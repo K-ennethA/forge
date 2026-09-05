@@ -45,8 +45,8 @@ has to run under whatever Python is around, with no install step, so
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status": "ok", "claude_cli": {"found", "path", "version"?, "hint"?}, "cwd", "session", "busy", "queued", "session_cost_usd", "last_auth_error"}` |
-| POST | `/ask` | `{"message", "context": {..., "image_path"?}, "conversation": "continue"\|"new"}` | `{"job_id", "state": "running", "queued": false}`, or `{"job_id", "state": "queued", "queued": true}` while a turn is running; **409** only when a message is *already* waiting; **503** if the CLI is missing; **400** for an empty message or an unusable `image_path` |
-| GET | `/job/<id>` | — | `{"state": "queued"\|"running"\|"done"\|"error"\|"cancelled", "activity": [...], "session_cost_usd", "reply"?, "session_id"?, "cost_usd"?, "duration_ms"?, "model"?, "usage"?, "error"?}` |
+| POST | `/ask` | `{"message", "context": {..., "image_path"?}, "conversation": "continue"\|"new", "model"?: "haiku"\|"sonnet"\|"opus"}` | `{"job_id", "state": "running", "queued": false}`, or `{"job_id", "state": "queued", "queued": true}` while a turn is running; **409** only when a message is *already* waiting; **503** if the CLI is missing; **400** for an empty message or an unusable `image_path` |
+| GET | `/job/<id>` | — | `{"state": "queued"\|"running"\|"done"\|"error"\|"cancelled", "activity": [...], "session_cost_usd", "reply"?, "session_id"?, "cost_usd"?, "duration_ms"?, "model"?, "requested_model"?, "usage"?, "error"?}` |
 | POST | `/cancel/<id>` | — | the job, now `cancelled` — works on a queued job too, which then never runs |
 | POST | `/new` | — | `{"status": "ok", "session": null}` — forget the conversation without asking anything, and zero `session_cost_usd` |
 
@@ -78,6 +78,32 @@ running is **queued**, not refused:
 
 Exactly one turn is ever in flight. The queue is one deep, and that is the whole
 of it.
+
+## Choosing the model per message
+
+`POST /ask` takes an optional `"model"`, one of **`haiku`**, **`sonnet`** or
+**`opus`** — the panel's Fast / Smart (recommended) / Deepest selector, which
+rides with every message including the quick-action chips. It is validated here:
+anything else (a model id, a typo, a number) is a **400 naming the three on
+offer**, before a turn is spent, and the bridge is not left busy. Whitespace and
+case are forgiven; an absent or empty value means "nothing was asked for". What
+wins, in order:
+
+1. the request's `model`,
+2. `FORGE_ASSISTANT_MODEL` (the escape hatch, and what a terminal user sets),
+3. nothing — no `--model` flag at all, so the CLI uses the user's own default.
+
+The choice belongs to the *message*, not to the bridge: it is stored on the job,
+so a message queued as Fast still runs as Fast even if the panel's selector
+moved while it waited. `GET /job/<id>` echoes it back as **`requested_model`**
+(readable while the job is still queued or running) alongside `model`, which is
+what the CLI says it actually ran.
+
+**Switching model mid-conversation is fine and needs no special handling.** The
+next turn still carries `--resume`, and the CLI continues the same conversation
+under the newly named model — so an artist can spend four Haiku turns exporting
+and segmenting, then hand the same thread to Opus for the part that is actually
+hard, without losing what was already said.
 
 ## Cost and the sign-in signal
 
@@ -183,7 +209,7 @@ the model against it.
          --append-system-prompt-file assistant/system_prompt.md
          --allowedTools "Read,Glob,Grep,mcp__forge__*"
          --permission-mode auto
-         [--model <FORGE_ASSISTANT_MODEL>]
+         [--model <the request's model, else FORGE_ASSISTANT_MODEL>]
          [--resume <session_id>]          # every turn after the first
 ```
 
@@ -216,7 +242,7 @@ run with `cwd` = the repo root. Five details are load-bearing:
 |---|---|---|
 | `FORGE_ASSISTANT_PORT` | `8901` | Listen port (loopback only) |
 | `FORGE_ASSISTANT_CLAUDE` | discovered | Full path to the CLI, skipping discovery |
-| `FORGE_ASSISTANT_MODEL` | unset | `--model` value; unset = the user's configured default |
+| `FORGE_ASSISTANT_MODEL` | unset | Fallback `--model` value, used only when the request named no model; unset = the CLI's configured default |
 | `FORGE_ASSISTANT_TIMEOUT` | `600` | Seconds one turn may take |
 | `FORGE_ASSISTANT_TOOLS` | the list above | `--allowedTools` value; set it to `""` for a no-tools run |
 | `FORGE_ASSISTANT_CWD` | the repo root | Working directory for the CLI |
@@ -311,6 +337,12 @@ so tests can assert after the fact — most usefully that turn two carried
 life of a bridge process, so a file is the only way one test can watch
 `last_auth_error` go true and then clear again.
 
+`FAKE_CLAUDE_EXPECT_MODEL` asserts on the selector: set to a name, `--model`
+must carry exactly that; set to the empty string, `--model` must be **absent**
+(the "nobody chose anything" case, which has to keep working unchanged). The
+flag's value is echoed back as the result's `model`, so a test can read the
+effective model off the job as well as off the argv log.
+
 `FAKE_CLAUDE_EXPECT_IMAGE` asserts on the attachment block: set to a path, the
 prompt must carry it under `--- Attached reference image ---` with the Read
 instruction and `Read` still in `--allowedTools`; set to the empty string, the
@@ -334,7 +366,8 @@ rate-limit failures skip rather than fail — those are facts about the machine,
 not bugs in the bridge.
 
 The panel side is `addon/tests/headless_assistant.py` (Blender `--background`,
-port 9882) and `addon/tests/headless_reference.py` (port 9886 — the attach
+port 9882), `addon/tests/headless_model.py` (port 9889 — the speed selector),
+and `addon/tests/headless_reference.py` (port 9886 — the attach
 field, its validation, and the `load_reference` command), which drives the operators against a fake bridge written into the
 harness. The two suites never overlap: that one is about the panel, this one is
 about the command line.

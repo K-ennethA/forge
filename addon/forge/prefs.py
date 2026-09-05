@@ -70,6 +70,21 @@ def default_flows_dir():
     return candidate if os.path.isdir(candidate) else ""
 
 
+#: The models the Assistant offers, fastest first, labelled for someone who has
+#: never heard of any of them.  The identifiers are the CLI's own aliases (the
+#: bridge validates against the same three); the labels are the only part an
+#: artist ever sees, so they name the trade-off, not the product.
+ASSISTANT_MODELS = (
+    ("haiku", "Fast", "Quick jobs: segmenting, exports, questions"),
+    ("sonnet", "Smart (recommended)",
+     "New parts, image references - the balanced default"),
+    ("opus", "Deepest", "Tricky design work; slowest"),
+)
+
+#: What a scene starts on when the artist has not chosen otherwise.
+DEFAULT_ASSISTANT_MODEL = "sonnet"
+
+
 # Values used when the add-on preferences are not available yet (during
 # registration, in ``--background`` runs, or if the add-on entry was removed).
 DEFAULTS = {
@@ -78,6 +93,7 @@ DEFAULTS = {
     "autostart": False,
     "service_url": "http://127.0.0.1:8765",
     "assistant_url": "http://127.0.0.1:8901",
+    "assistant_model": DEFAULT_ASSISTANT_MODEL,
     "printer_path": default_printer_path(),
     "forge_flows_dir": default_flows_dir(),
     "request_timeout": 120.0,

@@ -16,7 +16,8 @@ Endpoints
 ``GET  /health``        -> ``{"status", "claude_cli": {"found", "path", "version"},
                             "busy", "queued", "session_cost_usd", "last_auth_error"}``
 ``POST /ask``           -> ``{"job_id", "state": "running"|"queued"}``
-                           (409 only when a message is ALREADY waiting)
+                           (409 only when a message is ALREADY waiting;
+                            optional ``"model": "haiku"|"sonnet"|"opus"``)
 ``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
 
@@ -45,6 +46,19 @@ rather than one object at the end.  Those events are parsed as they arrive into
 lines under the busy indicator so the artist can see what the AI is doing
 instead of watching a spinner.
 
+Choosing the model per message
+------------------------------
+``POST /ask`` may carry ``"model": "haiku"|"sonnet"|"opus"`` — the artist's
+speed-versus-depth choice, made in the panel rather than in an environment
+variable they will never find.  Anything else is a 400 before a turn is spent.
+The order is: the request's model, then ``FORGE_ASSISTANT_MODEL``, then no
+``--model`` flag at all (the CLI's own default).
+
+Switching model mid-conversation is fine and needs no special handling: the next
+turn still carries ``--resume``, and the CLI continues the same conversation
+under the newly named model.  So an artist can ask Haiku for four quick exports
+and then hand the same thread to Opus for the tricky bit.
+
 Reference images (Phase 6c)
 ---------------------------
 ``POST /ask`` may carry ``context.image_path`` — an absolute path to a sketch or
@@ -64,7 +78,8 @@ Environment
 ``FORGE_ASSISTANT_PORT``     listen port (default 8901)
 ``FORGE_ASSISTANT_CLAUDE``   full path to the claude executable; skips discovery.
                              The test suite points this at a fake CLI.
-``FORGE_ASSISTANT_MODEL``    ``--model`` value; unset = the user's default model
+``FORGE_ASSISTANT_MODEL``    fallback ``--model`` value, used only when the
+                             request named none; unset = the CLI's own default
 ``FORGE_ASSISTANT_TIMEOUT``  seconds per turn (default 600)
 ``FORGE_ASSISTANT_TOOLS``    ``--allowedTools`` value; unset = the Forge default.
                              Set it to the empty string for a no-tools run.
@@ -108,6 +123,11 @@ CONTEXT_DIVIDER = "--- Current Blender context ---"
 #: last instruction the model reads before it starts working.
 IMAGE_DIVIDER = "--- Attached reference image ---"
 IMAGE_INSTRUCTION = "View this image with the Read tool BEFORE answering."
+
+#: The three models the panel offers, fastest first.  Deliberately the CLI's own
+#: aliases rather than pinned version ids: the artist is choosing "quick" or
+#: "careful", and the CLI is the right place for that to mean a specific model.
+MODELS = ("haiku", "sonnet", "opus")
 
 #: What the Read tool can actually render.  The panel checks the same list, so a
 #: bad attachment is refused in the sidebar rather than a turn later; this is the
@@ -435,7 +455,53 @@ def build_prompt(message, context):
             + format_image(image_path))
 
 
-def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
+# ---------------------------------------------------------------------------
+# which model this turn runs on
+# ---------------------------------------------------------------------------
+
+def normalize_model(value):
+    """A requested model as a bare lowercase name, or ``""`` for "not asked".
+
+    Whitespace and case are forgiven because this arrives over HTTP from a
+    panel; anything that is not one of :data:`MODELS` comes back unchanged for
+    :func:`model_error` to refuse by name.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip().lower()
+    return str(value).strip().lower()
+
+
+def model_error(value):
+    """Why this model choice cannot be used, or ``""`` when it is fine.
+
+    Checked here, not only in the panel: the bridge is a localhost HTTP
+    endpoint, and a typo'd model would otherwise be a turn spent watching the
+    CLI reject a flag.
+    """
+    text = normalize_model(value)
+    if not text or text in MODELS:
+        return ""
+    return ("%s is not a model the assistant offers. Choose one of %s."
+            % (str(value)[:60], ", ".join(MODELS)))
+
+
+def resolve_model(requested=None):
+    """The ``--model`` value for a turn, or ``""`` to leave the flag off.
+
+    Request first, then ``FORGE_ASSISTANT_MODEL``, then nothing — the artist's
+    choice in the panel beats the environment the bridge happened to start in,
+    and with neither set the CLI uses whatever the user configured for it.
+    """
+    text = normalize_model(requested)
+    if text:
+        return text
+    return str(_env("FORGE_ASSISTANT_MODEL") or "").strip()
+
+
+def build_argv(claude_path, prompt, session_id=None, permission_mode="auto",
+               model=None):
     """The exact command line a turn runs.
 
     Kept as one pure function so the tests can assert on it without spawning
@@ -447,6 +513,11 @@ def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
     ``-p`` mode, and ``--include-partial-messages`` is what turns text into
     token deltas we can show as progress.  The final ``type: "result"`` line
     carries exactly the fields ``--output-format json`` used to.
+
+    ``model`` is the artist's per-message choice; see :func:`resolve_model` for
+    what wins.  Naming a different model on a turn that also carries
+    ``--resume`` is deliberate and needs nothing special — the conversation
+    continues, the next reply is written by the model just named.
     """
     argv = launcher(claude_path) + [
         "-p", prompt,
@@ -463,9 +534,9 @@ def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
     if permission_mode:
         argv += ["--permission-mode", permission_mode]
 
-    model = _env("FORGE_ASSISTANT_MODEL")
-    if model and model.strip():
-        argv += ["--model", model.strip()]
+    effective_model = resolve_model(model)
+    if effective_model:
+        argv += ["--model", effective_model]
 
     if session_id:
         argv += ["--resume", str(session_id)]
@@ -925,7 +996,7 @@ class JobStore(object):
             self._jobs.pop(oldest, None)
         return job
 
-    def submit(self, message, prompt, new_conversation=False):
+    def submit(self, message, prompt, new_conversation=False, model=""):
         """Take the running slot, or the one waiting place behind it.
 
         Returns ``(job, disposition)``:
@@ -937,7 +1008,9 @@ class JobStore(object):
 
         The prompt is built by the caller and stored here rather than rebuilt at
         pickup: the artist pressed Send while looking at a particular scene, and
-        that is the scene the message is about.
+        that is the scene the message is about.  The model choice rides with the
+        job for the same reason — a message queued as "Fast" runs as Fast even
+        if the panel's selector moved while it waited.
         """
         with self._lock:
             active = self._jobs.get(self._active) if self._active else None
@@ -951,6 +1024,7 @@ class JobStore(object):
             job = self._new_job(message, "queued" if busy else "running")
             job["prompt"] = prompt
             job["new_conversation"] = bool(new_conversation)
+            job["requested_model"] = normalize_model(model)
 
             if busy:
                 self._pending = job["job_id"]
@@ -1160,6 +1234,11 @@ def public_job(job, session_cost_usd=0.0):
                 "model", "usage", "num_turns"):
         if job.get(key) is not None:
             out[key] = job[key]
+    # What was ASKED for, alongside "model" (what the CLI says it ran).  The
+    # panel can then say "you asked for Deepest" on a job that is still running,
+    # before there is any result to read a model off.
+    if job.get("requested_model"):
+        out["requested_model"] = job["requested_model"]
     # The conversation's running total rides on every job snapshot as well as
     # on /health: the panel already polls the job, and a second request just to
     # redraw one number would be a request per second for nothing.
@@ -1249,7 +1328,7 @@ def read_stream(proc, limit, recorder):
     }
 
 
-def run_turn(job_id, prompt, session_id):
+def run_turn(job_id, prompt, session_id, model=""):
     """Spawn the CLI, read its event stream, land the result. Never raises."""
     claude_path = resolve_claude()
     if not claude_path:
@@ -1266,7 +1345,8 @@ def run_turn(job_id, prompt, session_id):
         # A retry under a different flag starts its activity list over; the
         # rejected attempt did nothing worth showing.
         JOBS.reset_activity(job_id)
-        argv = build_argv(claude_path, prompt, session_id=session_id, permission_mode=mode)
+        argv = build_argv(claude_path, prompt, session_id=session_id,
+                          permission_mode=mode, model=model)
         try:
             proc = subprocess.Popen(
                 argv,
@@ -1360,7 +1440,7 @@ def run_turn(job_id, prompt, session_id):
                       "knows about.\n%s" % (last_error or ""))
 
 
-def _run_and_continue(job_id, prompt, session_id):
+def _run_and_continue(job_id, prompt, session_id, model=""):
     """Run one turn, then start whatever was waiting behind it.
 
     The pickup lives in a ``finally`` on purpose: done, errored, cancelled or
@@ -1369,7 +1449,7 @@ def _run_and_continue(job_id, prompt, session_id):
     silently strand the queue.
     """
     try:
-        run_turn(job_id, prompt, session_id)
+        run_turn(job_id, prompt, session_id, model)
     except Exception as exc:  # noqa: BLE001 - a dead thread must not stall the queue
         log("[assistant] turn %s failed: %s" % (job_id, exc))
         JOBS.finish(job_id, state="error",
@@ -1392,11 +1472,13 @@ def start_turn(job):
 
     The session id is resolved *here*, not when the message was submitted: a
     queued message must resume the conversation the turn ahead of it produced.
+    The model, by contrast, is the one the job was submitted with — it is the
+    artist's choice for *this* message, not for whenever it reached the front.
     """
     thread = threading.Thread(
         target=_run_and_continue,
         args=(job["job_id"], job.get("prompt") or job.get("message") or "",
-              JOBS.session_id),
+              JOBS.session_id, job.get("requested_model") or ""),
         name="ForgeAssistantTurn", daemon=True)
     thread.start()
     return thread
@@ -1508,6 +1590,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": "Type something first."})
             return
 
+        # The artist's speed-versus-depth choice, refused before a turn is spent
+        # if it is not one this bridge offers.
+        problem = model_error(payload.get("model"))
+        if problem:
+            self._send(400, {"error": problem})
+            return
+        model = normalize_model(payload.get("model"))
+
         context = payload.get("context")
         if isinstance(context, dict):
             problem = image_error(context.get("image_path"))
@@ -1530,7 +1620,8 @@ class Handler(BaseHTTPRequestHandler):
             str(payload.get("conversation") or "continue").lower() == "new")
 
         job, disposition = JOBS.submit(message, prompt,
-                                       new_conversation=new_conversation)
+                                       new_conversation=new_conversation,
+                                       model=model)
 
         if disposition == "rejected":
             self._send(409, {

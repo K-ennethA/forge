@@ -36,7 +36,13 @@ else:
     from . import ui
 
 import bpy  # noqa: E402
-from bpy.props import BoolProperty, FloatProperty, IntProperty, StringProperty  # noqa: E402
+from bpy.props import (  # noqa: E402
+    BoolProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
+)
 from bpy.types import AddonPreferences  # noqa: E402
 
 
@@ -72,6 +78,15 @@ class ForgePreferences(AddonPreferences):
             "start_forge.cmd launches it on this port"
         ),
         default="http://127.0.0.1:8901",
+    )
+    assistant_model: EnumProperty(
+        name="Assistant Speed",
+        description=(
+            "Which model a new scene's Assistant box starts on. The selector "
+            "above the message field changes it per message"
+        ),
+        items=prefs.ASSISTANT_MODELS,
+        default=prefs.DEFAULT_ASSISTANT_MODEL,
     )
     printer_path: StringProperty(
         name="Printer Profile",
@@ -141,6 +156,7 @@ class ForgePreferences(AddonPreferences):
         box = layout.box()
         box.label(text="Assistant (chat box)", icon="LIGHT")
         box.prop(self, "assistant_url")
+        box.prop(self, "assistant_model")
         box.label(text="Started by start_forge.cmd in the forge folder", icon="INFO")
 
         box = layout.box()

@@ -78,12 +78,17 @@ class Client(object):
                 return exc.code, {"raw": body}
 
     # -- convenience -----------------------------------------------------
-    def ask(self, message, context=None, conversation="continue"):
-        status, body = self.request("/ask", {
+    def ask(self, message, context=None, conversation="continue", model=None):
+        payload = {
             "message": message,
             "context": context if context is not None else {"active_object": "Cup"},
             "conversation": conversation,
-        })
+        }
+        if model is not None:
+            # Absent and empty are different things: absent means "the panel
+            # named nothing", which is what falls back to the environment.
+            payload["model"] = model
+        status, body = self.request("/ask", payload)
         return status, body
 
     def wait(self, job_id, timeout=60.0):
@@ -230,6 +235,66 @@ def test_build_argv_resumes_and_honours_the_model_env(monkeypatch):
 def test_build_argv_omits_permission_mode_when_asked():
     argv = bridge.build_argv("claude", "hi", permission_mode=None)
     assert "--permission-mode" not in argv
+
+
+# ---------------------------------------------------------------------------
+# the per-request model — the artist's speed-versus-depth dial
+#
+# The rule is one line: the request wins, then FORGE_ASSISTANT_MODEL, then no
+# --model flag at all.  These are the four corners of it, with no process.
+# ---------------------------------------------------------------------------
+
+def test_the_requested_model_reaches_the_command_line(monkeypatch):
+    monkeypatch.delenv("FORGE_ASSISTANT_MODEL", raising=False)
+    argv = bridge.build_argv("claude", "hi", model="opus")
+    assert argv[argv.index("--model") + 1] == "opus"
+
+
+def test_the_request_beats_the_environment(monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_MODEL", "haiku")
+    argv = bridge.build_argv("claude", "hi", model="opus")
+    assert argv[argv.index("--model") + 1] == "opus"
+    assert argv.count("--model") == 1
+
+
+def test_no_request_falls_back_to_the_environment(monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_MODEL", "sonnet")
+    for asked in (None, "", "   "):
+        argv = bridge.build_argv("claude", "hi", model=asked)
+        assert argv[argv.index("--model") + 1] == "sonnet", asked
+
+
+def test_nothing_chosen_anywhere_means_no_model_flag(monkeypatch):
+    monkeypatch.delenv("FORGE_ASSISTANT_MODEL", raising=False)
+    assert "--model" not in bridge.build_argv("claude", "hi")
+    assert "--model" not in bridge.build_argv("claude", "hi", model="")
+
+
+def test_the_three_models_are_the_only_ones_offered():
+    assert bridge.MODELS == ("haiku", "sonnet", "opus")
+    for name in bridge.MODELS:
+        assert bridge.model_error(name) == ""
+    # forgiving about how it arrives, strict about what it is
+    assert bridge.model_error("  Opus  ") == ""
+    assert bridge.normalize_model("  Opus  ") == "opus"
+    # not asking for one is not an error
+    for empty in (None, "", "   "):
+        assert bridge.model_error(empty) == ""
+        assert bridge.normalize_model(empty) == ""
+    # and anything else says what IS on offer
+    problem = bridge.model_error("gpt-4")
+    assert "gpt-4" in problem
+    assert "haiku" in problem and "sonnet" in problem and "opus" in problem
+    assert bridge.model_error("claude-3-5-sonnet-20241022") != ""
+    assert bridge.model_error(7) != ""  # a panel that sent something odd
+
+
+def test_resolve_model_is_the_priority_rule(monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_MODEL", "haiku")
+    assert bridge.resolve_model("opus") == "opus"
+    assert bridge.resolve_model(None) == "haiku"
+    monkeypatch.delenv("FORGE_ASSISTANT_MODEL", raising=False)
+    assert bridge.resolve_model(None) == ""
 
 
 def test_allowed_tools_env_can_be_emptied(monkeypatch):
@@ -812,6 +877,108 @@ def test_the_allowed_tools_env_reaches_the_cli(bridge_proc):
     assert reply["state"] == "done", reply
     argv = client.invocations()[0]["argv"]
     assert argv[argv.index("--allowedTools") + 1] == "Read"
+
+
+# ---------------------------------------------------------------------------
+# the model selector, end to end through a real subprocess
+#
+# The panel offers Fast / Smart / Deepest; what has to be true is that the
+# choice survives to the command line, that a bad one costs no turn, and that an
+# artist who never touches it gets exactly what they got before.
+# ---------------------------------------------------------------------------
+
+def test_the_panels_model_choice_reaches_the_cli(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": "opus"})
+    reply = client.turn("the tricky one", model="opus")
+    assert reply["state"] == "done", reply
+
+    argv = client.invocations()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "opus"
+    # what was asked for, and what the CLI says it ran, both readable
+    assert reply["requested_model"] == "opus"
+    assert reply["model"] == "opus"
+
+
+def test_a_turn_that_names_no_model_carries_no_flag(bridge_proc):
+    """The artist who never touches the selector gets the CLI's own default."""
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": ""})
+    reply = client.turn("just answer me")
+    assert reply["state"] == "done", reply
+    assert "--model" not in client.invocations()[0]["argv"]
+    assert "requested_model" not in reply
+
+
+def test_the_model_env_still_works_when_the_panel_names_none(bridge_proc):
+    client = bridge_proc(env_extra={"FORGE_ASSISTANT_MODEL": "haiku",
+                                    "FAKE_CLAUDE_EXPECT_MODEL": "haiku"})
+    reply = client.turn("hello")
+    assert reply["state"] == "done", reply
+    argv = client.invocations()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "haiku"
+
+
+def test_the_request_overrides_the_env_on_the_wire(bridge_proc):
+    client = bridge_proc(env_extra={"FORGE_ASSISTANT_MODEL": "haiku",
+                                    "FAKE_CLAUDE_EXPECT_MODEL": "sonnet"})
+    reply = client.turn("this one matters", model="sonnet")
+    assert reply["state"] == "done", reply
+    argv = client.invocations()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "sonnet"
+    assert argv.count("--model") == 1
+    assert reply["requested_model"] == "sonnet"
+
+
+@pytest.mark.parametrize("bad", ["gpt-4", "claude-3-opus", "fastest", " ", 7])
+def test_a_model_the_bridge_does_not_offer_is_a_clean_400(client, bad):
+    status, body = client.request("/ask", {"message": "hi", "model": bad})
+    if str(bad).strip() == "":
+        # whitespace is "nothing chosen", not a bad choice
+        assert status == 200, body
+        return
+    assert status == 400, body
+    assert "haiku" in body["error"] and "opus" in body["error"]
+    assert client.invocations() == []  # no turn was spent finding out
+
+
+def test_a_refused_model_does_not_leave_the_bridge_busy(client):
+    client.request("/ask", {"message": "hi", "model": "gpt-4"})
+    _status, health = client.request("/health")
+    assert health["busy"] is False
+    assert client.turn("carry on", model="haiku")["state"] == "done"
+
+
+def test_switching_model_keeps_the_same_conversation(client):
+    """Mid-session switching needs no special handling: --resume still rides."""
+    first = client.turn("start here", model="haiku")
+    assert "--resume" not in client.invocations()[0]["argv"]
+
+    second = client.turn("now think harder about it", model="opus")
+    assert second["state"] == "done", second
+    argv = client.invocations()[1]["argv"]
+    assert argv[argv.index("--resume") + 1] == first["session_id"]
+    assert argv[argv.index("--model") + 1] == "opus"
+    assert second["session_id"] == first["session_id"]
+
+
+def test_a_queued_message_keeps_the_model_it_was_sent_with(bridge_proc):
+    """The choice belongs to the message, not to whenever it reached the front."""
+    client = _busy_client(bridge_proc, seconds="3")
+    _status, first = client.ask("the slow one", model="haiku")
+    _status, second = client.ask("and now the careful one", model="opus")
+    assert second["state"] == "queued"
+
+    # visible while it waits, before there is any result to read a model off
+    _status, waiting = client.request("/job/%s" % second["job_id"])
+    assert waiting["requested_model"] == "opus"
+
+    client.wait(first["job_id"], timeout=60.0)
+    final = client.wait(second["job_id"], timeout=60.0)
+    assert final["state"] == "done", final
+
+    calls = client.invocations()
+    assert calls[0]["argv"][calls[0]["argv"].index("--model") + 1] == "haiku"
+    assert calls[1]["argv"][calls[1]["argv"].index("--model") + 1] == "opus"
+    assert final["requested_model"] == "opus"
 
 
 # ---------------------------------------------------------------------------

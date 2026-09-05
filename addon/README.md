@@ -413,6 +413,21 @@ flight used to be a 409; now the bridge queues one message, the panel says
 in the same conversation. A *third* message is refused, with a sentence saying one is
 already waiting.
 
+**One row picks how hard it thinks.** Directly above **Send** is a compact selector with
+three choices, labelled for the trade-off rather than for the product: **Fast** ("quick
+jobs: segmenting, exports, questions"), **Smart (recommended)** ("new parts, image
+references — the balanced default") and **Deepest** ("tricky design work; slowest"). The
+choice rides in the `model` field of every `/ask`, chips included, so it belongs to the
+message rather than to a mode the panel is left in — and a message queued behind another
+runs on the model it was sent with. Switching between messages is free and keeps the
+conversation: the next turn still resumes the same session, just written by the model you
+just picked, so you can spend a few Fast turns exporting and then hand the same thread to
+Deepest for the part that is actually hard. A new scene starts on whatever
+`Edit ▸ Preferences ▸ Add-ons ▸ Forge ▸ Assistant ▸ Assistant Speed` says (default
+**Smart**); once you pick something in the sidebar, that scene keeps your pick. No
+environment variable is involved — the bridge's `FORGE_ASSISTANT_MODEL` is only the
+fallback for a message that named nothing.
+
 **The footer says what this has cost.** `This session: $0.42` comes from the bridge's
 `session_cost_usd` (summed over finished turns, zeroed by New Conversation), with this
 turn's own cost and duration on the right. Nothing is shown before the first answer.
@@ -1202,9 +1217,9 @@ its panel's `status` string.
 
 ## Headless tests
 
-Nine suites, all `--background` only. Never launch Blender windowed to run them. As of the
-UI batch they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 = 926 checks**, all green
-on Blender 5.0.1.
+Ten suites, all `--background` only. Never launch Blender windowed to run them. As of the
+model selector they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 = 970
+checks**, all green on Blender 5.0.1.
 
 ### The UI batch (`headless_ui_batch.py`)
 
@@ -1243,6 +1258,27 @@ are replaced for the run by two stdlib HTTP servers on ephemeral ports, serving 
   an empty scene and again on a full one, and each box's sentence is asserted. A panel is
   the part of an add-on no headless test usually reaches, which is exactly how an
   empty-state sentence rots.
+
+### The Assistant speed selector (`headless_model.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_model.py
+```
+
+Port **9889** (HTTP). Needs nothing running: the bridge is a small `http.server` inside the
+harness that records every `/ask` body. 44 checks over: the selector registering as an enum
+offering exactly `haiku`/`sonnet`/`opus` in that order, labelled *Fast* / *Smart
+(recommended)* / *Deepest* with a "when to use it" description on each and no model name
+anywhere an artist can see; the add-on preference declaring the same three with `sonnet` as
+its default; an untouched scene reading that preference (and following it when it changes,
+including a brand-new scene) while a sanity guard catches a preference value that is not a
+model; a choice made in the sidebar sticking and outranking any later preference change;
+the model reaching the bridge in **every** `/ask` — the Send button, a changed selection,
+and a quick-action chip alike — plus the untouched case sending the preference; and the
+panel's `draw()` executed against a recording layout to prove the row is there, bound to
+`chat`, drawn once and label-less so it stays one compact row. What the *bridge* does with
+the field is `assistant/tests/test_bridge.py`'s job.
 
 ### Phase 6c — reference images (`headless_reference.py`)
 
@@ -1323,7 +1359,7 @@ it talks to is a twenty-line `http.server` inside the harness answering `/ask`, 
 ```
 
 Port 9882 (HTTP, not the command socket — the assistant does not speak that protocol).
-77 checks over: registration and panel ordering; the context the panel builds (active
+78 checks over: registration and panel ordering; the context the panel builds (active
 object in millimetres, scene summary, PartForge script path); a Send that round-trips a
 canned reply into the chat log with its cost and duration; the six-exchange log cap; New
 Conversation clearing both the log and the bridge session; a bridge error and a 409 both

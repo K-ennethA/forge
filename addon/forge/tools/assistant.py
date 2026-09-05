@@ -10,6 +10,11 @@ a file with Blender's own file browser, the path (never the pixels) rides along
 in ``context.image_path`` on the next ``/ask``, and the field clears once the
 answer lands — one message per attachment, re-attach to send it again.
 
+The speed selector rides the same way: ``Fast`` / ``Smart`` / ``Deepest`` is a
+per-message choice sent as ``model`` on every ``/ask`` (chips included), and a
+scene starts on whatever the add-on preference says — no environment variable,
+because an artist will never find one.
+
 Async exactly the way PartForge does it: the operator returns immediately, a
 worker thread does the HTTP, and a ``bpy.app.timers`` callback delivers the
 result on the main thread.  Nothing here ever blocks Blender's UI, and every
@@ -29,13 +34,14 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
+    EnumProperty,
     FloatProperty,
     IntProperty,
     StringProperty,
 )
 from bpy.types import Operator, PropertyGroup
 
-from ..prefs import pref
+from ..prefs import ASSISTANT_MODELS, DEFAULT_ASSISTANT_MODEL, pref
 from .partforge import _tag_redraw
 
 #: Shown verbatim when the bridge is not answering.  It names the script the
@@ -154,6 +160,40 @@ def request_json(url, payload=None, timeout=HTTP_TIMEOUT, method=None):
 # properties
 # ---------------------------------------------------------------------------
 
+#: The identifiers of :data:`ASSISTANT_MODELS`, in the order they are drawn.
+MODEL_IDS = tuple(item[0] for item in ASSISTANT_MODELS)
+
+
+def default_model():
+    """The model a scene starts on: the add-on preference, sanity-checked."""
+    value = str(pref("assistant_model") or "").strip().lower()
+    return value if value in MODEL_IDS else DEFAULT_ASSISTANT_MODEL
+
+
+def _model_get(self):
+    """Read the selector, falling back to the preference until it is touched.
+
+    An ``EnumProperty``'s ``default`` is fixed when the class is registered, and
+    the preference is not readable then (nor would a later change to it reach an
+    already-registered property).  So the choice is stored by hand under its own
+    key and "never chosen" reads through to the preference — which means the
+    value the panel draws is always the value that will be sent.
+    """
+    stored = self.get("model_choice")
+    fallback = MODEL_IDS.index(default_model())
+    if stored is None:
+        return fallback
+    try:
+        index = int(stored)
+    except (TypeError, ValueError):
+        return fallback
+    return index if 0 <= index < len(MODEL_IDS) else fallback
+
+
+def _model_set(self, value):
+    self["model_choice"] = int(value)
+
+
 class ForgeChatTurn(PropertyGroup):
     """One line of the visible chat log."""
 
@@ -173,6 +213,14 @@ class ForgeAssistantProps(PropertyGroup):
         name="Message",
         description="Tell the assistant what you want, in your own words",
         default="",
+    )
+    model: EnumProperty(
+        name="Speed",
+        description=("How hard the assistant thinks about your message. It "
+                     "rides with each message, so you can change it any time"),
+        items=ASSISTANT_MODELS,
+        get=_model_get,
+        set=_model_set,
     )
     image_path: StringProperty(
         name="Reference image",
@@ -354,6 +402,28 @@ def collect_context(context=None):
 # operators
 # ---------------------------------------------------------------------------
 
+def chosen_model(props):
+    """The model the next message runs on, as the bridge's own identifier.
+
+    Read off the props rather than the preference so the artist's per-message
+    choice is what travels; the preference only decides where a scene starts.
+    """
+    try:
+        value = str(getattr(props, "model", "") or "").strip().lower()
+    except (AttributeError, ReferenceError, TypeError):
+        value = ""
+    return value if value in MODEL_IDS else default_model()
+
+
+def model_label(props):
+    """``"Fast"`` — what the selector currently reads, for a status line."""
+    current = chosen_model(props)
+    for identifier, label, _description in ASSISTANT_MODELS:
+        if identifier == current:
+            return label
+    return current
+
+
 def cost_footer(props):
     """``"This session: $0.42"``, or ``""`` when nothing has cost anything yet."""
     try:
@@ -394,6 +464,9 @@ def send_message(context, props, message, conversation="continue"):
         "message": message,
         "context": scene_context,
         "conversation": conversation or "continue",
+        # Rides with every message, chips included: the selector is a property
+        # of the message, not a mode the panel is left in.
+        "model": chosen_model(props),
     }
     ask_url = bridge_url("/ask")
     job_url_base = bridge_url("/job/")

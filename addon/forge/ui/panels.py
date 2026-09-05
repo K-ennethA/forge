@@ -187,6 +187,14 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
             row = attach.row(align=True)
             row.prop(chat, "image_path", text="Picture")
 
+        # How hard to think about this message. One compact row, right above
+        # Send, because it is a property of the message being sent - not a mode
+        # buried in preferences. The labels say the trade-off ("Fast", "Smart
+        # (recommended)", "Deepest"); nothing here names a model.
+        speed = layout.row(align=True)
+        speed.enabled = not chat.busy
+        speed.prop(chat, "model", text="")
+
         row = layout.row(align=True)
         if chat.busy:
             row.label(text=chat.status or "Thinking ...",

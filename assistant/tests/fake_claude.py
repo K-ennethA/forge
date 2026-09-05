@@ -33,6 +33,12 @@ path, the prompt must carry that path under ``--- Attached reference image ---``
 with the Read instruction and ``Read`` still in ``--allowedTools``; set to the
 empty string, the prompt must carry no attachment block at all.
 
+``FAKE_CLAUDE_EXPECT_MODEL`` asserts on the per-request model selector: set to a
+name, ``--model`` must carry exactly that; set to the empty string, ``--model``
+must be absent altogether (the CLI's own default).  Whatever the flag says is
+echoed back as the result's ``model`` field, so a test can read the effective
+model off the job as well as off the argv log.
+
 ``FAKE_CLAUDE_AUTH_FILE`` names a flag file: while it exists the run behaves as
 ``auth_error``, and deleting it signs the fake back in.  A mode is fixed for the
 life of the bridge process (it is read from the environment it was started with),
@@ -262,6 +268,18 @@ def main():
         elif has_block:
             fail("no image was attached, but the prompt carries a %r block"
                  % IMAGE_DIVIDER)
+
+    # The per-request model selector: the panel's choice has to survive all the
+    # way onto the command line, and "no choice anywhere" has to mean no flag.
+    expect_model = os.environ.get("FAKE_CLAUDE_EXPECT_MODEL")
+    if expect_model is not None:
+        got_model = flag(argv, "--model")
+        if expect_model.strip():
+            if got_model != expect_model:
+                fail("--model was %r, expected %r" % (got_model, expect_model))
+        elif got_model is not None:
+            fail("no model was chosen and none is configured, so --model must "
+                 "be absent; got %r" % (got_model,))
 
     if mode == "reject_permission":
         mode_value = flag(argv, "--permission-mode")
