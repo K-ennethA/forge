@@ -381,16 +381,69 @@ The `/segment` body plus `directory` (absolute; created if missing),
  "mode": { }, "joint": { }, "cuts": [ ], "printer": { }, "timings": { }}
 ```
 
-## `forge_lib` — appendage slots
+## `forge_lib` — the printability library
+
+`forge_lib` is available to a PartForge script the same way `build123d` is — it
+is registered under its bare name, so `import forge_lib` works, and the name is
+already bound in the script namespace for scripts that forget the import.
+
+It has two halves: **printability features**, which is what a part is built out
+of, and **appendage slots**, which is how two printed pieces join.
+
+**The guide for writing part scripts is [`docs/part-authoring.md`](../docs/part-authoring.md)** —
+the PARAMS contract, the printability rules derived from `printer.json`, the
+full helper catalog with its guarantees, the check-and-iterate workflow, and two
+worked patterns. Read that first; this section is the API summary.
+
+### Printability features
+
+Every helper takes explicit millimetres plus an optional `printer=` dict (a
+partial profile merged over the built-in Centauri Carbon default), clamps itself
+to something the printer can make, and has a `*_plan()` twin returning the
+numbers it will build with plus a `clamped` list naming everything it moved and
+why. Nothing is ever silently sub-minimum: a helper clamps and says so, or
+raises `forge_lib.PrintabilityError` — a `ScriptError`, so an HTTP 400 with a
+plain sentence, not a 500.
+
+The rule that motivated the library: **a taper must never end in a knife edge.**
+A cone running into a flat face at an acute angle leaves a rim thinner than the
+nozzle for its first fraction of a millimetre — it looks like a clean chamfer
+and comes back as `min_wall: fail, thinnest 0.076 mm`. Every taper here ends on
+a straight land instead.
+
+| Call | Returns | Guarantees |
+|---|---|---|
+| `blunted_taper(bottom_r, top_r, height, *, role="add"\|"cut", bore_r=0, taper_height=None, min_land_mm=None, support_free=True)` | frustum, axis +Z, base Z=0 | Thin end is a land ≥ `max(min_land_mm, min_wall)`, never a point; the acute end gets a vertical land of the same size; the slope is clamped to the overhang limit in whichever direction `role` says is dangerous (a solid flares dangerously **up**, a hole dangerously **down**) |
+| `flared_lip(inner_r, wall, height, flare, *, direction="down"\|"up", taper_height=None, support_free=True)` | annular collar, base Z=0 | `wall` clamped up to `min_wall`; the flared end lands on a vertical land; an upward flare is given the run to self-support, or the flare is cut back |
+| `textured_band(solid_face_radius, height, count, depth, style="flute"\|"scallop"\|"chevron", *, wall=None, z_bottom=0, chevron_deg=45)` | `Compound` of cutters — **subtract** | Depth clamped to `min(depth, 0.40·wall, wall−min_wall, 0.45·surface_width, 0.45·radius)`; cutter radius solved from the pitch so a flat land survives between elements; suppressed to an empty (no-op) compound below 0.15 mm; `flute` cones its ends so the groove hangs no ceiling |
+| `feet_ring(outer_r, height, count, style="pad"\|"pier", *, foot_size=None, foot_depth=None, inset=0, chamfer=True)` | positive, base Z=0 | Feet ≥ `min_feature` with ≥ `min_feature` of air between them; nothing reaches past `outer_r`; 45° bottom chamfer |
+| `arcade_base(outer_r, height, count, style="pier"\|"pad", *, inner_r=0, arch="pointed"\|"round", opening_fraction=0.6, sill=None)` | positive plinth, base Z=0 | Piers ≥ `min_feature`; a `min_wall` of material always over the crown; `arch="pointed"` sits on the overhang limit and passes the check, `"round"` bridges in practice and reports `support_free: False` |
+| `magnet_pocket(diameter, depth, printer=None, *, tolerance=None, available_depth=None)` | negative, mouth at Z=0 facing **up** — **subtract** | `diameter + 2 × magnet_pocket_extra` by `depth + magnet_pocket_extra`, identical to `/segment`'s magnet joints; 0.2 mm mouth overshoot so the boolean is never coplanar; with `available_depth` it raises rather than leaving a floor under `min_wall` |
+| `shell_box(length, width, height, wall, *, floor=None, open_top=True, corner_r=0)` | hollow box, base Z=0 | `wall` and `floor` clamped up to `min_wall`; a cavity the walls would swallow raises with the size the box needs; `open_top=False` reports `support_free: False` |
+| `wall_safe_shell(solid, wall, *, openings=None)` | hollowed solid | `wall` clamped to `min_wall`; a hollowing OCC cannot do raises a plain message |
+| `screw_boss(screw_diameter, height, *, wall=None, hole_depth=None, style="thread-forming"\|"clearance")` | boss, base Z=0 | Wall ≥ `min_wall` (default `max(0.5·D, 2·min_wall)`); ≥ `min_wall` of floor always under the hole; hole clamped up to `min_feature` |
+
+Profile access, for a script that needs the number itself: `profile()`,
+`min_wall()`, `min_feature()`, `max_overhang_deg()`, `fit_tolerance(name)`,
+`min_land(min_land_mm=None)` (= `max(min_land_mm, min_wall)`, defaulting to
+`min_feature`), `max_flare_for(taper_height)`.
+
+```python
+part -= Pos(x, y, top_z) * forge_lib.magnet_pocket(6.0, 3.0, available_depth=top_z)
+part -= forge_lib.textured_band(r_out, 20.0, 24, 1.6, wall=wall, z_bottom=8.0)
+part += forge_lib.feet_ring(r_out, 6.0, 4)
+```
+
+`samples/magnet_holder.py` is the reference part built entirely from these — a
+magnet bar that passes all four checks at its defaults *and* at both ends of
+every declared range, including `overhangs` as a pass rather than a warning.
+
+### Appendage slots
 
 Decorative pieces (ears, feet, fins, a tail) plug into a base through a *keyed
 peg*: a cylinder with a flat rib down one side so the appendage cannot spin.
 Because the peg and the socket come from one spec, changing the peg once changes
 every socket.
-
-`forge_lib` is available to a PartForge script the same way `build123d` is — it
-is registered under its bare name, so `import forge_lib` works, and the name is
-already bound in the script namespace for scripts that forget the import.
 
 ```python
 from build123d import *
@@ -738,9 +791,10 @@ a B-Rep — and it is measured on exactly the mesh that leaves the service.
 | `segmenting.py` | Cut modes, region solids, orientation, plate packing |
 | `mold.py` | Cross-sections, the parting plane, draft, the box and its features |
 | `slicer.py` | Slicer detection, the CLI invocation, and running it hidden |
-| `forge_lib.py` | The appendage peg/socket library scripts import |
+| `forge_lib.py` | The printability library scripts import: printable features + the peg/socket pair |
 | `samples/ring_band.py` | Reference PartForge script |
 | `samples/appendage_peg.py` | Reference `forge_lib` script (base and ear) |
+| `samples/magnet_holder.py` | Reference part built from the printability helpers; passes all four checks at its extremes |
 | `tests/` | pytest suite, plus `fake_slicer.py`, the stub `/slice` is tested against |
 
 `checks.py`, `printer.py`, `slicer.py`, the packing half of `segmenting.py` and

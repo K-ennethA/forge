@@ -10,6 +10,7 @@ are thin, well-labelled wrappers over them.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
@@ -33,7 +34,9 @@ from .util import (
     fmt_manifest_report,
     fmt_metarig_report,
     fmt_mode,
+    fmt_new_part_report,
     fmt_number,
+    fmt_open_report,
     fmt_overrides,
     fmt_params,
     fmt_retarget_report,
@@ -56,17 +59,21 @@ from .util import (
     normalize_keys,
     normalize_modules,
     normalize_retarget_scale,
+    normalize_script_source,
     normalize_segment_mode,
     normalize_tag_list,
     normalize_tag_name,
     object_name_for_script,
     ok,
     plate_items_by_name,
+    project_paths,
+    project_slug,
     read_printer,
     read_script,
     resolve_path,
     rig_objects,
     scene_object,
+    spec_document,
 )
 
 INSTRUCTIONS = """\
@@ -80,6 +87,11 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   call, so "regenerate the part" is a single tool call.
 - To change a part's shape, edit its script/parameters and regenerate — do not
   hand-edit the mesh in Blender, it will be overwritten on the next generate.
+- When the part does not exist yet, WRITE one: read docs/part-authoring.md, then
+  partforge_new_part (validates the PARAMS block through the service and writes
+  projects/<slug>/part.py + spec.json) -> partforge_open_in_panel (the sliders
+  appear in Blender) -> partforge_generate -> partforge_check. If a check fails,
+  revise with partforge_new_part(overwrite=true) and check again.
 - Print readiness is a pipeline: partforge_check first; if bed_fit fails it
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
@@ -634,6 +646,115 @@ def partforge_export(
         f"exported {path.name} as {format.upper()} to {written}",
         f"overrides: {fmt_overrides(overrides)}",
     )
+
+
+# ---------------------------------------------------------------------------
+# PartForge authoring — making a part that does not exist yet
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def partforge_new_part(
+    name: str,
+    script_source: str,
+    overwrite: bool = False,
+) -> str:
+    """Create (or revise) a parametric part: write a PARAMS script into projects/.
+
+    This is how a part that does not exist yet comes into being. Read
+    `docs/part-authoring.md` FIRST — it is the authoring rulebook (printability
+    rules plus the `forge_lib` helper catalog) — then compose the script and pass
+    the whole file as `script_source`.
+
+    - `name` is plain words ("small magnet holder"); it becomes the folder
+      `projects/small-magnet-holder/` and the file `part.py` inside it. Anything
+      that looks like a path is refused — nothing is ever written elsewhere.
+    - The script is validated through the geometry service's /parse_params
+      BEFORE anything touches disk. A bad PARAMS block or a script that will not
+      import fails here, with the service's own message, and no file is created.
+    - A minimal `spec.json` is written alongside it (name, description
+      placeholder, the parameters mirrored from the parsed schema, and a print
+      section pointing at templates/printer.json) unless one already exists.
+    - `overwrite=true` is also the REVISION path: same tool, same validation.
+      That is how the self-correction loop edits a script after a failed check.
+
+    Returns the script path and the parsed parameter table, so you can confirm
+    what you built and name the useful sliders back to the artist.
+
+    Nothing is built or shown by this call. Follow with partforge_open_in_panel,
+    partforge_generate, then partforge_check — always check.
+    """
+    slug = project_slug(name)
+    folder, script, spec = project_paths(slug)
+    source = normalize_script_source(script_source)
+
+    if script.exists() and not overwrite:
+        raise ForgeError(
+            f"{script} already exists. That part is already there — regenerate it "
+            f"with partforge_generate('{script}'), or pass overwrite=true to "
+            "replace the script with this new version (which is what revising a "
+            "part after a failed check looks like). To make a DIFFERENT part, "
+            "give it another name."
+        )
+
+    # Validated before written: a script that cannot be parsed never lands on
+    # disk, so projects/ never fills up with drafts that do not run.
+    payload = service_client.parse_params(source)
+    params = payload.get("params") or {}
+
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        existed = script.exists()
+        script.write_text(source, encoding="utf-8", newline="\n")
+    except OSError as exc:
+        raise ForgeError(f"Could not write {script}: {exc}") from exc
+
+    spec_created = False
+    if not spec.exists():
+        try:
+            spec.write_text(
+                json.dumps(spec_document(name, slug, params), indent=2) + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            spec_created = True
+        except OSError as exc:  # a missing spec must not lose the script
+            return fmt_new_part_report(
+                name=name, slug=slug, script=script, params=params,
+                created=not existed, spec=None, spec_created=False,
+            ) + f"\n  (spec.json could not be written: {exc})"
+
+    return fmt_new_part_report(
+        name=name,
+        slug=slug,
+        script=script,
+        params=params,
+        created=not existed,
+        spec=spec,
+        spec_created=spec_created,
+    )
+
+
+@app.tool()
+def partforge_open_in_panel(script_path: str) -> str:
+    """Point Blender's Forge panel at a part script, so its sliders appear.
+
+    Sets the scene's PartForge script path and rebuilds the parameter list from
+    the script's PARAMS block, exactly as the panel's own Load Script button
+    does — the artist gets working sliders without typing a path into a file
+    field. Their panel and your tools are then looking at the same part.
+
+    Builds nothing: follow with partforge_generate so the part is actually
+    visible in the viewport.
+
+    Needs Blender running with the Forge add-on server started; the geometry
+    service supplies the parameter schema.
+    """
+    path = resolve_path(script_path, must_exist=True, label="script path")
+    result = blender_client.send_command(
+        "partforge_open", {"script_path": str(path)}
+    )
+    return fmt_open_report(path, result)
 
 
 # ---------------------------------------------------------------------------

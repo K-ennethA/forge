@@ -46,7 +46,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 40-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 42-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -56,8 +56,19 @@ command name and every parameter of each request, the `faces` / `use_selection` 
 `tags` / `use_selection` either-ors, the `actions` `"all"`-or-list forms, per-key keyframe
 validation, the `.bvh`/`.fbx` refusal, and each report rendered from a canned,
 contract-shaped result — including a warnings-heavy one and a nearly empty one, because the
-add-on side is being written in parallel and a thin result must still render. Nothing in the
+add-on side is being written in parallel and a thin result must still render.
+`tests/test_new_part.py` covers the two authoring tools: the slug matrix, every path-shaped
+name it refuses, that a script the service rejects leaves nothing on disk, the
+overwrite/spec matrix, and the one `partforge_open` command that crosses the wire. It
+redirects `projects/` to a `tmp_path`, so the real folder is never touched. Nothing in the
 suite needs Blender or the geometry service, and nothing binds or connects to 9876/8765.
+
+`tests/e2e_new_part.py` is deliberately **not** a pytest module: it is the end-to-end proof,
+and it needs the real service on 8765 and launches its own headless Blender (socket port
+9885, never 9876). It runs the whole loop for "small magnet holder" — first draft, open,
+generate, check FAILS on min_wall, revise with `overwrite=true`, check PASSES — asserts the
+artifacts and the scene object, then deletes the project folder it created. Run it by hand:
+`.\.venv\Scripts\python.exe tests\e2e_new_part.py`.
 
 ### Registering with Claude Code
 
@@ -160,6 +171,53 @@ Each takes an optional `object` name; omitted means Blender's active object.
 | `partforge_parse_params` | Reads a script's `PARAMS` block — names, values, units, ranges, descriptions. No geometry built. |
 | `partforge_generate` | Builds the part **and** loads the mesh into Blender in one call (`load_mesh`, `replace=true`). Reports verts/faces/bbox/watertight. |
 | `partforge_export` | Rebuilds and writes STL / STEP / 3MF straight from the solid. |
+
+### PartForge authoring — how the assistant makes new parts
+
+The three tools above all assume a script already exists. These two are how one comes into
+being: the artist asks for "a small magnet holder", nothing in `projects/` is a magnet
+holder, so the model **writes** the part.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `partforge_new_part` | `name`, `script_source`, `overwrite` | Validates the script through the service's `/parse_params` and — only then — writes it to `projects/<slug>/part.py`, plus a minimal `spec.json` beside it. Returns the path and the parsed parameter table. |
+| `partforge_open_in_panel` | `script_path` | Points Blender's Forge panel at that script and rebuilds its sliders (the `partforge_open` socket command, the panel's own Load Script path). Builds nothing — generate next. |
+
+The loop the assistant runs, and the reason each step is there:
+
+```text
+read docs/part-authoring.md          # the rulebook: printability + the forge_lib catalog
+partforge_new_part(name="small magnet holder", script_source="...")
+partforge_open_in_panel(script_path="projects/small-magnet-holder/part.py")
+partforge_generate(script_path="projects/small-magnet-holder/part.py")
+partforge_check(script_path="projects/small-magnet-holder/part.py")
+# min_wall FAILED -> revise the script and go again, up to 3 rounds:
+partforge_new_part(name="small magnet holder", script_source="...", overwrite=True)
+partforge_check(script_path="projects/small-magnet-holder/part.py")
+```
+
+Five things are fixed by the tools rather than left to the model:
+
+- **`name` is a name, not a path.** It is slugged (`"a small Magnet Holder!"` →
+  `small-magnet-holder`) and anything path-shaped — a separator, `..`, a drive letter, a
+  `~`/`%VAR%` — is refused outright. Nothing is ever written outside `projects/`, and the
+  slug rule is checked twice (once on the name, once on the resolved path).
+- **Validated before written.** `/parse_params` runs first; a bad `PARAMS` block or a script
+  that will not import comes back as the service's own message and **no file is created**, so
+  `projects/` never fills with drafts that do not run. A failed *revision* leaves the working
+  script exactly as it was.
+- **`overwrite=true` is the revision path.** Same tool, same validation — that is what the
+  self-correction loop calls after a check fails. Without it, an existing `part.py` is
+  refused with a message that says so.
+- **`spec.json` is written once.** Name, description placeholder, the parameters mirrored
+  from the schema the service just resolved, and a `print` section pointing at
+  `templates/printer.json` (shape per `templates/spec.json`). An existing spec is **never**
+  overwritten — that file is the artist's to edit.
+- **The panel and the tools agree on the object.** `partforge_open_in_panel` derives the same
+  object name `partforge_generate` uses (the script's stem, or its folder when the file is
+  generically named `part.py`), so the artist's Regenerate button rebuilds the object the
+  assistant made rather than a second one. It also clears the previous part's check rows —
+  a stale FAIL in the panel is worse than an empty one.
 
 ### PartForge print readiness (Phase 2)
 

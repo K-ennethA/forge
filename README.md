@@ -30,12 +30,11 @@ docs/          Plan + architecture contract
 start_forge.cmd / stop_forge.cmd   Double-click launchers for the two background programs
 ```
 
-## Setup (not yet done — testing deferred)
+## Setup (done on this machine)
 
-1. Fill in `templates/printer.json` with your printer's real specs.
-2. Create venvs and install deps for `service/` and `mcp/` (each has a `pyproject.toml`).
-3. Install `addon/forge/` as a Blender add-on (zip the folder, or symlink into Blender's addons dir).
-4. Register the MCP server in Claude Code using `.mcp.json` at the repo root.
+Already in place here: printer profile (Elegoo Centauri Carbon), venvs for `service/` and `mcp/`, the add-on installed into Blender with server autostart, and the MCP registration via `.mcp.json`. One-time remaining step: sign the Claude CLI in (`claude` in a terminal, then `/login`) so the Assistant chat box can answer.
+
+Fresh machine: fill `templates/printer.json`, create the two venvs (`pip install -e .` in `service/` and `mcp/`), install `addon/forge/` into Blender, run `claude` → `/login` once, then double-click `start_forge.cmd`.
 
 ## Status
 

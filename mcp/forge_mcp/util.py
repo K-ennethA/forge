@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
@@ -1850,5 +1851,193 @@ def fmt_retarget_report(
         )
     lines.append(
         "  next: scrub the action in Blender, then rigforge_export_godot."
+    )
+    return "\n".join(lines)
+
+
+# --- Phase 7 (making new parts) ---------------------------------------------
+
+#: Long enough for "small-magnet-holder-with-countersunk-screw-holes", short
+#: enough to stay a readable folder name on Windows.
+PROJECT_SLUG_MAX = 60
+
+#: Runs of anything that is not a lowercase letter or digit collapse to one dash.
+_SLUG_SEPARATORS = re.compile(r"[^a-z0-9]+")
+
+#: Characters that can only be an attempt to leave projects/ (or a Windows drive
+#: reference). Slugging would silently swallow them, and silently writing
+#: somewhere else is the one failure mode worth refusing loudly.
+_TRAVERSAL_MARKERS = ("/", "\\", "..", ":", "\x00")
+
+
+def project_slug(name: Any) -> str:
+    """`"a small Magnet Holder!"` -> `"small-magnet-holder"`, or refuse.
+
+    The slug is a single folder name under ``projects/``. Anything that looks
+    like a path — a separator, ``..``, a drive letter — is refused rather than
+    cleaned, because a caller who wrote one meant a location, and quietly
+    writing somewhere else is worse than an error.
+    """
+    raw = "" if name is None else str(name).strip().strip('"').strip()
+    if not raw:
+        raise ForgeError(
+            "No part name given. Name the thing in plain words — "
+            '"small magnet holder" — and it becomes projects/small-magnet-holder/.'
+        )
+    for marker in _TRAVERSAL_MARKERS:
+        if marker in raw:
+            raise ForgeError(
+                f"{name!r} is not a part name — it looks like a path "
+                f"(it contains {marker!r}). New parts are always written to "
+                "projects/<name>/part.py, so pass just the name, e.g. "
+                '"small magnet holder".'
+            )
+    if raw.startswith("~") or raw.startswith("%") or raw.startswith("$"):
+        raise ForgeError(
+            f"{name!r} is not a part name — it looks like a path or an "
+            'environment variable. Pass just the name, e.g. "small magnet holder".'
+        )
+
+    slug = _SLUG_SEPARATORS.sub("-", raw.lower()).strip("-")
+    if not slug:
+        raise ForgeError(
+            f"{name!r} has no letters or digits in it, so it cannot name a "
+            'folder. Try something like "small magnet holder".'
+        )
+    if len(slug) > PROJECT_SLUG_MAX:
+        slug = slug[:PROJECT_SLUG_MAX].rstrip("-")
+    return slug
+
+
+def projects_root() -> Path:
+    """The one directory new parts may be written under."""
+    return Path(config.PROJECTS_DIR).expanduser().resolve()
+
+
+def project_paths(slug: str) -> Tuple[Path, Path, Path]:
+    """``(folder, part.py, spec.json)`` for a slug, checked to stay in projects/.
+
+    The containment check is belt and braces on top of :func:`project_slug` —
+    two independent guards, because this is the only tool in the server that
+    writes source code to disk.
+    """
+    root = projects_root()
+    folder = (root / slug).resolve()
+    try:
+        folder.relative_to(root)
+    except ValueError:
+        raise ForgeError(
+            f"{slug!r} would write outside {root}. New parts only ever land in "
+            "projects/<name>/."
+        ) from None
+    return folder, folder / "part.py", folder / "spec.json"
+
+
+def normalize_script_source(source: Any) -> str:
+    """The script text as it will be written: LF endings, one trailing newline."""
+    if source is None or not isinstance(source, str) or not source.strip():
+        raise ForgeError(
+            "No script_source given. Pass the whole Python file: a top-level "
+            "PARAMS dict and a build(p) that returns a Build123d part "
+            "(docs/part-authoring.md, service/samples/ring_band.py)."
+        )
+    text = source.replace("\r\n", "\n").replace("\r", "\n")
+    return text if text.endswith("\n") else text + "\n"
+
+
+def spec_document(
+    name: str,
+    slug: str,
+    params: Any,
+    *,
+    description: Optional[str] = None,
+) -> Dict[str, Any]:
+    """A minimal spec.json for a new part, shaped like templates/spec.json.
+
+    The parameters are mirrored from the schema the service just resolved, so
+    the spec and the script cannot disagree on the day they are written.
+    """
+    mirrored: Dict[str, Any] = {}
+    if isinstance(params, Mapping):
+        for key, spec in params.items():
+            if not isinstance(spec, Mapping):
+                mirrored[str(key)] = {"value": spec}
+                continue
+            entry: Dict[str, Any] = {}
+            for field in ("value", "unit", "min", "max", "step", "description"):
+                if spec.get(field) is not None:
+                    entry[field] = spec[field]
+            mirrored[str(key)] = entry
+
+    return {
+        "_comment": (
+            "Contract between you and Claude for this part. Claude regenerates "
+            "part.py from this; edit freely. Created by partforge_new_part."
+        ),
+        "name": slug,
+        "description": description or (
+            f"{name} — written by the Forge Assistant. Replace this line with what "
+            "the part is for, what it fits, and anything it has to clear."
+        ),
+        "reference_images": [],
+        "parameters": mirrored,
+        "features": [],
+        "print": {
+            "printer": config.SPEC_PRINTER_REF,
+            "segments": "auto",
+            "joint_type": "dovetail",
+            "mold_mode": False,
+        },
+        "script": "part.py",
+        "exports": [],
+    }
+
+
+def fmt_new_part_report(
+    *,
+    name: str,
+    slug: str,
+    script: Path,
+    params: Any,
+    created: bool,
+    spec: Optional[Path],
+    spec_created: bool,
+) -> str:
+    """What was written, and the sliders the artist just gained."""
+    verb = "Created" if created else "Updated"
+    count = len(params) if isinstance(params, Mapping) else 0
+    lines = [
+        f"{verb} {slug} — {script}",
+        f"  {count} parameter(s) validated by the geometry service:",
+        fmt_params(params),
+    ]
+    if spec is not None:
+        lines.append(
+            f"  spec.json {'written' if spec_created else 'left as it was'}: {spec}"
+        )
+    lines.append(
+        f"  next: partforge_open_in_panel('{script}') to put the sliders in the "
+        "Forge panel, partforge_generate to build it, then partforge_check — "
+        "always check before calling it done."
+    )
+    return "\n".join(lines)
+
+
+def fmt_open_report(script: Path, result: Mapping[str, Any]) -> str:
+    """The panel is now pointed at this script, with N sliders on it."""
+    count = result.get("param_count")
+    names = result.get("params")
+    lines = [
+        f"Opened {script.name} in the Blender Forge panel — {script}",
+        f"  {'?' if count is None else count} slider(s) ready under "
+        "View3D sidebar (N) > Forge > PartForge",
+    ]
+    if isinstance(names, (list, tuple)) and names:
+        lines.append("  parameters: " + ", ".join(str(n) for n in names))
+    if result.get("object"):
+        lines.append(f"  the panel will build/replace the object '{result['object']}'")
+    lines.append(
+        "  next: partforge_generate on the same script so the part is actually "
+        "visible in the viewport — opening the panel builds nothing."
     )
     return "\n".join(lines)

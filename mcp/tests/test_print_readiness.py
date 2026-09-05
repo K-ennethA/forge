@@ -222,7 +222,12 @@ def export_payload(directory: Path) -> dict[str, Any]:
 
 
 class FakeService:
-    """HTTP server on an ephemeral port that records requests and replays canned bodies."""
+    """HTTP server on an ephemeral port that records requests and replays canned bodies.
+
+    A route's value is the body to return, a callable taking the request body, or
+    a ``(status, body)`` pair when the test needs the service's error path (a 400
+    with ``{"error": ...}``, which is what a bad PARAMS block produces).
+    """
 
     def __init__(self, routes: dict[str, Any]) -> None:
         self.routes = routes
@@ -247,7 +252,10 @@ class FakeService:
                     return
                 if callable(payload):
                     payload = payload(body)
-                self._send(200, payload)
+                status = 200
+                if isinstance(payload, tuple) and len(payload) == 2:
+                    status, payload = payload
+                self._send(int(status), payload)
 
             def _send(self, status: int, payload: Any) -> None:
                 encoded = json.dumps(payload).encode("utf-8")

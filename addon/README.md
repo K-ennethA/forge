@@ -139,6 +139,7 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `load_mesh` | `name`, `vertices` (mm), `faces`, `replace?`, `collection?`, `scale?`, `plate?` | builds a mesh; `replace` swaps mesh data in place, keeping the object, transforms, materials and custom properties |
 | `load_meshes` | `meshes` (a list of `load_mesh` param objects), `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
 | `export_stl` | `objects`, `path`, `scale?`, `ascii?`, `apply_modifiers?` | writes a binary STL |
+| `partforge_open` | `script_path`, `keep_values?`, `object?`, `params?` | points the PartForge panel at a script and rebuilds its sliders — the panel's own Load Script path, driven from outside. Returns `{"script", "param_count", "params", "object", "schema_source"}` |
 
 ### RigForge commands (Phase 3)
 
@@ -206,6 +207,40 @@ Both are additions; nothing in `docs/architecture.md` changes shape.
   mesh data stays in assembly coordinates — only the object transform moves — which is what
   keeps a later `replace` cheap. The result gains `location` (scene metres) and
   `rotation_z_deg`. Omit `plate` and nothing is moved, exactly as before.
+
+### Additive protocol extension: `partforge_open`
+
+Another addition; nothing in `docs/architecture.md` changes shape.
+
+When the assistant *writes* a part (MCP `partforge_new_part`), the artist should not then
+have to find the file and type its path into the panel. `partforge_open` does that for them:
+it sets `scene.forge_partforge.script_path`, asks the geometry service for the script's
+`PARAMS` schema and rebuilds the parameter collection — the same `read_script` →
+`request_json` → `sync_schema` path the **Load Script** button runs, not a fork of it. The
+handler runs on the main thread like every command, so the `/parse_params` call is
+synchronous here rather than going through `run_async`; parsing builds no geometry.
+
+```jsonc
+{"type": "partforge_open", "params": {
+   "script_path": "C:/.../projects/small-magnet-holder/part.py"}}
+```
+
+- **`object`** overrides the object name the panel will build into. Omitted, it is derived
+  the way the MCP server derives it — the script's stem, or its *folder* name when the file
+  is generically named (`projects/small-magnet-holder/part.py` → `small-magnet-holder`) — so
+  the panel's Regenerate button rebuilds the object `partforge_generate` made instead of a
+  second one. The name is only re-derived when the script path actually changes.
+- **`keep_values`** keeps values already tuned in the panel for parameters that still exist,
+  exactly as the operator's own flag does.
+- **`params`** supplies the schema directly and skips the service call. Only the headless
+  tests use it; it is what lets them prove the panel plumbing with no service running.
+- Changing script also **clears the previous part's check rows, verdict, suggested
+  segmentation and stats** — a FAIL left over from another part is worse than no row at all.
+- Nothing is built: the mesh appears when something calls `/generate` (MCP
+  `partforge_generate`, or the panel's Regenerate).
+- Failures are clean errors and the panel is rolled back to the script it had: no
+  `script_path`, a file that is not there, or a service that is not running all leave the
+  panel exactly as it was.
 
 Notes:
 
@@ -894,8 +929,30 @@ its panel's `status` string.
 
 ## Headless tests
 
-Five suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 6 they are **49 + 108 + 156 + 150 + 77 = 540 checks**, all green on Blender 5.0.1.
+Six suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 7 they are **49 + 108 + 156 + 150 + 77 + 40 = 580 checks**, all green on Blender 5.0.1.
+
+### Phase 7 — the generator handoff (`headless_partforge_open.py`)
+
+The only suite that wants the **live** geometry service (`--service`, default
+`http://127.0.0.1:8765`) — and it uses it read-only: one `/parse_params`, which builds no
+geometry and writes nothing. Everything else runs with the service pointed at a dead port
+and the schema supplied inline, so the panel plumbing is proved with no service at all.
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python addon\tests\headless_partforge_open.py -- --service http://127.0.0.1:8765
+```
+
+Port 9883. 40 checks over: `partforge_open` being registered without disturbing the older
+commands; the live open of `service/samples/ring_band.py` putting all five parameters on the
+panel with the right widget kinds (mm → float slider with its range, bool → checkbox); the
+object name following the script (and a `part.py` taking its *folder's* name); a supplied
+schema needing no service; `keep_values` keeping a tuned value and its absence restoring the
+default; an explicit `object` winning; stale check rows being cleared when the script
+changes; and the three failure paths — no `script_path`, a file that is not there, a service
+that is not running — each a plain error with the panel left exactly as it was.
 
 ### Phase 6 — the Assistant panel (`headless_assistant.py`)
 

@@ -1,0 +1,334 @@
+# Writing a PartForge part script
+
+Audience: an LLM writing a `part.py` on request ("make me a small magnet
+holder"). This is the rulebook. Read it before writing geometry, not after the
+checks fail.
+
+The one-sentence version: **compose the part out of `forge_lib` helpers, then
+run `/check`, and never ship a script whose checks you have not seen pass.**
+
+Reference implementations to imitate:
+
+| File | Shape of part |
+|---|---|
+| `service/samples/magnet_holder.py` | A flat bar: pockets, rounded ends, countersunk holes. Passes all four checks at defaults and at both ends of every range. |
+| `projects/bowl-holder/part_base_ring.py` | A ring: revolved profile, flared foot, fluted band, arcaded base, appendage sockets. |
+| `service/samples/appendage_peg.py` | Two parts from one script, joined by a keyed peg. |
+
+---
+
+## 1. The PARAMS contract
+
+Full wire contract: `docs/architecture.md` → *PARAMS block convention*. The
+short form:
+
+```python
+from build123d import *      # the house style
+import forge_lib             # already bound in the namespace; the import is for readers
+
+PARAMS = {
+    "bar_length": {"value": 80.0, "unit": "mm", "min": 20.0, "max": 240.0,
+                   "step": 1.0, "description": "Overall length of the bar"},
+    "magnet_count": {"value": 3, "unit": "count", "min": 1, "max": 6, "step": 1,
+                     "description": "How many magnets"},
+}
+
+def build(p):
+    ...                      # returns a build123d Part / Solid / Compound
+```
+
+Rules, all enforced by the service:
+
+- `value` **and** `unit` are required on every entry. `unit` is one of `mm`,
+  `in`, `deg`, `count`, `ratio`, `bool`.
+- Parameter names must be valid Python identifiers — the Blender panel turns
+  them into properties.
+- `min` / `max` / `step` / `description` are optional but write them anyway.
+  `step` is a UI hint; the service never snaps to it.
+- The declared `value` must sit inside its own `min`/`max`, or the script is
+  rejected at parse time.
+- Overrides outside `min`/`max` are **rejected, not clamped**.
+- `build(p)` always works in **millimetres and degrees**. An `in` parameter is
+  multiplied by 25.4 before `build` sees it, so never convert inches yourself.
+- `build(p)` is called with a plain dict. Return one solid; a `Compound` of
+  disjoint solids is legal but the checks will treat it as one part.
+
+Declare a range only if **every value in it is buildable and printable**. A
+`max` that fails `bed_fit` is a bug in the script, not a user error — the whole
+range is a promise. Size the ranges so the worst combination still fits the bed
+with its margin (Centauri Carbon: 256 mm cubed, 5 mm margin per side, so
+246 × 246 × 256 mm usable).
+
+---
+
+## 2. Printability rules
+
+From `templates/printer.json` (Elegoo Centauri Carbon, the default profile; the
+service mirrors it in `service/printer.py`):
+
+| Number | Value | What it means for the script |
+|---|---|---|
+| `min_wall_thickness` | 0.8 mm | Hard floor. Anything thinner is a `min_wall` **fail**. |
+| `min_feature_size` | 1.0 mm | Soft floor. Between 0.8 and 1.0 is a `min_wall` **warn**. Aim above this. |
+| `max_unsupported_overhang_deg` | 50° | Angle **from vertical**: 0° is a wall, 90° is a flat ceiling. Steeper than 50° needs supports. |
+| `nozzle_diameter` | 0.4 mm | Two perimeters is 0.8 mm — that is where `min_wall` comes from. |
+| `bed` | 256 × 256 × 256 mm | Past this, `bed_fit` fails and proposes segmentation. |
+| `tolerances.press_fit` / `slide_fit` / `loose_fit` | 0.1 / 0.2 / 0.3 mm | Clearance on a mating face. |
+| `tolerances.magnet_pocket_extra` | 0.05 mm | Growth on a magnet pocket. |
+
+### The rules, in the order they bite
+
+1. **No knife edges — every taper ends on a land.** This is the failure that
+   motivated `forge_lib`. A cone that runs into a flat face at an acute angle
+   leaves a rim of material that is a fraction of a millimetre thick for its
+   first layer. It looks like a clean chamfer and comes back as
+   `min_wall: fail, thinnest 0.076 mm`. Give the acute end a straight vertical
+   land of at least `max(min_land, min_wall)` — or just call
+   `forge_lib.blunted_taper()` / `forge_lib.flared_lip()`, which do it for you.
+   Every profile point in a revolve should be part of a pair that makes a
+   straight segment; a lone vertex where two slopes meet is a knife edge.
+
+2. **Relief is subtracted, never added.** An added rib is a free-standing
+   feature that has to be a nozzle wide on its own and has nothing to hold it.
+   A groove only has to leave enough wall behind, which is a condition you can
+   actually enforce. Depth clamp, in this order:
+   `min(depth, 0.40 × wall, wall − min_wall, 0.45 × surface_width)`.
+   `forge_lib.textured_band()` applies all four.
+
+3. **Flat-bottom bias.** Model the part standing on Z = 0 in its print
+   orientation. A flat face on the bed prints; a curve tangent to the bed does
+   not. Bottom **chamfers** at 45° are fine; bottom **fillets** are not — a
+   fillet goes through 90° right where it meets the plate.
+
+4. **Blind pockets open upward.** A pocket bored from the underside is a flat
+   ceiling: a 90° overhang and an `overhangs` failure. Same for a counterbore —
+   wide-at-top is safe, wide-at-bottom is a ceiling.
+
+5. **In a solid, wide-at-top overhangs; in a hole, wide-at-bottom overhangs.**
+   The sign flips between adding and cutting, and it is the single thing scripts
+   get backwards most often. A countersink (a hole widening upward) faces
+   *upward* and needs no support at all. `blunted_taper(..., role="cut")`
+   knows this; `role="add"` is the default.
+
+6. **Horizontal holes and bridges.** A hole through the X or Y axis has a
+   ceiling at its crown. Teardrop it, or turn it into a vertical hole, or accept
+   the warning knowingly.
+
+7. **Bed limits and segmenting.** Anything over ~246 mm in a horizontal axis or
+   256 mm tall will fail `bed_fit`. Do not try to fix that in the script:
+   `bed_fit.data.suggested_segmentation.mode` is directly valid as `/segment`'s
+   `mode`. Expect radial cuts for ring-like parts and planar Z cuts otherwise.
+   Design ranges that do not need it.
+
+8. **Tolerance belongs on the negative.** The peg is nominal, the socket is
+   grown. Never shrink the male part to make a fit.
+
+9. **Never let a computed thickness land *exactly* on a limit.** `min_wall`
+   compares with a strict `<`, so a floor computed as
+   `thickness - pocket_depth` that should be exactly 1.0 mm comes out as
+   0.9999999999999996 and warns. Derive from a value with headroom
+   (`floor = max(wall, land)`, not `floor = land`) or add a tenth of a
+   millimetre. The same applies to any land you size at exactly `min_feature`.
+
+### What the checks actually measure
+
+`min_wall` casts a ray **inward along each facet normal** and reports the first
+hit (`service/checks.py`). Consequences worth knowing:
+
+- It is why a knife edge fails: on a surface that leans inward as it rises, the
+  inward normal points down and exits through the bottom face after a distance
+  proportional to the facet's height above the bed. The lowest band of facets
+  measures almost nothing.
+- It measures along the normal, not the shortest path, so a wedge thin across
+  some *other* axis reads thicker than it prints.
+- A narrow gap between two faces reads as a thin wall. That is conservative, but
+  the number it reports is a gap, not a wall.
+- Treat a fail as "look here", not as a dimension. The authoritative numbers are
+  in `PARAMS`.
+
+`overhangs` is warn-only and evaluates all six axis-aligned orientations,
+suggesting the best. A part that only warns is shippable; a part that passes is
+better.
+
+---
+
+## 3. The `forge_lib` catalog
+
+Available in every script: the name `forge_lib` is pre-bound in the namespace
+and `import forge_lib` also works. Every helper takes millimetres and an
+optional `printer=` dict (partial profile, merged over the Centauri Carbon
+default). Every helper has a `*_plan()` twin returning the numbers it will build
+with plus a `clamped` list naming everything it moved and why. Nothing is
+silently made sub-minimum: it clamps and says so, or raises
+`forge_lib.PrintabilityError` (an HTTP 400 with a plain sentence).
+
+### Printability features
+
+| Call | Returns | Guarantees | Use it when |
+|---|---|---|---|
+| `blunted_taper(bottom_r, top_r, height, *, role="add"\|"cut", bore_r=0, taper_height=None, min_land_mm=None, support_free=True, printer=None)` | solid frustum, axis +Z, base on Z=0 | Thin end is a land ≥ `max(min_land_mm, min_wall)` wide, never a point; the acute end gets a straight vertical land of the same size; slope clamped to the overhang limit in whichever direction `role` says is dangerous; with `bore_r`, the wall stays ≥ `min_wall` or it raises | Any cone, chamfer, countersink, draft or tapered plinth. **The default answer to a `min_wall` failure on a sloped face.** |
+| `flared_lip(inner_r, wall, height, flare, *, direction="down"\|"up", taper_height=None, min_land_mm=None, support_free=True, printer=None)` | annular collar, base on Z=0 | `wall` clamped up to `min_wall`; the flared end finishes on a vertical land ≥ min land; `direction="up"` is given the run to stay inside the overhang limit, or the flare is reduced | A footed collar, a ring's flared base, a rim that widens at the top |
+| `textured_band(solid_face_radius, height, count, depth, style="flute"\|"scallop"\|"chevron", *, wall=None, z_bottom=0.0, pitch_fraction=0.78, chevron_deg=45, support_free=True, printer=None)` | `Compound` of cutters — **subtract it** | Depth clamped to `min(depth, 0.40·wall, wall−min_wall, 0.45·surface_width, 0.45·radius)`; cutter radius solved from the pitch so a flat land always survives between elements; suppressed to an empty compound (a no-op subtraction) when under 0.15 mm; `flute` cones its ends so the groove hangs no ceiling; `chevron` clamps its tilt into the printable window; `scallop` reports `support_free: False` | Decoration on a cylindrical face. Pass `wall` or the wall-based clamps cannot apply. |
+| `feet_ring(outer_r, height, count, style="pad"\|"pier", *, foot_size=None, foot_depth=None, inset=0, chamfer=True, printer=None)` | positive solid, base on Z=0 | Each foot ≥ `min_feature` across with ≥ `min_feature` of air between neighbours (size clamped, impossible counts raise); nothing reaches past `outer_r`; optional 45° bottom chamfer, dropped if the profile is stricter | Discrete feet under a base |
+| `arcade_base(outer_r, height, count, style="pier"\|"pad", *, inner_r=0, arch="pointed"\|"round", opening_fraction=0.6, sill=None, printer=None)` | positive plinth ring, base on Z=0 | Piers never under `min_feature`; a `min_wall` of material always left over the arch crown (the opening narrows rather than breaking through); `arch="pointed"` sits exactly on the overhang limit and genuinely passes, `"round"` prints fine but the facet check flags its crown and `plan["support_free"]` says so | An openwork base: legs with arches between them |
+| `magnet_pocket(diameter, depth, printer=None, *, tolerance=None, available_depth=None)` | negative cylinder, mouth at Z=0 facing **up** — **subtract it** | Pocket is `diameter + 2 × magnet_pocket_extra` by `depth + magnet_pocket_extra` — identical to `/segment`'s magnet joints; the mouth overshoots 0.2 mm so the boolean is never coplanar; with `available_depth` it raises rather than leaving a floor under `min_wall` | Any disc magnet. `diameter`/`depth` are the magnet's numbers off the packet. Always pass `available_depth`. |
+| `shell_box(length, width, height, wall, *, floor=None, open_top=True, corner_r=0, printer=None)` | hollow box, base on Z=0 | `wall` and `floor` clamped up to `min_wall`; a cavity the walls would swallow raises with the size the box needs to be; `open_top=True` is support-free, `open_top=False` reports `support_free: False` (a lid is a 90° ceiling); a fillet the kernel refuses falls back to square and records it | Trays, boxes, enclosures |
+| `wall_safe_shell(solid, wall, *, openings=None, printer=None)` | hollowed solid | `wall` clamped to `min_wall`; a hollowing the kernel cannot do raises a plain message instead of an OCC error | Hollowing a shape that is not a box. Prefer `shell_box` when it is one. |
+| `screw_boss(screw_diameter, height, *, wall=None, hole_depth=None, style="thread-forming"\|"clearance", printer=None)` | solid boss, base on Z=0 | Wall ≥ `min_wall` (default `max(0.5·D, 2·min_wall)`); a floor of ≥ `min_wall` always under the hole; a hole clamped up to `min_feature` so it cannot print closed; support-free by construction | A screw post inside an enclosure |
+
+### Numbers and the profile
+
+| Call | Gives you |
+|---|---|
+| `profile(printer=None)` | The resolved printer dict |
+| `min_wall()` / `min_feature()` / `max_overhang_deg()` | 0.8 / 1.0 / 50 on the default profile |
+| `min_land(min_land_mm=None)` | `max(min_land_mm, min_wall)`, defaulting `min_land_mm` to `min_feature` |
+| `fit_tolerance("slide_fit")` | One named clearance |
+| `max_flare_for(taper_height)` | How far a surface may lean out over that height and still self-support |
+
+### Appendage slots (pre-existing)
+
+| Call | Does |
+|---|---|
+| `peg_spec(d=6, l=8, key=True, ...)` | The single source of truth for one peg/socket pair |
+| `peg(spec)` | The keyed peg — a positive, axis +Z, base on Z=0 |
+| `socket_for(spec, tolerance=0.2)` | The matching negative, grown by `tolerance` on every mating face |
+
+### Composition idioms
+
+```python
+part += forge_lib.feet_ring(r_out, 6.0, 4)               # positives: union
+part -= forge_lib.textured_band(r_out, 20.0, 24, 1.6,    # negatives: subtract
+                                wall=wall, z_bottom=8.0)
+part -= Pos(x, y, top_z) * forge_lib.magnet_pocket(6.0, 3.0, available_depth=top_z)
+```
+
+Read a clamp back when you need to explain it to the user:
+
+```python
+plan = forge_lib.textured_band_plan(r_out, 20.0, count, depth, wall=wall)
+if plan["clamped"]:
+    ...   # each entry is "what: old -> new mm: why"
+```
+
+---
+
+## 4. The workflow law
+
+1. Write the script from helpers. Do not write raw cone, wedge or thin-plate
+   geometry when a helper covers it.
+2. **Always run `/check` after generating.** Not `/generate` — `/check`. A part
+   that has not been checked is not finished.
+3. Read the failures in this order and act:
+
+   | Failure | First move |
+   |---|---|
+   | `min_wall` on a sloped or tapered face | Replace the raw revolve/loft with `blunted_taper` or `flared_lip`. This is the common case. |
+   | `min_wall` on decoration | Replace the added ribs with `textured_band`, or pass `wall=` so its clamps can apply. |
+   | `min_wall` on a pocket floor | Pass `available_depth=` to `magnet_pocket`, and derive the part's thickness from the pocket depth rather than the other way round. |
+   | `min_wall` on a shell | `shell_box` / `wall_safe_shell`, and let it clamp the wall. |
+   | `overhangs` on a base | `arcade_base(arch="pointed")` or `feet_ring`. |
+   | `overhangs` on a cone or hole | Check `role`: a solid flares dangerously upward, a hole dangerously downward. Then let `support_free=True` clamp it. |
+   | `overhangs` with a better orientation offered | If the best orientation is not `+Z`, rebuild the part standing that way up — the model should be in its print orientation. |
+   | `bed_fit` | Shrink the declared `max`. Do not segment inside the script. |
+   | `watertight` | Almost always a coplanar-face boolean. Make every cutter overshoot the face it enters by 0.2–1 mm. |
+
+4. **Iterate at most three times.** After the third check, stop and explain in
+   plain language what is still failing, which number causes it, and what the
+   user would have to change (a thicker wall, a shorter part, supports in the
+   slicer). Do not keep tweaking; a fourth attempt is a design problem, not a
+   coding one.
+5. Report the check result to the user in plain terms — "all four pass" or "it
+   prints, but the underside of the lid needs supports" — never as raw JSON.
+
+---
+
+## 5. Two worked patterns
+
+### A. The flat bar — `service/samples/magnet_holder.py`
+
+Shape: a bar lying on the bed with a row of blind pockets, rounded ends, and
+countersunk mounting holes. The pattern generalises to any flat plate with
+holes: hooks, brackets, mounting strips, tool holders.
+
+The moves, in order:
+
+1. **Ask the library for the feature sizes first.**
+   ```python
+   land   = forge_lib.min_land(p["min_land_mm"])
+   wall   = max(p["wall"], forge_lib.min_wall())
+   pocket = forge_lib.magnet_pocket_plan(p["magnet_diameter"], p["magnet_thickness"])
+   ```
+2. **Derive the body from those sizes, never the reverse.** The requested
+   thickness is a floor, not a fact:
+   ```python
+   thickness = max(p["bar_thickness"], pocket["pocket_depth_mm"] + max(wall, land))
+   spacing   = max(p["magnet_spacing"], pocket["pocket_diameter_mm"] + wall)
+   width     = max(pocket["pocket_diameter_mm"], mount_d) + 2 * wall
+   ```
+   No slider combination can now put a pocket through the back or merge two
+   pockets into a slot.
+3. **Rounded ends with a stadium, not a fillet.** A box plus a cylinder at each
+   end gives round ends whose faces are all vertical. A fillet on the bottom
+   edge would be a 90° overhang at the bed.
+4. **Pockets from the top, with `available_depth`.**
+   ```python
+   bar -= Pos(x, 0, thickness) * forge_lib.magnet_pocket(d, t, available_depth=thickness)
+   ```
+5. **One cutter for the hole and its countersink.** The straight land is the
+   through bore, the taper above it is the countersink, and the cutter finishes
+   above the top face so the boolean is never coplanar:
+   ```python
+   bar -= Pos(x, 0, -1.0) * forge_lib.blunted_taper(
+       mount_r, mount_r + taper_h, thickness + 1.0 + 0.5,
+       role="cut", taper_height=taper_h)
+   ```
+   `role="cut"` is what tells the helper that widening *upward* is the safe
+   direction here.
+
+Result: `bed_fit`, `min_wall`, `overhangs` and `watertight` all **pass** at the
+defaults, at the small extreme (1.2 mm wall, 3 mm bar, six 3 mm magnets, 8 mm
+screw holes) and at the large one (6 mm wall, 25 mm bar, six 20 mm magnets at
+30 mm pitch — a 222 mm bar that still clears the plate margin).
+
+### B. The ring — `projects/bowl-holder/part_base_ring.py`
+
+Shape: a body of revolution with a decorative band and an openwork base. The
+pattern generalises to collars, vases, planters, lampshades, coasters, any
+"round thing with a wall".
+
+1. **Build the wall as a revolved `(radius, z)` polygon.** One profile carries
+   the bore, the seat, the rim and the foot. Every vertex where two slopes meet
+   must instead be two vertices with a straight segment between them — that is
+   the knife-edge rule written as a polygon. See `_seat_profile_points`, whose
+   `land` and `lip_land` points exist only for that.
+   Prefer `forge_lib.flared_lip()` for the foot; write the polygon by hand only
+   when the section is genuinely more complicated than a collar.
+2. **Cut the band, never add it.** The bowl-holder's `_flute_cutters` is the
+   proven original of `forge_lib.textured_band`: the effective depth is
+   `min(depth, 0.40 × wall, 0.45 × surface_width)` and the cutter radius is
+   solved from the pitch as
+   `R = (width² / 4 + d²) / (2 d)` for `width = 0.78 × pitch`,
+   which guarantees a flat land between flutes at every count. Use the helper;
+   read the original when you need to understand what it is doing.
+3. **Openwork base with `arcade_base`**, or subtract arch cutters as the
+   bowl-holder does. Pointed arches pass the overhang check; round ones bridge
+   in practice but get flagged.
+4. **Lugs and sockets last**, after the subtractions, so a boolean never has to
+   resolve a cutter against a feature that is about to be added. Overshoot every
+   through-cut past the face by ~1 mm.
+5. **Clamp proportions to the total height**, so no combination of sliders can
+   collapse the profile into a self-intersecting polygon — and raise a plain
+   `ValueError` (a 400) if one somehow does.
+
+---
+
+## 6. Checklist before returning a script
+
+- [ ] `PARAMS` entries all have `value` + `unit`; names are identifiers.
+- [ ] Every declared `min`/`max` combination builds **and** passes the checks.
+- [ ] Modelled in the print orientation, sitting on Z = 0.
+- [ ] No raw taper, cone or chamfer that a helper covers.
+- [ ] Every cutter overshoots the face it enters.
+- [ ] Blind pockets open upward; no flat ceilings.
+- [ ] `/check` run, all four results seen, reported in plain language.

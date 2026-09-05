@@ -30,7 +30,7 @@ from bpy.types import Operator, PropertyGroup
 
 from ..prefs import get_prefs, pref, service_url
 from . import common
-from .registry import ForgeError
+from .registry import ForgeError, command
 
 # unit -> UI kind
 _UNIT_KINDS = {
@@ -1180,6 +1180,141 @@ def _format_stats(stats, info):
     if "watertight" in stats:
         bits.append("watertight: %s" % ("yes" if stats.get("watertight") else "NO"))
     return "   ".join(bits)
+
+
+# ---------------------------------------------------------------------------
+# socket command (additive): partforge_open
+# ---------------------------------------------------------------------------
+
+#: Script filenames that say nothing about the part -- the folder name does.
+#: The same list the MCP server keeps (``mcp/forge_mcp/util.py``), so the panel
+#: and the tools agree on what the generated object is called: a panel pointed
+#: at ``projects/small-magnet-holder/part.py`` regenerates the very object
+#: ``partforge_generate`` made, rather than a second one called "Part".
+_GENERIC_STEMS = ("part", "main", "model", "script", "build", "generate", "__init__")
+
+#: Blender caps object names at 63 bytes.
+_MAX_OBJECT_NAME = 63
+
+
+def object_name_for_script(path):
+    """``projects/small-magnet-holder/part.py`` -> ``small-magnet-holder``."""
+    stem = os.path.splitext(os.path.basename(path))[0]
+    if stem.lower() in _GENERIC_STEMS:
+        folder = os.path.basename(os.path.dirname(path))
+        if folder:
+            stem = folder
+    stem = stem.strip() or "ForgePart"
+    encoded = stem.encode("utf-8")[:_MAX_OBJECT_NAME]
+    return encoded.decode("utf-8", "ignore") or "ForgePart"
+
+
+def clear_results(props):
+    """Forget the previous script's results when the panel changes part.
+
+    A FAIL row left over from another part is worse than no row at all: the
+    artist reads the panel, not the chat log.
+    """
+    props.checks.clear()
+    props.check_overall = ""
+    props.check_summary = ""
+    props.suggested_mode = ""
+    props.segment_summary = ""
+    props.stats = ""
+
+
+def _resolved_or_blank(raw):
+    try:
+        text = str(raw or "").strip()
+        return common.resolve_path(text) if text else ""
+    except Exception:  # noqa: BLE001 - a junk stored path is simply "no path"
+        return ""
+
+
+@command("partforge_open")
+def cmd_partforge_open(params):
+    """Point the PartForge panel at a script and build its sliders.
+
+    Additive command behind the MCP tool ``partforge_open_in_panel``: it does
+    what the panel's own **Load Script** button does (set the path, ask the
+    geometry service for the PARAMS schema, rebuild the parameter collection)
+    without the artist having to type a path into a file field.  Same plumbing,
+    no fork -- ``read_script`` / ``request_json`` / ``sync_schema``.
+
+    params: ``script_path`` (required), ``keep_values?`` (keep values already
+    tuned for parameters that still exist), ``object?`` (override the object
+    name the panel will build into), ``params?`` (a schema supplied directly,
+    which skips the service call -- used by the headless tests).
+
+    Runs on the main thread like every command, so the ``/parse_params`` request
+    is synchronous here rather than going through ``run_async``; parsing builds
+    no geometry, so it is a short call.
+    """
+    props = get_props()
+    if props is None:
+        raise ForgeError(
+            "This scene has no PartForge properties. Enable the Forge add-on "
+            "(Edit > Preferences > Add-ons > Forge) and try again."
+        )
+
+    raw = params.get("script_path") or params.get("script") or params.get("path")
+    if not isinstance(raw, str) or not raw.strip():
+        raise ForgeError(
+            "partforge_open needs 'script_path': the .py file with the PARAMS "
+            "block, e.g. projects/small-magnet-holder/part.py"
+        )
+    path = common.resolve_path(raw)
+    if not os.path.isfile(path):
+        raise ForgeError("Script not found: %s" % path)
+
+    schema = params.get("params")
+    if schema is not None and not isinstance(schema, dict):
+        raise ForgeError("'params', when given, must be a PARAMS schema object.")
+    keep_values = bool(params.get("keep_values", False))
+
+    override_name = params.get("object")
+    if override_name is not None and not isinstance(override_name, str):
+        raise ForgeError("'object' must be the object name to build into, as a string.")
+
+    previous_path = _resolved_or_blank(props.script_path)
+    props.script_path = path
+    try:
+        if schema is None:
+            _path, source = read_script(props)
+            url = service_url("/parse_params")
+            timeout = min(60.0, _timeout("request_timeout", 120.0))
+            value = request_json(url, {"script": source}, timeout=timeout)
+            schema = value.get("params") or {}
+            source_label = "service"
+        else:
+            source_label = "supplied"
+        sync_schema(props, schema, keep_values=keep_values)
+    except ServiceError as exc:
+        props.script_path = previous_path  # leave the panel as we found it
+        raise ForgeError(str(exc))
+    except ForgeError:
+        props.script_path = previous_path
+        raise
+
+    changed = previous_path != path
+    if override_name and override_name.strip():
+        props.object_name = override_name.strip()
+    elif changed or not props.object_name.strip():
+        props.object_name = object_name_for_script(path)
+    if changed:
+        clear_results(props)
+
+    names = [item.name for item in props.params]
+    set_status(props, "Loaded %d parameter(s) from %s"
+               % (len(names), os.path.basename(path)))
+    _tag_redraw()
+    return {
+        "script": path,
+        "param_count": len(names),
+        "params": names,
+        "object": props.object_name,
+        "schema_source": source_label,
+    }
 
 
 _CLASSES = (

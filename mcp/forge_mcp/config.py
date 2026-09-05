@@ -69,6 +69,16 @@ DEFAULT_PRINTER_PATH: str = _env_str(
     "FORGE_PRINTER_PATH", str(_REPO_ROOT / "templates" / "printer.json")
 )
 
+# --- part projects ----------------------------------------------------------
+# Where partforge_new_part is allowed to write, and the ONLY place it writes:
+# one folder per part under projects/<slug>/ holding part.py and spec.json
+# (docs/architecture.md, "spec.json / printer.json / character.json").
+PROJECTS_DIR: str = _env_str("FORGE_PROJECTS_DIR", str(_REPO_ROOT / "projects"))
+
+# The printer profile a generated spec.json points at. Relative on purpose: a
+# spec is a repo document, and templates/printer.json is where it lives.
+SPEC_PRINTER_REF: str = "templates/printer.json"
+
 
 def blender_address() -> str:
     return f"{BLENDER_HOST}:{BLENDER_PORT}"
