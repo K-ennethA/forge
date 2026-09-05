@@ -46,7 +46,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 45-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 46-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -173,6 +173,24 @@ Each takes an optional `object` name; omitted means Blender's active object.
 | `rename_object` | Rename; returns the final name (Blender may append `.001`). |
 | `delete_object` | Delete an object from the scene. |
 | `export_stl` | Write objects (or the current selection) to one `.stl`. |
+
+### Reference images (Phase 6c)
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `load_reference` | `path`, `view` `front`/`side`/`top`, `size_mm`, `name` | Puts the artist's sketch or photo in the viewport as a half-transparent image plane, facing the named orthographic view (front = Numpad 1, side = Numpad 3, top = Numpad 7) and sitting a millimetre behind the origin so it never z-fights the model. |
+
+`size_mm` is the picture's **longer** side in millimetres (default 200); the shorter side
+follows the file's own pixel aspect, so a reference is never stretched. `name` defaults to
+`Ref-<view>`, and loading the same name again **replaces** that reference rather than
+leaving `Ref-front.001` behind. `.png`, `.jpg`, `.jpeg`, `.webp` and `.bmp` only — the same
+five the Assistant's attach field and the bridge accept, checked here (exists, is a file,
+right extension) before Blender is touched at all.
+
+The object is an **empty**, not geometry: it cannot be exported, printed or booleaned by
+accident, and the artist can move, scale or hide it like anything else. It is there to
+**measure against, never to trace** — geometry is always built from parameters, which is
+what keeps it editable with real numbers (docs/plan.md §3).
 
 ### PartForge
 

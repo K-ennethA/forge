@@ -28,6 +28,15 @@ rather than one object at the end.  Those events are parsed as they arrive into
 lines under the busy indicator so the artist can see what the AI is doing
 instead of watching a spinner.
 
+Reference images (Phase 6c)
+---------------------------
+``POST /ask`` may carry ``context.image_path`` — an absolute path to a sketch or
+photo the artist attached in the panel.  The path is validated here (it exists,
+it is one of :data:`IMAGE_EXTENSIONS`) and appended to the message body as its
+own block telling the model to Read it before answering.  No allow-list change:
+``Read`` is already permitted and Claude Code's Read tool renders images.  The
+image itself never passes through this process — only its path.
+
 Parsing is deliberately forgiving: an event shape this bridge does not
 recognise is skipped, never fatal, and a run that never prints a ``result``
 event but exits 0 is salvaged from the last parseable line (falling back to the
@@ -76,6 +85,17 @@ DEFAULT_ALLOWED_TOOLS = "Read,Glob,Grep,mcp__%s__*" % MCP_SERVER
 PERMISSION_MODES = ("auto", "acceptEdits", None)
 
 CONTEXT_DIVIDER = "--- Current Blender context ---"
+
+#: Phase 6c.  An attached reference image rides in ``context.image_path`` and is
+#: appended to the message body as its own block, at the very end, so it is the
+#: last instruction the model reads before it starts working.
+IMAGE_DIVIDER = "--- Attached reference image ---"
+IMAGE_INSTRUCTION = "View this image with the Read tool BEFORE answering."
+
+#: What the Read tool can actually render.  The panel checks the same list, so a
+#: bad attachment is refused in the sidebar rather than a turn later; this is the
+#: server-side half of that, because the bridge is a public localhost endpoint.
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
 
 MAX_JOBS = 20
 
@@ -334,8 +354,68 @@ def format_context(context):
     return "\n\n%s\n%s" % (CONTEXT_DIVIDER, "\n".join(lines))
 
 
+def normalize_image_path(path):
+    """An attachment path as an absolute path, or ``""`` when there is none."""
+    text = str(path or "").strip().strip('"')
+    if not text:
+        return ""
+    text = os.path.expandvars(os.path.expanduser(text))
+    return os.path.abspath(os.path.normpath(text))
+
+
+def image_error(path):
+    """Why this attachment cannot be sent, or ``""`` when it is fine.
+
+    Checked here as well as in the panel on purpose: the panel is one client of
+    a localhost HTTP endpoint, and a path that does not exist would otherwise
+    become a turn spent watching the model fail to Read it.
+    """
+    resolved = normalize_image_path(path)
+    if not resolved:
+        return ""
+    # Folder first: a directory is a directory whatever it happens to be
+    # called, and "sketches is not an image" would send them looking for a
+    # typo that is not there.
+    if os.path.isdir(resolved):
+        return "%s is a folder, not an image file." % resolved
+    extension = os.path.splitext(resolved)[1].lower()
+    if extension not in IMAGE_EXTENSIONS:
+        return ("%s is not an image the assistant can read. Attach a %s file."
+                % (os.path.basename(resolved) or resolved,
+                   " or ".join(IMAGE_EXTENSIONS)))
+    if not os.path.isfile(resolved):
+        return "There is no file at %s." % resolved
+    return ""
+
+
+def split_image(context):
+    """``(context without the attachment, absolute image path)``.
+
+    The attachment is pulled out of the context dict before it is formatted so
+    it appears once — as its own block with the instruction attached — instead
+    of twice, once as an unexplained "Image path:" line.
+    """
+    if not isinstance(context, dict) or "image_path" not in context:
+        return context, ""
+    # The key comes out whether or not it holds anything: a panel that sends
+    # image_path="" must not produce a bare "Image path:" line in the context.
+    rest = {key: value for key, value in context.items() if key != "image_path"}
+    return rest, normalize_image_path(context.get("image_path"))
+
+
+def format_image(path):
+    """The attachment block appended to the message, or ``""``."""
+    path = normalize_image_path(path)
+    if not path:
+        return ""
+    return "\n\n%s\n%s\n%s" % (IMAGE_DIVIDER, path, IMAGE_INSTRUCTION)
+
+
 def build_prompt(message, context):
-    return str(message or "").strip() + format_context(context)
+    rest, image_path = split_image(context)
+    return (str(message or "").strip()
+            + format_context(rest)
+            + format_image(image_path))
 
 
 def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
@@ -1222,6 +1302,16 @@ class Handler(BaseHTTPRequestHandler):
         if not message:
             self._send(400, {"error": "Type something first."})
             return
+
+        context = payload.get("context")
+        if isinstance(context, dict):
+            problem = image_error(context.get("image_path"))
+            if problem:
+                # Refuse before spending a turn: the model cannot Read a file
+                # that is not there, and "I couldn't see your image" three
+                # minutes later is the worst possible way to learn that.
+                self._send(400, {"error": problem})
+                return
 
         info = claude_info()
         if not info.get("found"):

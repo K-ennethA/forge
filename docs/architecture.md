@@ -148,6 +148,21 @@ Component `assistant/` — a thin local bridge, stdlib-only Python (no venv need
 - `POST /cancel/<id>`
 The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
 
+### Phase 6d sketch — mesh input ("fix this downloaded model")
+
+Service accepts raw meshes (not just PARAMS scripts) so any downloaded STL/3MF can be checked and segmented:
+- `POST /check_mesh` `{"mesh": {vertices,faces} | "file_path": <abs .stl/.3mf/.obj>, "printer"?, ...existing check options}` → the standard checks response; `solid_is_valid` is null (no B-Rep), watertight = the mesh half only.
+- `POST /segment_mesh` `{same input, "joint", "mode", ...}` → the standard /segment response. Implementation guidance: sew the watertight mesh into an OCC solid (BRepBuilderAPI_Sewing + MakeSolid) and reuse the existing segmenting machinery wholesale; refuse non-watertight input with a plain "repair first (voxel remesh in Blender)" message; document a triangle-count ceiling and suggest decimation above it.
+- Addon flow (later round): Import Model button → Blender's STL/OBJ import → optional voxel-remesh repair → mesh streamed to /check_mesh / /segment_mesh; MCP mirrors check_model/segment_model taking an object name.
+Exact shapes refined by the service implementation; folded back here by the orchestrator.
+
+### Phase 6c sketch — image references (pulled forward from v2)
+
+- Panel: an attach-image field on the Assistant box (FILE_PATH property → Blender's file browser), shown as a chip with a clear button; the path travels in `context.image_path` on `/ask`.
+- Bridge: when `context.image_path` is present, append an "Attached reference image: <path> — view it with the Read tool before answering" line to the message body. No allowlist change (Read already permitted; Claude Code's Read tool renders images).
+- New socket command `load_reference` `{"path", "view": "front"|"side"|"top", "size_mm"?, "name"?, "offset_mm"?, "collection"?}` → image empty facing the viewer of that orthographic view (front faces −Y-viewer, side +X-viewer, top +Z-viewer), offset 1 mm away from the viewer; `size_mm` = the picture's longer side (default 200, aspect preserved); same name replaces. Returns `{"object", "width_mm", "height_mm", ...}`. MCP mirror `load_reference` (46 tools); accepted as a flow step op.
+- System prompt: reference-image law — extract proportions/features/style intent into parameters, NEVER trace pixels (geometry is always parametric, per the plan); when the artist gives a real-world dimension, anchor the extracted proportions to it; offer to `load_reference` the image so they can eyeball the model against it.
+
 ### Phase 6b — live activity + repeatable flows — implemented
 
 Implemented refinements (additive): `load_meshes` also accepts `/segment`'s own segment objects plus a top-level `plate` (placing by name) — what lets a flow chain `/segment` → Blender with one dotted reference; service-step arg sugar `script_path`/`printer_path` read files from disk into `script`/`printer` (blank = the panel's current script / the printer preference); step references `{{steps.N.result.<dotted.path>}}` (lookup only, list indices ok, whole-value placeholders keep their type); `steps[].args.timeout_s` per-step override; flows never nest (`flow_run`/`flow_list` refused as ops) and single-step flows are refused by `flow_save`; MCP totals 45 tools; env/prefs `forge_flows_dir`/`FORGE_FLOWS_DIR`, `FORGE_FLOW_RUN_TIMEOUT` (900), `FORGE_ASSISTANT_TEXT_INTERVAL` (2.0). Starter flow: `flows/segment-into-4.json`.

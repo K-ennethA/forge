@@ -25,6 +25,11 @@ Behaviour is steered by ``FAKE_CLAUDE_MODE``:
 ``stream_slow``        the stream, sleeping ``FAKE_CLAUDE_SLEEP`` seconds after
                        the tool events, so a cancel lands mid-stream
 
+``FAKE_CLAUDE_EXPECT_IMAGE`` asserts on the Phase 6c attachment block: set to a
+path, the prompt must carry that path under ``--- Attached reference image ---``
+with the Read instruction and ``Read`` still in ``--allowedTools``; set to the
+empty string, the prompt must carry no attachment block at all.
+
 ``FAKE_CLAUDE_STREAM=1`` selects ``stream`` without naming a mode, and
 ``FAKE_CLAUDE_STREAM_FILE`` names a flag file whose existence does the same.
 The *output* shape and the *flags the bridge must pass* are deliberately
@@ -41,6 +46,11 @@ import sys
 import time
 
 REPLY = "OK - the fake assistant answered."
+
+#: Kept in step with ``bridge.IMAGE_DIVIDER`` on purpose rather than imported:
+#: this file stands in for a separate program, and a copy that drifts is exactly
+#: the failure the assertion below exists to catch.
+IMAGE_DIVIDER = "--- Attached reference image ---"
 
 #: The streamed reply, in the chunks the CLI would emit it in.
 STREAM_CHUNKS = [
@@ -215,6 +225,27 @@ def main():
     if not prompt_file or not os.path.isfile(prompt_file):
         fail("--append-system-prompt-file must point at a real file, got %r"
              % (prompt_file,))
+
+    # Phase 6c: an attached reference image is a block in the prompt, and the
+    # allow-list must NOT have grown to carry it (Read already renders images).
+    expect_image = os.environ.get("FAKE_CLAUDE_EXPECT_IMAGE")
+    if expect_image is not None:
+        has_block = IMAGE_DIVIDER in prompt
+        if expect_image.strip():
+            if not has_block:
+                fail("the prompt carries no %r block, so the model would never "
+                     "look at the attached image" % IMAGE_DIVIDER)
+            if expect_image not in prompt:
+                fail("the attachment block does not name %r; prompt tail: %r"
+                     % (expect_image, prompt[-300:]))
+            if "Read tool" not in prompt:
+                fail("the attachment block must tell the model to Read the image")
+            if "Read" not in (tools or ""):
+                fail("Read must stay in --allowedTools or the image cannot be "
+                     "opened at all (got %r)" % (tools,))
+        elif has_block:
+            fail("no image was attached, but the prompt carries a %r block"
+                 % IMAGE_DIVIDER)
 
     if mode == "reject_permission":
         mode_value = flag(argv, "--permission-mode")

@@ -17,7 +17,7 @@ from typing import Any
 import pytest
 from mcp.client.client import Client
 
-from forge_mcp import server
+from forge_mcp import server, util
 
 #: The tool surface fixed by mcp/README.md and docs/architecture.md.
 EXPECTED_TOOLS = {
@@ -43,6 +43,8 @@ EXPECTED_TOOLS = {
     "rename_object",
     "delete_object",
     "export_stl",
+    # Reference images (Phase 6c)
+    "load_reference",
     # PartForge
     "partforge_parse_params",
     "partforge_generate",
@@ -121,7 +123,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 45
+    assert len(names) == 46
 
 
 def test_every_tool_is_documented() -> None:
@@ -148,6 +150,7 @@ def test_every_tool_has_an_object_schema() -> None:
         ("rename_object", ["name", "new_name"]),
         ("delete_object", ["name"]),
         ("export_stl", ["path"]),
+        ("load_reference", ["path"]),
         ("partforge_parse_params", ["script_path"]),
         ("partforge_generate", ["script_path"]),
         ("partforge_export", ["script_path", "output_path"]),
@@ -191,6 +194,7 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ("shade", "mode", ["smooth", "flat", "auto"]),
         ("set_origin", "type", ["geometry", "bottom", "cursor"]),
         ("boolean", "operation", ["UNION", "DIFFERENCE", "INTERSECT"]),
+        ("load_reference", "view", ["front", "side", "top"]),
         ("partforge_export", "format", ["stl", "step", "3mf"]),
         ("partforge_export_segments", "format", ["stl", "step", "3mf"]),
         ("partforge_segment", "joint_type", ["dovetail", "pin", "magnet", "none"]),
@@ -352,6 +356,101 @@ def test_retarget_mapping_and_scale_accept_both_contract_forms() -> None:
     scale = schema["properties"]["scale"]
     assert {branch.get("type") for branch in scale["anyOf"]} >= {"string", "number"}
     assert scale["default"] == "auto"
+
+
+# --- Phase 6c schema: reference images ---------------------------------------
+
+
+def test_load_reference_defaults_to_the_front_view_and_no_size() -> None:
+    """`size_mm` and `name` are the add-on's defaults (200 mm, Ref-<view>)."""
+    schema = next(t for t in list_tools() if t.name == "load_reference").input_schema
+    properties = schema["properties"]
+    assert properties["view"]["default"] == "front"
+    assert properties["size_mm"].get("default") is None
+    assert properties["name"].get("default") is None
+    assert schema.get("required", []) == ["path"]
+
+
+def test_load_reference_says_it_is_not_for_tracing() -> None:
+    """The philosophy is in the tool's own description, not only the prompt."""
+    tool = next(t for t in list_tools() if t.name == "load_reference")
+    description = tool.description.lower()
+    assert "never trace" in description or "not trace" in description
+    assert "parameters" in description
+
+
+def test_load_reference_checks_the_file_before_touching_blender(
+    dead_backends, tmp_path: Path
+) -> None:
+    missing = tmp_path / "sketch.png"
+    text = text_of(call("load_reference", {"path": str(missing)}))
+    assert "No file at" in text
+    assert "Blender is not running" not in text  # the path failed first
+
+
+def test_load_reference_rejects_a_file_that_is_not_an_image(
+    dead_backends, tmp_path: Path
+) -> None:
+    part = tmp_path / "part.stl"
+    part.write_bytes(b"solid\n")
+    text = text_of(call("load_reference", {"path": str(part)}))
+    assert "not an image" in text
+    assert ".webp" in text  # it says what IS accepted
+
+
+def test_load_reference_rejects_a_folder(dead_backends, tmp_path: Path) -> None:
+    text = text_of(call("load_reference", {"path": str(tmp_path)}))
+    assert "folder" in text
+
+
+@pytest.mark.parametrize("size", [0, -50.0])
+def test_load_reference_rejects_a_size_that_is_not_a_size(
+    dead_backends, tmp_path: Path, size: float
+) -> None:
+    image = tmp_path / "sketch.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\n")
+    text = text_of(call("load_reference", {"path": str(image), "size_mm": size}))
+    assert "positive number of millimetres" in text
+
+
+def test_load_reference_reaches_blender_with_the_resolved_path(
+    dead_backends, tmp_path: Path
+) -> None:
+    """A valid image gets as far as the (absent) add-on, not a path complaint."""
+    image = tmp_path / "sketch.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\n")
+    text = text_of(call("load_reference", {"path": str(image), "view": "side"}))
+    assert "Blender is not running" in text
+
+
+def test_load_reference_report_names_the_object_and_what_to_do_with_it() -> None:
+    report = util.fmt_reference_report(
+        Path(r"C:\refs\bowl sketch.png"),
+        "front",
+        {"object": "Ref-front", "width_mm": 200.0, "height_mm": 125.0},
+    )
+    assert "bowl sketch.png" in report
+    assert "Ref-front" in report
+    assert "200 x 125 mm" in report
+    assert "Numpad 1" in report
+    assert "move, scale or hide" in report
+    assert "never end up in an export" in report
+    assert "not something to trace" in report
+
+
+def test_load_reference_report_says_when_it_replaced_one() -> None:
+    report = util.fmt_reference_report(
+        Path("sketch.png"), "top",
+        {"object": "Ref-top", "width_mm": 200.0, "height_mm": 200.0,
+         "replaced": True},
+    )
+    assert "replaced" in report
+    assert "Numpad 7" in report
+
+
+def test_a_reference_can_be_a_flow_step() -> None:
+    """`load_reference` is a real socket command, so flow_save must accept it."""
+    assert "load_reference" in util.KNOWN_BLENDER_OPS
 
 
 # --- error paths with no backends running -----------------------------------

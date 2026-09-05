@@ -2043,6 +2043,66 @@ def fmt_open_report(script: Path, result: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+# --- Phase 6c (reference images) --------------------------------------------
+
+#: What Blender will open as a reference AND Claude Code's Read tool renders.
+#: The add-on and the assistant bridge check the same five, on purpose: a file
+#: the artist could attach to a message is a file this tool can put in the
+#: viewport, with no "that one only works over there".
+REFERENCE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+
+#: The three orthographic views a reference can be placed in.
+REFERENCE_VIEWS = ("front", "side", "top")
+
+#: Default longer side of a reference, in millimetres (docs/architecture.md).
+REFERENCE_SIZE_MM = 200.0
+
+
+def reference_path(raw: str) -> Path:
+    """An image on disk, or a refusal that says which formats work."""
+    path = resolve_path(raw, label="image path")
+    if path.is_dir():
+        raise ForgeError(f"{path} is a folder, not an image file.")
+    if path.suffix.lower() not in REFERENCE_SUFFIXES:
+        raise ForgeError(
+            f"{path.name} is not an image Forge can load. Reference images are "
+            + ", ".join(REFERENCE_SUFFIXES)
+            + " — re-save it as one of those."
+        )
+    if not path.is_file():
+        raise ForgeError(f"No file at {path} (resolved from {raw!r}).")
+    return path
+
+
+def fmt_reference_report(path: Path, view: str, result: Mapping[str, Any]) -> str:
+    """Where the picture landed, and that it is an ordinary object now."""
+    name = result.get("object") or "the reference"
+    width = result.get("width_mm")
+    height = result.get("height_mm")
+    lines = [
+        f"Loaded {path.name} into the viewport as '{name}' "
+        f"({view} view, {fmt_number(width, 1)} x {fmt_number(height, 1)} mm)."
+    ]
+    if result.get("replaced"):
+        lines.append(f"  replaced the reference already called '{name}'")
+    lines.append(
+        "  it is a half-transparent image plane sitting just behind the origin, "
+        f"facing the {view} view (Numpad "
+        + {"front": "1", "side": "3", "top": "7"}.get(view, "1")
+        + ")"
+    )
+    lines.append(
+        f"  tell the artist they can move, scale or hide '{name}' like any other "
+        "object (click it and press G, or the eye icon in the Outliner) — it is "
+        "an empty, so it can never end up in an export"
+    )
+    lines.append(
+        "  it is a reference to measure against, not something to trace: build "
+        "the model from parameters."
+    )
+    return "\n".join(lines)
+
+
 # --- Phase 6b (flows) --------------------------------------------------------
 
 #: Blender socket commands a flow step may call — the command registry from
@@ -2057,6 +2117,8 @@ KNOWN_BLENDER_OPS = frozenset({
     "set_origin", "boolean", "merge_by_distance", "separate_loose",
     # objects
     "select_object", "rename_object", "delete_object", "export_stl",
+    # references (Phase 6c)
+    "load_reference",
     # PartForge
     "load_mesh", "load_meshes", "partforge_open",
     # RigForge

@@ -45,7 +45,7 @@ has to run under whatever Python is around, with no install step, so
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/health` | — | `{"status": "ok", "claude_cli": {"found", "path", "version"?, "hint"?}, "cwd", "session", "busy"}` |
-| POST | `/ask` | `{"message", "context": {...}, "conversation": "continue"\|"new"}` | `{"job_id", "state": "running"}`; **409** while another job runs; **503** if the CLI is missing; **400** for an empty message |
+| POST | `/ask` | `{"message", "context": {..., "image_path"?}, "conversation": "continue"\|"new"}` | `{"job_id", "state": "running"}`; **409** while another job runs; **503** if the CLI is missing; **400** for an empty message or an unusable `image_path` |
 | GET | `/job/<id>` | — | `{"state": "running"\|"done"\|"error"\|"cancelled", "activity": [...], "reply"?, "session_id"?, "cost_usd"?, "duration_ms"?, "model"?, "usage"?, "error"?}` |
 | POST | `/cancel/<id>` | — | the job, now `cancelled` |
 | POST | `/new` | — | `{"status": "ok", "session": null}` — forget the conversation without asking anything |
@@ -86,10 +86,54 @@ what the model is doing, which the panel draws under the busy indicator.
   bridge has never seen, a half-written object: skipped, never fatal. The
   activity list is a nicety; the answer is not.
 
+## Reference images (Phase 6c)
+
+An artist can attach a sketch or a photo in the panel. The **path** travels — the
+image itself never passes through this process — as `context.image_path` on
+`/ask`, and the bridge appends it to the message body as its own block:
+
+```
+what should the wall thickness be?
+
+--- Current Blender context ---
+Active object: Cup (MESH, 120 x 120 x 90 mm)
+...
+
+--- Attached reference image ---
+C:\Users\you\Pictures\bowl-sketch.png
+View this image with the Read tool BEFORE answering.
+```
+
+Three decisions worth knowing:
+
+- **It is the last block in the prompt**, after the scene context, so the
+  instruction to look at the picture is the last thing read before the work
+  starts. `image_path` is taken *out* of the context dict first, so it appears
+  once as an explained block rather than twice — once as a bare "Image path:"
+  line nobody told the model what to do with.
+- **The allow-list does not change.** `Read` is already permitted and Claude
+  Code's Read tool renders images, so a picture needs no new permission. The
+  test suite asserts `--allowedTools` is still `Read,Glob,Grep,mcp__forge__*`
+  with an image attached.
+- **The path is checked here too**, not only in the panel: it is expanded and
+  made absolute, must be a file that exists, and must be one of `.png`, `.jpg`,
+  `.jpeg`, `.webp`, `.bmp` (a folder is reported as a folder whatever it is
+  called). Anything else is a **400 with a plain sentence** before a turn is
+  spent — "I couldn't see your image" three minutes later is the worst possible
+  way to learn the path was wrong.
+
+The panel sends one message per attachment and clears the field afterwards, and
+`system_prompt.md`'s **Reference images** section is what the model does with it:
+extract the feature list, the proportions and the style intent into parameters,
+anchor them to one real dimension, and **never trace pixels**. `load_reference`
+(the MCP tool, backed by the add-on's socket command of the same name) is the
+other half — it puts the same picture in the viewport so the artist can compare
+the model against it.
+
 ## The command line it builds
 
 ```
-<claude> -p "<message>\n\n--- Current Blender context ---\n<context lines>"
+<claude> -p "<message>\n\n--- Current Blender context ---\n<context lines>\n\n--- Attached reference image ---\n<path>\n<read instruction>"
          --output-format stream-json --verbose --include-partial-messages
          --append-system-prompt-file assistant/system_prompt.md
          --allowedTools "Read,Glob,Grep,mcp__forge__*"
@@ -211,6 +255,11 @@ so tests can assert after the fact — most usefully that turn two carried
 | `stream_noresult` | that stream with the result withheld, exit 0 — the salvage path |
 | `stream_slow` | that stream, sleeping after the tool events so a cancel lands mid-stream |
 
+`FAKE_CLAUDE_EXPECT_IMAGE` asserts on the attachment block: set to a path, the
+prompt must carry it under `--- Attached reference image ---` with the Read
+instruction and `Read` still in `--allowedTools`; set to the empty string, the
+prompt must carry no attachment block at all.
+
 `FAKE_CLAUDE_STREAM=1` (or a flag file named by `FAKE_CLAUDE_STREAM_FILE`)
 turns streaming on without naming a mode. The output shape and the flags the
 bridge must pass are deliberately independent: the bridge always asks for
@@ -229,7 +278,8 @@ rate-limit failures skip rather than fail — those are facts about the machine,
 not bugs in the bridge.
 
 The panel side is `addon/tests/headless_assistant.py` (Blender `--background`,
-port 9882), which drives the operators against a fake bridge written into the
+port 9882) and `addon/tests/headless_reference.py` (port 9886 — the attach
+field, its validation, and the `load_reference` command), which drives the operators against a fake bridge written into the
 harness. The two suites never overlap: that one is about the panel, this one is
 about the command line.
 

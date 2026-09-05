@@ -45,6 +45,7 @@ from .util import (
     fmt_open_report,
     fmt_overrides,
     fmt_params,
+    fmt_reference_report,
     fmt_retarget_report,
     fmt_retopo_report,
     fmt_rig_report,
@@ -77,6 +78,7 @@ from .util import (
     read_flow_files,
     read_printer,
     read_script,
+    reference_path,
     resolve_path,
     rig_objects,
     scene_object,
@@ -118,6 +120,10 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   Call flow_list BEFORE improvising any multi-step job and prefer a matching
   flow; after finishing a repeatable multi-step job, flow_save it (never a
   single-step one) and tell the artist its name and that Run is in the Flows box.
+- A reference image is for extracting features, proportions and style intent
+  into parameters — never for tracing. load_reference puts it in the viewport as
+  a half-transparent image plane so the artist can compare their model against
+  it; offer that whenever they gave you a picture.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -531,6 +537,55 @@ def export_stl(path: str, objects: Optional[List[str]] = None) -> str:
     written = result.get("path", str(out))
     subject = ", ".join(names) if names else "the current selection"
     return ok(f"exported {subject} to {written}")
+
+
+# ---------------------------------------------------------------------------
+# Reference images (Phase 6c)
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def load_reference(
+    path: str,
+    view: Literal["front", "side", "top"] = "front",
+    size_mm: Optional[float] = None,
+    name: Optional[str] = None,
+) -> str:
+    """Put the artist's sketch or photo in the Blender viewport to model against.
+
+    Offer this whenever they attached a reference image: it lands as a
+    half-transparent image plane just behind the origin, facing the named
+    orthographic view (front = Numpad 1, side = Numpad 3, top = Numpad 7), so
+    they can eyeball the model against the picture instead of taking your word
+    for the proportions.
+
+    `size_mm` is the picture's LONGER side in millimetres (default 200); the
+    shorter side follows the file's own pixel aspect, so nothing is stretched.
+    `name` defaults to `Ref-<view>`, and loading the same name again REPLACES
+    that reference rather than stacking another copy on it.
+
+    It is an empty, not geometry: it can never be exported, printed or
+    accidentally booleaned, and the artist can move, scale or hide it like any
+    other object. `.png`, `.jpg`, `.jpeg`, `.webp` and `.bmp` only.
+
+    This is for comparing against — never trace it. Geometry is always built
+    from parameters.
+    """
+    image = reference_path(path)
+    params: Dict[str, Any] = {"path": str(image), "view": view}
+    if size_mm is not None:
+        if not isinstance(size_mm, (int, float)) or isinstance(size_mm, bool):
+            raise ForgeError("size_mm must be a number of millimetres.")
+        if size_mm <= 0:
+            raise ForgeError(
+                f"size_mm must be a positive number of millimetres (got {size_mm})."
+            )
+        params["size_mm"] = float(size_mm)
+    if name is not None and name.strip():
+        params["name"] = name.strip()
+
+    result = blender_client.send_command("load_reference", params)
+    return fmt_reference_report(image, view, result)
 
 
 # ---------------------------------------------------------------------------

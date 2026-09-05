@@ -253,6 +253,129 @@ def test_the_two_failures_an_artist_hits_get_rewritten():
     assert bridge.friendly_error("build123d exploded") == "build123d exploded"
 
 
+# ---------------------------------------------------------------------------
+# Phase 6c — an attached reference image
+# ---------------------------------------------------------------------------
+
+def _png(tmp_path, name="sketch.png"):
+    """A real (tiny) file on disk; the bridge only ever checks the path."""
+    path = tmp_path / name
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0" * 16)
+    return str(path)
+
+
+def test_an_attached_image_becomes_its_own_block_at_the_end(tmp_path):
+    image = _png(tmp_path)
+    prompt = bridge.build_prompt("what is this?", {
+        "active_object": "Cup", "image_path": image})
+
+    assert bridge.IMAGE_DIVIDER in prompt
+    assert image in prompt
+    assert "View this image with the Read tool BEFORE answering." in prompt
+    # the message first, then the scene, then the attachment: the instruction
+    # to look at the picture is the last thing read before the work starts
+    assert prompt.index("what is this?") < prompt.index(bridge.CONTEXT_DIVIDER)
+    assert prompt.index(bridge.CONTEXT_DIVIDER) < prompt.index(bridge.IMAGE_DIVIDER)
+    # and it is named once, not once as a context line and once as a block
+    assert prompt.count(image) == 1
+    assert "Image path:" not in prompt
+
+
+def test_no_attachment_means_no_block(tmp_path):
+    assert bridge.IMAGE_DIVIDER not in bridge.build_prompt("hi", {"active_object": "Cup"})
+    assert bridge.IMAGE_DIVIDER not in bridge.build_prompt("hi", {"image_path": ""})
+    assert bridge.IMAGE_DIVIDER not in bridge.build_prompt("hi", None)
+    # an empty attachment must not resurrect the context divider either
+    assert bridge.build_prompt("hi", {"image_path": "   "}) == "hi"
+
+
+def test_an_attachment_alone_still_carries_the_message(tmp_path):
+    image = _png(tmp_path)
+    prompt = bridge.build_prompt("model this", {"image_path": image})
+    assert prompt.startswith("model this")
+    assert bridge.CONTEXT_DIVIDER not in prompt
+    assert bridge.IMAGE_DIVIDER in prompt
+
+
+def test_a_relative_or_expandable_path_is_absolute_in_the_prompt(tmp_path, monkeypatch):
+    _png(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    prompt = bridge.build_prompt("look", {"image_path": "sketch.png"})
+    line = prompt.split(bridge.IMAGE_DIVIDER)[1].strip().splitlines()[0]
+    assert os.path.isabs(line), line
+    assert os.path.normcase(line) == os.path.normcase(str(tmp_path / "sketch.png"))
+
+
+@pytest.mark.parametrize("extension", [".png", ".PNG", ".jpg", ".jpeg", ".webp", ".bmp"])
+def test_every_readable_image_type_is_accepted(tmp_path, extension):
+    assert bridge.image_error(_png(tmp_path, "ref" + extension)) == ""
+
+
+def test_the_attachment_checks_say_what_is_wrong(tmp_path):
+    assert bridge.image_error("") == ""
+    assert bridge.image_error(None) == ""
+
+    missing = bridge.image_error(str(tmp_path / "nope.png"))
+    assert "There is no file at" in missing and "nope.png" in missing
+
+    not_an_image = bridge.image_error(_png(tmp_path, "notes.txt"))
+    assert "not an image" in not_an_image
+    assert ".png" in not_an_image  # it says what IS accepted
+
+    folder = tmp_path / "shots.png"
+    folder.mkdir()
+    assert "folder" in bridge.image_error(str(folder))
+
+
+def test_an_attachment_reaches_the_cli_without_widening_the_allowlist(bridge_proc, tmp_path):
+    image = _png(tmp_path)
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_IMAGE": image})
+    reply = client.turn("what shape is this?",
+                        context={"active_object": "Cup", "image_path": image})
+    assert reply["state"] == "done", reply
+
+    argv = client.invocations()[0]["argv"]
+    prompt = argv[argv.index("-p") + 1]
+    assert bridge.IMAGE_DIVIDER in prompt and image in prompt
+    # the whole point of the design: Read already renders images, so nothing
+    # about the permission surface changes to carry a picture
+    tools = argv[argv.index("--allowedTools") + 1]
+    assert tools == bridge.DEFAULT_ALLOWED_TOOLS
+    assert tools == "Read,Glob,Grep,mcp__forge__*"
+
+
+def test_a_turn_without_an_attachment_carries_no_block(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_IMAGE": ""})
+    assert client.turn("no picture here")["state"] == "done"
+
+
+def test_an_attachment_that_is_not_there_is_a_clean_400(client, tmp_path):
+    status, body = client.request("/ask", {
+        "message": "look at this",
+        "context": {"image_path": str(tmp_path / "gone.png")}})
+    assert status == 400, body
+    assert "There is no file at" in body["error"]
+    assert client.invocations() == []  # no turn was spent
+
+
+def test_an_attachment_of_the_wrong_type_is_a_clean_400(client, tmp_path):
+    path = tmp_path / "model.stl"
+    path.write_bytes(b"solid\n")
+    status, body = client.request("/ask", {
+        "message": "look at this", "context": {"image_path": str(path)}})
+    assert status == 400, body
+    assert "not an image" in body["error"]
+    assert ".webp" in body["error"]
+
+
+def test_a_bad_attachment_does_not_leave_the_bridge_busy(client, tmp_path):
+    client.request("/ask", {"message": "hi", "context": {"image_path": "C:\\nope.png"}})
+    _status, health = client.request("/health")
+    assert health["busy"] is False
+    # and the next, valid, message goes through
+    assert client.turn("carry on")["state"] == "done"
+
+
 def test_launcher_runs_a_py_override_under_this_interpreter():
     assert bridge.launcher(FAKE_CLI) == [sys.executable, FAKE_CLI]
     assert bridge.launcher("C:\\claude.exe") == ["C:\\claude.exe"]

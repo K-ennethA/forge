@@ -140,6 +140,7 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `load_mesh` | `name`, `vertices` (mm), `faces`, `replace?`, `collection?`, `scale?`, `plate?` | builds a mesh; `replace` swaps mesh data in place, keeping the object, transforms, materials and custom properties |
 | `load_meshes` | `meshes` (a list of `load_mesh` param objects, or `/segment` segments), `plate?`, `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
 | `export_stl` | `objects`, `path`, `scale?`, `ascii?`, `apply_modifiers?` | writes a binary STL |
+| `load_reference` | `path`, `view` `front`\|`side`\|`top`, `size_mm?`, `name?`, `offset_mm?`, `collection?` | puts a sketch/photo in the viewport as an image EMPTY facing that orthographic view. Returns `{"object", "width_mm", "height_mm", "view", "size_mm", "path", "image", "pixels", "replaced", "location", "rotation_deg", "opacity"}` |
 | `partforge_open` | `script_path`, `keep_values?`, `object?`, `params?` | points the PartForge panel at a script and rebuilds its sliders — the panel's own Load Script path, driven from outside. Returns `{"script", "param_count", "params", "object", "schema_source"}` |
 | `flow_list` | — | every saved flow in the flows folder: `{"dir", "count", "flows": [{"name", "description", "params", "steps", "step_labels", "path"}]}`. A file that will not parse is listed with an `error` instead of being hidden |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
@@ -235,6 +236,47 @@ This is what lets a saved flow wire `/segment` into Blender with a plain referen
 A segment list with no geometry in it gets the honest error rather than a shrug: *"None of
 these entries carry geometry … ask for it with `"include_mesh": true`"*.
 
+### Additive protocol extension (Phase 6c): `load_reference`
+
+The artist's reference picture, in the viewport, to model **against** — never to trace.
+
+```jsonc
+{"type": "load_reference", "params": {
+   "path": "C:\\Users\\you\\Pictures\\bowl-sketch.png",
+   "view": "front", "size_mm": 200, "name": "Ref-front"}}
+```
+
+- **It is an EMPTY of type IMAGE**, not geometry and not a textured plane. It cannot be
+  exported (`export_stl` refuses it by name), printed, remeshed or booleaned by accident,
+  and the artist moves, scales or hides it like any other object.
+- **Orientation.** An image empty draws in its own local XY plane facing local +Z, so each
+  view spins that until the picture faces whoever is looking from it, with the top of the
+  picture kept upright: `front` → `(90°, 0, 0)` so it faces −Y (Numpad 1), `side` →
+  `(90°, 0, 90°)` so it faces +X (Numpad 3), `top` → `(0, 0, 0)`, the empty's own default,
+  facing +Z (Numpad 7).
+- **Offset.** The plane sits `offset_mm` (default **1 mm**) *away* from that viewer — front
+  +Y, side −X, top −Z — so it never shares a plane with a model sitting on the origin and
+  the two do not z-fight.
+- **Size.** `size_mm` (default **200**) is the picture's **longer** side in millimetres,
+  which is exactly what Blender's `empty_display_size` means for an image empty (the plane's
+  maximum dimension). The shorter side follows the file's own pixel aspect, so a reference
+  is never stretched, and both come back as `width_mm` / `height_mm`.
+- **Opacity.** `use_empty_image_alpha` on with the object colour's alpha at **0.5**, and
+  visible in both orthographic and perspective views — an opaque reference hides the thing
+  you are comparing it against, and one that vanishes when you orbit is worse than none.
+- **`name`** defaults to `Ref-<view>`. Loading the same name again **replaces** that
+  reference (new image, size and rotation on the same object) rather than leaving
+  `Ref-front.001` behind; a name already taken by a mesh is refused rather than clobbered.
+- **`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`** — the same five the Assistant's attach field
+  and the bridge accept. A folder, a missing file, a `.txt` and a `.png` Blender opens but
+  finds no pixels in each fail with a sentence (and the empty image datablock is taken back
+  out, so a retry after fixing the file is clean).
+
+Mirrored by the MCP tool `load_reference`. The philosophy is docs/plan.md §3: the picture is
+for extracting proportions, features and style intent into **parameters**. Geometry is
+always built from those, never traced from pixels, which is what keeps a model editable with
+real values.
+
 ### Additive protocol extension: `partforge_open`
 
 Another addition; nothing in `docs/architecture.md` changes shape.
@@ -319,6 +361,18 @@ every request has a timeout, and every failure ends up in the panel's status lin
 The context sent with each message is the active object with its size **in millimetres**,
 a summary of the scene's objects, the current PartForge script path, the mode and the
 Blender version — built on the main thread before the worker starts.
+
+**Attach a picture** (Phase 6c). Under the message box is a **Picture** field: the folder
+icon opens Blender's own file browser. Once a file is picked the row becomes a chip with
+the filename and an **X** to clear it (a 90-character path in a 40-character sidebar tells
+you nothing; the filename tells you everything). The path is validated before anything is
+sent — it must exist and be a `.png`, `.jpg`, `.jpeg`, `.webp` or `.bmp`, and a folder is
+called a folder — so a wrong path is a sentence in the status line rather than a turn spent
+watching the assistant fail to open it. It rides in `context.image_path` with the **next
+message only** and clears once the answer lands; re-attach to send it again. The image
+itself never leaves the machine's disk: only the path travels, and the assistant reads the
+file with its own Read tool. Ask it to `load_reference` the same picture and it appears in
+the viewport as a half-transparent plane to model against.
 
 With nothing listening the status line reads, exactly:
 
@@ -980,6 +1034,7 @@ addon/tests/
   headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
   headless_assistant.py  headless checks for the Assistant panel against a fake bridge
   headless_flows.py      headless checks for flow_list/flow_run and the Flows box
+  headless_reference.py  headless checks for load_reference and the attach field (6c)
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
@@ -1000,9 +1055,27 @@ its panel's `status` string.
 
 ## Headless tests
 
-Seven suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 6b they are **49 + 108 + 156 + 150 + 77 + 40 + 97 = 677 checks**, all green on
+Eight suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 6c they are **49 + 108 + 156 + 150 + 77 + 40 + 97 + 92 = 769 checks**, all green on
 Blender 5.0.1.
+
+### Phase 6c — reference images (`headless_reference.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_reference.py
+```
+
+Socket port **9886**, plus a fake assistant bridge on 9887. No geometry service, no Claude
+CLI, no assets: the test images are written byte by byte with `zlib`/`struct` inside the
+harness (a 40x25 PNG and a 25x40 one, so "the longer side is `size_mm`" is a claim with a
+right and a wrong answer) and removed afterwards. 92 checks covering: `load_reference`
+makes an EMPTY of type IMAGE; each view's rotation and its offset direction; the size maths
+in both orientations; the 0.5 opacity; a second load replacing rather than duplicating; the
+five refusals (missing, `.txt`, unreadable `.png`, folder, name taken by a mesh); that
+`export_stl` will not take a reference; and the panel side — the `image_path` property with
+its `FILE_PATH` subtype, `forge.assistant_clear_image`, the validation messages, the chip,
+and the field clearing itself after a successful send.
 
 ### Phase 6b — Flows (`headless_flows.py`)
 

@@ -5,6 +5,11 @@ plus a little scene context, posts it to the assistant bridge on
 ``127.0.0.1:8901``, polls until the answer lands, and writes the exchange into
 a scene-level chat log the panel draws.
 
+Phase 6c adds one thing to that: an optional reference image.  The artist picks
+a file with Blender's own file browser, the path (never the pixels) rides along
+in ``context.image_path`` on the next ``/ask``, and the field clears once the
+answer lands — one message per attachment, re-attach to send it again.
+
 Async exactly the way PartForge does it: the operator returns immediately, a
 worker thread does the HTTP, and a ``bpy.app.timers`` callback delivers the
 result on the main thread.  Nothing here ever blocks Blender's UI, and every
@@ -147,6 +152,13 @@ class ForgeAssistantProps(PropertyGroup):
         description="Tell the assistant what you want, in your own words",
         default="",
     )
+    image_path: StringProperty(
+        name="Reference image",
+        description=("A sketch or photo for the assistant to look at. It travels "
+                     "with your next message only, then clears"),
+        default="",
+        subtype="FILE_PATH",
+    )
     log: CollectionProperty(type=ForgeChatTurn)
     activity: CollectionProperty(type=ForgeActivityLine)
     status: StringProperty(name="Status", default="")
@@ -205,6 +217,52 @@ def set_activity(props, entries):
         line.kind = str(entry.get("kind") or "status")
         line.label = str(entry.get("label") or "")[:200]
     return len(tail)
+
+
+# ---------------------------------------------------------------------------
+# the attached reference image (Phase 6c)
+# ---------------------------------------------------------------------------
+
+#: What Claude Code's Read tool renders, and what `load_reference` will open.
+#: The bridge checks the same list server-side; this half exists so a mistyped
+#: path is caught in the sidebar instead of one turn later.
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+
+
+def resolve_image_path(path):
+    """An attachment as an absolute path (``//`` blend-relative included)."""
+    text = str(path or "").strip().strip('"')
+    if not text:
+        return ""
+    try:
+        text = bpy.path.abspath(text)
+    except Exception:  # noqa: BLE001 - bpy.path dislikes some odd input
+        pass
+    text = os.path.expandvars(os.path.expanduser(text))
+    return os.path.abspath(os.path.normpath(text))
+
+
+def image_problem(path):
+    """Why this attachment cannot be sent, in the artist's words, or ``""``."""
+    resolved = resolve_image_path(path)
+    if not resolved:
+        return ""
+    # Folder first: a directory is a directory whatever it is called.
+    if os.path.isdir(resolved):
+        return "%s is a folder, not a picture." % os.path.basename(resolved.rstrip("\\/"))
+    if os.path.splitext(resolved)[1].lower() not in IMAGE_EXTENSIONS:
+        return ("%s is not a picture Forge can read. Attach a %s file."
+                % (os.path.basename(resolved) or resolved,
+                   " or ".join(IMAGE_EXTENSIONS)))
+    if not os.path.isfile(resolved):
+        return "There is no file at %s." % resolved
+    return ""
+
+
+def image_label(path):
+    """The chip text: just the filename, because the path is 90 characters."""
+    resolved = resolve_image_path(path)
+    return os.path.basename(resolved.rstrip("\\/")) if resolved else ""
 
 
 def _alive(props):
@@ -288,9 +346,22 @@ class FORGE_OT_assistant_send(Operator):
             set_status(props, "Type what you want first.", error=True)
             return {"CANCELLED"}
 
+        # The attachment is checked here, before anything is sent: a missing
+        # file has to be a sentence in the sidebar, not a turn spent watching
+        # the assistant fail to open it.
+        attachment = resolve_image_path(props.image_path)
+        problem = image_problem(props.image_path)
+        if problem:
+            set_status(props, problem, error=True)
+            return {"CANCELLED"}
+
+        scene_context = collect_context(context)
+        if attachment:
+            scene_context["image_path"] = attachment
+
         payload = {
             "message": message,
-            "context": collect_context(context),
+            "context": scene_context,
             "conversation": self.conversation or "continue",
         }
         ask_url = bridge_url("/ask")
@@ -342,6 +413,10 @@ class FORGE_OT_assistant_send(Operator):
             if state.get("state") == "done":
                 append_turn(props, "forge", state.get("reply") or "(no reply)")
                 props.turns += 1
+                if attachment:
+                    # One message per attachment. It has been looked at now;
+                    # leaving it on would silently re-send it every turn.
+                    props.image_path = ""
                 cost = state.get("cost_usd")
                 bits = []
                 if isinstance(cost, (int, float)):
@@ -367,6 +442,24 @@ class FORGE_OT_assistant_send(Operator):
             set_activity(props, shared.get("activity"))
 
         _run_async(work, done, props, tick=tick)
+        return {"FINISHED"}
+
+
+class FORGE_OT_assistant_clear_image(Operator):
+    bl_idname = "forge.assistant_clear_image"
+    bl_label = "Remove Reference Image"
+    bl_description = "Don't send the attached picture with the next message"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and bool(props.image_path)
+
+    def execute(self, context):
+        props = get_props(context)
+        props.image_path = ""
+        set_status(props, "Reference image removed.")
         return {"FINISHED"}
 
 
@@ -534,6 +627,7 @@ _CLASSES = (
     ForgeActivityLine,
     ForgeAssistantProps,
     FORGE_OT_assistant_send,
+    FORGE_OT_assistant_clear_image,
     FORGE_OT_assistant_new,
     FORGE_OT_assistant_cancel,
     FORGE_OT_assistant_health,

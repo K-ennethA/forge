@@ -73,6 +73,25 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
             for line in _wrap(chat.message, 38)[1:5]:
                 sub.label(text=line)
 
+        # Attach a sketch or photo (Phase 6c). The folder icon is Blender's own
+        # file browser; once a file is picked the row becomes a chip with an X,
+        # because a 90-character path in a 40-character sidebar tells you
+        # nothing and the filename tells you everything.
+        attach = layout.column(align=True)
+        attach.enabled = not chat.busy
+        label = assistant.image_label(chat.image_path)
+        if label:
+            chip = attach.row(align=True)
+            chip.label(text=label, icon="IMAGE_DATA")
+            chip.operator("forge.assistant_clear_image", text="", icon="X")
+            note = attach.row()
+            note.active = False
+            note.scale_y = 0.7
+            note.label(text="sent with your next message")
+        else:
+            row = attach.row(align=True)
+            row.prop(chat, "image_path", text="Picture")
+
         row = layout.row(align=True)
         if chat.busy:
             row.label(text=chat.status or "Thinking ...", icon="SORTTIME")

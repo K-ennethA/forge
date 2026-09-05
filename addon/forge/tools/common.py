@@ -1552,6 +1552,186 @@ def cmd_load_meshes(params):
 
 
 # ---------------------------------------------------------------------------
+# load_reference (Phase 6c — the artist's sketch in the viewport)
+# ---------------------------------------------------------------------------
+
+#: What Blender will open AND the assistant's Read tool will render.  Kept
+#: identical to the bridge's and the MCP tool's list on purpose: a file the
+#: panel accepted as an attachment is a file this command accepts as a
+#: reference, with no "well, that one only works over there".
+REFERENCE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+
+#: view -> (rotation about X, Y, Z in radians, offset direction).
+#:
+#: An IMAGE empty draws its picture in its own local XY plane facing local +Z,
+#: so each entry is "spin local +Z until it points back at whoever is looking
+#: from that orthographic view", with local +Y (the top of the picture) kept
+#: upright:
+#:
+#: * ``front`` — Numpad 1 looks along +Y, so the picture faces -Y: +90° about X.
+#: * ``side``  — Numpad 3 looks along -X, so the picture faces +X: the same
+#:   +90° about X, then +90° about Z.
+#: * ``top``   — Numpad 7 looks down, so the picture faces +Z: no rotation, the
+#:   empty's own default.
+#:
+#: The offset pushes the plane a little way AWAY from the viewer so it never
+#: shares a plane with geometry sitting on the origin (docs/architecture.md says
+#: "front: +Y, side: -X, top: -Z" and that is exactly this).
+REFERENCE_VIEWS = {
+    "FRONT": ((math.pi / 2.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+    "SIDE": ((math.pi / 2.0, 0.0, math.pi / 2.0), (-1.0, 0.0, 0.0)),
+    "TOP": ((0.0, 0.0, 0.0), (0.0, 0.0, -1.0)),
+}
+
+#: Default height/width of a reference in millimetres, per the contract.
+REFERENCE_SIZE_MM = 200.0
+#: How far behind the origin the plane sits, in millimetres.
+REFERENCE_OFFSET_MM = 1.0
+#: Image empties take their opacity from the object colour's alpha.
+REFERENCE_ALPHA = 0.5
+
+
+def _load_reference_image(path):
+    """``bpy.data.images.load(check_existing=True)`` with honest failures."""
+    try:
+        image = bpy.data.images.load(path, check_existing=True)
+    except RuntimeError as exc:
+        raise ForgeError(
+            "Blender could not open %r as an image: %s" % (path, exc)
+        )
+    size = list(getattr(image, "size", (0, 0)))
+    width = int(size[0]) if size else 0
+    height = int(size[1]) if len(size) > 1 else 0
+    if width <= 0 or height <= 0:
+        # A file with the right extension and the wrong insides: Blender loads
+        # the datablock happily and only then has nothing in it.  Take the
+        # empty datablock back out so a retry after fixing the file is clean.
+        try:
+            if image.users == 0:
+                bpy.data.images.remove(image)
+        except (ReferenceError, RuntimeError):
+            pass
+        raise ForgeError(
+            "%r is not readable as an image (Blender opened it but found no "
+            "pixels). Re-save it as a PNG or JPEG and try again." % path
+        )
+    return image, width, height
+
+
+def _reference_empty(name, image):
+    """The image empty called ``name``, reusing one that is already there.
+
+    Loading the same reference twice must not leave ``Ref-front.001`` behind:
+    the artist asked for *the* front reference, and a second copy stacked on the
+    first is just a thing to delete.
+    """
+    existing = bpy.data.objects.get(name)
+    if existing is not None:
+        if existing.type != "EMPTY":
+            raise ForgeError(
+                "There is already a %s called %r in this file, so the reference "
+                "cannot take that name. Pass a different 'name'."
+                % (existing.type.lower(), name)
+            )
+        existing.empty_display_type = "IMAGE"
+        existing.data = image
+        return existing, True
+
+    obj = None
+    try:
+        # Empties carry their image in `data`; passing it straight to new()
+        # makes the object and the link in one step.
+        obj = bpy.data.objects.new(name, image)
+    except (TypeError, RuntimeError):
+        obj = None
+    if obj is None:
+        obj = bpy.data.objects.new(name, None)
+        try:
+            obj.data = image
+        except (AttributeError, TypeError) as exc:
+            raise ForgeError(
+                "This Blender build would not attach an image to an empty (%s)." % exc
+            )
+    obj.empty_display_type = "IMAGE"
+    return obj, False
+
+
+@command("load_reference")
+def cmd_load_reference(params):
+    """Put a sketch or photo in the viewport to model against.
+
+    Additive protocol extension (Phase 6c).  The image becomes an EMPTY of type
+    IMAGE — not geometry, not a material — so it can never end up in an export,
+    and the artist can move, scale or hide it like any other object.
+
+    ``size_mm`` sets the picture's LONGER side in millimetres (Blender's
+    ``empty_display_size`` is the plane's maximum dimension), and the shorter
+    side follows the file's own pixel aspect, so the reference is never
+    stretched.  Both are reported back in millimetres.
+    """
+    path = resolve_path(get_str(params, "path"))
+    # Folder first: a directory is a directory whatever it is called, and being
+    # told it has the wrong extension would send the artist hunting a typo.
+    if os.path.isdir(path):
+        raise ForgeError("%r is a folder, not an image file." % path)
+    extension = os.path.splitext(path)[1].lower()
+    if extension not in REFERENCE_EXTENSIONS:
+        raise ForgeError(
+            "%r is not an image Forge can load (%s). Save the reference as one "
+            "of those and try again."
+            % (os.path.basename(path) or path, ", ".join(REFERENCE_EXTENSIONS))
+        )
+    if not os.path.isfile(path):
+        raise ForgeError("There is no file at %r." % path)
+
+    view = get_choice(params, "view", {name: name for name in REFERENCE_VIEWS}, "FRONT")
+    rotation, direction = REFERENCE_VIEWS[view]
+    size_mm = get_float(params, "size_mm", REFERENCE_SIZE_MM, minimum=0.001)
+    offset_mm = get_float(params, "offset_mm", REFERENCE_OFFSET_MM, minimum=0.0)
+    name = get_str(params, "name", "Ref-%s" % view.lower()).strip()
+
+    image, pixels_x, pixels_y = _load_reference_image(path)
+
+    longest = float(max(pixels_x, pixels_y))
+    width_mm = size_mm * (pixels_x / longest)
+    height_mm = size_mm * (pixels_y / longest)
+
+    with object_mode():
+        obj, replaced = _reference_empty(name, image)
+        obj.empty_display_size = size_mm * MM_TO_M
+        obj.rotation_mode = "XYZ"
+        obj.rotation_euler = rotation
+        obj.location = tuple(component * offset_mm * MM_TO_M for component in direction)
+        # Opacity for an image empty is the object colour's alpha, gated by
+        # use_empty_image_alpha - half transparent so the model shows through.
+        obj.use_empty_image_alpha = True
+        obj.color = (obj.color[0], obj.color[1], obj.color[2], REFERENCE_ALPHA)
+        # Visible in both projections: an artist who orbits away from the
+        # orthographic view should not watch their reference vanish.
+        obj.show_empty_image_orthographic = True
+        obj.show_empty_image_perspective = True
+
+        if obj.name not in {o.name for o in get_scene().objects}:
+            _resolve_collection(params.get("collection")).objects.link(obj)
+        refresh_view_layer()
+
+    return {
+        "object": obj.name,
+        "width_mm": round(width_mm, 3),
+        "height_mm": round(height_mm, 3),
+        "view": view.lower(),
+        "size_mm": size_mm,
+        "path": path,
+        "image": image.name,
+        "pixels": [pixels_x, pixels_y],
+        "replaced": replaced,
+        "location": [round(v, 6) for v in obj.location],
+        "rotation_deg": [round(math.degrees(v), 3) for v in obj.rotation_euler],
+        "opacity": REFERENCE_ALPHA,
+    }
+
+
+# ---------------------------------------------------------------------------
 # export
 # ---------------------------------------------------------------------------
 
