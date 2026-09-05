@@ -16,12 +16,15 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
 
 # Pinned to majors that share the APIs this code targets.  build123d 0.5 is the
 # floor: the exporters (export_stl / export_step / Mesher) and
-# Shape.tessellate() are assumed to exist in that shape.
+# Shape.tessellate() are assumed to exist in that shape.  Verified end to end
+# against build123d 0.11.1 (cadquery-ocp 7.9.3, lib3mf 2.5.0) on CPython 3.14.
 dependencies = [
     "build123d>=0.5",
     "fastapi>=0.110",

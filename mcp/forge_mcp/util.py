@@ -23,9 +23,12 @@ _MAX_OBJECT_NAME = 63
 
 def resolve_path(raw: str, *, must_exist: bool = False, label: str = "path") -> Path:
     """Expand ``~``/env vars and return an absolute, normalized Path."""
-    if raw is None or not str(raw).strip():
+    # Quotes come off before the empty check, so a bare '""' is "no path given"
+    # rather than silently resolving to the server's working directory.
+    cleaned = "" if raw is None else str(raw).strip().strip('"').strip()
+    if not cleaned:
         raise ForgeError(f"No {label} given.")
-    expanded = os.path.expandvars(os.path.expanduser(str(raw).strip().strip('"')))
+    expanded = os.path.expandvars(os.path.expanduser(cleaned))
     path = Path(expanded)
     try:
         path = path.resolve()

@@ -12,17 +12,33 @@ Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` onl
 
 ## Install
 
-The package is `addon/forge/`. Pick either route:
+The package is `addon/forge/`. It ships **both** an extension manifest
+(`blender_manifest.toml`, used by Blender 4.2+) and a legacy `bl_info` block (used by
+Blender 4.0/4.1 and by the `scripts/addons` symlink route). The two coexist fine —
+Blender picks whichever one matches how you installed it, and the add-on resolves its
+own id either way, so preferences work under both.
 
-**Zip install (normal use)**
+Verified end-to-end on **Blender 5.0.1** (Windows) via all three routes below.
 
-1. Zip the `forge` folder itself so the archive contains `forge/__init__.py` (not the
-   loose files at the archive root):
+**Zip install (normal use, Blender 4.2+ / 5.0)**
+
+1. Build the extension zip — this is the cleanest option, since it validates the
+   manifest and leaves `__pycache__` out of the archive:
    ```powershell
-   Compress-Archive -Path "C:\Users\<you>\...\forge\addon\forge" -DestinationPath "$env:TEMP\forge.zip" -Force
+   & "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --command extension build `
+       --source-dir "C:\Users\<you>\OneDrive\Desktop\git\forge\addon\forge" `
+       --output-dir "$env:TEMP"
+   # -> $env:TEMP\forge-0.1.0.zip
    ```
-2. Blender → `Edit ▸ Preferences ▸ Add-ons ▸ ⌄ ▸ Install from Disk…` → pick `forge.zip`.
+   A plain `Compress-Archive -Path "...\addon\forge" -DestinationPath "$env:TEMP\forge.zip"`
+   also installs correctly (Blender accepts a package inside one top-level folder); it
+   just carries any stale `__pycache__` along.
+2. Blender → `Edit ▸ Preferences ▸ Add-ons ▸ ⌄ ▸ Install from Disk…` → pick the zip.
 3. Tick **Forge** in the add-on list.
+
+Installed this way the add-on id is `bl_ext.user_default.forge`, which is what you will
+see in `bpy.context.preferences.addons`. The operators are still `forge.start_server`
+and friends.
 
 **Symlink (development — edits show up after a Blender restart or add-on re-enable)**
 
@@ -35,8 +51,19 @@ New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
 New-Item -ItemType SymbolicLink -Path $dst -Target $src
 ```
 
-Then enable **Forge** in Preferences ▸ Add-ons. (On Blender 4.2+ the folder may be
+Then enable **Forge** in Preferences ▸ Add-ons. Here the add-on id is plain `forge`.
+Legacy `scripts/addons` add-ons still load on Blender 5.0. (On 4.2+ the folder may be
 `scripts/addons_core` for shipped add-ons; user add-ons still go in `scripts/addons`.)
+
+**Headless smoke test** (no window, nothing installed):
+
+```powershell
+blender --background --factory-startup --python-expr @'
+import sys; sys.path.insert(0, r"C:\Users\<you>\OneDrive\Desktop\git\forge\addon")
+import addon_utils; addon_utils.enable("forge")
+import bpy; print(bpy.ops.forge.start_server())
+'@
+```
 
 ## Start the server
 
@@ -81,11 +108,11 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `ping` | — | liveness + `blender_version` |
 | `get_scene_info` | — | every object's name/type/location/dimensions/vertex count/modifiers, plus the active object |
 | `execute_python` | `code`, `reset?` | runs code in a persistent namespace, returns captured stdout and the `repr` of a trailing expression |
-| `symmetrize` | `direction` `+X…-Z`, `threshold?` | mirrors the named (surviving) half onto the other side |
+| `symmetrize` | `direction` `+X…-Z`, `threshold?` | mirrors the named (surviving) half onto the other side; `result.method` says whether the bmesh or operator path ran |
 | `mirror` | `axis`, `use_clip?`, `apply?`, `bisect?`, `flip?`, `merge_threshold?`, `mirror_object?` | adds (and optionally applies) a Mirror modifier |
-| `remesh` | `mode` `voxel`\|`quad`, `voxel_size?`, `adaptivity?`, `target_faces?` | voxel remesh or Quadriflow retopology |
+| `remesh` | `mode` `voxel`\|`quad`, `voxel_size?`, `adaptivity?`, `target_faces?` | voxel remesh or Quadriflow retopology; `quad` refuses non-manifold input up front with a count of the offending edges |
 | `decimate` | `ratio`, `triangulate?` | collapse-decimates and applies |
-| `shade` | `mode` `smooth`\|`flat`\|`auto`, `angle?` (degrees) | face shading; `auto` uses Blender 4.1+ Smooth-by-Angle |
+| `shade` | `mode` `smooth`\|`flat`\|`auto`, `angle?` (degrees) | face shading; `auto` uses Blender 4.1+ Smooth-by-Angle. `smooth`/`flat` remove any existing Smooth-by-Angle modifier, and repeated `auto` calls never stack them |
 | `apply_transforms` | `location?`, `rotation?`, `scale?` | applies transforms (all three when none are named) |
 | `set_origin` | `type` `geometry`\|`bottom`\|`cursor`, `center?` | `bottom` = bounding-box bottom centre |
 | `boolean` | `operand`, `operation`, `apply?`, `delete_operand?`, `solver?` | Boolean modifier, optionally applied |
@@ -105,9 +132,16 @@ Notes:
   pass `"scale": 1.0` if you want raw Blender units.
 - **Paths** are absolute, normalised, and handle spaces, `~`, `%VARS%` and Blender's
   `//`-relative form. Parent folders are created for you.
+- **STL exporter.** Blender 4.2+/5.0 only ship `bpy.ops.wm.stl_export`; the legacy
+  `io_mesh_stl` add-on (`bpy.ops.export_mesh.stl`) is gone from 5.0. `export_stl` prefers
+  the new operator and keeps the old one as a fallback for 4.0/4.1, and reports which
+  one ran in `result.exporter`.
 - Handlers force OBJECT mode, restore the previous mode/selection/active object, and
   never assume a 3D viewport exists, so the same code paths work under
   `blender --background`.
+- Operators that Blender *cancels* rather than raising on (modifier apply, voxel remesh,
+  Quadriflow, STL export, symmetrize) have their return value checked, so a silent
+  no-op comes back as `status: "error"` instead of a bogus success.
 
 ## PartForge panel
 

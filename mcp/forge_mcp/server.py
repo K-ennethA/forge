@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
-from . import blender_client, config, service_client
+from . import __version__, blender_client, config, service_client
 from .errors import BackendUnavailable, ForgeError
 from .util import (
     ensure_parent_dir,
@@ -44,7 +44,8 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   than retrying blindly.
 """
 
-app = FastMCP("forge", instructions=INSTRUCTIONS)
+# mcp >= 2.0 renamed FastMCP to MCPServer; the decorator/run surface is the same.
+app = MCPServer("forge", instructions=INSTRUCTIONS, version=__version__)
 
 _OBJECT_DOC = "Object name. Omit to use Blender's active object."
 

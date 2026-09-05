@@ -155,8 +155,11 @@ def _make_compound(shapes: Sequence[Any]) -> Any:
     """Combine several shapes into one ``Compound``, across build123d versions."""
     from build123d import Compound  # noqa: PLC0415 - keep build123d out of the parent
 
-    # VERIFY: Compound(children=...) is the 0.5+ constructor; make_compound was
-    # the older classmethod.  Both are tried so either release works.
+    # Compound(children=[...]) is the current constructor (confirmed against
+    # build123d 0.11.1: it populates .wrapped with a real TopoDS_Compound, so
+    # the result tessellates and exports).  make_compound() was the older
+    # classmethod and is gone in 0.11; it is still tried so 0.5-era releases
+    # keep working.
     try:
         return Compound(children=list(shapes))
     except Exception:  # noqa: BLE001 - fall through to the legacy API
@@ -182,8 +185,9 @@ def tessellate_shape(
     zero-based index triples wound counter-clockwise as seen from outside.
     """
     # Preferred path: build123d's own tessellate, which handles face orientation
-    # and location transforms for us.
-    # VERIFY: Shape.tessellate(tolerance, angular_tolerance) -> (list[Vector], list[tuple[int,int,int]])
+    # and location transforms for us.  Confirmed against build123d 0.11.1:
+    # Shape.tessellate(tolerance, angular_tolerance=0.1)
+    #   -> (list[Vector], list[tuple[int, int, int]])
     primary_error: Optional[BaseException] = None
     tessellate = getattr(shape, "tessellate", None)
     if tessellate is not None:
@@ -191,7 +195,7 @@ def tessellate_shape(
             try:
                 raw_vertices, raw_faces = tessellate(tolerance, angular_tolerance)
             except TypeError:
-                # VERIFY: some releases name the second argument differently.
+                # Defensive: a release that drops the second positional.
                 raw_vertices, raw_faces = tessellate(tolerance)
             vertices = [_vector_xyz(v) for v in raw_vertices]
             faces = [tuple(int(i) for i in tri) for tri in raw_faces]
@@ -242,7 +246,8 @@ def _tessellate_via_ocp(
     transform to its nodes, and flip the winding of REVERSED faces so all
     triangle normals point out of the solid.
     """
-    # VERIFY: OCP module paths (OCP.BRepMesh / OCP.TopExp / OCP.BRep / OCP.TopAbs).
+    # OCP module paths confirmed against cadquery-ocp 7.9.3 (the OCP the
+    # installed build123d 0.11.1 pulls in).
     from OCP.BRep import BRep_Tool  # noqa: PLC0415
     from OCP.BRepMesh import BRepMesh_IncrementalMesh  # noqa: PLC0415
     from OCP.TopAbs import TopAbs_FACE, TopAbs_REVERSED  # noqa: PLC0415
@@ -268,8 +273,8 @@ def _tessellate_via_ocp(
             offset = len(vertices)
             node_count = triangulation.NbNodes()
             for index in range(1, node_count + 1):
-                # VERIFY: Poly_Triangulation.Node(i) is OCC 7.6+; older releases
-                # used Nodes().Value(i).
+                # Poly_Triangulation.Node(i) is OCC 7.6+ (confirmed on 7.9.3);
+                # older releases used Nodes().Value(i).
                 point = triangulation.Node(index).Transformed(transform)
                 vertices.append((point.X(), point.Y(), point.Z()))
             flipped = face.Orientation() == TopAbs_REVERSED
@@ -392,10 +397,16 @@ def compute_stats(
 
     solid_is_valid: Optional[bool] = None
     try:
-        # VERIFY: Shape.is_valid() exists in build123d 0.5+ (BRepCheck_Analyzer).
+        # build123d 0.11 exposes this as a *property* (backed by
+        # BRepCheck_Analyzer); 0.5-era releases had it as a method.  Reading it
+        # with getattr already evaluates the property, so accept both shapes --
+        # treating the property's bool as "not callable, therefore unknown" is
+        # how this silently reported null.
         is_valid = getattr(shape, "is_valid", None)
         if callable(is_valid):
             solid_is_valid = bool(is_valid())
+        elif is_valid is not None:
+            solid_is_valid = bool(is_valid)
     except Exception:  # noqa: BLE001 - a validity check must never fail the build
         solid_is_valid = None
 
@@ -429,7 +440,8 @@ def _bounding_box(
 ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float], str]:
     """Exact B-Rep bounding box when available, mesh extents otherwise."""
     try:
-        # VERIFY: Shape.bounding_box() -> BoundBox with .min/.max (Vectors) and .size.
+        # Shape.bounding_box(tolerance=None, optimal=True) -> BoundBox with
+        # .min / .max / .size as Vectors (confirmed against build123d 0.11.1).
         box = shape.bounding_box()
         low = _vector_xyz(box.min)
         high = _vector_xyz(box.max)

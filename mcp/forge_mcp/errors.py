@@ -1,14 +1,28 @@
 """Error types shared by the Forge MCP backends.
 
-Every error raised out of a tool function is one of these; FastMCP turns the
-message into the tool's error text, so the messages are written to be read by
-a model and acted on without further digging.
+Every error raised out of a tool function is one of these, and the messages are
+written to be read by a model and acted on without further digging.
+
+Getting that message to the model is why ForgeError derives from the SDK's
+``ToolError``. mcp 2.x splits tool failures in two (see
+``mcp.server.mcpserver.exceptions``): a ``ToolError`` is *anticipated*, so its
+text is returned to the caller in the ``is_error`` result and the server logs it
+at INFO; anything else is a *crash*, wrapped in ``UnexpectedToolError`` — the
+caller is told only "Error executing tool <name>" and the real message plus a
+traceback go to the server's stderr, where the model never sees them. A plain
+``RuntimeError`` here would silently turn every "Blender is not running" into
+that useless generic string.
+
+Genuine bugs (AttributeError, KeyError, ...) are deliberately left to the crash
+path: those *should* stay on the server rather than leak a traceback.
 """
 
 from __future__ import annotations
 
+from mcp.server.mcpserver.exceptions import ToolError
 
-class ForgeError(RuntimeError):
+
+class ForgeError(ToolError):
     """Base class for every error the Forge MCP server surfaces to the caller."""
 
 

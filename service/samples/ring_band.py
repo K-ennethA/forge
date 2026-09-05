@@ -94,9 +94,7 @@ def build(p):
 
         if p["chamfer_edges"] and chamfer_size >= _MIN_USEFUL_CHAMFER_MM:
             # The four rim circles: outer top/bottom and inner top/bottom.
-            # VERIFY: builder.edges() and ShapeList.filter_by(GeomType.CIRCLE).
             rims = band.edges().filter_by(GeomType.CIRCLE)  # noqa: F405
-            # VERIFY: chamfer(objects, length=...) is the build123d 0.5 signature.
             chamfer(rims, length=chamfer_size)  # noqa: F405
 
     return band.part

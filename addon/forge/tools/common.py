@@ -318,7 +318,7 @@ def apply_modifier(obj, modifier):
     name = modifier.name
     with active_only(obj):
         try:
-            bpy.ops.object.modifier_apply(
+            status = bpy.ops.object.modifier_apply(
                 **op_kwargs(
                     bpy.ops.object.modifier_apply,
                     {"modifier": name, "single_user": True},
@@ -328,6 +328,13 @@ def apply_modifier(obj, modifier):
             # Leave the modifier in place so the caller can inspect it.
             raise ForgeError(
                 "Could not apply modifier %r on %r: %s" % (name, obj.name, exc)
+            )
+        # Operators report refusals by returning CANCELLED, not by raising.
+        if "FINISHED" not in status:
+            raise ForgeError(
+                "Blender refused to apply modifier %r on %r (returned %s); the object may "
+                "be linked/library data or the modifier may be disabled."
+                % (name, obj.name, ", ".join(sorted(status)) or "nothing")
             )
 
 
@@ -494,15 +501,20 @@ def cmd_execute_python(params):
 # symmetrize / mirror
 # ---------------------------------------------------------------------------
 
-# Contract direction -> (bmesh.ops enum, bpy.ops.mesh.symmetrize enum).
+# Contract direction -> (bmesh.ops enum candidates, bpy.ops.mesh.symmetrize enum).
 # The named side is the SOURCE: the half that survives and is copied across.
+#
+# bmesh.ops.symmetrize spells its enum differently from the operator: on 4.x/5.0
+# the accepted identifiers are exactly ('-X', '-Y', '-Z', 'X', 'Y', 'Z') -- the
+# positive directions have NO leading '+'. Each entry lists candidates in
+# preference order so an older or newer spelling still resolves.
 _SYMMETRIZE_DIRECTIONS = {
-    "+X": ("+X", "POSITIVE_X"),
-    "-X": ("-X", "NEGATIVE_X"),
-    "+Y": ("+Y", "POSITIVE_Y"),
-    "-Y": ("-Y", "NEGATIVE_Y"),
-    "+Z": ("+Z", "POSITIVE_Z"),
-    "-Z": ("-Z", "NEGATIVE_Z"),
+    "+X": (("X", "+X", "POSITIVE_X"), "POSITIVE_X"),
+    "-X": (("-X", "NEGATIVE_X"), "NEGATIVE_X"),
+    "+Y": (("Y", "+Y", "POSITIVE_Y"), "POSITIVE_Y"),
+    "-Y": (("-Y", "NEGATIVE_Y"), "NEGATIVE_Y"),
+    "+Z": (("Z", "+Z", "POSITIVE_Z"), "POSITIVE_Z"),
+    "-Z": (("-Z", "NEGATIVE_Z"), "NEGATIVE_Z"),
 }
 # Aliases so callers can also send Blender's own identifiers or a bare axis.
 for _axis in ("X", "Y", "Z"):
@@ -514,48 +526,66 @@ del _axis
 
 def _symmetrize_with_ops(obj, op_direction, threshold):
     with active_only(obj):
-        bpy.ops.object.mode_set(mode="EDIT")
+        try:
+            bpy.ops.object.mode_set(mode="EDIT")
+        except RuntimeError as exc:
+            raise ForgeError("Could not enter Edit Mode on %r to symmetrize: %s" % (obj.name, exc))
         try:
             bpy.ops.mesh.select_all(action="SELECT")
-            bpy.ops.mesh.symmetrize(
+            status = bpy.ops.mesh.symmetrize(
                 **op_kwargs(
                     bpy.ops.mesh.symmetrize,
                     {"direction": op_direction, "threshold": threshold},
                 )
             )
         finally:
-            bpy.ops.object.mode_set(mode="OBJECT")
+            try:
+                bpy.ops.object.mode_set(mode="OBJECT")
+            except RuntimeError:
+                pass
+    if "FINISHED" not in status:
+        raise ForgeError(
+            "Symmetrize was refused by Blender on %r (direction %s, returned %s)."
+            % (obj.name, op_direction, ", ".join(sorted(status)) or "nothing")
+        )
 
 
 @command("symmetrize")
 def cmd_symmetrize(params):
     obj = resolve_object(params, mesh_only=True)
-    bm_direction, op_direction = get_choice(params, "direction", _SYMMETRIZE_DIRECTIONS, ("-X", "NEGATIVE_X"))
+    bm_candidates, op_direction = get_choice(
+        params, "direction", _SYMMETRIZE_DIRECTIONS, (("-X", "NEGATIVE_X"), "NEGATIVE_X")
+    )
     threshold = get_float(params, "threshold", 0.0001, minimum=0.0)
 
     with object_mode():
         mesh = obj.data
-        used = "bmesh"
+        used = None
         bm = bmesh.new()
         try:
             bm.from_mesh(mesh)
             geometry = list(bm.verts) + list(bm.edges) + list(bm.faces)
-            try:
-                bmesh.ops.symmetrize(bm, input=geometry, direction=bm_direction, dist=threshold)
-            except (TypeError, ValueError):
-                # bmesh.ops enum spelling differs on this build - use the operator.
-                used = "operator"
-            else:
+            for candidate in bm_candidates:
+                try:
+                    bmesh.ops.symmetrize(bm, input=geometry, direction=candidate, dist=threshold)
+                except (TypeError, ValueError):
+                    # Not this build's spelling for the enum - try the next one.
+                    continue
+                used = "bmesh:" + candidate
                 bm.to_mesh(mesh)
                 mesh.update()
+                break
         finally:
             bm.free()
-        if used == "operator":
+        if used is None:
+            # No bmesh spelling matched on this build - fall back to the operator.
             _symmetrize_with_ops(obj, op_direction, threshold)
+            used = "operator:" + op_direction
 
     stats = mesh_stats(obj)
     stats["object"] = obj.name
-    stats["direction"] = bm_direction
+    stats["direction"] = op_direction
+    stats["method"] = used
     return stats
 
 
@@ -607,20 +637,55 @@ def _voxel_remesh(obj, voxel_size, adaptivity):
         mesh.remesh_voxel_adaptivity = adaptivity
     except AttributeError:
         pass
+    status = set()
     try:
         with active_only(obj):
-            bpy.ops.object.voxel_remesh()
-        return "operator"
+            status = bpy.ops.object.voxel_remesh()
     except RuntimeError:
-        modifier = obj.modifiers.new(name="Forge Remesh", type="REMESH")
-        modifier.mode = "VOXEL"
-        modifier.voxel_size = voxel_size
-        modifier.adaptivity = adaptivity
-        apply_modifier(obj, modifier)
-        return "modifier"
+        status = set()
+    if "FINISHED" in status:
+        return "operator"
+    # The operator either raised or returned CANCELLED - do it with a modifier.
+    modifier = obj.modifiers.new(name="Forge Remesh", type="REMESH")
+    modifier.mode = "VOXEL"
+    modifier.voxel_size = voxel_size
+    modifier.adaptivity = adaptivity
+    apply_modifier(obj, modifier)
+    return "modifier"
+
+
+def _mesh_health(obj):
+    """(non-manifold edge count, loose vertex count, face count) for ``obj``.
+
+    ``edge.is_manifold`` is False for boundary edges (one face) as well as for
+    edges shared by three or more faces, which is exactly the set Quadriflow
+    cannot cope with.
+    """
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(obj.data)
+        bad_edges = sum(1 for edge in bm.edges if not edge.is_manifold)
+        loose_verts = sum(1 for vert in bm.verts if not vert.link_faces)
+        return bad_edges, loose_verts, len(bm.faces)
+    finally:
+        bm.free()
 
 
 def _quad_remesh(obj, target_faces, use_symmetry, preserve_sharp, preserve_boundary, seed):
+    bad_edges, loose_verts, face_count = _mesh_health(obj)
+    if face_count == 0:
+        raise ForgeError(
+            "Quadriflow needs a surface: %r has no faces." % obj.name
+        )
+    if bad_edges or loose_verts:
+        raise ForgeError(
+            "Quadriflow remesh cannot run on %r: the mesh is not manifold "
+            "(%d non-manifold or boundary edge(s), %d loose vertex/vertices). "
+            "Quadriflow needs a watertight mesh with consistent normals - run a "
+            "voxel remesh first, or fix the holes, then try again."
+            % (obj.name, bad_edges, loose_verts)
+        )
+
     kwargs = {
         "mode": "FACES",
         "target_faces": max(4, int(target_faces)),
@@ -633,15 +698,27 @@ def _quad_remesh(obj, target_faces, use_symmetry, preserve_sharp, preserve_bound
     with active_only(obj):
         try:
             try:
-                bpy.ops.object.quadriflow_remesh(**op_kwargs(bpy.ops.object.quadriflow_remesh, kwargs))
+                status = bpy.ops.object.quadriflow_remesh(
+                    **op_kwargs(bpy.ops.object.quadriflow_remesh, kwargs)
+                )
             except TypeError:
                 # Older/newer builds may not expose every keyword.
-                bpy.ops.object.quadriflow_remesh(mode="FACES", target_faces=kwargs["target_faces"])
+                status = bpy.ops.object.quadriflow_remesh(
+                    mode="FACES", target_faces=kwargs["target_faces"]
+                )
         except RuntimeError as exc:
             raise ForgeError(
                 "Quadriflow remesh failed on %r: %s. Quadriflow needs a manifold, "
                 "non-degenerate mesh - try a voxel remesh first." % (obj.name, exc)
             )
+    # Quadriflow reports a bad input by warning and returning CANCELLED rather
+    # than by raising, so the return value is the only reliable signal.
+    if "FINISHED" not in status:
+        raise ForgeError(
+            "Quadriflow remesh was cancelled on %r (returned %s). Quadriflow needs a "
+            "manifold, non-degenerate mesh with consistent face normals - try a voxel "
+            "remesh first." % (obj.name, ", ".join(sorted(status)) or "nothing")
+        )
 
 
 @command("remesh")
@@ -704,32 +781,60 @@ def _set_polygon_smooth(mesh, smooth):
     mesh.update()
 
 
+def _remove_auto_smooth_modifiers(obj):
+    """Drop Blender 4.1+ "Smooth by Angle" geometry-node modifiers.
+
+    ``shade`` sets ``polygons.use_smooth`` directly instead of going through
+    ``bpy.ops.object.shade_smooth``/``shade_flat``, so nothing else removes the
+    modifier those operators manage.  Without this, ``shade flat`` after
+    ``shade auto`` would leave the object visibly auto-smoothed, and repeated
+    ``shade auto`` calls would stack modifiers.
+    """
+    removed = 0
+    for modifier in list(obj.modifiers):
+        if getattr(modifier, "type", "") != "NODES":
+            continue
+        group = getattr(modifier, "node_group", None)
+        label = (getattr(group, "name", "") or modifier.name or "")
+        if "smooth by angle" in label.lower():
+            try:
+                obj.modifiers.remove(modifier)
+                removed += 1
+            except (RuntimeError, ReferenceError):
+                pass
+    return removed
+
+
 def _shade_auto(obj, angle_degrees):
     angle = math.radians(angle_degrees)
     mesh = obj.data
     _set_polygon_smooth(mesh, True)
+    # Start from a clean slate so repeated calls do not stack modifiers.
+    _remove_auto_smooth_modifiers(obj)
     # Blender 4.1+ : operator adds a "Smooth by Angle" node group modifier.
     if _op_exists(bpy.ops.object, "shade_auto_smooth"):
         operator = bpy.ops.object.shade_auto_smooth
         kwargs = op_kwargs(operator, {"angle": angle, "use_auto_smooth": True})
         with active_only(obj):
-            try:
-                operator(**kwargs)
-                return "shade_auto_smooth(%s)" % ", ".join(sorted(kwargs)) if kwargs else "shade_auto_smooth"
-            except (TypeError, RuntimeError):
+            for attempt in (kwargs, {}):
                 try:
-                    operator()
-                    return "shade_auto_smooth(no-args)"
+                    status = operator(**attempt)
                 except (TypeError, RuntimeError):
-                    pass
+                    continue
+                if "FINISHED" in status:
+                    return (
+                        "shade_auto_smooth(%s)" % ", ".join(sorted(attempt))
+                        if attempt
+                        else "shade_auto_smooth(no-args)"
+                    )
     # Blender <= 4.0 : mesh level auto smooth.
     if hasattr(mesh, "use_auto_smooth"):
         mesh.use_auto_smooth = True
         mesh.auto_smooth_angle = angle
         return "mesh.use_auto_smooth"
     raise ForgeError(
-        "This Blender build offers neither bpy.ops.object.shade_auto_smooth nor "
-        "mesh.use_auto_smooth; use mode 'smooth' or 'flat' instead."
+        "This Blender build offers neither a working bpy.ops.object.shade_auto_smooth "
+        "nor mesh.use_auto_smooth; use mode 'smooth' or 'flat' instead."
     )
 
 
@@ -739,17 +844,22 @@ def cmd_shade(params):
     mode = get_choice(params, "mode", {"SMOOTH": "smooth", "FLAT": "flat", "AUTO": "auto"}, "smooth")
     angle = get_float(params, "angle", 30.0, minimum=0.0, maximum=180.0)
 
+    removed = 0
     with object_mode():
-        if mode == "smooth":
-            _set_polygon_smooth(obj.data, True)
-            method = "polygons.use_smooth"
-        elif mode == "flat":
-            _set_polygon_smooth(obj.data, False)
+        if mode in ("smooth", "flat"):
+            removed = _remove_auto_smooth_modifiers(obj)
+            _set_polygon_smooth(obj.data, mode == "smooth")
             method = "polygons.use_smooth"
         else:
             method = _shade_auto(obj, angle)
 
-    return {"object": obj.name, "mode": mode, "angle": angle, "method": method}
+    return {
+        "object": obj.name,
+        "mode": mode,
+        "angle": angle,
+        "method": method,
+        "auto_smooth_modifiers_removed": removed,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1112,6 +1222,20 @@ def _iter_collections(root):
             yield nested
 
 
+def refresh_view_layer():
+    """Re-evaluate the view layer so freshly linked objects are visible to it.
+
+    ``collection.objects.link()`` only tags the depsgraph; until it is
+    evaluated, the new object is absent from ``view_layer.objects``, so
+    selection, ``hide_set`` and every operator-based command would refuse to
+    touch an object that was created moments earlier in the same command.
+    """
+    try:
+        get_view_layer().update()
+    except (ForgeError, AttributeError, RuntimeError):
+        pass
+
+
 def build_mesh_object(name, vertices, faces, replace=True, collection=None, scale=MM_TO_M):
     """Create or replace a mesh object from raw (millimetre) geometry.
 
@@ -1160,6 +1284,9 @@ def build_mesh_object(name, vertices, faces, replace=True, collection=None, scal
         obj = bpy.data.objects.new(name, mesh)
         target = _resolve_collection(collection)
         target.objects.link(obj)
+        # Without this the object is not yet in view_layer.objects, so the very
+        # next command (or the select branch below) would not find it.
+        refresh_view_layer()
 
     result = {
         "object": obj.name,
@@ -1189,11 +1316,15 @@ def cmd_load_mesh(params):
             name, vertices, faces, replace=replace, collection=collection, scale=scale
         )
         if get_bool(params, "select", False):
+            result["selected"] = False
             try:
                 view_layer = get_view_layer()
+                if obj.name not in view_layer.objects:
+                    refresh_view_layer()
                 if obj.name in view_layer.objects:
                     obj.select_set(True)
                     view_layer.objects.active = obj
+                    result["selected"] = True
             except (ForgeError, RuntimeError):
                 pass
 
@@ -1250,7 +1381,7 @@ def cmd_export_stl(params):
         problems = []
         if _op_exists(bpy.ops.wm, "stl_export"):
             try:
-                bpy.ops.wm.stl_export(
+                status = bpy.ops.wm.stl_export(
                     **op_kwargs(
                         bpy.ops.wm.stl_export,
                         {
@@ -1260,10 +1391,18 @@ def cmd_export_stl(params):
                             "global_scale": scale,
                             "use_scene_unit": False,
                             "apply_modifiers": apply_modifiers,
+                            # Never let the exporter try to raise an overwrite
+                            # confirmation - there is no user at this end.
+                            "check_existing": False,
                         },
                     )
                 )
-                exporter = "wm.stl_export"
+                if "FINISHED" in status:
+                    exporter = "wm.stl_export"
+                else:
+                    problems.append(
+                        "wm.stl_export returned %s" % (", ".join(sorted(status)) or "nothing")
+                    )
             except (TypeError, RuntimeError) as exc:
                 problems.append("wm.stl_export: %s" % exc)
         if exporter is None:
@@ -1273,7 +1412,7 @@ def cmd_export_stl(params):
                     "and %s" % ("; ".join(problems) or "bpy.ops.wm.stl_export is missing.")
                 )
             try:
-                bpy.ops.export_mesh.stl(
+                status = bpy.ops.export_mesh.stl(
                     **op_kwargs(
                         bpy.ops.export_mesh.stl,
                         {
@@ -1283,9 +1422,12 @@ def cmd_export_stl(params):
                             "global_scale": scale,
                             "use_scene_unit": False,
                             "use_mesh_modifiers": apply_modifiers,
+                            "check_existing": False,
                         },
                     )
                 )
+                if "FINISHED" not in status:
+                    raise RuntimeError("returned %s" % (", ".join(sorted(status)) or "nothing"))
                 exporter = "export_mesh.stl"
             except (TypeError, RuntimeError, AttributeError) as exc:
                 problems.append("export_mesh.stl: %s" % exc)

@@ -130,8 +130,9 @@ def export_shape(
 
 
 def _export_stl(shape: Any, target: Path, linear: float, angular: float) -> None:
-    # VERIFY: build123d.export_stl(to_export, file_path, tolerance=...,
-    #         angular_tolerance=..., ascii_format=False) -> bool
+    # Confirmed against build123d 0.11.1:
+    #   export_stl(to_export, file_path, tolerance=1e-3, angular_tolerance=0.1,
+    #              ascii_format=False) -> bool
     from build123d import export_stl  # noqa: PLC0415
 
     try:
@@ -143,7 +144,7 @@ def _export_stl(shape: Any, target: Path, linear: float, angular: float) -> None
             ascii_format=False,  # binary STL: smaller and what slicers expect
         )
     except TypeError:
-        # VERIFY: older/newer signatures may drop the keyword names.
+        # Defensive: a release that drops the tolerance keywords.
         ok = export_stl(shape, str(target))
     except Exception as exc:  # noqa: BLE001
         raise _export_failure("STL", target, exc) from exc
@@ -153,7 +154,9 @@ def _export_stl(shape: Any, target: Path, linear: float, angular: float) -> None
 
 
 def _export_step(shape: Any, target: Path) -> None:
-    # VERIFY: build123d.export_step(to_export, file_path, unit=Unit.MM, ...) -> bool
+    # Confirmed against build123d 0.11.1:
+    #   export_step(to_export, file_path, unit=Unit.MM, write_pcurves=True,
+    #               precision_mode=PrecisionMode.AVERAGE) -> bool
     from build123d import export_step  # noqa: PLC0415
 
     try:
@@ -171,8 +174,12 @@ def _export_step(shape: Any, target: Path) -> None:
 
 
 def _export_3mf(shape: Any, target: Path, linear: float, angular: float) -> None:
-    # VERIFY: build123d.Mesher(unit=Unit.MM); Mesher.add_shape(shape,
-    #         linear_deflection=..., angular_deflection=...); Mesher.write(path)
+    # Confirmed against build123d 0.11.1 (lib3mf 2.5.0 underneath):
+    #   Mesher(unit=Unit.MM)
+    #   Mesher.add_shape(shape, linear_deflection=1e-3, angular_deflection=0.1,
+    #                    mesh_type=MeshType.MODEL, part_number=None,
+    #                    uuid_value=None)
+    #   Mesher.write(file_name)
     from build123d import Mesher  # noqa: PLC0415
 
     try:

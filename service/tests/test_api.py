@@ -9,6 +9,9 @@ so the parameter tests still tell you something on a bare checkout.
 from __future__ import annotations
 
 import json
+import struct
+import subprocess
+import sys
 
 import pytest
 
@@ -17,6 +20,8 @@ pytest.importorskip("httpx", reason="fastapi.testclient needs httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from service import runner  # noqa: E402
+from service.errors import ServiceError  # noqa: E402
 from service.main import app  # noqa: E402
 
 # Default geometry of samples/ring_band.py, for the assertions below.
@@ -31,6 +36,16 @@ def build(p):
 '''
 
 NO_PARAMS_SCRIPT = "def build(p):\n    return None\n"
+
+#: A script that never returns.  The only containment against this is killing
+#: the child process, which is the whole reason the worker is a subprocess.
+HANGING_SCRIPT = '''
+PARAMS = {"size": {"value": 10.0, "unit": "mm"}}
+
+def build(p):
+    while True:
+        pass
+'''
 
 
 @pytest.fixture(scope="module")
@@ -252,3 +267,95 @@ def test_generate_response_is_plain_json(client, kernel, ring_band_source):
     response = client.post("/generate", json={"script": ring_band_source})
     assert response.headers["content-type"].startswith("application/json")
     json.loads(response.content.decode("utf-8"))
+
+
+# --------------------------------------------------------------------------
+# Windows specifics: paths with spaces, no console windows
+# --------------------------------------------------------------------------
+
+
+def test_export_handles_a_path_with_spaces_and_writes_a_real_binary_stl(
+    client, kernel, ring_band_source, tmp_path
+):
+    """Windows is the primary platform: spaces in directory *and* file names."""
+    target = tmp_path / "my parts" / "deeper dir" / "ring band v2.stl"
+    response = client.post(
+        "/export",
+        json={"script": ring_band_source, "format": "stl", "path": str(target)},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["path"] == str(target)
+    assert target.exists()
+
+    data = target.read_bytes()
+    # Binary STL: 80-byte header, uint32 triangle count, 50 bytes per triangle.
+    assert len(data) > 84
+    (triangle_count,) = struct.unpack("<I", data[80:84])
+    assert triangle_count > 0
+    assert len(data) == 84 + 50 * triangle_count
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows console-window guard")
+def test_the_worker_is_spawned_without_a_console_window(monkeypatch):
+    """Nothing this service does may flash a console on the user's desktop."""
+    captured = {}
+
+    def fake_popen(_command, **kwargs):
+        captured.update(kwargs)
+        raise OSError("not actually starting a process")
+
+    monkeypatch.setattr(runner.subprocess, "Popen", fake_popen)
+
+    pool = runner.WorkerPool()
+    with pytest.raises(ServiceError):
+        pool._spawn()
+
+    assert captured["creationflags"] & subprocess.CREATE_NO_WINDOW
+
+
+# --------------------------------------------------------------------------
+# Worker lifecycle -- kept last: these kill the warm child on purpose.
+# --------------------------------------------------------------------------
+
+
+def test_a_hanging_script_is_killed_and_the_worker_recovers(
+    client, kernel, ring_band_source
+):
+    """A runaway script must not wedge the service.
+
+    ``kernel`` has already warmed the child, so the cold-start grace does not
+    apply and the budget below is the real wall clock.
+    """
+    pool = runner.get_pool()
+    assert pool._warm, "the worker should already be warm via /health"
+
+    original_timeout = pool.timeout
+    pool.timeout = 3.0
+    try:
+        response = client.post("/generate", json={"script": HANGING_SCRIPT})
+    finally:
+        pool.timeout = original_timeout
+
+    assert response.status_code == 400, response.text
+    assert "time limit" in response.json()["error"]
+
+    # The child was killed, not left spinning.
+    assert pool._process is None
+
+    # ...and the next request transparently starts a fresh one.
+    again = client.post("/generate", json={"script": ring_band_source})
+    assert again.status_code == 200, again.text
+    assert again.json()["stats"]["watertight"] is True
+
+
+def test_the_service_recovers_when_the_worker_dies_underneath_it(
+    client, kernel, ring_band_source
+):
+    """A crashed child (segfault, OOM kill) is replaced on the next request."""
+    pool = runner.get_pool()
+    assert pool._process is not None
+    pool._process.kill()
+    pool._process.wait(timeout=30)
+
+    response = client.post("/generate", json={"script": ring_band_source})
+    assert response.status_code == 200, response.text

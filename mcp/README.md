@@ -11,18 +11,45 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-## Setup (do this later — nothing here is installed yet)
+## Setup
 
-From `mcp/`:
+`mcp/.venv` is created and installed. To rebuild it from scratch on another machine, from
+`mcp/`:
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
-That installs `mcp` (FastMCP) and `httpx` and puts `forge_mcp` on the venv's path, which is
-what makes `python -m forge_mcp` work from any working directory.
+(If `py` is not on PATH, call the interpreter by its full path — on this machine that is
+`%LOCALAPPDATA%\Python\pythoncore-3.14-64\python.exe`.)
+
+That installs `mcp` and `httpx` and puts `forge_mcp` on the venv's path, which is what makes
+`python -m forge_mcp` work from any working directory. The `[dev]` extra adds `pytest`; drop
+it for a runtime-only install.
+
+The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCPServer`
+(`mcp.server.mcpserver`) — hence the `mcp>=2,<3` pin. Two consequences worth knowing:
+
+- Only the SDK's `ToolError` has its message returned to the model; every other exception is
+  treated as a crash and the caller sees a bare `Error executing tool <name>` while the real
+  message goes to stderr. `ForgeError` therefore derives from `ToolError`, which is what
+  keeps the messages below actionable. Genuine bugs stay on the crash path on purpose.
+- On the wire the tool schema field is `inputSchema`; on the Python model it is
+  `input_schema`.
+
+### Tests
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+`tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
+server on an ephemeral port), the 21-tool surface and its schemas, the backend-down error
+messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
+`.mcp.json` registration. Nothing in the suite needs Blender or the geometry service, and
+nothing binds or connects to 9876/8765.
 
 ### Registering with Claude Code
 

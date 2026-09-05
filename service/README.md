@@ -12,13 +12,11 @@ what it produces.
 - Wire contract: `docs/architecture.md`. Any change to the API happens there
   first.
 
-## Setup (later, not during the initial build)
-
-Nothing here is installed yet. When it is time:
+## Setup
 
 ```powershell
 cd C:\Users\kenne\OneDrive\Desktop\git\forge\service
-py -3.11 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
@@ -26,6 +24,11 @@ pip install -e ".[dev]"
 
 Python 3.10 or newer. `build123d` pulls in OCP (the OpenCascade bindings),
 which is a large wheel — the first install takes a few minutes.
+
+Verified against **build123d 0.11.1** (cadquery-ocp 7.9.3, lib3mf 2.5.0) on
+CPython 3.14. If `python` is not on PATH, use the interpreter's full path — on
+this machine that is
+`%LOCALAPPDATA%\Python\pythoncore-3.14-64\python.exe`.
 
 ### Run it
 
@@ -56,6 +59,9 @@ python -m pytest                          # from service/
 
 `tests/test_params.py` is pure Python and runs as soon as pytest is installed.
 `tests/test_api.py` spawns the worker and skips itself if build123d is missing.
+It also exercises the containment story for real: a deliberately hanging script
+must come back as a clean `400`, and the next request must succeed on a fresh
+child. Those two tests are the slow ones — they pay a worker restart on purpose.
 
 ## API
 

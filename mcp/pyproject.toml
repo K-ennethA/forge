@@ -13,12 +13,23 @@ authors = [{ name = "Forge" }]
 keywords = ["mcp", "blender", "build123d", "cad", "3d-printing"]
 
 dependencies = [
-    "mcp>=1.2.0",
+    # mcp 2.x renamed FastMCP to MCPServer (mcp.server.mcpserver); forge_mcp.server
+    # uses that name, so 1.x will not import. Pin to the 2.x line.
+    "mcp>=2.0,<3",
     "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
 ]
 
 [project.scripts]
 forge-mcp = "forge_mcp.server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
 
 [tool.setuptools]
 packages = ["forge_mcp"]
