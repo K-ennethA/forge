@@ -65,6 +65,11 @@ EXPECTED_TOOLS = {
     "rigforge_generate_rig",
     "rigforge_weights",
     "rigforge_export_godot",
+    # RigForge cloth + animation (Phase 5)
+    "rigforge_cloth",
+    "rigforge_action",
+    "rigforge_keyframe",
+    "rigforge_retarget",
 }
 
 
@@ -109,7 +114,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 36
+    assert len(names) == 40
 
 
 def test_every_tool_is_documented() -> None:
@@ -156,6 +161,11 @@ def test_every_tool_has_an_object_schema() -> None:
         ("rigforge_generate_rig", []),
         ("rigforge_weights", []),
         ("rigforge_export_godot", ["path"]),
+        # Phase 5: the keys to set and the clip to read are the only musts
+        ("rigforge_cloth", []),
+        ("rigforge_action", []),
+        ("rigforge_keyframe", ["keys"]),
+        ("rigforge_retarget", ["source_path"]),
     ],
 )
 def test_required_parameters_match_the_contract(tool_name: str, required: list[str]) -> None:
@@ -185,6 +195,14 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ("rigforge_retopo", "platform", ["desktop", "mobile"]),
         ("rigforge_metarig", "archetype", ["auto", "biped", "quadruped", "custom"]),
         ("rigforge_weights", "action", ["report", "cleanup", "normalize"]),
+        ("rigforge_cloth", "preset", ["cotton", "leather", "heavy"]),
+        ("rigforge_cloth", "output", ["skin_tight", "shapekeys", "bones"]),
+        (
+            "rigforge_action",
+            "action",
+            ["new", "list", "delete", "duplicate", "rename", "push_nla"],
+        ),
+        ("rigforge_keyframe", "interpolation", ["BEZIER", "LINEAR"]),
     ],
 )
 def test_enum_parameters_match_the_contract(
@@ -229,6 +247,7 @@ def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
         "rigforge_status",
         "rigforge_metarig",
         "rigforge_weights",
+        "rigforge_cloth",
     ],
 )
 def test_object_targeting_tools_take_an_optional_object(tool_name: str) -> None:
@@ -279,6 +298,51 @@ def test_export_godot_actions_accepts_a_string_or_a_list() -> None:
     actions = schema["properties"]["actions"]
     kinds = {branch.get("type") for branch in actions["anyOf"]}
     assert {"string", "array"} <= kinds
+
+
+# --- Phase 5 schema ---------------------------------------------------------
+
+
+def test_cloth_defaults_are_the_cheap_deterministic_ones() -> None:
+    """skin_tight and body collision: no sim to babysit unless it is asked for."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_cloth").input_schema
+    properties = schema["properties"]
+    assert properties["output"]["default"] == "skin_tight"
+    assert properties["preset"]["default"] == "cotton"
+    assert properties["collision"]["default"] is True
+    assert properties["use_selection"]["default"] is False
+    for optional in ("offset_mm", "thickness_mm", "frames", "name"):
+        assert properties[optional].get("default") is None, optional
+    assert schema.get("required", []) == []
+
+
+def test_cloth_tags_and_use_selection_are_both_optional_in_the_schema() -> None:
+    """The either/or lives in the tool, exactly as it does for rigforge_tag."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_cloth").input_schema
+    required = schema.get("required", [])
+    assert "tags" not in required and "use_selection" not in required
+    branches = schema["properties"]["tags"].get("anyOf") or [schema["properties"]["tags"]]
+    array = next(b for b in branches if b.get("type") == "array")
+    assert array["items"]["type"] == "string"
+
+
+def test_keyframe_keys_are_a_list_of_objects() -> None:
+    schema = next(t for t in list_tools() if t.name == "rigforge_keyframe").input_schema
+    keys = schema["properties"]["keys"]
+    assert keys["type"] == "array"
+    assert keys["items"]["type"] == "object"
+    assert schema["properties"]["clear"]["default"] is False
+
+
+def test_retarget_mapping_and_scale_accept_both_contract_forms() -> None:
+    """`mapping` is "auto" or {src: dst}; `scale` is "auto" or a number."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_retarget").input_schema
+    mapping = schema["properties"]["mapping"]
+    assert {branch.get("type") for branch in mapping["anyOf"]} >= {"string", "object"}
+    assert mapping["default"] == "auto"
+    scale = schema["properties"]["scale"]
+    assert {branch.get("type") for branch in scale["anyOf"]} >= {"string", "number"}
+    assert scale["default"] == "auto"
 
 
 # --- error paths with no backends running -----------------------------------

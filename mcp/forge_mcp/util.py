@@ -1298,10 +1298,28 @@ def rig_objects(scene: Mapping[str, Any], base: str) -> Dict[str, List[str]]:
 
 
 def next_rig_step(
-    *, has_tags: bool, has_retopo: bool, has_metarig: bool, has_rig: bool
+    *,
+    has_tags: bool,
+    has_retopo: bool,
+    has_metarig: bool,
+    has_rig: bool,
+    has_actions: Optional[bool] = None,
 ) -> str:
-    """The one next call, walking the pipeline backwards from the far end."""
+    """The one next call, walking the pipeline backwards from the far end.
+
+    ``has_actions`` is deliberately three-valued: ``None`` means the add-on could
+    not be asked (no Phase 5 commands, or the call failed), and an unknown action
+    library must not be reported as an empty one — the export nudge stays, exactly
+    as it did before the animation stage existed.
+    """
     if has_rig:
+        if has_actions is False:
+            return (
+                "rigforge_action + rigforge_keyframe — open an action and sketch "
+                "the motion at a few key frames, or rigforge_retarget to bring in "
+                "a user-supplied .bvh/.fbx clip (rigforge_cloth first if the "
+                "character wears something)"
+            )
         return (
             "rigforge_export_godot — bake the actions onto the deform bones and "
             "write the glTF (plus its Godot import helper)"
@@ -1325,3 +1343,512 @@ def next_rig_step(
         "rigforge_tag — label the body parts (select the faces first, or pass "
         "explicit face indices)"
     )
+
+
+# --- Phase 5 (RigForge cloth and animation) ---------------------------------
+
+#: Motion-capture containers Blender imports without any add-on download. The
+#: file is the USER's (docs/architecture.md Phase 5: "nothing is fetched"), so an
+#: unknown extension is refused rather than corrected — unlike an *output* path,
+#: where the tool knows what it is about to write.
+MOCAP_SUFFIXES = (".bvh", ".fbx")
+
+#: Godot's looping-clip convention: an action whose name ends `-loop` is imported
+#: as a loop. The add-on enforces it when `loop` is true; this is only used to
+#: read a loop badge off a name the add-on already settled on.
+LOOP_SUFFIX = "-loop"
+
+#: The pose channels one keyframe entry may carry (docs/architecture.md).
+KEY_CHANNELS = ("rotation_euler_deg", "location", "scale")
+
+#: Blender caps action names at 63 bytes, same as objects and vertex groups.
+_MAX_ACTION_NAME = 63
+
+
+def normalize_tag_list(tags: Any, *, label: str = "tags") -> List[str]:
+    """Clean a list of body-part tag names: de-duplicated, order kept.
+
+    Each name goes through :func:`normalize_tag_name`, so ``"tag_Torso"`` and
+    ``"Torso"`` are the same tag here exactly as they are for rigforge_tag. A
+    comma-separated string is accepted for the same reason
+    :func:`normalize_actions` accepts one — it is what a model reaches for.
+    """
+    if isinstance(tags, (str, bytes)):
+        tags = str(tags).split(",")
+    if isinstance(tags, Mapping) or not isinstance(tags, (list, tuple, set)):
+        raise ForgeError(
+            f'`{label}` must be a list of tag names like ["Torso", "Arm.L"]; '
+            f"got {tags!r}."
+        )
+    names: List[str] = []
+    for entry in tags:
+        if entry is None or isinstance(entry, (Mapping, list, tuple, set, bool)):
+            raise ForgeError(
+                f"{entry!r} is not a tag name. Tags are body parts like 'Torso' "
+                "or 'Arm.L'; rigforge_list_tags shows the ones this mesh has."
+            )
+        if not str(entry).strip():
+            continue
+        name = normalize_tag_name(entry)
+        if name not in names:
+            names.append(name)
+    if not names:
+        raise ForgeError(
+            f"`{label}` was empty. Name the body-part tags the garment covers, "
+            'e.g. ["Torso", "Arm.L", "Arm.R"] — rigforge_list_tags shows what the '
+            "mesh has — or use_selection=true to take Blender's face selection."
+        )
+    return names
+
+
+def _as_frame(value: Any, where: str) -> int:
+    """A timeline frame: whole number, negatives allowed (Blender allows them)."""
+    if isinstance(value, bool):
+        raise ForgeError(f"{where} `frame` must be a frame number; got {value!r}.")
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ForgeError(
+                f"{where} `frame` must be a whole frame number; got {value}."
+            )
+        return int(value)
+    try:
+        return int(str(value).strip() if isinstance(value, str) else value)
+    except (TypeError, ValueError) as exc:
+        raise ForgeError(
+            f"{where} `frame` must be a whole frame number like 1 or 24; got {value!r}."
+        ) from exc
+
+
+def _as_vector3(value: Any, where: str) -> List[float]:
+    """One pose channel: exactly three numbers (X, Y, Z)."""
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ForgeError(
+            f"{where} must be three numbers [x, y, z]; got {value!r}."
+        )
+    if len(value) != 3:
+        raise ForgeError(
+            f"{where} must be exactly three numbers [x, y, z]; got {len(value)}."
+        )
+    out: List[float] = []
+    for component in value:
+        if isinstance(component, bool):
+            raise ForgeError(f"{where} must be three numbers [x, y, z]; got {value!r}.")
+        try:
+            out.append(float(component))
+        except (TypeError, ValueError) as exc:
+            raise ForgeError(
+                f"{where} must be three numbers [x, y, z]; {component!r} is not one."
+            ) from exc
+    return out
+
+
+def _normalize_key(entry: Any, index: int) -> Dict[str, Any]:
+    where = f"keys[{index}]"
+    if not isinstance(entry, Mapping):
+        raise ForgeError(
+            f"{where} must be an object like "
+            '{"bone": "spine.003", "frame": 1, "rotation_euler_deg": [0, 0, 10]}; '
+            f"got {entry!r}."
+        )
+    key = dict(entry)  # unknown fields survive, the way `modules` entries do
+
+    bone = str(key.get("bone") or "").strip()
+    if not bone:
+        raise ForgeError(
+            f"{where} has no `bone`. Every key names the control bone it moves, "
+            'e.g. {"bone": "hand_ik.L", "frame": 12, "location": [0, 0, 0.15]}.'
+        )
+    key["bone"] = bone
+
+    if key.get("frame") is None:
+        raise ForgeError(
+            f"{where} ('{bone}') has no `frame`. Every key names the frame it "
+            "sits on — that is what makes it a key rather than a pose."
+        )
+    key["frame"] = _as_frame(key.get("frame"), f"{where} ('{bone}')")
+
+    set_channels = []
+    for channel in KEY_CHANNELS:
+        if key.get(channel) is None:
+            key.pop(channel, None)
+            continue
+        key[channel] = _as_vector3(key[channel], f"{where} ('{bone}') {channel}")
+        set_channels.append(channel)
+    if not set_channels:
+        raise ForgeError(
+            f"{where} ('{bone}' at frame {key['frame']}) sets no channel. Give it "
+            "at least one of rotation_euler_deg (degrees), location (Blender "
+            "units, metres) or scale — a key that changes nothing keyframes "
+            "nothing."
+        )
+    return key
+
+
+def normalize_keys(keys: Any) -> List[Dict[str, Any]]:
+    """Validate the batch of keyframes, entry by entry, before the socket.
+
+    A key must name a bone and a frame and move at least one channel; anything
+    else reaches Blender as a silent no-op, which is the worst possible outcome
+    for a described-motion pass ("it said it keyed 8 poses and nothing moved").
+    Entry order is the caller's — keys are self-describing, so unlike a bare list
+    of face indices there is nothing to gain by sorting them.
+    """
+    if isinstance(keys, Mapping):  # one key, unwrapped
+        keys = [keys]
+    if isinstance(keys, (str, bytes)) or not isinstance(keys, (list, tuple)):
+        raise ForgeError(
+            "`keys` must be a list of keyframe objects like "
+            '[{"bone": "spine.003", "frame": 1, "rotation_euler_deg": [0, 0, 10]}]; '
+            f"got {keys!r}."
+        )
+    out = [_normalize_key(entry, index) for index, entry in enumerate(keys)]
+    if not out:
+        raise ForgeError(
+            "`keys` was empty. A described-motion pass is a few sketched poses, "
+            'e.g. [{"bone": "hand_ik.L", "frame": 1, "location": [0, 0, 0]}, '
+            '{"bone": "hand_ik.L", "frame": 12, "location": [0, 0, 0.15]}, '
+            '{"bone": "hand_ik.L", "frame": 24, "location": [0, 0, 0]}] — '
+            "the interpolation fills in everything between them."
+        )
+    return out
+
+
+def keys_frame_range(keys: Sequence[Mapping[str, Any]]) -> Optional[Tuple[int, int]]:
+    """(first, last) frame across a normalized key list, for the summary line."""
+    frames = [int(key["frame"]) for key in keys if isinstance(key.get("frame"), int)]
+    return (min(frames), max(frames)) if frames else None
+
+
+def normalize_bone_mapping(mapping: Any) -> Any:
+    """Resolve `mapping` into the wire's two forms: ``"auto"`` or ``{src: dst}``.
+
+    Same forgiveness as :func:`normalize_actions`: ``None``/``""``/``"auto"`` all
+    mean "map by name heuristics and report what did not land", and a JSON object
+    handed over as a string is parsed rather than refused.
+    """
+    if mapping is None:
+        return "auto"
+    if isinstance(mapping, (str, bytes)):
+        text = str(mapping).strip()
+        if not text or text.lower() == "auto":
+            return "auto"
+        if text.startswith("{"):
+            try:
+                return normalize_bone_mapping(json.loads(text))
+            except ValueError as exc:
+                raise ForgeError(
+                    f"mapping looked like JSON but did not parse: {exc}"
+                ) from exc
+        raise ForgeError(
+            f'Could not read mapping {mapping!r}. Use "auto" to map by name, or '
+            'an object from clip bone to rig bone like {"mixamorig:Hips": "torso"}.'
+        )
+    if isinstance(mapping, Mapping):
+        out: Dict[str, str] = {}
+        for source, target in mapping.items():
+            src = str(source).strip()
+            dst = "" if target is None else str(target).strip()
+            if not src or not dst or isinstance(target, (Mapping, list, tuple, set)):
+                raise ForgeError(
+                    "A mapping entry maps one clip bone to one rig bone, e.g. "
+                    f'{{"mixamorig:Hips": "torso"}}; got {source!r} -> {target!r}.'
+                )
+            out[src] = dst
+        if not out:
+            raise ForgeError(
+                '`mapping` was empty. Omit it (or pass "auto") to map by name '
+                "heuristics, or list only the bones the heuristics get wrong."
+            )
+        return out
+    raise ForgeError(
+        f'Could not read mapping {mapping!r}. Use "auto" to map by name, or an '
+        'object from clip bone to rig bone like {"mixamorig:Hips": "torso"}.'
+    )
+
+
+def normalize_retarget_scale(scale: Any) -> Any:
+    """``"auto"`` (fit the clip to the rig's proportions) or a positive factor."""
+    if scale is None:
+        return "auto"
+    if isinstance(scale, bool):
+        raise ForgeError(f'scale must be "auto" or a positive number; got {scale!r}.')
+    if isinstance(scale, (int, float)):
+        value = float(scale)
+    else:
+        text = str(scale).strip()
+        if not text or text.lower() == "auto":
+            return "auto"
+        try:
+            value = float(text)
+        except ValueError as exc:
+            raise ForgeError(
+                f'Could not read scale {scale!r}. Use "auto" to fit the clip to '
+                "the rig, or a positive multiplier like 0.01."
+            ) from exc
+    if value <= 0.0:
+        raise ForgeError(f"scale must be greater than 0; got {fmt_number(value)}.")
+    return value
+
+
+def normalize_action_name(raw: Any, *, label: str = "action name") -> str:
+    """Clean an action name without touching the `-loop` convention.
+
+    The suffix is the add-on's to enforce (docs/architecture.md), so a name
+    crosses the wire as typed — the report shows whatever name came back.
+    """
+    text = "" if raw is None else str(raw).strip()
+    if not text:
+        raise ForgeError(
+            f"No {label} given. Actions are named clips like 'idle-loop', "
+            "'walk-loop', 'jump' or 'attack'."
+        )
+    if any(ch in text for ch in "\r\n\t"):
+        raise ForgeError(
+            f"An {label} cannot contain line breaks or tabs; got {raw!r}."
+        )
+    encoded = text.encode("utf-8")[:_MAX_ACTION_NAME]
+    return encoded.decode("utf-8", errors="ignore") or text[:_MAX_ACTION_NAME]
+
+
+def action_name_for_clip(path: Path) -> str:
+    """Default action name for a retarget: the clip file's own stem."""
+    stem = str(path.stem).strip()
+    if not stem:
+        return "mocap"
+    encoded = stem.encode("utf-8")[:_MAX_ACTION_NAME]
+    return encoded.decode("utf-8", errors="ignore") or "mocap"
+
+
+def action_names(actions: Any) -> List[str]:
+    """Names out of an `actions` list of strings or of `{name, loop, ...}` records."""
+    if actions is None:
+        return []
+    if isinstance(actions, (str, bytes)):
+        text = str(actions).strip()
+        return [text] if text else []
+    if isinstance(actions, Mapping):
+        actions = [actions]
+    if not isinstance(actions, (list, tuple, set)):
+        return [str(actions)]
+    names: List[str] = []
+    for entry in actions:
+        if isinstance(entry, Mapping):
+            name = str(entry.get("name") or entry.get("action") or "").strip()
+        else:
+            name = str(entry).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def fmt_frame_range(value: Any) -> str:
+    """`[1, 24]`, `{"start": 1, "end": 24}`, `24` or `"1-24"` -> `1-24`."""
+    if value is None:
+        return "?"
+    if isinstance(value, Mapping):
+        start = value.get("start", value.get("first"))
+        end = value.get("end", value.get("last"))
+        if start is None and end is None:
+            return json.dumps(dict(value), separators=(", ", ": "))
+        return f"{fmt_number(start, 0)}-{fmt_number(end, 0)}"
+    if isinstance(value, (list, tuple)):
+        parts = [fmt_number(v, 0) for v in value]
+        if len(parts) == 2:
+            return f"{parts[0]}-{parts[1]}"
+        return ", ".join(parts) if parts else "?"
+    return fmt_number(value, 0)
+
+
+def fmt_name_list(values: Any, limit: int = 8) -> str:
+    """`count: a, b, c, +n more` from a list, a `{src: dst}` mapping or a count.
+
+    Every Phase 5 result field that could be "how many" or "which ones"
+    (`mapped`, `unmapped`, `shape_keys`) arrives through here, because the
+    contract pins none of their shapes.
+    """
+    if values is None:
+        return "not reported"
+    if isinstance(values, bool):
+        return "yes" if values else "no"
+    if isinstance(values, int):
+        return str(values)
+    if isinstance(values, float):
+        return fmt_number(values, 0)
+    if isinstance(values, (str, bytes)):
+        text = str(values).strip()
+        return text or "none"
+    if isinstance(values, Mapping):
+        entries = [f"{key} -> {value}" for key, value in values.items()]
+    elif isinstance(values, (list, tuple, set)):
+        entries = []
+        for entry in values:
+            if isinstance(entry, Mapping):
+                source = entry.get("source") or entry.get("src") or entry.get("name")
+                target = entry.get("target") or entry.get("dst") or entry.get("bone")
+                if source and target:
+                    entries.append(f"{source} -> {target}")
+                elif source or target:
+                    entries.append(str(source or target))
+                else:
+                    entries.append(json.dumps(dict(entry), separators=(", ", ": ")))
+            else:
+                entries.append(str(entry))
+    else:
+        return str(values)
+
+    if not entries:
+        return "0"
+    shown = ", ".join(entries[:limit])
+    if len(entries) > limit:
+        shown += f", +{len(entries) - limit} more"
+    return f"{len(entries)}: {shown}"
+
+
+def fmt_counted(label: str, values: Any, limit: int = 8) -> str:
+    """`mapped (2): a -> b, c -> d`, or `mapped: 22` when only a count came back."""
+    listed = fmt_name_list(values, limit)
+    head, separator, rest = listed.partition(": ")
+    if separator:
+        return f"{label} ({head}): {rest}"
+    return f"{label}: {listed}"
+
+
+def fmt_shape_keys(shape_keys: Any) -> Optional[str]:
+    """The `shape_keys` line of a cloth report, or None when there are none."""
+    if shape_keys is None or shape_keys == [] or shape_keys == {} or shape_keys == "":
+        return None
+    if fmt_name_list(shape_keys) in ("0", "none", "not reported"):
+        return None
+    return fmt_counted("shape keys", shape_keys)
+
+
+def fmt_cloth_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    """The garment, how it is driven, and the shape keys it left behind."""
+    garment = result.get("garment") or result.get("object") or "(unnamed)"
+    output = result.get("output") or "(not reported)"
+    lines = [
+        f"Garment made from {subject} — {summary}",
+        f"  garment: {garment}   output: {output}",
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    keys = fmt_shape_keys(result.get("shape_keys"))
+    if keys:
+        lines.append(f"  {keys}")
+    lines.append(
+        "  next: rigforge_action to open an action, then rigforge_keyframe "
+        "(or rigforge_retarget) to move it."
+    )
+    return "\n".join(lines)
+
+
+def fmt_action_table(actions: Any, indent: str = "  ") -> List[str]:
+    """The action library: one row per action with its loop badge and frames."""
+    entries = actions if isinstance(actions, (list, tuple)) else ([actions] if actions else [])
+    rows: List[Tuple[str, bool, Any, Any]] = []
+    for entry in entries:
+        if isinstance(entry, Mapping):
+            name = str(entry.get("name") or entry.get("action") or "?")
+            loop = entry.get("loop")
+            frames = entry.get("frames", entry.get("frame_range"))
+            nla = entry.get("nla", entry.get("pushed", entry.get("track")))
+        else:
+            name, frames, nla, loop = str(entry), None, None, None
+        if loop is None:  # not reported: the `-loop` suffix is the convention
+            loop = name.endswith(LOOP_SUFFIX)
+        rows.append((name, bool(loop), frames, nla))
+
+    if not rows:
+        return []
+    lines = [f"{indent}{'action':<28} {'loop':<5} {'frames':<12} nla"]
+    for name, loop, frames, nla in rows:
+        if nla is None:
+            track = "-"
+        elif isinstance(nla, bool):
+            track = "yes" if nla else "-"
+        else:
+            track = str(nla)
+        lines.append(
+            f"{indent}{name:<28.28} {('yes' if loop else '-'):<5} "
+            f"{fmt_frame_range(frames):<12.12} {track:.20}"
+        )
+    return lines
+
+
+_ACTION_HEADS = {
+    "new": "Action created",
+    "list": "Action library",
+    "delete": "Action deleted",
+    "duplicate": "Action duplicated",
+    "rename": "Action renamed",
+    "push_nla": "Action pushed to an NLA track",
+}
+
+
+def fmt_action_report(action: str, result: Mapping[str, Any], summary: str) -> str:
+    """What the call did, then the whole library as it now stands."""
+    head = _ACTION_HEADS.get(action, f"Action ({action})")
+    lines = [f"{head} — {summary}"]
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    actions = result.get("actions")
+    table = fmt_action_table(actions)
+    if table:
+        lines.append("")
+        lines.extend(table)
+        lines.append("")
+        lines.append(f"  {len(action_names(actions))} action(s)")
+    elif action == "list":
+        lines.append(
+            "  no actions yet — rigforge_action(action='new', name='idle-loop', "
+            "loop=true), then sketch the motion with rigforge_keyframe or import "
+            "a clip with rigforge_retarget."
+        )
+    else:
+        lines.append("  (the add-on reported no action library)")
+    return "\n".join(lines)
+
+
+def fmt_keyframe_report(result: Mapping[str, Any], summary: str, requested: str) -> str:
+    """How many keys landed, and over what span of the timeline."""
+    named = str(result.get("action") or "").strip()
+    action = f"'{named}'" if named else requested
+    keys_set = result.get("keys_set", result.get("keys"))
+    lines = [
+        f"Keyframed {action} — {summary}",
+        f"  {fmt_counted('keys set', keys_set)}   "
+        f"frames {fmt_frame_range(result.get('frame_range'))}",
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.append(
+        "  next: scrub it in Blender; more keys refine the same action, and "
+        "rigforge_export_godot bakes it for Godot."
+    )
+    return "\n".join(lines)
+
+
+def fmt_retarget_report(
+    source: Any, subject: str, result: Mapping[str, Any], summary: str
+) -> str:
+    """The baked action, and — loudly — the bones that did not map."""
+    action = result.get("action") or "(unnamed)"
+    frames = result.get("frames", result.get("frame_range"))
+    lines = [
+        f"Retargeted {source} onto {subject} — {summary}",
+        f"  action: {action}   frames: {fmt_frame_range(frames)}",
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.append("  " + fmt_counted("mapped", result.get("mapped")))
+
+    unmapped = result.get("unmapped")
+    if unmapped in (None, [], {}, 0, ""):
+        lines.append("  unmapped: none — every source bone found a home")
+    else:
+        lines.append("  " + fmt_counted("UNMAPPED", unmapped, limit=12))
+        lines.append(
+            "    those bones drive nothing. Re-run with an explicit `mapping` for "
+            "them if the motion looks wrong."
+        )
+    lines.append(
+        "  next: scrub the action in Blender, then rigforge_export_godot."
+    )
+    return "\n".join(lines)

@@ -15,7 +15,7 @@ from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import partforge, rigforge, rigforge_rig
+from ..tools import partforge, rigforge, rigforge_anim, rigforge_rig
 
 CATEGORY = "Forge"
 
@@ -419,6 +419,135 @@ class VIEW3D_PT_forge_rig(_ForgePanel, Panel):
         row.operator("forge.rf_weights", text="Normalize").action = "normalize"
 
 
+class VIEW3D_PT_forge_cloth(_ForgePanel, Panel):
+    """Stage 5: a garment grown from the tagged faces of the body."""
+
+    bl_idname = "VIEW3D_PT_forge_cloth"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "Cloth"
+
+    def draw(self, context):
+        layout = self.layout
+        ra = rigforge_anim.get_props(context)
+        if ra is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+        obj = rigforge.active_mesh(context)
+
+        layout.prop(ra, "cloth_use_selection")
+        box = layout.box()
+        box.active = not ra.cloth_use_selection
+        box.label(text="Covered tags", icon="GROUP_VERTEX")
+        tags = rigforge.tag_groups(obj) if obj is not None else []
+        chosen = set(rigforge_anim._selected_tags(ra))
+        if not tags:
+            box.label(text="No tags on this mesh yet", icon="INFO")
+        else:
+            column = box.column(align=True)
+            for group in tags:
+                name = rigforge.tag_display_name(group.name)
+                row = column.row(align=True)
+                row.operator(
+                    "forge.rf_cloth_tag",
+                    text=name,
+                    icon="CHECKBOX_HLT" if name in chosen else "CHECKBOX_DEHLT",
+                    depress=name in chosen,
+                ).tag = name
+
+        column = layout.column(align=True)
+        column.prop(ra, "cloth_name")
+        column.prop(ra, "cloth_output")
+        sub = column.column(align=True)
+        sub.active = ra.cloth_output == "shapekeys"
+        sub.prop(ra, "cloth_preset")
+        sub.prop(ra, "cloth_frames")
+        sub.prop(ra, "cloth_self_collision")
+
+        column = layout.column(align=True)
+        column.prop(ra, "cloth_offset_mm")
+        column.prop(ra, "cloth_thickness_mm")
+
+        layout.operator("forge.rf_cloth", icon="MOD_CLOTH", text="Make Garment")
+        row = layout.row()
+        row.active = False
+        row.label(text="The sim never ships: it bakes to a shape key")
+
+
+class VIEW3D_PT_forge_actions(_ForgePanel, Panel):
+    """Stage 6: the Godot action library."""
+
+    bl_idname = "VIEW3D_PT_forge_actions"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "Actions"
+
+    def draw(self, context):
+        layout = self.layout
+        ra = rigforge_anim.get_props(context)
+        if ra is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+
+        rig = rigforge_anim._rig_for(rigforge.active_mesh(context), {})
+        current = None
+        if rig is not None and rig.animation_data is not None:
+            current = rig.animation_data.action
+        row = layout.row(align=True)
+        row.active = False
+        row.label(text="Rig: %s" % (rig.name if rig is not None else "none found"),
+                  icon="ARMATURE_DATA")
+
+        box = layout.box()
+        if not len(bpy.data.actions):
+            box.label(text="No actions yet - name one below", icon="INFO")
+        for action in sorted(bpy.data.actions, key=lambda a: a.name.lower()):
+            start, end = action.frame_range
+            row = box.row(align=True)
+            row.operator(
+                "forge.rf_action_select", text="",
+                icon="RADIOBUT_ON" if action is current else "RADIOBUT_OFF",
+                emboss=False,
+            ).name = action.name
+            row.label(
+                text="%s   %d-%d" % (action.name, int(start), int(end)),
+                icon="ACTION" if not rigforge_anim.is_loop(action.name) else "FILE_REFRESH",
+            )
+            if rigforge_anim.nla_usage(action):
+                row.label(text="", icon="NLA")
+            row.operator("forge.rf_action", text="", icon="NLA_PUSHDOWN"
+                         ).action = "push_nla"
+            op = row.operator("forge.rf_action", text="", icon="X")
+            op.action = "delete"
+            op.name = action.name
+
+        column = layout.column(align=True)
+        row = column.row(align=True)
+        row.prop(ra, "action_name", text="")
+        row.prop(ra, "action_loop", text="", icon="FILE_REFRESH", toggle=True)
+        column.prop(ra, "action_source")
+        row = column.row(align=True)
+        row.operator("forge.rf_action", text="New", icon="ADD").action = "new"
+        row.operator("forge.rf_action", text="Duplicate",
+                     icon="DUPLICATE").action = "duplicate"
+
+        box = layout.box()
+        box.label(text="Retarget", icon="ANIM")
+        box.prop(ra, "retarget_path", text="")
+        row = box.row(align=True)
+        row.prop(ra, "retarget_name", text="")
+        row.prop(ra, "retarget_loop", text="", icon="FILE_REFRESH", toggle=True)
+        box.operator("forge.rf_retarget", icon="IMPORT", text="Retarget Clip")
+        row = box.row()
+        row.active = False
+        row.label(text=".bvh / .fbx you supply; FK chains receive it")
+
+        if ra.status:
+            box = layout.box()
+            box.alert = bool(ra.status_is_error)
+            box.label(text=ra.status, icon="ERROR" if ra.status_is_error else "INFO")
+        if ra.summary:
+            layout.label(text=ra.summary, icon="MESH_DATA")
+
+
 class VIEW3D_PT_forge_godot(_ForgePanel, Panel):
     """Stage 7: deform-only bake and glTF for Godot."""
 
@@ -477,6 +606,8 @@ _CLASSES = (
     VIEW3D_PT_forge_retopo,
     VIEW3D_PT_forge_uv,
     VIEW3D_PT_forge_rig,
+    VIEW3D_PT_forge_cloth,
+    VIEW3D_PT_forge_actions,
     VIEW3D_PT_forge_godot,
 )
 

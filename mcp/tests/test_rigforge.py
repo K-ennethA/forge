@@ -14,6 +14,7 @@ change to the contract and should break a test here first.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -1112,17 +1113,20 @@ def test_status_nudges_to_generate_once_a_metarig_exists(blender) -> None:
     assert "next: rigforge_generate_rig" in report
 
 
-def test_status_nudges_to_the_export_once_a_rig_exists(blender) -> None:
-    blender(
+def test_status_nudges_to_the_export_once_a_rig_has_actions(blender) -> None:
+    fake = blender(
         {
             "get_scene_info": scene_with(METARIG_OBJECT, RIG_OBJECT),
             "rigforge_list_tags": {"tags": TAGS},
+            "rigforge_action": {"actions": ["idle-loop", "walk-loop"]},
         },
-        connections=2,
+        connections=3,
     )
     report = server.rigforge_status("goblin")
 
+    assert sent(fake, "rigforge_action") == {"action": "list", "rig": "goblin_rig"}
     assert "rig goblin_rig" in report
+    assert "actions (2): idle-loop, walk-loop" in report
     assert "next: rigforge_export_godot" in report
 
 
@@ -1135,13 +1139,17 @@ def test_rigifys_own_default_names_count_as_this_characters_armatures(blender) -
             "get_scene_info": scene_with(generic_meta, generic_rig),
             "rigforge_list_tags": {"tags": TAGS},
         },
-        connections=2,
+        connections=3,  # the action probe is made and refused
     )
     report = server.rigforge_status("goblin")
 
     assert "metarig metarig" in report
     assert "rig RIG-metarig" in report, "RIG- is the generated rig, not a metarig"
-    assert "next: rigforge_export_godot" in report
+    assert "actions: unavailable" in report
+    assert "next: rigforge_export_godot" in report, (
+        "an add-on without the Phase 5 commands is unknown, not empty — the "
+        "export nudge must survive"
+    )
 
 
 def test_the_chain_starts_at_tagging_when_nothing_is_done(blender) -> None:
@@ -1170,3 +1178,706 @@ def test_tags_but_no_retopo_nudges_to_retopo(blender) -> None:
     report = server.rigforge_status()
 
     assert "next: rigforge_retopo" in report
+
+
+# ===========================================================================
+# Phase 5 — cloth and animation
+# ===========================================================================
+
+CLOTH_RESULT = {
+    "garment": "goblin_coat",
+    "output": "shapekeys",
+    "shape_keys": ["coat_settled"],
+    "warnings": [],
+}
+
+ACTION_LIST = {
+    "actions": [
+        {"name": "idle-loop", "loop": True, "frames": [1, 60], "nla": "base"},
+        {"name": "attack", "loop": False, "frames": [1, 18]},
+    ]
+}
+
+KEYFRAME_RESULT = {"action": "wave", "keys_set": 4, "frame_range": [1, 24]}
+
+RETARGET_RESULT = {
+    "action": "run-loop",
+    "mapped": {"mixamorig:Hips": "torso", "mixamorig:Spine": "spine_fk.001"},
+    "unmapped": ["mixamorig:LeftToeBase"],
+    "frames": 240,
+}
+
+WAVE = [
+    {"bone": "hand_ik.L", "frame": 1, "location": [0.0, 0.0, 0.0]},
+    {"bone": "hand_ik.L", "frame": 12, "location": [0.0, 0.0, 0.15]},
+    {"bone": "hand_ik.L", "frame": 24, "location": [0.0, 0.0, 0.0]},
+]
+
+
+# --- rigforge_cloth ---------------------------------------------------------
+
+
+def test_cloth_from_tags_sends_the_contract_parameters(blender) -> None:
+    fake = blender({"rigforge_cloth": CLOTH_RESULT})
+    server.rigforge_cloth(tags=["Torso", "Arm.L"], object="goblin_retopo")
+
+    assert fake.requests[0]["type"] == "rigforge_cloth"
+    params = sent(fake, "rigforge_cloth")
+    assert params == {
+        "object": "goblin_retopo",
+        "tags": ["Torso", "Arm.L"],
+        "preset": "cotton",
+        "output": "skin_tight",
+        "collision": True,
+    }
+    assert "use_selection" not in params, "the two are alternatives on the wire"
+
+
+def test_cloth_from_the_selection_sends_no_tag_list(blender) -> None:
+    fake = blender({"rigforge_cloth": CLOTH_RESULT})
+    report = server.rigforge_cloth(use_selection=True)
+
+    params = sent(fake, "rigforge_cloth")
+    assert params["use_selection"] is True
+    assert "tags" not in params
+    assert "the current selection" in report
+
+
+def test_cloth_tag_names_are_cleaned_like_every_other_tag(blender) -> None:
+    """"tag_Torso" is the add-on's spelling; both forms reach the wire as one."""
+    fake = blender({"rigforge_cloth": CLOTH_RESULT})
+    server.rigforge_cloth(tags=["tag_Torso", "Torso", " Arm.L ", ""])
+    assert sent(fake, "rigforge_cloth")["tags"] == ["Torso", "Arm.L"]
+
+
+def test_cloth_forwards_every_optional_setting(blender) -> None:
+    fake = blender({"rigforge_cloth": CLOTH_RESULT})
+    report = server.rigforge_cloth(
+        tags=["Torso"],
+        name="goblin_coat",
+        preset="heavy",
+        output="shapekeys",
+        offset_mm=4.0,
+        thickness_mm=1.5,
+        frames=90,
+        collision=False,
+        object="goblin_retopo",
+    )
+
+    assert sent(fake, "rigforge_cloth") == {
+        "object": "goblin_retopo",
+        "tags": ["Torso"],
+        "preset": "heavy",
+        "output": "shapekeys",
+        "collision": False,
+        "name": "goblin_coat",
+        "offset_mm": 4.0,
+        "thickness_mm": 1.5,
+        "frames": 90,
+    }
+    assert "heavy, shapekeys" in report
+    assert "no body collision" in report
+
+
+def test_omitted_cloth_settings_stay_off_the_wire(blender) -> None:
+    """Same rule as bake_resolution: the add-on's own default is not restated."""
+    fake = blender({"rigforge_cloth": CLOTH_RESULT})
+    server.rigforge_cloth(tags=["Torso"])
+
+    params = sent(fake, "rigforge_cloth")
+    for key in ("offset_mm", "thickness_mm", "frames", "name"):
+        assert key not in params, key
+
+
+def test_cloth_tags_and_use_selection_together_is_an_explicit_error() -> None:
+    with pytest.raises(ForgeError, match="not both"):
+        server.rigforge_cloth(tags=["Torso"], use_selection=True)
+
+
+def test_cloth_with_neither_says_how_to_name_the_area() -> None:
+    with pytest.raises(ForgeError) as exc:
+        server.rigforge_cloth()
+    message = str(exc.value)
+    assert "No garment area given" in message
+    assert "rigforge_list_tags" in message
+    assert "use_selection" in message
+
+
+@pytest.mark.parametrize(
+    ("tags", "fragment"),
+    [
+        ([], "was empty"),
+        (["   "], "was empty"),
+        ([{"tag": "Torso"}], "is not a tag name"),
+        (7, "must be a list of tag names"),
+    ],
+)
+def test_bad_cloth_tag_lists_are_refused_before_the_socket(
+    tags: Any, fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment):
+        server.rigforge_cloth(tags=tags)
+
+
+def test_frames_with_a_skin_tight_garment_is_an_error_not_a_no_op() -> None:
+    """skin_tight copies weights and never simulates, so `frames` cannot apply."""
+    with pytest.raises(ForgeError, match="only meaningful when a simulation runs"):
+        server.rigforge_cloth(tags=["Torso"], output="skin_tight", frames=60)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "fragment"),
+    [
+        ({"offset_mm": -1.0}, "between 0 and 100 mm"),
+        ({"thickness_mm": 500.0}, "between 0 and 100 mm"),
+        ({"output": "shapekeys", "frames": 0}, "between 1 and 1000"),
+        ({"output": "shapekeys", "frames": 5000}, "between 1 and 1000"),
+    ],
+)
+def test_out_of_range_cloth_settings_are_refused(
+    kwargs: dict[str, Any], fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment):
+        server.rigforge_cloth(tags=["Torso"], **kwargs)
+
+
+def test_the_bones_output_is_flagged_as_degraded_in_the_report(blender) -> None:
+    """v1 may fall back; the summary must say so before the user trusts it."""
+    fake = blender(
+        {
+            "rigforge_cloth": {
+                "garment": "goblin_cloak",
+                "output": "shapekeys",
+                "warnings": ["bone output is not implemented in v1; baked shape keys instead"],
+            }
+        }
+    )
+    report = server.rigforge_cloth(tags=["Torso"], output="bones")
+
+    assert sent(fake, "rigforge_cloth")["output"] == "bones"
+    assert "v1-degraded" in report
+    assert "WARNINGS (1):" in report
+    assert "! bone output is not implemented in v1" in report
+    assert "output: shapekeys" in report, "the report shows what actually happened"
+
+
+def test_cloth_report_names_the_garment_and_its_shape_keys(blender) -> None:
+    blender({"rigforge_cloth": CLOTH_RESULT})
+    report = server.rigforge_cloth(
+        tags=["Torso", "Arm.L"], output="shapekeys", object="goblin_retopo"
+    )
+
+    assert "Garment made from 'goblin_retopo'" in report
+    assert "covering Torso, Arm.L" in report
+    assert "garment: goblin_coat" in report
+    assert "shape keys (1): coat_settled" in report
+    assert "rigforge_keyframe" in report, "the report teaches the next step"
+
+
+def test_a_minimal_cloth_result_still_renders(blender) -> None:
+    blender({"rigforge_cloth": {}})
+    report = server.rigforge_cloth(use_selection=True)
+
+    assert "garment: (unnamed)" in report
+    assert "output: (not reported)" in report
+    assert "shape keys" not in report
+    assert "WARNINGS" not in report
+
+
+# --- rigforge_action --------------------------------------------------------
+
+
+def test_action_defaults_to_listing_the_library(blender) -> None:
+    fake = blender({"rigforge_action": ACTION_LIST})
+    report = server.rigforge_action()
+
+    assert fake.requests[0]["type"] == "rigforge_action"
+    assert sent(fake, "rigforge_action") == {"action": "list"}
+    assert "Action library" in report
+    assert "2 action(s)" in report
+
+
+def test_the_action_table_carries_loop_badges_and_frame_ranges(blender) -> None:
+    fake = blender({"rigforge_action": ACTION_LIST})
+    report = server.rigforge_action(rig="goblin_rig")
+
+    assert sent(fake, "rigforge_action") == {"action": "list", "rig": "goblin_rig"}
+    idle = next(line for line in report.splitlines() if "idle-loop" in line)
+    assert "yes" in idle and "1-60" in idle and "base" in idle
+    attack = next(line for line in report.splitlines() if "attack" in line)
+    assert "1-18" in attack
+
+
+def test_a_bare_action_name_still_gets_a_loop_badge_from_the_suffix(blender) -> None:
+    """The `-loop` suffix IS the convention, so a plain name list still reads."""
+    blender({"rigforge_action": {"actions": ["idle-loop", "jump"]}})
+    report = server.rigforge_action()
+
+    idle = next(line for line in report.splitlines() if "idle-loop" in line)
+    jump = next(line for line in report.splitlines() if "jump" in line)
+    assert "yes" in idle
+    assert "yes" not in jump
+
+
+def test_new_sends_the_name_and_the_loop_flag(blender) -> None:
+    fake = blender({"rigforge_action": {"actions": ["idle-loop"]}})
+    report = server.rigforge_action("new", name="idle-loop", loop=True, rig="goblin_rig")
+
+    assert sent(fake, "rigforge_action") == {
+        "action": "new",
+        "name": "idle-loop",
+        "rig": "goblin_rig",
+        "loop": True,
+    }
+    assert "Action created" in report
+    assert "looping (-loop)" in report
+
+
+def test_the_loop_suffix_is_the_addons_to_enforce(blender) -> None:
+    """A thin tool does not rewrite the name; the add-on applies the convention."""
+    fake = blender({"rigforge_action": {"actions": ["idle-loop"]}})
+    server.rigforge_action("new", name="idle", loop=True)
+
+    assert sent(fake, "rigforge_action")["name"] == "idle", "sent as typed"
+
+
+@pytest.mark.parametrize(
+    ("action", "kwargs", "expected"),
+    [
+        ("delete", {"name": "attack"}, {"action": "delete", "name": "attack"}),
+        (
+            "duplicate",
+            {"source": "walk-loop", "name": "run-loop", "loop": True},
+            {
+                "action": "duplicate",
+                "source": "walk-loop",
+                "name": "run-loop",
+                "loop": True,
+            },
+        ),
+        (
+            "rename",
+            {"source": "idle", "name": "idle-loop", "loop": True},
+            {"action": "rename", "source": "idle", "name": "idle-loop", "loop": True},
+        ),
+        ("push_nla", {}, {"action": "push_nla", "loop": False}),
+        ("push_nla", {"name": "idle-loop"}, {"action": "push_nla", "name": "idle-loop", "loop": False}),
+    ],
+)
+def test_each_action_puts_its_own_arguments_on_the_wire(
+    blender, action: str, kwargs: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    fake = blender({"rigforge_action": ACTION_LIST})
+    server.rigforge_action(action, **kwargs)
+    assert sent(fake, "rigforge_action") == expected
+
+
+def test_loop_is_omitted_where_it_cannot_mean_anything(blender) -> None:
+    """`list` and `delete` neither create nor name a clip, so no loop flag."""
+    fake = blender({"rigforge_action": ACTION_LIST})
+    server.rigforge_action("delete", name="attack", loop=True)
+    assert "loop" not in sent(fake, "rigforge_action")
+
+
+@pytest.mark.parametrize(
+    ("action", "kwargs", "fragment"),
+    [
+        ("new", {}, "needs `name`"),
+        ("delete", {}, "needs `name`"),
+        ("rename", {"name": "idle-loop"}, "needs `source`"),
+        ("duplicate", {"name": "run-loop"}, "needs `source`"),
+        ("list", {"name": "idle"}, "`name` means nothing to action 'list'"),
+        ("list", {"source": "idle"}, "`source` means nothing"),
+        ("new", {"name": "idle", "source": "walk"}, "`source` means nothing"),
+        ("delete", {"name": "idle", "source": "walk"}, "`source` means nothing"),
+    ],
+)
+def test_arguments_that_cannot_apply_are_refused_with_their_real_meaning(
+    action: str, kwargs: dict[str, Any], fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=re.escape(fragment)):
+        server.rigforge_action(action, **kwargs)
+
+
+def test_an_empty_library_teaches_the_two_ways_to_fill_it(blender) -> None:
+    blender({"rigforge_action": {"actions": []}})
+    report = server.rigforge_action("list")
+
+    assert "no actions yet" in report
+    assert "rigforge_keyframe" in report and "rigforge_retarget" in report
+
+
+def test_action_warnings_are_relayed(blender) -> None:
+    blender(
+        {
+            "rigforge_action": {
+                "actions": ["idle-loop"],
+                "warnings": ["'walk' had no keyframes and was not pushed"],
+            }
+        }
+    )
+    report = server.rigforge_action("push_nla", name="walk")
+
+    assert "Action pushed to an NLA track" in report
+    assert "WARNINGS (1):" in report
+    assert "! 'walk' had no keyframes" in report
+
+
+def test_a_minimal_action_result_still_renders(blender) -> None:
+    blender({"rigforge_action": {}})
+    report = server.rigforge_action("new", name="jump")
+
+    assert "Action created" in report
+    assert "(the add-on reported no action library)" in report
+
+
+# --- rigforge_keyframe ------------------------------------------------------
+
+
+def test_keyframe_sends_the_keys_and_the_contract_defaults(blender) -> None:
+    fake = blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    server.rigforge_keyframe(keys=WAVE, action="wave", rig="goblin_rig")
+
+    assert fake.requests[0]["type"] == "rigforge_keyframe"
+    assert sent(fake, "rigforge_keyframe") == {
+        "keys": WAVE,
+        "interpolation": "BEZIER",
+        "clear": False,
+        "action": "wave",
+        "rig": "goblin_rig",
+    }
+
+
+def test_keyframe_without_a_rig_or_action_targets_the_current_ones(blender) -> None:
+    """No names on the wire, and the report says which action it landed in."""
+    fake = blender({"rigforge_keyframe": {"keys_set": 3, "frame_range": [1, 24]}})
+    report = server.rigforge_keyframe(keys=WAVE)
+
+    params = sent(fake, "rigforge_keyframe")
+    assert "rig" not in params and "action" not in params
+    assert "the rig's current action" in report, "nothing was named, so say so"
+
+
+def test_the_action_the_addon_reports_wins_over_the_one_asked_for(blender) -> None:
+    """Blender may have created 'wave.001'; the report shows what actually holds."""
+    blender({"rigforge_keyframe": {"action": "wave.001", "keys_set": 3}})
+    report = server.rigforge_keyframe(keys=WAVE, action="wave")
+    assert "Keyframed 'wave.001'" in report
+
+
+def test_keys_keep_their_order_and_their_extra_fields(blender) -> None:
+    """Keys are self-describing, so nothing here sorts or prunes them."""
+    fake = blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    keys = [
+        {"bone": "spine.003", "frame": 24, "rotation_euler_deg": [0, 0, -10],
+         "easing": "EASE_OUT"},  # an unknown field survives, as `modules` do
+        {"bone": "spine.003", "frame": 1, "rotation_euler_deg": [0, 0, 0]},
+    ]
+    server.rigforge_keyframe(keys=keys)
+
+    sent_keys = sent(fake, "rigforge_keyframe")["keys"]
+    assert [k["frame"] for k in sent_keys] == [24, 1]
+    assert sent_keys[0]["easing"] == "EASE_OUT"
+
+
+def test_a_single_key_object_is_accepted_as_a_list_of_one(blender) -> None:
+    fake = blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    server.rigforge_keyframe(keys={"bone": "head", "frame": 1, "scale": [1, 1, 1]})
+    assert sent(fake, "rigforge_keyframe")["keys"] == [
+        {"bone": "head", "frame": 1, "scale": [1.0, 1.0, 1.0]}
+    ]
+
+
+def test_channels_are_normalised_to_three_floats(blender) -> None:
+    fake = blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    server.rigforge_keyframe(
+        keys=[{"bone": "head", "frame": "5", "rotation_euler_deg": [0, "15", 30]}]
+    )
+    assert sent(fake, "rigforge_keyframe")["keys"] == [
+        {"bone": "head", "frame": 5, "rotation_euler_deg": [0.0, 15.0, 30.0]}
+    ]
+
+
+def test_an_empty_key_list_teaches_the_described_motion_shape() -> None:
+    with pytest.raises(ForgeError) as exc:
+        server.rigforge_keyframe(keys=[])
+    message = str(exc.value)
+    assert "`keys` was empty" in message
+    assert '"bone"' in message and '"frame"' in message
+    assert "interpolation fills in" in message
+
+
+def test_a_key_with_no_channel_is_refused_because_it_would_key_nothing() -> None:
+    with pytest.raises(ForgeError) as exc:
+        server.rigforge_keyframe(
+            keys=[
+                {"bone": "hand_ik.L", "frame": 1, "location": [0, 0, 0]},
+                {"bone": "hand_ik.L", "frame": 12},
+            ]
+        )
+    message = str(exc.value)
+    assert "keys[1]" in message, "the failing entry is named"
+    assert "hand_ik.L" in message and "frame 12" in message
+    assert "rotation_euler_deg" in message and "location" in message
+
+
+@pytest.mark.parametrize(
+    ("keys", "fragment"),
+    [
+        ([{"frame": 1, "location": [0, 0, 0]}], "has no `bone`"),
+        ([{"bone": "head", "location": [0, 0, 0]}], "has no `frame`"),
+        ([{"bone": "head", "frame": 1.5, "scale": [1, 1, 1]}], "whole frame number"),
+        ([{"bone": "head", "frame": "soon", "scale": [1, 1, 1]}], "whole frame number"),
+        ([{"bone": "head", "frame": 1, "scale": [1, 1]}], "exactly three numbers"),
+        ([{"bone": "head", "frame": 1, "location": 3}], "three numbers"),
+        ([{"bone": "head", "frame": 1, "location": [0, "up", 0]}], "is not one"),
+        (["head"], "must be an object"),
+        ("head", "must be a list of keyframe objects"),
+    ],
+)
+def test_malformed_keys_are_refused_before_the_socket(
+    keys: Any, fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=re.escape(fragment)):
+        server.rigforge_keyframe(keys=keys)
+
+
+def test_clear_and_linear_reach_the_wire_and_the_summary(blender) -> None:
+    fake = blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    report = server.rigforge_keyframe(
+        keys=WAVE, action="wave", interpolation="LINEAR", clear=True
+    )
+
+    params = sent(fake, "rigforge_keyframe")
+    assert params["interpolation"] == "LINEAR"
+    assert params["clear"] is True
+    assert "LINEAR" in report
+    assert "existing keys cleared" in report
+
+
+def test_keyframe_report_counts_the_keys_the_bones_and_the_span(blender) -> None:
+    blender({"rigforge_keyframe": KEYFRAME_RESULT})
+    report = server.rigforge_keyframe(keys=WAVE, action="wave")
+
+    assert "Keyframed 'wave'" in report
+    assert "3 key(s) on 1 bone(s) over frames 1-24" in report
+    assert "keys set: 4" in report
+    assert "frames 1-24" in report
+    assert "rigforge_export_godot" in report
+
+
+def test_a_minimal_keyframe_result_still_renders(blender) -> None:
+    blender({"rigforge_keyframe": {}})
+    report = server.rigforge_keyframe(keys=WAVE)
+
+    assert "keys set: not reported" in report
+    assert "frames ?" in report
+
+
+# --- rigforge_retarget ------------------------------------------------------
+
+
+def clip(tmp_path: Path, name: str = "run.bvh") -> Path:
+    path = tmp_path / name
+    path.write_text("HIERARCHY\n", encoding="utf-8")
+    return path
+
+
+def test_retarget_resolves_the_clip_and_sends_the_contract_parameters(
+    blender, tmp_path: Path
+) -> None:
+    fake = blender({"rigforge_retarget": RETARGET_RESULT})
+    source = clip(tmp_path)
+
+    server.rigforge_retarget(str(source), action_name="run-loop", target_rig="goblin_rig")
+
+    assert fake.requests[0]["type"] == "rigforge_retarget"
+    assert sent(fake, "rigforge_retarget") == {
+        "source_path": str(source),
+        "action_name": "run-loop",
+        "mapping": "auto",
+        "loop": False,
+        "scale": "auto",
+        "target_rig": "goblin_rig",
+    }
+
+
+def test_the_action_name_defaults_to_the_clips_own_name(blender, tmp_path: Path) -> None:
+    fake = blender({"rigforge_retarget": RETARGET_RESULT})
+    server.rigforge_retarget(str(clip(tmp_path, "zombie_walk.fbx")))
+    assert sent(fake, "rigforge_retarget")["action_name"] == "zombie_walk"
+
+
+def test_a_missing_clip_fails_before_the_socket(tmp_path: Path) -> None:
+    with pytest.raises(ForgeError, match="No file at"):
+        server.rigforge_retarget(str(tmp_path / "gone.bvh"))
+
+
+def test_a_clip_in_the_wrong_format_is_refused_not_corrected(tmp_path: Path) -> None:
+    """Unlike an export path, the extension here describes a file that exists."""
+    source = clip(tmp_path, "run.glb")
+    with pytest.raises(ForgeError) as exc:
+        server.rigforge_retarget(str(source))
+    message = str(exc.value)
+    assert ".bvh or .fbx only" in message
+    assert "nothing is downloaded" in message
+
+
+@pytest.mark.parametrize("suffix", [".bvh", ".BVH", ".fbx", ".Fbx"])
+def test_both_import_formats_are_accepted_in_any_case(
+    blender, tmp_path: Path, suffix: str
+) -> None:
+    fake = blender({"rigforge_retarget": RETARGET_RESULT})
+    source = clip(tmp_path, f"run{suffix}")
+    server.rigforge_retarget(str(source))
+    assert sent(fake, "rigforge_retarget")["source_path"] == str(source)
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        ("auto", "auto"),
+        ("AUTO", "auto"),
+        (None, "auto"),
+        ({"mixamorig:Hips": "torso"}, {"mixamorig:Hips": "torso"}),
+        ('{"mixamorig:Hips": "torso"}', {"mixamorig:Hips": "torso"}),
+    ],
+)
+def test_mapping_is_auto_or_an_explicit_bone_dict(
+    blender, tmp_path: Path, given: Any, expected: Any
+) -> None:
+    fake = blender({"rigforge_retarget": RETARGET_RESULT})
+    server.rigforge_retarget(str(clip(tmp_path)), mapping=given)
+    assert sent(fake, "rigforge_retarget")["mapping"] == expected
+
+
+@pytest.mark.parametrize(
+    ("mapping", "fragment"),
+    [
+        ({}, "was empty"),
+        ({"mixamorig:Hips": ""}, "maps one clip bone to one rig bone"),
+        ({"mixamorig:Hips": ["torso"]}, "maps one clip bone to one rig bone"),
+        ("hips->torso", "Could not read mapping"),
+        (7, "Could not read mapping"),
+    ],
+)
+def test_bad_mappings_are_refused_before_the_socket(
+    tmp_path: Path, mapping: Any, fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment):
+        server.rigforge_retarget(str(clip(tmp_path)), mapping=mapping)
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"), [("auto", "auto"), (0.01, 0.01), ("2", 2.0), (None, "auto")]
+)
+def test_scale_is_auto_or_a_positive_multiplier(
+    blender, tmp_path: Path, given: Any, expected: Any
+) -> None:
+    fake = blender({"rigforge_retarget": RETARGET_RESULT})
+    server.rigforge_retarget(str(clip(tmp_path)), scale=given)
+    assert sent(fake, "rigforge_retarget")["scale"] == expected
+
+
+@pytest.mark.parametrize("scale", [0, -1.0, "backwards"])
+def test_an_impossible_scale_is_refused(tmp_path: Path, scale: Any) -> None:
+    with pytest.raises(ForgeError):
+        server.rigforge_retarget(str(clip(tmp_path)), scale=scale)
+
+
+def test_retarget_report_leads_with_the_unmapped_bones(blender, tmp_path: Path) -> None:
+    blender({"rigforge_retarget": RETARGET_RESULT})
+    report = server.rigforge_retarget(
+        str(clip(tmp_path)), action_name="run-loop", target_rig="goblin_rig", loop=True
+    )
+
+    assert "Retargeted run.bvh onto 'goblin_rig'" in report
+    assert "action: run-loop" in report
+    assert "frames: 240" in report
+    assert "mapped (2): mixamorig:Hips -> torso" in report
+    assert "UNMAPPED (1): mixamorig:LeftToeBase" in report
+    assert "drive nothing" in report
+    assert "looping (-loop)" in report
+
+
+def test_a_clean_retarget_says_everything_mapped(blender, tmp_path: Path) -> None:
+    blender(
+        {
+            "rigforge_retarget": {
+                "action": "run-loop",
+                "mapped": 22,
+                "unmapped": [],
+                "frames": [1, 240],
+            }
+        }
+    )
+    report = server.rigforge_retarget(str(clip(tmp_path)), mapping={"Hips": "torso"})
+
+    assert "mapped: 22" in report
+    assert "unmapped: none — every source bone found a home" in report
+    assert "1 explicit bone mapping(s)" in report
+    assert "frames: 1-240" in report
+
+
+def test_retarget_warnings_come_before_the_mapping(blender, tmp_path: Path) -> None:
+    blender(
+        {
+            "rigforge_retarget": {
+                "action": "run-loop",
+                "warnings": [
+                    {"level": "warning", "message": "the clip is 24 fps, the scene is 30"}
+                ],
+            }
+        }
+    )
+    report = server.rigforge_retarget(str(clip(tmp_path)), scale=0.01)
+    lines = report.splitlines()
+
+    assert "[WARNING] the clip is 24 fps" in report
+    warned = next(i for i, line in enumerate(lines) if "WARNINGS" in line)
+    mapped = next(i for i, line in enumerate(lines) if "mapped:" in line)
+    assert warned < mapped
+    assert "scale x0.01" in report
+
+
+def test_a_minimal_retarget_result_still_renders(blender, tmp_path: Path) -> None:
+    blender({"rigforge_retarget": {}})
+    report = server.rigforge_retarget(str(clip(tmp_path)))
+
+    assert "action: (unnamed)" in report
+    assert "frames: ?" in report
+    assert "mapped: not reported" in report
+
+
+# --- rigforge_status: the Phase 5 stage of the nudge chain -------------------
+
+
+def test_a_rig_with_no_actions_nudges_to_the_animation_tools(blender) -> None:
+    fake = blender(
+        {
+            "get_scene_info": scene_with(METARIG_OBJECT, RIG_OBJECT),
+            "rigforge_list_tags": {"tags": TAGS},
+            "rigforge_action": {"actions": []},
+        },
+        connections=3,
+    )
+    report = server.rigforge_status("goblin")
+
+    assert sent(fake, "rigforge_action") == {"action": "list", "rig": "goblin_rig"}
+    assert "actions: none yet" in report
+    assert "next: rigforge_action + rigforge_keyframe" in report
+    assert "rigforge_retarget" in report
+    assert "rigforge_cloth" in report, "cloth is optional, so it is a mention not a step"
+
+
+def test_the_action_library_is_not_asked_for_before_a_rig_exists(blender) -> None:
+    """No rig, no actions: status must not spend a round trip finding that out."""
+    fake = blender(
+        {"get_scene_info": scene_with(METARIG_OBJECT), "rigforge_list_tags": {"tags": TAGS}},
+        connections=2,
+    )
+    report = server.rigforge_status("goblin")
+
+    assert [r["type"] for r in fake.requests] == ["get_scene_info", "rigforge_list_tags"]
+    assert "actions" not in report
+    assert "next: rigforge_generate_rig" in report

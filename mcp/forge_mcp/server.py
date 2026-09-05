@@ -18,18 +18,25 @@ from . import __version__, blender_client, config, service_client
 from .errors import BackendUnavailable, ForgeError
 from .util import (
     GLTF_SUFFIXES,
+    MOCAP_SUFFIXES,
     PLATFORM_TARGET_FACES,
+    action_name_for_clip,
+    action_names,
     derivative_objects,
     ensure_parent_dir,
+    fmt_action_report,
     fmt_check_report,
+    fmt_cloth_report,
     fmt_export_report,
     fmt_joint,
+    fmt_keyframe_report,
     fmt_manifest_report,
     fmt_metarig_report,
     fmt_mode,
     fmt_number,
     fmt_overrides,
     fmt_params,
+    fmt_retarget_report,
     fmt_retopo_report,
     fmt_rig_report,
     fmt_scene_info,
@@ -40,11 +47,17 @@ from .util import (
     fmt_vector,
     fmt_weights_report,
     fmt_written_files,
+    keys_frame_range,
     next_rig_step,
+    normalize_action_name,
     normalize_actions,
+    normalize_bone_mapping,
     normalize_face_indices,
+    normalize_keys,
     normalize_modules,
+    normalize_retarget_scale,
     normalize_segment_mode,
+    normalize_tag_list,
     normalize_tag_name,
     object_name_for_script,
     ok,
@@ -73,10 +86,15 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   viewport) or partforge_export_segments (files for the slicer).
 - RigForge tools (rigforge_*) take a sculpt all the way to a game character:
   rigforge_tag (once per body part) -> rigforge_retopo -> rigforge_auto_uv ->
-  rigforge_metarig -> rigforge_generate_rig -> (animate) -> rigforge_export_godot.
+  rigforge_metarig -> rigforge_generate_rig -> rigforge_cloth (optional) ->
+  rigforge_action / rigforge_keyframe / rigforge_retarget -> rigforge_export_godot.
   rigforge_status is the one-call overview of where a mesh is in that pipeline
   and names the next step; rigforge_weights inspects or repairs the skinning
   between generate and export.
+- Animating from a description ("she waves, then folds her arms") is
+  rigforge_action to open the clip and rigforge_keyframe to sketch the pose at a
+  few frames — not raw Python. rigforge_retarget is for motion-capture files the
+  USER supplies (.bvh/.fbx); nothing is ever downloaded.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -1407,6 +1425,374 @@ def rigforge_export_godot(
     return fmt_export_report(subject, result, summary, str(out))
 
 
+# ---------------------------------------------------------------------------
+# RigForge (Phase 5) — cloth and animation
+# ---------------------------------------------------------------------------
+
+
+def _garment_source(tags: Optional[List[str]], use_selection: bool) -> Dict[str, Any]:
+    """Resolve the `tags` / `use_selection` pair, on rigforge_tag's rules.
+
+    The contract writes them as alternatives (``"tags": [names] |
+    "use_selection"``) and says nothing about both or neither, so this behaves
+    exactly like :func:`_face_target`: both is a refusal, because a garment cut
+    from the wrong faces is a silent wrong answer.
+    """
+    if tags is not None and use_selection:
+        raise ForgeError(
+            "Pass either `tags` (the body-part tags the garment covers) or "
+            "use_selection=true (Blender's current face selection), not both — "
+            "they name different geometry and there is no safe way to guess "
+            "which one you meant."
+        )
+    if tags is not None:
+        return {"tags": normalize_tag_list(tags)}
+    if use_selection:
+        return {"use_selection": True}
+    raise ForgeError(
+        "No garment area given. Pass `tags` — the body parts the garment covers, "
+        'e.g. ["Torso", "Arm.L", "Arm.R"]; rigforge_list_tags shows what the mesh '
+        "has — or use_selection=true to use Blender's current face selection."
+    )
+
+
+@app.tool()
+def rigforge_cloth(
+    tags: Optional[List[str]] = None,
+    use_selection: bool = False,
+    name: Optional[str] = None,
+    preset: Literal["cotton", "leather", "heavy"] = "cotton",
+    output: Literal["skin_tight", "shapekeys", "bones"] = "skin_tight",
+    offset_mm: Optional[float] = None,
+    thickness_mm: Optional[float] = None,
+    frames: Optional[int] = None,
+    collision: bool = True,
+    object: Optional[str] = None,
+) -> str:
+    """Grow a garment off a body mesh: duplicate the tagged area, offset, simulate.
+
+    Step six, and the optional one: rigforge_tag -> rigforge_retopo ->
+    rigforge_auto_uv -> rigforge_metarig -> rigforge_generate_rig ->
+    **rigforge_cloth** -> rigforge_action / rigforge_keyframe / rigforge_retarget
+    -> rigforge_export_godot. Run it on the RETOPO mesh (the one that is skinned),
+    because the garment inherits that mesh's weights and density.
+
+    Pass EXACTLY ONE of:
+    - `tags` — the body parts the garment covers, e.g. ["Torso", "Arm.L", "Arm.R"].
+    - `use_selection=true` — whatever faces are selected in Blender now.
+    Passing both, or neither, is an error.
+
+    `output` decides how the garment MOVES, and it is the choice that matters:
+    - "skin_tight" (default): copies the body's weights, no simulation. A tunic
+      that moves exactly with the character. Cheap, deterministic, exports
+      perfectly, and right for most game characters.
+    - "shapekeys": runs the cloth sim and bakes the settled result into shape
+      key(s) — the drape a skin-tight copy cannot give you, still with no runtime
+      cost. `frames` is how long the sim settles for.
+    - "bones": v1-DEGRADED. The add-on may warn and fall back to another output;
+      read the report's WARNINGS block before assuming a bone chain exists. Ask
+      for it only when the user specifically wants engine-driven cloth bones.
+
+    - `preset`: "cotton" (light, many folds), "leather" (stiff, heavy folds),
+      "heavy" (cloak/curtain weight).
+    - `offset_mm` / `thickness_mm`: how far the garment floats off the skin and
+      how thick the shell is. Omit both to use the add-on's own defaults.
+    - `frames`: simulation length. Only meaningful when a sim runs, so passing it
+      with "skin_tight" is an error rather than a silent no-op.
+    - `collision`: True (default) makes the body collide with the cloth. Turning
+      it off is faster and always wrong-looking.
+    - `name`: the garment object's name; omit and the add-on names it after the
+      body and the tags.
+    """
+    params = _target(object)
+    params.update(_garment_source(tags, use_selection))
+
+    if frames is not None and output == "skin_tight":
+        raise ForgeError(
+            "`frames` is only meaningful when a simulation runs (output "
+            "'shapekeys' or 'bones'). 'skin_tight' copies the body's weights and "
+            "never simulates — drop `frames`, or ask for output='shapekeys'."
+        )
+    for label, value in (("offset_mm", offset_mm), ("thickness_mm", thickness_mm)):
+        if value is not None and not 0.0 <= float(value) <= 100.0:
+            raise ForgeError(
+                f"{label} must be between 0 and 100 mm; got {value}. These are "
+                "millimetres on the character's own scale, not scene units."
+            )
+    if frames is not None and not 1 <= int(frames) <= 1000:
+        raise ForgeError(
+            f"frames must be between 1 and 1000; got {frames}. A garment settles "
+            "in 30-120 frames — more than that is usually a stuck simulation."
+        )
+
+    params["preset"] = preset
+    params["output"] = output
+    params["collision"] = bool(collision)
+    if name is not None and str(name).strip():
+        params["name"] = str(name).strip()
+    if offset_mm is not None:
+        params["offset_mm"] = float(offset_mm)
+    if thickness_mm is not None:
+        params["thickness_mm"] = float(thickness_mm)
+    if frames is not None:
+        params["frames"] = int(frames)
+
+    result = blender_client.send_command("rigforge_cloth", params)
+
+    covers = (
+        "the current selection"
+        if use_selection
+        else ", ".join(params.get("tags", [])) or "?"
+    )
+    summary = f"{preset}, {output}, covering {covers}"
+    if output == "bones":
+        summary += " (bones output is v1-degraded — check the warnings)"
+    if not collision:
+        summary += ", no body collision"
+    return fmt_cloth_report(
+        f"'{object}'" if object else "the active object", result, summary
+    )
+
+
+#: Which `rigforge_action` arguments each action actually uses. The contract
+#: lists `name`/`source` once for all six, so the meaning of each is pinned here
+#: rather than guessed inside Blender: a `source` on a "delete" is a typo worth
+#: refusing, not a parameter to drop on the floor.
+_ACTION_NEEDS_NAME = {"new", "delete", "rename"}
+_ACTION_NEEDS_SOURCE = {"duplicate", "rename"}
+_ACTION_TAKES_NAME = {"new", "delete", "rename", "duplicate", "push_nla"}
+_ACTION_TAKES_SOURCE = {"duplicate", "rename"}
+_ACTION_TAKES_LOOP = {"new", "duplicate", "rename", "push_nla"}
+
+_ACTION_ROLES = {
+    "new": "`name` is the new action's name",
+    "delete": "`name` is the action to delete",
+    "duplicate": "`source` is the action to copy, `name` the copy's name (optional)",
+    "rename": "`source` is the current name, `name` the new one",
+    "push_nla": "`name` is the action to push (omit for the rig's current one)",
+    "list": "'list' takes neither `name` nor `source` — it reports the whole library",
+}
+
+
+@app.tool()
+def rigforge_action(
+    action: Literal["new", "list", "delete", "duplicate", "rename", "push_nla"] = "list",
+    name: Optional[str] = None,
+    source: Optional[str] = None,
+    rig: Optional[str] = None,
+    loop: bool = False,
+) -> str:
+    """Manage the Godot action library on a rig: the clips, not their contents.
+
+    Actions are the animation clips that ship — `idle`, `walk`, `run`, `jump`,
+    `attack`. This tool creates, lists, deletes, copies, renames and stacks them;
+    rigforge_keyframe puts motion INSIDE one, and rigforge_retarget imports one
+    from a user-supplied capture file.
+
+    Which arguments each `action` uses:
+    - "list" (default): the whole library, with a loop badge and frame range per
+      action. Takes neither `name` nor `source`.
+    - "new": `name` is the clip to create.
+    - "delete": `name` is the clip to remove.
+    - "duplicate": `source` is the clip to copy; `name` names the copy (omit and
+      the add-on picks one).
+    - "rename": `source` is the current name, `name` the new one.
+    - "push_nla": stash the action onto an NLA track so the next one starts
+      clean — Blender only holds one active action at a time. `name` picks which,
+      omit it for the rig's current action.
+
+    `loop=true` marks a looping clip, and the add-on enforces the `-loop` name
+    suffix that Godot's importer reads (`idle-loop`, `walk-loop`); the name is
+    sent as typed and the report shows whatever the add-on settled on. Loop the
+    cycles (idle/walk/run), never the one-shots (jump/attack).
+
+    `rig` names the armature; omit it for the active/only one.
+    """
+    if name is not None and str(name).strip() and action not in _ACTION_TAKES_NAME:
+        raise ForgeError(
+            f"`name` means nothing to action '{action}': {_ACTION_ROLES[action]}."
+        )
+    if source is not None and str(source).strip() and action not in _ACTION_TAKES_SOURCE:
+        raise ForgeError(
+            f"`source` means nothing to action '{action}': {_ACTION_ROLES[action]}. "
+            "`source` is only the action being copied (duplicate) or renamed."
+        )
+
+    params: Dict[str, Any] = {"action": action}
+    if action in _ACTION_NEEDS_NAME and not (name and str(name).strip()):
+        raise ForgeError(
+            f"action '{action}' needs `name`: {_ACTION_ROLES[action]}."
+        )
+    if action in _ACTION_NEEDS_SOURCE and not (source and str(source).strip()):
+        raise ForgeError(
+            f"action '{action}' needs `source`: {_ACTION_ROLES[action]}."
+        )
+
+    if name is not None and str(name).strip():
+        params["name"] = normalize_action_name(name)
+    if source is not None and str(source).strip():
+        params["source"] = normalize_action_name(source, label="source action name")
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if action in _ACTION_TAKES_LOOP:
+        params["loop"] = bool(loop)
+
+    result = blender_client.send_command("rigforge_action", params)
+
+    bits = [f"'{params['name']}'"] if "name" in params else []
+    if "source" in params:
+        bits.insert(0, f"from '{params['source']}'")
+    if action in _ACTION_TAKES_LOOP:
+        bits.append("looping (-loop)" if loop else "one-shot")
+    bits.append(f"rig {params['rig']}" if "rig" in params else "the active rig")
+    return fmt_action_report(action, result, ", ".join(bits))
+
+
+@app.tool()
+def rigforge_keyframe(
+    keys: List[Dict[str, Any]],
+    action: Optional[str] = None,
+    rig: Optional[str] = None,
+    interpolation: Literal["BEZIER", "LINEAR"] = "BEZIER",
+    clear: bool = False,
+) -> str:
+    """Set a batch of keyframes on control bones — the described-motion tool.
+
+    THIS is how a description becomes animation. Sketch the pose at a few key
+    frames and let the interpolation do the rest: a wave is the hand up at frame
+    1, out at 8, back at 16, down at 24 — four keys, not twenty-four. Do not
+    reach for execute_blender_python for this; one structured call keys every
+    bone at once and reports the frame range it covered.
+
+    `keys` is a list of `{"bone", "frame", ...}` objects, each moving at least
+    one channel:
+    - `rotation_euler_deg`: [x, y, z] in DEGREES (the add-on converts).
+    - `location`: [x, y, z] in Blender units (metres), relative to the rest pose.
+    - `scale`: [x, y, z], 1.0 being unscaled.
+    A key with no bone, no frame, or no channel at all is refused here — it would
+    reach Blender as a silent no-op.
+
+      keys=[{"bone": "hand_ik.L", "frame": 1,  "location": [0, 0, 0]},
+            {"bone": "hand_ik.L", "frame": 12, "location": [0, 0, 0.15]},
+            {"bone": "hand_ik.L", "frame": 24, "location": [0, 0, 0]}]
+
+    - `interpolation`: "BEZIER" (default) eases in and out — organic motion, and
+      the reason a handful of keys reads as animation. "LINEAR" is constant
+      speed: mechanical parts, conveyor belts, held poses.
+    - `clear`: True wipes the action's existing keys first, so a re-run replaces
+      the motion instead of layering onto it. Use it when iterating on the same
+      description.
+    - `action`: which clip to key; omit for the rig's current action. Open a
+      named one with rigforge_action(action="new", ...) first — that is what
+      makes it exportable as its own Godot clip.
+    - `rig`: the armature; omit for the active/only one. Bone names are the
+      CONTROL rig's (`hand_ik.L`, `spine_fk.003`), not the DEF- deform bones.
+    """
+    wanted = normalize_keys(keys)
+    params: Dict[str, Any] = {
+        "keys": wanted,
+        "interpolation": interpolation,
+        "clear": bool(clear),
+    }
+    if action is not None and str(action).strip():
+        params["action"] = normalize_action_name(action)
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+
+    result = blender_client.send_command("rigforge_keyframe", params)
+
+    span = keys_frame_range(wanted)
+    bones = sorted({str(key["bone"]) for key in wanted})
+    summary = (
+        f"{len(wanted)} key(s) on {len(bones)} bone(s)"
+        + (f" over frames {span[0]}-{span[1]}" if span else "")
+        + f", {interpolation}"
+        + (", existing keys cleared" if clear else "")
+    )
+    subject = (
+        f"'{params['action']}'" if "action" in params else "the rig's current action"
+    )
+    return fmt_keyframe_report(result, summary, subject)
+
+
+@app.tool()
+def rigforge_retarget(
+    source_path: str,
+    action_name: Optional[str] = None,
+    target_rig: Optional[str] = None,
+    mapping: Union[str, Dict[str, str]] = "auto",
+    loop: bool = False,
+    scale: Union[str, float] = "auto",
+) -> str:
+    """Transfer a motion-capture clip the user has onto this rig, as one action.
+
+    Imports the file, maps its bones onto the rig's, transfers the rotations
+    (plus the hip location), bakes the result into an action and deletes the
+    import. Use it instead of rigforge_keyframe when real captured motion exists;
+    the two produce the same kind of thing — an action in the library — so they
+    mix freely on one character.
+
+    `source_path` is a file the USER supplies: `.bvh` or `.fbx`, nothing else,
+    and nothing is ever downloaded. Point it at a capture they already have on
+    disk (Mixamo exports, a mocap session, a purchased pack). The path is
+    resolved and must exist; another extension is refused rather than corrected,
+    because the format is the file's, not ours.
+
+    - `action_name`: what the clip becomes in the library. Omit it and the file's
+      own name is used — pass one to follow the Godot convention (`run-loop`).
+    - `mapping`: "auto" (default) matches bones by name heuristics and REPORTS
+      what did not land — read that list, it is the whole story of a retarget.
+      Pass `{"mixamorig:Hips": "torso", ...}` for the bones it gets wrong; only
+      the entries you give override the heuristics.
+    - `loop`: True for a cycle (walk, run, idle), which also drives the `-loop`
+      name convention Godot reads.
+    - `scale`: "auto" (default) fits the clip's proportions to the rig — a capture
+      of a 1.8 m human on a 0.9 m goblin. A number is an explicit multiplier.
+    - `target_rig`: the armature; omit for the active/only one.
+    """
+    clip = resolve_path(source_path, must_exist=True, label="source clip path")
+    if clip.suffix.lower() not in MOCAP_SUFFIXES:
+        raise ForgeError(
+            f"{clip} is not a motion-capture clip Blender imports natively. "
+            "rigforge_retarget reads .bvh or .fbx only (both are built in; "
+            "nothing is downloaded). Convert the clip, or point at the .bvh/.fbx "
+            "the user already has."
+        )
+
+    params: Dict[str, Any] = {
+        "source_path": str(clip),
+        "action_name": normalize_action_name(
+            action_name if action_name is not None and str(action_name).strip()
+            else action_name_for_clip(clip)
+        ),
+        "mapping": normalize_bone_mapping(mapping),
+        "loop": bool(loop),
+        "scale": normalize_retarget_scale(scale),
+    }
+    if target_rig and target_rig.strip():
+        params["target_rig"] = target_rig.strip()
+
+    result = blender_client.send_command("rigforge_retarget", params)
+
+    given = params["mapping"]
+    summary = (
+        f"action '{params['action_name']}'"
+        + (", looping (-loop)" if loop else ", one-shot")
+        + (
+            ", automatic bone mapping"
+            if given == "auto"
+            else f", {len(given)} explicit bone mapping(s)"
+        )
+        + (
+            ", scale auto-fitted"
+            if params["scale"] == "auto"
+            else f", scale x{fmt_number(params['scale'])}"
+        )
+    )
+    subject = f"'{target_rig.strip()}'" if target_rig and target_rig.strip() else "the rig"
+    return fmt_retarget_report(clip.name, subject, result, summary)
+
+
 @app.tool()
 def rigforge_status(object: Optional[str] = None) -> str:
     """Where is this mesh in the RigForge pipeline, and what is the next call?
@@ -1414,9 +1800,11 @@ def rigforge_status(object: Optional[str] = None) -> str:
     One call that answers "what have we done to this character so far": the
     object's vertex/face counts, every body-part tag with its size, whether a
     retopo or LOD mesh exists alongside it, whether a metarig or a generated rig
-    exists — and the one next step in the chain (tag -> retopo -> auto_uv ->
-    metarig -> generate_rig -> animate -> export_godot). Start here before
-    tagging, retopologising or rigging something you did not just create.
+    exists, and — once a rig does — what is in its action library. Then the one
+    next step in the chain (tag -> retopo -> auto_uv -> metarig -> generate_rig
+    -> [cloth] -> action/keyframe/retarget -> export_godot). Start here before
+    tagging, retopologising, rigging or animating something you did not just
+    create.
 
     Omit `object` to report on Blender's active object.
     """
@@ -1491,6 +1879,29 @@ def rigforge_status(object: Optional[str] = None) -> str:
             "  armatures: none — run rigforge_metarig once the retopo mesh is tagged"
         )
 
+    # The action library only exists once a rig does, and only an add-on with the
+    # Phase 5 commands can answer — so this is best-effort, exactly like the tag
+    # call above. `None` means "could not ask", which is NOT the same as "empty".
+    has_actions: Optional[bool] = None
+    if rigs:
+        try:
+            listed = blender_client.send_command(
+                "rigforge_action", {"action": "list", "rig": rigs[0]}
+            ).get("actions")
+        except ForgeError as exc:
+            lines.append(f"  actions: unavailable — {exc}")
+        else:
+            names = action_names(listed)
+            has_actions = bool(names)
+            if names:
+                lines.append(f"  actions ({len(names)}): " + ", ".join(names))
+            else:
+                lines.append(
+                    "  actions: none yet — open one with rigforge_action and "
+                    "sketch it with rigforge_keyframe, or import a clip with "
+                    "rigforge_retarget"
+                )
+
     lines.append("")
     lines.append(
         "  next: "
@@ -1499,6 +1910,7 @@ def rigforge_status(object: Optional[str] = None) -> str:
             has_retopo=bool(siblings),
             has_metarig=bool(metarigs),
             has_rig=bool(rigs),
+            has_actions=has_actions,
         )
     )
     return "\n".join(lines)

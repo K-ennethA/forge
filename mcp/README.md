@@ -4,7 +4,7 @@ A stdio MCP server that gives Claude Code one tool surface over both Forge backe
 
 | Backend | Address | Used for |
 |---|---|---|
-| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV/rig/Godot export |
+| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV/rig/cloth/animation/Godot export |
 | Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
@@ -46,17 +46,18 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 36-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 40-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
 a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket.
-`tests/test_rigforge.py` does the same for the Phase 3 and Phase 4 `rigforge_*` tools: the
-command name and every parameter of each request, the `faces` / `use_selection` either-or,
-the `actions` `"all"`-or-list forms, and each report rendered from a canned, contract-shaped
-result — including a warnings-heavy one and a nearly empty one, because the add-on side is
-being written in parallel and a thin result must still render. Nothing in the suite needs
-Blender or the geometry service, and nothing binds or connects to 9876/8765.
+`tests/test_rigforge.py` does the same for the Phase 3, 4 and 5 `rigforge_*` tools: the
+command name and every parameter of each request, the `faces` / `use_selection` and
+`tags` / `use_selection` either-ors, the `actions` `"all"`-or-list forms, per-key keyframe
+validation, the `.bvh`/`.fbx` refusal, and each report rendered from a canned,
+contract-shaped result — including a warnings-heavy one and a nearly empty one, because the
+add-on side is being written in parallel and a thin result must still render. Nothing in the
+suite needs Blender or the geometry service, and nothing binds or connects to 9876/8765.
 
 ### Registering with Claude Code
 
@@ -186,7 +187,7 @@ unwrap. Each takes an optional `object` name; omitted means the active object.
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `rigforge_status` | — | One-call overview: vertex/face counts, every tag with its size, whether a `_retopo` / `_lod*` sibling and a metarig/rig exist — and the one next call in the chain. Start here. |
+| `rigforge_status` | — | One-call overview: vertex/face counts, every tag with its size, whether a `_retopo` / `_lod*` sibling and a metarig/rig exist, the rig's action library once there is a rig — and the one next call in the chain. Start here. |
 | `rigforge_list_tags` | — | The body-part tags on a mesh with their vertex/face counts. |
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace` | Label faces as a body part ("Head", "Arm.L", "Ear.R"). Exactly one of `faces` / `use_selection`. |
 | `rigforge_untag` | `tag`, `faces` \| `use_selection` | Remove faces from a tag, or omit both to delete the tag entirely. Never touches geometry. |
@@ -221,8 +222,41 @@ are 4 and 8 — and is sent for `report` too, as the limit the report measures a
 `CONTROL BONES KEPT` in its summary, because that is a debugging export, not a shipping one.
 Every one of the four relays the add-on's `warnings` as its own block, ahead of the tables.
 
-**A typical run — tag, retopo, unwrap, rig, export.** The tagging step is two calls whenever
-the user describes geometry by shape rather than by index:
+### RigForge cloth and animation (Phase 5)
+
+The last four. `rigforge_cloth` is optional (not every character wears something); the other
+three are how a rigged mesh gets motion — either described, or captured.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `rigforge_cloth` | `tags` \| `use_selection`, `preset`, `output`, `name`, `offset_mm`, `thickness_mm`, `frames`, `collision` | Duplicates the tagged faces, offsets them off the skin, solidifies and (for a simulated output) runs the cloth sim against the body. Reports the garment, how it is driven and any shape keys. |
+| `rigforge_action` | `action` `new`/`list`/`delete`/`duplicate`/`rename`/`push_nla`, `name`, `source`, `rig`, `loop` | Manages the Godot action library — the clips themselves. `list` tables every action with its loop badge and frame range. |
+| `rigforge_keyframe` | `keys`, `action`, `rig`, `interpolation`, `clear` | **The described-motion tool.** Batch-keys control bones: sketch the pose at a few frames and let Bezier do the rest. Reports keys set and the frame span. |
+| `rigforge_retarget` | `source_path`, `action_name`, `target_rig`, `mapping`, `loop`, `scale` | Imports a `.bvh`/`.fbx` the **user** supplies, maps its bones onto the rig, bakes an action and deletes the import. Reports the unmapped bones loudly — that list is the whole story of a retarget. |
+
+`output` is the cloth choice that matters: `skin_tight` (default) copies the body's weights
+and never simulates — cheap, deterministic, right for most game characters; `shapekeys` bakes
+the settled sim into shape key(s); `bones` is **v1-degraded**, so the add-on may warn and fall
+back, and the report's WARNINGS block is what says which. `preset` is `cotton` / `leather` /
+`heavy`. `offset_mm`, `thickness_mm`, `frames` and `name` only go on the wire when given —
+omitted means the add-on's own default — and `frames` with `skin_tight` is an error, because
+nothing simulates there.
+
+`rigforge_keyframe`'s `keys` are `{"bone", "frame", ...}` objects carrying at least one of
+`rotation_euler_deg` (degrees), `location` (metres) or `scale`; a key missing its bone, its
+frame or every channel is refused here rather than reaching Blender as a silent no-op. Bone
+names are the **control** rig's (`hand_ik.L`), not the `DEF-` deform bones. Entry order and
+unknown fields are preserved, the way `modules` entries are.
+
+`loop=true` marks a looping clip and the add-on enforces the `-loop` suffix Godot's importer
+reads; names cross the wire as typed and the report shows whatever the add-on settled on.
+`mapping` is `"auto"` or `{clip_bone: rig_bone}` for only the bones the heuristics get wrong;
+`scale` is `"auto"` or a positive multiplier. A `source_path` that is not `.bvh`/`.fbx` is
+refused rather than corrected — unlike an export path, that extension describes a file that
+already exists, and nothing is ever downloaded.
+
+**A typical run — tag, retopo, unwrap, rig, dress, animate, export.** The tagging step is two
+calls whenever the user describes geometry by shape rather than by index:
 
 ```text
 # "the two lumps on top of the head are its ears"
@@ -260,26 +294,59 @@ rigforge_generate_rig(metarig="goblin_metarig", mesh="goblin_retopo")
 rigforge_weights(action="report", max_influences=4, object="goblin_retopo")
 rigforge_weights(action="cleanup", max_influences=4, object="goblin_retopo")
 
-# ... animate in Blender (or import existing actions) ...
+# give it a tunic: the torso and arm tags, cotton, moving with the body
+rigforge_cloth(tags=["Torso", "Arm.L", "Arm.R"], preset="cotton", output="skin_tight",
+               name="goblin_tunic", object="goblin_retopo")
+
+# open a looping clip, then describe the idle in four poses and let Bezier do the rest
+rigforge_action(action="new", name="idle-loop", loop=True, rig="goblin_rig")
+rigforge_keyframe(rig="goblin_rig", action="idle-loop", clear=True, keys=[
+    # breathe: chest up by frame 24, back down by 48, and frame 1 == frame 48 so it cycles
+    {"bone": "spine_fk.002", "frame": 1,  "rotation_euler_deg": [0, 0, 0]},
+    {"bone": "spine_fk.002", "frame": 24, "rotation_euler_deg": [-3, 0, 0]},
+    {"bone": "spine_fk.002", "frame": 48, "rotation_euler_deg": [0, 0, 0]},
+    # the head drifts a little off the beat, which is what stops it reading as a machine
+    {"bone": "head",         "frame": 1,  "rotation_euler_deg": [0, 0, 2]},
+    {"bone": "head",         "frame": 30, "rotation_euler_deg": [0, 0, -2]},
+    {"bone": "head",         "frame": 48, "rotation_euler_deg": [0, 0, 2]},
+])
+
+# stash it so the next clip starts clean, then check the library
+rigforge_action(action="push_nla", name="idle-loop", rig="goblin_rig")
+rigforge_action(action="list", rig="goblin_rig")
+
+# a captured clip the USER already has on disk, mapped by name, as a second action
+rigforge_retarget(source_path="C:/mocap/run.bvh", target_rig="goblin_rig",
+                  action_name="run-loop", loop=True)   # read the UNMAPPED list
 
 # bake onto the deform bones, strip the controls, write the glTF for Godot
 rigforge_export_godot(path="projects/goblin/godot/goblin.glb", rig="goblin_rig",
-                      meshes=["goblin_retopo", "goblin_lod1"], actions="all")
+                      meshes=["goblin_retopo", "goblin_lod1", "goblin_tunic"],
+                      actions="all")
 
 # and at any point: where are we, and what is the next call?
 rigforge_status(object="goblin")
 ```
 
-Four rules worth stating up front, because each one is an error rather than a guess:
+Six rules worth stating up front, because each one is an error rather than a guess:
 
-- `faces` and `use_selection` are alternatives. Passing both is refused (they name different
-  geometry); passing neither is refused with a pointer back to the two-call flow above.
+- `faces` and `use_selection` are alternatives, and so are `tags` and `use_selection` on
+  `rigforge_cloth`. Passing both is refused (they name different geometry); passing neither is
+  refused with a pointer back to the two-call flow above.
 - `path` is only meaningful for `action` `save`/`load`. With `get` it is an error, not a
-  silent no-op.
+  silent no-op. `frames` is only meaningful when a cloth sim runs; with `skin_tight` it is the
+  same kind of error.
 - `bake_resolution` only goes on the wire when `bake_normals` is true, the same way
-  `remesh`'s `voxel_size` is only sent in voxel mode.
+  `remesh`'s `voxel_size` is only sent in voxel mode — and `rigforge_action` only sends `loop`
+  for the actions that create or name a clip.
 - `max_influences` outside 1..8 and a `modules` entry that is not an object are refused
   before the socket, with the shape that would have worked.
+- `name` and `source` mean different things per `rigforge_action` action, so one that cannot
+  apply (a `source` on a `delete`, a `name` on a `list`) is refused with what each one
+  actually means for that action.
+- A keyframe missing its `bone`, its `frame` or every channel is refused by index
+  (`keys[3] ('hand_ik.L' at frame 12) sets no channel`), because the alternative is Blender
+  cheerfully keying nothing.
 
 ## Troubleshooting
 
@@ -332,7 +399,13 @@ stdin rather than exiting with a traceback (Ctrl+C to quit).
   absolute; missing export directories are created; export extensions are corrected to match
   the requested format. `rigforge_export_godot` is the one place two extensions are both
   right: `.gltf` is honoured when asked for, anything else (including no suffix) becomes
-  `.glb`, the single-file form Godot prefers.
+  `.glb`, the single-file form Godot prefers. An **input** path is the opposite case:
+  `rigforge_retarget` refuses anything but `.bvh`/`.fbx` rather than rewriting the suffix,
+  because that extension describes a file the user already has.
+- **The status chain is three-valued about actions.** `rigforge_status` asks the rig for its
+  action library, but only once a rig exists, and only best-effort: an add-on without the
+  Phase 5 commands reports `actions: unavailable`, which is *unknown*, not empty — so the
+  next-step nudge stays on `rigforge_export_godot` rather than inventing an animation step.
 - **Ambiguity is an error, not a default.** Where two arguments could both apply
   (`faces` and `use_selection`) or one cannot apply at all (`path` with `action="get"`), the
   tool refuses and says why. A silent precedence rule here tags the wrong geometry or writes

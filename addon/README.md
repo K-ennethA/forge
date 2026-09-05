@@ -12,7 +12,10 @@ The Blender half of the Forge pipeline. It does three things:
 3. Renders the **RigForge panel**: semantic tags on a sculpt, the `character.json`
    manifest, one-click retopology and auto-UV (Phase 3), then the rig itself — a Rigify
    metarig fitted to those tags, generated, weighted and cleaned up, and exported to a
-   Godot-ready glTF (Phase 4). That is the whole run: sculpt in, playable character out.
+   Godot-ready glTF (Phase 4) — and finally clothes and motion: a garment grown from the
+   tags with its cloth sim baked to a shape key, the Godot action library, structured
+   keyframing and mocap retargeting (Phase 5). That is the whole run: sculpt in, dressed
+   and animated playable character out.
 
 Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` only.
 
@@ -155,6 +158,19 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 
 Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
 sketch; every one has a default that reproduces the sketch's behaviour.
+
+### RigForge commands (Phase 5 — cloth and animation)
+
+| type | params | does |
+|---|---|---|
+| `rigforge_cloth` | `object?`, `tags` \| `use_selection`, `name?`, `offset_mm?`, `thickness_mm?`, `preset` `cotton`\|`leather`\|`heavy`, `output` `skin_tight`\|`shapekeys`\|`bones`, `frames?`, `collision?`, **`self_collision?`**, **`subdivide?`**, **`rig?`** | grows a garment from the tagged faces, offsets, thickens, weights it to the rig, and (for `shapekeys`) settles it with a cloth sim baked into a `Settled` shape key. Returns `garment`, `output`, `shape_keys`, `physics`, `weights`, `sim`, `warnings` |
+| `rigforge_action` | `action` `new`\|`list`\|`delete`\|`duplicate`\|`rename`\|`push_nla`, `name?`, `source?`, `rig?`, `loop?`, **`new_name?`** | the Godot action library, with the `-loop` convention enforced in both directions. Every call returns the whole library in `actions` |
+| `rigforge_keyframe` | `rig`, `action`, `keys`, `interpolation?`, `clear?`, **`loop?`**, **`fk_switch?`** | batch keyframing on control bones. Returns `action`, `keys_set`, `frame_range`, `bones`, `rotation_modes`, `fk_switched` |
+| `rigforge_retarget` | `source_path` (.bvh/.fbx you supply), `target_rig`, `action_name`, `mapping?` `auto`\|`{src: dst}`, `loop?`, `scale?`, **`frame_step?`**, **`replace?`**, **`fk_switch?`** | imports the clip into a temp collection, maps bones by name heuristics, bakes onto the FK controls, deletes the import. Returns `action`, `mapped`, `unmapped`, `frames`, `scale` |
+
+Parameters in **bold** are additive refinements beyond the Phase 5 sketch; every one has a
+default that reproduces the sketch's behaviour. Nothing in Phase 5 downloads anything:
+retargeting reads only files you point it at, with importers that ship inside Blender.
 
 Full behaviour is documented under [RigForge panel](#rigforge-panel) below.
 
@@ -317,8 +333,8 @@ by one ring around the hole).
    (biped / quadruped / custom — this picks the rig template in Phase 4), and
    **motion notes**, in plain language: *"ears are floppy and lag behind the head"*,
    *"tail drags on the ground"*, *"hops rather than walks"*. Stage 4 reads those notes to
-   set how much each chain lags (see [secondary motion](#the-rig-phase-4-stage-4)), and
-   Phase 5 will read them again. All three live as custom properties on the object, so they
+   set how much each chain lags (see [secondary motion](#the-rig-phase-4-stage-4)). All
+   three live as custom properties on the object, so they
    follow the sculpt rather than the scene; the ⟳ button next to the object name reloads
    the panel from whatever object is active.
 3. **Manifest.** A path plus **Save** / **Load**. Save writes `character.json` (tags come
@@ -327,7 +343,8 @@ by one ring around the hole).
    does not have yet — so a manifest can seed the tag list before you have tagged
    anything. Keys the add-on does not understand yet (`actions`, `godot`, anything Phase 4
    and 5 add) are carried through a load/save round trip untouched.
-4. **Retopo**, **UV**, **Rig** and **Godot Export** — below, in the order you run them.
+4. **Retopo**, **UV**, **Rig**, **Cloth**, **Actions** and **Godot Export** — below, in the
+   order you run them.
 
 Every button reports into the panel's own status line, in the same style as PartForge: a
 failure shows up in the sidebar, never as a traceback in a console you are not looking at.
@@ -587,6 +604,198 @@ contained that Godot did not see.
    an `AnimationPlayer` whose `-loop` clips already loop. Drop it into a scene and drive
    it with an `AnimationTree`.
 
+### Cloth (Phase 5, stage 5)
+
+`RigForge ▸ Cloth` (`rigforge_cloth`). Toggle the tags the garment covers (or switch on
+**Use Selection**), pick a preset and an output, set offset and thickness, press **Make
+Garment**.
+
+**What it builds.** The tagged faces are duplicated into a new object, every vertex is
+pushed out along its own normal by `offset_mm`, the sheet is subdivided if it is too
+coarse to bend, and Solidify gives it `thickness_mm` of shell. The duplicate keeps the
+body's **vertex groups** (so the deform weights arrive for free — Solidify and the
+subdivision interpolate them) and its **material slot layout** (empty is fine). The result
+is tagged `tag_Garment` and remembers the body it came from in `forge_garment_of`.
+
+**The three outputs.**
+
+| `output` | what happens | what ships |
+|---|---|---|
+| `skin_tight` | no simulation at all | the garment, weighted to the same rig, with an Armature modifier |
+| `shapekeys` | Cloth + a Collision modifier on the body, the sim stepped for `frames`, the settled coordinates baked into a `Settled` shape key at value 1.0 — then **both modifiers removed** | the same skinned mesh, plus one morph target |
+| `bones` | **not implemented in v1.** Warns loudly and does `skin_tight` instead | as `skin_tight`, with `requested_output: "bones"` in the result |
+
+Godot does not run Blender cloth, so the bake is what ships. The cloth modifier, the
+collision modifier and their point caches are gone before the command returns, whether the
+sim worked or not.
+
+**Cloth presets.** These are Blender's own shipped presets, not invented numbers, so the
+Physics tab shows you something you recognise afterwards. `mass` is kg per square metre;
+the stiffnesses are Blender's unitless spring constants; `quality` is solver substeps per
+frame, and is the single most effective knob against an exploding sim.
+
+| preset | Blender preset | mass | tension | compression | shear | bending | damping (T/C/S/B) | air | quality |
+|---|---|---|---|---|---|---|---|---|---|
+| `cotton` | Cotton | 0.30 | 15 | 15 | 5 | 0.5 | 5 / 5 / 5 / 0.5 | 1.0 | 5 |
+| `leather` | Leather | 0.40 | 80 | 80 | 80 | 150 | 25 / 25 / 25 / 0.5 | 1.0 | 7 |
+| `heavy` | Denim | 1.00 | 40 | 40 | 40 | 10 | 25 / 25 / 25 / 0.5 | 1.0 | 8 |
+
+**Keeping the sim on its feet.** A cloth sim over a duplicated sculpt patch is the easiest
+thing in this whole pipeline to blow up, so four things are done about it:
+
+- **The seam is pinned.** Every vertex on an open edge of the pre-solidify sheet goes into
+  a `Forge Pin` group used as the cloth `vertex_group_mass` at `pin_stiffness` 1.0. Without
+  it a shirt slides off the shoulders on frame 2.
+- **Self collision is off by default** (`self_collision: true` to turn it on). A patch
+  duplicated off a sculpt is very often already self-intersecting, and a self-collision
+  solver handed a tangled mesh is the most reliable way to make it explode.
+- **Collision quality 5**, with the collision distance scaled to the model
+  (`min(thickness/2, 1% of the body's longest axis)`), on both the garment and the body's
+  Collision modifier.
+- **The result is measured.** Non-finite coordinates, or a settled bounding box more than
+  **3×** the body's on any axis, mean the sim exploded: no shape key is baked, the
+  un-simulated garment is delivered instead, and you get a warning naming the axis and the
+  numbers. `result.sim` always reports `ok`, `reason`, `bbox` and how long it took.
+
+**Skinning.** Weights are inherited by duplication, then anything still unweighted is
+filled from the body by nearest-vertex data transfer (distance-to-bone as a last resort),
+then limited to 4 influences and normalised. `result.weights.method` says which of those
+ran. With no rig bound to the body the garment is still built, unskinned, with a warning.
+
+**Limits.** One garment per call. The garment carries the body's `tag_*` groups as well as
+`tag_Garment` — harmless, and useful if you retopologise it later. Shape keys on the body
+are *not* carried onto the garment (you get a warning). The sim runs from frame 1 to
+`frames` regardless of the scene's own frame range, and the scene's range and current
+frame are restored afterwards.
+
+### The action library (Phase 5, stage 6)
+
+`RigForge ▸ Actions` (`rigforge_action`). The list shows every action in the file with its
+frame range, a loop badge, and an NLA marker; the radio button on the left assigns one to
+the rig so it is the one you are editing.
+
+**The `-loop` convention is enforced in both directions.** `loop: true` appends `-loop` if
+it is missing, `loop: false` strips it if it is there, and omitting `loop` leaves the name
+exactly as given. That is the same suffix the Godot import script reads to set
+`Animation.LOOP_LINEAR`, so `idle` and `idle-loop` are not a naming preference — they are
+different behaviour in the engine.
+
+| `action` | needs | does |
+|---|---|---|
+| `new` | `name`, `loop?`, `rig?` | creates the action and assigns it to the rig. A name that is already taken is **refused**, not silently suffixed `.001` |
+| `list` | `rig?` | every action with `frame_range`, `loop`, `bones`, `fcurves`, `nla` + `nla_tracks`, and (with a `rig`) `fits_rig` / `assigned` |
+| `delete` | `name` | removes it, clearing it off any object holding it; NLA strips that went with it are reported |
+| `duplicate` | `source`, `name?`, `loop?` | branches a copy (default name `<source>_copy`) |
+| `rename` | `source` + `name`, **or** `name` + `loop` | moves an action, or just applies/removes the `-loop` suffix in place |
+| `push_nla` | `name`, `rig` | pushes the action onto its own NLA track named after it and clears the active action, the way Blender's own Push Down does |
+
+Deleting an action that does not exist is a clean error listing the ones that do (with a
+"did you mean" when the name is close). Every call returns the whole library in `actions`.
+
+### Described-motion keyframing (Phase 5, stage 6)
+
+`rigforge_keyframe` is the command Claude uses when you say *"a heavy two-beat hop, ears
+trail"*: one structured call instead of a page of raw Python.
+
+```jsonc
+{"type": "rigforge_keyframe", "params": {
+   "rig": "Sculpt_retopo_rig", "action": "hop", "interpolation": "LINEAR", "clear": true,
+   "keys": [
+     {"bone": "torso",          "frame": 1,  "rotation_euler_deg": [0, 0, 0], "location": [0, 0, 0]},
+     {"bone": "torso",          "frame": 12, "rotation_euler_deg": [-8, 0, 0], "location": [0, 0, -0.05]},
+     {"bone": "upper_arm_fk.L", "frame": 12, "rotation_euler_deg": [0, 0, 30]}
+   ]}}
+```
+
+- Each key needs a `bone` and a `frame` plus at least one of `rotation_euler_deg`,
+  `location`, `scale`. A key that sets nothing is an error naming the bone and the frame.
+- **Everything is validated before anything is written.** A typo in `keys[7]` must not
+  leave `keys[0..6]` half applied.
+- **Rotations are degrees, euler, in the bone's own space.** A bone in quaternion mode
+  (which is what every Rigify control ships as) is switched to `XYZ` and the switch is
+  reported in `rotation_modes` — describing a pose in quaternions is not a thing anybody
+  does out loud, and silently ignoring the mode would be worse than saying so.
+- **`interpolation`** is applied to the keyframe points this call made, and only those.
+- **`clear: true`** wipes the action's F-curves first (Blender 5.0 keeps them in per-slot
+  channelbags, not `action.fcurves`; the add-on handles both).
+- **`fk_switch`** (default `"auto"`) moves Rigify's `IK_FK` blend to full FK and keyframes
+  it whenever any key targets a `*_fk` bone. Without this the pose looks perfect in the FK
+  controls and exports as a T-pose, because Rigify limbs default to IK.
+- **A bone it cannot find is answered with the one it meant**: closest matches first, then
+  up to 30 **control** bone names (machinery — `DEF-`, `ORG-`, `MCH-`, `WGT-`, `VIS-` — is
+  listed only if the rig has nothing else). Error messages here have to be actionable
+  because this is the command an agent retries against.
+
+### Retargeting a mocap clip (Phase 5, stage 6)
+
+`RigForge ▸ Actions ▸ Retarget` (`rigforge_retarget`). Point **Clip** at a `.bvh` or
+`.fbx` **you supply** — a Mixamo download you already have, a capture, anything — name the
+action, press **Retarget Clip**. Both importers ship inside Blender. **Nothing is ever
+fetched over the network**, and a missing file says so in the error.
+
+**How the transfer works.** Not matrix arithmetic: a constraint bake.
+
+1. The clip is imported into a temp collection (`FORGE_RETARGET_TEMP`).
+2. `scale: "auto"` measures both skeletons' rest heights and scales the source object by
+   the ratio; the source is then shifted so its hip bone's rest position sits on the rig's.
+3. Every mapped control gets a world-space **Copy Rotation** from its source bone, and the
+   hips control additionally gets a world-space **Copy Location** — that is the clip's
+   travel, already scaled, with no offset arithmetic to get wrong.
+4. `nla.bake(visual_keying=True, only_selected=True)` over the clip's own frame range,
+   with **only the mapped controls selected**. Blender's evaluator does the rest-orientation
+   algebra, which is why this is more robust than solving local rotations by hand — and
+   baking *only* the mapped bones matters, because a Rigify rig is full of constrained
+   `MCH-`/`ORG-` bones whose evaluated transform, written into `matrix_basis` while the
+   constraint still runs, would be applied twice.
+5. Constraints come off, the import is deleted, the clip's own action is purged, and the
+   scene's frame range is restored — all in a `finally`, so a failed retarget leaves the
+   file exactly as it found it.
+
+**FK, on purpose.** The motion lands on the rig's **FK chains** so the result is something
+you can open and fix. Rigify limbs default to IK, so the rig's `IK_FK` properties are moved
+to full FK and **keyframed into the baked action** (the Godot export bakes per action, so a
+switch that was only a live property would be whatever the last command left it at).
+
+**The mapping table.** `mapping: "auto"` is a case-insensitive fragment match, tried in
+this order — the order *is* the design, because `LeftForeArm` contains "arm" and
+`LeftUpLeg` contains "leg":
+
+| source name contains | slot | target control (first that exists on the rig) |
+|---|---|---|
+| `forearm`, `fore_arm`, `lowerarm`, `radius`, `elbow` | forearm | `forearm_fk.{L,R}`, `forearm.{L,R}` |
+| `upperarm`, `upper_arm`, `humerus`, `shldr` | upperarm | `upper_arm_fk.*`, `upper_arm_ik.*`, `upper_arm.*` |
+| `shoulder`, `clavicle`, `collar` | shoulder | `shoulder.{L,R}` |
+| `hand`, `wrist` | hand | `hand_fk.*`, `hand_ik.*`, `hand.*` |
+| `upleg`, `upperleg`, `thigh`, `femur` | thigh | `thigh_fk.*`, `thigh_ik.*`, `thigh.*` |
+| `lowerleg`, `foreleg`, `shin`, `calf`, `tibia`, `knee` | shin | `shin_fk.*`, `shin.*` |
+| `toebase`, `toe`, `ball` | toe | `toe_fk.*`, `toe.*` |
+| `foot`, `ankle` | foot | `foot_fk.*`, `foot_ik.*`, `foot.*` |
+| `head` | head | `head`, `tweak_spine.005` |
+| `neck` | neck | `neck`, `spine_fk.003`, `tweak_spine.004` |
+| `upperchest`, `chest`, `spine2`, `spine3`, `thorax` | chest | `chest`, `spine_fk.002`, `tweak_spine.002` |
+| `spine1`, `abdomen`, `waist`, `spine` | spine | `spine_fk.001`, `hips`, `tweak_spine.001`, `chest` |
+| `hips`, `hip`, `pelvis`, `root` | hips | `torso`, `hips`, `spine_fk`, `root` — and this is the bone whose travel is copied |
+| `arm` (fallback) | upperarm | as above |
+| `leg` (fallback) | shin | as above |
+
+Sides come from `left`/`right` in the name, a `.L`/`.R`/`_L`/`_R` suffix, or a bare leading
+`l`/`r` (CMU-style `lfemur`). Prefixes like `mixamorig:` and `bip01 ` are stripped.
+**Refused on purpose:** anything containing `finger`, `index`, `middle`, `thumb`, `ring`,
+`pinky`, `eye`, `jaw`, `tongue`, `breast`, `_end`/`nub`/`site` — five finger joints all
+folding onto one hand control is worse than five reported gaps. Two source bones cannot
+claim the same control; the second is reported as unmapped with the reason. Everything not
+mapped comes back in `unmapped` (names) and `unmapped_detail` (name + reason).
+
+Pass an explicit `{"SourceBone": "target_bone"}` dict as `mapping` when the clip uses names
+the heuristic does not know. A target that is not a bone of the rig is an error with the
+usual "did you mean".
+
+**Limits.** The transfer is a world-space rotation copy, so it is approximate where the two
+skeletons' rest orientations disagree — expect to polish wrists and shoulders. `.fbx`
+imports its whole scene (meshes included) and everything it brought is deleted afterwards;
+only the armature is used. `replace: true` (the default) overwrites an existing action of
+that name and says so in the warnings — the mapping is something you iterate on.
+
 ### What still wants your hands
 
 - **Weights at the shoulders and hips.** The cleanup makes them defensible, not
@@ -596,6 +805,12 @@ contained that Godot did not see.
 - **Faces and fingers.** They are scaled with the head and hand, not fitted — there are no
   landmarks in a `Head` tag that say where an eyelid is. Tag them and use
   `preset: "human"` only if you intend to animate them.
+- **Garment silhouette.** The sim settles cloth onto a body in its rest pose; it does not
+  know the character is about to run. Sleeves and hems are where the shape key wants an
+  eye, and a stiffer preset with fewer frames is usually the fix.
+- **Retargeted wrists and shoulders.** A world-space rotation copy between two skeletons
+  that disagree about rest orientation lands close, not exact. The clip is on FK controls
+  precisely so you can fix it.
 
 ## Layout
 
@@ -609,27 +824,57 @@ addon/forge/
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
+  tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
   headless_phase2.py     headless checks for the Print Checks / Segments panels
   headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
   headless_phase4.py     headless checks for the rig, the weights and the Godot export
+  headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
 `rigforge.py`'s `ForgeRigForgeProps` and reports through the same `status` line, so the
-whole RigForge section behaves as one panel.
+whole RigForge section behaves as one panel. `rigforge_anim.py` (Phase 5) keeps its own
+`ForgeAnimProps` on the scene instead — cloth and the action library have a lot of state
+and none of Phase 3's fields mean anything to them — but it reports through a `status` line
+drawn the same way, so the section still reads as one panel.
 
-One convention in `ui/panels.py` worth knowing before you edit it: the PartForge panels
-bind their state to a local called `props`, the RigForge ones to `rf`. They are different
-PropertyGroups on the scene, and the headless panel-wiring tests tell them apart by that
-name.
+Two conventions in `ui/panels.py` worth knowing before you edit it: the PartForge panels
+bind their state to a local called `props`, the RigForge Phase 3/4 ones to `rf`, and the
+Phase 5 ones to `ra`. They are different PropertyGroups on the scene, and the headless
+panel-wiring tests tell them apart by that name. And nothing in the file does work: every
+button is an operator that reports back through its panel's `status` string.
 
 ## Headless tests
 
-Three suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 4 they are **49 + 108 + 156 = 313 checks**, all green on Blender 5.0.1.
+Four suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 5 they are **49 + 108 + 156 + 150 = 463 checks**, all green on Blender 5.0.1.
+
+### Phase 5 — cloth and animation (`headless_phase5.py`)
+
+Needs **no geometry service** and **downloads nothing**. The mocap clip the retarget test
+consumes is written by the test itself: a hand-authored nineteen-joint BVH with twelve
+frames of rotation, put in a temp folder and deleted with it.
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python addon\tests\headless_phase5.py
+```
+
+Port 9881. It imports Phase 4's builder (which imports Phase 3's) rather than copying it,
+carries the character the whole way — tag → retopo → metarig → generate → **garment →
+actions → keyframes → retarget** → glTF — and parses the exported `.glb` back out. 150
+checks over: the garment's measured offset from the body, its inherited weights and
+armature modifier; the cotton sim settling, baking a `Settled` shape key that actually
+differs from the basis, and leaving no cloth or collision modifier behind; the `-loop`
+round trip through `new`/`list`/`duplicate`/`rename`/`delete`/`push_nla`; keyframe values
+read back off the F-curve with the right interpolation and a near-miss bone name answered
+with a suggestion; the retarget's mapping table, hip travel, scene cleanliness and purged
+import; and finally an export whose `.glb` carries both garments, the `Settled` morph
+target and both `-loop`-suffixed clips.
 
 ### Phase 4 — rig and Godot export (`headless_phase4.py`)
 

@@ -96,7 +96,7 @@ MCP mirrors these as `rigforge_*` tools plus a `rigforge_status(object)` overvie
 
 ## Phase 4 — rig and Godot export — implemented
 
-Implemented refinements (additive; full detail in addon/README.md): `rigforge_metarig` + `preset` (auto picks 29-bone basic human unless face/hand tags exist); `rigforge_generate_rig` + `max_influences`/`band`/`spring_chains`; `rigforge_weights` + `rig`/`band`; `rigforge_export_godot` + `lods`/`frame_step`/`unit_scale` (`deform_only: false` warns and exports deform-only anyway; `path` is the glTF file, default `.glb`). MCP mirrors are 36 tools total; `spring_chains` derives from manifest motion notes, not an MCP param. Secondary motion v1 is a deterministic MCH lag/Damped-Track constraint rig (no state, bakes cleanly; helpers non-deform so they never export). Exporter traps encoded: `export_animation_mode="ACTIONS"` leaks other objects' actions (NLA_TRACKS used), and clip-name collisions are avoided by renaming source actions aside during export.
+Implemented refinements (additive; full detail in addon/README.md): `rigforge_metarig` + `preset` (auto picks 29-bone basic human unless face/hand tags exist); `rigforge_generate_rig` + `max_influences`/`band`/`spring_chains`; `rigforge_weights` + `rig`/`band`; `rigforge_export_godot` + `lods`/`frame_step`/`unit_scale` (`deform_only: false` warns and exports deform-only anyway; `path` is the glTF file, default `.glb`). MCP mirrors bring the tool total to 36 (40 after Phase 5); `spring_chains` derives from manifest motion notes, not an MCP param. Secondary motion v1 is a deterministic MCH lag/Damped-Track constraint rig (no state, bakes cleanly; helpers non-deform so they never export). Exporter traps encoded: `export_animation_mode="ACTIONS"` leaks other objects' actions (NLA_TRACKS used), and clip-name collisions are avoided by renaming source actions aside during export.
 
 ### Original sketch
 
@@ -110,6 +110,23 @@ New socket commands (additive; refinements folded back by the orchestrator). No 
 | `rigforge_export_godot` | `{"rig", "meshes"?, "path", "actions"?: "all"\|[names], "root_motion"?: false, "deform_only": true, "godot_import_script": true}` — bake all actions onto deform bones, strip control bones, glTF export (Y-up, applied transforms, unit scale, `-col`/`-lod` suffixes, `-loop` action convention) + emit a Godot `.gd` import helper or `.import` settings | `{"path", "actions": [names], "deform_bones", "files"}` |
 
 MCP mirrors as thin `rigforge_*` tools. Panel: Rig box (archetype, Place Metarig, Generate Rig, weight cleanup) + Export box (path, root motion toggle, Export to Godot).
+
+## Phase 5 — cloth and animation — implemented
+
+Implemented refinements (additive; full detail in addon/README.md): `rigforge_cloth` + `self_collision`/`subdivide`/`rig` (presets are Blender's own Cotton/Leather/Denim tables; boundary loop auto-pinned; sim sanity-checked, exploding results delivered un-simmed with a warning; sim modifiers always removed — only the skinned mesh + `Settled` shape key ship); `rigforge_action` `rename` also applies/strips the `-loop` suffix in place, every call returns the whole library; `rigforge_keyframe` + `loop`/`fk_switch` (quaternion controls forced to XYZ euler and reported; **`IK_FK` is switched to FK and keyframed** — without it FK poses export as T-pose); `rigforge_retarget` + `frame_step`/`replace`/`fk_switch`, maps to FK controls via an ordered fragment table (forearm before arm, etc.), bakes only mapped bones, reports unmapped with reasons. MCP: 40 tools, `frames` with `skin_tight` is an error, per-action argument roles pinned, retarget `action_name` defaults to the source filename stem.
+
+### Original sketch
+
+New socket commands (additive; refinements folded back by the orchestrator). No downloads: mocap retargeting operates on files the USER supplies (BVH via built-in importer, FBX via built-in importer); nothing is fetched.
+
+| type | params | result |
+|---|---|---|
+| `rigforge_cloth` | `{"object" (body mesh), "tags": [names] \| "use_selection", "name"?, "offset_mm"?, "thickness_mm"?, "preset": "cotton"\|"leather"\|"heavy", "output": "skin_tight"\|"shapekeys" (v1; "bones" may warn), "frames"?: int, "collision": true}` — duplicate tagged faces, offset outward, solidify, cloth sim with preset + body collision; `skin_tight` copies the body's weights (no sim); `shapekeys` bakes the settled sim into shape key(s) | `{"garment", "output", "shape_keys"?, "warnings"}` |
+| `rigforge_action` | `{"action": "new"\|"list"\|"delete"\|"duplicate"\|"rename"\|"push_nla", "name"?, "source"?, "rig"?, "loop"?: bool}` — manage the Godot action library (`idle`, `walk`, `run`, `jump`, `attack`, `-loop` suffix convention enforced when `loop` true) | `{"actions": [...]}` |
+| `rigforge_keyframe` | `{"rig", "action", "keys": [{"bone", "frame", "rotation_euler_deg"?/"location"?/"scale"?}], "interpolation"?: "BEZIER"\|"LINEAR", "clear"?: bool}` — batch keyframing on control-rig bones so described-motion passes are one structured call instead of raw Python | `{"action", "keys_set", "frame_range"}` |
+| `rigforge_retarget` | `{"source_path" (.bvh/.fbx, user-supplied), "target_rig", "action_name", "mapping"?: "auto"\|{src: dst}, "loop"?: bool, "scale"?: "auto"}` — import the clip, map bones by name heuristics (report unmapped), transfer rotations (+ hip location) onto the rig, bake to an action, delete the import | `{"action", "mapped", "unmapped", "frames"}` |
+
+MCP mirrors as thin tools; described-motion keyframing itself is Claude at runtime using `rigforge_keyframe`/`rigforge_action`. Panel: Cloth box (tags/selection, preset, output, Make Garment) + Actions box (library list with loop badges, New/Push-to-NLA).
 
 ## PARAMS block convention (the PartForge script contract)
 
