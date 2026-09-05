@@ -48,6 +48,8 @@ from .export import (
     safe_basename,
 )
 from .joints import resolve_joint
+from .mold import build_mold, solid_volume
+from .mold import normalize_options as normalize_mold_options
 from .printer import (
     DEFAULT_PLATE_MARGIN_MM,
     DEFAULT_PLATE_SPACING_MM,
@@ -487,6 +489,160 @@ def handle_export_segments(job: Mapping[str, Any]) -> Dict[str, Any]:
     return payload
 
 
+# --------------------------------------------------------------------------
+# Phase 2: mold mode
+# --------------------------------------------------------------------------
+
+
+def _mold_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Build, split, draft, box and verify.  Shared by /mold and /export_mold."""
+    linear, angular = _tolerances(job)
+    printer = normalize_printer(job.get("printer"))
+    margin, _spacing = _plate_options(job)
+    options = normalize_mold_options(job, printer)
+
+    schema, shape, timings = _build_shape(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats = _mesh_and_stats(shape, linear, angular)
+    timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    started = time.perf_counter()
+    mold = build_mold(
+        shape, vertices, triangles, stats, printer, options, margin_mm=margin
+    )
+    timings["mold_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    started = time.perf_counter()
+    halves = []
+    for half in mold["halves"]:
+        piece_vertices, piece_triangles, piece_stats = _mesh_and_stats(
+            half["solid"], linear, angular
+        )
+        if not piece_stats["watertight"]:
+            # Same contract as /segment: a half a slicer cannot use is an error,
+            # not a warning with a broken mesh attached.
+            raise ScriptError(
+                f"{half['name']} came out non-manifold (boundary edges "
+                f"{piece_stats['boundary_edges']}, non-manifold "
+                f"{piece_stats['nonmanifold_edges']}, B-Rep valid "
+                f"{piece_stats['solid_is_valid']}). Something in the cavity, the "
+                "spout or a registration key is degenerate; try a smaller "
+                "draft_deg, a bigger shell_mm, or a different parting_z_mm."
+            )
+        halves.append(
+            {
+                "name": half["name"],
+                "solid": half["solid"],
+                "mesh": {"vertices": piece_vertices, "faces": piece_triangles},
+                "stats": piece_stats,
+                # Additive: what the keys, spout and vents did to the half is
+                # only visible as a volume, and a caller checking that the mold
+                # is really a mold should not have to re-integrate the mesh.
+                "volume_mm3": round(solid_volume(half["solid"]), 4),
+            }
+        )
+    timings["verify_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return {
+        "params": schema,
+        "printer": printer,
+        "options": options,
+        "mold": mold,
+        "halves": halves,
+        "stats_part": stats,
+        "timings": timings,
+        "tolerances": (linear, angular),
+    }
+
+
+def _mold_payload(result: Mapping[str, Any]) -> Dict[str, Any]:
+    """The report half of a /mold response, without the meshes or the solids."""
+    mold = result["mold"]
+    return {
+        "parting_z_mm": mold["parting_z_mm"],
+        "parting_source": mold["parting_source"],
+        "parting_profile": mold["parting_profile"],
+        "draft": mold["draft"],
+        "box": mold["box"],
+        "cavity": mold["cavity"],
+        "spout": mold["spout"],
+        "vents": mold["vents"],
+        "registration_keys": mold["registration_keys"],
+        "bed": mold["bed"],
+        "printer": result["printer"],
+        "params": result["params"],
+        "options": result["options"],
+        "stats_part": result["stats_part"],
+        "timings": result["timings"],
+    }
+
+
+def handle_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
+    result = _mold_common(job)
+    include_mesh = job.get("include_mesh")
+    include_mesh = True if include_mesh is None else bool(include_mesh)
+
+    halves = []
+    for half in result["halves"]:
+        entry: Dict[str, Any] = {
+            "name": half["name"],
+            "stats": half["stats"],
+            "volume_mm3": half["volume_mm3"],
+        }
+        if include_mesh:
+            entry["mesh"] = half["mesh"]
+        halves.append(entry)
+
+    return {"halves": halves, **_mold_payload(result)}
+
+
+def handle_export_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
+    result = _mold_common(job)
+    linear, angular = result["tolerances"]
+
+    directory = resolve_output_dir(job.get("directory"))
+    basename = safe_basename(job.get("basename"), default="mold")
+    fmt = normalize_format(job.get("format") or "stl")
+
+    started = time.perf_counter()
+    files = []
+    for half in result["halves"]:
+        target = directory / f"{basename}_{half['name']}{FORMATS[fmt]}"
+        written = export_shape(
+            # Centred in XY and sitting on Z=0, the same way a segment is
+            # written, so a slicer opening one half does not have to hunt for it.
+            drop_to_origin(half["solid"]),
+            fmt,
+            str(target),
+            tolerance=linear,
+            angular_tolerance=angular,
+        )
+        files.append(
+            {
+                "name": half["name"],
+                "format": fmt,
+                "path": written,
+                "stats": half["stats"],
+            }
+        )
+    result["timings"]["export_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return {
+        "directory": str(directory),
+        "files": files,
+        "halves": [
+            {
+                "name": half["name"],
+                "stats": half["stats"],
+                "volume_mm3": half["volume_mm3"],
+            }
+            for half in result["halves"]
+        ],
+        **_mold_payload(result),
+    }
+
+
 HANDLERS = {
     "health": handle_health,
     "parse_params": handle_parse_params,
@@ -495,6 +651,8 @@ HANDLERS = {
     "check": handle_check,
     "segment": handle_segment,
     "export_segments": handle_export_segments,
+    "mold": handle_mold,
+    "export_mold": handle_export_mold,
 }
 
 

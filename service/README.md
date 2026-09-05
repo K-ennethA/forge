@@ -9,6 +9,10 @@ wall thickness, overhangs and watertightness against a printer profile, and when
 the answer is no, cutting the part into segments with dovetail, pin or magnet
 joints and laying them out on one plate. See **Print readiness** below.
 
+Past that it will hand a file to the slicer that is installed (**Slicing**) and
+turn the same script into a two-piece **mold master** instead of the part
+(**Mold mode**).
+
 Blender's mesh tools are the wrong kernel for dimensioned, watertight,
 print-ready solids, so this runs as a separate process and Blender just displays
 what it produces.
@@ -56,10 +60,16 @@ Environment overrides, useful for tuning without touching code:
 | `FORGE_ANGULAR_TOLERANCE` | `0.2` | angular deflection, radians |
 | `FORGE_CHECK_TIMEOUT` | `120` | seconds for one `/check` |
 | `FORGE_SEGMENT_TIMEOUT` | `300` | seconds for one `/segment` or `/export_segments` |
+| `FORGE_MOLD_TIMEOUT` | `300` | seconds for one `/mold` or `/export_mold` |
+| `FORGE_SLICE_TIMEOUT` | `600` | seconds one slicer run may take |
+| `FORGE_SLICER` | — | full path to the slicer executable, overriding detection |
 
 Segmenting gets its own, larger budget because it is dozens of OCC booleans
 rather than one `build()`; raising the interactive timeout to cover it would
-make a runaway slider drag take five minutes to fail.
+make a runaway slider drag take five minutes to fail. Mold mode is the same
+shape of work and gets the same budget. Slicing is not our work at all — it is
+another program's — and a fine layer height on a full plate is genuinely
+minutes, hence the ten.
 
 ### Test it
 
@@ -68,13 +78,19 @@ python -m pytest service/tests            # from the repo root
 python -m pytest                          # from service/
 ```
 
-`tests/test_params.py` and `tests/test_checks.py` are pure Python and run as
-soon as pytest is installed. `tests/test_api.py` and
-`tests/test_print_readiness_api.py` spawn the worker and skip themselves if
-build123d is missing. `test_api.py` also exercises the containment story for
-real: a deliberately hanging script must come back as a clean `400`, and the
-next request must succeed on a fresh child. Those two tests are the slow ones —
-they pay a worker restart on purpose.
+`tests/test_params.py`, `tests/test_checks.py`, `tests/test_mold.py` and
+`tests/test_slicer.py` are pure Python and run as soon as pytest is installed.
+`tests/test_api.py`, `tests/test_print_readiness_api.py` and
+`tests/test_mold_api.py` spawn the worker and skip themselves if build123d is
+missing. `test_api.py` also exercises the containment story for real: a
+deliberately hanging script must come back as a clean `400`, and the next
+request must succeed on a fresh child. Those two tests are the slow ones — they
+pay a worker restart on purpose.
+
+Nothing in the suite needs a slicer installed. `tests/fake_slicer.py` is a stub
+that answers the same command line, checks the same things and writes a file
+where OrcaSlicer would write one, so `/slice` is tested — success, a missing
+executable, a non-zero exit, and a hang that has to be killed — on any machine.
 
 ## API
 
@@ -87,6 +103,9 @@ they pay a worker restart on purpose.
 | `POST` | `/check` | `{"script", "overrides", "printer"}` | `{"overall", "checks": [...], "stats", "printer"}` |
 | `POST` | `/segment` | `{"script", "overrides", "printer", "joint", "mode"}` | `{"mode", "joint", "cuts", "segments": [...], "plate"}` |
 | `POST` | `/export_segments` | the `/segment` body plus `{"directory", "basename", "format"}` | `{"files": [...], "plate_path"}` |
+| `POST` | `/mold` | `{"script", "overrides", "printer", "parting_z_mm", "draft_deg", "shell_mm", ...}` | `{"halves": [...], "parting_z_mm", "draft", "spout", "vents", "registration_keys"}` |
+| `POST` | `/export_mold` | the `/mold` body plus `{"directory", "basename", "format"}` | `{"files": [one per half]}` |
+| `POST` | `/slice` | `{"input", "output", "profile", "printer", "slicer_path", "extra_args"}` | `{"output", "stdout_tail", "duration_ms"}` |
 
 `format` is `stl` (binary), `step` or `3mf`. `path` must be **absolute**;
 parent directories are created.
@@ -96,7 +115,11 @@ are at fault, `500` with the same shape when the service itself broke. There is
 no `422`: request-validation failures are remapped to `400`.
 
 `/health` always answers `200` so a caller can tell *service down* (connection
-refused) from *service up, kernel missing* (`"status": "degraded"`).
+refused) from *service up, kernel missing* (`"status": "degraded"`). It also
+carries a `slicer` object — whether one was found, where, and if not, every path
+that was probed — so a panel can grey out its *Slice* button before the user
+presses it. A missing slicer never makes the service degraded: everything else
+still works.
 
 ### Extensions beyond the contract
 
@@ -112,7 +135,11 @@ All additive; nothing in `docs/architecture.md` changes shape.
   `nonmanifold_edges`, `degenerate_faces_dropped`.
 - `/generate` includes a `timings` object (`resolve_ms`, `build_ms`,
   `tessellate_ms`); `/check` adds `check_ms`, `/segment` adds `segment_ms` and
-  `verify_ms`, `/export_segments` adds `export_ms`.
+  `verify_ms`, `/export_segments` adds `export_ms`, `/mold` adds `mold_ms` and
+  `verify_ms`, `/export_mold` adds `export_ms`.
+- `/slice`'s two failure modes carry a `slicer` object alongside the contract's
+  `error` and `traceback`: the probe report when nothing is installed, and the
+  argv, exit code and output tails when something ran and refused.
 
 # Print readiness
 
@@ -399,6 +426,250 @@ in once.
 `samples/appendage_peg.py` is the working version of the example above: one
 script that builds either the base or the ear, switched by `make_appendage`.
 
+# Mold mode
+
+The plan's promise is one switch: *draft angles applied to vertical faces, a
+two-piece mold box with a parting plane you can drag, registration keys, a pour
+spout and vents.* `POST /mold` is that switch. What comes back are two **mold
+masters** — you print them, then cast silicone or resin in them. Same script,
+same `PARAMS`, same sliders as the direct-print version.
+
+```jsonc
+{"script": "...", "overrides": {}, "printer": { },
+ "parting_z_mm": 4.0 | "auto",       // default "auto"
+ "draft_deg": 2.0, "shell_mm": 4.0, "clearance_mm": 0.0,
+ "spout": {"diameter_mm": 4.0, "position": [x, y]} | false,
+ "vents": 2 | "auto", "registration_keys": 4,
+ "include_mesh": true}
+```
+
+returns
+
+```jsonc
+{"halves": [{"name": "mold_top",    "stats": { }, "volume_mm3": 5786.7,
+             "mesh": {"vertices": [...], "faces": [...]}},
+            {"name": "mold_bottom", "stats": { }, "volume_mm3": 5774.4, "mesh": { }}],
+ "parting_z_mm": 4.0, "parting_source": "auto" | "request",
+ "parting_profile": [[z, area_mm2], ...],
+ "draft": {"angle_deg": 2.0, "mold_top": "occ_draft", "mold_bottom": "occ_draft",
+           "face_threshold_deg": 45.0},
+ "box": {"shell_mm": 4.0, "size_mm": [28, 28, 16], "min_mm": [...], "max_mm": [...]},
+ "cavity": {"volume_mm3": 938.7, "part_volume_mm3": 876.5, "clearance_mm": 0.0,
+            "plain_half_volume_mm3": {"mold_top": 5802.7, "mold_bottom": 5802.7}},
+ "spout": {"diameter_mm": 4.0, "position_mm": [9.5, 0.0], "top_z_mm": 12.5,
+           "bottom_z_mm": 7.0, "length_mm": 5.5, "fully_inside_cavity": false},
+ "vents": {"requested": 1, "count": 1, "diameter_mm": 1.0,
+           "positions_mm": [[8.3, 4.5, 8.0]]},
+ "registration_keys": {"count": 4, "radius_mm": 1.4, "tolerance_mm": 0.1,
+                       "male_half": "mold_top", "female_half": "mold_bottom",
+                       "positions_mm": [[-12, -12], [12, -12], [12, 12], [-12, 12]]},
+ "bed": { }, "printer": { }, "params": { }, "options": { },
+ "stats_part": { }, "timings": { }}
+```
+
+`plain_half_volume_mm3` is what each half weighed *before* the keys, spout and
+vents touched it, so a caller can check that the features actually happened
+rather than trusting that they did.
+
+## The parting plane
+
+`"auto"` takes the part's **widest horizontal cross-section**, measured on the
+same welded mesh everything else here uses: every triangle straddling the plane
+contributes one oriented segment, and the shoelace sum comes out as *outer loops
+minus holes*, so a ring reports its annulus rather than its disc. Sixty-five
+heights are sampled and the whole profile comes back as `parting_profile`, which
+is exactly what a "drag the parting plane" slider wants behind it.
+
+A part with a real bulge has one clear maximum. A prismatic part — a ring band,
+a box — has a whole band of identical slices, and the tie breaks toward the
+**middle** of that band: splitting a straight wall into two halves worth
+printing beats shaving a sliver off one end.
+
+An explicit `parting_z_mm` is honoured as given. Either way at least 0.5 mm of
+part has to survive on each side, or it is a `400` naming the part's own Z span.
+
+## Draft — what shipped, and what it costs
+
+Two implementations, tried in order. `draft.mold_top` / `draft.mold_bottom` say
+which one ran for each half, because they can differ.
+
+| Method | How | Where it works |
+|---|---|---|
+| `occ_draft` | `BRepOffsetAPI_DraftAngle` on every face steeper than 45° from horizontal, with the far end of the half as the neutral plane. OCC tilts the faces and rebuilds the solid, so the result is smooth. | Anything whose walls are **planar, cylindrical or conical** — boxes, cylinders, rings, prisms, cones. OCC refuses everything else, face by face. |
+| `taper_union` | The documented fallback. The half is fused with a series of copies of itself, each scaled up about a point behind the neutral plane, sweeping the silhouette outward toward the parting face. | Anything at all, including freeform surfaces. A sphere lands here. |
+| `none` | `draft_deg: 0`, or nothing on the half could be tapered. | — |
+
+Known limits, all of them real:
+
+- **Draft adds material toward the parting line, it does not remove it from the
+  far end.** A cavity that does not contain the part would cast a smaller part
+  than the script describes, so the neutral plane sits at the far end and the
+  cavity grows by up to `(half height) × tan(draft)` at the parting face. At the
+  default 2° over a 10 mm half that is 0.35 mm. If the part's dimensions are
+  what matter, use `draft_deg: 0` and taper in the script itself.
+- **`taper_union`'s taper is a staircase.** Steps are one per millimetre of half
+  height, clamped to 4–16, so sub-millimetre — but they are there, and they show
+  in the printed master.
+- **`taper_union` widens radially about the part's axis**, not normal to each
+  face, so the taper is proportionally weaker near that axis than at the rim.
+- **The two halves' cavity mouths do not match exactly.** Each is drafted from
+  its own end, so the parting line can carry a step of the same order as the
+  draft, which shows as flash on the casting.
+- Containment is *verified*, not assumed: a drafted half that no longer contains
+  the part, or that fails OCC's own validity check, is discarded and the next
+  method is tried. `"none"` is the floor.
+
+## The box, the keys, the spout and the vents
+
+The box is the part's bounding box grown by `shell_mm` on all six sides, split
+at the parting plane, with the cavity subtracted from each half.
+`clearance_mm` (default 0) grows the cavity all round first, via OCC's 3D
+offset; it fails loudly on a part OCC cannot offset rather than quietly doing
+nothing.
+
+**Registration keys** are spheres on the parting plane, spaced evenly around a
+rectangle inset half the shell from the box edge — with the default four that is
+the four corners. The boss is nominal on `mold_top`, the socket is grown by
+`printer.tolerances.press_fit` in `mold_bottom`. A key that would break into the
+cavity, or that needs more room than the shell has, is a `400` telling you to
+raise `shell_mm` or set `registration_keys: 0`.
+
+**The spout** is a cone from above the top of the box down into the cavity,
+narrow at the bottom so it snips off. **Vents** are straight channels of
+`max(min_feature_size, 1 mm)` from the cavity's other local high points to the
+same top face; `"auto"` is one, plus one more per 40 mm of cavity width, capped
+at four.
+
+Both are placed from the mesh's high points, and both are then **walked across
+the wall** until the channel's whole buried length is inside the cavity. Every
+candidate a mesh offers is a vertex, which sits on an edge by construction: a
+spout centred on a rim grazes it tangentially and that is exactly how a mold half
+comes out non-manifold. When no position fits — a 2 mm wall cannot swallow a
+4 mm spout — the original is used anyway and `spout.fully_inside_cavity` says
+`false`. Diameters below `printer.min_feature_size` are a `400`; they would not
+print.
+
+## What is enforced
+
+- **Both halves must be watertight.** They are re-tessellated and re-analysed
+  exactly as segments are, and a non-manifold half is a `400` naming it and its
+  edge counts — not a warning with a broken mesh attached.
+- **Both halves must fit the bed**, box and all, in either 90° placement, with
+  the plate margin. Otherwise it is a `400` that says to reduce `shell_mm`,
+  shrink the part, or run `/segment` on the part first and mold the segments.
+
+## `POST /export_mold`
+
+The `/mold` body plus `directory` (absolute, created if missing), `basename`
+(default `mold`, sanitised) and `format` (`stl`, `step` or `3mf`). It writes
+`<directory>/<basename>_mold_top.<ext>` and `..._mold_bottom.<ext>`, each
+centred in XY and sitting on Z=0, and returns the same report `/mold` gives plus
+`files`.
+
+A note on printing them: the halves come out modelled as they assemble, so
+`mold_top` has its cavity facing down and its registration bosses hanging below
+the parting plane. Slicing it as written asks for supports. Flip it in the
+slicer — or in Blender — before you print it.
+
+# Slicing
+
+`POST /slice` hands a file this service exported to the slicer that is actually
+installed, and brings back the G-code. It is a subprocess call, not a geometry
+job, so it never goes near the warm worker.
+
+```jsonc
+{"input": "C:\\...\\band_mold_top.stl",      // absolute, .stl/.3mf/.step/.obj
+ "output": "C:\\...\\band_top.gcode",         // absolute, .gcode or .3mf
+ "profile": ["<machine>.json", "<process>.json"],   // or one path, or omitted
+ "filaments": ["<filament>.json"],
+ "printer": { }, "slicer_path": "...", "extra_args": [], "timeout_s": 600}
+```
+
+returns
+
+```jsonc
+{"output": "C:\\...\\band_top.gcode", "produced_name": "plate_1.gcode",
+ "slicer": {"path": "C:\\Program Files\\OrcaSlicer\\orca-slicer.exe",
+            "flavor": "orcaslicer", "source": "install"},
+ "input": "...", "profiles": [...], "argv": [...], "returncode": 0,
+ "stdout_tail": "...", "stderr_tail": "", "duration_ms": 549.1,
+ "size_bytes": 539600, "printer": { }}
+```
+
+## Pointing it at a real install
+
+Four sources, in order, first one that exists on disk wins:
+
+1. `slicer_path` in the request,
+2. the `FORGE_SLICER` environment variable,
+3. the standard install locations — `%ProgramFiles%\OrcaSlicer\orca-slicer.exe`
+   and its `(x86)` / `%LOCALAPPDATA%\Programs` variants, then the same three for
+   Elegoo Slicer (`elegoo-slicer.exe`, which is an OrcaSlicer fork and takes the
+   same flags), then the usual macOS and Linux paths,
+4. `PATH`, for `orca-slicer` / `elegoo-slicer`.
+
+`printer.slicer` (`"orcaslicer"` by default, from `templates/printer.json`)
+decides which flavour is probed first when a machine has both.
+
+**With nothing installed, `/slice` is a structured `400`, not a crash.** The
+body keeps the contract's `error` and `traceback` and adds `slicer`, listing
+every path that was probed and how to configure one. `GET /health` reports the
+same detection result without running anything.
+
+A `slicer_path` ending in `.py` is run under this interpreter, which is how the
+test stub works — and is a genuine way to wrap a slicer in a script of your own.
+
+## The command line
+
+Every flag was verified by running **OrcaSlicer 2.3.2** on Windows, not read off
+a wiki. They live in `slicer.CLI` as a dict rather than inline, so a release that
+renames one is a one-line fix.
+
+| Flag | What it actually does |
+|---|---|
+| `--debug 2` | OrcaSlicer is a GUI-subsystem binary and prints **nothing** without this. With it, warnings and errors go to stdout — that is what `stdout_tail` is worth reading for. (`--version` is not a valid option; the version is in the first `--debug` line.) |
+| `--load-settings "<machine.json>;<process.json>"` | Semicolon-separated, one argument. A missing file is a clean non-zero exit with the path on stderr. A profile path containing `;` is rejected here rather than mangled there. |
+| `--load-filaments "<filament.json>"` | Same shape, for `filaments`. |
+| `--slice 0` | Slice all plates. Used when `output` ends in `.gcode`. |
+| `--export-3mf <bare file name>` | Used when `output` ends in `.3mf`. The value is joined onto `--outputdir`, so it must be a plain name; an absolute path produces "Unable to open the file `<dir>/<abs path>`". |
+| `--outputdir <dir>` | The only placement flag there is. |
+
+Two things worth knowing:
+
+- **`--slice` and `--export-3mf` must not be combined.** 2.3.2 writes the G-code
+  and then dies with an access violation (`0xC0000005`). The output extension
+  picks one or the other.
+- **The slicer names its own G-code** — `plate_1.gcode`, not what you asked for.
+  So `/slice` runs it into a scratch directory, takes what appeared there, and
+  moves it to `output`; `produced_name` reports the name it had. That also means
+  a version that *does* honour a name still works.
+
+`extra_args` are appended verbatim, just before the model path.
+
+OrcaSlicer's own profiles live under its install directory, e.g.
+`C:\Program Files\OrcaSlicer\resources\profiles\Elegoo\machine\ECC\Elegoo Centauri Carbon 0.4 nozzle.json`
+and `...\process\ECC\0.20mm Standard @Elegoo CC 0.4 nozzle.json`. Pass the
+machine profile then the process profile. With no `profile` at all the slicer
+uses whatever it last had configured, which is rarely what you meant.
+
+## When it goes wrong
+
+Everything is a `400` — all three are things the caller can fix — and each
+carries a `slicer` object alongside `error` and `traceback`:
+
+| Situation | `error` says | `slicer` carries |
+|---|---|---|
+| Nothing installed | how to configure one | `found: false`, `probed`, `configure` |
+| Non-zero exit | the tail of the slicer's own stderr | `argv`, `returncode` (signed, so `-13` not `4294967283`), `stdout_tail`, `stderr_tail` |
+| Overran `FORGE_SLICE_TIMEOUT` | that it was stopped, and to raise the limit | the same, plus `timed_out: true` |
+| Exit 0, no file | to check the profile matches the model | the same |
+
+The child is spawned with `CREATE_NO_WINDOW` and its stdin is `/dev/null`: a
+slicer that decides to ask a question gets EOF instead of hanging on a prompt
+nobody can see.
+
+# Reference
+
 ## The PARAMS contract
 
 ```python
@@ -465,15 +736,22 @@ a B-Rep — and it is measured on exactly the mesh that leaves the service.
 | `checks.py` | The four print-readiness checks; pure mesh arithmetic |
 | `joints.py` | Dovetail / pin / magnet geometry and the cut-face frame |
 | `segmenting.py` | Cut modes, region solids, orientation, plate packing |
+| `mold.py` | Cross-sections, the parting plane, draft, the box and its features |
+| `slicer.py` | Slicer detection, the CLI invocation, and running it hidden |
 | `forge_lib.py` | The appendage peg/socket library scripts import |
 | `samples/ring_band.py` | Reference PartForge script |
 | `samples/appendage_peg.py` | Reference `forge_lib` script (base and ear) |
-| `tests/` | pytest suite |
+| `tests/` | pytest suite, plus `fake_slicer.py`, the stub `/slice` is tested against |
 
-`checks.py`, `printer.py` and the packing half of `segmenting.py` deliberately
-import no build123d, so they run — and are tested — in the HTTP process as well
-as the worker. Everything that touches the kernel does so through a function-
-local import, which is what keeps `import service.main` free of OCP.
+`checks.py`, `printer.py`, `slicer.py`, the packing half of `segmenting.py` and
+the mesh half of `mold.py` deliberately import no build123d, so they run — and
+are tested — in the HTTP process as well as the worker. Everything that touches
+the kernel does so through a function-local import, which is what keeps
+`import service.main` free of OCP.
+
+`slicer.py` is the one module with no worker side at all: slicing is another
+program's subprocess, there is no OCC state to serialise behind and nothing to
+keep warm, so it runs in the HTTP process directly.
 
 ### Why a subprocess
 
@@ -505,3 +783,9 @@ point — they are CAD scripts the user's own Claude session wrote — but it me
   determinism and clean tracebacks, not for confinement. The wall-clock timeout
   is the only containment, and it exists to stop runaway loops, not attackers.
 - Do not point it at scripts from anywhere but this pipeline.
+- `/slice` launches another program. The executable comes from `slicer_path`,
+  `FORGE_SLICER` or a fixed list of install locations, and the arguments are
+  built here as a list — never a shell string — so nothing in a path or a
+  profile name can turn into a command. `extra_args` is the deliberate
+  exception: it goes to the slicer verbatim, so treat it the way you would treat
+  a command line you typed yourself.

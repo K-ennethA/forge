@@ -14,6 +14,10 @@ Phase 2, print readiness::
     POST /segment         -> {"mode", "joint", "cuts", "segments": [...],
                               "plate": {...}}
     POST /export_segments -> {"files": [one per segment], "plate_path": "<3MF>"}
+    POST /mold            -> {"halves": [mold_top, mold_bottom], "parting_z_mm",
+                              "spout", "vents", "registration_keys"}
+    POST /export_mold     -> {"files": [one per half]}
+    POST /slice           -> {"output", "stdout_tail", "duration_ms"}
 
 Error contract: HTTP 400 with ``{"error", "traceback"}`` for script and
 parameter failures, HTTP 500 for service bugs.
@@ -57,13 +61,16 @@ from .runner import (  # noqa: E402
     DEFAULT_TIMEOUT_S,
     run_check,
     run_export,
+    run_export_mold,
     run_export_segments,
     run_generate,
     run_health,
+    run_mold,
     run_parse_params,
     run_segment,
     shutdown_pool,
 )
+from .slicer import health_detection, run_slice  # noqa: E402
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
@@ -160,6 +167,96 @@ class ExportSegmentsRequest(SegmentRequest):
     format: str = Field(default="stl", description="Per-segment format: stl|step|3mf")
 
 
+class MoldRequest(BaseModel):
+    """``/mold``: the same part script, but you get the negative.
+
+    Everything except ``script`` has a default, so ``{"script": ...}`` alone
+    produces a sensible two-piece mold: parting plane at the widest slice, 2
+    degrees of draft, a 4 mm shell, four keys, a spout and automatic vents.
+    """
+
+    script: str = Field(..., description="PartForge script source")
+    overrides: Dict[str, Any] = Field(default_factory=dict)
+    printer: Optional[Dict[str, Any]] = None
+    parting_z_mm: Any = Field(
+        default="auto",
+        description='Z height of the parting plane in mm, or "auto" for the '
+        "part's widest horizontal cross-section",
+    )
+    draft_deg: Optional[float] = Field(
+        default=None, description="Draft angle on near-vertical cavity walls (default 2)"
+    )
+    shell_mm: Optional[float] = Field(
+        default=None, description="Mold box wall thickness per side (default 4)"
+    )
+    clearance_mm: Optional[float] = Field(
+        default=None, description="Grow the cavity by this much all round (default 0)"
+    )
+    spout: Any = Field(
+        default=None,
+        description='{"diameter_mm": mm, "position": [x, y]} or false for no spout',
+    )
+    vents: Any = Field(default="auto", description='Number of vents, or "auto"')
+    registration_keys: Optional[int] = Field(
+        default=None, description="Keys around the parting face (default 4, 0 for none)"
+    )
+    include_mesh: bool = Field(
+        default=True, description="Return each half's triangles as well as its stats"
+    )
+    tolerance: Optional[float] = None
+    angular_tolerance: Optional[float] = None
+    plate_margin_mm: Optional[float] = None
+
+    def mold_options(self) -> Dict[str, Any]:
+        """The mold-shaped fields, forwarded verbatim to the worker."""
+        return {
+            "parting_z_mm": self.parting_z_mm,
+            "draft_deg": self.draft_deg,
+            "shell_mm": self.shell_mm,
+            "clearance_mm": self.clearance_mm,
+            "spout": self.spout,
+            "vents": self.vents,
+            "registration_keys": self.registration_keys,
+        }
+
+
+class ExportMoldRequest(MoldRequest):
+    directory: str = Field(..., description="Absolute output directory")
+    basename: Optional[str] = Field(
+        default=None, description="File-name stem; defaults to 'mold'"
+    )
+    format: str = Field(default="stl", description="Per-half format: stl|step|3mf")
+
+
+class SliceRequest(BaseModel):
+    """``/slice``: hand a file we exported to the slicer that is installed."""
+
+    input: str = Field(..., description="Absolute path to an .stl / .3mf we exported")
+    output: str = Field(..., description="Absolute .gcode or .3mf path to write")
+    printer: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="printer.json object; its `slicer` key decides which install "
+        "is probed first",
+    )
+    profile: Any = Field(
+        default=None,
+        description="Absolute path to an OrcaSlicer .json profile, or a list of them "
+        "(machine, then process)",
+    )
+    filaments: Any = Field(
+        default=None, description="Absolute path(s) to filament .json profiles"
+    )
+    slicer_path: Optional[str] = Field(
+        default=None, description="Slicer executable, overriding detection"
+    )
+    extra_args: Optional[list] = Field(
+        default=None, description="Extra CLI arguments, appended verbatim"
+    )
+    timeout_s: Optional[float] = Field(
+        default=None, description="Wall-clock budget (default FORGE_SLICE_TIMEOUT, 600)"
+    )
+
+
 # --------------------------------------------------------------------------
 # Application
 # --------------------------------------------------------------------------
@@ -227,6 +324,7 @@ def health() -> JSONResponse:
                 "build123d": None,
                 "error": exc.message,
                 "service": __version__,
+                "slicer": health_detection(),
             },
         )
 
@@ -236,6 +334,10 @@ def health() -> JSONResponse:
         "build123d": version,
         "service": __version__,
         "python": info.get("python"),
+        # Additive: whether /slice has anything to call.  A panel can grey out
+        # its Slice button before the user presses it.  A missing slicer is not
+        # a degraded service -- everything else still works.
+        "slicer": health_detection(),
     }
     if not version:
         payload["error"] = info.get("build123d_error") or "build123d is not installed"
@@ -379,6 +481,69 @@ def export_segments(request: ExportSegmentsRequest) -> JSONResponse:
         angular_tolerance=request.angular_tolerance,
         plate_margin_mm=request.plate_margin_mm,
         plate_spacing_mm=request.plate_spacing_mm,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/mold")
+def mold(request: MoldRequest) -> JSONResponse:
+    """Produce a two-piece mold master from the part instead of the part.
+
+    Both halves are re-tessellated and re-checked before they come back; a
+    non-manifold half is a 400 naming it, not a warning with a broken mesh
+    attached.
+    """
+    result = run_mold(
+        request.script,
+        overrides=request.overrides,
+        printer=request.printer,
+        options=request.mold_options(),
+        include_mesh=request.include_mesh,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+    )
+    # Raw JSONResponse for the same reason /generate uses one: the half meshes
+    # are the bulk of the body and do not need re-encoding.
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/export_mold")
+def export_mold(request: ExportMoldRequest) -> JSONResponse:
+    """Write one file per mold half, each centred in XY and sitting on Z=0."""
+    fmt = normalize_format(request.format)
+    result = run_export_mold(
+        request.script,
+        request.directory,
+        overrides=request.overrides,
+        printer=request.printer,
+        options=request.mold_options(),
+        basename=request.basename,
+        fmt=fmt,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/slice")
+def slice_model(request: SliceRequest) -> JSONResponse:
+    """Run the installed slicer's CLI over a file we exported.
+
+    This is a subprocess call, not a geometry job, so it does not go near the
+    warm worker.  With no slicer installed it is a 400 listing everything that
+    was probed -- never a traceback about a missing file.
+    """
+    result = run_slice(
+        request.input,
+        request.output,
+        profile=request.profile,
+        filaments=request.filaments,
+        slicer_path=request.slicer_path,
+        printer=request.printer,
+        extra_args=request.extra_args,
+        timeout_s=request.timeout_s,
     )
     return JSONResponse(status_code=200, content=result)
 

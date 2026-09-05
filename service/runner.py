@@ -75,6 +75,11 @@ SEGMENT_TIMEOUT_S: float = _env_float("FORGE_SEGMENT_TIMEOUT", 300.0)
 #: Wall-clock budget for a check run: one build plus mesh analysis.
 CHECK_TIMEOUT_S: float = _env_float("FORGE_CHECK_TIMEOUT", 120.0)
 
+#: Wall-clock budget for a mold job.  Same shape of work as segmenting -- a
+#: build, a draft, and a dozen booleans against a box -- so it gets the same
+#: order of budget rather than the interactive one.
+MOLD_TIMEOUT_S: float = _env_float("FORGE_MOLD_TIMEOUT", 300.0)
+
 #: Linear deflection for tessellation, in millimetres.  0.05 mm is well below
 #: a 0.4 mm nozzle's resolution while keeping vertex counts sane.
 DEFAULT_TOLERANCE_MM: float = _env_float("FORGE_TESSELLATION_TOLERANCE", 0.05)
@@ -979,8 +984,94 @@ def run_export_segments(
     )
 
 
+def _mold_job(
+    kind: str,
+    script: str,
+    overrides: Optional[Mapping[str, Any]],
+    printer: Optional[Mapping[str, Any]],
+    options: Optional[Mapping[str, Any]],
+    tolerance: Optional[float],
+    angular_tolerance: Optional[float],
+    plate_margin_mm: Optional[float],
+) -> Dict[str, Any]:
+    """One mold job envelope.  ``options`` carries the mold-shaped fields."""
+    job: Dict[str, Any] = {
+        "kind": kind,
+        "script": script,
+        "overrides": dict(overrides or {}),
+        "printer": dict(printer) if printer is not None else None,
+        "tolerance": tolerance,
+        "angular_tolerance": angular_tolerance,
+        "plate_margin_mm": plate_margin_mm,
+    }
+    # Passed through verbatim; mold.normalize_options is the validator, and it
+    # runs in the worker so the error text comes back through the same path as
+    # every other 400.
+    job.update(dict(options or {}))
+    return job
+
+
+def run_mold(
+    script: str,
+    overrides: Optional[Mapping[str, Any]] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    options: Optional[Mapping[str, Any]] = None,
+    include_mesh: bool = True,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _mold_job(
+        "mold",
+        script,
+        overrides,
+        printer,
+        options,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+    )
+    job["include_mesh"] = bool(include_mesh)
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else MOLD_TIMEOUT_S
+    )
+
+
+def run_export_mold(
+    script: str,
+    directory: str,
+    overrides: Optional[Mapping[str, Any]] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    options: Optional[Mapping[str, Any]] = None,
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _mold_job(
+        "export_mold",
+        script,
+        overrides,
+        printer,
+        options,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+    )
+    job["directory"] = directory
+    job["basename"] = basename
+    job["format"] = fmt
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else MOLD_TIMEOUT_S
+    )
+
+
 __all__ = [
     "CHECK_TIMEOUT_S",
+    "MOLD_TIMEOUT_S",
     "DEFAULT_ANGULAR_TOLERANCE",
     "DEFAULT_TIMEOUT_S",
     "DEFAULT_TOLERANCE_MM",
@@ -994,8 +1085,10 @@ __all__ = [
     "normalize_build_result",
     "run_check",
     "run_export",
+    "run_export_mold",
     "run_export_segments",
     "run_generate",
+    "run_mold",
     "run_health",
     "run_parse_params",
     "run_segment",

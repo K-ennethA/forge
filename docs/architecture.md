@@ -74,6 +74,23 @@ Full field detail lives in `service/README.md`; this is the contract summary.
 - `forge_lib` — importable in part scripts (injected like build123d): `peg(d, l)` keyed anti-rotation peg, `socket_for(peg_params, tolerance)` matching negative. Sample: `service/samples/appendage_peg.py`.
 - Joint tolerances come from printer.json (`press_fit` for dovetail/pin, `magnet_pocket_extra` for magnets) unless overridden. Known limitation: N radial dovetails all face the same way, so the final joint must spring; use pins or magnets for full rings.
 - Timeouts: `/check` 120 s, `/segment`/`/export_segments` 300 s (`FORGE_CHECK_TIMEOUT` / `FORGE_SEGMENT_TIMEOUT`).
+- `POST /slice` `{"input": <abs stl/3mf/step/obj>, "output": <abs gcode/3mf>, "profile"?, "filaments"?, "printer"?, "slicer_path"?, "extra_args"?, "timeout_s"?}` → argv, tails, duration, size. OrcaSlicer CLI verified against the real 2.3.2 binary ("C:\Program Files\OrcaSlicer\orca-slicer.exe"); flags are data-driven in `service/slicer.py`. `GET /health` reports slicer detection. Structured 400 with probe list when no slicer found.
+- `POST /mold` `{"script", "overrides", "parting_z_mm": float|"auto", "draft_deg"=2, "shell_mm"=4, "clearance_mm", "spout"|false, "vents": int|"auto", "registration_keys"=4, ...}` → two watertight halves (`mold_top`/`mold_bottom`) with draft (OCC DraftAngle, taper-union fallback, per-half report), registration keys, spout, vents; `POST /export_mold` writes them. Full detail in service/README.md.
+
+## Phase 3 sketch — RigForge foundation (tag panel, manifest, retopo, auto-UV)
+
+New Blender socket commands (additive; refinements folded back here by the orchestrator). Tags are vertex groups prefixed `tag_` on the object, mirrored to a `character.json` manifest (templates/character.json).
+
+| type | params | result |
+|---|---|---|
+| `rigforge_list_tags` | `{"object"}` | `{"tags": [{"name", "vertex_count", "face_count"}]}` |
+| `rigforge_tag` | `{"object", "tag", "faces": [indices] \| "use_selection": true, "replace"?: bool}` | `{"tag", "vertex_count"}` |
+| `rigforge_untag` | `{"object", "tag", "faces"?/"use_selection"? (omit = remove tag entirely)}` | `{}` |
+| `rigforge_manifest` | `{"object", "action": "save"\|"load"\|"get", "path"?, "archetype"?, "motion_notes"?}` | `{"manifest": <character.json content>}` |
+| `rigforge_retopo` | `{"object", "target_faces", "platform"?: "desktop"\|"mobile", "lods"?: int, "bake_normals"?: bool, "bake_resolution"?: int, "keep_original": true}` — voxel remesh → Quadriflow → shrinkwrap → tag transfer by proximity → optional normal bake high→low → optional decimated LODs | `{"objects": [names], "face_counts", "baked"?: image/path info}` |
+| `rigforge_auto_uv` | `{"object", "seams_from_tags"?: true, "margin"?: float, "angle_limit"?}` — seams at tag boundaries (neck, shoulders, wrists per plan), unwrap, pack | `{"islands": int, "uv_coverage": float}` |
+
+MCP mirrors these as `rigforge_*` tools plus a `rigforge_status(object)` overview. Panel: RigForge N-panel section — tag list with assign/remove from selection, archetype dropdown, motion-notes text, retopo settings + Run, UV Run.
 
 ## PARAMS block convention (the PartForge script contract)
 
