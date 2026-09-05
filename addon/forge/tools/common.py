@@ -407,8 +407,10 @@ def cmd_get_scene_info(params):
     for obj in scene.objects:
         data = obj.data
         vertex_count = 0
+        face_count = 0
         if obj.type == "MESH" and data is not None:
             vertex_count = len(data.vertices)
+            face_count = len(data.polygons)
         elif hasattr(data, "vertices"):
             try:
                 vertex_count = len(data.vertices)
@@ -421,6 +423,7 @@ def cmd_get_scene_info(params):
                 "location": [float(v) for v in obj.location],
                 "dimensions": [float(v) for v in obj.dimensions],
                 "vertex_count": vertex_count,
+                "face_count": face_count,
                 "modifiers": [m.name for m in obj.modifiers],
                 "visible": bool(obj.visible_get()) if obj.name in layer_objects else False,
             }

@@ -23,10 +23,16 @@ Responder = Callable[[dict[str, Any], socket.socket], None]
 
 
 class FakeBlender:
-    """Accepts one connection, reads one NDJSON line, hands it to `responder`."""
+    """Accepts a connection, reads one NDJSON line, hands it to `responder`.
 
-    def __init__(self, responder: Responder) -> None:
+    One connection by default, because the client opens a fresh one per command.
+    `connections=N` serves N commands in a row, for the tools that make more than
+    one call (rigforge_status asks for the scene, then for the tags).
+    """
+
+    def __init__(self, responder: Responder, connections: int = 1) -> None:
         self.responder = responder
+        self.connections = connections
         self.requests: list[dict[str, Any]] = []
         self.raw_requests: list[bytes] = []
         self.error: BaseException | None = None
@@ -55,7 +61,8 @@ class FakeBlender:
 
     def _serve(self) -> None:
         self._sock.settimeout(0.2)
-        while not self._stop.is_set():
+        served = 0
+        while not self._stop.is_set() and served < self.connections:
             try:
                 conn, _ = self._sock.accept()
             except TimeoutError:
@@ -76,7 +83,7 @@ class FakeBlender:
                     self.responder(self.requests[-1], conn)
                 except BaseException as exc:  # noqa: BLE001 - surfaced to the test
                     self.error = exc
-            return  # one command per connection (one connection per call)
+            served += 1  # one command per connection (one connection per call)
 
 
 def reply(payload: dict[str, Any]) -> Responder:

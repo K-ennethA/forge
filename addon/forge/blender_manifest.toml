@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 id = "forge"
 version = "0.1.0"
 name = "Forge"
-tagline = "Command socket for Claude plus a parametric PartForge panel"
+tagline = "Command socket for Claude plus PartForge and RigForge panels"
 maintainer = "Forge"
 type = "add-on"
 # "website" is omitted deliberately: Blender's manifest validator rejects an
@@ -18,7 +18,7 @@ license = ["SPDX:GPL-3.0-or-later"]
 # Each permission string must be 64 characters or fewer (Blender validates this).
 [permissions]
 network = "Local command socket (9876) and local geometry service (8765)"
-files = "Reads PartForge scripts and writes STL/STEP/3MF exports"
+files = "Reads part scripts, writes exports, manifests and baked maps"
 
 [build]
 paths_exclude_pattern = [

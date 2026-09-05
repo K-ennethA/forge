@@ -10,10 +10,12 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     registry = importlib.reload(registry)  # noqa: F821
     common = importlib.reload(common)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
+    rigforge = importlib.reload(rigforge)  # noqa: F821
 else:
     from . import registry
     from . import common
     from . import partforge
+    from . import rigforge
 
 import bpy  # noqa: E402,F401  (used by the reload guard above)
 
@@ -23,6 +25,7 @@ __all__ = [
     "registry",
     "common",
     "partforge",
+    "rigforge",
     "ForgeError",
     "dispatch",
     "command_names",
@@ -32,7 +35,9 @@ __all__ = [
 
 def register():
     partforge.register()
+    rigforge.register()
 
 
 def unregister():
+    rigforge.unregister()
     partforge.unregister()

@@ -1,6 +1,6 @@
 # Forge — Blender add-on
 
-The Blender half of the Forge pipeline. It does two things:
+The Blender half of the Forge pipeline. It does three things:
 
 1. Runs a **command socket** on `127.0.0.1:9876` (newline-delimited JSON) that the Forge
    MCP server drives, so Claude can say "symmetrize", "voxel remesh at 1 mm", "export STL"
@@ -9,6 +9,9 @@ The Blender half of the Forge pipeline. It does two things:
    block, a Regenerate button that reloads the solid in place, an Export button, and the
    print-readiness half — **Print Checks** (can this be printed?) and **Segments** (cut it
    up so it can be, and lay the pieces out on the plate).
+3. Renders the **RigForge panel**: semantic tags on a sculpt, the `character.json`
+   manifest, one-click retopology and auto-UV — Phase 3, the foundation the rig, cloth
+   and animation stages are built on.
 
 Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` only.
 
@@ -128,6 +131,20 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `load_meshes` | `meshes` (a list of `load_mesh` param objects), `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
 | `export_stl` | `objects`, `path`, `scale?`, `ascii?`, `apply_modifiers?` | writes a binary STL |
 
+### RigForge commands (Phase 3)
+
+| type | params | does |
+|---|---|---|
+| `rigforge_list_tags` | — | every `tag_*` vertex group with its vertex and face counts, plus how many faces are untagged |
+| `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace?` | assigns the vertices of those faces to `tag_<Name>` at weight 1.0 |
+| `rigforge_untag` | `tag`, `faces?` / `use_selection?`, `include_shared?` | drops faces from a tag; with no faces given, deletes the tag |
+| `rigforge_manifest` | `action` `save`\|`load`\|`get`, `path?`, `archetype?`, `motion_notes?`, `name?`, `create_missing_tags?` | reads/writes `character.json` |
+| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline; returns object names and face counts |
+| `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage |
+| `rigforge_status` | — | one-call overview: tags, archetype, motion notes, manifest path, derived meshes |
+
+Full behaviour is documented under [RigForge panel](#rigforge-panel) below.
+
 ### Additive protocol extensions (Phase 2)
 
 Both are additions; nothing in `docs/architecture.md` changes shape.
@@ -239,6 +256,139 @@ runs on a worker thread with an explicit timeout and reports back through the st
 line, so the UI never freezes waiting on the service. Regeneration is deliberately
 manual — nothing is rebuilt until you press Regenerate.
 
+## RigForge panel
+
+`View3D ▸ N sidebar ▸ Forge ▸ RigForge`. Unlike PartForge, **nothing here needs the
+geometry service** — RigForge is pure Blender.
+
+### The tagging model
+
+Everything downstream depends on Blender knowing what the parts of your sculpt are, so
+that is the only manual step:
+
+- A **tag** is a vertex group named `tag_<Name>` — `tag_Head`, `tag_Arm.L`, `tag_Ear.R`,
+  `tag_Tail`. The commands and the panel take the bare name (`Head`); the `tag_` prefix
+  is added for you, and accepted if you type it. Nothing else on the object is touched,
+  so deform weights and sculpt masks live alongside tags without colliding.
+- A vertex is in a tag at **weight 1.0** — tags are memberships, not gradients.
+- A **face** belongs to a tag when *every* one of its vertices does. That is the rule
+  both writing and reading use, so tagging faces and reading faces back round-trips
+  exactly. A face straddling a boundary belongs to neither side, which is what leaves a
+  one-face band between regions for the seam to run along.
+- Face indices are **base-mesh polygon indices** (`object.data.polygons`), not evaluated
+  or modifier-applied ones.
+- The `character.json` **manifest** is the same information in a form that outlives the
+  .blend: the tag list, the archetype, and your motion notes. Vertex groups are the truth
+  for *where* a tag is; the manifest is the truth for *what the character is*.
+
+Selection-based tagging works in the face-select mode you will actually be in: the
+handler reads the live edit-mode bmesh (the base mesh's `polygon.select` flags only catch
+up when Blender leaves Edit Mode), assigns in Object Mode because that is the only place
+`vertex_group.add()` is legal, and puts you back in Edit Mode where it found you.
+
+`rigforge_untag` with a face list is conservative by default: it only drops vertices that
+no *remaining* face of that tag still needs, so a shared border between two patches
+survives and the neighbours keep their tag. Untagging a scattered handful of faces whose
+every vertex is shared is therefore a legitimate no-op. Pass `include_shared: true` for
+the blunter Blender-style behaviour (remove every vertex of those faces, eroding the tag
+by one ring around the hole).
+
+### Panel walkthrough
+
+1. **Tags.** One row per tag: name, face count, vertex count, and three buttons —
+   *select* (enters Edit Mode with that tag's geometry selected), *assign from selection*,
+   and *remove*. Type a name in the field at the bottom and press **+**: with faces
+   selected it tags them straight away, with nothing selected it creates the tag empty so
+   you can fill it later.
+2. **Character.** The character name written into the manifest, the **archetype**
+   (biped / quadruped / custom — this picks the rig template in Phase 4), and
+   **motion notes**, in plain language: *"ears are floppy and lag behind the head"*,
+   *"tail drags on the ground"*, *"hops rather than walks"*. Phase 5 reads those notes to
+   drive secondary motion. All three live as custom properties on the object, so they
+   follow the sculpt rather than the scene; the ⟳ button next to the object name reloads
+   the panel from whatever object is active.
+3. **Manifest.** A path plus **Save** / **Load**. Save writes `character.json` (tags come
+   from the vertex groups, everything else from the object). Load applies the archetype
+   and notes and creates an empty vertex group for any tag the file lists that the mesh
+   does not have yet — so a manifest can seed the tag list before you have tagged
+   anything. Keys the add-on does not understand yet (`actions`, `godot`, anything Phase 4
+   and 5 add) are carried through a load/save round trip untouched.
+4. **Retopo** and **UV** — below.
+
+Every button reports into the panel's own status line, in the same style as PartForge: a
+failure shows up in the sidebar, never as a traceback in a console you are not looking at.
+
+### The retopo pipeline
+
+**Retopo ▸ Retopologise** (`rigforge_retopo`) turns the sculpt into a game mesh. The
+sculpt is **never modified and never deleted** — `keep_original` is always true in v1, and
+asking for false comes back as a warning rather than a refusal. Re-running replaces the
+previous `_retopo` / `_lod*` objects in place, so the names stay stable.
+
+1. **Duplicate.** `<obj>_retopo`, in the same collection(s), with the sculpt's modifiers
+   and vertex groups stripped off the copy.
+2. **Voxel remesh** at an adaptive size. This step is the whole reason the pipeline is
+   robust against a real sculpt: overlapping blobs, self-intersections and holes are all
+   non-manifold, and Quadriflow refuses non-manifold input outright. The voxel size is
+   derived rather than fixed — a surface of area *A* remeshed at size *v* lands around
+   `A / v²` quads, so the size is solved backwards from four times the target face count
+   and then clamped to between 1/400 and 1/16 of the object's longest axis. The same call
+   therefore works on a 3 cm trinket and a 3 m creature.
+3. **Quadriflow** to `target_faces`. Presets: **desktop 15000**, **mobile 5000**; an
+   explicit `target_faces` (or the panel's field, when it is above zero) wins, and a value
+   stored in the manifest's `retopo` block comes next. If Quadriflow still fails, the run
+   does not die: it falls back to a collapse decimate to the same target and says so in
+   `warnings` and in `quad_method`.
+4. **Shrinkwrap** the result back onto the sculpt (`NEAREST_SURFACEPOINT`, applied), so
+   the quads sit on the original silhouette rather than on the voxel approximation of it.
+   No modifiers are left on the output.
+5. **Tag transfer by proximity.** A KD-tree of the sculpt's vertices, and each retopo
+   vertex takes a majority vote over its three nearest neighbours — deterministic, needs
+   no modifier stack or depsgraph evaluation, and one stray vertex on a border cannot
+   claim a region. Every `tag_*` group is recreated on the retopo mesh.
+6. **Normal bake** (optional, `bake_normals`). High-to-low, Cycles, into a new image named
+   `<obj>_retopo_normal` at `bake_resolution` (default 2048); `bake_path` also writes it
+   out as a PNG.
+7. **LODs** (optional, `lods`). `<obj>_lod1`, `_lod2`, … decimated at ratio 0.5, 0.25,
+   0.125 …, duplicated from the retopo mesh so the tags come with them.
+
+Returns the object names, a `face_counts` map keyed by name, the per-stage log, the
+transferred tags, the bake report and any warnings.
+
+**Bake caveat.** The bake is the one step allowed to fail. It needs Cycles, and Cycles is
+a shipped add-on that a `--factory-startup` session (or a user who turned it off) leaves
+disabled — so the add-on enables it for you and then lets `scene.render.engine = "CYCLES"`
+be the real test, because `engine` is a dynamic enum whose static RNA item list does not
+list registered engines. If any of it fails, `result.baked` comes back as
+`{"ok": false, "reason": "..."}`, the reason is repeated in `warnings`, and **the rest of
+the pipeline still delivers its meshes** — everything else is already on disk by then.
+Cycles bakes on the CPU here at one sample; a 2048 map on a dense sculpt is not instant,
+so start smaller if you are iterating. Baking also needs UVs on the low-poly mesh: if
+there are none it makes a UV layer first, but you will get a better map by running the UV
+pass below before the bake.
+
+### Auto UV
+
+**UV ▸ Unwrap** (`rigforge_auto_uv`) derives seams from the tags, unwraps and packs.
+
+- **Seams from tags** (the default): every edge where the tag changes becomes a seam.
+  That is exactly the neck, shoulder and wrist seams the plan asks for, and it falls out
+  of the tagging rule rather than being special-cased. Open boundaries are always seams —
+  a hole cannot be unwrapped through.
+- **Fallback.** A mesh with fewer than two distinct tagged regions has no boundaries to
+  use, so it seams by sharp angle instead (`angle_limit`, default 66°, the same threshold
+  Smart UV Project uses).
+- **Unwrap** is angle-based along those seams, with `uv.smart_project` as a second
+  fallback if Blender refuses; then **pack** with the concave packer, rotation and scaling
+  enabled, at `margin` (default 0.02).
+
+Returns the island count, the UV coverage as a fraction of the 0–1 tile, the seam counts
+broken down by where they came from, and which unwrap method actually ran. For an organic
+shrinkwrapped quad mesh, coverage lands around **0.50–0.55** — that is what Blender's
+packer gives for concave islands, not a bug. UV selection is driven with
+`use_uv_select_sync` turned on for the duration, because there is no UV editor to select
+in when this runs headless; your setting is restored afterwards.
+
 ## Layout
 
 ```
@@ -249,13 +399,47 @@ addon/forge/
   tools/registry.py      command registry + error wrapping
   tools/common.py        every protocol command
   tools/partforge.py     PartForge state, HTTP client, operators
+  tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel operators
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
   headless_phase2.py     headless checks for the Print Checks / Segments panels
+  headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
 ```
 
+One convention in `ui/panels.py` worth knowing before you edit it: the PartForge panels
+bind their state to a local called `props`, the RigForge ones to `rf`. They are different
+PropertyGroups on the scene, and the headless panel-wiring tests tell them apart by that
+name.
+
 ## Headless tests
+
+Two suites, both `--background` only. Never launch Blender windowed to run them.
+
+### Phase 3 — RigForge (`headless_rigforge.py`)
+
+Needs **no geometry service**:
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python "C:\...\forge\addon\tests\headless_rigforge.py"
+```
+
+It builds its own sculpt in-script — six overlapping spheres subdivided to ~36 000 faces,
+with a hole punched in the torso and a three-faced edge welded on, so the mesh is
+genuinely non-manifold and the voxel pass has to earn its place (the suite asserts that
+plain `remesh mode=quad` refuses it first). Then it drives every `rigforge_*` command over
+a real socket on port 9879: tag/list/untag round trips, selection-based tagging in
+face-select mode, a manifest save→load round trip checked against
+`templates/character.json`'s schema, a retopo to 5000 faces with two LODs (asserting the
+sculpt is untouched, the tags transferred, and the count landed within 25 % of target),
+auto-UV (asserting every tag-change edge is seamed, that no seam-free path runs from the
+head to the torso, that every face has UV area, and that coverage clears 0.45), a
+best-effort normal bake, and the panel operators and wiring. 108 checks; it ends with
+`RESULT: OK` and frees its port.
+
+### Phase 2 — PartForge
 
 `addon/tests/headless_phase2.py` drives the Phase 2 panels through their real operators
 inside a background Blender, against a running geometry service. Start the service on a

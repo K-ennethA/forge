@@ -1,11 +1,21 @@
-"""Forge sidebar (N-panel) UI: server status and the PartForge parameter panel."""
+"""Forge sidebar (N-panel) UI: server status, PartForge and RigForge.
+
+Two deliberate conventions in this file:
+
+* the PartForge panels bind their state to a local called ``props``, the
+  RigForge ones to ``rf``.  They are different PropertyGroups on the scene and
+  the headless panel-wiring test tells them apart by that name;
+* nothing here does work.  Every button is an operator that reports back through
+  its panel's ``status`` string, so a failure shows up in the sidebar instead of
+  in a console the sculptor is not looking at.
+"""
 
 import bpy
 from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import partforge
+from ..tools import partforge, rigforge
 
 CATEGORY = "Forge"
 
@@ -238,6 +248,135 @@ class VIEW3D_PT_forge_export(_ForgePanel, Panel):
         layout.label(text="Service: %s" % service_url(), icon="URL")
 
 
+class VIEW3D_PT_forge_rigforge(_ForgePanel, Panel):
+    """Stage 1 of RigForge: what the parts of the sculpt are called."""
+
+    bl_idname = "VIEW3D_PT_forge_rigforge"
+    bl_label = "RigForge"
+
+    def draw(self, context):
+        layout = self.layout
+        rf = rigforge.get_props(context)
+        if rf is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+
+        obj = rigforge.active_mesh(context)
+        row = layout.row(align=True)
+        if obj is None:
+            row.label(text="Select a mesh object", icon="INFO")
+            return
+        row.label(text=obj.name, icon="OUTLINER_OB_MESH")
+        row.operator("forge.rf_sync", text="", icon="FILE_REFRESH")
+
+        box = layout.box()
+        box.label(text="Tags", icon="GROUP_VERTEX")
+        tags = rigforge.tag_groups(obj)
+        if not tags:
+            box.label(text="No tags yet - name one below", icon="INFO")
+        else:
+            face_map = rigforge._face_tag_map(obj)
+            for group in tags:
+                name = rigforge.tag_display_name(group.name)
+                verts = len(rigforge._group_vertices(obj, group.index))
+                faces = sum(1 for marks in face_map.values() if group.index in marks)
+                row = box.row(align=True)
+                row.label(text="%s   %d f / %d v" % (name, faces, verts))
+                row.operator("forge.rf_select_tag", text="", icon="RESTRICT_SELECT_OFF").tag = name
+                op = row.operator("forge.rf_assign_tag", text="", icon="IMPORT")
+                op.tag = name
+                op.replace = False
+                row.operator("forge.rf_remove_tag", text="", icon="X").tag = name
+
+        row = box.row(align=True)
+        row.prop(rf, "new_tag_name", text="")
+        row.operator("forge.rf_new_tag", text="", icon="ADD")
+
+        box = layout.box()
+        box.label(text="Character", icon="ARMATURE_DATA")
+        box.prop(rf, "character_name")
+        box.prop(rf, "archetype")
+        column = box.column(align=True)
+        column.label(text="Motion notes:")
+        column.prop(rf, "motion_notes", text="")
+        if rf.motion_notes:
+            sub = column.column(align=True)
+            sub.active = False
+            for line in _wrap(rf.motion_notes, 40)[:4]:
+                sub.label(text=line)
+
+        box = layout.box()
+        box.label(text="Manifest", icon="FILE_TEXT")
+        box.prop(rf, "manifest_path", text="")
+        row = box.row(align=True)
+        row.operator("forge.rf_manifest_save", text="Save", icon="FILE_TICK")
+        row.operator("forge.rf_manifest_load", text="Load", icon="IMPORT")
+
+        if rf.status:
+            box = layout.box()
+            box.alert = bool(rf.status_is_error)
+            box.label(text=rf.status, icon="ERROR" if rf.status_is_error else "INFO")
+        if rf.summary:
+            layout.label(text=rf.summary, icon="MESH_DATA")
+
+
+class VIEW3D_PT_forge_retopo(_ForgePanel, Panel):
+    """Stage 2: sculpt in, game mesh out."""
+
+    bl_idname = "VIEW3D_PT_forge_retopo"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "Retopo"
+
+    def draw(self, context):
+        layout = self.layout
+        rf = rigforge.get_props(context)
+        if rf is None:
+            return
+
+        column = layout.column(align=True)
+        column.prop(rf, "platform", expand=True)
+        column.prop(rf, "target_faces")
+        if rf.target_faces <= 0:
+            row = column.row()
+            row.active = False
+            row.label(text="Preset: %d faces" % rigforge.PLATFORM_TARGETS[rf.platform])
+        column.prop(rf, "lods")
+
+        box = layout.box()
+        box.prop(rf, "bake_normals")
+        sub = box.row()
+        sub.active = rf.bake_normals
+        sub.prop(rf, "bake_resolution")
+        if rf.bake_normals:
+            row = box.row()
+            row.active = False
+            row.label(text="Needs Cycles; skipped with a note if it fails")
+
+        layout.operator("forge.rf_retopo", icon="MOD_REMESH", text="Retopologise")
+
+
+class VIEW3D_PT_forge_uv(_ForgePanel, Panel):
+    """Stage 3: seams from the tags, unwrap, pack."""
+
+    bl_idname = "VIEW3D_PT_forge_uv"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "UV"
+
+    def draw(self, context):
+        layout = self.layout
+        rf = rigforge.get_props(context)
+        if rf is None:
+            return
+
+        column = layout.column(align=True)
+        column.prop(rf, "uv_seams_from_tags")
+        column.prop(rf, "uv_margin")
+        sub = column.row()
+        sub.active = not rf.uv_seams_from_tags
+        sub.prop(rf, "uv_angle_limit")
+        layout.operator("forge.rf_auto_uv", icon="UV", text="Unwrap")
+
+
 def _wrap(text, width):
     """Very small word wrapper - layout.label() does not wrap by itself."""
     lines = []
@@ -262,6 +401,9 @@ _CLASSES = (
     VIEW3D_PT_forge_checks,
     VIEW3D_PT_forge_segments,
     VIEW3D_PT_forge_export,
+    VIEW3D_PT_forge_rigforge,
+    VIEW3D_PT_forge_retopo,
+    VIEW3D_PT_forge_uv,
 )
 
 

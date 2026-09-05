@@ -630,3 +630,279 @@ def fmt_written_files(files: Sequence[Any], plate_path: Any) -> str:
         lines.append(f"  {'(packed plate)':<20} {'plate':<9} {fmt_size(size):>10}  {plate_path}")
     lines.append(f"  {len(lines)} file(s), {fmt_size(total)} total")
     return "\n".join(lines)
+
+
+# --- Phase 3 (RigForge) -----------------------------------------------------
+
+#: Tags are vertex groups prefixed ``tag_`` on the object (docs/architecture.md).
+#: The add-on owns that prefix, so the wire carries the BARE name — a model that
+#: reaches for "tag_Head" (because it read the contract) gets the same result as
+#: one that says "Head".
+TAG_PREFIX = "tag_"
+
+#: Blender caps vertex group names at 63 bytes, same as object names.
+_MAX_TAG_NAME = 63
+
+#: Retopology face budgets per target platform, taken from
+#: templates/character.json (`retopo.target_faces_desktop` / `_mobile`) so the
+#: manifest and the tool agree on what "desktop" means.
+PLATFORM_TARGET_FACES: Dict[str, int] = {"desktop": 15000, "mobile": 5000}
+
+#: Name suffixes that mark an object as a retopo/LOD derivative of a sculpt.
+_DERIVATIVE_SUFFIXES = ("retopo", "lod", "low", "lo")
+
+
+def normalize_tag_name(raw: Any, *, label: str = "tag") -> str:
+    """Clean a tag name and strip the ``tag_`` prefix the add-on adds itself."""
+    text = "" if raw is None else str(raw).strip()
+    if text.lower().startswith(TAG_PREFIX):
+        text = text[len(TAG_PREFIX):].strip()
+    if not text:
+        raise ForgeError(
+            f"No {label} name given. Tags are body parts like 'Head', 'Arm.L' or "
+            "'Ear.R' (the tag_ prefix is added by the add-on)."
+        )
+    if any(ch in text for ch in "\r\n\t"):
+        raise ForgeError(f"A {label} name cannot contain line breaks or tabs; got {raw!r}.")
+    encoded = text.encode("utf-8")[:_MAX_TAG_NAME]
+    return encoded.decode("utf-8", errors="ignore") or text[:_MAX_TAG_NAME]
+
+
+def normalize_face_indices(faces: Any) -> List[int]:
+    """Validate a face-index list: whole, non-negative, de-duplicated, sorted.
+
+    Sorting is not cosmetic — it makes two calls that name the same faces produce
+    the same request, which is what lets the request-shaping tests pin the wire.
+    """
+    if isinstance(faces, (str, bytes)) or not isinstance(faces, (list, tuple, set)):
+        raise ForgeError(
+            f"`faces` must be a list of face indices like [12, 13, 14]; got {faces!r}."
+        )
+    seen: set[int] = set()
+    for value in faces:
+        if isinstance(value, bool):
+            raise ForgeError(f"{value!r} is not a face index.")
+        if isinstance(value, float):
+            if not value.is_integer():
+                raise ForgeError(f"Face indices must be whole numbers; got {value}.")
+            value = int(value)
+        try:
+            index = int(str(value).strip() if isinstance(value, str) else value)
+        except (TypeError, ValueError) as exc:
+            raise ForgeError(f"{value!r} is not a face index.") from exc
+        if index < 0:
+            raise ForgeError(f"Face indices cannot be negative; got {index}.")
+        seen.add(index)
+    if not seen:
+        raise ForgeError(
+            "`faces` was empty. Pass at least one face index, or use "
+            "use_selection=true to take Blender's current face selection."
+        )
+    return sorted(seen)
+
+
+def fmt_tag_table(tags: Any, subject: str) -> str:
+    """`rigforge_list_tags` -> one line per tag with its vertex/face counts."""
+    entries = list(tags or []) if isinstance(tags, (list, tuple)) else []
+    if not entries:
+        return (
+            f"No tags on {subject}. Tag body parts with rigforge_tag "
+            "(select faces first, or pass explicit face indices)."
+        )
+
+    lines = [
+        f"{len(entries)} tag(s) on {subject}",
+        "",
+        f"  {'tag':<24} {'verts':>8} {'faces':>8}",
+    ]
+    total_verts = 0
+    total_faces = 0
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            lines.append(f"  {str(entry):<24}{'?':>9}{'?':>9}")
+            continue
+        name = normalize_tag_name(entry.get("name", "?"), label="tag") if entry.get("name") else "?"
+        verts = entry.get("vertex_count")
+        faces = entry.get("face_count")
+        total_verts += verts if isinstance(verts, int) and not isinstance(verts, bool) else 0
+        total_faces += faces if isinstance(faces, int) and not isinstance(faces, bool) else 0
+        lines.append(
+            f"  {name:<24.24} {('?' if verts is None else str(verts)):>8} "
+            f"{('?' if faces is None else str(faces)):>8}"
+        )
+    lines.append("")
+    lines.append(f"  {'total':<24} {total_verts:>8} {total_faces:>8}")
+    return "\n".join(lines)
+
+
+def retopo_face_counts(result: Mapping[str, Any]) -> List[Tuple[str, Any]]:
+    """`(name, face_count)` pairs out of a `rigforge_retopo` result.
+
+    The contract sketches ``{"objects": [names], "face_counts": ...}`` without
+    pinning the second field's shape, so all three plausible forms are accepted:
+    a dict keyed by object name, a list parallel to ``objects``, or ``objects``
+    itself being a list of ``{"name", "face_count"}`` records.
+    """
+    objects = result.get("objects") or []
+    counts = result.get("face_counts")
+
+    pairs: List[Tuple[str, Any]] = []
+    for index, entry in enumerate(objects):
+        if isinstance(entry, Mapping):
+            name = str(entry.get("name") or entry.get("object") or f"object {index}")
+            faces = entry.get("face_count", entry.get("faces"))
+        else:
+            name = str(entry)
+            faces = None
+        if faces is None and isinstance(counts, Mapping):
+            faces = counts.get(name)
+        elif faces is None and isinstance(counts, (list, tuple)) and index < len(counts):
+            faces = counts[index]
+        pairs.append((name, faces))
+    return pairs
+
+
+def fmt_baked(baked: Any) -> Optional[str]:
+    """One line about a baked normal map, whatever shape the add-on reports it in."""
+    if not baked:
+        return None
+    if isinstance(baked, Mapping):
+        bits = []
+        for key in ("image", "name"):
+            if baked.get(key):
+                bits.append(str(baked[key]))
+                break
+        resolution = baked.get("resolution") or baked.get("size")
+        if resolution is not None:
+            if isinstance(resolution, (list, tuple)):
+                bits.append("x".join(fmt_number(v, 0) for v in resolution) + " px")
+            else:
+                bits.append(f"{fmt_number(resolution, 0)} px")
+        if baked.get("path"):
+            bits.append(str(baked["path"]))
+        return ", ".join(bits) if bits else json.dumps(dict(baked), separators=(", ", ": "))
+    return str(baked)
+
+
+def fmt_retopo_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    """Created objects and their face counts as a short table."""
+    pairs = retopo_face_counts(result)
+    lines = [f"Retopologised {subject} — {summary}"]
+    if not pairs:
+        lines.append("  (the add-on reported no new objects)")
+        return "\n".join(lines)
+
+    lines.append("")
+    lines.append(f"  {'object':<28} {'faces':>9}")
+    for name, faces in pairs:
+        lines.append(f"  {name:<28.28} {('?' if faces is None else fmt_number(faces, 0)):>9}")
+
+    baked = fmt_baked(result.get("baked"))
+    if baked:
+        lines.append("")
+        lines.append(f"  normal map baked: {baked}")
+    return "\n".join(lines)
+
+
+def fmt_uv_coverage(value: Any) -> str:
+    """Coverage as a percentage, whether the add-on sends 0.78 or 78.0.
+
+    A value at or below 1.0 is read as a fraction (the contract's `uv_coverage`);
+    anything larger is already a percentage. 1.0 therefore reads as 100%, which
+    is the only sensible meaning either way.
+    """
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "?"
+    if number <= 1.0:
+        number *= 100.0
+    return f"{number:.1f}%"
+
+
+def fmt_uv_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    islands = result.get("islands")
+    coverage = result.get("uv_coverage", result.get("coverage"))
+    parts = [f"{'?' if islands is None else islands} island(s)"]
+    if coverage is not None:
+        parts.append(f"{fmt_uv_coverage(coverage)} UV coverage")
+    seams = result.get("seams")
+    if seams is not None:
+        parts.append(f"{seams} seam edge(s)")
+    return ok(f"unwrapped {subject} ({summary})", ", ".join(parts))
+
+
+def fmt_manifest(manifest: Any) -> str:
+    """A character.json summary — the fields a rigger actually asks about."""
+    if not isinstance(manifest, Mapping) or not manifest:
+        return "  (no manifest content returned)"
+    tags = manifest.get("tags") or []
+    retopo = manifest.get("retopo") if isinstance(manifest.get("retopo"), Mapping) else {}
+    actions = manifest.get("actions") or []
+    notes = str(manifest.get("motion_notes") or "").strip()
+
+    lines = [
+        f"  name: {manifest.get('name') or '(unnamed)'}   "
+        f"archetype: {manifest.get('archetype') or '(unset)'}",
+        f"  tags ({len(tags)}): " + (", ".join(str(t) for t in tags) if tags else "none"),
+    ]
+    if retopo:
+        lines.append(
+            f"  retopo: desktop {retopo.get('target_faces_desktop', '?')} / "
+            f"mobile {retopo.get('target_faces_mobile', '?')} faces, "
+            f"{retopo.get('lods', '?')} LOD(s)"
+        )
+    if actions:
+        lines.append(f"  actions ({len(actions)}): {', '.join(str(a) for a in actions)}")
+    if notes:
+        lines.append(f"  motion notes: {notes if len(notes) <= 200 else notes[:197] + '...'}")
+    return "\n".join(lines)
+
+
+def fmt_manifest_report(action: str, subject: str, result: Mapping[str, Any],
+                        requested_path: Optional[Path]) -> str:
+    """What was saved/loaded/read, and where the JSON lives."""
+    manifest = result.get("manifest")
+    where = result.get("path") or (str(requested_path) if requested_path else None)
+
+    if action == "save":
+        head = f"Saved the {subject} manifest"
+    elif action == "load":
+        head = f"Loaded a manifest onto {subject}"
+    else:
+        head = f"Manifest for {subject}"
+    if where:
+        head += f" — {where}"
+    elif action == "get":
+        head += " (in memory; not written to disk)"
+
+    return "\n".join([head, fmt_manifest(manifest)])
+
+
+def derivative_objects(scene: Mapping[str, Any], base: str) -> List[str]:
+    """Scene objects that look like a retopo/LOD sibling of ``base``.
+
+    ``Hero`` matches ``Hero_retopo``, ``Hero_lod0``, ``Hero_low``; the naming is
+    the add-on's, so this is a hint for the status report, never a guarantee.
+    """
+    if not base:
+        return []
+    prefix = base.lower() + "_"
+    found: List[str] = []
+    for entry in scene.get("objects") or []:
+        if not isinstance(entry, Mapping):
+            continue
+        name = str(entry.get("name") or "")
+        lowered = name.lower()
+        if name == base or not lowered.startswith(prefix):
+            continue
+        if lowered[len(prefix):].startswith(_DERIVATIVE_SUFFIXES):
+            found.append(name)
+    return found
+
+
+def scene_object(scene: Mapping[str, Any], name: str) -> Optional[Mapping[str, Any]]:
+    for entry in scene.get("objects") or []:
+        if isinstance(entry, Mapping) and str(entry.get("name") or "") == name:
+            return entry
+    return None

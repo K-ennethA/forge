@@ -17,24 +17,34 @@ from mcp.server.mcpserver import MCPServer
 from . import __version__, blender_client, config, service_client
 from .errors import BackendUnavailable, ForgeError
 from .util import (
+    PLATFORM_TARGET_FACES,
+    derivative_objects,
     ensure_parent_dir,
     fmt_check_report,
     fmt_joint,
+    fmt_manifest_report,
     fmt_mode,
     fmt_number,
     fmt_overrides,
     fmt_params,
+    fmt_retopo_report,
     fmt_scene_info,
     fmt_segment_report,
     fmt_stats,
+    fmt_tag_table,
+    fmt_uv_report,
+    fmt_vector,
     fmt_written_files,
+    normalize_face_indices,
     normalize_segment_mode,
+    normalize_tag_name,
     object_name_for_script,
     ok,
     plate_items_by_name,
     read_printer,
     read_script,
     resolve_path,
+    scene_object,
 )
 
 INSTRUCTIONS = """\
@@ -52,6 +62,11 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
   viewport) or partforge_export_segments (files for the slicer).
+- RigForge tools (rigforge_*) prepare a sculpt for animation: tag body parts,
+  mirror the tags into a character.json manifest, retopologise, unwrap. The
+  usual order is rigforge_tag (once per part) -> rigforge_retopo ->
+  rigforge_auto_uv; rigforge_status is the one-call overview of where a mesh is
+  in that pipeline.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -854,6 +869,397 @@ def partforge_export_segments(
     plate = payload.get("plate")
     if isinstance(plate, dict) and not plate.get("fits", True):
         lines.append("  WARNING: the packed plate does not fit the bed.")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# RigForge (Phase 3) — tags, manifest, retopology, UV
+# ---------------------------------------------------------------------------
+
+
+def _face_target(
+    faces: Optional[List[int]],
+    use_selection: bool,
+    *,
+    allow_neither: bool = False,
+    neither_hint: str = "",
+) -> Dict[str, Any]:
+    """Resolve the `faces` / `use_selection` pair into wire params.
+
+    The contract writes these as alternatives (``"faces": [...] |
+    "use_selection": true``) without saying what happens when both or neither
+    arrive. Both is an explicit error rather than a silent precedence rule —
+    the same call that guesses wrong here silently tags the wrong geometry, and
+    partforge_* already prefers a readable refusal (apply_transforms with
+    nothing to apply, a negative joint tolerance) over a quiet default.
+    """
+    if faces is not None and use_selection:
+        raise ForgeError(
+            "Pass either `faces` (explicit indices) or use_selection=true "
+            "(Blender's current face selection), not both — they name different "
+            "geometry and there is no safe way to guess which one you meant."
+        )
+    if faces is not None:
+        return {"faces": normalize_face_indices(faces)}
+    if use_selection:
+        return {"use_selection": True}
+    if allow_neither:
+        return {}
+    raise ForgeError(
+        "No faces given. Pass `faces` as a list of face indices, or "
+        "use_selection=true to use Blender's current face selection." + neither_hint
+    )
+
+
+@app.tool()
+def rigforge_list_tags(object: Optional[str] = None) -> str:
+    """List the RigForge body-part tags on a mesh, with their vertex/face counts.
+
+    Tags are vertex groups (prefixed `tag_` in Blender) that name parts of a
+    sculpt — "Head", "Arm.L", "Ear.R" — so retopology, UV seams and rigging know
+    what is what. Call this before tagging to see what already exists, and after
+    a retopo to confirm the tags transferred onto the new mesh.
+    """
+    result = blender_client.send_command("rigforge_list_tags", _target(object))
+    return fmt_tag_table(result.get("tags"), f"'{object}'" if object else "the active object")
+
+
+@app.tool()
+def rigforge_tag(
+    tag: str,
+    faces: Optional[List[int]] = None,
+    use_selection: bool = False,
+    replace: bool = False,
+    object: Optional[str] = None,
+) -> str:
+    """Tag faces of a mesh as a named body part ("Head", "Arm.L", "Ear.R").
+
+    Pass EXACTLY ONE of:
+    - `use_selection=true` — tag whatever faces are selected in Blender now.
+    - `faces` — an explicit list of face indices.
+    Passing both, or neither, is an error.
+
+    For a request phrased by SHAPE or POSITION rather than by index — "the two
+    lumps on top are the ears", "everything below the waist is legs" — you do
+    not know the indices, so do it in two calls:
+
+      1. execute_blender_python: enter Edit Mode on the object, deselect all,
+         and select the faces by their centre position, e.g. select polygons
+         whose centre z is above a threshold and |x| is off-centre for ears.
+         (Selecting in Object Mode via `mesh.polygons[i].select` also works.)
+      2. rigforge_tag(tag="Ear.L", use_selection=True).
+
+    Check the result's face count against what you expected before moving on; if
+    it looks wrong, adjust the selection and re-run with `replace=True`.
+
+    `replace=False` (default) adds these faces to an existing tag of that name;
+    `replace=True` makes the tag exactly this set. The `tag_` prefix is added by
+    the add-on — pass the bare part name.
+    """
+    params = _target(object)
+    params["tag"] = normalize_tag_name(tag)
+    params.update(
+        _face_target(
+            faces,
+            use_selection,
+            neither_hint=(
+                " For a positional request ('the lumps on top are ears'), select "
+                "the faces with execute_blender_python first, then call this with "
+                "use_selection=true."
+            ),
+        )
+    )
+    params["replace"] = bool(replace)
+
+    result = blender_client.send_command("rigforge_tag", params)
+    how = "the current selection" if use_selection else f"{len(params.get('faces', []))} face(s)"
+    return ok(
+        f"tagged {how} as '{result.get('tag', params['tag'])}' on "
+        f"{object or 'the active object'}",
+        f"{result.get('vertex_count', '?')} vertices in the tag"
+        + (", replaced" if replace else ", added"),
+    )
+
+
+@app.tool()
+def rigforge_untag(
+    tag: str,
+    faces: Optional[List[int]] = None,
+    use_selection: bool = False,
+    object: Optional[str] = None,
+) -> str:
+    """Remove faces from a RigForge tag, or delete the tag entirely.
+
+    - Omit BOTH `faces` and `use_selection` to remove the whole tag (the vertex
+      group goes away; the geometry is untouched).
+    - Pass `faces` OR `use_selection=true` to remove just those faces from the
+      tag and leave the rest of it alone. Passing both is an error.
+
+    Nothing is deleted from the mesh either way — this only changes labelling.
+    """
+    params = _target(object)
+    params["tag"] = normalize_tag_name(tag)
+    scope = _face_target(faces, use_selection, allow_neither=True)
+    params.update(scope)
+
+    blender_client.send_command("rigforge_untag", params)
+    if not scope:
+        return ok(f"tag '{params['tag']}' removed from {object or 'the active object'}")
+    how = "the current selection" if use_selection else f"{len(scope.get('faces', []))} face(s)"
+    return ok(
+        f"{how} removed from tag '{params['tag']}' on {object or 'the active object'}"
+    )
+
+
+@app.tool()
+def rigforge_manifest(
+    action: Literal["save", "load", "get"] = "get",
+    path: Optional[str] = None,
+    archetype: Optional[str] = None,
+    motion_notes: Optional[str] = None,
+    object: Optional[str] = None,
+) -> str:
+    """Read or write a character's `character.json` manifest (see templates/).
+
+    The manifest is the durable record of what a sculpt is: its name, archetype
+    (biped / quadruped / custom), the tag list mirrored from the mesh's vertex
+    groups, retopology budgets, plain-language motion notes and the action list.
+
+    - "get": return the manifest as it stands on the object. No file is touched.
+    - "save": write it to disk (`path`, or the add-on's default beside the
+      .blend). Missing folders are created and the extension is set to .json.
+    - "load": read a manifest file and apply it to the object.
+
+    `archetype` and `motion_notes` are forwarded to the add-on verbatim and take
+    effect when the manifest is written — set them on a "save". `motion_notes`
+    is plain language for the animator ("ears are floppy and lag behind the
+    head", "hops rather than walks"), not a schema.
+
+    `path` is only meaningful for save/load; passing it with "get" is an error
+    rather than a silent no-op.
+    """
+    if path is not None and str(path).strip() and action == "get":
+        raise ForgeError(
+            "`path` is only meaningful for action 'save' or 'load'. 'get' returns "
+            "the manifest already on the object — use action='load' to read that "
+            "file, or action='save' to write to it."
+        )
+
+    resolved: Optional[Any] = None
+    params = _target(object)
+    params["action"] = action
+
+    if path is not None and str(path).strip():
+        resolved = resolve_path(path, label="manifest path")
+        if resolved.suffix.lower() != ".json":
+            resolved = resolved.with_suffix(".json")
+        if action == "save":
+            ensure_parent_dir(resolved)
+        elif not resolved.is_file():
+            raise ForgeError(
+                f"No manifest at {resolved}. Point `path` at a character.json "
+                "(see templates/character.json), or omit it to use the add-on's "
+                "default location."
+            )
+        params["path"] = str(resolved)
+
+    if archetype is not None and str(archetype).strip():
+        params["archetype"] = str(archetype).strip()
+    if motion_notes is not None:
+        params["motion_notes"] = str(motion_notes)
+
+    result = blender_client.send_command("rigforge_manifest", params)
+    return fmt_manifest_report(
+        action, f"'{object}'" if object else "the active object", result, resolved
+    )
+
+
+@app.tool()
+def rigforge_retopo(
+    platform: Literal["desktop", "mobile"] = "desktop",
+    target_faces: Optional[int] = None,
+    lods: int = 0,
+    bake_normals: bool = False,
+    bake_resolution: int = 2048,
+    keep_original: bool = True,
+    object: Optional[str] = None,
+) -> str:
+    """Turn a dense sculpt into a clean, animatable game mesh.
+
+    One call runs the whole chain: voxel remesh to seal the sculpt, Quadriflow to
+    the face budget, shrinkwrap back onto the original so the silhouette
+    survives, and tag transfer by proximity so the body-part tags land on the new
+    mesh. Optionally bakes a high-to-low normal map and builds decimated LODs.
+
+    Face budget comes from `platform` unless `target_faces` overrides it:
+    - "desktop": 15000 faces — the templates/character.json desktop budget.
+    - "mobile":  5000 faces — for phone targets and crowds.
+
+    - `lods`: extra decimated levels beyond the base mesh (0 = none, 2 is
+      typical: half and quarter density).
+    - `bake_normals`: bake the sculpt's detail into a normal map on the retopo
+      mesh — this is what makes a 5k-face mesh still read as a sculpt.
+      `bake_resolution` (px, only used when baking) is 2048 by default; 1024 for
+      mobile, 4096 only when the character fills the screen.
+    - `keep_original`: True (default) leaves the sculpt in the scene as the bake
+      source and as an undo of last resort.
+
+    Slow on a dense sculpt — Blender blocks while Quadriflow runs. Reports every
+    object created with its face count; run rigforge_list_tags afterwards to
+    confirm the tags came across, then rigforge_auto_uv to unwrap.
+    """
+    if target_faces is not None:
+        target = int(target_faces)
+        if target < 100:
+            raise ForgeError(
+                f"target_faces must be at least 100; got {target}. Omit it to use "
+                f"the {platform} preset ({PLATFORM_TARGET_FACES[platform]} faces)."
+            )
+        source = "explicit target"
+    else:
+        target = PLATFORM_TARGET_FACES[platform]
+        source = f"{platform} preset"
+
+    if not 0 <= int(lods) <= 8:
+        raise ForgeError(f"lods must be between 0 and 8; got {lods}.")
+    if bake_normals and not 64 <= int(bake_resolution) <= 8192:
+        raise ForgeError(
+            f"bake_resolution must be between 64 and 8192 px; got {bake_resolution}."
+        )
+
+    params = _target(object)
+    params.update(
+        {
+            "target_faces": target,
+            "platform": platform,
+            "lods": int(lods),
+            "bake_normals": bool(bake_normals),
+            "keep_original": bool(keep_original),
+        }
+    )
+    if bake_normals:
+        params["bake_resolution"] = int(bake_resolution)
+
+    result = blender_client.send_command("rigforge_retopo", params)
+    summary = f"{target} face target ({source}), {int(lods)} extra LOD(s)"
+    if bake_normals:
+        summary += f", normals baked at {int(bake_resolution)} px"
+    if not keep_original:
+        summary += ", original removed"
+    return fmt_retopo_report(f"'{object}'" if object else "the active object", result, summary)
+
+
+@app.tool()
+def rigforge_auto_uv(
+    seams_from_tags: bool = True,
+    margin: float = 0.003,
+    angle_limit: float = 66.0,
+    object: Optional[str] = None,
+) -> str:
+    """Unwrap a mesh into a packed UV atlas, cutting seams at the tag boundaries.
+
+    Run this on the RETOPO mesh, after rigforge_retopo — unwrapping a raw sculpt
+    wastes the atlas on geometry that is about to be replaced.
+
+    - `seams_from_tags` (default True): mark seams where one body-part tag meets
+      another — neck, shoulders, wrists — so islands follow anatomy and stretch
+      lands in places nobody looks. Set False to let the angle limit decide
+      alone, for a mesh with no tags.
+    - `angle_limit`: degrees of face-angle change that forces a new island (66 is
+      Blender's own default; lower = more, flatter islands).
+    - `margin`: gap between islands in UV space (0..1). 0.003 keeps mipmaps from
+      bleeding one island into the next; raise it for low-resolution textures.
+
+    Reports the island count and how much of the UV square the layout uses —
+    low coverage means wasted texture resolution, so consider fewer seams.
+    """
+    if not 0.0 <= float(margin) < 0.5:
+        raise ForgeError(f"margin must be between 0 and 0.5 (UV space); got {margin}.")
+    if not 0.0 < float(angle_limit) < 90.0:
+        raise ForgeError(f"angle_limit must be between 0 and 90 degrees; got {angle_limit}.")
+
+    params = _target(object)
+    params.update(
+        {
+            "seams_from_tags": bool(seams_from_tags),
+            "margin": float(margin),
+            "angle_limit": float(angle_limit),
+        }
+    )
+    result = blender_client.send_command("rigforge_auto_uv", params)
+    summary = (
+        ("seams at tag boundaries" if seams_from_tags else "no tag seams")
+        + f", angle limit {fmt_number(angle_limit)} deg, margin {fmt_number(margin, 4)}"
+    )
+    return fmt_uv_report(f"'{object}'" if object else "the active object", result, summary)
+
+
+@app.tool()
+def rigforge_status(object: Optional[str] = None) -> str:
+    """Where is this mesh in the RigForge pipeline? Tags, counts, retopo siblings.
+
+    One call that answers "what have we done to this character so far": the
+    object's vertex/face counts, every body-part tag with its size, and whether a
+    retopo or LOD mesh already exists alongside it. Start here before tagging or
+    retopologising something you did not just create.
+
+    Omit `object` to report on Blender's active object.
+    """
+    scene = blender_client.send_command("get_scene_info")
+    name = (object or "").strip() or str(scene.get("active") or "").strip()
+    if not name:
+        raise ForgeError(
+            "No object given and nothing is active in Blender. Name the object, "
+            "or select one first (select_object)."
+        )
+
+    entry = scene_object(scene, name)
+    if entry is None:
+        available = ", ".join(
+            str(o.get("name")) for o in (scene.get("objects") or []) if isinstance(o, dict)
+        )
+        raise ForgeError(
+            f"No object named '{name}' in the scene. Present: {available or '(none)'}."
+        )
+
+    faces = entry.get("face_count")
+    lines = [
+        f"RigForge status — {name}" + (" (active)" if name == scene.get("active") else ""),
+        f"  {entry.get('type', '?')}: {entry.get('vertex_count', '?')} verts, "
+        + (f"{faces} faces" if faces is not None else "face count not reported")
+        + f", dimensions {fmt_vector(entry.get('dimensions'), 3)}",
+    ]
+
+    try:
+        tags = blender_client.send_command("rigforge_list_tags", {"object": name}).get("tags")
+    except ForgeError as exc:
+        lines.append(f"  tags: unavailable — {exc}")
+    else:
+        listed = [t for t in (tags or []) if isinstance(t, dict)]
+        if not listed:
+            lines.append("  tags: none yet — tag body parts with rigforge_tag")
+        else:
+            lines.append(f"  tags ({len(listed)}):")
+            for tag in listed:
+                lines.append(
+                    f"    {str(tag.get('name', '?')):<24.24} "
+                    f"{str(tag.get('vertex_count', '?')):>8} verts "
+                    f"{str(tag.get('face_count', '?')):>8} faces"
+                )
+
+    siblings = derivative_objects(scene, name)
+    if siblings:
+        lines.append(f"  retopo/LOD siblings ({len(siblings)}):")
+        for sibling in siblings:
+            info = scene_object(scene, sibling) or {}
+            sibling_faces = info.get("face_count")
+            lines.append(
+                f"    {sibling:<24.24} {str(info.get('vertex_count', '?')):>8} verts"
+                + (f" {sibling_faces:>8} faces" if sibling_faces is not None else "")
+            )
+    else:
+        lines.append("  retopo/LOD siblings: none — run rigforge_retopo when tagging is done")
+
     return "\n".join(lines)
 
 

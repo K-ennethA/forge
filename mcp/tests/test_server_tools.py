@@ -52,6 +52,14 @@ EXPECTED_TOOLS = {
     "partforge_segment",
     "partforge_load_segments",
     "partforge_export_segments",
+    # RigForge (Phase 3)
+    "rigforge_list_tags",
+    "rigforge_tag",
+    "rigforge_untag",
+    "rigforge_manifest",
+    "rigforge_retopo",
+    "rigforge_auto_uv",
+    "rigforge_status",
 }
 
 
@@ -96,7 +104,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 25
+    assert len(names) == 32
 
 
 def test_every_tool_is_documented() -> None:
@@ -130,6 +138,14 @@ def test_every_tool_has_an_object_schema() -> None:
         ("partforge_segment", ["script_path"]),
         ("partforge_load_segments", ["script_path"]),
         ("partforge_export_segments", ["script_path", "directory"]),
+        # RigForge: only the tag name is ever mandatory
+        ("rigforge_list_tags", []),
+        ("rigforge_tag", ["tag"]),
+        ("rigforge_untag", ["tag"]),
+        ("rigforge_manifest", []),
+        ("rigforge_retopo", []),
+        ("rigforge_auto_uv", []),
+        ("rigforge_status", []),
     ],
 )
 def test_required_parameters_match_the_contract(tool_name: str, required: list[str]) -> None:
@@ -155,6 +171,8 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
             "joint_type",
             ["dovetail", "pin", "magnet", "none"],
         ),
+        ("rigforge_manifest", "action", ["save", "load", "get"]),
+        ("rigforge_retopo", "platform", ["desktop", "mobile"]),
     ],
 )
 def test_enum_parameters_match_the_contract(
@@ -190,6 +208,13 @@ def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
         "boolean",
         "merge_by_distance",
         "separate_loose",
+        "rigforge_list_tags",
+        "rigforge_tag",
+        "rigforge_untag",
+        "rigforge_manifest",
+        "rigforge_retopo",
+        "rigforge_auto_uv",
+        "rigforge_status",
     ],
 )
 def test_object_targeting_tools_take_an_optional_object(tool_name: str) -> None:
@@ -197,6 +222,30 @@ def test_object_targeting_tools_take_an_optional_object(tool_name: str) -> None:
     tool = next(t for t in list_tools() if t.name == tool_name)
     assert "object" in tool.input_schema["properties"]
     assert "object" not in tool.input_schema.get("required", [])
+
+
+@pytest.mark.parametrize("tool_name", ["rigforge_tag", "rigforge_untag"])
+def test_faces_and_use_selection_are_both_optional_in_the_schema(tool_name: str) -> None:
+    """The either/or is enforced in the tool, not the schema — see test_rigforge."""
+    schema = next(t for t in list_tools() if t.name == tool_name).input_schema
+    required = schema.get("required", [])
+    assert "faces" not in required and "use_selection" not in required
+    branches = schema["properties"]["faces"].get("anyOf") or [schema["properties"]["faces"]]
+    array = next(b for b in branches if b.get("type") == "array")
+    assert array["items"]["type"] == "integer"
+    assert schema["properties"]["use_selection"]["type"] == "boolean"
+
+
+def test_retopo_defaults_match_the_desktop_preset() -> None:
+    """target_faces has no default of its own: the platform preset decides."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_retopo").input_schema
+    properties = schema["properties"]
+    assert properties["platform"]["default"] == "desktop"
+    assert properties["target_faces"].get("default") is None
+    assert properties["lods"]["default"] == 0
+    assert properties["bake_normals"]["default"] is False
+    assert properties["bake_resolution"]["default"] == 2048
+    assert properties["keep_original"]["default"] is True
 
 
 # --- error paths with no backends running -----------------------------------
@@ -216,7 +265,16 @@ def test_forge_status_never_fails_and_reports_both_backends(dead_backends) -> No
     assert "Traceback" not in text
 
 
-@pytest.mark.parametrize("tool_name", ["blender_ping", "get_scene_info", "separate_loose"])
+@pytest.mark.parametrize(
+    "tool_name",
+    [
+        "blender_ping",
+        "get_scene_info",
+        "separate_loose",
+        "rigforge_list_tags",
+        "rigforge_status",
+    ],
+)
 def test_blender_tools_report_the_addon_is_down(dead_backends, tool_name: str) -> None:
     result = call(tool_name)
     text = text_of(result)

@@ -4,7 +4,7 @@ A stdio MCP server that gives Claude Code one tool surface over both Forge backe
 
 | Backend | Address | Used for |
 |---|---|---|
-| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export |
+| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV |
 | Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
@@ -46,13 +46,15 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 25-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 32-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
-a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket. Nothing
-in the suite needs Blender or the geometry service, and nothing binds or connects to
-9876/8765.
+a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket.
+`tests/test_rigforge.py` does the same for the Phase 3 `rigforge_*` tools: the command name
+and every parameter of each request, the `faces` / `use_selection` either-or, and each
+report rendered from a canned, contract-shaped result. Nothing in the suite needs Blender or
+the geometry service, and nothing binds or connects to 9876/8765.
 
 ### Registering with Claude Code
 
@@ -175,6 +177,65 @@ heights, `"30, 60"`, or `partforge_check`'s `{"radial": 4}` object copied verbat
 `joint_type` is `dovetail` / `pin` / `magnet` / `none`, and `joint_tolerance` overrides the
 printer profile's `press_fit` / `magnet_pocket_extra` when given.
 
+### RigForge (Phase 3)
+
+Getting a sculpt ready to animate: label the parts, write that down, rebuild the topology,
+unwrap. Each takes an optional `object` name; omitted means the active object.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `rigforge_status` | — | One-call overview: vertex/face counts, every tag with its size, and whether a `_retopo` / `_lod*` sibling already exists. Start here. |
+| `rigforge_list_tags` | — | The body-part tags on a mesh with their vertex/face counts. |
+| `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace` | Label faces as a body part ("Head", "Arm.L", "Ear.R"). Exactly one of `faces` / `use_selection`. |
+| `rigforge_untag` | `tag`, `faces` \| `use_selection` | Remove faces from a tag, or omit both to delete the tag entirely. Never touches geometry. |
+| `rigforge_manifest` | `action` `save`/`load`/`get`, `path`, `archetype`, `motion_notes` | Read or write the character's `character.json` (see `templates/`). |
+| `rigforge_retopo` | `platform` `desktop`/`mobile`, `target_faces`, `lods`, `bake_normals`, `bake_resolution`, `keep_original` | Voxel remesh → Quadriflow → shrinkwrap → tag transfer, plus optional normal bake and LODs. Tables every object it created with its face count. |
+| `rigforge_auto_uv` | `seams_from_tags`, `margin`, `angle_limit` | Seams at tag boundaries, unwrap, pack. Reports islands and UV coverage. |
+
+Tags are vertex groups prefixed `tag_` on the object; the add-on owns that prefix, so pass
+the bare part name (`"Head"` — `"tag_Head"` is accepted and stripped). The face budget comes
+from `platform` — desktop 15000, mobile 5000, matching `templates/character.json` — unless
+`target_faces` overrides it.
+
+**A typical run — tag, retopo, unwrap.** The tagging step is two calls whenever the user
+describes geometry by shape rather than by index:
+
+```text
+# "the two lumps on top of the head are its ears"
+execute_blender_python(code="""
+import bpy
+mesh = bpy.data.objects['goblin'].data
+for poly in mesh.polygons:
+    c = poly.center
+    poly.select = c.z > 1.55 and abs(c.x) > 0.06
+print(sum(1 for p in mesh.polygons if p.select), 'faces selected')
+""")
+rigforge_tag(tag="Ear.L", use_selection=True, object="goblin")
+
+# ... one call per part, then check the labelling took
+rigforge_status(object="goblin")
+
+# rebuild the topology for a phone target, with the sculpt detail baked in
+rigforge_retopo(platform="mobile", lods=2, bake_normals=True, object="goblin")
+
+# unwrap the RETOPO mesh, cutting seams where one tag meets the next
+rigforge_auto_uv(object="goblin_retopo")
+
+# write it all down
+rigforge_manifest(action="save", path="projects/goblin/character.json",
+                  archetype="biped", motion_notes="ears are floppy and lag behind the head",
+                  object="goblin")
+```
+
+Three rules worth stating up front, because each one is an error rather than a guess:
+
+- `faces` and `use_selection` are alternatives. Passing both is refused (they name different
+  geometry); passing neither is refused with a pointer back to the two-call flow above.
+- `path` is only meaningful for `action` `save`/`load`. With `get` it is an error, not a
+  silent no-op.
+- `bake_resolution` only goes on the wire when `bake_normals` is true, the same way
+  `remesh`'s `voxel_size` is only sent in voxel mode.
+
 ## Troubleshooting
 
 **"Blender is not running or the Forge add-on server is stopped…"**
@@ -225,3 +286,7 @@ stdin rather than exiting with a traceback (Ctrl+C to quit).
 - **Windows paths.** Every path argument is expanded (`~`, `%VARS%`), normalized and made
   absolute; missing export directories are created; export extensions are corrected to match
   the requested format.
+- **Ambiguity is an error, not a default.** Where two arguments could both apply
+  (`faces` and `use_selection`) or one cannot apply at all (`path` with `action="get"`), the
+  tool refuses and says why. A silent precedence rule here tags the wrong geometry or writes
+  nothing, and neither failure is visible in the report.

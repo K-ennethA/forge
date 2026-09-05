@@ -77,9 +77,11 @@ Full field detail lives in `service/README.md`; this is the contract summary.
 - `POST /slice` `{"input": <abs stl/3mf/step/obj>, "output": <abs gcode/3mf>, "profile"?, "filaments"?, "printer"?, "slicer_path"?, "extra_args"?, "timeout_s"?}` → argv, tails, duration, size. OrcaSlicer CLI verified against the real 2.3.2 binary ("C:\Program Files\OrcaSlicer\orca-slicer.exe"); flags are data-driven in `service/slicer.py`. `GET /health` reports slicer detection. Structured 400 with probe list when no slicer found.
 - `POST /mold` `{"script", "overrides", "parting_z_mm": float|"auto", "draft_deg"=2, "shell_mm"=4, "clearance_mm", "spout"|false, "vents": int|"auto", "registration_keys"=4, ...}` → two watertight halves (`mold_top`/`mold_bottom`) with draft (OCC DraftAngle, taper-union fallback, per-half report), registration keys, spout, vents; `POST /export_mold` writes them. Full detail in service/README.md.
 
-## Phase 3 sketch — RigForge foundation (tag panel, manifest, retopo, auto-UV)
+## Phase 3 — RigForge foundation (tag panel, manifest, retopo, auto-UV) — implemented
 
-New Blender socket commands (additive; refinements folded back here by the orchestrator). Tags are vertex groups prefixed `tag_` on the object, mirrored to a `character.json` manifest (templates/character.json).
+Blender socket commands (full detail in addon/README.md). Tags are vertex groups prefixed `tag_` on the object, mirrored to a `character.json` manifest (templates/character.json). **Wire convention: bare tag names** (`"Head"`); the `tag_` prefix is add-on-internal, and prefixed input is accepted and stripped on both sides. `rigforge_list_tags` entries are `{name, vertex_group, vertex_count, face_count}`.
+
+Implemented refinements (additive): `rigforge_untag` + `include_shared` (default false — shared border verts survive); `rigforge_retopo` `target_faces` optional (explicit → manifest → platform preset), + `bake_path`/`voxel_size`, `face_counts` is a dict keyed by object name, `keep_original: false` is a warning not an error; `rigforge_manifest` + `name`/`create_missing_tags`; `rigforge_auto_uv` + `method`; `rigforge_status` also exists as a socket command (MCP currently composes its own from get_scene_info + list_tags — both valid). `get_scene_info` objects now include `face_count` (mesh objects). Retopo pipeline: adaptive voxel remesh → Quadriflow (decimate fallback, self-reporting) → applied shrinkwrap → kd-tree majority-vote tag transfer → optional Cycles normal bake (works headless; best-effort with `baked.ok`) → LOD1/LOD2 (decimate ratios are triangle budgets, so LOD1 ≈ 70% of polygons, documented). Auto-UV: seams at tag-change edges + boundaries, 66° angle fallback, angle-based unwrap, 0-1 tile pack.
 
 | type | params | result |
 |---|---|---|
