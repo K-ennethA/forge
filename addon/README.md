@@ -10,8 +10,9 @@ The Blender half of the Forge pipeline. It does three things:
    print-readiness half — **Print Checks** (can this be printed?) and **Segments** (cut it
    up so it can be, and lay the pieces out on the plate).
 3. Renders the **RigForge panel**: semantic tags on a sculpt, the `character.json`
-   manifest, one-click retopology and auto-UV — Phase 3, the foundation the rig, cloth
-   and animation stages are built on.
+   manifest, one-click retopology and auto-UV (Phase 3), then the rig itself — a Rigify
+   metarig fitted to those tags, generated, weighted and cleaned up, and exported to a
+   Godot-ready glTF (Phase 4). That is the whole run: sculpt in, playable character out.
 
 Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` only.
 
@@ -142,6 +143,18 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline; returns object names and face counts |
 | `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage |
 | `rigforge_status` | — | one-call overview: tags, archetype, motion notes, manifest path, derived meshes |
+
+### RigForge commands (Phase 4 — rig and Godot export)
+
+| type | params | does |
+|---|---|---|
+| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`** | builds a Rigify metarig and fits it to the tags; ear/tail tags become bone chains. Returns `metarig`, `bone_count`, `mapping` (tag → bones), `chains`, `landmarks`, `warnings` |
+| `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`** | Rigify generate → automatic weights → per-tag weight cleanup. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, `warnings` |
+| `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts and the two numbers that mean trouble; or re-runs the rules |
+| `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`**, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files` |
+
+Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
+sketch; every one has a default that reproduces the sketch's behaviour.
 
 Full behaviour is documented under [RigForge panel](#rigforge-panel) below.
 
@@ -303,8 +316,9 @@ by one ring around the hole).
 2. **Character.** The character name written into the manifest, the **archetype**
    (biped / quadruped / custom — this picks the rig template in Phase 4), and
    **motion notes**, in plain language: *"ears are floppy and lag behind the head"*,
-   *"tail drags on the ground"*, *"hops rather than walks"*. Phase 5 reads those notes to
-   drive secondary motion. All three live as custom properties on the object, so they
+   *"tail drags on the ground"*, *"hops rather than walks"*. Stage 4 reads those notes to
+   set how much each chain lags (see [secondary motion](#the-rig-phase-4-stage-4)), and
+   Phase 5 will read them again. All three live as custom properties on the object, so they
    follow the sculpt rather than the scene; the ⟳ button next to the object name reloads
    the panel from whatever object is active.
 3. **Manifest.** A path plus **Save** / **Load**. Save writes `character.json` (tags come
@@ -313,7 +327,7 @@ by one ring around the hole).
    does not have yet — so a manifest can seed the tag list before you have tagged
    anything. Keys the add-on does not understand yet (`actions`, `godot`, anything Phase 4
    and 5 add) are carried through a load/save round trip untouched.
-4. **Retopo** and **UV** — below.
+4. **Retopo**, **UV**, **Rig** and **Godot Export** — below, in the order you run them.
 
 Every button reports into the panel's own status line, in the same style as PartForge: a
 failure shows up in the sidebar, never as a traceback in a console you are not looking at.
@@ -389,6 +403,200 @@ packer gives for concave islands, not a bug. UV selection is driven with
 `use_uv_select_sync` turned on for the duration, because there is no UV editor to select
 in when this runs headless; your setting is restored afterwards.
 
+### The rig (Phase 4, stage 4)
+
+`RigForge ▸ Rig`. Three buttons and a weight row, in the order you use them.
+
+**Nothing is downloaded.** Rigify is not a download — it ships inside Blender
+(`scripts/addons_core/rigify`) and is simply switched off in a `--factory-startup`
+session, so the add-on enables it in-session the same way the normal bake enables Cycles.
+One wrinkle worth knowing if you write similar code: Rigify must be enabled with
+`default_set=True`, because its own `register()` reads
+`preferences.addons["rigify"].preferences` and raises `KeyError` if the add-on was not
+written into the preferences first.
+
+**Place Metarig** (`rigforge_metarig`) does not merely scale a template onto the sculpt.
+
+1. **Measure.** Every tag becomes a *region*: its bounds, its centroid, its dominant axis
+   (power iteration on the point cloud's covariance — no numpy, the add-on stays stdlib +
+   `bpy`), and landmarks along that axis. Landmarks average a slab of vertices rather than
+   picking the extreme one, so a stray vertex cannot move a joint. A region that is
+   nearly round — a blob arm, a ball head — has no meaningful principal axis, so it falls
+   back to the anatomical hint instead (arms measure outward from the torso, legs
+   downward).
+2. **Scale and seat.** The metarig is uniformly scaled to the sculpt's height and sat on
+   its floor, and the transform is applied into the armature. Everything the fitter does
+   *not* touch — feet, fingers, the whole face — rides on this step.
+3. **Fit.** Then the landmark bones are snapped: hips → chest along the spine (each
+   vertebra at the centroid of its own slice, so the spine follows a belly), neck and
+   head from the Head tag's bottom and top, shoulder/elbow/wrist from each Arm tag,
+   hip/knee/ankle from each Leg tag. Bones are placed parent-first, and any child that is
+   *not* itself being fitted is dragged along by the same delta its parent's tail moved —
+   which is what keeps a hand (and its fingers) on the end of a re-fitted forearm and the
+   whole face on top of a re-fitted head.
+4. **Two details that are not cosmetic.** A perfectly straight limb — which is exactly
+   what a blob sculpt measures as — leaves Rigify's IK pole undefined, so a minimum bend
+   is inserted at the elbow (backwards) and knee (forwards). And Rigify refuses to
+   generate when one chain's head does not sit exactly on the tail of the chain above it
+   (*"bone position is disjoint"*), so the spine and the neck are fitted from a single
+   shared junction point rather than each computing its own.
+
+**Missing tags are warnings, never errors.** A sculpt tagged only Head and Torso still
+gets a rig; the untouched bones keep their scaled default and the result says so.
+
+**Template choice.** `archetype` comes from the manifest by default (`auto`). Within
+biped, the **preset** decides which Rigify human you get:
+
+- `auto` (default) → the **29-bone basic human**, unless the sculpt carries face or hand
+  tags (`Face`, `Jaw`, `Eye`, `Hand`, `Finger`, …), which earn the full one. A game
+  character does not want 160 deform bones for a face nobody tagged.
+- `human` → `bpy.ops.object.armature_human_metarig_add`, the full template (face,
+  fingers, ~160 deform bones).
+- `basic_human`, `quadruped` (and Rigify's `wolf`/`cat`/`horse`/`bird`/`shark` samples).
+
+The result reports `preset` and `preset_reason` every time, so the choice is never
+silent.
+
+**Chains, and secondary motion v1.** A tag named like a chain (`Ear.L`, `Tail`,
+`Antenna`, `Whisker`, `Fin`, `Tentacle`, `Horn`, …), or listed in `modules` as
+`{"kind": "chain", "tag": "..."}`, or named in `spring_chains`, becomes a straight
+three-bone chain along its own axis, anchored to whichever existing bone is nearest its
+base and flagged `basic.copy_chain` so Rigify generates controls and `DEF-` bones for it.
+
+Blender has **no spring-bone primitive**, and every real one is a download. What Generate
+Rig builds instead, per chain:
+
+- `MCH-lag-<tag>` — a bone at the chain's tip, parented to the chain's parent. It follows
+  the head exactly.
+- `MCH-lagmix-<tag>` — the same place, but parented to `root`, with a Copy Transforms
+  constraint onto `MCH-lag-<tag>` at influence `follow`. At influence 1 it tracks the head
+  perfectly; below 1 it blends between the head's motion and its own rest pose, so it
+  arrives **late and short**.
+- every `DEF-` bone of the chain gets a Damped Track onto that mixer, influence rising
+  towards the tip.
+
+So the ears swing towards where the head *was*. It is a pure function of the pose — no
+state, no frame order, no simulation cache — which means it bakes into an exported action
+like any other constraint. It approximates inertia; it does not simulate it. Hence
+**secondary-motion v1**. `follow` is read out of your motion notes: *floppy / lags /
+trails / drags / loose / heavy* → 0.45, *bouncy / jiggle / springy* → 0.60,
+*stiff / rigid* → 0.88, otherwise 0.70. Both helper bones are non-deform, so they never
+reach Godot.
+
+**Generate Rig** (`rigforge_generate_rig`) runs Rigify's own generate (capturing its
+errors, including the bone it names, into a readable message), then:
+
+- **Automatic weights.** `parent_set(type='ARMATURE_AUTO')`. Bone-heat weighting flatly
+  refuses some meshes, and — worse — sometimes succeeds while leaving vertices with no
+  weight at all. Both cases are detected: a hard failure falls back to distance weights
+  (inverse-square distance to the bone *segment*, top 4, normalised), a partial one is
+  repaired vertex by vertex. Either way the result's `weights.method` says which ran, and
+  it is a warning, not a silent difference.
+- **Per-tag cleanup.** The plan's rule, stated exactly, is *no head weights below the neck
+  tag*. Generalised: a vertex inside tag **T** may only be weighted to a bone belonging to
+  another tag **O** when the vertex is within a tolerance **band** of O's own region
+  (default 6% of the character's longest dimension). That band is what keeps the shoulder
+  and neck blending instead of shearing. Bones are matched to tags from the metarig's
+  recorded mapping first (`DEF-upper_arm.L` *and* `DEF-upper_arm.L.001` — Rigify
+  subdivides), then geometrically for anything left over, which is also the whole answer
+  for a rig this add-on did not build.
+- **Limit and normalise.** Top 4 influences per vertex, summing to 1. Done in Python
+  rather than through `vertex_group_limit_total`, because tags live in the same
+  vertex-group namespace as deform weights and the operator's group filters are not a safe
+  way to protect them.
+- Anything the cleanup strips bare is re-filled from the nearest bones rather than left
+  unweighted, with a warning.
+
+`cleanup_report` carries the numbers per tag: vertices in the tag, weights zeroed, total
+weight removed, and which bones were the offenders. On the test biped (5 082 faces, eight
+tags) it zeroes about 4 700 weights, most of them ear bones reaching into the head and
+head bones reaching down the torso.
+
+**Weights ▸ Report / Cleanup / Normalize** (`rigforge_weights`) is the same machinery on
+its own: `report` counts per-bone influences and finds unweighted, un-normalised and
+over-influenced vertices; `cleanup` re-runs the per-tag rules; `normalize` only limits and
+normalises.
+
+### Godot export (Phase 4, stage 7)
+
+`RigForge ▸ Godot Export` (`rigforge_export_godot`). Path, all-or-named actions, LODs,
+root motion, Export.
+
+**Why there is no Game Rig Tools here.** The plan named that add-on for the
+control-rig → deform-rig conversion. It is a download, so the conversion is implemented
+natively, and it is four honest steps:
+
+1. Duplicate the generated rig into a temp collection, and strip its constraints **before**
+   deleting anything (a constraint whose subtarget has just been removed makes the
+   depsgraph complain on every evaluation for the rest of the export).
+2. Work out where each `DEF-` bone's parent *went*: Rigify parents deform bones to
+   `ORG-`/`MCH-` bones, so walking the original hierarchy and mapping each ancestor back
+   to its `DEF-` counterpart reconstructs the anatomical parenting the metarig described.
+   Orphans land on `root`.
+3. Delete every bone that is not a deform bone (plus `root`), and re-apply that parenting.
+4. Constrain each deform bone to its namesake on the control rig with Copy Transforms and
+   bake with `nla.bake(visual_keying=True)`, one action at a time. Whatever the control
+   rig's IK, drivers and secondary motion resolve to on a frame is what lands on the
+   deform bone — so the exported clip needs none of that machinery.
+
+Then the glTF, with Godot's conventions:
+
+- **`use_selection`, `export_yup=True`** — glTF is a +Y-up format and the exporter does the
+  conversion; unit scale is 1.0 = metres (override with `unit_scale`).
+- **Applied transforms.** Rotation and scale are applied on the export copies, so a
+  character that sat rotated in the .blend does not arrive rotated in Godot.
+- **`export_animation_mode="NLA_TRACKS"`.** Each baked clip is pushed onto its own NLA
+  track named after the action. This matters: in `ACTIONS` mode the exporter also picks up
+  actions belonging to *other* objects in the file, and a two-action character ships with
+  five animations. With NLA tracks the file contains exactly what was baked.
+- **Action names survive.** Blender will not hand out a name the source action still
+  holds, so the source steps aside for the duration of the export and is put back
+  afterwards; the clip reaches Godot as `idle-loop`, not `idle-loop.001`. The temporary
+  baked actions are deleted on the way out.
+- **`-loop`, `-col`, `-lod`.** Clip names are passed through untouched, so the `-loop`
+  convention survives to the import script. Meshes suffixed `-col` / `-colonly` /
+  `-convcol` are exported as-is for Godot's own collision handling and listed in the
+  result. `<mesh>_lod1` / `_lod2` siblings are exported alongside, renamed to Godot's
+  `-lod1` / `-lod2` (turn this off with `lods: false`).
+- **LODs get weights.** An LOD is decimated in stage 2, *before* skinning, so it arrives
+  at export with tags but no deform weights — which makes the glTF exporter invent a
+  `neutral_bone` joint and hang the geometry off it, shipping an LOD that never animates.
+  Missing weights are transferred from the skinned mesh by nearest vertex (distance
+  weights if there is no skinned sibling), and you get a warning saying so.
+- **Root motion** (`root_motion: true`) moves each clip's horizontal hip travel onto the
+  `root` bone: the hips' object-space matrices are sampled first, then root is keyed with
+  the travel and the hips re-keyed with it removed, so the visual result is identical and
+  Godot gets a root-motion track. If it fails for a clip, the clip still exports with the
+  travel on the hips and the result says why — it is never allowed to lose an export.
+- **Nothing is left behind.** Every temporary object lives in one collection removed in a
+  `finally`, along with the baked actions and every temporary rename. A *failed* export
+  leaves the scene exactly as it found it; the suite asserts that too.
+
+**The Godot import helper.** `<name>_import.gd` is written next to the glTF: a Godot 4.x
+`EditorScenePostImport` script that walks the imported scene's `AnimationPlayer`, sets
+`loop_mode = Animation.LOOP_LINEAR` on every animation whose name ends in `-loop` (and
+`LOOP_NONE` on the rest), prints what it found, and warns about any clip this export
+contained that Godot did not see.
+
+**Importing it in Godot** (4.x):
+
+1. Copy `character.glb` and `character_import.gd` into the project.
+2. Select `character.glb` in the FileSystem dock, open the **Import** tab.
+3. Set **Import Script** to `character_import.gd`, press **Reimport**.
+4. The scene arrives as a `Skeleton3D` (deform bones only, plus `root`), the meshes, and
+   an `AnimationPlayer` whose `-loop` clips already loop. Drop it into a scene and drive
+   it with an `AnimationTree`.
+
+### What still wants your hands
+
+- **Weights at the shoulders and hips.** The cleanup makes them defensible, not
+  beautiful. Nothing is locked: it is a normal Blender weight paint session afterwards.
+- **The rest pose.** The fitter matches the sculpt's pose; a sculpt in a wild pose gets a
+  wild rest pose. A-pose or T-pose sculpts fit best.
+- **Faces and fingers.** They are scaled with the head and hand, not fitted — there are no
+  landmarks in a `Head` tag that say where an eyelid is. Tag them and use
+  `preset: "human"` only if you intend to animate them.
+
 ## Layout
 
 ```
@@ -399,13 +607,19 @@ addon/forge/
   tools/registry.py      command registry + error wrapping
   tools/common.py        every protocol command
   tools/partforge.py     PartForge state, HTTP client, operators
-  tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel operators
+  tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
+  tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
   headless_phase2.py     headless checks for the Print Checks / Segments panels
   headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
+  headless_phase4.py     headless checks for the rig, the weights and the Godot export
 ```
+
+`rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
+`rigforge.py`'s `ForgeRigForgeProps` and reports through the same `status` line, so the
+whole RigForge section behaves as one panel.
 
 One convention in `ui/panels.py` worth knowing before you edit it: the PartForge panels
 bind their state to a local called `props`, the RigForge ones to `rf`. They are different
@@ -414,7 +628,43 @@ name.
 
 ## Headless tests
 
-Two suites, both `--background` only. Never launch Blender windowed to run them.
+Three suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 4 they are **49 + 108 + 156 = 313 checks**, all green on Blender 5.0.1.
+
+### Phase 4 — rig and Godot export (`headless_phase4.py`)
+
+Needs **no geometry service**; it does need Rigify, which the add-on enables itself:
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python "C:\...\forge\addon\tests\headless_phase4.py"
+```
+
+It imports the synthetic sculpt from the Phase 3 suite (so the two cannot drift apart),
+adds two ear caps to the head, tags all eight regions, retopologises to 5 000 faces with
+two LODs, and then drives the whole of stage 4 and stage 7 over a real socket on port
+9880:
+
+- **Metarig.** Every fitted joint is checked against the *tag's own bounds* — the head
+  bone starts and ends inside the Head tag, each shoulder/elbow/wrist inside its Arm tag,
+  each hip/knee/ankle inside its Leg tag — plus that the limbs are not degenerate
+  (Rigify's IK needs a pole), that the metarig is the sculpt's size and not Rigify's
+  default human, that both ear tags became chains spanning their own tags, and that the
+  chains read "floppy" out of the motion notes.
+- **Generate.** Deform bones exist, the mesh is parented and skinned, tags survive, and
+  the plan's own example is verified on the mesh rather than in the report: pick torso
+  vertices well below the neck band and assert that **no head-bone weight survives on
+  them**. Then: every vertex weighted, none over four influences, all summing to 1.
+- **Export.** The `.glb` is parsed back out (the JSON chunk of the binary container) and
+  checked joint by joint: the skin is there, the deform bones and the ear chain are in it,
+  **no `ORG-`/`MCH-`/`WGT-` bone leaked in**, the only non-`DEF-` joint is `root`, the
+  baked clip is present under its own name and animates many bones rather than the one
+  that was posed, and the LOD meshes arrived with Godot's `-lod` suffix. Then the `.gd`
+  helper's contents, a root-motion export, an export refused for an unknown action name,
+  and — after each — that the scene was left exactly as it was found.
+- Finally the panel wiring, the panel operators, and the quadruped and full-human
+  templates on throwaway copies.
 
 ### Phase 3 — RigForge (`headless_rigforge.py`)
 

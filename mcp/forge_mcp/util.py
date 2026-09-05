@@ -906,3 +906,422 @@ def scene_object(scene: Mapping[str, Any], name: str) -> Optional[Mapping[str, A
         if isinstance(entry, Mapping) and str(entry.get("name") or "") == name:
             return entry
     return None
+
+
+# --- Phase 4 (RigForge rig + Godot export) ----------------------------------
+
+#: glTF containers Godot imports directly. Anything else — including a path with
+#: no suffix at all — becomes .glb, the single-file form with the meshes,
+#: skeleton and animations in one blob.
+GLTF_SUFFIXES = (".glb", ".gltf")
+
+#: Armature names that belong to a character without carrying its name: Rigify
+#: calls its metarig "metarig" and the rig it generates "RIG-<metarig>".
+_GENERIC_METARIG_NAMES = ("metarig",)
+_GENERIC_RIG_PREFIXES = ("rig-", "rig_", "rig.")
+
+
+def normalize_modules(modules: Any) -> List[Dict[str, Any]]:
+    """Validate the metarig `modules` list without rewriting the entries.
+
+    The contract sketches ``[{"kind": "limb"|"spine"|"tail"|"chain", "tag": str}]``,
+    but the add-on owns that vocabulary and will grow it, so modules cross the
+    wire VERBATIM — this only refuses shapes that cannot be a module at all,
+    where passing them through turns into an obscure failure inside Blender.
+    """
+    if isinstance(modules, Mapping):  # one module, unwrapped
+        modules = [modules]
+    if isinstance(modules, (str, bytes)) or not isinstance(modules, (list, tuple)):
+        raise ForgeError(
+            "`modules` must be a list of module objects like "
+            f'[{{"kind": "limb", "tag": "Arm.L"}}]; got {modules!r}.'
+        )
+    out: List[Dict[str, Any]] = []
+    for entry in modules:
+        if not isinstance(entry, Mapping):
+            raise ForgeError(
+                "Each module must be an object naming what to build and from "
+                f'which tag, e.g. {{"kind": "tail", "tag": "Tail"}}; got {entry!r}.'
+            )
+        out.append(dict(entry))
+    if not out:
+        raise ForgeError(
+            "`modules` was empty. Omit it to let the archetype decide, or list "
+            'the modules to add, e.g. [{"kind": "tail", "tag": "Tail"}].'
+        )
+    return out
+
+
+def normalize_actions(actions: Any) -> Any:
+    """Resolve `actions` into the wire's two forms: ``"all"`` or a name list.
+
+    Forgiving in the same way :func:`normalize_segment_mode` is, because a model
+    reaches for whichever of these it thought of first::
+
+        None / "" / "all"          -> "all"
+        "idle-loop"                -> ["idle-loop"]
+        "idle-loop, walk-loop"     -> ["idle-loop", "walk-loop"]
+        ["idle-loop", "walk-loop"] -> unchanged (order kept, duplicates dropped)
+    """
+    if actions is None:
+        return "all"
+    if isinstance(actions, (str, bytes)):
+        text = str(actions).strip()
+        if not text or text.lower() == "all":
+            return "all"
+        if text.startswith("["):  # a JSON list handed over as a string
+            try:
+                return normalize_actions(json.loads(text))
+            except ValueError as exc:
+                raise ForgeError(
+                    f"actions looked like a list but did not parse: {exc}"
+                ) from exc
+        return _action_names(text.split(","))
+    if isinstance(actions, (list, tuple, set)):
+        return _action_names(actions)
+    raise ForgeError(
+        f'Could not read actions {actions!r}. Use "all" for every action on the '
+        'rig, or a list of names like ["idle-loop", "walk-loop"].'
+    )
+
+
+def _action_names(values: Iterable[Any]) -> List[str]:
+    names: List[str] = []
+    for value in values:
+        if value is None or isinstance(value, (Mapping, list, tuple, set, bool)):
+            raise ForgeError(
+                f"{value!r} is not an action name. Actions are named strings, e.g. "
+                '["idle-loop", "walk-loop"].'
+            )
+        name = str(value).strip()
+        if name and name not in names:
+            names.append(name)
+    if not names:
+        raise ForgeError(
+            'No action names given. Pass "all" to export every action, or a list '
+            'like ["idle-loop", "walk-loop"].'
+        )
+    return names
+
+
+def warning_texts(warnings: Any) -> List[str]:
+    """Warnings as plain strings, whatever shape the add-on reports them in.
+
+    The Phase 4 sketch says ``"warnings"`` and stops there, so a bare string, a
+    list of strings and a list of ``{"message", "level"}`` records all render.
+    """
+    if not warnings:
+        return []
+    if isinstance(warnings, (str, bytes)):
+        text = str(warnings).strip()
+        return [text] if text else []
+    if isinstance(warnings, Mapping):
+        warnings = [warnings]
+    if not isinstance(warnings, (list, tuple, set)):
+        return [str(warnings)]
+
+    texts: List[str] = []
+    for entry in warnings:
+        if isinstance(entry, Mapping):
+            for key in ("message", "text", "detail", "warning", "reason"):
+                if entry.get(key):
+                    text = str(entry[key])
+                    break
+            else:
+                text = json.dumps(dict(entry), separators=(", ", ": "))
+            level = entry.get("level") or entry.get("severity")
+            if level:
+                text = f"[{str(level).upper()}] {text}"
+        else:
+            text = str(entry)
+        text = text.strip()
+        if text:
+            texts.append(text)
+    return texts
+
+
+def fmt_warnings(warnings: Any, indent: str = "  ") -> List[str]:
+    """Warnings as their own block, high in the report.
+
+    A rig that generated with "no weights on Ear.R" is the one fact worth
+    reading, so warnings never hide at the bottom under a table of file sizes.
+    """
+    texts = warning_texts(warnings)
+    if not texts:
+        return []
+    lines = [f"{indent}WARNINGS ({len(texts)}):"]
+    lines.extend(f"{indent}  ! {text}" for text in texts)
+    return lines
+
+
+def fmt_detail_block(data: Any, indent: str = "    ") -> List[str]:
+    """Render a free-form report field (`cleanup_report`, `report`, `changed`).
+
+    The contract pins neither shape, so a dict, a list of dicts, a list of
+    strings and a bare scalar all come out as readable lines instead of a repr.
+    """
+    if data is None or data == "" or data == [] or data == {}:
+        return []
+    if isinstance(data, Mapping):
+        lines: List[str] = []
+        for key, value in data.items():
+            label = str(key).replace("_", " ")
+            if isinstance(value, Mapping):
+                inner = ", ".join(f"{k}={fmt_number(v)}" for k, v in value.items())
+                lines.append(f"{indent}{label}: {inner or 'none'}")
+            elif isinstance(value, (list, tuple)):
+                if value and all(isinstance(v, Mapping) for v in value):
+                    lines.append(f"{indent}{label} ({len(value)}):")
+                    for record in value:
+                        lines.append(
+                            f"{indent}  "
+                            + ", ".join(f"{k}={fmt_number(v)}" for k, v in record.items())
+                        )
+                else:
+                    listed = ", ".join(fmt_number(v) for v in value) if value else "none"
+                    lines.append(f"{indent}{label}: {listed}")
+            else:
+                lines.append(f"{indent}{label}: {fmt_number(value)}")
+        return lines
+    if isinstance(data, (list, tuple, set)):
+        lines = []
+        for entry in data:
+            if isinstance(entry, Mapping):
+                lines.extend(fmt_detail_block(entry, indent))
+            else:
+                lines.append(f"{indent}{entry}")
+        return lines
+    return [f"{indent}{fmt_number(data)}"]
+
+
+def fmt_bone_mapping(mapping: Any, indent: str = "  ") -> List[str]:
+    """`{tag: [bones]}` from rigforge_metarig, one line per tag."""
+    if not isinstance(mapping, Mapping) or not mapping:
+        return []
+    lines = [f"{indent}tag -> bones ({len(mapping)}):"]
+    for tag, bones in mapping.items():
+        if isinstance(bones, (list, tuple, set)):
+            listed = ", ".join(str(b) for b in bones) or "(none)"
+            count = f"{len(bones)}"
+        elif bones is None:
+            listed, count = "(none)", "0"
+        else:
+            listed, count = str(bones), "1"
+        lines.append(f"{indent}  {str(tag):<16.16} {count:>3}  {listed}")
+    return lines
+
+
+def fmt_metarig_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    """What was placed, how many bones, which tag drove which bones."""
+    name = result.get("metarig") or result.get("object") or "(unnamed)"
+    bones = result.get("bone_count", result.get("bones"))
+    if isinstance(bones, (list, tuple, set)):
+        bones = len(bones)
+    lines = [
+        f"Metarig placed for {subject} — {summary}",
+        f"  metarig: {name}   bones: "
+        + ("?" if bones is None else fmt_number(bones, 0)),
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.extend(fmt_bone_mapping(result.get("mapping")))
+    lines.append(
+        "  next: check the placement in Blender, then rigforge_generate_rig."
+    )
+    return "\n".join(lines)
+
+
+def fmt_weighted(weighted: Any) -> str:
+    """`weighted` may be a name, a list of names, or just a yes/no."""
+    if weighted is None:
+        return "not reported"
+    if isinstance(weighted, bool):
+        return "yes" if weighted else "NO — the mesh was not parented"
+    if isinstance(weighted, (list, tuple, set)):
+        listed = ", ".join(str(w) for w in weighted)
+        return listed or "nothing"
+    return str(weighted)
+
+
+def fmt_rig_report(result: Mapping[str, Any], summary: str) -> str:
+    """The generated rig, what it is driving, and the cleanup that ran."""
+    rig = result.get("rig") or "(unnamed)"
+    lines = [
+        f"Rig generated — {summary}",
+        f"  rig: {rig}   weighted: {fmt_weighted(result.get('weighted'))}",
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    cleanup = fmt_detail_block(result.get("cleanup_report"))
+    if cleanup:
+        lines.append("  cleanup:")
+        lines.extend(cleanup)
+    lines.append(
+        "  next: pose and animate, then rigforge_export_godot to bake and write "
+        "the glTF."
+    )
+    return "\n".join(lines)
+
+
+def fmt_weights_report(action: str, subject: str, result: Mapping[str, Any]) -> str:
+    """`report` reads the weights; `cleanup`/`normalize` say what they changed."""
+    heads = {
+        "report": f"Weights on {subject}",
+        "cleanup": f"Cleaned up weights on {subject}",
+        "normalize": f"Normalized weights on {subject}",
+    }
+    lines = [heads.get(action, f"Weights ({action}) on {subject}")]
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    body: List[str] = []
+    report = result.get("report")
+    if report is not None:
+        body.extend(fmt_detail_block(report, "  "))
+    changed = result.get("changed")
+    if changed is not None:
+        if isinstance(changed, (Mapping, list, tuple, set)):
+            body.append("  changed:")
+            body.extend(fmt_detail_block(changed))
+        else:
+            body.append(f"  changed: {fmt_number(changed)}")
+
+    if body:
+        lines.extend(body)
+    else:
+        lines.append("  (the add-on reported no detail)")
+    return "\n".join(lines)
+
+
+def fmt_deform_bones(deform: Any) -> str:
+    """`deform_bones` may be a count or the list of bone names."""
+    if deform is None:
+        return "?"
+    if isinstance(deform, (list, tuple, set)):
+        names = [str(b) for b in deform]
+        head = ", ".join(names[:6])
+        if len(names) > 6:
+            head += f", +{len(names) - 6} more"
+        return f"{len(names)}" + (f" ({head})" if head else "")
+    return fmt_number(deform, 0)
+
+
+def fmt_exported_files(files: Any, indent: str = "  ") -> List[str]:
+    """The written files with their sizes, from strings or `{name, path}` records."""
+    entries = files if isinstance(files, (list, tuple)) else ([files] if files else [])
+    lines: List[str] = []
+    total = 0
+    counted = 0
+    for entry in entries:
+        if isinstance(entry, Mapping):
+            path = entry.get("path") or entry.get("file") or entry.get("name")
+            kind = entry.get("kind") or entry.get("type") or ""
+        else:
+            path, kind = entry, ""
+        if not path:
+            continue
+        size = file_size(path)
+        if size is not None:
+            total += size
+            counted += 1
+        lines.append(
+            f"{indent}  {str(kind):<10.10} {fmt_size(size) if size is not None else '':>10}"
+            f"  {path}"
+        )
+    if not lines:
+        return []
+    head = f"{indent}files ({len(lines)})"
+    if counted:
+        head += f", {fmt_size(total)} on disk"
+    return [head + ":"] + lines
+
+
+def fmt_export_report(
+    subject: str, result: Mapping[str, Any], summary: str, requested_path: Any
+) -> str:
+    """Where it went, what was baked, and every file — warnings first."""
+    where = result.get("path") or requested_path
+    actions = result.get("actions")
+    if isinstance(actions, (list, tuple, set)):
+        listed = ", ".join(str(a) for a in actions) or "none"
+        count = f"{len(actions)}"
+    elif actions is None:
+        listed, count = "not reported", "?"
+    else:
+        listed, count = str(actions), "?"
+
+    lines = [
+        f"Exported {subject} to Godot — {where}",
+        f"  {summary}",
+    ]
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.append(f"  deform bones: {fmt_deform_bones(result.get('deform_bones'))}")
+    lines.append(f"  actions ({count}): {listed}")
+    files = fmt_exported_files(result.get("files"))
+    if files:
+        lines.extend(files)
+    else:
+        lines.append(f"  files: (none reported) — expected at least {where}")
+    return "\n".join(lines)
+
+
+def rig_objects(scene: Mapping[str, Any], base: str) -> Dict[str, List[str]]:
+    """Armatures in the scene that belong to ``base``, split metarig vs rig.
+
+    Naming is the add-on's, so this is a hint for the status report exactly like
+    :func:`derivative_objects`: an armature counts when it carries the character's
+    name (``goblin_metarig``, ``goblin_rig``) or when it carries Rigify's own
+    default names (``metarig``, ``RIG-metarig``).
+    """
+    found: Dict[str, List[str]] = {"metarig": [], "rig": []}
+    base_lower = (base or "").lower()
+    for entry in scene.get("objects") or []:
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("type") or "").upper() != "ARMATURE":
+            continue
+        name = str(entry.get("name") or "")
+        lowered = name.lower()
+        related = bool(base_lower) and base_lower in lowered
+        generic = lowered.startswith(_GENERIC_RIG_PREFIXES) or lowered in (
+            "rig",
+            *_GENERIC_METARIG_NAMES,
+        )
+        if not (related or generic):
+            continue
+        # RIG-metarig is Rigify's GENERATED rig, so the prefix decides before the
+        # substring does.
+        if lowered.startswith(_GENERIC_RIG_PREFIXES):
+            found["rig"].append(name)
+        elif "metarig" in lowered:
+            found["metarig"].append(name)
+        else:
+            found["rig"].append(name)
+    return found
+
+
+def next_rig_step(
+    *, has_tags: bool, has_retopo: bool, has_metarig: bool, has_rig: bool
+) -> str:
+    """The one next call, walking the pipeline backwards from the far end."""
+    if has_rig:
+        return (
+            "rigforge_export_godot — bake the actions onto the deform bones and "
+            "write the glTF (plus its Godot import helper)"
+        )
+    if has_metarig:
+        return (
+            "rigforge_generate_rig — Rigify generate, then parent the mesh with "
+            "automatic weights and run the per-tag cleanup"
+        )
+    if has_retopo:
+        return (
+            "rigforge_metarig — place the metarig from the tag landmarks "
+            "(rigforge_auto_uv first if the mesh is not unwrapped yet)"
+        )
+    if has_tags:
+        return (
+            "rigforge_retopo — rebuild the topology to the face budget, then "
+            "rigforge_auto_uv"
+        )
+    return (
+        "rigforge_tag — label the body parts (select the faces first, or pass "
+        "explicit face indices)"
+    )

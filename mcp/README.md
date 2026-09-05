@@ -4,7 +4,7 @@ A stdio MCP server that gives Claude Code one tool surface over both Forge backe
 
 | Backend | Address | Used for |
 |---|---|---|
-| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV |
+| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV/rig/Godot export |
 | Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
@@ -46,15 +46,17 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 32-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 36-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
 a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket.
-`tests/test_rigforge.py` does the same for the Phase 3 `rigforge_*` tools: the command name
-and every parameter of each request, the `faces` / `use_selection` either-or, and each
-report rendered from a canned, contract-shaped result. Nothing in the suite needs Blender or
-the geometry service, and nothing binds or connects to 9876/8765.
+`tests/test_rigforge.py` does the same for the Phase 3 and Phase 4 `rigforge_*` tools: the
+command name and every parameter of each request, the `faces` / `use_selection` either-or,
+the `actions` `"all"`-or-list forms, and each report rendered from a canned, contract-shaped
+result — including a warnings-heavy one and a nearly empty one, because the add-on side is
+being written in parallel and a thin result must still render. Nothing in the suite needs
+Blender or the geometry service, and nothing binds or connects to 9876/8765.
 
 ### Registering with Claude Code
 
@@ -184,7 +186,7 @@ unwrap. Each takes an optional `object` name; omitted means the active object.
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `rigforge_status` | — | One-call overview: vertex/face counts, every tag with its size, and whether a `_retopo` / `_lod*` sibling already exists. Start here. |
+| `rigforge_status` | — | One-call overview: vertex/face counts, every tag with its size, whether a `_retopo` / `_lod*` sibling and a metarig/rig exist — and the one next call in the chain. Start here. |
 | `rigforge_list_tags` | — | The body-part tags on a mesh with their vertex/face counts. |
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace` | Label faces as a body part ("Head", "Arm.L", "Ear.R"). Exactly one of `faces` / `use_selection`. |
 | `rigforge_untag` | `tag`, `faces` \| `use_selection` | Remove faces from a tag, or omit both to delete the tag entirely. Never touches geometry. |
@@ -197,8 +199,30 @@ the bare part name (`"Head"` — `"tag_Head"` is accepted and stripped). The fac
 from `platform` — desktop 15000, mobile 5000, matching `templates/character.json` — unless
 `target_faces` overrides it.
 
-**A typical run — tag, retopo, unwrap.** The tagging step is two calls whenever the user
-describes geometry by shape rather than by index:
+### RigForge rig and Godot export (Phase 4)
+
+Where Phase 3 stops (a clean, tagged, unwrapped mesh), these four take it to a rigged
+character in Godot. `rigforge_metarig` and `rigforge_weights` take the usual optional
+`object`; the other two name the rig instead.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `rigforge_metarig` | `archetype` `auto`/`biped`/`quadruped`/`custom`, `modules` | Places and scales a metarig from the tag landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle). Reports the bone count and which bones each tag drove. |
+| `rigforge_generate_rig` | `metarig`, `mesh`, `parent_with_weights`, `cleanup` | Rigify generate → parent with automatic weights → per-tag cleanup rules → normalize. Reports the rig, what got skinned and the cleanup counts. |
+| `rigforge_weights` | `action` `report`/`cleanup`/`normalize`, `max_influences` | Reads or repairs the skinning: influences over the limit, unnormalized or unweighted vertices, weights that cross a tag boundary. |
+| `rigforge_export_godot` | `path`, `rig`, `meshes`, `actions`, `root_motion`, `deform_only`, `godot_import_script` | Bakes the actions onto the deform bones, strips the control bones, writes the glTF plus its Godot import helper, and lists every file with its size. |
+
+`modules` crosses the wire verbatim (`[{"kind": "tail", "tag": "Tail"}]`) because the add-on
+owns that vocabulary; spring/jiggle chains come from the manifest's `motion_notes`, so write
+those with `rigforge_manifest` rather than looking for a parameter here. `actions` is `"all"`
+(default), a list, or a comma-separated string. `max_influences` is 1..8 — Godot's own limits
+are 4 and 8 — and is sent for `report` too, as the limit the report measures against.
+`deform_only` and `godot_import_script` default to true; a `deform_only=false` export says
+`CONTROL BONES KEPT` in its summary, because that is a debugging export, not a shipping one.
+Every one of the four relays the add-on's `warnings` as its own block, ahead of the tables.
+
+**A typical run — tag, retopo, unwrap, rig, export.** The tagging step is two calls whenever
+the user describes geometry by shape rather than by index:
 
 ```text
 # "the two lumps on top of the head are its ears"
@@ -221,13 +245,32 @@ rigforge_retopo(platform="mobile", lods=2, bake_normals=True, object="goblin")
 # unwrap the RETOPO mesh, cutting seams where one tag meets the next
 rigforge_auto_uv(object="goblin_retopo")
 
-# write it all down
+# write it all down — the motion notes are what flags the ear chains for jiggle later
 rigforge_manifest(action="save", path="projects/goblin/character.json",
                   archetype="biped", motion_notes="ears are floppy and lag behind the head",
                   object="goblin")
+
+# place the metarig on the RETOPO mesh, from the tag landmarks, then look at it
+rigforge_metarig(archetype="biped", modules=[{"kind": "chain", "tag": "Ear.L"},
+                                             {"kind": "chain", "tag": "Ear.R"}],
+                 object="goblin_retopo")
+
+# Rigify generate + automatic weights + per-tag cleanup, then check the skinning
+rigforge_generate_rig(metarig="goblin_metarig", mesh="goblin_retopo")
+rigforge_weights(action="report", max_influences=4, object="goblin_retopo")
+rigforge_weights(action="cleanup", max_influences=4, object="goblin_retopo")
+
+# ... animate in Blender (or import existing actions) ...
+
+# bake onto the deform bones, strip the controls, write the glTF for Godot
+rigforge_export_godot(path="projects/goblin/godot/goblin.glb", rig="goblin_rig",
+                      meshes=["goblin_retopo", "goblin_lod1"], actions="all")
+
+# and at any point: where are we, and what is the next call?
+rigforge_status(object="goblin")
 ```
 
-Three rules worth stating up front, because each one is an error rather than a guess:
+Four rules worth stating up front, because each one is an error rather than a guess:
 
 - `faces` and `use_selection` are alternatives. Passing both is refused (they name different
   geometry); passing neither is refused with a pointer back to the two-call flow above.
@@ -235,6 +278,8 @@ Three rules worth stating up front, because each one is an error rather than a g
   silent no-op.
 - `bake_resolution` only goes on the wire when `bake_normals` is true, the same way
   `remesh`'s `voxel_size` is only sent in voxel mode.
+- `max_influences` outside 1..8 and a `modules` entry that is not an object are refused
+  before the socket, with the shape that would have worked.
 
 ## Troubleshooting
 
@@ -285,7 +330,9 @@ stdin rather than exiting with a traceback (Ctrl+C to quit).
   Blender units (metres).
 - **Windows paths.** Every path argument is expanded (`~`, `%VARS%`), normalized and made
   absolute; missing export directories are created; export extensions are corrected to match
-  the requested format.
+  the requested format. `rigforge_export_godot` is the one place two extensions are both
+  right: `.gltf` is honoured when asked for, anything else (including no suffix) becomes
+  `.glb`, the single-file form Godot prefers.
 - **Ambiguity is an error, not a default.** Where two arguments could both apply
   (`faces` and `use_selection`) or one cannot apply at all (`path` with `action="get"`), the
   tool refuses and says why. A silent precedence rule here tags the wrong geometry or writes

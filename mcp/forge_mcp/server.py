@@ -17,25 +17,33 @@ from mcp.server.mcpserver import MCPServer
 from . import __version__, blender_client, config, service_client
 from .errors import BackendUnavailable, ForgeError
 from .util import (
+    GLTF_SUFFIXES,
     PLATFORM_TARGET_FACES,
     derivative_objects,
     ensure_parent_dir,
     fmt_check_report,
+    fmt_export_report,
     fmt_joint,
     fmt_manifest_report,
+    fmt_metarig_report,
     fmt_mode,
     fmt_number,
     fmt_overrides,
     fmt_params,
     fmt_retopo_report,
+    fmt_rig_report,
     fmt_scene_info,
     fmt_segment_report,
     fmt_stats,
     fmt_tag_table,
     fmt_uv_report,
     fmt_vector,
+    fmt_weights_report,
     fmt_written_files,
+    next_rig_step,
+    normalize_actions,
     normalize_face_indices,
+    normalize_modules,
     normalize_segment_mode,
     normalize_tag_name,
     object_name_for_script,
@@ -44,6 +52,7 @@ from .util import (
     read_printer,
     read_script,
     resolve_path,
+    rig_objects,
     scene_object,
 )
 
@@ -62,11 +71,12 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
   viewport) or partforge_export_segments (files for the slicer).
-- RigForge tools (rigforge_*) prepare a sculpt for animation: tag body parts,
-  mirror the tags into a character.json manifest, retopologise, unwrap. The
-  usual order is rigforge_tag (once per part) -> rigforge_retopo ->
-  rigforge_auto_uv; rigforge_status is the one-call overview of where a mesh is
-  in that pipeline.
+- RigForge tools (rigforge_*) take a sculpt all the way to a game character:
+  rigforge_tag (once per body part) -> rigforge_retopo -> rigforge_auto_uv ->
+  rigforge_metarig -> rigforge_generate_rig -> (animate) -> rigforge_export_godot.
+  rigforge_status is the one-call overview of where a mesh is in that pipeline
+  and names the next step; rigforge_weights inspects or repairs the skinning
+  between generate and export.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -1194,14 +1204,219 @@ def rigforge_auto_uv(
     return fmt_uv_report(f"'{object}'" if object else "the active object", result, summary)
 
 
+# ---------------------------------------------------------------------------
+# RigForge (Phase 4) — metarig, rig generation, weights, Godot export
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def rigforge_metarig(
+    archetype: Literal["auto", "biped", "quadruped", "custom"] = "auto",
+    modules: Optional[List[Dict[str, Any]]] = None,
+    object: Optional[str] = None,
+) -> str:
+    """Place and scale a metarig on a tagged mesh, fitted to its body-part tags.
+
+    Step four of the RigForge pipeline: rigforge_tag -> rigforge_retopo ->
+    rigforge_auto_uv -> **rigforge_metarig** -> rigforge_generate_rig ->
+    (animate) -> rigforge_export_godot. Run it on the RETOPO mesh, once the tags
+    are on it — the bones are placed from tag geometry (head top, chin, shoulder,
+    elbow, wrist, hip, knee, ankle), so an untagged or half-tagged mesh gives a
+    metarig in the wrong place.
+
+    - `archetype` "auto" (default) reads the character.json manifest and falls
+      back to guessing from the tags; "biped" / "quadruped" force a skeleton;
+      "custom" builds only from `modules`.
+    - `modules`: extra chains to build, passed to the add-on verbatim, e.g.
+      [{"kind": "tail", "tag": "Tail"}, {"kind": "chain", "tag": "Ear.L"}].
+      Omit it to let the archetype decide. Ear/tail chains are flagged for
+      spring/jiggle from the manifest's motion_notes by the add-on — there is no
+      parameter for that here, write the notes with rigforge_manifest instead.
+
+    Reports the metarig's name, its bone count and which bones each tag drove,
+    and relays the add-on's warnings (a missing landmark tag shows up here, not
+    later as a bone in the wrong place). Nothing is skinned yet — look at the
+    placement in Blender before running rigforge_generate_rig.
+    """
+    params = _target(object)
+    params["archetype"] = archetype
+    if modules is not None:
+        params["modules"] = normalize_modules(modules)
+
+    result = blender_client.send_command("rigforge_metarig", params)
+    summary = f"archetype {archetype}"
+    if modules is not None:
+        summary += f", {len(params['modules'])} extra module(s)"
+    return fmt_metarig_report(
+        f"'{object}'" if object else "the active object", result, summary
+    )
+
+
+@app.tool()
+def rigforge_generate_rig(
+    metarig: Optional[str] = None,
+    mesh: Optional[str] = None,
+    parent_with_weights: bool = True,
+    cleanup: bool = True,
+) -> str:
+    """Generate the real rig from a metarig and skin the mesh to it.
+
+    Step five: Rigify generate, then parent the mesh with automatic weights, then
+    per-tag cleanup rules (no head weights below the neck tag, and so on) and a
+    normalize pass. Run rigforge_metarig first and check the bone placement — the
+    weights are only as good as the skeleton they came from.
+
+    - `metarig`: the metarig object; omit to use the one the add-on just placed
+      (or the active object).
+    - `mesh`: the mesh to skin; omit to use the metarig's tagged mesh.
+    - `parent_with_weights`: False generates the control rig but skins nothing,
+      for when the mesh is not final yet.
+    - `cleanup`: False keeps Blender's raw automatic weights — usually worse, but
+      useful when comparing against a hand-painted result.
+
+    Reports the rig, what got skinned and the cleanup counts, with the add-on's
+    warnings first. Inspect the result with rigforge_weights(action="report"),
+    animate, then rigforge_export_godot.
+    """
+    params: Dict[str, Any] = {
+        "parent_with_weights": bool(parent_with_weights),
+        "cleanup": bool(cleanup),
+    }
+    if metarig and metarig.strip():
+        params["metarig"] = metarig.strip()
+    if mesh and mesh.strip():
+        params["mesh"] = mesh.strip()
+
+    result = blender_client.send_command("rigforge_generate_rig", params)
+    summary = (
+        ("parented with automatic weights" if parent_with_weights else "no skinning")
+        + (", per-tag cleanup + normalize" if cleanup else ", raw weights kept")
+    )
+    return fmt_rig_report(result, summary)
+
+
+@app.tool()
+def rigforge_weights(
+    action: Literal["report", "cleanup", "normalize"] = "report",
+    max_influences: Optional[int] = None,
+    object: Optional[str] = None,
+) -> str:
+    """Inspect or repair a skinned mesh's vertex weights.
+
+    Sits between rigforge_generate_rig and rigforge_export_godot, and is the
+    thing to run when a deformation looks wrong.
+
+    - "report" (default): read the skinning and say what is off — vertices over
+      the influence limit, unnormalized or unweighted vertices, weights that
+      cross a tag boundary. Changes nothing.
+    - "cleanup": drop the smallest influences until every vertex is within the
+      limit, remove near-zero weights and weights the tag rules forbid.
+    - "normalize": make every vertex's weights sum to 1 without changing which
+      bones influence it.
+
+    `max_influences` is the bones-per-vertex limit — Godot's own limits are 4
+    (the default the add-on applies) and 8; more than 8 will be cut by the engine
+    regardless. It applies to "report" too, as the limit that report measures
+    against. Omit it to use the add-on's default.
+    """
+    if max_influences is not None:
+        limit = int(max_influences)
+        if not 1 <= limit <= 8:
+            raise ForgeError(
+                f"max_influences must be between 1 and 8; got {limit}. Godot "
+                "supports 4 or 8 bones per vertex, so anything above 8 is cut by "
+                "the engine anyway."
+            )
+
+    params = _target(object)
+    params["action"] = action
+    if max_influences is not None:
+        params["max_influences"] = int(max_influences)
+
+    result = blender_client.send_command("rigforge_weights", params)
+    return fmt_weights_report(
+        action, f"'{object}'" if object else "the active object", result
+    )
+
+
+@app.tool()
+def rigforge_export_godot(
+    path: str,
+    rig: Optional[str] = None,
+    meshes: Optional[List[str]] = None,
+    actions: Union[str, List[str]] = "all",
+    root_motion: bool = False,
+    deform_only: bool = True,
+    godot_import_script: bool = True,
+) -> str:
+    """Bake the animation onto the deform bones and write a Godot-ready glTF.
+
+    The last step: rigforge_tag -> rigforge_retopo -> rigforge_auto_uv ->
+    rigforge_metarig -> rigforge_generate_rig -> (animate) ->
+    **rigforge_export_godot**. Actions are baked from the control rig onto the
+    deform bones, the control bones are stripped, and the result is exported as
+    glTF with Godot's conventions (Y-up, applied transforms, unit scale, `-col`
+    and `-lod` name suffixes, `-loop` actions).
+
+    - `path`: where the glTF goes. `.glb` (default when the suffix is anything
+      else) is the single-file form Godot prefers; `.gltf` is honoured when asked
+      for. Missing folders are created.
+    - `rig`: the rig object; omit to use the active/only one.
+    - `meshes`: which meshes to include; omit to take everything skinned to the
+      rig. Name the LOD meshes here too if they should ship.
+    - `actions`: "all" (default), or the names to export — a list, or a
+      comma-separated string.
+    - `root_motion`: True keeps the root bone's motion in the animation for the
+      engine to drive the character with; False (default) bakes in place.
+    - `deform_only`: True (default) strips control bones — turn it off only to
+      debug the rig, never for a shipping export.
+    - `godot_import_script`: True (default) also writes a `.gd` import helper /
+      `.import` settings next to the glTF.
+
+    Read the report's WARNINGS block before importing: a missing action, an
+    unweighted mesh or a stripped bone that something still referenced shows up
+    there, and all of them are cheaper to fix in Blender than in Godot.
+    """
+    out = resolve_path(path, label="export path")
+    if out.suffix.lower() not in GLTF_SUFFIXES:
+        out = out.with_suffix(".glb")
+    ensure_parent_dir(out)
+
+    wanted = normalize_actions(actions)
+    params: Dict[str, Any] = {
+        "path": str(out),
+        "actions": wanted,
+        "root_motion": bool(root_motion),
+        "deform_only": bool(deform_only),
+        "godot_import_script": bool(godot_import_script),
+    }
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    names = [m.strip() for m in (meshes or []) if m and m.strip()]
+    if names:
+        params["meshes"] = names
+
+    result = blender_client.send_command("rigforge_export_godot", params)
+    summary = (
+        ("every action" if wanted == "all" else f"{len(wanted)} action(s)")
+        + (", root motion" if root_motion else ", baked in place")
+        + (", deform bones only" if deform_only else ", CONTROL BONES KEPT")
+        + (", + Godot import helper" if godot_import_script else "")
+    )
+    subject = f"'{rig.strip()}'" if rig and rig.strip() else "the rig"
+    return fmt_export_report(subject, result, summary, str(out))
+
+
 @app.tool()
 def rigforge_status(object: Optional[str] = None) -> str:
-    """Where is this mesh in the RigForge pipeline? Tags, counts, retopo siblings.
+    """Where is this mesh in the RigForge pipeline, and what is the next call?
 
     One call that answers "what have we done to this character so far": the
-    object's vertex/face counts, every body-part tag with its size, and whether a
-    retopo or LOD mesh already exists alongside it. Start here before tagging or
-    retopologising something you did not just create.
+    object's vertex/face counts, every body-part tag with its size, whether a
+    retopo or LOD mesh exists alongside it, whether a metarig or a generated rig
+    exists — and the one next step in the chain (tag -> retopo -> auto_uv ->
+    metarig -> generate_rig -> animate -> export_godot). Start here before
+    tagging, retopologising or rigging something you did not just create.
 
     Omit `object` to report on Blender's active object.
     """
@@ -1230,12 +1445,14 @@ def rigforge_status(object: Optional[str] = None) -> str:
         + f", dimensions {fmt_vector(entry.get('dimensions'), 3)}",
     ]
 
+    has_tags = False
     try:
         tags = blender_client.send_command("rigforge_list_tags", {"object": name}).get("tags")
     except ForgeError as exc:
         lines.append(f"  tags: unavailable — {exc}")
     else:
         listed = [t for t in (tags or []) if isinstance(t, dict)]
+        has_tags = bool(listed)
         if not listed:
             lines.append("  tags: none yet — tag body parts with rigforge_tag")
         else:
@@ -1260,6 +1477,30 @@ def rigforge_status(object: Optional[str] = None) -> str:
     else:
         lines.append("  retopo/LOD siblings: none — run rigforge_retopo when tagging is done")
 
+    armatures = rig_objects(scene, name)
+    metarigs, rigs = armatures["metarig"], armatures["rig"]
+    if metarigs or rigs:
+        lines.append(
+            "  armatures: "
+            + ("metarig " + ", ".join(metarigs) if metarigs else "no metarig")
+            + " / "
+            + ("rig " + ", ".join(rigs) if rigs else "no generated rig")
+        )
+    else:
+        lines.append(
+            "  armatures: none — run rigforge_metarig once the retopo mesh is tagged"
+        )
+
+    lines.append("")
+    lines.append(
+        "  next: "
+        + next_rig_step(
+            has_tags=has_tags,
+            has_retopo=bool(siblings),
+            has_metarig=bool(metarigs),
+            has_rig=bool(rigs),
+        )
+    )
     return "\n".join(lines)
 
 

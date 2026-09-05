@@ -1610,6 +1610,59 @@ class ForgeRigForgeProps(PropertyGroup):
         default=True,
     )
 
+    # --- Phase 4: rig + Godot export ---------------------------------------
+    rig_preset: EnumProperty(
+        name="Template",
+        description=(
+            "Which Rigify metarig to fit. Auto picks the 29-bone basic human "
+            "unless the sculpt has face or hand tags, which earn the full one"
+        ),
+        items=(
+            ("auto", "Auto", "Choose from the tags on the mesh"),
+            ("basic_human", "Basic Human", "29 bones: spine, arms, legs - the game rig"),
+            ("human", "Human", "The full Rigify human: face and fingers too"),
+            ("quadruped", "Quadruped", "Rigify's basic quadruped"),
+        ),
+        default="auto",
+    )
+    max_influences: IntProperty(
+        name="Max Influences",
+        description="Bones allowed to move one vertex (4 is what game engines expect)",
+        default=4,
+        min=1,
+        max=12,
+    )
+    export_path: StringProperty(
+        name="Export",
+        description="Where to write the glTF (.glb or .gltf); the Godot import script goes beside it",
+        default="",
+        subtype="FILE_PATH",
+    )
+    export_actions: EnumProperty(
+        name="Actions",
+        description="Which actions to bake onto the deform bones",
+        items=(
+            ("all", "All", "Every action that animates this rig"),
+            ("selected", "Named", "Only the actions listed below"),
+        ),
+        default="all",
+    )
+    export_action_names: StringProperty(
+        name="Names",
+        description="Comma-separated action names, e.g. idle-loop, walk-loop, jump",
+        default="",
+    )
+    export_lods: BoolProperty(
+        name="Include LODs",
+        description="Export <mesh>_lod1/_lod2 alongside, renamed to Godot's -lodN suffix",
+        default=True,
+    )
+    root_motion: BoolProperty(
+        name="Root Motion",
+        description="Move each clip's horizontal hip travel onto the root bone",
+        default=False,
+    )
+
     status: StringProperty(name="Status", default="Idle")
     status_is_error: BoolProperty(default=False)
     summary: StringProperty(name="Summary", default="")

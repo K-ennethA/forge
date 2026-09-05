@@ -1,4 +1,4 @@
-"""The Phase 3 (RigForge) tools: request shaping and report formatting.
+"""The Phase 3/4 (RigForge) tools: request shaping and report formatting.
 
 Blender is the NDJSON fake from ``test_blender_client`` on an ephemeral port —
 never 9876 — so these run with Blender closed and against the *contract* in
@@ -627,3 +627,546 @@ def test_status_still_reports_the_mesh_when_tags_are_unavailable(blender) -> Non
     assert "tags: unavailable" in report
     assert "unexpected command 'rigforge_list_tags'" in report
     assert "retopo/LOD siblings (2)" in report
+
+
+# ===========================================================================
+# Phase 4 — metarig, rig generation, weights, Godot export
+# ===========================================================================
+
+METARIG_RESULT = {
+    "metarig": "goblin_metarig",
+    "bone_count": 64,
+    "mapping": {
+        "Head": ["spine.006", "spine.005"],
+        "Torso": ["spine", "spine.001"],
+        "Ear.L": ["ear.L", "ear.L.001"],
+    },
+    "warnings": [],
+}
+
+RIG_RESULT = {
+    "rig": "goblin_rig",
+    "weighted": ["goblin_retopo"],
+    "cleanup_report": {
+        "vertices_cleared": 812,
+        "groups_removed": 3,
+        "normalized_vertices": 7600,
+    },
+    "warnings": [],
+}
+
+WEIGHTS_REPORT = {
+    "report": {
+        "vertices": 7600,
+        "max_influences": 4,
+        "over_limit": 118,
+        "unnormalized": 3,
+        "unweighted": 0,
+    }
+}
+
+EXPORT_RESULT = {
+    "actions": ["idle-loop", "walk-loop"],
+    "deform_bones": 31,
+    "files": [],
+}
+
+
+# --- rigforge_metarig -------------------------------------------------------
+
+
+def test_metarig_sends_the_contract_command_with_the_default_archetype(blender) -> None:
+    fake = blender({"rigforge_metarig": METARIG_RESULT})
+    server.rigforge_metarig(object="goblin_retopo")
+
+    assert fake.requests[0]["type"] == "rigforge_metarig"
+    params = sent(fake, "rigforge_metarig")
+    assert params == {"object": "goblin_retopo", "archetype": "auto"}
+    assert "modules" not in params, "omitted modules let the archetype decide"
+
+
+@pytest.mark.parametrize("archetype", ["auto", "biped", "quadruped", "custom"])
+def test_every_archetype_reaches_the_wire(blender, archetype: str) -> None:
+    fake = blender({"rigforge_metarig": METARIG_RESULT})
+    report = server.rigforge_metarig(archetype=archetype)
+
+    assert sent(fake, "rigforge_metarig")["archetype"] == archetype
+    assert f"archetype {archetype}" in report
+
+
+def test_modules_cross_the_wire_verbatim(blender) -> None:
+    """The add-on owns the module vocabulary, so nothing here rewrites an entry."""
+    fake = blender({"rigforge_metarig": METARIG_RESULT})
+    modules = [
+        {"kind": "tail", "tag": "Tail", "segments": 5},  # an unknown key survives
+        {"kind": "chain", "tag": "Ear.L"},
+    ]
+    report = server.rigforge_metarig(archetype="custom", modules=modules)
+
+    assert sent(fake, "rigforge_metarig")["modules"] == modules
+    assert "2 extra module(s)" in report
+
+
+def test_a_single_module_object_is_accepted_as_a_list_of_one(blender) -> None:
+    fake = blender({"rigforge_metarig": METARIG_RESULT})
+    server.rigforge_metarig(modules={"kind": "tail", "tag": "Tail"})
+    assert sent(fake, "rigforge_metarig")["modules"] == [{"kind": "tail", "tag": "Tail"}]
+
+
+@pytest.mark.parametrize(
+    ("modules", "fragment"),
+    [
+        ("Tail", "must be a list of module objects"),
+        (["Tail"], "Each module must be an object"),
+        ([], "was empty"),
+        (7, "must be a list of module objects"),
+    ],
+)
+def test_bad_modules_are_refused_before_the_socket(modules: Any, fragment: str) -> None:
+    with pytest.raises(ForgeError, match=fragment):
+        server.rigforge_metarig(modules=modules)
+
+
+def test_metarig_report_names_the_rig_the_bones_and_the_mapping(blender) -> None:
+    blender({"rigforge_metarig": METARIG_RESULT})
+    report = server.rigforge_metarig(object="goblin_retopo")
+
+    assert "Metarig placed for 'goblin_retopo'" in report
+    assert "metarig: goblin_metarig" in report
+    assert "bones: 64" in report
+    assert "tag -> bones (3)" in report
+    ear = next(line for line in report.splitlines() if "Ear.L" in line)
+    assert "ear.L.001" in ear
+    assert "rigforge_generate_rig" in report, "the report teaches the next step"
+
+
+def test_metarig_warnings_are_loud_and_come_before_the_mapping(blender) -> None:
+    blender(
+        {
+            "rigforge_metarig": {
+                "metarig": "goblin_metarig",
+                "bone_count": 58,
+                "mapping": {"Head": ["spine.006"]},
+                "warnings": [
+                    "no Hand.R tag: the right wrist was placed from the arm bounds",
+                    {"level": "error", "message": "no Foot.L tag; the leg chain is guessed"},
+                ],
+            }
+        }
+    )
+    report = server.rigforge_metarig()
+    lines = report.splitlines()
+
+    assert "WARNINGS (2):" in report
+    assert "! no Hand.R tag" in report
+    assert "[ERROR] no Foot.L tag" in report
+    warned = next(i for i, line in enumerate(lines) if "WARNINGS" in line)
+    mapped = next(i for i, line in enumerate(lines) if "tag -> bones" in line)
+    assert warned < mapped, "a warning must not hide under the mapping table"
+
+
+def test_a_minimal_metarig_result_still_renders(blender) -> None:
+    """The add-on is being written in parallel; a bare result must not crash."""
+    blender({"rigforge_metarig": {}})
+    report = server.rigforge_metarig()
+
+    assert "(unnamed)" in report
+    assert "bones: ?" in report
+    assert "WARNINGS" not in report
+
+
+# --- rigforge_generate_rig --------------------------------------------------
+
+
+def test_generate_rig_defaults_send_both_flags_and_nothing_else(blender) -> None:
+    fake = blender({"rigforge_generate_rig": RIG_RESULT})
+    server.rigforge_generate_rig()
+
+    params = sent(fake, "rigforge_generate_rig")
+    assert params == {"parent_with_weights": True, "cleanup": True}
+    assert "metarig" not in params and "mesh" not in params
+
+
+def test_generate_rig_names_and_flags_reach_the_wire(blender) -> None:
+    fake = blender({"rigforge_generate_rig": RIG_RESULT})
+    report = server.rigforge_generate_rig(
+        metarig="  goblin_metarig  ",
+        mesh="goblin_retopo",
+        parent_with_weights=False,
+        cleanup=False,
+    )
+
+    assert sent(fake, "rigforge_generate_rig") == {
+        "metarig": "goblin_metarig",
+        "mesh": "goblin_retopo",
+        "parent_with_weights": False,
+        "cleanup": False,
+    }
+    assert "no skinning" in report and "raw weights kept" in report
+
+
+def test_generate_rig_report_covers_the_rig_the_mesh_and_the_cleanup(blender) -> None:
+    blender({"rigforge_generate_rig": RIG_RESULT})
+    report = server.rigforge_generate_rig()
+
+    assert "rig: goblin_rig" in report
+    assert "weighted: goblin_retopo" in report
+    assert "parented with automatic weights" in report
+    assert "vertices cleared: 812" in report
+    assert "groups removed: 3" in report
+    assert "rigforge_export_godot" in report
+
+
+def test_generate_rig_relays_warnings_and_a_bool_weighted(blender) -> None:
+    blender(
+        {
+            "rigforge_generate_rig": {
+                "rig": "goblin_rig",
+                "weighted": False,
+                "cleanup_report": ["dropped 4 head weights below the neck tag"],
+                "warnings": "Ear.R came back unweighted",
+            }
+        }
+    )
+    report = server.rigforge_generate_rig(parent_with_weights=False)
+
+    assert "NO — the mesh was not parented" in report
+    assert "WARNINGS (1):" in report and "! Ear.R came back unweighted" in report
+    assert "dropped 4 head weights" in report
+
+
+def test_a_minimal_rig_result_still_renders(blender) -> None:
+    blender({"rigforge_generate_rig": {}})
+    report = server.rigforge_generate_rig()
+
+    assert "rig: (unnamed)" in report
+    assert "weighted: not reported" in report
+
+
+# --- rigforge_weights -------------------------------------------------------
+
+
+def test_weights_defaults_to_a_read_only_report(blender) -> None:
+    fake = blender({"rigforge_weights": WEIGHTS_REPORT})
+    server.rigforge_weights(object="goblin_retopo")
+
+    params = sent(fake, "rigforge_weights")
+    assert params == {"object": "goblin_retopo", "action": "report"}
+    assert "max_influences" not in params, "omitted = the add-on's own default"
+
+
+@pytest.mark.parametrize("action", ["report", "cleanup", "normalize"])
+def test_every_weights_action_carries_max_influences_when_given(
+    blender, action: str
+) -> None:
+    """The limit is what a report measures against, not just what cleanup enforces."""
+    fake = blender({"rigforge_weights": {"changed": 0}})
+    server.rigforge_weights(action=action, max_influences=8)
+
+    assert sent(fake, "rigforge_weights") == {"action": action, "max_influences": 8}
+
+
+@pytest.mark.parametrize("limit", [0, -1, 9, 64])
+def test_an_impossible_influence_limit_is_refused(limit: int) -> None:
+    with pytest.raises(ForgeError, match="between 1 and 8"):
+        server.rigforge_weights(action="cleanup", max_influences=limit)
+
+
+def test_weights_report_renders_the_numbers(blender) -> None:
+    blender({"rigforge_weights": WEIGHTS_REPORT})
+    report = server.rigforge_weights(object="goblin_retopo")
+
+    assert "Weights on 'goblin_retopo'" in report
+    assert "over limit: 118" in report
+    assert "unnormalized: 3" in report
+
+
+def test_cleanup_and_normalize_report_what_changed(blender) -> None:
+    blender({"rigforge_weights": {"changed": 118, "warnings": ["3 vertices had no bone"]}})
+    report = server.rigforge_weights(action="cleanup")
+
+    assert "Cleaned up weights on the active object" in report
+    assert "changed: 118" in report
+    assert "WARNINGS (1):" in report and "3 vertices had no bone" in report
+
+
+def test_a_weights_result_with_nothing_in_it_says_so(blender) -> None:
+    blender({"rigforge_weights": {}})
+    assert "(the add-on reported no detail)" in server.rigforge_weights(action="normalize")
+
+
+# --- rigforge_export_godot --------------------------------------------------
+
+
+def test_export_godot_resolves_the_path_and_creates_the_folder(
+    blender, tmp_path: Path
+) -> None:
+    out = tmp_path / "godot" / "characters" / "goblin"  # no extension, no folder
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+
+    server.rigforge_export_godot(path=str(out), rig="goblin_rig")
+
+    params = sent(fake, "rigforge_export_godot")
+    assert params["path"] == str(out.with_suffix(".glb")), "defaults to single-file glb"
+    assert out.parent.is_dir(), "the folder exists before the add-on is asked"
+    assert params["rig"] == "goblin_rig"
+
+
+def test_an_explicit_gltf_extension_is_honoured(blender, tmp_path: Path) -> None:
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+    out = tmp_path / "goblin.gltf"
+    server.rigforge_export_godot(path=str(out))
+    assert sent(fake, "rigforge_export_godot")["path"] == str(out)
+
+
+def test_a_foreign_extension_becomes_glb(blender, tmp_path: Path) -> None:
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+    server.rigforge_export_godot(path=str(tmp_path / "goblin.fbx"))
+    assert sent(fake, "rigforge_export_godot")["path"] == str(tmp_path / "goblin.glb")
+
+
+def test_export_defaults_are_all_actions_deform_only_with_a_helper(
+    blender, tmp_path: Path
+) -> None:
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+    report = server.rigforge_export_godot(path=str(tmp_path / "goblin.glb"))
+
+    params = sent(fake, "rigforge_export_godot")
+    assert params["actions"] == "all"
+    assert params["root_motion"] is False
+    assert params["deform_only"] is True
+    assert params["godot_import_script"] is True
+    assert "rig" not in params and "meshes" not in params
+    assert "every action" in report and "baked in place" in report
+    assert "deform bones only" in report
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    [
+        ("all", "all"),
+        ("ALL", "all"),
+        (None, "all"),
+        (["idle-loop", "walk-loop"], ["idle-loop", "walk-loop"]),
+        ("idle-loop, walk-loop", ["idle-loop", "walk-loop"]),
+        ("idle-loop", ["idle-loop"]),
+        (["idle-loop", "idle-loop"], ["idle-loop"]),
+        ('["idle-loop", "walk-loop"]', ["idle-loop", "walk-loop"]),
+    ],
+)
+def test_actions_is_all_or_an_explicit_list(
+    blender, tmp_path: Path, given: Any, expected: Any
+) -> None:
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+    server.rigforge_export_godot(path=str(tmp_path / "goblin.glb"), actions=given)
+    assert sent(fake, "rigforge_export_godot")["actions"] == expected
+
+
+@pytest.mark.parametrize(
+    ("actions", "fragment"),
+    [
+        ([], "No action names given"),
+        ([{"name": "idle"}], "not an action name"),
+        (12, "Could not read actions"),
+        (["  "], "No action names given"),
+    ],
+)
+def test_bad_action_lists_are_refused_before_the_socket(
+    tmp_path: Path, actions: Any, fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment):
+        server.rigforge_export_godot(path=str(tmp_path / "goblin.glb"), actions=actions)
+
+
+def test_export_forwards_the_meshes_and_the_toggles(blender, tmp_path: Path) -> None:
+    fake = blender({"rigforge_export_godot": EXPORT_RESULT})
+    report = server.rigforge_export_godot(
+        path=str(tmp_path / "goblin.glb"),
+        rig="goblin_rig",
+        meshes=["goblin_retopo", "  goblin_lod1  ", ""],
+        actions=["idle-loop"],
+        root_motion=True,
+        deform_only=False,
+        godot_import_script=False,
+    )
+
+    params = sent(fake, "rigforge_export_godot")
+    assert params["meshes"] == ["goblin_retopo", "goblin_lod1"], "blanks dropped"
+    assert params["root_motion"] is True
+    assert params["deform_only"] is False
+    assert params["godot_import_script"] is False
+    assert "1 action(s)" in report
+    assert "root motion" in report
+    assert "CONTROL BONES KEPT" in report, "a debug export must be obvious"
+
+
+def test_export_report_lists_the_files_with_their_sizes(blender, tmp_path: Path) -> None:
+    glb = tmp_path / "goblin.glb"
+    helper = tmp_path / "goblin.gd"
+    glb.write_bytes(b"x" * 2048)
+    helper.write_text("# import helper\n", encoding="utf-8")
+    blender(
+        {
+            "rigforge_export_godot": {
+                "path": str(glb),
+                "actions": ["idle-loop", "walk-loop", "attack"],
+                "deform_bones": 31,
+                "files": [
+                    {"path": str(glb), "kind": "gltf"},
+                    {"path": str(helper), "kind": "import"},
+                ],
+            }
+        }
+    )
+    report = server.rigforge_export_godot(path=str(glb), rig="goblin_rig")
+
+    assert f"Exported 'goblin_rig' to Godot — {glb}" in report
+    assert "deform bones: 31" in report
+    assert "actions (3): idle-loop, walk-loop, attack" in report
+    assert "files (2)" in report
+    assert "2.0 KB" in report
+    assert str(helper) in report
+
+
+def test_export_warnings_come_before_the_file_list(blender, tmp_path: Path) -> None:
+    blender(
+        {
+            "rigforge_export_godot": {
+                "path": str(tmp_path / "goblin.glb"),
+                "actions": ["idle-loop"],
+                "deform_bones": ["DEF-spine", "DEF-head", "DEF-arm.L", "DEF-arm.R"],
+                "files": [str(tmp_path / "goblin.glb")],
+                "warnings": [
+                    "action 'attack' has no keyframes and was skipped",
+                    "goblin_lod2 is not skinned to the rig and was not exported",
+                ],
+            }
+        }
+    )
+    report = server.rigforge_export_godot(path=str(tmp_path / "goblin.glb"))
+    lines = report.splitlines()
+
+    assert "WARNINGS (2):" in report
+    assert "! action 'attack' has no keyframes" in report
+    warned = next(i for i, line in enumerate(lines) if "WARNINGS" in line)
+    filed = next(i for i, line in enumerate(lines) if line.strip().startswith("files"))
+    assert warned < filed, "warnings are the point of reading an export report"
+    assert "deform bones: 4 (DEF-spine, DEF-head" in report, "a bone list counts too"
+
+
+def test_a_minimal_export_result_still_says_where_it_went(blender, tmp_path: Path) -> None:
+    out = tmp_path / "goblin.glb"
+    blender({"rigforge_export_godot": {}})
+    report = server.rigforge_export_godot(path=str(out))
+
+    assert str(out) in report
+    assert "deform bones: ?" in report
+    assert "actions (?): not reported" in report
+    assert "files: (none reported)" in report
+
+
+# --- rigforge_status: the Phase 4 stages of the nudge chain ------------------
+
+
+def scene_with(*extra: dict[str, Any]) -> dict[str, Any]:
+    """SCENE plus the given armature objects."""
+    return {"objects": [*SCENE["objects"], *extra], "active": "goblin"}
+
+
+METARIG_OBJECT = {
+    "name": "goblin_metarig",
+    "type": "ARMATURE",
+    "location": [0.0, 0.0, 0.0],
+    "dimensions": [0.6, 0.4, 1.7],
+    "vertex_count": 0,
+    "modifiers": [],
+}
+
+RIG_OBJECT = {
+    "name": "goblin_rig",
+    "type": "ARMATURE",
+    "location": [0.0, 0.0, 0.0],
+    "dimensions": [0.6, 0.4, 1.7],
+    "vertex_count": 0,
+    "modifiers": [],
+}
+
+
+def test_status_nudges_to_the_metarig_once_a_retopo_exists(blender) -> None:
+    blender({"get_scene_info": SCENE, "rigforge_list_tags": {"tags": TAGS}}, connections=2)
+    report = server.rigforge_status("goblin")
+
+    assert "armatures: none" in report
+    assert "next: rigforge_metarig" in report
+
+
+def test_status_nudges_to_generate_once_a_metarig_exists(blender) -> None:
+    blender(
+        {"get_scene_info": scene_with(METARIG_OBJECT), "rigforge_list_tags": {"tags": TAGS}},
+        connections=2,
+    )
+    report = server.rigforge_status("goblin")
+
+    assert "metarig goblin_metarig" in report
+    assert "no generated rig" in report
+    assert "next: rigforge_generate_rig" in report
+
+
+def test_status_nudges_to_the_export_once_a_rig_exists(blender) -> None:
+    blender(
+        {
+            "get_scene_info": scene_with(METARIG_OBJECT, RIG_OBJECT),
+            "rigforge_list_tags": {"tags": TAGS},
+        },
+        connections=2,
+    )
+    report = server.rigforge_status("goblin")
+
+    assert "rig goblin_rig" in report
+    assert "next: rigforge_export_godot" in report
+
+
+def test_rigifys_own_default_names_count_as_this_characters_armatures(blender) -> None:
+    """Rigify calls them "metarig" and "RIG-metarig" — neither carries the name."""
+    generic_meta = dict(METARIG_OBJECT, name="metarig")
+    generic_rig = dict(RIG_OBJECT, name="RIG-metarig")
+    blender(
+        {
+            "get_scene_info": scene_with(generic_meta, generic_rig),
+            "rigforge_list_tags": {"tags": TAGS},
+        },
+        connections=2,
+    )
+    report = server.rigforge_status("goblin")
+
+    assert "metarig metarig" in report
+    assert "rig RIG-metarig" in report, "RIG- is the generated rig, not a metarig"
+    assert "next: rigforge_export_godot" in report
+
+
+def test_the_chain_starts_at_tagging_when_nothing_is_done(blender) -> None:
+    bare = {
+        "objects": [
+            {
+                "name": "goblin",
+                "type": "MESH",
+                "location": [0, 0, 0],
+                "dimensions": [0.6, 0.4, 1.7],
+                "vertex_count": 240100,
+                "modifiers": [],
+            }
+        ],
+        "active": "goblin",
+    }
+    blender({"get_scene_info": bare, "rigforge_list_tags": {"tags": []}}, connections=2)
+    report = server.rigforge_status()
+
+    assert "next: rigforge_tag" in report
+
+
+def test_tags_but_no_retopo_nudges_to_retopo(blender) -> None:
+    tagged = {"objects": [SCENE["objects"][0]], "active": "goblin"}
+    blender({"get_scene_info": tagged, "rigforge_list_tags": {"tags": TAGS}}, connections=2)
+    report = server.rigforge_status()
+
+    assert "next: rigforge_retopo" in report

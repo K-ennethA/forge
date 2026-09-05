@@ -94,6 +94,23 @@ Implemented refinements (additive): `rigforge_untag` + `include_shared` (default
 
 MCP mirrors these as `rigforge_*` tools plus a `rigforge_status(object)` overview. Panel: RigForge N-panel section — tag list with assign/remove from selection, archetype dropdown, motion-notes text, retopo settings + Run, UV Run.
 
+## Phase 4 — rig and Godot export — implemented
+
+Implemented refinements (additive; full detail in addon/README.md): `rigforge_metarig` + `preset` (auto picks 29-bone basic human unless face/hand tags exist); `rigforge_generate_rig` + `max_influences`/`band`/`spring_chains`; `rigforge_weights` + `rig`/`band`; `rigforge_export_godot` + `lods`/`frame_step`/`unit_scale` (`deform_only: false` warns and exports deform-only anyway; `path` is the glTF file, default `.glb`). MCP mirrors are 36 tools total; `spring_chains` derives from manifest motion notes, not an MCP param. Secondary motion v1 is a deterministic MCH lag/Damped-Track constraint rig (no state, bakes cleanly; helpers non-deform so they never export). Exporter traps encoded: `export_animation_mode="ACTIONS"` leaks other objects' actions (NLA_TRACKS used), and clip-name collisions are avoided by renaming source actions aside during export.
+
+### Original sketch
+
+New socket commands (additive; refinements folded back by the orchestrator). No external add-on downloads: the deform-rig conversion (Game Rig Tools' job in the plan) is implemented natively — bake control-rig animation onto deform bones, strip non-deform bones on export.
+
+| type | params | result |
+|---|---|---|
+| `rigforge_metarig` | `{"object", "archetype"?: "auto"\|"biped"\|"quadruped"\|"custom", "modules"?: [{"kind": "limb"\|"spine"\|"tail"\|"chain", "tag": str}], "spring_chains"?: auto-from-motion-notes}` — places and scales a Rigify metarig from tag bounds/landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle by tag geometry); ear/tail tags become bone chains flagged for spring/jiggle per manifest motion notes | `{"metarig", "bone_count", "mapping": {tag: [bones]}, "warnings"}` |
+| `rigforge_generate_rig` | `{"metarig"?, "mesh"?, "parent_with_weights": true, "cleanup": true}` — Rigify generate → parent mesh with automatic weights → per-tag cleanup rules (e.g. no head weights below the neck tag), normalize | `{"rig", "weighted", "cleanup_report", "warnings"}` |
+| `rigforge_weights` | `{"object", "action": "report"\|"cleanup"\|"normalize", "max_influences"?: 4}` | `{"report"/"changed"}` |
+| `rigforge_export_godot` | `{"rig", "meshes"?, "path", "actions"?: "all"\|[names], "root_motion"?: false, "deform_only": true, "godot_import_script": true}` — bake all actions onto deform bones, strip control bones, glTF export (Y-up, applied transforms, unit scale, `-col`/`-lod` suffixes, `-loop` action convention) + emit a Godot `.gd` import helper or `.import` settings | `{"path", "actions": [names], "deform_bones", "files"}` |
+
+MCP mirrors as thin `rigforge_*` tools. Panel: Rig box (archetype, Place Metarig, Generate Rig, weight cleanup) + Export box (path, root motion toggle, Export to Godot).
+
 ## PARAMS block convention (the PartForge script contract)
 
 Every generated script is a plain Python file with, at top level:

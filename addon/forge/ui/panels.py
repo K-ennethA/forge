@@ -15,7 +15,7 @@ from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import partforge, rigforge
+from ..tools import partforge, rigforge, rigforge_rig
 
 CATEGORY = "Forge"
 
@@ -377,6 +377,78 @@ class VIEW3D_PT_forge_uv(_ForgePanel, Panel):
         layout.operator("forge.rf_auto_uv", icon="UV", text="Unwrap")
 
 
+class VIEW3D_PT_forge_rig(_ForgePanel, Panel):
+    """Stage 4: metarig from the tags, Rigify generate, weight cleanup."""
+
+    bl_idname = "VIEW3D_PT_forge_rig"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "Rig"
+
+    def draw(self, context):
+        layout = self.layout
+        rf = rigforge.get_props(context)
+        if rf is None:
+            return
+        obj = rigforge.active_mesh(context)
+
+        column = layout.column(align=True)
+        # the archetype lives on the object and in the manifest; this is the
+        # same property the Character box edits, shown again where it decides
+        # which Rigify template gets built.
+        column.prop(rf, "archetype")
+        column.prop(rf, "rig_preset")
+
+        column = layout.column(align=True)
+        column.operator("forge.rf_metarig", icon="ARMATURE_DATA", text="Place Metarig")
+        row = column.row(align=True)
+        metarig = str(rigforge._prop(obj, rigforge_rig.PROP_METARIG, "")) if obj else ""
+        row.enabled = bool(metarig and metarig in bpy.data.objects)
+        row.operator("forge.rf_generate_rig", icon="OUTLINER_OB_ARMATURE",
+                     text="Generate Rig")
+        if obj is not None and metarig:
+            sub = column.row()
+            sub.active = False
+            sub.label(text="Metarig: %s" % metarig)
+
+        box = layout.box()
+        box.label(text="Weights", icon="MOD_VERTEX_WEIGHT")
+        box.prop(rf, "max_influences")
+        row = box.row(align=True)
+        row.operator("forge.rf_weights", text="Report").action = "report"
+        row.operator("forge.rf_weights", text="Cleanup").action = "cleanup"
+        row.operator("forge.rf_weights", text="Normalize").action = "normalize"
+
+
+class VIEW3D_PT_forge_godot(_ForgePanel, Panel):
+    """Stage 7: deform-only bake and glTF for Godot."""
+
+    bl_idname = "VIEW3D_PT_forge_godot"
+    bl_parent_id = "VIEW3D_PT_forge_rigforge"
+    bl_label = "Godot Export"
+
+    def draw(self, context):
+        layout = self.layout
+        rf = rigforge.get_props(context)
+        if rf is None:
+            return
+
+        layout.prop(rf, "export_path", text="")
+        column = layout.column(align=True)
+        column.prop(rf, "export_actions", expand=True)
+        sub = column.row()
+        sub.active = rf.export_actions == "selected"
+        sub.prop(rf, "export_action_names", text="")
+
+        column = layout.column(align=True)
+        column.prop(rf, "export_lods")
+        column.prop(rf, "root_motion")
+
+        layout.operator("forge.rf_export_godot", icon="EXPORT", text="Export to Godot")
+        row = layout.row()
+        row.active = False
+        row.label(text="Control bones are stripped; -loop clips auto-loop")
+
+
 def _wrap(text, width):
     """Very small word wrapper - layout.label() does not wrap by itself."""
     lines = []
@@ -404,6 +476,8 @@ _CLASSES = (
     VIEW3D_PT_forge_rigforge,
     VIEW3D_PT_forge_retopo,
     VIEW3D_PT_forge_uv,
+    VIEW3D_PT_forge_rig,
+    VIEW3D_PT_forge_godot,
 )
 
 

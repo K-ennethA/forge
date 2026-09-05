@@ -60,6 +60,11 @@ EXPECTED_TOOLS = {
     "rigforge_retopo",
     "rigforge_auto_uv",
     "rigforge_status",
+    # RigForge rig + Godot export (Phase 4)
+    "rigforge_metarig",
+    "rigforge_generate_rig",
+    "rigforge_weights",
+    "rigforge_export_godot",
 }
 
 
@@ -104,7 +109,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 32
+    assert len(names) == 36
 
 
 def test_every_tool_is_documented() -> None:
@@ -146,6 +151,11 @@ def test_every_tool_has_an_object_schema() -> None:
         ("rigforge_retopo", []),
         ("rigforge_auto_uv", []),
         ("rigforge_status", []),
+        # Phase 4: only the export needs somewhere to write
+        ("rigforge_metarig", []),
+        ("rigforge_generate_rig", []),
+        ("rigforge_weights", []),
+        ("rigforge_export_godot", ["path"]),
     ],
 )
 def test_required_parameters_match_the_contract(tool_name: str, required: list[str]) -> None:
@@ -173,6 +183,8 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ),
         ("rigforge_manifest", "action", ["save", "load", "get"]),
         ("rigforge_retopo", "platform", ["desktop", "mobile"]),
+        ("rigforge_metarig", "archetype", ["auto", "biped", "quadruped", "custom"]),
+        ("rigforge_weights", "action", ["report", "cleanup", "normalize"]),
     ],
 )
 def test_enum_parameters_match_the_contract(
@@ -215,6 +227,8 @@ def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
         "rigforge_retopo",
         "rigforge_auto_uv",
         "rigforge_status",
+        "rigforge_metarig",
+        "rigforge_weights",
     ],
 )
 def test_object_targeting_tools_take_an_optional_object(tool_name: str) -> None:
@@ -246,6 +260,25 @@ def test_retopo_defaults_match_the_desktop_preset() -> None:
     assert properties["bake_normals"]["default"] is False
     assert properties["bake_resolution"]["default"] == 2048
     assert properties["keep_original"]["default"] is True
+
+
+def test_export_godot_defaults_are_the_shipping_ones() -> None:
+    """deform_only and the import helper are on unless the caller says otherwise."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_export_godot").input_schema
+    properties = schema["properties"]
+    assert properties["actions"]["default"] == "all"
+    assert properties["root_motion"]["default"] is False
+    assert properties["deform_only"]["default"] is True
+    assert properties["godot_import_script"]["default"] is True
+    assert "rig" not in schema.get("required", [])
+
+
+def test_export_godot_actions_accepts_a_string_or_a_list() -> None:
+    """"all" and ["idle-loop", ...] are the contract's two forms."""
+    schema = next(t for t in list_tools() if t.name == "rigforge_export_godot").input_schema
+    actions = schema["properties"]["actions"]
+    kinds = {branch.get("type") for branch in actions["anyOf"]}
+    assert {"string", "array"} <= kinds
 
 
 # --- error paths with no backends running -----------------------------------
