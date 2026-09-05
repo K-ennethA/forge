@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from mcp.server.mcpserver import MCPServer
 
 from . import __version__, blender_client, config, service_client
-from .errors import BackendUnavailable, ForgeError
+from .errors import BackendError, BackendUnavailable, ForgeError
 from .util import (
     GLTF_SUFFIXES,
     MOCAP_SUFFIXES,
@@ -40,6 +40,8 @@ from .util import (
     fmt_manifest_report,
     fmt_metarig_report,
     fmt_mode,
+    fmt_model_check_report,
+    fmt_model_segment_report,
     fmt_new_part_report,
     fmt_number,
     fmt_open_report,
@@ -105,6 +107,11 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
   viewport) or partforge_export_segments (files for the slicer).
+- A model the artist DOWNLOADED or imported (an STL/OBJ off the internet, their
+  own sculpt) has no PARAMS script, so the partforge_* tools cannot touch it:
+  check it with check_model and cut it with segment_model, which work off the
+  Blender object. Both refuse a mesh that is not watertight — repair that with
+  remesh(mode="voxel") first, then ask again.
 - RigForge tools (rigforge_*) take a sculpt all the way to a game character:
   rigforge_tag (once per body part) -> rigforge_retopo -> rigforge_auto_uv ->
   rigforge_metarig -> rigforge_generate_rig -> rigforge_cloth (optional) ->
@@ -1085,6 +1092,164 @@ def partforge_export_segments(
     if isinstance(plate, dict) and not plate.get("fits", True):
         lines.append("  WARNING: the packed plate does not fit the bed.")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Imported models (Phase 6d) — "I downloaded this STL, will it print?"
+# ---------------------------------------------------------------------------
+
+#: A mesh with holes cannot be measured or cut, and the geometry service says so
+#: in one plain sentence. That sentence is the truth; this is the fix, and it is
+#: the same fix on both tools.
+_REPAIR_ADVICE = (
+    "Fix it first: remesh(mode=\"voxel\") on that object rebuilds the surface as "
+    "one closed shell, sealing holes and non-manifold edges (the artist's own "
+    "button for this is the Forge panel's Model box > Voxel Repair). Start with "
+    "the default 0.01 m voxel and only go smaller if detail is lost — smaller is "
+    "much heavier. Then run the same call again."
+)
+
+#: What a "repair it first" refusal from the service looks like by the time it
+#: has crossed the add-on's socket. Matched loosely on purpose: the exact
+#: wording is the service's, and it must keep reaching the caller verbatim.
+_REPAIR_MARKERS = ("watertight", "repair first", "not closed", "manifold")
+
+
+def _with_repair_advice(exc: ForgeError) -> ForgeError:
+    """Re-dress a non-watertight refusal with the fix, message kept word for word.
+
+    A backend that is simply not running is left alone — "start Blender" is
+    already the right advice there, and voxel-remeshing nothing would not help.
+    """
+    if isinstance(exc, BackendUnavailable):
+        return exc
+    text = str(exc)
+    if not any(marker in text.lower() for marker in _REPAIR_MARKERS):
+        return exc
+    return BackendError(f"{text}\n\n{_REPAIR_ADVICE}")
+
+
+def _model_request(
+    object_name: Optional[str], printer_path: Optional[str]
+) -> tuple[Dict[str, Any], str]:
+    """Target + printer, resolved the way every print-readiness tool resolves them.
+
+    The profile only goes on the wire when there IS one, so "no profile" keeps
+    meaning "use the service's own Centauri Carbon defaults" rather than an empty
+    object to merge over them.
+    """
+    params = _target(object_name)
+    printer, printer_source = read_printer(printer_path)
+    if printer:
+        params["printer"] = printer
+    return params, printer_source
+
+
+@app.tool()
+def check_model(
+    object: Optional[str] = None,
+    printer_path: Optional[str] = None,
+) -> str:
+    """Can this DOWNLOADED or imported model be printed? Bed fit, walls, overhangs.
+
+    The raw-mesh twin of partforge_check, and the one to reach for when there is
+    no script: an STL or OBJ the artist downloaded, a sculpt they made, anything
+    that arrived as triangles. partforge_check needs a PARAMS script; this needs
+    only an object that is already in the Blender scene.
+
+    The add-on takes that object's evaluated mesh (modifiers applied), scales
+    Blender's metres to millimetres and asks the geometry service the same four
+    questions — bed fit, minimum wall, overhangs, watertightness — then writes the
+    rows into the panel's Print Checks box, so the artist reads the same verdict
+    you do.
+
+    `object` is the object's name; omit it for Blender's active object.
+    `printer_path` works exactly as in partforge_check: the repo's
+    templates/printer.json by default, the service's built-in Elegoo Centauri
+    Carbon profile when that file is missing, and the report always names which
+    profile it used.
+
+    Two things read differently on an imported mesh than on a PartForge part:
+
+    - There is no B-Rep, so solid validity is never reported — "watertight" here
+      is the triangle mesh's own closedness, nothing more.
+    - A model that is NOT watertight is REFUSED rather than checked, with a plain
+      "repair first" message. That is not a bug and not worth retrying: tell the
+      artist their download has holes, run remesh(mode="voxel") on it (the panel's
+      Model box has a Voxel Repair button that does the same), then check again.
+
+    When bed_fit fails the report carries the suggested cut mode — hand that
+    object straight to segment_model as `mode`. And the same two caveats as
+    partforge_check apply: min_wall is approximate inward ray casting ("look
+    here", not an exact dimension), and overhangs warn rather than fail.
+    """
+    params, printer_source = _model_request(object, printer_path)
+    try:
+        result = blender_client.send_command(
+            "check_model",
+            params,
+            read_timeout=max(config.BLENDER_READ_TIMEOUT, config.SERVICE_CHECK_TIMEOUT),
+        )
+    except ForgeError as exc:
+        raise _with_repair_advice(exc) from exc
+    return fmt_model_check_report(object, result, printer_source)
+
+
+@app.tool()
+def segment_model(
+    object: Optional[str] = None,
+    printer_path: Optional[str] = None,
+    joint_type: Literal["dovetail", "pin", "magnet", "none"] = "dovetail",
+    joint_tolerance: Optional[float] = None,
+    mode: SegmentMode = "auto",
+    collection: Optional[str] = None,
+) -> str:
+    """Cut a DOWNLOADED or imported model into printable, joinable pieces.
+
+    The raw-mesh twin of partforge_load_segments: it cuts the mesh that is
+    already in Blender — a download, a sculpt, anything with no PARAMS script
+    behind it — fits a joint into every mating face, re-checks each piece is
+    watertight, packs them onto one plate AND loads the pieces back into the
+    viewport where the packing put them. One call, and the artist sees their
+    print plate instead of the assembled model.
+
+    - `object`: the model to cut; omit it for Blender's active object.
+    - `mode`: "auto", an integer radial wedge count, a list of Z heights, or
+      check_model's own suggested_segmentation.mode copied verbatim.
+    - `joint_type`: "dovetail" (default), "pin" (the printed pins come back as
+      extra "hardware" pieces), "magnet", or "none". `joint_tolerance` overrides
+      the printer profile's press_fit / magnet_pocket_extra.
+    - `collection`: put the pieces in a named Blender collection instead of the
+      scene collection — worth doing, because a cut model is a lot of objects.
+    - `printer_path`: as in check_model.
+
+    Run check_model first: its bed_fit failure is what says a cut is needed, and
+    its suggestion is the `mode` to use. A model that is not watertight is
+    refused here too — remesh(mode="voxel") to repair it, then cut.
+
+    Meshes never reach you: the pieces travel service -> Blender and the report
+    names the objects that landed, their oriented sizes and whether the packed
+    plate fits the bed. A joint that cannot work on a face (a 6 mm magnet in a
+    2 mm wall) is an error saying what to use instead — change the joint rather
+    than retrying.
+    """
+    params, printer_source = _model_request(object, printer_path)
+    params["joint"] = _joint_spec(joint_type, joint_tolerance)
+    params["mode"] = normalize_segment_mode(mode)
+    if collection and collection.strip():
+        params["collection"] = collection.strip()
+
+    try:
+        result = blender_client.send_command(
+            "segment_model",
+            params,
+            read_timeout=max(
+                config.BLENDER_READ_TIMEOUT, config.SERVICE_SEGMENT_TIMEOUT
+            ),
+        )
+    except ForgeError as exc:
+        raise _with_repair_advice(exc) from exc
+    return fmt_model_segment_report(object, result, printer_source, collection)
 
 
 # ---------------------------------------------------------------------------

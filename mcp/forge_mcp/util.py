@@ -353,8 +353,16 @@ def _bed_fit_line(data: Mapping[str, Any]) -> str:
     )
 
 
-def _suggestion_lines(data: Mapping[str, Any], indent: str) -> List[str]:
-    """The bed_fit failure's segmentation advice, mode object included verbatim."""
+def _suggestion_lines(
+    data: Mapping[str, Any], indent: str, segment_tool: str = "partforge_segment"
+) -> List[str]:
+    """The bed_fit failure's segmentation advice, mode object included verbatim.
+
+    `segment_tool` is the tool the suggestion should be handed to, because the
+    same check runs for a PARAMS part (partforge_segment) and for an imported
+    mesh (segment_model), and naming the wrong one sends the artist to a tool
+    that cannot take their object.
+    """
     suggestion = data.get("suggested_segmentation")
     if not isinstance(suggestion, Mapping):
         return []
@@ -362,7 +370,7 @@ def _suggestion_lines(data: Mapping[str, Any], indent: str) -> List[str]:
              f"{suggestion.get('reason', '')}".rstrip()]
     if suggestion.get("feasible") and suggestion.get("mode") is not None:
         mode = json.dumps(suggestion.get("mode"), separators=(", ", ": "))
-        lines.append(f"{indent}pass to partforge_segment verbatim -> mode = {mode}")
+        lines.append(f"{indent}pass to {segment_tool} verbatim -> mode = {mode}")
     else:
         lines.append(f"{indent}NOT segmentable automatically — cutting cannot fix this.")
     estimate = suggestion.get("estimated_segment_bbox_mm")
@@ -420,8 +428,12 @@ def _overhang_line(data: Mapping[str, Any]) -> str:
 
 def _watertight_line(data: Mapping[str, Any]) -> str:
     verdict = "watertight" if data.get("watertight") else "NOT watertight"
+    # `solid_is_valid` is null for an imported mesh — there is no B-Rep to
+    # validate — and "B-Rep valid None" reads like a bug rather than an absence.
+    valid = data.get("solid_is_valid")
+    valid_text = "n/a (no B-Rep)" if valid is None else fmt_number(valid)
     return (
-        f"{verdict}: B-Rep valid {fmt_number(data.get('solid_is_valid'))}, "
+        f"{verdict}: B-Rep valid {valid_text}, "
         f"mesh closed {fmt_number(data.get('mesh_is_closed'))}, "
         f"{data.get('boundary_edges', '?')} boundary / "
         f"{data.get('nonmanifold_edges', '?')} non-manifold edges"
@@ -434,6 +446,41 @@ _CHECK_LINES = {
     "overhangs": _overhang_line,
     "watertight": _watertight_line,
 }
+
+
+def _check_lines(
+    checks: Any, segment_tool: str = "partforge_segment"
+) -> List[str]:
+    """One line per check with the numbers that decide it, plus its follow-ups.
+
+    Shared by the two check reports (a PARAMS part and an imported mesh): the
+    rows are the same rows, and only the tool the bed_fit suggestion is handed
+    to differs.
+    """
+    lines: List[str] = []
+    for check in checks or []:
+        if not isinstance(check, Mapping):
+            lines.append(f"  {check!r}")
+            continue
+        name = str(check.get("name", "?"))
+        data = check.get("data") if isinstance(check.get("data"), Mapping) else {}
+        builder = _CHECK_LINES.get(name)
+        try:
+            summary = builder(data) if builder else str(check.get("details", ""))
+        except Exception:  # noqa: BLE001 - a report must never hide the verdict
+            summary = str(check.get("details", ""))
+        lines.append(f"  {_tag(check.get('status'))} {name:<11} {summary}")
+
+        indent = " " * 21
+        status = str(check.get("status", "")).lower()
+        if name == "bed_fit":
+            # The service's own `details` restates the summary line and then the
+            # suggestion; only the suggestion is new, so print just that.
+            if status == "fail":
+                lines.extend(_suggestion_lines(data, indent, segment_tool))
+        elif status != "pass" and check.get("details"):
+            lines.append(f"{indent}{check['details']}")
+    return lines
 
 
 def fmt_check_report(
@@ -456,29 +503,7 @@ def fmt_check_report(
         lines.append("  (the service returned no checks)")
         return "\n".join(lines)
 
-    for check in checks:
-        if not isinstance(check, Mapping):
-            lines.append(f"  {check!r}")
-            continue
-        name = str(check.get("name", "?"))
-        data = check.get("data") if isinstance(check.get("data"), Mapping) else {}
-        builder = _CHECK_LINES.get(name)
-        try:
-            summary = builder(data) if builder else str(check.get("details", ""))
-        except Exception:  # noqa: BLE001 - a report must never hide the verdict
-            summary = str(check.get("details", ""))
-        lines.append(f"  {_tag(check.get('status'))} {name:<11} {summary}")
-
-        indent = " " * 21
-        status = str(check.get("status", "")).lower()
-        if name == "bed_fit":
-            # The service's own `details` restates the summary line and then the
-            # suggestion; only the suggestion is new, so print just that.
-            if status == "fail":
-                lines.extend(_suggestion_lines(data, indent))
-        elif status != "pass" and check.get("details"):
-            lines.append(f"{indent}{check['details']}")
-
+    lines.extend(_check_lines(checks))
     return "\n".join(lines)
 
 
@@ -529,8 +554,23 @@ def fmt_segment_report(script_name: str, payload: Mapping[str, Any],
         f"   cuts: {len(cuts)}",
         f"  overrides: {fmt_overrides(overrides)}",
         "",
+    ]
+    lines.extend(_segment_table(segments))
+
+    lines.append("")
+    lines.append(fmt_plate(payload.get("plate")))
+    return "\n".join(lines)
+
+
+def _segment_table(segments: Sequence[Mapping[str, Any]]) -> List[str]:
+    """The pieces, one row each — name, kind, oriented box, counts, watertight.
+
+    Every field is optional: a planning response carries no meshes, and the
+    imported-mesh path may report a segment with `stats` it never measured.
+    """
+    lines = [
         f"  {'segment':<20} {'kind':<9} {'oriented bbox (mm)':<26} {'verts':>7} "
-        f"{'faces':>7}  watertight",
+        f"{'faces':>7}  watertight"
     ]
     for segment in segments:
         stats = segment.get("stats") if isinstance(segment.get("stats"), Mapping) else {}
@@ -542,10 +582,7 @@ def fmt_segment_report(script_name: str, payload: Mapping[str, Any],
             f"{str(stats.get('face_count', '?')):>7}  "
             f"{'yes' if stats.get('watertight') else 'NO'}"
         )
-
-    lines.append("")
-    lines.append(fmt_plate(payload.get("plate")))
-    return "\n".join(lines)
+    return lines
 
 
 def fmt_plate(plate: Any) -> str:
@@ -630,6 +667,161 @@ def fmt_written_files(files: Sequence[Any], plate_path: Any) -> str:
             total += size
         lines.append(f"  {'(packed plate)':<20} {'plate':<9} {fmt_size(size):>10}  {plate_path}")
     lines.append(f"  {len(lines)} file(s), {fmt_size(total)} total")
+    return "\n".join(lines)
+
+
+# --- Phase 6d reports: imported meshes --------------------------------------
+#
+# The same two questions as the PartForge pipeline (will it print, how do I cut
+# it) asked of a mesh that is already in Blender. The rows are the service's own
+# rows, so the check/segment/plate renderers above are reused wholesale; what is
+# different is everything around them — the subject is a Blender object rather
+# than a script, there are no `overrides` to report, the answer names the
+# objects the add-on loaded, and an imported mesh has no B-Rep.
+
+
+def mesh_subject(object_name: Optional[str], result: Mapping[str, Any]) -> str:
+    """What to call the thing that was checked or cut.
+
+    The add-on echoes the object it resolved, which is the useful name when the
+    caller omitted `object` and meant "whatever is active".
+    """
+    reported = str(result.get("object") or "").strip() if isinstance(result, Mapping) else ""
+    named = str(object_name or "").strip()
+    subject = reported or named
+    return f"'{subject}'" if subject else "the active object"
+
+
+def fmt_mesh_line(payload: Mapping[str, Any], label: str = "mesh") -> Optional[str]:
+    """The one line about the geometry that was measured, or None if unreported.
+
+    `stats` is the service's (counts, bbox, watertight) and `mesh` is the
+    add-on's (counts plus the metres->millimetres `scale` it applied). Either
+    may be absent, so this never assumes both.
+    """
+    stats = payload.get("stats")
+    mesh = payload.get("mesh") if isinstance(payload.get("mesh"), Mapping) else {}
+    if isinstance(stats, Mapping) and stats:
+        text = fmt_stats(stats)
+    elif mesh:
+        text = fmt_stats(mesh)
+    else:
+        return None
+    scale = mesh.get("scale")
+    if scale is not None:
+        # Not places=0: fmt_number strips trailing zeros, which would turn the
+        # x1000 metres->millimetres scale into "x1".
+        text += f" (scene metres scaled x{fmt_number(scale)} to mm)"
+    return f"  {label}: {text}"
+
+
+def loaded_object_names(objects: Any) -> List[str]:
+    """Names out of an `objects` field, whether it holds strings or records.
+
+    `segment_model` reports plain names; `load_meshes` reports
+    ``{"object": ..., "vertex_count": ...}`` records, and an add-on written in
+    parallel may well settle on either.
+    """
+    if isinstance(objects, Mapping):
+        objects = [objects]
+    if isinstance(objects, (str, bytes)):
+        objects = [objects]
+    if not isinstance(objects, (list, tuple)):
+        return []
+    names: List[str] = []
+    for entry in objects:
+        if isinstance(entry, Mapping):
+            name = entry.get("object") or entry.get("name")
+        else:
+            name = entry
+        text = str(name).strip() if name is not None else ""
+        if text:
+            names.append(text)
+    return names
+
+
+def fmt_model_check_report(
+    object_name: Optional[str], result: Mapping[str, Any], printer_source: str
+) -> str:
+    """Print readiness for a mesh the artist imported, rather than a part script."""
+    overall = str(result.get("overall", "?")).upper()
+    lines = [
+        f"Print readiness: {overall} — {mesh_subject(object_name, result)} (imported mesh)",
+        f"  {_printer_line(result.get('printer'), printer_source)}",
+    ]
+    mesh_line = fmt_mesh_line(result)
+    if mesh_line:
+        lines.append(mesh_line)
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.append("")
+
+    checks = result.get("checks") or []
+    if not checks:
+        lines.append("  (the add-on returned no checks)")
+    else:
+        lines.extend(_check_lines(checks, segment_tool="segment_model"))
+
+    lines.append("")
+    if result.get("panel"):
+        lines.append("  The same rows are now in Blender's Print Checks panel.")
+    lines.append(
+        "  This is a raw mesh, so there is no B-Rep to validate — 'watertight' "
+        "is the triangles' own closedness."
+    )
+    return "\n".join(lines)
+
+
+def fmt_model_segment_report(
+    object_name: Optional[str],
+    result: Mapping[str, Any],
+    printer_source: str,
+    collection: Optional[str] = None,
+) -> str:
+    """The cut of an imported mesh: the pieces, the plate, and what is now in Blender."""
+    segments = [s for s in (result.get("segments") or []) if isinstance(s, Mapping)]
+    pieces = sum(1 for s in segments if s.get("kind") != "hardware")
+    hardware = len(segments) - pieces
+
+    lines = [
+        f"Cut {mesh_subject(object_name, result)} into {pieces} piece(s)"
+        + (f" plus {hardware} printed pin(s)" if hardware else ""),
+        f"  mode: {fmt_mode(result.get('mode'))}   "
+        f"joint: {fmt_joint(result.get('joint'))}   printer: {printer_source}",
+    ]
+    mesh_line = fmt_mesh_line(result, label="source mesh")
+    if mesh_line:
+        lines.append(mesh_line)
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    if segments:
+        lines.append("")
+        lines.extend(_segment_table(segments))
+
+    plate = result.get("plate")
+    lines.append("")
+    lines.append(fmt_plate(plate))
+    if isinstance(plate, Mapping) and not plate.get("fits", True):
+        lines.append(
+            "  WARNING: the packed plate does not fit the bed — cut into more "
+            "pieces (a bigger radial count, or another planar height) and re-run."
+        )
+
+    lines.append("")
+    names = loaded_object_names(result.get("objects"))
+    where = f" in collection '{collection.strip()}'" if collection and collection.strip() else ""
+    if names:
+        lines.append(
+            f"  Loaded {len(names)} object(s) into Blender{where}, laid out on the plate:"
+        )
+        lines.append(f"    {', '.join(names)}")
+    else:
+        count = result.get("count")
+        lines.append(
+            f"  The add-on reported {count} piece(s) but named no loaded objects "
+            "— check the scene with get_scene_info."
+            if count
+            else "  NOT loaded into Blender: the add-on named no objects."
+        )
     return "\n".join(lines)
 
 
@@ -2121,6 +2313,8 @@ KNOWN_BLENDER_OPS = frozenset({
     "load_reference",
     # PartForge
     "load_mesh", "load_meshes", "partforge_open",
+    # imported meshes (Phase 6d)
+    "check_model", "segment_model",
     # RigForge
     "rigforge_list_tags", "rigforge_tag", "rigforge_untag", "rigforge_manifest",
     "rigforge_retopo", "rigforge_auto_uv", "rigforge_status", "rigforge_metarig",
@@ -2132,6 +2326,8 @@ KNOWN_BLENDER_OPS = frozenset({
 KNOWN_SERVICE_OPS = frozenset({
     "/health", "/parse_params", "/generate", "/export", "/check", "/segment",
     "/export_segments", "/slice", "/mold", "/export_mold",
+    # raw-mesh input (Phase 6d): the same two answers for a downloaded model
+    "/check_mesh", "/segment_mesh",
 })
 
 FLOW_NAME_MAX = 60

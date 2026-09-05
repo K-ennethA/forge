@@ -48,6 +48,13 @@ from .export import (
     safe_basename,
 )
 from .joints import resolve_joint
+from .mesh_input import (
+    check_triangle_ceiling,
+    load_mesh_input,
+    require_watertight,
+    sew_to_solid,
+    sew_tolerance_for,
+)
 from .mold import build_mold, solid_volume
 from .mold import normalize_options as normalize_mold_options
 from .printer import (
@@ -58,6 +65,7 @@ from .printer import (
 from .runner import (
     DEFAULT_ANGULAR_TOLERANCE,
     DEFAULT_TOLERANCE_MM,
+    compute_mesh_stats,
     compute_stats,
     normalize_build_result,
     tessellate_shape,
@@ -289,19 +297,60 @@ def handle_check(job: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _segment_common(job: Mapping[str, Any]) -> Dict[str, Any]:
-    """Build, cut, join and verify.  Shared by /segment and /export_segments."""
+def _segment_context(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Everything a segmenting job validates *before* it touches geometry.
+
+    A bad joint type or an impossible mode should come back immediately, not
+    after a minute of building or sewing.
+    """
     linear, angular = _tolerances(job)
     printer = normalize_printer(job.get("printer"))
     margin, spacing = _plate_options(job)
-    joint_spec = resolve_joint(job.get("joint"), printer)
-    mode = normalize_mode(job.get("mode"))
+    return {
+        "linear": linear,
+        "angular": angular,
+        "printer": printer,
+        "margin": margin,
+        "spacing": spacing,
+        "joint": resolve_joint(job.get("joint"), printer),
+        "mode": normalize_mode(job.get("mode")),
+    }
+
+
+def _segment_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Build, cut, join and verify.  Shared by /segment and /export_segments."""
+    context = _segment_context(job)
+    linear, angular = context["linear"], context["angular"]
 
     schema, shape, timings = _build_shape(job)
 
     started = time.perf_counter()
     vertices, triangles, stats = _mesh_and_stats(shape, linear, angular)
     timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return _segment_tail(context, shape, vertices, triangles, stats, timings, schema)
+
+
+def _segment_tail(
+    context: Mapping[str, Any],
+    shape: Any,
+    vertices: list,
+    triangles: list,
+    stats: Dict[str, Any],
+    timings: Dict[str, float],
+    schema: Any,
+) -> Dict[str, Any]:
+    """Cut, join, verify and pack -- identical for a script and for a mesh.
+
+    By the time a job reaches here the difference between "a PARAMS script built
+    this solid" and "somebody downloaded this mesh and we sewed it" is gone: both
+    are a build123d shape plus the triangles that describe it.
+    """
+    linear, angular = context["linear"], context["angular"]
+    printer = context["printer"]
+    margin, spacing = context["margin"], context["spacing"]
+    joint_spec = context["joint"]
+    mode = context["mode"]
 
     suggestion: Optional[Dict[str, Any]] = None
     if mode["kind"] == "auto":
@@ -391,7 +440,12 @@ def _segment_common(job: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 def handle_segment(job: Mapping[str, Any]) -> Dict[str, Any]:
-    result = _segment_common(job)
+    return _segment_payload(job, _segment_common(job))
+
+
+def _segment_payload(
+    job: Mapping[str, Any], result: Mapping[str, Any]
+) -> Dict[str, Any]:
     include_mesh = job.get("include_mesh")
     include_mesh = True if include_mesh is None else bool(include_mesh)
 
@@ -421,15 +475,26 @@ def handle_segment(job: Mapping[str, Any]) -> Dict[str, Any]:
     }
     if result["suggestion"] is not None:
         payload["suggestion"] = result["suggestion"]
+    if result.get("mesh_input") is not None:
+        payload["mesh_input"] = result["mesh_input"]
+        payload["sewing"] = result["sewing"]
     return payload
 
 
 def handle_export_segments(job: Mapping[str, Any]) -> Dict[str, Any]:
-    result = _segment_common(job)
+    return _export_segments_payload(job, _segment_common(job))
+
+
+def _export_segments_payload(
+    job: Mapping[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
     linear, angular = result["tolerances"]
 
     directory = resolve_output_dir(job.get("directory"))
-    basename = safe_basename(job.get("basename"), default="part")
+    # A downloaded model has no script name to borrow, so its files are "model_*"
+    # rather than "part_*" unless the caller says otherwise.
+    default_name = "model" if result.get("mesh_input") is not None else "part"
+    basename = safe_basename(job.get("basename"), default=default_name)
     fmt = normalize_format(job.get("format") or "stl")
 
     started = time.perf_counter()
@@ -486,7 +551,106 @@ def handle_export_segments(job: Mapping[str, Any]) -> Dict[str, Any]:
     }
     if result["suggestion"] is not None:
         payload["suggestion"] = result["suggestion"]
+    if result.get("mesh_input") is not None:
+        payload["mesh_input"] = result["mesh_input"]
+        payload["sewing"] = result["sewing"]
     return payload
+
+
+# --------------------------------------------------------------------------
+# Phase 6d: mesh input -- "fix this downloaded model"
+# --------------------------------------------------------------------------
+
+
+def _load_mesh(job: Mapping[str, Any]) -> Tuple[list, list, Dict[str, Any], Dict[str, Any]]:
+    """Read the caller's mesh and measure it the way ``/generate`` measures one.
+
+    Returns ``(vertices, triangles, stats, info)``.  ``stats`` is the same block
+    every other endpoint returns, except that ``solid_is_valid`` is ``null``:
+    there is no B-Rep behind a mesh to ask OpenCascade about.
+    """
+    loaded = load_mesh_input(job)
+    vertices = loaded["vertices"]
+    triangles = loaded["faces"]
+    info = loaded["info"]
+    stats = compute_mesh_stats(vertices, triangles, info["degenerate_faces_dropped"])
+    return vertices, triangles, stats, info
+
+
+def handle_check_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """``/check``, but the geometry arrived as triangles instead of a script.
+
+    The four checks were always mesh checks -- bed fit, wall probing, overhang
+    angles and manifold analysis all read triangles -- so this is the same
+    :func:`checks.run_checks` call, not a parallel implementation.
+    """
+    printer = normalize_printer(job.get("printer"))
+    margin, _spacing = _plate_options(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats, info = _load_mesh(job)
+    timings = {"load_ms": round((time.perf_counter() - started) * 1000.0, 2)}
+
+    started = time.perf_counter()
+    report = run_checks(
+        vertices,
+        triangles,
+        stats,
+        printer,
+        margin_mm=margin,
+        min_wall_probe_mm=job.get("min_wall_probe_mm"),
+        max_wall_samples=int(job.get("max_wall_samples") or 4000),
+    )
+    timings["check_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return {
+        "overall": report["overall"],
+        "checks": report["checks"],
+        # There is no PARAMS schema behind a downloaded model.  The key is kept
+        # so a caller can render a /check and a /check_mesh response with one
+        # code path.
+        "params": None,
+        "printer": printer,
+        "stats": stats,
+        "mesh_input": info,
+        "timings": timings,
+    }
+
+
+def _segment_mesh_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Load, refuse or sew, then hand the solid to the ordinary segmenting path."""
+    context = _segment_context(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats, info = _load_mesh(job)
+    timings = {"load_ms": round((time.perf_counter() - started) * 1000.0, 2)}
+
+    # Both refusals come before any OCC work: they are the two things that make
+    # sewing pointless (a mesh with holes) or ruinously slow (a dense one).
+    require_watertight(stats)
+    info["triangle_limit"] = check_triangle_ceiling(
+        len(triangles), job.get("tri_limit")
+    )
+
+    started = time.perf_counter()
+    tolerance = sew_tolerance_for(vertices, job.get("sew_tolerance_mm"))
+    shape, sewing = sew_to_solid(vertices, triangles, tolerance)
+    timings["sew_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    # The sewn solid is re-tessellated by the ordinary path, so from here the
+    # numbers describe the solid that will actually be cut, not the input file.
+    result = _segment_tail(context, shape, vertices, triangles, stats, timings, None)
+    result["mesh_input"] = info
+    result["sewing"] = sewing
+    return result
+
+
+def handle_segment_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _segment_payload(job, _segment_mesh_common(job))
+
+
+def handle_export_segments_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _export_segments_payload(job, _segment_mesh_common(job))
 
 
 # --------------------------------------------------------------------------
@@ -651,6 +815,9 @@ HANDLERS = {
     "check": handle_check,
     "segment": handle_segment,
     "export_segments": handle_export_segments,
+    "check_mesh": handle_check_mesh,
+    "segment_mesh": handle_segment_mesh,
+    "export_segments_mesh": handle_export_segments_mesh,
     "mold": handle_mold,
     "export_mold": handle_export_mold,
 }

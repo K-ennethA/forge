@@ -87,13 +87,20 @@ class Client(object):
         return status, body
 
     def wait(self, job_id, timeout=60.0):
+        """Poll until the job is finished.
+
+        "queued" counts as unfinished as much as "running" does: a message
+        waiting its turn has not answered anything yet.
+        """
         deadline = time.time() + timeout
+        state = None
         while time.time() < deadline:
             status, body = self.request("/job/%s" % job_id)
-            if body.get("state") != "running":
+            state = body.get("state")
+            if state not in ("running", "queued"):
                 return body
             time.sleep(0.05)
-        raise AssertionError("job %s never left running" % job_id)
+        raise AssertionError("job %s never finished (last state %r)" % (job_id, state))
 
     def turn(self, message, **kwargs):
         status, body = self.ask(message, **kwargs)
@@ -106,6 +113,22 @@ class Client(object):
             return []
         with open(self.log_path, "r", encoding="utf-8") as handle:
             return [json.loads(line) for line in handle if line.strip()]
+
+    def wait_for_calls(self, count, timeout=15.0):
+        """Block until the fake CLI has been spawned ``count`` times.
+
+        Spawning is a thread plus a process, so "it started" is not true the
+        instant /ask answers; without this a test that counts invocations is
+        really testing how fast this machine is.
+        """
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            calls = self.invocations()
+            if len(calls) >= count:
+                return calls
+            time.sleep(0.05)
+        raise AssertionError("the CLI ran %d times, expected %d"
+                             % (len(self.invocations()), count))
 
 
 def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
@@ -392,6 +415,10 @@ def test_health_finds_the_cli_and_reports_its_version(client):
     assert body["claude_cli"]["found"] is True
     assert body["claude_cli"]["version"].startswith("9.9.9")
     assert body["busy"] is False
+    # the status row the panel draws: nothing waiting, nothing spent, signed in
+    assert body["queued"] is False
+    assert body["session_cost_usd"] == 0.0
+    assert body["last_auth_error"] is False
 
 
 def test_ask_then_poll_reaches_done(client):
@@ -446,19 +473,24 @@ def test_new_endpoint_also_clears_the_session(client):
 
 
 def test_one_job_at_a_time(bridge_proc):
+    """Two asks, one CLI: the second waits rather than racing the first."""
     client = bridge_proc(env_extra={"FAKE_CLAUDE_MODE": "slow",
                                     "FAKE_CLAUDE_SLEEP": "6"})
     status, first = client.ask("a long one")
     assert status == 200
+    assert first["state"] == "running"
 
-    status, busy = client.ask("me too")
-    assert status == 409, busy
-    assert "still working" in busy["error"]
-    assert busy["job_id"] == first["job_id"]
+    status, second = client.ask("me too")
+    assert status == 200, second
+    assert second["state"] == "queued"
 
     _status, health = client.request("/health")
     assert health["busy"] is True
+    assert health["queued"] is True
+    # exactly one turn is ever in flight
+    assert len(client.wait_for_calls(1)) == 1
 
+    client.request("/cancel/%s" % second["job_id"], {})
     client.request("/cancel/%s" % first["job_id"], {})
 
 
@@ -483,6 +515,223 @@ def test_cancel_stops_the_run(bridge_proc):
 def test_cancel_of_an_unknown_job_is_a_clean_404(client):
     status, body = client.request("/cancel/nope", {})
     assert status == 404 and "No such job" in body["error"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 6e — one message may wait its turn
+#
+# The artist thinks of the next thing while the last one is still running. One
+# message is allowed to wait; a second waiting message is refused, because a
+# queue you cannot see is a way to lose track of what you asked for.
+# ---------------------------------------------------------------------------
+
+def _busy_client(bridge_proc, seconds="4"):
+    """A bridge whose every turn takes ``seconds``, so a queue can form."""
+    return bridge_proc(env_extra={"FAKE_CLAUDE_MODE": "slow",
+                                  "FAKE_CLAUDE_SLEEP": seconds})
+
+
+def test_asking_while_busy_queues_instead_of_refusing(bridge_proc):
+    client = _busy_client(bridge_proc, seconds="6")
+    status, first = client.ask("the slow one")
+    assert status == 200 and first["state"] == "running"
+
+    status, second = client.ask("and then this")
+    assert status == 200, second
+    assert second["state"] == "queued"
+    assert second["queued"] is True
+    assert second["job_id"] != first["job_id"]
+
+    # pollable immediately: the panel must never see a 404 for a job it was
+    # just handed the id of
+    status, view = client.request("/job/%s" % second["job_id"])
+    assert status == 200, view
+    assert view["state"] == "queued"
+    assert view["job_id"] == second["job_id"]
+    # and it says why nothing is happening yet, rather than showing an empty box
+    assert view["activity"], view
+    assert view["activity"][0]["kind"] == "status"
+    assert "waiting" in view["activity"][0]["label"]
+
+    client.request("/cancel/%s" % second["job_id"], {})
+    client.request("/cancel/%s" % first["job_id"], {})
+
+
+def test_a_second_waiting_message_is_refused_by_name(bridge_proc):
+    client = _busy_client(bridge_proc, seconds="6")
+    _status, first = client.ask("the slow one")
+    status, second = client.ask("next")
+    assert status == 200 and second["state"] == "queued"
+
+    status, third = client.ask("and another")
+    assert status == 409, third
+    assert "already waiting" in third["error"]
+    # the old 409 keys still carry, so a panel written against them keeps working
+    assert third["job_id"] == second["job_id"]
+    assert third["state"] == "queued"
+    # and the refused message never became a job of its own
+    assert len(client.wait_for_calls(1)) == 1
+
+    client.request("/cancel/%s" % second["job_id"], {})
+    client.request("/cancel/%s" % first["job_id"], {})
+
+
+def test_the_queued_message_runs_next_in_the_same_conversation(bridge_proc):
+    client = _busy_client(bridge_proc, seconds="3")
+    _status, first = client.ask("the slow one")
+    _status, second = client.ask("and then split it")
+    assert second["state"] == "queued"
+
+    assert client.wait(first["job_id"], timeout=60.0)["state"] == "done"
+    final = client.wait(second["job_id"], timeout=60.0)
+    assert final["state"] == "done", final
+    assert "OK" in final["reply"]
+
+    calls = client.invocations()
+    assert len(calls) == 2, [call["argv"] for call in calls]
+    # the queue does not start a second conversation: the waiting message
+    # resumes the session the turn ahead of it produced
+    assert "--resume" not in calls[0]["argv"]
+    assert calls[1]["argv"][calls[1]["argv"].index("--resume") + 1] == "sess-fake-0001"
+    assert final["session_id"] == "sess-fake-0001"
+
+    _status, health = client.request("/health")
+    assert health["busy"] is False and health["queued"] is False
+
+
+def test_a_queued_message_carries_the_scene_it_was_typed_against(bridge_proc):
+    """The context is the one the artist could see when they pressed Send."""
+    client = _busy_client(bridge_proc, seconds="3")
+    _status, first = client.ask("the slow one", context={"active_object": "Cup"})
+    _status, second = client.ask("now this one",
+                                 context={"active_object": "Lid"})
+
+    client.wait(first["job_id"], timeout=60.0)
+    assert client.wait(second["job_id"], timeout=60.0)["state"] == "done"
+
+    argv = client.invocations()[1]["argv"]
+    prompt = argv[argv.index("-p") + 1]
+    assert "now this one" in prompt
+    assert "Active object: Lid" in prompt
+
+
+def test_cancelling_a_queued_message_means_it_never_runs(bridge_proc):
+    client = _busy_client(bridge_proc, seconds="3")
+    _status, first = client.ask("the slow one")
+    _status, second = client.ask("actually, never mind")
+
+    status, body = client.request("/cancel/%s" % second["job_id"], {})
+    assert status == 200, body
+    assert body["state"] == "cancelled"
+
+    _status, health = client.request("/health")
+    assert health["queued"] is False
+
+    assert client.wait(first["job_id"], timeout=60.0)["state"] == "done"
+    time.sleep(0.5)  # long enough for a wrongly-queued turn to have started
+    _status, after = client.request("/job/%s" % second["job_id"])
+    assert after["state"] == "cancelled", after
+    assert len(client.invocations()) == 1, "the cancelled message spawned a CLI"
+
+
+def test_stopping_the_running_turn_still_lets_the_queued_one_through(bridge_proc):
+    """However the turn ends, the message behind it gets its turn."""
+    client = _busy_client(bridge_proc, seconds="4")
+    _status, first = client.ask("the slow one")
+    _status, second = client.ask("this one instead")
+    assert second["state"] == "queued"
+
+    time.sleep(0.4)
+    status, _body = client.request("/cancel/%s" % first["job_id"], {})
+    assert status == 200
+
+    assert client.wait(first["job_id"], timeout=30.0)["state"] == "cancelled"
+    assert client.wait(second["job_id"], timeout=60.0)["state"] == "done"
+    assert len(client.invocations()) == 2
+
+
+def test_a_queued_new_conversation_starts_fresh_when_it_gets_there(bridge_proc):
+    client = _busy_client(bridge_proc, seconds="3")
+    _status, first = client.ask("the slow one")
+    _status, second = client.ask("forget all that", conversation="new")
+    assert second["state"] == "queued"
+
+    client.wait(first["job_id"], timeout=60.0)
+    assert client.wait(second["job_id"], timeout=60.0)["state"] == "done"
+
+    calls = client.invocations()
+    # the turn ahead of it kept its own session; the queued one dropped it at
+    # pickup, not at enqueue, so the running turn was never disturbed
+    assert "--resume" not in calls[0]["argv"]
+    assert "--resume" not in calls[1]["argv"], calls[1]["argv"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 6e — what the conversation cost, and whether we are signed in
+# ---------------------------------------------------------------------------
+
+def test_session_cost_adds_up_and_a_new_conversation_zeroes_it(client):
+    first = client.turn("one")
+    assert first["session_cost_usd"] == pytest.approx(0.0123)
+
+    second = client.turn("two")
+    assert second["cost_usd"] == pytest.approx(0.0123)     # this turn
+    assert second["session_cost_usd"] == pytest.approx(0.0246)  # the conversation
+
+    _status, health = client.request("/health")
+    assert health["session_cost_usd"] == pytest.approx(0.0246)
+
+    status, body = client.request("/new", {})
+    assert status == 200 and body["session"] is None
+    _status, health = client.request("/health")
+    assert health["session_cost_usd"] == 0.0
+    # and the next turn counts from zero again
+    assert client.turn("three")["session_cost_usd"] == pytest.approx(0.0123)
+
+
+def test_a_failed_turn_costs_the_conversation_nothing(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_MODE": "api_error"})
+    assert client.turn("hello")["state"] == "error"
+    _status, health = client.request("/health")
+    assert health["session_cost_usd"] == 0.0
+
+
+def test_a_signed_out_cli_is_reported_on_health_and_clears_again(bridge_proc, tmp_path):
+    """The panel can say "sign in" without spending a turn to find out."""
+    marker = tmp_path / "signed-out.flag"
+    marker.write_text("signed out", encoding="utf-8")
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_AUTH_FILE": str(marker)})
+
+    failed = client.turn("hello")
+    assert failed["state"] == "error", failed
+    assert "not signed in" in failed["error"]
+
+    _status, health = client.request("/health")
+    assert health["last_auth_error"] is True
+
+    # sign back in: the very next good turn clears the flag
+    marker.unlink()
+    assert client.turn("hello again")["state"] == "done"
+    _status, health = client.request("/health")
+    assert health["last_auth_error"] is False
+
+
+def test_an_ordinary_failure_is_not_reported_as_a_sign_in_problem(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_MODE": "api_error"})
+    assert client.turn("hello")["state"] == "error"
+    _status, health = client.request("/health")
+    assert health["last_auth_error"] is False
+
+
+def test_the_sign_in_class_is_read_off_the_error_text():
+    assert bridge.looks_like_auth_error("Invalid API key · Please run /login")
+    assert bridge.looks_like_auth_error("authentication_error: nope")
+    # the rewritten sentence an artist actually sees still reads as sign-in
+    assert bridge.looks_like_auth_error(bridge.friendly_error("Not logged in"))
+    assert not bridge.looks_like_auth_error("Claude AI usage limit reached")
+    assert not bridge.looks_like_auth_error(bridge.friendly_error("usage limit"))
+    assert not bridge.looks_like_auth_error("")
+    assert not bridge.looks_like_auth_error(None)
 
 
 def test_a_warning_line_before_the_json_is_salvaged(bridge_proc):
@@ -614,7 +863,8 @@ def test_argument_summaries_stay_inside_sixty_characters():
 
 def _store_with_job():
     store = bridge.JobStore()
-    job, _busy = store.start("hello")
+    job, disposition = store.submit("hello", "hello")
+    assert disposition == "running"
     return store, job["job_id"]
 
 

@@ -57,6 +57,9 @@ EXPECTED_TOOLS = {
     "partforge_segment",
     "partforge_load_segments",
     "partforge_export_segments",
+    # Imported models (Phase 6d) — a downloaded mesh, no script
+    "check_model",
+    "segment_model",
     # RigForge (Phase 3)
     "rigforge_list_tags",
     "rigforge_tag",
@@ -123,7 +126,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 46
+    assert len(names) == 48
 
 
 def test_every_tool_is_documented() -> None:
@@ -160,6 +163,9 @@ def test_every_tool_has_an_object_schema() -> None:
         ("partforge_segment", ["script_path"]),
         ("partforge_load_segments", ["script_path"]),
         ("partforge_export_segments", ["script_path", "directory"]),
+        # Phase 6d: the mesh is already in Blender, so nothing is mandatory
+        ("check_model", []),
+        ("segment_model", []),
         # RigForge: only the tag name is ever mandatory
         ("rigforge_list_tags", []),
         ("rigforge_tag", ["tag"]),
@@ -204,6 +210,7 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
             "joint_type",
             ["dovetail", "pin", "magnet", "none"],
         ),
+        ("segment_model", "joint_type", ["dovetail", "pin", "magnet", "none"]),
         ("rigforge_manifest", "action", ["save", "load", "get"]),
         ("rigforge_retopo", "platform", ["desktop", "mobile"]),
         ("rigforge_metarig", "archetype", ["auto", "biped", "quadruped", "custom"]),
@@ -227,7 +234,12 @@ def test_enum_parameters_match_the_contract(
 
 @pytest.mark.parametrize(
     "tool_name",
-    ["partforge_segment", "partforge_load_segments", "partforge_export_segments"],
+    [
+        "partforge_segment",
+        "partforge_load_segments",
+        "partforge_export_segments",
+        "segment_model",
+    ],
 )
 def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
     """`mode` must swallow partforge_check's suggestion object unchanged."""
@@ -251,6 +263,8 @@ def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
         "boolean",
         "merge_by_distance",
         "separate_loose",
+        "check_model",
+        "segment_model",
         "rigforge_list_tags",
         "rigforge_tag",
         "rigforge_untag",
@@ -476,6 +490,8 @@ def test_forge_status_never_fails_and_reports_both_backends(dead_backends) -> No
         "blender_ping",
         "get_scene_info",
         "separate_loose",
+        "check_model",
+        "segment_model",
         "rigforge_list_tags",
         "rigforge_status",
     ],

@@ -101,6 +101,23 @@ Or let the assistant write it: finish a multi-step job, then say "save that as a
 flow". It calls `flow_save`, which validates every step and writes the file here
 — the only place it is allowed to write.
 
+## Editing one from the panel
+
+The pencil toggle in Blender's **Flows** box edits the selected flow without
+opening this folder: its description, its **default** parameter values, and the
+order of its steps (up/down arrows and an X per step). Nothing is written until
+**Save** — the header says *unsaved* meanwhile, and the loop-back button next to
+Save throws the edits away and re-reads the file.
+
+Two things the panel preserves that hand-editing gets wrong: each default is
+written back **typed like the one it replaced** (a `wedges` of `4` stays a
+number when you type `6`), and the whole document is revalidated before it is
+written, so a flow that would not load cannot be saved. Saving fewer than two
+steps is refused, exactly as `flow_save` refuses it.
+
+Steps cannot be *created* there — writing a step means knowing a command name
+and its arguments, which is what this file and the assistant are for.
+
 ## What is here
 
 | Flow | What it does |

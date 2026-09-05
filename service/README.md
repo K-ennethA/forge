@@ -9,6 +9,9 @@ wall thickness, overhangs and watertightness against a printer profile, and when
 the answer is no, cutting the part into segments with dovetail, pin or magnet
 joints and laying them out on one plate. See **Print readiness** below.
 
+None of that needs a script: hand it a downloaded STL, 3MF or OBJ instead and
+the same checks and the same segmenting run on it (**Mesh input**).
+
 Past that it will hand a file to the slicer that is installed (**Slicing**) and
 turn the same script into a two-piece **mold master** instead of the part
 (**Mold mode**).
@@ -63,6 +66,9 @@ Environment overrides, useful for tuning without touching code:
 | `FORGE_MOLD_TIMEOUT` | `300` | seconds for one `/mold` or `/export_mold` |
 | `FORGE_SLICE_TIMEOUT` | `600` | seconds one slicer run may take |
 | `FORGE_SLICER` | — | full path to the slicer executable, overriding detection |
+| `FORGE_MESH_TRI_LIMIT` | `60000` | triangles a mesh may bring to `/segment_mesh`; `0` removes the ceiling (see *Mesh input*) |
+| `FORGE_MESH_WELD_TOLERANCE` | `0.001` | ceiling, mm, on the scale-relative vertex weld for mesh input |
+| `FORGE_MESH_SEW_TOLERANCE` | — | absolute mm tolerance for sewing a mesh into a solid, overriding the weld-derived default |
 
 Segmenting gets its own, larger budget because it is dozens of OCC booleans
 rather than one `build()`; raising the interactive timeout to cover it would
@@ -82,7 +88,11 @@ python -m pytest                          # from service/
 `tests/test_slicer.py` are pure Python and run as soon as pytest is installed.
 `tests/test_api.py`, `tests/test_print_readiness_api.py` and
 `tests/test_mold_api.py` spawn the worker and skip themselves if build123d is
-missing. `test_api.py` also exercises the containment story for real: a
+missing. `tests/test_mesh_input.py` is both halves: the readers, the weld and
+the refusals run without the kernel, while the three mesh endpoints are gated
+on it. Its centrepiece writes a binary STL of a 300 mm ring in the test — a
+download, in effect — and follows it all the way to four watertight dovetailed
+segments on one plate. `test_api.py` also exercises the containment story for real: a
 deliberately hanging script must come back as a clean `400`, and the next
 request must succeed on a fresh child. Those two tests are the slow ones — they
 pay a worker restart on purpose.
@@ -103,6 +113,9 @@ executable, a non-zero exit, and a hang that has to be killed — on any machine
 | `POST` | `/check` | `{"script", "overrides", "printer"}` | `{"overall", "checks": [...], "stats", "printer"}` |
 | `POST` | `/segment` | `{"script", "overrides", "printer", "joint", "mode"}` | `{"mode", "joint", "cuts", "segments": [...], "plate"}` |
 | `POST` | `/export_segments` | the `/segment` body plus `{"directory", "basename", "format"}` | `{"files": [...], "plate_path"}` |
+| `POST` | `/check_mesh` | `{"mesh" / "file_path", "printer"}` — a downloaded model instead of a script | the `/check` response, `params` and `solid_is_valid` null |
+| `POST` | `/segment_mesh` | `{"mesh" / "file_path", "printer", "joint", "mode"}` | the `/segment` response, plus `mesh_input` and `sewing` |
+| `POST` | `/export_segments_mesh` | the `/segment_mesh` body plus `{"directory", "basename", "format"}` | the `/export_segments` response |
 | `POST` | `/mold` | `{"script", "overrides", "printer", "parting_z_mm", "draft_deg", "shell_mm", ...}` | `{"halves": [...], "parting_z_mm", "draft", "spout", "vents", "registration_keys"}` |
 | `POST` | `/export_mold` | the `/mold` body plus `{"directory", "basename", "format"}` | `{"files": [one per half]}` |
 | `POST` | `/slice` | `{"input", "output", "profile", "printer", "slicer_path", "extra_args"}` | `{"output", "stdout_tail", "duration_ms"}` |
@@ -136,7 +149,11 @@ All additive; nothing in `docs/architecture.md` changes shape.
 - `/generate` includes a `timings` object (`resolve_ms`, `build_ms`,
   `tessellate_ms`); `/check` adds `check_ms`, `/segment` adds `segment_ms` and
   `verify_ms`, `/export_segments` adds `export_ms`, `/mold` adds `mold_ms` and
-  `verify_ms`, `/export_mold` adds `export_ms`.
+  `verify_ms`, `/export_mold` adds `export_ms`. The mesh endpoints report
+  `load_ms`, and `/segment_mesh` adds `sew_ms`.
+- The mesh endpoints (`/check_mesh`, `/segment_mesh`, `/export_segments_mesh`)
+  are additive beyond Phase 2 — see **Mesh input** — and carry a `mesh_input`
+  object describing what was read, welded and repaired on the way in.
 - `/slice`'s two failure modes carry a `slicer` object alongside the contract's
   `error` and `traceback`: the probe report when nothing is installed, and the
   argv, exit code and output tails when something ran and refused.
@@ -479,6 +496,183 @@ in once.
 `samples/appendage_peg.py` is the working version of the example above: one
 script that builds either the base or the ear, switched by `make_appendage`.
 
+# Mesh input — *fix this downloaded model*
+
+Everything in **Print readiness** is worth just as much to a model somebody
+downloaded as to one a PARAMS script built. Three endpoints take a raw mesh
+instead of a script and answer exactly the same questions:
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `POST` | `/check_mesh` | `{"mesh" / "file_path", "printer", ...check options}` | the `/check` response |
+| `POST` | `/segment_mesh` | `{"mesh" / "file_path", "printer", "joint", "mode", ...}` | the `/segment` response |
+| `POST` | `/export_segments_mesh` | the `/segment_mesh` body plus `{"directory", "basename", "format"}` | the `/export_segments` response |
+
+These are not a parallel implementation. The four checks were always mesh
+checks — bed fit, wall probing, overhang angles and manifold analysis all read
+triangles — so `/check_mesh` is the same `run_checks` call. `/segment_mesh` sews
+the mesh into an OpenCascade solid and then hands it to the *existing* cutting,
+joint, verification and plate-packing code, unchanged. Whatever `/segment` can
+do to a generated part it can do to a download.
+
+## The two input forms
+
+```jsonc
+{"mesh": {"vertices": [[x, y, z], ...],     // millimetres
+          "faces":    [[i, j, k], ...]}}    // 0-based; more than 3 corners is fine
+{"file_path": "C:\\Users\\me\\Downloads\\thing.stl"}   // absolute
+```
+
+Exactly one of the two. `mesh` is byte-for-byte what `/generate` returns, so a
+part can be generated, sent to Blender, edited there, and sent back in.
+
+| Format | Read | Notes |
+|---|---|---|
+| `.stl` | binary and ASCII | The header's triangle count against the file size decides which. |
+| `.3mf` | via lib3mf | Every mesh object is concatenated; model units are honoured, so a 3MF in metres arrives in millimetres. Build-item transforms are *not* applied (neither does build123d's own reader), so a 3MF that places one mesh several times comes in once, in its own coordinates. |
+| `.obj` | `v` and `f` only | 1-based, negative and `1/2/3`-suffixed indices all work. Normals, UVs, materials and groups are skipped — a print has no use for them. |
+
+`.step` is refused with a message saying so: a STEP file is a B-Rep, not a mesh,
+and it belongs on `/check` and `/segment` with the script that made it.
+
+## What happens to the mesh on the way in
+
+Reported back as `mesh_input` on every response, so nothing here is invisible:
+
+1. **Triangulate.** A face with more than three corners is fanned from its first
+   vertex (`polygons_triangulated`).
+2. **Validate.** Non-empty, every index in range, every coordinate finite. All
+   `400`s — a malformed mesh is the caller's to fix, not ours to guess at.
+3. **Weld.** Coincident vertices are merged (`merged_vertices`) with a
+   *proximity* search, not the grid weld the OCC path uses. This matters more
+   than it sounds: binary STL has no vertex indices and stores float32, so the
+   six copies of a corner in the file differ in the fifth decimal. A grid weld
+   would leave a 300 mm ring as an open soup of loose corners and every check
+   downstream would answer the wrong question.
+4. **Orient.** A closed mesh wound inside-out (negative signed volume) has every
+   triangle flipped (`winding_flipped`). Inward normals would invert the overhang
+   report and hand OpenCascade a solid whose "inside" is the rest of the universe.
+
+The weld tolerance is scale-relative — a millionth of the bounding-box diagonal,
+so about 0.0004 mm on a 300 mm model — and **capped at 0.001 mm**, a four
+hundredth of a 0.4 mm nozzle. It can never merge two things a printer could tell
+apart. Override it per request with `weld_tolerance_mm`, or move the cap with
+`FORGE_MESH_WELD_TOLERANCE`.
+
+## `POST /check_mesh`
+
+The `/check` response envelope exactly — `overall`, `checks[]`, `printer`,
+`stats`, `timings` — plus `mesh_input`, and with two nulls that say what a mesh
+cannot know:
+
+- `params` is `null`. There is no PARAMS schema behind a download. The key is
+  kept so one caller code path renders both responses.
+- `stats.solid_is_valid` is `null`. There is no B-Rep to run OpenCascade's
+  validity check against, so `watertight` here is exactly the **mesh** half:
+  every edge shared by two triangles, wound consistently. That is the half a
+  slicer sees anyway.
+
+`stats.bounding_box_source` is `"mesh"` rather than `"brep"`, so the box is the
+tessellation's, which sits inside the true one by up to the chord error.
+
+A broken mesh is **not** refused here. Checking is diagnosis: an open mesh gets
+`watertight: fail` with its boundary-edge count, which is the answer the caller
+asked for.
+
+## `POST /segment_mesh`
+
+The `/segment` body with the mesh in place of the script, and the `/segment`
+response with `params: null` plus `mesh_input` and `sewing`. `mode: "auto"`,
+`{"radial": N}` and `{"planar": [...]}` all work, and `bed_fit`'s
+`suggested_segmentation.mode` from `/check_mesh` is directly valid as `mode` —
+the two endpoints chain the way `/check` and `/segment` do.
+
+### Sewing
+
+The mesh becomes a solid the way build123d's own 3MF reader does it, spelled out
+here because the tolerance, the winding and the failure messages have to be
+ours: one planar `BRepBuilderAPI_MakeFace` per triangle, `BRepBuilderAPI_Sewing`
+into shells, then `BRepBuilderAPI_MakeSolid` with the largest shell as the skin
+and any others added as voids — which is what makes a hollow model come through
+hollow. `sewing` reports `faces_sewn`, `faces_skipped`, `shells`, `voids` and
+`sew_tolerance_mm`.
+
+**The sewing tolerance is the weld tolerance.** By the time the sewer sees the
+mesh it has already been welded, so two triangles sharing a corner share a
+bit-identical vertex and the sewer only has to not be *stricter* than the weld
+was. One tolerance to reason about instead of two, and both are far below
+anything a printer resolves. `sew_tolerance_mm` on the request, or
+`FORGE_MESH_SEW_TOLERANCE`, overrides it absolutely.
+
+### The two refusals
+
+Both are `400`s, and both happen **before** any kernel work — so does joint and
+mode validation, so a typo comes back instantly rather than after a minute of
+sewing.
+
+**Not watertight.** A mesh with holes in it cannot be cut into printable
+segments, and repairing meshes is Blender's job, not this service's. So the
+message says where the tool is rather than what a manifold edge is:
+
+> this mesh has holes in it (4 open edges and 0 non-manifold edges), so it cannot
+> be cut into printable segments - repair it first - in Blender: select it, ask
+> the assistant to voxel remesh it, or Forge panel -> Remesh. Then send it back
+> here.
+
+**Too many triangles.** Sewing is one OCC face per triangle and the cut booleans
+then run against every one of those faces, so a dense mesh is expensive twice
+over. Measured end to end on this machine — a 300 mm ring cut radially into four
+with dovetails, which is the shape of job this endpoint exists for:
+
+| triangles | sew | cut + joints | re-tessellate | ≈ total |
+|---:|---:|---:|---:|---:|
+| 512 | 4.0 s | 0.8 s | 0.4 s | 5 s |
+| 3 072 | 4.5 s | 5.2 s | 2.1 s | 12 s |
+| 14 000 | 8.3 s | 24.8 s | 10.5 s | 44 s |
+| 39 200 | 19.5 s | 80.8 s | 29.6 s | 130 s |
+
+Sewing is roughly linear in triangles; the cut is a little worse than linear.
+The budget all of it has to fit inside is `FORGE_SEGMENT_TIMEOUT` (300 s), and
+60 000 triangles extrapolates to about 200 s of it — headroom for a slower
+machine or a part cut into more pieces. So **the default ceiling is 60 000
+triangles**, not a round 150 000: the honest number is the one the clock gave.
+Over it, a `400` that says what to do:
+
+> this mesh has 240000 triangles, over the 60000 the service will sew into a
+> solid. […] Decimate it first - in Blender: select it, ask the assistant to
+> decimate it, or add a Decimate modifier and set the ratio until the triangle
+> count is under 60000 - then try again. Raise FORGE_MESH_TRI_LIMIT if you would
+> rather wait.
+
+`FORGE_MESH_TRI_LIMIT` moves it globally (`0` removes it entirely, at which
+point `FORGE_SEGMENT_TIMEOUT` is the only thing standing between you and a
+five-minute wait); `tri_limit` in the request body moves it for one call. `/check_mesh` has **no** ceiling — checking is linear in
+triangles and the wall probe already strides its samples — so an oversized model
+can always be diagnosed even when it cannot yet be cut.
+
+## `POST /export_segments_mesh`
+
+The `/segment_mesh` body plus `directory`, `basename` and `format`, writing the
+same files `/export_segments` writes. The only difference is the default
+`basename`: `model`, not `part` — there is no script name to borrow.
+
+## Timeouts
+
+`/check_mesh` runs under `FORGE_CHECK_TIMEOUT` (120 s); loading and sewing and
+segmenting a mesh all run under `FORGE_SEGMENT_TIMEOUT` (300 s), which is the
+budget the triangle ceiling above was chosen against.
+
+## Limits worth knowing
+
+- Vertex colours, materials, textures and per-face attributes are dropped. This
+  service makes printable solids; none of that survives a boolean anyway.
+- A file holding several disconnected objects comes in as one mesh. Sewing gives
+  the largest shell the role of skin and treats the rest as voids, which is right
+  for a hollow model and wrong for two separate parts in one file — separate them
+  in Blender first.
+- `min_wall`'s documented approximations apply unchanged: it is the same
+  ray-casting probe, so read *[`min_wall` — and what it cannot see]* above.
+
 # Mold mode
 
 The plan's promise is one switch: *draft angles applied to vertical faces, a
@@ -776,6 +970,12 @@ The second is the one that matters for printing — a slicer sees triangles, not
 a B-Rep — and it is measured on exactly the mesh that leaves the service.
 `stats` reports both halves separately so a failure says which one broke.
 
+On the mesh endpoints there is no B-Rep to ask, so `solid_is_valid` is `null`
+and `watertight` is the second condition alone. That is not a weaker answer for
+printing — it is the same triangles a slicer would read — but it is a weaker
+answer about the *model*: OpenCascade can find self-intersections and bad
+topology that edge counting cannot.
+
 ## Layout
 
 | File | Role |
@@ -789,6 +989,7 @@ a B-Rep — and it is measured on exactly the mesh that leaves the service.
 | `checks.py` | The four print-readiness checks; pure mesh arithmetic |
 | `joints.py` | Dovetail / pin / magnet geometry and the cut-face frame |
 | `segmenting.py` | Cut modes, region solids, orientation, plate packing |
+| `mesh_input.py` | STL / 3MF / OBJ readers, welding and winding repair, and sewing a mesh into a solid |
 | `mold.py` | Cross-sections, the parting plane, draft, the box and its features |
 | `slicer.py` | Slicer detection, the CLI invocation, and running it hidden |
 | `forge_lib.py` | The printability library scripts import: printable features + the peg/socket pair |
@@ -797,9 +998,10 @@ a B-Rep — and it is measured on exactly the mesh that leaves the service.
 | `samples/magnet_holder.py` | Reference part built from the printability helpers; passes all four checks at its extremes |
 | `tests/` | pytest suite, plus `fake_slicer.py`, the stub `/slice` is tested against |
 
-`checks.py`, `printer.py`, `slicer.py`, the packing half of `segmenting.py` and
-the mesh half of `mold.py` deliberately import no build123d, so they run — and
-are tested — in the HTTP process as well as the worker. Everything that touches
+`checks.py`, `printer.py`, `slicer.py`, the packing half of `segmenting.py`, the
+mesh half of `mold.py` and everything in `mesh_input.py` above `sew_to_solid`
+deliberately import no build123d, so they run — and are tested — in the HTTP
+process as well as the worker. Everything that touches
 the kernel does so through a function-local import, which is what keeps
 `import service.main` free of OCP.
 

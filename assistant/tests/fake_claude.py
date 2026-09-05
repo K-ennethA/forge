@@ -17,6 +17,9 @@ Behaviour is steered by ``FAKE_CLAUDE_MODE``:
 ``reject_permission``  exit 1 complaining about ``--permission-mode`` unless it
                        is ``acceptEdits`` — the older-CLI fallback path
 ``api_error``          print the CLI's ``is_error`` result shape
+``auth_error``         print the ``is_error`` shape a signed-out CLI produces,
+                       so ``/health``'s ``last_auth_error`` has something real
+                       to read
 ``stream``             the full event stream: two tool calls (one with its
                        arguments arriving as ``input_json_delta`` chunks), a
                        malformed line, text deltas, then the result event
@@ -29,6 +32,12 @@ Behaviour is steered by ``FAKE_CLAUDE_MODE``:
 path, the prompt must carry that path under ``--- Attached reference image ---``
 with the Read instruction and ``Read`` still in ``--allowedTools``; set to the
 empty string, the prompt must carry no attachment block at all.
+
+``FAKE_CLAUDE_AUTH_FILE`` names a flag file: while it exists the run behaves as
+``auth_error``, and deleting it signs the fake back in.  A mode is fixed for the
+life of the bridge process (it is read from the environment it was started with),
+so a file is the only way for one test to watch the signed-out signal appear and
+then clear.
 
 ``FAKE_CLAUDE_STREAM=1`` selects ``stream`` without naming a mode, and
 ``FAKE_CLAUDE_STREAM_FILE`` names a flag file whose existence does the same.
@@ -196,6 +205,13 @@ def main():
 
     mode = os.environ.get("FAKE_CLAUDE_MODE", "ok")
 
+    # A flag file, not a mode: the bridge process carries one environment for
+    # its whole life, and a test that watches the signed-out signal clear needs
+    # to change the answer between two turns of the same bridge.
+    auth_file = os.environ.get("FAKE_CLAUDE_AUTH_FILE")
+    if auth_file and os.path.isfile(auth_file):
+        mode = "auth_error"
+
     # --- the contract the bridge must keep -------------------------------
     if "-p" not in argv:
         fail("no -p flag: this was not a headless one-shot run")
@@ -270,11 +286,18 @@ def main():
         return run_stream(session_id, model,
                           mode if mode.startswith("stream") else "stream")
 
+    failures = {
+        "api_error": "the model refused",
+        # The CLI's own words when nobody has run /login on this machine; the
+        # bridge rewrites them for the artist and reads the class off them.
+        "auth_error": "Invalid API key · Please run /login",
+    }
+
     payload = {
         "type": "result",
         "subtype": "success",
-        "is_error": mode == "api_error",
-        "result": REPLY if mode != "api_error" else "the model refused",
+        "is_error": mode in failures,
+        "result": failures.get(mode, REPLY),
         "session_id": session_id,
         "total_cost_usd": 0.0123,
         "num_turns": 1,

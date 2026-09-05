@@ -224,8 +224,18 @@ def test_registration():
     from forge.ui import panels
 
     order = [c.__name__ for c in panels._CLASSES]
-    check("and it is registered before every other Forge panel",
-          order[0] == "VIEW3D_PT_forge_assistant", str(order[:3]))
+    # Since the UI batch exactly one thing sits above it: the status row that
+    # says whether the assistant is even running. Everything that DOES anything
+    # is still below the chat box.
+    check("only the status row is registered above it",
+          order[:2] == ["VIEW3D_PT_forge_health", "VIEW3D_PT_forge_assistant"],
+          str(order[:3]))
+    check("and it is above every panel that does work",
+          order.index("VIEW3D_PT_forge_assistant")
+          < min(order.index(name) for name in
+                ("VIEW3D_PT_forge_partforge", "VIEW3D_PT_forge_flows",
+                 "VIEW3D_PT_forge_rigforge", "VIEW3D_PT_forge_model")),
+          str(order[:6]))
 
     from forge.prefs import DEFAULTS
 

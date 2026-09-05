@@ -29,6 +29,13 @@ from .registry import ForgeError, command
 
 # Millimetres -> metres. The geometry service works in mm, Blender in m.
 MM_TO_M = 0.001
+#: The other direction, for handing a Blender mesh back to the service.
+M_TO_MM = 1000.0
+
+#: Above this the mesh is not worth streaming to the service: the request would
+#: take longer than the artist's patience and the answer would be no different.
+#: Said out loud with the fix attached rather than silently truncated.
+MAX_MESH_FACES = 500000
 
 _MISSING = object()
 
@@ -1732,10 +1739,80 @@ def cmd_load_reference(params):
 
 
 # ---------------------------------------------------------------------------
+# reading a mesh back OUT of Blender (Phase 6d: downloaded models)
+# ---------------------------------------------------------------------------
+
+def evaluated_mesh_mm(obj, apply_modifiers=True, scale=M_TO_MM):
+    """``(vertices_mm, faces)`` for ``obj`` — world space, millimetres.
+
+    The mirror image of :func:`build_mesh_object`, and the whole reason a
+    downloaded STL can be print-checked: the geometry service speaks millimetre
+    meshes, Blender holds metres, and this is the one place that conversion
+    happens on the way out.
+
+    Modifiers are applied by default (what you see is what is checked), the
+    object's world matrix is baked in (a scaled or rotated object is measured as
+    it sits, not as it was authored) and n-gons are passed through untouched —
+    the service sews the shell itself, so triangulating here would only make the
+    payload bigger.
+    """
+    if obj is None:
+        raise ForgeError("No object to read a mesh from.")
+    if obj.type not in _MESHABLE_TYPES:
+        raise ForgeError(
+            "%s is a %s, and only meshes (and curves/text that can become one) "
+            "can be checked or cut up. Select the imported model itself."
+            % (obj.name, obj.type.lower()))
+
+    depsgraph = None
+    if apply_modifiers:
+        try:
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+        except (AttributeError, RuntimeError):
+            depsgraph = None
+    source = obj.evaluated_get(depsgraph) if depsgraph is not None else obj
+
+    try:
+        mesh = source.to_mesh()
+    except RuntimeError as exc:
+        raise ForgeError("Could not read %s as a mesh: %s" % (obj.name, exc))
+    if mesh is None:
+        raise ForgeError("%s has no geometry to check." % obj.name)
+
+    try:
+        face_count = len(mesh.polygons)
+        if face_count > MAX_MESH_FACES:
+            raise ForgeError(
+                "%s has %d faces, which is more than Forge will send over at "
+                "once (%d). Simplify it first — the Decimate modifier, or ask "
+                "the assistant to simplify it — then try again."
+                % (obj.name, face_count, MAX_MESH_FACES))
+        if not face_count:
+            raise ForgeError(
+                "%s has no faces. A print check needs a surface, not just "
+                "points or edges." % obj.name)
+        matrix = obj.matrix_world
+        vertices = []
+        for vertex in mesh.vertices:
+            point = matrix @ vertex.co
+            vertices.append([point.x * scale, point.y * scale, point.z * scale])
+        faces = [list(polygon.vertices) for polygon in mesh.polygons]
+    finally:
+        try:
+            source.to_mesh_clear()
+        except (AttributeError, RuntimeError):
+            pass
+
+    return vertices, faces
+
+
+# ---------------------------------------------------------------------------
 # export
 # ---------------------------------------------------------------------------
 
 _EXPORTABLE_TYPES = {"MESH", "CURVE", "SURFACE", "META", "FONT"}
+#: What ``to_mesh()`` will actually give us geometry for.
+_MESHABLE_TYPES = _EXPORTABLE_TYPES
 
 
 @command("export_stl")

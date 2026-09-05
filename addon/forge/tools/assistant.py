@@ -29,6 +29,7 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
+    FloatProperty,
     IntProperty,
     StringProperty,
 )
@@ -56,6 +57,27 @@ ACTIVITY_ICONS = {
     "text": "SMALL_CAPS",
     "status": "SORTTIME",
 }
+
+#: The three things an artist asks for over and over, as buttons.  The text is
+#: what actually gets sent — a chip is not a special code path, it is the
+#: sentence they would have typed, so the reply reads the same either way and
+#: they learn what to ask for next time.
+QUICK_ACTIONS = (
+    ("check", "Check print", "CHECKMARK",
+     "Run the print checks on the current part and explain anything that fails "
+     "in plain words."),
+    ("segment", "Segment to fit", "MOD_BOOLEAN",
+     "Segment the current part so every piece fits my printer bed, and lay the "
+     "pieces out."),
+    ("export", "Export STL", "EXPORT",
+     "Export the current part as an STL to the project's exports folder and "
+     "tell me where it is."),
+)
+
+#: How many characters of a reply the chat log shows before the expand button
+#: is the only way to read the rest.
+LOG_LINE_WIDTH = 38
+LOG_MAX_LINES = 24
 
 POLL_INTERVAL = 0.4
 #: The bridge answers /ask and /job instantly; only the CLI behind it is slow.
@@ -164,8 +186,14 @@ class ForgeAssistantProps(PropertyGroup):
     status: StringProperty(name="Status", default="")
     status_is_error: BoolProperty(default=False)
     busy: BoolProperty(default=False)
+    #: True while this message is waiting behind another one on the bridge.
+    queued: BoolProperty(default=False)
     job_id: StringProperty(default="")
     last_cost: StringProperty(default="")
+    #: Everything this conversation has cost, in dollars, straight off the
+    #: bridge.  Reset by New Conversation, because that is what "this session"
+    #: means to the person reading it.
+    session_cost: FloatProperty(default=0.0)
     turns: IntProperty(default=0)
 
 
@@ -326,6 +354,147 @@ def collect_context(context=None):
 # operators
 # ---------------------------------------------------------------------------
 
+def cost_footer(props):
+    """``"This session: $0.42"``, or ``""`` when nothing has cost anything yet."""
+    try:
+        total = float(getattr(props, "session_cost", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return ""
+    if total <= 0.0:
+        return ""
+    return "This session: $%.2f" % total
+
+
+def send_message(context, props, message, conversation="continue"):
+    """Send one message the way the Send button does. Returns an operator set.
+
+    Every path into the assistant goes through here — the Send button, the
+    quick-action chips, anything added later — so the attachment rules, the
+    chat log and the queue behaviour cannot drift apart between them.
+    """
+    message = str(message or "").strip()
+    if not message:
+        set_status(props, "Type what you want first.", error=True)
+        return {"CANCELLED"}
+
+    # The attachment is checked here, before anything is sent: a missing
+    # file has to be a sentence in the sidebar, not a turn spent watching
+    # the assistant fail to open it.
+    attachment = resolve_image_path(props.image_path)
+    problem = image_problem(props.image_path)
+    if problem:
+        set_status(props, problem, error=True)
+        return {"CANCELLED"}
+
+    scene_context = collect_context(context)
+    if attachment:
+        scene_context["image_path"] = attachment
+
+    payload = {
+        "message": message,
+        "context": scene_context,
+        "conversation": conversation or "continue",
+    }
+    ask_url = bridge_url("/ask")
+    job_url_base = bridge_url("/job/")
+
+    append_turn(props, "you", message)
+    props.message = ""
+    props.busy = True
+    props.queued = False
+    props.job_id = ""
+    props.last_cost = ""
+    props.activity.clear()
+    set_status(props, "Thinking ...")
+
+    # The worker thread must not touch bpy, so it publishes the job id, the
+    # state and the activity list here and the timer below copies them onto
+    # the props.
+    shared = {}
+
+    def work():
+        started = time.monotonic()
+        reply = request_json(ask_url, payload)
+        job_id = str(reply.get("job_id") or "")
+        if not job_id:
+            raise BridgeError("The assistant did not start the job.")
+        shared["job_id"] = job_id
+        # The bridge queues one message behind a running turn instead of
+        # refusing it; when it does, this is where the panel learns to say so.
+        shared["state"] = str(reply.get("state") or "running")
+        while True:
+            if time.monotonic() - started > JOB_DEADLINE:
+                raise BridgeError("The assistant did not answer in time.")
+            time.sleep(POLL_INTERVAL)
+            state = request_json(job_url_base + job_id, method="GET")
+            shared["activity"] = state.get("activity") or []
+            shared["state"] = str(state.get("state") or "running")
+            if state.get("state") in ("done", "error", "cancelled"):
+                state["job_id"] = job_id
+                return state
+
+    def done(value, error):
+        if not _alive(props):
+            return
+        props.busy = False
+        props.queued = False
+        props.job_id = ""
+        # The finished job keeps its activity, so the last lines stay
+        # readable after the answer lands.
+        set_activity(props, (value or {}).get("activity")
+                     if isinstance(value, dict) else shared.get("activity"))
+        state = value if isinstance(value, dict) else {}
+        total = state.get("session_cost_usd")
+        if isinstance(total, (int, float)):
+            props.session_cost = float(total)
+        if error is not None:
+            append_turn(props, "forge", str(error))
+            set_status(props, str(error), error=True)
+            return
+        if state.get("state") == "done":
+            append_turn(props, "forge", state.get("reply") or "(no reply)")
+            props.turns += 1
+            if attachment:
+                # One message per attachment. It has been looked at now;
+                # leaving it on would silently re-send it every turn.
+                props.image_path = ""
+            cost = state.get("cost_usd")
+            bits = []
+            if isinstance(cost, (int, float)):
+                bits.append("$%.4f" % cost)
+                if not isinstance(total, (int, float)):
+                    # An older bridge with no running total: at least keep the
+                    # footer honest by adding this turn to it ourselves.
+                    props.session_cost = float(props.session_cost) + float(cost)
+            duration = state.get("duration_ms")
+            if isinstance(duration, (int, float)):
+                bits.append("%.1fs" % (duration / 1000.0))
+            props.last_cost = "  ".join(bits)
+            set_status(props, "Answered.")
+        elif state.get("state") == "cancelled":
+            append_turn(props, "forge", "Stopped.")
+            set_status(props, "Stopped.")
+        else:
+            failure = state.get("error") or "The assistant errored."
+            append_turn(props, "forge", failure)
+            set_status(props, failure, error=True)
+
+    def tick():
+        if not _alive(props):
+            return
+        if shared.get("job_id") and not props.job_id:
+            props.job_id = shared["job_id"]
+        queued = shared.get("state") == "queued"
+        if queued != bool(props.queued):
+            props.queued = queued
+            set_status(props, "Queued — waiting for the current answer ..."
+                       if queued else "Thinking ...")
+        set_activity(props, shared.get("activity"))
+
+    _run_async(work, done, props, tick=tick)
+    return {"FINISHED"}
+
+
 class FORGE_OT_assistant_send(Operator):
     bl_idname = "forge.assistant_send"
     bl_label = "Send"
@@ -341,108 +510,139 @@ class FORGE_OT_assistant_send(Operator):
 
     def execute(self, context):
         props = get_props(context)
-        message = str(props.message or "").strip()
-        if not message:
-            set_status(props, "Type what you want first.", error=True)
+        return send_message(context, props, props.message,
+                            conversation=self.conversation or "continue")
+
+
+class FORGE_OT_assistant_quick(Operator):
+    """One of the three canned jobs above the chat box.
+
+    It types the sentence for the artist and sends it — same endpoint, same
+    conversation, same attachment rules.  The wording is deliberately the
+    wording a person would use, so the reply is the reply they would have got.
+    """
+
+    bl_idname = "forge.assistant_quick"
+    bl_label = "Quick Action"
+    bl_options = {"REGISTER"}
+
+    action: StringProperty(default="check", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and not props.busy
+
+    @classmethod
+    def description(cls, context, properties):
+        for key, _label, _icon, text in QUICK_ACTIONS:
+            if key == getattr(properties, "action", ""):
+                return "Send: %s" % text
+        return "Send a canned request to the assistant"
+
+    def execute(self, context):
+        props = get_props(context)
+        text = quick_action_text(self.action)
+        if not text:
+            set_status(props, "Unknown quick action %r." % self.action, error=True)
             return {"CANCELLED"}
+        return send_message(context, props, text)
 
-        # The attachment is checked here, before anything is sent: a missing
-        # file has to be a sentence in the sidebar, not a turn spent watching
-        # the assistant fail to open it.
-        attachment = resolve_image_path(props.image_path)
-        problem = image_problem(props.image_path)
-        if problem:
-            set_status(props, problem, error=True)
+
+def quick_action_text(key):
+    """The sentence a chip sends, or ``""`` for a key that is not one."""
+    for name, _label, _icon, text in QUICK_ACTIONS:
+        if name == key:
+            return text
+    return ""
+
+
+class FORGE_OT_assistant_show_reply(Operator):
+    """Read one exchange in full, in a popup, when the log truncated it.
+
+    The sidebar log shows the first couple of dozen lines of a reply because a
+    sidebar is 40 characters wide; a numbered handoff list ("press N, then ...")
+    routinely runs past that.  This is the rest of it — plain wrapped text, no
+    scrolling widget, because a popup that always works beats a text editor that
+    sometimes does.
+    """
+
+    bl_idname = "forge.assistant_show_reply"
+    bl_label = "Full reply"
+    bl_description = "Show this message in full, in a window you can read"
+    bl_options = {"REGISTER", "INTERNAL"}
+
+    index: IntProperty(default=-1, options={"HIDDEN"})
+
+    def _entry(self, context):
+        props = get_props(context)
+        if props is None or not len(props.log):
+            return None
+        index = int(self.index)
+        if index < 0 or index >= len(props.log):
+            index = len(props.log) - 1
+        return props.log[index]
+
+    def invoke(self, context, event):
+        entry = self._entry(context)
+        if entry is None:
+            self.report({"WARNING"}, "There is nothing in the chat log yet.")
             return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, width=700)
 
-        scene_context = collect_context(context)
-        if attachment:
-            scene_context["image_path"] = attachment
+    def draw(self, context):
+        # Read the entry again rather than stashing it in invoke(): the dialog
+        # redraws, and the log is the only place that text has to live.
+        layout = self.layout
+        entry = self._entry(context)
+        if entry is None:
+            layout.label(text="That message is no longer in the log.", icon="INFO")
+            return
+        you = entry.role == "you"
+        layout.label(text="You said:" if you else "Forge said:",
+                     icon="USER" if you else "LIGHT")
+        column = layout.column(align=True)
+        column.scale_y = 0.8
+        for line in _wrap_text(entry.text, 96):
+            column.label(text=line)
 
-        payload = {
-            "message": message,
-            "context": scene_context,
-            "conversation": self.conversation or "continue",
-        }
-        ask_url = bridge_url("/ask")
-        job_url_base = bridge_url("/job/")
+    def execute(self, context):
+        # Nothing to apply: the dialog IS the operator.  Headless (and the OK
+        # button) land here, and both should simply succeed.
+        entry = self._entry(context)
+        return {"FINISHED"} if entry is not None else {"CANCELLED"}
 
-        append_turn(props, "you", message)
-        props.message = ""
-        props.busy = True
-        props.job_id = ""
-        props.last_cost = ""
-        props.activity.clear()
-        set_status(props, "Thinking ...")
 
-        # The worker thread must not touch bpy, so it publishes the job id and
-        # the activity list here and the timer below copies both onto the props.
-        shared = {}
-
-        def work():
-            started = time.monotonic()
-            reply = request_json(ask_url, payload)
-            job_id = str(reply.get("job_id") or "")
-            if not job_id:
-                raise BridgeError("The assistant did not start the job.")
-            shared["job_id"] = job_id
-            while True:
-                if time.monotonic() - started > JOB_DEADLINE:
-                    raise BridgeError("The assistant did not answer in time.")
-                time.sleep(POLL_INTERVAL)
-                state = request_json(job_url_base + job_id, method="GET")
-                shared["activity"] = state.get("activity") or []
-                if state.get("state") in ("done", "error", "cancelled"):
-                    state["job_id"] = job_id
-                    return state
-
-        def done(value, error):
-            if not _alive(props):
-                return
-            props.busy = False
-            props.job_id = ""
-            # The finished job keeps its activity, so the last lines stay
-            # readable after the answer lands.
-            set_activity(props, (value or {}).get("activity")
-                         if isinstance(value, dict) else shared.get("activity"))
-            if error is not None:
-                append_turn(props, "forge", str(error))
-                set_status(props, str(error), error=True)
-                return
-            state = value or {}
-            if state.get("state") == "done":
-                append_turn(props, "forge", state.get("reply") or "(no reply)")
-                props.turns += 1
-                if attachment:
-                    # One message per attachment. It has been looked at now;
-                    # leaving it on would silently re-send it every turn.
-                    props.image_path = ""
-                cost = state.get("cost_usd")
-                bits = []
-                if isinstance(cost, (int, float)):
-                    bits.append("$%.4f" % cost)
-                duration = state.get("duration_ms")
-                if isinstance(duration, (int, float)):
-                    bits.append("%.1fs" % (duration / 1000.0))
-                props.last_cost = "  ".join(bits)
-                set_status(props, "Answered.")
-            elif state.get("state") == "cancelled":
-                append_turn(props, "forge", "Stopped.")
-                set_status(props, "Stopped.")
+def _wrap_text(text, width):
+    """Word wrap for the popup. The panel has its own; this one is not drawing
+    a sidebar, so it keeps blank lines (a numbered list needs its gaps)."""
+    lines = []
+    for paragraph in str(text or "").splitlines():
+        if not paragraph.strip():
+            lines.append("")
+            continue
+        current = ""
+        for word in paragraph.split():
+            candidate = (current + " " + word).strip()
+            if len(candidate) > width and current:
+                lines.append(current)
+                current = word
             else:
-                message = state.get("error") or "The assistant errored."
-                append_turn(props, "forge", message)
-                set_status(props, message, error=True)
+                current = candidate
+        if current:
+            lines.append(current)
+    return lines or [""]
 
-        def tick():
-            if not _alive(props):
-                return
-            if shared.get("job_id") and not props.job_id:
-                props.job_id = shared["job_id"]
-            set_activity(props, shared.get("activity"))
 
-        _run_async(work, done, props, tick=tick)
-        return {"FINISHED"}
+def is_truncated(text, width=LOG_LINE_WIDTH, max_lines=LOG_MAX_LINES):
+    """Did the sidebar have to cut this message short?
+
+    Counts the way the panel's own wrapper does (blank lines dropped, since
+    ``layout.label`` draws nothing for them), so the expand button appears
+    exactly when there is something hidden behind it.
+    """
+    lines = [line for line in _wrap_text(text, width) if line]
+    return len(lines) > max_lines
 
 
 class FORGE_OT_assistant_clear_image(Operator):
@@ -480,6 +680,10 @@ class FORGE_OT_assistant_new(Operator):
         props.activity.clear()
         props.turns = 0
         props.last_cost = ""
+        # "This session" starts again here, on both sides: the bridge zeroes its
+        # own total on /new, and the footer must not show the old one until the
+        # next answer comes back to correct it.
+        props.session_cost = 0.0
         url = bridge_url("/new")
 
         def work():
@@ -627,6 +831,8 @@ _CLASSES = (
     ForgeActivityLine,
     ForgeAssistantProps,
     FORGE_OT_assistant_send,
+    FORGE_OT_assistant_quick,
+    FORGE_OT_assistant_show_reply,
     FORGE_OT_assistant_clear_image,
     FORGE_OT_assistant_new,
     FORGE_OT_assistant_cancel,

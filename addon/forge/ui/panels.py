@@ -18,7 +18,16 @@ from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import assistant, flows, partforge, rigforge, rigforge_anim, rigforge_rig
+from ..tools import (
+    assistant,
+    flows,
+    model,
+    partforge,
+    rigforge,
+    rigforge_anim,
+    rigforge_rig,
+    services,
+)
 
 CATEGORY = "Forge"
 
@@ -27,6 +36,67 @@ class _ForgePanel:
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = CATEGORY
+
+
+def _empty(layout, sentence, icon="INFO"):
+    """One plain sentence saying what to do when a box has nothing in it.
+
+    Every box in this file that can be empty says something here.  An empty box
+    with no words in it is the single most common way a beginner concludes the
+    tool is broken, and one sentence is cheaper than any amount of documentation
+    they will not read.
+    """
+    column = layout.column(align=True)
+    column.scale_y = 0.8
+    lines = _wrap(sentence, 36)
+    column.label(text=lines[0], icon=icon)
+    for line in lines[1:4]:
+        column.label(text=line)
+    return column
+
+
+class VIEW3D_PT_forge_health(_ForgePanel, Panel):
+    """Four dots at the very top: is everything Forge needs actually running?
+
+    Deliberately above the Assistant, because "why did nothing happen when I
+    pressed Send" is answered here and nowhere else.  Nothing in this panel does
+    any work — the states are whatever the last refresh found, and the command
+    socket is read straight out of this process.
+    """
+
+    bl_idname = "VIEW3D_PT_forge_health"
+    bl_label = "Forge Status"
+    bl_order = 0
+
+    def draw(self, context):
+        layout = self.layout
+        sv = services.get_props(context)
+
+        column = layout.column(align=True)
+        for label, state, detail in services.rows(sv):
+            row = column.row(align=True)
+            row.label(text=label,
+                      icon=services.STATE_ICONS.get(state, "RADIOBUT_OFF"))
+            note = row.row()
+            note.active = state == services.UP
+            note.alignment = "RIGHT"
+            note.label(text=_wrap(detail, 30)[0])
+
+        row = layout.row(align=True)
+        row.operator("forge.services_start", text="Start services", icon="PLAY")
+        row.operator("forge.services_refresh", text="", icon="FILE_REFRESH")
+
+        if sv is None:
+            return
+        if sv.busy:
+            layout.label(text=sv.status or "Checking ...", icon="SORTTIME")
+        elif sv.status:
+            box = layout.box() if sv.status_is_error else layout.column(align=True)
+            box.alert = bool(sv.status_is_error)
+            for line in _wrap(sv.status, 38)[:3]:
+                box.label(text=line, icon="ERROR" if sv.status_is_error else "INFO")
+        elif not sv.checked:
+            _empty(layout, "Press the refresh arrows to check.")
 
 
 class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
@@ -50,17 +120,42 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
         if len(chat.log):
             box = layout.box()
             column = box.column(align=True)
-            for entry in chat.log:
+            for index, entry in enumerate(chat.log):
                 you = entry.role == "you"
-                header = column.row()
+                lines = _wrap(entry.text, assistant.LOG_LINE_WIDTH)
+                header = column.row(align=True)
                 header.active = you
                 header.label(text="You:" if you else "Forge:",
                              icon="USER" if you else "LIGHT")
+                if len(lines) > assistant.LOG_MAX_LINES:
+                    # Truncated below: give them the whole thing in a window
+                    # rather than a message that stops mid-sentence.
+                    expand = header.row(align=True)
+                    expand.active = True
+                    expand.operator("forge.assistant_show_reply", text="",
+                                    icon="ZOOM_IN").index = index
                 body = column.column(align=True)
                 body.scale_y = 0.75
-                for line in _wrap(entry.text, 38)[:24]:
+                for line in lines[:assistant.LOG_MAX_LINES]:
                     body.label(text=line)
+                if len(lines) > assistant.LOG_MAX_LINES:
+                    more = column.row(align=True)
+                    more.active = False
+                    more.label(text="... %d more lines"
+                               % (len(lines) - assistant.LOG_MAX_LINES))
                 column.separator()
+        else:
+            _empty(layout,
+                   "Type what you want in your own words - 'make me a phone stand'.",
+                   icon="LIGHT")
+
+        # The three jobs that come up over and over, as buttons. They send the
+        # sentence an artist would have typed, so nothing about the answer is
+        # different for having pressed a button.
+        chips = layout.row(align=True)
+        chips.enabled = not chat.busy
+        for key, label, icon, _text in assistant.QUICK_ACTIONS:
+            chips.operator("forge.assistant_quick", text=label, icon=icon).action = key
 
         column = layout.column(align=True)
         column.enabled = not chat.busy
@@ -94,7 +189,8 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
 
         row = layout.row(align=True)
         if chat.busy:
-            row.label(text=chat.status or "Thinking ...", icon="SORTTIME")
+            row.label(text=chat.status or "Thinking ...",
+                      icon="SORTTIME" if not chat.queued else "TIME")
             row.operator("forge.assistant_cancel", text="Stop", icon="CANCEL")
             # What it is doing, live, under the spinner: a job that is thinking
             # in silence looks broken, and this is the difference between
@@ -121,10 +217,23 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
                          icon="ERROR" if chat.status_is_error else "INFO")
             for line in lines[1:4]:
                 status.label(text=line)
+
+        # Undo, in words, for someone who does not know Ctrl+Z is undo: every
+        # command the assistant ran pushed a named checkpoint before it ran.
+        revert = layout.row(align=True)
+        revert.enabled = not chat.busy
+        revert.operator("forge.revert_ai", text="Revert last AI action",
+                        icon="LOOP_BACK")
+
+        footer = layout.row(align=True)
+        footer.active = False
+        total = assistant.cost_footer(chat)
+        if total:
+            footer.label(text=total)
         if chat.last_cost:
-            row = layout.row()
-            row.active = False
-            row.label(text=chat.last_cost)
+            last = footer.row()
+            last.alignment = "RIGHT"
+            last.label(text=chat.last_cost)
 
 
 class VIEW3D_PT_forge_server(_ForgePanel, Panel):
@@ -181,6 +290,11 @@ class VIEW3D_PT_forge_partforge(_ForgePanel, Panel):
             layout.label(text="Scene properties unavailable", icon="ERROR")
             return
 
+        if not str(props.script_path or "").strip():
+            _empty(layout,
+                   "No part yet - ask the Assistant for one, or set a script "
+                   "path below.")
+
         column = layout.column(align=True)
         column.prop(props, "script_path", text="")
         row = column.row(align=True)
@@ -224,8 +338,7 @@ class VIEW3D_PT_forge_parameters(_ForgePanel, Panel):
         layout.enabled = not props.busy
 
         if not len(props.params):
-            layout.label(text="No parameters loaded", icon="INFO")
-            layout.label(text="Pick a script and press Load Script")
+            _empty(layout, "Sliders appear here once a part is loaded.")
             return
 
         for item in props.params:
@@ -266,7 +379,7 @@ class VIEW3D_PT_forge_checks(_ForgePanel, Panel):
         layout.operator("forge.pf_check", icon="CHECKMARK", text="Run Checks")
 
         if not len(props.checks):
-            layout.label(text="Not checked yet", icon="INFO")
+            _empty(layout, "Press Run Checks after generating a part.")
             return
 
         overall = (props.check_overall or "").lower()
@@ -302,6 +415,10 @@ class VIEW3D_PT_forge_segments(_ForgePanel, Panel):
         if props is None:
             return
         layout.enabled = not props.busy
+
+        if not props.segment_summary:
+            _empty(layout,
+                   "Cut a part into printable pieces here, or ask the Assistant.")
 
         column = layout.column(align=True)
         column.prop(props, "joint_type")
@@ -349,6 +466,74 @@ class VIEW3D_PT_forge_export(_ForgePanel, Panel):
         layout.label(text="Service: %s" % service_url(), icon="URL")
 
 
+class VIEW3D_PT_forge_model(_ForgePanel, Panel):
+    """Downloaded models: the same two questions, asked of geometry we did not make.
+
+    Sits under PartForge because it answers the same things — will it print, and
+    how do I cut it up — for a file the artist got from somewhere else.  The
+    results land in the very same Print Checks and Segments boxes above.
+    """
+
+    bl_idname = "VIEW3D_PT_forge_model"
+    bl_label = "Model (downloaded / imported)"
+
+    def draw(self, context):
+        layout = self.layout
+        md = model.get_props(context)
+        if md is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+        layout.enabled = not md.busy
+
+        column = layout.column(align=True)
+        column.prop(md, "import_units", text="File is in")
+        column.operator("forge.model_import", icon="IMPORT", text="Import Model")
+
+        if not str(md.object_name or "").strip():
+            _empty(layout,
+                   "Import an STL you downloaded, or select your own mesh, then "
+                   "press Check.")
+        else:
+            row = layout.row(align=True)
+            row.label(text=md.object_name, icon="OUTLINER_OB_MESH")
+            if md.face_count:
+                note = row.row()
+                note.active = False
+                note.alignment = "RIGHT"
+                note.label(text="%d faces" % md.face_count)
+
+        column = layout.column(align=True)
+        column.operator("forge.model_check", icon="CHECKMARK",
+                        text="Check imported model")
+        column.operator("forge.model_segment", icon="MOD_BOOLEAN",
+                        text="Segment imported model")
+
+        repair = layout.box()
+        repair.alert = bool(md.needs_repair)
+        if md.needs_repair:
+            repair.label(text="This model has holes in it", icon="ERROR")
+            sub = repair.column(align=True)
+            sub.scale_y = 0.8
+            for line in _wrap("Voxel Repair closes them by rebuilding the "
+                              "surface, then check it again.", 36):
+                sub.label(text=line)
+        row = repair.row(align=True)
+        row.prop(md, "voxel_size_mm")
+        row.operator("forge.model_repair", icon="MOD_REMESH", text="Voxel Repair")
+
+        if md.busy:
+            layout.label(text=md.status or "Working ...", icon="SORTTIME")
+        elif md.status:
+            box = layout.box()
+            box.alert = bool(md.status_is_error)
+            for line in _wrap(md.status, 38)[:4]:
+                box.label(text=line, icon="ERROR" if md.status_is_error else "INFO")
+        if md.summary:
+            row = layout.row()
+            row.active = False
+            row.label(text=md.summary[:80], icon="MESH_DATA")
+
+
 class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
     """Saved sequences of Forge operations, replayed with no AI in the loop.
 
@@ -368,13 +553,18 @@ class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
 
         row = layout.row(align=True)
         row.label(text="Saved sequences", icon="SEQUENCE")
+        row.prop(fl, "editing", text="", icon="GREASEPENCIL", toggle=True)
         row.operator("forge.flow_refresh", text="", icon="FILE_REFRESH")
 
         if not fl.loaded:
-            layout.label(text="Press the refresh button to list them", icon="INFO")
+            _empty(layout, "Press the refresh arrows to list them.")
         elif not len(fl.flows):
-            layout.label(text="No flows in %s" % (flows.flows_dir() or "(unset)"),
-                         icon="INFO")
+            _empty(layout,
+                   "Saved one-button jobs appear here. The Assistant offers to "
+                   "save repeatable work.")
+            note = layout.row()
+            note.active = False
+            note.label(text=flows.flows_dir() or "(no flows folder set)")
 
         column = layout.column(align=True)
         for entry in fl.flows:
@@ -405,7 +595,8 @@ class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
         if len(fl.params):
             box = layout.box()
             box.enabled = not fl.busy
-            box.label(text="Parameters", icon="PRESET")
+            box.label(text="Parameters" if not fl.editing else "Default values",
+                      icon="PRESET")
             for item in fl.params:
                 box.prop(item, "value", text=item.label_text())
                 if item.description:
@@ -414,6 +605,9 @@ class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
                     sub.scale_y = 0.7
                     for line in _wrap(item.description, 40)[:2]:
                         sub.label(text=line)
+
+        if fl.editing and fl.selected:
+            self._draw_editor(fl)
 
         if fl.busy:
             layout.label(text=fl.status or "Running ...", icon="SORTTIME")
@@ -427,6 +621,60 @@ class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
             row = layout.row()
             row.active = False
             row.label(text=fl.summary[:80], icon="MESH_DATA")
+
+    def _draw_editor(self, fl):
+        """The modest editor: what it says, what it does, in what order.
+
+        Steps can be reordered and removed but not written from scratch — that
+        is what the assistant and the JSON are for, and a half-built step editor
+        would only be a worse way to reach the same file.
+        """
+        layout = self.layout
+        box = layout.box()
+        box.enabled = not fl.busy
+        header = box.row(align=True)
+        header.label(text="Editing %s" % fl.selected, icon="GREASEPENCIL")
+        if fl.dirty:
+            unsaved = header.row()
+            unsaved.alert = True
+            unsaved.label(text="unsaved", icon="ERROR")
+
+        column = box.column(align=True)
+        column.label(text="What it does:")
+        column.prop(fl, "edit_description", text="")
+
+        steps = box.column(align=True)
+        steps.label(text="Steps", icon="SEQUENCE")
+        if not len(fl.steps):
+            _empty(steps, "This flow has no steps to show.")
+        for index, item in enumerate(fl.steps):
+            row = steps.row(align=True)
+            row.label(text="%d. %s" % (index + 1, item.line()))
+            up = row.row(align=True)
+            up.enabled = index > 0
+            move = up.operator("forge.flow_step_move", text="", icon="TRIA_UP")
+            move.index = index
+            move.direction = "UP"
+            down = row.row(align=True)
+            down.enabled = index < len(fl.steps) - 1
+            move = down.operator("forge.flow_step_move", text="", icon="TRIA_DOWN")
+            move.index = index
+            move.direction = "DOWN"
+            row.operator("forge.flow_step_delete", text="", icon="X").index = index
+
+        note = box.row()
+        note.active = False
+        note.label(text="Ask the Assistant to add steps")
+
+        row = box.row(align=True)
+        save = row.row(align=True)
+        save.enabled = len(fl.steps) >= 2
+        save.operator("forge.flow_save", text="Save", icon="FILE_TICK")
+        row.operator("forge.flow_revert", text="", icon="LOOP_BACK")
+        if len(fl.steps) < 2:
+            warn = box.row()
+            warn.alert = True
+            warn.label(text="A flow needs at least two steps", icon="ERROR")
 
 
 class VIEW3D_PT_forge_rigforge(_ForgePanel, Panel):
@@ -443,10 +691,10 @@ class VIEW3D_PT_forge_rigforge(_ForgePanel, Panel):
             return
 
         obj = rigforge.active_mesh(context)
-        row = layout.row(align=True)
         if obj is None:
-            row.label(text="Select a mesh object", icon="INFO")
+            _empty(layout, "Select your sculpt and add a tag to start.")
             return
+        row = layout.row(align=True)
         row.label(text=obj.name, icon="OUTLINER_OB_MESH")
         row.operator("forge.rf_sync", text="", icon="FILE_REFRESH")
 
@@ -454,7 +702,7 @@ class VIEW3D_PT_forge_rigforge(_ForgePanel, Panel):
         box.label(text="Tags", icon="GROUP_VERTEX")
         tags = rigforge.tag_groups(obj)
         if not tags:
-            box.label(text="No tags yet - name one below", icon="INFO")
+            _empty(box, "Select your sculpt and add a tag to start.")
         else:
             face_map = rigforge._face_tag_map(obj)
             for group in tags:
@@ -777,6 +1025,7 @@ def _wrap(text, width):
 
 
 _CLASSES = (
+    VIEW3D_PT_forge_health,
     VIEW3D_PT_forge_assistant,
     VIEW3D_PT_forge_server,
     VIEW3D_PT_forge_partforge,
@@ -784,6 +1033,7 @@ _CLASSES = (
     VIEW3D_PT_forge_checks,
     VIEW3D_PT_forge_segments,
     VIEW3D_PT_forge_export,
+    VIEW3D_PT_forge_model,
     VIEW3D_PT_forge_flows,
     VIEW3D_PT_forge_rigforge,
     VIEW3D_PT_forge_retopo,

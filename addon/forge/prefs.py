@@ -28,6 +28,33 @@ def default_printer_path():
     return candidate if os.path.isfile(candidate) else ""
 
 
+def repo_root():
+    """``<repo>`` when this is a source checkout, else ``""``.
+
+    Anchored on this file (``addon/forge/prefs.py`` -> two levels up), the same
+    way the printer profile and the flows folder are.  Installed from a zip
+    there is no repo above the add-on, so this is empty and everything built on
+    it says so rather than guessing.
+    """
+    candidate = os.path.normpath(os.path.join(_HERE, os.pardir, os.pardir))
+    return candidate if os.path.isdir(candidate) else ""
+
+
+def start_script_path():
+    """The repo's ``start_forge.ps1``, or ``""``.
+
+    The Start Services button runs this exact script rather than reimplementing
+    what it does: one place decides how the geometry service and the assistant
+    bridge are launched, and the terminal user and the Blender user get the same
+    behaviour.
+    """
+    root = repo_root()
+    if not root:
+        return ""
+    candidate = os.path.join(root, "start_forge.ps1")
+    return candidate if os.path.isfile(candidate) else ""
+
+
 def default_flows_dir():
     """The repo's ``flows/`` folder when this is a source checkout.
 

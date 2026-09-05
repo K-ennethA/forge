@@ -4,7 +4,7 @@ A stdio MCP server that gives Claude Code one tool surface over both Forge backe
 
 | Backend | Address | Used for |
 |---|---|---|
-| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, RigForge tags/retopo/UV/rig/cloth/animation/Godot export |
+| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, imported-model checks/segmentation, RigForge tags/retopo/UV/rig/cloth/animation/Godot export |
 | Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
@@ -46,7 +46,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 46-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 48-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -57,6 +57,11 @@ command name and every parameter of each request, the `faces` / `use_selection` 
 validation, the `.bvh`/`.fbx` refusal, and each report rendered from a canned,
 contract-shaped result — including a warnings-heavy one and a nearly empty one, because the
 add-on side is being written in parallel and a thin result must still render.
+`tests/test_mesh_input.py` does it for the two Phase 6d tools (`check_model`, `segment_model`):
+every parameter each puts on the wire, the report rendered from a canned add-on result —
+including a plate that does not fit and a nearly empty result — that a non-watertight refusal
+reaches the caller **word for word** with the voxel-remesh fix appended, and that a merely
+absent add-on is not dressed up as a mesh problem.
 `tests/test_new_part.py` covers the two authoring tools: the slug matrix, every path-shaped
 name it refuses, that a script the service rejects leaves nothing on disk, the
 overwrite/spec matrix, and the one `partforge_open` command that crosses the wire. It
@@ -265,6 +270,51 @@ built-in Elegoo Centauri Carbon defaults) and take the same `overrides` as
 heights, `"30, 60"`, or `partforge_check`'s `{"radial": 4}` object copied verbatim.
 `joint_type` is `dovetail` / `pin` / `magnet` / `none`, and `joint_tolerance` overrides the
 printer profile's `press_fit` / `magnet_pocket_extra` when given.
+
+### Imported models (Phase 6d) — the downloaded-STL pipeline
+
+The four tools above all need a **PARAMS script**. These two need only an object that is
+already in the Blender scene, which is what makes them the answer to "I downloaded this
+dragon off Thingiverse, will it print?" and "cut it up, it is too tall for my bed". The
+add-on takes the object's evaluated mesh, scales scene metres to millimetres and posts it to
+the service's `/check_mesh` / `/segment_mesh` — the same checkers and the same cutter, fed
+triangles instead of a solid.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `check_model` | `object`, `printer_path` | Bed fit, wall thickness, overhangs, watertightness on an imported mesh, with the rows also written into the panel's Print Checks box. When `bed_fit` fails it prints the suggested cut mode, which goes straight into `segment_model` as `mode`. |
+| `segment_model` | `object`, `mode`, `joint_type`, `joint_tolerance`, `collection`, `printer_path` | Cuts that mesh into printable, joinable pieces, packs them onto one plate **and** loads the pieces back into Blender where the packing put them. Names the objects that landed and warns when the plate does not fit. |
+
+Both take an optional `object` (omitted = the active object) and the same `printer_path` as
+the Phase 2 tools, and `mode` / `joint_type` / `joint_tolerance` mean exactly what they mean
+on `partforge_segment` — including `check_model`'s own `{"planar": [120.0]}` copied verbatim.
+
+Two differences from the PARAMS path are worth saying to the artist out loud:
+
+- **There is no B-Rep.** Solid validity is never reported (the report says `n/a (no B-Rep)`
+  rather than a bare `None`); `watertight` is the triangle mesh's own closedness.
+- **A model with holes is refused, not checked.** The service answers "repair first (voxel
+  remesh)", which arrives here as a socket error — so both tools surface that sentence
+  **verbatim** and append the fix: `remesh(mode="voxel")` on the object (the panel's Model
+  box has a **Voxel Repair** button that does the same), then ask again. That is a
+  one-command repair, not a dead end, and it is why the refusal is worth reading rather than
+  retrying.
+
+Both commands also get their own socket budget: they proxy a `/check_mesh` (120 s) or
+`/segment_mesh` (300 s) call through Blender, so the read timeout is the larger of
+`FORGE_BLENDER_READ_TIMEOUT` and the matching service budget rather than the per-command
+default.
+
+```text
+# the artist imported dragon.stl themselves (File > Import), then:
+check_model(object="dragon_bust")
+# bed_fit FAILED, and the report hands back mode = {"planar": [120.0]}
+segment_model(object="dragon_bust", mode={"planar": [120.0]}, collection="Pieces")
+
+# if instead the check is refused as not watertight:
+remesh(mode="voxel", object="dragon_bust")   # or the panel's Voxel Repair button
+check_model(object="dragon_bust")
+```
 
 ### RigForge (Phase 3)
 
@@ -530,7 +580,9 @@ stdin rather than exiting with a traceback (Ctrl+C to quit).
   service is picked up on the next tool call.
 - **Meshes never reach the model.** `partforge_generate` and `partforge_load_segments` move
   the vertex/face arrays straight from the service into Blender and return only stats;
-  `partforge_segment` does not ask for them at all.
+  `partforge_segment` does not ask for them at all. `check_model` and `segment_model` are the
+  same rule from the other end: the triangles go Blender → service → Blender and this server
+  only ever sees the verdict, the piece sizes and the object names.
 - **Segments load in one round trip.** `partforge_load_segments` uses the add-on's
   `load_meshes` command (the plural of `load_mesh`, an additive protocol extension) rather
   than N calls, and forwards each segment's `plate.items` entry verbatim so the add-on —

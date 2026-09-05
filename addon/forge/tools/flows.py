@@ -68,7 +68,9 @@ SERVICE_OPS = {
     "/generate": 180.0,
     "/export": 300.0,
     "/check": 150.0,
+    "/check_mesh": 150.0,
     "/segment": 330.0,
+    "/segment_mesh": 330.0,
     "/export_segments": 330.0,
     "/slice": 600.0,
     "/mold": 330.0,
@@ -647,15 +649,45 @@ class ForgeFlowEntry(PropertyGroup):
     error: StringProperty(default="")
 
 
+class ForgeFlowStep(PropertyGroup):
+    """One row of the step list in the editor: what it does, in that order."""
+
+    label: StringProperty(default="")
+    kind: StringProperty(default="")
+    op: StringProperty(default="")
+
+    def line(self):
+        label = str(self.label or "").strip()
+        return label or ("%s %s" % (self.kind or "?", self.op or "?"))
+
+
 class ForgeFlowsProps(PropertyGroup):
     flows: CollectionProperty(type=ForgeFlowEntry)
     params: CollectionProperty(type=ForgeFlowParam)
+    steps: CollectionProperty(type=ForgeFlowStep)
     selected: StringProperty(name="Flow", default="")
     status: StringProperty(default="")
     status_is_error: BoolProperty(default=False)
     summary: StringProperty(default="")
     busy: BoolProperty(default=False)
     loaded: BoolProperty(default=False)
+    #: The editor is off by default: the Flows box is a row of Run buttons
+    #: first and a workbench second.
+    editing: BoolProperty(
+        name="Edit",
+        description="Change this flow's defaults and the order of its steps",
+        default=False,
+    )
+    edit_description: StringProperty(
+        name="Description",
+        description="What this flow does, in the artist's own words",
+        default="",
+    )
+    #: The flow being edited, as JSON, so reordering and deleting cost nothing
+    #: until Save is pressed and a half-finished edit can always be abandoned by
+    #: selecting the flow again.
+    edit_json: StringProperty(default="")
+    dirty: BoolProperty(default=False)
 
 
 def get_props(context=None):
@@ -695,15 +727,25 @@ def refresh(props):
 
 
 def select(props, name):
-    """Point the param list at ``name``'s parameters."""
+    """Point the param list (and the editor) at ``name``'s flow."""
     props.selected = str(name or "")
     props.params.clear()
+    props.steps.clear()
+    props.edit_json = ""
+    props.edit_description = ""
+    props.dirty = False
     if not props.selected:
         return
     try:
         doc = read_flow(props.selected)
     except ForgeError:
         return
+    load_editor(props, doc)
+
+
+def load_editor(props, doc):
+    """Fill the param rows, the step rows and the working copy from ``doc``."""
+    props.params.clear()
     for key, spec in (doc.get("params") or {}).items():
         item = props.params.add()
         item.name = str(key)
@@ -712,6 +754,121 @@ def select(props, name):
             json.dumps(value) if isinstance(value, (dict, list)) else str(value))
         item.unit = str(spec.get("unit") or "")
         item.description = str(spec.get("description") or "")
+    props.edit_description = str(doc.get("description") or "")
+    props.edit_json = json.dumps(doc)
+    props.dirty = False
+    sync_steps(props, doc)
+
+
+def sync_steps(props, doc):
+    """Rebuild the step rows from a flow document."""
+    props.steps.clear()
+    for index, step in enumerate(doc.get("steps") or []):
+        if not isinstance(step, dict):
+            continue
+        item = props.steps.add()
+        item.label = step_label(step, index)
+        item.kind = str(step.get("kind") or "")
+        item.op = str(step.get("op") or "")
+    return len(props.steps)
+
+
+def editor_doc(props):
+    """The working copy being edited, or the file if nothing is loaded yet."""
+    raw = str(props.edit_json or "").strip()
+    if not raw:
+        return read_flow(props.selected)
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return read_flow(props.selected)
+    if not isinstance(doc, dict):
+        return read_flow(props.selected)
+    return doc
+
+
+def _store_editor(props, doc):
+    props.edit_json = json.dumps(doc)
+    props.dirty = True
+    sync_steps(props, doc)
+
+
+def move_step(props, index, offset):
+    """Move step ``index`` by ``offset`` in the working copy."""
+    doc = editor_doc(props)
+    steps = doc.get("steps") or []
+    target = index + offset
+    if index < 0 or index >= len(steps):
+        raise ForgeError("There is no step %d in this flow." % (index + 1))
+    if target < 0 or target >= len(steps):
+        raise ForgeError("Step %d is already %s." % (index + 1,
+                                                     "first" if offset < 0 else "last"))
+    steps[index], steps[target] = steps[target], steps[index]
+    doc["steps"] = steps
+    _store_editor(props, doc)
+    return target
+
+
+def delete_step(props, index):
+    """Remove step ``index`` from the working copy (Save writes it)."""
+    doc = editor_doc(props)
+    steps = doc.get("steps") or []
+    if index < 0 or index >= len(steps):
+        raise ForgeError("There is no step %d in this flow." % (index + 1))
+    removed = step_label(steps[index], index)
+    del steps[index]
+    doc["steps"] = steps
+    _store_editor(props, doc)
+    return removed
+
+
+def apply_edits(props, doc):
+    """Fold the editable fields — description and param defaults — into ``doc``.
+
+    Values come back as the strings the panel edits, so each one is typed like
+    the default it replaces: a flow whose ``wedges`` was 4 keeps a number, not
+    the text "6".
+    """
+    doc["description"] = str(props.edit_description or "").strip()
+    params = doc.get("params") or {}
+    for item in props.params:
+        key = str(item.name or "")
+        spec = params.get(key)
+        if not isinstance(spec, dict):
+            continue
+        spec["value"] = _coerce(item.value, spec.get("value"), key)
+    if params:
+        doc["params"] = params
+    return doc
+
+
+def save_flow(props):
+    """Write the working copy back over its file. Returns the path written."""
+    name = str(props.selected or "").strip()
+    if not name:
+        raise ForgeError("Pick a flow first.")
+    doc = apply_edits(props, editor_doc(props))
+
+    steps = doc.get("steps") or []
+    if len(steps) < 2:
+        # The same rule flow_save enforces: a one-step flow is a button for
+        # something that is already a button, and it hides what it does.
+        raise ForgeError(
+            "A flow needs at least two steps — with one step left there is "
+            "nothing to save that the panel cannot already do. Undo the "
+            "deletion by selecting the flow again.")
+    validate_flow(doc, source=name)
+
+    path = flow_path(name)
+    try:
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(doc, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+    except OSError as exc:
+        raise ForgeError("Could not write %s: %s" % (path, exc))
+    props.edit_json = json.dumps(doc)
+    props.dirty = False
+    return path
 
 
 def panel_overrides(props):
@@ -868,6 +1025,104 @@ class FORGE_OT_flow_run(Operator):
         return {"FINISHED"}
 
 
+class FORGE_OT_flow_step_move(Operator):
+    bl_idname = "forge.flow_step_move"
+    bl_label = "Move Step"
+    bl_description = "Move this step up or down. Nothing is written until you press Save"
+    bl_options = {"REGISTER"}
+
+    index: IntProperty(default=0)
+    direction: StringProperty(default="UP")
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and not props.busy
+
+    def execute(self, context):
+        props = get_props(context)
+        offset = -1 if str(self.direction).upper() == "UP" else 1
+        try:
+            move_step(props, int(self.index), offset)
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            return {"CANCELLED"}
+        set_status(props, "Reordered — press Save to keep it.")
+        _tag_redraw()
+        return {"FINISHED"}
+
+
+class FORGE_OT_flow_step_delete(Operator):
+    bl_idname = "forge.flow_step_delete"
+    bl_label = "Delete Step"
+    bl_description = "Remove this step. Nothing is written until you press Save"
+    bl_options = {"REGISTER"}
+
+    index: IntProperty(default=0)
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and not props.busy
+
+    def execute(self, context):
+        props = get_props(context)
+        try:
+            removed = delete_step(props, int(self.index))
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            return {"CANCELLED"}
+        set_status(props, "Removed '%s' — press Save to keep it." % removed)
+        _tag_redraw()
+        return {"FINISHED"}
+
+
+class FORGE_OT_flow_save(Operator):
+    bl_idname = "forge.flow_save"
+    bl_label = "Save Flow"
+    bl_description = "Write the description, the default values and the step order back to the flow file"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and not props.busy and bool(props.selected)
+
+    def execute(self, context):
+        props = get_props(context)
+        try:
+            path = save_flow(props)
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            return {"CANCELLED"}
+        try:
+            refresh(props)
+        except ForgeError:
+            pass
+        set_status(props, "Saved %s" % os.path.basename(path))
+        _tag_redraw()
+        return {"FINISHED"}
+
+
+class FORGE_OT_flow_revert(Operator):
+    bl_idname = "forge.flow_revert"
+    bl_label = "Discard Changes"
+    bl_description = "Forget the edits and re-read the flow from disk"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        props = get_props(context)
+        return props is not None and not props.busy and bool(props.selected)
+
+    def execute(self, context):
+        props = get_props(context)
+        select(props, props.selected)
+        set_status(props, "Back to what is on disk.")
+        _tag_redraw()
+        return {"FINISHED"}
+
+
 def _run_async(work, done):
     """PartForge's async shape, with the main-thread queue drained each tick."""
     if bpy.app.background:
@@ -907,10 +1162,15 @@ def _run_async(work, done):
 _CLASSES = (
     ForgeFlowParam,
     ForgeFlowEntry,
+    ForgeFlowStep,
     ForgeFlowsProps,
     FORGE_OT_flow_refresh,
     FORGE_OT_flow_select,
     FORGE_OT_flow_run,
+    FORGE_OT_flow_step_move,
+    FORGE_OT_flow_step_delete,
+    FORGE_OT_flow_save,
+    FORGE_OT_flow_revert,
 )
 
 

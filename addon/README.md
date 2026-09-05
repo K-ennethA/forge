@@ -16,11 +16,15 @@ The Blender half of the Forge pipeline. It does four things:
    tags with its cloth sim baked to a shape key, the Godot action library, structured
    keyframing and mocap retargeting (Phase 5). That is the whole run: sculpt in, dressed
    and animated playable character out.
-4. Renders the **Assistant panel** at the top of the tab (Phase 6): a chat box where you
+4. Renders the **Assistant panel** near the top of the tab (Phase 6): a chat box where you
    describe what you want in ordinary words. It talks to the assistant bridge
    (`assistant/bridge.py`, port 8901), which runs the Claude Code CLI headless with the
    Forge MCP tools. Every other panel assumes you know which button you want; this one
    does not.
+5. Renders the **Forge Status row** above everything (the UI batch): four dots saying
+   whether the shape service, the assistant, the Blender link and your sign-in are
+   actually there, and one button that starts whatever is not. "Why did nothing happen"
+   is answered at the top of the tab instead of three clicks deep in an error message.
 
 Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` only.
 
@@ -115,6 +119,28 @@ s.sendall(json.dumps({"type": "ping"}).encode() + b"\n")
 print(s.makefile().readline())
 ```
 
+### Undo checkpoints
+
+Every command that can change the scene pushes a **named undo step before it runs**
+(`bpy.ops.ed.undo_push(message="Forge: <command>")`, in `tools/registry.py`'s `dispatch`).
+So Ctrl+Z in the viewport reverses what the assistant just did, `Edit ▸ Undo History` shows
+it in words, and the Assistant box's **Revert last AI action** button is a real button
+rather than an apology.
+
+* Read-only commands push nothing: `ping`, `get_scene_info`, `flow_list`,
+  `rigforge_list_tags`, `rigforge_status`, `export_stl` (it writes a file, which undo could
+  never take back anyway). Burying the checkpoint the artist wants under a pile of `ping`s
+  would defeat the point.
+* `execute_python` **does** push one, deliberately: arbitrary code is exactly the case
+  worth being able to take back, even when it happened to do nothing.
+* The push is *before* the handler, so a command that fails half-way through is the one
+  you can most easily undo.
+* Verified working in `--background` (Blender 5.0 pushes and pops with no window), but
+  guarded regardless: the first refusal flips checkpoints off for the session, prints one
+  line, and every command keeps working. A trust feature must never break the flows it
+  exists to protect.
+* Flows push one step per Blender step, because a flow *is* a sequence of those commands.
+
 ## Commands
 
 All object-targeting commands take `"object"` (a name); omit it to use the active object.
@@ -143,6 +169,8 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `load_reference` | `path`, `view` `front`\|`side`\|`top`, `size_mm?`, `name?`, `offset_mm?`, `collection?` | puts a sketch/photo in the viewport as an image EMPTY facing that orthographic view. Returns `{"object", "width_mm", "height_mm", "view", "size_mm", "path", "image", "pixels", "replaced", "location", "rotation_deg", "opacity"}` |
 | `partforge_open` | `script_path`, `keep_values?`, `object?`, `params?` | points the PartForge panel at a script and rebuilds its sliders — the panel's own Load Script path, driven from outside. Returns `{"script", "param_count", "params", "object", "schema_source"}` |
 | `flow_list` | — | every saved flow in the flows folder: `{"dir", "count", "flows": [{"name", "description", "params", "steps", "step_labels", "path"}]}`. A file that will not parse is listed with an `error` instead of being hidden |
+| `check_model` | `object?`, `printer?` | print-checks a mesh that is **already in the scene** (a downloaded STL, your own sculpt): the evaluated mesh goes to the service's `/check_mesh` in millimetres and the rows land in the Print Checks panel. Returns `{"object", "overall", "checks", "printer"?, "stats"?, "mesh": {"vertex_count", "face_count", "scale"}, "printer_source", "panel"}` |
+| `segment_model` | `object?`, `printer?`, `joint?`, `mode?`, `collection?` | cuts an in-scene mesh via `/segment_mesh` and loads the pieces laid out on the plate. Returns `{"object", "objects", "count", "segments", "mode", "joint", "plate", "mesh", "printer_source"}` — the segment meshes are **not** echoed back, the objects are in the viewport |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
 ### RigForge commands (Phase 3)
@@ -330,12 +358,70 @@ Notes:
   Quadriflow, STL export, symmetrize) have their return value checked, so a silent
   no-op comes back as `status: "error"` instead of a bogus success.
 
+## Forge Status row
+
+`View3D ▸ N sidebar ▸ Forge ▸ Forge Status` — the very top of the tab, above the chat box,
+because "I pressed Send and nothing happened" has exactly four possible answers and this
+box is all four:
+
+| Row | Where it comes from | Down means |
+|---|---|---|
+| **Shapes** | `GET <service_url>/health` | the geometry service (8765) is not running — nothing can be built, checked or cut |
+| **Assistant** | `GET <assistant_url>/health` | the bridge (8901) is not running — the chat box cannot send |
+| **Blender link** | this process's own socket status, not a port probe | the command socket is stopped, so Claude cannot drive Blender; the port is shown either way |
+| **Sign-in** | the bridge's `claude_cli.found` + `last_auth_error` | the Claude CLI is missing, or the last turn failed on sign-in (`open a terminal, type claude, run /login`) |
+
+**Nothing is probed by spending money or a turn.** Sign-in is whatever the bridge already
+knows from the last job (`last_auth_error`, additive on `/health`) — the CLI is never run
+to test it. The refresh arrows do the two health calls on a worker thread and land the
+answer through a timer, so a dead port costs a second of nothing, never a frozen draw.
+
+**Start services** runs the repo's own `start_forge.ps1` hidden (PowerShell,
+`CREATE_NO_WINDOW`), so the button and the double-click do exactly the same thing and
+there is one file that decides how those processes launch. Ports are probed first: whatever
+is already answering is left strictly alone, and the status line afterwards names what it
+actually started ("Started Assistant.") or what refused to ("Shapes did not start. Open
+the forge folder and run start_forge.cmd to see why."). Installed from a zip there is no
+repo above the add-on, so the button says so instead of guessing.
+
+The session cost the bridge reports rides along on the same poll and fills in the
+Assistant box's footer — one call, two answers.
+
 ## Assistant panel
 
-`View3D ▸ N sidebar ▸ Forge ▸ Assistant` — deliberately the **first** box in the tab
-(`bl_order = 0`, registered first), because it is the entry point for someone who has
-never opened Blender before. Everything below it stays exactly as it was; the assistant
-is a layer over the manual panels, never a replacement.
+`View3D ▸ N sidebar ▸ Forge ▸ Assistant` — the first box you can type in, with only the
+status row above it, because it is the entry point for someone who has never opened
+Blender before. Everything below it stays exactly as it was; the assistant is a layer over
+the manual panels, never a replacement.
+
+**Three chips do the three jobs everybody asks for**: **Check print**, **Segment to fit**
+and **Export STL**, in a row above the message field. A chip is not a special code path —
+it types the sentence an artist would have typed ("Run the print checks on the current
+part and explain anything that fails in plain words.") and sends it through the same
+`/ask`, with the same attachment rules and the same queue. The reply reads the same as if
+they had written it, which is how they learn what to ask for next time.
+
+**Revert last AI action** sits under the status line. Every socket command pushes a named
+undo checkpoint *before* it runs (`Forge: remesh`, `Forge: load_meshes` — see
+[Undo checkpoints](#undo-checkpoints)), so this button is plain `ed.undo`: one press, one
+thing the assistant did. Ctrl+Z in the viewport does exactly the same job; the button
+exists for the artist who does not know that.
+
+**A second message waits its turn instead of being refused.** Sending while a turn is in
+flight used to be a 409; now the bridge queues one message, the panel says
+`Queued — waiting for the current answer ...`, and it runs the moment the first finishes,
+in the same conversation. A *third* message is refused, with a sentence saying one is
+already waiting.
+
+**The footer says what this has cost.** `This session: $0.42` comes from the bridge's
+`session_cost_usd` (summed over finished turns, zeroed by New Conversation), with this
+turn's own cost and duration on the right. Nothing is shown before the first answer.
+
+**Long replies are readable.** A reply too long for the sidebar is cut at 24 lines with
+`... N more lines` under it and a magnifier button in its header: that opens the whole
+message in a popup, wrapped at 96 characters. Numbered handoff lists ("press N → Forge tab
+→ Segments box → set Radial to 4") routinely run past what a 40-character sidebar can
+show, and half a set of instructions is worse than none.
 
 Type what you want in your own words, press **Send**, and the answer lands in the chat
 log above the field (last six exchanges, `You:` / `Forge:`). **New Conversation** (the
@@ -450,6 +536,38 @@ runs on a worker thread with an explicit timeout and reports back through the st
 line, so the UI never freezes waiting on the service. Regeneration is deliberately
 manual — nothing is rebuilt until you press Regenerate.
 
+## Model box — downloaded and imported models
+
+`View3D ▸ N sidebar ▸ Forge ▸ Model (downloaded / imported)` — under PartForge, because it
+answers the same two questions about geometry Forge did not generate.
+
+1. **Import Model** opens Blender's file browser for `.stl` / `.obj` / `.ply` and brings the
+   file in scaled by the **File is in** setting — *Millimetres* by default, which is what
+   print files are, so a 20 mm widget arrives 20 mm across instead of 20 metres. The status
+   line names the object, its size and its face count, then says what to press next.
+   (Anything already in the scene works too: select your own sculpt and skip this step.)
+2. **Check imported model** reads the object's *evaluated* mesh (modifiers applied, world
+   transform baked in), scales it to millimetres and POSTs it to the geometry service's
+   `/check_mesh`. The answers land in the **Print Checks** box above — the same rows, the
+   same icons — because there should not be two kinds of check to learn.
+3. **Segment imported model** POSTs the same mesh to `/segment_mesh` with the joint and
+   mode from the **Segments** box, and loads the pieces laid out on the plate, exactly as
+   the parametric Segment button does.
+4. **Voxel Repair** rebuilds the surface as one closed shell at the given detail size. A
+   mesh with holes cannot be sewn into a solid, so the service refuses it and says so; that
+   refusal is passed through word for word, the box turns red, and the fix is this button.
+   The repair goes through the ordinary `remesh` command, so it gets its own named undo
+   checkpoint like everything else. Detail finer than the voxel size is lost — the panel and
+   the assistant both say so.
+
+Two things a raw mesh cannot have: `solid_is_valid` is null (there is no B-Rep to validate,
+so `watertight` is the triangles' own closedness), and a mesh above 500 000 faces is refused
+up front with the fix attached rather than being streamed at the service for a minute.
+
+The same two operations are socket commands (`check_model`, `segment_model` above) and MCP
+tools (`check_model`, `segment_model` — `mcp/README.md`), so the assistant can do all of
+this from the chat box.
+
 ## Flows box
 
 `View3D ▸ N sidebar ▸ Forge ▸ Flows` — directly under PartForge, because that is where a
@@ -467,6 +585,29 @@ first time; the tenth time it should be a button.
 - The result goes into the status line (`segment-into-4: 2 step(s) in 4.3s`), with the step
   labels underneath. A failure names the step that broke, not just the flow.
 - A file that will not parse is **listed with its error** rather than quietly vanishing.
+
+### Editing a flow
+
+The pencil toggle in the Flows header turns the box into a modest editor for the selected
+flow:
+
+- its **description**, in your own words;
+- its **default values** — the same fields, saved back into the file instead of used for
+  one run;
+- its **steps**, listed by label with up/down arrows and an X.
+
+Nothing is written until **Save**: reordering and deleting happen on a working copy held in
+the panel (the header says *unsaved*), and the loop-back button next to Save throws the
+edits away and re-reads the file. Save writes the JSON back with each default typed like the
+one it replaced — a `wedges` of `4` stays a number when you type `6`, not the text `"6"` —
+revalidates the whole document, and **refuses to save fewer than two steps**, which is the
+same rule `flow_save` enforces for the assistant: a one-step flow is a button for something
+that is already a button, and it hides what it does.
+
+Steps cannot be *created* here, and that is deliberate. Writing a step means knowing a
+command name and its arguments; that is the assistant's job (it offers to save repeatable
+work as a flow) or the JSON's. A half-built step editor would only be a worse way to reach
+the same file.
 
 The folder is an add-on preference: `Edit ▸ Preferences ▸ Add-ons ▸ Forge ▸ Flows ▸ Flows
 Folder` (`forge_flows_dir`), defaulting to the repo's `flows/` directory, derived from the
@@ -1025,6 +1166,8 @@ addon/forge/
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
   tools/flows.py         Flows: the JSON format, the runner, flow_list/flow_run, the box (6b)
+  tools/model.py         Downloaded models: check_model/segment_model, the Model box (6d)
+  tools/services.py      The health row, Start services, Revert last AI action
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
@@ -1035,6 +1178,9 @@ addon/tests/
   headless_assistant.py  headless checks for the Assistant panel against a fake bridge
   headless_flows.py      headless checks for flow_list/flow_run and the Flows box
   headless_reference.py  headless checks for load_reference and the attach field (6c)
+  headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
+                         row, the chips, the empty states, check_model/segment_model
+                         against a fake service, and the flow editor
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
@@ -1046,7 +1192,8 @@ drawn the same way, so the section still reads as one panel.
 
 Two conventions in `ui/panels.py` worth knowing before you edit it: the PartForge panels
 bind their state to a local called `props`, the RigForge Phase 3/4 ones to `rf`, the
-Phase 5 ones to `ra`, the Phase 6 Assistant to `chat` and the Phase 6b Flows box to `fl`.
+Phase 5 ones to `ra`, the Phase 6 Assistant to `chat`, the Phase 6b Flows box to `fl`, the
+Model box to `md` and the status row to `sv`.
 They are different
 PropertyGroups on the scene, and the headless panel-wiring tests tell them apart by that
 name — reuse one and another phase's suite fails on a property that is not on its group.
@@ -1055,9 +1202,47 @@ its panel's `status` string.
 
 ## Headless tests
 
-Eight suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 6c they are **49 + 108 + 156 + 150 + 77 + 40 + 97 + 92 = 769 checks**, all green on
-Blender 5.0.1.
+Nine suites, all `--background` only. Never launch Blender windowed to run them. As of the
+UI batch they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 = 926 checks**, all green
+on Blender 5.0.1.
+
+### The UI batch (`headless_ui_batch.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_ui_batch.py
+```
+
+Socket port **9888**. Needs nothing running: the geometry service and the assistant bridge
+are replaced for the run by two stdlib HTTP servers on ephemeral ports, serving canned
+`/check_mesh`, `/segment_mesh` and `/health` responses in the shapes
+`docs/architecture.md` promises. 156 checks covering:
+
+- **undo checkpoints** — read-only commands push nothing, the message is `Forge: <command>`,
+  and a `load_mesh` over the socket followed by `ed.undo` really removes the object. If a
+  Blender ever refuses to push, the suite reports the guard rather than failing, because the
+  commands themselves must still work;
+- **the health row** — four rows, both healths parsed off the fakes, a signed-out CLI shown
+  as a warning that names `/login`, a dead port reported as down, the socket row read from
+  this process, and the session cost riding along on the poll;
+- **the chips, the queue and the footer** — the three canned sentences are asserted word for
+  word against what reaches `/ask`, a reply that starts life `queued` still lands in the log,
+  and `This session: $0.42` is formatted from the bridge's own total;
+- **the full-reply viewer** — truncation detection and the popup operator running headless;
+- **`check_model` / `segment_model`** — the request bodies are inspected: a 20 mm cube
+  arrives as 6 faces reaching 10 mm from the origin (metres × 1000), the printer profile
+  rides along, the joint and mode travel verbatim, the answers land in the Print Checks rows,
+  and the pieces are loaded at their plate positions. Plus the refusal path: a non-watertight
+  answer is surfaced with "Voxel Repair" in it, the button appears, and it rebuilds the mesh;
+- **Import Model** — a real STL is exported and re-imported, and comes back 20 mm across
+  rather than 20 metres;
+- **the flow editor** — a copy of the starter flow is reordered and re-defaulted, nothing is
+  written before Save, the typed default and the new order are read back off disk, and
+  saving a one-step flow is refused with its reason;
+- **the empty states** — every panel's `draw()` is *executed* against a recording layout, on
+  an empty scene and again on a full one, and each box's sentence is asserted. A panel is
+  the part of an add-on no headless test usually reaches, which is exactly how an
+  empty-state sentence rots.
 
 ### Phase 6c — reference images (`headless_reference.py`)
 

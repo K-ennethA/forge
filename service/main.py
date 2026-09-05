@@ -19,6 +19,12 @@ Phase 2, print readiness::
     POST /export_mold     -> {"files": [one per half]}
     POST /slice           -> {"output", "stdout_tail", "duration_ms"}
 
+Phase 6d, mesh input -- the same answers for a model somebody downloaded::
+
+    POST /check_mesh            -> the /check response, from triangles
+    POST /segment_mesh          -> the /segment response, from triangles
+    POST /export_segments_mesh  -> the /export_segments response, from triangles
+
 Error contract: HTTP 400 with ``{"error", "traceback"}`` for script and
 parameter failures, HTTP 500 for service bugs.
 
@@ -60,14 +66,17 @@ from .export import normalize_format, resolve_output_path  # noqa: E402
 from .runner import (  # noqa: E402
     DEFAULT_TIMEOUT_S,
     run_check,
+    run_check_mesh,
     run_export,
     run_export_mold,
     run_export_segments,
+    run_export_segments_mesh,
     run_generate,
     run_health,
     run_mold,
     run_parse_params,
     run_segment,
+    run_segment_mesh,
     shutdown_pool,
 )
 from .slicer import health_detection, run_slice  # noqa: E402
@@ -163,6 +172,75 @@ class ExportSegmentsRequest(SegmentRequest):
     directory: str = Field(..., description="Absolute output directory")
     basename: Optional[str] = Field(
         default=None, description="File-name stem; defaults to 'part'"
+    )
+    format: str = Field(default="stl", description="Per-segment format: stl|step|3mf")
+
+
+class MeshInputRequest(BaseModel):
+    """The input half of every mesh endpoint: triangles, or a file to read them from.
+
+    Exactly one of ``mesh`` and ``file_path`` is given.  Coordinates are
+    millimetres, matching every other number in this service.
+    """
+
+    mesh: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description='{"vertices": [[x, y, z] mm, ...], "faces": [[i, j, k], ...]}; '
+        "faces with more than three corners are triangulated",
+    )
+    file_path: Optional[str] = Field(
+        default=None,
+        description="Absolute path to an .stl (binary or ASCII), .3mf or .obj",
+    )
+    weld_tolerance_mm: Optional[float] = Field(
+        default=None,
+        description="Merge vertices closer than this before anything else "
+        "(default: scale-relative, capped at 0.001 mm)",
+    )
+
+
+class CheckMeshRequest(MeshInputRequest):
+    printer: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="printer.json object; missing keys fall back to the built-in "
+        "Elegoo Centauri Carbon profile",
+    )
+    plate_margin_mm: Optional[float] = None
+    min_wall_probe_mm: Optional[float] = None
+    max_wall_samples: Optional[int] = None
+
+
+class SegmentMeshRequest(MeshInputRequest):
+    printer: Optional[Dict[str, Any]] = None
+    joint: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description='{"type": "dovetail"|"pin"|"magnet"|"none", "tolerance": mm, ...}',
+    )
+    mode: Any = Field(
+        default="auto",
+        description='"auto" | {"radial": N} | {"planar": [z_mm, ...]}',
+    )
+    include_mesh: bool = True
+    tolerance: Optional[float] = None
+    angular_tolerance: Optional[float] = None
+    plate_margin_mm: Optional[float] = None
+    plate_spacing_mm: Optional[float] = None
+    sew_tolerance_mm: Optional[float] = Field(
+        default=None,
+        description="Tolerance handed to OpenCascade's sewer (default: the weld "
+        "tolerance, i.e. the mesh's own vertex agreement)",
+    )
+    tri_limit: Optional[int] = Field(
+        default=None,
+        description="Override the triangle ceiling for this request "
+        "(default FORGE_MESH_TRI_LIMIT)",
+    )
+
+
+class ExportSegmentsMeshRequest(SegmentMeshRequest):
+    directory: str = Field(..., description="Absolute output directory")
+    basename: Optional[str] = Field(
+        default=None, description="File-name stem; defaults to 'model'"
     )
     format: str = Field(default="stl", description="Per-segment format: stl|step|3mf")
 
@@ -481,6 +559,95 @@ def export_segments(request: ExportSegmentsRequest) -> JSONResponse:
         angular_tolerance=request.angular_tolerance,
         plate_margin_mm=request.plate_margin_mm,
         plate_spacing_mm=request.plate_spacing_mm,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/check_mesh")
+def check_mesh(request: CheckMeshRequest) -> JSONResponse:
+    """The print-readiness checks against a mesh instead of a script.
+
+    This is the front door for "fix this downloaded model": an STL off the
+    internet gets the same four answers a generated part does.  ``params`` is
+    ``null`` and ``stats.solid_is_valid`` is ``null`` -- there is no PARAMS
+    schema and no B-Rep behind a mesh -- so ``watertight`` here is exactly the
+    mesh half: closed, and consistently wound.
+    """
+    result = run_check_mesh(
+        mesh=request.mesh,
+        file_path=request.file_path,
+        printer=request.printer,
+        plate_margin_mm=request.plate_margin_mm,
+        min_wall_probe_mm=request.min_wall_probe_mm,
+        max_wall_samples=request.max_wall_samples,
+        weld_tolerance_mm=request.weld_tolerance_mm,
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "overall": result["overall"],
+            "checks": result["checks"],
+            "params": result["params"],
+            "printer": result["printer"],
+            "stats": result["stats"],
+            "mesh_input": result["mesh_input"],
+            "timings": result["timings"],
+        },
+    )
+
+
+@app.post("/segment_mesh")
+def segment_mesh(request: SegmentMeshRequest) -> JSONResponse:
+    """Cut a downloaded model into printable segments with mating joints.
+
+    The mesh is sewn into an OpenCascade solid and then goes through the very
+    same cutting, joint and plate machinery ``/segment`` uses, so the joints,
+    the watertight guarantee on every segment and the plate packing are not
+    re-implementations -- they are the same code.
+
+    Two refusals, both 400s and both before any kernel work: a mesh with holes
+    in it cannot be cut (it says how to repair it), and a mesh with more
+    triangles than the ceiling would take minutes rather than seconds (it says
+    to decimate).
+    """
+    result = run_segment_mesh(
+        mesh=request.mesh,
+        file_path=request.file_path,
+        printer=request.printer,
+        joint=request.joint,
+        mode=request.mode,
+        include_mesh=request.include_mesh,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        plate_spacing_mm=request.plate_spacing_mm,
+        weld_tolerance_mm=request.weld_tolerance_mm,
+        sew_tolerance_mm=request.sew_tolerance_mm,
+        tri_limit=request.tri_limit,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/export_segments_mesh")
+def export_segments_mesh(request: ExportSegmentsMeshRequest) -> JSONResponse:
+    """``/segment_mesh``, written to disk: one file per segment plus the plate."""
+    fmt = normalize_format(request.format)
+    result = run_export_segments_mesh(
+        request.directory,
+        mesh=request.mesh,
+        file_path=request.file_path,
+        printer=request.printer,
+        joint=request.joint,
+        mode=request.mode,
+        basename=request.basename,
+        fmt=fmt,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        plate_spacing_mm=request.plate_spacing_mm,
+        weld_tolerance_mm=request.weld_tolerance_mm,
+        sew_tolerance_mm=request.sew_tolerance_mm,
+        tri_limit=request.tri_limit,
     )
     return JSONResponse(status_code=200, content=result)
 

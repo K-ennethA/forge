@@ -449,6 +449,25 @@ def compute_stats(
     }
 
 
+def compute_mesh_stats(
+    vertices: Sequence[Sequence[float]],
+    faces: Sequence[Sequence[int]],
+    degenerate_dropped: int = 0,
+) -> Dict[str, Any]:
+    """:func:`compute_stats` for a mesh that never had a B-Rep behind it.
+
+    This is the ``/check_mesh`` and ``/segment_mesh`` path: the caller handed us
+    triangles, so there is no solid to run OpenCascade's validity check against
+    and ``solid_is_valid`` is ``null`` rather than ``true`` or ``false``.
+    ``watertight`` then means exactly the mesh half -- closed and consistently
+    wound -- which is the half a slicer sees anyway.
+    """
+    stats = compute_stats(None, vertices, faces, degenerate_dropped)
+    stats["solid_is_valid"] = None
+    stats["bounding_box_source"] = "mesh"
+    return stats
+
+
 def _bounding_box(
     shape: Any, vertices: Sequence[Sequence[float]]
 ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float], str]:
@@ -984,6 +1003,158 @@ def run_export_segments(
     )
 
 
+# -- mesh input (Phase 6d): the same jobs, without a script -----------------
+
+
+def _mesh_spec(
+    mesh: Optional[Mapping[str, Any]],
+    file_path: Optional[str],
+    weld_tolerance_mm: Optional[float],
+) -> Dict[str, Any]:
+    """The input half of a mesh job.  Validated in the worker, not here."""
+    return {
+        "mesh": dict(mesh) if isinstance(mesh, Mapping) else mesh,
+        "file_path": file_path,
+        "weld_tolerance_mm": weld_tolerance_mm,
+    }
+
+
+def run_check_mesh(
+    mesh: Optional[Mapping[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    plate_margin_mm: Optional[float] = None,
+    min_wall_probe_mm: Optional[float] = None,
+    max_wall_samples: Optional[int] = None,
+    weld_tolerance_mm: Optional[float] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _mesh_spec(mesh, file_path, weld_tolerance_mm)
+    job.update(
+        {
+            "kind": "check_mesh",
+            "printer": dict(printer) if printer is not None else None,
+            "plate_margin_mm": plate_margin_mm,
+            "min_wall_probe_mm": min_wall_probe_mm,
+            "max_wall_samples": max_wall_samples,
+        }
+    )
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else CHECK_TIMEOUT_S
+    )
+
+
+def _segment_mesh_job(
+    kind: str,
+    mesh: Optional[Mapping[str, Any]],
+    file_path: Optional[str],
+    printer: Optional[Mapping[str, Any]],
+    joint: Optional[Mapping[str, Any]],
+    mode: Any,
+    tolerance: Optional[float],
+    angular_tolerance: Optional[float],
+    plate_margin_mm: Optional[float],
+    plate_spacing_mm: Optional[float],
+    weld_tolerance_mm: Optional[float],
+    sew_tolerance_mm: Optional[float],
+    tri_limit: Optional[int],
+) -> Dict[str, Any]:
+    job = _mesh_spec(mesh, file_path, weld_tolerance_mm)
+    job.update(
+        {
+            "kind": kind,
+            "printer": dict(printer) if printer is not None else None,
+            "joint": dict(joint) if joint is not None else None,
+            "mode": mode,
+            "tolerance": tolerance,
+            "angular_tolerance": angular_tolerance,
+            "plate_margin_mm": plate_margin_mm,
+            "plate_spacing_mm": plate_spacing_mm,
+            "sew_tolerance_mm": sew_tolerance_mm,
+            "tri_limit": tri_limit,
+        }
+    )
+    return job
+
+
+def run_segment_mesh(
+    mesh: Optional[Mapping[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    joint: Optional[Mapping[str, Any]] = None,
+    mode: Any = "auto",
+    include_mesh: bool = True,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    plate_spacing_mm: Optional[float] = None,
+    weld_tolerance_mm: Optional[float] = None,
+    sew_tolerance_mm: Optional[float] = None,
+    tri_limit: Optional[int] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _segment_mesh_job(
+        "segment_mesh",
+        mesh,
+        file_path,
+        printer,
+        joint,
+        mode,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        plate_spacing_mm,
+        weld_tolerance_mm,
+        sew_tolerance_mm,
+        tri_limit,
+    )
+    job["include_mesh"] = bool(include_mesh)
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else SEGMENT_TIMEOUT_S
+    )
+
+
+def run_export_segments_mesh(
+    directory: str,
+    mesh: Optional[Mapping[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    joint: Optional[Mapping[str, Any]] = None,
+    mode: Any = "auto",
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    plate_spacing_mm: Optional[float] = None,
+    weld_tolerance_mm: Optional[float] = None,
+    sew_tolerance_mm: Optional[float] = None,
+    tri_limit: Optional[int] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _segment_mesh_job(
+        "export_segments_mesh",
+        mesh,
+        file_path,
+        printer,
+        joint,
+        mode,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        plate_spacing_mm,
+        weld_tolerance_mm,
+        sew_tolerance_mm,
+        tri_limit,
+    )
+    job["directory"] = directory
+    job["basename"] = basename
+    job["format"] = fmt
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else SEGMENT_TIMEOUT_S
+    )
+
+
 def _mold_job(
     kind: str,
     script: str,
@@ -1079,12 +1250,16 @@ __all__ = [
     "SEGMENT_TIMEOUT_S",
     "WELD_DECIMALS",
     "WorkerPool",
+    "compute_mesh_stats",
     "compute_stats",
     "get_pool",
     "mesh_edge_report",
     "normalize_build_result",
     "run_check",
+    "run_check_mesh",
     "run_export",
+    "run_export_segments_mesh",
+    "run_segment_mesh",
     "run_export_mold",
     "run_export_segments",
     "run_generate",

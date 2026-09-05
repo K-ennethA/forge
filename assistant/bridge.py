@@ -13,10 +13,27 @@ double-click.
 
 Endpoints
 ---------
-``GET  /health``        -> ``{"status", "claude_cli": {"found", "path", "version"}}``
-``POST /ask``           -> ``{"job_id"}``  (409 while another job is running)
-``GET  /job/<id>``      -> ``{"state", "activity", "reply"?, "session_id"?, ...}``
+``GET  /health``        -> ``{"status", "claude_cli": {"found", "path", "version"},
+                            "busy", "queued", "session_cost_usd", "last_auth_error"}``
+``POST /ask``           -> ``{"job_id", "state": "running"|"queued"}``
+                           (409 only when a message is ALREADY waiting)
+``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
+
+One waiting message (Phase 6e)
+------------------------------
+Exactly one turn ever runs at a time — two in flight would fight over
+``--resume`` — but a turn takes tens of seconds and an artist who has thought of
+the next thing should not have to sit on their hands.  So a second ``/ask``
+while a job is running is *queued* rather than refused: it gets a real job id
+immediately (``state: "queued"``, pollable at once) and starts by itself when
+the running turn ends, however it ended.  A *third* is the 409, because a queue
+of one is a courtesy and a queue of ten is a way to lose track of what you asked
+for.
+
+The queued message carries the prompt built when the artist pressed Send — the
+scene context they were looking at — but resolves the session id at pickup time,
+so it continues the conversation the turn ahead of it produced.
 
 Activity (Phase 6b)
 -------------------
@@ -540,6 +557,23 @@ def friendly_error(message):
     return message
 
 
+#: The first ``_FRIENDLY`` entry is the sign-in class, and it is the one worth
+#: reporting on ``/health``: the panel can say "not signed in" in its status row
+#: instead of the artist discovering it a turn later.
+AUTH_NEEDLES = _FRIENDLY[0][0]
+
+
+def looks_like_auth_error(message):
+    """Was this failure a sign-in problem?
+
+    Read off an error we already have, never by running the CLI to find out —
+    a probe turn costs money and seconds, and this answer is only ever used to
+    colour a status line.
+    """
+    lowered = (message or "").lower()
+    return any(needle in lowered for needle in AUTH_NEEDLES)
+
+
 def extract_reply(payload):
     """The assistant's text out of the CLI's JSON, whatever shape it took."""
     for key in ("result", "text", "response", "content"):
@@ -833,9 +867,10 @@ class ActivityRecorder(object):
 class JobStore(object):
     """Every turn this bridge has run, newest last, capped at ``MAX_JOBS``.
 
-    Also owns the one-at-a-time rule and the session id, because they are the
-    same piece of state: a second turn started while the first is mid-flight
-    would fight over ``--resume``.
+    Also owns the one-at-a-time rule, the single waiting place behind it, and
+    the session id, because they are all the same piece of state: two turns in
+    flight would fight over ``--resume``, and the message waiting its turn has
+    to resume whatever the turn ahead of it produced.
     """
 
     def __init__(self, limit=MAX_JOBS):
@@ -843,13 +878,22 @@ class JobStore(object):
         self._jobs = OrderedDict()
         self._limit = limit
         self._active = None
+        self._pending = None
         self.session_id = None
+        #: What this conversation has cost so far, in dollars.  Reset with the
+        #: session, because "this conversation" is what the number means.
+        self.session_cost_usd = 0.0
+        #: Did the most recently finished turn fail because nobody is signed in?
+        self.last_auth_error = False
 
     # -- session ---------------------------------------------------------
     def reset_session(self):
         with self._lock:
             previous = self.session_id
             self.session_id = None
+            # The running total is per-conversation: a fresh conversation has
+            # not cost anything yet, so the panel's status row starts at zero.
+            self.session_cost_usd = 0.0
             return previous
 
     def remember_session(self, session_id):
@@ -858,31 +902,99 @@ class JobStore(object):
                 self.session_id = str(session_id)
 
     # -- lifecycle -------------------------------------------------------
-    def start(self, message):
-        """Claim the single slot. Returns ``(job, None)`` or ``(None, busy_job)``."""
+    def _new_job(self, message, state):
+        """A job record in the store. Caller holds the lock."""
+        job_id = uuid.uuid4().hex[:12]
+        job = {
+            "job_id": job_id,
+            "state": state,
+            "message": message,
+            "started_at": time.time(),
+            "proc": None,
+            "cancelled": False,
+            "activity": [],
+            "activity_dropped": 0,
+        }
+        self._jobs[job_id] = job
+        while len(self._jobs) > self._limit:
+            oldest, _value = next(iter(self._jobs.items()))
+            # Never drop the turn that is running, the one waiting behind it,
+            # or the one being created: those three are the live conversation.
+            if oldest in (self._active, self._pending, job_id):
+                break
+            self._jobs.pop(oldest, None)
+        return job
+
+    def submit(self, message, prompt, new_conversation=False):
+        """Take the running slot, or the one waiting place behind it.
+
+        Returns ``(job, disposition)``:
+
+        ``("running")``  the turn started now;
+        ``("queued")``   nothing was waiting, so this message is;
+        ``("rejected")`` a message is already waiting — ``job`` is *that* one,
+                         so the caller can name it in the refusal.
+
+        The prompt is built by the caller and stored here rather than rebuilt at
+        pickup: the artist pressed Send while looking at a particular scene, and
+        that is the scene the message is about.
+        """
+        with self._lock:
+            active = self._jobs.get(self._active) if self._active else None
+            busy = active is not None and active["state"] == "running"
+
+            if busy:
+                waiting = self._jobs.get(self._pending) if self._pending else None
+                if waiting is not None and waiting["state"] == "queued":
+                    return waiting, "rejected"
+
+            job = self._new_job(message, "queued" if busy else "running")
+            job["prompt"] = prompt
+            job["new_conversation"] = bool(new_conversation)
+
+            if busy:
+                self._pending = job["job_id"]
+                # Under the same lock as the enqueue, so a turn that finishes
+                # this instant cannot land the line on a job it just started.
+                self.add_activity(job["job_id"], "status",
+                                  "waiting for the current message to finish…")
+                return job, "queued"
+
+            # Starting now, so a "new conversation" ask drops the session now.
+            # A queued one carries the flag instead and drops it at pickup —
+            # the turn ahead of it must still finish in its own session.
+            if new_conversation:
+                self.session_id = None
+                self.session_cost_usd = 0.0
+            self._active = job["job_id"]
+            return job, "running"
+
+    def take_pending(self):
+        """Promote the waiting message into the running slot, or ``None``.
+
+        Called after every turn ends — done, errored or cancelled — because the
+        artist's next message should not be held hostage by how the last one
+        turned out.
+        """
         with self._lock:
             active = self._jobs.get(self._active) if self._active else None
             if active is not None and active["state"] == "running":
-                return None, active
-            job_id = uuid.uuid4().hex[:12]
-            job = {
-                "job_id": job_id,
-                "state": "running",
-                "message": message,
-                "started_at": time.time(),
-                "proc": None,
-                "cancelled": False,
-                "activity": [],
-                "activity_dropped": 0,
-            }
-            self._jobs[job_id] = job
-            self._active = job_id
-            while len(self._jobs) > self._limit:
-                oldest, _value = next(iter(self._jobs.items()))
-                if oldest == self._active:
-                    break
-                self._jobs.pop(oldest, None)
-            return job, None
+                return None  # still busy: nothing to promote into
+            job = self._jobs.get(self._pending) if self._pending else None
+            self._pending = None
+            if job is None or job["state"] != "queued" or job.get("cancelled"):
+                return None  # cancelled while it waited, or already gone
+            if job.get("new_conversation"):
+                self.session_id = None
+                self.session_cost_usd = 0.0
+            job["state"] = "running"
+            # The wait was not work: time it from the moment it actually starts,
+            # so duration_ms means what it means on every other job.
+            job["started_at"] = time.time()
+            job["activity"] = []
+            job["activity_dropped"] = 0
+            self._active = job["job_id"]
+            return job
 
     def get(self, job_id):
         with self._lock:
@@ -892,6 +1004,11 @@ class JobStore(object):
         with self._lock:
             active = self._jobs.get(self._active) if self._active else None
             return bool(active is not None and active["state"] == "running")
+
+    def is_queued(self):
+        with self._lock:
+            waiting = self._jobs.get(self._pending) if self._pending else None
+            return bool(waiting is not None and waiting["state"] == "queued")
 
     # -- activity --------------------------------------------------------
     def add_activity(self, job_id, kind, label):
@@ -932,7 +1049,7 @@ class JobStore(object):
         """The public view of a job, copied under the lock."""
         with self._lock:
             job = self._jobs.get(job_id)
-            return public_job(job)
+            return public_job(job, self.session_cost_usd)
 
     def attach_proc(self, job_id, proc):
         with self._lock:
@@ -954,12 +1071,41 @@ class JobStore(object):
             job.update(fields)
             job["proc"] = None
             job["duration_ms"] = int((time.time() - job["started_at"]) * 1000)
+            self._record_outcome(job)
+
+    def _record_outcome(self, job):
+        """Fold a finished turn into the two session-wide signals. Lock held.
+
+        A cancelled turn deliberately touches neither: it neither cost anything
+        worth counting nor proved anything about whether we are signed in.
+        """
+        state = job.get("state")
+        if state == "done":
+            try:
+                self.session_cost_usd += float(job.get("cost_usd") or 0.0)
+            except (TypeError, ValueError):
+                pass  # a build that reported cost as something odd: skip it
+            # It answered, so whatever went wrong before is over.
+            self.last_auth_error = False
+        elif state == "error":
+            self.last_auth_error = looks_like_auth_error(job.get("error"))
 
     def cancel(self, job_id):
         with self._lock:
             job = self._jobs.get(job_id)
             if job is None:
                 return None
+            if job["state"] == "queued":
+                # It never started, so there is no process to stop: drop it out
+                # of the waiting place and land it cancelled, so the panel stops
+                # polling and take_pending() can never resurrect it.
+                if self._pending == job_id:
+                    self._pending = None
+                job["cancelled"] = True
+                job["state"] = "cancelled"
+                job["error"] = "Cancelled before it started."
+                job["duration_ms"] = 0
+                return job
             if job["state"] != "running":
                 return job
             job["cancelled"] = True
@@ -1005,7 +1151,7 @@ def public_activity(job):
     return entries
 
 
-def public_job(job):
+def public_job(job, session_cost_usd=0.0):
     """The subset of a job the panel is allowed to see."""
     if job is None:
         return None
@@ -1014,6 +1160,10 @@ def public_job(job):
                 "model", "usage", "num_turns"):
         if job.get(key) is not None:
             out[key] = job[key]
+    # The conversation's running total rides on every job snapshot as well as
+    # on /health: the panel already polls the job, and a second request just to
+    # redraw one number would be a request per second for nothing.
+    out["session_cost_usd"] = round(float(session_cost_usd or 0.0), 6)
     # Always present, running or finished: the panel draws it live and the
     # finished job keeps it so the artist can still read what was done.
     out["activity"] = public_activity(job)
@@ -1210,6 +1360,56 @@ def run_turn(job_id, prompt, session_id):
                       "knows about.\n%s" % (last_error or ""))
 
 
+def _run_and_continue(job_id, prompt, session_id):
+    """Run one turn, then start whatever was waiting behind it.
+
+    The pickup lives in a ``finally`` on purpose: done, errored, cancelled or
+    crashed, the message the artist queued has to get its turn.  Nothing here
+    may raise — this is the top of a worker thread, and an exception would
+    silently strand the queue.
+    """
+    try:
+        run_turn(job_id, prompt, session_id)
+    except Exception as exc:  # noqa: BLE001 - a dead thread must not stall the queue
+        log("[assistant] turn %s failed: %s" % (job_id, exc))
+        JOBS.finish(job_id, state="error",
+                    error="The assistant stopped unexpectedly: %s" % exc)
+    finally:
+        job = JOBS.get(job_id)
+        if job is not None and job.get("state") == "running":
+            # run_turn always finishes its job; if some path ever does not, the
+            # running slot would stay claimed forever and the panel would spin.
+            JOBS.finish(job_id, state="error",
+                        error="The assistant stopped without answering.")
+        try:
+            start_next()
+        except Exception as exc:  # noqa: BLE001
+            log("[assistant] could not start the queued message: %s" % exc)
+
+
+def start_turn(job):
+    """Spawn the worker thread for a job that already holds the running slot.
+
+    The session id is resolved *here*, not when the message was submitted: a
+    queued message must resume the conversation the turn ahead of it produced.
+    """
+    thread = threading.Thread(
+        target=_run_and_continue,
+        args=(job["job_id"], job.get("prompt") or job.get("message") or "",
+              JOBS.session_id),
+        name="ForgeAssistantTurn", daemon=True)
+    thread.start()
+    return thread
+
+
+def start_next():
+    """Promote and start the waiting message, if there is one."""
+    job = JOBS.take_pending()
+    if job is not None:
+        start_turn(job)
+    return job
+
+
 # ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
@@ -1258,6 +1458,11 @@ class Handler(BaseHTTPRequestHandler):
                 "cwd": working_dir(),
                 "session": bool(JOBS.session_id),
                 "busy": self._busy(),
+                "queued": JOBS.is_queued(),
+                "session_cost_usd": round(float(JOBS.session_cost_usd or 0.0), 6),
+                # Read off the last failure, never by spending a turn to find
+                # out: the panel only wants to know whether to say "sign in".
+                "last_auth_error": bool(JOBS.last_auth_error),
             })
             return
         if path.startswith("/job/"):
@@ -1318,25 +1523,34 @@ class Handler(BaseHTTPRequestHandler):
             self._send(503, {"error": INSTALL_HINT})
             return
 
-        if str(payload.get("conversation") or "continue").lower() == "new":
-            JOBS.reset_session()
+        # Built now, not at pickup: this is the scene the artist was looking at
+        # when they pressed Send, and it is what their message is about.
+        prompt = build_prompt(message, payload.get("context"))
+        new_conversation = (
+            str(payload.get("conversation") or "continue").lower() == "new")
 
-        job, busy = JOBS.start(message)
-        if job is None:
+        job, disposition = JOBS.submit(message, prompt,
+                                       new_conversation=new_conversation)
+
+        if disposition == "rejected":
             self._send(409, {
-                "error": "The assistant is still working on your last message. "
-                         "Give it a moment, or press Stop.",
-                "job_id": busy["job_id"],
+                "error": "One message is already waiting its turn. Wait for the "
+                         "assistant to get to it, or press Stop.",
+                "job_id": job["job_id"],
+                "state": "queued",
             })
             return
 
-        prompt = build_prompt(message, payload.get("context"))
-        session_id = JOBS.session_id
-        thread = threading.Thread(
-            target=run_turn, args=(job["job_id"], prompt, session_id),
-            name="ForgeAssistantTurn", daemon=True)
-        thread.start()
-        self._send(200, {"job_id": job["job_id"], "state": "running"})
+        if disposition == "queued":
+            # A real job id straight away, so the panel can poll it like any
+            # other and show the artist their message is not lost.
+            self._send(200, {"job_id": job["job_id"], "state": "queued",
+                             "queued": True})
+            return
+
+        start_turn(job)
+        self._send(200, {"job_id": job["job_id"], "state": "running",
+                         "queued": False})
 
 
 def serve(host="127.0.0.1", listen_port=None, ready=None):
