@@ -1,0 +1,94 @@
+{
+  "_comment": "Contract between you and Claude for the bowl-holder. Claude regenerates the scripts from this; edit freely. Follows templates/spec.json, plus an additive 'companion_parts' key because this project ships two printed parts.",
+  "name": "bowl-holder",
+  "description": "A footed collar that holds a 6 in (152.4 mm) stainless mixing bowl. The bowl is lowered through the top bore and its rim lands on an internal seat lip; below the seat the bore opens back up so the bowl body hangs free. The lower outside carries a fluted decorative band, the base is an arcaded plinth whose piers are the feet, and two lugs on the X axis carry blind sockets for slot-in ears (a separate appendage part). A matching fluted collar band prints separately and slides down over the ring's plain upper wall.",
+  "reference_images": [],
+  "parameters": {
+    "bowl_diameter": { "value": 6.0, "unit": "in", "min": 3.0, "max": 7.0, "step": 0.25, "description": "Rim diameter of the bowl the ring wraps" },
+    "fit_clearance": { "value": 0.8, "unit": "mm", "min": 0.0, "max": 5.0, "step": 0.1, "description": "Radial gap between the bowl rim and the bore" },
+    "wall_thickness": { "value": 5.0, "unit": "mm", "min": 2.0, "max": 12.0, "step": 0.5, "description": "Radial thickness of the ring wall" },
+    "total_height": { "value": 62.0, "unit": "mm", "min": 40.0, "max": 150.0, "step": 1.0, "description": "Overall height, bottom of the feet to the top rim" },
+    "lip_width": { "value": 6.5, "unit": "mm", "min": 2.0, "max": 20.0, "step": 0.5, "description": "How far the seat lip reaches in under the bowl rim" },
+    "lip_height": { "value": 8.0, "unit": "mm", "min": 2.0, "max": 25.0, "step": 0.5, "description": "Height of the seat lip; its underside is the print-safe taper" },
+    "flute_count": { "value": 24, "unit": "count", "min": 6, "max": 60, "step": 1, "description": "Number of scalloped flutes in the decorative band" },
+    "flute_depth": { "value": 1.6, "unit": "mm", "min": 0.3, "max": 4.0, "step": 0.1, "description": "Depth of each flute, capped at 40% of the wall" },
+    "feet_count": { "value": 4, "unit": "count", "min": 3, "max": 8, "step": 1, "description": "Number of feet (piers) around the arcaded base" },
+    "foot_height": { "value": 12.0, "unit": "mm", "min": 4.0, "max": 30.0, "step": 0.5, "description": "Height of the arcaded base zone" },
+    "socket_diameter": { "value": 6.0, "unit": "mm", "min": 3.0, "max": 10.0, "step": 0.5, "description": "Diameter of the slot-in ear sockets in the top rim lugs" },
+    "socket_depth": { "value": 10.0, "unit": "mm", "min": 3.0, "max": 25.0, "step": 0.5, "description": "Depth of the ear sockets below the top rim" }
+  },
+  "features": [
+    "bore sized to bowl_diameter + 2 * fit_clearance (154.0 mm at defaults)",
+    "internal seat lip with a self-supporting tapered underside, so the bowl rim hangs on it",
+    "plain upper wall above the seat that captures the rim (and is where the collar band rides)",
+    "fluted decorative band around the lower outside, count and depth parameterized",
+    "arcaded plinth base: feet_count round-topped arches leaving feet_count piers",
+    "flared foot at the very bottom for bed adhesion and a plinth read",
+    "two ear lugs on the X axis with domed undersides, each carrying one blind ear socket in the top rim"
+  ],
+  "derived_geometry": {
+    "_comment": "Values build() computes from the parameters rather than exposing as knobs, so no combination of the declared ranges can collapse the profile.",
+    "upper_wall": "clamp(0.16 * total_height, 4, 22), also capped at 0.25 * total_height",
+    "foot_height_effective": "min(foot_height, 0.35 * total_height)",
+    "lip_height_effective": "min(lip_height, 0.25 * total_height)",
+    "lip_width_effective": "min(lip_width, 0.6 * bore_radius)",
+    "flute_depth_effective": "min(flute_depth, 0.40 * wall_thickness, 0.45 * flute_surface_width) -- the 40% cap is what makes a flute physically unable to reach the bore",
+    "flute_cutter_radius": "(width^2 / 4 + depth^2) / (2 * depth), width = 0.78 * circumferential pitch",
+    "band_zone": "from foot_height_effective + 2 up to seat_z - 3, capped at 0.5 * total_height; skipped below 3 mm",
+    "lug_height": "min(socket_depth + 8, 0.45 * total_height)",
+    "socket_depth_effective": "min(socket_depth, lug_height - 4, 0.40 * total_height)"
+  },
+  "appendage_slots": {
+    "_comment": "The ears are a later appendage part. Peg is nominal; the socket is the peg plus the printer's slide_fit, and 1 mm deeper than the peg is long so the ear seats on its shoulder, not on the hole bottom.",
+    "peg_diameter": 5.8,
+    "peg_length": 9.0,
+    "peg_tolerance": 0.2,
+    "sockets": [
+      { "name": "ear_left", "part": "part_base_ring.py", "face": "top_rim_lug", "angle_deg": 0.0, "axis": "-Z", "diameter": 6.0, "depth": 10.0, "centre_radius_mm": 84.5 },
+      { "name": "ear_right", "part": "part_base_ring.py", "face": "top_rim_lug", "angle_deg": 180.0, "axis": "-Z", "diameter": 6.0, "depth": 10.0, "centre_radius_mm": 84.5 }
+    ]
+  },
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "pin-socket",
+    "mold_mode": false,
+    "orientation": "as modelled, feet on the bed",
+    "notes": [
+      "Both parts fit the Centauri Carbon's 256 x 256 x 256 bed at every declared parameter value; the widest case measured is 246 mm.",
+      "The seat lip underside, the arcade tops and the lug undersides are all curved or tapered so the part is intended to print without support."
+    ]
+  },
+  "script": "part_base_ring.py",
+  "exports": [],
+  "companion_parts": [
+    {
+      "name": "bowl-holder-collar-band",
+      "script": "part_collar_band.py",
+      "description": "A decorative sleeve carrying the same flute family as the ring's band, sized to slide down over the base ring's outer wall and sit on its plain upper section.",
+      "features": [
+        "bore = ring_outer_diameter + 2 * slide_fit",
+        "plain rim above and below the flutes",
+        "fluted zone matching the base ring's texture family",
+        "chamfer on all four rim circles"
+      ],
+      "mates_to": {
+        "part": "part_base_ring.py",
+        "surface": "outer wall",
+        "rule": "ring_outer_diameter = bowl_diameter + 2 * (fit_clearance + wall_thickness) = 164.0 mm at defaults",
+        "tolerance": "slide_fit, 0.2 mm from templates/printer.json tolerances.slide_fit"
+      },
+      "parameters": {
+        "ring_outer_diameter": { "value": 164.0, "unit": "mm", "min": 40.0, "max": 220.0, "step": 0.5, "description": "Outer diameter of the base ring this collar wraps" },
+        "slide_fit": { "value": 0.2, "unit": "mm", "min": 0.0, "max": 1.0, "step": 0.05, "description": "Radial clearance on the bore so the collar slides on" },
+        "wall_thickness": { "value": 4.0, "unit": "mm", "min": 1.5, "max": 12.0, "step": 0.5, "description": "Radial thickness of the collar wall" },
+        "band_height": { "value": 20.0, "unit": "mm", "min": 6.0, "max": 60.0, "step": 0.5, "description": "Height of the collar along Z" },
+        "rim_height": { "value": 3.0, "unit": "mm", "min": 1.0, "max": 15.0, "step": 0.5, "description": "Plain rim above and below the flutes" },
+        "flute_count": { "value": 24, "unit": "count", "min": 6, "max": 60, "step": 1, "description": "Number of scalloped flutes around the collar" },
+        "flute_depth": { "value": 1.6, "unit": "mm", "min": 0.3, "max": 4.0, "step": 0.1, "description": "Depth of each flute, capped at 40% of the wall" },
+        "edge_chamfer": { "value": 0.8, "unit": "mm", "min": 0.0, "max": 2.0, "step": 0.05, "description": "Chamfer breaking the four rim circles; 0 leaves them sharp" }
+      },
+      "exports": []
+    }
+  ]
+}
