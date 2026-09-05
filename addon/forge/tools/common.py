@@ -394,6 +394,10 @@ def cmd_ping(params):
 
 @command("get_scene_info")
 def cmd_get_scene_info(params):
+    # ``dimensions`` comes from the evaluated object, so make sure any pending
+    # depsgraph change (a mesh swapped by load_mesh, an edit made through
+    # execute_python) is evaluated before we report sizes.
+    refresh_view_layer()
     scene = get_scene()
     try:
         layer_objects = get_view_layer().objects
@@ -1284,9 +1288,16 @@ def build_mesh_object(name, vertices, faces, replace=True, collection=None, scal
         obj = bpy.data.objects.new(name, mesh)
         target = _resolve_collection(collection)
         target.objects.link(obj)
-        # Without this the object is not yet in view_layer.objects, so the very
-        # next command (or the select branch below) would not find it.
-        refresh_view_layer()
+
+    # Both branches need this, for two different reasons:
+    #  * new object - until the view layer is re-evaluated it is absent from
+    #    ``view_layer.objects``, so the select branch and the very next command
+    #    would not find it;
+    #  * replaced mesh - ``obj.data = mesh`` only tags the depsgraph.  Anything
+    #    read from the evaluated object (``obj.dimensions``, ``bound_box``, and
+    #    therefore ``get_scene_info``) keeps reporting the OLD mesh's size until
+    #    it is evaluated, which in ``--background`` never happens on its own.
+    refresh_view_layer()
 
     result = {
         "object": obj.name,
