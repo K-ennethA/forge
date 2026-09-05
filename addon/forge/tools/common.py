@@ -1439,6 +1439,70 @@ def cmd_load_mesh(params):
     return result
 
 
+def _plate_items(plate):
+    """``/segment``'s ``plate`` object as ``{segment name: plate item}``."""
+    if not isinstance(plate, dict):
+        return {}
+    out = {}
+    for item in plate.get("items") or []:
+        if isinstance(item, dict) and isinstance(item.get("name"), str):
+            out[item["name"]] = item
+    return out
+
+
+def _as_mesh_entries(meshes, plate):
+    """Accept either load_mesh specs or ``/segment`` segments (Phase 6b, additive).
+
+    A segment carries its geometry under ``mesh`` and its plate position in the
+    reply's separate ``plate.items`` list, so chaining ``/segment`` into
+    ``load_meshes`` used to mean a caller reshaping both by hand (which is
+    exactly what the MCP tool ``partforge_load_segments`` does).  Accepting the
+    service's own shape here is what lets a saved flow wire the two together
+    with a plain reference and no code in between.  Entries that already look
+    like ``load_mesh`` specs are passed through untouched.
+    """
+    placements = _plate_items(plate)
+    out = []
+    without_mesh = []
+    for index, spec in enumerate(meshes):
+        if not isinstance(spec, dict):
+            raise ForgeError(
+                "meshes[%d] must be an object, got %s." % (index, type(spec).__name__)
+            )
+        if spec.get("vertices") is not None:
+            out.append(spec)
+            continue
+        mesh = spec.get("mesh")
+        if not isinstance(mesh, dict) or mesh.get("vertices") is None:
+            without_mesh.append(str(spec.get("name") or "meshes[%d]" % index))
+            continue
+        entry = {
+            "name": spec.get("name", "ForgePart"),
+            "vertices": mesh.get("vertices"),
+            "faces": mesh.get("faces") or [],
+        }
+        if spec.get("plate") is not None:
+            entry["plate"] = spec["plate"]
+        elif entry["name"] in placements:
+            entry["plate"] = placements[entry["name"]]
+        if spec.get("collection") is not None:
+            entry["collection"] = spec["collection"]
+        out.append(entry)
+
+    if without_mesh and not out:
+        raise ForgeError(
+            "None of these entries carry geometry (%s). If they came from "
+            "/segment, ask for it with \"include_mesh\": true — the planning "
+            "call returns sizes and joints but no meshes."
+            % ", ".join(without_mesh[:6]))
+    if without_mesh:
+        raise ForgeError(
+            "No geometry for: %s. Every entry needs 'vertices' (or a 'mesh' "
+            "object from /segment with include_mesh true)."
+            % ", ".join(without_mesh[:6]))
+    return out
+
+
 @command("load_meshes")
 def cmd_load_meshes(params):
     """Load many meshes in one round trip (PartForge segmentation).
@@ -1446,12 +1510,17 @@ def cmd_load_meshes(params):
     Additive extension to the protocol: ``load_mesh`` for a list.  A cut part
     arrives as N segments plus any printed pins, and doing that as N round trips
     means N main-thread hops and N depsgraph refreshes for one logical action.
+
+    ``meshes`` entries may also be ``/segment`` segments verbatim (geometry under
+    ``mesh``), in which case a top-level ``plate`` — the service's own plate
+    object — supplies each one's position by name.
     """
     meshes = params.get("meshes")
     if not isinstance(meshes, list):
         raise ForgeError("'meshes' must be a list of {name, vertices, faces} objects.")
     if not meshes:
         raise ForgeError("'meshes' is empty; nothing to load.")
+    meshes = _as_mesh_entries(meshes, params.get("plate"))
 
     replace = get_bool(params, "replace", True)
     scale = get_float(params, "scale", MM_TO_M, minimum=0.0)

@@ -25,10 +25,16 @@ from .util import (
     action_names,
     derivative_objects,
     ensure_parent_dir,
+    flow_document,
+    flow_path,
+    flow_slug,
     fmt_action_report,
     fmt_check_report,
     fmt_cloth_report,
     fmt_export_report,
+    fmt_flow_list,
+    fmt_flow_run_report,
+    fmt_flow_saved,
     fmt_joint,
     fmt_keyframe_report,
     fmt_manifest_report,
@@ -68,6 +74,7 @@ from .util import (
     plate_items_by_name,
     project_paths,
     project_slug,
+    read_flow_files,
     read_printer,
     read_script,
     resolve_path,
@@ -107,6 +114,10 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   rigforge_action to open the clip and rigforge_keyframe to sketch the pose at a
   few frames — not raw Python. rigforge_retarget is for motion-capture files the
   USER supplies (.bvh/.fbx); nothing is ever downloaded.
+- Flows are saved, parameterised sequences that replay with no model in the loop.
+  Call flow_list BEFORE improvising any multi-step job and prefer a matching
+  flow; after finishing a repeatable multi-step job, flow_save it (never a
+  single-step one) and tell the artist its name and that Run is in the Flows box.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -2035,6 +2046,119 @@ def rigforge_status(object: Optional[str] = None) -> str:
         )
     )
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Flows (Phase 6b) — saved sequences that replay with no model in the loop
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def flow_list() -> str:
+    """What has already been saved as a repeatable sequence? Check this FIRST.
+
+    A flow is a job someone worked out once, written down: a named, parameterised
+    list of Forge operations that replays exactly the same way every time, with
+    no model deciding anything. Before improvising a multi-step job, look here —
+    running a matching flow is faster, free and deterministic, and it is the same
+    button the artist has in their panel.
+
+    Reads `flows/*.json` off disk, so it answers whether or not Blender is
+    running. Each entry lists the flow's description, its parameters with their
+    defaults, and its steps in order.
+    """
+    root, flows = read_flow_files()
+    return fmt_flow_list(root, flows)
+
+
+@app.tool()
+def flow_run(name: str, params: Optional[Dict[str, Any]] = None) -> str:
+    """Replay a saved flow, optionally with different parameter values.
+
+    The steps run in order and stop at the first failure, which names the step
+    that broke. Blender steps execute inside Blender; geometry-service steps go
+    out over HTTP; a step can feed the next one its result. No model is in the
+    loop — this is the same sequence every time.
+
+    `params` overrides the flow's declared defaults: `{"wedges": 6}`. Only
+    declared parameters are accepted, so a misspelled name is an error naming
+    what the flow actually takes rather than a silently ignored argument.
+
+    Needs Blender running with the Forge add-on server started (that is where
+    flows execute), and the geometry service for any service step.
+    """
+    slug = flow_slug(name)
+    request: Dict[str, Any] = {"name": slug}
+    if params:
+        if not isinstance(params, dict):
+            raise ForgeError("`params` must be an object of {name: value}.")
+        request["params"] = params
+    result = blender_client.send_command(
+        "flow_run", request, read_timeout=config.FLOW_RUN_TIMEOUT
+    )
+    return fmt_flow_run_report(slug, result)
+
+
+@app.tool()
+def flow_save(
+    name: str,
+    description: str,
+    steps: List[Dict[str, Any]],
+    params: Optional[Dict[str, Any]] = None,
+    overwrite: bool = False,
+) -> str:
+    """Save a multi-step job you just finished as a flow the artist can re-run.
+
+    Do this after any repeatable sequence of two or more operations — segment
+    and load, retopo and unwrap, check and export. The artist then gets a button
+    (N -> Forge tab -> Flows) that does the same thing with no turn spent, and
+    you get something to find with `flow_list` next time instead of working it
+    out again.
+
+    - `name` is plain words ("segment into 4"); it becomes
+      `flows/segment-into-4.json`. Anything path-shaped is refused — nothing is
+      ever written elsewhere.
+    - `description` is one sentence for a human; it is the tooltip in the panel.
+    - `steps` is the sequence: `{"kind": "blender"|"service", "op": <socket
+      command | endpoint>, "args": {...}, "label": "what this step does"}`. Every
+      `op` is checked against the real command/endpoint set before anything is
+      written. Label every step — the labels are what the artist reads, and what
+      a failure is reported against.
+    - `params` declares what can vary: `{"wedges": {"value": 4, "unit": "count",
+      "description": "..."}}`. Use `"{{wedges}}"` in an argument to fill it in;
+      a placeholder that is the whole value keeps its type (the number 4). An
+      argument may also read an earlier step with `"{{steps.0.result.segments}}"`
+      (dotted lookup only).
+    - In a service step, `script_path` and `printer_path` are read from disk for
+      you and become `script`/`printer`; leave them `""` to mean "whatever the
+      PartForge panel is pointed at", which is what makes one flow serve every
+      part.
+
+    Never save a single-step flow — that is just the tool call. `overwrite=true`
+    replaces an existing flow of the same name.
+    """
+    slug = flow_slug(name)
+    doc = flow_document(name, slug, description, params, steps)
+    path = flow_path(slug)
+
+    existed = path.exists()
+    if existed and not overwrite:
+        raise ForgeError(
+            f"{path} already exists. Run it with flow_run('{slug}'), or pass "
+            "overwrite=true to replace it with this version. To save a different "
+            "sequence, give it another name."
+        )
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    except OSError as exc:
+        raise ForgeError(f"Could not write {path}: {exc}") from exc
+
+    return fmt_flow_saved(path, doc, overwritten=existed)
 
 
 def main() -> None:

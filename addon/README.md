@@ -83,8 +83,9 @@ import bpy; print(bpy.ops.forge.start_server())
 
 - UI: `View3D ▸ N sidebar ▸ Forge ▸ Forge Server ▸ Start`.
 - Preferences: `Edit ▸ Preferences ▸ Add-ons ▸ Forge` — set the port, the geometry
-  service URL, the printer profile, timeouts, and **Start Server With Blender** for
-  autostart.
+  service URL, the printer profile, the assistant bridge URL, the flows folder
+  (`forge_flows_dir`, default `<repo>/flows`), timeouts, and **Start Server With Blender**
+  for autostart.
 - Script/console: `bpy.ops.forge.start_server()`.
 
 The panel shows whether it is listening, how many connections and commands it has
@@ -137,9 +138,11 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `rename_object` | `name`, `new_name`, `rename_data?` | returns the name Blender actually used |
 | `delete_object` | `name`, `purge_data?` | deletes the object (and its orphaned data) |
 | `load_mesh` | `name`, `vertices` (mm), `faces`, `replace?`, `collection?`, `scale?`, `plate?` | builds a mesh; `replace` swaps mesh data in place, keeping the object, transforms, materials and custom properties |
-| `load_meshes` | `meshes` (a list of `load_mesh` param objects), `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
+| `load_meshes` | `meshes` (a list of `load_mesh` param objects, or `/segment` segments), `plate?`, `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
 | `export_stl` | `objects`, `path`, `scale?`, `ascii?`, `apply_modifiers?` | writes a binary STL |
 | `partforge_open` | `script_path`, `keep_values?`, `object?`, `params?` | points the PartForge panel at a script and rebuilds its sliders — the panel's own Load Script path, driven from outside. Returns `{"script", "param_count", "params", "object", "schema_source"}` |
+| `flow_list` | — | every saved flow in the flows folder: `{"dir", "count", "flows": [{"name", "description", "params", "steps", "step_labels", "path"}]}`. A file that will not parse is listed with an `error` instead of being hidden |
+| `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
 ### RigForge commands (Phase 3)
 
@@ -208,6 +211,30 @@ Both are additions; nothing in `docs/architecture.md` changes shape.
   keeps a later `replace` cheap. The result gains `location` (scene metres) and
   `rotation_z_deg`. Omit `plate` and nothing is moved, exactly as before.
 
+### Additive protocol extension (Phase 6b): segments straight into `load_meshes`
+
+`meshes` entries may now be `/segment`'s **own** segment objects — geometry under `mesh`
+rather than at the top level — and a top-level `plate` (the service's whole plate object)
+places each one by name:
+
+```jsonc
+{"type": "load_meshes", "params": {
+   "meshes": [{"name": "segment_1", "kind": "segment",
+               "mesh": {"vertices": [[x,y,z], ...], "faces": [[i,i,i], ...]}}],
+   "plate": {"items": [{"name": "segment_1", "position_mm": [5.0, 5.0, 0.0],
+                        "rotate_deg": 0.0}]},
+   "replace": true}}
+```
+
+Entries that already look like `load_mesh` specs are passed through untouched, and a
+per-entry `plate` still wins over the plate table — so nothing that worked before changes.
+This is what lets a saved flow wire `/segment` into Blender with a plain reference
+(`"{{steps.0.result.segments}}"`) and no reshaping code in between; the MCP tool
+`partforge_load_segments` does that reshaping in Python, and now does not have to.
+
+A segment list with no geometry in it gets the honest error rather than a shrug: *"None of
+these entries carry geometry … ask for it with `"include_mesh": true`"*.
+
 ### Additive protocol extension: `partforge_open`
 
 Another addition; nothing in `docs/architecture.md` changes shape.
@@ -273,6 +300,14 @@ log above the field (last six exchanges, `You:` / `Forge:`). **New Conversation*
 page icon) clears the log and tells the bridge to forget the session; the globe icon
 checks that the bridge and the Claude CLI are both there; while a turn is in flight the
 row becomes a **Stop** button.
+
+**While it is thinking you can see what it is doing.** Under the busy indicator the panel
+draws the last five lines of the bridge's activity list — the tools it called with their
+arguments (`partforge_check: part.py`), a `thinking…` marker when it starts writing, and
+snippets of the reply as it streams. That comes from `GET /job/<id>`'s `activity` field on
+every poll (Phase 6b); the finished job keeps it, so the lines stay readable after the
+answer lands. A run against an older CLI that streams nothing simply shows nothing —
+never an error.
 
 The panel itself does no thinking. It POSTs to the **assistant bridge** on
 `127.0.0.1:8901` (`assistant/bridge.py` in this repo, started by `start_forge.cmd`),
@@ -360,6 +395,39 @@ line. Use the globe button next to *Load Script* to check `/health`. Every HTTP 
 runs on a worker thread with an explicit timeout and reports back through the status
 line, so the UI never freezes waiting on the service. Regeneration is deliberately
 manual — nothing is rebuilt until you press Regenerate.
+
+## Flows box
+
+`View3D ▸ N sidebar ▸ Forge ▸ Flows` — directly under PartForge, because that is where a
+flow's steps usually land.
+
+A **flow** is a job that was worked out once and written down: a named sequence of Forge
+operations with parameters, stored as JSON in the repo's `flows/` folder, that replays
+exactly the same way every time **with no AI involved**. The assistant is worth a turn the
+first time; the tenth time it should be a button.
+
+- The refresh button re-reads the folder. Each flow is a row: click its name to select it
+  (the description appears underneath), press **Run** to replay it.
+- The selected flow's parameters are editable fields right there — the wedge count, the
+  joint tolerance, the target collection — filled in with the flow's declared defaults.
+- The result goes into the status line (`segment-into-4: 2 step(s) in 4.3s`), with the step
+  labels underneath. A failure names the step that broke, not just the flow.
+- A file that will not parse is **listed with its error** rather than quietly vanishing.
+
+The folder is an add-on preference: `Edit ▸ Preferences ▸ Add-ons ▸ Forge ▸ Flows ▸ Flows
+Folder` (`forge_flows_dir`), defaulting to the repo's `flows/` directory, derived from the
+add-on's own location the same way the printer profile is. Installed from a zip there is no
+repo above the add-on, so it comes back empty and the box says so rather than guessing.
+
+Async like everything else here: the run happens on a worker thread so a 300-second
+`/segment` does not freeze Blender, and the Blender steps are marshalled back to the main
+thread through the operator's own poll timer. The same flow run over the socket
+(`flow_run`) is already on the main thread and skips all of that.
+
+The JSON format, the `{{param}}` and `{{steps.0.result.field}}` placeholders and the
+`script_path`/`printer_path` conveniences are documented in **`flows/README.md`**. The
+matching MCP tools are `flow_list`, `flow_run` and `flow_save` (`mcp/README.md`);
+`flow_save` is the only thing that writes into `flows/`.
 
 ## RigForge panel
 
@@ -902,6 +970,7 @@ addon/forge/
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
+  tools/flows.py         Flows: the JSON format, the runner, flow_list/flow_run, the box (6b)
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
@@ -910,6 +979,7 @@ addon/tests/
   headless_phase4.py     headless checks for the rig, the weights and the Godot export
   headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
   headless_assistant.py  headless checks for the Assistant panel against a fake bridge
+  headless_flows.py      headless checks for flow_list/flow_run and the Flows box
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
@@ -921,7 +991,8 @@ drawn the same way, so the section still reads as one panel.
 
 Two conventions in `ui/panels.py` worth knowing before you edit it: the PartForge panels
 bind their state to a local called `props`, the RigForge Phase 3/4 ones to `rf`, the
-Phase 5 ones to `ra`, and the Phase 6 Assistant to `chat`. They are different
+Phase 5 ones to `ra`, the Phase 6 Assistant to `chat` and the Phase 6b Flows box to `fl`.
+They are different
 PropertyGroups on the scene, and the headless panel-wiring tests tell them apart by that
 name — reuse one and another phase's suite fails on a property that is not on its group.
 And nothing in the file does work: every button is an operator that reports back through
@@ -929,8 +1000,35 @@ its panel's `status` string.
 
 ## Headless tests
 
-Six suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 7 they are **49 + 108 + 156 + 150 + 77 + 40 = 580 checks**, all green on Blender 5.0.1.
+Seven suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 6b they are **49 + 108 + 156 + 150 + 77 + 40 + 97 = 677 checks**, all green on
+Blender 5.0.1.
+
+### Phase 6b — Flows (`headless_flows.py`)
+
+Port **9884**. Needs no geometry service; if one happens to be listening on `--service`
+(default `http://127.0.0.1:8765`) it takes one read-only `/parse_params` to prove a service
+step end to end, and says so plainly when it skips it instead.
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python addon\tests\headless_flows.py -- --service http://127.0.0.1:8765
+```
+
+97 checks over: `flow_list` finding the repo's `segment-into-4` with its description,
+parameters and two labelled steps; that starter flow's wiring (`/segment` with
+`include_mesh: true`, then `load_meshes` reading `{{steps.0.result.segments}}`);
+`flow_run` on an inline flow executing Blender steps in order with per-step reports;
+`{{param}}` arriving as a *typed* value (the number 6, not `"6"`) and panel strings
+coercing to it; `{{steps.N.result.field}}` carrying one step's output into the next;
+fail-fast naming the step that broke, what had already run, and refusing an unknown
+command / unknown endpoint / missing flow before anything happens; the additive
+segment-shaped `load_meshes` placing objects at their plate positions in metres; the panel
+wiring (`fl` bindings, all three operators, the parameter list with its units); the Run
+button doing the thing and reporting into the status line; a broken flow file listed *with*
+its error; and the Assistant's activity lines (Phase 6b's other half) turning a bridge
+activity list into drawable rows.
 
 ### Phase 7 — the generator handoff (`headless_partforge_open.py`)
 

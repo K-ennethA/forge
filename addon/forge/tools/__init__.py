@@ -14,6 +14,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     assistant = importlib.reload(assistant)  # noqa: F821
+    flows = importlib.reload(flows)  # noqa: F821
 else:
     from . import registry
     from . import common
@@ -22,6 +23,7 @@ else:
     from . import rigforge_rig
     from . import rigforge_anim
     from . import assistant
+    from . import flows
 
 import bpy  # noqa: E402,F401  (used by the reload guard above)
 
@@ -35,6 +37,7 @@ __all__ = [
     "rigforge_rig",
     "rigforge_anim",
     "assistant",
+    "flows",
     "ForgeError",
     "dispatch",
     "command_names",
@@ -48,9 +51,11 @@ def register():
     rigforge_rig.register()
     rigforge_anim.register()
     assistant.register()
+    flows.register()
 
 
 def unregister():
+    flows.unregister()
     assistant.unregister()
     rigforge_anim.unregister()
     rigforge_rig.unregister()

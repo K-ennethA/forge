@@ -73,6 +73,10 @@ EXPECTED_TOOLS = {
     "rigforge_action",
     "rigforge_keyframe",
     "rigforge_retarget",
+    # Flows (Phase 6b) — saved sequences that replay with no model in the loop
+    "flow_list",
+    "flow_run",
+    "flow_save",
 }
 
 
@@ -117,7 +121,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 42
+    assert len(names) == 45
 
 
 def test_every_tool_is_documented() -> None:

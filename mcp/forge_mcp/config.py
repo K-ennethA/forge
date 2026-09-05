@@ -79,6 +79,18 @@ PROJECTS_DIR: str = _env_str("FORGE_PROJECTS_DIR", str(_REPO_ROOT / "projects"))
 # spec is a repo document, and templates/printer.json is where it lives.
 SPEC_PRINTER_REF: str = "templates/printer.json"
 
+# --- flows ------------------------------------------------------------------
+# Saved, parameterised sequences of Forge operations (docs/architecture.md,
+# "Phase 6b"). The second and last place this server writes, and it writes
+# exactly one file shape: flows/<slug>.json. The Blender add-on has its own
+# `forge_flows_dir` preference pointing at the same folder.
+FLOWS_DIR: str = _env_str("FORGE_FLOWS_DIR", str(_REPO_ROOT / "flows"))
+
+# A flow can contain a /segment (300 s on the service) plus mesh loading, and it
+# runs through one Blender socket call, so it needs its own budget rather than
+# the per-command default.
+FLOW_RUN_TIMEOUT: float = _env_float("FORGE_FLOW_RUN_TIMEOUT", 900.0)
+
 
 def blender_address() -> str:
     return f"{BLENDER_HOST}:{BLENDER_PORT}"

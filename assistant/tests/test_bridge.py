@@ -180,7 +180,11 @@ def test_build_argv_carries_the_flags_the_assistant_needs():
                              permission_mode="auto")
     assert argv[0] == "C:\\claude.exe"
     assert argv[1:3] == ["-p", "hello"]
-    assert "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json"
+    # stream-json (not json) is what makes the activity list possible, and the
+    # CLI demands --verbose with it in -p mode.
+    assert argv[argv.index("--output-format") + 1] == "stream-json"
+    assert "--verbose" in argv
+    assert "--include-partial-messages" in argv
     tools = argv[argv.index("--allowedTools") + 1]
     assert "mcp__forge__*" in tools, tools
     assert "Read" in tools and "Glob" in tools and "Grep" in tools
@@ -436,6 +440,277 @@ def test_the_allowed_tools_env_reaches_the_cli(bridge_proc):
     assert reply["state"] == "done", reply
     argv = client.invocations()[0]["argv"]
     assert argv[argv.index("--allowedTools") + 1] == "Read"
+
+
+# ---------------------------------------------------------------------------
+# Phase 6b — the event stream and the activity list
+#
+# The pure units first: every one of these runs with no process at all, because
+# the parsing is where the "unknown shapes are skipped, never fatal" promise
+# actually lives.
+# ---------------------------------------------------------------------------
+
+def test_parse_stream_line_skips_everything_that_is_not_an_object():
+    assert bridge.parse_stream_line('{"type": "result"}') == {"type": "result"}
+    assert bridge.parse_stream_line("  \n") is None
+    assert bridge.parse_stream_line("(node:1) ExperimentalWarning") is None
+    assert bridge.parse_stream_line('{"type": "stream_ev') is None  # half a line
+    assert bridge.parse_stream_line('["not", "an", "object"]') is None
+
+
+def test_looks_like_result_knows_the_final_event_from_the_rest():
+    assert bridge.looks_like_result({"type": "result", "result": "hi"})
+    assert not bridge.looks_like_result({"type": "stream_event", "event": {}})
+    assert not bridge.looks_like_result({"type": "assistant", "message": {}})
+    # a build that prints the plain --output-format json object instead
+    assert bridge.looks_like_result({"result": "hi", "session_id": "s1"})
+    assert not bridge.looks_like_result({})
+
+
+def test_tool_labels_read_like_the_contract_example():
+    assert bridge.tool_label("mcp__forge__partforge_check",
+                             {"script_path": "C:\\parts\\part.py"}) \
+        == "partforge_check: part.py"
+    # no arguments worth showing: the bare name, not "name: {}"
+    assert bridge.tool_label("mcp__forge__get_scene_info", {}) == "get_scene_info"
+    assert bridge.tool_label("Read", None) == "Read"
+
+
+def test_argument_summaries_stay_inside_sixty_characters():
+    summary = bridge.summarize_args({
+        "overrides": {"bowl_diameter": 152.4, "wall_thickness": 3.2, "feet": 4},
+        "joint": {"type": "dovetail", "tolerance": 0.2},
+        "include_mesh": True,
+    })
+    assert len(summary) <= bridge.TOOL_ARG_LIMIT, summary
+    assert summary.endswith("…")
+    assert "overrides" in summary
+    # a multi-line value is flattened; a sidebar has one line per entry
+    assert "\n" not in bridge.summarize_args({"code": "import bpy\nprint(1)"})
+
+
+def _store_with_job():
+    store = bridge.JobStore()
+    job, _busy = store.start("hello")
+    return store, job["job_id"]
+
+
+def _tool_events(index, tool_id, name, args):
+    """The events a CLI emits for one tool call, name first, input after."""
+    return [
+        {"type": "stream_event", "event": {
+            "type": "content_block_start", "index": index,
+            "content_block": {"type": "tool_use", "id": tool_id, "name": name,
+                              "input": {}}}},
+        {"type": "stream_event", "event": {
+            "type": "content_block_delta", "index": index,
+            "delta": {"type": "input_json_delta",
+                      "partial_json": json.dumps(args)}}},
+        {"type": "stream_event", "event": {
+            "type": "content_block_stop", "index": index}},
+    ]
+
+
+def _text_event(text):
+    return {"type": "stream_event", "event": {
+        "type": "content_block_delta", "index": 9,
+        "delta": {"type": "text_delta", "text": text}}}
+
+
+def test_a_tool_call_is_one_line_that_gains_its_arguments():
+    store, job_id = _store_with_job()
+    recorder = bridge.ActivityRecorder(store, job_id, interval=0)
+    for event in _tool_events(0, "toolu_1", "mcp__forge__partforge_check",
+                              {"script_path": "projects/cup/part.py"}):
+        recorder.feed(event)
+
+    activity = store.snapshot(job_id)["activity"]
+    assert len(activity) == 1, activity  # not one line for the name and one for the input
+    assert activity[0]["kind"] == "tool"
+    assert activity[0]["label"] == "partforge_check: part.py"
+    assert isinstance(activity[0]["t"], float)
+
+
+def test_the_thinking_marker_appears_once_and_only_after_tools():
+    store, job_id = _store_with_job()
+    recorder = bridge.ActivityRecorder(store, job_id, interval=0)
+    for event in _tool_events(0, "toolu_1", "mcp__forge__get_scene_info", {}):
+        recorder.feed(event)
+    recorder.feed(_text_event("Done — "))
+    recorder.feed(_text_event("four wedges."))
+
+    kinds = [entry["kind"] for entry in store.snapshot(job_id)["activity"]]
+    assert kinds == ["tool", "status", "text", "text"], kinds
+    assert store.snapshot(job_id)["activity"][1]["label"] == "thinking…"
+
+    # text with no tools before it is just text: nothing to announce
+    store2, job2 = _store_with_job()
+    plain = bridge.ActivityRecorder(store2, job2, interval=0)
+    plain.feed(_text_event("hello"))
+    assert [e["kind"] for e in store2.snapshot(job2)["activity"]] == ["text"]
+
+
+def test_text_markers_are_throttled():
+    store, job_id = _store_with_job()
+    recorder = bridge.ActivityRecorder(store, job_id, interval=2.0)
+    for chunk in ("one ", "two ", "three ", "four ", "five ", "six"):
+        recorder.feed(_text_event(chunk))
+
+    activity = store.snapshot(job_id)["activity"]
+    assert len(activity) == 1, activity  # six deltas in well under two seconds
+    assert activity[0]["label"] == "one"
+    # ... and nothing was lost: the whole text is still there for the salvage path
+    assert recorder.text() == "one two three four five six"
+
+
+def test_an_unknown_event_shape_is_skipped_not_fatal():
+    store, job_id = _store_with_job()
+    recorder = bridge.ActivityRecorder(store, job_id, interval=0)
+    for junk in (None, [], {"type": "wat"}, {"type": "stream_event"},
+                 {"type": "stream_event", "event": "not a dict"},
+                 {"type": "assistant", "message": {"content": "nope"}},
+                 {"type": "stream_event", "event": {"type": "content_block_delta",
+                                                    "delta": {"type": "audio"}}}):
+        recorder.feed(junk)
+    assert store.snapshot(job_id)["activity"] == []
+    # and the recorder still works afterwards
+    recorder.feed(_text_event("still here"))
+    assert store.snapshot(job_id)["activity"][0]["label"] == "still here"
+
+
+def test_activity_is_capped_at_two_hundred_keeping_the_ends():
+    store, job_id = _store_with_job()
+    for index in range(320):
+        store.add_activity(job_id, "tool", "step %d" % index)
+
+    activity = store.snapshot(job_id)["activity"]
+    assert len(activity) == bridge.ACTIVITY_LIMIT
+    # how it started
+    assert activity[0]["label"] == "step 0"
+    assert activity[bridge.ACTIVITY_HEAD - 1]["label"] == "step %d" % (bridge.ACTIVITY_HEAD - 1)
+    # the middle is gone, and says so
+    marker = activity[bridge.ACTIVITY_HEAD]
+    assert marker["kind"] == "status" and "not shown" in marker["label"]
+    # what it is doing now
+    assert activity[-1]["label"] == "step 319"
+    assert store.snapshot(job_id)["activity_dropped"] == 320 - (bridge.ACTIVITY_LIMIT - 1)
+
+
+# --- the same thing, end to end through a real subprocess -------------------
+
+def _stream_client(bridge_proc, mode="stream", **env):
+    extra = {"FAKE_CLAUDE_MODE": mode}
+    extra.update(env)
+    return bridge_proc(env_extra=extra)
+
+
+def test_a_streamed_turn_lands_the_reply_and_the_activity(bridge_proc):
+    client = _stream_client(bridge_proc)
+    final = client.turn("segment this into 4")
+    assert final["state"] == "done", final
+    assert "four wedges" in final["reply"] or "4 wedges" in final["reply"], final["reply"]
+    assert final["session_id"] == "sess-fake-0001"
+    assert final["cost_usd"] == pytest.approx(0.0123)
+
+    activity = final["activity"]
+    kinds = [entry["kind"] for entry in activity]
+    labels = [entry["label"] for entry in activity]
+    assert kinds[:3] == ["tool", "tool", "status"], labels
+    # the contract's own example, produced by arguments that arrived as deltas
+    assert labels[0] == "partforge_check: part.py", labels
+    assert labels[1].startswith("partforge_segment: "), labels
+    assert len(labels[1]) <= len("partforge_segment: ") + bridge.TOOL_ARG_LIMIT
+    assert labels[2] == "thinking…"
+    assert kinds[3:] and set(kinds[3:]) == {"text"}, kinds
+    # the malformed event the fake printed between the tools was skipped, not fatal
+    assert len(activity) >= 4
+    # timestamps only ever move forward
+    assert [entry["t"] for entry in activity] == sorted(entry["t"] for entry in activity)
+
+
+def test_the_finished_job_keeps_its_activity(bridge_proc):
+    client = _stream_client(bridge_proc)
+    final = client.turn("hello")
+    again = client.request("/job/%s" % final["job_id"])[1]
+    assert again["state"] == "done"
+    assert again["activity"] == final["activity"]
+
+
+def test_activity_grows_while_the_job_is_still_running(bridge_proc):
+    """The whole point: the artist sees the tools before the answer arrives."""
+    client = _stream_client(bridge_proc, mode="stream_slow",
+                            FAKE_CLAUDE_SLEEP="6")
+    status, started = client.ask("something slow")
+    assert status == 200, started
+
+    deadline = time.time() + 20.0
+    seen = []
+    while time.time() < deadline:
+        _status, body = client.request("/job/%s" % started["job_id"])
+        seen = body.get("activity") or []
+        if body.get("state") != "running":
+            raise AssertionError("the job finished before we could watch it")
+        if len(seen) >= 2:
+            break
+        time.sleep(0.1)
+
+    assert len(seen) >= 2, seen
+    assert seen[0]["label"] == "partforge_check: part.py", seen
+    assert all(entry["kind"] == "tool" for entry in seen[:2]), seen
+
+    client.request("/cancel/%s" % started["job_id"], {})
+
+
+def test_cancel_mid_stream_stops_it_and_keeps_what_was_seen(bridge_proc):
+    client = _stream_client(bridge_proc, mode="stream_slow",
+                            FAKE_CLAUDE_SLEEP="30")
+    status, started = client.ask("cut this up")
+    assert status == 200
+
+    deadline = time.time() + 20.0
+    while time.time() < deadline:
+        _status, body = client.request("/job/%s" % started["job_id"])
+        if len(body.get("activity") or []) >= 2:
+            break
+        time.sleep(0.1)
+
+    status, _body = client.request("/cancel/%s" % started["job_id"], {})
+    assert status == 200
+    final = client.wait(started["job_id"], timeout=30.0)
+    assert final["state"] == "cancelled", final
+    assert len(final["activity"]) >= 2, final["activity"]
+    assert final["activity"][0]["kind"] == "tool"
+
+    _status, health = client.request("/health")
+    assert health["busy"] is False
+
+
+def test_a_stream_with_no_result_event_is_salvaged(bridge_proc):
+    client = _stream_client(bridge_proc, mode="stream_noresult")
+    final = client.turn("segment this")
+    assert final["state"] == "done", final
+    # the reply is the text that streamed past, not an apology
+    assert "wedges" in final["reply"], final["reply"]
+    assert final["activity"], final
+
+
+def test_the_text_throttle_is_configurable_end_to_end(bridge_proc):
+    """Same six chunks, two throttle settings, two different activity lists."""
+    client = _stream_client(bridge_proc)
+    slow = [e for e in client.turn("a")["activity"] if e["kind"] == "text"]
+    assert len(slow) == 1, slow
+
+    fast_client = _stream_client(bridge_proc,
+                                 FORGE_ASSISTANT_TEXT_INTERVAL="0")
+    fast = [e for e in fast_client.turn("b")["activity"] if e["kind"] == "text"]
+    assert len(fast) > len(slow), fast
+
+
+def test_a_json_only_cli_still_answers_with_an_empty_activity_list(client):
+    """The old single-object output: no events, so nothing to show — not a crash."""
+    final = client.turn("hello")
+    assert final["state"] == "done"
+    assert final["activity"] == []
 
 
 # ---------------------------------------------------------------------------

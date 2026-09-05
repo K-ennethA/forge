@@ -1,0 +1,105 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "dog-bowl-holder",
+  "description": "dog bowl holder \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "bowl_diameter": {
+      "value": 6.0,
+      "unit": "in",
+      "min": 3.0,
+      "max": 7.0,
+      "step": 0.25,
+      "description": "Rim diameter of the dog bowl"
+    },
+    "bowl_height": {
+      "value": 4.0,
+      "unit": "in",
+      "min": 1.5,
+      "max": 6.0,
+      "step": 0.25,
+      "description": "Height of the bowl from its base to its rim"
+    },
+    "fit_clearance": {
+      "value": 1.0,
+      "unit": "mm",
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.1,
+      "description": "Gap between the bowl rim and the bore, all the way round"
+    },
+    "wall_thickness": {
+      "value": 5.0,
+      "unit": "mm",
+      "min": 2.0,
+      "max": 10.0,
+      "step": 0.5,
+      "description": "Thickness of the ring wall"
+    },
+    "bowl_lift": {
+      "value": 12.0,
+      "unit": "mm",
+      "min": 0.0,
+      "max": 60.0,
+      "step": 1.0,
+      "description": "Air under the bowl's base once it is seated"
+    },
+    "rim_capture": {
+      "value": 10.0,
+      "unit": "mm",
+      "min": 3.0,
+      "max": 30.0,
+      "step": 0.5,
+      "description": "Plain wall standing above the seat, around the bowl rim"
+    },
+    "lip_width": {
+      "value": 5.0,
+      "unit": "mm",
+      "min": 2.0,
+      "max": 14.0,
+      "step": 0.5,
+      "description": "How far the seat ledge reaches in under the bowl rim"
+    },
+    "foot_height": {
+      "value": 14.0,
+      "unit": "mm",
+      "min": 6.0,
+      "max": 40.0,
+      "step": 0.5,
+      "description": "Height of the arcaded base zone"
+    },
+    "feet_count": {
+      "value": 4,
+      "unit": "count",
+      "min": 3.0,
+      "max": 8.0,
+      "step": 1.0,
+      "description": "Number of feet (piers) around the arcaded base"
+    },
+    "flute_count": {
+      "value": 24,
+      "unit": "count",
+      "min": 6.0,
+      "max": 60.0,
+      "step": 1.0,
+      "description": "Number of flutes in the decorative band"
+    },
+    "flute_depth": {
+      "value": 1.6,
+      "unit": "mm",
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "description": "Depth of each flute; 0 leaves the wall plain"
+    }
+  },
+  "features": [],
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}

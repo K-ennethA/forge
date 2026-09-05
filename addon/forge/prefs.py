@@ -28,6 +28,21 @@ def default_printer_path():
     return candidate if os.path.isfile(candidate) else ""
 
 
+def default_flows_dir():
+    """The repo's ``flows/`` folder when this is a source checkout.
+
+    Same reasoning as :func:`default_printer_path`: installed from a zip there
+    is no repo above the add-on, so this comes back empty and the Flows box says
+    so rather than guessing at a folder.  The path is derived from this file
+    (``addon/forge/prefs.py`` -> ``<repo>/flows``), which is the same anchor the
+    printer profile uses.
+    """
+    candidate = os.path.normpath(
+        os.path.join(_HERE, os.pardir, os.pardir, "flows")
+    )
+    return candidate if os.path.isdir(candidate) else ""
+
+
 # Values used when the add-on preferences are not available yet (during
 # registration, in ``--background`` runs, or if the add-on entry was removed).
 DEFAULTS = {
@@ -37,6 +52,7 @@ DEFAULTS = {
     "service_url": "http://127.0.0.1:8765",
     "assistant_url": "http://127.0.0.1:8901",
     "printer_path": default_printer_path(),
+    "forge_flows_dir": default_flows_dir(),
     "request_timeout": 120.0,
     "job_timeout": 600.0,
     "verbose": False,

@@ -2041,3 +2041,372 @@ def fmt_open_report(script: Path, result: Mapping[str, Any]) -> str:
         "visible in the viewport — opening the panel builds nothing."
     )
     return "\n".join(lines)
+
+
+# --- Phase 6b (flows) --------------------------------------------------------
+
+#: Blender socket commands a flow step may call — the command registry from
+#: docs/architecture.md, mirrored here so `flow_save` can refuse a typo before
+#: it is written rather than at run time, with Blender not even required.
+#: `flow_list`/`flow_run` are deliberately absent: flows do not nest.
+KNOWN_BLENDER_OPS = frozenset({
+    # scene + health
+    "ping", "get_scene_info", "execute_python",
+    # common mesh operations
+    "symmetrize", "mirror", "remesh", "decimate", "shade", "apply_transforms",
+    "set_origin", "boolean", "merge_by_distance", "separate_loose",
+    # objects
+    "select_object", "rename_object", "delete_object", "export_stl",
+    # PartForge
+    "load_mesh", "load_meshes", "partforge_open",
+    # RigForge
+    "rigforge_list_tags", "rigforge_tag", "rigforge_untag", "rigforge_manifest",
+    "rigforge_retopo", "rigforge_auto_uv", "rigforge_status", "rigforge_metarig",
+    "rigforge_generate_rig", "rigforge_weights", "rigforge_export_godot",
+    "rigforge_cloth", "rigforge_action", "rigforge_keyframe", "rigforge_retarget",
+})
+
+#: Geometry-service endpoints a flow step may call (docs/architecture.md).
+KNOWN_SERVICE_OPS = frozenset({
+    "/health", "/parse_params", "/generate", "/export", "/check", "/segment",
+    "/export_segments", "/slice", "/mold", "/export_mold",
+})
+
+FLOW_NAME_MAX = 60
+
+
+def flow_slug(name: Any) -> str:
+    """`"Segment Into 4!"` -> `"segment-into-4"`, or refuse.
+
+    Exactly the rules :func:`project_slug` uses, for exactly the same reason:
+    the slug is a single filename under ``flows/`` and anything path-shaped is
+    an error rather than something to be quietly cleaned up.
+    """
+    raw = "" if name is None else str(name).strip().strip('"').strip()
+    if raw.lower().endswith(".json"):
+        raw = raw[: -len(".json")]
+    if not raw:
+        raise ForgeError(
+            'No flow name given. Name it for what it does — "segment into 4" — '
+            "and it becomes flows/segment-into-4.json."
+        )
+    for marker in _TRAVERSAL_MARKERS:
+        if marker in raw:
+            raise ForgeError(
+                f"{name!r} is not a flow name — it looks like a path (it contains "
+                f"{marker!r}). Flows are always written to flows/<name>.json, so "
+                'pass just the name, e.g. "segment into 4".'
+            )
+    if raw.startswith("~") or raw.startswith("%") or raw.startswith("$"):
+        raise ForgeError(
+            f"{name!r} is not a flow name — it looks like a path or an "
+            'environment variable. Pass just the name, e.g. "segment into 4".'
+        )
+    slug = _SLUG_SEPARATORS.sub("-", raw.lower()).strip("-")
+    if not slug:
+        raise ForgeError(
+            f"{name!r} has no letters or digits in it, so it cannot name a file. "
+            'Try something like "segment into 4".'
+        )
+    if len(slug) > FLOW_NAME_MAX:
+        slug = slug[:FLOW_NAME_MAX].rstrip("-")
+    return slug
+
+
+def flows_root() -> Path:
+    """The one directory flows are read from and written to."""
+    return Path(config.FLOWS_DIR).expanduser().resolve()
+
+
+def flow_path(slug: str) -> Path:
+    """``flows/<slug>.json``, checked to stay inside flows/."""
+    root = flows_root()
+    path = (root / f"{slug}.json").resolve()
+    try:
+        path.relative_to(root)
+    except ValueError:
+        raise ForgeError(
+            f"{slug!r} would write outside {root}. Flows only ever land in "
+            "flows/<name>.json."
+        ) from None
+    return path
+
+
+def _json_safe(value: Any, where: str) -> Any:
+    """Everything in a flow has to survive a round trip through the file."""
+    try:
+        json.dumps(value, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ForgeError(
+            f"{where} is not JSON-serialisable ({exc}). A flow is a file: every "
+            "argument has to be a string, number, boolean, list or object."
+        ) from exc
+    return value
+
+
+def normalize_flow_params(params: Any) -> Dict[str, Any]:
+    """`{name: {"value", "unit"?, "description"?}}`, with bare values allowed.
+
+    Passing `{"wedges": 4}` is the obvious thing to try, so it is accepted and
+    grown into the full shape rather than rejected on a technicality.
+    """
+    if params in (None, ""):
+        return {}
+    if not isinstance(params, Mapping):
+        raise ForgeError(
+            '`params` must be an object of {name: {"value": ...}} (a bare value '
+            'is fine too: {"wedges": 4}).'
+        )
+    out: Dict[str, Any] = {}
+    for key, spec in params.items():
+        name = str(key).strip()
+        if not name:
+            raise ForgeError("A flow parameter cannot have an empty name.")
+        if isinstance(spec, Mapping):
+            if "value" not in spec:
+                raise ForgeError(
+                    f"Parameter {name!r} has no 'value'. Every parameter declares "
+                    "its default, which is also what types it."
+                )
+            entry: Dict[str, Any] = {
+                "value": _json_safe(spec["value"], f"params.{name}.value")
+            }
+            for field in ("unit", "description"):
+                if spec.get(field) not in (None, ""):
+                    entry[field] = str(spec[field])
+            out[name] = entry
+        else:
+            out[name] = {"value": _json_safe(spec, f"params.{name}")}
+    return out
+
+
+def normalize_flow_steps(steps: Any) -> List[Dict[str, Any]]:
+    """Validate a flow's steps against the known command / endpoint sets."""
+    if not isinstance(steps, (list, tuple)) or not steps:
+        raise ForgeError(
+            "`steps` must be a non-empty list. A flow with no steps does nothing "
+            "— and a flow with ONE step is not worth saving either: that is just "
+            "the tool call itself."
+        )
+    out: List[Dict[str, Any]] = []
+    for index, raw in enumerate(steps):
+        where = f"steps[{index}]"
+        if not isinstance(raw, Mapping):
+            raise ForgeError(f"{where} must be an object with kind, op and args.")
+        kind = str(raw.get("kind") or "").strip()
+        if kind not in ("blender", "service"):
+            raise ForgeError(
+                f"{where} has kind {raw.get('kind')!r}; it must be \"blender\" (a "
+                'Forge socket command) or "service" (a geometry-service endpoint).'
+            )
+        op = str(raw.get("op") or "").strip()
+        if not op:
+            raise ForgeError(f"{where} has no 'op'.")
+        if kind == "blender":
+            if op in ("flow_run", "flow_list"):
+                raise ForgeError(
+                    f"{where} calls {op!r}. Flows do not nest — write the steps "
+                    "out in this flow so what it does is readable in one file."
+                )
+            if op not in KNOWN_BLENDER_OPS:
+                raise ForgeError(
+                    f"{where}: {op!r} is not a Blender command. Known commands: "
+                    + ", ".join(sorted(KNOWN_BLENDER_OPS))
+                )
+        else:
+            if not op.startswith("/"):
+                op = "/" + op
+            if op not in KNOWN_SERVICE_OPS:
+                raise ForgeError(
+                    f"{where}: {op!r} is not a geometry-service endpoint. Known "
+                    "endpoints: " + ", ".join(sorted(KNOWN_SERVICE_OPS))
+                )
+        args = raw.get("args")
+        if args is None:
+            args = {}
+        if not isinstance(args, Mapping):
+            raise ForgeError(f"{where}: 'args' must be an object.")
+        step: Dict[str, Any] = {
+            "kind": kind,
+            "op": op,
+            "args": _json_safe(dict(args), f"{where}.args"),
+        }
+        label = str(raw.get("label") or "").strip()
+        if label:
+            step["label"] = label
+        out.append(step)
+    return out
+
+
+def flow_document(
+    name: str,
+    slug: str,
+    description: Any,
+    params: Any,
+    steps: Any,
+) -> Dict[str, Any]:
+    """The JSON a saved flow is, in the field order a human wants to read."""
+    text = str(description or "").strip()
+    if not text:
+        raise ForgeError(
+            "A flow needs a `description`: one sentence saying what it does, "
+            "because that sentence is the tooltip the artist reads in the panel."
+        )
+    normalized = normalize_flow_steps(steps)
+    if len(normalized) < 2:
+        # Saving one call as a flow adds a file, a name and a button for
+        # something that was already one call. Refused here rather than left to
+        # judgement, so flows/ stays a list of things worth pressing.
+        raise ForgeError(
+            "A flow with ONE step is not worth saving — that is just the tool "
+            f"call itself ({normalized[0]['kind']} {normalized[0]['op']}). Save a "
+            "sequence of two or more operations, or nothing."
+        )
+    return {
+        "name": slug,
+        "description": text,
+        "params": normalize_flow_params(params),
+        "steps": normalized,
+    }
+
+
+def flow_step_label(step: Mapping[str, Any], index: int) -> str:
+    label = str(step.get("label") or "").strip()
+    return label or f"{step.get('kind', '?')} {step.get('op', '?')}"
+
+
+def read_flow_files() -> Tuple[Path, List[Dict[str, Any]]]:
+    """Every flow on disk: `(folder, [{name, description, params, steps, path}])`.
+
+    Read straight from the filesystem rather than through Blender, so `flow_list`
+    answers whether or not Blender happens to be running. A file that will not
+    parse is listed with its error instead of being hidden.
+    """
+    root = flows_root()
+    if not root.is_dir():
+        return root, []
+    out: List[Dict[str, Any]] = []
+    for path in sorted(root.glob("*.json")):
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            out.append({"name": path.stem, "path": str(path), "error": str(exc)})
+            continue
+        if not isinstance(doc, dict):
+            out.append({"name": path.stem, "path": str(path),
+                        "error": "the file is not a JSON object"})
+            continue
+        steps = doc.get("steps") if isinstance(doc.get("steps"), list) else []
+        out.append({
+            "name": str(doc.get("name") or path.stem),
+            "description": str(doc.get("description") or ""),
+            "params": doc.get("params") if isinstance(doc.get("params"), Mapping) else {},
+            "steps": steps,
+            "path": str(path),
+        })
+    return root, out
+
+
+def fmt_flow_params(params: Any, indent: str = "      ") -> List[str]:
+    if not isinstance(params, Mapping) or not params:
+        return [f"{indent}(no parameters)"]
+    lines = []
+    for name, spec in params.items():
+        if isinstance(spec, Mapping):
+            value = spec.get("value")
+            unit = f" {spec['unit']}" if spec.get("unit") else ""
+            description = str(spec.get("description") or "")
+        else:
+            value, unit, description = spec, "", ""
+        shown = json.dumps(value) if isinstance(value, (dict, list)) else value
+        line = f"{indent}{str(name):<16.16} = {shown}{unit}"
+        if description:
+            line = f"{line}   ({description})"
+        lines.append(line[:160])
+    return lines
+
+
+def fmt_flow_list(root: Path, flows: Sequence[Mapping[str, Any]]) -> str:
+    """The saved flows, in the shape a model should read before improvising."""
+    if not flows:
+        return (
+            f"No saved flows in {root}.\n"
+            "  Nothing has been saved yet — do the job with the tools, then "
+            "flow_save it so the artist can press a button next time."
+        )
+    lines = [f"{len(flows)} saved flow(s) in {root}:"]
+    for entry in flows:
+        name = entry.get("name")
+        if entry.get("error"):
+            lines.append(f"  {name}  — BROKEN: {entry['error']}")
+            continue
+        steps = entry.get("steps") or []
+        lines.append(f"  {name}  ({len(steps)} step(s))")
+        if entry.get("description"):
+            lines.append(f"    {entry['description']}")
+        lines.extend(fmt_flow_params(entry.get("params")))
+        for index, step in enumerate(steps):
+            if isinstance(step, Mapping):
+                lines.append(
+                    f"      {index + 1}. {flow_step_label(step, index)}"
+                    f"  [{step.get('kind')} {step.get('op')}]"
+                )
+    lines.append(
+        "  run one with flow_run(name, params) — same result every time, no "
+        "model in the loop."
+    )
+    return "\n".join(lines)
+
+
+def fmt_flow_run_report(name: str, result: Mapping[str, Any]) -> str:
+    """What each step did, in order."""
+    steps = result.get("steps") if isinstance(result.get("steps"), list) else []
+    duration = result.get("duration_ms")
+    header = f"Ran flow '{result.get('flow') or name}'"
+    if isinstance(duration, (int, float)):
+        header = f"{header} — {len(steps)} step(s) in {duration / 1000.0:.1f}s"
+    lines = [header]
+    if result.get("description"):
+        lines.append(f"  {result['description']}")
+    params = result.get("params")
+    if isinstance(params, Mapping) and params:
+        lines.append("  parameters used:")
+        lines.extend(fmt_flow_params(params, indent="    "))
+    lines.append("  steps:")
+    for index, step in enumerate(steps):
+        if not isinstance(step, Mapping):
+            continue
+        mark = "ok  " if step.get("ok") else "FAIL"
+        lines.append(
+            f"    {index + 1}. [{mark}] {flow_step_label(step, index)}"
+            f"  ({step.get('kind')} {step.get('op')})"
+        )
+        if step.get("brief"):
+            lines.append(f"         {step['brief']}")
+    lines.append(
+        "  nothing here was decided by a model: a flow replays exactly what was "
+        "saved. Say what changed in the scene in plain words."
+    )
+    return "\n".join(lines)
+
+
+def fmt_flow_saved(path: Path, doc: Mapping[str, Any], overwritten: bool) -> str:
+    """Where the flow landed, and how the artist runs it without asking again."""
+    steps = doc.get("steps") or []
+    lines = [
+        f"{'Replaced' if overwritten else 'Saved'} flow '{doc.get('name')}' — {path}",
+        f"  {doc.get('description')}",
+        f"  {len(steps)} step(s):",
+    ]
+    for index, step in enumerate(steps):
+        lines.append(
+            f"    {index + 1}. {flow_step_label(step, index)}"
+            f"  [{step.get('kind')} {step.get('op')}]"
+        )
+    lines.append("  parameters:")
+    lines.extend(fmt_flow_params(doc.get("params"), indent="    "))
+    lines.append(
+        "  tell the artist: it is now a button — press N, Forge tab, Flows box, "
+        f"'{doc.get('name')}' -> Run. The parameters above are editable there."
+    )
+    return "\n".join(lines)

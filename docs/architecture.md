@@ -148,6 +148,21 @@ Component `assistant/` — a thin local bridge, stdlib-only Python (no venv need
 - `POST /cancel/<id>`
 The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
 
+### Phase 6b — live activity + repeatable flows — implemented
+
+Implemented refinements (additive): `load_meshes` also accepts `/segment`'s own segment objects plus a top-level `plate` (placing by name) — what lets a flow chain `/segment` → Blender with one dotted reference; service-step arg sugar `script_path`/`printer_path` read files from disk into `script`/`printer` (blank = the panel's current script / the printer preference); step references `{{steps.N.result.<dotted.path>}}` (lookup only, list indices ok, whole-value placeholders keep their type); `steps[].args.timeout_s` per-step override; flows never nest (`flow_run`/`flow_list` refused as ops) and single-step flows are refused by `flow_save`; MCP totals 45 tools; env/prefs `forge_flows_dir`/`FORGE_FLOWS_DIR`, `FORGE_FLOW_RUN_TIMEOUT` (900), `FORGE_ASSISTANT_TEXT_INTERVAL` (2.0). Starter flow: `flows/segment-into-4.json`.
+
+### Original sketch
+
+**Activity streaming (visibility).** The bridge switches the CLI to `--output-format stream-json --verbose --include-partial-messages` and parses NDJSON as it arrives. Each job gains `"activity": [{"t": epoch, "kind": "tool"|"text"|"status", "label": str}]` — tool events labeled with the tool name plus a ≤60-char arg summary ("partforge_check: part.py"), text progress as occasional "thinking/writing" status markers, final reply from the result event. `GET /job/<id>` returns the growing list; the panel renders the last few lines live under the busy indicator so the artist always sees what the AI is doing. The full activity list is kept on the finished job.
+
+**Flows (repeatability).** A flow is a saved, parameterized sequence of Forge operations that replays deterministically — no AI in the loop. Stored as git-versioned JSON in `flows/*.json`:
+`{"name", "description", "params": {name: {"value", "unit"?, "description"?}}, "steps": [{"kind": "blender"|"service", "op": <socket command | endpoint>, "args": {... with "{{param}}" placeholders ...}, "label"?}]}`
+- Add-on socket commands (additive): `flow_list` → flows with descriptions/params; `flow_run {"name"|"flow": <inline object>, "params": {overrides}}` — blender steps dispatch in-process via the registry, service steps via urllib; linear, fail-fast, per-step results in the response. Flows dir = `<repo>/flows` via an add-on preference.
+- MCP tools: `flow_list`, `flow_run`, `flow_save(name, description, params, steps)` — `flow_save` validates ops against the known command/endpoint set and writes ONLY under `flows/` (same scoped-write philosophy as partforge_new_part).
+- Panel: a Flows box — saved flows listed with Run buttons and param fields.
+- System-prompt law: before improvising a multi-step job, check `flow_list` for a match and prefer running the flow; after completing a repeatable multi-step task, offer to save it as a flow (and name the params).
+
 ## PARAMS block convention (the PartForge script contract)
 
 Every generated script is a plain Python file with, at top level:

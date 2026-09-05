@@ -1,0 +1,54 @@
+{
+  "name": "segment-into-4",
+  "description": "Cut the current part into 4 radial wedges with dovetail joints, then lay the pieces out in Blender the way they will sit on the print plate.",
+  "params": {
+    "script_path": {
+      "value": "",
+      "description": "Part script to cut. Leave blank to use the script the PartForge panel is pointed at."
+    },
+    "wedges": {
+      "value": 4,
+      "unit": "count",
+      "description": "How many equal wedges to cut the part into, around the Z axis"
+    },
+    "joint_type": {
+      "value": "dovetail",
+      "description": "How the pieces hold together: dovetail, pin, magnet or none"
+    },
+    "joint_tolerance": {
+      "value": 0.2,
+      "unit": "mm",
+      "description": "Deliberate gap between mating faces. Bigger = looser fit"
+    },
+    "collection": {
+      "value": "Segments",
+      "description": "Blender collection the pieces are loaded into"
+    }
+  },
+  "steps": [
+    {
+      "kind": "service",
+      "op": "/segment",
+      "label": "Cut the part into {{wedges}} wedges",
+      "args": {
+        "script_path": "{{script_path}}",
+        "printer_path": "",
+        "overrides": {},
+        "mode": {"radial": "{{wedges}}"},
+        "joint": {"type": "{{joint_type}}", "tolerance": "{{joint_tolerance}}"},
+        "include_mesh": true
+      }
+    },
+    {
+      "kind": "blender",
+      "op": "load_meshes",
+      "label": "Lay the pieces out on the plate",
+      "args": {
+        "meshes": "{{steps.0.result.segments}}",
+        "plate": "{{steps.0.result.plate}}",
+        "collection": "{{collection}}",
+        "replace": true
+      }
+    }
+  ]
+}

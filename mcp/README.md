@@ -46,7 +46,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 42-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 45-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -60,8 +60,15 @@ add-on side is being written in parallel and a thin result must still render.
 `tests/test_new_part.py` covers the two authoring tools: the slug matrix, every path-shaped
 name it refuses, that a script the service rejects leaves nothing on disk, the
 overwrite/spec matrix, and the one `partforge_open` command that crosses the wire. It
-redirects `projects/` to a `tmp_path`, so the real folder is never touched. Nothing in the
-suite needs Blender or the geometry service, and nothing binds or connects to 9876/8765.
+redirects `projects/` to a `tmp_path`, so the real folder is never touched.
+`tests/test_flows.py` does the same for the three flow tools: the slug matrix and every
+path-shaped name, the validation matrix (unknown command, unknown endpoint, bad `kind`,
+non-object `args`, a nested `flow_run`, a parameter with no `value`, a one-step "flow"),
+that a refusal writes **nothing**, the one `flow_run` command that crosses the wire with its
+slugged name, the per-step report rendering, and that the repo's own
+`flows/segment-into-4.json` passes the validation `flow_save` applies. It redirects
+`flows/` to a `tmp_path` too. Nothing in the suite needs Blender or the geometry service,
+and nothing binds or connects to 9876/8765.
 
 `tests/e2e_new_part.py` is deliberately **not** a pytest module: it is the end-to-end proof,
 and it needs the real service on 8765 and launches its own headless Blender (socket port
@@ -115,6 +122,9 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_SERVICE_CHECK_TIMEOUT` | `150.0` | seconds to wait for `/check` (the service allows itself 120) |
 | `FORGE_SERVICE_SEGMENT_TIMEOUT` | `330.0` | seconds to wait for `/segment` and `/export_segments` (the service allows itself 300) |
 | `FORGE_PRINTER_PATH` | `<repo>/templates/printer.json` | default printer profile for the print-readiness tools |
+| `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` writes to |
+| `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
+| `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
 | `FORGE_MAX_RESPONSE_BYTES` | `268435456` | refuse to buffer a runaway response |
 
 The two Phase 2 timeouts sit deliberately *above* the service's own budgets
@@ -405,6 +415,63 @@ Six rules worth stating up front, because each one is an error rather than a gue
 - A keyframe missing its `bone`, its `frame` or every channel is refused by index
   (`keys[3] ('hand_ik.L' at frame 12) sets no channel`), because the alternative is Blender
   cheerfully keying nothing.
+
+### Flows (Phase 6b) — the tools that stop you redoing work
+
+A **flow** is a job someone worked out once, saved as a named, parameterised sequence of
+Forge operations in `flows/*.json` that replays with **no model in the loop**. Three tools,
+and the order they are used in is the point: *look* before improvising, *run* what is there,
+*save* what you just worked out.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `flow_list` | — | Every saved flow with its description, parameters (defaults and units) and labelled steps. Reads `flows/` straight off disk, so it answers with Blender closed. **Call this before improvising any multi-step job.** |
+| `flow_run` | `name`, `params` | Replays one flow through Blender's `flow_run` command. Renders a line per step (`[ok  ]` / `[FAIL]`, the label, the kind and op, a one-line brief of what it produced). `params` overrides declared defaults only — an undeclared name is an error listing what the flow takes. |
+| `flow_save` | `name`, `description`, `steps`, `params`, `overwrite` | Writes `flows/<slug>.json` and nothing else. Validates first: every `op` against the real command/endpoint set, every argument JSON-serialisable, every parameter carrying a `value`. |
+
+`flow_save` is the second and last tool in this server that writes, and it obeys the same
+rules as `partforge_new_part`: the name is slugged (`"segment into 4"` →
+`flows/segment-into-4.json`), anything path-shaped is **refused rather than cleaned**, and a
+refusal leaves nothing on disk. Two additional refusals are specific to flows:
+
+- **a one-step flow** — that is just the tool call, and a folder of one-step flows is worse
+  than an empty one;
+- **`flow_run` or `flow_list` as a step** — flows do not nest, so what one does stays
+  readable in one file.
+
+A step is `{"kind": "blender"|"service", "op": <socket command | endpoint>, "args": {...},
+"label": "what this step does"}`. Label every step: the labels are what the artist reads in
+the panel and what a failure is reported against. `args` may carry `{{placeholders}}` —
+`"{{wedges}}"` as a whole value keeps its type (the number `4`), embedded in a longer string
+it is text substitution, and `"{{steps.0.result.segments}}"` reads an earlier step's result
+by dotted path (lookup only, no expressions). In a **service** step, `script_path` and
+`printer_path` are read off disk by the add-on and become `script`/`printer`; left `""` they
+mean "whatever the PartForge panel is pointed at", which is what lets one saved flow serve
+every part. The full format is `flows/README.md`.
+
+```text
+# before working anything out
+flow_list()
+
+# there is already one for this
+flow_run(name="segment-into-4", params={"wedges": 6})
+
+# and after finishing something repeatable that was NOT there
+flow_save(
+  name="check then export segments",
+  description="Check the part, cut it into printable pieces and write them to exports/.",
+  params={"wedges": {"value": 4, "unit": "count", "description": "How many wedges"}},
+  steps=[
+    {"kind": "service", "op": "/check", "label": "Check it prints",
+     "args": {"script_path": ""}},
+    {"kind": "service", "op": "/export_segments", "label": "Cut and write the files",
+     "args": {"script_path": "", "mode": {"radial": "{{wedges}}"},
+              "directory": "projects/dog-bowl-holder/exports"}},
+  ])
+```
+
+`flow_run` gets its own socket budget (`FORGE_FLOW_RUN_TIMEOUT`, 900 s) because one flow can
+contain a 300-second `/segment` plus the mesh loading after it.
 
 ## Troubleshooting
 

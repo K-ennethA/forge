@@ -82,6 +82,15 @@ class ForgePreferences(AddonPreferences):
         default=prefs.default_printer_path(),
         subtype="FILE_PATH",
     )
+    forge_flows_dir: StringProperty(
+        name="Flows Folder",
+        description=(
+            "Folder holding the saved flows (*.json) the Flows box lists and "
+            "runs. Defaults to the repo's flows/ directory"
+        ),
+        default=prefs.default_flows_dir(),
+        subtype="DIR_PATH",
+    )
     request_timeout: FloatProperty(
         name="Service Timeout (s)",
         description="How long a PartForge HTTP request may take before it is abandoned",
@@ -133,6 +142,12 @@ class ForgePreferences(AddonPreferences):
         box.label(text="Assistant (chat box)", icon="LIGHT")
         box.prop(self, "assistant_url")
         box.label(text="Started by start_forge.cmd in the forge folder", icon="INFO")
+
+        box = layout.box()
+        box.label(text="Flows (saved sequences)", icon="SEQUENCE")
+        box.prop(self, "forge_flows_dir")
+        if not str(self.forge_flows_dir).strip():
+            box.label(text="Point this at the repo's flows/ folder", icon="INFO")
 
         layout.prop(self, "verbose")
 

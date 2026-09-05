@@ -3,8 +3,9 @@
 Two deliberate conventions in this file:
 
 * the PartForge panels bind their state to a local called ``props``, the
-  RigForge ones to ``rf``, the animation ones to ``ra`` and the Assistant to
-  ``chat``.  They are different PropertyGroups on the scene and the headless
+  RigForge ones to ``rf``, the animation ones to ``ra``, the Assistant to
+  ``chat`` and Flows to ``fl``.  They are different PropertyGroups on the scene
+  and the headless
   panel-wiring tests tell them apart by that name — reuse one and another
   phase's suite will fail on a property that is not on its group;
 * nothing here does work.  Every button is an operator that reports back through
@@ -17,7 +18,7 @@ from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import assistant, partforge, rigforge, rigforge_anim, rigforge_rig
+from ..tools import assistant, flows, partforge, rigforge, rigforge_anim, rigforge_rig
 
 CATEGORY = "Forge"
 
@@ -76,6 +77,16 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
         if chat.busy:
             row.label(text=chat.status or "Thinking ...", icon="SORTTIME")
             row.operator("forge.assistant_cancel", text="Stop", icon="CANCEL")
+            # What it is doing, live, under the spinner: a job that is thinking
+            # in silence looks broken, and this is the difference between
+            # "it's working" and "is it working?".
+            if len(chat.activity):
+                box = layout.box()
+                column = box.column(align=True)
+                column.scale_y = 0.75
+                for entry in list(chat.activity)[-assistant.ACTIVITY_LINES:]:
+                    column.label(text=_wrap(entry.label, 36)[0],
+                                 icon=assistant.ACTIVITY_ICONS.get(entry.kind, "DOT"))
         else:
             send = row.row(align=True)
             send.enabled = bool(chat.message.strip())
@@ -317,6 +328,86 @@ class VIEW3D_PT_forge_export(_ForgePanel, Panel):
         layout.prop(props, "export_path", text="")
         layout.operator("forge.pf_export", icon="EXPORT", text="Export")
         layout.label(text="Service: %s" % service_url(), icon="URL")
+
+
+class VIEW3D_PT_forge_flows(_ForgePanel, Panel):
+    """Saved sequences of Forge operations, replayed with no AI in the loop.
+
+    Sits directly under PartForge because that is where its steps land: a flow
+    is what a job the assistant worked out once becomes afterwards.
+    """
+
+    bl_idname = "VIEW3D_PT_forge_flows"
+    bl_label = "Flows"
+
+    def draw(self, context):
+        layout = self.layout
+        fl = flows.get_props(context)
+        if fl is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+
+        row = layout.row(align=True)
+        row.label(text="Saved sequences", icon="SEQUENCE")
+        row.operator("forge.flow_refresh", text="", icon="FILE_REFRESH")
+
+        if not fl.loaded:
+            layout.label(text="Press the refresh button to list them", icon="INFO")
+        elif not len(fl.flows):
+            layout.label(text="No flows in %s" % (flows.flows_dir() or "(unset)"),
+                         icon="INFO")
+
+        column = layout.column(align=True)
+        for entry in fl.flows:
+            row = column.row(align=True)
+            chosen = entry.name == fl.selected
+            pick = row.operator(
+                "forge.flow_select", text=entry.name,
+                icon="RADIOBUT_ON" if chosen else "RADIOBUT_OFF",
+                emboss=False, depress=chosen)
+            pick.name = entry.name
+            if entry.error:
+                row.label(text="", icon="ERROR")
+            else:
+                run = row.operator("forge.flow_run", text="Run", icon="PLAY")
+                run.name = entry.name
+            if chosen and entry.description:
+                sub = column.column(align=True)
+                sub.active = False
+                sub.scale_y = 0.75
+                for line in _wrap(entry.description, 38)[:3]:
+                    sub.label(text=line)
+            if chosen and entry.error:
+                sub = column.box()
+                sub.alert = True
+                for line in _wrap(entry.error, 38)[:3]:
+                    sub.label(text=line)
+
+        if len(fl.params):
+            box = layout.box()
+            box.enabled = not fl.busy
+            box.label(text="Parameters", icon="PRESET")
+            for item in fl.params:
+                box.prop(item, "value", text=item.label_text())
+                if item.description:
+                    sub = box.column(align=True)
+                    sub.active = False
+                    sub.scale_y = 0.7
+                    for line in _wrap(item.description, 40)[:2]:
+                        sub.label(text=line)
+
+        if fl.busy:
+            layout.label(text=fl.status or "Running ...", icon="SORTTIME")
+        elif fl.status:
+            box = layout.box()
+            box.alert = bool(fl.status_is_error)
+            for line in _wrap(fl.status, 38)[:4]:
+                box.label(text=line,
+                          icon="ERROR" if fl.status_is_error else "CHECKMARK")
+        if fl.summary:
+            row = layout.row()
+            row.active = False
+            row.label(text=fl.summary[:80], icon="MESH_DATA")
 
 
 class VIEW3D_PT_forge_rigforge(_ForgePanel, Panel):
@@ -674,6 +765,7 @@ _CLASSES = (
     VIEW3D_PT_forge_checks,
     VIEW3D_PT_forge_segments,
     VIEW3D_PT_forge_export,
+    VIEW3D_PT_forge_flows,
     VIEW3D_PT_forge_rigforge,
     VIEW3D_PT_forge_retopo,
     VIEW3D_PT_forge_uv,

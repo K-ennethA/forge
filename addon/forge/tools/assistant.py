@@ -40,6 +40,18 @@ BRIDGE_DOWN = "Assistant not running — double-click start_forge.cmd in the for
 #: before the artist has to scroll past their own question.
 MAX_TURNS = 6
 
+#: How many activity lines the panel shows under the busy indicator.  Enough to
+#: see what it is doing now and what it just did; not enough to push the chat
+#: log off the screen.
+ACTIVITY_LINES = 5
+
+#: Activity kinds -> the icon each line gets.
+ACTIVITY_ICONS = {
+    "tool": "TOOL_SETTINGS",
+    "text": "SMALL_CAPS",
+    "status": "SORTTIME",
+}
+
 POLL_INTERVAL = 0.4
 #: The bridge answers /ask and /job instantly; only the CLI behind it is slow.
 HTTP_TIMEOUT = 20.0
@@ -122,6 +134,13 @@ class ForgeChatTurn(PropertyGroup):
     text: StringProperty(name="Text", default="")
 
 
+class ForgeActivityLine(PropertyGroup):
+    """One line of "what it is doing right now", straight off the bridge."""
+
+    kind: StringProperty(default="status")  # "tool" | "text" | "status"
+    label: StringProperty(default="")
+
+
 class ForgeAssistantProps(PropertyGroup):
     message: StringProperty(
         name="Message",
@@ -129,6 +148,7 @@ class ForgeAssistantProps(PropertyGroup):
         default="",
     )
     log: CollectionProperty(type=ForgeChatTurn)
+    activity: CollectionProperty(type=ForgeActivityLine)
     status: StringProperty(name="Status", default="")
     status_is_error: BoolProperty(default=False)
     busy: BoolProperty(default=False)
@@ -163,6 +183,28 @@ def append_turn(props, role, text):
     while len(props.log) > MAX_TURNS * 2:
         props.log.remove(0)
     return entry
+
+
+def set_activity(props, entries):
+    """Replace the visible activity lines with the bridge's latest few.
+
+    Only the tail is kept: a 200-entry list would be a scroll bar, and the
+    artist wants the last thing that happened, not a transcript.
+    """
+    if props is None:
+        return 0
+    entries = [entry for entry in (entries or []) if isinstance(entry, dict)]
+    tail = entries[-ACTIVITY_LINES:]
+    if len(props.activity) == len(tail) and all(
+            line.label == str(entry.get("label") or "")
+            for line, entry in zip(props.activity, tail)):
+        return len(tail)  # unchanged: do not churn the UI every poll
+    props.activity.clear()
+    for entry in tail:
+        line = props.activity.add()
+        line.kind = str(entry.get("kind") or "status")
+        line.label = str(entry.get("label") or "")[:200]
+    return len(tail)
 
 
 def _alive(props):
@@ -259,10 +301,11 @@ class FORGE_OT_assistant_send(Operator):
         props.busy = True
         props.job_id = ""
         props.last_cost = ""
+        props.activity.clear()
         set_status(props, "Thinking ...")
 
-        # The worker thread must not touch bpy, so it publishes the job id here
-        # and the timer below copies it onto the props for the Stop button.
+        # The worker thread must not touch bpy, so it publishes the job id and
+        # the activity list here and the timer below copies both onto the props.
         shared = {}
 
         def work():
@@ -277,6 +320,7 @@ class FORGE_OT_assistant_send(Operator):
                     raise BridgeError("The assistant did not answer in time.")
                 time.sleep(POLL_INTERVAL)
                 state = request_json(job_url_base + job_id, method="GET")
+                shared["activity"] = state.get("activity") or []
                 if state.get("state") in ("done", "error", "cancelled"):
                     state["job_id"] = job_id
                     return state
@@ -286,6 +330,10 @@ class FORGE_OT_assistant_send(Operator):
                 return
             props.busy = False
             props.job_id = ""
+            # The finished job keeps its activity, so the last lines stay
+            # readable after the answer lands.
+            set_activity(props, (value or {}).get("activity")
+                         if isinstance(value, dict) else shared.get("activity"))
             if error is not None:
                 append_turn(props, "forge", str(error))
                 set_status(props, str(error), error=True)
@@ -312,8 +360,11 @@ class FORGE_OT_assistant_send(Operator):
                 set_status(props, message, error=True)
 
         def tick():
-            if _alive(props) and shared.get("job_id") and not props.job_id:
+            if not _alive(props):
+                return
+            if shared.get("job_id") and not props.job_id:
                 props.job_id = shared["job_id"]
+            set_activity(props, shared.get("activity"))
 
         _run_async(work, done, props, tick=tick)
         return {"FINISHED"}
@@ -333,6 +384,7 @@ class FORGE_OT_assistant_new(Operator):
     def execute(self, context):
         props = get_props(context)
         props.log.clear()
+        props.activity.clear()
         props.turns = 0
         props.last_cost = ""
         url = bridge_url("/new")
@@ -479,6 +531,7 @@ def _run_async(work, done, props, clear_busy=True, tick=None):
 
 _CLASSES = (
     ForgeChatTurn,
+    ForgeActivityLine,
     ForgeAssistantProps,
     FORGE_OT_assistant_send,
     FORGE_OT_assistant_new,

@@ -15,8 +15,23 @@ Endpoints
 ---------
 ``GET  /health``        -> ``{"status", "claude_cli": {"found", "path", "version"}}``
 ``POST /ask``           -> ``{"job_id"}``  (409 while another job is running)
-``GET  /job/<id>``      -> ``{"state", "reply"?, "session_id"?, "cost_usd"?, ...}``
+``GET  /job/<id>``      -> ``{"state", "activity", "reply"?, "session_id"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
+
+Activity (Phase 6b)
+-------------------
+The CLI runs with ``--output-format stream-json --verbose
+--include-partial-messages``, so its stdout is newline-delimited JSON events
+rather than one object at the end.  Those events are parsed as they arrive into
+``job["activity"]`` — ``[{"t": epoch, "kind": "tool"|"text"|"status", "label"}]``
+— which ``GET /job/<id>`` returns on every poll.  The panel draws the last few
+lines under the busy indicator so the artist can see what the AI is doing
+instead of watching a spinner.
+
+Parsing is deliberately forgiving: an event shape this bridge does not
+recognise is skipped, never fatal, and a run that never prints a ``result``
+event but exits 0 is salvaged from the last parseable line (falling back to the
+text that streamed past).
 
 Environment
 -----------
@@ -28,6 +43,8 @@ Environment
 ``FORGE_ASSISTANT_TOOLS``    ``--allowedTools`` value; unset = the Forge default.
                              Set it to the empty string for a no-tools run.
 ``FORGE_ASSISTANT_CWD``      working directory for the CLI (default: the repo root)
+``FORGE_ASSISTANT_TEXT_INTERVAL``  seconds between text activity markers
+                             (default 2.0; 0 = every chunk, for the tests)
 """
 
 import json
@@ -39,7 +56,7 @@ import sys
 import threading
 import time
 import uuid
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -61,6 +78,22 @@ PERMISSION_MODES = ("auto", "acceptEdits", None)
 CONTEXT_DIVIDER = "--- Current Blender context ---"
 
 MAX_JOBS = 20
+
+#: How many activity entries a job keeps.  Past this the MIDDLE is dropped: the
+#: first few say how the turn started, the last few say what it is doing now,
+#: and the 140th identical file read in between says nothing at all.
+ACTIVITY_LIMIT = 200
+#: How many of the oldest entries survive trimming.
+ACTIVITY_HEAD = 20
+#: Longest argument summary on a tool label (the contract's "≤60 chars").
+TOOL_ARG_LIMIT = 60
+#: Longest label of any kind, as a backstop against a pathological tool name.
+LABEL_LIMIT = 160
+#: Seconds between text markers.  Text streams a token at a time; one line every
+#: couple of seconds is a progress indicator, one per token is a firehose.
+DEFAULT_TEXT_INTERVAL = 2.0
+#: How much streamed text is kept to stand in for a missing result event.
+MAX_SALVAGE_TEXT = 8000
 
 #: Only meaningful on Windows; kept as 0 elsewhere so the same call site works.
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -131,6 +164,16 @@ def allowed_tools():
     if value is None:
         return DEFAULT_ALLOWED_TOOLS
     return value
+
+
+def text_interval():
+    """Seconds between text activity markers (0 disables the throttle)."""
+    try:
+        value = float(str(_env("FORGE_ASSISTANT_TEXT_INTERVAL",
+                               DEFAULT_TEXT_INTERVAL)).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_TEXT_INTERVAL
+    return max(0.0, value)
 
 
 # ---------------------------------------------------------------------------
@@ -300,8 +343,20 @@ def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
 
     Kept as one pure function so the tests can assert on it without spawning
     anything, and so the argv that ships is the argv that was tested.
+
+    ``stream-json`` (not ``json``) is what makes the activity list possible: the
+    CLI prints one JSON event per line as it works instead of a single object
+    when it is done.  ``--verbose`` is required by the CLI for stream-json in
+    ``-p`` mode, and ``--include-partial-messages`` is what turns text into
+    token deltas we can show as progress.  The final ``type: "result"`` line
+    carries exactly the fields ``--output-format json`` used to.
     """
-    argv = launcher(claude_path) + ["-p", prompt, "--output-format", "json"]
+    argv = launcher(claude_path) + [
+        "-p", prompt,
+        "--output-format", "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+    ]
 
     if os.path.isfile(SYSTEM_PROMPT_PATH):
         argv += ["--append-system-prompt-file", SYSTEM_PROMPT_PATH]
@@ -328,10 +383,11 @@ def build_argv(claude_path, prompt, session_id=None, permission_mode="auto"):
 def salvage_json(stdout):
     """The CLI's JSON payload, even with noise printed around it.
 
-    ``--output-format json`` writes one object, but node warnings, update
-    notices and shell wrappers all like to print a line first.  Try the whole
-    blob, then every line from the last backwards, then any brace-balanced
-    region.  Returns ``None`` when nothing parses.
+    The stream reader below handles the normal path line by line; this is the
+    last resort for a build that printed one ``--output-format json`` object
+    with node warnings, update notices or a shell wrapper's chatter around it.
+    Try the whole blob, then every line from the last backwards, then any
+    brace-balanced region.  Returns ``None`` when nothing parses.
     """
     text = (stdout or "").strip()
     if not text:
@@ -418,6 +474,279 @@ def extract_reply(payload):
 
 
 # ---------------------------------------------------------------------------
+# the NDJSON stream: events in, activity out
+# ---------------------------------------------------------------------------
+
+def parse_stream_line(line):
+    """One line of the CLI's stdout as a dict, or ``None`` if it is not one.
+
+    Node warnings, blank lines and half-written objects all turn up here.  None
+    of them is an error: an unreadable line is skipped and the stream carries on.
+    """
+    text = (line or "").strip()
+    if not text or not text.startswith("{"):
+        return None
+    try:
+        value = json.loads(text)
+    except ValueError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def looks_like_result(payload):
+    """Is this event the final result object?
+
+    ``type: "result"`` is the CLI's own marker.  The rest is for a build that
+    prints the plain ``--output-format json`` object instead — the same fields,
+    without the tag.
+    """
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("type") == "result":
+        return True
+    if payload.get("type"):  # some other tagged event: not the result
+        return False
+    return any(key in payload for key in ("result", "session_id", "is_error"))
+
+
+def _clip(text, limit):
+    text = " ".join(str(text or "").split())
+    if len(text) <= limit:
+        return text
+    return text[: max(1, limit - 1)].rstrip() + "…"
+
+
+#: Argument names worth showing, most identifying first.  A tool call reads
+#: "partforge_check: part.py", not a dump of its whole input object.
+_ARG_KEYS = (
+    "script_path", "path", "file_path", "name", "object", "new_name", "tag",
+    "directory", "source_path", "rig", "action", "operand", "mode", "format",
+    "pattern", "command", "url", "code", "message",
+)
+
+#: Everything the assistant can call is prefixed by the MCP server name; the
+#: artist does not need to read "mcp__forge__" 30 times.
+_TOOL_PREFIXES = ("mcp__%s__" % MCP_SERVER, "mcp__forge__")
+
+
+def short_tool_name(name):
+    text = str(name or "").strip() or "tool"
+    for prefix in _TOOL_PREFIXES:
+        if text.startswith(prefix):
+            return text[len(prefix):] or text
+    return text
+
+
+def _short_value(value):
+    if isinstance(value, str):
+        text = value.strip()
+        if ("\\" in text or "/" in text) and not text.startswith("http"):
+            base = os.path.basename(text.replace("\\", "/").rstrip("/"))
+            if base:
+                return base
+        return text
+    if isinstance(value, bool) or value is None:
+        return json.dumps(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    try:
+        return json.dumps(value, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def summarize_args(args):
+    """A ≤60 character sketch of a tool's input, or ``""`` when there is none."""
+    if not isinstance(args, dict) or not args:
+        return ""
+    for key in _ARG_KEYS:
+        value = args.get(key)
+        if value in (None, "", [], {}):
+            continue
+        summary = _short_value(value)
+        if summary:
+            return _clip(summary, TOOL_ARG_LIMIT)
+    parts = []
+    for key in list(args)[:3]:
+        value = args.get(key)
+        if value in (None, "", [], {}):
+            continue
+        parts.append("%s=%s" % (key, _short_value(value)))
+    return _clip(", ".join(parts), TOOL_ARG_LIMIT)
+
+
+def tool_label(name, args=None):
+    """``"partforge_check: part.py"`` — the label a tool event gets."""
+    label = short_tool_name(name)
+    summary = summarize_args(args)
+    return "%s: %s" % (label, summary) if summary else label
+
+
+class ActivityRecorder(object):
+    """Turns a stream of CLI events into the job's activity list.
+
+    Every method is defensive on purpose.  This runs on the worker thread while
+    a real turn is in flight; a shape we have not seen before must cost the
+    artist a missing line, never the answer.
+    """
+
+    def __init__(self, store, job_id, interval=None):
+        self.store = store
+        self.job_id = job_id
+        self.interval = text_interval() if interval is None else float(interval)
+        self._tool_entries = {}     # tool_use id -> the activity entry dict
+        self._tool_names = {}       # tool_use id -> full tool name
+        self._tool_json = {}        # tool_use id -> accumulated partial JSON
+        self._tool_detailed = set() # ids whose label already carries arguments
+        self._block_tools = {}      # stream block index -> tool_use id
+        self._seen_tool = False
+        self._said_thinking = False
+        self._saw_text_delta = False
+        self._pending_text = ""
+        self._all_text = ""
+        self._last_text_at = 0.0
+
+    # -- output ----------------------------------------------------------
+    def text(self):
+        """Everything that streamed past as assistant text."""
+        return self._all_text.strip()
+
+    def push(self, kind, label):
+        return self.store.add_activity(self.job_id, kind, label)
+
+    # -- input -----------------------------------------------------------
+    def feed(self, payload):
+        """One parsed NDJSON object. Never raises."""
+        try:
+            self._feed(payload)
+        except Exception:  # noqa: BLE001 - visibility must not break the turn
+            pass
+
+    def _feed(self, payload):
+        if not isinstance(payload, dict):
+            return
+        kind = payload.get("type")
+        if kind == "stream_event":
+            self._event(payload.get("event"))
+        elif kind == "assistant":
+            self._message(payload.get("message"))
+        elif kind in ("content_block_start", "content_block_delta",
+                      "content_block_stop"):
+            # a build that emits the raw Anthropic events without the wrapper
+            self._event(payload)
+
+    def _event(self, event):
+        if not isinstance(event, dict):
+            return
+        etype = event.get("type")
+        index = event.get("index")
+        if etype == "content_block_start":
+            block = event.get("content_block")
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                tool_id = str(block.get("id") or "block-%s" % index)
+                self._block_tools[index] = tool_id
+                self._tool(tool_id, block.get("name"), block.get("input"))
+            return
+        if etype == "content_block_delta":
+            delta = event.get("delta")
+            if not isinstance(delta, dict):
+                return
+            dtype = delta.get("type")
+            if dtype == "text_delta":
+                self._saw_text_delta = True
+                self._text(delta.get("text"))
+            elif dtype == "input_json_delta":
+                tool_id = self._block_tools.get(index)
+                if tool_id:
+                    chunk = str(delta.get("partial_json") or "")
+                    self._tool_json[tool_id] = (
+                        self._tool_json.get(tool_id, "") + chunk)[:8000]
+            return
+        if etype == "content_block_stop":
+            tool_id = self._block_tools.pop(index, None)
+            if tool_id:
+                self._finish_tool(tool_id)
+
+    def _message(self, message):
+        """An assembled assistant message — the tool inputs arrive complete here."""
+        if not isinstance(message, dict):
+            return
+        content = message.get("content")
+        if not isinstance(content, list):
+            return
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use":
+                self._tool(str(block.get("id") or ""), block.get("name"),
+                           block.get("input"))
+            elif block.get("type") == "text" and not self._saw_text_delta:
+                # No partial messages on this build: the whole block at once.
+                self._text(block.get("text"))
+
+    # -- pieces ----------------------------------------------------------
+    def _tool(self, tool_id, name, args):
+        if not name:
+            return
+        tool_id = tool_id or "tool-%d" % len(self._tool_entries)
+        self._seen_tool = True
+        entry = self._tool_entries.get(tool_id)
+        if entry is None:
+            self._tool_names[tool_id] = name
+            entry = self.push("tool", tool_label(name, args))
+            if entry is None:
+                return
+            self._tool_entries[tool_id] = entry
+            if summarize_args(args):
+                self._tool_detailed.add(tool_id)
+            return
+        # Seen already (streamed start, now the complete input): fill the
+        # arguments in on the SAME line rather than logging the call twice.
+        if tool_id not in self._tool_detailed and summarize_args(args):
+            self.store.relabel_activity(self.job_id, entry, tool_label(name, args))
+            self._tool_detailed.add(tool_id)
+
+    def _finish_tool(self, tool_id):
+        if tool_id in self._tool_detailed:
+            return
+        raw = self._tool_json.pop(tool_id, "")
+        if not raw:
+            return
+        try:
+            args = json.loads(raw)
+        except ValueError:
+            return
+        entry = self._tool_entries.get(tool_id)
+        if entry is None or not summarize_args(args):
+            return
+        self.store.relabel_activity(
+            self.job_id, entry, tool_label(self._tool_names.get(tool_id), args))
+        self._tool_detailed.add(tool_id)
+
+    def _text(self, chunk):
+        chunk = str(chunk or "")
+        if not chunk:
+            return
+        if self._seen_tool and not self._said_thinking:
+            # The tools are done and words are coming: say so once.
+            self.push("status", "thinking…")
+            self._said_thinking = True
+        self._pending_text += chunk
+        if len(self._all_text) < MAX_SALVAGE_TEXT:
+            self._all_text += chunk
+
+        now = time.time()
+        if self.interval and (now - self._last_text_at) < self.interval:
+            return
+        snippet = _clip(self._pending_text, TOOL_ARG_LIMIT)
+        self._pending_text = ""
+        if not snippet:
+            return
+        self._last_text_at = now
+        self.push("text", snippet)
+
+
+# ---------------------------------------------------------------------------
 # jobs
 # ---------------------------------------------------------------------------
 
@@ -463,6 +792,8 @@ class JobStore(object):
                 "started_at": time.time(),
                 "proc": None,
                 "cancelled": False,
+                "activity": [],
+                "activity_dropped": 0,
             }
             self._jobs[job_id] = job
             self._active = job_id
@@ -481,6 +812,47 @@ class JobStore(object):
         with self._lock:
             active = self._jobs.get(self._active) if self._active else None
             return bool(active is not None and active["state"] == "running")
+
+    # -- activity --------------------------------------------------------
+    def add_activity(self, job_id, kind, label):
+        """Append one activity entry and return it (``None`` if the job is gone).
+
+        The returned dict is live: :meth:`relabel_activity` edits it in place so
+        a tool call whose arguments arrive after its name does not log twice.
+        """
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return None
+            entry = {"t": round(time.time(), 3),
+                     "kind": str(kind or "status"),
+                     "label": str(label or "")[:LABEL_LIMIT]}
+            entries = job.setdefault("activity", [])
+            entries.append(entry)
+            # Trim from the middle: keep how it started and what it is doing now.
+            while len(entries) > ACTIVITY_LIMIT - 1:
+                del entries[ACTIVITY_HEAD]
+                job["activity_dropped"] = int(job.get("activity_dropped") or 0) + 1
+            return entry
+
+    def relabel_activity(self, job_id, entry, label):
+        with self._lock:
+            if isinstance(entry, dict):
+                entry["label"] = str(label or "")[:LABEL_LIMIT]
+
+    def reset_activity(self, job_id):
+        """Forget an attempt's activity — used when a turn is retried."""
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is not None:
+                job["activity"] = []
+                job["activity_dropped"] = 0
+
+    def snapshot(self, job_id):
+        """The public view of a job, copied under the lock."""
+        with self._lock:
+            job = self._jobs.get(job_id)
+            return public_job(job)
 
     def attach_proc(self, job_id, proc):
         with self._lock:
@@ -535,6 +907,24 @@ def _terminate(proc):
 JOBS = JobStore()
 
 
+def public_activity(job):
+    """A copy of the job's activity, with the trimmed middle marked.
+
+    The marker is synthesised here rather than stored so it can never be
+    trimmed away itself, and so the count stays right as more is dropped.
+    """
+    entries = [dict(entry) for entry in (job.get("activity") or [])]
+    dropped = int(job.get("activity_dropped") or 0)
+    if dropped > 0:
+        anchor = entries[ACTIVITY_HEAD]["t"] if len(entries) > ACTIVITY_HEAD else time.time()
+        entries.insert(ACTIVITY_HEAD, {
+            "t": anchor,
+            "kind": "status",
+            "label": "… %d earlier steps not shown …" % dropped,
+        })
+    return entries
+
+
 def public_job(job):
     """The subset of a job the panel is allowed to see."""
     if job is None:
@@ -544,6 +934,12 @@ def public_job(job):
                 "model", "usage", "num_turns"):
         if job.get(key) is not None:
             out[key] = job[key]
+    # Always present, running or finished: the panel draws it live and the
+    # finished job keeps it so the artist can still read what was done.
+    out["activity"] = public_activity(job)
+    dropped = int(job.get("activity_dropped") or 0)
+    if dropped:
+        out["activity_dropped"] = dropped
     return out
 
 
@@ -551,8 +947,80 @@ def public_job(job):
 # running a turn
 # ---------------------------------------------------------------------------
 
+def _drain(stream, sink):
+    """Read a pipe to EOF into ``sink``. Keeps stderr from filling and blocking."""
+    try:
+        for chunk in iter(stream.readline, b""):
+            sink.append(chunk)
+    except Exception:  # noqa: BLE001 - a closed pipe is the normal ending
+        pass
+
+
+def read_stream(proc, limit, recorder):
+    """Consume the CLI's NDJSON stdout, feeding ``recorder`` as it goes.
+
+    Returns ``{"result", "last", "stdout_tail", "stderr", "code", "timed_out"}``.
+    The timeout is a watchdog thread rather than a read deadline because
+    ``readline`` blocks: when it fires the process is terminated, the pipe
+    closes and this loop ends on its own.
+    """
+    stderr_chunks = []
+    stderr_thread = threading.Thread(
+        target=_drain, args=(proc.stderr, stderr_chunks),
+        name="ForgeAssistantStderr", daemon=True)
+    stderr_thread.start()
+
+    state = {"timed_out": False}
+
+    def on_timeout():
+        state["timed_out"] = True
+        _terminate(proc)
+
+    watchdog = threading.Timer(limit, on_timeout)
+    watchdog.daemon = True
+    watchdog.start()
+
+    result = None
+    last = None
+    tail = deque(maxlen=20)
+    try:
+        for raw in iter(proc.stdout.readline, b""):
+            line = raw.decode("utf-8", "replace")
+            tail.append(line.rstrip("\r\n"))
+            payload = parse_stream_line(line)
+            if payload is None:
+                continue  # noise, a half-line, an event shape we do not know
+            last = payload
+            if looks_like_result(payload):
+                result = payload
+            recorder.feed(payload)
+    except Exception as exc:  # noqa: BLE001 - a broken pipe ends the turn, not the server
+        log("[assistant] stream read failed: %s" % exc)
+    finally:
+        watchdog.cancel()
+        for stream in (proc.stdout, proc.stderr):
+            try:
+                stream.close()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            proc.wait(timeout=15)
+        except Exception:  # noqa: BLE001
+            _terminate(proc)
+        stderr_thread.join(timeout=2.0)
+
+    return {
+        "result": result,
+        "last": last,
+        "stdout_tail": "\n".join(tail),
+        "stderr": b"".join(stderr_chunks).decode("utf-8", "replace"),
+        "code": proc.returncode,
+        "timed_out": state["timed_out"],
+    }
+
+
 def run_turn(job_id, prompt, session_id):
-    """Spawn the CLI, read its JSON, land the result on the job. Never raises."""
+    """Spawn the CLI, read its event stream, land the result. Never raises."""
     claude_path = resolve_claude()
     if not claude_path:
         JOBS.finish(job_id, state="error", error=INSTALL_HINT)
@@ -565,6 +1033,9 @@ def run_turn(job_id, prompt, session_id):
 
     while modes:
         mode = modes.pop(0)
+        # A retry under a different flag starts its activity list over; the
+        # rejected attempt did nothing worth showing.
+        JOBS.reset_activity(job_id)
         argv = build_argv(claude_path, prompt, session_id=session_id, permission_mode=mode)
         try:
             proc = subprocess.Popen(
@@ -581,17 +1052,18 @@ def run_turn(job_id, prompt, session_id):
             return
 
         JOBS.attach_proc(job_id, proc)
+        recorder = ActivityRecorder(JOBS, job_id)
         try:
-            raw_out, raw_err = proc.communicate(timeout=limit)
-        except subprocess.TimeoutExpired:
-            _terminate(proc)
+            outcome = read_stream(proc, limit, recorder)
+        except Exception as exc:  # noqa: BLE001
+            JOBS.finish(job_id, state="error", error="Claude CLI failed: %s" % exc)
+            return
+
+        if outcome["timed_out"]:
             JOBS.finish(job_id, state="error",
                         error="The assistant took longer than %.0f seconds and was stopped. "
                               "Try a smaller request, or raise FORGE_ASSISTANT_TIMEOUT."
                               % limit)
-            return
-        except Exception as exc:  # noqa: BLE001
-            JOBS.finish(job_id, state="error", error="Claude CLI failed: %s" % exc)
             return
 
         job = JOBS.get(job_id)
@@ -599,18 +1071,25 @@ def run_turn(job_id, prompt, session_id):
             JOBS.finish(job_id, state="cancelled", error="Cancelled.")
             return
 
-        stdout = (raw_out or b"").decode("utf-8", "replace")
-        stderr = (raw_err or b"").decode("utf-8", "replace")
-        code = proc.returncode
+        stderr = outcome["stderr"]
+        code = outcome["code"]
 
         # Step down through the permission-mode flags an older build rejects.
         if code not in (0, 2) and mode and _looks_like_bad_flag(stderr, "--permission-mode"):
             last_error = _tail(stderr)
             continue
 
-        payload = salvage_json(stdout)
+        payload = outcome["result"]
+        streamed = recorder.text()
+        if payload is None and code == 0:
+            # Exited clean but never printed a result event. The last line that
+            # parsed is the best answer available; the text that streamed past
+            # is the reply itself.
+            payload = outcome["last"]
+            if not isinstance(payload, dict):
+                payload = salvage_json(outcome["stdout_tail"]) or {}
         if payload is None:
-            detail = _tail(stderr) or _tail(stdout) or "no output"
+            detail = _tail(stderr) or _tail(outcome["stdout_tail"]) or "no output"
             JOBS.finish(
                 job_id, state="error",
                 error="The Claude CLI did not return readable JSON (exit %s).\n%s"
@@ -625,7 +1104,7 @@ def run_turn(job_id, prompt, session_id):
             JOBS.remember_session(payload.get("session_id"))
             return
 
-        reply = extract_reply(payload)
+        reply = extract_reply(payload) or streamed
         if not reply and code not in (0, 2):
             JOBS.finish(job_id, state="error",
                         error="The Claude CLI exited %s with no reply.\n%s"
@@ -702,12 +1181,12 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
         if path.startswith("/job/"):
-            job = JOBS.get(path[len("/job/"):])
-            if job is None:
+            view = JOBS.snapshot(path[len("/job/"):])
+            if view is None:
                 self._send(404, {"error": "No such job. It may have scrolled out of "
                                           "the last %d." % MAX_JOBS})
                 return
-            self._send(200, public_job(job))
+            self._send(200, view)
             return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -721,7 +1200,7 @@ class Handler(BaseHTTPRequestHandler):
             if job is None:
                 self._send(404, {"error": "No such job."})
                 return
-            self._send(200, public_job(JOBS.get(job["job_id"])))
+            self._send(200, JOBS.snapshot(job["job_id"]))
             return
         if path == "/new":
             JOBS.reset_session()

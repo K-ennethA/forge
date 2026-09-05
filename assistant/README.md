@@ -46,18 +46,51 @@ has to run under whatever Python is around, with no install step, so
 |---|---|---|---|
 | GET | `/health` | — | `{"status": "ok", "claude_cli": {"found", "path", "version"?, "hint"?}, "cwd", "session", "busy"}` |
 | POST | `/ask` | `{"message", "context": {...}, "conversation": "continue"\|"new"}` | `{"job_id", "state": "running"}`; **409** while another job runs; **503** if the CLI is missing; **400** for an empty message |
-| GET | `/job/<id>` | — | `{"state": "running"\|"done"\|"error"\|"cancelled", "reply"?, "session_id"?, "cost_usd"?, "duration_ms"?, "model"?, "usage"?, "error"?}` |
+| GET | `/job/<id>` | — | `{"state": "running"\|"done"\|"error"\|"cancelled", "activity": [...], "reply"?, "session_id"?, "cost_usd"?, "duration_ms"?, "model"?, "usage"?, "error"?}` |
 | POST | `/cancel/<id>` | — | the job, now `cancelled` |
 | POST | `/new` | — | `{"status": "ok", "session": null}` — forget the conversation without asking anything |
 
 One job at a time, on purpose: two turns in flight would fight over the same
 resumed session. The last 20 jobs stay in memory; older ids 404.
 
+## Live activity (Phase 6b)
+
+A turn takes tens of seconds. A spinner for tens of seconds looks broken. So the
+bridge reads the CLI's event stream as it arrives and keeps a running list of
+what the model is doing, which the panel draws under the busy indicator.
+
+```jsonc
+"activity": [
+  {"t": 1764972041.213, "kind": "tool",   "label": "partforge_check: part.py"},
+  {"t": 1764972048.771, "kind": "tool",   "label": "partforge_segment: overrides={\"bowl…"},
+  {"t": 1764972061.004, "kind": "status", "label": "thinking…"},
+  {"t": 1764972061.377, "kind": "text",   "label": "Done - I cut it into 4 wedges,"}
+]
+```
+
+| kind | When | Label |
+|---|---|---|
+| `tool` | The model called a tool | The tool name with `mcp__forge__` stripped, plus a **≤60-character** summary of its most identifying argument (a path is shown as its basename). One entry per call: the name arrives first and the arguments are filled into the *same* line when they finish streaming. |
+| `status` | Text starts flowing after at least one tool ran | `thinking…` — exactly once per turn |
+| `text` | The reply is being written | The text that arrived since the last marker, clipped to 60 characters, at most **one every 2 s** (`FORGE_ASSISTANT_TEXT_INTERVAL`) |
+
+- `GET /job/<id>` returns `activity` **always** — running, done, errored or
+  cancelled — and the finished job keeps it, so the last lines stay readable
+  after the answer lands. A run that produced no events (an older CLI printing
+  one JSON object) returns `[]` rather than failing.
+- The list is capped at **200 entries**. Past that the *middle* is dropped —
+  the first 20 say how the turn started, the tail says what it is doing now —
+  and a synthetic `status` line in their place says how many are missing
+  (`activity_dropped` carries the count).
+- Parsing is forgiving on purpose. A line that is not JSON, an event shape this
+  bridge has never seen, a half-written object: skipped, never fatal. The
+  activity list is a nicety; the answer is not.
+
 ## The command line it builds
 
 ```
 <claude> -p "<message>\n\n--- Current Blender context ---\n<context lines>"
-         --output-format json
+         --output-format stream-json --verbose --include-partial-messages
          --append-system-prompt-file assistant/system_prompt.md
          --allowedTools "Read,Glob,Grep,mcp__forge__*"
          --permission-mode auto
@@ -65,7 +98,16 @@ resumed session. The last 20 jobs stay in memory; older ids 404.
          [--resume <session_id>]          # every turn after the first
 ```
 
-run with `cwd` = the repo root. Four details are load-bearing:
+run with `cwd` = the repo root. Five details are load-bearing:
+
+- **`stream-json`, not `json`.** This is what makes the activity list possible:
+  the CLI prints one JSON event per line as it works instead of a single object
+  at the end. `--verbose` is required by the CLI alongside it in `-p` mode, and
+  `--include-partial-messages` is what turns the reply into text deltas — drop
+  it and the panel goes silent while the model writes. The final
+  `type: "result"` line carries exactly the fields `--output-format json` used
+  to (`result`, `session_id`, `total_cost_usd`, `usage`, `model`), so nothing
+  downstream changed.
 
 - **cwd is the repo root** so `.mcp.json` is discovered. Project-scope MCP
   servers load automatically in `-p` mode with no approval gate, and CLI
@@ -89,6 +131,7 @@ run with `cwd` = the repo root. Four details are load-bearing:
 | `FORGE_ASSISTANT_TIMEOUT` | `600` | Seconds one turn may take |
 | `FORGE_ASSISTANT_TOOLS` | the list above | `--allowedTools` value; set it to `""` for a no-tools run |
 | `FORGE_ASSISTANT_CWD` | the repo root | Working directory for the CLI |
+| `FORGE_ASSISTANT_TEXT_INTERVAL` | `2.0` | Seconds between `text` activity markers; `0` records every chunk (the tests use it) |
 | `FORGE_ASSISTANT_VERBOSE` | unset | Print an access log |
 
 ## Finding the CLI on Windows
@@ -119,9 +162,19 @@ has no such problem.
 
 - **CLI missing** — `/health` says `found: false` with an install hint, and
   `/ask` answers 503 with the same hint instead of starting a job.
-- **Noisy stdout** — a node warning printed before the JSON is salvaged by
-  scanning backwards for the last line that parses; failing that, the stderr
-  tail is surfaced verbatim rather than a shrug.
+- **Noisy stdout** — a node warning printed between events is skipped by the
+  line parser; a build that answers with one plain JSON object instead of a
+  stream is still read (the object *is* the last parseable line). Failing all
+  of that, the stderr tail is surfaced verbatim rather than a shrug.
+- **No result event** — if the stream ends with the process exiting 0 and no
+  `type: "result"` line, the last parseable line is used, and if that carries no
+  reply the text that streamed past becomes the reply. An answer the artist can
+  read beats a correct complaint about a missing event.
+- **Cancel mid-stream** — `POST /cancel/<id>` terminates the process; the pipe
+  closes, the read loop ends, and the job finishes `cancelled` **keeping the
+  activity it had gathered**, so it is still visible what it got through.
+- **Timeout** — a watchdog thread, not a read deadline, because `readline`
+  blocks: it terminates the process and the loop ends on its own.
 - **Not signed in / rate limited** — rewritten into a sentence an artist can act
   on, with the CLI's own words kept in parentheses.
 - **`pythonw.exe`** — `sys.stderr` is `None` there, so every diagnostic goes
@@ -140,11 +193,29 @@ interpreter (`bridge.launcher`) rather than through a `.cmd` wrapper — deliber
 since `cmd.exe` cannot carry the multi-line prompt.
 
 The fake does two jobs: it **fails loudly** if the command line lost a flag that
-makes the assistant work (`-p`, `--output-format json`, `--allowedTools`, a real
+makes the assistant work (`-p`, `--output-format stream-json`, `--verbose`,
+`--include-partial-messages`, `--allowedTools`, a real
 `--append-system-prompt-file`), and it **logs every argv** to `FAKE_CLAUDE_LOG`
 so tests can assert after the fact — most usefully that turn two carried
-`--resume`. `FAKE_CLAUDE_MODE` picks the failure being rehearsed: `noise`,
-`garbage`, `slow`, `reject_permission`, `api_error`.
+`--resume`. `FAKE_CLAUDE_MODE` picks what is being rehearsed:
+
+| Mode | What it prints |
+|---|---|
+| `ok` (default) | one `--output-format json`-shaped result object |
+| `noise` | a node warning line, then that object |
+| `garbage` | no JSON at all, exit 1 |
+| `slow` | sleeps `FAKE_CLAUDE_SLEEP` first (cancel, busy) |
+| `reject_permission` | exits 1 on anything but `--permission-mode acceptEdits` |
+| `api_error` | the CLI's `is_error` result shape |
+| `stream` | the real event sequence: two tool calls (one with its arguments arriving as `input_json_delta` chunks), a deliberately malformed line, text deltas, then the result event |
+| `stream_noresult` | that stream with the result withheld, exit 0 — the salvage path |
+| `stream_slow` | that stream, sleeping after the tool events so a cancel lands mid-stream |
+
+`FAKE_CLAUDE_STREAM=1` (or a flag file named by `FAKE_CLAUDE_STREAM_FILE`)
+turns streaming on without naming a mode. The output shape and the flags the
+bridge must pass are deliberately independent: the bridge always asks for
+stream-json, and the json modes prove it still copes with a build that answers
+with one object anyway.
 
 One real turn against the live CLI runs only when you ask for it:
 
