@@ -35,6 +35,7 @@ DEFAULTS = {
     "port": 9876,
     "autostart": False,
     "service_url": "http://127.0.0.1:8765",
+    "assistant_url": "http://127.0.0.1:8901",
     "printer_path": default_printer_path(),
     "request_timeout": 120.0,
     "job_timeout": 600.0,

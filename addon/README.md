@@ -1,6 +1,6 @@
 # Forge — Blender add-on
 
-The Blender half of the Forge pipeline. It does three things:
+The Blender half of the Forge pipeline. It does four things:
 
 1. Runs a **command socket** on `127.0.0.1:9876` (newline-delimited JSON) that the Forge
    MCP server drives, so Claude can say "symmetrize", "voxel remesh at 1 mm", "export STL"
@@ -16,6 +16,11 @@ The Blender half of the Forge pipeline. It does three things:
    tags with its cloth sim baked to a shape key, the Godot action library, structured
    keyframing and mocap retargeting (Phase 5). That is the whole run: sculpt in, dressed
    and animated playable character out.
+4. Renders the **Assistant panel** at the top of the tab (Phase 6): a chat box where you
+   describe what you want in ordinary words. It talks to the assistant bridge
+   (`assistant/bridge.py`, port 8901), which runs the Claude Code CLI headless with the
+   Forge MCP tools. Every other panel assumes you know which button you want; this one
+   does not.
 
 Zero third-party dependencies — Python standard library plus `bpy`/`bmesh` only.
 
@@ -220,6 +225,42 @@ Notes:
 - Operators that Blender *cancels* rather than raising on (modifier apply, voxel remesh,
   Quadriflow, STL export, symmetrize) have their return value checked, so a silent
   no-op comes back as `status: "error"` instead of a bogus success.
+
+## Assistant panel
+
+`View3D ▸ N sidebar ▸ Forge ▸ Assistant` — deliberately the **first** box in the tab
+(`bl_order = 0`, registered first), because it is the entry point for someone who has
+never opened Blender before. Everything below it stays exactly as it was; the assistant
+is a layer over the manual panels, never a replacement.
+
+Type what you want in your own words, press **Send**, and the answer lands in the chat
+log above the field (last six exchanges, `You:` / `Forge:`). **New Conversation** (the
+page icon) clears the log and tells the bridge to forget the session; the globe icon
+checks that the bridge and the Claude CLI are both there; while a turn is in flight the
+row becomes a **Stop** button.
+
+The panel itself does no thinking. It POSTs to the **assistant bridge** on
+`127.0.0.1:8901` (`assistant/bridge.py` in this repo, started by `start_forge.cmd`),
+which runs the Claude Code CLI headless in the repo with the Forge MCP tools allowed.
+Same async shape as PartForge: the operator returns immediately, a worker thread does the
+HTTP, and a `bpy.app.timers` callback lands the reply on the main thread. `urllib` only,
+every request has a timeout, and every failure ends up in the panel's status line.
+
+The context sent with each message is the active object with its size **in millimetres**,
+a summary of the scene's objects, the current PartForge script path, the mode and the
+Blender version — built on the main thread before the worker starts.
+
+With nothing listening the status line reads, exactly:
+
+```
+Assistant not running — double-click start_forge.cmd in the forge folder
+```
+
+which names the script the repo root actually ships. The bridge address is an add-on
+preference (`Edit ▸ Preferences ▸ Add-ons ▸ Forge ▸ Assistant`), default
+`http://127.0.0.1:8901`.
+
+Full protocol, environment variables and the CLI command line: `assistant/README.md`.
 
 ## PartForge panel
 
@@ -825,6 +866,7 @@ addon/forge/
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
+  tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
 addon/tests/
@@ -832,6 +874,7 @@ addon/tests/
   headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
   headless_phase4.py     headless checks for the rig, the weights and the Godot export
   headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
+  headless_assistant.py  headless checks for the Assistant panel against a fake bridge
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
@@ -842,15 +885,38 @@ and none of Phase 3's fields mean anything to them — but it reports through a 
 drawn the same way, so the section still reads as one panel.
 
 Two conventions in `ui/panels.py` worth knowing before you edit it: the PartForge panels
-bind their state to a local called `props`, the RigForge Phase 3/4 ones to `rf`, and the
-Phase 5 ones to `ra`. They are different PropertyGroups on the scene, and the headless
-panel-wiring tests tell them apart by that name. And nothing in the file does work: every
-button is an operator that reports back through its panel's `status` string.
+bind their state to a local called `props`, the RigForge Phase 3/4 ones to `rf`, the
+Phase 5 ones to `ra`, and the Phase 6 Assistant to `chat`. They are different
+PropertyGroups on the scene, and the headless panel-wiring tests tell them apart by that
+name — reuse one and another phase's suite fails on a property that is not on its group.
+And nothing in the file does work: every button is an operator that reports back through
+its panel's `status` string.
 
 ## Headless tests
 
-Four suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 5 they are **49 + 108 + 156 + 150 = 463 checks**, all green on Blender 5.0.1.
+Five suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 6 they are **49 + 108 + 156 + 150 + 77 = 540 checks**, all green on Blender 5.0.1.
+
+### Phase 6 — the Assistant panel (`headless_assistant.py`)
+
+Needs **no geometry service, no Claude CLI and no network beyond loopback**: the bridge
+it talks to is a twenty-line `http.server` inside the harness answering `/ask`, `/job`,
+`/new` and `/cancel` with canned JSON.
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python addon\tests\headless_assistant.py
+```
+
+Port 9882 (HTTP, not the command socket — the assistant does not speak that protocol).
+77 checks over: registration and panel ordering; the context the panel builds (active
+object in millimetres, scene summary, PartForge script path); a Send that round-trips a
+canned reply into the chat log with its cost and duration; the six-exchange log cap; New
+Conversation clearing both the log and the bridge session; a bridge error and a 409 both
+arriving as plain-language status lines; and — character for character — the sentence
+shown when nothing is listening. Whether the *bridge* builds the right command line is
+`assistant/tests/test_bridge.py`'s job; the two suites never overlap.
 
 ### Phase 5 — cloth and animation (`headless_phase5.py`)
 

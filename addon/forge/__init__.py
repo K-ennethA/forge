@@ -65,6 +65,14 @@ class ForgePreferences(AddonPreferences):
         description="Base URL of the Build123d geometry service used by the PartForge panel",
         default="http://127.0.0.1:8765",
     )
+    assistant_url: StringProperty(
+        name="Assistant Bridge URL",
+        description=(
+            "Base URL of the Forge Assistant bridge that the chat box talks to. "
+            "start_forge.cmd launches it on this port"
+        ),
+        default="http://127.0.0.1:8901",
+    )
     printer_path: StringProperty(
         name="Printer Profile",
         description=(
@@ -120,6 +128,11 @@ class ForgePreferences(AddonPreferences):
         box.prop(self, "service_url")
         box.prop(self, "printer_path")
         box.prop(self, "request_timeout")
+
+        box = layout.box()
+        box.label(text="Assistant (chat box)", icon="LIGHT")
+        box.prop(self, "assistant_url")
+        box.label(text="Started by start_forge.cmd in the forge folder", icon="INFO")
 
         layout.prop(self, "verbose")
 

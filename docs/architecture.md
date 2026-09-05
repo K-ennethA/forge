@@ -128,6 +128,21 @@ New socket commands (additive; refinements folded back by the orchestrator). No 
 
 MCP mirrors as thin tools; described-motion keyframing itself is Claude at runtime using `rigforge_keyframe`/`rigforge_action`. Panel: Cloth box (tags/selection, preset, output, Make Garment) + Actions box (library list with loop badges, New/Push-to-NLA).
 
+## Phase 6 sketch — Forge Assistant (AI chat inside Blender)
+
+Product philosophy — THE governing contract for the assistant, from the user verbatim in intent: **abstract difficulty away; enable the artist without them being an expert on the tech or Blender.** Concretely, every assistant reply follows one of three shapes:
+1. **Did it** — the request was achievable with tools: do it, then say what changed in plain language.
+2. **90% + handoff** — do everything the tools can, then give the remaining steps as a numbered, beginner-level list naming exact UI locations ("press N → Forge tab → Segments box → set Radial to 4") for the part only a human hand/eye can do.
+3. **Can't do it, here's how you do it** — when tools can't help (sculpt detail, artistic judgment, GUI-only work): a step-by-step beginner walkthrough of the commands/approach, jargon explained inline, no assumed Blender knowledge.
+Manual panels always remain; the assistant is a layer, never a replacement.
+
+Component `assistant/` — a thin local bridge, stdlib-only Python (no venv needed), HTTP on `127.0.0.1:8901`:
+- `GET /health` → `{"status", "claude_cli": {found, version}}`
+- `POST /ask` `{"message": str, "context": {"active_object"?, "objects"?, "script_path"?}, "conversation": "continue"|"new"}` → starts a job; `{"job_id"}`
+- `GET /job/<id>` → `{"state": "running"|"done"|"error", "reply"?, "actions"?: [summarized tool calls], "error"?}` (panel polls)
+- `POST /cancel/<id>`
+The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
+
 ## PARAMS block convention (the PartForge script contract)
 
 Every generated script is a plain Python file with, at top level:

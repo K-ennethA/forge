@@ -22,6 +22,13 @@ Design notes worth knowing before turning knobs
 * The flute cutter radius is solved from the circumferential pitch so the
   scallops always leave a flat land between them; at very high ``flute_count``
   on a small ring the depth is reduced rather than letting the cuts merge.
+* **The flared foot ends in a blunt vertical land, never a knife edge.**  The
+  flare is a cone that is widest at Z = 0, so if it ran all the way down to the
+  bed it would meet the bottom face at an acute dihedral -- a feather edge that
+  is under a nozzle width for its first fraction of a millimetre and reads as a
+  sub-0.4 mm wall to any thickness check.  ``min_land_mm`` is the straight
+  vertical rim left below the taper, floored at ``_PRINTABLE_LAND_FLOOR_MM`` so
+  no parameter combination can sharpen it back up.
 """
 
 import math
@@ -125,6 +132,18 @@ PARAMS = {
         "step": 0.5,
         "description": "Depth of the ear sockets below the top rim",
     },
+    "min_land_mm": {
+        "value": 1.0,
+        "unit": "mm",
+        "min": 1.0,
+        "max": 5.0,
+        "step": 0.1,
+        "description": (
+            "Blunt vertical land under the flared foot, so the rim never "
+            "prints as a knife edge; can only be raised above the 1.0 mm "
+            "printability floor"
+        ),
+    },
 }
 
 #: Angles (degrees) where the ear lugs sit.  Two ears, on the X axis.
@@ -144,22 +163,50 @@ _MIN_BAND_HEIGHT_MM = 3.0
 #: Wall left between the ear socket and the outside of its lug.
 _SOCKET_LUG_WALL_MM = 2.5
 
+#: Printability floor for any land this part leaves on an edge, in mm.  It is
+#: ``templates/printer.json``'s ``min_feature_size``: below it a rim is not a
+#: wall the slicer can put a perimeter on, it is a feather edge.  ``build()``
+#: clamps to this even if ``min_land_mm`` is declared lower.
+_PRINTABLE_LAND_FLOOR_MM = 1.0
 
-def _seat_profile_points(r_in, r_out, height, z_lip, lip_h, r_lip, flare, flare_h):
+#: The flare has to keep *some* taper above its land or it stops reading as a
+#: flare at all, so this much cone survives even on the shortest plinth.
+_MIN_FLARE_TAPER_MM = 0.6
+
+
+def _seat_profile_points(
+    r_in, r_out, height, z_lip, lip_h, r_lip, flare, flare_h, land, lip_land
+):
     """The revolved cross-section, as (radius, z) pairs, counter-clockwise.
 
-    Bottom outward, up the flared plinth and the outer wall, in across the top
-    rim, down the upper bore, in along the seat's top face, back out down the
+    Bottom outward, straight up the foot's blunt land, up the flared plinth and
+    the outer wall, in across the top rim, down the upper bore, in along the
+    seat's top face, straight down the lip's blunt inner face, back out down the
     seat's tapered underside, then down the lower bore to the start.
+
+    Two of these points exist only to keep the profile off a knife edge, and
+    both are the same rule -- *every edge of the revolved section ends in a
+    straight land, never in an acute vertex*:
+
+    ``land``
+        The vertical rim at ``r_out + flare`` before the flare's taper starts.
+        Without it the cone runs into the Z = 0 face at an acute angle and the
+        foot ends in a feather edge sitting on the bed.
+    ``lip_land``
+        The vertical face at ``r_lip`` between the seat's top and the start of
+        its tapered underside.  Without it the seat lip is a wedge that comes to
+        nothing at its inner tip, which is where the bowl's whole weight lands.
     """
     return [
         (r_in, 0.0),
         (r_out + flare, 0.0),
+        (r_out + flare, land),
         (r_out, flare_h),
         (r_out, height),
         (r_in, height),
         (r_in, z_lip + lip_h),
         (r_lip, z_lip + lip_h),
+        (r_lip, z_lip + lip_h - lip_land),
         (r_in, z_lip),
     ]
 
@@ -271,12 +318,29 @@ def build(p):
         )
 
     flare = min(2.5, wall * 0.5)
-    flare_h = min(4.0, foot_h * 0.4)
+
+    # The flared foot ends in a straight vertical land, not a feather edge.
+    # The land is floored at the printability floor and capped at a third of
+    # the plinth so it can never swallow the arcade; ``foot_h`` is at least
+    # 4 mm across the declared ranges, so the cap never bites into the floor.
+    land = max(p.get("min_land_mm", _PRINTABLE_LAND_FLOOR_MM), _PRINTABLE_LAND_FLOOR_MM)
+    land = min(land, max(foot_h * 0.35, _PRINTABLE_LAND_FLOOR_MM))
+
+    # Whatever taper the plinth can afford above the land, but never nothing.
+    taper_h = max(min(4.0, foot_h * 0.4) - land, _MIN_FLARE_TAPER_MM)
+    flare_h = land + taper_h
+
+    # The same rule on the seat lip's inner tip: it is a wedge between the flat
+    # top face and the tapered underside, so it needs its own straight land or
+    # it comes to nothing exactly where the bowl's weight sits.  Half the lip is
+    # the ceiling, which keeps the taper the dominant feature; ``lip_h`` is at
+    # least 2 mm across the declared ranges, so half of it clears the floor.
+    lip_land = min(land, lip_h * 0.5)
 
     # --- the body of revolution ------------------------------------------
     profile = Plane.XZ * Polygon(  # noqa: F405
         *_seat_profile_points(
-            r_in, r_out, height, z_lip, lip_h, r_lip, flare, flare_h
+            r_in, r_out, height, z_lip, lip_h, r_lip, flare, flare_h, land, lip_land
         ),
         align=None,
     )

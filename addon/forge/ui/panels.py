@@ -3,8 +3,10 @@
 Two deliberate conventions in this file:
 
 * the PartForge panels bind their state to a local called ``props``, the
-  RigForge ones to ``rf``.  They are different PropertyGroups on the scene and
-  the headless panel-wiring test tells them apart by that name;
+  RigForge ones to ``rf``, the animation ones to ``ra`` and the Assistant to
+  ``chat``.  They are different PropertyGroups on the scene and the headless
+  panel-wiring tests tell them apart by that name — reuse one and another
+  phase's suite will fail on a property that is not on its group;
 * nothing here does work.  Every button is an operator that reports back through
   its panel's ``status`` string, so a failure shows up in the sidebar instead of
   in a console the sculptor is not looking at.
@@ -15,7 +17,7 @@ from bpy.types import Panel
 
 from .. import server
 from ..prefs import get_prefs, service_url
-from ..tools import partforge, rigforge, rigforge_anim, rigforge_rig
+from ..tools import assistant, partforge, rigforge, rigforge_anim, rigforge_rig
 
 CATEGORY = "Forge"
 
@@ -24,6 +26,75 @@ class _ForgePanel:
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = CATEGORY
+
+
+class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
+    """The beginner's door into everything below it.
+
+    Deliberately first in the sidebar: someone who has never opened Blender
+    should be able to type a sentence here and never touch the boxes underneath.
+    """
+
+    bl_idname = "VIEW3D_PT_forge_assistant"
+    bl_label = "Assistant"
+    bl_order = 0
+
+    def draw(self, context):
+        layout = self.layout
+        chat = assistant.get_props(context)
+        if chat is None:
+            layout.label(text="Scene properties unavailable", icon="ERROR")
+            return
+
+        if len(chat.log):
+            box = layout.box()
+            column = box.column(align=True)
+            for entry in chat.log:
+                you = entry.role == "you"
+                header = column.row()
+                header.active = you
+                header.label(text="You:" if you else "Forge:",
+                             icon="USER" if you else "LIGHT")
+                body = column.column(align=True)
+                body.scale_y = 0.75
+                for line in _wrap(entry.text, 38)[:24]:
+                    body.label(text=line)
+                column.separator()
+
+        column = layout.column(align=True)
+        column.enabled = not chat.busy
+        column.label(text="What do you want to make or fix?")
+        column.prop(chat, "message", text="")
+        if chat.message:
+            sub = column.column(align=True)
+            sub.active = False
+            sub.scale_y = 0.7
+            for line in _wrap(chat.message, 38)[1:5]:
+                sub.label(text=line)
+
+        row = layout.row(align=True)
+        if chat.busy:
+            row.label(text=chat.status or "Thinking ...", icon="SORTTIME")
+            row.operator("forge.assistant_cancel", text="Stop", icon="CANCEL")
+        else:
+            send = row.row(align=True)
+            send.enabled = bool(chat.message.strip())
+            send.operator("forge.assistant_send", text="Send", icon="PLAY")
+            row.operator("forge.assistant_new", text="", icon="FILE_NEW")
+            row.operator("forge.assistant_health", text="", icon="URL")
+
+        if not chat.busy and chat.status:
+            status = layout.box() if chat.status_is_error else layout.column(align=True)
+            status.alert = bool(chat.status_is_error)
+            lines = _wrap(chat.status, 38)
+            status.label(text=lines[0],
+                         icon="ERROR" if chat.status_is_error else "INFO")
+            for line in lines[1:4]:
+                status.label(text=line)
+        if chat.last_cost:
+            row = layout.row()
+            row.active = False
+            row.label(text=chat.last_cost)
 
 
 class VIEW3D_PT_forge_server(_ForgePanel, Panel):
@@ -596,6 +667,7 @@ def _wrap(text, width):
 
 
 _CLASSES = (
+    VIEW3D_PT_forge_assistant,
     VIEW3D_PT_forge_server,
     VIEW3D_PT_forge_partforge,
     VIEW3D_PT_forge_parameters,
