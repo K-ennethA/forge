@@ -28,7 +28,7 @@ from bpy.props import (
 )
 from bpy.types import Operator, PropertyGroup
 
-from ..prefs import get_prefs, service_url
+from ..prefs import get_prefs, pref, service_url
 from . import common
 from .registry import ForgeError
 
@@ -47,6 +47,26 @@ EXPORT_FORMATS = (
     ("step", "STEP", "Solid CAD exchange (Fusion, FreeCAD)"),
     ("3mf", "3MF", "Modern print format with units and metadata"),
 )
+
+JOINT_TYPES = (
+    ("dovetail", "Dovetail", "Sliding trapezoidal rail; nothing extra to print or buy"),
+    ("pin", "Pin", "Sockets in both faces plus a printed pin per pair"),
+    ("magnet", "Magnet", "Pockets in both faces for a disc magnet; nothing printed"),
+    ("none", "None", "A plain cut with no joint"),
+)
+
+SEGMENT_MODES = (
+    ("AUTO", "Auto", "Let the service pick from the bed-fit suggestion"),
+    ("RADIAL", "Radial", "N equal wedges about Z, for rings and round parts"),
+    ("PLANAR", "Planar", "Slabs cut at the given Z heights"),
+)
+
+#: check status -> (icon, short label). CANCEL is the hard stop, ERROR the warning.
+CHECK_ICONS = {
+    "pass": "CHECKMARK",
+    "warn": "ERROR",
+    "fail": "CANCEL",
+}
 
 
 class ServiceError(Exception):
@@ -279,6 +299,22 @@ class ForgeParam(PropertyGroup):
         return "  ".join(bits)
 
 
+class ForgeCheckResult(PropertyGroup):
+    """One row of ``/check``'s ``checks`` list, flattened for the panel."""
+
+    name: StringProperty(name="Check")
+    status: StringProperty(name="Status", default="")
+    details: StringProperty(name="Details", default="")
+    hint: StringProperty(
+        name="Hint",
+        description="Follow-up the service suggested (e.g. the segmentation mode)",
+        default="",
+    )
+
+    def icon(self):
+        return CHECK_ICONS.get(self.status.lower(), "QUESTION")
+
+
 class ForgePartForgeProps(PropertyGroup):
     """Scene-level PartForge project state."""
 
@@ -313,6 +349,80 @@ class ForgePartForgeProps(PropertyGroup):
         name="Export Path",
         description="Output file. Blank = <script folder>/exports/<script name>.<format>",
         subtype="FILE_PATH",
+    )
+
+    # --- print readiness (Phase 2) -----------------------------------------
+    checks: CollectionProperty(type=ForgeCheckResult)
+    check_overall: StringProperty(
+        name="Overall",
+        description="Worst status of the last /check run: pass, warn or fail",
+        default="",
+    )
+    check_summary: StringProperty(
+        name="Check Summary",
+        description="Printer profile and bounding box the last check ran against",
+        default="",
+    )
+    suggested_mode: StringProperty(
+        name="Suggested Mode",
+        description="Segmentation mode /check suggested, as JSON",
+        default="",
+    )
+
+    joint_type: EnumProperty(
+        name="Joint",
+        description="Joint cut into every mating face",
+        items=JOINT_TYPES,
+        default="dovetail",
+    )
+    joint_tolerance: FloatProperty(
+        name="Tolerance",
+        description=(
+            "Gap across every mating face, mm. 0 = use the printer profile "
+            "(press_fit for dovetail/pin, magnet_pocket_extra for magnets)"
+        ),
+        default=0.0,
+        min=0.0,
+        max=2.0,
+        precision=3,
+    )
+    segment_mode: EnumProperty(
+        name="Mode",
+        description="How the part is cut up",
+        items=SEGMENT_MODES,
+        default="AUTO",
+    )
+    segment_radial: IntProperty(
+        name="Wedges",
+        description="Number of equal wedges about Z",
+        default=4,
+        min=2,
+        max=64,
+    )
+    segment_planar: StringProperty(
+        name="Z Heights",
+        description="Comma-separated Z heights in mm to cut at, e.g. 30, 60",
+        default="",
+    )
+    segment_collection: StringProperty(
+        name="Segment Collection",
+        description="Collection the loaded segments are linked into (blank = scene collection)",
+        default="",
+    )
+    segment_summary: StringProperty(
+        name="Segment Summary",
+        description="Result of the last segment run",
+        default="",
+    )
+    segment_export_dir: StringProperty(
+        name="Segment Folder",
+        description="Folder the segment files are written to. Blank = <script folder>/exports",
+        subtype="DIR_PATH",
+    )
+    segment_basename: StringProperty(
+        name="Basename",
+        description="File-name stem for the segment files. Blank = the script's name",
+        default="",
     )
 
 
@@ -427,6 +537,200 @@ def default_export_path(props):
     folder = os.path.join(os.path.dirname(script_path), "exports")
     stem = os.path.splitext(os.path.basename(script_path))[0] or "part"
     return common.resolve_path(os.path.join(folder, stem + "." + fmt), make_parents=True)
+
+
+def load_printer():
+    """``(printer_dict_or_None, source_label)`` from the add-on preference.
+
+    A blank preference is not an error: the geometry service merges whatever it
+    is given over its own Elegoo Centauri Carbon defaults, so sending nothing is
+    a valid (and honest) way to say "the default printer".
+    """
+    raw = str(pref("printer_path") or "").strip()
+    if not raw:
+        return None, "service default profile"
+    path = common.resolve_path(raw)
+    if not os.path.isfile(path):
+        raise ForgeError(
+            "Printer profile not found: %s (set it in the Forge add-on preferences, "
+            "or clear it to use the service default)" % path
+        )
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            profile = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise ForgeError("Could not read the printer profile %s: %s" % (path, exc))
+    if not isinstance(profile, dict):
+        raise ForgeError("Printer profile %s must contain a JSON object." % path)
+    return profile, os.path.basename(path)
+
+
+def segment_mode(props):
+    """The panel's mode widgets as the ``mode`` value ``/segment`` expects."""
+    kind = props.segment_mode
+    if kind == "AUTO":
+        return "auto"
+    if kind == "RADIAL":
+        count = int(props.segment_radial)
+        if count < 2:
+            raise ForgeError("Radial mode needs at least 2 wedges.")
+        return {"radial": count}
+
+    heights = []
+    for chunk in str(props.segment_planar or "").replace(";", ",").split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        try:
+            heights.append(float(chunk))
+        except ValueError:
+            raise ForgeError("'%s' is not a Z height in mm. Use e.g. 30, 60" % chunk)
+    if not heights:
+        raise ForgeError("Planar mode needs at least one Z height, e.g. 30, 60")
+    return {"planar": heights}
+
+
+def joint_spec(props):
+    spec = {"type": props.joint_type}
+    if props.joint_tolerance > 0.0:
+        spec["tolerance"] = float(props.joint_tolerance)
+    return spec
+
+
+def segment_export_dir(props):
+    """Where Export Segments writes: the property, or <script folder>/exports."""
+    raw = str(props.segment_export_dir or "").strip()
+    if raw:
+        folder = common.resolve_path(raw)
+    else:
+        script_path = str(props.script_path or "").strip()
+        if not script_path:
+            raise ForgeError("Set a segment folder (no script path to derive one from).")
+        folder = os.path.join(os.path.dirname(common.resolve_path(script_path)), "exports")
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except OSError as exc:
+        raise ForgeError("Could not create %s: %s" % (folder, exc))
+    return folder
+
+
+def segment_basename(props):
+    raw = str(props.segment_basename or "").strip()
+    if raw:
+        return raw
+    script_path = str(props.script_path or "").strip()
+    if script_path:
+        stem = os.path.splitext(os.path.basename(common.resolve_path(script_path)))[0]
+        if stem:
+            return stem
+    return "part"
+
+
+def store_checks(props, payload):
+    """Flatten ``/check``'s response onto the scene props for the panel."""
+    props.checks.clear()
+    props.check_overall = str(payload.get("overall") or "")
+    props.suggested_mode = ""
+
+    for entry in payload.get("checks") or []:
+        if not isinstance(entry, dict):
+            continue
+        row = props.checks.add()
+        row.name = str(entry.get("name") or "?")
+        row.status = str(entry.get("status") or "").lower()
+        row.details = str(entry.get("details") or "")
+        data = entry.get("data") if isinstance(entry.get("data"), dict) else {}
+        if row.name == "bed_fit":
+            suggestion = data.get("suggested_segmentation")
+            if isinstance(suggestion, dict) and suggestion.get("mode") is not None:
+                props.suggested_mode = json.dumps(suggestion.get("mode"))
+                if row.status == "fail":
+                    row.hint = "Suggested: %s" % props.suggested_mode
+
+    printer = payload.get("printer") if isinstance(payload.get("printer"), dict) else {}
+    bed = printer.get("bed") if isinstance(printer.get("bed"), dict) else {}
+    bits = []
+    if printer.get("name"):
+        bits.append(str(printer["name"]))
+    if bed:
+        try:
+            bits.append("bed %g x %g x %g mm" % (bed.get("x"), bed.get("y"), bed.get("z")))
+        except (TypeError, ValueError):
+            pass
+    stats = payload.get("stats") if isinstance(payload.get("stats"), dict) else {}
+    box = stats.get("bounding_box_mm")
+    if isinstance(box, (list, tuple)) and len(box) == 3:
+        try:
+            bits.append("part %.1f x %.1f x %.1f mm" % tuple(float(v) for v in box))
+        except (TypeError, ValueError):
+            pass
+    props.check_summary = "   ".join(bits)
+
+
+def load_segment_objects(payload, collection=None):
+    """Build one object per returned segment, laid out on the packed plate.
+
+    Positions come from ``plate.items``: each entry says where that segment's
+    rotated bounding-box minimum corner goes, so the viewport shows the print
+    plate rather than the assembled part.  Same convention as the MCP
+    ``partforge_load_segments`` tool, because it is the same wire data.
+    """
+    placements = {}
+    plate = payload.get("plate") if isinstance(payload.get("plate"), dict) else {}
+    for item in plate.get("items") or []:
+        if isinstance(item, dict) and item.get("name"):
+            placements[str(item["name"])] = item
+
+    names = []
+    with common.object_mode():
+        for segment in payload.get("segments") or []:
+            if not isinstance(segment, dict):
+                continue
+            name = str(segment.get("name") or "segment")
+            mesh = segment.get("mesh") if isinstance(segment.get("mesh"), dict) else {}
+            vertices = mesh.get("vertices")
+            if not vertices:
+                continue
+            obj, _info = common.build_mesh_object(
+                name,
+                vertices,
+                mesh.get("faces") or [],
+                replace=True,
+                collection=collection or None,
+                scale=common.MM_TO_M,
+            )
+            if name in placements:
+                common.apply_plate_placement(obj, placements[name], scale=common.MM_TO_M)
+            names.append(obj.name)
+    return names
+
+
+def format_segment_summary(payload, loaded_names=None):
+    segments = [s for s in (payload.get("segments") or []) if isinstance(s, dict)]
+    pieces = sum(1 for s in segments if s.get("kind") != "hardware")
+    hardware = len(segments) - pieces
+    mode = payload.get("mode") if isinstance(payload.get("mode"), dict) else {}
+    kind = mode.get("kind", "?")
+    if kind == "radial":
+        mode_text = "radial x%s" % mode.get("count", "?")
+    elif kind == "planar":
+        mode_text = "planar x%d" % (len(mode.get("heights") or []) + 1)
+    else:
+        mode_text = str(kind)
+
+    bits = ["%d segment(s)" % pieces]
+    if hardware:
+        bits.append("%d pin(s)" % hardware)
+    bits.append(mode_text)
+    joint = payload.get("joint") if isinstance(payload.get("joint"), dict) else {}
+    if joint.get("type"):
+        bits.append(str(joint["type"]))
+    plate = payload.get("plate") if isinstance(payload.get("plate"), dict) else {}
+    if plate:
+        bits.append("plate %s" % ("fits" if plate.get("fits") else "DOES NOT FIT"))
+    if loaded_names is not None:
+        bits.append("%d loaded" % len(loaded_names))
+    return "   ".join(bits)
 
 
 def _timeout(name, fallback):
@@ -676,6 +980,191 @@ class FORGE_OT_pf_reset_params(_PartForgeOperator):
         return {"FINISHED"}
 
 
+# ---------------------------------------------------------------------------
+# print readiness operators (Phase 2)
+# ---------------------------------------------------------------------------
+
+class FORGE_OT_pf_check(_PartForgeOperator):
+    bl_idname = "forge.pf_check"
+    bl_label = "Run Checks"
+    bl_description = (
+        "Ask the geometry service whether this part can be printed: bed fit, "
+        "wall thickness, overhangs and watertightness"
+    )
+
+    def execute(self, context):
+        props = get_props(context)
+        try:
+            path, source = read_script(props)
+            printer, printer_source = load_printer()
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+
+        payload = {"script": source, "overrides": overrides(props)}
+        if printer:
+            payload["printer"] = printer
+        url = service_url("/check")
+        # The service allows itself 120 s for a check; outlive that, don't race it.
+        timeout = max(150.0, _timeout("request_timeout", 120.0))
+        props.busy = True
+        set_status(props, "Checking %s against %s ..."
+                   % (os.path.basename(path), printer_source))
+
+        def work():
+            return request_json(url, payload, timeout=timeout)
+
+        def done(value, error):
+            if not _alive(props):
+                return
+            props.busy = False
+            if error is not None:
+                set_status(props, str(error), error=True)
+                return
+            try:
+                store_checks(props, value)
+            except Exception as exc:  # noqa: BLE001
+                set_status(props, "Could not read the check response: %s" % exc, error=True)
+                traceback.print_exc()
+                return
+            overall = props.check_overall or "?"
+            set_status(
+                props,
+                "Print checks: %s (%d check(s))" % (overall.upper(), len(props.checks)),
+                error=(overall == "fail"),
+            )
+
+        run_async(work, done)
+        return {"FINISHED"}
+
+
+class FORGE_OT_pf_segment(_PartForgeOperator):
+    bl_idname = "forge.pf_segment"
+    bl_label = "Segment"
+    bl_description = (
+        "Cut the part into printable segments with mating joints and lay the "
+        "pieces out in the viewport the way they will sit on the plate"
+    )
+
+    def execute(self, context):
+        props = get_props(context)
+        try:
+            path, source = read_script(props)
+            printer, printer_source = load_printer()
+            mode = segment_mode(props)
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+
+        payload = {
+            "script": source,
+            "overrides": overrides(props),
+            "mode": mode,
+            "joint": joint_spec(props),
+            "include_mesh": True,
+        }
+        if printer:
+            payload["printer"] = printer
+        url = service_url("/segment")
+        # Segmenting is dozens of OCC booleans; the service allows itself 300 s.
+        timeout = max(330.0, _timeout("request_timeout", 120.0))
+        collection = props.segment_collection.strip()
+        props.busy = True
+        set_status(props, "Segmenting %s (%s) ..." % (os.path.basename(path), printer_source))
+
+        def work():
+            return request_json(url, payload, timeout=timeout)
+
+        def done(value, error):
+            if not _alive(props):
+                return
+            props.busy = False
+            if error is not None:
+                set_status(props, str(error), error=True)
+                return
+            try:
+                names = load_segment_objects(value, collection=collection or None)
+            except ForgeError as exc:
+                set_status(props, str(exc), error=True)
+                return
+            except Exception as exc:  # noqa: BLE001
+                set_status(props, "Failed to build the segments: %s" % exc, error=True)
+                traceback.print_exc()
+                return
+            props.segment_summary = format_segment_summary(value, names)
+            if not names:
+                set_status(props, "The service returned no segment meshes.", error=True)
+                return
+            set_status(props, "Loaded %d segment(s): %s"
+                       % (len(names), ", ".join(names[:6]) + (" ..." if len(names) > 6 else "")))
+
+        run_async(work, done)
+        return {"FINISHED"}
+
+
+class FORGE_OT_pf_export_segments(_PartForgeOperator):
+    bl_idname = "forge.pf_export_segments"
+    bl_label = "Export Segments"
+    bl_description = (
+        "Write one file per segment (oriented, centred, on Z=0) plus a packed "
+        "plate 3MF, straight from the geometry service"
+    )
+
+    def execute(self, context):
+        props = get_props(context)
+        try:
+            path, source = read_script(props)
+            printer, printer_source = load_printer()
+            mode = segment_mode(props)
+            directory = segment_export_dir(props)
+            basename = segment_basename(props)
+        except ForgeError as exc:
+            set_status(props, str(exc), error=True)
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+
+        payload = {
+            "script": source,
+            "overrides": overrides(props),
+            "mode": mode,
+            "joint": joint_spec(props),
+            "include_mesh": False,
+            "directory": directory,
+            "basename": basename,
+            "format": props.export_format,
+        }
+        if printer:
+            payload["printer"] = printer
+        url = service_url("/export_segments")
+        timeout = max(330.0, _timeout("request_timeout", 120.0))
+        props.busy = True
+        set_status(props, "Exporting segments of %s (%s) to %s ..."
+                   % (os.path.basename(path), printer_source, directory))
+
+        def work():
+            return request_json(url, payload, timeout=timeout)
+
+        def done(value, error):
+            if not _alive(props):
+                return
+            props.busy = False
+            if error is not None:
+                set_status(props, str(error), error=True)
+                return
+            files = value.get("files") or []
+            props.segment_summary = "%d file(s) in %s" % (
+                len(files) + (1 if value.get("plate_path") else 0),
+                value.get("directory") or directory,
+            )
+            set_status(props, "Wrote %d segment file(s) + plate to %s"
+                       % (len(files), value.get("directory") or directory))
+
+        run_async(work, done)
+        return {"FINISHED"}
+
+
 def _format_stats(stats, info):
     bits = []
     vertex_count = stats.get("vertex_count", info.get("vertex_count"))
@@ -695,12 +1184,16 @@ def _format_stats(stats, info):
 
 _CLASSES = (
     ForgeParam,
+    ForgeCheckResult,
     ForgePartForgeProps,
     FORGE_OT_pf_health,
     FORGE_OT_pf_load_script,
     FORGE_OT_pf_regenerate,
     FORGE_OT_pf_export,
     FORGE_OT_pf_reset_params,
+    FORGE_OT_pf_check,
+    FORGE_OT_pf_segment,
+    FORGE_OT_pf_export_segments,
 )
 
 

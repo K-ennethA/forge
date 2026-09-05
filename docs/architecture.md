@@ -47,7 +47,8 @@ All object-targeting commands take `"object"` (name, string); omitted = active o
 | `select_object` | `{"name"}` | `{}` |
 | `rename_object` | `{"name", "new_name"}` | `{"name": "<final>"}` |
 | `delete_object` | `{"name"}` | `{}` |
-| `load_mesh` | `{"name": str, "vertices": [[x,y,z],...], "faces": [[i0,i1,i2,...],...], "replace": bool, "collection": str?}` — PartForge regen path; `replace` swaps mesh data in place preserving object/panel state | `{"object": name, "vertex_count", "face_count"}` |
+| `load_mesh` | `{"name": str, "vertices": [[x,y,z],...], "faces": [[i0,i1,i2,...],...], "replace": bool, "collection": str?, "plate": {"position_mm":[x,y,z], "pre_rotate_deg", "rotate_deg"}?}` — PartForge regen path; `replace` swaps mesh data in place preserving object/panel state. Optional `plate` (one `/segment` `plate.items` entry, forwarded verbatim) rotates the OBJECT about Z and offsets so the rotated bbox min corner lands at `position_mm`; mesh data stays in assembly coordinates | `{"object": name, "vertex_count", "face_count", "location"?, "rotation_z_deg"?}` |
+| `load_meshes` | `{"meshes": [<load_mesh params>...], "replace"?: bool, "collection"?: str, "scale"?: float, "select"?: bool}` — bulk variant; top-level keys are per-entry defaults, `select` applies to the last entry, empty list is an error | `{"objects": [<load_mesh result>...], "count", "names", "scale"}` |
 | `export_stl` | `{"objects": [names], "path": str, "scale": float?}` — empty/omitted `objects` = current selection, else active object; `scale` defaults to 1000.0 (scene metres → STL millimetres) | `{"path": str}` |
 
 Units: Blender scene units are meters; geometry service works in millimeters. `load_mesh` receives **millimeter** coordinates and the add-on scales by 0.001 on import (objects keep scale 1.0; vertices are scaled).

@@ -65,6 +65,15 @@ class ForgePreferences(AddonPreferences):
         description="Base URL of the Build123d geometry service used by the PartForge panel",
         default="http://127.0.0.1:8765",
     )
+    printer_path: StringProperty(
+        name="Printer Profile",
+        description=(
+            "printer.json used by the Print Checks and Segments panels. "
+            "Blank = the geometry service's built-in Elegoo Centauri Carbon profile"
+        ),
+        default=prefs.default_printer_path(),
+        subtype="FILE_PATH",
+    )
     request_timeout: FloatProperty(
         name="Service Timeout (s)",
         description="How long a PartForge HTTP request may take before it is abandoned",
@@ -109,6 +118,7 @@ class ForgePreferences(AddonPreferences):
         box = layout.box()
         box.label(text="Geometry Service (PartForge)", icon="URL")
         box.prop(self, "service_url")
+        box.prop(self, "printer_path")
         box.prop(self, "request_timeout")
 
         layout.prop(self, "verbose")

@@ -6,9 +6,27 @@ by ("forge" for a legacy add-on, "bl_ext.<repo>.forge" for an extension).
 Submodules must import ADDON_ID from here rather than computing it themselves.
 """
 
+import os
+
 import bpy
 
 ADDON_ID = __package__
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def default_printer_path():
+    """The repo's ``templates/printer.json`` when this is a source checkout.
+
+    Installed from a zip the add-on has no repo above it, so this comes back
+    empty and the panel simply sends no printer profile — the geometry service
+    then merges over its own built-in Elegoo Centauri Carbon defaults.
+    """
+    candidate = os.path.normpath(
+        os.path.join(_HERE, os.pardir, os.pardir, "templates", "printer.json")
+    )
+    return candidate if os.path.isfile(candidate) else ""
+
 
 # Values used when the add-on preferences are not available yet (during
 # registration, in ``--background`` runs, or if the add-on entry was removed).
@@ -17,6 +35,7 @@ DEFAULTS = {
     "port": 9876,
     "autostart": False,
     "service_url": "http://127.0.0.1:8765",
+    "printer_path": default_printer_path(),
     "request_timeout": 120.0,
     "job_timeout": 600.0,
     "verbose": False,

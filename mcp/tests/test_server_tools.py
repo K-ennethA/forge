@@ -47,6 +47,11 @@ EXPECTED_TOOLS = {
     "partforge_parse_params",
     "partforge_generate",
     "partforge_export",
+    # PartForge print readiness (Phase 2)
+    "partforge_check",
+    "partforge_segment",
+    "partforge_load_segments",
+    "partforge_export_segments",
 }
 
 
@@ -91,7 +96,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 21
+    assert len(names) == 25
 
 
 def test_every_tool_is_documented() -> None:
@@ -121,6 +126,10 @@ def test_every_tool_has_an_object_schema() -> None:
         ("partforge_parse_params", ["script_path"]),
         ("partforge_generate", ["script_path"]),
         ("partforge_export", ["script_path", "output_path"]),
+        ("partforge_check", ["script_path"]),
+        ("partforge_segment", ["script_path"]),
+        ("partforge_load_segments", ["script_path"]),
+        ("partforge_export_segments", ["script_path", "directory"]),
     ],
 )
 def test_required_parameters_match_the_contract(tool_name: str, required: list[str]) -> None:
@@ -138,6 +147,14 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ("set_origin", "type", ["geometry", "bottom", "cursor"]),
         ("boolean", "operation", ["UNION", "DIFFERENCE", "INTERSECT"]),
         ("partforge_export", "format", ["stl", "step", "3mf"]),
+        ("partforge_export_segments", "format", ["stl", "step", "3mf"]),
+        ("partforge_segment", "joint_type", ["dovetail", "pin", "magnet", "none"]),
+        ("partforge_load_segments", "joint_type", ["dovetail", "pin", "magnet", "none"]),
+        (
+            "partforge_export_segments",
+            "joint_type",
+            ["dovetail", "pin", "magnet", "none"],
+        ),
     ],
 )
 def test_enum_parameters_match_the_contract(
@@ -145,6 +162,19 @@ def test_enum_parameters_match_the_contract(
 ) -> None:
     tool = next(t for t in list_tools() if t.name == tool_name)
     assert tool.input_schema["properties"][param]["enum"] == values
+
+
+@pytest.mark.parametrize(
+    "tool_name",
+    ["partforge_segment", "partforge_load_segments", "partforge_export_segments"],
+)
+def test_mode_accepts_an_object_an_int_and_a_list(tool_name: str) -> None:
+    """`mode` must swallow partforge_check's suggestion object unchanged."""
+    tool = next(t for t in list_tools() if t.name == tool_name)
+    schema = tool.input_schema["properties"]["mode"]
+    kinds = {branch.get("type") for branch in schema["anyOf"]}
+    assert {"object", "integer", "array", "string"} <= kinds
+    assert schema["default"] == "auto"
 
 
 @pytest.mark.parametrize(

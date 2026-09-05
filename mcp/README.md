@@ -5,7 +5,7 @@ A stdio MCP server that gives Claude Code one tool surface over both Forge backe
 | Backend | Address | Used for |
 |---|---|---|
 | Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export |
-| Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d) |
+| Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
@@ -46,10 +46,13 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 21-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 25-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
-`.mcp.json` registration. Nothing in the suite needs Blender or the geometry service, and
-nothing binds or connects to 9876/8765.
+`.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
+normalization, what each tool actually PUTs on the wire, and what its report says — against
+a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket. Nothing
+in the suite needs Blender or the geometry service, and nothing binds or connects to
+9876/8765.
 
 ### Registering with Claude Code
 
@@ -93,7 +96,15 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_SERVICE_HOST` / `FORGE_SERVICE_PORT` | `127.0.0.1` / `8765` | geometry service address |
 | `FORGE_SERVICE_CONNECT_TIMEOUT` | `2.0` | seconds to wait for the HTTP connection |
 | `FORGE_SERVICE_READ_TIMEOUT` | `180.0` | seconds to wait for a build/export |
+| `FORGE_SERVICE_CHECK_TIMEOUT` | `150.0` | seconds to wait for `/check` (the service allows itself 120) |
+| `FORGE_SERVICE_SEGMENT_TIMEOUT` | `330.0` | seconds to wait for `/segment` and `/export_segments` (the service allows itself 300) |
+| `FORGE_PRINTER_PATH` | `<repo>/templates/printer.json` | default printer profile for the print-readiness tools |
 | `FORGE_MAX_RESPONSE_BYTES` | `268435456` | refuse to buffer a runaway response |
+
+The two Phase 2 timeouts sit deliberately *above* the service's own budgets
+(`FORGE_CHECK_TIMEOUT` / `FORGE_SEGMENT_TIMEOUT` on its side): a client that gives up first
+turns a slow-but-working job into a mystery, where letting the service time out produces a
+400 that says what went wrong.
 
 ## Tool catalog
 
@@ -145,6 +156,25 @@ Each takes an optional `object` name; omitted means Blender's active object.
 | `partforge_generate` | Builds the part **and** loads the mesh into Blender in one call (`load_mesh`, `replace=true`). Reports verts/faces/bbox/watertight. |
 | `partforge_export` | Rebuilds and writes STL / STEP / 3MF straight from the solid. |
 
+### PartForge print readiness (Phase 2)
+
+The pipeline is *check → segment → load or export*. All four read the same printer profile
+(`printer_path`, default the repo's `templates/printer.json`; missing = the service's
+built-in Elegoo Centauri Carbon defaults) and take the same `overrides` as
+`partforge_generate`.
+
+| Tool | What it does |
+|---|---|
+| `partforge_check` | Can this be printed? Bed fit, wall thickness, overhangs, watertightness — one verdict, then a line per check with the numbers. When `bed_fit` fails it prints the service's suggested cut mode, which goes straight into the three tools below as `mode`. |
+| `partforge_segment` | Plans the cut: segment names, kinds, oriented bounding boxes, the joints and the packed plate. `include_mesh=false` on the wire — this is planning, and segment meshes are large. |
+| `partforge_load_segments` | The same cut, with the meshes, loaded into Blender as one object per segment, positioned and spun exactly where the plate packing put them. Shows the user the print plate rather than the assembled part. |
+| `partforge_export_segments` | Writes one file per segment and per printed pin (oriented, centred, on Z=0) plus `<basename>_plate.3mf`, and lists every file with its size on disk. |
+
+`mode` is deliberately forgiving: `"auto"`, an integer (radial wedge count), a list of Z
+heights, `"30, 60"`, or `partforge_check`'s `{"radial": 4}` object copied verbatim.
+`joint_type` is `dovetail` / `pin` / `magnet` / `none`, and `joint_tolerance` overrides the
+printer profile's `press_fit` / `magnet_pocket_extra` when given.
+
 ## Troubleshooting
 
 **"Blender is not running or the Forge add-on server is stopped…"**
@@ -182,8 +212,13 @@ stdin rather than exiting with a traceback (Ctrl+C to quit).
 
 - **One connection per call.** No pooling, no persistent socket: a restarted Blender or
   service is picked up on the next tool call.
-- **Meshes never reach the model.** `partforge_generate` moves the vertex/face arrays
-  straight from the service into Blender and returns only stats.
+- **Meshes never reach the model.** `partforge_generate` and `partforge_load_segments` move
+  the vertex/face arrays straight from the service into Blender and return only stats;
+  `partforge_segment` does not ask for them at all.
+- **Segments load in one round trip.** `partforge_load_segments` uses the add-on's
+  `load_meshes` command (the plural of `load_mesh`, an additive protocol extension) rather
+  than N calls, and forwards each segment's `plate.items` entry verbatim so the add-on —
+  which has the geometry — decides where the object lands. See `addon/README.md`.
 - **Millimetres vs metres.** The service works in mm and `load_mesh` receives mm; the add-on
   scales by 0.001 on import. Blender-side tools (`voxel_size`, `merge_by_distance`) are in
   Blender units (metres).

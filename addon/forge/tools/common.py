@@ -1309,38 +1309,174 @@ def build_mesh_object(name, vertices, faces, replace=True, collection=None, scal
     return obj, result
 
 
-@command("load_mesh")
-def cmd_load_mesh(params):
-    name = get_str(params, "name", "ForgePart")
-    vertices = params.get("vertices")
-    faces = params.get("faces")
+def _plate_angle(plate):
+    """Total spin about Z for a plate item, in radians.
+
+    The geometry service reports the rotation in two halves — ``pre_rotate_deg``
+    is the segment's own tightest-footprint orientation, ``rotate_deg`` the extra
+    quarter turn the packer gave it — and says the total is their sum.
+    """
+    degrees = 0.0
+    for key in ("pre_rotate_deg", "rotate_deg"):
+        value = plate.get(key)
+        if value is None:
+            continue
+        try:
+            degrees += float(value)
+        except (TypeError, ValueError):
+            raise ForgeError("plate.%s must be a number, got %r." % (key, value))
+    return math.radians(degrees)
+
+
+def apply_plate_placement(obj, plate, scale=MM_TO_M):
+    """Move an object to where ``/segment``'s plate packing put its segment.
+
+    ``plate`` is one entry of the service's ``plate.items`` list, forwarded
+    verbatim: ``{"position_mm": [x, y, z], "pre_rotate_deg": a, "rotate_deg": b}``.
+    ``position_mm`` is where that segment's *rotated* bounding-box minimum corner
+    goes, so the object is spun about Z first and then offset by however far the
+    rotated mesh's minimum corner sits from the origin.  The mesh data itself is
+    left in assembly coordinates; only the object transform changes, which is
+    what keeps a later Regenerate/replace cheap.
+    """
+    if not isinstance(plate, dict):
+        raise ForgeError("'plate' must be an object with 'position_mm'; got %s."
+                         % type(plate).__name__)
+    position = plate.get("position_mm")
+    if not isinstance(position, (list, tuple)) or len(position) != 3:
+        raise ForgeError("plate.position_mm must be [x, y, z] in millimetres.")
+    try:
+        target = [float(v) * scale for v in position]
+    except (TypeError, ValueError):
+        raise ForgeError("plate.position_mm must be three numbers, got %r." % (position,))
+
+    angle = _plate_angle(plate)
+    cos_a = math.cos(angle)
+    sin_a = math.sin(angle)
+
+    mesh = obj.data
+    count = len(mesh.vertices) if mesh is not None else 0
+    if count:
+        flat = [0.0] * (count * 3)
+        mesh.vertices.foreach_get("co", flat)
+        low = [float("inf"), float("inf"), float("inf")]
+        for index in range(0, count * 3, 3):
+            x = flat[index]
+            y = flat[index + 1]
+            z = flat[index + 2]
+            rx = x * cos_a - y * sin_a
+            ry = x * sin_a + y * cos_a
+            if rx < low[0]:
+                low[0] = rx
+            if ry < low[1]:
+                low[1] = ry
+            if z < low[2]:
+                low[2] = z
+    else:
+        low = [0.0, 0.0, 0.0]
+
+    obj.rotation_mode = "XYZ"
+    obj.rotation_euler = (0.0, 0.0, angle)
+    obj.location = (target[0] - low[0], target[1] - low[1], target[2] - low[2])
+    return {
+        "location": [round(v, 6) for v in obj.location],
+        "rotation_z_deg": round(math.degrees(angle), 6),
+    }
+
+
+def _load_one_mesh(spec, replace, collection, scale, select=False):
+    """Shared body of ``load_mesh`` and one entry of ``load_meshes``."""
+    name = get_str(spec, "name", "ForgePart")
+    vertices = spec.get("vertices")
+    faces = spec.get("faces")
     if vertices is None:
-        raise ForgeError("Missing required parameter 'vertices'.")
+        raise ForgeError("Missing required parameter 'vertices' for mesh %r." % name)
     if faces is None:
         faces = []
+
+    obj, result = build_mesh_object(
+        name, vertices, faces, replace=replace, collection=collection, scale=scale
+    )
+
+    plate = spec.get("plate")
+    if plate is not None:
+        result.update(apply_plate_placement(obj, plate, scale=scale))
+
+    if select:
+        result["selected"] = False
+        try:
+            view_layer = get_view_layer()
+            if obj.name not in view_layer.objects:
+                refresh_view_layer()
+            if obj.name in view_layer.objects:
+                obj.select_set(True)
+                view_layer.objects.active = obj
+                result["selected"] = True
+        except (ForgeError, RuntimeError):
+            pass
+    return obj, result
+
+
+@command("load_mesh")
+def cmd_load_mesh(params):
     replace = get_bool(params, "replace", True)
     scale = get_float(params, "scale", MM_TO_M, minimum=0.0)
     collection = params.get("collection")
 
     with object_mode():
-        obj, result = build_mesh_object(
-            name, vertices, faces, replace=replace, collection=collection, scale=scale
+        _obj, result = _load_one_mesh(
+            params,
+            replace=replace,
+            collection=collection,
+            scale=scale,
+            select=get_bool(params, "select", False),
         )
-        if get_bool(params, "select", False):
-            result["selected"] = False
-            try:
-                view_layer = get_view_layer()
-                if obj.name not in view_layer.objects:
-                    refresh_view_layer()
-                if obj.name in view_layer.objects:
-                    obj.select_set(True)
-                    view_layer.objects.active = obj
-                    result["selected"] = True
-            except (ForgeError, RuntimeError):
-                pass
 
     result["scale"] = scale
     return result
+
+
+@command("load_meshes")
+def cmd_load_meshes(params):
+    """Load many meshes in one round trip (PartForge segmentation).
+
+    Additive extension to the protocol: ``load_mesh`` for a list.  A cut part
+    arrives as N segments plus any printed pins, and doing that as N round trips
+    means N main-thread hops and N depsgraph refreshes for one logical action.
+    """
+    meshes = params.get("meshes")
+    if not isinstance(meshes, list):
+        raise ForgeError("'meshes' must be a list of {name, vertices, faces} objects.")
+    if not meshes:
+        raise ForgeError("'meshes' is empty; nothing to load.")
+
+    replace = get_bool(params, "replace", True)
+    scale = get_float(params, "scale", MM_TO_M, minimum=0.0)
+    collection = params.get("collection")
+    select = get_bool(params, "select", False)
+
+    loaded = []
+    with object_mode():
+        for index, spec in enumerate(meshes):
+            if not isinstance(spec, dict):
+                raise ForgeError(
+                    "meshes[%d] must be an object, got %s." % (index, type(spec).__name__)
+                )
+            _obj, result = _load_one_mesh(
+                spec,
+                replace=replace,
+                collection=spec.get("collection", collection),
+                scale=scale,
+                select=select and index == len(meshes) - 1,
+            )
+            loaded.append(result)
+
+    return {
+        "objects": loaded,
+        "count": len(loaded),
+        "scale": scale,
+        "names": [entry["object"] for entry in loaded],
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,12 @@ Endpoints:
     POST /generate      -> {"params": {...}, "mesh": {...}, "stats": {...}}
     POST /export        -> {"path": "..."}
 
+Phase 2 (print readiness):
+
+    POST /check           -> {"overall", "checks": [...], "printer", "params", "stats"}
+    POST /segment         -> {"mode", "joint", "cuts", "segments": [...], "plate"}
+    POST /export_segments -> {"directory", "files": [...], "plate", "plate_path"}
+
 Errors come back as HTTP 400 (script/param problems) or 500 (service bugs) with
 ``{"error": "...", "traceback": "..."}``.
 
@@ -174,6 +180,83 @@ def export(script_source: str, overrides: Optional[Dict[str, Any]],
             "format": fmt,
             "path": path,
         },
+    )
+
+
+# --- Phase 2: print readiness ----------------------------------------------
+
+
+def _print_body(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]],
+    printer: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """The three fields every Phase 2 endpoint shares.
+
+    ``printer`` is omitted entirely when None so the service falls back to its
+    built-in profile rather than being handed an empty object to merge.
+    """
+    body: Dict[str, Any] = {"script": script_source, "overrides": overrides or {}}
+    if printer:
+        body["printer"] = printer
+    return body
+
+
+def check(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """POST /check — bed fit, min wall, overhangs, watertight. Builds no files."""
+    return _request(
+        "POST",
+        "/check",
+        _print_body(script_source, overrides, printer),
+        timeout=config.SERVICE_CHECK_TIMEOUT,
+    )
+
+
+def segment(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    mode: Any = "auto",
+    joint: Optional[Dict[str, Any]] = None,
+    include_mesh: bool = False,
+) -> Dict[str, Any]:
+    """POST /segment — cut the part into printable segments with mating joints."""
+    body = _print_body(script_source, overrides, printer)
+    body["mode"] = mode
+    body["include_mesh"] = bool(include_mesh)
+    if joint:
+        body["joint"] = joint
+    return _request("POST", "/segment", body, timeout=config.SERVICE_SEGMENT_TIMEOUT)
+
+
+def export_segments(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    mode: Any = "auto",
+    joint: Optional[Dict[str, Any]] = None,
+    directory: str = "",
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+) -> Dict[str, Any]:
+    """POST /export_segments — one file per segment plus a packed plate 3MF."""
+    body = _print_body(script_source, overrides, printer)
+    body["mode"] = mode
+    body["include_mesh"] = False
+    body["directory"] = directory
+    body["format"] = fmt
+    if joint:
+        body["joint"] = joint
+    if basename:
+        body["basename"] = basename
+    return _request(
+        "POST", "/export_segments", body, timeout=config.SERVICE_SEGMENT_TIMEOUT
     )
 
 

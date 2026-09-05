@@ -10,7 +10,7 @@ are thin, well-labelled wrappers over them.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
 
@@ -18,13 +18,21 @@ from . import __version__, blender_client, config, service_client
 from .errors import BackendUnavailable, ForgeError
 from .util import (
     ensure_parent_dir,
+    fmt_check_report,
+    fmt_joint,
+    fmt_mode,
     fmt_number,
     fmt_overrides,
     fmt_params,
     fmt_scene_info,
+    fmt_segment_report,
     fmt_stats,
+    fmt_written_files,
+    normalize_segment_mode,
     object_name_for_script,
     ok,
+    plate_items_by_name,
+    read_printer,
     read_script,
     resolve_path,
 )
@@ -40,9 +48,17 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   call, so "regenerate the part" is a single tool call.
 - To change a part's shape, edit its script/parameters and regenerate — do not
   hand-edit the mesh in Blender, it will be overwritten on the next generate.
+- Print readiness is a pipeline: partforge_check first; if bed_fit fails it
+  hands back a `mode` object — pass it verbatim to partforge_segment (planning,
+  no meshes), partforge_load_segments (same, plus the pieces laid out in the
+  viewport) or partforge_export_segments (files for the slicer).
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
+
+#: Cut modes accepted by the segmenting tools. Dict is first so a `mode` object
+#: copied straight out of partforge_check survives validation unchanged.
+SegmentMode = Union[Dict[str, Any], int, List[float], str]
 
 # mcp >= 2.0 renamed FastMCP to MCPServer; the decorator/run surface is the same.
 app = MCPServer("forge", instructions=INSTRUCTIONS, version=__version__)
@@ -575,6 +591,270 @@ def partforge_export(
         f"exported {path.name} as {format.upper()} to {written}",
         f"overrides: {fmt_overrides(overrides)}",
     )
+
+
+# ---------------------------------------------------------------------------
+# PartForge print readiness (Phase 2)
+# ---------------------------------------------------------------------------
+
+
+def _joint_spec(
+    joint_type: str, joint_tolerance: Optional[float]
+) -> Dict[str, Any]:
+    """The /segment `joint` object; tolerance omitted = the printer's own fit."""
+    spec: Dict[str, Any] = {"type": joint_type}
+    if joint_tolerance is not None:
+        tolerance = float(joint_tolerance)
+        if tolerance < 0.0:
+            raise ForgeError(f"joint_tolerance cannot be negative; got {tolerance}.")
+        spec["tolerance"] = tolerance
+    return spec
+
+
+def _segment_request(
+    script_path: str,
+    overrides: Optional[Dict[str, Any]],
+    printer_path: Optional[str],
+    joint_type: str,
+    joint_tolerance: Optional[float],
+    mode: SegmentMode,
+) -> Dict[str, Any]:
+    """Everything the three segmenting tools resolve the same way."""
+    path, source = read_script(script_path)
+    printer, printer_source = read_printer(printer_path)
+    return {
+        "path": path,
+        "source": source,
+        "printer": printer,
+        "printer_source": printer_source,
+        "overrides": overrides,
+        "joint": _joint_spec(joint_type, joint_tolerance),
+        "mode": normalize_segment_mode(mode),
+    }
+
+
+@app.tool()
+def partforge_check(
+    script_path: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+) -> str:
+    """Can this part be printed? Bed fit, wall thickness, overhangs, watertightness.
+
+    Runs the script through the geometry service against a printer profile and
+    reports one verdict (pass/warn/fail) plus a line per check. Nothing is
+    written and no mesh comes back, so this is the cheap first question to ask
+    about any part before exporting it.
+
+    When bed_fit FAILS the report carries the service's own suggested cut mode —
+    hand that object straight to partforge_segment / partforge_load_segments /
+    partforge_export_segments as `mode`.
+
+    Two caveats worth repeating to the user: min_wall is inward ray casting on
+    the mesh, so it is approximate (narrow gaps read as thin walls, a fail means
+    "look here", not an exact dimension), and overhangs never fail — they warn,
+    because supports exist.
+
+    `printer_path` defaults to the repo's templates/printer.json and falls back
+    to the service's built-in Elegoo Centauri Carbon profile when that file is
+    missing; the report always names the profile it used.
+    """
+    path, source = read_script(script_path)
+    printer, printer_source = read_printer(printer_path)
+    payload = service_client.check(source, overrides, printer)
+    return fmt_check_report(path.name, payload, overrides, printer_source)
+
+
+@app.tool()
+def partforge_segment(
+    script_path: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+    joint_type: Literal["dovetail", "pin", "magnet", "none"] = "dovetail",
+    joint_tolerance: Optional[float] = None,
+    mode: SegmentMode = "auto",
+) -> str:
+    """Plan how to cut a too-big part into printable, joinable segments.
+
+    Cuts the solid, fits a joint into every mating face, re-verifies each piece
+    is watertight and packs them onto one plate — then reports the plan: segment
+    names, kinds, oriented bounding boxes and the plate layout. Meshes are NOT
+    requested, because this is the planning step and segment meshes are large;
+    use partforge_load_segments to see the pieces, partforge_export_segments to
+    write them.
+
+    `mode` accepts partforge_check's suggested_segmentation.mode verbatim, or an
+    integer radial count, or a list of Z heights. `joint_type` 'pin' adds the
+    printed pins as extra segments of kind "hardware".
+
+    A joint that cannot work on a face (a 6 mm magnet in a 2 mm wall, a dovetail
+    over a hole) is an error that says what to use instead — read it and change
+    the joint rather than retrying. `joint_tolerance` overrides the printer's
+    press_fit / magnet_pocket_extra; `printer_path` works as in partforge_check.
+    """
+    request = _segment_request(
+        script_path, overrides, printer_path, joint_type, joint_tolerance, mode
+    )
+    payload = service_client.segment(
+        request["source"],
+        request["overrides"],
+        request["printer"],
+        mode=request["mode"],
+        joint=request["joint"],
+        include_mesh=False,
+    )
+    report = fmt_segment_report(request["path"].name, payload, overrides)
+    return f"{report}\n  printer: {request['printer_source']}"
+
+
+@app.tool()
+def partforge_load_segments(
+    script_path: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+    joint_type: Literal["dovetail", "pin", "magnet", "none"] = "dovetail",
+    joint_tolerance: Optional[float] = None,
+    mode: SegmentMode = "auto",
+    collection: Optional[str] = None,
+) -> str:
+    """Segment a part AND load every piece into Blender, laid out on the plate.
+
+    Same cut as partforge_segment, but the meshes come back and each one is
+    loaded as its own object (named after the segment, mesh data replaced in
+    place on a re-run) positioned and spun exactly where the plate packing put
+    it — so the viewport shows the print plate, not the assembled part.
+
+    Use this to show the user what they will be printing. `collection` puts the
+    pieces in a named collection instead of the scene collection. Needs Blender
+    running with the Forge add-on server started; the cut still succeeds without
+    it, the pieces just are not shown.
+    """
+    request = _segment_request(
+        script_path, overrides, printer_path, joint_type, joint_tolerance, mode
+    )
+    payload = service_client.segment(
+        request["source"],
+        request["overrides"],
+        request["printer"],
+        mode=request["mode"],
+        joint=request["joint"],
+        include_mesh=True,
+    )
+
+    lines = [fmt_segment_report(request["path"].name, payload, overrides)]
+    lines.append(f"  printer: {request['printer_source']}")
+
+    placements = plate_items_by_name(payload.get("plate"))
+    meshes: List[Dict[str, Any]] = []
+    missing: List[str] = []
+    for segment in payload.get("segments") or []:
+        if not isinstance(segment, dict):
+            continue
+        name = str(segment.get("name") or "segment")
+        mesh = segment.get("mesh") or {}
+        vertices = mesh.get("vertices") or []
+        if not vertices:
+            missing.append(name)
+            continue
+        item: Dict[str, Any] = {
+            "name": name,
+            "vertices": vertices,
+            "faces": mesh.get("faces") or [],
+        }
+        if name in placements:
+            item["plate"] = placements[name]
+        meshes.append(item)
+
+    lines.append("")
+    if not meshes:
+        lines.append("  NOT loaded into Blender: the service returned no segment meshes.")
+        return "\n".join(lines)
+
+    params: Dict[str, Any] = {"meshes": meshes, "replace": True}
+    if collection and collection.strip():
+        params["collection"] = collection.strip()
+
+    try:
+        loaded = blender_client.send_command("load_meshes", params)
+    except BackendUnavailable as exc:
+        lines.append(f"  NOT loaded into Blender — {exc}")
+    except ForgeError as exc:
+        lines.append(f"  Blender refused the segments — {exc}")
+    else:
+        objects = loaded.get("objects") or []
+        where = f" in collection '{collection.strip()}'" if collection and collection.strip() else ""
+        lines.append(
+            f"  Loaded {len(objects)} object(s) into Blender{where}, "
+            "positioned at their plate locations (mm -> m)."
+        )
+        for entry in objects:
+            if not isinstance(entry, dict):
+                continue
+            lines.append(
+                f"    {str(entry.get('object', '?')):<20.20} "
+                f"{entry.get('vertex_count', '?')} verts, "
+                f"{entry.get('face_count', '?')} faces"
+            )
+    if missing:
+        lines.append(f"  no mesh returned for: {', '.join(missing)}")
+    return "\n".join(lines)
+
+
+@app.tool()
+def partforge_export_segments(
+    script_path: str,
+    directory: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+    joint_type: Literal["dovetail", "pin", "magnet", "none"] = "dovetail",
+    joint_tolerance: Optional[float] = None,
+    mode: SegmentMode = "auto",
+    basename: Optional[str] = None,
+    format: Literal["stl", "step", "3mf"] = "stl",
+) -> str:
+    """Segment a part and write every piece to disk, plus a packed plate 3MF.
+
+    One file per segment (and per printed pin), each already spun to its best
+    orientation, centred and sitting on Z=0 so a slicer opens it ready to print,
+    plus `<basename>_plate.3mf` holding them all at their packed plate positions.
+
+    `directory` is created if missing; `basename` defaults to "part". Reports
+    every file written with its size on disk.
+    """
+    request = _segment_request(
+        script_path, overrides, printer_path, joint_type, joint_tolerance, mode
+    )
+    out_dir = resolve_path(directory, label="output directory")
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ForgeError(f"Could not create the output directory {out_dir}: {exc}") from exc
+
+    payload = service_client.export_segments(
+        request["source"],
+        request["overrides"],
+        request["printer"],
+        mode=request["mode"],
+        joint=request["joint"],
+        directory=str(out_dir),
+        basename=(basename or "").strip() or None,
+        fmt=format.lower(),
+    )
+
+    files = payload.get("files") or []
+    lines = [
+        f"Exported {request['path'].name} as {format.upper()} segments to "
+        f"{payload.get('directory', out_dir)}",
+        f"  mode: {fmt_mode(payload.get('mode'))}   "
+        f"joint: {fmt_joint(payload.get('joint'))}   "
+        f"printer: {request['printer_source']}",
+        "",
+        fmt_written_files(files, payload.get("plate_path")),
+    ]
+    plate = payload.get("plate")
+    if isinstance(plate, dict) and not plate.get("fits", True):
+        lines.append("  WARNING: the packed plate does not fit the bed.")
+    return "\n".join(lines)
 
 
 def main() -> None:

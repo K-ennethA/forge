@@ -8,6 +8,7 @@ non-default port without editing code.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
 def _env_str(name: str, default: str) -> str:
@@ -48,8 +49,25 @@ SERVICE_URL: str = _env_str(
 SERVICE_CONNECT_TIMEOUT: float = _env_float("FORGE_SERVICE_CONNECT_TIMEOUT", 2.0)
 SERVICE_READ_TIMEOUT: float = _env_float("FORGE_SERVICE_READ_TIMEOUT", 180.0)
 
+# Phase 2 endpoints get their own budgets: the service allows 120 s for /check and
+# 300 s for /segment /export_segments (FORGE_CHECK_TIMEOUT / FORGE_SEGMENT_TIMEOUT
+# on its side), and a client that gives up first turns a slow-but-working job into
+# a mystery.  These sit just above the service's own limits.
+SERVICE_CHECK_TIMEOUT: float = _env_float("FORGE_SERVICE_CHECK_TIMEOUT", 150.0)
+SERVICE_SEGMENT_TIMEOUT: float = _env_float("FORGE_SERVICE_SEGMENT_TIMEOUT", 330.0)
+
 # Refuse to buffer a runaway response rather than eating all of RAM.
 MAX_RESPONSE_BYTES: int = _env_int("FORGE_MAX_RESPONSE_BYTES", 256 * 1024 * 1024)
+
+# --- printer profile --------------------------------------------------------
+# The repo's templates/printer.json, resolved from this file so it works no
+# matter what directory Claude Code launched the server from. /check and
+# /segment fall back to the service's built-in Centauri Carbon profile when this
+# file is missing, so a checkout without templates/ still works.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_PRINTER_PATH: str = _env_str(
+    "FORGE_PRINTER_PATH", str(_REPO_ROOT / "templates" / "printer.json")
+)
 
 
 def blender_address() -> str:

@@ -140,6 +140,87 @@ class VIEW3D_PT_forge_parameters(_ForgePanel, Panel):
         row.operator("forge.pf_reset_params", icon="LOOP_BACK", text="", emboss=True)
 
 
+class VIEW3D_PT_forge_checks(_ForgePanel, Panel):
+    bl_idname = "VIEW3D_PT_forge_checks"
+    bl_parent_id = "VIEW3D_PT_forge_partforge"
+    bl_label = "Print Checks"
+
+    def draw(self, context):
+        layout = self.layout
+        props = partforge.get_props(context)
+        if props is None:
+            return
+        layout.enabled = not props.busy
+
+        layout.operator("forge.pf_check", icon="CHECKMARK", text="Run Checks")
+
+        if not len(props.checks):
+            layout.label(text="Not checked yet", icon="INFO")
+            return
+
+        overall = (props.check_overall or "").lower()
+        box = layout.box()
+        box.alert = overall == "fail"
+        box.label(
+            text="Overall: %s" % (props.check_overall or "?").upper(),
+            icon=partforge.CHECK_ICONS.get(overall, "QUESTION"),
+        )
+        if props.check_summary:
+            box.label(text=props.check_summary)
+
+        for item in props.checks:
+            column = layout.column(align=True)
+            column.label(text=item.name, icon=item.icon())
+            sub = column.column(align=True)
+            sub.active = item.status == "pass"
+            for line in _wrap(item.details, 40)[:3]:
+                sub.label(text=line)
+            if item.hint:
+                for line in _wrap(item.hint, 40)[:2]:
+                    column.label(text=line, icon="MOD_BEVEL")
+
+
+class VIEW3D_PT_forge_segments(_ForgePanel, Panel):
+    bl_idname = "VIEW3D_PT_forge_segments"
+    bl_parent_id = "VIEW3D_PT_forge_partforge"
+    bl_label = "Segments"
+
+    def draw(self, context):
+        layout = self.layout
+        props = partforge.get_props(context)
+        if props is None:
+            return
+        layout.enabled = not props.busy
+
+        column = layout.column(align=True)
+        column.prop(props, "joint_type")
+        column.prop(props, "joint_tolerance")
+
+        column = layout.column(align=True)
+        column.prop(props, "segment_mode")
+        if props.segment_mode == "RADIAL":
+            column.prop(props, "segment_radial")
+        elif props.segment_mode == "PLANAR":
+            column.prop(props, "segment_planar")
+        elif props.suggested_mode:
+            row = column.row()
+            row.active = False
+            row.label(text="Suggested: %s" % props.suggested_mode)
+
+        layout.prop(props, "segment_collection")
+        layout.operator("forge.pf_segment", icon="MOD_BOOLEAN", text="Segment")
+
+        box = layout.box()
+        box.label(text="Export Segments", icon="EXPORT")
+        box.prop(props, "segment_export_dir", text="")
+        box.prop(props, "segment_basename")
+        box.label(text="Format: %s (see Export panel)" % props.export_format.upper())
+        box.operator("forge.pf_export_segments", icon="FILE_TICK", text="Export Segments")
+
+        if props.segment_summary:
+            layout.label(text=props.segment_summary, icon="MESH_DATA")
+
+
 class VIEW3D_PT_forge_export(_ForgePanel, Panel):
     bl_idname = "VIEW3D_PT_forge_export"
     bl_parent_id = "VIEW3D_PT_forge_partforge"
@@ -178,6 +259,8 @@ _CLASSES = (
     VIEW3D_PT_forge_server,
     VIEW3D_PT_forge_partforge,
     VIEW3D_PT_forge_parameters,
+    VIEW3D_PT_forge_checks,
+    VIEW3D_PT_forge_segments,
     VIEW3D_PT_forge_export,
 )
 
