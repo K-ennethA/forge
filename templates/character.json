@@ -1,0 +1,11 @@
+{
+  "_comment": "RigForge manifest for one character. Tags mirror vertex groups on the sculpt.",
+  "name": "example-character",
+  "archetype": "biped | quadruped | custom",
+  "custom_modules": [],
+  "tags": ["Head", "Torso", "Arm.L", "Arm.R", "Leg.L", "Leg.R"],
+  "motion_notes": "Plain language: 'ears are floppy and lag behind head', 'hops rather than walks'.",
+  "retopo": { "target_faces_desktop": 15000, "target_faces_mobile": 5000, "lods": 2 },
+  "actions": ["idle-loop", "walk-loop", "run-loop", "jump", "attack"],
+  "godot": { "root_motion": false, "y_up": true, "unit_scale": 1.0 }
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Contract between you and Claude for one PartForge part. Claude regenerates part.py from this; edit freely.",
+  "name": "example-part",
+  "description": "One-paragraph plain-language description of the part.",
+  "reference_images": [],
+  "parameters": {
+    "example_diameter": { "value": 152.4, "unit": "mm", "min": 50, "max": 300, "description": "..." }
+  },
+  "features": ["list of named features, e.g. 'textured band', 'four feet', 'two slot-in ears'"],
+  "appendage_slots": { "peg_diameter": 6.0, "peg_length": 10.0, "sockets": [] },
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail | pin-socket | magnet",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}

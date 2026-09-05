@@ -1,0 +1,18 @@
+{
+  "_comment": "Fill in from your printer's real specs before first export. Units: mm unless noted.",
+  "name": "UNSET — e.g. Bambu Lab P1S",
+  "slicer": "UNSET — bambu-studio | prusaslicer | orcaslicer",
+  "bed": { "x": 256, "y": 256, "z": 256 },
+  "nozzle_diameter": 0.4,
+  "layer_heights": { "default": 0.2, "min": 0.08, "max": 0.28 },
+  "min_wall_thickness": 0.8,
+  "min_feature_size": 1.0,
+  "max_unsupported_overhang_deg": 50,
+  "tolerances": {
+    "press_fit": 0.1,
+    "slide_fit": 0.2,
+    "loose_fit": 0.3,
+    "magnet_pocket_extra": 0.05
+  },
+  "materials": ["PLA"]
+}
