@@ -48,6 +48,7 @@ from __future__ import annotations
 import copy
 import linecache
 import math
+import sys
 import traceback
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
@@ -81,6 +82,27 @@ _COUNT_EPS = 1e-6
 # --------------------------------------------------------------------------
 
 
+def install_forge_lib(namespace: Dict[str, Any]) -> None:
+    """Make ``forge_lib`` available to a script the same way build123d is.
+
+    Two routes, because scripts are written by hand as often as by Claude:
+    ``import forge_lib`` works (the module is registered under its bare name in
+    ``sys.modules``), and the name is already bound in the script's namespace so
+    a script that forgets the import still runs.  The package is importable as
+    both ``service`` and ``forge_service``, so the relative import here is what
+    keeps the bare name pointing at the right module either way.
+
+    A failure is swallowed: the appendage library is a convenience, and a script
+    that does not use it must not stop working because it could not be loaded.
+    """
+    try:
+        from . import forge_lib  # noqa: PLC0415 - avoids an import cycle at module load
+    except Exception:  # noqa: BLE001 - never fail a script over an extra
+        return
+    sys.modules.setdefault("forge_lib", forge_lib)
+    namespace.setdefault("forge_lib", forge_lib)
+
+
 def exec_script(source: str, filename: str = SCRIPT_FILENAME) -> Dict[str, Any]:
     """Execute *source* in a fresh namespace and return that namespace.
 
@@ -109,6 +131,7 @@ def exec_script(source: str, filename: str = SCRIPT_FILENAME) -> Dict[str, Any]:
         # __builtins__ is injected by exec(); scripts need the full builtins to
         # import build123d and do arithmetic.
     }
+    install_forge_lib(namespace)
 
     try:
         code = compile(source, filename, "exec")
@@ -494,6 +517,7 @@ __all__ = [
     "exec_script",
     "extract_build",
     "extract_params",
+    "install_forge_lib",
     "load_script",
     "resolve",
     "to_build_value",

@@ -77,6 +77,103 @@ def resolve_output_path(path: Any, fmt: str) -> Path:
     return candidate
 
 
+def resolve_output_dir(path: Any) -> Path:
+    """Turn the caller's directory into an absolute :class:`Path`, creating it."""
+    if not isinstance(path, str) or not path.strip():
+        raise ParamError("directory is required and must be an absolute path")
+
+    candidate = Path(path.strip())
+    if not candidate.is_absolute():
+        raise ParamError(
+            f"directory must be absolute, got {path!r}; the service does not guess a "
+            "working directory"
+        )
+    if candidate.exists() and not candidate.is_dir():
+        raise ParamError(f"directory {str(candidate)!r} exists and is not a directory")
+
+    try:
+        candidate.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ParamError(f"cannot create {str(candidate)!r}: {exc}") from exc
+    return candidate
+
+
+def safe_basename(name: Any, default: str = "part") -> str:
+    """A file-name stem with nothing in it that could escape the target folder."""
+    if name is None:
+        return default
+    if not isinstance(name, str):
+        raise ParamError(f"basename must be a string, got {type(name).__name__}")
+    cleaned = "".join(
+        character if (character.isalnum() or character in "-_ .") else "_"
+        for character in name.strip()
+    ).strip(" .")
+    cleaned = cleaned.replace("..", "_")
+    if not cleaned:
+        raise ParamError(f"basename {name!r} has no usable characters")
+    return cleaned
+
+
+def export_plate_3mf(
+    named_shapes: Any,
+    path: str,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+) -> str:
+    """Write several positioned solids into one 3MF, one object per segment.
+
+    This is the print plate: the segments are already sitting where the packer
+    put them, so the file opens in the slicer arranged and ready.
+    """
+    from build123d import Mesher  # noqa: PLC0415
+
+    from .runner import (  # noqa: PLC0415
+        DEFAULT_ANGULAR_TOLERANCE,
+        DEFAULT_TOLERANCE_MM,
+    )
+
+    shapes = list(named_shapes)
+    if not shapes:
+        raise ServiceError("cannot write a 3MF plate with no segments on it")
+
+    target = resolve_output_path(path, "3mf")
+    linear = float(tolerance) if tolerance else DEFAULT_TOLERANCE_MM
+    angular = float(angular_tolerance) if angular_tolerance else DEFAULT_ANGULAR_TOLERANCE
+
+    try:
+        try:
+            from build123d import Unit  # noqa: PLC0415
+
+            mesher = Mesher(unit=Unit.MM)
+        except (ImportError, TypeError):
+            mesher = Mesher()
+
+        for name, shape in shapes:
+            try:
+                mesher.add_shape(
+                    shape,
+                    linear_deflection=linear,
+                    angular_deflection=angular,
+                    part_number=str(name),
+                )
+            except TypeError:
+                # Older signatures: drop the keywords one group at a time.
+                try:
+                    mesher.add_shape(
+                        shape, linear_deflection=linear, angular_deflection=angular
+                    )
+                except TypeError:
+                    mesher.add_shape(shape)
+
+        mesher.write(str(target))
+    except Exception as exc:  # noqa: BLE001
+        raise _export_failure("3MF plate", target, exc) from exc
+
+    if not target.exists() or target.stat().st_size == 0:
+        raise ServiceError(f"the 3MF plate writer produced no file at {str(target)!r}")
+    return str(target)
+
+
 def export_shape(
     shape: Any,
     fmt: str,
@@ -213,7 +310,10 @@ def _export_failure(label: str, target: Path, exc: Exception) -> Exception:
 
 __all__ = [
     "FORMATS",
+    "export_plate_3mf",
     "export_shape",
     "normalize_format",
+    "resolve_output_dir",
     "resolve_output_path",
+    "safe_basename",
 ]

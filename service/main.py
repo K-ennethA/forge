@@ -2,10 +2,18 @@
 
 Implements the HTTP API from ``docs/architecture.md`` on 127.0.0.1:8765::
 
-    GET  /health        -> {"status": "ok", "build123d": "<version>"}
-    POST /parse_params  -> {"params": <resolved schema>}
-    POST /generate      -> {"params": ..., "mesh": {...}, "stats": {...}}
-    POST /export        -> {"path": "<absolute path written>"}
+    GET  /health          -> {"status": "ok", "build123d": "<version>"}
+    POST /parse_params    -> {"params": <resolved schema>}
+    POST /generate        -> {"params": ..., "mesh": {...}, "stats": {...}}
+    POST /export          -> {"path": "<absolute path written>"}
+
+Phase 2, print readiness::
+
+    POST /check           -> {"overall": ..., "checks": [bed_fit, min_wall,
+                              overhangs, watertight]}
+    POST /segment         -> {"mode", "joint", "cuts", "segments": [...],
+                              "plate": {...}}
+    POST /export_segments -> {"files": [one per segment], "plate_path": "<3MF>"}
 
 Error contract: HTTP 400 with ``{"error", "traceback"}`` for script and
 parameter failures, HTTP 500 for service bugs.
@@ -47,10 +55,13 @@ from .errors import ForgeError  # noqa: E402
 from .export import normalize_format, resolve_output_path  # noqa: E402
 from .runner import (  # noqa: E402
     DEFAULT_TIMEOUT_S,
+    run_check,
     run_export,
+    run_export_segments,
     run_generate,
     run_health,
     run_parse_params,
+    run_segment,
     shutdown_pool,
 )
 
@@ -96,6 +107,57 @@ class ExportRequest(BaseModel):
     path: str = Field(..., description="Absolute output file path")
     tolerance: Optional[float] = None
     angular_tolerance: Optional[float] = None
+
+
+class CheckRequest(BaseModel):
+    script: str = Field(..., description="PartForge script source")
+    overrides: Dict[str, Any] = Field(default_factory=dict)
+    printer: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="printer.json object; missing keys fall back to the built-in "
+        "Elegoo Centauri Carbon profile",
+    )
+    tolerance: Optional[float] = None
+    angular_tolerance: Optional[float] = None
+    plate_margin_mm: Optional[float] = Field(
+        default=None, description="Bed edge margin used by bed_fit (default 5 mm)"
+    )
+    min_wall_probe_mm: Optional[float] = Field(
+        default=None,
+        description="How far the wall probe looks (default 4x min_wall_thickness)",
+    )
+    max_wall_samples: Optional[int] = Field(
+        default=None, description="Facet sample ceiling for the wall probe"
+    )
+
+
+class SegmentRequest(BaseModel):
+    script: str = Field(..., description="PartForge script source")
+    overrides: Dict[str, Any] = Field(default_factory=dict)
+    printer: Optional[Dict[str, Any]] = None
+    joint: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description='{"type": "dovetail"|"pin"|"magnet"|"none", "tolerance": mm, ...}',
+    )
+    mode: Any = Field(
+        default="auto",
+        description='"auto" | {"radial": N} | {"planar": [z_mm, ...]}',
+    )
+    include_mesh: bool = Field(
+        default=True, description="Return each segment's triangles as well as its stats"
+    )
+    tolerance: Optional[float] = None
+    angular_tolerance: Optional[float] = None
+    plate_margin_mm: Optional[float] = None
+    plate_spacing_mm: Optional[float] = None
+
+
+class ExportSegmentsRequest(SegmentRequest):
+    directory: str = Field(..., description="Absolute output directory")
+    basename: Optional[str] = Field(
+        default=None, description="File-name stem; defaults to 'part'"
+    )
+    format: str = Field(default="stl", description="Per-segment format: stl|step|3mf")
 
 
 # --------------------------------------------------------------------------
@@ -244,6 +306,81 @@ def export(request: ExportRequest) -> JSONResponse:
         angular_tolerance=request.angular_tolerance,
     )
     return JSONResponse(status_code=200, content={"path": result["path"]})
+
+
+@app.post("/check")
+def check(request: CheckRequest) -> JSONResponse:
+    """Run the print-readiness checks: bed fit, wall thickness, overhangs, watertight.
+
+    ``overall`` is the worst of the four statuses.  Nothing is written and no
+    geometry is returned -- this is the "can I print this?" question on its own.
+    """
+    result = run_check(
+        request.script,
+        overrides=request.overrides,
+        printer=request.printer,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        min_wall_probe_mm=request.min_wall_probe_mm,
+        max_wall_samples=request.max_wall_samples,
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "overall": result["overall"],
+            "checks": result["checks"],
+            "printer": result["printer"],
+            "params": result["params"],
+            "stats": result["stats"],
+            "timings": result["timings"],
+        },
+    )
+
+
+@app.post("/segment")
+def segment(request: SegmentRequest) -> JSONResponse:
+    """Cut the part into printable segments with mating joints.
+
+    Every segment is re-tessellated and re-checked before it comes back; a
+    non-manifold segment is a 400, not a warning with a broken mesh attached.
+    """
+    result = run_segment(
+        request.script,
+        overrides=request.overrides,
+        printer=request.printer,
+        joint=request.joint,
+        mode=request.mode,
+        include_mesh=request.include_mesh,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        plate_spacing_mm=request.plate_spacing_mm,
+    )
+    # Raw JSONResponse for the same reason /generate uses one: the segment
+    # meshes are the bulk of the body and do not need re-encoding.
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/export_segments")
+def export_segments(request: ExportSegmentsRequest) -> JSONResponse:
+    """Write one file per segment plus a single 3MF plate laid out for the bed."""
+    fmt = normalize_format(request.format)
+    result = run_export_segments(
+        request.script,
+        request.directory,
+        overrides=request.overrides,
+        printer=request.printer,
+        joint=request.joint,
+        mode=request.mode,
+        basename=request.basename,
+        fmt=fmt,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        plate_spacing_mm=request.plate_spacing_mm,
+    )
+    return JSONResponse(status_code=200, content=result)
 
 
 # --------------------------------------------------------------------------

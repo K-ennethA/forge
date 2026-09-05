@@ -37,8 +37,22 @@ import traceback
 from typing import Any, Dict, Mapping, Optional, Tuple
 
 from . import params as params_module
+from .checks import MeshGeometry, run_checks, suggest_segmentation
 from .errors import ForgeError, ScriptError, ServiceError
-from .export import export_shape
+from .export import (
+    FORMATS,
+    export_plate_3mf,
+    export_shape,
+    normalize_format,
+    resolve_output_dir,
+    safe_basename,
+)
+from .joints import resolve_joint
+from .printer import (
+    DEFAULT_PLATE_MARGIN_MM,
+    DEFAULT_PLATE_SPACING_MM,
+    normalize_printer,
+)
 from .runner import (
     DEFAULT_ANGULAR_TOLERANCE,
     DEFAULT_TOLERANCE_MM,
@@ -46,6 +60,16 @@ from .runner import (
     normalize_build_result,
     tessellate_shape,
     weld_vertices,
+)
+from .segmenting import (
+    drop_to_origin,
+    min_area_orientation,
+    normalize_mode,
+    pack_plate,
+    place_on_plate,
+    resolve_auto_mode,
+    rotated_bounds,
+    segment_shape,
 )
 
 # --------------------------------------------------------------------------
@@ -201,11 +225,276 @@ def handle_export(job: Mapping[str, Any]) -> Dict[str, Any]:
     return {"path": written}
 
 
+# --------------------------------------------------------------------------
+# Phase 2: print readiness
+# --------------------------------------------------------------------------
+
+
+def _mesh_and_stats(
+    shape: Any, linear: float, angular: float
+) -> Tuple[list, list, Dict[str, Any]]:
+    """Tessellate, weld and measure -- the same path ``/generate`` takes."""
+    vertices, triangles = tessellate_shape(shape, linear, angular)
+    vertices, triangles, degenerate = weld_vertices(vertices, triangles)
+    if not triangles:
+        raise ScriptError(
+            "the shape produced no triangles; check that build(p) returns a solid "
+            "with volume"
+        )
+    return vertices, triangles, compute_stats(shape, vertices, triangles, degenerate)
+
+
+def _plate_options(job: Mapping[str, Any]) -> Tuple[float, float]:
+    margin = job.get("plate_margin_mm")
+    spacing = job.get("plate_spacing_mm")
+    return (
+        float(margin) if margin is not None else DEFAULT_PLATE_MARGIN_MM,
+        float(spacing) if spacing is not None else DEFAULT_PLATE_SPACING_MM,
+    )
+
+
+def handle_check(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Run the printer-aware checks against the built solid."""
+    linear, angular = _tolerances(job)
+    printer = normalize_printer(job.get("printer"))
+    margin, _spacing = _plate_options(job)
+
+    schema, shape, timings = _build_shape(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats = _mesh_and_stats(shape, linear, angular)
+    timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    started = time.perf_counter()
+    report = run_checks(
+        vertices,
+        triangles,
+        stats,
+        printer,
+        margin_mm=margin,
+        min_wall_probe_mm=job.get("min_wall_probe_mm"),
+        max_wall_samples=int(job.get("max_wall_samples") or 4000),
+    )
+    timings["check_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return {
+        "overall": report["overall"],
+        "checks": report["checks"],
+        "params": schema,
+        "printer": printer,
+        "stats": stats,
+        "timings": timings,
+    }
+
+
+def _segment_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Build, cut, join and verify.  Shared by /segment and /export_segments."""
+    linear, angular = _tolerances(job)
+    printer = normalize_printer(job.get("printer"))
+    margin, spacing = _plate_options(job)
+    joint_spec = resolve_joint(job.get("joint"), printer)
+    mode = normalize_mode(job.get("mode"))
+
+    schema, shape, timings = _build_shape(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats = _mesh_and_stats(shape, linear, angular)
+    timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    suggestion: Optional[Dict[str, Any]] = None
+    if mode["kind"] == "auto":
+        geometry = MeshGeometry(vertices, triangles)
+        size = tuple(float(v) for v in stats["bounding_box_mm"])
+        low = tuple(float(v) for v in stats["bounding_box_min_mm"])
+        high = tuple(float(v) for v in stats["bounding_box_max_mm"])
+        suggestion = suggest_segmentation(geometry, size, low, high, printer, margin)
+        mode = resolve_auto_mode(suggestion)
+
+    started = time.perf_counter()
+    cut = segment_shape(shape, mode, joint_spec)
+    timings["segment_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    started = time.perf_counter()
+    segments = []
+    for item in cut["items"]:
+        piece_vertices, piece_triangles, piece_stats = _mesh_and_stats(
+            item["solid"], linear, angular
+        )
+        if not piece_stats["watertight"]:
+            # Contract: a segmenting operation that produces non-manifold output
+            # is an error.  A slicer cannot do anything with it, so neither can we.
+            raise ScriptError(
+                f"{item['name']} came out non-manifold "
+                f"(boundary edges {piece_stats['boundary_edges']}, non-manifold "
+                f"{piece_stats['nonmanifold_edges']}, B-Rep valid "
+                f"{piece_stats['solid_is_valid']}). The joint or the cut is degenerate "
+                "at that face; try a smaller joint, a different joint type, or moving "
+                "the cut."
+            )
+        # A wedge comes out of the cut wherever its arc sat, so its axis-aligned
+        # footprint can be the whole outer diameter.  Spinning it about the
+        # build axis is free -- overhangs and layer heights do not change -- and
+        # is often what makes it fit the bed at all.  The mesh returned here is
+        # *not* rotated: /segment's meshes stay assembly-accurate so a caller
+        # can show the part coming apart.  Exports apply the spin.
+        orient = min_area_orientation([(v[0], v[1]) for v in piece_vertices])
+        width, depth = rotated_bounds(
+            [(v[0], v[1]) for v in piece_vertices], orient
+        )
+        height = float(piece_stats["bounding_box_mm"][2])
+        segments.append(
+            {
+                "name": item["name"],
+                "kind": item["kind"],
+                "solid": item["solid"],
+                "mesh": {"vertices": piece_vertices, "faces": piece_triangles},
+                "stats": piece_stats,
+                "orient_deg": orient,
+                "oriented_bbox_mm": [
+                    round(width, 4),
+                    round(depth, 4),
+                    round(height, 4),
+                ],
+            }
+        )
+    timings["verify_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    plate = pack_plate(
+        [
+            {
+                "name": s["name"],
+                "size_mm": s["oriented_bbox_mm"],
+                "orient_deg": s["orient_deg"],
+            }
+            for s in segments
+        ],
+        printer,
+        margin_mm=margin,
+        spacing_mm=spacing,
+    )
+
+    return {
+        "params": schema,
+        "printer": printer,
+        "mode": mode,
+        "suggestion": suggestion,
+        "joint": joint_spec,
+        "cuts": cut["cuts"],
+        "segments": segments,
+        "plate": plate,
+        "stats": stats,
+        "timings": timings,
+        "tolerances": (linear, angular),
+    }
+
+
+def handle_segment(job: Mapping[str, Any]) -> Dict[str, Any]:
+    result = _segment_common(job)
+    include_mesh = job.get("include_mesh")
+    include_mesh = True if include_mesh is None else bool(include_mesh)
+
+    segments = []
+    for segment in result["segments"]:
+        entry: Dict[str, Any] = {
+            "name": segment["name"],
+            "kind": segment["kind"],
+            "stats": segment["stats"],
+            "orient_deg": segment["orient_deg"],
+            "oriented_bbox_mm": segment["oriented_bbox_mm"],
+        }
+        if include_mesh:
+            entry["mesh"] = segment["mesh"]
+        segments.append(entry)
+
+    payload = {
+        "params": result["params"],
+        "printer": result["printer"],
+        "mode": result["mode"],
+        "joint": result["joint"],
+        "cuts": result["cuts"],
+        "segments": segments,
+        "plate": result["plate"],
+        "stats": result["stats"],
+        "timings": result["timings"],
+    }
+    if result["suggestion"] is not None:
+        payload["suggestion"] = result["suggestion"]
+    return payload
+
+
+def handle_export_segments(job: Mapping[str, Any]) -> Dict[str, Any]:
+    result = _segment_common(job)
+    linear, angular = result["tolerances"]
+
+    directory = resolve_output_dir(job.get("directory"))
+    basename = safe_basename(job.get("basename"), default="part")
+    fmt = normalize_format(job.get("format") or "stl")
+
+    started = time.perf_counter()
+    files = []
+    for segment in result["segments"]:
+        # Each file is written on its own, sitting on Z=0 and centred in XY, so
+        # a slicer opening one segment does not have to hunt for it.
+        target = directory / f"{basename}_{segment['name']}{FORMATS[fmt]}"
+        written = export_shape(
+            drop_to_origin(segment["solid"], segment["orient_deg"]),
+            fmt,
+            str(target),
+            tolerance=linear,
+            angular_tolerance=angular,
+        )
+        files.append(
+            {
+                "name": segment["name"],
+                "kind": segment["kind"],
+                "format": fmt,
+                "path": written,
+                "stats": segment["stats"],
+                "orient_deg": segment["orient_deg"],
+            }
+        )
+
+    placement_by_name = {p["name"]: p for p in result["plate"]["items"]}
+    plate_shapes = [
+        (
+            segment["name"],
+            place_on_plate(segment["solid"], placement_by_name[segment["name"]]),
+        )
+        for segment in result["segments"]
+    ]
+    plate_path = export_plate_3mf(
+        plate_shapes,
+        str(directory / f"{basename}_plate.3mf"),
+        tolerance=linear,
+        angular_tolerance=angular,
+    )
+    result["timings"]["export_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    payload = {
+        "params": result["params"],
+        "printer": result["printer"],
+        "mode": result["mode"],
+        "joint": result["joint"],
+        "cuts": result["cuts"],
+        "directory": str(directory),
+        "files": files,
+        "plate": {**result["plate"], "path": plate_path},
+        "plate_path": plate_path,
+        "timings": result["timings"],
+    }
+    if result["suggestion"] is not None:
+        payload["suggestion"] = result["suggestion"]
+    return payload
+
+
 HANDLERS = {
     "health": handle_health,
     "parse_params": handle_parse_params,
     "generate": handle_generate,
     "export": handle_export,
+    "check": handle_check,
+    "segment": handle_segment,
+    "export_segments": handle_export_segments,
 }
 
 

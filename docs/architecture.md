@@ -63,6 +63,17 @@ JSON request/response bodies.
 
 Errors: HTTP 400 with `{"error": "<message>", "traceback": "<optional>"}` for script/param failures; 500 for service bugs.
 
+### Phase 2 endpoints (print readiness) — implemented
+
+Full field detail lives in `service/README.md`; this is the contract summary.
+
+- `POST /check` `{"script", "overrides", "printer": <partial printer.json, merged over a Centauri Carbon default>, "plate_margin_mm"?, "min_wall_probe_mm"?, "max_wall_samples"?, "tolerance"?, "angular_tolerance"?}` → `{"overall": "pass"|"warn"|"fail", "checks": [{"name": "bed_fit"|"min_wall"|"overhangs"|"watertight", "status", "details", "data"}], "printer": <resolved>, "params", "stats", "timings"}`. `bed_fit.data.suggested_segmentation.mode` is directly valid as `/segment`'s `mode`. `overhangs` reports the 6 axis-aligned orientations with `best_orientation` (warn-only). `min_wall` is inward ray casting — approximate, limits documented in service/README.md.
+- `POST /segment` `{"script", "overrides", "printer", "joint": {"type": "dovetail"|"pin"|"magnet"|"none", "tolerance"?}, "mode": "auto"|{"radial": N, "start_angle_deg"?}|{"planar": [z_mm,...]}, "include_mesh"?, "plate_margin_mm"?, "plate_spacing_mm"?}` → `{"mode": <resolved>, "joint", "cuts", "segments": [{"name", "kind": "segment"|"hardware", "stats", "orient_deg", "oriented_bbox_mm", "mesh"?}], "plate", ...}`. Printed pins arrive as `kind: "hardware"` segments. Every segment is re-verified watertight; non-manifold output is a 400, not a warning.
+- `POST /export_segments` — the `/segment` body plus `{"directory", "basename"?, "format"?}` → one STL per segment (oriented, centred, on Z=0) plus `<basename>_plate.3mf` packed to the bed.
+- `forge_lib` — importable in part scripts (injected like build123d): `peg(d, l)` keyed anti-rotation peg, `socket_for(peg_params, tolerance)` matching negative. Sample: `service/samples/appendage_peg.py`.
+- Joint tolerances come from printer.json (`press_fit` for dovetail/pin, `magnet_pocket_extra` for magnets) unless overridden. Known limitation: N radial dovetails all face the same way, so the final joint must spring; use pins or magnets for full rings.
+- Timeouts: `/check` 120 s, `/segment`/`/export_segments` 300 s (`FORGE_CHECK_TIMEOUT` / `FORGE_SEGMENT_TIMEOUT`).
+
 ## PARAMS block convention (the PartForge script contract)
 
 Every generated script is a plain Python file with, at top level:

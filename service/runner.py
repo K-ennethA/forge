@@ -66,6 +66,15 @@ DEFAULT_TIMEOUT_S: float = _env_float("FORGE_SCRIPT_TIMEOUT", 30.0)
 #: Budget for the first job on a cold worker, which pays the build123d import.
 COLD_START_EXTRA_S: float = _env_float("FORGE_COLD_START_EXTRA", 60.0)
 
+#: Wall-clock budget for a segmenting job.  Cutting a part into wedges and
+#: fusing a joint onto every face is dozens of OCC booleans, an order of
+#: magnitude more work than one ``build()``, so it gets its own budget rather
+#: than forcing the interactive one up.
+SEGMENT_TIMEOUT_S: float = _env_float("FORGE_SEGMENT_TIMEOUT", 300.0)
+
+#: Wall-clock budget for a check run: one build plus mesh analysis.
+CHECK_TIMEOUT_S: float = _env_float("FORGE_CHECK_TIMEOUT", 120.0)
+
 #: Linear deflection for tessellation, in millimetres.  0.05 mm is well below
 #: a 0.4 mm nozzle's resolution while keeping vertex counts sane.
 DEFAULT_TOLERANCE_MM: float = _env_float("FORGE_TESSELLATION_TOLERANCE", 0.05)
@@ -851,21 +860,145 @@ def run_export(
     )
 
 
+def run_check(
+    script: str,
+    overrides: Optional[Mapping[str, Any]] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    min_wall_probe_mm: Optional[float] = None,
+    max_wall_samples: Optional[int] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    return get_pool().submit(
+        {
+            "kind": "check",
+            "script": script,
+            "overrides": dict(overrides or {}),
+            "printer": dict(printer) if printer is not None else None,
+            "tolerance": tolerance,
+            "angular_tolerance": angular_tolerance,
+            "plate_margin_mm": plate_margin_mm,
+            "min_wall_probe_mm": min_wall_probe_mm,
+            "max_wall_samples": max_wall_samples,
+        },
+        timeout=timeout if timeout is not None else CHECK_TIMEOUT_S,
+    )
+
+
+def _segment_job(
+    kind: str,
+    script: str,
+    overrides: Optional[Mapping[str, Any]],
+    printer: Optional[Mapping[str, Any]],
+    joint: Optional[Mapping[str, Any]],
+    mode: Any,
+    tolerance: Optional[float],
+    angular_tolerance: Optional[float],
+    plate_margin_mm: Optional[float],
+    plate_spacing_mm: Optional[float],
+) -> Dict[str, Any]:
+    return {
+        "kind": kind,
+        "script": script,
+        "overrides": dict(overrides or {}),
+        "printer": dict(printer) if printer is not None else None,
+        "joint": dict(joint) if joint is not None else None,
+        "mode": mode,
+        "tolerance": tolerance,
+        "angular_tolerance": angular_tolerance,
+        "plate_margin_mm": plate_margin_mm,
+        "plate_spacing_mm": plate_spacing_mm,
+    }
+
+
+def run_segment(
+    script: str,
+    overrides: Optional[Mapping[str, Any]] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    joint: Optional[Mapping[str, Any]] = None,
+    mode: Any = "auto",
+    include_mesh: bool = True,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    plate_spacing_mm: Optional[float] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _segment_job(
+        "segment",
+        script,
+        overrides,
+        printer,
+        joint,
+        mode,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        plate_spacing_mm,
+    )
+    job["include_mesh"] = bool(include_mesh)
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else SEGMENT_TIMEOUT_S
+    )
+
+
+def run_export_segments(
+    script: str,
+    directory: str,
+    overrides: Optional[Mapping[str, Any]] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    joint: Optional[Mapping[str, Any]] = None,
+    mode: Any = "auto",
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    plate_spacing_mm: Optional[float] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _segment_job(
+        "export_segments",
+        script,
+        overrides,
+        printer,
+        joint,
+        mode,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        plate_spacing_mm,
+    )
+    job["directory"] = directory
+    job["basename"] = basename
+    job["format"] = fmt
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else SEGMENT_TIMEOUT_S
+    )
+
+
 __all__ = [
+    "CHECK_TIMEOUT_S",
     "DEFAULT_ANGULAR_TOLERANCE",
     "DEFAULT_TIMEOUT_S",
     "DEFAULT_TOLERANCE_MM",
     "OUTPUT_DECIMALS",
+    "SEGMENT_TIMEOUT_S",
     "WELD_DECIMALS",
     "WorkerPool",
     "compute_stats",
     "get_pool",
     "mesh_edge_report",
     "normalize_build_result",
+    "run_check",
     "run_export",
+    "run_export_segments",
     "run_generate",
     "run_health",
     "run_parse_params",
+    "run_segment",
     "shutdown_pool",
     "tessellate_shape",
     "weld_vertices",
