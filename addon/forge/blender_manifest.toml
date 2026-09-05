@@ -1,0 +1,26 @@
+schema_version = "1.0.0"
+
+id = "forge"
+version = "0.1.0"
+name = "Forge"
+tagline = "Command socket for Claude plus a parametric PartForge panel"
+maintainer = "Forge"
+type = "add-on"
+website = ""
+tags = ["Pipeline", "Mesh", "Import-Export"]
+
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+
+# The add-on listens on 127.0.0.1:9876 and calls the local geometry service on
+# 127.0.0.1:8765. Both are loopback only.
+[permissions]
+network = "Local command socket (9876) and local geometry service (8765)"
+files = "Reads PartForge scripts and writes STL/STEP/3MF exports you choose"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "*.pyc",
+  ".*",
+]

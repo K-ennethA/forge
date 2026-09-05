@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forge-mcp"
+version = "0.1.0"
+description = "Forge MCP server: drives the Blender Forge add-on (TCP 9876) and the Build123d geometry service (HTTP 8765) from Claude Code."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Forge" }]
+keywords = ["mcp", "blender", "build123d", "cad", "3d-printing"]
+
+dependencies = [
+    "mcp>=1.2.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+forge-mcp = "forge_mcp.server:main"
+
+[tool.setuptools]
+packages = ["forge_mcp"]
+
+[tool.setuptools.package-data]
+forge_mcp = ["py.typed"]

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forge-service"
+version = "0.1.0"
+description = "Forge geometry service: Build123d kernel that turns PartForge PARAMS scripts into printable solids."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Forge" }]
+keywords = ["cad", "build123d", "3d-printing", "blender", "parametric"]
+classifiers = [
+    "Private :: Do Not Upload",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+
+# Pinned to majors that share the APIs this code targets.  build123d 0.5 is the
+# floor: the exporters (export_stl / export_step / Mesher) and
+# Shape.tessellate() are assumed to exist in that shape.
+dependencies = [
+    "build123d>=0.5",
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",  # fastapi.testclient needs it
+]
+
+[project.scripts]
+# `forge-service` after `pip install -e .`; equivalent to `python -m service.main`
+forge-service = "forge_service.main:run"
+
+[tool.setuptools]
+# The package source lives in this directory itself.  It is importable as
+# `service` straight from the repo (python -m service.main) and installs into a
+# venv under the less generic name `forge_service`.
+packages = ["forge_service", "forge_service.samples"]
+
+[tool.setuptools.package-dir]
+forge_service = "."
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

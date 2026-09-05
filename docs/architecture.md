@@ -36,7 +36,7 @@ All object-targeting commands take `"object"` (name, string); omitted = active o
 | `execute_python` | `{"code": str}` | `{"output": "<captured stdout>", "result": "<repr of last expr or null>"}` |
 | `symmetrize` | `{"object", "direction": "+X"\|"-X"\|"+Y"\|"-Y"\|"+Z"\|"-Z"}` (direction = the side that survives is the source; maps to Blender's `POSITIVE_X` etc.) | `{}` |
 | `mirror` | `{"object", "axis": "X"\|"Y"\|"Z", "use_clip": bool, "apply": bool}` — adds (and optionally applies) a Mirror modifier | `{}` |
-| `remesh` | `{"object", "mode": "voxel"\|"quad", "voxel_size": float (voxel), "target_faces": int (quad)}` | `{"vertex_count": int, "face_count": int}` |
+| `remesh` | `{"object", "mode": "voxel"\|"quad", "voxel_size": float (voxel, in scene metres, default 0.01), "target_faces": int (quad, default 5000)}` | `{"vertex_count": int, "face_count": int}` |
 | `decimate` | `{"object", "ratio": float}` | `{"face_count": int}` |
 | `shade` | `{"object", "mode": "smooth"\|"flat"\|"auto", "angle": float_degrees (auto)}` | `{}` |
 | `apply_transforms` | `{"object", "location": bool, "rotation": bool, "scale": bool}` | `{}` |
@@ -48,7 +48,7 @@ All object-targeting commands take `"object"` (name, string); omitted = active o
 | `rename_object` | `{"name", "new_name"}` | `{"name": "<final>"}` |
 | `delete_object` | `{"name"}` | `{}` |
 | `load_mesh` | `{"name": str, "vertices": [[x,y,z],...], "faces": [[i0,i1,i2,...],...], "replace": bool, "collection": str?}` — PartForge regen path; `replace` swaps mesh data in place preserving object/panel state | `{"object": name, "vertex_count", "face_count"}` |
-| `export_stl` | `{"objects": [names], "path": str}` | `{"path": str}` |
+| `export_stl` | `{"objects": [names], "path": str, "scale": float?}` — empty/omitted `objects` = current selection, else active object; `scale` defaults to 1000.0 (scene metres → STL millimetres) | `{"path": str}` |
 
 Units: Blender scene units are meters; geometry service works in millimeters. `load_mesh` receives **millimeter** coordinates and the add-on scales by 0.001 on import (objects keep scale 1.0; vertices are scaled).
 
@@ -81,7 +81,7 @@ def build(p):
     ...
 ```
 
-Rules: `value` required; `unit` one of `mm`, `in`, `deg`, `count`, `ratio`, `bool`; `min`/`max`/`step`/`description` optional but encouraged. `in` values are converted to mm before `build()` is called (build works in mm). The service validates overrides against min/max and type. The Blender panel is generated from this schema verbatim.
+Rules: `value` AND `unit` required (`unit` one of `mm`, `in`, `deg`, `count`, `ratio`, `bool`); `min`/`max`/`step`/`description` optional but encouraged. Param names must be valid Python identifiers. Out-of-range overrides are rejected by the service (not clamped); `step` is a UI hint only. `in` values are converted to mm before `build()` is called (build works in mm). The service validates overrides against min/max and type. The Blender panel is generated from this schema verbatim.
 
 ## spec.json / printer.json / character.json
 

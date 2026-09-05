@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "forge": {
+      "command": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\mcp\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "forge_mcp"],
+      "env": {
+        "PYTHONUTF8": "1",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
