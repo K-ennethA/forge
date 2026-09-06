@@ -148,7 +148,11 @@ Component `assistant/` — a thin local bridge, stdlib-only Python (no venv need
 - `POST /cancel/<id>`
 The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
 
-### Phase 7 sketch — meshgen (image-to-3D, swappable backends)
+### Phase 7 — meshgen (image-to-3D, swappable backends) — implemented
+
+Implemented (port **8902**; ComfyUI child on 8188, lazy-started, windowless, process-tree-killed on stop): backends `trellis2` (default) + `pixal3d`, both via ComfyUI **core** nodes v0.34.0 (MIT-clean chain; no custom node packs — they reintroduce non-commercial nvdiffrast/RMBG). Weights at `C:\forge-models\` (18.45 GB total incl. ComfyUI+cu130 torch on Python 3.14; sha256 ledger at downloads\sha256.txt; relocatable via meshgen\config.json). `POST /generate3d` → 202 `{job_id (= ComfyUI prompt_id), state, backend, output}`; `/job` carries per-stage `progress` (resets per node — not overall), `stats`, `vram`; one job at a time, extras queue. `VRAM_SAFE_DEFAULTS` (shape 1024/tex 512/2048/200k) prevent the stock-template 20 GiB OOM on 12 GB cards; callers can override upward. `/health` free + names any missing weight file with path and URL. Proven E2E on RTX 5070: trellis2 304 s / 8.15 GB peak; pixal3d 249 s / 9.30 GB; output correctly diagnosed by /check_mesh (raw AI meshes are non-manifold with paper walls — voxel repair is the mandatory next step). Corrections vs research: ComfyUI moved to Comfy-Org/ComfyUI; DINOv3 file lives in the Pixal3D HF repo; cu130 (not cu128) required; MoGe is pixal3d-only.
+
+### Original sketch
 
 New component `meshgen/` — a fourth localhost service wrapping image-to-3D AI models behind ONE stable API so the model is a plug, not a dependency:
 - `GET /health` → `{"status", "backend": {"name", "model", "license", "loaded": bool, "vram_gb"}, "available_backends": [...]}`

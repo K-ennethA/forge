@@ -1,10 +1,11 @@
-# Forge - start the two background programs Blender's panels talk to.
+# Forge - start the background programs Blender's panels talk to.
 #
 #   * the shape service   (port 8765) - builds the actual geometry
 #   * the assistant       (port 8901) - the chat box in Blender's sidebar
+#   * meshgen             (port 8902) - image-to-3D, only if the models are installed
 #
 # Each is started only if its port is free, so running this twice is harmless
-# and it will never trample a service you already had running.  Both run hidden;
+# and it will never trample a service you already had running.  All run hidden;
 # stop_forge.ps1 (or stop_forge.cmd) shuts them down again.
 
 $ErrorActionPreference = 'Stop'
@@ -13,8 +14,10 @@ $root          = Split-Path -Parent $MyInvocation.MyCommand.Path
 $venvPython    = Join-Path $root 'service\.venv\Scripts\python.exe'
 $venvPythonW   = Join-Path $root 'service\.venv\Scripts\pythonw.exe'
 $bridge        = Join-Path $root 'assistant\bridge.py'
+$meshgenConfig = Join-Path $root 'meshgen\config.json'
 $servicePort   = 8765
 $assistantPort = 8901
+$meshgenPort   = 8902
 
 function Test-Port([int]$Port) {
     $client = New-Object System.Net.Sockets.TcpClient
@@ -79,6 +82,34 @@ if (Test-Port $assistantPort) {
     } else {
         Write-Host "  [X] The assistant did not start." -ForegroundColor Red
         Write-Host "      To see why, run:  `"$venvPython`" `"$bridge`""
+    }
+}
+
+# --- meshgen (image-to-3D) ---------------------------------------------------
+# Optional: only started when the ~19 GB model install it needs is actually
+# present, so a machine without it is simply quiet rather than broken.
+if (Test-Port $meshgenPort) {
+    Write-Host "  [ok] Meshgen already running on port $meshgenPort"
+} elseif (-not (Test-Path $meshgenConfig)) {
+    Write-Host "  [--] Meshgen not configured (no meshgen\config.json) - skipped"
+} else {
+    $cfg         = Get-Content $meshgenConfig -Raw | ConvertFrom-Json
+    $comfyMain   = Join-Path $cfg.comfyui_root 'main.py'
+    $modelsRoot  = $cfg.models_root
+    if ((Test-Path $comfyMain) -and (Test-Path $cfg.comfyui_python) -and (Test-Path $modelsRoot)) {
+        Start-Process -FilePath $runner -ArgumentList @('-m', 'meshgen') `
+            -WorkingDirectory $root -WindowStyle Hidden | Out-Null
+        if (Wait-Port $meshgenPort) {
+            Write-Host "  [ok] Meshgen started on port $meshgenPort"
+        } else {
+            Write-Host "  [X] Meshgen did not start." -ForegroundColor Red
+            Write-Host "      To see why, run:  `"$venvPython`" -m meshgen"
+        }
+    } else {
+        Write-Host "  [--] Meshgen models are not installed yet - skipped"
+        Write-Host "       Expected ComfyUI at: $comfyMain"
+        Write-Host "       Expected models at:  $modelsRoot"
+        Write-Host "       See meshgen\README.md."
     }
 }
 

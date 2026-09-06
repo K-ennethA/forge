@@ -23,6 +23,7 @@ Full plan: [docs/plan.md](docs/plan.md). Component contract (ports, protocols, P
 addon/forge/   Blender add-on: TCP command server, common ops (symmetrize, remesh, ...), PartForge panel, Assistant chat box
 service/       Build123d geometry service (HTTP, port 8765): PARAMS parsing, tessellation, STL/STEP/3MF
 assistant/     Forge Assistant bridge (HTTP, port 8901): runs the Claude Code CLI headless for the chat box
+meshgen/       Image-to-3D service (HTTP, port 8902): picture in, textured .glb out, swappable model backends
 mcp/           MCP server (stdio) exposing both to Claude Code
 templates/     spec.json / printer.json / character.json starting points
 projects/      One folder per real part or character

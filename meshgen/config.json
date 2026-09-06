@@ -1,0 +1,17 @@
+{
+  "_comment": "Every path to the 19 GB model install lives here. Relocating C:/forge-models means editing this file and nothing else. Forward slashes are fine on Windows.",
+
+  "comfyui_root": "C:/forge-models/comfyui",
+  "comfyui_python": "C:/forge-models/comfyui/.venv/Scripts/python.exe",
+  "models_root": "C:/forge-models/models",
+  "comfyui_output_dir": "C:/forge-models/comfyui-output",
+  "comfyui_input_dir": "C:/forge-models/comfyui-input",
+
+  "port": 8902,
+  "comfyui_port": 8188,
+  "default_backend": "trellis2",
+
+  "comfyui_startup_timeout_s": 420,
+  "job_timeout_s": 1800,
+  "comfyui_idle_shutdown_s": 0
+}
