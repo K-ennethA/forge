@@ -1,11 +1,14 @@
 """The health row at the top of the Forge tab, and the Start Services button.
 
-Four things have to be alive for Forge to work, and until now the artist found
-out which one was not by reading an error three clicks deep in some other box.
-This module answers the question up front:
+Five things decide whether Forge works, and until now the artist found out which
+one was not by reading an error three clicks deep in some other box.  This
+module answers the question up front:
 
 * the **geometry service** (8765) — builds the shapes;
 * the **assistant bridge** (8901) — the chat box's other half;
+* **picture to 3D** (8902, meshgen) — optional: the only row that is allowed to
+  be down on a working machine, because the 18.5 GB of models is a download the
+  artist may simply not have made;
 * the **command socket** (9876) — how Claude drives Blender; it lives in this
   process, so if the panel is drawing at all we can simply read its status;
 * **sign-in** — whether the Claude CLI is installed and logged in, taken from
@@ -37,7 +40,7 @@ import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy.types import Operator, PropertyGroup
 
-from ..prefs import pref, repo_root, start_script_path, service_url
+from ..prefs import meshgen_url, pref, repo_root, start_script_path, service_url
 from .partforge import _tag_redraw
 
 #: One state vocabulary for every dot, so the panel has one icon table.
@@ -114,8 +117,34 @@ def get_json(url, timeout=HEALTH_TIMEOUT):
     return parsed if isinstance(parsed, dict) else {}
 
 
-def poll_health(service_health_url, bridge_health_url):
-    """Both health calls, as one plain dict. Runs on a worker thread; no bpy."""
+def meshgen_base():
+    return str(meshgen_url() or "http://127.0.0.1:8902").strip()
+
+
+def meshgen_row(payload):
+    """``(state, detail)`` from meshgen's ``/health``.
+
+    Three honest answers rather than a green light: ready with the backend
+    named, a warning naming the first missing weight (the models are a separate
+    18.5 GB download, and "down" would read as broken when it is only absent),
+    or misconfigured with the service's own reason.
+    """
+    status = str(payload.get("status") or "").lower()
+    backend = payload.get("backend") if isinstance(payload.get("backend"), dict) else {}
+    name = str(backend.get("name") or "") or "no backend"
+    if status == "models_missing":
+        missing = [m for m in (payload.get("missing") or []) if isinstance(m, dict)]
+        first = str(missing[0].get("what") or "a model file") if missing else "model files"
+        return WARN, "%d file(s) to download: %s" % (len(missing) or 1, first)
+    if status == "misconfigured":
+        return WARN, str(payload.get("error") or "misconfigured")[:120]
+    if status:
+        return UP, "%s ready" % name
+    return DOWN, "no answer"
+
+
+def poll_health(service_health_url, bridge_health_url, meshgen_health_url=""):
+    """Every health call, as one plain dict. Runs on a worker thread; no bpy."""
     out = {}
 
     try:
@@ -125,6 +154,16 @@ def poll_health(service_health_url, bridge_health_url):
     else:
         version = payload.get("build123d") or payload.get("version") or ""
         out["service"] = (UP, ("build123d %s" % version) if version else "ready")
+
+    if meshgen_health_url:
+        try:
+            payload = get_json(meshgen_health_url)
+        except (urllib.error.URLError, OSError, ValueError):
+            # Not an error the artist has to fix: this one is optional, so the
+            # detail says what it would take rather than what went wrong.
+            out["meshgen"] = (DOWN, "not running - press Start services")
+        else:
+            out["meshgen"] = meshgen_row(payload)
 
     try:
         payload = get_json(bridge_health_url)
@@ -163,12 +202,14 @@ def _reason(exc):
 # ---------------------------------------------------------------------------
 
 class ForgeServicesProps(PropertyGroup):
-    """What the health row draws. Four states, four one-line explanations."""
+    """What the health row draws. Five states, five one-line explanations."""
 
     service_state: StringProperty(default=UNKNOWN)
     service_detail: StringProperty(default=NOT_CHECKED)
     bridge_state: StringProperty(default=UNKNOWN)
     bridge_detail: StringProperty(default=NOT_CHECKED)
+    meshgen_state: StringProperty(default=UNKNOWN)
+    meshgen_detail: StringProperty(default=NOT_CHECKED)
     cli_state: StringProperty(default=UNKNOWN)
     cli_detail: StringProperty(default=NOT_CHECKED)
     status: StringProperty(default="")
@@ -197,7 +238,8 @@ def apply_health(props, health):
     """Copy a :func:`poll_health` result onto the props. Main thread."""
     if props is None:
         return
-    for key, prefix in (("service", "service"), ("bridge", "bridge"), ("cli", "cli")):
+    for key, prefix in (("service", "service"), ("bridge", "bridge"),
+                        ("meshgen", "meshgen"), ("cli", "cli")):
         state, detail = (health or {}).get(key) or (UNKNOWN, NOT_CHECKED)
         setattr(props, prefix + "_state", str(state))
         setattr(props, prefix + "_detail", str(detail)[:400])
@@ -228,19 +270,27 @@ def socket_row():
 
 
 def rows(props):
-    """The four (label, state, detail) tuples the panel draws, in order."""
+    """The five (label, state, detail) tuples the panel draws, in order."""
     socket_state, socket_detail = socket_row()
     if props is None:
         return [("Shapes", UNKNOWN, NOT_CHECKED),
                 ("Assistant", UNKNOWN, NOT_CHECKED),
+                ("Picture to 3D", UNKNOWN, NOT_CHECKED),
                 ("Blender link", socket_state, socket_detail),
                 ("Sign-in", UNKNOWN, NOT_CHECKED)]
     return [
         ("Shapes", props.service_state, props.service_detail),
         ("Assistant", props.bridge_state, props.bridge_detail),
+        ("Picture to 3D", props.meshgen_state, props.meshgen_detail),
         ("Blender link", socket_state, socket_detail),
         ("Sign-in", props.cli_state, props.cli_detail),
     ]
+
+
+#: Rows whose absence stops Forge working.  "Picture to 3D" is deliberately not
+#: one of them: it is an optional 18.5 GB download, and a machine without it is
+#: a working machine.
+REQUIRED_ROWS = ("Shapes", "Assistant")
 
 
 # ---------------------------------------------------------------------------
@@ -361,11 +411,12 @@ class FORGE_OT_services_refresh(Operator):
         props = get_props(context)
         service = service_url("/health")
         bridge = _url(bridge_base(), "/health")
+        meshgen = _url(meshgen_base(), "/health")
         props.busy = True
         set_status(props, "Checking ...")
 
         def work():
-            return poll_health(service, bridge)
+            return poll_health(service, bridge, meshgen)
 
         def done(value, error):
             if not _alive(props):
@@ -376,8 +427,13 @@ class FORGE_OT_services_refresh(Operator):
                 return
             apply_health(props, value)
             down = [label for label, state, _detail in rows(props) if state == DOWN]
-            if down:
-                set_status(props, "Not running: %s" % ", ".join(down), error=True)
+            required_down = [label for label in down if label in REQUIRED_ROWS]
+            if required_down:
+                set_status(props, "Not running: %s" % ", ".join(required_down), error=True)
+            elif down:
+                # Only the optional row is down: say so without the red box, so
+                # a machine that simply has no picture models does not look broken.
+                set_status(props, "Ready. Not running: %s." % ", ".join(down))
             else:
                 set_status(props, "Everything is running.")
 
@@ -414,7 +470,12 @@ class FORGE_OT_services_start(Operator):
         bridge_port = url_port(bridge_base(), 8901)
         service_health = service_url("/health")
         bridge_health = _url(bridge_base(), "/health")
+        meshgen_health = _url(meshgen_base(), "/health")
 
+        # meshgen is deliberately NOT in this map: start_forge.ps1 starts it
+        # only when the models are installed, so requiring it here would report
+        # a failure on every machine that never downloaded them.  The health
+        # poll below still reports it, so the dot is right either way.
         before = {"Shapes": probe_port(service_port),
                   "Assistant": probe_port(bridge_port)}
         if all(before.values()):
@@ -422,7 +483,7 @@ class FORGE_OT_services_start(Operator):
             set_status(props, "Both background programs were already running.")
 
             def work_check():
-                return poll_health(service_health, bridge_health)
+                return poll_health(service_health, bridge_health, meshgen_health)
 
             def done_check(value, error):
                 if _alive(props) and error is None:
@@ -439,7 +500,8 @@ class FORGE_OT_services_start(Operator):
             report = start_services(script, root)
             report["after"] = {"Shapes": probe_port(service_port),
                                "Assistant": probe_port(bridge_port)}
-            report["health"] = poll_health(service_health, bridge_health)
+            report["health"] = poll_health(service_health, bridge_health,
+                                           meshgen_health)
             return report
 
         def done(value, error):

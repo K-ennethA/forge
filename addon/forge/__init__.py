@@ -79,6 +79,14 @@ class ForgePreferences(AddonPreferences):
         ),
         default="http://127.0.0.1:8901",
     )
+    meshgen_url: StringProperty(
+        name="Picture-to-3D URL",
+        description=(
+            "Base URL of the meshgen service that turns a photo into a mesh. "
+            "start_forge.cmd launches it on this port when the models are installed"
+        ),
+        default="http://127.0.0.1:8902",
+    )
     assistant_model: EnumProperty(
         name="Assistant Speed",
         description=(
@@ -152,6 +160,11 @@ class ForgePreferences(AddonPreferences):
         box.prop(self, "service_url")
         box.prop(self, "printer_path")
         box.prop(self, "request_timeout")
+
+        box = layout.box()
+        box.label(text="Picture to 3D (meshgen)", icon="IMAGE_DATA")
+        box.prop(self, "meshgen_url")
+        box.label(text="Optional: only runs when the models are installed", icon="INFO")
 
         box = layout.box()
         box.label(text="Assistant (chat box)", icon="LIGHT")

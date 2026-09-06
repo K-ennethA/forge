@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
 
-from . import __version__, blender_client, config, service_client
+from . import __version__, blender_client, config, meshgen_client, service_client
 from .errors import BackendError, BackendUnavailable, ForgeError
 from .util import (
     GLTF_SUFFIXES,
@@ -35,9 +35,11 @@ from .util import (
     fmt_flow_list,
     fmt_flow_run_report,
     fmt_flow_saved,
+    fmt_generate_report,
     fmt_joint,
     fmt_keyframe_report,
     fmt_manifest_report,
+    fmt_meshgen_status,
     fmt_metarig_report,
     fmt_mode,
     fmt_model_check_report,
@@ -54,12 +56,15 @@ from .util import (
     fmt_scene_info,
     fmt_segment_report,
     fmt_stats,
+    fmt_submitted_report,
     fmt_tag_table,
     fmt_uv_report,
     fmt_vector,
     fmt_weights_report,
     fmt_written_files,
+    generated_object_name,
     keys_frame_range,
+    meshgen_image_path,
     next_rig_step,
     normalize_action_name,
     normalize_actions,
@@ -131,6 +136,12 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   into parameters — never for tracing. load_reference puts it in the viewport as
   a half-transparent image plane so the artist can compare their model against
   it; offer that whenever they gave you a picture.
+- generate_3d turns a picture into an actual mesh (meshgen, ~5 minutes, one job
+  at a time) and is the right first offer for ORGANIC, stylised, one-off shapes
+  — a creature, a bust, an ornament. Anything functional or dimensioned stays
+  parametric: a generated mesh has no crisp faces and no exact millimetres. It
+  always arrives voxel-repaired and print-checked; say the wait out loud before
+  starting, and meshgen_status reports the stage while it runs.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -158,12 +169,15 @@ def _target(object_name: Optional[str]) -> Dict[str, Any]:
 
 @app.tool()
 def forge_status() -> str:
-    """Check whether both Forge backends are up, in one call.
+    """Check whether the Forge backends are up, in one call.
 
-    Reports the Blender add-on socket (127.0.0.1:9876) and the Build123d
-    geometry service (127.0.0.1:8765) with the Blender/build123d versions when
-    reachable. Never fails — use it to diagnose any "backend is not running"
-    error, or before starting a session.
+    Reports the Blender add-on socket (127.0.0.1:9876), the Build123d geometry
+    service (127.0.0.1:8765) and the meshgen image-to-3D service
+    (127.0.0.1:8902) with their versions when reachable. Never fails — use it to
+    diagnose any "backend is not running" error, or before starting a session.
+
+    meshgen being down is not a fault: it is optional (an 18.5 GB model
+    download) and everything else works without it. The other two are not.
     """
     lines = ["Forge backend status", ""]
 
@@ -184,6 +198,16 @@ def forge_status() -> str:
     else:
         lines.append(f"Geometry service [DOWN] {config.service_address()}")
         lines.append(f"                 {detail}")
+
+    reachable, detail = meshgen_client.is_available()
+    if reachable:
+        lines.append(f"Picture to 3D    [UP]   {config.meshgen_address()} — {detail}")
+    else:
+        lines.append(f"Picture to 3D    [DOWN] {config.meshgen_address()} — {detail}")
+        lines.append(
+            "                 optional: image-to-3D only. meshgen_status says what "
+            "it would need; parametric parts do not use it."
+        )
 
     return "\n".join(lines)
 
@@ -1250,6 +1274,191 @@ def segment_model(
     except ForgeError as exc:
         raise _with_repair_advice(exc) from exc
     return fmt_model_segment_report(object, result, printer_source, collection)
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — meshgen: a picture becomes a mesh (127.0.0.1:8902)
+# ---------------------------------------------------------------------------
+
+#: Voxel repair on a 200k-triangle mesh blocks Blender's main thread for a
+#: while, so the import gets its own budget rather than the per-command default.
+_IMPORT_TIMEOUT = 300.0
+
+
+def _import_generated(
+    mesh_path: str, name: str = ""
+) -> tuple[Optional[Dict[str, Any]], List[str]]:
+    """Bring the .glb into Blender, repaired. Returns (result, problems).
+
+    Blender being down does NOT lose the run: minutes of GPU time produced a
+    file, and the caller reports that path instead of an error.
+    """
+    params: Dict[str, Any] = {"path": mesh_path, "repair": True}
+    if name:
+        params["name"] = name
+    try:
+        result = blender_client.send_command(
+            "import_generated",
+            params,
+            read_timeout=max(config.BLENDER_READ_TIMEOUT, _IMPORT_TIMEOUT),
+        )
+    except BackendUnavailable as exc:
+        return None, [
+            f"Blender is not running, so nothing was imported ({exc}). The .glb "
+            "is written and safe — open Blender, start the Forge server, then "
+            "import_generated(path=...) brings it in repaired."
+        ]
+    except ForgeError as exc:
+        return None, [f"The mesh was generated but importing it failed: {exc}"]
+    return result, []
+
+
+def _check_generated(object_name: Optional[str]) -> tuple[Optional[Dict[str, Any]], List[str]]:
+    """The print verdict for what just landed, via the add-on's check_model."""
+    if not object_name:
+        return None, []
+    try:
+        return blender_client.send_command(
+            "check_model",
+            {"object": object_name},
+            read_timeout=max(config.BLENDER_READ_TIMEOUT, config.SERVICE_CHECK_TIMEOUT),
+        ), []
+    except ForgeError as exc:
+        return None, [
+            f"The mesh is in the scene, but the print check did not run: {exc}. "
+            "Run check_model yourself once that backend is up."
+        ]
+
+
+@app.tool()
+def generate_3d(
+    image_path: str,
+    backend: Optional[str] = None,
+    wait: bool = True,
+) -> str:
+    """Turn a PHOTO or SKETCH into a 3D mesh in the scene. Takes about 5 minutes.
+
+    One call does the whole job: the picture goes to the meshgen service
+    (127.0.0.1:8902), the AI model builds a textured mesh, the .glb is imported
+    into Blender, voxel-REPAIRED on the way in, and print-checked — so what you
+    report is an object the artist can see plus a verdict, not a file path.
+
+    **Say the five minutes out loud BEFORE you start.** It is minutes of GPU
+    work (measured: 304 s trellis2 / 249 s pixal3d on this machine), one job at
+    a time. An artist who was not warned thinks it hung.
+
+    **When to use this, and when NOT to.** Reach for meshgen when the shape is
+    organic, stylised or a one-off and looking right matters more than measuring
+    right: a creature, a character bust, an ornament, a base to sculpt on. Do
+    NOT use it for anything functional, dimensioned or printable-to-fit — a
+    bracket, a holder, a lid, anything that must be a named number of
+    millimetres. That is partforge_new_part's job, and a generated mesh can
+    never give you crisp faces or exact sizes.
+
+    - `image_path`: an absolute .png/.jpg/.jpeg/.webp/.bmp on this machine. The
+      object is named after the file, so `gecko.png` lands as `gecko` rather
+      than the exporter's `Mesh_0`.
+    - `backend`: omit for the service's default (trellis2). "pixal3d" is the
+      other installed model; anything else is refused with the list.
+    - `wait`: true (default) blocks until the mesh is in the scene. false hands
+      back the job id immediately — then poll meshgen_status(job_id).
+
+    What comes back is honest about three things, and so must you be:
+
+    - the mesh is voxel-repaired ALWAYS, because raw image-to-3D output is never
+      manifold (paper-thin walls, boundary edges, inconsistent winding) and
+      nothing downstream works until it is one closed shell;
+    - the print verdict usually fails on min_wall. That is the correct diagnosis
+      of a generated mesh, not a broken tool — report it plainly and say what
+      thickening or scaling it needs;
+    - nothing in a picture says how big the thing is. Scale is a decision the
+      artist makes; ask for one real dimension.
+
+    Next steps to offer: rigforge_retopo for a game asset (clean quads, then
+    tags/UV/rig), check_model then repairs for printing, and sculpting for
+    detail — never promise fine detail from the generator.
+    """
+    image = meshgen_image_path(image_path)
+    chosen = (backend or "").strip() or None
+
+    submitted = meshgen_client.generate3d(str(image), backend=chosen)
+    job_id = str(submitted.get("job_id") or "").strip()
+    if not job_id:
+        raise BackendError(
+            "meshgen accepted the job but returned no job_id, so there is "
+            f"nothing to follow: {submitted}"
+        )
+
+    if not wait:
+        return fmt_submitted_report(image, submitted)
+
+    job, stages = meshgen_client.wait_for_job(job_id)
+    state = str(job.get("state") or "").lower()
+
+    if state == "error":
+        raise BackendError(
+            f"meshgen could not make a model from {image.name}: "
+            f"{job.get('error') or 'no reason given'}\n"
+            "Nothing is in the scene. A photo with one clear subject on a plain "
+            "background works best; if the service reports missing models, "
+            "meshgen_status names the files and where they go."
+        )
+    if state != "done":
+        return fmt_generate_report(image, submitted, job, stages)
+
+    mesh_path = str(job.get("mesh_path") or "")
+    if not mesh_path:
+        return fmt_generate_report(
+            image, submitted, job, stages,
+            problems=["meshgen finished but named no file, so nothing could be imported."],
+        )
+
+    imported, problems = _import_generated(mesh_path, generated_object_name(image))
+    check = None
+    if imported:
+        check, check_problems = _check_generated(imported.get("object"))
+        problems.extend(check_problems)
+    return fmt_generate_report(image, submitted, job, stages, imported, check, problems)
+
+
+@app.tool()
+def meshgen_status(job_id: Optional[str] = None) -> str:
+    """Is the picture-to-3D service up, and how far has a job got?
+
+    Never fails. Call it when generate_3d(wait=false) gave you a job id, when a
+    generation seems slow, or before promising an artist that a photo can become
+    a model at all.
+
+    Two things it reports that are easy to misread:
+
+    - `progress` is the fraction through the CURRENT STAGE and it resets every
+      time the pipeline moves to the next one. Tell the artist which stage it is
+      on ("remeshing", "baking the texture"), never a percentage of the job.
+    - a "models_missing" status is not a crash: the 18.5 GB of weights is a
+      separate download, and the report names each missing file, where it should
+      live and where to fetch it. Nothing is ever downloaded automatically.
+
+    This service is optional. If it is down and the artist wants a functional,
+    dimensioned part anyway, build it parametrically instead of waiting.
+    """
+    detail = ""
+    try:
+        payload = meshgen_client.health()
+    except ForgeError as exc:
+        payload = None
+        detail = str(exc)
+
+    job = None
+    wanted = (job_id or "").strip()
+    if wanted and payload is not None:
+        try:
+            job = meshgen_client.job(wanted)
+        except ForgeError as exc:
+            detail = f"{detail}\n  job {wanted}: {exc}".strip()
+    report = fmt_meshgen_status(payload, job, detail)
+    if wanted and payload is not None and job is None:
+        report = f"{report}\n  (no job {wanted} — ids are forgotten when the service restarts)"
+    return report
 
 
 # ---------------------------------------------------------------------------

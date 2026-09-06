@@ -87,9 +87,9 @@ import bpy; print(bpy.ops.forge.start_server())
 
 - UI: `View3D ▸ N sidebar ▸ Forge ▸ Forge Server ▸ Start`.
 - Preferences: `Edit ▸ Preferences ▸ Add-ons ▸ Forge` — set the port, the geometry
-  service URL, the printer profile, the assistant bridge URL, the flows folder
-  (`forge_flows_dir`, default `<repo>/flows`), timeouts, and **Start Server With Blender**
-  for autostart.
+  service URL, the printer profile, the assistant bridge URL, the picture-to-3D URL
+  (`meshgen_url`, default `http://127.0.0.1:8902`), the flows folder (`forge_flows_dir`,
+  default `<repo>/flows`), timeouts, and **Start Server With Blender** for autostart.
 - Script/console: `bpy.ops.forge.start_server()`.
 
 The panel shows whether it is listening, how many connections and commands it has
@@ -171,6 +171,7 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `flow_list` | — | every saved flow in the flows folder: `{"dir", "count", "flows": [{"name", "description", "params", "steps", "step_labels", "path"}]}`. A file that will not parse is listed with an `error` instead of being hidden |
 | `check_model` | `object?`, `printer?` | print-checks a mesh that is **already in the scene** (a downloaded STL, your own sculpt): the evaluated mesh goes to the service's `/check_mesh` in millimetres and the rows land in the Print Checks panel. Returns `{"object", "overall", "checks", "printer"?, "stats"?, "mesh": {"vertex_count", "face_count", "scale"}, "printer_source", "panel"}` |
 | `segment_model` | `object?`, `printer?`, `joint?`, `mode?`, `collection?` | cuts an in-scene mesh via `/segment_mesh` and loads the pieces laid out on the plate. Returns `{"object", "objects", "count", "segments", "mode", "joint", "plate", "mesh", "printer_source"}` — the segment meshes are **not** echoed back, the objects are in the viewport |
+| `import_generated` | `path` (`.glb`/`.gltf`), `name?`, `repair?` (**default true**), `voxel_size?` (scene metres), `collection?` | imports what meshgen wrote and **voxel-repairs it on the way in**. Returns `{"object", "vertex_count", "face_count", "edge_count", "repaired", "path", "importer", "imported_objects", "dimensions_mm", "before": {...}, "voxel_size"?, "voxel_size_mm"?, "repair_method"?}` |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
 ### RigForge commands (Phase 3)
@@ -305,6 +306,41 @@ for extracting proportions, features and style intent into **parameters**. Geome
 always built from those, never traced from pixels, which is what keeps a model editable with
 real values.
 
+### Additive protocol extension (Phase 7): `import_generated`
+
+What meshgen (`127.0.0.1:8902`) wrote, in the scene, in a state the rest of Forge can work
+on.
+
+```jsonc
+{"type": "import_generated", "params": {
+   "path": "C:\\forge-models\\comfyui-output\\gecko_trellis2.glb",
+   "name": "gecko", "repair": true}}
+```
+
+- **The repair is the default, and that is the whole point.** Raw image-to-3D output is
+  never manifold — paper-thin walls, boundary edges, inconsistent winding (meshgen's own
+  README measures a fresh 200k-triangle output as *9 boundary and 210 non-manifold edges*
+  with 3586 of 3861 wall probes under the minimum). Nothing downstream — print checks,
+  segmenting, Quadriflow retopo — works on that, so the import voxel-remeshes before
+  handing anything back. `"repair": false` exists for looking at exactly what the model
+  produced, and says so loudly in the result.
+- **The voxel size is adaptive**, the same reasoning RigForge's retopo uses: solve
+  `area / v²` for the face count to land on rather than fixing a millimetre value that only
+  suits one scale, then clamp between 16 and 400 voxels across the longest axis. The target
+  is the mesh's *own* density (capped at 200 000 faces), so a repair keeps roughly the
+  detail that arrived. An explicit `voxel_size` (scene metres) overrides it.
+- **One object comes back, not a hierarchy.** A `.glb` carries the scene graph it was
+  written with — typically an empty for the glTF root holding the Y-up rotation. The meshes
+  are joined, that transform is baked into the mesh, and the leftover scaffolding is
+  deleted, so `dimensions_mm` is the truth for every downstream measurement.
+- **Scale is not guessed.** The file's units come through as they are and the result reports
+  `dimensions_mm`; nothing in a picture says how big the thing is, so the artist decides.
+- `.stl`/`.obj`/`.ply` are refused here with a pointer to the Model box's **Import Model**,
+  which is the button that does open them.
+
+Mirrored by the MCP tool `generate_3d`, which is the whole job in one call (submit, follow
+the stages, import, print-check). The command is also a legal flow step.
+
 ### Additive protocol extension: `partforge_open`
 
 Another addition; nothing in `docs/architecture.md` changes shape.
@@ -361,15 +397,21 @@ Notes:
 ## Forge Status row
 
 `View3D ▸ N sidebar ▸ Forge ▸ Forge Status` — the very top of the tab, above the chat box,
-because "I pressed Send and nothing happened" has exactly four possible answers and this
-box is all four:
+because "I pressed Send and nothing happened" has a short list of possible answers and this
+box is all of them:
 
 | Row | Where it comes from | Down means |
 |---|---|---|
 | **Shapes** | `GET <service_url>/health` | the geometry service (8765) is not running — nothing can be built, checked or cut |
 | **Assistant** | `GET <assistant_url>/health` | the bridge (8901) is not running — the chat box cannot send |
+| **Picture to 3D** | `GET <meshgen_url>/health` | meshgen (8902) is not running — **the only row that may be down on a working machine**, because the models are an 18.5 GB download. A warning (not a failure) when it answers `models_missing`, with the first missing file named |
 | **Blender link** | this process's own socket status, not a port probe | the command socket is stopped, so Claude cannot drive Blender; the port is shown either way |
 | **Sign-in** | the bridge's `claude_cli.found` + `last_auth_error` | the Claude CLI is missing, or the last turn failed on sign-in (`open a terminal, type claude, run /login`) |
+
+Only **Shapes** and **Assistant** turn the status line red. Picture-to-3D down reads as
+"Ready. Not running: Picture to 3D." — a fact, not a fault — and **Start services** does not
+count it as a failure to start either, because `start_forge.ps1` deliberately skips meshgen
+when the models are not installed.
 
 **Nothing is probed by spending money or a turn.** Sign-in is whatever the bridge already
 knows from the last job (`last_auth_error`, additive on `/health`) — the CLI is never run
@@ -568,7 +610,16 @@ answers the same two questions about geometry Forge did not generate.
 3. **Segment imported model** POSTs the same mesh to `/segment_mesh` with the joint and
    mode from the **Segments** box, and loads the pieces laid out on the plate, exactly as
    the parametric Segment button does.
-4. **Voxel Repair** rebuilds the surface as one closed shell at the given detail size. A
+4. **Generate 3D from Picture** turns a photo or sketch into a mesh with the meshgen service
+   (8902). It uses the **Picture** field in this box, or — when that is empty — whatever is
+   attached in the **Assistant** box above, so a picture dragged in up there does not have
+   to be found twice; the panel says which one it will send. It takes about **five
+   minutes** on this machine and the button says so before it is pressed. While it runs, the
+   box shows the stage meshgen is actually on (`RemeshMesh (2:05) ...`) rather than a
+   spinner, with the caveat that the bar is progress through *that stage*, not the job.
+   What lands is voxel-repaired (see `import_generated` above) and the status line names the
+   object, the time it took and the face count, then points at **Check imported model**.
+5. **Voxel Repair** rebuilds the surface as one closed shell at the given detail size. A
    mesh with holes cannot be sewn into a solid, so the service refuses it and says so; that
    refusal is passed through word for word, the box turns red, and the fix is this button.
    The repair goes through the ordinary `remesh` command, so it gets its own named undo
@@ -579,9 +630,9 @@ Two things a raw mesh cannot have: `solid_is_valid` is null (there is no B-Rep t
 so `watertight` is the triangles' own closedness), and a mesh above 500 000 faces is refused
 up front with the fix attached rather than being streamed at the service for a minute.
 
-The same two operations are socket commands (`check_model`, `segment_model` above) and MCP
-tools (`check_model`, `segment_model` — `mcp/README.md`), so the assistant can do all of
-this from the chat box.
+The same operations are socket commands (`check_model`, `segment_model`, `import_generated`
+above) and MCP tools (`check_model`, `segment_model`, `generate_3d` — `mcp/README.md`), so
+the assistant can do all of this from the chat box.
 
 ## Flows box
 
@@ -1217,9 +1268,38 @@ its panel's `status` string.
 
 ## Headless tests
 
-Ten suites, all `--background` only. Never launch Blender windowed to run them. As of the
-model selector they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 = 970
+Eleven suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 7 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 = 1039
 checks**, all green on Blender 5.0.1.
+
+### Phase 7 — picture to 3D (`headless_meshgen.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_meshgen.py
+```
+
+Socket port **9890**. Needs no GPU, no models and nothing on 8902 or 8765: meshgen and the
+geometry service are two stdlib HTTP servers on ephemeral ports, and the `.glb` under test
+is one the suite exports from a cube seconds earlier — a real glTF round trip through
+Blender's own exporter and importer. A real generation is a manual gate costing five minutes
+of graphics card, not a test. 69 checks covering:
+
+- **`import_generated`** — the round trip, that repair is the DEFAULT (and `repair: false`
+  says so in the result), that the adaptive voxel size lands in range and an explicit one
+  overrides it, that the counts from before the repair survive for the report, that a 20 mm
+  cube comes back 20 mm and that the glTF scene graph is collapsed to one parentless object;
+- **the two refusals** — an `.stl` points at Import Model instead, a missing file says so;
+- **Generate 3D from Picture** — the whole job against the fake service: the picture posted
+  as an absolute path, the job followed through every state rather than slept through, the
+  file it names imported and repaired, and the status line in minutes;
+- **which picture it uses** — this box's field first, the Assistant box's attachment
+  otherwise, and a plain "attach a picture" when there is neither;
+- **the health dot** — five rows, up / models-missing (a warning naming the file to
+  download) / not running (with *Start services* in the sentence), and the rule that only
+  this row being down is **not** an error;
+- **the panels** — drawn for real against the recording layout, with the stage line and its
+  per-stage caveat on screen while a job runs.
 
 ### The UI batch (`headless_ui_batch.py`)
 

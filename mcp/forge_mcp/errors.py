@@ -45,3 +45,11 @@ SERVICE_DOWN = (
     "service/ directory (see service/README.md), then retry. "
     "Expected an HTTP server on {address}."
 )
+
+MESHGEN_DOWN = (
+    "The meshgen image-to-3D service is not running — start_forge.ps1 launches "
+    "it on {address} when the models are installed (meshgen/README.md says "
+    "where the 18.5 GB lives and what /health reports as missing). Tell the "
+    "artist to press Start services in the Forge Status box, or build the shape "
+    "parametrically instead — do not retry blindly."
+)

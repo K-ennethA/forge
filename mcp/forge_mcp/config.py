@@ -56,6 +56,26 @@ SERVICE_READ_TIMEOUT: float = _env_float("FORGE_SERVICE_READ_TIMEOUT", 180.0)
 SERVICE_CHECK_TIMEOUT: float = _env_float("FORGE_SERVICE_CHECK_TIMEOUT", 150.0)
 SERVICE_SEGMENT_TIMEOUT: float = _env_float("FORGE_SERVICE_SEGMENT_TIMEOUT", 330.0)
 
+# --- meshgen HTTP (docs/architecture.md Phase 7: 127.0.0.1:8902) ------------
+# Image-to-3D. Optional on any given machine: the models are an 18.5 GB
+# download, so "not running" is a normal answer here, never an error to fix.
+MESHGEN_HOST: str = _env_str("FORGE_MESHGEN_HOST", "127.0.0.1")
+MESHGEN_PORT: int = _env_int("FORGE_MESHGEN_PORT", 8902)
+MESHGEN_URL: str = _env_str(
+    "FORGE_MESHGEN_URL", f"http://{MESHGEN_HOST}:{MESHGEN_PORT}"
+).rstrip("/")
+
+MESHGEN_CONNECT_TIMEOUT: float = _env_float("FORGE_MESHGEN_CONNECT_TIMEOUT", 2.0)
+# /generate3d answers 202 straight away and /job is a dict read; only the job
+# itself is slow, and that is waited out by polling, not by one long read.
+MESHGEN_READ_TIMEOUT: float = _env_float("FORGE_MESHGEN_READ_TIMEOUT", 30.0)
+
+# How long generate_3d(wait=True) follows a job before handing back the job id
+# instead. Measured on the reference machine: 304 s (trellis2) / 249 s
+# (pixal3d) plus ComfyUI's cold start, so 900 s is generous on purpose.
+MESHGEN_JOB_TIMEOUT: float = _env_float("FORGE_MESHGEN_JOB_TIMEOUT", 900.0)
+MESHGEN_POLL_INTERVAL: float = _env_float("FORGE_MESHGEN_POLL_INTERVAL", 3.0)
+
 # Refuse to buffer a runaway response rather than eating all of RAM.
 MAX_RESPONSE_BYTES: int = _env_int("FORGE_MAX_RESPONSE_BYTES", 256 * 1024 * 1024)
 
@@ -98,3 +118,7 @@ def blender_address() -> str:
 
 def service_address() -> str:
     return SERVICE_URL
+
+
+def meshgen_address() -> str:
+    return MESHGEN_URL

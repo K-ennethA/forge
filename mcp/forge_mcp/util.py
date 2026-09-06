@@ -2315,6 +2315,8 @@ KNOWN_BLENDER_OPS = frozenset({
     "load_mesh", "load_meshes", "partforge_open",
     # imported meshes (Phase 6d)
     "check_model", "segment_model",
+    # generated meshes (Phase 7 — meshgen writes a .glb, this brings it in)
+    "import_generated",
     # RigForge
     "rigforge_list_tags", "rigforge_tag", "rigforge_untag", "rigforge_manifest",
     "rigforge_retopo", "rigforge_auto_uv", "rigforge_status", "rigforge_metarig",
@@ -2667,4 +2669,380 @@ def fmt_flow_saved(path: Path, doc: Mapping[str, Any], overwritten: bool) -> str
         "  tell the artist: it is now a button — press N, Forge tab, Flows box, "
         f"'{doc.get('name')}' -> Run. The parameters above are editable there."
     )
+    return "\n".join(lines)
+
+
+# --- Phase 7 (meshgen: a picture becomes a mesh) -----------------------------
+#
+# Three things about this pipeline have to survive into every report, because
+# each one is a promise an artist would otherwise be let down by:
+#
+# * it takes MINUTES (measured: 304 s trellis2 / 249 s pixal3d on the reference
+#   12 GB card), so a report that does not say how long it took is hiding the
+#   only number they will feel;
+# * `progress` is the fraction through the CURRENT STAGE and resets per node, so
+#   the stage NAMES are the honest account of the run and the bar is not;
+# * the mesh that comes out is diagnosable, not printable. Voxel repair is
+#   mandatory, not optional, and the print verdict afterwards is usually a fail
+#   on min_wall — that is the correct answer, not a broken tool.
+
+#: What meshgen will take as an input picture — the same five the reference-image
+#: path accepts, so a file the artist attached in the panel is one this can use.
+MESHGEN_IMAGE_SUFFIXES = REFERENCE_SUFFIXES
+
+#: What the backends write, and what `import_generated` opens.
+MESHGEN_OUTPUT_SUFFIXES = (".glb", ".gltf")
+
+
+def meshgen_image_path(raw: str) -> Path:
+    """A picture on disk for /generate3d, or a refusal naming the formats."""
+    path = resolve_path(raw, label="image path")
+    if path.is_dir():
+        raise ForgeError(f"{path} is a folder, not an image file.")
+    if path.suffix.lower() not in MESHGEN_IMAGE_SUFFIXES:
+        raise ForgeError(
+            f"{path.name} is not an image meshgen can read. It takes "
+            + ", ".join(MESHGEN_IMAGE_SUFFIXES)
+            + " — re-save it as one of those."
+        )
+    if not path.is_file():
+        raise ForgeError(f"No file at {path} (resolved from {raw!r}).")
+    return path
+
+
+def generated_object_name(image: Path) -> str:
+    """What to call the object a picture became: the picture's own name.
+
+    A generated ``.glb`` names its mesh whatever the exporter felt like
+    (``Mesh_0`` in practice), which tells the artist nothing and collides with
+    the next generation. The file they chose is the name they already think in.
+    """
+    stem = str(getattr(image, "stem", "") or "").strip() or "generated"
+    encoded = stem.encode("utf-8")[:_MAX_OBJECT_NAME]
+    return encoded.decode("utf-8", errors="ignore") or "generated"
+
+
+def fmt_duration(seconds: Any) -> str:
+    """`304.2` -> `"5 min 04 s"`. Minutes, because that is the unit that stings."""
+    try:
+        total = float(seconds)
+    except (TypeError, ValueError):
+        return "unknown"
+    if total < 0:
+        return "unknown"
+    if total < 60:
+        return f"{total:.0f} s"
+    return f"{int(total) // 60} min {int(total) % 60:02d} s"
+
+
+def job_seconds(job: Mapping[str, Any]) -> Optional[float]:
+    """How long the job has taken, finished or not."""
+    ms = job.get("duration_ms")
+    if isinstance(ms, (int, float)):
+        return float(ms) / 1000.0
+    started = job.get("started")
+    finished = job.get("finished")
+    if isinstance(started, (int, float)) and isinstance(finished, (int, float)):
+        return float(finished) - float(started)
+    return None
+
+
+def fmt_vram(vram: Any) -> Optional[str]:
+    """The one number that decides whether a setting fits on this card."""
+    if not isinstance(vram, Mapping) or not vram:
+        return None
+    peak = vram.get("peak_gb")
+    total = vram.get("total_gb")
+    if peak is None:
+        return None
+    if total is None:
+        return f"peak VRAM {fmt_number(peak, 2)} GB"
+    return f"peak VRAM {fmt_number(peak, 2)} GB of {fmt_number(total, 2)}"
+
+
+def fmt_meshgen_stats(stats: Any) -> Optional[str]:
+    """`{"verts": ..., "faces": ...}` in whichever spelling the backend used."""
+    if not isinstance(stats, Mapping) or not stats:
+        return None
+    verts = stats.get("verts", stats.get("vertex_count"))
+    faces = stats.get("faces", stats.get("face_count"))
+    parts = []
+    if verts is not None:
+        parts.append(f"{verts} verts")
+    if faces is not None:
+        parts.append(f"{faces} faces")
+    for key in ("materials", "textures"):
+        if stats.get(key) is not None:
+            parts.append(f"{stats[key]} {key}")
+    return ", ".join(parts) or None
+
+
+def fmt_stage_trail(stages: Sequence[str], limit: int = 12) -> Optional[str]:
+    """The stages the job actually went through, in order.
+
+    This is what "what took five minutes" looks like when answered honestly.
+    """
+    names = [str(stage).strip() for stage in stages if str(stage).strip()]
+    if not names:
+        return None
+    if len(names) > limit:
+        head = names[: limit - 1]
+        return " -> ".join(head) + f" -> ... ({len(names) - limit + 1} more)"
+    return " -> ".join(names)
+
+
+def fmt_job_state(job: Mapping[str, Any]) -> str:
+    """State, stage and the per-stage caveat, as one line."""
+    state = str(job.get("state") or "?")
+    stage = str(job.get("stage") or "").strip()
+    progress = job.get("progress")
+    bits = [f"state: {state}"]
+    if stage:
+        bits.append(f"stage: {stage}")
+    if isinstance(progress, (int, float)):
+        bits.append(f"{float(progress) * 100:.0f}% through THAT stage")
+    return "  " + "   ".join(bits)
+
+
+def check_verdict(check: Optional[Mapping[str, Any]]) -> List[str]:
+    """A compact print verdict for a generated mesh: row statuses, no detail.
+
+    ``check_model`` renders the full report; this is the two-line version that
+    belongs at the end of a generation, and it is deliberately blunt about what
+    a generated mesh usually scores.
+    """
+    if not isinstance(check, Mapping) or not check:
+        return []
+    overall = str(check.get("overall", "?")).upper()
+    rows = [row for row in (check.get("checks") or []) if isinstance(row, Mapping)]
+    marks = "  ".join(
+        f"[{str(row.get('status', '?')).upper()}] {row.get('name', '?')}" for row in rows
+    )
+    lines = [f"  print verdict: {overall}"]
+    if marks:
+        lines.append(f"    {marks}")
+    failed = [str(row.get("name")) for row in rows if row.get("status") == "fail"]
+    if failed:
+        lines.append(
+            "    "
+            + ", ".join(failed)
+            + " failed — usual for a generated mesh, and a real answer: it says "
+            "what to fix before printing, not that the model is wrong."
+        )
+    return lines
+
+
+#: Said at the end of every generation, because every one of these is a thing an
+#: artist would otherwise discover on a failed print or a ruined rig.
+GENERATED_MESH_ADVICE = (
+    "  What this mesh is: a sculpt-like starting shape, not a precise part. It "
+    "has no crisp flat faces, no exact dimensions and no fine detail — never "
+    "promise those. Scale and wall thickness are DECISIONS the artist still has "
+    "to make before printing (nothing in the picture said how big it is).\n"
+    "  Next steps to offer: for a game asset, rigforge_retopo (clean quads, then "
+    "tags/UV/rig); for printing, check_model and then fix what it names; for "
+    "looks, sculpting is theirs — offer the polish walkthrough rather than "
+    "pretending a tool does it."
+)
+
+
+def fmt_generate_report(
+    image: Path,
+    submitted: Mapping[str, Any],
+    job: Mapping[str, Any],
+    stages: Sequence[str],
+    imported: Optional[Mapping[str, Any]] = None,
+    check: Optional[Mapping[str, Any]] = None,
+    problems: Optional[Sequence[str]] = None,
+) -> str:
+    """Picture in, object in the scene, verdict — the whole run in one report."""
+    state = str(job.get("state") or submitted.get("state") or "?").lower()
+    mesh_path = job.get("mesh_path") or job.get("output") or submitted.get("output")
+    backend = job.get("backend") or submitted.get("backend") or "?"
+    model = job.get("model")
+    seconds = job_seconds(job)
+
+    if state == "done" and imported:
+        headline = (
+            f"Generated a 3D shape from {image.name} and imported it as "
+            f"'{imported.get('object')}'."
+        )
+    elif state == "done":
+        headline = f"Generated a 3D shape from {image.name}."
+    else:
+        headline = f"Generation from {image.name} did not finish (state: {state})."
+
+    lines = [headline, f"  backend: {backend}" + (f" ({model})" if model else "")]
+    if seconds is not None:
+        lines.append(f"  took {fmt_duration(seconds)}")
+    trail = fmt_stage_trail(stages)
+    if trail:
+        lines.append(f"  stages: {trail}")
+        lines.append("    (meshgen reports progress per stage, never for the whole job)")
+    stats = fmt_meshgen_stats(job.get("stats"))
+    if stats:
+        lines.append(f"  raw output: {stats}")
+    vram = fmt_vram(job.get("vram"))
+    if vram:
+        lines.append(f"  {vram}")
+    if mesh_path:
+        lines.append(f"  file: {mesh_path}")
+    if job.get("error"):
+        lines.append(f"  error: {job['error']}")
+
+    if imported:
+        counts = f"{imported.get('vertex_count')} verts, {imported.get('face_count')} faces"
+        if imported.get("repaired"):
+            voxel = imported.get("voxel_size_mm")
+            before = imported.get("before") or {}
+            lines.append(
+                f"  in Blender: '{imported.get('object')}' — {counts}, voxel-repaired"
+                + (f" at {fmt_number(voxel, 3)} mm" if voxel is not None else "")
+            )
+            if before.get("face_count"):
+                lines.append(
+                    f"    (the raw mesh had {before.get('face_count')} faces and was "
+                    "not manifold — the repair is mandatory, not a preference)"
+                )
+        else:
+            lines.append(
+                f"  in Blender: '{imported.get('object')}' — {counts}, NOT repaired"
+            )
+        dims = imported.get("dimensions_mm")
+        if isinstance(dims, (list, tuple)) and len(dims) == 3:
+            lines.append(
+                f"    size as imported: {_dims(dims)} — the picture never said how "
+                "big it is, so scale it to whatever the artist tells you"
+            )
+
+    lines.extend(check_verdict(check))
+
+    for problem in problems or []:
+        lines.append(f"  NOTE: {problem}")
+
+    if state == "done" and not imported:
+        lines.append(
+            "  The file above is on disk and safe. Nothing is in the scene: import "
+            "it with import_generated once Blender is running (path above)."
+        )
+    if state in ("queued", "running"):
+        job_id = job.get("job_id") or submitted.get("job_id")
+        lines.append(
+            f'  Still running. Follow it with meshgen_status(job_id="{job_id}") — '
+            "nothing was lost, and cancelling is a separate decision."
+        )
+
+    if state == "done":
+        lines.append("")
+        lines.append(GENERATED_MESH_ADVICE)
+    return "\n".join(lines)
+
+
+def fmt_submitted_report(image: Path, submitted: Mapping[str, Any]) -> str:
+    """wait=false: the job id and how to follow it, with nothing pretended."""
+    job_id = submitted.get("job_id")
+    return "\n".join([
+        f"Started a 3D generation from {image.name}.",
+        f"  job id: {job_id}",
+        f"  backend: {submitted.get('backend')}   will write: {submitted.get('output')}",
+        f'  Poll it with meshgen_status(job_id="{job_id}"). It takes about five '
+        "minutes on this machine — say so before the artist starts waiting.",
+        "  When it says done, import it with import_generated(path=<the file above>) "
+        "— it arrives voxel-repaired, and check_model gives the print verdict.",
+    ])
+
+
+def fmt_missing_models(payload: Mapping[str, Any]) -> List[str]:
+    """The "what to download and where it goes" lines, straight from /health."""
+    missing = [entry for entry in (payload.get("missing") or []) if isinstance(entry, Mapping)]
+    if not missing:
+        return []
+    lines = [f"  {len(missing)} model file(s) missing — nothing downloads on its own:"]
+    for entry in missing[:8]:
+        lines.append(f"    {entry.get('what')}  ->  {entry.get('path')}")
+        if entry.get("source"):
+            lines.append(f"      from {entry.get('source')}")
+    if payload.get("hint"):
+        lines.append(f"  {payload['hint']}")
+    return lines
+
+
+def fmt_meshgen_status(
+    payload: Optional[Mapping[str, Any]],
+    job: Optional[Mapping[str, Any]] = None,
+    detail: str = "",
+) -> str:
+    """/health (+ one job) in words an artist can act on."""
+    if not payload:
+        lines = [f"Picture-to-3D (meshgen) [DOWN] {config.meshgen_address()}"]
+        if detail:
+            lines.append(f"  {detail}")
+        lines.append(
+            "  This one is optional: it needs an 18.5 GB model download "
+            "(meshgen/README.md). Everything else in Forge works without it, and "
+            "a shape that needs real dimensions should be parametric anyway."
+        )
+        return "\n".join(lines)
+
+    status = str(payload.get("status") or "?")
+    backend = payload.get("backend") if isinstance(payload.get("backend"), Mapping) else {}
+    lines = [
+        f"Picture-to-3D (meshgen) [UP] {config.meshgen_address()} — status: {status}"
+    ]
+    if backend:
+        lines.append(
+            f"  backend: {backend.get('name')} ({backend.get('model')}), "
+            f"licence {backend.get('license')}, about {backend.get('vram_gb')} GB VRAM"
+        )
+    others = [
+        str(entry.get("name"))
+        for entry in (payload.get("available_backends") or [])
+        if isinstance(entry, Mapping) and entry.get("name") != (backend or {}).get("name")
+    ]
+    if others:
+        lines.append(f"  also installed: {', '.join(others)}")
+    jobs = payload.get("jobs") if isinstance(payload.get("jobs"), Mapping) else {}
+    if jobs:
+        lines.append(
+            f"  jobs: {jobs.get('active', 0)} active, {jobs.get('queued', 0)} queued "
+            "(one at a time — a 12 GB card cannot hold two of these models)"
+        )
+    if payload.get("comfyui_running") is not None:
+        lines.append(
+            "  model host: "
+            + ("running" if payload.get("comfyui_running")
+               else "not started yet (it starts on the first job, costing ~10 s)")
+        )
+    lines.extend(fmt_missing_models(payload))
+
+    if job:
+        lines.append("")
+        lines.append(f"Job {job.get('job_id')}")
+        lines.append(fmt_job_state(job))
+        seconds = job_seconds(job)
+        if seconds is not None:
+            lines.append(f"  {fmt_duration(seconds)} so far")
+        if job.get("image_path"):
+            lines.append(f"  from: {job.get('image_path')}")
+        if job.get("mesh_path"):
+            lines.append(f"  wrote: {job.get('mesh_path')}")
+        stats = fmt_meshgen_stats(job.get("stats"))
+        if stats:
+            lines.append(f"  {stats}")
+        vram = fmt_vram(job.get("vram"))
+        if vram:
+            lines.append(f"  {vram}")
+        if job.get("error"):
+            lines.append(f"  error: {job.get('error')}")
+        state = str(job.get("state") or "").lower()
+        if state in ("queued", "running"):
+            lines.append(
+                "  Nothing to do but wait — a full run is about five minutes on "
+                "this machine. Tell the artist which stage it is on, not a percentage."
+            )
+        elif state == "done":
+            lines.append(
+                "  Done: import it with import_generated(path=<the file above>) — it "
+                "arrives voxel-repaired, then check_model gives the print verdict."
+            )
     return "\n".join(lines)

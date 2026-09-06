@@ -497,6 +497,36 @@ class VIEW3D_PT_forge_model(_ForgePanel, Panel):
         column.prop(md, "import_units", text="File is in")
         column.operator("forge.model_import", icon="IMPORT", text="Import Model")
 
+        # Picture to 3D. One button, and it takes the picture from wherever the
+        # artist put it: this field, or the one attached in the Assistant box.
+        picture = layout.column(align=True)
+        chat = assistant.get_props(context)
+        attached = assistant.image_label(getattr(chat, "image_path", "")) if chat else ""
+        own = assistant.image_label(md.image_path)
+        if own:
+            row = picture.row(align=True)
+            row.label(text=own, icon="IMAGE_DATA")
+        elif attached:
+            row = picture.row(align=True)
+            row.active = False
+            row.label(text="%s (from the Assistant box)" % attached, icon="IMAGE_DATA")
+            picture.prop(md, "image_path", text="Or")
+        else:
+            picture.prop(md, "image_path", text="Picture")
+        generate = picture.row(align=True)
+        generate.enabled = bool(own or attached) and not md.busy
+        generate.operator("forge.model_generate3d", icon="SHADERFX",
+                          text="Generate 3D from Picture")
+        note = picture.row()
+        note.active = False
+        note.scale_y = 0.7
+        note.label(text="about 5 minutes, then repaired")
+        if md.busy and md.gen_stage:
+            stage = picture.column(align=True)
+            stage.scale_y = 0.8
+            stage.label(text=_wrap(md.gen_stage, 36)[0], icon="SORTTIME")
+            stage.label(text="the bar is this step, not the whole job")
+
         if not str(md.object_name or "").strip():
             _empty(layout,
                    "Import an STL you downloaded, or select your own mesh, then "

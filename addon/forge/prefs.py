@@ -93,6 +93,7 @@ DEFAULTS = {
     "autostart": False,
     "service_url": "http://127.0.0.1:8765",
     "assistant_url": "http://127.0.0.1:8901",
+    "meshgen_url": "http://127.0.0.1:8902",
     "assistant_model": DEFAULT_ASSISTANT_MODEL,
     "printer_path": default_printer_path(),
     "forge_flows_dir": default_flows_dir(),
@@ -139,13 +140,22 @@ def pref(name):
     return getattr(get_prefs(), name, DEFAULTS.get(name))
 
 
-def service_url(path=""):
-    """Absolute geometry-service URL for ``path`` (e.g. ``/generate``)."""
-    base = str(pref("service_url") or "").strip().rstrip("/")
+def _base_url(name, path):
+    base = str(pref(name) or "").strip().rstrip("/")
     if not base:
-        base = DEFAULTS["service_url"]
+        base = DEFAULTS[name]
     if "://" not in base:
         base = "http://" + base
     if not path:
         return base
     return base + "/" + str(path).lstrip("/")
+
+
+def service_url(path=""):
+    """Absolute geometry-service URL for ``path`` (e.g. ``/generate``)."""
+    return _base_url("service_url", path)
+
+
+def meshgen_url(path=""):
+    """Absolute meshgen URL for ``path`` (e.g. ``/generate3d``, port 8902)."""
+    return _base_url("meshgen_url", path)

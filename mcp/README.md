@@ -1,11 +1,12 @@
 # Forge MCP server
 
-A stdio MCP server that gives Claude Code one tool surface over both Forge backends:
+A stdio MCP server that gives Claude Code one tool surface over the Forge backends:
 
 | Backend | Address | Used for |
 |---|---|---|
-| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, STL export, imported-model checks/segmentation, RigForge tags/retopo/UV/rig/cloth/animation/Godot export |
+| Blender add-on (`addon/forge/`) | TCP `127.0.0.1:9876` | scene inspection, common mesh ops, mesh loading, generated-mesh import, STL export, imported-model checks/segmentation, RigForge tags/retopo/UV/rig/cloth/animation/Godot export |
 | Geometry service (`service/`) | HTTP `127.0.0.1:8765` | PartForge parametric parts (Build123d), print-readiness checks and segmentation |
+| meshgen (`meshgen/`) | HTTP `127.0.0.1:8902` | image-to-3D. **Optional**: it needs an 18.5 GB model download, so "not running" is a normal answer and every other tool works without it |
 
 Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); this server is
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
@@ -46,7 +47,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 48-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 50-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -62,6 +63,13 @@ every parameter each puts on the wire, the report rendered from a canned add-on 
 including a plate that does not fit and a nearly empty result — that a non-watertight refusal
 reaches the caller **word for word** with the voxel-remesh fix appended, and that a merely
 absent add-on is not dressed up as a mesh problem.
+`tests/test_meshgen.py` does it for the two Phase 7 tools (`generate_3d`, `meshgen_status`)
+against a scripted fake meshgen and the same fake Blender: the exact `/generate3d` body, that
+a file which is not a picture never starts a five-minute job, that the job is followed to the
+end and its stage names survive into the report in order, that the import always asks for the
+repair, that the verdict comes from `check_model` on what landed, that Blender being down
+loses the import but never the `.glb`, and both `/health` renderings (ready, and
+models-missing with every file named). Nothing binds or connects to 8902.
 `tests/test_new_part.py` covers the two authoring tools: the slug matrix, every path-shaped
 name it refuses, that a script the service rejects leaves nothing on disk, the
 overwrite/spec matrix, and the one `partforge_open` command that crosses the wire. It
@@ -73,7 +81,7 @@ that a refusal writes **nothing**, the one `flow_run` command that crosses the w
 slugged name, the per-step report rendering, and that the repo's own
 `flows/segment-into-4.json` passes the validation `flow_save` applies. It redirects
 `flows/` to a `tmp_path` too. Nothing in the suite needs Blender or the geometry service,
-and nothing binds or connects to 9876/8765.
+and nothing binds or connects to 9876/8765/8902.
 
 `tests/e2e_new_part.py` is deliberately **not** a pytest module: it is the end-to-end proof,
 and it needs the real service on 8765 and launches its own headless Blender (socket port
@@ -130,6 +138,12 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` writes to |
 | `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
+| `FORGE_MESHGEN_URL` | `http://127.0.0.1:8902` | meshgen base URL (overrides host/port) |
+| `FORGE_MESHGEN_HOST` / `FORGE_MESHGEN_PORT` | `127.0.0.1` / `8902` | meshgen address |
+| `FORGE_MESHGEN_CONNECT_TIMEOUT` | `2.0` | seconds to wait for meshgen's HTTP connection |
+| `FORGE_MESHGEN_READ_TIMEOUT` | `30.0` | seconds for one meshgen call — never the job, which is polled |
+| `FORGE_MESHGEN_JOB_TIMEOUT` | `900.0` | seconds `generate_3d(wait=true)` follows a job before handing back the id (a run is ~250–305 s) |
+| `FORGE_MESHGEN_POLL_INTERVAL` | `3.0` | seconds between `/job` polls |
 | `FORGE_MAX_RESPONSE_BYTES` | `268435456` | refuse to buffer a runaway response |
 
 The two Phase 2 timeouts sit deliberately *above* the service's own budgets
@@ -143,8 +157,9 @@ turns a slow-but-working job into a mystery, where letting the service time out 
 
 | Tool | What it does |
 |---|---|
-| `forge_status` | Reachability of both backends in one call, with Blender/build123d versions. Never fails. |
+| `forge_status` | Reachability of all three backends in one call, with Blender/build123d versions and meshgen's backend. Never fails; meshgen being down is reported as optional, not as a fault. |
 | `blender_ping` | Cheapest check that Blender is up with the add-on server started. |
+| `meshgen_status` | meshgen's `/health` (backend, licence, VRAM, queue, any missing model files with their paths and URLs) plus one job's stage when given a `job_id`. Never fails. |
 
 ### Blender scene
 
@@ -314,6 +329,58 @@ segment_model(object="dragon_bust", mode={"planar": [120.0]}, collection="Pieces
 # if instead the check is refused as not watertight:
 remesh(mode="voxel", object="dragon_bust")   # or the panel's Voxel Repair button
 check_model(object="dragon_bust")
+```
+
+### Picture to 3D (Phase 7) — meshgen
+
+Two tools over the meshgen service on `127.0.0.1:8902`. `generate_3d` is the whole job in
+one call: the picture goes to the AI model, the finished `.glb` is imported into Blender
+through the add-on's `import_generated` command, **voxel-repaired on the way in**, and
+print-checked — so what comes back is an object in the scene plus a verdict, not a file
+path.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `generate_3d` | `image_path`, `backend`, `wait` | Picture → mesh → repaired object in the scene → print verdict. `wait=false` returns the job id immediately instead. |
+| `meshgen_status` | `job_id` | Is the service up, which backend, what is missing, and which stage a job is on. |
+
+Four facts the report always carries, because each one is a promise an artist would
+otherwise be let down by:
+
+- **It takes about five minutes** (measured on the reference RTX 5070: 304 s trellis2,
+  249 s pixal3d) and one job runs at a time. Say so *before* starting.
+- **`progress` is per stage, not per job.** It resets every time the pipeline moves on, so
+  the report relays the stage NAMES in order (`Trellis2UpsampleStage -> RemeshMesh ->
+  UnwrapMesh`) and never quotes a percentage as "done".
+- **The repair is not optional.** Raw image-to-3D output is never manifold — paper-thin
+  walls, boundary edges, inconsistent winding — so `import_generated` voxel-remeshes it at
+  an adaptive size before anything downstream sees it.
+- **The print verdict usually fails** — on `min_wall` at a sensible scale, on `bed_fit` at
+  the metre-ish scale these models come out at. That is the correct diagnosis of a generated
+  mesh, not a broken tool, and the report says so rather than burying it.
+
+The object is named after the picture (`gecko.png` → `gecko`), because a `.glb` names its
+own mesh `Mesh_0` and the artist thinks in the file they chose.
+
+When to reach for which: **parametric** (`partforge_new_part`) for anything functional,
+dimensioned or printed to fit; **generate_3d** for organic, stylised one-offs where looking
+right beats measuring right. A generated mesh has no crisp faces, no exact millimetres and
+no fine detail, and nothing in a picture says how big the thing is — scale is a decision the
+artist still has to make.
+
+Blender being down does not lose the run: the `.glb` is on disk and the report says so with
+the path, ready for `import_generated` once Blender is up.
+
+```text
+# the whole job, one call (five minutes)
+generate_3d(image_path=r"C:\Users\me\Pictures\gecko.png")
+
+# or start it and get on with something else
+generate_3d(image_path=r"C:\...\gecko.png", wait=False)
+meshgen_status(job_id="11111111-2222-...")     # stage: RemeshMesh, 20% through THAT stage
+
+# is it even installed on this machine?
+meshgen_status()      # names every missing weight file, its path and its URL
 ```
 
 ### RigForge (Phase 3)

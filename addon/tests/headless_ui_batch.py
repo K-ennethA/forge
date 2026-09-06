@@ -486,7 +486,10 @@ def test_health_row(service_url, bridge_url):
     check("forge.services_refresh is registered", hasattr(bpy.ops.forge, "services_refresh"))
     check("forge.services_start is registered", hasattr(bpy.ops.forge, "services_start"))
 
-    check("there are exactly four rows", len(services.rows(props)) == 4,
+    # Five since Phase 7: the picture-to-3D service joined the row. It is the
+    # optional one, and headless_meshgen.py owns its dot; what matters here is
+    # that adding it left the other four alone.
+    check("there are exactly five rows", len(services.rows(props)) == 5,
           str([row[0] for row in services.rows(props)]))
     check("and the command socket is read from this process, not a port probe",
           services.socket_row()[0] == services.UP, str(services.socket_row()))
@@ -746,8 +749,9 @@ def test_empty_states():
 
     layout = draw_panel(panels.VIEW3D_PT_forge_health)
     text = layout.text()
-    check("the health row names all four things",
-          all(word in text for word in ("Shapes", "Assistant", "Blender link", "Sign-in")),
+    check("the health row names all five things",
+          all(word in text for word in ("Shapes", "Assistant", "Picture to 3D",
+                                        "Blender link", "Sign-in")),
           text[:200])
     check("and offers to start what is down",
           "forge.services_start" in layout.sink["operators"],

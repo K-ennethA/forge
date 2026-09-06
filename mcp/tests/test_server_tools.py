@@ -60,6 +60,9 @@ EXPECTED_TOOLS = {
     # Imported models (Phase 6d) — a downloaded mesh, no script
     "check_model",
     "segment_model",
+    # meshgen (Phase 7) — a picture becomes a mesh
+    "generate_3d",
+    "meshgen_status",
     # RigForge (Phase 3)
     "rigforge_list_tags",
     "rigforge_tag",
@@ -126,7 +129,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 48
+    assert len(names) == 50
 
 
 def test_every_tool_is_documented() -> None:
@@ -470,17 +473,22 @@ def test_a_reference_can_be_a_flow_step() -> None:
 # --- error paths with no backends running -----------------------------------
 
 
-def test_forge_status_never_fails_and_reports_both_backends(dead_backends) -> None:
-    blender_port, service_port = dead_backends
+def test_forge_status_never_fails_and_reports_every_backend(dead_backends) -> None:
+    blender_port, service_port, meshgen_port = dead_backends
     result = call("forge_status")
     text = text_of(result)
 
     assert result.is_error is False, text
-    assert text.count("[DOWN]") == 2
+    assert text.count("[DOWN]") == 3
     assert f"127.0.0.1:{blender_port}" in text
     assert f"127.0.0.1:{service_port}" in text
+    assert f"127.0.0.1:{meshgen_port}" in text
     assert "Blender is not running" in text
     assert "geometry service is not running" in text
+    # meshgen down is a fact, not a fault: the line says so rather than sending
+    # the model off to fix an optional service.
+    assert "Picture to 3D    [DOWN]" in text
+    assert "optional" in text
     assert "Traceback" not in text
 
 
