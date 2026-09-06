@@ -404,13 +404,14 @@ The `/segment` body plus `directory` (absolute; created if missing),
 is registered under its bare name, so `import forge_lib` works, and the name is
 already bound in the script namespace for scripts that forget the import.
 
-It has two halves: **printability features**, which is what a part is built out
-of, and **appendage slots**, which is how two printed pieces join.
+It has three parts: **printability features**, which is what a part is built out
+of; **ornament**, which is how a part gets a character on it; and **appendage
+slots**, which is how two printed pieces join.
 
 **The guide for writing part scripts is [`docs/part-authoring.md`](../docs/part-authoring.md)** —
 the PARAMS contract, the printability rules derived from `printer.json`, the
-full helper catalog with its guarantees, the check-and-iterate workflow, and two
-worked patterns. Read that first; this section is the API summary.
+full helper catalog with its guarantees, the check-and-iterate workflow, and
+three worked patterns. Read that first; this section is the API summary.
 
 ### Printability features
 
@@ -454,6 +455,41 @@ part += forge_lib.feet_ring(r_out, 6.0, 4)
 `samples/magnet_holder.py` is the reference part built entirely from these — a
 magnet bar that passes all four checks at its defaults *and* at both ends of
 every declared range, including `overhangs` as a pass rather than a warning.
+
+### Ornament — decoration that is generated, not sculpted
+
+The gap these close: asked for "a fur collar of overlapping leaves, two ears and
+a tail", a generator with only cylinders and grooves produces a dashed groove
+and two flat slabs. None of that is sculpture — a fur collar is **one leaf
+arrayed round a ring**, an ear is **a silhouette with thickness** — so all of it
+is a parameter set, and all of it comes out printable.
+
+Every element is a **prism**: a smooth closed outline extruded along its own
+normal, so every convex edge is 90° whatever the outline does. That is not
+stylistic. `check_min_wall` casts rays inward along facet normals, so a convex
+edge under 90° measures `distance-from-the-edge × tan(angle)`, which goes to
+zero as the tessellation gets finer — the knife-edge rule in plan view.
+
+| Call | Returns | Guarantees |
+|---|---|---|
+| `leaf_collar(ring_radius, leaf_length, leaf_width, count, overlap=0.3, droop_deg=20, thickness=None, jitter=0.0, seed=0, printer=None, *, clearance=None, tip_land=None, layers=2, shape="leaf")` | one solid ring, base Z=0 | **One watertight solid** at any count/overlap/jitter — every root is buried in a band; the two layers sit a *solved* distance apart (`_slab_clearance`) so alternate leaves lie **over** their neighbours rather than grazing them, and the air gap between them is ≥ `min_feature` so the check cannot read it as a wall; each leaf ends on a land ≥ `1.5 × min_feature`; `droop_deg` is the lean **from vertical** and *is* the underside's overhang angle, clamped into the printable window; jitter never leans an element less far than asked, so the plan's verdict is exact |
+| `petal_crown(ring_radius, petal_length, petal_width, count, overlap=0.15, flare_deg=25, ...)` | one solid ring, base Z=0 | As `leaf_collar`, and **genuinely support-free**: the band sits on the plate, the petals lean out as they rise, their tip lands face up, and `overhangs` passes |
+| `scale_band(ring_radius, scale_length, scale_width, count, rows=3, overlap=0.35, droop_deg=30, ...)` | one solid ring, base Z=0 | As `leaf_collar`, with rows: each row is offset half a pitch and its spacing is floored at the drop that lets it clear the row above (a drooping element travels outward as it falls, which a conical band gives it for free) |
+| `silhouette_part(points, thickness, rounding=None, taper=0.0, peg=None, printer=None)` | one solid, flat on the bed | 6–16 `[x, y]` points splined into one smooth closed outline and extruded, watertight, every side face vertical; too few points, too many, or a self-intersecting outline is refused with a plain sentence; `taper` (degrees of draft, thinner at the top) and `rounding` (**top** perimeter only) are both **stepped down** until the kernel accepts them, and the achieved values land in `rounding_achieved_mm` / `taper_deg`; `peg={"d","l"}` attaches a keyed `peg()` at the outline's bottom-centre pointing −Y |
+
+Two things to know:
+
+- **`droop_deg` has a sweet spot, 42–48°.** A leaf's underside must lean no
+  further than the overhang limit; its tip land faces down the leaf's own axis
+  and must lean no *less* than 90° − limit. Only that window satisfies both, and
+  `leaf_collar_plan(...)["unsupported"]` says so when you are outside it.
+- **A collar unioned onto a base wants a negative `clearance`.** The positive
+  slide fit is for a ring that slips over a separately printed cylinder; union
+  one on at `+0.2` and you get two solids 0.2 mm apart.
+
+`samples/eevee_style_bowl_base.py` is the reference: a bowl ring with a
+generated fur collar, two ears and a tail, one `part` selector, and the base
+passing all four checks with the collar on it.
 
 ### Appendage slots
 

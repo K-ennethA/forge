@@ -10,6 +10,14 @@ spin in its socket.  The base gets the matching negative subtracted out of it.
 Because both come from the same spec, changing the peg once changes every
 socket.
 
+**Ornament** (:func:`leaf_collar`, :func:`petal_crown`, :func:`scale_band`,
+:func:`silhouette_part`) closes the gap between a part that works and a part
+with a character on it.  A fur collar is ONE leaf arrayed round a ring with
+overlap and droop; an ear, a tail, a fin or a wing is a SILHOUETTE with
+thickness and rounding.  Neither is sculpture, so neither needs a mesh -- both
+are parameter sets, and both come out printable.  Sample:
+``service/samples/eevee_style_bowl_base.py``.
+
 **Printability-guaranteed features** (:func:`blunted_taper`, :func:`flared_lip`,
 :func:`textured_band`, :func:`feet_ring`, :func:`arcade_base`,
 :func:`magnet_pocket`, :func:`shell_box`, :func:`wall_safe_shell`,
@@ -2165,6 +2173,1644 @@ def screw_boss(
     return solid
 
 
+# ==========================================================================
+# Ornament -- organic-LOOKING decoration, generated rather than sculpted
+#
+# The gap this closes: a generator can size a bowl, a bracket or a boss, but
+# asked for "a fur collar of overlapping leaves, two ears and a tail" it either
+# cuts a dashed groove or extrudes a flat slab.  Neither is what the reference
+# shows, and neither is what the artist meant.
+#
+# The insight is that none of that decoration is sculpture:
+#
+# * a fur collar is ONE leaf arrayed round a ring with overlap and droop;
+# * an ear, a tail, a fin, a wing is a SILHOUETTE with thickness and rounding.
+#
+# Both are parameter sets, so both belong here rather than in a mesh.  The
+# helpers below build them under exactly the contract the rest of the library
+# works to: explicit millimetres, an optional printer profile, a ``*_plan()``
+# twin listing every clamp, and nothing ever silently sub-minimum.
+#
+# The one rule that shapes all of this geometry: **every convex edge must meet
+# at 90 degrees or more.**  ``check_min_wall`` casts a ray inward along each
+# facet normal, so at a convex edge whose interior angle is under 90 the facets
+# beside it measure (distance from the edge) x tan(angle) -- which goes to zero
+# as the tessellation gets finer.  That is the same feather-edge failure
+# :func:`blunted_taper` exists for, in plan view instead of in section.  Every
+# element here is therefore a prism: a smooth closed outline extruded along its
+# own normal, so every side face is square to both flat faces, whatever the
+# outline does.
+# ==========================================================================
+
+#: Smallest flat an element's tip may end on, as a multiple of the profile's
+#: minimum feature.  A rounded point is a knife edge in plan view: the outline
+#: narrows to nothing and the last half-millimetre of it is thinner than the
+#: nozzle.  Elements end on a straight land instead, exactly like a taper does.
+TIP_LAND_FEATURE_RATIO = 1.5
+
+#: Most elements one ornament call will place.  Every element is a boolean, so
+#: this is a wall-clock guard rather than a geometric one.
+MAX_ORNAMENT_ELEMENTS = 144
+
+#: Control points an outline is allowed to carry.  Fewer than six cannot
+#: describe a silhouette worth splining; more than sixteen is pixel tracing,
+#: which is exactly what the reference-image law forbids.
+MIN_OUTLINE_POINTS = 6
+MAX_OUTLINE_POINTS = 16
+
+#: :func:`silhouette_part` takes a ``peg=`` argument, which shadows the module
+#: function of the same name inside it.  This alias is how it still gets at it.
+_keyed_peg = peg
+
+#: Element shapes.  Each is a list of ``(t, k)``: at fraction *t* along the
+#: element the half-width is *k* times the widest half-width.  This table is
+#: the whole difference between a leaf, a petal and a roof-tile scale.  The
+#: ``t = 0`` entry states the root width; the outline builder skips it, because
+#: the straight root line already carries it and two control points a hair
+#: apart make a spline wobble.
+_ELEMENT_SHAPES: Dict[str, Dict[str, Any]] = {
+    # A drop that swells fast out of the root and runs out slowly to the tip --
+    # the fur/feather element.  Widest a quarter of the way up, so the widest
+    # point sits at the band's edge where the leaves have to cover each other.
+    "leaf": {
+        "profile": [
+            (0.00, 0.62),
+            (0.11, 0.93),
+            (0.24, 1.00),
+            (0.45, 0.94),
+            (0.68, 0.74),
+            (0.87, 0.44),
+            (1.00, None),
+        ],
+        "tip_ratio": 0.10,
+        "root_ratio": 0.62,
+    },
+    # Fuller and blunter, widest near the middle: an upright petal.
+    "petal": {
+        "profile": [
+            (0.00, 0.55),
+            (0.18, 0.86),
+            (0.44, 1.00),
+            (0.70, 0.93),
+            (0.89, 0.74),
+            (1.00, None),
+        ],
+        "tip_ratio": 0.34,
+        "root_ratio": 0.55,
+    },
+    # Short, wide and round-ended: a roof tile.
+    "scale": {
+        "profile": [
+            (0.00, 0.80),
+            (0.22, 0.95),
+            (0.44, 1.00),
+            (0.72, 0.95),
+            (0.90, 0.83),
+            (1.00, None),
+        ],
+        "tip_ratio": 0.58,
+        "root_ratio": 0.80,
+    },
+}
+
+
+def _noise(seed: int, index: int, channel: int) -> float:
+    """Deterministic pseudo-random number in ``[-1, 1)``.
+
+    Not :mod:`random`: a part script must build the same solid on every machine
+    and in every process, so the "randomness" is a fixed integer hash of
+    ``(seed, index, channel)``.  Same seed, same collar, forever.
+    """
+    x = ((int(seed) & 0xFFFFFFFF) + 0x9E3779B9) * 0x9E3779B1
+    x ^= (int(index) + 1) * 0x85EBCA6B
+    x ^= (int(channel) + 1) * 0xC2B2AE35
+    x &= 0xFFFFFFFFFFFFFFFF
+    x ^= x >> 29
+    x = (x * 0xBF58476D1CE4E5B9) & 0xFFFFFFFFFFFFFFFF
+    x ^= x >> 32
+    return (x % 1000003) / 500001.5 - 1.0
+
+
+def _points_2d(points: Any, label: str) -> List[Tuple[float, float]]:
+    """Validate a list of ``[x, y]`` control points into float pairs."""
+    try:
+        raw = list(points)
+    except TypeError as exc:
+        raise PrintabilityError(
+            f"{label} must be a list of [x, y] points in millimetres, "
+            f"got {type(points).__name__}"
+        ) from exc
+
+    out: List[Tuple[float, float]] = []
+    for index, item in enumerate(raw):
+        try:
+            x, y = item  # type: ignore[misc]
+        except Exception as exc:  # noqa: BLE001
+            raise PrintabilityError(
+                f"{label}[{index}] must be a pair [x, y] in millimetres, got {item!r}"
+            ) from exc
+        if isinstance(x, bool) or isinstance(y, bool):
+            raise PrintabilityError(f"{label}[{index}] must be numbers, got {item!r}")
+        try:
+            fx, fy = float(x), float(y)
+        except Exception as exc:  # noqa: BLE001
+            raise PrintabilityError(
+                f"{label}[{index}] must be numbers, got {item!r}"
+            ) from exc
+        if not (math.isfinite(fx) and math.isfinite(fy)):
+            raise PrintabilityError(f"{label}[{index}] must be finite, got {item!r}")
+        out.append((fx, fy))
+    return out
+
+
+def _segments_cross(
+    a: Tuple[float, float],
+    b: Tuple[float, float],
+    c: Tuple[float, float],
+    d: Tuple[float, float],
+) -> bool:
+    """Do the open segments ``ab`` and ``cd`` properly cross?"""
+
+    def side(p, q, r):
+        return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+
+    d1, d2 = side(a, b, c), side(a, b, d)
+    d3, d4 = side(c, d, a), side(c, d, b)
+    return ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0))
+
+
+def _polygon_is_simple(points: Sequence[Tuple[float, float]]) -> Optional[Tuple[int, int]]:
+    """The first pair of non-adjacent edges that cross, or ``None``."""
+    n = len(points)
+    for i in range(n):
+        a, b = points[i], points[(i + 1) % n]
+        for j in range(i + 1, n):
+            if j == i or (j + 1) % n == i or (i + 1) % n == j:
+                continue
+            if _segments_cross(a, b, points[j], points[(j + 1) % n]):
+                return (i, j)
+    return None
+
+
+def _polygon_area(points: Sequence[Tuple[float, float]]) -> float:
+    """Signed area; positive when the points wind counter-clockwise."""
+    total = 0.0
+    for i in range(len(points)):
+        x0, y0 = points[i]
+        x1, y1 = points[(i + 1) % len(points)]
+        total += x0 * y1 - x1 * y0
+    return total / 2.0
+
+
+#: Segments a splined outline is sampled into before it is extruded.  Not a
+#: cosmetic number -- see :func:`_sample_curve`.
+OUTLINE_SEGMENTS = 72
+ELEMENT_SEGMENTS = 40
+
+
+def _sample_curve(curve: Any, count: int) -> List[Tuple[float, float]]:
+    """Walk a splined edge and return points along it.
+
+    **Why a splined outline is always sampled before it is extruded.**  OCC
+    triangulates the extrusion of a B-spline curve as a B-spline *surface*, and
+    the interior rows of that mesh use a coarser subdivision than the cap faces
+    do -- so the side wall pinches ~0.03 mm inside the cap's own outline part
+    way up.  The solid is perfectly valid and perfectly watertight; the *mesh*
+    is not prismatic, and ``check_min_wall``'s rays walk straight out through
+    the pinch and report a 0.3 mm wall on a 9 mm part.  Refining the
+    tessellation does not help: the artefact is in the surface's own
+    parametrisation, and it survives at every tolerance tried.
+
+    Sampling the curve into a polygon first makes every side face planar, so
+    the mesh is exactly prismatic and the measurement is the real thickness.
+    At 72 segments the chord error on a 20 mm feature is under 0.01 mm -- far
+    below the printer's own resolution -- so nothing is lost but the artefact.
+    """
+    edges = list(curve.edges())
+    if not edges:
+        return []
+    edge = edges[0] if len(edges) == 1 else None
+    out: List[Tuple[float, float]] = []
+    for index in range(count + 1):
+        t = index / count
+        point = (edge @ t) if edge is not None else (curve @ t)
+        out.append((float(point.X), float(point.Y)))
+    return out
+
+
+def _sample_wire(wire: Any, count: int) -> List[Tuple[float, float]]:
+    """Walk a closed wire by arc length and return *count* points on it."""
+    out: List[Tuple[float, float]] = []
+    for index in range(count):
+        point = wire @ (index / count)
+        out.append((float(point.X), float(point.Y)))
+    return out
+
+
+def _offset_polygon(
+    points: Sequence[Tuple[float, float]], inset: float
+) -> Optional[List[Tuple[float, float]]]:
+    """Shrink a counter-clockwise polygon by *inset*, vertex for vertex.
+
+    Not the kernel's own offset, deliberately: the point is that the result has
+    the **same number of points in the same order**, so a loft between the two
+    joins vertex 3 to vertex 3.  Offsetting with the kernel gives a wire of a
+    different length whose arc-length samples do not correspond, and lofting
+    between those twists the side faces into slivers -- measured, again, as a
+    min_wall failure on a 9 mm part.
+
+    Returns ``None`` when the inset folds the outline over on itself.
+    """
+    n = len(points)
+    out: List[Tuple[float, float]] = []
+    for i in range(n):
+        prev_p = points[(i - 1) % n]
+        here = points[i]
+        next_p = points[(i + 1) % n]
+        normals = []
+        for a, b in ((prev_p, here), (here, next_p)):
+            dx, dy = b[0] - a[0], b[1] - a[1]
+            length = math.hypot(dx, dy)
+            if length < 1e-12:
+                continue
+            normals.append((-dy / length, dx / length))  # inward for CCW winding
+        if not normals:
+            return None
+        nx = sum(v[0] for v in normals)
+        ny = sum(v[1] for v in normals)
+        norm = math.hypot(nx, ny)
+        if norm < 1e-9:
+            return None
+        nx, ny = nx / norm, ny / norm
+        scale = max(nx * normals[-1][0] + ny * normals[-1][1], 0.25)
+        out.append((here[0] + nx * inset / scale, here[1] + ny * inset / scale))
+    if _polygon_area(out) <= 0.0 or _polygon_is_simple(out) is not None:
+        return None
+    return out
+
+
+def _polygon_face(points: Sequence[Tuple[float, float]]) -> Any:
+    """A planar face through *points*, wound counter-clockwise."""
+    from build123d import Polygon  # noqa: PLC0415
+
+    ordered = list(points)
+    if _polygon_area(ordered) < 0.0:
+        ordered.reverse()
+    return Polygon(*ordered, align=None)
+
+
+def _smooth_outline(points: Sequence[Tuple[float, float]]) -> Any:
+    """The exact splined face through *points*: one periodic B-spline, no corners."""
+    from build123d import Spline, make_face  # noqa: PLC0415
+
+    ordered = list(points)
+    if _polygon_area(ordered) < 0.0:
+        ordered.reverse()
+    return make_face(Spline(*[(x, y, 0.0) for x, y in ordered], periodic=True))
+
+
+def _outline_polygon(
+    points: Sequence[Tuple[float, float]], segments: int = OUTLINE_SEGMENTS
+) -> List[Tuple[float, float]]:
+    """A smooth closed outline through *points*, as a fine counter-clockwise polygon.
+
+    One periodic B-spline -- so the outline has no corners at all, which is what
+    makes an ear read as a drawn shape rather than a polygon -- sampled before
+    it becomes a face.  See :func:`_sample_curve` for why the sampling is not
+    optional.
+    """
+    sampled = _sample_wire(_smooth_outline(points).faces()[0].outer_wire(), segments)
+    if _polygon_area(sampled) < 0.0:
+        sampled.reverse()
+    return sampled
+
+
+def _element_face(
+    length: float,
+    width: float,
+    tip_land: float,
+    root_width: float,
+    embed: float,
+    shape: str,
+) -> Any:
+    """One ornament element as a flat face: +Y along it, root at ``y = -embed``.
+
+    Two splines for the flanks, a straight land across the tip, a straight
+    line across the root.  The tip land is what keeps the outline from
+    narrowing to a point, and the splines arrive at it vertically so the two
+    tip corners are square.
+    """
+    from build123d import Spline  # noqa: PLC0415
+
+    half = width / 2.0
+    tip_half = tip_land / 2.0
+    root_half = root_width / 2.0
+    table = _ELEMENT_SHAPES[shape]["profile"]
+
+    flank: List[Tuple[float, float]] = [(root_half, -embed)]
+    for t, k in table:
+        # ``t == 0`` is the root width, which the root line already carries.
+        # Two control points a hair apart make a spline wobble, and a wobble in
+        # an outline is a 0.1 mm sliver in the extrusion -- measured, not
+        # theorised: the first cut of this helper failed min_wall on one leaf.
+        if k is None or t <= 1e-9:
+            continue
+        flank.append((max(k * half, tip_half), t * length))
+    flank.append((tip_half, length))
+
+    # Drop any point that would make the flank double back on itself; a spline
+    # through a non-monotonic y is a loop, and a loop is a broken solid.
+    cleaned: List[Tuple[float, float]] = [flank[0]]
+    for point in flank[1:]:
+        if point[1] > cleaned[-1][1] + 1e-6:
+            cleaned.append(point)
+    cleaned[-1] = (tip_half, length)
+
+    # No end tangents: forcing the flank vertical at both ends overshoots and
+    # folds the outline back on itself near the root.  Both flanks are sampled
+    # into a polygon before the face is made -- see :func:`_sample_curve`; the
+    # straight tip land and root line fall out of the point list for free.
+    right = Spline(*[(x, y, 0.0) for x, y in cleaned])
+    left = Spline(*[(-x, y, 0.0) for x, y in reversed(cleaned)])
+    return _polygon_face(
+        _sample_curve(right, ELEMENT_SEGMENTS) + _sample_curve(left, ELEMENT_SEGMENTS)
+    )
+
+
+# --------------------------------------------------------------------------
+# silhouette_part -- a drawn outline becomes a printable appendage
+# --------------------------------------------------------------------------
+
+
+def silhouette_part_plan(
+    points: Any,
+    thickness: float,
+    rounding: Optional[float] = None,
+    taper: float = 0.0,
+    peg: Any = None,
+    printer: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    """The numbers :func:`silhouette_part` will build with, before any geometry.
+
+    Cheap: pure arithmetic on the control points, so a script can read the
+    clamps and explain them without paying for a spline.  The *achieved*
+    rounding radius is only known after the fillet is attempted -- read it back
+    from ``solid.forge_silhouette_plan`` (or ``rounding_mm`` here, which is the
+    radius the helper will *ask* for).
+    """
+    pts = _points_2d(points, "points")
+    if len(pts) < MIN_OUTLINE_POINTS:
+        raise PrintabilityError(
+            f"a silhouette needs at least {MIN_OUTLINE_POINTS} control points to be "
+            f"a shape rather than a triangle, got {len(pts)}. Add points at the "
+            "features you care about: the tip, the widest part, the root corners."
+        )
+    if len(pts) > MAX_OUTLINE_POINTS:
+        raise PrintabilityError(
+            f"a silhouette takes at most {MAX_OUTLINE_POINTS} control points, got "
+            f"{len(pts)}. More than that is tracing pixels; the outline is a "
+            "parameter set the artist nudges, so keep it to the 8-12 points that "
+            "carry the proportions."
+        )
+
+    crossing = _polygon_is_simple(pts)
+    if crossing is not None:
+        i, j = crossing
+        raise PrintabilityError(
+            f"the outline crosses itself between point {i} -> {i + 1} and point "
+            f"{j} -> {j + 1}, so it does not enclose an area. Order the points "
+            "the way you would draw the shape, all the way round, without "
+            "jumping from one side to the other."
+        )
+
+    area = abs(_polygon_area(pts))
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    span_x = max(xs) - min(xs)
+    span_y = max(ys) - min(ys)
+
+    prof = profile(printer)
+    wall_floor = float(prof["min_wall_thickness"])
+    feature = float(prof["min_feature_size"])
+    clamped: List[str] = []
+
+    if span_x < feature or span_y < feature:
+        raise PrintabilityError(
+            f"the outline is {span_x:.2f} x {span_y:.2f} mm, which is under the "
+            f"{feature:g} mm minimum feature in at least one direction; it would "
+            "print as a line, not a part"
+        )
+    if area < feature * feature:
+        raise PrintabilityError(
+            f"the outline encloses only {area:.2f} mm2, too little to print at the "
+            f"{feature:g} mm minimum feature"
+        )
+
+    body = _finite_positive(thickness, "thickness")
+    if body < wall_floor - 1e-9:
+        clamped.append(
+            f"thickness {body:g} -> {wall_floor:g} mm: the printer's minimum wall"
+        )
+        body = wall_floor
+
+    # ---- taper: a draft angle, thinner at the top -------------------------
+    draft = _finite_positive(taper, "taper", allow_zero=True)
+    if draft > 45.0:
+        clamped.append(f"taper {draft:g} -> 45 deg: past 45 the top face vanishes")
+        draft = 45.0
+    inset = body * math.tan(math.radians(draft))
+    # The top outline has to survive the inset with a real face left on it.
+    max_inset = max(0.0, min(span_x, span_y) / 2.0 - feature)
+    if inset > max_inset + 1e-9:
+        was = draft
+        inset = max_inset
+        draft = math.degrees(math.atan2(inset, body)) if body > 0 else 0.0
+        clamped.append(
+            f"taper {was:g} -> {draft:.2f} deg: a {was:g} deg draft over {body:g} mm "
+            f"pulls the top face in {body * math.tan(math.radians(was)):.2f} mm and "
+            f"the outline is only {min(span_x, span_y):.2f} mm across at its "
+            "narrowest"
+        )
+    if inset < 0.05:
+        inset = 0.0
+        draft = 0.0
+
+    # ---- rounding: the top perimeter only ---------------------------------
+    # A fillet on the *bottom* edge would roll through 90 deg exactly where the
+    # part meets the plate, which is rule 3 of the authoring guide.  The top
+    # edge is free, so that is the one that gets softened.
+    if rounding is None:
+        radius = min(0.35 * body, 1.2)
+    else:
+        radius = _finite_positive(rounding, "rounding", allow_zero=True)
+    ceiling = min(0.45 * body, 0.25 * min(span_x, span_y))
+    if radius > ceiling + 1e-9:
+        clamped.append(
+            f"rounding {radius:g} -> {ceiling:.2f} mm: a fillet cannot eat more than "
+            f"45% of the {body:g} mm thickness or a quarter of the "
+            f"{min(span_x, span_y):.2f} mm narrow span"
+        )
+        radius = ceiling
+    if radius < 0.15:
+        radius = 0.0
+
+    # ---- the optional peg at the outline's bottom centre -------------------
+    peg_plan: Optional[Dict[str, Any]] = None
+    if peg is not None:
+        spec = _as_spec(peg)
+        # Where the outline is lowest, and how wide it is there.
+        y_min = min(ys)
+        band = [p for p in pts if p[1] <= y_min + max(0.15 * span_y, 1.0)]
+        root_xs = [p[0] for p in band] or xs
+        centre = (min(root_xs) + max(root_xs)) / 2.0
+        root_width = max(root_xs) - min(root_xs)
+        needed = spec["d"] + 2.0 * feature
+        if body < needed - 1e-9:
+            raise PrintabilityError(
+                f"a {spec['d']:g} mm peg cannot be buried in a {body:g} mm thick "
+                f"part: it needs {needed:g} mm so a {feature:g} mm wall is left on "
+                "each side. Thicken the part or narrow the peg."
+            )
+        if root_width < needed - 1e-9:
+            raise PrintabilityError(
+                f"the outline is only {root_width:.2f} mm wide at its bottom edge, "
+                f"which cannot carry a {spec['d']:g} mm peg with a {feature:g} mm "
+                "wall each side. Widen the root or narrow the peg."
+            )
+        peg_plan = {
+            "diameter_mm": round(spec["d"], 5),
+            "length_mm": round(spec["l"], 5),
+            "embed_mm": round(min(0.5 * spec["d"] + 1.0, 0.6 * span_y), 5),
+            "at_mm": [round(centre, 5), round(y_min, 5)],
+            "root_width_mm": round(root_width, 5),
+            "spec": spec,
+        }
+
+    return {
+        "point_count": len(pts),
+        "points": [[round(x, 5), round(y, 5)] for x, y in pts],
+        "thickness_mm": round(body, 5),
+        "taper_deg": round(draft, 3),
+        "taper_inset_mm": round(inset, 5),
+        "rounding_mm": round(radius, 5),
+        "bbox_mm": [round(span_x, 5), round(span_y, 5)],
+        "outline_area_mm2": round(area, 3),
+        "peg": peg_plan,
+        "min_wall_mm": wall_floor,
+        "min_feature_mm": feature,
+        # Flat on the bed, every side face square to it: the only downward face
+        # is the one lying on the plate.
+        "support_free": True,
+        "clamped": clamped,
+    }
+
+
+def silhouette_part(
+    points: Any,
+    thickness: float,
+    rounding: Optional[float] = None,
+    taper: float = 0.0,
+    peg: Any = None,
+    printer: Optional[Mapping[str, Any]] = None,
+) -> Any:
+    """A drawn outline, made real: ears, tails, fins, wings, horns, crests.
+
+    ``points`` is 6 to 16 ``[x, y]`` control points in millimetres.  They are
+    splined into one smooth closed outline -- so eight points describe a shape
+    with no corners in it -- and extruded to ``thickness``.  **The part is
+    modelled lying flat on the bed**, outline in XY, growing +Z, which is both
+    the print orientation for a blade and the reason every side face is
+    vertical.
+
+    The points are *proportions*, not a trace.  Read them off a reference the
+    way you would read a measurement -- tip here, widest point there, root that
+    wide -- and then they are parameters the artist can nudge.
+
+    Guarantees
+    ----------
+    * **Watertight, always**: one closed outline, one extrusion, and every
+      convex edge square.  A self-intersecting outline, fewer than 6 points or
+      more than 16 is refused with a plain sentence rather than built badly.
+    * ``thickness`` is clamped up to the printer's minimum wall.
+    * ``taper`` (degrees of draft, thinner at the top) is clamped so the top
+      face never falls under the minimum feature.  Drafting inward as it rises
+      is the safe direction: it hangs nothing over itself.
+    * ``rounding`` softens the **top** perimeter only, never the bottom -- a
+      bottom fillet rolls through 90 deg at the plate.  The radius is clamped
+      to what the outline can carry and then **stepped down** if the kernel
+      still refuses it; the radius actually achieved is reported in
+      ``solid.forge_silhouette_plan["rounding_achieved_mm"]`` (0.0 means the
+      fillet was abandoned and the part is square-topped, which still prints).
+    * ``peg={"d": 6, "l": 10}`` attaches a :func:`peg` at the outline's
+      bottom-centre, lying in the part's own plane and pointing **-Y**, so the
+      appendage plugs into a :func:`socket_for` cut from the same spec.  It
+      raises rather than burying a peg in a part too thin or too narrow to hold
+      it.
+
+    Examples
+    --------
+    An ear, 9 mm thick, with the peg that mates the base's socket::
+
+        ear = forge_lib.silhouette_part(
+            [[0, 0], [11, 6], [15, 24], [12, 46], [4, 62], [0, 70],
+             [-6, 58], [-13, 34], [-14, 12], [-8, 2]],
+            9.0, rounding=1.5, peg={"d": 6.0, "l": 10.0})
+    """
+    plan = silhouette_part_plan(
+        points, thickness, rounding, taper, peg, printer=printer
+    )
+
+    from build123d import (  # noqa: PLC0415
+        Axis,
+        Plane,
+        Pos,
+        Rot,
+        extrude,
+        fillet,
+        loft,
+    )
+
+    outline = _outline_polygon([(p[0], p[1]) for p in plan["points"]])
+    face = _polygon_face(outline)
+    body = plan["thickness_mm"]
+    inset = plan["taper_inset_mm"]
+
+    solid = None
+    if inset > 0.0:
+        # ``extrude(taper=...)`` is OCC's draft prism and refuses a splined face
+        # outright, so the taper is a loft between the outline and its inward
+        # offset -- the same shape, and it survives anything the offset does.
+        # Step the draft down rather than dropping it: a narrow neck in the
+        # outline folds long before the bounding box says it should.
+        wanted = plan["taper_deg"]
+        while solid is None and inset >= 0.05:
+            shrunk = _offset_polygon(outline, inset)
+            if shrunk is not None:
+                try:
+                    solid = loft(
+                        [Plane.XY * face, Plane.XY.offset(body) * _polygon_face(shrunk)]
+                    )
+                except Exception:  # noqa: BLE001 - a straight-sided part still prints
+                    solid = None
+            if solid is None:
+                inset *= 0.6
+        plan["taper_inset_mm"] = round(inset if solid is not None else 0.0, 5)
+        plan["taper_deg"] = round(
+            math.degrees(math.atan2(plan["taper_inset_mm"], body)), 3
+        )
+        if plan["taper_deg"] < wanted - 1e-6:
+            plan["clamped"].append(
+                f"taper {wanted:g} -> {plan['taper_deg']:g} deg: a bigger draft folds "
+                "this outline in on itself where it is narrowest"
+            )
+    if solid is None:
+        solid = extrude(Plane.XY * face, amount=body)
+
+    # ---- rounding, stepped down until the kernel accepts it ---------------
+    achieved = 0.0
+    attempts: List[str] = []
+    radius = plan["rounding_mm"]
+    while radius >= 0.15:
+        try:
+            top_face = solid.faces().sort_by(Axis.Z)[-1]
+            rounded = fillet(top_face.edges(), radius=radius)
+            if rounded.is_valid and rounded.volume > 0.0:
+                solid = rounded
+                achieved = radius
+                break
+        except Exception as exc:  # noqa: BLE001 - stepping down is the point
+            attempts.append(f"{radius:.2f} mm ({type(exc).__name__})")
+        else:
+            attempts.append(f"{radius:.2f} mm (invalid solid)")
+        radius = radius * 0.6
+    if plan["rounding_mm"] >= 0.15 and achieved < plan["rounding_mm"] - 1e-9:
+        plan["clamped"].append(
+            f"rounding {plan['rounding_mm']:g} -> {achieved:g} mm: the kernel "
+            f"refused the larger radius ({'; '.join(attempts[:4])})"
+        )
+    plan["rounding_achieved_mm"] = round(achieved, 5)
+    plan["rounding_attempts"] = attempts
+
+    # ---- the peg, in the part's own plane, pointing -Y --------------------
+    peg_plan = plan["peg"]
+    if peg_plan is not None:
+        spec = peg_spec(
+            **{**peg_plan["spec"], "l": peg_plan["spec"]["l"] + peg_plan["embed_mm"]}
+        )
+        solid = solid + (
+            Pos(peg_plan["at_mm"][0], peg_plan["at_mm"][1] + peg_plan["embed_mm"], body / 2.0)
+            * Rot(90.0, 0.0, 0.0)
+            * _keyed_peg(spec)
+        )
+
+    _attach(solid, "forge_silhouette_plan", plan)
+    return solid
+
+
+# --------------------------------------------------------------------------
+# leaf_collar / petal_crown / scale_band -- one ring of elements, three faces
+# --------------------------------------------------------------------------
+
+
+class _Slab:
+    """One element, reduced to the box that bounds it, in world coordinates.
+
+    Everything the clearance test needs: where the box's origin is, and the
+    three unit vectors of its own frame.  Using the *bounding box* rather than
+    the splined outline is deliberate -- it is conservative in the safe
+    direction, and it makes the test a handful of dot products.
+    """
+
+    __slots__ = ("o", "ex", "ey", "ez", "hw", "y0", "y1", "t1")
+
+    def __init__(
+        self,
+        radius: float,
+        z: float,
+        phi: float,
+        theta: float,
+        sign: float,
+        body: float,
+        half_width: float,
+        y0: float,
+        y1: float,
+        roll: float = 0.0,
+    ) -> None:
+        cos_p, sin_p = math.cos(phi), math.sin(phi)
+        cos_t, sin_t = math.cos(theta), math.sin(theta)
+        # Local frame at azimuth 0: x across, z the thickness normal, y along.
+        ex = (0.0, sign, 0.0)
+        ez = (cos_t, 0.0, -sign * sin_t)
+        ey = (
+            ez[1] * ex[2] - ez[2] * ex[1],
+            ez[2] * ex[0] - ez[0] * ex[2],
+            ez[0] * ex[1] - ez[1] * ex[0],
+        )
+        if roll:
+            cos_r, sin_r = math.cos(roll), math.sin(roll)
+            ex, ez = (
+                tuple(ex[i] * cos_r + ez[i] * sin_r for i in range(3)),
+                tuple(ez[i] * cos_r - ex[i] * sin_r for i in range(3)),
+            )
+        rot = lambda v: (  # noqa: E731 - spin the frame round to its azimuth
+            v[0] * cos_p - v[1] * sin_p,
+            v[0] * sin_p + v[1] * cos_p,
+            v[2],
+        )
+        self.o = (radius * cos_p, radius * sin_p, z)
+        self.ex, self.ey, self.ez = rot(ex), rot(ey), rot(ez)
+        self.hw = half_width
+        self.y0, self.y1, self.t1 = y0, y1, body
+
+    def samples(self, nu: int = 7, nv: int = 9) -> List[Tuple[float, float, float]]:
+        """Points on the box's surface, dense enough to catch a grazing corner."""
+        out: List[Tuple[float, float, float]] = []
+        for i in range(nu):
+            x = -self.hw + 2.0 * self.hw * i / (nu - 1)
+            for j in range(nv):
+                y = self.y0 + (self.y1 - self.y0) * j / (nv - 1)
+                edge = i in (0, nu - 1) or j in (0, nv - 1)
+                for t in ((0.0, self.t1 / 2.0, self.t1) if edge else (0.0, self.t1)):
+                    out.append(
+                        tuple(
+                            self.o[k] + x * self.ex[k] + y * self.ey[k] + t * self.ez[k]
+                            for k in range(3)
+                        )
+                    )
+        return out
+
+    def distance_to(self, point: Sequence[float]) -> float:
+        """Distance from *point* to this box: 0 inside it."""
+        d = (point[0] - self.o[0], point[1] - self.o[1], point[2] - self.o[2])
+        u = sum(d[k] * self.ex[k] for k in range(3))
+        v = sum(d[k] * self.ey[k] for k in range(3))
+        w = sum(d[k] * self.ez[k] for k in range(3))
+        du = max(abs(u) - self.hw, 0.0)
+        dv = max(self.y0 - v, v - self.y1, 0.0)
+        dw = max(-w, w - self.t1, 0.0)
+        return math.sqrt(du * du + dv * dv + dw * dw)
+
+
+def _slab_clearance(a: "_Slab", b: "_Slab") -> float:
+    """The narrowest air gap between two element slabs; 0 means they touch.
+
+    A guess here is not good enough, and neither is a closed form: two slabs
+    that merely *look* clear can be a tenth of a millimetre apart, which is
+    invisible on screen and comes back as ``min_wall: fail``.  Worse, a plane-
+    to-plane formula says two same-layer elements collide when in fact they
+    miss each other sideways, so the test has to know about each slab's extent.
+    Hence: sample one box's surface against the other's, both ways round.
+    """
+    gap = min(b.distance_to(p) for p in a.samples())
+    if gap <= 0.0:
+        return 0.0
+    return min(gap, min(a.distance_to(p) for p in b.samples()))
+
+
+def _solve_gap(
+    make_pair: Any, needed: float, low: float, high: float, steps: int = 22
+) -> Tuple[float, float]:
+    """Smallest separation in ``[low, high]`` whose clearance reaches *needed*.
+
+    ``make_pair(g)`` returns the two slabs at separation ``g``.  Clearance is
+    monotonic in ``g`` over the range that matters, so this is a bisection.
+    Returns ``(separation, clearance_achieved)``.
+    """
+    if _slab_clearance(*make_pair(low)) >= needed:
+        return low, _slab_clearance(*make_pair(low))
+    best = _slab_clearance(*make_pair(high))
+    if best < needed:
+        return high, best
+    lo, hi = low, high
+    for _ in range(steps):
+        mid = 0.5 * (lo + hi)
+        if _slab_clearance(*make_pair(mid)) >= needed:
+            hi = mid
+        else:
+            lo = mid
+    return hi, _slab_clearance(*make_pair(hi))
+
+
+def _ornament_plan(
+    ring_radius: float,
+    length: float,
+    width: float,
+    count: int,
+    *,
+    shape: str,
+    direction: str,
+    lean_deg: float,
+    overlap: float,
+    thickness: Optional[float],
+    jitter: float,
+    seed: int,
+    rows: int,
+    clearance: Optional[float],
+    tip_land: Optional[float],
+    layers: int,
+    printer: Optional[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    """Everything both the plan twins and the builders need.  Pure arithmetic."""
+    if direction not in ("down", "up"):
+        raise PrintabilityError(f"direction must be 'down' or 'up', got {direction!r}")
+    if shape not in _ELEMENT_SHAPES:
+        raise PrintabilityError(
+            f"shape must be one of {', '.join(sorted(_ELEMENT_SHAPES))}, got {shape!r}"
+        )
+
+    base_r = _finite_positive(ring_radius, "ring_radius")
+    elem_l = _finite_positive(length, "length")
+    elem_w = _finite_positive(width, "width")
+    n = _positive_count(count, "count")
+    row_count = _positive_count(rows, "rows")
+    layer_count = max(1, min(int(layers), 3))
+
+    prof = profile(printer)
+    wall_floor = float(prof["min_wall_thickness"])
+    feature = float(prof["min_feature_size"])
+    limit = max(float(prof["max_unsupported_overhang_deg"]) - OVERHANG_SAFETY_DEG, 1.0)
+    clamped: List[str] = []
+
+    if n * row_count > MAX_ORNAMENT_ELEMENTS:
+        raise PrintabilityError(
+            f"{n} elements x {row_count} rows is {n * row_count} booleans, past the "
+            f"{MAX_ORNAMENT_ELEMENTS} this helper will build. Use fewer, bigger "
+            "elements -- an overlapping ring reads as fur at 12 to 20 leaves, not 60."
+        )
+
+    # A NEGATIVE clearance is legal and it is the one you want when the ring is
+    # unioned onto a base rather than slipped over one: the band bites into the
+    # base's material, so the two are genuinely one solid instead of two solids
+    # a slide fit apart.
+    if clearance is None:
+        slack = fit_tolerance("slide_fit", prof)
+    elif isinstance(clearance, bool) or not isinstance(clearance, (int, float)):
+        raise PrintabilityError(
+            f"clearance must be a number in millimetres, got {clearance!r}"
+        )
+    else:
+        slack = float(clearance)
+        if not math.isfinite(slack):
+            raise PrintabilityError(f"clearance must be finite, got {clearance!r}")
+        if slack <= -0.5 * base_r:
+            raise PrintabilityError(
+                f"a clearance of {slack:g} mm would put the ring's bore inside half "
+                f"its own {base_r:g} mm radius; that is not a fit, it is a hole"
+            )
+    r_bore = base_r + slack
+
+    # ---- thickness: the one number every wall in the ornament comes from --
+    if thickness is None:
+        body = max(2.0, 2.5 * wall_floor)
+    else:
+        body = _finite_positive(thickness, "thickness")
+    if body < feature - 1e-9:
+        clamped.append(
+            f"thickness {body:g} -> {feature:g} mm: an element thinner than the "
+            "minimum feature is a fin the slicer cannot put a perimeter on"
+        )
+        body = feature
+
+    # ---- the lean, which IS the overhang angle of the element's underside --
+    lean = _finite_positive(lean_deg, "lean_deg", allow_zero=True)
+    if lean > limit + 1e-9:
+        clamped.append(
+            f"{'droop' if direction == 'down' else 'flare'}_deg {lean:g} -> "
+            f"{limit:g}: an element leaning further than that hangs its own "
+            f"underside past the {prof['max_unsupported_overhang_deg']:g} deg limit"
+        )
+        lean = limit
+    theta = math.radians(lean)
+
+    # ---- how deep the roots go, and therefore how thick the band is -------
+    # An element's root runs back up its own axis, so it also runs *inward*.
+    # The band's wall has to be thick enough to swallow that, or the root pokes
+    # out into the bore and the collar stops being one solid.
+    embed = max(2.5 * body, 4.0)
+    band_wall = max(1.5 * wall_floor, feature, embed * math.sin(theta) + 0.8)
+    band_wall = min(band_wall, max(0.30 * base_r, 1.5 * wall_floor))
+    if embed * math.sin(theta) > band_wall - 0.8:
+        embed = max((band_wall - 0.8) / max(math.sin(theta), 1e-6), 2.0)
+
+    # ---- how wide an element has to be to cover its share of the ring -----
+    r_layer0 = r_bore + band_wall
+    spread = float(overlap)
+    if not math.isfinite(spread) or spread < 0.0:
+        raise PrintabilityError(
+            f"overlap must be zero or more (a fraction of the pitch), got {overlap!r}"
+        )
+    pitch = 2.0 * math.pi * r_layer0 / n
+    wanted = pitch * (1.0 + spread)
+    elem_w_requested = elem_w
+    if elem_w < wanted - 1e-9:
+        clamped.append(
+            f"width {elem_w:g} -> {wanted:.2f} mm: {n} elements on a "
+            f"{2.0 * r_layer0:.1f} mm circle need that much to overlap by "
+            f"{spread:.0%} of the {pitch:.2f} mm pitch and leave no gap"
+        )
+        elem_w = wanted
+    # Two layers means an element only ever meets its immediate neighbours, and
+    # they are always on the other layer.  Keep it that way: an element wider
+    # than 1.85 pitches would reach its *second* neighbour, which shares its own
+    # layer and its own radius, and two elements at the same radius can only
+    # graze each other -- which is a feather edge, not an overlap.
+    ceiling = (
+        min(1.85 * pitch, 1.6 * r_layer0)
+        if layer_count > 1
+        else max(pitch - max(feature, 0.6), 0.5 * pitch)
+    )
+    if elem_w > ceiling:
+        clamped.append(
+            f"width {elem_w:g} -> {ceiling:.2f} mm: "
+            + (
+                "past 1.85 pitches an element reaches the neighbour on its own "
+                "layer, and two elements at one radius can only graze"
+                if layer_count > 1
+                else f"with layers=1 the elements never touch, so they cannot be "
+                f"wider than the {pitch:.2f} mm pitch"
+            )
+        )
+        elem_w = ceiling
+
+    land = (
+        max(TIP_LAND_FEATURE_RATIO * feature, _ELEMENT_SHAPES[shape]["tip_ratio"] * elem_w)
+        if tip_land is None
+        else _finite_positive(tip_land, "tip_land")
+    )
+    if land < feature - 1e-9:
+        clamped.append(
+            f"tip_land {land:g} -> {feature:g} mm: an element that runs out to a "
+            "point is a knife edge in plan view"
+        )
+        land = feature
+    land = min(land, 0.85 * elem_w)
+
+    # A short, wide element is fine -- a roof tile is exactly that -- but one
+    # shorter than a few minimum features is not an element, it is a burr.
+    length_floor = max(3.0 * feature, 1.5 * body)
+    if elem_l < length_floor - 1e-9:
+        raise PrintabilityError(
+            f"length {elem_l:g} mm is too short to be an element at all; make it at "
+            f"least {length_floor:.2f} mm (three minimum features, or one and a half "
+            "times its own thickness)"
+        )
+
+    # ---- radial layering: what gives the ring depth instead of a scallop ---
+    # Neighbouring elements sit on two radii, ``layer_gap`` apart, so alternate
+    # ones lie OVER their neighbours instead of into them.  How far apart is
+    # solved, not guessed -- see :func:`_slab_clearance`.
+    elem_w_kept = elem_w
+    # The air gap between two elements has to be at least a minimum feature
+    # wide, not merely non-zero.  ``check_min_wall`` casts rays and reports the
+    # first thing they meet, so it reads a narrow *gap* as a thin wall -- a
+    # 0.6 mm gap comes back as a 0.73 mm "wall" and fails.
+    keep_apart = max(feature, wall_floor) + 0.4
+    jit = max(0.0, min(float(jitter), 1.0))
+    sign = -1.0 if direction == "down" else 1.0
+    step_phi = 2.0 * math.pi / n
+
+    def _slab(radius: float, z: float, phi: float, lean_scale: float, roll: float) -> "_Slab":
+        # Worst case, not nominal: jitter is allowed to make an element wider,
+        # longer, closer to its neighbour, rolled and steeper all at once.
+        return _Slab(
+            radius,
+            z,
+            phi,
+            min(theta * lean_scale, math.radians(limit)),
+            sign,
+            body,
+            0.5 * elem_w * (1.0 + 0.15 * jit),
+            -embed,
+            elem_l * (1.0 + 0.15 * jit),
+            roll,
+        )
+
+    jphi = step_phi * (1.0 - 0.30 * jit)
+    roll_max = math.radians(8.0 * jit)
+
+    # ---- same-layer neighbours: they share a radius, so only width helps ---
+    # With two layers an element's own-layer neighbour is two pitches away; the
+    # width is narrowed until they clear, which is the honest answer -- two
+    # elements at one radius can only ever graze, never overlap cleanly.
+    same_phi = jphi * layer_count
+    for _ in range(24):
+        a = _slab(r_layer0, 0.0, 0.0, 1.0 + 0.15 * jit, roll_max)
+        b = _slab(r_layer0, 0.0, same_phi, 1.0 - 0.15 * jit, -roll_max)
+        if _slab_clearance(a, b) >= keep_apart or elem_w <= 2.0 * land:
+            break
+        elem_w *= 0.94
+        land = min(land, 0.85 * elem_w)
+    if elem_w < elem_w_kept - 1e-6:
+        clamped.append(
+            f"width {elem_w_kept:.2f} -> {elem_w:.2f} mm: at {n} elements on a "
+            f"{2.0 * r_layer0:.1f} mm circle the wider one grazed its own-layer "
+            f"neighbour, and two elements at one radius cannot overlap cleanly"
+        )
+
+    # ---- the two layers: solved, not guessed -------------------------------
+    layer_gap = 0.0
+    layer_clearance = None
+    if layer_count > 1:
+        def pair(g: float):
+            return (
+                _slab(r_layer0, 0.0, 0.0, 1.0 + 0.15 * jit, roll_max),
+                _slab(r_layer0 + g, 0.0, jphi, 1.0 - 0.15 * jit, -roll_max),
+            )
+
+        layer_gap, layer_clearance = _solve_gap(
+            pair, keep_apart, body + keep_apart, 6.0 * body + 2.0 * elem_w + 10.0
+        )
+
+    root_w = _ELEMENT_SHAPES[shape]["root_ratio"] * elem_w
+
+    # The band has to swallow the outermost element's *corners*, not its centre
+    # line.  An element is a flat slab, so its far corner stands
+    # ``half_width^2 / 2R`` further from the axis than its middle does; a band
+    # sized to the centre line leaves the corners poking through its outer face
+    # as a lip thinner than the nozzle.
+    r_layer_last = r_layer0 + (layer_count - 1) * layer_gap
+    r_out = (
+        math.hypot(r_layer_last + body, elem_w / 2.0) + max(0.6, 0.5 * wall_floor)
+    )
+    band_land = min_land(None, prof)
+    # The band's underside is a REVOLVED cone, and the check measures triangles.
+    # The tessellation's *angular* tolerance (0.2 rad) lets a facet span ~12 deg
+    # of arc, and once the boolean with a base part has re-triangulated it the
+    # facets are long, thin and skewed -- their normals ran up to 8 deg steeper
+    # than the surface they came from.  Measured, not assumed: a cone built at
+    # 46 deg came back as 51.2, and at 43 as 50.7; at 40 nothing is flagged at
+    # all.  An element's own faces are planar and need no such margin.
+    band_limit = max(limit - 8.0, 1.0)
+    tan_limit = math.tan(math.radians(band_limit))
+    tip_reach_z = elem_l * math.cos(theta)
+    tip_reach_r = elem_l * math.sin(theta)
+
+    # Element roots sit ``embed`` back inside the band along their own axis, and
+    # the element is ``body`` thick along a normal that itself leans, so the
+    # highest corner of a root is that much higher again.  The band has to be
+    # tall enough to keep all of it inside: a root that pokes through the band's
+    # top face leaves a lip thinner than the nozzle right where it emerges.
+    root_drop = embed * math.cos(theta) + body * math.sin(theta)
+
+    # ---- rows: each one tiles over the row behind it -----------------------
+    # A drooping element travels outward as it falls, so the row below has to
+    # start that much further out to clear the row above -- which is exactly
+    # what a conical band does for free.  The step is therefore floored at the
+    # distance that keeps the two rows apart.
+    row_step = 0.0
+    row_clearance = None
+    if row_count > 1:
+        if lean <= 1.0:
+            raise PrintabilityError(
+                f"{row_count} rows need the elements to lean out as they fall, or "
+                "each row lands on top of the one above it. Give the band a droop "
+                "of at least a few degrees, or ask for one row."
+            )
+        tan_lean = math.tan(theta)
+
+        def row_pair(step: float):
+            return (
+                _slab(r_layer0, 0.0, 0.0, 1.0 + 0.15 * jit, roll_max),
+                _slab(
+                    r_layer0 + step * tan_lean,
+                    -step * (1.0 if direction == "down" else -1.0),
+                    0.5 * jphi,
+                    1.0 - 0.15 * jit,
+                    -roll_max,
+                ),
+            )
+
+        wanted_step = tip_reach_z * (1.0 - min(max(spread, 0.15), 0.75))
+        floor_step, row_clearance = _solve_gap(
+            row_pair, keep_apart, 0.5, 3.0 * tip_reach_z + 20.0
+        )
+        row_step = max(wanted_step, floor_step)
+        if row_step > wanted_step + 1e-9:
+            clamped.append(
+                f"row spacing {wanted_step:.2f} -> {row_step:.2f} mm: at a "
+                f"{lean:g} deg droop the row below only clears the row above it "
+                "once it has dropped that far and gained the radius to go with it"
+            )
+
+    row_drop = (row_count - 1) * row_step
+    r_skirt = r_out + row_drop * math.tan(theta)
+    rise = (r_skirt - r_bore - band_land) / tan_limit
+    band_h = max(
+        root_drop + 2.0 * band_land + 0.5, rise + row_drop + band_land
+    )
+    lowest = band_h - band_land - root_drop - row_drop - tip_reach_z
+    height = band_h + max(0.0, -lowest)
+
+    # The band's own cross-section, as (radius, z) with the band's bottom at
+    # z = 0.  Bottom land -> underside cone at exactly the overhang limit ->
+    # the skirt face, which leans back IN as it rises at the element's own
+    # droop so every row roots on it -> the top face -> the bore.  Every convex
+    # edge in it is 90 deg or more; that is the whole reason for the land.
+    band_profile: List[Tuple[float, float]] = [
+        (r_bore, 0.0),
+        (r_bore + band_land, 0.0),
+        (r_skirt, min(rise, band_h - band_land - row_drop)),
+    ]
+    if row_drop > 1e-9:
+        band_profile.append((r_out, min(rise + row_drop, band_h - band_land)))
+    band_profile.append((r_out, band_h))
+    band_profile.append((r_bore, band_h))
+    if direction == "up":
+        band_profile = [(r, band_h - z) for r, z in band_profile]
+
+    # ---- what is honestly not support-free --------------------------------
+    # Jitter never makes an element's overhang worse than the droop you asked
+    # for: it may lean an element FURTHER out (up to the limit) but never less
+    # far, because a shallower element has a steeper tip land and would walk
+    # straight out of the printable window.  Printability wins over variety,
+    # and the variety that is left -- width, length, angle, roll, more droop --
+    # is what carries the organic look anyway.  It also makes the plan's
+    # verdict exact: the worst overhang in the ring is the one you specified.
+    lean_floor = lean
+    worst_lean = lean
+    tip_overhang = 90.0 - worst_lean if direction == "down" else 0.0
+    unsupported: List[Dict[str, Any]] = []
+    if direction == "down":
+        tip_area = land * body * n * row_count
+        if tip_overhang > float(prof["max_unsupported_overhang_deg"]) + 1e-9:
+            unsupported.append(
+                {
+                    "what": "element tips",
+                    "angle_from_vertical_deg": round(tip_overhang, 2),
+                    "area_mm2": round(tip_area, 2),
+                    "why": (
+                        f"each element ends on a {land:.2f} x {body:g} mm land whose "
+                        f"face points down the element's own axis, {tip_overhang:.0f} "
+                        f"deg from vertical. It bridges (it is {land:.2f} mm across), "
+                        f"and it disappears entirely at a droop of "
+                        f"{90.0 - float(prof['max_unsupported_overhang_deg']):.0f} deg "
+                        f"or more, where the tip face comes inside the limit too."
+                    ),
+                }
+            )
+        rim_area = math.pi * ((r_bore + band_land) ** 2 - r_bore**2)
+        unsupported.append(
+            {
+                "what": "band bottom rim",
+                "angle_from_vertical_deg": 90.0,
+                "area_mm2": round(rim_area, 2),
+                "why": (
+                    f"the {band_land:g} mm land the bore ends on. A ring around a "
+                    "cylinder has to stop somewhere, and every alternative is a "
+                    "convex edge under 90 deg, which fails min_wall instead. Union "
+                    "the collar onto a base and this face is inside the part."
+                ),
+            }
+        )
+
+    return {
+        "shape": shape,
+        "direction": direction,
+        "count": n,
+        "rows": row_count,
+        "layers": layer_count,
+        "ring_radius_mm": round(base_r, 5),
+        "clearance_mm": round(slack, 5),
+        "bore_radius_mm": round(r_bore, 5),
+        "outer_radius_mm": round(r_out + tip_reach_r, 5),
+        "band_outer_radius_mm": round(r_skirt, 5),
+        "layer_radius_mm": [round(r_layer0 + i * layer_gap, 5) for i in range(layer_count)],
+        "layer_gap_mm": round(layer_gap, 5),
+        "layer_clearance_mm": (
+            None if layer_clearance is None else round(layer_clearance, 5)
+        ),
+        "row_clearance_mm": None if row_clearance is None else round(row_clearance, 5),
+        "keep_apart_mm": round(keep_apart, 5),
+        "band_profile_mm": [[round(r, 5), round(z, 5)] for r, z in band_profile],
+        "row_radius_step_mm": round(row_step * math.tan(theta), 5),
+        "thickness_mm": round(body, 5),
+        "length_mm": round(elem_l, 5),
+        "width_mm": round(elem_w, 5),
+        "requested_width_mm": round(elem_w_requested, 5),
+        "root_width_mm": round(root_w, 5),
+        "tip_land_mm": round(land, 5),
+        "embed_mm": round(embed, 5),
+        "pitch_mm": round(pitch, 5),
+        "overlap": round(elem_w / pitch - 1.0, 4),
+        "lean_deg": round(lean, 3),
+        "lean_limit_deg": round(limit, 3),
+        "lean_floor_deg": round(lean_floor, 3),
+        "worst_lean_deg": round(worst_lean, 3),
+        "band_height_mm": round(band_h, 5),
+        "band_land_mm": round(band_land, 5),
+        "band_rise_mm": round(rise, 5),
+        "band_wall_mm": round(band_wall, 5),
+        "row_step_mm": round(row_step, 5),
+        "row_overlap": round(
+            1.0 - row_step / tip_reach_z if row_count > 1 and tip_reach_z > 0 else 0.0, 4
+        ),
+        "height_mm": round(height, 5),
+        "jitter": round(max(0.0, min(float(jitter), 1.0)), 4),
+        "seed": int(seed),
+        "element_count": n * row_count,
+        "min_wall_mm": wall_floor,
+        "min_feature_mm": feature,
+        "support_free": not unsupported,
+        "unsupported": unsupported,
+        "clamped": clamped,
+    }
+
+
+def _ornament_solid(plan: Dict[str, Any]) -> Any:
+    """Build the ring the plan describes: a band, then the elements on it."""
+    from build123d import Axis, Plane, Polygon, Pos, Rot, extrude, revolve  # noqa: PLC0415, F401
+
+    down = plan["direction"] == "down"
+    sign = -1.0 if down else 1.0
+    body = plan["thickness_mm"]
+    lean = math.radians(plan["lean_deg"])
+    n = plan["count"]
+    jitter = plan["jitter"]
+    seed = plan["seed"]
+    limit = math.radians(plan["lean_limit_deg"])
+
+    band_h = plan["band_height_mm"]
+    band_land = plan["band_land_mm"]
+
+    # ---- the band: one revolve, every convex edge 90 deg or more ----------
+    # The profile was worked out in the plan; read it back so the arithmetic
+    # lives in exactly one place.
+    part = revolve(
+        Plane.XZ * Polygon(*[tuple(p) for p in plan["band_profile_mm"]], align=None),
+        axis=Axis.Z,
+    )
+    # The element's root end has to finish strictly INSIDE the band, never flush
+    # with a face of it: a coplanar-face union is the classic watertight failure.
+    root_reach = plan["embed_mm"] * math.cos(lean) + body * math.sin(lean)
+    root_z = (
+        band_h - band_land - root_reach if down else band_land + root_reach
+    )
+
+    faces: Dict[Tuple[float, float, float, float], Any] = {}
+    for row in range(plan["rows"]):
+        row_offset = -row * plan["row_step_mm"] if down else row * plan["row_step_mm"]
+        stagger = 0.5 if row % 2 else 0.0
+        for index in range(n):
+            key = row * n + index
+            width = plan["width_mm"]
+            length = plan["length_mm"]
+            phi = 360.0 * (index + stagger) / n
+            lean_i = lean
+            roll = 0.0
+            if jitter > 0.0:
+                width *= 1.0 + 0.22 * jitter * _noise(seed, key, 0)
+                length *= 1.0 + 0.18 * jitter * _noise(seed, key, 1)
+                phi += 0.30 * jitter * _noise(seed, key, 2) * 360.0 / n
+                roll = 8.0 * jitter * _noise(seed, key, 3)
+                lean_i = min(
+                    max(
+                        lean * (1.0 + 0.25 * jitter * _noise(seed, key, 4)),
+                        math.radians(plan["lean_floor_deg"]),
+                    ),
+                    limit,
+                )
+            tip_land = min(plan["tip_land_mm"], 0.85 * width)
+            # Without jitter every element is the same drawing, so spline it once.
+            key_shape = (
+                round(length, 4),
+                round(width, 4),
+                round(tip_land, 4),
+                round(min(plan["root_width_mm"], width), 4),
+            )
+            face = faces.get(key_shape)
+            if face is None:
+                face = _element_face(
+                    key_shape[0],
+                    key_shape[1],
+                    key_shape[2],
+                    key_shape[3],
+                    plan["embed_mm"],
+                    plan["shape"],
+                )
+                faces[key_shape] = face
+            # Rows follow the band's skirt outward as they fall, which is what
+            # keeps a row clear of the one above it without any extra gap.
+            radius = (
+                plan["layer_radius_mm"][index % plan["layers"]]
+                + row * plan["row_radius_step_mm"]
+            )
+            # x_dir across the element, y_dir (= z x x) along it: down-and-out
+            # for a collar, up-and-out for a crown.
+            ex = (0.0, sign, 0.0)
+            ez = (math.cos(lean_i), 0.0, -sign * math.sin(lean_i))
+            if abs(roll) > 1e-6:
+                # Roll is about the element's OWN long axis, so it tilts the
+                # blade sideways without ever changing its droop.  Spelled out
+                # rather than left to ``Plane.rotated``, which turns about a
+                # different axis and quietly steepened the lean past the limit.
+                cos_r, sin_r = math.cos(math.radians(roll)), math.sin(math.radians(roll))
+                ex, ez = (
+                    tuple(ex[i] * cos_r + ez[i] * sin_r for i in range(3)),
+                    tuple(ez[i] * cos_r - ex[i] * sin_r for i in range(3)),
+                )
+            plane = Plane(
+                origin=(radius, 0.0, root_z + row_offset), x_dir=ex, z_dir=ez
+            )
+            part = part + Rot(0.0, 0.0, phi) * extrude(plane * face, amount=body)
+
+    box = part.bounding_box()
+    return Pos(0.0, 0.0, -box.min.Z) * part
+
+
+def leaf_collar_plan(
+    ring_radius: float,
+    leaf_length: float,
+    leaf_width: float,
+    count: int,
+    overlap: float = 0.3,
+    droop_deg: float = 20.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+    shape: str = "leaf",
+) -> Dict[str, Any]:
+    """The collar :func:`leaf_collar` will build, with every clamp named."""
+    return _ornament_plan(
+        ring_radius,
+        leaf_length,
+        leaf_width,
+        count,
+        shape=shape,
+        direction="down",
+        lean_deg=droop_deg,
+        overlap=overlap,
+        thickness=thickness,
+        jitter=jitter,
+        seed=seed,
+        rows=1,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+        printer=printer,
+    )
+
+
+def leaf_collar(
+    ring_radius: float,
+    leaf_length: float,
+    leaf_width: float,
+    count: int,
+    overlap: float = 0.3,
+    droop_deg: float = 20.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+    shape: str = "leaf",
+) -> Any:
+    """A ring of overlapping drooping leaves: the fur-collar answer.  Base Z = 0.
+
+    One leaf, arrayed.  The leaves lie on two radii a *solved* distance apart,
+    so alternate leaves lie **over** their neighbours instead of grazing them --
+    that is where the depth in a fur band comes from, and it is also why the
+    booleans stay clean.  Their roots are buried in a solid band whose bore is
+    ``ring_radius`` plus a slide fit, so the collar drops over a cylinder of
+    that radius and the whole thing is one watertight solid however the leaves
+    fall.  Pass a **negative** ``clearance`` for a collar you union onto a base
+    instead: the band then bites into it rather than sitting a fit away from it.
+
+    ``leaf_width`` is a request: a leaf narrower than its share of the ring is
+    widened to ``pitch x (1 + overlap)`` so the band never shows a gap between
+    leaves, and the widening is reported.
+
+    ``droop_deg`` is the leaf's lean **from vertical**, the same convention the
+    overhang check uses -- 0 hangs the leaves flat against the base, and the
+    number *is* the overhang angle of their undersides, so it is clamped to
+    ``max_unsupported_overhang_deg`` minus the tessellation margin.
+
+    ``jitter`` (0 to 1) varies each leaf's width, length, angle, roll and droop
+    by a deterministic hash of ``(seed, leaf index)`` -- same seed, same collar,
+    on every machine.  It is what stops twenty identical leaves reading as a
+    machined part.  It can only lean a leaf **further** out, never less far, so
+    it can never make the ring's worst overhang worse than the droop you asked
+    for.
+
+    Guarantees
+    ----------
+    * **One watertight solid.**  Every leaf root is inside the band, so the
+      collar is connected at any count, overlap or jitter -- and the two layers
+      are separated by a numerically solved gap, so neighbouring leaves never
+      graze each other.  A grazing pair is invisible on screen and comes back as
+      ``min_wall: fail``; that is the failure this helper's clearance solver
+      exists for.
+    * **No feather edges.**  Each leaf is a prism -- a smooth outline extruded
+      along its own normal -- so every convex edge is 90 deg, and the leaf ends
+      on a straight land at least ``1.5 x min_feature`` wide instead of a point.
+      The band's bore ends on a land for the same reason.
+    * **The leaf undersides self-support**: ``droop_deg`` is clamped into the
+      printable window.
+    * **What is left over is named, not hidden.**  ``leaf_collar_plan(...)``
+      returns ``support_free`` and an ``unsupported`` list with the area and the
+      angle of every downward face the collar still has: the leaf tip lands
+      (which vanish at ``droop_deg >= 90 - max_unsupported_overhang_deg``, a
+      40-48 deg window on the default profile) and the band's bottom rim (which
+      is inside the part as soon as you union the collar onto a base).
+
+    Example -- a collar round a 45 mm bowl ring::
+
+        part += Pos(0, 0, 34.0) * forge_lib.leaf_collar(
+            45.0, 26.0, 20.0, 14, overlap=0.35, droop_deg=44.0, jitter=0.35)
+    """
+    plan = leaf_collar_plan(
+        ring_radius,
+        leaf_length,
+        leaf_width,
+        count,
+        overlap,
+        droop_deg,
+        thickness,
+        jitter,
+        seed,
+        printer,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+        shape=shape,
+    )
+    solid = _ornament_solid(plan)
+    _attach(solid, "forge_ornament_plan", plan)
+    return solid
+
+
+def petal_crown_plan(
+    ring_radius: float,
+    petal_length: float,
+    petal_width: float,
+    count: int,
+    overlap: float = 0.15,
+    flare_deg: float = 25.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+) -> Dict[str, Any]:
+    """The crown :func:`petal_crown` will build."""
+    return _ornament_plan(
+        ring_radius,
+        petal_length,
+        petal_width,
+        count,
+        shape="petal",
+        direction="up",
+        lean_deg=flare_deg,
+        overlap=overlap,
+        thickness=thickness,
+        jitter=jitter,
+        seed=seed,
+        rows=1,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+        printer=printer,
+    )
+
+
+def petal_crown(
+    ring_radius: float,
+    petal_length: float,
+    petal_width: float,
+    count: int,
+    overlap: float = 0.15,
+    flare_deg: float = 25.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+) -> Any:
+    """:func:`leaf_collar` turned the other way up: petals standing in a ring.
+
+    Same machinery, same guarantees, and one extra one that makes it the
+    cheaper sibling: **a crown is genuinely support-free**.  Its band sits on
+    the plate, the petals lean *outward as they rise*, and their tip lands face
+    upward -- so unlike a drooping collar it has no downward face at all, and
+    the overhang check passes rather than warning.
+
+    ``flare_deg`` is the lean from vertical, clamped to the overhang window;
+    everything else reads exactly as :func:`leaf_collar`.
+
+    Use it for a crown, a ruff standing up round a neck, a flower, a fan of
+    fins, the spikes on a lid.
+    """
+    plan = petal_crown_plan(
+        ring_radius,
+        petal_length,
+        petal_width,
+        count,
+        overlap,
+        flare_deg,
+        thickness,
+        jitter,
+        seed,
+        printer,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+    )
+    solid = _ornament_solid(plan)
+    _attach(solid, "forge_ornament_plan", plan)
+    return solid
+
+
+def scale_band_plan(
+    ring_radius: float,
+    scale_length: float,
+    scale_width: float,
+    count: int,
+    rows: int = 3,
+    overlap: float = 0.35,
+    droop_deg: float = 30.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+) -> Dict[str, Any]:
+    """The band :func:`scale_band` will build."""
+    return _ornament_plan(
+        ring_radius,
+        scale_length,
+        scale_width,
+        count,
+        shape="scale",
+        direction="down",
+        lean_deg=droop_deg,
+        overlap=overlap,
+        thickness=thickness,
+        jitter=jitter,
+        seed=seed,
+        rows=rows,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+        printer=printer,
+    )
+
+
+def scale_band(
+    ring_radius: float,
+    scale_length: float,
+    scale_width: float,
+    count: int,
+    rows: int = 3,
+    overlap: float = 0.35,
+    droop_deg: float = 30.0,
+    thickness: Optional[float] = None,
+    jitter: float = 0.0,
+    seed: int = 0,
+    printer: Optional[Mapping[str, Any]] = None,
+    *,
+    clearance: Optional[float] = None,
+    tip_land: Optional[float] = None,
+    layers: int = 2,
+) -> Any:
+    """Overlapping roof-tile scales, in rows down a band.  Base Z = 0.
+
+    :func:`leaf_collar`'s machinery with a short, wide, round-ended element and
+    more than one row: each row is offset half a pitch and drops about
+    ``(1 - overlap)`` of a scale-length below the one above it, so the rows
+    cover each other the way tiles do.
+
+    The row spacing is a **floor**, not a request.  A drooping element travels
+    outward as it falls, so the row below has to start that much further out to
+    clear the row above -- which is exactly what the band's conical skirt gives
+    it, and the step is raised until it does.  ``droop_deg`` therefore has to be
+    more than a couple of degrees for rows to be possible at all; at zero the
+    rows would land on top of each other and the helper says so.
+
+    Same guarantees as :func:`leaf_collar` -- one watertight solid, no feather
+    edges, the droop clamped into the printable window, and every remaining
+    downward face named in ``scale_band_plan(...)["unsupported"]``.  Scales are
+    short, so at a droop under 42 deg their tip lands are the thing the plan
+    reports; at 42 to 48 they come inside the limit like everything else.
+
+    Use it for dragon hide, pine cones, fish, armour, roof tiles.
+    """
+    plan = scale_band_plan(
+        ring_radius,
+        scale_length,
+        scale_width,
+        count,
+        rows,
+        overlap,
+        droop_deg,
+        thickness,
+        jitter,
+        seed,
+        printer,
+        clearance=clearance,
+        tip_land=tip_land,
+        layers=layers,
+    )
+    solid = _ornament_solid(plan)
+    _attach(solid, "forge_ornament_plan", plan)
+    return solid
+
+
 __all__ = [
     "DEFAULT_DEPTH_EXTRA_MM",
     "DEFAULT_PEG_DIAMETER_MM",
@@ -2175,11 +3821,15 @@ __all__ = [
     "KEY_HEIGHT_RATIO",
     "KEY_WIDTH_RATIO",
     "MAX_BAND_CUTTERS",
+    "MAX_ORNAMENT_ELEMENTS",
+    "MAX_OUTLINE_POINTS",
+    "MIN_OUTLINE_POINTS",
     "MIN_RELIEF_DEPTH_MM",
     "MIN_TAPER_HEIGHT_MM",
     "MOUTH_OVERSHOOT_MM",
     "OVERHANG_SAFETY_DEG",
     "PrintabilityError",
+    "TIP_LAND_FEATURE_RATIO",
     "arcade_base",
     "arcade_base_plan",
     "blunted_taper",
@@ -2189,6 +3839,8 @@ __all__ = [
     "fit_tolerance",
     "flared_lip",
     "flared_lip_plan",
+    "leaf_collar",
+    "leaf_collar_plan",
     "magnet_pocket",
     "magnet_pocket_plan",
     "max_flare_for",
@@ -2198,11 +3850,17 @@ __all__ = [
     "min_wall",
     "peg",
     "peg_spec",
+    "petal_crown",
+    "petal_crown_plan",
     "profile",
+    "scale_band",
+    "scale_band_plan",
     "screw_boss",
     "screw_boss_plan",
     "shell_box",
     "shell_box_plan",
+    "silhouette_part",
+    "silhouette_part_plan",
     "socket_for",
     "textured_band",
     "textured_band_plan",
