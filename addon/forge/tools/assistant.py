@@ -199,6 +199,10 @@ class ForgeChatTurn(PropertyGroup):
 
     role: StringProperty(name="Role", default="you")  # "you" | "forge"
     text: StringProperty(name="Text", default="")
+    #: True when this turn came from a buddy check-in rather than from the
+    #: artist typing.  The panel labels those differently, because an answer
+    #: nobody asked for reads as a bug unless it says where it came from.
+    check_in: BoolProperty(default=False)
 
 
 class ForgeActivityLine(PropertyGroup):
@@ -263,11 +267,12 @@ def set_status(props, message, error=False):
         print("[Forge/Assistant]", text)
 
 
-def append_turn(props, role, text):
+def append_turn(props, role, text, check_in=False):
     """Add a line and trim the log to the last ``MAX_TURNS`` exchanges."""
     entry = props.log.add()
     entry.role = role
     entry.text = str(text or "").strip()[:4000]
+    entry.check_in = bool(check_in)
     while len(props.log) > MAX_TURNS * 2:
         props.log.remove(0)
     return entry
@@ -352,11 +357,81 @@ def _alive(props):
 # scene context — what the assistant is told about the file
 # ---------------------------------------------------------------------------
 
+#: How many selected objects travel with a message.  A sculptor with 400 objects
+#: selected has told us nothing by selecting them; the first ten plus a count is
+#: the whole signal.
+MAX_SELECTED = 10
+
+
 def _dimensions_mm(obj):
     try:
         return [round(float(v) * 1000.0, 1) for v in obj.dimensions]
     except (AttributeError, TypeError, ValueError):
         return None
+
+
+def _selected_names(context):
+    """The names of the selected objects, capped, never raising.
+
+    Guarded at every step: ``selected_objects`` does not exist on every context
+    (``--background`` and some override contexts have none), and an object can
+    go away between the list and the read.
+    """
+    names = []
+    try:
+        selected = list(getattr(context, "selected_objects", None) or [])
+    except (AttributeError, TypeError, RuntimeError):
+        selected = []
+    if not selected:
+        view_layer = getattr(context, "view_layer", None)
+        try:
+            selected = [obj for obj in getattr(view_layer, "objects", [])
+                        if obj.select_get()]
+        except (AttributeError, TypeError, RuntimeError, ReferenceError):
+            selected = []
+    for obj in selected[:MAX_SELECTED]:
+        try:
+            names.append(obj.name)
+        except (AttributeError, ReferenceError):
+            continue
+    if len(selected) > MAX_SELECTED:
+        names.append("... and %d more" % (len(selected) - MAX_SELECTED))
+    return names
+
+
+def _brush_summary(context):
+    """``{"name", "size", "strength"}`` for the active sculpt/paint brush.
+
+    Only meaningful in a paint-like mode, so only collected there: the brush
+    that happens to be loaded while the artist is in Object Mode is noise, and
+    noise in the context is a sentence the assistant will believe.
+    """
+    mode = str(getattr(context, "mode", "") or "").upper()
+    if not (mode.startswith("SCULPT") or mode.startswith("PAINT")):
+        return None
+    tool_settings = getattr(context, "tool_settings", None)
+    if tool_settings is None:
+        return None
+    for attribute in ("sculpt", "vertex_paint", "weight_paint", "image_paint",
+                      "gpencil_paint", "curves_sculpt"):
+        paint = getattr(tool_settings, attribute, None)
+        brush = getattr(paint, "brush", None)
+        if brush is None:
+            continue
+        try:
+            summary = {"name": brush.name}
+        except (AttributeError, ReferenceError):
+            continue
+        for key, source in (("size", "size"), ("strength", "strength")):
+            value = getattr(brush, source, None)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                summary[key] = round(float(value), 4)
+        symmetry = [axis.upper() for axis in ("x", "y", "z")
+                    if getattr(paint, "use_symmetry_%s" % axis, False) is True]
+        if symmetry:
+            summary["symmetry"] = symmetry
+        return summary
+    return None
 
 
 def collect_context(context=None):
@@ -390,10 +465,27 @@ def collect_context(context=None):
     if script_path:
         out["script_path"] = bpy.path.abspath(script_path)
 
+    # Phase 8: where the artist actually IS. Mode, what they have selected and
+    # (in sculpt or paint) the brush in their hand. Every one of these is a
+    # cheap attribute read and every one is guarded, because this runs on every
+    # message including the ones sent from a headless harness with no viewport,
+    # no selection and no brush.
     try:
         out["mode"] = str(context.mode)
     except (AttributeError, TypeError):
-        pass
+        obj = getattr(getattr(context, "view_layer", None), "objects", None)
+        obj = getattr(obj, "active", None)
+        if obj is not None:
+            out["mode"] = str(getattr(obj, "mode", "OBJECT"))
+
+    selected = _selected_names(context)
+    if selected:
+        out["selected_objects"] = selected
+
+    brush = _brush_summary(context)
+    if brush:
+        out["brush"] = brush
+
     out["blender_version"] = bpy.app.version_string
     return out
 
@@ -435,12 +527,22 @@ def cost_footer(props):
     return "This session: $%.2f" % total
 
 
-def send_message(context, props, message, conversation="continue"):
+def send_message(context, props, message, conversation="continue",
+                 check_in=False, log_text=None, extra_context=None,
+                 on_reply=None):
     """Send one message the way the Send button does. Returns an operator set.
 
     Every path into the assistant goes through here — the Send button, the
-    quick-action chips, anything added later — so the attachment rules, the
-    chat log and the queue behaviour cannot drift apart between them.
+    quick-action chips, the buddy's check-ins, anything added later — so the
+    attachment rules, the chat log and the queue behaviour cannot drift apart
+    between them.
+
+    ``check_in`` marks both turns as a buddy check-in (the panel labels them);
+    ``log_text`` is what the chat log shows for the outgoing turn when the real
+    message is a wall of paths and numbers nobody wants in a sidebar;
+    ``extra_context`` is merged over the collected scene context; ``on_reply``
+    is called with the finished reply text so the buddy can remember what it
+    already said.
     """
     message = str(message or "").strip()
     if not message:
@@ -459,6 +561,8 @@ def send_message(context, props, message, conversation="continue"):
     scene_context = collect_context(context)
     if attachment:
         scene_context["image_path"] = attachment
+    if isinstance(extra_context, dict):
+        scene_context.update(extra_context)
 
     payload = {
         "message": message,
@@ -471,7 +575,7 @@ def send_message(context, props, message, conversation="continue"):
     ask_url = bridge_url("/ask")
     job_url_base = bridge_url("/job/")
 
-    append_turn(props, "you", message)
+    append_turn(props, "you", log_text if log_text else message, check_in=check_in)
     props.message = ""
     props.busy = True
     props.queued = False
@@ -521,11 +625,17 @@ def send_message(context, props, message, conversation="continue"):
         if isinstance(total, (int, float)):
             props.session_cost = float(total)
         if error is not None:
-            append_turn(props, "forge", str(error))
+            append_turn(props, "forge", str(error), check_in=check_in)
             set_status(props, str(error), error=True)
             return
         if state.get("state") == "done":
-            append_turn(props, "forge", state.get("reply") or "(no reply)")
+            reply = state.get("reply") or "(no reply)"
+            append_turn(props, "forge", reply, check_in=check_in)
+            if on_reply is not None:
+                try:
+                    on_reply(reply)
+                except Exception:  # noqa: BLE001 - a note is never worth a failure
+                    traceback.print_exc()
             props.turns += 1
             if attachment:
                 # One message per attachment. It has been looked at now;

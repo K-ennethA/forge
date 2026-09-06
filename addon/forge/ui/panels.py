@@ -20,6 +20,7 @@ from .. import server
 from ..prefs import get_prefs, service_url
 from ..tools import (
     assistant,
+    buddy,
     flows,
     model,
     partforge,
@@ -125,8 +126,14 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
                 lines = _wrap(entry.text, assistant.LOG_LINE_WIDTH)
                 header = column.row(align=True)
                 header.active = you
-                header.label(text="You:" if you else "Forge:",
-                             icon="USER" if you else "LIGHT")
+                # A check-in says so. An answer nobody asked for reads as a bug
+                # unless the log names where it came from.
+                if entry.check_in:
+                    header.label(text="Check-in:" if not you else "You asked:",
+                                 icon="HIDE_OFF")
+                else:
+                    header.label(text="You:" if you else "Forge:",
+                                 icon="USER" if you else "LIGHT")
                 if len(lines) > assistant.LOG_MAX_LINES:
                     # Truncated below: give them the whole thing in a window
                     # rather than a message that stops mid-sentence.
@@ -225,6 +232,34 @@ class VIEW3D_PT_forge_assistant(_ForgePanel, Panel):
                          icon="ERROR" if chat.status_is_error else "INFO")
             for line in lines[1:4]:
                 status.label(text=line)
+
+        # Buddy mode: a teacher's eyes on the work in progress. The button is
+        # the whole feature for most people ("look at this now"); the toggle
+        # underneath is the same thing on a timer, off by default, and it says
+        # in words that each look costs a turn.
+        bud = buddy.get_props(context)
+        if bud is not None:
+            box = layout.box()
+            row = box.row(align=True)
+            row.enabled = not chat.busy
+            row.operator("forge.buddy_check", text="Check my work",
+                         icon="HIDE_OFF")
+            watch = box.row(align=True)
+            watch.prop(bud, "enabled", text="Look every", toggle=True,
+                       icon="TIME")
+            sub = watch.row(align=True)
+            sub.enabled = bud.enabled
+            sub.prop(bud, "interval_minutes", text="")
+            cost = box.row()
+            cost.active = False
+            cost.scale_y = 0.7
+            cost.label(text="%s min. %s"
+                            % (bud.interval_minutes, buddy.TURN_COST_NOTE))
+            if bud.status:
+                note = box.row()
+                note.active = False
+                note.scale_y = 0.7
+                note.label(text=_wrap(bud.status, 36)[0], icon="INFO")
 
         # Undo, in words, for someone who does not know Ctrl+Z is undo: every
         # command the assistant ran pushed a named checkpoint before it ran.

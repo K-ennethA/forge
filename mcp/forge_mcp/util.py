@@ -2434,6 +2434,171 @@ def fmt_preview_report(result: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+# --- Phase 8: the workspace copilot ------------------------------------------
+
+#: Bumped per capture, like the preview counter and for the same reason: the
+#: point of a check-in is comparing this look against the last one.
+_checkin_counter = 0
+
+
+def checkin_path(kind: str, suffix: str = ".png") -> Path:
+    """A fresh scratch file for one piece of check-in evidence."""
+    global _checkin_counter
+
+    _checkin_counter += 1
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", str(kind)).strip("-") or "checkin"
+    path = Path(config.PREVIEWS_DIR) / f"checkin-{_checkin_counter:03d}-{slug}{suffix}"
+    ensure_parent_dir(path)
+    return path
+
+
+def normalize_axes(axes: Any) -> Any:
+    """Validate the `axes` argument of `set_overlays`, or refuse by name.
+
+    Accepts a list of x/y/z, the word "all", or a bool — the same three forms
+    the add-on takes — and refuses anything else HERE, so a typo costs a
+    sentence rather than a round trip to Blender.
+    """
+    if axes is None or isinstance(axes, bool):
+        return axes
+    if isinstance(axes, str):
+        text = axes.strip().lower()
+        if text in {"all", "xyz", "none", ""}:
+            return text
+        axes = list(text.replace(",", " ").split()) or list(text)
+    if not isinstance(axes, (list, tuple)):
+        raise ForgeError(
+            'axes must be a list like ["x", "y", "z"], the word "all", or '
+            f"true/false (got {axes!r})."
+        )
+    out = []
+    for entry in axes:
+        letter = str(entry).strip().lower().lstrip("+")
+        if letter not in {"x", "y", "z"}:
+            raise ForgeError(
+                f'axes entries must be "x", "y" or "z" (got {entry!r}).'
+            )
+        if letter not in out:
+            out.append(letter)
+    return out
+
+
+def fmt_workspace_report(result: Mapping[str, Any], extra: Sequence[str] = ()) -> str:
+    """The one shape every workspace tool answers in: what changed, and where.
+
+    Both halves are the point. "Done" alone leaves the artist exactly as
+    dependent as they were; the `where` line is the difference between doing
+    something for someone and teaching them while you do it. The model is told,
+    in the last line, to pass the pair on in ONE sentence — because a nine-step
+    tutorial is the bug this whole phase exists to fix.
+    """
+    changed = str(result.get("changed") or "Done.")
+    where = str(result.get("where") or "")
+    lines = [changed]
+    if where:
+        lines.append(f"  where the artist would do it themselves: {where}")
+    viewports = result.get("viewports")
+    if isinstance(viewports, int) and viewports > 1:
+        lines.append(f"  applied to all {viewports} open 3D viewports")
+    for entry in extra:
+        if entry:
+            lines.append(f"  {entry}")
+    lines.append(
+        "  Tell them in ONE line: what changed, then where the switch lives. "
+        "Do not write out the steps — you already did it."
+    )
+    return "\n".join(lines)
+
+
+def _place(location: Any) -> str:
+    values = [fmt_number(v, 1) for v in (location or [])]
+    return "(" + ", ".join(values) + ") mm" if values else "somewhere"
+
+
+def fmt_diagnose_report(result: Mapping[str, Any]) -> str:
+    """`mesh_diagnose` as the numbers a teacher would actually quote.
+
+    Ordered worst-first and every entry carries a place, because "there is some
+    self-intersection" is not a note an artist can act on and "the left ear
+    passes through the head at (-42, 18, 96) mm" is.
+    """
+    name = result.get("object") or "the mesh"
+    lines = [
+        f"{name}: {fmt_number(result.get('face_count'), 0)} faces, "
+        f"{fmt_number(result.get('vertex_count'), 0)} vertices"
+        + (" (modifiers applied)" if result.get("evaluated") else ""),
+        "",
+    ]
+    for sentence in result.get("verdict") or []:
+        lines.append(f"  {sentence}")
+
+    clip = result.get("self_intersections") or {}
+    for example in (clip.get("examples") or [])[:5]:
+        lines.append(f"    clipping at {_place(example.get('location_mm'))}")
+    topo = result.get("topology") or {}
+    for example in (topo.get("edge_examples") or [])[:5]:
+        lines.append(f"    {example.get('kind')} at "
+                     f"{_place(example.get('location_mm'))}")
+    density = result.get("density") or {}
+    for entry in (density.get("starved") or [])[:3]:
+        lines.append(f"    starved: {entry.get('faces')} faces around "
+                     f"{_place(entry.get('location_mm'))}, about "
+                     f"{fmt_number(entry.get('times_median'), 1)}x coarser — "
+                     "remesh there")
+    for entry in (density.get("dense") or [])[:3]:
+        lines.append(f"    crammed: {entry.get('faces')} faces around "
+                     f"{_place(entry.get('location_mm'))}, about "
+                     f"{fmt_number(entry.get('times_median'), 1)}x denser")
+    for example in ((result.get("ngons") or {}).get("examples") or [])[:3]:
+        lines.append(f"    {example.get('sides')}-sided face at "
+                     f"{_place(example.get('location_mm'))}")
+
+    ngons = result.get("ngons") or {}
+    if ngons.get("count"):
+        lines.append(f"  {ngons['count']} faces have more than four sides "
+                     f"(largest {ngons.get('max_sides')})")
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    if result.get("clean"):
+        lines.append("  Nothing to fix numerically — say so briefly and let "
+                     "them get back to work.")
+    else:
+        lines.append("  Name at most THREE of these, each with its place and "
+                     "its fix. Offer to do the ones a tool can do.")
+    return "\n".join(lines)
+
+
+def fmt_check_in_report(images: Sequence[tuple], diagnose: Any,
+                        scene: Any, notes: Sequence[str] = ()) -> str:
+    """Everything `check_my_work` gathered, with the instruction to LOOK first."""
+    lines = ["Here is everything to look at before you say anything.", ""]
+    for label, path in images:
+        lines.append(f"  {label}:")
+        lines.append(f"    {path}")
+    if images:
+        lines.append("")
+        lines.append("READ %s NOW with the Read tool. A critique written "
+                     "without looking is a guess."
+                     % ("BOTH FILES" if len(images) > 1 else "THAT FILE"))
+        lines.append("")
+    if scene:
+        lines.append("--- Where they are working ---")
+        lines.append(str(scene).rstrip())
+        lines.append("")
+    if diagnose:
+        lines.append("--- Mesh check ---")
+        lines.append(str(diagnose).rstrip())
+        lines.append("")
+    for note in notes:
+        lines.append(f"  could not gather: {note}")
+    lines.append(
+        "Then answer as a teacher: one clause on what is working, then at most "
+        "three concrete things with WHERE and the fix. Short — they are mid-"
+        "stroke."
+    )
+    return "\n".join(lines)
+
+
 # --- Phase 6b (flows) --------------------------------------------------------
 
 #: Blender socket commands a flow step may call — the command registry from
@@ -2452,6 +2617,10 @@ KNOWN_BLENDER_OPS = frozenset({
     "load_reference",
     # looking at the result — a flow can end by leaving a picture on disk
     "render_preview",
+    # the workspace copilot (Phase 8): a flow can end by putting the artist in
+    # the right mode, looking at the right angle, with the grid on
+    "set_view", "frame_object", "local_view", "set_shading", "set_overlays",
+    "set_mode", "sculpt_brush", "capture_viewport", "mesh_diagnose",
     # PartForge
     "load_mesh", "load_meshes", "partforge_open",
     # imported meshes (Phase 6d)

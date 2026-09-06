@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
 
-from . import __version__, blender_client, config, meshgen_client, service_client
+from . import __version__, blender_client, config, meshgen_client, service_client, util
 from .errors import BackendError, BackendUnavailable, ForgeError
 from .util import (
     GLTF_SUFFIXES,
@@ -29,8 +29,10 @@ from .util import (
     flow_path,
     flow_slug,
     fmt_action_report,
+    fmt_check_in_report,
     fmt_check_report,
     fmt_cloth_report,
+    fmt_diagnose_report,
     fmt_export_report,
     fmt_flow_list,
     fmt_flow_run_report,
@@ -62,12 +64,14 @@ from .util import (
     fmt_uv_report,
     fmt_vector,
     fmt_weights_report,
+    fmt_workspace_report,
     fmt_written_files,
     generated_object_name,
     keys_frame_range,
     meshgen_image_path,
     next_rig_step,
     normalize_action_name,
+    normalize_axes,
     normalize_actions,
     normalize_bone_mapping,
     normalize_face_indices,
@@ -153,6 +157,18 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   parametric: a generated mesh has no crisp faces and no exact millimetres. It
   always arrives voxel-repaired and print-checked; say the wait out loud before
   starting, and meshgen_status reports the stage while it runs.
+- The artist's WORKSPACE is yours to drive, not to describe. set_view,
+  frame_object, local_view, set_shading, set_overlays, set_mode and sculpt_brush
+  run inside their live Blender: "turn the grid on for x, y and z" is
+  set_overlays(grid=True, axes=["x","y","z"]), one call, never a list of steps.
+  Every one of them returns what changed AND where the switch lives — pass both
+  on in ONE line so they learn while you work. Brush technique stays theirs;
+  brush selection and settings are yours.
+- check_my_work and mesh_diagnose are the buddy tools. check_my_work gathers a
+  screenshot of what they are looking at, a clean render and the mesh numbers in
+  one call; Read the pictures before commenting. mesh_diagnose locates clipping
+  (self-intersections), unsealed edges and density hotspots in millimetres, so a
+  critique can say WHERE. Name at most three things, each with its fix.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -691,6 +707,366 @@ def render_preview(
     )
     result.setdefault("path", str(out))
     return fmt_preview_report(result)
+
+
+# ---------------------------------------------------------------------------
+# The workspace copilot (Phase 8) — you drive their Blender, you don't describe it
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def set_view(
+    view: Literal["front", "back", "left", "right", "side", "top", "bottom",
+                  "iso", "camera"] = "front",
+    ortho: Optional[bool] = None,
+) -> str:
+    """Turn the artist's viewport to a named angle. DO IT — never describe it.
+
+    You are running inside their Blender. "Show me the front", "let me see it
+    from the side", "get me back to a 3/4 view" are one call, not a tutorial.
+
+    `front`/`back`/`left`/`right`/`top`/`bottom` are flat (orthographic) by
+    default — the projection you can measure against a reference, and the same
+    three `render_preview` and `load_reference` use. `iso` is the 3/4 orbit and
+    stays in perspective. `camera` looks through the scene camera.
+
+    Applies to every open 3D viewport. Reply with what changed plus the one
+    line saying where the switch lives — the numpad — so they can do it
+    themselves next time.
+    """
+    params: Dict[str, Any] = {"view": view}
+    if ortho is not None:
+        params["ortho"] = bool(ortho)
+    return fmt_workspace_report(blender_client.send_command("set_view", params))
+
+
+@app.tool()
+def frame_object(
+    object: Optional[str] = None,
+    all: bool = False,
+    margin: Optional[float] = None,
+) -> str:
+    """Zoom their viewport onto one object (or everything visible). DO IT.
+
+    "I can't see it", "where did it go", "zoom in on the head" — this, not a
+    paragraph about Numpad dot. Nothing is selected or deselected: their
+    selection stays theirs.
+
+    - `object`: what to frame; omit for the active object.
+    - `all`: frame every visible mesh instead.
+    - `margin`: breathing room, 1.0-4.0 (default 1.25).
+    """
+    params = _target(object)
+    if all:
+        params["all"] = True
+    if margin is not None:
+        params["margin"] = float(margin)
+    return fmt_workspace_report(blender_client.send_command("frame_object", params))
+
+
+@app.tool()
+def local_view(enable: Optional[bool] = None, object: Optional[str] = None) -> str:
+    """Isolate one object so everything else stops getting in the way. DO IT.
+
+    Local View hides everything except the selection, which is the right answer
+    to "I can't work on the ear with the body in the way".
+
+    - `enable`: true to go in, false to come out, omit to toggle.
+    - `object`: isolate this one — it is selected and made active first,
+      because Local View isolates the SELECTION and there is no other way to
+      say which object was meant.
+    """
+    params = _target(object)
+    if enable is not None:
+        params["enable"] = bool(enable)
+    return fmt_workspace_report(blender_client.send_command("local_view", params))
+
+
+@app.tool()
+def set_shading(
+    mode: Literal["solid", "wireframe", "material", "rendered"] = "solid",
+) -> str:
+    """Switch how their viewport draws the model. DO IT.
+
+    `solid` (grey clay, fast, shows form), `wireframe` (see-through, edges
+    only — what you want for checking topology), `material` (the object's own
+    colours), `rendered` (full lighting, slowest).
+
+    Applies to every open 3D viewport.
+    """
+    return fmt_workspace_report(
+        blender_client.send_command("set_shading", {"mode": mode})
+    )
+
+
+@app.tool()
+def set_overlays(
+    grid: Optional[bool] = None,
+    axes: Optional[Union[List[str], bool, str]] = None,
+    wireframe: Optional[bool] = None,
+    stats: Optional[bool] = None,
+    overlays: Optional[bool] = None,
+    origins: Optional[bool] = None,
+    cursor: Optional[bool] = None,
+    text: Optional[bool] = None,
+    face_orientation: Optional[bool] = None,
+    xray: Optional[bool] = None,
+) -> str:
+    """Turn viewport overlays on and off — the grid, the X/Y/Z axis lines, more.
+
+    **This is the answer to "I want to enable grid view for x, y, z axis".**
+    One call: `set_overlays(grid=True, axes=["x", "y", "z"])`. Not nine steps.
+    You are inside their Blender and every one of those steps is a property you
+    can set. Do it, then say in one line that it is on and that the Overlays
+    dropdown is where they toggle it themselves.
+
+    - `grid`: the floor grid (and the orthographic grid, which is the same idea
+      seen from the front/side/top).
+    - `axes`: which coloured axis lines show — `["x","y","z"]`, `"all"`, `true`
+      for all three, or `[]` for none. The list is authoritative: an axis not
+      in it is turned OFF.
+    - `wireframe`: draw the edges over the surface.
+    - `stats`: the vertex/face counter.
+    - `overlays`: the master switch for all of them.
+    - `origins`, `cursor`, `text`, `face_orientation` (blue outside / red
+      inside — the fast way to spot flipped normals), `xray` (see-through).
+
+    Anything you do not name is left exactly as the artist had it. Applies to
+    every open 3D viewport.
+    """
+    params: Dict[str, Any] = {}
+    for key, value in (
+        ("grid", grid), ("wireframe", wireframe), ("stats", stats),
+        ("overlays", overlays), ("origins", origins), ("cursor", cursor),
+        ("text", text), ("face_orientation", face_orientation), ("xray", xray),
+    ):
+        if value is not None:
+            params[key] = bool(value)
+    if axes is not None:
+        params["axes"] = normalize_axes(axes)
+    if not params:
+        raise ForgeError(
+            "Name at least one overlay to change: grid, axes, wireframe, stats, "
+            "overlays, origins, cursor, text, face_orientation, xray."
+        )
+    return fmt_workspace_report(blender_client.send_command("set_overlays", params))
+
+
+@app.tool()
+def set_mode(
+    mode: Literal["object", "edit", "sculpt", "vertex_paint", "weight_paint",
+                  "texture_paint", "pose"] = "object",
+    object: Optional[str] = None,
+) -> str:
+    """Put Blender into a mode. DO IT — do not tell them where the dropdown is.
+
+    "Put me in sculpt mode", "I want to edit the vertices", "let me paint
+    weights" are one call. The object is checked first: Sculpt Mode on an
+    armature comes back as a sentence, not a Blender error box nobody sees.
+
+    - `object`: which object goes into that mode; omit for the active one. It
+      is selected and made active, because Blender's mode belongs to the active
+      object and switching without that is the commonest silent no-op.
+
+    Sculpt Mode is usually the *start* of a shape-3 answer, not the whole of
+    it: put them in the mode, set the brush with `sculpt_brush`, and THEN walk
+    them through the strokes, which are genuinely theirs.
+    """
+    params = _target(object)
+    params["mode"] = mode
+    return fmt_workspace_report(blender_client.send_command("set_mode", params))
+
+
+@app.tool()
+def sculpt_brush(
+    brush: Optional[str] = None,
+    size: Optional[int] = None,
+    strength: Optional[float] = None,
+    symmetry_x: Optional[bool] = None,
+    symmetry_y: Optional[bool] = None,
+    symmetry_z: Optional[bool] = None,
+    dyntopo: Optional[bool] = None,
+    object: Optional[str] = None,
+) -> str:
+    """Pick their sculpt brush and set it up. DO IT.
+
+    The line to hold: brush **technique** is theirs — nobody can drag their
+    stylus for them, and "how do I sculpt a fold" is a shape-3 walkthrough.
+    Brush **selection and settings** are yours. So when they say "I want to add
+    wrinkles to the cloak", set the Crease brush up for them first, then give
+    the strokes.
+
+    - `brush`: the name (`"Clay Strips"`, `"Draw"`, `"Crease Sharp"`,
+      `"Smooth"`, `"Grab"`, `"Inflate/Deflate"`). Case- and
+      underscore-insensitive, and a miss comes back naming the closest brush
+      that exists. Omit it to change only the settings.
+    - `size`: brush radius in screen pixels, 1-5000.
+    - `strength`: 0.0-10.0.
+    - `symmetry_x` / `_y` / `_z`: mirror every stroke. Turn X on for a face.
+    - `dyntopo`: dynamic topology — the mesh grows new polygons where they
+      sculpt. The right answer to a starved region they want detail in.
+
+    The object is put into Sculpt Mode first if it is not already, because that
+    is what makes the brushes exist at all.
+    """
+    params = _target(object)
+    if brush is not None:
+        params["brush"] = brush
+    if size is not None:
+        params["size"] = size
+    if strength is not None:
+        params["strength"] = strength
+    for key, value in (("symmetry_x", symmetry_x), ("symmetry_y", symmetry_y),
+                       ("symmetry_z", symmetry_z), ("dyntopo", dyntopo)):
+        if value is not None:
+            params[key] = bool(value)
+    if len(params) == len(_target(object)):
+        raise ForgeError(
+            "Nothing to change: give a brush name, a size, a strength, a "
+            "symmetry axis or dyntopo."
+        )
+    result = blender_client.send_command("sculpt_brush", params)
+    extra = []
+    available = result.get("available") or []
+    if available:
+        extra.append("other brushes: " + ", ".join(str(n) for n in available[:12])
+                     + (", ..." if len(available) > 12 else ""))
+    return fmt_workspace_report(result, extra)
+
+
+# ---------------------------------------------------------------------------
+# Buddy mode — a teacher's eyes on the work in progress
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def mesh_diagnose(
+    object: Optional[str] = None,
+    examples: Optional[int] = None,
+    density_ratio: Optional[float] = None,
+) -> str:
+    """Measure what is wrong with a mesh, and WHERE, in millimetres.
+
+    This is the numbers behind a critique. A render shows you the form; this
+    finds what a render cannot: the surface passing through itself (the
+    artist's word for it is **clipping**), edges that are not sealed, faces
+    with no area, regions with far too few or far too many polygons ("we need
+    to remesh here"), ngons, stray geometry, and a scale that is a units
+    mistake rather than a decision.
+
+    Every defect comes back with a location in millimetres. Use them. "There is
+    some self-intersection" is worth nothing to a sculptor; "the left ear
+    passes through the head around (-42, 18, 96) mm" is somewhere to put the
+    mouse.
+
+    - `object`: which mesh; omit for the active object.
+    - `examples`: located examples per problem, 1-25 (default 5).
+    - `density_ratio`: how far off the median a region must be before it
+      counts, default 4.
+
+    Read-only and fast (under a second on a 200 000-face sculpt), so it is safe
+    to run whenever you are about to comment on someone's model. Name at most
+    THREE things back — a list of nine defects is not a critique.
+    """
+    params = _target(object)
+    if examples is not None:
+        if isinstance(examples, bool) or not isinstance(examples, int):
+            raise ForgeError("examples must be a whole number between 1 and 25.")
+        if not 1 <= examples <= 25:
+            raise ForgeError(
+                f"examples must be between 1 and 25 (got {examples})."
+            )
+        params["examples"] = examples
+    if density_ratio is not None:
+        if isinstance(density_ratio, bool) or not isinstance(density_ratio, (int, float)):
+            raise ForgeError("density_ratio must be a number.")
+        if not 1.5 <= float(density_ratio) <= 100.0:
+            raise ForgeError(
+                f"density_ratio must be between 1.5 and 100 (got {density_ratio})."
+            )
+        params["density_ratio"] = float(density_ratio)
+    return fmt_diagnose_report(
+        blender_client.send_command("mesh_diagnose", params)
+    )
+
+
+@app.tool()
+def check_my_work(object: Optional[str] = None, resolution: Optional[int] = None) -> str:
+    """Look over the artist's shoulder: their view, a clean render, and the numbers.
+
+    One call gathers everything a teacher needs and hands you the paths:
+
+    1. `capture_viewport` — **what they are actually looking at**: their angle,
+       their shading, their overlays, the mask they have painted.
+    2. `render_preview` (3/4 view) — the same model lit cleanly, so the form and
+       the silhouette read.
+    3. `mesh_diagnose` — clipping, unsealed edges, density hotspots and starved
+       regions, each with a place in millimetres.
+
+    **Then Read both pictures before you say a word.** A critique written from
+    the numbers alone is half a critique, and one written from neither is a
+    guess dressed up as teaching.
+
+    Answer as a teacher, not a report: one clause on what is working, then at
+    most **three** concrete things, each with where it is and what fixes it —
+    offer to do the ones a tool can do, give numbered steps for the ones only
+    their hand can. If it is genuinely clean, say so in a line and let them get
+    back to work. Never repeat a note you already gave them.
+    """
+    images: List[tuple] = []
+    notes: List[str] = []
+
+    viewport = util.checkin_path("viewport")
+    params: Dict[str, Any] = {"path": str(viewport)}
+    if resolution is not None:
+        params["resolution"] = resolution
+    try:
+        result = blender_client.send_command(
+            "capture_viewport", params, read_timeout=config.PREVIEW_TIMEOUT
+        )
+        images.append(("what they are looking at right now",
+                       result.get("path") or str(viewport)))
+    except BackendUnavailable:
+        raise
+    except ForgeError as exc:
+        notes.append(f"no viewport screenshot ({exc})")
+
+    preview = util.checkin_path("render")
+    params = {"path": str(preview), "view": "iso", "resolution": 768,
+              "shading": "solid"}
+    name = (object or "").strip()
+    if name:
+        params["objects"] = [name]
+    try:
+        result = blender_client.send_command(
+            "render_preview", params, read_timeout=config.PREVIEW_TIMEOUT
+        )
+        images.append(("a clean 3/4 render of the same model",
+                       result.get("path") or str(preview)))
+    except BackendUnavailable:
+        raise
+    except ForgeError as exc:
+        notes.append(f"no clean render ({exc})")
+
+    diagnosis = ""
+    try:
+        diagnosis = fmt_diagnose_report(
+            blender_client.send_command("mesh_diagnose", _target(object))
+        )
+    except BackendUnavailable:
+        raise
+    except ForgeError as exc:
+        notes.append(f"no mesh check ({exc})")
+
+    scene = ""
+    try:
+        scene = fmt_scene_info(blender_client.send_command("get_scene_info"))
+    except BackendUnavailable:
+        raise
+    except ForgeError as exc:
+        notes.append(f"no scene listing ({exc})")
+
+    return fmt_check_in_report(images, diagnosis, scene, notes)
 
 
 # ---------------------------------------------------------------------------

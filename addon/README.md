@@ -177,6 +177,91 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `import_generated` | `path` (`.glb`/`.gltf`), `name?`, `repair?` (**default true**), `voxel_size?` (scene metres), `collection?` | imports what meshgen wrote and **voxel-repairs it on the way in**. Returns `{"object", "vertex_count", "face_count", "edge_count", "repaired", "path", "importer", "imported_objects", "dimensions_mm", "before": {...}, "voxel_size"?, "voxel_size_mm"?, "repair_method"?}` |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
+### Workspace commands (Phase 8 — the copilot drives the viewport)
+
+Seven commands that change what the artist is looking at, what mode they are in and
+what brush is in their hand. Every one returns **`changed`** (one plain sentence
+naming what is different) and **`where`** (the place in Blender's own UI they would
+have clicked). Those two fields are the whole teaching contract — the assistant is
+told to reply with both, in one line.
+
+All seven are in `READ_ONLY_COMMANDS`, so **none of them pushes an undo checkpoint**.
+Blender does not put viewport state in the undo stack at all, and a mode switch or a
+brush size in the undo history is noise on top of the artist's actual work.
+Transparency replaces undo: the `changed` line is what makes the change reversible
+by hand.
+
+**Which viewport:** every VIEW_3D area in every window. An artist with a quad split
+or a second monitor asked for the grid *on*, not for the grid on whichever area
+Blender happened to hand us. Quad-view sub-regions are turned too. `capture_viewport`
+is the one exception — a picture is one picture, so it uses the **largest** VIEW_3D.
+The count is reported as `viewports` in every result.
+
+**Headless:** `blender --background` still builds one off-screen screen with a
+VIEW_3D in it, which is exactly the trap — the commands would "succeed" against a
+viewport nobody is looking at. So the guard is on `bpy.app.background`, not on "is
+there an area", and the five view commands plus `capture_viewport` refuse with one
+sentence (`workspace.NO_VIEWPORT`). `set_mode` and `sculpt_brush` do **not** refuse:
+mode lives on the object and brush settings live in the scene's tool settings, so
+both are real work with no window involved.
+
+| type | params | does |
+|---|---|---|
+| `set_view` | `view` `front`\|`back`\|`left`\|`right`\|`side`\|`top`\|`bottom`\|`iso`\|`camera`, `ortho?` | turns every 3D viewport to that angle. `ortho` defaults to **flat for the axis views** and perspective for `iso`, which is Blender's own habit; `front`/`side`/`top` are the same three projections `render_preview` and `load_reference` use, so a front viewport and a front render line up. `camera` refuses with a sentence when the scene has no camera. Returns `{"view", "ortho", "viewports", "regions", "changed", "where"}` |
+| `frame_object` | `object?`, `all?`, `margin?` (1.0–4.0, default 1.25) | centres and zooms every viewport onto that object (or every visible mesh). **Nothing is selected or deselected** — the artist's selection is theirs. Returns `{"objects", "framed_all_visible", "center_mm", "size_mm", "radius_mm", "view_distance", "viewports", "changed", "where"}` |
+| `local_view` | `enable?` (omit to toggle), `object?` | isolates the selection so everything else stops getting in the way. Naming an `object` selects it and makes it active first, because Local View isolates the *selection* and there is no other way to say which one was meant. Returns `{"enabled", "object", "viewports", "viewports_changed", "changed", "where"}` |
+| `set_shading` | `mode` `solid`\|`wireframe`\|`material`\|`rendered` | the four shading balls, top right. Returns `{"mode", "viewports", "changed", "where"}` |
+| `set_overlays` | `grid?`, `axes?`, `wireframe?`, `stats?`, `overlays?`, `origins?`, `cursor?`, `text?`, `face_orientation?`, `xray?` | **the motivating case.** `{"grid": true, "axes": ["x","y","z"]}` is the whole of "I want to enable grid view for x,y,z axis". `grid` sets both the floor grid and the orthographic grid (two switches, one idea). `axes` takes a list, `"all"`, `true`, or `[]`/`false`/`"none"` — and **the list is authoritative**: an axis not in it is turned off. `xray` lives on the shading, not the overlay, which is where Blender keeps it. Anything not named is left exactly as the artist had it. Returns `{"applied", "requested", "viewports", "changed", "where"}` |
+| `set_mode` | `mode` `object`\|`edit`\|`sculpt`\|`vertex_paint`\|`weight_paint`\|`texture_paint`\|`pose`, `object?` | validates that the object type supports the mode **before** asking Blender ("Sculpt Mode only works on mesh objects"), leaves any other object's mode first, then selects and activates the target — Blender's mode belongs to the active object, and switching without that is the commonest silent no-op. Asking for a mode you are already in is a success, not an error. Spaces are accepted for underscores (`"vertex paint"`). Returns `{"mode", "blender_mode", "object", "object_type", "previous", "changed", "where"}` |
+| `sculpt_brush` | `brush?`, `size?` (1–5000 px), `strength?` (0–10), `symmetry_x/y/z?`, `dyntopo?`, `object?`, `enter_mode?` (default true) | picks the brush and sets it up. Enters Sculpt Mode first by default, because that is what makes the brush list exist. Every numeric parameter is validated **before** any mode or brush is touched. Returns `{"object", "brush", "brush_type", "size", "strength", "symmetry", "dyntopo", "mode", "available", "changed", "where"}` |
+
+**Brush names in Blender 4.3+.** Brushes became *assets*: `bpy.data.brushes` holds
+only the ones this file has already used (one, in a fresh scene) and `Paint.brush`
+is read-only. Validating against `bpy.data.brushes` alone would therefore reject
+`"Clay Strips"` in every scene where the artist had not already clicked it. So the
+catalog is the union of this file's brushes and **Blender's own essentials library**
+(62 sculpt brushes, read once from `datafiles/assets/brushes/essentials_brushes-mesh_sculpt.blend`
+and cached), and switching goes through `bpy.ops.brush.asset_activate` with a direct
+`Paint.brush` assignment tried first for Blender 4.2 and earlier. Matching is
+case-insensitive and treats `_`/`-`/space alike; a miss comes back with a
+`difflib` closest match — the `rigforge_keyframe` precedent — plus the list of what
+is actually there: *"There is no sculpt brush called 'Smoothify'. Did you mean
+'Smooth'? Brushes available: Airbrush, Blob, Clay, Clay Strips, ..."*
+
+### Buddy commands (Phase 8 — a teacher's eyes)
+
+| type | params | does |
+|---|---|---|
+| `capture_viewport` | `path` (`.png`), `resolution?` (128–4096, default 1024 — the **longer** side; the shorter one follows the viewport's own aspect) | photographs the **largest** 3D viewport with an OpenGL render under a context override: the artist's angle, their shading, their overlays, the mask they have painted. Borrows the scene's render settings and puts every one of them back. Read-only; refuses headless. Returns `{"path", "resolution", "size_bytes", "area", "shading", "perspective", "mode", "viewports", "note"}` |
+| `mesh_diagnose` | `object?`, `examples?` (1–25, default 5), `apply_modifiers?` (default true), `density_ratio?` (1.5–100, default 4) | numeric defects, each with a place in millimetres. Read-only. Returns `{"object", "vertex_count", "face_count", "edge_count", "evaluated", "self_intersections", "topology", "zero_area_faces", "ngons", "loose", "density", "scale", "notes", "duration_ms", "verdict", "clean"}` |
+
+`mesh_diagnose` in detail:
+
+| block | what it holds |
+|---|---|
+| `self_intersections` | `{count, faces, examples: [{location_mm, faces}], scanned, note?}` — the artist's **clipping**. A `BVHTree.overlap` against itself, with every pair that shares a vertex filtered out (adjacent faces touch by definition; that is not clipping). Capped at **200 000 faces**, and above that it says so in `notes` rather than silently not running |
+| `topology` | `{non_manifold_edges, boundary_edges, wire_edges, multi_face_edges, non_manifold_vertices, loose_vertices, watertight, edge_examples, vertex_examples}` — each example carries `location_mm` and a plain-words `kind` (`"open hole"`, `"loose wire"`, `"3 faces meet here"`) |
+| `zero_area_faces` | `{count, examples}` — degenerate geometry that survives remeshes and breaks normals |
+| `ngons` | `{count, max_sides, examples}` |
+| `loose` | `{vertices, wire_edges, shells}` — `shells` is a union-find over the edges, so "the mesh is in 5 separate pieces" is answerable |
+| `density` | `{faces: {count, mean_mm2, median_mm2, min_mm2, max_mm2, p05_mm2, p95_mm2}, ratio, dense: [...], starved: [...]}` — each region is `{faces, mean_area_mm2, location_mm, times_median}`. **"We need to remesh here" is a `starved` entry** |
+| `scale` | `{object_scale, non_uniform, unapplied, mirrored, dimensions_mm, problems: [sentences]}` |
+| `verdict` | the three or four sentences a teacher would actually say, worst first — clipping, then unsealed edges, then starved, then crammed |
+| `clean` | true only when there is nothing at all to say |
+
+**How a region is decided.** A face has to be `density_ratio` off the median **and**
+in the most extreme 2% of the mesh, and a cell has to hold at least 6 offending faces
+before it is a place. Without the second and third tests a plain UV sphere reports its
+own poles on every single check-in — the pole triangles really are seven times smaller
+than the equator quads — and an artist who reads that twice stops reading. The
+bounding box is bucketed 8 cells per axis, which is fine enough to point at an ear and
+coarse enough that one cell is one sentence.
+
+**Speed.** Measured on this machine: **0.65 s on 198 916 faces** with the
+self-intersection scan, 0.39 s on 202 500 without it (above the cap). Bulk statistics
+come off the Mesh with `foreach_get` into numpy arrays; topology comes off a bmesh;
+the BVH overlap is the expensive one and is the thing that is capped.
+
 ### RigForge commands (Phase 3)
 
 | type | params | does |
@@ -565,8 +650,63 @@ HTTP, and a `bpy.app.timers` callback lands the reply on the main thread. `urlli
 every request has a timeout, and every failure ends up in the panel's status line.
 
 The context sent with each message is the active object with its size **in millimetres**,
-a summary of the scene's objects, the current PartForge script path, the mode and the
-Blender version — built on the main thread before the worker starts.
+a summary of the scene's objects, the current PartForge script path, the mode, the
+Blender version and — since Phase 8 — **where the artist actually is**: the objects they
+have selected (`selected_objects`, capped at 10 plus an "... and N more" line) and, when
+they are in a sculpt or paint mode, the brush in their hand (`brush`: name, size,
+strength, and which symmetry axes are on). All of it is built on the main thread before
+the worker starts, every attribute read is guarded, and the brush is only collected in a
+paint-like mode — a brush they are not holding is noise, and noise in the context is a
+sentence the assistant will believe.
+
+### Buddy mode — a teacher's eyes on the work in progress
+
+At the bottom of the Assistant box is a small box with a **Check my work** button and a
+**Look every N min** toggle.
+
+**Check my work** gathers, in one press:
+
+1. `capture_viewport` — a screenshot of what you are looking at right now: your angle,
+   your shading, your overlays;
+2. `render_preview` (3/4 iso, clean clay) — the same model lit so the form reads;
+3. `mesh_diagnose` — clipping, unsealed edges, density hotspots and starved regions, each
+   with a place in millimetres;
+4. the workspace context — mode, selection, brush.
+
+It then sends all of that through the ordinary `/ask` path, led by the fixed line
+`[check-in] Look at my work and tell me what you notice.` with both image paths and an
+instruction to Read them before answering. The system prompt's **## Checking their work**
+section is keyed off that first line: one clause on what is working, then at most three
+concrete things with where and the fix, short, and never a note it already gave you.
+
+Both turns are marked as check-ins, so the chat log labels them **Check-in:** with an eye
+icon rather than **Forge:** — an answer nobody asked for reads as a bug unless the log
+says where it came from. The outgoing turn shows as the short sentence "Check my work",
+not the forty-line payload.
+
+**The timer is off by default, and every check-in costs one Claude turn — the toggle's own
+tooltip says so, and so does a line under it.** That is not a detail: a background process
+quietly spending money is the one thing that would make someone switch this off and never
+switch it on again. The interval is 10 minutes by default and **cannot go below 5**.
+
+Three things stop it costing a turn for nothing:
+
+- **it skips while the assistant is busy** (or has a message queued), and asks again in 20
+  seconds rather than forfeiting the whole interval;
+- **it skips when nothing has changed.** A cheap fingerprint of the active mesh — its
+  name, its vertex and face counts and a hash of its coordinates (the whole array, via
+  numpy: about a millisecond on a 200 000-vertex sculpt, and it cannot miss a stroke) — is
+  compared against the one from the last look. Unchanged means no turn, and the clock is
+  pushed forward so it does not spin;
+- **it carries the last check-in's own words forward.** The previous reply's first 300
+  characters ride along as `You previously noted: ...`, with "Do not repeat it — say what
+  is new, or that it is fixed." So the second note is never the first note again.
+
+The timer is a `bpy.app.timers` callback that wakes every 20 seconds and checks the clock
+itself, so changing the interval takes effect without toggling anything. It refuses to run
+at all in `--background`. `buddy.should_check(now, due, busy, signature, last_hash)` is a
+plain function with no `bpy` in it and is where both skips actually live, which is why the
+headless suite can prove them in milliseconds instead of waiting ten minutes.
 
 **Attach a picture** (Phase 6c). Under the message box is a **Picture** field: the folder
 icon opens Blender's own file browser. Once a file is picked the row becomes a chip with
@@ -1333,9 +1473,60 @@ its panel's `status` string.
 
 ## Headless tests
 
-Eleven suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 7 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 = 1039
+Twelve suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 8 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 = 1355
 checks**, all green on Blender 5.0.1.
+
+### Phase 8 — the workspace copilot and buddy mode (`headless_workspace.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_workspace.py
+```
+
+Socket port **9892**, fake assistant bridge on **9893**. No geometry service, no Claude
+CLI, no network beyond loopback, no window. **316 checks** covering:
+
+- **registration** — nine commands, every one READ-ONLY, `push_undo` refusing each;
+- **the headless guard** — the five view commands and `capture_viewport` refusing with
+  `workspace.NO_VIEWPORT`, character for character, and no traceback. The suite first
+  *proves* that `--background` does build a VIEW_3D, which is why the guard is on
+  `bpy.app.background` rather than on "is there an area";
+- **the window-dependent core, twice** — `apply_view`, `apply_shading`, `apply_overlays`
+  and `apply_framing` driven against the real off-screen `SpaceView3D` (which proves the
+  property names are this build's) *and* against stubs (which proves the guards when a
+  build is missing half of them). Front really is Blender's front quaternion, and the
+  three axis views really are the same three angles `render_preview` points its camera at;
+- **the validation matrix** — twenty refusals, each asserted to name why and to carry no
+  traceback, including that `sculpt_brush(size=0)` says the size is out of range rather
+  than something about brushes, and that `mesh_diagnose(examples=0)` says so rather than
+  something about objects;
+- **`set_mode` for real** — the mode really changes, Sculpt Mode on an armature is refused
+  by name *before* Blender is asked and leaves the artist where they were, Pose Mode on a
+  mesh is refused, asking twice is a success, and `"vertex paint"` is understood;
+- **`sculpt_brush` for real** — the catalog is Blender's own 62 essentials brushes (not
+  the one datablock a fresh file holds), `"clay strips"` really becomes Clay Strips in
+  `tool_settings.sculpt`, size/strength/symmetry land, dynamic topology toggles, and
+  `"Smoothify"` comes back suggesting `'Smooth'`;
+- **the context payload** — a scene with two selected objects, the mode, no brush in
+  Object Mode, the brush with its size and strength in Sculpt Mode, and the 10-object cap
+  with its "... and N more" line;
+- **`mesh_diagnose` on a deliberately broken mesh** — one object carrying two boxes that
+  pass through each other, a box with its lid off, a crammed patch, a starved plate, an
+  ngon, a zero-area triangle and a loose vertex, every one asserted to be *found* and
+  *located* within tolerance of where it was planted. Plus an evenly tessellated icosphere
+  asserted CLEAN, so the suite proves it does not manufacture problems, and the scale
+  checks on a non-uniform and a sub-millimetre object;
+- **the density map on its own** — synthetic areas where the answer is known, including
+  that two stray faces are not a region and an even mesh has no regions at all;
+- **the buddy's gating** — the change hash (one nudged vertex changes it; a non-mesh has
+  none; two objects never collide), `should_check`'s four outcomes, and `buddy_tick`
+  driven *by hand* through busy-skip, unchanged-skip, one-turn-on-change, the previous
+  note being carried forward, and off meaning off;
+- **check-my-work shaping** against the fake bridge — the message led by the fixed line,
+  the render path really on disk, the Read instruction, the workspace block, the mesh
+  numbers, the missing screenshot said out loud rather than dropped, both turns marked as
+  check-ins and the outgoing turn logged as the short sentence.
 
 ### Phase 7 — picture to 3D (`headless_meshgen.py`)
 

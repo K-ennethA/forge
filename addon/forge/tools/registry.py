@@ -48,6 +48,26 @@ READ_ONLY_COMMANDS = frozenset({
     # settings and a camera and puts every one of them back, so an undo step for
     # it would take back whatever the artist actually wanted undone.
     "render_preview",
+    # The workspace copilot (Phase 8).  None of these seven touch geometry, and
+    # Blender does not put viewport state — the angle, the shading, the overlays
+    # — in the undo stack at all, so a checkpoint here could only ever bury the
+    # sculpt stroke the artist actually wants back.  `set_mode` and
+    # `sculpt_brush` are in the same boat by intent rather than by API: a mode
+    # switch and a brush size are the artist's tools, not their work, and an
+    # undo history full of "Forge: set_mode" is an undo history nobody can use.
+    # What replaces undo is transparency: every one of these returns a `changed`
+    # line saying what is different and a `where` line naming the switch, so the
+    # artist can put it back by hand and knows how next time.
+    "set_view",
+    "frame_object",
+    "local_view",
+    "set_shading",
+    "set_overlays",
+    "set_mode",
+    "sculpt_brush",
+    # Buddy mode's two eyes: one takes a picture, one counts defects.
+    "capture_viewport",
+    "mesh_diagnose",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

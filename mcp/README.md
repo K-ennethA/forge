@@ -47,9 +47,17 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 51-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 60-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
-`.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
+`.mcp.json` registration.
+`tests/test_workspace.py` does it for the nine Phase 8 tools: what each workspace command
+puts on the wire, that every report carries **both** halves of the teaching contract (what
+changed and where the switch lives) plus the instruction not to write out the steps, the
+motivating case itself (`grid` + all three axes in one call, with the axes on the wire),
+the `axes` validation matrix refused before the socket, `mesh_diagnose` rendering a place
+against every defect and a short answer on a clean mesh, and `check_my_work` composing its
+four calls **in order** — including that a Blender with no viewport degrades to a note
+instead of losing the whole check-in. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
 a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket.
 `tests/test_rigforge.py` does the same for the Phase 3, 4 and 5 `rigforge_*` tools: the
@@ -219,6 +227,39 @@ what keeps it editable with real numbers (docs/plan.md §3).
 | Tool | Key params | What it does |
 |---|---|---|
 | `render_preview` | `objects`, `view` `iso`/`front`/`side`/`top`, `resolution` (128–2048), `shading` `solid`/`material` | Renders the scene to a PNG and returns the path, so the model can **Read the file and look at what it made**. Nothing is required: no path (it picks a scratch one), no object (it frames every visible mesh). |
+
+### The workspace copilot (Phase 8) — drive their Blender, don't describe it
+
+Seven tools that change what the artist is looking at, what mode they are in and what
+brush is in their hand. **Nothing is required on any of them** — a copilot that needs a
+form filled in before it will turn the grid on is a tutorial with extra steps.
+
+Every one returns the same two things: **what changed** and **where the switch lives in
+Blender's own UI**, with the instruction to pass both on in ONE line and not to write out
+the steps. That last part is the whole point: the phase exists because an artist asked to
+"enable grid view for x,y,z axis" and got a nine-step tutorial from a program running
+inside their Blender.
+
+| tool | key arguments | what it does |
+|---|---|---|
+| `set_view` | `view` `front`/`back`/`left`/`right`/`side`/`top`/`bottom`/`iso`/`camera`, `ortho` | Turns every open 3D viewport. Axis views are flat by default (the projection you can measure a reference against, and the same three `render_preview` and `load_reference` use); `iso` stays in perspective. |
+| `frame_object` | `object`, `all`, `margin` | Zooms onto one object, or everything visible. Never touches the selection. |
+| `local_view` | `enable`, `object` | Isolates the selection so the body stops getting in the way of the ear. Naming an object selects it first. |
+| `set_shading` | `mode` `solid`/`wireframe`/`material`/`rendered` | The four shading balls. `wireframe` is the one for looking at topology. |
+| `set_overlays` | `grid`, `axes`, `wireframe`, `stats`, `overlays`, `origins`, `cursor`, `text`, `face_orientation`, `xray` | **The motivating case:** `set_overlays(grid=True, axes=["x","y","z"])` is the whole of "enable grid view for x,y,z axis". `axes` takes a list, `"all"`, `true` or `[]`, and the list is authoritative. Anything not named is left as the artist had it. |
+| `set_mode` | `mode` `object`/`edit`/`sculpt`/`vertex_paint`/`weight_paint`/`texture_paint`/`pose`, `object` | Checks the object type supports the mode first, then selects, activates and switches. |
+| `sculpt_brush` | `brush`, `size`, `strength`, `symmetry_x/y/z`, `dyntopo`, `object` | Picks the brush and sets it up, entering Sculpt Mode on the way. A miss names the closest brush that exists. The line the docstring holds: **technique is theirs, selection and settings are yours.** |
+
+### Buddy mode (Phase 8) — a teacher's eyes on the work in progress
+
+| tool | key arguments | what it does |
+|---|---|---|
+| `mesh_diagnose` | `object`, `examples` (1–25), `density_ratio` | Clipping (self-intersections), unsealed edges, zero-area faces, density hotspots and starved regions, ngons, loose geometry, scale anomalies — **each with a location in millimetres**, so a critique can say where. Renders worst-first with the instruction to name at most three. Read-only, under a second on a 200 000-face sculpt. |
+| `check_my_work` | `object`, `resolution` | Composes the whole gather in one call: `capture_viewport` (what they are looking at — their angle, their shading, their overlays), `render_preview` (a clean 3/4 clay render), `mesh_diagnose` and `get_scene_info`. Hands back both image paths with **READ BOTH FILES NOW** and the teacher framing. A piece that cannot be gathered — a headless Blender has no viewport to photograph — degrades to a `could not gather:` note rather than losing the check-in. |
+
+The add-on's **Check my work** button gathers exactly the same four things and sends them
+through the assistant bridge instead; `capture_viewport` is a socket command on the
+add-on side, reached here through `check_my_work` rather than as a tool of its own.
 
 This is the only tool whose report exists to trigger another tool call. It names the path on
 its own line, says `READ THAT FILE NOW`, and then names the four things to look for —

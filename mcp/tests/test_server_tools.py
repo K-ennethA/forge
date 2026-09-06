@@ -47,6 +47,17 @@ EXPECTED_TOOLS = {
     "load_reference",
     # Looking at the result — the assistant's eyes
     "render_preview",
+    # The workspace copilot (Phase 8) — driving the artist's Blender
+    "set_view",
+    "frame_object",
+    "local_view",
+    "set_shading",
+    "set_overlays",
+    "set_mode",
+    "sculpt_brush",
+    # Buddy mode (Phase 8) — a teacher's eyes on the work in progress
+    "mesh_diagnose",
+    "check_my_work",
     # PartForge
     "partforge_parse_params",
     "partforge_generate",
@@ -131,7 +142,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 51
+    assert len(names) == 60
 
 
 def test_every_tool_is_documented() -> None:
@@ -162,6 +173,19 @@ def test_every_tool_has_an_object_schema() -> None:
         # Looking costs nothing and needs nothing: no path (it picks a scratch
         # one), no object (it frames what is visible).
         ("render_preview", []),
+        # Phase 8: driving the workspace must be the cheapest thing in the
+        # surface. Nothing is required anywhere — a copilot that needs a form
+        # filled in before it will turn the grid on is a tutorial with extra
+        # steps.
+        ("set_view", []),
+        ("frame_object", []),
+        ("local_view", []),
+        ("set_shading", []),
+        ("set_overlays", []),
+        ("set_mode", []),
+        ("sculpt_brush", []),
+        ("mesh_diagnose", []),
+        ("check_my_work", []),
         ("partforge_parse_params", ["script_path"]),
         ("partforge_generate", ["script_path"]),
         ("partforge_export", ["script_path", "output_path"]),
