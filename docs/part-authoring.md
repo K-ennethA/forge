@@ -335,6 +335,20 @@ if plan["clamped"]:
    coding one.
 5. Report the check result to the user in plain terms — "all four pass" or "it
    prints, but the underside of the lid needs supports" — never as raw JSON.
+6. **No mystery geometry.** Every feature the script adds that the user did not
+   name — socket lugs, a foot ring, a stiffening rib, a drain hole — must be
+   (a) *named in the reply with its purpose* ("the two small columns on the rim
+   are sockets the ears plug into") and (b) *removable by a parameter*: counts
+   go to 0 (`feet_count`, min 0), toggles exist (`ear_sockets: bool`), nothing
+   structural is hard-coded. A user staring at an unexplained column has lost
+   trust in the whole part. When in doubt whether a feature is wanted, add it
+   OFF by default and mention the switch.
+7. **Multi-part results arrive seated, separate, and named.** Companion pieces
+   (ears, collar, tail) are their own objects — never fused into each other —
+   positioned where they belong on the core (ear pegs IN their sockets, collar
+   seated at its band height), in one collection named for the project. The
+   user must be able to delete any proposal object and lose nothing else, and
+   ask for an exploded layout only if they want one.
 
 ---
 
