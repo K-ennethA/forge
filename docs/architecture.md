@@ -148,6 +148,15 @@ Component `assistant/` — a thin local bridge, stdlib-only Python (no venv need
 - `POST /cancel/<id>`
 The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
 
+### Phase 7 sketch — meshgen (image-to-3D, swappable backends)
+
+New component `meshgen/` — a fourth localhost service wrapping image-to-3D AI models behind ONE stable API so the model is a plug, not a dependency:
+- `GET /health` → `{"status", "backend": {"name", "model", "license", "loaded": bool, "vram_gb"}, "available_backends": [...]}`
+- `POST /generate3d` `{"image_path", "options"?: {backend-specific, passed through}, "output"?: path}` → async job (`{"job_id"}`) + `GET /job/<id>` (queued/running/done/error, progress if the backend reports it) → result `{"mesh_path": <.glb or .obj>, "stats": {verts, faces}, "backend", "duration_ms"}`.
+- Backend adapter interface (`meshgen/backends/<name>.py`): `info()`, `ensure_ready()` (downloads/loads weights lazily, reports what it will fetch BEFORE fetching), `generate(image_path, options, out_path)`. Selected via `FORGE_MESHGEN_BACKEND` env / config file; swapping = one config line, adapters own their own venv/requirements so heavyweight deps never leak into the other services.
+- Downstream is the EXISTING pipeline: output mesh → Blender import (Model box / load path) → voxel repair → /check_mesh → retopo/tag (RigForge) or /segment_mesh (printing). Meshgen generates; Forge finishes.
+- Model choice policy: prefer permissive licenses (MIT/Apache) for commercial-clean output; weights safetensors-only from official publisher accounts, pinned versions; fully offline after download. Hardware budget: RTX 5070 (12 GB VRAM), 32 GB RAM, Windows.
+
 ### Phase 6d — mesh input ("fix this downloaded model") — service implemented
 
 - `POST /check_mesh` `{"mesh": {vertices,faces} | "file_path": <abs .stl/.3mf/.obj>, "printer"?, check options, "weld_tolerance_mm"?}` → standard checks envelope (+`mesh_input` block, `params: null`, `solid_is_valid: null`). **Never refuses a broken mesh** — diagnosis always answers; an open mesh just fails `watertight`. No triangle ceiling.

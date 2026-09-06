@@ -1,0 +1,81 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "dog-bowl-holder-ear",
+  "description": "dog-bowl-holder-ear \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "ear_length": {
+      "value": 70.0,
+      "unit": "mm",
+      "min": 25.0,
+      "max": 130.0,
+      "step": 1.0,
+      "description": "Root to tip, not counting the peg"
+    },
+    "ear_width": {
+      "value": 30.0,
+      "unit": "mm",
+      "min": 12.0,
+      "max": 60.0,
+      "step": 0.5,
+      "description": "Width at the widest point of the leaf"
+    },
+    "ear_thickness": {
+      "value": 8.0,
+      "unit": "mm",
+      "min": 3.0,
+      "max": 16.0,
+      "step": 0.5,
+      "description": "Blade thickness; raised automatically to bury the peg"
+    },
+    "widest_at": {
+      "value": 0.3,
+      "unit": "ratio",
+      "min": 0.15,
+      "max": 0.6,
+      "step": 0.01,
+      "description": "How far up the ear its widest point sits; low = a lance, high = a leaf"
+    },
+    "peg_diameter": {
+      "value": 6.0,
+      "unit": "mm",
+      "min": 3.0,
+      "max": 10.0,
+      "step": 0.5,
+      "description": "Must match the base's Socket diameter"
+    },
+    "peg_length": {
+      "value": 10.0,
+      "unit": "mm",
+      "min": 3.0,
+      "max": 16.0,
+      "step": 0.5,
+      "description": "How far the peg sticks out; must match the base's Socket depth"
+    },
+    "inner_depth": {
+      "value": 1.5,
+      "unit": "mm",
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "description": "Depth of the inner-ear recess; 0 leaves the face flat"
+    },
+    "inner_margin": {
+      "value": 3.5,
+      "unit": "mm",
+      "min": 1.0,
+      "max": 12.0,
+      "step": 0.5,
+      "description": "Border of solid ear left around the inner recess"
+    }
+  },
+  "features": [],
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}

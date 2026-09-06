@@ -1,14 +1,26 @@
-"""Dog-bowl holder -- a raised collar that wraps all the way around the bowl.
+"""Eevee-style dog-bowl holder -- the BASE, part 1 of the reference sheet.
 
-The bowl is lowered through the top bore and its rim lands on an internal seat
-lip near the top; below the seat the bore opens back out so the bowl's body
-hangs free inside the ring.  The result wraps the bowl from rim to base and
-lifts it clear of the floor.  An arcaded plinth carries the load -- the piers
-between the arches are the feet -- and a continuous sill under them gives the
-first layer something to hold on to.
+A raised collar that wraps all the way around a stainless bowl.  The bowl is
+lowered through the top bore and its rim lands on an internal seat lip near the
+top; below the seat the bore opens back out so the bowl's body hangs free
+inside the ring.  An arcaded plinth carries the load -- the piers between the
+arches are the feet -- and a continuous sill under them gives the first layer
+something to hold on to.
+
+Three lugs on the top rim carry blind sockets for the slot-in appendages: two
+on the X axis for the ears and one at the back for the tail.  Each socket
+leans outward by ``appendage_angle`` so the ears splay the way they do in the
+reference, and each is a blind hole opening UPWARD, which is the only
+orientation that prints without a ceiling.
 
 Everything is millimetres with the feet on Z = 0, so the part is modelled in
 its print orientation.
+
+Defaults are taken from the reference sheet
+-------------------------------------------
+* bowl 5.5 in (139.7 mm) rim, 2 in (50.8 mm) deep -- the recommended insert
+* body 75.8 mm tall and 157.7 mm across the plinth (sheet: 3.0 in x 6.5 in)
+* 169 mm across the ear lugs (sheet: 7.5 in overall, ears included)
 
 Design notes worth knowing before turning knobs
 -----------------------------------------------
@@ -20,6 +32,8 @@ Design notes worth knowing before turning knobs
   edge is never a feather edge.
 * The flutes are subtracted, never added ribs, and ``forge_lib`` caps their
   depth against the wall, so no slider combination can cut into the bore.
+* The lug radius grows with the socket lean, so a tilted socket can never
+  break out through the side of its own lug.
 """
 
 import math
@@ -30,15 +44,15 @@ import forge_lib  # noqa: F401 - already bound in the service namespace
 
 PARAMS = {
     "bowl_diameter": {
-        "value": 6.0,
+        "value": 5.5,
         "unit": "in",
         "min": 3.0,
-        "max": 7.0,
+        "max": 6.5,
         "step": 0.25,
-        "description": "Rim diameter of the dog bowl",
+        "description": "Rim diameter of the stainless bowl that drops in",
     },
     "bowl_height": {
-        "value": 4.0,
+        "value": 2.0,
         "unit": "in",
         "min": 1.5,
         "max": 6.0,
@@ -70,7 +84,7 @@ PARAMS = {
         "description": "Air under the bowl's base once it is seated",
     },
     "rim_capture": {
-        "value": 10.0,
+        "value": 13.0,
         "unit": "mm",
         "min": 3.0,
         "max": 30.0,
@@ -117,11 +131,43 @@ PARAMS = {
         "step": 0.1,
         "description": "Depth of each flute; 0 leaves the wall plain",
     },
+    "socket_diameter": {
+        "value": 6.0,
+        "unit": "mm",
+        "min": 3.0,
+        "max": 10.0,
+        "step": 0.5,
+        "description": "Diameter of the ear/tail sockets in the top rim lugs",
+    },
+    "socket_depth": {
+        "value": 10.0,
+        "unit": "mm",
+        "min": 3.0,
+        "max": 16.0,
+        "step": 0.5,
+        "description": "How deep the ear/tail pegs go into the rim",
+    },
+    "appendage_angle": {
+        "value": 20.0,
+        "unit": "deg",
+        "min": 0.0,
+        "max": 25.0,
+        "step": 1.0,
+        "description": "How far the ears and tail lean outward; 0 stands them upright",
+    },
+    "tail_socket": {
+        "value": True,
+        "unit": "bool",
+        "description": "Add the third lug at the back for the tail",
+    },
 }
 
 _LIP_LAND_MM = 2.0        # vertical land at the seat's inner edge
 _PLINTH_GAP_MM = 3.0      # plain wall between the plinth and the fluted band
 _WALL_OVERLAP_MM = 0.5    # the wall dips into the plinth's solid crown band
+_EAR_ANGLES_DEG = (0.0, 180.0)   # the two ear lugs, on the X axis
+_TAIL_ANGLE_DEG = 270.0          # the tail lug, at the back
+_LUG_WALL_MM = 3.0        # material left around a socket inside its lug
 
 
 def _derived(p):
@@ -180,6 +226,46 @@ def _derived(p):
     }
 
 
+def _lug_plan(p, d):
+    """Sizes for the appendage lugs and the sockets bored into them.
+
+    The lug LEANS with its socket rather than standing upright, so the hole
+    always enters its own top face square on.  A tilted hole through a flat
+    top would meet it at an acute angle and leave a feather edge round the
+    mouth -- exactly the knife-edge failure the authoring rules warn about,
+    and it fails min_wall.
+    """
+    tol = forge_lib.fit_tolerance("slide_fit")
+    tilt = max(0.0, min(p["appendage_angle"], 25.0))
+    depth = p["socket_depth"]
+
+    # socket_for's mouth chamfer grows the cavity a touch past its bore, so
+    # allow for it before the wall.
+    lug_r = 0.5 * p["socket_diameter"] + tol + 0.3 + _LUG_WALL_MM
+    lug_h = min(depth + 6.0, 0.45 * d["total_h"])
+    if lug_h - depth < 2.0:
+        raise ValueError(
+            "The ear sockets are deeper than the rim lugs can hold. Lower "
+            "Socket depth, or raise Rim capture so the rim is taller."
+        )
+
+    # How far the lug buries itself in the ring wall: enough to weld on, never
+    # so much that it leaves under min_wall behind it.
+    bite = max(min(0.6 * d["wall"], d["wall"] - forge_lib.min_wall() - 0.2, 3.0), 0.2)
+    lug_cr = d["r_out"] + lug_r - bite
+
+    return {
+        "tilt": tilt,
+        "tol": tol,
+        "depth": depth,
+        "lug_r": lug_r,
+        "lug_h": lug_h,
+        "lug_cr": lug_cr,
+        # Lean the lug and its top face still lands on the rim.
+        "lug_z0": d["total_h"] - lug_h * math.cos(math.radians(tilt)),
+    }
+
+
 def _section_points(d):
     """The revolved cross-section as (radius, z) pairs, counter-clockwise.
 
@@ -224,6 +310,45 @@ def build(p):
             p["flute_depth"],
             wall=d["wall"],
             z_bottom=d["band_z0"],
+        )
+
+    # --- appendage lugs last, then the sockets bored down into them --------
+    lp = _lug_plan(p, d)
+    angles = list(_EAR_ANGLES_DEG)
+    if p["tail_socket"]:
+        angles.append(_TAIL_ANGLE_DEG)
+
+    spec = forge_lib.peg_spec(d=p["socket_diameter"], l=lp["depth"], key=False)
+
+    def _frame(a):
+        """Stand at the lug's root on the rim, then lean outward.
+
+        Everything built along this axis is coaxial with the socket, which is
+        what keeps the hole square to the face it enters.
+        """
+        return (
+            Rot(0.0, 0.0, a)  # noqa: F405
+            * Pos(lp["lug_cr"], 0.0, lp["lug_z0"])  # noqa: F405
+            * Rot(0.0, lp["tilt"], 0.0)  # noqa: F405
+        )
+
+    for a in angles:
+        frame = _frame(a)
+        part += frame * Pos(0.0, 0.0, 0.5 * lp["lug_h"]) * Cylinder(  # noqa: F405
+            radius=lp["lug_r"], height=lp["lug_h"]
+        )
+        # A domed foot, so the lug leaves the wall on a curve rather than a
+        # flat ceiling.
+        part += frame * Sphere(radius=lp["lug_r"])  # noqa: F405
+
+    for a in angles:
+        # Flipped to open at the lug's top face, overshooting it by 0.5 mm so
+        # the mouth is never a coplanar boolean.
+        part -= (
+            _frame(a)
+            * Pos(0.0, 0.0, lp["lug_h"] + 0.5)  # noqa: F405
+            * Rot(0.0, 180.0, 0.0)  # noqa: F405
+            * forge_lib.socket_for(spec, lp["tol"])
         )
 
     return part
