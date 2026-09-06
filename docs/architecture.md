@@ -192,6 +192,14 @@ Pilot/exit test: the Litwick LED figure — push the translucent flame to toggle
 - Prompt: basic-circuit knowledge (LED+resistor+switch+cell), design-around-components law (pick real parts FIRST, model to their dims), material intent (translucent parts named as such).
 Exact shapes refined by implementation; folded back by the orchestrator.
 
+### Phase 11 sketch — base shapes, components, and merge-for-print
+
+User intent (near-verbatim): when 100% likeness isn't achievable, deliver the modifiable sculptable base structure; results segmented into parts — the correct/editable core (bowl size etc.) vs add-on details the user can keep or scrap; then merge so printing is simple.
+
+- **Sculptable base**: profile revolves via forge_lib.soft_body from THREE input doors — described ((r,z) words→points), shown (image silhouette extraction), or DRAWN (new socket commands `profile_from_curve {"curve_object"}` and `outline_from_curve` — sample a user-drawn Bezier/curve into control points, feed soft_body/silhouette_part; the drawn curve seeds a still-parametric part). After generation: voxel remesh to even sculpt topology + set_mode sculpt + brush ready (copilot tools). A saved flow makes it one button.
+- **Component-tree results (product law)**: multi-part generations land as a named collection — `core` (dimensioned, sliders named in the reply) + `proposals` (collar/ears/tail…, each a separate object, each scrappable independently: "scrap the collar" = delete_object, nothing else depends on it; "redo the collar tighter" regenerates one component). spec.json records components. Prompt: always present core-vs-proposals explicitly with the keep/scrap instruction.
+- **`merge_for_print`** (socket command + MCP mirror + panel button): join the surviving chosen objects → voxel remesh into ONE watertight shell (resolution derived from nozzle/detail trade, stated honestly) → run checks → report (incl. thin-detail warnings with locations). Downstream segmenting/slicing unchanged.
+
 ### Phase 9 sketch — Forge web UI (the second surface)
 
 The bridge serves a local single-page UI at `GET http://127.0.0.1:8901/` — stdlib-only, no build step, no CDN (works offline), vanilla HTML/JS/CSS in `assistant/webui/`. Same bridge API = same session/jobs as the Blender panel; both surfaces coexist. Features: full-width chat with the last N jobs (bridge keeps 20), attached reference images and assistant RENDERS displayed inline in the conversation, live activity stream, model selector + queue + session cost, health strip (+ start-services via a new `POST /services/start` that shells the same start logic), flows list/run. File serving strictly allowlisted: `GET /file/<token>` serves ONLY paths the bridge itself recorded on a job (attachments in, renders/outputs out) — never arbitrary paths. Localhost-bound like everything else.

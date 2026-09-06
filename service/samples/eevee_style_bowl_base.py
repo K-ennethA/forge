@@ -7,17 +7,24 @@ none of it sculpted, all of it generated from `forge_lib` ornament helpers.
 
 The insight the ornament helpers exist for
 ------------------------------------------
-The decoration on a character-shaped functional part is not sculpture:
+Nothing about a character-shaped functional part is sculpture:
 
-* a fur collar is ONE leaf, arrayed round a ring with overlap and droop --
-  :func:`forge_lib.leaf_collar`;
+* the body is a SILHOUETTE OF REVOLUTION -- six ``(radius, z)`` proportions
+  splined, sampled and turned, :func:`forge_lib.soft_body`.  Deliberately not a
+  cylinder: a collar's band is a cone, and against a straight wall a cone reads
+  as a hat brim, while against a body that already swells and tapers it reads
+  as the body's own shoulder;
+* a fur collar is ONE leaf, arrayed round a ring with overlap, droop and a
+  CUP -- :func:`forge_lib.leaf_collar`.  The cup arches each leaf's front over
+  its flat back; flat leaves read as cut-outs, cupped ones as fur;
 * an ear, a tail, a fin, a wing is a SILHOUETTE with thickness and rounding --
   :func:`forge_lib.silhouette_part`.
 
-Both are parameter sets, so both are generated rather than modelled.  The ear's
-outline below is ten numbers read off a reference image as *proportions* -- tip
-here, widest point there, root that wide -- never a pixel trace.  Nudge them and
-the ear changes; the peg, the socket and the printability all follow.
+All three are parameter sets, so all three are generated rather than modelled.
+The ear's outline below is ten numbers read off a reference image as
+*proportions* -- tip here, widest point there, root that wide -- never a pixel
+trace.  Nudge them and the ear changes; the peg, the socket and the
+printability all follow.
 
 One script, three printed pieces
 --------------------------------
@@ -36,21 +43,34 @@ design: **one `part` selector, one `/check` per piece.**
 
 What the checks say, at the defaults
 ------------------------------------
-* **part 0, the base** -- all four checks **pass**, collar and all.  Two
-  decisions bought that, and both are worth stealing:
+* **part 0, the base** -- all four checks **pass**: swollen body, cupped
+  collar and all.  Three decisions bought that, and all three are worth
+  stealing:
 
   1. `collar_droop` defaults to 44 degrees.  Between 42 and 48 degrees is the
      window where a drooping leaf is support-free *at both ends*: its underside
      is inside the 50 degree limit because it leans no further than that, and
      its tip land is inside the limit because it leans no *less*.  It is also,
-     as it happens, about the flare the reference has.
+     as it happens, about the flare the reference has.  Cupping costs nothing
+     here: a collar's arched face points outward and UP, so the face the check
+     measures is still the flat back, at exactly the droop.
   2. The socket lugs are ribs that run down into the collar band, not bosses
      hanging off the rim.  A boss leaves its own flat underside in mid-air:
      three of them measured 354 mm2 of 90 degree overhang.
+  3. The collar's bore is sized to the **narrowest** the body gets over the
+     band's own height, not to the body's radius under the band's top.  On a
+     cylinder those are the same number.  On a soft body they are not, and the
+     difference is 535 mm2 of 90 degree overhang: the band's bore is a
+     cylinder, so where the body shrinks away from it the band's bottom rim
+     stops being buried.  Measured, on the first cut of this after the body
+     stopped being a cylinder.
 
   The collar band's own bottom rim -- the one face `leaf_collar_plan`
   ["unsupported"] always names -- disappears here, because the band is unioned
-  into the ring wall (see `_collar_args`: a **negative** clearance).
+  into the body's wall (see `_collar_args`: a **negative** clearance).
+
+  `body_swell` and `collar_cup` are both sliders, and 0 on either gives back
+  the straight-cylinder, flat-leaf part this sample used to be.
 
 * **part 1 and part 2** -- `bed_fit`, `min_wall` and `watertight` pass.
   `overhangs` warns at 63 mm2 (ear) and 80 mm2 (tail): that is the underside of
@@ -174,12 +194,14 @@ PARAMS = {
     "collar_droop": {
         "value": 44.0,
         "unit": "deg",
-        "min": 0.0,
+        "min": 15.0,
         "max": 48.0,
         "step": 1.0,
         "description": (
             "How far the leaves lean out from vertical. 42-48 deg is the window "
-            "where the leaf tips are support-free as well as their undersides"
+            "where the leaf tips are support-free as well as their undersides. "
+            "The floor is 15, not 0: leaves hanging dead vertical against a "
+            "swelling body graze it, and the declared range is a promise"
         ),
     },
     "collar_jitter": {
@@ -205,6 +227,28 @@ PARAMS = {
         "max": 5.0,
         "step": 0.2,
         "description": "Thickness of one leaf",
+    },
+    "collar_cup": {
+        "value": 0.32,
+        "unit": "ratio",
+        "min": 0.0,
+        "max": 0.42,
+        "step": 0.02,
+        "description": (
+            "How far each leaf's front arches above its own edges, as a fraction "
+            "of its half-width. 0 is the flat cut-out; 0.3 and up reads as fur"
+        ),
+    },
+    "body_swell": {
+        "value": 0.16,
+        "unit": "ratio",
+        "min": 0.0,
+        "max": 0.24,
+        "step": 0.02,
+        "description": (
+            "How far the body's waist swells past its rim, as a fraction of the "
+            "rim radius. 0 is a straight cylinder"
+        ),
     },
     "ear_length": {
         "value": 70.0,
@@ -367,9 +411,20 @@ def _derived(p):
             "height, or raise Bowl lift."
         )
 
+    # How far the body's waist stands proud of its rim.  A silhouette that
+    # leans outward as it rises IS an overhang, so the swell is clamped to what
+    # the run up to the waist can carry -- the range is a promise, not a hope.
+    height = total_h - wall_z0
+    swell = min(
+        p["body_swell"] * r_out,
+        0.45 * height * math.tan(math.radians(forge_lib.max_overhang_deg() - 6.0)),
+    )
+
     return {
         "land": land,
         "wall": wall,
+        "swell": swell,
+        "body_h": height,
         "r_bore": r_bore,
         "r_out": r_out,
         "r_seat": r_bore - lip_w,
@@ -384,36 +439,91 @@ def _derived(p):
     }
 
 
-def _section_points(d):
-    """The revolved wall as (radius, z), counter-clockwise.
+def _body_points(d):
+    """The body's outer silhouette as (radius, z), base first.
 
-    Out along the bottom, up the outside, in across the rim, down the bore, in
-    across the seat's top face, down its land, then out along the 45 degree
-    underside back to the bore.  Every sloped edge starts and ends on a
-    straight one, which is the no-knife-edges rule written as a polygon.
+    Six control points, not a trace: foot, the swell out of the foot, the
+    waist, the shoulder, the rim.  `forge_lib.soft_body` splines them, samples
+    the spline into a fine polygon and revolves it -- which is why this reads
+    as a soft rounded body instead of a straight cylinder, and why the collar's
+    band lands on a shoulder rather than standing out of a wall like a brim.
     """
+    height = d["body_h"]
+    swell = d["swell"]
     return [
-        (d["r_bore"], d["wall_z0"]),
-        (d["r_out"], d["wall_z0"]),
-        (d["r_out"], d["total_h"]),
-        (d["r_bore"], d["total_h"]),
-        (d["r_bore"], d["seat_z"]),
-        (d["r_seat"], d["seat_z"]),
-        (d["r_seat"], d["z_land_bot"]),
-        (d["r_bore"], d["z_taper_bot"]),
+        (d["r_out"], 0.0),
+        (d["r_out"] + 0.55 * swell, 0.16 * height),
+        (d["r_out"] + swell, 0.45 * height),
+        (d["r_out"] + 0.80 * swell, 0.70 * height),
+        (d["r_out"] + 0.25 * swell, 0.90 * height),
+        (d["r_out"], height),
     ]
 
 
-def _collar_args(p, d):
-    """The collar's arguments, sized to the ring it wraps.
+def _body_radius_at(d, z):
+    """The silhouette's radius at world height *z*, read straight-line.
+
+    Close enough to place a collar by: the band bites `_COLLAR_BITE_MM` into
+    the body anyway, and the spline never leaves its control polygon by more
+    than a fraction of that.
+    """
+    points = _body_points(d)
+    local = z - d["wall_z0"]
+    if local <= points[0][1]:
+        return points[0][0]
+    for (r0, z0), (r1, z1) in zip(points, points[1:]):
+        if local <= z1:
+            return r0 + (r1 - r0) * (local - z0) / max(z1 - z0, 1e-9)
+    return points[-1][0]
+
+
+def _cavity_points(d):
+    """The bore, the seat ledge and the rim, as one negative to subtract.
+
+    The same section the base used to be revolved from, turned inside out: with
+    the outside now coming from `soft_body`, the inside is a cutter.  Every
+    sloped edge still starts and ends on a straight one -- the no-knife-edges
+    rule written as a polygon -- and it overshoots the body at both ends so the
+    boolean is never coplanar.
+    """
+    return [
+        (0.0, d["wall_z0"] - 1.0),
+        (d["r_bore"], d["wall_z0"] - 1.0),
+        (d["r_bore"], d["z_taper_bot"]),
+        (d["r_seat"], d["z_land_bot"]),
+        (d["r_seat"], d["seat_z"]),
+        (d["r_bore"], d["seat_z"]),
+        (d["r_bore"], d["total_h"] + 1.0),
+        (0.0, d["total_h"] + 1.0),
+    ]
+
+
+def _collar_args(p, d, ring_radius):
+    """The collar's arguments, sized to the body it wraps.
+
+    ``ring_radius`` is the **narrowest** the body gets over the band's own
+    height, not its radius at the band's top.  On a straight cylinder those are
+    the same number; on a soft body they are not, and the difference is not
+    cosmetic: the band's bore is a cylinder, so if the body shrinks away from
+    it anywhere along the band, the band's bottom rim -- the one face
+    ``leaf_collar_plan`` always flags -- stops being buried and comes back as
+    535 mm2 of 90 degree overhang.  Measured, on the first cut of this sample
+    after the body stopped being a cylinder.
 
     ``clearance`` is NEGATIVE on purpose: the band bites ``_COLLAR_BITE_MM``
-    into the ring wall, so the union is one solid.  The positive slide-fit
+    into the body's wall, so the union is one solid.  The positive slide-fit
     default is for a collar that slips over a separate printed cylinder.
+
+    ``cup`` is what turns a leaf from a cut-out into a leaf: the front of each
+    one arches above its own edges, so the collar reads as fur rather than as
+    a ring of flat blades.  The default 2-layer, 35%-overlap collar is what
+    covers the band -- the two ranks shingle, and the outer one is stepped
+    along the leaves' own normal so it lies OVER the inner rank rather than
+    hiding it behind the band's skirt.
     """
     length = min(p["collar_length"], 0.55 * (d["z_taper_bot"] - d["wall_z0"]) + 8.0)
     return dict(
-        ring_radius=d["r_out"],
+        ring_radius=ring_radius,
         leaf_length=max(length, 8.0),
         leaf_width=0.7 * length,
         count=int(p["collar_leaves"]),
@@ -423,6 +533,7 @@ def _collar_args(p, d):
         jitter=p["collar_jitter"],
         seed=int(p["collar_seed"]),
         clearance=-_COLLAR_BITE_MM,
+        cup=p["collar_cup"],
     )
 
 
@@ -439,6 +550,7 @@ def _lug_plan(p, d, band_top_z):
     tol = forge_lib.fit_tolerance("slide_fit")
     lug_r = 0.5 * p["peg_diameter"] + tol + 0.3 + _LUG_WALL_MM
     depth = p["peg_length"]
+    bore_r = 0.5 * p["peg_diameter"] + tol + 0.3
     # Start the rib a little below the collar band's top face so its foot is
     # inside the band rather than resting on it.
     lug_z0 = min(band_top_z - 2.0, d["total_h"] - depth - 3.0)
@@ -451,6 +563,21 @@ def _lug_plan(p, d, band_top_z):
     # How far the rib buries itself in the wall: enough to weld on, never so
     # much that it leaves under the minimum wall behind it.
     bite = max(min(0.6 * d["wall"], d["wall"] - forge_lib.min_wall() - 0.2, 3.0), 0.2)
+
+    # A rib on a SOFT body has one more thing to satisfy: it has to stand clear
+    # of the body's own surface over its whole height, or the two graze.  Where
+    # a straight cylinder is tangent to a swelling wall the boolean leaves a
+    # feather edge -- 0.014 mm, measured, on the widest body this sample will
+    # build -- which is the same knife-edge failure a taper has, in plan view.
+    # So the rib is widened until its outer face clears the widest the body
+    # gets under it by a millimetre.  It is a rib; a fatter one is still a rib.
+    widest = max(
+        _body_radius_at(d, lug_z0 + (d["total_h"] - lug_z0) * step / 8.0)
+        for step in range(9)
+    )
+    lug_r = max(lug_r, 0.5 * (widest - d["r_out"] + bite + 1.0))
+    if lug_r - bore_r < _LUG_WALL_MM - 1e-9:  # pragma: no cover - belt and braces
+        lug_r = bore_r + _LUG_WALL_MM
     return {
         "tol": tol,
         "depth": depth,
@@ -464,8 +591,12 @@ def _lug_plan(p, d, band_top_z):
 def _build_base(p):
     d = _derived(p)
 
-    part = revolve(  # noqa: F405
-        Plane.XZ * Polygon(*_section_points(d), align=None), axis=Axis.Z  # noqa: F405
+    # The body: one soft silhouette, splined and revolved, then bored.
+    part = Pos(0.0, 0.0, d["wall_z0"]) * forge_lib.soft_body(  # noqa: F405
+        _body_points(d)
+    )
+    part -= revolve(  # noqa: F405
+        Plane.XZ * Polygon(*_cavity_points(d), align=None), axis=Axis.Z  # noqa: F405
     )
 
     # Feet: an openwork plinth with pointed arches, which pass the overhang
@@ -481,10 +612,22 @@ def _build_base(p):
     )
 
     # The fur collar.  Ask for the plan first so the script can place the band
-    # by its own height instead of guessing at it.
-    args = _collar_args(p, d)
-    collar_plan = forge_lib.leaf_collar_plan(**args)
+    # by its own height instead of guessing at it -- and then ask again, now
+    # that the band's height is known, with the bore sized to the narrowest the
+    # body gets underneath it.  Two passes, because the band's height depends
+    # on its radius and its radius depends on where the band ends up.  The
+    # second pass moves it by a millimetre or so; the extra half millimetre of
+    # bite absorbs that.
     band_top = d["z_taper_bot"] - 2.0
+    args = _collar_args(p, d, _body_radius_at(d, band_top))
+    collar_plan = forge_lib.leaf_collar_plan(**args)
+    for _ in range(2):
+        band_h = collar_plan["band_height_mm"]
+        narrowest = min(
+            _body_radius_at(d, band_top - band_h * step / 8.0) for step in range(9)
+        )
+        args = _collar_args(p, d, narrowest - 0.5)
+        collar_plan = forge_lib.leaf_collar_plan(**args)
     bottom = max(band_top - collar_plan["height_mm"], d["foot_h"] + 1.0)
     part += Pos(0.0, 0.0, bottom) * forge_lib.leaf_collar(**args)  # noqa: F405
 

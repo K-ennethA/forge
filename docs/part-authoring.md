@@ -14,7 +14,7 @@ Reference implementations to imitate:
 | `service/samples/magnet_holder.py` | A flat bar: pockets, rounded ends, countersunk holes. Passes all four checks at defaults and at both ends of every range. |
 | `projects/bowl-holder/part_base_ring.py` | A ring: revolved profile, flared foot, fluted band, arcaded base, appendage sockets. |
 | `service/samples/appendage_peg.py` | Two parts from one script, joined by a keyed peg. |
-| `service/samples/eevee_style_bowl_base.py` | **Function plus character**: a bowl ring with a generated fur collar, two ears and a tail. One script, three printed pieces, a `part` selector. |
+| `service/samples/eevee_style_bowl_base.py` | **Function plus character**: a soft revolved body with a generated fur collar of cupped leaves, two ears and a tail. One script, three printed pieces, a `part` selector. |
 
 ---
 
@@ -179,45 +179,75 @@ silently made sub-minimum: it clamps and says so, or raises
 
 ### Ornament — decoration that is generated, not sculpted
 
-The gap these close: asked for "a fur collar of overlapping leaves, two ears and
-a tail", a generator that only has cylinders and grooves produces a dashed
-groove and two flat slabs. None of that decoration is sculpture, though — a fur
+The gap these close: asked for "a fur collar of overlapping leaves on a soft
+rounded body, two ears and a tail", a generator that only has cylinders and
+grooves produces a cylinder, a dashed groove and two flat slabs. None of that is
+sculpture, though — a body is **a silhouette turned about an axis**, a fur
 collar is **one leaf arrayed round a ring**, and an ear is **a silhouette with
-thickness**. Both are parameter sets, so both belong in the script.
+thickness**. All three are parameter sets, so all three belong in the script.
 
-Every one of these builds its elements as **prisms** — a smooth closed outline
-extruded along its own normal — so every convex edge is 90° whatever the
-outline does. That is not a stylistic choice: `min_wall` casts rays inward
-along facet normals, so a convex edge under 90° measures
-`distance-from-the-edge × tan(angle)`, which goes to zero as the tessellation
-gets finer. It is the knife-edge rule from §2 in plan view.
+A flat element is a **prism** — a smooth closed outline extruded along its own
+normal — so every convex edge is 90° whatever the outline does. A cupped one is
+that outline with an arched front over its flat back, and its section is never
+*thinner* than the thickness asked for. Neither is a stylistic choice:
+`min_wall` casts rays inward along facet normals, so a convex edge under 90°
+measures `distance-from-the-edge × tan(angle)`, which goes to zero as the
+tessellation gets finer. It is the knife-edge rule from §2 in plan view.
+
+**Flat reads as cut-outs; cupped reads as fur or feathers — default to cupped
+for an organic reference.** `cup=` arches each element's front over its flat
+back, and it is the single difference between "a ring of paper blades" and "a
+collar".
 
 | Call | Returns | Guarantees | Use it when |
 |---|---|---|---|
-| `leaf_collar(ring_radius, leaf_length, leaf_width, count, overlap=0.3, droop_deg=20, thickness=None, jitter=0.0, seed=0, printer=None, *, clearance=None, tip_land=None, layers=2, shape="leaf")` | one solid ring, base on Z=0 | **One watertight solid** at any count/overlap/jitter — every root is buried in a band, so nothing can float; leaves sit on two radii a *solved* distance apart so alternate ones lie **over** their neighbours instead of grazing them; each leaf ends on a straight land ≥ `1.5 × min_feature`, never a point; `droop_deg` (lean **from vertical** — the same convention the overhang check uses, and it *is* the underside's overhang angle) clamped into the printable window; `jitter` never leans an element less far than you asked, so the plan's verdict is exact | A fur collar, a ruff, feathers, a mane, petticoats — anything that reads as overlapping organic elements round a body |
-| `petal_crown(ring_radius, petal_length, petal_width, count, overlap=0.15, flare_deg=25, ...)` | one solid ring, base on Z=0 | Same as `leaf_collar`, **plus**: a crown is genuinely support-free. Its band sits on the plate, the petals lean out as they *rise*, and their tip lands face upward — so `overhangs` passes rather than warning | A crown, an upright ruff, a flower, a fan of fins, spikes on a lid |
-| `scale_band(ring_radius, scale_length, scale_width, count, rows=3, overlap=0.35, droop_deg=30, ...)` | one solid ring, base on Z=0 | Same as `leaf_collar`, with rows: each row is offset half a pitch and its spacing is **floored at the drop that lets it clear the row above** (a drooping element travels outward as it falls, which is what a conical band gives it for free) | Dragon hide, pine cones, fish, armour, roof tiles |
+| `leaf_collar(ring_radius, leaf_length, leaf_width, count, overlap=0.3, droop_deg=20, thickness=None, jitter=0.0, seed=0, printer=None, *, clearance=None, tip_land=None, layers=2, cup=0.0, shape="leaf")` | one solid ring, base on Z=0 | **One watertight solid** at any count/overlap/jitter/cup — every root is buried in a band, so nothing can float; leaves sit on two ranks a *solved* distance apart so alternate ones lie **over** their neighbours instead of grazing them; each leaf ends on a straight land ≥ `1.5 × min_feature`, never a point; `droop_deg` (lean **from vertical** — the same convention the overhang check uses, and it *is* the underside's overhang angle) clamped into the printable window; `jitter` never leans an element less far than you asked, so the plan's verdict is exact | A fur collar, a ruff, feathers, a mane, petticoats — anything that reads as overlapping organic elements round a body |
+| `petal_crown(ring_radius, petal_length, petal_width, count, overlap=0.15, flare_deg=25, ..., cup=0.0)` | one solid ring, base on Z=0 | Same as `leaf_collar`, **plus**: a crown is genuinely support-free. Its band sits on the plate, the petals lean out as they *rise*, and their tip lands face upward — so `overhangs` passes rather than warning. It is also the one direction that pays for a cup: a crown's arched face is the one pointing down, so the cup's climb out of the root is charged to the flare window | A crown, an upright ruff, a flower, a fan of fins, spikes on a lid |
+| `scale_band(ring_radius, scale_length, scale_width, count, rows=3, overlap=0.35, droop_deg=30, ..., cup=0.0)` | one solid ring, base on Z=0 | Same as `leaf_collar`, with rows: each row is offset half a pitch and its spacing is **floored at the drop that lets it clear the row above** (a drooping element travels outward as it falls, which is what a conical band gives it for free) | Dragon hide, pine cones, fish, armour, roof tiles |
 | `silhouette_part(points, thickness, rounding=None, taper=0.0, peg=None, printer=None)` | one solid, lying flat on the bed | 6–16 `[x, y]` control points splined into **one smooth closed outline** and extruded, so the part is watertight and every side face is vertical (nothing but the bed-facing bottom points down); fewer than 6 points, more than 16, or an outline that crosses itself is refused with a plain sentence; `thickness` clamped to `min_wall`; `taper` (degrees of draft, thinner at the top) **stepped down** until the outline survives it; `rounding` softens the **top** perimeter only and is **stepped down** until the kernel accepts it, reporting `rounding_achieved_mm`; `peg={"d","l"}` attaches a keyed `peg()` at the outline's bottom-centre pointing −Y | Ears, tails, fins, wings, horns, crests, leaves — any appendage you would otherwise sculpt |
+| `soft_body(profile_points, wall=None, *, floor=None, base_land=None, printer=None)` | one body of revolution, base flat on Z=0 | 5–10 `(radius, z)` control points splined into one silhouette, **sampled into a fine polygon** and revolved; `wall=None` gives a solid, `wall=3.0` gives a constant-wall hollow with an **open top** (a lid is a 90° ceiling); base clamped up to a `min_land` disc so nothing is tangent to the bed; `z` must strictly increase, checked on the control points and again on the samples; a wall that would close the body up raises; a silhouette that swells outward past the overhang limit, or a cavity that closes in over itself, is **named in `plan["unsupported"]`** with the angle and which point to move | **The body a collar sits on.** Bowls, vases, planters, pots, creature bodies — anywhere you would otherwise reach for a cylinder |
 
-The two things to know before turning these knobs:
+The things to know before turning these knobs:
 
-1. **`droop_deg` has a sweet spot: 42–48°.** The leaf's *underside* must lean no
+1. **`cup` is the knob that makes the difference.** `cup=0.32` arches each
+   element's front to a third of its half-width above its own edges. The
+   section is never thinner than `thickness` — `thickness` at the edges,
+   `thickness + rise` at the crown — so `min_wall` holds by construction, and
+   more strongly than a constant-wall shell would. Read
+   `plan["cup_rise_mm"]`, `plan["cup_flank_deg"]` and `plan["stack_mm"]` (how
+   far an element now stands off its own root plane; every envelope in the
+   collar is built from it). A cup pushes the ranks apart and the band out, so
+   expect `band_outer_radius_mm` to grow with it.
+2. **`droop_deg` has a sweet spot: 42–48°.** The leaf's *underside* must lean no
    further than the overhang limit; its *tip land* faces down the leaf's own
    axis and so must lean no *less* than 90° − limit. Both hold only in that
    window, and `leaf_collar_plan(...)["unsupported"]` says so in as many words
    when you are outside it. It is also roughly the flare a real ruff has.
-2. **A collar you union onto a base wants a negative `clearance`.** The default
+   Cupping a **collar** costs nothing here — its arched face points outward and
+   up, and the face the check measures is still the flat back. Cupping a
+   **crown** does, and `plan["cup_slope_deg"]` is the number it costs.
+3. **A collar you union onto a base wants a negative `clearance`.** The default
    is a positive slide fit, for a ring that slips over a separately printed
    cylinder. Union one on at `clearance=+0.2` and you get two solids 0.2 mm
    apart. Pass `clearance=-1.0` and the band bites into the base — one solid,
    and the band's bottom rim (the one face the plan always flags) ends up
-   *inside* the part where nothing can see it.
+   *inside* the part where nothing can see it. On a `soft_body` the bore has to
+   bite at the **narrowest** the body gets over the band's whole height, not at
+   its radius under the band's top — see pattern C.
+4. **`layers=2` is what makes a collar dense, and it only works because the
+   ranks shingle.** The gaps between one rank's elements are two pitches wide
+   and no element can be that wide, so a single rank always shows the band
+   between its elements. The second rank sits in those gaps — stepped along the
+   elements' own normal, out *and* up, so it lies over the inner rank instead
+   of hiding behind the band's skirt. `layer_step_r_mm`, `layer_rise_mm` and
+   `layer_z_mm` in the plan are where that step ends up.
 
 Read the plan before you build:
 
 ```python
-plan = forge_lib.leaf_collar_plan(r_out, 26.0, 20.0, 16, droop_deg=44.0)
+plan = forge_lib.leaf_collar_plan(r_out, 26.0, 20.0, 16, droop_deg=44.0, cup=0.32)
 plan["height_mm"]        # so you can place the collar by its band, not by guesswork
+plan["band_height_mm"]   # the band alone: the span whose bore has to bite the body
 plan["clamped"]          # "width 20 -> 26.60 mm: 16 leaves on a ... circle need that much"
 plan["support_free"]     # False, and then:
 plan["unsupported"]      # [{"what", "angle_from_vertical_deg", "area_mm2", "why"}, ...]
@@ -244,10 +274,24 @@ plan["unsupported"]      # [{"what", "angle_from_vertical_deg", "area_mm2", "why
 ### Composition idioms
 
 ```python
+part = forge_lib.soft_body(points)                       # the body, solid
 part += forge_lib.feet_ring(r_out, 6.0, 4)               # positives: union
 part -= forge_lib.textured_band(r_out, 20.0, 24, 1.6,    # negatives: subtract
                                 wall=wall, z_bottom=8.0)
 part -= Pos(x, y, top_z) * forge_lib.magnet_pocket(6.0, 3.0, available_depth=top_z)
+```
+
+A `soft_body` is an ordinary solid; bores, seats, sockets and pockets go onto it
+exactly as they would onto a box. Read `plan["height_mm"]` and
+`plan["max_radius_mm"]` to place them:
+
+```python
+plan = forge_lib.soft_body_plan(points)                  # or (points, wall=3.0)
+body = forge_lib.soft_body(points)
+body -= Pos(0, 0, plan["height_mm"] + 0.5) * Rot(180, 0, 0) * \
+    forge_lib.blunted_taper(bore_r, bore_r, depth, role="cut")
+body -= Pos(x, y, plan["height_mm"] + 0.5) * Rot(180, 0, 0) * \
+    forge_lib.socket_for(spec, forge_lib.fit_tolerance("slide_fit"))
 ```
 
 Read a clamp back when you need to explain it to the user:
@@ -274,6 +318,8 @@ if plan["clamped"]:
    | `min_wall` on decoration | Replace the added ribs with `textured_band`, or pass `wall=` so its clamps can apply. |
    | `min_wall` on an outline you extruded yourself | Almost always a convex edge under 90° in **plan** view, or a spline outline extruded straight (OCC's mesh of a B-spline side wall pinches inside its own cap). Use `silhouette_part`, which splines the outline and then samples it into a polygon before extruding. |
    | Decoration that came out as a groove or a slab | It is not sculpture. A collar of overlapping elements is `leaf_collar` / `petal_crown` / `scale_band`; an ear, tail, fin or wing is `silhouette_part`. See pattern C. |
+   | Decoration that reads flat, stiff or sparse | The elements are cut-outs. Pass `cup=0.3` and leave `layers=2`: flat reads as cut-outs, cupped reads as fur or feathers. Then check the body it sits on is a `soft_body` and not a cylinder. |
+   | `overhangs` on a collar's band rim after the body stopped being a cylinder | The band's bore is a cylinder; size `ring_radius` to the **narrowest** the body gets over `band_height_mm`, not to its radius under the band's top. |
    | `min_wall` on a pocket floor | Pass `available_depth=` to `magnet_pocket`, and derive the part's thickness from the pocket depth rather than the other way round. |
    | `min_wall` on a shell | `shell_box` / `wall_safe_shell`, and let it clamp the wall. |
    | `overhangs` on a base | `arcade_base(arch="pointed")` or `feet_ring`. |
@@ -353,6 +399,10 @@ pattern generalises to collars, vases, planters, lampshades, coasters, any
    `land` and `lip_land` points exist only for that.
    Prefer `forge_lib.flared_lip()` for the foot; write the polygon by hand only
    when the section is genuinely more complicated than a collar.
+   For anything that should read as *soft* rather than machined, build the
+   outside with `forge_lib.soft_body()` and cut the inside out of it: five or
+   six control points give a silhouette a polygon cannot, and the helper keeps
+   the base flat, the wall constant and the swell inside the overhang limit.
 2. **Cut the band, never add it.** The bowl-holder's `_flute_cutters` is the
    proven original of `forge_lib.textured_band`: the effective depth is
    `min(depth, 0.40 × wall, 0.45 × surface_width)` and the cutter radius is
@@ -377,12 +427,22 @@ creature; a pen cup with ears; a planter shaped like an animal; a lamp base with
 fins. The pattern generalises to anything where a user asks for a real object
 "but make it look like X".
 
-This is the pattern that used to fail, and it is worth being honest about how.
+This is the pattern that used to fail, and it is worth being honest about how —
+twice.
+
 Given a reference image of a bowl holder with a fur collar and ears, a generator
 that only knows cylinders and grooves produces a correct bowl ring, a **dashed
 groove** where the fur should be, and **flat slabs** for the ears. The base was
 never the problem. The decoration was — and the fix is not to sculpt it, it is
 to notice that the decoration is parametric too.
+
+Then the ornament helpers landed, every check passed, and the result still read
+as **stiff, sparse and flat**: flat leaves are cut-outs, and a cylinder is not a
+body. Passing four checks is necessary and it is not the brief. The fix for that
+was two more parameters — `cup=` on the collar and `soft_body` under it — and
+one measurement that a screenshot would not have given: rays cast out of the
+band's axis, at the gaps between one rank's leaves, to prove the second rank
+really covers them.
 
 1. **Split the design into a base with sockets and appendages with pegs.**
    The base does the work (holds the bowl, stands up, does not tip). The
@@ -394,19 +454,43 @@ to notice that the decoration is parametric too.
    ```
    Sockets open **upward** in the base; pegs lie in the appendage's own plane.
 
-2. **Fur, feathers, a mane, a ruff → `leaf_collar`.** One leaf, arrayed:
+2. **The body is a `soft_body`, not a cylinder.** A collar's band is a cone;
+   against a straight wall a cone reads as a hat brim, and against a body that
+   already swells and tapers it reads as the body's own shoulder. Five or six
+   `(radius, z)` proportions are the whole silhouette:
    ```python
-   args = dict(ring_radius=r_out, leaf_length=26.0, leaf_width=18.0, count=16,
+   points = [(r_out, 0), (r_out + 0.55*swell, 0.16*h), (r_out + swell, 0.45*h),
+             (r_out + 0.80*swell, 0.70*h), (r_out + 0.25*swell, 0.90*h), (r_out, h)]
+   part = Pos(0, 0, base_z) * forge_lib.soft_body(points)   # solid; bore it after
+   part -= revolve(Plane.XZ * Polygon(*cavity_points, align=None), axis=Axis.Z)
+   ```
+   Bores, seats, sockets and pockets go on afterwards exactly as they would on
+   any other solid; there is nothing special about a revolved body. Clamp the
+   swell — a silhouette that leans outward as it rises **is** an overhang, and
+   `soft_body_plan(...)["unsupported"]` will say so.
+
+3. **Fur, feathers, a mane, a ruff → `leaf_collar`, cupped.** One leaf, arrayed:
+   ```python
+   args = dict(ring_radius=narrowest, leaf_length=26.0, leaf_width=18.0, count=16,
                overlap=0.35, droop_deg=44.0, jitter=0.35, seed=3,
-               clearance=-1.0)             # negative: bite into the base
+               cup=0.32,                   # arched front: fur, not cut-outs
+               clearance=-1.0)             # negative: bite into the body
    plan = forge_lib.leaf_collar_plan(**args)
    part += Pos(0, 0, band_top - plan["height_mm"]) * forge_lib.leaf_collar(**args)
    ```
    Read `plan["height_mm"]` and place the collar by it rather than guessing.
    `jitter` is what stops sixteen identical leaves reading as a machined ring;
-   `seed` makes "organic" reproducible.
+   `seed` makes "organic" reproducible; `cup` is what stops them reading as
+   paper.
 
-3. **Ears, tails, fins, wings → `silhouette_part`.** Draw the outline as **8–12
+   On a `soft_body`, `ring_radius` is the **narrowest the body gets over the
+   band's own height** — not its radius under the band's top. The band's bore is
+   a cylinder, so if the body shrinks away from it anywhere along the band, the
+   band's bottom rim stops being buried and comes back as 535 mm² of 90°
+   overhang. Two passes: plan once for `band_height_mm`, sample the silhouette
+   over that span, plan again.
+
+4. **Ears, tails, fins, wings → `silhouette_part`.** Draw the outline as **8–12
    proportions**, never a pixel trace:
    ```python
    _EAR_SHAPE = [(0.00, 0.000), (0.36, 0.085), (0.50, 0.340), (0.40, 0.660),
@@ -422,7 +506,7 @@ to notice that the decoration is parametric too.
    backwards. Read the proportions off the reference the way you would read a
    measurement: tip here, widest point there, root that wide.
 
-4. **One script, one `part` selector, one `/check` per piece.** `build()` must
+5. **One script, one `part` selector, one `/check` per piece.** `build()` must
    return one thing, and these pieces have different print orientations (the
    base stands up; the ear and tail lie flat). A `Compound` of all three would
    force one orientation on all of them and make the overhang answer
@@ -433,8 +517,8 @@ to notice that the decoration is parametric too.
    ```
    Check each value separately and report each separately.
 
-5. **Spend the printability budget where it shows.** Two decisions carried this
-   sample from "warns everywhere" to "passes":
+6. **Spend the printability budget where it shows.** Three decisions carried
+   this sample from "warns everywhere" to "passes":
    - `droop_deg = 44`, inside the 42–48° window where a drooping leaf is
      support-free at *both* ends. Below 42 the leaf tips point too far down;
      above 48 the undersides do. It is also about the flare the reference has,
@@ -442,10 +526,15 @@ to notice that the decoration is parametric too.
    - Socket lugs built as **ribs running down into the collar band**, not
      bosses hanging off the rim. Three bosses left 354 mm² of flat, 90°
      underside in mid-air; three ribs leave none.
+   - The collar's bore sized to the body's **narrowest point under the band**.
+     Sizing it to the body's radius under the band's *top* — which is the same
+     number on a cylinder and not on a soft body — left the band's bottom rim
+     hanging in mid-air: 535 mm² at 90°.
 
-Result: the base passes all four checks with the collar on it. The ear and the
-tail pass three and warn at 63–80 mm² — the underside of the peg, which is a
-horizontal cylinder however you draw it, and which bridges at 6 mm.
+Result: the base passes all four checks with the collar on it, cupped leaves,
+swollen body and all. The ear and the tail pass three and warn at 63–80 mm² —
+the underside of the peg, which is a horizontal cylinder however you draw it,
+and which bridges at 6 mm.
 
 ---
 
@@ -459,5 +548,7 @@ horizontal cylinder however you draw it, and which bridges at 6 mm.
 - [ ] Blind pockets open upward; no flat ceilings.
 - [ ] Decoration is generated, not sculpted: no hand-rolled ribs, slabs or
       dashed grooves where an ornament helper covers it.
+- [ ] Anything organic is **cupped** (`cup=0.3`) on a **`soft_body`**, not flat
+      elements on a cylinder.
 - [ ] Multi-piece designs expose a `part` selector and each piece is checked.
 - [ ] `/check` run, all four results seen, reported in plain language.

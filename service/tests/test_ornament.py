@@ -10,13 +10,22 @@ Same three layers as ``test_forge_lib.py``, cheapest first:
   endpoint, once per piece, because "the base passes all four with the collar
   on it" is the claim the sample exists to make.
 
-The two failures worth naming, because they are what these tests defend:
+The failures worth naming, because they are what these tests defend:
 
 * two elements a tenth of a millimetre apart look identical on screen and come
   back as ``min_wall: fail``.  Hence the clearance tests.
 * a splined outline extruded straight gives a mesh whose side wall pinches
   ~0.03 mm inside its own cap face, and the check's rays walk out through the
   pinch.  Hence the "one element measures its own thickness" tests.
+* a CURVED element built as a constant-wall shell measured 0.15 to 0.38 mm on
+  blades 1.2, 2.6 and 5.0 mm thick, and 0.16 mm on all three at once for one
+  setting -- because the measurement was an acute dihedral at the shell's own
+  radial end face and never touched the wall at all.  Hence
+  ``test_cupped_collar_is_one_watertight_solid_that_measures_its_own_wall``,
+  which asserts the measured wall across thicknesses rather than at one.
+* a collar can pass every check and still look like a ring of paper.  Hence
+  ``test_two_layers_close_the_gaps_the_first_rank_leaves``, which casts rays
+  out of the band's axis instead of trusting a screenshot.
 """
 
 from __future__ import annotations
@@ -112,6 +121,128 @@ def test_leaf_collar_layers_are_far_enough_apart_to_measure():
     assert plan["layer_gap_mm"] > plan["thickness_mm"]
     assert plan["layer_clearance_mm"] >= plan["keep_apart_mm"] - 1e-6
     assert plan["keep_apart_mm"] >= MIN_FEATURE
+
+
+def test_leaf_collar_ranks_step_along_the_element_not_straight_out():
+    """A rank steps out AND up, which is what keeps the band off the one inside.
+
+    Straight out, a step of ``g`` buys only ``g cos(lean)`` of the separation
+    that matters, and all of ``g`` lands in the band's outer radius -- which is
+    the material that hides the inner rank.
+    """
+    plan = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0)
+    gap = plan["layer_gap_mm"]
+    assert plan["layer_step_r_mm"] == pytest.approx(
+        gap * math.cos(math.radians(44.0)), abs=1e-4
+    )
+    assert plan["layer_rise_mm"] == pytest.approx(
+        gap * math.sin(math.radians(44.0)), abs=1e-4
+    )
+    # The radial step is strictly cheaper than the separation it buys.
+    assert plan["layer_step_r_mm"] < gap
+    # The outer rank starts higher, so it lies over the inner one.
+    assert plan["layer_z_mm"][0] < plan["layer_z_mm"][1] == 0.0
+    # ... and it is a little smaller.
+    assert plan["layer_scale"][1] < plan["layer_scale"][0] == 1.0
+
+
+def test_petal_crown_ranks_still_step_straight_out():
+    """A crown's band is below its petals, so nothing is hidden either way."""
+    plan = forge_lib.petal_crown_plan(45.0, 26.0, 20.0, 16)
+    assert plan["layer_step_r_mm"] == pytest.approx(plan["layer_gap_mm"])
+    assert plan["layer_rise_mm"] == 0.0
+
+
+# ==========================================================================
+# cup -- the arched front that turns a cut-out into a leaf
+# ==========================================================================
+
+
+def test_cup_is_off_by_default_and_reported_when_on():
+    flat = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0)
+    assert flat["cup"] == 0.0
+    assert flat["cup_rise_mm"] == 0.0
+    assert flat["stack_mm"] == flat["thickness_mm"]
+
+    cupped = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0, cup=0.32)
+    assert cupped["cup"] == pytest.approx(0.32)
+    assert cupped["cup_rise_mm"] > 0.0
+    assert cupped["cup_flank_deg"] > 20.0
+    # The element is thin but no longer shallow, and every envelope knows it.
+    assert cupped["stack_mm"] == pytest.approx(
+        cupped["thickness_mm"] + cupped["cup_rise_mm"]
+    )
+    assert cupped["stack_mm"] > flat["stack_mm"]
+
+
+def test_cup_rise_follows_the_element_and_eases_to_a_flat_tip():
+    plan = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0, cup=0.32)
+    assert plan["cup_rise_mm"] == pytest.approx(0.32 * plan["width_mm"] / 2.0, rel=0.05)
+
+    flank = forge_lib._element_flank(
+        plan["length_mm"], plan["width_mm"], plan["tip_land_mm"],
+        plan["root_width_mm"], plan["embed_mm"], "leaf",
+    )
+    geom = forge_lib._cup_geometry(
+        plan["cup"], flank, plan["thickness_mm"],
+        plan["cup_rake_tan"], plan["cup_ascent_tan"],
+    )
+    rises = [rise for _, _, rise in geom["stations"]]
+    # Flat at the tip, so the tip land is the same rectangle a prism's is.
+    assert rises[-1] == 0.0
+    # Fullest somewhere in the middle, not at either end.
+    peak = rises.index(max(rises))
+    assert 0 < peak < len(rises) - 1
+
+
+def test_cup_is_clamped_to_something_that_still_reads_as_a_leaf():
+    plan = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, cup=5.0)
+    assert plan["cup"] == forge_lib.MAX_CUP_RATIO
+    assert any("cup" in note for note in plan["clamped"])
+
+
+def test_cup_is_suppressed_when_it_would_be_under_a_layer_of_relief():
+    """A cup shallower than 0.3 mm is not a cup; the element stays a prism."""
+    plan = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, cup=0.002)
+    assert plan["cup_rise_mm"] == 0.0
+    assert plan["stack_mm"] == plan["thickness_mm"]
+
+
+def test_cup_refuses_a_number_that_is_not_one():
+    for bad in (-0.2, float("nan"), True, "deep"):
+        with pytest.raises(forge_lib.PrintabilityError) as exc:
+            forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, cup=bad)
+        assert "cup" in str(exc.value)
+
+
+def test_cup_costs_a_crown_droop_window_but_not_a_collar():
+    """Which way the arched front faces decides who pays.
+
+    A collar's crown points outward and UP -- the face the overhang check
+    measures is the flat back, at exactly the droop.  A crown's arched face is
+    the one pointing down, so its climb out of the root rides on top of the
+    flare and the window has to give it room.
+    """
+    collar = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=46.0, cup=0.42)
+    assert collar["cup_slope_deg"] == 0.0
+    assert collar["lean_deg"] == pytest.approx(46.0)
+
+    crown = forge_lib.petal_crown_plan(45.0, 26.0, 20.0, 16, flare_deg=46.0, cup=0.42)
+    assert crown["cup_slope_deg"] > 0.0
+    assert crown["lean_deg"] < 46.0
+    assert any("flare_deg" in note for note in crown["clamped"])
+    # Never so far that the printable window closes: the tip land has to stay
+    # inside the limit as well as the underside.
+    assert crown["lean_deg"] >= 90.0 - OVERHANG
+
+
+def test_cup_pushes_the_ranks_apart_and_the_band_out():
+    flat = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0)
+    cupped = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, droop_deg=44.0, cup=0.32)
+    assert cupped["layer_gap_mm"] > flat["layer_gap_mm"]
+    assert cupped["band_outer_radius_mm"] > flat["band_outer_radius_mm"]
+    # And the solved gap still clears a real air gap.
+    assert cupped["layer_clearance_mm"] >= cupped["keep_apart_mm"] - 1e-6
 
 
 def test_leaf_collar_one_layer_keeps_the_elements_apart_instead():
@@ -318,15 +449,95 @@ def test_silhouette_is_support_free_by_construction():
 
 
 # ==========================================================================
+# soft_body -- the plan
+# ==========================================================================
+
+BOWL = [(30.0, 0.0), (40.0, 10.0), (45.0, 26.0), (44.0, 46.0), (38.0, 66.0), (33.0, 78.0)]
+
+
+def test_soft_body_refuses_a_profile_too_short_to_be_a_curve():
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan([(10.0, 0.0), (12.0, 5.0), (14.0, 10.0)])
+    assert "at least 5" in str(exc.value)
+
+
+def test_soft_body_refuses_a_traced_profile():
+    points = [(10.0 + i, float(i)) for i in range(14)]
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan(points)
+    assert "tracing a photograph" in str(exc.value)
+
+
+def test_soft_body_refuses_a_profile_that_doubles_back():
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan(
+            [(10.0, 0.0), (12.0, 5.0), (14.0, 3.0), (16.0, 10.0), (12.0, 20.0)]
+        )
+    assert "not above" in str(exc.value)
+
+
+def test_soft_body_refuses_a_negative_radius():
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan(
+            [(-1.0, 0.0), (12.0, 5.0), (14.0, 10.0), (16.0, 15.0), (12.0, 20.0)]
+        )
+    assert "zero or more" in str(exc.value)
+
+
+def test_soft_body_refuses_something_too_small_to_be_a_body():
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan(
+            [(10.0, 0.0), (12.0, 0.4), (14.0, 0.8), (16.0, 1.2), (12.0, 1.6)]
+        )
+    assert "tall" in str(exc.value)
+
+
+def test_soft_body_refuses_a_wall_that_closes_the_body_up():
+    with pytest.raises(forge_lib.PrintabilityError) as exc:
+        forge_lib.soft_body_plan(BOWL, wall=40.0)
+    assert "cavity left" in str(exc.value)
+
+
+def test_soft_body_clamps_the_base_to_a_land_and_the_wall_to_the_minimum():
+    plan = forge_lib.soft_body_plan(
+        [(0.05, 0.0), (12.0, 5.0), (14.0, 10.0), (16.0, 15.0), (12.0, 20.0)],
+        wall=0.2,
+    )
+    assert plan["base_radius_mm"] >= forge_lib.min_land()
+    assert plan["wall_mm"] == MIN_WALL
+    assert any("base radius" in note for note in plan["clamped"])
+    assert any("wall" in note for note in plan["clamped"])
+
+
+def test_soft_body_names_a_silhouette_that_hangs_over_itself():
+    steep = [(6.0, 0.0), (10.0, 2.0), (30.0, 6.0), (34.0, 20.0), (30.0, 30.0)]
+    plan = forge_lib.soft_body_plan(steep)
+    assert plan["support_free"] is False
+    assert "outside of the body" in {e["what"] for e in plan["unsupported"]}
+    assert plan["outer_steepest_deg"] > OVERHANG
+
+
+def test_soft_body_solid_and_hollow_agree_about_the_outside():
+    solid = forge_lib.soft_body_plan(BOWL)
+    hollow = forge_lib.soft_body_plan(BOWL, wall=3.0)
+    assert solid["hollow"] is False and hollow["hollow"] is True
+    assert solid["outline_mm"] == hollow["outline_mm"]
+    assert hollow["floor_mm"] >= MIN_WALL
+    assert len(hollow["inner_mm"]) > 2
+
+
+# ==========================================================================
 # Geometry -- measured, not asserted from the plan
 # ==========================================================================
 
 build123d = pytest.importorskip("build123d", reason="build123d is not installed yet")
 
 
+from service import checks  # noqa: E402
+
+
 def _thinnest(solid) -> float:
     """The minimum-wall probe the real check runs, on one solid."""
-    from service import checks
     from service.printer import normalize_printer
     from service.runner import tessellate_shape
 
@@ -338,7 +549,6 @@ def _thinnest(solid) -> float:
 
 def _steepest_overhang(solid) -> float:
     """The steepest downward facet that is not resting on the plate."""
-    from service import checks
     from service.runner import tessellate_shape
 
     vertices, triangles = tessellate_shape(solid)
@@ -472,6 +682,292 @@ def test_scale_band_rows_stay_one_solid():
     assert len(band.solids()) == 1
     assert _thinnest(band) >= MIN_WALL
     assert _steepest_overhang(band) <= OVERHANG
+
+
+@pytest.mark.parametrize(
+    "label, kwargs",
+    [
+        ("defaults", {}),
+        ("full jitter", {"jitter": 1.0, "seed": 7}),
+        ("thin leaves", {"thickness": 1.2}),
+        ("max cup", {"cup": forge_lib.MAX_CUP_RATIO}),
+        ("short wide", {"count": 22, "leaf_length": 16.0}),
+    ],
+)
+def test_cupped_collar_is_one_watertight_solid_that_measures_its_own_wall(label, kwargs):
+    """The claim the cup exists to make good: puffy AND min_wall-safe.
+
+    The section is never thinner than ``thickness`` -- it is ``thickness`` at
+    the element's edges and ``thickness + rise`` at its crown -- so the wall
+    holds by construction, not by being measured afterwards.
+    """
+    args = dict(
+        ring_radius=45.0,
+        leaf_length=26.0,
+        leaf_width=20.0,
+        count=16,
+        overlap=0.35,
+        droop_deg=44.0,
+        thickness=2.6,
+        jitter=0.35,
+        seed=3,
+        cup=0.32,
+    )
+    args.update(kwargs)
+    collar = forge_lib.leaf_collar(**args)
+    assert collar.is_valid, label
+    assert len(collar.solids()) == 1, f"{label}: the collar came apart"
+    assert collar.bounding_box().min.Z == pytest.approx(0.0, abs=1e-6)
+    assert _thinnest(collar) >= MIN_WALL, label
+    # And it never measures LESS than the element it was asked for, either.
+    plan = forge_lib.leaf_collar_plan(**args)
+    assert _thinnest(collar) >= min(plan["thickness_mm"], MIN_WALL) - 1e-3, label
+
+
+def test_a_cupped_element_is_thicker_at_its_crown_than_at_its_edges():
+    """It really is arched: the section is a chord, not a slab."""
+    from build123d import Axis
+
+    plan = forge_lib.leaf_collar_plan(45.0, 26.0, 20.0, 16, thickness=2.6, cup=0.32)
+    flat = forge_lib._element_solid(
+        26.0, plan["width_mm"], plan["tip_land_mm"], plan["root_width_mm"],
+        plan["embed_mm"], "leaf", 2.6, 0.0,
+    )
+    cupped = forge_lib._element_solid(
+        26.0, plan["width_mm"], plan["tip_land_mm"], plan["root_width_mm"],
+        plan["embed_mm"], "leaf", 2.6, plan["cup"],
+        plan["cup_rake_tan"], plan["cup_ascent_tan"],
+    )
+    assert cupped.is_valid and len(cupped.solids()) == 1
+    # The back stays flat on Z = 0; only the front rises.
+    assert cupped.bounding_box().min.Z == pytest.approx(0.0, abs=1e-6)
+    assert cupped.bounding_box().max.Z > flat.bounding_box().max.Z + 1.0
+    assert cupped.bounding_box().max.Z == pytest.approx(
+        2.6 + plan["cup_rise_mm"], rel=0.02
+    )
+    # Arched, not merely taller: it holds more material over the same footprint.
+    assert cupped.volume > flat.volume
+    # Its widest section is still the outline's, so the collar's arithmetic holds.
+    assert cupped.bounding_box().size.X == pytest.approx(
+        flat.bounding_box().size.X, rel=0.01
+    )
+    assert cupped.faces().sort_by(Axis.Z)[0].area == pytest.approx(
+        flat.faces().sort_by(Axis.Z)[0].area, rel=0.02
+    )
+
+
+def test_a_cupped_collar_hangs_no_more_than_a_flat_one():
+    """The droop window is untouched: the face pointing down is still flat."""
+    args = dict(
+        ring_radius=45.0, leaf_length=26.0, leaf_width=20.0, count=16,
+        overlap=0.35, droop_deg=44.0, thickness=2.6,
+    )
+    flat = _steepest_overhang(forge_lib.leaf_collar(**args))
+    cupped = _steepest_overhang(forge_lib.leaf_collar(**args, cup=0.32))
+    # Both leave nothing but the band's own bottom rim, which is 90 deg flat and
+    # disappears the moment the collar is unioned onto a base.
+    assert flat == pytest.approx(90.0, abs=1e-6)
+    assert cupped == pytest.approx(90.0, abs=1e-6)
+
+
+def test_a_cupped_crown_is_still_support_free():
+    crown = forge_lib.petal_crown(45.0, 26.0, 20.0, 14, cup=0.32, jitter=0.4, seed=2)
+    assert crown.is_valid
+    assert len(crown.solids()) == 1
+    assert _steepest_overhang(crown) <= OVERHANG
+    assert _thinnest(crown) >= MIN_WALL
+
+
+def test_a_cupped_scale_band_keeps_its_rows_and_its_wall():
+    """Cup and rows together: the third helper, and the one with two knobs."""
+    band = forge_lib.scale_band(
+        45.0, 14.0, 20.0, 16, rows=3, droop_deg=44.0, cup=0.32, jitter=0.3, seed=4
+    )
+    assert band.is_valid
+    assert len(band.solids()) == 1
+    assert _thinnest(band) >= MIN_WALL
+    assert _steepest_overhang(band) <= OVERHANG
+
+
+# ==========================================================================
+# Density -- measured with rays, not looked at
+# ==========================================================================
+
+
+def _gap_azimuths(plan):
+    """Halfway between each neighbouring pair of the FIRST rank's elements.
+
+    Where the elements actually end up, jitter included -- the same hash
+    ``_ornament_solid`` uses -- so the probe lands in the real gap and not in
+    the one an un-jittered ring would have had.
+    """
+    first = []
+    for index in range(plan["count"]):
+        if index % plan["layers"]:
+            continue
+        phi = 360.0 * index / plan["count"]
+        if plan["jitter"] > 0.0:
+            phi += (
+                0.30 * plan["jitter"]
+                * forge_lib._noise(plan["seed"], index, 2)
+                * 360.0 / plan["count"]
+            )
+        first.append(math.radians(phi))
+    first.sort()
+    return [
+        0.5 * (a + b)
+        for a, b in zip(first, first[1:] + [first[0] + 2.0 * math.pi])
+    ]
+
+
+def _shoulder_coverage(plan, solid, bands=7, top=0.03, bottom=0.33):
+    """Do rays out of the axis, in the gaps, meet an element?
+
+    The probe is horizontal and it leaves the band's own axis, so anything it
+    can hit is element material: the band itself is higher up.  The band is
+    ``height_mm - band_height_mm`` above the collar's lowest point, and the
+    zone probed is the top third of the skirt below it -- the shoulder, where
+    the elements are at their widest and where a gap is a hole in the collar
+    right beside the band.  Further down every ring of drooping elements fans
+    out; that is what a fur collar does, and it is not what this measures.
+    """
+    from service.runner import tessellate_shape
+
+    vertices, triangles = tessellate_shape(solid)
+    geometry = checks.MeshGeometry(vertices, triangles)
+    low, _ = geometry.bounds()
+    base = low[2]
+    band_bottom = base + plan["height_mm"] - plan["band_height_mm"]
+    skirt = band_bottom - base
+    reach = 3.0 * plan["outer_radius_mm"] + 50.0
+
+    hits = total = 0
+    for phi in _gap_azimuths(plan):
+        direction = (math.cos(phi), math.sin(phi), 0.0)
+        for index in range(bands):
+            frac = top + (bottom - top) * index / (bands - 1)
+            origin = (0.0, 0.0, band_bottom - frac * skirt)
+            total += 1
+            for ia, ib, ic in geometry.triangles:
+                distance = checks._ray_triangle(
+                    origin,
+                    direction,
+                    geometry.vertices[ia],
+                    geometry.vertices[ib],
+                    geometry.vertices[ic],
+                )
+                if distance is not None and 1e-6 < distance <= reach:
+                    hits += 1
+                    break
+    return hits, total
+
+
+@pytest.mark.parametrize("label, cup", [("cupped", 0.32), ("flat", 0.0)])
+def test_two_layers_close_the_gaps_the_first_rank_leaves(label, cup):
+    """``layers=2`` is dense at the defaults, and it is the second rank doing it.
+
+    The gaps between one rank's elements are two pitches wide and no element
+    can be that wide, so a single rank ALWAYS shows the band between its
+    elements.  The second rank sits in those gaps, and this measures whether it
+    really covers them rather than hiding behind the band's own skirt -- which
+    is what it did when the ranks were stepped straight outward.
+    """
+    args = dict(
+        ring_radius=45.0, leaf_length=26.0, leaf_width=18.0, count=16,
+        overlap=0.35, droop_deg=44.0, thickness=2.6, jitter=0.35, seed=3,
+        clearance=-1.0, cup=cup,
+    )
+    plan = forge_lib.leaf_collar_plan(**args)
+    hits, total = _shoulder_coverage(plan, forge_lib.leaf_collar(**args))
+    assert total > 0
+    assert hits / total >= 0.9, f"{label}: {hits}/{total} of the shoulder covered"
+
+    one = dict(args, layers=1)
+    lone_plan = forge_lib.leaf_collar_plan(**one)
+    lone_hits, lone_total = _shoulder_coverage(lone_plan, forge_lib.leaf_collar(**one))
+    assert lone_hits == 0, (
+        f"{label}: one rank should show straight through its own gaps, "
+        f"got {lone_hits}/{lone_total}"
+    )
+
+
+# ==========================================================================
+# soft_body -- the geometry
+# ==========================================================================
+
+
+def test_soft_body_solid_is_one_watertight_body_flat_on_the_plate():
+    body = forge_lib.soft_body(BOWL)
+    assert body.is_valid
+    assert len(body.solids()) == 1
+    box = body.bounding_box()
+    assert box.min.Z == pytest.approx(0.0, abs=1e-6)
+    assert box.size.Z == pytest.approx(78.0)
+    assert _thinnest(body) >= MIN_WALL
+    assert _steepest_overhang(body) <= OVERHANG
+
+
+@pytest.mark.parametrize("wall", [1.6, 3.0, 6.0])
+def test_soft_body_hollow_keeps_the_wall_it_was_given(wall):
+    body = forge_lib.soft_body(BOWL, wall=wall)
+    assert body.is_valid
+    assert len(body.solids()) == 1
+    assert _thinnest(body) >= MIN_WALL
+    # An open top: the rim is a land, and nothing is a ceiling over the cavity.
+    assert _steepest_overhang(body) <= OVERHANG
+    solid = forge_lib.soft_body(BOWL)
+    assert body.volume < solid.volume
+
+
+def test_soft_body_is_the_curve_its_plan_says_it_is():
+    """Polygonised before it is revolved -- the law from :func:`_sample_curve`."""
+    plan = forge_lib.soft_body_plan(BOWL)
+    body = forge_lib.soft_body(BOWL)
+    assert plan["segments"] > 4 * len(BOWL)
+    assert body.bounding_box().size.X / 2.0 == pytest.approx(
+        plan["max_radius_mm"], rel=1e-3
+    )
+    assert plan["max_radius_mm"] > max(r for r, _ in BOWL) - 1e-6
+
+
+def test_soft_body_takes_a_bore_and_a_socket_like_any_other_solid():
+    """The composition idiom the docstring promises, exercised."""
+    from build123d import Pos, Rot
+
+    plan = forge_lib.soft_body_plan(BOWL)
+    spec = forge_lib.peg_spec(d=6.0, l=10.0)
+    body = forge_lib.soft_body(BOWL)
+    bored = body - Pos(0, 0, plan["height_mm"] + 0.5) * Rot(180, 0, 0) * (
+        forge_lib.blunted_taper(9.0, 9.0, 30.0, role="cut")
+    )
+    seated = bored - Pos(20.0, 0.0, plan["height_mm"] + 0.5) * Rot(180, 0, 0) * (
+        forge_lib.socket_for(spec, forge_lib.fit_tolerance("slide_fit"))
+    )
+    assert seated.is_valid
+    assert len(seated.solids()) == 1
+    assert seated.volume < bored.volume < body.volume
+    assert _thinnest(seated) >= MIN_WALL
+
+
+def test_a_soft_body_carries_a_cupped_collar_as_one_solid():
+    """The composition the library is for: a soft body with fur round its waist."""
+    from build123d import Pos
+
+    plan = forge_lib.soft_body_plan(BOWL)
+    args = dict(
+        ring_radius=43.0, leaf_length=28.0, leaf_width=20.0, count=16,
+        overlap=0.35, droop_deg=44.0, thickness=2.6, jitter=0.35, seed=3,
+        clearance=-2.0, cup=0.32,
+    )
+    collar_plan = forge_lib.leaf_collar_plan(**args)
+    part = forge_lib.soft_body(BOWL)
+    part += Pos(0.0, 0.0, 44.0 - collar_plan["height_mm"]) * forge_lib.leaf_collar(
+        **args
+    )
+    assert part.is_valid
+    assert len(part.solids()) == 1, "the collar did not weld onto the body"
+    assert _thinnest(part) >= MIN_WALL
+    assert plan["height_mm"] > 0
 
 
 def test_silhouette_part_is_a_prism_of_the_thickness_asked_for():
@@ -652,6 +1148,11 @@ def test_the_sample_appendages_are_clean_but_for_their_pegs(
         ("big bowl", {"bowl_diameter": 6.0, "bowl_height": 4.0, "wall": 10.0}),
         ("sparse collar", {"collar_leaves": 8, "collar_overlap": 0.0}),
         ("dense collar", {"collar_leaves": 26, "collar_length": 14.0}),
+        ("flat collar", {"collar_cup": 0.0}),
+        ("deepest cup", {"collar_cup": 0.42}),
+        ("straight body", {"body_swell": 0.0}),
+        ("fullest body", {"body_swell": 0.24}),
+        ("upright collar", {"collar_droop": 15.0}),
     ],
 )
 def test_the_sample_base_stays_printable_across_its_range(
@@ -669,6 +1170,18 @@ def test_the_sample_base_stays_printable_across_its_range(
     # which is between the minimum wall and the minimum feature.
     assert statuses["min_wall"] != "fail", (label, body["checks"])
     assert statuses["watertight"] == "pass", label
+
+
+def test_the_sample_declares_the_two_knobs_that_make_it_soft(client, sample_source):
+    """The cup and the swell are parameters, not decisions baked into the file."""
+    params = client.post(
+        "/parse_params", json={"script": sample_source}
+    ).json()["params"]
+    assert params["collar_cup"]["unit"] == "ratio"
+    assert params["collar_cup"]["value"] > 0.0
+    assert params["collar_cup"]["max"] <= forge_lib.MAX_CUP_RATIO
+    assert params["body_swell"]["unit"] == "ratio"
+    assert params["body_swell"]["value"] > 0.0
 
 
 def test_the_ornament_helpers_are_reachable_from_inside_a_script(client, kernel):
@@ -712,6 +1225,31 @@ def build(p):
         [[0,0],[11,6],[15,24],[12,46],[4,62],[0,70],
          [-6,58],[-13,34],[-14,12],[-8,2]], p["t"], rounding=1.5)
 """
+    _run_raw_vs_fixed(client, raw, fixed)
+
+
+def test_a_soft_body_is_reachable_and_printable_from_inside_a_script(client, kernel):
+    """The new body vocabulary, through the real endpoint."""
+    script = """
+from build123d import *
+PARAMS = {"wall": {"value": 3.0, "unit": "mm", "min": 1.0, "max": 8.0}}
+def build(p):
+    points = [(30, 0), (40, 10), (45, 26), (44, 46), (38, 66), (33, 78)]
+    plan = forge_lib.soft_body_plan(points, wall=p["wall"])
+    assert plan["hollow"] and plan["support_free"]
+    return forge_lib.soft_body(points, wall=p["wall"])
+"""
+    response = client.post("/check", json={"script": script})
+    assert response.status_code == 200, response.text
+    assert _statuses(response.json()) == {
+        "bed_fit": "pass",
+        "min_wall": "pass",
+        "overhangs": "pass",
+        "watertight": "pass",
+    }
+
+
+def _run_raw_vs_fixed(client, raw, fixed):
     raw_wall = [
         c
         for c in client.post("/check", json={"script": raw}).json()["checks"]
