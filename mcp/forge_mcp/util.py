@@ -2295,6 +2295,145 @@ def fmt_reference_report(path: Path, view: str, result: Mapping[str, Any]) -> st
     return "\n".join(lines)
 
 
+# --- Previews (the assistant's eyes) -----------------------------------------
+
+#: The views render_preview can take. The last three are deliberately the same
+#: three `load_reference` uses, so a `front` render and a `front` reference are
+#: the same projection and can be held up against each other.
+PREVIEW_VIEWS = ("iso", "front", "side", "top")
+
+#: Square pixels. 768 is enough to judge a silhouette; the floor and ceiling
+#: match the add-on's so a refusal reads the same on either side.
+PREVIEW_RESOLUTION = 768
+PREVIEW_MIN_RESOLUTION = 128
+PREVIEW_MAX_RESOLUTION = 2048
+
+#: Bumped per render inside one server process, so consecutive previews are
+#: preview-001, preview-002 ... rather than one file overwritten. Comparing a
+#: change against the render before it needs both files to still exist.
+_preview_counter = 0
+
+
+def preview_path(view: str, objects: Sequence[str] | None = None) -> Path:
+    """A fresh scratch .png to render into, its folder already made."""
+    global _preview_counter
+
+    _preview_counter += 1
+    stem = f"preview-{_preview_counter:03d}-{view}"
+    names = [str(n).strip() for n in (objects or []) if str(n).strip()]
+    if len(names) == 1:
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "-", names[0]).strip("-")[:40]
+        if slug:
+            stem = f"{stem}-{slug}"
+    path = Path(config.PREVIEWS_DIR) / f"{stem}.png"
+    ensure_parent_dir(path)
+    return path
+
+
+def normalize_preview_resolution(resolution: Any) -> int:
+    """A square pixel size, or a refusal that names the range."""
+    if resolution is None:
+        return PREVIEW_RESOLUTION
+    if isinstance(resolution, bool) or not isinstance(resolution, (int, float)):
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution!r})."
+        )
+    if isinstance(resolution, float) and not float(resolution).is_integer():
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution})."
+        )
+    value = int(resolution)
+    if not PREVIEW_MIN_RESOLUTION <= value <= PREVIEW_MAX_RESOLUTION:
+        raise ForgeError(
+            f"resolution must be between {PREVIEW_MIN_RESOLUTION} and "
+            f"{PREVIEW_MAX_RESOLUTION} pixels (got {value}). The default, "
+            f"{PREVIEW_RESOLUTION}, is right for almost everything."
+        )
+    return value
+
+
+def normalize_preview_objects(objects: Any) -> list[str]:
+    """The names to frame, or an empty list meaning 'everything visible'."""
+    if objects is None:
+        return []
+    if isinstance(objects, str):
+        objects = [objects]
+    if not isinstance(objects, (list, tuple)):
+        raise ForgeError("objects must be a list of Blender object names.")
+    names: list[str] = []
+    for entry in objects:
+        if not isinstance(entry, str) or not entry.strip():
+            raise ForgeError(
+                f"objects must be a list of object names; {entry!r} is not one."
+            )
+        if entry.strip() not in names:
+            names.append(entry.strip())
+    return names
+
+
+def fmt_preview_report(result: Mapping[str, Any]) -> str:
+    """Where the picture is, and the instruction to go and look at it.
+
+    The path is on its own line and repeated in the instruction because this
+    report has exactly one job: get the model to Read the file. A preview
+    nobody looked at is worse than no preview — it is the same blind design
+    with an extra tool call in front of it.
+    """
+    path = str(result.get("path") or "")
+    names = [str(n) for n in (result.get("objects") or [])]
+    view = str(result.get("view") or "iso")
+    resolution = result.get("resolution")
+
+    if not names:
+        subject = "the scene"
+    elif len(names) <= 4:
+        subject = ", ".join(names)
+    else:
+        subject = f"{', '.join(names[:4])} and {len(names) - 4} more"
+
+    size = result.get("bounds_mm", {})
+    size = size.get("size") if isinstance(size, Mapping) else None
+
+    lines = [
+        f"Rendered {subject} — {view} view, {fmt_number(resolution)} px"
+        + (f", {_dims(size, 1)} overall" if size else "")
+        + ".",
+        "",
+        f"    {path}",
+        "",
+        "READ THAT FILE NOW. It is the picture of what you just made, and it is "
+        "the only way you will know whether it looks right — checks pass on "
+        "shapes that are stiff, sparse and flat.",
+    ]
+
+    if names and len(names) > 1:
+        lines.append(f"  it frames {len(names)} objects together, so what you see "
+                     "is how they read as one thing")
+    if result.get("framed_all_visible"):
+        lines.append("  every visible mesh is in frame; pass `objects` to look at "
+                     "one part on its own")
+
+    lines.append(
+        "  when you look: is the DENSITY right (too few leaves, too few teeth, "
+        "too sparse a band)? Are the PROPORTIONS the reference's proportions? "
+        "Does the SILHOUETTE read as the thing it is meant to be? Is it as SOFT "
+        "or as sharp as the reference?"
+    )
+    lines.append(
+        "  if you were given a reference picture, Read that too and compare them "
+        "side by side. If it visibly misses, change the parameters and render "
+        "again — do not describe a shape you have not looked at."
+    )
+
+    notes = result.get("notes") or []
+    for entry in notes:
+        lines.append(f"  note: {entry}")
+    if str(result.get("shading")) == "material":
+        lines.append("  this one is material shading (EEVEE), so colours and "
+                     "materials are what you see")
+    return "\n".join(lines)
+
+
 # --- Phase 6b (flows) --------------------------------------------------------
 
 #: Blender socket commands a flow step may call — the command registry from
@@ -2311,6 +2450,8 @@ KNOWN_BLENDER_OPS = frozenset({
     "select_object", "rename_object", "delete_object", "export_stl",
     # references (Phase 6c)
     "load_reference",
+    # looking at the result — a flow can end by leaving a picture on disk
+    "render_preview",
     # PartForge
     "load_mesh", "load_meshes", "partforge_open",
     # imported meshes (Phase 6d)

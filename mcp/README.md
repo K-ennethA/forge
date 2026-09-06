@@ -47,7 +47,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 50-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 51-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
@@ -138,6 +138,8 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` writes to |
 | `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
+| `FORGE_PREVIEWS_DIR` | `%TEMP%\forge-previews` | where `render_preview` drops the PNGs the model Reads — scratch by design, never the repo or a project |
+| `FORGE_PREVIEW_TIMEOUT` | `180.0` | seconds to wait for one `render_preview` (a Workbench render of an ordinary part is well under a second; the budget is for a dense import at 2048 px) |
 | `FORGE_MESHGEN_URL` | `http://127.0.0.1:8902` | meshgen base URL (overrides host/port) |
 | `FORGE_MESHGEN_HOST` / `FORGE_MESHGEN_PORT` | `127.0.0.1` / `8902` | meshgen address |
 | `FORGE_MESHGEN_CONNECT_TIMEOUT` | `2.0` | seconds to wait for meshgen's HTTP connection |
@@ -211,6 +213,34 @@ The object is an **empty**, not geometry: it cannot be exported, printed or bool
 accident, and the artist can move, scale or hide it like anything else. It is there to
 **measure against, never to trace** — geometry is always built from parameters, which is
 what keeps it editable with real numbers (docs/plan.md §3).
+
+### Previews — the model's eyes
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `render_preview` | `objects`, `view` `iso`/`front`/`side`/`top`, `resolution` (128–2048), `shading` `solid`/`material` | Renders the scene to a PNG and returns the path, so the model can **Read the file and look at what it made**. Nothing is required: no path (it picks a scratch one), no object (it frames every visible mesh). |
+
+This is the only tool whose report exists to trigger another tool call. It names the path on
+its own line, says `READ THAT FILE NOW`, and then names the four things to look for —
+**density, proportions, silhouette, softness** — because a preview nobody looked at is the
+same blind design with an extra tool call in front of it. `partforge_check` answers *"can
+this be printed"*; it says nothing about whether the thing resembles what was asked for, and
+a part can pass every check and still come out stiff, sparse and flat next to the reference.
+
+- **Paths are scratch and never reused.** They land in `FORGE_PREVIEWS_DIR` (default
+  `%TEMP%\forge-previews`) as `preview-001-iso-<object>.png`, `preview-002-front.png` and so
+  on — a second preview is a *comparison* with the first, and comparing needs both files to
+  still exist. They are how the model sees, not artefacts the artist keeps, so they never go
+  into the repo or a project.
+- **`front` / `side` / `top` are `load_reference`'s three exactly**, so a `front` render and
+  a `front` reference are the same projection and can be held up against each other 1:1.
+  `iso` (the default) is a 3/4 orbit, which is where a silhouette shows itself.
+- `render_preview` is a legal **flow** step, so a flow can end by leaving a picture on disk.
+
+The add-on side does the work — an orthographic camera fitted to the target bounds, Workbench
+clay, and every borrowed setting restored in a `finally`. See
+[`addon/README.md`](../addon/README.md) for the framing maths and the state-restoration
+contract.
 
 ### PartForge
 

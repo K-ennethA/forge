@@ -8,6 +8,7 @@ non-default port without editing code.
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 
@@ -110,6 +111,20 @@ FLOWS_DIR: str = _env_str("FORGE_FLOWS_DIR", str(_REPO_ROOT / "flows"))
 # runs through one Blender socket call, so it needs its own budget rather than
 # the per-command default.
 FLOW_RUN_TIMEOUT: float = _env_float("FORGE_FLOW_RUN_TIMEOUT", 900.0)
+
+# --- previews ---------------------------------------------------------------
+# Where render_preview drops the PNGs the model then Reads. Scratch by design:
+# they are how the model SEES what it made, not artefacts the artist keeps, so
+# they go to the system temp folder and never into the repo or a project.
+# Every render gets its own filename rather than overwriting the last one — a
+# second preview is a comparison with the first, and comparing needs both.
+PREVIEWS_DIR: str = _env_str(
+    "FORGE_PREVIEWS_DIR", str(Path(tempfile.gettempdir()) / "forge-previews")
+)
+
+# A Workbench render of an ordinary part is well under a second; the budget is
+# for a dense import at 2048 px, and it sits inside BLENDER_READ_TIMEOUT.
+PREVIEW_TIMEOUT: float = _env_float("FORGE_PREVIEW_TIMEOUT", 180.0)
 
 
 def blender_address() -> str:

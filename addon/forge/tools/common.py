@@ -1919,3 +1919,503 @@ def cmd_export_stl(params):
         "exporter": exporter,
         "size_bytes": os.path.getsize(path),
     }
+
+
+# ---------------------------------------------------------------------------
+# render_preview — the assistant's eyes
+# ---------------------------------------------------------------------------
+#
+# Everything else in this file changes geometry.  This one only LOOKS at it, and
+# it exists because the assistant used to design blind: set the parameters, run
+# the checks, declare it done, never once seeing that the result was stiff,
+# sparse and flat next to the artist's reference.  Claude Code's Read tool
+# renders images, so a PNG on disk closes that loop.
+#
+# Three constraints shape the implementation:
+#
+# * It must run in ``--background`` (the harnesses) AND in the artist's live
+#   session.  So it renders with ``bpy.ops.render.render(write_still=True)``,
+#   which is context-free, rather than ``render.opengl``, which needs a VIEW_3D
+#   area and would inherit whatever shading the artist happens to be using.
+# * It must not touch the artist's viewport.  ``scene.display.shading`` is the
+#   render-time Workbench configuration, a scene property; the 3D view's own
+#   ``space.shading`` is never read or written here.
+# * It must leave nothing behind.  A preview that costs the artist a stray
+#   camera, a changed render engine or an undo step they have to unpick is worse
+#   than no preview, so the whole body runs under try/finally and the command is
+#   in ``READ_ONLY_COMMANDS`` (no undo push).
+
+#: Square by default: a preview is looked at, not printed, and 768 px is enough
+#: to judge a silhouette without spending the model's whole image budget.
+PREVIEW_RESOLUTION = 768
+PREVIEW_MIN_RESOLUTION = 128
+PREVIEW_MAX_RESOLUTION = 2048
+
+#: Breathing room around the fitted bounds, so nothing is clipped by rounding.
+PREVIEW_MARGIN = 1.12
+
+#: True isometric: azimuth 45 degrees (the classic orbit), elevation
+#: ``atan(1/sqrt(2))`` = 35.264 degrees, which is the angle at which the three
+#: axes foreshorten equally.  The camera ends up front-right-above the subject.
+PREVIEW_ISO_ELEVATION_DEG = math.degrees(math.atan(1.0 / math.sqrt(2.0)))
+
+#: view -> camera rotation (XYZ euler, radians).  A camera looks down its own
+#: local -Z, so with rotation ``(rx, 0, rz)`` it looks along
+#: ``(-sin(rz)sin(rx), cos(rz)sin(rx), -cos(rx))`` and sits on the opposite side
+#: of the subject.  The three orthographic entries are deliberately the same
+#: three ``load_reference`` uses, so a front render and a front reference can be
+#: held up against each other: front looks along +Y (Numpad 1), side along -X
+#: (Numpad 3), top straight down (Numpad 7).
+PREVIEW_VIEWS = {
+    "ISO": (math.radians(90.0 - PREVIEW_ISO_ELEVATION_DEG), 0.0, math.radians(45.0)),
+    "FRONT": (math.pi / 2.0, 0.0, 0.0),
+    "SIDE": (math.pi / 2.0, 0.0, math.pi / 2.0),
+    "TOP": (0.0, 0.0, 0.0),
+}
+
+#: Object types that actually appear in a render, and therefore the only ones
+#: worth hiding when the caller asked for a subset.  Lights and cameras are left
+#: alone: hiding the artist's lights would break `material` shading, and
+#: Workbench does not use them at all.
+_RENDERABLE_TYPES = frozenset({
+    "MESH", "CURVE", "SURFACE", "META", "FONT", "VOLUME",
+    "GPENCIL", "GREASEPENCIL",
+})
+
+#: A neutral clay grey for the subject and a darker grey behind it: the two
+#: never merge, so the silhouette reads at a glance whatever colour the part's
+#: materials happen to be.
+PREVIEW_OBJECT_COLOR = (0.72, 0.70, 0.67)
+PREVIEW_BACKGROUND_COLOR = (0.22, 0.23, 0.25)
+
+
+def _preview_snapshot(store, owner, names):
+    """Remember ``owner.<name>`` for every name that exists on this build.
+
+    Colour and vector properties come back as live ``bpy_prop_array`` views onto
+    the property we are about to overwrite, so they are copied to tuples: a
+    snapshot that mutates with the thing it is meant to restore is not a
+    snapshot.
+    """
+    for name in names:
+        try:
+            value = getattr(owner, name)
+        except (AttributeError, TypeError):
+            continue
+        if not isinstance(value, (str, bytes)):
+            try:
+                value = tuple(value)
+            except TypeError:
+                pass
+        store.append((owner, name, value))
+
+
+def _preview_restore(store):
+    """Put every snapshotted value back, and never raise doing it."""
+    for owner, name, value in reversed(store):
+        try:
+            setattr(owner, name, value)
+        except Exception:  # noqa: BLE001 - restoration is best effort, always
+            pass
+
+
+def _preview_targets(params):
+    """The objects to frame: ``objects`` if given, else every visible mesh."""
+    raw = params.get("objects")
+    if isinstance(raw, str):
+        raw = [raw]
+    if raw is None:
+        raw = []
+    if not isinstance(raw, (list, tuple)):
+        raise ForgeError("'objects' must be a list of object names.")
+
+    if raw:
+        chosen = []
+        for entry in raw:
+            obj = find_object(entry if isinstance(entry, str) else "")
+            if obj not in chosen:
+                chosen.append(obj)
+        return chosen, False
+
+    try:
+        pool = list(get_view_layer().objects)
+    except ForgeError:
+        pool = list(bpy.data.objects)
+    visible = []
+    for obj in pool:
+        if obj.type != "MESH":
+            continue
+        try:
+            shown = obj.visible_get()
+        except (RuntimeError, ReferenceError):
+            shown = not (obj.hide_viewport or obj.hide_render)
+        if shown:
+            visible.append(obj)
+    if not visible:
+        raise ForgeError(
+            "There is nothing visible to render: the scene has no visible mesh "
+            "objects. Generate or import something first, or name the objects "
+            "to render with 'objects'."
+        )
+    return visible, True
+
+
+def _preview_bounds(objects):
+    """World-space min/max corner of everything in ``objects``, modifiers applied."""
+    depsgraph = None
+    try:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+    except (AttributeError, RuntimeError):
+        depsgraph = None
+
+    lows = []
+    highs = []
+    for obj in objects:
+        source = obj
+        if depsgraph is not None:
+            try:
+                source = obj.evaluated_get(depsgraph)
+            except (RuntimeError, ReferenceError):
+                source = obj
+        try:
+            low, high = _world_bounds(source)
+        except (ForgeError, RuntimeError, ReferenceError):
+            continue
+        lows.append(low)
+        highs.append(high)
+    if not lows:
+        raise ForgeError(
+            "Could not measure %s: none of the objects have a bounding box to "
+            "frame the camera on." % ", ".join(o.name for o in objects)
+        )
+    low = tuple(min(entry[i] for entry in lows) for i in range(3))
+    high = tuple(max(entry[i] for entry in highs) for i in range(3))
+    return low, high
+
+
+def _preview_frame(camera, rotation, low, high, margin=PREVIEW_MARGIN):
+    """Point an ORTHOGRAPHIC camera at the bounds and fit them in the frame.
+
+    Orthographic on purpose. It makes the fit exact arithmetic rather than a
+    field-of-view guess, it keeps a `front` render measurable against a `front`
+    reference image, and it means a preview of the same part twice is the same
+    picture twice — which is what makes "did my change help?" answerable.
+
+    Returns ``(ortho_scale, distance, radius)``.
+    """
+    camera.rotation_mode = "XYZ"
+    camera.rotation_euler = rotation
+    basis = camera.rotation_euler.to_matrix()
+    right = basis @ Vector((1.0, 0.0, 0.0))
+    up = basis @ Vector((0.0, 1.0, 0.0))
+    forward = basis @ Vector((0.0, 0.0, -1.0))
+
+    center = Vector(((low[0] + high[0]) / 2.0,
+                     (low[1] + high[1]) / 2.0,
+                     (low[2] + high[2]) / 2.0))
+    corners = [
+        Vector((x, y, z))
+        for x in (low[0], high[0])
+        for y in (low[1], high[1])
+        for z in (low[2], high[2])
+    ]
+    offsets = [corner - center for corner in corners]
+    half_width = max(abs(offset.dot(right)) for offset in offsets)
+    half_height = max(abs(offset.dot(up)) for offset in offsets)
+    half_depth = max(abs(offset.dot(forward)) for offset in offsets)
+    radius = max((offset.length for offset in offsets), default=0.0)
+
+    # A single vertex, a flat plane seen edge-on, an empty-ish object: give the
+    # camera something finite to look at rather than dividing by zero.
+    span = max(half_width, half_height, 1e-4)
+    ortho_scale = 2.0 * span * margin
+
+    distance = half_depth + max(radius, span) * 2.0 + 1.0
+    camera.location = center - forward * distance
+    camera.data.type = "ORTHO"
+    camera.data.ortho_scale = ortho_scale
+    camera.data.clip_start = 1e-4
+    camera.data.clip_end = distance + half_depth + radius * 4.0 + 10.0
+    camera.data.shift_x = 0.0
+    camera.data.shift_y = 0.0
+    return ortho_scale, distance, radius
+
+
+def _preview_configure_workbench(scene):
+    """Clay-render settings: form and silhouette over colour."""
+    shading = scene.display.shading
+    for name, value in (
+        ("light", "STUDIO"),
+        ("color_type", "SINGLE"),
+        ("single_color", PREVIEW_OBJECT_COLOR),
+        ("background_type", "VIEWPORT"),
+        ("background_color", PREVIEW_BACKGROUND_COLOR),
+        ("show_shadows", True),
+        ("show_specular_highlight", True),
+        # Cavity shading is what makes a shallow texture or a soft crease
+        # visible at all in a flat clay render — without it a "textured band"
+        # and a plain band look identical, which is exactly the mistake this
+        # command exists to catch.
+        ("show_cavity", True),
+        ("cavity_type", "BOTH"),
+        ("show_object_outline", False),
+        ("show_xray", False),
+    ):
+        try:
+            setattr(shading, name, value)
+        except Exception:  # noqa: BLE001 - a missing knob is not a failed render
+            pass
+    try:
+        scene.display.render_aa = "16"
+    except (AttributeError, TypeError):
+        pass
+
+
+def _preview_engine(scene, shading):
+    """Set the render engine for ``shading``. Returns ``(engine, notes)``."""
+    notes = []
+    if shading == "material":
+        for candidate in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
+            try:
+                scene.render.engine = candidate
+            except (TypeError, ValueError):
+                continue
+            return candidate, notes
+        notes.append(
+            "This Blender build has no EEVEE engine, so 'material' shading fell "
+            "back to Workbench solid shading."
+        )
+    scene.render.engine = "BLENDER_WORKBENCH"
+    return "BLENDER_WORKBENCH", notes
+
+
+@command("render_preview")
+def cmd_render_preview(params):
+    """Render the scene (or named objects) to a PNG the assistant can Read.
+
+    This is the visual feedback loop: geometry in, picture out, look at it.
+    Read-only — it writes one file and changes nothing in the .blend.
+
+    - ``objects``: names to frame; omitted = every visible mesh object. Anything
+      renderable that is NOT a target is hidden for the duration, so a preview
+      of one part is a preview of one part.
+    - ``path``: absolute .png to write.
+    - ``resolution``: square pixel size, 128-2048, default 768.
+    - ``view``: ``iso`` (default, the classic 45 degree orbit), ``front``,
+      ``side`` or ``top`` — the last three matching ``load_reference`` exactly.
+    - ``shading``: ``solid`` (default, Workbench clay — fast, no GPU
+      dependency) or ``material`` (EEVEE, the part's own materials).
+    """
+    # The folder check comes before the extension is forced, or "render into my
+    # renders directory" would quietly become a file called "renders.png"
+    # sitting next to it.
+    path = resolve_path(get_str(params, "path"))
+    if os.path.isdir(path):
+        raise ForgeError(
+            "%r is a folder, not a file to write a picture to. Give the whole "
+            "filename, ending in .png." % path
+        )
+    if os.path.splitext(path)[1].lower() != ".png":
+        path += ".png"
+    path = resolve_path(path, make_parents=True)
+
+    view = get_choice(params, "view", {name: name for name in PREVIEW_VIEWS}, "ISO")
+    resolution = get_int(
+        params, "resolution", PREVIEW_RESOLUTION,
+        minimum=PREVIEW_MIN_RESOLUTION, maximum=PREVIEW_MAX_RESOLUTION,
+    )
+    shading = get_choice(
+        params, "shading",
+        {"SOLID": "solid", "WORKBENCH": "solid", "MATERIAL": "material",
+         "RENDERED": "material"},
+        "solid",
+    )
+
+    targets, defaulted = _preview_targets(params)
+    scene = get_scene()
+    notes = []
+    restore = []
+    camera_object = None
+    camera_data = None
+    light_object = None
+    light_data = None
+
+    try:
+        with object_mode():
+            refresh_view_layer()
+            low, high = _preview_bounds(targets)
+
+            _preview_snapshot(restore, scene, ("camera",))
+            _preview_snapshot(restore, scene.render, (
+                "engine", "filepath", "resolution_x", "resolution_y",
+                "resolution_percentage", "film_transparent", "use_overwrite",
+                "use_file_extension", "use_stamp", "use_border",
+            ))
+            _preview_snapshot(restore, scene.render.image_settings,
+                              ("file_format", "color_mode", "color_depth"))
+            _preview_snapshot(restore, scene.display, ("render_aa",))
+            _preview_snapshot(restore, scene.display.shading, (
+                "light", "color_type", "single_color", "studio_light",
+                "background_type", "background_color", "show_shadows",
+                "show_specular_highlight", "show_cavity", "cavity_type",
+                "show_object_outline", "show_xray",
+            ))
+            # Blender's default view transform (AgX/Filmic) is a film look, and
+            # it washes a clay preview out into grey soup. Standard is what
+            # makes the render an honest picture of the shading.
+            view_settings = getattr(scene, "view_settings", None)
+            if view_settings is not None:
+                _preview_snapshot(restore, view_settings,
+                                  ("view_transform", "look", "exposure", "gamma"))
+
+            # Hide everything the caller did not ask for. Recorded per object so
+            # a scene where the artist had already hidden something comes back
+            # exactly as hidden as it was.
+            chosen = {obj.name for obj in targets}
+            for obj in bpy.data.objects:
+                if obj.type not in _RENDERABLE_TYPES or obj.name in chosen:
+                    continue
+                restore.append((obj, "hide_render", obj.hide_render))
+                obj.hide_render = True
+            for obj in targets:
+                restore.append((obj, "hide_render", obj.hide_render))
+                obj.hide_render = False
+
+            engine, engine_notes = _preview_engine(scene, shading)
+            notes.extend(engine_notes)
+            if engine == "BLENDER_WORKBENCH":
+                _preview_configure_workbench(scene)
+
+            render = scene.render
+            render.filepath = path
+            render.resolution_x = resolution
+            render.resolution_y = resolution
+            render.resolution_percentage = 100
+            render.film_transparent = False
+            render.use_overwrite = True
+            render.use_file_extension = True
+            render.use_border = False
+            try:
+                render.use_stamp = False
+            except (AttributeError, TypeError):
+                pass
+            render.image_settings.file_format = "PNG"
+            render.image_settings.color_mode = "RGB"
+            try:
+                render.image_settings.color_depth = "8"
+            except (AttributeError, TypeError):
+                pass
+            if view_settings is not None:
+                for name, value in (("view_transform", "Standard"),
+                                    ("look", "None"), ("exposure", 0.0),
+                                    ("gamma", 1.0)):
+                    try:
+                        setattr(view_settings, name, value)
+                    except (AttributeError, TypeError, ValueError):
+                        pass
+
+            camera_data = bpy.data.cameras.new("Forge Preview Camera")
+            camera_object = bpy.data.objects.new("Forge Preview Camera", camera_data)
+            scene.collection.objects.link(camera_object)
+            ortho_scale, distance, radius = _preview_frame(
+                camera_object, PREVIEW_VIEWS[view], low, high
+            )
+            scene.camera = camera_object
+
+            # Workbench's studio lighting is built into the engine, so solid
+            # previews need no lamp at all. EEVEE does, and a scene with no
+            # lights would render a black shape — add one only then.
+            if engine != "BLENDER_WORKBENCH" and not any(
+                obj.type == "LIGHT" for obj in scene.objects
+            ):
+                light_data = bpy.data.lights.new("Forge Preview Light", type="SUN")
+                light_data.energy = 3.0
+                light_object = bpy.data.objects.new("Forge Preview Light", light_data)
+                scene.collection.objects.link(light_object)
+                light_object.rotation_mode = "XYZ"
+                light_object.rotation_euler = (
+                    math.radians(50.0), 0.0, math.radians(35.0)
+                )
+                light_object.location = camera_object.location
+                notes.append("Added a temporary sun light: the scene had none.")
+
+            refresh_view_layer()
+            status = None
+            try:
+                status = bpy.ops.render.render(write_still=True)
+            except RuntimeError as exc:
+                if engine == "BLENDER_WORKBENCH":
+                    raise ForgeError(
+                        "Blender could not render the preview: %s" % exc
+                    )
+                # EEVEE needs a GPU that may not be there (a headless box, a
+                # remote session). Workbench does not, so answer with a picture
+                # and say what happened rather than with an apology.
+                notes.append(
+                    "EEVEE could not render here (%s), so this preview is "
+                    "Workbench solid shading instead." % exc
+                )
+                engine = "BLENDER_WORKBENCH"
+                shading = "solid"
+                scene.render.engine = "BLENDER_WORKBENCH"
+                _preview_configure_workbench(scene)
+                try:
+                    status = bpy.ops.render.render(write_still=True)
+                except RuntimeError as fallback_exc:
+                    raise ForgeError(
+                        "Blender could not render the preview: %s" % fallback_exc
+                    )
+            if status is not None and "FINISHED" not in status:
+                raise ForgeError(
+                    "The render returned %s instead of finishing."
+                    % (", ".join(sorted(status)) or "nothing")
+                )
+    finally:
+        # Order matters only in that everything must happen: the camera goes
+        # before the settings so a failed link cannot strand a datablock.
+        for obj, data, collection in (
+            (camera_object, camera_data, bpy.data.cameras),
+            (light_object, light_data, bpy.data.lights),
+        ):
+            if obj is not None:
+                try:
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                except (ReferenceError, RuntimeError):
+                    pass
+            if data is not None:
+                try:
+                    if data.users == 0:
+                        collection.remove(data)
+                except (ReferenceError, RuntimeError):
+                    pass
+        _preview_restore(restore)
+        try:
+            refresh_view_layer()
+        except Exception:  # noqa: BLE001
+            pass
+
+    if not os.path.exists(path):
+        raise ForgeError(
+            "The render reported success but nothing was written to %r." % path
+        )
+    size_bytes = os.path.getsize(path)
+    if size_bytes <= 0:
+        raise ForgeError("The render wrote an empty file at %r." % path)
+
+    return {
+        "path": path,
+        "objects": [obj.name for obj in targets],
+        "resolution": resolution,
+        "view": view.lower(),
+        "shading": shading,
+        "engine": engine,
+        "size_bytes": size_bytes,
+        "framed_all_visible": defaulted,
+        "bounds_mm": {
+            "min": [round(v * M_TO_MM, 3) for v in low],
+            "max": [round(v * M_TO_MM, 3) for v in high],
+            "size": [round((high[i] - low[i]) * M_TO_MM, 3) for i in range(3)],
+        },
+        "ortho_scale_mm": round(ortho_scale * M_TO_MM, 3),
+        "notes": notes,
+    }

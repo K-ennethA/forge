@@ -129,8 +129,10 @@ rather than an apology.
 
 * Read-only commands push nothing: `ping`, `get_scene_info`, `flow_list`,
   `rigforge_list_tags`, `rigforge_status`, `export_stl` (it writes a file, which undo could
-  never take back anyway). Burying the checkpoint the artist wants under a pile of `ping`s
-  would defeat the point.
+  never take back anyway) and `render_preview` (looking at the scene is not changing it — it
+  borrows the render settings and a camera and puts every one of them back, so a checkpoint
+  for it would take back whatever the artist actually wanted undone). Burying the checkpoint
+  the artist wants under a pile of `ping`s would defeat the point.
 * `execute_python` **does** push one, deliberately: arbitrary code is exactly the case
   worth being able to take back, even when it happened to do nothing.
 * The push is *before* the handler, so a command that fails half-way through is the one
@@ -167,6 +169,7 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `load_meshes` | `meshes` (a list of `load_mesh` param objects, or `/segment` segments), `plate?`, `replace?`, `collection?`, `scale?`, `select?` | loads many meshes in one round trip; returns `{"objects": [...], "count", "names", "scale"}` |
 | `export_stl` | `objects`, `path`, `scale?`, `ascii?`, `apply_modifiers?` | writes a binary STL |
 | `load_reference` | `path`, `view` `front`\|`side`\|`top`, `size_mm?`, `name?`, `offset_mm?`, `collection?` | puts a sketch/photo in the viewport as an image EMPTY facing that orthographic view. Returns `{"object", "width_mm", "height_mm", "view", "size_mm", "path", "image", "pixels", "replaced", "location", "rotation_deg", "opacity"}` |
+| `render_preview` | `path` (`.png`), `objects?` (default every visible mesh), `resolution?` (128–2048, default 768), `view?` `iso`\|`front`\|`side`\|`top`, `shading?` `solid`\|`material` | renders the scene to a PNG the assistant can Read — a temporary orthographic camera fitted to the target bounds, Workbench clay by default, **every borrowed setting put back**. Returns `{"path", "objects", "resolution", "view", "shading", "engine", "size_bytes", "framed_all_visible", "bounds_mm": {"min", "max", "size"}, "ortho_scale_mm", "notes"}` |
 | `partforge_open` | `script_path`, `keep_values?`, `object?`, `params?` | points the PartForge panel at a script and rebuilds its sliders — the panel's own Load Script path, driven from outside. Returns `{"script", "param_count", "params", "object", "schema_source"}` |
 | `flow_list` | — | every saved flow in the flows folder: `{"dir", "count", "flows": [{"name", "description", "params", "steps", "step_labels", "path"}]}`. A file that will not parse is listed with an `error` instead of being hidden |
 | `check_model` | `object?`, `printer?` | print-checks a mesh that is **already in the scene** (a downloaded STL, your own sculpt): the evaluated mesh goes to the service's `/check_mesh` in millimetres and the rows land in the Print Checks panel. Returns `{"object", "overall", "checks", "printer"?, "stats"?, "mesh": {"vertex_count", "face_count", "scale"}, "printer_source", "panel"}` |
@@ -305,6 +308,66 @@ Mirrored by the MCP tool `load_reference`. The philosophy is docs/plan.md §3: t
 for extracting proportions, features and style intent into **parameters**. Geometry is
 always built from those, never traced from pixels, which is what keeps a model editable with
 real values.
+
+### Additive protocol extension: `render_preview`
+
+The assistant's **eyes**. Every other command in `tools/common.py` changes geometry; this one
+only looks at it, and it exists because the assistant used to design blind — set the
+parameters, run the checks, declare it done, never once seeing that the result was stiff,
+sparse and flat next to the artist's reference. Claude Code's Read tool renders images, so a
+PNG on disk closes that loop.
+
+```jsonc
+{"type": "render_preview", "params": {
+   "path": "C:\\Users\\you\\AppData\\Local\\Temp\\forge-previews\\preview-001-iso.png",
+   "objects": ["bowl"], "view": "iso", "resolution": 768, "shading": "solid"}}
+```
+
+- **Orthographic, fitted to the bounds.** A temporary camera is rotated to the view, the
+  eight world-space corners of the targets' (modifier-evaluated) bounding box are projected
+  onto its right/up axes, and `ortho_scale` is `2 × max(half-width, half-height) × 1.12`.
+  Orthographic on purpose: the fit is exact arithmetic rather than a field-of-view guess, a
+  `front` render stays measurable against a `front` reference, and the same part rendered
+  twice is the same picture twice — which is what makes *"did my change help?"* answerable.
+  A cube parked 5 m from the origin still comes out centred and filling the frame.
+- **The three orthographic views are `load_reference`'s three exactly** — `front` looks along
+  +Y (Numpad 1), `side` along −X (Numpad 3), `top` straight down (Numpad 7) — so a `front`
+  render and a `front` reference are the same projection and line up 1:1. `iso` is the
+  classic 45° orbit at elevation `atan(1/√2)` = 35.264°, where all three axes foreshorten
+  equally.
+- **Workbench clay by default.** `scene.display.shading` set to a single neutral grey subject
+  on a darker grey ground (the two never merge, so the silhouette reads whatever colour the
+  materials are), studio light, shadows, specular and **cavity on** — without cavity a
+  textured band and a plain band render identically, which is exactly the mistake this
+  command exists to catch. View transform is forced to Standard: AgX washes a clay render
+  into grey soup. `shading: "material"` switches to EEVEE instead, and adds a temporary sun
+  only if the scene has no light of its own; if EEVEE cannot run here (no GPU, remote
+  session) it answers with a Workbench picture and a `note` saying so, rather than an
+  apology.
+- **`objects` frames those objects only.** Everything else renderable gets `hide_render` for
+  the duration, recorded per object, so a scene where the artist had already hidden something
+  comes back exactly as hidden as it was. Omit it and every *visible* mesh is framed, with
+  `framed_all_visible: true` in the result.
+- **It leaves nothing behind.** Camera and light datablocks are removed and the whole
+  snapshot — `scene.camera`, engine, filepath, resolution, percentage, film transparency,
+  overwrite/extension/stamp/border, image settings, `render_aa`, all eleven Workbench shading
+  fields, colour management, and every `hide_render` flag — is restored in a `finally`, so a
+  render that *fails* restores just as completely as one that succeeds.
+- **It never touches the artist's viewport.** It renders through `bpy.ops.render.render`,
+  not `render.opengl`, so it needs no VIEW_3D area and works identically in `--background`
+  and in a live session. `scene.display.shading` (what the render uses) and a 3D view's own
+  `space.shading` (what the artist looks through) are different properties; only the first is
+  borrowed. The command never reads `space_data`, never walks the window manager's areas and
+  never uses `temp_override`.
+- **Read-only**, so looking never eats the undo step the artist wanted.
+- A missing path, a folder, an unknown view or shading, a resolution outside 128–2048, a
+  name that is not in the scene, and a scene with nothing visible in it each fail with a
+  sentence. A path with no extension gets `.png`; the folder check happens first, so
+  *"render into my renders directory"* never becomes a file called `renders.png`.
+
+Mirrored by the MCP tool `render_preview`, whose report ends by telling the model to Read the
+file — a preview nobody looked at is the same blind design with an extra tool call in front
+of it.
 
 ### Additive protocol extension (Phase 7): `import_generated`
 
@@ -1244,6 +1307,8 @@ addon/tests/
   headless_assistant.py  headless checks for the Assistant panel against a fake bridge
   headless_flows.py      headless checks for flow_list/flow_run and the Flows box
   headless_reference.py  headless checks for load_reference and the attach field (6c)
+  headless_preview.py    headless checks for render_preview: real PNGs, framing measured
+                         on the pixels, all four views, and the scene put back exactly
   headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
                          row, the chips, the empty states, check_model/segment_model
                          against a fake service, and the flow editor
@@ -1377,6 +1442,34 @@ five refusals (missing, `.txt`, unreadable `.png`, folder, name taken by a mesh)
 `export_stl` will not take a reference; and the panel side — the `image_path` property with
 its `FILE_PATH` subtype, `forge.assistant_clear_image`, the validation messages, the chip,
 and the field clearing itself after a successful send.
+
+### Previews — the assistant's eyes (`headless_preview.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_preview.py
+```
+
+Socket port **9891**. No geometry service, no Claude CLI, no assets: the "generated part" is
+a 48-segment bowl built in millimetres inside the harness and pushed in through `load_mesh`,
+which is the real PartForge path. The startup Cube and Light are removed first (the Cube
+would quietly get framed alongside the part; the Light would make *"did it add one?"*
+unanswerable) — the startup **Camera stays on purpose**, because it is what proves
+`scene.camera` is handed back afterwards. **117 checks**, and the interesting ones are
+measured on the pixels rather than asserted about the code: the PNG magic bytes and an IHDR
+that says the resolution that was asked for; a lone cube parked at (5000, −4000, 3000) mm
+coming out centred within 12% of frame centre and covering 5–95% of it (so the camera is
+fitted to the bounds, not parked at the origin); four views that are four genuinely
+different files; `objects` framing one part's bounds and two parts' bounds; and the whole
+state comparison — deliberately unusual settings first (EEVEE, `//artists_own_render_path`,
+1920×1080 at 50%, JPEG, transparent film, MATERIAL viewport colours, cavity off, an object
+the artist had already excluded from renders) so restoring to the factory defaults would
+pass a weaker test than this one. A render that *fails* is checked to restore just as
+completely. The interactive guard is both a source assertion (`bpy.ops.render.render` and
+not `render.opengl`; no `space_data`, no `screen.areas`, no `temp_override`) and a real
+measurement — `--background` still builds one off-screen VIEW_3D, so the harness sets that
+viewport to MATERIAL colours in perspective, renders, and proves its shading and view matrix
+are byte-for-byte unchanged.
 
 ### Phase 6b — Flows (`headless_flows.py`)
 

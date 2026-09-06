@@ -45,6 +45,8 @@ EXPECTED_TOOLS = {
     "export_stl",
     # Reference images (Phase 6c)
     "load_reference",
+    # Looking at the result — the assistant's eyes
+    "render_preview",
     # PartForge
     "partforge_parse_params",
     "partforge_generate",
@@ -129,7 +131,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 50
+    assert len(names) == 51
 
 
 def test_every_tool_is_documented() -> None:
@@ -157,6 +159,9 @@ def test_every_tool_has_an_object_schema() -> None:
         ("delete_object", ["name"]),
         ("export_stl", ["path"]),
         ("load_reference", ["path"]),
+        # Looking costs nothing and needs nothing: no path (it picks a scratch
+        # one), no object (it frames what is visible).
+        ("render_preview", []),
         ("partforge_parse_params", ["script_path"]),
         ("partforge_generate", ["script_path"]),
         ("partforge_export", ["script_path", "output_path"]),
@@ -204,6 +209,8 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ("set_origin", "type", ["geometry", "bottom", "cursor"]),
         ("boolean", "operation", ["UNION", "DIFFERENCE", "INTERSECT"]),
         ("load_reference", "view", ["front", "side", "top"]),
+        ("render_preview", "view", ["iso", "front", "side", "top"]),
+        ("render_preview", "shading", ["solid", "material"]),
         ("partforge_export", "format", ["stl", "step", "3mf"]),
         ("partforge_export_segments", "format", ["stl", "step", "3mf"]),
         ("partforge_segment", "joint_type", ["dovetail", "pin", "magnet", "none"]),
@@ -468,6 +475,177 @@ def test_load_reference_report_says_when_it_replaced_one() -> None:
 def test_a_reference_can_be_a_flow_step() -> None:
     """`load_reference` is a real socket command, so flow_save must accept it."""
     assert "load_reference" in util.KNOWN_BLENDER_OPS
+
+
+# --- render_preview: the assistant's eyes ------------------------------------
+
+
+def test_render_preview_needs_nothing_and_defaults_to_an_iso_view() -> None:
+    """Looking must be the cheapest call in the surface: no required argument."""
+    schema = next(t for t in list_tools() if t.name == "render_preview").input_schema
+    properties = schema["properties"]
+    assert schema.get("required", []) == []
+    assert properties["view"]["default"] == "iso"
+    assert properties["shading"]["default"] == "solid"
+    assert properties["resolution"].get("default") is None
+    assert properties["objects"].get("default") is None
+
+
+def test_render_preview_tells_the_model_to_look() -> None:
+    """The instruction lives in the tool's own description, not only the prompt."""
+    tool = next(t for t in list_tools() if t.name == "render_preview")
+    description = tool.description
+    assert "your eyes" in description.lower()
+    assert "look at what you made" in description.lower()
+    assert "read that file" in description.lower()
+
+
+def test_render_preview_says_checks_are_not_looks() -> None:
+    """The motivating bug, stated where the model reads it: a part can pass
+    every print check and still look wrong."""
+    description = next(
+        t for t in list_tools() if t.name == "render_preview"
+    ).description.lower()
+    assert "check" in description
+    assert "reference" in description
+
+
+def test_render_preview_reaches_blender(dead_backends) -> None:
+    """No path to validate, so the call goes straight at the (absent) add-on."""
+    text = text_of(call("render_preview"))
+    assert "Blender is not running" in text
+
+
+@pytest.mark.parametrize("resolution", [4, 12000])
+def test_render_preview_rejects_an_impossible_resolution(
+    dead_backends, resolution: int
+) -> None:
+    text = text_of(call("render_preview", {"resolution": resolution}))
+    assert "resolution must be" in text
+    assert "128" in text and "2048" in text  # it says what IS accepted
+    assert "Blender is not running" not in text  # refused before the socket
+
+
+def test_render_preview_resolution_is_an_integer_in_the_schema() -> None:
+    """A fractional pixel count never reaches the add-on: the schema stops it."""
+    schema = next(t for t in list_tools() if t.name == "render_preview").input_schema
+    field = schema["properties"]["resolution"]
+    kinds = {field.get("type")} | {
+        branch.get("type") for branch in field.get("anyOf", [])
+    }
+    assert "integer" in kinds
+
+
+def test_render_preview_resolution_helper_refuses_a_fraction() -> None:
+    with pytest.raises(util.ForgeError):
+        util.normalize_preview_resolution(768.5)
+    assert util.normalize_preview_resolution(None) == util.PREVIEW_RESOLUTION
+    assert util.normalize_preview_resolution(1024.0) == 1024
+
+
+def test_render_preview_rejects_objects_that_are_not_names(dead_backends) -> None:
+    text = text_of(call("render_preview", {"objects": ["bowl", ""]}))
+    assert "not one" in text or "list of object names" in text
+
+
+def test_preview_paths_are_scratch_and_never_reused(monkeypatch, tmp_path: Path) -> None:
+    """Every render gets its own file: comparing a change against the render
+    before it needs both to still be there."""
+    monkeypatch.setattr(util.config, "PREVIEWS_DIR", str(tmp_path / "previews"))
+    first = util.preview_path("iso", ["bowl"])
+    second = util.preview_path("front", ["bowl"])
+    third = util.preview_path("iso", None)
+
+    assert first != second != third
+    assert first.suffix == ".png"
+    assert first.parent == tmp_path / "previews"
+    assert first.parent.is_dir()  # the folder is made, so the add-on can write
+    assert "bowl" in first.name and "iso" in first.name
+    assert "front" in second.name
+
+
+def test_preview_path_slugs_an_awkward_object_name(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(util.config, "PREVIEWS_DIR", str(tmp_path))
+    path = util.preview_path("top", ["bowl / v2 (final)"])
+    assert path.parent == tmp_path
+    assert "/" not in path.name and "\\" not in path.name
+
+
+def test_preview_path_does_not_slug_a_whole_scene(monkeypatch, tmp_path: Path) -> None:
+    """Several objects have no one name, so the filename does not pretend."""
+    monkeypatch.setattr(util.config, "PREVIEWS_DIR", str(tmp_path))
+    path = util.preview_path("iso", ["bowl", "ear_left", "ear_right"])
+    assert "bowl" not in path.name
+
+
+def test_preview_report_puts_the_path_where_it_cannot_be_missed() -> None:
+    report = util.fmt_preview_report({
+        "path": r"C:\Temp\forge-previews\preview-001-iso-bowl.png",
+        "objects": ["bowl"],
+        "resolution": 768,
+        "view": "iso",
+        "shading": "solid",
+        "bounds_mm": {"size": [152.4, 152.4, 88.0]},
+    })
+    assert r"C:\Temp\forge-previews\preview-001-iso-bowl.png" in report
+    # on its own line, so it is a path to Read rather than prose to skim
+    assert any(
+        line.strip() == r"C:\Temp\forge-previews\preview-001-iso-bowl.png"
+        for line in report.splitlines()
+    )
+    assert "READ THAT FILE NOW" in report
+    assert "bowl" in report
+    assert "iso view" in report
+    assert "768 px" in report
+    assert "152.4 x 152.4 x 88 mm" in report
+
+
+def test_preview_report_names_what_to_look_for() -> None:
+    """Density, proportions, silhouette, softness — the four aesthetic axes the
+    Eevee-bowl failure went wrong on, named every single time."""
+    report = util.fmt_preview_report({
+        "path": "/tmp/p.png", "objects": ["bowl"], "resolution": 768, "view": "front",
+    }).lower()
+    for word in ("density", "proportions", "silhouette", "soft"):
+        assert word in report, word
+    assert "reference" in report
+    assert "render again" in report or "regenerate" in report
+
+
+def test_preview_report_says_when_it_framed_the_whole_scene() -> None:
+    report = util.fmt_preview_report({
+        "path": "/tmp/p.png",
+        "objects": ["bowl", "foot", "ear_l", "ear_r", "tail"],
+        "resolution": 768,
+        "view": "iso",
+        "framed_all_visible": True,
+    })
+    assert "and 1 more" in report  # 4 named, the rest counted
+    assert "pass `objects`" in report
+    assert "5 objects together" in report
+
+
+def test_preview_report_passes_on_the_addons_notes() -> None:
+    """A Workbench fallback or a borrowed light is said out loud, not hidden."""
+    report = util.fmt_preview_report({
+        "path": "/tmp/p.png", "objects": ["bowl"], "resolution": 768, "view": "iso",
+        "shading": "material",
+        "notes": ["Added a temporary sun light: the scene had none."],
+    })
+    assert "temporary sun light" in report
+    assert "material shading" in report
+
+
+def test_preview_report_survives_a_thin_result() -> None:
+    """The add-on is the contract, but a short result must still read."""
+    report = util.fmt_preview_report({"path": "/tmp/p.png"})
+    assert "/tmp/p.png" in report
+    assert "the scene" in report
+    assert "READ THAT FILE NOW" in report
+
+
+def test_a_preview_can_be_a_flow_step() -> None:
+    assert "render_preview" in util.KNOWN_BLENDER_OPS
 
 
 # --- error paths with no backends running -----------------------------------

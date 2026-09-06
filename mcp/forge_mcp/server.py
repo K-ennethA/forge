@@ -49,6 +49,7 @@ from .util import (
     fmt_open_report,
     fmt_overrides,
     fmt_params,
+    fmt_preview_report,
     fmt_reference_report,
     fmt_retarget_report,
     fmt_retopo_report,
@@ -72,6 +73,8 @@ from .util import (
     normalize_face_indices,
     normalize_keys,
     normalize_modules,
+    normalize_preview_objects,
+    normalize_preview_resolution,
     normalize_retarget_scale,
     normalize_script_source,
     normalize_segment_mode,
@@ -80,6 +83,7 @@ from .util import (
     object_name_for_script,
     ok,
     plate_items_by_name,
+    preview_path,
     project_paths,
     project_slug,
     read_flow_files,
@@ -136,6 +140,13 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   into parameters — never for tracing. load_reference puts it in the viewport as
   a half-transparent image plane so the artist can compare their model against
   it; offer that whenever they gave you a picture.
+- render_preview is how you SEE what you made: it renders the scene to a PNG and
+  gives you the path, and you then Read that file. Call it after generating or
+  changing anything visual, and always when you worked from a reference picture
+  — checks answer "can this be printed", never "does this look right". Compare
+  the render against the reference (density, proportions, silhouette, softness)
+  and iterate on the parameters if it misses. Never call a visual design done
+  without having looked at it.
 - generate_3d turns a picture into an actual mesh (meshgen, ~5 minutes, one job
   at a time) and is the right first offer for ORGANIC, stylised, one-off shapes
   — a creature, a bust, an ornament. Anything functional or dimensioned stays
@@ -617,6 +628,69 @@ def load_reference(
 
     result = blender_client.send_command("load_reference", params)
     return fmt_reference_report(image, view, result)
+
+
+# ---------------------------------------------------------------------------
+# Previews — the assistant's eyes
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def render_preview(
+    objects: Optional[List[str]] = None,
+    view: Literal["iso", "front", "side", "top"] = "iso",
+    resolution: Optional[int] = None,
+    shading: Literal["solid", "material"] = "solid",
+) -> str:
+    """Your eyes — look at what you made.
+
+    Renders the Blender scene to a PNG and hands you the path.
+    **Then Read that file.** Rendering without looking is the same blind
+    design with an extra tool call in front of it.
+
+    Call this after generating or meaningfully changing anything visual, and
+    ALWAYS when the artist gave you a reference picture. Print checks answer
+    "can this be printed"; they say nothing about whether it looks like the
+    thing. A part can pass every check and still be stiff, sparse and flat next
+    to the picture it came from — that is exactly the failure this tool exists
+    to catch, and you cannot catch it from parameter values.
+
+    - `objects`: names to frame; omit for every visible mesh. Anything else is
+      hidden for the render, so one part is one part.
+    - `view`: `iso` (default, a 3/4 orbit — best for silhouette and form),
+      or `front` / `side` / `top`, which are the SAME three projections
+      `load_reference` uses. Render `front` when you have a front reference and
+      the two line up 1:1.
+    - `resolution`: square pixels, 128-2048, default 768.
+    - `shading`: `solid` (default — clay, fast, no GPU needed, form over
+      colour) or `material` for the object's own materials.
+
+    Nothing in the scene changes: the camera, the render settings and the
+    artist's viewport are all put back, and it costs no undo step.
+
+    When you look, compare against the reference and name what you see:
+    density (too few leaves? too sparse a band?), proportions, silhouette,
+    softness. If it visibly misses, change the parameters or the script and
+    render again — then show the artist and say what still differs.
+    """
+    names = normalize_preview_objects(objects)
+    pixels = normalize_preview_resolution(resolution)
+    out = preview_path(view, names)
+
+    params: Dict[str, Any] = {
+        "path": str(out),
+        "view": view,
+        "resolution": pixels,
+        "shading": shading,
+    }
+    if names:
+        params["objects"] = names
+
+    result = blender_client.send_command(
+        "render_preview", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+    result.setdefault("path", str(out))
+    return fmt_preview_report(result)
 
 
 # ---------------------------------------------------------------------------

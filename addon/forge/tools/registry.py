@@ -44,6 +44,10 @@ READ_ONLY_COMMANDS = frozenset({
     "rigforge_list_tags",
     "rigforge_status",
     "export_stl",
+    # Looking at the scene is not changing it. render_preview borrows the render
+    # settings and a camera and puts every one of them back, so an undo step for
+    # it would take back whatever the artist actually wanted undone.
+    "render_preview",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

@@ -148,6 +148,35 @@ Component `assistant/` — a thin local bridge, stdlib-only Python (no venv need
 - `POST /cancel/<id>`
 The bridge spawns the Claude Code CLI headless in the forge repo (user's existing subscription auth; exact flags per the CLI-facts findings) with only the Forge MCP tools + read-only repo access allowed, injects the context + the philosophy above as system-prompt append, and keeps one conversation per Blender session via CLI session continuity. Add-on panel: Assistant box (message field, Send, chat log of the last exchanges, busy state, New Conversation), urllib + background thread + timer polling per the existing PartForge async pattern.
 
+### Phase 8 sketch — workspace copilot (do, don't lecture)
+
+UI/viewport state is the assistant's to CHANGE, not just explain. New socket commands (all narrate-what-changed; viewport state is not Ctrl-Z-able so transparency replaces undo; READ_ONLY classification where true):
+- `set_view {"view": "front"|"side"|"top"|"iso"|"camera", "ortho"?: bool}`; `frame_object {"object"?}`; `local_view {"enable"}`
+- `set_shading {"mode": "solid"|"wireframe"|"material"|"rendered"}`; `set_overlays {"grid"?, "axes"?: [..], "wireframe"?, "stats"?}`
+- `set_mode {"mode": "object"|"edit"|"sculpt"|"vertex_paint"|"weight_paint", "object"?}`
+- `sculpt_brush {"brush": name, "size"?, "strength"?, "symmetry_x/y/z"?, "dyntopo"?}`
+Context enrichment: the panel's per-message context gains mode, selected objects, active tool/brush (+ size/strength) so the chat is situational. MCP mirrors; prompt stance rewritten: workspace requests = shape 1 (do it) + one line naming where the switch lives so the artist learns. Motivating case: "enable grid for x,y,z" must become "done — grid on (Overlays dropdown to revert)" not a 9-step tutorial.
+
+**Buddy mode (teacher/buddy eyes on the artist's work):**
+- `capture_viewport {"path", "resolution"?}` — what the USER sees (their angle/shading; GUI-session OpenGL render with context override; clean headless error). `mesh_diagnose {"object"?}` — numeric defects: self-intersections (clipping), non-manifold edges/verts, zero-area faces, density stats + hotspots/starved regions (per-face area distribution), ngon count, loose geometry, scale anomalies; returns counts + up to N located examples (mm coordinates) so critique can say WHERE.
+- "Check my work" (panel button + chat phrase): sends viewport capture + turntable renders + mesh_diagnose + context through the normal /ask path with a check-in framing.
+- Buddy timer (add-on, opt-in, default OFF, interval default 10 min, costs a Claude turn — say so in the UI): fires only when the mesh changed since the last check (edit hash), includes the previous check-in's summary in context so notes never repeat.
+- Prompt "## Checking their work": teacher voice — one clause of what's working, top ≤3 concrete issues with where + fix (tool-doable = offer to do it; manual = numbered steps), brief "all good, keep going" when clean, never repeat prior notes.
+
+### Phase 10 sketch — maker mode (functional products from references)
+
+Pilot/exit test: the Litwick LED figure — push the translucent flame to toggle an LED (real latching switch + CR2032 + 5 mm LED inside a hollowed organic body).
+
+- `maker_lib` (service, alongside forge_lib): component-driven design. A data table of real parts (CR2032 + holder, 6x6 and 12 mm latching push switches, 3/5 mm LEDs, common screws/heat-set inserts) each exposing `envelope()` (keep-out solid), `mount()` (boss/pocket/clip geometry), `cutout()` (negative w/ clearances from printer.json tolerances). Mechanisms: `plunger_guide(stem_d, travel, keyed=True)` (sliding fit + travel stop + anti-rotation via the keyed-peg profile), `snap_clip(...)`, `battery_door(...)` (magnet or screw variants from existing helpers).
+- Mesh-hybrid ops (service): `POST /hollow_mesh` {mesh|file_path, wall_mm, drain_holes?} (voxel-based shell — sibling of the planned auto-thickening) and `POST /mesh_boolean` {mesh, features: [parametric solids or forge_lib/maker_lib calls], op} — carve functional features INTO generated/sculpted bodies (sew → boolean → verify watertight, same machinery as /segment_mesh).
+- Assembly spec: spec.json vNext — `assembly: {parts: [{name, source: script|generated|purchased, material_note?, interfaces: [...]}], bom: [...], steps: [...]}`; export produces per-part files + BOM.md + ASSEMBLY.md.
+- Prompt: basic-circuit knowledge (LED+resistor+switch+cell), design-around-components law (pick real parts FIRST, model to their dims), material intent (translucent parts named as such).
+Exact shapes refined by implementation; folded back by the orchestrator.
+
+### Phase 9 sketch — Forge web UI (the second surface)
+
+The bridge serves a local single-page UI at `GET http://127.0.0.1:8901/` — stdlib-only, no build step, no CDN (works offline), vanilla HTML/JS/CSS in `assistant/webui/`. Same bridge API = same session/jobs as the Blender panel; both surfaces coexist. Features: full-width chat with the last N jobs (bridge keeps 20), attached reference images and assistant RENDERS displayed inline in the conversation, live activity stream, model selector + queue + session cost, health strip (+ start-services via a new `POST /services/start` that shells the same start logic), flows list/run. File serving strictly allowlisted: `GET /file/<token>` serves ONLY paths the bridge itself recorded on a job (attachments in, renders/outputs out) — never arbitrary paths. Localhost-bound like everything else.
+
 ### Phase 7 — meshgen (image-to-3D, swappable backends) — implemented
 
 Implemented (port **8902**; ComfyUI child on 8188, lazy-started, windowless, process-tree-killed on stop): backends `trellis2` (default) + `pixal3d`, both via ComfyUI **core** nodes v0.34.0 (MIT-clean chain; no custom node packs — they reintroduce non-commercial nvdiffrast/RMBG). Weights at `C:\forge-models\` (18.45 GB total incl. ComfyUI+cu130 torch on Python 3.14; sha256 ledger at downloads\sha256.txt; relocatable via meshgen\config.json). `POST /generate3d` → 202 `{job_id (= ComfyUI prompt_id), state, backend, output}`; `/job` carries per-stage `progress` (resets per node — not overall), `stats`, `vram`; one job at a time, extras queue. `VRAM_SAFE_DEFAULTS` (shape 1024/tex 512/2048/200k) prevent the stock-template 20 GiB OOM on 12 GB cards; callers can override upward. `/health` free + names any missing weight file with path and URL. Proven E2E on RTX 5070: trellis2 304 s / 8.15 GB peak; pixal3d 249 s / 9.30 GB; output correctly diagnosed by /check_mesh (raw AI meshes are non-manifold with paper walls — voxel repair is the mandatory next step). Corrections vs research: ComfyUI moved to Comfy-Org/ComfyUI; DINOv3 file lives in the Pixal3D HF repo; cu130 (not cu128) required; MoGe is pixal3d-only.
