@@ -1,0 +1,1188 @@
+"""Tests for the Forge web UI — the bridge's second surface (Phase 9).
+
+Run them the same way as the rest::
+
+    service\\.venv\\Scripts\\python.exe -m pytest assistant\\tests -q
+
+The harness is ``test_bridge``'s: a real bridge process on an ephemeral port
+with ``fake_claude.py`` standing in for the CLI.  Nothing here touches port
+8901, and nothing here needs Blender, PowerShell or the internet — the Blender
+socket, the two downstream services and the start script all have fakes in this
+file, each on a port the OS handed out.
+
+What is being pinned down, in order:
+
+* the page and its assets are served, and **only** they are — traversal out of
+  ``assistant/webui/`` is refused by the shape of the name;
+* ``/jobs`` carries enough for a page that has just been opened to draw a
+  conversation it never saw happen;
+* tokens: minted for an attachment on the way in and for a render path on the
+  way out, and ``/file`` serves nothing that was not minted;
+* ``/upload``: what a browser can hand this bridge, and what it may not;
+* ``/services/health`` fans out and survives everything being down;
+* ``/flows`` passes through to Blender's socket, including when it is not there.
+"""
+
+import base64
+import json
+import os
+import re
+import shutil
+import socket
+import socketserver
+import subprocess
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+
+import pytest
+
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSISTANT_DIR = os.path.normpath(os.path.join(TESTS_DIR, os.pardir))
+REPO_ROOT = os.path.normpath(os.path.join(ASSISTANT_DIR, os.pardir))
+WEBUI_DIR = os.path.join(ASSISTANT_DIR, "webui")
+
+for _path in (TESTS_DIR, ASSISTANT_DIR):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+import bridge  # noqa: E402
+from test_bridge import FAKE_CLI, free_port, start_bridge  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# harness
+# ---------------------------------------------------------------------------
+
+#: A real (tiny) PNG header, so the magic-byte check has something to accept.
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 96
+JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 96
+
+
+def write_png(path, data=PNG):
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return str(path)
+
+
+def raw_get(client, path, timeout=20.0):
+    """``(status, headers, body bytes)`` — for assets and files, not JSON."""
+    request = urllib.request.Request(client.url(path))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            return response.status, dict(response.headers), response.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, dict(exc.headers), exc.read()
+
+
+@pytest.fixture
+def bridges(tmp_path):
+    """Start bridges with the web-UI environment pointed at the sandbox."""
+    started = []
+
+    def factory(env_extra=None, **kwargs):
+        env = {
+            # Never write uploads into the repo while testing.
+            "FORGE_ASSISTANT_UPLOADS": str(tmp_path / "uploads"),
+            # Ports nothing is listening on, so "down" is the default answer.
+            "FORGE_SERVICE_URL": "http://127.0.0.1:%d" % free_port(),
+            "FORGE_MESHGEN_URL": "http://127.0.0.1:%d" % free_port(),
+            "FORGE_BLENDER_PORT": str(free_port()),
+        }
+        env.update(env_extra or {})
+        proc, client = start_bridge(tmp_path, env_extra=env, **kwargs)
+        started.append(proc)
+        return client
+
+    yield factory
+    for proc in started:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except Exception:  # noqa: BLE001
+            proc.kill()
+
+
+@pytest.fixture
+def client(bridges):
+    return bridges()
+
+
+class FakeService(object):
+    """A downstream service that answers ``GET /health`` and nothing else."""
+
+    def __init__(self, payload, status=200):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        body = json.dumps(payload).encode("utf-8")
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):  # noqa: N802
+                if self.path.rstrip("/") != "/health":
+                    self.send_response(404)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        self.url = "http://127.0.0.1:%d" % self.port
+        self.thread = threading.Thread(target=self.server.serve_forever,
+                                       kwargs={"poll_interval": 0.05}, daemon=True)
+        self.thread.start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+class FakeBlender(object):
+    """The add-on's socket, faked: one newline-delimited JSON exchange.
+
+    ``responder(request) -> response dict``; every request seen is recorded so
+    a test can assert on what the passthrough actually sent.
+    """
+
+    def __init__(self, responder):
+        self.seen = []
+        outer = self
+
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                line = self.rfile.readline()
+                if not line:
+                    return
+                try:
+                    request = json.loads(line.decode("utf-8"))
+                except ValueError:
+                    request = {"raw": line.decode("utf-8", "replace")}
+                outer.seen.append(request)
+                reply = responder(request)
+                if reply is None:      # "hang up without answering"
+                    return
+                self.wfile.write(json.dumps(reply).encode("utf-8") + b"\n")
+
+        class Server(socketserver.ThreadingTCPServer):
+            allow_reuse_address = True
+            daemon_threads = True
+
+        self.server = Server(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        self.thread = threading.Thread(target=self.server.serve_forever,
+                                       kwargs={"poll_interval": 0.05}, daemon=True)
+        self.thread.start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.fixture
+def fake_service():
+    made = []
+
+    def factory(payload, status=200):
+        service = FakeService(payload, status)
+        made.append(service)
+        return service
+
+    yield factory
+    for service in made:
+        service.close()
+
+
+@pytest.fixture
+def fake_blender():
+    made = []
+
+    def factory(responder):
+        server = FakeBlender(responder)
+        made.append(server)
+        return server
+
+    yield factory
+    for server in made:
+        server.close()
+
+
+def ok_response(result):
+    def responder(request):
+        return {"id": request.get("id"), "status": "success", "result": result}
+    return responder
+
+
+# ===========================================================================
+# pure units — no process at all
+# ===========================================================================
+
+def test_webui_asset_serves_the_page():
+    found = bridge.webui_asset("index.html")
+    assert found is not None
+    body, content_type = found
+    assert b"<title>Forge</title>" in body
+    assert content_type.startswith("text/html")
+
+
+@pytest.mark.parametrize("name", [
+    "../bridge.py",
+    "../system_prompt.md",
+    "..\\bridge.py",
+    "sub/app.js",
+    "sub\\app.js",
+    "/etc/passwd",
+    "C:\\Windows\\win.ini",
+    "%2e%2e%2fbridge.py",
+    ".hidden.js",
+    "",
+    "   ",
+    None,
+])
+def test_webui_asset_refuses_anything_that_is_not_one_plain_name(name):
+    """Traversal is refused by the *shape* of the name, before path arithmetic.
+
+    That is the check that cannot be got past by encoding: whatever a client
+    writes, what arrives here either matches one plain segment or it does not.
+    """
+    assert bridge.webui_asset(name) is None
+
+
+def test_webui_asset_refuses_a_file_type_a_browser_has_no_use_for(tmp_path):
+    # The extension table is the allow-list, not the folder listing.
+    assert bridge.webui_asset("README.md") is None
+    assert bridge.webui_asset("app.py") is None
+
+
+def test_find_file_paths_picks_paths_out_of_prose():
+    text = ("I rendered it to C:\\forge\\projects\\cup\\render.png and exported "
+            "C:/forge/out/cup.glb — the sketch you gave me was ref.jpg.")
+    found = bridge.find_file_paths(text)
+    assert "C:\\forge\\projects\\cup\\render.png" in found
+    assert "C:/forge/out/cup.glb" in found
+    # A bare filename is not a path: there is nothing to open.
+    assert not any(p.endswith("ref.jpg") for p in found)
+
+
+def test_find_file_paths_stops_at_markdown_punctuation():
+    found = bridge.find_file_paths("see `C:\\out\\a.png` and (C:\\out\\b.png)")
+    assert "C:\\out\\a.png" in found
+    assert "C:\\out\\b.png" in found
+
+
+def test_find_file_paths_ignores_types_that_are_not_served():
+    assert bridge.find_file_paths("C:\\forge\\part.py and C:\\forge\\notes.txt") == []
+
+
+def test_tokens_are_stable_and_only_for_real_servable_files(tmp_path):
+    store = bridge.FileTokens(limit=3)
+    png = write_png(tmp_path / "a.png")
+    token = store.mint(png)
+    assert token and store.resolve(token) == os.path.abspath(png)
+    # Same path, same token: one render named twice is one entry.
+    assert store.mint(png) == token
+    # A path that does not exist is not minted: a broken image in the
+    # conversation reads as a bug in the UI, not as an answer.
+    assert store.mint(str(tmp_path / "missing.png")) is None
+    # Nor is a type this bridge will not serve.
+    script = tmp_path / "part.py"
+    script.write_text("x = 1", encoding="utf-8")
+    assert store.mint(str(script)) is None
+    assert store.mint("") is None
+    assert store.resolve("nope") is None
+
+
+def test_tokens_evict_the_oldest_when_the_table_is_full(tmp_path):
+    store = bridge.FileTokens(limit=2)
+    first = store.mint(write_png(tmp_path / "1.png"))
+    store.mint(write_png(tmp_path / "2.png"))
+    store.mint(write_png(tmp_path / "3.png"))
+    assert store.count() == 2
+    assert store.resolve(first) is None
+
+
+def test_upload_error_checks_the_extension_and_the_bytes():
+    assert bridge.upload_error("ref.png", PNG) == ""
+    assert bridge.upload_error("ref.jpg", JPEG) == ""
+    assert "Only images" in bridge.upload_error("part.py", PNG)
+    assert "empty" in bridge.upload_error("ref.png", b"")
+    # An extension is a claim; this writes to the artist's disk.
+    problem = bridge.upload_error("ref.png", b"MZ\x90\x00 not a png")
+    assert "not a" in problem and "png" in problem
+
+
+def test_upload_error_refuses_something_larger_than_the_cap(monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_MAX_UPLOAD_MB", "0.01")
+    problem = bridge.upload_error("ref.png", PNG + b"\x00" * 20000)
+    assert "limit" in problem
+
+
+def test_safe_upload_name_is_only_ever_a_filename():
+    for hostile in ("../../etc/passwd.png", "C:\\Windows\\evil.png",
+                    "..\\..\\bridge.png", "a/b/c.png"):
+        name = bridge.safe_upload_name(hostile)
+        assert os.path.basename(name) == name
+        assert ".." not in name
+        assert name.endswith(".png")
+    # Two files called the same thing are two files.
+    assert bridge.safe_upload_name("ref.png") != bridge.safe_upload_name("ref.png")
+
+
+def test_decode_base64_takes_a_data_url_or_bare_base64():
+    encoded = base64.b64encode(PNG).decode("ascii")
+    assert bridge.decode_base64(encoded) == PNG
+    assert bridge.decode_base64("data:image/png;base64," + encoded) == PNG
+    assert bridge.decode_base64("") is None
+    assert bridge.decode_base64("!!!! not base64 !!!!") is None
+
+
+def test_parse_multipart_finds_the_file_part():
+    boundary = "----forgetest"
+    body = (
+        "--%s\r\nContent-Disposition: form-data; name=\"other\"\r\n\r\nignored\r\n"
+        "--%s\r\nContent-Disposition: form-data; name=\"file\"; "
+        "filename=\"sketch.png\"\r\nContent-Type: image/png\r\n\r\n"
+        % (boundary, boundary)
+    ).encode("utf-8") + PNG + ("\r\n--%s--\r\n" % boundary).encode("utf-8")
+    name, data = bridge.parse_multipart(body, "multipart/form-data; boundary=" + boundary)
+    assert name == "sketch.png"
+    assert data == PNG
+
+
+def test_parse_multipart_without_a_boundary_is_not_an_exception():
+    assert bridge.parse_multipart(b"whatever", "multipart/form-data") == (None, None)
+
+
+def test_start_services_command_runs_a_py_script_under_this_interpreter(tmp_path):
+    script = tmp_path / "fake_start.py"
+    script.write_text("print('hi')", encoding="utf-8")
+    argv = bridge.start_services_command(str(script))
+    assert argv[0] == sys.executable and argv[1] == str(script)
+
+
+def test_start_services_command_uses_powershell_for_a_ps1():
+    argv = bridge.start_services_command("C:\\forge\\start_forge.ps1")
+    if argv is None:
+        pytest.skip("no PowerShell on this machine")
+    assert "-File" in argv and argv[-1].endswith("start_forge.ps1")
+    assert "-NoProfile" in argv
+
+
+# ===========================================================================
+# the page and its assets
+# ===========================================================================
+
+def test_index_is_served_at_the_root(client):
+    status, headers, body = raw_get(client, "/")
+    assert status == 200
+    assert headers["Content-Type"].startswith("text/html")
+    text = body.decode("utf-8")
+    assert "<title>Forge</title>" in text
+    # It has to name its own assets, or the page is a blank screen.
+    assert "/webui/app.css" in text and "/webui/app.js" in text
+    assert "/webui/format.js" in text
+
+
+@pytest.mark.parametrize("asset,content_type,needle", [
+    ("app.css", "text/css", "--accent"),
+    ("app.js", "text/javascript", "/upload"),
+    ("format.js", "text/javascript", "formatReply"),
+    ("index.html", "text/html", "<title>Forge</title>"),
+])
+def test_assets_are_served_with_their_type(client, asset, content_type, needle):
+    status, headers, body = raw_get(client, "/webui/" + asset)
+    assert status == 200
+    assert headers["Content-Type"].startswith(content_type)
+    assert needle in body.decode("utf-8")
+
+
+@pytest.mark.parametrize("path", [
+    "/webui/../bridge.py",
+    "/webui/../system_prompt.md",
+    "/webui/..%2Fbridge.py",
+    "/webui/%2e%2e/bridge.py",
+    "/webui/....//bridge.py",
+    "/webui/",
+    "/webui/nope.js",
+    "/webui/README.md",
+])
+def test_asset_traversal_and_unknown_assets_are_refused(client, path):
+    status, _headers, body = raw_get(client, path)
+    assert status == 404
+    # Whatever the answer was, it was not a file from outside the folder.
+    assert b"ForgeAssistant" not in body
+    assert b"claude" not in body.lower()
+
+
+def test_the_page_never_leaks_the_system_prompt(client):
+    for path in ("/webui/system_prompt.md", "/webui/..%5Csystem_prompt.md"):
+        status, _headers, _body = raw_get(client, path)
+        assert status == 404
+
+
+# ===========================================================================
+# the page's structure — fetched from a real bridge, not read off disk
+# ===========================================================================
+
+def fetch_text(client, path):
+    status, _headers, body = raw_get(client, path)
+    assert status == 200, path
+    return body.decode("utf-8")
+
+
+#: Every control the Phase 9 contract names, by the id the script reaches for.
+PAGE_ANCHORS = (
+    ("thread", "the conversation"),
+    ("empty", "the empty state"),
+    ("composer", "the send form"),
+    ("message", "the message box"),
+    ("send", "the send button"),
+    ("model", "the Fast/Smart/Deepest selector"),
+    ("file", "the image picker"),
+    ("attachment", "the attached-image chip"),
+    ("attachment-thumb", "the attachment's thumbnail"),
+    ("attachment-clear", "the attachment's remove button"),
+    ("composer-status", "where 'queued' is said"),
+    ("health", "the health strip"),
+    ("cost", "the session cost"),
+    ("start-services", "Start services"),
+    ("new-conversation", "New conversation"),
+    ("banners", "where errors land"),
+    ("tab-chat", "the chat tab"),
+    ("tab-flows", "the flows tab"),
+    ("panel-chat", "the chat panel"),
+    ("panel-flows", "the flows panel"),
+    ("flows", "the flows list"),
+    ("flows-refresh", "the flows refresh button"),
+)
+
+
+@pytest.mark.parametrize("anchor,what", PAGE_ANCHORS)
+def test_the_page_carries_every_anchor_the_contract_names(client, anchor, what):
+    html = fetch_text(client, "/")
+    assert ('id="%s"' % anchor) in html, "%s (#%s) is missing" % (what, anchor)
+
+
+def test_the_script_never_reaches_for_an_element_the_page_lacks(client):
+    """The one bug a page with no build step and no framework actually gets.
+
+    ``$("typo")`` is ``null`` and the next line throws, taking the rest of
+    ``init()`` with it — a blank screen with a message only in the console.
+    So every id the script asks for is checked against the page it was served
+    with, both fetched from a running bridge.
+    """
+    html = fetch_text(client, "/")
+    script = fetch_text(client, "/webui/app.js")
+    wanted = sorted(set(re.findall(r'\$\("([A-Za-z0-9_-]+)"\)', script)))
+    assert wanted, "no element lookups found — did app.js stop using $()?"
+    missing = [name for name in wanted if ('id="%s"' % name) not in html]
+    assert not missing, "app.js reaches for ids the page does not have: %s" % missing
+
+
+def test_the_model_selector_offers_the_three_the_bridge_accepts(client):
+    html = fetch_text(client, "/")
+    for model in bridge.MODELS:
+        assert ('value="%s"' % model) in html, model
+    for label in ("Fast", "Smart", "Deepest"):
+        assert ">%s<" % label in html, label
+
+
+def test_the_page_asks_for_nothing_off_this_machine(client):
+    """No CDN, no font host, no analytics: this has to work with the wire out.
+
+    Checked on the bytes the bridge actually serves, because "it is offline"
+    is the kind of property that is true until somebody adds one convenient
+    ``<link>``.
+    """
+    for path in ("/", "/webui/app.js", "/webui/app.css", "/webui/format.js"):
+        text = fetch_text(client, path)
+        for attribute in ("src=", "href=", "@import", "url("):
+            for match in re.finditer(re.escape(attribute) + r'\s*["\']?([^"\'\s)>]+)',
+                                     text):
+                target = match.group(1)
+                if target.startswith(("http://", "https://", "//")):
+                    # The one allowed absolute URL is the SVG namespace in the
+                    # inline favicon: an identifier, never fetched.
+                    assert "www.w3.org" in target, "%s fetches %s" % (path, target)
+
+
+def test_the_page_only_talks_to_routes_this_bridge_serves(client):
+    """Every path the script fetches is one of ours, and all of them exist."""
+    script = fetch_text(client, "/webui/app.js")
+    called = set(re.findall(r'api\("(/[a-z/]*)', script))
+    assert called == {"/services/health", "/jobs", "/job/", "/ask", "/cancel/",
+                      "/upload", "/new", "/services/start", "/flows",
+                      "/flows/run"}, called
+
+
+def test_the_reply_is_the_only_html_the_page_ever_builds(client):
+    """Anything a model writes is escaped before it is marked up.
+
+    ``innerHTML`` is the one way a reply could put a tag on this page, so there
+    is exactly one assignment of it and it comes from the formatter — which
+    escapes first and marks up afterwards.  Everything else is textContent.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assignments = re.findall(r"\.innerHTML\s*=\s*([^;]+);", script)
+    assert assignments == ["fmt.formatReply(job.reply)"], assignments
+
+
+# ===========================================================================
+# the formatter — run for real, under node when there is one
+# ===========================================================================
+
+FORMAT_HARNESS = """
+const fs = require('fs');
+globalThis.window = globalThis;
+eval(fs.readFileSync(process.argv[2], 'utf8'));
+const cases = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+process.stdout.write(JSON.stringify(cases.map(window.ForgeFormat.formatReply)));
+"""
+
+
+def format_replies(tmp_path, texts):
+    """Run ``format.js`` over some replies and hand back the HTML it made."""
+    node = shutil.which("node") or shutil.which("node.exe")
+    if not node:
+        pytest.skip("no node on this machine to run format.js with")
+    harness = tmp_path / "harness.js"
+    harness.write_text(FORMAT_HARNESS, encoding="utf-8")
+    cases = tmp_path / "cases.json"
+    cases.write_text(json.dumps(list(texts)), encoding="utf-8")
+    out = subprocess.run(
+        [node, str(harness), os.path.join(WEBUI_DIR, "format.js"), str(cases)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+    assert out.returncode == 0, out.stderr.decode("utf-8", "replace")
+    return json.loads(out.stdout.decode("utf-8"))
+
+
+def test_the_formatter_makes_paragraphs_code_and_bold(tmp_path):
+    reply = ("Here is the plan.\nIt has two lines.\n\n"
+             "**Wall thickness** is 2.4 mm, set by `wall_mm`.\n\n"
+             "```python\nPARAMS = {\"wall_mm\": {\"value\": 2.4}}\n```\n\n"
+             "- one\n- two\n\n1. first\n2. second\n\n## A heading")
+    html, = format_replies(tmp_path, [reply])
+    assert "<p>Here is the plan.<br>It has two lines.</p>" in html
+    assert "<strong>Wall thickness</strong>" in html
+    assert "<code>wall_mm</code>" in html
+    assert "<pre><code>PARAMS = " in html
+    assert "<ul><li>one</li><li>two</li></ul>" in html
+    assert '<ol start="1"><li>first</li><li>second</li></ol>' in html
+    assert "<h3>A heading</h3>" in html
+
+
+def test_the_formatter_escapes_before_it_marks_up(tmp_path):
+    """A reply is text a model wrote. It never becomes a tag on this page."""
+    cases = [
+        "<script>alert(1)</script>",
+        "<img src=x onerror=alert(1)>",
+        "**<b>bold</b>**",
+        "`<script>`",
+        "```\n<script>alert(1)</script>\n```",
+        "- <script>alert(1)</script>",
+    ]
+    # The only tags that may come out are the ones the formatter itself makes.
+    allowed = {"p", "br", "strong", "em", "code", "pre", "ul", "ol", "li",
+               "h3", "a"}
+    for html in format_replies(tmp_path, cases):
+        made = {name.lower() for name in re.findall(r"</?([A-Za-z][A-Za-z0-9]*)",
+                                                    html)}
+        assert made <= allowed, html
+        # …and what the model wrote is still there, as words rather than markup.
+        assert "&lt;" in html
+
+
+def test_the_formatter_leaves_a_code_sample_alone(tmp_path):
+    """Asterisks and underscores inside code are code, not emphasis."""
+    html, = format_replies(tmp_path, ["```\na = b ** 2 + _c_\n```"])
+    assert "<strong>" not in html and "<em>" not in html
+    assert "b ** 2 + _c_" in html
+
+
+def test_the_formatter_is_safe_on_nothing_at_all(tmp_path):
+    assert format_replies(tmp_path, ["", "   \n\n  ", None]) == ["", "", ""]
+
+
+# ===========================================================================
+# /jobs — the conversation a freshly opened page has to draw
+# ===========================================================================
+
+def test_jobs_is_empty_before_anything_is_asked(client):
+    status, body = client.request("/jobs")
+    assert status == 200
+    assert body["jobs"] == []
+    assert body["session_cost_usd"] == 0
+    assert body["busy"] is False and body["queued"] is False
+    assert body["limit"] == bridge.MAX_JOBS
+
+
+def test_jobs_carries_what_the_page_needs_to_redraw_a_turn(client):
+    client.turn("make me a cup")
+    status, body = client.request("/jobs")
+    assert status == 200
+    assert len(body["jobs"]) == 1
+    job = body["jobs"][0]
+    # Everything the conversation view draws, in one request.
+    for key in ("job_id", "state", "message", "reply", "activity", "files",
+                "created_at", "started_at", "duration_ms", "session_cost_usd"):
+        assert key in job, key
+    assert job["state"] == "done"
+    assert job["message"] == "make me a cup"
+    assert job["reply"]
+    assert job["cost_usd"] == pytest.approx(0.0123)
+    assert body["session_cost_usd"] == pytest.approx(0.0123)
+
+
+def test_jobs_are_in_the_order_they_were_asked(client):
+    client.turn("first")
+    client.turn("second")
+    client.turn("third")
+    _status, body = client.request("/jobs")
+    assert [job["message"] for job in body["jobs"]] == ["first", "second", "third"]
+    stamps = [job["created_at"] for job in body["jobs"]]
+    assert stamps == sorted(stamps)
+
+
+def test_a_queued_message_shows_as_queued_in_the_jobs_list(bridges):
+    client = bridges(env_extra={"FAKE_CLAUDE_MODE": "slow", "FAKE_CLAUDE_SLEEP": "6"})
+    first_status, first = client.ask("the slow one")
+    assert first_status == 200
+    second_status, second = client.ask("the one behind it")
+    assert second_status == 200 and second["state"] == "queued"
+
+    _status, body = client.request("/jobs")
+    states = {job["job_id"]: job["state"] for job in body["jobs"]}
+    assert states[first["job_id"]] == "running"
+    assert states[second["job_id"]] == "queued"
+    assert body["busy"] is True and body["queued"] is True
+    client.request("/cancel/%s" % second["job_id"], payload={})
+    client.request("/cancel/%s" % first["job_id"], payload={})
+
+
+def test_the_job_endpoint_gained_the_same_fields(client):
+    _status, asked = client.ask("hello")
+    job = client.wait(asked["job_id"])
+    assert job["message"] == "hello"
+    assert job["created_at"] > 0
+    assert job["finished_at"] >= job["started_at"]
+    assert isinstance(job["files"], list)
+
+
+# ===========================================================================
+# tokens and /file
+# ===========================================================================
+
+def test_an_attachment_is_minted_and_served(client, tmp_path):
+    sketch = write_png(tmp_path / "sketch.png")
+    _status, asked = client.ask("what is this?", context={"image_path": sketch})
+    job = client.wait(asked["job_id"])
+
+    attachments = [f for f in job["files"] if f["source"] == "attachment"]
+    assert len(attachments) == 1, job["files"]
+    entry = attachments[0]
+    assert entry["path"] == os.path.abspath(sketch)
+    assert entry["kind"] == "image"
+    assert entry["url"] == "/file/" + entry["token"]
+
+    status, headers, body = raw_get(client, entry["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "image/png"
+    assert body == PNG
+
+
+def test_a_render_path_in_the_activity_is_minted(bridges, tmp_path):
+    render = write_png(tmp_path / "render.png")
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_MODE": "stream",
+        "FAKE_CLAUDE_RENDER_PATH": render,
+        "FORGE_ASSISTANT_TEXT_INTERVAL": "0",
+    })
+    job = client.turn("render it")
+    minted = {f["path"]: f for f in job["files"]}
+    assert os.path.abspath(render) in minted, job["files"]
+    entry = minted[os.path.abspath(render)]
+    assert entry["source"] == "activity"
+
+    status, headers, body = raw_get(client, entry["url"])
+    assert status == 200 and body == PNG and headers["Content-Type"] == "image/png"
+
+
+def test_a_path_in_the_reply_is_minted(bridges, tmp_path):
+    out = write_png(tmp_path / "cup.png")
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_REPLY": "Done — I saved the render to %s, have a look." % out,
+    })
+    job = client.turn("render it")
+    assert [f["source"] for f in job["files"]] == ["reply"]
+    assert job["files"][0]["path"] == os.path.abspath(out)
+
+
+def test_a_glb_is_offered_as_a_file_rather_than_an_image(bridges, tmp_path):
+    model = tmp_path / "bug.glb"
+    model.write_bytes(b"glTF\x02\x00\x00\x00")
+    client = bridges(env_extra={"FAKE_CLAUDE_REPLY": "Exported %s." % model})
+    job = client.turn("export it")
+    assert job["files"][0]["kind"] == "model"
+    status, headers, body = raw_get(client, job["files"][0]["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "model/gltf-binary"
+    assert body.startswith(b"glTF")
+
+
+def test_a_path_the_model_only_mentioned_is_not_minted(bridges, tmp_path):
+    missing = tmp_path / "never-written.png"
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_REPLY": "I would put it at %s if you asked." % missing})
+    job = client.turn("what would you call it")
+    assert job["files"] == []
+
+
+def test_the_same_path_twice_is_one_token(bridges, tmp_path):
+    render = write_png(tmp_path / "same.png")
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_MODE": "stream",
+        "FAKE_CLAUDE_RENDER_PATH": render,
+        "FAKE_CLAUDE_REPLY": "Saved to %s." % render,
+        "FORGE_ASSISTANT_TEXT_INTERVAL": "0",
+    })
+    job = client.turn("render it")
+    # It arrived through the tool arguments, the tool result AND the reply.
+    matching = [f for f in job["files"] if f["path"] == os.path.abspath(render)]
+    assert len(matching) == 1, job["files"]
+
+
+@pytest.mark.parametrize("token", [
+    "deadbeefdeadbeef",
+    "..%2F..%2Fbridge.py",
+    "C:%5CWindows%5Cwin.ini",
+    "",
+    "0",
+])
+def test_file_serves_nothing_that_was_not_minted(client, token):
+    status, _headers, body = raw_get(client, "/file/" + token)
+    assert status == 404
+    assert b"ForgeAssistant/" not in body
+
+
+def test_a_readable_file_is_still_refused_without_a_token(client, tmp_path):
+    """The allow-list is the bridge's own history, not the filesystem's."""
+    readable = write_png(tmp_path / "not-mine.png")
+    assert os.path.isfile(readable)
+    status, _headers, _body = raw_get(client, "/file/" + readable)
+    assert status == 404
+
+
+def test_a_token_whose_file_vanished_is_a_plain_404(client, tmp_path):
+    sketch = write_png(tmp_path / "gone.png")
+    _status, asked = client.ask("look", context={"image_path": sketch})
+    job = client.wait(asked["job_id"])
+    url = job["files"][0]["url"]
+    assert raw_get(client, url)[0] == 200
+    os.remove(sketch)
+    status, _headers, _body = raw_get(client, url)
+    assert status == 404
+
+
+# ===========================================================================
+# /upload
+# ===========================================================================
+
+def upload(client, name, data, as_data_url=False):
+    encoded = base64.b64encode(data).decode("ascii")
+    if as_data_url:
+        encoded = "data:image/png;base64," + encoded
+    return client.request("/upload", {"name": name, "data": encoded})
+
+
+def test_upload_writes_the_bytes_and_hands_back_a_path(client, tmp_path):
+    status, body = upload(client, "sketch.png", PNG)
+    assert status == 200, body
+    path = body["path"]
+    assert os.path.isfile(path)
+    assert os.path.dirname(path) == str(tmp_path / "uploads")
+    with open(path, "rb") as handle:
+        assert handle.read() == PNG
+    assert body["bytes"] == len(PNG)
+    # And it is immediately viewable, which is how the page draws the thumb.
+    assert raw_get(client, body["url"])[2] == PNG
+
+
+def test_upload_accepts_a_data_url(client):
+    status, body = upload(client, "sketch.png", PNG, as_data_url=True)
+    assert status == 200, body
+    assert os.path.isfile(body["path"])
+
+
+def test_upload_accepts_multipart(client):
+    boundary = "----forgetest"
+    payload = (
+        "--%s\r\nContent-Disposition: form-data; name=\"file\"; "
+        "filename=\"drop.png\"\r\nContent-Type: image/png\r\n\r\n" % boundary
+    ).encode("utf-8") + PNG + ("\r\n--%s--\r\n" % boundary).encode("utf-8")
+
+    request = urllib.request.Request(
+        client.url("/upload"), data=payload,
+        headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(request, timeout=20) as response:
+        body = json.loads(response.read().decode("utf-8"))
+    assert os.path.isfile(body["path"])
+    assert body["name"].endswith("drop.png")
+
+
+@pytest.mark.parametrize("name,data,needle", [
+    ("notes.txt", b"hello", "Only images"),
+    ("part.py", b"import os", "Only images"),
+    ("sketch.png", b"MZ\x90\x00 definitely an exe", "not a"),
+    ("sketch.png", b"", "empty"),
+])
+def test_upload_refuses_what_is_not_an_image(client, name, data, needle):
+    status, body = upload(client, name, data)
+    assert status == 400, body
+    assert needle in body["error"]
+
+
+def test_upload_refuses_bad_base64(client):
+    status, body = client.request("/upload", {"name": "a.png", "data": "!!!!"})
+    assert status == 400
+    assert "base64" in body["error"]
+
+
+def test_upload_refuses_a_body_that_is_not_an_object(client):
+    status, body = client.request("/upload", {"name": "a.png"})
+    assert status == 400
+    assert "base64" in body["error"]
+
+
+def test_upload_is_capped(bridges):
+    client = bridges(env_extra={"FORGE_ASSISTANT_MAX_UPLOAD_MB": "0.05"})
+    big = PNG + b"\x00" * (80 * 1024)
+    status, body = upload(client, "huge.png", big)
+    assert status in (400, 413), body
+    assert "limit" in body["error"] or "larger" in body["error"]
+    # …and the small one still goes through, so the cap is a cap not a wall.
+    assert upload(client, "small.png", PNG)[0] == 200
+
+
+def test_the_uploads_folder_ignores_itself(client, tmp_path):
+    """Sketches dropped on a page are not source, and the default folder is
+    inside the repo — so it ignores itself rather than making every clone edit
+    .gitignore."""
+    upload(client, "sketch.png", PNG)
+    ignore = tmp_path / "uploads" / ".gitignore"
+    assert ignore.is_file()
+    assert ignore.read_text(encoding="utf-8").strip() == "*"
+
+
+def test_pruning_never_evicts_the_folders_own_housekeeping(tmp_path):
+    directory = tmp_path / "uploads"
+    directory.mkdir()
+    (directory / ".gitignore").write_text("*\n", encoding="utf-8")
+    for index in range(5):
+        write_png(directory / ("shot-%d.png" % index))
+    assert bridge.prune_uploads(str(directory), keep=2) == 3
+    assert (directory / ".gitignore").is_file()
+    assert len([p for p in directory.iterdir() if p.suffix == ".png"]) == 2
+
+
+def test_upload_cannot_write_outside_the_uploads_folder(client, tmp_path):
+    status, body = upload(client, "../../../evil.png", PNG)
+    assert status == 200, body
+    assert os.path.dirname(body["path"]) == str(tmp_path / "uploads")
+
+
+def test_an_uploaded_path_rides_context_image_path_exactly_like_the_panel(client):
+    """The whole point of /upload: browser bytes become the panel's attachment.
+
+    A browser hands JavaScript file *content*, never a path, so there is
+    nothing to put in ``context.image_path`` until the bytes are written down.
+    Once they are, the same road is taken: a path in the context, a block in
+    the prompt, a Read by the model.
+    """
+    _status, uploaded = upload(client, "ref.png", PNG)
+    path = uploaded["path"]
+
+    _status, asked = client.ask("match these proportions",
+                                context={"image_path": path})
+    job = client.wait(asked["job_id"])
+    assert job["state"] == "done", job
+
+    argv = client.wait_for_calls(1)[-1]["argv"]
+    prompt = argv[argv.index("-p") + 1]
+    assert bridge.IMAGE_DIVIDER in prompt
+    assert path in prompt
+    assert "Read tool" in prompt
+    # And the attachment is on the job, so a reload still shows the picture.
+    assert [f["path"] for f in job["files"]] == [path]
+
+
+# ===========================================================================
+# /services/health
+# ===========================================================================
+
+def test_services_health_fans_out_and_reports_one_service_down(bridges, fake_service):
+    geometry = fake_service({"status": "ok", "build123d": "0.9"})
+    client = bridges(env_extra={
+        "FORGE_SERVICE_URL": geometry.url,
+        "FORGE_MESHGEN_URL": "http://127.0.0.1:%d" % free_port(),
+    })
+    status, body = client.request("/services/health")
+    assert status == 200
+    services = {svc["key"]: svc for svc in body["services"]}
+    assert set(services) == {"bridge", "geometry", "meshgen", "blender"}
+
+    assert services["geometry"]["ok"] is True
+    assert services["geometry"]["data"]["build123d"] == "0.9"
+    assert services["meshgen"]["ok"] is False
+    assert "not running" in services["meshgen"]["detail"]
+    # Meshgen and Blender are allowed to be down on a working machine.
+    assert services["meshgen"]["optional"] is True
+    assert services["blender"]["optional"] is True
+    assert services["geometry"]["optional"] is False
+    assert services["bridge"]["ok"] is True
+    assert "session_cost_usd" in body and "claude_cli" in body
+
+
+def test_services_health_answers_even_with_everything_down(client):
+    status, body = client.request("/services/health", timeout=30)
+    assert status == 200
+    down = [svc["key"] for svc in body["services"] if not svc["ok"]]
+    assert set(down) == {"geometry", "meshgen", "blender"}
+
+
+def test_services_health_sees_blender_listening(bridges, fake_blender):
+    server = fake_blender(ok_response({"pong": True}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+    _status, body = client.request("/services/health")
+    services = {svc["key"]: svc for svc in body["services"]}
+    assert services["blender"]["ok"] is True
+    assert services["blender"]["address"].endswith(":%d" % server.port)
+
+
+def test_services_health_marks_a_service_that_answers_badly(bridges, fake_service):
+    sick = fake_service({"status": "error", "detail": "no build123d"})
+    client = bridges(env_extra={"FORGE_SERVICE_URL": sick.url})
+    _status, body = client.request("/services/health")
+    geometry = [s for s in body["services"] if s["key"] == "geometry"][0]
+    assert geometry["ok"] is False
+    assert geometry["detail"] == "error"
+
+
+# ===========================================================================
+# /services/start
+# ===========================================================================
+
+def fake_start_script(tmp_path, code=0, lines=("[ok] Shape service started",)):
+    script = tmp_path / ("fake_start_%d.py" % int(time.time() * 1000 % 1e9))
+    body = "\n".join(["print(%r)" % line for line in lines])
+    script.write_text("import sys\n%s\nsys.exit(%d)\n" % (body, code), encoding="utf-8")
+    return str(script)
+
+
+def test_start_services_shells_the_script_and_reports_what_it_said(bridges, tmp_path):
+    script = fake_start_script(tmp_path, 0,
+                               ("  [ok] Shape service started on port 8765",
+                                "  [ok] Assistant already running on port 8901"))
+    client = bridges(env_extra={"FORGE_START_SCRIPT": script})
+    status, body = client.request("/services/start", payload={}, timeout=60)
+    assert status == 200, body
+    assert body["ok"] is True and body["returncode"] == 0
+    assert body["script"] == script
+    assert any("Shape service started" in line for line in body["output"])
+    assert any("already running" in line for line in body["output"])
+
+
+def test_start_services_reports_a_failing_script_without_pretending(bridges, tmp_path):
+    script = fake_start_script(tmp_path, 3, ("  [X] The shape service did not start.",))
+    client = bridges(env_extra={"FORGE_START_SCRIPT": script})
+    status, body = client.request("/services/start", payload={}, timeout=60)
+    assert status == 200
+    assert body["ok"] is False and body["returncode"] == 3
+    assert any("did not start" in line for line in body["output"])
+
+
+def test_start_services_says_so_when_the_script_is_missing(bridges, tmp_path):
+    client = bridges(env_extra={
+        "FORGE_START_SCRIPT": str(tmp_path / "nope" / "start_forge.ps1")})
+    status, body = client.request("/services/start", payload={}, timeout=60)
+    assert status == 404
+    assert "missing" in body["error"]
+
+
+def test_the_real_start_script_is_still_where_the_route_expects_it():
+    """A guard, not a run: this route is worthless pointed at nothing."""
+    assert os.path.isfile(os.path.join(REPO_ROOT, "start_forge.ps1"))
+
+
+# ===========================================================================
+# /flows — passthrough to the Blender socket
+# ===========================================================================
+
+FLOW_LIST = {
+    "dir": "C:\\forge\\flows",
+    "count": 1,
+    "flows": [{
+        "name": "segment-into-4",
+        "description": "Cut the part into 4 wedges that fit the bed.",
+        "params": {"wedges": {"value": 4, "unit": "count",
+                              "description": "How many wedges"}},
+        "steps": 2,
+        "step_labels": ["Cut it up", "Show the pieces"],
+        "path": "C:\\forge\\flows\\segment-into-4.json",
+    }],
+}
+
+
+def test_flows_proxies_flow_list(bridges, fake_blender):
+    server = fake_blender(ok_response(FLOW_LIST))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/flows", payload={})
+    assert status == 200, body
+    assert body["count"] == 1
+    assert body["flows"][0]["name"] == "segment-into-4"
+    assert body["flows"][0]["params"]["wedges"]["value"] == 4
+    assert server.seen[0]["type"] == "flow_list"
+
+
+def test_flows_run_sends_the_name_and_params_it_was_given(bridges, fake_blender):
+    report = {"flow": "segment-into-4", "ok": True, "count": 2,
+              "duration_ms": 1234,
+              "steps": [{"index": 0, "label": "Cut it up", "brief": "segments=6"},
+                        {"index": 1, "label": "Show the pieces", "brief": "count=6"}]}
+    server = fake_blender(ok_response(report))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+
+    status, body = client.request("/flows/run",
+                                  payload={"name": "segment-into-4",
+                                           "params": {"wedges": 6}})
+    assert status == 200, body
+    assert body["ok"] is True and body["count"] == 2
+    request = server.seen[0]
+    assert request["type"] == "flow_run"
+    assert request["params"]["name"] == "segment-into-4"
+    assert request["params"]["params"] == {"wedges": 6}
+
+
+def test_flows_run_with_no_params_still_sends_an_object(bridges, fake_blender):
+    server = fake_blender(ok_response({"ok": True, "count": 0, "steps": []}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+    status, _body = client.request("/flows/run", payload={"name": "whatever"})
+    assert status == 200
+    assert server.seen[0]["params"]["params"] == {}
+
+
+def test_flows_run_needs_a_name(client):
+    status, body = client.request("/flows/run", payload={})
+    assert status == 400
+    assert "Which flow" in body["error"]
+
+
+def test_flows_run_refuses_params_that_are_not_an_object(client):
+    status, body = client.request("/flows/run",
+                                  payload={"name": "x", "params": [1, 2, 3]})
+    assert status == 400
+    assert "object" in body["error"]
+
+
+def test_a_flow_that_failed_reports_blenders_own_words(bridges, fake_blender):
+    message = ("Flow 'segment-into-4' failed at step 2 of 2 (Show the pieces): "
+               "no such object  (done first: 1 Cut it up)")
+
+    def responder(request):
+        return {"id": request.get("id"), "status": "error", "message": message}
+
+    server = fake_blender(responder)
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/flows/run", payload={"name": "segment-into-4"})
+    assert status == 502
+    assert body["error"] == message
+    assert body["blender"] is True
+
+
+def test_flows_says_blender_is_not_running_in_words_an_artist_can_act_on(client):
+    for path in ("/flows", "/flows/run"):
+        payload = {"name": "x"} if path.endswith("run") else {}
+        status, body = client.request(path, payload=payload)
+        assert status == 503, (path, body)
+        assert body["blender"] is False
+        assert "Blender is not running" in body["error"]
+        assert "Start Server" in body["error"]
+
+
+def test_a_blender_that_hangs_up_is_an_error_not_a_hang(bridges, fake_blender):
+    server = fake_blender(lambda request: None)   # accept, then close
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/flows", payload={}, timeout=40)
+    assert status in (502, 503), body
+    assert body["error"]
+
+
+def test_a_blender_that_answers_with_junk_is_an_error(bridges):
+    """A socket that sends a line of non-JSON must not take the bridge down."""
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    port = server.getsockname()[1]
+
+    def serve():
+        try:
+            conn, _addr = server.accept()
+            conn.recv(65536)
+            conn.sendall(b"not json at all\n")
+            conn.close()
+        except OSError:
+            pass
+
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(port)})
+    try:
+        status, body = client.request("/flows", payload={}, timeout=40)
+        assert status == 502
+        assert "not JSON" in body["error"]
+    finally:
+        server.close()
+
+
+# ===========================================================================
+# the two surfaces are one conversation
+# ===========================================================================
+
+def test_the_web_ui_and_the_panel_share_the_session_and_the_jobs(client):
+    """Nothing about /jobs is a separate history: it is *the* history."""
+    panel_job = client.turn("asked from the panel")
+    _status, jobs = client.request("/jobs")
+    assert panel_job["job_id"] in [job["job_id"] for job in jobs["jobs"]]
+
+    # /new is the same reset both surfaces press.
+    assert client.request("/new", payload={})[0] == 200
+    _status, after = client.request("/jobs")
+    assert after["session_cost_usd"] == 0
+    # The history stays: forgetting the conversation is not erasing the page.
+    assert len(after["jobs"]) == 1
+
+
+def test_the_health_route_the_panel_uses_is_untouched(client):
+    status, body = client.request("/health")
+    assert status == 200
+    for key in ("status", "claude_cli", "busy", "queued", "session_cost_usd",
+                "last_auth_error"):
+        assert key in body, key
+
+
+def test_unknown_paths_are_still_a_clean_404(client):
+    for path in ("/nope", "/webui", "/file"):
+        status, body = client.request(path)
+        assert status == 404, path
+        assert "error" in body

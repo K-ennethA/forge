@@ -45,6 +45,12 @@ life of the bridge process (it is read from the environment it was started with)
 so a file is the only way for one test to watch the signed-out signal appear and
 then clear.
 
+``FAKE_CLAUDE_REPLY`` replaces the reply text in the result event, and
+``FAKE_CLAUDE_RENDER_PATH`` adds a tool call that "wrote" a file at that path
+(and a tool result saying so).  Together they are how the Phase 9 tests give
+the bridge a real path to mint a ``/file`` token for — one arriving through the
+activity, one arriving through the reply.
+
 ``FAKE_CLAUDE_STREAM=1`` selects ``stream`` without naming a mode, and
 ``FAKE_CLAUDE_STREAM_FILE`` names a flag file whose existence does the same.
 The *output* shape and the *flags the bridge must pass* are deliberately
@@ -134,6 +140,29 @@ def tool_block(index, tool_id, name, chunks):
     stream_event({"type": "content_block_stop", "index": index})
 
 
+def reply_text(default):
+    """What the result event says — overridable so a test can plant a path."""
+    return os.environ.get("FAKE_CLAUDE_REPLY") or default
+
+
+def render_events():
+    """A tool call that wrote a file, if ``FAKE_CLAUDE_RENDER_PATH`` names one.
+
+    Emitted as both a tool *input* and a tool *result*, because those are the
+    two places a real render's path shows up and the bridge mints tokens from
+    each of them.
+    """
+    path = os.environ.get("FAKE_CLAUDE_RENDER_PATH")
+    if not path:
+        return
+    emit({"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": "toolu_03", "name": "mcp__forge__render_view",
+         "input": {"path": path}}]}})
+    emit({"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "toolu_03",
+         "content": "wrote %s" % path}]}})
+
+
 def run_stream(session_id, model, mode):
     """The event sequence a real turn produces, in the real order."""
     emit({"type": "system", "subtype": "init", "session_id": session_id,
@@ -157,6 +186,8 @@ def run_stream(session_id, model, mode):
          "name": "mcp__forge__partforge_segment",
          "input": LONG_SEGMENT_ARGS}]}})
 
+    render_events()
+
     if mode == "stream_slow":
         time.sleep(float(os.environ.get("FAKE_CLAUDE_SLEEP", "30")))
 
@@ -175,7 +206,7 @@ def run_stream(session_id, model, mode):
         "type": "result",
         "subtype": "success",
         "is_error": False,
-        "result": STREAM_REPLY,
+        "result": reply_text(STREAM_REPLY),
         "session_id": session_id,
         "total_cost_usd": 0.0123,
         "num_turns": 2,
@@ -315,7 +346,7 @@ def main():
         "type": "result",
         "subtype": "success",
         "is_error": mode in failures,
-        "result": failures.get(mode, REPLY),
+        "result": failures.get(mode, reply_text(REPLY)),
         "session_id": session_id,
         "total_cost_usd": 0.0123,
         "num_turns": 1,

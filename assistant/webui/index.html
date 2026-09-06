@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge</title>
+<link rel="stylesheet" href="/webui/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#128296;</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="name">Forge</span>
+  </div>
+
+  <div class="health" id="health" aria-label="Service status">
+    <span class="health-empty">checking services…</span>
+  </div>
+
+  <div class="topbar-actions">
+    <span class="cost" id="cost" title="What this conversation has cost so far">$0.00</span>
+    <button type="button" class="btn ghost" id="start-services"
+            title="Start the shape service, the assistant and image-to-3D (whichever are not already running)">Start services</button>
+    <button type="button" class="btn ghost" id="new-conversation"
+            title="Forget the conversation so far and start fresh">New conversation</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button type="button" class="tab is-active" id="tab-chat" role="tab"
+          aria-selected="true" aria-controls="panel-chat">Chat</button>
+  <button type="button" class="tab" id="tab-flows" role="tab"
+          aria-selected="false" aria-controls="panel-flows">Flows</button>
+</nav>
+
+<div class="banner-slot" id="banners" aria-live="polite"></div>
+
+<main>
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+    <div class="thread" id="thread">
+      <div class="empty" id="empty">
+        <h1>What are we making?</h1>
+        <p>Describe the thing — “a mug with a hex-pattern grip, 90&nbsp;mm tall” —
+           or attach a sketch and ask what it would take. The assistant has the
+           same tools as the Blender panel, and this is the same conversation.</p>
+        <ul class="starters">
+          <li><button type="button" class="chip" data-starter="Check the part I have open for printability on my printer and tell me what to fix.">Check my part for printing</button></li>
+          <li><button type="button" class="chip" data-starter="What is in the Blender scene right now?">What is in the scene?</button></li>
+          <li><button type="button" class="chip" data-starter="Cut the current part into pieces that fit my bed, with joints that hold without glue.">Cut it up to fit my bed</button></li>
+          <li><button type="button" class="chip" data-starter="I am new to this. Walk me through making my first parametric part.">I am completely new</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <form class="composer" id="composer" autocomplete="off">
+      <div class="attachment" id="attachment" hidden>
+        <img class="attachment-thumb" id="attachment-thumb" alt="">
+        <span class="attachment-name" id="attachment-name"></span>
+        <button type="button" class="btn tiny" id="attachment-clear" title="Remove this image">Remove</button>
+      </div>
+
+      <div class="composer-row">
+        <textarea id="message" rows="1" placeholder="Ask for something — Enter to send, Shift+Enter for a new line"></textarea>
+        <button type="submit" class="btn primary send" id="send" title="Send (Enter)">Send</button>
+      </div>
+
+      <div class="composer-bar">
+        <label class="attach-label btn tiny" for="file" title="Attach a reference photo or sketch">
+          Attach image
+          <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/bmp" hidden>
+        </label>
+        <select id="model" class="select tiny" title="How much thinking to spend on this message">
+          <option value="haiku">Fast</option>
+          <option value="sonnet" selected>Smart</option>
+          <option value="opus">Deepest</option>
+        </select>
+        <span class="composer-status" id="composer-status"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-flows" role="tabpanel" aria-labelledby="tab-flows" hidden>
+    <div class="flows-head">
+      <div>
+        <h2>Flows</h2>
+        <p class="muted">Saved sequences that replay exactly, with no model in
+           the loop. They run in Blender, so Blender has to be open.</p>
+      </div>
+      <button type="button" class="btn ghost" id="flows-refresh">Refresh</button>
+    </div>
+    <div id="flows"></div>
+  </section>
+</main>
+
+<script src="/webui/format.js"></script>
+<script src="/webui/app.js"></script>
+</body>
+</html>

@@ -53,6 +53,11 @@ has to run under whatever Python is around, with no install step, so
 One job at a time, on purpose: two turns in flight would fight over the same
 resumed session. The last 20 jobs stay in memory; older ids 404.
 
+The bridge serves a second surface as well — a web UI at `/`, with its own
+routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`). They are
+additive, the panel never calls them, and they are documented under
+[The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface).
+
 ## One message may wait its turn
 
 A turn takes tens of seconds, and an artist who has already thought of the next
@@ -201,6 +206,124 @@ anchor them to one real dimension, and **never trace pixels**. `load_reference`
 other half — it puts the same picture in the viewport so the artist can compare
 the model against it.
 
+## The web UI (Phase 9) — the second surface
+
+`http://127.0.0.1:8901/` in a browser is the same assistant as the Blender
+panel: the same session, the same job list, the same `/ask`. Ask something in
+the panel and it appears in the page; ask it in the page and the panel's poll
+picks it up. There is no second history — `/jobs` **is** the history.
+
+It exists because Blender's sidebar is 300 px wide and a conversation with
+pictures in it is not. The page is what you leave open on the second monitor.
+
+The whole of it is `assistant/webui/` — `index.html`, `app.css`, `app.js`,
+`format.js`. Vanilla, no build step, **no CDN**, no framework: it is served by a
+stdlib HTTP server on a machine that may have no internet, and it has to still
+open in five years without a toolchain being alive to rebuild it. A test fetches
+all four files from a running bridge and fails if any of them names an
+`http://` resource.
+
+### Its routes
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/` | — | the page (`assistant/webui/index.html`) |
+| GET | `/webui/<asset>` | — | one file from `assistant/webui/`, and nothing else |
+| GET | `/jobs` | — | `{"jobs": [<every job in memory, oldest first>], "session_cost_usd", "busy", "queued", "limit"}` |
+| GET | `/file/<token>` | — | the bytes of one file **this bridge recorded**; 404 for anything else |
+| GET | `/services/health` | — | `{"services": [{"key", "label", "ok", "detail", "optional"?, "url"?, "address"?, "data"?}], "busy", "queued", "session_cost_usd", "claude_cli", ...}` |
+| POST | `/upload` | `{"name", "data": "<base64 or data: URL>"}`, or a multipart form | `{"path", "name", "bytes", "token", "url"}` — **400** for a non-image or bad base64, **413** over the cap |
+| POST | `/services/start` | — | `{"ok", "returncode", "script", "output": [<last 60 lines>]}`; **404** if the script is missing, **409** if a start is already running, **504** on timeout |
+| POST | `/flows` | — | Blender's `flow_list`, verbatim |
+| POST | `/flows/run` | `{"name", "params"?}` | Blender's `flow_run` report, verbatim; **503** Blender down, **502** the add-on said no |
+
+`/job/<id>` and `/jobs` gained the fields a page that has just been opened needs
+in order to draw a conversation it never saw happen: `message` (what was asked),
+`created_at` / `started_at` / `finished_at`, and `files`. `created_at` is when
+Send was pressed and never moves; `started_at` moves when a queued job is picked
+up, so `duration_ms` means the same thing on every job. The panel ignores all of
+them.
+
+### File serving is the bridge's own history, not the filesystem
+
+`GET /file/<token>` is the only way the page can see a file on the artist's
+disk, and **paths are never accepted from the client**. A token is minted
+*inbound*, when a path enters a job through this process:
+
+- the attachment on an `/ask` (`source: "attachment"`),
+- a path in a tool's arguments or in a tool result (`source: "activity"`) — how
+  a render arrives,
+- a path in the reply (`source: "reply"`) — "I saved it to `C:\...\cup.png`".
+
+Minting also requires the extension to be one of `.png .jpg .jpeg .webp .bmp
+.glb .gltf` **and** the file to exist right then; a path the model only
+*mentioned* never becomes a broken image in the conversation. The same path
+noted three times is one token, so a reload gets the URLs it had. 400 tokens
+live at once; past that the oldest is forgotten and its `/file` 404s.
+
+Everything else is a 404 with the same words — never minted, expired, or minted
+and since deleted all read alike, because a client that can tell those apart can
+use the endpoint to ask questions about the filesystem. A perfectly readable
+`.png` whose absolute path you type in is refused exactly like `..\bridge.py`.
+
+`/webui/<asset>` is the same idea for the page's own files: the name must match
+`^[A-Za-z0-9._-]+$` (one plain segment — no slash, no `..`, and a percent sign
+is not one of the allowed characters, so an encoded traversal fails on the
+alphabet rather than on path arithmetic), the extension must be one a browser
+has a use for, and the resolved path must still be inside the folder. Three
+gates, all of which must pass. `assistant/system_prompt.md` is a 404 by all
+three.
+
+### Uploads: browser bytes in, a path on this machine out
+
+A file input hands JavaScript the file's **content**, never its path, so there
+is nothing to put in `context.image_path` until the bytes have been written
+down. `POST /upload` does that; the path it hands back then rides exactly the
+road the panel's attachment takes — a path in the context, a block in the
+prompt, a Read by the model.
+
+What it refuses, before writing anything: a non-image extension; an empty file;
+anything over **20 MB** (`FORGE_ASSISTANT_MAX_UPLOAD_MB`), checked against
+`Content-Length` before a byte is read as well as against the decoded bytes; and
+an extension that lies — the first bytes must actually be a PNG, JPEG, WEBP or
+BMP, because this writes a file to the artist's disk that the model is then told
+to open. The name is sanitised to a filename with a random prefix, so
+`../../../evil.png` lands in the uploads folder like everything else and two
+sketches called `ref.png` are two files. The folder keeps its newest 200 files
+and writes itself a `.gitignore` on creation — dropped sketches are not source.
+
+Drag-and-drop and paste-a-screenshot go through the same `/upload`.
+
+### The page
+
+- **Chat** the width of the window, with the model selector (Fast / Smart /
+  Deepest, remembered in `localStorage`), Enter to send, Shift+Enter for a line
+  break, and four starter chips on the empty state.
+- **Live activity** while a turn runs — the last four lines under a pulse, with
+  a Stop button; the full list collapses into a `N steps` disclosure when it
+  finishes. Polling is 800 ms and only while something is unsettled.
+- **Pictures in the conversation**: the attachment under the question, renders
+  and `.glb` files under the answer, each fetched by token.
+- **Per-job footer**: model, duration, cost, time of day. A queued job says
+  "waiting its turn", and the composer says so too — the queue is surfaced on
+  both surfaces.
+- **Health strip + Start services + New conversation + session cost** in the top
+  bar. The strip is fanned out server-side by `/services/health`, because a page
+  served from 8901 cannot ask 8765 itself; Blender and image-to-3D are allowed
+  to be down on a working machine, the shape service is not.
+- **Flows tab**: the saved flows with their params, and a Run button that goes
+  straight to Blender with no model in the loop. Blender being closed is a
+  sentence naming the button to press, not a stack trace.
+
+`format.js` is the reply formatter, ~90 lines and no markdown library: blank-line
+paragraphs (single newlines kept as breaks), `- ` and `1. ` lists, `#` headings,
+`` `code` ``, ```` ``` ```` fenced blocks, `**bold**`, `_italic_`, and bare URLs
+as links. Everything is **escaped first and marked up afterwards**, so no reply
+can put a tag on the page — the tests run the real file under node and assert
+that the only tags coming out are the ones the formatter itself makes.
+`innerHTML` is assigned in exactly one place in `app.js`, from that function; a
+test fails if a second one appears.
+
 ## The command line it builds
 
 ```
@@ -248,6 +371,18 @@ run with `cwd` = the repo root. Five details are load-bearing:
 | `FORGE_ASSISTANT_CWD` | the repo root | Working directory for the CLI |
 | `FORGE_ASSISTANT_TEXT_INTERVAL` | `2.0` | Seconds between `text` activity markers; `0` records every chunk (the tests use it) |
 | `FORGE_ASSISTANT_VERBOSE` | unset | Print an access log |
+
+The web UI's own, all optional:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `FORGE_ASSISTANT_UPLOADS` | `assistant/uploads` | Where `POST /upload` writes |
+| `FORGE_ASSISTANT_MAX_UPLOAD_MB` | `20` | The upload cap |
+| `FORGE_START_SCRIPT` | `<repo>/start_forge.ps1` | What `POST /services/start` shells (hidden, via PowerShell; a `.py` path runs under this interpreter, which is how the tests exercise the route without PowerShell) |
+| `FORGE_SERVICE_URL` | `http://127.0.0.1:8765` | Geometry service, for the health strip |
+| `FORGE_MESHGEN_URL` | `http://127.0.0.1:8902` | Image-to-3D service, likewise |
+| `FORGE_BLENDER_HOST` / `FORGE_BLENDER_PORT` | `127.0.0.1` / `9876` | The add-on socket the flows passthrough talks to |
+| `FORGE_FLOW_RUN_TIMEOUT` | `900` | Seconds a `/flows/run` may take (a segment is minutes) |
 
 ## Finding the CLI on Windows
 
@@ -348,11 +483,32 @@ prompt must carry it under `--- Attached reference image ---` with the Read
 instruction and `Read` still in `--allowedTools`; set to the empty string, the
 prompt must carry no attachment block at all.
 
+`FAKE_CLAUDE_REPLY` replaces the reply text and `FAKE_CLAUDE_RENDER_PATH` adds a
+tool call that "wrote" a file at that path (as both a tool input and a tool
+result). Together they give the web-UI tests a real path to mint a `/file` token
+for — one arriving through the activity, one through the reply, and both at once
+to prove they collapse to a single token.
+
 `FAKE_CLAUDE_STREAM=1` (or a flag file named by `FAKE_CLAUDE_STREAM_FILE`)
 turns streaming on without naming a mode. The output shape and the flags the
 bridge must pass are deliberately independent: the bridge always asks for
 stream-json, and the json modes prove it still copes with a build that answers
 with one object anyway.
+
+`assistant/tests/test_webui.py` is the web UI's half of the suite (124 tests
+beside `test_bridge.py`'s 90). It never touches port 8901: every bridge it
+starts is on a port the OS handed out, and the Blender socket, the two
+downstream services and the start script all have fakes in the file, so nothing
+in it needs Blender, PowerShell or the internet. What it pins down: the page and
+its assets are served and **only** they are (traversal, encoded traversal,
+`system_prompt.md` and unknown file types are all 404); every element id
+`app.js` reaches for exists in the page it was served with; the page fetches
+nothing off this machine and calls no route this bridge does not serve; tokens
+are minted inbound and `/file` serves nothing that was not; upload caps, magic
+bytes and hostile filenames; `/services/health` answers with everything down;
+and `/flows` passing through to a fake socket, including one that hangs up and
+one that answers with junk. The formatter tests run `format.js` for real under
+node when there is one, and skip when there is not.
 
 One real turn against the live CLI runs only when you ask for it:
 
@@ -378,3 +534,7 @@ about the command line.
 only if its port is free. `stop_forge.cmd` stops them again. The Blender side
 points at `http://127.0.0.1:8901` by default; the address is an add-on
 preference (Edit → Preferences → Add-ons → Forge → Assistant).
+
+The web UI is the same address in a browser: **http://127.0.0.1:8901/**. It
+needs nothing else running — Blender down just means the flows tab and the
+scene-context tools have nothing to talk to, which the page says in words.

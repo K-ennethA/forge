@@ -21,6 +21,19 @@ Endpoints
 ``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
 
+Phase 9 — the web UI's routes (all additive; the panel never calls them)::
+
+``GET  /``                 the single-page app in ``assistant/webui/``
+``GET  /webui/<asset>``    its css/js, served from that folder and nowhere else
+``GET  /jobs``             every job still in memory, so a page load can draw
+                           the conversation it missed
+``GET  /file/<token>``     one file this bridge itself recorded on a job
+``GET  /services/health``  the other localhost services, probed server-side
+``POST /upload``           an image from the browser -> a path on this machine
+``POST /services/start``   shells ``start_forge.ps1`` (probe-first, hidden)
+``POST /flows``            passthrough to Blender's ``flow_list``
+``POST /flows/run``        passthrough to Blender's ``flow_run``
+
 One waiting message (Phase 6e)
 ------------------------------
 Exactly one turn ever runs at a time — two in flight would fight over
@@ -86,16 +99,35 @@ Environment
 ``FORGE_ASSISTANT_CWD``      working directory for the CLI (default: the repo root)
 ``FORGE_ASSISTANT_TEXT_INTERVAL``  seconds between text activity markers
                              (default 2.0; 0 = every chunk, for the tests)
+
+Web UI environment (Phase 9)
+----------------------------
+``FORGE_ASSISTANT_UPLOADS``  where ``POST /upload`` writes (default
+                             ``assistant/uploads``)
+``FORGE_START_SCRIPT``       the script ``POST /services/start`` shells
+                             (default ``start_forge.ps1`` at the repo root; a
+                             ``.py`` path runs under this interpreter, which is
+                             how the tests avoid needing PowerShell)
+``FORGE_BLENDER_HOST`` / ``FORGE_BLENDER_PORT``   the add-on socket the flows
+                             passthrough talks to (default 127.0.0.1:9876)
+``FORGE_SERVICE_URL``        geometry service, for ``/services/health``
+                             (default http://127.0.0.1:8765)
+``FORGE_MESHGEN_URL``        meshgen service, likewise (default 8902)
 """
 
+import base64
+import binascii
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 import uuid
 from collections import OrderedDict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -135,6 +167,90 @@ MODELS = ("haiku", "sonnet", "opus")
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
 
 MAX_JOBS = 20
+
+# ---------------------------------------------------------------------------
+# Phase 9 — the web UI's constants
+# ---------------------------------------------------------------------------
+
+#: The single-page app.  Everything served under ``/webui/`` comes from here and
+#: from nowhere else; see :func:`webui_asset`.
+WEBUI_DIR = os.path.join(HERE, "webui")
+
+#: What ``GET /webui/<asset>`` will serve, and as what.  A file type that is not
+#: in this table is a 404 even if it sits in the folder — the browser has no use
+#: for it and an unknown type is not worth guessing at.
+ASSET_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+    ".woff2": "font/woff2",
+}
+
+#: What a minted token may point at.  Images because the artist attached or the
+#: assistant rendered them; ``.glb`` because that is what meshgen and the Godot
+#: exporter write, and a browser that cannot show one can still download it.
+SERVABLE_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".bmp": "image/bmp",
+    ".glb": "model/gltf-binary",
+    ".gltf": "model/gltf+json",
+}
+
+#: How many path tokens stay live.  Ten per job for the last twenty jobs, with
+#: room to spare; past this the oldest is forgotten and its ``/file`` 404s.
+MAX_FILE_TOKENS = 400
+
+#: A browser hands JavaScript a file's *content*, never its path, so an attached
+#: image has to be uploaded before it can ride ``context.image_path`` the way
+#: the panel's attachment does.  20 MB is far more than a reference photo needs
+#: and far less than a way to fill someone's disk from a tab.
+DEFAULT_MAX_UPLOAD_MB = 20
+#: Uploads older than this many files are deleted when a new one arrives.
+MAX_UPLOADS_KEPT = 200
+
+#: The first bytes of each image type we accept.  Checked because an extension
+#: is a claim and this writes a file to the artist's disk; a ``.png`` that is
+#: not a PNG is refused here rather than discovered by the model a turn later.
+IMAGE_MAGIC = {
+    ".png": (b"\x89PNG\r\n\x1a\n",),
+    ".jpg": (b"\xff\xd8\xff",),
+    ".jpeg": (b"\xff\xd8\xff",),
+    ".webp": (b"RIFF",),
+    ".bmp": (b"BM",),
+}
+
+#: Absolute paths of servable files, wherever they appear in a reply, a tool
+#: argument or a tool result.  Windows drive letters and UNC/POSIX roots both;
+#: quotes, brackets and backticks end a path because markdown wraps them.
+_FILE_PATH_RE = re.compile(
+    r"(?:[A-Za-z]:[\\/]|\\\\|/)[^\s\"'`<>|*?\r\n]*?"
+    r"\.(?:png|jpe?g|webp|bmp|glb|gltf)\b",
+    re.IGNORECASE)
+
+#: How deep into a tool's arguments the path scan walks.
+_SCAN_DEPTH = 4
+
+#: The other localhost services the health strip draws.  The page cannot poll
+#: them itself — a page served from 8901 asking 8765 is cross-origin — so the
+#: bridge fans out server-side and answers with one object.
+DEFAULT_SERVICE_URL = "http://127.0.0.1:8765"
+DEFAULT_MESHGEN_URL = "http://127.0.0.1:8902"
+DEFAULT_BLENDER_HOST = "127.0.0.1"
+DEFAULT_BLENDER_PORT = 9876
+#: A health probe is a dot on a strip: it must never make the page wait.
+HEALTH_TIMEOUT = 2.5
+#: ``flow_list`` is a folder read; ``flow_run`` can be a five-minute segment.
+FLOW_LIST_TIMEOUT = 20.0
+DEFAULT_FLOW_RUN_TIMEOUT = 900.0
+#: start_forge.ps1 probes three ports and waits up to 25 s for each.
+START_SERVICES_TIMEOUT = 180.0
 
 #: How many activity entries a job keeps.  Past this the MIDDLE is dropped: the
 #: first few say how the turn started, the last few say what it is doing now,
@@ -231,6 +347,52 @@ def text_interval():
     except (TypeError, ValueError):
         return DEFAULT_TEXT_INTERVAL
     return max(0.0, value)
+
+
+def uploads_dir():
+    """Where ``POST /upload`` puts what the browser handed us.
+
+    Beside this file by default, so it travels with the bridge and is obvious
+    to find (and to delete) rather than hidden in a temp folder the artist will
+    never think to look in.
+    """
+    return os.path.abspath(str(_env("FORGE_ASSISTANT_UPLOADS",
+                                    os.path.join(HERE, "uploads"))))
+
+
+def max_upload_bytes():
+    """The ``POST /upload`` size cap, in bytes."""
+    try:
+        megabytes = float(str(_env("FORGE_ASSISTANT_MAX_UPLOAD_MB",
+                                   DEFAULT_MAX_UPLOAD_MB)).strip())
+    except (TypeError, ValueError):
+        megabytes = DEFAULT_MAX_UPLOAD_MB
+    return int(max(0.01, megabytes) * 1024 * 1024)
+
+
+def start_script():
+    """The script ``POST /services/start`` runs."""
+    return os.path.abspath(str(_env("FORGE_START_SCRIPT",
+                                    os.path.join(REPO_ROOT, "start_forge.ps1"))))
+
+
+def blender_address():
+    host = str(_env("FORGE_BLENDER_HOST", DEFAULT_BLENDER_HOST)).strip() \
+        or DEFAULT_BLENDER_HOST
+    try:
+        blender_port = int(str(_env("FORGE_BLENDER_PORT", DEFAULT_BLENDER_PORT)).strip())
+    except (TypeError, ValueError):
+        blender_port = DEFAULT_BLENDER_PORT
+    return host, blender_port
+
+
+def flow_run_timeout():
+    try:
+        value = float(str(_env("FORGE_FLOW_RUN_TIMEOUT",
+                               DEFAULT_FLOW_RUN_TIMEOUT)).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_FLOW_RUN_TIMEOUT
+    return max(5.0, value)
 
 
 # ---------------------------------------------------------------------------
@@ -815,6 +977,11 @@ class ActivityRecorder(object):
             self._event(payload.get("event"))
         elif kind == "assistant":
             self._message(payload.get("message"))
+        elif kind == "user":
+            # A tool's *result* — where a render's path usually first appears.
+            # Nothing is logged from here (the tool call already has a line);
+            # it is read only for paths worth a token.
+            self._files(payload.get("message"))
         elif kind in ("content_block_start", "content_block_delta",
                       "content_block_stop"):
             # a build that emits the raw Anthropic events without the wrapper
@@ -869,12 +1036,22 @@ class ActivityRecorder(object):
                 # No partial messages on this build: the whole block at once.
                 self._text(block.get("text"))
 
+    def _files(self, value):
+        """Record any servable path in ``value`` against this job."""
+        try:
+            self.store.note_files_in(self.job_id, value, "activity")
+        except Exception:  # noqa: BLE001 - a thumbnail is never worth the turn
+            pass
+
     # -- pieces ----------------------------------------------------------
     def _tool(self, tool_id, name, args):
         if not name:
             return
         tool_id = tool_id or "tool-%d" % len(self._tool_entries)
         self._seen_tool = True
+        # Before the label is clipped to a basename: the token needs the whole
+        # path, and this is the last place it exists in full.
+        self._files(args)
         entry = self._tool_entries.get(tool_id)
         if entry is None:
             self._tool_names[tool_id] = name
@@ -901,6 +1078,7 @@ class ActivityRecorder(object):
             args = json.loads(raw)
         except ValueError:
             return
+        self._files(args)
         entry = self._tool_entries.get(tool_id)
         if entry is None or not summarize_args(args):
             return
@@ -929,6 +1107,132 @@ class ActivityRecorder(object):
             return
         self._last_text_at = now
         self.push("text", snippet)
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — file tokens: the only paths a browser may ask this bridge for
+# ---------------------------------------------------------------------------
+
+class FileTokens(object):
+    """Opaque names for paths this bridge itself recorded on a job.
+
+    The web UI has to show two kinds of file that live on the artist's disk:
+    the reference image they attached, and the renders and ``.glb`` files the
+    assistant produced.  A browser can only fetch a URL, so something has to
+    serve those bytes — and "serve any path a query string names" is a hole
+    straight through the machine, on a port every program on it can reach.
+
+    So paths are never accepted from the client.  A token is minted *inbound*,
+    when a path enters a job through this process: an attachment on ``/ask``, a
+    path in a tool's arguments, a path in a tool result, a path in the reply.
+    ``GET /file/<token>`` maps a token back to exactly the path that was minted
+    for it and refuses everything else, including a path that exists and is
+    perfectly readable.  The allow-list is therefore the bridge's own history,
+    which is the smallest one that can still show the artist their work.
+    """
+
+    def __init__(self, limit=MAX_FILE_TOKENS):
+        self._lock = threading.RLock()
+        self._by_token = OrderedDict()   # token -> absolute path
+        self._by_path = {}               # absolute path -> token
+        self._limit = limit
+
+    def mint(self, path):
+        """A token for ``path``, or ``None`` if it may not be served.
+
+        Same path, same token: a render mentioned in both the activity and the
+        reply is one entry, and a page that reloads gets the URLs it had.
+        """
+        resolved = normalize_image_path(path)
+        if not resolved:
+            return None
+        if os.path.splitext(resolved)[1].lower() not in SERVABLE_TYPES:
+            return None
+        # Existence is checked at mint time on purpose: a path the model
+        # *mentioned* but never wrote would otherwise become a broken image in
+        # the conversation, which reads as a bug in the UI rather than as an
+        # answer that named a file it did not make.
+        try:
+            if not os.path.isfile(resolved):
+                return None
+        except OSError:
+            return None
+        with self._lock:
+            token = self._by_path.get(resolved)
+            if token is not None:
+                self._by_token.move_to_end(token)
+                return token
+            token = uuid.uuid4().hex[:16]
+            self._by_token[token] = resolved
+            self._by_path[resolved] = token
+            while len(self._by_token) > self._limit:
+                old_token, old_path = self._by_token.popitem(last=False)
+                if self._by_path.get(old_path) == old_token:
+                    self._by_path.pop(old_path, None)
+            return token
+
+    def resolve(self, token):
+        """The path a token stands for, or ``None``."""
+        text = str(token or "").strip()
+        if not text:
+            return None
+        with self._lock:
+            return self._by_token.get(text)
+
+    def count(self):
+        with self._lock:
+            return len(self._by_token)
+
+
+FILES = FileTokens()
+
+
+def find_file_paths(text, limit=12):
+    """Absolute paths of servable files mentioned in ``text``.
+
+    Used on replies and tool results, where a render's path arrives as prose
+    ("saved to C:\\forge\\projects\\cup\\render.png") rather than as a field.
+    """
+    if not text:
+        return []
+    out = []
+    for match in _FILE_PATH_RE.finditer(str(text)):
+        candidate = match.group(0)
+        if candidate not in out:
+            out.append(candidate)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def walk_strings(value, depth=_SCAN_DEPTH):
+    """Every string inside a JSON-ish value, without recursing forever."""
+    if depth < 0:
+        return
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in list(value.values())[:40]:
+            for found in walk_strings(item, depth - 1):
+                yield found
+    elif isinstance(value, (list, tuple)):
+        for item in list(value)[:40]:
+            for found in walk_strings(item, depth - 1):
+                yield found
+
+
+def file_entry(token, path, source):
+    """The public shape of one recorded file."""
+    extension = os.path.splitext(path)[1].lower()
+    return {
+        "token": token,
+        "path": path,
+        "name": os.path.basename(path) or path,
+        "ext": extension,
+        "kind": "image" if extension in IMAGE_EXTENSIONS else "model",
+        "source": source,
+        "url": "/file/%s" % token,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -980,11 +1284,18 @@ class JobStore(object):
             "job_id": job_id,
             "state": state,
             "message": message,
+            # ``started_at`` moves when a queued job is picked up, so the
+            # duration means the same thing on every job.  ``created_at`` is
+            # when the artist pressed Send, and never moves: it is what the web
+            # UI sorts the conversation by.
+            "created_at": time.time(),
             "started_at": time.time(),
             "proc": None,
             "cancelled": False,
             "activity": [],
             "activity_dropped": 0,
+            #: Files this bridge recorded on the job — see :class:`FileTokens`.
+            "files": [],
         }
         self._jobs[job_id] = job
         while len(self._jobs) > self._limit:
@@ -1111,6 +1422,40 @@ class JobStore(object):
             if isinstance(entry, dict):
                 entry["label"] = str(label or "")[:LABEL_LIMIT]
 
+    # -- files -----------------------------------------------------------
+    def note_file(self, job_id, path, source="activity"):
+        """Mint a token for a path that just entered this job, if it may be.
+
+        Returns the entry, or ``None`` when the path is not something this
+        bridge will serve (wrong type, or not on disk).  Idempotent: the same
+        path noted twice, once from a tool argument and once from the reply, is
+        one entry with one token.
+        """
+        token = FILES.mint(path)
+        if token is None:
+            return None
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return None
+            entries = job.setdefault("files", [])
+            for entry in entries:
+                if entry["token"] == token:
+                    return entry
+            entry = file_entry(token, FILES.resolve(token) or path, source)
+            entries.append(entry)
+            return entry
+
+    def note_files_in(self, job_id, value, source="activity"):
+        """Note every servable path inside a value (a reply, a tool's args…)."""
+        found = []
+        for text in walk_strings(value):
+            for path in find_file_paths(text):
+                entry = self.note_file(job_id, path, source)
+                if entry is not None:
+                    found.append(entry)
+        return found
+
     def reset_activity(self, job_id):
         """Forget an attempt's activity — used when a turn is retried."""
         with self._lock:
@@ -1124,6 +1469,17 @@ class JobStore(object):
         with self._lock:
             job = self._jobs.get(job_id)
             return public_job(job, self.session_cost_usd)
+
+    def snapshot_all(self):
+        """Every job still in memory, oldest first.
+
+        The web UI is a page that can be opened, closed and reloaded at any
+        point in a conversation, so it needs the whole history in one request
+        rather than a job id it was never told about.
+        """
+        with self._lock:
+            return [public_job(job, self.session_cost_usd)
+                    for job in self._jobs.values()]
 
     def attach_proc(self, job_id, proc):
         with self._lock:
@@ -1145,7 +1501,14 @@ class JobStore(object):
             job.update(fields)
             job["proc"] = None
             job["duration_ms"] = int((time.time() - job["started_at"]) * 1000)
+            job["finished_at"] = time.time()
             self._record_outcome(job)
+        # Outside the lock only in spirit — RLock, same thread — but written as
+        # its own step because it touches the disk: a render named in the reply
+        # gets a token so the web UI can show it under the answer.
+        reply = fields.get("reply")
+        if reply:
+            self.note_files_in(job_id, reply, "reply")
 
     def _record_outcome(self, job):
         """Fold a finished turn into the two session-wide signals. Lock held.
@@ -1234,6 +1597,19 @@ def public_job(job, session_cost_usd=0.0):
                 "model", "usage", "num_turns"):
         if job.get(key) is not None:
             out[key] = job[key]
+    # What was asked, and when.  The panel ignores both; the web UI draws the
+    # conversation from them after a page reload, when nothing else remembers
+    # what the artist typed.
+    out["message"] = str(job.get("message") or "")[:8000]
+    out["created_at"] = round(float(job.get("created_at")
+                                    or job.get("started_at") or 0.0), 3)
+    out["started_at"] = round(float(job.get("started_at") or 0.0), 3)
+    if job.get("finished_at"):
+        out["finished_at"] = round(float(job["finished_at"]), 3)
+    # Attachments in, renders out — each as a token, never as a path the client
+    # could have chosen (the path is shown because it is worth reading, not
+    # because it is what gets fetched).
+    out["files"] = [dict(entry) for entry in (job.get("files") or [])]
     # What was ASKED for, alongside "model" (what the CLI says it ran).  The
     # panel can then say "you asked for Deepest" on a job that is still running,
     # before there is any result to read a model off.
@@ -1493,6 +1869,479 @@ def start_next():
 
 
 # ---------------------------------------------------------------------------
+# Phase 9 — serving the page
+# ---------------------------------------------------------------------------
+
+#: One path segment of a static asset: letters, digits, dot, dash, underscore.
+#: Deliberately no slash and no ``..``, so traversal is refused by the shape of
+#: the name before any path arithmetic happens.  It is the check that cannot be
+#: got past by encoding, because it is an allow-list of characters: ``../`` does
+#: not match it, and neither does ``%2e%2e%2f`` (this handler never decodes the
+#: path, so a percent sign is simply not one of the characters allowed).
+_ASSET_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def webui_asset(name):
+    """``(bytes, content type)`` for a file in ``assistant/webui/``, or ``None``.
+
+    Three gates, all of which must pass: the name is one plain segment, the
+    extension is one a browser has a use for, and the resolved path is still
+    inside the folder.  The last is belt-and-braces against a symlink; the
+    first two are what actually refuse ``../../system_prompt.md``.
+    """
+    text = str(name or "").strip()
+    if not text or not _ASSET_NAME_RE.match(text) or text.startswith("."):
+        return None
+    extension = os.path.splitext(text)[1].lower()
+    content_type = ASSET_TYPES.get(extension)
+    if content_type is None:
+        return None
+    root = os.path.abspath(WEBUI_DIR)
+    path = os.path.abspath(os.path.join(root, text))
+    if os.path.dirname(path) != root or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(), content_type
+    except OSError:
+        return None
+
+
+def read_token_file(token):
+    """``(bytes, content type, filename)`` for a minted token, or ``None``."""
+    path = FILES.resolve(token)
+    if not path:
+        return None
+    content_type = SERVABLE_TYPES.get(os.path.splitext(path)[1].lower())
+    if content_type is None:
+        return None
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(), content_type, os.path.basename(path)
+    except OSError:
+        # Minted, then moved or deleted: the token was real, the file is gone.
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — uploads: browser bytes in, a path on this machine out
+# ---------------------------------------------------------------------------
+
+_SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def safe_upload_name(name):
+    """A filename that is only ever a filename.
+
+    Whatever the browser called it, what lands on disk is a sanitised stem, the
+    original extension, and a random prefix so two sketches called ``ref.png``
+    are two files.
+    """
+    base = os.path.basename(str(name or "").replace("\\", "/").rstrip("/"))
+    stem, extension = os.path.splitext(base)
+    stem = _SAFE_NAME_RE.sub("-", stem).strip("-.") or "image"
+    extension = _SAFE_NAME_RE.sub("", extension).lower()
+    return "%s-%s%s" % (uuid.uuid4().hex[:8], stem[:60], extension)
+
+
+def upload_error(name, data):
+    """Why these bytes cannot be saved, or ``""``.
+
+    Type by extension *and* by the bytes themselves: an extension is a claim,
+    and this writes a file to the artist's disk that the model is then told to
+    open.  A ``.png`` that does not start like a PNG is refused here.
+    """
+    extension = os.path.splitext(str(name or ""))[1].lower()
+    if extension not in IMAGE_EXTENSIONS:
+        return ("Only images can be attached (%s). %s is not one."
+                % (" ".join(IMAGE_EXTENSIONS), os.path.basename(str(name)) or "that file"))
+    if not data:
+        return "That file is empty."
+    cap = max_upload_bytes()
+    if len(data) > cap:
+        return ("That image is %.1f MB. The limit is %d MB — resize it, or point "
+                "the assistant at the file with a message instead."
+                % (len(data) / 1048576.0, cap // 1048576))
+    magic = IMAGE_MAGIC.get(extension)
+    if magic and not any(data.startswith(prefix) for prefix in magic):
+        return ("That file is named %s but its contents are not a %s image."
+                % (extension, extension.lstrip(".")))
+    return ""
+
+
+def prune_uploads(directory, keep=MAX_UPLOADS_KEPT):
+    """Delete all but the newest ``keep`` uploads. Best effort, never fatal."""
+    try:
+        names = [os.path.join(directory, n) for n in os.listdir(directory)]
+    except OSError:
+        return 0
+    # Dotfiles are the folder's own housekeeping (its .gitignore), never an
+    # upload, so they are not candidates for eviction.
+    files = [p for p in names
+             if os.path.isfile(p) and not os.path.basename(p).startswith(".")]
+    if len(files) <= keep:
+        return 0
+    try:
+        files.sort(key=os.path.getmtime)
+    except OSError:
+        return 0
+    removed = 0
+    for path in files[:len(files) - keep]:
+        try:
+            os.remove(path)
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
+def save_upload(name, data):
+    """Write an accepted upload; returns its absolute path."""
+    directory = uploads_dir()
+    existed = os.path.isdir(directory)
+    os.makedirs(directory, exist_ok=True)
+    if not existed:
+        # The default folder is inside the repo, so that the artist can find
+        # (and empty) it.  It ignores itself rather than making every clone
+        # edit .gitignore: sketches somebody dropped on a page are not source.
+        try:
+            with open(os.path.join(directory, ".gitignore"), "w") as handle:
+                handle.write("*\n")
+        except OSError:
+            pass
+    path = os.path.join(directory, safe_upload_name(name))
+    with open(path, "wb") as handle:
+        handle.write(data)
+    prune_uploads(directory)
+    return path
+
+
+def decode_base64(text):
+    """Bytes from a base64 string or a ``data:`` URL, or ``None``.
+
+    Strict on purpose (``validate=True``): the lenient decoder silently drops
+    every character outside the alphabet, so a body of pure garbage comes back
+    as zero bytes and the artist is told their image is "empty" when the truth
+    is that it never decoded.  Whitespace is stripped first, because that is
+    the one bit of noise a real base64 payload legitimately carries.
+    """
+    raw = str(text or "").strip()
+    if not raw:
+        return None
+    if raw.startswith("data:"):
+        comma = raw.find(",")
+        if comma == -1:
+            return None
+        raw = raw[comma + 1:]
+    raw = "".join(raw.split())
+    if not raw:
+        return None
+    try:
+        return base64.b64decode(raw, validate=True)
+    except (binascii.Error, ValueError):
+        return None
+
+
+def parse_multipart(body, content_type):
+    """``(filename, bytes)`` from a simple multipart body, or ``(None, None)``.
+
+    A deliberately small parser: one file part, the first one found.  ``cgi``
+    is gone from the standard library in 3.13 and the alternative is a
+    dependency, which this process does not get to have.  The page itself
+    posts base64 JSON; this exists so ``curl -F`` works too.
+    """
+    marker = "boundary="
+    index = str(content_type or "").find(marker)
+    if index == -1:
+        return None, None
+    boundary = content_type[index + len(marker):].split(";")[0].strip().strip('"')
+    if not boundary:
+        return None, None
+    separator = b"--" + boundary.encode("utf-8", "replace")
+    for part in body.split(separator):
+        split = part.find(b"\r\n\r\n")
+        if split == -1:
+            continue
+        headers = part[:split].decode("utf-8", "replace")
+        if "filename=" not in headers:
+            continue
+        filename = headers.split("filename=", 1)[1]
+        filename = filename.split("\r\n")[0].strip().strip(";").strip().strip('"')
+        payload = part[split + 4:]
+        if payload.endswith(b"\r\n"):
+            payload = payload[:-2]
+        return filename, payload
+    return None, None
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — the Blender socket, from here (flows passthrough)
+# ---------------------------------------------------------------------------
+
+class BlenderDown(Exception):
+    """Nothing is listening on the add-on's port."""
+
+
+class BlenderRefused(Exception):
+    """The add-on answered, and said no."""
+
+
+#: What to tell an artist whose Blender is not listening.  Same words the MCP
+#: server uses, because it is the same situation and they will hit it twice.
+BLENDER_DOWN_HINT = (
+    "Blender is not running, or the Forge add-on's server is stopped. Open "
+    "Blender, press N in the 3D view, click the Forge tab, and press Start "
+    "Server — then try again. (Expected a listener on %s.)")
+
+
+def blender_command(command, params=None, timeout=FLOW_LIST_TIMEOUT):
+    """Send one newline-delimited JSON command to the add-on and read its reply.
+
+    A minimal reimplementation of ``mcp/forge_mcp/blender_client.py`` — same
+    wire format, same one-connection-per-command rule — because this process is
+    stdlib-only and cannot import the MCP package.  Kept to what the two flow
+    passthroughs need: connect, send a line, read a line, close.
+    """
+    host, blender_port = blender_address()
+    address = "%s:%d" % (host, blender_port)
+    request = {"id": uuid.uuid4().hex[:8], "type": str(command),
+               "params": params or {}}
+    try:
+        payload = json.dumps(request, separators=(",", ":"), allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise BlenderRefused("Those parameters are not valid JSON: %s" % exc)
+
+    try:
+        sock = socket.create_connection((host, blender_port), timeout=3.0)
+    except OSError:
+        raise BlenderDown(BLENDER_DOWN_HINT % address)
+
+    chunks = []
+    try:
+        sock.settimeout(timeout)
+        sock.sendall(payload.encode("utf-8") + b"\n")
+        while True:
+            try:
+                chunk = sock.recv(65536)
+            except socket.timeout:
+                raise BlenderRefused(
+                    "Blender did not answer within %.0f seconds. The step may "
+                    "still be running on its main thread — check the Blender "
+                    "window." % timeout)
+            except OSError as exc:
+                raise BlenderDown("%s (connection dropped: %s)"
+                                  % (BLENDER_DOWN_HINT % address, exc))
+            if not chunk:
+                if chunks:
+                    raise BlenderRefused(
+                        "Blender closed the connection before finishing its "
+                        "answer. Check Blender's system console.")
+                raise BlenderDown(BLENDER_DOWN_HINT % address)
+            newline = chunk.find(b"\n")
+            if newline != -1:
+                chunks.append(chunk[:newline])
+                break
+            chunks.append(chunk)
+            if sum(len(c) for c in chunks) > 64 * 1024 * 1024:
+                raise BlenderRefused("Blender's answer was too large to read.")
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+
+    line = b"".join(chunks).decode("utf-8", "replace")
+    try:
+        response = json.loads(line)
+    except ValueError:
+        raise BlenderRefused("Blender sent something that is not JSON: %s"
+                             % line[:300])
+    if not isinstance(response, dict):
+        raise BlenderRefused("Blender sent a %s, not a response object."
+                             % type(response).__name__)
+    if response.get("status") == "error":
+        raise BlenderRefused(str(response.get("message") or "no reason given"))
+    result = response.get("result")
+    return result if isinstance(result, dict) else {}
+
+
+def blender_listening(timeout=1.0):
+    """Is something accepting connections on the add-on's port?"""
+    host, blender_port = blender_address()
+    try:
+        with socket.create_connection((host, blender_port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — the health strip, fanned out from here
+# ---------------------------------------------------------------------------
+
+def service_urls():
+    return {
+        "geometry": str(_env("FORGE_SERVICE_URL", DEFAULT_SERVICE_URL)).rstrip("/"),
+        "meshgen": str(_env("FORGE_MESHGEN_URL", DEFAULT_MESHGEN_URL)).rstrip("/"),
+    }
+
+
+def probe_http(url, timeout=HEALTH_TIMEOUT):
+    """``{"ok", "detail", "data"?}`` for one service's ``/health``."""
+    request = urllib.request.Request(url + "/health",
+                                     headers={"Accept": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            body = response.read(200000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        return {"ok": False, "detail": "answered HTTP %s" % exc.code}
+    except urllib.error.URLError as exc:
+        return {"ok": False, "detail": "not running (%s)" % (exc.reason,)}
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "detail": "not running (%s)" % (exc,)}
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return {"ok": True, "detail": "running"}
+    if not isinstance(data, dict):
+        return {"ok": True, "detail": "running"}
+    return {"ok": str(data.get("status") or "ok").lower() in ("ok", "ready", "idle"),
+            "detail": str(data.get("status") or "ok"),
+            "data": data}
+
+
+def services_health(timeout=HEALTH_TIMEOUT):
+    """Every dot on the health strip, probed in parallel.
+
+    In parallel because a stopped service is a connection that has to time out,
+    and three of those in a row is a page that looks broken for eight seconds.
+    """
+    urls = service_urls()
+    host, blender_port = blender_address()
+    results = {}
+
+    def probe(key, fn):
+        try:
+            results[key] = fn()
+        except Exception as exc:  # noqa: BLE001 - a dot is never worth a 500
+            results[key] = {"ok": False, "detail": str(exc)[:200]}
+
+    def probe_blender():
+        up = blender_listening(timeout)
+        return {"ok": up, "detail": "listening" if up else "not running"}
+
+    threads = [
+        threading.Thread(target=probe, args=(
+            "geometry", lambda: probe_http(urls["geometry"], timeout)), daemon=True),
+        threading.Thread(target=probe, args=(
+            "meshgen", lambda: probe_http(urls["meshgen"], timeout)), daemon=True),
+        threading.Thread(target=probe, args=("blender", probe_blender), daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout + 1.5)
+
+    cli = claude_info()
+    services = [
+        {"key": "bridge", "label": "Assistant", "ok": True,
+         "detail": "signed in" if not JOBS.last_auth_error else "not signed in",
+         "address": "127.0.0.1:%d" % port(),
+         "warn": bool(JOBS.last_auth_error) or not cli.get("found"),
+         "claude_cli": cli},
+        {"key": "geometry", "label": "Shape service", "url": urls["geometry"],
+         "optional": False},
+        {"key": "meshgen", "label": "Image to 3D", "url": urls["meshgen"],
+         # The only row allowed to be down on a working machine: the models
+         # behind it are an optional 18.5 GB download.
+         "optional": True},
+        {"key": "blender", "label": "Blender", "address": "%s:%d" % (host, blender_port),
+         "optional": True},
+    ]
+    for entry in services[1:]:
+        found = results.get(entry["key"]) or {"ok": False, "detail": "not probed"}
+        entry.update(found)
+    return {
+        "services": services,
+        "busy": JOBS.is_busy(),
+        "queued": JOBS.is_queued(),
+        "session_cost_usd": round(float(JOBS.session_cost_usd or 0.0), 6),
+        "session": bool(JOBS.session_id),
+        "last_auth_error": bool(JOBS.last_auth_error),
+        "claude_cli": cli,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — starting the services from the page
+# ---------------------------------------------------------------------------
+
+_START_LOCK = threading.Lock()
+
+
+def start_services_command(path):
+    """The argv that runs the start script.
+
+    A ``.py`` path runs under this interpreter — the same trick
+    :func:`launcher` plays for the fake CLI, and what lets the tests exercise
+    this route without PowerShell.
+    """
+    if str(path).lower().endswith(".py"):
+        return [sys.executable, path]
+    powershell = (shutil.which("powershell.exe") or shutil.which("powershell")
+                  or shutil.which("pwsh"))
+    if not powershell:
+        return None
+    return [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy",
+            "Bypass", "-File", path]
+
+
+def start_services():
+    """Run the start script and report what it said.
+
+    The script probes each port first and starts only what is not already
+    running, so pressing the button twice is harmless — that behaviour lives
+    there, not here, and this deliberately does not second-guess it.
+    """
+    path = start_script()
+    if not os.path.isfile(path):
+        return 404, {"error": "The start script is missing (%s)." % path}
+    argv = start_services_command(path)
+    if argv is None:
+        return 501, {"error": "PowerShell was not found, so the services cannot "
+                              "be started from here. Run start_forge.cmd in the "
+                              "repo root instead."}
+    if not _START_LOCK.acquire(blocking=False):
+        return 409, {"error": "The services are already being started. Give it "
+                              "a few seconds."}
+    try:
+        try:
+            proc = subprocess.run(
+                argv, cwd=REPO_ROOT,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
+                timeout=START_SERVICES_TIMEOUT,
+                creationflags=CREATE_NO_WINDOW)
+        except subprocess.TimeoutExpired:
+            return 504, {"error": "The start script did not finish within %d "
+                                  "seconds." % START_SERVICES_TIMEOUT}
+        except OSError as exc:
+            return 500, {"error": "Could not run %s: %s" % (path, exc)}
+    finally:
+        _START_LOCK.release()
+
+    text = (proc.stdout or b"").decode("utf-8", "replace")
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    return 200, {
+        "ok": proc.returncode == 0,
+        "returncode": proc.returncode,
+        "script": path,
+        "output": lines[-60:],
+    }
+
+
+# ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
 
@@ -1515,6 +2364,42 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         except OSError:
             pass
+
+    def _send_bytes(self, status, body, content_type, headers=None):
+        """A binary/text response — the page, its assets, a token's file."""
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        # The page is a local file the artist may be editing; a cached copy of
+        # yesterday's app.js is a bug report that cannot be reproduced.
+        self.send_header("Cache-Control", "no-store")
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except OSError:
+            pass
+
+    def _read_body(self, limit=None):
+        """Raw request body, or ``None`` if it is longer than ``limit``.
+
+        The length is checked before a byte is read: an oversized upload is
+        refused by its header rather than by first accepting all of it.
+        """
+        limit = max_upload_bytes() if limit is None else limit
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if length <= 0:
+            return b""
+        if length > limit:
+            # Drain enough to keep the connection sane, then give up on it:
+            # HTTP/1.1 keep-alive with an unread body is a poisoned socket.
+            self.close_connection = True
+            return None
+        return self.rfile.read(length)
 
     def _read_json(self):
         try:
@@ -1555,7 +2440,55 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, view)
             return
+
+        # -- the web UI (Phase 9) ----------------------------------------
+        if path == "/":
+            self._index()
+            return
+        if path == "/jobs":
+            self._send(200, {
+                "jobs": JOBS.snapshot_all(),
+                "session_cost_usd": round(float(JOBS.session_cost_usd or 0.0), 6),
+                "busy": JOBS.is_busy(),
+                "queued": JOBS.is_queued(),
+                "limit": MAX_JOBS,
+            })
+            return
+        if path.startswith("/webui/"):
+            asset = webui_asset(path[len("/webui/"):])
+            if asset is None:
+                self._send(404, {"error": "No such asset."})
+                return
+            self._send_bytes(200, asset[0], asset[1])
+            return
+        if path.startswith("/file/"):
+            found = read_token_file(path[len("/file/"):])
+            if found is None:
+                # Deliberately the same answer for "never minted", "expired"
+                # and "gone from disk": a client that can tell those apart can
+                # use this endpoint to ask questions about the filesystem.
+                self._send(404, {"error": "No such file."})
+                return
+            body, content_type, filename = found
+            self._send_bytes(200, body, content_type, {
+                "Content-Disposition": 'inline; filename="%s"'
+                                       % filename.replace('"', "")})
+            return
+        if path == "/services/health":
+            self._send(200, services_health())
+            return
         self._send(404, {"error": "Unknown path %s" % path})
+
+    def _index(self):
+        asset = webui_asset("index.html")
+        if asset is None:
+            self._send_bytes(
+                404,
+                b"<h1>Forge</h1><p>The web UI is not installed: "
+                b"assistant/webui/index.html is missing.</p>",
+                "text/html; charset=utf-8")
+            return
+        self._send_bytes(200, asset[0], asset[1])
 
     def do_POST(self):  # noqa: N802
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
@@ -1572,6 +2505,21 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/new":
             JOBS.reset_session()
             self._send(200, {"status": "ok", "session": None})
+            return
+
+        # -- the web UI (Phase 9) ----------------------------------------
+        if path == "/upload":
+            self._upload()
+            return
+        if path == "/services/start":
+            status, payload = start_services()
+            self._send(status, payload)
+            return
+        if path == "/flows":
+            self._flows()
+            return
+        if path == "/flows/run":
+            self._flows_run()
             return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -1632,6 +2580,13 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
 
+        # The attachment becomes a token on the job, so the surface that sent
+        # it can draw it back (the web UI has only ever seen bytes, not a path)
+        # and so the conversation still shows it after a reload.  Only once the
+        # message has a job of its own: a rejected one is somebody else's.
+        if isinstance(context, dict) and context.get("image_path"):
+            JOBS.note_file(job["job_id"], context.get("image_path"), "attachment")
+
         if disposition == "queued":
             # A real job id straight away, so the panel can poll it like any
             # other and show the artist their message is not lost.
@@ -1642,6 +2597,117 @@ class Handler(BaseHTTPRequestHandler):
         start_turn(job)
         self._send(200, {"job_id": job["job_id"], "state": "running",
                          "queued": False})
+
+    # -- the web UI's own handlers (Phase 9) -----------------------------
+    def _upload(self):
+        """Browser bytes in, a path on this machine out.
+
+        This is the whole reason the route exists: a file input hands
+        JavaScript the file's *content*, never its path, so there is nothing to
+        put in ``context.image_path`` until the bytes have been written down
+        somewhere.  Once they have, the attachment rides exactly the same road
+        as the panel's — a path in the context, a block in the prompt, a Read
+        by the model.
+        """
+        content_type = str(self.headers.get("Content-Type") or "")
+        body = self._read_body(max_upload_bytes() + 65536)
+        if body is None:
+            self._send(413, {"error": "That image is larger than the %d MB limit."
+                                      % (max_upload_bytes() // 1048576)})
+            return
+
+        if "multipart/form-data" in content_type.lower():
+            name, data = parse_multipart(body, content_type)
+            if data is None:
+                self._send(400, {"error": "No file was found in that upload."})
+                return
+        else:
+            try:
+                payload = json.loads(body.decode("utf-8")) if body else None
+            except (ValueError, UnicodeDecodeError):
+                payload = None
+            if not isinstance(payload, dict):
+                self._send(400, {"error": "Send {\"name\": ..., \"data\": "
+                                          "\"<base64>\"} or a multipart form."})
+                return
+            name = payload.get("name")
+            encoded = payload.get("data")
+            if isinstance(encoded, str) and not encoded.strip():
+                # A zero-byte file encodes to an empty string.  That is not a
+                # decoding failure, and saying so would send the artist looking
+                # for a bug in the page instead of at the file they picked.
+                data = b""
+            else:
+                data = decode_base64(encoded)
+                if data is None:
+                    self._send(400, {"error": "That image did not decode. Expected "
+                                              "base64 (a data: URL is fine)."})
+                    return
+
+        problem = upload_error(name, data)
+        if problem:
+            self._send(413 if len(data) > max_upload_bytes() else 400,
+                       {"error": problem})
+            return
+
+        try:
+            path = save_upload(name, data)
+        except OSError as exc:
+            self._send(500, {"error": "Could not save the image to %s: %s"
+                                      % (uploads_dir(), exc)})
+            return
+
+        token = FILES.mint(path)
+        self._send(200, {
+            # The path is what rides in context.image_path on the next /ask —
+            # the browser could not have known it, and cannot choose it.
+            "path": path,
+            "name": os.path.basename(path),
+            "bytes": len(data),
+            "token": token,
+            "url": ("/file/%s" % token) if token else None,
+        })
+
+    def _flows(self):
+        """``flow_list`` from Blender, verbatim."""
+        try:
+            result = blender_command("flow_list", {}, FLOW_LIST_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        self._send(200, result)
+
+    def _flows_run(self):
+        """``flow_run`` on Blender — no model in the loop, by design."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        name = str(payload.get("name") or "").strip()
+        if not name:
+            self._send(400, {"error": "Which flow? Pass {\"name\": ...}."})
+            return
+        params = payload.get("params")
+        if params is not None and not isinstance(params, dict):
+            self._send(400, {"error": "'params' must be an object of "
+                                      "{name: value}."})
+            return
+        try:
+            result = blender_command("flow_run",
+                                     {"name": name, "params": params or {}},
+                                     flow_run_timeout())
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            # The add-on's own message: it names the step that failed and what
+            # had already run, which is the useful half of a flow failure.
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        self._send(200, result)
 
 
 def serve(host="127.0.0.1", listen_port=None, ready=None):
