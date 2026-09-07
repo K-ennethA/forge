@@ -581,3 +581,321 @@ and which bridges at 6 mm.
       elements on a cylinder.
 - [ ] Multi-piece designs expose a `part` selector and each piece is checked.
 - [ ] `/check` run, all four results seen, reported in plain language.
+
+---
+
+<!-- BEGIN maker section (Phase 10 / maker_lib). Owned by maker mode; append
+     below this marker only, and leave the sections above untouched. -->
+
+## 7. Maker components and mechanisms
+
+Everything above makes a shape the printer can hold. This section is about
+making a shape the **world** fits into: a switch a finger can operate, an LED
+that stays where you pressed it, a cell you can change, and the circuit that
+joins them.
+
+Two new modules, installed in a script's namespace exactly the way `forge_lib`
+is:
+
+```python
+from build123d import *
+import forge_lib, maker_lib      # both already bound; the import is for editors
+
+PARAMS = {"wall": {"value": 2.0, "unit": "mm"}}
+
+def build(p):
+    body = forge_lib.shell_box(40, 40, 30, p["wall"])
+    body -= Pos(0, 0, 30) * maker_lib.cutout("led_5mm", depth=p["wall"])
+    return body
+```
+
+`components` (the data table) and `wiring` (the circuit maths) are bound too,
+but `maker_lib` re-exports everything you normally need, so one import is enough.
+
+### 7.1 The design-around-components law
+
+**Pick the real part first. Then model to its dimensions.**
+
+A cavity invented from nothing fits nothing. Before any geometry exists, choose
+the actual switch, the actual cell holder, the actual LED — then let their
+numbers set the model's numbers, not the other way round. Every derived
+clearance comes from `printer.json`'s `tolerances`, never from a number typed
+into a script.
+
+Three habits follow from it, and all three show up in
+`samples/push_lamp_core.py`:
+
+1. **Ask the table, then build with what it gives back.** `component(name)`
+   returns the record; `cutout_plan(name)` returns the negative's numbers with
+   every fit named and sourced. A script that writes `+ 0.2` anywhere has
+   stopped following the printer profile.
+2. **Derive the body from the parts.** The push lamp's `body_radius` is not a
+   style choice — it is whatever the coin-cell holder standing on edge beside
+   the switch tower needs, and the script *raises with the number* when it is
+   not enough. That refusal is the law working.
+3. **Repeat the verify sentence.** Every record carries
+   `verify_against_your_part`, and it is not boilerplate: clones vary by ±0.3 mm
+   routinely, and coin-cell holders sold under one search term run from 20 to 28
+   mm long. Put that sentence in front of the user before they print.
+
+### 7.2 The component catalog
+
+`maker_lib.catalog()` lists them; `maker_lib.catalog("switch")` filters by
+category. Dimensions are datasheet-typical for the family, not a measurement of
+one unit.
+
+| Component | Category | The numbers that matter | Use it for |
+| --- | --- | --- | --- |
+| `tactile_6x6_latching` | switch | 6×6 mm body, 7.3 mm tall, **1.5 mm latch travel**, 250 gf, max overtravel 0.3 mm | Push on / push off. The switch behind a press-the-figure-to-light-it toy. |
+| `tactile_6x6_h43` / `_h73` / `_h95` | switch | 6×6 mm body, 4.3 / 7.3 / 9.5 mm tall, **0.25 mm** travel, 160 gf, max overtravel 0.2 mm | Momentary. Lights only while held. The extra height is button, not travel. |
+| `push_latching_12mm` | switch | 12 mm panel hole, thread 11.9 × 8 mm, 25 mm behind the panel, **3 mm** stroke, 500 gf | A big obvious latching press that mounts through a wall by itself. |
+| `slide_switch_sk12` | switch | 7 × 3.5 × 3.5 mm body, 2.5 mm sideways throw, 3 pins on 2.54 | Plain on/off that cannot be pressed by accident. |
+| `cr2032_cell` | power | Ø20 × 3.2, **3.0 V**, 220 mAh, ~30 Ω internal, comfortable at 3 mA | The default supply. Small, flat, changeable. |
+| `cr2032_holder` | power | 26 × 24 × 6 envelope, pins on 20 mm, mount holes Ø2.2 on 20 mm | Holding that cell. **The loosest entry in the table — measure yours.** |
+| `aaa_pair_box` | power | 52 × 26 × 14, 3.0 V, 1000 mAh, 150 mm leads | Same voltage, five times the run time — and it *will* deliver 20 mA, which is why the resistor stops being optional. |
+| `led_3mm` / `led_5mm` / `led_10mm` | light | Lens Ø3 / 5 / 10; flange Ø3.4 / 5.8 / 11.0; legs on 2.54; 20 mA | The light. Buy **diffused** for anything glowing through a translucent print. |
+| `m3_screw` | fastener | Thread Ø3.0, pan head Ø6.0 × 2.4, clearance 3.4, thread-forming 2.4 | Holding two printed pieces together. |
+| `heat_set_m3` | fastener | 5.7 mm long, OD 4.6, **hole Ø4.0 × 6.2** | A real metal thread that survives being undone. |
+| `magnet_5x2` / `6x3` / `8x3` / `10x2` | magnet | N35 discs, ±0.1 mm, 0.5–1.7 kg pull | Doors and lids. Goes through `forge_lib.magnet_pocket` unchanged. |
+
+**LED forward voltages** (`maker_lib.led_forward_voltage(colour)`) are what the
+resistor maths turns on: red / orange 2.0 V, amber / yellow 2.1 V, green / blue
+/ white 3.0 V, UV 3.4 V, infrared 1.4 V. White is a blue die under phosphor,
+which is why it has blue's forward voltage — and why a white LED runs straight
+off a 3 V coin cell with no resistor at all.
+
+### 7.3 envelope / cutout / mount
+
+Three verbs per component. Each has a `*_plan()` twin listing every fit it chose
+and where that fit came from.
+
+- **`envelope(name)`** — the keep-out solid, grown by `loose_fit`. Use it as a
+  *check*: subtract it from a draft body and if anything vanishes, something was
+  in the component's way. Not a cutter.
+- **`cutout(name, depth=...)`** — the negative you actually subtract. Placed
+  exactly like `forge_lib.magnet_pocket`: it hangs below Z = 0 with its mouth
+  poking `MOUTH_OVERSHOOT_MM` above, so you put it *at the face it is bored into*
+  and it bores straight down.
+- **`mount(name, style=...)`** — the printed positive that holds the part, built
+  standing on Z = 0. Read `plan["usage"]`: it is one sentence saying how the
+  positive and the negative compose, and "union the collar inside, bore from
+  outside" is the kind of thing that is obvious once and never again.
+
+The fits are chosen per face by what the joint has to do:
+
+| Joint | Fit | Why |
+| --- | --- | --- |
+| LED lens bore | `press_fit` (0.1/side) | It has to grip. An FDM hole prints about that much undersize, so a 5.2 mm bore comes out near 5.0 — the plan says so, and says what to do if your printer holds holes true. |
+| LED flange seat | `slide_fit` | It only has to seat, not grip. |
+| LED leg relief | `loose_fit` | Legs must not be crushed against solid plastic. |
+| Switch / holder body pocket | `slide_fit` | It must drop in without force. **Forcing a moulded body cracks it.** |
+| Panel switch hole | larger of the datasheet hole and thread + 2×`slide_fit` | A printed hole needs the printer's clearance whatever the datasheet says. |
+| Magnet pocket | `magnet_pocket_extra` | Straight through `forge_lib.magnet_pocket`. |
+| Heat-set insert hole, M3 clearance hole | **none** | Those diameters are the insert maker's and ISO's. Adding our clearance would add clearance twice. |
+
+Mount styles are per component: `collar` for LEDs, `shelf` / `pocket_boss` for
+switches, `screw` / `rib` for holders and boxes, `boss` for fasteners.
+`mount("cr2032_holder", style="rib", standing=True)` turns the holder on edge —
+the difference between needing its whole 35 mm diagonal of floor and needing a
+26 × 10 mm strip of it, which is the difference between a figure 70 mm wide and
+one 48 mm wide.
+
+Two refusals worth knowing about, because both are the library telling you
+something true:
+
+- A `cutout("push_latching_12mm", depth=...)` **raises** if the wall is thicker
+  than the switch's thread can clamp. It names the range (1–4 mm) and suggests
+  a local rebate.
+- A `mount("heat_set_m3", style="boss")` does **not** go through
+  `forge_lib.screw_boss`, and says why in its plan: that helper derives its hole
+  from the screw and the printer, and a heat-set hole is neither. It is the
+  insert maker's number and a deliberate interference — the brass melts its own
+  way in and the displaced plastic is what grips it.
+
+### 7.4 The push mechanic: `plunger`
+
+A gap that makes a cap removable is not a mechanism. **This** is a mechanism:
+
+```python
+rig = maker_lib.plunger(6.0, switch="tactile_6x6_latching")
+rig["guide"]     # positive: the sleeve, union it into the wall
+rig["plunger"]   # positive: the sliding piece, its own printed part
+rig["plan"]      # the kinematics, every number of it
+```
+
+Both solids come back **in one frame, in the at-rest position**, with Z = 0 at
+the guide sleeve's bottom rim. Place them with one `Pos` and the assembly lands
+together; `plan["switch_seat_z_mm"]` then says exactly where the switch's seat
+has to be in that same frame.
+
+What is engineered, rather than left as a gap:
+
+- **Travel** is the switch's own actuation stroke plus overtravel — and the
+  overtravel is **clamped down to what the switch can physically take**. Ask for
+  0.5 mm on a latching 6×6 and you get 0.3 mm with a clamp note, because past
+  that its button is already bottomed on its own body and the end stop would be
+  crushing the switch instead of protecting it.
+- **The end stop** is the cap's underside landing on the guide's top rim. That
+  rim is why the switch can never see more than its stroke plus that overtravel
+  however hard the press. A finger can put 5 kg through a plunger; the end stop
+  is the only reason that does not reach the switch.
+- **Guide engagement** is never under `2 ×` the stem diameter. A pin engaged less
+  than that cocks in its bore and jams the first time somebody presses it
+  off-centre, and the stem is longer than the sleeve over the whole travel, so
+  the engagement is the sleeve's full length at every point of the press.
+- **Retention** is a flange wider than the bore. Which means the plunger goes in
+  **from the inside, before the body is closed** — `plan["assembly"]` says so, in
+  order, and the decorative cap goes on last because it is what makes the
+  plunger captive.
+- **The return is the switch's own spring.** There is no second spring and there
+  does not need to be. For a latching switch, `plan["return"]` spells out what
+  that means: the button latches down and stays down, so the cap visibly sits
+  1.5 mm lower while the light is on. That is a feature, not a fault — say so in
+  the reply rather than letting the user discover it.
+- **Free play** (0.3 mm) is the designed rattle. It exists so no stack-up of
+  printed tolerances can leave the plunger *preloading* the switch, which is a
+  model that is permanently on. Gravity closes it, so the plunger's resting place
+  is on the button, and it is also exactly how far the plunger can rise before
+  the flange catches.
+
+Take the cap's socket from `plunger_cap_socket(plan)` so the press fit matches,
+and put its shoulder at `plan["cap_underside_z_mm"]`. The cap does not have to
+be a plug — in the sample it is a **cup** whose skirt comes down over the guide
+and the LED, so neither is on show.
+
+Two switches refuse a plunger, and the refusal is the right answer:
+`slide_switch_sk12` moves sideways, and `push_latching_12mm` already *is* a
+plunger — it clamps through the wall with its own nut, and putting a second
+sliding mechanism in front of it buys twice the friction for nothing.
+
+### 7.5 `snap_clip` and `battery_door`
+
+`snap_clip(length, thickness, width, deflection)` returns the arm **and** the
+catch it snaps into, sized from the same numbers so they cannot disagree. The
+rule it enforces:
+
+```
+y_max = K · strain_limit · L² / t
+```
+
+`K` is 0.67 for a constant-section arm and 1.09 for one tapered to half
+thickness at the tip, because a constant-section beam carries its whole strain
+at the root and wastes the rest of its length. A requested deflection over
+`y_max` is **clamped**, and the clamp is reported: an over-flexed PLA arm does
+not bend less, it snaps at the root. Note that deflection goes with the **square**
+of the arm's length, so the cheapest fix for a clip that will not reach is
+always to make it longer.
+
+Two things the plan will keep telling you, and both are true:
+
+- **PLA takes 2% strain; PETG takes 3.5%.** For a clip that has to open more
+  than once, print it in PETG.
+- **Print the arm so the layers run ALONG it, not across it.** A layer boundary
+  at the point of maximum strain is a crack that has already started, and a clip
+  printed the wrong way round snaps on the first flex whatever the arithmetic
+  says.
+
+`battery_door(opening_l, opening_w, style="magnet"|"screw")` returns the plate,
+the rebated opening, and the fixings — magnet pockets through
+`forge_lib.magnet_pocket` (so `available_depth` still refuses to punch through
+the back) or screw bosses through `forge_lib.screw_boss`. The **lip is clamped
+up** to whatever the fixing actually needs: a 6 mm magnet wants a minimum wall
+of plastic each side of it, an M3 pan head is 6 mm across. Getting that number
+wrong is why so many printed battery doors are held on with tape.
+
+### 7.6 The circuit: `circuit_plan` and `wiring_steps`
+
+A printed housing with a perfect switch pocket is still not a lamp.
+
+```python
+circuit = maker_lib.circuit_plan(led="led_5mm", color="white",
+                                 cell="cr2032_cell",
+                                 switch="tactile_6x6_latching")
+steps   = maker_lib.wiring_steps(circuit)     # beginner sentences, in order
+bom     = maker_lib.bill_of_materials(circuit)
+svg     = maker_lib.diagram_svg(circuit)      # one loop, boxes and lines
+```
+
+The maths is Ohm's law across the part of the supply the LED does not use:
+
+```
+headroom = supply_voltage − LED_forward_voltage
+R        = headroom / target_current       → rounded UP to the next E12 value
+```
+
+Rounding **up** is the safe direction: too big only dims the LED. Three verdicts,
+and the plan names which one you got:
+
+- **`"no resistor needed"`** — the headroom is zero or negative. A white or blue
+  LED (3.0 V) on a CR2032 (3.0 V) leaves nothing for a resistor to drop. The
+  cell's own ~30 Ω internal resistance is the current limit, and that is a real
+  limit, not a hope: it is why an LED taped to a coin cell glows for a day
+  instead of exploding. **This is the Litwick default**, and the plan works out
+  the actual current from the cell's *fresh* 3.2 V — about 6.7 mA, falling as the
+  cell sags, for roughly 23 hours of light.
+- **`"resistor optional"`** — small headroom on a supply that limits itself.
+  A red LED on the same cell: 56 Ω at 20 mA, and it will work without one. The
+  plan states the trade — brighter at first, flat far sooner, brightness visibly
+  falling as the cell ages.
+- **`"resistor required"`** — everything else. Two CR2032s and a red LED at
+  20 mA: (6.0 − 2.0) / 0.020 = 200 Ω → **220 Ω**. Swap the coin cell for
+  `aaa_pair_box` and a case that was optional becomes required, because two AAAs
+  will happily deliver the 20 mA that kills the LED.
+
+The plan also carries `resistor_gentle_ohms` — the same maths at the *cell's*
+recommended current rather than the LED's nominal 20 mA — with the run time for
+both, because the textbook answer and the answer that still works tomorrow are
+often not the same number.
+
+`wiring_steps` writes it out in `casting.py`'s voice, in the order the mistakes
+happen in: polarity first (longer leg is +, the flat on the rim marks the
+cathode), the switch's terminal pairs found with a meter before anything is
+soldered, one series loop with no branches, every joint insulated, and — the step
+that saves the most rework — **test it on the bench before a single drop of
+glue**.
+
+### 7.7 The sample
+
+`service/samples/push_lamp_core.py` is the reference: press the flame, the light
+comes on; press again, it goes off. Four pieces, four print orientations, one
+`part` selector, and a `notes()` helper so the same file that builds the geometry
+also answers "what do I solder, and in what order?".
+
+It is worth reading for three failures it was rewritten to fix, all of which
+generalise:
+
+1. **Every cutter overshoots the face it enters.** A groove whose top face is
+   exactly the floor plane is a coplanar-face boolean, and OCC leaves a 0.04 mm
+   sliver there that reads as both a thin wall and a 54 mm² flat ceiling.
+2. **A `soft_body`'s cavity floor is not flat.** The inward offset turns the
+   corner near the wall, so the floor rises as it goes out. A groove cut to the
+   *nominal* floor depth leaves a skin over its far end.
+3. **Cut into the shell, then stand things on it.** Subtracting a groove after
+   unioning three features onto the floor leaves slivers along every seam.
+
+And for one design decision that is not obvious until you try it: **the housing
+has to be two pieces.** The switch has to face the plunger and the plunger has to
+come out of the top, so in a single closed body one of the two — the guide's
+mouth or the switch's seat — always ends up facing away from the bed. Split it at
+the mouth and the switch's seat faces up out of the open base while the guide
+stands up off a flat lid. Real enclosures are two pieces for exactly this reason.
+
+### 7.8 Checklist for a maker part
+
+- [ ] Real components chosen **first**, from `maker_lib.catalog()`.
+- [ ] Every `verify_against_your_part` sentence passed on to the user — and the
+      coin-cell holder's especially, because that one is not boilerplate.
+- [ ] No hand-typed clearance anywhere. Every fit came from a `*_plan()`.
+- [ ] The body's size **derived** from the parts, with a refusal (naming the
+      number) when they do not fit.
+- [ ] Every mechanism's plan reported: travel, end stop, guide engagement,
+      retention, and what returns it.
+- [ ] Any clamp the plan lists repeated in the reply, not swallowed.
+- [ ] `circuit_plan` run and its verdict stated, including "no resistor needed"
+      when that is the answer — and the trade when it is "optional".
+- [ ] `wiring_steps` handed over with the test-before-glue step intact.
+- [ ] Assembly order stated: plunger in from the inside, circuit tested on the
+      bench, cap on last.
+- [ ] Each piece `/check`ed separately, in its own print orientation.
+
+<!-- END maker section -->

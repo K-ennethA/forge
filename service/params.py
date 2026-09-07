@@ -103,6 +103,33 @@ def install_forge_lib(namespace: Dict[str, Any]) -> None:
     namespace.setdefault("forge_lib", forge_lib)
 
 
+def install_maker_lib(namespace: Dict[str, Any]) -> None:
+    """Make ``maker_lib`` available to a script exactly the way ``forge_lib`` is.
+
+    Maker mode's library is a peer of the printability library, not an extra on
+    top of it: a script that designs around a real switch imports it the same
+    way, ``import maker_lib``, and finds the name already bound if it forgets.
+    ``components`` and ``wiring`` ride along under their own bare names too, so
+    a script can reach the raw data table or the circuit maths without going
+    through the geometry module.
+
+    A failure is swallowed for the same reason ``install_forge_lib``'s is: a
+    script that does not use maker mode must not stop working because maker mode
+    could not be loaded.
+    """
+    try:
+        from . import components, maker_lib, wiring  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 - never fail a script over an extra
+        return
+    for name, module in (
+        ("maker_lib", maker_lib),
+        ("components", components),
+        ("wiring", wiring),
+    ):
+        sys.modules.setdefault(name, module)
+        namespace.setdefault(name, module)
+
+
 def exec_script(source: str, filename: str = SCRIPT_FILENAME) -> Dict[str, Any]:
     """Execute *source* in a fresh namespace and return that namespace.
 
@@ -132,6 +159,7 @@ def exec_script(source: str, filename: str = SCRIPT_FILENAME) -> Dict[str, Any]:
         # import build123d and do arithmetic.
     }
     install_forge_lib(namespace)
+    install_maker_lib(namespace)
 
     try:
         code = compile(source, filename, "exec")
@@ -518,6 +546,7 @@ __all__ = [
     "extract_build",
     "extract_params",
     "install_forge_lib",
+    "install_maker_lib",
     "load_script",
     "resolve",
     "to_build_value",
