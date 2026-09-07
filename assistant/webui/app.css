@@ -618,21 +618,54 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .flowbar-saved { display: contents; }
 .flowbar .saved { font-size: 12.5px; color: var(--text-dim); }
 
-/* ------------------------------------------------------------ workbench -- */
+/* --------------------------------------------------------------- studio -- */
 
-#panel-workbench { overflow-y: auto; padding: 20px; }
+/* One screen for one working session: the conversation on the left, the part
+   being edited on the right.  Two independently scrolling columns rather than
+   two tabs, because the whole point is that a number can be typed WHILE the
+   answer about it is still on screen. */
 
-.wb-grid {
+#panel-studio { overflow: hidden; }
+
+.studio {
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 22px;
-  max-width: 1240px;
-  margin: 0 auto;
-  width: 100%;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
+  min-height: 0;
 }
 
-.wb-col { min-width: 0; display: flex; flex-direction: column; }
+.studio-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.studio-rail {
+  border-left: 1px solid var(--line);
+  background: var(--bg-raised);
+  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 16px 18px 32px;
+}
+
+.rail-head { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; }
+.rail-head > div:first-child { flex: 1 1 auto; min-width: 0; }
+.rail-head h2 { margin: 0 0 2px; font-size: 15px; font-weight: 620; }
+.rail-head p { margin: 0; }
+.rail-head .btn { flex: 0 0 auto; }
+
+/* Whether the sheet is keeping up with the conversation on its own, or is
+   pinned to a part the artist picked by hand. */
+#follow-note { color: var(--text-faint); font-size: 11.5px; line-height: 1.5; }
+#follow-note.is-pinned { color: var(--accent); }
+
+/* The rail's own scene list is a strip, not a panel: names, sizes, two
+   buttons, and no more room than that. */
+.scene-strip .wb-object { padding: 6px 8px; gap: 8px; }
+
+/* ------------------------------------------------------------ workbench -- */
 
 .wb-head {
   display: flex;
@@ -720,9 +753,20 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
-.wb-status { font-size: 12.5px; color: var(--text-dim); }
+.wb-status { font-size: 12.5px; color: var(--text-dim); flex: 1 1 100%; }
 .wb-status.warn { color: var(--warn); }
 .wb-status.bad { color: #f0a49c; }
+
+/* How long the last rebuild took. It is here because the direct path being
+   seconds is the whole argument for typing the number yourself. */
+.wb-timing {
+  font: 11.5px/1 var(--mono);
+  color: var(--text-faint);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 4px 9px;
+}
+.wb-timing:empty { display: none; }
 
 .wb-preview {
   border: 1px solid var(--line);
@@ -859,8 +903,18 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 
 /* --------------------------------------------------------------- narrow -- */
 
-@media (max-width: 1000px) {
-  .wb-grid { grid-template-columns: minmax(0, 1fr); }
+/* Below this the two columns stop being two columns and stack — chat first,
+   because the conversation is how a part comes into being and the rail is how
+   it is adjusted afterwards. */
+@media (max-width: 1100px) {
+  #panel-studio { overflow-y: auto; }
+  .studio { display: flex; flex-direction: column; }
+  .studio-chat { min-height: 74vh; }
+  .studio-rail {
+    overflow: visible;
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
 }
 
 @media (max-width: 720px) {

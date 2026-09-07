@@ -1,4 +1,4 @@
-"""Tests for the Forge web UI — the bridge's second surface (Phase 9).
+﻿"""Tests for the Forge web UI — the bridge's second surface (Phase 9).
 
 Run them the same way as the rest::
 
@@ -589,12 +589,14 @@ def test_index_is_served_at_the_root(client):
     # It has to name its own assets, or the page is a blank screen.
     assert "/webui/app.css" in text and "/webui/app.js" in text
     assert "/webui/format.js" in text
+    assert "/webui/follow.js" in text
 
 
 @pytest.mark.parametrize("asset,content_type,needle", [
     ("app.css", "text/css", "--accent"),
     ("app.js", "text/javascript", "/upload"),
     ("format.js", "text/javascript", "formatReply"),
+    ("follow.js", "text/javascript", "projectFromJob"),
     ("index.html", "text/html", "<title>Forge</title>"),
 ])
 def test_assets_are_served_with_their_type(client, asset, content_type, needle):
@@ -638,7 +640,11 @@ def fetch_text(client, path):
     return body.decode("utf-8")
 
 
-#: Every control the Phase 9 contract names, by the id the script reaches for.
+#: Every control the page's contract names, by the id the script reaches for.
+#:
+#: Phase 14 merged the Chat and Workbench tabs into ONE screen, so the chat's
+#: anchors and the part sheet's anchors are now both inside ``panel-studio``.
+#: The ids themselves did not move house: the sheet was relocated, not rewritten.
 PAGE_ANCHORS = (
     ("thread", "the conversation"),
     ("empty", "the empty state"),
@@ -656,15 +662,18 @@ PAGE_ANCHORS = (
     ("start-services", "Start services"),
     ("new-conversation", "New conversation"),
     ("banners", "where errors land"),
-    ("tab-chat", "the chat tab"),
+    ("tab-studio", "the studio tab"),
     ("tab-flows", "the flows tab"),
-    ("panel-chat", "the chat panel"),
+    ("panel-studio", "the studio panel"),
     ("panel-flows", "the flows panel"),
     ("flows", "the flows list"),
     ("flows-refresh", "the flows refresh button"),
-    # -- the workbench (Phase 11)
-    ("tab-workbench", "the workbench tab"),
-    ("panel-workbench", "the workbench panel"),
+    # -- the studio's two columns (Phase 14)
+    ("studio-chat", "the conversation column"),
+    ("studio-rail", "the part rail"),
+    ("follow-note", "whether the rail is following or pinned"),
+    ("wb-timing", "how long the last rebuild took"),
+    # -- the part sheet (Phase 11, now inside the studio)
     ("flow-buttons", "the always-visible flow row"),
     ("flow-print", "Get ready to print"),
     ("flow-godot", "Send to Godot"),
@@ -728,7 +737,8 @@ def test_the_page_asks_for_nothing_off_this_machine(client):
     is the kind of property that is true until somebody adds one convenient
     ``<link>``.
     """
-    for path in ("/", "/webui/app.js", "/webui/app.css", "/webui/format.js"):
+    for path in ("/", "/webui/app.js", "/webui/app.css", "/webui/format.js",
+                 "/webui/follow.js"):
         text = fetch_text(client, path)
         for attribute in ("src=", "href=", "@import", "url("):
             for match in re.finditer(re.escape(attribute) + r'\s*["\']?([^"\'\s)>]+)',
@@ -2063,16 +2073,18 @@ def test_the_flow_row_is_outside_both_panels(client):
     html = fetch_text(client, "/")
     row = html.index('id="flow-buttons"')
     assert row < html.index("<main>")
-    assert row > html.index('id="tab-chat"')
+    assert row > html.index('id="tab-studio"')
 
 
-def test_the_workbench_tab_and_its_panel_are_wired_to_each_other(client):
+def test_the_studio_tab_and_its_panel_are_wired_to_each_other(client):
     html = fetch_text(client, "/")
-    assert 'aria-controls="panel-workbench"' in html
-    assert 'aria-labelledby="tab-workbench"' in html
-    # The four tabs the script knows about.
+    assert 'aria-controls="panel-studio"' in html
+    assert 'aria-labelledby="tab-studio"' in html
+    # Three tabs, not four: the Chat and the Workbench are one screen now, and
+    # the two that remain are the errands that really are separate.
     script = fetch_text(client, "/webui/app.js")
-    assert 'var TABS = ["chat", "workbench", "library", "flows"];' in script
+    assert 'var TABS = ["studio", "library", "flows"];' in script
+    assert 'id="tab-chat"' not in html and 'id="tab-workbench"' not in html
 
 
 # ===========================================================================
@@ -2653,10 +2665,10 @@ def test_the_library_tab_and_its_panel_are_wired_to_each_other(client):
     html = fetch_text(client, "/")
     assert 'aria-controls="panel-library"' in html
     assert 'aria-labelledby="tab-library"' in html
-    # It comes after Chat and the Workbench: the chat is where a part is asked
-    # for, the workbench is where it is edited, and this is the shelf.
-    assert html.index('id="tab-chat"') < html.index('id="tab-workbench"')
-    assert html.index('id="tab-workbench"') < html.index('id="tab-library"')
+    # It comes after the Studio: the Studio is the working session — asking
+    # for a part and editing it — and this is the shelf you look along after.
+    assert html.index('id="tab-studio"') < html.index('id="tab-library"')
+    assert html.index('id="tab-library"') < html.index('id="tab-flows"')
 
 
 def test_the_library_is_linkable(client):
@@ -2669,8 +2681,8 @@ def test_the_library_is_linkable(client):
 
 def test_the_library_cards_carry_their_two_buttons(client):
     script = fetch_text(client, "/webui/app.js")
-    assert '"Open in Workbench"' in script
-    assert "function openInWorkbench(" in script
+    assert '"Open in Studio"' in script
+    assert "function openInStudio(" in script
     assert "/thumbnail" in script
 
 
@@ -2735,14 +2747,17 @@ def test_a_card_says_what_it_is_made_of_and_what_it_exported(client):
     assert ".lib-chip.is-proposal" in fetch_text(client, "/webui/app.css")
 
 
-def test_open_in_workbench_switches_the_tab_and_the_selection(client):
+def test_open_in_studio_switches_the_tab_and_the_selection(client):
     """Both halves, in that order — a tab switch that left the picker on the
     previous part would be a button that lies about what it did."""
     script = fetch_text(client, "/webui/app.js")
-    body = script[script.index("function openInWorkbench("):]
+    body = script[script.index("function openInStudio("):]
     body = body[:body.index("\n  function ")]
-    assert 'showTab("workbench")' in body
+    assert 'showTab("studio")' in body
     assert "selectProject(name)" in body
+    # …and it pins, because somebody who went looking for this part in the
+    # Library should not lose it to the next thing the conversation does.
+    assert "pinProject(name)" in body
     # …and it waits for the picker's own fetch rather than racing a second one.
     assert "whenProjectsLoaded()" in body
     assert "function whenProjectsLoaded()" in script
@@ -2758,6 +2773,289 @@ def test_the_library_is_refetched_every_time_the_tab_is_opened(client):
     assert 'if (which === "library") { loadLibrary(); }' in script
     assert "function loadLibrary()" in script
     assert 'api("/library")' in script
+
+
+# ===========================================================================
+# the Studio (Phase 14) — one screen for one working session
+# ===========================================================================
+#
+# The artist's own words for what was wrong with Phase 11: *"I want to directly
+# edit this from the UI — I should be able to pinch or stretch the bottom radius
+# by typing into a param box or flatten the top with params rather than going
+# back and forth with the AI… I don't like the multiple tabs for one workflow
+# session — one screen that allows me to control it directly."*  Three edits
+# asked of the model took 155 seconds and $0.41; the same three numbers typed
+# into the rail are one rebuild each.
+
+def studio_panel(client):
+    """The Studio panel's markup, on its own."""
+    html = fetch_text(client, "/")
+    return html[html.index('id="panel-studio"'):html.index('id="panel-library"')]
+
+
+def test_the_studio_holds_the_conversation_and_the_sheet_on_one_screen(client):
+    """The whole point of the merge: neither half is a tab away from the other.
+
+    Both sets of anchors are inside the one panel, so there is no arrangement
+    of tabs in which the artist can see the answer about a dimension and not
+    the box that changes it.
+    """
+    panel = studio_panel(client)
+    for anchor in ("thread", "composer", "message", "send", "model",
+                   "composer-status"):
+        assert ('id="%s"' % anchor) in panel, "the chat's #%s left the Studio" % anchor
+    for anchor in ("project", "wb-params", "wb-apply", "wb-reset", "wb-status",
+                   "wb-preview", "wb-view", "wb-preview-refresh", "scene",
+                   "scene-refresh", "wb-sheet", "projects-refresh"):
+        assert ('id="%s"' % anchor) in panel, "the sheet's #%s left the Studio" % anchor
+
+
+def test_the_conversation_comes_first_and_the_rail_second(client):
+    """Source order is the stacking order at a narrow width, and chat leads."""
+    panel = studio_panel(client)
+    assert panel.index('id="studio-chat"') < panel.index('id="studio-rail"')
+    assert panel.index('id="thread"') < panel.index('id="wb-params"')
+
+
+def test_the_rail_is_a_column_that_scrolls_on_its_own(client):
+    """Typing into a parameter must never move the conversation, or vice versa."""
+    css = fetch_text(client, "/webui/app.css")
+    studio = css[css.index(".studio {"):css.index(".rail-head")]
+    assert "grid-template-columns" in studio
+    assert "overflow-y: auto" in studio          # the rail's own scrollbar
+    assert "min-height: 0" in studio             # …which a grid child needs
+
+
+def test_the_studio_stacks_below_a_breakpoint(client):
+    """A laptop and a second monitor are not the same window.
+
+    Below the breakpoint the two columns become one, and the chat is on top
+    because that is where a part comes into being.
+    """
+    css = fetch_text(client, "/webui/app.css")
+    assert "@media (max-width: 1100px)" in css
+    block = css[css.index("@media (max-width: 1100px)"):]
+    block = block[:block.index("@media (max-width: 720px)")]
+    assert ".studio" in block and "flex-direction: column" in block
+    assert ".studio-rail" in block
+
+
+def test_enter_in_a_value_box_is_apply(client):
+    """The point of the rail is typing speed: 1.5, Enter, rebuilt.
+
+    Reaching for a button between every field is the thing that made asking
+    the model feel no slower than doing it yourself.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assert "function applyOnEnter(" in script
+    hook = script[script.index("function applyOnEnter("):]
+    hook = hook[:hook.index("\n    }") + 6]
+    assert 'event.key !== "Enter"' in hook
+    assert "applyParams()" in hook
+    assert "event.preventDefault()" in hook
+    # …wired to both kinds of box the sheet draws, not only the number.
+    assert "applyOnEnter(number);" in script
+    assert "applyOnEnter(text);" in script
+
+
+def test_the_rail_says_how_long_the_rebuild_took(client):
+    """The number that makes the case for the direct path.
+
+    155 seconds and $0.41 through the model; this says "1.8 s" and costs
+    nothing, right beside the button that did it.
+    """
+    html = fetch_text(client, "/")
+    assert 'id="wb-timing"' in html
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function applyParams()"):]
+    body = body[:body.index("\n  function ")]
+    assert "Date.now()" in body
+    assert '$("wb-timing").textContent' in body
+    assert '.toFixed(1) + " s"' in body
+
+
+def test_a_held_down_enter_does_not_queue_a_second_rebuild(client):
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function applyParams()"):]
+    body = body[:body.index("\n  function ")]
+    assert "if (button.disabled) { return Promise.resolve(); }" in body
+
+
+def test_the_old_tab_names_land_on_the_studio(client):
+    """A bookmark of #chat and a localStorage of "workbench" both still work.
+
+    The two tabs became one screen; somebody's browser does not know that, and
+    a stored name from yesterday must not drop them on a default by accident.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assert 'var TAB_ALIASES = { chat: "studio", workbench: "studio" };' in script
+    assert "function storedTab()" in script
+    body = script[script.index("function storedTab()"):]
+    body = body[:body.index("\n  // ---")]
+    assert 'localStorage.getItem("forge.tab")' in body
+    # …and the alias is written back, so it is read exactly once per browser.
+    assert 'localStorage.setItem("forge.tab", wanted)' in body
+
+
+def test_the_rail_opens_on_the_part_the_page_was_left_on(client):
+    """Else the most recently modified project, which /library is the only
+    route to carry an mtime for."""
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function initialProject()"):]
+    body = body[:body.index("\n  function ")]
+    assert 'localStorage.getItem("forge.project")' in body
+    assert 'api("/library")' in body
+    assert "mtime" in body
+
+
+def test_picking_a_part_by_hand_pins_it_until_the_conversation_moves_on(client):
+    script = fetch_text(client, "/webui/app.js")
+    assert "function pinProject(" in script
+    assert "function followTo(" in script
+    assert "function considerFollowing(" in script
+    # A detection always wins over a pin: the artist asked for this part in
+    # the very message that produced it.
+    body = script[script.index("function followTo("):]
+    body = body[:body.index("\n  function ")]
+    assert "follow.pinned = null" in body
+    assert "loadProjects(name)" in body          # a brand-new part, one refetch
+
+
+def test_a_page_load_does_not_yank_the_rail_to_an_old_turn(client):
+    """The conversation redrawn at startup is history, not a decision."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "historical: true" in script
+    body = script[script.index("function upsert(job, options)"):]
+    body = body[:body.index("\n  function ")]
+    assert "considerFollowing(job)" in body
+
+
+# ---------------------------------------------------------------------------
+# auto-follow, run for real under node
+# ---------------------------------------------------------------------------
+
+FOLLOW_HARNESS = """
+const fs = require('fs');
+globalThis.window = globalThis;
+eval(fs.readFileSync(process.argv[2], 'utf8'));
+const cases = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+process.stdout.write(JSON.stringify(cases.map(
+  function (one) {
+    return window.ForgeFollow.projectFromJob(one.job, one.projects);
+  })));
+"""
+
+#: What the picker knows about: two parts whose script is the usual `part.py`
+#: and one whose script names itself.
+KNOWN = [
+    {"name": "cup", "script": "part.py", "scripts": ["part.py"]},
+    {"name": "litwick-lamp", "script": "part.py", "scripts": ["part.py"]},
+    {"name": "ring", "script": "part_base_ring.py",
+     "scripts": ["part_base_ring.py"]},
+]
+
+
+def tool_line(label):
+    return {"kind": "tool", "label": label}
+
+
+def canned_job(activity=(), reply="", message="", state="done"):
+    return {"job_id": "j1", "state": state, "activity": list(activity),
+            "reply": reply, "message": message}
+
+
+def follow_choices(tmp_path, cases):
+    """Run follow.js over some canned /jobs entries; hand back its answers."""
+    node = shutil.which("node") or shutil.which("node.exe")
+    if not node:
+        pytest.skip("no node on this machine to run follow.js with")
+    harness = tmp_path / "follow-harness.js"
+    harness.write_text(FOLLOW_HARNESS, encoding="utf-8")
+    payload = tmp_path / "follow-cases.json"
+    payload.write_text(json.dumps(list(cases)), encoding="utf-8")
+    out = subprocess.run(
+        [node, str(harness), os.path.join(WEBUI_DIR, "follow.js"), str(payload)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+    assert out.returncode == 0, out.stderr.decode("utf-8", "replace")
+    return json.loads(out.stdout.decode("utf-8"))
+
+
+#: Every rule in follow.js, as a job the bridge could really have published.
+#: The labels are `bridge.tool_label()`'s exact output shape — a short tool
+#: name, a colon, and the most identifying argument with paths basenamed.
+FOLLOW_CASES = [
+    ("a new part is named in plain words and slugged to its folder",
+     canned_job([tool_line("partforge_new_part: a small magnet holder")]),
+     "a-small-magnet-holder"),
+    ("…and when that folder is already in the picker, it is that entry",
+     canned_job([tool_line("partforge_new_part: Litwick Lamp")]), "litwick-lamp"),
+    ("a script filename only one part has names that part",
+     canned_job([tool_line("partforge_open_in_panel: part_base_ring.py")]), "ring"),
+    ("a script filename half the parts share names none of them",
+     canned_job([tool_line("partforge_open_in_panel: part.py")]), ""),
+    ("…unless the reply says which folder it was in",
+     canned_job([tool_line("partforge_generate: part.py")],
+         reply="Rebuilt projects/cup/part.py at 3 mm."), "cup"),
+    ("a Windows path in the reply reads the same as a POSIX one",
+     canned_job(reply="Wrote C:\\forge\\projects\\litwick-lamp\\part.py."),
+     "litwick-lamp"),
+    ("the newest part-shaped tool wins, not the first",
+     canned_job([tool_line("partforge_new_part: cup"),
+          tool_line("partforge_open_in_panel: part_base_ring.py")]), "ring"),
+    ("tools that are not about opening a part do not move the sheet",
+     canned_job([tool_line("partforge_check: part.py"),
+                 tool_line("Read: architecture.md")]), ""),
+    ("a job that has not finished has not decided anything",
+     canned_job([tool_line("partforge_new_part: a small magnet holder")], state="running"),
+     ""),
+    ("a project's name is a name, not a substring",
+     canned_job(reply="I put it in the cupboard, so to speak."), ""),
+    ("a folder the picker has not heard of is still a folder",
+     canned_job(reply="Written to projects/hex-mug/part.py."), "hex-mug"),
+    ("nothing at all is nothing at all",
+     canned_job(reply="I would start with the wall thickness."), ""),
+    ("a question that names a part, when the answer names none",
+     canned_job(message="make the litwick-lamp taller"), "litwick-lamp"),
+]
+
+
+def test_auto_follow_reads_a_finished_job_the_way_the_contract_says(tmp_path):
+    cases = [{"job": entry, "projects": KNOWN} for _why, entry, _want in
+             FOLLOW_CASES]
+    found = follow_choices(tmp_path, cases)
+    for (why, _entry, want), got in zip(FOLLOW_CASES, found):
+        assert got == want, "%s: expected %r, got %r" % (why, want, got)
+
+
+def test_auto_follow_survives_a_page_that_has_not_read_projects_yet(tmp_path):
+    """The list arrives asynchronously; a turn can finish before it does."""
+    entry = canned_job([tool_line("partforge_new_part: a small magnet holder")])
+    for projects in (None, [], {"projects": []}):
+        found = follow_choices(tmp_path, [{"job": entry, "projects": projects}])
+        assert found == ["a-small-magnet-holder"], projects
+
+
+def test_auto_follow_takes_the_projects_answer_in_any_shape_it_comes(tmp_path):
+    """`/projects` itself, its list, or just the names — whichever is to hand."""
+    entry = canned_job([tool_line("partforge_open_in_panel: part_base_ring.py")])
+    whole = {"dir": "C:\\forge\\projects", "count": 3, "projects": KNOWN}
+    found = follow_choices(tmp_path, [
+        {"job": entry, "projects": whole},
+        {"job": entry, "projects": KNOWN},
+        {"job": canned_job([tool_line("partforge_new_part: cup")]),
+         "projects": ["cup", "ring"]},
+    ])
+    assert found == ["ring", "ring", "cup"]
+
+
+def test_auto_follow_never_throws_on_a_job_shape_it_has_not_seen(tmp_path):
+    """A missing field must cost a missed switch, never a broken page."""
+    cases = [{"job": shape, "projects": KNOWN} for shape in (
+        None, {}, {"state": "done"}, {"state": "done", "activity": None},
+        {"state": "done", "activity": [None, {}, {"kind": "tool"}]},
+        {"state": "done", "reply": None, "message": None},
+    )]
+    assert follow_choices(tmp_path, cases) == ["", "", "", "", "", ""]
 
 
 def test_the_page_explains_that_scrapping_is_undoable(client):

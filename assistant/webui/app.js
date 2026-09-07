@@ -1,4 +1,4 @@
-/* app.js — the Forge web UI.
+﻿/* app.js — the Forge web UI.
  *
  * Vanilla, no build step, no framework, no CDN: this is served by a stdlib
  * HTTP server on a machine that may have no internet, and it has to keep
@@ -59,9 +59,10 @@
     sessionCost: 0
   };
 
-  //: The workbench (Phase 11): the part being edited, its parameter controls,
-  //: and the last picture of it.  Kept apart from `state` because it survives
-  //: nothing — every one of these is refetched when the tab is opened.
+  //: The part sheet (Phase 11's workbench, now the Studio's right rail): the
+  //: part being edited, its parameter controls, and the last picture of it.
+  //: Kept apart from `state` because it survives nothing — every one of these
+  //: is refetched when the page is opened.
   var wb = {
     projects: null,   // the last /projects answer
     project: null,    // the selected entry from it
@@ -69,6 +70,15 @@
     preview: null,    // the last /preview answer
     scene: null,      // the last /scene answer
     loading: null     // the in-flight /projects promise, so two callers share one
+  };
+
+  //: Auto-follow (Phase 14): the rail keeps up with the conversation by
+  //: itself.  `seen` is per job so one finished turn is read exactly once —
+  //: the poll returns the same job several times.  `pinned` is the part the
+  //: artist chose by hand, which holds until the next detection.
+  var follow = {
+    seen: {},
+    pinned: null
   };
 
   //: The library (Phase 13): every project as a card, and whatever Blender is
@@ -286,6 +296,11 @@
   function upsert(job, options) {
     var stick = (options && options.stick) || nearBottom();
     var previous = state.jobs[job.job_id];
+    // A turn that has just finished may have made or opened a part; the rail
+    // follows it.  `historical` is the page-load redraw, which must not yank
+    // the sheet to whatever was being made an hour ago.
+    if (options && options.historical) { follow.seen[job.job_id] = true; }
+    else { considerFollowing(job); }
     state.jobs[job.job_id] = job;
     var node = renderTurn(job);
     if (state.nodes[job.job_id]) {
@@ -344,7 +359,9 @@
       var jobs = (res.data.jobs || []).slice().sort(function (a, b) {
         return (a.created_at || 0) - (b.created_at || 0);
       });
-      jobs.forEach(function (job) { upsert(job, { stick: true }); });
+      jobs.forEach(function (job) {
+        upsert(job, { stick: true, historical: true });
+      });
       if (typeof res.data.session_cost_usd === "number") {
         setCost(res.data.session_cost_usd);
       }
@@ -651,7 +668,7 @@
     host.textContent = "";
     if (!entry) {
       host.appendChild(el("p", "muted small",
-        "Pick a part, or ask the assistant in the Chat tab for a new one."));
+        "Pick a part, or ask for a new one in the conversation."));
       return;
     }
     var spec = entry.spec || {};
@@ -717,6 +734,19 @@
     // does not need to be recomputed sixty times a second.
     var settled = debounce(function () { refreshDirty(); }, 180);
 
+    // Enter in a value box IS Apply.  The whole point of the rail is that an
+    // edit is typing-speed: click the number, type 1.5, press Enter, watch it
+    // rebuild — never reach for a button between every field.
+    function applyOnEnter(input) {
+      input.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" || event.shiftKey || event.ctrlKey ||
+            event.altKey) { return; }
+        event.preventDefault();
+        refreshDirty();
+        applyParams();
+      });
+    }
+
     if (isBool) {
       var box = el("input");
       box.type = "checkbox";
@@ -759,6 +789,7 @@
         if (range) { range.value = number.value; }
         settled();
       });
+      applyOnEnter(number);
       control.get = function () { return numberOr(number.value, start); };
       control.set = function (value) {
         number.value = String(value);
@@ -772,6 +803,7 @@
       text.value = start == null ? "" : String(start);
       row.appendChild(text);
       text.addEventListener("input", settled);
+      applyOnEnter(text);
       control.get = function () { return text.value; };
       control.set = function (value) { text.value = value == null ? "" : String(value); };
     }
@@ -879,7 +911,10 @@
       });
   }
 
-  function loadProjects() {
+  //: `want` is the part the caller would like selected if it is there — the
+  //: one auto-follow just detected, or the one the page was left on.  It only
+  //: ever *prefers*; a name that is not on disk falls through to the rest.
+  function loadProjects(want) {
     var job = api("/projects").then(function (res) {
       var picker = $("project");
       if (!res.ok) {
@@ -903,7 +938,7 @@
         $("wb-sheet").textContent = "";
         var empty = card("Nothing in projects/ yet");
         empty.appendChild(el("p", null, res.data.note ||
-          "Ask the assistant in the Chat tab for a part and it appears here."));
+          "Ask the assistant for a part and it appears here."));
         $("wb-sheet").appendChild(empty);
         return;
       }
@@ -915,13 +950,13 @@
       });
       var saved = null;
       try { saved = localStorage.getItem("forge.project"); } catch (e) { saved = null; }
-      var wanted = [previous, saved, list[0].name].filter(function (name) {
+      var wanted = [want, previous, saved, list[0].name].filter(function (name) {
         return name && findProject(name);
       })[0];
       picker.value = wanted;
       return selectProject(wanted);
     });
-    // Held so a second caller — the library's "Open in Workbench" arriving
+    // Held so a second caller — the library's "Open in Studio" arriving
     // while the tab is still loading — waits for THIS fetch instead of firing
     // a second one and racing it for the picker.
     wb.loading = job;
@@ -931,6 +966,58 @@
   function whenProjectsLoaded() {
     if (wb.projects !== null) { return Promise.resolve(); }
     return wb.loading || loadProjects();
+  }
+
+  // -- auto-follow: the rail keeps up with the conversation ---------------
+  //
+  // The rules live in follow.js so they can be tested under node with canned
+  // /jobs entries.  This half is the wiring: when a turn finishes and names a
+  // part, the sheet switches to it and refetches its schema.  A part the
+  // assistant has only just written is not in the picker yet, so a name that
+  // does not resolve costs one /projects refetch and no more.
+
+  function followNote(text, pinned) {
+    var node = $("follow-note");
+    node.className = "muted small" + (pinned ? " is-pinned" : "");
+    node.textContent = text;
+  }
+
+  function pinProject(name) {
+    follow.pinned = name || null;
+    followNote(name ? "Pinned to " + name + " until the conversation moves on."
+                    : "Following the conversation.", !!name);
+  }
+
+  //: Switch the rail to `name`, refetching the projects list once if the part
+  //: is new.  A detection always wins over a hand-picked pin: the artist asked
+  //: for this part in the very message that produced it.
+  function followTo(name) {
+    if (!name) { return Promise.resolve(); }
+    if (wb.project && wb.project.name === name) {
+      follow.pinned = null;
+      followNote("Following the conversation.");
+      return Promise.resolve();
+    }
+    function land() {
+      if (!findProject(name)) { return Promise.resolve(); }
+      $("project").value = name;
+      follow.pinned = null;
+      followNote("Following the conversation — switched to " + name + ".");
+      return selectProject(name);
+    }
+    if (findProject(name)) { return land(); }
+    return loadProjects(name).then(land);
+  }
+
+  function considerFollowing(job) {
+    if (!job || !job.job_id || follow.seen[job.job_id]) { return; }
+    if (job.state !== "done") { return; }
+    follow.seen[job.job_id] = true;
+    var name = "";
+    try {
+      name = window.ForgeFollow.projectFromJob(job, wb.projects);
+    } catch (e) { name = ""; }
+    if (name) { followTo(name); }
   }
 
   function statsLine(data) {
@@ -950,12 +1037,19 @@
   function applyParams() {
     if (!wb.project) { return Promise.resolve(); }
     var button = $("wb-apply");
+    if (button.disabled) { return Promise.resolve(); }   // a held-down Enter
     button.disabled = true;
     setStatus("rebuilding…");
+    $("wb-timing").textContent = "";
+    var started = Date.now();
     return api("/projects/" + encodeURIComponent(wb.project.name) + "/set_params",
                { body: { overrides: collectOverrides() } })
       .then(function (res) {
         button.disabled = false;
+        // The number that makes the case for typing it yourself: this is the
+        // same edit the assistant would charge a turn and two minutes for.
+        $("wb-timing").textContent =
+          ((Date.now() - started) / 1000).toFixed(1) + " s";
         var data = res.data || {};
         if (!res.ok) {
           setStatus(data.error || ("The bridge answered " + res.status + "."), "bad");
@@ -1094,14 +1188,43 @@
     });
   }
 
-  function loadWorkbench() {
+  //: Which part the rail opens on, before anything has been asked: the one it
+  //: was left on, else the most recently modified project — which is what
+  //: somebody who closed the page mid-part comes back for.  /library is the
+  //: only route that carries an mtime, and this is the one call it costs.
+  function initialProject() {
+    var saved = null;
+    try { saved = localStorage.getItem("forge.project"); } catch (e) { saved = null; }
+    if (saved) { return Promise.resolve(saved); }
+    return api("/library").then(function (res) {
+      if (!res.ok) { return null; }
+      var newest = null;
+      ((res.data && res.data.projects) || []).forEach(function (project) {
+        if (!newest || numberOr(project.mtime, 0) > numberOr(newest.mtime, 0)) {
+          newest = project;
+        }
+      });
+      return newest ? newest.name : null;
+    });
+  }
+
+  function loadStudio() {
+    var job = initialProject().then(function (name) {
+      return loadProjects(name);
+    });
+    wb.loading = job;
+    loadScene();
+    return job;
+  }
+
+  function reloadStudio() {
     loadProjects();
     loadScene();
   }
 
   // -------------------------------------------------------------- library --
   //
-  // "A view to see all our 3d models."  The workbench edits ONE part; this is
+  // "A view to see all our 3d models."  The Studio edits ONE part; this is
   // the shelf you look along to find it.  Everything on a card is a folder read
   // — description, dimensions, components, exports — so the whole page still
   // draws with Blender closed and the shape service stopped.  The only thing
@@ -1178,16 +1301,19 @@
       });
   }
 
-  function openInWorkbench(name) {
-    showTab("workbench");
+  function openInStudio(name) {
+    showTab("studio");
     return whenProjectsLoaded().then(function () {
       var picker = $("project");
       picker.value = name;
       if (picker.value !== name) {
-        banner("error", "The Workbench does not have a part called “" + name +
+        banner("error", "The part sheet does not have a part called “" + name +
                         "”. Press Refresh on it and try again.");
         return;
       }
+      // Opened by hand from the Library, so it is pinned: the artist went
+      // looking for this one and should not lose it to the next turn.
+      pinProject(name);
       return selectProject(name);
     });
   }
@@ -1258,10 +1384,10 @@
     }
 
     var actions = el("div", "lib-actions");
-    var open = el("button", "btn tiny", "Open in Workbench");
+    var open = el("button", "btn tiny", "Open in Studio");
     open.type = "button";
     open.title = "Edit its dimensions";
-    open.addEventListener("click", function () { openInWorkbench(project.name); });
+    open.addEventListener("click", function () { openInStudio(project.name); });
     actions.appendChild(open);
 
     var shoot = el("button", "btn tiny lib-shoot", "Preview");
@@ -1290,7 +1416,7 @@
     var bits = [];
     var size = object.dimensions || [];
     // Blender units, one of which is `unit_scale` metres — the same conversion
-    // the workbench's scene rows do, for the same reason: a size printed in the
+    // the rail's scene rows do, for the same reason: a size printed in the
     // wrong unit is worse than no size at all.
     var toMillimetres = 1000 * numberOr(unitScale, 1) || 1000;
     if (size.length === 3) {
@@ -1325,10 +1451,10 @@
     actions.appendChild(shoot);
 
     if (owner) {
-      var open = el("button", "btn tiny", "Open in Workbench");
+      var open = el("button", "btn tiny", "Open in Studio");
       open.type = "button";
       open.title = "This is " + owner.name + "'s part object";
-      open.addEventListener("click", function () { openInWorkbench(owner.name); });
+      open.addEventListener("click", function () { openInStudio(owner.name); });
       actions.appendChild(open);
     }
     body.appendChild(actions);
@@ -1344,7 +1470,7 @@
     if (!projects.length) {
       var empty = card("Nothing in projects/ yet");
       empty.appendChild(el("p", null, (data && data.note) ||
-        "Ask the assistant in the Chat tab for a part and it appears here."));
+        "Ask the assistant for a part and it appears here."));
       host.appendChild(empty);
     } else {
       projects.forEach(function (project) {
@@ -1357,7 +1483,7 @@
     var scene = (data && data.scene) || {};
     if (!scene.ok) {
       // Blender closed is the common case, and it is one sentence with one
-      // thing to do — the same sentence the workbench and the panel use.
+      // thing to do — the same sentence the rail and the panel use.
       var box = card(scene.blender === false ? "Blender is not open"
                                              : "Could not read the scene", "bad");
       box.appendChild(el("p", null, scene.error ||
@@ -1407,7 +1533,7 @@
   // Blender directly, with no model in the loop.
 
   function sendCanned(message) {
-    showTab("chat");
+    showTab("studio");
     $("message").value = message;
     resize();
     send();
@@ -1449,10 +1575,25 @@
   }
 
   // ----------------------------------------------------------------- tabs --
-  var TABS = ["chat", "workbench", "library", "flows"];
+  //
+  // Three, not four.  The Studio is the working session — conversation and
+  // part sheet on one screen — and the other two are the things that are
+  // genuinely separate errands: looking along the shelf, and replaying a
+  // saved sequence.
+  var TABS = ["studio", "library", "flows"];
+
+  //: What a stored or pasted tab name means now.  Somebody with "workbench"
+  //: in their localStorage from yesterday, or a #chat bookmark, lands on the
+  //: screen that swallowed both rather than on the default by accident.
+  var TAB_ALIASES = { chat: "studio", workbench: "studio" };
+
+  function tabName(which) {
+    var name = TAB_ALIASES[which] || which;
+    return TABS.indexOf(name) >= 0 ? name : "";
+  }
 
   function showTab(which) {
-    if (TABS.indexOf(which) < 0) { which = "chat"; }
+    which = tabName(which) || "studio";
     TABS.forEach(function (name) {
       var on = name === which;
       document.getElementById("panel-" + name).hidden = !on;
@@ -1461,12 +1602,14 @@
       tab.setAttribute("aria-selected", String(on));
     });
     if (which === "flows" && state.flows === null) { loadFlows(); }
-    if (which === "workbench" && wb.projects === null) { loadWorkbench(); }
-    // The library is refetched every time it is opened, unlike the other two:
-    // a part made in the chat a minute ago is exactly what somebody opens this
-    // tab to look for, and it is one folder read.
+    // The library is refetched every time it is opened, unlike the flows:
+    // a part made in the conversation a minute ago is exactly what somebody
+    // opens this tab to look for, and it is one folder read.
     if (which === "library") { loadLibrary(); }
-    if (which === "chat") { scrollDown(); }
+    if (which === "studio") {
+      if (wb.projects === null && !wb.loading) { loadStudio(); }
+      scrollDown();
+    }
     // Linkable: #library is a URL that opens on the library, which is what a
     // second monitor and a bookmark are for.  Written with replaceState so the
     // back button still leaves the page instead of walking the tabs.
@@ -1480,7 +1623,20 @@
 
   function tabFromHash() {
     var hash = String(window.location.hash || "").replace(/^#/, "").toLowerCase();
-    return TABS.indexOf(hash) >= 0 ? hash : null;
+    return tabName(hash) || null;
+  }
+
+  //: The tab this page was left on last time, with the pre-Studio names
+  //: rewritten — and rewritten in storage too, so the alias is only ever read
+  //: once per browser.
+  function storedTab() {
+    var saved = null;
+    try { saved = localStorage.getItem("forge.tab"); } catch (e) { saved = null; }
+    var wanted = tabName(saved) || "studio";
+    if (saved && saved !== wanted) {
+      try { localStorage.setItem("forge.tab", wanted); } catch (e) { /* private */ }
+    }
+    return wanted;
   }
 
   // ------------------------------------------------------------------ wire --
@@ -1560,8 +1716,7 @@
     });
 
     $("flows-refresh").addEventListener("click", loadFlows);
-    $("tab-chat").addEventListener("click", function () { showTab("chat"); });
-    $("tab-workbench").addEventListener("click", function () { showTab("workbench"); });
+    $("tab-studio").addEventListener("click", function () { showTab("studio"); });
     $("tab-library").addEventListener("click", function () { showTab("library"); });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
     $("library-refresh").addEventListener("click", loadLibrary);
@@ -1571,9 +1726,12 @@
       if (wanted) { showTab(wanted); }
     });
 
-    // -- the workbench
-    $("projects-refresh").addEventListener("click", loadWorkbench);
+    // -- the part rail
+    $("projects-refresh").addEventListener("click", reloadStudio);
     $("project").addEventListener("change", function () {
+      // Picking by hand pins the rail to that part; the next time the
+      // conversation names one, auto-follow takes it back.
+      pinProject($("project").value);
       selectProject($("project").value);
     });
     $("wb-apply").addEventListener("click", applyParams);
@@ -1617,13 +1775,17 @@
     // startup rather than when the Flows tab is first opened.  Blender being
     // closed just means there are none to add.
     loadFlows();
-    var tab = "chat";
-    try { tab = localStorage.getItem("forge.tab") || "chat"; } catch (e) { tab = "chat"; }
+    var tab = storedTab();
     // A link wins over what was open last time: somebody who typed #library
     // meant it.
-    showTab(tabFromHash() || tab);
+    var opening = tabFromHash() || tab;
+    showTab(opening);
+    // The Studio is the working screen, so its rail is loaded at startup even
+    // when the page opens on the Library — coming back to the Studio should
+    // not be a second wait.
+    if (wb.projects === null && !wb.loading) { loadStudio(); }
     setInterval(refreshHealth, 15000);
-    if (tab === "chat") { $("message").focus(); }
+    if (opening === "studio") { $("message").focus(); }
   }
 
   if (document.readyState === "loading") {

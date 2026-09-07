@@ -29,10 +29,8 @@
 </header>
 
 <nav class="tabs" role="tablist">
-  <button type="button" class="tab is-active" id="tab-chat" role="tab"
-          aria-selected="true" aria-controls="panel-chat">Chat</button>
-  <button type="button" class="tab" id="tab-workbench" role="tab"
-          aria-selected="false" aria-controls="panel-workbench">Workbench</button>
+  <button type="button" class="tab is-active" id="tab-studio" role="tab"
+          aria-selected="true" aria-controls="panel-studio">Studio</button>
   <button type="button" class="tab" id="tab-library" role="tab"
           aria-selected="false" aria-controls="panel-library">Library</button>
   <button type="button" class="tab" id="tab-flows" role="tab"
@@ -59,13 +57,22 @@
 
 <main>
   <!-- ------------------------------------------------------------------ -->
-  <section class="panel" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+  <!-- The Studio: ONE screen for one working session.  The conversation and
+       the part's own numbers are the same job — asking the assistant to make
+       the top 1.5× the bottom took 155 seconds and 41 cents, and typing 1.5
+       into a box takes two.  So they sit side by side and neither is a tab
+       away from the other.  Below 1100 px they stack, chat first. -->
+  <section class="panel" id="panel-studio" role="tabpanel" aria-labelledby="tab-studio">
+   <div class="studio">
+    <div class="studio-chat" id="studio-chat">
     <div class="thread" id="thread">
       <div class="empty" id="empty">
         <h1>What are we making?</h1>
         <p>Describe the thing — “a mug with a hex-pattern grip, 90&nbsp;mm tall” —
            or attach a sketch and ask what it would take. The assistant has the
-           same tools as the Blender panel, and this is the same conversation.</p>
+           same tools as the Blender panel, and this is the same conversation.
+           Once it exists, its dimensions are on the right: type a number,
+           press Enter, and it is rebuilt in seconds without asking anybody.</p>
         <ul class="starters">
           <li><button type="button" class="chip" data-starter="Check the part I have open for printability on my printer and tell me what to fix.">Check my part for printing</button></li>
           <li><button type="button" class="chip" data-starter="What is in the Blender scene right now?">What is in the scene?</button></li>
@@ -100,63 +107,59 @@
         <span class="composer-status" id="composer-status"></span>
       </div>
     </form>
-  </section>
+    </div><!-- /studio-chat -->
 
-  <!-- ------------------------------------------------------------------ -->
-  <section class="panel" id="panel-workbench" role="tabpanel"
-           aria-labelledby="tab-workbench" hidden>
-    <div class="wb-grid">
-
-      <div class="wb-col">
-        <div class="wb-head">
-          <div>
-            <h2>Component sheet</h2>
-            <p class="muted">Every part in <code>projects/</code>, its
-               dimensions and what it is made of. Change a number, press Apply,
-               and the part is rebuilt in Blender in place.</p>
-          </div>
-          <button type="button" class="btn ghost" id="projects-refresh">Refresh</button>
+    <!-- The right rail: the part you are editing, its picture, and what
+         Blender is holding.  It scrolls on its own, so typing into a
+         parameter never moves the conversation and vice versa. -->
+    <aside class="studio-rail" id="studio-rail" aria-label="The part you are editing">
+      <div class="rail-head">
+        <div>
+          <h2>The part</h2>
+          <p class="muted small" id="follow-note">Following the conversation.</p>
         </div>
-
-        <div class="wb-picker">
-          <label for="project">Part</label>
-          <select id="project" class="select"></select>
-        </div>
-
-        <div id="wb-sheet"></div>
-
-        <div id="wb-params" class="wb-params"></div>
-
-        <div class="wb-actions">
-          <button type="button" class="btn primary" id="wb-apply">Apply &amp; rebuild</button>
-          <button type="button" class="btn ghost" id="wb-reset">Reset values</button>
-          <span class="wb-status" id="wb-status"></span>
-        </div>
+        <button type="button" class="btn ghost tiny" id="projects-refresh"
+                title="Re-read projects/">Refresh</button>
       </div>
 
-      <div class="wb-col">
-        <div class="wb-head">
-          <h3>Preview</h3>
-          <select id="wb-view" class="select tiny" title="Which way to look at it">
-            <option value="iso" selected>3/4 view</option>
-            <option value="front">Front</option>
-            <option value="side">Side</option>
-            <option value="top">Top</option>
-          </select>
-          <button type="button" class="btn ghost tiny" id="wb-preview-refresh">Render</button>
-        </div>
-        <div id="wb-preview" class="wb-preview"></div>
-
-        <div class="wb-head">
-          <h3>In the scene</h3>
-          <button type="button" class="btn ghost tiny" id="scene-refresh">Refresh</button>
-        </div>
-        <p class="muted small">Everything Blender is holding right now. Scrap
-           removes one piece — Ctrl+Z in Blender puts it back.</p>
-        <div id="scene"></div>
+      <div class="wb-picker">
+        <label for="project">Part</label>
+        <select id="project" class="select"></select>
       </div>
 
-    </div>
+      <div id="wb-params" class="wb-params"></div>
+
+      <div class="wb-actions">
+        <button type="button" class="btn primary" id="wb-apply"
+                title="Rebuild it in Blender with these numbers (Enter in any box does this too)">Apply &amp; rebuild</button>
+        <button type="button" class="btn ghost" id="wb-reset">Reset values</button>
+        <span class="wb-timing" id="wb-timing" title="How long the last rebuild took"></span>
+        <span class="wb-status" id="wb-status"></span>
+      </div>
+
+      <div id="wb-sheet"></div>
+
+      <div class="wb-head">
+        <h3>Preview</h3>
+        <select id="wb-view" class="select tiny" title="Which way to look at it">
+          <option value="iso" selected>3/4 view</option>
+          <option value="front">Front</option>
+          <option value="side">Side</option>
+          <option value="top">Top</option>
+        </select>
+        <button type="button" class="btn ghost tiny" id="wb-preview-refresh">Render</button>
+      </div>
+      <div id="wb-preview" class="wb-preview"></div>
+
+      <div class="wb-head">
+        <h3>In the scene</h3>
+        <button type="button" class="btn ghost tiny" id="scene-refresh">Refresh</button>
+      </div>
+      <p class="muted small">Everything Blender is holding right now. Scrap
+         removes one piece — Ctrl+Z in Blender puts it back.</p>
+      <div id="scene" class="scene-strip"></div>
+    </aside>
+   </div><!-- /studio -->
   </section>
 
   <!-- ------------------------------------------------------------------ -->
@@ -201,6 +204,7 @@
 </main>
 
 <script src="/webui/format.js"></script>
+<script src="/webui/follow.js"></script>
 <script src="/webui/app.js"></script>
 </body>
 </html>

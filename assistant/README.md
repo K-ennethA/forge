@@ -1,4 +1,4 @@
-# Forge Assistant
+﻿# Forge Assistant
 
 The chat box at the top of Blender's Forge sidebar, and the small local program
 behind it.
@@ -55,12 +55,14 @@ resumed session. The last 20 jobs stay in memory; older ids 404.
 
 The bridge serves a second surface as well — a web UI at `/`, with its own
 routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`, the
-workbench's `/projects`, `/preview`, `/scene`, and the library's `/library` and
+part sheet's `/projects`, `/preview`, `/scene`, and the library's `/library` and
 `/projects/<name>/thumbnail`). They are additive, the panel never calls them, and
 they are documented under
 [The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface),
-[The Workbench (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box)
+[The part sheet (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box)
 and [The Library (Phase 13)](#the-library-phase-13--a-view-to-see-all-our-3d-models).
+The page itself is [one screen](#the-page-the-studio): the conversation and the
+part's own numbers side by side.
 
 ## One message may wait its turn
 
@@ -221,11 +223,13 @@ It exists because Blender's sidebar is 300 px wide and a conversation with
 pictures in it is not. The page is what you leave open on the second monitor.
 
 The whole of it is `assistant/webui/` — `index.html`, `app.css`, `app.js`,
-`format.js`. Vanilla, no build step, **no CDN**, no framework: it is served by a
-stdlib HTTP server on a machine that may have no internet, and it has to still
-open in five years without a toolchain being alive to rebuild it. A test fetches
-all four files from a running bridge and fails if any of them names an
-`http://` resource.
+`format.js`, `follow.js`. Vanilla, no build step, **no CDN**, no framework: it is
+served by a stdlib HTTP server on a machine that may have no internet, and it has
+to still open in five years without a toolchain being alive to rebuild it. A test
+fetches all five files from a running bridge and fails if any of them names an
+`http://` resource. The two small files are the two rules worth running in a test
+on their own: `format.js` turns a reply into HTML, `follow.js` decides which part
+a finished turn was about.
 
 ### Its routes
 
@@ -298,11 +302,51 @@ and writes itself a `.gitignore` on creation — dropped sketches are not source
 
 Drag-and-drop and paste-a-screenshot go through the same `/upload`.
 
-### The page
+### The page: the Studio
 
-- **Chat** the width of the window, with the model selector (Fast / Smart /
-  Deepest, remembered in `localStorage`), Enter to send, Shift+Enter for a line
-  break, and four starter chips on the empty state.
+Three tabs — **Studio | Library | Flows** — and the first of them is the whole
+working session. The artist's own words for what was wrong with four:
+
+> *"I want to directly edit this from the UI — I should be able to pinch or
+> stretch the bottom radius by typing into a param box or flatten the top with
+> params rather than going back and forth with the AI. I want fields I can
+> directly edit. I don't like the multiple tabs for one workflow session — one
+> screen that allows me to control it directly. Things like gallery that are
+> separate actions can be a different tab."*
+
+The case that settled it: three edits — shorter, flatter top, top 1.5× the
+bottom — asked of the model, **155 seconds and $0.41**. They are three numbers.
+So the Chat tab and the Workbench tab are one screen, and the numbers are always
+on it:
+
+**Left — the conversation**, unchanged: the thread, the composer, the model
+selector (Fast / Smart / Deepest, remembered in `localStorage`), Enter to send
+and Shift+Enter for a line break, the attachment chip, the queue notice, four
+starter chips on the empty state.
+
+**Right — the part rail**, its own scrolling column:
+
+- the **picker** and a Refresh, with one line under it saying whether the rail
+  is following the conversation or pinned to a part chosen by hand;
+- the **parameter rows** — slider *and* number box, the unit, a hint, amber
+  until Apply — always visible, never a tab away;
+- **Apply & rebuild**, **Reset values**, the status, and **how long the last
+  rebuild took**. That pill is the argument: the same edit is `1.8 s` here and
+  was 155 seconds and 41 cents through the model;
+- the **component sheet** (what the part is, what it is made of, what prints
+  beside it) from `spec.json`;
+- the **preview** with its view selector, refreshed by itself after every Apply;
+- a compact **scene strip** — what Blender is holding, with Preview and Scrap.
+
+**Enter in any value box is Apply.** That is the point of the rail: click the
+number, type `1.5`, press Enter, watch it rebuild. Reaching for a button between
+every field is what made typing it yourself feel no faster than asking.
+
+Below **1100 px** the two columns stack, chat first — a laptop and a second
+monitor are not the same window.
+
+The rest, unchanged by the merge:
+
 - **Live activity** while a turn runs — the last four lines under a pulse, with
   a Stop button; the full list collapses into a `N steps` disclosure when it
   finishes. Polling is 800 ms and only while something is unsettled.
@@ -315,14 +359,57 @@ Drag-and-drop and paste-a-screenshot go through the same `/upload`.
   bar. The strip is fanned out server-side by `/services/health`, because a page
   served from 8901 cannot ask 8765 itself; Blender and image-to-3D are allowed
   to be down on a working machine, the shape service is not.
+- **The flow row above every panel** — Phase 11, and one click away whichever
+  tab is open. It is [below](#the-flow-row--on-every-tab).
+- **Library tab**: every project in `projects/` as a card, from a folder read
+  alone, plus what Blender is holding right now — a separate errand, so a
+  separate tab. Its cards' **Open in Studio** switches the tab, the picker and
+  the pin. [Below](#the-library-phase-13--a-view-to-see-all-our-3d-models).
 - **Flows tab**: the saved flows with their params, and a Run button that goes
   straight to Blender with no model in the loop. Blender being closed is a
   sentence naming the button to press, not a stack trace.
-- **Workbench tab** and the **flow row above every panel** — Phase 11, and
-  the rest of this section's worth of page. It is [below](#the-workbench-phase-11--the-page-stops-being-a-chat-box).
-- **Library tab**: every project in `projects/` as a card, from a folder read
-  alone, plus what Blender is holding right now. Also
-  [below](#the-library-phase-13--a-view-to-see-all-our-3d-models).
+
+### Auto-follow: the rail keeps up on its own
+
+A sheet that has to be pointed at the part you just asked for is a tab in
+disguise. So the rail tracks the conversation, and the rules are one file —
+`follow.js`, no DOM and no fetch in it, so the tests run them under node with
+canned `/jobs` entries. In order, and each one cheap:
+
+1. Only a job whose `state` is `"done"` is read at all; a running turn has not
+   decided anything yet, and the conversation redrawn at page load is history
+   rather than a decision.
+2. Its tool activity is read **newest first**, and only three tools count —
+   `partforge_new_part`, `partforge_open_in_panel`, `partforge_generate`.
+   Everything else (a check, an export, a render) is about a part the rail is
+   already on, and following those would walk the sheet through a part's whole
+   history.
+3. The argument half of the label is resolved against the picker's projects: by
+   exact name, then by slug (`"a small magnet holder"` →
+   `a-small-magnet-holder`), then as a script filename **exactly one** project
+   has. `part.py` is most projects' script, so it deliberately resolves to
+   nothing — switching to whichever sorted first would be worse than not
+   switching.
+4. `partforge_new_part` is special: the part was written *this turn*, so a slug
+   matching nothing is still returned and the page refetches `/projects` once.
+5. Failing all that, the reply and then the question are read for a
+   `projects/<name>` path (either slash) or a known project's name — as a whole
+   word, so "cup" does not match inside "cupboard" — and the last mention wins,
+   because a reply that names two parts ends on the one it just made. A path
+   naming a folder the picker has not heard of is the last resort, for the same
+   reason as rule 4.
+6. Otherwise the sheet does not move.
+
+Picking from the dropdown by hand, or **Open in Studio** from the Library,
+**pins** the rail to that part; the next detection unpins it, because the artist
+asked for that part in the message that produced it. On page load the rail opens
+on the part it was left on (`forge.project` in `localStorage`), else the most
+recently modified project — `/library` is the only route carrying an `mtime`,
+and that is the one call it costs.
+
+`localStorage` from before the merge is migrated rather than ignored: a stored
+tab of `chat` or `workbench` (and a `#chat` / `#workbench` bookmark) both land on
+`studio`, and the stored name is rewritten so the alias is read once per browser.
 
 `format.js` is the reply formatter, ~90 lines and no markdown library: blank-line
 paragraphs (single newlines kept as breaks), `- ` and `1. ` lists, `#` headings,
@@ -340,12 +427,18 @@ much just a chat bot, but I should be given little windows to edit my
 components… I'd like to have a sheet of what makes up the object, like CAD,
 where I can see the components so I can edit parts of it."*
 
-So there is a Workbench tab between Chat and Flows, and **none of it spends a
-model turn** — a slider that costs money per drag is a slider nobody drags. Every control
-is a route on this bridge: a slider move is a `/generate` and a `load_mesh`, a
-Preview is a `render_preview`, a Scrap is a `delete_object`. Changing a number
-costs nothing and answers in the time a rebuild takes, which is the difference
-between editing a part and *asking somebody* to edit a part.
+So the page grew a part sheet, and **none of it spends a model turn** — a slider
+that costs money per drag is a slider nobody drags. Every control is a route on
+this bridge: a slider move is a `/generate` and a `load_mesh`, a Preview is a
+`render_preview`, a Scrap is a `delete_object`. Changing a number costs nothing
+and answers in the time a rebuild takes, which is the difference between editing
+a part and *asking somebody* to edit a part.
+
+Phase 11 gave it its own tab; **Phase 14 moved it into the Studio's right rail**,
+beside the conversation, because a tab away was still away. The machinery below —
+the rows, the debounce, the amber-until-Apply, Apply's chain, the preview, the
+scene panel — is the same machinery in a different place, plus Enter-to-Apply and
+the rebuild-time pill. Where this section says "the Workbench", read "the rail".
 
 ### The flow row — on every tab
 
@@ -513,14 +606,14 @@ A card carries:
   machine and the browser is on this machine, so a download route would be a
   second way to read the filesystem for no gain over a path you can paste into
   Explorer;
-- **Open in Workbench**, which switches tab *and* selection (a tab switch that
+- **Open in Studio**, which switches tab, selection *and* pin (a tab switch that
   left the picker on the previous part would be a button that lies), and
   **Preview**.
 
 The second row is the **works in progress**: a generated mesh, a sculpt, the
 pieces a segment produced. None of them has a folder in `projects/` and all of
 them are the artist's work, so they get cards too — dashed, with their size in
-millimetres and a Preview, and an Open in Workbench when the object happens to
+millimetres and a Preview, and an Open in Studio when the object happens to
 be some project's part object. Blender being closed is one sentence in that row,
 not a failed request, because the rest of the page is a folder read and must
 still draw.
@@ -771,8 +864,8 @@ bridge must pass are deliberately independent: the bridge always asks for
 stream-json, and the json modes prove it still copes with a build that answers
 with one object anyway.
 
-`assistant/tests/test_webui.py` is the web UI's half of the suite (274 tests
-beside `test_bridge.py`'s 90, so **364** in all). It never touches port 8901:
+`assistant/tests/test_webui.py` is the web UI's half of the suite (292 tests
+beside `test_bridge.py`'s 90, so **382** in all). It never touches port 8901:
 every bridge it starts is on a port the OS handed out, and the Blender socket,
 the geometry service, the two downstream health probes and the start script all
 have fakes in the file, so nothing in it needs Blender, PowerShell or the
@@ -827,11 +920,32 @@ panel's sentence when Blender is closed; the Workbench's own render doubling as
 the thumbnail while a whole-scene render stays nobody's; and, on the page, the
 tab and panel wired to each other in the right order, the two grids, the
 responsive `auto-fill` grid rule, the initial placeholder, the `?t=` cache-bust,
-Open in Workbench switching both the tab and the selection, and the tab
+Open in Studio switching the tab, the selection and the pin, and the tab
 refetching every time it is opened.
 
-The formatter tests run `format.js` for real under node when there is one, and
-skip when there is not.
+And for Phase 14: the Studio panel holding **both** sets of anchors — the
+thread, the composer and the model selector *and* the picker, the parameter
+rows, Apply, the preview and the scene — so there is no arrangement of tabs in
+which the answer about a dimension is visible and the box that changes it is
+not; the conversation before the rail in source order, which is the stacking
+order at a narrow width; the rail as a grid column that scrolls on its own; the
+1100 px breakpoint existing at all; Enter wired to Apply on **both** kinds of
+value box, with a held-down Enter unable to queue a second rebuild; the
+rebuild-time pill measured across the `set_params` call; the old `chat` /
+`workbench` tab names aliased to `studio` and rewritten in `localStorage`; the
+rail opening on the remembered part else `/library`'s newest `mtime`; the
+page-load redraw marked `historical` so it cannot yank the sheet to an hour-old
+turn; and **auto-follow's rules run for real under node** over canned `/jobs`
+entries — a slugged new part, a script filename only one project has, the
+ambiguous `part.py` resolving to nothing, a `projects/<name>` path in the reply
+(both slashes), the newest tool winning, a name that is not a substring
+("cupboard"), a folder the picker has not heard of, a job that has not
+finished, `/projects` in any of the three shapes it arrives in, and six
+malformed job shapes that must each cost a missed switch rather than an
+exception.
+
+The formatter and auto-follow tests run `format.js` and `follow.js` for real
+under node when there is one, and skip when there is not.
 
 One real turn against the live CLI runs only when you ask for it:
 
