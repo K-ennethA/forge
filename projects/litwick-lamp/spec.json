@@ -1,0 +1,88 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "litwick-lamp",
+  "description": "litwick-lamp \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "part": {
+      "value": 0,
+      "unit": "count",
+      "min": 0.0,
+      "max": 1.0,
+      "step": 1.0,
+      "description": "0 = body (holds the LED, battery and switch), 1 = flame (the push plunger)"
+    },
+    "total_height": {
+      "value": 75.0,
+      "unit": "mm",
+      "min": 60.0,
+      "max": 200.0,
+      "step": 1.0,
+      "description": "Overall height of the body, not counting the flame"
+    },
+    "base_diameter": {
+      "value": 40.0,
+      "unit": "mm",
+      "min": 20.0,
+      "max": 80.0,
+      "step": 1.0,
+      "description": "Diameter of the small circle at the base the lamp stands on. The top opening is always 1.5x this"
+    },
+    "wall": {
+      "value": 3.0,
+      "unit": "mm",
+      "min": 2.0,
+      "max": 6.0,
+      "step": 0.2,
+      "description": "Shell wall thickness"
+    },
+    "foot_count": {
+      "value": 4,
+      "unit": "count",
+      "min": 0.0,
+      "max": 6.0,
+      "step": 1.0,
+      "description": "Little foot nubs around the base (0 removes them)"
+    },
+    "flame_height": {
+      "value": 55.0,
+      "unit": "mm",
+      "min": 25.0,
+      "max": 90.0,
+      "step": 1.0,
+      "description": "Height of the oval flame above its flat base disc"
+    },
+    "flame_width": {
+      "value": 24.0,
+      "unit": "mm",
+      "min": 16.0,
+      "max": 50.0,
+      "step": 1.0,
+      "description": "Widest diameter of the slim oval flame"
+    },
+    "peg_length": {
+      "value": 34.0,
+      "unit": "mm",
+      "min": 10.0,
+      "max": 80.0,
+      "step": 1.0,
+      "description": "How far the flame's plunger stem drops inside the body to reach your switch"
+    }
+  },
+  "features": [],
+  "components": {
+    "collection": "litwick-lamp",
+    "core": "litwick-lamp",
+    "proposals": [
+      "litwick-lamp-flame"
+    ]
+  },
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}
