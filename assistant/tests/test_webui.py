@@ -87,6 +87,11 @@ def bridges(tmp_path):
         env = {
             # Never write uploads into the repo while testing.
             "FORGE_ASSISTANT_UPLOADS": str(tmp_path / "uploads"),
+            # …nor previews, and never read the repo's real projects folder:
+            # a test that passes because the machine happens to have four bowl
+            # holders in it is not a test.
+            "FORGE_ASSISTANT_PREVIEWS": str(tmp_path / "previews"),
+            "FORGE_PROJECTS_DIR": str(tmp_path / "projects"),
             # Ports nothing is listening on, so "down" is the default answer.
             "FORGE_SERVICE_URL": "http://127.0.0.1:%d" % free_port(),
             "FORGE_MESHGEN_URL": "http://127.0.0.1:%d" % free_port(),
@@ -222,6 +227,193 @@ def ok_response(result):
     def responder(request):
         return {"id": request.get("id"), "status": "success", "result": result}
     return responder
+
+
+def by_type(table, default=None):
+    """A FakeBlender responder that answers per command ``type``.
+
+    ``table`` maps a command name to a result dict, or to a callable taking the
+    whole request — which is how the preview test writes the PNG the add-on
+    would have written.
+    """
+    def responder(request):
+        command = request.get("type")
+        if command not in table:
+            if default is not None:
+                return {"id": request.get("id"), "status": "success",
+                        "result": default}
+            return {"id": request.get("id"), "status": "error",
+                    "message": "Unknown command %r." % command}
+        found = table[command]
+        result = found(request) if callable(found) else found
+        if isinstance(result, str):            # a string means "refuse"
+            return {"id": request.get("id"), "status": "error", "message": result}
+        return {"id": request.get("id"), "status": "success",
+                "result": result if isinstance(result, dict) else {}}
+    return responder
+
+
+# ---------------------------------------------------------------------------
+# the workbench's fakes (Phase 11)
+# ---------------------------------------------------------------------------
+
+#: A PARAMS schema shaped exactly as docs/architecture.md's contract describes:
+#: value and unit always, min/max/step/description where they help.  The page
+#: draws a slider from min/max/step, so a schema without them is also covered.
+PARAMS = {
+    "wall_mm": {"value": 2.4, "unit": "mm", "min": 1.0, "max": 6.0, "step": 0.1,
+                "description": "Wall thickness"},
+    "feet_count": {"value": 4, "unit": "count", "min": 3, "max": 8, "step": 1,
+                   "description": "Number of feet"},
+    "hollow": {"value": True, "unit": "bool", "description": "Hollow it out"},
+}
+
+#: Enough of a spec.json to draw a component sheet from: what it is, what it is
+#: made of, which pieces are core and which are proposals, what prints beside it.
+SPEC = {
+    "name": "cup",
+    "description": "A cup that holds a thing.",
+    "parameters": PARAMS,
+    "features": ["a fluted band", "four feet"],
+    "components": [
+        {"name": "cup_core", "kind": "core", "description": "the dimensioned ring"},
+        {"name": "cup_collar", "kind": "proposal", "description": "scrap me freely"},
+    ],
+    "companion_parts": [{"name": "cup-lid", "script": "part_lid.py",
+                         "description": "prints separately"}],
+    "script": "part.py",
+}
+
+PART_SOURCE = (
+    "PARAMS = {\n"
+    "    \"wall_mm\": {\"value\": 2.4, \"unit\": \"mm\"},\n"
+    "}\n\n"
+    "def build(p):\n"
+    "    return None\n"
+)
+
+#: A tetrahedron: four points, four faces, and unmistakable in an assertion.
+MESH = {"vertices": [[0, 0, 0], [10, 0, 0], [0, 10, 0], [0, 0, 10]],
+        "faces": [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]}
+STATS = {"vertex_count": 4, "face_count": 4, "bounding_box_mm": [10, 10, 10],
+         "watertight": True}
+
+
+class FakeGeometry(object):
+    """The geometry service, faked: ``/health``, ``/parse_params``, ``/generate``.
+
+    Every request body is recorded, because what the bridge *sends* is the
+    contract here — an override the page collected has to arrive as the
+    service's own ``overrides`` object, in the parameter's declared unit.
+    """
+
+    def __init__(self, params=None, mesh=None, stats=None, errors=None):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        self.seen = []
+        self.params = PARAMS if params is None else params
+        self.mesh = MESH if mesh is None else mesh
+        self.stats = STATS if stats is None else stats
+        self.errors = errors or {}          # endpoint -> (status, payload)
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def log_message(self, *args):
+                pass
+
+            def _answer(self, status, payload):
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_GET(self):  # noqa: N802
+                if self.path.rstrip("/") == "/health":
+                    self._answer(200, {"status": "ok", "build123d": "0.9"})
+                    return
+                self._answer(404, {"error": "no"})
+
+            def do_POST(self):  # noqa: N802
+                try:
+                    length = int(self.headers.get("Content-Length") or 0)
+                except (TypeError, ValueError):
+                    length = 0
+                raw = self.rfile.read(length) if length else b""
+                try:
+                    body = json.loads(raw.decode("utf-8")) if raw else None
+                except ValueError:
+                    body = None
+                endpoint = self.path.split("?", 1)[0].rstrip("/") or "/"
+                outer.seen.append((endpoint, body))
+                if endpoint in outer.errors:
+                    status, payload = outer.errors[endpoint]
+                    self._answer(status, payload)
+                    return
+                if endpoint == "/parse_params":
+                    self._answer(200, {"params": outer.params})
+                    return
+                if endpoint == "/generate":
+                    self._answer(200, {"params": outer.params,
+                                       "mesh": outer.mesh,
+                                       "stats": outer.stats})
+                    return
+                self._answer(404, {"error": "no such endpoint %s" % endpoint})
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        self.url = "http://127.0.0.1:%d" % self.port
+        self.thread = threading.Thread(target=self.server.serve_forever,
+                                       kwargs={"poll_interval": 0.05}, daemon=True)
+        self.thread.start()
+
+    def bodies(self, endpoint):
+        return [body for path, body in self.seen if path == endpoint]
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+@pytest.fixture
+def fake_geometry():
+    made = []
+
+    def factory(**kwargs):
+        service = FakeGeometry(**kwargs)
+        made.append(service)
+        return service
+
+    yield factory
+    for service in made:
+        service.close()
+
+
+@pytest.fixture
+def projects(tmp_path):
+    """Write project folders into the sandbox the ``bridges`` fixture points at."""
+    root = tmp_path / "projects"
+
+    def make(name, spec=SPEC, script="part.py", source=PART_SOURCE, extra=None):
+        folder = root / name
+        folder.mkdir(parents=True, exist_ok=True)
+        if script:
+            (folder / script).write_text(source, encoding="utf-8")
+        if spec is not None:
+            payload = dict(spec)
+            payload["name"] = name
+            if script:
+                payload["script"] = script
+            payload.update(extra or {})
+            (folder / "spec.json").write_text(json.dumps(payload), encoding="utf-8")
+        return folder
+
+    root.mkdir(parents=True, exist_ok=True)
+    make.root = root
+    return make
 
 
 # ===========================================================================
@@ -465,6 +657,26 @@ PAGE_ANCHORS = (
     ("panel-flows", "the flows panel"),
     ("flows", "the flows list"),
     ("flows-refresh", "the flows refresh button"),
+    # -- the workbench (Phase 11)
+    ("tab-workbench", "the workbench tab"),
+    ("panel-workbench", "the workbench panel"),
+    ("flow-buttons", "the always-visible flow row"),
+    ("flow-print", "Get ready to print"),
+    ("flow-godot", "Send to Godot"),
+    ("flow-check", "Check my work"),
+    ("saved-flows", "where saved flows are added as buttons"),
+    ("project", "the project picker"),
+    ("projects-refresh", "the projects refresh button"),
+    ("wb-sheet", "the component sheet"),
+    ("wb-params", "the parameter controls"),
+    ("wb-apply", "Apply & rebuild"),
+    ("wb-reset", "Reset values"),
+    ("wb-status", "where the workbench says what happened"),
+    ("wb-preview", "the inline preview"),
+    ("wb-preview-refresh", "the render button"),
+    ("wb-view", "which way to look at it"),
+    ("scene", "the scene components panel"),
+    ("scene-refresh", "the scene refresh button"),
 )
 
 
@@ -523,7 +735,10 @@ def test_the_page_only_talks_to_routes_this_bridge_serves(client):
     called = set(re.findall(r'api\("(/[a-z/]*)', script))
     assert called == {"/services/health", "/jobs", "/job/", "/ask", "/cancel/",
                       "/upload", "/new", "/services/start", "/flows",
-                      "/flows/run"}, called
+                      "/flows/run",
+                      # the workbench (Phase 11)
+                      "/projects", "/projects/", "/preview", "/scene",
+                      "/scene/delete"}, called
 
 
 def test_the_reply_is_the_only_html_the_page_ever_builds(client):
@@ -1186,3 +1401,707 @@ def test_unknown_paths_are_still_a_clean_404(client):
         status, body = client.request(path)
         assert status == 404, path
         assert "error" in body
+
+
+# ===========================================================================
+# the workbench (Phase 11) — pure units
+# ===========================================================================
+
+@pytest.mark.parametrize("script,expected", [
+    ("C:\\forge\\projects\\eevee-bowl-holder\\part.py", "eevee-bowl-holder"),
+    ("C:\\forge\\projects\\bowl-holder\\part_base_ring.py", "part_base_ring"),
+    ("C:/forge/projects/cup/main.py", "cup"),
+    ("C:/forge/projects/cup/__init__.py", "cup"),
+    ("C:/forge/projects/cup/lid.py", "lid"),
+])
+def test_object_name_for_script_follows_the_naming_convention(script, expected):
+    """The workbench has to name the same object the panel and MCP name.
+
+    Otherwise Apply replaces the mesh of an object nobody is looking at, and
+    the artist watches a slider do nothing.  docs/architecture.md's rule: the
+    stem, or the folder when the stem is generic.
+    """
+    assert bridge.object_name_for_script(script) == expected
+
+
+def test_object_name_is_capped_the_way_blender_caps_it():
+    long_name = "x" * 200
+    name = bridge.object_name_for_script("C:/p/%s/part.py" % long_name)
+    assert len(name.encode("utf-8")) <= 63
+
+
+@pytest.mark.parametrize("name", [
+    "../system_prompt.md", "..\\bridge.py", "sub/thing", "sub\\thing",
+    "%2e%2e", "C:\\Windows", "/etc", "", "   ", None, ".", "..",
+])
+def test_project_dir_refuses_anything_that_is_not_one_plain_name(name, monkeypatch,
+                                                                tmp_path):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(tmp_path))
+    assert bridge.project_dir(name) is None
+
+
+def test_scan_projects_reads_the_spec_and_finds_the_script(monkeypatch, tmp_path,
+                                                           projects):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    projects("cup")
+    found = bridge.scan_projects()
+    assert found["count"] == 1
+    entry = found["projects"][0]
+    assert entry["name"] == "cup"
+    assert entry["script"] == "part.py"
+    assert entry["has_params"] is True
+    # The object the panel would build into, not "part".
+    assert entry["object"] == "cup"
+    assert entry["spec"]["features"] == ["a fluted band", "four feet"]
+
+
+def test_scan_projects_prefers_the_script_the_spec_names(monkeypatch, projects):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    folder = projects("ring", script="part_base_ring.py")
+    (folder / "part_collar_band.py").write_text(PART_SOURCE, encoding="utf-8")
+    entry = bridge.scan_projects()["projects"][0]
+    assert entry["script"] == "part_base_ring.py"
+    assert set(entry["scripts"]) == {"part_base_ring.py", "part_collar_band.py"}
+
+
+def test_scan_projects_skips_folders_that_are_not_projects(monkeypatch, projects):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    projects("cup")
+    (projects.root / "notes").mkdir()
+    (projects.root / "notes" / "todo.txt").write_text("later", encoding="utf-8")
+    assert [p["name"] for p in bridge.scan_projects()["projects"]] == ["cup"]
+
+
+def test_scan_projects_survives_a_spec_that_will_not_parse(monkeypatch, projects):
+    """A trailing comma in the artist's own file must not hide their part."""
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    folder = projects("cup")
+    (folder / "spec.json").write_text("{ not json,", encoding="utf-8")
+    entry = bridge.scan_projects()["projects"][0]
+    assert entry["spec"] is None
+    assert entry["script"] == "part.py" and entry["has_params"] is True
+
+
+def test_scan_projects_says_so_when_there_is_no_folder_at_all(monkeypatch, tmp_path):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(tmp_path / "nope"))
+    found = bridge.scan_projects()
+    assert found["projects"] == [] and found["count"] == 0
+    assert "no projects folder" in found["note"]
+
+
+def test_script_has_params_reads_the_file_rather_than_importing_it(tmp_path):
+    good = tmp_path / "part.py"
+    good.write_text(PART_SOURCE, encoding="utf-8")
+    assert bridge.script_has_params(str(good)) is True
+
+    # Executing this would end the test run; reading it is a False.
+    bad = tmp_path / "hostile.py"
+    bad.write_text("import sys\nsys.exit(1)\n# PARAMS is only in a comment\n",
+                   encoding="utf-8")
+    assert bridge.script_has_params(str(bad)) is False
+    assert bridge.script_has_params(str(tmp_path / "missing.py")) is False
+
+
+def test_prune_previews_keeps_the_newest_and_never_touches_anything_else(tmp_path):
+    directory = tmp_path / "previews"
+    directory.mkdir()
+    keep_me = directory / "notes.txt"
+    keep_me.write_text("hello", encoding="utf-8")
+    for index in range(6):
+        write_png(directory / ("preview-%d.png" % index))
+        time.sleep(0.01)
+    assert bridge.prune_previews(str(directory), keep=2) == 4
+    assert keep_me.is_file()
+    assert len([p for p in directory.iterdir() if p.suffix == ".png"]) == 2
+
+
+def test_new_preview_path_is_a_fresh_name_in_the_bridges_own_folder(monkeypatch,
+                                                                   tmp_path):
+    monkeypatch.setenv("FORGE_ASSISTANT_PREVIEWS", str(tmp_path / "previews"))
+    first = bridge.new_preview_path()
+    second = bridge.new_preview_path()
+    assert first != second, "a reused name is a cached picture of the old shape"
+    assert os.path.dirname(first) == str(tmp_path / "previews")
+    assert first.endswith(".png")
+    assert os.path.isdir(str(tmp_path / "previews"))
+
+
+def test_service_post_keeps_not_running_and_refused_apart(monkeypatch,
+                                                          fake_geometry):
+    """One is a button to press; the other is a message about your script."""
+    monkeypatch.setenv("FORGE_SERVICE_URL", "http://127.0.0.1:%d" % free_port())
+    with pytest.raises(bridge.ServiceDown) as down:
+        bridge.service_post("/parse_params", {"script": "x"}, 5.0)
+    assert "Start services" in str(down.value)
+
+    sick = fake_geometry(errors={"/parse_params": (400, {
+        "error": "wall_mm must be between 1.0 and 6.0"})})
+    monkeypatch.setenv("FORGE_SERVICE_URL", sick.url)
+    with pytest.raises(bridge.ServiceRefused) as refused:
+        bridge.service_post("/parse_params", {"script": "x"}, 5.0)
+    assert str(refused.value) == "wall_mm must be between 1.0 and 6.0"
+
+
+def test_project_schema_is_cached_until_the_script_changes(monkeypatch, projects,
+                                                           fake_geometry):
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    service = fake_geometry()
+    monkeypatch.setenv("FORGE_SERVICE_URL", service.url)
+    bridge.forget_schema()
+
+    script = str(projects("cup") / "part.py")
+    params, cached = bridge.project_schema(script)
+    assert cached is False and params["wall_mm"]["value"] == 2.4
+    assert bridge.project_schema(script)[1] is True
+    assert len(service.bodies("/parse_params")) == 1
+
+    # An edit in another window is not something to wait fifteen seconds for.
+    with open(script, "a", encoding="utf-8") as handle:
+        handle.write("\n# edited\n")
+    os.utime(script, (time.time() + 5, time.time() + 5))
+    assert bridge.project_schema(script)[1] is False
+    assert len(service.bodies("/parse_params")) == 2
+
+    # …and refresh=True skips the cache outright.
+    assert bridge.project_schema(script, refresh=True)[1] is False
+    assert len(service.bodies("/parse_params")) == 3
+
+
+# ===========================================================================
+# the workbench — GET /projects and GET /projects/<name>/schema
+# ===========================================================================
+
+def test_projects_is_empty_before_anything_is_made(client):
+    status, body = client.request("/projects")
+    assert status == 200
+    assert body["projects"] == [] and body["count"] == 0
+    assert body["dir"].endswith("projects")
+
+
+def test_projects_lists_what_is_on_disk(bridges, projects):
+    projects("cup")
+    projects("lid", script="part_lid.py")
+    client = bridges()
+    status, body = client.request("/projects")
+    assert status == 200, body
+    names = [p["name"] for p in body["projects"]]
+    assert names == ["cup", "lid"]
+    cup = body["projects"][0]
+    assert cup["script"] == "part.py"
+    assert cup["object"] == "cup"
+    assert cup["has_params"] is True
+    assert cup["spec"]["description"] == "A cup that holds a thing."
+    assert cup["spec"]["components"][0]["kind"] == "core"
+    assert cup["spec"]["companion_parts"][0]["script"] == "part_lid.py"
+
+
+def test_schema_asks_the_service_for_the_resolved_params(bridges, projects,
+                                                         fake_geometry):
+    projects("cup")
+    service = fake_geometry()
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url})
+    status, body = client.request("/projects/cup/schema")
+    assert status == 200, body
+    assert body["project"] == "cup" and body["script"] == "part.py"
+    assert body["object"] == "cup"
+    assert body["count"] == 3
+    assert body["params"]["wall_mm"]["min"] == 1.0
+    assert body["params"]["feet_count"]["unit"] == "count"
+    # The source went to the service; the bridge never runs the artist's script.
+    sent = service.bodies("/parse_params")[0]
+    assert "PARAMS" in sent["script"]
+
+
+@pytest.mark.parametrize("name", ["nope", "..", "..%2Fassistant", "sub%2Fthing"])
+def test_schema_of_a_project_that_is_not_one_is_a_plain_404(bridges, projects, name):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/%s/schema" % name)
+    assert status == 404, body
+    assert "No project called" in body["error"]
+
+
+def test_schema_with_the_service_down_is_one_sentence_with_a_button_in_it(bridges,
+                                                                         projects):
+    projects("cup")
+    client = bridges()          # the default service URL has nothing on it
+    status, body = client.request("/projects/cup/schema", timeout=40)
+    assert status == 503, body
+    assert body["service"] is False
+    assert "shape service is not running" in body["error"]
+    assert "Start services" in body["error"]
+
+
+def test_schema_passes_the_services_own_complaint_through(bridges, projects,
+                                                          fake_geometry):
+    service = fake_geometry(errors={"/parse_params": (400, {
+        "error": "PARAMS['wall_mm'] has no 'unit'."})})
+    projects("cup")
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url})
+    status, body = client.request("/projects/cup/schema")
+    assert status == 502, body
+    assert body["service"] is True
+    assert body["error"] == "PARAMS['wall_mm'] has no 'unit'."
+
+
+# ===========================================================================
+# the workbench — POST /projects/<name>/set_params
+# ===========================================================================
+
+def set_params_blender():
+    """A fake add-on that accepts the two commands the chain sends."""
+    return by_type({
+        "partforge_open": lambda request: {
+            "script": (request.get("params") or {}).get("script_path"),
+            "param_count": 3, "object": (request.get("params") or {}).get("object"),
+            "schema_source": "service"},
+        "load_mesh": lambda request: {
+            "object": (request.get("params") or {}).get("name"),
+            "vertex_count": 4, "face_count": 4},
+    })
+
+
+def test_set_params_generates_then_loads_the_mesh_in_place(bridges, projects,
+                                                           fake_geometry,
+                                                           fake_blender):
+    projects("cup")
+    service = fake_geometry()
+    blender = fake_blender(set_params_blender())
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url,
+                                "FORGE_BLENDER_PORT": str(blender.port)})
+
+    status, body = client.request("/projects/cup/set_params",
+                                  payload={"overrides": {"wall_mm": 3.2,
+                                                         "feet_count": 6}},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["loaded"] is True and body["blender"] is True
+    assert body["object"] == "cup"
+    assert body["stats"]["face_count"] == 4
+    assert body["overrides"] == {"wall_mm": 3.2, "feet_count": 6}
+
+    # -- what the shape service was asked for
+    generated = service.bodies("/generate")
+    assert len(generated) == 1
+    assert generated[0]["overrides"] == {"wall_mm": 3.2, "feet_count": 6}
+    assert "def build" in generated[0]["script"]
+
+    # -- and what Blender was asked to do, in order
+    types = [request["type"] for request in blender.seen]
+    assert types == ["partforge_open", "load_mesh"], types
+    opened = blender.seen[0]["params"]
+    assert opened["script_path"].endswith(os.path.join("cup", "part.py"))
+    assert opened["object"] == "cup"
+    loaded = blender.seen[1]["params"]
+    # ``replace`` is the whole point: the object's transform, its place in the
+    # outliner and the artist's selection all survive a rebuild.
+    assert loaded["replace"] is True
+    assert loaded["name"] == "cup"
+    assert loaded["vertices"] == MESH["vertices"]
+    assert loaded["faces"] == MESH["faces"]
+
+
+def test_set_params_with_no_overrides_still_rebuilds(bridges, projects,
+                                                     fake_geometry, fake_blender):
+    projects("cup")
+    service = fake_geometry()
+    blender = fake_blender(set_params_blender())
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url,
+                                "FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/set_params", payload={}, timeout=60)
+    assert status == 200, body
+    assert service.bodies("/generate")[0]["overrides"] == {}
+
+
+def test_set_params_refuses_overrides_that_are_not_an_object(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/cup/set_params",
+                                  payload={"overrides": [1, 2, 3]})
+    assert status == 400
+    assert "object" in body["error"]
+
+
+def test_set_params_with_the_service_down_never_reaches_blender(bridges, projects,
+                                                                fake_blender):
+    projects("cup")
+    blender = fake_blender(set_params_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/set_params", payload={},
+                                  timeout=40)
+    assert status == 503, body
+    assert body["service"] is False
+    assert "Start services" in body["error"]
+    assert blender.seen == [], "the mesh was never built; nothing to load"
+
+
+def test_set_params_reports_the_services_own_words_about_a_bad_value(
+        bridges, projects, fake_geometry):
+    service = fake_geometry(errors={"/generate": (400, {
+        "error": "wall_mm=99 is outside 1.0..6.0"})})
+    projects("cup")
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url})
+    status, body = client.request("/projects/cup/set_params",
+                                  payload={"overrides": {"wall_mm": 99}})
+    assert status == 502, body
+    assert body["service"] is True
+    assert body["error"] == "wall_mm=99 is outside 1.0..6.0"
+
+
+def test_set_params_with_blender_closed_still_hands_back_the_numbers(
+        bridges, projects, fake_geometry):
+    """Built but not shown. Hiding the stats would be a lie of omission."""
+    projects("cup")
+    service = fake_geometry()
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url})
+    status, body = client.request("/projects/cup/set_params",
+                                  payload={"overrides": {"wall_mm": 3.0}},
+                                  timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False and body["loaded"] is False
+    assert "Blender is not running" in body["error"]
+    assert "Start Server" in body["error"]
+    assert body["stats"]["face_count"] == 4
+
+
+def test_set_params_survives_a_panel_that_refuses_to_follow_along(
+        bridges, projects, fake_geometry, fake_blender):
+    """The panel not tracking is smaller than the mesh not arriving."""
+    projects("cup")
+    service = fake_geometry()
+    blender = fake_blender(by_type({
+        "partforge_open": lambda request: "that script is not where you said",
+        "load_mesh": lambda request: {
+            "object": (request.get("params") or {}).get("name"),
+            "vertex_count": 4, "face_count": 4},
+    }))
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url,
+                                "FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/set_params", payload={},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["loaded"] is True
+    assert any("did not follow along" in note for note in body["notes"])
+
+
+def test_set_params_says_so_when_the_service_builds_nothing(bridges, projects,
+                                                            fake_geometry,
+                                                            fake_blender):
+    service = fake_geometry(mesh={"vertices": [], "faces": []})
+    projects("cup")
+    blender = fake_blender(set_params_blender())
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url,
+                                "FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/set_params", payload={},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["loaded"] is False
+    assert any("empty mesh" in note for note in body["notes"])
+    assert blender.seen == []
+
+
+def test_set_params_reports_a_blender_that_refuses_the_mesh(bridges, projects,
+                                                            fake_geometry,
+                                                            fake_blender):
+    projects("cup")
+    service = fake_geometry()
+    blender = fake_blender(by_type({
+        "partforge_open": {},
+        "load_mesh": lambda request: "faces reference vertex 9 of 4",
+    }))
+    client = bridges(env_extra={"FORGE_SERVICE_URL": service.url,
+                                "FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/set_params", payload={},
+                                  timeout=60)
+    assert status == 502, body
+    assert body["blender"] is True and body["loaded"] is False
+    assert body["error"] == "faces reference vertex 9 of 4"
+
+
+def test_set_params_of_a_project_that_is_not_one_is_a_404(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/..%5Cassistant/set_params", payload={})
+    assert status == 404
+    assert "No project called" in body["error"]
+
+
+# ===========================================================================
+# the workbench — POST /preview
+# ===========================================================================
+
+def preview_blender(written=None):
+    def render(request):
+        params = request.get("params") or {}
+        path = params.get("path")
+        if written is not None:
+            written.append(path)
+        write_png(path)
+        return {"path": path, "objects": params.get("objects") or [],
+                "view": params.get("view") or "iso", "resolution": 768,
+                "framed_all_visible": not params.get("objects"),
+                "bounds_mm": {"size": [10, 10, 10]}}
+    return by_type({"render_preview": render})
+
+
+def test_preview_renders_mints_a_token_and_serves_the_png(bridges, fake_blender,
+                                                          tmp_path):
+    written = []
+    blender = fake_blender(preview_blender(written))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    status, body = client.request("/preview", payload={}, timeout=60)
+    assert status == 200, body
+    assert body["token"] and body["url"] == "/file/" + body["token"]
+    # The path is the bridge's, never the client's.
+    assert os.path.dirname(body["path"]) == str(tmp_path / "previews")
+    assert written == [body["path"]]
+    assert body["framed_all_visible"] is True
+
+    # …and this is how the page actually shows a component.
+    status, headers, png = raw_get(client, body["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "image/png"
+    assert png == PNG
+
+
+def test_preview_passes_the_objects_and_the_view_through(bridges, fake_blender):
+    blender = fake_blender(preview_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request(
+        "/preview", payload={"objects": ["cup_collar"], "view": "front",
+                             "resolution": 512, "shading": "material"},
+        timeout=60)
+    assert status == 200, body
+    sent = blender.seen[0]["params"]
+    assert sent["objects"] == ["cup_collar"]
+    assert sent["view"] == "front" and sent["shading"] == "material"
+    assert sent["resolution"] == 512
+    assert body["view"] == "front"
+
+
+def test_preview_never_renders_to_a_path_the_client_named(bridges, fake_blender,
+                                                          tmp_path):
+    """A route that writes where it is told writes wherever it is told."""
+    blender = fake_blender(preview_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    hostile = str(tmp_path / "evil.png")
+    status, body = client.request("/preview", payload={"path": hostile},
+                                  timeout=60)
+    assert status == 200, body
+    assert blender.seen[0]["params"]["path"] != hostile
+    assert not os.path.exists(hostile)
+
+
+def test_preview_refuses_objects_that_are_not_names(bridges, fake_blender):
+    blender = fake_blender(preview_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/preview", payload={"objects": [{"name": "cup"}]})
+    assert status == 400
+    assert "object names" in body["error"]
+
+
+def test_preview_says_so_when_the_render_produced_no_file(bridges, fake_blender):
+    blender = fake_blender(by_type({
+        "render_preview": lambda request: {
+            "path": (request.get("params") or {}).get("path")}}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/preview", payload={}, timeout=60)
+    assert status == 502, body
+    assert "no readable" in body["error"]
+
+
+def test_preview_with_blender_closed_names_the_button_to_press(client):
+    status, body = client.request("/preview", payload={}, timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False
+    assert "Blender is not running" in body["error"]
+    assert "Start Server" in body["error"]
+
+
+# ===========================================================================
+# the workbench — GET/POST /scene and POST /scene/delete
+# ===========================================================================
+
+SCENE = {
+    "objects": [
+        {"name": "cup_core", "type": "MESH", "location": [0, 0, 0],
+         "dimensions": [0.152, 0.152, 0.062], "vertex_count": 4212,
+         "face_count": 4100, "modifiers": []},
+        {"name": "cup_collar", "type": "MESH", "location": [0, 0, 0.06],
+         "dimensions": [0.164, 0.164, 0.02], "vertex_count": 900,
+         "face_count": 880, "modifiers": []},
+    ],
+    "active": "cup_core",
+}
+
+
+def test_scene_is_get_scene_info_verbatim(bridges, fake_blender):
+    blender = fake_blender(by_type({"get_scene_info": SCENE}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/scene")
+    assert status == 200, body
+    assert [o["name"] for o in body["objects"]] == ["cup_core", "cup_collar"]
+    assert body["active"] == "cup_core"
+    assert blender.seen[0]["type"] == "get_scene_info"
+
+
+def test_scene_answers_a_post_too(bridges, fake_blender):
+    """Both verbs, because a page that got it wrong would silently show nothing."""
+    blender = fake_blender(by_type({"get_scene_info": SCENE}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/scene", payload={})
+    assert status == 200 and len(body["objects"]) == 2
+
+
+def test_scene_with_blender_closed_is_the_panels_own_sentence(client):
+    status, body = client.request("/scene", timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False
+    assert "Blender is not running" in body["error"]
+    assert "press N" in body["error"] and "Start Server" in body["error"]
+
+
+def test_scene_delete_scraps_one_object_and_says_it_is_undoable(bridges,
+                                                                fake_blender):
+    blender = fake_blender(by_type({"delete_object": {}}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/scene/delete", payload={"object": "cup_collar"})
+    assert status == 200, body
+    assert body["deleted"] == "cup_collar"
+    # The add-on pushes an undo step per state-changing command, so this is a
+    # fact rather than a comfort.
+    assert body["undo"] == "Ctrl+Z in Blender puts cup_collar back."
+    request = blender.seen[0]
+    assert request["type"] == "delete_object"
+    assert request["params"] == {"name": "cup_collar"}
+
+
+def test_scene_delete_needs_to_be_told_what_to_scrap(client):
+    status, body = client.request("/scene/delete", payload={})
+    assert status == 400
+    assert "Which object" in body["error"]
+
+
+def test_scene_delete_reports_blenders_refusal(bridges, fake_blender):
+    blender = fake_blender(by_type({
+        "delete_object": lambda request: "No object called 'ghost'."}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/scene/delete", payload={"object": "ghost"})
+    assert status == 502, body
+    assert body["error"] == "No object called 'ghost'."
+    assert body["blender"] is True
+
+
+def test_scene_delete_with_blender_closed_names_the_button(client):
+    status, body = client.request("/scene/delete", payload={"object": "cup"},
+                                  timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False
+
+
+# ===========================================================================
+# the flow buttons — the canned messages, verbatim
+# ===========================================================================
+
+#: The exact text each button sends. These are the product: an artist should
+#: never have to type this paragraph again, and a reworded one is a different
+#: instruction to the model.
+CANNED = {
+    "flow-print": (
+        "Get ready to print",
+        "Get the current work ready to print: merge what's in the scene if "
+        "needed, run the checks, fix what you can, segment if it doesn't fit "
+        "the bed, and export. Tell me what you did."),
+    "flow-godot": (
+        "Send to Godot",
+        "Take the current character through retopo/tags/rig if not done and "
+        "export it for Godot. Tell me where the files are."),
+    "flow-check": (
+        "Check my work",
+        "[check-in] Look at my work and tell me what you notice."),
+}
+
+
+@pytest.mark.parametrize("anchor", sorted(CANNED))
+def test_the_flow_buttons_carry_their_message_verbatim(client, anchor):
+    html = fetch_text(client, "/")
+    label, message = CANNED[anchor]
+    assert ('id="%s"' % anchor) in html
+    assert ('data-canned="%s"' % message) in html, message
+    assert (">%s<" % label) in html, label
+
+
+def test_the_check_in_button_says_exactly_what_the_addon_says():
+    """One phrase, two surfaces.
+
+    The system prompt keys its "checking their work" stance off this exact
+    opening, and the Blender panel's own Check my work button sends it — so a
+    reworded button here would be a check-in the model does not recognise.
+    """
+    path = os.path.join(REPO_ROOT, "addon", "forge", "tools", "buddy.py")
+    with open(path, encoding="utf-8") as handle:
+        source = handle.read()
+    assert ('CHECK_IN_LEAD = "%s"' % CANNED["flow-check"][1]) in source
+
+
+def test_the_flow_row_is_outside_both_panels(client):
+    """Always visible means always visible: above <main>, not inside a tab."""
+    html = fetch_text(client, "/")
+    row = html.index('id="flow-buttons"')
+    assert row < html.index("<main>")
+    assert row > html.index('id="tab-chat"')
+
+
+def test_the_workbench_tab_and_its_panel_are_wired_to_each_other(client):
+    html = fetch_text(client, "/")
+    assert 'aria-controls="panel-workbench"' in html
+    assert 'aria-labelledby="tab-workbench"' in html
+    # The three tabs the script knows about.
+    script = fetch_text(client, "/webui/app.js")
+    assert 'var TABS = ["chat", "workbench", "flows"];' in script
+
+
+# ===========================================================================
+# keep-alive: the bug the workbench found
+# ===========================================================================
+
+@pytest.mark.parametrize("first", ["/flows", "/scene", "/new", "/services/start"])
+def test_a_post_body_never_poisons_the_next_request_on_the_connection(bridges,
+                                                                     tmp_path,
+                                                                     first):
+    """Every POST handler must drain its body, even one that ignores it.
+
+    HTTP/1.1 here is keep-alive.  A body left in the socket is read as the
+    start of the *next* request on that connection, which surfaces as a 501
+    "Unsupported method ('{}GET')" on some later, innocent route — a bug that
+    looks like it belongs to whichever page happened to ask second.  A browser
+    reuses connections; urllib does not, so this test speaks http.client.
+    """
+    import http.client
+
+    client = bridges(env_extra={
+        "FORGE_START_SCRIPT": fake_start_script(tmp_path)})
+    connection = http.client.HTTPConnection("127.0.0.1", client.port, timeout=60)
+    try:
+        body = json.dumps({}).encode("utf-8")
+        connection.request("POST", first, body=body,
+                           headers={"Content-Type": "application/json"})
+        connection.getresponse().read()
+        # …and now the *next* request on the same socket.
+        connection.request("GET", "/health")
+        response = connection.getresponse()
+        payload = json.loads(response.read().decode("utf-8"))
+        assert response.status == 200, payload
+        assert payload["status"] == "ok"
+    finally:
+        connection.close()
+
+
+def test_the_page_explains_that_scrapping_is_undoable(client):
+    """The one destructive button on the page says what undoes it."""
+    html = fetch_text(client, "/")
+    assert "Ctrl+Z in Blender puts it back" in html
+    script = fetch_text(client, "/webui/app.js")
+    # …and it asks first, exactly once.
+    assert script.count("window.confirm(") == 1

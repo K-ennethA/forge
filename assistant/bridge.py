@@ -34,6 +34,26 @@ Phase 9 — the web UI's routes (all additive; the panel never calls them)::
 ``POST /flows``            passthrough to Blender's ``flow_list``
 ``POST /flows/run``        passthrough to Blender's ``flow_run``
 
+Phase 11 — the workbench's routes (also additive; also model-free)::
+
+``GET  /projects``                     every folder in ``FORGE_PROJECTS_DIR``,
+                                       with its ``spec.json`` and its part script
+``GET  /projects/<name>/schema``       that script's ``PARAMS``, resolved by the
+                                       geometry service's ``/parse_params`` and
+                                       cached against the file's mtime
+``POST /projects/<name>/set_params``   ``/generate`` with the artist's values,
+                                       then ``load_mesh`` with ``replace`` — the
+                                       same chain as ``partforge_generate``
+``POST /preview``                      ``render_preview`` to a path *this* bridge
+                                       chooses, handed back as a ``/file`` token
+``GET/POST /scene``                    ``get_scene_info``, verbatim
+``POST /scene/delete``                 ``delete_object`` (undoable in Blender)
+
+None of these spends a model turn: the workbench tab is the artist editing a
+part directly, and a slider that costs money per drag is a slider nobody drags.
+The bridge never *executes* the artist's script — that is the geometry service's
+job, in its own process, with its own venv.
+
 One waiting message (Phase 6e)
 ------------------------------
 Exactly one turn ever runs at a time — two in flight would fight over
@@ -113,6 +133,13 @@ Web UI environment (Phase 9)
 ``FORGE_SERVICE_URL``        geometry service, for ``/services/health``
                              (default http://127.0.0.1:8765)
 ``FORGE_MESHGEN_URL``        meshgen service, likewise (default 8902)
+``FORGE_PROJECTS_DIR``       the parametric projects the workbench lists
+                             (default ``<repo>/projects``; same variable the MCP
+                             server's ``partforge_new_part`` writes into)
+``FORGE_ASSISTANT_PREVIEWS`` where ``POST /preview`` writes its PNGs (default a
+                             ``forge-webui-previews`` folder in the temp dir)
+``FORGE_GENERATE_TIMEOUT``   seconds the workbench waits for one ``/generate``
+                             (default 300)
 """
 
 import base64
@@ -124,6 +151,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -251,6 +279,56 @@ FLOW_LIST_TIMEOUT = 20.0
 DEFAULT_FLOW_RUN_TIMEOUT = 900.0
 #: start_forge.ps1 probes three ports and waits up to 25 s for each.
 START_SERVICES_TIMEOUT = 180.0
+
+# ---------------------------------------------------------------------------
+# Phase 11 — the workbench's constants
+# ---------------------------------------------------------------------------
+
+#: One plain folder name under ``projects/``.  Deliberately the same alphabet as
+#: :data:`_ASSET_NAME_RE`: a percent sign is not in it, so an encoded traversal
+#: fails on the alphabet rather than on path arithmetic.
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+#: A script stem this generic names the *folder*, not the object.  Verbatim from
+#: docs/architecture.md's part-object naming convention, which both the add-on
+#: and the MCP server implement; the workbench has to agree with them or Apply
+#: replaces the mesh of an object nobody is looking at.
+GENERIC_STEMS = ("part", "main", "model", "script", "build", "generate",
+                 "__init__")
+#: Blender's own object-name ceiling, in bytes.
+MAX_OBJECT_NAME = 63
+
+#: Which ``.py`` in a project folder is *the* part, when spec.json does not say.
+PART_SCRIPT_PREFERENCE = ("part.py", "main.py", "model.py")
+
+#: ``PARAMS = {`` at the top level — the PartForge script contract's one marker.
+_PARAMS_RE = re.compile(r"^PARAMS\s*=", re.MULTILINE)
+
+#: How long a parsed schema stays fresh.  Briefly on purpose: the artist edits
+#: part.py in another window and presses Refresh, and waiting fifteen seconds
+#: for their own edit to appear is the kind of bug nobody reports.  The file's
+#: mtime invalidates it sooner anyway; this only stops a page that redraws twice
+#: from parsing twice.
+SCHEMA_CACHE_TTL = 15.0
+
+#: ``/parse_params`` builds no geometry, so it is a read.  ``/generate`` runs the
+#: artist's script through OCC and can be a minute on a fluted revolve.
+PARSE_TIMEOUT = 60.0
+DEFAULT_GENERATE_TIMEOUT = 300.0
+#: A render is a render: fitted camera, Workbench clay, a PNG on disk.
+PREVIEW_TIMEOUT = 180.0
+#: ``get_scene_info`` / ``delete_object`` are one main-thread hop each.
+SCENE_TIMEOUT = 30.0
+
+#: How many preview PNGs stay on disk.  They are a cache of pictures, not work.
+PREVIEWS_KEPT = 40
+
+#: What to tell an artist whose geometry service is not running.  Same shape as
+#: :data:`BLENDER_DOWN_HINT`: one sentence, one button to press.
+SERVICE_DOWN_HINT = (
+    "The shape service is not running, so parameters cannot be read or rebuilt. "
+    "Press Start services (it runs start_forge.ps1), then try again. (Expected "
+    "an HTTP server on %s.)")
 
 #: How many activity entries a job keeps.  Past this the MIDDLE is dropped: the
 #: first few say how the turn started, the last few say what it is doing now,
@@ -392,6 +470,39 @@ def flow_run_timeout():
                                DEFAULT_FLOW_RUN_TIMEOUT)).strip())
     except (TypeError, ValueError):
         return DEFAULT_FLOW_RUN_TIMEOUT
+    return max(5.0, value)
+
+
+def projects_dir():
+    """Where the parametric projects live.
+
+    The *same* variable the MCP server's ``partforge_new_part`` writes into, so
+    a part the assistant wrote one minute ago is in the workbench's picker the
+    next time it is opened.  Two names for one folder would be a bug that only
+    shows up on the machine that set the variable.
+    """
+    return os.path.abspath(str(_env("FORGE_PROJECTS_DIR",
+                                    os.path.join(REPO_ROOT, "projects"))))
+
+
+def previews_dir():
+    """Where ``POST /preview`` writes.  A cache of pictures, not the artist's work.
+
+    The temp dir rather than the repo: these are regenerated on every click, and
+    a folder of four hundred PNGs beside ``projects/`` is somebody's next
+    confused bug report about disk space.
+    """
+    return os.path.abspath(str(_env(
+        "FORGE_ASSISTANT_PREVIEWS",
+        os.path.join(tempfile.gettempdir(), "forge-webui-previews"))))
+
+
+def generate_timeout():
+    try:
+        value = float(str(_env("FORGE_GENERATE_TIMEOUT",
+                               DEFAULT_GENERATE_TIMEOUT)).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_GENERATE_TIMEOUT
     return max(5.0, value)
 
 
@@ -2176,6 +2287,308 @@ def blender_listening(timeout=1.0):
 
 
 # ---------------------------------------------------------------------------
+# Phase 11 — the workbench: the geometry service, from here
+# ---------------------------------------------------------------------------
+
+class ServiceDown(Exception):
+    """Nothing is listening on the geometry service's port."""
+
+
+class ServiceRefused(Exception):
+    """The service answered, and said no — usually about the artist's script."""
+
+
+def service_post(endpoint, payload, timeout=PARSE_TIMEOUT):
+    """One JSON POST to the geometry service.
+
+    A minimal reimplementation of ``mcp/forge_mcp/service_client.py`` for the
+    same reason :func:`blender_command` reimplements the socket client: this
+    process is stdlib-only and cannot import the MCP package.  The two failure
+    modes are kept apart deliberately — "not running" is a button to press and
+    "your script raised" is a message to read, and merging them produces the
+    worst error text in the product.
+    """
+    base = service_urls()["geometry"]
+    try:
+        body = json.dumps(payload, separators=(",", ":"), allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ServiceRefused("Those values are not valid JSON: %s" % exc)
+    request = urllib.request.Request(
+        base + endpoint, data=body.encode("utf-8"),
+        headers={"Content-Type": "application/json",
+                 "Accept": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            raw = response.read(256 * 1024 * 1024)
+    except urllib.error.HTTPError as exc:
+        # 400 is the service's own way of saying "this script/these values are
+        # wrong", and its message is the useful half of that answer.
+        detail = b""
+        try:
+            detail = exc.read(200000)
+        except OSError:
+            pass
+        text = detail.decode("utf-8", "replace")
+        message = None
+        try:
+            parsed = json.loads(text)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            message = parsed.get("error") or parsed.get("message")
+        raise ServiceRefused(str(message or text or "HTTP %s" % exc.code)[:4000])
+    except urllib.error.URLError:
+        raise ServiceDown(SERVICE_DOWN_HINT % base)
+    except socket.timeout:
+        raise ServiceRefused(
+            "The shape service did not finish within %.0f seconds. The script "
+            "may be building something very heavy." % timeout)
+    except OSError:
+        raise ServiceDown(SERVICE_DOWN_HINT % base)
+    try:
+        data = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        raise ServiceRefused("The shape service sent something that is not JSON.")
+    if not isinstance(data, dict):
+        raise ServiceRefused("The shape service sent a %s, not an answer object."
+                             % type(data).__name__)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — the workbench: projects on disk
+# ---------------------------------------------------------------------------
+
+def object_name_for_script(path):
+    """The Blender object a part script builds into.
+
+    docs/architecture.md's part-object naming convention, third implementation:
+    the script's stem, or its *folder* when the stem is generic, capped at 63
+    bytes.  ``projects/eevee-bowl-holder/part.py`` is "eevee-bowl-holder", not
+    "part" — which is the whole reason the rule exists.
+    """
+    base = os.path.basename(str(path or ""))
+    stem = os.path.splitext(base)[0]
+    parent = os.path.basename(os.path.dirname(str(path or "")))
+    if stem.lower() in GENERIC_STEMS and parent:
+        stem = parent
+    stem = stem.strip() or "Part"
+    encoded = stem.encode("utf-8")[:MAX_OBJECT_NAME]
+    return encoded.decode("utf-8", "ignore") or "Part"
+
+
+def project_dir(name):
+    """The absolute path of one project folder, or ``None``.
+
+    Same three gates as :func:`webui_asset`, and for the same reason: this name
+    arrives in a URL from a browser, and ``/projects/..%2F..%2Fsystem_prompt/``
+    must fail on the *shape* of the name rather than on path arithmetic.
+    """
+    text = str(name or "").strip()
+    if not text or text in (".", "..") or not _PROJECT_NAME_RE.match(text):
+        return None
+    root = projects_dir()
+    path = os.path.abspath(os.path.join(root, text))
+    if os.path.dirname(path) != root or not os.path.isdir(path):
+        return None
+    return path
+
+
+def read_spec(folder):
+    """``spec.json`` from a project folder, or ``None`` if it has none.
+
+    A spec that will not parse is not an error either: the parameters still work
+    without it, and a project the artist can no longer open because they left a
+    trailing comma in a comment file is a worse outcome than a missing sheet.
+    """
+    try:
+        with open(os.path.join(folder, "spec.json"), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def project_scripts(folder):
+    """Every ``.py`` in a project folder, the likeliest part first."""
+    try:
+        names = sorted(n for n in os.listdir(folder)
+                       if n.lower().endswith(".py")
+                       and os.path.isfile(os.path.join(folder, n)))
+    except OSError:
+        return []
+
+    def rank(name):
+        lowered = name.lower()
+        if lowered in PART_SCRIPT_PREFERENCE:
+            return (0, PART_SCRIPT_PREFERENCE.index(lowered), lowered)
+        if lowered.startswith("part"):
+            return (1, 0, lowered)
+        return (2, 0, lowered)
+
+    return sorted(names, key=rank)
+
+
+def script_has_params(path):
+    """Does this file carry a top-level ``PARAMS`` block?
+
+    Read rather than imported: the bridge never executes the artist's script —
+    that is the geometry service's job, in its own process, with its own venv.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            return bool(_PARAMS_RE.search(handle.read(400000)))
+    except OSError:
+        return False
+
+
+def read_script(path):
+    """The source of one part script, or ``None``."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+    except OSError:
+        return None
+
+
+def project_entry(folder):
+    """One project as the picker sees it, or ``None`` if it is not one."""
+    name = os.path.basename(folder)
+    spec = read_spec(folder)
+    scripts = project_scripts(folder)
+    wanted = str((spec or {}).get("script") or "").strip()
+    primary = ""
+    if wanted and wanted in scripts:
+        primary = wanted
+    elif scripts:
+        primary = scripts[0]
+    if not primary and spec is None:
+        # A folder with no script and no spec is somebody's notes, not a part.
+        return None
+    script_path = os.path.join(folder, primary) if primary else ""
+    return {
+        "name": name,
+        "path": folder,
+        "script": primary,
+        "script_path": script_path,
+        "scripts": scripts,
+        "spec": spec,
+        "has_params": bool(script_path) and script_has_params(script_path),
+        "object": object_name_for_script(script_path) if script_path else "",
+    }
+
+
+def scan_projects():
+    """Every project folder, with its spec, for the workbench's picker."""
+    root = projects_dir()
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return {"dir": root, "projects": [], "count": 0,
+                "note": "There is no projects folder at %s yet. Ask the "
+                        "assistant for a part and one appears." % root}
+    out = []
+    for name in names:
+        folder = os.path.join(root, name)
+        if not _PROJECT_NAME_RE.match(name) or not os.path.isdir(folder):
+            continue
+        entry = project_entry(folder)
+        if entry is not None:
+            out.append(entry)
+    return {"dir": root, "projects": out, "count": len(out)}
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — the workbench: the parameter schema, cached briefly
+# ---------------------------------------------------------------------------
+
+_SCHEMA_LOCK = threading.Lock()
+_SCHEMA_CACHE = {}
+
+
+def project_schema(script_path, refresh=False):
+    """``(params, cached)`` for one script, via the service's ``/parse_params``.
+
+    Cached against the file's mtime as well as the clock, so an edit made in
+    another window shows up on the next Refresh rather than fifteen seconds
+    later.  The cache exists only so that a page which draws itself twice does
+    not parse twice.
+    """
+    key = os.path.abspath(script_path)
+    try:
+        mtime = os.path.getmtime(key)
+    except OSError:
+        mtime = 0.0
+    now = time.time()
+    if not refresh:
+        with _SCHEMA_LOCK:
+            cached = _SCHEMA_CACHE.get(key)
+        if (cached and cached["mtime"] == mtime
+                and now - cached["at"] < SCHEMA_CACHE_TTL):
+            return cached["params"], True
+    source = read_script(key)
+    if source is None:
+        raise ServiceRefused("Could not read %s." % key)
+    data = service_post("/parse_params", {"script": source}, PARSE_TIMEOUT)
+    params = data.get("params")
+    params = params if isinstance(params, dict) else {}
+    with _SCHEMA_LOCK:
+        _SCHEMA_CACHE[key] = {"mtime": mtime, "at": now, "params": params}
+    return params, False
+
+
+def forget_schema(script_path=None):
+    """Drop one cached schema, or all of them."""
+    with _SCHEMA_LOCK:
+        if script_path is None:
+            _SCHEMA_CACHE.clear()
+        else:
+            _SCHEMA_CACHE.pop(os.path.abspath(script_path), None)
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — the workbench: previews
+# ---------------------------------------------------------------------------
+
+def prune_previews(directory, keep=PREVIEWS_KEPT):
+    """Delete all but the newest ``keep`` previews. Best effort, never fatal."""
+    try:
+        names = [os.path.join(directory, n) for n in os.listdir(directory)]
+    except OSError:
+        return 0
+    files = [p for p in names
+             if os.path.isfile(p) and p.lower().endswith(".png")]
+    if len(files) <= keep:
+        return 0
+    try:
+        files.sort(key=os.path.getmtime)
+    except OSError:
+        return 0
+    removed = 0
+    for path in files[:len(files) - keep]:
+        try:
+            os.remove(path)
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
+def new_preview_path():
+    """A fresh PNG path for one render, in a folder this bridge owns.
+
+    A new name every time, on purpose: the page shows the picture in an ``img``
+    and a browser that reuses a cached URL shows the artist the *previous*
+    shape, which is the single most misleading thing this feature could do.
+    """
+    directory = previews_dir()
+    os.makedirs(directory, exist_ok=True)
+    prune_previews(directory)
+    return os.path.join(directory, "preview-%s.png" % uuid.uuid4().hex[:12])
+
+
+# ---------------------------------------------------------------------------
 # Phase 9 — the health strip, fanned out from here
 # ---------------------------------------------------------------------------
 
@@ -2402,6 +2815,15 @@ class Handler(BaseHTTPRequestHandler):
         return self.rfile.read(length)
 
     def _read_json(self):
+        """The request body as an object, ``{}`` if there was none, ``None`` if
+        it was not JSON.
+
+        **Every** POST handler must call this, even one that ignores the body.
+        HTTP/1.1 here is keep-alive, so a body left unread stays in the socket
+        and is parsed as the start of the *next* request on that connection —
+        which surfaces as a 501 "Unsupported method ('{}GET')" on some later,
+        innocent route.  Draining is the whole fix.
+        """
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except (TypeError, ValueError):
@@ -2477,6 +2899,18 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/services/health":
             self._send(200, services_health())
             return
+
+        # -- the workbench (Phase 11) ------------------------------------
+        if path == "/projects":
+            self._send(200, scan_projects())
+            return
+        if path.startswith("/projects/") and path.endswith("/schema"):
+            self._schema(path[len("/projects/"):-len("/schema")],
+                         refresh="refresh=1" in self.path)
+            return
+        if path == "/scene":
+            self._scene()
+            return
         self._send(404, {"error": "Unknown path %s" % path})
 
     def _index(self):
@@ -2496,6 +2930,7 @@ class Handler(BaseHTTPRequestHandler):
             self._ask()
             return
         if path.startswith("/cancel/"):
+            self._read_json()   # drain, even though there is nothing to read
             job = JOBS.cancel(path[len("/cancel/"):])
             if job is None:
                 self._send(404, {"error": "No such job."})
@@ -2503,6 +2938,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, JOBS.snapshot(job["job_id"]))
             return
         if path == "/new":
+            self._read_json()
             JOBS.reset_session()
             self._send(200, {"status": "ok", "session": None})
             return
@@ -2512,6 +2948,7 @@ class Handler(BaseHTTPRequestHandler):
             self._upload()
             return
         if path == "/services/start":
+            self._read_json()
             status, payload = start_services()
             self._send(status, payload)
             return
@@ -2520,6 +2957,20 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/flows/run":
             self._flows_run()
+            return
+
+        # -- the workbench (Phase 11) ------------------------------------
+        if path.startswith("/projects/") and path.endswith("/set_params"):
+            self._set_params(path[len("/projects/"):-len("/set_params")])
+            return
+        if path == "/preview":
+            self._preview()
+            return
+        if path == "/scene":
+            self._scene()
+            return
+        if path == "/scene/delete":
+            self._scene_delete()
             return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -2670,6 +3121,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _flows(self):
         """``flow_list`` from Blender, verbatim."""
+        self._read_json()   # drain: see _read_json's note about keep-alive
         try:
             result = blender_command("flow_list", {}, FLOW_LIST_TIMEOUT)
         except BlenderDown as exc:
@@ -2708,6 +3160,271 @@ class Handler(BaseHTTPRequestHandler):
             self._send(502, {"error": str(exc), "blender": True})
             return
         self._send(200, result)
+
+    # -- the workbench's own handlers (Phase 11) -------------------------
+    def _project(self, name):
+        """``(entry, folder)`` for a project named in a URL, or ``(None, None)``.
+
+        Answers the client itself on a miss, with the same words for "that is
+        not a name" and "there is no such project": a route that can tell those
+        apart is a route that can be asked what folders exist.
+        """
+        folder = project_dir(name)
+        entry = project_entry(folder) if folder else None
+        if entry is None:
+            self._send(404, {"error": "No project called %r in %s."
+                                      % (str(name), projects_dir())})
+            return None, None
+        return entry, folder
+
+    def _schema(self, name, refresh=False):
+        """The part's ``PARAMS``, resolved by the service — the component sheet."""
+        entry, _folder = self._project(name)
+        if entry is None:
+            return
+        if not entry["script_path"]:
+            self._send(422, {"error": "%s has no part script to read parameters "
+                                      "from." % entry["name"],
+                             "project": entry["name"]})
+            return
+        try:
+            params, cached = project_schema(entry["script_path"], refresh=refresh)
+        except ServiceDown as exc:
+            # 503 and `service: false` together are what lets the page grey the
+            # sliders out and print one sentence instead of a stack trace.
+            self._send(503, {"error": str(exc), "service": False,
+                             "project": entry["name"]})
+            return
+        except ServiceRefused as exc:
+            self._send(502, {"error": str(exc), "service": True,
+                             "project": entry["name"]})
+            return
+        self._send(200, {
+            "project": entry["name"],
+            "script": entry["script"],
+            "script_path": entry["script_path"],
+            "object": entry["object"],
+            "params": params,
+            "count": len(params),
+            "cached": cached,
+            "spec": entry["spec"],
+        })
+
+    def _set_params(self, name):
+        """Rebuild the part with these values and put it back in the scene.
+
+        The order is not arbitrary.  ``/generate`` runs first so that a stopped
+        service is reported as a stopped service rather than as Blender
+        refusing a command it never got; ``partforge_open`` runs next so the
+        artist's panel is looking at the same script the page is; ``load_mesh``
+        with ``replace`` runs last, which is what keeps the object's transform,
+        its place in the outliner and the artist's selection.
+        """
+        entry, _folder = self._project(name)
+        if entry is None:
+            return
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        overrides = payload.get("overrides")
+        if overrides is None:
+            overrides = {}
+        if not isinstance(overrides, dict):
+            self._send(400, {"error": "'overrides' must be an object of "
+                                      "{parameter: value}."})
+            return
+        if not entry["script_path"]:
+            self._send(422, {"error": "%s has no part script to build."
+                                      % entry["name"]})
+            return
+        source = read_script(entry["script_path"])
+        if source is None:
+            self._send(422, {"error": "Could not read %s." % entry["script_path"]})
+            return
+
+        try:
+            built = service_post("/generate",
+                                 {"script": source, "overrides": overrides},
+                                 generate_timeout())
+        except ServiceDown as exc:
+            self._send(503, {"error": str(exc), "service": False})
+            return
+        except ServiceRefused as exc:
+            # The service's own words: "wall_mm must be between 1 and 6", which
+            # is the answer, not a symptom of one.
+            self._send(502, {"error": str(exc), "service": True})
+            return
+
+        stats = built.get("stats") if isinstance(built.get("stats"), dict) else {}
+        params = built.get("params") if isinstance(built.get("params"), dict) else {}
+        mesh = built.get("mesh") if isinstance(built.get("mesh"), dict) else {}
+        vertices = mesh.get("vertices") or []
+        faces = mesh.get("faces") or []
+        object_name = str(payload.get("object") or "").strip() or entry["object"]
+        answer = {
+            "project": entry["name"],
+            "script": entry["script"],
+            "object": object_name,
+            "overrides": overrides,
+            "params": params,
+            "stats": stats,
+            "loaded": False,
+            "notes": [],
+        }
+
+        if not vertices:
+            answer["notes"].append(
+                "The shape service returned an empty mesh, so there was nothing "
+                "to load — check what build() returns.")
+            self._send(200, answer)
+            return
+
+        try:
+            opened = blender_command(
+                "partforge_open",
+                {"script_path": entry["script_path"], "object": object_name,
+                 "keep_values": True},
+                FLOW_LIST_TIMEOUT)
+        except BlenderDown as exc:
+            # Built but not shown: the numbers are still worth having, and
+            # saying "Blender is not running" while hiding them is a lie of
+            # omission.
+            answer["error"] = str(exc)
+            answer["blender"] = False
+            self._send(503, answer)
+            return
+        except BlenderRefused as exc:
+            # Not fatal: the panel not following along is a smaller problem
+            # than the mesh not arriving, so the load is still attempted.
+            answer["notes"].append("The Forge panel did not follow along (%s)."
+                                   % exc)
+        else:
+            answer["panel"] = opened
+
+        try:
+            loaded = blender_command(
+                "load_mesh",
+                {"name": object_name, "vertices": vertices, "faces": faces,
+                 "replace": True},
+                generate_timeout())
+        except BlenderDown as exc:
+            answer["error"] = str(exc)
+            answer["blender"] = False
+            self._send(503, answer)
+            return
+        except BlenderRefused as exc:
+            answer["error"] = str(exc)
+            answer["blender"] = True
+            self._send(502, answer)
+            return
+
+        answer["loaded"] = True
+        answer["blender"] = True
+        answer["mesh"] = loaded
+        answer["object"] = str(loaded.get("object") or object_name)
+        self._send(200, answer)
+
+    def _preview(self):
+        """Render the scene (or some objects) and hand back a token for the PNG.
+
+        This is how the page *shows* components.  The path is chosen here and
+        never by the client — a route that renders to a path a browser names is
+        a route that writes files wherever it is told.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        objects = payload.get("objects")
+        if objects is None:
+            objects = []
+        if isinstance(objects, str):
+            objects = [objects]
+        if not isinstance(objects, list) or not all(
+                isinstance(item, str) for item in objects):
+            self._send(400, {"error": "'objects' must be a list of object names."})
+            return
+
+        params = {"path": new_preview_path()}
+        if objects:
+            params["objects"] = objects
+        for key in ("view", "shading"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                params[key] = value.strip()
+        resolution = payload.get("resolution")
+        if isinstance(resolution, (int, float)) and not isinstance(resolution, bool):
+            params["resolution"] = int(resolution)
+
+        try:
+            result = blender_command("render_preview", params, PREVIEW_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+
+        path = str(result.get("path") or params["path"])
+        token = FILES.mint(path)
+        if not token:
+            # The add-on said it rendered and there is nothing there.  Said
+            # plainly, because the alternative is a broken image icon.
+            self._send(502, {
+                "error": "Blender reported a render but there is no readable "
+                         "PNG at %s." % path,
+                "blender": True})
+            return
+        self._send(200, {
+            "token": token,
+            "url": "/file/%s" % token,
+            "path": path,
+            "objects": result.get("objects") or objects,
+            "view": result.get("view") or params.get("view") or "iso",
+            "framed_all_visible": bool(result.get("framed_all_visible")),
+            "bounds_mm": result.get("bounds_mm"),
+            "resolution": result.get("resolution"),
+        })
+
+    def _scene(self):
+        """``get_scene_info``, verbatim — the component sheet with no spec."""
+        self._read_json()   # drain: see _read_json's note about keep-alive
+        try:
+            result = blender_command("get_scene_info", {}, SCENE_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        self._send(200, result)
+
+    def _scene_delete(self):
+        """Scrap one object.  Undoable in Blender, and the answer says so."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        name = str(payload.get("object") or payload.get("name") or "").strip()
+        if not name:
+            self._send(400, {"error": "Which object? Pass {\"object\": ...}."})
+            return
+        try:
+            result = blender_command("delete_object", {"name": name}, SCENE_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        self._send(200, {
+            "deleted": name,
+            "result": result,
+            # Every state-changing socket command pushes its own undo step, so
+            # this is true rather than reassuring.
+            "undo": "Ctrl+Z in Blender puts %s back." % name,
+        })
 
 
 def serve(host="127.0.0.1", listen_port=None, ready=None):

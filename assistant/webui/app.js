@@ -59,6 +59,31 @@
     sessionCost: 0
   };
 
+  //: The workbench (Phase 11): the part being edited, its parameter controls,
+  //: and the last picture of it.  Kept apart from `state` because it survives
+  //: nothing — every one of these is refetched when the tab is opened.
+  var wb = {
+    projects: null,   // the last /projects answer
+    project: null,    // the selected entry from it
+    controls: {},     // parameter name -> its control
+    preview: null,    // the last /preview answer
+    scene: null       // the last /scene answer
+  };
+
+  function debounce(fn, ms) {
+    var timer = null;
+    return function () {
+      var args = arguments, self = this;
+      if (timer) { clearTimeout(timer); }
+      timer = setTimeout(function () { timer = null; fn.apply(self, args); }, ms);
+    };
+  }
+
+  function numberOr(value, fallback) {
+    var number = typeof value === "number" ? value : parseFloat(value);
+    return (typeof number === "number" && isFinite(number)) ? number : fallback;
+  }
+
   // ---------------------------------------------------------------- banner --
   function banner(kind, text, detail) {
     var box = el("div", "banner " + kind);
@@ -546,20 +571,583 @@
       }
       state.flows = res.data;
       renderFlows(res.data);
+      // The same flows, again, as one-click buttons in the row at the top.
+      renderFlowButtons(res.data);
+    });
+  }
+
+  // ------------------------------------------------------------ workbench --
+  //
+  // The second half of the product.  The chat is where a part is *asked* for;
+  // this is where it is edited — the dimensions on one side, the picture and
+  // the scene's own contents on the other.  Nothing here goes through the
+  // model: every button is a route on the bridge, so changing a number costs
+  // nothing and answers in the time a rebuild takes.
+
+  function card(title, cls) {
+    var box = el("div", "wb-card" + (cls ? " " + cls : ""));
+    if (title) { box.appendChild(el("h4", null, title)); }
+    return box;
+  }
+
+  function bullets(items) {
+    var list = el("ul");
+    items.forEach(function (item) { list.appendChild(el("li", null, item)); });
+    return list;
+  }
+
+  function setStatus(text, cls) {
+    var node = $("wb-status");
+    node.className = "wb-status" + (cls ? " " + cls : "");
+    node.textContent = text || "";
+  }
+
+  //: spec.json is the artist's file and Phase 11 is still growing it, so this
+  //: reads every shape a component list has been written in rather than one:
+  //: a list of names, a list of objects, or a map keyed by name.
+  function componentList(value, role) {
+    var out = [];
+    if (!value) { return out; }
+    function push(item, key) {
+      if (typeof item === "string") {
+        out.push({ name: key || item, role: role || "", description: key ? item : "" });
+        return;
+      }
+      if (!item || typeof item !== "object") { return; }
+      out.push({
+        name: String(item.name || item.object || key || item.script || "component"),
+        role: String(item.kind || item.role || item.type || role || ""),
+        description: String(item.description || item.note || "")
+      });
+    }
+    if (Object.prototype.toString.call(value) === "[object Array]") {
+      value.forEach(function (item) { push(item, null); });
+    } else if (typeof value === "object") {
+      Object.keys(value).forEach(function (key) {
+        if (key.charAt(0) === "_") { return; }
+        push(value[key], key);
+      });
+    }
+    return out;
+  }
+
+  function specComponents(spec) {
+    var out = componentList(spec.components, "");
+    out = out.concat(componentList(spec.core, "core"));
+    out = out.concat(componentList(spec.proposals, "proposal"));
+    if (spec.assembly) { out = out.concat(componentList(spec.assembly.parts, "")); }
+    return out;
+  }
+
+  function renderSheet(entry) {
+    var host = $("wb-sheet");
+    host.textContent = "";
+    if (!entry) {
+      host.appendChild(el("p", "muted small",
+        "Pick a part, or ask the assistant in the Chat tab for a new one."));
+      return;
+    }
+    var spec = entry.spec || {};
+
+    var about = card(entry.name);
+    if (spec.description) { about.appendChild(el("p", null, spec.description)); }
+    about.appendChild(el("p", "muted small",
+      (entry.script || "no script") + "  →  object “" + (entry.object || "?") + "”"));
+    host.appendChild(about);
+
+    var features = spec.features || [];
+    if (features.length) {
+      var box = card("What it is made of");
+      box.appendChild(bullets(features.map(String)));
+      host.appendChild(box);
+    }
+
+    var parts = specComponents(spec);
+    if (parts.length) {
+      var componentBox = card("Components");
+      componentBox.appendChild(bullets(parts.map(function (part) {
+        return part.name + (part.role ? " (" + part.role + ")" : "") +
+               (part.description ? " — " + part.description : "");
+      })));
+      componentBox.appendChild(el("p", "muted small",
+        "Scrap one you do not want from “In the scene”, or ask the assistant " +
+        "to redo just that piece."));
+      host.appendChild(componentBox);
+    }
+
+    var companions = spec.companion_parts || [];
+    if (companions.length) {
+      var companionBox = card("Prints separately");
+      companionBox.appendChild(bullets(companions.map(function (part) {
+        return String(part.name || part.script || "companion") +
+               (part.script ? " (" + part.script + ")" : "") +
+               (part.description ? " — " + part.description : "");
+      })));
+      host.appendChild(companionBox);
+    }
+  }
+
+  // -- one parameter ---------------------------------------------------
+  function makeControl(name, spec) {
+    spec = spec || {};
+    var start = spec.value;
+    var unit = String(spec.unit || "");
+    var row = el("div", "wb-param");
+
+    var label = el("div", "name");
+    label.appendChild(el("span", null, name));
+    if (unit) { label.appendChild(el("span", "unit", unit)); }
+    row.appendChild(label);
+
+    var baseline = start;
+    var control = { row: row };
+    var isBool = unit === "bool" || typeof start === "boolean";
+    var min = numberOr(spec.min, null);
+    var max = numberOr(spec.max, null);
+    var step = numberOr(spec.step, null);
+
+    // A debounce, because a slider fires on every pixel and the dirty count
+    // does not need to be recomputed sixty times a second.
+    var settled = debounce(function () { refreshDirty(); }, 180);
+
+    if (isBool) {
+      var box = el("input");
+      box.type = "checkbox";
+      box.checked = !!start;
+      box.id = "wbp-" + name;
+      label.setAttribute("for", box.id);
+      row.appendChild(box);
+      box.addEventListener("change", settled);
+      control.get = function () { return box.checked; };
+      control.set = function (value) { box.checked = !!value; };
+    } else if (typeof start === "number") {
+      var number = el("input");
+      number.type = "number";
+      number.value = String(start);
+      number.id = "wbp-" + name;
+      label.setAttribute("for", number.id);
+      if (min !== null) { number.min = String(min); }
+      if (max !== null) { number.max = String(max); }
+      number.step = (step !== null && step > 0) ? String(step)
+        : (Math.floor(start) === start ? "1" : "any");
+      row.appendChild(number);
+
+      var range = null;
+      if (min !== null && max !== null && max > min) {
+        range = el("input");
+        range.type = "range";
+        range.min = String(min);
+        range.max = String(max);
+        range.step = (step !== null && step > 0) ? String(step)
+                                                 : String((max - min) / 200);
+        range.value = String(start);
+        range.title = min + " to " + max + (unit ? " " + unit : "");
+        row.appendChild(range);
+        range.addEventListener("input", function () {
+          number.value = range.value;
+          settled();
+        });
+      }
+      number.addEventListener("input", function () {
+        if (range) { range.value = number.value; }
+        settled();
+      });
+      control.get = function () { return numberOr(number.value, start); };
+      control.set = function (value) {
+        number.value = String(value);
+        if (range) { range.value = String(value); }
+      };
+    } else {
+      var text = el("input");
+      text.type = "text";
+      text.id = "wbp-" + name;
+      label.setAttribute("for", text.id);
+      text.value = start == null ? "" : String(start);
+      row.appendChild(text);
+      text.addEventListener("input", settled);
+      control.get = function () { return text.value; };
+      control.set = function (value) { text.value = value == null ? "" : String(value); };
+    }
+
+    if (spec.description) { row.appendChild(el("div", "hint", spec.description)); }
+
+    control.changed = function () { return control.get() !== baseline; };
+    control.reset = function () { control.set(baseline); };
+    //: After a successful rebuild the values on screen ARE the part, so they
+    //: become the baseline — otherwise every slider stays orange for ever.
+    control.commit = function () { baseline = control.get(); };
+    return control;
+  }
+
+  function refreshDirty() {
+    var changed = [];
+    Object.keys(wb.controls).forEach(function (name) {
+      var control = wb.controls[name];
+      var isChanged = control.changed();
+      control.row.classList.toggle("is-changed", isChanged);
+      if (isChanged) { changed.push(name); }
+    });
+    if (changed.length) {
+      setStatus(changed.length + (changed.length === 1 ? " value" : " values") +
+                " changed — press Apply to rebuild", "warn");
+    } else {
+      setStatus("");
+    }
+  }
+
+  function renderParams(params) {
+    var host = $("wb-params");
+    host.textContent = "";
+    wb.controls = {};
+    var names = Object.keys(params || {});
+    if (!names.length) {
+      host.appendChild(el("p", "muted small",
+        "This part has no PARAMS block, so there is nothing to slide. Ask the " +
+        "assistant to add the dimensions you want to be able to change."));
+      $("wb-apply").disabled = true;
+      $("wb-reset").disabled = true;
+      return;
+    }
+    names.forEach(function (name) {
+      var control = makeControl(name, params[name]);
+      wb.controls[name] = control;
+      host.appendChild(control.row);
+    });
+    $("wb-apply").disabled = false;
+    $("wb-reset").disabled = false;
+    setStatus("");
+  }
+
+  function collectOverrides() {
+    var out = {};
+    Object.keys(wb.controls).forEach(function (name) {
+      out[name] = wb.controls[name].get();
+    });
+    return out;
+  }
+
+  // -- the parts on disk ------------------------------------------------
+  function findProject(name) {
+    var list = (wb.projects && wb.projects.projects) || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].name === name) { return list[i]; }
+    }
+    return null;
+  }
+
+  function paramsProblem(res) {
+    var host = $("wb-params");
+    host.textContent = "";
+    var data = res.data || {};
+    // The two failures are told apart on purpose: one is a button to press,
+    // the other is a message about the artist's own script.
+    var box = card(data.service === false ? "The shape service is not running"
+                                          : "Could not read the parameters", "bad");
+    box.appendChild(el("p", null,
+      data.error || ("The bridge answered " + res.status + ".")));
+    host.appendChild(box);
+    $("wb-apply").disabled = true;
+    $("wb-reset").disabled = true;
+    setStatus("");
+  }
+
+  function selectProject(name) {
+    var entry = findProject(name);
+    wb.project = entry;
+    wb.controls = {};
+    renderSheet(entry);
+    try { localStorage.setItem("forge.project", name || ""); } catch (e) { /* private mode */ }
+    if (!entry) {
+      $("wb-params").textContent = "";
+      return Promise.resolve();
+    }
+    var host = $("wb-params");
+    host.textContent = "";
+    host.appendChild(el("p", "muted small", "Reading the parameters…"));
+    return api("/projects/" + encodeURIComponent(name) + "/schema")
+      .then(function (res) {
+        if (wb.project !== entry) { return; }   // they picked another one
+        if (!res.ok) { paramsProblem(res); return; }
+        renderParams(res.data.params || {});
+      });
+  }
+
+  function loadProjects() {
+    return api("/projects").then(function (res) {
+      var picker = $("project");
+      if (!res.ok) {
+        picker.textContent = "";
+        $("wb-sheet").textContent = "";
+        var box = card("Could not read the projects folder", "bad");
+        box.appendChild(el("p", null,
+          res.data.error || ("The bridge answered " + res.status + ".")));
+        $("wb-sheet").appendChild(box);
+        return;
+      }
+      wb.projects = res.data;
+      var list = res.data.projects || [];
+      var previous = picker.value;
+      picker.textContent = "";
+      if (!list.length) {
+        var none = el("option", null, "no parts yet");
+        none.value = "";
+        picker.appendChild(none);
+        $("wb-params").textContent = "";
+        $("wb-sheet").textContent = "";
+        var empty = card("Nothing in projects/ yet");
+        empty.appendChild(el("p", null, res.data.note ||
+          "Ask the assistant in the Chat tab for a part and it appears here."));
+        $("wb-sheet").appendChild(empty);
+        return;
+      }
+      list.forEach(function (project) {
+        var option = el("option", null,
+          project.name + (project.has_params ? "" : "  (no parameters)"));
+        option.value = project.name;
+        picker.appendChild(option);
+      });
+      var saved = null;
+      try { saved = localStorage.getItem("forge.project"); } catch (e) { saved = null; }
+      var wanted = [previous, saved, list[0].name].filter(function (name) {
+        return name && findProject(name);
+      })[0];
+      picker.value = wanted;
+      return selectProject(wanted);
+    });
+  }
+
+  function statsLine(data) {
+    var stats = data.stats || {};
+    var bits = [];
+    if (stats.face_count) { bits.push(stats.face_count + " faces"); }
+    var box = stats.bounding_box_mm;
+    if (box && box.length === 3) {
+      bits.push(box.map(function (v) { return Math.round(v * 10) / 10; }).join(" × ") + " mm");
+    }
+    if (stats.watertight === false) { bits.push("NOT watertight"); }
+    else if (stats.watertight === true) { bits.push("watertight"); }
+    return "Rebuilt " + (data.object || "the part") +
+           (bits.length ? " — " + bits.join(", ") : "") + ".";
+  }
+
+  function applyParams() {
+    if (!wb.project) { return Promise.resolve(); }
+    var button = $("wb-apply");
+    button.disabled = true;
+    setStatus("rebuilding…");
+    return api("/projects/" + encodeURIComponent(wb.project.name) + "/set_params",
+               { body: { overrides: collectOverrides() } })
+      .then(function (res) {
+        button.disabled = false;
+        var data = res.data || {};
+        if (!res.ok) {
+          setStatus(data.error || ("The bridge answered " + res.status + "."), "bad");
+          banner("error", data.error || ("The bridge answered " + res.status + "."));
+          refreshHealth();
+          return;
+        }
+        Object.keys(wb.controls).forEach(function (name) {
+          wb.controls[name].commit();
+        });
+        refreshDirty();
+        setStatus(statsLine(data) + (data.loaded ? "" : " Not loaded into Blender."));
+        (data.notes || []).forEach(function (note) { banner("info", note); });
+        if (data.loaded) {
+          renderPreview(data.object ? [data.object] : null);
+          loadScene();
+        }
+      });
+  }
+
+  function resetParams() {
+    Object.keys(wb.controls).forEach(function (name) { wb.controls[name].reset(); });
+    refreshDirty();
+  }
+
+  // -- the picture ------------------------------------------------------
+  function placeholder(text) {
+    var host = $("wb-preview");
+    host.textContent = "";
+    host.appendChild(el("div", "placeholder", text));
+  }
+
+  function renderPreview(objects) {
+    placeholder("rendering…");
+    var body = { view: $("wb-view").value };
+    if (objects && objects.length) { body.objects = objects; }
+    return api("/preview", { body: body }).then(function (res) {
+      if (!res.ok) {
+        placeholder(res.data.error || ("The bridge answered " + res.status + "."));
+        return;
+      }
+      wb.preview = res.data;
+      var host = $("wb-preview");
+      host.textContent = "";
+      var img = el("img");
+      // A fresh path per render, so the browser can never show the previous
+      // shape from its cache — which would be the most misleading bug here.
+      img.src = res.data.url;
+      img.alt = (res.data.objects || []).join(", ") || "the scene";
+      img.title = res.data.path;
+      host.appendChild(img);
+    });
+  }
+
+  // -- what Blender is holding ------------------------------------------
+  function sceneRow(object, active, unitScale) {
+    var row = el("div", "wb-object" + (object.name === active ? " is-active" : ""));
+    var who = el("div", "who");
+    who.appendChild(el("b", null, object.name));
+    var bits = [];
+    var size = object.dimensions || [];
+    // `dimensions` is in Blender units, and one of those is `unit_scale`
+    // metres — which get_scene_info reports for exactly this reason. Forge's
+    // convention is 1 BU = 1 mm-of-a-metre, i.e. scale 1.0, but a file the
+    // artist made elsewhere may not be, and a size printed in the wrong unit is
+    // worse than no size at all.
+    var toMillimetres = 1000 * numberOr(unitScale, 1) || 1000;
+    if (size.length === 3) {
+      bits.push(size.map(function (v) {
+        return Math.round(v * toMillimetres * 10) / 10;
+      }).join(" × ") + " mm");
+    }
+    if (object.vertex_count) { bits.push(object.vertex_count + " verts"); }
+    if (object.type && object.type !== "MESH") { bits.push(String(object.type).toLowerCase()); }
+    who.appendChild(el("span", "dims", bits.join("  ·  ")));
+    row.appendChild(who);
+
+    var preview = el("button", "btn tiny", "Preview");
+    preview.type = "button";
+    preview.title = "Render just this one";
+    preview.addEventListener("click", function () { renderPreview([object.name]); });
+    row.appendChild(preview);
+
+    var scrap = el("button", "btn tiny", "Scrap");
+    scrap.type = "button";
+    scrap.title = "Delete it from the scene (Ctrl+Z in Blender puts it back)";
+    scrap.addEventListener("click", function () { scrapObject(object.name); });
+    row.appendChild(scrap);
+    return row;
+  }
+
+  function renderScene(data) {
+    var host = $("scene");
+    host.textContent = "";
+    var objects = (data && data.objects) || [];
+    if (!objects.length) {
+      host.appendChild(el("p", "muted small", "Blender's scene is empty."));
+      return;
+    }
+    objects.forEach(function (object) {
+      host.appendChild(sceneRow(object, data.active, data.unit_scale));
+    });
+  }
+
+  function loadScene() {
+    var host = $("scene");
+    return api("/scene").then(function (res) {
+      host.textContent = "";
+      if (!res.ok) {
+        // Blender closed is the common case, and the bridge's message is the
+        // same sentence the Blender panel uses. One line, one thing to do.
+        var box = card(res.data.blender === false ? "Blender is not open"
+                                                  : "Could not read the scene", "bad");
+        box.appendChild(el("p", null,
+          res.data.error || ("The bridge answered " + res.status + ".")));
+        host.appendChild(box);
+        return;
+      }
+      wb.scene = res.data;
+      renderScene(res.data);
+    });
+  }
+
+  function scrapObject(name) {
+    if (!window.confirm("Scrap “" + name + "”?\n\nIt is deleted from the " +
+                        "Blender scene. Ctrl+Z in Blender puts it back.")) {
+      return;
+    }
+    api("/scene/delete", { body: { object: name } }).then(function (res) {
+      if (!res.ok) {
+        banner("error", res.data.error || ("The bridge answered " + res.status + "."));
+        return;
+      }
+      banner("info", res.data.undo || (name + " is gone from the scene."));
+      loadScene();
+    });
+  }
+
+  function loadWorkbench() {
+    loadProjects();
+    loadScene();
+  }
+
+  // -------------------------------------------------------- flow buttons --
+  //
+  // Always visible, on every tab.  The three canned ones are chat messages —
+  // the assistant already knows how to do these jobs and each one is several
+  // tools deep, so the button's whole job is to save the artist typing the
+  // same paragraph again.  Saved flows are added beside them and run in
+  // Blender directly, with no model in the loop.
+
+  function sendCanned(message) {
+    showTab("chat");
+    $("message").value = message;
+    resize();
+    send();
+  }
+
+  function runSavedFlow(flow, button) {
+    var label = button.textContent;
+    button.disabled = true;
+    button.textContent = "running…";
+    api("/flows/run", { body: { name: flow.name } }).then(function (res) {
+      button.disabled = false;
+      button.textContent = label;
+      if (!res.ok) {
+        banner("error", res.data.error || ("The bridge answered " + res.status + "."));
+        return;
+      }
+      var report = res.data || {};
+      banner("info", flow.name + " — " + (report.count || 0) + " steps in " +
+             ((report.duration_ms || 0) / 1000).toFixed(1) + " s.",
+             (report.steps || []).map(function (step) {
+               return (step.label || step.op) + " — " + (step.brief || "ok");
+             }).join("\n"));
+      loadScene();
+    });
+  }
+
+  function renderFlowButtons(data) {
+    var host = $("saved-flows");
+    host.textContent = "";
+    ((data && data.flows) || []).slice(0, 6).forEach(function (flow) {
+      if (flow.error) { return; }
+      var button = el("button", "btn tiny saved", flow.name);
+      button.type = "button";
+      button.title = (flow.description || flow.name) +
+                     "\nRuns in Blender with its saved defaults.";
+      button.addEventListener("click", function () { runSavedFlow(flow, button); });
+      host.appendChild(button);
     });
   }
 
   // ----------------------------------------------------------------- tabs --
+  var TABS = ["chat", "workbench", "flows"];
+
   function showTab(which) {
-    var chat = which === "chat";
-    $("panel-chat").hidden = !chat;
-    $("panel-flows").hidden = chat;
-    $("tab-chat").classList.toggle("is-active", chat);
-    $("tab-flows").classList.toggle("is-active", !chat);
-    $("tab-chat").setAttribute("aria-selected", String(chat));
-    $("tab-flows").setAttribute("aria-selected", String(!chat));
-    if (!chat && state.flows === null) { loadFlows(); }
-    if (chat) { scrollDown(); }
+    if (TABS.indexOf(which) < 0) { which = "chat"; }
+    TABS.forEach(function (name) {
+      var on = name === which;
+      document.getElementById("panel-" + name).hidden = !on;
+      var tab = document.getElementById("tab-" + name);
+      tab.classList.toggle("is-active", on);
+      tab.setAttribute("aria-selected", String(on));
+    });
+    if (which === "flows" && state.flows === null) { loadFlows(); }
+    if (which === "workbench" && wb.projects === null) { loadWorkbench(); }
+    if (which === "chat") { scrollDown(); }
+    try { localStorage.setItem("forge.tab", which); } catch (e) { /* private mode */ }
   }
 
   // ------------------------------------------------------------------ wire --
@@ -640,7 +1228,30 @@
 
     $("flows-refresh").addEventListener("click", loadFlows);
     $("tab-chat").addEventListener("click", function () { showTab("chat"); });
+    $("tab-workbench").addEventListener("click", function () { showTab("workbench"); });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
+
+    // -- the workbench
+    $("projects-refresh").addEventListener("click", loadWorkbench);
+    $("project").addEventListener("change", function () {
+      selectProject($("project").value);
+    });
+    $("wb-apply").addEventListener("click", applyParams);
+    $("wb-reset").addEventListener("click", resetParams);
+    $("wb-preview-refresh").addEventListener("click", function () {
+      renderPreview(wb.project && wb.project.object ? [wb.project.object] : null);
+    });
+    $("wb-view").addEventListener("change", function () {
+      if (wb.preview) { renderPreview(wb.preview.objects); }
+    });
+    $("scene-refresh").addEventListener("click", loadScene);
+
+    // -- the flow buttons: canned chat messages, verbatim from the markup
+    document.querySelectorAll("[data-canned]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        sendCanned(button.dataset.canned);
+      });
+    });
 
     document.querySelectorAll("[data-starter]").forEach(function (chip) {
       chip.addEventListener("click", function () {
@@ -659,10 +1270,18 @@
 
     wire();
     resize();
+    placeholder("Press Render to look at what is in the scene.");
     loadJobs();
     refreshHealth();
+    // The flow row is on every tab, so its saved-flow buttons are fetched at
+    // startup rather than when the Flows tab is first opened.  Blender being
+    // closed just means there are none to add.
+    loadFlows();
+    var tab = "chat";
+    try { tab = localStorage.getItem("forge.tab") || "chat"; } catch (e) { tab = "chat"; }
+    showTab(tab);
     setInterval(refreshHealth, 15000);
-    $("message").focus();
+    if (tab === "chat") { $("message").focus(); }
   }
 
   if (document.readyState === "loading") {

@@ -31,9 +31,27 @@
 <nav class="tabs" role="tablist">
   <button type="button" class="tab is-active" id="tab-chat" role="tab"
           aria-selected="true" aria-controls="panel-chat">Chat</button>
+  <button type="button" class="tab" id="tab-workbench" role="tab"
+          aria-selected="false" aria-controls="panel-workbench">Workbench</button>
   <button type="button" class="tab" id="tab-flows" role="tab"
           aria-selected="false" aria-controls="panel-flows">Flows</button>
 </nav>
+
+<!-- The flow buttons live OUTSIDE the panels on purpose: they are the two or
+     three things an artist actually wants to press, and they should be one
+     click away whichever tab is open. -->
+<div class="flowbar" id="flow-buttons" aria-label="Common flows">
+  <button type="button" class="btn flowbtn" id="flow-print"
+          title="Merge, check, fix, segment if needed, export"
+          data-canned="Get the current work ready to print: merge what's in the scene if needed, run the checks, fix what you can, segment if it doesn't fit the bed, and export. Tell me what you did.">Get ready to print</button>
+  <button type="button" class="btn flowbtn" id="flow-godot"
+          title="Retopo, tags, rig, then a .glb for Godot"
+          data-canned="Take the current character through retopo/tags/rig if not done and export it for Godot. Tell me where the files are.">Send to Godot</button>
+  <button type="button" class="btn flowbtn" id="flow-check"
+          title="A second pair of eyes on what you have now"
+          data-canned="[check-in] Look at my work and tell me what you notice.">Check my work</button>
+  <span class="flowbar-saved" id="saved-flows"></span>
+</div>
 
 <div class="banner-slot" id="banners" aria-live="polite"></div>
 
@@ -80,6 +98,63 @@
         <span class="composer-status" id="composer-status"></span>
       </div>
     </form>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-workbench" role="tabpanel"
+           aria-labelledby="tab-workbench" hidden>
+    <div class="wb-grid">
+
+      <div class="wb-col">
+        <div class="wb-head">
+          <div>
+            <h2>Component sheet</h2>
+            <p class="muted">Every part in <code>projects/</code>, its
+               dimensions and what it is made of. Change a number, press Apply,
+               and the part is rebuilt in Blender in place.</p>
+          </div>
+          <button type="button" class="btn ghost" id="projects-refresh">Refresh</button>
+        </div>
+
+        <div class="wb-picker">
+          <label for="project">Part</label>
+          <select id="project" class="select"></select>
+        </div>
+
+        <div id="wb-sheet"></div>
+
+        <div id="wb-params" class="wb-params"></div>
+
+        <div class="wb-actions">
+          <button type="button" class="btn primary" id="wb-apply">Apply &amp; rebuild</button>
+          <button type="button" class="btn ghost" id="wb-reset">Reset values</button>
+          <span class="wb-status" id="wb-status"></span>
+        </div>
+      </div>
+
+      <div class="wb-col">
+        <div class="wb-head">
+          <h3>Preview</h3>
+          <select id="wb-view" class="select tiny" title="Which way to look at it">
+            <option value="iso" selected>3/4 view</option>
+            <option value="front">Front</option>
+            <option value="side">Side</option>
+            <option value="top">Top</option>
+          </select>
+          <button type="button" class="btn ghost tiny" id="wb-preview-refresh">Render</button>
+        </div>
+        <div id="wb-preview" class="wb-preview"></div>
+
+        <div class="wb-head">
+          <h3>In the scene</h3>
+          <button type="button" class="btn ghost tiny" id="scene-refresh">Refresh</button>
+        </div>
+        <p class="muted small">Everything Blender is holding right now. Scrap
+           removes one piece — Ctrl+Z in Blender puts it back.</p>
+        <div id="scene"></div>
+      </div>
+
+    </div>
   </section>
 
   <!-- ------------------------------------------------------------------ -->

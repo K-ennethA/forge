@@ -54,9 +54,11 @@ One job at a time, on purpose: two turns in flight would fight over the same
 resumed session. The last 20 jobs stay in memory; older ids 404.
 
 The bridge serves a second surface as well — a web UI at `/`, with its own
-routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`). They are
-additive, the panel never calls them, and they are documented under
-[The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface).
+routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`, and the
+workbench's `/projects`, `/preview`, `/scene`). They are additive, the panel
+never calls them, and they are documented under
+[The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface) and
+[The Workbench (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box).
 
 ## One message may wait its turn
 
@@ -314,6 +316,8 @@ Drag-and-drop and paste-a-screenshot go through the same `/upload`.
 - **Flows tab**: the saved flows with their params, and a Run button that goes
   straight to Blender with no model in the loop. Blender being closed is a
   sentence naming the button to press, not a stack trace.
+- **Workbench tab** and the **flow row above all three panels** — Phase 11, and
+  the rest of this section's worth of page. It is [below](#the-workbench-phase-11--the-page-stops-being-a-chat-box).
 
 `format.js` is the reply formatter, ~90 lines and no markdown library: blank-line
 paragraphs (single newlines kept as breaks), `- ` and `1. ` lists, `#` headings,
@@ -323,6 +327,138 @@ can put a tag on the page — the tests run the real file under node and assert
 that the only tags coming out are the ones the formatter itself makes.
 `innerHTML` is assigned in exactly one place in `app.js`, from that function; a
 test fails if a second one appears.
+
+## The Workbench (Phase 11) — the page stops being a chat box
+
+The artist's own words for what was wrong with Phase 9: *"On the UI it's pretty
+much just a chat bot, but I should be given little windows to edit my
+components… I'd like to have a sheet of what makes up the object, like CAD,
+where I can see the components so I can edit parts of it."*
+
+So there is a Workbench tab between Chat and Flows, and **none of it spends a
+model turn** — a slider that costs money per drag is a slider nobody drags. Every control
+is a route on this bridge: a slider move is a `/generate` and a `load_mesh`, a
+Preview is a `render_preview`, a Scrap is a `delete_object`. Changing a number
+costs nothing and answers in the time a rebuild takes, which is the difference
+between editing a part and *asking somebody* to edit a part.
+
+### The flow row — on every tab
+
+The row sits above `<main>`, outside all three panels, because these are the
+things an artist actually presses and they should not be a tab away (a test
+asserts the position, not just the markup). The three fixed ones send a **canned
+chat message** — the assistant already knows how to do these jobs, and each is
+several tools deep, so the button's whole purpose is that the paragraph never
+has to be typed again:
+
+| Button | What it sends, verbatim |
+|---|---|
+| Get ready to print | `Get the current work ready to print: merge what's in the scene if needed, run the checks, fix what you can, segment if it doesn't fit the bed, and export. Tell me what you did.` |
+| Send to Godot | `Take the current character through retopo/tags/rig if not done and export it for Godot. Tell me where the files are.` |
+| Check my work | `[check-in] Look at my work and tell me what you notice.` |
+
+The last one is *character-for-character* the add-on's `CHECK_IN_LEAD` and the
+phrase `system_prompt.md` keys its "checking their work" stance off — a test
+asserts that, because a reworded button would be a check-in the model does not
+recognise. Saved flows from `/flows` are added to the same row as extra buttons
+and run in Blender directly, with no model in the loop.
+
+### The component sheet
+
+The picker lists every folder in `projects/` (`FORGE_PROJECTS_DIR` — the same
+variable `partforge_new_part` writes into, so a part the assistant wrote a
+minute ago is already there). Picking one draws:
+
+- **what it is** — `spec.json`'s description, the script, and the Blender object
+  it builds into;
+- **what it is made of** — the spec's `features`, its `components` (read
+  liberally: a list of names, a list of objects, or a map, plus `core` /
+  `proposals` / `assembly.parts`, so the Phase 11 component tree lands without a
+  second reader), and its `companion_parts` under "prints separately";
+- **the dimensions** — one row per `PARAMS` entry, resolved by the service's
+  `/parse_params`: a labelled slider when the schema gives `min` and `max`
+  (stepped by `step`), a number box beside it that is always the authority, a
+  checkbox for a `bool`, the unit next to the name and the description under it.
+  Both inputs drive each other, debounced, and a row whose value has moved goes
+  amber until Apply.
+
+**Apply & rebuild** posts every value to `/projects/<name>/set_params` and the
+part comes back changed in place, then renders itself into the preview beside
+it. **Reset values** puts the schema's defaults back.
+
+### The scene panel and the preview
+
+`GET /scene` is `get_scene_info` verbatim — what Blender is holding *right now*,
+which is the component sheet for work that has no spec (a generated mesh, a
+sculpt, the pieces a segment produced). Each object gets its size in millimetres
+and two buttons: **Preview** renders that one object, and **Scrap** deletes it
+after one confirm. Scrap is the only destructive control on the page, and both
+the button and the bridge's own answer say the same true thing — every
+state-changing socket command pushes its own undo step, so Ctrl+Z in Blender
+puts it back.
+
+`POST /preview` renders to a path **this bridge chooses**, mints a token for it
+and hands back the URL; the picture is then served by the same `/file/<token>`
+allow-list as everything else. The path is never taken from the client, and the
+name is fresh every time — a reused URL is a browser cache showing the artist
+the *previous* shape, which is the most misleading thing this feature could do.
+The folder keeps its newest 40.
+
+### The workbench's routes
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/projects` | — | `{"dir", "count", "projects": [{"name", "path", "script", "script_path", "scripts", "spec", "has_params", "object"}]}` |
+| GET | `/projects/<name>/schema` | `?refresh=1` skips the cache | `{"project", "script", "script_path", "object", "params", "count", "cached", "spec"}`; **503** service down (with `"service": false`), **502** the service refused the script, **422** the project has no script to read, **404** no such project |
+| POST | `/projects/<name>/set_params` | `{"overrides": {param: value}, "object"?}` | `{"project", "object", "overrides", "params", "stats", "loaded", "mesh", "notes"}`; **503** service or Blender down, **502** either one refused, **422** nothing to build, **400** a body that is not `{param: value}` |
+| POST | `/preview` | `{"objects"?, "view"?, "resolution"?, "shading"?}` | `{"token", "url", "path", "objects", "view", "bounds_mm", ...}`; **503** Blender down, **502** it refused or wrote nothing |
+| GET/POST | `/scene` | — | `get_scene_info`, verbatim |
+| POST | `/scene/delete` | `{"object"}` | `{"deleted", "result", "undo"}` |
+
+`set_params` is a three-step chain and **the order is not arbitrary**:
+
+1. `POST /generate` on the geometry service, so a stopped service is reported as
+   a stopped service rather than as Blender refusing a command it never got;
+2. `partforge_open` on the socket, so the artist's Forge panel is pointed at the
+   same script the page is — best effort: a panel that will not follow along is
+   a smaller problem than a mesh that does not arrive, and it becomes a note;
+3. `load_mesh` with `replace: true`, which is what keeps the object's transform,
+   its place in the outliner and the artist's selection through a rebuild.
+
+The object name is derived by `bridge.object_name_for_script` — the stem, or the
+*folder* when the stem is generic (`part.py`, `main.py`, …). That is
+`docs/architecture.md`'s part-object naming convention, implemented here for the
+third time (the add-on and the MCP server are the other two) on purpose: get it
+wrong and Apply replaces the mesh of an object nobody is looking at, and the
+artist watches a slider do nothing.
+
+The bridge **never runs the artist's script**. `has_params` is a read for a
+top-level `PARAMS =`, and everything that needs the script executed goes to the
+geometry service, in its own process, with its own venv.
+
+### When something is not running
+
+- **Blender closed** — the scene panel, Preview and Apply each answer with the
+  *panel's own sentence*: "Blender is not running, or the Forge add-on's server
+  is stopped. Open Blender, press N in the 3D view, click the Forge tab, and
+  press Start Server — then try again." One line, one thing to do, the same
+  words on both surfaces. A rebuild that got as far as the service still returns
+  its `stats` alongside the 503: built but not shown, said plainly.
+- **Shape service stopped** — the parameters are replaced by one sentence naming
+  the button in the top bar ("Press Start services"), and Apply and Reset are
+  disabled rather than left to fail.
+- **Neither** — the sheet still lists what is in `projects/` and shows every
+  spec, because that is a folder read and nothing else.
+
+### A keep-alive bug this tab found
+
+`POST /flows` ignored its request body, and HTTP/1.1 here is keep-alive: the
+unread `{}` stayed in the socket and was parsed as the start of the *next*
+request on that connection, which arrived as a 501 `Unsupported method
+('{}GET')` on whatever innocent route asked second. It was invisible until a
+page made two POSTs in a row. Every POST handler now drains, even the ones with
+nothing to read, and a test walks each of them over one `http.client` connection
+and then asks for `/health`.
 
 ## The command line it builds
 
@@ -383,6 +519,9 @@ The web UI's own, all optional:
 | `FORGE_MESHGEN_URL` | `http://127.0.0.1:8902` | Image-to-3D service, likewise |
 | `FORGE_BLENDER_HOST` / `FORGE_BLENDER_PORT` | `127.0.0.1` / `9876` | The add-on socket the flows passthrough talks to |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900` | Seconds a `/flows/run` may take (a segment is minutes) |
+| `FORGE_PROJECTS_DIR` | `<repo>/projects` | The parts the workbench lists — **the same variable** `partforge_new_part` writes into |
+| `FORGE_ASSISTANT_PREVIEWS` | `<temp>/forge-webui-previews` | Where `POST /preview` renders to |
+| `FORGE_GENERATE_TIMEOUT` | `300` | Seconds one workbench rebuild may take |
 
 ## Finding the CLI on Windows
 
@@ -495,20 +634,42 @@ bridge must pass are deliberately independent: the bridge always asks for
 stream-json, and the json modes prove it still copes with a build that answers
 with one object anyway.
 
-`assistant/tests/test_webui.py` is the web UI's half of the suite (124 tests
-beside `test_bridge.py`'s 90). It never touches port 8901: every bridge it
-starts is on a port the OS handed out, and the Blender socket, the two
-downstream services and the start script all have fakes in the file, so nothing
-in it needs Blender, PowerShell or the internet. What it pins down: the page and
-its assets are served and **only** they are (traversal, encoded traversal,
-`system_prompt.md` and unknown file types are all 404); every element id
-`app.js` reaches for exists in the page it was served with; the page fetches
-nothing off this machine and calls no route this bridge does not serve; tokens
-are minted inbound and `/file` serves nothing that was not; upload caps, magic
-bytes and hostile filenames; `/services/health` answers with everything down;
-and `/flows` passing through to a fake socket, including one that hangs up and
-one that answers with junk. The formatter tests run `format.js` for real under
-node when there is one, and skip when there is not.
+`assistant/tests/test_webui.py` is the web UI's half of the suite (214 tests
+beside `test_bridge.py`'s 90, so **304** in all). It never touches port 8901:
+every bridge it starts is on a port the OS handed out, and the Blender socket,
+the geometry service, the two downstream health probes and the start script all
+have fakes in the file, so nothing in it needs Blender, PowerShell or the
+internet. `FORGE_PROJECTS_DIR` is pointed at the test's own `tmp_path` for the
+same reason — a workbench test that passes because the machine happens to have
+four bowl holders in `projects/` is not a test.
+
+What it pins down for Phase 9: the page and its assets are served and **only**
+they are (traversal, encoded traversal, `system_prompt.md` and unknown file
+types are all 404); every element id `app.js` reaches for exists in the page it
+was served with; the page fetches nothing off this machine and calls no route
+this bridge does not serve; tokens are minted inbound and `/file` serves nothing
+that was not; upload caps, magic bytes and hostile filenames;
+`/services/health` answers with everything down; and `/flows` passing through to
+a fake socket, including one that hangs up and one that answers with junk.
+
+And for Phase 11: `object_name_for_script` against the naming convention's own
+cases (`part.py` → the folder, `lid.py` → `lid`); `project_dir` refusing
+everything that is not one plain name; `scan_projects` reading the spec,
+preferring the script the spec names, skipping folders that are not parts and
+surviving a `spec.json` with a trailing comma; the schema cache expiring on the
+script's mtime; `set_params` calling `/generate` **before** the socket (so a
+stopped service never reads as a Blender fault), keeping the numbers when
+Blender is closed, and surviving a panel that will not follow along; `/preview`
+never rendering to a path the client named and saying so when the render
+produced no file; `/scene/delete` promising the undo it actually has; the three
+canned flow buttons carrying their message character-for-character (one of them
+compared against `addon/forge/tools/buddy.py`'s `CHECK_IN_LEAD`, in that file,
+so a reword on either side fails here); the flow row living outside every panel;
+and every POST route walked over a single keep-alive connection followed by a
+`/health` that must still answer.
+
+The formatter tests run `format.js` for real under node when there is one, and
+skip when there is not.
 
 One real turn against the live CLI runs only when you ask for it:
 
