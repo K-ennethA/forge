@@ -1240,6 +1240,110 @@ def run_export_mold(
     )
 
 
+# -- mold from a mesh (Phase 12): the same mold jobs, without a script ------
+
+
+def _mold_mesh_job(
+    kind: str,
+    mesh: Optional[Mapping[str, Any]],
+    file_path: Optional[str],
+    printer: Optional[Mapping[str, Any]],
+    options: Optional[Mapping[str, Any]],
+    tolerance: Optional[float],
+    angular_tolerance: Optional[float],
+    plate_margin_mm: Optional[float],
+    weld_tolerance_mm: Optional[float],
+    sew_tolerance_mm: Optional[float],
+    tri_limit: Optional[int],
+) -> Dict[str, Any]:
+    job = _mesh_spec(mesh, file_path, weld_tolerance_mm)
+    job.update(
+        {
+            "kind": kind,
+            "printer": dict(printer) if printer is not None else None,
+            "tolerance": tolerance,
+            "angular_tolerance": angular_tolerance,
+            "plate_margin_mm": plate_margin_mm,
+            "sew_tolerance_mm": sew_tolerance_mm,
+            "tri_limit": tri_limit,
+        }
+    )
+    # Same rule as the script path: mold.normalize_options is the validator and
+    # it runs in the worker, so its errors come back through the usual 400.
+    job.update(dict(options or {}))
+    return job
+
+
+def run_mold_mesh(
+    mesh: Optional[Mapping[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    options: Optional[Mapping[str, Any]] = None,
+    include_mesh: bool = True,
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    weld_tolerance_mm: Optional[float] = None,
+    sew_tolerance_mm: Optional[float] = None,
+    tri_limit: Optional[int] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _mold_mesh_job(
+        "mold_mesh",
+        mesh,
+        file_path,
+        printer,
+        options,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        weld_tolerance_mm,
+        sew_tolerance_mm,
+        tri_limit,
+    )
+    job["include_mesh"] = bool(include_mesh)
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else MOLD_TIMEOUT_S
+    )
+
+
+def run_export_mold_mesh(
+    directory: str,
+    mesh: Optional[Mapping[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Mapping[str, Any]] = None,
+    options: Optional[Mapping[str, Any]] = None,
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+    tolerance: Optional[float] = None,
+    angular_tolerance: Optional[float] = None,
+    plate_margin_mm: Optional[float] = None,
+    weld_tolerance_mm: Optional[float] = None,
+    sew_tolerance_mm: Optional[float] = None,
+    tri_limit: Optional[int] = None,
+    timeout: Optional[float] = None,
+) -> Dict[str, Any]:
+    job = _mold_mesh_job(
+        "export_mold_mesh",
+        mesh,
+        file_path,
+        printer,
+        options,
+        tolerance,
+        angular_tolerance,
+        plate_margin_mm,
+        weld_tolerance_mm,
+        sew_tolerance_mm,
+        tri_limit,
+    )
+    job["directory"] = directory
+    job["basename"] = basename
+    job["format"] = fmt
+    return get_pool().submit(
+        job, timeout=timeout if timeout is not None else MOLD_TIMEOUT_S
+    )
+
+
 __all__ = [
     "CHECK_TIMEOUT_S",
     "MOLD_TIMEOUT_S",
@@ -1261,6 +1365,8 @@ __all__ = [
     "run_export_segments_mesh",
     "run_segment_mesh",
     "run_export_mold",
+    "run_export_mold_mesh",
+    "run_mold_mesh",
     "run_export_segments",
     "run_generate",
     "run_mold",

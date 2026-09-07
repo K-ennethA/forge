@@ -25,6 +25,18 @@ Phase 6d, mesh input -- the same answers for a model somebody downloaded::
     POST /segment_mesh          -> the /segment response, from triangles
     POST /export_segments_mesh  -> the /export_segments response, from triangles
 
+Phase 12, molds from meshes -- silicone casting for figure runs::
+
+    POST /mold_mesh             -> the /mold response, from triangles
+    POST /export_mold_mesh      -> the /export_mold response, from triangles
+
+Both mold modes ride every one of those four endpoints:
+``mode: "printed_negative"`` (default) prints the negative in two halves;
+``mode: "master_box"`` prints the figure itself plus an open box to pour
+silicone around it.  Every mold response also carries an ``undercuts`` block
+(what fights the mold, per half) and an ``instructions`` array (the casting
+workflow in plain words).
+
 Error contract: HTTP 400 with ``{"error", "traceback"}`` for script and
 parameter failures, HTTP 500 for service bugs.
 
@@ -69,11 +81,13 @@ from .runner import (  # noqa: E402
     run_check_mesh,
     run_export,
     run_export_mold,
+    run_export_mold_mesh,
     run_export_segments,
     run_export_segments_mesh,
     run_generate,
     run_health,
     run_mold,
+    run_mold_mesh,
     run_parse_params,
     run_segment,
     run_segment_mesh,
@@ -245,17 +259,23 @@ class ExportSegmentsMeshRequest(SegmentMeshRequest):
     format: str = Field(default="stl", description="Per-segment format: stl|step|3mf")
 
 
-class MoldRequest(BaseModel):
-    """``/mold``: the same part script, but you get the negative.
+class MoldOptions(BaseModel):
+    """Everything a mold request says about the mold, whatever the input was.
 
-    Everything except ``script`` has a default, so ``{"script": ...}`` alone
-    produces a sensible two-piece mold: parting plane at the widest slice, 2
-    degrees of draft, a 4 mm shell, four keys, a spout and automatic vents.
+    Shared by the script endpoints (``/mold``, ``/export_mold``) and the mesh
+    ones (``/mold_mesh``, ``/export_mold_mesh``) so the two can never drift.
+    Every field has a default: an empty request produces a sensible two-piece
+    mold -- parting plane at the widest slice, 2 degrees of draft, a 4 mm shell,
+    four keys, a spout and automatic vents.
     """
 
-    script: str = Field(..., description="PartForge script source")
-    overrides: Dict[str, Any] = Field(default_factory=dict)
     printer: Optional[Dict[str, Any]] = None
+    mode: Optional[str] = Field(
+        default=None,
+        description='"printed_negative" (default: two printed halves with the '
+        'part cut out of them) or "master_box" (print the figure itself plus an '
+        "open box, and pour silicone around it)",
+    )
     parting_z_mm: Any = Field(
         default="auto",
         description='Z height of the parting plane in mm, or "auto" for the '
@@ -279,15 +299,70 @@ class MoldRequest(BaseModel):
         default=None, description="Keys around the parting face (default 4, 0 for none)"
     )
     include_mesh: bool = Field(
-        default=True, description="Return each half's triangles as well as its stats"
+        default=True, description="Return each piece's triangles as well as its stats"
     )
     tolerance: Optional[float] = None
     angular_tolerance: Optional[float] = None
     plate_margin_mm: Optional[float] = None
 
+    # -- undercut analysis (both modes) ------------------------------------
+    undercut_threshold_deg: Optional[float] = Field(
+        default=None,
+        description="How far past vertical a face must oppose the draw before it "
+        "is counted as an undercut (default 1 degree)",
+    )
+    undercut_examples: Optional[int] = Field(
+        default=None,
+        description="Located example faces returned per half (default 6, 0 for none)",
+    )
+
+    # -- master_box mode ---------------------------------------------------
+    master_box: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Pour-box options as one object; when given it wins over the "
+        "flat margin_mm / wall_mm / ... fields below",
+    )
+    margin_mm: Optional[float] = Field(
+        default=None,
+        description="master_box: silicone around the figure, per side (default 10)",
+    )
+    wall_mm: Optional[float] = Field(
+        default=None,
+        description="master_box: box wall thickness (default: the thicker of 3 mm "
+        "and two of the printer's minimum walls)",
+    )
+    floor_mm: Optional[float] = Field(
+        default=None, description="master_box: box floor thickness (default: wall_mm)"
+    )
+    pour_clearance_mm: Optional[float] = Field(
+        default=None,
+        description="master_box: silicone kept above the figure's highest point "
+        "(default 15)",
+    )
+    platform_mm: Optional[float] = Field(
+        default=None,
+        description="master_box: height of the pad the master is glued to, which "
+        "becomes the finished mold's pour hole (default 3, 0 for none)",
+    )
+    funnels: Any = Field(
+        default=None,
+        description="master_box: corner pour funnels, 0-4 (default 1)",
+    )
+    split: Optional[bool] = Field(
+        default=None,
+        description="master_box: cut the box in two with registration keys so the "
+        "cured silicone demolds easily (default false)",
+    )
+
     def mold_options(self) -> Dict[str, Any]:
-        """The mold-shaped fields, forwarded verbatim to the worker."""
+        """The mold-shaped fields, forwarded verbatim to the worker.
+
+        Validation lives in ``mold.normalize_options`` and ``casting`` inside the
+        worker, so a bad number comes back through the same 400 as everything
+        else rather than as a pydantic message about a field name.
+        """
         return {
+            "mode": self.mode,
             "parting_z_mm": self.parting_z_mm,
             "draft_deg": self.draft_deg,
             "shell_mm": self.shell_mm,
@@ -295,7 +370,24 @@ class MoldRequest(BaseModel):
             "spout": self.spout,
             "vents": self.vents,
             "registration_keys": self.registration_keys,
+            "undercut_threshold_deg": self.undercut_threshold_deg,
+            "undercut_examples": self.undercut_examples,
+            "master_box": self.master_box,
+            "margin_mm": self.margin_mm,
+            "wall_mm": self.wall_mm,
+            "floor_mm": self.floor_mm,
+            "pour_clearance_mm": self.pour_clearance_mm,
+            "platform_mm": self.platform_mm,
+            "funnels": self.funnels,
+            "split": self.split,
         }
+
+
+class MoldRequest(MoldOptions):
+    """``/mold``: the same part script, but you get the mold instead of the part."""
+
+    script: str = Field(..., description="PartForge script source")
+    overrides: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ExportMoldRequest(MoldRequest):
@@ -303,7 +395,36 @@ class ExportMoldRequest(MoldRequest):
     basename: Optional[str] = Field(
         default=None, description="File-name stem; defaults to 'mold'"
     )
-    format: str = Field(default="stl", description="Per-half format: stl|step|3mf")
+    format: str = Field(default="stl", description="Per-piece format: stl|step|3mf")
+
+
+class MoldMeshRequest(MeshInputRequest, MoldOptions):
+    """``/mold_mesh``: the same mold, from triangles instead of a script.
+
+    The mesh is welded, winding-repaired and sewn into an OpenCascade solid by
+    the very machinery ``/segment_mesh`` uses, and then goes through the same
+    mold pipeline a script does -- so the parting plane, the draft, the keys,
+    the spout and the watertight guarantee are not re-implementations.
+    """
+
+    sew_tolerance_mm: Optional[float] = Field(
+        default=None,
+        description="Tolerance handed to OpenCascade's sewer (default: the weld "
+        "tolerance, i.e. the mesh's own vertex agreement)",
+    )
+    tri_limit: Optional[int] = Field(
+        default=None,
+        description="Override the triangle ceiling for this request "
+        "(default FORGE_MESH_TRI_LIMIT)",
+    )
+
+
+class ExportMoldMeshRequest(MoldMeshRequest):
+    directory: str = Field(..., description="Absolute output directory")
+    basename: Optional[str] = Field(
+        default=None, description="File-name stem; defaults to 'mold'"
+    )
+    format: str = Field(default="stl", description="Per-piece format: stl|step|3mf")
 
 
 class SliceRequest(BaseModel):
@@ -690,6 +811,56 @@ def export_mold(request: ExportMoldRequest) -> JSONResponse:
         tolerance=request.tolerance,
         angular_tolerance=request.angular_tolerance,
         plate_margin_mm=request.plate_margin_mm,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/mold_mesh")
+def mold_mesh(request: MoldMeshRequest) -> JSONResponse:
+    """Mold a model somebody downloaded, sculpted or generated, not a script.
+
+    Same two refusals ``/segment_mesh`` makes, both 400s and both before any
+    kernel work: a mesh with holes in it cannot be molded (the message says how
+    to repair it), and a mesh denser than the triangle ceiling would take
+    minutes rather than seconds (it says to decimate).
+
+    The response is ``/mold``'s, plus a ``mesh_input`` block describing what
+    arrived and what had to be repaired to use it.
+    """
+    result = run_mold_mesh(
+        mesh=request.mesh,
+        file_path=request.file_path,
+        printer=request.printer,
+        options=request.mold_options(),
+        include_mesh=request.include_mesh,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        weld_tolerance_mm=request.weld_tolerance_mm,
+        sew_tolerance_mm=request.sew_tolerance_mm,
+        tri_limit=request.tri_limit,
+    )
+    return JSONResponse(status_code=200, content=result)
+
+
+@app.post("/export_mold_mesh")
+def export_mold_mesh(request: ExportMoldMeshRequest) -> JSONResponse:
+    """``/mold_mesh``, written to disk: one file per piece."""
+    fmt = normalize_format(request.format)
+    result = run_export_mold_mesh(
+        request.directory,
+        mesh=request.mesh,
+        file_path=request.file_path,
+        printer=request.printer,
+        options=request.mold_options(),
+        basename=request.basename,
+        fmt=fmt,
+        tolerance=request.tolerance,
+        angular_tolerance=request.angular_tolerance,
+        plate_margin_mm=request.plate_margin_mm,
+        weld_tolerance_mm=request.weld_tolerance_mm,
+        sew_tolerance_mm=request.sew_tolerance_mm,
+        tri_limit=request.tri_limit,
     )
     return JSONResponse(status_code=200, content=result)
 

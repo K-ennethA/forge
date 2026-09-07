@@ -192,6 +192,13 @@ Pilot/exit test: the Litwick LED figure — push the translucent flame to toggle
 - Prompt: basic-circuit knowledge (LED+resistor+switch+cell), design-around-components law (pick real parts FIRST, model to their dims), material intent (translucent parts named as such).
 Exact shapes refined by implementation; folded back by the orchestrator.
 
+### Phase 12 sketch — molds from meshes (silicone casting for figure runs)
+
+User intent: take any 3D object (generated/sculpted/imported) and mold it for silicone casting instead of printing every copy.
+- `POST /mold_mesh` — mesh|file_path input (sew→solid via the existing mesh_input machinery) into the EXISTING mold engine (/mold's parting/draft/keys/spout/vents), same response shape + `mesh_input` block. Plus **undercut analysis**: per-half, faces opposing the draw direction reported with area + located examples; severity verdict ("silicone will release this" vs "rigid mold cannot release this — use master_box").
+- **`mode: "printed_negative"` (default, today's behavior) | `"master_box"`** — master_box generates the figure-production rig: the master itself (untouched, exported for printing), a pour box sized around it (wall from printer profile, registration keys, pour funnel + vents above the highest point, optional two-part box split for demold), so the user prints master + box, pours silicone around the master, and casts resin copies from the resulting negative. Geometrically simple; the right path for organic figures with undercuts.
+- `/export_mold_mesh` writes the pieces; MCP mirror + prompt guidance (when figures at volume → master_box; explain the silicone workflow in beginner steps) ride a later integration round.
+
 ### Phase 11 sketch — base shapes, components, and merge-for-print
 
 User intent (near-verbatim): when 100% likeness isn't achievable, deliver the modifiable sculptable base structure; results segmented into parts — the correct/editable core (bowl size etc.) vs add-on details the user can keep or scrap; then merge so printing is simple.

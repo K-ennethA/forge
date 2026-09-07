@@ -67,6 +67,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from . import casting, undercut
 from .errors import ParamError, ScriptError
 from .printer import DEFAULT_PLATE_MARGIN_MM, bed_size, tolerance as printer_tolerance
 
@@ -239,6 +240,25 @@ def auto_parting_z(
     return tied[len(tied) // 2], profile
 
 
+def resolve_parting_z(
+    vertices: Sequence[Sequence[float]],
+    triangles: Sequence[Sequence[int]],
+    z_min: float,
+    z_max: float,
+    requested: Any = "auto",
+) -> Tuple[float, str, List[Tuple[float, float]]]:
+    """``(z, source, profile)`` for a request's ``parting_z_mm``.
+
+    Split out of :func:`build_mold` because ``master_box`` mode has no parting
+    plane of its own and still wants one to run the undercut analysis against:
+    the whole point of the report is "here is what a two-piece mold would fight".
+    """
+    if requested is None or requested == "auto":
+        parting_z, profile = auto_parting_z(vertices, triangles, z_min, z_max)
+        return parting_z, "auto", profile
+    return float(requested), "request", []
+
+
 def local_high_points(
     vertices: Sequence[Sequence[float]],
     count: int,
@@ -374,8 +394,31 @@ def normalize_options(job: Mapping[str, Any], printer: Mapping[str, Any]) -> Dic
             f"spout must be an object or false, got {type(spout).__name__}"
         )
 
+    examples = job.get("undercut_examples")
+    if examples is None:
+        examples = undercut.DEFAULT_EXAMPLES
+    if isinstance(examples, bool) or not isinstance(examples, int):
+        raise ParamError(f"undercut_examples must be an integer, got {examples!r}")
+    if not 0 <= examples <= 50:
+        raise ParamError(
+            f"undercut_examples must sit between 0 and 50, got {examples}"
+        )
+
     min_feature = float(printer["min_feature_size"])
     return {
+        # Phase 12: which of the two molds, and how hard to look for undercuts.
+        # Both are additive -- an unchanged request still gets the printed
+        # negative it always got.
+        "mode": casting.normalize_mode(job.get("mode")),
+        "undercut_threshold_deg": _number(
+            job.get("undercut_threshold_deg"),
+            "undercut_threshold_deg",
+            0.0,
+            45.0,
+            undercut.DEFAULT_THRESHOLD_DEG,
+        ),
+        "undercut_examples": examples,
+        "master_box": casting.normalize_master_box_options(job, printer),
         "parting_z_mm": parting,
         "draft_deg": _number(job.get("draft_deg"), "draft_deg", 0.0, MAX_DRAFT_DEG, DEFAULT_DRAFT_DEG),
         "shell_mm": _number(job.get("shell_mm"), "shell_mm", max(min_feature, 0.2), 200.0, DEFAULT_SHELL_MM),
@@ -415,12 +458,16 @@ def solid_volume(shape: Any) -> float:
         return 0.0
 
 
-def _contains(inner: Any, outer: Any) -> bool:
+def contains(inner: Any, outer: Any) -> bool:
     """Is every cubic millimetre of *inner* inside *outer*?"""
     try:
         return not has_volume(inner - outer, tolerance=VOLUME_EPS)
     except Exception:  # noqa: BLE001 - a failed boolean is a "no"
         return False
+
+
+#: The name this module used before :mod:`service.casting` needed it too.
+_contains = contains
 
 
 def _is_valid(shape: Any) -> bool:
@@ -733,13 +780,9 @@ def build_mold(
     min_feature = float(printer["min_feature_size"])
 
     # -- parting plane -----------------------------------------------------
-    profile: List[Tuple[float, float]] = []
-    if options["parting_z_mm"] == "auto":
-        parting_z, profile = auto_parting_z(vertices, triangles, low[2], high[2])
-        parting_source = "auto"
-    else:
-        parting_z = float(options["parting_z_mm"])
-        parting_source = "request"
+    parting_z, parting_source, profile = resolve_parting_z(
+        vertices, triangles, low[2], high[2], options["parting_z_mm"]
+    )
     if not low[2] + MIN_HALF_HEIGHT_MM <= parting_z <= high[2] - MIN_HALF_HEIGHT_MM:
         raise ParamError(
             f"parting_z_mm={parting_z:.3f} leaves less than {MIN_HALF_HEIGHT_MM} mm "
@@ -986,11 +1029,28 @@ def build_mold(
                 "their diameters or raise shell_mm"
             )
 
+    # Additive (Phase 12): the same two draw directions this mold just committed
+    # to, measured against the part's own faces.  It costs one pass over the
+    # triangles and it is the difference between "your mold is ready" and "your
+    # mold is ready and it will never open".
+    undercuts = undercut.analyze(
+        vertices,
+        triangles,
+        parting_z,
+        low,
+        high,
+        threshold_deg=float(
+            options.get("undercut_threshold_deg", undercut.DEFAULT_THRESHOLD_DEG)
+        ),
+        examples=int(options.get("undercut_examples", undercut.DEFAULT_EXAMPLES)),
+    )
+
     return {
         "halves": [
             {"name": "mold_top", "solid": mold_top},
             {"name": "mold_bottom", "solid": mold_bottom},
         ],
+        "undercuts": undercuts,
         "parting_z_mm": round(parting_z, 6),
         "parting_source": parting_source,
         "parting_profile": [
@@ -1043,8 +1103,10 @@ __all__ = [
     "apply_draft",
     "auto_parting_z",
     "build_mold",
+    "contains",
     "cross_section_area",
     "has_volume",
+    "resolve_parting_z",
     "local_high_points",
     "normalize_options",
     "perimeter_positions",

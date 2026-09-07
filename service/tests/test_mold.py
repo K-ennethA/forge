@@ -163,6 +163,7 @@ def printer():
 def test_an_empty_request_resolves_to_the_documented_defaults(printer):
     options = normalize_options({}, printer)
     assert options == {
+        "mode": "printed_negative",
         "parting_z_mm": "auto",
         "draft_deg": 2.0,
         "shell_mm": 4.0,
@@ -170,6 +171,20 @@ def test_an_empty_request_resolves_to_the_documented_defaults(printer):
         "registration_keys": 4,
         "vents": "auto",
         "spout": {},
+        # Phase 12, additive: the undercut report runs on every mold, and the
+        # pour-box numbers are resolved whether or not this request wants one.
+        "undercut_threshold_deg": 1.0,
+        "undercut_examples": 6,
+        "master_box": {
+            "margin_mm": 10.0,
+            "wall_mm": 3.0,
+            "floor_mm": 3.0,
+            "pour_clearance_mm": 15.0,
+            "platform_mm": 3.0,
+            "funnels": 1,
+            "split": False,
+            "registration_keys": 4,
+        },
     }
 
 

@@ -34,7 +34,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Any, Dict, Mapping, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from . import params as params_module
 from .checks import MeshGeometry, run_checks, suggest_segmentation
@@ -55,8 +55,15 @@ from .mesh_input import (
     sew_to_solid,
     sew_tolerance_for,
 )
-from .mold import build_mold, solid_volume
+from .casting import (
+    build_master_box,
+    check_bed as casting_check_bed,
+    master_box_instructions,
+    printed_negative_instructions,
+)
+from .mold import build_mold, resolve_parting_z, solid_volume
 from .mold import normalize_options as normalize_mold_options
+from .undercut import analyze as analyze_undercuts
 from .printer import (
     DEFAULT_PLATE_MARGIN_MM,
     DEFAULT_PLATE_SPACING_MM,
@@ -654,22 +661,87 @@ def handle_export_segments_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# Phase 2: mold mode
+# Phase 2: mold mode -- and Phase 12: from a mesh, with undercuts and a pour box
+#
+# Four job kinds, one pipeline.  ``mold`` / ``export_mold`` build the solid from
+# a PARAMS script; ``mold_mesh`` / ``export_mold_mesh`` sew it out of triangles.
+# From ``_mold_tail`` down the difference is gone, exactly as it is for
+# ``/segment`` and ``/segment_mesh``, and the only branch left is ``mode``.
 # --------------------------------------------------------------------------
 
 
-def _mold_common(job: Mapping[str, Any]) -> Dict[str, Any]:
-    """Build, split, draft, box and verify.  Shared by /mold and /export_mold."""
+def _mold_context(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Everything a mold job validates before it touches geometry."""
     linear, angular = _tolerances(job)
     printer = normalize_printer(job.get("printer"))
     margin, _spacing = _plate_options(job)
-    options = normalize_mold_options(job, printer)
+    return {
+        "linear": linear,
+        "angular": angular,
+        "printer": printer,
+        "margin": margin,
+        "options": normalize_mold_options(job, printer),
+    }
 
-    schema, shape, timings = _build_shape(job)
 
-    started = time.perf_counter()
-    vertices, triangles, stats = _mesh_and_stats(shape, linear, angular)
-    timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+def _verify_pieces(
+    pieces: Sequence[Mapping[str, Any]], linear: float, angular: float, hint: str
+) -> list:
+    """Tessellate every piece and refuse any that a slicer could not open.
+
+    Same contract as ``/segment``: a piece that is not watertight is an error
+    naming it, not a warning with a broken mesh attached.
+    """
+    verified = []
+    for piece in pieces:
+        piece_vertices, piece_triangles, piece_stats = _mesh_and_stats(
+            piece["solid"], linear, angular
+        )
+        if not piece_stats["watertight"]:
+            raise ScriptError(
+                f"{piece['name']} came out non-manifold (boundary edges "
+                f"{piece_stats['boundary_edges']}, non-manifold "
+                f"{piece_stats['nonmanifold_edges']}, B-Rep valid "
+                f"{piece_stats['solid_is_valid']}). {hint}"
+            )
+        verified.append(
+            {
+                "name": piece["name"],
+                "solid": piece["solid"],
+                "mesh": {"vertices": piece_vertices, "faces": piece_triangles},
+                "stats": piece_stats,
+                # Additive: what the keys, spout and vents did to a piece is only
+                # visible as a volume, and a caller checking that the mold is
+                # really a mold should not have to re-integrate the mesh.
+                "volume_mm3": round(solid_volume(piece["solid"]), 4),
+            }
+        )
+    return verified
+
+
+def _mold_tail(
+    context: Mapping[str, Any],
+    shape: Any,
+    vertices: list,
+    triangles: list,
+    stats: Dict[str, Any],
+    timings: Dict[str, float],
+    schema: Any,
+) -> Dict[str, Any]:
+    """Everything after "we have a solid": identical for a script and a mesh.
+
+    Branches once, on ``mode``.  ``printed_negative`` is the original two-half
+    mold; ``master_box`` prints the figure and a box to pour silicone into and
+    subtracts nothing from anything.
+    """
+    linear, angular = context["linear"], context["angular"]
+    printer, margin = context["printer"], context["margin"]
+    options = context["options"]
+
+    if options["mode"] == "master_box":
+        return _master_box_tail(
+            context, shape, vertices, triangles, stats, timings, schema
+        )
 
     started = time.perf_counter()
     mold = build_mold(
@@ -678,62 +750,158 @@ def _mold_common(job: Mapping[str, Any]) -> Dict[str, Any]:
     timings["mold_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
 
     started = time.perf_counter()
-    halves = []
-    for half in mold["halves"]:
-        piece_vertices, piece_triangles, piece_stats = _mesh_and_stats(
-            half["solid"], linear, angular
-        )
-        if not piece_stats["watertight"]:
-            # Same contract as /segment: a half a slicer cannot use is an error,
-            # not a warning with a broken mesh attached.
-            raise ScriptError(
-                f"{half['name']} came out non-manifold (boundary edges "
-                f"{piece_stats['boundary_edges']}, non-manifold "
-                f"{piece_stats['nonmanifold_edges']}, B-Rep valid "
-                f"{piece_stats['solid_is_valid']}). Something in the cavity, the "
-                "spout or a registration key is degenerate; try a smaller "
-                "draft_deg, a bigger shell_mm, or a different parting_z_mm."
-            )
-        halves.append(
-            {
-                "name": half["name"],
-                "solid": half["solid"],
-                "mesh": {"vertices": piece_vertices, "faces": piece_triangles},
-                "stats": piece_stats,
-                # Additive: what the keys, spout and vents did to the half is
-                # only visible as a volume, and a caller checking that the mold
-                # is really a mold should not have to re-integrate the mesh.
-                "volume_mm3": round(solid_volume(half["solid"]), 4),
-            }
-        )
+    pieces = _verify_pieces(
+        mold["halves"],
+        linear,
+        angular,
+        "Something in the cavity, the spout or a registration key is degenerate; "
+        "try a smaller draft_deg, a bigger shell_mm, or a different parting_z_mm.",
+    )
     timings["verify_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
 
     return {
         "params": schema,
         "printer": printer,
         "options": options,
+        "mode": "printed_negative",
         "mold": mold,
-        "halves": halves,
+        "master_box": None,
+        "undercuts": mold["undercuts"],
+        "instructions": printed_negative_instructions(mold),
+        "pieces": pieces,
+        "halves": pieces,
         "stats_part": stats,
         "timings": timings,
         "tolerances": (linear, angular),
     }
 
 
+def _master_box_tail(
+    context: Mapping[str, Any],
+    shape: Any,
+    vertices: list,
+    triangles: list,
+    stats: Dict[str, Any],
+    timings: Dict[str, float],
+    schema: Any,
+) -> Dict[str, Any]:
+    """``mode: "master_box"``: the untouched master, plus a box to pour into."""
+    linear, angular = context["linear"], context["angular"]
+    printer, margin = context["printer"], context["margin"]
+    options = context["options"]
+
+    low = [float(v) for v in stats["bounding_box_min_mm"]]
+    high = [float(v) for v in stats["bounding_box_max_mm"]]
+
+    started = time.perf_counter()
+    built = build_master_box(shape, stats, printer, options, margin)
+    timings["mold_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    started = time.perf_counter()
+    pieces = _verify_pieces(
+        built["pieces"],
+        linear,
+        angular,
+        "The pour box, its corner funnel or the split came out degenerate; try "
+        "raising wall_mm or margin_mm, or funnels: 0.",
+    )
+    timings["verify_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    # The box is not printed as one object when it is split, so the bed check
+    # runs on what actually goes on the plate -- measured, not predicted.
+    bed = casting_check_bed(
+        printer,
+        [(piece["name"], piece["stats"]["bounding_box_mm"]) for piece in pieces],
+        margin,
+    )
+
+    # There is no parting plane in this mode; the undercut report still wants
+    # one, because its whole job is to say what a two-piece mold would fight.
+    parting_z, parting_source, _profile = resolve_parting_z(
+        vertices, triangles, low[2], high[2], options["parting_z_mm"]
+    )
+    undercuts = analyze_undercuts(
+        vertices,
+        triangles,
+        parting_z,
+        low,
+        high,
+        threshold_deg=float(options["undercut_threshold_deg"]),
+        examples=int(options["undercut_examples"]),
+    )
+
+    geometry = dict(built["geometry"])
+    geometry["bed"] = bed
+    return {
+        "params": schema,
+        "printer": printer,
+        "options": options,
+        "mode": "master_box",
+        "mold": None,
+        "master_box": geometry,
+        "undercuts": undercuts,
+        "instructions": master_box_instructions(geometry),
+        "pieces": pieces,
+        "halves": None,
+        "parting_z_mm": round(parting_z, 6),
+        "parting_source": parting_source,
+        "bed": bed,
+        "stats_part": stats,
+        "timings": timings,
+        "tolerances": (linear, angular),
+    }
+
+
+def _mold_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Build, split, draft, box and verify.  Shared by /mold and /export_mold."""
+    context = _mold_context(job)
+    schema, shape, timings = _build_shape(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats = _mesh_and_stats(
+        shape, context["linear"], context["angular"]
+    )
+    timings["tessellate_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    return _mold_tail(context, shape, vertices, triangles, stats, timings, schema)
+
+
+def _mold_mesh_common(job: Mapping[str, Any]) -> Dict[str, Any]:
+    """Load, refuse or sew, then hand the solid to the ordinary mold path.
+
+    Byte for byte the same refusals ``/segment_mesh`` makes, in the same order
+    and with the same words: a mesh with holes cannot be molded either, and a
+    mesh dense enough to take minutes to sew is a mesh to decimate first.
+    """
+    context = _mold_context(job)
+
+    started = time.perf_counter()
+    vertices, triangles, stats, info = _load_mesh(job)
+    timings = {"load_ms": round((time.perf_counter() - started) * 1000.0, 2)}
+
+    require_watertight(stats)
+    info["triangle_limit"] = check_triangle_ceiling(len(triangles), job.get("tri_limit"))
+
+    started = time.perf_counter()
+    tolerance = sew_tolerance_for(vertices, job.get("sew_tolerance_mm"))
+    shape, sewing = sew_to_solid(vertices, triangles, tolerance)
+    timings["sew_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
+
+    result = _mold_tail(context, shape, vertices, triangles, stats, timings, None)
+    result["mesh_input"] = info
+    result["sewing"] = sewing
+    return result
+
+
 def _mold_payload(result: Mapping[str, Any]) -> Dict[str, Any]:
     """The report half of a /mold response, without the meshes or the solids."""
-    mold = result["mold"]
-    return {
-        "parting_z_mm": mold["parting_z_mm"],
-        "parting_source": mold["parting_source"],
-        "parting_profile": mold["parting_profile"],
-        "draft": mold["draft"],
-        "box": mold["box"],
-        "cavity": mold["cavity"],
-        "spout": mold["spout"],
-        "vents": mold["vents"],
-        "registration_keys": mold["registration_keys"],
-        "bed": mold["bed"],
+    payload: Dict[str, Any] = {
+        # Phase 12, additive on every mold response: which mold this is, what
+        # fights it, and how to actually use the thing once it is printed.
+        "mode": result["mode"],
+        "undercuts": result["undercuts"],
+        "recommendation": result["undercuts"]["recommendation"],
+        "instructions": result["instructions"],
         "printer": result["printer"],
         "params": result["params"],
         "options": result["options"],
@@ -741,28 +909,64 @@ def _mold_payload(result: Mapping[str, Any]) -> Dict[str, Any]:
         "timings": result["timings"],
     }
 
+    mold = result.get("mold")
+    if mold is not None:
+        payload.update(
+            {
+                "parting_z_mm": mold["parting_z_mm"],
+                "parting_source": mold["parting_source"],
+                "parting_profile": mold["parting_profile"],
+                "draft": mold["draft"],
+                "box": mold["box"],
+                "cavity": mold["cavity"],
+                "spout": mold["spout"],
+                "vents": mold["vents"],
+                "registration_keys": mold["registration_keys"],
+                "bed": mold["bed"],
+            }
+        )
+    else:
+        payload.update(
+            {
+                "master_box": result["master_box"],
+                "parting_z_mm": result["parting_z_mm"],
+                "parting_source": result["parting_source"],
+                "bed": result["bed"],
+            }
+        )
 
-def handle_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
-    result = _mold_common(job)
+    if result.get("mesh_input") is not None:
+        payload["mesh_input"] = result["mesh_input"]
+        payload["sewing"] = result["sewing"]
+    return payload
+
+
+def _mold_response(job: Mapping[str, Any], result: Mapping[str, Any]) -> Dict[str, Any]:
     include_mesh = job.get("include_mesh")
     include_mesh = True if include_mesh is None else bool(include_mesh)
 
-    halves = []
-    for half in result["halves"]:
+    pieces = []
+    for piece in result["pieces"]:
         entry: Dict[str, Any] = {
-            "name": half["name"],
-            "stats": half["stats"],
-            "volume_mm3": half["volume_mm3"],
+            "name": piece["name"],
+            "stats": piece["stats"],
+            "volume_mm3": piece["volume_mm3"],
         }
         if include_mesh:
-            entry["mesh"] = half["mesh"]
-        halves.append(entry)
+            entry["mesh"] = piece["mesh"]
+        pieces.append(entry)
 
-    return {"halves": halves, **_mold_payload(result)}
+    payload: Dict[str, Any] = {"pieces": pieces, **_mold_payload(result)}
+    if result.get("halves") is not None:
+        # The two-half response shape predates `pieces` and is what every
+        # existing caller reads; it stays exactly where it was.
+        payload["halves"] = pieces
+    return payload
 
 
-def handle_export_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
-    result = _mold_common(job)
+def _export_mold_response(
+    job: Mapping[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
     linear, angular = result["tolerances"]
 
     directory = resolve_output_dir(job.get("directory"))
@@ -771,12 +975,13 @@ def handle_export_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
 
     started = time.perf_counter()
     files = []
-    for half in result["halves"]:
-        target = directory / f"{basename}_{half['name']}{FORMATS[fmt]}"
+    for piece in result["pieces"]:
+        target = directory / f"{basename}_{piece['name']}{FORMATS[fmt]}"
         written = export_shape(
             # Centred in XY and sitting on Z=0, the same way a segment is
-            # written, so a slicer opening one half does not have to hunt for it.
-            drop_to_origin(half["solid"]),
+            # written, so a slicer opening one piece does not have to hunt for
+            # it.  The master's shape is untouched -- only where it sits moves.
+            drop_to_origin(piece["solid"]),
             fmt,
             str(target),
             tolerance=linear,
@@ -784,27 +989,47 @@ def handle_export_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
         )
         files.append(
             {
-                "name": half["name"],
+                "name": piece["name"],
                 "format": fmt,
                 "path": written,
-                "stats": half["stats"],
+                "stats": piece["stats"],
             }
         )
     result["timings"]["export_ms"] = round((time.perf_counter() - started) * 1000.0, 2)
 
-    return {
+    summary = [
+        {
+            "name": piece["name"],
+            "stats": piece["stats"],
+            "volume_mm3": piece["volume_mm3"],
+        }
+        for piece in result["pieces"]
+    ]
+    payload: Dict[str, Any] = {
         "directory": str(directory),
         "files": files,
-        "halves": [
-            {
-                "name": half["name"],
-                "stats": half["stats"],
-                "volume_mm3": half["volume_mm3"],
-            }
-            for half in result["halves"]
-        ],
+        "pieces": summary,
         **_mold_payload(result),
     }
+    if result.get("halves") is not None:
+        payload["halves"] = summary
+    return payload
+
+
+def handle_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _mold_response(job, _mold_common(job))
+
+
+def handle_export_mold(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _export_mold_response(job, _mold_common(job))
+
+
+def handle_mold_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _mold_response(job, _mold_mesh_common(job))
+
+
+def handle_export_mold_mesh(job: Mapping[str, Any]) -> Dict[str, Any]:
+    return _export_mold_response(job, _mold_mesh_common(job))
 
 
 HANDLERS = {
@@ -820,6 +1045,8 @@ HANDLERS = {
     "export_segments_mesh": handle_export_segments_mesh,
     "mold": handle_mold,
     "export_mold": handle_export_mold,
+    "mold_mesh": handle_mold_mesh,
+    "export_mold_mesh": handle_export_mold_mesh,
 }
 
 

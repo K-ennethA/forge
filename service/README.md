@@ -63,7 +63,7 @@ Environment overrides, useful for tuning without touching code:
 | `FORGE_ANGULAR_TOLERANCE` | `0.2` | angular deflection, radians |
 | `FORGE_CHECK_TIMEOUT` | `120` | seconds for one `/check` |
 | `FORGE_SEGMENT_TIMEOUT` | `300` | seconds for one `/segment` or `/export_segments` |
-| `FORGE_MOLD_TIMEOUT` | `300` | seconds for one `/mold` or `/export_mold` |
+| `FORGE_MOLD_TIMEOUT` | `300` | seconds for one `/mold`, `/export_mold`, `/mold_mesh` or `/export_mold_mesh` |
 | `FORGE_SLICE_TIMEOUT` | `600` | seconds one slicer run may take |
 | `FORGE_SLICER` | — | full path to the slicer executable, overriding detection |
 | `FORGE_MESH_TRI_LIMIT` | `60000` | triangles a mesh may bring to `/segment_mesh`; `0` removes the ceiling (see *Mesh input*) |
@@ -84,11 +84,16 @@ python -m pytest service/tests            # from the repo root
 python -m pytest                          # from service/
 ```
 
-`tests/test_params.py`, `tests/test_checks.py`, `tests/test_mold.py` and
-`tests/test_slicer.py` are pure Python and run as soon as pytest is installed.
-`tests/test_api.py`, `tests/test_print_readiness_api.py` and
-`tests/test_mold_api.py` spawn the worker and skip themselves if build123d is
-missing. `tests/test_mesh_input.py` is both halves: the readers, the weld and
+`tests/test_params.py`, `tests/test_checks.py`, `tests/test_mold.py`,
+`tests/test_undercut.py` and `tests/test_slicer.py` are pure Python and run as
+soon as pytest is installed. `tests/test_api.py`,
+`tests/test_print_readiness_api.py`, `tests/test_mold_api.py` and
+`tests/test_mold_mesh_api.py` spawn the worker and skip themselves if build123d
+is missing. `tests/test_undercut.py` spins its shapes out of `(r, z)`
+silhouettes — a cone, a bicone, a sphere, a spool, a mushroom — because an
+undercut is a question about a silhouette and nothing else, and building them
+that way means the answer is known before the test runs.
+`tests/test_mesh_input.py` is both halves: the readers, the weld and
 the refusals run without the kernel, while the three mesh endpoints are gated
 on it. Its centrepiece writes a binary STL of a 300 mm ring in the test — a
 download, in effect — and follows it all the way to four watertight dovetailed
@@ -116,8 +121,10 @@ executable, a non-zero exit, and a hang that has to be killed — on any machine
 | `POST` | `/check_mesh` | `{"mesh" / "file_path", "printer"}` — a downloaded model instead of a script | the `/check` response, `params` and `solid_is_valid` null |
 | `POST` | `/segment_mesh` | `{"mesh" / "file_path", "printer", "joint", "mode"}` | the `/segment` response, plus `mesh_input` and `sewing` |
 | `POST` | `/export_segments_mesh` | the `/segment_mesh` body plus `{"directory", "basename", "format"}` | the `/export_segments` response |
-| `POST` | `/mold` | `{"script", "overrides", "printer", "parting_z_mm", "draft_deg", "shell_mm", ...}` | `{"halves": [...], "parting_z_mm", "draft", "spout", "vents", "registration_keys"}` |
-| `POST` | `/export_mold` | the `/mold` body plus `{"directory", "basename", "format"}` | `{"files": [one per half]}` |
+| `POST` | `/mold` | `{"script", "overrides", "printer", "mode", "parting_z_mm", "draft_deg", "shell_mm", ...}` | `{"pieces": [...], "halves": [...], "mode", "undercuts", "instructions", "parting_z_mm", "draft", "spout", "vents", "registration_keys"}` |
+| `POST` | `/export_mold` | the `/mold` body plus `{"directory", "basename", "format"}` | `{"files": [one per piece]}` |
+| `POST` | `/mold_mesh` | `{"mesh" / "file_path", "printer", "mode", ...}` — a sculpt or a download instead of a script | the `/mold` response, plus `mesh_input` and `sewing` |
+| `POST` | `/export_mold_mesh` | the `/mold_mesh` body plus `{"directory", "basename", "format"}` | the `/export_mold` response |
 | `POST` | `/slice` | `{"input", "output", "profile", "printer", "slicer_path", "extra_args"}` | `{"output", "stdout_tail", "duration_ms"}` |
 
 `format` is `stl` (binary), `step` or `3mf`. `path` must be **absolute**;
@@ -151,9 +158,13 @@ All additive; nothing in `docs/architecture.md` changes shape.
   `verify_ms`, `/export_segments` adds `export_ms`, `/mold` adds `mold_ms` and
   `verify_ms`, `/export_mold` adds `export_ms`. The mesh endpoints report
   `load_ms`, and `/segment_mesh` adds `sew_ms`.
-- The mesh endpoints (`/check_mesh`, `/segment_mesh`, `/export_segments_mesh`)
-  are additive beyond Phase 2 — see **Mesh input** — and carry a `mesh_input`
-  object describing what was read, welded and repaired on the way in.
+- The mesh endpoints (`/check_mesh`, `/segment_mesh`, `/export_segments_mesh`,
+  `/mold_mesh`, `/export_mold_mesh`) are additive beyond Phase 2 — see **Mesh
+  input** and **Molds from meshes** — and carry a `mesh_input` object describing
+  what was read, welded and repaired on the way in.
+- Every mold response carries `mode`, `pieces`, `undercuts`, `recommendation`
+  and `instructions` on top of the Phase 2 shape. Nothing was taken away:
+  `printed_negative` still returns `halves` where it always did.
 - `/slice`'s two failure modes carry a `slicer` object alongside the contract's
   `error` and `traceback`: the probe report when nothing is installed, and the
   argv, exit code and output tails when something ran and refused.
@@ -717,12 +728,30 @@ spout and vents.* `POST /mold` is that switch. What comes back are two **mold
 masters** — you print them, then cast silicone or resin in them. Same script,
 same `PARAMS`, same sliders as the direct-print version.
 
+There are **two modes**, and which one you want depends on the shape:
+
+| `mode` | What you print | When |
+| --- | --- | --- |
+| `"printed_negative"` *(default)* | `mold_top` + `mold_bottom` — the part cut out of a box | Nothing on the part hangs back over the mold. Exact, rigid, a handful of pulls. |
+| `"master_box"` | `master` (the figure itself, untouched) + `box` (or `box_a`/`box_b`) | Figures. You pour silicone around the master; rubber bends past overhangs a rigid mold could never clear. Dozens of pulls. |
+
+Every mold response, in either mode, also carries an **`undercuts`** block (what
+fights the mold, per half, with locations) and an **`instructions`** array (the
+casting workflow in plain words). When the undercuts come back `severe`, the
+response says in so many words to use `master_box` instead.
+
 ```jsonc
 {"script": "...", "overrides": {}, "printer": { },
+ "mode": "printed_negative" | "master_box",   // default "printed_negative"
  "parting_z_mm": 4.0 | "auto",       // default "auto"
  "draft_deg": 2.0, "shell_mm": 4.0, "clearance_mm": 0.0,
  "spout": {"diameter_mm": 4.0, "position": [x, y]} | false,
  "vents": 2 | "auto", "registration_keys": 4,
+ "undercut_threshold_deg": 1.0, "undercut_examples": 6,
+ // master_box only — or give them together as "master_box": { }
+ "margin_mm": 10.0, "wall_mm": 3.0, "floor_mm": 3.0,
+ "pour_clearance_mm": 15.0, "platform_mm": 3.0,
+ "funnels": 1, "split": false,
  "include_mesh": true}
 ```
 
@@ -746,6 +775,11 @@ returns
  "registration_keys": {"count": 4, "radius_mm": 1.4, "tolerance_mm": 0.1,
                        "male_half": "mold_top", "female_half": "mold_bottom",
                        "positions_mm": [[-12, -12], [12, -12], [12, 12], [-12, 12]]},
+ "mode": "printed_negative",
+ "pieces": [ ],                 // the same two entries as "halves"
+ "undercuts": { },              // see below
+ "recommendation": null,        // a sentence, when the undercuts are severe
+ "instructions": ["Print mold_top and mold_bottom...", ...],
  "bed": { }, "printer": { }, "params": { }, "options": { },
  "stats_part": { }, "timings": { }}
 ```
@@ -753,6 +787,10 @@ returns
 `plain_half_volume_mm3` is what each half weighed *before* the keys, spout and
 vents touched it, so a caller can check that the features actually happened
 rather than trusting that they did.
+
+`pieces` is the mode-independent list: in `printed_negative` it holds exactly
+what `halves` holds, and in `master_box` it is the only list there is (`halves`
+is absent). Render `pieces` and one code path covers both.
 
 ## The parting plane
 
@@ -840,19 +878,270 @@ print.
 - **Both halves must fit the bed**, box and all, in either 90° placement, with
   the plate margin. Otherwise it is a `400` that says to reduce `shell_mm`,
   shrink the part, or run `/segment` on the part first and mold the segments.
+- **`master_box` is held to exactly the same two rules**, piece by piece —
+  `master`, `box`, `box_a`, `box_b` — with its own wording about `margin_mm`,
+  `pour_clearance_mm` and `split` on the bed refusal, and one more besides: a
+  half that comes apart into *two* solids is a refusal, not something to fuse
+  back together, because the small one is a chip that falls off the bed.
+
+## Undercut analysis — what fights the mold
+
+A two-piece mold opens along one axis: the half above the parting plane is
+pulled **+Z**, the half below it **-Z**. Any face of the part pointing back
+*against* the direction its own half travels is an undercut — material sits over
+it, and the casting is locked in until something bends. Every mold response
+carries the report, in both modes:
+
+```jsonc
+"undercuts": {
+  "parting_z_mm": 4.0,
+  "severity": "none" | "mild" | "severe",
+  "verdict": "severe -- a rigid mold cannot release this",
+  "detail": "2 deep pocket(s) above the parting plane grip mold_top: ...",
+  "recommend_master_box": true,
+  "recommendation": "Parts of this shape hang out over the mold, so ...",
+  "halves": {
+    "mold_top": {
+      "draw_direction": [0, 0, 1],
+      "face_count": 812, "surface_area_mm2": 1453.2,
+      "opposing_face_count": 96, "opposing_area_mm2": 221.4,
+      "opposing_area_fraction": 0.152,
+      "max_angle_deg": 51.3, "max_depth_mm": 5.0,
+      "patch_count": 1, "severe_patch_count": 1,
+      "patches": [{"face_count": 96, "area_mm2": 221.4, "max_angle_deg": 51.3,
+                   "max_depth_mm": 5.0, "deepest_point_mm": [3.0, 0.2, 20.4],
+                   "severe": true}],
+      "examples": [{"position_mm": [3.0, 0.2, 20.4], "angle_deg": 51.3,
+                    "depth_mm": 5.0, "area_mm2": 2.31}, ...],
+      "severity": "severe",
+      "verdict": "severe -- a rigid mold cannot release this",
+      "thresholds": {"patch_area_mm2": 7.27, "depth_mm": 1.5, "angle_deg": 25.0}
+    },
+    "mold_bottom": { }
+  },
+  "criterion": { }
+}
+```
+
+Three numbers per opposing triangle:
+
+- **`angle_deg`** — how far past vertical the face opposes the pull. `0` is a
+  wall parallel to the draw (no draft, but it releases); `90` is a face pointing
+  straight back at the mold half. Faces sloping *with* the draw score nothing
+  and are never counted. `undercut_threshold_deg` (default 1°) is the floor,
+  and it exists to keep tessellation noise on a vertical wall out of the report.
+- **`depth_mm`** — how far sideways the silicone has to stretch: the widest the
+  part gets *ahead* of the face in the draw direction, within the same half,
+  minus the face's own smallest radius, both about the part's vertical centre
+  axis. This is the number that separates "rubber peels off this" from "nothing
+  short of cutting the mold gets this out".
+- **`area_mm2`** — and triangles that share an edge are grouped into **patches**,
+  because one deep pocket and a thousand specks of tessellation noise are not
+  the same problem.
+
+**The criterion.** A half is **severe** when some *single patch* is all three of:
+
+1. not a speck — `area >= max(1 mm², 0.5% of that half's surface area)`,
+2. steeply opposed — `angle >= 25°` past vertical, and
+3. deep — `depth >= max(1.5 mm, 5% of the part's footprint width)`.
+
+Anything opposing that is not severe is **mild**; nothing opposing at all is
+**none**. The whole part's verdict is the worse of its two halves.
+
+### The honesty note
+
+Those five numbers are a judgement call, not physics, and this section says so
+because a warning nobody can calibrate is worse than no warning:
+
+- **Real silicone release** depends on the rubber's Shore hardness and
+  elongation, on how thick the mold wall is at the pocket, and on how patient
+  the caster is. The service knows none of that. `25°` and `5%` are a sensible
+  line drawn through typical tin/platinum silicone, not a simulation of it.
+- **The depth is radial.** It is measured about the part's *vertical centre
+  axis*, so a part whose lobes sit off-centre in plan — an arm out to one side —
+  can report a bulge that is really on the far side of the part. It
+  over-reports rather than under-reports, which is the safer direction for a
+  warning, but it is not a swept-volume undercut test.
+- **A triangle belongs to one half.** Triangles straddling the parting plane are
+  filed by their centroid rather than split, so the band right at the plane is
+  approximate by exactly one triangle's width. On a coarse mesh that is visible:
+  a cone parted 0.4 mm above its base reports *nothing* below the plane, because
+  every wall triangle runs the full height of the cone and its centroid is above.
+- **An undercut is a property of the plane, not of the shape.** `"auto"` already
+  picks the widest cross-section, which is the plane that avoids an undercut
+  wherever a shape allows one to be avoided. A mushroom parted through its cap
+  is clean; the same mushroom parted through its stem is severe. Shapes that
+  come back severe under `"auto"` are the ones that genuinely re-widen away from
+  their widest slice — two lobes on a stem, a spool, a figure with arms.
+
+`undercut_examples` (default 6, `0` to switch them off) caps the located
+examples per half. Examples are chosen one per patch first, worst patch first,
+so three separate pockets read as three things to look at.
+
+## `mode: "master_box"` — the silicone route
+
+Nothing is subtracted from anything. This mode prints **two separate objects**:
+
+```jsonc
+{"mode": "master_box",
+ "pieces": [{"name": "master", "stats": { }, "volume_mm3": 7238.2, "mesh": { }},
+            {"name": "box",    "stats": { }, "volume_mm3": 33892.1, "mesh": { }}],
+ "master_box": {
+   "margin_mm": 10.0, "wall_mm": 3.0, "floor_mm": 3.0,
+   "pour_clearance_mm": 15.0, "platform_mm": 3.0, "split": false, "open_top": true,
+   "master_bbox_mm": [24, 24, 24], "master_min_mm": [...], "master_max_mm": [...],
+   "interior_min_mm": [-22, -22, -3], "interior_max_mm": [22, 22, 39],
+   "interior_size_mm": [44, 44, 42],
+   "outer_min_mm": [-25, -25, -6], "outer_max_mm": [25, 25, 39],
+   "outer_size_mm": [50, 50, 45],
+   "platform": {"height_mm": 3.0, "top_diameter_mm": 9.6,
+                "bottom_diameter_mm": 12.4, "centre_mm": [0, 0], "top_z_mm": 0.0,
+                "role": "the master is glued to this; it becomes the mold's pour hole"},
+   "funnels": {"count": 1, "requested": 1, "throat_diameter_mm": 12.0,
+               "height_mm": 8.0, "draft_deg": 25.0, "positions_mm": [[-22, -22]],
+               "rim_z_mm": 39.0, "note": null},
+   "registration_keys": null,
+   "silicone_volume_mm3": 74073.8, "silicone_volume_ml": 74.07,
+   "bed": { }},
+ "parting_z_mm": 12.0, "parting_source": "auto",
+ "undercuts": { }, "instructions": [ ], "bed": { }, ...}
+```
+
+The geometry, piece by piece:
+
+- **Interior** — the master's bounding box grown by `margin_mm` (default 10) on
+  all four sides, its floor dropped by `platform_mm` so the master sits on the
+  pad, and its ceiling raised `pour_clearance_mm` (default 15) above the
+  master's highest point. That headroom *is* the silicone over the figure: it is
+  the roof of the finished mold, and a thin one tears.
+- **Walls and floor** — `wall_mm` thick, defaulting to whichever is thicker of
+  3 mm and two of the printer's `min_wall_thickness`, and refused below the
+  printer's `min_feature_size`. **No lid**: the top is open, because that is
+  where the silicone goes in.
+- **The pad** — a short cone on the floor, wide at the bottom, that the master is
+  glued to. It is not decoration: once the silicone cures and the master comes
+  out, the pad's shape is the **pour hole** of the mold, funnel-side up. Set
+  `platform_mm: 0` and the finished mold has a closed bottom with no way in.
+- **Corner funnel** — a flared collar over one interior corner (`funnels`, 0–4).
+  Silicone is poured into it as a thin stream so it climbs the box and floods
+  the figure from *below* rather than falling on top of it and trapping air.
+  With `split: true` a collar is shortened so its flare stays on its own side of
+  the split plane — a collar that reaches over the split prints as a loose chip
+  on the far half — and left off entirely once the squeeze takes it below half
+  its design height, because a stub silicone pours straight over is not a
+  funnel. `funnels.count` versus `funnels.requested`, and a `note`, say when
+  that happened and what to change.
+- **`split: true`** — the box is cut down the middle in X into `box_a` and
+  `box_b`, with the same spherical registration keys `/mold` uses (male on
+  `box_a`, sockets grown by the printer's `press_fit` in `box_b`, spread up the
+  two side walls on the split plane). Their count is the same
+  `registration_keys` field the two-piece mold uses — one knob, both molds —
+  unless you override it inside a nested `"master_box": {"registration_keys": n}`.
+  The seam runs through the floor and the pad as well, so tape or a band around
+  the closed box is not optional and the cured block will carry a hairline of
+  flash along the seam.
+
+**The workflow assumption, stated once: the master is glued down.** It is not
+suspended on wires and not keyed into the floor. The pad is a landing spot and a
+pour hole, and one dab of hot glue is what holds the figure against the silicone
+trying to float it. Every instruction the service writes assumes that.
+
+**Order of operations, and why.** The sockets are cut out of the *whole* box and
+only then is the box split. Carving a hemisphere into a face a boolean has just
+created comes back as a solid OpenCascade cannot clean on this build123d — mesh
+closed and correctly wound, `BRepCheck_Analyzer` unhappy — which is exactly the
+silently-wrong-mold failure this pipeline refuses. Cutting first and splitting
+afterwards is valid, so that is the order.
+
+Every piece is re-tessellated and re-checked like every other piece this service
+emits, and **each piece is measured against the bed after it is built** rather
+than predicted before: a split box is two plates, not one, and the funnel collar
+sticks out past the corner it sits on. Over the bed is a `400` naming the piece
+and telling you to lower `margin_mm` or `pour_clearance_mm`, split the box, or
+scale the figure down.
 
 ## `POST /export_mold`
 
 The `/mold` body plus `directory` (absolute, created if missing), `basename`
-(default `mold`, sanitised) and `format` (`stl`, `step` or `3mf`). It writes
-`<directory>/<basename>_mold_top.<ext>` and `..._mold_bottom.<ext>`, each
-centred in XY and sitting on Z=0, and returns the same report `/mold` gives plus
-`files`.
+(default `mold`, sanitised) and `format` (`stl`, `step` or `3mf`). It writes one
+file per piece — `<directory>/<basename>_mold_top.<ext>` and
+`..._mold_bottom.<ext>` in `printed_negative`, `..._master.<ext>` plus
+`..._box.<ext>` (or `..._box_a` / `..._box_b`) in `master_box` — each centred in
+XY and sitting on Z=0, and returns the same report `/mold` gives plus `files`.
+
+The master's *shape* is untouched by `master_box`; only where it sits moves, the
+same way a segment is dropped to the origin, so a slicer opening the file does
+not have to hunt for it.
 
 A note on printing them: the halves come out modelled as they assemble, so
 `mold_top` has its cavity facing down and its registration bosses hanging below
 the parting plane. Slicing it as written asks for supports. Flip it in the
 slicer — or in Blender — before you print it.
+
+# Molds from meshes
+
+`POST /mold_mesh` and `POST /export_mold_mesh` are `/mold` and `/export_mold`
+with the script swapped for triangles. This is the front door for *"mold this
+thing I sculpted / downloaded / generated"*: an image-to-3D result, a Blender
+sculpt, an STL off the internet.
+
+```jsonc
+{"mesh": {"vertices": [[x, y, z], ...], "faces": [[i, j, k], ...]}   // or "file_path"
+ // ... plus every field /mold takes, mode and master_box options included
+ "weld_tolerance_mm": null, "sew_tolerance_mm": null, "tri_limit": null}
+```
+
+The input half is the *same code* `/segment_mesh` uses — proximity weld, winding
+repair by signed volume, `.stl` / `.3mf` / `.obj`, 3MF units honoured — and so
+are its **two refusals**, both `400`s and both before any kernel work:
+
+- **A mesh with holes in it** cannot be molded any more than it can be cut. Same
+  words, same repair-first advice: *repair it first — in Blender: select it, ask
+  the assistant to voxel remesh it, or Forge panel → Remesh.*
+- **A mesh over the triangle ceiling** (60 000, `FORGE_MESH_TRI_LIMIT`, or
+  per-request `tri_limit`) is refused with the count and told to decimate.
+  Sewing builds one OpenCascade face per triangle and every mold boolean then
+  runs against all of them: the reference sphere at 2 020 triangles takes 91
+  seconds, the same sphere at 224 takes 8.
+
+Once sewn, the solid goes through the mold pipeline a script's solid goes
+through — the parting plane, the draft, the keys, the spout, the vents, the
+undercut report and both modes are the same code, not a parallel implementation.
+The response is `/mold`'s, plus the `mesh_input` block (what arrived and what had
+to be repaired) and `sewing` (`faces_sewn`, `faces_skipped`, `shells`, `voids`,
+`sew_tolerance_mm`). `params` is `null` — there is no `PARAMS` schema behind a
+mesh — exactly as with `/check_mesh` and `/segment_mesh`.
+
+`/export_mold_mesh` adds `directory`, `basename` (default `mold`) and `format`,
+and writes one file per piece.
+
+Both mesh endpoints run under `FORGE_MOLD_TIMEOUT`, the same budget `/mold` uses.
+
+# The two casting workflows
+
+Every mold response carries an `instructions` array: the workflow written for
+somebody who has never cast anything, with this mold's own numbers in it.
+
+**`printed_negative`** — print both halves, sand and wash the cavities, brush in
+mold release, press the halves together so the bosses drop into the dimples,
+band them shut, pour resin down the spout until it comes up in the vents, wait
+out the full demold time, open, snip the spout and vent stubs off, sand the
+parting line. The last step says the quiet part: a printed mold is good for a
+handful of pulls, and dozens of copies means `master_box` instead.
+
+**`master_box`** — print the master and the box, finish the master properly
+(sand, fill, two coats of primer — the step people skip and the one that decides
+how the copies look), glue the master to the pad, spray release, mix silicone
+slowly by weight, pour a thin string into the corner funnel so the rubber floods
+the figure from below, fill to `pour_clearance_mm` above its highest point, cure
+flat and untouched for the bottle's full time, flex the box off (or take the two
+halves apart), ease the master out through the pour hole, then stand the block
+pour-hole up and cast resin copies in it for as long as it lasts.
+
+The text bends to the mold it was given: no keys means "line the edges up by
+eye", no spout means "pour along one edge", `platform_mm: 0` means "glue it flat
+to the floor", `split: true` means "undo the tape and take the halves apart",
+and the silicone volume the box actually needs is quoted in millilitres.
 
 # Slicing
 
@@ -1027,6 +1316,8 @@ topology that edge counting cannot.
 | `segmenting.py` | Cut modes, region solids, orientation, plate packing |
 | `mesh_input.py` | STL / 3MF / OBJ readers, welding and winding repair, and sewing a mesh into a solid |
 | `mold.py` | Cross-sections, the parting plane, draft, the box and its features |
+| `undercut.py` | Which faces oppose the draw, how deep, and how bad; pure mesh arithmetic |
+| `casting.py` | The `master_box` pour box, and the casting workflow in plain words |
 | `slicer.py` | Slicer detection, the CLI invocation, and running it hidden |
 | `forge_lib.py` | The printability library scripts import: printable features + the peg/socket pair |
 | `samples/ring_band.py` | Reference PartForge script |
@@ -1034,8 +1325,9 @@ topology that edge counting cannot.
 | `samples/magnet_holder.py` | Reference part built from the printability helpers; passes all four checks at its extremes |
 | `tests/` | pytest suite, plus `fake_slicer.py`, the stub `/slice` is tested against |
 
-`checks.py`, `printer.py`, `slicer.py`, the packing half of `segmenting.py`, the
-mesh half of `mold.py` and everything in `mesh_input.py` above `sew_to_solid`
+`checks.py`, `printer.py`, `slicer.py`, `undercut.py`, the packing half of
+`segmenting.py`, the mesh half of `mold.py`, the option and instruction halves of
+`casting.py` and everything in `mesh_input.py` above `sew_to_solid`
 deliberately import no build123d, so they run — and are tested — in the HTTP
 process as well as the worker. Everything that touches
 the kernel does so through a function-local import, which is what keeps
