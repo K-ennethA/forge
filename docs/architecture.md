@@ -192,7 +192,11 @@ Pilot/exit test: the Litwick LED figure — push the translucent flame to toggle
 - Prompt: basic-circuit knowledge (LED+resistor+switch+cell), design-around-components law (pick real parts FIRST, model to their dims), material intent (translucent parts named as such).
 Exact shapes refined by implementation; folded back by the orchestrator.
 
-### Phase 12 sketch — molds from meshes (silicone casting for figure runs)
+### Phase 12 — molds from meshes — implemented (service 464 tests)
+
+Implemented refinements: every mold response (both input kinds, both modes) carries `mode`, `pieces` (mode-independent list; `halves` kept in printed_negative), `undercuts`, `recommendation`, `instructions` (beginner casting steps incl. a silicone-volume ml quote). Undercut verdicts are per HALF and a property of the parting plane, not the shape ("auto" avoids them where geometry allows — severe means "re-widens away from its widest slice"); criterion is a stated judgement call (patch area + angle ≥25° + radial-bulge depth), honesty block in the response. master_box: the pad IS the pour hole (platform_mm: 0 = a mold with no way in); corner funnels shrink to stay on their side of a split and are dropped with a note below half design height; sockets are cut before the split (OCC validity bug otherwise); a half that splits into two solids is a refusal. New request fields: `mode`, `undercut_threshold_deg`, `undercut_examples`, master_box options (margin/wall/floor/pour_clearance/platform/funnels/split).
+
+### Original sketch
 
 User intent: take any 3D object (generated/sculpted/imported) and mold it for silicone casting instead of printing every copy.
 - `POST /mold_mesh` — mesh|file_path input (sew→solid via the existing mesh_input machinery) into the EXISTING mold engine (/mold's parting/draft/keys/spout/vents), same response shape + `mesh_input` block. Plus **undercut analysis**: per-half, faces opposing the draw direction reported with area + located examples; severity verdict ("silicone will release this" vs "rigid mold cannot release this — use master_box").
