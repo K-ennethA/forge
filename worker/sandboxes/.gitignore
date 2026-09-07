@@ -1,0 +1,9 @@
+# Fallback sandbox location, used only if `sandbox_root` is missing from
+# worker/config.json. The real sandboxes live at C:\forge-models\worker-sandboxes
+# -- off the synced drive, because OneDrive locks freshly written files and turns
+# a gate red for reasons the worker cannot see (see worker/CALIBRATION.md).
+#
+# Either way: never commit them. A stale copy of service/ sitting next to the
+# real one is a trap for grep and for the next agent.
+*
+!.gitignore

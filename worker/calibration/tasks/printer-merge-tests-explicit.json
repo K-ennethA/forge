@@ -1,0 +1,10 @@
+{
+  "id": "printer-merge-tests-explicit",
+  "brief_file": "../briefs/printer-merge-tests-explicit.md",
+  "cwd": "C:\\forge-models\\worker-sandboxes\\printer-merge-tests-explicit",
+  "files_scope": [
+    "service/tests/test_printer_merge.py"
+  ],
+  "acceptance_cmd": "\"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\worker\\verifiers\\check_test_count.py\" service/tests/test_printer_merge.py --min 3 && \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" -m pytest service/tests/test_printer_merge.py -q -p no:cacheprovider && \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" -m pytest service/tests/test_checks.py -q -p no:cacheprovider -k printer && \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\worker\\verifiers\\check_tests_catch_mutants.py\" --module service/printer.py --tests service/tests/test_printer_merge.py --pytest \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" --mutants-file mutants.json",
+  "max_attempts": 2
+}

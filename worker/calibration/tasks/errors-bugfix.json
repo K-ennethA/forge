@@ -1,0 +1,10 @@
+{
+  "id": "errors-bugfix",
+  "brief_file": "../briefs/errors-bugfix.md",
+  "cwd": "C:\\forge-models\\worker-sandboxes\\errors-bugfix",
+  "files_scope": [
+    "service/errors.py"
+  ],
+  "acceptance_cmd": "\"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\service\\.venv\\Scripts\\python.exe\" -m pytest tests/test_errors.py -q -p no:cacheprovider",
+  "max_attempts": 2
+}

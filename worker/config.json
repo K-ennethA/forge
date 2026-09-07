@@ -1,0 +1,25 @@
+{
+  "_comment": "Local worker tier settings. Paths are absolute because the installs deliberately live OUTSIDE the repo (and outside OneDrive). Override any of these per-task in the task dict.",
+
+  "ollama_url": "http://127.0.0.1:11434",
+  "ollama_exe": "%LOCALAPPDATA%\\Programs\\Ollama\\ollama.exe",
+
+  "model": "qwen2.5-coder:14b",
+  "vision_model": "qwen2.5vl:7b",
+
+  "backend": "aider",
+  "num_ctx": 16384,
+  "temperature": 0.1,
+  "keep_alive": "5m",
+
+  "aider_exe": "C:\\forge-models\\aider-venv\\Scripts\\aider.exe",
+  "aider_python": "C:\\forge-models\\aider-venv\\Scripts\\python.exe",
+  "aider_edit_format": "whole",
+
+  "_sandbox_root": "Calibration/scratch copies live OUTSIDE OneDrive. Measured 2026-09-07: a gate that compiled a file aider had just written failed with [Errno 13] Permission denied because OneDrive grabbed the fresh write; the same command passed seconds later. A flaky gate is worse than no gate.",
+  "sandbox_root": "C:\\forge-models\\worker-sandboxes",
+
+  "worker_timeout_s": 900,
+  "gate_timeout_s": 300,
+  "max_attempts": 2
+}

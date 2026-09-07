@@ -1,0 +1,10 @@
+{
+  "id": "glb-docstrings",
+  "brief_file": "../briefs/glb-docstrings.md",
+  "cwd": "C:\\forge-models\\worker-sandboxes\\glb-docstrings",
+  "files_scope": [
+    "meshgen/glb.py"
+  ],
+  "acceptance_cmd": "\"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" -m py_compile meshgen/glb.py && \"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\worker\\verifiers\\check_docstrings.py\" meshgen/glb.py --min-functions 2",
+  "max_attempts": 2
+}
