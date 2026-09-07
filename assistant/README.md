@@ -54,11 +54,13 @@ One job at a time, on purpose: two turns in flight would fight over the same
 resumed session. The last 20 jobs stay in memory; older ids 404.
 
 The bridge serves a second surface as well — a web UI at `/`, with its own
-routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`, and the
-workbench's `/projects`, `/preview`, `/scene`). They are additive, the panel
-never calls them, and they are documented under
-[The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface) and
-[The Workbench (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box).
+routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`, the
+workbench's `/projects`, `/preview`, `/scene`, and the library's `/library` and
+`/projects/<name>/thumbnail`). They are additive, the panel never calls them, and
+they are documented under
+[The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface),
+[The Workbench (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box)
+and [The Library (Phase 13)](#the-library-phase-13--a-view-to-see-all-our-3d-models).
 
 ## One message may wait its turn
 
@@ -316,8 +318,11 @@ Drag-and-drop and paste-a-screenshot go through the same `/upload`.
 - **Flows tab**: the saved flows with their params, and a Run button that goes
   straight to Blender with no model in the loop. Blender being closed is a
   sentence naming the button to press, not a stack trace.
-- **Workbench tab** and the **flow row above all three panels** — Phase 11, and
+- **Workbench tab** and the **flow row above every panel** — Phase 11, and
   the rest of this section's worth of page. It is [below](#the-workbench-phase-11--the-page-stops-being-a-chat-box).
+- **Library tab**: every project in `projects/` as a card, from a folder read
+  alone, plus what Blender is holding right now. Also
+  [below](#the-library-phase-13--a-view-to-see-all-our-3d-models).
 
 `format.js` is the reply formatter, ~90 lines and no markdown library: blank-line
 paragraphs (single newlines kept as breaks), `- ` and `1. ` lists, `#` headings,
@@ -344,7 +349,7 @@ between editing a part and *asking somebody* to edit a part.
 
 ### The flow row — on every tab
 
-The row sits above `<main>`, outside all three panels, because these are the
+The row sits above `<main>`, outside every panel, because these are the
 things an artist actually presses and they should not be a tab away (a test
 asserts the position, not just the markup). The three fixed ones send a **canned
 chat message** — the assistant already knows how to do these jobs, and each is
@@ -460,6 +465,137 @@ page made two POSTs in a row. Every POST handler now drains, even the ones with
 nothing to read, and a test walks each of them over one `http.client` connection
 and then asks for `/health`.
 
+## The Library (Phase 13) — a view to see all our 3D models
+
+The Workbench edits *one* part. The Library is the shelf you look along to find
+it: a responsive card grid of every folder in `projects/`, plus a second row of
+whatever Blender is holding right now.
+
+**Everything on a card is a folder read.** Description, dimensions, components,
+exports, when it was last touched — all of it comes off `spec.json` and `stat`,
+so the whole page still draws with Blender closed *and* the shape service
+stopped. That is the point of the tab: the artist opens it to find their work,
+and "find my work" must not be a thing that can be down. The only part that
+needs anything running is the picture, and a missing picture is a placeholder
+with the project's initial in it, not an error.
+
+A card carries:
+
+- the cached thumbnail, or that initial placeholder;
+- `spec.json`'s `description` (or, with no spec, the script and the object name
+  it builds into);
+- **how many dimensions** it has — read from the spec's own `parameters` block,
+  else from a schema the Workbench already parsed this session, else honestly
+  unknown. Never by calling the shape service: a library of twenty parts must
+  not be twenty `/parse_params` round trips, nor twenty error cards when the
+  service is stopped. "Parameters not read yet" is the truth; `0 dimensions`
+  about a script with three would not be;
+- **component chips**. The shape that matters is the one
+  `partforge_new_part` actually writes —
+  `"components": {"collection": <slug>, "core": <slug>, "proposals": [names]}`
+  (`forge_mcp.util.component_block`). That is a **tree, not a map**, and reading
+  it as a map is a real bug this tab found: it produced a chip called
+  "collection", a chip called "core", and silently dropped every proposal —
+  which is the one thing on the card that says what the part is made of. So the
+  tree is recognised by its whole key set and read as core-plus-proposals, the
+  collection is skipped (it is where the pieces live in the outliner, not a
+  piece), and a test pins the three key names against `util.py` itself so a
+  rename on either side fails here rather than quietly emptying every chip row.
+  The looser shapes are still read — a list of names, a list of objects, a map
+  of name → sentence, plus top-level `core`/`proposals` and `assembly.parts` —
+  because `spec.json` is the artist's file and the tree is still growing. A
+  `proposal` chip is dashed: it is the piece you are invited to scrap, and it
+  should not look as settled as the core does. `companion_parts` are deliberately
+  **not** chips — a companion part prints separately and is a sibling, not a
+  component;
+- **exports** from `projects/<name>/exports/`, newest first, with sizes. The
+  full path is the chip's tooltip rather than a link — these are files on this
+  machine and the browser is on this machine, so a download route would be a
+  second way to read the filesystem for no gain over a path you can paste into
+  Explorer;
+- **Open in Workbench**, which switches tab *and* selection (a tab switch that
+  left the picker on the previous part would be a button that lies), and
+  **Preview**.
+
+The second row is the **works in progress**: a generated mesh, a sculpt, the
+pieces a segment produced. None of them has a folder in `projects/` and all of
+them are the artist's work, so they get cards too — dashed, with their size in
+millimetres and a Preview, and an Open in Workbench when the object happens to
+be some project's part object. Blender being closed is one sentence in that row,
+not a failed request, because the rest of the page is a folder read and must
+still draw.
+
+`#library` is a URL: the tab is written to the hash with `replaceState` (so Back
+still leaves the page instead of walking the tabs) and a pasted link wins over
+whatever was open last time.
+
+### Thumbnails: a photograph, never a build
+
+The cache is one PNG per project in `assistant/thumbs/`, overwritten in place —
+so it cannot grow past the number of parts, and a stale picture cannot outlive
+the part it is of. It sits **beside `uploads/`, not in the temp dir** like the
+previews do: a preview is regenerated on every click, and a thumbnail is what
+the library draws *before* anything is running, so it has to survive a reboot.
+The folder writes its own `.gitignore` (`*`) on creation rather than making every
+clone edit the repo's.
+
+Two ways a picture gets there, and neither of them builds geometry:
+
+1. **The Workbench's own render.** `POST /preview` of exactly one object that is
+   some project's part object caches the PNG on the way past, and says which
+   project it was in `thumbnail_for`. One render, two uses — the file is already
+   on disk, and asking Blender to draw the same shape a second time for a
+   240-pixel square would be work nobody asked for. A whole-scene render is
+   nobody's thumbnail: a picture captioned with the wrong part is worse than no
+   picture, when the library is how the artist finds their work.
+2. **The card's Preview button** — `POST /projects/<name>/thumbnail`, which
+   photographs the part *as it stands in the scene*.
+
+That second one is deliberately **only** a photograph. It would be easy to make
+it open the script and generate the part when it is missing — and then a page of
+twelve cards would rebuild twelve parts, spend minutes of the artist's machine
+and change a scene they were looking at, all for pictures. So a part that is not
+in the scene is a **409** naming the button that builds it ("Open it in the
+Workbench and press Apply & rebuild"), and the artist stays the one who decides
+when geometry happens. The route asks `get_scene_info` first and only reaches
+`render_preview` if the object is there; a test asserts that on a miss Blender
+saw exactly one command.
+
+The thumbnail URL is stable, so the card appends the file's mtime as `?t=` — a
+browser showing yesterday's shape under today's name is the one bug this feature
+must not have.
+
+### The library's routes
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/library` | — | `{"dir", "count", "projects": [...], "scene": {...}}` |
+| GET | `/projects/<name>/thumbnail` | — | the cached PNG as `image/png`; **404** with a sentence saying how to get one (which the page draws as a placeholder, not as a fault) |
+| POST | `/projects/<name>/thumbnail` | — | `{"project", "object", "token", "url", "path", "cached", "thumbnail_url", "thumbnail_mtime", "bounds_mm"}`; **409** the part is not in the scene, **422** the project has no part script to photograph, **503** Blender down, **502** it refused or wrote nothing, **404** no such project |
+
+Each card in `projects` is:
+
+```
+{"name", "path", "script", "script_path", "object", "has_params",
+ "description", "param_count", "param_source", "components": [{"name", "role",
+ "description"}], "features", "exports": [{"file", "path", "size", "mtime"}],
+ "export_count", "mtime", "has_thumbnail", "thumbnail_mtime", "thumbnail_url",
+ "spec"}
+```
+
+`param_count` is `null` when it could not be read without running anything, and
+`param_source` says which of the three answers it is (`spec`, `service`,
+`unread`). `mtime` is the latest of the folder, its `spec.json`, its script and
+its exports. The `scene` block is `get_scene_info`'s objects when Blender is up,
+and `{"ok": false, "blender": false, "error": <the panel's own sentence>}` when
+it is not — never an exception, because the rest of the answer is a folder read.
+
+`/projects/<name>/thumbnail` puts the project name through the same alphabet gate
+as `project_dir` and the asset server, so traversal is refused by the *shape* of
+the name before any path arithmetic; the cached PNG is then served straight off
+the cache rather than through `/file/<token>`, since the path is one this bridge
+chose in a folder this bridge owns.
+
 ## The command line it builds
 
 ```
@@ -522,6 +658,7 @@ The web UI's own, all optional:
 | `FORGE_PROJECTS_DIR` | `<repo>/projects` | The parts the workbench lists — **the same variable** `partforge_new_part` writes into |
 | `FORGE_ASSISTANT_PREVIEWS` | `<temp>/forge-webui-previews` | Where `POST /preview` renders to |
 | `FORGE_GENERATE_TIMEOUT` | `300` | Seconds one workbench rebuild may take |
+| `FORGE_ASSISTANT_THUMBS` | `assistant/thumbs` | The library's thumbnail cache — beside `uploads`, not in the temp dir, because a card has to draw before anything is running |
 
 ## Finding the CLI on Windows
 
@@ -634,8 +771,8 @@ bridge must pass are deliberately independent: the bridge always asks for
 stream-json, and the json modes prove it still copes with a build that answers
 with one object anyway.
 
-`assistant/tests/test_webui.py` is the web UI's half of the suite (214 tests
-beside `test_bridge.py`'s 90, so **304** in all). It never touches port 8901:
+`assistant/tests/test_webui.py` is the web UI's half of the suite (274 tests
+beside `test_bridge.py`'s 90, so **364** in all). It never touches port 8901:
 every bridge it starts is on a port the OS handed out, and the Blender socket,
 the geometry service, the two downstream health probes and the start script all
 have fakes in the file, so nothing in it needs Blender, PowerShell or the
@@ -667,6 +804,31 @@ compared against `addon/forge/tools/buddy.py`'s `CHECK_IN_LEAD`, in that file,
 so a reword on either side fails here); the flow row living outside every panel;
 and every POST route walked over a single keep-alive connection followed by a
 `/health` that must still answer.
+
+And for Phase 13: `/library` carrying every field a card draws (description,
+`param_count` and its source, component chips, exports with sizes, the mtime),
+listing what is on disk and skipping what is not a project, surviving a
+`spec.json` that will not parse, and — the one that matters — **drawing every
+card with nothing at all running**, with Blender's absence as the panel's own
+sentence inside the `scene` block rather than as a failed request;
+`param_count_for` never reaching the shape service, and answering `None` rather
+than `0` for a script it could not read; `spec_components` reading the tree the
+MCP server actually writes (core + proposals, collection skipped) *and* still
+reading a map keyed by name that happens to contain a piece called "core", with
+the three key names compared against `mcp/forge_mcp/util.py`'s
+`component_block`; `thumbnail_path` refusing everything
+that is not one plain name, and defaulting beside `uploads` rather than in the
+temp dir; `save_thumbnail` keeping one file per project and writing the folder's
+own `.gitignore`; `remember_preview` caching a picture of exactly one part and
+of nothing else; the `POST` thumbnail route **never building the part to
+photograph it** (a 409 naming Apply & rebuild, with an assertion that Blender saw
+only `get_scene_info`), 422 for a project with no script, and 503 with the
+panel's sentence when Blender is closed; the Workbench's own render doubling as
+the thumbnail while a whole-scene render stays nobody's; and, on the page, the
+tab and panel wired to each other in the right order, the two grids, the
+responsive `auto-fill` grid rule, the initial placeholder, the `?t=` cache-bust,
+Open in Workbench switching both the tab and the selection, and the tab
+refetching every time it is opened.
 
 The formatter tests run `format.js` for real under node when there is one, and
 skip when there is not.

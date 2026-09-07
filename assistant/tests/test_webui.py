@@ -20,7 +20,9 @@ What is being pinned down, in order:
   way out, and ``/file`` serves nothing that was not minted;
 * ``/upload``: what a browser can hand this bridge, and what it may not;
 * ``/services/health`` fans out and survives everything being down;
-* ``/flows`` passes through to Blender's socket, including when it is not there.
+* ``/flows`` passes through to Blender's socket, including when it is not there;
+* ``/library`` draws every project from a folder read alone, and its thumbnail
+  cache photographs the scene without ever building anything to photograph.
 """
 
 import base64
@@ -92,6 +94,9 @@ def bridges(tmp_path):
             # holders in it is not a test.
             "FORGE_ASSISTANT_PREVIEWS": str(tmp_path / "previews"),
             "FORGE_PROJECTS_DIR": str(tmp_path / "projects"),
+            # …nor thumbnails: the library's cache is a real folder in the repo
+            # by default, and a test must never leave a picture in it.
+            "FORGE_ASSISTANT_THUMBS": str(tmp_path / "thumbs"),
             # Ports nothing is listening on, so "down" is the default answer.
             "FORGE_SERVICE_URL": "http://127.0.0.1:%d" % free_port(),
             "FORGE_MESHGEN_URL": "http://127.0.0.1:%d" % free_port(),
@@ -677,6 +682,12 @@ PAGE_ANCHORS = (
     ("wb-view", "which way to look at it"),
     ("scene", "the scene components panel"),
     ("scene-refresh", "the scene refresh button"),
+    # -- the library (Phase 13)
+    ("tab-library", "the library tab"),
+    ("panel-library", "the library panel"),
+    ("library", "the card grid"),
+    ("library-scene", "the works-in-progress row"),
+    ("library-refresh", "the library refresh button"),
 )
 
 
@@ -738,7 +749,9 @@ def test_the_page_only_talks_to_routes_this_bridge_serves(client):
                       "/flows/run",
                       # the workbench (Phase 11)
                       "/projects", "/projects/", "/preview", "/scene",
-                      "/scene/delete"}, called
+                      "/scene/delete",
+                      # the library (Phase 13)
+                      "/library"}, called
 
 
 def test_the_reply_is_the_only_html_the_page_ever_builds(client):
@@ -2057,9 +2070,9 @@ def test_the_workbench_tab_and_its_panel_are_wired_to_each_other(client):
     html = fetch_text(client, "/")
     assert 'aria-controls="panel-workbench"' in html
     assert 'aria-labelledby="tab-workbench"' in html
-    # The three tabs the script knows about.
+    # The four tabs the script knows about.
     script = fetch_text(client, "/webui/app.js")
-    assert 'var TABS = ["chat", "workbench", "flows"];' in script
+    assert 'var TABS = ["chat", "workbench", "library", "flows"];' in script
 
 
 # ===========================================================================
@@ -2096,6 +2109,655 @@ def test_a_post_body_never_poisons_the_next_request_on_the_connection(bridges,
         assert payload["status"] == "ok"
     finally:
         connection.close()
+
+
+# ===========================================================================
+# the library (Phase 13) — pure units
+# ===========================================================================
+
+@pytest.mark.parametrize("name", [
+    "../system_prompt", "..\\bridge", "sub/thing", "sub\\thing",
+    "%2e%2e", "C:\\Windows", "/etc", "", "   ", None, ".", "..",
+])
+def test_thumbnail_path_refuses_anything_that_is_not_one_plain_name(name,
+                                                                    monkeypatch,
+                                                                    tmp_path):
+    """Same alphabet gate as the assets and the projects, for the same reason.
+
+    This name arrives in a URL from a browser, and the refusal must not depend
+    on path arithmetic.
+    """
+    monkeypatch.setenv("FORGE_ASSISTANT_THUMBS", str(tmp_path))
+    assert bridge.thumbnail_path(name) is None
+
+
+def test_thumbnail_path_is_one_png_per_project(monkeypatch, tmp_path):
+    monkeypatch.setenv("FORGE_ASSISTANT_THUMBS", str(tmp_path))
+    path = bridge.thumbnail_path("eevee-bowl-holder")
+    assert path == str(tmp_path / "eevee-bowl-holder.png")
+    # One file per project, overwritten: the cache cannot grow past the number
+    # of parts, and a stale picture cannot outlive the part it is of.
+    assert bridge.thumbnail_path("eevee-bowl-holder") == path
+
+
+def test_the_thumbnail_cache_lives_beside_uploads_not_in_the_temp_dir(monkeypatch):
+    """A preview is regenerated on every click; a thumbnail is what the library
+    draws *before* anything is running, so it has to survive a reboot — and be
+    somewhere the artist can find and delete, the way ``uploads`` is."""
+    monkeypatch.delenv("FORGE_ASSISTANT_THUMBS", raising=False)
+    assert (os.path.dirname(bridge.thumbs_dir())
+            == os.path.dirname(bridge.uploads_dir()))
+    assert os.path.basename(bridge.thumbs_dir()) == "thumbs"
+    # …unlike the previews folder, which is pictures of the moment and lives in
+    # the temp dir where the OS will eventually sweep it.
+    assert bridge.thumbs_dir() != bridge.previews_dir()
+
+
+def test_spec_components_reads_every_shape_the_block_takes():
+    """spec.json is the artist's file and the component tree is still growing.
+
+    A list of names, a list of objects, or a map keyed by name — all three have
+    been written, so all three are read.
+    """
+    found = bridge.spec_components({
+        "components": [{"name": "cup_core", "kind": "core",
+                        "description": "the dimensioned ring"},
+                       "cup_lip"],
+        "core": {"base": "the part that holds the bowl"},
+        "proposals": ["collar", "ears"],
+        "assembly": {"parts": [{"name": "pin", "source": "purchased"}]},
+        "_notes": "ignored",
+    })
+    by_name = {item["name"]: item for item in found}
+    assert by_name["cup_core"]["role"] == "core"
+    assert by_name["cup_core"]["description"] == "the dimensioned ring"
+    # A bare name in a list is a name, with nothing claimed about it.
+    assert by_name["cup_lip"]["description"] == ""
+    # A map is name -> sentence: the key names it, the string describes it.
+    assert by_name["base"]["role"] == "core"
+    assert by_name["base"]["description"] == "the part that holds the bowl"
+    assert by_name["collar"]["role"] == "proposal"
+    assert by_name["pin"]["name"] == "pin"
+
+
+def test_spec_components_reads_the_tree_the_mcp_server_actually_writes():
+    """The shape in `projects/` on this machine, not the one in the fixture.
+
+    ``partforge_new_part`` records the tree as
+    ``{"collection", "core", "proposals"}`` — a *tree*, not a map of components.
+    Read as a map it yields a chip called "collection", a chip called "core",
+    and silently drops every proposal, which is the one thing on the card that
+    says what the part is made of.
+    """
+    found = bridge.spec_components({"components": {
+        "collection": "litwick-lamp", "core": "litwick-lamp",
+        "proposals": ["litwick-lamp-flame", "litwick-lamp-wax"]}})
+    assert [(c["name"], c["role"]) for c in found] == [
+        ("litwick-lamp", "core"),
+        ("litwick-lamp-flame", "proposal"),
+        ("litwick-lamp-wax", "proposal"),
+    ]
+    # The collection is where the pieces live in the outliner, not a piece.
+    assert "collection" not in [c["name"] for c in found]
+    # A tree with nothing proposed yet is just the core.
+    assert bridge.spec_components({"components": {
+        "collection": "cup", "core": "cup", "proposals": []}}) == [
+        {"name": "cup", "role": "core", "description": ""}]
+
+
+def test_the_tree_shape_is_read_off_the_writer_that_makes_it():
+    """Pinned against `forge_mcp.util.component_block`, in that file.
+
+    Three keys, and the library reads all three by name — so a rename on either
+    side fails here rather than quietly emptying every card's chip row.
+    """
+    path = os.path.join(REPO_ROOT, "mcp", "forge_mcp", "util.py")
+    with open(path, encoding="utf-8") as handle:
+        source = handle.read()
+    assert ('return {"collection": slug, "core": slug, "proposals": proposals}'
+            in source)
+    assert bridge._TREE_KEYS == frozenset(("collection", "core", "proposals"))
+
+
+def test_a_map_keyed_by_name_is_still_read_as_one(monkeypatch):
+    """The tree is recognised by its *whole* key set, not by one key.
+
+    ``{"core": "the ring", "collar": "scrap me"}`` is a map of name -> sentence
+    that happens to have a piece called "core" in it, and reading it as a tree
+    would lose the collar.
+    """
+    found = bridge.spec_components({"components": {
+        "core": "the dimensioned ring", "collar": "scrap me freely"}})
+    by_name = {item["name"]: item for item in found}
+    assert set(by_name) == {"core", "collar"}
+    assert by_name["collar"]["description"] == "scrap me freely"
+
+
+def test_spec_components_is_empty_rather_than_an_exception_on_junk():
+    for spec in (None, {}, {"components": "not a list"}, {"components": 4},
+                 {"assembly": "nope"}):
+        assert bridge.spec_components(spec) == []
+
+
+def write_export(folder, name, size=2048, ago=0.0):
+    directory = folder / "exports"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.write_bytes(b"\x00" * size)
+    if ago:
+        stamp = time.time() - ago
+        os.utime(str(path), (stamp, stamp))
+    return path
+
+
+def test_project_exports_lists_the_newest_first_with_its_size(projects):
+    folder = projects("cup")
+    write_export(folder, "cup.stl", size=4096, ago=600)
+    write_export(folder, "cup.3mf", size=1024)
+    (folder / "exports" / "subfolder").mkdir()
+    found = bridge.project_exports(str(folder))
+    assert [item["file"] for item in found] == ["cup.3mf", "cup.stl"]
+    assert found[0]["size"] == 1024 and found[1]["size"] == 4096
+    assert found[0]["path"].endswith(os.path.join("exports", "cup.3mf"))
+
+
+def test_project_exports_of_a_project_that_never_exported_is_empty(projects):
+    assert bridge.project_exports(str(projects("cup"))) == []
+
+
+def test_param_count_never_asks_the_service(monkeypatch, projects):
+    """A library of twenty parts must not be twenty /parse_params round trips.
+
+    (Nor twenty error cards when the shape service is stopped.) So the count
+    comes off the spec, or off a schema the workbench already parsed, or it is
+    honestly unknown.
+    """
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    folder = projects("cup")
+    entry = bridge.project_entry(str(folder))
+    assert bridge.param_count_for(entry) == (3, "spec")
+
+    # No spec: unread, not zero — "0 dimensions" would be a lie about a script
+    # that has three.
+    bare = projects("plain", spec=None)
+    count, source = bridge.param_count_for(bridge.project_entry(str(bare)))
+    assert count is None and source == "unread"
+
+
+def test_save_thumbnail_writes_one_file_and_the_folder_ignores_itself(monkeypatch,
+                                                                      tmp_path):
+    monkeypatch.setenv("FORGE_ASSISTANT_THUMBS", str(tmp_path / "thumbs"))
+    render = write_png(tmp_path / "render.png")
+    cached = bridge.save_thumbnail("cup", render)
+    assert cached == str(tmp_path / "thumbs" / "cup.png")
+    with open(cached, "rb") as handle:
+        assert handle.read() == PNG
+    # The default folder lives in the repo, so it excludes itself rather than
+    # making every clone edit .gitignore — a cache of pictures is not source.
+    ignore = tmp_path / "thumbs" / ".gitignore"
+    assert ignore.is_file() and ignore.read_text(encoding="utf-8").strip() == "*"
+
+    # Rendered again: same file, new bytes.
+    again = write_png(tmp_path / "again.png", PNG + b"\x01")
+    bridge.save_thumbnail("cup", again)
+    assert len([p for p in (tmp_path / "thumbs").iterdir()
+                if p.suffix == ".png"]) == 1
+    assert bridge.read_thumbnail("cup")[0].endswith(b"\x01")
+
+
+def test_save_thumbnail_refuses_a_name_that_is_not_a_project(monkeypatch, tmp_path):
+    monkeypatch.setenv("FORGE_ASSISTANT_THUMBS", str(tmp_path / "thumbs"))
+    render = write_png(tmp_path / "render.png")
+    assert bridge.save_thumbnail("../evil", render) is None
+    assert bridge.save_thumbnail("cup", "") is None
+
+
+def test_remember_preview_only_caches_a_picture_of_exactly_one_part(monkeypatch,
+                                                                     tmp_path,
+                                                                     projects):
+    """A whole-scene render is nobody's thumbnail.
+
+    A picture captioned with the wrong part is worse than no picture: the
+    library is how the artist finds their work.
+    """
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects.root))
+    monkeypatch.setenv("FORGE_ASSISTANT_THUMBS", str(tmp_path / "thumbs"))
+    projects("cup")
+    render = write_png(tmp_path / "render.png")
+
+    assert bridge.remember_preview(["cup"], render) is not None
+    assert bridge.read_thumbnail("cup") is not None
+    # …and none of these is a picture of one part.
+    assert bridge.remember_preview([], render) is None
+    assert bridge.remember_preview(["cup", "cup_collar"], render) is None
+    assert bridge.remember_preview(["something_else"], render) is None
+
+
+# ===========================================================================
+# the library — GET /library
+# ===========================================================================
+
+def library_blender(objects=("cup",), written=None):
+    """A fake add-on that can be asked what is in the scene and to render it."""
+    scene = {
+        "objects": [{"name": name, "type": "MESH",
+                     "dimensions": [0.152, 0.152, 0.062], "vertex_count": 4212}
+                    for name in objects],
+        "active": objects[0] if objects else None,
+    }
+
+    def render(request):
+        params = request.get("params") or {}
+        path = params.get("path")
+        if written is not None:
+            written.append(path)
+        write_png(path)
+        return {"path": path, "objects": params.get("objects") or [],
+                "view": params.get("view") or "iso", "resolution": 768}
+
+    return by_type({"get_scene_info": scene, "render_preview": render})
+
+
+def test_library_is_empty_before_anything_is_made(client):
+    status, body = client.request("/library", timeout=40)
+    assert status == 200
+    assert body["projects"] == [] and body["count"] == 0
+    assert body["dir"].endswith("projects")
+    # The scene block is present even with nothing running: it is how the page
+    # knows to print one sentence instead of drawing an empty row.
+    assert body["scene"]["ok"] is False
+
+
+def test_library_carries_everything_a_card_draws(bridges, projects):
+    folder = projects("cup")
+    write_export(folder, "cup.stl", size=4096, ago=600)
+    write_export(folder, "cup.3mf", size=1024)
+    client = bridges()
+
+    status, body = client.request("/library", timeout=40)
+    assert status == 200, body
+    assert body["count"] == 1
+    card = body["projects"][0]
+
+    assert card["name"] == "cup"
+    assert card["object"] == "cup"          # the naming convention, not "part"
+    assert card["script"] == "part.py"
+    assert card["description"] == "A cup that holds a thing."
+    assert card["param_count"] == 3 and card["param_source"] == "spec"
+    assert [c["name"] for c in card["components"]] == ["cup_core", "cup_collar"]
+    assert card["components"][1]["role"] == "proposal"
+    assert card["features"] == ["a fluted band", "four feet"]
+    assert card["export_count"] == 2
+    assert [e["file"] for e in card["exports"]] == ["cup.3mf", "cup.stl"]
+    assert card["exports"][0]["size"] == 1024
+    assert card["mtime"] > 0
+    # No picture has been taken yet, so the card is a placeholder.
+    assert card["has_thumbnail"] is False
+    assert card["thumbnail_url"] == "/projects/cup/thumbnail"
+
+
+def test_a_card_chips_the_core_and_the_proposals_a_real_spec_records(bridges,
+                                                                     projects):
+    """End to end, on the shape `partforge_new_part` writes into `projects/`."""
+    projects("litwick-lamp", extra={"components": {
+        "collection": "litwick-lamp", "core": "litwick-lamp",
+        "proposals": ["litwick-lamp-flame"]}})
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert [(c["name"], c["role"]) for c in card["components"]] == [
+        ("litwick-lamp", "core"), ("litwick-lamp-flame", "proposal")]
+
+
+def test_library_lists_every_project_and_skips_what_is_not_one(bridges, projects):
+    projects("cup")
+    projects("lid", script="part_lid.py")
+    (projects.root / "notes").mkdir()
+    (projects.root / "notes" / "todo.txt").write_text("later", encoding="utf-8")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    assert [p["name"] for p in body["projects"]] == ["cup", "lid"]
+
+
+def test_library_survives_a_spec_that_will_not_parse(bridges, projects):
+    """A trailing comma in the artist's own file must not hide their part."""
+    folder = projects("cup")
+    (folder / "spec.json").write_text("{ not json,", encoding="utf-8")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert card["name"] == "cup" and card["spec"] is None
+    assert card["description"] == "" and card["components"] == []
+    # The script is still readable, so the card still says it has dimensions.
+    assert card["has_params"] is True
+    assert card["param_count"] is None
+
+
+def test_library_still_draws_with_blender_closed(bridges, projects):
+    """The whole point: a shelf of your work is a folder read.
+
+    Everything except the pictures survives every service on the machine being
+    stopped, and the one thing that does not is one sentence with one thing to
+    do in it.
+    """
+    projects("cup")
+    client = bridges()          # nothing is listening on any of the ports
+    status, body = client.request("/library", timeout=40)
+    assert status == 200, body
+    assert body["projects"][0]["name"] == "cup"
+    scene = body["scene"]
+    assert scene["ok"] is False and scene["blender"] is False
+    assert "Blender is not running" in scene["error"]
+    assert "press N" in scene["error"] and "Start Server" in scene["error"]
+    assert scene["objects"] == []
+
+
+def test_library_shows_works_in_progress_beside_the_saved_parts(bridges, projects,
+                                                                fake_blender):
+    projects("cup")
+    blender = fake_blender(library_blender(objects=("cup", "sculpt_head")))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    _status, body = client.request("/library", timeout=40)
+    scene = body["scene"]
+    assert scene["ok"] is True and scene["count"] == 2
+    assert [o["name"] for o in scene["objects"]] == ["cup", "sculpt_head"]
+    # A sculpt has no folder in projects/ and is still the artist's work.
+    assert [p["name"] for p in body["projects"]] == ["cup"]
+
+
+def test_library_says_so_when_there_is_no_projects_folder_at_all(bridges,
+                                                                 tmp_path):
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(tmp_path / "nope")})
+    _status, body = client.request("/library", timeout=40)
+    assert body["projects"] == []
+    assert "no projects folder" in body["note"]
+
+
+# ===========================================================================
+# the library — the thumbnail cache
+# ===========================================================================
+
+def test_a_thumbnail_is_a_404_until_one_is_taken(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, _headers, body = raw_get(client, "/projects/cup/thumbnail")
+    assert status == 404
+    # …and it says how to get one, because this 404 is a placeholder card
+    # rather than a fault.
+    assert b"Preview" in body
+
+
+def test_a_thumbnail_is_photographed_from_the_scene_and_then_cached(bridges,
+                                                                    projects,
+                                                                    fake_blender,
+                                                                    tmp_path):
+    projects("cup")
+    written = []
+    blender = fake_blender(library_blender(("cup",), written))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    assert raw_get(client, "/projects/cup/thumbnail")[0] == 404
+
+    status, body = client.request("/projects/cup/thumbnail", payload={},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["project"] == "cup" and body["object"] == "cup"
+    assert body["cached"] is True
+    assert body["url"] == "/file/" + body["token"]
+    # The render went to a path this bridge chose, and only the one object.
+    assert os.path.dirname(written[0]) == str(tmp_path / "previews")
+    types = [request["type"] for request in blender.seen]
+    assert types == ["get_scene_info", "render_preview"], types
+    assert blender.seen[1]["params"]["objects"] == ["cup"]
+
+    # …and now the cache answers, which is what the card draws on a page that
+    # is opened with Blender closed.
+    status, headers, png = raw_get(client, "/projects/cup/thumbnail")
+    assert status == 200
+    assert headers["Content-Type"] == "image/png"
+    assert png == PNG
+    assert os.path.isfile(str(tmp_path / "thumbs" / "cup.png"))
+
+    _status, listing = client.request("/library", timeout=40)
+    card = listing["projects"][0]
+    assert card["has_thumbnail"] is True and card["thumbnail_mtime"] > 0
+
+
+def test_a_thumbnail_never_builds_the_part_to_photograph_it(bridges, projects,
+                                                            fake_blender):
+    """A picture is not a reason to run somebody's script.
+
+    Generating the part when it is missing would make a page of twelve cards
+    into twelve rebuilds — minutes of their machine and a scene they did not
+    ask to have changed, for pictures. So it is a 409 naming the button that
+    builds it, and the artist stays the one who decides when geometry happens.
+    """
+    projects("cup")
+    blender = fake_blender(library_blender(objects=("something_else",)))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/thumbnail", payload={},
+                                  timeout=60)
+    assert status == 409, body
+    assert "not in the Blender scene" in body["error"]
+    assert "Apply & rebuild" in body["error"]
+    assert body["object"] == "cup"
+    assert body["scene_objects"] == ["something_else"]
+    # Nothing was rendered, and nothing was built.
+    assert [request["type"] for request in blender.seen] == ["get_scene_info"]
+
+
+def test_a_thumbnail_with_blender_closed_names_the_button_to_press(bridges,
+                                                                   projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/cup/thumbnail", payload={},
+                                  timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False
+    assert "Blender is not running" in body["error"]
+    assert "Start Server" in body["error"]
+
+
+def test_a_project_with_no_part_script_has_nothing_to_photograph(bridges,
+                                                                 projects,
+                                                                 fake_blender):
+    """A spec and no script is a plan, not a part.
+
+    422 rather than 409: the 409 names a button that would build it, and there
+    is nothing here to build yet.  Blender is never asked.
+    """
+    projects("plan", script="")
+    blender = fake_blender(library_blender(("cup",)))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/plan/thumbnail", payload={},
+                                  timeout=40)
+    assert status == 422, body
+    assert "no part script" in body["error"]
+    assert body["project"] == "plan"
+    assert blender.seen == []
+    # …and the card still draws, with a placeholder where the picture goes.
+    _status, listing = client.request("/library", timeout=40)
+    card = [p for p in listing["projects"] if p["name"] == "plan"][0]
+    assert card["has_thumbnail"] is False and card["object"] == ""
+
+
+@pytest.mark.parametrize("name", ["nope", "..", "..%2Fassistant", "sub%2Fthing"])
+def test_a_thumbnail_of_a_project_that_is_not_one_is_a_plain_404(bridges,
+                                                                 projects, name):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/%s/thumbnail" % name, payload={})
+    assert status == 404, body
+    assert "No project called" in body["error"]
+    # …and the GET half is a 404 too, without saying which kind of miss it was.
+    assert raw_get(client, "/projects/%s/thumbnail" % name)[0] == 404
+
+
+def test_a_thumbnail_post_never_poisons_the_next_request(bridges, projects):
+    """The keep-alive rule, on the route most likely to 404 before it drains."""
+    import http.client
+
+    projects("cup")
+    client = bridges()
+    connection = http.client.HTTPConnection("127.0.0.1", client.port, timeout=60)
+    try:
+        connection.request("POST", "/projects/nope/thumbnail",
+                           body=json.dumps({"view": "front"}).encode("utf-8"),
+                           headers={"Content-Type": "application/json"})
+        assert connection.getresponse().read()
+        connection.request("GET", "/health")
+        response = connection.getresponse()
+        payload = json.loads(response.read().decode("utf-8"))
+        assert response.status == 200, payload
+    finally:
+        connection.close()
+
+
+def test_the_workbench_render_doubles_as_the_library_thumbnail(bridges, projects,
+                                                               fake_blender):
+    """One render, two uses.
+
+    The artist presses Render in the Workbench; the PNG is already on disk, so
+    asking Blender to draw the same shape again for a 240-pixel square would be
+    work nobody asked for.
+    """
+    projects("cup")
+    blender = fake_blender(library_blender(("cup",)))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    status, body = client.request("/preview", payload={"objects": ["cup"]},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["thumbnail_for"] == "cup"
+    status, headers, png = raw_get(client, "/projects/cup/thumbnail")
+    assert status == 200 and png == PNG
+    assert headers["Content-Type"] == "image/png"
+
+
+def test_a_whole_scene_render_is_nobodys_thumbnail(bridges, projects,
+                                                   fake_blender):
+    projects("cup")
+    blender = fake_blender(library_blender(("cup",)))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/preview", payload={}, timeout=60)
+    assert status == 200, body
+    assert body["thumbnail_for"] is None
+    assert raw_get(client, "/projects/cup/thumbnail")[0] == 404
+
+
+# ===========================================================================
+# the library — the page
+# ===========================================================================
+
+def test_the_library_tab_and_its_panel_are_wired_to_each_other(client):
+    html = fetch_text(client, "/")
+    assert 'aria-controls="panel-library"' in html
+    assert 'aria-labelledby="tab-library"' in html
+    # It comes after Chat and the Workbench: the chat is where a part is asked
+    # for, the workbench is where it is edited, and this is the shelf.
+    assert html.index('id="tab-chat"') < html.index('id="tab-workbench"')
+    assert html.index('id="tab-workbench"') < html.index('id="tab-library"')
+
+
+def test_the_library_is_linkable(client):
+    """#library is a URL, so it can be bookmarked and pasted."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "function tabFromHash()" in script
+    assert "hashchange" in script
+    assert "replaceState" in script
+
+
+def test_the_library_cards_carry_their_two_buttons(client):
+    script = fetch_text(client, "/webui/app.js")
+    assert '"Open in Workbench"' in script
+    assert "function openInWorkbench(" in script
+    assert "/thumbnail" in script
+
+
+def test_the_library_panel_carries_both_grids_and_its_refresh(client):
+    """The saved parts and the works in progress are two rows, not one list.
+
+    A sculpt with no folder is still the artist's work and belongs on the page;
+    it is not, however, a project, and a card that implied it was would send
+    somebody looking for a folder that is not there.
+    """
+    html = fetch_text(client, "/")
+    panel = html[html.index('id="panel-library"'):html.index('id="panel-flows"')]
+    assert 'id="library"' in panel and 'class="lib-grid"' in panel
+    assert 'id="library-scene"' in panel
+    assert 'id="library-refresh"' in panel
+    assert panel.index('id="library"') < panel.index('id="library-scene"')
+    assert "In progress" in panel
+
+
+def test_the_library_grid_is_responsive_without_a_media_query_per_size(client):
+    """One part is a card, twelve are a grid and a narrow window is a column."""
+    css = fetch_text(client, "/webui/app.css")
+    assert ".lib-grid" in css
+    assert "auto-fill" in css and "minmax(" in css
+    # The picture area keeps its shape whatever the render was, and never
+    # crops the part to fill it.
+    assert "aspect-ratio" in css
+    assert "object-fit: contain" in css
+
+
+def test_a_card_with_no_picture_draws_a_placeholder_rather_than_a_broken_image(
+        client):
+    """A missing thumbnail is the normal state of a part nobody has rendered."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "function initial(" in script
+    assert "lib-initial" in script
+    assert "project.has_thumbnail" in script
+    css = fetch_text(client, "/webui/app.css")
+    assert ".lib-initial" in css
+
+
+def test_a_cards_picture_is_busted_out_of_the_browser_cache_by_its_mtime(client):
+    """The thumbnail URL is stable, so the mtime has to ride in the query.
+
+    A browser showing yesterday's shape under today's name is the one bug this
+    feature must not have.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assert 'project.thumbnail_url + "?t=" + (project.thumbnail_mtime' in script
+
+
+def test_a_card_says_what_it_is_made_of_and_what_it_exported(client):
+    """Description, dimensions, component chips, exports — the folder read."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "lib-desc" in script and "project.description" in script
+    assert "project.param_count" in script and "dimensions" in script
+    assert "lib-chip" in script and "project.components" in script
+    assert "lib-exports" in script and "function bytes(" in script
+    # A proposal is the piece you are invited to scrap, and it does not look as
+    # settled as the core does.
+    assert "is-proposal" in script
+    assert ".lib-chip.is-proposal" in fetch_text(client, "/webui/app.css")
+
+
+def test_open_in_workbench_switches_the_tab_and_the_selection(client):
+    """Both halves, in that order — a tab switch that left the picker on the
+    previous part would be a button that lies about what it did."""
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function openInWorkbench("):]
+    body = body[:body.index("\n  function ")]
+    assert 'showTab("workbench")' in body
+    assert "selectProject(name)" in body
+    # …and it waits for the picker's own fetch rather than racing a second one.
+    assert "whenProjectsLoaded()" in body
+    assert "function whenProjectsLoaded()" in script
+
+
+def test_the_library_is_refetched_every_time_the_tab_is_opened(client):
+    """Unlike the flows and the workbench, which are loaded once.
+
+    A part made in the chat a minute ago is exactly what somebody opens this
+    tab to look for, and it costs one folder read.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assert 'if (which === "library") { loadLibrary(); }' in script
+    assert "function loadLibrary()" in script
+    assert 'api("/library")' in script
 
 
 def test_the_page_explains_that_scrapping_is_undoable(client):

@@ -33,6 +33,8 @@
           aria-selected="true" aria-controls="panel-chat">Chat</button>
   <button type="button" class="tab" id="tab-workbench" role="tab"
           aria-selected="false" aria-controls="panel-workbench">Workbench</button>
+  <button type="button" class="tab" id="tab-library" role="tab"
+          aria-selected="false" aria-controls="panel-library">Library</button>
   <button type="button" class="tab" id="tab-flows" role="tab"
           aria-selected="false" aria-controls="panel-flows">Flows</button>
 </nav>
@@ -155,6 +157,33 @@
       </div>
 
     </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-library" role="tabpanel"
+           aria-labelledby="tab-library" hidden>
+    <div class="lib-head">
+      <div>
+        <h2>Library</h2>
+        <p class="muted">Everything you have made. Each card is a folder in
+           <code>projects/</code> — what it is, how many dimensions it has, the
+           pieces it is made of and the files it has exported. Pictures are kept
+           from the last time it was rendered.</p>
+      </div>
+      <button type="button" class="btn ghost" id="library-refresh">Refresh</button>
+    </div>
+
+    <div id="library" class="lib-grid"></div>
+
+    <div class="lib-head lib-head-second">
+      <div>
+        <h3>In progress</h3>
+        <p class="muted small">What Blender is holding right now — a generated
+           mesh, a sculpt, the pieces a segment produced. These have no folder
+           yet, which is fine; they are still your work.</p>
+      </div>
+    </div>
+    <div id="library-scene" class="lib-grid"></div>
   </section>
 
   <!-- ------------------------------------------------------------------ -->

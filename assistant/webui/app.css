@@ -753,6 +753,110 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .wb-object .who .dims { display: block; font: 11.5px/1.5 var(--mono); color: var(--text-faint); }
 .wb-object.is-active { border-color: var(--accent-dim); }
 
+/* -------------------------------------------------------------- library -- */
+
+/* The shelf you look along to find a part. Everything on a card is a folder
+   read, so the grid draws with nothing else on the machine running. */
+
+#panel-library { overflow-y: auto; padding: 24px 20px 40px; }
+#panel-library > * { max-width: 1240px; margin-left: auto; margin-right: auto; }
+
+.lib-head { display: flex; align-items: flex-start; gap: 20px; }
+.lib-head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 620; }
+.lib-head h3 { margin: 0 0 4px; font-size: 14.5px; font-weight: 620; }
+.lib-head p { margin: 0; max-width: 72ch; font-size: 13.5px; }
+.lib-head .btn { margin-left: auto; flex: 0 0 auto; }
+.lib-head-second { margin-top: 34px; border-top: 1px solid var(--line-soft); padding-top: 22px; }
+
+/* auto-fill rather than a fixed count: one part is one card, twelve parts are
+   a grid, and a narrow window is a column — without a media query per size. */
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.lib-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lib-card.is-scene { border-style: dashed; }
+
+.lib-thumb {
+  aspect-ratio: 4 / 3;
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.lib-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.lib-initial {
+  font: 600 34px/1 var(--font);
+  color: var(--text-faint);
+  letter-spacing: .02em;
+}
+
+.lib-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.lib-body h3 { margin: 0; font: 620 14.5px/1.3 var(--font); overflow-wrap: anywhere; }
+
+.lib-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  /* one line of description on a card; the whole of it is in the sheet */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lib-facts { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.lib-fact { font: 11.5px/1.5 var(--mono); color: var(--text-faint); }
+
+.lib-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.lib-chip {
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--bg-raised);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* a proposal is the piece you are invited to scrap; it should not look as
+   settled as the core does */
+.lib-chip.is-proposal { border-style: dashed; color: var(--text-faint); }
+.lib-chip.is-more { color: var(--text-faint); border-color: transparent; }
+
+.lib-exports { margin: 0; padding: 0; list-style: none; }
+.lib-exports li {
+  display: flex;
+  gap: 8px;
+  font: 11.5px/1.7 var(--mono);
+  color: var(--text-faint);
+}
+.lib-exports .f { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-exports .s { flex: 0 0 auto; }
+.lib-exports .more { color: var(--text-faint); opacity: .8; }
+
+.lib-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.lib-status { font-size: 11.5px; color: var(--text-dim); }
+.lib-status.bad { color: #f0a49c; }
+.lib-status:empty { display: none; }
+
 /* --------------------------------------------------------------- narrow -- */
 
 @media (max-width: 1000px) {

@@ -49,6 +49,24 @@ Phase 11 — the workbench's routes (also additive; also model-free)::
 ``GET/POST /scene``                    ``get_scene_info``, verbatim
 ``POST /scene/delete``                 ``delete_object`` (undoable in Blender)
 
+Phase 13 — the library's routes (additive again, and model-free again)::
+
+``GET  /library``                      every project on disk as a card — spec
+                                       description, parameter count, components,
+                                       exports with sizes — plus a ``scene``
+                                       block of what Blender is holding right
+                                       now, so works in progress show up beside
+                                       the saved parts
+``GET  /projects/<name>/thumbnail``    the cached PNG for one project (404 when
+                                       there is none; the page draws a
+                                       placeholder)
+``POST /projects/<name>/thumbnail``    photograph the project *as it stands in
+                                       the scene* and cache the PNG.  409 when
+                                       the part is not in the scene — a
+                                       thumbnail is a picture of the artist's
+                                       work, never a reason to build something
+                                       behind their back
+
 None of these spends a model turn: the workbench tab is the artist editing a
 part directly, and a slider that costs money per drag is a slider nobody drags.
 The bridge never *executes* the artist's script — that is the geometry service's
@@ -140,6 +158,8 @@ Web UI environment (Phase 9)
                              ``forge-webui-previews`` folder in the temp dir)
 ``FORGE_GENERATE_TIMEOUT``   seconds the workbench waits for one ``/generate``
                              (default 300)
+``FORGE_ASSISTANT_THUMBS``   the library's thumbnail cache (default
+                             ``assistant/thumbs``, beside ``uploads``)
 """
 
 import base64
@@ -323,6 +343,30 @@ SCENE_TIMEOUT = 30.0
 #: How many preview PNGs stay on disk.  They are a cache of pictures, not work.
 PREVIEWS_KEPT = 40
 
+# ---------------------------------------------------------------------------
+# Phase 13 — the library's constants
+# ---------------------------------------------------------------------------
+
+#: Where a project's finished files land, by the folder convention in
+#: docs/architecture.md ("each project folder holds spec.json, part.py,
+#: exports/ and renders").
+EXPORTS_DIRNAME = "exports"
+#: How many export files one card lists.  A card is a card; a folder with two
+#: hundred STLs in it is a folder, and the count still tells the truth.
+MAX_EXPORTS_LISTED = 40
+#: How many components one card lists, for the same reason.
+MAX_COMPONENTS_LISTED = 40
+
+#: Why a thumbnail cannot be taken.  A thumbnail is a photograph of the
+#: artist's work as it stands — it is deliberately NOT allowed to build the
+#: part first.  Generating a shape because a picture was missing is minutes of
+#: someone's machine and a scene they did not ask to have changed, in service
+#: of a 240-pixel square.
+NEEDS_GENERATING_HINT = (
+    "%s is not in the Blender scene, so there is nothing to photograph. Open it "
+    "in the Workbench and press Apply & rebuild to generate it first, then press "
+    "Preview again.")
+
 #: What to tell an artist whose geometry service is not running.  Same shape as
 #: :data:`BLENDER_DOWN_HINT`: one sentence, one button to press.
 SERVICE_DOWN_HINT = (
@@ -504,6 +548,19 @@ def generate_timeout():
     except (TypeError, ValueError):
         return DEFAULT_GENERATE_TIMEOUT
     return max(5.0, value)
+
+
+def thumbs_dir():
+    """The library's thumbnail cache — one PNG per project.
+
+    Beside ``uploads`` rather than in the temp folder, unlike
+    :func:`previews_dir`: a preview is regenerated on every click and a
+    thumbnail is what the library draws *before* anything is running, so it has
+    to survive a reboot.  One file per project, overwritten in place, so the
+    folder can never grow past the number of parts the artist has.
+    """
+    return os.path.abspath(str(_env("FORGE_ASSISTANT_THUMBS",
+                                    os.path.join(HERE, "thumbs"))))
 
 
 # ---------------------------------------------------------------------------
@@ -2589,6 +2646,374 @@ def new_preview_path():
 
 
 # ---------------------------------------------------------------------------
+# Phase 13 — the library: thumbnails
+# ---------------------------------------------------------------------------
+
+def thumbnail_path(name):
+    """Where one project's cached PNG lives, or ``None`` for a bad name.
+
+    Same alphabet gate as :func:`project_dir` and :func:`webui_asset`, because
+    this name arrives in a URL from a browser and the answer must not depend on
+    path arithmetic.  The file is *always* ``<project>.png``: one per project,
+    overwritten, so the cache cannot grow and a stale picture cannot outlive the
+    part it is of.
+    """
+    text = str(name or "").strip()
+    if not text or text in (".", "..") or not _PROJECT_NAME_RE.match(text):
+        return None
+    root = thumbs_dir()
+    path = os.path.abspath(os.path.join(root, "%s.png" % text))
+    if os.path.dirname(path) != root:
+        return None
+    return path
+
+
+def thumbnail_stat(name):
+    """``(path, mtime)`` for a cached thumbnail, or ``(path, 0.0)``/``(None, 0)``."""
+    path = thumbnail_path(name)
+    if not path:
+        return None, 0.0
+    try:
+        return path, round(os.path.getmtime(path), 3)
+    except OSError:
+        return path, 0.0
+
+
+def save_thumbnail(name, source_path):
+    """Copy a freshly rendered PNG into the cache. Best effort, never fatal.
+
+    Returns the cached path, or ``None``.  A failure here costs the artist a
+    placeholder card and nothing else, so it must never take a render down with
+    it — the picture they asked for has already been made.
+    """
+    target = thumbnail_path(name)
+    source = str(source_path or "")
+    if not target or not source:
+        return None
+    try:
+        directory = os.path.dirname(target)
+        existed = os.path.isdir(directory)
+        os.makedirs(directory, exist_ok=True)
+        if not existed:
+            # The default folder is inside the repo, like uploads/: a cache of
+            # pictures is not source, and it says so itself rather than making
+            # every clone edit .gitignore.
+            try:
+                with open(os.path.join(directory, ".gitignore"), "w") as handle:
+                    handle.write("*\n")
+            except OSError:
+                pass
+        shutil.copyfile(source, target)
+    except OSError:
+        return None
+    return target
+
+
+def read_thumbnail(name):
+    """``(bytes, content type)`` for a cached thumbnail, or ``None``."""
+    path = thumbnail_path(name)
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(), "image/png"
+    except OSError:
+        return None
+
+
+def project_for_object(object_name):
+    """The project whose part script builds into this object, or ``None``.
+
+    The naming convention read backwards.  It is what lets the workbench's
+    existing render double as a thumbnail: the artist presses Render, the PNG
+    is already on disk, and the library gets its picture for free instead of
+    asking Blender to draw the same shape twice.
+    """
+    text = str(object_name or "").strip()
+    if not text:
+        return None
+    for entry in scan_projects().get("projects", []):
+        if entry.get("object") == text:
+            return entry
+    return None
+
+
+def remember_preview(objects, path):
+    """Cache a preview PNG as a project's thumbnail, when it is a picture of one.
+
+    Only when the render was of *exactly one* named object that is some
+    project's part object.  A whole-scene render is not a thumbnail for any one
+    project, and a picture captioned with the wrong part is worse than no
+    picture: the library is meant to be how the artist finds their work.
+    """
+    names = [str(item).strip() for item in (objects or []) if str(item).strip()]
+    if len(names) != 1:
+        return None
+    entry = project_for_object(names[0])
+    if entry is None:
+        return None
+    return save_thumbnail(entry["name"], path)
+
+
+# ---------------------------------------------------------------------------
+# Phase 13 — the library: what one card is made of
+# ---------------------------------------------------------------------------
+
+def _component_entry(item, key=None, role=""):
+    """One component, whichever of the three shapes it was written in."""
+    if isinstance(item, str):
+        text = item.strip()
+        if not text and not key:
+            return None
+        # A map of name -> sentence: the KEY is the name and the string is what
+        # it is.  A bare list entry is the name, with nothing said about it.
+        return {"name": str(key or text), "role": str(role or ""),
+                "description": text if key else ""}
+    if not isinstance(item, dict):
+        return None
+    name = (item.get("name") or item.get("object") or key
+            or item.get("script") or "component")
+    return {
+        "name": str(name),
+        "role": str(item.get("kind") or item.get("role") or item.get("type")
+                    or role or ""),
+        "description": str(item.get("description") or item.get("note") or ""),
+    }
+
+
+def component_list(value, role=""):
+    """A components block as a flat list, read liberally.
+
+    ``spec.json`` is the artist's file and the component tree is still growing,
+    so every shape it has been written in is read rather than one: a list of
+    names, a list of objects, or a map keyed by name.  The web UI does exactly
+    this in JavaScript for the workbench sheet; the library needs it server-side
+    so a card can carry chips without shipping the spec to the browser twice.
+    """
+    out = []
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            entry = _component_entry(item, None, role)
+            if entry is not None:
+                out.append(entry)
+    elif isinstance(value, dict):
+        for key in value:
+            if str(key).startswith("_"):
+                continue
+            entry = _component_entry(value[key], key, role)
+            if entry is not None:
+                out.append(entry)
+    return out
+
+
+#: The keys of the component tree the MCP server actually writes —
+#: ``{"collection": <slug>, "core": <slug>, "proposals": [names]}``
+#: (``forge_mcp.util.component_block``).  Named here because that block is a
+#: *tree*, not a map of components: read as a map it yields a chip called
+#: "collection", a chip called "core", and silently drops every proposal — the
+#: one thing on the card that says what the part is made of.
+_TREE_KEYS = frozenset(("collection", "core", "proposals"))
+
+
+def _names_in(value):
+    """The strings in a name, or in a list of names.  Nothing else."""
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, (list, tuple)):
+        return [item.strip() for item in value
+                if isinstance(item, str) and item.strip()]
+    return []
+
+
+def component_tree(block):
+    """The MCP's own component tree as a flat list, or ``None`` if it is not one.
+
+    ``collection`` is skipped on purpose: it is the Blender collection the
+    pieces live in, not a piece.  ``core`` is the dimensioned part and
+    ``proposals`` are the ones the artist is invited to scrap, which is the
+    whole distinction the chips exist to draw.
+    """
+    if not isinstance(block, dict):
+        return None
+    keys = {str(key) for key in block if not str(key).startswith("_")}
+    # Only when the block is *that* tree and nothing else. A map of
+    # ``{"core": "the ring", "collar": "scrap me"}`` is a map keyed by name and
+    # is read as one.
+    if not keys or not keys <= _TREE_KEYS or not keys & {"core", "proposals"}:
+        return None
+    out = [{"name": name, "role": "core", "description": ""}
+           for name in _names_in(block.get("core"))]
+    out += [{"name": name, "role": "proposal", "description": ""}
+            for name in _names_in(block.get("proposals"))]
+    return out
+
+
+def spec_components(spec):
+    """Every component named in a spec — ``components``, core, proposals, parts."""
+    if not isinstance(spec, dict):
+        return []
+    block = spec.get("components")
+    tree = component_tree(block)
+    out = tree if tree is not None else component_list(block)
+    out += component_list(spec.get("core"), "core")
+    out += component_list(spec.get("proposals"), "proposal")
+    assembly = spec.get("assembly")
+    if isinstance(assembly, dict):
+        out += component_list(assembly.get("parts"))
+    return out[:MAX_COMPONENTS_LISTED]
+
+
+def project_exports(folder, limit=MAX_EXPORTS_LISTED):
+    """``projects/<name>/exports/*`` as ``{file, path, size, mtime}``, newest first.
+
+    Paths are shown, never linked: these are files on the artist's own machine
+    and the browser is on the same machine.  A download route would be a second
+    way to read the filesystem for no gain over the path they can paste into
+    Explorer.
+    """
+    directory = os.path.join(folder, EXPORTS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    out = []
+    for name in sorted(names):
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        out.append({"file": name, "path": path, "size": int(info.st_size),
+                    "mtime": round(info.st_mtime, 3)})
+    out.sort(key=lambda item: item["mtime"], reverse=True)
+    return out[:limit]
+
+
+def param_count_for(entry):
+    """``(count, source)`` — how many dimensions this part has, if we can tell.
+
+    Without running the artist's script and **without calling the geometry
+    service**: the library is a folder read, and a page that lists twenty parts
+    must not become twenty ``/parse_params`` round trips (or twenty error cards
+    when the service is stopped).  So: the spec's own ``parameters`` block,
+    else a schema the workbench already parsed this session, else ``None`` —
+    which the card says as "parameters not read yet" rather than as a zero.
+    """
+    spec = entry.get("spec")
+    if isinstance(spec, dict):
+        params = spec.get("parameters")
+        if isinstance(params, dict) and params:
+            return len(params), "spec"
+    script_path = entry.get("script_path")
+    if script_path:
+        with _SCHEMA_LOCK:
+            cached = _SCHEMA_CACHE.get(os.path.abspath(script_path))
+        if cached is not None:
+            return len(cached.get("params") or {}), "service"
+    return None, "unread"
+
+
+def project_mtime(folder, entry, exports):
+    """When this project was last touched — the folder, its spec, its script,
+    its exports, whichever moved last."""
+    stamps = []
+    candidates = [folder, os.path.join(folder, "spec.json"),
+                  entry.get("script_path")]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            stamps.append(os.path.getmtime(candidate))
+        except OSError:
+            pass
+    stamps.extend(item["mtime"] for item in exports)
+    return round(max(stamps), 3) if stamps else 0.0
+
+
+def library_entry(folder):
+    """One project as a library card, or ``None`` if the folder is not one."""
+    entry = project_entry(folder)
+    if entry is None:
+        return None
+    spec = entry.get("spec") if isinstance(entry.get("spec"), dict) else {}
+    exports = project_exports(folder)
+    count, source = param_count_for(entry)
+    features = spec.get("features")
+    _path, thumb_mtime = thumbnail_stat(entry["name"])
+    return {
+        "name": entry["name"],
+        "path": entry["path"],
+        "script": entry["script"],
+        "script_path": entry["script_path"],
+        "object": entry["object"],
+        "has_params": entry["has_params"],
+        "description": str(spec.get("description") or "").strip(),
+        "param_count": count,
+        "param_source": source,
+        "components": spec_components(spec),
+        "features": ([str(item) for item in features[:20]]
+                     if isinstance(features, list) else []),
+        "exports": exports,
+        "export_count": len(exports),
+        "mtime": project_mtime(folder, entry, exports),
+        "has_thumbnail": bool(thumb_mtime),
+        "thumbnail_mtime": thumb_mtime,
+        "thumbnail_url": "/projects/%s/thumbnail" % entry["name"],
+        "spec": entry["spec"],
+    }
+
+
+def scene_section():
+    """What Blender is holding right now — best effort, never an error.
+
+    Works in progress belong in the library beside the saved parts: a generated
+    mesh, a sculpt, the pieces a segment produced.  None of them has a folder in
+    ``projects/`` and all of them are the artist's work.  Blender being closed
+    is one sentence in this block rather than a failed request, because the rest
+    of the page is a folder read and must still draw.
+    """
+    try:
+        result = blender_command("get_scene_info", {}, SCENE_TIMEOUT)
+    except BlenderDown as exc:
+        return {"ok": False, "blender": False, "error": str(exc), "objects": [],
+                "count": 0}
+    except BlenderRefused as exc:
+        return {"ok": False, "blender": True, "error": str(exc), "objects": [],
+                "count": 0}
+    except Exception as exc:  # noqa: BLE001 - the library draws without Blender
+        return {"ok": False, "blender": False, "error": str(exc)[:300],
+                "objects": [], "count": 0}
+    objects = result.get("objects")
+    objects = objects if isinstance(objects, list) else []
+    return {"ok": True, "blender": True, "objects": objects,
+            "count": len(objects), "active": result.get("active"),
+            "unit_scale": result.get("unit_scale")}
+
+
+def scan_library(scene=True):
+    """Every project as a card, plus what is in the scene right now."""
+    root = projects_dir()
+    scene_block = scene_section() if scene else None
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return {"dir": root, "projects": [], "count": 0, "scene": scene_block,
+                "note": "There is no projects folder at %s yet. Ask the "
+                        "assistant for a part and one appears." % root}
+    out = []
+    for name in names:
+        folder = os.path.join(root, name)
+        if not _PROJECT_NAME_RE.match(name) or not os.path.isdir(folder):
+            continue
+        entry = library_entry(folder)
+        if entry is not None:
+            out.append(entry)
+    return {"dir": root, "projects": out, "count": len(out), "scene": scene_block}
+
+
+# ---------------------------------------------------------------------------
 # Phase 9 — the health strip, fanned out from here
 # ---------------------------------------------------------------------------
 
@@ -2911,6 +3336,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/scene":
             self._scene()
             return
+
+        # -- the library (Phase 13) --------------------------------------
+        if path == "/library":
+            self._send(200, scan_library())
+            return
+        if path.startswith("/projects/") and path.endswith("/thumbnail"):
+            self._get_thumbnail(path[len("/projects/"):-len("/thumbnail")])
+            return
         self._send(404, {"error": "Unknown path %s" % path})
 
     def _index(self):
@@ -2971,6 +3404,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/scene/delete":
             self._scene_delete()
+            return
+
+        # -- the library (Phase 13) --------------------------------------
+        if path.startswith("/projects/") and path.endswith("/thumbnail"):
+            self._make_thumbnail(path[len("/projects/"):-len("/thumbnail")])
             return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -3367,6 +3805,12 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         path = str(result.get("path") or params["path"])
+        # The picture the artist just asked for is also the library's thumbnail,
+        # when it is a picture of exactly one part.  Free: the PNG is already on
+        # disk, and asking Blender to draw the same shape a second time for a
+        # 240-pixel square would be work nobody asked for.
+        rendered = result.get("objects") or objects
+        cached = remember_preview(rendered, path)
         token = FILES.mint(path)
         if not token:
             # The add-on said it rendered and there is nothing there.  Said
@@ -3380,11 +3824,14 @@ class Handler(BaseHTTPRequestHandler):
             "token": token,
             "url": "/file/%s" % token,
             "path": path,
-            "objects": result.get("objects") or objects,
+            "objects": rendered,
             "view": result.get("view") or params.get("view") or "iso",
             "framed_all_visible": bool(result.get("framed_all_visible")),
             "bounds_mm": result.get("bounds_mm"),
             "resolution": result.get("resolution"),
+            # Which project's library card just got a new picture, if any.
+            "thumbnail_for": os.path.splitext(os.path.basename(cached))[0]
+                             if cached else None,
         })
 
     def _scene(self):
@@ -3424,6 +3871,113 @@ class Handler(BaseHTTPRequestHandler):
             # Every state-changing socket command pushes its own undo step, so
             # this is true rather than reassuring.
             "undo": "Ctrl+Z in Blender puts %s back." % name,
+        })
+
+    # -- the library's own handlers (Phase 13) ---------------------------
+    def _get_thumbnail(self, name):
+        """The cached PNG for one project, or a 404 the page draws around.
+
+        Served straight off the cache rather than through ``/file/<token>``:
+        the path is one this bridge chose, in a folder this bridge owns, named
+        by a project name that has already passed the alphabet gate — there is
+        nothing for a token to add.  A 404 here is not an error; it is a
+        placeholder card with the project's initial in it.
+        """
+        found = read_thumbnail(name)
+        if found is None:
+            self._send(404, {
+                "error": "No picture of %s yet. Press Preview on its card (or "
+                         "Render in the Workbench) and one is kept."
+                         % (str(name)[:60] or "that project"),
+                "project": str(name)[:60],
+            })
+            return
+        body, content_type = found
+        self._send_bytes(200, body, content_type)
+
+    def _make_thumbnail(self, name):
+        """Photograph the project as it stands in the scene, and cache the PNG.
+
+        Deliberately *only* a photograph.  It would be easy to make this open
+        the script and generate the part when it is missing — and then a page
+        that draws twelve cards would rebuild twelve parts, spend minutes of
+        the artist's machine and change a scene they were looking at, all for
+        pictures.  So a part that is not in the scene is a 409 naming the
+        button that builds it, and the artist stays the one who decides when
+        geometry happens.
+        """
+        # Drained BEFORE the project is resolved, not after: a 404 that returns
+        # early would otherwise leave the body in the socket, and keep-alive
+        # would read it as the start of the next request. See _read_json.
+        self._read_json()
+        entry, _folder = self._project(name)
+        if entry is None:
+            return
+        object_name = entry["object"]
+        if not object_name:
+            self._send(422, {"error": "%s has no part script, so there is no "
+                                      "object to photograph." % entry["name"],
+                             "project": entry["name"]})
+            return
+
+        try:
+            scene = blender_command("get_scene_info", {}, SCENE_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False,
+                             "project": entry["name"]})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True,
+                             "project": entry["name"]})
+            return
+
+        present = [str(item.get("name")) for item in (scene.get("objects") or [])
+                   if isinstance(item, dict) and item.get("name")]
+        if object_name not in present:
+            self._send(409, {
+                "error": NEEDS_GENERATING_HINT % object_name,
+                "blender": True,
+                "project": entry["name"],
+                "object": object_name,
+                "scene_objects": present[:40],
+            })
+            return
+
+        params = {"path": new_preview_path(), "objects": [object_name]}
+        try:
+            result = blender_command("render_preview", params, PREVIEW_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False,
+                             "project": entry["name"]})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True,
+                             "project": entry["name"]})
+            return
+
+        path = str(result.get("path") or params["path"])
+        cached = save_thumbnail(entry["name"], path)
+        token = FILES.mint(path)
+        if not token:
+            self._send(502, {
+                "error": "Blender reported a render but there is no readable "
+                         "PNG at %s." % path,
+                "blender": True, "project": entry["name"]})
+            return
+        _cached_path, mtime = thumbnail_stat(entry["name"])
+        self._send(200, {
+            "project": entry["name"],
+            "object": object_name,
+            # The render itself, by token — what the page swaps straight into
+            # the card, since a fresh name per render can never be a browser
+            # showing the previous shape out of its cache.
+            "token": token,
+            "url": "/file/%s" % token,
+            "path": path,
+            "cached": bool(cached),
+            "thumbnail_url": "/projects/%s/thumbnail" % entry["name"],
+            "thumbnail_mtime": mtime,
+            "bounds_mm": result.get("bounds_mm"),
         })
 
 

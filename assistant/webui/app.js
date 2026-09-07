@@ -67,7 +67,14 @@
     project: null,    // the selected entry from it
     controls: {},     // parameter name -> its control
     preview: null,    // the last /preview answer
-    scene: null       // the last /scene answer
+    scene: null,      // the last /scene answer
+    loading: null     // the in-flight /projects promise, so two callers share one
+  };
+
+  //: The library (Phase 13): every project as a card, and whatever Blender is
+  //: holding beside them.  One fetch, refetched whenever the tab is opened.
+  var lib = {
+    data: null        // the last /library answer
   };
 
   function debounce(fn, ms) {
@@ -873,7 +880,7 @@
   }
 
   function loadProjects() {
-    return api("/projects").then(function (res) {
+    var job = api("/projects").then(function (res) {
       var picker = $("project");
       if (!res.ok) {
         picker.textContent = "";
@@ -914,6 +921,16 @@
       picker.value = wanted;
       return selectProject(wanted);
     });
+    // Held so a second caller — the library's "Open in Workbench" arriving
+    // while the tab is still loading — waits for THIS fetch instead of firing
+    // a second one and racing it for the picker.
+    wb.loading = job;
+    return job;
+  }
+
+  function whenProjectsLoaded() {
+    if (wb.projects !== null) { return Promise.resolve(); }
+    return wb.loading || loadProjects();
   }
 
   function statsLine(data) {
@@ -1082,6 +1099,305 @@
     loadScene();
   }
 
+  // -------------------------------------------------------------- library --
+  //
+  // "A view to see all our 3d models."  The workbench edits ONE part; this is
+  // the shelf you look along to find it.  Everything on a card is a folder read
+  // — description, dimensions, components, exports — so the whole page still
+  // draws with Blender closed and the shape service stopped.  The only thing
+  // that needs anything running is the picture, and a missing picture is a
+  // placeholder rather than an error.
+
+  function bytes(size) {
+    var value = numberOr(size, 0);
+    if (value < 1024) { return value + " B"; }
+    if (value < 1024 * 1024) { return (value / 1024).toFixed(0) + " KB"; }
+    return (value / 1048576).toFixed(value < 10 * 1048576 ? 1 : 0) + " MB";
+  }
+
+  function initial(name) {
+    return String(name || "?").trim().charAt(0).toUpperCase() || "?";
+  }
+
+  //: The picture area of a card: the cached PNG, or the project's initial.  The
+  //: mtime rides in the query string because the URL is otherwise stable — and
+  //: a browser showing yesterday's shape from its cache is the one bug this
+  //: feature must not have.
+  function thumb(project) {
+    var box = el("div", "lib-thumb");
+    if (project.has_thumbnail) {
+      var img = el("img");
+      img.src = project.thumbnail_url + "?t=" + (project.thumbnail_mtime || 0);
+      img.alt = project.name;
+      img.loading = "lazy";
+      box.appendChild(img);
+    } else {
+      var mark = el("div", "lib-initial", initial(project.name));
+      mark.title = "No picture yet — press Preview with the part in the scene.";
+      box.appendChild(mark);
+    }
+    return box;
+  }
+
+  function setThumb(box, url, alt) {
+    box.textContent = "";
+    var img = el("img");
+    img.src = url;
+    img.alt = alt || "";
+    box.appendChild(img);
+  }
+
+  function cardStatus(card, text, cls) {
+    var node = card.querySelector(".lib-status");
+    if (!node) { return; }
+    node.className = "lib-status" + (cls ? " " + cls : "");
+    node.textContent = text || "";
+  }
+
+  function refreshThumbnail(project, card) {
+    var button = card.querySelector(".lib-shoot");
+    var box = card.querySelector(".lib-thumb");
+    if (button) { button.disabled = true; }
+    cardStatus(card, "rendering…");
+    return api("/projects/" + encodeURIComponent(project.name) + "/thumbnail",
+               { method: "POST", body: {} })
+      .then(function (res) {
+        if (button) { button.disabled = false; }
+        if (!res.ok) {
+          // 409 is the interesting one: the part is not in the scene, so there
+          // is nothing to photograph. Saying so on the card beats a banner —
+          // it is about this part, and it names the button that fixes it.
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        setThumb(box, res.data.url, project.name);
+        project.has_thumbnail = true;
+        project.thumbnail_mtime = res.data.thumbnail_mtime || 0;
+        cardStatus(card, "");
+      });
+  }
+
+  function openInWorkbench(name) {
+    showTab("workbench");
+    return whenProjectsLoaded().then(function () {
+      var picker = $("project");
+      picker.value = name;
+      if (picker.value !== name) {
+        banner("error", "The Workbench does not have a part called “" + name +
+                        "”. Press Refresh on it and try again.");
+        return;
+      }
+      return selectProject(name);
+    });
+  }
+
+  function libraryCard(project) {
+    var card = el("section", "lib-card");
+    card.dataset.project = project.name;
+    card.appendChild(thumb(project));
+
+    var body = el("div", "lib-body");
+    body.appendChild(el("h3", null, project.name));
+    body.appendChild(el("p", "lib-desc",
+      project.description || (project.script
+        ? project.script + "  →  object “" + project.object + "”"
+        : "No description in spec.json.")));
+
+    var facts = el("div", "lib-facts");
+    if (typeof project.param_count === "number") {
+      facts.appendChild(el("span", "lib-fact",
+        project.param_count + (project.param_count === 1 ? " dimension"
+                                                          : " dimensions")));
+    } else if (project.has_params) {
+      facts.appendChild(el("span", "lib-fact", "has dimensions"));
+    } else {
+      facts.appendChild(el("span", "lib-fact", "no parameters"));
+    }
+    var exports = project.exports || [];
+    var files = el("span", "lib-fact",
+      exports.length ? (exports.length + (exports.length === 1 ? " export"
+                                                               : " exports"))
+                     : "not exported yet");
+    facts.appendChild(files);
+    body.appendChild(facts);
+
+    var parts = project.components || [];
+    if (parts.length) {
+      var chips = el("div", "lib-chips");
+      parts.slice(0, 8).forEach(function (part) {
+        var chip = el("span", "lib-chip" +
+          (part.role === "proposal" ? " is-proposal" : ""), part.name);
+        chip.title = (part.role ? part.role + " — " : "") +
+                     (part.description || part.name);
+        chips.appendChild(chip);
+      });
+      if (parts.length > 8) {
+        chips.appendChild(el("span", "lib-chip is-more",
+                             "+" + (parts.length - 8)));
+      }
+      body.appendChild(chips);
+    }
+
+    if (exports.length) {
+      var list = el("ul", "lib-exports");
+      exports.slice(0, 4).forEach(function (file) {
+        var item = el("li");
+        item.appendChild(el("span", "f", file.file));
+        item.appendChild(el("span", "s", bytes(file.size)));
+        // The path, not a link: these are files on this machine and the
+        // browser is on this machine. Copy it into Explorer.
+        item.title = file.path;
+        list.appendChild(item);
+      });
+      if (exports.length > 4) {
+        list.appendChild(el("li", "more",
+          "… and " + (exports.length - 4) + " more in " + project.path));
+      }
+      body.appendChild(list);
+    }
+
+    var actions = el("div", "lib-actions");
+    var open = el("button", "btn tiny", "Open in Workbench");
+    open.type = "button";
+    open.title = "Edit its dimensions";
+    open.addEventListener("click", function () { openInWorkbench(project.name); });
+    actions.appendChild(open);
+
+    var shoot = el("button", "btn tiny lib-shoot", "Preview");
+    shoot.type = "button";
+    shoot.title = "Render it as it stands in the Blender scene, and keep the picture";
+    shoot.addEventListener("click", function () {
+      refreshThumbnail(project, card);
+    });
+    actions.appendChild(shoot);
+    body.appendChild(actions);
+    body.appendChild(el("div", "lib-status"));
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function sceneCard(object, unitScale, owner) {
+    var card = el("section", "lib-card is-scene");
+    card.dataset.object = object.name;
+    var box = el("div", "lib-thumb");
+    box.appendChild(el("div", "lib-initial", initial(object.name)));
+    card.appendChild(box);
+
+    var body = el("div", "lib-body");
+    body.appendChild(el("h3", null, object.name));
+    var bits = [];
+    var size = object.dimensions || [];
+    // Blender units, one of which is `unit_scale` metres — the same conversion
+    // the workbench's scene rows do, for the same reason: a size printed in the
+    // wrong unit is worse than no size at all.
+    var toMillimetres = 1000 * numberOr(unitScale, 1) || 1000;
+    if (size.length === 3) {
+      bits.push(size.map(function (v) {
+        return Math.round(v * toMillimetres * 10) / 10;
+      }).join(" × ") + " mm");
+    }
+    if (object.vertex_count) { bits.push(object.vertex_count + " verts"); }
+    if (object.type && object.type !== "MESH") {
+      bits.push(String(object.type).toLowerCase());
+    }
+    body.appendChild(el("p", "lib-desc", bits.join("  ·  ") || "in the scene"));
+
+    var actions = el("div", "lib-actions");
+    var shoot = el("button", "btn tiny", "Preview");
+    shoot.type = "button";
+    shoot.addEventListener("click", function () {
+      shoot.disabled = true;
+      cardStatus(card, "rendering…");
+      api("/preview", { body: { objects: [object.name], view: "iso" } })
+        .then(function (res) {
+          shoot.disabled = false;
+          if (!res.ok) {
+            cardStatus(card, res.data.error ||
+                       ("The bridge answered " + res.status + "."), "bad");
+            return;
+          }
+          setThumb(box, res.data.url, object.name);
+          cardStatus(card, "");
+        });
+    });
+    actions.appendChild(shoot);
+
+    if (owner) {
+      var open = el("button", "btn tiny", "Open in Workbench");
+      open.type = "button";
+      open.title = "This is " + owner.name + "'s part object";
+      open.addEventListener("click", function () { openInWorkbench(owner.name); });
+      actions.appendChild(open);
+    }
+    body.appendChild(actions);
+    body.appendChild(el("div", "lib-status"));
+    card.appendChild(body);
+    return card;
+  }
+
+  function renderLibrary(data) {
+    var host = $("library");
+    host.textContent = "";
+    var projects = (data && data.projects) || [];
+    if (!projects.length) {
+      var empty = card("Nothing in projects/ yet");
+      empty.appendChild(el("p", null, (data && data.note) ||
+        "Ask the assistant in the Chat tab for a part and it appears here."));
+      host.appendChild(empty);
+    } else {
+      projects.forEach(function (project) {
+        host.appendChild(libraryCard(project));
+      });
+    }
+
+    var sceneHost = $("library-scene");
+    sceneHost.textContent = "";
+    var scene = (data && data.scene) || {};
+    if (!scene.ok) {
+      // Blender closed is the common case, and it is one sentence with one
+      // thing to do — the same sentence the workbench and the panel use.
+      var box = card(scene.blender === false ? "Blender is not open"
+                                             : "Could not read the scene", "bad");
+      box.appendChild(el("p", null, scene.error ||
+        "The scene could not be read just now."));
+      sceneHost.appendChild(box);
+      return;
+    }
+    var objects = scene.objects || [];
+    if (!objects.length) {
+      sceneHost.appendChild(el("p", "muted small", "Blender's scene is empty."));
+      return;
+    }
+    var owners = {};
+    projects.forEach(function (project) {
+      if (project.object) { owners[project.object] = project; }
+    });
+    objects.forEach(function (object) {
+      sceneHost.appendChild(sceneCard(object, scene.unit_scale,
+                                      owners[object.name]));
+    });
+  }
+
+  function loadLibrary() {
+    var host = $("library");
+    host.textContent = "";
+    host.appendChild(el("p", "muted small", "Reading projects/…"));
+    return api("/library").then(function (res) {
+      if (!res.ok) {
+        host.textContent = "";
+        var box = card("Could not read the library", "bad");
+        box.appendChild(el("p", null, res.data.error ||
+          ("The bridge answered " + res.status + ".")));
+        host.appendChild(box);
+        return;
+      }
+      lib.data = res.data;
+      renderLibrary(res.data);
+    });
+  }
+
   // -------------------------------------------------------- flow buttons --
   //
   // Always visible, on every tab.  The three canned ones are chat messages —
@@ -1133,7 +1449,7 @@
   }
 
   // ----------------------------------------------------------------- tabs --
-  var TABS = ["chat", "workbench", "flows"];
+  var TABS = ["chat", "workbench", "library", "flows"];
 
   function showTab(which) {
     if (TABS.indexOf(which) < 0) { which = "chat"; }
@@ -1146,8 +1462,25 @@
     });
     if (which === "flows" && state.flows === null) { loadFlows(); }
     if (which === "workbench" && wb.projects === null) { loadWorkbench(); }
+    // The library is refetched every time it is opened, unlike the other two:
+    // a part made in the chat a minute ago is exactly what somebody opens this
+    // tab to look for, and it is one folder read.
+    if (which === "library") { loadLibrary(); }
     if (which === "chat") { scrollDown(); }
+    // Linkable: #library is a URL that opens on the library, which is what a
+    // second monitor and a bookmark are for.  Written with replaceState so the
+    // back button still leaves the page instead of walking the tabs.
+    try {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, "", "#" + which);
+      }
+    } catch (e) { /* file:// and other odd origins */ }
     try { localStorage.setItem("forge.tab", which); } catch (e) { /* private mode */ }
+  }
+
+  function tabFromHash() {
+    var hash = String(window.location.hash || "").replace(/^#/, "").toLowerCase();
+    return TABS.indexOf(hash) >= 0 ? hash : null;
   }
 
   // ------------------------------------------------------------------ wire --
@@ -1229,7 +1562,14 @@
     $("flows-refresh").addEventListener("click", loadFlows);
     $("tab-chat").addEventListener("click", function () { showTab("chat"); });
     $("tab-workbench").addEventListener("click", function () { showTab("workbench"); });
+    $("tab-library").addEventListener("click", function () { showTab("library"); });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
+    $("library-refresh").addEventListener("click", loadLibrary);
+    // …and a link somebody pasted, or edited in the address bar.
+    window.addEventListener("hashchange", function () {
+      var wanted = tabFromHash();
+      if (wanted) { showTab(wanted); }
+    });
 
     // -- the workbench
     $("projects-refresh").addEventListener("click", loadWorkbench);
@@ -1279,7 +1619,9 @@
     loadFlows();
     var tab = "chat";
     try { tab = localStorage.getItem("forge.tab") || "chat"; } catch (e) { tab = "chat"; }
-    showTab(tab);
+    // A link wins over what was open last time: somebody who typed #library
+    // meant it.
+    showTab(tabFromHash() || tab);
     setInterval(refreshHealth, 15000);
     if (tab === "chat") { $("message").focus(); }
   }
