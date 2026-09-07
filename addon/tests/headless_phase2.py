@@ -179,21 +179,43 @@ def test_checks_on_the_sample():
 
 def test_checks_fail_on_an_oversized_part(script_path):
     section("Print Checks on an oversized part")
+    # Imported here, like the other addon-internals reaches in this file: the
+    # add-on is only on sys.path once bootstrap() has enabled it.
+    from forge.tools import partforge
+
     state = props()
     state.script_path = script_path
 
     run(bpy.ops.forge.pf_load_script)
     run(bpy.ops.forge.pf_check)
 
+    # The service's own word is stored exactly as it arrived — only what the
+    # panel SHOWS is reframed.
     check("overall is fail", state.check_overall == "fail", "got %r" % state.check_overall)
     bed_fit = next((row for row in state.checks if row.name == "bed_fit"), None)
     check("bed_fit failed", bed_fit is not None and bed_fit.status == "fail")
-    check("bed_fit shows the CANCEL icon", bed_fit is not None and bed_fit.icon() == "CANCEL")
     check("a segmentation mode was suggested",
           state.suggested_mode and json.loads(state.suggested_mode).get("radial", 0) >= 2,
           state.suggested_mode)
-    check("the suggestion reaches the panel row",
-          bed_fit is not None and "Suggested" in bed_fit.hint, bed_fit.hint if bed_fit else "")
+
+    # Bed fit is print planning, not a design constraint. A part that merely
+    # prints in pieces is not broken, so nothing about the row says failure.
+    check("bed_fit is flagged as a split, not a fault",
+          bed_fit is not None and bed_fit.split)
+    check("bed_fit does NOT wear the failure icon",
+          bed_fit is not None and bed_fit.icon() == "MOD_BOOLEAN",
+          bed_fit.icon() if bed_fit else "")
+    check("the row's hint says how it prints, not that it is broken",
+          bed_fit is not None and bed_fit.hint.startswith("Prints as ")
+          and "pieces" in bed_fit.hint and "Segments box" in bed_fit.hint,
+          bed_fit.hint if bed_fit else "")
+    check("the panel's verdict discounts a split the printer can just cut",
+          partforge.design_overall(state) != "fail",
+          partforge.design_overall(state))
+    check("the Segments box says how it prints instead of showing raw JSON",
+          partforge.suggested_split_label(state).startswith("Prints as ")
+          and "press Segment" in partforge.suggested_split_label(state),
+          partforge.suggested_split_label(state))
 
 
 def test_radial_dovetail_segment(script_path):

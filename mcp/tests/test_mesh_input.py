@@ -259,9 +259,12 @@ def test_check_model_report_leads_with_the_verdict_and_names_every_check(
     blender({"check_model": _mesh_check()})
     report = server.check_model("dragon_bust", str(printer_file))
 
-    assert report.splitlines()[0].startswith("Print readiness: FAIL")
+    # Too big for the bed, but it cuts up: that is print planning, not a
+    # failure, so the headline is the worst of the checks that remain.
+    assert report.splitlines()[0].startswith("Print readiness: WARN at design time")
     assert "'dragon_bust' (imported mesh)" in report
-    assert "[FAIL] bed_fit" in report
+    assert "[SPLIT] bed_fit" in report
+    assert "prints as 2 planar pieces" in report
     assert "[WARN] min_wall" in report
     assert "[WARN] overhangs" in report
     assert "[PASS] watertight" in report

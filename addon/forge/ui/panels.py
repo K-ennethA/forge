@@ -425,11 +425,14 @@ class VIEW3D_PT_forge_checks(_ForgePanel, Panel):
             _empty(layout, "Press Run Checks after generating a part.")
             return
 
-        overall = (props.check_overall or "").lower()
+        # The service's own verdict is kept as it sent it; what the panel SHOWS
+        # discounts a bed_fit row that only needs cutting up, because a part
+        # bigger than the plate is print planning and not a design failure.
+        overall = partforge.design_overall(props)
         box = layout.box()
         box.alert = overall == "fail"
         box.label(
-            text="Overall: %s" % (props.check_overall or "?").upper(),
+            text="Overall: %s" % (overall or "?").upper(),
             icon=partforge.CHECK_ICONS.get(overall, "QUESTION"),
         )
         if props.check_summary:
@@ -439,7 +442,7 @@ class VIEW3D_PT_forge_checks(_ForgePanel, Panel):
             column = layout.column(align=True)
             column.label(text=item.name, icon=item.icon())
             sub = column.column(align=True)
-            sub.active = item.status == "pass"
+            sub.active = item.status == "pass" or item.split
             for line in _wrap(item.details, 40)[:3]:
                 sub.label(text=line)
             if item.hint:
@@ -474,9 +477,12 @@ class VIEW3D_PT_forge_segments(_ForgePanel, Panel):
         elif props.segment_mode == "PLANAR":
             column.prop(props, "segment_planar")
         elif props.suggested_mode:
+            # Not "your part is too big" — the part is the size it should be,
+            # and this is simply how it comes off the plate.
             row = column.row()
             row.active = False
-            row.label(text="Suggested: %s" % props.suggested_mode)
+            row.label(text=partforge.suggested_split_label(props),
+                      icon="MOD_BOOLEAN")
 
         layout.prop(props, "segment_collection")
         layout.operator("forge.pf_segment", icon="MOD_BOOLEAN", text="Segment")

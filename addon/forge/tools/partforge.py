@@ -69,6 +69,67 @@ CHECK_ICONS = {
 }
 
 
+def split_phrase(suggestion):
+    """``Prints as 4 radial pieces`` for a feasible bed_fit segmentation.
+
+    A part is designed at the size it should be; bed fit is print planning, not
+    a design constraint. So the row's hint says how the part PRINTS rather than
+    telling the artist their part is too big to make.
+    """
+    mode = suggestion.get("mode") if isinstance(suggestion, dict) else None
+    kind = str(suggestion.get("kind") or "").strip() if isinstance(suggestion, dict) else ""
+    count = None
+    if isinstance(mode, dict):
+        radial = mode.get("radial")
+        planar = mode.get("planar")
+        if isinstance(radial, (int, float)) and not isinstance(radial, bool):
+            count = int(radial)
+            kind = kind or "radial"
+        elif isinstance(planar, (list, tuple)):
+            count = len(planar) + 1
+            kind = kind or "planar"
+    if count is None or count < 2:
+        return "Prints in more than one piece"
+    return ("Prints as %d %s pieces" % (count, kind)).replace("  ", " ")
+
+
+def suggested_split_label(props):
+    """The Segments box's one-line nudge, in print-planning language.
+
+    ``props.suggested_mode`` is the raw mode JSON ``/check`` handed back. Showing
+    the artist ``{"radial": 4}`` reads like an error code; what they need to know
+    is that their part is fine and simply prints in pieces.
+    """
+    raw = str(getattr(props, "suggested_mode", "") or "").strip()
+    if not raw:
+        return ""
+    try:
+        mode = json.loads(raw)
+    except (TypeError, ValueError):
+        return ""
+    return "%s — press Segment" % split_phrase({"mode": mode})
+
+
+def design_overall(props):
+    """The verdict as the artist should read it: a printable split is not a fail.
+
+    ``props.check_overall`` keeps the service's own word untouched. This is the
+    panel's presentation of it — the worst status among the checks that actually
+    constrain the DESIGN, which a bed_fit row we can simply cut up does not.
+    """
+    rank = {"pass": 0, "warn": 1, "fail": 2}
+    worst = -1
+    for row in props.checks:
+        status = "pass" if row.split else str(row.status or "").lower()
+        worst = max(worst, rank.get(status, 2))
+    if worst < 0:
+        return str(props.check_overall or "").lower()
+    for name, value in rank.items():
+        if value == worst:
+            return name
+    return str(props.check_overall or "").lower()
+
+
 class ServiceError(Exception):
     """The geometry service refused or could not be reached."""
 
@@ -310,8 +371,21 @@ class ForgeCheckResult(PropertyGroup):
         description="Follow-up the service suggested (e.g. the segmentation mode)",
         default="",
     )
+    split: BoolProperty(
+        name="Handled by splitting",
+        description=(
+            "This check only failed because the part is bigger than the bed, and "
+            "the service can cut it into pieces that fit. Print planning, not a "
+            "fault: the row is shown as a split, not a failure"
+        ),
+        default=False,
+    )
 
     def icon(self):
+        # A part that merely prints in pieces is not broken, so it never wears
+        # the CANCEL icon: the design is fine, the plate is just smaller.
+        if self.split:
+            return "MOD_BOOLEAN"
         return CHECK_ICONS.get(self.status.lower(), "QUESTION")
 
 
@@ -645,7 +719,11 @@ def store_checks(props, payload):
             if isinstance(suggestion, dict) and suggestion.get("mode") is not None:
                 props.suggested_mode = json.dumps(suggestion.get("mode"))
                 if row.status == "fail":
-                    row.hint = "Suggested: %s" % props.suggested_mode
+                    # Bigger than the bed is print planning, not a design
+                    # fault: say how it prints, not that it is broken.
+                    row.split = True
+                    row.hint = "%s — cut it in the Segments box below." % (
+                        split_phrase(suggestion),)
 
     printer = payload.get("printer") if isinstance(payload.get("printer"), dict) else {}
     bed = printer.get("bed") if isinstance(printer.get("bed"), dict) else {}
@@ -1028,12 +1106,15 @@ class FORGE_OT_pf_check(_PartForgeOperator):
                 set_status(props, "Could not read the check response: %s" % exc, error=True)
                 traceback.print_exc()
                 return
-            overall = props.check_overall or "?"
-            set_status(
-                props,
-                "Print checks: %s (%d check(s))" % (overall.upper(), len(props.checks)),
-                error=(overall == "fail"),
-            )
+            # The stored check_overall keeps the service's word. The status LINE
+            # discounts a bed_fit row that only needs cutting up, so a part that
+            # is simply bigger than the plate never flashes red at the artist.
+            overall = design_overall(props) or "?"
+            split = any(row.split for row in props.checks)
+            line = "Print checks: %s (%d check(s))" % (overall.upper(), len(props.checks))
+            if split:
+                line += " — prints in pieces, cut it in Segments"
+            set_status(props, line, error=(overall == "fail"))
 
         run_async(work, done)
         return {"FINISHED"}

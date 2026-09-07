@@ -317,6 +317,12 @@ def ok(message: str, detail: str = "") -> str:
 
 _STATUS_TAG = {"pass": "[PASS]", "warn": "[WARN]", "fail": "[FAIL]"}
 
+#: A bed_fit failure the printer can simply cut up is not a failure at all.
+_SPLIT_TAG = "[SPLIT]"
+
+#: Worst-first, for the design-time verdict.
+_STATUS_RANK = {"pass": 0, "warn": 1, "fail": 2}
+
 
 def _tag(status: Any) -> str:
     return _STATUS_TAG.get(str(status).lower(), f"[{str(status).upper()}]")
@@ -353,6 +359,101 @@ def _bed_fit_line(data: Mapping[str, Any]) -> str:
     )
 
 
+def feasible_split(check: Any) -> Optional[Mapping[str, Any]]:
+    """The print-time split behind a bed_fit failure, or None.
+
+    THE DOCTRINE: a part is designed at the size it SHOULD be. Bed fit is
+    print planning, not a design constraint. A `bed_fit` fail that comes with a
+    feasible `suggested_segmentation` is INFORMATIONAL — "this prints as N
+    pieces" — never a fault to fix and never a reason to shrink the design. The
+    wire `overall` stays exactly as the service sent it (compatibility); only
+    the rendering is reframed. It is a genuine problem ONLY when the suggestion
+    is infeasible — the footprint is too big even segmented — and then the
+    options are scaling the part down or redesigning it, with the user.
+    """
+    if not isinstance(check, Mapping):
+        return None
+    if str(check.get("name")) != "bed_fit":
+        return None
+    if str(check.get("status", "")).lower() != "fail":
+        return None
+    data = check.get("data") if isinstance(check.get("data"), Mapping) else {}
+    suggestion = data.get("suggested_segmentation")
+    if not isinstance(suggestion, Mapping):
+        return None
+    if not suggestion.get("feasible") or suggestion.get("mode") is None:
+        return None
+    return suggestion
+
+
+def split_phrase(suggestion: Mapping[str, Any]) -> str:
+    """`prints as 4 radial pieces` — the human half of a feasible split."""
+    mode = suggestion.get("mode")
+    kind = str(suggestion.get("kind") or "").strip()
+    count: Optional[int] = None
+    if isinstance(mode, Mapping):
+        radial = mode.get("radial")
+        planar = mode.get("planar")
+        if isinstance(radial, (int, float)) and not isinstance(radial, bool):
+            count = int(radial)
+            kind = kind or "radial"
+        elif isinstance(planar, (list, tuple)):
+            count = len(planar) + 1
+            kind = kind or "planar"
+    if count is None or count < 2:
+        return "prints in more than one piece" + (f" ({kind})" if kind else "")
+    return f"prints as {count} {kind} pieces".replace("  ", " ")
+
+
+def _split_note(checks: Any) -> Optional[Mapping[str, Any]]:
+    """The first feasible split among a check list, or None."""
+    for check in checks or []:
+        suggestion = feasible_split(check)
+        if suggestion is not None:
+            return suggestion
+    return None
+
+
+def _design_verdict(payload: Mapping[str, Any]) -> str:
+    """The verdict as a human should read it: a feasible split is not a fail.
+
+    The service's own `overall` is untouched on the wire. This is presentation
+    only — the worst status among the checks that actually constrain the
+    DESIGN, which a bed_fit failure with a printable split does not.
+    """
+    checks = payload.get("checks") or []
+    worst = -1
+    seen = False
+    for check in checks:
+        if not isinstance(check, Mapping):
+            continue
+        seen = True
+        status = "pass" if feasible_split(check) else str(check.get("status", "")).lower()
+        worst = max(worst, _STATUS_RANK.get(status, 2))
+    if not seen:
+        return str(payload.get("overall", "?")).upper()
+    for name, rank in _STATUS_RANK.items():
+        if rank == worst:
+            return name.upper()
+    return str(payload.get("overall", "?")).upper()
+
+
+def _readiness_lines(subject: str, payload: Mapping[str, Any]) -> List[str]:
+    """The headline, reframed when the part is simply bigger than the bed."""
+    overall = str(payload.get("overall", "?")).upper()
+    split = _split_note(payload.get("checks"))
+    if split is None:
+        return [f"Print readiness: {overall} — {subject}"]
+    verdict = _design_verdict(payload)
+    prefix = "passes everything that matters at design time; " if verdict == "PASS" else ""
+    return [
+        f"Print readiness: {verdict} at design time — {subject}",
+        f"  {prefix}{split_phrase(split)} at print time — bed size is not a design "
+        f"constraint, so it does not count against the verdict (service overall: "
+        f"{overall}).",
+    ]
+
+
 def _suggestion_lines(
     data: Mapping[str, Any], indent: str, segment_tool: str = "partforge_segment"
 ) -> List[str]:
@@ -371,8 +472,13 @@ def _suggestion_lines(
     if suggestion.get("feasible") and suggestion.get("mode") is not None:
         mode = json.dumps(suggestion.get("mode"), separators=(", ", ": "))
         lines.append(f"{indent}pass to {segment_tool} verbatim -> mode = {mode}")
+        lines.append(f"{indent}not a design problem: design at the true size and let "
+                     f"the print-time split handle it. Never shrink a part to fit "
+                     f"the bed.")
     else:
-        lines.append(f"{indent}NOT segmentable automatically — cutting cannot fix this.")
+        lines.append(f"{indent}NOT segmentable automatically — cutting cannot fix this, "
+                     f"so this one IS a real problem: scale the part down or redesign "
+                     f"it, and talk it over with the user first.")
     estimate = suggestion.get("estimated_segment_bbox_mm")
     if estimate:
         lines.append(f"{indent}estimated segment bbox {_dims(estimate)}")
@@ -469,7 +575,16 @@ def _check_lines(
             summary = builder(data) if builder else str(check.get("details", ""))
         except Exception:  # noqa: BLE001 - a report must never hide the verdict
             summary = str(check.get("details", ""))
-        lines.append(f"  {_tag(check.get('status'))} {name:<11} {summary}")
+
+        # Bigger than the bed, but it cuts up cleanly: that is a print-time
+        # fact, not a design failure, so it does not wear the failure styling.
+        split = feasible_split(check)
+        if split is not None:
+            tag = _SPLIT_TAG
+            summary = f"{split_phrase(split)} (handled at print time) — {summary}"
+        else:
+            tag = _tag(check.get("status"))
+        lines.append(f"  {tag} {name:<11} {summary}")
 
         indent = " " * 21
         status = str(check.get("status", "")).lower()
@@ -490,9 +605,8 @@ def fmt_check_report(
     printer_source: str,
 ) -> str:
     """Verdict first, then one line per check with the numbers that decide it."""
-    overall = str(payload.get("overall", "?")).upper()
     lines = [
-        f"Print readiness: {overall} — {script_name}",
+        *_readiness_lines(script_name, payload),
         f"  {_printer_line(payload.get('printer'), printer_source)}",
         f"  overrides: {fmt_overrides(overrides)}",
         "",
@@ -744,9 +858,8 @@ def fmt_model_check_report(
     object_name: Optional[str], result: Mapping[str, Any], printer_source: str
 ) -> str:
     """Print readiness for a mesh the artist imported, rather than a part script."""
-    overall = str(result.get("overall", "?")).upper()
     lines = [
-        f"Print readiness: {overall} — {mesh_subject(object_name, result)} (imported mesh)",
+        *_readiness_lines(f"{mesh_subject(object_name, result)} (imported mesh)", result),
         f"  {_printer_line(result.get('printer'), printer_source)}",
     ]
     mesh_line = fmt_mesh_line(result)

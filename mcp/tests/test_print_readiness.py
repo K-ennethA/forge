@@ -383,8 +383,10 @@ def test_check_report_leads_with_the_verdict_and_names_every_check(
     service({"/check": CHECK_FAIL})
     report = server.partforge_check(str(script), None, str(printer_file))
 
-    assert report.splitlines()[0].startswith("Print readiness: FAIL")
-    assert "[FAIL] bed_fit" in report
+    # min_wall is what makes this FAIL; bed_fit cuts up cleanly, so it is
+    # reported as a split rather than a failure (see the doctrine test below).
+    assert report.splitlines()[0].startswith("Print readiness: FAIL at design time")
+    assert "[SPLIT] bed_fit" in report
     assert "[FAIL] min_wall" in report
     assert "[WARN] overhangs" in report
     assert "[PASS] watertight" in report
@@ -419,6 +421,63 @@ def test_check_hands_back_the_suggested_mode_verbatim(
     assert '{"radial": 4}' in report
     assert "partforge_segment" in report
     assert normalize_segment_mode({"radial": 4}) == {"radial": 4}
+
+
+def test_a_part_bigger_than_the_bed_is_not_a_design_failure(
+    service, script: Path, printer_file: Path
+) -> None:
+    """The doctrine: a part is designed at the size it SHOULD be.
+
+    bed_fit + a feasible split is print planning, not a fault to fix, so the
+    report says how many pieces it prints as and never tells anyone to shrink
+    the design. The service's own `overall` is untouched on the wire.
+    """
+    service({"/check": CHECK_FAIL})
+    report = server.partforge_check(str(script), None, str(printer_file))
+
+    assert "[SPLIT] bed_fit" in report
+    assert "prints as 4 radial pieces" in report
+    assert "handled at print time" in report
+    assert "Never shrink a part to fit the bed." in report
+    assert "[FAIL] bed_fit" not in report
+    assert "(service overall: FAIL)" in report  # the wire verdict is still said
+
+
+def test_a_part_that_only_needs_cutting_reads_as_a_pass(
+    service, script: Path, printer_file: Path
+) -> None:
+    """Everything but bed_fit passing means the design is done."""
+    payload = json.loads(json.dumps(CHECK_FAIL))
+    for check in payload["checks"]:
+        if check["name"] != "bed_fit":
+            check["status"] = "pass"
+    service({"/check": payload})
+    report = server.partforge_check(str(script), None, str(printer_file))
+
+    assert report.splitlines()[0].startswith("Print readiness: PASS at design time")
+    assert "passes everything that matters at design time" in report
+    assert "prints as 4 radial pieces" in report
+
+
+def test_an_unsegmentable_part_stays_a_real_failure(
+    service, script: Path, printer_file: Path
+) -> None:
+    """Too big even segmented IS a problem — and the options are the user's."""
+    payload = json.loads(json.dumps(CHECK_FAIL))
+    bed_fit = payload["checks"][0]
+    bed_fit["data"]["suggested_segmentation"] = {
+        "kind": "planar",
+        "mode": None,
+        "feasible": False,
+        "reason": "the 300.0x300.0 mm footprint is larger than the usable bed",
+    }
+    service({"/check": payload})
+    report = server.partforge_check(str(script), None, str(printer_file))
+
+    assert report.splitlines()[0].startswith("Print readiness: FAIL —")
+    assert "[FAIL] bed_fit" in report
+    assert "[SPLIT]" not in report
+    assert "scale the part down or redesign" in report
 
 
 def test_check_names_the_printer_profile_it_used(

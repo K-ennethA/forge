@@ -54,11 +54,20 @@ Rules, all enforced by the service:
 - `build(p)` is called with a plain dict. Return one solid; a `Compound` of
   disjoint solids is legal but the checks will treat it as one part.
 
-Declare a range only if **every value in it is buildable and printable**. A
-`max` that fails `bed_fit` is a bug in the script, not a user error — the whole
-range is a promise. Size the ranges so the worst combination still fits the bed
-with its margin (Centauri Carbon: 256 mm cubed, 5 mm margin per side, so
-246 × 246 × 256 mm usable).
+Declare a range only if **every value in it is buildable and printable** — the
+whole range is a promise. But *printable* is not the same as *bed-sized*. A part
+is designed at the size it should be, and a `max` that overflows the bed is fine
+as long as the service can cut it up: `bed_fit` then reports a split, which is
+print planning, not a bug in the script. What a range must never contain is a
+value that fails `min_wall`, `overhangs` or `watertight`, or one that is too big
+**even segmented** (`suggested_segmentation.feasible: false`) — that one really
+is unprintable, and the `max` has to come down.
+
+The honest exception: if splitting would wreck the design — a part whose whole
+point is being one continuous piece, a surface that must not carry a seam — then
+the bed *is* the limit for that part. Say so in the parameter's `description` and
+size the `max` to the bed with its margin (Centauri Carbon: 256 mm cubed, 5 mm
+margin per side, so 246 × 246 × 256 mm usable).
 
 ---
 
@@ -73,7 +82,7 @@ service mirrors it in `service/printer.py`):
 | `min_feature_size` | 1.0 mm | Soft floor. Between 0.8 and 1.0 is a `min_wall` **warn**. Aim above this. |
 | `max_unsupported_overhang_deg` | 50° | Angle **from vertical**: 0° is a wall, 90° is a flat ceiling. Steeper than 50° needs supports. |
 | `nozzle_diameter` | 0.4 mm | Two perimeters is 0.8 mm — that is where `min_wall` comes from. |
-| `bed` | 256 × 256 × 256 mm | Past this, `bed_fit` fails and proposes segmentation. |
+| `bed` | 256 × 256 × 256 mm | Past this, `bed_fit` fails and proposes segmentation. Informational: the part prints in pieces. Not a size to design down to. |
 | `tolerances.press_fit` / `slide_fit` / `loose_fit` | 0.1 / 0.2 / 0.3 mm | Clearance on a mating face. |
 | `tolerances.magnet_pocket_extra` | 0.05 mm | Growth on a magnet pocket. |
 
@@ -115,11 +124,16 @@ service mirrors it in `service/printer.py`):
    ceiling at its crown. Teardrop it, or turn it into a vertical hole, or accept
    the warning knowingly.
 
-7. **Bed limits and segmenting.** Anything over ~246 mm in a horizontal axis or
-   256 mm tall will fail `bed_fit`. Do not try to fix that in the script:
+7. **Bed limits are print planning, not a design rule.** Anything over ~246 mm
+   in a horizontal axis or 256 mm tall will fail `bed_fit`. Do not try to fix
+   that in the script, and do not shrink the part to make it go away — a part is
+   modelled at the size it is meant to be, and being bigger than one plate is
+   what segmenting is for.
    `bed_fit.data.suggested_segmentation.mode` is directly valid as `/segment`'s
    `mode`. Expect radial cuts for ring-like parts and planar Z cuts otherwise.
-   Design ranges that do not need it.
+   The only genuine failure here is `suggested_segmentation.feasible: false` —
+   too big even in pieces. That one needs a smaller part or a different design,
+   and it is a conversation with the user, not a silent clamp.
 
 8. **Tolerance belongs on the negative.** The peg is nominal, the socket is
    grown. Never shrink the male part to make a fit.
@@ -325,7 +339,8 @@ if plan["clamped"]:
    | `overhangs` on a base | `arcade_base(arch="pointed")` or `feet_ring`. |
    | `overhangs` on a cone or hole | Check `role`: a solid flares dangerously upward, a hole dangerously downward. Then let `support_free=True` clamp it. |
    | `overhangs` with a better orientation offered | If the best orientation is not `+Z`, rebuild the part standing that way up — the model should be in its print orientation. |
-   | `bed_fit` | Shrink the declared `max`. Do not segment inside the script. |
+   | `bed_fit`, with a feasible `suggested_segmentation` | **Nothing.** This is not a failure to fix — the part is the size it should be and prints in pieces. Hand `suggested_segmentation.mode` to `/segment` at print time and say so in the reply. Never shrink a `max` to make this go away, and never segment inside the script. |
+   | `bed_fit`, with `suggested_segmentation.feasible: false` | The real one: too big even segmented. Shrink the declared `max` or rework the shape — and put the choice to the user rather than deciding it silently. |
    | `watertight` | Almost always a coplanar-face boolean. Make every cutter overshoot the face it enters by 0.2–1 mm. |
 
 4. **Iterate at most three times.** After the third check, stop and explain in

@@ -124,6 +124,12 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
   viewport) or partforge_export_segments (files for the slicer).
+- A part is designed at the size it SHOULD be. Bed fit is print planning, not a
+  design constraint: a bed_fit fail that comes with a feasible split is
+  INFORMATIONAL — the report tags it [SPLIT] and says "prints as N pieces" —
+  and it never blocks "done" and never justifies shrinking the part. Only an
+  INFEASIBLE suggestion is a real problem (too big even segmented), and then
+  the options — scale down, or redesign — are the user's to pick.
 - A model the artist DOWNLOADED or imported (an STL/OBJ off the internet, their
   own sculpt) has no PARAMS script, so the partforge_* tools cannot touch it:
   check it with check_model and cut it with segment_model, which work off the
@@ -1410,7 +1416,10 @@ def partforge_check(
 
     When bed_fit FAILS the report carries the service's own suggested cut mode —
     hand that object straight to partforge_segment / partforge_load_segments /
-    partforge_export_segments as `mode`.
+    partforge_export_segments as `mode`. A bed_fit fail with a feasible split is
+    NOT a design fault: the part is the size it should be and prints as N
+    pieces, the report says so under a [SPLIT] tag, and nothing needs shrinking.
+    Only an infeasible suggestion is a genuine problem.
 
     Two caveats worth repeating to the user: min_wall is inward ray casting on
     the mesh, so it is approximate (narrow gaps read as thin walls, a fail means
@@ -1704,9 +1713,12 @@ def check_model(
       Model box has a Voxel Repair button that does the same), then check again.
 
     When bed_fit fails the report carries the suggested cut mode — hand that
-    object straight to segment_model as `mode`. And the same two caveats as
-    partforge_check apply: min_wall is approximate inward ray casting ("look
-    here", not an exact dimension), and overhangs warn rather than fail.
+    object straight to segment_model as `mode`. A model bigger than the bed is
+    not a broken model: with a feasible split the report tags it [SPLIT] and
+    says how many pieces it prints as, which is print planning, not a fault to
+    fix. And the same two caveats as partforge_check apply: min_wall is
+    approximate inward ray casting ("look here", not an exact dimension), and
+    overhangs warn rather than fail.
     """
     params, printer_source = _model_request(object, printer_path)
     try:

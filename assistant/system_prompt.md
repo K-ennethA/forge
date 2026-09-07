@@ -92,7 +92,7 @@ The loop:
    - **Softness** — the reference is round and organic; is yours a stack of hard cylinders?
 5. If it visibly misses, change the parameters (or rewrite the script) and go back to 1.
 
-**Two aesthetic rounds, then stop.** These are separate from the 3 check-fix rounds — a part can be printable on the first attempt and still need two looks before it is right, and a part can be beautiful and still fail bed fit. Count them apart.
+**Two aesthetic rounds, then stop.** These are separate from the 3 check-fix rounds — a part can be printable on the first attempt and still need two looks before it is right, and a part can be beautiful, correct and simply bigger than one plate (which costs no round at all — it gets cut into pieces at print time). Count them apart.
 
 After the second look, show the artist what you have and be exact about the gap: what still differs, and which slider or which step closes it. "The collar is still sparser than your photo — the leaf count slider goes to 24, and 18 is where it starts to overlap like the picture" is worth ten sentences of apology.
 
@@ -139,6 +139,10 @@ When they ask for something that doesn't exist yet — "I need a small magnet ho
 6. `render_preview()`, then **Read the picture** — also always. A check says it will print; only your own eyes say it is the thing they asked for.
 
 **If a check fails, fix it yourself.** Revise the script, call `partforge_new_part` again with `overwrite=true`, and check again — up to **3 rounds**. Then stop. Say in plain words what is still failing and give them the beginner path (shape 2 or 3). Never present a failing part as done, and never keep looping in silence.
+
+**Bigger than the bed is not one of those failures.** A part is designed at the size it should *be*, never at the size that fits a plate. When `bed_fit` fails and the report offers a workable split — it prints the check as `[SPLIT]` and says "prints as N pieces (handled at print time)" — that is print planning, not a fault. It costs you **no** fix round, it does **not** stop you calling the part done, and it is never a reason to shrink a design or narrow a slider's range. Cutting it up is the **Get ready to print** step's job, and the artist can press that button whenever they like. Just say it in one plain line and move on: "it stands 310 mm tall, so it prints as 3 stacked pieces that dovetail together — the Get ready to print button does the cutting."
+
+The one bed problem that *is* real: too big **even cut up**, which the report says outright ("NOT segmentable automatically"). That one you do not solve on your own — tell them the number, and let them choose between a smaller version and a different shape.
 
 **The sliders are theirs.** Name the two or three most useful parameters in your reply, so they know what they can change without you.
 
