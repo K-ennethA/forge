@@ -47,7 +47,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 60-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 63-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration.
 `tests/test_workspace.py` does it for the nine Phase 8 tools: what each workspace command
@@ -88,8 +88,15 @@ non-object `args`, a nested `flow_run`, a parameter with no `value`, a one-step 
 that a refusal writes **nothing**, the one `flow_run` command that crosses the wire with its
 slugged name, the per-step report rendering, and that the repo's own
 `flows/segment-into-4.json` passes the validation `flow_save` applies. It redirects
-`flows/` to a `tmp_path` too. Nothing in the suite needs Blender or the geometry service,
-and nothing binds or connects to 9876/8765/8902.
+`flows/` to a `tmp_path` too. `tests/test_base_shapes.py` covers the three Phase 11 tools:
+what each sampler puts on the wire (and that an omitted option is *absent* rather than a
+null), that a profile report hands back pasteable control points and says out loud that
+nothing was built, that an outline that crosses itself is flagged before `silhouette_part`
+refuses it, that `merge_for_print` resolves its pieces the documented way, that its report
+states the voxel trade and the hidden-not-deleted rule and always names `check_model` next,
+and that `partforge_generate`'s `collection` really reaches `load_mesh` so the component
+convention is reachable rather than aspirational. Nothing in the suite needs Blender or the
+geometry service, and nothing binds or connects to 9876/8765/8902.
 
 `tests/e2e_new_part.py` is deliberately **not** a pytest module: it is the end-to-end proof,
 and it needs the real service on 8765 and launches its own headless Blender (socket port
@@ -288,7 +295,7 @@ contract.
 | Tool | What it does |
 |---|---|
 | `partforge_parse_params` | Reads a script's `PARAMS` block — names, values, units, ranges, descriptions. No geometry built. |
-| `partforge_generate` | Builds the part **and** loads the mesh into Blender in one call (`load_mesh`, `replace=true`). Reports verts/faces/bbox/watertight. |
+| `partforge_generate` | Builds the part **and** loads the mesh into Blender in one call (`load_mesh`, `replace=true`). Reports verts/faces/bbox/watertight. `name` and `collection` are how a multi-part design lands as a component tree: one collection named after the project, the core named after the project, each proposal `<project>-<component>` (see Phase 11 below). |
 | `partforge_export` | Rebuilds and writes STL / STEP / 3MF straight from the solid. |
 
 ### PartForge authoring — how the assistant makes new parts
@@ -299,7 +306,7 @@ holder, so the model **writes** the part.
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `partforge_new_part` | `name`, `script_source`, `overwrite` | Validates the script through the service's `/parse_params` and — only then — writes it to `projects/<slug>/part.py`, plus a minimal `spec.json` beside it. Returns the path and the parsed parameter table. |
+| `partforge_new_part` | `name`, `script_source`, `overwrite`, `components` | Validates the script through the service's `/parse_params` and — only then — writes it to `projects/<slug>/part.py`, plus a minimal `spec.json` beside it. Returns the path and the parsed parameter table. `components` (`["collar", "ear-l"]`) records the component tree in the spec — see Phase 11 below. |
 | `partforge_open_in_panel` | `script_path` | Points Blender's Forge panel at that script and rebuilds its sliders (the `partforge_open` socket command, the panel's own Load Script path). Builds nothing — generate next. |
 
 The loop the assistant runs, and the reason each step is there:
@@ -400,6 +407,63 @@ segment_model(object="dragon_bust", mode={"planar": [120.0]}, collection="Pieces
 # if instead the check is refused as not watertight:
 remesh(mode="voxel", object="dragon_bust")   # or the panel's Voxel Repair button
 check_model(object="dragon_bust")
+```
+
+### Base shapes and merge-for-print (Phase 11)
+
+When 100% likeness is not achievable, the deliverable is **structure**: a dimensioned,
+sculptable base shape with the right proportions. There are three doors into one — described,
+shown in a picture, or **drawn** — and these two read-only tools are the drawn one.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `profile_from_curve` | `curve_object`, `points` (5–10, default 7), `close_bottom` | Samples a curve the artist drew into the `(radius, z)` control points `forge_lib.soft_body` takes. Nothing is built. |
+| `outline_from_curve` | `curve_object`, `points` (6–16, default 12), `recenter` | Samples a **closed** drawn curve into the `[x, y]` outline `forge_lib.silhouette_part` extrudes. Nothing is built. |
+| `merge_for_print` | `objects`, `collection`, `voxel_size_mm`, `name`, `keep_originals` | Joins the pieces the artist kept and voxel-remeshes them into ONE watertight shell for the slicer. Originals hidden, not deleted. |
+
+- **The points come back; the geometry does not.** Both samplers are measurements. You write
+  the points into a PARAMS script with `partforge_new_part`, which is what keeps a drawn
+  shape parametric — sliders, regeneration, a part that can still change. Handing back a
+  mesh traced off the curve throws away the only thing that made the door worth opening.
+  The reports print the points in the shape they get pasted in.
+- **What to tell the artist**: Numpad 1 for the front view, **Add ▸ Curve ▸ Bezier**, draw
+  the right-hand edge of the silhouette going up with the model's centre line on the origin.
+  For an ear, a fin or a tail it is a closed loop instead (`A`, then `Alt+C`).
+- **`merge_for_print`'s voxel size is the whole argument.** The default is half the printer's
+  nozzle — 0.2 mm on a 0.4 mm nozzle — because two voxels per bead keeps every detail the
+  printer could lay down and spends nothing on detail it could not; finer costs file size
+  quadratically for no change on the plate. On a big model the add-on coarsens it to stay
+  under a million faces and says so, and the report tells you to pass that trade on rather
+  than hide it.
+- **The pieces**: name them in `objects`, or name a `collection` (every VISIBLE mesh in it),
+  or name nothing and merge the selection. That is what makes the component tree work —
+  scrapping a proposal is `delete_object` or the eye icon, and "merge what's left" is the
+  same call as before.
+- **`check_model` always follows a merge.** The report says so, because a merged shell is a
+  new mesh nobody has print-checked; when a check fails, `mesh_diagnose` gives the thin
+  places in millimetres so the artist knows where to thicken.
+- **spec.json records the tree.** `partforge_new_part(..., components=["collar", "ear-l"])`
+  writes a `components` block — `{"collection": <slug>, "core": <slug>, "proposals":
+  ["<slug>-collar", ...]}` — so a session that starts tomorrow knows which object is the
+  dimensioned core and which ones the artist may scrap. Passing a full name
+  (`"gecko-bowl-collar"`) records the same thing; the prefix is never doubled. On a revision
+  the block is **merged** into the existing spec and nothing else in that file is touched —
+  a spec that cannot be parsed is left exactly as it is, with a sentence in the report.
+- **All three are legal flow steps**, and the two ends of the workflow ship as saved flows:
+  `flows/sculpt-ready.json` (remesh → Sculpt Mode → brush, the handoff to their stylus) and
+  `flows/merge-and-check.json` (merge, then print-check). `flow_run(name="sculpt-ready")`
+  beats improvising the same three calls, per the flow law above.
+
+```text
+# the artist drew the silhouette and called it VaseProfile
+profile_from_curve(curve_object="VaseProfile", points=7)
+partforge_new_part(name="gecko-bowl", script_source=...)   # the points, in a PARAMS block
+partforge_generate(...); partforge_check(...); render_preview()
+
+# they sculpted on it, scrapped the collar, and are done
+delete_object(name="gecko-bowl-collar")
+merge_for_print(collection="gecko-bowl")
+check_model(object="gecko-bowl-merged")
 ```
 
 ### Picture to 3D (Phase 7) — meshgen

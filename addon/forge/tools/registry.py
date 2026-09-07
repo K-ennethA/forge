@@ -68,6 +68,13 @@ READ_ONLY_COMMANDS = frozenset({
     # Buddy mode's two eyes: one takes a picture, one counts defects.
     "capture_viewport",
     "mesh_diagnose",
+    # Phase 11's two samplers. They read a curve the artist drew and hand back
+    # control points — nothing is built and nothing in the scene moves, so a
+    # checkpoint for "I measured your drawing" would only bury the stroke
+    # itself. (`merge_for_print` is deliberately NOT here: it builds an object
+    # and hides the pieces it came from, which is exactly what Ctrl+Z is for.)
+    "profile_from_curve",
+    "outline_from_curve",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

@@ -30,6 +30,7 @@ its caller is waiting on the reply.
 """
 
 import json
+import math
 import os
 import threading
 import time
@@ -746,6 +747,458 @@ def cmd_import_generated(params):
 
 
 # ---------------------------------------------------------------------------
+# merge_for_print (Phase 11) — many chosen pieces become one printable shell
+# ---------------------------------------------------------------------------
+#
+# A design arrives as a component tree: the core, and the proposals the artist
+# kept.  Every one of those is its own watertight solid, which is exactly right
+# while they are deciding — and exactly wrong at the slicer, where two solids
+# that merely overlap are two objects with a seam between them.
+#
+# Merging is a voxel remesh of the union, and the voxel size is the whole
+# argument.  It is the one number that trades detail against file size, and the
+# honest default comes from the machine rather than from taste:
+#
+#   voxel = nozzle / 2  (0.4 / 2 = 0.2 mm on the Centauri Carbon)
+#
+# Half the nozzle is two voxels across the narrowest bead the printer can
+# actually lay down, which is the Nyquist argument in millimetres: anything the
+# grid loses at that size is something the printer could not have printed
+# anyway.  Going finer buys nothing on the plate and costs quadratically —
+# triangle count grows as 1/voxel^2, so 0.1 mm is four times the file for detail
+# that ends up inside a single extrusion.  Going coarser is a real choice the
+# artist can make (a 0.4 mm voxel halves the file again) and it is theirs to
+# make, not ours to make quietly.
+#
+# The cap exists because that default does not scale: a 100 mm sphere has about
+# 31 000 mm2 of surface, which at 0.2 mm is roughly 780 000 quads — near the
+# ceiling already — and a 200 mm one is four times that.  So the size is
+# predicted from the joined mesh's own surface area before anything is remeshed,
+# and coarsened until the prediction fits under the cap, with the trade said out
+# loud in `notes` rather than discovered as a five-minute freeze.
+
+#: Polygons the merged shell is allowed to come back with.  A million-face
+#: object is already a slow .blend and a ~50 MB STL; past that Blender's own
+#: viewport is what breaks first.
+MERGE_FACE_CAP = 1000000
+
+#: Voxels per extrusion width.  Two: one to say "material here", one to say
+#: "and not here".
+MERGE_VOXELS_PER_NOZZLE = 2.0
+
+#: The nozzle assumed when there is no printer profile to read.
+MERGE_DEFAULT_NOZZLE_MM = 0.4
+
+#: Never finer than this, whatever the profile says — a 0.02 mm voxel on
+#: anything bigger than a thimble is an out-of-memory error, not a detail level.
+MERGE_MIN_VOXEL_MM = 0.05
+
+#: A voxel bigger than this fraction of the smallest dimension eats the object.
+MERGE_MAX_VOXEL_FRACTION = 0.25
+
+
+def merge_nozzle_mm():
+    """``(nozzle_mm, source)`` from the printer preference, or the default.
+
+    A broken printer path must not fail a merge: the profile is being consulted
+    for one number with a sane fallback, not for permission.
+    """
+    try:
+        profile, source = partforge.load_printer()
+    except ForgeError:
+        return MERGE_DEFAULT_NOZZLE_MM, "default (the printer profile could not be read)"
+    if not profile:
+        return MERGE_DEFAULT_NOZZLE_MM, "default profile"
+    try:
+        nozzle = float(profile.get("nozzle_diameter"))
+    except (TypeError, ValueError):
+        return MERGE_DEFAULT_NOZZLE_MM, "%s (no nozzle_diameter in it)" % source
+    if nozzle <= 0.0:
+        return MERGE_DEFAULT_NOZZLE_MM, "%s (nozzle_diameter was not a size)" % source
+    return nozzle, source
+
+
+def _polygon_area_mm2(vertices, faces):
+    """Surface area of a millimetre mesh, by fan-triangulating every face."""
+    total = 0.0
+    for face in faces:
+        if len(face) < 3:
+            continue
+        ax, ay, az = vertices[face[0]]
+        for index in range(1, len(face) - 1):
+            bx, by, bz = vertices[face[index]]
+            cx, cy, cz = vertices[face[index + 1]]
+            ux, uy, uz = bx - ax, by - ay, bz - az
+            vx, vy, vz = cx - ax, cy - ay, cz - az
+            nx = uy * vz - uz * vy
+            ny = uz * vx - ux * vz
+            nz = ux * vy - uy * vx
+            total += 0.5 * math.sqrt(nx * nx + ny * ny + nz * nz)
+    return total
+
+
+def predicted_faces(area_mm2, voxel_mm):
+    """Roughly how many polygons a voxel remesh of that area will produce.
+
+    One quad per voxel of surface, which is what OpenVDB's dual-contouring mesh
+    comes out at within a factor the size of the shape's own curvature.  It is
+    an estimate and it is used as one: it picks the voxel size, and the real
+    count is reported afterwards.
+    """
+    if voxel_mm <= 0.0:
+        return 0
+    return int(area_mm2 / (voxel_mm * voxel_mm))
+
+
+def merge_voxel_size(area_mm2, smallest_dim_mm, requested=None):
+    """The resolution argument, decided in one place.
+
+    ``(voxel_mm, source, notes, predicted_faces, nozzle_mm, printer_source)`` —
+    ``source`` is ``"nozzle"`` (the default), ``"given"``, ``"clamped"`` or
+    ``"coarsened"``, and every clamp writes its reason into ``notes`` rather
+    than quietly moving the number.
+    """
+    notes = []
+    nozzle, profile_source = merge_nozzle_mm()
+    auto = max(nozzle / MERGE_VOXELS_PER_NOZZLE, MERGE_MIN_VOXEL_MM)
+
+    if requested is None:
+        voxel = auto
+        source = "nozzle"
+    else:
+        voxel = float(requested)
+        source = "given"
+
+    if voxel < MERGE_MIN_VOXEL_MM:
+        notes.append(
+            "A %.3f mm voxel is finer than Forge will build (%.2f mm); at that "
+            "size the grid costs memory for detail no nozzle can print."
+            % (voxel, MERGE_MIN_VOXEL_MM))
+        voxel = MERGE_MIN_VOXEL_MM
+        source = "clamped"
+
+    ceiling = smallest_dim_mm * MERGE_MAX_VOXEL_FRACTION
+    if ceiling > 0.0 and voxel > ceiling:
+        notes.append(
+            "A %.2f mm voxel is too coarse for something %.1f mm across — it "
+            "would leave little or nothing behind — so it was taken down to "
+            "%.2f mm." % (voxel, smallest_dim_mm, ceiling))
+        voxel = ceiling
+        source = "clamped"
+
+    estimate = predicted_faces(area_mm2, voxel)
+    if estimate > MERGE_FACE_CAP and area_mm2 > 0.0:
+        coarser = voxel * math.sqrt(float(estimate) / float(MERGE_FACE_CAP))
+        coarser = math.ceil(coarser * 100.0) / 100.0
+        notes.append(
+            "At %.2f mm this merge would come back with about %s polygons, over "
+            "the %s cap, so the voxel was coarsened to %.2f mm. That is the "
+            "trade: the file stays workable, and detail finer than %.2f mm is "
+            "rounded off. Ask for a smaller voxel_size_mm if you want it back "
+            "and can live with the file."
+            % (voxel, "{:,}".format(estimate), "{:,}".format(MERGE_FACE_CAP),
+               coarser, coarser))
+        voxel = coarser
+        source = "coarsened"
+        estimate = predicted_faces(area_mm2, voxel)
+
+    return voxel, source, notes, estimate, nozzle, profile_source
+
+
+def _topology_watertight(faces):
+    """True when every edge in this face list is shared by exactly two faces."""
+    if not faces:
+        return False
+    edges = {}
+    for face in faces:
+        count = len(face)
+        if count < 3:
+            return False
+        for index in range(count):
+            a = face[index]
+            b = face[(index + 1) % count]
+            key = (a, b) if a < b else (b, a)
+            edges[key] = edges.get(key, 0) + 1
+    return all(count == 2 for count in edges.values())
+
+
+def _visible(obj):
+    try:
+        return bool(obj.visible_get())
+    except (RuntimeError, ReferenceError, AttributeError):
+        return not bool(getattr(obj, "hide_viewport", False))
+
+
+def merge_sources(params):
+    """``(objects, how, collection_name, skipped)`` — what is being merged.
+
+    Resolution order, and it is deliberate: an explicit list wins, then a named
+    collection (every **visible** mesh in it — which is what makes "scrap the
+    collar" and "merge what's left" the same two words), then the selection,
+    then the active object.
+    """
+    skipped = []
+    names = params.get("objects")
+    collection_name = params.get("collection")
+    if collection_name is not None and not isinstance(collection_name, str):
+        raise ForgeError("'collection' must be a collection name.")
+    collection_name = (collection_name or "").strip()
+
+    if names is not None and not isinstance(names, list):
+        raise ForgeError("'objects' must be a list of object names.")
+    if names:
+        objects = []
+        for entry in names:
+            if not isinstance(entry, str) or not entry.strip():
+                raise ForgeError("'objects' must be a list of object names.")
+            objects.append(common.find_object(entry.strip(), mesh_only=True))
+        return objects, "objects", collection_name, skipped
+
+    if collection_name:
+        collection = bpy.data.collections.get(collection_name)
+        if collection is None:
+            raise ForgeError(
+                "There is no collection called %r. Collections are the folders "
+                "in the list at the top right." % collection_name)
+        objects = []
+        for obj in collection.all_objects:
+            if obj.type != "MESH" or not len(obj.data.polygons):
+                skipped.append("%s (%s)" % (obj.name, obj.type.lower()))
+                continue
+            if not _visible(obj):
+                skipped.append("%s (hidden)" % obj.name)
+                continue
+            objects.append(obj)
+        if not objects:
+            raise ForgeError(
+                "Nothing in the collection %r is a visible mesh, so there is "
+                "nothing to merge." % collection_name)
+        return objects, "collection", collection_name, skipped
+
+    selected = []
+    try:
+        view_layer = common.get_view_layer()
+        selected = [obj for obj in view_layer.objects
+                    if obj.select_get() and obj.type == "MESH"]
+    except (ForgeError, RuntimeError, AttributeError):
+        selected = []
+    if selected:
+        return selected, "selection", collection_name, skipped
+
+    active = common.get_active_object()
+    if active is not None and active.type == "MESH":
+        return [active], "active", collection_name, skipped
+    raise ForgeError(
+        "Nothing to merge. Name the pieces in 'objects', name the project's "
+        "'collection', or select them in the viewport first.")
+
+
+def _merged_name(params, objects, collection_name):
+    """``<project>-merged`` by the component convention, unless told otherwise."""
+    given = str(params.get("name") or "").strip()
+    if given:
+        return given
+    names = [obj.name for obj in objects]
+    if collection_name:
+        stem = collection_name          # a project collection IS the project
+    else:
+        stem = common.common_project(names) if len(names) > 1 else ""
+        if not stem:
+            stem = common.project_of(names[0], [c.name for c in bpy.data.collections])
+    return common.component_name(stem or names[0], "merged")
+
+
+@command("merge_for_print")
+def cmd_merge_for_print(params):
+    """Join the chosen pieces and voxel-remesh them into ONE watertight shell.
+
+    params: ``objects?`` (names), ``collection?``, ``voxel_size_mm?`` (omit for
+    nozzle/2), ``name?`` (default ``<project>-merged``), ``keep_originals?``
+    (default true — the originals are **hidden, never deleted**).
+
+    This is the last step before the slicer, and it is destructive-ish by
+    nature, so it pushes an undo checkpoint like every other building command
+    and the pieces it consumed are still there behind the eye icon.
+
+    The natural next call is ``check_model`` on what comes back: a merged shell
+    is a new mesh, and whether it still fits the bed and still has walls thick
+    enough to print is a question the merge cannot answer.
+    """
+    objects, how, collection_name, skipped = merge_sources(params)
+    keep_originals = common.get_bool(params, "keep_originals", True)
+    requested = params.get("voxel_size_mm")
+    if requested is not None:
+        # Zero means "you choose" rather than an error: it is what a flow's
+        # numeric parameter has to say when its honest default is the nozzle.
+        requested = common.get_float(params, "voxel_size_mm", minimum=0.0)
+        if requested <= 0.0:
+            requested = None
+
+    name = _merged_name(params, objects, collection_name)
+    if any(obj.name == name for obj in objects):
+        raise ForgeError(
+            "%r is one of the pieces being merged, so the merged shell cannot "
+            "be called that too. Pass a different 'name'." % name)
+
+    notes = []
+    if skipped:
+        notes.append("Skipped: %s." % ", ".join(skipped[:8]))
+    vertices = []
+    faces = []
+    watertight_inputs = 0
+    sources = []
+
+    with common.object_mode():
+        for obj in objects:
+            piece_vertices, piece_faces = common.evaluated_mesh_mm(obj)
+            offset = len(vertices)
+            vertices.extend(piece_vertices)
+            faces.extend([[index + offset for index in face] for face in piece_faces])
+            sealed = _topology_watertight(piece_faces)
+            watertight_inputs += 1 if sealed else 0
+            sources.append({
+                "object": obj.name,
+                "vertex_count": len(piece_vertices),
+                "face_count": len(piece_faces),
+                "watertight": sealed,
+            })
+
+        if not faces:
+            raise ForgeError(
+                "The pieces have no faces between them, so there is nothing to "
+                "merge.")
+
+        area = _polygon_area_mm2(vertices, faces)
+        low = [min(vertex[axis] for vertex in vertices) for axis in range(3)]
+        high = [max(vertex[axis] for vertex in vertices) for axis in range(3)]
+        size = [high[axis] - low[axis] for axis in range(3)]
+        voxel_mm, voxel_source, voxel_notes, estimate, nozzle, profile_source = \
+            merge_voxel_size(area, min(size), requested)
+        notes.extend(voxel_notes)
+
+        target_collection = collection_name or _first_collection(objects[0])
+        obj, _ = common.build_mesh_object(
+            name, vertices, faces, replace=True, collection=target_collection)
+        method = common._voxel_remesh(obj, voxel_mm * common.MM_TO_M, 0.0)
+        common.refresh_view_layer()
+
+        if not len(obj.data.polygons):
+            raise ForgeError(
+                "The merge left no faces: a %.2f mm voxel was too coarse for "
+                "these pieces. Pass a smaller 'voxel_size_mm'." % voxel_mm)
+
+        hidden = []
+        removed = []
+        for source in objects:
+            if keep_originals:
+                if _hide(source):
+                    hidden.append(source.name)
+            else:
+                removed.append(source.name)
+                try:
+                    bpy.data.objects.remove(source, do_unlink=True)
+                except (ReferenceError, RuntimeError):
+                    pass
+        common.refresh_view_layer()
+        _make_active(obj)
+
+    bad_edges, loose, face_count = common._mesh_health(obj)
+    watertight = bad_edges == 0 and face_count > 0
+    if not watertight:
+        notes.append(
+            "The merged shell still has %d unsealed or non-manifold edge(s). "
+            "Run mesh_diagnose to see where, or merge again at a coarser voxel."
+            % bad_edges)
+    if watertight_inputs < len(objects):
+        notes.append(
+            "%d of the %d pieces were not sealed on their own; the voxel remesh "
+            "closes that, which is half the reason this step exists."
+            % (len(objects) - watertight_inputs, len(objects)))
+    if keep_originals:
+        notes.append(
+            "The %d original piece(s) are hidden, not deleted — click the eye "
+            "next to them in the list at the top right to bring one back."
+            % len(hidden))
+
+    result = common.mesh_stats(obj)
+    result.update({
+        "object": obj.name,
+        "voxel_size_mm": round(voxel_mm, 4),
+        "voxel_size_requested_mm": (round(float(requested), 4)
+                                    if requested is not None else None),
+        "voxel_source": voxel_source,
+        "nozzle_mm": round(float(nozzle), 3),
+        "printer_source": profile_source,
+        "predicted_face_count": estimate,
+        "surface_area_mm2": round(area, 1),
+        "watertight_input_count": watertight_inputs,
+        "watertight": watertight,
+        "loose_vertices": loose,
+        "sources": sources,
+        "source_count": len(sources),
+        "resolved_by": how,
+        "collection": collection_name or target_collection or "",
+        "kept_originals": bool(keep_originals),
+        "hidden": hidden,
+        "deleted": removed,
+        "dimensions_mm": [round(value, 3) for value in size],
+        "remesh_method": method,
+        "next": "check_model",
+        "notes": notes,
+    })
+
+    props = get_props()
+    if props is not None:
+        props.object_name = obj.name
+        props.face_count = int(result.get("face_count") or 0)
+        props.needs_repair = not watertight
+        props.summary = ("Merged %d piece(s) into %s: %d faces at %.2f mm voxel"
+                         % (len(sources), obj.name,
+                            result.get("face_count") or 0, voxel_mm))
+        set_status(props, props.summary)
+    _tag_redraw()
+    return result
+
+
+def _first_collection(obj):
+    """The name of the collection this object lives in, or "" for the scene's."""
+    try:
+        scene_collection = common.get_scene().collection
+    except ForgeError:
+        scene_collection = None
+    for collection in obj.users_collection:
+        if collection is not scene_collection:
+            return collection.name
+    return ""
+
+
+def _hide(obj):
+    try:
+        obj.hide_set(True)
+        return True
+    except (RuntimeError, ReferenceError):
+        pass
+    try:
+        obj.hide_viewport = True
+        return True
+    except (AttributeError, ReferenceError):
+        return False
+
+
+def _make_active(obj):
+    """Leave the merged shell selected, because it is what they work on next."""
+    try:
+        view_layer = common.get_view_layer()
+        for other in view_layer.objects:
+            if other.select_get():
+                other.select_set(False)
+        obj.select_set(True)
+        view_layer.objects.active = obj
+    except (ForgeError, RuntimeError, ReferenceError, AttributeError):
+        pass
+
+
+# ---------------------------------------------------------------------------
 # operators
 # ---------------------------------------------------------------------------
 
@@ -1031,6 +1484,47 @@ class FORGE_OT_model_repair(_ModelOperator):
         return {"FINISHED"}
 
 
+class FORGE_OT_model_merge(_ModelOperator):
+    """Everything selected becomes one printable shell."""
+
+    bl_idname = "forge.model_merge"
+    bl_label = "Merge for Print"
+    bl_description = (
+        "Join everything you have selected into ONE sealed shell for the "
+        "slicer. The originals are hidden, not deleted, and the voxel size "
+        "comes from the printer's nozzle"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = get_props(context)
+        selected = [obj for obj in (getattr(context, "selected_objects", None) or [])
+                    if obj.type == "MESH"]
+        if not selected:
+            set_status(props,
+                       "Select the pieces first — click one, then Shift+click "
+                       "the rest — and press Merge for Print again.", error=True)
+            return {"CANCELLED"}
+
+        from . import registry
+
+        status, result, message = registry.dispatch("merge_for_print", {
+            "objects": [obj.name for obj in selected],
+        })
+        if status != "success":
+            set_status(props, message or "The merge failed.", error=True)
+            return {"CANCELLED"}
+
+        result = result or {}
+        set_status(props, "Merged %d piece(s) into %s at a %.2f mm voxel. Now "
+                          "press Check imported model."
+                   % (result.get("source_count") or len(selected),
+                      result.get("object") or "",
+                      float(result.get("voxel_size_mm") or 0.0)))
+        _tag_redraw()
+        return {"FINISHED"}
+
+
 # ---------------------------------------------------------------------------
 # Generate 3D from Picture
 # ---------------------------------------------------------------------------
@@ -1208,6 +1702,7 @@ _CLASSES = (
     FORGE_OT_model_check,
     FORGE_OT_model_segment,
     FORGE_OT_model_repair,
+    FORGE_OT_model_merge,
     FORGE_OT_model_generate3d,
 )
 

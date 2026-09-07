@@ -9,6 +9,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
 
     registry = importlib.reload(registry)  # noqa: F821
     common = importlib.reload(common)  # noqa: F821
+    curves = importlib.reload(curves)  # noqa: F821
     workspace = importlib.reload(workspace)  # noqa: F821
     diagnose = importlib.reload(diagnose)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
@@ -23,6 +24,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
 else:
     from . import registry
     from . import common
+    from . import curves
     from . import workspace
     from . import diagnose
     from . import partforge
@@ -42,6 +44,7 @@ from .registry import ForgeError, command_names, dispatch, has_command  # noqa: 
 __all__ = [
     "registry",
     "common",
+    "curves",
     "workspace",
     "diagnose",
     "partforge",

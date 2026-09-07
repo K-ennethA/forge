@@ -1150,6 +1150,100 @@ def cmd_delete_object(params):
     return {"name": actual, "deleted": True, "data_purged": purged}
 
 
+# ---------------------------------------------------------------------------
+# the component convention (Phase 11) — a result the artist can take apart
+# ---------------------------------------------------------------------------
+#
+# A design is rarely one object.  It is a **core** — the dimensioned part, the
+# bowl, the body, the thing that has to be a named number of millimetres — and a
+# handful of **proposals** hung off it: a collar, two ears, a tail.  The core is
+# usually right and wants a slider nudged; the proposals are opinions, and half
+# of them will be wrong.
+#
+# So the naming is the product law: everything for one design lands in a
+# collection named after the project, the core object is named after the
+# project, and each proposal is ``<project>-<component>``.  That is what makes
+# "scrap the collar" a one-object delete with nothing else depending on it, and
+# what lets `merge_for_print` say "everything still visible in this collection"
+# rather than asking the artist to list the survivors.
+
+#: Blender truncates object names at 63 bytes; the part-object convention
+#: already caps there and this has to agree with it.
+NAME_LIMIT = 63
+
+
+def component_name(project, component=None):
+    """``<project>`` for the core, ``<project>-<component>`` for a proposal."""
+    stem = str(project or "").strip()
+    if not stem:
+        raise ForgeError("A component name needs a project name to hang off.")
+    piece = str(component or "").strip().strip("-")
+    name = "%s-%s" % (stem, piece) if piece else stem
+    return name.encode("utf-8")[:NAME_LIMIT].decode("utf-8", "ignore")
+
+
+def split_component_name(name):
+    """``(project, component)`` for a name written to the convention.
+
+    ``"gecko-bowl"`` in a project called ``gecko-bowl`` is the core, and so is
+    any name with no dash in it; ``"gecko-bowl-collar"`` is the collar.  With no
+    project to compare against, the LAST dashed piece is read as the component,
+    which is the convention's own shape — a project keeps its dashes, a
+    component is one word.
+    """
+    text = str(name or "").strip()
+    if "-" not in text:
+        return text, ""
+    project, _, component = text.rpartition("-")
+    return project, component
+
+
+def common_project(names):
+    """The project a set of component names agree on.
+
+    Their longest shared run of dash-separated pieces: ``["core", "core-collar",
+    "core-ear"]`` is a project called ``core``, and ``["panel-core",
+    "panel-core-ear"]`` is one called ``panel-core``.  It is the reading that
+    needs no collection and no guessing — the names themselves say where the
+    project ends and the component begins, as soon as there is more than one of
+    them.  Names that agree on nothing give ``""``.
+    """
+    parts = [str(name or "").strip().split("-")
+             for name in (names or []) if str(name or "").strip()]
+    if not parts:
+        return ""
+    shared = parts[0]
+    for other in parts[1:]:
+        keep = []
+        for mine, theirs in zip(shared, other):
+            if mine != theirs:
+                break
+            keep.append(mine)
+        shared = keep
+        if not shared:
+            break
+    return "-".join(shared)
+
+
+def project_of(name, known_projects=None):
+    """The project a component name belongs to.
+
+    ``known_projects`` (collection names, usually) settles the ambiguity when
+    the project's own name has a dash in it: the longest known project the name
+    starts with wins, and failing that the last dashed piece is the component.
+    """
+    text = str(name or "").strip()
+    for project in sorted(known_projects or (), key=len, reverse=True):
+        project = str(project or "").strip()
+        if not project:
+            continue
+        if text == project:
+            return project
+        if text.startswith(project + "-"):
+            return project
+    return split_component_name(text)[0] or text
+
+
 _DATA_COLLECTIONS = {
     "Mesh": "meshes",
     "Curve": "curves",

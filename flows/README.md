@@ -123,3 +123,11 @@ and its arguments, which is what this file and the assistant are for.
 | Flow | What it does |
 |---|---|
 | `segment-into-4.json` | Cuts the current part into 4 radial wedges with dovetail joints (`/segment`, `include_mesh: true`) and loads every piece into Blender at its packed plate position. The count, joint type, tolerance and target collection are all parameters, so "cut it into 6 with magnets instead" is the same flow with different numbers. |
+| `merge-and-check.json` | The end of a component-tree design: `merge_for_print` fuses the pieces you kept into one watertight shell, then `check_model` print-checks what came out. Both steps are Blender commands, so nothing but the check needs the geometry service. Leave `collection` blank to merge whatever is **selected**; name a project collection to merge every **visible** mesh in it — which is what makes "scrap the collar, then merge" two words. `voxel_size_mm` of `0` means "half the printer's nozzle" (0.2 mm on a 0.4 mm nozzle); raise it for a smaller file with softer detail. `keep_originals` hides the pieces rather than deleting them, so a merge you dislike costs one Ctrl+Z. |
+
+| `sculpt-ready.json` | The other end of the same design: a base shape handed over to the artist's stylus. `remesh` (voxel) evens the topology out so a brush pushes the same amount everywhere, `set_mode` puts the object in Sculpt Mode, and `sculpt_brush` leaves Clay Strips in their hand with X symmetry on. Leave `object` blank and it prepares whatever is active — which is what a part that was just generated is. `voxel_size` is in Blender metres (`0.001` = a 1 mm grid) because that is what the `remesh` command takes; halving it quadruples the faces. |
+
+The last two are also the examples worth copying for a **selection-dependent** flow: a step
+whose argument is a blank string means "whatever I am working on right now", the same way
+`script_path: ""` does for a service step, and the merge's own resolution order (names →
+collection → selection → active object) is what makes that safe rather than vague.

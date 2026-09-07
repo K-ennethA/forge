@@ -2125,6 +2125,56 @@ def project_paths(slug: str) -> Tuple[Path, Path, Path]:
     return folder, folder / "part.py", folder / "spec.json"
 
 
+#: Blender truncates object names at 63 bytes, so the add-on's
+#: ``common.component_name`` caps there — and a spec that recorded a name
+#: Blender cannot give an object would be recording a lie.
+COMPONENT_NAME_LIMIT = 63
+
+
+def component_name(project: str, component: Any = None) -> str:
+    """``<project>`` for the core, ``<project>-<component>`` for a proposal.
+
+    The mirror of the add-on's ``forge.tools.common.component_name``: the two
+    halves of Forge have to spell a component the same way or "scrap the collar"
+    finds nothing.
+    """
+    stem = str(project or "").strip()
+    piece = str(component or "").strip().strip("-")
+    if piece.startswith(stem + "-") and stem:
+        name = piece                      # already a full name; do not double it
+    else:
+        name = f"{stem}-{piece}" if piece else stem
+    return name.encode("utf-8")[:COMPONENT_NAME_LIMIT].decode("utf-8", "ignore")
+
+
+def component_block(slug: str, components: Any) -> Optional[Dict[str, Any]]:
+    """The spec's record of a component tree, or ``None`` when there is none.
+
+    ``["collar", "ear-l"]`` and ``["gecko-bowl-collar", "gecko-bowl-ear-l"]``
+    both record the same two proposals, because the assistant will reach for
+    either and the naming rule is the same one either way. The core and the
+    collection are the project itself, which is the whole convention.
+    """
+    if components in (None, "", [], ()):
+        return None
+    if isinstance(components, str) or not isinstance(components, (list, tuple)):
+        raise ForgeError(
+            "`components` is the list of proposal pieces a design lands as — "
+            '["collar", "ear-l", "tail"]. The core is the part itself and does '
+            "not go in the list."
+        )
+    proposals: List[str] = []
+    for entry in components:
+        if not isinstance(entry, str) or not entry.strip():
+            raise ForgeError("Every component is a name, e.g. \"collar\".")
+        name = component_name(slug, entry)
+        if name == slug:
+            continue                      # that is the core, not a proposal
+        if name not in proposals:
+            proposals.append(name)
+    return {"collection": slug, "core": slug, "proposals": proposals}
+
+
 def normalize_script_source(source: Any) -> str:
     """The script text as it will be written: LF endings, one trailing newline."""
     if source is None or not isinstance(source, str) or not source.strip():
@@ -2143,11 +2193,15 @@ def spec_document(
     params: Any,
     *,
     description: Optional[str] = None,
+    components: Any = None,
 ) -> Dict[str, Any]:
     """A minimal spec.json for a new part, shaped like templates/spec.json.
 
     The parameters are mirrored from the schema the service just resolved, so
     the spec and the script cannot disagree on the day they are written.
+    ``components`` records the component tree (Phase 11) when the design has
+    one, so a later session knows which object is the core and which are
+    proposals that can be scrapped.
     """
     mirrored: Dict[str, Any] = {}
     if isinstance(params, Mapping):
@@ -2161,7 +2215,8 @@ def spec_document(
                     entry[field] = spec[field]
             mirrored[str(key)] = entry
 
-    return {
+    block = component_block(slug, components)
+    document: Dict[str, Any] = {
         "_comment": (
             "Contract between you and Claude for this part. Claude regenerates "
             "part.py from this; edit freely. Created by partforge_new_part."
@@ -2174,6 +2229,12 @@ def spec_document(
         "reference_images": [],
         "parameters": mirrored,
         "features": [],
+    }
+    # Right after "features", where a reader asking "what pieces is this?" is
+    # already looking, and only when there is a tree to record.
+    if block is not None:
+        document["components"] = block
+    document.update({
         "print": {
             "printer": config.SPEC_PRINTER_REF,
             "segments": "auto",
@@ -2182,7 +2243,49 @@ def spec_document(
         },
         "script": "part.py",
         "exports": [],
-    }
+    })
+    return document
+
+
+def update_spec_components(spec: Path, slug: str, components: Any) -> str:
+    """Record the component tree in an existing spec.json. ``""`` when it worked.
+
+    Revising a design is the common case — the collar was wrong, the tail is
+    new — and the spec is the artist's file with their own edits in it. So this
+    rewrites exactly one key and merges the proposals it is given with the ones
+    already recorded, and any spec it cannot read is left untouched with a
+    sentence handed back rather than replaced by a fresh one.
+    """
+    block = component_block(slug, components)
+    if block is None:
+        return ""
+    try:
+        document = json.loads(spec.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return f"spec.json was left alone — it could not be read: {exc}"
+    if not isinstance(document, dict):
+        return "spec.json was left alone — it does not contain a JSON object."
+
+    existing = document.get("components")
+    if isinstance(existing, Mapping):
+        known = [name for name in (existing.get("proposals") or [])
+                 if isinstance(name, str)]
+        merged = list(known)
+        for name in block["proposals"]:
+            if name not in merged:
+                merged.append(name)
+        block = dict(existing)
+        block.update({"collection": document.get("name") or slug,
+                      "core": document.get("name") or slug,
+                      "proposals": merged})
+
+    document["components"] = block
+    try:
+        spec.write_text(json.dumps(document, indent=2) + "\n",
+                        encoding="utf-8", newline="\n")
+    except OSError as exc:
+        return f"spec.json could not be updated: {exc}"
+    return ""
 
 
 def fmt_new_part_report(
@@ -2627,6 +2730,11 @@ KNOWN_BLENDER_OPS = frozenset({
     "check_model", "segment_model",
     # generated meshes (Phase 7 — meshgen writes a .glb, this brings it in)
     "import_generated",
+    # base shapes and the component tree (Phase 11): the two samplers read a
+    # drawn curve, and the merge is the end of a design — "scrap the collar,
+    # then merge what's left and check it" is exactly the repeatable sequence
+    # flows exist for (flows/merge-and-check.json).
+    "profile_from_curve", "outline_from_curve", "merge_for_print",
     # RigForge
     "rigforge_list_tags", "rigforge_tag", "rigforge_untag", "rigforge_manifest",
     "rigforge_retopo", "rigforge_auto_uv", "rigforge_status", "rigforge_metarig",
@@ -3355,4 +3463,134 @@ def fmt_meshgen_status(
                 "  Done: import it with import_generated(path=<the file above>) — it "
                 "arrives voxel-repaired, then check_model gives the print verdict."
             )
+    return "\n".join(lines)
+
+
+# --- Phase 11: base shapes, components and merge-for-print -------------------
+
+
+def _points_block(points: Any, digits: int = 1) -> str:
+    """A control-point list as the caller will paste it into a PARAMS block."""
+    rows = []
+    for pair in points or []:
+        try:
+            first, second = float(pair[0]), float(pair[1])
+        except (TypeError, ValueError, IndexError):
+            continue
+        rows.append(f"({fmt_number(first, digits)}, {fmt_number(second, digits)})")
+    return "[" + ", ".join(rows) + "]"
+
+
+def fmt_profile_report(result: Mapping[str, Any]) -> str:
+    """A drawn curve, measured — and the reminder that it is still parametric.
+
+    The points ARE the answer, so they go first and in the shape they will be
+    pasted in. Everything under them is the honest small print: which plane the
+    stroke was read on, what was dropped, what soft_body will clamp.
+    """
+    points = result.get("points_mm") or []
+    lines = [
+        f"Read {result.get('object')} as a profile — {len(points)} control "
+        f"points, {fmt_number(result.get('height_mm'), 1)} mm tall, widest "
+        f"radius {fmt_number(result.get('max_radius_mm'), 1)} mm "
+        f"({fmt_number(2 * float(result.get('max_radius_mm') or 0.0), 1)} mm "
+        "across).",
+        "",
+        f"    profile_points = {_points_block(points)}",
+        "",
+        f"  drawn on the {result.get('plane')} plane (looking down "
+        f"{result.get('plane_normal')}), sampled from "
+        f"{fmt_number(result.get('sample_count'), 0)} points of a "
+        f"{str(result.get('spline_type') or '').lower()} curve",
+        "  radius first, then height — the pair forge_lib.soft_body takes. "
+        "Nothing was built: write these into a PARAMS script (partforge_new_part) "
+        "so every one of them stays a slider the artist can nudge.",
+    ]
+    if result.get("close_bottom"):
+        lines.append("  the profile was dropped onto z = 0, so the body stands "
+                     "on the plate")
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    lines.append(
+        "  Then: partforge_generate, render_preview, and Read the render — a "
+        "drawn curve is a proposal, and the first look is where it becomes right."
+    )
+    return "\n".join(lines)
+
+
+def fmt_outline_report(result: Mapping[str, Any]) -> str:
+    """A drawn loop, measured, for silhouette_part."""
+    points = result.get("points_mm") or []
+    lines = [
+        f"Read {result.get('object')} as an outline — {len(points)} points, "
+        f"{fmt_number(result.get('width_mm'), 1)} x "
+        f"{fmt_number(result.get('height_mm'), 1)} mm.",
+        "",
+        f"    points = {_points_block(points)}",
+        "",
+        f"  drawn on the {result.get('plane')} plane, sampled from "
+        f"{fmt_number(result.get('sample_count'), 0)} points of a "
+        f"{str(result.get('spline_type') or '').lower()} curve",
+        "  x then y, the outline forge_lib.silhouette_part extrudes. It models "
+        "the part lying flat on the bed, so this is a proposal for one ear, "
+        "fin, tail or crest — give it a thickness and, if it plugs into a body, "
+        "a peg.",
+    ]
+    if result.get("recentered"):
+        lines.append("  recentred on x = 0 with its bottom on y = 0, which is "
+                     "where silhouette_part puts the peg")
+    if result.get("self_intersections"):
+        lines.append("  WARNING: the simplified outline crosses itself — "
+                     "silhouette_part will refuse it. Ask for fewer points or "
+                     "have the artist redraw the loop.")
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    return "\n".join(lines)
+
+
+def fmt_merge_report(result: Mapping[str, Any]) -> str:
+    """One shell out of many pieces, with the resolution trade said out loud."""
+    sources = result.get("sources") or []
+    voxel = result.get("voxel_size_mm")
+    lines = [
+        f"Merged {len(sources)} piece(s) into {result.get('object')} — "
+        f"{fmt_number(result.get('face_count'), 0)} faces, "
+        f"{fmt_number(result.get('vertex_count'), 0)} vertices, "
+        f"{_dims(result.get('dimensions_mm'), 1)}.",
+        f"  one shell at a {fmt_number(voxel, 2)} mm voxel"
+        + (f" (half the printer's {fmt_number(result.get('nozzle_mm'), 2)} mm "
+           "nozzle — two voxels per bead, which is every detail the printer "
+           "could actually lay down)"
+           if str(result.get("voxel_source")) == "nozzle" else "")
+        + ".",
+    ]
+    if str(result.get("voxel_source")) == "coarsened":
+        lines.append(f"  the voxel was coarsened to fit the face budget: detail "
+                     f"finer than {fmt_number(voxel, 2)} mm is rounded off. Say "
+                     "that to the artist — it is the trade, not a defect.")
+    if str(result.get("voxel_source")) == "given":
+        lines.append("  that size was asked for rather than derived from the nozzle")
+
+    sealed = result.get("watertight_input_count")
+    if isinstance(sealed, int) and sealed < len(sources):
+        lines.append(f"  {len(sources) - sealed} of the pieces were not sealed on "
+                     "their own; the merge closed them")
+    if result.get("watertight") is False:
+        lines.append("  the merged shell is NOT sealed — run mesh_diagnose to "
+                     "see where before doing anything else")
+    if result.get("kept_originals"):
+        lines.append("  the originals are hidden, not deleted: nothing is lost "
+                     "if the merge is wrong, and delete_object still scraps a "
+                     "piece for good")
+    else:
+        lines.append("  the originals were DELETED, as asked")
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    lines.append(
+        "  Now call check_model on it — a merged shell is a new mesh, and "
+        "whether it still fits the bed and still has printable walls is a "
+        "question only the check answers. If a check fails, mesh_diagnose "
+        "locates the thin sculpted detail in millimetres so the artist knows "
+        "WHERE to thicken."
+    )
     return "\n".join(lines)

@@ -1,0 +1,61 @@
+{
+  "name": "sculpt-ready",
+  "description": "Hand a freshly generated base shape over to the artist's stylus: even out the topology with a voxel remesh, put the object in Sculpt Mode, and set the brush up with symmetry on. Leave the object blank to use whatever is active.",
+  "params": {
+    "object": {
+      "value": "",
+      "description": "The base shape to prepare. Blank means the active object, which is what a part that was just generated is"
+    },
+    "voxel_size": {
+      "value": 0.001,
+      "unit": "m",
+      "description": "Remesh grid in Blender metres: 0.001 is a 1 mm grid — fine enough to sculpt into, coarse enough to stay quick. 0.0005 is half a millimetre and four times the faces"
+    },
+    "brush": {
+      "value": "Clay Strips",
+      "description": "The brush to hand them. Clay Strips builds form up; Draw, Smooth and Grab are the other three worth naming"
+    },
+    "brush_size": {
+      "value": 60,
+      "unit": "count",
+      "description": "Brush size in screen pixels"
+    },
+    "symmetry_x": {
+      "value": true,
+      "unit": "bool",
+      "description": "Mirror every stroke across X, so one ear is two"
+    }
+  },
+  "steps": [
+    {
+      "kind": "blender",
+      "op": "remesh",
+      "label": "Even out the topology so a brush pushes the same everywhere",
+      "args": {
+        "object": "{{object}}",
+        "mode": "voxel",
+        "voxel_size": "{{voxel_size}}"
+      }
+    },
+    {
+      "kind": "blender",
+      "op": "set_mode",
+      "label": "Into Sculpt Mode",
+      "args": {
+        "object": "{{object}}",
+        "mode": "sculpt"
+      }
+    },
+    {
+      "kind": "blender",
+      "op": "sculpt_brush",
+      "label": "Brush in hand, symmetry on",
+      "args": {
+        "object": "{{object}}",
+        "brush": "{{brush}}",
+        "size": "{{brush_size}}",
+        "symmetry_x": "{{symmetry_x}}"
+      }
+    }
+  ]
+}

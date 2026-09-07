@@ -581,6 +581,21 @@ class VIEW3D_PT_forge_model(_ForgePanel, Panel):
         column.operator("forge.model_segment", icon="MOD_BOOLEAN",
                         text="Segment imported model")
 
+        # Phase 11: the core and the proposals the artist kept are separate
+        # objects right up until the slicer, where they have to be one.
+        merge = layout.column(align=True)
+        selected = [obj for obj in (getattr(context, "selected_objects", None) or [])
+                    if obj.type == "MESH"]
+        row = merge.row(align=True)
+        row.enabled = bool(selected) and not md.busy
+        row.operator("forge.model_merge", icon="MOD_OPACITY",
+                     text="Merge for Print")
+        hint = merge.row()
+        hint.active = False
+        hint.scale_y = 0.7
+        hint.label(text=("%d selected -> one sealed shell" % len(selected))
+                   if selected else "select the pieces to merge them")
+
         repair = layout.box()
         repair.alert = bool(md.needs_repair)
         if md.needs_repair:

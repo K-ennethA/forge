@@ -175,6 +175,9 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `check_model` | `object?`, `printer?` | print-checks a mesh that is **already in the scene** (a downloaded STL, your own sculpt): the evaluated mesh goes to the service's `/check_mesh` in millimetres and the rows land in the Print Checks panel. Returns `{"object", "overall", "checks", "printer"?, "stats"?, "mesh": {"vertex_count", "face_count", "scale"}, "printer_source", "panel"}` |
 | `segment_model` | `object?`, `printer?`, `joint?`, `mode?`, `collection?` | cuts an in-scene mesh via `/segment_mesh` and loads the pieces laid out on the plate. Returns `{"object", "objects", "count", "segments", "mode", "joint", "plate", "mesh", "printer_source"}` — the segment meshes are **not** echoed back, the objects are in the viewport |
 | `import_generated` | `path` (`.glb`/`.gltf`), `name?`, `repair?` (**default true**), `voxel_size?` (scene metres), `collection?` | imports what meshgen wrote and **voxel-repairs it on the way in**. Returns `{"object", "vertex_count", "face_count", "edge_count", "repaired", "path", "importer", "imported_objects", "dimensions_mm", "before": {...}, "voxel_size"?, "voxel_size_mm"?, "repair_method"?}` |
+| `profile_from_curve` | `curve_object`, `points?` (5–10, default 7), `close_bottom?` (default true) | **read-only.** Samples a curve the artist DREW into the `(radius, z)` control points `forge_lib.soft_body` takes. Returns `{"object", "points_mm", "height_mm", "max_radius_mm", "min_radius_mm", "base_radius_mm", "plane", "plane_normal", "point_count", "sample_count", "spline_type", "closed_curve", "close_bottom", "z_offset_mm", "flatness_mm", "helper", "notes"}` |
+| `outline_from_curve` | `curve_object`, `points?` (6–16, default 12), `recenter?` (default true) | **read-only.** Samples a **closed** drawn curve into the `[x, y]` outline `forge_lib.silhouette_part` extrudes. Returns `{"object", "points_mm", "width_mm", "height_mm", "plane", "plane_normal", "point_count", "sample_count", "spline_type", "closed_curve", "cyclic_flag", "recentered", "offset_mm", "self_intersections", "flatness_mm", "helper", "notes"}` |
+| `merge_for_print` | `objects?` (names), `collection?`, `voxel_size_mm?` (omit or `0` = nozzle/2), `name?` (default `<project>-merged`), `keep_originals?` (default true) | joins the chosen meshes and voxel-remeshes them into ONE watertight shell. Returns `{"object", "vertex_count", "face_count", "edge_count", "voxel_size_mm", "voxel_size_requested_mm", "voxel_source", "nozzle_mm", "printer_source", "predicted_face_count", "surface_area_mm2", "watertight_input_count", "watertight", "loose_vertices", "sources", "source_count", "resolved_by", "collection", "kept_originals", "hidden", "deleted", "dimensions_mm", "remesh_method", "next", "notes"}` |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
 ### Workspace commands (Phase 8 — the copilot drives the viewport)
@@ -488,6 +491,110 @@ on.
 
 Mirrored by the MCP tool `generate_3d`, which is the whole job in one call (submit, follow
 the stages, import, print-check). The command is also a legal flow step.
+
+### Additive protocol extension (Phase 11): drawn base shapes
+
+Two read-only samplers turn a curve the artist drew into the control points a `forge_lib`
+helper takes. **Neither builds anything.** The points go back to the caller, who writes them
+into a PARAMS script — which is what keeps a drawn shape *parametric* instead of turning it
+into a mesh that can never change again.
+
+```jsonc
+{"type": "profile_from_curve", "params": {"curve_object": "VaseProfile", "points": 7}}
+{"type": "outline_from_curve", "params": {"curve_object": "EarOutline", "points": 10}}
+```
+
+- **The drawing plane is detected, not assumed.** The axis the stroke spreads along least is
+  the one the artist was looking down, so the other two are the plane: `XZ` (front — what
+  Numpad 1 gives, and what everything in Forge names), `YZ` (side) or `XY` (top). Ties go to
+  the front view. The result reports `plane`, `plane_normal` and `flatness_mm`, and a stroke
+  that wanders more than 2% out of its own plane is flattened onto it *with a note saying
+  so*.
+- **`radius` is the distance from the world Z axis**, so the model's centre line is the blue
+  vertical line at the origin. A silhouette drawn on the left of it is folded onto the
+  right; one that crosses it is folded too, and the note says the drawing was a whole
+  silhouette rather than one half.
+- **Curvature extrema survive the simplification.** Reducing ~200 tessellated samples to 7
+  control points by keeping every 30th one loses the widest point of the vase, which is the
+  one point that makes it a vase. The reduction is the Douglas-Peucker split — repeatedly
+  keep the sample furthest from the chord it should be on — so the shoulder, the waist and
+  the rim are exactly what survives.
+- **Bezier splines are evaluated, not read.** `mathutils.geometry.interpolate_bezier` walks
+  each segment at the spline's own `resolution_u`, so the samples are the curve Blender
+  draws. Poly points are themselves; NURBS goes through Blender's own tessellation
+  (`to_mesh`), and if that fails the control polygon is used **with a note**.
+- **A profile can only climb.** `z` must strictly increase (`soft_body` enforces it too);
+  samples that double back downward are dropped and counted in the notes, because a body of
+  revolution cannot overhang itself. `close_bottom` (default) drops the profile onto `z = 0`
+  so the body stands on the plate, and reports `z_offset_mm`.
+- **An outline must be closed** — cyclic, or with its two ends inside 2% of the drawing's
+  size. An open one is refused with the two keys that close it (`A`, then `Alt+C`). The
+  simplified loop is checked for self-intersection, since `silhouette_part` refuses one.
+- **Too few points is not a refusal.** A three-point poly curve is resampled evenly along
+  its own length up to the helper's minimum, and says it did that.
+- Refusals name what to do instead: an object that is not a curve, a name that is not in the
+  file, **two strokes in one object** (a silhouette is one stroke — picking one silently is
+  how an artist ends up with a body they did not draw), a point count outside the helper's
+  band, a stroke with no height.
+
+Both are in `READ_ONLY_COMMANDS`: measuring a drawing changes nothing, and an undo step for
+it would only bury the stroke itself.
+
+### Additive protocol extension (Phase 11): the component convention
+
+A design is rarely one object. It is a **core** — the dimensioned part, the thing that has
+to be a named number of millimetres — and a handful of **proposals** hung off it. So:
+
+| | |
+|---|---|
+| the collection | named after the project — `gecko-bowl` |
+| the core object | named after the project — `gecko-bowl` |
+| each proposal | `<project>-<component>` — `gecko-bowl-collar`, `gecko-bowl-ear-l` |
+
+That is what makes *"scrap the collar"* a one-object `delete_object` with nothing else
+depending on it, and what lets `merge_for_print` take a collection name and mean "everything
+still visible in it". `forge.tools.common` holds the three helpers the convention is made
+of: `component_name(project, component)`, `split_component_name(name)`,
+`common_project(names)` (the longest shared run of dash-separated pieces — `["panel-core",
+"panel-core-ear"]` is a project called `panel-core`) and `project_of(name, known_projects)`.
+Names are capped at Blender's 63-byte object-name limit, the same as the part-object rule.
+
+### Additive protocol extension (Phase 11): `merge_for_print`
+
+The last step before the slicer. The core and the proposals the artist kept are separate
+watertight solids the whole time they are deciding — which is right — and exactly wrong at
+the slicer, where two overlapping solids are two objects with a seam between them.
+
+```jsonc
+{"type": "merge_for_print", "params": {"collection": "gecko-bowl"}}
+```
+
+- **Which pieces**, in this order: an explicit `objects` list; else a `collection` (every
+  **visible** mesh in it, which is what makes "scrap it and merge what's left" two words);
+  else the current selection; else the active object. Anything skipped is named in `notes`,
+  never silently dropped. `resolved_by` says which route was taken.
+- **The voxel size is the whole argument, and the default comes from the machine:**
+  `nozzle / 2` = **0.2 mm** on the Centauri Carbon's 0.4 mm nozzle. Half the nozzle is two
+  voxels across the narrowest bead the printer can lay down — anything the grid loses at
+  that size is something the printer could not have printed. Finer buys nothing on the plate
+  and costs quadratically (triangles grow as 1/voxel²); coarser is a real choice, and it is
+  the artist's to make out loud rather than ours to make quietly.
+- **The face count is predicted before anything is remeshed.** The joined mesh's own surface
+  area over voxel² estimates the polygon count; over **1 000 000** the voxel is coarsened
+  until it fits, and the trade is written into `notes` in words. (A 100 mm sphere is ~31 000
+  mm² of surface — about 780 000 polygons at 0.2 mm — so the cap is not theoretical.)
+  Measured against the real remesh, the estimate lands within about ±40%, which is all a
+  size-picker needs. A voxel finer than 0.05 mm, or coarser than a quarter of the smallest
+  dimension, is clamped with a note.
+- **The originals are hidden, not deleted** (`keep_originals`, default true) — the eye icon
+  in the outliner brings one back, and `keep_originals: false` deletes them and says so in
+  `deleted`. The command is **not** read-only: it pushes `Forge: merge_for_print`, and
+  Ctrl+Z takes the whole thing back, unhiding included.
+- **`watertight_input_count`** says how many pieces were sealed on their own, and
+  `watertight` whether the result is — closing unsealed pieces is half the reason the step
+  exists, and a merged shell that is *still* open is a note pointing at `mesh_diagnose`.
+- The merged object is left selected and active, the Model box is pointed at it, and
+  `next` says `check_model` — because a merged shell is a new mesh nobody has print-checked.
 
 ### Additive protocol extension: `partforge_open`
 
@@ -822,7 +929,13 @@ answers the same two questions about geometry Forge did not generate.
    spinner, with the caveat that the bar is progress through *that stage*, not the job.
    What lands is voxel-repaired (see `import_generated` above) and the status line names the
    object, the time it took and the face count, then points at **Check imported model**.
-5. **Voxel Repair** rebuilds the surface as one closed shell at the given detail size. A
+5. **Merge for Print** fuses everything **selected** into one sealed shell (`merge_for_print`
+   above), at a voxel size taken from the printer's nozzle — no field to fill in, because
+   the honest default is a machine number. The hint under the button counts what is
+   selected, the button is greyed until something is, and the status line afterwards names
+   the shell, the voxel size and the next press (**Check imported model**). The originals
+   are hidden, not deleted, and Ctrl+Z takes the merge back.
+6. **Voxel Repair** rebuilds the surface as one closed shell at the given detail size. A
    mesh with holes cannot be sewn into a solid, so the service refuses it and says so; that
    refusal is passed through word for word, the box turns red, and the fix is this button.
    The repair goes through the ordinary `remesh` command, so it gets its own named undo
@@ -833,9 +946,11 @@ Two things a raw mesh cannot have: `solid_is_valid` is null (there is no B-Rep t
 so `watertight` is the triangles' own closedness), and a mesh above 500 000 faces is refused
 up front with the fix attached rather than being streamed at the service for a minute.
 
-The same operations are socket commands (`check_model`, `segment_model`, `import_generated`
-above) and MCP tools (`check_model`, `segment_model`, `generate_3d` — `mcp/README.md`), so
-the assistant can do all of this from the chat box.
+The same operations are socket commands (`check_model`, `segment_model`, `import_generated`,
+`merge_for_print` above) and MCP tools (`check_model`, `segment_model`, `generate_3d`,
+`merge_for_print` — `mcp/README.md`), so the assistant can do all of this from the chat box.
+The saved flow **merge-and-check** (`flows/merge-and-check.json`) is the merge and the check
+as one press.
 
 ## Flows box
 
@@ -1435,7 +1550,9 @@ addon/forge/
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
   tools/flows.py         Flows: the JSON format, the runner, flow_list/flow_run, the box (6b)
-  tools/model.py         Downloaded models: check_model/segment_model, the Model box (6d)
+  tools/model.py         Downloaded models: check_model/segment_model, the Model box (6d),
+                         and merge_for_print + its button (Phase 11)
+  tools/curves.py        The drawn door: profile_from_curve / outline_from_curve (Phase 11)
   tools/services.py      The health row, Start services, Revert last AI action
   ui/panels.py           sidebar panels
   blender_manifest.toml  extension metadata (Blender 4.2+ install path)
@@ -1452,6 +1569,10 @@ addon/tests/
   headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
                          row, the chips, the empty states, check_model/segment_model
                          against a fake service, and the flow editor
+  headless_phase11.py    headless checks for the drawn door (profile/outline_from_curve),
+                         the component convention, the voxel argument, merge_for_print,
+                         the Merge for Print button, and the merge-and-check and
+                         sculpt-ready flows
 ```
 
 `rigforge_rig.py` holds the Phase 4 commands but keeps its panel state in
@@ -1473,9 +1594,61 @@ its panel's `status` string.
 
 ## Headless tests
 
-Twelve suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 8 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 = 1355
-checks**, all green on Blender 5.0.1.
+Thirteen suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 11 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 + 139 =
+1494 checks**, all green on Blender 5.0.1.
+
+### Phase 11 — drawn base shapes and merge-for-print (`headless_phase11.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_phase11.py
+```
+
+Socket port **9894**. **139 checks**, no window, nothing outside loopback — the geometry
+service on 8765 is consulted read-only (`/generate`) for one end-to-end proof and its
+absence is a printed note, never a failure. Covering:
+
+- **the drawn door as a measurement, not a trace** — a vase Bezier built in-script is
+  sampled into 7 points with `z` strictly increasing and every radius ≥ 0, and *both* of its
+  curvature extremes — the bulge and the waist — are asserted to survive the reduction,
+  measured against the sampler's own dense samples rather than against the drawn control
+  points;
+- **the options** — `close_bottom` standing the body on `z = 0` (and reporting the shift),
+  a silhouette drawn to the LEFT of the axis giving the same body, a curve drawn in the side
+  view read as `YZ`, and a 3-point poly curve resampled up to `soft_body`'s minimum *with*
+  the note that says so;
+- **the refusals** — a mesh, a name that is not in the file, no name at all, a point count
+  outside the helper's band, two strokes in one object, a stroke with no height; and for
+  outlines, an open curve (naming `Alt+C`), a loop closed by hand being accepted anyway;
+- **the end-to-end proof** — the sampled points POSTed to the live service as a `soft_body`
+  script, asserted to build a watertight solid at the height the artist drew;
+- **the component convention** — `component_name` / `split_component_name` /
+  `common_project` / `project_of`, including the 63-byte cap and a project whose own name
+  has a dash in it;
+- **the voxel argument** — nozzle/2 from the real `templates/printer.json`, the prediction,
+  the coarsening at the million-face cap with its note, and both clamps;
+- **merging for real** — two overlapping cubes and a sphere become ONE watertight object,
+  all three inputs counted as sealed, the originals hidden and still present, the shell left
+  active, and the face-count prediction asserted within a factor of the truth (measured:
+  predicted 139 945, got 99 070 — 0.71×);
+- **Ctrl+Z** — `bpy.ops.ed.undo` really removes the merged shell and unhides the pieces;
+- **the collection route** — a project collection with one proposal hidden ("scrap the left
+  ear") merges the survivors only, names the skipped ones, lands in the project's
+  collection and leaves the scrapped piece untouched;
+- **the options and refusals** — an explicit voxel and name, `keep_originals: false` really
+  deleting, a shell named after one of its own pieces refused, an unknown collection refused,
+  nothing-to-merge refused with the three ways in, and the selection used when nothing is
+  named;
+- **the button** — drawn in the Model box, the selection count in its hint, pressing it
+  really merging, the Model box pointed at the result, and a plain refusal (not a traceback)
+  with nothing selected;
+- **the flow** — `flows/merge-and-check.json` loads, validates, has both ops registered,
+  aims the check at `{{steps.0.result.object}}`, and its merge step replays through the real
+  flow runner;
+- **the other flow** — `flows/sculpt-ready.json` (remesh → Sculpt Mode → brush) replays
+  whole against a sphere: the topology really changes and the object really ends up in
+  Sculpt Mode, which is the base-shape handoff as one press.
 
 ### Phase 8 — the workspace copilot and buddy mode (`headless_workspace.py`)
 

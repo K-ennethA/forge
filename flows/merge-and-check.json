@@ -1,0 +1,40 @@
+{
+  "name": "merge-and-check",
+  "description": "Fuse the pieces you kept into one sealed shell for the slicer, then print-check what came out. Leave the collection blank to merge whatever is selected.",
+  "params": {
+    "collection": {
+      "value": "",
+      "description": "Project collection to merge: every visible mesh in it goes in. Blank means merge the current selection instead"
+    },
+    "voxel_size_mm": {
+      "value": 0,
+      "unit": "mm",
+      "description": "Detail size of the merged shell. 0 means half the printer's nozzle (0.2 mm on a 0.4 mm nozzle); bigger is a smaller file with softer detail"
+    },
+    "keep_originals": {
+      "value": true,
+      "unit": "bool",
+      "description": "Hide the pieces instead of deleting them, so nothing is lost if the merge is wrong"
+    }
+  },
+  "steps": [
+    {
+      "kind": "blender",
+      "op": "merge_for_print",
+      "label": "Merge the surviving pieces into one shell",
+      "args": {
+        "collection": "{{collection}}",
+        "voxel_size_mm": "{{voxel_size_mm}}",
+        "keep_originals": "{{keep_originals}}"
+      }
+    },
+    {
+      "kind": "blender",
+      "op": "check_model",
+      "label": "Print-check the merged shell",
+      "args": {
+        "object": "{{steps.0.result.object}}"
+      }
+    }
+  ]
+}

@@ -41,6 +41,7 @@ from .util import (
     fmt_joint,
     fmt_keyframe_report,
     fmt_manifest_report,
+    fmt_merge_report,
     fmt_meshgen_status,
     fmt_metarig_report,
     fmt_mode,
@@ -49,9 +50,11 @@ from .util import (
     fmt_new_part_report,
     fmt_number,
     fmt_open_report,
+    fmt_outline_report,
     fmt_overrides,
     fmt_params,
     fmt_preview_report,
+    fmt_profile_report,
     fmt_reference_report,
     fmt_retarget_report,
     fmt_retopo_report,
@@ -98,6 +101,7 @@ from .util import (
     rig_objects,
     scene_object,
     spec_document,
+    update_spec_components,
 )
 
 INSTRUCTIONS = """\
@@ -157,6 +161,21 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   parametric: a generated mesh has no crisp faces and no exact millimetres. It
   always arrives voxel-repaired and print-checked; say the wait out loud before
   starting, and meshgen_status reports the stage while it runs.
+- When likeness is not achievable, deliver STRUCTURE: a sculptable base shape.
+  forge_lib.soft_body (a body of revolution from 5-10 (radius, z) points) and
+  silhouette_part (an appendage from 6-16 outline points) are the vocabulary,
+  and there are three ways in — described, shown in a picture, or DRAWN:
+  profile_from_curve and outline_from_curve read a curve the artist drew into
+  exactly those control points, so their drawing becomes a parametric part with
+  sliders rather than a frozen mesh. Then remesh(mode="voxel") for even sculpt
+  topology, set_mode("sculpt") and sculpt_brush, and the detail is theirs.
+- A multi-part result is a COMPONENT TREE: one collection named after the
+  project, the core object named after the project, each proposal named
+  <project>-<component>. Present core-vs-proposals every time, name the core's
+  sliders, and say the keep/scrap line — scrapping a proposal is delete_object
+  and nothing else depends on it. merge_for_print then fuses the survivors into
+  one watertight shell for the slicer (voxel = nozzle/2 by default; originals
+  hidden, not deleted), and check_model is the call that always follows it.
 - The artist's WORKSPACE is yours to drive, not to describe. set_view,
   frame_object, local_view, set_shading, set_overlays, set_mode and sculpt_brush
   run inside their live Blender: "turn the grid on for x, y and z" is
@@ -1092,6 +1111,7 @@ def partforge_generate(
     script_path: str,
     overrides: Optional[Dict[str, Any]] = None,
     name: Optional[str] = None,
+    collection: Optional[str] = None,
 ) -> str:
     """Build a PartForge part and load it into Blender — the whole regenerate loop.
 
@@ -1106,6 +1126,15 @@ def partforge_generate(
       change stick.
     - `name`: Blender object name; defaults to the script's filename (or its
       folder name when the file is generically named, e.g. projects/x/part.py).
+    - `collection`: the Blender collection the object lands in (created if it
+      does not exist). Use it for a multi-part design: one collection named
+      after the project, the core object named after the project, and every
+      proposal named `<project>-<component>` (`gecko-bowl-collar`). That naming
+      is what makes "scrap the collar" a one-object delete and lets
+      merge_for_print take the collection and mean "everything still visible in
+      it". A collection is only applied when the object is created — an existing
+      object keeps the collection it is already in, like every other thing
+      `replace` preserves.
 
     Reports vertex/face counts, bounding box in mm and watertightness. If Blender
     is not running the part is still built and the stats are still reported — it
@@ -1133,16 +1162,17 @@ def partforge_generate(
         )
         return "\n".join(lines)
 
+    load_params: Dict[str, Any] = {
+        "name": object_name,
+        "vertices": vertices,
+        "faces": faces,
+        "replace": True,
+    }
+    if collection and collection.strip():
+        load_params["collection"] = collection.strip()
+
     try:
-        loaded = blender_client.send_command(
-            "load_mesh",
-            {
-                "name": object_name,
-                "vertices": vertices,
-                "faces": faces,
-                "replace": True,
-            },
-        )
+        loaded = blender_client.send_command("load_mesh", load_params)
     except BackendUnavailable as exc:
         lines.append(f"  NOT loaded into Blender — {exc}")
     except ForgeError as exc:
@@ -1152,6 +1182,8 @@ def partforge_generate(
             f"  Loaded into Blender as '{loaded.get('object', object_name)}' "
             f"({loaded.get('vertex_count', '?')} verts, "
             f"{loaded.get('face_count', '?')} faces), mesh replaced in place."
+            + (f" In the collection '{collection.strip()}'."
+               if collection and collection.strip() else "")
         )
 
     params = payload.get("params")
@@ -1205,6 +1237,7 @@ def partforge_new_part(
     name: str,
     script_source: str,
     overwrite: bool = False,
+    components: Optional[List[str]] = None,
 ) -> str:
     """Create (or revise) a parametric part: write a PARAMS script into projects/.
 
@@ -1224,6 +1257,13 @@ def partforge_new_part(
       section pointing at templates/printer.json) unless one already exists.
     - `overwrite=true` is also the REVISION path: same tool, same validation.
       That is how the self-correction loop edits a script after a failed check.
+    - `components`: the proposal pieces this design lands as — `["collar",
+      "ear-l", "ear-r"]`. It records the component tree in spec.json (the
+      collection and the core are the project itself, each proposal
+      `<project>-<component>`), so a later session knows which object is the
+      dimensioned core and which ones the artist may scrap. Pass it whenever the
+      answer is more than one object, and build each piece with
+      `partforge_generate(..., name=..., collection=...)` to match.
 
     Returns the script path and the parsed parameter table, so you can confirm
     what you built and name the useful sliders back to the artist.
@@ -1260,7 +1300,8 @@ def partforge_new_part(
     if not spec.exists():
         try:
             spec.write_text(
-                json.dumps(spec_document(name, slug, params), indent=2) + "\n",
+                json.dumps(spec_document(name, slug, params,
+                                         components=components), indent=2) + "\n",
                 encoding="utf-8",
                 newline="\n",
             )
@@ -1270,6 +1311,16 @@ def partforge_new_part(
                 name=name, slug=slug, script=script, params=params,
                 created=not existed, spec=None, spec_created=False,
             ) + f"\n  (spec.json could not be written: {exc})"
+    elif components:
+        # An existing spec is the artist's file, so only the one block this call
+        # actually knows about is touched — and a spec that cannot be read is
+        # left exactly as it is rather than replaced with a guess.
+        note = update_spec_components(spec, slug, components)
+        if note:
+            return fmt_new_part_report(
+                name=name, slug=slug, script=script, params=params,
+                created=not existed, spec=spec, spec_created=False,
+            ) + f"\n  ({note})"
 
     return fmt_new_part_report(
         name=name,
@@ -1724,6 +1775,148 @@ def segment_model(
     except ForgeError as exc:
         raise _with_repair_advice(exc) from exc
     return fmt_model_segment_report(object, result, printer_source, collection)
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — base shapes: the artist draws it, and many pieces become one
+# ---------------------------------------------------------------------------
+
+#: A voxel remesh of a big union is a minute of main-thread work — the same
+#: reasoning as the generated-mesh import below.
+_MERGE_TIMEOUT = 300.0
+
+
+@app.tool()
+def profile_from_curve(
+    curve_object: str,
+    points: Optional[int] = None,
+    close_bottom: bool = True,
+) -> str:
+    """Read a curve the artist DREW into (radius, z) points for forge_lib.soft_body.
+
+    The third door into a base shape. They can describe it ("a bowl that swells
+    at the shoulder"), show you a picture, or draw the silhouette themselves —
+    this is the drawn one, and it is the most exact of the three because the
+    shape is theirs to begin with.
+
+    Tell them: press Numpad 1 for the front view, Add > Curve > Bezier, draw the
+    RIGHT-HAND EDGE of the silhouette going up from the base, and tell you what
+    the object is called. Radius is measured from the world Z axis (the blue
+    vertical line at the origin), so that axis is the model's centre line.
+
+    Nothing is built and nothing in the scene changes. What comes back is 5-10
+    control points — write them into a PARAMS script with partforge_new_part, so
+    what the artist drew is still a PARAMETRIC part with sliders on it and not a
+    mesh frozen at the moment they drew it. That is the whole point of the door.
+
+    - `points`: how many control points to return (5-10, default 7). The
+      simplification keeps the silhouette's own extremes — the shoulder, the
+      waist, the rim — and drops the samples in between.
+    - `close_bottom` (default true): drop the profile onto z = 0 so the body
+      stands on the build plate.
+
+    A silhouette can only climb: samples that double back downward are dropped
+    and counted in the notes, because a body of revolution cannot overhang
+    itself. An open curve is fine here — for a closed loop (an ear, a fin) use
+    outline_from_curve instead.
+    """
+    params: Dict[str, Any] = {
+        "curve_object": curve_object,
+        "close_bottom": bool(close_bottom),
+    }
+    if points is not None:
+        params["points"] = int(points)
+    result = blender_client.send_command("profile_from_curve", params)
+    return fmt_profile_report(result)
+
+
+@app.tool()
+def outline_from_curve(
+    curve_object: str,
+    points: Optional[int] = None,
+    recenter: bool = True,
+) -> str:
+    """Read a CLOSED drawn curve into [x, y] points for forge_lib.silhouette_part.
+
+    The same door, for the pieces that hang off a body: an ear, a fin, a tail, a
+    wing, a crest. The artist draws the outline as a closed loop (Add > Curve >
+    Bezier, then Alt+C in Edit Mode to close it) and this measures it into the
+    6-16 control points silhouette_part splines and extrudes.
+
+    Nothing is built. Feed the points into a PARAMS script — with a thickness,
+    and a `peg` when the piece plugs into a socket on the core — and the drawn
+    ear becomes a parametric one.
+
+    - `points`: 6-16, default 12. Eight to sixteen is the useful band.
+    - `recenter` (default true): centre the outline on x = 0 with its bottom on
+      y = 0, which is where silhouette_part attaches the peg.
+
+    An open curve is refused with the two keys that close it, because an outline
+    with a gap in it has no inside to fill.
+    """
+    params: Dict[str, Any] = {
+        "curve_object": curve_object,
+        "recenter": bool(recenter),
+    }
+    if points is not None:
+        params["points"] = int(points)
+    result = blender_client.send_command("outline_from_curve", params)
+    return fmt_outline_report(result)
+
+
+@app.tool()
+def merge_for_print(
+    objects: Optional[List[str]] = None,
+    collection: Optional[str] = None,
+    voxel_size_mm: Optional[float] = None,
+    name: Optional[str] = None,
+    keep_originals: bool = True,
+) -> str:
+    """Join the pieces the artist KEPT into ONE watertight shell for the slicer.
+
+    The last step of a component-tree design. The core and its proposals are
+    separate objects the whole time the artist is deciding — which is what makes
+    "scrap the collar" one delete — and separate objects are exactly wrong at
+    the slicer, where two overlapping solids are two objects with a seam.
+
+    What it does: copies the chosen meshes, joins them, and voxel-remeshes the
+    union into a single sealed surface.
+
+    - `objects`: the names to merge. Omit them and name a `collection` instead —
+      every VISIBLE mesh in it goes in, which is why scrapping a proposal is a
+      delete or a hide and nothing else. Omit both and it merges the selection.
+    - `voxel_size_mm`: omit it. The default is half the printer's nozzle
+      (0.2 mm on a 0.4 mm nozzle) — two voxels per bead, which resolves every
+      detail the printer could actually lay down and spends nothing on detail it
+      could not. Finer costs file size quadratically; coarser is a real choice
+      worth offering when the file matters more than the surface.
+    - `name`: default `<project>-merged`, by the component naming convention.
+    - `keep_originals` (default true): the pieces are HIDDEN, not deleted. Say
+      so — it is what makes the merge safe to try.
+
+    Say the trade out loud when you report it: a voxel merge rounds off detail
+    finer than the voxel, and thin sculpted details (a whisker, a fingernail)
+    are what it takes first. Then call **check_model** on what came back, and if
+    a check fails run mesh_diagnose — it gives the millimetre coordinates of the
+    thin places, so the artist knows where to thicken instead of guessing.
+    """
+    params: Dict[str, Any] = {"keep_originals": bool(keep_originals)}
+    names = [entry.strip() for entry in (objects or []) if entry and entry.strip()]
+    if names:
+        params["objects"] = names
+    if collection and collection.strip():
+        params["collection"] = collection.strip()
+    if voxel_size_mm is not None:
+        params["voxel_size_mm"] = float(voxel_size_mm)
+    if name and name.strip():
+        params["name"] = name.strip()
+
+    result = blender_client.send_command(
+        "merge_for_print",
+        params,
+        read_timeout=max(config.BLENDER_READ_TIMEOUT, _MERGE_TIMEOUT),
+    )
+    return fmt_merge_report(result)
 
 
 # ---------------------------------------------------------------------------
