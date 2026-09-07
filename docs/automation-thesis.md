@@ -34,6 +34,16 @@ The critique was right about the habit, wrong about the remedy. Generative 3D mo
 - Arbitrary-morphology rigging (wings, tails, multi-limb) is NOT production-viable anywhere in 2026 — biped-only claims hold even at Meshy. The bridge + harness narrows the manual work; it does not remove it.
 - Rigging is the strongest "wait" case: datasets scaled ~70× in a year and the field is data-constrained — expect meaningful MIT checkpoints within quarters; the bridge is designed to absorb them.
 
+## Final research installment (fine-tuning + industry, 2026-09-06)
+
+- **License audit PERFORMED on our ComfyUI env: CLEAN** — 88 packages, zero nvdiffrast/diffoctreerast/diff-gaussian/simple-knn, zero custom node packs. The NC landmine is the official-repo path we avoided. Re-audit after any ComfyUI update; NEVER install 3D node packs (an MIT wrapper doesn't launder an NC payload).
+- **2D-LoRA house style is CONFIRMED as the strategy** — Tencent's own production pipeline (Hunyuan3D Studio) applies style via a 2D image LoRA BEFORE geometry generation; the geometry model is never style-tuned. 20–100 images, fits 12 GB, hours to iterate — vs ~12k curated 3D pairs and rented datacenter GPUs for the one documented 3D LoRA. Train nothing 3D; style in 2D, lift with an unmodified generator.
+- **Visual-critique protocol upgrades (adopt in the verifier round):** fixed 24-view turntable at 256px is the judging rig that works; **~26% of VLM judgments reverse when presentation order swaps** — all A/B comparisons must be order-swap de-biased; CLIP similarity is useless (0.48 agreement); geometry-validity proxies hit chance (0.53) on ambiguous cases — hence BOTH gates (geometry for defects, de-biased VLM for quality). Future lever: LoRA a 7B VLM judge on our own ratings (~2.6k samples beat Gemini-2.5-Pro on mesh quality).
+- **Test-time consensus for CAD generation (free upgrade):** sample N part-scripts, build all, keep the one closest to pool consensus by Chamfer distance — beats a learned verifier, plateaus at N≈9. Worth wiring into partforge for high-stakes parts.
+- **Copyright/commerce design inputs:** prompts-alone outputs are likely unprotectable; parametric definitions and hand edits ARE. The CAD lane and sculpt pass are the owner's IP position, not fallbacks. Keep **per-asset provenance metadata** (generated / parametric / hand-edited); storefronts require AI disclosure (Steam pre-generated content, Fab mandatory flag, itch: hand-editing does NOT exempt); some publishers refuse AI assets entirely — the clean-room CAD lane has commercial value on its own.
+- **Hardware policy:** 12 GB is the binding constraint, not compute. Rent single-GPU cloud hours for any training job (all the ones that matter are single-GPU, ~13h class); if ever upgrading, 16 GB+ crosses real floors. No consumer-GPU 3D benchmarks exist — distrust all SEO timing claims.
+- **GPL boundary:** distributed Blender add-on code must be GPL; keep the add-on a separate process-boundary component (already true) so services stay license-independent.
+
 ## Standing rules distilled
 
 - Never train a 3D generative model; keep every model behind an adapter seam and swap quarterly as the field moves (TRELLIS→TRELLIS.2 took one year; part-based gen went 0→shipping in 12 months).
