@@ -77,7 +77,9 @@ from .util import (
     fmt_stats,
     fmt_submitted_report,
     fmt_tag_table,
+    fmt_turntable_report,
     fmt_uv_report,
+    fmt_verify_report,
     fmt_vector,
     fmt_weights_report,
     fmt_wiring_guide,
@@ -94,9 +96,12 @@ from .util import (
     normalize_face_indices,
     normalize_keys,
     normalize_modules,
+    normalize_poly_budget,
     normalize_preview_objects,
     normalize_preview_resolution,
     normalize_retarget_scale,
+    normalize_turntable_resolution,
+    normalize_turntable_views,
     normalize_script_source,
     normalize_segment_mode,
     normalize_tag_list,
@@ -115,6 +120,7 @@ from .util import (
     rig_objects,
     scene_object,
     spec_document,
+    turntable_path,
     update_spec_components,
 )
 
@@ -175,6 +181,22 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   the render against the reference (density, proportions, silhouette, softness)
   and iterate on the parameters if it misses. Never call a visual design done
   without having looked at it.
+- THE GATE IS TWO GATES. render_preview judges beauty; verify_design judges
+  truth, and BOTH must pass before visual or geometry work is done. Judging by
+  eye alone is measurably biased toward prettiness (the same model scores 78 ELO
+  higher shown as a splat than as a mesh), so a render loop on its own hands
+  over beautiful meshes nobody can use. verify_design is one scored report —
+  defects, poly budget, UVs, symmetry residual (reported, never judged), edge
+  loops at joints, and silhouette IoU against the artist's reference — and every
+  claim in it carries a tier: `measured` (a computed number) or `heuristic` (a
+  number that took a judgement call). Quote them apart.
+- turntable is the rig for anything organic or generated: 24 views at 256 px on
+  one contact sheet, every tile framed identically. A single view hides
+  interpenetration, the unmodelled side and the top of the head. Read the sheet.
+- ORDER-SWAP LAW: when you compare two renders or two candidates, read them in
+  BOTH orders. About a quarter of paired visual judgements reverse when the
+  presentation order swaps. If the verdict flips, it is too close to call — say
+  so and decide on verify_design's numbers instead.
 - generate_3d turns a picture into an actual mesh (meshgen, ~5 minutes, one job
   at a time) and is the right first offer for ORGANIC, stylised, one-off shapes
   — a creature, a bust, an ornament. Anything functional or dimensioned stays
@@ -1125,6 +1147,158 @@ def check_my_work(object: Optional[str] = None, resolution: Optional[int] = None
         notes.append(f"no scene listing ({exc})")
 
     return fmt_check_in_report(images, diagnosis, scene, notes)
+
+
+# ---------------------------------------------------------------------------
+# The geometric gate — renders judge beauty, this judges truth
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def verify_design(
+    object: Optional[str] = None,
+    reference_image: Optional[str] = None,
+    profile: Literal["game", "print", "any"] = "any",
+    poly_budget: Optional[int] = None,
+    symmetry_axis: Literal["X", "Y", "Z"] = "X",
+    examples: Optional[int] = None,
+) -> str:
+    """The other half of looking: is this mesh TRUE, whatever it looks like.
+
+    `render_preview` judges beauty. This judges truth, and you need both,
+    because judging by eye alone is measurably biased toward prettiness: the
+    same model scores 78 ELO higher presented as a splat than as a mesh, and
+    about a quarter of paired visual judgements reverse when the two candidates
+    swap places. A render loop on its own will hand over a beautiful mesh nobody
+    can use and you will believe you succeeded.
+
+    One scored report, one call:
+
+    - **defects** — everything `mesh_diagnose` finds (clipping, unsealed edges,
+      density, scale), composed in rather than repeated.
+    - **poly budget** — the face count against a target, so "game-ready" is a
+      number.
+    - **UVs** — islands, flipped faces, texture-density distortion, an overlap
+      estimate. Skipped when there are none, which is itself the finding.
+    - **symmetry residual** — the distance from the mesh to its own mirror, in
+      millimetres. **Reported, never judged**: a swept tail and a failed
+      symmetrize produce the same number and only the artist knows which it is.
+    - **edge loops at joints** — how many loops cross each deformation zone,
+      read off an armature or off the RigForge tag boundaries. Under three and
+      the bend creases.
+    - **silhouette IoU** — with `reference_image`, how much of the front
+      silhouette actually overlaps the picture they gave you. This is the only
+      measurement that answers "is it the SHAPE of the thing they asked for".
+
+    - `profile`: what the mesh is FOR. `game` gates loops, UVs and the budget;
+      `print` gates defects and silhouette only — **bed fit, wall thickness and
+      overhangs belong to `partforge_check` / `check_model`**, and this
+      deliberately does not duplicate them; `any` (default) gates the universal
+      axes.
+    - `poly_budget`: faces the target platform allows (default 15 000 for
+      `game`, ungated otherwise).
+    - `reference_image`: the artist's picture. A plain background makes the
+      measurement reliable and the report says when it did not have one.
+
+    **Every claim carries a tier.** `measured` is a computed number with a
+    definition; `heuristic` is a number that took a judgement call. Quote them
+    apart — a silhouette thresholded off a photograph is not the same kind of
+    fact as a face count, and saying so is the difference between a report and
+    a guess with numbers in it.
+
+    Read-only, and it costs no undo step.
+    """
+    # The socket protocol's field really is called `for` — it is the natural
+    # word and JSON does not care. Python does, so the tool's argument is
+    # `profile` and the rename happens here, in one place.
+    params = _target(object)
+    params["for"] = profile
+    params["symmetry_axis"] = symmetry_axis
+
+    if examples is not None:
+        if isinstance(examples, bool) or not isinstance(examples, int):
+            raise ForgeError("examples must be a whole number between 1 and 25.")
+        if not 1 <= examples <= 25:
+            raise ForgeError(f"examples must be between 1 and 25 (got {examples}).")
+        params["examples"] = examples
+
+    budget = normalize_poly_budget(poly_budget)
+    if budget is not None:
+        params["poly_budget"] = budget
+
+    if reference_image is not None and str(reference_image).strip():
+        params["reference_image"] = str(reference_path(reference_image))
+
+    return fmt_verify_report(
+        blender_client.send_command(
+            "verify_design", params, read_timeout=config.PREVIEW_TIMEOUT
+        )
+    )
+
+
+@app.tool()
+def turntable(
+    objects: Optional[List[str]] = None,
+    views: Optional[int] = None,
+    resolution: Optional[int] = None,
+    elevation: Optional[float] = None,
+) -> str:
+    """Every side of the model on ONE picture. Use it for anything organic.
+
+    Renders N views around Z and stitches them into a single contact sheet, then
+    hands you the path. **Then Read that file.**
+
+    A single hero render is the cheapest way to be wrong about a mesh. It hides
+    interpenetration, the flat side nobody modelled, and the top of the head —
+    which is exactly the set of things a generated mesh gets wrong. This is the
+    judging rig that was actually measured to work: a fixed turntable, every
+    tile framed identically, so anything that changes between tiles is the model
+    changing and never the camera.
+
+    Call it instead of `render_preview` for anything organic or generated, after
+    `generate_3d`, after a retopo, and before saying a creature is done.
+
+    - `objects`: names to spin; omit for every visible mesh.
+    - `views`: 4-64, default **24** — the protocol number. Fewer hides the
+      sides between the ones you kept.
+    - `resolution`: pixels per tile, 64-512, default **256**, also the protocol
+      number. A bigger tile buys nothing when there are 24 on one sheet.
+    - `elevation`: degrees above the equator, -80 to 80, default 15. A dead
+      level orbit hides the top of everything.
+
+    **If you compare two turntables, read them in BOTH orders.** About a quarter
+    of paired visual judgements reverse when the presentation order swaps, so a
+    one-way read is a coin flip wearing a verdict's clothes. If your answer
+    flips, say it is too close to call and decide on `verify_design`'s numbers.
+
+    Read-only: the render settings and the camera are borrowed and put back.
+    """
+    names = normalize_preview_objects(objects)
+    count = normalize_turntable_views(views)
+    pixels = normalize_turntable_resolution(resolution)
+    out = turntable_path(count, names)
+
+    params: Dict[str, Any] = {
+        "path": str(out),
+        "views": count,
+        "resolution": pixels,
+    }
+    if names:
+        params["objects"] = names
+    if elevation is not None:
+        if isinstance(elevation, bool) or not isinstance(elevation, (int, float)):
+            raise ForgeError("elevation must be a number of degrees.")
+        if not -80.0 <= float(elevation) <= 80.0:
+            raise ForgeError(
+                f"elevation must be between -80 and 80 degrees (got {elevation})."
+            )
+        params["elevation"] = float(elevation)
+
+    result = blender_client.send_command(
+        "turntable", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+    result.setdefault("path", str(out))
+    return fmt_turntable_report(result)
 
 
 # ---------------------------------------------------------------------------

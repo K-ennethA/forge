@@ -129,9 +129,11 @@ rather than an apology.
 
 * Read-only commands push nothing: `ping`, `get_scene_info`, `flow_list`,
   `rigforge_list_tags`, `rigforge_status`, `export_stl` (it writes a file, which undo could
-  never take back anyway) and `render_preview` (looking at the scene is not changing it — it
+  never take back anyway), `render_preview` (looking at the scene is not changing it — it
   borrows the render settings and a camera and puts every one of them back, so a checkpoint
-  for it would take back whatever the artist actually wanted undone). Burying the checkpoint
+  for it would take back whatever the artist actually wanted undone) and the geometric gate,
+  `verify_design` and `turntable`, for exactly those two reasons — one measures, the other
+  borrows and returns. Burying the checkpoint
   the artist wants under a pile of `ping`s would defeat the point.
 * `execute_python` **does** push one, deliberately: arbitrary code is exactly the case
   worth being able to take back, even when it happened to do nothing.
@@ -239,6 +241,8 @@ is actually there: *"There is no sculpt brush called 'Smoothify'. Did you mean
 |---|---|---|
 | `capture_viewport` | `path` (`.png`), `resolution?` (128–4096, default 1024 — the **longer** side; the shorter one follows the viewport's own aspect) | photographs the **largest** 3D viewport with an OpenGL render under a context override: the artist's angle, their shading, their overlays, the mask they have painted. Borrows the scene's render settings and puts every one of them back. Read-only; refuses headless. Returns `{"path", "resolution", "size_bytes", "area", "shading", "perspective", "mode", "viewports", "note"}` |
 | `mesh_diagnose` | `object?`, `examples?` (1–25, default 5), `apply_modifiers?` (default true), `density_ratio?` (1.5–100, default 4) | numeric defects, each with a place in millimetres. Read-only. Returns `{"object", "vertex_count", "face_count", "edge_count", "evaluated", "self_intersections", "topology", "zero_area_faces", "ngons", "loose", "density", "scale", "notes", "duration_ms", "verdict", "clean"}` |
+| `verify_design` | `object?`, `for?` `game`\|`print`\|`any` (default `any`), `reference_image?` (a picture on disk), `poly_budget?` (faces; default 15 000 for `game`, ungated otherwise), `symmetry_axis?` `X`\|`Y`\|`Z` (default `X`), `examples?` (1–25) | **the geometric gate.** One scored report over six axes, each with a `status` and a credibility `tier`. Read-only. Returns `{"object", "for", "gated_axes", "axes", "attention", "passed", "gate", "face_count", "vertex_count", "tiers", "notes", "duration_ms", "verdict"}` |
+| `turntable` | `object?` / `objects?`, `views?` (4–64, default **24**), `resolution?` (64–512 px per tile, default **256**), `path` (`.png`) or `dir`, `elevation?` (−80…80°, default 15), `keep_frames?` (default false) | **the standardised judging rig.** N views around Z stitched into ONE contact sheet, every tile framed identically. Read-only; borrows the render settings and a camera and puts every one of them back. Returns `{"path", "objects", "views", "resolution", "columns", "rows", "sheet_size", "elevation_deg", "angles_deg", "reading_order", "frames", "kept_frames", "framed_all_visible", "bounds_mm", "fixed_framing", "size_bytes", "duration_ms", "notes"}` |
 
 `mesh_diagnose` in detail:
 
@@ -266,6 +270,102 @@ coarse enough that one cell is one sentence.
 self-intersection scan, 0.39 s on 202 500 without it (above the cap). Bulk statistics
 come off the Mesh with `foreach_get` into numpy arrays; topology comes off a bmesh;
 the BVH overlap is the expensive one and is the thing that is capped.
+
+### The geometric gate — `verify_design` and `turntable` (`tools/verify.py`)
+
+**Renders judge beauty; this judges truth; both gates must pass.** The reason the
+second gate exists is measured rather than felt: render-based judging systematically
+rewards visual impact over downstream utility (123 k human votes; +144 ELO for
+textured over untextured, and *the same model* scoring 78 ELO higher presented as a
+splat than as a mesh), and ~26 % of paired VLM judgements reverse when the two
+candidates swap presentation order. A loop that only looks can be fooled by
+prettiness, which is exactly the failure mode `render_preview` alone leaves open.
+
+`verify_design` composes ONE scored report over six axes. Each axis carries a
+`status` (`pass` / `attention` / `reported` / `not_applicable`), a `summary`
+sentence, a `tier`, and a `detail` block.
+
+| axis | what it measures | tier |
+|---|---|---|
+| `defects` | the whole of `mesh_diagnose`, **composed in verbatim** — clipping, unsealed edges, zero-area faces, density hotspots, scale anomalies, each with a place in millimetres. Not reimplemented: one measurement, one implementation | `measured` |
+| `poly_budget` | `face_count` against a target, with the ratio. Default 15 000 for `game` (RigForge's own `PLATFORM_TARGETS["desktop"]`), ungated for `print`/`any` unless a `poly_budget` is passed | `measured` |
+| `uv` | island count (connected faces sharing matched loop UVs — Blender's own definition, so the number matches the UV editor), flipped faces (the minority winding, so an all-negative layout is a convention and not a defect), degenerate faces, out-of-bounds loops (legal for UDIM, so reported not failed), area distortion (worst texture-density ratio against an even layout), total coverage — plus an **overlap estimate** | `measured`, except `overlap` |
+| `symmetry` | mirror residual on X/Y/Z: mean / p95 / max distance from a mirrored vertex to the nearest real one, in millimetres, plus the same as a fraction of the bounding diagonal | `measured`; `near_symmetric` is `heuristic` |
+| `loops` | how many edge loops cross each deformation zone, wanted ≥ 3. Joints come from an **armature** when there is one and from the **RigForge tag boundaries** when there is not | `heuristic` throughout |
+| `silhouette` | IoU of the front silhouette against a reference image, plus aspect and centroid deltas | `measured`; the reference mask is `measured` from alpha, `heuristic` from a threshold |
+
+**Credibility tiering, the pattern taken verbatim from the competitive sweep.** Every
+leaf in the report is a `{"value", "tier", "note"?}` claim, and there are exactly two
+tiers: `measured` (a computed number with a definition — if it is wrong, the code is
+wrong) and `heuristic` (a number that took a judgement call — real information, wrong
+to quote as fact). The distinction is load-bearing: a silhouette IoU thresholded off
+somebody's photograph and a face count are both numbers and are not both facts, and a
+report that presented them alike would train the reader to trust the wrong one. The
+harness walks the whole report structurally and asserts that *every* claim carries a
+legal tier, and that both tiers are actually used.
+
+**Profiles.** `for` does not filter the report — it decides which axes are **gated**
+(may say `attention`) and which are merely reported:
+
+* **`game`** gates `defects`, `poly_budget`, `uv`, `loops`, `silhouette`.
+* **`print`** gates `defects` and `silhouette` only. It deliberately grows **no**
+  second opinion about bed fit, wall thickness or overhangs: those are
+  `partforge_check` / `check_model`'s question against the real printer profile, and
+  a weaker duplicate computed from a bounding box would be worse than none. The
+  profile note points at them by name.
+* **`any`** (the default) gates the two universal axes.
+
+`symmetry` is never gated in any profile. Its `status` is `reported` and it carries
+`judged: false`, because a swept tail, a hand on a hip and a symmetrize that did not
+take all produce a large residual and only the artist can tell them apart.
+
+**Silhouette IoU, and every approximation in it.** The object is rendered front-on
+with `film_transparent`, so the subject mask is the alpha channel — exact, no
+thresholding. The reference's mask is its own alpha when it has one (also exact), and
+otherwise a threshold against the **median border colour**, which assumes a plain
+background. Both masks are then cropped to their subject and fitted into the same
+128 × 128 square preserving aspect, so the IoU is about **shape** and not about how
+far away the photographer stood; aspect and centroid deltas are reported separately,
+from before the normalisation, so "the proportions are wrong" and "the shape is wrong"
+stay two different findings. How plain the background actually was comes back as
+`background_uniformity` and drives a `confidence` of `high` / `medium` / `low` with
+`confidence_reasons` in sentences — the report never assumes the assumption held.
+The pass threshold is **0.85**, calibrated rather than picked: a circle inscribed in a
+square scores π/4 = 0.785, so 0.75 would let a *sphere* pass as a *cube* — which the
+harness measures.
+
+**Edge loops, and why they are heuristic all the way down.** Vertices inside a band
+around each joint are projected onto the bone axis and clustered along it; each
+cluster counts as one loop. The clustering tolerance comes from the mesh's own median
+**edge length** (35 % of one), not from the gap statistics — on ring topology the gaps
+*within* a loop are ~0 and the gaps *between* loops are one edge, so an edge-relative
+tolerance separates them exactly, while a median-gap-relative one collapses every limb
+to a single loop. It is exact on ring topology and increasingly approximate on
+anything else, so it never claims to be measured.
+
+The tag-boundary path handles the case Forge's own tagging actually produces: two
+tags **share** the seam ring (a face's tag goes to all of its vertices, so the faces
+either side of a seam both claim it), and reading only edges that *cross* between
+disjoint tags — the obvious implementation — finds nothing at all. Both are read.
+
+`turntable` is the judging rig the protocol research settled on: **24 views at
+256 px**, stitched into one contact sheet reading left-to-right, top-to-bottom. One
+image rather than N files because a VLM reads one image far more cheaply, and because
+the whole point is comparing the views *against each other*. Every tile is framed with
+a single ortho scale derived from the **bounding sphere** — the only fit that does not
+change as the camera orbits — so anything that changes between tiles is the model
+changing and never the camera.
+
+Both commands are in `READ_ONLY_COMMANDS`. `verify_design` measures; `turntable`
+borrows the render settings, the colour management and a camera and puts every one of
+them back, exactly as `render_preview` does, and the silhouette render goes to the
+system temp folder rather than next to the artist's picture.
+
+**Caps, said out loud rather than applied silently.** The UV island walk is skipped
+above 200 000 faces (every other UV number is vectorised and still runs, and the
+result says which); the symmetry KD-tree subsamples above 120 000 vertices, which can
+only *overstate* a residual, never understate it — the safe direction for a number
+nobody is allowed to fail on.
 
 ### RigForge commands (Phase 3)
 
@@ -1627,6 +1727,9 @@ addon/forge/
   server.py              TCP server, main-thread pump, start/stop operators
   tools/registry.py      command registry + error wrapping
   tools/common.py        every protocol command
+  tools/diagnose.py      mesh_diagnose: the defects, each with a place in millimetres
+  tools/verify.py        the geometric gate: verify_design (the scored, tier-stamped
+                         report) and turntable (the 24-view judging rig)
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
@@ -1649,6 +1752,13 @@ addon/tests/
   headless_reference.py  headless checks for load_reference and the attach field (6c)
   headless_preview.py    headless checks for render_preview: real PNGs, framing measured
                          on the pixels, all four views, and the scene put back exactly
+  headless_verify.py     headless checks for the geometric gate (port 9900): every claim
+                         tier-stamped (walked structurally, not spot-checked), the
+                         symmetry residual ordering, UVs present/absent/flipped, the poly
+                         budget, silhouette IoU against a synthetic reference (a cube's
+                         own render, used AS the reference), the confidence drop on a busy
+                         background, loops from an armature and from tag boundaries, and
+                         the turntable contact sheet measured on its IHDR
   headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
                          row, the chips, the empty states, check_model/segment_model
                          against a fake service, and the flow editor

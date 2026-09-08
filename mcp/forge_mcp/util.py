@@ -2815,6 +2815,336 @@ def fmt_check_in_report(images: Sequence[tuple], diagnose: Any,
     return "\n".join(lines)
 
 
+# --- The geometric gate (verify_design / turntable) --------------------------
+#
+# The second half of a two-gate loop. `render_preview` and `capture_viewport`
+# judge beauty; these judge truth. The reason they are separate tools rather
+# than one is measured rather than felt: render-based judging systematically
+# rewards visual impact over downstream utility (the same model scores 78 ELO
+# higher shown as a splat than as a mesh), and ~26% of paired visual judgements
+# reverse when the two candidates swap places. A loop that only looks is a loop
+# that can be fooled.
+
+#: What `for` may be, and what each profile gates.
+VERIFY_PROFILES = ("game", "print", "any")
+
+#: The judging rig that survived the protocol research: 24 views at 256 px.
+#: Exposed here so the MCP refusal quotes the same numbers the add-on does.
+TURNTABLE_VIEWS = 24
+TURNTABLE_MIN_VIEWS = 4
+TURNTABLE_MAX_VIEWS = 64
+TURNTABLE_RESOLUTION = 256
+TURNTABLE_MIN_RESOLUTION = 64
+TURNTABLE_MAX_RESOLUTION = 512
+
+#: Bumped per sheet, like the preview counter: comparing this turntable against
+#: the last one needs both files to still exist.
+_turntable_counter = 0
+
+
+def turntable_path(views: int, objects: Sequence[str] | None = None) -> Path:
+    """A fresh scratch .png for one contact sheet, its folder already made."""
+    global _turntable_counter
+
+    _turntable_counter += 1
+    stem = f"turntable-{_turntable_counter:03d}-{int(views)}v"
+    names = [str(n).strip() for n in (objects or []) if str(n).strip()]
+    if len(names) == 1:
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "-", names[0]).strip("-")[:40]
+        if slug:
+            stem = f"{stem}-{slug}"
+    path = Path(config.PREVIEWS_DIR) / f"{stem}.png"
+    ensure_parent_dir(path)
+    return path
+
+
+def normalize_turntable_views(views: Any) -> int:
+    """How many views, or a refusal that names the range and the default."""
+    if views is None:
+        return TURNTABLE_VIEWS
+    if isinstance(views, bool) or not isinstance(views, (int, float)):
+        raise ForgeError(f"views must be a whole number (got {views!r}).")
+    if isinstance(views, float) and not float(views).is_integer():
+        raise ForgeError(f"views must be a whole number (got {views}).")
+    value = int(views)
+    if not TURNTABLE_MIN_VIEWS <= value <= TURNTABLE_MAX_VIEWS:
+        raise ForgeError(
+            f"views must be between {TURNTABLE_MIN_VIEWS} and "
+            f"{TURNTABLE_MAX_VIEWS} (got {value}). {TURNTABLE_VIEWS} is the "
+            "default because it is the turntable that was actually measured to "
+            "work; fewer hides the sides between the ones you kept."
+        )
+    return value
+
+
+def normalize_turntable_resolution(resolution: Any) -> int:
+    """Pixels per tile, or a refusal naming the range."""
+    if resolution is None:
+        return TURNTABLE_RESOLUTION
+    if isinstance(resolution, bool) or not isinstance(resolution, (int, float)):
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution!r})."
+        )
+    if isinstance(resolution, float) and not float(resolution).is_integer():
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution})."
+        )
+    value = int(resolution)
+    if not TURNTABLE_MIN_RESOLUTION <= value <= TURNTABLE_MAX_RESOLUTION:
+        raise ForgeError(
+            f"resolution must be between {TURNTABLE_MIN_RESOLUTION} and "
+            f"{TURNTABLE_MAX_RESOLUTION} pixels per tile (got {value}). "
+            f"{TURNTABLE_RESOLUTION} is the default: it is what the judging "
+            "protocol uses, and a bigger tile buys nothing when there are 24 of "
+            "them on one sheet."
+        )
+    return value
+
+
+def normalize_poly_budget(budget: Any) -> int | None:
+    """A face-count target, or a refusal. ``None`` means 'use the profile's'."""
+    if budget is None:
+        return None
+    if isinstance(budget, bool) or not isinstance(budget, (int, float)):
+        raise ForgeError(f"poly_budget must be a whole number of faces (got {budget!r}).")
+    if isinstance(budget, float) and not float(budget).is_integer():
+        raise ForgeError(f"poly_budget must be a whole number of faces (got {budget}).")
+    value = int(budget)
+    if value < 0:
+        raise ForgeError(
+            f"poly_budget cannot be negative (got {value}). Pass 0 to measure "
+            "the face count without gating it."
+        )
+    return value
+
+
+#: How an axis's status reads in the report. The words are chosen so a skim
+#: answers the only question that matters — is this blocking "done" or not.
+_AXIS_LABEL = {
+    "pass": "PASS      ",
+    "attention": "ATTENTION ",
+    "reported": "REPORT    ",
+    "not_applicable": "n/a       ",
+}
+
+_AXIS_TITLE = {
+    "defects": "defects",
+    "poly_budget": "poly budget",
+    "uv": "UVs",
+    "loops": "edge loops at joints",
+    "symmetry": "symmetry residual",
+    "silhouette": "silhouette vs reference",
+}
+
+
+def _tier_of(entry: Mapping[str, Any]) -> str:
+    tier = str(entry.get("tier") or "")
+    return tier or "measured"
+
+
+def fmt_verify_report(result: Mapping[str, Any]) -> str:
+    """`verify_design` as a scored gate an artist and a model can both read.
+
+    Three things this report has to do and a plain dict dump would not:
+
+    1. **Say pass or attention per axis**, so "is this done" is answerable by
+       skimming a column rather than by reading numbers and forming an opinion.
+    2. **Stamp every claim with its credibility tier.** A silhouette IoU
+       thresholded off somebody's photograph and a face count are both numbers
+       and they are not both facts, and a report that presented them alike would
+       teach the reader to trust the wrong one.
+    3. **Say the other half of the gate out loud.** This is the truth gate. It
+       does not know whether the thing is beautiful and it must never be quoted
+       as though it did.
+    """
+    name = result.get("object") or "the mesh"
+    profile = str(result.get("for") or "any")
+    axes: Mapping[str, Any] = result.get("axes") or {}
+    gated = [str(a) for a in (result.get("gated_axes") or [])]
+    attention = [str(a) for a in (result.get("attention") or [])]
+    passed = [str(a) for a in (result.get("passed") or [])]
+    gate = str(result.get("gate") or "pass")
+
+    headline = (
+        f"{name}: geometric gate {'NEEDS ATTENTION' if gate == 'attention' else 'PASSES'}"
+        f" — {len(passed)} of {len(gated)} gated axes clean"
+        f" (profile: {profile}, {fmt_number(result.get('face_count'), 0)} faces)."
+    )
+    lines = [headline, ""]
+
+    # The axes, gated ones first: what is blocking "done" belongs at the top.
+    order = gated + [a for a in axes if a not in gated]
+    for key in order:
+        entry = axes.get(key)
+        if not isinstance(entry, Mapping):
+            continue
+        label = _AXIS_LABEL.get(str(entry.get("status")), "          ")
+        title = _AXIS_TITLE.get(key, key)
+        tier = _tier_of(entry)
+        gate_mark = "" if key in gated else "  (not gated for this profile)"
+        lines.append(f"  [{label.strip()}] {title} ({tier}){gate_mark}")
+        lines.append(f"      {entry.get('summary')}")
+
+    verdict = [str(v) for v in (result.get("verdict") or [])]
+    if verdict:
+        lines.append("")
+        lines.append("  Worst first, each stamped with how much it can be trusted:")
+        for sentence in verdict:
+            lines.append(f"    {sentence}")
+
+    detail = _verify_detail_lines(axes)
+    if detail:
+        lines.append("")
+        for entry in detail:
+            lines.append(f"    {entry}")
+
+    notes = [str(n) for n in (result.get("notes") or [])]
+    if notes:
+        lines.append("")
+        for note in notes:
+            lines.append(f"  note: {note}")
+
+    lines.append("")
+    lines.append(
+        "  measured = a computed number with a definition behind it. "
+        "heuristic = a number that took a judgement call to compute — real "
+        "information, wrong to quote as fact. Say which you are quoting."
+    )
+    lines.append(
+        "  This is the TRUTH half of the gate and it says nothing about whether "
+        "the thing is beautiful. Renders judge beauty, this judges truth, and "
+        "BOTH have to pass before you call visual work done — so run "
+        "render_preview or turntable and Read the picture as well."
+    )
+    if attention:
+        lines.append(
+            "  Name at most THREE of the flagged axes back, each with what fixes "
+            "it. A list of every number here is a dump, not a critique."
+        )
+    return "\n".join(lines)
+
+
+def _verify_detail_lines(axes: Mapping[str, Any]) -> list[str]:
+    """The handful of numbers worth quoting under the axis summaries."""
+    out: list[str] = []
+
+    silhouette = axes.get("silhouette")
+    if isinstance(silhouette, Mapping) and isinstance(silhouette.get("detail"), Mapping):
+        detail = silhouette["detail"]
+        iou = detail.get("iou") or {}
+        aspect = detail.get("aspect_delta") or {}
+        centroid = detail.get("centroid_delta") or {}
+        mask = detail.get("reference_mask") or {}
+        out.append(
+            f"silhouette: IoU {fmt_number(iou.get('value'), 3)} "
+            f"[{_tier_of(iou)}], proportions off "
+            f"{fmt_number(aspect.get('value'), 3)}, centre off "
+            f"{fmt_number(centroid.get('value'), 3)} of the frame; reference "
+            f"mask from {mask.get('value')} [{_tier_of(mask)}]"
+        )
+        confidence = str(silhouette.get("confidence") or "")
+        if confidence and confidence != "high":
+            out.append(f"silhouette confidence: {confidence}")
+        for reason in detail.get("confidence_reasons") or []:
+            out.append(f"  why: {reason}")
+
+    uv = axes.get("uv")
+    if isinstance(uv, Mapping) and isinstance(uv.get("detail"), Mapping):
+        detail = uv["detail"]
+        islands = (detail.get("islands") or {}).get("value")
+        flipped = (detail.get("flipped_faces") or {}).get("value")
+        distortion = (detail.get("area_distortion") or {}).get("value")
+        overlap = (detail.get("overlap") or {}).get("value")
+        out.append(
+            f"UVs: {fmt_number(islands, 0)} islands [measured], "
+            f"{fmt_number(flipped, 0)} flipped [measured], worst density ratio "
+            f"{fmt_number(distortion, 2)} [measured], overlap "
+            f"{fmt_number(overlap, 0)} [heuristic]"
+        )
+
+    loops = axes.get("loops")
+    if isinstance(loops, Mapping) and isinstance(loops.get("detail"), Mapping):
+        detail = loops["detail"]
+        zones = detail.get("zones") or []
+        if zones:
+            listed = ", ".join(
+                f"{z.get('joint')}: {fmt_number((z.get('loops') or {}).get('value'), 0)}"
+                for z in zones[:4]
+            )
+            out.append(
+                f"loops at joints [heuristic, from {detail.get('source')}]: {listed}"
+            )
+
+    symmetry = axes.get("symmetry")
+    if isinstance(symmetry, Mapping) and isinstance(symmetry.get("detail"), Mapping):
+        detail = symmetry["detail"]
+        out.append(
+            f"mirror residual on {detail.get('axis')}: "
+            f"{fmt_number((detail.get('mean_mm') or {}).get('value'), 2)} mm mean, "
+            f"{fmt_number((detail.get('max_mm') or {}).get('value'), 2)} mm worst "
+            "[measured] — REPORTED, never judged: asymmetry is usually a decision"
+        )
+    return out
+
+
+def fmt_turntable_report(result: Mapping[str, Any]) -> str:
+    """Where the contact sheet is, how to read it, and the two laws that go with it.
+
+    The laws are here rather than only in the system prompt because this is the
+    moment they apply. Order-swap de-biasing is not a nicety: ~26% of paired
+    visual judgements reverse when the candidates change places, so an A/B read
+    in one order is a coin flip dressed as a verdict.
+    """
+    path = str(result.get("path") or "")
+    views = result.get("views")
+    resolution = result.get("resolution")
+    columns = result.get("columns")
+    rows = result.get("rows")
+    names = [str(n) for n in (result.get("objects") or [])]
+    subject = ", ".join(names) if names and len(names) <= 4 else (
+        f"{len(names)} objects" if names else "the scene"
+    )
+
+    lines = [
+        f"Turntable of {subject}: {fmt_number(views, 0)} views at "
+        f"{fmt_number(resolution, 0)} px, stitched into one "
+        f"{fmt_number(columns, 0)} x {fmt_number(rows, 0)} contact sheet.",
+        "",
+        f"    {path}",
+        "",
+        "READ THAT FILE NOW. One image, every side. A single hero render is the "
+        "cheapest way to be wrong about a mesh — it hides interpenetration, the "
+        "flat side nobody modelled and the top of the head, which is exactly "
+        "what a generated mesh gets wrong.",
+    ]
+    reading = result.get("reading_order")
+    if reading:
+        lines.append(f"  reading order: {reading}")
+    lines.append(
+        "  every tile is framed identically, so anything that changes between "
+        "tiles is the MODEL changing and never the camera"
+    )
+    lines.append(
+        "  when you look: does the silhouette read as the thing from EVERY "
+        "side, or only from the one you rendered first? Is anything passing "
+        "through anything? Is there a side with no detail on it at all?"
+    )
+    lines.append(
+        "  ORDER-SWAP LAW — if you are comparing two of these (before and "
+        "after, candidate A and candidate B), read them in BOTH orders. About a "
+        "quarter of paired visual judgements reverse when the presentation "
+        "order swaps. If your verdict flips, it is too close to call: say so "
+        "and decide on the geometry instead."
+    )
+    lines.append(
+        "  verify_design is the other half of this gate: renders judge beauty, "
+        "it judges truth, and both have to pass."
+    )
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    return "\n".join(lines)
+
+
 # --- Phase 6b (flows) --------------------------------------------------------
 
 #: Blender socket commands a flow step may call — the command registry from
@@ -2837,6 +3167,9 @@ KNOWN_BLENDER_OPS = frozenset({
     # the right mode, looking at the right angle, with the grid on
     "set_view", "frame_object", "local_view", "set_shading", "set_overlays",
     "set_mode", "sculpt_brush", "capture_viewport", "mesh_diagnose",
+    # The geometric gate: a flow can end by MEASURING what it built, not just by
+    # leaving a picture of it.
+    "verify_design", "turntable",
     # PartForge
     "load_mesh", "load_meshes", "partforge_open",
     # imported meshes (Phase 6d)

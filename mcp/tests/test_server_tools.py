@@ -58,6 +58,9 @@ EXPECTED_TOOLS = {
     # Buddy mode (Phase 8) — a teacher's eyes on the work in progress
     "mesh_diagnose",
     "check_my_work",
+    # The geometric gate — renders judge beauty, these judge truth
+    "verify_design",
+    "turntable",
     # PartForge
     "partforge_parse_params",
     "partforge_generate",
@@ -155,7 +158,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 69
+    assert len(names) == 71
 
 
 def test_every_tool_is_documented() -> None:
@@ -199,6 +202,12 @@ def test_every_tool_has_an_object_schema() -> None:
         ("sculpt_brush", []),
         ("mesh_diagnose", []),
         ("check_my_work", []),
+        # The geometric gate is the thing you should never have an excuse not
+        # to run, so nothing is required: no object (it takes the active one),
+        # no reference (the silhouette axis simply says it was not measured),
+        # no profile (it defaults to the universal axes).
+        ("verify_design", []),
+        ("turntable", []),
         ("partforge_parse_params", ["script_path"]),
         ("partforge_generate", ["script_path"]),
         ("partforge_export", ["script_path", "output_path"]),
@@ -270,6 +279,8 @@ def test_required_parameters_match_the_contract(tool_name: str, required: list[s
         ("load_reference", "view", ["front", "side", "top"]),
         ("render_preview", "view", ["iso", "front", "side", "top"]),
         ("render_preview", "shading", ["solid", "material"]),
+        ("verify_design", "profile", ["game", "print", "any"]),
+        ("verify_design", "symmetry_axis", ["X", "Y", "Z"]),
         ("partforge_export", "format", ["stl", "step", "3mf"]),
         ("partforge_export_segments", "format", ["stl", "step", "3mf"]),
         ("partforge_segment", "joint_type", ["dovetail", "pin", "magnet", "none"]),

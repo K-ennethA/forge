@@ -12,6 +12,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     curves = importlib.reload(curves)  # noqa: F821
     workspace = importlib.reload(workspace)  # noqa: F821
     diagnose = importlib.reload(diagnose)  # noqa: F821
+    verify = importlib.reload(verify)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
@@ -28,6 +29,7 @@ else:
     from . import curves
     from . import workspace
     from . import diagnose
+    from . import verify
     from . import partforge
     from . import rigforge
     from . import rigforge_rig
@@ -49,6 +51,7 @@ __all__ = [
     "curves",
     "workspace",
     "diagnose",
+    "verify",
     "partforge",
     "rigforge",
     "rigforge_rig",

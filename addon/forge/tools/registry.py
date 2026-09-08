@@ -68,6 +68,13 @@ READ_ONLY_COMMANDS = frozenset({
     # Buddy mode's two eyes: one takes a picture, one counts defects.
     "capture_viewport",
     "mesh_diagnose",
+    # The geometric gate. `verify_design` measures and changes nothing;
+    # `turntable` borrows the render settings and a camera and puts every one of
+    # them back, exactly as `render_preview` does — so both are here for exactly
+    # the reasons those two are, and an undo step for either would take back
+    # whatever the artist actually wanted undone.
+    "verify_design",
+    "turntable",
     # Phase 11's two samplers. They read a curve the artist drew and hand back
     # control points — nothing is built and nothing in the scene moves, so a
     # checkpoint for "I measured your drawing" would only bury the stroke

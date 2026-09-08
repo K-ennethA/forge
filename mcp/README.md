@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**69 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+**71 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -53,7 +53,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 69-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 71-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration.
 `tests/test_workspace.py` does it for the nine Phase 8 tools: what each workspace command
@@ -63,7 +63,15 @@ motivating case itself (`grid` + all three axes in one call, with the axes on th
 the `axes` validation matrix refused before the socket, `mesh_diagnose` rendering a place
 against every defect and a short answer on a clean mesh, and `check_my_work` composing its
 four calls **in order** — including that a Blender with no viewport degrades to a note
-instead of losing the whole check-in. `tests/test_print_readiness.py` adds the Phase 2 tools: mode
+instead of losing the whole check-in.
+`tests/test_verify.py` covers the geometric gate: the `profile` → `for` rename on the wire,
+the reference-image refusals raised before the socket, and the report shaping — the
+pass/attention headline, a status and a tier on every axis, the tier glossary, symmetry
+rendered as REPORTED and never as a fault, the silhouette's mask provenance and its
+low-confidence reasons, the `print` profile pointing at `partforge_check` instead of
+duplicating it, and the turntable report carrying the reading order, the fixed-framing
+guarantee and the **order-swap law**.
+`tests/test_print_readiness.py` adds the Phase 2 tools: mode
 normalization, what each tool actually PUTs on the wire, and what its report says — against
 a stdlib `http.server` fake on an ephemeral port plus the same fake Blender socket.
 `tests/test_rigforge.py` does the same for the Phase 3, 4 and 5 `rigforge_*` tools: the
@@ -249,6 +257,45 @@ what keeps it editable with real numbers (docs/plan.md §3).
 | Tool | Key params | What it does |
 |---|---|---|
 | `render_preview` | `objects`, `view` `iso`/`front`/`side`/`top`, `resolution` (128–2048), `shading` `solid`/`material` | Renders the scene to a PNG and returns the path, so the model can **Read the file and look at what it made**. Nothing is required: no path (it picks a scratch one), no object (it frames every visible mesh). |
+| `turntable` | `objects`, `views` (4–64, default **24**), `resolution` (64–512 px per tile, default **256**), `elevation` (−80…80°) | N views around Z on **one contact sheet**, every tile framed identically. The rig for anything organic or generated: a single view hides interpenetration, the flat side nobody modelled and the top of the head. Report carries the reading order and the **order-swap law**. |
+
+### The geometric gate — renders judge beauty, this judges truth
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `verify_design` | `object`, `reference_image`, `profile` `game`/`print`/`any`, `poly_budget`, `symmetry_axis`, `examples` | One scored report over six axes — defects, poly budget, UVs, symmetry residual, edge loops at joints, silhouette IoU against the artist's picture — with a pass/attention verdict per axis and a **credibility tier on every claim**. Nothing is required. |
+
+**Why there are two gates and not one.** Judging by eye alone is measurably biased
+toward prettiness: 123 k human votes show render-based judging rewards visual impact
+over downstream utility (the *same* model scores 78 ELO higher shown as a splat than
+as a mesh), and ~26 % of paired visual judgements reverse when the two candidates swap
+presentation order. A render loop on its own hands over beautiful meshes nobody can
+open, rig or print — and does it while believing it succeeded. So `render_preview` and
+`turntable` judge beauty, `verify_design` judges truth, and **both have to pass**.
+
+**Credibility tiering, and why the report shouts about it.** Every number in the
+report is stamped `measured` (a computed number with a definition behind it) or
+`heuristic` (a number that took a judgement call to compute). A silhouette IoU
+thresholded off somebody's photograph and a face count are both numbers and are not
+both facts; the report explains the two words at the bottom so the model has no excuse
+for laundering one into the other. The formatter renders the tier inline on every axis
+and every detail line.
+
+**Symmetry is REPORTED, never judged.** Its row reads `[REPORT]`, it never appears in
+the attention list, and the report says in words that asymmetry is usually a decision.
+A swept tail and a symmetrize that did not take produce the same residual.
+
+**The `print` profile points rather than duplicates.** It gates defects and silhouette
+only, and its note names `partforge_check` / `check_model` as the tools that actually
+answer bed fit, wall thickness and overhangs against the real printer profile. A
+second, weaker opinion computed from a bounding box would be worse than none.
+
+**`profile`, not `for`.** The socket protocol's field really is `for` — it is the
+natural word and JSON does not care — but Python does, so the tool argument is
+`profile` and the rename happens in exactly one place, on the way to the wire.
+
+Both tools are legal **flow** steps, so a flow can end by *measuring* what it built
+rather than only leaving a picture of it on disk.
 
 ### The workspace copilot (Phase 8) — drive their Blender, don't describe it
 
@@ -299,6 +346,9 @@ a part can pass every check and still come out stiff, sparse and flat next to th
   a `front` reference are the same projection and can be held up against each other 1:1.
   `iso` (the default) is a 3/4 orbit, which is where a silhouette shows itself.
 - `render_preview` is a legal **flow** step, so a flow can end by leaving a picture on disk.
+  So are `turntable` and `verify_design`, so a flow can end by measuring what it built.
+- Turntable sheets land beside the previews as `turntable-001-24v-<object>.png`, and are
+  never overwritten either — comparing two turntables needs both, **read in both orders**.
 
 The add-on side does the work — an orthographic camera fitted to the target bounds, Workbench
 clay, and every borrowed setting restored in a `finally`. See
