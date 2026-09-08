@@ -136,7 +136,14 @@ def _number(
 
 
 def normalize_mode(value: Any) -> str:
-    """``mode``: which of the two molds the caller wants."""
+    """``mode``: which of the two molds the caller wants.
+
+    Args:
+        value: The mode name; None defaults to "printed_negative".
+
+    Returns:
+        The normalized mode name: "printed_negative" or "master_box".
+    """
     if value is None:
         return "printed_negative"
     if not isinstance(value, str):
@@ -150,7 +157,14 @@ def normalize_mode(value: Any) -> str:
 
 
 def default_wall_mm(printer: Mapping[str, Any]) -> float:
-    """The thinnest box wall this printer has any business being asked for."""
+    """The thinnest box wall this printer has any business being asked for.
+
+    Args:
+        printer: Printer configuration mapping containing min_wall_thickness and min_feature_size.
+
+    Returns:
+        The minimum wall thickness in millimetres.
+    """
     return max(
         DEFAULT_WALL_MM,
         2.0 * float(printer["min_wall_thickness"]),
@@ -161,7 +175,16 @@ def default_wall_mm(printer: Mapping[str, Any]) -> float:
 def normalize_master_box_options(
     job: Mapping[str, Any], printer: Mapping[str, Any]
 ) -> Dict[str, Any]:
-    """Validate the pour-box fields.  Harmless to call in either mode."""
+    """Validate the pour-box fields.  Harmless to call in either mode.
+
+    Args:
+        job: Job configuration mapping; may contain a "master_box" key with mold options.
+        printer: Printer configuration mapping.
+
+    Returns:
+        A dictionary of validated master_box options including margin_mm, wall_mm, floor_mm,
+        pour_clearance_mm, platform_mm, funnels, split, and registration_keys.
+    """
     source = job.get("master_box")
     if source is None:
         source = job
@@ -245,7 +268,16 @@ def check_bed(
     pieces: Sequence[Tuple[str, Sequence[float]]],
     margin_mm: float,
 ) -> Dict[str, Any]:
-    """Every printed piece has to fit the bed; the box is the one that usually does not."""
+    """Every printed piece has to fit the bed; the box is the one that usually does not.
+
+    Args:
+        printer: Printer configuration mapping containing bed dimensions.
+        pieces: Sequence of (name, [width, depth, height]) tuples for each piece to check.
+        margin_mm: Safety margin to keep from the bed edges in millimetres.
+
+    Returns:
+        A dictionary containing the bed dimensions and rounded size of each piece.
+    """
     bed_x, bed_y, bed_z = bed_size(printer)
     usable_x = bed_x - 2.0 * margin_mm
     usable_y = bed_y - 2.0 * margin_mm
@@ -328,6 +360,17 @@ def build_master_box(
     Returns ``{"pieces": [{"name", "solid"}], "geometry": {...}, "bed": {...}}``.
     The caller tessellates and verifies each piece, exactly as ``/mold`` does
     with its two halves.
+
+    Args:
+        shape: The master shape as a build123d solid.
+        stats: Statistics mapping containing bounding_box_min_mm and bounding_box_max_mm.
+        printer: Printer configuration mapping.
+        options: Options mapping containing a "master_box" key with mold parameters.
+        margin_mm: Safety margin in millimetres (used to compute bed report).
+
+    Returns:
+        A dictionary containing "pieces" (list of {name, solid}), "geometry" (detailed
+        dimensions and specifications), and "bed" (bed fit report with rounded dimensions).
     """
     from build123d import Pos, Sphere  # noqa: PLC0415
 
@@ -577,7 +620,14 @@ def build_master_box(
 
 
 def printed_negative_instructions(mold: Mapping[str, Any]) -> List[str]:
-    """Steps for the two printed halves ``/mold`` produces."""
+    """Steps for the two printed halves ``/mold`` produces.
+
+    Args:
+        mold: Mold specification mapping containing registration_keys, vents, and spout.
+
+    Returns:
+        A list of instruction strings describing the printed_negative workflow.
+    """
     keys = int((mold.get("registration_keys") or {}).get("count") or 0)
     vents = int((mold.get("vents") or {}).get("count") or 0)
     spout = mold.get("spout")
@@ -629,7 +679,15 @@ def printed_negative_instructions(mold: Mapping[str, Any]) -> List[str]:
 
 
 def master_box_instructions(geometry: Mapping[str, Any]) -> List[str]:
-    """Steps for the print-a-master-and-pour-silicone workflow."""
+    """Steps for the print-a-master-and-pour-silicone workflow.
+
+    Args:
+        geometry: Geometry specification mapping from build_master_box containing pour_clearance_mm,
+            split, platform_mm, silicone_volume_ml, funnels, and registration_keys.
+
+    Returns:
+        A list of instruction strings describing the master_box workflow.
+    """
     clearance = float(geometry.get("pour_clearance_mm") or 0.0)
     split = bool(geometry.get("split"))
     platform = float(geometry.get("platform_mm") or 0.0)
