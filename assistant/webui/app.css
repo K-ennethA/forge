@@ -897,6 +897,13 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .lib-exports .more { color: var(--text-faint); opacity: .8; }
 
 .lib-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+
+/* Phase 15 — "clicking a model should open the associated blender file."  That
+   is what Open does and what the artist means, so it leads the row and is the
+   only button on a card wearing the accent; "Open in Studio" beside it edits
+   the dimensions, which is a different thing and says so. */
+.lib-actions .lib-open { border-color: var(--accent-dim); color: var(--accent); }
+.lib-actions .lib-open:hover:not(:disabled) { border-color: var(--accent); }
 .lib-status { font-size: 11.5px; color: var(--text-dim); }
 .lib-status.bad { color: #f0a49c; }
 .lib-status:empty { display: none; }

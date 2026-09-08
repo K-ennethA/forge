@@ -67,6 +67,25 @@ Phase 13 — the library's routes (additive again, and model-free again)::
                                        work, never a reason to build something
                                        behind their back
 
+Phase 15 — the project's own ``.blend`` (additive, and model-free again)::
+
+``POST /projects/<name>/save``         ``save_project_blend`` in the running
+                                       Blender: the scene goes to
+                                       ``projects/<name>/<name>.blend`` as a
+                                       **copy**, so where the artist's own
+                                       Ctrl+S goes never moves
+``POST /projects/<name>/open``         "clicking a model opens its Blender
+                                       file", in three routes: Blender running
+                                       -> ``open_project_blend`` with the
+                                       confirmation round trip surfaced;
+                                       Blender closed and a ``.blend`` on disk
+                                       -> spawn a windowed Blender on it; no
+                                       ``.blend`` -> say so, and the page falls
+                                       back to Open-in-Studio plus an offer to
+                                       save.  A running instance **always**
+                                       wins: two Blenders would fight over port
+                                       9876
+
 None of these spends a model turn: the workbench tab is the artist editing a
 part directly, and a slider that costs money per drag is a slider nobody drags.
 The bridge never *executes* the artist's script — that is the geometry service's
@@ -160,6 +179,11 @@ Web UI environment (Phase 9)
                              (default 300)
 ``FORGE_ASSISTANT_THUMBS``   the library's thumbnail cache (default
                              ``assistant/thumbs``, beside ``uploads``)
+``FORGE_BLENDER_EXE``        full path to ``blender.exe``, for the one case
+                             where this bridge *starts* Blender rather than
+                             talking to it (``POST /projects/<name>/open`` with
+                             nothing listening).  Unset = PATH, then the
+                             official installer's own folders
 """
 
 import base64
@@ -392,6 +416,50 @@ MAX_SALVAGE_TEXT = 8000
 
 #: Only meaningful on Windows; kept as 0 elsewhere so the same call site works.
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+# ---------------------------------------------------------------------------
+# Phase 15 — the project's own .blend
+# ---------------------------------------------------------------------------
+
+#: The scene file a project keeps beside its script, by the folder convention:
+#: ``projects/<name>/<name>.blend``.  One per project, named for it, so the
+#: library can ask "is there one?" with a ``stat`` and no guessing.
+BLEND_SUFFIX = ".blend"
+
+#: Writing a project file is a sculpt going to disk, and opening one is that
+#: plus a whole world being rebuilt.  Both are minutes on a heavy scene, and
+#: both are the artist waiting on purpose rather than something hanging.
+BLEND_SAVE_TIMEOUT = 300.0
+BLEND_OPEN_TIMEOUT = 300.0
+
+#: Windows flags for a Blender **the artist asked for by clicking Open**.
+#:
+#: ``DETACHED_PROCESS`` because this bridge may be restarted (or stopped) while
+#: they are still working, and their Blender must not go with it;
+#: ``CREATE_NEW_PROCESS_GROUP`` so a Ctrl+C in the bridge's console is not also
+#: a Ctrl+C in theirs.  And emphatically **not** ``CREATE_NO_WINDOW``, which is
+#: what every *other* spawn in this file uses: those are background helpers
+#: nobody should have to look at, and this one is an application the artist is
+#: about to work in.  (The two flags are mutually exclusive to ``CreateProcess``
+#: anyway, so getting this wrong is not a subtle cosmetic bug — it is a Blender
+#: that never appears.)
+DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0)
+CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+
+#: Well-known Blender install roots on Windows, newest version first.
+_BLENDER_DIR_HINTS = ("Blender Foundation",)
+
+BLENDER_MISSING_HINT = (
+    "Blender was not found on this machine, so the project file cannot be "
+    "opened from here. Open %s in Blender yourself, or set FORGE_BLENDER_EXE "
+    "to the full path of blender.exe and restart the assistant.")
+
+#: What the page does when a project has no scene file yet.  Not an error: it is
+#: the ordinary state of every project until someone saves one, and the answer
+#: is a button, not an apology.
+NO_BLEND_HINT = (
+    "%s has no scene file yet. Open it in the Studio to edit its dimensions, "
+    "or press Save scene to project with the part in Blender and one is made.")
 
 INSTALL_HINT = (
     "The Claude Code CLI was not found. Install it from "
@@ -626,6 +694,125 @@ def resolve_claude():
         if os.path.isfile(candidate):
             return candidate
     return None
+
+
+# ---------------------------------------------------------------------------
+# Phase 15 — locating Blender itself
+# ---------------------------------------------------------------------------
+
+def _blender_candidates():
+    """Where Blender installs itself, newest version first.
+
+    Deliberately the same shape as :func:`_candidate_paths`: an override, then
+    ``PATH``, then the places the official installer actually unpacks to.  The
+    Windows installer does not put Blender on a PATH this process will inherit,
+    so ``shutil.which`` alone would find nothing on the machine this product is
+    built for.
+    """
+    out = []
+    if os.name == "nt":
+        roots = []
+        for base in (os.environ.get("PROGRAMFILES"),
+                     os.environ.get("ProgramW6432"),
+                     r"C:\Program Files",
+                     os.environ.get("PROGRAMFILES(X86)")):
+            if not base:
+                continue
+            for hint in _BLENDER_DIR_HINTS:
+                root = os.path.join(base, hint)
+                if os.path.isdir(root) and root not in roots:
+                    roots.append(root)
+        for root in roots:
+            try:
+                entries = os.listdir(root)
+            except OSError:
+                continue
+            for name in sorted(entries, key=_version_key, reverse=True):
+                out.append(os.path.join(root, name, "blender.exe"))
+        for base in (os.environ.get("PROGRAMFILES(X86)"), r"C:\Program Files (x86)"):
+            if base:
+                out.append(os.path.join(base, "Steam", "steamapps", "common",
+                                        "Blender", "blender.exe"))
+    else:
+        out.extend([
+            "/Applications/Blender.app/Contents/MacOS/Blender",
+            "/usr/local/bin/blender",
+            "/usr/bin/blender",
+            "/snap/bin/blender",
+        ])
+    return out
+
+
+def resolve_blender():
+    """Absolute path to a Blender executable, or ``None``.
+
+    ``FORGE_BLENDER_EXE`` first (which is also how the tests point this at a
+    stand-in), then ``PATH``, then the install locations.
+    """
+    override = _env("FORGE_BLENDER_EXE")
+    if override:
+        override = override.strip().strip('"')
+        if os.path.isfile(override):
+            return override
+        return shutil.which(override) or None
+
+    for name in ("blender", "blender.exe"):
+        found = shutil.which(name)
+        if found:
+            return found
+
+    for candidate in _blender_candidates():
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def blender_launch_argv(exe, blend_path):
+    """The argv that opens ``blend_path`` in a windowed Blender.
+
+    A ``.py`` executable runs under this interpreter — the same trick
+    :func:`launcher` and :func:`start_services_command` play, and what lets the
+    spawn be tested without a real Blender appearing on somebody's screen.
+    """
+    if str(exe).lower().endswith(".py"):
+        return [sys.executable, str(exe), str(blend_path)]
+    return [str(exe), str(blend_path)]
+
+
+def spawn_creationflags():
+    """Windows creation flags for the Blender the artist just asked for.
+
+    See :data:`DETACHED_PROCESS`: detached so it outlives this bridge, its own
+    process group so a Ctrl+C here is not a Ctrl+C there, and **never**
+    ``CREATE_NO_WINDOW`` — the whole point of this spawn is a window.
+    """
+    if os.name != "nt":
+        return 0
+    return DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+
+
+def spawn_blender(exe, blend_path):
+    """Start a windowed Blender on ``blend_path``.  Returns the process.
+
+    The artist clicked Open, so this is *them* launching Blender — the
+    no-windowed-Blender law binds agents and verification runs, not the person
+    whose machine it is.  Nothing is piped: a detached GUI application with a
+    pipe nobody reads is a GUI application that eventually blocks on its own
+    stdout.
+    """
+    argv = blender_launch_argv(exe, blend_path)
+    kwargs = {
+        "cwd": REPO_ROOT,
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = spawn_creationflags()
+    else:
+        kwargs["start_new_session"] = True
+    return subprocess.Popen(argv, **kwargs)
 
 
 def launcher(path):
@@ -2915,10 +3102,31 @@ def param_count_for(entry):
     return None, "unread"
 
 
-def project_mtime(folder, entry, exports):
+def project_blend(folder):
+    """``{"path", "exists", "size", "mtime"}`` for ``<folder>/<name>.blend``.
+
+    A ``stat`` and nothing else.  The library must draw with Blender closed, so
+    "does this project have a scene file" is answered off the disk — never by
+    asking Blender, which is exactly the thing that may not be running.
+    """
+    name = os.path.basename(os.path.normpath(folder))
+    path = os.path.join(folder, "%s%s" % (name, BLEND_SUFFIX))
+    try:
+        info = os.stat(path)
+    except OSError:
+        return {"path": path, "exists": False, "size": 0, "mtime": 0.0}
+    if not os.path.isfile(path):
+        return {"path": path, "exists": False, "size": 0, "mtime": 0.0}
+    return {"path": path, "exists": True, "size": int(info.st_size),
+            "mtime": round(info.st_mtime, 3)}
+
+
+def project_mtime(folder, entry, exports, blend=None):
     """When this project was last touched — the folder, its spec, its script,
-    its exports, whichever moved last."""
+    its scene file, its exports, whichever moved last."""
     stamps = []
+    if blend and blend.get("mtime"):
+        stamps.append(float(blend["mtime"]))
     candidates = [folder, os.path.join(folder, "spec.json"),
                   entry.get("script_path")]
     for candidate in candidates:
@@ -2942,6 +3150,7 @@ def library_entry(folder):
     count, source = param_count_for(entry)
     features = spec.get("features")
     _path, thumb_mtime = thumbnail_stat(entry["name"])
+    blend = project_blend(folder)
     return {
         "name": entry["name"],
         "path": entry["path"],
@@ -2957,7 +3166,13 @@ def library_entry(folder):
                      if isinstance(features, list) else []),
         "exports": exports,
         "export_count": len(exports),
-        "mtime": project_mtime(folder, entry, exports),
+        "mtime": project_mtime(folder, entry, exports, blend),
+        # Phase 15: does this project have a scene of its own to open?  A stat,
+        # so the answer is the same whether Blender is running or not.
+        "has_blend": blend["exists"],
+        "blend_path": blend["path"],
+        "blend_size": blend["size"],
+        "blend_mtime": blend["mtime"],
         "has_thumbnail": bool(thumb_mtime),
         "thumbnail_mtime": thumb_mtime,
         "thumbnail_url": "/projects/%s/thumbnail" % entry["name"],
@@ -3409,6 +3624,14 @@ class Handler(BaseHTTPRequestHandler):
         # -- the library (Phase 13) --------------------------------------
         if path.startswith("/projects/") and path.endswith("/thumbnail"):
             self._make_thumbnail(path[len("/projects/"):-len("/thumbnail")])
+            return
+
+        # -- project scene files (Phase 15) ------------------------------
+        if path.startswith("/projects/") and path.endswith("/open"):
+            self._open_project(path[len("/projects/"):-len("/open")])
+            return
+        if path.startswith("/projects/") and path.endswith("/save"):
+            self._save_project(path[len("/projects/"):-len("/save")])
             return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -3979,6 +4202,155 @@ class Handler(BaseHTTPRequestHandler):
             "thumbnail_mtime": mtime,
             "bounds_mm": result.get("bounds_mm"),
         })
+
+    # -- project scene files (Phase 15) ----------------------------------
+    def _save_project(self, name):
+        """Write the Blender scene into ``projects/<name>/<name>.blend``.
+
+        Straight through to the add-on's ``save_project_blend``, which saves a
+        *copy* — so this route can never move where the artist's own Ctrl+S
+        goes, no matter what the browser sends it.  The answer carries the card
+        fields back so the page can redraw one card instead of the library.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        entry, folder = self._project(name)
+        if entry is None:
+            return
+        try:
+            result = blender_command("save_project_blend",
+                                     {"project": entry["name"]},
+                                     BLEND_SAVE_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False,
+                             "project": entry["name"]})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True,
+                             "project": entry["name"]})
+            return
+
+        blend = project_blend(folder)
+        self._send(200, {
+            "project": entry["name"],
+            "saved": True,
+            "blender": True,
+            "path": result.get("path") or blend["path"],
+            "object_count": result.get("object_count"),
+            "replaced": bool(result.get("replaced")),
+            # The one thing an artist would want checked, handed over rather
+            # than promised: where *their* file still saves to.
+            "session_file": result.get("session_file"),
+            "has_blend": blend["exists"],
+            "blend_size": blend["size"],
+            "blend_mtime": blend["mtime"],
+            "result": result,
+        })
+
+    def _open_project(self, name):
+        """Open the project's own scene file — three routes, one rule.
+
+        The rule is that **a running Blender always wins**.  Two instances would
+        fight over port 9876 and the artist would end up with the add-on talking
+        to whichever one won the race, so this never spawns while something is
+        listening: it drives the running session through ``open_project_blend``
+        instead, confirmation round trip and all.
+
+        1. ``running`` — Blender is up.  The add-on may answer
+           ``needs_confirmation``, which is a **200**, not an error: it is a
+           question, and the page asks it and comes back with ``confirm``.
+        2. ``spawned`` — Blender is not up and there is a ``.blend``.  A
+           windowed Blender is started on it.  The artist clicked Open, so this
+           is them launching Blender; the no-windowed-Blender law binds agents,
+           not the person whose machine it is.
+        3. ``no_blend`` — there is nothing to open yet.  Also a 200: it is the
+           ordinary state of every project until someone saves one, and the page
+           answers it by opening the part in the Studio and offering to save.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        entry, folder = self._project(name)
+        if entry is None:
+            return
+        confirm = bool(payload.get("confirm"))
+        blend = project_blend(folder)
+        base = {"project": entry["name"], "blend": blend["path"],
+                "has_blend": blend["exists"]}
+
+        if not blend["exists"]:
+            answer = dict(base)
+            answer.update({
+                "route": "no_blend",
+                "opened": False,
+                "hint": NO_BLEND_HINT % entry["name"],
+                "object": entry["object"],
+                "script_path": entry["script_path"],
+            })
+            self._send(200, answer)
+            return
+
+        if blender_listening():
+            try:
+                result = blender_command("open_project_blend",
+                                         {"name": entry["name"],
+                                          "confirm": confirm},
+                                         BLEND_OPEN_TIMEOUT)
+            except BlenderDown as exc:
+                # It was listening a moment ago and is not now: say so rather
+                # than racing to spawn a second one on top of a closing first.
+                self._send(503, {"error": str(exc), "blender": False, **base})
+                return
+            except BlenderRefused as exc:
+                self._send(502, {"error": str(exc), "blender": True, **base})
+                return
+            answer = dict(base)
+            answer.update({
+                "route": "running",
+                "blender": True,
+                "opened": bool(result.get("opened")),
+                "needs_confirmation": bool(result.get("needs_confirmation")),
+                "would_lose": result.get("would_lose") or "",
+                "hint": result.get("hint") or "",
+                "object_count": result.get("object_count"),
+                "session_file": result.get("session_file"),
+                "result": result,
+            })
+            self._send(200, answer)
+            return
+
+        exe = resolve_blender()
+        if not exe:
+            answer = dict(base)
+            answer.update({"route": "no_blender", "opened": False,
+                           "error": BLENDER_MISSING_HINT % blend["path"]})
+            self._send(501, answer)
+            return
+        try:
+            proc = spawn_blender(exe, blend["path"])
+        except OSError as exc:
+            answer = dict(base)
+            answer.update({"route": "no_blender", "opened": False,
+                           "error": "Could not start %s: %s" % (exe, exc)})
+            self._send(500, answer)
+            return
+
+        answer = dict(base)
+        answer.update({
+            "route": "spawned",
+            "opened": True,
+            "blender": False,
+            "pid": proc.pid,
+            "executable": exe,
+            "note": "Blender is starting with %s. Give it a few seconds — then "
+                    "press N in the 3D view, open the Forge tab and Start "
+                    "Server if it is not already listening."
+                    % os.path.basename(blend["path"]),
+        })
+        self._send(200, answer)
 
 
 def serve(host="127.0.0.1", listen_port=None, ready=None):

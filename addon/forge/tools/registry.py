@@ -75,6 +75,16 @@ READ_ONLY_COMMANDS = frozenset({
     # and hides the pieces it came from, which is exactly what Ctrl+Z is for.)
     "profile_from_curve",
     "outline_from_curve",
+    # Phase 15's two. `save_project_blend` writes a file and changes nothing in
+    # the session (it saves a *copy*) — the `export_stl` precedent exactly.
+    # `open_project_blend` is here for the opposite reason: a file load resets
+    # Blender's undo stack, so a checkpoint pushed just before one is a
+    # checkpoint that cannot exist a moment later. What replaces undo there is
+    # the confirmation round trip — the command asks before it destroys
+    # anything, which is a better guarantee than an undo step that would be
+    # gone by the time it was needed.
+    "save_project_blend",
+    "open_project_blend",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

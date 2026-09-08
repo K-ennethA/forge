@@ -20,6 +20,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     buddy = importlib.reload(buddy)  # noqa: F821
     flows = importlib.reload(flows)  # noqa: F821
     model = importlib.reload(model)  # noqa: F821
+    projects = importlib.reload(projects)  # noqa: F821
     services = importlib.reload(services)  # noqa: F821
 else:
     from . import registry
@@ -35,6 +36,7 @@ else:
     from . import buddy
     from . import flows
     from . import model
+    from . import projects
     from . import services
 
 import bpy  # noqa: E402,F401  (used by the reload guard above)
@@ -55,6 +57,7 @@ __all__ = [
     "buddy",
     "flows",
     "model",
+    "projects",
     "services",
     "ForgeError",
     "dispatch",
@@ -74,11 +77,13 @@ def register():
     buddy.register()
     flows.register()
     model.register()
+    projects.register()
     services.register()
 
 
 def unregister():
     services.unregister()
+    projects.unregister()
     model.unregister()
     flows.unregister()
     buddy.unregister()

@@ -55,12 +55,14 @@ resumed session. The last 20 jobs stay in memory; older ids 404.
 
 The bridge serves a second surface as well — a web UI at `/`, with its own
 routes (`/jobs`, `/file/<token>`, `/upload`, `/services/*`, `/flows`, the
-part sheet's `/projects`, `/preview`, `/scene`, and the library's `/library` and
-`/projects/<name>/thumbnail`). They are additive, the panel never calls them, and
+part sheet's `/projects`, `/preview`, `/scene`, the library's `/library` and
+`/projects/<name>/thumbnail`, and the project file's `/projects/<name>/open` and
+`/projects/<name>/save`). They are additive, the panel never calls them, and
 they are documented under
 [The web UI (Phase 9)](#the-web-ui-phase-9--the-second-surface),
-[The part sheet (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box)
-and [The Library (Phase 13)](#the-library-phase-13--a-view-to-see-all-our-3d-models).
+[The part sheet (Phase 11)](#the-workbench-phase-11--the-page-stops-being-a-chat-box),
+[The Library (Phase 13)](#the-library-phase-13--a-view-to-see-all-our-3d-models)
+and [The project's own `.blend` (Phase 15)](#the-projects-own-blend-phase-15--clicking-a-model-should-open-it).
 The page itself is [one screen](#the-page-the-studio): the conversation and the
 part's own numbers side by side.
 
@@ -606,8 +608,12 @@ A card carries:
   machine and the browser is on this machine, so a download route would be a
   second way to read the filesystem for no gain over a path you can paste into
   Explorer;
-- **Open in Studio**, which switches tab, selection *and* pin (a tab switch that
-  left the picker on the previous part would be a button that lies), and
+- **whether it has a scene file of its own** — `scene file 4.2 MB`, or `no scene
+  file yet` with the button that makes one in the tooltip (Phase 15, below);
+- four buttons: **Open** (the project's `.blend`, which is what "open this
+  model" means, and the only one on a card wearing the accent), **Open in
+  Studio**, which switches tab, selection *and* pin (a tab switch that left the
+  picker on the previous part would be a button that lies), **Save scene**, and
   **Preview**.
 
 The second row is the **works in progress**: a generated mesh, a sculpt, the
@@ -672,8 +678,8 @@ Each card in `projects` is:
 {"name", "path", "script", "script_path", "object", "has_params",
  "description", "param_count", "param_source", "components": [{"name", "role",
  "description"}], "features", "exports": [{"file", "path", "size", "mtime"}],
- "export_count", "mtime", "has_thumbnail", "thumbnail_mtime", "thumbnail_url",
- "spec"}
+ "export_count", "mtime", "has_blend", "blend_path", "blend_size",
+ "blend_mtime", "has_thumbnail", "thumbnail_mtime", "thumbnail_url", "spec"}
 ```
 
 `param_count` is `null` when it could not be read without running anything, and
@@ -688,6 +694,90 @@ as `project_dir` and the asset server, so traversal is refused by the *shape* of
 the name before any path arithmetic; the cached PNG is then served straight off
 the cache rather than through `/file/<token>`, since the path is one this bridge
 chose in a folder this bridge owns.
+
+## The project's own `.blend` (Phase 15) — "clicking a model should open it"
+
+The artist's words, and the gap they expose: everything up to here is
+parametric — a script, a spec, an STL — and none of that is where a **sculpt**
+lives, or a lighting setup, or six carefully placed reference empties. Those
+live in a `.blend`, and a project folder had nowhere to put one.
+
+So a project may now keep one scene file beside its script,
+`projects/<name>/<name>.blend`, and the card says whether it has one. That
+question is answered by a **`stat`** — `has_blend`, `blend_path`, `blend_size`,
+`blend_mtime` — never by asking Blender, which is exactly the thing that may not
+be running when somebody opens the Library to find their work. A saved scene
+also counts as touching the project, so it moves the card's `mtime`.
+
+### Save is a copy, and that is the whole feature
+
+`POST /projects/<name>/save` goes straight through to the add-on's
+`save_project_blend`, which is `wm.save_as_mainfile(..., copy=True)`. Without
+`copy=True` Blender **retargets the session**: the file the artist has been
+pressing Ctrl+S on all afternoon silently becomes the project file, and their
+next save goes somewhere they did not choose. A tool that moves where your work
+saves to is a tool nobody should hand a sculpt. The add-on checks
+`bpy.data.filepath` before and after and hands it back as `session_file`, this
+route passes it on, and the card prints "your own file is untouched" every time
+it succeeds — because that is the one thing an artist would reasonably be afraid
+of, and reassurance is cheaper said than discovered.
+
+This route never names a path of its own. The folder convention lives in one
+place and it is the add-on's; a bridge with its own opinion about where a
+project file goes is a second convention waiting to disagree.
+
+### Open has three routes, and a running Blender always wins
+
+`POST /projects/<name>/open` — and the page branches on the **`route`** in the
+body, not on the status code, because two of the three are not faults:
+
+1. **`running`** — something is listening on 9876, so the open goes through the
+   add-on's `open_project_blend`. If the running scene has unsaved work, the
+   add-on answers `needs_confirmation` with a sentence naming what would go and
+   a count of it, and **nothing is touched**. That comes back as a **200**: it
+   is a question, and the page asks it (`window.confirm`) and comes back with
+   `{"confirm": true}`. There is no undo across a file load — Blender resets the
+   stack — so this confirmation is the last moment it can be asked, and the
+   dialog says exactly that rather than implying a way back.
+2. **`spawned`** — nothing is listening and there *is* a `.blend`, so a windowed
+   Blender is started on it. The artist clicked Open, so this is **them**
+   launching Blender: the no-windowed-Blender law binds agents and verification
+   runs, not the person whose machine it is. The spawn is `DETACHED_PROCESS |
+   CREATE_NEW_PROCESS_GROUP` on Windows (`start_new_session` elsewhere) so it
+   outlives a bridge restart and a Ctrl+C here is not a Ctrl+C there — and
+   emphatically **not** `CREATE_NO_WINDOW`, which every *other* spawn in this
+   file carries. Those are background helpers nobody should have to look at;
+   this is an application the artist is about to work in. The two flags are
+   mutually exclusive to `CreateProcess` anyway, so getting it wrong is not a
+   cosmetic bug, it is a Blender that never appears. Nothing is piped: a
+   detached GUI application with a pipe nobody reads eventually blocks on its
+   own stdout.
+3. **`no_blend`** — there is nothing to open yet, which is the ordinary state of
+   every project until someone saves one. Also a 200, and Blender is never
+   contacted: the question was answered by a `stat`. The page falls back to the
+   thing that *does* exist — Open in Studio, its dimensions — and prints one
+   sentence naming the button that makes the other.
+
+**A running instance always wins.** Two Blenders would fight over port 9876 and
+the add-on would end up talking to whichever won the race, so this never spawns
+while something is listening — it drives the running session instead. A test
+asserts that with both a fake add-on socket *and* a stand-in executable
+available, the executable is never launched.
+
+Blender itself is found the way the CLI is: `FORGE_BLENDER_EXE` first (which is
+also how the tests point this at a stand-in that only writes down its argv),
+then `PATH`, then where the official installer actually unpacks — the Windows
+installer does not put Blender on a `PATH` this process inherits, so
+`shutil.which` alone would find nothing on the machine this product is built
+for. Not found at all is a **501** naming the variable to set, in the same shape
+as the "PowerShell was not found" answer.
+
+### The project-file routes
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/projects/<name>/save` | — | `{"project", "saved", "blender", "path", "object_count", "replaced", "session_file", "has_blend", "blend_size", "blend_mtime", "result"}`; **503** Blender down, **502** it refused, **404** no such project |
+| POST | `/projects/<name>/open` | `{"confirm"?}` | `{"project", "blend", "has_blend", "route": "running"\|"spawned"\|"no_blend"}` plus, per route: `opened`/`needs_confirmation`/`would_lose`/`hint`/`result` (running), `pid`/`executable`/`note` (spawned), `hint`/`object`/`script_path` (no_blend). **501** Blender is not installed, **500** it would not start, **503**/**502** the running Blender went away or refused, **404** no such project |
 
 ## The command line it builds
 
@@ -752,6 +842,7 @@ The web UI's own, all optional:
 | `FORGE_ASSISTANT_PREVIEWS` | `<temp>/forge-webui-previews` | Where `POST /preview` renders to |
 | `FORGE_GENERATE_TIMEOUT` | `300` | Seconds one workbench rebuild may take |
 | `FORGE_ASSISTANT_THUMBS` | `assistant/thumbs` | The library's thumbnail cache — beside `uploads`, not in the temp dir, because a card has to draw before anything is running |
+| `FORGE_BLENDER_EXE` | discovered | Full path to `blender.exe`, for the one case where this bridge *starts* Blender rather than talking to it (`POST /projects/<name>/open` with nothing listening). Unset = `PATH`, then the official installer's own folders |
 
 ## Finding the CLI on Windows
 
@@ -864,8 +955,8 @@ bridge must pass are deliberately independent: the bridge always asks for
 stream-json, and the json modes prove it still copes with a build that answers
 with one object anyway.
 
-`assistant/tests/test_webui.py` is the web UI's half of the suite (292 tests
-beside `test_bridge.py`'s 90, so **382** in all). It never touches port 8901:
+`assistant/tests/test_webui.py` is the web UI's half of the suite (313 tests
+beside `test_bridge.py`'s 90, so **403** in all). It never touches port 8901:
 every bridge it starts is on a port the OS handed out, and the Blender socket,
 the geometry service, the two downstream health probes and the start script all
 have fakes in the file, so nothing in it needs Blender, PowerShell or the
@@ -943,6 +1034,29 @@ ambiguous `part.py` resolving to nothing, a `projects/<name>` path in the reply
 finished, `/projects` in any of the three shapes it arrives in, and six
 malformed job shapes that must each cost a missed switch rather than an
 exception.
+
+And for Phase 15: `project_blend` answering off a `stat` alone (absent, then
+present with its size and mtime) and a saved scene moving the card's "last
+touched"; `resolve_blender` taking the override first and refusing a path that
+is not there rather than quietly picking up something else off `PATH`;
+`blender_launch_argv` running a `.py` stand-in under this interpreter; the GUI
+spawn's creation flags asserted to be `DETACHED_PROCESS |
+CREATE_NEW_PROCESS_GROUP` and **not** `CREATE_NO_WINDOW`; `spawn_blender`
+actually starting the stand-in, which writes down the argv it was given so the
+`.blend` path can be checked; `/projects/<name>/save` driving
+`save_project_blend` with the project name and nothing else (the folder
+convention lives in the add-on), 503 with the panel's sentence when Blender is
+closed, 502 passing the add-on's own refusal through, 404 for a name that is not
+a project; `/projects/<name>/open` answering `no_blend` **without contacting
+Blender at all**, surfacing the confirmation round trip as a 200 and carrying the
+artist's `confirm` back on the second press, spawning a Blender on the file when
+none is listening, and **never** spawning one when a socket answers — that last
+with a stand-in executable available and a log asserted not to exist; a 501
+naming `FORGE_BLENDER_EXE` when Blender is not installed; both new POST routes
+draining their body so a 404 cannot poison the next request on a keep-alive
+connection; and, on the page, the confirm dialog quoting the add-on's
+`would_lose` and saying that undo does not cross a file load, the branch on
+`route` rather than on the status code, and the scene-file chip.
 
 The formatter and auto-follow tests run `format.js` and `follow.js` for real
 under node when there is one, and skip when there is not.

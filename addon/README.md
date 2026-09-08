@@ -178,6 +178,8 @@ All object-targeting commands take `"object"` (a name); omit it to use the activ
 | `profile_from_curve` | `curve_object`, `points?` (5–10, default 7), `close_bottom?` (default true) | **read-only.** Samples a curve the artist DREW into the `(radius, z)` control points `forge_lib.soft_body` takes. Returns `{"object", "points_mm", "height_mm", "max_radius_mm", "min_radius_mm", "base_radius_mm", "plane", "plane_normal", "point_count", "sample_count", "spline_type", "closed_curve", "close_bottom", "z_offset_mm", "flatness_mm", "helper", "notes"}` |
 | `outline_from_curve` | `curve_object`, `points?` (6–16, default 12), `recenter?` (default true) | **read-only.** Samples a **closed** drawn curve into the `[x, y]` outline `forge_lib.silhouette_part` extrudes. Returns `{"object", "points_mm", "width_mm", "height_mm", "plane", "plane_normal", "point_count", "sample_count", "spline_type", "closed_curve", "cyclic_flag", "recentered", "offset_mm", "self_intersections", "flatness_mm", "helper", "notes"}` |
 | `merge_for_print` | `objects?` (names), `collection?`, `voxel_size_mm?` (omit or `0` = nozzle/2), `name?` (default `<project>-merged`), `keep_originals?` (default true) | joins the chosen meshes and voxel-remeshes them into ONE watertight shell. Returns `{"object", "vertex_count", "face_count", "edge_count", "voxel_size_mm", "voxel_size_requested_mm", "voxel_source", "nozzle_mm", "printer_source", "predicted_face_count", "surface_area_mm2", "watertight_input_count", "watertight", "loose_vertices", "sources", "source_count", "resolved_by", "collection", "kept_originals", "hidden", "deleted", "dimensions_mm", "remesh_method", "next", "notes"}` |
+| `save_project_blend` | `project?` (default: the panel's project), `create?` (default true) | **read-only for undo.** Saves the scene to `projects/<name>/<name>.blend` as a **copy** — the artist's own file is never retargeted. Returns `{"project", "path", "folder", "size", "mtime", "exists", "replaced", "created_folder", "object_count", "objects", "session_file", "retargeted": false, "changed", "where"}` |
+| `open_project_blend` | `name`, `confirm?` (default false) | **read-only for undo.** Opens that project's `.blend`. With unsaved work and no `confirm` it returns `{"needs_confirmation": true, "would_lose", "objects", "hint", ...}` and touches nothing; confirmed it returns `{"opened": true, "discarded", "session_file", "object_count", "objects", "server_running", "server_port", "pump_survived", ...}`. No file yet is an error naming the button that makes one |
 | `flow_run` | `name` \| `flow` (an inline flow object), `params?` | replays a saved sequence — Blender steps through the command registry, service steps over HTTP. Linear and fail-fast. Returns `{"flow", "description", "params", "count", "ok", "duration_ms", "steps": [{"index", "kind", "op", "label", "ok", "brief"}]}` |
 
 ### Workspace commands (Phase 8 — the copilot drives the viewport)
@@ -630,6 +632,81 @@ synchronous here rather than going through `run_async`; parsing builds no geomet
   `script_path`, a file that is not there, or a service that is not running all leave the
   panel exactly as it was.
 
+### Additive protocol extension (Phase 15): project `.blend` files
+
+Two more commands, and nothing in `docs/architecture.md` changes shape. They close a gap
+the artist named: *"clicking a model should open the associated blender file."* Everything
+Forge builds up to here is parametric — a script, a spec, an STL — and none of that is
+where a **sculpt** lives, or a lighting setup, or six carefully placed reference empties.
+Those live in a `.blend`, and a project folder had nowhere to put one.
+
+Where projects are is `FORGE_PROJECTS_DIR` if it is set (the same variable the bridge and
+the MCP server read — two names for one folder would be a bug that only shows up on the
+machine that set it), else `<repo>/projects`. Installed from a zip there is no repo above
+the add-on, and the commands say so rather than guessing at somebody's disk.
+
+```jsonc
+{"type": "save_project_blend", "params": {"project": "small-magnet-holder"}}
+{"type": "open_project_blend",  "params": {"name": "small-magnet-holder", "confirm": true}}
+```
+
+**`save_project_blend`** → `wm.save_as_mainfile(..., copy=True)` into
+`projects/<name>/<name>.blend`.
+
+- **`copy=True` is the entire feature.** Without it Blender *retargets the session*: the
+  file the artist has been pressing Ctrl+S on all afternoon silently becomes the project
+  file, and their next save goes somewhere they did not choose. A tool that moves where
+  your work saves to is a tool nobody should hand a sculpt. `bpy.data.filepath` is the same
+  string before and after, the result hands it back as **`session_file`** so a caller can
+  check rather than trust, and a Blender build whose `save_as_mainfile` has no `copy`
+  option is **refused** rather than served — that build cannot keep the one promise this
+  command makes.
+- `project` omitted means the project the PartForge panel is pointed at
+  (`projects/small-magnet-holder/part.py` → `small-magnet-holder`), so the panel button
+  needs no arguments.
+- `create` (default true) makes the project folder when it is not there — which is what
+  gives a sculpt that never had a folder a home. The name goes through the same alphabet
+  gate the bridge uses (`[A-Za-z0-9._-]+`, and never `.` or `..`), so it can only ever name
+  a folder directly under `projects/`.
+- Returns `{project, path, folder, size, mtime, exists, replaced, created_folder,
+  object_count, objects, session_file, retargeted: false, changed, where}`.
+
+**`open_project_blend`** → `wm.open_mainfile`, which throws the running scene away. So the
+first call, when there is anything to lose, does **not** open:
+
+- no file yet → an **error** naming the button that makes one (an open that cannot happen
+  is a missing file, not a question);
+- unsaved work and no `confirm` → `{"needs_confirmation": true, "would_lose": <sentence>,
+  "object_count", "objects", "hint"}` and **nothing is touched**. There is no undo across a
+  file load — Blender resets the stack — which is precisely why this is a confirmation and
+  not a checkpoint;
+- otherwise → the world is replaced and the result carries `{opened, discarded,
+  session_file, object_count, objects, server_running, server_port, pump_survived}`.
+
+"Anything to lose" is `bpy.data.is_dirty` **and** a scene with objects in it. The second
+half is not padding: an empty scene has nothing to lose whatever the flag says, and asking
+"are you sure?" about nothing is how a dialog trains someone to click through the one that
+mattered. It also happens to be the only way the "do not ask" branch can be tested —
+in `blender --background` `is_dirty` is **always true**, true at startup before anything has
+happened and not cleared by an explicit save (measured on 5.0.1).
+
+**Does the socket server survive the world being replaced?** Yes, and it is proved rather
+than assumed on every run of `headless_projects.py`. The listening socket, its accept thread
+and the module-level server singleton are plain Python and a file load does not touch them —
+Blender reloads *data*, not the modules holding it. The main-thread pump is a
+`bpy.app.timers` callback registered **`persistent=True`**, and persistence is exactly the
+flag that survives `open_mainfile`. The suite registers a second, deliberately
+non-persistent timer beside the pump and asserts that one is **gone** after the open while
+the pump is still there — without that control, "it survived" could only mean "nothing was
+ever cleared". Then it round-trips two more commands through the same socket. Belt and
+braces regardless: the handler calls `server._ensure_pump()` after the open, which is a
+no-op when the timer is still registered and the difference between a live add-on and a
+dead port on any future build where persistence changes meaning.
+
+Both commands are in `READ_ONLY_COMMANDS`, for opposite reasons: `save_project_blend` writes
+a file and changes nothing in the session (the `export_stl` precedent), and
+`open_project_blend` destroys the very undo stack it would be pushing onto.
+
 Notes:
 
 - **Units.** Blender works in metres, the geometry service in millimetres. `load_mesh`
@@ -853,6 +930,12 @@ Full protocol, environment variables and the CLI command line: `assistant/README
    transforms, materials, modifiers and panel state survive.
 4. **Export** → POSTs to `/export` with the chosen format (STL / STEP / 3MF). A blank
    export path defaults to `<script folder>/exports/<script name>.<format>`.
+5. **Save Scene to Project** → `save_project_blend` for the project the script path names,
+   writing `projects/<name>/<name>.blend`. It saves a **copy**, so your own file (File ▸
+   Save) is not moved — which is why this button can sit next to Regenerate without being
+   frightening. It is how a sculpt, a lighting setup or a set of placed reference empties
+   gets a home; the web UI's Library then shows a scene-file chip on that project's card
+   and its **Open** button loads it.
 
 ### Print Checks
 
@@ -1594,9 +1677,48 @@ its panel's `status` string.
 
 ## Headless tests
 
-Thirteen suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 11 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 + 139 =
-1494 checks**, all green on Blender 5.0.1.
+Fourteen suites, all `--background` only. Never launch Blender windowed to run them. As of
+Phase 15 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 + 139 +
+79 = 1573 checks**, all green on Blender 5.0.1.
+
+### Phase 15 — project `.blend` files (`headless_projects.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_projects.py
+```
+
+Socket port **9899**. **79 checks**, no window, no service needed.
+`FORGE_PROJECTS_DIR` is pointed at a temp folder before anything runs, so a suite that
+writes `.blend` files can never leave one in the repo's own `projects/`. Covering:
+
+- **the copy, which is the whole feature** — the file lands at
+  `projects/<name>/<name>.blend`, the folder is created when missing, and
+  `bpy.data.filepath` is the *same string* before and after. Saving into the file you
+  currently have open is checked separately, because that is the case where a retarget
+  would be easiest to miss;
+- **the refusals**: a name with a slash in it, `create: false` on a folder that is not
+  there (and the folder is not made anyway), a `project` that is not a string, an open of
+  a project with no `.blend` (which names the button that makes one);
+- **the confirmation round trip** — with unsaved work and no `confirm`, `needs_confirmation`
+  comes back with a sentence and a count, and *nothing in the scene moves*;
+- **the question this feature stood or fell on: does the socket server survive
+  `wm.open_mainfile`?** A file load clears Blender's timer list and the add-on's
+  main-thread pump *is* a timer, so if it went with the file every Forge command after an
+  open would hang forever on a queue nothing drains. The suite registers a second,
+  deliberately **non-persistent** timer beside the pump and asserts, after the open, that
+  the control is **gone** and the pump is still there — without the control, "the pump
+  survived" could only mean "nothing was ever cleared". It then checks the server is the
+  same object on the same port, that `_pump()` still finds a live server, and round-trips
+  `get_scene_info` and `ping` through the real socket afterwards. **Measured answer: yes,
+  it survives** — the persistent flag is what saves it;
+- **the "do not ask" branch**, reached the only way it can be reached headless: an empty
+  scene. `--background` leaves `bpy.data.is_dirty` true from the first line of the session
+  and an explicit save does not clear it (measured on 5.0.1), which is exactly why the gate
+  is not that flag alone;
+- **undo classification** — `push_undo` declines both commands — and the PartForge box's
+  **Save Scene to Project** button, pressed for real and asserted to have written the file
+  and reported it in the panel's own status line.
 
 ### Phase 11 — drawn base shapes and merge-for-print (`headless_phase11.py`)
 

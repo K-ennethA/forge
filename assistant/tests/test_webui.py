@@ -2406,6 +2406,10 @@ def test_library_carries_everything_a_card_draws(bridges, projects):
     # No picture has been taken yet, so the card is a placeholder.
     assert card["has_thumbnail"] is False
     assert card["thumbnail_url"] == "/projects/cup/thumbnail"
+    # …and no scene file either, which is the ordinary state of a new project.
+    assert card["has_blend"] is False
+    assert card["blend_size"] == 0 and card["blend_mtime"] == 0.0
+    assert card["blend_path"].endswith(os.path.join("cup", "cup.blend"))
 
 
 def test_a_card_chips_the_core_and_the_proposals_a_real_spec_records(bridges,
@@ -2679,11 +2683,15 @@ def test_the_library_is_linkable(client):
     assert "replaceState" in script
 
 
-def test_the_library_cards_carry_their_two_buttons(client):
+def test_the_library_cards_carry_their_four_buttons(client):
     script = fetch_text(client, "/webui/app.js")
     assert '"Open in Studio"' in script
     assert "function openInStudio(" in script
     assert "/thumbnail" in script
+    # Phase 15: the scene file is what "open this model" means, so Open leads
+    # and Save scene is how a project gets one.
+    assert '"Open")' in script and "function openProject(" in script
+    assert '"Save scene")' in script and "function saveProject(" in script
 
 
 def test_the_library_panel_carries_both_grids_and_its_refresh(client):
@@ -2773,6 +2781,379 @@ def test_the_library_is_refetched_every_time_the_tab_is_opened(client):
     assert 'if (which === "library") { loadLibrary(); }' in script
     assert "function loadLibrary()" in script
     assert 'api("/library")' in script
+
+
+# ===========================================================================
+# Phase 15 — the project's own .blend, and opening it from the Library
+# ===========================================================================
+
+#: Blender's own magic bytes, so nothing here has to pretend a text file is a
+#: scene.  The size is what the card prints; the content is never parsed.
+BLEND_MAGIC = b"BLENDER-v500" + b"\x00" * 64
+
+
+def write_blend(folder, name=None, data=BLEND_MAGIC):
+    """Put a ``<name>.blend`` in a project folder, the way a save would."""
+    name = name or os.path.basename(str(folder))
+    path = os.path.join(str(folder), "%s.blend" % name)
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return path
+
+
+#: A stand-in for ``blender.exe``: it records the argv it was launched with and
+#: exits.  ``FORGE_BLENDER_EXE`` pointing at a ``.py`` runs under this
+#: interpreter (the ``start_forge.ps1`` trick), which is what lets the spawn be
+#: proved without a Blender window appearing on somebody's screen.
+FAKE_BLENDER = """
+import json, os, sys
+log = os.environ.get("FORGE_FAKE_BLENDER_LOG")
+if log:
+    with open(log, "w", encoding="utf-8") as handle:
+        json.dump({"argv": sys.argv[1:], "cwd": os.getcwd()}, handle)
+"""
+
+
+@pytest.fixture
+def fake_blender_exe(tmp_path):
+    """``(exe_path, log_path)`` for a Blender that only writes down its argv."""
+    exe = tmp_path / "fake_blender.py"
+    exe.write_text(FAKE_BLENDER, encoding="utf-8")
+    return str(exe), str(tmp_path / "blender-launch.json")
+
+
+def blend_blender(saved=None, opened=None, needs_confirmation=False):
+    """A fake add-on that answers the two Phase 15 commands."""
+    def save(request):
+        params = request.get("params") or {}
+        if saved is not None:
+            saved.append(params)
+        name = str(params.get("project") or "")
+        return {"project": name, "path": "/somewhere/%s.blend" % name,
+                "object_count": 3, "replaced": False, "created_folder": False,
+                "session_file": "", "retargeted": False}
+
+    def open_(request):
+        params = request.get("params") or {}
+        if opened is not None:
+            opened.append(params)
+        if needs_confirmation and not params.get("confirm"):
+            return {"project": params.get("name"), "opened": False,
+                    "needs_confirmation": True, "dirty": True,
+                    "object_count": 4, "session_file": "",
+                    "would_lose": "This session has never been saved (4 "
+                                  "object(s) in the scene).",
+                    "hint": "Press Save scene to project first."}
+        return {"project": params.get("name"), "opened": True,
+                "needs_confirmation": False, "confirmed": bool(params.get("confirm")),
+                "object_count": 7, "session_file": "/somewhere/cup.blend",
+                "server_running": True, "server_port": 9876,
+                "pump_survived": True}
+
+    return by_type({"save_project_blend": save, "open_project_blend": open_,
+                    "get_scene_info": {"objects": []}})
+
+
+# -- pure units -------------------------------------------------------------
+
+def test_project_blend_is_a_stat_and_nothing_else(projects):
+    """The library must draw with Blender closed, so this asks the disk."""
+    folder = projects("cup")
+    absent = bridge.project_blend(str(folder))
+    assert absent["exists"] is False
+    assert absent["size"] == 0 and absent["mtime"] == 0.0
+    assert absent["path"].endswith(os.path.join("cup", "cup.blend"))
+
+    write_blend(folder)
+    found = bridge.project_blend(str(folder))
+    assert found["exists"] is True
+    assert found["size"] == len(BLEND_MAGIC)
+    assert found["mtime"] > 0
+
+
+def test_a_saved_scene_counts_as_touching_the_project(projects):
+    """Saving a sculpt is work, so it moves the card's "last touched"."""
+    folder = projects("cup")
+    entry = bridge.project_entry(str(folder))
+    before = bridge.project_mtime(str(folder), entry, [])
+    write_blend(folder)
+    blend = bridge.project_blend(str(folder))
+    os.utime(blend["path"], (before + 500, before + 500))
+    blend = bridge.project_blend(str(folder))
+    after = bridge.project_mtime(str(folder), entry, [], blend)
+    assert after > before
+
+
+def test_resolve_blender_takes_the_override_first(monkeypatch, tmp_path):
+    exe = tmp_path / "blender.exe"
+    exe.write_bytes(b"")
+    monkeypatch.setenv("FORGE_BLENDER_EXE", str(exe))
+    assert bridge.resolve_blender() == str(exe)
+    # A path that is not there is not silently swapped for whatever is on PATH
+    # under some *other* name: the override is either a file or a command.
+    monkeypatch.setenv("FORGE_BLENDER_EXE", str(tmp_path / "nope.exe"))
+    assert bridge.resolve_blender() is None
+
+
+def test_blender_launch_argv_runs_a_py_stand_in_under_this_interpreter(tmp_path):
+    blend = str(tmp_path / "cup.blend")
+    argv = bridge.blender_launch_argv(str(tmp_path / "fake.py"), blend)
+    assert argv[0] == sys.executable
+    assert argv[-1] == blend
+    real = bridge.blender_launch_argv(r"C:\Blender\blender.exe", blend)
+    assert real == [r"C:\Blender\blender.exe", blend]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="creation flags are Windows only")
+def test_the_gui_spawn_is_detached_and_never_windowless():
+    """The one spawn in this file that must *show* something.
+
+    Every other subprocess here is a background helper and carries
+    ``CREATE_NO_WINDOW``.  This one is an application the artist is about to
+    work in, and the two flags are mutually exclusive to ``CreateProcess``
+    anyway — so getting it wrong is not a cosmetic bug, it is a Blender that
+    never appears.
+    """
+    flags = bridge.spawn_creationflags()
+    assert flags & subprocess.DETACHED_PROCESS
+    assert flags & subprocess.CREATE_NEW_PROCESS_GROUP
+    assert not (flags & bridge.CREATE_NO_WINDOW)
+
+
+def test_spawn_blender_starts_the_stand_in_and_hands_it_the_file(
+        monkeypatch, tmp_path, fake_blender_exe):
+    exe, log = fake_blender_exe
+    monkeypatch.setenv("FORGE_FAKE_BLENDER_LOG", log)
+    blend = str(tmp_path / "cup.blend")
+    proc = bridge.spawn_blender(exe, blend)
+    try:
+        proc.wait(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    with open(log, encoding="utf-8") as handle:
+        seen = json.load(handle)
+    assert seen["argv"] == [blend]
+
+
+# -- the library card -------------------------------------------------------
+
+def test_a_card_says_whether_the_project_has_a_scene_of_its_own(bridges,
+                                                                 projects):
+    folder = projects("cup")
+    write_blend(folder)
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert card["has_blend"] is True
+    assert card["blend_size"] == len(BLEND_MAGIC)
+    assert card["blend_mtime"] > 0
+    assert card["blend_path"] == os.path.join(str(folder), "cup.blend")
+
+
+# -- POST /projects/<name>/save --------------------------------------------
+
+def test_save_writes_the_scene_into_the_project(bridges, projects,
+                                                fake_blender):
+    projects("cup")
+    saved = []
+    blender = fake_blender(blend_blender(saved=saved))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    status, body = client.request("/projects/cup/save", payload={}, timeout=60)
+    assert status == 200, body
+    assert body["saved"] is True and body["project"] == "cup"
+    assert saved == [{"project": "cup"}]
+    # The route never names a path of its own: the folder convention lives in
+    # one place, and it is the add-on's.
+    assert [request["type"] for request in blender.seen] == ["save_project_blend"]
+    # And the answer carries the one reassurance worth carrying.
+    assert "session_file" in body
+
+
+def test_save_of_a_project_that_is_not_one_is_a_404(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/../bridge/save", payload={},
+                                  timeout=40)
+    assert status == 404, body
+
+
+def test_save_with_blender_closed_names_the_button_to_press(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/cup/save", payload={}, timeout=40)
+    assert status == 503, body
+    assert body["blender"] is False
+    assert "Blender is not running" in body["error"]
+    assert "Start Server" in body["error"]
+
+
+def test_save_passes_the_addons_own_refusal_through(bridges, projects,
+                                                    fake_blender):
+    projects("cup")
+    blender = fake_blender(by_type({
+        "save_project_blend": "Could not create the project folder: read-only"}))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/save", payload={}, timeout=40)
+    assert status == 502, body
+    assert body["blender"] is True
+    assert "read-only" in body["error"]
+
+
+# -- POST /projects/<name>/open --------------------------------------------
+
+def test_open_with_no_blend_never_touches_blender_at_all(bridges, projects,
+                                                         fake_blender):
+    """The ordinary state of a new project is not a fault.
+
+    There is nothing to open, so the answer is the thing that *does* exist —
+    its dimensions — plus one sentence naming the button that makes the other.
+    Blender is not asked, because the question was answered by a ``stat``.
+    """
+    projects("cup")
+    blender = fake_blender(blend_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    status, body = client.request("/projects/cup/open", payload={}, timeout=40)
+    assert status == 200, body
+    assert body["route"] == "no_blend"
+    assert body["opened"] is False and body["has_blend"] is False
+    assert "Save scene to project" in body["hint"]
+    assert body["object"] == "cup"
+    assert blender.seen == []
+
+
+def test_open_routes_through_the_running_blender_and_asks_first(bridges,
+                                                                projects,
+                                                                fake_blender):
+    folder = projects("cup")
+    write_blend(folder)
+    opened = []
+    blender = fake_blender(blend_blender(opened=opened, needs_confirmation=True))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    status, body = client.request("/projects/cup/open", payload={}, timeout=60)
+    assert status == 200, body           # a question is not an error
+    assert body["route"] == "running"
+    assert body["needs_confirmation"] is True and body["opened"] is False
+    assert "object(s)" in body["would_lose"]
+    assert opened == [{"name": "cup", "confirm": False}]
+
+    # …and the second press carries the confirmation the artist just gave.
+    status, body = client.request("/projects/cup/open", payload={"confirm": True},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["opened"] is True and body["needs_confirmation"] is False
+    assert opened[-1] == {"name": "cup", "confirm": True}
+
+
+def test_a_running_blender_always_wins_over_spawning_a_second_one(
+        bridges, projects, fake_blender, fake_blender_exe, tmp_path):
+    """Two instances would fight over port 9876, so one is never started."""
+    folder = projects("cup")
+    write_blend(folder)
+    exe, log = fake_blender_exe
+    blender = fake_blender(blend_blender())
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port),
+                                "FORGE_BLENDER_EXE": exe,
+                                "FORGE_FAKE_BLENDER_LOG": log})
+    status, body = client.request("/projects/cup/open", payload={"confirm": True},
+                                  timeout=60)
+    assert status == 200, body
+    assert body["route"] == "running"
+    assert not os.path.exists(log), "a second Blender was started"
+
+
+def test_open_with_blender_closed_starts_one_on_the_file(bridges, projects,
+                                                          fake_blender_exe,
+                                                          tmp_path):
+    folder = projects("cup")
+    blend = write_blend(folder)
+    exe, log = fake_blender_exe
+    client = bridges(env_extra={"FORGE_BLENDER_EXE": exe,
+                                "FORGE_FAKE_BLENDER_LOG": log})
+
+    status, body = client.request("/projects/cup/open", payload={}, timeout=60)
+    assert status == 200, body
+    assert body["route"] == "spawned"
+    assert body["opened"] is True and body["pid"] > 0
+    assert body["executable"] == exe
+    assert "Start Server" in body["note"]
+
+    deadline = time.time() + 30
+    while time.time() < deadline and not os.path.exists(log):
+        time.sleep(0.1)
+    assert os.path.exists(log), "the stand-in Blender never ran"
+    with open(log, encoding="utf-8") as handle:
+        seen = json.load(handle)
+    assert seen["argv"] == [blend]
+
+
+def test_open_with_no_blender_installed_says_what_to_set(bridges, projects,
+                                                          tmp_path):
+    folder = projects("cup")
+    write_blend(folder)
+    client = bridges(env_extra={"FORGE_BLENDER_EXE": str(tmp_path / "nope.exe"),
+                                "PATH": str(tmp_path)})
+    status, body = client.request("/projects/cup/open", payload={}, timeout=40)
+    assert status == 501, body
+    assert body["route"] == "no_blender"
+    assert "FORGE_BLENDER_EXE" in body["error"]
+    assert body["has_blend"] is True
+
+
+def test_open_of_a_project_that_is_not_one_is_a_404(bridges, projects):
+    projects("cup")
+    client = bridges()
+    status, body = client.request("/projects/..%2Fbridge/open", payload={},
+                                  timeout=40)
+    assert status == 404, body
+
+
+def test_an_open_body_never_poisons_the_next_request(bridges, projects):
+    """The keep-alive drain, on the two routes that take a body and may 404."""
+    projects("cup")
+    client = bridges()
+    for path in ("/projects/nope/open", "/projects/nope/save"):
+        status, _body = client.request(path, payload={"confirm": True},
+                                       timeout=40)
+        assert status == 404
+        status, body = client.request("/health", timeout=40)
+        assert status == 200, body
+
+
+# -- the page ---------------------------------------------------------------
+
+def test_the_page_asks_before_it_throws_a_scene_away(client):
+    """A file load cannot be undone, so the confirmation is the last chance."""
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function openProject("):]
+    body = body[:body.index("\n  function ")]
+    assert "window.confirm(" in body
+    assert "data.would_lose" in body
+    assert "Undo does not cross a file load" in body
+    # …and the confirmed press is the same call with the answer attached.
+    assert "openProject(project, card, true)" in body
+
+
+def test_the_page_branches_on_the_route_not_the_status(client):
+    script = fetch_text(client, "/webui/app.js")
+    body = script[script.index("function openProject("):]
+    body = body[:body.index("\n  function ")]
+    assert 'data.route === "no_blend"' in body
+    assert 'data.route === "spawned"' in body
+    # No .blend falls back to the thing that does exist: its dimensions.
+    assert "openInStudio(project.name)" in body
+
+
+def test_the_card_says_whether_there_is_a_scene_file(client):
+    script = fetch_text(client, "/webui/app.js")
+    assert "function blendFact(" in script
+    assert "no scene file yet" in script
+    assert "project.has_blend" in script
+    assert "lib-blend" in script
+    css = fetch_text(client, "/webui/app.css")
+    assert ".lib-actions .lib-open" in css
 
 
 # ===========================================================================
@@ -3058,10 +3439,18 @@ def test_auto_follow_never_throws_on_a_job_shape_it_has_not_seen(tmp_path):
     assert follow_choices(tmp_path, cases) == ["", "", "", "", "", ""]
 
 
-def test_the_page_explains_that_scrapping_is_undoable(client):
-    """The one destructive button on the page says what undoes it."""
+def test_every_destructive_button_asks_first_and_says_what_undoes_it(client):
+    """Two buttons on this page destroy something, and they are not the same.
+
+    Scrapping an object is a socket command with its own undo checkpoint, so it
+    says which key puts it back.  Opening a project's ``.blend`` replaces the
+    whole scene, and Blender resets the undo stack on a file load — so that one
+    cannot promise a way back and does not pretend to: it names what would be
+    lost instead.  The count is pinned so a third destructive button cannot be
+    added without deciding which of those two it is.
+    """
     html = fetch_text(client, "/")
     assert "Ctrl+Z in Blender puts it back" in html
     script = fetch_text(client, "/webui/app.js")
-    # …and it asks first, exactly once.
-    assert script.count("window.confirm(") == 1
+    assert script.count("window.confirm(") == 2
+    assert "Undo does not cross a file load" in script

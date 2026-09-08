@@ -1301,6 +1301,88 @@
       });
   }
 
+  //: Phase 15: does this project have a scene of its own?  A .blend is where a
+  //: sculpt, a lighting setup and six placed reference empties live — none of
+  //: which fits in a part script — so the card says whether there is one and
+  //: how big it got.
+  function blendFact(project) {
+    return project.has_blend ? "scene file " + bytes(project.blend_size)
+                             : "no scene file yet";
+  }
+
+  //: "Clicking a model should open the associated blender file."  Three answers
+  //: come back and the page acts on `route`, never on the status code: a
+  //: project with no .blend is the ordinary state of a new project, not a
+  //: fault, and the fallback for it is the thing that DOES exist — its
+  //: dimensions — plus one sentence naming the button that makes the other.
+  function openProject(project, card, confirmed) {
+    var button = card.querySelector(".lib-open");
+    if (button) { button.disabled = true; }
+    cardStatus(card, confirmed ? "opening…" : "asking Blender…");
+    return api("/projects/" + encodeURIComponent(project.name) + "/open",
+               { method: "POST", body: { confirm: !!confirmed } })
+      .then(function (res) {
+        if (button) { button.disabled = false; }
+        if (!res.ok) {
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        var data = res.data || {};
+        if (data.route === "no_blend") {
+          cardStatus(card, data.hint || "");
+          openInStudio(project.name);
+          return;
+        }
+        if (data.route === "spawned") {
+          cardStatus(card, data.note || "Blender is starting…");
+          return;
+        }
+        if (data.needs_confirmation) {
+          // The last moment this can be asked: a file load throws the running
+          // scene away and Ctrl+Z does not cross one. Blender's own words, so
+          // the sentence names the file and counts the objects.
+          var lose = data.would_lose ||
+                     "The scene open in Blender has unsaved changes.";
+          if (!window.confirm("Open “" + project.name + "” in Blender?\n\n" +
+                              lose + "\n\nOpening replaces the scene that is " +
+                              "there now. Undo does not cross a file load.")) {
+            cardStatus(card, "Left as it was.");
+            return;
+          }
+          return openProject(project, card, true);
+        }
+        project.has_blend = true;
+        cardStatus(card, "Opened in Blender.");
+      });
+  }
+
+  function saveProject(project, card) {
+    var button = card.querySelector(".lib-save");
+    if (button) { button.disabled = true; }
+    cardStatus(card, "saving the scene…");
+    return api("/projects/" + encodeURIComponent(project.name) + "/save",
+               { method: "POST", body: {} })
+      .then(function (res) {
+        if (button) { button.disabled = false; }
+        if (!res.ok) {
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        project.has_blend = true;
+        project.blend_size = res.data.blend_size || 0;
+        project.blend_mtime = res.data.blend_mtime || 0;
+        var fact = card.querySelector(".lib-blend");
+        if (fact) { fact.textContent = blendFact(project); }
+        // Said every time, because it is the one thing an artist would
+        // reasonably be afraid of: a copy went to the project, and their own
+        // file still saves where it always did.
+        cardStatus(card, "Saved " + bytes(project.blend_size) +
+                         " — your own file is untouched.");
+      });
+  }
+
   function openInStudio(name) {
     showTab("studio");
     return whenProjectsLoaded().then(function () {
@@ -1346,6 +1428,11 @@
                                                                : " exports"))
                      : "not exported yet");
     facts.appendChild(files);
+    var scene = el("span", "lib-fact lib-blend", blendFact(project));
+    scene.title = project.has_blend
+      ? project.blend_path + " — Open loads this in Blender"
+      : "Press Save scene to project with the part in Blender to make one";
+    facts.appendChild(scene);
     body.appendChild(facts);
 
     var parts = project.components || [];
@@ -1384,11 +1471,31 @@
     }
 
     var actions = el("div", "lib-actions");
+
+    // First, and named for what the artist means by "open": the scene itself.
+    // Editing dimensions is the other button, and it says so.
+    var openBlend = el("button", "btn tiny lib-open", "Open");
+    openBlend.type = "button";
+    openBlend.title = project.has_blend
+      ? "Open " + project.name + ".blend in Blender"
+      : "No scene file yet — this opens its dimensions instead";
+    openBlend.addEventListener("click", function () {
+      openProject(project, card, false);
+    });
+    actions.appendChild(openBlend);
+
     var open = el("button", "btn tiny", "Open in Studio");
     open.type = "button";
     open.title = "Edit its dimensions";
     open.addEventListener("click", function () { openInStudio(project.name); });
     actions.appendChild(open);
+
+    var save = el("button", "btn tiny lib-save", "Save scene");
+    save.type = "button";
+    save.title = "Save Blender's scene into this project as a copy — your own "
+               + "file is not moved";
+    save.addEventListener("click", function () { saveProject(project, card); });
+    actions.appendChild(save);
 
     var shoot = el("button", "btn tiny lib-shoot", "Preview");
     shoot.type = "button";

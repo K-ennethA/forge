@@ -349,6 +349,16 @@ class VIEW3D_PT_forge_partforge(_ForgePanel, Panel):
         column.prop(props, "object_name")
         column.prop(props, "collection_name")
 
+        # Phase 15: the project's own .blend.  Sculpts, lighting and reference
+        # empties have nowhere to live in a part script, and this is the one
+        # button that gives them a home.  It saves a *copy* — the artist's own
+        # file never moves — which is why it can sit here next to Regenerate
+        # without being frightening.
+        row = layout.row(align=True)
+        row.enabled = not props.busy
+        row.operator("forge.save_project_blend", icon="FILE_TICK",
+                     text="Save Scene to Project")
+
         if props.busy:
             layout.label(text=props.status or "Working ...", icon="SORTTIME")
         elif props.status:
