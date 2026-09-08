@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**71 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+**72 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -172,7 +172,7 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_SERVICE_CHECK_TIMEOUT` | `150.0` | seconds to wait for `/check` (the service allows itself 120) |
 | `FORGE_SERVICE_SEGMENT_TIMEOUT` | `330.0` | seconds to wait for `/segment` and `/export_segments` (the service allows itself 300) |
 | `FORGE_PRINTER_PATH` | `<repo>/templates/printer.json` | default printer profile for the print-readiness tools |
-| `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` writes to |
+| `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` and `save_design_doc` write to |
 | `FORGE_SERVICE_PACKAGE_ROOT` | `<repo>` | the folder **containing** `service/` — the maker tools import `components.py`, `wiring.py` and the arithmetic half of `maker_lib.py` in-process rather than over a wire (see Maker mode below). Lazy and guarded: a checkout without `service/` still runs everything else |
 | `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
@@ -373,6 +373,7 @@ holder, so the model **writes** the part.
 |---|---|---|
 | `partforge_new_part` | `name`, `script_source`, `overwrite`, `components` | Validates the script through the service's `/parse_params` and — only then — writes it to `projects/<slug>/part.py`, plus a minimal `spec.json` beside it. Returns the path and the parsed parameter table. `components` (`["collar", "ear-l"]`) records the component tree in the spec — see Phase 11 below. |
 | `partforge_open_in_panel` | `script_path` | Points Blender's Forge panel at that script and rebuilds its sliders (the `partforge_open` socket command, the panel's own Load Script path). Builds nothing — generate next. |
+| `save_design_doc` | `project`, `filename`, `content` | Writes ONE design document to `projects/<slug>/design/<filename>` and nowhere else. `.md`, `.svg` or `.json` only. The project folder need not exist — the design phase comes *before* the part. Overwriting is normal (a sheet iterates). Returns the path, the whole sheet in reading order, and the sign-off reminder. |
 
 The loop the assistant runs, and the reason each step is there:
 
@@ -409,6 +410,45 @@ Five things are fixed by the tools rather than left to the model:
   generically named `part.py`), so the artist's Regenerate button rebuilds the object the
   assistant made rather than a second one. It also clears the previous part's check rows —
   a stale FAIL in the panel is worse than an empty one.
+
+### The design phase (Phase 16) — requirements before geometry
+
+`save_design_doc` is the **third and last** tool in this server that writes to disk, and it
+obeys `partforge_new_part`'s rules exactly: the project name is slugged
+(`"ankle fan"` → `projects/ankle-fan/`), anything path-shaped is **refused rather than
+cleaned**, and the resolved path is checked a second time against the folder it must be
+inside. Four things are specific to it:
+
+- **The project folder does not have to exist**, and usually does not. A functional,
+  wearable, multi-component or novel request gets questions, a requirements sheet, a
+  hand-written concept `.svg` and a components proposal *before* any geometry — and may
+  never get geometry at all if the sheet is torn up at the sign-off gate. `design/` is
+  routinely the only thing in a project folder.
+- **A filename is a filename**, not a name to be slugged: a slug would have to invent an
+  extension, and the extension is the one thing here that carries meaning. Letters, digits,
+  dots, dashes and underscores, starting with a letter or a digit, ≤80 characters, and one
+  of `.md` / `.svg` / `.json`. Everything else is refused, and a `.py` refusal names
+  `partforge_new_part` so the message is a signpost rather than a wall.
+- **An `.svg` is parsed as XML (root must be `<svg>`) and a `.json` as JSON, before anything
+  touches disk.** These files are self-authored, which is exactly why they are checked: a
+  diagram cut off mid-tag draws as an empty box in the artist's chat, and that reads as a
+  broken *tool* rather than a broken file. A refusal leaves the previous good version
+  exactly where it was.
+- **Overwriting is normal** — no `overwrite` flag. A design sheet iterates: they answer a
+  question, a number changes, it is saved again over the same name.
+
+```text
+save_design_doc("ankle fan", "requirements.md", "# Ankle fan — requirements\n...")
+save_design_doc("ankle fan", "concept.svg",     '<svg xmlns="..." viewBox="0 0 800 500">...')
+save_design_doc("ankle fan", "components.md",   "# Components\n...")
+# then STOP. Geometry starts when the artist signs off on the sheet.
+```
+
+The report lists the whole sheet in reading order (`requirements.md`, `concept.svg`,
+`components.md`, then anything else alphabetically), because that is the order somebody
+reads it in, and it tells the model to name an `.svg`'s full path in the reply — the
+assistant bridge mints a `/file` token for it and the diagram renders inline in the chat.
+The bridge's `GET /library` cards carry the same list as `design`.
 
 ### PartForge print readiness (Phase 2)
 

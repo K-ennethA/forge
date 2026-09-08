@@ -3454,3 +3454,205 @@ def test_every_destructive_button_asks_first_and_says_what_undoes_it(client):
     script = fetch_text(client, "/webui/app.js")
     assert script.count("window.confirm(") == 2
     assert "Undo does not cross a file load" in script
+
+
+# ===========================================================================
+# Phase 16 — the design phase: an SVG diagram in the chat, a sheet on the card
+# ===========================================================================
+
+#: A concept diagram exactly as the assistant writes one: boxes, a line, a
+#: dimension callout.  Schematic, not art — which is also why it is 200 bytes.
+SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">'
+       '<rect x="10" y="10" width="80" height="40" fill="none" stroke="#333"/>'
+       '<text x="14" y="70">64 mm</text></svg>\n').encode("utf-8")
+
+
+def write_svg(path, data=SVG):
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return str(path)
+
+
+def write_design(folder, name, data=None):
+    """One document in a project's design/ folder."""
+    directory = folder / "design"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    if data is None:
+        data = SVG if name.endswith(".svg") else b"# requirements\n\n1. 240 mm\n"
+    path.write_bytes(data)
+    return path
+
+
+# -- the diagram has to be a picture, not a path -----------------------------
+
+def test_an_svg_is_mintable_where_a_script_is_not(tmp_path):
+    store = bridge.FileTokens(limit=4)
+    diagram = write_svg(tmp_path / "concept.svg")
+    token = store.mint(diagram)
+    assert token and store.resolve(token) == os.path.abspath(diagram)
+
+
+def test_find_file_paths_picks_a_concept_diagram_out_of_prose():
+    found = bridge.find_file_paths(
+        "The sheet is at C:\\forge\\projects\\ankle-fan\\design\\concept.svg "
+        "- have a look before I build anything.")
+    assert found == ["C:\\forge\\projects\\ankle-fan\\design\\concept.svg"]
+
+
+def test_a_concept_diagram_named_in_a_reply_renders_as_an_image(bridges, tmp_path):
+    """The whole point of adding .svg: the artist SEES the sketch.
+
+    A design turn that hands back a path has handed back homework; one that
+    hands back a picture has handed back something to sign off on.
+    """
+    diagram = write_svg(tmp_path / "concept.svg")
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_REPLY": "Here is the concept sheet: %s" % diagram})
+    job = client.turn("design me an ankle fan")
+
+    assert len(job["files"]) == 1, job["files"]
+    entry = job["files"][0]
+    assert entry["path"] == os.path.abspath(diagram)
+    # "image", so the page draws it inline instead of offering a download.
+    assert entry["kind"] == "image"
+    assert entry["ext"] == ".svg"
+
+    status, headers, body = raw_get(client, entry["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "image/svg+xml"
+    assert body == SVG
+
+
+def test_an_svg_is_served_sandboxed(bridges, tmp_path):
+    """Markup is the one servable type that can carry code.
+
+    These diagrams are written by the assistant, never uploaded, so this is
+    belt and braces rather than a hole being plugged - but a document served
+    from this origin at its natural type is a document a browser would run
+    scripts in, and one header costs nothing.
+    """
+    diagram = write_svg(tmp_path / "concept.svg")
+    client = bridges(env_extra={"FAKE_CLAUDE_REPLY": "Sheet: %s" % diagram})
+    job = client.turn("design it")
+    _status, headers, _body = raw_get(client, job["files"][0]["url"])
+    policy = headers["Content-Security-Policy"]
+    assert "sandbox" in policy
+    assert "default-src " + chr(39) + "none" + chr(39) in policy
+
+    # ...and only there: a render is a bitmap and cannot run anything.
+    png = write_png(tmp_path / "render.png")
+    other = bridges(env_extra={"FAKE_CLAUDE_REPLY": "Render: %s" % png})
+    shot = other.turn("render it")
+    _status, png_headers, _body = raw_get(other, shot["files"][0]["url"])
+    assert "Content-Security-Policy" not in png_headers
+
+
+def test_an_svg_is_still_not_something_the_artist_can_attach():
+    """Servable and attachable are different lists, on purpose.
+
+    `.svg` travels out of a job into the conversation.  It does not travel in:
+    Claude Code's Read tool renders bitmaps, so an SVG attachment would be a
+    turn spent watching the model fail to look at it.
+    """
+    assert ".svg" not in bridge.IMAGE_EXTENSIONS
+    assert ".svg" in bridge.DISPLAY_IMAGE_EXTENSIONS
+    assert "Only images" in bridge.upload_error("concept.svg", SVG)
+    assert "not an image" in bridge.image_error("C:\\forge\\concept.svg")
+
+
+# -- the sheet on the card ---------------------------------------------------
+
+def test_project_design_reads_the_sheet_in_reading_order(projects):
+    """Not newest-first: what it has to do comes before what it looks like."""
+    folder = projects("ankle-fan")
+    for name in ("zeta.md", "components.md", "concept.svg", "requirements.md",
+                 "alpha.md"):
+        write_design(folder, name)
+    (folder / "design" / "scratch").mkdir()
+    found = bridge.project_design(str(folder))
+    assert [item["file"] for item in found] == [
+        "requirements.md", "concept.svg", "components.md", "alpha.md", "zeta.md"]
+    assert all(item["size"] > 0 and item["mtime"] > 0 for item in found)
+    assert found[1]["path"].endswith(os.path.join("design", "concept.svg"))
+
+
+def test_project_design_of_a_project_that_skipped_the_phase_is_empty(projects):
+    assert bridge.project_design(str(projects("cup"))) == []
+
+
+def test_a_card_carries_the_design_sheet(bridges, projects):
+    folder = projects("ankle-fan")
+    write_design(folder, "requirements.md")
+    write_design(folder, "concept.svg")
+    client = bridges()
+
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert [item["file"] for item in card["design"]] == ["requirements.md",
+                                                         "concept.svg"]
+    assert card["design_count"] == 2
+    # It has a part.py, so it is past the gate.
+    assert card["design_only"] is False
+
+
+def test_a_project_that_is_only_a_design_sheet_is_still_on_the_shelf(bridges,
+                                                                    tmp_path):
+    """The state the sign-off gate holds: real work, no geometry.
+
+    `project_entry` calls a folder with no script and no spec "somebody's
+    notes", which is the right answer for the workbench picker and the wrong
+    one here - a shelf that hid the sheet would hide the thing the artist is
+    being asked to approve.
+    """
+    root = tmp_path / "projects"
+    folder = root / "ankle-fan"
+    folder.mkdir(parents=True)
+    write_design(folder, "requirements.md")
+    write_design(folder, "concept.svg")
+    client = bridges()
+
+    _status, body = client.request("/library", timeout=40)
+    assert [p["name"] for p in body["projects"]] == ["ankle-fan"]
+    card = body["projects"][0]
+    assert card["design_only"] is True
+    assert card["design_count"] == 2
+    # Honest about what is not there yet, rather than inventing it.
+    assert card["script"] == "" and card["script_path"] == ""
+    assert card["has_params"] is False and card["param_count"] is None
+    assert card["spec"] is None and card["components"] == []
+    assert card["exports"] == [] and card["has_blend"] is False
+    assert card["mtime"] > 0
+
+
+def test_a_folder_with_neither_a_sheet_nor_a_part_is_still_not_a_project(bridges,
+                                                                        projects):
+    (projects.root / "notes").mkdir()
+    (projects.root / "notes" / "todo.txt").write_text("later", encoding="utf-8")
+    projects("cup")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    assert [p["name"] for p in body["projects"]] == ["cup"]
+
+
+def test_saving_a_design_doc_moves_the_cards_clock(bridges, projects):
+    """So the sheet somebody just revised sorts to the front of the shelf."""
+    folder = projects("ankle-fan")
+    old = time.time() - 4000
+    for name in ("part.py", "spec.json"):
+        os.utime(str(folder / name), (old, old))
+    os.utime(str(folder), (old, old))
+    write_design(folder, "requirements.md")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    assert body["projects"][0]["mtime"] > old + 1000
+
+
+def test_the_card_draws_the_design_sheet_and_says_when_nothing_is_built(client):
+    """The DOM half - the list, the fact, and the sentence for a bare sheet."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "project.design" in script and "lib-design" in script
+    assert "design doc" in script
+    assert "project.design_only" in script
+    assert "waiting for your sign-off" in script
+    assert ".lib-design" in fetch_text(client, "/webui/app.css")

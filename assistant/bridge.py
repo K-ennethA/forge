@@ -86,6 +86,29 @@ Phase 15 — the project's own ``.blend`` (additive, and model-free again)::
                                        wins: two Blenders would fight over port
                                        9876
 
+Phase 16 — the design phase (no new routes; two existing ones grew)::
+
+``GET  /file/<token>``                 also serves ``.svg`` as
+                                       ``image/svg+xml``, so the hand-written
+                                       concept diagram a design turn produced
+                                       draws inline in the conversation rather
+                                       than arriving as a path.  Markup is the
+                                       one servable type that can contain code,
+                                       so an SVG response carries a
+                                       ``Content-Security-Policy`` that
+                                       sandboxes it — these diagrams are
+                                       self-authored, and this is belt and
+                                       braces on top of that
+``GET  /library``                      cards gain ``design`` (the requirements
+                                       sheet, the concept diagram, the
+                                       components list, in reading order) and
+                                       ``design_only``.  A project that is a
+                                       design sheet with no ``part.py`` yet is a
+                                       card: that is exactly the state the
+                                       sign-off gate holds, and a shelf that
+                                       hid it would hide the thing the artist is
+                                       being asked to approve
+
 None of these spends a model turn: the workbench tab is the artist editing a
 part directly, and a slider that costs money per drag is a slider nobody drags.
 The bridge never *executes* the artist's script — that is the geometry service's
@@ -264,16 +287,35 @@ ASSET_TYPES = {
 
 #: What a minted token may point at.  Images because the artist attached or the
 #: assistant rendered them; ``.glb`` because that is what meshgen and the Godot
-#: exporter write, and a browser that cannot show one can still download it.
+#: exporter write, and a browser that cannot show one can still download it;
+#: ``.svg`` (Phase 16) because a concept diagram is written by the assistant
+#: itself and is the one deliverable of the design phase that has to be LOOKED
+#: at rather than read.
 SERVABLE_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".webp": "image/webp",
     ".bmp": "image/bmp",
+    ".svg": "image/svg+xml",
     ".glb": "model/gltf-binary",
     ".gltf": "model/gltf+json",
 }
+
+#: Servable types that the page draws as a picture rather than offering as a
+#: download.  Deliberately NOT :data:`IMAGE_EXTENSIONS`: that list is what the
+#: artist may *attach* and what Claude Code's Read tool renders, and an SVG is
+#: neither.  It travels the other way — out of a job, into the conversation.
+DISPLAY_IMAGE_EXTENSIONS = IMAGE_EXTENSIONS + (".svg",)
+
+#: An SVG is markup, and markup served from this origin at its natural type is
+#: a document a browser will happily run scripts in.  These diagrams are written
+#: by the assistant, not uploaded by anyone, so this is not a hole anyone is
+#: standing at — it is one sentence of belt and braces on the one servable type
+#: that can contain code.  ``sandbox`` alone puts the response in an opaque
+#: origin with scripts off; the rest says it may not fetch anything either.
+SVG_CSP = ("default-src 'none'; style-src 'unsafe-inline'; img-src data:; "
+           "sandbox")
 
 #: How many path tokens stay live.  Ten per job for the last twenty jobs, with
 #: room to spare; past this the oldest is forgotten and its ``/file`` 404s.
@@ -303,7 +345,7 @@ IMAGE_MAGIC = {
 #: quotes, brackets and backticks end a path because markdown wraps them.
 _FILE_PATH_RE = re.compile(
     r"(?:[A-Za-z]:[\\/]|\\\\|/)[^\s\"'`<>|*?\r\n]*?"
-    r"\.(?:png|jpe?g|webp|bmp|glb|gltf)\b",
+    r"\.(?:png|jpe?g|webp|bmp|svg|glb|gltf)\b",
     re.IGNORECASE)
 
 #: How deep into a tool's arguments the path scan walks.
@@ -375,6 +417,15 @@ PREVIEWS_KEPT = 40
 #: docs/architecture.md ("each project folder holds spec.json, part.py,
 #: exports/ and renders").
 EXPORTS_DIRNAME = "exports"
+#: Where the design phase's own files land (Phase 16, and the MCP server's
+#: `save_design_doc` — the two halves have to spell this folder the same way).
+DESIGN_DIRNAME = "design"
+#: The order a design sheet reads in, which is the order it is written in:
+#: what it has to do, what it looks like, what it is made of.  Anything else
+#: follows alphabetically.  Mirrors `forge_mcp.util.DESIGN_READING_ORDER`.
+DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "components.md")
+#: How many design documents one card lists.  Same reason as the exports cap.
+MAX_DESIGN_LISTED = 20
 #: How many export files one card lists.  A card is a card; a folder with two
 #: hundred STLs in it is a folder, and the count still tells the truth.
 MAX_EXPORTS_LISTED = 40
@@ -1584,7 +1635,7 @@ def file_entry(token, path, source):
         "path": path,
         "name": os.path.basename(path) or path,
         "ext": extension,
-        "kind": "image" if extension in IMAGE_EXTENSIONS else "model",
+        "kind": "image" if extension in DISPLAY_IMAGE_EXTENSIONS else "model",
         "source": source,
         "url": "/file/%s" % token,
     }
@@ -3078,6 +3129,44 @@ def project_exports(folder, limit=MAX_EXPORTS_LISTED):
     return out[:limit]
 
 
+def project_design(folder, limit=MAX_DESIGN_LISTED):
+    """``projects/<name>/design/*`` as ``{file, path, size, mtime}``, in reading
+    order.
+
+    The design phase (Phase 16) writes here BEFORE any geometry exists, so this
+    is routinely the only thing in a project folder — a requirements sheet, a
+    concept diagram and a components list, with no ``part.py`` yet and maybe
+    never.  Newest-first would be the wrong order for a sheet somebody reads:
+    what it has to do comes before what it looks like.
+    """
+    directory = os.path.join(folder, DESIGN_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    out = []
+    for name in sorted(names):
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        out.append({"file": name, "path": path, "size": int(info.st_size),
+                    "mtime": round(info.st_mtime, 3)})
+
+    def rank(item):
+        lowered = item["file"].lower()
+        try:
+            return (DESIGN_READING_ORDER.index(lowered), lowered)
+        except ValueError:
+            return (len(DESIGN_READING_ORDER), lowered)
+
+    out.sort(key=rank)
+    return out[:limit]
+
+
 def param_count_for(entry):
     """``(count, source)`` — how many dimensions this part has, if we can tell.
 
@@ -3121,9 +3210,9 @@ def project_blend(folder):
             "mtime": round(info.st_mtime, 3)}
 
 
-def project_mtime(folder, entry, exports, blend=None):
+def project_mtime(folder, entry, exports, blend=None, design=()):
     """When this project was last touched — the folder, its spec, its script,
-    its scene file, its exports, whichever moved last."""
+    its scene file, its exports, its design sheet, whichever moved last."""
     stamps = []
     if blend and blend.get("mtime"):
         stamps.append(float(blend["mtime"]))
@@ -3137,14 +3226,41 @@ def project_mtime(folder, entry, exports, blend=None):
         except OSError:
             pass
     stamps.extend(item["mtime"] for item in exports)
+    stamps.extend(item["mtime"] for item in design)
     return round(max(stamps), 3) if stamps else 0.0
+
+
+def design_only_entry(folder):
+    """A project that is a design sheet and nothing else, as the shelf sees it.
+
+    :func:`project_entry` answers ``None`` for a folder with no script and no
+    spec — "somebody's notes, not a part" — and that is the right answer for the
+    workbench's picker, which exists to open dimensions.  It is the wrong answer
+    for the Library: after the design phase writes a requirements sheet and a
+    concept diagram, a project has real work in it and no geometry yet, and a
+    shelf that hides it until somebody presses build has hidden the one thing
+    the artist is being asked to sign off on.
+    """
+    return {
+        "name": os.path.basename(os.path.normpath(folder)),
+        "path": folder,
+        "script": "",
+        "script_path": "",
+        "scripts": [],
+        "spec": None,
+        "has_params": False,
+        "object": "",
+    }
 
 
 def library_entry(folder):
     """One project as a library card, or ``None`` if the folder is not one."""
+    design = project_design(folder)
     entry = project_entry(folder)
     if entry is None:
-        return None
+        if not design:
+            return None
+        entry = design_only_entry(folder)
     spec = entry.get("spec") if isinstance(entry.get("spec"), dict) else {}
     exports = project_exports(folder)
     count, source = param_count_for(entry)
@@ -3166,7 +3282,17 @@ def library_entry(folder):
                      if isinstance(features, list) else []),
         "exports": exports,
         "export_count": len(exports),
-        "mtime": project_mtime(folder, entry, exports, blend),
+        # Phase 16: the design phase's own files — the requirements sheet, the
+        # concept diagram, the components list.  Paths, never links: the design
+        # folder is on this machine and so is the browser, and a download route
+        # would be a second way to read the filesystem for no gain.
+        "design": design,
+        "design_count": len(design),
+        # A project that has a sheet and no script has not been built yet, which
+        # is the state the sign-off gate exists to hold.  The card says so
+        # rather than drawing a part that is not there.
+        "design_only": bool(design) and not entry.get("script_path"),
+        "mtime": project_mtime(folder, entry, exports, blend, design),
         # Phase 15: does this project have a scene of its own to open?  A stat,
         # so the answer is the same whether Blender is running or not.
         "has_blend": blend["exists"],
@@ -3532,9 +3658,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, {"error": "No such file."})
                 return
             body, content_type, filename = found
-            self._send_bytes(200, body, content_type, {
-                "Content-Disposition": 'inline; filename="%s"'
-                                       % filename.replace('"', "")})
+            headers = {"Content-Disposition": 'inline; filename="%s"'
+                                              % filename.replace('"', "")}
+            if content_type == "image/svg+xml":
+                headers["Content-Security-Policy"] = SVG_CSP
+            self._send_bytes(200, body, content_type, headers)
             return
         if path == "/services/health":
             self._send(200, services_health())

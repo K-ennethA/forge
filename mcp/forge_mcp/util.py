@@ -13,6 +13,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from xml.etree import ElementTree
 
 from . import config
 from .errors import ForgeError
@@ -2447,6 +2448,224 @@ def fmt_open_report(script: Path, result: Mapping[str, Any]) -> str:
     lines.append(
         "  next: partforge_generate on the same script so the part is actually "
         "visible in the viewport — opening the panel builds nothing."
+    )
+    return "\n".join(lines)
+
+
+# --- Phase 16 (the design phase: requirements before geometry) ---------------
+#
+# The design phase writes prose and pictures BEFORE any geometry exists, so
+# `projects/<slug>/design/` is routinely the first thing in a project folder —
+# there is no part.py yet, and there may never be one if the sheet gets torn up
+# at the sign-off gate. That is the whole point of the phase, and it is why this
+# writer does not require the project to exist first.
+#
+# It is also the third and last tool in this server that writes to disk, so it
+# obeys `partforge_new_part`'s rules exactly: the project name is slugged, a
+# filename is a filename or it is refused, and the resolved path is checked a
+# second time against the folder it must be under.
+
+#: The one folder under a project that design documents may be written to.
+DESIGN_DIRNAME = "design"
+
+#: What a design document may be. Prose, a hand-authored schematic, structured
+#: numbers — and nothing that runs: `partforge_new_part` is the only tool that
+#: writes source, and this must not become a second one.
+DESIGN_EXTENSIONS = (".md", ".svg", ".json")
+
+#: Long enough for "requirements-revision-2.md", short enough to stay readable.
+DESIGN_NAME_MAX = 80
+
+#: A design filename is ONE plain name. Deliberately the same alphabet the
+#: bridge allows for its own assets: a percent sign is not in it, so an encoded
+#: traversal fails on the alphabet rather than on path arithmetic.
+_DESIGN_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+#: The order a design sheet reads in, which is the order it is written in.
+#: Anything else follows alphabetically.
+DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "components.md")
+
+
+def design_filename(filename: Any) -> str:
+    """`"requirements.md"` -> itself, or a refusal that says why.
+
+    Not slugged. A slug would have to invent an extension, and an extension is
+    the one thing here that carries meaning — `.svg` is a picture the artist
+    will look at, `.md` is a sheet they will read. So a name that is not already
+    a plain filename with a known extension is refused rather than cleaned.
+    """
+    raw = "" if filename is None else str(filename).strip().strip('"').strip()
+    if not raw:
+        raise ForgeError(
+            "No filename given. A design document is one plain name — "
+            '"requirements.md", "concept.svg", "components.md".'
+        )
+    for marker in _TRAVERSAL_MARKERS:
+        if marker in raw:
+            raise ForgeError(
+                f"{filename!r} is not a filename — it looks like a path (it "
+                f"contains {marker!r}). Design documents are always written to "
+                'projects/<project>/design/, so pass just the name, e.g. '
+                '"requirements.md".'
+            )
+    if raw.startswith("~") or raw.startswith("%") or raw.startswith("$"):
+        raise ForgeError(
+            f"{filename!r} is not a filename — it looks like a path or an "
+            'environment variable. Pass just the name, e.g. "requirements.md".'
+        )
+    if not _DESIGN_NAME_RE.match(raw):
+        raise ForgeError(
+            f"{filename!r} is not a usable filename. Letters, digits, dots, "
+            "dashes and underscores only, starting with a letter or a digit — "
+            'e.g. "requirements.md" or "concept-front.svg".'
+        )
+    if len(raw) > DESIGN_NAME_MAX:
+        raise ForgeError(
+            f"{filename!r} is longer than {DESIGN_NAME_MAX} characters. Give the "
+            'document a short name — "requirements.md".'
+        )
+    suffix = Path(raw).suffix.lower()
+    if suffix not in DESIGN_EXTENSIONS:
+        raise ForgeError(
+            f"{raw} is not a design document. Design documents are "
+            + ", ".join(DESIGN_EXTENSIONS)
+            + " — the sheet (.md), the concept diagram (.svg), or structured "
+            "numbers (.json). A part script is not one of these: that is "
+            "partforge_new_part's job, and it comes after the sign-off gate."
+        )
+    return raw
+
+
+def design_root(slug: str) -> Path:
+    """``projects/<slug>/design/`` — the one folder design documents live in."""
+    folder, _script, _spec = project_paths(slug)
+    return (folder / DESIGN_DIRNAME).resolve()
+
+
+def design_paths(slug: str, filename: str) -> Tuple[Path, Path]:
+    """``(design folder, file)`` for a slug, checked to stay in projects/.
+
+    Two independent guards, the same pair :func:`project_paths` uses: the
+    filename rules above, and then the resolved path measured against the folder
+    it has to be inside.
+    """
+    design = design_root(slug)
+    path = (design / filename).resolve()
+    try:
+        path.relative_to(design)
+    except ValueError:
+        raise ForgeError(
+            f"{filename!r} would write outside {design}. Design documents only "
+            "ever land in projects/<project>/design/."
+        ) from None
+    return design, path
+
+
+def normalize_design_content(content: Any, filename: str) -> str:
+    """The document as it will be written: LF endings, one trailing newline.
+
+    A `.svg` is parsed as XML first and a `.json` is parsed as JSON first — both
+    are self-authored, and that is exactly why they are checked. A diagram that
+    was cut off mid-tag renders as nothing at all in the artist's chat, and a
+    blank rectangle where the concept sketch should be is worse than no sketch:
+    it looks like the tool is broken rather than like the file is.
+    """
+    if content is None or not isinstance(content, str) or not content.strip():
+        raise ForgeError(
+            f"No content given for {filename}. Pass the whole document — the "
+            "requirements sheet, or the SVG source of the diagram."
+        )
+    text = content.replace("\r\n", "\n").replace("\r", "\n")
+    suffix = Path(filename).suffix.lower()
+    if suffix == ".svg":
+        check_svg(text, filename)
+    elif suffix == ".json":
+        try:
+            json.loads(text)
+        except ValueError as exc:
+            raise ForgeError(
+                f"{filename} is not valid JSON ({exc}). Nothing was written — "
+                "a half-written file is worse than none."
+            ) from None
+    return text if text.endswith("\n") else text + "\n"
+
+
+def check_svg(text: str, filename: str) -> None:
+    """Refuse anything that is not a parseable SVG document. Returns nothing."""
+    try:
+        root = ElementTree.fromstring(text)
+    except ElementTree.ParseError as exc:
+        raise ForgeError(
+            f"{filename} is not valid XML ({exc}), so it would not draw. "
+            "Nothing was written. Check every tag is closed — an SVG that was "
+            "cut off mid-element renders as an empty box in the artist's chat, "
+            "which reads as a broken tool rather than a broken file."
+        ) from None
+    tag = root.tag
+    # ElementTree keeps the namespace on the tag: '{http://www.w3.org/2000/svg}svg'.
+    local = tag.rsplit("}", 1)[-1] if isinstance(tag, str) else ""
+    if local.lower() != "svg":
+        raise ForgeError(
+            f"{filename} parses as XML but its root element is <{local or tag}>, "
+            "not <svg>, so nothing would draw. Nothing was written. A concept "
+            'diagram starts with <svg xmlns="http://www.w3.org/2000/svg" '
+            'viewBox="0 0 800 500">.'
+        )
+
+
+def design_documents(slug: str) -> List[Dict[str, Any]]:
+    """Every document in a project's design folder, in reading order."""
+    design = design_root(slug)
+    try:
+        names = sorted(entry.name for entry in design.iterdir()
+                       if entry.is_file())
+    except OSError:
+        return []
+    ranked = sorted(
+        names,
+        key=lambda name: (DESIGN_READING_ORDER.index(name.lower())
+                          if name.lower() in DESIGN_READING_ORDER
+                          else len(DESIGN_READING_ORDER), name.lower()),
+    )
+    out: List[Dict[str, Any]] = []
+    for name in ranked:
+        path = design / name
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        out.append({"file": name, "path": str(path), "size": int(size)})
+    return out
+
+
+def fmt_design_saved(
+    *,
+    slug: str,
+    path: Path,
+    documents: List[Dict[str, Any]],
+    overwritten: bool,
+) -> str:
+    """Where the document landed, and where the artist will find it."""
+    suffix = path.suffix.lower()
+    lines = [
+        f"{'Updated' if overwritten else 'Saved'} {path.name} — {path}",
+        f"  design sheet for {slug}: "
+        + ", ".join(item["file"] for item in documents),
+    ]
+    if suffix == ".svg":
+        lines.append(
+            "  it is a picture: name that full path in your reply and it renders "
+            "inline in the artist's chat, so they see the diagram rather than a "
+            "description of it."
+        )
+    lines.append(
+        f"  the {slug} card in the Library lists the design sheet, so this "
+        "survives the conversation."
+    )
+    lines.append(
+        "  nothing has been built. The design phase ends at the sign-off gate: "
+        "show the sheet, then ask them to say build it — or to say what to "
+        "change on it."
     )
     return "\n".join(lines)
 

@@ -266,10 +266,25 @@ disk, and **paths are never accepted from the client**. A token is minted
 - a path in the reply (`source: "reply"`) — "I saved it to `C:\...\cup.png`".
 
 Minting also requires the extension to be one of `.png .jpg .jpeg .webp .bmp
-.glb .gltf` **and** the file to exist right then; a path the model only
+.svg .glb .gltf` **and** the file to exist right then; a path the model only
 *mentioned* never becomes a broken image in the conversation. The same path
 noted three times is one token, so a reload gets the URLs it had. 400 tokens
 live at once; past that the oldest is forgotten and its `/file` 404s.
+
+`.svg` is Phase 16's addition, and it travels **one way**. The design phase's
+concept diagram is written by the assistant itself, and a design turn that hands
+back a path has handed back homework — the artist has to be able to *look* at
+the sketch before signing off on it, so an SVG is `kind: "image"` and the page
+draws it inline. It is deliberately not on `IMAGE_EXTENSIONS`, which is what may
+be **attached**: Claude Code's Read tool renders bitmaps, so an SVG attachment
+would be a turn spent watching the model fail to look at it. `/upload` refuses
+one for the same reason. And because markup is the one servable type that can
+carry code, an SVG response goes out with
+`Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src
+data:; sandbox` — these diagrams are self-authored, so this is belt and braces
+rather than a hole being plugged, but a document served from this origin at its
+natural type is a document a browser would run scripts in, and one header costs
+nothing.
 
 Everything else is a 404 with the same words — never minted, expired, or minted
 and since deleted all read alike, because a client that can tell those apart can
@@ -603,6 +618,18 @@ A card carries:
   should not look as settled as the core does. `companion_parts` are deliberately
   **not** chips — a companion part prints separately and is a sibling, not a
   component;
+- **the design sheet** (Phase 16) from `projects/<name>/design/` — the
+  requirements, the concept diagram and the components list `save_design_doc`
+  wrote before any geometry existed. In **reading order**, not newest-first:
+  `requirements.md`, `concept.svg`, `components.md`, then anything else
+  alphabetically, because what a thing has to do comes before what it looks
+  like. A project with a sheet and no `part.py` **is a card** — `design_only`,
+  and the card says "Designed, not built yet — the sheet is waiting for your
+  sign-off". That needed one change: `project_entry` answers `None` for a folder
+  with no script and no spec ("somebody's notes, not a part"), which is right
+  for the Workbench picker, whose whole job is opening dimensions, and wrong
+  here. A shelf that hid the sheet would hide the one thing the artist is being
+  asked to approve, so `library_entry` falls back to a design-only entry;
 - **exports** from `projects/<name>/exports/`, newest first, with sizes. The
   full path is the chip's tooltip rather than a link — these are files on this
   machine and the browser is on this machine, so a download route would be a
@@ -678,14 +705,16 @@ Each card in `projects` is:
 {"name", "path", "script", "script_path", "object", "has_params",
  "description", "param_count", "param_source", "components": [{"name", "role",
  "description"}], "features", "exports": [{"file", "path", "size", "mtime"}],
- "export_count", "mtime", "has_blend", "blend_path", "blend_size",
+ "export_count", "design": [{"file", "path", "size", "mtime"}], "design_count",
+ "design_only", "mtime", "has_blend", "blend_path", "blend_size",
  "blend_mtime", "has_thumbnail", "thumbnail_mtime", "thumbnail_url", "spec"}
 ```
 
 `param_count` is `null` when it could not be read without running anything, and
 `param_source` says which of the three answers it is (`spec`, `service`,
-`unread`). `mtime` is the latest of the folder, its `spec.json`, its script and
-its exports. The `scene` block is `get_scene_info`'s objects when Blender is up,
+`unread`). `mtime` is the latest of the folder, its `spec.json`, its script, its
+exports and its design sheet — so a sheet revised a minute ago sorts to the
+front of the shelf. The `scene` block is `get_scene_info`'s objects when Blender is up,
 and `{"ok": false, "blender": false, "error": <the panel's own sentence>}` when
 it is not — never an exception, because the rest of the answer is a folder read.
 

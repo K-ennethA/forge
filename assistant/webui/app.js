@@ -1410,7 +1410,9 @@
     body.appendChild(el("p", "lib-desc",
       project.description || (project.script
         ? project.script + "  →  object “" + project.object + "”"
-        : "No description in spec.json.")));
+        : (project.design_only
+            ? "Designed, not built yet — the sheet is waiting for your sign-off."
+            : "No description in spec.json."))));
 
     var facts = el("div", "lib-facts");
     if (typeof project.param_count === "number") {
@@ -1428,6 +1430,17 @@
                                                                : " exports"))
                      : "not exported yet");
     facts.appendChild(files);
+    var design = project.design || [];
+    if (design.length) {
+      // Phase 16: the sheet the artist is being asked to sign off on. Before
+      // the count, because on a design-only card it is the whole card.
+      var sheet = el("span", "lib-fact lib-design-fact",
+        design.length + (design.length === 1 ? " design doc" : " design docs") +
+        (project.design_only ? " — not built yet" : ""));
+      sheet.title = "Requirements, the concept diagram and the components list, "
+                  + "in " + project.path;
+      facts.appendChild(sheet);
+    }
     var scene = el("span", "lib-fact lib-blend", blendFact(project));
     scene.title = project.has_blend
       ? project.blend_path + " — Open loads this in Blender"
@@ -1450,6 +1463,22 @@
                              "+" + (parts.length - 8)));
       }
       body.appendChild(chips);
+    }
+
+    if (design.length) {
+      var sheetList = el("ul", "lib-exports lib-design");
+      design.slice(0, 4).forEach(function (file) {
+        var item = el("li");
+        item.appendChild(el("span", "f", file.file));
+        item.appendChild(el("span", "s", bytes(file.size)));
+        item.title = file.path;
+        sheetList.appendChild(item);
+      });
+      if (design.length > 4) {
+        sheetList.appendChild(el("li", "more",
+          "… and " + (design.length - 4) + " more in " + project.path));
+      }
+      body.appendChild(sheetList);
     }
 
     if (exports.length) {

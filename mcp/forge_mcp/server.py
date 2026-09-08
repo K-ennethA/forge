@@ -32,6 +32,9 @@ from .util import (
     action_name_for_clip,
     action_names,
     derivative_objects,
+    design_documents,
+    design_filename,
+    design_paths,
     ensure_parent_dir,
     flow_document,
     flow_path,
@@ -42,6 +45,7 @@ from .util import (
     fmt_circuit_plan,
     fmt_cloth_report,
     fmt_component_catalog,
+    fmt_design_saved,
     fmt_diagnose_report,
     fmt_export_report,
     fmt_flow_list,
@@ -93,6 +97,7 @@ from .util import (
     normalize_axes,
     normalize_actions,
     normalize_bone_mapping,
+    normalize_design_content,
     normalize_face_indices,
     normalize_keys,
     normalize_modules,
@@ -140,6 +145,11 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   projects/<slug>/part.py + spec.json) -> partforge_open_in_panel (the sliders
   appear in Blender) -> partforge_generate -> partforge_check. If a check fails,
   revise with partforge_new_part(overwrite=true) and check again.
+- When the request is functional, wearable, multi-component or novel, the design
+  phase comes FIRST: at most 5 questions in one message, then a requirements
+  sheet, a hand-written concept .svg and a components proposal, each saved with
+  save_design_doc into projects/<slug>/design/. Geometry starts only after the
+  artist signs off on the sheet. A trivially-shaped part skips all of this.
 - Print readiness is a pipeline: partforge_check first; if bed_fit fails it
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
@@ -1543,6 +1553,60 @@ def partforge_new_part(
         created=not existed,
         spec=spec,
         spec_created=spec_created,
+    )
+
+
+@app.tool()
+def save_design_doc(project: str, filename: str, content: str) -> str:
+    """Save one design document — requirements, a concept diagram, a components
+    list — into `projects/<project>/design/`, BEFORE any geometry exists.
+
+    This is the design phase's only writer. A functional, wearable,
+    multi-component or novel request does not go straight to geometry: it gets
+    questions, a requirements sheet, a 2D concept diagram and a components
+    proposal first, and then a sign-off gate. This tool is where each of those
+    lands so it survives the conversation.
+
+    - `project` is plain words ("ankle fan"); it becomes
+      `projects/ankle-fan/design/`. Anything path-shaped is refused — nothing is
+      ever written elsewhere. **The project folder does not have to exist yet**,
+      and usually does not: the sheet comes before the part.
+    - `filename` is one plain name with one of three extensions: `.md` (the
+      requirements sheet, the mechanics notes, the components list), `.svg` (the
+      concept diagram, which you write by hand — schematic boxes, lines,
+      dimension callouts and text, not art), `.json` (structured numbers).
+      Nothing that runs: a part script is `partforge_new_part`'s job, after the
+      gate.
+    - An `.svg` is parsed as XML and an `.json` as JSON before anything touches
+      disk. A diagram cut off mid-tag draws as an empty box in the artist's
+      chat, which reads as a broken tool — so a document that would not render
+      is refused and no file is created.
+    - Overwriting is normal. A design sheet iterates: the artist answers a
+      question, a number changes, you save it again over the same name.
+
+    Returns the path, the whole sheet as it now stands, and where the artist
+    sees it. Name an `.svg`'s full path in your reply and the diagram renders
+    inline in their chat.
+
+    Nothing is built by this call, and nothing should be until they sign off.
+    """
+    slug = project_slug(project)
+    name = design_filename(filename)
+    design, path = design_paths(slug, name)
+    text = normalize_design_content(content, name)
+
+    try:
+        design.mkdir(parents=True, exist_ok=True)
+        existed = path.exists()
+        path.write_text(text, encoding="utf-8", newline="\n")
+    except OSError as exc:
+        raise ForgeError(f"Could not write {path}: {exc}") from exc
+
+    return fmt_design_saved(
+        slug=slug,
+        path=path,
+        documents=design_documents(slug),
+        overwritten=existed,
     )
 
 

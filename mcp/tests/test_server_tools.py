@@ -68,6 +68,8 @@ EXPECTED_TOOLS = {
     # PartForge authoring (Phase 7 — the assistant makes new parts)
     "partforge_new_part",
     "partforge_open_in_panel",
+    # The design phase (Phase 16) — requirements and a diagram before geometry
+    "save_design_doc",
     # PartForge print readiness (Phase 2)
     "partforge_check",
     "partforge_segment",
@@ -158,7 +160,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 71
+    assert len(names) == 72
 
 
 def test_every_tool_is_documented() -> None:
@@ -213,6 +215,10 @@ def test_every_tool_has_an_object_schema() -> None:
         ("partforge_export", ["script_path", "output_path"]),
         ("partforge_new_part", ["name", "script_source"]),
         ("partforge_open_in_panel", ["script_path"]),
+        # Phase 16: all three are mandatory. A design document with no project
+        # has nowhere to live, one with no name cannot be re-saved over, and one
+        # with no content is the empty file that reads as a broken tool.
+        ("save_design_doc", ["project", "filename", "content"]),
         ("partforge_check", ["script_path"]),
         ("partforge_segment", ["script_path"]),
         ("partforge_load_segments", ["script_path"]),

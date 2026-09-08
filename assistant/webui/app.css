@@ -896,6 +896,11 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .lib-exports .s { flex: 0 0 auto; }
 .lib-exports .more { color: var(--text-faint); opacity: .8; }
 
+/* Phase 16 — the design sheet reads before the exports, so it is set apart
+   from them rather than run together into one list of files. */
+.lib-design { border-left: 2px solid var(--line); padding-left: 8px; }
+.lib-design-fact { color: var(--text); }
+
 .lib-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 
 /* Phase 15 — "clicking a model should open the associated blender file."  That
