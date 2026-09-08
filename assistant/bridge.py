@@ -86,6 +86,43 @@ Phase 15 — the project's own ``.blend`` (additive, and model-free again)::
                                        wins: two Blenders would fight over port
                                        9876
 
+Phase 13, revisited — the library's models (the artist: "library is still not
+showing all my actual 3d models")::
+
+``GET  /library``                      gains a ``models`` section: the ``.glb``
+                                       files the meshgen backends wrote (the
+                                       output folder ``meshgen/config.json``
+                                       names, plus anything in
+                                       ``FORGE_MODELS_DIRS``) and every mesh in
+                                       ``projects/<name>/models/``.  A ``stat``
+                                       each and nothing more, so this row draws
+                                       with every service on the machine stopped
+``POST /models/import``                ``import_generated`` in the running
+                                       Blender, repaired — the generated mesh
+                                       lands in the scene.  503 with the
+                                       panel's own sentence when Blender is down
+``POST /models/file``                  copy one indexed model into
+                                       ``projects/<slug>/models/``, so a mesh
+                                       that was born in a scratch folder gets a
+                                       home beside the part it belongs to.  The
+                                       source must be a file ``GET /library``
+                                       already indexes: this route files the
+                                       artist's own models, it is not a way to
+                                       copy arbitrary paths into the repo
+``POST /models/open``                  what a click on the card means — the
+                                       model, in Blender, whichever state the
+                                       machine is in.  Blender running:
+                                       ``import_generated`` into the scene they
+                                       are looking at (a running instance always
+                                       wins — two would fight over port 9876).
+                                       Blender closed: a windowed Blender is
+                                       started with the mesh imported into an
+                                       empty scene, through ``--python-expr``
+                                       because a ``.glb`` is not a ``.blend``
+                                       and cannot be opened as one.  No Blender
+                                       on the machine: a 501 naming the menu
+                                       (File > Import, not File > Open)
+
 Phase 16 — the design phase (no new routes; two existing ones grew)::
 
 ``GET  /file/<token>``                 also serves ``.svg`` as
@@ -207,6 +244,16 @@ Web UI environment (Phase 9)
                              talking to it (``POST /projects/<name>/open`` with
                              nothing listening).  Unset = PATH, then the
                              official installer's own folders
+``FORGE_MESHGEN_OUTPUT_DIR`` where the meshgen backends write their ``.glb``.
+                             Unset (the normal case) means read it out of
+                             ``meshgen/config.json``, which is the one file that
+                             has to be edited when the 19 GB model install moves
+                             — the same variable meshgen's own config honours, so
+                             the two halves cannot disagree
+``FORGE_MODELS_DIRS``        extra folders the library's models row indexes,
+                             separated by ``;``.  For meshes that came from
+                             somewhere else entirely — a download, another
+                             machine, a scratch export folder
 """
 
 import base64
@@ -431,6 +478,143 @@ MAX_DESIGN_LISTED = 20
 MAX_EXPORTS_LISTED = 40
 #: How many components one card lists, for the same reason.
 MAX_COMPONENTS_LISTED = 40
+
+# ---------------------------------------------------------------------------
+# Phase 13, revisited — the library's models row
+# ---------------------------------------------------------------------------
+#
+# The gap, in the artist's words: "library is still not showing all my actual 3d
+# models."  It was not: every generated mesh on this machine sat in the meshgen
+# output folder, which has no project folder, no spec.json and therefore no card
+# — four .glb files of real work, invisible to the one tab that exists to find
+# work.  So the shelf indexes the FILES too, from the folders they are actually
+# written to, and the two things an artist wants to do with one (put it in
+# Blender, give it a home) are buttons rather than a paragraph about Explorer.
+
+#: Where a project keeps the meshes it owns.  The MCP server spells this folder
+#: the same way (``forge_mcp.util.PROJECT_MODELS_DIRNAME``) so a generation filed
+#: at birth by ``generate_3d(project=...)`` lands where this row looks.
+MODELS_DIRNAME = "models"
+
+#: What counts as a model file.  ``.glb``/``.gltf`` are what the meshgen backends
+#: and the Godot exporter write; ``.stl``/``.obj`` because a downloaded mesh the
+#: artist dropped in ``projects/<name>/models/`` is their work too, and a shelf
+#: that could only see the formats Forge itself writes would be back to hiding
+#: things.
+MODEL_EXTENSIONS = (".glb", ".gltf", ".stl", ".obj", ".blend")
+
+#: A running Blender cannot be handed an arbitrary ``.blend`` safely from here:
+#: opening one discards the scene the artist is looking at, and the guarded
+#: confirmation flow (`open_project_blend`) is name-based, not path-based.  So a
+#: click on a ``.blend`` card while Blender is up answers with the manual path
+#: rather than pretending.  Blender closed, the file IS the positional argument
+#: — the one case where a model file opens natively.
+BLEND_RUNNING_HINT = (
+    "Blender is already open. To protect any unsaved work there, open this "
+    "file inside Blender itself: File > Open, then %s. Or close Blender and "
+    "click the card again and it will launch straight into this file.")
+
+#: ``meshgen/config.json`` — the one file that names every path into the 19 GB
+#: model install ("relocating C:/forge-models means editing this file and nothing
+#: else").  Read rather than hardcoded, so that promise stays true from here too.
+MESHGEN_CONFIG_PATH = os.path.join(REPO_ROOT, "meshgen", "config.json")
+MESHGEN_OUTPUT_KEY = "comfyui_output_dir"
+#: Only if the file is missing or unreadable — the same default
+#: ``meshgen/config.py`` carries, for the same reason.
+DEFAULT_MESHGEN_OUTPUT_DIR = "C:/forge-models/comfyui-output"
+#: The subfolder the backends actually write into: ComfyUI is launched with the
+#: output directory above and every workflow's save node is prefixed
+#: ``forge/<backend>`` (``meshgen/backends/comfyui_base.py``).  So the meshes are
+#: one level down, which is precisely why nothing looking only at the output
+#: root would have found them.
+MESHGEN_OUTPUT_PREFIX = "forge"
+
+#: How many models the row lists.  A cap for the same reason the exports one
+#: exists, plus a second: every listed model mints a ``/file`` token, and the
+#: token table is the bridge's own history of a job's files — a folder of three
+#: hundred meshes must not evict the render somebody is looking at.
+MAX_MODELS_LISTED = 60
+
+#: How long ``POST /models/import`` waits.  Voxel-repairing a 200k-triangle mesh
+#: blocks Blender's main thread for a while; the same budget the MCP server's
+#: ``_import_generated`` gives it.
+MODEL_IMPORT_TIMEOUT = 300.0
+
+#: What to say when a client names a path this bridge does not index.  One
+#: sentence for "no such file", "not a model" and "not in an indexed folder"
+#: together, on purpose: a route that tells those apart is a route that can be
+#: asked what exists on this machine.
+MODEL_UNKNOWN_HINT = (
+    "That is not a model this library indexes. The Models row lists what the "
+    "picture-to-3D service wrote and what is in projects/<name>/models/ — press "
+    "Refresh and use one of those.")
+
+#: Which Blender importer opens which kind of model file, best first.
+#:
+#: The same operator names and the same fallback order the add-on's own
+#: ``model.import_file`` uses, because they are answering the same question:
+#: Blender moved its mesh importers from Python add-ons to C++ between 3.x and
+#: 4.x (``import_mesh.stl`` -> ``wm.stl_import``), so a single hardcoded
+#: operator name is a spawn that works on one artist's machine and silently
+#: imports nothing on another's.  glTF never moved.
+MODEL_IMPORT_OPERATORS = {
+    ".glb": (("import_scene", "gltf"),),
+    ".gltf": (("import_scene", "gltf"),),
+    ".stl": (("wm", "stl_import"), ("import_mesh", "stl")),
+    ".obj": (("wm", "obj_import"), ("import_scene", "obj")),
+}
+
+#: What a spawned Blender is told to do before it imports: get rid of the
+#: startup **cube**.  "Open this model" that hands the artist their mesh *and* a
+#: cube sitting inside it is a small lie about what they asked for, and on a
+#: generated mesh at metre-ish scale the cube is not even visible until they
+#: zoom — they find it later, in the export.  Only meshes go: the default camera
+#: and lamp are useful and cost nothing, and ``read_homefile`` is not used at
+#: all so the add-on registered at startup — the one they will press Start
+#: Server in — is still there.
+MODEL_OPEN_EXPRESSION = """\
+import bpy
+for _forge_ob in list(bpy.data.objects):
+    if _forge_ob.type == "MESH":
+        bpy.data.objects.remove(_forge_ob, do_unlink=True)
+_forge_path = %(path)r
+_forge_problem = "no importer in this Blender"
+for _forge_module, _forge_name in %(ops)r:
+    _forge_group = getattr(bpy.ops, _forge_module, None)
+    if _forge_group is None or _forge_name not in dir(_forge_group):
+        continue
+    try:
+        getattr(_forge_group, _forge_name)(filepath=_forge_path)
+        _forge_problem = ""
+        break
+    except Exception as _forge_exc:
+        _forge_problem = str(_forge_exc)
+if _forge_problem:
+    print("[forge] could not open %%s: %%s" %% (_forge_path, _forge_problem))
+"""
+
+#: What to say when there is no Blender to start.  The sibling of
+#: :data:`BLENDER_MISSING_HINT`, and a separate sentence because the thing that
+#: cannot be opened is a mesh file rather than a project: "open it yourself" is
+#: File > Import here, not File > Open, and telling someone the wrong menu is
+#: worse than telling them nothing.
+MODEL_BLENDER_MISSING_HINT = (
+    "Blender was not found on this machine, so %s cannot be opened from here. "
+    "Start Blender yourself and use File > Import > glTF 2.0 (or set "
+    "FORGE_BLENDER_EXE to the full path of blender.exe and restart the "
+    "assistant).")
+
+#: The alphabet a project name is slugged into before a model is filed there.
+#: Mirrors ``forge_mcp.util.project_slug`` — the MCP server writes
+#: ``projects/<slug>/`` and this route writes into the same folders, so the two
+#: have to agree on what a name becomes or "file it into the bowl holder" makes
+#: a second folder next to the one that is already there.
+PROJECT_SLUG_MAX = 60
+_SLUG_SEPARATORS = re.compile(r"[^a-z0-9]+")
+#: Characters that can only be an attempt to name a location rather than a
+#: project.  Refused rather than slugged away, because a caller who wrote one
+#: meant it, and quietly writing somewhere else is the worst outcome here.
+_SLUG_TRAVERSAL_MARKERS = ("/", "\\", "..", ":", "\x00")
 
 #: Why a thumbnail cannot be taken.  A thumbnail is a photograph of the
 #: artist's work as it stands — it is deliberately NOT allowed to build the
@@ -842,16 +1026,19 @@ def spawn_creationflags():
     return DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
 
 
-def spawn_blender(exe, blend_path):
-    """Start a windowed Blender on ``blend_path``.  Returns the process.
+def spawn_detached(argv):
+    """Start a windowed Blender, however it was asked for.  Returns the process.
 
-    The artist clicked Open, so this is *them* launching Blender — the
+    The artist clicked, so this is *them* launching Blender — the
     no-windowed-Blender law binds agents and verification runs, not the person
     whose machine it is.  Nothing is piped: a detached GUI application with a
     pipe nobody reads is a GUI application that eventually blocks on its own
     stdout.
+
+    One function for both spawns (a project file, a model file) so the flags
+    above are decided in exactly one place: a second copy is a second chance to
+    write ``CREATE_NO_WINDOW`` and ship a Blender that never appears.
     """
-    argv = blender_launch_argv(exe, blend_path)
     kwargs = {
         "cwd": REPO_ROOT,
         "stdin": subprocess.DEVNULL,
@@ -864,6 +1051,45 @@ def spawn_blender(exe, blend_path):
     else:
         kwargs["start_new_session"] = True
     return subprocess.Popen(argv, **kwargs)
+
+
+def spawn_blender(exe, blend_path):
+    """Start a windowed Blender on ``blend_path`` (Phase 15's project file)."""
+    return spawn_detached(blender_launch_argv(exe, blend_path))
+
+
+def model_open_expression(path):
+    """The Python a spawned Blender runs to have the model on screen.
+
+    A ``.glb`` is not a ``.blend``, so it cannot be a positional argument the
+    way :func:`blender_launch_argv` passes a project file — Blender would try to
+    *open* it as a scene and fail.  It has to be **imported**, which means code,
+    which is what ``--python-expr`` is for.
+
+    The path is embedded with ``repr`` rather than pasted: a Windows path is
+    full of backslashes, and a mesh called ``dog's bowl.glb`` would otherwise
+    end the string literal in the middle of the artist's filename.
+    """
+    extension = os.path.splitext(str(path))[1].lower()
+    operators = MODEL_IMPORT_OPERATORS.get(extension, MODEL_IMPORT_OPERATORS[".glb"])
+    return MODEL_OPEN_EXPRESSION % {"path": str(path), "ops": tuple(operators)}
+
+
+def blender_model_argv(exe, model_path):
+    """The argv that starts a windowed Blender with ``model_path`` imported.
+
+    A ``.py`` executable runs under this interpreter, the same stand-in trick
+    :func:`blender_launch_argv` plays — which is what lets the spawn be proved
+    without a Blender window appearing on somebody's screen.
+    """
+    argv = [sys.executable, str(exe)] if str(exe).lower().endswith(".py") \
+        else [str(exe)]
+    return argv + ["--python-expr", model_open_expression(model_path)]
+
+
+def spawn_blender_with_model(exe, model_path):
+    """Start a windowed Blender with one model file imported, cube and all gone."""
+    return spawn_detached(blender_model_argv(exe, model_path))
 
 
 def launcher(path):
@@ -3333,14 +3559,329 @@ def scene_section():
             "unit_scale": result.get("unit_scale")}
 
 
+# ---------------------------------------------------------------------------
+# Phase 13, revisited — the library's models: the files, not the folders
+# ---------------------------------------------------------------------------
+
+def meshgen_output_dir():
+    """Where meshgen writes, read out of ``meshgen/config.json``.
+
+    Not hardcoded, and not guessed: that file's own first line promises that
+    relocating the model install is a one-file edit, and a second copy of
+    ``C:/forge-models`` in this module would quietly break that promise on the
+    day somebody moves it.  ``FORGE_MESHGEN_OUTPUT_DIR`` wins first — the same
+    variable ``meshgen/config.py`` honours for the same key, so pointing the
+    service at a scratch folder points this row at it too.
+    """
+    override = str(_env("FORGE_MESHGEN_OUTPUT_DIR", "") or "").strip()
+    if override:
+        return os.path.abspath(override)
+    try:
+        with open(MESHGEN_CONFIG_PATH, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        data = None
+    value = ""
+    if isinstance(data, dict):
+        value = str(data.get(MESHGEN_OUTPUT_KEY) or "").strip()
+    return os.path.abspath(value or DEFAULT_MESHGEN_OUTPUT_DIR)
+
+
+def extra_model_dirs():
+    """``FORGE_MODELS_DIRS`` as a list — semicolon-separated, Windows-style."""
+    raw = str(_env("FORGE_MODELS_DIRS", "") or "")
+    out = []
+    for piece in raw.split(";"):
+        text = piece.strip().strip('"')
+        if text:
+            out.append(os.path.abspath(os.path.expandvars(os.path.expanduser(text))))
+    return out
+
+
+def _dedupe_dirs(paths):
+    """Absolute paths, in order, without repeats — case-insensitively on Windows."""
+    out = []
+    seen = set()
+    for path in paths:
+        key = os.path.normcase(os.path.normpath(path))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(path)
+    return out
+
+
+def generated_model_dirs():
+    """Every folder a *generated* mesh can be sitting in, likeliest first.
+
+    Two from meshgen — the ``forge/`` prefix the backends write into and the
+    output root itself, because a workflow saved with a different prefix (or a
+    file the artist dropped there) is still their mesh — plus whatever
+    ``FORGE_MODELS_DIRS`` names.
+    """
+    root = meshgen_output_dir()
+    return _dedupe_dirs([os.path.join(root, MESHGEN_OUTPUT_PREFIX), root]
+                        + extra_model_dirs())
+
+
+def project_model_dirs():
+    """``projects/<name>/models`` for every project folder on disk."""
+    root = projects_dir()
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return []
+    out = []
+    for name in names:
+        folder = os.path.join(root, name)
+        if not _PROJECT_NAME_RE.match(name) or not os.path.isdir(folder):
+            continue
+        out.append(os.path.join(folder, MODELS_DIRNAME))
+    return out
+
+
+def indexed_model_dirs():
+    """Every folder ``GET /library`` reads models from.
+
+    This list is also the allow-list ``POST /models/import`` and
+    ``POST /models/file`` check a client's path against.  One function, so a
+    folder the shelf can show is exactly a folder those two will act on, and a
+    path the shelf never showed is one they refuse.
+    """
+    return _dedupe_dirs(generated_model_dirs() + project_model_dirs())
+
+
+def model_project_for(directory):
+    """``"cup"`` for ``projects/cup/models``, or ``""`` for anywhere else."""
+    parent = os.path.dirname(os.path.normpath(directory))
+    if os.path.basename(os.path.normpath(directory)).lower() != MODELS_DIRNAME:
+        return ""
+    if os.path.normcase(os.path.dirname(parent)) != os.path.normcase(projects_dir()):
+        return ""
+    return os.path.basename(parent)
+
+
+def model_entry(path, info=None, project=None):
+    """One model file as the row draws it, or ``None`` if it is not one.
+
+    A ``stat`` and a token, and nothing else: no mesh is opened, no header is
+    read and Blender is never asked.  The Models row has to draw with everything
+    on the machine stopped, exactly like the cards above it.
+    """
+    directory = os.path.dirname(path)
+    extension = os.path.splitext(path)[1].lower()
+    if extension not in MODEL_EXTENSIONS:
+        return None
+    if info is None:
+        try:
+            info = os.stat(path)
+        except OSError:
+            return None
+    owner = model_project_for(directory) if project is None else str(project or "")
+    # A token so the browser can fetch the bytes at all — .glb and .gltf are
+    # servable and .stl/.obj are not, which is the honest answer rather than a
+    # dead link.  There is no 3D preview here: a viewer is a library this page
+    # would have to fetch from a CDN, and this page works offline.
+    token = FILES.mint(path)
+    return {
+        "file": os.path.basename(path),
+        "path": path,
+        "dir": directory,
+        "dir_kind": "project" if owner else "generated",
+        "project": owner,
+        "ext": extension,
+        "size": int(info.st_size),
+        "mtime": round(info.st_mtime, 3),
+        "token": token,
+        "url": ("/file/%s" % token) if token else None,
+    }
+
+
+def scan_model_dir(directory, project=None):
+    """Every model file directly in one folder.  Never recursive.
+
+    A walk would follow the artist's own folders — a ComfyUI output tree has
+    every render in it — and turn a card row into a filesystem crawl.  The
+    folders that matter are named, and one of them is the ``forge/`` subfolder
+    precisely because that is where the backends write.
+    """
+    try:
+        names = sorted(os.listdir(directory))
+    except OSError:
+        return []
+    out = []
+    for name in names:
+        path = os.path.join(directory, name)
+        if os.path.splitext(name)[1].lower() not in MODEL_EXTENSIONS:
+            continue
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        entry = model_entry(path, info, project=project)
+        if entry is not None:
+            out.append(entry)
+    return out
+
+
+def scan_models(limit=MAX_MODELS_LISTED):
+    """The library's models section: every mesh on disk that Forge can see.
+
+    Newest first across *both* kinds, not grouped: an artist who generated
+    something four minutes ago wants it at the front of the row, and which
+    folder it happens to be sitting in is the badge on the card rather than the
+    sort order.
+    """
+    generated = generated_model_dirs()
+    models = []
+    for directory in generated:
+        models.extend(scan_model_dir(directory, project=""))
+    for directory in project_model_dirs():
+        models.extend(scan_model_dir(directory))
+    # Same path through two indexed folders is one card.
+    seen = set()
+    unique = []
+    for entry in models:
+        key = os.path.normcase(os.path.normpath(entry["path"]))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(entry)
+    unique.sort(key=lambda item: item["mtime"], reverse=True)
+    total = len(unique)
+    listed = unique[:limit]
+    section = {
+        "models": listed,
+        "count": len(listed),
+        "total": total,
+        "dirs": indexed_model_dirs(),
+        "generated_dirs": generated,
+        "projects_dir": projects_dir(),
+    }
+    if not listed:
+        section["note"] = (
+            "No model files yet. Generated meshes land in %s, and anything you "
+            "put in projects/<name>/models/ shows up here too."
+            % (generated[0] if generated else meshgen_output_dir()))
+    return section
+
+
+def project_slug(name):
+    """``"A small Cup!"`` -> ``"a-small-cup"``, or ``""`` when it is not a name.
+
+    :data:`_SLUG_TRAVERSAL_MARKERS` are refused rather than collapsed: a caller
+    who wrote a separator meant a location, and slugging it away would write
+    somewhere they did not ask for.  The mirror of the MCP server's
+    ``project_slug``, which is the writer this route has to agree with.
+    """
+    raw = str(name or "").strip().strip('"').strip()
+    if not raw:
+        return ""
+    for marker in _SLUG_TRAVERSAL_MARKERS:
+        if marker in raw:
+            return ""
+    if raw[:1] in ("~", "%", "$"):
+        return ""
+    slug = _SLUG_SEPARATORS.sub("-", raw.lower()).strip("-")
+    if len(slug) > PROJECT_SLUG_MAX:
+        slug = slug[:PROJECT_SLUG_MAX].rstrip("-")
+    # Belt and braces on top of the alphabet above: whatever came out of the
+    # slugger still has to be one plain folder name, or nothing is written.
+    if not slug or slug in (".", "..") or not _PROJECT_NAME_RE.match(slug):
+        return ""
+    return slug
+
+
+def project_models_dir(slug, create=False):
+    """``projects/<slug>/models``, or ``None`` if that is not inside ``projects/``.
+
+    The containment check is arithmetic on top of the alphabet gate in
+    :func:`project_slug`, the same two-independent-guards rule the MCP server's
+    ``project_paths`` uses for the only other place in Forge that writes files
+    the artist did not name.
+    """
+    if not slug:
+        return None
+    root = projects_dir()
+    folder = os.path.abspath(os.path.join(root, slug, MODELS_DIRNAME))
+    if os.path.dirname(os.path.dirname(folder)) != root:
+        return None
+    if create:
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except OSError:
+            return None
+    return folder
+
+
+def resolve_indexed_model(path):
+    """An absolute path this bridge indexes, or ``None``.
+
+    Paths are never taken on trust: what a client may name is exactly what
+    ``GET /library`` already showed it.  The check is on the file's *directory*,
+    matched against :func:`indexed_model_dirs` — not a prefix test, so a folder
+    that merely starts with the same characters is not inside anything.
+    """
+    resolved = normalize_image_path(path)
+    if not resolved:
+        return None
+    if os.path.splitext(resolved)[1].lower() not in MODEL_EXTENSIONS:
+        return None
+    try:
+        if not os.path.isfile(resolved):
+            return None
+    except OSError:
+        return None
+    directory = os.path.normcase(os.path.dirname(resolved))
+    for candidate in indexed_model_dirs():
+        if os.path.normcase(os.path.normpath(candidate)) == directory:
+            return resolved
+    return None
+
+
+def model_object_name(path):
+    """What the imported object is called: the file's own stem, Blender-capped.
+
+    The mirror of ``forge_mcp.util.generated_object_name`` — a ``.glb`` names its
+    mesh whatever the exporter felt like (``Mesh_0`` in practice), which tells
+    the artist nothing and collides with the next import.
+    """
+    stem = os.path.splitext(os.path.basename(str(path or "")))[0].strip()
+    if not stem:
+        return ""
+    return stem.encode("utf-8")[:MAX_OBJECT_NAME].decode("utf-8", "ignore")
+
+
+def free_model_path(folder, filename):
+    """``(path, renamed)`` — ``filename`` in ``folder``, never over something else.
+
+    Filing is a copy, and a copy that silently replaced a mesh the artist put
+    there last week would be the one unrecoverable thing this route could do.
+    """
+    stem, extension = os.path.splitext(filename)
+    candidate = os.path.join(folder, filename)
+    counter = 2
+    while os.path.exists(candidate) and counter < 1000:
+        candidate = os.path.join(folder, "%s-%d%s" % (stem, counter, extension))
+        counter += 1
+    return candidate, os.path.basename(candidate) != filename
+
+
 def scan_library(scene=True):
     """Every project as a card, plus what is in the scene right now."""
     root = projects_dir()
     scene_block = scene_section() if scene else None
+    # The models row is read whatever happens to the projects folder: the
+    # generated meshes live outside the repo entirely, and "there is no
+    # projects/ yet" must not also hide them.
+    models = scan_models()
     try:
         names = sorted(os.listdir(root))
     except OSError:
         return {"dir": root, "projects": [], "count": 0, "scene": scene_block,
+                "models": models,
                 "note": "There is no projects folder at %s yet. Ask the "
                         "assistant for a part and one appears." % root}
     out = []
@@ -3351,7 +3892,8 @@ def scan_library(scene=True):
         entry = library_entry(folder)
         if entry is not None:
             out.append(entry)
-    return {"dir": root, "projects": out, "count": len(out), "scene": scene_block}
+    return {"dir": root, "projects": out, "count": len(out), "scene": scene_block,
+            "models": models}
 
 
 # ---------------------------------------------------------------------------
@@ -3752,6 +4294,17 @@ class Handler(BaseHTTPRequestHandler):
         # -- the library (Phase 13) --------------------------------------
         if path.startswith("/projects/") and path.endswith("/thumbnail"):
             self._make_thumbnail(path[len("/projects/"):-len("/thumbnail")])
+            return
+
+        # -- the library's models (Phase 13, revisited) ------------------
+        if path == "/models/import":
+            self._model_import()
+            return
+        if path == "/models/file":
+            self._model_file()
+            return
+        if path == "/models/open":
+            self._model_open()
             return
 
         # -- project scene files (Phase 15) ------------------------------
@@ -4329,6 +4882,234 @@ class Handler(BaseHTTPRequestHandler):
             "thumbnail_url": "/projects/%s/thumbnail" % entry["name"],
             "thumbnail_mtime": mtime,
             "bounds_mm": result.get("bounds_mm"),
+        })
+
+    # -- the library's models (Phase 13, revisited) ----------------------
+    def _model(self, payload):
+        """The indexed model a request names, or ``None`` — answered on a miss.
+
+        One sentence for every kind of miss, deliberately: "no such file", "not
+        a mesh" and "not somewhere this library looks" told apart would make
+        this route a way to ask what is on the machine.
+        """
+        resolved = resolve_indexed_model(payload.get("path"))
+        if resolved is None:
+            self._send(404, {"error": MODEL_UNKNOWN_HINT,
+                             "path": str(payload.get("path") or "")})
+            return None
+        return resolved
+
+    def _model_into_scene(self, resolved, payload, route=""):
+        """``import_generated`` in the running Blender.  Answers, either way.
+
+        Straight through to the add-on's ``import_generated``, which is the
+        command the MCP server's ``generate_3d`` already ends on — same
+        parameters, same mandatory repair.  The repair is the default and stays
+        the default: raw image-to-3D output is never manifold, and nothing
+        downstream (print checks, segmenting, retopo) works until it is one
+        closed shell.
+
+        Shared by ``POST /models/import`` (the button) and the *running* branch
+        of ``POST /models/open`` (the card click), because those are one action:
+        with Blender already up, "open this model" is the mesh arriving in the
+        scene the artist is looking at.  Two copies of this would be two
+        answers that could drift, and one of them would eventually forget the
+        repair.
+        """
+        wanted = payload.get("repair")
+        params = {"path": resolved, "repair": True if wanted is None else bool(wanted)}
+        name = model_object_name(resolved)
+        if name:
+            params["name"] = name
+        base = {"path": resolved, "file": os.path.basename(resolved)}
+        if route:
+            base["route"] = route
+        try:
+            result = blender_command("import_generated", params,
+                                     MODEL_IMPORT_TIMEOUT)
+        except BlenderDown as exc:
+            # The file is on disk and safe; this is Blender being closed, which
+            # is one sentence with one button in it — the panel's own.
+            self._send(503, dict(base, error=str(exc), blender=False,
+                                 imported=False, opened=False))
+            return
+        except BlenderRefused as exc:
+            self._send(502, dict(base, error=str(exc), blender=True,
+                                 imported=False, opened=False))
+            return
+        answer = dict(base)
+        answer.update({
+            "imported": True,
+            "opened": True,
+            "blender": True,
+            "object": result.get("object"),
+            "vertex_count": result.get("vertex_count"),
+            "face_count": result.get("face_count"),
+            "repaired": bool(result.get("repaired")),
+            "dimensions_mm": result.get("dimensions_mm"),
+            "result": result,
+        })
+        self._send(200, answer)
+
+    def _model_import(self):
+        """Put one indexed model into the Blender scene, repaired."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        resolved = self._model(payload)
+        if resolved is None:
+            return
+        self._model_into_scene(resolved, payload)
+
+    def _model_open(self):
+        """Open one indexed model in Blender — three routes, the same one rule.
+
+        The artist clicked the card, and what they mean by that does not depend
+        on whether Blender happens to be running.  What *has* to depend on it is
+        how: a running Blender always wins, exactly as it does for a project's
+        own scene file (``POST /projects/<name>/open``), because two instances
+        would fight over port 9876 and the add-on would end up talking to
+        whichever won the race.
+
+        1. ``running`` — the mesh is imported into the scene they are looking
+           at, voxel-repaired on the way in.  Identical to pressing Import,
+           which is the point: one click, one meaning.
+        2. ``spawned`` — nothing is listening, so a windowed Blender starts with
+           the model imported and the startup cube gone.  A ``.glb`` is not a
+           ``.blend`` and cannot be a positional argument, so this goes through
+           ``--python-expr`` (:func:`model_open_expression`) rather than the
+           project-file spawn.
+        3. ``no_blender`` — there is no Blender on this machine to start.  A
+           501 naming the menu they would use by hand, which for a mesh file is
+           File > Import, not File > Open.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        resolved = self._model(payload)
+        if resolved is None:
+            return
+        base = {"path": resolved, "file": os.path.basename(resolved)}
+        is_blend = resolved.lower().endswith(BLEND_SUFFIX)
+
+        if blender_listening():
+            if is_blend:
+                # An arbitrary .blend into a live session would discard the
+                # scene they are looking at; the safe flows are manual.
+                self._send(200, dict(base, route="running", opened=False,
+                                     imported=False, manual=True,
+                                     note=BLEND_RUNNING_HINT % resolved))
+                return
+            self._model_into_scene(resolved, payload, route="running")
+            return
+
+        exe = resolve_blender()
+        if not exe:
+            hint = ("Install Blender, then click again — a .blend opens "
+                    "directly." if is_blend
+                    else MODEL_BLENDER_MISSING_HINT % resolved)
+            self._send(501, dict(base, route="no_blender", opened=False,
+                                 imported=False, blender=False, error=hint))
+            return
+        try:
+            if is_blend:
+                proc = spawn_detached([exe, resolved])
+            else:
+                proc = spawn_blender_with_model(exe, resolved)
+        except OSError as exc:
+            self._send(500, dict(base, route="no_blender", opened=False,
+                                 imported=False, blender=False,
+                                 error="Could not start %s: %s" % (exe, exc)))
+            return
+
+        self._send(200, dict(base, **{
+            "route": "spawned",
+            "opened": True,
+            # Nothing has been imported into a *listening* Blender: the mesh is
+            # being imported by a Blender that is still starting, and the add-on
+            # is not answering yet.  Saying "imported" here would have the page
+            # claim something it cannot see.
+            "imported": False,
+            "blender": False,
+            "pid": proc.pid,
+            "executable": exe,
+            "note": "Blender is starting with %s imported. Give it a few "
+                    "seconds — then press N in the 3D view, open the Forge tab "
+                    "and Start Server so Forge can work on it."
+                    % os.path.basename(resolved),
+        }))
+
+    def _model_file(self):
+        """Copy one indexed model into ``projects/<slug>/models/``.
+
+        A **copy**, not a move, and for the same reason ``save_project_blend``
+        saves a copy: the meshgen output folder is where the service will look
+        for its own output next time, and a library button that moved files out
+        from under another service would be a bug nobody would connect to the
+        button they pressed.
+
+        Two independent gates, because this writes into the repo: the source has
+        to be a file :func:`indexed_model_dirs` already lists, and the
+        destination has to be one plain slug directly under ``projects/``.
+        Neither is derived from the other.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        resolved = self._model(payload)
+        if resolved is None:
+            return
+        raw = payload.get("project")
+        slug = project_slug(raw)
+        if not slug:
+            self._send(400, {
+                "error": "%r is not a project name. Pass the name of a project — "
+                         '"bowl holder" becomes projects/bowl-holder/models/.'
+                         % (str(raw or ""),),
+                "path": resolved})
+            return
+        folder = project_models_dir(slug, create=True)
+        if folder is None:
+            self._send(400, {
+                "error": "%s could not be made under %s." % (slug, projects_dir()),
+                "path": resolved, "project": slug})
+            return
+
+        if os.path.normcase(os.path.dirname(resolved)) == os.path.normcase(folder):
+            # Already filed there.  Not an error and not a second copy: the card
+            # the page wanted back is the one it already had.
+            entry = model_entry(resolved)
+            self._send(200, {"project": slug, "filed": False, "copied": False,
+                             "renamed": False, "folder": folder,
+                             "path": resolved, "source": resolved,
+                             "model": entry,
+                             "note": "%s is already in %s."
+                                     % (os.path.basename(resolved), folder)})
+            return
+
+        destination, renamed = free_model_path(folder, os.path.basename(resolved))
+        try:
+            shutil.copy2(resolved, destination)
+        except OSError as exc:
+            self._send(500, {"error": "Could not copy %s into %s: %s"
+                                      % (resolved, folder, exc),
+                             "path": resolved, "project": slug})
+            return
+        entry = model_entry(destination, project=slug)
+        self._send(200, {
+            "project": slug,
+            "filed": True,
+            "copied": True,
+            "renamed": renamed,
+            "folder": folder,
+            "path": destination,
+            "source": resolved,
+            "model": entry,
+            "note": "Copied into %s. The original is still in %s."
+                    % (folder, os.path.dirname(resolved)),
         })
 
     # -- project scene files (Phase 15) ----------------------------------

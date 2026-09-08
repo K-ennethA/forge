@@ -1599,6 +1599,217 @@
     return card;
   }
 
+  // --------------------------------------------------------- the models row --
+  //
+  // "library is still not showing all my actual 3d models."  It was not: a mesh
+  // the picture-to-3D service generated has no folder in projects/, no
+  // spec.json and therefore no card, so four .glb files of real work were
+  // invisible to the one tab that exists to find work.  This row lists the
+  // FILES — generated ones and anything in projects/<name>/models/ — and gives
+  // each the two things an artist wants to do with one: put it in Blender, and
+  // give it a home.
+  //
+  // No picture on these cards.  A .glb preview means a 3D viewer, which means
+  // fetching a library from a CDN, and this page works offline; a badge, a size
+  // and a date say what the file is without pretending to show it.
+
+  function stamp(mtime) {
+    var seconds = numberOr(mtime, 0);
+    if (!seconds) { return "unknown date"; }
+    var when = new Date(seconds * 1000);
+    if (isNaN(when.getTime())) { return "unknown date"; }
+    var today = new Date();
+    var sameDay = when.toDateString() === today.toDateString();
+    return sameDay ? when.toLocaleTimeString([], { hour: "numeric",
+                                                   minute: "2-digit" })
+                   : when.toLocaleDateString();
+  }
+
+  //: The projects a model can be filed into — the same names the Studio's
+  //: picker offers, read off the library answer this row was drawn from rather
+  //: than fetched a second time.
+  function projectNames() {
+    var projects = (lib.data && lib.data.projects) || [];
+    return projects.map(function (project) { return project.name; });
+  }
+
+  function modelCard(model) {
+    var card = el("section", "lib-card is-model is-clickable");
+    card.dataset.model = model.path;
+
+    // "Clicking a model should open the associated blender file."  A card is
+    // not a link and not a button, so it has to be told to behave like one:
+    // the pointer, a role, a tab stop, and Enter/Space — otherwise this is a
+    // feature only a mouse can reach.
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.title = "Open " + model.file + " in Blender — into the scene if "
+               + "Blender is running, otherwise Blender starts with it";
+    card.addEventListener("click", function (event) {
+      // The buttons and the picker inside the card are their own actions.
+      if (event.target.closest("button, select, option, a")) { return; }
+      openModel(model, card);
+    });
+    card.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" && event.key !== " ") { return; }
+      if (event.target !== card) { return; }
+      event.preventDefault();
+      openModel(model, card);
+    });
+
+    var body = el("div", "lib-body");
+    body.appendChild(el("h3", null, model.file));
+
+    var facts = el("div", "lib-facts");
+    var badge = el("span", "lib-badge" +
+      (model.dir_kind === "project" ? " is-project" : " is-generated"),
+      model.dir_kind === "project" ? (model.project || "project") : "generated");
+    badge.title = model.dir_kind === "project"
+      ? "In projects/" + (model.project || "?") + "/models/"
+      : "Written by the picture-to-3D service, in " + model.dir;
+    facts.appendChild(badge);
+    facts.appendChild(el("span", "lib-fact", bytes(model.size)));
+    facts.appendChild(el("span", "lib-fact", stamp(model.mtime)));
+    facts.appendChild(el("span", "lib-fact", (model.ext || "").replace(".", "")));
+    body.appendChild(facts);
+
+    // The path, not a link: the file is on this machine and so is the browser.
+    var where = el("p", "lib-desc lib-path", model.dir);
+    where.title = model.path;
+    body.appendChild(where);
+
+    var actions = el("div", "lib-actions");
+
+    var bring = el("button", "btn tiny lib-open", "Import into Blender");
+    bring.type = "button";
+    bring.title = "Bring " + model.file + " into the scene, voxel-repaired on "
+                + "the way in";
+    bring.addEventListener("click", function () { importModel(model, card); });
+    actions.appendChild(bring);
+    body.appendChild(actions);
+
+    // Filing is a second row: it needs a destination, and a picker crammed in
+    // beside the buttons reads as a filter on them rather than an argument.
+    var names = projectNames();
+    var filing = el("div", "lib-actions lib-file-row");
+    if (!names.length) {
+      filing.appendChild(el("span", "lib-fact",
+        "No projects yet to file it into."));
+    } else {
+      var picker = el("select", "lib-file-pick");
+      picker.title = "Which project this model belongs to";
+      names.forEach(function (name) {
+        var option = el("option", null, name);
+        option.value = name;
+        picker.appendChild(option);
+      });
+      filing.appendChild(picker);
+      var file = el("button", "btn tiny lib-file", "File into project…");
+      file.type = "button";
+      file.title = "Copy it into projects/<name>/models/ — the original stays "
+                 + "where it is";
+      file.addEventListener("click", function () {
+        fileModel(model, picker.value, card);
+      });
+      filing.appendChild(file);
+    }
+    body.appendChild(filing);
+    body.appendChild(el("div", "lib-status"));
+
+    card.appendChild(body);
+    return card;
+  }
+
+  // The card click.  One gesture, and what it means does not depend on whether
+  // Blender happens to be running — only *how* does, and the bridge decides
+  // that (running: into the scene; closed: a Blender starts with it).  So there
+  // is nothing to check here first: asking /health before clicking would be a
+  // second answer that could already be stale by the time the click lands.
+  function openModel(model, card) {
+    // One click at a time, and this guard is not cosmetic: with Blender closed
+    // a second click would start a SECOND Blender, and two of them fight over
+    // port 9876 — the exact thing the bridge refuses to do to itself.  A card
+    // has no button to disable, so the card carries the flag.
+    if (card.dataset.opening === "1") { return Promise.resolve(); }
+    card.dataset.opening = "1";
+    cardStatus(card, "opening in Blender…");
+    return api("/models/open", { body: { path: model.path } })
+      .then(function (res) {
+        delete card.dataset.opening;
+        if (!res.ok) {
+          // 501 is "there is no Blender on this machine", which is a sentence
+          // about their machine rather than about this model.
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        if (res.data.route === "spawned") {
+          cardStatus(card, res.data.note || "Blender is starting with it.");
+          return;
+        }
+        cardStatus(card, "In the scene as “" + (res.data.object || model.file) +
+                   "”" + (res.data.repaired ? ", voxel-repaired." : "."));
+      });
+  }
+
+  function importModel(model, card) {
+    var button = card.querySelector(".lib-open");
+    if (button) { button.disabled = true; }
+    cardStatus(card, "importing — a repair on a big mesh takes a moment…");
+    return api("/models/import", { body: { path: model.path } })
+      .then(function (res) {
+        if (button) { button.disabled = false; }
+        if (!res.ok) {
+          // 503 is the common one and it is Blender being closed: one sentence
+          // with one button in it, on the card rather than in a banner.
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        cardStatus(card, "In the scene as “" + (res.data.object || model.file) +
+                   "”" + (res.data.repaired ? ", voxel-repaired." : "."));
+      });
+  }
+
+  function fileModel(model, project, card) {
+    var button = card.querySelector(".lib-file");
+    if (!project) { return Promise.resolve(); }
+    if (button) { button.disabled = true; }
+    cardStatus(card, "copying into " + project + "…");
+    return api("/models/file", { body: { path: model.path, project: project } })
+      .then(function (res) {
+        if (button) { button.disabled = false; }
+        if (!res.ok) {
+          cardStatus(card, res.data.error ||
+                     ("The bridge answered " + res.status + "."), "bad");
+          return;
+        }
+        cardStatus(card, res.data.note || ("Filed into " + project + "."));
+        // The row now has a second card for the copy, so redraw it.
+        loadLibrary();
+      });
+  }
+
+  function renderModels(data) {
+    var host = $("library-models");
+    host.textContent = "";
+    var section = (data && data.models) || {};
+    var models = section.models || [];
+    if (!models.length) {
+      var empty = card("No 3D model files yet");
+      empty.appendChild(el("p", null, section.note ||
+        "Generated meshes appear here, and so does anything you put in " +
+        "projects/<name>/models/."));
+      host.appendChild(empty);
+      return;
+    }
+    models.forEach(function (model) { host.appendChild(modelCard(model)); });
+    if (section.total > models.length) {
+      host.appendChild(el("p", "muted small",
+        "… and " + (section.total - models.length) + " more on disk."));
+    }
+  }
+
   function renderLibrary(data) {
     var host = $("library");
     host.textContent = "";
@@ -1613,6 +1824,11 @@
         host.appendChild(libraryCard(project));
       });
     }
+
+    // The models the artist actually has, between the parts and the scene: a
+    // generated mesh is neither a project folder nor something Blender is
+    // holding, and before this row it was on neither.
+    renderModels(data);
 
     var sceneHost = $("library-scene");
     sceneHost.textContent = "";
@@ -1646,9 +1862,13 @@
     var host = $("library");
     host.textContent = "";
     host.appendChild(el("p", "muted small", "Reading projects/…"));
+    var modelHost = $("library-models");
+    modelHost.textContent = "";
+    modelHost.appendChild(el("p", "muted small", "Reading your model files…"));
     return api("/library").then(function (res) {
       if (!res.ok) {
         host.textContent = "";
+        modelHost.textContent = "";
         var box = card("Could not read the library", "bad");
         box.appendChild(el("p", null, res.data.error ||
           ("The bridge answered " + res.status + ".")));
@@ -1856,6 +2076,10 @@
     $("tab-library").addEventListener("click", function () { showTab("library"); });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
     $("library-refresh").addEventListener("click", loadLibrary);
+    // The models row rides the same fetch: one folder read draws the whole tab,
+    // and a second button that refetched half of it would be two answers that
+    // could disagree.
+    $("models-refresh").addEventListener("click", loadLibrary);
     // …and a link somebody pasted, or edited in the address bar.
     window.addEventListener("hashchange", function () {
       var wanted = tabFromHash();

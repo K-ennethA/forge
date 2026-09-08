@@ -90,6 +90,7 @@ from .util import (
     fmt_workspace_report,
     fmt_written_files,
     generated_object_name,
+    generated_output_path,
     keys_frame_range,
     meshgen_image_path,
     next_rig_step,
@@ -2548,6 +2549,7 @@ def generate_3d(
     image_path: str,
     backend: Optional[str] = None,
     wait: bool = True,
+    project: Optional[str] = None,
 ) -> str:
     """Turn a PHOTO or SKETCH into a 3D mesh in the scene. Takes about 5 minutes.
 
@@ -2575,6 +2577,15 @@ def generate_3d(
       other installed model; anything else is refused with the list.
     - `wait`: true (default) blocks until the mesh is in the scene. false hands
       back the job id immediately — then poll meshgen_status(job_id).
+    - `project`: the part this mesh belongs to. Pass it whenever there is one
+      and the .glb is written straight into `projects/<slug>/models/` instead of
+      the service's scratch folder — so it appears on the Library tab's Models
+      row badged with its project, and is still findable in a month. Omit it
+      only for a genuinely loose experiment; the default stays the meshgen
+      output folder. The name is slugged the same way partforge_new_part slugs
+      one ("dog bowl holder" -> `dog-bowl-holder`), so pass the SAME name you
+      used for the part and both halves land in one folder. Nothing is ever
+      overwritten: a second generation for the same picture becomes `-2`.
 
     What comes back is honest about three things, and so must you be:
 
@@ -2594,7 +2605,17 @@ def generate_3d(
     image = meshgen_image_path(image_path)
     chosen = (backend or "").strip() or None
 
-    submitted = meshgen_client.generate3d(str(image), backend=chosen)
+    # Born filed, when there is a project to file it into. The path is resolved
+    # BEFORE the job is submitted so a bad project name costs nothing — five
+    # minutes of GPU work and then a refusal about a folder name would be the
+    # worst possible order to discover it in.
+    filed_to = ""
+    output: Optional[str] = None
+    if project is not None and str(project).strip():
+        filed_to = project_slug(project)
+        output = str(generated_output_path(filed_to, image))
+
+    submitted = meshgen_client.generate3d(str(image), backend=chosen, output=output)
     job_id = str(submitted.get("job_id") or "").strip()
     if not job_id:
         raise BackendError(
@@ -2603,7 +2624,7 @@ def generate_3d(
         )
 
     if not wait:
-        return fmt_submitted_report(image, submitted)
+        return fmt_submitted_report(image, submitted, filed_to)
 
     job, stages = meshgen_client.wait_for_job(job_id)
     state = str(job.get("state") or "").lower()
@@ -2617,13 +2638,14 @@ def generate_3d(
             "meshgen_status names the files and where they go."
         )
     if state != "done":
-        return fmt_generate_report(image, submitted, job, stages)
+        return fmt_generate_report(image, submitted, job, stages, filed_to=filed_to)
 
     mesh_path = str(job.get("mesh_path") or "")
     if not mesh_path:
         return fmt_generate_report(
             image, submitted, job, stages,
             problems=["meshgen finished but named no file, so nothing could be imported."],
+            filed_to=filed_to,
         )
 
     imported, problems = _import_generated(mesh_path, generated_object_name(image))
@@ -2631,7 +2653,8 @@ def generate_3d(
     if imported:
         check, check_problems = _check_generated(imported.get("object"))
         problems.extend(check_problems)
-    return fmt_generate_report(image, submitted, job, stages, imported, check, problems)
+    return fmt_generate_report(image, submitted, job, stages, imported, check,
+                               problems, filed_to=filed_to)
 
 
 @app.tool()

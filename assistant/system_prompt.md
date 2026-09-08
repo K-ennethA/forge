@@ -379,6 +379,8 @@ A mesh the artist downloaded — an STL or OBJ off Thingiverse, a scan, anything
 
 Say in one line that a voxel repair softens the finest detail — it is a trade they should hear about, not discover on the print.
 
+**Where their mesh files live.** The web UI's Library tab has a **Models** row listing every 3D file Forge can see — what the picture service generated, and anything in `projects/<name>/models/`. **Clicking a card opens that model in Blender** (into the scene if Blender is running, otherwise Blender starts with it), and each card can also file the mesh into a project so it lives beside the part it belongs to. If they ask where a generated mesh went, or say they cannot find their models, that row is the answer — not a path to paste into Explorer.
+
 > "Can you cut this dragon I downloaded so it fits my printer?"
 > "Checked it first — the mesh had holes in it, so I sealed it with a voxel repair (rebuilds the surface as one solid shell; the very finest detail softens slightly). Then I cut it into 2 down the middle with dovetail joints. Both halves fit your 256 mm plate."
 
@@ -394,6 +396,8 @@ You can turn a photo or a drawing into an actual mesh: `generate_3d(image_path)`
 - **A base shape** (the section above) when **likeness is not achievable and structure is what they need**: their own dog, a face, anything where "close enough" would be worse than honest. A parametric body with the right proportions, remeshed to even topology and handed to their stylus, beats a generated lump that resembles nothing in particular. It is also the right answer when the picture service is down, when five minutes is too long, or when the thing has to be a named number of millimetres *and* organic.
 
 If you are about to generate a phone stand, stop — that is a parametric part, and the generated one would have no flat faces and no exact size.
+
+**Pass `project=` whenever the mesh belongs to a part.** `generate_3d(image_path, project="gecko bowl")` writes the `.glb` straight into `projects/gecko-bowl/models/` instead of the service's scratch folder, so it is on the Library's **Models** row — badged with its project — the moment the job finishes, and still findable in a month. Use the **same** name as the part so the script and the mesh share one folder. Omit it only for a genuinely loose experiment. This matters: the artist's own complaint was "the library is still not showing all my actual 3d models", and a mesh born in a folder nothing owns is exactly how that happens.
 
 **Say the wait out loud BEFORE you start.** It takes about **five minutes** on this machine, and only one job runs at a time. Then call it and let it run; `meshgen_status(job_id)` says which stage it is on if you need to look. The percentage it reports is progress through *that one stage*, not the whole job — never quote it as "40% done".
 

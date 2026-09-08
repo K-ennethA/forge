@@ -681,7 +681,7 @@ path.
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `generate_3d` | `image_path`, `backend`, `wait` | Picture → mesh → repaired object in the scene → print verdict. `wait=false` returns the job id immediately instead. |
+| `generate_3d` | `image_path`, `backend`, `wait`, `project` | Picture → mesh → repaired object in the scene → print verdict. `wait=false` returns the job id immediately instead. `project` files the `.glb` into `projects/<slug>/models/` at birth. |
 | `meshgen_status` | `job_id` | Is the service up, which backend, what is missing, and which stage a job is on. |
 
 Four facts the report always carries, because each one is a promise an artist would
@@ -702,6 +702,26 @@ otherwise be let down by:
 The object is named after the picture (`gecko.png` → `gecko`), because a `.glb` names its
 own mesh `Mesh_0` and the artist thinks in the file they chose.
 
+**`project=` gives the mesh a home before it exists.** The artist's complaint that started
+this — *"library is still not showing all my actual 3d models"* — was true because a
+generation landed in a scratch folder nothing owned. The assistant's Library now indexes
+those folders after the fact; `project` is the version where it never goes missing in the
+first place. Pass it whenever there is a part this mesh belongs to and the `.glb` is written
+straight into `projects/<slug>/models/` — the exact folder the bridge's Models row reads, so
+the card is there the moment the job finishes, badged with its project. The name is slugged
+the way `partforge_new_part` slugs one (`"dog bowl holder"` → `dog-bowl-holder`), so passing
+the **same** name puts the script and the mesh in one folder. The file is named after the
+*picture* rather than the backend, because `trellis2_00003.glb` tells the artist which of
+four meshes is theirs only by opening all four. Nothing is ever overwritten: a second
+generation from the same picture becomes `gecko-2.glb`. Omit `project` for a genuinely loose
+experiment and the default is unchanged — the meshgen output folder, which the Models row
+also indexes.
+
+Two guards, both checked **before** the job is submitted: the slug alphabet (anything that
+looks like a path is refused rather than cleaned) and a containment check that the folder
+really is under `projects/`. Five minutes of GPU work and *then* a refusal about a folder
+name would be the worst possible order to discover it in.
+
 When to reach for which: **parametric** (`partforge_new_part`) for anything functional,
 dimensioned or printed to fit; **generate_3d** for organic, stylised one-offs where looking
 right beats measuring right. A generated mesh has no crisp faces, no exact millimetres and
@@ -714,6 +734,10 @@ the path, ready for `import_generated` once Blender is up.
 ```text
 # the whole job, one call (five minutes)
 generate_3d(image_path=r"C:\Users\me\Pictures\gecko.png")
+
+# …and file it where it belongs, so it is on the Library's Models row at birth
+generate_3d(image_path=r"C:\...\gecko.png", project="gecko bowl")
+# -> writes projects/gecko-bowl/models/gecko.glb
 
 # or start it and get on with something else
 generate_3d(image_path=r"C:\...\gecko.png", wait=False)

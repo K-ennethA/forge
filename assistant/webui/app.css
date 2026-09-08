@@ -909,6 +909,63 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
    the dimensions, which is a different thing and says so. */
 .lib-actions .lib-open { border-color: var(--accent-dim); color: var(--accent); }
 .lib-actions .lib-open:hover:not(:disabled) { border-color: var(--accent); }
+
+/* The models row (Phase 13, revisited) — "library is still not showing all my
+   actual 3d models."  These cards carry a filename, a badge, a size and a date
+   and no picture: a .glb preview means a 3D viewer fetched from a CDN, and this
+   page works offline.  So they are narrower and shorter than a project card,
+   which is also the honest signal that a file is not a part. */
+.lib-grid-compact { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.lib-card.is-model .lib-body { gap: 6px; }
+.lib-card.is-model h3 { font-size: 13px; font-family: var(--mono); }
+
+/* "Clicking a model should open the associated blender file."  The whole card
+   is the target, so it has to LOOK like one — a card that acts like a button
+   without saying so is a feature nobody finds.  The focus ring is not
+   decoration: this is a tab stop, and a keyboard user has to be able to see
+   where they are. */
+.lib-card.is-clickable { cursor: pointer; }
+.lib-card.is-clickable:hover { border-color: var(--accent-dim); }
+.lib-card.is-clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* …but the controls inside it are their own actions, and must not read as part
+   of the click target. */
+.lib-card.is-clickable button,
+.lib-card.is-clickable select { cursor: pointer; }
+
+.lib-path {
+  font: 11px/1.5 var(--mono);
+  -webkit-line-clamp: 1;
+  overflow-wrap: anywhere;
+}
+
+.lib-badge {
+  font: 10.5px/1.6 var(--mono);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 7px;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+}
+/* Generated is the state a mesh is BORN in and the one the row exists to
+   surface; filed into a project is where it ends up, and wears the accent the
+   way an owned thing should. */
+.lib-badge.is-generated { border-style: dashed; }
+.lib-badge.is-project { border-color: var(--accent-dim); color: var(--accent); }
+
+.lib-file-row { gap: 6px; align-items: center; }
+.lib-file-pick {
+  flex: 1 1 90px;
+  min-width: 0;
+  font: 11.5px/1.6 var(--font);
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+}
 .lib-status { font-size: 11.5px; color: var(--text-dim); }
 .lib-status.bad { color: #f0a49c; }
 .lib-status:empty { display: none; }

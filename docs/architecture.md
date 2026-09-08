@@ -197,6 +197,24 @@ Implemented refinements (additive; the sketch below is unchanged and still bindi
 - **System prompt** gained `## Design before geometry`, placed before `## Making new parts` and cross-referencing both it and `## Making things that DO something` (whose opening now says every maker build triggers the phase). It carries the trigger law, the ≤5-questions-one-message law with stated defaults and the intent-disambiguator first, the five deliverables in order, the sign-off sentence verbatim, and the worked ankle-fan example including the honest physics verdict ("marginal in still air, nothing outdoors — here is the version that works").
 - **Tests:** `mcp/tests/test_design.py` — 70 tests inside an **856-test** MCP suite (was 786); `assistant/tests/test_webui.py` gained 13 (SVG minting/serving/CSP/attachment asymmetry, design listing and ordering, the design-only card, the mtime, the DOM anchors).
 
+### Library models section (user, 2026-09-07): all actual 3D models visible and one-click-openable
+
+Generated meshes (meshgen output dir per meshgen/config.json + FORGE_MODELS_DIRS extras) and projects/*/models/* get Library cards with Import-into-Blender and File-into-project actions. **Card click opens the model in Blender** (user extension): Blender running → import_generated into the scene; Blender closed → spawn GUI Blender with a startup import of that file (reuse Phase 15's resolve/spawn machinery; glTF import expression since .glb isn't a .blend). generate_3d(project=...) files new generations into projects/<slug>/models/ at birth.
+
+### Phase 18 sketch — silhouette fitting (match the reference outline, multi-view)
+
+User intent: "take an image and use the silhouette to map out or move the sculpt to match that silhouette, and do multiple sides if provided — front and side."
+- **(a) Meshgen multi-view**: wire the ALREADY-DOWNLOADED Pixal3D multiview weights (pixal3d_multiview_int8 — verify presence; if absent it's ~5.2 GB and needs user approval) into a second workflow template (4 views at 90°, front first, transforms.json camera rig per the Pixal3D docs); backend option `views: {front, side?, back?}` on /generate3d; graceful single-image fallback.
+- **(b) `fit_to_silhouette` (addon, queued behind the mechanism agent)**: `{"object", "front_image"?, "side_image"?, "strength" 0-1, "iterations", "smooth"}` — masks extracted like verify_design's silhouette machinery (alpha-exact else border-median threshold + confidence); per-view 2D chamfer distance fields (pure numpy, two-pass); per vertex, displacement toward the mask boundary in that view's plane (front constrains X/Z, side constrains Y/Z), blended across provided views, neighbor-smoothed (no spikes), iterated; reports before/after IoU per view via the verifier (measured tier) + a "fit is illustration of the outline, interior unchanged" honesty note. Works on any mesh: generated, imported, or the artist's own sculpt. Undo-pushed.
+
+### Phase 17 sketch — mechanism demos (show how it works)
+
+User intent: "take the design all the way to even show how a litwick light would work, with the led and button mechanics similar to the robotics websites — a full 3d print, 3d animation, 3d to robotics tool."
+- **Design-level (prompt-only)**: functional designs gain `design/mechanism.svg` — an ANIMATED cross-section (SMIL/CSS in hand-authored SVG; save_design_doc already accepts it): the press stroke, latch state, LED on/off, spring return, with the plan's real numbers labeled. Taught in the design-phase prompt section.
+- **Build-level (addon)**: `animate_object {"object","keys":[{frame, location?/rotation_euler_deg?/scale?}], "interpolation"?}` (object-level sibling of rigforge_keyframe), `set_material_emission {"object","strength","color"?,"frame"?}` (keyframeable — the LED lighting up), `render_animation {"path",".mp4","frame_start/end","fps"?,"resolution"?}` (EEVEE/Workbench headless, Blender's built-in ffmpeg; CREATE-NO-WINDOW law applies). A `mechanism-demo` usage pattern in the prompt: keyframe the press cycle from build-plan numbers, render, show.
+- **Web (after Library agent lands)**: .mp4 added to servable token types; demos render inline in chat/cards.
+- **Robotics exit (contract for the fork)**: build-plan components gain optional `mechanism: {joint_type: "prismatic"|"revolute", axis, travel_mm|range_deg, actuated_by}` records — the same schema URDF needs; a future `export_urdf` is then a formatter over data we already keep.
+
 ### Phase 16 sketch — the design phase (requirements before geometry)
 
 User intent (near-verbatim): "before we even start generating 3d we should have a design phase — 2d images and diagrams, questions and requirements, how long how big how wide." Motivating case: "a 3d printed fan that attaches to my ankles to help keep fans away — consider the mechanics, battery placements and motors" — an ambiguous, wearable, multi-component request that must NOT go straight to geometry.

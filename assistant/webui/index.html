@@ -180,6 +180,20 @@
 
     <div class="lib-head lib-head-second">
       <div>
+        <h3>Models</h3>
+        <p class="muted small">Every 3D file on this machine Forge can see — the
+           meshes the picture-to-3D service generated, and anything in
+           <code>projects/&lt;name&gt;/models/</code>. Newest first.
+           <strong>Click a card to open that model in Blender</strong> — it lands
+           in your scene if Blender is running, and Blender starts with it if
+           not. Or file one into a project so it lives beside its part.</p>
+      </div>
+      <button type="button" class="btn ghost" id="models-refresh">Refresh</button>
+    </div>
+    <div id="library-models" class="lib-grid lib-grid-compact"></div>
+
+    <div class="lib-head lib-head-second">
+      <div>
         <h3>In progress</h3>
         <p class="muted small">What Blender is holding right now — a generated
            mesh, a sculpt, the pieces a segment produced. These have no folder

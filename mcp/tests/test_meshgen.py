@@ -27,7 +27,7 @@ from typing import Any
 import pytest
 
 from forge_mcp import config, server, util
-from forge_mcp.errors import BackendError, BackendUnavailable
+from forge_mcp.errors import BackendError, BackendUnavailable, ForgeError
 
 from .conftest import REAL_BACKEND_PORTS
 from .test_blender_client import FakeBlender
@@ -549,3 +549,154 @@ def test_the_stage_trail_collapses_a_long_run() -> None:
     trail = util.fmt_stage_trail([f"Stage{i}" for i in range(20)])
     assert trail.startswith("Stage0 -> Stage1")
     assert "9 more" in trail
+
+
+# --- born filed: generate_3d(project=...) -----------------------------------
+#
+# The gap this closes, in the artist's words: "library is still not showing all
+# my actual 3d models." The Library's Models row is the cure after the fact;
+# this is the version where the mesh never goes missing in the first place,
+# because it is written into the project it belongs to at birth.
+
+
+@pytest.fixture
+def projects_dir(tmp_path: Path, monkeypatch) -> Path:
+    """Redirect projects/ so no test can write into the real repo folder."""
+    root = tmp_path / "projects"
+    root.mkdir()
+    monkeypatch.setattr(config, "PROJECTS_DIR", str(root))
+    return root
+
+
+def test_a_project_sends_the_output_path_into_that_projects_models_folder(
+    meshgen, blender, picture: Path, projects_dir: Path
+) -> None:
+    fake = meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    server.generate_3d(str(picture), project="dog bowl holder")
+
+    _path, body = fake.posts[0]
+    wanted = projects_dir / "dog-bowl-holder" / "models" / "gecko.glb"
+    assert Path(body["output"]) == wanted
+
+
+def test_the_generation_is_named_after_the_picture_not_the_backend(
+    meshgen, blender, picture: Path, projects_dir: Path
+) -> None:
+    """`trellis2_00003.glb` tells the artist which of four meshes is theirs only
+    by opening all four."""
+    fake = meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    server.generate_3d(str(picture), project="gecko-bowl")
+    _path, body = fake.posts[0]
+    assert Path(body["output"]).name == "gecko.glb"
+
+
+def test_without_a_project_nothing_is_filed_and_the_service_decides(
+    meshgen, blender, picture: Path
+) -> None:
+    """The default is unchanged: a loose experiment still lands in the meshgen
+    output folder, which is exactly where the Library's Models row looks."""
+    fake = meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    server.generate_3d(str(picture))
+    _path, body = fake.posts[0]
+    assert "output" not in body
+
+
+@pytest.mark.parametrize("blank", ["", "   ", None])
+def test_a_blank_project_is_the_same_as_no_project(
+    meshgen, blender, picture: Path, blank: Any
+) -> None:
+    fake = meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    server.generate_3d(str(picture), project=blank)
+    _path, body = fake.posts[0]
+    assert "output" not in body
+
+
+def test_a_project_name_that_is_a_path_is_refused_before_any_gpu_time(
+    meshgen, picture: Path, projects_dir: Path
+) -> None:
+    """Five minutes of GPU work and *then* a refusal about a folder name would
+    be the worst possible order to discover it in."""
+    fake = meshgen()
+    with pytest.raises(ForgeError):
+        server.generate_3d(str(picture), project="../../somewhere")
+    assert fake.posts == [], "the job was submitted before the name was checked"
+
+
+def test_the_report_says_where_the_mesh_was_filed(
+    meshgen, blender, picture: Path, projects_dir: Path
+) -> None:
+    """An artist who is told where it went does not have to go looking."""
+    meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    report = server.generate_3d(str(picture), project="gecko-bowl")
+    assert "projects/gecko-bowl/models/" in report
+    assert "Models row" in report
+
+
+def test_the_submitted_report_says_it_too(
+    meshgen, picture: Path, projects_dir: Path
+) -> None:
+    meshgen()
+    report = server.generate_3d(str(picture), project="gecko-bowl", wait=False)
+    assert "projects/gecko-bowl/models/" in report
+    assert "job id:" in report
+
+
+def test_a_loose_generation_never_claims_to_have_been_filed(
+    meshgen, blender, picture: Path
+) -> None:
+    meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    report = server.generate_3d(str(picture))
+    assert "filed into" not in report
+
+
+# --- where a filed generation goes, without a service at all ----------------
+
+
+def test_the_output_path_never_writes_over_the_last_generation(
+    picture: Path, projects_dir: Path
+) -> None:
+    """Five minutes of GPU time per file makes a silent replacement the one
+    unrecoverable thing this path could do."""
+    folder = projects_dir / "gecko-bowl" / "models"
+    folder.mkdir(parents=True)
+    assert util.generated_output_path("gecko-bowl", picture).name == "gecko.glb"
+
+    (folder / "gecko.glb").write_bytes(b"the first one")
+    assert util.generated_output_path("gecko-bowl", picture).name == "gecko-2.glb"
+
+    (folder / "gecko-2.glb").write_bytes(b"the second one")
+    assert util.generated_output_path("gecko-bowl", picture).name == "gecko-3.glb"
+    # …and the earlier ones are still there, byte for byte.
+    assert (folder / "gecko.glb").read_bytes() == b"the first one"
+
+
+def test_the_models_folder_does_not_have_to_exist_yet(
+    picture: Path, projects_dir: Path
+) -> None:
+    """meshgen makes the parent itself (``collect_output``), so asking for a
+    path into a folder nobody has made is the normal first generation."""
+    path = util.generated_output_path("brand-new", picture)
+    assert not path.parent.exists()
+    assert path.parent == projects_dir / "brand-new" / "models"
+
+
+@pytest.mark.parametrize("name", ["../etc", "a/b", "C:/anywhere", "~/home", ""])
+def test_a_models_folder_is_never_outside_projects(name: str,
+                                                   projects_dir: Path) -> None:
+    with pytest.raises(ForgeError):
+        util.project_models_dir(name)
+
+
+def test_the_models_folder_is_spelled_the_way_the_bridge_spells_it() -> None:
+    """The assistant bridge indexes this exact folder name, so a generation
+    filed here at birth is on the Library's Models row without anyone moving
+    it. A divergence would make two folders that each hold half the meshes."""
+    source = Path(__file__).resolve().parents[2] / "assistant" / "bridge.py"
+    text = source.read_text(encoding="utf-8")
+    assert f'MODELS_DIRNAME = "{util.PROJECT_MODELS_DIRNAME}"' in text

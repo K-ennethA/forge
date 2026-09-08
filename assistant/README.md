@@ -695,7 +695,7 @@ must not have.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/library` | — | `{"dir", "count", "projects": [...], "scene": {...}}` |
+| GET | `/library` | — | `{"dir", "count", "projects": [...], "scene": {...}, "models": {...}}` (the `models` section is below) |
 | GET | `/projects/<name>/thumbnail` | — | the cached PNG as `image/png`; **404** with a sentence saying how to get one (which the page draws as a placeholder, not as a fault) |
 | POST | `/projects/<name>/thumbnail` | — | `{"project", "object", "token", "url", "path", "cached", "thumbnail_url", "thumbnail_mtime", "bounds_mm"}`; **409** the part is not in the scene, **422** the project has no part script to photograph, **503** Blender down, **502** it refused or wrote nothing, **404** no such project |
 
@@ -808,6 +808,137 @@ as the "PowerShell was not found" answer.
 | POST | `/projects/<name>/save` | — | `{"project", "saved", "blender", "path", "object_count", "replaced", "session_file", "has_blend", "blend_size", "blend_mtime", "result"}`; **503** Blender down, **502** it refused, **404** no such project |
 | POST | `/projects/<name>/open` | `{"confirm"?}` | `{"project", "blend", "has_blend", "route": "running"\|"spawned"\|"no_blend"}` plus, per route: `opened`/`needs_confirmation`/`would_lose`/`hint`/`result` (running), `pid`/`executable`/`note` (spawned), `hint`/`object`/`script_path` (no_blend). **501** Blender is not installed, **500** it would not start, **503**/**502** the running Blender went away or refused, **404** no such project |
 
+## The Models row (Phase 13, revisited) — "library is still not showing all my actual 3d models"
+
+The artist's words, and they were right. Every card above this row is a
+*project folder*: a script, a `spec.json`, exports. A mesh the picture-to-3D
+service generated has none of those — it is a `.glb` in an output folder that no
+project owns — so four `.glb` files of real work were invisible to the one tab
+that exists to find work.
+
+So the shelf indexes the **files** too, from the folders they are actually
+written to, and the three things an artist wants to do with one are a click and
+two buttons rather than a paragraph about Explorer.
+
+### Where it looks
+
+Three sources, newest first across all of them — which folder a mesh happens to
+be sitting in is the badge on the card, not the sort order:
+
+1. **The meshgen output folder**, read out of `meshgen/config.json`
+   (`comfyui_output_dir`) rather than hardcoded. That file's own promise is that
+   relocating the 19 GB model install is a one-file edit, and a second copy of
+   `C:/forge-models` in the bridge would quietly break it. `FORGE_MESHGEN_OUTPUT_DIR`
+   overrides — the same variable meshgen's own config honours, so pointing the
+   service at a scratch folder points this row at it too. Both the `forge/`
+   subfolder the backends write into **and** the root are indexed: a workflow
+   saved with another prefix is still the artist's mesh, and looking only at the
+   root is precisely why nothing had found these files.
+2. **`projects/<name>/models/`** for every project on disk — where
+   `generate_3d(project=...)` files a generation at birth, and where
+   `POST /models/file` copies one.
+3. **`FORGE_MODELS_DIRS`**, semicolon-separated, for meshes that came from
+   somewhere else entirely.
+
+The scan is a `listdir` and a `stat` per file and **never recursive**: a ComfyUI
+output tree has every render ever made in it, and a card row must not become a
+filesystem crawl. No mesh is opened, no header is read and Blender is never
+asked — this row draws with every service on the machine stopped, exactly like
+the cards above it. `.glb`, `.gltf`, `.stl` and `.obj` count, because a
+downloaded mesh the artist dropped in `projects/<name>/models/` is their work
+too. The row is capped at 60 (`total` says how many there really are): every
+listed model mints a `/file` token, and a folder of three hundred meshes must
+not evict the render somebody is looking at.
+
+### The path gate: what the shelf showed is exactly what the routes will act on
+
+All three POST routes take a `path`, and none of them takes it on trust. The
+allow-list is the *same function* the listing uses (`indexed_model_dirs`), and
+the check is on the file's **directory**, matched whole — not a prefix test, so
+a folder that merely starts with the same characters is not "inside" anything.
+A miss is one 404 sentence for "no such file", "not a mesh" and "not somewhere
+this library looks" together, deliberately: a route that told those apart would
+be a way to ask what exists on this machine.
+
+Filing has a second, independent gate, because it writes into the repo: the
+destination has to slug down to one plain folder name directly under
+`projects/`. The slug mirrors `forge_mcp.util.project_slug` character for
+character (a test pins both files against each other) — the MCP server writes
+`projects/<slug>/` and this route writes into the same folders, so a divergence
+would put "the bowl holder" in a second folder next to the one already there.
+Filing is a **copy**, never a move (the meshgen service will look for its own
+output there next time), and it never writes over a file that is already there —
+a second `a.glb` becomes `a-2.glb`. Five minutes of GPU time per mesh makes a
+silent replacement the one unrecoverable thing this route could do.
+
+### The click: `POST /models/open`
+
+The artist's extension, in their words: *"clicking a model should open the
+associated blender file."* So the card is the button — pointer, `role`, tab
+stop, Enter and Space, because a card that acts like a button without saying so
+is a feature only a mouse can find. What the click *means* never changes: the
+model, in Blender. Only how depends on what is running, and the page branches on
+the **`route`**, not the status code:
+
+1. **`running`** — something is listening on 9876, so the mesh is imported into
+   the scene they are looking at, voxel-repaired on the way in. This is
+   literally the Import button's code path (`import_generated`, same parameters,
+   same mandatory repair): with Blender up, "open this model" *is* the mesh
+   arriving in the scene, and two implementations of that would eventually
+   disagree about the repair.
+2. **`spawned`** — nothing is listening, so a windowed Blender starts with the
+   model imported and the startup cube gone. This reuses Phase 15's machinery
+   wholesale — `resolve_blender`, `spawn_creationflags`, one `spawn_detached`
+   that both spawns go through so `CREATE_NO_WINDOW` cannot creep into the one
+   spawn that must show a window. What it cannot reuse is the argv: **a `.glb`
+   is not a `.blend`**, and handed positionally Blender would try to *open* it
+   as a scene and fail. So the model goes in through
+   `--python-expr` — the startup **mesh** objects removed (the default cube is
+   not part of what they asked to see, and on a metre-scale generated mesh they
+   would not find it until the export; the camera and lamp survive), then the
+   importer that opens that kind of file.
+   The path is embedded with `repr`, because a Windows path is all backslashes
+   and a mesh called `dog's bowl.glb` would otherwise end the string literal
+   mid-filename. The importer is chosen with the add-on's own fallback order
+   (`wm.stl_import` then `import_mesh.stl`, `wm.obj_import` then
+   `import_scene.obj`; glTF never moved): Blender moved its mesh importers from
+   Python to C++ between 3.x and 4.x, so one hardcoded operator name is a spawn
+   that works on one machine and silently imports nothing on another. The answer
+   says `imported: false` — the mesh is going into a Blender that is still
+   starting and is not answering yet, and claiming otherwise would have the page
+   report something it cannot see.
+3. **`no_blender`** — a **501** naming the menu they would use by hand, which
+   for a mesh file is **File > Import**, not File > Open. Telling somebody the
+   wrong menu is worse than telling them nothing.
+
+**A running instance always wins**, for the same reason project files never
+double-spawn: two Blenders would fight over port 9876. A test asserts that with
+both a fake add-on socket *and* a stand-in executable available, the executable
+is never launched — and another asserts that a path the shelf never listed
+starts no process at all.
+
+### The models routes
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/models/import` | `{"path", "repair"?}` | `{"path", "file", "imported", "opened", "blender", "object", "vertex_count", "face_count", "repaired", "dimensions_mm", "result"}`; **503** Blender down (the panel's own sentence), **502** it refused, **404** not an indexed model, **400** the body was not an object |
+| POST | `/models/file` | `{"path", "project"}` | `{"project", "filed", "copied", "renamed", "folder", "path", "source", "model", "note"}`; **400** the name is not a project name, **404** not an indexed model, **500** the copy failed |
+| POST | `/models/open` | `{"path", "repair"?}` | `{"path", "file", "route": "running"\|"spawned"\|"no_blender", "opened"}` plus, per route: the import block above (running), `pid`/`executable`/`note`/`imported: false` (spawned); **501** no Blender on the machine, **500** it would not start, **503**/**502** the running Blender went away or refused, **404** not an indexed model |
+
+The `models` section on `GET /library` is:
+
+```
+{"models": [{"file", "path", "dir", "dir_kind": "generated"|"project",
+             "project", "ext", "size", "mtime", "token", "url"}],
+ "count", "total", "dirs", "generated_dirs", "projects_dir", "note"?}
+```
+
+`token`/`url` are `null` for the kinds the bridge will not serve, which is the
+honest answer rather than a dead link. There is no 3D preview on these cards: a
+`.glb` viewer means fetching a library from a CDN, and this page works offline —
+so a badge, a size and a date say what the file is without pretending to show
+it.
+
 ## The command line it builds
 
 ```
@@ -871,7 +1002,9 @@ The web UI's own, all optional:
 | `FORGE_ASSISTANT_PREVIEWS` | `<temp>/forge-webui-previews` | Where `POST /preview` renders to |
 | `FORGE_GENERATE_TIMEOUT` | `300` | Seconds one workbench rebuild may take |
 | `FORGE_ASSISTANT_THUMBS` | `assistant/thumbs` | The library's thumbnail cache — beside `uploads`, not in the temp dir, because a card has to draw before anything is running |
-| `FORGE_BLENDER_EXE` | discovered | Full path to `blender.exe`, for the one case where this bridge *starts* Blender rather than talking to it (`POST /projects/<name>/open` with nothing listening). Unset = `PATH`, then the official installer's own folders |
+| `FORGE_BLENDER_EXE` | discovered | Full path to `blender.exe`, for the two cases where this bridge *starts* Blender rather than talking to it (`POST /projects/<name>/open` and `POST /models/open` with nothing listening). Unset = `PATH`, then the official installer's own folders |
+| `FORGE_MESHGEN_OUTPUT_DIR` | `meshgen/config.json`'s `comfyui_output_dir` | Where the meshgen backends write their `.glb`, and so where the Models row looks. The same variable meshgen's own config honours, so the two halves cannot disagree |
+| `FORGE_MODELS_DIRS` | unset | Extra folders the Models row indexes, separated by `;` — for meshes that came from somewhere else entirely |
 
 ## Finding the CLI on Windows
 

@@ -3805,6 +3805,58 @@ def generated_object_name(image: Path) -> str:
     return encoded.decode("utf-8", errors="ignore") or "generated"
 
 
+#: Where a project keeps the mesh files it owns. The assistant bridge's library
+#: indexes this exact folder name (``bridge.MODELS_DIRNAME``), so a generation
+#: filed here at birth is on the Library's Models row without anyone moving it.
+PROJECT_MODELS_DIRNAME = "models"
+
+#: How many `<stem>-N.glb` names are tried before giving up. A generation is
+#: five minutes of GPU time; the one thing this must never do is write over the
+#: previous one, and a folder with 999 attempts in it is a different problem.
+_MODEL_NAME_ATTEMPTS = 999
+
+
+def project_models_dir(project: Any) -> Path:
+    """``projects/<slug>/models`` — the slug rules and the containment check.
+
+    Both, and independently, exactly as ``project_paths`` does for the only
+    other place in this server that writes files the artist did not name.
+    """
+    slug = project_slug(project)
+    root = projects_root()
+    folder = (root / slug / PROJECT_MODELS_DIRNAME).resolve()
+    try:
+        folder.relative_to(root)
+    except ValueError:
+        raise ForgeError(
+            f"{slug!r} would write outside {root}. Generated meshes only ever "
+            "land in projects/<name>/models/."
+        ) from None
+    return folder
+
+
+def generated_output_path(project: Any, image: Path) -> Path:
+    """Where a generation lands when it is filed at birth: the absolute .glb.
+
+    Named after the PICTURE, not the backend: the artist thinks in "the gecko",
+    and `trellis2_00003.glb` is a filename that tells them which of four meshes
+    is theirs only by opening all four. That is precisely the state the Library's
+    Models row was invented to fix, and generating straight into a project is
+    the version where it never happens in the first place.
+
+    Never over a file that is already there. Five minutes of GPU work per file
+    makes silently replacing one the worst thing this path could do.
+    """
+    folder = project_models_dir(project)
+    stem = generated_object_name(image)
+    candidate = folder / f"{stem}.glb"
+    counter = 2
+    while candidate.exists() and counter <= _MODEL_NAME_ATTEMPTS:
+        candidate = folder / f"{stem}-{counter}.glb"
+        counter += 1
+    return candidate
+
+
 def fmt_duration(seconds: Any) -> str:
     """`304.2` -> `"5 min 04 s"`. Minutes, because that is the unit that stings."""
     try:
@@ -3937,6 +3989,7 @@ def fmt_generate_report(
     imported: Optional[Mapping[str, Any]] = None,
     check: Optional[Mapping[str, Any]] = None,
     problems: Optional[Sequence[str]] = None,
+    filed_to: str = "",
 ) -> str:
     """Picture in, object in the scene, verdict — the whole run in one report."""
     state = str(job.get("state") or submitted.get("state") or "?").lower()
@@ -3970,6 +4023,8 @@ def fmt_generate_report(
         lines.append(f"  {vram}")
     if mesh_path:
         lines.append(f"  file: {mesh_path}")
+    if filed_to:
+        lines.extend(fmt_filed_into(filed_to))
     if job.get("error"):
         lines.append(f"  error: {job['error']}")
 
@@ -4021,18 +4076,39 @@ def fmt_generate_report(
     return "\n".join(lines)
 
 
-def fmt_submitted_report(image: Path, submitted: Mapping[str, Any]) -> str:
+def fmt_filed_into(slug: str) -> List[str]:
+    """The two lines that say a generation was born with a home.
+
+    Worth saying out loud every time: the whole reason a mesh went missing from
+    the shelf is that it landed in a scratch folder nothing owned, and an artist
+    who is told where this one went does not have to go looking.
+    """
+    return [
+        f"  filed into projects/{slug}/{PROJECT_MODELS_DIRNAME}/ — this mesh has a "
+        "home from the moment it was written, rather than a scratch folder",
+        "    it is on the Library tab's Models row already (web UI, Library, "
+        "Models), badged with the project it belongs to",
+    ]
+
+
+def fmt_submitted_report(image: Path, submitted: Mapping[str, Any],
+                         filed_to: str = "") -> str:
     """wait=false: the job id and how to follow it, with nothing pretended."""
     job_id = submitted.get("job_id")
-    return "\n".join([
+    lines = [
         f"Started a 3D generation from {image.name}.",
         f"  job id: {job_id}",
         f"  backend: {submitted.get('backend')}   will write: {submitted.get('output')}",
+    ]
+    if filed_to:
+        lines.extend(fmt_filed_into(filed_to))
+    lines.extend([
         f'  Poll it with meshgen_status(job_id="{job_id}"). It takes about five '
         "minutes on this machine — say so before the artist starts waiting.",
         "  When it says done, import it with import_generated(path=<the file above>) "
         "— it arrives voxel-repaired, and check_model gives the print verdict.",
     ])
+    return "\n".join(lines)
 
 
 def fmt_missing_models(payload: Mapping[str, Any]) -> List[str]:
