@@ -15,7 +15,15 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
 
-from . import __version__, blender_client, config, meshgen_client, service_client, util
+from . import (
+    __version__,
+    blender_client,
+    config,
+    maker,
+    meshgen_client,
+    service_client,
+    util,
+)
 from .errors import BackendError, BackendUnavailable, ForgeError
 from .util import (
     GLTF_SUFFIXES,
@@ -31,7 +39,9 @@ from .util import (
     fmt_action_report,
     fmt_check_in_report,
     fmt_check_report,
+    fmt_circuit_plan,
     fmt_cloth_report,
+    fmt_component_catalog,
     fmt_diagnose_report,
     fmt_export_report,
     fmt_flow_list,
@@ -53,6 +63,7 @@ from .util import (
     fmt_outline_report,
     fmt_overrides,
     fmt_params,
+    fmt_plunger_plan,
     fmt_preview_report,
     fmt_profile_report,
     fmt_reference_report,
@@ -67,6 +78,7 @@ from .util import (
     fmt_uv_report,
     fmt_vector,
     fmt_weights_report,
+    fmt_wiring_guide,
     fmt_workspace_report,
     fmt_written_files,
     generated_object_name,
@@ -194,6 +206,17 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   one call; Read the pictures before commenting. mesh_diagnose locates clipping
   (self-intersections), unsealed edges and density hotspots in millimetres, so a
   critique can say WHERE. Name at most three things, each with its fix.
+- MAKER MODE is for anything that has to DO something when you press it. Pick
+  the real part FIRST and model to its dimensions — maker_components is the
+  catalog of 18 buyable switches, cells, LEDs, screws and magnets with datasheet
+  numbers and a purchase note each; a cavity invented from nothing fits nothing.
+  circuit_plan answers the resistor question in one of three verdicts ("no
+  resistor needed" is a real answer, not an oversight), plunger_plan gives the
+  press its travel, its end stop and what returns it, and wiring_guide is the
+  handover: 13 soldering steps plus a shopping list, with polarity and
+  test-before-glue intact. Geometry is still a PARAMS script composing maker_lib
+  (docs/part-authoring.md section 7) and a maker housing is two pieces by
+  necessity. End every functional build with wiring_guide.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -1626,6 +1649,200 @@ def partforge_export_segments(
     if isinstance(plate, dict) and not plate.get("fits", True):
         lines.append("  WARNING: the packed plate does not fit the bed.")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Maker mode (Phase 10) — the part that does something when you press it
+#
+# These four are the only tools in this server that do not go over a wire. They
+# read service/components.py, service/wiring.py and the arithmetic half of
+# service/maker_lib.py straight off disk — forge_mcp/maker.py's module docstring
+# argues that at length. Geometry is NOT here: a maker part is built the way
+# every PartForge part is built, with a PARAMS script that composes maker_lib.
+# These tools are the half before the script exists (what to buy, what will
+# fit, how far it moves) and the half after it is printed (what to solder).
+# ---------------------------------------------------------------------------
+
+
+@app.tool()
+def maker_components(filter: Optional[str] = None) -> str:
+    """What real parts can this design be built around? START HERE, before geometry.
+
+    Answers "what should I buy" with 18 actual, purchasable components — every
+    switch, cell, LED, screw and magnet the maker library knows the datasheet
+    numbers for. Each entry carries what it is in one sentence, the dimensions
+    that set the model's dimensions, a **purchase note** (the search term that
+    finds the right one, and the near-identical wrong one to avoid), and the
+    `verify_against_your_part` sentence the artist has to hear before they print.
+
+    **The law this tool exists to enforce: pick the real part FIRST, then model
+    to its dimensions.** A cavity invented from nothing fits nothing. Never write
+    a bare pocket and hope a switch drops into it — ask here, then let the
+    numbers that come back set the numbers in the script.
+
+    `filter` takes a category (`switch`, `power`, `light`, `fastener`, `magnet`),
+    an exact component name (`tactile_6x6_latching` — that gives the full card:
+    every dimension, where its Z = 0 datum sits, its mount styles, its lead
+    layout), or free text matched against names and summaries. No filter lists
+    the lot, grouped by category.
+
+    Dimensions are datasheet-typical for the family, not a measurement of one
+    unit: clones vary by ±0.3 mm routinely. Say that out loud — it is honesty,
+    not hedging, and it is why the verify sentence exists.
+
+    The workflow this starts: **maker_components** → `circuit_plan` (does it need
+    a resistor?) and `plunger_plan` (how far does the press move?) → read
+    `docs/part-authoring.md` §7 → `partforge_new_part` with a script composing
+    `maker_lib.cutout` / `mount` / `plunger` → `partforge_generate` →
+    `partforge_check` **on each piece in its own orientation** → `wiring_guide`
+    at handover. A maker housing is two pieces by necessity (§7.7 says why).
+    """
+    result = maker.catalog(filter)
+    return fmt_component_catalog(result, maker.clone_tolerance_mm())
+
+
+@app.tool()
+def circuit_plan(
+    led: str = "led_5mm",
+    color: Optional[str] = None,
+    cell: str = "cr2032_cell",
+    cells: int = 1,
+    switch: Optional[str] = "tactile_6x6_latching",
+    current_ma: Optional[float] = None,
+) -> str:
+    """Does this LED need a resistor, and which one? Ohm's law over real datasheets.
+
+    A printed housing with a perfect switch pocket is still not a lamp. Run this
+    the moment a design has a light in it, and state the verdict in the reply —
+    it is one of three, and the surprising one is right more often than people
+    expect:
+
+    - **no resistor needed** — the supply has nothing left to drop. A white or
+      blue LED (3.0 V) on a CR2032 (3.0 V) is this case, and the cell's own ~30 Ω
+      internal resistance is the real current limit. This is the common answer
+      for a glowing figure, so do not "add a resistor to be safe" — say why there
+      is none.
+    - **resistor optional** — small headroom on a supply that limits itself. The
+      plan names the trade: brighter now, flat far sooner.
+    - **resistor required** — everything else. Two cells and a red LED wants
+      220 Ω. Swapping a coin cell for `aaa_pair_box` turns optional into
+      required, because two AAAs *will* deliver the 20 mA that kills the LED.
+
+    Values are rounded **up** to the next E12 value, because too big only dims
+    the LED and too small cooks it. The plan also reports `resistor_gentle_ohms`
+    — the same maths at the *cell's* recommended current instead of the LED's
+    nominal 20 mA — with the run time for both, because the textbook answer and
+    the answer that is still lit tomorrow are often different numbers.
+
+    `led` / `cell` / `switch` are names from `maker_components`; `color` is the
+    LED colour (it sets the forward voltage, and it is the whole reason white and
+    red give different verdicts); `cells` is how many in series; `current_ma`
+    overrides the target current. `switch=null` plans a circuit with no switch.
+
+    Follow with `wiring_guide` when the artist is ready to solder.
+    """
+    plan = maker.circuit(
+        led,
+        color=color,
+        cell=cell,
+        cells=cells,
+        switch=switch,
+        current_ma=current_ma,
+    )
+    return fmt_circuit_plan(plan)
+
+
+@app.tool()
+def wiring_guide(
+    led: str = "led_5mm",
+    color: Optional[str] = None,
+    cell: str = "cr2032_cell",
+    cells: int = 1,
+    switch: Optional[str] = "tactile_6x6_latching",
+    current_ma: Optional[float] = None,
+) -> str:
+    """What do I solder, in what order, and what do I buy? The handover document.
+
+    `circuit_plan`'s verdict plus **13 numbered beginner steps** in the order the
+    mistakes actually happen in — find the LED's long leg before trimming
+    anything, find the switch's terminal pairs with a meter before soldering,
+    one series loop with no branches, every joint insulated — and a **shopping
+    list** where every line carries the search term that finds the right part.
+
+    **End every functional build with this.** A housing whose owner cannot wire
+    it is an ornament. Give it as the last thing, after the pieces are checked
+    and the artist knows what to print.
+
+    Two steps must reach them intact, never paraphrased away:
+
+    - **polarity** — the LED's longer leg is positive, and the flat filed on the
+      plastic rim marks the negative one. Backwards is not dangerous; it simply
+      does not light, and it is the single commonest reason a first circuit does
+      nothing.
+    - **test it on the bench before a single drop of glue** — cell in, switch
+      pressed, watching the LED. Glue is the point of no return, and nineteen
+      failures in twenty are the LED round the wrong way, the cell upside down,
+      or the wrong pair of switch terminals.
+
+    Arguments are `circuit_plan`'s. Say the run time out loud too — it is in
+    there, and "roughly 23 hours from one coin cell" is the kind of number that
+    decides whether the battery door needs to be easy to open.
+    """
+    guide = maker.wiring_guide(
+        led,
+        color=color,
+        cell=cell,
+        cells=cells,
+        switch=switch,
+        current_ma=current_ma,
+    )
+    return fmt_wiring_guide(guide)
+
+
+@app.tool()
+def plunger_plan(
+    stem_diameter: float,
+    switch: str = "tactile_6x6_latching",
+    guide_length: Optional[float] = None,
+    overtravel: Optional[float] = None,
+    keyed: bool = True,
+) -> str:
+    """How far does the press move, what stops it, and what pushes it back?
+
+    A gap that makes a cap removable is not a mechanism. This is the arithmetic
+    behind one that is: a printed pin in a printed sleeve that reaches a real
+    switch, with a retention flange so it cannot fall out the front and an end
+    stop so a finger's 5 kg never reaches a switch rated for 250 gf.
+
+    Every number comes from the switch's own datasheet and the printer profile —
+    nothing is a constant typed into a script. In particular **overtravel is
+    clamped by the component**, and the plan lists every clamp it applied.
+    Repeat those clamps in the reply; do not swallow them.
+
+    Say the result to the artist as a feeling with numbers in it, not a table:
+    *"the flame presses 1.8 mm and the switch's own spring pushes it back."*
+    Travel, what returns it (a latching switch has no return spring while it is
+    latched, so the cap visibly sits lower while the light is on — a feature,
+    worth saying), where it stops, and the press force in grams.
+
+    Two switches refuse a plunger and say what to use instead: a slide switch
+    moves sideways, and a 12 mm panel-mount push button already *is* the plunger.
+
+    `stem_diameter` is the pin's diameter in mm (4 mm or more if a finger pushes
+    it). `keyed` flats the stem so a shaped cap cannot spin on it.
+
+    **This tool does the arithmetic; it builds nothing.** The solid comes from
+    `maker_lib.plunger()` inside a PARAMS script — `docs/part-authoring.md` §7.4
+    — built by `partforge_generate`.
+    """
+    plan = maker.plunger(
+        stem_diameter,
+        switch=switch,
+        guide_length=guide_length,
+        overtravel=overtravel,
+        keyed=keyed,
+    )
+    return fmt_plunger_plan(plan)
 
 
 # ---------------------------------------------------------------------------

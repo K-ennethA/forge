@@ -12,6 +12,12 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
+**67 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
+`service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
+modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
+docstring and summarised under [Maker mode](#maker-mode-phase-10--the-part-that-does-something-when-you-press-it).
+
 ## Setup
 
 `mcp/.venv` is created and installed. To rebuild it from scratch on another machine, from
@@ -151,6 +157,7 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_SERVICE_SEGMENT_TIMEOUT` | `330.0` | seconds to wait for `/segment` and `/export_segments` (the service allows itself 300) |
 | `FORGE_PRINTER_PATH` | `<repo>/templates/printer.json` | default printer profile for the print-readiness tools |
 | `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` writes to |
+| `FORGE_SERVICE_PACKAGE_ROOT` | `<repo>` | the folder **containing** `service/` — the maker tools import `components.py`, `wiring.py` and the arithmetic half of `maker_lib.py` in-process rather than over a wire (see Maker mode below). Lazy and guarded: a checkout without `service/` still runs everything else |
 | `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
 | `FORGE_PREVIEWS_DIR` | `%TEMP%\forge-previews` | where `render_preview` drops the PNGs the model Reads — scratch by design, never the repo or a project |
@@ -363,6 +370,66 @@ built-in Elegoo Centauri Carbon defaults) and take the same `overrides` as
 heights, `"30, 60"`, or `partforge_check`'s `{"radial": 4}` object copied verbatim.
 `joint_type` is `dovetail` / `pin` / `magnet` / `none`, and `joint_tolerance` overrides the
 printer profile's `press_fit` / `magnet_pocket_extra` when given.
+
+### Maker mode (Phase 10) — the part that does something when you press it
+
+Four tools for designs with a **switch, a light and a cell** in them. They are the only
+tools in this server that do **not** go over a wire: `forge_mcp/maker.py` imports
+`service/components.py`, `service/wiring.py` and the arithmetic half of
+`service/maker_lib.py` straight off disk and calls them in-process. That is deliberate and
+its docstring argues it at length — there is no HTTP endpoint for a resistor calculation,
+those three modules are dependency-free (build123d is imported lazily *inside* the geometry
+functions, so the arithmetic loads without the kernel), and a second copy of the maths here
+would drift from the one the part scripts actually run. The import is **lazy and guarded**:
+nothing loads at server start, and a checkout without `service/` still runs the other 63
+tools while these four answer with one sentence naming the fix.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `maker_components` | `filter` | The catalog of **18 real, buyable parts** — switches, cells, LEDs, screws, magnets — each with what it is in one sentence, the dimensions that set the model's dimensions, a **purchase note** (the search term that finds the right one and the near-identical wrong one to avoid) and a `verify_against_your_part` sentence. `filter` takes a category (`switch` / `power` / `light` / `fastener` / `magnet`), an exact name (that gives the full card: every dimension, the datum its Z = 0 sits on, its mount styles, its lead layout) or free text. |
+| `circuit_plan` | `led`, `color`, `cell`, `cells`, `switch`, `current_ma` | Ohm's law across the headroom the LED does not use, rounded **up** to the next E12 value. Three verdicts — **no resistor needed** / **resistor optional** / **resistor required** — each with the sentence saying why, plus `resistor_gentle_ohms` (the same maths at the *cell's* recommended current) and the run time for both. |
+| `wiring_guide` | same as `circuit_plan` | The handover document: the verdict, **13 numbered beginner soldering steps** in the order the mistakes happen in, and a shopping list where every line carries its search term. Polarity and **test-before-glue** are the two steps that must never be paraphrased away. |
+| `plunger_plan` | `stem_diameter`, `switch`, `guide_length`, `overtravel`, `keyed` | The kinematics of a printed pin in a printed sleeve reaching a real switch: travel, end stop, guide engagement, retention flange, press force, and what returns it. **Overtravel is clamped by the component**, never by a constant, and every clamp is listed to be repeated out loud. Arithmetic only — no kernel, no solid. |
+
+**Geometry is not here.** Everything that builds a solid (`envelope`, `cutout`, `mount`,
+`plunger`, `snap_clip`, `battery_door`, `plunger_cap_socket`) needs build123d and lives on
+the service side. A maker part reaches the artist the way every PartForge part does: a
+PARAMS script composing `maker_lib`, written with `partforge_new_part` and built by
+`partforge_generate`. These four are the half **before** the script exists (what to buy,
+what will fit, how far it moves) and the half **after** it is printed (what to solder).
+
+`FORGE_SERVICE_PACKAGE_ROOT` (default: the repo root, i.e. the folder containing `service/`)
+moves the search if the checkout is laid out differently.
+
+```text
+# "I want a little figure that lights up when you press its head."
+
+# 1. Real parts FIRST — a cavity invented from nothing fits nothing.
+maker_components("switch")          # -> tactile_6x6_latching: 6x6x5 mm, 1.5 mm latch
+                                    #    travel, max overtravel 0.3 mm, 250 gf
+maker_components("cr2032_holder")   # -> the full card, and the loosest entry in the
+                                    #    table: "measure yours" is not boilerplate
+
+# 2. The two questions that decide the design, before any geometry exists.
+circuit_plan(led="led_5mm", color="white", cell="cr2032_cell")
+# -> VERDICT: NO RESISTOR NEEDED. 3 V of LED on a 3 V cell leaves nothing to drop.
+plunger_plan(stem_diameter=6.0, switch="tactile_6x6_latching")
+# -> 2.1 mm of travel, end stop on the guide's rim, the switch's own spring returns it
+
+# 3. The geometry, the ordinary way. Read docs/part-authoring.md section 7 first.
+partforge_new_part("head lamp core", script_source=..., components=["body", "lid"])
+partforge_generate(".../part.py", name="head-lamp-core-body", collection="head-lamp-core")
+partforge_check(".../part.py")      # each piece, in its own print orientation
+
+# 4. Handover. A housing whose owner cannot wire it is an ornament.
+wiring_guide(led="led_5mm", color="white", cell="cr2032_cell")
+# -> 13 steps + the shopping list, polarity and test-before-glue intact
+```
+
+A maker housing is **two pieces by necessity**: the switch has to face the plunger and the
+plunger has to come out of the top, so in one closed body either the guide's mouth or the
+switch's seat ends up facing away from the bed. `docs/part-authoring.md` §7.7 has the
+reasoning and `service/samples/push_lamp_core.py` is the worked example.
 
 ### Imported models (Phase 6d) — the downloaded-STL pipeline
 

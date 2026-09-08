@@ -90,6 +90,18 @@ DEFAULT_PRINTER_PATH: str = _env_str(
     "FORGE_PRINTER_PATH", str(_REPO_ROOT / "templates" / "printer.json")
 )
 
+# --- maker mode (Phase 10) --------------------------------------------------
+# The one backend this server does NOT reach over a wire. service/components.py,
+# service/wiring.py and the arithmetic half of service/maker_lib.py are imported
+# into this process (forge_mcp/maker.py says why at length): there is no HTTP
+# endpoint for them, they are dependency-free, and a second copy of the resistor
+# maths would drift from the one the part scripts actually run.
+#
+# This is the folder that CONTAINS service/, i.e. the repo root — it goes on
+# sys.path so `import service.wiring` resolves. The import is lazy and guarded,
+# so a checkout without service/ still runs every other tool.
+SERVICE_PACKAGE_ROOT: str = _env_str("FORGE_SERVICE_PACKAGE_ROOT", str(_REPO_ROOT))
+
 # --- part projects ----------------------------------------------------------
 # Where partforge_new_part is allowed to write, and the ONLY place it writes:
 # one folder per part under projects/<slug>/ holding part.py and spec.json

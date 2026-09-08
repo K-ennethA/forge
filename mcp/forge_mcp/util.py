@@ -3707,3 +3707,640 @@ def fmt_merge_report(result: Mapping[str, Any]) -> str:
         "WHERE to thicken."
     )
     return "\n".join(lines)
+
+
+# --- Phase 10: maker mode — real parts, real circuits, real mechanisms -------
+#
+# Every renderer below takes a plain dict — a component record, a circuit plan,
+# a plunger plan — and nothing else. They never import `maker`, never touch the
+# service, and never raise on a missing key: a record that is half a record
+# still renders the half it has. That is what lets them be tested against canned
+# data, and it is also what stops a future field rename in service/components.py
+# from turning a catalog listing into a traceback.
+
+#: Width the wrapped honesty/purchase prose is folded to. The panel is narrow
+#: and these are paragraphs, not numbers.
+_MAKER_WRAP = 86
+
+#: Repeated in the catalog header for each group. Kept beside the renderer so it
+#: needs nothing but a dict to run.
+_MAKER_CATEGORY_BLURB: Dict[str, str] = {
+    "switch": "what the finger operates",
+    "power": "what feeds it",
+    "light": "what lights up",
+    "fastener": "what holds the printed pieces together",
+    "magnet": "what holds a door shut",
+}
+
+
+def _wrap_note(text: Any, indent: str) -> List[str]:
+    """One prose field, folded to width under *indent*. Empty text, no lines."""
+    body = " ".join(str(text or "").split())
+    if not body:
+        return []
+    width = max(_MAKER_WRAP - len(indent), 30)
+    lines: List[str] = []
+    current = ""
+    for word in body.split(" "):
+        candidate = f"{current} {word}".strip()
+        if len(candidate) > width and current:
+            lines.append(indent + current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(indent + current)
+    return lines
+
+
+def _mm(value: Any, places: int = 2) -> str:
+    """A measurement, trailing zeros trimmed — but only after the decimal point.
+
+    Not :func:`fmt_number`: that one strips trailing zeros off the whole string,
+    so ``fmt_number(500.0, 0)`` answers ``"5"``. Every force in grams-force and
+    every current in milliamps here is a round hundred, so that is not a corner
+    case, it is most of the catalog.
+    """
+    if value is None or isinstance(value, bool):
+        return fmt_number(value, places)
+    if isinstance(value, (int, float)):
+        text = f"{float(value):.{places}f}"
+        if "." in text:
+            text = text.rstrip("0").rstrip(".")
+        return text or "0"
+    return fmt_number(value, places)
+
+
+def _has(entry: Mapping[str, Any], *keys: str) -> bool:
+    return all(entry.get(key) is not None for key in keys)
+
+
+def _switch_dims(entry: Mapping[str, Any]) -> List[str]:
+    dims: List[str] = []
+    if _has(entry, "body_length_mm", "body_width_mm", "body_height_mm"):
+        dims.append(
+            f"{_mm(entry['body_length_mm'])} x {_mm(entry['body_width_mm'])} x "
+            f"{_mm(entry['body_height_mm'])} mm body"
+        )
+    elif entry.get("body_diameter_mm") is not None:
+        dims.append(f"{_mm(entry['body_diameter_mm'])} mm round body")
+    if entry.get("overall_height_mm") is not None:
+        dims.append(f"{_mm(entry['overall_height_mm'])} mm tall overall")
+    if entry.get("panel_hole_diameter_mm") is not None:
+        dims.append(
+            f"mounts through a {_mm(entry['panel_hole_diameter_mm'])} mm panel hole"
+        )
+    if _has(entry, "panel_thickness_min_mm", "panel_thickness_max_mm"):
+        dims.append(
+            f"clamps a wall {_mm(entry['panel_thickness_min_mm'])}-"
+            f"{_mm(entry['panel_thickness_max_mm'])} mm thick"
+        )
+    if entry.get("behind_panel_depth_mm") is not None:
+        dims.append(
+            f"{_mm(entry['behind_panel_depth_mm'])} mm of it sits behind the wall"
+        )
+
+    actuation = entry.get("actuation") or {}
+    if actuation.get("stroke_mm") is not None:
+        sideways = "slide" in str(entry.get("kind", ""))
+        dims.append(
+            f"{_mm(actuation['stroke_mm'])} mm of "
+            + ("sideways throw" if sideways else "travel")
+            + (
+                f" at {_mm(actuation['force_gf'], 0)} gf"
+                if actuation.get("force_gf") is not None
+                else ""
+            )
+        )
+    if actuation.get("latching") is not None:
+        dims.append(
+            "LATCHING (press on, press off - it stays where you put it)"
+            if actuation["latching"]
+            else "momentary (on only while held)"
+        )
+    if actuation.get("max_overtravel_mm") is not None:
+        dims.append(
+            f"max overtravel {_mm(actuation['max_overtravel_mm'])} mm - the number "
+            "that caps a plunger's end stop"
+        )
+    electrical = entry.get("electrical") or {}
+    if electrical.get("max_current_ma") is not None:
+        dims.append(f"rated {_mm(electrical['max_current_ma'], 0)} mA")
+    return dims
+
+
+def _power_dims(entry: Mapping[str, Any]) -> List[str]:
+    dims: List[str] = []
+    if _has(entry, "diameter_mm", "thickness_mm"):
+        dims.append(
+            f"{_mm(entry['diameter_mm'])} mm across x "
+            f"{_mm(entry['thickness_mm'])} mm thick"
+        )
+    if _has(entry, "body_length_mm", "body_width_mm", "body_height_mm"):
+        dims.append(
+            f"{_mm(entry['body_length_mm'])} x {_mm(entry['body_width_mm'])} x "
+            f"{_mm(entry['body_height_mm'])} mm envelope"
+        )
+    electrical = entry.get("electrical") or {}
+    if electrical.get("nominal_voltage_v") is not None:
+        volts = f"{_mm(electrical['nominal_voltage_v'])} V"
+        if electrical.get("fresh_voltage_v") is not None:
+            volts += f" ({_mm(electrical['fresh_voltage_v'])} V fresh)"
+        dims.append(volts)
+    if electrical.get("capacity_mah") is not None:
+        dims.append(f"{_mm(electrical['capacity_mah'], 0)} mAh")
+    if electrical.get("recommended_current_ma") is not None:
+        dims.append(f"comfortable at {_mm(electrical['recommended_current_ma'])} mA")
+    if electrical.get("internal_resistance_ohm") is not None:
+        dims.append(
+            f"~{_mm(electrical['internal_resistance_ohm'], 0)} ohm internal "
+            "resistance (this is what limits an LED wired straight across it)"
+        )
+    leads = entry.get("leads") or {}
+    if leads.get("kind"):
+        dims.append(f"{leads.get('count', '?')} x {leads['kind']}")
+    return dims
+
+
+def _light_dims(entry: Mapping[str, Any]) -> List[str]:
+    dims: List[str] = []
+    if entry.get("dome_diameter_mm") is not None:
+        dims.append(f"{_mm(entry['dome_diameter_mm'])} mm lens")
+    if entry.get("flange_diameter_mm") is not None:
+        dims.append(
+            f"{_mm(entry['flange_diameter_mm'])} mm FLANGE - the number that "
+            "decides whether it seats or falls through"
+        )
+    if entry.get("above_flange_mm") is not None:
+        dims.append(f"{_mm(entry['above_flange_mm'])} mm sticks out past the flange")
+    electrical = entry.get("electrical") or {}
+    if electrical.get("nominal_current_ma") is not None:
+        dims.append(f"{_mm(electrical['nominal_current_ma'], 0)} mA nominal")
+    if electrical.get("default_color"):
+        dims.append(f"default colour {electrical['default_color']}")
+    return dims
+
+
+def _fastener_dims(entry: Mapping[str, Any]) -> List[str]:
+    dims: List[str] = []
+    if entry.get("thread"):
+        dims.append(str(entry["thread"]))
+    elif entry.get("thread_diameter_mm") is not None:
+        dims.append(f"M{_mm(entry['thread_diameter_mm'], 0)} thread")
+    if entry.get("length_mm") is not None:
+        dims.append(f"{_mm(entry['length_mm'])} mm long")
+    heads = entry.get("heads") or {}
+    pan = heads.get("pan") or {}
+    if pan.get("diameter_mm") is not None:
+        dims.append(
+            f"pan head {_mm(pan['diameter_mm'])} x {_mm(pan.get('height_mm'))} mm"
+        )
+    if entry.get("clearance_hole_normal_mm") is not None:
+        dims.append(f"clearance hole {_mm(entry['clearance_hole_normal_mm'])} mm")
+    if entry.get("thread_forming_hole_mm") is not None:
+        dims.append(f"thread-forming hole {_mm(entry['thread_forming_hole_mm'])} mm")
+    if _has(entry, "hole_diameter_mm", "hole_depth_mm"):
+        dims.append(
+            f"needs a {_mm(entry['hole_diameter_mm'])} x "
+            f"{_mm(entry['hole_depth_mm'])} mm hole - the insert maker's number, "
+            "with NO printer tolerance added to it"
+        )
+    return dims
+
+
+def _magnet_dims(entry: Mapping[str, Any]) -> List[str]:
+    dims: List[str] = []
+    if _has(entry, "diameter_mm", "thickness_mm"):
+        dims.append(
+            f"{_mm(entry['diameter_mm'])} x {_mm(entry['thickness_mm'])} mm disc"
+        )
+    if entry.get("grade"):
+        dims.append(str(entry["grade"]))
+    if entry.get("pull_force_kg") is not None:
+        dims.append(f"~{_mm(entry['pull_force_kg'])} kg pull")
+    if entry.get("tolerance_mm") is not None:
+        dims.append(f"held to +/-{_mm(entry['tolerance_mm'])} mm")
+    if entry.get("max_temperature_c") is not None:
+        dims.append(
+            "loses its magnetism permanently above "
+            f"{_mm(entry['max_temperature_c'], 0)} C"
+        )
+    return dims
+
+
+_MAKER_DIMS = {
+    "switch": _switch_dims,
+    "power": _power_dims,
+    "light": _light_dims,
+    "fastener": _fastener_dims,
+    "magnet": _magnet_dims,
+}
+
+
+def component_key_dims(entry: Mapping[str, Any]) -> List[str]:
+    """The handful of numbers that decide whether a part fits the design."""
+    renderer = _MAKER_DIMS.get(str(entry.get("category")))
+    return renderer(entry) if renderer else []
+
+
+def fmt_component_card(entry: Mapping[str, Any], clone_tolerance_mm: Any = None) -> str:
+    """One component in full: what it is, every number, and the honesty fields."""
+    name = entry.get("name", "?")
+    lines = [f"{name}  ({entry.get('category', '?')}, {entry.get('kind', '?')})"]
+    lines.extend(_wrap_note(entry.get("summary"), "  "))
+    for dim in component_key_dims(entry):
+        lines.append(f"    - {dim}")
+
+    for label in ("actuation", "leads", "electrical"):
+        block = entry.get(label) or {}
+        if block.get("note"):
+            lines.append(f"  {label}:")
+            lines.extend(_wrap_note(block["note"], "    "))
+    if entry.get("polarity"):
+        lines.append("  polarity:")
+        lines.extend(_wrap_note(entry["polarity"], "    "))
+    if entry.get("grip_note"):
+        lines.extend(_wrap_note(entry["grip_note"], "    "))
+    if entry.get("datum"):
+        lines.append("  where Z = 0 is, when you model around it:")
+        lines.extend(_wrap_note(entry["datum"], "    "))
+    styles = entry.get("mount_styles") or []
+    if styles:
+        lines.append(
+            "  maker_lib.mount styles: " + ", ".join(str(one) for one in styles)
+        )
+    else:
+        lines.append(
+            "  no mount style - this one is held by a cutout or by another part"
+        )
+    if entry.get("purchase_note"):
+        lines.append("  BUY:")
+        lines.extend(_wrap_note(entry["purchase_note"], "    "))
+    if entry.get("verify_against_your_part"):
+        lines.append("  VERIFY AGAINST YOUR PART (say this to the artist):")
+        lines.extend(_wrap_note(entry["verify_against_your_part"], "    "))
+    if entry.get("source"):
+        lines.extend(_wrap_note(f"numbers from: {entry['source']}", "  "))
+    if clone_tolerance_mm is not None:
+        lines.extend(
+            _wrap_note(
+                "These are datasheet-typical for the family, not a measurement of "
+                f"one unit. Clones vary by +/-{_mm(clone_tolerance_mm)} mm routinely.",
+                "  ",
+            )
+        )
+    return "\n".join(lines)
+
+
+def fmt_component_catalog(
+    result: Mapping[str, Any], clone_tolerance_mm: Any = None
+) -> str:
+    """The catalog by category - name, what it is, key dims, what to buy."""
+    records = list(result.get("records") or [])
+    match = str(result.get("match") or "all")
+    query = result.get("query")
+
+    if match == "name" and len(records) == 1:
+        closing = _wrap_note(
+            "Design around these numbers; never invent a cavity and hope. The next "
+            "step is a PARAMS script that composes maker_lib around this part "
+            "(docs/part-authoring.md section 7), then partforge_generate and "
+            "partforge_check.",
+            "  ",
+        )
+        return fmt_component_card(records[0], clone_tolerance_mm) + "\n\n" + "\n".join(
+            closing
+        )
+
+    if match == "category":
+        heading = f"Maker components - {query} ({len(records)} of them)"
+    elif match == "search":
+        heading = f"Maker components matching {query!r} ({len(records)} found)"
+    else:
+        heading = (
+            f"Maker component catalog - {len(records)} real parts, all buyable today"
+        )
+
+    lines = [heading, ""]
+    lines.extend(
+        _wrap_note(
+            "PICK THE PART FIRST, THEN MODEL TO ITS DIMENSIONS. A cavity invented "
+            "from nothing fits nothing. Every number below is datasheet-typical "
+            "for the family"
+            + (
+                ", not a measurement of one unit: clones vary by +/-"
+                f"{_mm(clone_tolerance_mm)} mm routinely, so the artist verifies "
+                "against the part in their hand before they print."
+                if clone_tolerance_mm is not None
+                else "."
+            ),
+            "",
+        )
+    )
+    lines.append("")
+
+    order = [str(one) for one in (result.get("categories") or ())]
+    present = [str(rec.get("category")) for rec in records]
+    for category in order + [one for one in present if one not in order]:
+        group = [rec for rec in records if str(rec.get("category")) == category]
+        if not group:
+            continue
+        blurb = _MAKER_CATEGORY_BLURB.get(category)
+        lines.append(
+            category.upper()
+            + f" ({len(group)})"
+            + (f" - {blurb}" if blurb else "")
+        )
+        for entry in group:
+            lines.append(f"  {entry.get('name', '?')}")
+            lines.extend(_wrap_note(entry.get("summary"), "    "))
+            dims = component_key_dims(entry)
+            if dims:
+                lines.extend(_wrap_note("dims: " + "; ".join(dims), "      "))
+            if entry.get("purchase_note"):
+                lines.extend(
+                    _wrap_note("buy: " + str(entry["purchase_note"]), "      ")
+                )
+        lines.append("")
+
+    lines.extend(
+        _wrap_note(
+            'maker_components("<name>") gives one part in full - every dimension, '
+            "the datum its Z = 0 sits on, its mount styles, and the "
+            "verify-against-your-part sentence that has to reach the artist.",
+            "  ",
+        )
+    )
+    lines.extend(
+        _wrap_note(
+            "Then: circuit_plan for the resistor question, plunger_plan for a push "
+            "mechanic, partforge_new_part for the script (docs/part-authoring.md "
+            "section 7 is the rulebook), and wiring_guide at handover.",
+            "  ",
+        )
+    )
+    return "\n".join(lines)
+
+
+def _circuit_headline(plan: Mapping[str, Any]) -> str:
+    led = plan.get("led") or {}
+    supply = plan.get("supply") or {}
+    switch = plan.get("switch") or None
+    parts = [f"{led.get('color', '?')} {led.get('name', 'LED')}"]
+    cells = supply.get("cells") or 1
+    parts.append(
+        str(supply.get("name") or "supply") + (f" x{cells}" if cells > 1 else "")
+    )
+    if switch:
+        parts.append(str(switch.get("name")))
+    return " + ".join(parts)
+
+
+def fmt_circuit_plan(plan: Mapping[str, Any]) -> str:
+    """The resistor answer, the arithmetic behind it, and what it costs."""
+    led = plan.get("led") or {}
+    supply = plan.get("supply") or {}
+    switch = plan.get("switch") or None
+    resistor = plan.get("resistor_ohms") or 0.0
+
+    lines = [f"Circuit - {_circuit_headline(plan)}", ""]
+    lines.append(f"  VERDICT: {str(plan.get('verdict', '?')).upper()}")
+    lines.extend(_wrap_note(plan.get("reason"), "    "))
+    lines.append("")
+
+    band = led.get("forward_voltage_band_v") or []
+    lines.append(
+        f"  LED        {led.get('name', '?')} in {led.get('color', '?')} - drops "
+        f"{_mm(led.get('forward_voltage_v'))} V"
+        + (
+            f" (a bag of them runs {_mm(band[0])}-{_mm(band[1])} V)"
+            if len(band) == 2
+            else ""
+        )
+    )
+    lines.append(
+        f"  supply     {supply.get('name') or 'bench supply'}"
+        + (f" x{supply['cells']}" if (supply.get("cells") or 1) > 1 else "")
+        + f" - {_mm(supply.get('voltage_v'))} V"
+        + (
+            f", {_mm(supply.get('capacity_mah'), 0)} mAh"
+            if supply.get("capacity_mah")
+            else ""
+        )
+        + (
+            f", ~{_mm(supply.get('internal_resistance_ohm'), 0)} ohm internal"
+            if supply.get("internal_resistance_ohm")
+            else ""
+        )
+    )
+    if switch:
+        lines.append(
+            f"  switch     {switch.get('name')} - "
+            + (
+                "latching (press on, press off)"
+                if switch.get("latching")
+                else "momentary (on while held)"
+            )
+            + f", rated {_mm(switch.get('max_current_ma'), 0)} mA"
+        )
+    lines.append(
+        f"  headroom   {_mm(plan.get('headroom_v'))} V left for a resistor to drop"
+    )
+    if resistor:
+        lines.append(
+            f"  RESISTOR   {_mm(resistor, 0)} ohm, "
+            f"{_mm(plan.get('resistor_rating_w'))} W (the exact answer is "
+            f"{_mm(plan.get('resistor_exact_ohms'), 1)} ohm, rounded UP to the next "
+            f"{plan.get('resistor_series', 'E12')} value - too big only dims the "
+            "LED, too small cooks it)"
+        )
+    else:
+        lines.append("  RESISTOR   none - there is no voltage left for one to drop")
+    if plan.get("forward_current_ma") is not None:
+        lines.append(
+            f"  current    {_mm(plan.get('forward_current_ma'), 1)} mA through the LED"
+        )
+    if plan.get("runtime_hours"):
+        lines.append(
+            f"  runtime    roughly {_mm(plan.get('runtime_hours'), 1)} hours"
+        )
+        lines.extend(_wrap_note(plan.get("runtime_note"), "             "))
+    if plan.get("resistor_gentle_ohms"):
+        lines.append(
+            f"  gentler    {_mm(plan['resistor_gentle_ohms'], 0)} ohm instead runs it "
+            f"at {_mm(plan.get('resistor_gentle_current_ma'))} mA"
+            + (
+                f" for roughly {_mm(plan.get('resistor_gentle_runtime_h'), 1)} hours"
+                if plan.get("resistor_gentle_runtime_h")
+                else ""
+            )
+            + " - the cell's own comfortable draw rather than the LED's textbook 20 mA"
+        )
+
+    order = plan.get("series_order") or []
+    if order:
+        lines.append("")
+        lines.extend(
+            _wrap_note(
+                "One loop, in series: "
+                + " -> ".join(str(one) for one in order)
+                + ". No branches, no second wire, nothing connected twice.",
+                "  ",
+            )
+        )
+
+    for note in plan.get("notes") or []:
+        lines.append("")
+        lines.extend(_wrap_note("note: " + str(note), "  "))
+    for warning in plan.get("warnings") or []:
+        lines.append("")
+        lines.extend(_wrap_note("WARNING: " + str(warning), "  "))
+
+    lines.append("")
+    lines.extend(
+        _wrap_note(
+            'Say the verdict to the artist in plain words - "no resistor needed" is '
+            "a real answer and a surprising one, so it earns the sentence saying "
+            "why. Then wiring_guide for the soldering steps and the shopping list.",
+            "  ",
+        )
+    )
+    return "\n".join(lines)
+
+
+def fmt_wiring_guide(guide: Mapping[str, Any]) -> str:
+    """The soldering steps and the shopping list, in the artist's language."""
+    plan = guide.get("plan") or {}
+    steps = list(guide.get("steps") or [])
+    bom = list(guide.get("bom") or [])
+
+    lines = [f"Wiring guide - {_circuit_headline(plan)}", ""]
+    lines.append(f"  {str(plan.get('verdict', '?')).upper()}")
+    lines.extend(_wrap_note(plan.get("reason"), "    "))
+    lines.append("")
+
+    lines.append(f"SOLDER IT IN THIS ORDER ({len(steps)} steps)")
+    for index, step in enumerate(steps, start=1):
+        folded = _wrap_note(step, "")
+        if not folded:
+            continue
+        lines.append(f"  {index:>2}. {folded[0]}")
+        lines.extend(f"      {more}" for more in folded[1:])
+    lines.append("")
+
+    lines.append(f"SHOPPING LIST ({len(bom)} lines)")
+    for row in bom:
+        quantity = row.get("quantity")
+        lines.append(
+            f"  {quantity if quantity is not None else 1} x {row.get('item', '?')}"
+            + (f"  [{row['source']}]" if row.get("source") else "")
+        )
+        lines.extend(_wrap_note(row.get("note"), "      "))
+    lines.append("")
+
+    lines.extend(
+        _wrap_note(
+            "THE RULE THAT SAVES THE MOST REWORK: test the whole loop on the "
+            "bench, cell in and switch pressed, BEFORE a single drop of glue. "
+            "Glue is the point of no return, and nineteen failures in twenty are "
+            "the LED round the wrong way, the cell upside down, or the wrong pair "
+            "of switch terminals.",
+            "  ",
+        )
+    )
+    lines.append("")
+    lines.extend(
+        _wrap_note(
+            "Hand this over as the last thing in a functional build - after the "
+            "pieces are checked and the artist knows what to print. Do not "
+            "paraphrase the polarity step or the test step away; those two are "
+            "the whole guide.",
+            "  ",
+        )
+    )
+    return "\n".join(lines)
+
+
+def fmt_plunger_plan(plan: Mapping[str, Any]) -> str:
+    """The push mechanic's kinematics, with the sentence to say to the artist."""
+    lines = [
+        f"Push mechanic - a {_mm(plan.get('stem_diameter_mm'))} mm plunger on a "
+        f"{plan.get('switch', '?')}",
+        "",
+    ]
+    lines.append(
+        f"  travel        {_mm(plan.get('travel_mm'))} mm - the switch's own "
+        f"{_mm(plan.get('switch_stroke_mm'))} mm stroke, plus "
+        f"{_mm(plan.get('overtravel_mm'))} mm of overtravel, plus "
+        f"{_mm(plan.get('free_play_mm'))} mm of designed free play"
+    )
+    lines.append(
+        "  end stop      the cap's underside lands on the guide's top rim after "
+        f"{_mm(plan.get('end_stop_gap_mm'))} mm"
+    )
+    lines.extend(_wrap_note(plan.get("end_stop_note"), "                "))
+    lines.append(
+        f"  guide         {_mm(plan.get('guide_length_mm'))} mm sleeve, "
+        f"{_mm(plan.get('guide_outer_diameter_mm'))} mm outside, bore "
+        f"{_mm(plan.get('bore_diameter_mm'))} mm "
+        f"({_mm(plan.get('clearance_per_side_mm'))} mm per side, from "
+        f"{plan.get('fit_source', 'the printer profile')})"
+    )
+    lines.append(
+        f"  engagement    {_mm(plan.get('guide_engagement_mm'))} mm = "
+        f"{_mm(plan.get('guide_engagement_ratio'), 1)} x the stem - under that a "
+        "pin cocks in its bore and jams on the first off-centre push"
+    )
+    lines.append(
+        f"  retention     a {_mm(plan.get('flange_diameter_mm'))} mm flange, wider "
+        "than the bore, so the plunger cannot leave through the front"
+    )
+    if plan.get("keyed"):
+        lines.append(
+            "  anti-rotation the stem is keyed, so a shaped cap cannot spin on it"
+        )
+    if plan.get("force_note"):
+        lines.append("  force:")
+        lines.extend(_wrap_note(plan["force_note"], "    "))
+    if plan.get("return"):
+        lines.append("  the return:")
+        lines.extend(_wrap_note(plan["return"], "    "))
+    if plan.get("print_orientation"):
+        lines.append("  printing:")
+        lines.extend(_wrap_note(plan["print_orientation"], "    "))
+
+    clamped = plan.get("clamped") or []
+    if clamped:
+        lines.append("")
+        lines.append(
+            "  CLAMPED - say every one of these out loud, do not swallow them:"
+        )
+        for item in clamped:
+            lines.extend(_wrap_note("- " + str(item), "    "))
+    for note in plan.get("notes") or []:
+        lines.extend(_wrap_note("note: " + str(note), "  "))
+
+    assembly = plan.get("assembly") or []
+    if assembly:
+        lines.append("")
+        lines.append("  ASSEMBLY, IN ORDER (the order IS the mechanism):")
+        for index, step in enumerate(assembly, start=1):
+            folded = _wrap_note(step, "")
+            if not folded:
+                continue
+            lines.append(f"    {index}. {folded[0]}")
+            lines.extend(f"       {more}" for more in folded[1:])
+
+    lines.append("")
+    lines.extend(
+        _wrap_note(
+            "These numbers are the reply, not the appendix. Tell the artist what "
+            "the press FEELS like in their own words - how far it moves, what "
+            "pushes it back, and where it stops - then build the geometry with "
+            "maker_lib.plunger() inside a PARAMS script (docs/part-authoring.md "
+            "section 7.4). This tool does the arithmetic; partforge_generate "
+            "makes the solid.",
+            "  ",
+        )
+    )
+    return "\n".join(lines)

@@ -99,6 +99,11 @@ EXPECTED_TOOLS = {
     "rigforge_action",
     "rigforge_keyframe",
     "rigforge_retarget",
+    # Maker mode (Phase 10) — the part that does something when you press it
+    "maker_components",
+    "circuit_plan",
+    "wiring_guide",
+    "plunger_plan",
     # Flows (Phase 6b) — saved sequences that replay with no model in the loop
     "flow_list",
     "flow_run",
@@ -147,7 +152,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 63
+    assert len(names) == 67
 
 
 def test_every_tool_is_documented() -> None:
@@ -227,6 +232,16 @@ def test_every_tool_has_an_object_schema() -> None:
         ("rigforge_action", []),
         ("rigforge_keyframe", ["keys"]),
         ("rigforge_retarget", ["source_path"]),
+        # Phase 10 maker mode: every argument that could sensibly default does.
+        # "what should I buy" has to be answerable with an empty call, and the
+        # default circuit (white 5 mm LED, CR2032, latching tactile) is the one
+        # a glowing figure actually uses.
+        ("maker_components", []),
+        ("circuit_plan", []),
+        ("wiring_guide", []),
+        # The one exception: a plunger cannot guess its own stem diameter, and a
+        # defaulted one would be a millimetre nobody chose.
+        ("plunger_plan", ["stem_diameter"]),
     ],
 )
 def test_required_parameters_match_the_contract(tool_name: str, required: list[str]) -> None:
