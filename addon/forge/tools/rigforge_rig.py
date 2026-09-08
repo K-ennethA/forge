@@ -47,6 +47,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from . import rigforge
+from . import rigforge_joints
 from .common import (
     active_only,
     get_bool,
@@ -494,11 +495,20 @@ def _side_tags(regions, prefix):
     return out
 
 
-def fit_biped(meta, regions, warnings, mapping):
-    """Snap a human metarig onto the tagged landmarks. Returns fitted bone names."""
+def fit_biped(meta, regions, warnings, mapping, hints=None):
+    """Snap a human metarig onto the tagged landmarks. Returns fitted bone names.
+
+    ``hints`` is an optional :class:`~.rigforge_joints.JointHints` — a neural
+    detector's second opinion.  Every landmark below is computed from the tags
+    exactly as before and then passed through ``refine``, which moves it part of
+    the way towards a believable prediction, overrules an unbelievable one, and
+    records both.  With no hints the ``refine`` below is the identity function
+    and this fit is bit-for-bit the tag-only fit.
+    """
     edit_bones = meta.data.edit_bones
     fitted = []
     frozen = set()
+    refine = hints.refine if hints is not None else (lambda role, point: point)
 
     torso_tag = _pick_tag(regions, "Torso", "Body", "Chest", "Spine")
     head_tag = _pick_tag(regions, "Head", "Skull")
@@ -528,7 +538,7 @@ def fit_biped(meta, regions, warnings, mapping):
         if torso is not None:
             half = max(torso.size.z * 0.06, 1e-6)
             base_xy = torso.slice_centre(neck_base_z - half, neck_base_z + half)
-        neck_base = Vector((base_xy.x, base_xy.y, neck_base_z))
+        neck_base = refine("neck_base", Vector((base_xy.x, base_xy.y, neck_base_z)))
 
     if torso is None:
         warnings.append(
@@ -544,9 +554,11 @@ def fit_biped(meta, regions, warnings, mapping):
             half = max((chest_z - hips_z) * 0.12, 1e-6)
             centre = torso.slice_centre(z - half, z + half)
             centre.z = z
-            points.append(centre)
-        if neck_base is not None:
-            points[-1] = neck_base.copy()
+            if step == 4 and neck_base is not None:
+                # the shared junction: refined once, above, for both chains
+                points.append(neck_base.copy())
+            else:
+                points.append(refine("hips" if step == 0 else "spine_%02d" % step, centre))
         fit_chain(edit_bones, spine_names, points, frozen, fitted)
         mapping.setdefault(torso.tag, []).extend(spine_names)
 
@@ -559,9 +571,9 @@ def fit_biped(meta, regions, warnings, mapping):
         neck_top_z = head_bottom + (head_top - head_bottom) * 0.15
         if neck_top_z <= neck_base.z:
             neck_top_z = neck_base.z + max((head_top - neck_base.z) * 0.25, 1e-4)
-        neck_top = Vector((head.centre.x, head.centre.y, neck_top_z))
-        neck_mid = (neck_base + neck_top) * 0.5
-        top = Vector((head.centre.x, head.centre.y, head_top))
+        neck_top = refine("neck_top", Vector((head.centre.x, head.centre.y, neck_top_z)))
+        neck_mid = refine("neck_mid", (neck_base + neck_top) * 0.5)
+        top = refine("head_top", Vector((head.centre.x, head.centre.y, head_top)))
         fit_chain(edit_bones, neck_names, [neck_base, neck_mid, neck_top, top],
                   frozen, fitted)
         mapping.setdefault(head.tag, []).extend(neck_names[-1:])
@@ -586,9 +598,9 @@ def fit_biped(meta, regions, warnings, mapping):
         # Re-measure the arm along the outward direction so "start" really is
         # the shoulder end, whatever the blob's own principal axis said.
         arm = Region(tag, arm._points, axis_hint=axis)
-        shoulder = arm.at(0.06)
-        elbow = arm.at(0.5)
-        wrist = arm.at(0.96)
+        shoulder = refine("shoulder.%s" % side, arm.at(0.06))
+        elbow = refine("elbow.%s" % side, arm.at(0.5))
+        wrist = refine("wrist.%s" % side, arm.at(0.96))
         elbow = _bend(shoulder, elbow, wrist, Vector((0.0, 1.0, 0.0)))
         if torso is not None:
             root = Vector((body.x + outward.x * torso.size.x * 0.12,
@@ -596,6 +608,7 @@ def fit_biped(meta, regions, warnings, mapping):
                            torso.high.z - torso.size.z * 0.06))
         else:
             root = shoulder - outward * (arm.length * 0.4)
+        root = refine("clavicle.%s" % side, root)
         names = ["shoulder.%s" % side, "upper_arm.%s" % side, "forearm.%s" % side]
         fit_chain(edit_bones, names, [root, shoulder, elbow, wrist], frozen, fitted)
         mapping.setdefault(tag, []).extend(names[1:] + ["hand.%s" % side])
@@ -607,16 +620,74 @@ def fit_biped(meta, regions, warnings, mapping):
             continue
         leg = Region(tag, regions[tag]._points, axis_hint=Vector((0.0, 0.0, -1.0)))
         hip = leg.at(0.04)
-        knee = leg.at(0.5)
-        ankle = leg.at(0.94)
         if torso is not None:
             hip = Vector((hip.x, torso.centre.y, min(torso.low.z, hip.z)))
+        hip = refine("hip.%s" % side, hip)
+        knee = refine("knee.%s" % side, leg.at(0.5))
+        ankle = refine("ankle.%s" % side, leg.at(0.94))
         knee = _bend(hip, knee, ankle, Vector((0.0, -1.0, 0.0)))
         names = ["thigh.%s" % side, "shin.%s" % side]
         fit_chain(edit_bones, names, [hip, knee, ankle], frozen, fitted)
         mapping.setdefault(tag, []).extend(names + ["foot.%s" % side, "toe.%s" % side])
 
     return fitted
+
+
+def fit_best_effort(meta, hints, fitted, warnings):
+    """Place bones the tags could never reach, from *named* predictions alone.
+
+    The tag vocabulary stops at ``Arm``/``Leg``: nothing an artist paints says
+    where an index finger's first knuckle is.  A detector that names its joints
+    can say, so this walks the short table of past-the-wrist / past-the-ankle
+    bones (:data:`~.rigforge_joints.BEST_EFFORT_BONES`) and moves each one onto
+    its named prediction.
+
+    Two rules keep it from fighting the fit above it:
+
+    * only bones the tag fitter did **not** place are eligible, and
+    * a *connected* bone's head belongs to its parent's tail, so it is moved
+      only when that parent was not itself fitted from tags. Where it was, the
+      tags win and the skip is recorded with its reason.
+
+    Returns the bone names actually moved; everything else lands in the report.
+    """
+    if hints is None or not hints.enabled or not hints.named:
+        return []
+    edit_bones = meta.data.edit_bones
+    fitted_set = set(fitted)
+    frozen = set(fitted_set)
+    placed = []
+    for template, role in rigforge_joints.BEST_EFFORT_BONES:
+        for side in ("L", "R"):
+            name = template % side
+            bone = edit_bones.get(name)
+            if bone is None or name in fitted_set:
+                continue
+            match = hints.named_only("%s.%s" % (role, side), bone.head.copy())
+            if match is None:
+                continue
+            index, point, distance = match
+            delta = point - bone.head
+            if delta.length < 1e-6:
+                continue
+            parent = bone.parent
+            if bone.use_connect and parent is not None:
+                if parent.name in fitted_set:
+                    hints.best_effort.append({
+                        "bone": name, "role": role, "joint": index,
+                        "joint_name": hints.names[index],
+                        "skipped": "the tags own this joint: %s was fitted from them"
+                                   % parent.name,
+                    })
+                    continue
+                parent.tail = point
+            bone.head = point
+            bone.tail = bone.tail + delta
+            _safe_roll(bone, None)
+            _drag_subtree(bone, delta, frozen)
+            hints.record_best_effort(name, role, index, distance, delta.length)
+            placed.append(name)
+    return placed
 
 
 def fit_quadruped(meta, regions, warnings, mapping):
@@ -897,6 +968,16 @@ def cmd_rigforge_metarig(params):
     ``archetype: "auto"`` reads the manifest (the object's stored archetype).
     Missing tags are warnings, never errors: a quadruped with no arms, or a
     sculpt tagged only Head and Torso, still gets a usable best-effort rig.
+
+    ``joints_file`` adds a **third landmark source** — a neural joint detector's
+    predictions, written by ``rigbridge/detect_joints.py`` in the
+    ``forge.joints/1`` schema.  Predictions never replace the tags: each
+    tag-derived landmark moves ``joints_weight`` (0.5) of the way towards a
+    prediction that lands within ``joints_tolerance`` (12% of the mesh's span)
+    of it, a prediction beyond that but inside ``joints_disagree_band`` (3x) is
+    reported as a **disagreement** and overruled, and roles the tags cannot
+    cover (fingers, toes) are placed from *named* predictions as best-effort.
+    Without ``joints_file`` this command behaves exactly as it always did.
     """
     obj = resolve_object(params, mesh_only=True)
     started = time.monotonic()
@@ -933,6 +1014,39 @@ def cmd_rigforge_metarig(params):
 
     preset, preset_reason = _resolve_preset(obj, archetype, preset_param, regions, warnings)
     operator, operator_name = _metarig_operator(preset)
+
+    # --- the third landmark source: a detector's predicted joints
+    hints = None
+    joints_path = params.get("joints_file")
+    if isinstance(joints_path, str) and joints_path.strip():
+        joints_path = resolve_path(joints_path.strip())
+        data = rigforge_joints.load_joints(joints_path)
+        hints = rigforge_joints.JointHints(
+            data, obj,
+            weight=get_float(params, "joints_weight", rigforge_joints.DEFAULT_WEIGHT,
+                             minimum=0.0, maximum=1.0),
+            tolerance=get_float(params, "joints_tolerance",
+                                rigforge_joints.DEFAULT_TOLERANCE,
+                                minimum=0.0, maximum=1.0),
+            disagree=get_float(params, "joints_disagree_band",
+                               rigforge_joints.DEFAULT_DISAGREE,
+                               minimum=1.0, maximum=20.0),
+            axis_up=(params.get("joints_axis_up") or None),
+            path=joints_path, warnings=warnings)
+        if not hints.enabled:
+            guess = rigforge_joints.sanity_axis_guess(data, obj)
+            if guess:
+                warnings.append(
+                    "That joints file would land inside the mesh if it were read as "
+                    "unit=%s, axis_up=%s (%d of %d joints). Fix the producer, or pass "
+                    "joints_axis_up to override."
+                    % (guess["unit"], guess["axis_up"], guess["inside"], guess["of"]))
+        if archetype == "quadruped" and hints.enabled:
+            hints.enabled = False
+            warnings.append(
+                "Predicted joints are wired into the biped fit only; the quadruped "
+                "template's roles (front vs rear limbs, a spine that runs forwards) have "
+                "no agreed role names yet, so the joints file was read and not used.")
 
     name = "%s_metarig" % obj.name
     mapping = {}
@@ -976,7 +1090,9 @@ def cmd_rigforge_metarig(params):
                 if archetype == "quadruped":
                     fitted = fit_quadruped(meta, regions, warnings, mapping)
                 else:
-                    fitted = fit_biped(meta, regions, warnings, mapping)
+                    fitted = fit_biped(meta, regions, warnings, mapping, hints=hints)
+                    if hints is not None:
+                        fit_best_effort(meta, hints, fitted, warnings)
 
                 specs = chain_tags(regions, params.get("modules"),
                                    params.get("spring_chains"), archetype)
@@ -1012,6 +1128,9 @@ def cmd_rigforge_metarig(params):
                 "them: %s. List them in 'modules' as chains if they should move."
                 % (preset, ", ".join(unfitted)))
 
+        if hints is not None:
+            warnings.extend(hints.summary_warnings())
+
         _set_prop(meta, PROP_TAG_BONES, json.dumps(mapping))
         _set_prop(meta, PROP_CHAINS, json.dumps(chains_meta))
         _set_prop(meta, PROP_RIG_MESH, obj.name)
@@ -1031,6 +1150,7 @@ def cmd_rigforge_metarig(params):
         "mapping": {tag: sorted(set(bones)) for tag, bones in mapping.items()},
         "chains": chains_meta,
         "landmarks": {tag: region.as_dict() for tag, region in sorted(regions.items())},
+        "joints": hints.report() if hints is not None else None,
         "scale": round(scale, 6),
         "rigify": rigify_info,
         "warnings": warnings,

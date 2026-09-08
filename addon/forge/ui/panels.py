@@ -951,6 +951,16 @@ class VIEW3D_PT_forge_rig(_ForgePanel, Panel):
         row.operator("forge.rf_weights", text="Cleanup").action = "cleanup"
         row.operator("forge.rf_weights", text="Normalize").action = "normalize"
 
+        # The deformation gate. Enabled only once something is skinned to a rig:
+        # there is nothing to measure on an unbound mesh, and a button that can
+        # only produce an error is not a button.
+        rigged = bool(obj is not None and any(
+            modifier.type == "ARMATURE" and modifier.object is not None
+            for modifier in obj.modifiers))
+        row = box.row(align=True)
+        row.enabled = rigged
+        row.operator("forge.rig_check", icon="MOD_ARMATURE", text="Check Deformation")
+
 
 class VIEW3D_PT_forge_cloth(_ForgePanel, Panel):
     """Stage 5: a garment grown from the tagged faces of the body."""

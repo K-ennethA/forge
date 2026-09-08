@@ -15,7 +15,9 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     verify = importlib.reload(verify)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
+    rigforge_joints = importlib.reload(rigforge_joints)  # noqa: F821
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
+    rigcheck = importlib.reload(rigcheck)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     assistant = importlib.reload(assistant)  # noqa: F821
     buddy = importlib.reload(buddy)  # noqa: F821
@@ -32,7 +34,9 @@ else:
     from . import verify
     from . import partforge
     from . import rigforge
+    from . import rigforge_joints
     from . import rigforge_rig
+    from . import rigcheck
     from . import rigforge_anim
     from . import assistant
     from . import buddy
@@ -54,7 +58,9 @@ __all__ = [
     "verify",
     "partforge",
     "rigforge",
+    "rigforge_joints",
     "rigforge_rig",
+    "rigcheck",
     "rigforge_anim",
     "assistant",
     "buddy",
@@ -73,6 +79,9 @@ def register():
     partforge.register()
     rigforge.register()
     rigforge_rig.register()
+    # After rigforge_rig: the deformation harness's operator subclasses its
+    # ``_RigOperator``, and its command reads that module's rig/mesh properties.
+    rigcheck.register()
     rigforge_anim.register()
     assistant.register()
     # After the assistant: the buddy hangs its check-ins off the same chat log
@@ -92,6 +101,7 @@ def unregister():
     buddy.unregister()
     assistant.unregister()
     rigforge_anim.unregister()
+    rigcheck.unregister()
     rigforge_rig.unregister()
     rigforge.unregister()
     partforge.unregister()

@@ -75,6 +75,10 @@ READ_ONLY_COMMANDS = frozenset({
     # whatever the artist actually wanted undone.
     "verify_design",
     "turntable",
+    # The deformation harness poses the rig into its extremes and puts every
+    # bone back in a `finally`, so it is a measurement, not an edit — and an
+    # undo step for it would bury whatever the animator actually wants back.
+    "rig_check",
     # Phase 11's two samplers. They read a curve the artist drew and hand back
     # control points — nothing is built and nothing in the scene moves, so a
     # checkpoint for "I measured your drawing" would only bury the stroke

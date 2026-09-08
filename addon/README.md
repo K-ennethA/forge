@@ -383,10 +383,11 @@ nobody is allowed to fail on.
 
 | type | params | does |
 |---|---|---|
-| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`** | builds a Rigify metarig and fits it to the tags; ear/tail tags become bone chains. Returns `metarig`, `bone_count`, `mapping` (tag → bones), `chains`, `landmarks`, `warnings` |
+| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it to the tags; ear/tail tags become bone chains. With `joints_file`, a neural detector's predicted joints refine that fit (see [The rigging bridge](#the-rigging-bridge-phase-4-stage-4a-joints_file)). Returns `metarig`, `bone_count`, `mapping` (tag → bones), `chains`, `landmarks`, `joints`, `warnings` |
 | `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`** | Rigify generate → automatic weights → per-tag weight cleanup. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, `warnings` |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts and the two numbers that mean trouble; or re-runs the rules |
 | `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`**, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files` |
+| **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?` | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) |
 
 Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
 sketch; every one has a default that reproduces the sketch's behaviour.
@@ -1328,7 +1329,10 @@ in when this runs headless; your setting is restored afterwards.
 
 ### The rig (Phase 4, stage 4)
 
-`RigForge ▸ Rig`. Three buttons and a weight row, in the order you use them.
+`RigForge ▸ Rig`. Three buttons, a weight row and a gate, in the order you use them.
+(The fourth button, **Check Deformation**, is
+[the deformation harness](#the-deformation-harness-rig_check); it is drawn disabled until
+something is skinned to a rig, because there is nothing to measure before that.)
 
 **Nothing is downloaded.** Rigify is not a download — it ships inside Blender
 (`scripts/addons_core/rigify`) and is simply switched off in a `--factory-startup`
@@ -1439,6 +1443,182 @@ head bones reaching down the torso.
 its own: `report` counts per-bone influences and finds unweighted, un-normalised and
 over-influenced vertices; `cleanup` re-runs the per-tag rules; `normalize` only limits and
 normalises.
+
+### The rigging bridge (Phase 4, stage 4a): `joints_file`
+
+`rigforge_metarig` has two sources of truth about where a joint is — the **tags** the
+artist painted and the **template** Rigify hands us. `joints_file` adds a third: a neural
+joint detector's predictions, read from a JSON file.
+
+**Why a file, and why hints.** The detector runs outside Blender, in its own Python and
+its own CUDA (`rigbridge/detect_joints.py`, driving UniRig; see `rigbridge/README.md` and
+`C:\forge-models\unirig\FORGE-NOTES.md`). It is a **separate process with a file
+handoff**, not a service: it wants ~8.5 GB of a 12 GB card, and holding that resident
+would starve the mesh generator. The file boundary also means the blending rules below are
+testable to the millimetre with no model, no CUDA and no download — which is exactly how
+they are tested.
+
+And the predictions are *hints*, not answers, because the evidence says so
+(`docs/automation-thesis.md` build #2): these are joint **detectors**, not riggers —
+F1 ≈ 0.077 on out-of-domain skeletons, no hands, no tails, no wings, and on anything
+outside a template mode **no names at all**. Measured here, on our own test biped: UniRig
+put the spine within 8–36 mm and the shoulders 253–266 mm out. A source like that is worth
+listening to and must never be obeyed.
+
+So the blend is deliberately asymmetric:
+
+- **Tags anchor.** Every landmark is still computed from the tagged geometry first.
+- **Predictions refine.** A prediction within `joints_tolerance` (default 12% of the
+  mesh's largest dimension) of that landmark pulls it `joints_weight` (default **0.5**) of
+  the way in. Half: a detector that is right pulls the joint into the flesh, one that is
+  slightly wrong costs half its error rather than all of it. `joints_weight: 0` reports
+  everything and moves nothing; `1` hands the landmark over outright.
+- **Tags win, loudly.** A prediction past tolerance but inside `joints_disagree_band`
+  (default 3×) is recorded as a **disagreement** — with both positions in millimetres —
+  and ignored. The fit is unchanged and the report says a second opinion existed and was
+  overruled.
+- **Best effort past the wrist.** Roles no tag can express (fingers, toes) are placed
+  from *named* predictions alone, flagged `best_effort`, never counted as fitted. A
+  connected bone whose parent the tags fitted is skipped instead, with the reason.
+
+**Matching, when the detector gives no names.** Two matchers run per role: by **name**
+(`hips`/`pelvis`, `spine`/`chest`, `upper_arm`, `forearm`/`elbow`, `hand`/`wrist`,
+`thigh`, `shin`/`calf`, `foot`/`ankle`, with a side that must agree), then by **position**
+— the nearest unclaimed prediction. Position is the path that actually runs: UniRig's
+joints arrive named `bone_0`, `bone_1`, …, and those are read as **unnamed**, because a
+placeholder that looks like a name is worse than no name at all (the positional matcher
+deliberately refuses to touch a joint whose name says it belongs to another role).
+
+Two rules keep positional matching from inventing anatomy:
+
+1. A prediction is **claimed** once used, so two adjacent spine landmarks cannot collapse
+   onto the same predicted vertebra.
+2. A positional match must also fall inside the prediction's **own territory** — closer to
+   this landmark than half the way to the next predicted joint. Without that, a landmark
+   the detector simply did not predict (a knee it missed) reaches over and grabs its
+   neighbour's ankle. This is why the effective tolerance in the report is often far below
+   the nominal one (43 mm at the shoulder of a 1.7 m figure, not 205 mm).
+
+**Disagreements are decided at the end, not on the spot.** A landmark with no prediction
+of its own always has *some* neighbour's joint as its nearest; calling that a disagreement
+would bury the real ones. A near-miss becomes a disagreement only if no other role claimed
+that prediction (or if the prediction's *name* said it was this role's); otherwise it is
+recorded as `explained_elsewhere`.
+
+**The frame gate.** The file declares its own frame (`unit`, `space`, `axis_up`) and it is
+converted — millimetres to metres, glTF Y-up to Blender Z-up when asked, then through
+`matrix_world`. If fewer than half the converted joints land inside the mesh's (10%-grown)
+bounding box the **whole file is refused**, the fit falls back to tags alone, and the
+warning says which unit/axis reading *would* have worked. A frame mistake that silently
+shifted every joint is the one failure that looks exactly like success.
+
+The result's `joints` block carries all of it: `enabled`, `joints`, `named_joints`,
+`placeholder_names`, `inside_fraction`, the effective tolerances, `refined` (with
+`tag_mm`, `predicted_mm`, `used_mm`, `moved_mm` per role), `disagreements`,
+`best_effort`, `considered` and `unused_joints`. Two of the warnings are written for
+someone who will never open it: one counts the disagreements and names the worst, one
+counts the refinements and gives the largest move.
+
+```jsonc
+// what the runner writes; what this command reads
+{"schema": "forge.joints/1", "source": "unirig",
+ "frame": {"unit": "mm", "space": "mesh_local", "axis_up": "Z"},
+ "joints": [{"index": 0, "name": null, "head_mm": [3.3, -10.0, 634.2],
+             "tail_mm": null, "parent": null, "confidence": null}]}
+```
+
+Nothing changes without `joints_file`: the tag-only fit is bit-for-bit what it was.
+Quadruped metarigs read the file and decline to use it (their front/rear limb roles have
+no agreed names yet) and say so in a warning.
+
+### The deformation harness (`rig_check`)
+
+`RigForge ▸ Check Deformation` (`rig_check`). Every rigging tool stops at "the rig
+generated". This answers the question the artist asks next — **does it deform** — with
+numbers instead of a screenshot.
+
+For each deform-relevant joint it poses the rig to extremes and measures three things on
+the **evaluated** (armature-modified) mesh:
+
+1. **Volume loss** — the collapsed elbow. The convex hull of the vertices around the
+   joint, posed against rest. A hull because the surface around a joint is an open patch
+   whose signed volume means nothing, while the hull of the same vertices is closed,
+   cheap, and collapses exactly when the flesh does. A negative loss is a joint whose
+   neighbourhood *grew*, which is information, not an error.
+2. **New self-intersections** — the arm through the ribs. The same BVH overlap
+   `mesh_diagnose` uses, differenced against the rest pose so a mesh that already clips
+   itself does not fail every joint on the rig.
+3. **Candy-wrapper twist** — the forearm pinched to a thread. The area of the 2D convex
+   hull of the vertices in a thin slab across the bone, 30% of the way along it, posed
+   against rest.
+
+**The neighbourhood scales with the limb, not just the bone.** A radius measured only in
+bone lengths sits entirely inside a blob leg and catches no surface at all — which is how
+a joint gets silently skipped. The radius is the larger of 60% of the shorter adjacent
+bone and 1.25× the limb's measured girth (the median distance from its own vertices to the
+bone). Both numbers are in the report (`neighbourhood_radius_mm`, `limb_girth_mm`).
+
+**Three poses per joint** (`extreme`, the default): mid-flex, max-flex, max-twist. A sweep
+would be hours; the extremes are where the failures live and the mid-flex catches a joint
+that is already wrong before it gets anywhere. `quick` is one pose, `full` is seven, and
+`poses` also takes an explicit list (`[90, 140]` or
+`[{"label": "...", "flex_deg": 90, "twist_deg": 30}]`). Ranges are per joint and
+conservative — knee 0–140°, elbow 0–150°, hip 0–110°, shoulder 0–95°, spine and neck
+bends — a game character reaches those long before a gymnast's.
+
+**Three things stop it from passing a rig that did nothing:**
+
+- It poses the **control**, not the deform bone (`upper_arm_fk.L`, `chest`, `neck`),
+  preferring *unconstrained* bones — a Rigify `ORG-`/`DEF-` bone is driven by constraints
+  and rotating it changes nothing while looking exactly like a pass.
+- It forces every `IK_FK` property to full FK for the duration, because an FK rotation
+  under an IK solver moves nothing either.
+- It then **proves** the joint drove geometry: if the poses move no vertex further than
+  0.2% of the mesh's span, the joint is reported unmeasured with that reason rather than
+  scored.
+
+**The pose is always restored.** Every pose bone's `matrix_basis`, rotation mode and
+`IK_FK` value is captured up front and put back in a `finally` — finished, raised or
+interrupted. The suite asserts this bone by bone.
+
+**The thresholds are heuristics and say so.** ≤8% volume loss / ≤20% is attention, 0 new
+intersections / ≤20 is attention, ≤15% twist collapse / ≤35% is attention. They are
+**proxy tier**: the points at which each artefact becomes visible in practice, *not*
+calibrated against artist accept/reject decisions — calibrating them against real
+accepted and rejected rigs is the obvious next round. Every measurement is printed next to
+the band that judged it, so you can disagree with a threshold and keep the number.
+
+A real report, on the synthetic test biped (a blob with automatic weights — it is supposed
+to fail):
+
+```
+gate=fail   11 joints measured   0.67 s
+  knee.L       vol=41.7%  twist=-0.7%  new clips=108   fail
+  elbow.R      vol=52.7%  twist= 5.5%  new clips= 96   fail
+  shoulder.L   vol=22.9%  twist=-6.9%  new clips=106   fail
+  spine_lower  vol= 3.7%  twist= 1.5%  new clips=  4   attention
+  neck         vol= 2.6%  twist= 8.1%  new clips= 12   attention
+```
+
+Runs under `--background` in well under a second on a 5 000-face mesh, renders nothing,
+downloads nothing and writes nothing to disk.
+
+**What the MCP mirror will need** (the follow-up round, in `mcp/`, not touched here):
+
+- `rig_check` as a tool, with `rig`, `mesh`, `poses`, `joints`, `max_poses`,
+  `intersections` — and a **summariser**, because the full result is one object per joint
+  per pose and the agent only needs `gate`, the failing joints, and their worst three
+  numbers. Feed the LLM the computed features, never the raw report.
+- `rigforge_metarig`'s five new parameters, `joints_file` first; the MCP layer should
+  resolve a relative path against the project workspace the way the other file-taking
+  tools do.
+- A wrapper that *runs* the detector — the runner is a subprocess in a foreign venv
+  (`C:\forge-models\unirig\.venv\Scripts\python.exe rigbridge\detect_joints.py`), so the
+  tool is "export mesh → run runner → hand the JSON path to `rigforge_metarig`", and it
+  must refuse to start while a meshgen job holds the GPU (port 8902).
+- The honest caveats in the tool descriptions: predictions are hints, disagreements mean
+  the tags won, and `rig_check`'s thresholds are heuristic — otherwise an agent will read
+  a `fail` as a fact about the artist's work rather than a band it can argue with.
 
 ### Godot export (Phase 4, stage 7)
 
@@ -1733,6 +1913,10 @@ addon/forge/
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
+  tools/rigforge_joints.py  predicted-joint hints: the metarig fitter's third landmark
+                         source (loads forge.joints/1, matches roles, rations belief)
+  tools/rigcheck.py      the deformation harness: rig_check poses every joint to its
+                         extremes and measures volume / clipping / twist collapse
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
   tools/flows.py         Flows: the JSON format, the runner, flow_list/flow_run, the box (6b)
@@ -1747,6 +1931,9 @@ addon/tests/
   headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
   headless_phase4.py     headless checks for the rig, the weights and the Godot export
   headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
+  headless_rigbridge.py  headless checks for the rigging bridge (port 9901): joints_file
+                         blending against a hand-written detector file, the frame gate,
+                         and rig_check on the generated rig - no GPU, no download
   headless_assistant.py  headless checks for the Assistant panel against a fake bridge
   headless_flows.py      headless checks for flow_list/flow_run and the Flows box
   headless_reference.py  headless checks for load_reference and the attach field (6c)
@@ -1787,9 +1974,9 @@ its panel's `status` string.
 
 ## Headless tests
 
-Fourteen suites, all `--background` only. Never launch Blender windowed to run them. As of
-Phase 15 they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 + 316 + 139 +
-79 = 1573 checks**, all green on Blender 5.0.1.
+Fifteen suites, all `--background` only. Never launch Blender windowed to run them. As of
+the rigging bridge they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 +
+316 + 139 + 79 + 108 = 1681 checks**, all green on Blender 5.0.1.
 
 ### Phase 15 — project `.blend` files (`headless_projects.py`)
 
@@ -2159,6 +2346,56 @@ read back off the F-curve with the right interpolation and a near-miss bone name
 with a suggestion; the retarget's mapping table, hip travel, scene cleanliness and purged
 import; and finally an export whose `.glb` carries both garments, the `Settled` morph
 target and both `-loop`-suffixed clips.
+
+### The rigging bridge — `joints_file` and `rig_check` (`headless_rigbridge.py`)
+
+Needs **no geometry service, no GPU and no model download**:
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python "C:\...\forge\addon\tests\headless_rigbridge.py"
+```
+
+108 checks on port 9901. The count is stable run to run: the per-joint assertions
+cover the eight limb joints, which are always measurable, and the spine ones (whose
+vertex neighbourhoods depend on where Quadriflow landed that run) are checked in
+aggregate. It imports the same synthetic tagged biped as Phase 4 (so the
+three suites cannot drift apart), retopologises it, and then:
+
+- **The bridge, against a hand-written detector file.** The detector's output is a *file*,
+  so the suite writes its own: predictions derived from the tag-only fit with known
+  offsets baked in. That is the point of the file handoff — the blending rules are
+  testable to the millimetre with no CUDA. It checks that landmarks move **towards** the
+  predictions and land **about half way** (weight 0.5, asserted within 15%), that
+  `joints_weight: 0` moves nothing while still reporting, that `1` hands the landmark over
+  outright, that the deliberately-wrong elbow prediction is reported as a **disagreement**
+  with both positions and does not move the bone, and that landmarks merely *next to*
+  another joint are not reported as conflicts.
+- **The frame gate.** The same numbers relabelled `axis_up: "Y"`, and metres written into
+  a millimetre field, are both refused with a warning that names the reading that would
+  have worked — and the fit is asserted identical to the tag-only one. A missing file and
+  an empty `joints` array are errors, not silent no-ops.
+- **Best effort.** A *named* prediction places an index finger on the full human template
+  and the bone is checked to have really moved; a prediction named `hand` is checked to be
+  taken **once**, by the wrist landmark, by name — not a second time for the hand bone.
+- **The harness.** `rig_check` on the generated rig: every knee, elbow, hip and shoulder
+  measured, three poses each, a rest volume to compare against, a volume loss for every
+  pose, a verdict per metric, a measured bend direction — and, per joint, that the control
+  **actually moved the flesh**. Then the pose is compared bone by bone against a
+  fingerprint taken before the call.
+- **That it can fail.** The elbow's weights are hard-bound (every vertex snapped to one
+  bone, the classic no-falloff mistake) and the harness is required to report a
+  measurably different volume loss. A gate that cannot fail is not a gate.
+- The knobs: a joint filter, the one-pose `quick` set, intersections switched off, an
+  explicit angle list echoed back, and three error paths (unknown rig, a mesh passed as a
+  rig, an unknown pose set).
+- The panel button: that it exists, maps to a registered operator, is drawn disabled off
+  an unrigged mesh, runs when clicked, and reports through the RigForge status line.
+
+The **real** UniRig smoke test is deliberately *not* here — it needs a GPU, 5.4 s and
+8.5 GB of VRAM per mesh. It is run by hand, once, and written down in
+`C:\forge-models\unirig\FORGE-NOTES.md`.
 
 ### Phase 4 — rig and Godot export (`headless_phase4.py`)
 
