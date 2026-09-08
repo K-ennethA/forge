@@ -121,10 +121,15 @@ MASTER_BOX_RECOMMENDATION = (
 def face_area_normal(
     a: Sequence[float], b: Sequence[float], c: Sequence[float]
 ) -> Tuple[float, Vec3]:
-    """``(area_mm2, unit_normal)`` of one triangle, wound outward.
+    """Calculate the area and normal of a triangle.
 
-    A degenerate triangle gets zero area and a zero normal; callers skip those
-    rather than dividing by their length.
+    Args:
+        a: The first vertex of the triangle.
+        b: The second vertex of the triangle.
+        c: The third vertex of the triangle.
+
+    Returns:
+        A tuple containing the area of the triangle and its unit normal vector.
     """
     ux, uy, uz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
     vx, vy, vz = c[0] - a[0], c[1] - a[1], c[2] - a[2]
@@ -144,13 +149,17 @@ def radius_profile(
     z_max: float,
     bins: int = RADIUS_BINS,
 ) -> List[float]:
-    """How wide the part is at each height: max radius from the centre axis.
+    """Compute the radius profile of the part.
 
-    Vertices are bucketed by height and each bucket keeps its largest radius.
-    A bucket no vertex landed in -- a long thin triangle spanning several
-    buckets on a coarse mesh -- is filled by interpolating its nearest occupied
-    neighbours, which is what the silhouette does between two tessellation
-    bands anyway.
+    Args:
+        vertices: The vertices of the mesh.
+        centre: The center of the part in the XY plane.
+        z_min: The minimum Z coordinate of the vertices.
+        z_max: The maximum Z coordinate of the vertices.
+        bins: The number of height bins to use.
+
+    Returns:
+        A list of radii at each height bin.
     """
     count = max(2, int(bins))
     span = z_max - z_min
@@ -195,6 +204,17 @@ def radius_profile(
 
 
 def _bin_of(z: float, z_min: float, z_max: float, bins: int) -> int:
+    """Determine the bin index for a given Z coordinate.
+
+    Args:
+        z: The Z coordinate.
+        z_min: The minimum Z coordinate.
+        z_max: The maximum Z coordinate.
+        bins: The number of bins.
+
+    Returns:
+        The bin index for the given Z coordinate.
+    """
     span = z_max - z_min
     if span <= 0.0:
         return 0
@@ -205,11 +225,14 @@ def _bin_of(z: float, z_min: float, z_max: float, bins: int) -> int:
 def _patches(
     faces: Sequence[Sequence[int]], indices: Sequence[int]
 ) -> Dict[int, int]:
-    """Union-find over the opposing faces: which of them touch each other.
+    """Union-find over the opposing faces to group them into patches.
 
-    Returns ``{face index: patch root}``.  Two opposing triangles are in the
-    same patch when they share an edge -- one pocket, however many triangles
-    the tessellator spent on it.
+    Args:
+        faces: The faces of the mesh.
+        indices: The indices of the faces to consider.
+
+    Returns:
+        A dictionary mapping each face index to its patch root.
     """
     parent: Dict[int, int] = {index: index for index in indices}
 
@@ -255,7 +278,21 @@ def _half_report(
     footprint_width: float,
     examples_wanted: int,
 ) -> Dict[str, Any]:
-    """Turn one half's opposing faces into patches, a verdict and examples."""
+    """Generate a report for one half of the mold.
+
+    Args:
+        name: The name of the half.
+        draw: The draw direction vector.
+        records: The records of opposing faces.
+        half_area: The surface area of the half.
+        face_count: The number of faces in the half.
+        faces: The faces of the mesh.
+        footprint_width: The width of the part's footprint.
+        examples_wanted: The number of examples to include in the report.
+
+    Returns:
+        A dictionary containing the report for the half.
+    """
     area_floor = max(SEVERE_MIN_PATCH_AREA_MM2, SEVERE_PATCH_AREA_FRACTION * half_area)
     depth_floor = max(SEVERE_MIN_DEPTH_MM, SEVERE_DEPTH_FRACTION * footprint_width)
 
@@ -353,7 +390,15 @@ def _half_report(
 
 
 def _detail_sentence(name: str, report: Mapping[str, Any]) -> str:
-    """One plain sentence about this half, with the numbers in it."""
+    """Generate a detail sentence for the report.
+
+    Args:
+        name: The name of the half.
+        report: The report for the half.
+
+    Returns:
+        A detail sentence describing the half.
+    """
     side = "above" if name.endswith("top") else "below"
     if report["severity"] == "none":
         return (
@@ -388,10 +433,19 @@ def analyze(
     threshold_deg: float = DEFAULT_THRESHOLD_DEG,
     examples: int = DEFAULT_EXAMPLES,
 ) -> Dict[str, Any]:
-    """Per-half undercut report for a two-piece mold parted at *parting_z*.
+    """Analyze the undercut for a two-piece mold.
 
-    ``bounds_low`` / ``bounds_high`` are the part's bounding box in mm -- the
-    same ``stats["bounding_box_min_mm"]`` every other endpoint returns.
+    Args:
+        vertices: The vertices of the mesh.
+        triangles: The triangles of the mesh.
+        parting_z: The Z coordinate of the parting plane.
+        bounds_low: The lower bounds of the part's bounding box.
+        bounds_high: The upper bounds of the part's bounding box.
+        threshold_deg: The threshold angle in degrees.
+        examples: The number of examples to include in the report.
+
+    Returns:
+        A dictionary containing the analysis report.
     """
     low = [float(v) for v in bounds_low]
     high = [float(v) for v in bounds_high]
