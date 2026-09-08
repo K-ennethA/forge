@@ -78,6 +78,9 @@ EXPECTED_TOOLS = {
     "profile_from_curve",
     "outline_from_curve",
     "merge_for_print",
+    # The project's own scene file (Phase 15) — where a sculpt lives
+    "save_project_blend",
+    "open_project_blend",
     # meshgen (Phase 7) — a picture becomes a mesh
     "generate_3d",
     "meshgen_status",
@@ -152,7 +155,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 67
+    assert len(names) == 69
 
 
 def test_every_tool_is_documented() -> None:
@@ -214,6 +217,12 @@ def test_every_tool_has_an_object_schema() -> None:
         ("profile_from_curve", ["curve_object"]),
         ("outline_from_curve", ["curve_object"]),
         ("merge_for_print", []),
+        # Phase 15: a save can guess the project from the panel, so it needs
+        # nothing. An open cannot guess — replacing the running scene with the
+        # wrong project's file is not a mistake a default should be able to
+        # make — so the name is mandatory.
+        ("save_project_blend", []),
+        ("open_project_blend", ["name"]),
         # RigForge: only the tag name is ever mandatory
         ("rigforge_list_tags", []),
         ("rigforge_tag", ["tag"]),

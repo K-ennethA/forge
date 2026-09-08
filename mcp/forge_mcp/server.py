@@ -66,6 +66,8 @@ from .util import (
     fmt_plunger_plan,
     fmt_preview_report,
     fmt_profile_report,
+    fmt_project_open_report,
+    fmt_project_save_report,
     fmt_reference_report,
     fmt_retarget_report,
     fmt_retopo_report,
@@ -194,6 +196,14 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   and nothing else depends on it. merge_for_print then fuses the survivors into
   one watertight shell for the slicer (voxel = nozzle/2 by default; originals
   hidden, not deleted), and check_model is the call that always follows it.
+- A project can also own a SCENE: save_project_blend writes the Blender session
+  into projects/<name>/<name>.blend as a COPY — the artist's own file is never
+  retargeted — which is the only home a sculpt, a lighting setup or placed
+  references have. Offer it after real scene work, never after a parametric
+  rebuild the script reproduces anyway. open_project_blend loads one back, and
+  it is never called unasked: when there is unsaved work it opens nothing and
+  answers needs_confirmation, which is a question to put to the artist and wait
+  on — offer the save first, and only pass confirm=true after a plain yes.
 - The artist's WORKSPACE is yours to drive, not to describe. set_view,
   frame_object, local_view, set_shading, set_overlays, set_mode and sculpt_brush
   run inside their live Blender: "turn the grid on for x, y and z" is
@@ -2146,6 +2156,99 @@ def merge_for_print(
         read_timeout=max(config.BLENDER_READ_TIMEOUT, _MERGE_TIMEOUT),
     )
     return fmt_merge_report(result)
+
+
+# ---------------------------------------------------------------------------
+# Phase 15 — the project's own scene file
+# ---------------------------------------------------------------------------
+
+#: Writing (or loading) a whole sculpt is disk work on Blender's main thread.
+#: The same budget the bridge gives these two routes (BLEND_SAVE_TIMEOUT /
+#: BLEND_OPEN_TIMEOUT), so the two surfaces wait the same length of time for
+#: the same command.
+_BLEND_TIMEOUT = 300.0
+
+
+@app.tool()
+def save_project_blend(project: Optional[str] = None) -> str:
+    """Save the Blender scene into the project as `projects/<name>/<name>.blend`.
+
+    The home for everything a part script cannot hold: a sculpt, a lighting
+    setup, the reference empties someone spent an hour placing. A PARAMS script
+    rebuilds a shape; it does not rebuild an afternoon of sculpting.
+
+    **It saves a COPY, and that is the whole design.** The artist's own file —
+    the one they have been pressing Ctrl+S on — is not retargeted, not moved and
+    not renamed; their next Ctrl+S goes exactly where it went before. The report
+    hands back `session_file` so you can say that rather than promise it. Say it
+    every time: it is what makes this safe to accept.
+
+    - `project`: the folder name under `projects/`. Omit it and the add-on uses
+      the project the PartForge panel is pointed at, which is the one the artist
+      is visibly working on. The folder is created when it is not there yet, so
+      a sculpt that never had a project gets one.
+
+    **Offer this after substantial scene work** — a sculpt, a voxel remesh, a
+    merge, references placed — and never after a cheap parametric rebuild, which
+    `partforge_generate` reproduces from the script in seconds. Once it is saved,
+    the project's card in the Library grows an **Open** button that loads the
+    scene back, which is the point of saving at all: tell them that.
+
+    Needs Blender running with the Forge add-on server started.
+    """
+    params: Dict[str, Any] = {}
+    if project and project.strip():
+        params["project"] = project.strip()
+
+    result = blender_client.send_command(
+        "save_project_blend",
+        params,
+        read_timeout=max(config.BLENDER_READ_TIMEOUT, _BLEND_TIMEOUT),
+    )
+    return fmt_project_save_report(result)
+
+
+@app.tool()
+def open_project_blend(name: str, confirm: bool = False) -> str:
+    """Load `projects/<name>/<name>.blend` into Blender, replacing the scene.
+
+    **Never call this unasked.** Opening a file throws the running scene away
+    and Blender resets its undo stack on a file load, so there is no Ctrl+Z
+    afterwards — this runs when the artist asked for this project's scene, and
+    at no other time.
+
+    - `name`: the project's folder name under `projects/`.
+    - `confirm` (default false): permission to discard unsaved work. **Leave it
+      false.** When there is anything to lose the add-on opens nothing and
+      answers `needs_confirmation` with a sentence naming exactly what would go.
+      That is a question for the artist, not a step for you: relay it, wait for
+      a plain yes, and only then call again with `confirm=true`. Offer
+      `save_project_blend` first — it keeps the current scene as a copy, and
+      then the open costs nothing at all.
+
+    A project with no scene file yet is refused with the sentence that makes
+    one (Save Scene to Project); the artist's own route is the **Open** button
+    on the project's Library card.
+
+    The add-on's socket survives the file load — the pump is registered
+    persistent — so you can carry straight on. Call `get_scene_info` before you
+    act on anything: every object name you knew belongs to the previous file.
+
+    Needs Blender running with the Forge add-on server started.
+    """
+    project = (name or "").strip()
+    if not project:
+        raise ForgeError(
+            "Which project? open_project_blend takes the folder name under "
+            'projects/, e.g. "small-magnet-holder".'
+        )
+
+    result = blender_client.send_command(
+        "open_project_blend",
+        {"name": project, "confirm": bool(confirm)},
+        read_timeout=max(config.BLENDER_READ_TIMEOUT, _BLEND_TIMEOUT),
+    )
+    return fmt_project_open_report(result)
 
 
 # ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**67 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+**69 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -53,7 +53,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 63-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 69-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration.
 `tests/test_workspace.py` does it for the nine Phase 8 tools: what each workspace command
@@ -101,8 +101,16 @@ nothing was built, that an outline that crosses itself is flagged before `silhou
 refuses it, that `merge_for_print` resolves its pieces the documented way, that its report
 states the voxel trade and the hidden-not-deleted rule and always names `check_model` next,
 and that `partforge_generate`'s `collection` really reaches `load_mesh` so the component
-convention is reachable rather than aspirational. Nothing in the suite needs Blender or the
-geometry service, and nothing binds or connects to 9876/8765/8902.
+convention is reachable rather than aspirational. `tests/test_projects_blend.py` covers the
+two Phase 15 mirrors: what each puts on the wire (an omitted project is the panel's guess,
+never a null; `confirm` is always explicit), that the save's report repeats the
+untouched-file promise with `session_file` printed beside it and points at the Library's
+**Open** button, that a blank name never reaches Blender, that `needs_confirmation` is
+rendered as a question to relay — with **exactly one** request sent, carrying
+`confirm: false`, so the tool can never confirm on its own — that the opened report says
+undo does not cross a file load, and that neither command is a legal flow step. Nothing in
+the suite needs Blender or the geometry service, and nothing binds or connects to
+9876/8765/8902.
 
 `tests/e2e_new_part.py` is deliberately **not** a pytest module: it is the end-to-end proof,
 and it needs the real service on 8765 and launches its own headless Blender (socket port
@@ -531,6 +539,46 @@ partforge_generate(...); partforge_check(...); render_preview()
 delete_object(name="gecko-bowl-collar")
 merge_for_print(collection="gecko-bowl")
 check_model(object="gecko-bowl-merged")
+```
+
+### The project's own scene file (Phase 15)
+
+A part script rebuilds a shape; it does not rebuild a sculpt, a lighting setup or six placed
+reference empties. Those live in a `.blend`, and a project folder now has one.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `save_project_blend` | `project` (default: the project the PartForge panel is pointed at) | `wm.save_as_mainfile(copy=True)` into `projects/<name>/<name>.blend`, creating the folder if it is not there. **Never retargets the session** — the artist's own file is where it was, and the report prints `session_file` to prove it rather than promise it. |
+| `open_project_blend` | `name`, `confirm` (default **false**) | Loads that `.blend`, replacing the running scene. With unsaved work and no `confirm`, it opens **nothing** and answers `needs_confirmation` plus the sentence naming what would be lost. |
+
+- **`copy=True` is the entire design of the save.** Without it Blender retargets the session:
+  the file the artist has been pressing Ctrl+S on silently becomes the project file and their
+  next save goes somewhere they did not choose. The add-on refuses outright on a build whose
+  `save_as_mainfile` has no `copy`, and the report says the untouched-file line every time —
+  it is what makes the offer safe to accept.
+- **`needs_confirmation` is a question, not an error.** It comes back `status: "success"` with
+  nothing touched. The mirror renders it as an instruction to the model: relay what would be
+  lost, offer `save_project_blend` first, and wait for a plain yes before calling again with
+  `confirm=true`. **Never auto-confirm** — Blender resets its undo stack on a file load, so
+  there is no Ctrl+Z afterwards, which is exactly why the confirmation exists and not a
+  checkpoint.
+- **Neither is a flow step**, deliberately: a flow replays with no model in the loop, so there
+  is nobody to put the confirmation to and nobody to notice a project file being written.
+- **Both surfaces agree.** The artist's own routes are **press N → Forge tab → PartForge box →
+  Save Scene to Project** and the **Open** button on the project's card in the web Library
+  (`POST /projects/<name>/save` and `/open` on the bridge, same two commands, same round
+  trip). The save's report points at that Open button, because loading the scene back is the
+  reason to save it. Timeouts here match the bridge's 300 s.
+
+```text
+# after an hour of sculpting on the project's part
+save_project_blend()                        # the panel's project; a COPY
+# -> "your own file did not move: this session still saves to D:\sculpts\my-gecko.blend"
+
+# they ask for that scene back, days later
+open_project_blend(name="gecko-bowl")
+# -> NOT opened: 12 unsaved objects would be lost. ASK. Then, after a plain yes:
+open_project_blend(name="gecko-bowl", confirm=True)
 ```
 
 ### Picture to 3D (Phase 7) — meshgen

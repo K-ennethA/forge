@@ -4344,3 +4344,140 @@ def fmt_plunger_plan(plan: Mapping[str, Any]) -> str:
         )
     )
     return "\n".join(lines)
+
+
+# --- Phase 15: the project's own .blend file ---------------------------------
+#
+# Two renderers, and each one carries one sentence the artist cannot check for
+# themselves.
+#
+# The save's is that their own file did not move. `save_as_mainfile(copy=True)`
+# is the whole promise of that command, and a promise nobody repeats is a
+# promise nobody trusts — so `session_file` (where THEIR Ctrl+S still writes)
+# is printed rather than summarised, and the impossible case (`retargeted`) is
+# shouted rather than dropped.
+#
+# The open's is what a file load would throw away. `needs_confirmation` is a
+# QUESTION, not a failure and not a step to get past: nothing was touched, and
+# the only correct next move is to put the sentence to the artist and wait. So
+# the renderer says that in the imperative, offers the save as the way to lose
+# nothing either way, and never once mentions confirm=true as a thing to do
+# now.
+
+
+def fmt_project_save_report(result: Mapping[str, Any]) -> str:
+    """`save_project_blend`, with the untouched-file promise said out loud."""
+    project = str(result.get("project") or "the project")
+    path = str(result.get("path") or "")
+    count = result.get("object_count")
+    size = result.get("size")
+
+    head = f"Saved {fmt_number(count, 0)} object(s) into {path}"
+    if result.get("replaced"):
+        head += " (replacing the previous save)"
+    if isinstance(size, (int, float)) and size:
+        head += f" — {fmt_size(size)}"
+    lines = [head + "."]
+
+    session = str(result.get("session_file") or "")
+    lines.append(
+        "  It is a COPY. The artist's own file did not move: this Blender "
+        + (f"session still saves to {session}"
+           if session else "session is still unsaved, exactly as it was")
+        + " — File > Save goes where it always went. Say that; it is the "
+        "reason this is safe to press."
+    )
+    if result.get("retargeted"):
+        lines.append(
+            "  WARNING: Blender reported that it RETARGETED this session to the "
+            "project file. Tell the artist immediately and have them use File > "
+            "Save As to put their own file back before they save again."
+        )
+    if result.get("created_folder"):
+        lines.append(f"  the projects/{project}/ folder did not exist and was "
+                     "made for it")
+    names = result.get("objects") or []
+    if names:
+        lines.append(f"  saved: {fmt_name_list(names, 12)}")
+    lines.append(
+        f"  Point them at it: the **{project}** card in the Library now has an "
+        "**Open** button, and that button loads this scene — the sculpt, the "
+        "lighting, the reference empties — straight back into Blender. In "
+        "Blender itself the same save is **press N → Forge tab → PartForge box "
+        "→ Save Scene to Project**."
+    )
+    return "\n".join(lines)
+
+
+def fmt_project_open_report(result: Mapping[str, Any]) -> str:
+    """`open_project_blend` — the question, or the world replaced.
+
+    The confirmation branch is the important one, and it is written at the
+    model rather than at the artist: this is the moment where a helpful
+    assistant discards an afternoon of somebody's sculpting by being agreeable.
+    """
+    project = str(result.get("project") or "the project")
+    path = str(result.get("path") or "")
+
+    if result.get("needs_confirmation"):
+        lost = str(result.get("would_lose") or
+                   "This session has unsaved changes.")
+        session = str(result.get("session_file") or "")
+        lines = [
+            f"NOT opened — nothing was touched. {path} is there, but loading it "
+            "would throw away unsaved work in this session.",
+            f"  what would be lost: {lost}",
+        ]
+        if session:
+            lines.append(f"  the session's own file: {session}")
+        hint = str(result.get("hint") or "")
+        if hint:
+            lines.append(f"  Blender's own hint: {hint}")
+        lines.append(
+            "  RELAY THIS AS A QUESTION AND STOP. Repeat what would be lost in "
+            "the artist's own words and wait for a plain yes before calling "
+            "this again with confirm=true. Do not confirm on your own and do "
+            "not confirm because they asked to open it — they asked before "
+            "they knew the cost. A file load resets Blender's undo stack, so "
+            "Ctrl+Z cannot bring the scene back afterwards."
+        )
+        lines.append(
+            f"  Offer the save first: save_project_blend keeps this scene as "
+            f"projects/{project}/{project}.blend (a copy — their own file is "
+            "untouched), and then opening costs nothing at all."
+        )
+        return "\n".join(lines)
+
+    count = result.get("object_count")
+    lines = [
+        f"Opened {path} — {fmt_number(count, 0)} object(s) in the scene now.",
+    ]
+    discarded = str(result.get("discarded") or "")
+    if discarded:
+        lines.append(f"  discarded, as confirmed: {discarded}")
+    session = str(result.get("session_file") or "")
+    if session:
+        lines.append(f"  this session is now that file: {session}")
+    if result.get("server_running"):
+        port = result.get("server_port")
+        lines.append(
+            "  the Forge server kept listening across the file load"
+            + (f" (port {fmt_number(port, 0)})" if port else "")
+            + " — you can carry straight on"
+        )
+    else:
+        lines.append(
+            "  the Forge server is NOT listening after the load: tell them to "
+            "press N → Forge tab → Start under Forge Server before you try "
+            "anything else"
+        )
+    names = result.get("objects") or []
+    if names:
+        lines.append(f"  in the scene: {fmt_name_list(names, 12)}")
+    lines.append(
+        "  Say two things and stop: what came back, and that **undo does not "
+        "cross a file load** — Ctrl+Z will not return to the previous scene. "
+        "Then get_scene_info before you act on anything, because every object "
+        "name you knew a moment ago belonged to a different file."
+    )
+    return "\n".join(lines)
