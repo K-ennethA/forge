@@ -581,6 +581,7 @@ def bill_of_materials(plan: Mapping[str, Any]) -> List[Dict[str, Any]]:
         "quantity": 1,
         "source": "purchased",
         "note": led_entry["purchase_note"],
+        "purchase_link": led_entry.get("purchase_link"),
     })
     if plan.get("switch"):
         switch_entry = _components.component(plan["switch"]["name"])
@@ -589,6 +590,7 @@ def bill_of_materials(plan: Mapping[str, Any]) -> List[Dict[str, Any]]:
             "quantity": 1,
             "source": "purchased",
             "note": switch_entry["purchase_note"],
+            "purchase_link": switch_entry.get("purchase_link"),
         })
     if plan["supply"].get("name"):
         cell_entry = _components.component(plan["supply"]["name"])
@@ -597,6 +599,7 @@ def bill_of_materials(plan: Mapping[str, Any]) -> List[Dict[str, Any]]:
             "quantity": int(plan["supply"]["cells"]),
             "source": "purchased",
             "note": cell_entry["purchase_note"],
+            "purchase_link": cell_entry.get("purchase_link"),
         })
     if plan.get("resistor_ohms"):
         rows.append({
@@ -609,6 +612,7 @@ def bill_of_materials(plan: Mapping[str, Any]) -> List[Dict[str, Any]]:
                 "book: you will want a different value the first time you see the "
                 "LED lit through the actual print."
             ),
+            "purchase_link": "https://www.adafruit.com/search?q=resistor%20assortment%20600",
         })
     rows.append({
         "item": "hook-up wire, 26 AWG stranded",
@@ -616,12 +620,14 @@ def bill_of_materials(plan: Mapping[str, Any]) -> List[Dict[str, Any]]:
         "source": "purchased",
         "note": "About 300 mm. Stranded, not solid -- solid wire work-hardens and "
                 "snaps off at the solder joint the third time you open the model.",
+        "purchase_link": "https://www.adafruit.com/search?q=26%20AWG%20stranded%20hook-up%20wire",
     })
     rows.append({
         "item": "heat-shrink sleeving or electrical tape",
         "quantity": 1,
         "source": "purchased",
         "note": "For every joint. Not optional in a sealed model.",
+        "purchase_link": "https://www.adafruit.com/search?q=heat-shrink%20sleeving",
     })
     return rows
 

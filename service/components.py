@@ -223,6 +223,7 @@ TACTILE_6X6_H43 = _tactile(
              "one to prototype with, but its 0.25 mm travel is far too little for a "
              "finger to feel through a plunger.",
 )
+TACTILE_6X6_H43["purchase_link"] = "https://www.adafruit.com/search?q=6x6x4.3%20tact%20switch"
 
 TACTILE_6X6_H73 = _tactile(
     "tactile_6x6_h73", body_h=3.5, overall_h=7.3, stroke=0.25, max_overtravel=0.20,
@@ -231,6 +232,7 @@ TACTILE_6X6_H73 = _tactile(
     purchase="Search '6x6x7.3 tact switch'. Identical mechanism to the 4.3; the extra "
              "3 mm is button, not travel, so it reaches through a thicker wall.",
 )
+TACTILE_6X6_H73["purchase_link"] = "https://www.adafruit.com/search?q=6x6x7.3%20tact%20switch"
 
 TACTILE_6X6_H95 = _tactile(
     "tactile_6x6_h95", body_h=3.5, overall_h=9.5, stroke=0.25, max_overtravel=0.20,
@@ -239,6 +241,7 @@ TACTILE_6X6_H95 = _tactile(
     purchase="Search '6x6x9.5 tact switch'. The tall button often reaches a panel "
              "directly, which saves you a plunger entirely if you do not need a cap.",
 )
+TACTILE_6X6_H95["purchase_link"] = "https://www.adafruit.com/search?q=6x6x9.5%20tact%20switch"
 
 TACTILE_6X6_LATCHING = _tactile(
     "tactile_6x6_latching", body_h=5.0, overall_h=7.3, stroke=1.5, max_overtravel=0.30,
@@ -255,6 +258,7 @@ TACTILE_6X6_LATCHING = _tactile(
         "this design most likely to arrive wrong."
     ),
 )
+TACTILE_6X6_LATCHING["purchase_link"] = "https://www.adafruit.com/search?q=6x6%20self-locking%20tact%20switch"
 
 PUSH_LATCHING_12MM = {
     "name": "push_latching_12mm",
@@ -347,6 +351,7 @@ PUSH_LATCHING_12MM = {
         "self-locking / latching rather than momentary. Buy the one WITH the nut "
         "and the toothed washer; a nut alone will work loose."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=KD2-22%2012mm%20latching%20push%20button",
 }
 
 SLIDE_SWITCH_SK12 = {
@@ -430,6 +435,7 @@ SLIDE_SWITCH_SK12 = {
         "in this table, and the right answer whenever the push mechanic is "
         "decoration rather than the point."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=SS-12D00%20slide%20switch",
 }
 
 
@@ -493,6 +499,7 @@ CR2032_CELL = {
         "with solder tabs unless you are soldering it -- soldering a bare coin "
         "cell can vent it."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=CR2032%20coin%20cell",
 }
 
 CR2032_HOLDER = {
@@ -563,6 +570,7 @@ CR2032_HOLDER = {
         "M2 screws into printed bosses is a far better fix than glue, which "
         "creeps and lets the holder tilt until the cell loses contact."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=CR2032%20holder%20through%20hole",
 }
 
 AAA_PAIR_BOX = {
@@ -621,6 +629,7 @@ AAA_PAIR_BOX = {
         "and a lid if the design has no other way in; get the plain one if your "
         "own battery door is doing that job."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=2xAAA%20battery%20holder%20with%20wires",
 }
 
 
@@ -737,6 +746,7 @@ LED_3MM = _led(
              "a bright point with dark around it, a diffused one lights the whole "
              "cavity.",
 )
+LED_3MM["purchase_link"] = "https://www.adafruit.com/search?q=3mm%20diffused%20LED"
 
 LED_5MM = _led(
     "led_5mm", dome_d=5.0, flange_d=5.8, flange_h=1.0, overall_h=8.6,
@@ -746,6 +756,7 @@ LED_5MM = _led(
              "the phosphor point of a clear white LED shows straight through a "
              "translucent print as a hot spot.",
 )
+LED_5MM["purchase_link"] = "https://www.adafruit.com/search?q=5mm%20diffused%20LED"
 
 LED_10MM = _led(
     "led_10mm", dome_d=10.0, flange_d=11.0, flange_h=1.2, overall_h=13.5,
@@ -759,6 +770,7 @@ LED_10MM = _led(
         "drilled on 2.54."
     ),
 )
+LED_10MM["purchase_link"] = "https://www.adafruit.com/search?q=10mm%20diffused%20LED"
 
 
 # ==========================================================================
@@ -817,6 +829,7 @@ M3_SCREW = {
         "key cannot cam out and round off a printed boss the way a cross-head "
         "driver can."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=M3%20socket%20cap%20screw%20assortment",
 }
 
 HEAT_SET_M3 = {
@@ -866,6 +879,7 @@ HEAT_SET_M3 = {
         "pressing an insert in with a bare conical tip sends it in crooked, and "
         "crooked is not fixable."
     ),
+    "purchase_link": "https://www.adafruit.com/search?q=M3%20heat%20set%20insert%20knurled",
 }
 
 
@@ -917,9 +931,16 @@ def _magnet(name: str, d: float, t: float, pull_kg: float) -> Dict[str, Any]:
 
 
 MAGNET_5X2 = _magnet("magnet_5x2", 5.0, 2.0, 0.5)
+MAGNET_5X2["purchase_link"] = "https://www.adafruit.com/search?q=N35%20neodymium%20disc%205x2"
+
 MAGNET_6X3 = _magnet("magnet_6x3", 6.0, 3.0, 0.9)
+MAGNET_6X3["purchase_link"] = "https://www.adafruit.com/search?q=N35%20neodymium%20disc%206x3"
+
 MAGNET_8X3 = _magnet("magnet_8x3", 8.0, 3.0, 1.6)
+MAGNET_8X3["purchase_link"] = "https://www.adafruit.com/search?q=N35%20neodymium%20disc%208x3"
+
 MAGNET_10X2 = _magnet("magnet_10x2", 10.0, 2.0, 1.7)
+MAGNET_10X2["purchase_link"] = "https://www.adafruit.com/search?q=N35%20neodymium%20disc%2010x2"
 
 
 # ==========================================================================

@@ -849,6 +849,45 @@ def test_the_bill_of_materials_lists_the_resistor_only_when_there_is_one():
         assert row["quantity"] >= 1 and row["note"]
 
 
+def test_every_bom_row_has_a_purchase_link():
+    """Every BOM row carries a URL where the artist can find the part."""
+    for plan_kwargs in ({}, {"color": "red"}, {"color": "red", "cell": "aaa_pair_box"}):
+        plan = wiring.circuit_plan(**plan_kwargs)
+        bom = wiring.bill_of_materials(plan)
+        for row in bom:
+            assert "purchase_link" in row, f"missing link in {row['item']}"
+            link = row["purchase_link"]
+            assert isinstance(link, str) and link.startswith("https://"), (
+                f"{row['item']} link is not an https URL: {link!r}"
+            )
+
+
+def test_purchase_links_do_not_contain_cart_or_checkout_paths():
+    """The links are informational searches, never transactional."""
+    for plan_kwargs in ({}, {"color": "red"}):
+        plan = wiring.circuit_plan(**plan_kwargs)
+        bom = wiring.bill_of_materials(plan)
+        for row in bom:
+            link = row["purchase_link"]
+            bad_paths = ("cart", "checkout", "buy", "/add", "addtocart")
+            for bad_path in bad_paths:
+                assert bad_path not in link.lower(), (
+                    f"{row['item']} link contains transactional path '{bad_path}': {link}"
+                )
+
+
+def test_led_purchase_link_mentions_the_component():
+    """The LED link in the BOM should be searchable by the component's name."""
+    plan = wiring.circuit_plan(color="red")
+    bom = wiring.bill_of_materials(plan)
+    led_row = next(row for row in bom if "led_" in row["item"].lower())
+    link = led_row["purchase_link"]
+    led_name = plan["led"]["name"]
+    assert (
+        led_name.lower() in link.lower() or "mm" in link.lower()
+    ), f"LED link does not mention {led_name}: {link}"
+
+
 def test_the_diagram_is_a_self_contained_svg_with_no_dependencies():
     svg = wiring.diagram_svg(wiring.circuit_plan())
     assert svg.startswith("<svg") and svg.endswith("</svg>")
