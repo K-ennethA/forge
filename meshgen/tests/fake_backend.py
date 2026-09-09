@@ -74,6 +74,7 @@ class FakeBackend(Backend):
     license = "MIT (test fixture)"
     vram_gb = 0
     description = "Writes a one-triangle .glb. Test fixture, never a real model."
+    supports_multiview = True
 
     def __init__(self, config, client=None):
         super().__init__(config)
@@ -99,9 +100,40 @@ class FakeBackend(Backend):
     def is_loaded(self):
         return self._env("FORGE_MESHGEN_FAKE_LOADED") == "1"
 
+    def multiview_readiness(self, use_client=False):
+        # FORGE_MESHGEN_FAKE_MV=1 makes the fake adapter claim it could run
+        # multi-view, which is how the "views reach the backend" path is tested.
+        # Left off, it stands in for the real world: declared, not available.
+        if self._env("FORGE_MESHGEN_FAKE_MV") == "1":
+            return {"supported": True, "available": True, "missing": [],
+                    "detail": "fake multi-view"}
+        return {"supported": True, "available": False, "detail": "fake: unavailable",
+                "missing": [{
+                    "what": "fake_multiview.safetensors (5.2 GB)",
+                    "path": str(self.config.model_path("diffusion_models",
+                                                       "fake_multiview.safetensors")),
+                    "source": "https://example.invalid/fake_multiview.safetensors",
+                    "bytes": 5555,
+                }]}
+
+    def resolve_multiview(self, image_path, options):
+        views = (options or {}).get("views")
+        if not views:
+            return image_path, None
+        state = self.multiview_readiness()
+        front = views[0]["path"]
+        if state["available"]:
+            return front, {"requested": [v["name"] for v in views], "used": True}
+        if (options or {}).get("on_unavailable") == "front_only":
+            return front, {"requested": [v["name"] for v in views], "used": False,
+                           "fell_back_to": "front", "front_image": front,
+                           "reason": "fake backend has no multi-view weights"}
+        raise BackendError("fake backend cannot run multi-view")
+
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
+        image_path, multiview_note = self.resolve_multiview(image_path, options)
 
         if self._env("FORGE_MESHGEN_FAKE_FAIL") == "1":
             raise BackendError("fake backend was told to fail")
@@ -118,7 +150,7 @@ class FakeBackend(Backend):
 
         write_triangle_glb(out_path)
         from meshgen import glb
-        return {
+        payload = {
             "mesh_path": str(out_path),
             "stats": glb.stats(out_path),
             "backend": self.name,
@@ -128,7 +160,11 @@ class FakeBackend(Backend):
             "vram": {"before_gb": None, "after_gb": None, "peak_gb": None,
                      "total_gb": None, "device": None},
             "options_seen": dict(options or {}),
+            "image_seen": str(image_path),
         }
+        if multiview_note is not None:
+            payload["multiview"] = multiview_note
+        return payload
 
     def cancel(self, handle):
         return True

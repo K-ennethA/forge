@@ -1,0 +1,10 @@
+{
+    "id":  "prod-casting-docs",
+    "acceptance_cmd":  "\"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" -m py_compile service/casting.py \u0026\u0026 \"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\worker\\verifiers\\check_docstrings.py\" service/casting.py --min-functions 2",
+    "cwd":  "C:\\forge-models\\worker-sandboxes\\prod-casting-docs",
+    "files_scope":  [
+                        "service/casting.py"
+                    ],
+    "brief_file":  "prod-casting-docs.brief.md",
+    "max_attempts":  2
+}

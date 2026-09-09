@@ -24,6 +24,7 @@ from pathlib import Path
 from . import backends as backend_registry
 from . import config as config_module
 from . import jobs as jobs_module
+from .backends import multiview
 from .backends.base import BackendError, Cancelled, NotReady
 from .comfyui_client import ComfyUIClient
 
@@ -114,8 +115,58 @@ class MeshgenApp:
         return payload
 
     # -- jobs -------------------------------------------------------------
-    def submit(self, image_path, backend_name, options, output):
+    def _resolve_views(self, backend, image_path, options, views):
+        """Validate a multi-view request and settle which image leads it.
+
+        Returns ``(image_path, options)``.  Everything here happens BEFORE a job
+        is queued, so an unsatisfiable ``views`` block is an immediate 400 with
+        the missing file named - not a job that fails minutes later.
+        """
+        if not getattr(backend, "supports_multiview", False):
+            capable = sorted(
+                name for name, other in self.backends.items()
+                if getattr(other, "supports_multiview", False)
+            )
+            raise multiview.MultiviewError(
+                f"backend {backend.name!r} does not accept views. "
+                + (f"Backends that do: {', '.join(capable)}."
+                   if capable else "No installed backend does.")
+            )
+
+        records = multiview.normalise_views(views)
+        front = records[0]["path"]
+        if image_path and Path(image_path) != Path(front):
+            raise multiview.MultiviewError(
+                "image_path and views.front disagree - give one or the other.\n"
+                f"  image_path:  {image_path}\n"
+                f"  views.front: {front}"
+            )
+
+        mode = options.get("on_unavailable", "error")
+        if mode not in ("error", "front_only"):
+            raise multiview.MultiviewError(
+                f"on_unavailable must be 'error' or 'front_only', got {mode!r}"
+            )
+
+        options["views"] = records
+        state = backend.multiview_readiness()
+        if not state["available"] and mode != "front_only":
+            raise multiview.MultiviewUnavailable(
+                multiview.unavailable_message(state["missing"]), state["missing"]
+            )
+        return front, options
+
+    def submit(self, image_path, backend_name, options, output, views=None):
         backend = self.resolve_backend(backend_name)
+        options = dict(options or {})
+        if views is None:
+            views = options.get("views")
+
+        if views:
+            image_path, options = self._resolve_views(
+                backend, image_path, options, views)
+        elif not image_path:
+            raise ValueError("image_path is required (or a views block)")
 
         image = Path(image_path)
         if not image.is_absolute():
@@ -278,25 +329,39 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(400, {"error": str(exc)})
 
         if path == "/generate3d":
-            image_path = body.get("image_path")
-            if not image_path:
-                return self._send(400, {"error": "image_path is required"})
             options = body.get("options") or {}
             if not isinstance(options, dict):
                 return self._send(400, {"error": "options must be an object"})
+            views = body.get("views")
+            if views is None:
+                views = options.get("views")
+            image_path = body.get("image_path")
+            if not image_path and not views:
+                return self._send(400, {"error": "image_path is required"})
             try:
-                job = self.app.submit(image_path, body.get("backend"), options, body.get("output"))
+                job = self.app.submit(image_path, body.get("backend"), options,
+                                      body.get("output"), views=views)
             except KeyError as exc:
                 return self._send(400, {
                     "error": f"unknown backend {exc.args[0]!r}",
                     "available_backends": sorted(self.app.backends),
                 })
+            except multiview.MultiviewUnavailable as exc:
+                # Well-formed request, unrunnable machine: name the file, the
+                # size and the URL rather than a bare "unsupported".
+                return self._send(400, {
+                    "error": str(exc),
+                    "multiview": {"available": False, "missing": exc.missing},
+                })
             except FileNotFoundError as exc:
                 return self._send(400, {"error": f"image not found: {exc}"})
             except ValueError as exc:
                 return self._send(400, {"error": str(exc)})
-            return self._send(202, {"job_id": job.id, "state": job.state,
-                                    "backend": job.backend, "output": job.output})
+            payload = {"job_id": job.id, "state": job.state,
+                       "backend": job.backend, "output": job.output}
+            if job.options.get("views"):
+                payload["views"] = [v["name"] for v in job.options["views"]]
+            return self._send(202, payload)
 
         if path.startswith("/cancel/"):
             result = self.app.cancel(path[len("/cancel/"):])

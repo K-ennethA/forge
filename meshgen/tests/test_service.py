@@ -31,6 +31,7 @@ from meshgen.tests.fake_backend import write_triangle_glb  # noqa: E402
 FAKE_ENV_KEYS = [
     "FORGE_MESHGEN_FAKE_MISSING", "FORGE_MESHGEN_FAKE_LOADED",
     "FORGE_MESHGEN_FAKE_FAIL", "FORGE_MESHGEN_FAKE_DELAY",
+    "FORGE_MESHGEN_FAKE_MV",
 ]
 
 

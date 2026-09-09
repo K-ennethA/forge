@@ -10,10 +10,17 @@ one graph behind a boolean, which is why both adapters share
 Heavier than TRELLIS.2 (a ~5.2 GB UNet against ~4.9 GB, plus MoGe resident).
 Measured on the RTX 5070 at the meshgen defaults it still fits: 249 s and a
 9.30 GB peak, against TRELLIS.2's 304 s and 8.15 GB.
+
+Multi-view (Phase 18(a)) is the only backend feature that is declared but not
+runnable.  This adapter owns the request surface, the validation and the camera
+rig; :mod:`multiview` documents exactly what is missing and why the missing
+piece is a core node rather than only a download.
 """
 
 from __future__ import annotations
 
+from . import multiview
+from .base import BackendError
 from .comfyui_base import HF, MOGE_WEIGHT, ComfyUIBackend
 
 
@@ -28,6 +35,10 @@ class Pixal3DBackend(ComfyUIBackend):
     )
 
     use_trellis2 = False
+    #: Pixal3D is the family that HAS a multi-view checkpoint upstream, so this
+    #: is the adapter that owns the ``views`` request surface.  Whether a given
+    #: machine can RUN one is :meth:`multiview_readiness`, never this flag.
+    supports_multiview = True
     diffusion_weight = (
         "diffusion_models",
         "pixal3d_int8_convrot.safetensors",
@@ -38,3 +49,97 @@ class Pixal3DBackend(ComfyUIBackend):
     # never touches it - the template's switch node evaluates lazily - so it is
     # required here and nowhere else.
     extra_weights = (MOGE_WEIGHT,)
+
+    # -- multi-view ------------------------------------------------------
+    def multiview_readiness(self, use_client: bool = False) -> dict:
+        """``use_client`` asks the RUNNING ComfyUI instead of reading its source.
+
+        Off by default and off for /health: ``object_info`` is a large HTTP
+        payload, and /health is promised to be instant.  The source scan is the
+        right authority anyway - meshgen forbids custom nodes, so the only place
+        a multi-view node can appear is core's own ``nodes_trellis2.py``.
+        """
+        missing = multiview.multiview_missing(
+            self.config, self.client if use_client else None)
+        return {
+            "supported": True,
+            "available": not missing,
+            "missing": missing,
+            "detail": (
+                "front + side (+ back) conditioning, 90 degree orbit"
+                if not missing else
+                "declared, not runnable here - see missing"
+            ),
+        }
+
+    def info(self) -> dict:
+        data = super().info()
+        state = self.multiview_readiness()
+        data["multiview"] = {
+            "supported": state["supported"],
+            "available": state["available"],
+            "views": list(multiview.VIEW_ORDER),
+            "missing": state["missing"],
+        }
+        return data
+
+    def resolve_multiview(self, image_path, options):
+        """Settle a ``views`` request before ComfyUI is started.
+
+        Three outcomes, all of them explicit:
+
+        * no ``views``        -> unchanged single-image behaviour, no note;
+        * views + available   -> would run the multi-view graph (unreachable
+          today, and it raises rather than pretending);
+        * views + unavailable -> refuse by name, unless the caller opted into
+          ``on_unavailable: "front_only"``, in which case fall back to the front
+          image and SAY SO in the result.
+        """
+        options = options or {}
+        views = options.get("views")
+        if not views:
+            return image_path, None
+
+        records = (views if isinstance(views, list)
+                   else multiview.normalise_views(views))
+        front = records[0]["path"]
+        plan = multiview.stage_plan(
+            records, fov_deg=float(options.get("multiview_fov_deg")
+                                   or multiview.DEFAULT_FOV_DEG))
+
+        # A request is worth the round-trip that /health is not: this one is
+        # about to spend minutes of GPU time if it proceeds.
+        state = self.multiview_readiness(use_client=True)
+        if state["available"]:
+            # Deliberately unreachable on core v0.34.0.  If a future ComfyUI
+            # ships a per-view camera node this is where the multi-view graph
+            # gets built - and it must be written against that node's real
+            # inputs, not guessed here.
+            raise BackendError(
+                "multi-view weights and a per-view camera node are both present, "
+                "but the multi-view workflow template has not been built against "
+                f"{multiview.core_multiview_support(self.config, self.client)['node']!r} "
+                "yet. See meshgen/backends/multiview.py."
+            )
+
+        mode = options.get("on_unavailable", "error")
+        if mode == "front_only":
+            return front, {
+                "requested": [record["name"] for record in records],
+                "used": False,
+                "fell_back_to": "front",
+                "front_image": front,
+                "reason": "multi-view is not available on this machine",
+                "missing": state["missing"],
+                "honesty": (
+                    f"{len(records)} views were given and {len(records) - 1} of "
+                    "them were ignored - this mesh was generated from the front "
+                    "image alone."
+                ),
+                "camera_rig": plan["transforms_json"],
+            }
+        if mode != "error":
+            raise BackendError(
+                f"on_unavailable must be 'error' or 'front_only', got {mode!r}"
+            )
+        raise BackendError(multiview.unavailable_message(state["missing"]))

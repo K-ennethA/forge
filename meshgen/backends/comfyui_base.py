@@ -44,6 +44,12 @@ VRAM_SAFE_DEFAULTS = {
     "target_face_count": 200000,    # template: 700000
 }
 
+#: Option keys that are real and validated but steer meshgen rather than a node
+#: in the graph, so ``build_graph`` must skip them instead of refusing them as
+#: unknown.  ``views`` and ``on_unavailable`` are the Phase 18(a) multi-view
+#: request surface; they are resolved before a graph is built.
+NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg"}
+
 #: options callers may pass through /generate3d -> {"options": {...}}
 OPTION_SPEC = {
     "seed": (NODE_STRUCTURE_SAMPLER, "seed", int),
@@ -158,7 +164,7 @@ class ComfyUIBackend(Backend):
 
         unknown = []
         for key, value in self.resolved_options(options).items():
-            if key in ("backend",):
+            if key in NON_GRAPH_OPTIONS:
                 continue
             spec = OPTION_SPEC.get(key)
             if spec is None:
@@ -179,9 +185,26 @@ class ComfyUIBackend(Backend):
         return graph
 
     # -- generation ------------------------------------------------------
+    def resolve_multiview(self, image_path, options):
+        """Hook: settle a ``views`` request before any GPU work starts.
+
+        Returns ``(image_path, note_or_None)``.  The base implementation refuses
+        views outright - only an adapter that declares ``supports_multiview``
+        overrides this.  Called before ComfyUI is even started so an
+        unsatisfiable request costs nothing.
+        """
+        if (options or {}).get("views"):
+            raise BackendError(
+                f"backend {self.name!r} does not accept multi-view input; "
+                "send a single image_path"
+            )
+        return image_path, None
+
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
+
+        image_path, multiview_note = self.resolve_multiview(image_path, options)
 
         progress(0.0, "starting ComfyUI")
         self.client.ensure_running(cancel_event=cancel_event)
@@ -213,7 +236,7 @@ class ComfyUIBackend(Backend):
         except (glb.GlbError, OSError):
             mesh_stats = {}
 
-        return {
+        payload = {
             "mesh_path": result["mesh_path"],
             "stats": mesh_stats,
             "backend": self.name,
@@ -228,6 +251,11 @@ class ComfyUIBackend(Backend):
                 "device": (before or {}).get("name"),
             },
         }
+        if multiview_note is not None:
+            # Never let a fallback be invisible: if the caller asked for views
+            # and got one image, the result says so.
+            payload["multiview"] = multiview_note
+        return payload
 
     def cancel(self, handle):
         if handle:

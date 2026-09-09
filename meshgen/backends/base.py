@@ -44,6 +44,10 @@ class Backend:
     #: rough VRAM the backend wants, in GB (None = unknown)
     vram_gb = None
     description = ""
+    #: True when this adapter accepts a ``views`` block (front + side + back).
+    #: Declaring it is not the same as being able to run it - see
+    #: :meth:`multiview_readiness`, which is what decides a request.
+    supports_multiview = False
 
     def __init__(self, config):
         self.config = config
@@ -70,6 +74,20 @@ class Backend:
     def is_loaded(self) -> bool:
         """True when the weights are resident (a job has run and the host is up)."""
         return False
+
+    def multiview_readiness(self, use_client: bool = False) -> dict:
+        """``{"supported": bool, "available": bool, "missing": [...], "detail": str}``.
+
+        Split deliberately from :meth:`readiness`: a backend can be perfectly
+        ready for single-image work and still have no way to run multi-view, so
+        the two must never collapse into one "ready" flag.
+        """
+        return {
+            "supported": False,
+            "available": False,
+            "missing": [],
+            "detail": f"backend {self.name!r} does not accept multi-view input",
+        }
 
     def ensure_ready(self) -> dict:
         """Raise :class:`NotReady` listing what is missing, else return readiness."""

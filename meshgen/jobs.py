@@ -54,6 +54,15 @@ class Job:
             "stage": self.stage,
             "created": self.created,
         }
+        views = self.options.get("views")
+        if views:
+            # A multi-view job says so from the moment it is queued, not only
+            # once it finishes - the caller sent more than one image and needs
+            # to see which ones were accepted.
+            payload["views"] = [
+                {"name": v["name"], "azimuth_deg": v["azimuth_deg"], "path": v["path"]}
+                for v in views
+            ]
         if self.started is not None:
             payload["started"] = self.started
         if self.finished is not None:
@@ -71,6 +80,8 @@ class Job:
                 "vram": self.result.get("vram"),
                 "model": self.result.get("model"),
             })
+            if self.result.get("multiview"):
+                payload["multiview"] = self.result["multiview"]
         return payload
 
 
