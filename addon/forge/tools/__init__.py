@@ -19,6 +19,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
     rigcheck = importlib.reload(rigcheck)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
+    mechanism = importlib.reload(mechanism)  # noqa: F821
     assistant = importlib.reload(assistant)  # noqa: F821
     buddy = importlib.reload(buddy)  # noqa: F821
     flows = importlib.reload(flows)  # noqa: F821
@@ -38,6 +39,9 @@ else:
     from . import rigforge_rig
     from . import rigcheck
     from . import rigforge_anim
+    # After rigforge_anim/rigforge_rig: the mechanism demos reuse their
+    # slotted-action helpers (Blender 5.0 has no ``action.fcurves``).
+    from . import mechanism
     from . import assistant
     from . import buddy
     from . import flows
@@ -62,6 +66,7 @@ __all__ = [
     "rigforge_rig",
     "rigcheck",
     "rigforge_anim",
+    "mechanism",
     "assistant",
     "buddy",
     "flows",

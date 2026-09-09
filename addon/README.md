@@ -271,6 +271,60 @@ self-intersection scan, 0.39 s on 202 500 without it (above the cap). Bulk stati
 come off the Mesh with `foreach_get` into numpy arrays; topology comes off a bmesh;
 the BVH overlap is the expensive one and is the thing that is capped.
 
+### Mechanism demo commands (Phase 17 — showing how it works)
+
+Three commands in `tools/mechanism.py`, and between them the robotics-site trick: a
+part that presses, a light that comes on, and a short film of the two happening
+together. The motion is the numbers `plunger_plan` already computed, played back —
+**an illustration of the intended motion, not a simulation.** Nothing here computes a
+force, a spring rate or a collision, and the system prompt requires the assistant to
+say so in words every time it shows one.
+
+| type | params | does |
+|---|---|---|
+| `animate_object` | `object?`, `keys` (`[{"frame", "location"? (metres), "location_mm"? (millimetres), "rotation_euler_deg"?, "scale"?}]`), `interpolation?` (default `BEZIER`), `clear?` (default false) | object-level keyframing — `rigforge_keyframe`'s sibling, on a transform rather than on pose bones. Everything is parsed **before** anything is applied, so a typo in `keys[7]` cannot leave `keys[0..6]` half done. Returns `{"object", "action", "created_action", "keys", "keys_set", "channels", "frame_range", "frames", "action_frame_range", "interpolation", "interpolated_points", "cleared_fcurves", "fcurves", "rotation_mode", "rotation_mode_changed", "units", "warnings", "seconds"}` |
+| `set_material_emission` | `object?`, `strength` (0–1000), `color?` `[r, g, b]`, `frame?`, `interpolation?` (default **`CONSTANT`**) | the LED turning on. Ensures an emission-capable material, sets strength and colour, and keyframes both when a `frame` is given. Returns `{"object", "material", "created_material", "node", "node_type", "strength", "color", "frame", "keyed", "keyframed", "interpolation", "interpolated_points", "action", "fcurves", "notes", "seconds"}` |
+| `render_animation` | `path` (`.mp4`), `frame_start`, `frame_end` (≤600 frames), `fps?` (1–60, default 24), `resolution?` (128–1920, default 640), `engine?` `eevee`\|`workbench` (default `eevee`), `objects?`, `view?` `iso`\|`front`\|`side`\|`top` | **read-only.** A temporary orthographic camera framed the way `render_preview` frames one, Blender's own ffmpeg writing an H.264 `.mp4`, every borrowed setting put back in a `finally`. Returns `{"path", "objects", "frame_start", "frame_end", "frames", "fps", "duration_s", "resolution", "view", "engine", "engine_requested", "container", "codec", "size_bytes", "framed_all_visible", "framed_over_frames", "bounds_mm", "ortho_scale_mm", "duration_ms", "honesty", "notes"}` |
+
+**`location_mm` exists because every number in this toolchain is a millimetre.**
+`plunger_plan` says the cap travels 2.1 mm; `{"frame": 8, "location_mm": [0, 0, -2.1]}`
+is that sentence with nothing to convert and nothing to get wrong. `location` (metres,
+Blender's own unit for a transform) still works, and giving both for one key is an
+error rather than a merge.
+
+**Emission keys are `CONSTANT` by default.** An LED is off and then it is on; it does
+not fade up over seven frames. The parameter exists for the deliberate exception (a
+heater, a charge indicator). Three ways into a material, in order of how little they
+disturb: an emission node that is already there, a Principled BSDF's own emission
+inputs (so an existing material keeps its look), or a new emission node. An object
+with no material at all gets **`Forge Glow`** — a bare emission shader, because an LED
+lens reads as a light and not as a lit surface.
+
+**The camera frames the whole clip, not frame one.** The subject *moves*, which is the
+point, so the bounds are the union over up to 8 sampled frames of the range — framing
+on the first frame is how a plunger presses itself out of shot.
+
+**Two Blender 5.0 traps, both load-bearing.** Video output is gated behind the new
+`image_settings.media_type`: `file_format = "FFMPEG"` fails with *enum "FFMPEG" not
+found* until the media type says `VIDEO`, and the restore therefore has to put
+`media_type` back **before** `file_format` (the snapshot order makes that happen). And
+the exact-path rule: with `use_file_extension` on and a path that already ends in
+`.mp4`, Blender writes *that* file — without the extension it appends `0001-0048.mp4`
+and hands the caller a path that does not exist.
+
+**Undo:** `render_animation` is in `READ_ONLY_COMMANDS` for exactly the reasons
+`render_preview` and `turntable` are. `animate_object` and `set_material_emission` are
+deliberately **not**: keys and materials are the artist's work, and Ctrl+Z is what a
+demo that went the wrong way needs.
+
+**Measured on this machine (RTX 5070, Blender 5.0, `--background`):** 48 frames at
+640 px on EEVEE in **52.8 s cold (1.10 s/frame) and 6.9 s warm (0.14 s/frame)** — the
+gap is EEVEE's shader compilation, which the first render of a session pays for and
+every render after it does not. 12 frames at 320 px on EEVEE: 13.9 s cold, 1.5 s warm.
+12 frames at 320 px on Workbench: **0.8–1.9 s**, cold or warm, because Workbench
+compiles nothing. Budget both ways when quoting a wait to the artist: the first demo of
+a session is the slow one.
+
 ### The geometric gate — `verify_design` and `turntable` (`tools/verify.py`)
 
 **Renders judge beauty; this judges truth; both gates must pass.** The reason the
@@ -1974,9 +2028,45 @@ its panel's `status` string.
 
 ## Headless tests
 
-Fifteen suites, all `--background` only. Never launch Blender windowed to run them. As of
-the rigging bridge they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 +
-316 + 139 + 79 + 108 = 1681 checks**, all green on Blender 5.0.1.
+Sixteen suites, all `--background` only. Never launch Blender windowed to run them. As of
+the mechanism demos they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 +
+316 + 139 + 79 + 108 + 163 = 1844 checks**, all green on Blender 5.0.1.
+
+### Phase 17 — mechanism demos (`headless_mechanism.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_mechanism.py
+```
+
+Socket port **9903**. **163 checks**, no window, no service needed. All three commands are
+tested in **one** launch on purpose: every extra `--background` run is another flash on
+the artist's machine. Covering:
+
+- **`animate_object` round trips** — the F-curves exist, they hold the asked-for values at
+  the asked-for frames (`location_mm: [0,0,-1.8]` evaluates to −0.0018 m at frame 8), the
+  interpolation lands on the points *this call* made, `clear` really empties, a quaternion
+  object is moved to XYZ euler and says so, and a near-miss name comes back with *"Did you
+  mean 'Flame'?"*. A typo in the **last** key is asserted to leave the first one unapplied;
+- **`set_material_emission`** — a fresh `Forge Glow` emission material wired to the
+  material output, an existing Principled reused through its own emission inputs, and the
+  keying that matters: dark at frame 1, lit at frame 8, and **still dark at frame 7**,
+  because an LED does not fade up;
+- **`render_animation` writes a real `.mp4`** — ISO base-media `ftyp` magic, a `mvhd`
+  duration parsed out of the box tree that matches the frames and fps asked for, the exact
+  path requested (asserted by the *absence* of a `press0001-0012.mp4` beside it), and the
+  camera framed over the whole clip rather than frame one;
+- **the scene comes back exactly as it was** — engine, output path, resolution, file
+  format, **media type**, ffmpeg container/codec/CRF, fps, frame range, frame position,
+  colour management, Workbench shading, `scene.camera` and every object's `hide_render`,
+  with no camera and no light datablock left behind;
+- **the end-to-end demo** — a flame pressed 1.8 mm over 12 frames, an LED keyed on at the
+  latch frame, and a film of the two happening together;
+- **the budget**, measured and printed by the suite: 48 frames at 640 px on EEVEE in
+  **52.8 s with a cold shader cache and 6.9 s with a warm one**, asserted against a
+  deliberately loose 180 s upper bound (this asserts "not a coffee break", not a
+  benchmark, and the first EEVEE render of a session is allowed to pay for shader
+  compilation).
 
 ### Phase 15 — project `.blend` files (`headless_projects.py`)
 

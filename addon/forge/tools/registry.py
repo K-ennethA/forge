@@ -96,6 +96,14 @@ READ_ONLY_COMMANDS = frozenset({
     # gone by the time it was needed.
     "save_project_blend",
     "open_project_blend",
+    # Phase 17's camera. `render_animation` borrows the render settings, the
+    # frame range and a camera and puts every one of them back, exactly as
+    # `render_preview` and `turntable` do — the only thing it leaves behind is
+    # the .mp4, which undo could never take back anyway. Its two siblings,
+    # `animate_object` and `set_material_emission`, are deliberately NOT here:
+    # keys and materials are the artist's work, and Ctrl+Z is what a demo that
+    # went the wrong way needs.
+    "render_animation",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

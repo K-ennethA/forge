@@ -768,6 +768,18 @@ Two switches refuse a plunger, and the refusal is the right answer:
 plunger — it clamps through the wall with its own nut, and putting a second
 sliding mechanism in front of it buys twice the friction for nothing.
 
+**The plan's numbers are also the demo.** Every kinematic field above is what a
+mechanism demo animates, so a mechanism that was *computed* can also be *shown*:
+`plan["travel_mm"]` is the stroke `animate_object` moves the plunger through
+(its `location_mm` takes millimetres directly, so there is nothing to convert),
+`plan["stroke_mm"]` is how far into that movement the switch clicks and
+therefore the frame `set_material_emission` turns the LED on, and
+`plan["latched_cap_gap_mm"]` is where a latching cap comes to rest afterwards.
+`render_animation` writes the `.mp4`. Say what it is when you show it: an
+illustration of the **intended** motion, not a simulation — nothing there
+computes a force or a spring — but drawn from the plan rather than from a guess,
+which is the whole reason it is worth showing.
+
 ### 7.5 `snap_clip` and `battery_door`
 
 `snap_clip(length, thickness, width, deflection)` returns the arm **and** the
