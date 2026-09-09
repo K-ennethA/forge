@@ -136,6 +136,16 @@ class JointTools:
 
 
 def _number(spec: Mapping[str, Any], key: str, default: Optional[float]) -> Optional[float]:
+    """Parse a number from the spec, ensuring it's a finite positive number.
+
+    Args:
+        spec: The specification dictionary.
+        key: The key to look for in the spec.
+        default: The default value to return if the key is not found or is None.
+
+    Returns:
+        The parsed number or the default value.
+    """
     if key not in spec or spec[key] is None:
         return default
     value = spec[key]
@@ -154,6 +164,13 @@ def resolve_joint(
 
     ``dovetail`` and ``pin`` default to the profile's ``press_fit``; ``magnet``
     to ``magnet_pocket_extra``.  An explicit ``tolerance`` in the request wins.
+
+    Args:
+        joint: The joint specification.
+        printer: The printer specification.
+
+    Returns:
+        A dictionary with the resolved joint specification.
     """
     if joint is None:
         joint = {}
@@ -221,6 +238,14 @@ def resolve_joint(
 
 
 def _count(joint: Mapping[str, Any]) -> Optional[int]:
+    """Parse the count from the joint specification, ensuring it's within the valid range.
+
+    Args:
+        joint: The joint specification.
+
+    Returns:
+        The parsed count or None if not specified.
+    """
     value = joint.get("count")
     if value is None:
         return None
@@ -237,7 +262,15 @@ def _count(joint: Mapping[str, Any]) -> Optional[int]:
 
 
 def plan_joint(spec: Mapping[str, Any], frame: CutFrame) -> Dict[str, Any]:
-    """Fill a joint spec's blanks from the measured cut face, and check it fits."""
+    """Fill a joint spec's blanks from the measured cut face, and check it fits.
+
+    Args:
+        spec: The joint specification.
+        frame: The cut frame.
+
+    Returns:
+        A dictionary with the planned joint specification.
+    """
     kind = spec["type"]
     if kind == "none":
         return dict(spec)
@@ -259,6 +292,17 @@ def plan_joint(spec: Mapping[str, Any], frame: CutFrame) -> Dict[str, Any]:
 def _plan_dovetail(
     spec: Mapping[str, Any], frame: CutFrame, u_extent: float, v_extent: float
 ) -> Dict[str, Any]:
+    """Plan the dovetail joint based on the measured cut face.
+
+    Args:
+        spec: The joint specification.
+        frame: The cut frame.
+        u_extent: The extent of the cut face along the u-axis.
+        v_extent: The extent of the cut face along the v-axis.
+
+    Returns:
+        A dictionary with the planned dovetail joint specification.
+    """
     across = min(u_extent, v_extent)  # the axis the trapezoid's width lives on
     along = max(u_extent, v_extent)
 
@@ -313,6 +357,18 @@ def _plan_round(
     v_extent: float,
     kind: str,
 ) -> Dict[str, Any]:
+    """Plan the round joint (pin or magnet) based on the measured cut face.
+
+    Args:
+        spec: The joint specification.
+        frame: The cut frame.
+        u_extent: The extent of the cut face along the u-axis.
+        v_extent: The extent of the cut face along the v-axis.
+        kind: The type of the joint ("pin" or "magnet").
+
+    Returns:
+        A dictionary with the planned round joint specification.
+    """
     tolerance = float(spec["tolerance"])
 
     if kind == "pin":
@@ -379,6 +435,15 @@ def build_joint(
     *part* is the whole solid and *region_b* the half-space (or wedge) on the
     ``+Y`` side of the cut; both are needed to trim a male feature back to the
     material it is supposed to grow out of.
+
+    Args:
+        planned: The planned joint specification.
+        frame: The cut frame.
+        part: The whole solid.
+        region_b: The half-space on the +Y side of the cut.
+
+    Returns:
+        A JointTools object with the boolean work and hardware.
     """
     kind = planned["type"]
     if kind == "none":
@@ -389,7 +454,15 @@ def build_joint(
 
 
 def _positions(frame: CutFrame, planned: Mapping[str, Any]) -> List[Tuple[float, float]]:
-    """Local (u, v) centres for ``count`` features spread along the longer axis."""
+    """Local (u, v) centres for ``count`` features spread along the longer axis.
+
+    Args:
+        frame: The cut frame.
+        planned: The planned joint specification.
+
+    Returns:
+        A list of (u, v) centres for the features.
+    """
     count = int(planned["count"])
     if planned["spread_axis"] == "v":
         low, high, other = frame.v_min, frame.v_max, frame.u_centre
@@ -410,7 +483,18 @@ def _trapezoid_prism(
     y_end: float,
     length: float,
 ) -> Any:
-    """Trapezoid in local (x, y), extruded +/- ``length``/2 along local Z."""
+    """Trapezoid in local (x, y), extruded +/- ``length``/2 along local Z.
+
+    Args:
+        half_width_at_face: The half-width at the face.
+        half_width_at_tip: The half-width at the tip.
+        y_start: The start y-coordinate.
+        y_end: The end y-coordinate.
+        length: The length of the prism.
+
+    Returns:
+        The trapezoid prism.
+    """
     from build123d import BuildPart, BuildSketch, Plane, Polygon, extrude  # noqa: PLC0415
 
     with BuildPart() as builder:
@@ -429,6 +513,17 @@ def _trapezoid_prism(
 def _build_dovetail(
     planned: Mapping[str, Any], frame: CutFrame, part: Any, region_b: Any
 ) -> JointTools:
+    """Build the dovetail joint.
+
+    Args:
+        planned: The planned joint specification.
+        frame: The cut frame.
+        part: The whole solid.
+        region_b: The half-space on the +Y side of the cut.
+
+    Returns:
+        A JointTools object with the boolean work and hardware.
+    """
     from build123d import Pos, Rot  # noqa: PLC0415
 
     width = float(planned["width_mm"])
@@ -496,6 +591,15 @@ def _build_dovetail(
 
 
 def _build_round(planned: Mapping[str, Any], frame: CutFrame) -> JointTools:
+    """Build the round joint (pin or magnet).
+
+    Args:
+        planned: The planned joint specification.
+        frame: The cut frame.
+
+    Returns:
+        A JointTools object with the boolean work and hardware.
+    """
     from build123d import Cylinder, Pos, Rot  # noqa: PLC0415
 
     radius = float(planned["pocket_diameter_mm"]) / 2.0
@@ -536,6 +640,14 @@ def _build_round(planned: Mapping[str, Any], frame: CutFrame) -> JointTools:
 
 
 def _pin_solid(planned: Mapping[str, Any]) -> Any:
+    """Create a solid pin.
+
+    Args:
+        planned: The planned joint specification.
+
+    Returns:
+        The pin solid.
+    """
     from build123d import Cylinder  # noqa: PLC0415
 
     radius = float(planned["diameter_mm"]) / 2.0
@@ -558,7 +670,14 @@ def _pin_solid(planned: Mapping[str, Any]) -> Any:
 
 
 def _has_volume(shape: Any) -> bool:
-    """An empty boolean result *asserts* on ``.wrapped`` in build123d 0.11."""
+    """Check if a shape has a non-zero volume.
+
+    Args:
+        shape: The shape to check.
+
+    Returns:
+        True if the shape has a non-zero volume, False otherwise.
+    """
     if shape is None:
         return False
     try:
