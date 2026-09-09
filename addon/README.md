@@ -325,6 +325,97 @@ every render after it does not. 12 frames at 320 px on EEVEE: 13.9 s cold, 1.5 s
 compiles nothing. Budget both ways when quoting a wait to the artist: the first demo of
 a session is the slow one.
 
+### Silhouette fitting (Phase 18b — `fit_to_silhouette`, `tools/silhouette.py`)
+
+The artist's ask, verbatim: *"take an image and use the silhouette to map out or move
+the sculpt to match that silhouette, and do multiple sides if provided, so front and
+side."* One command, one or more reference pictures, one per orthographic view.
+
+| type | params | does |
+|---|---|---|
+| `fit_to_silhouette` | `object?`, `views` (`[{"image": <path>, "axis": "front"\|"back"\|"side"\|"left"\|"right"\|"top"\|"bottom", "threshold"?: 0–1}]`) **or** the shorthand `front_image` / `side_image` / …, `strength?` (0–1, default 1), `iterations?` (1–12, default 3), `smooth?` (0–1, default 0.5), `falloff?` (0–4, default 0), `symmetry?` (false \| true \| `X`\|`Y`\|`Z`), `fit?` `height`\|`width`\|`bbox` (default `height`) | deforms the mesh until its projected outline follows the reference in every view given. **Not read-only** — it edits the artist's mesh, so the registry pushes `Forge: fit_to_silhouette` and one Ctrl+Z puts it back. Returns `{"object", "vertices", "faces", "views": [...], "strength", "iterations", "iterations_run", "smooth", "falloff", "fit", "symmetry", "symmetry_plane_mm", "applied", "moved", "moved_fraction", "max_displacement_mm", "mean_displacement_mm", "displacement_by_axis_mm", "constrained_axes", "untouched_axes", "iteration_max_mm", "dimensions_before_mm", "dimensions_after_mm", "bounds_before_mm", "bounds_after_mm", "shape_keys", "modifiers", "method", "honesty", "notes", "warnings", "seconds"}` |
+
+Each entry of `views` comes back as `{"axis", "resolved_axis", "image", "image_size",
+"plane", "depth_axis", "constrains", "mask": {"source" (a tiered claim), "threshold",
+"coverage", "pixels", "bbox_px", "background_uniformity"}, "confidence",
+"confidence_reasons", "fit", "scale_mm_per_pixel", "centre_mm", "target_size_mm",
+"mesh_size_before_mm", "iou_before", "iou_after", "iou_gain", "shape_iou_before",
+"shape_iou_after", "outline_error_before_mm", "outline_error_after_mm",
+"rays_unresolved", "grid", "grid_cell_mm"}`.
+
+**A view only moves the two axes it can see.** `front` moves X and Z, `side` (= `right`)
+moves Y and Z, `top` moves X and Y, and the depth axis of a view is the one thing that
+view has no opinion about — a front-only fit reports `displacement_by_axis_mm["Y"] == 0.0`
+and the Y coordinates come back bit-identical, asserted by test. An axis two views both
+constrain (Z, for front + side) takes the **average** of what they ask, which is what
+makes a front and a side reference agree on one ellipsoid instead of fighting.
+
+**The warp is a smooth radial scale field, not a projection onto a curve.** In each
+view's plane, both outlines are measured the same way by the same function — a ray
+marched out from the shared centre until it leaves the silhouette, 256 angular bins —
+the reference off its thresholded picture and the mesh off a **rasterised projection of
+its own faces**. The ratio of the two radii at an angle is how much the mesh must grow
+or shrink there, and every vertex moves along its own radius by that ratio, interpolated
+between bins. So the outline lands on the reference *and* everything inside moves by the
+same proportion: the ridge of a nose stays where the artist put it relative to the jaw.
+
+**Why the mesh outline is rasterised rather than read off the vertices.** Binning
+projected vertices by angle and taking the farthest one sounds equivalent and is not: a
+bin whose farthest vertex happens to sit slightly inside the true outline reports a
+radius that is too small, and every vertex at that angle is then pushed too far — a 10%
+lump on a UV sphere. The surface has an outline whether or not a vertex landed on it, so
+the surface is what gets measured (384 cells across a doubly-padded frame ≈ 0.5% radial
+precision).
+
+**`smooth` smooths the DISPLACEMENT, never the mesh.** The Laplacian passes run over the
+per-vertex movement vectors before any of them are applied, so spikes in a noisy
+reference are faired out and a 200 000-vertex sculpt keeps every pore it came in with.
+Measured: a deliberate 350 mm spike still stands 470 mm proud after a fit at `smooth=1.0`.
+
+**`falloff` is the knob for artists who want only the rim to move.** At `0` (default) the
+whole cross-section scales together; at `3` the interior barely moves and the outline
+still lands. Measured on the fixture: interior vertices moved **98.3 mm at falloff 0 and
+9.7 mm at falloff 3**, with the outline IoU 0.988 and 0.989 respectively.
+
+**Alignment is bbox-to-bbox, and `fit` says which extent is the anchor.** `height` (the
+default) scales the reference so its silhouette is as tall as the mesh's projection, then
+centres it — height because the vertical axis is the one front and side views share,
+which is what lets two references agree. The command changes the shape of the sculpt, not
+where in the world it stands.
+
+**Every view is measured, before and after.** `iou_before` / `iou_after` are the overlap
+of the mesh's projected silhouette with the reference, on a **fixed grid against a frozen
+target**: the alignment, scale, centre and reference profile are all computed once,
+against the mesh as it was before the first iteration, so the thing the fit is graded on
+at the end is the thing it was aimed at at the start. Recomputing the alignment from the
+deformed mesh would move the goalposts. `shape_iou_*` is the same overlap with both
+silhouettes cropped and fitted to one square (`verify._normalise_mask`, verbatim), so
+"the proportions are wrong" and "the shape is wrong" stay two findings.
+
+**Masks come off `verify.py`'s own machinery** — one measurement, one implementation. An
+alpha channel is the mask exactly (tier `measured`); otherwise it is every pixel further
+than `threshold` from the median border colour, which is a luminance threshold when the
+border is white paper (tier `heuristic`, and the report shouts PLAIN BACKGROUND). A stray
+pixel in a corner is **warned about, never silently cropped** — trimming it would clip a
+foot.
+
+**Said in every report** (`honesty`): a silhouette fit matches an outline. Depth the
+reference never had is not invented, interior form is scaled with the outline rather than
+rebuilt, and a concavity a ray from the centre cannot see — the gap between two legs, the
+inside of a horseshoe — is approximated by the outline it can see.
+
+**Measured on this machine (Blender 5.0.1, `--background`):** a 482-vertex sphere fitted
+to a 2:1 ellipse in **0.14 s**, IoU **0.497 → 0.990**, mean outline error 313 mm → 2.5 mm.
+Front **and** side on an 8 066-vertex sphere, 4 iterations, in **0.33 s** — the whole
+thing is numpy, and the rasteriser is the expensive half.
+
+**Scrappable by parameter, all of it:** `strength=0` is an exact no-op that still returns
+the measurement (nothing is written to the mesh at all, and the report says so), `smooth=0`
+turns the fairing off, `falloff` chooses between warping the whole section and moving only
+the rim, `symmetry` chooses whether a lopsided photograph is allowed to make a lopsided
+sculpt (measured: mirror residual 61.4 mm off, 0.00 mm on), and `iterations` trades time
+for accuracy.
+
 ### The geometric gate — `verify_design` and `turntable` (`tools/verify.py`)
 
 **Renders judge beauty; this judges truth; both gates must pass.** The reason the
@@ -1964,6 +2055,8 @@ addon/forge/
   tools/diagnose.py      mesh_diagnose: the defects, each with a place in millimetres
   tools/verify.py        the geometric gate: verify_design (the scored, tier-stamped
                          report) and turntable (the 24-view judging rig)
+  tools/silhouette.py    fit_to_silhouette: warp a sculpt until its outline matches
+                         one reference picture per orthographic view (Phase 18b)
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
@@ -2000,6 +2093,11 @@ addon/tests/
                          own render, used AS the reference), the confidence drop on a busy
                          background, loops from an armature and from tag boundaries, and
                          the turntable contact sheet measured on its IHDR
+  headless_silhouette.py headless checks for fit_to_silhouette (port 9904): a sphere
+                         fitted to ellipses it draws itself, with the right answer in
+                         millimetres known by arithmetic; the untouched axis asserted
+                         bit-identical; front+side together; every knob; the mask tiers;
+                         thirteen refusals; and flow legality proven by running a flow
   headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
                          row, the chips, the empty states, check_model/segment_model
                          against a fake service, and the flow editor
@@ -2028,9 +2126,58 @@ its panel's `status` string.
 
 ## Headless tests
 
-Sixteen suites, all `--background` only. Never launch Blender windowed to run them. As of
-the mechanism demos they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69 +
-316 + 139 + 79 + 108 + 163 = 1844 checks**, all green on Blender 5.0.1.
+Seventeen suites, all `--background` only. Never launch Blender windowed to run them. As
+of silhouette fitting they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69
++ 316 + 139 + 79 + 108 + 163 + 105 = 1949 checks**, all green on Blender 5.0.1.
+
+### Phase 18b — silhouette fitting (`headless_silhouette.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_silhouette.py
+```
+
+Socket port **9904**. **105 checks**, no window, no service, no network beyond loopback,
+and no reference pictures on disk that the suite did not draw itself. Every fixture's
+right answer is arithmetic rather than a golden file: a 1 m sphere is 2000 mm across, so
+fitted to an ellipse whose bounding box is 201 × 401 px with `fit="height"` the answer is
+`2000 × 201 / 401` = **1003 mm** wide, **2000 mm** tall and **exactly 2000.000 mm** deep.
+Covering:
+
+- **registration and undo** — registered, deliberately **not** read-only, undo step named
+  `Forge: fit_to_silhouette`, and the three view frames (front → XZ/depth Y, side →
+  YZ/depth X, top → XY/depth Z) asserted as tuples rather than trusted;
+- **the single-view fit** — the mm dimensions above, IoU 0.497 → 0.990, mean outline error
+  313 mm → 2.5 mm, the shape-only IoU rising too (so framing cannot explain it), and both
+  numbers tiered `measured`;
+- **the untouched axis** — `displacement_by_axis_mm["Y"] == 0.0` *and*
+  `numpy.array_equal` on the Y column, because "near enough" is not what the contract
+  says;
+- **a wider reference widens** — the fit follows the picture, not a preference;
+- **front + side** — two references, three axes, X from the front, Y from the side, Z
+  agreed between them, both views above 0.88 IoU;
+- **the shorthand** — `front_image` / `side_image` becomes the same two views, and giving
+  both spellings at once is refused rather than merged;
+- **`strength=0` is an exact no-op** — not one coordinate moves, the mesh is not written
+  to at all, and before/after are the same number, which is how you get the measurement
+  without committing to the fit;
+- **the knobs** — `strength` as a lerp, `falloff` holding the interior (98.3 mm → 9.7 mm
+  while the outline still lands), `symmetry` pulling a lopsided reference back onto its
+  own mirror (residual 61.4 mm → 0.00 mm, measured with `verify.symmetry_residual`),
+  `iterations` recovering what heavy smoothing gives away (0.941 → 0.988 at `smooth=0.8`),
+  and a deliberate 350 mm spike surviving `smooth=1.0` — **the mesh is never smoothed**;
+- **the mask machinery** — alpha `measured` / high confidence, flat background
+  `heuristic` with the PLAIN BACKGROUND caveat, an explicit `threshold` honoured, and a
+  single stray pixel warned about rather than cropped;
+- **shape keys** counted and warned about;
+- **thirteen refusals**, each with a sentence: no file at the path, a misspelled view
+  (with the `difflib` near miss), a view with no axis, a view with no image, no references
+  at all, an empty list, two views of the same side, a threshold out of range, a strength
+  out of range, an object that is not there, a camera instead of a mesh, and a picture
+  with nothing in it;
+- **flow legality proven by running one** — a two-step flow (`ping`, then the fit) rather
+  than a lookup in a registry list;
+- **the budget** — 8 066 vertices, two references, four passes, **0.33 s**.
 
 ### Phase 17 — mechanism demos (`headless_mechanism.py`)
 
