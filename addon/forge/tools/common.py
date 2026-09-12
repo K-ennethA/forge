@@ -436,9 +436,20 @@ def cmd_get_scene_info(params):
             }
         )
     active = get_active_object()
+    try:
+        selected = [o.name for o in layer_objects if o.select_get()]
+    except (TypeError, AttributeError):
+        selected = []
+    # The 3D cursor and the selection are how the artist POINTS at things:
+    # "split the wall I have selected", "put it where my cursor is".  Report
+    # both so the assistant never has to reach for execute_python to see them.
+    cursor = scene.cursor.location
     return {
         "objects": objects,
         "active": active.name if active is not None else None,
+        "selected": selected,
+        "cursor": [float(v) for v in cursor],
+        "cursor_mm": [round(float(v) * 1000.0, 3) for v in cursor],
         "scene": scene.name,
         "unit_scale": float(scene.unit_settings.scale_length),
     }
