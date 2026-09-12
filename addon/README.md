@@ -325,6 +325,111 @@ every render after it does not. 12 frames at 320 px on EEVEE: 13.9 s cold, 1.5 s
 compiles nothing. Budget both ways when quoting a wait to the artist: the first demo of
 a session is the slow one.
 
+### Floor plans to prototype levels (Phase 19 — `build_floorplan`, `tools/floorplan.py`)
+
+The artist's ask, near-verbatim: *"I draw rooms, walls, doors, and give it a label key —
+washer/dryer here — and I want a simple 3d level created with the walls and doors, and
+washer/dryer as rectangles to help map out. Then from there we can edit a shape and make
+it more complex. We should be able to do prototypes; on the floor plans and basic 3d
+rooms we should allow modifications on drawings without full regen; we support
+additions."* One command, one plan file, and **the second call only builds what changed**.
+
+| type | params | does |
+|---|---|---|
+| `build_floorplan` | `plan` (the `floorplan.json` object itself, resolved values, millimetres), `collection?` (default `Floorplan`), `mode?` `update`\|`rebuild` (default `update`), `floor?` (default **true**) | materialises the plan into scene objects named `FP:<id>`, and on every later call **diffs** the plan against what is already there. **Not read-only** — the registry pushes `Forge: build_floorplan` and one Ctrl+Z takes the whole diff back. Returns `{"collection", "built", "updated", "deleted", "unchanged", "kept": [{"id", "object", "why"}], "objects", "object_names", "walls", "openings", "fixtures", "floors", "rooms", "pieces", "mechanisms": [...], "bounds_mm": {"min","max","size"}, "dimensions_mm", "mode", "floor", "defaults_mm", "plan_version", "units", "honesty", "notes", "warnings", "seconds"}` |
+
+The add-on does **not** read images and does not talk to the geometry service: the plan
+arrives as data over the socket with every value already resolved, and this command's
+whole job is to turn numbers into objects and — far more importantly — to *keep* turning
+an edited set of numbers into the same objects.
+
+**The id is the whole contract.** Every room, wall, opening and label carries a stable id,
+and that id names the object: `FP:wall-01`, `FP:wd-01`. Nothing else identifies anything.
+So a rebuild is a **diff against ids**, never a regen:
+
+- an **unchanged** entry is not touched *at all* — same object, same mesh datablock, same
+  materials, same transform, same custom properties. The code path for it is a `continue`,
+  and the suite proves it with `as_pointer()` rather than with the report;
+- a **changed** entry rebuilds only its own object (the object survives and its mesh
+  datablock is swapped, so modifiers and parenting the artist added survive with it);
+- a **new** id creates; a **missing** id deletes — and only ever an `FP:`-prefixed object
+  inside the named collection, because deleting something Forge did not build would be the
+  one unforgivable bug in a command whose job is to leave things alone.
+
+**"Changed" is a fingerprint, not a guess.** When an object is built, a content hash of its
+entry's fully resolved values goes into `obj["forge_fp_hash"]`, alongside
+`forge_fp_id`, `forge_fp_kind`, `forge_fp_verts` and `forge_fp_dims_mm`. The hash is
+canonical JSON (sorted keys, no whitespace) so reordering the plan's keys is not a change,
+and `BUILD_VERSION` is hashed in too, so the day the geometry in this module changes every
+existing object correctly reads as stale. Defaults are resolved *into* each entry before
+hashing, which is why raising `defaults.ceiling_mm` rebuilds every wall and leaves the
+floors and the fixtures untouched — asserted by test, on allocation identity.
+
+**A promoted placeholder is never clobbered.** Promotion is one-way: once the artist has
+elaborated a slot, the plan keeps its footprint as the size contract but the geometry is
+theirs. Before rebuilding *or deleting* anything, the object is asked whether it still
+looks like what Forge built — `obj["forge_fp_keep"] = True` set by hand is an
+unconditional hands-off, a vertex count that no longer matches is an edit, dimensions
+off by more than **0.5 mm** (which is what catches a scale in the viewport) is an edit,
+and an `FP:` object with no fingerprint at all was not Forge's to begin with. Any of those
+and the entry is **skipped**, listed under `kept` with a sentence saying which object and
+why, and warned about. Placement is the exception on purpose: the plan owns *where* a
+placeholder stands, the artist owns *what shape it is*.
+
+**`mode: "rebuild"` is the escape hatch, and it still honours `forge_fp_keep`.** It throws
+the greybox away and builds it again — that is what it is for, and the notes say so out
+loud — but an explicit marker outranks a mode.
+
+**Geometry is boxes, and the openings are cut by construction.** A wall is built in its own
+frame (x along the centreline from `from_mm`, y across, z up) as the solid pieces left
+over: a full-height pier between openings, a sill under a window, a header over anything
+that does not reach the ceiling. No Boolean modifier — it is exact (no coplanar-face
+lottery, no solver to time out) and fast enough that rebuilding a wall per keystroke is
+free. A door leaves a header above and nothing below; a window leaves both; a `gap` runs
+floor to ceiling and splits its wall into two separate piers. Rooms get an optional slab
+hanging **below z = 0** so the walls stand on it (concave rooms are tessellated, so an L
+gets a real L). Labels become boxes at their footprint, spun about Z by `rotation_deg`.
+
+**Two conventions the schema leaves open, decided here and said out loud:** an opening's
+`at_mm` is its **centre** measured along the wall from the `from_mm` end (pass `start_mm`
+instead for the near edge — both at once is refused, because they disagree by half a
+width), and a label's `footprint_mm` `[x, y, w, d]` puts `[x, y]` at the **centre** of the
+box (`"anchor": "corner"`, or `defaults.label_anchor`, switches it).
+
+**Materials are three flat colours by kind** — `Forge FP Wall` (grey), `Forge FP Floor`
+(darker), `Forge FP Fixture` (accent) — made once and shared by every object. A greybox
+with a hundred materials is not a greybox. Each is given a `diffuse_color` as well as a
+Principled base colour, because a prototype level is looked at in Workbench far more often
+than it is rendered.
+
+**A door with a `swing` comes back as a Phase 17 mechanism record** — `{"joint_type":
+"revolute", "axis": [0, 0, 1], "origin_mm": <the hinge edge on the centreline>,
+"range_deg": 90, "direction": ±1, "swing", "hinge", "width_mm", "height_mm",
+"actuated_by"}` — which is the same handful of fields URDF wants. It is **data in the
+report only**: no leaf object is built and nothing is rigged, and the record says so.
+`direction` is the product of which way it swings and which end it hangs from, because a
+right-hung door swinging in turns the opposite way about +Z from a left-hung one.
+
+**Refusals are sentences**, and the plan is parsed *in full* before one thing in the scene
+is touched — a plan that is going to be refused is refused before half a level exists.
+Duplicate ids (ids name objects, so they have to be unique across rooms, walls, openings
+and labels), an opening wider than the wall it is in, a label with no footprint, an opening
+that hangs off the end, two openings overlapping, an unknown opening kind or mode (with the
+`difflib` near miss), a zero-length wall, a room with fewer than three corners or no area,
+a plan in units that are not millimetres, an id too long for a Blender name, and both
+`at_mm` and `start_mm` at once.
+
+**Said in every report** (`honesty`): this is a prototype greybox at real sizes and not a
+construction drawing. Nothing is framed, structural, insulated, code-compliant or
+load-bearing; the walls are solid pieces that meet face to face where they touch, which
+makes them greybox geometry rather than a printable solid; and every dimension is only as
+true as whatever calibrated the plan.
+
+**Measured on this machine (Blender 5.0.1, `--background`):** a two-room flat — two slabs,
+five walls, one door, one fixture — in well under a millisecond; **40 walls with 40 doors
+in 0.047 s**, and re-diffing that same plan (40 hashes, nothing touched) in under a
+millisecond.
+
 ### Silhouette fitting (Phase 18b — `fit_to_silhouette`, `tools/silhouette.py`)
 
 The artist's ask, verbatim: *"take an image and use the silhouette to map out or move
@@ -2126,9 +2231,67 @@ its panel's `status` string.
 
 ## Headless tests
 
-Seventeen suites, all `--background` only. Never launch Blender windowed to run them. As
-of silhouette fitting they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69
-+ 316 + 139 + 79 + 108 + 163 + 105 = 1949 checks**, all green on Blender 5.0.1.
+Eighteen suites, all `--background` only. Never launch Blender windowed to run them. As
+of floor plans they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 69
++ 316 + 139 + 79 + 108 + 163 + 105 + 208 = 2157 checks**, all green on Blender 5.0.1.
+
+### Phase 19 — floor plans to prototype levels (`headless_floorplan.py`)
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup `
+    --python addon\tests\headless_floorplan.py
+```
+
+Socket port **9905**. **208 checks**, one Blender launch, no window, no service, no network
+beyond loopback and no files on disk: the plan is a Python dict in the file and every right
+answer is arithmetic. The fixture is a two-room flat, 7000 × 3000 mm, split by a party wall
+at x = 4000 with one 820 × 2040 mm door centred at 1500 mm along it — so the door runs
+1090…1910 mm, the wall builds as exactly **three boxes** (a pier either side, one header
+over the door) and that is **24 vertices and 18 faces**, asserted rather than eyeballed.
+Covering:
+
+- **registration and undo** — registered, deliberately **not** read-only, undo step named
+  `Forge: build_floorplan`, and the fingerprint itself proved to ignore key order and to
+  notice a changed millimetre;
+- **the first build** — eight objects, per-object vertex and face counts, millimetre
+  dimensions (7000 × 100 × 2400 for a wall, 4000 × 3000 × 50 for a slab, 600 × 600 × 850
+  for the washer/dryer), the door cutout's exact X breaks (0, 1090, 1910, 3000) and Z
+  breaks (0, 2040, 2400), **not one vertex inside the void the door cut**, the slab hanging
+  below z = 0, the three shared materials, a wall's origin at its `from_mm` end rotated
+  along its own centreline, and a revolute mechanism record whose origin is the hinge edge
+  on the centreline;
+- **THE INCREMENTAL LAW, four ways, each on `as_pointer()` identity rather than on the
+  report** — one wall moved rebuilds exactly one mesh datablock while all eight objects
+  stay the same allocation; calling again with the same plan is a total no-op (objects
+  *and* meshes byte-identical allocations, and the notes say so); an added fixture only
+  creates; a removed one only deletes; and a raised `defaults.ceiling_mm` rebuilds all five
+  walls while the two slabs and the fixture are not touched at all;
+- **never clobber** — a hand-scaled fixture whose plan entry then changes is *kept*, with
+  a warning naming the object and a reason saying it was scaled, its scale still on it and
+  its mesh never replaced; an object carrying `forge_fp_keep` is kept; an `FP:` object
+  Forge did not build is kept, and is **not deleted** when its id leaves the plan either;
+  and an `FP:` name already taken by an empty is kept while the other seven build anyway;
+- **rebuild** — every rebuilt object is a genuinely new object (proved with a marker custom
+  property, not with `as_pointer()`: the allocator is entitled to hand a freed address
+  straight back), nothing is reported as deleted because a rebuilt id is not a removed one,
+  and `forge_fp_keep` still holds with a warning saying the marker outranked the mode;
+- **the knobs** — `floor:false` builds six objects instead of eight and says why, turning
+  floors back on is an *addition* of two slabs and nothing else, turning them off again
+  deletes only the slabs, and `collection` puts the level wherever it is pointed;
+- **windows, gaps and an L** — a window leaves a sill *and* a header (Z breaks 0, 900,
+  2100, 2400; four boxes), a gap runs floor to ceiling and splits its wall into two
+  separate piers, and a six-cornered L-shaped room gets a properly tessellated slab
+  (4 triangles a cap, not a fan);
+- **twenty-one refusals**, each with a sentence and each proved to have built nothing:
+  duplicate ids, an opening wider than its wall, a label with no footprint, an unknown kind
+  and an unknown mode (both with the `difflib` near miss), an opening off the end, two
+  openings overlapping, a zero-length wall, a two-corner room, a collinear room, the wrong
+  units, an empty plan, a plan that is not an object, a wall with one end, a non-numeric
+  coordinate, a missing id, an id too long for a Blender name, an unknown swing, `at_mm`
+  and `start_mm` at once, a footprint with no area, and no plan at all;
+- **flow legality proven by running one** — a two-step flow (`ping`, then the build) with
+  the collection arriving through a `{{param}}`;
+- **the budget** — 40 walls and 40 doors in **0.047 s**, re-diffed in under a millisecond.
 
 ### Phase 18b — silhouette fitting (`headless_silhouette.py`)
 

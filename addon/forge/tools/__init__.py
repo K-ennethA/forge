@@ -21,6 +21,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     mechanism = importlib.reload(mechanism)  # noqa: F821
     silhouette = importlib.reload(silhouette)  # noqa: F821
+    floorplan = importlib.reload(floorplan)  # noqa: F821
     assistant = importlib.reload(assistant)  # noqa: F821
     buddy = importlib.reload(buddy)  # noqa: F821
     flows = importlib.reload(flows)  # noqa: F821
@@ -47,6 +48,10 @@ else:
     # implementation of "which pixels are the subject") and after mechanism (it
     # borrows the near-miss object resolver).
     from . import silhouette
+    # Phase 19's floor plans. Nothing but common + registry behind it (boxes,
+    # prisms and a content hash), so it sits wherever it is convenient to read —
+    # next to the other "build me a shape" module.
+    from . import floorplan
     from . import assistant
     from . import buddy
     from . import flows
@@ -73,6 +78,7 @@ __all__ = [
     "rigforge_anim",
     "mechanism",
     "silhouette",
+    "floorplan",
     "assistant",
     "buddy",
     "flows",
