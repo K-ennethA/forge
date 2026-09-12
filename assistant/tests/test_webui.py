@@ -3666,7 +3666,8 @@ def test_the_reading_order_matches_the_mcp_servers(projects):
     other copy, and a sheet that read differently on the card than in the tool
     report would be one of them quietly wrong."""
     assert bridge.DESIGN_READING_ORDER == (
-        "requirements.md", "concept.svg", "mechanism.svg", "components.md")
+        "requirements.md", "concept.svg", "mechanism.svg", "floorplan.svg",
+        "components.md")
 
 
 def test_the_mechanism_diagram_reads_after_the_concept_one(projects):

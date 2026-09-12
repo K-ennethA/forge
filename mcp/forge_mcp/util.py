@@ -2526,8 +2526,14 @@ _DESIGN_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 #: Anything else follows alphabetically. `mechanism.svg` (Phase 17) is the
 #: concept sketch with the motion in it — the press stroke, the latch, the LED —
 #: so it reads directly after `concept.svg` and before the parts list.
+#: `floorplan.svg` (Phase 19) is the same document one scale up: the assistant's
+#: READING of a drawing, echoed back for approval before any wall is built. It
+#: is a picture and it is the thing being signed off, so it sits with the other
+#: diagrams rather than filed alphabetically. `floorplan.json` is deliberately
+#: NOT named here — it is the machine's copy of what the picture says, and it
+#: follows alphabetically like any other structured file.
 DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "mechanism.svg",
-                        "components.md")
+                        "floorplan.svg", "components.md")
 
 
 def design_filename(filename: Any) -> str:
@@ -3453,6 +3459,10 @@ KNOWN_BLENDER_OPS = frozenset({
     # Mechanism demos (Phase 17): keyframe the press, light the LED, film it —
     # exactly the three-step sequence a flow exists to replay.
     "animate_object", "set_material_emission", "render_animation",
+    # Floor plans (Phase 19): the plan file IS the model, so "build the level
+    # again after I edited the plan" is one step a flow can end on — and in
+    # `update` mode it is incremental, so replaying it is cheap and safe.
+    "build_floorplan",
 })
 
 #: Geometry-service endpoints a flow step may call (docs/architecture.md).
@@ -5634,4 +5644,416 @@ def fmt_rig_check_report(result: Mapping[str, Any], summary: str) -> str:
             "  next: the usual cause is weights, not bones — rigforge_weights"
             '(action="report") on the mesh, then cleanup, then check again.'
         )
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Phase 19 — floor plans (floorplan_validate / floorplan_build / floorplan_diff)
+# ---------------------------------------------------------------------------
+#
+# THE PLAN FILE IS THE MODEL. Everything in this block exists to keep that true:
+# the plan lives on disk in the design folder beside the sheet it belongs to, it
+# is read back rather than reconstructed from a conversation, and every id in it
+# is forever, because the id is what names the Blender object and therefore what
+# makes an edit incremental instead of a full regen.
+#
+# The write here is `save_design_doc`'s write, deliberately: same slug rules,
+# same filename alphabet, same second check of the resolved path against the
+# folder it must be inside, same parse-before-write. A floor plan is a design
+# document that happens to be machine-readable, and giving it a second, laxer
+# door onto projects/ would be the bug.
+
+#: The plan file, and the picture of it the artist actually signs off on. Both
+#: live in `projects/<slug>/design/` — the plan is not a build artefact, it is
+#: the design, and it outlives every greybox built from it.
+FLOORPLAN_FILENAME = "floorplan.json"
+FLOORPLAN_SVG_FILENAME = "floorplan.svg"
+
+#: The greybox honesty line, mirrored from the add-on (`floorplan.HONESTY`) so
+#: the report carries it even when an older add-on result has no `honesty` field
+#: of its own — exactly `MECHANISM_HONESTY`'s arrangement, for exactly its
+#: reason: the one way this feature could mislead somebody is by looking like a
+#: building when it is a sketch of one.
+FLOORPLAN_HONESTY = (
+    "This is a prototype greybox at real sizes, not a construction drawing: "
+    "walls are boxes on the plan's centrelines, openings are rectangular "
+    "cutouts, every fixture is a plain box at its stated footprint, and nothing "
+    "here is framed, structural, code-compliant or load-bearing. Say that to "
+    "the artist in your own words every time you show one."
+)
+
+#: The sentence that ends a validate report. The echo-back gate is Phase 19's
+#: whole safety story — the artist corrects the DIAGRAM, never the mesh — so the
+#: tool that produces the numbers says so rather than leaving it to the prompt.
+FLOORPLAN_GATE = (
+    "nothing is built by this call. Hand-author design/floorplan.svg from these "
+    "numbers, name its full path in your reply so they can LOOK at your reading "
+    "of their drawing, and call floorplan_build only after they say yes."
+)
+
+#: What each list in a plan holds, and the word a report calls one of them.
+#: `labels` are "fixtures" in every sentence a human reads — the washer, the
+#: sofa — and `label` only in the schema, so the plural is spelled rather than
+#: derived from the key.
+FLOORPLAN_NOUNS: Dict[str, Tuple[str, str]] = {
+    "room": ("room", "rooms"),
+    "wall": ("wall", "walls"),
+    "opening": ("opening", "openings"),
+    "label": ("fixture", "fixtures"),
+}
+
+#: Ids named in full in a diff report before it starts counting instead. A diff
+#: the model cannot quote back id by id is a diff that becomes "some walls".
+FLOORPLAN_IDS_LISTED = 12
+
+
+def floorplan_path(project: Any) -> Tuple[str, Path]:
+    """``(slug, projects/<slug>/design/floorplan.json)``, checked both ways."""
+    slug = project_slug(project)
+    name = design_filename(FLOORPLAN_FILENAME)  # belt and braces, one alphabet
+    _design, path = design_paths(slug, name)
+    return slug, path
+
+
+def read_floorplan(project: Any) -> Tuple[str, Path, Dict[str, Any]]:
+    """The project's saved plan — ``(slug, path, plan)`` — or a refusal.
+
+    A missing plan is the commonest case and gets the sentence that says what to
+    do about it, not a stack trace: the plan is authored by the assistant with
+    `save_design_doc`, so "there is no plan yet" means "write one".
+    """
+    slug, path = floorplan_path(project)
+    if not path.is_file():
+        raise ForgeError(
+            f"{slug} has no saved floor plan ({path} does not exist). The plan "
+            "file IS the model here: author it against the schema and save it "
+            f'with save_design_doc("{slug}", "{FLOORPLAN_FILENAME}", ...) — ids '
+            "on every room, wall, opening and fixture, because an id is what "
+            "survives an edit."
+        )
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ForgeError(f"Could not read {path}: {exc}") from exc
+    try:
+        plan = json.loads(text)
+    except ValueError as exc:
+        raise ForgeError(
+            f"{path} is not valid JSON ({exc}). Nothing was changed — fix the "
+            "file, or save a corrected plan over it with save_design_doc."
+        ) from None
+    if not isinstance(plan, dict):
+        raise ForgeError(
+            f"{path} holds a {type(plan).__name__}, not a plan object. A floor "
+            'plan is {"version": 1, "units": "mm", "defaults": {...}, "rooms": '
+            '[...], "walls": [...], "labels": [...]}.'
+        )
+    return slug, path, plan
+
+
+def write_floorplan(project: Any, plan: Mapping[str, Any]) -> Tuple[Path, bool]:
+    """Save a plan into the design folder — ``(path, overwritten)``.
+
+    `save_design_doc`'s rules, reached through `save_design_doc`'s helpers, so
+    there is one implementation of "may these bytes land here" rather than two.
+    """
+    slug, path = floorplan_path(project)
+    try:
+        body = json.dumps(plan, indent=2, allow_nan=False, sort_keys=False)
+    except (TypeError, ValueError) as exc:
+        raise ForgeError(
+            f"That plan will not serialise to JSON ({exc}), so it was not "
+            "saved. A plan is a file: every value in it has to be a string, "
+            "number, boolean, list or object — and never NaN or Infinity."
+        ) from exc
+    text = normalize_design_content(body, FLOORPLAN_FILENAME)
+    design = design_root(slug)
+    try:
+        design.mkdir(parents=True, exist_ok=True)
+        existed = path.exists()
+        path.write_text(text, encoding="utf-8", newline="\n")
+    except OSError as exc:
+        raise ForgeError(f"Could not write {path}: {exc}") from exc
+    return path, existed
+
+
+def fmt_plan_counts(tally: Mapping[str, int]) -> str:
+    """`3 rooms, 12 walls, 4 openings, 2 fixtures` — always all four."""
+    parts = []
+    for kind, (one, many) in FLOORPLAN_NOUNS.items():
+        count = int(tally.get(kind, 0) or 0)
+        parts.append(f"{count} {one if count == 1 else many}")
+    return ", ".join(parts)
+
+
+def fmt_plan_noun_phrase(ids: Sequence[str], kinds: Mapping[str, str]) -> str:
+    """`2 walls and 1 fixture` from a list of ids and what each one is."""
+    tally: Dict[str, int] = {}
+    for ident in ids:
+        kind = kinds.get(str(ident)) or "entry"
+        tally[kind] = tally.get(kind, 0) + 1
+    if not tally:
+        return "nothing"
+    parts = []
+    for kind in list(FLOORPLAN_NOUNS) + sorted(k for k in tally
+                                               if k not in FLOORPLAN_NOUNS):
+        count = tally.get(kind)
+        if not count:
+            continue
+        one, many = FLOORPLAN_NOUNS.get(kind, (kind, kind + "s"))
+        parts.append(f"{count} {one if count == 1 else many}")
+    if len(parts) == 1:
+        return parts[0]
+    return ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+def fmt_plan_ids(ids: Sequence[str], limit: int = FLOORPLAN_IDS_LISTED) -> str:
+    """`wall-03, wall-04` — the ids themselves, because ids are the contract."""
+    listed = [str(ident) for ident in ids]
+    if not listed:
+        return "none"
+    if len(listed) <= limit:
+        return ", ".join(listed)
+    return ", ".join(listed[:limit]) + f", +{len(listed) - limit} more"
+
+
+def fmt_plan_defaults(defaults: Mapping[str, Any]) -> str:
+    """The resolved `defaults` block as one readable line of millimetres."""
+    def mm(key: str) -> str:
+        return fmt_number(defaults.get(key), 1)
+
+    return (
+        f"ceiling {mm('ceiling_mm')} mm, wall {mm('wall_mm')} mm, "
+        f"door {mm('door_w_mm')} x {mm('door_h_mm')} mm, "
+        f"window {mm('window_w_mm')} x {mm('window_h_mm')} mm at sill "
+        f"{mm('sill_mm')} mm, fixture height {mm('label_h_mm')} mm, "
+        f"floor slab {mm('floor_mm')} mm, footprint anchor "
+        f"{defaults.get('label_anchor') or 'center'}"
+    )
+
+
+def fmt_floorplan_validated(
+    *,
+    slug: Optional[str],
+    source: str,
+    resolved: Mapping[str, Any],
+    tally: Mapping[str, int],
+    matches: Sequence[Mapping[str, Any]],
+    defaulted: Sequence[Tuple[str, Sequence[str]]],
+    saved: Optional[Path],
+    overwritten: bool,
+) -> str:
+    """The plan as Forge read it: the counts, the numbers it filled in, the gate.
+
+    Written to be QUOTED. Every appliance match carries its confidence and the
+    route it came in by, because "I read 'W/D' as a washer/dryer, 850 mm tall,
+    on an alias match" is a sentence the artist can correct in one word — and
+    correcting it on the sheet costs nothing, while correcting it after the
+    level is built costs a rebuild and possibly their hand edits.
+    """
+    lines = [
+        f"Floor plan reads clean ({source}) — {fmt_plan_counts(tally)}."
+    ]
+    if saved is not None:
+        lines.append(
+            f"  {'updated' if overwritten else 'saved'} the normalised plan — "
+            f"{saved}"
+        )
+        lines.append(
+            "  normalised, not resolved: the defaults block stays live on disk, "
+            "so a number they never chose stays a default and raising "
+            "ceiling_mm later still moves every wall that takes its height "
+            "from it."
+        )
+    lines.append(f"  defaults: {fmt_plan_defaults(resolved.get('defaults') or {})}")
+
+    if defaulted:
+        shown = [f"{ident} ({', '.join(fields)})" for ident, fields in defaulted]
+        head = shown[:FLOORPLAN_IDS_LISTED]
+        extra = len(shown) - len(head)
+        lines.append(
+            f"  took a default ({len(shown)}): " + "; ".join(head)
+            + (f"; +{extra} more" if extra > 0 else "")
+        )
+    else:
+        lines.append("  every number is the artist's own — nothing was defaulted")
+
+    known = [m for m in matches if m.get("match")]
+    unknown = [m for m in matches if not m.get("match")]
+    for match in known[:FLOORPLAN_IDS_LISTED]:
+        lines.append(
+            f"  {match.get('id')}: {match.get('label')!r} -> "
+            f"{match.get('match')} ({match.get('how')}, confidence "
+            f"{fmt_number(match.get('confidence'), 2)}) — "
+            # places=1: `fmt_number` strips trailing zeros, so 850.0 at 0
+            # decimal places would print as "85".
+            f"{fmt_number(match.get('height_mm'), 1)} mm tall"
+            + (f", height from the {match.get('height_from')} table"
+               if match.get("height_from") == "appliance" else "")
+        )
+    if len(known) > FLOORPLAN_IDS_LISTED:
+        lines.append(f"  ... and {len(known) - FLOORPLAN_IDS_LISTED} more matched")
+    if unknown:
+        lines.append(
+            "  no appliance match, so the footprint they DREW is the size "
+            f"({len(unknown)}): "
+            + fmt_plan_ids([f"{m.get('id')} {m.get('label')!r}" for m in unknown])
+        )
+    lines.append(
+        "  THE FOOTPRINT IS NEVER OVERRIDDEN — a plan is top-down and has no "
+        "height in it, so only the height ever comes from the table."
+    )
+    if slug:
+        lines.append(
+            f"  next: floorplan_diff before any later edit, so you can say which "
+            f"ids rebuild; floorplan_build to materialise it in Blender."
+        )
+    lines.append("  " + FLOORPLAN_GATE)
+    return "\n".join(lines)
+
+
+def fmt_floorplan_diff(
+    summary: Mapping[str, Any],
+    *,
+    old_source: str,
+    new_source: str,
+) -> str:
+    """What this edit touches, by id — the sentence to say BEFORE building.
+
+    The whole point of Phase 19's stable ids is that an edit is a diff and not a
+    regen, and the artist only gets that guarantee if somebody tells them: "only
+    wall-03 rebuilds" is a promise about the hand-sculpted sofa in the next room
+    surviving, and it is worth more than any amount of the level being right.
+    """
+    kinds = summary.get("kinds") or {}
+    added = [str(i) for i in (summary.get("added") or [])]
+    removed = [str(i) for i in (summary.get("removed") or [])]
+    changed = [str(i) for i in (summary.get("changed") or [])]
+    unchanged = [str(i) for i in (summary.get("unchanged") or [])]
+    touched = len(added) + len(removed) + len(changed)
+
+    lines = [
+        f"Floor-plan diff ({old_source} -> {new_source}) — {touched} id(s) "
+        f"touched, {len(unchanged)} left alone.",
+        f"  rebuilds ({len(changed)}): {fmt_plan_ids(changed)}",
+        f"  adds ({len(added)}): {fmt_plan_ids(added)}",
+        f"  deletes ({len(removed)}): {fmt_plan_ids(removed)}",
+        f"  unchanged ({len(unchanged)}): {fmt_plan_ids(unchanged)}",
+    ]
+
+    if not touched:
+        lines.append(
+            "  nothing changed: floorplan_build would touch not one object. "
+            "Say that rather than building again."
+        )
+    else:
+        clauses = []
+        if changed:
+            clauses.append(f"rebuilds {fmt_plan_noun_phrase(changed, kinds)}")
+        if added:
+            clauses.append(f"adds {fmt_plan_noun_phrase(added, kinds)}")
+        if removed:
+            clauses.append(f"deletes {fmt_plan_noun_phrase(removed, kinds)}")
+        sentence = ", ".join(clauses)
+        joiner = ", and touches" if len(clauses) > 1 else " and touches"
+        lines.append(
+            f"  SAY THIS BEFORE YOU BUILD: \"this edit {sentence}{joiner} "
+            "nothing else\" — naming the ids."
+        )
+    lines.append(
+        "  an opening's change is its wall's change (a door is a hole cut in "
+        "one), so a moved door lists the door AND the wall it moved on."
+    )
+    lines.append(
+        "  every id not named above keeps the object it already has, hand edits "
+        "included. That is what the ids are for, and it is the promise to make "
+        "out loud."
+    )
+    return "\n".join(lines)
+
+
+def fmt_floorplan_build_report(result: Mapping[str, Any], summary: str) -> str:
+    """The greybox: what moved, what Forge refused to touch, how big it came out."""
+    collection = result.get("collection") or "Floorplan"
+    built = [str(i) for i in (result.get("built") or [])]
+    updated = [str(i) for i in (result.get("updated") or [])]
+    deleted = [str(i) for i in (result.get("deleted") or [])]
+    unchanged = [str(i) for i in (result.get("unchanged") or [])]
+    kept = [k for k in (result.get("kept") or []) if isinstance(k, Mapping)]
+
+    lines = [
+        f"Built the greybox level in '{collection}' — {summary}",
+        f"  built {len(built)}   updated {len(updated)}   "
+        f"deleted {len(deleted)}   unchanged {len(unchanged)}   "
+        f"kept {len(kept)}",
+    ]
+    if built:
+        lines.append(f"  built: {fmt_plan_ids(built)}")
+    if updated:
+        lines.append(f"  rebuilt: {fmt_plan_ids(updated)}")
+    if deleted:
+        lines.append(f"  deleted: {fmt_plan_ids(deleted)}")
+    if unchanged:
+        lines.append(
+            f"  NOT TOUCHED ({len(unchanged)}): {fmt_plan_ids(unchanged)} — same "
+            "object, same mesh, same transform"
+        )
+    for entry in kept[:8]:
+        lines.append(
+            f"  KEPT, not rebuilt — {entry.get('object') or entry.get('id')}: "
+            f"{entry.get('why')}"
+        )
+    if len(kept) > 8:
+        lines.append(f"  ... and {len(kept) - 8} more kept object(s)")
+
+    lines.append(
+        f"  {fmt_number(result.get('objects'), 0)} object(s), "
+        f"{fmt_number(result.get('pieces'), 0)} piece(s) — "
+        f"{fmt_number(result.get('walls'), 0)} wall(s) with "
+        f"{fmt_number(result.get('openings'), 0)} opening(s), "
+        f"{fmt_number(result.get('fixtures'), 0)} fixture(s), "
+        f"{fmt_number(result.get('floors'), 0)} floor slab(s) over "
+        f"{fmt_number(result.get('rooms'), 0)} room(s)"
+    )
+
+    size = (result.get("bounds_mm") or {}).get("size") \
+        if isinstance(result.get("bounds_mm"), Mapping) else None
+    size = size or result.get("dimensions_mm")
+    if isinstance(size, (list, tuple)) and len(size) == 3:
+        # places=1, never 0: `fmt_number` strips trailing zeros, so a float
+        # formatted to no decimals turns 4100.0 into "41".
+        lines.append(
+            f"  bounds: {fmt_number(size[0], 1)} x {fmt_number(size[1], 1)} x "
+            f"{fmt_number(size[2], 1)} mm"
+        )
+
+    mechanisms = [m for m in (result.get("mechanisms") or [])
+                  if isinstance(m, Mapping)]
+    if mechanisms:
+        lines.append(f"  door mechanisms ({len(mechanisms)}):")
+        for record in mechanisms[:6]:
+            lines.append(
+                f"    {record.get('id') or record.get('opening')} on "
+                f"{record.get('wall')}: {record.get('joint_type')} about "
+                f"{fmt_vector(record.get('axis'), 0)}, "
+                f"{fmt_number(record.get('range_deg'), 1)} deg, swing "
+                f"{record.get('swing') or 'unset'} / hinge "
+                f"{record.get('hinge') or 'unset'}"
+            )
+        if len(mechanisms) > 6:
+            lines.append(f"    ... and {len(mechanisms) - 6} more")
+        lines.append(
+            "    DATA ONLY: no leaf object was built and nothing is rigged."
+        )
+
+    lines.extend(fmt_warnings(result.get("warnings")))
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    lines.append(
+        "  every placeholder is a component SLOT: elaborate it parametrically, "
+        "swap in a generated or imported mesh at the slot's footprint, or "
+        "sculpt it. Promotion is one-way and the level never rebuilds around "
+        "it — an edited object is KEPT with a warning, never clobbered."
+    )
+    lines.append("  " + str(result.get("honesty") or FLOORPLAN_HONESTY))
     return "\n".join(lines)

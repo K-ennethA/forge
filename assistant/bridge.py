@@ -501,7 +501,7 @@ DESIGN_DIRNAME = "design"
 #: ``mechanism.svg`` (Phase 17) sits straight after the concept sketch: it is
 #: the same drawing with the motion in it, so it is read second, not last.
 DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "mechanism.svg",
-                        "components.md")
+                        "floorplan.svg", "components.md")
 #: How many design documents one card lists.  Same reason as the exports cap.
 MAX_DESIGN_LISTED = 20
 

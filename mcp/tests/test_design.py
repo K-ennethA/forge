@@ -358,10 +358,17 @@ def test_mechanism_svg_reads_right_after_the_concept_diagram(
         "requirements.md", "concept.svg", "mechanism.svg", "components.md"]
 
 
-def test_the_reading_order_is_the_four_named_documents() -> None:
-    """Pinned, because the assistant bridge mirrors this tuple verbatim."""
+def test_the_reading_order_is_the_five_named_documents() -> None:
+    """Pinned, because the assistant bridge mirrors this tuple verbatim.
+
+    `floorplan.svg` (Phase 19) joined after `mechanism.svg`: it is the same kind
+    of document one scale up — the assistant's reading of a drawing, echoed back
+    for approval — so it belongs with the diagrams rather than filed
+    alphabetically.
+    """
     assert util.DESIGN_READING_ORDER == (
-        "requirements.md", "concept.svg", "mechanism.svg", "components.md")
+        "requirements.md", "concept.svg", "mechanism.svg", "floorplan.svg",
+        "components.md")
 
 
 def test_a_mechanism_diagram_is_saved_and_listed_like_any_other_svg(

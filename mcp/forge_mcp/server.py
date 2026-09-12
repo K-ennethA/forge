@@ -11,6 +11,7 @@ are thin, well-labelled wrappers over them.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
@@ -19,6 +20,7 @@ from . import (
     __version__,
     blender_client,
     config,
+    floorplan,
     maker,
     meshgen_client,
     service_client,
@@ -52,6 +54,9 @@ from .util import (
     fmt_diagnose_report,
     fmt_emission_report,
     fmt_export_report,
+    fmt_floorplan_build_report,
+    fmt_floorplan_diff,
+    fmt_floorplan_validated,
     fmt_flow_list,
     fmt_flow_run_report,
     fmt_flow_saved,
@@ -71,6 +76,7 @@ from .util import (
     fmt_outline_report,
     fmt_overrides,
     fmt_params,
+    fmt_plan_counts,
     fmt_plunger_plan,
     fmt_preview_report,
     fmt_profile_report,
@@ -272,6 +278,18 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   test-before-glue intact. Geometry is still a PARAMS script composing maker_lib
   (docs/part-authoring.md section 7) and a maker housing is two pieces by
   necessity. End every functional build with wiring_guide.
+- FLOOR PLANS are the parametric lane at room scale, and the PLAN FILE IS THE
+  MODEL: projects/<slug>/design/floorplan.json carries the whole meaning of the
+  drawing, and every id in it is forever because an id names the Blender object.
+  The order is fixed — floorplan_validate (schema, resolved numbers, appliance
+  matches quoted so they can be corrected in one word), then a hand-authored
+  design/floorplan.svg echoing your READING back (rooms coloured, door swing
+  arcs, labelled fixture rectangles at the sizes the lookup resolved), then a
+  MANDATORY approval gate, then floorplan_build. After that every edit goes
+  through floorplan_diff FIRST and the reply quotes the touched ids ("only
+  wall-03 rebuilds") — never a full regen, and never mode="rebuild" unasked.
+  A placeholder box is a component SLOT: promoting it is one-way, and an object
+  they hand-edited is kept with a warning rather than clobbered.
 - If a tool reports a backend is down, say which one and how to start it rather
   than retrying blindly.
 """
@@ -4095,6 +4113,244 @@ def render_animation(
            f"{util.PROJECT_RENDERS_DIRNAME}/" if project else ", scratch folder")
     )
     return fmt_animation_report(result, summary)
+
+
+# ---------------------------------------------------------------------------
+# Floor plans (Phase 19) — draw rooms, get walls
+# ---------------------------------------------------------------------------
+#
+# THE PLAN FILE IS THE MODEL. There is no generative 3D anywhere in this group:
+# `projects/<slug>/design/floorplan.json` carries the whole meaning of the
+# drawing, the greybox is a projection of it, and every id in it is forever
+# because an id is what names the Blender object and therefore what makes an
+# edit a DIFF rather than a regen.
+#
+# The order is fixed and the middle step is not optional: validate (read it
+# back, resolve the numbers, show the appliance matches) -> the echo-back
+# `floorplan.svg` the artist approves -> build. After that, every edit goes
+# through `floorplan_diff` first so the reply can say WHICH ids rebuild, because
+# "only wall-03 rebuilds" is a promise about the hand-sculpted sofa in the next
+# room surviving, and that promise is worth more than the level being right.
+
+
+def _plan_source(
+    plan: Optional[Dict[str, Any]],
+    project: Optional[str],
+    *,
+    tool: str,
+) -> tuple[Optional[str], Dict[str, Any], str]:
+    """`(slug|None, plan, where it came from)` from a plan object or a project.
+
+    Exactly one of the two is required, and giving both is not an error: it is
+    the normal editing shape — the proposed plan, plus the project it belongs
+    to, which is where a validated copy gets saved back.
+    """
+    if plan is None and project is None:
+        raise ForgeError(
+            f"{tool} needs a plan. Pass the floorplan.json object as `plan`, or "
+            "name the `project` whose design/floorplan.json to read. The shape "
+            'is {"version": 1, "units": "mm", "defaults": {...}, "rooms": '
+            '[...], "walls": [...], "labels": [...]}, with a stable id on every '
+            "entry."
+        )
+    if plan is not None:
+        if not isinstance(plan, dict):
+            raise ForgeError(
+                f"`plan` must be the floor-plan object itself, not a "
+                f"{type(plan).__name__}. To use a project's saved plan, pass "
+                "`project` instead of a path."
+            )
+        if project is not None:
+            slug, _path = util.floorplan_path(project)
+            return slug, plan, "the plan you passed"
+        return None, plan, "the plan you passed"
+    slug, path, saved = util.read_floorplan(project)
+    return slug, saved, str(path)
+
+
+@app.tool()
+def floorplan_validate(
+    plan: Optional[Dict[str, Any]] = None,
+    project: Optional[str] = None,
+    save: bool = True,
+) -> str:
+    """Check a floor plan against the schema and report what Forge read in it.
+
+    The first call of the floor-plan flow and the one that has to happen before
+    anything is drawn or built: it resolves every optional number, matches each
+    fixture label against the appliance table, and hands back the reading in
+    words the artist can correct — *"I read 'W/D' as a washer/dryer, 850 mm
+    tall, on an alias match"* is a sentence they fix in one word on the sheet,
+    and fixing it after the level is built costs a rebuild.
+
+    - `plan`: the floor-plan object. `project`: the project whose saved
+      `design/floorplan.json` to read. One of the two, or both — both is the
+      editing shape (validate this proposal, and file it under that project).
+    - `save`: with a `project`, the **normalised** plan is written back to
+      `projects/<slug>/design/floorplan.json` under `save_design_doc`'s rules.
+      Normalised, not resolved: the `defaults` block stays live, so a number the
+      artist never chose stays a default and raising `defaults.ceiling_mm` later
+      still moves every wall that takes its height from it.
+
+    **Refusals are the feature.** A duplicate id, an opening past the end of its
+    wall or taller than it, two openings on top of each other, a room that
+    crosses itself, a missing id — each comes back as a sentence naming the
+    entry. A missing id is refused rather than generated, because an invented id
+    changes next run and takes the artist's hand edits with it.
+
+    Nothing is built by this call. The echo-back gate comes next: hand-author
+    `design/floorplan.svg` from these numbers, name its path so it renders in
+    their chat, and build only after they say yes.
+    """
+    slug, source_plan, source = _plan_source(plan, project, tool="floorplan_validate")
+
+    # Normalised first, resolved second, and they are DIFFERENT documents: the
+    # normalised one is what gets saved (it still knows which numbers were
+    # chosen), the resolved one is what gets reported and, later, built.
+    normalized = floorplan.validate(source_plan)
+    resolved = floorplan.resolve(normalized)
+
+    saved_path: Optional[Path] = None
+    overwritten = False
+    if slug is not None and save:
+        saved_path, overwritten = util.write_floorplan(slug, normalized)
+
+    return fmt_floorplan_validated(
+        slug=slug,
+        source=source,
+        resolved=resolved,
+        tally=floorplan.counts(resolved),
+        matches=floorplan.appliance_matches(resolved),
+        defaulted=floorplan.from_defaults(resolved),
+        saved=saved_path,
+        overwritten=overwritten,
+    )
+
+
+@app.tool()
+def floorplan_diff(
+    plan: Dict[str, Any],
+    against: Optional[Dict[str, Any]] = None,
+    project: Optional[str] = None,
+) -> str:
+    """What would this edit actually rebuild? Ask BEFORE floorplan_build.
+
+    The incremental-regen law, made sayable. Two plans go in and four lists of
+    ids come out — added, removed, changed, unchanged — so the reply can be
+    *"this edit rebuilds 2 walls, adds 1 fixture, and touches nothing else"*
+    instead of an unqualified "rebuilding the level". Every id NOT named keeps
+    the object it already has, hand edits included.
+
+    - `plan`: the proposed (new) plan.
+    - `against`: the plan to compare it with, or `project`: compare against that
+      project's saved `design/floorplan.json`. One of the two.
+
+    Both sides are resolved before comparing, so the diff is of real values:
+    raising `defaults.ceiling_mm` marks every wall that was taking its height
+    from the block and leaves a wall with its own explicit height alone, and
+    dropping an explicit `thickness_mm: 100` when the default is already 100
+    marks nothing. An opening's change is its wall's change, because a door is a
+    hole cut in one — a door that moves between walls marks both.
+
+    Reads nothing in Blender and builds nothing: this is arithmetic on two
+    documents, and it is cheap enough to run on every edit.
+    """
+    if not isinstance(plan, dict):
+        raise ForgeError(
+            f"`plan` must be the proposed floor-plan object, not a "
+            f"{type(plan).__name__}."
+        )
+    if against is None and project is None:
+        raise ForgeError(
+            "floorplan_diff compares two plans, so it needs the other one: pass "
+            "`against` (a plan object) or `project` (whose saved "
+            "design/floorplan.json is the before)."
+        )
+    if against is not None and project is not None:
+        raise ForgeError(
+            "Pass `against` OR `project`, not both — they are two different "
+            "answers to 'what is this being compared with', and guessing which "
+            "one you meant is how a diff ends up measured against the wrong "
+            "before."
+        )
+    if against is not None:
+        if not isinstance(against, dict):
+            raise ForgeError(
+                f"`against` must be a floor-plan object, not a "
+                f"{type(against).__name__}."
+            )
+        old, old_source = against, "the plan you passed as `against`"
+    else:
+        _slug, path, old = util.read_floorplan(project)
+        old_source = str(path)
+
+    return fmt_floorplan_diff(
+        floorplan.diff(old, plan),
+        old_source=old_source,
+        new_source="the proposed plan",
+    )
+
+
+@app.tool()
+def floorplan_build(
+    plan: Optional[Dict[str, Any]] = None,
+    project: Optional[str] = None,
+    collection: str = "Floorplan",
+    mode: Literal["update", "rebuild"] = "update",
+    floor: bool = True,
+) -> str:
+    """Materialise a floor plan as a greybox level in Blender — incrementally.
+
+    Walls extruded on their centrelines, openings cut by construction (a pier
+    between them, a header over, a sill under a window), each room an optional
+    slab, each label a named box at its real footprint. **Only after the artist
+    has approved `design/floorplan.svg`** — the echo-back gate is the whole
+    safety story of this phase: they correct the diagram, never the mesh.
+
+    - `plan` / `project`: the plan object, or the project whose saved plan to
+      build. Both is fine (build this proposal into that project's level).
+    - `mode`: **"update"** (the default) diffs the plan against what is already
+      in the collection by id and touches only what changed — an unchanged entry
+      keeps the same object, the same mesh datablock and the same transform.
+      **"rebuild"** throws the greybox away and builds it again, so hand edits
+      to it are gone; that is what the mode is for, and ask before using it.
+    - `collection`: which collection the level lives in ("Floorplan"). Only
+      `FP:`-prefixed objects *inside it* are ever touched.
+    - `floor`: whether rooms get slabs, for the build as a whole. A single
+      room opts out on its own with `"floor": false` on its plan entry — the
+      add-on honours it and reports the slab it skipped.
+
+    **Nothing hand-edited is clobbered.** An `FP:` object whose mesh no longer
+    matches what its entry would build — a different vertex count, dimensions
+    off by more than 0.5 mm — or that carries `forge_fp_keep` is KEPT and
+    reported with a sentence naming it, in every mode. That is promotion: a
+    placeholder is a component SLOT, elaborating it is one-way, and the level
+    never rebuilds around it.
+
+    Needs Blender running with the Forge add-on server started. The plan is
+    validated and resolved HERE first, so a refusal costs no round trip.
+    """
+    _slug, source_plan, _source = _plan_source(plan, project, tool="floorplan_build")
+
+    # Resolved on this side: what crosses the socket is a plan with every number
+    # explicit, so the add-on cannot silently substitute a default of its own.
+    resolved = floorplan.resolve(source_plan)
+
+    name = (collection or "").strip() or "Floorplan"
+    result = blender_client.send_command("build_floorplan", {
+        "plan": resolved,
+        "collection": name,
+        "mode": mode,
+        "floor": bool(floor),
+    })
+
+    tally = floorplan.counts(resolved)
+    summary = (
+        f"{mode} mode, {fmt_plan_counts(tally)}"
+        + (f", {fmt_number(result.get('seconds'), 2)} s"
+           if result.get("seconds") is not None else "")
+    )
+    return fmt_floorplan_build_report(result, summary)
 
 
 # ---------------------------------------------------------------------------

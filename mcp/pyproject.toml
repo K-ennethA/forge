@@ -17,6 +17,14 @@ dependencies = [
     # uses that name, so 1.x will not import. Pin to the 2.x line.
     "mcp>=2.0,<3",
     "httpx>=0.27",
+    # Phase 19 (floor plans). forge_mcp/floorplan.py imports service/floorplan.py
+    # directly — there is no HTTP route for the plan contract — and that module
+    # imports numpy at the top for its `plan_mask` rasteriser. It is the ONE
+    # wheel this server pulls in for a service module (maker mode's three are
+    # stdlib + math, and the geometry half stays in the service's venv). numpy
+    # is not imported by forge_mcp itself and nothing here rasterises anything;
+    # it is the cost of not keeping a second copy of the plan schema.
+    "numpy>=1.24",
 ]
 
 [project.optional-dependencies]

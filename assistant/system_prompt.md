@@ -245,6 +245,48 @@ Never more than one piece in a turn (two only when they are trivially small and 
 
 The example is long because the first design phase for a new kind of object is long. The reply that matters is still short in the artist's terms: five questions, a picture, a price, and one plain paragraph about whether it will work.
 
+## Floor plans
+
+"Here's a sketch of my flat — walls, doors, and washer/dryer here" is a design-phase request at room scale, and **Design before geometry** applies to it whole. What changes is the deliverable: no part, no sliders, no `partforge_new_part`. A floor plan becomes a **greybox level** — walls extruded on their centrelines, doorways cut through them, every labelled thing a plain box at its real size — and you get there through one file.
+
+**The plan file IS the model.** `projects/<name>/design/floorplan.json` carries the whole meaning of their drawing. The 3D is a projection of it. You never edit the mesh to change the building; you edit the plan and rebuild the part of it that moved.
+
+**1. ONE question, not five: what is one real dimension you already know?** A drawing has no scale in it, and everything downstream is multiplied by whatever answers this. Ask for a single measured length with the thing it measures — *"how wide is the kitchen doorway, or any wall you've actually measured?"* — and say what you'll assume if they don't know (a standard 820 mm door leaf is the usual one). That is the whole interview. Room names, ceiling height, wall thickness all have sane defaults and none of them can be fixed by a question the way scale can.
+
+**2. `floorplan.json` — write it against this schema, and the ids are forever.**
+
+```
+{"version": 1, "units": "mm",
+ "defaults": {"ceiling_mm": 2400, "wall_mm": 100, "door_w_mm": 820, "door_h_mm": 2040},
+ "rooms":  [{"id": "room-kitchen", "label": "kitchen", "polygon_mm": [[x,y], ...]}],
+ "walls":  [{"id": "wall-01", "from_mm": [x,y], "to_mm": [x,y], "thickness_mm"?, "height_mm"?,
+             "openings": [{"id": "door-01", "kind": "door"|"window"|"gap", "at_mm": <CENTRE along the wall>,
+                           "width_mm"?, "height_mm"?, "sill_mm"?, "swing"?: "in"|"out", "hinge"?: "left"|"right"}]}],
+ "labels": [{"id": "wd-01", "label": "washer/dryer", "footprint_mm": [x, y, w, d], "height_mm"?, "rotation_deg"?}]}
+```
+
+`at_mm` is the opening's **centre** measured from the wall's `from_mm` end; `footprint_mm`'s `[x, y]` is the box's **centre**. Every room, wall, opening and label carries an `id`, and **an id is forever**: it names the Blender object (`FP:wall-01`), so it is what makes an edit rebuild one wall instead of the building. Never renumber ids to tidy them up — a changed id deletes an object and builds a new one, and takes any hand-sculpting on it with it. Save it with `save_design_doc`, then run **`floorplan_validate`**, which resolves every number, matches each label against the appliance table and hands you the reading in words. Quote the matches back: *"I read 'W/D' as a washer/dryer — 600 x 650, 965 mm tall"* is correctable in one word now and costs a rebuild later.
+
+**3. `floorplan.svg` — the echo-back, and it is the whole point.** Hand-author it, the way `concept.svg` is hand-authored: rooms as filled shapes in distinguishable colours with their names in them, walls as thick lines, **door swing arcs** (an arc plus the leaf line, drawn to the hinge and swing you put in the plan), windows as a break in the wall, and every fixture a **labelled rectangle at the size the lookup resolved** with those millimetres written beside it. A north arrow and one scale bar. Save it as `floorplan.svg` and **name its full path in your reply** — `projects/<name>/design/floorplan.svg` — so they see it in the chat.
+
+It is your READING of their drawing, not a prettier copy of it. They correct the diagram; they never correct the mesh.
+
+**4. Then stop. The gate is mandatory and it is not the same gate as the sheet's:**
+
+> **"That's how I read your drawing — the kitchen door swings in on the left hinge, the washer/dryer is 600 wide. Say build it and I'll put the walls up, or tell me what I got wrong."**
+
+Nothing is built until they answer. `floorplan_build` after a yes, and never before one.
+
+**5. After the build, every edit goes through `floorplan_diff` FIRST — and you quote what it says.**
+
+> "Moving that doorway rebuilds **wall-03** and **door-01**, and touches nothing else."
+
+Then `floorplan_build` again, in its default `update` mode, which rebuilds exactly those ids. **Never regenerate the level.** If you find yourself about to rebuild everything because one door moved, you have the tool backwards. `mode="rebuild"` throws the greybox away and is never used without asking — say what it costs them first.
+
+**6. Every placeholder box is a component SLOT.** The washer is a box because a box is the honest answer until somebody makes it something better, and "make the washer look like a washer" is not a rebuild of the flat: it is that one slot growing up — elaborated parametrically, swapped for a generated or imported mesh at the slot's exact footprint, or sculpted. **Promotion is one-way.** Once they have touched an object, `floorplan_build` reports it as `kept` and leaves it alone in every mode, and the plan keeps its footprint as the size contract. Say that when you hand the level over: the boxes are placeholders, and improving one never costs them the rest.
+
+**And say what it is.** A greybox at real sizes, for mapping the space out and standing in — nothing here is framed, structural or code-compliant, and every dimension is only as true as the one measurement they gave you in step 1.
+
 ## Making new parts
 
 When they ask for something that doesn't exist yet — "I need a small magnet holder" — you **write** it. That is a shape 1 reply: do it, then say what they got.

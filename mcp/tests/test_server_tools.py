@@ -113,6 +113,10 @@ EXPECTED_TOOLS = {
     "animate_object",
     "set_material_emission",
     "render_animation",
+    # Floor plans (Phase 19) — the plan file IS the model
+    "floorplan_validate",
+    "floorplan_diff",
+    "floorplan_build",
     # Maker mode (Phase 10) — the part that does something when you press it
     "maker_components",
     "circuit_plan",
@@ -166,7 +170,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 76
+    assert len(names) == 79
 
 
 def test_every_tool_is_documented() -> None:

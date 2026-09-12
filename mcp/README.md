@@ -12,11 +12,16 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**76 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+**79 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
 docstring and summarised under [Maker mode](#maker-mode-phase-10--the-part-that-does-something-when-you-press-it).
+The three **floor-plan** tools do the same with `service/floorplan.py` and
+`service/appliance_dims.py` for the same reason — the plan contract is a schema, not a
+geometry job, and the service exposes no route for it — at the cost of one wheel, `numpy`,
+which `service/floorplan.py` imports at the top for its rasteriser
+(`forge_mcp/floorplan.py`'s docstring says so out loud).
 
 ## Setup
 
@@ -32,7 +37,9 @@ py -3 -m venv .venv
 (If `py` is not on PATH, call the interpreter by its full path — on this machine that is
 `%LOCALAPPDATA%\Python\pythoncore-3.14-64\python.exe`.)
 
-That installs `mcp` and `httpx` and puts `forge_mcp` on the venv's path, which is what makes
+That installs `mcp`, `httpx` and `numpy` (the last one only because
+`service/floorplan.py`, which the floor-plan tools import directly, imports it at the top)
+and puts `forge_mcp` on the venv's path, which is what makes
 `python -m forge_mcp` work from any working directory. The `[dev]` extra adds `pytest`; drop
 it for a runtime-only install.
 
@@ -53,7 +60,7 @@ The server is built against the **mcp 2.x** SDK, which renamed `FastMCP` to `MCP
 ```
 
 `tests/` covers path/formatting logic, the NDJSON framing (against an in-process fake socket
-server on an ephemeral port), the 71-tool surface and its schemas, the backend-down error
+server on an ephemeral port), the 79-tool surface and its schemas, the backend-down error
 messages, the stdio handshake against a real `python -m forge_mcp` subprocess, and the
 `.mcp.json` registration.
 `tests/test_workspace.py` does it for the nine Phase 8 tools: what each workspace command
@@ -578,6 +585,63 @@ set_material_emission(object="led_lens", strength=6, color=[1.0, 0.62, 0.2], fra
 render_animation(1, 48, project="litwick lamp", name="litwick press", view="front")
 # -> projects/litwick-lamp/renders/litwick-press.mp4 - name it in the reply
 ```
+
+### Floor plans (Phase 19) — draw rooms, get walls
+
+**The plan file IS the model.** No generative 3D anywhere in this group: the whole meaning
+of the drawing lives in `projects/<slug>/design/floorplan.json`, the greybox is a projection
+of it, and every id in it is **forever** — an id names the Blender object (`FP:wall-01`), so
+an id that changed between runs would take the artist's hand edits with it. That is why a
+missing id is refused rather than generated.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `floorplan_validate` | `plan` (the object) and/or `project`, `save` (default **true**) | `service.validate_plan` + `fill_defaults`. Reports the counts, the resolved `defaults`, which entries took one, and every fixture's appliance match **with its confidence and the route it matched by**. With a `project` it saves the normalised plan back under `save_design_doc`'s rules. |
+| `floorplan_diff` | `plan` (the proposal), `against` (a plan) **or** `project` (its saved plan) | `service.diff_plans` — `added` / `removed` / `changed` / `unchanged`, by id, plus the one-sentence version: *"this edit rebuilds 2 walls, adds 1 fixture and touches nothing else."* Reads nothing in Blender. |
+| `floorplan_build` | `plan` and/or `project`, `collection` (`"Floorplan"`), `mode` `update`/`rebuild`, `floor` | Sends `build_floorplan` over the socket. Reports built / updated / deleted / **unchanged** / **kept**, the door mechanism records, the bounds, and the greybox honesty line. Needs Blender. |
+
+**The order is fixed and the middle step is not optional.** validate → hand-author
+`design/floorplan.svg` (the echo-back: rooms coloured, door swing arcs, labelled fixture
+rectangles at the sizes the lookup resolved) → **the artist approves the diagram** → build.
+They correct the drawing, never the mesh. `floorplan.svg` therefore reads on the design
+sheet right after `mechanism.svg`; `floorplan.json` is the machine's copy of what the
+picture says and files alphabetically like any other structured document.
+
+**Normalised is saved; resolved is sent.** `floorplan_validate` writes back the *normalised*
+plan — ids stripped, numbers floats, polygons wound counter-clockwise — and deliberately not
+the resolved one, so the `defaults` block stays live on disk and raising `ceiling_mm` next
+week still moves every wall that was taking its height from it. `floorplan_build` resolves
+on this side and sends that, so the add-on cannot silently substitute a default of its own
+(`service.DEFAULTS` is the add-on's `PLAN_DEFAULTS` key for key, and both halves pin it).
+
+**After the build, every edit goes through `floorplan_diff` first.** Not for the model's
+benefit — for the sentence it makes possible. "Only `wall-03` rebuilds" is a promise about
+the hand-sculpted sofa in the next room surviving, and it is worth more than the level being
+right. A placeholder box is a component **SLOT**: elaborate it parametrically, swap in a
+generated or imported mesh at the slot's footprint, or sculpt it — promotion is one-way, and
+an `FP:` object whose mesh no longer matches its entry (different vertex count, dimensions
+off by >0.5 mm, or `forge_fp_keep` set) is reported under `kept` and left alone in **every**
+mode, `rebuild` included.
+
+```
+# 1. the reading, checked and filed
+floorplan_validate(plan={"version": 1, "units": "mm", "defaults": {"ceiling_mm": 2400},
+                         "rooms": [...], "walls": [...], "labels": [...]},
+                   project="upstairs flat")
+# -> 3 rooms, 12 walls, 4 openings, 2 fixtures; 'W/D' -> washer/dryer (alias, 0.95)
+# 2. the echo-back, and then STOP
+save_design_doc("upstairs flat", "floorplan.svg", '<svg ...>')
+# 3. only after they say yes
+floorplan_build(project="upstairs flat")
+# 4. and every edit after that
+floorplan_diff(plan=revised, project="upstairs flat")
+# -> "this edit rebuilds 1 wall, adds 1 fixture and touches nothing else"
+floorplan_build(plan=revised, project="upstairs flat")   # update mode: 2 objects touched
+```
+
+`build_floorplan` is also a legal flow step (`KNOWN_BLENDER_OPS`), which is safe precisely
+because `update` mode is incremental: replaying it costs a sub-millisecond diff when nothing
+changed.
 
 ### Imported models (Phase 6d) — the downloaded-STL pipeline
 
