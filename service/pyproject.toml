@@ -30,6 +30,10 @@ dependencies = [
     "fastapi>=0.110",
     "uvicorn>=0.27",
     "pydantic>=2.6",
+    # floorplan_extract.py decodes the artist's drawing; Pillow is the decoder
+    # and numpy does everything after it (imported lazily, so a service without
+    # it still serves every other route).
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

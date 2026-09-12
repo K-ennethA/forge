@@ -21,10 +21,19 @@ mask half is not reached from here anyway), and if it is missing the import
 failure is one plain sentence naming what to do, exactly like maker mode's —
 lazy and guarded, so every other tool in the server carries on working.
 
+``service/floorplan_extract.py`` rides in on the same argument, and it brings
+**Pillow** with it the way ``floorplan.py`` brought numpy — stated in
+``mcp/pyproject.toml`` rather than hidden, imported lazily inside the extractor
+so a venv without it still validates, diffs and builds plans. It is here for the
+one reason the whole module exists: a drawing that got read by EYE produced a
+level with the wrong footprint and a diagonal wall that exists nowhere in it, so
+the reading has to be arithmetic, and arithmetic the model cannot reach around
+has to be a tool.
+
 **What is NOT mirrored here:** ``plan_mask`` / ``mask_iou`` / ``plan_bounds``
 (the verification tier — that is a render-vs-mask comparison and it belongs with
-``verify_design``), ``snap_segments`` (the deterministic half of extraction,
-which has no drawing to run on until there is an image pipeline) and
+``verify_design``), ``snap_segments`` (the line-art half of extraction, which
+has no caller until a drawing arrives as strokes rather than as blocks) and
 ``component_build_specs`` (the add-on computes its own from the resolved plan;
 sending specs as well would be two sources of truth for one wall).
 """
@@ -50,6 +59,11 @@ _UNAVAILABLE = (
 #: Cached ``(floorplan, appliance_dims)`` once the import has succeeded.
 _MODULES: Optional[Tuple[Any, Any]] = None
 
+#: Cached ``service.floorplan_extract``. Separate from the pair above because it
+#: is the one piece of this with a dependency that can be missing on its own:
+#: Pillow. A server without it still validates, diffs and builds plans.
+_EXTRACTOR: Optional[Any] = None
+
 
 def modules() -> Tuple[Any, Any]:
     """``(service.floorplan, service.appliance_dims)``, imported on first use."""
@@ -68,6 +82,22 @@ def modules() -> Tuple[Any, Any]:
 
     _MODULES = (_floorplan, _appliance)
     return _MODULES
+
+
+def extractor() -> Any:
+    """``service.floorplan_extract``, imported on first use."""
+    global _EXTRACTOR
+    if _EXTRACTOR is not None:
+        return _EXTRACTOR
+    modules()  # same sys.path work, same one sentence if the repo is not there
+    try:
+        from service import floorplan_extract as _extract  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        raise ForgeError(
+            _UNAVAILABLE.format(root=config.SERVICE_PACKAGE_ROOT, detail=exc)
+        ) from exc
+    _EXTRACTOR = _extract
+    return _EXTRACTOR
 
 
 def _service_errors() -> tuple:
@@ -231,12 +261,174 @@ def from_defaults(resolved: Mapping[str, Any]) -> List[Tuple[str, List[str]]]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# The drawing (Phase 19's extraction half)
+# ---------------------------------------------------------------------------
+
+
+def extract(image_path: Any, legend: Any = None, mm_per_px: Any = None,
+            grid_px: Any = None) -> Dict[str, Any]:
+    """Measure a drawing into a plan — ``{"plan", "regions", "mask", "report"}``.
+
+    Refusals cross verbatim like every other one in this module; the extractor's
+    name the file and say what it saw in it.
+    """
+    module = extractor()
+    return _translate(module.extract_floorplan, image_path, legend=legend,
+                      mm_per_px=mm_per_px, grid_px=grid_px)
+
+
+#: Regions listed by name in an extract report before it starts counting. Each
+#: one is a crop the model has to LOOK at, so a list too long to act on is a
+#: list that turns into "and some other rooms".
+EXTRACT_REGIONS_LISTED = 12
+
+#: The law the report exists to enforce, said in the report rather than left to
+#: the prompt — the same arrangement as `FLOORPLAN_GATE`, and for a harder
+#: reason: the failure that produced this tool was a model reading a picture.
+EXTRACT_LAW = (
+    "GEOMETRY CAME FROM THE PIXELS, NOT FROM LOOKING. Do not adjust a "
+    "coordinate here by eye and do not re-type the plan — if something is "
+    "wrong, say which region or wall and re-extract with a legend, a grid_px "
+    "or a scale. What you DO supply is the names: read each crop and set that "
+    "region's label."
+)
+
+
+def fmt_extract_report(result: Mapping[str, Any], *, image: Any,
+                       saved: Any = None, overwritten: bool = False,
+                       slug: Optional[str] = None) -> str:
+    """The reading, in words the artist can correct before anything is built.
+
+    Written to be QUOTED, like every other report in this group. The order is
+    the order the next few turns happen in: what was measured, what has to be
+    named, the one question, then the gate.
+    """
+    report = result.get("report") or {}
+    regions = result.get("regions") or []
+    counts_ = report.get("counts") or {}
+    plan = result.get("plan") or {}
+
+    lines = [
+        f"Read {image} — {counts_.get('rooms', 0)} region(s), "
+        f"{counts_.get('walls', 0)} wall(s) "
+        f"({counts_.get('walls_shared', 0)} shared, "
+        f"{counts_.get('walls_exterior', 0)} outside), "
+        f"{counts_.get('openings', 0)} opening(s). Measured, not eyeballed."
+    ]
+    grid = report.get("grid") or {}
+    if grid.get("pitch_px"):
+        lines.append(
+            f"  grid: {grid.get('source')} pitch {grid['pitch_px']:g} px, worst "
+            f"snap {grid.get('worst_snap_px')} px (never more than "
+            f"{grid.get('tolerance_px')} px, whatever the pitch)"
+        )
+    else:
+        lines.append("  grid: none fitted, so coordinates are where they were measured")
+    if report.get("wall_gap_px"):
+        lines.append(
+            f"  wall thickness read off the drawing: {report['wall_gap_px']:g} px "
+            f"(anything wider than {report.get('wall_gap_limit_px')} px was taken "
+            f"for open space, not a wall)"
+        )
+    fidelity = (report.get("fidelity") or {}).get("rooms_vs_fill_iou")
+    if fidelity is not None:
+        lines.append(
+            f"  the rooms cover {float(fidelity) * 100:.1f}% of the colour that was "
+            f"actually filled in (1.0 is a pixel-perfect reading)"
+        )
+
+    lines.append("  NAME THESE — look at each crop and give it a label:")
+    for region in regions[:EXTRACT_REGIONS_LISTED]:
+        box = (region.get("crop") or {}).get("box_px") or region.get("crop_px")
+        size = region.get("size_mm") or []
+        lines.append(
+            f"    {region.get('id')}: crop {box}, "
+            + (f"{size[0]:g} x {size[1]:g} mm, " if len(size) == 2 else "")
+            + f"{region.get('corners')} corners, confidence "
+            + f"{region.get('confidence')}"
+        )
+    if len(regions) > EXTRACT_REGIONS_LISTED:
+        lines.append(f"    ... and {len(regions) - EXTRACT_REGIONS_LISTED} more")
+
+    legend_block = report.get("legend") or {}
+    for sentence in (legend_block.get("assumed") or []):
+        lines.append(f"  ASSUMED: {sentence}")
+    if legend_block.get("given"):
+        lines.append(
+            "  colour key you gave: "
+            + ", ".join(f"{item['hex']} = {item['role']}"
+                        for item in legend_block["given"])
+        )
+    for opening in (report.get("openings") or [])[:EXTRACT_REGIONS_LISTED]:
+        lines.append(
+            f"  {opening.get('id')}: {opening.get('kind')} "
+            f"({opening.get('role')}, {opening.get('color')}) on "
+            f"{opening.get('wall')}, {opening.get('width_mm'):g} mm wide at "
+            f"{opening.get('at_mm'):g} mm along it"
+        )
+
+    for sentence in (report.get("ambiguous") or []):
+        lines.append(f"  AMBIGUOUS: {sentence}")
+    for sentence in (report.get("warnings") or []):
+        lines.append(f"  WARNING: {sentence}")
+    for sentence in (report.get("notes") or []):
+        lines.append(f"  note: {sentence}")
+
+    if saved is not None:
+        lines.append(
+            f"  {'updated' if overwritten else 'saved'} the plan — {saved}"
+        )
+    elif slug is None:
+        lines.append(
+            "  nothing was saved: pass `project` to file this under "
+            "projects/<slug>/design/floorplan.json"
+        )
+
+    question = report.get("calibration_question")
+    if question:
+        lines.append(f"  ASK THIS, and nothing else: {question}")
+        hints = report.get("calibration_hints") or []
+        if hints:
+            lines.append(
+                "  then mm_per_px = their millimetres / one of these pixel "
+                "lengths: "
+                + "; ".join(f"{hint['what']} = {hint['length_px']:g} px"
+                            for hint in hints[:4])
+            )
+        lines.append(
+            "  re-run floorplan_extract with that mm_per_px — do not scale the "
+            "numbers by hand."
+        )
+    else:
+        scale = (report.get("scale") or {}).get("mm_per_px")
+        lines.append(f"  scale: {scale} mm per pixel, as you gave it")
+
+    lines.append(f"  {EXTRACT_LAW}")
+    lines.append(
+        "  next: name the regions, then render design/floorplan.svg FROM this "
+        "plan (never from the picture), name its path, and build only after "
+        "they say yes."
+    )
+    lines.append("  " + str(report.get("honesty") or ""))
+    if plan.get("walls"):
+        lines.append(
+            f"  every one of the {len(plan['walls'])} walls is axis-aligned by "
+            f"construction: this reader has no code path that can tilt one."
+        )
+    return "\n".join(lines)
+
+
 __all__ = [
+    "EXTRACT_LAW",
     "appliance_matches",
     "counts",
     "defaults",
     "diff",
     "entry_kinds",
+    "extract",
+    "extractor",
+    "fmt_extract_report",
     "from_defaults",
     "modules",
     "plan_version",

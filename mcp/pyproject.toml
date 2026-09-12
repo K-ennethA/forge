@@ -25,6 +25,13 @@ dependencies = [
     # is not imported by forge_mcp itself and nothing here rasterises anything;
     # it is the cost of not keeping a second copy of the plan schema.
     "numpy>=1.24",
+    # `floorplan_extract` reads the artist's DRAWING, and service/
+    # floorplan_extract.py imports Pillow to decode it. Stated here for numpy's
+    # reason: the alternative is a second copy of the extractor, and a tool that
+    # fails on its first call in a fresh venv is worse than a named wheel.
+    # Pillow is imported lazily inside the extractor, so every other tool on
+    # this server works without it and the failure is one plain sentence.
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

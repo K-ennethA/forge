@@ -181,6 +181,14 @@ PROVENANCE_KEYS: Tuple[str, ...] = ("from_defaults", "height_from", "appliance_m
 #: A grid bigger than this is a mistake in ``cell_mm``, not a request.
 MAX_MASK_CELLS = 8_000_000
 
+#: How far off square a wall may run before :func:`plan_warnings` says so.  A
+#: drawn plan is rectilinear -- rooms are blocks and walls are the lines between
+#: them -- so a wall at 17 degrees is almost always a coordinate that was typed
+#: rather than measured.  It is a WARNING and never a refusal: a genuinely
+#: angled wall is a real thing to draw, and refusing it would make this module
+#: an opinion about architecture instead of a check on arithmetic.
+RECTILINEAR_TOLERANCE_DEG = 1.0
+
 _POINT_EPS_MM = 1e-6
 
 
@@ -759,7 +767,57 @@ _PLAN_KEYS = ("version", "units", "scale", "defaults", "rooms", "walls", "labels
               "history", "provenance")
 
 
-def validate_plan(plan: Any) -> Dict[str, Any]:
+def plan_warnings(plan: Any, *,
+                  tolerance_deg: float = RECTILINEAR_TOLERANCE_DEG) -> List[str]:
+    """Sentences about a plan that is legal but probably not what was drawn.
+
+    Today there is exactly one, and it exists because of a real failure: a
+    drawing was read by eye instead of measured, and the level came out with a
+    **diagonal wall that exists nowhere in the drawing**.  Nothing in the schema
+    forbids that wall -- two points make a wall at any angle -- so the check
+    cannot be a refusal, and a warning naming the wall is what turns it into a
+    question the artist can answer in one word.
+
+    Reads defensively rather than validating: it is called from
+    :func:`validate_plan` on its own output, and an entry it cannot understand
+    is one :func:`validate_plan` has already refused or will.
+    """
+    out: List[str] = []
+    if not isinstance(plan, Mapping):
+        return out
+    limit = float(tolerance_deg)
+    for index, wall in enumerate(plan.get("walls") or []):
+        if not isinstance(wall, Mapping):
+            continue
+        ident = wall.get("id") or f"walls[{index}]"
+        start, end = wall.get("from_mm"), wall.get("to_mm")
+        if not isinstance(start, Sequence) or not isinstance(end, Sequence):
+            continue
+        if len(start) < 2 or len(end) < 2:
+            continue
+        try:
+            x0, y0 = float(start[0]), float(start[1])
+            x1, y1 = float(end[0]), float(end[1])
+        except (TypeError, ValueError):
+            continue
+        dx, dy = x1 - x0, y1 - y0
+        if not (math.isfinite(dx) and math.isfinite(dy)):
+            continue
+        if math.hypot(dx, dy) < MIN_WALL_LENGTH_MM:
+            continue
+        angle = math.degrees(math.atan2(abs(dy), abs(dx)))
+        off_axis = min(angle, 90.0 - angle)
+        if off_axis > limit:
+            out.append(
+                f"wall {ident!r} runs {off_axis:.0f} degrees off axis, from "
+                f"({x0:g}, {y0:g}) to ({x1:g}, {y1:g}) -- drawn plans are "
+                f"rectilinear, so an angled wall is usually a coordinate that was "
+                f"typed rather than measured; is that intended?"
+            )
+    return out
+
+
+def validate_plan(plan: Any, *, warnings: Optional[List[str]] = None) -> Dict[str, Any]:
     """Check a plan against the schema and return a normalised copy.
 
     What "normalised" means, exactly:
@@ -776,6 +834,13 @@ def validate_plan(plan: Any) -> Dict[str, Any]:
 
     Unknown keys on an entry are kept verbatim (that is the Phase 17
     ``mechanism`` record's ride); unknown keys inside ``defaults`` are refused.
+
+    Pass a list as *warnings* to collect the sentences from
+    :func:`plan_warnings` -- today, any wall that does not run square.  They are
+    collected into a list the CALLER owns rather than added to the returned
+    document on purpose: the normalised plan is what gets written to
+    ``floorplan.json`` and fingerprinted by the add-on, and a note about the
+    geometry living inside the file would be a note that has to be diffed.
 
     The input is never mutated.
     """
@@ -831,6 +896,8 @@ def validate_plan(plan: Any) -> Dict[str, Any]:
         "history": _validate_history(given.get("history")),
     }
     normalized.update(_extras(given, _PLAN_KEYS))
+    if warnings is not None:
+        warnings.extend(plan_warnings(normalized))
     return normalized
 
 
@@ -1909,6 +1976,7 @@ __all__ = [
     "LABEL_SOURCES",
     "OPENING_KINDS",
     "PLAN_VERSION",
+    "RECTILINEAR_TOLERANCE_DEG",
     "SUPPORTED_VERSIONS",
     "component_build_specs",
     "diff_plans",
@@ -1916,6 +1984,7 @@ __all__ = [
     "mask_iou",
     "plan_bounds",
     "plan_mask",
+    "plan_warnings",
     "snap_segments",
     "validate_plan",
 ]

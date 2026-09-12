@@ -708,3 +708,192 @@ def test_the_plan_file_is_a_design_sheet_member(projects_dir: Path) -> None:
     found = util.design_documents("upstairs-flat")
     assert [item["file"] for item in found] == ["floorplan.json"]
     assert found[0]["path"].endswith("floorplan.json")
+
+
+# ===========================================================================
+# floorplan_extract — the drawing, measured instead of looked at
+# ===========================================================================
+#
+# This tool exists because of one real failure: a drawn plan was read BY EYE and
+# the level came out with the wrong footprint, the rooms in the wrong places and
+# a diagonal wall that exists nowhere in the drawing. So the tests here are
+# about the two halves of the handoff — geometry comes out of the pixels, names
+# come out of the model — and about the one question the report is allowed to
+# ask.
+
+pytest.importorskip("PIL.Image")
+
+
+def drawing(tmp_path: Path, name: str = "sketch.png") -> str:
+    """A small flat-block plan: two rooms, a shared wall, a door in it.
+
+    Built here rather than kept as a fixture file so the geometry every
+    assertion below depends on is readable in the same screen as the assertion.
+    """
+    import numpy as np
+    from PIL import Image
+
+    sheet = np.full((300, 400, 3), (255, 255, 255), dtype=np.uint8)
+    sheet[40:140, 40:180] = (200, 200, 200)    # room on the left
+    sheet[40:140, 200:340] = (168, 168, 168)   # room on the right
+    sheet[60:100, 180:200] = (219, 68, 55)     # a red door in the wall between
+    sheet[200:216, 340:360] = (66, 133, 244)   # a legend swatch, touching nothing
+    path = tmp_path / name
+    Image.fromarray(sheet, mode="RGB").save(str(path))
+    return str(path)
+
+
+def test_extract_reads_the_rooms_out_of_the_picture(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "2 region(s)" in report
+    assert "Measured, not eyeballed" in report
+    assert "room-r1" in report and "room-r2" in report
+
+
+def test_extract_hands_back_a_crop_to_name_each_room(tmp_path: Path) -> None:
+    """Geometry comes from the pixels; the NAMES come from looking at these."""
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "NAME THESE" in report
+    assert "crop [" in report
+
+
+def test_extract_says_the_law_out_loud(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "GEOMETRY CAME FROM THE PIXELS, NOT FROM LOOKING" in report
+    assert "Do not adjust a coordinate here by eye" in report
+
+
+def test_extract_promises_no_wall_can_be_diagonal(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "axis-aligned by construction" in report
+
+
+def test_extract_asks_the_one_calibration_question_when_unscaled(
+    tmp_path: Path,
+) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path))
+    assert "ASK THIS, and nothing else" in report
+    assert "ONE real dimension" in report
+    assert "mm_per_px = their millimetres" in report
+    assert "do not scale the numbers by hand" in report
+
+
+def test_extract_asks_nothing_once_it_has_a_scale(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "ASK THIS" not in report
+    assert "scale: 10.0 mm per pixel" in report
+
+
+def test_extract_names_the_colour_assumptions_it_made(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "ASSUMED:" in report
+    assert "#db4437" in report
+
+
+def test_a_given_legend_is_quoted_back_rather_than_assumed(tmp_path: Path) -> None:
+    report = server.floorplan_extract(
+        image_path=drawing(tmp_path), mm_per_px=10.0,
+        legend={"#db4437": "room_door"},
+    )
+    assert "colour key you gave: #db4437 = room_door" in report
+
+
+def test_extract_saves_the_plan_under_the_project(
+    tmp_path: Path, projects_dir: Path,
+) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0,
+                                      project="upstairs flat")
+    saved = saved_plan(projects_dir, "upstairs-flat")
+    assert "saved the plan" in report
+    assert [room["id"] for room in saved["rooms"]] == ["room-r1", "room-r2"]
+    assert saved["walls"]
+
+
+def test_the_saved_plan_is_the_normalised_one(
+    tmp_path: Path, projects_dir: Path,
+) -> None:
+    """Same rule as floorplan_validate's: the defaults block stays live."""
+    server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0,
+                             project="upstairs flat")
+    saved = saved_plan(projects_dir, "upstairs-flat")
+    assert "provenance" not in saved
+    assert saved["defaults"] == floorplan.defaults()
+    # A wall the extractor did not measure a height for has none baked into it,
+    # so raising ceiling_mm next week still moves it.
+    assert all("height_mm" not in wall for wall in saved["walls"])
+
+
+def test_the_saved_plan_validates_and_resolves(
+    tmp_path: Path, projects_dir: Path,
+) -> None:
+    """The whole point: what comes off the drawing is buildable without edits."""
+    server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0,
+                             project="upstairs flat")
+    report = server.floorplan_validate(project="upstairs flat")
+    assert "reads clean" in report
+    resolved = floorplan.resolve(saved_plan(projects_dir, "upstairs-flat"))
+    assert all(wall["height_mm"] == 2400.0 for wall in resolved["walls"])
+
+
+def test_extract_can_read_without_saving(
+    tmp_path: Path, projects_dir: Path,
+) -> None:
+    server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0,
+                             project="upstairs flat", save=False)
+    assert not (projects_dir / "upstairs-flat" / "design" / "floorplan.json").exists()
+
+
+def test_extract_with_no_project_says_nothing_was_filed(tmp_path: Path) -> None:
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "nothing was saved" in report
+
+
+def test_two_reads_of_one_drawing_are_the_same_plan(
+    tmp_path: Path, projects_dir: Path,
+) -> None:
+    """Ids are forever, so a re-read must rebuild nothing."""
+    path = drawing(tmp_path)
+    server.floorplan_extract(image_path=path, mm_per_px=10.0, project="upstairs flat")
+    first = saved_plan(projects_dir, "upstairs-flat")
+    server.floorplan_extract(image_path=path, mm_per_px=10.0, project="upstairs flat")
+    second = saved_plan(projects_dir, "upstairs-flat")
+    assert first == second
+    report = server.floorplan_diff(plan=second, against=first)
+    assert "rebuilds (0)" in report
+    assert "adds (0)" in report
+
+
+def test_a_missing_drawing_is_refused_by_path(tmp_path: Path) -> None:
+    with pytest.raises(ForgeError) as caught:
+        server.floorplan_extract(image_path=str(tmp_path / "nope.png"))
+    assert "No file at" in str(caught.value)
+
+
+def test_a_drawing_with_no_rooms_in_it_is_refused_verbatim(tmp_path: Path) -> None:
+    """The service's refusal names the file and says what it saw — word for word."""
+    import numpy as np
+    from PIL import Image
+
+    blank = tmp_path / "blank.png"
+    Image.fromarray(np.full((120, 120, 3), 255, dtype=np.uint8), "RGB").save(str(blank))
+
+    from service.floorplan_extract import extract_floorplan  # noqa: PLC0415
+    from service.floorplan import FloorPlanError  # noqa: PLC0415
+
+    try:
+        extract_floorplan(str(blank))
+    except FloorPlanError as exc:
+        expected = str(exc)
+    else:  # pragma: no cover
+        pytest.fail("a blank sheet should be refused")
+
+    with pytest.raises(ForgeError) as caught:
+        server.floorplan_extract(image_path=str(blank))
+    assert str(caught.value) == expected
+    assert "do NOT type coordinates off the picture" in str(caught.value)
+
+
+def test_extract_is_not_a_blender_call(tmp_path: Path, dead_backends) -> None:
+    """Reading a picture touches no scene, so a closed Blender is irrelevant."""
+    report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
+    assert "2 region(s)" in report

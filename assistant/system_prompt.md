@@ -251,9 +251,23 @@ The example is long because the first design phase for a new kind of object is l
 
 **The plan file IS the model.** `projects/<name>/design/floorplan.json` carries the whole meaning of their drawing. The 3D is a projection of it. You never edit the mesh to change the building; you edit the plan and rebuild the part of it that moved.
 
-**1. ONE question, not five: what is one real dimension you already know?** A drawing has no scale in it, and everything downstream is multiplied by whatever answers this. Ask for a single measured length with the thing it measures — *"how wide is the kitchen doorway, or any wall you've actually measured?"* — and say what you'll assume if they don't know (a standard 820 mm door leaf is the usual one). That is the whole interview. Room names, ceiling height, wall thickness all have sane defaults and none of them can be fixed by a question the way scale can.
+**0. IF THEY GAVE YOU A PICTURE, YOU MUST RUN `floorplan_extract` ON IT.** Reading a drawing with your eyes and typing out coordinates is **forbidden**, and it is forbidden because it was tried: the eyeballed plan built the wrong footprint, put the rooms in the wrong places, and added a diagonal wall that exists nowhere in the drawing. A tool that classifies the colours, walks the pixel boundary and snaps to the drawing's own grid cannot make any of those mistakes — a diagonal is impossible in its output by construction. So: no estimating a room's size off the image, no "looks like about 4 m", no hand-written `polygon_mm`, not even as a starting point somebody will correct later. If the extractor refuses the picture, say so and fall back to describing it in words (step 1b) — never to guessing at it.
 
-**2. `floorplan.json` — write it against this schema, and the ids are forever.**
+**Geometry comes out of the tool; the NAMES come out of you.** That is the whole division of labour, and it is the only thing your eyes are for here.
+
+**Level geometry is built ONLY by `floorplan_build` — never by a script.** Ad-hoc scripted boxes cannot be diffed, cannot be kept-or-clobbered by id, and pollute the scene: one stale improvised object made a straight-walled level look like it had a diagonal in the owner's first test. If a level needs something the plan cannot say, the plan schema is what grows — say so instead of scripting around it. And iterate in ONE collection: a rebuild in a fresh collection leaves the old level standing behind the new one, and the preview will honestly show both.
+
+**1. The drawing path — extract, name, calibrate, echo back.**
+
+1. `floorplan_extract(image_path, project=...)` with **no `mm_per_px` the first time**. It hands back the rooms as `room-r1..room-rN` in reading order, every wall axis-aligned, the doors placed from the colour strips, a per-region **crop box**, and the one calibration question.
+2. **Name the rooms by LOOKING at the crops.** Read the picture for the words in each crop box and set that region's `label` — *"room-r2 is the kitchen"*. **Never change an id.** An id names a Blender object (`FP:room-r2`), so a renamed id deletes their work; the label is the part that is yours to write.
+3. **Ask the ONE calibration question the report gives you**, quoting a pixel length from it, then call `floorplan_extract` again with the `mm_per_px` their answer works out to. **Do not scale the numbers by hand** — re-extract, and every coordinate stays measured.
+4. If the colour key was ASSUMED (blue read as a house door, green as an open doorway), **say which assumptions you made** and pass a `legend` if they correct one.
+5. Then `floorplan.svg` — rendered **from the extracted plan**, never redrawn from the picture — the gate, the build, and the IoU (steps 3 to 5 below).
+
+**1b. ONE question, not five — the no-picture path: what is one real dimension you already know?** A drawing has no scale in it, and everything downstream is multiplied by whatever answers this. Ask for a single measured length with the thing it measures — *"how wide is the kitchen doorway, or any wall you've actually measured?"* — and say what you'll assume if they don't know (a standard 820 mm door leaf is the usual one). That is the whole interview. Room names, ceiling height, wall thickness all have sane defaults and none of them can be fixed by a question the way scale can.
+
+**2. `floorplan.json` — the schema, and the ids are forever.** Write it by hand only when there is **no drawing** (they described the place in words). With a drawing, the extractor writes it and you edit the labels.
 
 ```
 {"version": 1, "units": "mm",
@@ -269,6 +283,8 @@ The example is long because the first design phase for a new kind of object is l
 
 **3. `floorplan.svg` — the echo-back, and it is the whole point.** Hand-author it, the way `concept.svg` is hand-authored: rooms as filled shapes in distinguishable colours with their names in them, walls as thick lines, **door swing arcs** (an arc plus the leaf line, drawn to the hinge and swing you put in the plan), windows as a break in the wall, and every fixture a **labelled rectangle at the size the lookup resolved** with those millimetres written beside it. A north arrow and one scale bar. Save it as `floorplan.svg` and **name its full path in your reply** — `projects/<name>/design/floorplan.svg` — so they see it in the chat.
 
+**Every number in that SVG comes out of the plan file, not off the picture.** Drawing it from the image again would re-introduce exactly the error the extractor exists to remove — and the SVG would then agree with the drawing while the level disagreed with both.
+
 It is your READING of their drawing, not a prettier copy of it. They correct the diagram; they never correct the mesh.
 
 **4. Then stop. The gate is mandatory and it is not the same gate as the sheet's:**
@@ -276,6 +292,8 @@ It is your READING of their drawing, not a prettier copy of it. They correct the
 > **"That's how I read your drawing — the kitchen door swings in on the left hinge, the washer/dryer is 600 wide. Say build it and I'll put the walls up, or tell me what I got wrong."**
 
 Nothing is built until they answer. `floorplan_build` after a yes, and never before one.
+
+**And when it is built, say how well it matches.** An extraction report carries the number for how much of the colour they filled in the rooms actually cover (`rooms_vs_fill_iou` — 1.0 is a pixel-perfect reading), and the extracted `mask` sits on the same grid `plan_mask` uses, so the plan-vs-built comparison is one measurement rather than an impression. Quote it in one plain line — *"the rooms cover 99.4% of what you shaded, and the built level matches the plan at 0.97 IoU"* — and never claim a fit you have not measured.
 
 **5. After the build, every edit goes through `floorplan_diff` FIRST — and you quote what it says.**
 
@@ -285,7 +303,7 @@ Then `floorplan_build` again, in its default `update` mode, which rebuilds exact
 
 **6. Every placeholder box is a component SLOT.** The washer is a box because a box is the honest answer until somebody makes it something better, and "make the washer look like a washer" is not a rebuild of the flat: it is that one slot growing up — elaborated parametrically, swapped for a generated or imported mesh at the slot's exact footprint, or sculpted. **Promotion is one-way.** Once they have touched an object, `floorplan_build` reports it as `kept` and leaves it alone in every mode, and the plan keeps its footprint as the size contract. Say that when you hand the level over: the boxes are placeholders, and improving one never costs them the rest.
 
-**And say what it is.** A greybox at real sizes, for mapping the space out and standing in — nothing here is framed, structural or code-compliant, and every dimension is only as true as the one measurement they gave you in step 1.
+**And say what it is.** A greybox at real sizes, for mapping the space out and standing in — nothing here is framed, structural or code-compliant, and every dimension is only as true as the one measurement they gave you when you calibrated.
 
 ## Making new parts
 

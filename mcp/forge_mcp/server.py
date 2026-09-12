@@ -281,11 +281,14 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
 - FLOOR PLANS are the parametric lane at room scale, and the PLAN FILE IS THE
   MODEL: projects/<slug>/design/floorplan.json carries the whole meaning of the
   drawing, and every id in it is forever because an id names the Blender object.
-  The order is fixed — floorplan_validate (schema, resolved numbers, appliance
-  matches quoted so they can be corrected in one word), then a hand-authored
-  design/floorplan.svg echoing your READING back (rooms coloured, door swing
-  arcs, labelled fixture rectangles at the sizes the lookup resolved), then a
-  MANDATORY approval gate, then floorplan_build. After that every edit goes
+  The order is fixed. If they gave you a DRAWING, floorplan_extract reads it —
+  never your eyes: hand-authoring coordinates off a picture built the wrong
+  rooms and a diagonal wall that was in no drawing. Otherwise floorplan_validate
+  (schema, resolved numbers, appliance matches quoted so they can be corrected
+  in one word). Then a hand-authored design/floorplan.svg echoing your READING
+  back (rooms coloured, door swing arcs, labelled fixture rectangles at the
+  sizes the lookup resolved), then a MANDATORY approval gate, then
+  floorplan_build. After that every edit goes
   through floorplan_diff FIRST and the reply quotes the touched ids ("only
   wall-03 rebuilds") — never a full regen, and never mode="rebuild" unasked.
   A placeholder box is a component SLOT: promoting it is one-way, and an object
@@ -4125,9 +4128,12 @@ def render_animation(
 # because an id is what names the Blender object and therefore what makes an
 # edit a DIFF rather than a regen.
 #
-# The order is fixed and the middle step is not optional: validate (read it
-# back, resolve the numbers, show the appliance matches) -> the echo-back
-# `floorplan.svg` the artist approves -> build. After that, every edit goes
+# The order is fixed and the middle step is not optional: extract (when there is
+# a drawing — the geometry is MEASURED, because the one time it was eyeballed
+# the level came out with the wrong footprint and a diagonal wall that exists
+# nowhere in the picture) -> validate (read it back, resolve the numbers, show
+# the appliance matches) -> the echo-back `floorplan.svg` the artist approves ->
+# build. After that, every edit goes
 # through `floorplan_diff` first so the reply can say WHICH ids rebuild, because
 # "only wall-03 rebuilds" is a promise about the hand-sculpted sofa in the next
 # room surviving, and that promise is worth more than the level being right.
@@ -4166,6 +4172,75 @@ def _plan_source(
         return None, plan, "the plan you passed"
     slug, path, saved = util.read_floorplan(project)
     return slug, saved, str(path)
+
+
+@app.tool()
+def floorplan_extract(
+    image_path: str,
+    project: Optional[str] = None,
+    mm_per_px: Optional[float] = None,
+    legend: Optional[Dict[str, str]] = None,
+    grid_px: Optional[float] = None,
+    save: bool = True,
+) -> str:
+    """Read a DRAWING of a floor plan into a plan file. Measured, not eyeballed.
+
+    **If they gave you a picture, this is how you read it.** Hand-authoring
+    `floorplan.json` coordinates from a drawing is forbidden and it is forbidden
+    because it was tried: the level came out with the wrong footprint, the rooms
+    in the wrong places, and a diagonal wall that exists nowhere in the drawing.
+    Colour classification, connected components and a boundary walk on the pixel
+    lattice do not make that mistake — **a diagonal is impossible here by
+    construction**, because every edge is traced as axis-aligned pixel steps and
+    then snapped to the drawing's own grid.
+
+    - `image_path`: the drawing on this machine (.png is the expected export).
+    - `project`: file the plan under `projects/<slug>/design/floorplan.json`
+      (`save=false` reads without writing).
+    - `mm_per_px`: the scale. **Leave it out the first time** — the report comes
+      back with the ONE calibration question and the pixel lengths to divide,
+      and you call this again with their answer. Never scale the numbers
+      yourself.
+    - `legend`: `{"#4285f4": "house_door", "#34a853": "doorway", "#db4437":
+      "room_door"}` — which colour is which kind of opening. Without it the
+      swatches in the drawing's own key are found geometrically (a colour blob
+      touching no room) and their roles are ASSUMED from hue, named as
+      assumptions in the report. Roles: house_door, room_door, door, doorway,
+      gap, window.
+    - `grid_px`: the drawing's grid pitch when it is known; detected otherwise.
+      No coordinate ever moves more than a few pixels to reach it.
+
+    **Geometry comes back from here; NAMES come back from you.** Rooms are
+    `room-r1`..`room-rN` in reading order with no labels, and each one carries a
+    crop box: look at that part of the drawing, read the word in it, and set the
+    room's `label`. Never change an id — an id names a Blender object, and a
+    renamed id deletes the artist's work.
+
+    Then render `design/floorplan.svg` FROM THIS PLAN (never from the picture),
+    name its path, gate on their approval, and build.
+    """
+    image = util.resolve_path(image_path, must_exist=True, label="drawing path")
+
+    slug: Optional[str] = None
+    if project is not None:
+        slug, _path = util.floorplan_path(project)
+
+    result = floorplan.extract(str(image), legend=legend, mm_per_px=mm_per_px,
+                               grid_px=grid_px)
+
+    # Validated on the way out for the same reason `floorplan_validate` exists:
+    # a plan that cannot be built should be a refusal here, not a surprise two
+    # turns later. The extractor validates its own output too; this is the
+    # server agreeing rather than assuming.
+    normalized = floorplan.validate(result["plan"])
+
+    saved_path: Optional[Path] = None
+    overwritten = False
+    if slug is not None and save:
+        saved_path, overwritten = util.write_floorplan(slug, normalized)
+
+    return floorplan.fmt_extract_report(result, image=image, saved=saved_path,
+                                        overwritten=overwritten, slug=slug)
 
 
 @app.tool()
