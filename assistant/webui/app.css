@@ -432,6 +432,17 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
   background: var(--bg-sunken);
 }
 
+/* Phase 17 — a mechanism demo plays where a render would have been shown, and
+   is sized to match one so a turn that produced both reads as one row. */
+.gallery video.demo {
+  display: block;
+  max-width: 300px;
+  max-height: 260px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+
 .gallery figcaption {
   font: 11.5px/1.5 var(--mono);
   color: var(--text-faint);
@@ -900,6 +911,24 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
    from them rather than run together into one list of files. */
 .lib-design { border-left: 2px solid var(--line); padding-left: 8px; }
 .lib-design-fact { color: var(--text); }
+
+/* Phase 17 — the demo is the one thing on a card that is watched rather than
+   read, so it gets the card's own width and the same frame the thumbnail has. */
+.lib-demos { display: flex; flex-direction: column; gap: 4px; }
+.lib-demos video.demo {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
+}
+.lib-demo-caption {
+  font: 11.5px/1.7 var(--mono);
+  color: var(--text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lib-demo-fact { color: var(--text); }
 
 .lib-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 

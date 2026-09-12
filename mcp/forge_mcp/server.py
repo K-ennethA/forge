@@ -31,6 +31,7 @@ from .util import (
     PLATFORM_TARGET_FACES,
     action_name_for_clip,
     action_names,
+    animation_path,
     derivative_objects,
     design_documents,
     design_filename,
@@ -40,6 +41,8 @@ from .util import (
     flow_path,
     flow_slug,
     fmt_action_report,
+    fmt_animate_report,
+    fmt_animation_report,
     fmt_check_in_report,
     fmt_check_report,
     fmt_circuit_plan,
@@ -47,6 +50,7 @@ from .util import (
     fmt_component_catalog,
     fmt_design_saved,
     fmt_diagnose_report,
+    fmt_emission_report,
     fmt_export_report,
     fmt_flow_list,
     fmt_flow_run_report,
@@ -75,6 +79,7 @@ from .util import (
     fmt_reference_report,
     fmt_retarget_report,
     fmt_retopo_report,
+    fmt_rig_check_report,
     fmt_rig_report,
     fmt_scene_info,
     fmt_segment_report,
@@ -95,13 +100,19 @@ from .util import (
     meshgen_image_path,
     next_rig_step,
     normalize_action_name,
+    normalize_animation_fps,
+    normalize_animation_frames,
+    normalize_animation_resolution,
     normalize_axes,
     normalize_actions,
     normalize_bone_mapping,
     normalize_design_content,
+    normalize_emission_color,
+    normalize_emission_strength,
     normalize_face_indices,
     normalize_keys,
     normalize_modules,
+    normalize_object_keys,
     normalize_poly_budget,
     normalize_preview_objects,
     normalize_preview_resolution,
@@ -112,6 +123,7 @@ from .util import (
     normalize_segment_mode,
     normalize_tag_list,
     normalize_tag_name,
+    object_keys_frame_range,
     object_name_for_script,
     ok,
     plate_items_by_name,
@@ -3029,6 +3041,12 @@ def rigforge_metarig(
     archetype: Literal["auto", "biped", "quadruped", "custom"] = "auto",
     modules: Optional[List[Dict[str, Any]]] = None,
     object: Optional[str] = None,
+    preset: Optional[str] = None,
+    joints_file: Optional[str] = None,
+    joints_weight: Optional[float] = None,
+    joints_tolerance: Optional[float] = None,
+    joints_disagree_band: Optional[float] = None,
+    joints_axis_up: Optional[Literal["X", "Y", "Z"]] = None,
 ) -> str:
     """Place and scale a metarig on a tagged mesh, fitted to its body-part tags.
 
@@ -3047,6 +3065,30 @@ def rigforge_metarig(
       Omit it to let the archetype decide. Ear/tail chains are flagged for
       spring/jiggle from the manifest's motion_notes by the add-on — there is no
       parameter for that here, write the notes with rigforge_manifest instead.
+    - `preset`: which Rigify template to start from; omit (the default) and the
+      add-on picks — a 29-bone basic human unless face or hand tags exist.
+
+    **Predicted joints (`joints_file`) are a THIRD source, and the weakest one.**
+    A neural joint detector's output, written as JSON by a runner outside
+    Blender, refines the tag fit — it never replaces it. Measured on our own test
+    biped, UniRig put the spine within 8-36 mm and the shoulders 253-266 mm out,
+    so the blend is asymmetric on purpose: tags anchor, predictions pull a
+    landmark part of the way in, and a prediction that disagrees is REPORTED and
+    ignored. Read the `joints` block's disagreements before you trust a fit.
+
+    - `joints_file`: the detector's JSON (`{"schema": "forge.joints/1", ...}`).
+      Omit it and this command behaves exactly as it always did.
+    - `joints_weight`: 0-1, default 0.5. How far a landmark moves toward a
+      prediction it agrees with. 0 reports everything and moves nothing; 1 hands
+      the landmark over outright.
+    - `joints_tolerance`: 0-1, default 0.12 — "agrees with" as a fraction of the
+      mesh's largest dimension.
+    - `joints_disagree_band`: 1-20, default 3 — how far past tolerance still
+      counts as a second opinion worth reporting rather than noise.
+    - `joints_axis_up`: "X"/"Y"/"Z", overriding the file's own declared frame.
+      Only for a producer that lies about its axes: the file is refused outright
+      when fewer than half its joints land inside the mesh, and the warning names
+      the reading that WOULD have worked.
 
     Reports the metarig's name, its bone count and which bones each tag drove,
     and relays the add-on's warnings (a missing landmark tag shows up here, not
@@ -3057,11 +3099,51 @@ def rigforge_metarig(
     params["archetype"] = archetype
     if modules is not None:
         params["modules"] = normalize_modules(modules)
+    if preset is not None and str(preset).strip():
+        params["preset"] = str(preset).strip()
+
+    hints = ""
+    if joints_file is not None and str(joints_file).strip():
+        # Resolved against the project workspace the way every other file-taking
+        # tool does, and it must exist: a typo'd path would otherwise become a
+        # silent tag-only fit that looks exactly like a successful refinement.
+        joints = resolve_path(joints_file, must_exist=True, label="joints file")
+        params["joints_file"] = str(joints)
+        hints = f", refined by {joints.name}"
+    elif any(value is not None for value in (joints_weight, joints_tolerance,
+                                             joints_disagree_band, joints_axis_up)):
+        raise ForgeError(
+            "joints_weight / joints_tolerance / joints_disagree_band / "
+            "joints_axis_up only mean anything with a `joints_file` — they tune "
+            "how far a predicted joint is allowed to move a landmark, and there "
+            "are no predictions without the file."
+        )
+
+    for name, value, low, high in (
+        ("joints_weight", joints_weight, 0.0, 1.0),
+        ("joints_tolerance", joints_tolerance, 0.0, 1.0),
+        ("joints_disagree_band", joints_disagree_band, 1.0, 20.0),
+    ):
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ForgeError(f"{name} must be a number (got {value!r}).")
+        if not low <= float(value) <= high:
+            raise ForgeError(
+                f"{name} must be between {fmt_number(low, 2)} and "
+                f"{fmt_number(high, 2)} (got {fmt_number(value, 3)})."
+            )
+        params[name] = float(value)
+    if joints_axis_up is not None and str(joints_axis_up).strip():
+        params["joints_axis_up"] = str(joints_axis_up).strip().upper()
 
     result = blender_client.send_command("rigforge_metarig", params)
     summary = f"archetype {archetype}"
+    if "preset" in params:
+        summary += f", preset {params['preset']}"
     if modules is not None:
         summary += f", {len(params['modules'])} extra module(s)"
+    summary += hints
     return fmt_metarig_report(
         f"'{object}'" if object else "the active object", result, summary
     )
@@ -3220,6 +3302,92 @@ def rigforge_export_godot(
     )
     subject = f"'{rig.strip()}'" if rig and rig.strip() else "the rig"
     return fmt_export_report(subject, result, summary, str(out))
+
+
+@app.tool()
+def rig_check(
+    rig: Optional[str] = None,
+    mesh: Optional[str] = None,
+    poses: Union[str, List[Any]] = "extreme",
+    joints: Optional[List[str]] = None,
+    max_poses: Optional[int] = None,
+    intersections: bool = True,
+) -> str:
+    """Does the rig DEFORM? Pose every joint to its extremes and measure.
+
+    Every other rigging tool stops at "the rig generated". This answers the
+    question the artist asks next, with numbers rather than a screenshot: for
+    each limb, spine and neck joint it poses the control to its extremes and
+    measures three failures on the evaluated mesh — **volume loss** (the
+    collapsed elbow), **new self-intersections** (the arm through the ribs) and
+    **candy-wrapper twist** (the forearm pinched to a thread).
+
+    Run it after rigforge_generate_rig and before rigforge_export_godot. A rig
+    that exports and then breaks in the engine broke here first.
+
+    - `poses`: "extreme" (default, 3 per joint: mid-flex, max-flex, max-twist —
+      where the failures live), "quick" (1), "full" (7), or an explicit list:
+      `[90, 140]` or `[{"label": "reach", "flex_deg": 95, "twist_deg": 30}]`.
+    - `joints`: names to measure; omit for every deform-relevant joint found.
+    - `max_poses`: 1-64, the per-joint ceiling. Omit for the add-on's default.
+    - `intersections`: False skips the BVH overlap scan — the expensive part —
+      when you only want volume and twist.
+
+    **The thresholds are heuristics and the report says so.** They are the points
+    at which each artefact becomes visible, not values calibrated against what
+    artists accept, so a `fail` is a band you can argue with and NOT a fact about
+    their sculpt. Quote the measurement next to the band that judged it. The pose
+    is always restored — every bone's matrix, rotation mode and IK/FK value comes
+    back, finished or interrupted.
+    """
+    params: Dict[str, Any] = {"intersections": bool(intersections)}
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if mesh and mesh.strip():
+        params["mesh"] = mesh.strip()
+
+    if isinstance(poses, (list, tuple)):
+        if not poses:
+            raise ForgeError(
+                "`poses` was an empty list. Give it angles ([90, 140]), pose "
+                'objects ([{"label": "reach", "flex_deg": 95}]), or one of '
+                '"extreme" / "quick" / "full".'
+            )
+        params["poses"] = list(poses)
+        described = f"{len(poses)} explicit pose(s)"
+    else:
+        wanted = str(poses or "extreme").strip().lower()
+        if wanted not in ("extreme", "quick", "full"):
+            raise ForgeError(
+                f"Unknown pose set {poses!r}. Use \"extreme\" (default, the "
+                'three where failures live), "quick" (one), "full" (seven), or '
+                "a list of angles."
+            )
+        params["poses"] = wanted
+        described = f"{wanted} poses"
+
+    names = [str(name).strip() for name in (joints or []) if str(name).strip()]
+    if names:
+        params["joints"] = names
+    if max_poses is not None:
+        if isinstance(max_poses, bool) or not isinstance(max_poses, int):
+            raise ForgeError(f"max_poses must be a whole number (got {max_poses!r}).")
+        if not 1 <= max_poses <= 64:
+            raise ForgeError(
+                f"max_poses must be between 1 and 64 (got {max_poses}). It is a "
+                "ceiling on poses per joint, not a target."
+            )
+        params["max_poses"] = int(max_poses)
+
+    result = blender_client.send_command(
+        "rig_check", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+    summary = (
+        described
+        + (f", {len(names)} named joint(s)" if names else ", every joint found")
+        + ("" if intersections else ", intersection scan OFF")
+    )
+    return fmt_rig_check_report(result, summary)
 
 
 # ---------------------------------------------------------------------------
@@ -3711,6 +3879,222 @@ def rigforge_status(object: Optional[str] = None) -> str:
         )
     )
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Mechanism demos (Phase 17) — show how it works
+# ---------------------------------------------------------------------------
+#
+# The three tools that turn a build plan into the thing the robotics sites do:
+# the part presses, the LED comes on, and a two-second film shows both. It is
+# playback of numbers the maker tools already computed — never a simulation, and
+# every report here says so, because a demo that looks like physics and is not
+# is the one way this could mislead an artist about their own design.
+
+
+@app.tool()
+def animate_object(
+    keys: List[Dict[str, Any]],
+    object: Optional[str] = None,
+    interpolation: Literal["BEZIER", "LINEAR", "CONSTANT"] = "BEZIER",
+    clear: bool = False,
+) -> str:
+    """Keyframe an object's own transform — the press stroke, in one call.
+
+    `rigforge_keyframe`'s sibling: that one poses bones, this one moves a whole
+    object. It is how a mechanism demo is built — the plunger travelling down and
+    springing back, a lid hinging open, a slide advancing.
+
+    **`location_mm` is the unit to use.** Every number in this toolchain is a
+    millimetre: `plunger_plan` says the cap travels 2.1 mm, and
+    `{"frame": 8, "location_mm": [0, 0, -2.1]}` is that sentence with nothing to
+    convert and nothing to get wrong. Take the numbers from the plan — a demo
+    with an invented stroke is a lie about the design.
+
+      keys=[{"frame": 1,  "location_mm": [0, 0, 0]},
+            {"frame": 8,  "location_mm": [0, 0, -2.1]},
+            {"frame": 20, "location_mm": [0, 0, 0]}]
+
+    - `keys`: `{"frame", ...}` objects, each moving at least one channel:
+      `location_mm` (millimetres — prefer this), `location` (metres, Blender's
+      own unit; giving both for one key is an error, not a merge),
+      `rotation_euler_deg` (degrees; forces XYZ euler mode and reports it),
+      `scale`.
+    - `interpolation`: "BEZIER" (default) eases in and out — a spring return.
+      "LINEAR" is constant speed (a motor, a slide). "CONSTANT" snaps between
+      poses (a latch).
+    - `clear`: True wipes the object's existing animation first, which is what
+      makes re-running a demo idempotent rather than a layered mess.
+    - `object`: omit for the active object.
+
+    The whole batch is parsed before any of it is applied, so a typo in keys[7]
+    cannot leave keys[0..6] half done. Follow with set_material_emission for
+    anything that lights up, then render_animation over the reported range.
+    """
+    wanted = normalize_object_keys(keys)
+    params = _target(object)
+    params["keys"] = wanted
+    params["interpolation"] = interpolation
+    params["clear"] = bool(clear)
+
+    result = blender_client.send_command("animate_object", params)
+
+    span = object_keys_frame_range(wanted)
+    summary = (
+        f"{len(wanted)} key(s)"
+        + (f" over frames {span[0]}-{span[1]}" if span else "")
+        + f", {interpolation}"
+        + (", existing animation cleared" if clear else "")
+    )
+    subject = f"'{object}'" if object else "the active object"
+    return fmt_animate_report(subject, result, summary)
+
+
+@app.tool()
+def set_material_emission(
+    strength: float,
+    object: Optional[str] = None,
+    color: Optional[List[float]] = None,
+    frame: Optional[int] = None,
+    interpolation: Literal["CONSTANT", "LINEAR", "BEZIER"] = "CONSTANT",
+) -> str:
+    """Make something glow — the LED coming on, keyframed at the moment it does.
+
+    With no `frame` this is a STATE: the thing is lit, now, and a
+    render_preview(shading="material") shows it. With a `frame` it is an EVENT:
+    `strength=0` at the frame before the click and `strength=6` at the click is
+    an LED coming on when the latch catches.
+
+    - `strength`: 0-1000. 0 is off; 5-20 reads as a lit LED in EEVEE.
+    - `color`: `[r, g, b]` in **0-1**, not 0-255. A warm amber LED is about
+      [1.0, 0.62, 0.2]. Omit to leave the colour alone.
+    - `frame`: the frame to key at. Omit for a state.
+    - `interpolation`: "CONSTANT" (default) is correct for an LED — it is off and
+      then it is on, it does not fade up over seven frames. Use "LINEAR" or
+      "BEZIER" only for the deliberate exception (a heater, a charge indicator).
+    - `object`: omit for the active object.
+
+    Three ways into a material, in order of how little they disturb: an emission
+    node that is already there, a Principled BSDF's own emission inputs (so an
+    existing look survives), or a new emission node. An object with no material
+    at all gets a plain one called "Forge Glow", because an LED lens reads as a
+    light and not as a lit surface.
+
+    Emission only shows with materials: render_animation(engine="eevee") or
+    render_preview(shading="material"). Workbench draws clay and shows nothing.
+    """
+    value = normalize_emission_strength(strength)
+    rgb = normalize_emission_color(color)
+
+    params = _target(object)
+    params["strength"] = value
+    if rgb is not None:
+        params["color"] = rgb
+    if frame is not None:
+        if isinstance(frame, bool) or not isinstance(frame, int):
+            raise ForgeError(
+                f"frame must be a whole frame number (got {frame!r})."
+            )
+        params["frame"] = int(frame)
+        params["interpolation"] = interpolation
+
+    result = blender_client.send_command("set_material_emission", params)
+
+    summary = f"strength {fmt_number(value, 2)}"
+    if rgb is not None:
+        summary += f", colour {fmt_vector(rgb, 2)}"
+    summary += (f", keyed at frame {frame} ({interpolation})"
+                if frame is not None else ", not keyed")
+    subject = f"'{object}'" if object else "the active object"
+    return fmt_emission_report(subject, result, summary)
+
+
+@app.tool()
+def render_animation(
+    frame_start: int,
+    frame_end: int,
+    project: Optional[str] = None,
+    name: Optional[str] = None,
+    objects: Optional[List[str]] = None,
+    view: Literal["iso", "front", "side", "top"] = "iso",
+    fps: Optional[int] = None,
+    resolution: Optional[int] = None,
+    engine: Literal["eevee", "workbench"] = "eevee",
+) -> str:
+    """The demo itself: render the keyed motion to a short .mp4 and hand it over.
+
+    This is the payoff of animate_object + set_material_emission — the thing the
+    robotics sites do, showing a mechanism working instead of describing it. Then
+    **name the returned path in your reply**: the bridge serves .mp4, so the film
+    plays inline in the artist's chat and on the project's Library card.
+
+    There is no `path` parameter, deliberately — this picks its own folder, the
+    way render_preview does. You name the FILE, never the location.
+
+    - `project`: files the demo in `projects/<slug>/renders/`, which is where the
+      Library plays it from. Pass it whenever the demo belongs to a project (it
+      almost always does); omit it for a throwaway and it lands in the scratch
+      previews folder.
+    - `name`: what to call it, in plain words — "litwick press" becomes
+      `litwick-press.mp4`. Name it for what it SHOWS, never `demo1`. Re-rendering
+      the same name replaces that take, which is what makes iterating on a demo
+      free; omit `name` and the film is numbered instead.
+    - `frame_start` / `frame_end`: the range animate_object reported as
+      `frame_range`. At most 600 frames — a demo is a couple of seconds.
+    - `objects`: names to film; omit for every visible mesh.
+    - `view`: "iso" (default) or "front"/"side"/"top" — the same projections
+      render_preview and load_reference use. Film the view the motion is IN: a
+      2 mm vertical press is invisible from the top.
+    - `fps`: 1-60, default 24. `resolution`: 128-1920 square, default 640.
+    - `engine`: "eevee" (default — the only one that shows an emission, so the
+      only one that shows the LED) or "workbench" (clay, but seconds faster and
+      it never waits on shader compilation).
+
+    Read-only: the camera, the render settings and the artist's viewport are all
+    borrowed and put back, and the one thing left behind is the file. The camera
+    is fitted over the WHOLE clip, not frame one, so nothing presses itself out
+    of shot.
+
+    **Budget the wait honestly.** The first EEVEE render of a Blender session
+    pays for shader compilation and every one after it does not: 48 frames at
+    640 px measured 53 s cold and 7 s warm. Workbench compiles nothing (~1-2 s)
+    and is the right answer when the motion, not the light, is the point.
+
+    Say what it IS when you show it: an illustration of the intended motion built
+    from the plan's numbers — not a simulation. Nothing here computes a force, a
+    spring rate or a collision.
+    """
+    start, end = normalize_animation_frames(frame_start, frame_end)
+    rate = normalize_animation_fps(fps)
+    pixels = normalize_animation_resolution(resolution)
+    names = normalize_preview_objects(objects)
+    out = animation_path(project, view, name)
+
+    params: Dict[str, Any] = {
+        "path": str(out),
+        "frame_start": start,
+        "frame_end": end,
+        "fps": rate,
+        "resolution": pixels,
+        "engine": engine,
+        "view": view,
+    }
+    if names:
+        params["objects"] = names
+
+    result = blender_client.send_command(
+        "render_animation", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+    result.setdefault("path", str(out))
+
+    frames = end - start + 1
+    summary = (
+        f"frames {start}-{end} ({frames}) at {rate} fps, {pixels} px, "
+        f"{engine}, {view} view"
+        + (f", filed in projects/{project_slug(project)}/"
+           f"{util.PROJECT_RENDERS_DIRNAME}/" if project else ", scratch folder")
+    )
+    return fmt_animation_report(result, summary)
 
 
 # ---------------------------------------------------------------------------

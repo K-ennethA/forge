@@ -102,11 +102,17 @@ EXPECTED_TOOLS = {
     "rigforge_generate_rig",
     "rigforge_weights",
     "rigforge_export_godot",
+    # The deformation harness (Phase 4, stage 4b) — does the rig deform?
+    "rig_check",
     # RigForge cloth + animation (Phase 5)
     "rigforge_cloth",
     "rigforge_action",
     "rigforge_keyframe",
     "rigforge_retarget",
+    # Mechanism demos (Phase 17) — the press, the LED, the film of both
+    "animate_object",
+    "set_material_emission",
+    "render_animation",
     # Maker mode (Phase 10) — the part that does something when you press it
     "maker_components",
     "circuit_plan",
@@ -160,7 +166,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 72
+    assert len(names) == 76
 
 
 def test_every_tool_is_documented() -> None:

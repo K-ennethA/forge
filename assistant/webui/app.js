@@ -173,10 +173,34 @@
     return box;
   }
 
+  //: A mechanism demo (Phase 17): two seconds of the thing working.  Looping
+  //: and muted on purpose — the clip is short by construction and silent by
+  //: construction (the renderer writes no audio track at all), so a play button
+  //: the artist has to press twice to see the stroke would be a worse picture
+  //: of the same file.  `controls` stays, because scrubbing a 2 mm press is the
+  //: whole point.
+  function demoVideo(file) {
+    var video = el("video", "demo");
+    video.src = file.url;
+    video.controls = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.preload = "metadata";
+    video.title = file.path || file.name || "";
+    return video;
+  }
+
   function gallery(files) {
     var box = el("div", "gallery");
     files.forEach(function (file) {
-      if (file.kind === "image") {
+      if (file.kind === "video") {
+        var clip = el("figure", "is-video");
+        clip.appendChild(demoVideo(file));
+        clip.appendChild(el("figcaption", null, file.path));
+        box.appendChild(clip);
+      } else if (file.kind === "image") {
         var figure = el("figure");
         var img = el("img");
         img.src = file.url;
@@ -1441,6 +1465,15 @@
                   + "in " + project.path;
       facts.appendChild(sheet);
     }
+    var demos = project.demos || [];
+    if (demos.length) {
+      // Phase 17: a film of the mechanism working. Counted like everything
+      // else, and then actually played below.
+      var reel = el("span", "lib-fact lib-demo-fact",
+        demos.length + (demos.length === 1 ? " demo" : " demos"));
+      reel.title = "Mechanism demos rendered into " + project.path;
+      facts.appendChild(reel);
+    }
     var scene = el("span", "lib-fact lib-blend", blendFact(project));
     scene.title = project.has_blend
       ? project.blend_path + " — Open loads this in Blender"
@@ -1479,6 +1512,31 @@
           "… and " + (design.length - 4) + " more in " + project.path));
       }
       body.appendChild(sheetList);
+    }
+
+    // The newest take plays on the card; the ones before it are named under it,
+    // because a card that autoplays four films is a card nobody can read.
+    if (demos.length) {
+      var reelBox = el("div", "lib-demos");
+      var newest = demos[0];
+      if (newest.url) {
+        reelBox.appendChild(demoVideo(newest));
+      }
+      var caption = el("div", "lib-demo-caption", newest.file);
+      caption.title = newest.path;
+      reelBox.appendChild(caption);
+      if (demos.length > 1) {
+        var older = el("ul", "lib-exports lib-demo-list");
+        demos.slice(1).forEach(function (file) {
+          var row = el("li");
+          row.appendChild(el("span", "f", file.file));
+          row.appendChild(el("span", "s", bytes(file.size)));
+          row.title = file.path;
+          older.appendChild(row);
+        });
+        reelBox.appendChild(older);
+      }
+      body.appendChild(reelBox);
     }
 
     if (exports.length) {

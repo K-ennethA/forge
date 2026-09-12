@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**72 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
+**76 tools.** One group is the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -529,6 +529,56 @@ plunger has to come out of the top, so in one closed body either the guide's mou
 switch's seat ends up facing away from the bed. `docs/part-authoring.md` §7.7 has the
 reasoning and `service/samples/push_lamp_core.py` is the worked example.
 
+### Mechanism demos (Phase 17) — show how it works
+
+The three tools that turn a build plan into what the robotics parts sites do: the part
+presses, the LED comes on, and a two-second film shows both. They are the build-level half
+of the phase; the design-level half is `mechanism.svg`, an animated cross-section written
+with `save_design_doc` before any geometry exists (it reads straight after `concept.svg` on
+the sheet, so a Library card lists it with no further work).
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `animate_object` | `keys` (`[{frame, location_mm \| location, rotation_euler_deg, scale}]`), `object`, `interpolation` `BEZIER`/`LINEAR`/`CONSTANT`, `clear` | Object-level keyframing — `rigforge_keyframe`'s sibling, on a transform rather than on pose bones. The press stroke, the hinge, the slide. |
+| `set_material_emission` | `strength` (0–1000), `object`, `color` `[r,g,b]` **0–1**, `frame`, `interpolation` (default **`CONSTANT`**) | The LED. With no `frame` it is a state; with one it is an event keyed at the moment the latch catches. |
+| `render_animation` | `frame_start`, `frame_end` (≤600 frames), `project`, `name`, `objects`, `view`, `fps` (1–60, default 24), `resolution` (128–1920, default 640), `engine` `eevee`/`workbench` | The film. Returns the `.mp4` path; the bridge serves `.mp4`, so naming that path in the reply plays it inline in the artist's chat and on the project's Library card. |
+
+**`location_mm` is the unit, and the tool's description leads with it.** Every number in this
+toolchain is a millimetre: `plunger_plan` says the cap travels 2.1 mm, and
+`{"frame": 8, "location_mm": [0, 0, -2.1]}` is that sentence with nothing to convert. It
+crosses the wire verbatim — the add-on owns the mm→m conversion, and converting here as well
+would halve the stroke. `location` (metres) still works; giving both for one key is an error
+rather than a merge, and a key that sets no channel at all is refused here rather than
+reaching Blender as a silent no-op.
+
+**`render_animation` has no `path` parameter**, exactly as `render_preview` has none: an
+agent that picks its own output paths picks them inconsistently, and a path parameter is a
+way to write an `.mp4` anywhere on the artist's disk. It picks the folder — `project` files
+the demo into `projects/<slug>/renders/`, which is the exact folder the assistant bridge's
+Library plays demos from (`bridge.DEMOS_DIRNAME`); without one it lands in the scratch
+previews folder. `name` names the FILE and only the file: it is slugged, never joined
+("litwick press" → `litwick-press.mp4`), a path-shaped name is refused rather than cleaned,
+and re-rendering the same name replaces that take so iterating on one demo is free.
+Unnamed demos are numbered, so two exploratory films in one session are two files.
+
+The report says **NAME THAT PATH**, never "Read that file" — an `.mp4` is the one thing this
+server produces that the model itself cannot look at. And every report in this group carries
+the honesty line: **it is an illustration of the intended motion, not a simulation.** Nothing
+here computes a force, a spring rate or a collision, and a demo that looks like physics and
+is not is the one way this feature could mislead an artist about their own design.
+
+```
+# after the pieces are built and checked
+animate_object(object="flame_cap", clear=True, keys=[
+    {"frame": 1,  "location_mm": [0, 0, 0]},        # at rest
+    {"frame": 8,  "location_mm": [0, 0, -2.1]},     # pressed, plan's travel_mm
+    {"frame": 20, "location_mm": [0, 0, -1.5]}])    # latched, sitting low
+set_material_emission(object="led_lens", strength=0, frame=1)
+set_material_emission(object="led_lens", strength=6, color=[1.0, 0.62, 0.2], frame=8)
+render_animation(1, 48, project="litwick lamp", name="litwick press", view="front")
+# -> projects/litwick-lamp/renders/litwick-press.mp4 - name it in the reply
+```
+
 ### Imported models (Phase 6d) — the downloaded-STL pipeline
 
 The four tools above all need a **PARAMS script**. These two need only an object that is
@@ -775,10 +825,11 @@ character in Godot. `rigforge_metarig` and `rigforge_weights` take the usual opt
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `rigforge_metarig` | `archetype` `auto`/`biped`/`quadruped`/`custom`, `modules` | Places and scales a metarig from the tag landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle). Reports the bone count and which bones each tag drove. |
+| `rigforge_metarig` | `archetype` `auto`/`biped`/`quadruped`/`custom`, `modules`, `preset`, `joints_file`, `joints_weight`, `joints_tolerance`, `joints_disagree_band`, `joints_axis_up` | Places and scales a metarig from the tag landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle). Reports the bone count and which bones each tag drove — and, with `joints_file`, how many landmarks a detector refined and how many disagreements the tags overruled. |
 | `rigforge_generate_rig` | `metarig`, `mesh`, `parent_with_weights`, `cleanup` | Rigify generate → parent with automatic weights → per-tag cleanup rules → normalize. Reports the rig, what got skinned and the cleanup counts. |
 | `rigforge_weights` | `action` `report`/`cleanup`/`normalize`, `max_influences` | Reads or repairs the skinning: influences over the limit, unnormalized or unweighted vertices, weights that cross a tag boundary. |
 | `rigforge_export_godot` | `path`, `rig`, `meshes`, `actions`, `root_motion`, `deform_only`, `godot_import_script` | Bakes the actions onto the deform bones, strips the control bones, writes the glTF plus its Godot import helper, and lists every file with its size. |
+| `rig_check` | `rig`, `mesh`, `poses` `extreme`/`quick`/`full`/`[angles]`, `joints`, `max_poses`, `intersections` | **Does it deform?** Poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. Reports the gate, then the joints worst-first with the three numbers that earned each verdict. |
 
 `modules` crosses the wire verbatim (`[{"kind": "tail", "tag": "Tail"}]`) because the add-on
 owns that vocabulary; spring/jiggle chains come from the manifest's `motion_notes`, so write
@@ -788,6 +839,29 @@ are 4 and 8 — and is sent for `report` too, as the limit the report measures a
 `deform_only` and `godot_import_script` default to true; a `deform_only=false` export says
 `CONTROL BONES KEPT` in its summary, because that is a debugging export, not a shipping one.
 Every one of the four relays the add-on's `warnings` as its own block, ahead of the tables.
+
+**`joints_file` is a third landmark source and the weakest one.** A neural joint detector's
+predictions, written as JSON by a runner outside Blender (`rigbridge/detect_joints.py`),
+refine the tag fit — they never replace it. Measured on our own test biped, UniRig put the
+spine within 8–36 mm and the shoulders 253–266 mm out, so the tool's own description says
+predictions are hints and the report says how many disagreements the **tags** overruled. The
+path is resolved the way every other file-taking tool resolves one and must exist: a typo
+would otherwise become a silent tag-only fit that reads exactly like a successful
+refinement. `joints_weight` (0–1, default 0.5), `joints_tolerance` (0–1, default 0.12) and
+`joints_disagree_band` (1–20, default 3) are refused without a `joints_file`, because they
+tune something that is not there. `joints_axis_up` overrides the file's declared frame and is
+for a producer that lies about its axes — the add-on refuses a whole file whose joints do not
+land inside the mesh and names the reading that would have worked.
+
+**`rig_check`'s thresholds are heuristics and the report says so, every time.** They are the
+points at which each artefact becomes visible in practice, not values calibrated against what
+artists accept or reject, so a `fail` is a band you can argue with and never a fact about
+somebody's sculpt. The report is a **summary**, not the raw result: the harness returns one
+object per joint per pose, and the model needs the gate, the failing joints and their worst
+three numbers. Joints it could not measure are named with the reason (a control driven by
+constraints, or flesh that is not weighted to it) rather than scored, a missing measurement
+prints as `-` rather than `None`, and `pose_restored` is reported because the artist's rig is
+put back exactly as they left it.
 
 ### RigForge cloth and animation (Phase 5)
 

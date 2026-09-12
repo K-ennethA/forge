@@ -1431,10 +1431,51 @@ def fmt_metarig_report(subject: str, result: Mapping[str, Any], summary: str) ->
     ]
     lines.extend(fmt_warnings(result.get("warnings")))
     lines.extend(fmt_bone_mapping(result.get("mapping")))
+    lines.extend(fmt_joint_hints(result.get("joints")))
     lines.append(
         "  next: check the placement in Blender, then rigforge_generate_rig."
     )
     return "\n".join(lines)
+
+
+def fmt_joint_hints(joints: Any) -> List[str]:
+    """The `joints_file` block, summarised — never the raw per-role dump.
+
+    Predictions are HINTS: a detector scores F1 ~0.077 on out-of-domain
+    skeletons and, measured here, put a shoulder 253 mm out. So what this prints
+    is the three numbers that decide whether to trust the fit — how many
+    landmarks moved, how far the largest move was, and how many disagreements
+    the tags overruled — and never a wall of coordinates.
+    """
+    if not isinstance(joints, Mapping) or not joints:
+        return []
+    if not joints.get("enabled"):
+        return [
+            "  predicted joints: read and NOT used — the tag-only fit is what "
+            "you are looking at. The warnings above say why."
+        ]
+    refined = joints.get("refined") or []
+    disagreements = joints.get("disagreements") or []
+    best_effort = joints.get("best_effort") or []
+    moves = [float(entry.get("moved_mm") or 0.0) for entry in refined
+             if isinstance(entry, Mapping)]
+    out = [
+        f"  predicted joints: {fmt_number(len(refined), 0)} landmark(s) refined"
+        + (f", largest move {fmt_number(max(moves), 1)} mm" if moves else "")
+        + f", {fmt_number(len(disagreements), 0)} disagreement(s) overruled"
+    ]
+    if disagreements:
+        out.append(
+            "    the TAGS won every one of those — say so if you quote the fit. "
+            "A second opinion was recorded, not obeyed."
+        )
+    if best_effort:
+        out.append(
+            f"    {fmt_number(len(best_effort), 0)} role(s) placed from "
+            "predictions alone (past the wrist, where no tag can reach) — "
+            "best effort, not fitted"
+        )
+    return out
 
 
 def fmt_weighted(weighted: Any) -> str:
@@ -2482,8 +2523,11 @@ DESIGN_NAME_MAX = 80
 _DESIGN_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 #: The order a design sheet reads in, which is the order it is written in.
-#: Anything else follows alphabetically.
-DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "components.md")
+#: Anything else follows alphabetically. `mechanism.svg` (Phase 17) is the
+#: concept sketch with the motion in it — the press stroke, the latch, the LED —
+#: so it reads directly after `concept.svg` and before the parts list.
+DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "mechanism.svg",
+                        "components.md")
 
 
 def design_filename(filename: Any) -> str:
@@ -3405,6 +3449,10 @@ KNOWN_BLENDER_OPS = frozenset({
     "rigforge_retopo", "rigforge_auto_uv", "rigforge_status", "rigforge_metarig",
     "rigforge_generate_rig", "rigforge_weights", "rigforge_export_godot",
     "rigforge_cloth", "rigforge_action", "rigforge_keyframe", "rigforge_retarget",
+    "rig_check",
+    # Mechanism demos (Phase 17): keyframe the press, light the LED, film it —
+    # exactly the three-step sequence a flow exists to replay.
+    "animate_object", "set_material_emission", "render_animation",
 })
 
 #: Geometry-service endpoints a flow step may call (docs/architecture.md).
@@ -5108,4 +5156,482 @@ def fmt_project_open_report(result: Mapping[str, Any]) -> str:
         "Then get_scene_info before you act on anything, because every object "
         "name you knew a moment ago belonged to a different file."
     )
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Phase 17 — mechanism demos (animate_object / set_material_emission /
+# render_animation)
+# ---------------------------------------------------------------------------
+#
+# The robotics-site trick, in three commands: a part that presses, a light that
+# comes on, and a short film of the two happening together. Everything here is
+# playback of numbers the maker tools already computed — `plunger_plan` says the
+# cap travels 2.1 mm, and the demo shows 2.1 mm of travel. Nothing simulates a
+# force, a spring rate or a collision, and the formatters below say so, because
+# a film that looks like physics and is not is the one way this feature could
+# mislead an artist about their own design.
+
+#: The channels one object key may move. `location_mm` leads because every
+#: number in this toolchain is a millimetre: the plan says 2.1 mm and the key
+#: says 2.1, with nothing to convert and nothing to get wrong.
+OBJECT_KEY_CHANNELS = ("location_mm", "location", "rotation_euler_deg", "scale")
+
+#: The honesty sentence, kept here so the report carries it even when an older
+#: add-on result has no `honesty` field of its own.
+MECHANISM_HONESTY = (
+    "This is an ILLUSTRATION of the intended motion, not a simulation: nothing "
+    "here computes a force, a spring rate or a collision. Say that to the "
+    "artist in your own words every time you show one."
+)
+
+
+def _normalize_object_key(entry: Any, index: int) -> Dict[str, Any]:
+    """One `animate_object` key, checked before anything reaches Blender.
+
+    The add-on parses the whole batch before it applies any of it, so that a
+    typo in `keys[7]` cannot leave `keys[0..6]` half done. This is the same rule
+    one layer earlier, where the error can name the tool.
+    """
+    where = f"keys[{index}]"
+    if not isinstance(entry, Mapping):
+        raise ForgeError(
+            f"{where} must be an object like "
+            '{"frame": 8, "location_mm": [0, 0, -2.1]}; '
+            f"got {entry!r}."
+        )
+    key = dict(entry)  # unknown fields survive, the way pose keys' do
+
+    if key.get("frame") is None:
+        raise ForgeError(
+            f"{where} has no `frame`. Every key names the frame it sits on — "
+            "that is what makes it a key rather than a pose."
+        )
+    key["frame"] = _as_frame(key.get("frame"), where)
+
+    if key.get("location") is not None and key.get("location_mm") is not None:
+        raise ForgeError(
+            f"{where} gives both `location` (metres) and `location_mm` "
+            "(millimetres). They are the same channel — use one. In a maker "
+            "demo that is almost always location_mm, because the build plan is "
+            "in millimetres."
+        )
+
+    moved = []
+    for channel in OBJECT_KEY_CHANNELS:
+        if key.get(channel) is None:
+            key.pop(channel, None)
+            continue
+        key[channel] = _as_vector3(key[channel], f"{where} {channel}")
+        moved.append(channel)
+    if not moved:
+        raise ForgeError(
+            f"{where} (frame {key['frame']}) sets no channel. Give it at least "
+            "one of location_mm (millimetres — the unit the build plan is in), "
+            "location (metres), rotation_euler_deg or scale; a key that changes "
+            "nothing keyframes nothing."
+        )
+    return key
+
+
+def normalize_object_keys(keys: Any) -> List[Dict[str, Any]]:
+    """The `animate_object` batch, validated entry by entry."""
+    if isinstance(keys, Mapping):  # one key, unwrapped
+        keys = [keys]
+    if isinstance(keys, (str, bytes)) or not isinstance(keys, (list, tuple)):
+        raise ForgeError(
+            "`keys` must be a list of keyframe objects like "
+            '[{"frame": 1, "location_mm": [0, 0, 0]}, '
+            '{"frame": 8, "location_mm": [0, 0, -2.1]}]; '
+            f"got {keys!r}."
+        )
+    out = [_normalize_object_key(entry, index) for index, entry in enumerate(keys)]
+    if not out:
+        raise ForgeError(
+            "`keys` was empty. A press stroke is three keys: at rest, pressed, "
+            'back — [{"frame": 1, "location_mm": [0, 0, 0]}, '
+            '{"frame": 8, "location_mm": [0, 0, -2.1]}, '
+            '{"frame": 20, "location_mm": [0, 0, 0]}].'
+        )
+    return out
+
+
+def object_keys_frame_range(
+    keys: Sequence[Mapping[str, Any]]
+) -> Optional[Tuple[int, int]]:
+    """(first, last) frame across a normalized object-key list."""
+    frames = [int(key["frame"]) for key in keys if isinstance(key.get("frame"), int)]
+    return (min(frames), max(frames)) if frames else None
+
+
+#: Emission strength. The add-on's own ceiling, mirrored so the refusal reads
+#: the same on either side of the socket.
+MAX_EMISSION_STRENGTH = 1000.0
+
+
+def normalize_emission_strength(strength: Any) -> float:
+    """How bright, or a refusal naming the range."""
+    if isinstance(strength, bool) or not isinstance(strength, (int, float)):
+        raise ForgeError(
+            f"strength must be a number (got {strength!r}). 0 is off; an LED "
+            "reads at about 5-20 in EEVEE."
+        )
+    value = float(strength)
+    if not 0.0 <= value <= MAX_EMISSION_STRENGTH:
+        raise ForgeError(
+            f"strength must be between 0 and "
+            f"{fmt_number(MAX_EMISSION_STRENGTH, 0)} "
+            f"(got {fmt_number(value, 2)}). 0 is the LED off; 5-20 is an LED on."
+        )
+    return value
+
+
+def normalize_emission_color(color: Any) -> Optional[List[float]]:
+    """`[r, g, b]` in 0-1, or `None` when the colour is being left alone."""
+    if color is None:
+        return None
+    values = _as_vector3(color, "color")
+    for component in values:
+        if not 0.0 <= component <= 1.0:
+            raise ForgeError(
+                f"color components are 0-1, not 0-255 (got {values}). A warm "
+                "amber LED is about [1.0, 0.62, 0.2]."
+            )
+    return values
+
+
+#: The demo's own numbers, mirrored from the add-on so a refusal costs no round
+#: trip and reads identically on either side.
+ANIMATION_FPS = 24
+ANIMATION_MIN_FPS = 1
+ANIMATION_MAX_FPS = 60
+ANIMATION_RESOLUTION = 640
+ANIMATION_MIN_RESOLUTION = 128
+ANIMATION_MAX_RESOLUTION = 1920
+#: A mechanism demo is a couple of seconds of a thing moving. Past this a
+#: headless render stops being something the artist waits for.
+ANIMATION_MAX_FRAMES = 600
+
+#: Where a project keeps its renders, by the folder convention in
+#: docs/architecture.md ("spec.json, part.py, exports/ and renders"). The
+#: assistant bridge's Library plays the `.mp4` files in this exact folder
+#: (`bridge.DEMOS_DIRNAME`), so a demo written here is on the artist's shelf
+#: without anybody moving a file.
+PROJECT_RENDERS_DIRNAME = "renders"
+
+#: Bumped per demo inside one server process, like the preview counter: a demo
+#: is compared against the one before it, so both files have to still exist.
+_animation_counter = 0
+
+
+def normalize_animation_fps(fps: Any) -> int:
+    """Frames per second, or a refusal naming the range and the default."""
+    if fps is None:
+        return ANIMATION_FPS
+    if isinstance(fps, bool) or not isinstance(fps, (int, float)):
+        raise ForgeError(f"fps must be a whole number (got {fps!r}).")
+    if isinstance(fps, float) and not float(fps).is_integer():
+        raise ForgeError(f"fps must be a whole number (got {fps}).")
+    value = int(fps)
+    if not ANIMATION_MIN_FPS <= value <= ANIMATION_MAX_FPS:
+        raise ForgeError(
+            f"fps must be between {ANIMATION_MIN_FPS} and {ANIMATION_MAX_FPS} "
+            f"(got {value}). {ANIMATION_FPS} is the default and is right for a "
+            "mechanism demo."
+        )
+    return value
+
+
+def normalize_animation_resolution(resolution: Any) -> int:
+    """Square pixels for the film, or a refusal naming the range."""
+    if resolution is None:
+        return ANIMATION_RESOLUTION
+    if isinstance(resolution, bool) or not isinstance(resolution, (int, float)):
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution!r})."
+        )
+    if isinstance(resolution, float) and not float(resolution).is_integer():
+        raise ForgeError(
+            f"resolution must be a whole number of pixels (got {resolution})."
+        )
+    value = int(resolution)
+    if not ANIMATION_MIN_RESOLUTION <= value <= ANIMATION_MAX_RESOLUTION:
+        raise ForgeError(
+            f"resolution must be between {ANIMATION_MIN_RESOLUTION} and "
+            f"{ANIMATION_MAX_RESOLUTION} pixels (got {value}). The default, "
+            f"{ANIMATION_RESOLUTION}, reads a 2 mm stroke and renders in "
+            "seconds rather than minutes."
+        )
+    return value
+
+
+def normalize_animation_frames(frame_start: Any, frame_end: Any) -> Tuple[int, int]:
+    """`(start, end)`, in order and within the length a demo may be."""
+    start = _as_frame(frame_start, "frame_start")
+    end = _as_frame(frame_end, "frame_end")
+    if end < start:
+        raise ForgeError(
+            f"frame_end ({end}) is before frame_start ({start}). Render the "
+            "range the keys are on — animate_object reports it as frame_range."
+        )
+    count = end - start + 1
+    if count > ANIMATION_MAX_FRAMES:
+        raise ForgeError(
+            f"{count} frames is longer than one demo renders in a go "
+            f"({ANIMATION_MAX_FRAMES}). A mechanism demo is a couple of seconds "
+            "— shorten the range, or drop the fps."
+        )
+    return start, end
+
+
+def animation_name(name: Any) -> str:
+    """`"Litwick press!"` -> `"litwick-press"`, or refuse.
+
+    A NAME, never a path — `project_slug`'s rules, for `project_slug`'s reason:
+    a caller who wrote a separator meant a location, and quietly writing
+    somewhere else is worse than an error. A trailing `.mp4` is dropped rather
+    than refused, because writing it is the obvious thing to do and the
+    extension is not the caller's to choose here.
+    """
+    raw = "" if name is None else str(name).strip().strip('"').strip()
+    if raw.lower().endswith(".mp4"):
+        raw = raw[:-4].strip()
+    if not raw:
+        raise ForgeError(
+            "The demo's name was empty. Name it for what it shows — "
+            '"litwick press" becomes litwick-press.mp4 — or omit `name` and one '
+            "is chosen."
+        )
+    for marker in _TRAVERSAL_MARKERS:
+        if marker in raw:
+            raise ForgeError(
+                f"{name!r} is not a demo name — it looks like a path (it "
+                f"contains {marker!r}). A demo is always written into the "
+                "project's renders/ folder, so pass just a name, e.g. "
+                '"litwick press".'
+            )
+    slug = _SLUG_SEPARATORS.sub("-", raw.lower()).strip("-")
+    if not slug:
+        raise ForgeError(
+            f"{name!r} has no letters or digits in it, so it cannot name a "
+            'file. Try something like "litwick press".'
+        )
+    return slug[:60].rstrip("-")
+
+
+def animation_path(project: Any = None, view: str = "iso",
+                   name: Any = None) -> Path:
+    """Where this demo is written — chosen HERE, never asked of the caller.
+
+    `render_preview`'s rule, for `render_preview`'s reason: an agent that picks
+    its own output paths picks them inconsistently, and a path parameter is a
+    way to write an .mp4 anywhere on the artist's disk. With a `project` the
+    film lands in `projects/<slug>/renders/`, which is where the Library plays
+    it from; without one it lands in the same scratch folder previews use, so an
+    exploratory demo costs no project folder.
+
+    `name` chooses the FILE's name inside that folder and nothing else — it is
+    slugged, never joined — so "litwick press" is `litwick-press.mp4` and a
+    re-render of the same demo replaces it rather than leaving take after take.
+    Unnamed demos are numbered instead, so two exploratory films in one session
+    are two files.
+    """
+    global _animation_counter
+
+    if name is not None and str(name).strip():
+        stem = animation_name(name)
+    else:
+        _animation_counter += 1
+        stem = f"demo-{_animation_counter:03d}-{str(view or 'iso').strip().lower()}"
+    if project is None or not str(project).strip():
+        path = Path(config.PREVIEWS_DIR) / f"{stem}.mp4"
+    else:
+        slug = project_slug(project)
+        root = projects_root()
+        folder = (root / slug / PROJECT_RENDERS_DIRNAME).resolve()
+        try:
+            folder.relative_to(root)
+        except ValueError:
+            raise ForgeError(
+                f"{slug!r} would write outside {root}. Demos only ever land in "
+                "projects/<name>/renders/."
+            ) from None
+        path = folder / f"{stem}.mp4"
+    ensure_parent_dir(path)
+    return path
+
+
+def fmt_animate_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    """What was keyed, over what span, and what to do with it next."""
+    name = result.get("object") or subject
+    action = result.get("action") or "(unnamed)"
+    lines = [
+        f"Keyframed {name} — {summary}",
+        f"  action: {action}   "
+        f"{fmt_counted('keys set', result.get('keys_set'))}   "
+        f"frames {fmt_frame_range(result.get('frame_range'))}",
+    ]
+    channels = result.get("channels")
+    if channels:
+        lines.append(f"  channels: {fmt_name_list(channels, 6)}")
+    if result.get("cleared_fcurves"):
+        lines.append(
+            f"  cleared first: {fmt_number(result.get('cleared_fcurves'), 0)} "
+            "existing curve(s), so this replaces the motion rather than "
+            "layering onto it"
+        )
+    lines.extend(fmt_warnings(result.get("warnings")))
+    lines.append(
+        "  next: set_material_emission for anything that lights up, then "
+        "render_animation over this frame range to get the film."
+    )
+    lines.append("  " + MECHANISM_HONESTY)
+    return "\n".join(lines)
+
+
+def fmt_emission_report(subject: str, result: Mapping[str, Any], summary: str) -> str:
+    """The LED: which material, how bright, and whether it was keyed."""
+    name = result.get("object") or subject
+    material = result.get("material") or "(unnamed)"
+    lines = [
+        f"Emission set on {name} — {summary}",
+        f"  material: {material}"
+        + ("  (new)" if result.get("created_material") else "")
+        + f"   strength: {fmt_number(result.get('strength'), 2)}",
+    ]
+    if result.get("keyframed"):
+        lines.append(
+            f"  keyed at frame {fmt_number(result.get('frame'), 0)} "
+            f"({result.get('interpolation') or 'CONSTANT'}): "
+            + fmt_name_list(result.get("keyed"), 4)
+        )
+    else:
+        lines.append(
+            "  not keyed — this is a state, not an event. Pass `frame` to key "
+            "the moment it comes on."
+        )
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    lines.append(
+        "  it only shows in a render with materials: render_preview"
+        '(shading="material") or render_animation(engine="eevee"). Workbench '
+        "draws clay and will not show it."
+    )
+    return "\n".join(lines)
+
+
+def fmt_animation_report(result: Mapping[str, Any], summary: str) -> str:
+    """Where the film is, and the instruction to hand the artist the path.
+
+    Deliberately NOT "Read that file": the Read tool renders bitmaps, and an
+    .mp4 is the one thing this server produces that the model cannot look at.
+    What it CAN do is name the path, which is what makes the demo play inline in
+    the artist's chat and on the project's Library card.
+    """
+    path = str(result.get("path") or "")
+    lines = [
+        f"Rendered the demo — {summary}",
+        "",
+        f"    {path}",
+        "",
+        "NAME THAT FULL PATH IN YOUR REPLY. It plays inline in the artist's "
+        "chat and on the project's card in the Library; a film they cannot "
+        "press play on is a filename.",
+    ]
+    frames = result.get("frames")
+    fps = result.get("fps")
+    duration = result.get("duration_s")
+    if frames or fps:
+        lines.append(
+            f"  {fmt_number(frames, 0)} frames at {fmt_number(fps, 0)} fps"
+            + (f" — {fmt_number(duration, 1)} s of film" if duration else "")
+            + f", {fmt_number(result.get('resolution'), 0)} px, "
+            + f"{result.get('engine') or '?'}"
+        )
+    size = result.get("size_bytes")
+    if size:
+        lines.append(f"  {fmt_number(float(size) / 1024.0, 0)} KB on disk")
+    if result.get("framed_all_visible"):
+        lines.append(
+            "  every visible mesh is in frame; pass `objects` to film one piece"
+        )
+    if result.get("framed_over_frames"):
+        lines.append(
+            "  the camera was fitted over "
+            f"{fmt_name_list(result.get('framed_over_frames'), 8)} — the whole "
+            "clip, so nothing presses itself out of shot"
+        )
+    for note in result.get("notes") or []:
+        lines.append(f"  note: {note}")
+    lines.append("  " + str(result.get("honesty") or MECHANISM_HONESTY))
+    return "\n".join(lines)
+
+
+#: How many joints one `rig_check` report names in full. The whole result is one
+#: object per joint per pose; the agent needs the gate, the failures and their
+#: worst three numbers — feed it the computed features, never the raw report.
+RIG_CHECK_LISTED = 12
+
+
+def fmt_rig_check_report(result: Mapping[str, Any], summary: str) -> str:
+    """The deformation gate: the verdict, the joints that earned it, the caveat."""
+    gate = str(result.get("gate") or "?")
+    lines = [
+        f"Deformation check — gate: {gate.upper()} ({summary})",
+        f"  {fmt_number(result.get('joints_measured'), 0)} joint(s) measured in "
+        f"{fmt_number(result.get('seconds'), 2)} s"
+        + (f", {fmt_number(result.get('poses_run'), 0)} poses"
+           if result.get("poses_run") else ""),
+    ]
+    says = str(result.get("says") or "").strip()
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    def _measured(value: Any, places: int = 1) -> str:
+        # A joint the harness could not measure reports None, and "None%" would
+        # read as a number. "-" reads as what it is: no measurement.
+        return "-" if value is None else fmt_number(value, places)
+
+    joints = [j for j in (result.get("joints") or []) if isinstance(j, Mapping)]
+    rank = {"fail": 0, "attention": 1, "pass": 2}
+    joints.sort(key=lambda j: rank.get(str(j.get("verdict")), 3))
+    for joint in joints[:RIG_CHECK_LISTED]:
+        lines.append(
+            "  {label:<14} vol={vol:>6}%  twist={twist:>6}%  "
+            "new clips={clips:>4}   {verdict}".format(
+                label=str(joint.get("label") or joint.get("joint") or "?")[:14],
+                vol=_measured(joint.get("worst_volume_loss_pct")),
+                twist=_measured(joint.get("worst_twist_collapse_pct")),
+                clips=_measured(joint.get("worst_new_intersections"), 0),
+                verdict=str(joint.get("verdict") or "?"),
+            )
+        )
+    if len(joints) > RIG_CHECK_LISTED:
+        lines.append(f"  ... and {len(joints) - RIG_CHECK_LISTED} more joint(s)")
+
+    skipped = [s for s in (result.get("joints_skipped") or [])
+               if isinstance(s, Mapping)]
+    for entry in skipped[:4]:
+        lines.append(
+            f"  NOT MEASURED — {entry.get('label') or entry.get('joint')}: "
+            f"{entry.get('reason')}"
+        )
+    if len(skipped) > 4:
+        lines.append(f"  ... and {len(skipped) - 4} more unmeasured joint(s)")
+
+    if result.get("pose_restored"):
+        lines.append("  the pose was restored: the rig is exactly as they left it")
+    tier = str(result.get("threshold_tier") or "").strip()
+    lines.append(
+        "  THE THRESHOLDS ARE HEURISTICS, not facts about their work"
+        + (f" — {tier}" if tier else "")
+        + ". Report the numbers next to the band that judged them, and say a "
+        "fail is a band you can argue with."
+    )
+    if gate != "pass":
+        lines.append(
+            "  next: the usual cause is weights, not bones — rigforge_weights"
+            '(action="report") on the mesh, then cleanup, then check again.'
+        )
     return "\n".join(lines)

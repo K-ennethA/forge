@@ -146,6 +146,23 @@ Phase 16 — the design phase (no new routes; two existing ones grew)::
                                        hid it would hide the thing the artist is
                                        being asked to approve
 
+Phase 17 — mechanism demos (no new routes; the same two grew again)::
+
+``GET  /file/<token>``                 also serves ``.mp4`` as ``video/mp4``,
+                                       so the two-second film ``render_animation``
+                                       wrote — the plunger pressing, the LED
+                                       coming on — plays inline in the
+                                       conversation.  A video is its own display
+                                       class (``DISPLAY_VIDEO_EXTENSIONS``), never
+                                       an attachment: it travels out of a job and
+                                       never into one
+``GET  /library``                      cards gain ``demos`` — the ``.mp4`` files
+                                       in ``projects/<name>/renders/``, which is
+                                       where the MCP mirror of ``render_animation``
+                                       writes them.  Tokens, like the Models row,
+                                       because a demo nobody can press play on is
+                                       a filename
+
 None of these spends a model turn: the workbench tab is the artist editing a
 part directly, and a slider that costs money per drag is a slider nobody drags.
 The bridge never *executes* the artist's script — that is the geometry service's
@@ -337,7 +354,9 @@ ASSET_TYPES = {
 #: exporter write, and a browser that cannot show one can still download it;
 #: ``.svg`` (Phase 16) because a concept diagram is written by the assistant
 #: itself and is the one deliverable of the design phase that has to be LOOKED
-#: at rather than read.
+#: at rather than read; ``.mp4`` (Phase 17) for the same reason one step further
+#: on — a mechanism demo is a moving picture of the thing working, and a path to
+#: it is homework.
 SERVABLE_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -345,6 +364,7 @@ SERVABLE_TYPES = {
     ".webp": "image/webp",
     ".bmp": "image/bmp",
     ".svg": "image/svg+xml",
+    ".mp4": "video/mp4",
     ".glb": "model/gltf-binary",
     ".gltf": "model/gltf+json",
 }
@@ -354,6 +374,14 @@ SERVABLE_TYPES = {
 #: artist may *attach* and what Claude Code's Read tool renders, and an SVG is
 #: neither.  It travels the other way — out of a job, into the conversation.
 DISPLAY_IMAGE_EXTENSIONS = IMAGE_EXTENSIONS + (".svg",)
+
+#: Servable types the page PLAYS.  Its own class rather than another entry on
+#: the list above, because a ``<video>`` is not an ``<img>`` and — the reason
+#: this is a class and not a special case — a video can never be an attachment:
+#: Claude Code's Read tool renders bitmaps, so a film attached to a message
+#: would be a turn spent watching the model fail to look at it.  ``.svg``'s
+#: display-only precedent (Phase 16), one medium further along.
+DISPLAY_VIDEO_EXTENSIONS = (".mp4",)
 
 #: An SVG is markup, and markup served from this origin at its natural type is
 #: a document a browser will happily run scripts in.  These diagrams are written
@@ -392,7 +420,7 @@ IMAGE_MAGIC = {
 #: quotes, brackets and backticks end a path because markdown wraps them.
 _FILE_PATH_RE = re.compile(
     r"(?:[A-Za-z]:[\\/]|\\\\|/)[^\s\"'`<>|*?\r\n]*?"
-    r"\.(?:png|jpe?g|webp|bmp|svg|glb|gltf)\b",
+    r"\.(?:png|jpe?g|webp|bmp|svg|mp4|glb|gltf)\b",
     re.IGNORECASE)
 
 #: How deep into a tool's arguments the path scan walks.
@@ -470,9 +498,23 @@ DESIGN_DIRNAME = "design"
 #: The order a design sheet reads in, which is the order it is written in:
 #: what it has to do, what it looks like, what it is made of.  Anything else
 #: follows alphabetically.  Mirrors `forge_mcp.util.DESIGN_READING_ORDER`.
-DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "components.md")
+#: ``mechanism.svg`` (Phase 17) sits straight after the concept sketch: it is
+#: the same drawing with the motion in it, so it is read second, not last.
+DESIGN_READING_ORDER = ("requirements.md", "concept.svg", "mechanism.svg",
+                        "components.md")
 #: How many design documents one card lists.  Same reason as the exports cap.
 MAX_DESIGN_LISTED = 20
+
+#: Where a project's renders live, by the same folder convention
+#: (docs/architecture.md: "spec.json, part.py, exports/ and renders").  The MCP
+#: mirror of ``render_animation`` picks ``projects/<name>/renders/`` for a demo
+#: exactly so this row finds it without anybody moving a file.
+DEMOS_DIRNAME = "renders"
+#: What counts as a demo.  Only ``.mp4``: the still renders in the same folder
+#: are the thumbnail's job, and a row of PNGs is a gallery nobody asked for.
+DEMO_EXTENSIONS = (".mp4",)
+#: How many demos one card plays.  A card is a card.
+MAX_DEMOS_LISTED = 4
 #: How many export files one card lists.  A card is a card; a folder with two
 #: hundred STLs in it is a folder, and the count still tells the truth.
 MAX_EXPORTS_LISTED = 40
@@ -1853,6 +1895,20 @@ def walk_strings(value, depth=_SCAN_DEPTH):
                 yield found
 
 
+def file_kind(path):
+    """``"image"``, ``"video"`` or ``"model"`` — how the page should draw it.
+
+    Three classes rather than two, because the page does three different things:
+    an ``<img>``, a ``<video controls>`` and a download link.
+    """
+    extension = os.path.splitext(str(path or ""))[1].lower()
+    if extension in DISPLAY_VIDEO_EXTENSIONS:
+        return "video"
+    if extension in DISPLAY_IMAGE_EXTENSIONS:
+        return "image"
+    return "model"
+
+
 def file_entry(token, path, source):
     """The public shape of one recorded file."""
     extension = os.path.splitext(path)[1].lower()
@@ -1861,7 +1917,7 @@ def file_entry(token, path, source):
         "path": path,
         "name": os.path.basename(path) or path,
         "ext": extension,
-        "kind": "image" if extension in DISPLAY_IMAGE_EXTENSIONS else "model",
+        "kind": file_kind(path),
         "source": source,
         "url": "/file/%s" % token,
     }
@@ -3393,6 +3449,48 @@ def project_design(folder, limit=MAX_DESIGN_LISTED):
     return out[:limit]
 
 
+def project_demos(folder, limit=MAX_DEMOS_LISTED):
+    """``projects/<name>/renders/*.mp4`` as ``{file, path, size, mtime, url}``.
+
+    Newest first, because a demo is a *take*: the one that was just rendered is
+    the one the artist wants to watch, and the one before it is the version they
+    are comparing it against.
+
+    Tokens, unlike the design sheet next door — that list is paths on purpose
+    (they are documents on this machine and the browser is on this machine), but
+    a film is not a document.  A demo the page cannot press play on is a
+    filename, which is exactly the state Phase 17 exists to leave behind.  The
+    Models row already mints for the same reason, so this adds no new power: a
+    token is minted here for a file the shelf already indexes and nowhere else.
+    """
+    directory = os.path.join(folder, DEMOS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    found = []
+    for name in sorted(names):
+        if os.path.splitext(name)[1].lower() not in DEMO_EXTENSIONS:
+            continue
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        found.append((path, name, info))
+    found.sort(key=lambda item: item[2].st_mtime, reverse=True)
+
+    out = []
+    for path, name, info in found[:limit]:
+        token = FILES.mint(path)
+        out.append({"file": name, "path": path, "size": int(info.st_size),
+                    "mtime": round(info.st_mtime, 3), "token": token,
+                    "url": ("/file/%s" % token) if token else None})
+    return out
+
+
 def param_count_for(entry):
     """``(count, source)`` — how many dimensions this part has, if we can tell.
 
@@ -3436,9 +3534,10 @@ def project_blend(folder):
             "mtime": round(info.st_mtime, 3)}
 
 
-def project_mtime(folder, entry, exports, blend=None, design=()):
+def project_mtime(folder, entry, exports, blend=None, design=(), demos=()):
     """When this project was last touched — the folder, its spec, its script,
-    its scene file, its exports, its design sheet, whichever moved last."""
+    its scene file, its exports, its design sheet, its demos, whichever moved
+    last."""
     stamps = []
     if blend and blend.get("mtime"):
         stamps.append(float(blend["mtime"]))
@@ -3453,6 +3552,7 @@ def project_mtime(folder, entry, exports, blend=None, design=()):
             pass
     stamps.extend(item["mtime"] for item in exports)
     stamps.extend(item["mtime"] for item in design)
+    stamps.extend(item["mtime"] for item in demos)
     return round(max(stamps), 3) if stamps else 0.0
 
 
@@ -3489,6 +3589,7 @@ def library_entry(folder):
         entry = design_only_entry(folder)
     spec = entry.get("spec") if isinstance(entry.get("spec"), dict) else {}
     exports = project_exports(folder)
+    demos = project_demos(folder)
     count, source = param_count_for(entry)
     features = spec.get("features")
     _path, thumb_mtime = thumbnail_stat(entry["name"])
@@ -3518,7 +3619,12 @@ def library_entry(folder):
         # is the state the sign-off gate exists to hold.  The card says so
         # rather than drawing a part that is not there.
         "design_only": bool(design) and not entry.get("script_path"),
-        "mtime": project_mtime(folder, entry, exports, blend, design),
+        # Phase 17: the mechanism demos, newest take first.  Tokens, not paths —
+        # see project_demos: this is the one thing on a card that is watched
+        # rather than read.
+        "demos": demos,
+        "demo_count": len(demos),
+        "mtime": project_mtime(folder, entry, exports, blend, design, demos),
         # Phase 15: does this project have a scene of its own to open?  A stat,
         # so the answer is the same whether Blender is running or not.
         "has_blend": blend["exists"],

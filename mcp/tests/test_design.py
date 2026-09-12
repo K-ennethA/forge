@@ -327,3 +327,61 @@ def test_design_documents_reads_the_sheet_in_reading_order(
 
 def test_design_documents_of_a_project_with_no_design_folder_is_empty() -> None:
     assert util.design_documents("never-designed") == []
+
+
+# --- Phase 17: the mechanism diagram joins the sheet ------------------------
+#
+# `mechanism.svg` is the concept sketch with the motion in it — the press
+# stroke, the latch, the LED. It reads straight after the still diagram and
+# before the parts list, which is also the order it gets written in.
+
+MECHANISM_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">'
+    '<rect x="20" y="20" width="60" height="30" fill="none" stroke="#333"/>'
+    '<animateTransform attributeName="transform" type="translate" '
+    'values="0 0; 0 6; 0 0" dur="1.6s" repeatCount="indefinite"/>'
+    '<text x="24" y="80">2.1 mm stroke</text></svg>'
+)
+
+
+def test_mechanism_svg_reads_right_after_the_concept_diagram(
+    projects_dir: Path,
+) -> None:
+    """The animated section belongs with the still one, not filed alphabetically."""
+    for name, body in (("components.md", COMPONENTS),
+                       ("mechanism.svg", MECHANISM_SVG),
+                       ("concept.svg", CONCEPT_SVG),
+                       ("requirements.md", REQUIREMENTS)):
+        server.save_design_doc("litwick lamp", name, body)
+    found = util.design_documents("litwick-lamp")
+    assert [item["file"] for item in found] == [
+        "requirements.md", "concept.svg", "mechanism.svg", "components.md"]
+
+
+def test_the_reading_order_is_the_four_named_documents() -> None:
+    """Pinned, because the assistant bridge mirrors this tuple verbatim."""
+    assert util.DESIGN_READING_ORDER == (
+        "requirements.md", "concept.svg", "mechanism.svg", "components.md")
+
+
+def test_a_mechanism_diagram_is_saved_and_listed_like_any_other_svg(
+    projects_dir: Path,
+) -> None:
+    report = server.save_design_doc("litwick lamp", "mechanism.svg", MECHANISM_SVG)
+    path = design_of(projects_dir, "litwick-lamp") / "mechanism.svg"
+    assert path.read_text(encoding="utf-8") == MECHANISM_SVG + "\n"
+    # Same .svg treatment: it is a picture, so the reply has to name its path.
+    assert "renders" in report and "inline" in report
+    assert "design sheet for litwick-lamp: mechanism.svg" in report
+
+
+def test_a_truncated_mechanism_diagram_leaves_the_previous_one_alone(
+    projects_dir: Path,
+) -> None:
+    """An animated SVG is longer, so a cut-off one is the likelier failure."""
+    server.save_design_doc("litwick lamp", "mechanism.svg", MECHANISM_SVG)
+    with pytest.raises(ForgeError):
+        server.save_design_doc("litwick lamp", "mechanism.svg",
+                               MECHANISM_SVG[:120])
+    path = design_of(projects_dir, "litwick-lamp") / "mechanism.svg"
+    assert path.read_text(encoding="utf-8") == MECHANISM_SVG + "\n"

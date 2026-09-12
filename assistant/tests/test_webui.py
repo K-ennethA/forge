@@ -761,7 +761,10 @@ def test_the_page_only_talks_to_routes_this_bridge_serves(client):
                       "/projects", "/projects/", "/preview", "/scene",
                       "/scene/delete",
                       # the library (Phase 13)
-                      "/library"}, called
+                      "/library",
+                      # the library's models row: import into the running
+                      # Blender, file into a project, open the file
+                      "/models/import", "/models/file", "/models/open"}, called
 
 
 def test_the_reply_is_the_only_html_the_page_ever_builds(client):
@@ -3656,3 +3659,216 @@ def test_the_card_draws_the_design_sheet_and_says_when_nothing_is_built(client):
     assert "project.design_only" in script
     assert "waiting for your sign-off" in script
     assert ".lib-design" in fetch_text(client, "/webui/app.css")
+
+
+def test_the_reading_order_matches_the_mcp_servers(projects):
+    """Two components, one order.  `forge_mcp.util.DESIGN_READING_ORDER` is the
+    other copy, and a sheet that read differently on the card than in the tool
+    report would be one of them quietly wrong."""
+    assert bridge.DESIGN_READING_ORDER == (
+        "requirements.md", "concept.svg", "mechanism.svg", "components.md")
+
+
+def test_the_mechanism_diagram_reads_after_the_concept_one(projects):
+    """Phase 17: the animated section is the still one with the motion in it."""
+    folder = projects("litwick-lamp")
+    for name in ("components.md", "mechanism.svg", "concept.svg",
+                 "requirements.md"):
+        write_design(folder, name)
+    found = bridge.project_design(str(folder))
+    assert [item["file"] for item in found] == [
+        "requirements.md", "concept.svg", "mechanism.svg", "components.md"]
+
+
+# ===========================================================================
+# Phase 17 - mechanism demos: a film in the chat, a film on the card
+# ===========================================================================
+
+#: An .mp4 as far as anything here is concerned: the ISO base-media `ftyp` box
+#: that Blender's ffmpeg writes, and enough bytes after it to be a file.  The
+#: bridge never parses one - it serves the bytes - so the magic is here to keep
+#: the fixture honest rather than because anything checks it.
+MP4 = (b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom"
+       + b"\x00\x00\x00\x08free" + b"\x00" * 64)
+
+
+def write_mp4(path, data=MP4):
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return str(path)
+
+
+def write_demo(folder, name, data=MP4):
+    """One rendered demo in a project's renders/ folder."""
+    directory = folder / "renders"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.write_bytes(data)
+    return path
+
+
+# -- the film has to be a film, not a path -----------------------------------
+
+def test_an_mp4_is_mintable(tmp_path):
+    store = bridge.FileTokens(limit=4)
+    film = write_mp4(tmp_path / "demo-001-iso.mp4")
+    token = store.mint(film)
+    assert token and store.resolve(token) == os.path.abspath(film)
+
+
+def test_find_file_paths_picks_a_demo_out_of_prose():
+    found = bridge.find_file_paths(
+        "The press cycle is at "
+        "C:\\forge\\projects\\litwick-lamp\\renders\\demo-001-iso.mp4 - it is "
+        "an illustration, not a simulation.")
+    assert found == [
+        "C:\\forge\\projects\\litwick-lamp\\renders\\demo-001-iso.mp4"]
+
+
+def test_a_demo_named_in_a_reply_is_served_as_a_video(bridges, tmp_path):
+    """The whole point of adding .mp4: the artist WATCHES the mechanism work."""
+    film = write_mp4(tmp_path / "demo-001-iso.mp4")
+    client = bridges(env_extra={
+        "FAKE_CLAUDE_REPLY": "Here is the press cycle: %s" % film})
+    job = client.turn("show me how the button works")
+
+    assert len(job["files"]) == 1, job["files"]
+    entry = job["files"][0]
+    assert entry["path"] == os.path.abspath(film)
+    # Its own class: a <video>, not an <img> and not a download chip.
+    assert entry["kind"] == "video"
+    assert entry["ext"] == ".mp4"
+
+    status, headers, body = raw_get(client, entry["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "video/mp4"
+    assert body == MP4
+
+
+def test_a_video_is_not_an_image_and_never_an_attachment():
+    """Display-only, the way `.svg` is - one medium further along.
+
+    A film travels OUT of a job into the conversation.  It can never travel in:
+    Claude Code's Read tool renders bitmaps, so an attached .mp4 would be a turn
+    spent watching the model fail to look at it.
+    """
+    assert ".mp4" in bridge.SERVABLE_TYPES
+    assert ".mp4" in bridge.DISPLAY_VIDEO_EXTENSIONS
+    assert ".mp4" not in bridge.IMAGE_EXTENSIONS
+    assert ".mp4" not in bridge.DISPLAY_IMAGE_EXTENSIONS
+    assert "Only images" in bridge.upload_error("demo.mp4", MP4)
+    assert "not an image" in bridge.image_error("C:\\forge\\demo.mp4")
+
+
+def test_the_three_display_classes_are_distinct():
+    assert bridge.file_kind("C:\\forge\\demo.mp4") == "video"
+    assert bridge.file_kind("C:\\forge\\concept.svg") == "image"
+    assert bridge.file_kind("C:\\forge\\render.png") == "image"
+    assert bridge.file_kind("C:\\forge\\gecko.glb") == "model"
+
+
+def test_a_video_is_not_served_with_the_svg_sandbox(bridges, tmp_path):
+    """The CSP is about markup that could run; an .mp4 is bytes a decoder reads."""
+    film = write_mp4(tmp_path / "demo-001-iso.mp4")
+    client = bridges(env_extra={"FAKE_CLAUDE_REPLY": "Demo: %s" % film})
+    job = client.turn("film it")
+    _status, headers, _body = raw_get(client, job["files"][0]["url"])
+    assert "Content-Security-Policy" not in headers
+    assert headers["Content-Type"] == "video/mp4"
+
+
+def test_a_demo_the_model_only_mentioned_is_not_minted(bridges, tmp_path):
+    """Same rule as every other servable: a path that is not a file is not a
+    token, so a demo that was never rendered cannot become a broken player."""
+    missing = str(tmp_path / "never-rendered.mp4")
+    client = bridges(env_extra={"FAKE_CLAUDE_REPLY": "It would go to %s" % missing})
+    job = client.turn("film it")
+    assert job["files"] == []
+
+
+# -- the demo on the card ----------------------------------------------------
+
+def test_project_demos_reads_renders_newest_first(projects):
+    folder = projects("litwick-lamp")
+    older = write_demo(folder, "demo-001-iso.mp4")
+    newer = write_demo(folder, "demo-002-front.mp4")
+    os.utime(str(older), (time.time() - 500, time.time() - 500))
+    # A still render in the same folder is not a demo.
+    write_png(str(folder / "renders" / "preview.png"))
+
+    found = bridge.project_demos(str(folder))
+    assert [item["file"] for item in found] == ["demo-002-front.mp4",
+                                                "demo-001-iso.mp4"]
+    assert found[0]["path"] == str(newer)
+    assert all(item["size"] > 0 and item["mtime"] > 0 for item in found)
+
+
+def test_project_demos_of_a_project_with_no_renders_folder_is_empty(projects):
+    assert bridge.project_demos(str(projects("cup"))) == []
+
+
+def test_a_card_carries_its_demos_as_playable_tokens(bridges, projects):
+    """Paths, unlike the design sheet next door: a film nobody can press play
+    on is a filename, which is the state this phase exists to leave behind."""
+    folder = projects("litwick-lamp")
+    write_demo(folder, "demo-001-iso.mp4")
+    client = bridges()
+
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert card["demo_count"] == 1
+    demo = card["demos"][0]
+    assert demo["file"] == "demo-001-iso.mp4"
+    assert demo["url"] == "/file/%s" % demo["token"]
+
+    status, headers, played = raw_get(client, demo["url"])
+    assert status == 200
+    assert headers["Content-Type"] == "video/mp4"
+    assert played == MP4
+
+
+def test_a_card_lists_at_most_the_cap(bridges, projects):
+    folder = projects("litwick-lamp")
+    for index in range(bridge.MAX_DEMOS_LISTED + 3):
+        write_demo(folder, "demo-%03d-iso.mp4" % index)
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert len(card["demos"]) == bridge.MAX_DEMOS_LISTED
+    assert card["demo_count"] == bridge.MAX_DEMOS_LISTED
+
+
+def test_a_project_with_no_demos_says_zero_rather_than_nothing(bridges, projects):
+    projects("cup")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    card = body["projects"][0]
+    assert card["demos"] == [] and card["demo_count"] == 0
+
+
+def test_rendering_a_demo_moves_the_cards_clock(bridges, projects):
+    """So the project somebody just filmed sorts to the front of the shelf."""
+    folder = projects("litwick-lamp")
+    old = time.time() - 4000
+    for name in ("part.py", "spec.json"):
+        os.utime(str(folder / name), (old, old))
+    os.utime(str(folder), (old, old))
+    write_demo(folder, "demo-001-iso.mp4")
+    client = bridges()
+    _status, body = client.request("/library", timeout=40)
+    assert body["projects"][0]["mtime"] > old + 1000
+
+
+def test_the_page_plays_a_video_inline_in_chat_and_on_the_card(client):
+    """The DOM half: one <video> builder, used by the thread and by the shelf."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "function demoVideo(" in script
+    # Muted and looping on purpose: the clip is ~2 s and silent by construction.
+    assert "video.loop = true" in script
+    assert "video.muted = true" in script
+    assert "video.controls = true" in script
+    # Both surfaces reach for it.
+    assert 'file.kind === "video"' in script
+    assert "project.demos" in script and "lib-demos" in script
+    css = fetch_text(client, "/webui/app.css")
+    assert ".gallery video.demo" in css and ".lib-demos" in css
