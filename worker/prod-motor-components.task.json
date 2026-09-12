@@ -1,0 +1,8 @@
+{
+  "id": "prod-motor-components",
+  "brief_file": "prod-motor-components.brief.md",
+  "cwd": "C:\\forge-models\\worker-sandboxes\\prod-motor-components",
+  "files_scope": ["service/electronics_motors.py"],
+  "acceptance_cmd": "\"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" -m py_compile service/electronics_motors.py && \"C:\\Users\\kenne\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe\" \"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\worker\\verifiers\\check_motor_components.py\" service",
+  "max_attempts": 2
+}
