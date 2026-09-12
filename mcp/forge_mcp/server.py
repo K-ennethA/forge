@@ -4367,12 +4367,131 @@ def floorplan_diff(
 
 
 @app.tool()
+def floorplan_reconcile(
+    project: str,
+    apply: bool = False,
+    collection: str = "Floorplan",
+    floor: bool = True,
+    confirm_deletions: bool = False,
+) -> str:
+    """They moved it, resized it or deleted it BY HAND — read that back.
+
+    The return channel, and the answer to *"I should be able to manually edit
+    and forge should be aware of my changes."* `floorplan_build` already refuses
+    to clobber a hand-edited object, but that protection is one-way: the plan
+    never finds out, so it keeps proposing the old layout and a wall they
+    deleted on purpose comes back on the next build. This measures what they
+    actually did — in millimetres, off each object's own transform and mesh —
+    and folds it into the plan, so the plan stays the model.
+
+    - `project`: whose `design/floorplan.json` is being measured against, and
+      where the absorbed plan is saved back.
+    - `apply`: **false** (the default) measures and reports, changing nothing.
+      **true** writes the measurements into the plan and saves it, then quotes
+      the diff. Nothing is rebuilt either way — the next build finds those ids
+      unchanged, which is the point.
+    - `collection` / `floor`: the same two the level was built with. Pass the
+      same `floor` you built with: with `floor=false` no slab was ever built, and
+      a missing slab is not a deleted room.
+    - `confirm_deletions`: **false** (the default) absorbs a deletion the way it
+      absorbs a move — they deleted the wall because there is no wall there, and
+      a plan that keeps re-proposing it is a plan arguing with them. Pass true to
+      have deletions listed for a human yes instead.
+
+    **What cannot be absorbed is said, not approximated.** A tilted or sheared
+    object, a sculpted placeholder, one lifted off the floor: no field of
+    `floorplan.json` can hold any of those, so each comes back under "cannot
+    absorb" with the reason. A sculpted object is a PROMOTION — mark it
+    `forge_fp_keep` and the plan keeps its slot's footprint. An `FP:` box Forge
+    never built is reported as a candidate and never added on its own: a new
+    fixture needs an id and a label from a person.
+
+    Reads the scene and never writes to it (the add-on command is read-only).
+    Needs Blender running with the Forge add-on server started.
+    """
+    slug, path, saved = util.read_floorplan(project)
+    resolved = floorplan.resolve(saved)
+    name = (collection or "").strip() or "Floorplan"
+    result = blender_client.send_command(
+        "reconcile_floorplan",
+        floorplan.reconcile_params(resolved, name, floor),
+    )
+
+    if not apply:
+        return floorplan.fmt_reconcile_report(result, source=str(path))
+
+    absorbed = floorplan.absorb(saved, result,
+                                confirm_deletions=bool(confirm_deletions))
+    saved_path: Optional[Path] = None
+    overwritten = False
+    quote: Optional[str] = None
+    if absorbed.get("applied"):
+        saved_path, overwritten = util.write_floorplan(slug, absorbed["plan"])
+        quote = fmt_floorplan_diff(
+            floorplan.diff(saved, absorbed["plan"]),
+            old_source="the plan as it was",
+            new_source="the plan with your scene edits in it",
+        )
+    return floorplan.fmt_reconcile_report(
+        result, source=str(path), absorbed=absorbed, saved=saved_path,
+        overwritten=overwritten, diff_quote=quote,
+    )
+
+
+def _sync_scene_first(
+    plan: Optional[Dict[str, Any]],
+    slug: Optional[str],
+    project: Optional[str],
+    collection: str,
+    floor: bool,
+) -> tuple[Optional[Dict[str, Any]], List[str]]:
+    """Absorb the scene's hand edits BEFORE a build. `(plan|None, lines)`.
+
+    The ordering is the whole guarantee: measure what is actually in the
+    collection, fold it into the plan, and only then build. A build that edits
+    first and measures never cannot help resurrecting the wall the artist
+    deleted — which is exactly what happened to `FP:wall-living-kitchen`, twice.
+
+    A plan the CALLER is editing on this same turn wins over the scene for the
+    ids it touches: that edit is the later intent, and absorbing both would be
+    two answers to one question. Everything else in the scene is absorbed.
+
+    Anything that stops the measurement — an add-on too old to know the command,
+    a collection with nothing in it, a project with no saved plan — is a line in
+    the report and never a refusal. The build is what the artist asked for.
+    """
+    if slug is None:
+        return None, []
+    try:
+        _slug, path, saved = util.read_floorplan(project)
+        resolved = floorplan.resolve(saved)
+        result = blender_client.send_command(
+            "reconcile_floorplan",
+            floorplan.reconcile_params(resolved, collection, floor),
+        )
+        protect = floorplan.touched_ids(saved, plan) if plan is not None else []
+        target = plan if plan is not None else saved
+        absorbed = floorplan.absorb(target, result, skip_ids=protect)
+    except ForgeError as exc:
+        return None, [
+            f"Could not read your scene edits back first ({exc}). Building the "
+            f"plan as it stands — if you have moved or deleted anything in the "
+            f"viewport, say so and I will run floorplan_reconcile."
+        ]
+    if not absorbed.get("applied"):
+        return None, []
+    saved_path, _overwritten = util.write_floorplan(slug, absorbed["plan"])
+    return absorbed["plan"], floorplan.fmt_sync_lines(result, absorbed, saved_path)
+
+
+@app.tool()
 def floorplan_build(
     plan: Optional[Dict[str, Any]] = None,
     project: Optional[str] = None,
     collection: str = "Floorplan",
     mode: Literal["update", "rebuild"] = "update",
     floor: bool = True,
+    sync: bool = True,
 ) -> str:
     """Materialise a floor plan as a greybox level in Blender — incrementally.
 
@@ -4394,6 +4513,11 @@ def floorplan_build(
     - `floor`: whether rooms get slabs, for the build as a whole. A single
       room opts out on its own with `"floor": false` on its plan entry — the
       add-on honours it and reports the slab it skipped.
+    - `sync`: **true** (the default, with a `project`) reads the artist's hand
+      edits out of the collection and folds them into the plan BEFORE building —
+      so a build cannot resurrect a wall they deleted or snap back something
+      they moved. The report leads with what was absorbed. Turn it off only to
+      build a plan deliberately against a scene you know is stale.
 
     **Nothing hand-edited is clobbered.** An `FP:` object whose mesh no longer
     matches what its entry would build — a different vertex count, dimensions
@@ -4405,13 +4529,23 @@ def floorplan_build(
     Needs Blender running with the Forge add-on server started. The plan is
     validated and resolved HERE first, so a refusal costs no round trip.
     """
-    _slug, source_plan, _source = _plan_source(plan, project, tool="floorplan_build")
+    slug, source_plan, _source = _plan_source(plan, project, tool="floorplan_build")
+
+    name = (collection or "").strip() or "Floorplan"
+
+    # Absorb the scene FIRST, then build. Not a nicety: with the edit applied
+    # first, a build has no way of knowing that the wall it is about to create
+    # was deleted on purpose.
+    lead: List[str] = []
+    if sync:
+        merged, lead = _sync_scene_first(plan, slug, project, name, bool(floor))
+        if merged is not None:
+            source_plan = merged
 
     # Resolved on this side: what crosses the socket is a plan with every number
     # explicit, so the add-on cannot silently substitute a default of its own.
     resolved = floorplan.resolve(source_plan)
 
-    name = (collection or "").strip() or "Floorplan"
     result = blender_client.send_command("build_floorplan", {
         "plan": resolved,
         "collection": name,
@@ -4425,7 +4559,7 @@ def floorplan_build(
         + (f", {fmt_number(result.get('seconds'), 2)} s"
            if result.get("seconds") is not None else "")
     )
-    return fmt_floorplan_build_report(result, summary)
+    return "\n".join(lead + [fmt_floorplan_build_report(result, summary)])
 
 
 # ---------------------------------------------------------------------------

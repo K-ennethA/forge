@@ -419,8 +419,258 @@ def fmt_extract_report(result: Mapping[str, Any], *, image: Any,
     return "\n".join(lines)
 
 
+
+# ---------------------------------------------------------------------------
+# Reconcile — the artist's hand edits, measured and folded back in
+# ---------------------------------------------------------------------------
+#
+# "I should be able to manually edit and forge should be aware of my changes",
+# and then, after a wall they had deliberately deleted came back twice: "the
+# plan should auto update based off my changes, i deleted the wall because there
+# isnt a wall there, i'd like to play with things to determine optimal layout,
+# having it undone doesnt make sense."
+#
+# The add-on measures, `service.absorb_reconcile` decides, and this half turns
+# the two into sentences. Nothing here has an opinion of its own.
+
+
+def reconcile_params(resolved: Mapping[str, Any], collection: Any,
+                     floor: Any = True) -> Dict[str, Any]:
+    """What crosses the socket for ``reconcile_floorplan``.
+
+    The RESOLVED plan, like ``build_floorplan``'s — the add-on compares each
+    object's fingerprint against the entry it was built from, and a plan with a
+    default left open would fingerprint differently on this side than it did on
+    that one, which would make every wall in the level read as stale.
+    """
+    name = str(collection or "").strip() or "Floorplan"
+    return {"plan": dict(resolved), "collection": name, "floor": bool(floor)}
+
+
+def absorb(plan: Any, report: Any, *, confirm_deletions: bool = False,
+           skip_ids: Any = ()) -> Dict[str, Any]:
+    """``service.absorb_reconcile`` — the measurement, applied to the plan."""
+    plan_module, _appliance = modules()
+    return _translate(plan_module.absorb_reconcile, plan, report,
+                      confirm_deletions=confirm_deletions,
+                      skip_ids=tuple(skip_ids or ()))
+
+
+def touched_ids(old: Any, new: Any) -> List[str]:
+    """Every id the caller's own plan edit touches, added/changed/removed alike.
+
+    These are the ids the scene must NOT be allowed to overrule when a build
+    absorbs first and edits second: the plan edit is the later intent, and
+    absorbing both would be two answers to one question.
+    """
+    summary = diff(old, new)
+    out: set = set()
+    for key in ("added", "changed", "removed"):
+        out.update(str(ident) for ident in (summary.get(key) or []))
+    return sorted(out)
+
+
+#: Items named in full in a reconcile report before it starts counting. A report
+#: the model cannot quote item by item is a report that becomes "some walls".
+RECONCILE_ITEMS_LISTED = 12
+
+
+def _g(value: Any) -> str:
+    """One number, the way a millimetre is written in a sentence."""
+    try:
+        return "%g" % (float(value) + 0.0)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _point(value: Any) -> str:
+    if isinstance(value, Mapping):
+        value = value.get("size") or []
+    if isinstance(value, (list, tuple)):
+        return "(" + ", ".join(_g(item) for item in value) + ")"
+    return _g(value)
+
+
+def _field_line(field: str, was: Any, now: Any) -> str:
+    return f"{field} {_point(was)} -> {_point(now)}"
+
+
+def _measurement_line(record: Mapping[str, Any], verb: str) -> str:
+    kind = str(record.get("kind") or "entry")
+    noun = "fixture" if kind == "label" else kind
+    measured = record.get("measured") or {}
+    was = record.get("was") or {}
+    changes = [
+        _field_line(field, was.get(field), measured.get(field))
+        for field in (record.get("changed") or [])
+    ]
+    distance = record.get("moved_mm")
+    moved = f" by {_g(distance)} mm" if distance else ""
+    mesh = record.get("mesh")
+    note = " (its mesh was edited too, and is still a box)" \
+        if mesh == "edited-but-still-a-box" else ""
+    return (f"  {verb} {record.get('id')} ({noun}){moved} — "
+            + "; ".join(changes) + note)
+
+
+def fmt_reconcile_report(
+    result: Mapping[str, Any],
+    *,
+    source: str,
+    absorbed: Optional[Mapping[str, Any]] = None,
+    saved: Any = None,
+    overwritten: bool = False,
+    diff_quote: Optional[str] = None,
+) -> str:
+    """What the artist changed with their hands, in millimetres and in words.
+
+    Written to be QUOTED. The order is the order the next turn happens in: what
+    was measured, what was absorbed, what needs a word from them, and then the
+    law — the plan learns from the scene, and the scene is never corrected back.
+    """
+    collection = result.get("collection") or "Floorplan"
+    clean = [str(i) for i in (result.get("clean") or [])]
+    stale = [str(i) for i in (result.get("stale") or [])]
+    moved = [r for r in (result.get("moved") or []) if isinstance(r, Mapping)]
+    resized = [r for r in (result.get("resized") or []) if isinstance(r, Mapping)]
+    deleted = [r for r in (result.get("deleted_in_scene") or [])
+               if isinstance(r, Mapping)]
+    candidates = [r for r in (result.get("candidates") or []) if isinstance(r, Mapping)]
+    blocked = [r for r in (result.get("unabsorbable") or []) if isinstance(r, Mapping)]
+
+    seconds = result.get("seconds")
+    lines = [
+        f"Measured '{collection}' against {source} — "
+        f"{result.get('objects', 0)} FP: object(s), "
+        f"{result.get('plan_entries', 0)} plan entr(ies)"
+        + (f", {_g(seconds)} s." if seconds is not None else "."),
+        f"  clean {len(clean)}   moved {len(moved)}   resized {len(resized)}   "
+        f"deleted in the scene {len(deleted)}   stale {len(stale)}   "
+        f"new boxes {len(candidates)}   cannot absorb {len(blocked)}",
+    ]
+
+    for record in moved[:RECONCILE_ITEMS_LISTED]:
+        lines.append(_measurement_line(record, "MOVED"))
+    for record in resized[:RECONCILE_ITEMS_LISTED]:
+        lines.append(_measurement_line(record, "RESIZED"))
+    for record in deleted[:RECONCILE_ITEMS_LISTED]:
+        kind = str(record.get("kind") or "entry")
+        lines.append(
+            f"  DELETED IN THE SCENE — {record.get('id')} ({kind}): the plan has "
+            f"it and '{collection}' does not."
+        )
+    for record in candidates[:RECONCILE_ITEMS_LISTED]:
+        size = (record.get("bbox_mm") or {}).get("size") or []
+        suggested = (record.get("suggested") or {}).get("footprint_mm") or []
+        lines.append(
+            f"  NEW BOX — {record.get('object')}: "
+            + (f"{_g(size[0])} x {_g(size[1])} x {_g(size[2])} mm " if len(size) == 3 else "")
+            + (f"at ({_g(suggested[0])}, {_g(suggested[1])}) " if len(suggested) == 4 else "")
+            + "— Forge did not build it, so it has no entry. Give it an id and a "
+              "label and I will add it; nothing was added on its own."
+        )
+    for record in blocked[:RECONCILE_ITEMS_LISTED]:
+        lines.append(f"  CANNOT ABSORB — {record.get('id')}: {record.get('why')}")
+    for key, items in (("moved", moved), ("resized", resized),
+                       ("deleted", deleted), ("new boxes", candidates),
+                       ("unabsorbable", blocked)):
+        if len(items) > RECONCILE_ITEMS_LISTED:
+            lines.append(f"    ... and {len(items) - RECONCILE_ITEMS_LISTED} "
+                         f"more {key}")
+
+    if absorbed is None:
+        pending = len(moved) + len(resized) + len(deleted)
+        if pending:
+            lines.append(
+                f"  NOTHING WAS CHANGED. {pending} measurement(s) are ready to "
+                f"go into the plan — run this again with apply=true, or say what "
+                f"to leave out."
+            )
+        else:
+            lines.append("  nothing to absorb: the plan already says what the "
+                         "scene shows.")
+    else:
+        applied = [r for r in (absorbed.get("applied") or []) if isinstance(r, Mapping)]
+        skipped = [r for r in (absorbed.get("skipped") or []) if isinstance(r, Mapping)]
+        gone = [str(i) for i in (absorbed.get("deleted") or [])]
+        lines.append(f"  ABSORBED INTO THE PLAN ({len(applied)}):")
+        for record in applied[:RECONCILE_ITEMS_LISTED]:
+            lines.append(f"    {record.get('what')}")
+        if len(applied) > RECONCILE_ITEMS_LISTED:
+            lines.append(f"    ... and {len(applied) - RECONCILE_ITEMS_LISTED} more")
+        if gone:
+            lines.append(
+                f"    deletions absorbed, not queried: {', '.join(gone)}. You "
+                f"deleted them because they are not there; the plan agrees now."
+            )
+        for record in skipped[:RECONCILE_ITEMS_LISTED]:
+            lines.append(f"    not absorbed — {record.get('why')}")
+        if len(skipped) > RECONCILE_ITEMS_LISTED:
+            lines.append(f"    ... and {len(skipped) - RECONCILE_ITEMS_LISTED} "
+                         f"more left alone")
+        if saved is not None:
+            lines.append(f"  {'updated' if overwritten else 'saved'} the plan — "
+                         f"{saved}")
+        if diff_quote:
+            lines.append(diff_quote)
+        lines.append(
+            "  NOTHING WAS REBUILT and nothing needs to be: the plan now says "
+            "what the scene already shows, so the next build finds those ids "
+            "unchanged and leaves them alone."
+        )
+
+    for sentence in (result.get("notes") or []):
+        lines.append(f"  note: {sentence}")
+    for sentence in (result.get("warnings") or []):
+        lines.append(f"  WARNING: {sentence}")
+    lines.append(f"  {RECONCILE_LAW}")
+    lines.append("  " + str(result.get("honesty") or ""))
+    return "\n".join(lines)
+
+
+#: The law this whole round exists to enforce, carried in the report rather than
+#: left to the prompt — `EXTRACT_LAW`'s arrangement, for the same reason: the
+#: failure that produced this tool was Forge putting a deleted wall back.
+RECONCILE_LAW = (
+    "THE PLAN LEARNS FROM THE SCENE, NEVER THE OTHER WAY ROUND. Never rebuild "
+    "to 'fix' something they moved and never re-add something they deleted — "
+    "absorb it, say what you absorbed, and let them keep playing with the "
+    "layout."
+)
+
+
+def fmt_sync_lines(result: Mapping[str, Any],
+                   absorbed: Mapping[str, Any],
+                   saved: Any = None) -> List[str]:
+    """The two or three lines a BUILD leads with when it absorbed first.
+
+    Short on purpose: the build report is the thing being read, and this is the
+    sentence that has to come before it — what the artist did with their hands,
+    which the build is about to treat as the plan's own.
+    """
+    applied = [r for r in (absorbed.get("applied") or []) if isinstance(r, Mapping)]
+    if not applied:
+        return []
+    gone = [str(i) for i in (absorbed.get("deleted") or [])]
+    lines = [
+        f"Absorbed your scene edits into the plan first ({len(applied)}), "
+        f"before building — nothing you moved or deleted was put back:"
+    ]
+    for record in applied[:RECONCILE_ITEMS_LISTED]:
+        lines.append(f"  {record.get('what')}")
+    if len(applied) > RECONCILE_ITEMS_LISTED:
+        lines.append(f"  ... and {len(applied) - RECONCILE_ITEMS_LISTED} more")
+    if gone:
+        lines.append(f"  the plan no longer has {', '.join(gone)} in it at all.")
+    if saved is not None:
+        lines.append(f"  the plan on disk is up to date — {saved}")
+    return lines
+
+
 __all__ = [
     "EXTRACT_LAW",
+    "RECONCILE_LAW",
+    "absorb",
     "appliance_matches",
     "counts",
     "defaults",
@@ -429,9 +679,13 @@ __all__ = [
     "extract",
     "extractor",
     "fmt_extract_report",
+    "fmt_reconcile_report",
+    "fmt_sync_lines",
     "from_defaults",
     "modules",
     "plan_version",
+    "reconcile_params",
     "resolve",
+    "touched_ids",
     "validate",
 ]

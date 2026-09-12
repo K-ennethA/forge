@@ -1966,7 +1966,460 @@ def mask_iou(first: Any, second: Any) -> float:
     return intersection / union
 
 
+
+# ==========================================================================
+# absorb_reconcile -- the scene's hand edits, folded back into the plan
+# ==========================================================================
+#
+# The artist's ask, verbatim: *"I should be able to manually edit and forge
+# should be aware of my changes"*, and then, after a wall they had deliberately
+# deleted came back twice: *"the plan should auto update based off my changes, i
+# deleted the wall because there isnt a wall there, i'd like to play with things
+# to determine optimal layout, having it undone doesnt make sense."*
+#
+# So: the add-on MEASURES (``reconcile_floorplan`` -- millimetres, no opinions)
+# and this function DECIDES, deterministically, with no model anywhere near it.
+# Every number that lands in the plan came off an object's own transform; every
+# entry that cannot take one is skipped with a sentence saying why.
+#
+# Three rulings worth arguing for, because they are the ones a reasonable person
+# would get wrong:
+#
+# * **A deletion is absorbed, not asked about.** Deleting a wall because there
+#   is no wall there is a layout decision, and a layout decision that the plan
+#   keeps re-proposing is a bug. The report says what it absorbed rather than
+#   asking permission to notice; ``confirm_deletions=True`` is there for a
+#   cautious caller and is deliberately not the default.
+# * **A field is written only when it actually changed.** Copying a measured
+#   thickness back onto a wall that never moved would turn a live default into
+#   an explicit number, and then raising ``defaults.wall_mm`` next week would
+#   move nothing -- the exact failure the ``defaults`` block exists to prevent.
+# * **An opening is re-anchored proportionally, and an opening that no longer
+#   fits stops its whole wall.** Absorbing a shortened wall and leaving its door
+#   hanging off the end would produce a plan that refuses to validate, and the
+#   artist would get the refusal for an edit they made with a mouse.
+
+#: Two numbers are "the same" if they are this close -- the add-on's
+#: ``KEEP_TOL_MM`` / ``MOVE_TOL_MM``, and it has to be, because a difference the
+#: add-on calls float noise and this module calls an edit would write an
+#: explicit value onto an entry that never moved. Pinned by test.
+ABSORB_TOL_MM = 0.5
+
+#: Same again for angles: below this a rotation is the float noise of a
+#: euler -> matrix -> atan2 round trip.
+ABSORB_TOL_DEG = 0.05
+
+#: Which report lists carry a measurement this module knows how to apply.
+_MEASURED_LISTS: Tuple[str, ...] = ("moved", "resized")
+
+
+def _report_mapping(report: Any) -> Mapping[str, Any]:
+    if not isinstance(report, Mapping):
+        raise FloorPlanError(
+            f"the reconcile report must be the object reconcile_floorplan "
+            f"returned, got {type(report).__name__}. It is the measurement this "
+            f"function applies; without it there is nothing to absorb."
+        )
+    return report
+
+
+def _report_records(report: Mapping[str, Any], key: str) -> List[Mapping[str, Any]]:
+    value = report.get(key) or []
+    if not isinstance(value, (list, tuple)):
+        raise FloorPlanError(
+            f"the reconcile report's {key!r} must be a list, got "
+            f"{type(value).__name__}."
+        )
+    return [item for item in value if isinstance(item, Mapping)]
+
+
+def _deleted_ids(report: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    """``deleted_in_scene``, whether it came as records or as bare ids."""
+    out: List[Dict[str, Any]] = []
+    for item in (report.get("deleted_in_scene") or []):
+        if isinstance(item, Mapping) and item.get("id"):
+            out.append({"id": str(item["id"]), "kind": item.get("kind")})
+        elif isinstance(item, str):
+            out.append({"id": item, "kind": None})
+    return out
+
+
+def _plan_index(plan: Mapping[str, Any]) -> Dict[str, Tuple[str, Dict[str, Any]]]:
+    """``{id: (kind, entry)}`` over a plan's rooms, walls and labels."""
+    index: Dict[str, Tuple[str, Dict[str, Any]]] = {}
+    for room in plan.get("rooms") or []:
+        index[str(room["id"])] = ("room", room)
+    for wall in plan.get("walls") or []:
+        index[str(wall["id"])] = ("wall", wall)
+    for label in plan.get("labels") or []:
+        index[str(label["id"])] = ("label", label)
+    return index
+
+
+def _changed(left: Any, right: Any, tolerance: float = ABSORB_TOL_MM) -> bool:
+    if isinstance(left, (list, tuple)):
+        return any(abs(float(a) - float(b)) > tolerance
+                   for a, b in zip(left, right))
+    return abs(float(left) - float(right)) > tolerance
+
+
+def _angle_changed(left: Any, right: Any) -> bool:
+    gap = (float(left) - float(right)) % 360.0
+    return min(gap, 360.0 - gap) > ABSORB_TOL_DEG
+
+
+def _mm(value: Any) -> float:
+    return round(float(value) + 0.0, 3) + 0.0
+
+
+def _absorb_wall(entry: Dict[str, Any], resolved: Mapping[str, Any],
+                 measured: Mapping[str, Any]) -> Tuple[List[str], List[str], Optional[str]]:
+    """Apply one wall measurement. ``(fields written, sentences, refusal)``.
+
+    The refusal is the third return rather than an exception because one wall
+    that cannot be absorbed must not cost the artist the other eleven that can.
+    """
+    fields: List[str] = []
+    said: List[str] = []
+
+    old_from = [float(v) for v in resolved["from_mm"]]
+    old_to = [float(v) for v in resolved["to_mm"]]
+    new_from = [_mm(v) for v in measured["from_mm"]]
+    new_to = [_mm(v) for v in measured["to_mm"]]
+    old_length = math.hypot(old_to[0] - old_from[0], old_to[1] - old_from[1])
+    new_length = math.hypot(new_to[0] - new_from[0], new_to[1] - new_from[1])
+
+    if new_length < MIN_WALL_LENGTH_MM:
+        return [], [], (
+            f"the object for wall {entry['id']!r} measures {new_length:.3g} mm "
+            f"end to end, which is not a wall. Nothing was applied -- delete the "
+            f"wall in the plan if that is what you meant."
+        )
+
+    # Openings first, so a door that no longer fits stops the wall before the
+    # centreline is written and leaves the entry exactly as it was.
+    reanchored: List[Tuple[Dict[str, Any], float, float]] = []
+    if _changed(old_length, new_length):
+        ratio = new_length / old_length if old_length > 0.0 else 1.0
+        resolved_openings = {str(o["id"]): o for o in (resolved.get("openings") or [])}
+        for opening in entry.get("openings") or []:
+            source = resolved_openings.get(str(opening["id"]))
+            if source is None:  # pragma: no cover -- the two come from one plan
+                continue
+            width = float(source["width_mm"])
+            at = float(source["at_mm"]) * ratio
+            if at - width / 2.0 < -_POINT_EPS_MM or at + width / 2.0 > new_length + _POINT_EPS_MM:
+                return [], [], (
+                    f"wall {entry['id']!r} measures {new_length:.0f} mm now "
+                    f"(it was {old_length:.0f} mm), and opening "
+                    f"{opening['id']!r} -- {width:.0f} mm wide -- no longer fits "
+                    f"in it even re-anchored proportionally. Nothing was applied "
+                    f"to this wall: move or delete that opening in the plan, "
+                    f"then reconcile again."
+                )
+            reanchored.append((opening, at, width))
+
+    for opening, at, width in reanchored:
+        if "at_mm" in opening:
+            if _changed(opening["at_mm"], at):
+                opening["at_mm"] = _mm(at)
+                fields.append(f"openings[{opening['id']}].at_mm")
+        else:
+            start = at - width / 2.0
+            if _changed(opening.get("start_mm", 0.0), start):
+                opening["start_mm"] = _mm(start)
+                fields.append(f"openings[{opening['id']}].start_mm")
+
+    if _changed(old_from, new_from) or _changed(old_to, new_to):
+        entry["from_mm"] = list(new_from)
+        entry["to_mm"] = list(new_to)
+        fields.extend(["from_mm", "to_mm"])
+        said.append(
+            f"its centreline now runs ({new_from[0]:g}, {new_from[1]:g}) to "
+            f"({new_to[0]:g}, {new_to[1]:g})"
+        )
+    if _changed(resolved["thickness_mm"], measured["thickness_mm"]):
+        entry["thickness_mm"] = _mm(measured["thickness_mm"])
+        fields.append("thickness_mm")
+        said.append(f"it is {entry['thickness_mm']:g} mm thick now "
+                    f"(was {float(resolved['thickness_mm']):g})")
+    if _changed(resolved["height_mm"], measured["height_mm"]):
+        entry["height_mm"] = _mm(measured["height_mm"])
+        fields.append("height_mm")
+        said.append(f"it stands {entry['height_mm']:g} mm high now "
+                    f"(was {float(resolved['height_mm']):g})")
+    if reanchored and any(field.startswith("openings[") for field in fields):
+        said.append(
+            f"its {sum(1 for f in fields if f.startswith('openings['))} "
+            f"opening(s) were re-anchored proportionally along the new length"
+        )
+    return fields, said, None
+
+
+def _absorb_label(entry: Dict[str, Any], resolved: Mapping[str, Any],
+                  measured: Mapping[str, Any]) -> Tuple[List[str], List[str], Optional[str]]:
+    """Apply one fixture measurement -- footprint, spin, height."""
+    fields: List[str] = []
+    said: List[str] = []
+
+    old = [float(v) for v in resolved["footprint_mm"]]
+    anchor = str(resolved.get("anchor") or DEFAULTS["label_anchor"])
+    old_size = [old[2], old[3]]
+    old_centre = ([old[0] + old[2] / 2.0, old[1] + old[3] / 2.0]
+                  if anchor == "corner" else [old[0], old[1]])
+
+    new_centre = [_mm(v) for v in measured["centre_mm"]]
+    new_size = [_mm(v) for v in measured["size_mm"]]
+    if min(new_size) <= 0.0:
+        return [], [], (
+            f"the object for fixture {entry['id']!r} measures "
+            f"{new_size[0]:g} x {new_size[1]:g} mm on the floor, which is not a "
+            f"footprint. Nothing was applied."
+        )
+
+    if _changed(old_centre, new_centre) or _changed(old_size, new_size):
+        if anchor == "corner":
+            spot = [new_centre[0] - new_size[0] / 2.0,
+                    new_centre[1] - new_size[1] / 2.0]
+        else:
+            spot = new_centre
+        entry["footprint_mm"] = [_mm(spot[0]), _mm(spot[1]),
+                                 _mm(new_size[0]), _mm(new_size[1])]
+        fields.append("footprint_mm")
+        if _changed(old_centre, new_centre):
+            said.append(f"it stands at ({new_centre[0]:g}, {new_centre[1]:g}) now")
+        if _changed(old_size, new_size):
+            said.append(f"its footprint is {new_size[0]:g} x {new_size[1]:g} mm "
+                        f"(was {old_size[0]:g} x {old_size[1]:g})")
+
+    if _angle_changed(measured["rotation_deg"], resolved.get("rotation_deg") or 0.0):
+        entry["rotation_deg"] = round(float(measured["rotation_deg"]), 6) + 0.0
+        fields.append("rotation_deg")
+        said.append(f"it is turned {entry['rotation_deg']:g} degrees")
+
+    if _changed(resolved["height_mm"], measured["height_mm"]):
+        entry["height_mm"] = _mm(measured["height_mm"])
+        fields.append("height_mm")
+        said.append(f"it is {entry['height_mm']:g} mm tall now "
+                    f"(was {float(resolved['height_mm']):g}) -- that height is "
+                    f"the artist's now, not the appliance table's")
+    return fields, said, None
+
+
+def _absorb_room(entry: Dict[str, Any], resolved: Mapping[str, Any],
+                 measured: Mapping[str, Any]) -> Tuple[List[str], List[str], Optional[str]]:
+    """Apply one slab measurement -- a TRANSLATION, and nothing else.
+
+    A room is a polygon and the measurement is a bounding box, so the only edit
+    a box can describe without inventing corners is "all of it went that way".
+    A resized or rotated slab never reaches here: the add-on reports it as
+    unabsorbable, naming the polygon as the thing to redraw.
+    """
+    points = [[float(p[0]), float(p[1])] for p in resolved["polygon_mm"]]
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    old_centre = [(min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0]
+    new_centre = [_mm(v) for v in measured["centre_mm"]]
+    offset = [new_centre[0] - old_centre[0], new_centre[1] - old_centre[1]]
+    if not _changed(old_centre, new_centre):
+        return [], [], None
+
+    size = (measured.get("outline_bbox_mm") or {}).get("size")
+    if size is not None:
+        expected = [max(xs) - min(xs), max(ys) - min(ys)]
+        if _changed([float(v) for v in size], expected):
+            return [], [], (
+                f"room {entry['id']!r}'s slab measures "
+                f"{float(size[0]):g} x {float(size[1]):g} mm and its polygon is "
+                f"{expected[0]:g} x {expected[1]:g} mm, so it was resized as well "
+                f"as moved. A bounding box cannot say which corners moved -- "
+                f"redraw polygon_mm."
+            )
+
+    entry["polygon_mm"] = [[_mm(p[0] + offset[0]), _mm(p[1] + offset[1])]
+                           for p in entry["polygon_mm"]]
+    return (["polygon_mm"],
+            [f"the whole slab moved {math.hypot(*offset):.0f} mm, so every "
+             f"corner of its polygon moved with it"],
+            None)
+
+
+_ABSORBERS = {"wall": _absorb_wall, "label": _absorb_label, "room": _absorb_room}
+
+
+def absorb_reconcile(plan: Any, report: Any, *, confirm_deletions: bool = False,
+                     skip_ids: Iterable[str] = ()) -> Dict[str, Any]:
+    """Fold a ``reconcile_floorplan`` report back into the plan.
+
+    Returns ``{"plan", "applied", "skipped", "deleted", "notes"}``:
+
+    * ``plan`` -- a NEW normalised plan (the input is never mutated) with every
+      measurement this function could express applied to it;
+    * ``applied`` -- one record per entry changed: ``{"id", "kind", "what",
+      "fields"}``, where ``what`` is the sentence to say out loud;
+    * ``skipped`` -- ``{"id", "why"}`` for everything that was not applied, each
+      ``why`` a sentence: an unabsorbable object (the add-on's own reason, passed
+      through), a candidate box nobody has named, an opening that no longer fits,
+      an id this plan does not have;
+    * ``deleted`` -- the ids removed because their object is gone from the scene.
+
+    **Deletions are absorbed by default.** The artist deleted a wall because
+    there is no wall there; a plan that keeps re-proposing it is a plan arguing
+    with them. Pass ``confirm_deletions=True`` and they are listed under
+    ``skipped`` for a human to say yes to instead.
+
+    *skip_ids* protects ids the CALLER is editing on this same turn -- the
+    ordering ``floorplan_build`` uses is "absorb the scene first, then apply the
+    plan edit on top", and an id in both places belongs to the edit, which is
+    the later intent. Each one is reported as a skip with that sentence, never
+    dropped silently.
+
+    Deterministic end to end: no AI, no randomness, no clock. The same report
+    and the same plan give the same plan back, byte for byte.
+    """
+    record = _report_mapping(report)
+    normalized = validate_plan(plan)
+    resolved = fill_defaults(plan)
+    index = _plan_index(normalized)
+    resolved_index = _plan_index(resolved)
+    protected = {str(ident) for ident in (skip_ids or ())}
+
+    applied: List[Dict[str, Any]] = []
+    skipped: List[Dict[str, Any]] = []
+    notes: List[str] = []
+
+    def skip(ident: str, why: str) -> None:
+        skipped.append({"id": str(ident), "why": why})
+
+    # --- measurements ------------------------------------------------------
+    measurements: List[Mapping[str, Any]] = []
+    for key in _MEASURED_LISTS:
+        measurements.extend(_report_records(record, key))
+
+    for item in sorted(measurements, key=lambda r: str(r.get("id"))):
+        ident = str(item.get("id") or "")
+        measured = item.get("measured")
+        if not ident or not isinstance(measured, Mapping):
+            continue
+        if ident in protected:
+            skip(ident, f"{ident} is edited by the plan change on this call, so "
+                        f"that edit wins over the scene measurement -- absorbing "
+                        f"both would be two answers to one question.")
+            continue
+        if ident not in index:
+            skip(ident, f"the reconcile report measured {ident}, and this plan "
+                        f"has no entry with that id. Nothing was applied.")
+            continue
+        kind, entry = index[ident]
+        if item.get("kind") and str(item["kind"]) != kind:
+            skip(ident, f"the reconcile report calls {ident} a "
+                        f"{item['kind']} and this plan calls it a {kind}. "
+                        f"Nothing was applied.")
+            continue
+        _kind, source = resolved_index[ident]
+        fields, said, refusal = _ABSORBERS[kind](entry, source, measured)
+        if refusal is not None:
+            skip(ident, refusal)
+            continue
+        if not fields:
+            continue
+        distance = item.get("moved_mm")
+        opening = (f"{ident} moved {float(distance):g} mm"
+                   if distance else f"{ident} changed")
+        applied.append({
+            "id": ident, "kind": kind, "fields": fields,
+            "what": opening + (": " + "; ".join(said) if said else ""),
+        })
+
+    # --- deletions ---------------------------------------------------------
+    gone = _deleted_ids(record)
+    surviving = len(index) - len([item for item in gone if item["id"] in index])
+    for item in sorted(gone, key=lambda r: r["id"]):
+        ident = item["id"]
+        if ident in protected:
+            skip(ident, f"{ident} is edited by the plan change on this call, so "
+                        f"its deletion in the scene was not absorbed -- the plan "
+                        f"edit is the later intent.")
+            continue
+        if ident not in index:
+            continue  # already gone from the plan; nothing to do and nothing to say
+        kind, entry = index[ident]
+        if confirm_deletions:
+            skip(ident, f"{ident} ({kind}) is in the plan and its object is not "
+                        f"in the scene. confirm_deletions is on, so nothing was "
+                        f"removed -- say the word and it comes out of the plan.")
+            continue
+        if surviving <= 0:
+            skip(ident, f"absorbing every deletion in this report would leave the "
+                        f"plan with nothing in it at all, which is more likely a "
+                        f"level built into another collection than a demolition. "
+                        f"Nothing was removed -- check the collection name.")
+            continue
+        bucket = {"room": "rooms", "wall": "walls", "label": "labels"}[kind]
+        normalized[bucket] = [other for other in normalized[bucket]
+                              if str(other["id"]) != ident]
+        del index[ident]
+        openings = [str(o["id"]) for o in (entry.get("openings") or [])]
+        applied.append({
+            "id": ident, "kind": kind, "fields": ["(deleted)"],
+            "deleted": True, "openings": openings,
+            "what": (f"absorbed your deletion of {ident} -- the {kind} is out of "
+                     f"the plan"
+                     + (f", and so are its {len(openings)} opening(s) "
+                        f"({', '.join(openings)})" if openings else "")),
+        })
+
+    # --- everything the plan cannot take ------------------------------------
+    for item in _report_records(record, "unabsorbable"):
+        ident = str(item.get("id") or item.get("object") or "")
+        why = str(item.get("why") or "no plan field can describe what was done to it")
+        skip(ident, f"{ident}: {why}")
+    for item in _report_records(record, "candidates"):
+        ident = str(item.get("id") or item.get("object") or "")
+        suggested = item.get("suggested") or {}
+        footprint = suggested.get("footprint_mm")
+        skip(ident, f"{ident} is a box in the collection that Forge did not "
+                    f"build, so it has no entry to absorb into"
+                    + (f" (it measures {footprint} as a footprint_mm)"
+                       if footprint else "")
+                    + ". A new fixture needs an id and a label from a person; "
+                      "nothing was added.")
+
+    deleted_ids = sorted(item["id"] for item in applied if item.get("deleted"))
+    if deleted_ids:
+        notes.append(
+            "Deletions were ABSORBED, not queried: deleting a wall because there "
+            "is no wall there is a layout decision, and a plan that keeps "
+            "re-proposing it is a plan arguing with the artist."
+        )
+    if not applied:
+        notes.append("Nothing was absorbed: the plan already says what the scene "
+                     "shows.")
+
+    # The plan is what gets saved, so it validates before it leaves here. A
+    # measurement that produced a plan nobody can build is a bug in this
+    # function, and it says so rather than writing the file.
+    try:
+        checked = validate_plan(normalized)
+    except FloorPlanError as exc:
+        raise FloorPlanError(
+            f"absorbing the scene's edits produced a plan that will not "
+            f"validate, so nothing was changed: {exc}"
+        ) from exc
+
+    return {
+        "plan": checked,
+        "applied": applied,
+        "skipped": skipped,
+        "deleted": deleted_ids,
+        "notes": notes,
+        "tolerance_mm": ABSORB_TOL_MM,
+    }
+
+
 __all__ = [
+    "ABSORB_TOL_DEG",
+    "ABSORB_TOL_MM",
     "ANCHORS",
     "CUTOUT_OVERSHOOT_MM",
     "DEFAULTS",
@@ -1978,6 +2431,7 @@ __all__ = [
     "PLAN_VERSION",
     "RECTILINEAR_TOLERANCE_DEG",
     "SUPPORTED_VERSIONS",
+    "absorb_reconcile",
     "component_build_specs",
     "diff_plans",
     "fill_defaults",

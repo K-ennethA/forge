@@ -444,10 +444,20 @@ def cmd_get_scene_info(params):
     # "split the wall I have selected", "put it where my cursor is".  Report
     # both so the assistant never has to reach for execute_python to see them.
     cursor = scene.cursor.location
+    # ...and the mode is how they are holding the tool. "Add a loop cut" means
+    # something different in Object mode than in Edit mode, and an assistant that
+    # cannot see which one they are in gives the wrong half of the answer. Read
+    # defensively: bpy.context is thin in some contexts and an unreadable mode is
+    # worth an empty string, never an exception in a report.
+    try:
+        mode = str(bpy.context.mode)
+    except (AttributeError, RuntimeError, TypeError):
+        mode = ""
     return {
         "objects": objects,
         "active": active.name if active is not None else None,
         "selected": selected,
+        "mode": mode,
         "cursor": [float(v) for v in cursor],
         "cursor_mm": [round(float(v) * 1000.0, 3) for v in cursor],
         "scene": scene.name,

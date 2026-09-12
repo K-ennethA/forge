@@ -1262,3 +1262,383 @@ def test_shared_bounds_let_two_plans_be_compared_cell_for_cell():
     after = floorplan.plan_mask(new, cell_mm=50.0, bounds_mm=bounds)
     assert before["shape"] == after["shape"]
     assert floorplan.mask_iou(before, after) < 1.0
+
+
+# ==========================================================================
+# absorb_reconcile -- the scene's hand edits, folded back into the plan
+# ==========================================================================
+#
+# The failure this exists for, in the owner's words: *"i deleted the wall
+# because there isnt a wall there, i'd like to play with things to determine
+# optimal layout, having it undone doesnt make sense."*  `build_floorplan` put
+# FP:wall-living-kitchen back twice.  So the tests below are mostly about what
+# is NOT done: a default is not turned into an explicit number by a move that
+# did not touch it, a wall is not shortened out from under its door, a plan is
+# not emptied because somebody reconciled against the wrong collection, and a
+# deletion is not argued with.
+#
+# The add-on measures and this half decides, so every fixture here is a report
+# shaped exactly as `reconcile_floorplan` returns one -- millimetres, and no
+# opinions in it.
+
+
+def absorb_plan():
+    """One room, two walls (one with a door), one fixture. Every optional
+    number left out, so the defaults are live and can be seen to stay that way."""
+    return {
+        "version": 1, "units": "mm",
+        "rooms": [{"id": "room-k", "label": "kitchen",
+                   "polygon_mm": [[0, 0], [4000, 0], [4000, 3000], [0, 3000]]}],
+        "walls": [
+            {"id": "wall-01", "from_mm": [0, 0], "to_mm": [4000, 0],
+             "openings": [{"id": "door-01", "kind": "door", "at_mm": 2000}]},
+            {"id": "wall-02", "from_mm": [4000, 0], "to_mm": [4000, 3000]},
+        ],
+        "labels": [{"id": "wd-01", "label": "washer/dryer",
+                    "footprint_mm": [600, 400, 700, 700], "height_mm": 900}],
+    }
+
+
+def wall_measurement(**overrides):
+    """`wall-01` measured where the plan puts it, unless told otherwise."""
+    measured = {"from_mm": [0.0, 0.0], "to_mm": [4000.0, 0.0],
+                "thickness_mm": 100.0, "height_mm": 2400.0, "base_z_mm": 0.0}
+    measured.update(overrides)
+    was = {"from_mm": [0.0, 0.0], "to_mm": [4000.0, 0.0],
+           "thickness_mm": 100.0, "height_mm": 2400.0, "base_z_mm": 0.0}
+    return {"id": "wall-01", "kind": "wall", "object": "FP:wall-01",
+            "measured": measured, "was": was, "changed": ["from_mm", "to_mm"],
+            "moved_mm": 0.0, "mesh": "intact", "confidence": "measured"}
+
+
+def fixture_measurement(**overrides):
+    measured = {"centre_mm": [600.0, 400.0], "size_mm": [700.0, 700.0],
+                "height_mm": 900.0, "rotation_deg": 0.0, "base_z_mm": 0.0}
+    measured.update(overrides)
+    return {"id": "wd-01", "kind": "label", "object": "FP:wd-01",
+            "measured": measured, "changed": ["centre_mm"], "moved_mm": 0.0,
+            "mesh": "intact", "confidence": "measured"}
+
+
+def report(**overrides):
+    body = {"collection": "Floorplan", "clean": [], "moved": [], "resized": [],
+            "stale": [], "deleted_in_scene": [], "candidates": [],
+            "unabsorbable": []}
+    body.update(overrides)
+    return body
+
+
+def test_absorb_applies_a_move_to_the_wall_that_moved():
+    """The whole feature in one assertion: they dragged it, the plan says so."""
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    moved["moved_mm"] = 500.0
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert wall["from_mm"] == [0.0, 500.0]
+    assert wall["to_mm"] == [4000.0, 500.0]
+    assert [record["id"] for record in out["applied"]] == ["wall-01"]
+    assert "500" in out["applied"][0]["what"]
+    assert out["applied"][0]["fields"] == ["from_mm", "to_mm"]
+
+
+def test_a_move_leaves_every_other_wall_exactly_as_it_was():
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    before = floorplan.validate_plan(absorb_plan())
+    after = out["plan"]
+    assert after["walls"][1] == before["walls"][1]
+    assert after["rooms"] == before["rooms"]
+    assert after["labels"] == before["labels"]
+
+
+def test_a_move_that_did_not_touch_the_thickness_leaves_the_DEFAULT_live():
+    """The subtle one, and the reason a field is written only when it changed.
+
+    Copying a measured 100 mm thickness onto a wall that never changed would
+    turn a live default into an explicit number, and raising
+    `defaults.wall_mm` next week would then move nothing.
+    """
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert "thickness_mm" not in wall
+    assert "height_mm" not in wall
+
+
+def test_a_resize_writes_the_thickness_and_the_height():
+    resized = wall_measurement(thickness_mm=150.0, height_mm=2700.0)
+    resized["changed"] = ["thickness_mm", "height_mm"]
+    out = floorplan.absorb_reconcile(absorb_plan(), report(resized=[resized]))
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert wall["thickness_mm"] == 150.0
+    assert wall["height_mm"] == 2700.0
+    assert "150" in out["applied"][0]["what"]
+
+
+def test_an_opening_is_re_anchored_proportionally_when_its_wall_changes_length():
+    """A door halfway along a wall is halfway along the new one."""
+    longer = wall_measurement(to_mm=[8000.0, 0.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[longer]))
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert wall["openings"][0]["at_mm"] == 4000.0  # 2000/4000 -> 4000/8000
+    assert any("re-anchored" in record["what"] for record in out["applied"])
+
+
+def test_an_opening_that_no_longer_fits_stops_its_whole_wall_with_a_sentence():
+    """Absorbing the wall and leaving the door hanging off the end would write
+    a plan that refuses to validate -- for an edit made with a mouse."""
+    short = wall_measurement(to_mm=[700.0, 0.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(resized=[short]))
+
+    assert out["applied"] == []
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "wall-01")
+    assert "door-01" in why and "820" in why and "700" in why
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert wall["to_mm"] == [4000.0, 0.0]          # not applied, not half-applied
+    assert wall["openings"][0]["at_mm"] == 2000.0
+
+
+def test_a_deletion_is_ABSORBED_rather_than_queried():
+    """The incident: they deleted the wall because there is no wall there."""
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(deleted_in_scene=[{"id": "wall-02", "kind": "wall"}]),
+    )
+    assert [w["id"] for w in out["plan"]["walls"]] == ["wall-01"]
+    assert out["deleted"] == ["wall-02"]
+    record = next(r for r in out["applied"] if r["id"] == "wall-02")
+    assert "absorbed your deletion" in record["what"]
+    assert any("arguing" in note for note in out["notes"])
+
+
+def test_a_deleted_wall_takes_its_openings_out_with_it():
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(deleted_in_scene=[{"id": "wall-01", "kind": "wall"}]),
+    )
+    assert [w["id"] for w in out["plan"]["walls"]] == ["wall-02"]
+    record = next(r for r in out["applied"] if r["id"] == "wall-01")
+    assert record["openings"] == ["door-01"]
+    assert "door-01" in record["what"]
+    # and the plan still validates with the door gone
+    assert floorplan.diff_plans(absorb_plan(), out["plan"])["removed"] == [
+        "door-01", "wall-01"
+    ]
+
+
+def test_a_deleted_room_drops_its_slab_entry():
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(deleted_in_scene=[{"id": "room-k", "kind": "room"}]),
+    )
+    assert out["plan"]["rooms"] == []
+    assert out["deleted"] == ["room-k"]
+
+
+def test_confirm_deletions_asks_instead_of_absorbing():
+    """The opt-in for a cautious caller. Deliberately not the default."""
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(deleted_in_scene=[{"id": "wall-02", "kind": "wall"}]),
+        confirm_deletions=True,
+    )
+    assert [w["id"] for w in out["plan"]["walls"]] == ["wall-01", "wall-02"]
+    assert out["deleted"] == []
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "wall-02")
+    assert "say the word" in why
+
+
+def test_deletions_that_would_empty_the_plan_are_refused_as_a_wrong_collection():
+    """Reconciling against the collection the level is NOT in must not demolish
+    the plan -- the likeliest cause of 'everything is missing' is a typo."""
+    everything = [{"id": ident, "kind": kind} for ident, kind in
+                  (("room-k", "room"), ("wall-01", "wall"),
+                   ("wall-02", "wall"), ("wd-01", "label"))]
+    out = floorplan.absorb_reconcile(absorb_plan(),
+                                     report(deleted_in_scene=everything))
+    assert out["deleted"] == []
+    assert len(out["skipped"]) == 4
+    assert all("collection" in item["why"] for item in out["skipped"])
+    assert len(out["plan"]["walls"]) == 2
+
+
+def test_a_fixture_absorbs_its_footprint_its_spin_and_its_height():
+    resized = fixture_measurement(centre_mm=[1200.0, 900.0],
+                                  size_mm=[1400.0, 700.0],
+                                  rotation_deg=90.0, height_mm=1000.0)
+    out = floorplan.absorb_reconcile(absorb_plan(), report(resized=[resized]))
+    fixture = out["plan"]["labels"][0]
+    assert fixture["footprint_mm"] == [1200.0, 900.0, 1400.0, 700.0]
+    assert fixture["rotation_deg"] == 90.0
+    assert fixture["height_mm"] == 1000.0
+
+
+def test_a_corner_anchored_fixture_keeps_its_corner_convention():
+    """`footprint_mm`'s [x, y] means what the entry says it means; a measured
+    CENTRE written into a corner-anchored entry would move the box by half of
+    itself."""
+    plan = absorb_plan()
+    plan["labels"][0]["anchor"] = "corner"
+    plan["labels"][0]["footprint_mm"] = [600, 400, 700, 700]
+    moved = fixture_measurement(centre_mm=[2000.0, 2000.0])
+    out = floorplan.absorb_reconcile(plan, report(moved=[moved]))
+    assert out["plan"]["labels"][0]["footprint_mm"] == [1650.0, 1650.0, 700.0, 700.0]
+
+
+def test_a_room_that_was_only_MOVED_shifts_every_corner_of_its_polygon():
+    moved = {"id": "room-k", "kind": "room", "object": "FP:room-k",
+             "moved_mm": 1000.0, "changed": ["centre_mm"],
+             "measured": {"outline_bbox_mm": {"min": [1000.0, 0.0],
+                                              "max": [5000.0, 3000.0],
+                                              "size": [4000.0, 3000.0]},
+                          "centre_mm": [3000.0, 1500.0],
+                          "thickness_mm": 50.0, "rotation_deg": 0.0,
+                          "top_z_mm": 0.0}}
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    assert out["plan"]["rooms"][0]["polygon_mm"] == [
+        [1000.0, 0.0], [5000.0, 0.0], [5000.0, 3000.0], [1000.0, 3000.0]
+    ]
+    assert "every corner" in out["applied"][0]["what"]
+
+
+def test_a_room_that_was_also_resized_is_refused_naming_the_polygon():
+    """A bounding box cannot say which corners moved, so it does not pretend to."""
+    stretched = {"id": "room-k", "kind": "room",
+                 "measured": {"outline_bbox_mm": {"min": [0.0, 0.0],
+                                                  "max": [6000.0, 3000.0],
+                                                  "size": [6000.0, 3000.0]},
+                              "centre_mm": [3000.0, 1500.0],
+                              "thickness_mm": 50.0, "rotation_deg": 0.0,
+                              "top_z_mm": 0.0}}
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[stretched]))
+    assert out["applied"] == []
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "room-k")
+    assert "polygon_mm" in why
+
+
+def test_an_unabsorbable_object_carries_the_add_ons_own_reason_through():
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(unabsorbable=[{"id": "wd-01", "object": "FP:wd-01",
+                              "why": "it has been SCULPTED rather than resized"}]),
+    )
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "wd-01")
+    assert "SCULPTED" in why
+
+
+def test_a_candidate_box_is_never_added_on_its_own():
+    """A new fixture needs an id and a label, and both come from a person."""
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(candidates=[{"id": "sofa", "object": "FP:sofa",
+                            "suggested": {"footprint_mm": [2000, 2000, 1800, 900]}}]),
+    )
+    assert len(out["plan"]["labels"]) == 1
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "sofa")
+    assert "id and a label" in why
+
+
+def test_skip_ids_lets_the_callers_own_plan_edit_win():
+    """`floorplan_build` absorbs the scene first and applies the edit second, so
+    an id in both places belongs to the edit -- and the skip says so."""
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]),
+                                     skip_ids=["wall-01"])
+    wall = next(w for w in out["plan"]["walls"] if w["id"] == "wall-01")
+    assert wall["from_mm"] == [0.0, 0.0]
+    why = next(item["why"] for item in out["skipped"] if item["id"] == "wall-01")
+    assert "wins over the scene" in why
+
+
+def test_skip_ids_protects_a_deletion_too():
+    out = floorplan.absorb_reconcile(
+        absorb_plan(),
+        report(deleted_in_scene=[{"id": "wall-02", "kind": "wall"}]),
+        skip_ids=["wall-02"],
+    )
+    assert [w["id"] for w in out["plan"]["walls"]] == ["wall-01", "wall-02"]
+    assert out["deleted"] == []
+
+
+def test_a_measurement_for_an_id_the_plan_does_not_have_is_a_skip():
+    stray = wall_measurement()
+    stray["id"] = "wall-99"
+    stray["measured"]["from_mm"] = [0.0, 900.0]
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[stray]))
+    assert out["applied"] == []
+    assert "no entry with that id" in out["skipped"][0]["why"]
+
+
+def test_a_report_that_measures_nothing_changes_nothing_and_says_so():
+    out = floorplan.absorb_reconcile(absorb_plan(), report(clean=["wall-01"]))
+    assert out["applied"] == []
+    assert out["plan"] == floorplan.validate_plan(absorb_plan())
+    assert any("already says what the scene shows" in note for note in out["notes"])
+
+
+def test_the_input_plan_is_never_mutated():
+    plan = absorb_plan()
+    before = copy.deepcopy(plan)
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    floorplan.absorb_reconcile(plan, report(
+        moved=[moved], deleted_in_scene=[{"id": "wall-02", "kind": "wall"}]))
+    assert plan == before
+
+
+def test_absorbing_is_deterministic():
+    """No AI anywhere near this, and the test says so in the only way it can."""
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    body = report(moved=[moved], resized=[fixture_measurement(size_mm=[900.0, 700.0])],
+                  deleted_in_scene=[{"id": "wall-02", "kind": "wall"}])
+    first = floorplan.absorb_reconcile(absorb_plan(), body)
+    second = floorplan.absorb_reconcile(absorb_plan(), body)
+    assert first == second
+
+
+def test_the_absorbed_plan_is_a_normalised_plan_that_still_validates():
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    assert floorplan.validate_plan(out["plan"]) == out["plan"]
+    assert floorplan.fill_defaults(out["plan"])["walls"][0]["height_mm"] == 2400.0
+
+
+def test_absorbing_a_move_makes_the_plan_and_the_scene_agree_on_exactly_one_id():
+    """What the diff quote after an absorb has to be able to say."""
+    moved = wall_measurement(from_mm=[0.0, 500.0], to_mm=[4000.0, 500.0])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    summary = floorplan.diff_plans(absorb_plan(), out["plan"])
+    assert summary["changed"] == ["wall-01"]
+    assert summary["added"] == [] and summary["removed"] == []
+
+
+def test_a_report_that_is_not_a_report_is_refused_by_type():
+    with pytest.raises(FloorPlanError) as caught:
+        floorplan.absorb_reconcile(absorb_plan(), ["wall-01"])
+    assert "reconcile_floorplan returned" in str(caught.value)
+
+
+def test_a_broken_plan_is_refused_before_anything_is_absorbed():
+    broken = absorb_plan()
+    broken["walls"][0]["to_mm"] = [0, 0]
+    with pytest.raises(FloorPlanError) as caught:
+        floorplan.absorb_reconcile(broken, report())
+    assert "wall-01" in str(caught.value)
+
+
+def test_the_absorb_tolerance_is_the_add_ons_number():
+    """Half a millimetre, the same number `KEEP_TOL_MM` uses in the add-on.
+
+    Two different tolerances would mean a difference the add-on calls float
+    noise and this module calls an edit -- which would write an explicit value
+    onto an entry that never moved.
+    """
+    assert floorplan.ABSORB_TOL_MM == 0.5
+    assert floorplan.ABSORB_TOL_DEG == 0.05
+
+
+def test_a_sub_tolerance_wobble_is_not_an_edit():
+    moved = wall_measurement(from_mm=[0.0, 0.2], to_mm=[4000.0, 0.2])
+    out = floorplan.absorb_reconcile(absorb_plan(), report(moved=[moved]))
+    assert out["applied"] == []
+    assert out["plan"]["walls"][0]["from_mm"] == [0.0, 0.0]

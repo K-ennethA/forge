@@ -551,9 +551,15 @@ def test_a_broken_plan_never_reaches_blender(blender) -> None:
 
 
 def test_build_reads_the_projects_saved_plan(blender, projects_dir: Path) -> None:
+    """`sync=False` here on purpose: this is about the plan the build READS.
+
+    With a project and the default `sync=True` a build measures the scene first
+    (its own section below), which is a second round trip and a second thing
+    being tested. One claim per test.
+    """
     server.floorplan_validate(plan=plan(), project="upstairs flat")
     fake = blender({"build_floorplan": BUILD_RESULT})
-    server.floorplan_build(project="upstairs flat")
+    server.floorplan_build(project="upstairs flat", sync=False)
     wire = sent(fake, "build_floorplan")["plan"]
     assert {w["id"] for w in wire["walls"]} == {"wall-01", "wall-02", "wall-03"}
 
@@ -897,3 +903,448 @@ def test_extract_is_not_a_blender_call(tmp_path: Path, dead_backends) -> None:
     """Reading a picture touches no scene, so a closed Blender is irrelevant."""
     report = server.floorplan_extract(image_path=drawing(tmp_path), mm_per_px=10.0)
     assert "2 region(s)" in report
+
+
+# ===========================================================================
+# floorplan_reconcile — the artist's hand edits, read back
+# ===========================================================================
+#
+# The incident this group exists for: `build_floorplan` re-created
+# FP:wall-living-kitchen twice after the owner deleted it on purpose (an
+# open-plan choice). *"the plan should auto update based off my changes, i
+# deleted the wall because there isnt a wall there."*  So the two claims worth
+# pinning here are the ordering — a build MEASURES before it edits — and the
+# resurrection itself: the plan that crosses the wire must not contain a wall
+# whose object the artist deleted.
+
+#: `reconcile_floorplan`'s result, shaped as docs/architecture.md documents it:
+#: `moved`/`resized` carry measurements, `deleted_in_scene` carries records, and
+#: `unabsorbable` carries the add-on's own sentence for each one.
+RECONCILE_RESULT = {
+    "collection": "Floorplan",
+    "objects": 6,
+    "plan_entries": 7,
+    "clean": ["room-kitchen", "wall-02", "door-01"],
+    "moved": [
+        {"id": "wall-01", "kind": "wall", "object": "FP:wall-01",
+         "measured": {"from_mm": [0.0, 500.0], "to_mm": [4000.0, 500.0],
+                      "thickness_mm": 100.0, "height_mm": 2400.0,
+                      "base_z_mm": 0.0},
+         "was": {"from_mm": [0.0, 0.0], "to_mm": [4000.0, 0.0],
+                 "thickness_mm": 100.0, "height_mm": 2400.0, "base_z_mm": 0.0},
+         "changed": ["from_mm", "to_mm"], "moved_mm": 500.0,
+         "mesh": "intact", "confidence": "measured"},
+    ],
+    "resized": [
+        {"id": "wd-01", "kind": "label", "object": "FP:wd-01",
+         "measured": {"centre_mm": [600.0, 400.0], "size_mm": [1400.0, 700.0],
+                      "height_mm": 965.0, "rotation_deg": 0.0, "base_z_mm": 0.0},
+         "was": {"centre_mm": [600.0, 400.0], "size_mm": [700.0, 700.0],
+                 "height_mm": 965.0, "rotation_deg": 0.0, "base_z_mm": 0.0},
+         "changed": ["size_mm"], "moved_mm": 0.0,
+         "mesh": "edited-but-still-a-box", "confidence": "measured"},
+    ],
+    "stale": [],
+    "deleted_in_scene": [
+        {"id": "wall-03", "kind": "wall", "object": "FP:wall-03",
+         "was": {"from_mm": [4000.0, 3000.0], "to_mm": [0.0, 3000.0],
+                 "thickness_mm": 100.0, "height_mm": 2400.0, "base_z_mm": 0.0}},
+    ],
+    "candidates": [
+        {"id": "sofa-99", "object": "FP:sofa-99",
+         "bbox_mm": {"min": [0.0, 0.0, 0.0], "max": [1800.0, 900.0, 850.0],
+                     "size": [1800.0, 900.0, 850.0]},
+         "suggested": {"footprint_mm": [900.0, 450.0, 1800.0, 900.0],
+                       "height_mm": 850.0, "rotation_deg": 0.0},
+         "why": "it is named FP: but carries no Forge fingerprint"},
+    ],
+    "unabsorbable": [
+        {"id": "sofa-01", "kind": "label", "object": "FP:sofa-01",
+         "why": "its mesh is no longer a plain box (512 vertices now, 8 when "
+                "Forge built it), so it has been SCULPTED rather than resized"},
+    ],
+    "tolerance_mm": {"move": 0.5, "size": 0.5, "angle_deg": 0.05},
+    "floor": True,
+    "plan_version": 1,
+    "units": "mm",
+    "honesty": "These are measurements of the scene, not decisions about the plan.",
+    "notes": ["1 plan entry has no object in 'Floorplan'."],
+    "warnings": [],
+    "seconds": 0.012,
+}
+
+
+def quiet_reconcile() -> dict[str, Any]:
+    """The same report with nothing to absorb in it."""
+    body = copy.deepcopy(RECONCILE_RESULT)
+    body["moved"] = []
+    body["resized"] = []
+    body["deleted_in_scene"] = []
+    body["candidates"] = []
+    body["unabsorbable"] = []
+    body["clean"] = ["room-kitchen", "wall-01", "wall-02", "wall-03",
+                     "door-01", "gap-01", "wd-01", "sofa-01"]
+    return body
+
+
+def filed(projects_dir: Path) -> None:
+    """The plan on disk, the way the flow always reaches reconcile."""
+    server.floorplan_validate(plan=plan(), project="upstairs flat")
+
+
+# --- what goes on the wire --------------------------------------------------
+
+
+def test_reconcile_sends_the_contract_command_with_the_resolved_plan(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT})
+    server.floorplan_reconcile(project="upstairs flat")
+
+    assert fake.requests[0]["type"] == "reconcile_floorplan"
+    params = sent(fake, "reconcile_floorplan")
+    assert set(params) == {"plan", "collection", "floor"}
+    assert params["collection"] == "Floorplan"
+    assert params["floor"] is True
+    wall = next(w for w in params["plan"]["walls"] if w["id"] == "wall-02")
+    assert wall["thickness_mm"] == 100.0 and wall["height_mm"] == 2400.0
+
+
+def test_reconcile_needs_a_saved_plan_and_says_how_to_make_one(
+    blender, projects_dir: Path
+) -> None:
+    with pytest.raises(ForgeError) as caught:
+        server.floorplan_reconcile(project="upstairs flat")
+    assert "no saved floor plan" in str(caught.value)
+
+
+def test_a_named_collection_and_floor_false_both_cross(
+    blender, projects_dir: Path
+) -> None:
+    """`floor=false` matters more here than anywhere: with no slabs built, every
+    room would otherwise read as deleted."""
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT})
+    server.floorplan_reconcile(project="upstairs flat", collection="Level A",
+                               floor=False)
+    params = sent(fake, "reconcile_floorplan")
+    assert params["collection"] == "Level A"
+    assert params["floor"] is False
+
+
+# --- the report -------------------------------------------------------------
+
+
+def test_the_report_names_what_moved_and_by_how_many_mm(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "MOVED wall-01 (wall) by 500 mm" in report
+    assert "from_mm (0, 0) -> (0, 500)" in report
+
+
+def test_the_report_names_what_was_resized_and_how(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "RESIZED wd-01 (fixture)" in report
+    assert "size_mm (700, 700) -> (1400, 700)" in report
+    assert "its mesh was edited too" in report
+
+
+def test_the_report_names_what_was_deleted_in_the_scene(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "DELETED IN THE SCENE — wall-03 (wall)" in report
+
+
+def test_what_cannot_be_absorbed_carries_the_add_ons_own_reason(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "CANNOT ABSORB — sofa-01" in report
+    assert "SCULPTED" in report
+
+
+def test_a_box_forge_did_not_build_is_a_candidate_and_needs_a_name(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "NEW BOX — FP:sofa-99" in report
+    assert "1800 x 900 x 850 mm" in report
+    assert "id and a label" in report
+
+
+def test_the_report_carries_the_law_and_the_honesty_line(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert floorplan.RECONCILE_LAW in report
+    assert "never re-add something they deleted" in report
+    assert "measurements of the scene" in report
+
+
+def test_without_apply_nothing_is_written_and_the_report_says_so(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    before = saved_plan(projects_dir, "upstairs-flat")
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "NOTHING WAS CHANGED" in report
+    assert "apply=true" in report
+    assert saved_plan(projects_dir, "upstairs-flat") == before
+
+
+def test_a_quiet_scene_says_there_is_nothing_to_absorb(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": quiet_reconcile()})
+    report = server.floorplan_reconcile(project="upstairs flat")
+    assert "nothing to absorb" in report
+
+
+# --- apply ------------------------------------------------------------------
+
+
+def test_apply_writes_the_measurements_into_the_saved_plan(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat", apply=True)
+
+    on_disk = saved_plan(projects_dir, "upstairs-flat")
+    wall = next(w for w in on_disk["walls"] if w["id"] == "wall-01")
+    assert wall["from_mm"] == [0.0, 500.0] and wall["to_mm"] == [4000.0, 500.0]
+    fixture = next(f for f in on_disk["labels"] if f["id"] == "wd-01")
+    assert fixture["footprint_mm"] == [600.0, 400.0, 1400.0, 700.0]
+    assert "ABSORBED INTO THE PLAN" in report
+    assert str(projects_dir) in report
+
+
+def test_apply_absorbs_the_deletion_rather_than_asking_about_it(
+    blender, projects_dir: Path
+) -> None:
+    """The incident, in one test: they deleted it, so the plan drops it."""
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat", apply=True)
+
+    on_disk = saved_plan(projects_dir, "upstairs-flat")
+    assert {w["id"] for w in on_disk["walls"]} == {"wall-01", "wall-02"}
+    assert "absorbed your deletion of wall-03" in report
+    assert "deletions absorbed, not queried" in report
+
+
+def test_confirm_deletions_leaves_the_entry_and_asks(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat", apply=True,
+                                        confirm_deletions=True)
+    on_disk = saved_plan(projects_dir, "upstairs-flat")
+    assert {w["id"] for w in on_disk["walls"]} == {"wall-01", "wall-02", "wall-03"}
+    assert "say the word" in report
+
+
+def test_apply_quotes_the_diff_it_just_made(blender, projects_dir: Path) -> None:
+    """The same sentence every other edit gets, for an edit made with a mouse."""
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat", apply=True)
+    assert "Floor-plan diff" in report
+    assert "wall-01" in report and "wall-03" in report
+
+
+def test_apply_rebuilds_NOTHING(blender, projects_dir: Path) -> None:
+    """The fingerprints match again by arithmetic, not by building."""
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT})
+    report = server.floorplan_reconcile(project="upstairs flat", apply=True)
+    assert [r["type"] for r in fake.requests] == ["reconcile_floorplan"]
+    assert "NOTHING WAS REBUILT" in report
+
+
+def test_apply_never_adds_the_candidate_box(blender, projects_dir: Path) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    server.floorplan_reconcile(project="upstairs flat", apply=True)
+    on_disk = saved_plan(projects_dir, "upstairs-flat")
+    assert {f["id"] for f in on_disk["labels"]} == {"wd-01", "sofa-01"}
+
+
+def test_apply_saves_a_plan_that_reads_back_through_the_same_tools(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT})
+    server.floorplan_reconcile(project="upstairs flat", apply=True)
+    report = server.floorplan_validate(project="upstairs flat")
+    assert "1 room, 2 walls, 1 opening, 2 fixtures" in report
+
+
+def test_a_quiet_scene_writes_nothing_even_with_apply(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    before = saved_plan(projects_dir, "upstairs-flat")
+    blender({"reconcile_floorplan": quiet_reconcile()})
+    server.floorplan_reconcile(project="upstairs flat", apply=True)
+    assert saved_plan(projects_dir, "upstairs-flat") == before
+
+
+# ===========================================================================
+# floorplan_build's sync — absorb the scene FIRST, then build
+# ===========================================================================
+
+
+def test_a_build_measures_before_it_builds(blender, projects_dir: Path) -> None:
+    """The ordering IS the guarantee. Edit-then-build cannot know that the wall
+    it is about to create was deleted on purpose."""
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT,
+                    "build_floorplan": BUILD_RESULT}, connections=2)
+    server.floorplan_build(project="upstairs flat")
+    assert [r["type"] for r in fake.requests] == ["reconcile_floorplan",
+                                                  "build_floorplan"]
+
+
+def test_a_build_does_not_resurrect_a_wall_they_deleted(
+    blender, projects_dir: Path
+) -> None:
+    """FP:wall-living-kitchen came back twice. This is that, prevented."""
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT,
+                    "build_floorplan": BUILD_RESULT}, connections=2)
+    server.floorplan_build(project="upstairs flat")
+
+    wire = sent(fake, "build_floorplan")["plan"]
+    assert {w["id"] for w in wire["walls"]} == {"wall-01", "wall-02"}
+    assert {w["id"] for w in saved_plan(projects_dir, "upstairs-flat")["walls"]} \
+        == {"wall-01", "wall-02"}
+
+
+def test_a_build_does_not_snap_back_something_they_moved(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT,
+                    "build_floorplan": BUILD_RESULT}, connections=2)
+    server.floorplan_build(project="upstairs flat")
+    wire = sent(fake, "build_floorplan")["plan"]
+    wall = next(w for w in wire["walls"] if w["id"] == "wall-01")
+    assert wall["from_mm"] == [0.0, 500.0]
+
+
+def test_the_build_report_LEADS_with_what_it_absorbed(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    blender({"reconcile_floorplan": RECONCILE_RESULT,
+             "build_floorplan": BUILD_RESULT}, connections=2)
+    report = server.floorplan_build(project="upstairs flat")
+    assert report.startswith("Absorbed your scene edits into the plan first")
+    assert "absorbed your deletion of wall-03" in report
+    assert "Built the greybox level" in report
+
+
+def test_the_callers_own_plan_edit_wins_over_the_scene(
+    blender, projects_dir: Path
+) -> None:
+    """Absorb first, edit second: an id in both places belongs to the edit."""
+    filed(projects_dir)
+    edited = plan()
+    for wall in edited["walls"]:
+        if wall["id"] == "wall-01":
+            wall["from_mm"] = [0, 900]
+            wall["to_mm"] = [4000, 900]
+    fake = blender({"reconcile_floorplan": RECONCILE_RESULT,
+                    "build_floorplan": BUILD_RESULT}, connections=2)
+    server.floorplan_build(plan=edited, project="upstairs flat")
+
+    wire = sent(fake, "build_floorplan")["plan"]
+    wall = next(w for w in wire["walls"] if w["id"] == "wall-01")
+    assert wall["from_mm"] == [0.0, 900.0]          # the plan edit, not the scene
+    assert {w["id"] for w in wire["walls"]} == {"wall-01", "wall-02"}  # still absorbed
+
+
+def test_sync_false_builds_the_plan_as_it_stands(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    fake = blender({"build_floorplan": BUILD_RESULT})
+    server.floorplan_build(project="upstairs flat", sync=False)
+    assert [r["type"] for r in fake.requests] == ["build_floorplan"]
+    wire = sent(fake, "build_floorplan")["plan"]
+    assert {w["id"] for w in wire["walls"]} == {"wall-01", "wall-02", "wall-03"}
+
+
+def test_a_plan_with_no_project_has_nothing_to_sync_against(
+    blender, projects_dir: Path
+) -> None:
+    """No project means no saved plan to absorb into, so there is one round trip."""
+    fake = blender({"build_floorplan": BUILD_RESULT})
+    server.floorplan_build(plan=plan())
+    assert [r["type"] for r in fake.requests] == ["build_floorplan"]
+
+
+def test_an_add_on_too_old_to_reconcile_still_builds_and_says_so(
+    blender, projects_dir: Path
+) -> None:
+    """A measurement that cannot happen is a line in the report, never a refusal:
+    the build is what the artist asked for."""
+    filed(projects_dir)
+    fake = blender({"build_floorplan": BUILD_RESULT}, connections=2)
+    report = server.floorplan_build(project="upstairs flat")
+    assert [r["type"] for r in fake.requests] == ["reconcile_floorplan",
+                                                  "build_floorplan"]
+    assert "Could not read your scene edits back first" in report
+    assert "Built the greybox level" in report
+
+
+def test_a_quiet_scene_adds_no_lead_and_writes_nothing(
+    blender, projects_dir: Path
+) -> None:
+    filed(projects_dir)
+    before = saved_plan(projects_dir, "upstairs-flat")
+    blender({"reconcile_floorplan": quiet_reconcile(),
+             "build_floorplan": BUILD_RESULT}, connections=2)
+    report = server.floorplan_build(project="upstairs flat")
+    assert report.startswith("Built the greybox level")
+    assert saved_plan(projects_dir, "upstairs-flat") == before
+
+
+def test_a_project_with_no_saved_plan_yet_still_builds(
+    blender, projects_dir: Path
+) -> None:
+    """The first build of a project nobody filed a plan for: there is nothing to
+    absorb INTO, so the sync says so and gets out of the way."""
+    fake = blender({"build_floorplan": BUILD_RESULT})
+    report = server.floorplan_build(plan=plan(), project="upstairs flat")
+    assert [r["type"] for r in fake.requests] == ["build_floorplan"]
+    assert "Could not read your scene edits back first" in report
+
+
+def test_sync_is_documented_on_the_tool_and_defaults_to_on() -> None:
+    import inspect
+
+    signature = inspect.signature(server.floorplan_build)
+    assert signature.parameters["sync"].default is True
+    assert "resurrect" in (server.floorplan_build.__doc__ or "")

@@ -1068,6 +1068,411 @@ def test_budget():
     wipe()
 
 
+
+# ---------------------------------------------------------------------------
+# 10. reconcile — the return channel, measured
+# ---------------------------------------------------------------------------
+#
+# The ask: *"I should be able to manually edit and forge should be aware of my
+# changes."*  And the incident: a wall the owner deleted on purpose came back
+# twice, because `build_floorplan` never looks at an object's TRANSFORM and the
+# plan never hears about a deletion at all.
+#
+# Every expectation below is arithmetic on the fixture flat, and the one that
+# matters most is the last: the command must not touch the scene, proven on
+# `as_pointer()` identity and on the transforms themselves rather than on the
+# report saying so.
+
+def reconcile(**params):
+    return _roundtrip({"type": "reconcile_floorplan", "params": params})
+
+
+def transforms():
+    """Every FP: object's world matrix, flattened — the read-only proof.
+
+    The view layer is evaluated first, exactly as the command does: a matrix
+    read before the depsgraph has caught up is stale rather than wrong, and
+    comparing a stale reading with a fresh one would fail a command that never
+    touched anything.
+    """
+    bpy.context.view_layer.update()
+    out = {}
+    collection = bpy.data.collections.get(COLLECTION)
+    if collection is None:
+        return out
+    for obj in collection.all_objects:
+        if obj.name.startswith(PREFIX):
+            out[obj.name] = [round(value, 9)
+                             for row in obj.matrix_world for value in row]
+    return out
+
+
+def box_mesh(name, half_x, half_y, z0, z1):
+    """One axis-aligned 8-vertex box mesh, in METRES, for a hand 'resize'."""
+    verts = [(-half_x, -half_y, z0), (half_x, -half_y, z0),
+             (half_x, half_y, z0), (-half_x, half_y, z0),
+             (-half_x, -half_y, z1), (half_x, -half_y, z1),
+             (half_x, half_y, z1), (-half_x, half_y, z1)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    return mesh
+
+
+def hex_mesh(name):
+    """A twelve-vertex prism: what a sculpted placeholder looks like from here."""
+    verts = []
+    for z in (0.0, 0.85):
+        for index in range(6):
+            angle = math.radians(60 * index)
+            verts.append((0.3 * math.cos(angle), 0.3 * math.sin(angle), z))
+    faces = [(0, 1, 2, 3, 4, 5), (11, 10, 9, 8, 7, 6)]
+    for index in range(6):
+        following = (index + 1) % 6
+        faces.append((index, following, following + 6, index + 6))
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    return mesh
+
+
+def test_reconcile_registration():
+    section("reconcile — registration and the read-only classification")
+    from forge.tools import registry
+
+    check("reconcile_floorplan is a registered command",
+          registry.has_command("reconcile_floorplan"))
+    check("it IS read-only — it measures the scene and changes nothing",
+          "reconcile_floorplan" in registry.READ_ONLY_COMMANDS)
+    check("its sibling build_floorplan is still not read-only",
+          "build_floorplan" not in registry.READ_ONLY_COMMANDS)
+
+
+def test_reconcile_on_an_untouched_level():
+    section("reconcile — a level nobody has touched is all clean")
+    wipe()
+    build(plan=plan())
+    check("every object carries where Forge PUT it",
+          all(obj_of(i).get("forge_fp_loc_mm") is not None
+              and obj_of(i).get("forge_fp_rot_deg") is not None for i in ALL_IDS))
+    check("and the stamp is in millimetres, not metres",
+          near(obj_of("wall-mid").get("forge_fp_loc_mm")[0], SPLIT_X),
+          str(list(obj_of("wall-mid").get("forge_fp_loc_mm"))))
+    check("a wall's stamped rotation is its own angle",
+          near(obj_of("wall-mid").get("forge_fp_rot_deg"), 90.0),
+          str(obj_of("wall-mid").get("forge_fp_rot_deg")))
+
+    before_pointers = pointers()
+    before_transforms = transforms()
+    reply = reconcile(plan=plan())
+    if not check("the untouched level reconciles", ok(reply), message(reply)[:400]):
+        return
+    data = result(reply)
+    check("all eight entries are clean",
+          sorted(data["clean"]) == sorted(ALL_IDS), str(data["clean"]))
+    check("nothing moved, resized, vanished or turned up",
+          not data["moved"] and not data["resized"]
+          and not data["deleted_in_scene"] and not data["candidates"]
+          and not data["unabsorbable"] and not data["stale"], str(data)[:300])
+    check("the report says there is nothing to absorb",
+          any("Nothing to absorb" in note for note in data["notes"]),
+          str(data["notes"]))
+    check("it says out loud that it measured rather than decided",
+          "measurements of the scene" in data["honesty"])
+    check("and names the tolerance every number was compared at",
+          data["tolerance_mm"]["move"] == 0.5, str(data["tolerance_mm"]))
+
+    # THE read-only claim, proven on the scene rather than on the report.
+    check("READ-ONLY: not one allocation changed", pointers() == before_pointers)
+    check("READ-ONLY: not one transform changed", transforms() == before_transforms)
+    check("READ-ONLY: no object was added or removed",
+          len(bpy.data.objects) == len(before_pointers), str(len(bpy.data.objects)))
+
+
+def test_reconcile_measures_a_move():
+    section("reconcile — a wall dragged 500 mm north, measured to the millimetre")
+    wall = obj_of("wall-s")
+    wall.location = (0.0, 0.5, 0.0)          # the artist drags it in the viewport
+
+    data = result(reconcile(plan=plan()))
+    moved = {record["id"]: record for record in data["moved"]}
+    if not check("the wall that moved is the one reported",
+                 list(moved) == ["wall-s"], str(data["moved"])[:200]):
+        return
+    record = moved["wall-s"]
+    check("its measured centreline is the new one, to the mm",
+          near_all(record["measured"]["from_mm"], [0.0, 500.0])
+          and near_all(record["measured"]["to_mm"], [FLAT_W, 500.0]),
+          str(record["measured"]))
+    check("and it says where it was",
+          near_all(record["was"]["from_mm"], [0.0, 0.0]), str(record["was"]))
+    check("the fields that changed are named",
+          sorted(record["changed"]) == ["from_mm", "to_mm"], str(record["changed"]))
+    check("how far it went is a number", near(record["moved_mm"], 500.0),
+          str(record["moved_mm"]))
+    check("its thickness and height are unchanged, so they are not in `changed`",
+          near(record["measured"]["thickness_mm"], WALL_T)
+          and near(record["measured"]["height_mm"], CEILING),
+          str(record["measured"]))
+    check("the mesh is reported intact — this was a transform, not an edit",
+          record["mesh"] == "intact" and record["confidence"] == "measured",
+          str(record["mesh"]))
+    check("the other seven are still clean",
+          sorted(data["clean"]) == sorted(i for i in ALL_IDS if i != "wall-s"),
+          str(data["clean"]))
+    wall.location = (0.0, 0.0, 0.0)
+
+
+def test_reconcile_measures_a_rotation_and_a_scale():
+    section("reconcile — a fixture spun 90 degrees, a wall scaled thicker")
+    fixture = obj_of("wd-01")
+    fixture.rotation_euler = (0.0, 0.0, math.radians(90))
+    wall = obj_of("wall-e")
+    wall.scale = (1.0, 2.0, 1.0)             # twice as thick, by hand
+
+    data = result(reconcile(plan=plan()))
+    moved = {record["id"]: record for record in data["moved"]}
+    resized = {record["id"]: record for record in data["resized"]}
+
+    check("a spin is a MOVE — the plan has a field for it",
+          "wd-01" in moved, str(data["moved"])[:200])
+    if "wd-01" in moved:
+        record = moved["wd-01"]
+        check("the measured angle is exactly 90, not 89.9999",
+              record["measured"]["rotation_deg"] == 90.0,
+              str(record["measured"]["rotation_deg"]))
+        check("its footprint centre did not move",
+              near_all(record["measured"]["centre_mm"], [1000.0, 500.0]),
+              str(record["measured"]["centre_mm"]))
+        check("and its size did not change",
+              near_all(record["measured"]["size_mm"], list(WD_SIZE)),
+              str(record["measured"]["size_mm"]))
+
+    check("a scale is a RESIZE", "wall-e" in resized, str(data["resized"])[:200])
+    if "wall-e" in resized:
+        record = resized["wall-e"]
+        check("the measured thickness is the scaled one",
+              near(record["measured"]["thickness_mm"], WALL_T * 2),
+              str(record["measured"]))
+        check("the centreline did not move with it",
+              near_all(record["measured"]["from_mm"], [FLAT_W, 0.0]),
+              str(record["measured"]["from_mm"]))
+        check("thickness_mm is the field named as changed",
+              record["changed"] == ["thickness_mm"], str(record["changed"]))
+    fixture.rotation_euler = (0.0, 0.0, 0.0)
+    wall.scale = (1.0, 1.0, 1.0)
+
+
+def test_reconcile_measures_a_mesh_edited_box():
+    section("reconcile — a box resized in EDIT mode is still a box")
+    fixture = obj_of("wd-01")
+    old_mesh = fixture.data
+    fixture.data = box_mesh("wd-hand", 0.5, 0.3, 0.0, 0.85)   # 1000 x 600 x 850
+
+    data = result(reconcile(plan=plan()))
+    resized = {record["id"]: record for record in data["resized"]}
+    if check("the hand-resized fixture is measured, not refused",
+             "wd-01" in resized, str(data)[:300]):
+        record = resized["wd-01"]
+        check("its measured footprint is the mesh's own",
+              near_all(record["measured"]["size_mm"], [1000.0, 600.0]),
+              str(record["measured"]["size_mm"]))
+        check("and the report says the mesh itself was edited",
+              record["mesh"] == "edited-but-still-a-box", str(record["mesh"]))
+    fixture.data = old_mesh
+
+
+def test_reconcile_refuses_to_describe_a_sculpt():
+    section("reconcile — a sculpted placeholder is a promotion, not a measurement")
+    fixture = obj_of("wd-01")
+    old_mesh = fixture.data
+    fixture.data = hex_mesh("wd-sculpted")
+
+    data = result(reconcile(plan=plan()))
+    blocked = {record["id"]: record for record in data["unabsorbable"]}
+    if check("it comes back as unabsorbable", "wd-01" in blocked,
+             str(data)[:300]):
+        why = blocked["wd-01"]["why"]
+        check("the reason says it was sculpted", "SCULPTED" in why, why[:200])
+        check("and recommends the promotion marker", "forge_fp_keep" in why,
+              why[:200])
+    check("it is not quietly measured as something else",
+          not any(r["id"] == "wd-01" for r in data["moved"] + data["resized"]))
+    fixture.data = old_mesh
+
+
+def test_reconcile_refuses_a_tilt_and_a_lift():
+    section("reconcile — a plan is top-down, and says so twice")
+    wall = obj_of("wall-mid")
+    wall.rotation_euler = (math.radians(12), 0.0, math.radians(90))
+    slab = obj_of("room-right")
+    slab.location = (slab.location.x, slab.location.y, 1.0)
+
+    data = result(reconcile(plan=plan()))
+    blocked = {record["id"]: record["why"] for record in data["unabsorbable"]}
+    check("a tilted wall is unabsorbable", "wall-mid" in blocked, str(blocked)[:300])
+    check("and the reason names the tilt in degrees",
+          "tilted" in blocked.get("wall-mid", "")
+          and "12" in blocked.get("wall-mid", ""),
+          blocked.get("wall-mid", "")[:200])
+    check("a slab lifted off the floor is unabsorbable too",
+          "room-right" in blocked, str(blocked)[:300])
+    check("and the reason says the plan has no field for a height",
+          "off the floor" in blocked.get("room-right", ""),
+          blocked.get("room-right", "")[:200])
+    wall.rotation_euler = (0.0, 0.0, math.radians(90))
+    slab.location = (slab.location.x, slab.location.y, 0.0)
+
+
+def test_reconcile_reads_a_deletion_and_a_stranger():
+    section("reconcile — a wall they deleted, and a box they added")
+    victim = obj_of("wall-w")
+    bpy.data.objects.remove(victim, do_unlink=True)
+
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(2.0, 2.0, 0.425))
+    stranger = bpy.context.view_layer.objects.active
+    stranger.name = "FP:sofa-99"
+    stranger.scale = (1.8, 0.9, 0.85)
+    collection = bpy.data.collections.get(COLLECTION)
+    for other in list(stranger.users_collection):
+        other.objects.unlink(stranger)
+    collection.objects.link(stranger)
+
+    data = result(reconcile(plan=plan()))
+    gone = {record["id"]: record for record in data["deleted_in_scene"]}
+    check("the deleted wall is reported as deleted in the scene",
+          list(gone) == ["wall-w"], str(data["deleted_in_scene"])[:200])
+    check("with the kind and what it was, so the plan knows what it is dropping",
+          gone.get("wall-w", {}).get("kind") == "wall"
+          and near_all(gone["wall-w"]["was"]["from_mm"], [0.0, FLAT_D]),
+          str(gone.get("wall-w"))[:240])
+    check("the report says a deletion is a layout decision",
+          any("layout decision" in note for note in data["notes"]),
+          str(data["notes"]))
+
+    candidates = {record["id"]: record for record in data["candidates"]}
+    if check("the stranger is a candidate, not an error",
+             "sofa-99" in candidates, str(data["candidates"])[:240]):
+        record = candidates["sofa-99"]
+        check("its bounding box is measured in millimetres",
+              near_all(record["bbox_mm"]["size"], [1800.0, 900.0, 850.0], 1.0),
+              str(record["bbox_mm"]))
+        check("and it is offered as a footprint, with the rotation unknown",
+              near_all(record["suggested"]["footprint_mm"][2:],
+                       [1800.0, 900.0], 1.0)
+              and record["suggested"]["rotation_deg"] == 0.0,
+              str(record["suggested"]))
+        check("the reason says Forge did not build it",
+              "did not build it" in record["why"], record["why"][:160])
+
+    bpy.data.objects.remove(stranger, do_unlink=True)
+    build(plan=plan())      # put wall-w back for the tests after this one
+
+
+def test_reconcile_does_not_read_a_tidied_object_as_a_deletion():
+    section("reconcile — an object moved to another collection is not a deletion")
+    obj = obj_of("wall-n")
+    collection = bpy.data.collections.get(COLLECTION)
+    collection.objects.unlink(obj)
+    bpy.context.scene.collection.objects.link(obj)
+
+    data = result(reconcile(plan=plan()))
+    blocked = {record["id"]: record["why"] for record in data["unabsorbable"]}
+    check("it is NOT reported as deleted",
+          not any(record["id"] == "wall-n"
+                  for record in data["deleted_in_scene"]),
+          str(data["deleted_in_scene"]))
+    check("it is reported as outside the collection instead",
+          "outside the" in blocked.get("wall-n", ""),
+          str(blocked.get("wall-n"))[:200])
+    bpy.context.scene.collection.objects.unlink(obj)
+    collection.objects.link(obj)
+
+
+def test_reconcile_will_not_read_a_pending_plan_edit_as_a_hand_edit():
+    section("reconcile — a plan that moved on since the build is STALE, not moved")
+    doc = plan()
+    for wall in doc["walls"]:
+        if wall["id"] == "wall-s":
+            wall["to_mm"] = [FLAT_W + 2000.0, 0]   # edited in the PLAN, not built
+
+    data = result(reconcile(plan=doc))
+    check("the entry waiting for a rebuild is stale",
+          data["stale"] == ["wall-s"], str(data["stale"]))
+    check("and it is NOT measured as something the artist moved",
+          not any(record["id"] == "wall-s"
+                  for record in data["moved"] + data["resized"]),
+          str(data["moved"] + data["resized"])[:200])
+    check("the note says a rebuild is what it is waiting for",
+          any("waiting for a rebuild" in note for note in data["notes"]),
+          str(data["notes"]))
+
+    # ... and a plan edit PLUS a hand edit is a conflict Forge refuses to guess at.
+    obj_of("wall-s").location = (0.0, 0.9, 0.0)
+    data = result(reconcile(plan=doc))
+    blocked = {record["id"]: record["why"] for record in data["unabsorbable"]}
+    check("a plan edit and a hand edit at once is unabsorbable",
+          "wall-s" in blocked, str(data)[:300])
+    check("and the sentence says to build first, then reconcile",
+          "build first" in blocked.get("wall-s", ""),
+          blocked.get("wall-s", "")[:200])
+    obj_of("wall-s").location = (0.0, 0.0, 0.0)
+
+
+def test_reconcile_refusals():
+    section("reconcile — refusals, sentences again")
+    reply = reconcile()
+    check("no plan at all is refused", not ok(reply))
+    check("  ... and the sentence says to pass one",
+          "needs" in message(reply) and "plan" in message(reply),
+          message(reply)[:200])
+
+    reply = reconcile(plan=plan(), collection="Nowhere")
+    check("a collection that does not exist is refused", not ok(reply))
+    check("  ... and the sentence says Forge will not create one",
+          "never creates anything" in message(reply), message(reply)[:240])
+    check("  ... and it really did not create one",
+          bpy.data.collections.get("Nowhere") is None)
+
+    empty = bpy.data.collections.new("Empty Level")
+    bpy.context.scene.collection.children.link(empty)
+    reply = reconcile(plan=plan(), collection="Empty Level")
+    check("a collection with no FP: objects is refused, not answered",
+          not ok(reply))
+    check("  ... because the answer would be 'everything was deleted'",
+          "every entry in your plan has been deleted" in message(reply),
+          message(reply)[:300])
+    bpy.data.collections.remove(empty)
+
+
+def test_reconcile_is_still_read_only_after_all_that():
+    section("reconcile — the read-only guarantee, one more time")
+    obj_of("wd-01").location = (2.0, 1.0, 0.0)   # the edit happens FIRST
+    before_pointers = pointers()
+    before_transforms = transforms()
+    before_objects = len(bpy.data.objects)
+    before_collections = len(bpy.data.collections)
+    before_meshes = len(bpy.data.meshes)
+
+    data = result(reconcile(plan=plan()))
+    check("it measured something", bool(data["moved"]), str(data["moved"])[:120])
+    check("allocations are untouched, objects and meshes both",
+          pointers() == before_pointers)
+    check("transforms are exactly as the artist left them",
+          transforms() == before_transforms,
+          str([n for n in before_transforms
+               if transforms().get(n) != before_transforms[n]]))
+    check("no object, collection or mesh was created or removed",
+          (len(bpy.data.objects), len(bpy.data.collections),
+           len(bpy.data.meshes))
+          == (before_objects, before_collections, before_meshes),
+          "%d/%d/%d" % (len(bpy.data.objects), len(bpy.data.collections),
+                        len(bpy.data.meshes)))
+    obj_of("wd-01").location = (1.0, 0.5, 0.0)
+    wipe()
+
 def test_port_is_free_after():
     section("shutdown")
     from forge import server as forge_server
@@ -1113,6 +1518,18 @@ def main():
         test_a_non_mesh_in_the_way()
         test_it_is_a_legal_flow_step()
         test_budget()
+        test_reconcile_registration()
+        test_reconcile_on_an_untouched_level()
+        test_reconcile_measures_a_move()
+        test_reconcile_measures_a_rotation_and_a_scale()
+        test_reconcile_measures_a_mesh_edited_box()
+        test_reconcile_refuses_to_describe_a_sculpt()
+        test_reconcile_refuses_a_tilt_and_a_lift()
+        test_reconcile_reads_a_deletion_and_a_stranger()
+        test_reconcile_does_not_read_a_tidied_object_as_a_deletion()
+        test_reconcile_will_not_read_a_pending_plan_edit_as_a_hand_edit()
+        test_reconcile_refusals()
+        test_reconcile_is_still_read_only_after_all_that()
     except Exception:  # noqa: BLE001
         traceback.print_exc()
         check("harness ran to completion", False, "unhandled exception")

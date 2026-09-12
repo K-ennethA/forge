@@ -325,7 +325,7 @@ every render after it does not. 12 frames at 320 px on EEVEE: 13.9 s cold, 1.5 s
 compiles nothing. Budget both ways when quoting a wait to the artist: the first demo of
 a session is the slow one.
 
-### Floor plans to prototype levels (Phase 19 — `build_floorplan`, `tools/floorplan.py`)
+### Floor plans to prototype levels (Phase 19 — `build_floorplan` + `reconcile_floorplan`, `tools/floorplan.py`)
 
 The artist's ask, near-verbatim: *"I draw rooms, walls, doors, and give it a label key —
 washer/dryer here — and I want a simple 3d level created with the walls and doors, and
@@ -337,6 +337,7 @@ additions."* One command, one plan file, and **the second call only builds what 
 | type | params | does |
 |---|---|---|
 | `build_floorplan` | `plan` (the `floorplan.json` object itself, resolved values, millimetres), `collection?` (default `Floorplan`), `mode?` `update`\|`rebuild` (default `update`), `floor?` (default **true**) | materialises the plan into scene objects named `FP:<id>`, and on every later call **diffs** the plan against what is already there. **Not read-only** — the registry pushes `Forge: build_floorplan` and one Ctrl+Z takes the whole diff back. Returns `{"collection", "built", "updated", "deleted", "unchanged", "kept": [{"id", "object", "why"}], "objects", "object_names", "walls", "openings", "fixtures", "floors", "rooms", "pieces", "mechanisms": [...], "bounds_mm": {"min","max","size"}, "dimensions_mm", "mode", "floor", "defaults_mm", "plan_version", "units", "honesty", "notes", "warnings", "seconds"}` |
+| `reconcile_floorplan` | `plan` (the same resolved object), `collection?` (default `Floorplan`), `floor?` (default **true**, and pass the same one the level was built with) | the **return channel**: measures every `FP:` object in the collection against what Forge put there and hands back millimetres. **Read-only** — it is in `READ_ONLY_COMMANDS`, there is no write in it, and the headless suite proves it on `as_pointer()` identity *and* on the world matrices. Returns `{"collection", "objects", "plan_entries", "clean": [ids], "moved": [...], "resized": [...], "stale": [ids], "deleted_in_scene": [{"id","kind","object","was"}], "candidates": [...], "unabsorbable": [{"id","object","why"}], "tolerance_mm", "floor", "plan_version", "units", "honesty", "notes", "warnings", "seconds"}`, where a `moved`/`resized` record is `{"id", "kind", "object", "measured", "was", "changed": [fields], "moved_mm", "mesh", "confidence": "measured"}` |
 
 The add-on does **not** read images and does not talk to the geometry service: the plan
 arrives as data over the socket with every value already resolved, and this command's
@@ -379,6 +380,41 @@ placeholder stands, the artist owns *what shape it is*.
 **`mode: "rebuild"` is the escape hatch, and it still honours `forge_fp_keep`.** It throws
 the greybox away and builds it again — that is what it is for, and the notes say so out
 loud — but an explicit marker outranks a mode.
+
+**`reconcile_floorplan` is the return channel, and it exists because the protection above
+is one-way.** *"I should be able to manually edit and forge should be aware of my
+changes."* `build_floorplan` detects a hand edit and skips it, so the plan never finds out
+what the artist did — and the detection has a hole the size of the viewport, because it
+never looks at an object's **transform**: a wall dragged two metres north keeps its
+fingerprint, reads as unchanged, and is put back where the plan says the next time its
+entry changes. A wall *deleted* comes straight back on the next build, which is what
+happened to `FP:wall-living-kitchen`, twice. So this command measures and hands back
+millimetres: a wall's centreline, thickness and height; a fixture's footprint centre, size
+and rotation (a right angle comes back **exact**, anything else comes back as the real
+angle); a slab's outline bbox. `service.absorb_reconcile` decides what to do with them —
+the add-on measures and never edits the plan.
+
+**The reference is what Forge PUT there, not what the plan says.** `_stamp` writes
+`forge_fp_loc_mm` and `forge_fp_rot_deg` beside the fingerprint, and reconcile compares
+against those: the plan can have moved on since the build, and reading "the scene
+disagrees with the plan" as a hand edit would absorb the artist's own plan edit straight
+back out again. An entry whose plan changed since it was built is reported as **`stale`**
+(a rebuild waiting to happen, not a measurement); an entry that is stale *and* has been
+touched is **unabsorbable**, with a sentence saying to build first and reconcile after,
+because Forge will not guess which of the two edits was meant.
+
+**What it refuses to describe, it names.** A tilted or sheared transform, an object lifted
+off z = 0, a mesh that is no longer a plain box (a **sculpt**, which is a promotion —
+the reason says `forge_fp_keep`), an `FP:` object that is not a mesh: each comes back under
+`unabsorbable` with the reason, never rounded into the nearest field that would take it. A
+mesh edited in Edit mode but still one axis-aligned 8-corner box is measured like any other
+resize, marked `"mesh": "edited-but-still-a-box"`. Two refusals guard the deletion path,
+which is the one with teeth now that deletions are absorbed: a collection that **does not
+exist**, and a collection with **no `FP:` objects in it at all** — because the honest answer
+to the second would be "every entry in your plan has been deleted", and acting on that
+would empty the plan of a level that was built into a different collection. An object found
+in the file but *outside* the named collection is reported as outside it, never as a
+deletion.
 
 **Geometry is boxes, and the openings are cut by construction.** A wall is built in its own
 frame (x along the centreline from `from_mm`, y across, z up) as the solid pieces left
@@ -2242,7 +2278,7 @@ of floor plans they are **49 + 108 + 156 + 150 + 78 + 40 + 97 + 92 + 156 + 44 + 
     --python addon\tests\headless_floorplan.py
 ```
 
-Socket port **9905**. **208 checks**, one Blender launch, no window, no service, no network
+Socket port **9905**. **278 checks**, one Blender launch, no window, no service, no network
 beyond loopback and no files on disk: the plan is a Python dict in the file and every right
 answer is arithmetic. The fixture is a two-room flat, 7000 × 3000 mm, split by a party wall
 at x = 4000 with one 820 × 2040 mm door centred at 1500 mm along it — so the door runs
@@ -2291,7 +2327,22 @@ Covering:
   and `start_mm` at once, a footprint with no area, and no plan at all;
 - **flow legality proven by running one** — a two-step flow (`ping`, then the build) with
   the collection arriving through a `{{param}}`;
-- **the budget** — 40 walls and 40 doors in **0.047 s**, re-diffed in under a millisecond.
+- **the budget** — 40 walls and 40 doors in **0.047 s**, re-diffed in under a millisecond;
+- **reconcile, the return channel** — an untouched level comes back with all eight ids
+  `clean`; a wall dragged 500 mm north is measured to the millimetre (new centreline, the
+  old one beside it, the fields that changed and how far it went, `mesh: "intact"`); a
+  fixture spun 90 degrees comes back as **exactly** 90 and a wall scaled twice as thick
+  comes back as a resize with its centreline unmoved; a box resized in Edit mode is
+  measured off its own mesh and marked `edited-but-still-a-box`; a **sculpted** placeholder
+  is unabsorbable and the reason recommends `forge_fp_keep`; a wall tilted 12 degrees and a
+  slab lifted off the floor are both unabsorbable, because a floor plan is top-down; a
+  deleted wall is `deleted_in_scene` with what it was, while an object merely moved to
+  another collection is reported as *outside* it and never as a deletion; a stranger box is
+  a **candidate** with its bounding box measured and its rotation left unknown; a plan edit
+  that has not been built yet is `stale` rather than measured, and a plan edit *plus* a hand
+  edit is a refusal saying to build first; three refusals (no plan, no such collection, a
+  collection with no `FP:` objects in it); and **the read-only guarantee twice**, on
+  `as_pointer()` identity, on every world matrix, and on the object/mesh/collection counts.
 
 ### Phase 18b — silhouette fitting (`headless_silhouette.py`)
 

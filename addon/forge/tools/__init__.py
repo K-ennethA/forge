@@ -22,6 +22,8 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     mechanism = importlib.reload(mechanism)  # noqa: F821
     silhouette = importlib.reload(silhouette)  # noqa: F821
     floorplan = importlib.reload(floorplan)  # noqa: F821
+    pov = importlib.reload(pov)  # noqa: F821
+    activity = importlib.reload(activity)  # noqa: F821
     assistant = importlib.reload(assistant)  # noqa: F821
     buddy = importlib.reload(buddy)  # noqa: F821
     flows = importlib.reload(flows)  # noqa: F821
@@ -52,6 +54,14 @@ else:
     # prisms and a content hash), so it sits wherever it is convenient to read —
     # next to the other "build me a shape" module.
     from . import floorplan
+    # The playtest camera: a first-person stand-in for walking a level.
+    # Only common + registry behind it.
+    from . import pov
+    # The live activity feed.  Only registry + bpy behind it (a ring of names and
+    # timestamps, and a wrapper around ``registry.dispatch`` so the feed can tell
+    # "Forge built this" from "the artist edited this"), so it sits next to the
+    # other always-on machinery rather than after the things it watches.
+    from . import activity
     from . import assistant
     from . import buddy
     from . import flows
@@ -79,6 +89,8 @@ __all__ = [
     "mechanism",
     "silhouette",
     "floorplan",
+    "pov",
+    "activity",
     "assistant",
     "buddy",
     "flows",
@@ -108,9 +120,14 @@ def register():
     model.register()
     projects.register()
     services.register()
+    # Last, and first out below: the feed's whole job is to notice scene
+    # changes, and registering it after the others means the add-on's own
+    # start-up churn is not the first thing it has to say.
+    activity.register()
 
 
 def unregister():
+    activity.unregister()
     services.unregister()
     projects.unregister()
     model.unregister()

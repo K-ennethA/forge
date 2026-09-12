@@ -146,6 +146,9 @@ def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
         "FORGE_ASSISTANT_CWD": REPO_ROOT,
         "FAKE_CLAUDE_LOG": log_path,
         "PYTHONUNBUFFERED": "1",
+        # A dead port, so no test in this file can ever probe the artist's
+        # LIVE Blender on 9876 (the live-context glance would otherwise).
+        "FORGE_BLENDER_PORT": str(free_port()),
     })
     env.pop("FORGE_ASSISTANT_MODEL", None)
     env.pop("FORGE_ASSISTANT_TOOLS", None)

@@ -976,6 +976,15 @@ def _stamp(obj, entry, digest, collection_name):
     obj["forge_fp_verts"] = len(obj.data.vertices)
     obj["forge_fp_dims_mm"] = _local_dims_mm(obj)
     obj["forge_fp_collection"] = collection_name
+    # WHERE Forge put it, as well as what it built. The mesh props above answer
+    # "has this been reshaped?"; these two answer "has this been MOVED?", which
+    # is a question the plan cannot answer on its own the moment the plan has an
+    # edit in it that the scene has not been rebuilt for yet. `reconcile_floorplan`
+    # is the only reader; the build path never compares against them, because
+    # placement is deliberately not part of the never-clobber heuristic.
+    obj["forge_fp_loc_mm"] = _round_all(
+        [c / MM_TO_M for c in obj.location], 3)
+    obj["forge_fp_rot_deg"] = _round(math.degrees(obj.rotation_euler.z), 6)
     if entry.get("label"):
         obj["forge_fp_label"] = entry["label"]
 
@@ -1269,3 +1278,763 @@ def cmd_build_floorplan(params):
         "warnings": list(dict.fromkeys(warnings)),
         "seconds": round(time.monotonic() - started, 3),
     }
+
+
+# ---------------------------------------------------------------------------
+# reconcile — the return channel: the artist's hand edits, MEASURED
+# ---------------------------------------------------------------------------
+#
+# The artist's ask, verbatim: *"I should be able to manually edit and forge
+# should be aware of my changes."*
+#
+# ``build_floorplan`` already protects a hand edit — it detects one and SKIPS
+# the entry — but that protection is one-way: the plan never finds out what the
+# artist did, so the plan stops being the model the moment they touch anything.
+# Worse, the protection has a hole the size of the viewport: it never looks at
+# an object's TRANSFORM, so a wall dragged two metres north keeps its
+# fingerprint, reads as unchanged, and is put back where the plan says the next
+# time its entry changes. And a wall *deleted* because there is no wall there
+# comes straight back on the next build — which is exactly what happened to
+# FP:wall-living-kitchen, twice.
+#
+# So this command measures the scene and hands back millimetres. It decides
+# nothing: it does not edit the plan (``service.absorb_reconcile`` does that,
+# deterministically, off this report), it does not touch the scene (it is in
+# ``READ_ONLY_COMMANDS`` and there is no write anywhere in it), and anything it
+# cannot say in a plan field it calls **unabsorbable** with the reason rather
+# than rounding the difference off into the nearest field that would take it.
+#
+# The reference is not the plan. It is what Forge PUT there — ``forge_fp_loc_mm``
+# and ``forge_fp_rot_deg``, stamped at build time — because the plan can have
+# moved on since the build, and reading "the scene disagrees with the plan" as a
+# hand edit would absorb the artist's own plan edit straight back out again. An
+# entry whose plan has changed since it was built is reported as ``stale``,
+# which is a rebuild waiting to happen and not a measurement.
+
+#: Below this a difference is float noise, not an edit — ``KEEP_TOL_MM``'s
+#: number for ``KEEP_TOL_MM``'s reason (half a millimetre on a 2.4 m wall is
+#: nobody's hand).
+MOVE_TOL_MM = KEEP_TOL_MM
+SIZE_TOL_MM = KEEP_TOL_MM
+
+#: A rotation this close to a multiple of 90 degrees is reported AS that
+#: multiple. Small on purpose: an artist who spun a fixture to 89.7 degrees by
+#: eye meant 89.7, and snapping that to 90 would be Forge correcting them. This
+#: tolerance exists to absorb the float noise of a euler -> matrix -> atan2
+#: round trip, which is about 1e-13 degrees, and nothing else.
+SQUARE_TOL_DEG = 0.05
+
+#: How far an object's own axes may drift from orthogonal-and-upright before the
+#: transform is one no plan field can describe. A floor plan is top-down: it has
+#: no word for a leaning wall and no word for a sheared box.
+FRAME_TOL = 1e-4
+
+#: How far a vertex may sit off the corner lattice and still count as a corner
+#: of an axis-aligned box, in millimetres of the object's own space.
+BOX_TOL_MM = 0.5
+
+RECONCILE_HONESTY = (
+    "These are measurements of the scene, not decisions about the plan. Every "
+    "number came off an object's own transform and mesh in millimetres; "
+    "nothing in the scene and nothing in the plan was changed by this call. An "
+    "edit that no field of floorplan.json can describe — a tilted wall, a "
+    "sheared box, a sculpted placeholder — is listed as unabsorbable with the "
+    "reason, never rounded off into the nearest field that would take it."
+)
+
+
+def _world_frame(obj):
+    """``(matrix, origin, axes, lengths)`` — the object's world basis.
+
+    ``axes`` are the world directions of the object's own X, Y and Z (the
+    columns of the world matrix) and ``lengths`` are how much each one scales.
+    Read off the matrix rather than out of ``obj.scale`` because a parent, a
+    constraint and a delta transform all land in the matrix and none of them
+    land in ``scale`` — and the artist's edit is whatever is true in the world.
+    """
+    matrix = obj.matrix_world
+    origin = Vector((matrix[0][3], matrix[1][3], matrix[2][3]))
+    axes = [Vector((matrix[0][i], matrix[1][i], matrix[2][i])) for i in range(3)]
+    return matrix, origin, axes, [axis.length for axis in axes]
+
+
+def _frame_problem(axes, lengths):
+    """Why this transform cannot be written down in a plan — or ``None``."""
+    if min(lengths) <= 1e-9:
+        return ("it has been scaled flat on at least one axis, so there is no "
+                "size left on it to measure")
+    unit = [axis / length for axis, length in zip(axes, lengths)]
+    if (abs(unit[0].dot(unit[1])) > FRAME_TOL
+            or abs(unit[0].dot(unit[2])) > FRAME_TOL
+            or abs(unit[1].dot(unit[2])) > FRAME_TOL):
+        return ("its transform is sheared — its own axes are no longer at right "
+                "angles to each other — and a floor plan has no field that can "
+                "say that")
+    if unit[2].z < 1.0 - FRAME_TOL:
+        tilt = math.degrees(math.acos(max(-1.0, min(1.0, unit[2].z))))
+        return ("it is tilted %.2f degrees off vertical, and a floor plan is "
+                "top-down: nothing in floorplan.json can say a leaning wall or "
+                "a tipped-over box" % tilt)
+    return None
+
+
+def _mesh_bbox_local(obj):
+    """``(low, high)`` over the mesh's own vertices, in the object's own units."""
+    vertices = getattr(getattr(obj, "data", None), "vertices", None)
+    if not vertices:
+        return None
+    low = [float("inf")] * 3
+    high = [float("-inf")] * 3
+    for vertex in vertices:
+        for axis in range(3):
+            value = vertex.co[axis]
+            low[axis] = min(low[axis], value)
+            high[axis] = max(high[axis], value)
+    return Vector(low), Vector(high)
+
+
+def _raw_dims_mm(obj):
+    """The mesh's own size in millimetres, WITHOUT the object's scale.
+
+    This is what ``forge_fp_dims_mm`` was at build time (Forge builds at scale
+    1), so comparing the two answers "has the mesh datablock been edited?"
+    separately from "has the object been scaled?" — which is exactly the
+    difference between a resize the plan can hold and a sculpt it cannot.
+    """
+    box = _mesh_bbox_local(obj)
+    if box is None:
+        return [0.0, 0.0, 0.0]
+    low, high = box
+    return [_round((high[a] - low[a]) / MM_TO_M, 3) for a in range(3)]
+
+
+def _dims_match(stored, actual):
+    """Does the mesh still measure what Forge stamped on it?"""
+    if stored is None:
+        return True  # nothing to compare with; the vertex count carried it
+    try:
+        expected = [float(value) for value in stored]
+    except (TypeError, ValueError):  # pragma: no cover — a hand-typed property
+        return True
+    if len(expected) != 3:
+        return True
+    return all(abs(a - b) <= SIZE_TOL_MM for a, b in zip(actual, expected))
+
+
+def _is_axis_aligned_box(obj, lengths):
+    """Is this mesh still one axis-aligned box in its own space?
+
+    Eight vertices, every one of them on a corner of the mesh's own bounding
+    box, and all eight corners used. That is the shape every placeholder starts
+    as, so a mesh that still passes was RESIZED (in edit mode, or by an applied
+    scale) rather than sculpted — and a resize is a number the plan can hold.
+    """
+    vertices = getattr(getattr(obj, "data", None), "vertices", None)
+    if not vertices or len(vertices) != 8:
+        return False
+    box = _mesh_bbox_local(obj)
+    if box is None:
+        return False
+    low, high = box
+    corners = set()
+    for vertex in vertices:
+        key = []
+        for axis in range(3):
+            span = high[axis] - low[axis]
+            if span <= 0.0:
+                return False
+            tolerance = (BOX_TOL_MM * MM_TO_M) / max(lengths[axis], 1e-9)
+            if abs(vertex.co[axis] - low[axis]) <= tolerance:
+                key.append(0)
+            elif abs(vertex.co[axis] - high[axis]) <= tolerance:
+                key.append(1)
+            else:
+                return False
+        corners.add(tuple(key))
+    return len(corners) == 8
+
+
+def _world_mm(matrix, point):
+    """One local point in world millimetres."""
+    world = matrix @ point
+    return [_round(world.x / MM_TO_M, 3), _round(world.y / MM_TO_M, 3),
+            _round(world.z / MM_TO_M, 3)]
+
+
+def _normalise_deg(angle):
+    """Any angle onto (-180, 180]."""
+    angle = float(angle) % 360.0
+    if angle > 180.0:
+        angle -= 360.0
+    return angle
+
+
+def _snap_deg(angle):
+    """A right angle comes back EXACT; anything else comes back as it is."""
+    angle = _normalise_deg(angle)
+    nearest = round(angle / 90.0) * 90.0
+    if abs(angle - nearest) <= SQUARE_TOL_DEG:
+        return _round(_normalise_deg(nearest), 6)
+    return _round(angle, 6)
+
+
+def _angle_gap(first, second):
+    """The short way round between two angles, in degrees."""
+    return abs(_normalise_deg(float(first) - float(second)))
+
+
+def _z_angle(axes):
+    """The object's rotation about world +Z, read off its own X axis."""
+    return _snap_deg(math.degrees(math.atan2(axes[0].y, axes[0].x)))
+
+
+# --- what the plan says each entry should measure ---------------------------
+
+def _entry_measurements(entry):
+    """What a faithfully built object would measure — the plan's own numbers."""
+    if entry["kind"] == "wall":
+        return {
+            "from_mm": [entry["from_mm"][0], entry["from_mm"][1]],
+            "to_mm": [entry["to_mm"][0], entry["to_mm"][1]],
+            "thickness_mm": entry["thickness_mm"],
+            "height_mm": entry["height_mm"],
+            "base_z_mm": 0.0,
+        }
+    if entry["kind"] == "label":
+        return {
+            "centre_mm": list(entry["centre_mm"]),
+            "size_mm": list(entry["size_mm"]),
+            "height_mm": entry["height_mm"],
+            "rotation_deg": _snap_deg(entry["rotation_deg"]),
+            "base_z_mm": 0.0,
+        }
+    points = entry["polygon_mm"]
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    low = [_round(min(xs), 3), _round(min(ys), 3)]
+    high = [_round(max(xs), 3), _round(max(ys), 3)]
+    return {
+        "outline_bbox_mm": {
+            "min": low, "max": high,
+            "size": [_round(high[0] - low[0], 3), _round(high[1] - low[1], 3)],
+        },
+        "centre_mm": [_round((low[0] + high[0]) / 2.0, 3),
+                      _round((low[1] + high[1]) / 2.0, 3)],
+        "thickness_mm": entry["thickness_mm"],
+        "rotation_deg": 0.0,
+        "top_z_mm": 0.0,
+    }
+
+
+# --- what the object actually measures --------------------------------------
+
+def _measure_wall(entry, obj, matrix, axes, lengths, intact):
+    """A wall's centreline, thickness and height, in world millimetres.
+
+    Two readings, and the difference matters. **Mesh intact:** the mesh is
+    exactly what the plan built, so the centreline is the plan's own local
+    centreline pushed through the world matrix — which stays right even when an
+    opening runs to the end of the wall and the mesh therefore stops short of
+    it. **Mesh edited (and still a box):** there is no plan geometry left to
+    trust, so the centreline is the mesh's own bounding box, down the middle of
+    its thickness.
+
+    Through the world matrix rather than off the world AABB, deliberately: the
+    AABB of a wall at 45 degrees is a square that says nothing about where the
+    wall runs. For the axis-aligned walls that are nearly all of them the two
+    agree to the micron; for the rest only this one is true.
+    """
+    if intact:
+        length = entry["length_mm"] * MM_TO_M
+        start = Vector((0.0, 0.0, 0.0))
+        end = Vector((length, 0.0, 0.0))
+        thickness = entry["thickness_mm"] * lengths[1]
+        height = entry["height_mm"] * lengths[2]
+    else:
+        low, high = _mesh_bbox_local(obj)
+        middle = (low.y + high.y) / 2.0
+        start = Vector((low.x, middle, low.z))
+        end = Vector((high.x, middle, low.z))
+        thickness = (high.y - low.y) * lengths[1] / MM_TO_M
+        height = (high.z - low.z) * lengths[2] / MM_TO_M
+    from_world = _world_mm(matrix, start)
+    to_world = _world_mm(matrix, end)
+    return {
+        "from_mm": from_world[:2],
+        "to_mm": to_world[:2],
+        "thickness_mm": _round(thickness, 3),
+        "height_mm": _round(height, 3),
+        "base_z_mm": from_world[2],
+    }
+
+
+def _measure_label(entry, obj, matrix, axes, lengths, intact):
+    """A fixture's footprint centre, size, height and spin, in millimetres."""
+    if intact:
+        centre = Vector((0.0, 0.0, 0.0))
+        width = entry["size_mm"][0] * lengths[0]
+        depth = entry["size_mm"][1] * lengths[1]
+        height = entry["height_mm"] * lengths[2]
+    else:
+        low, high = _mesh_bbox_local(obj)
+        centre = Vector(((low.x + high.x) / 2.0, (low.y + high.y) / 2.0, low.z))
+        width = (high.x - low.x) * lengths[0] / MM_TO_M
+        depth = (high.y - low.y) * lengths[1] / MM_TO_M
+        height = (high.z - low.z) * lengths[2] / MM_TO_M
+    world = _world_mm(matrix, centre)
+    return {
+        "centre_mm": world[:2],
+        "size_mm": [_round(width, 3), _round(depth, 3)],
+        "height_mm": _round(height, 3),
+        "rotation_deg": _z_angle(axes),
+        "base_z_mm": world[2],
+    }
+
+
+def _measure_room(entry, obj, matrix, axes, lengths, intact):
+    """A slab's outline, as a bounding box — which is all a box can say.
+
+    A room is a polygon and its object is a prism over it, so a moved or scaled
+    slab can tell you where its *outline* went and not which corner moved. What
+    comes back is the bbox, and the honest note that it is one.
+    """
+    low, high = _mesh_bbox_local(obj)
+    corners = []
+    for x in (low.x, high.x):
+        for y in (low.y, high.y):
+            for z in (low.z, high.z):
+                corners.append(_world_mm(matrix, Vector((x, y, z))))
+    xs = [corner[0] for corner in corners]
+    ys = [corner[1] for corner in corners]
+    zs = [corner[2] for corner in corners]
+    box_low = [_round(min(xs), 3), _round(min(ys), 3)]
+    box_high = [_round(max(xs), 3), _round(max(ys), 3)]
+    return {
+        "outline_bbox_mm": {
+            "min": box_low, "max": box_high,
+            "size": [_round(box_high[0] - box_low[0], 3),
+                     _round(box_high[1] - box_low[1], 3)],
+        },
+        "centre_mm": [_round((box_low[0] + box_high[0]) / 2.0, 3),
+                      _round((box_low[1] + box_high[1]) / 2.0, 3)],
+        "thickness_mm": _round(max(zs) - min(zs), 3),
+        "rotation_deg": _z_angle(axes),
+        "top_z_mm": _round(max(zs), 3),
+    }
+
+
+MEASURERS = {"wall": _measure_wall, "label": _measure_label, "room": _measure_room}
+
+#: Which measured fields say WHERE it is and which say HOW BIG it is. A change
+#: in the first set is a move, a change in the second is a resize, and an entry
+#: with both is reported as a resize — the bigger claim — with both named.
+PLACEMENT_FIELDS = {
+    "wall": ("from_mm", "to_mm"),
+    "label": ("centre_mm", "rotation_deg"),
+    "room": ("centre_mm",),
+}
+SIZE_FIELDS = {
+    "wall": ("thickness_mm", "height_mm"),
+    "label": ("size_mm", "height_mm"),
+    "room": ("outline_bbox_mm", "thickness_mm"),
+}
+
+
+def _field_changed(kind, field, measured, expected):
+    """Has one measured field moved further than float noise?"""
+    left, right = measured.get(field), expected.get(field)
+    if field.endswith("_deg"):
+        return _angle_gap(left, right) > SQUARE_TOL_DEG
+    if field == "outline_bbox_mm":
+        return any(abs(a - b) > SIZE_TOL_MM
+                   for a, b in zip(left.get("size") or [],
+                                   right.get("size") or []))
+    tolerance = SIZE_TOL_MM if field in SIZE_FIELDS[kind] else MOVE_TOL_MM
+    if isinstance(left, (list, tuple)):
+        return any(abs(a - b) > tolerance for a, b in zip(left, right))
+    return abs(float(left) - float(right)) > tolerance
+
+
+def _drift_mm(kind, measured, expected):
+    """How far the thing actually went, in millimetres — for the sentence."""
+    worst = 0.0
+    for field in PLACEMENT_FIELDS[kind]:
+        if field.endswith("_deg"):
+            continue
+        left, right = measured.get(field), expected.get(field)
+        if isinstance(left, (list, tuple)):
+            worst = max(worst, math.hypot(*[a - b for a, b in zip(left, right)]))
+    return _round(worst, 3)
+
+
+def _off_the_floor(kind, measured):
+    """Everything in a plan sits on z = 0; a plan has no field for anything else."""
+    if kind == "room":
+        return abs(float(measured.get("top_z_mm") or 0.0)) > MOVE_TOL_MM
+    return abs(float(measured.get("base_z_mm") or 0.0)) > MOVE_TOL_MM
+
+
+def _placed_reference(obj):
+    """Where Forge PUT this object — ``([x, y, z] mm, deg)`` — or ``None``."""
+    location = obj.get("forge_fp_loc_mm")
+    rotation = obj.get("forge_fp_rot_deg")
+    if location is None or rotation is None:
+        return None
+    try:
+        return [float(value) for value in location], float(rotation)
+    except (TypeError, ValueError):  # pragma: no cover — a hand-typed property
+        return None
+
+
+def _candidate_for(obj):
+    """An ``FP:`` object Forge never built, described the way a fixture is.
+
+    A suggestion and nothing more: the world bounding box says where it is and
+    how big it is, and says nothing at all about its rotation — which is why
+    ``rotation_deg`` is 0 with a sentence beside it rather than a guess.
+    """
+    low = [float("inf")] * 3
+    high = [float("-inf")] * 3
+    for corner in obj.bound_box:
+        world = obj.matrix_world @ Vector(corner)
+        for axis in range(3):
+            value = world[axis] / MM_TO_M
+            low[axis] = min(low[axis], value)
+            high[axis] = max(high[axis], value)
+    low = _round_all(low, 3)
+    high = _round_all(high, 3)
+    size = [_round(high[a] - low[a], 3) for a in range(3)]
+    return {
+        "id": obj.name[len(PREFIX):],
+        "object": obj.name,
+        "bbox_mm": {"min": low, "max": high, "size": size},
+        "suggested": {
+            "footprint_mm": [_round((low[0] + high[0]) / 2.0, 3),
+                             _round((low[1] + high[1]) / 2.0, 3),
+                             size[0], size[1]],
+            "height_mm": size[2],
+            "rotation_deg": 0.0,
+        },
+        "why": ("it is named FP: but carries no Forge fingerprint, so Forge did "
+                "not build it. The footprint above is its world bounding box — a "
+                "suggestion for a new fixture entry, with an unknown rotation (a "
+                "bounding box cannot say), and nothing goes into the plan until "
+                "somebody gives it an id and a label."),
+    }
+
+
+def reconcile(plan, collection_name=DEFAULT_COLLECTION, floors=True):
+    """Measure one collection against one plan. Reads; never writes.
+
+    Split out of the command so the measurement can be tested without a socket,
+    exactly the way :func:`resolve_plan` is.
+    """
+    started = time.monotonic()
+    spec = resolve_plan(plan, floors=floors)
+    warnings = list(spec["warnings"])
+    notes = []
+
+    # ``matrix_world`` is evaluated state: in a viewport it is current because
+    # the depsgraph runs every frame, but over a socket (and in --background) a
+    # transform set moments ago may not have reached it yet, and a stale matrix
+    # would report a wall the artist just dragged as clean. Evaluating the view
+    # layer is not a change to the .blend — it is the same call every read-only
+    # command that looks at world space already makes.
+    common.refresh_view_layer()
+
+    collection = bpy.data.collections.get(collection_name)
+    if collection is None:
+        raise ForgeError(
+            "There is no collection called %r in this file, so there is nothing "
+            "to measure. reconcile_floorplan reads the scene and never creates "
+            "anything — build the level first, or name the collection it is "
+            "actually in." % collection_name)
+
+    present = _owned_objects(collection)
+    if not present:
+        raise ForgeError(
+            "The collection %r holds no FP: objects, so there is nothing to "
+            "measure this plan against. Refused rather than answered, because "
+            "the answer would be 'every entry in your plan has been deleted' — "
+            "and acting on that would empty the plan of a level that was never "
+            "built here, or was built into a different collection."
+            % collection_name)
+
+    entries = {entry["id"]: entry for entry in spec["entries"]}
+    clean, moved, resized, stale = [], [], [], []
+    deleted, candidates, unabsorbable = [], [], []
+
+    # --- what the plan has and the collection does not -----------------------
+    for ident, entry in sorted(entries.items()):
+        if ident in present:
+            continue
+        elsewhere = bpy.data.objects.get(PREFIX + ident)
+        if elsewhere is not None:
+            # In the file but outside this collection: the artist tidied it
+            # somewhere else, and reading that as a deletion would drop a plan
+            # entry for an object that is sitting right there.
+            unabsorbable.append({
+                "id": ident, "kind": entry["kind"], "object": elsewhere.name,
+                "why": ("it is in this file but outside the %r collection, so "
+                        "this call does not own it. It was NOT read as a "
+                        "deletion — move it back in, or reconcile against the "
+                        "collection it is in." % collection_name),
+            })
+            warnings.append("%s is outside the %r collection, so it was not read "
+                            "as a deletion." % (PREFIX + ident, collection_name))
+            continue
+        deleted.append({"id": ident, "kind": entry["kind"],
+                        "object": PREFIX + ident,
+                        "was": _entry_measurements(entry)})
+
+    # --- what the collection has ---------------------------------------------
+    for ident, obj in sorted(present.items()):
+        entry = entries.get(ident)
+        digest = obj.get("forge_fp_hash")
+
+        if not digest:
+            if obj.type != "MESH":
+                unabsorbable.append({
+                    "id": ident, "kind": None, "object": obj.name,
+                    "why": ("it is an object of type %s carrying no Forge "
+                            "fingerprint, and Forge measures meshes." % obj.type),
+                })
+                continue
+            candidates.append(_candidate_for(obj))
+            continue
+
+        if entry is None:
+            # Fingerprinted, but its id is not in this plan any more. That is
+            # `build_floorplan`'s deletion case rather than a measurement, and
+            # saying so is more use than measuring an object nothing will keep.
+            unabsorbable.append({
+                "id": ident, "kind": obj.get("forge_fp_kind") or None,
+                "object": obj.name,
+                "why": ("Forge built it, but this plan has no entry with that id "
+                        "any more. The next build deletes it (unless it has been "
+                        "hand-edited, in which case it is kept) — there is no "
+                        "entry left to measure it into."),
+            })
+            continue
+
+        if obj.type != "MESH":
+            unabsorbable.append({
+                "id": ident, "kind": entry["kind"], "object": obj.name,
+                "why": ("it is an object of type %s now, not the mesh Forge "
+                        "built. That is a promotion rather than a plan edit: "
+                        "set forge_fp_keep on it and the plan holds its slot."
+                        % obj.type),
+            })
+            continue
+
+        matrix, _origin, axes, lengths = _world_frame(obj)
+        fresh = digest == fingerprint(entry)
+        mesh_intact = (
+            int(obj.get("forge_fp_verts") or -1) == len(obj.data.vertices)
+            and _dims_match(obj.get("forge_fp_dims_mm"), _raw_dims_mm(obj))
+        )
+
+        # Has anything happened to it at all? Measured against what Forge PUT
+        # there, not against the plan, so a plan edit waiting for a rebuild is
+        # never mistaken for the artist's hand.
+        #
+        # The frame check is part of "has anything happened", not just part of
+        # the measurement: a wall tipped about its OWN x axis keeps its origin,
+        # keeps its rotation about +Z and keeps every vertex it had, so nothing
+        # else here would notice it.
+        problem = _frame_problem(axes, lengths)
+        placed = _placed_reference(obj)
+        if placed is not None:
+            put_location, put_rotation = placed
+            world = [_round(c / MM_TO_M, 3) for c in matrix.translation]
+            still_put = (
+                problem is None
+                and all(abs(a - b) <= MOVE_TOL_MM
+                        for a, b in zip(world, put_location))
+                and _angle_gap(_z_angle(axes), put_rotation) <= SQUARE_TOL_DEG
+                and all(abs(length - 1.0) <= 1e-4 for length in lengths)
+            )
+        else:
+            still_put = False if problem is not None else None
+            if not fresh:
+                warnings.append(
+                    "%s was built by an older Forge that did not record where it "
+                    "put things, and its plan entry has changed since — so Forge "
+                    "cannot tell a hand edit from the rebuild that is pending. "
+                    "Build first, then reconcile." % obj.name)
+
+        if not fresh:
+            # The PLAN moved on since this was built. The scene is showing the
+            # old plan, and measuring it would absorb the plan edit back out.
+            if still_put is False or (still_put is None and not mesh_intact):
+                unabsorbable.append({
+                    "id": ident, "kind": entry["kind"], "object": obj.name,
+                    "why": ("its plan entry has changed since this object was "
+                            "built AND the object has been edited in the scene. "
+                            "Forge will not guess which of the two you meant: "
+                            "build first (the plan edit lands), then reconcile "
+                            "(the scene edit comes back)."),
+                })
+            else:
+                stale.append(ident)
+            continue
+
+        if mesh_intact and still_put is not False:
+            clean.append(ident)
+            continue
+
+        if problem is not None:
+            unabsorbable.append({"id": ident, "kind": entry["kind"],
+                                 "object": obj.name, "why": problem})
+            continue
+
+        if not mesh_intact and not _is_axis_aligned_box(obj, lengths):
+            unabsorbable.append({
+                "id": ident, "kind": entry["kind"], "object": obj.name,
+                "why": ("its mesh is no longer a plain box (%d vertices now, %s "
+                        "when Forge built it), so it has been SCULPTED rather "
+                        "than resized and no footprint describes it. That is a "
+                        "promotion: set forge_fp_keep on it and the plan keeps "
+                        "the slot's footprint as the size contract."
+                        % (len(obj.data.vertices), obj.get("forge_fp_verts"))),
+            })
+            continue
+
+        measured = MEASURERS[entry["kind"]](entry, obj, matrix, axes, lengths,
+                                            mesh_intact)
+        if _off_the_floor(entry["kind"], measured):
+            height = (measured.get("top_z_mm") if entry["kind"] == "room"
+                      else measured.get("base_z_mm"))
+            unabsorbable.append({
+                "id": ident, "kind": entry["kind"], "object": obj.name,
+                "why": ("it now sits %g mm off the floor, and a floor plan is "
+                        "top-down: no field in floorplan.json can hold a height "
+                        "off z = 0, so absorbing the rest of it would quietly "
+                        "put it back on the ground." % height),
+            })
+            continue
+
+        expected = _entry_measurements(entry)
+        changed = [field
+                   for field in (PLACEMENT_FIELDS[entry["kind"]]
+                                 + SIZE_FIELDS[entry["kind"]])
+                   if _field_changed(entry["kind"], field, measured, expected)]
+        if not changed:
+            clean.append(ident)
+            continue
+
+        if entry["kind"] == "room":
+            if any(field in SIZE_FIELDS["room"] for field in changed):
+                unabsorbable.append({
+                    "id": ident, "kind": "room", "object": obj.name,
+                    "why": ("its slab has been resized, and a room is a polygon: "
+                            "a bounding box cannot say which corners moved. "
+                            "Redraw the room's polygon_mm in the plan — a slab "
+                            "that was only MOVED is absorbed; this one was not."),
+                })
+                continue
+            if _angle_gap(measured.get("rotation_deg"), 0.0) > SQUARE_TOL_DEG:
+                unabsorbable.append({
+                    "id": ident, "kind": "room", "object": obj.name,
+                    "why": ("its slab has been rotated, and a room is a polygon: "
+                            "rotating one rewrites every corner, which a "
+                            "bounding box cannot do for you. Redraw its "
+                            "polygon_mm."),
+                })
+                continue
+
+        record = {
+            "id": ident,
+            "kind": entry["kind"],
+            "object": obj.name,
+            "measured": measured,
+            "was": expected,
+            "changed": changed,
+            "moved_mm": _drift_mm(entry["kind"], measured, expected),
+            "mesh": "intact" if mesh_intact else "edited-but-still-a-box",
+            "confidence": "measured",
+        }
+        if any(field in SIZE_FIELDS[entry["kind"]] for field in changed):
+            resized.append(record)
+        else:
+            moved.append(record)
+
+    if deleted:
+        notes.append("%d plan entr%s has no object in %r. Deleting a wall "
+                     "because there is no wall there is a layout decision, and "
+                     "the plan is what has to learn it."
+                     % (len(deleted), "y" if len(deleted) == 1 else "ies",
+                        collection_name))
+    if stale:
+        notes.append("%d entr%s in this plan changed since it was built and is "
+                     "waiting for a rebuild; nothing in the scene was read as an "
+                     "edit for %s."
+                     % (len(stale), "y" if len(stale) == 1 else "ies",
+                        "it" if len(stale) == 1 else "them"))
+    if not floors:
+        notes.append("floor:false, so this plan's rooms were left out of the "
+                     "comparison entirely — a missing slab is not a deletion "
+                     "when no slab was ever built.")
+    if not (moved or resized or deleted or candidates):
+        notes.append("Nothing to absorb: the scene and the plan agree, to within "
+                     "%g mm." % MOVE_TOL_MM)
+
+    return {
+        "collection": collection_name,
+        "objects": len(present),
+        "plan_entries": len(entries),
+        "clean": clean,
+        "moved": moved,
+        "resized": resized,
+        "stale": stale,
+        "deleted_in_scene": deleted,
+        "candidates": candidates,
+        "unabsorbable": unabsorbable,
+        "tolerance_mm": {"move": MOVE_TOL_MM, "size": SIZE_TOL_MM,
+                         "angle_deg": SQUARE_TOL_DEG},
+        "floor": floors,
+        "plan_version": spec["version"],
+        "units": spec["units"],
+        "honesty": RECONCILE_HONESTY,
+        "notes": list(dict.fromkeys(notes)),
+        "warnings": list(dict.fromkeys(warnings)),
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+@command("reconcile_floorplan")
+def cmd_reconcile_floorplan(params):
+    """Measure the artist's hand edits back into millimetres. Reads only.
+
+    ``{"plan": <the floorplan.json object, resolved, mm>,
+    "collection"?: "Floorplan", "floor"?: true}``
+
+    The return channel for *"I should be able to manually edit and forge should
+    be aware of my changes."*  Every ``FP:`` object in the collection is compared
+    with what Forge put there, and what comes back is data:
+
+    * ``clean`` — ids that still measure exactly what the plan says;
+    * ``moved`` / ``resized`` — each with the measurement written in plan fields
+      (``from_mm``/``to_mm``/``thickness_mm``/``height_mm`` for a wall; footprint
+      centre, size and rotation for a fixture; an outline bbox for a slab), what
+      it was, which fields changed, and how far it went;
+    * ``stale`` — the plan has an edit for this id that the scene has not been
+      rebuilt for, so nothing here was read as a hand edit;
+    * ``deleted_in_scene`` — in the plan, not in the collection;
+    * ``candidates`` — an ``FP:`` box Forge did not build, with the footprint it
+      would suggest;
+    * ``unabsorbable`` — one sentence per object saying why no plan field can
+      hold what was done to it (tilted, sheared, sculpted, lifted off the floor).
+
+    **Nothing is decided here and nothing is written.** The plan is edited by
+    ``service.absorb_reconcile`` off this report, deterministically, and the
+    artist sees the diff before it is saved.
+    """
+    if "plan" not in params or params.get("plan") is None:
+        raise ForgeError(
+            "reconcile_floorplan measures the scene against a plan, so it needs "
+            "one: pass the floorplan.json object as 'plan'. It is the same "
+            "resolved plan build_floorplan takes, and this command changes "
+            "neither the plan nor the scene.")
+    collection_name = get_str(params, "collection", DEFAULT_COLLECTION)
+    return reconcile(params["plan"], collection_name, _floor_flag(params))

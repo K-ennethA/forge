@@ -21,6 +21,19 @@ Endpoints
 ``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
 
+Live context (the copilot's eyes)
+---------------------------------
+``/ask`` — and only ``/ask``, because the other routes are not conversations —
+opens every turn with one glance at the add-on socket: ``get_activity`` for what
+the artist has done since this conversation last looked, plus the mode, the
+active object, the selection and the 3D cursor that come back in the same call.
+It becomes one ``[Blender now] ...`` line in the prompt, capped at
+:data:`LIVE_CONTEXT_BUDGET` characters, newest first.  It is bounded in time
+(:data:`LIVE_CONTEXT_TIMEOUT`), it says "Blender is not running" out loud rather
+than silently losing the scene, it degrades to ``get_scene_info`` alone on an
+add-on that predates the feed, and **it can never fail a turn**: every exception
+on that path is swallowed and costs the turn nothing but the block.
+
 Phase 9 — the web UI's routes (all additive; the panel never calls them)::
 
 ``GET  /``                 the single-page app in ``assistant/webui/``
@@ -243,7 +256,13 @@ Web UI environment (Phase 9)
                              ``.py`` path runs under this interpreter, which is
                              how the tests avoid needing PowerShell)
 ``FORGE_BLENDER_HOST`` / ``FORGE_BLENDER_PORT``   the add-on socket the flows
-                             passthrough talks to (default 127.0.0.1:9876)
+                             passthrough — and the per-turn live glance — talk
+                             to (default 127.0.0.1:9876)
+``FORGE_ASSISTANT_LIVE_CONTEXT``  ``0`` switches the per-turn glance off
+                             entirely (default on).  For a harness that must
+                             open no connection to the add-on's port, and for a
+                             machine where Blender is slow enough that the wait
+                             is worse than the blindness
 ``FORGE_SERVICE_URL``        geometry service, for ``/services/health``
                              (default http://127.0.0.1:8765)
 ``FORGE_MESHGEN_URL``        meshgen service, likewise (default 8902)
@@ -308,6 +327,82 @@ DEFAULT_ALLOWED_TOOLS = "Read,Glob,Grep,mcp__%s__*" % MCP_SERVER
 PERMISSION_MODES = ("auto", "acceptEdits", None)
 
 CONTEXT_DIVIDER = "--- Current Blender context ---"
+
+#: Live context (Phase 19b).  The panel's context block says what the artist was
+#: looking at when they pressed Send; this one says what Blender *is*, read off
+#: the add-on socket a moment before the turn starts, and what has changed since
+#: the assistant last looked.  It is one marked line rather than a divider block
+#: on purpose: it is an observation, not part of the artist's message, and it
+#: should read as a glance rather than as an instruction.
+LIVE_CONTEXT_MARKER = "[Blender now]"
+
+#: Hard ceiling on the whole block, in characters.  Every turn pays for this, in
+#: tokens and in the model's attention, so the budget is the design: newest first
+#: and the older half dropped with a count, rather than a scrolling log that
+#: crowds out the thing the artist actually typed.
+LIVE_CONTEXT_BUDGET = 600
+
+#: How many events to ask the add-on for.  More than fits the budget, so the
+#: trimming decision is made here against real text rather than guessed at.
+LIVE_CONTEXT_LIMIT = 16
+
+#: The probe's whole time allowance, per socket call.  A copilot's awareness is
+#: not worth a second of the artist's wait, and the turn must start whether or
+#: not Blender answered — so this is short and every failure is swallowed.
+LIVE_CONTEXT_TIMEOUT = 1.0
+
+#: How long to wait for the port to accept a connection before giving up on the
+#: whole probe.  Deliberately shorter than the command timeout: "nothing is
+#: listening" is the common case when Blender is closed, and it should be cheap.
+LIVE_CONTEXT_CONNECT_TIMEOUT = 0.4
+
+#: What the block says when the socket is down.  Said out loud rather than
+#: omitted: "Blender is not running" is itself context, and an assistant that
+#: silently loses the scene will happily talk about objects that are not there.
+LIVE_CONTEXT_DOWN = "Blender is not running, so there is no live scene to see."
+
+#: ...and when the port accepts but the add-on says nothing in time — a busy
+#: main thread, usually.  "I could not see" beats a scene read off nothing.
+LIVE_CONTEXT_UNREADABLE = ("Blender is listening but did not answer in time, "
+                           "so nothing below is live.")
+
+#: ...and when the add-on answers but has no feed, which means an add-on built
+#: before ``get_activity`` existed.  Named as an upgrade rather than a fault.
+LIVE_CONTEXT_NO_FEED = ("no activity feed in this add-on build "
+                        "(restart Blender with the current Forge add-on to see "
+                        "what the artist has been doing)")
+
+#: Blender's own mode strings, in the words an artist uses for them.  Anything
+#: not in the table is passed through unchanged rather than guessed at.
+MODE_WORDS = {
+    "OBJECT": "Object",
+    "EDIT_MESH": "Edit",
+    "EDIT_CURVE": "Edit (curve)",
+    "EDIT_SURFACE": "Edit (surface)",
+    "EDIT_TEXT": "Edit (text)",
+    "EDIT_ARMATURE": "Edit (armature)",
+    "EDIT_METABALL": "Edit (metaball)",
+    "EDIT_LATTICE": "Edit (lattice)",
+    "EDIT_GREASE_PENCIL": "Edit (grease pencil)",
+    "POSE": "Pose",
+    "SCULPT": "Sculpt",
+    "PAINT_WEIGHT": "Weight Paint",
+    "PAINT_VERTEX": "Vertex Paint",
+    "PAINT_TEXTURE": "Texture Paint",
+    "PARTICLE": "Particle Edit",
+}
+
+#: An event ``kind`` in the words an artist would use for it.  The verb is the
+#: whole point: "transformed" is a depsgraph flag, "moved" is what happened.
+ACTIVITY_VERBS = {
+    "transformed": "moved",
+    "geometry": "edited",
+    "added": "added",
+    "removed": "deleted",
+    "mode": "switched to",
+    "undo": "undid a step",
+    "redo": "redid a step",
+}
 
 #: Phase 6c.  An attached reference image rides in ``context.image_path`` and is
 #: appended to the message body as its own block, at the very end, so it is the
@@ -1284,10 +1379,26 @@ def format_image(path):
     return "\n\n%s\n%s\n%s" % (IMAGE_DIVIDER, path, IMAGE_INSTRUCTION)
 
 
-def build_prompt(message, context):
+def format_live(live):
+    """The live-context block as it appears in the prompt, or ``""``."""
+    text = str(live or "").strip()
+    if not text:
+        return ""
+    return "\n\n%s" % text
+
+
+def build_prompt(message, context, live=""):
+    """The artist's message, what they were looking at, what Blender IS, the image.
+
+    ``live`` sits between the panel's context block and the attachment for a
+    reason of reading order: the context block is what the artist told us, the
+    live block is what we went and looked at, and the attachment carries an
+    instruction ("Read this first") that has to be the last thing on the page.
+    """
     rest, image_path = split_image(context)
     return (str(message or "").strip()
             + format_context(rest)
+            + format_live(live)
             + format_image(image_path))
 
 
@@ -1948,6 +2059,12 @@ class JobStore(object):
         self.session_cost_usd = 0.0
         #: Did the most recently finished turn fail because nobody is signed in?
         self.last_auth_error = False
+        #: BLENDER's clock at the last live glance — the ``since`` of the next
+        #: one.  It lives here rather than in a module global because it is
+        #: per-conversation state exactly as the session id is: a new
+        #: conversation has never looked at the scene, and should be told
+        #: everything the feed still remembers rather than nothing.
+        self.blender_seen_at = None
 
     # -- session ---------------------------------------------------------
     def reset_session(self):
@@ -1957,7 +2074,30 @@ class JobStore(object):
             # The running total is per-conversation: a fresh conversation has
             # not cost anything yet, so the panel's status row starts at zero.
             self.session_cost_usd = 0.0
+            # ...and neither has it looked at Blender yet.
+            self.blender_seen_at = None
             return previous
+
+    # -- the live glance -------------------------------------------------
+    def blender_since(self):
+        """When this conversation last looked at Blender, or ``None``."""
+        with self._lock:
+            return self.blender_seen_at
+
+    def note_blender_seen(self, when):
+        """Remember the add-on's own clock as of this glance."""
+        if when is None:
+            return
+        try:
+            when = float(when)
+        except (TypeError, ValueError):
+            return
+        with self._lock:
+            self.blender_seen_at = when
+
+    def forget_blender_seen(self):
+        with self._lock:
+            self.blender_seen_at = None
 
     def remember_session(self, session_id):
         with self._lock:
@@ -2861,6 +3001,265 @@ def blender_listening(timeout=1.0):
             return True
     except OSError:
         return False
+
+
+# ---------------------------------------------------------------------------
+# live context — what Blender IS, read a moment before the turn starts
+# ---------------------------------------------------------------------------
+#
+# The ask, verbatim: "it should have live context awareness of blender otherwise
+# its useless as a copilot."  Before this, the assistant saw the scene only when
+# it chose to call a tool, which meant it saw the thing it asked about and
+# nothing else; an artist who moved a wall and dropped into sculpt mode between
+# two messages was invisible.  So every chat turn now opens with a glance:
+# one socket call to ``get_activity``, one short line in the prompt.
+#
+# Four rules, and all four are about not making the artist pay for it:
+#
+# * it is capped at :data:`LIVE_CONTEXT_BUDGET` characters, newest first;
+# * it costs at most :data:`LIVE_CONTEXT_TIMEOUT` seconds, and the connect probe
+#   is shorter still, because "Blender is closed" is the common case;
+# * it NEVER fails a turn — every exception on this path is swallowed, and a
+#   probe that blew up simply produces no block;
+# * it goes into the chat route and nowhere else.  The library, the workbench and
+#   the flow passthroughs are not conversations and have nothing to be aware of.
+
+def relative_age(seconds):
+    """``2 min ago`` — how long ago, in the words a person would use."""
+    try:
+        seconds = float(seconds)
+    except (TypeError, ValueError):
+        return "just now"
+    if seconds < 5:
+        return "just now"
+    if seconds < 90:
+        return "%ds ago" % int(round(seconds))
+    if seconds < 5400:
+        return "%d min ago" % int(round(seconds / 60.0))
+    return "%d h ago" % int(round(seconds / 3600.0))
+
+
+def mode_word(mode):
+    """``EDIT_MESH`` -> ``Edit``. An unknown mode is passed through, not guessed."""
+    text = str(mode or "").strip()
+    if not text:
+        return "unknown"
+    return MODE_WORDS.get(text.upper(), text)
+
+
+def _mm_text(value):
+    try:
+        return "%g" % float(value)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def describe_activity_event(event):
+    """One event as a clause: ``artist moved FP:wall-x0-garage (2 min ago)``."""
+    if not isinstance(event, dict):
+        return ""
+    source = "Forge" if str(event.get("source")) == "forge" else "artist"
+    kind = str(event.get("kind") or "")
+    verb = ACTIVITY_VERBS.get(kind, kind or "touched")
+    name = str(event.get("object") or "")
+    if kind in ("undo", "redo"):
+        text = "%s %s" % (source, verb)
+    elif kind == "mode":
+        text = "%s switched to %s" % (source, mode_word(event.get("detail")))
+    else:
+        text = "%s %s %s" % (source, verb, name or "something")
+    try:
+        count = int(event.get("count") or 1)
+    except (TypeError, ValueError):
+        count = 1
+    if count > 1:
+        text += " x%d" % count
+    return "%s (%s)" % (text, relative_age(event.get("ago")))
+
+
+def live_headline(info):
+    """Where the artist is standing: mode, active, selection, cursor."""
+    parts = ["mode %s" % mode_word(info.get("mode"))]
+    active = str(info.get("active") or "")
+    parts.append("active %s" % active if active else "nothing active")
+    selected = [str(name) for name in (info.get("selected") or []) if str(name)]
+    if not selected:
+        parts.append("selected nothing")
+    elif len(selected) <= 2:
+        parts.append("selected %d (%s)" % (len(selected), ", ".join(selected)))
+    else:
+        parts.append("selected %d (%s, +%d)"
+                     % (len(selected), ", ".join(selected[:2]), len(selected) - 2))
+    cursor = info.get("cursor_mm")
+    if isinstance(cursor, (list, tuple)) and len(cursor) == 3:
+        parts.append("cursor_mm [%s]" % ", ".join(_mm_text(v) for v in cursor))
+    return "; ".join(parts)
+
+
+def _clip_live(text, budget):
+    """The budget, enforced on the finished sentence rather than trusted.
+
+    Named apart from :func:`_clip` (the activity sidebar's, with its ellipsis
+    character and its own limit) because the two are different rules for
+    different readers, and one shadowing the other is a bug that shows up three
+    tests away from where it was written.
+    """
+    if len(text) <= budget:
+        return text
+    return text[:max(0, budget - 3)].rstrip(" ,;") + "..."
+
+
+def format_live_context(info, budget=LIVE_CONTEXT_BUDGET):
+    """The one-line block, or ``""`` when there is nothing honest to say."""
+    if not isinstance(info, dict) or not info:
+        return ""
+    if not info.get("up"):
+        return "%s %s" % (LIVE_CONTEXT_MARKER, LIVE_CONTEXT_DOWN)
+    if not info.get("state"):
+        # Listening, but it told us nothing — busy main thread, dropped
+        # connection.  Said plainly: an assistant that reports a scene it could
+        # not read is worse than one that admits it did not get a look.
+        return "%s %s" % (LIVE_CONTEXT_MARKER, LIVE_CONTEXT_UNREADABLE)
+
+    head = live_headline(info)
+    if not info.get("feed"):
+        return _clip_live("%s %s; %s." % (LIVE_CONTEXT_MARKER, head,
+                                     LIVE_CONTEXT_NO_FEED), budget)
+
+    events = [event for event in (info.get("events") or [])
+              if isinstance(event, dict)]
+    if not events:
+        tail = ("this is your first look at the scene this session"
+                if info.get("since") is None
+                else "nothing has changed since your last look")
+        return _clip_live("%s %s; %s." % (LIVE_CONTEXT_MARKER, head, tail), budget)
+
+    prefix = "%s %s; since your last look: " % (LIVE_CONTEXT_MARKER, head)
+    phrases = [text for text in (describe_activity_event(event)
+                                 for event in events) if text]
+    try:
+        unsent = max(0, int(info.get("more") or 0))
+    except (TypeError, ValueError):
+        unsent = 0
+
+    kept = []
+    for index, phrase in enumerate(phrases):
+        remaining = len(phrases) - index - 1 + unsent
+        # Reserve room for the ", +N more" note whenever there is anything left
+        # to be more than: a block that spent its last characters on half a
+        # clause would hide the fact that it was trimmed at all.
+        reserve = len(", +%d more" % remaining) if remaining else 0
+        candidate = prefix + ", ".join(kept + [phrase]) + "."
+        if len(candidate) + reserve > budget and kept:
+            break
+        if len(candidate) > budget:
+            break
+        kept.append(phrase)
+
+    dropped = len(phrases) - len(kept) + unsent
+    if not kept:
+        return _clip_live("%s %s; %d changes since your last look."
+                     % (LIVE_CONTEXT_MARKER, head, len(phrases) + unsent), budget)
+    body = ", ".join(kept)
+    if dropped > 0:
+        body += ", +%d more" % dropped
+    return _clip_live(prefix + body + ".", budget)
+
+
+def probe_blender_live(since=None, timeout=LIVE_CONTEXT_TIMEOUT):
+    """Read the add-on's live state for one turn. Never raises.
+
+    ``get_activity`` already carries the mode, the active object, the selection
+    and the 3D cursor, so the happy path is ONE socket round trip rather than two
+    — the fields are the same fields ``get_scene_info`` reports, and asking twice
+    for them would double the wait for nothing.  ``get_scene_info`` is the
+    fallback, for an add-on old enough not to have the feed.
+    """
+    info = {"up": False, "feed": False, "state": False, "since": since,
+            "events": [], "more": 0, "now": None, "error": ""}
+    try:
+        if not blender_listening(timeout=LIVE_CONTEXT_CONNECT_TIMEOUT):
+            return info
+        info["up"] = True
+
+        params = {"limit": LIVE_CONTEXT_LIMIT}
+        if since is not None:
+            params["since"] = since
+        result = None
+        try:
+            result = blender_command("get_activity", params, timeout=timeout)
+        except BlenderRefused as exc:
+            # "Unknown command 'get_activity'" is an add-on built before the
+            # feed, not a failure: degrade to the state half of the question.
+            info["error"] = str(exc)[:200]
+
+        if isinstance(result, dict) and result:
+            info["feed"] = True
+            info["state"] = True
+            info["events"] = result.get("events") or []
+            info["mode"] = result.get("mode")
+            info["active"] = result.get("active")
+            info["selected"] = result.get("selected") or []
+            info["cursor_mm"] = result.get("cursor_mm")
+            info["now"] = result.get("now")
+            info["collections_touched"] = result.get("collections_touched") or []
+            try:
+                info["more"] = max(0, int(result.get("matched") or 0)
+                                   - len(info["events"]))
+            except (TypeError, ValueError):
+                info["more"] = 0
+            return info
+
+        if info["error"] and "unknown command" not in info["error"].lower():
+            # It is listening and it did not answer — a hung main thread, a
+            # dropped connection, a refusal about something else.  A second
+            # call would only buy a second helping of the same wait, and the
+            # artist is sitting in front of a Send button.
+            return info
+
+        scene = blender_command("get_scene_info", {}, timeout=timeout)
+        if isinstance(scene, dict):
+            info["state"] = True
+            info["mode"] = scene.get("mode")
+            info["active"] = scene.get("active")
+            info["selected"] = scene.get("selected") or []
+            info["cursor_mm"] = scene.get("cursor_mm")
+    except BlenderDown as exc:
+        info["up"] = False
+        info["error"] = str(exc)[:200]
+    except Exception as exc:  # noqa: BLE001 - awareness must never cost a turn
+        info["error"] = "%s: %s" % (type(exc).__name__, exc)
+    return info
+
+
+def live_context_enabled():
+    """Is the glance switched on?  ``FORGE_ASSISTANT_LIVE_CONTEXT=0`` turns it off.
+
+    On by default, because a copilot that cannot see the scene is the problem
+    this exists to fix.  The switch is for the two cases where a probe is the
+    wrong thing: a test harness that must never open a connection to whatever is
+    on the add-on's port, and an artist who wants the turn to start the instant
+    they press Send on a machine where Blender is slow to answer.
+    """
+    value = str(_env("FORGE_ASSISTANT_LIVE_CONTEXT", "1")).strip().lower()
+    return value not in ("0", "off", "false", "no")
+
+
+def live_context_for_turn(since=None):
+    """``(block text, the add-on's clock at the moment of the glance)``.
+
+    The clock comes back so the caller can remember it as "when I last looked":
+    it is BLENDER's own ``time.time()``, not this process's, which is what makes
+    ``since`` filtering exact across two processes with no clock-skew reasoning
+    anywhere.
+    """
+    if not live_context_enabled():
+        return "", None
+    try:
+        info = probe_blender_live(since=since)
+        return format_live_context(info), info.get("now")
+    except Exception:  # noqa: BLE001 - see probe_blender_live
+        return "", None
 
 
 # ---------------------------------------------------------------------------
@@ -4460,11 +4859,27 @@ class Handler(BaseHTTPRequestHandler):
             self._send(503, {"error": INSTALL_HINT})
             return
 
-        # Built now, not at pickup: this is the scene the artist was looking at
-        # when they pressed Send, and it is what their message is about.
-        prompt = build_prompt(message, payload.get("context"))
         new_conversation = (
             str(payload.get("conversation") or "continue").lower() == "new")
+
+        # The glance.  One socket call, a second at most, and wrapped twice over
+        # because an assistant that cannot answer at all is worse than one that
+        # cannot see: `live_context_for_turn` swallows everything already, and
+        # this catches even a failure to call it.
+        live = ""
+        try:
+            if new_conversation:
+                # A fresh conversation has never looked, so it is owed the whole
+                # feed rather than "nothing since a glance it does not remember".
+                JOBS.forget_blender_seen()
+            live, seen_at = live_context_for_turn(JOBS.blender_since())
+            JOBS.note_blender_seen(seen_at)
+        except Exception:  # noqa: BLE001 - never fail a turn over awareness
+            live = ""
+
+        # Built now, not at pickup: this is the scene the artist was looking at
+        # when they pressed Send, and it is what their message is about.
+        prompt = build_prompt(message, payload.get("context"), live=live)
 
         job, disposition = JOBS.submit(message, prompt,
                                        new_conversation=new_conversation,

@@ -104,6 +104,12 @@ READ_ONLY_COMMANDS = frozenset({
     # keys and materials are the artist's work, and Ctrl+Z is what a demo that
     # went the wrong way needs.
     "render_animation",
+    # Phase 19's tape measure. `reconcile_floorplan` reads every FP: object's
+    # transform and mesh and hands back millimetres; it has no write in it at
+    # all, and an undo step for "I measured your level" would bury the drag the
+    # artist actually wants back. Its sibling `build_floorplan` is deliberately
+    # NOT here — that one builds objects, and Ctrl+Z has to reach it.
+    "reconcile_floorplan",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

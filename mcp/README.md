@@ -17,7 +17,7 @@ tools import `service/components.py`, `service/wiring.py` and the arithmetic hal
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
 docstring and summarised under [Maker mode](#maker-mode-phase-10--the-part-that-does-something-when-you-press-it).
-The three **floor-plan** tools do the same with `service/floorplan.py` and
+The five **floor-plan** tools do the same with `service/floorplan.py` and
 `service/appliance_dims.py` for the same reason — the plan contract is a schema, not a
 geometry job, and the service exposes no route for it — at the cost of one wheel, `numpy`,
 which `service/floorplan.py` imports at the top for its rasteriser
@@ -598,7 +598,8 @@ missing id is refused rather than generated.
 |---|---|---|
 | `floorplan_validate` | `plan` (the object) and/or `project`, `save` (default **true**) | `service.validate_plan` + `fill_defaults`. Reports the counts, the resolved `defaults`, which entries took one, and every fixture's appliance match **with its confidence and the route it matched by**. With a `project` it saves the normalised plan back under `save_design_doc`'s rules. |
 | `floorplan_diff` | `plan` (the proposal), `against` (a plan) **or** `project` (its saved plan) | `service.diff_plans` — `added` / `removed` / `changed` / `unchanged`, by id, plus the one-sentence version: *"this edit rebuilds 2 walls, adds 1 fixture and touches nothing else."* Reads nothing in Blender. |
-| `floorplan_build` | `plan` and/or `project`, `collection` (`"Floorplan"`), `mode` `update`/`rebuild`, `floor` | Sends `build_floorplan` over the socket. Reports built / updated / deleted / **unchanged** / **kept**, the door mechanism records, the bounds, and the greybox honesty line. Needs Blender. |
+| `floorplan_build` | `plan` and/or `project`, `collection` (`"Floorplan"`), `mode` `update`/`rebuild`, `floor`, `sync` (default **true**) | Sends `build_floorplan` over the socket. With a `project`, `sync` **absorbs the artist's scene edits into the plan first** and the report leads with what it absorbed. Then built / updated / deleted / **unchanged** / **kept**, the door mechanism records, the bounds, and the greybox honesty line. Needs Blender. |
+| `floorplan_reconcile` | `project`, `apply` (default **false**), `collection`, `floor`, `confirm_deletions` (default **false**) | The return channel: sends the read-only `reconcile_floorplan`, reports what MOVED and by how many millimetres, what was resized, what they deleted, what boxes Forge did not build, and what no plan field can describe. `apply=true` runs `service.absorb_reconcile`, saves the plan through `floorplan_validate`'s own write path and quotes the diff — **rebuilding nothing**. Needs Blender. |
 
 **The order is fixed and the middle step is not optional.** validate → hand-author
 `design/floorplan.svg` (the echo-back: rooms coloured, door swing arcs, labelled fixture
@@ -623,6 +624,23 @@ an `FP:` object whose mesh no longer matches its entry (different vertex count, 
 off by >0.5 mm, or `forge_fp_keep` set) is reported under `kept` and left alone in **every**
 mode, `rebuild` included.
 
+**They edit the level by hand, and the PLAN learns from it.** *"i deleted the wall because
+there isnt a wall there, i'd like to play with things to determine optimal layout, having it
+undone doesnt make sense."* `build_floorplan` refuses to clobber a hand-edited object, but
+that protection is one-way and it never looks at a TRANSFORM — so a wall dragged two metres
+kept its fingerprint and got put back, and a wall deleted on purpose came back on the next
+build (twice, to `FP:wall-living-kitchen`). `floorplan_reconcile` measures the scene instead:
+a wall's centreline, thickness and height; a fixture's footprint, size and spin (a right
+angle comes back exact); a slab's outline. `floorplan_build` runs that **before** it builds,
+by default — absorb the scene, then apply the edit, then build — which is the ordering that
+makes a resurrection impossible rather than unlikely. **Deletions are absorbed, not queried**
+(`confirm_deletions=true` if a caller wants to be asked), and `apply` never rebuilds
+anything: the plan now says what the scene shows, so the next build finds those ids
+unchanged. What no plan field can describe — a tilted or sheared object, one lifted off the
+floor, a sculpted placeholder (that is a **promotion**: `forge_fp_keep`) — comes back with
+the reason rather than rounded off, and an `FP:` box Forge never built is a *candidate* that
+needs an id and a label from a person before anything is added.
+
 ```
 # 1. the reading, checked and filed
 floorplan_validate(plan={"version": 1, "units": "mm", "defaults": {"ceiling_mm": 2400},
@@ -637,11 +655,18 @@ floorplan_build(project="upstairs flat")
 floorplan_diff(plan=revised, project="upstairs flat")
 # -> "this edit rebuilds 1 wall, adds 1 fixture and touches nothing else"
 floorplan_build(plan=revised, project="upstairs flat")   # update mode: 2 objects touched
+# 5. and when they have been dragging things about in the viewport
+floorplan_reconcile(project="upstairs flat")
+# -> MOVED wall-03 (wall) by 500 mm; DELETED IN THE SCENE - wall-07 (wall)
+floorplan_reconcile(project="upstairs flat", apply=True)
+# -> absorbed into the plan, saved, diff quoted, NOTHING REBUILT
 ```
 
 `build_floorplan` is also a legal flow step (`KNOWN_BLENDER_OPS`), which is safe precisely
 because `update` mode is incremental: replaying it costs a sub-millisecond diff when nothing
-changed.
+changed. `reconcile_floorplan` is deliberately **not** a flow op: absorbing scene edits into
+a saved plan is a conversation with the artist about their layout, not a step to replay
+unattended.
 
 ### Imported models (Phase 6d) — the downloaded-STL pipeline
 

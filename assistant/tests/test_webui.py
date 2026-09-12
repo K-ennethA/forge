@@ -3873,3 +3873,340 @@ def test_the_page_plays_a_video_inline_in_chat_and_on_the_card(client):
     assert "project.demos" in script and "lib-demos" in script
     css = fetch_text(client, "/webui/app.css")
     assert ".gallery video.demo" in css and ".lib-demos" in css
+
+
+# ===========================================================================
+# Live context - the copilot's eyes (the artist: "it should have live context
+# awareness of blender otherwise its useless as a copilot")
+#
+# Two halves, deliberately.  The pure half asserts the SENTENCE - the block is
+# the whole product here, and a format nobody pinned down is a format that
+# drifts.  The wired half runs a real bridge against a fake add-on socket and
+# proves the four things that must be true of an always-on probe: it reaches the
+# prompt, it asks only for what is new, it stays inside its budget, and it never
+# costs a turn when Blender is slow, old, silent or absent.
+# ===========================================================================
+
+def last_prompt(client):
+    """The prompt the fake CLI was last spawned with."""
+    calls = client.wait_for_calls(1)
+    argv = calls[-1]["argv"] if isinstance(calls[-1], dict) else calls[-1]
+    return argv[argv.index("-p") + 1]
+
+
+def activity_blender(events=None, matched=None, now=1700000000.0, **extra):
+    """A FakeBlender that answers ``get_activity`` the way the add-on does."""
+    events = list(events or [])
+    result = {
+        "events": events,
+        "count": len(events),
+        "matched": len(events) if matched is None else matched,
+        "truncated": bool(matched and matched > len(events)),
+        "now": now,
+        "mode": "OBJECT",
+        "active": "FP:wall-front-house",
+        "selected": ["FP:wall-front-house"],
+        "selected_count": 1,
+        "cursor_mm": [0.0, 0.0, 0.0],
+        "collections_touched": ["Floorplan"],
+        "ring": {"limit": 200, "size": len(events), "dropped": 0, "errors": 0},
+        "handlers": 4,
+        "watching": True,
+    }
+    result.update(extra)
+    return by_type({"get_activity": result}, default={})
+
+
+def moved(name, ago=120.0, source="artist", kind="transformed", **extra):
+    event = {"t": 1699999000.0, "object": name, "kind": kind,
+             "source": source, "count": 1, "ago": ago}
+    event.update(extra)
+    return event
+
+
+# -- the pure half: no bridge process, no socket -------------------------
+
+def test_live_context_reads_like_a_glance_not_a_log():
+    """The format the whole feature is for, asserted verbatim once."""
+    text = bridge.format_live_context({
+        "up": True, "state": True, "feed": True, "since": 1.0,
+        "mode": "OBJECT", "active": "FP:wall-front-house",
+        "selected": ["FP:wall-front-house"], "cursor_mm": [0.0, 0.0, 0.0],
+        "events": [moved("FP:wall-x0-garage", ago=120.0),
+                   moved("FP:closet-entry", ago=300.0, kind="removed")],
+    })
+    assert text.startswith(bridge.LIVE_CONTEXT_MARKER)
+    assert "mode Object" in text
+    assert "active FP:wall-front-house" in text
+    assert "selected 1 (FP:wall-front-house)" in text
+    assert "cursor_mm [0, 0, 0]" in text
+    assert "since your last look:" in text
+    assert "artist moved FP:wall-x0-garage (2 min ago)" in text
+    assert "artist deleted FP:closet-entry (5 min ago)" in text
+
+
+def test_live_context_tells_forges_own_work_from_the_artists():
+    """The whole point of the source tag: one of these is news, one is not."""
+    text = bridge.format_live_context({
+        "up": True, "state": True, "feed": True, "since": 1.0, "mode": "SCULPT",
+        "active": "Body", "selected": [], "events": [
+            moved("Body", ago=10.0, source="forge", kind="geometry"),
+            moved("FP:wall-01", ago=20.0, source="artist"),
+        ]})
+    assert "Forge edited Body (10s ago)" in text
+    assert "artist moved FP:wall-01 (20s ago)" in text
+    assert "mode Sculpt" in text and "selected nothing" in text
+
+
+def test_live_context_says_what_a_gesture_was_rather_than_repeating_it():
+    text = bridge.format_live_context({
+        "up": True, "state": True, "feed": True, "since": 1.0, "mode": "OBJECT",
+        "active": None, "selected": [],
+        "events": [moved("Cup", ago=3.0, count=340)]})
+    assert "artist moved Cup x340 (just now)" in text
+    assert "nothing active" in text
+
+
+def test_live_context_reports_undo_and_mode_switches_in_words():
+    text = bridge.format_live_context({
+        "up": True, "state": True, "feed": True, "since": 1.0, "mode": "SCULPT",
+        "active": "Body", "selected": ["Body"], "events": [
+            {"object": "", "kind": "undo", "source": "artist", "count": 1,
+             "ago": 4.0},
+            {"object": "Body", "kind": "mode", "source": "artist", "count": 1,
+             "ago": 8.0, "detail": "SCULPT"},
+        ]})
+    assert "artist undid a step (just now)" in text
+    assert "artist switched to Sculpt (8s ago)" in text
+
+
+def test_live_context_says_nothing_changed_rather_than_going_quiet():
+    """Silence and "I could not see" must never look the same to the model."""
+    first = bridge.format_live_context({"up": True, "state": True, "feed": True,
+                                        "since": None, "mode": "OBJECT",
+                                        "active": None, "selected": [],
+                                        "events": []})
+    assert "first look at the scene this session" in first
+    later = bridge.format_live_context({"up": True, "state": True, "feed": True,
+                                        "since": 12.0, "mode": "OBJECT",
+                                        "active": None, "selected": [],
+                                        "events": []})
+    assert "nothing has changed since your last look" in later
+
+
+def test_live_context_is_capped_and_says_what_it_dropped():
+    long_name = "FP:wall-along-the-north-side-of-the-garage"
+    info = {"up": True, "state": True, "feed": True, "since": 1.0,
+            "mode": "OBJECT", "active": long_name, "selected": [long_name],
+            "cursor_mm": [0.0, 0.0, 0.0], "more": 24,
+            "events": [moved("%s-%02d" % (long_name, index), ago=index * 30.0)
+                       for index in range(16)]}
+    text = bridge.format_live_context(info)
+    assert len(text) <= bridge.LIVE_CONTEXT_BUDGET, len(text)
+    assert "more" in text
+    # Newest first: the first clause is the freshest event, not the oldest.
+    assert text.index("-00 ") < text.index("-01 ")
+
+
+def test_live_context_budget_survives_a_headline_that_eats_it():
+    """A pathological name must produce a clipped line, never a huge one."""
+    info = {"up": True, "state": True, "feed": True, "since": 1.0,
+            "mode": "OBJECT", "active": "X" * 900, "selected": ["Y" * 900],
+            "events": [moved("Z" * 900)]}
+    text = bridge.format_live_context(info)
+    assert len(text) <= bridge.LIVE_CONTEXT_BUDGET
+
+
+def test_live_context_names_the_three_ways_it_can_have_no_answer():
+    assert bridge.format_live_context({"up": False}) == (
+        "%s %s" % (bridge.LIVE_CONTEXT_MARKER, bridge.LIVE_CONTEXT_DOWN))
+    assert "did not answer in time" in bridge.format_live_context(
+        {"up": True, "state": False})
+    stale = bridge.format_live_context({"up": True, "state": True,
+                                        "feed": False, "mode": "OBJECT",
+                                        "active": "Cup", "selected": []})
+    assert bridge.LIVE_CONTEXT_NO_FEED in stale and "active Cup" in stale
+    assert bridge.format_live_context(None) == ""
+    assert bridge.format_live_context({}) == ""
+
+
+def test_live_context_ages_read_the_way_a_person_says_them():
+    assert bridge.relative_age(0.4) == "just now"
+    assert bridge.relative_age(30) == "30s ago"
+    assert bridge.relative_age(120) == "2 min ago"
+    assert bridge.relative_age(7200) == "2 h ago"
+    assert bridge.relative_age(None) == "just now"
+
+
+def test_live_context_passes_an_unknown_mode_through_rather_than_guessing():
+    assert bridge.mode_word("EDIT_MESH") == "Edit"
+    assert bridge.mode_word("PAINT_WEIGHT") == "Weight Paint"
+    assert bridge.mode_word("EDIT_POINT_CLOUD") == "EDIT_POINT_CLOUD"
+    assert bridge.mode_word("") == "unknown"
+
+
+def test_live_context_sits_between_the_context_block_and_the_attachment():
+    prompt = bridge.build_prompt("segment this", {"active_object": "Cup"},
+                                 live="[Blender now] mode Object")
+    assert prompt.index("segment this") < prompt.index(bridge.CONTEXT_DIVIDER)
+    assert prompt.index(bridge.CONTEXT_DIVIDER) < prompt.index("[Blender now]")
+    # ...and an empty block adds nothing at all.
+    assert bridge.build_prompt("hi", None, live="") == "hi"
+    assert bridge.build_prompt("hi", None, live="   ") == "hi"
+    assert bridge.build_prompt("hi", None) == "hi"
+
+
+# -- the wired half: a real bridge, a fake add-on ------------------------
+
+def test_live_context_reaches_the_prompt_when_the_addon_answers(bridges,
+                                                                fake_blender):
+    blender = fake_blender(activity_blender(
+        events=[moved("FP:wall-x0-garage", ago=120.0),
+                moved("FP:closet-entry", ago=300.0, kind="removed")]))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    body = client.turn("make the garage bigger")
+    assert body["state"] == "done", body
+    prompt = last_prompt(client)
+    assert bridge.LIVE_CONTEXT_MARKER in prompt
+    assert "artist moved FP:wall-x0-garage (2 min ago)" in prompt
+    assert "artist deleted FP:closet-entry" in prompt
+    assert "active FP:wall-front-house" in prompt
+
+    asked = [request for request in blender.seen
+             if request.get("type") == "get_activity"]
+    assert asked, blender.seen
+    assert asked[0]["params"]["limit"] == bridge.LIVE_CONTEXT_LIMIT
+    # First turn of a conversation: no "since", because it has never looked.
+    assert "since" not in asked[0]["params"]
+
+
+def test_live_context_asks_for_only_what_is_new_on_the_second_turn(bridges,
+                                                                   fake_blender):
+    """The add-on's own clock is the bookmark, so no clock skew is ever in it."""
+    blender = fake_blender(activity_blender(events=[], now=1700000123.5))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    client.turn("first")
+    client.turn("second")
+    asked = [request for request in blender.seen
+             if request.get("type") == "get_activity"]
+    assert len(asked) == 2, asked
+    assert asked[1]["params"]["since"] == 1700000123.5
+    assert "nothing has changed since your last look" in last_prompt(client)
+
+
+def test_live_context_forgets_its_bookmark_on_a_new_conversation(bridges,
+                                                                 fake_blender):
+    blender = fake_blender(activity_blender(events=[], now=1700000123.5))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    client.turn("first")
+    client.turn("starting over", conversation="new")
+    asked = [request for request in blender.seen
+             if request.get("type") == "get_activity"]
+    assert "since" not in asked[-1]["params"], asked
+
+
+def test_live_context_says_blender_is_not_running_when_it_is_down(client):
+    """The default fixture points at a port nothing is listening on."""
+    body = client.turn("what is in my scene?")
+    assert body["state"] == "done", body
+    assert bridge.LIVE_CONTEXT_DOWN in last_prompt(client)
+
+
+def test_live_context_degrades_to_get_scene_info_on_an_older_addon(bridges,
+                                                                   fake_blender):
+    blender = fake_blender(by_type({
+        "get_scene_info": {"objects": [], "active": "Cup", "mode": "SCULPT",
+                           "selected": ["Cup"], "cursor_mm": [0.0, 0.0, 0.0]},
+    }))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    body = client.turn("how is this looking?")
+    assert body["state"] == "done", body
+    prompt = last_prompt(client)
+    assert "mode Sculpt" in prompt and "active Cup" in prompt
+    assert bridge.LIVE_CONTEXT_NO_FEED in prompt
+    assert [request["type"] for request in blender.seen] == [
+        "get_activity", "get_scene_info"]
+
+
+def test_live_context_survives_a_probe_that_never_answers(bridges, fake_blender):
+    """A hung Blender must cost the turn a sentence, never the turn."""
+    def responder(request):
+        time.sleep(bridge.LIVE_CONTEXT_TIMEOUT + 2.0)
+        return {"id": request.get("id"), "status": "success", "result": {}}
+
+    blender = fake_blender(responder)
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    body = client.turn("keep going")
+    assert body["state"] == "done", body
+    prompt = last_prompt(client)
+    assert "did not answer in time" in prompt
+    # One timeout, not two: a second call would only buy the same wait again.
+    assert [request["type"] for request in blender.seen] == ["get_activity"]
+
+
+def test_live_context_survives_an_addon_that_hangs_up(bridges, fake_blender):
+    blender = fake_blender(lambda request: None)   # accept, then close
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    body = client.turn("still there?")
+    assert body["state"] == "done", body
+    assert bridge.LIVE_CONTEXT_MARKER in last_prompt(client)
+
+
+def test_live_context_survives_an_addon_that_refuses(bridges, fake_blender):
+    blender = fake_blender(by_type({}))     # every command is "Unknown command"
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    body = client.turn("anything?")
+    assert body["state"] == "done", body
+    assert bridge.LIVE_CONTEXT_MARKER in last_prompt(client)
+
+
+def test_live_context_never_exceeds_its_budget_in_a_real_prompt(bridges,
+                                                                fake_blender):
+    blender = fake_blender(activity_blender(
+        events=[moved("FP:wall-along-the-north-side-%02d" % index,
+                      ago=index * 45.0) for index in range(16)],
+        matched=90))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+    client.turn("carry on")
+    prompt = last_prompt(client)
+    block = prompt[prompt.index(bridge.LIVE_CONTEXT_MARKER):].split("\n\n")[0]
+    assert len(block) <= bridge.LIVE_CONTEXT_BUDGET, len(block)
+    assert "more" in block
+
+
+def test_live_context_goes_into_the_chat_route_and_nowhere_else(bridges,
+                                                                fake_blender):
+    """The library and the workbench are not conversations."""
+    blender = fake_blender(by_type({
+        "get_activity": {"events": [], "now": 1.0, "mode": "OBJECT",
+                         "active": None, "selected": [], "matched": 0},
+        "get_scene_info": {"objects": [], "active": None, "mode": "OBJECT"},
+        "flow_list": {"flows": []},
+    }))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port)})
+
+    client.request("/scene")
+    client.request("/flows", {})
+    client.request("/library", timeout=40)
+    assert not [request for request in blender.seen
+                if request.get("type") == "get_activity"], blender.seen
+
+    client.turn("now ask properly")
+    assert [request for request in blender.seen
+            if request.get("type") == "get_activity"]
+
+
+def test_live_context_can_be_switched_off_entirely(bridges, fake_blender):
+    """One env var, for a harness that must open no connection to that port."""
+    blender = fake_blender(activity_blender(events=[moved("Cup")]))
+    client = bridges(env_extra={"FORGE_BLENDER_PORT": str(blender.port),
+                                "FORGE_ASSISTANT_LIVE_CONTEXT": "0"})
+    body = client.turn("quiet please")
+    assert body["state"] == "done", body
+    assert bridge.LIVE_CONTEXT_MARKER not in last_prompt(client)
+    assert blender.seen == []
