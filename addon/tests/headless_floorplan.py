@@ -791,6 +791,21 @@ def test_floor_false_and_a_named_collection():
     check("turning them off again deletes only the slabs",
           sorted(data["deleted"]) == ["room-left", "room-right"],
           str(data["deleted"]))
+
+    # A single room can opt out on its own: per-room "floor": false is the
+    # service half's convention, and the two halves must agree on it.
+    doc = plan()
+    doc["rooms"][0]["floor"] = False
+    data = result(build(plan=doc, collection="Level A"))
+    check("a per-room floor:false builds only the other room's slab",
+          data["built"] == ["room-right"], str(data["built"]))
+    check("  ... the opted-out room's id built nothing",
+          obj_of("room-left") is None)
+    doc["rooms"][0]["floor"] = "yes"
+    reply = build(plan=doc, collection="Level A")
+    check("a non-bool per-room floor flag is refused with a sentence",
+          not ok(reply) and "true or false" in message(reply).lower(),
+          message(reply)[:200])
     wipe()
 
 

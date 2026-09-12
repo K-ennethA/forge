@@ -299,6 +299,10 @@ def _resolve_room(entry, index, defaults, floors, warnings):
     if thickness <= 0.0:
         raise ForgeError("Room %r would get a floor slab of zero thickness; "
                          "give it a 'floor_mm' or pass floor:false." % ident)
+    room_floor = entry.get("floor", True)
+    if not isinstance(room_floor, bool):
+        raise ForgeError("Room %r has 'floor': %r — a room's own floor flag "
+                         "is true or false." % (ident, room_floor))
     resolved = {
         "kind": "room",
         "id": ident,
@@ -307,7 +311,7 @@ def _resolve_room(entry, index, defaults, floors, warnings):
         "thickness_mm": _round(thickness, 3),
         "area_mm2": _round(area, 2),
     }
-    if not floors:
+    if not floors or not room_floor:
         return None, resolved
     return resolved, resolved
 
