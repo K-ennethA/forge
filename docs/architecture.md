@@ -201,6 +201,33 @@ Implemented refinements (additive; the sketch below is unchanged and still bindi
 
 Generated meshes (meshgen output dir per meshgen/config.json + FORGE_MODELS_DIRS extras) and projects/*/models/* get Library cards with Import-into-Blender and File-into-project actions. **Card click opens the model in Blender** (user extension): Blender running → import_generated into the scene; Blender closed → spawn GUI Blender with a startup import of that file (reuse Phase 15's resolve/spawn machinery; glTF import expression since .glb isn't a .blend). generate_3d(project=...) files new generations into projects/<slug>/models/ at birth.
 
+### Phase 19 sketch — floor plans to prototype levels (draw rooms, get walls)
+
+User intent (2026-09-09/12, near-verbatim): "I draw rooms, walls, doors, and give it a label key — washer/dryer here — and I want a simple 3d level created with the walls and doors, and washer/dryer as rectangles to help map out. Then from there we can edit a shape and make it more complex. We should be able to do prototypes; on the floor plans and basic 3d rooms we should allow modifications on drawings without full regen; we support additions."
+
+**The contract is a typed plan file, and the plan file is the model.** No generative 3D anywhere in this phase — it is the parametric lane end to end, and the drawing's meaning lives in `projects/<slug>/design/floorplan.json`:
+
+```
+{"version": 1, "units": "mm", "scale": {"mm_per_px"?, "calibrated_by"?},
+ "defaults": {"ceiling_mm": 2400, "wall_mm": 100, "door_w_mm": 820, "door_h_mm": 2040},
+ "rooms":   [{"id": "room-kitchen", "label"?, "polygon_mm": [[x,y],...]}],
+ "walls":   [{"id": "wall-01", "from_mm": [x,y], "to_mm": [x,y], "thickness_mm"?, "height_mm"?,
+              "openings": [{"id": "door-01", "kind": "door"|"window"|"gap", "at_mm": <along wall>,
+                            "width_mm"?, "height_mm"?, "sill_mm"?, "swing"?: "in"|"out"|null}]}],
+ "labels":  [{"id": "wd-01", "label": "washer/dryer", "footprint_mm": [x,y,w,d], "height_mm"?,
+              "rotation_deg"?, "source": "user"|"library"}],
+ "history": [{"rev", "date", "note"}]}
+```
+
+- **Stable ids are the incremental-regen law.** Every room/wall/opening/label carries an id that survives edits, and the id names the Blender object (`FP:wall-01`, `FP:wd-01`). Rebuilding is a DIFF against ids: an edited entry rebuilds only its own objects, an added entry only creates, a removed entry only deletes its own — **never a full regen**, so hand edits to untouched components survive by construction. A component the artist has manually edited (mesh differs from what its plan entry would build) is SKIPPED on rebuild with a warning naming it, never clobbered — promotion (making a shape more complex) is one-way, and the plan keeps the slot's footprint as the size contract.
+- **Extraction is two layers, per the thesis.** Deterministic first: threshold/line extraction off the drawing, wobbly hand lines snapped straight and to right angles where within tolerance (the verify.py mask machinery is the seed). VLM assigns semantics only — which gap is a doorway, what each key label means — over the computed segments, never inventing walls. Scale is calibrated by ONE user-stated dimension (`scale_mm_per_pixel`, exactly fit_to_silhouette's), asked in the design phase.
+- **Echo-back approval before any 3D.** The assistant renders its READING back as `design/floorplan.svg` — rooms colored, doors with swing arcs, labeled footprints with intended real sizes — and the user corrects the diagram, not the mesh. Mandatory gate, the design-phase sign-off applied to a scene.
+- **Geometry is extrusion + booleans, per component.** Walls extrude centerlines to height, openings are booleans, each room may get a floor slab; labels become named box components at real-world default sizes (an appliance/furniture dims library with sane measured defaults — washer ≈ 600×600×850 mm — same provenance spirit as components.py). Doors may carry Phase 17 `mechanism` records (revolute about the hinge edge, `range_deg: 90`) so demos and the robotics/game exit come free.
+- **Promotion, not regeneration (the follow-up ask).** Every placeholder is a component SLOT: elaborate it parametrically, swap in a generated/imported mesh that inherits the slot's exact footprint and placement, or hand-sculpt (+ fit_to_silhouette against a photo). The level never rebuilds around a promotion.
+- **Verification is the shipped machinery:** top-down orthographic render of the built level vs the plan's own rasterised mask, silhouette IoU (measured tier), per component and whole-plan.
+- **Exits:** .glb greybox level for Godot (walls carry collision-ready geometry, labels are placeholder props); 3D-print miniature at bed-fit scale ("prints as N pieces" informational); walkthrough render.
+- **Split:** service owns the plan contract, validation, diff and the appliance-dims library (`service/floorplan.py`); the addon owns `build_floorplan` (materialise/diff-update scene objects by id, bpy, undo-pushed); assistant/MCP round teaches the flow + echo-back SVG and mirrors the tools.
+
 ### Phase 18 sketch — silhouette fitting (match the reference outline, multi-view)
 
 User intent: "take an image and use the silhouette to map out or move the sculpt to match that silhouette, and do multiple sides if provided — front and side."
