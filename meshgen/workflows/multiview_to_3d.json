@@ -454,8 +454,8 @@
       "sign_mode": "udf",
       "sign_mode.drop_enclosed_components": false,
       "sign_mode.drop_inverted_components": false,
-      "sign_mode.qef": false,
-      "smooth_iters": 20
+      "sign_mode.qef": true,
+      "smooth_iters": 3
     }
   },
   "248": {

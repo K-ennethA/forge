@@ -116,11 +116,41 @@ supported list rather than silently ignored.
 | `cfg` | structure sampler CFG | 7.5 | 7.5 |
 | `uv_padding` | UV atlas padding | 1 | 1 |
 
+Five more are the **surface-quality** knobs, measured rather than inherited —
+the table, the winners and the losers are in
+[Tuning the surface](#tuning-the-surface-what-was-measured):
+
+| option | node input | range | ComfyUI template | **meshgen default** |
+|---|---|---|---|---|
+| `smooth_iters` | `RemeshMesh.smooth_iters` | 0–20 | 20 | **3** |
+| `qef` | `RemeshMesh.sign_mode.qef` | bool | `false` | **`true`** |
+| `project_back` | `RemeshMesh.project_back` | 0.0–1.0 | 0 | **0.5** |
+| `crease_angle` | **both** `MeshSmoothNormals` | 0–180 | 180 | 180 |
+| `fix_poles` | `RemeshMesh.fix_poles` | bool | `false` | `false` |
+
+Plus `hard_surface` (bool) — a convenience **macro, not a mode**: it pre-seeds
+`crease_angle: 45` and `qef: true` together, and an explicit option next to it
+still wins. The result's `options` block reports both the macro and what it
+expanded to.
+
+Ranges are core's own node schemas, and out-of-range is **refused with the real
+range, never clamped** — a node that quietly clamps 500 iterations to 20 does not
+tell you it did, and you then reason about a setting that never happened.
+Booleans are strict: `"true"` / `"false"` / `true` / `false` / `1` / `0` and
+nothing else, because `bool("false")` is `True` and a silently inverted
+sharp-feature flag is precisely the bug this surface exists to prevent.
+
 Three more steer meshgen rather than a node in the graph, and only mean anything
 alongside `views` (see [Multi-view](#multi-view-front--side--back--live)):
 `on_unavailable` (`"error"` / `"front_only"`), `multiview_fov_deg` (20.0 — the
 rig's FOV; it reaches `Pixal3DMultiViewConditioning.fov` directly), and `views`
 itself, which may be sent top-level or inside `options`.
+
+**There is no `negative_prompt`, and there should never be one.** At the shape
+stage the graph wires `negative` from the conditioning node's second output,
+which for both backends is a zero tensor — the architecture has no text
+conditioning to negate. The option would be a control you could turn and watch
+do nothing.
 
 ### Why the defaults differ from the template — this is a 12 GB card
 
@@ -181,6 +211,206 @@ never refuses a broken mesh, and this is what the downstream half of the pipelin
 Expect to repair before printing. 200k triangles checked in ~4 s.
 
 ---
+
+## Tuning the surface: what was measured
+
+`workflows/image_to_3d.json` began as the official ComfyUI template, and a
+template is a demo. Several of its values are **not the node's own default** and
+were never justified anywhere — they were inherited, not chosen:
+
+| node input | node default | template ships | what the template's value means |
+|---|---|---|---|
+| `RemeshMesh.smooth_iters` | 0 | **20** | the node's *maximum*, against its own tooltip: "2-3 cleans DC staircase-like artifacts; higher over-smooth QEF edges" |
+| `RemeshMesh.sign_mode.qef` | `false` in udf | **false** | sharp-feature dual-vertex placement **off** |
+| `RemeshMesh.project_back` | 0.0 | **0** | nothing is pulled back onto the surface the model produced |
+| `MeshSmoothNormals.crease_angle` (×2) | 180 | **180** | "no edge is ever hard" — a 90° edge shaded with one averaged normal |
+| `KSampler(structure).steps` / `cfg` | — | **12 / 7.5** | the demo's numbers, which every SEO table copies |
+
+None of that is knowable by reading, so it was measured.
+
+### The harness
+
+`tools/ab_tuning.py` runs the real pipeline once per setting and scores each
+output mesh **deterministically — geometry only, no VLM, no eyeballing**:
+
+```
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_tuning run    --out <dir>
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_tuning report <dir>
+```
+
+Without meshgen up on 8902 and the weights present it prints why and **exits 0**,
+the same contract the pytest suites keep. Rows append to `<dir>/results.jsonl`
+one at a time and a re-run skips what is already there, so an interrupted sweep
+resumes instead of paying twice for finished GPU minutes.
+
+**The inputs are synthesised, not photographed** (`tools/ab_fixtures.py`), which
+is the only way the ground truth can be exact: a vectorised ray/solid cast over
+axis-aligned boxes and ellipsoids, through **core's own camera rig** — imported
+from `tools/make_rig_views.py`, extended by one elevation angle, and pinned by a
+test to agree with it exactly at elevation 0. Three scenes:
+
+- **`hard_steps`** — a stepped ziggurat with an off-centre tab. Creases at four
+  different scales, so a setting that survives a big edge and melts a small one
+  shows up as a number. This is the sweep scene. Its **true crease length is
+  ≤ 15.24** (`ab_fixtures.true_crease_length`, counting every box edge including
+  the buried ones, so the visible figure is lower) — the anchor that separates
+  "sharper" from "jaggier".
+- **`hard_slab`** — the `make_rig_views` object (slab + fin + foot), reused
+  rather than retyped, so the hard-surface control is the same shape Phase 18(a)
+  verified orientation against.
+- **`organic_blob`** — four overlapping ellipsoids, no sharp edge anywhere. The
+  control that says whether a hard-surface win costs anything on a round shape.
+
+### What the scores mean
+
+`tools/mesh_metrics.py`, all from vertices and triangles:
+
+| metric | what it catches |
+|---|---|
+| `silhouette_iou` | the mesh's outline against the input's exact mask through the identical camera — anything that eats volume |
+| `edge_sharpness` | of the edge length that is a crease **at all** (dihedral > 5°), the fraction still a *real* crease (≥60°) rather than melted into a 5–60° ramp. A cube scores 1.0, a sphere 0.0 — both pinned as tests |
+| `soft_edge_fraction` | the rounding-over signature directly: edge length sitting in that 5–60° band |
+| `crease_length` | total sharp edge length ÷ bbox diagonal — **the staircase detector.** `edge_sharpness` alone can be gamed by Dual Contouring's voxel steps, which are perfectly sharp and entirely fake; a ziggurat has a handful of real creases, so a jump here is artifacts, not detail |
+| `crease_normal_p95` | 95th-percentile angle between a shading normal and its own face, over faces touching a real crease. **The only number `crease_angle` moves** — it splits vertices, so it changes shading and never geometry |
+| `boundary_edges` / `nonmanifold_edges` / `components` | topology health |
+| `self_intersections` | clipping, vertex-sharing pairs excluded (adjacent faces touch by definition) |
+| `uv_split_ratio` | exported vertices ÷ welded vertices — the atlas cost |
+
+Two things in there are load-bearing and were bugs first:
+
+- **The mesh is welded by position before anything is measured.** `UnwrapMesh`
+  cuts the surface into UV islands and the glTF carries one vertex per
+  (position, island) pair, so a closed mesh exports with ~58 000 "boundary"
+  edges and ~1 800 "components". Worse, an edge split by a seam stops being a
+  two-face edge and **drops out of the dihedral statistics** — and seams are
+  routed preferentially along creases, so the unwelded number under-counts
+  exactly what is being measured. Welding moved the baseline's `edge_sharpness`
+  from 0.006 to 0.061: a **ten-fold** difference, in the metric the whole
+  exercise turns on.
+- **Zero-area faces are dropped.** A sliver has no normal; dividing by its zero
+  length hands it `(0,0,0)`, which scores a flawless 90° crease against
+  anything. Counting slivers as sharp edges would have put a floor under every
+  variant and made smoothing look harmless.
+
+The mesh's axes are the exporter's, not the scene's, so the silhouette is scored
+after a search over all **48 signed axis permutations** (these meshes come back
+Y-up, `[x, z, y]` with two flips). It is a search over *labelling*, not a fit —
+nothing is rotated by a free angle, so a genuinely wrong shape cannot be aligned
+into looking right, and a test pins that a sphere cannot pass as a slab.
+
+### Measured — RTX 5070 12 GB, ComfyUI v0.35.1, `trellis2`, seed 56
+
+One knob moved at a time from the template's values, on `hard_steps`, one job at
+a time, at the meshgen VRAM-safe defaults. Peak VRAM is `nvidia-smi` at 200 ms,
+not meshgen's own coarser sample. **`creaseL` against the ground-truth bound of
+15.24** is what separates recovered detail from voxel staircase.
+
+| variant | smooth | qef | proj | crease | steps/cfg | IoU | sharp | soft% | creaseL | crease n95 | selfX | shells | time | VRAM |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `baseline` | 20 | off | 0 | 180 | 12/7.5 | 0.9771 | 0.061 | 10.8 | 15.7 | 164.4 | 0 | 33 | 177 s | 11.63 |
+| `smooth3` | 3 | off | 0 | 180 | 12/7.5 | 0.9767 | 0.097 | 9.4 | 23.2 | 156.0 | 1 | 43 | 175 s | 11.05 |
+| `smooth2` | 2 | off | 0 | 180 | 12/7.5 | 0.9768 | 0.110 | 9.1 | 25.6 | 152.0 | 0 | 37 | 173 s | 11.17 |
+| `smooth0` | 0 | off | 0 | 180 | 12/7.5 | 0.9766 | 0.147 | 8.2 | **32.5** | 143.0 | 0 | 33 | 173 s | 11.27 |
+| `qef_on` | 20 | **on** | 0 | 180 | 12/7.5 | 0.9763 | 0.068 | 9.9 | 16.5 | 163.9 | 0 | 28 | 175 s | 11.25 |
+| `project05` | 20 | off | **0.5** | 180 | 12/7.5 | 0.9778 | 0.051 | 12.0 | 14.8 | 169.8 | **70** | 35 | 207 s | 11.24 |
+| `project10` | 20 | off | **1** | 180 | 12/7.5 | 0.9787 | 0.129 | 13.0 | **39.6** | 180.0 | **13,391** | **465** | 207 s | 10.93 |
+| `crease45` | 20 | off | 0 | **45** | 12/7.5 | 0.9769 | 0.061 | 10.7 | 15.8 | **19.2** | 1 | 34 | 169 s | 11.24 |
+| `steps25_cfg5` | 20 | off | 0 | 180 | **25/5** | **0.9801** | **0.006** | 9.6 | **1.2** | 180.0 | 0 | 26 | 143 s | 10.31 |
+
+**Silhouette IoU barely moves — 0.976 to 0.980 across every variant.** That is
+itself a finding: at 200k triangles the outline is settled long before these
+settings matter, so IoU is the guard that a change did not eat the object, and
+`edge_sharpness` / `creaseL` / `selfX` are what actually decide. A tuning table
+built on IoU alone would have picked `project10`, which is the worst mesh here.
+
+### The winners, and why
+
+| setting | template | **chosen** | one-line reason |
+|---|---|---|---|
+| `smooth_iters` | 20 | **3** | 20 is the node's maximum and its tooltip says 2-3; at 3, `edge_sharpness` rises 59% (0.061 → 0.097) and the soft-ramp band falls, for no time or VRAM. Lower keeps helping the score and stops being real: `smooth0` reaches 0.147 only by carrying **2.1× the object's true crease length** — that is Dual Contouring's staircase, perfectly sharp and entirely fake. 3 is the safe end of core's own range. |
+| `qef` | off | **on** | free and directionally clean: sharpness up 11%, soft ramps down 8%, shells 33 → 28, **and `creaseL` stays at the ground truth** (16.5 vs 15.24) — it recovers features by *placing* the dual vertex, not by getting jaggier. Muted alone because 20 smoothing iterations then erase what it placed; the stack is where it pays. |
+| `project_back` | 0 | **0** (unchanged) | the clearest loss measured. 0.5 buys +0.0007 IoU and **70 self-intersections where there were none**; 1.0 buys +0.0016 and **13,391 across 465 shells**, at 2.6× the true crease length. It snaps dual-contoured vertices back onto the raw model surface — reintroducing exactly the self-intersecting mess the remesh exists to remove. Both also cost ~17% more wall time. |
+| `crease_angle` | 180 | **180 globally, 45 under `hard_surface`** | on hard surfaces 45 is close to free: geometry is *bit-identical* by construction (sharp 0.061, creaseL 15.8 — unchanged), it cut crease-face shading error from **164° to 19°**, and it ran 8 s faster with slightly *fewer* exported vertices. It is not defaulted because **the metric that scores it is only valid on hard surfaces** — a sphere *wants* its shading normals to deviate from its faces, so defaulting 45 would be optimising a number the harness cannot read on half the inputs. Hence the opt-in. |
+| `steps` / `cfg` | 12 / 7.5 | **12 / 7.5** (unchanged) | 25/5.0 posts the best IoU of the whole sweep (0.9801) and is 34 s *faster*, and it is still refused: `creaseL` collapses to **1.2 against a true 15.24** — it loses ~92% of the object's creases, fitting the outline by rounding the object off. A silhouette-only table would have shipped this. Both knobs were then separated; see below. |
+
+### The stack, against all three scenes
+
+`winner` = `smooth_iters: 3` + `qef: true` (what meshgen now ships by default);
+`winner_hard` = that plus `crease_angle: 45` (what `hard_surface` adds).
+**Ground-truth `creaseL`: `hard_steps` ≤ 15.24, `hard_slab` ≤ 7.90.**
+
+| scene | variant | IoU | sharp | creaseL | soft% | crease n95 | exported verts | selfX | shells | time |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `hard_steps` | `baseline` | 0.9771 | 0.061 | 15.7 | 10.8 | 164.4 | 135,123 | 0 | 33 | 177 s |
+| `hard_steps` | `winner` | 0.9752 | **0.281** | 57.8 | 6.5 | 120.7 | 130,222 | 0 | 33 | 175 s |
+| `hard_steps` | `winner_hard` | 0.9755 | 0.280 | 57.3 | 6.5 | **13.2** | 128,954 | 0 | 37 | 179 s |
+| `hard_slab` | `baseline` | 0.9016 | 0.006 | **0.4** | 4.7 | 180.0 | 147,702 | 0 | 2 | 78 s |
+| `hard_slab` | `winner` | 0.9004 | **0.161** | **7.9** | 2.9 | 55.6 | 146,213 | 0 | 2 | 78 s |
+| `hard_slab` | `winner_hard` | 0.9006 | 0.160 | 7.8 | 2.8 | **4.9** | 145,842 | 0 | 2 | 76 s |
+| `organic_blob` | `baseline` | 0.9121 | 0.068 | 16.3 | 9.2 | 110.8 | 122,160 | 5 | 28 | 278 s |
+| `organic_blob` | `winner` | 0.9120 | 0.129 | 28.7 | 8.0 | 100.4 | 122,206 | **1** | 25 | 282 s |
+| `organic_blob` | `winner_hard` | 0.9121 | 0.128 | 28.4 | 8.0 | 29.3 | **128,121** | 2 | 29 | 284 s |
+
+Four things this says that the single-knob table could not:
+
+- **The two winners compound far beyond their sum.** Alone, `smooth_iters: 3`
+  reached 0.097 and `qef` reached 0.068 against a 0.061 baseline. Together they
+  reach **0.281** — 4.6×. That is the mechanism working as core describes it:
+  QEF *places* the dual vertex on the feature, and low smoothing is what leaves
+  it there. Either one alone is half a fix.
+- **On `hard_slab` the winner lands on the ground truth exactly** — `creaseL`
+  7.9 against an analytic 7.90 — while the template sits at **0.4**, having
+  melted 95% of the object's creases. That is the single most convincing number
+  in this exercise, because the target was computed from the source geometry and
+  never from a mesh.
+- **`hard_steps` over-creases** (57.8 against ≤15.24) where `hard_slab` does
+  not. The ziggurat's top boxes are near the remesh grid's resolution, so the
+  model returns micro-detail there and QEF sharpens all of it, noise included.
+  Reported rather than hidden: the win is real on both, the *excess* is
+  fixture-specific, and anyone re-running this should expect it.
+- **It costs nothing on an organic shape.** Identical IoU (0.9120 vs 0.9121),
+  fewer self-intersections (**5 → 1**), fewer shells, +1.5% wall time.
+
+And the reason `crease_angle` is opt-in rather than default is in the last row:
+on the blob, `winner_hard` adds **4.8% more exported vertices** (122,206 →
+128,121) to split edges that should have stayed smooth, and drives `normal_p50`
+*down* — shading normals hugging their faces, which on a curved surface is the
+definition of faceting. No metric here scores that as bad, which is precisely
+why it is not defaulted.
+
+### The structure sampler: 12/7.5 vs the checkpoint's 25/5.0, separated
+
+The two knobs move together in every write-up, so `steps25_cfg5` could not say
+which one did what. The full 2×2 (`hard_steps`, seed 56):
+
+| steps | cfg | IoU | sharp | creaseL | shells | time | VRAM |
+|---|---|---|---|---|---|---|---|
+| **12** | **7.5** *(template)* | 0.9771 | **0.061** | **15.7** | 33 | 177 s | 11.63 |
+| 12 | 5.0 | **0.9653** | 0.004 | 0.7 | 10 | 141 s | 10.13 |
+| 25 | 7.5 | 0.9729 | 0.008 | 1.4 | 10 | 145 s | 10.64 |
+| 25 | 5.0 *(checkpoint)* | **0.9801** | 0.006 | 1.2 | 26 | 143 s | 10.31 |
+
+**The template's pairing is the only one of the four that keeps the object's
+creases at all** — 0.061 / 15.7 against ≈0.005 / ≈1 everywhere else, i.e. a 12×
+difference in crease length. It is an interaction, not two independent knobs:
+moving *either* one off 12/7.5 collapses the structure into a smooth blob, and
+`cfg` 5.0 at the template's 12 steps is the worst silhouette of the entire
+sweep (0.9653). The ~35 s the template costs over the other three is the remesh
+having real geometry to work on.
+
+So the demo's numbers survive, but now for a measured reason rather than because
+they were inherited. **Caveat, stated plainly:** this is one fixture at one
+seed. It is enough to refuse a change, not enough to claim 12/7.5 is optimal —
+`ab_tuning.py` is checked in so the question can be reopened cheaply.
+
+`fix_poles` is exposed but **not** swept — it stays `false`, which is both core's
+default and the template's. It collapses valence-3 vertex pairs (a Dual
+Contouring T-junction artifact); nothing in these fixtures isolates it, so
+changing it would have been a guess wearing a measurement's clothes.
+
+**Cost of the whole exercise: 19 GPU runs, ~55 minutes**, one job at a time.
+
+
 
 ## Multi-view (front + side + back) — LIVE
 
@@ -548,6 +778,16 @@ If node ids move, `test_workflow_template_has_the_nodes_the_adapters_patch`
 fails and the `NODE_*` constants at the top of `backends/comfyui_base.py` need
 updating.
 
+**A refresh overwrites the tuned surface values with the demo's again** — it
+rewrites the whole file from the template. Re-apply `TUNED_DEFAULTS`
+(`RemeshMesh.smooth_iters: 3`, `sign_mode.qef: true`; see
+[Tuning the surface](#tuning-the-surface-what-was-measured)) before regenerating
+the sibling. `test_the_committed_templates_carry_the_tuned_values` fails until
+you do, in both templates. Behaviour is safe either way — `TUNED_DEFAULTS` is
+applied on top of whatever the JSON says, exactly like `VRAM_SAFE_DEFAULTS`, so
+a forgotten re-apply cannot make meshgen *run* the demo's numbers; it would only
+leave the committed graph lying to the next person who reads it.
+
 Then regenerate the multi-view sibling from it — it is derived, not maintained:
 
 ```
@@ -619,8 +859,8 @@ service\.venv\Scripts\python.exe -m meshgen
 service\.venv\Scripts\python.exe -m pytest meshgen/tests -q
 ```
 
-**92 tests** (39 `test_service.py` + 53 `test_multiview.py`), all runnable with
-**none** of the 23.8 GB present — they exercise the job API, config resolution,
+**153 tests** (39 `test_service.py` + 53 `test_multiview.py` + 61
+`test_tuning.py`), all runnable with **none** of the 23.8 GB present — they exercise the job API, config resolution,
 option validation, cancellation, the missing-models guidance, both ComfyUI
 history output shapes and the VRAM-safe defaults, against a fake adapter that
 writes a real one-triangle `.glb`.
@@ -636,7 +876,25 @@ models. One of those, `test_the_node_probe_reads_the_real_installed_comfyui`,
 **had its polarity flipped** on 2026-09-13: it used to fail the day core shipped
 a multi-view node, and now fails if a downgrade takes it away again.
 
-The real-model run is a manual gate, not a pytest: it needs the GPU and takes
-minutes. The numbers it produced are in
-[Multi-view](#multi-view-front--side--back--live); reproduce them with
-`tools/make_rig_views.py`.
+`test_tuning.py` covers the two halves that can go wrong independently. The
+**option surface**: every new key reaches the node it claims to (and
+`crease_angle` reaches *both* `MeshSmoothNormals` nodes), `qef` writes the
+DynamicCombo's namespaced `sign_mode.qef` key rather than a nested object that
+would be ignored, a non-boolean is refused, an out-of-range value is refused
+*with the real range*, and the `hard_surface` macro expands without overruling an
+explicit option next to it. And the **metrics themselves**, against solids whose
+answer is known in closed form — a welded cube must score `edge_sharpness` 1.0
+with a 90° p99, a sphere 0.0, a sphere must not be alignable onto a slab's
+silhouette, welding must recover a UV-split export's real topology, and a
+zero-area face must not count as a perfect crease. A scoring harness that is
+itself wrong is worse than none: it produces a table, and the table is believed.
+
+The tuned values are pinned against both committed workflow templates, so a
+future `tools/build_workflow.py` refresh that restores the demo's numbers fails
+a test instead of quietly shipping rounder meshes.
+
+The real-model runs are manual gates, not pytest: they need the GPU and take
+minutes. The numbers they produced are in
+[Multi-view](#multi-view-front--side--back--live) and
+[Tuning the surface](#tuning-the-surface-what-was-measured); reproduce them with
+`tools/make_rig_views.py` and `tools/ab_tuning.py run`.

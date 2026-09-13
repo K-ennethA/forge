@@ -21,33 +21,56 @@ from meshgen.backends import multiview
 from meshgen.backends.base import Backend, BackendError, Cancelled
 
 
-def write_triangle_glb(path):
-    """Write a minimal valid .glb: one triangle, indexed, no material."""
-    positions = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
-    indices = [0, 1, 2]
+def write_glb(path, positions, indices, normals=None):
+    """Write a valid indexed binary glTF from plain Python sequences.
 
-    index_bytes = struct.pack("<3H", *indices)
+    Generalised out of :func:`write_triangle_glb` so the tuning tests can put a
+    *known* solid — a welded cube, a sphere — through the very same reader
+    ``mesh_metrics`` uses on real output.  A metric that is only ever exercised
+    on model output cannot tell you it is wrong.
+    """
+    positions = [tuple(float(c) for c in p) for p in positions]
+    flat = [int(i) for tri in indices for i in tri]
+    wide = len(positions) > 65535
+
+    index_bytes = struct.pack(f"<{len(flat)}{'I' if wide else 'H'}", *flat)
     index_bytes += b"\x00" * ((4 - len(index_bytes) % 4) % 4)
     position_bytes = b"".join(struct.pack("<3f", *p) for p in positions)
-    buffer = index_bytes + position_bytes
+    normal_bytes = b""
+    if normals is not None:
+        normal_bytes = b"".join(struct.pack("<3f", *map(float, n)) for n in normals)
+    buffer = index_bytes + position_bytes + normal_bytes
+
+    lo = [min(p[i] for p in positions) for i in range(3)]
+    hi = [max(p[i] for p in positions) for i in range(3)]
+    attributes = {"POSITION": 1}
+    views = [
+        {"buffer": 0, "byteOffset": 0, "byteLength": len(index_bytes), "target": 34963},
+        {"buffer": 0, "byteOffset": len(index_bytes),
+         "byteLength": len(position_bytes), "target": 34962},
+    ]
+    accessors = [
+        {"bufferView": 0, "componentType": 5125 if wide else 5123,
+         "count": len(flat), "type": "SCALAR"},
+        {"bufferView": 1, "componentType": 5126, "count": len(positions),
+         "type": "VEC3", "min": lo, "max": hi},
+    ]
+    if normals is not None:
+        attributes["NORMAL"] = 2
+        views.append({"buffer": 0, "byteOffset": len(index_bytes) + len(position_bytes),
+                      "byteLength": len(normal_bytes), "target": 34962})
+        accessors.append({"bufferView": 2, "componentType": 5126,
+                          "count": len(normals), "type": "VEC3"})
 
     doc = {
         "asset": {"version": "2.0", "generator": "forge-meshgen fake backend"},
         "scene": 0,
         "scenes": [{"nodes": [0]}],
         "nodes": [{"mesh": 0}],
-        "meshes": [{"primitives": [{"attributes": {"POSITION": 1}, "indices": 0, "mode": 4}]}],
+        "meshes": [{"primitives": [{"attributes": attributes, "indices": 0, "mode": 4}]}],
         "buffers": [{"byteLength": len(buffer)}],
-        "bufferViews": [
-            {"buffer": 0, "byteOffset": 0, "byteLength": len(index_bytes), "target": 34963},
-            {"buffer": 0, "byteOffset": len(index_bytes),
-             "byteLength": len(position_bytes), "target": 34962},
-        ],
-        "accessors": [
-            {"bufferView": 0, "componentType": 5123, "count": 3, "type": "SCALAR"},
-            {"bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3",
-             "min": [0.0, 0.0, 0.0], "max": [1.0, 1.0, 0.0]},
-        ],
+        "bufferViews": views,
+        "accessors": accessors,
     }
 
     json_bytes = json.dumps(doc).encode("utf-8")
@@ -65,6 +88,12 @@ def write_triangle_glb(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(bytes(out))
     return path
+
+
+def write_triangle_glb(path):
+    """Write a minimal valid .glb: one triangle, indexed, no material."""
+    return write_glb(path, [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)],
+                     [(0, 1, 2)])
 
 
 class FakeBackend(Backend):

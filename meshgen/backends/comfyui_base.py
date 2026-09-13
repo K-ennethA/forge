@@ -29,6 +29,8 @@ NODE_DECIMATE = "186"
 NODE_UNWRAP = "196"
 NODE_STRUCTURE_SAMPLER = "3"   # the first of four KSamplers; the one seed/steps steer
 NODE_UPSAMPLE = "94"
+NODE_SMOOTH_NORMALS_UV = "238"    # decimate -> here -> UnwrapMesh (splits UV islands)
+NODE_SMOOTH_NORMALS_OUT = "260"   # textured mesh -> here -> the exported .glb
 
 #: Settings applied on top of the official template before any caller options.
 #:
@@ -44,13 +46,96 @@ VRAM_SAFE_DEFAULTS = {
     "target_face_count": 200000,    # template: 700000
 }
 
+#: Surface-quality settings the official template ships at values that are not
+#: its own node defaults, measured and re-chosen on this card.  Applied exactly
+#: like VRAM_SAFE_DEFAULTS - on top of the template, under any caller option -
+#: so that re-running tools/build_workflow.py after a ComfyUI upgrade cannot
+#: silently restore the template's numbers.  workflows/image_to_3d.json carries
+#: the same values, and a test pins the two together.
+#:
+#: The measurements, the losers and the reasons are in meshgen/README.md under
+#: "Tuning the surface: what was measured".  In one line each:
+#:
+#: * ``smooth_iters`` - the template ships 20, which is the node's MAXIMUM and
+#:   ten times what its own tooltip recommends ("2-3 cleans DC staircase
+#:   artifacts; higher over-smooth QEF edges").  Taubin smoothing does not know
+#:   an artifact from a chamfer.
+#: * ``qef`` - Quadratic Error Function dual-vertex placement, which is what
+#:   recovers a sharp feature instead of averaging across it.  Core defaults it
+#:   ON for sdf and OFF for udf; the template runs udf, so it was off.
+#: * ``project_back`` - pulls dual-contoured vertices back onto the true input
+#:   surface.  0 is pure DC: the remesh's idea of the surface, not the model's.
+#: * ``crease_angle`` - 180 means "smooth everything", so a 90 degree edge is
+#:   shaded with one averaged normal and reads as a 45 degree lie.
+#:
+#: Two of the four moved.  The other two were measured and LOST, which is worth
+#: as much as the wins and is why they are named here rather than forgotten:
+#:
+#: * ``project_back`` stays 0.  At 0.5 it bought +0.0007 silhouette IoU for 70
+#:   self-intersections where there had been none; at 1.0, 13 391 of them across
+#:   465 shells, with 2.6x the object's true crease length - pure voxel
+#:   staircase.  It snaps dual-contoured vertices back onto the raw model
+#:   surface, which is precisely the self-intersecting mess the remesh exists to
+#:   remove.  Both cost ~17% more wall time as well.
+#: * ``crease_angle`` stays 180 GLOBALLY, and moves only under ``hard_surface``.
+#:   45 is close to free on a hard surface - measured alone it cut crease-face
+#:   shading error from 164.4 to 19.2 degrees while changing no geometry at all
+#:   (sharpness and crease length identical to the baseline, as it must be: the
+#:   node splits vertices, it does not move them).  But on the organic control
+#:   it added 4.8% more exported vertices to split edges that should have stayed
+#:   smooth, and that is faceting.  The metric cannot tell the difference - a
+#:   sphere WANTS its shading normals to deviate from its faces - so defaulting
+#:   it would be optimising a number the harness cannot read on half the inputs.
+TUNED_DEFAULTS = {
+    "smooth_iters": 3,      # template: 20 (the node's max; its tooltip says 2-3)
+    "qef": True,            # template: false
+}
+
+#: The ``hard_surface`` macro, expanded in :meth:`resolved_options`.  Sets more
+#: than one node at once; see OPTION_SPEC.  ``qef`` is already the default and
+#: is repeated here on purpose - the macro must mean the same thing to a caller
+#: who has overridden the defaults as it does to one who has not.
+HARD_SURFACE_PRESET = {
+    "crease_angle": 45.0,
+    "qef": True,
+}
+
 #: Option keys that are real and validated but steer meshgen rather than a node
 #: in the graph, so ``build_graph`` must skip them instead of refusing them as
 #: unknown.  ``views`` and ``on_unavailable`` are the Phase 18(a) multi-view
-#: request surface; they are resolved before a graph is built.
-NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg"}
+#: request surface; they are resolved before a graph is built.  ``hard_surface``
+#: is a macro over two graph options, expanded in :meth:`resolved_options`.
+NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg",
+                     "hard_surface"}
+
+
+def _boolean(value):
+    """Strict bool coercion - ``bool("false")`` is True, and that is a trap.
+
+    A caller sending ``"false"`` for ``qef`` means false, and silently turning
+    sharp-feature placement ON because a JSON client stringified a flag is
+    exactly the class of wrongness this whole option surface exists to stop.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str) and value.lower() in ("true", "false"):
+        return value.lower() == "true"
+    if value in (0, 1) and not isinstance(value, float):
+        return bool(value)
+    raise ValueError(f"{value!r} is not a boolean")
+
+
+_boolean.__name__ = "boolean"
+
 
 #: options callers may pass through /generate3d -> {"options": {...}}
+#:
+#: A spec is ``(node id or tuple of node ids, input field, coercion)``.  The
+#: tuple form exists for ``crease_angle``, which is one artistic decision -
+#: "this object has hard edges" - held by two separate MeshSmoothNormals nodes
+#: in the template: one feeding the UV unwrap, one producing the exported
+#: normals.  Setting only one of them gives a mesh whose atlas and whose shading
+#: disagree about where the creases are.
 OPTION_SPEC = {
     "seed": (NODE_STRUCTURE_SAMPLER, "seed", int),
     "steps": (NODE_STRUCTURE_SAMPLER, "steps", int),
@@ -60,6 +145,33 @@ OPTION_SPEC = {
     "target_face_count": (NODE_DECIMATE, "target_face_count", int),
     "uv_padding": (NODE_UNWRAP, "padding", int),
     "shape_resolution": (NODE_UPSAMPLE, "target_resolution", str),
+    "smooth_iters": (NODE_REMESH, "smooth_iters", int),
+    "qef": (NODE_REMESH, "sign_mode.qef", _boolean),
+    "project_back": (NODE_REMESH, "project_back", float),
+    "fix_poles": (NODE_REMESH, "fix_poles", _boolean),
+    "crease_angle": ((NODE_SMOOTH_NORMALS_UV, NODE_SMOOTH_NORMALS_OUT),
+                     "crease_angle", float),
+}
+
+#: Inclusive ``(low, high)`` bounds, straight off the ComfyUI node schemas.
+#: Out-of-range is refused with the real range rather than clamped: a node that
+#: clamps 500 smoothing iterations to 20 does not tell you it did, and the
+#: caller then reasons about a setting that never happened.
+OPTION_LIMITS = {
+    "steps": (1, 200),
+    "cfg": (0.0, 100.0),
+    "texture_resolution": (16, 8192),
+    "remesh_resolution": (32, 2048),
+    "target_face_count": (4, 10_000_000),
+    "uv_padding": (0, 64),
+    "smooth_iters": (0, 20),
+    "project_back": (0.0, 1.0),
+    "crease_angle": (0.0, 180.0),
+}
+
+#: ``shape_resolution`` is a combo, not a number.
+OPTION_CHOICES = {
+    "shape_resolution": ("1024", "1536"),
 }
 
 # Weights the shared pipeline always needs, whichever diffusion model drives it.
@@ -152,10 +264,36 @@ class ComfyUIBackend(Backend):
     default_options = {}
 
     def resolved_options(self, options: dict) -> dict:
+        caller = dict(options or {})
         merged = dict(VRAM_SAFE_DEFAULTS)
+        merged.update(TUNED_DEFAULTS)
         merged.update(self.default_options)
-        merged.update(options or {})
+        if "hard_surface" in caller:
+            try:
+                wanted = _boolean(caller["hard_surface"])
+            except ValueError:
+                raise BackendError(
+                    f"option hard_surface={caller['hard_surface']!r} is not a boolean"
+                ) from None
+            if wanted:
+                # a macro, not a mode: it only pre-seeds the two options it is
+                # shorthand for, so an explicit crease_angle next to it still
+                # wins rather than being quietly overruled
+                merged.update(HARD_SURFACE_PRESET)
+        merged.update(caller)
         return merged
+
+    @staticmethod
+    def _check_range(key, value):
+        choices = OPTION_CHOICES.get(key)
+        if choices is not None and value not in choices:
+            raise BackendError(
+                f"option {key}={value!r} is not one of {', '.join(map(repr, choices))}")
+        limits = OPTION_LIMITS.get(key)
+        if limits is not None and not (limits[0] <= value <= limits[1]):
+            raise BackendError(
+                f"option {key}={value!r} is outside the supported range "
+                f"{limits[0]} to {limits[1]}")
 
     def build_graph(self, image_name: str, options: dict, prefix: str) -> dict:
         graph = self.load_workflow()
@@ -180,13 +318,18 @@ class ComfyUIBackend(Backend):
             if spec is None:
                 unknown.append(key)
                 continue
-            node_id, field, coerce = spec
-            if node_id not in graph:
-                continue
+            node_ids, field, coerce = spec
+            if isinstance(node_ids, str):
+                node_ids = (node_ids,)
             try:
-                graph[node_id]["inputs"][field] = coerce(value)
+                coerced = coerce(value)
             except (TypeError, ValueError):
-                raise BackendError(f"option {key}={value!r} is not a valid {coerce.__name__}") from None
+                raise BackendError(
+                    f"option {key}={value!r} is not a valid {coerce.__name__}") from None
+            self._check_range(key, coerced)
+            for node_id in node_ids:
+                if node_id in graph:
+                    graph[node_id]["inputs"][field] = coerced
         if unknown:
             raise BackendError(
                 f"unknown option(s): {', '.join(sorted(unknown))}. "

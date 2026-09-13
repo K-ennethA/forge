@@ -18,14 +18,24 @@ from pathlib import Path
 
 _MAGIC = b"glTF"
 _CHUNK_JSON = 0x4E4F534A  # 'JSON'
+_CHUNK_BIN = 0x004E4942   # 'BIN\0'
 
 
 class GlbError(ValueError):
     pass
 
 
-def read_json_chunk(path) -> dict:
+def read_chunks(path):
+    """Return ``(gltf_json, bin_blob_or_None)``.
+
+    The JSON chunk is what :func:`stats` needs; the BIN chunk is what anything
+    that wants the actual geometry needs (``tools/mesh_metrics.py`` scores real
+    vertices and triangles from it).  Both come out of one pass over the file so
+    a caller never opens a multi-megabyte ``.glb`` twice.
+    """
     path = Path(path)
+    doc = None
+    blob = None
     with open(path, "rb") as fh:
         header = fh.read(12)
         if len(header) < 12 or header[:4] != _MAGIC:
@@ -40,9 +50,17 @@ def read_json_chunk(path) -> dict:
             length, kind = struct.unpack("<II", raw)
             payload = fh.read(length)
             read += 8 + length
-            if kind == _CHUNK_JSON:
-                return json.loads(payload.decode("utf-8"))
-    raise GlbError(f"{path} has no JSON chunk")
+            if kind == _CHUNK_JSON and doc is None:
+                doc = json.loads(payload.decode("utf-8"))
+            elif kind == _CHUNK_BIN and blob is None:
+                blob = payload
+    if doc is None:
+        raise GlbError(f"{path} has no JSON chunk")
+    return doc, blob
+
+
+def read_json_chunk(path) -> dict:
+    return read_chunks(path)[0]
 
 
 def stats(path) -> dict:

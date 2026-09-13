@@ -521,9 +521,12 @@ def test_workflow_template_has_the_nodes_the_adapters_patch():
     assert graph[base.NODE_LOAD_IMAGE]["class_type"] == "LoadImage"
     assert graph[base.NODE_TRELLIS2_SWITCH]["class_type"] == "PrimitiveBoolean"
     assert graph[base.NODE_SAVE]["class_type"] == "Save3DAdvanced"
-    for node_id, field, _ in base.OPTION_SPEC.values():
-        assert node_id in graph, node_id
-        assert field in graph[node_id]["inputs"], (node_id, field)
+    for node_ids, field, _ in base.OPTION_SPEC.values():
+        # an option may steer more than one node - crease_angle owns both
+        # MeshSmoothNormals nodes, see backends/comfyui_base.py
+        for node_id in ((node_ids,) if isinstance(node_ids, str) else node_ids):
+            assert node_id in graph, node_id
+            assert field in graph[node_id]["inputs"], (node_id, field)
 
     # every node link must point at a node that survived the prune
     for node_id, node in graph.items():

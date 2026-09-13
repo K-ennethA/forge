@@ -71,14 +71,23 @@ def _corners(box):
             for p in ((x, y, z) for x in (x0, x1) for y in (y0, y1) for z in (z0, z1))]
 
 
-def _camera(azimuth_deg, distance):
-    """(origin, right, up, back) from core's rig, read off the c2w matrix."""
+def camera_basis(azimuth_deg, distance):
+    """(origin, right, up, back) from core's rig, read off the c2w matrix.
+
+    Public because the A/B tuning fixtures (``tools/ab_fixtures.py``) render
+    *their* objects through the identical rig, and a second copy of this would
+    be the one place the two could silently disagree.
+    """
     T = multiview.transform_matrix(azimuth_deg, distance)
     right = (T[0][0], T[1][0], T[2][0])
     up = (T[0][1], T[1][1], T[2][1])
     back = (T[0][2], T[1][2], T[2][2])
     origin = (T[0][3], T[1][3], T[2][3])
     return origin, right, up, back
+
+
+#: kept so the module's own internals read as before
+_camera = camera_basis
 
 
 def _project(point, camera, fov_deg, resolution):
