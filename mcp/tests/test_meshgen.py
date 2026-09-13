@@ -278,6 +278,35 @@ def test_an_unknown_backend_is_refused_with_the_list(meshgen, picture: Path) -> 
     assert "trellis2" in str(excinfo.value)
 
 
+def test_extra_views_go_out_as_pixal3d_multiview(meshgen, blender, picture: Path,
+                                                 tmp_path: Path) -> None:
+    """A side image switches the job to pixal3d and rides options.views —
+    front is always image_path, and the single-view wire shape is untouched."""
+    side = tmp_path / "gecko-side.png"
+    side.write_bytes(picture.read_bytes())
+    fake = meshgen()
+    blender({"import_generated": IMPORTED, "check_model": CHECKED})
+    server.generate_3d(str(picture), side_image=str(side))
+
+    body = fake.posts[0][1]
+    assert body["backend"] == "pixal3d"
+    assert body["options"]["views"] == {"front": str(picture),
+                                        "side": str(side)}
+    assert body["image_path"] == str(picture)
+
+
+def test_views_with_a_single_view_backend_are_refused_up_front(
+        meshgen, picture: Path, tmp_path: Path) -> None:
+    side = tmp_path / "side.png"
+    side.write_bytes(picture.read_bytes())
+    fake = meshgen()
+    with pytest.raises(BackendError) as excinfo:
+        server.generate_3d(str(picture), side_image=str(side),
+                           backend="trellis2")
+    assert "single-view" in str(excinfo.value)
+    assert not fake.posts  # refused before any GPU work was asked for
+
+
 @pytest.mark.parametrize("name", ["sketch.txt", "model.glb", "notes.pdf"])
 def test_a_file_that_is_not_a_picture_never_reaches_the_service(
     meshgen, tmp_path: Path, name: str

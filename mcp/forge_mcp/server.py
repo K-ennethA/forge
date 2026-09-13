@@ -2580,6 +2580,9 @@ def _check_generated(object_name: Optional[str]) -> tuple[Optional[Dict[str, Any
 @app.tool()
 def generate_3d(
     image_path: str,
+    side_image: Optional[str] = None,
+    back_image: Optional[str] = None,
+    left_image: Optional[str] = None,
     backend: Optional[str] = None,
     wait: bool = True,
     project: Optional[str] = None,
@@ -2605,9 +2608,18 @@ def generate_3d(
 
     - `image_path`: an absolute .png/.jpg/.jpeg/.webp/.bmp on this machine. The
       object is named after the file, so `gecko.png` lands as `gecko` rather
-      than the exporter's `Mesh_0`.
-    - `backend`: omit for the service's default (trellis2). "pixal3d" is the
-      other installed model; anything else is refused with the list.
+      than the exporter's `Mesh_0`. This is always the FRONT view.
+    - `side_image` / `back_image` / `left_image`: MORE VIEWS of the same
+      object, same rules as image_path. Any of them switches the job to
+      multi-view pixal3d (measured on this machine: ~11.1 GB peak at 4 views,
+      82-106 s), which conditions the geometry on every view instead of
+      guessing the unseen sides — offer it whenever the artist has a side or
+      back reference, exactly the "front and side" ask. `side_image` is the
+      object's RIGHT side; views must share framing and lighting. trellis2
+      cannot take views and is refused up front.
+    - `backend`: omit for the service's default (trellis2 single-view;
+      pixal3d automatically when views are given). "pixal3d" is the other
+      installed model; anything else is refused with the list.
     - `wait`: true (default) blocks until the mesh is in the scene. false hands
       back the job id immediately — then poll meshgen_status(job_id).
     - `project`: the part this mesh belongs to. Pass it whenever there is one
@@ -2638,6 +2650,23 @@ def generate_3d(
     image = meshgen_image_path(image_path)
     chosen = (backend or "").strip() or None
 
+    views: Dict[str, str] = {}
+    for name, extra in (("side", side_image), ("back", back_image),
+                        ("left", left_image)):
+        if extra is not None and str(extra).strip():
+            views[name] = str(meshgen_image_path(extra))
+    options: Optional[Dict[str, Any]] = None
+    if views:
+        if chosen not in (None, "pixal3d"):
+            raise BackendError(
+                f"Extra views need the pixal3d backend; {chosen!r} is "
+                "single-view only. Drop the views or drop the backend "
+                "override."
+            )
+        chosen = "pixal3d"
+        views["front"] = str(image)
+        options = {"views": views}
+
     # Born filed, when there is a project to file it into. The path is resolved
     # BEFORE the job is submitted so a bad project name costs nothing — five
     # minutes of GPU work and then a refusal about a folder name would be the
@@ -2648,7 +2677,8 @@ def generate_3d(
         filed_to = project_slug(project)
         output = str(generated_output_path(filed_to, image))
 
-    submitted = meshgen_client.generate3d(str(image), backend=chosen, output=output)
+    submitted = meshgen_client.generate3d(str(image), backend=chosen,
+                                          options=options, output=output)
     job_id = str(submitted.get("job_id") or "").strip()
     if not job_id:
         raise BackendError(
