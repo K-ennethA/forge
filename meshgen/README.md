@@ -598,16 +598,9 @@ rejected and why, the pairwise agreement matrix, the winner, one sentence of
 
 ### Measured — RTX 5070 12 GB, ComfyUI v0.35.1, `trellis2`, base seed 56
 
-**This table is PARTIAL and says so.** The sweep was stopped part-way when the
-GPU was needed elsewhere; three of nine planned rows landed. What is here was
-measured, and the gaps are named rather than estimated. Finish it with
-
-```
-service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble run --out <dir>
-service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble report <dir>
-```
-
-which resumes from `results.jsonl` and re-runs only what is missing.
+**COMPLETE** (2026-09-14; the sweep paused mid-run when the GPU was needed
+elsewhere and was resumed by `ab_ensemble run`, which re-ran only the six
+missing rows — the resume machinery got its integration test for free).
 
 **Seed replay**: 3 probes of seed 56 on `hard_steps` agreed at grid IoU
 **1.000, 1.000** — 4 752 occupied voxels every time. Probe cost **6.2 s** cold,
@@ -616,12 +609,29 @@ identical graph). A *distinct* seed costs ~6 s.
 
 | scene | arm | picked seed | IoU | sharp | creaseL | selfX | shells | probe | wall | VRAM |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `hard_steps` | `baseline` | 56 | 0.9755 | 0.284 | 57.9 | 0 | 38 | — | 177 s | 11.21 |
-| `hard_steps` | `structure5` | **56** | 0.9753 | 0.284 | 57.8 | 3 | 35 | 32 s | 219 s | 11.21 |
+| `hard_steps` | `baseline` | 56 | 0.9755 | 0.286 | 58.0 | 1 | 37 | — | 185 s | 10.44 |
+| `hard_steps` | `structure5` | **56** | 0.9753 | 0.282 | 57.5 | 0 | 30 | 26 s | 189 s | 11.16 |
+| `hard_steps` | `best_of3` | **56** | 0.9752 | 0.286 | 58.3 | 0 | 32 | 2 s | 494 s | 10.97 |
+| `hard_slab` | `baseline` | 56 | 0.9006 | 0.161 | 7.9 | 0 | 5 | — | 76 s | 10.18 |
 | `hard_slab` | `structure5` | **58** | 0.8866 | 0.167 | 8.3 | 0 | 5 | 30 s | 105 s | 10.18 |
-| `hard_slab` | `baseline` | — | *not run* | | | | | | | |
-| `hard_steps` / `hard_slab` | `best_of3` | — | *not run* | | | | | | | |
-| `organic_blob` | all three | — | *not run* | | | | | | | |
+| `organic_blob` | `baseline` | 56 | 0.9123 | 0.127 | 28.4 | 3 | 27 | — | 258 s | 10.25 |
+| `organic_blob` | `structure5` | **57** | 0.9184 | 0.113 | 30.4 | 2 | 28 | 26 s | 312 s | 10.13 |
+| `organic_blob` | `best_of3` | **58** | 0.8811 | 0.099 | 28.5 | 2 | 29 | 2 s | 963 s | 10.31 |
+
+**The completed table's verdict, plainly.** `structure5` behaved exactly as
+sold — insurance: it kept the default seed where the default was fine
+(`hard_steps`), swapped to a better-agreeing seed on the wobbly scenes, bought
+a real +0.006 IoU on `organic_blob`, and its one unambiguous win stays the
+rejection of drawing-contradicting grids before any tail ran. `best_of3` is
+the expensive disappointment the medoid literature did not promise against:
+3.7x the wall time, never better than baseline, and on `organic_blob` it
+picked a mesh 0.031 IoU WORSE than the single default seed — with only 2-3
+gate survivors, "most agreed-with" measures the crowd, not the quality, and
+the crowd was wrong. Both stay off by default; `structure_n` is the one worth
+reaching for on a shape the model keeps getting wrong, `best_of` earns its
+keep only if a future re-rank puts input-silhouette agreement above the
+Chamfer medoid — an open question the data now motivates, not one it settles
+(n = 2 scenes).
 
 **Cost is ~6 s per distinct seed, and it is the only thing here that is fully
 settled.** `structure_n: 5` added **32 s to a 177 s** job (+24%) and **30 s to a
