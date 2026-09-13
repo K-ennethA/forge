@@ -40,3 +40,8 @@ Fresh machine: fill `templates/printer.json`, create the two venvs (`pip install
 ## Status
 
 Phase 0–1 in progress: scaffolding, add-on core + common ops, geometry service, MCP bridge, PARAMS→panel. Untested until first manual test session.
+
+---
+
+Image-to-3D in Forge is **Built with DINOv3** (Meta AI); its license requires this attribution. Generation runs locally via ComfyUI (GPL, arms-length over HTTP) with MIT-licensed TRELLIS.2 and Pixal3D weights.
+
