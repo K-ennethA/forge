@@ -621,8 +621,40 @@ def test_export(rig, retopo, workspace):
     meshes = [entry.get("name") for entry in doc.get("meshes", [])]
     check("the game mesh is in the file", any(RETOPO in str(name) for name in meshes),
           str(meshes))
-    check("the LOD meshes came along with Godot's -lod suffix",
-          any(str(name).endswith("-lod1") for name in meshes), str(meshes))
+
+    section("tangents ship with the asset")
+    # Khronos' exporter defaults export_tangents to False. Without them every
+    # engine regenerates the basis its own way and the baked normal map decodes
+    # against a basis it was never baked in - wrong, everywhere, silently.
+    primitives = [primitive for entry in doc.get("meshes", [])
+                  for primitive in entry.get("primitives", [])]
+    check("every mesh primitive carries a TANGENT attribute",
+          primitives and all("TANGENT" in primitive.get("attributes", {})
+                             for primitive in primitives),
+          str([sorted(p.get("attributes", {})) for p in primitives][:2]))
+    check("and the UVs they are paired with",
+          all("TEXCOORD_0" in primitive.get("attributes", {})
+              for primitive in primitives),
+          str([sorted(p.get("attributes", {})) for p in primitives][:2]))
+    check("the result says tangents were exported", result.get("tangents") is True,
+          str(result.get("tangents")))
+
+    section("Godot's own LOD convention is respected")
+    # Godot 4 generates LODs on import (meshoptimizer) and its import suffixes
+    # are -col/-convcol/-occ/-navmesh - there is no -lod among them. So the
+    # default export ships LOD0 alone.
+    check("the default export mode is auto", result.get("lods") == "auto",
+          str(result.get("lods")))
+    check("no -lodN sibling was invented in the glTF",
+          not [name for name in meshes if "-lod" in str(name)], str(meshes))
+    check("and the generated levels stayed out of the file",
+          not [name for name in meshes if "_lod" in str(name)], str(meshes))
+    check("the result carries no visibility chain when Godot does the LODs",
+          result.get("lod_chain") == [], str(result.get("lod_chain")))
+    check("it says out loud which levels it left behind",
+          any("_lod1" in warning and "meshoptimizer" in warning
+              for warning in result.get("warnings") or []),
+          str(result.get("warnings")))
 
     section("the Godot import helper")
     script = result.get("import_script")
@@ -637,6 +669,9 @@ def test_export(rig, retopo, workspace):
               '"%s"' % ACTION in text, text[:200])
         check("it is listed in the result's files", script in result["files"],
               str(result["files"]))
+        check("its LOD chain is empty on a default export",
+              "const LOD_CHAIN: Array = []" in text,
+              [line for line in text.splitlines() if "LOD_CHAIN" in line][:1])
 
     section("the export left no litter")
     after = set(bpy.data.objects.keys())
@@ -681,6 +716,64 @@ def test_export_root_motion(rig, workspace):
     check("LODs stayed out when asked to", not any("-lod" in name for name in
                                                    result.get("meshes", [])),
           str(result.get("meshes")))
+
+
+def test_export_manual_lods(rig, workspace):
+    """``lods="manual"`` ships our chain AND makes it switch."""
+    section('rigforge_export_godot with lods="manual"')
+    path = os.path.join(workspace, "blob_manual.glb")
+    result = call("rigforge_export_godot", {"rig": rig.name, "path": path,
+                                            "actions": [ACTION], "lods": "manual"})
+    for warning in result.get("warnings") or []:
+        note("warning: %s" % warning)
+    check("the mode is reported back", result.get("lods") == "manual",
+          str(result.get("lods")))
+
+    doc = parse_gltf(path)
+    meshes = [str(entry.get("name")) for entry in doc.get("meshes", [])]
+    check("the generated levels are in the glTF under their own names",
+          any(name.endswith("_lod1") for name in meshes)
+          and any(name.endswith("_lod2") for name in meshes), str(meshes))
+    check("nothing pretends to be a Godot -lodN suffix",
+          not [name for name in meshes if "-lod" in name], str(meshes))
+    primitives = [primitive for entry in doc.get("meshes", [])
+                  for primitive in entry.get("primitives", [])]
+    check("every level ships tangents too",
+          primitives and all("TANGENT" in primitive.get("attributes", {})
+                             for primitive in primitives),
+          str([sorted(p.get("attributes", {})) for p in primitives][:3]))
+
+    chain = result.get("lod_chain") or []
+    check("the result carries a visibility range per level",
+          len(chain) == 3, str(chain))
+    if len(chain) == 3:
+        check("LOD0 starts at the camera", chain[0]["begin"] == 0.0, str(chain[0]))
+        check("the bands are contiguous and strictly increasing",
+              chain[0]["end"] == chain[1]["begin"] > 0.0
+              and chain[1]["end"] == chain[2]["begin"] > chain[1]["begin"],
+              str(chain))
+        check("the last level never ends (Godot's 0 = for ever)",
+              chain[2]["end"] == 0.0, str(chain[2]))
+        check("the ranges are keyed on the glTF's own mesh names",
+              all(entry["mesh"] in meshes for entry in chain),
+              "%s vs %s" % ([e["mesh"] for e in chain], meshes))
+        note("chain: %s" % ", ".join("%s [%.2f, %.2f)"
+                                     % (e["mesh"], e["begin"], e["end"]) for e in chain))
+
+    script = result.get("import_script")
+    if check("the import script was written", script and os.path.isfile(script),
+             str(script)):
+        text = open(script, "r", encoding="utf-8").read()
+        check("it wires visibility_range_begin/end, so the chain switches",
+              "visibility_range_begin" in text and "visibility_range_end" in text
+              and "_apply_lod_chain" in text,
+              [line for line in text.splitlines() if "visibility_range" in line][:2])
+        check("the chain constant is populated, not empty",
+              "const LOD_CHAIN: Array = [{" in text,
+              [line for line in text.splitlines() if "LOD_CHAIN" in line][:1])
+        for entry in chain:
+            check("%s is named in the import script" % entry["mesh"],
+                  '"mesh": "%s"' % entry["mesh"] in text)
 
 
 def test_export_errors(rig, workspace):
@@ -869,6 +962,7 @@ def main():
         test_weights_command(retopo, rig)
         test_action(rig)
         test_export(rig, retopo, workspace)
+        test_export_manual_lods(rig, workspace)
         test_export_root_motion(rig, workspace)
         test_export_errors(rig, workspace)
         test_panels()

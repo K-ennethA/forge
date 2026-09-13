@@ -661,8 +661,8 @@ nobody is allowed to fail on.
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace?` | assigns the vertices of those faces to `tag_<Name>` at weight 1.0 |
 | `rigforge_untag` | `tag`, `faces?` / `use_selection?`, `include_shared?` | drops faces from a tag; with no faces given, deletes the tag |
 | `rigforge_manifest` | `action` `save`\|`load`\|`get`, `path?`, `archetype?`, `motion_notes?`, `name?`, `create_missing_tags?` | reads/writes `character.json` |
-| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline; returns object names and face counts |
-| `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage |
+| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, **`unwrap?`** (default true), **`lod_budgets?`**, **`protect_seams?`**, `seams_from_tags?`, `margin?`, `angle_limit?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline in canonical order (retopo → unwrap → bake → LOD); returns object names, face counts, `uv`, `lod_reports`, `budget` |
+| `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage. Marks the mesh as really unwrapped, which is what lets a bake run |
 | `rigforge_status` | — | one-call overview: tags, archetype, motion notes, manifest path, derived meshes |
 
 ### RigForge commands (Phase 4 — rig and Godot export)
@@ -672,7 +672,7 @@ nobody is allowed to fail on.
 | `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it to the tags; ear/tail tags become bone chains. With `joints_file`, a neural detector's predicted joints refine that fit (see [The rigging bridge](#the-rigging-bridge-phase-4-stage-4a-joints_file)). Returns `metarig`, `bone_count`, `mapping` (tag → bones), `chains`, `landmarks`, `joints`, `warnings` |
 | `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`** | Rigify generate → automatic weights → per-tag weight cleanup. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, `warnings` |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts and the two numbers that mean trouble; or re-runs the rules |
-| `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`**, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files` |
+| `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents` |
 | **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?` | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) |
 
 Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
@@ -1570,14 +1570,68 @@ previous `_retopo` / `_lod*` objects in place, so the names stay stable.
    vertex takes a majority vote over its three nearest neighbours — deterministic, needs
    no modifier stack or depsgraph evaluation, and one stray vertex on a border cannot
    claim a region. Every `tag_*` group is recreated on the retopo mesh.
-6. **Normal bake** (optional, `bake_normals`). High-to-low, Cycles, into a new image named
+6. **UV unwrap** (`unwrap`, default **on**) of LOD0, through the same code the UV panel
+   runs (see *Auto UV* below), controlled by the same `seams_from_tags` / `margin` /
+   `angle_limit` parameters.
+7. **Normal bake** (optional, `bake_normals`). High-to-low, Cycles, into a new image named
    `<obj>_retopo_normal` at `bake_resolution` (default 2048); `bake_path` also writes it
    out as a PNG.
-7. **LODs** (optional, `lods`). `<obj>_lod1`, `_lod2`, … decimated at ratio 0.5, 0.25,
-   0.125 …, duplicated from the retopo mesh so the tags come with them.
+8. **LODs** (optional, `lods`). `<obj>_lod1`, `_lod2`, … decimated **from the unwrapped
+   LOD0** to a triangle budget, so the tags *and the atlas* come with them.
 
 Returns the object names, a `face_counts` map keyed by name, the per-stage log, the
-transferred tags, the bake report and any warnings.
+transferred tags, the UV report, the bake report, `lod_reports`, `budget` and any warnings.
+
+**The order is the feature.** The canonical finishing chain is
+`repair → retopo → UV unwrap → bake high→low → tangents → LOD`, and three of those
+orderings are not negotiable:
+
+- **Unwrap before bake.** A bake needs somewhere to write. If nothing has unwrapped the
+  mesh, the obvious somewhere is an empty default UV layer — and the real unwrap that
+  follows replaces every coordinate in it, so the map decodes against a layout that no
+  longer exists. Nothing errors; the asset just looks subtly wrong. So `bake_normals` with
+  `unwrap: false` is **refused with a sentence**, and `bake_normals()` itself refuses any
+  mesh that carries no record of a real unwrap (the `forge_uv_unwrapped` custom property,
+  written only by `rigforge_auto_uv` / the stage above).
+- **LODs from the unwrapped LOD0.** Every level is duplicated from LOD0 — never from the
+  level above, which would compound UV drift — so one baked map serves the whole chain.
+- **Tangents on export**, not regenerated by the engine. See *Godot export* below.
+
+**LOD budgets, not ratios.** `0.5 ** level` says nothing about what an asset may cost:
+half of a 200 000-triangle mesh is still unshippable. Levels are cut to **triangle
+budgets** instead:
+
+- **Game budgets**: desktop **50 000**, mobile **10 000** triangles. `result.budget` states
+  the platform budget, LOD0's achieved triangle and face counts and a `within_budget` flag,
+  and going over is a warning.
+- **The default chain** starts at LOD0's own triangle count (capped by the game budget)
+  and takes a quarter per level, floored at 64. Override the whole chain with
+  `lod_budgets: [2400, 600, 150]`.
+- **Each level's achievement is asserted** in `lod_reports`: `budget`, `ratio`,
+  `triangles`, `face_count`, `within_budget`, plus the **measured** geometric error
+  (`error`, `error_mean`, `error_relative` — max/mean distance from LOD0's vertices to the
+  level's surface, by `closest_point_on_mesh`) and the `visibility_begin` distance that
+  error implies. A budget it could not reach is a warning, not a silent miss.
+- **`visibility_begin`** comes from a screen-error model: an error *e* seen from distance
+  *d* subtends `e / d` radians, which is `e / d × 704` pixels at 1080p and a 75° vertical
+  FOV, so the level is honest from `e × 704 / 1 px` onward. Those are the numbers the Godot
+  export turns into `visibility_range_begin` / `_end`.
+
+**Known limitation — UV distortion under decimation.** Blender's Decimate **Collapse** is a
+position-only quadric with no UV term at all (the modifier's `delimit` option belongs to
+Planar/Dissolve), so UV distortion across a collapse is not bounded by anything. Measured
+on the synthetic character in `headless_rigforge.py`, sharing LOD0's atlas holds well in
+practice — median UV drift 0.0003 at LOD1 and 0.0008 at LOD2, 90th percentile under 0.006
+— but the worst case is a torn island, not a small stretch. The one lever Collapse exposes
+is its vertex group, and measured on Blender 5.0.1 that group is a **hard lock, not a soft
+cost**: a vertex in it is never collapsed, whatever its weight (1.0, 0.5, 0.05) and
+whatever `vertex_group_factor` says (0.5 through 100 behave identically). On an unwrapped
+character the seam vertices *are* most of the budget, so locking them floors the reduction
+far above any LOD target. `protect_seams` (default **off**) turns it on for the cases where
+an exact atlas matters more than the face count, and the budget miss is reported. The real
+fix is a UV-aware simplifier — meshoptimizer's `simplifyWithAttributes`, which carries UVs
+in the error metric and reports the error it achieved — and building a ctypes binding for
+it is a queued lane of its own.
 
 **Bake caveat.** The bake is the one step allowed to fail. It needs Cycles, and Cycles is
 a shipped add-on that a `--factory-startup` session (or a user who turned it off) leaves
@@ -1587,9 +1641,9 @@ list registered engines. If any of it fails, `result.baked` comes back as
 `{"ok": false, "reason": "..."}`, the reason is repeated in `warnings`, and **the rest of
 the pipeline still delivers its meshes** — everything else is already on disk by then.
 Cycles bakes on the CPU here at one sample; a 2048 map on a dense sculpt is not instant,
-so start smaller if you are iterating. Baking also needs UVs on the low-poly mesh: if
-there are none it makes a UV layer first, but you will get a better map by running the UV
-pass below before the bake.
+so start smaller if you are iterating. Baking needs a **real** unwrap on the low-poly mesh
+and refuses without one (see *The order is the feature* above) — it no longer invents a UV
+layer to write into, because that layer is exactly what the next unwrap throws away.
 
 ### Auto UV
 
@@ -1942,11 +1996,33 @@ Then the glTF, with Godot's conventions:
   holds, so the source steps aside for the duration of the export and is put back
   afterwards; the clip reaches Godot as `idle-loop`, not `idle-loop.001`. The temporary
   baked actions are deleted on the way out.
-- **`-loop`, `-col`, `-lod`.** Clip names are passed through untouched, so the `-loop`
-  convention survives to the import script. Meshes suffixed `-col` / `-colonly` /
+- **Tangents are exported.** Khronos' glTF exporter defaults `export_tangents` to
+  **False**, so an asset that does not ask for them ships tangent-less and every engine
+  regenerates the basis with its own algorithm — which is not the basis the normal map was
+  baked against. The map then decodes slightly wrong, everywhere, and nothing errors. The
+  export sets `export_tangents=True` alongside `export_normals=True` (the exporter ANDs
+  the two internally, so normals are asked for rather than relied on),
+  `export_texcoords=True`, `export_materials="EXPORT"` and `export_image_format="AUTO"`.
+  `result.tangents` says so, and the suite asserts `TANGENT` on every mesh primitive in
+  the written glTF.
+- **`-loop` and `-col`, but no `-lod`.** Clip names are passed through untouched, so the
+  `-loop` convention survives to the import script. Meshes suffixed `-col` / `-colonly` /
   `-convcol` are exported as-is for Godot's own collision handling and listed in the
-  result. `<mesh>_lod1` / `_lod2` siblings are exported alongside, renamed to Godot's
-  `-lod1` / `-lod2` (turn this off with `lods: false`).
+  result. **`-lodN` is not a Godot convention** — its import suffixes are `-col`,
+  `-convcol`, `-occ`, `-navmesh` and friends, and there is no `-lod` among them; Godot 4
+  generates LODs on import with meshoptimizer instead. So:
+  - **`lods: "auto"` (the default)** exports only the unwrapped LOD0 and lets Godot's
+    importer do the levels. Generated `<mesh>_lod1` / `_lod2` siblings are left out, and
+    the result says which ones and why.
+  - **`lods: "manual"`** exports them too, under **their own names** (`Sculpt_lod1`, not a
+    fake `-lod1` suffix), and writes a `LOD_CHAIN` into the import script that sets
+    `visibility_range_begin` / `visibility_range_end` on each sibling — because without
+    those ranges every level renders at once, on top of each other. The bands are
+    contiguous and strictly increasing, LOD0 begins at 0 and the last level ends at 0
+    (Godot's "for ever"); the distances come from each level's measured error (see *LOD
+    budgets* above), or are measured at export time for a level with no record.
+    `result.lod_chain` carries the same `{mesh, begin, end}` list. Legacy `lods: true` /
+    `false` still work and mean `manual` / `auto`.
 - **LODs get weights.** An LOD is decimated in stage 2, *before* skinning, so it arrives
   at export with tags but no deform weights — which makes the glTF exporter invent a
   `neutral_bone` joint and hang the geometry off it, shipping an LOD that never animates.
@@ -2877,9 +2953,15 @@ two LODs, and then drives the whole of stage 4 and stage 7 over a real socket on
   checked joint by joint: the skin is there, the deform bones and the ear chain are in it,
   **no `ORG-`/`MCH-`/`WGT-` bone leaked in**, the only non-`DEF-` joint is `root`, the
   baked clip is present under its own name and animates many bones rather than the one
-  that was posed, and the LOD meshes arrived with Godot's `-lod` suffix. Then the `.gd`
-  helper's contents, a root-motion export, an export refused for an unknown action name,
-  and — after each — that the scene was left exactly as it was found.
+  that was posed. Then **tangents** — every mesh primitive in the written glTF carries a
+  `TANGENT` attribute, next to the `TEXCOORD_0` it is paired with — and the **Godot LOD
+  convention**: the default export invents no `-lodN` sibling, leaves the generated levels
+  out entirely, says so in a warning, and writes an empty `LOD_CHAIN`. A second export
+  with `lods: "manual"` then asserts the levels ship under their own names, with tangents,
+  and that the import script wires `visibility_range_begin`/`_end` over a contiguous,
+  strictly increasing chain keyed on the glTF's own mesh names. Then the `.gd` helper's
+  contents, a root-motion export, an export refused for an unknown action name, and —
+  after each — that the scene was left exactly as it was found. 179 checks.
 - Finally the panel wiring, the panel operators, and the quadruped and full-human
   templates on throwaway copies.
 
@@ -2903,8 +2985,17 @@ face-select mode, a manifest save→load round trip checked against
 sculpt is untouched, the tags transferred, and the count landed within 25 % of target),
 auto-UV (asserting every tag-change edge is seamed, that no seam-free path runs from the
 head to the torso, that every face has UV area, and that coverage clears 0.45), a
-best-effort normal bake, and the panel operators and wiring. 108 checks; it ends with
-`RESULT: OK` and frees its port.
+best-effort normal bake, and the panel operators and wiring.
+
+It also pins the **finishing order**: that the unwrap stage runs after the tag transfer
+and before the LODs and before the bake; that `bake_normals` with `unwrap: false` is
+refused in a sentence and `bake_normals()` refuses a never-unwrapped mesh without
+inventing a UV layer on the way past; that each LOD **achieved its triangle budget** and
+recorded a measured error and a strictly increasing switch distance; and that every LOD
+**shares LOD0's atlas** — checked twice over, exactly for the vertices the collapse did
+not move, and statistically for all of them against LOD0's interpolated UV at the nearest
+surface point (90th-percentile drift under 0.02; measured 0.0016 at LOD1, 0.0058 at LOD2).
+139 checks; it ends with `RESULT: OK` and frees its port.
 
 ### Phase 2 — PartForge
 

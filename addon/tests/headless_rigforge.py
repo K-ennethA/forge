@@ -455,10 +455,21 @@ def test_retopo(obj, workspace):
     check("the reported face count matches the mesh",
           result["face_counts"][retopo_name] == faces, str(result["face_counts"]))
 
+    stage_names = [stage["stage"] for stage in result["stages"]]
     check("the pipeline ran voxel -> quad -> shrinkwrap -> tags",
-          [stage["stage"] for stage in result["stages"]][:4]
-          == ["voxel_remesh", "quad_remesh", "shrinkwrap", "tag_transfer"],
-          str([stage["stage"] for stage in result["stages"]]))
+          stage_names[:4] == ["voxel_remesh", "quad_remesh", "shrinkwrap", "tag_transfer"],
+          str(stage_names))
+    # The canonical order: unwrap LOD0 before anything is cut from it.
+    check("the unwrap runs after the tag transfer and before the LODs",
+          "auto_uv" in stage_names
+          and stage_names.index("auto_uv") > stage_names.index("tag_transfer")
+          and stage_names.index("auto_uv") < stage_names.index("lod"),
+          str(stage_names))
+    check("LOD0 was unwrapped by the retopo call itself",
+          result["unwrapped"] is True and bool(result["uv"])
+          and result["uv"]["islands"] > 1, str(result.get("uv")))
+    check("the retopo mesh carries a real UV layer",
+          bool(retopo.data.uv_layers), str(list(retopo.data.uv_layers.keys())))
     check("the voxel size was derived from the sculpt, not hard-coded",
           0.0 < result["voxel_size"] < 0.2, str(result["voxel_size"]))
     check("no modifiers are left on the retopo mesh", not len(retopo.modifiers),
@@ -486,31 +497,178 @@ def test_retopo(obj, workspace):
     check("shrinkwrap put it back on the sculpt's silhouette", drift < 0.15,
           "%.1f%% size drift" % (drift * 100.0))
 
-    section("LODs")
-    # Decimate's ratio is a triangle-budget ratio and its output is triangles,
-    # so a 0.5 pass on a quad mesh does not land on exactly half the *polygon*
-    # count. What has to hold is that each level is a real step down.
-    previous = faces
-    for level, ratio in ((1, 0.5), (2, 0.25)):
-        name = "%s_lod%d" % (obj.name, level)
+    section("LODs (triangle budgets, not fixed ratios)")
+    from forge.tools import rigforge as rf
+
+    budget = result["budget"]
+    check("the report states the platform game budget in triangles",
+          budget["platform"] == "mobile" and budget["unit"] == "triangles"
+          and budget["lod0"] == rf.LOD_BUDGETS["mobile"]
+          and budget["within_budget"] is (budget["lod0_triangles"] <= budget["lod0"]),
+          str(budget))
+    check("the budgets came from the platform, not a fixed ratio",
+          result["lod_budget_source"] == "platform budget"
+          and len(result["lod_budgets"]) == 2, str(result["lod_budgets"]))
+    check("each level's budget is a quarter of the one above",
+          result["lod_budgets"][1] < result["lod_budgets"][0] < budget["lod0"],
+          str(result["lod_budgets"]))
+
+    previous_triangles = rf.triangle_count(retopo)
+    previous_begin = -1.0
+    for report in result["lod_reports"]:
+        name = report["object"]
         lod = bpy.data.objects.get(name)
         if not check("%s exists" % name, lod is not None):
             continue
-        actual = len(lod.data.polygons)
+        check("%s achieved its triangle budget" % name,
+              report["within_budget"] and report["triangles"] <= report["budget"],
+              "%d triangles against a budget of %d"
+              % (report["triangles"], report["budget"]))
+        check("%s reports the face count the mesh really has" % name,
+              report["face_count"] == len(lod.data.polygons),
+              "%d vs %d" % (report["face_count"], len(lod.data.polygons)))
         check("%s is a real step down from the level above" % name,
-              0 < actual < previous, "%d vs %d" % (actual, previous))
-        check("%s is in the right ballpark for ratio %.2f" % (name, ratio),
-              faces * ratio * 0.6 <= actual <= faces * ratio * 1.9,
-              "%d faces, retopo has %d" % (actual, faces))
-        previous = actual
+              0 < report["triangles"] < previous_triangles,
+              "%d vs %d" % (report["triangles"], previous_triangles))
+        previous_triangles = report["triangles"]
+
+        check("%s recorded a measured geometric error" % name,
+              report["error"] > 0.0 and report["error_mean"] > 0.0
+              and 0.0 < report["error_relative"] < 1.0, str(report))
+        check("%s recorded a visibility distance further out than the level above"
+              % name, report["visibility_begin"] > previous_begin,
+              "%.3f vs %.3f" % (report["visibility_begin"], previous_begin))
+        previous_begin = report["visibility_begin"]
+
         lod_tags = [g for g in lod.vertex_groups if g.name.startswith("tag_")]
         check("%s kept its tags" % name, len(lod_tags) >= 5,
               str([g.name for g in lod_tags]))
+        check("%s carries no leftover seam-protect group" % name,
+              lod.vertex_groups.get(rf.SEAM_PROTECT_GROUP) is None,
+              str([g.name for g in lod.vertex_groups]))
         listing = call("rigforge_list_tags", {"object": name})
         check("%s tags still have vertices" % name,
               sum(1 for e in listing["tags"] if e["vertex_count"] > 0) >= 5,
               str([(e["name"], e["vertex_count"]) for e in listing["tags"]]))
+        note("%s: %d tris (budget %d), error %.5f, switches at %.2f m"
+             % (name, report["triangles"], report["budget"], report["error"],
+                report["visibility_begin"]))
+
+    test_lods_share_lod0_atlas(retopo, result)
     return retopo
+
+
+def _uv_by_vertex(obj):
+    """``{vertex index: [(u, v), ...]}`` from the active UV layer."""
+    mesh = obj.data
+    layer = mesh.uv_layers.active
+    if layer is None:
+        return {}
+    out = {}
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex = mesh.loops[loop_index].vertex_index
+            out.setdefault(vertex, []).append(tuple(layer.data[loop_index].uv))
+    return out
+
+
+def _lod0_uv_at(retopo, point):
+    """LOD0's UV interpolated at the closest surface point to ``point``."""
+    from mathutils.interpolate import poly_3d_calc
+
+    hit, location, _normal, index = retopo.closest_point_on_mesh(point)
+    if not hit:
+        return None
+    mesh = retopo.data
+    layer = mesh.uv_layers.active
+    polygon = mesh.polygons[index]
+    corners = [mesh.vertices[i].co for i in polygon.vertices]
+    weights = poly_3d_calc(corners, location)
+    u = v = 0.0
+    for weight, loop_index in zip(weights, polygon.loop_indices):
+        uv = layer.data[loop_index].uv
+        u += weight * uv[0]
+        v += weight * uv[1]
+    return (u, v)
+
+
+def test_lods_share_lod0_atlas(retopo, result):
+    """Every LOD must use LOD0's atlas, or one bake cannot serve the chain."""
+    section("LODs share LOD0's atlas")
+    from mathutils.kdtree import KDTree
+
+    lod0_uv = _uv_by_vertex(retopo)
+    check("LOD0 has UVs to share", len(lod0_uv) > 0, str(len(lod0_uv)))
+    lod0_layer = retopo.data.uv_layers.active
+    tree = KDTree(len(retopo.data.vertices))
+    for vertex in retopo.data.vertices:
+        tree.insert(vertex.co, vertex.index)
+    tree.balance()
+
+    for report in result["lod_reports"]:
+        lod = bpy.data.objects.get(report["object"])
+        if lod is None:
+            continue
+        check("%s has a UV layer named exactly like LOD0's" % lod.name,
+              report["uv_layer"] == (lod0_layer.name if lod0_layer else None)
+              and len(lod.data.uv_layers) == 1,
+              "%s vs %s" % (report["uv_layer"],
+                            lod0_layer.name if lod0_layer else None))
+        lod_uv = _uv_by_vertex(lod)
+
+        # 1. Vertices the collapse did not move must carry LOD0's own UV,
+        #    unchanged. (Blender's quadric moves most vertices to an optimal
+        #    position, so this is a minority - but for that minority it is an
+        #    exact, unambiguous statement.)
+        survivors = 0
+        matched = 0
+        for vertex in lod.data.vertices:
+            _co, index, distance = tree.find(vertex.co)
+            if distance > 1e-6:
+                continue
+            wanted = lod0_uv.get(index) or []
+            mine = lod_uv.get(vertex.index) or []
+            if not wanted or not mine:
+                continue
+            survivors += 1
+            if min(abs(a[0] - b[0]) + abs(a[1] - b[1])
+                   for a in mine for b in wanted) < 1e-4:
+                matched += 1
+        if survivors:
+            check("%s gives every surviving vertex LOD0's own UV" % lod.name,
+                  matched == survivors,
+                  "%d of %d survivors matched" % (matched, survivors))
+        else:
+            note("%s: the collapse moved every vertex, so check 2 carries it"
+                 % lod.name)
+
+        # 2. The real promise: every LOD vertex sits where LOD0's atlas says it
+        #    should, so one baked map serves the whole chain. Compared against
+        #    LOD0's *interpolated* UV at the nearest surface point, which is
+        #    what a texture lookup actually resolves to.
+        drift = []
+        for vertex in lod.data.vertices:
+            expected = _lod0_uv_at(retopo, vertex.co)
+            mine = lod_uv.get(vertex.index) or []
+            if expected is None or not mine:
+                continue
+            drift.append(min(max(abs(uv[0] - expected[0]), abs(uv[1] - expected[1]))
+                             for uv in mine))
+        drift.sort()
+        if check("%s could be sampled against LOD0's atlas" % lod.name, bool(drift),
+                 str(len(drift))):
+            p90 = drift[int(len(drift) * 0.9)]
+            median = drift[len(drift) // 2]
+            check("%s samples LOD0's atlas, it does not have one of its own"
+                  % lod.name, p90 < 0.02,
+                  "90th percentile UV drift %.4f (median %.4f)" % (p90, median))
+            note("%s: median UV drift %.5f, 90th %.5f, worst %.5f"
+                 % (lod.name, median, p90, drift[-1]))
+
+        outside = [uv for uvs in lod_uv.values() for uv in uvs
+                   if not (-0.002 <= uv[0] <= 1.002 and -0.002 <= uv[1] <= 1.002)]
+        check("%s stays inside LOD0's 0..1 tile" % lod.name, not outside,
+              "%d loop UV(s) outside" % len(outside))
 
 
 def test_auto_uv(retopo):
@@ -632,6 +790,49 @@ def test_auto_uv_angle_fallback():
           result["uv_coverage"] > 0.5, str(result["uv_coverage"]))
 
 
+def test_bake_needs_a_real_unwrap(obj, workspace):
+    """A bake into a throwaway UV layer is a bake that never happened."""
+    section("the bake refuses without a real unwrap")
+    from forge.tools import rigforge as rf
+
+    failed = call("rigforge_retopo", {
+        "object": obj.name, "target_faces": 400, "lods": 0,
+        "unwrap": False, "bake_normals": True,
+    }, expect_error=True)
+    check("retopo refuses bake_normals with unwrap=false, in a sentence",
+          "unwrap" in (failed.get("message") or "").lower()
+          and "bake" in (failed.get("message") or "").lower(),
+          str(failed.get("message")))
+
+    # And the bake itself refuses, for anyone calling it directly.
+    plain = bpy.data.meshes.new("NeverUnwrapped")
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bm.to_mesh(plain)
+    bm.free()
+    never = bpy.data.objects.new("NeverUnwrapped", plain)
+    bpy.context.scene.collection.objects.link(never)
+    bpy.context.view_layer.update()
+    check("has_real_unwrap says no on a mesh nothing unwrapped",
+          rf.has_real_unwrap(never) is False)
+    report = rf.bake_normals(obj, never, resolution=32)
+    check("bake_normals refuses it with a reason, not a traceback",
+          report["ok"] is False and "unwrap" in report["reason"].lower(),
+          report["reason"])
+    check("and it did not invent a UV layer on the way past",
+          not plain.uv_layers, str(list(plain.uv_layers.keys())))
+    bpy.data.objects.remove(never, do_unlink=True)
+
+    # unwrap=false on its own is allowed, but it says what it costs.
+    bare = call("rigforge_retopo", {
+        "object": obj.name, "target_faces": 400, "lods": 1, "unwrap": False,
+    })
+    check("unwrap=false is allowed and warns about the missing atlas",
+          bare["unwrapped"] is False
+          and any("atlas" in w for w in bare.get("warnings") or []),
+          str(bare.get("warnings")))
+
+
 def test_bake_is_best_effort(obj, workspace):
     section("rigforge_retopo with bake_normals (best effort)")
     image_path = os.path.join(workspace, "blob_normal.png")
@@ -641,6 +842,16 @@ def test_bake_is_best_effort(obj, workspace):
     })
     baked = result.get("baked") or {}
     check("a bake report came back", bool(baked), str(result.get("baked")))
+    stage_names = [stage["stage"] for stage in result["stages"]]
+    check("the unwrap ran before the bake, not after it",
+          "auto_uv" in stage_names and "bake_normals" in stage_names
+          and stage_names.index("auto_uv") < stage_names.index("bake_normals"),
+          str(stage_names))
+    retopo = bpy.data.objects.get(obj.name + "_retopo")
+    check("the bake target carries the unwrapped atlas, not a filler layer",
+          retopo is not None and result["uv"]["uv_layer"] in retopo.data.uv_layers
+          and len(retopo.data.uv_layers) == 1,
+          str(result.get("uv")))
     if baked.get("ok"):
         check("the bake produced an image", bool(baked.get("image")), str(baked))
         check("and wrote it where it was asked to",
@@ -784,6 +995,7 @@ def main():
         test_auto_uv_angle_fallback()
         test_operators_drive_the_same_code(obj)
         test_panels_are_registered_and_reference_real_properties()
+        test_bake_needs_a_real_unwrap(obj, workspace)
         test_bake_is_best_effort(obj, workspace)
     except Exception:  # noqa: BLE001
         traceback.print_exc()

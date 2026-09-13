@@ -73,6 +73,29 @@ ARCHETYPES = ("biped", "quadruped", "custom")
 #: Target face counts per platform (plan section 4, stage 2).
 PLATFORM_TARGETS = {"desktop": 15000, "mobile": 5000}
 
+#: Per-platform **game budgets** for the finished asset: the face count a
+#: shipping character of this class is allowed to cost on screen. These are not
+#: the retopo targets above (which are what Quadriflow is aimed at); they are
+#: what LOD0 is measured against in the result report, and what the default LOD
+#: chain is derived from. Overridable per call with ``lod_budgets``.
+LOD_BUDGETS = {"desktop": 50000, "mobile": 10000}
+
+#: Each LOD level targets this fraction of the level above it. A quarter per
+#: level is the usual game step: it is a visible halving of the silhouette
+#: sample rate in each direction, so the switch distance roughly doubles.
+LOD_STEP = 0.25
+
+#: Below this a LOD is not worth generating - the draw call costs more than the
+#: triangles it saves.
+LOD_MIN_FACES = 64
+
+#: Screen-error model for the visibility ranges written into the Godot import
+#: script. A LOD whose measured geometric error is ``e`` world units is
+#: acceptable from distance ``d`` when ``e / d * PIXELS_PER_RADIAN <= error_px``.
+#: 1080p at a 75 deg vertical FOV: 1080 / (2 * tan(37.5 deg)) ~= 704 px/radian.
+LOD_PIXELS_PER_RADIAN = 703.7
+LOD_ERROR_PIXELS = 1.0
+
 DEFAULT_RETOPO = {"target_faces_desktop": 15000, "target_faces_mobile": 5000, "lods": 2}
 DEFAULT_ACTIONS = ["idle-loop", "walk-loop", "run-loop", "jump", "attack"]
 DEFAULT_GODOT = {"targets": ["desktop", "mobile"], "root_motion": False, "y_up": True,
@@ -92,6 +115,17 @@ PROP_CHARACTER_NAME = "forge_character_name"
 PROP_MANIFEST_EXTRA = "forge_manifest_extra"
 PROP_RETOPO = "forge_retopo"
 PROP_RETOPO_SOURCE = "forge_retopo_source"
+#: Name of the UV layer a *real* unwrap wrote. Its absence is what tells the
+#: normal bake that the only UV layer on the mesh is the throwaway one
+#: ``_ensure_uv_layer`` makes, which the next unwrap will overwrite - and a bake
+#: into a layer that is about to be replaced is a bake that silently never
+#: happened. See :func:`bake_normals`.
+PROP_UV_UNWRAPPED = "forge_uv_unwrapped"
+#: Per-LOD record written onto each generated level: the budget it was cut to,
+#: the face count it achieved and the geometric error that came out of it. The
+#: Godot exporter reads it to write ``visibility_range_*`` on the manual chain,
+#: so the numbers the switch distances rest on are measured, not guessed.
+PROP_LOD = "forge_lod"
 
 
 # ---------------------------------------------------------------------------
@@ -646,6 +680,7 @@ def cmd_rigforge_status(params):
                 "vertex_count": len(other.data.vertices),
                 "tags": len(tag_groups(other)),
                 "uv_layers": [layer.name for layer in other.data.uv_layers],
+                "uv_unwrapped": has_real_unwrap(other),
             })
     return {
         "object": obj.name,
@@ -658,6 +693,7 @@ def cmd_rigforge_status(params):
         "face_count": len(obj.data.polygons),
         "vertex_count": len(obj.data.vertices),
         "uv_layers": [layer.name for layer in obj.data.uv_layers],
+        "uv_unwrapped": has_real_unwrap(obj),
         "retopo": _retopo_block(obj),
         "derived": derived,
         "retopo_source": str(_prop(obj, PROP_RETOPO_SOURCE, "") or ""),
@@ -819,11 +855,166 @@ def _shrinkwrap(target, source):
     apply_modifier(target, modifier)
 
 
-def _decimate(obj, ratio):
+#: Vertex group the LOD pass builds to hold the UV seam (and open boundary)
+#: vertices when ``protect_seams`` is on. Removed again as soon as the modifier
+#: is applied.
+SEAM_PROTECT_GROUP = "forge_lod_seam_protect"
+
+
+def _seam_vertices(obj):
+    """Vertex indices on a UV seam or an open boundary."""
+    mesh = obj.data
+    out = set()
+    for edge in mesh.edges:
+        if edge.use_seam:
+            out.update(edge.vertices)
+    counts = {}
+    for polygon in mesh.polygons:
+        for key in polygon.edge_keys:
+            counts[key] = counts.get(key, 0) + 1
+    for key, count in counts.items():
+        if count != 2:
+            out.update(key)
+    return sorted(out)
+
+
+def _protect_seams(obj):
+    """Lock the seam vertices in a vertex group; returns its name or ``None``.
+
+    Blender's Decimate **Collapse** is a position-only quadric: it has no UV
+    term at all (the modifier's ``delimit`` option belongs to Planar/Dissolve),
+    so a naive decimate is free to walk a vertex across a UV seam and smear the
+    atlas.  The only lever Collapse exposes is its vertex group, and measured on
+    Blender 5.0.1 that group is a **hard lock, not a soft cost**: a vertex in it
+    is never collapsed, whatever its weight (1.0, 0.5, 0.05) and whatever
+    ``vertex_group_factor`` says (0.5 through 100 all behave identically).
+
+    So this is not free.  On an unwrapped character the seam vertices *are* most
+    of the budget, and locking them floors the reduction well above any LOD
+    target - which is why ``protect_seams`` is off by default and the budget
+    wins.  Turn it on when an exact atlas matters more than the face count.
+    The real fix is a UV-aware simplifier; see the limitation note in
+    ``addon/README.md``.
+    """
+    indices = _seam_vertices(obj)
+    if not indices:
+        return None
+    existing = obj.vertex_groups.get(SEAM_PROTECT_GROUP)
+    if existing is not None:
+        obj.vertex_groups.remove(existing)
+    group = obj.vertex_groups.new(name=SEAM_PROTECT_GROUP)
+    group.add(indices, 1.0, "REPLACE")
+    return group.name
+
+
+def _decimate(obj, ratio, protect_seams=False):
+    protect = _protect_seams(obj) if protect_seams else None
     modifier = obj.modifiers.new(name="Forge Decimate", type="DECIMATE")
     modifier.decimate_type = "COLLAPSE"
     modifier.ratio = max(1e-4, min(1.0, float(ratio)))
-    apply_modifier(obj, modifier)
+    if protect:
+        try:
+            modifier.vertex_group = protect
+            modifier.invert_vertex_group = False
+        except (AttributeError, TypeError, ValueError):
+            protect = None
+    try:
+        apply_modifier(obj, modifier)
+    finally:
+        group = obj.vertex_groups.get(SEAM_PROTECT_GROUP)
+        if group is not None:
+            try:
+                obj.vertex_groups.remove(group)
+            except (RuntimeError, ReferenceError):
+                pass
+    return protect is not None
+
+
+def triangle_count(obj):
+    """Triangles, not polygons.
+
+    Decimate's ratio is a *triangle* budget and its output is triangles, so a
+    face budget expressed against a quad mesh has to be converted before it can
+    become a ratio.  Counted from the polygon loops rather than
+    ``loop_triangles`` so no depsgraph evaluation is needed.
+    """
+    return sum(max(0, len(polygon.vertices) - 2) for polygon in obj.data.polygons)
+
+
+def _decimate_to_budget(obj, budget, protect_seams=False):
+    """Collapse ``obj`` towards ``budget`` **triangles**. Returns a report.
+
+    Budgets are counted in triangles throughout, because that is the unit a
+    game budget is quoted in and the unit Decimate's ratio is expressed in.
+    The polygon count is reported too and is always the smaller of the two:
+    Collapse triangulates, then rejoins coplanar pairs back into quads unless
+    ``use_collapse_triangulate`` is set, so a 1592-triangle result can show as
+    1068 polygons.
+    """
+    before = triangle_count(obj)
+    budget = max(int(LOD_MIN_FACES), int(budget))
+    ratio = 1.0 if before <= budget else float(budget) / float(before)
+    protected = _decimate(obj, ratio, protect_seams=protect_seams)
+    triangles = triangle_count(obj)
+    return {
+        "budget": budget,
+        "ratio": round(ratio, 6),
+        "triangles": triangles,
+        "face_count": len(obj.data.polygons),
+        "triangles_before": before,
+        "within_budget": triangles <= budget,
+        "seams_protected": bool(protected),
+    }
+
+
+def measure_lod_error(reference, lod, samples=2000):
+    """Max/mean distance from ``reference``'s vertices to ``lod``'s surface.
+
+    This is the *achieved* geometric error of a level - the number the
+    visibility range is computed from.  Blender's Decimate reports nothing of
+    the kind, so it is measured after the fact with
+    ``Object.closest_point_on_mesh``, which is an exact point-to-surface
+    distance rather than a vertex-to-vertex approximation.
+    """
+    vertices = reference.data.vertices
+    total = len(vertices)
+    if not total or not len(lod.data.polygons):
+        return {"max": 0.0, "mean": 0.0, "samples": 0}
+    step = max(1, total // max(1, int(samples)))
+    worst = 0.0
+    accumulated = 0.0
+    taken = 0
+    for index in range(0, total, step):
+        co = vertices[index].co
+        try:
+            hit, location, _normal, _face = lod.closest_point_on_mesh(co)
+        except (RuntimeError, ValueError):
+            continue
+        if not hit:
+            continue
+        distance = (location - co).length
+        worst = max(worst, distance)
+        accumulated += distance
+        taken += 1
+    return {
+        "max": round(worst, 9),
+        "mean": round(accumulated / taken, 9) if taken else 0.0,
+        "samples": taken,
+    }
+
+
+def visibility_distance(error, error_pixels=LOD_ERROR_PIXELS):
+    """Distance (scene units) at which ``error`` shrinks below ``error_pixels``.
+
+    A world-space error *e* seen from distance *d* subtends ``e / d`` radians;
+    multiplied by :data:`LOD_PIXELS_PER_RADIAN` that is its size in pixels.
+    Solving for *d* gives the nearest distance at which this level is honest -
+    which is exactly Godot's ``visibility_range_begin`` for it.
+    """
+    error = max(0.0, float(error))
+    if error <= 0.0:
+        return 0.0
+    return error * LOD_PIXELS_PER_RADIAN / max(1e-6, float(error_pixels))
 
 
 def _ensure_uv_layer(obj, name="UVMap"):
@@ -831,6 +1022,15 @@ def _ensure_uv_layer(obj, name="UVMap"):
     if mesh.uv_layers:
         return mesh.uv_layers.active or mesh.uv_layers[0]
     return mesh.uv_layers.new(name=name)
+
+
+def has_real_unwrap(obj):
+    """True when a real unwrap (not ``_ensure_uv_layer``'s filler) ran here."""
+    mesh = getattr(obj, "data", None)
+    if mesh is None or not getattr(mesh, "uv_layers", None):
+        return False
+    stored = str(_prop(obj, PROP_UV_UNWRAPPED, "") or "")
+    return bool(stored) and stored in mesh.uv_layers
 
 
 # ---------------------------------------------------------------------------
@@ -875,11 +1075,25 @@ def bake_normals(high, low, resolution=2048, path=None, margin=8):
     needs Cycles, a render context and real time, and a ``--background`` run on a
     machine without a GPU may simply refuse.  Everything else in the pipeline is
     already on disk when this runs, so a failure is reported, not fatal.
+
+    It refuses outright on a mesh that has never been unwrapped.  A bake needs
+    somewhere to write, and the obvious "somewhere" - an empty default UV layer -
+    is a trap: the real unwrap that follows replaces every coordinate in it, so
+    the baked map decodes against a layout that no longer exists and the whole
+    bake is silently worthless.  Unwrap first (``rigforge_auto_uv``, or leave
+    ``unwrap`` on in ``rigforge_retopo``, which does it in the right order).
     """
     report = {"ok": False, "resolution": int(resolution), "image": None, "path": None,
               "engine": None, "reason": "", "seconds": 0.0}
     scene = get_scene()
     started = time.monotonic()
+    if not has_real_unwrap(low):
+        report["reason"] = (
+            "%r has no real UV unwrap yet, so there is no atlas to bake into; "
+            "unwrap it first (rigforge_auto_uv) or the bake would be thrown away "
+            "by the unwrap that follows." % low.name
+        )
+        return report
     previous_engine = scene.render.engine
     previous_bake = {}
     image = None
@@ -1014,15 +1228,60 @@ def _resolve_target_faces(obj, params):
     return PLATFORM_TARGETS[platform], platform, "platform preset"
 
 
+def _resolve_lod_budgets(params, platform, lods, lod0_triangles):
+    """Absolute **triangle** budgets per LOD level, from level 1 downwards.
+
+    Fixed ``0.5 ** level`` ratios say nothing about what the asset may cost:
+    half of a 200 000-triangle mesh is still 100 000 triangles and still
+    unshippable.  A budget does say it.  The default chain starts at the
+    platform's game budget (or LOD0's own count, whichever is smaller - there
+    is no point "reducing" to more triangles than LOD0 has) and takes a quarter
+    per level.
+    """
+    explicit = params.get("lod_budgets")
+    if explicit is not None:
+        if not isinstance(explicit, (list, tuple)) or not explicit:
+            raise ForgeError("'lod_budgets' must be a non-empty list of face counts.")
+        budgets = []
+        for entry in explicit:
+            if isinstance(entry, bool) or not isinstance(entry, (int, float)):
+                raise ForgeError("Every 'lod_budgets' entry must be a face count, got %r."
+                                 % (entry,))
+            budgets.append(max(LOD_MIN_FACES, int(entry)))
+        return budgets[:lods] if lods else budgets, "param"
+
+    ceiling = min(int(lod0_triangles), LOD_BUDGETS.get(platform, LOD_BUDGETS["desktop"]))
+    budgets = []
+    current = float(ceiling)
+    for _level in range(lods):
+        current *= LOD_STEP
+        budgets.append(max(LOD_MIN_FACES, int(round(current))))
+    return budgets, "platform budget"
+
+
 @command("rigforge_retopo")
 def cmd_rigforge_retopo(params):
     """Stage 2: a game mesh from the sculpt, tags and all.
 
-    voxel remesh -> Quadriflow -> shrinkwrap back onto the sculpt -> tag
-    transfer by proximity -> optional high->low normal bake -> optional
-    decimated LODs.  The voxel pass is first for a reason: it is what makes a
-    non-manifold sculpt (overlapping blobs, self-intersections, holes) safe for
-    Quadriflow, which refuses anything that is not watertight.
+    The canonical finishing order, and the order this runs in:
+
+    ``repair -> retopo -> UV unwrap -> bake high->low -> tangents -> LOD``
+
+    So: voxel remesh -> Quadriflow -> shrinkwrap back onto the sculpt -> tag
+    transfer by proximity -> **unwrap LOD0** -> optional high->low normal bake
+    into that atlas -> LODs decimated **from the unwrapped LOD0**.  The voxel
+    pass is first for a reason: it is what makes a non-manifold sculpt
+    (overlapping blobs, self-intersections, holes) safe for Quadriflow, which
+    refuses anything that is not watertight.
+
+    The three orderings that are not negotiable:
+
+    * the unwrap comes **before** the bake, or the bake writes into the
+      throwaway UV layer a later unwrap replaces and is silently worthless;
+    * the LODs come **from** the unwrapped LOD0, so every level carries LOD0's
+      atlas and one set of baked maps serves the whole chain;
+    * tangents are exported (``rigforge_export_godot``), not generated by the
+      engine, or the normal map decodes against a basis it was not baked in.
     """
     obj = _require_mesh(params)
     if not len(obj.data.polygons):
@@ -1030,11 +1289,26 @@ def cmd_rigforge_retopo(params):
 
     target_faces, platform, target_source = _resolve_target_faces(obj, params)
     lods = get_int(params, "lods", 0, minimum=0, maximum=8)
+    do_unwrap = get_bool(params, "unwrap", True)
     do_bake = get_bool(params, "bake_normals", False)
     bake_resolution = get_int(params, "bake_resolution", 2048, minimum=16, maximum=8192)
     bake_path = params.get("bake_path")
     keep_original = get_bool(params, "keep_original", True)
     voxel_override = params.get("voxel_size")
+    uv_margin = get_float(params, "margin", 0.02, minimum=0.0, maximum=0.5)
+    uv_angle_limit = get_float(params, "angle_limit", 66.0, minimum=0.0, maximum=180.0)
+    seams_from_tags = get_bool(params, "seams_from_tags", True)
+    # Off by default, and the docstring of _protect_seams says why: Blender's
+    # Decimate vertex group is a hard lock, so protecting the seams of an
+    # unwrapped mesh costs more budget than the tearing it prevents.
+    protect_seams = get_bool(params, "protect_seams", False)
+
+    if do_bake and not do_unwrap:
+        raise ForgeError(
+            "bake_normals with unwrap=false would bake into a throwaway UV layer "
+            "that the next unwrap replaces, so the bake would be worthless. Leave "
+            "'unwrap' on, or unwrap first with rigforge_auto_uv and bake after."
+        )
 
     warnings = []
     if not keep_original:
@@ -1050,6 +1324,10 @@ def cmd_rigforge_retopo(params):
 
     with object_mode():
         retopo = _duplicate_object(obj, retopo_name)
+        # The copy inherits the sculpt's custom properties, and the remesh below
+        # throws away whatever UVs came with them: this mesh has not been
+        # unwrapped until stage 5 says so.
+        _set_prop(retopo, PROP_UV_UNWRAPPED, "")
 
         # --- 1. voxel remesh: makes a non-manifold sculpt safe for Quadriflow
         if voxel_override is not None:
@@ -1101,16 +1379,21 @@ def cmd_rigforge_retopo(params):
             _retopo_block(obj), **{"target_faces_%s" % platform: int(target_faces),
                                    "lods": int(lods)})))
 
-        # --- 5. LODs
-        lod_objects = []
-        for level in range(1, lods + 1):
-            ratio = 0.5 ** level
-            lod_name = "%s_lod%d" % (obj.name, level)
-            lod = _duplicate_object(retopo, lod_name, drop_groups=False)
-            _decimate(lod, ratio)
-            lod_objects.append(lod)
-            stages.append({"stage": "lod", "level": level, "ratio": ratio,
-                           "object": lod.name, "face_count": len(lod.data.polygons)})
+        # --- 5. UV unwrap of LOD0, BEFORE the bake and before the LODs.
+        uv_report = None
+        if do_unwrap:
+            uv_report = auto_uv(retopo, seams_from_tags=seams_from_tags,
+                                margin=uv_margin, angle_limit=uv_angle_limit)
+            stages.append({"stage": "auto_uv", "object": retopo.name,
+                           "uv_layer": uv_report["uv_layer"],
+                           "islands": uv_report["islands"],
+                           "uv_coverage": uv_report["uv_coverage"]})
+        else:
+            warnings.append(
+                "unwrap=false: this mesh has no atlas, so it cannot be baked into "
+                "and its LODs have no UVs to share. Run rigforge_auto_uv before "
+                "baking or exporting."
+            )
 
         refresh_view_layer()
 
@@ -1123,6 +1406,65 @@ def cmd_rigforge_retopo(params):
                        "reason": bake_report["reason"]})
         if not bake_report["ok"]:
             warnings.append("Normal bake did not run: %s" % bake_report["reason"])
+
+    # --- 7. LODs, decimated FROM the unwrapped, baked LOD0 so every level
+    #        carries LOD0's atlas and one set of maps serves the whole chain.
+    lod_objects = []
+    lod_reports = []
+    lod0_faces = len(retopo.data.polygons)
+    lod0_triangles = triangle_count(retopo)
+    budget_ceiling = LOD_BUDGETS.get(platform, LOD_BUDGETS["desktop"])
+    budgets, budget_source = _resolve_lod_budgets(params, platform, lods, lod0_triangles)
+    radius = max(1e-9, _max_dimension(retopo) * 0.5)
+    with object_mode():
+        for level in range(1, lods + 1):
+            budget = budgets[level - 1] if level - 1 < len(budgets) else budgets[-1]
+            lod_name = "%s_lod%d" % (obj.name, level)
+            # Every level is decimated from LOD0, never from the level above:
+            # chaining would compound the UV drift instead of measuring it once.
+            lod = _duplicate_object(retopo, lod_name, drop_groups=False)
+            report = _decimate_to_budget(lod, budget, protect_seams=protect_seams)
+            error = measure_lod_error(retopo, lod)
+            report.update({
+                "level": level,
+                "object": lod.name,
+                "error": error["max"],
+                "error_mean": error["mean"],
+                "error_relative": round(error["max"] / radius, 6),
+                "visibility_begin": round(visibility_distance(error["max"]), 4),
+                "uv_layer": (lod.data.uv_layers.active.name
+                             if lod.data.uv_layers and lod.data.uv_layers.active else None),
+            })
+            _set_prop(lod, PROP_LOD, json.dumps({
+                "level": level, "budget": report["budget"],
+                "face_count": report["face_count"], "error": report["error"],
+                "error_relative": report["error_relative"],
+                "visibility_begin": report["visibility_begin"],
+                "source": retopo.name,
+            }))
+            if not report["within_budget"]:
+                warnings.append(
+                    "%s came out at %d triangles against a %d-triangle budget%s."
+                    % (lod.name, report["triangles"], report["budget"],
+                       "; protect_seams locks every seam vertex, which is what is "
+                       "holding it up" if report["seams_protected"]
+                       else "; Decimate could collapse no further"))
+            if do_unwrap and not report["uv_layer"]:
+                warnings.append("%s lost its UV layer during decimation." % lod.name)
+            lod_objects.append(lod)
+            lod_reports.append(report)
+            stages.append({"stage": "lod", "level": level, "ratio": report["ratio"],
+                           "budget": report["budget"], "object": lod.name,
+                           "face_count": report["face_count"],
+                           "triangles": report["triangles"],
+                           "error": report["error"]})
+        refresh_view_layer()
+
+    if lod0_triangles > budget_ceiling:
+        warnings.append(
+            "LOD0 is %d triangles against the %s game budget of %d; pass a smaller "
+            "'target_faces' or accept that this asset is over budget."
+            % (lod0_triangles, platform, budget_ceiling))
 
     after = mesh_stats(obj)
     if (before["face_count"], before["vertex_count"]) != (after["face_count"],
@@ -1143,6 +1485,19 @@ def cmd_rigforge_retopo(params):
         "voxel_size": round(voxel_size, 8),
         "quad_method": quad_method,
         "lods": lods,
+        "lod_reports": lod_reports,
+        "lod_budgets": budgets,
+        "lod_budget_source": budget_source,
+        "budget": {
+            "platform": platform,
+            "lod0": budget_ceiling,
+            "lod0_faces": lod0_faces,
+            "lod0_triangles": lod0_triangles,
+            "unit": "triangles",
+            "within_budget": lod0_triangles <= budget_ceiling,
+        },
+        "unwrapped": bool(do_unwrap),
+        "uv": uv_report,
         "tags": transferred,
         "tags_transferred": len([t for t in transferred if t["vertex_count"]]),
         "keep_original": True,
@@ -1373,22 +1728,16 @@ def _unwrap_and_pack(obj, margin, angle_limit_deg, method="ANGLE_BASED"):
     return unwrap_method, packed, notes
 
 
-@command("rigforge_auto_uv")
-def cmd_rigforge_auto_uv(params):
-    """Stage 3: seams from the tag boundaries, unwrap, pack."""
-    obj = _require_mesh(params)
+def auto_uv(obj, seams_from_tags=True, margin=0.02, angle_limit=66.0,
+            method="ANGLE_BASED"):
+    """Seams from the tag boundaries, unwrap, pack. The stage-3 body.
+
+    Factored out of :func:`cmd_rigforge_auto_uv` so the retopo pipeline can run
+    it **in the right place** - after the tag transfer, before the bake - rather
+    than leaving the artist to call it afterwards and invalidate their own bake.
+    """
     if not len(obj.data.polygons):
         raise ForgeError("Object %r has no faces to unwrap." % obj.name)
-
-    seams_from_tags = get_bool(params, "seams_from_tags", True)
-    margin = get_float(params, "margin", 0.02, minimum=0.0, maximum=0.5)
-    angle_limit = get_float(params, "angle_limit", 66.0, minimum=0.0, maximum=180.0)
-    method = get_choice(
-        params, "method",
-        {"ANGLE_BASED": "ANGLE_BASED", "CONFORMAL": "CONFORMAL",
-         "MINIMUM_STRETCH": "MINIMUM_STRETCH"},
-        "ANGLE_BASED",
-    )
 
     with object_mode():
         seam_report = mark_tag_seams(obj, angle_limit_deg=angle_limit,
@@ -1397,6 +1746,10 @@ def cmd_rigforge_auto_uv(params):
         islands, coverage, faces_with_area = _uv_report(obj)
 
     layer = obj.data.uv_layers.active or (obj.data.uv_layers[0] if obj.data.uv_layers else None)
+    if layer is not None:
+        # The mark that turns a UV layer from "somewhere to put coordinates"
+        # into "the atlas this asset's maps are baked against".
+        _set_prop(obj, PROP_UV_UNWRAPPED, layer.name)
     result = {
         "object": obj.name,
         "islands": islands,
@@ -1411,6 +1764,23 @@ def cmd_rigforge_auto_uv(params):
     }
     result.update(seam_report)
     return result
+
+
+@command("rigforge_auto_uv")
+def cmd_rigforge_auto_uv(params):
+    """Stage 3: seams from the tag boundaries, unwrap, pack."""
+    obj = _require_mesh(params)
+    seams_from_tags = get_bool(params, "seams_from_tags", True)
+    margin = get_float(params, "margin", 0.02, minimum=0.0, maximum=0.5)
+    angle_limit = get_float(params, "angle_limit", 66.0, minimum=0.0, maximum=180.0)
+    method = get_choice(
+        params, "method",
+        {"ANGLE_BASED": "ANGLE_BASED", "CONFORMAL": "CONFORMAL",
+         "MINIMUM_STRETCH": "MINIMUM_STRETCH"},
+        "ANGLE_BASED",
+    )
+    return auto_uv(obj, seams_from_tags=seams_from_tags, margin=margin,
+                   angle_limit=angle_limit, method=method)
 
 
 # ---------------------------------------------------------------------------
@@ -1572,10 +1942,22 @@ class ForgeRigForgeProps(PropertyGroup):
     )
     lods: IntProperty(
         name="LODs",
-        description="Extra decimated levels after the retopo mesh (0.5, 0.25, ...)",
+        description=(
+            "Extra decimated levels below the retopo mesh. Each level targets a "
+            "quarter of the level above it, capped by the platform game budget "
+            "(desktop 50000, mobile 10000 faces)"
+        ),
         default=2,
         min=0,
         max=8,
+    )
+    retopo_unwrap: BoolProperty(
+        name="Unwrap",
+        description=(
+            "Unwrap the retopo mesh before baking and before the LODs are cut, "
+            "so the bake lands in the real atlas and every LOD shares it"
+        ),
+        default=True,
     )
     bake_normals: BoolProperty(
         name="Bake Normals",
@@ -1652,10 +2034,19 @@ class ForgeRigForgeProps(PropertyGroup):
         description="Comma-separated action names, e.g. idle-loop, walk-loop, jump",
         default="",
     )
-    export_lods: BoolProperty(
-        name="Include LODs",
-        description="Export <mesh>_lod1/_lod2 alongside, renamed to Godot's -lodN suffix",
-        default=True,
+    export_lods: EnumProperty(
+        name="LODs",
+        description=(
+            "Godot 4 generates LODs on import with meshoptimizer and has no "
+            "-lodN suffix to recognise ours by, so the default ships LOD0 alone "
+            "and lets the importer do it"
+        ),
+        items=(
+            ("auto", "Godot", "Export LOD0 only; Godot's importer generates the levels"),
+            ("manual", "Manual",
+             "Also export <mesh>_lod1/_lod2, wired with visibility ranges so they switch"),
+        ),
+        default="auto",
     )
     root_motion: BoolProperty(
         name="Root Motion",
@@ -1882,6 +2273,10 @@ class FORGE_OT_rf_retopo(_RigForgeOperator):
                 "object": obj.name,
                 "platform": props.platform,
                 "lods": int(props.lods),
+                "unwrap": bool(props.retopo_unwrap),
+                "seams_from_tags": bool(props.uv_seams_from_tags),
+                "margin": float(props.uv_margin),
+                "angle_limit": float(props.uv_angle_limit),
                 "bake_normals": bool(props.bake_normals),
                 "bake_resolution": int(props.bake_resolution),
                 "keep_original": True,

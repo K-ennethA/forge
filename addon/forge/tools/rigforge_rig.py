@@ -68,6 +68,7 @@ from .common import (
 from .registry import ForgeError, command
 from .rigforge import (
     PROP_ARCHETYPE,
+    PROP_LOD,
     PROP_MOTION_NOTES,
     _prop,
     _set_prop,
@@ -2281,13 +2282,21 @@ extends EditorScenePostImport
 #     supposed to contain but Godot did not see;
 #   * meshes suffixed {collision} keep Godot's own collision-shape behaviour;
 #     nothing here has to do that, the suffix does it.
+#   * LOD_CHAIN (manual LOD exports only) writes visibility_range_begin/end onto
+#     the sibling meshes, so the chain actually SWITCHES. Godot has no "-lodN"
+#     import suffix - -col, -convcol, -occ, -navmesh and friends are the whole
+#     list - so without these ranges every level renders at once, on top of
+#     each other. It is empty on a default export, where the only mesh shipped
+#     is LOD0 and Godot's own importer (meshoptimizer) generates the levels.
 
 const LOOP_SUFFIX := "{loop}"
 const EXPECTED_ACTIONS: Array[String] = [{actions}]
 const EXPECTED_COLLISION: Array[String] = [{collision_meshes}]
+const LOD_CHAIN: Array = [{lod_chain}]
 
 
 func _post_import(scene: Node) -> Node:
+	_apply_lod_chain(scene)
 	var player := _find_player(scene)
 	if player == null:
 		if not EXPECTED_ACTIONS.is_empty():
@@ -2311,6 +2320,30 @@ func _post_import(scene: Node) -> Node:
 	return scene
 
 
+func _apply_lod_chain(scene: Node) -> void:
+	if LOD_CHAIN.is_empty():
+		return
+	for entry in LOD_CHAIN:
+		var mesh := _find_mesh(scene, entry["mesh"])
+		if mesh == null:
+			push_warning("Forge: LOD mesh '%s' is not in {basename}" % entry["mesh"])
+			continue
+		mesh.visibility_range_begin = entry["begin"]
+		mesh.visibility_range_end = entry["end"]
+		mesh.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+	print("Forge: {basename} LOD chain wired over %d mesh(es)" % LOD_CHAIN.size())
+
+
+func _find_mesh(node: Node, mesh_name: String) -> MeshInstance3D:
+	if node is MeshInstance3D and node.name == mesh_name:
+		return node
+	for child in node.get_children():
+		var found := _find_mesh(child, mesh_name)
+		if found != null:
+			return found
+	return null
+
+
 func _find_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
 		return node
@@ -2327,7 +2360,17 @@ def _gd_string_list(names):
                      for name in names)
 
 
-def write_godot_import_script(path, actions, collision):
+def _gd_lod_chain(chain):
+    """``[{"mesh": name, "begin": f, "end": f}, ...]`` as a GDScript literal."""
+    parts = []
+    for entry in chain or ():
+        parts.append('{"mesh": "%s", "begin": %.4f, "end": %.4f}'
+                     % (str(entry["mesh"]).replace('\\', '\\\\').replace('"', '\\"'),
+                        float(entry["begin"]), float(entry["end"])))
+    return ", ".join(parts)
+
+
+def write_godot_import_script(path, actions, collision, lod_chain=()):
     """Emit the ``EditorScenePostImport`` companion next to the glTF."""
     target = os.path.splitext(path)[0] + "_import.gd"
     body = GODOT_IMPORT_SCRIPT.format(
@@ -2336,6 +2379,7 @@ def write_godot_import_script(path, actions, collision):
         collision="/".join(COLLISION_SUFFIXES[:2]),
         actions=_gd_string_list(actions),
         collision_meshes=_gd_string_list(collision or ()),
+        lod_chain=_gd_lod_chain(lod_chain),
     )
     with open(target, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(body)
@@ -2383,6 +2427,90 @@ def _lod_siblings(mesh):
     return out
 
 
+#: How ``lods`` is read. Godot 4 generates LODs on import with meshoptimizer,
+#: and has no ``-lodN`` import suffix to recognise ours by (its list is ``-col``,
+#: ``-convcol``, ``-occ``, ``-navmesh`` and friends), so the default ships LOD0
+#: alone and lets the importer do the work. ``manual`` is for the cases where
+#: the artist wants their own chain - hand-authored silhouettes, a level that
+#: must not be regenerated - and it is only honest if the levels actually
+#: switch, so it writes ``visibility_range_*`` into the import script.
+LOD_MODES = {"AUTO": "auto", "GODOT": "auto", "NONE": "auto", "MANUAL": "manual"}
+
+
+def _lod_mode(params):
+    raw = params.get("lods")
+    if isinstance(raw, bool):
+        # Legacy callers said lods=true/false before there was a choice. True
+        # meant "send my levels", which is what manual means now.
+        return "manual" if raw else "auto"
+    if raw is None:
+        return "auto"
+    return get_choice(params, "lods", LOD_MODES, "auto")
+
+
+def _lod_record(obj):
+    """The measured LOD record rigforge wrote, or ``{}``."""
+    try:
+        raw = obj.get(PROP_LOD)
+    except (AttributeError, TypeError):
+        return {}
+    if isinstance(raw, dict):
+        return dict(raw)
+    if isinstance(raw, str) and raw.strip():
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            return {}
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
+def _measure_begin(lod0, lod):
+    """Switch distance for a level with no stored record, measured now."""
+    try:
+        error = rigforge.measure_lod_error(lod0, lod, samples=500)["max"]
+        return rigforge.visibility_distance(error)
+    except Exception:  # noqa: BLE001 - a missing range is better than a lost export
+        return 0.0
+
+
+def build_lod_chain(entries):
+    """``[(object, level, lod0), ...]`` -> visibility ranges, LOD0 included.
+
+    One rule makes the chain usable: the distances must strictly increase, or
+    two levels claim the same band and Godot draws both.  A level whose
+    measured error lands at or below the level above it is nudged past it
+    rather than dropped, because a level that exists and never shows is the
+    bug this whole function is here to prevent.
+    """
+    by_lod0 = {}
+    for lod, level, lod0 in entries:
+        by_lod0.setdefault(id(lod0), (lod0, []))[1].append((level, lod))
+    chain = []
+    for lod0, levels in by_lod0.values():
+        levels.sort()
+        begins = []
+        previous = 0.0
+        for _level, lod in levels:
+            record = _lod_record(lod)
+            begin = record.get("visibility_begin")
+            if not isinstance(begin, (int, float)) or isinstance(begin, bool) or begin <= 0.0:
+                begin = _measure_begin(lod0, lod)
+            begin = float(begin)
+            if begin <= previous:
+                begin = previous * 1.5 if previous > 0.0 else 1.0
+            begins.append(begin)
+            previous = begin
+        objects = [lod0] + [lod for _level, lod in levels]
+        for index, obj in enumerate(objects):
+            begin = 0.0 if index == 0 else begins[index - 1]
+            # 0.0 is Godot's "no end": the last level is visible for ever.
+            end = begins[index] if index < len(begins) else 0.0
+            chain.append({"object": obj, "begin": round(begin, 4), "end": round(end, 4)})
+    return chain
+
+
 @command("rigforge_export_godot")
 def cmd_rigforge_export_godot(params):
     """Stage 7: deform-only bake, glTF with Godot conventions, import helper.
@@ -2418,7 +2546,8 @@ def cmd_rigforge_export_godot(params):
     meshes = _meshes_for_rig(rig, params)
     if not meshes:
         warnings.append("No mesh is bound to %r; exporting the skeleton alone." % rig.name)
-    include_lods = get_bool(params, "lods", True)
+    lod_mode = _lod_mode(params)
+    include_lods = lod_mode == "manual"
     root_motion = get_bool(params, "root_motion", False)
     deform_only = get_bool(params, "deform_only", True)
     want_script = get_bool(params, "godot_import_script", True)
@@ -2449,6 +2578,7 @@ def cmd_rigforge_export_godot(params):
     files = []
     baked_names = []
     collision = []
+    lod_chain = []
     script_path = None
     root_report = {"applied": False, "reason": "not requested"}
 
@@ -2468,21 +2598,38 @@ def cmd_rigforge_export_godot(params):
             export_meshes = []
             origins = {}
             sources = [(mesh, None, None) for mesh in meshes]
+            lod_entries = []
             if include_lods:
                 for mesh in meshes:
                     for lod, level in _lod_siblings(mesh):
                         if lod not in meshes:
                             sources.append((lod, level, mesh))
+                            lod_entries.append((lod, level, mesh))
+                if not lod_entries:
+                    warnings.append(
+                        "lods=\"manual\" but no <mesh>_lodN sibling exists; only LOD0 "
+                        "was exported. Generate levels with rigforge_retopo's 'lods'.")
+            else:
+                skipped_levels = [lod.name for mesh in meshes
+                                  for lod, _level in _lod_siblings(mesh)]
+                if skipped_levels:
+                    warnings.append(
+                        "Godot 4 generates its own LODs on import (meshoptimizer) and "
+                        "has no -lodN import suffix, so %s were left out of the glTF. "
+                        "Pass lods=\"manual\" to ship them with visibility ranges "
+                        "instead." % ", ".join(sorted(skipped_levels)))
             # names captured before any source is renamed out of the way
             display = {id(entry[0]): entry[0].name for entry in sources}
             for mesh, level, origin in sources:
                 # The export copy takes the source's own name (the source is
                 # renamed out of the way and put back in the ``finally``), so the
-                # glTF node names match the objects the sculptor sees. LODs are
-                # renamed to Godot's `-lodN` suffix instead.
+                # glTF node names match the objects the sculptor sees - LODs
+                # included. They used to be renamed to a `-lodN` suffix, which
+                # looked like a Godot import convention and is not one: Godot's
+                # suffixes are -col/-convcol/-occ/-navmesh and there is no -lod
+                # among them. The switching is done by the visibility ranges the
+                # import script writes, keyed on exactly these names.
                 base = mesh.name
-                if level is not None:
-                    base = re.sub(r"_lod\d+$", "", base) + "-lod%d" % level
                 copy = _duplicate(mesh, base + "_forge_export", collection)
                 _apply_object_transform(copy, warnings)
                 _rename_export_object(copy, base, renamed, source=mesh)
@@ -2584,6 +2731,17 @@ def cmd_rigforge_export_godot(params):
                     export_rig.animation_data.action = None
                 strip_constraints(export_rig)
 
+            # --- the manual LOD chain, keyed on the names the glTF will carry
+            lod_chain = []
+            if lod_entries:
+                for entry in build_lod_chain(lod_entries):
+                    obj = entry["object"]
+                    lod_chain.append({
+                        "mesh": display.get(id(obj), obj.name),
+                        "begin": entry["begin"],
+                        "end": entry["end"],
+                    })
+
             # --- glTF
             collision = [mesh.name for mesh in export_meshes
                          if mesh.name.lower().endswith(COLLISION_SUFFIXES)]
@@ -2600,6 +2758,19 @@ def cmd_rigforge_export_godot(params):
                             "use_selection": True,
                             "export_yup": True,
                             "export_apply": False,
+                            # Khronos' exporter defaults export_tangents to
+                            # FALSE, and a tangent-less asset makes every engine
+                            # regenerate the basis with its own algorithm - which
+                            # is not the basis the normal map was baked against.
+                            # The map then decodes slightly wrong, everywhere, and
+                            # nothing errors. (gltf_tangents is ANDed with
+                            # gltf_normals inside the exporter, so normals are
+                            # asked for explicitly rather than relied on.)
+                            "export_normals": True,
+                            "export_tangents": True,
+                            "export_texcoords": True,
+                            "export_materials": "EXPORT",
+                            "export_image_format": "AUTO",
                             "export_animations": bool(baked_names),
                             "export_animation_mode": "NLA_TRACKS",
                             "export_nla_strips": True,
@@ -2628,7 +2799,8 @@ def cmd_rigforge_export_godot(params):
 
             script_path = None
             if want_script:
-                script_path = write_godot_import_script(path, baked_names, collision)
+                script_path = write_godot_import_script(path, baked_names, collision,
+                                                        lod_chain)
                 files.append(script_path)
     finally:
         scene.frame_current = previous_frame
@@ -2686,6 +2858,9 @@ def cmd_rigforge_export_godot(params):
         "deform_bone_count": len(deform),
         "meshes": [mesh.name for mesh in meshes],
         "collision_meshes": collision,
+        "lods": lod_mode,
+        "lod_chain": lod_chain,
+        "tangents": True,
         "files": files,
         "import_script": script_path,
         "root_motion": root_report,
@@ -2804,7 +2979,7 @@ class FORGE_OT_rf_export_godot(_RigOperator):
             rig_name = str(rigforge._prop(obj, PROP_RIG, "") or "")
             payload = {"path": props.export_path,
                        "root_motion": bool(props.root_motion),
-                       "lods": bool(props.export_lods)}
+                       "lods": str(props.export_lods)}
             if rig_name:
                 payload["rig"] = rig_name
             if props.export_actions == "selected" and props.export_action_names.strip():

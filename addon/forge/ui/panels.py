@@ -874,6 +874,16 @@ class VIEW3D_PT_forge_retopo(_ForgePanel, Panel):
             row.active = False
             row.label(text="Preset: %d faces" % rigforge.PLATFORM_TARGETS[rf.platform])
         column.prop(rf, "lods")
+        if rf.lods:
+            row = column.row()
+            row.active = False
+            row.label(text="Budget: %d faces (%s)"
+                           % (rigforge.LOD_BUDGETS[rf.platform], rf.platform))
+        column.prop(rf, "retopo_unwrap")
+        if not rf.retopo_unwrap:
+            row = column.row()
+            row.active = False
+            row.label(text="No atlas: cannot bake, LODs share no UVs")
 
         box = layout.box()
         box.prop(rf, "bake_normals")
@@ -1112,7 +1122,7 @@ class VIEW3D_PT_forge_godot(_ForgePanel, Panel):
         sub.prop(rf, "export_action_names", text="")
 
         column = layout.column(align=True)
-        column.prop(rf, "export_lods")
+        column.prop(rf, "export_lods", expand=True)
         column.prop(rf, "root_motion")
 
         layout.operator("forge.rf_export_godot", icon="EXPORT", text="Export to Godot")
