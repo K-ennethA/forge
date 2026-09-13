@@ -34,6 +34,34 @@ class Cancelled(BackendError):
     """The job was cancelled by /cancel."""
 
 
+#: ``options.ensemble`` - the seed-ensemble request surface.  Two independent
+#: tiers, both deterministic; the full argument is under "Seed ensemble" in
+#: meshgen/README.md.
+#:
+#: * ``structure_n`` - how many times to run the CHEAP head (structure sampler +
+#:   structure VAE decode) at varied seeds before committing to the expensive
+#:   tail.  1 disables it.  The cap is 9 because the consensus benefit plateaus
+#:   there (arXiv 2608.09706) and paying past a plateau is just paying.
+#: * ``best_of`` - how many FULL generations to run and then choose between.
+#:   Linear in wall time, hence the cap of 5.
+#:
+#: The default is 1/1, stated here rather than inferred.  The measured cost of
+#: each tier is in the README; a default that multiplies a caller's GPU time has
+#: to be asked for.
+ENSEMBLE_DEFAULTS = {"structure_n": 1, "best_of": 1}
+ENSEMBLE_LIMITS = {"structure_n": (1, 9), "best_of": (1, 5)}
+
+
+def ensemble_seeds(base_seed: int, count: int):
+    """``base, base+1, ...`` - the candidate seeds, never random.
+
+    Two runs of the same request therefore compare the same candidates, which is
+    the property that lets a picker be believed without a human looking at the
+    meshes.
+    """
+    return [int(base_seed) + offset for offset in range(int(count))]
+
+
 class Backend:
     #: short name used by FORGE_MESHGEN_BACKEND and the "backend" request field
     name = "base"
@@ -88,6 +116,45 @@ class Backend:
             "missing": [],
             "detail": f"backend {self.name!r} does not accept multi-view input",
         }
+
+    def resolved_ensemble(self, options: dict) -> dict:
+        """Validate and fill in ``options.ensemble``.  Refuses, never clamps.
+
+        A clamped ensemble is the same trap a clamped node input is: the caller
+        asked for 20 candidates, got 9, was told nothing, and now reasons about a
+        run that never happened.
+        """
+        raw = (options or {}).get("ensemble")
+        if raw is None:
+            return dict(ENSEMBLE_DEFAULTS)
+        if not isinstance(raw, dict):
+            raise BackendError(
+                'option ensemble must be an object, e.g. {"ensemble": '
+                '{"structure_n": 5}} - got ' + type(raw).__name__)
+        unknown = sorted(set(raw) - set(ENSEMBLE_DEFAULTS))
+        if unknown:
+            raise BackendError(
+                f"unknown ensemble key(s): {', '.join(unknown)}. "
+                f"Supported: {', '.join(sorted(ENSEMBLE_DEFAULTS))}")
+        merged = dict(ENSEMBLE_DEFAULTS)
+        for key, value in raw.items():
+            # bool is an int in Python and {"best_of": true} means nothing here
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise BackendError(f"ensemble.{key}={value!r} is not an integer")
+            low, high = ENSEMBLE_LIMITS[key]
+            if not (low <= value <= high):
+                raise BackendError(
+                    f"ensemble.{key}={value} is outside the supported range "
+                    f"{low} to {high}")
+            merged[key] = int(value)
+        if merged["structure_n"] > 1 and merged["best_of"] > 1:
+            raise BackendError(
+                "ensemble.structure_n and ensemble.best_of cannot both be above "
+                "1. best_of already draws N independent structures - running "
+                "structure consensus inside each one would hand every candidate "
+                "the same grid, and you would pay N full generations for N "
+                "copies of one mesh. Pick a tier.")
+        return merged
 
     def ensure_ready(self) -> dict:
         """Raise :class:`NotReady` listing what is missing, else return readiness."""

@@ -419,6 +419,16 @@ class ComfyUIClient:
         """
         timeout_s = timeout_s or self.config.job_timeout_s
         progress = progress or (lambda *a: None)
+        # Every poll below addresses the job by the id WE hold, so a missing one
+        # means polling /api/jobs/None forever on a job that has already
+        # finished - the run fails on the timeout instead of returning its mesh.
+        # An ensemble submits several graphs per /generate3d job and only one of
+        # them can carry the job's own id, so this is now the ordinary case.
+        #
+        # It must be a CANONICAL uuid: ComfyUI v0.35 refuses anything else with
+        # `invalid_prompt_id`, which also rules out the obvious
+        # f"{job_id}-structure-2" scheme for naming an ensemble's sub-runs.
+        prompt_id = prompt_id or str(uuid.uuid4())
         self.submit(graph, prompt_id)
 
         def sample_vram():

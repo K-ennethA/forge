@@ -102,19 +102,30 @@ class Pixal3DBackend(ComfyUIBackend):
             fov_deg=plan["camera_angle_x_deg"])
         return self.finish_graph(graph, options or {}, prefix)
 
-    def prepare_run(self, image_path, options, prefix, plan=None):
+    def stage_inputs(self, image_path, plan=None):
+        """One staged copy per view; the handle is ``{view name: staged name}``.
+
+        Staging is split from graph building (base class) so an ensemble stages
+        the four views ONCE and builds N graphs over them - a fresh staged name
+        per candidate would miss ComfyUI's execution cache and re-run background
+        removal and the image encoder for every seed.
+        """
         if plan is None:
-            return super().prepare_run(image_path, options, prefix, plan)
+            return super().stage_inputs(image_path, plan)
         staged = {}
         try:
             for view in plan["views"]:
                 staged[view["name"]] = self.client.stage_image(view["path"])
-            graph = self.build_multiview_graph(staged, plan, options, prefix)
         except Exception:
             for name in staged.values():
                 self.client.unstage_image(name)
             raise
-        return graph, list(staged.values())
+        return staged, list(staged.values())
+
+    def graph_for(self, staged, options, prefix, plan=None):
+        if plan is None:
+            return super().graph_for(staged, options, prefix, plan)
+        return self.build_multiview_graph(staged, plan, options, prefix)
 
     def resolve_multiview(self, image_path, options):
         """Settle a ``views`` request before ComfyUI is started.

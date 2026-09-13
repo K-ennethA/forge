@@ -9,11 +9,13 @@ licence they report.  Everything else lives here.
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from pathlib import Path
 
 from .. import glb
-from .base import Backend, BackendError, NotReady
+from . import structure_probe
+from .base import (Backend, BackendError, Cancelled, NotReady, ensemble_seeds)
 
 HF = "https://huggingface.co"
 
@@ -106,7 +108,7 @@ HARD_SURFACE_PRESET = {
 #: request surface; they are resolved before a graph is built.  ``hard_surface``
 #: is a macro over two graph options, expanded in :meth:`resolved_options`.
 NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg",
-                     "hard_surface"}
+                     "hard_surface", "ensemble"}
 
 
 def _boolean(value):
@@ -357,22 +359,64 @@ class ComfyUIBackend(Backend):
             )
         return image_path, None, None
 
+    def stage_inputs(self, image_path, plan=None):
+        """Copy the caller's image(s) into ComfyUI's input dir.
+
+        Returns ``(handle, [staged names])``.  The handle is whatever
+        :meth:`graph_for` needs; for the single-image path it is the one staged
+        filename.  Split out of :meth:`prepare_run` so an ensemble stages **once**
+        and builds N graphs from it - staging per candidate would give every
+        candidate a different ``LoadImage`` filename, which misses ComfyUI's
+        execution cache and re-runs background removal and the image encoder for
+        every seed.
+        """
+        image_name = self.client.stage_image(image_path)
+        return image_name, [image_name]
+
+    def graph_for(self, staged, options, prefix, plan=None):
+        """The finished graph for one run, from an already-staged input."""
+        return self.build_graph(staged, options or {}, prefix)
+
     def prepare_run(self, image_path, options, prefix, plan=None):
         """Stage the inputs and build the graph.
 
         Returns ``(graph, [staged names])``; the caller unstages every name in
         that list when the run is over, however it ended.
         """
-        image_name = self.client.stage_image(image_path)
+        staged, names = self.stage_inputs(image_path, plan)
         try:
-            return self.build_graph(image_name, options or {}, prefix), [image_name]
+            return self.graph_for(staged, options, prefix, plan), names
         except Exception:
-            self.client.unstage_image(image_name)
+            for name in names:
+                self.client.unstage_image(name)
             raise
+
+    # -- the seed ensemble ------------------------------------------------
+    @staticmethod
+    def load_scorer():
+        """Import the numpy scorer, or say plainly why the ensemble cannot run.
+
+        Deliberately lazy.  meshgen's request path is stdlib-only and stays that
+        way for a single-shot generation; picking between candidates is geometry
+        and needs numpy (and PIL, to read the prepared silhouette back).  A
+        caller who asked for an ensemble on a machine without them gets a
+        sentence, not a single-seed mesh that quietly pretends it was chosen.
+        """
+        try:
+            from .. import ensemble as ensemble_module
+            from ..tools import mesh_metrics
+        except ImportError as exc:
+            raise BackendError(
+                "the ensemble picker needs numpy and PIL (both are in "
+                f"service/.venv) and one of them is missing: {exc}. "
+                'Drop "ensemble" from options to run a single seed.') from None
+        return ensemble_module, mesh_metrics
 
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
+        options = dict(options or {})
+        ensemble_options = self.resolved_ensemble(options)
 
         image_path, multiview_note, multiview_plan = self.resolve_multiview(image_path, options)
 
@@ -380,27 +424,39 @@ class ComfyUIBackend(Backend):
         self.client.ensure_running(cancel_event=cancel_event)
 
         prefix = f"forge/{self.name}"
-        graph, staged_names = self.prepare_run(image_path, options, prefix, multiview_plan)
-
         started = time.time()
         telemetry = {}
         before = self.client.vram_report()
+        report = None
+
+        staged, staged_names = self.stage_inputs(image_path, multiview_plan)
         try:
-            entry = self.client.run_graph(
-                graph,
-                prompt_id=job_id,
-                cancel_event=cancel_event,
-                progress=progress,
-                timeout_s=self.config.job_timeout_s,
-                telemetry=telemetry,
-            )
+            if ensemble_options["best_of"] > 1:
+                result, report = self._run_best_of(
+                    staged, options, out_path, prefix, multiview_plan,
+                    ensemble_options, progress, cancel_event, job_id, telemetry)
+            else:
+                if ensemble_options["structure_n"] > 1:
+                    winning_seed, report = self._structure_consensus(
+                        staged, options, prefix, multiview_plan, ensemble_options,
+                        progress, cancel_event, job_id, telemetry)
+                    options["seed"] = winning_seed
+                graph = self.graph_for(staged, options, prefix, multiview_plan)
+                entry = self.client.run_graph(
+                    graph,
+                    prompt_id=job_id,
+                    cancel_event=cancel_event,
+                    progress=progress,
+                    timeout_s=self.config.job_timeout_s,
+                    telemetry=telemetry,
+                )
+                result = self.client.collect_output(entry, out_path)
         finally:
             for name in staged_names:
                 self.client.unstage_image(name)
         after = self.client.vram_report()
         duration_ms = int((time.time() - started) * 1000)
 
-        result = self.client.collect_output(entry, out_path)
         try:
             mesh_stats = glb.stats(result["mesh_path"])
         except (glb.GlbError, OSError):
@@ -425,7 +481,224 @@ class ComfyUIBackend(Backend):
             # Never let a fallback be invisible: if the caller asked for views
             # and got one image, the result says so.
             payload["multiview"] = multiview_note
+        if report is not None:
+            report["wall_ms"] = duration_ms
+            payload["ensemble"] = report
         return payload
+
+    # -- tier 1: structure consensus --------------------------------------
+    def _structure_consensus(self, staged, options, prefix, plan, ensemble_options,
+                             progress, cancel_event, job_id, telemetry):
+        """Run the cheap head N times, pick the medoid grid, return its seed.
+
+        The winner is replayed as an ordinary full generation at that seed rather
+        than re-injected as a grid - core has no node that can take a VOXEL back
+        in, and meshgen never installs one.  See
+        :mod:`meshgen.backends.structure_probe` for the whole argument.
+        """
+        ensemble_module, _metrics = self.load_scorer()
+        count = ensemble_options["structure_n"]
+        base_seed = int(self.resolved_options(options).get("seed", 0))
+        seeds = ensemble_seeds(base_seed, count)
+
+        candidates = []
+        mask = None
+        probe_started = time.time()
+        for index, seed in enumerate(seeds, 1):
+            if cancel_event is not None and cancel_event.is_set():
+                raise Cancelled("cancelled during the structure ensemble")
+            progress(index / count, f"structure candidate {index}/{count} (seed {seed})")
+            probe_prefix = f"{prefix}_probe"
+            graph = self.graph_for(staged, {**options, "seed": seed},
+                                   probe_prefix, plan)
+            probe = structure_probe.build_structure_graph(
+                graph, probe_prefix, resolution=self._structure_resolution(graph))
+            entry = self.client.run_graph(
+                probe,
+                # a fresh canonical uuid per sub-run: ComfyUI refuses anything
+                # that is not one, so an ensemble's candidates cannot be named
+                # after the job that owns them.  Cancellation still works - it
+                # rides ``cancel_event``, which run_graph checks every poll.
+                prompt_id=None,
+                cancel_event=cancel_event,
+                progress=lambda fraction, label, i=index: progress(
+                    None, f"structure {i}/{count}: {label}" if label else None),
+                timeout_s=self.config.job_timeout_s,
+                telemetry=telemetry,
+            )
+            meshes = self.client.find_mesh_outputs(entry, suffixes=(".glb",))
+            if not meshes:
+                raise BackendError(
+                    "the structure probe produced no grid mesh - the SaveGLB tail "
+                    "in backends/structure_probe.py did not run")
+            verts, faces = self._read_grid_mesh(meshes[-1])
+            grid = ensemble_module.occupancy_from_cube_mesh(
+                verts, faces, self._structure_resolution(graph))
+            candidates.append({"seed": seed, "grid": grid})
+            if mask is None:
+                mask = self._read_mask(entry)
+
+        report = ensemble_module.select_structure(candidates, mask=mask)
+        report.update({
+            "tier": "structure_consensus",
+            "structure_n": count,
+            "seeds": seeds,
+            "seed_base": base_seed,
+            "mask_used": mask is not None,
+            "probe_ms": int((time.time() - probe_started) * 1000),
+            "replay": (
+                "the winning seed is re-run as one ordinary full generation - "
+                "ComfyUI core has no node that can take a structure VOXEL back "
+                "into a graph, and meshgen never installs a custom one, so the "
+                "winner's cheap head runs a second time"),
+        })
+        if not report["mask_used"]:
+            report["honesty"] = (
+                "no prepared silhouette came back from the probe, so the "
+                "drawing-agreement gate did not run and the pick is pure "
+                "grid consensus")
+        return int(report["winner"]["seed"]), report
+
+    # -- tier 2: best-of full generations ---------------------------------
+    def _run_best_of(self, staged, options, out_path, prefix, plan,
+                     ensemble_options, progress, cancel_event, job_id, telemetry):
+        ensemble_module, mesh_metrics = self.load_scorer()
+        count = ensemble_options["best_of"]
+        base_seed = int(self.resolved_options(options).get("seed", 0))
+        seeds = ensemble_seeds(base_seed, count)
+        out_path = Path(out_path)
+
+        mask, mask_ms = self._harvest_mask(staged, options, prefix, plan,
+                                           cancel_event, job_id, telemetry)
+
+        candidates = []
+        for index, seed in enumerate(seeds, 1):
+            if cancel_event is not None and cancel_event.is_set():
+                raise Cancelled("cancelled during the best_of ensemble")
+            progress(0.0, f"candidate {index}/{count} (seed {seed})")
+            candidate_path = out_path.with_name(f"{out_path.stem}_seed{seed}{out_path.suffix}")
+            graph = self.graph_for(staged, {**options, "seed": seed}, prefix, plan)
+            entry = self.client.run_graph(
+                graph,
+                prompt_id=None,
+                cancel_event=cancel_event,
+                progress=lambda fraction, label, i=index: progress(
+                    fraction, f"{i}/{count}: {label}" if label else None),
+                timeout_s=self.config.job_timeout_s,
+                telemetry=telemetry,
+            )
+            produced = self.client.collect_output(entry, candidate_path)
+            candidates.append(self._score_candidate(
+                seed, produced["mesh_path"], mask, ensemble_module, mesh_metrics))
+
+        report = ensemble_module.select_mesh(candidates)
+        report.update({
+            "tier": "best_of",
+            "best_of": count,
+            "seeds": seeds,
+            "seed_base": base_seed,
+            "mask_used": mask is not None,
+            "mask_probe_ms": mask_ms,
+            "kept": [c["mesh_path"] for c in candidates],
+            "note": ("every candidate is kept on disk next to the output - you "
+                     "paid for all of them"),
+        })
+        winner_path = report["winner"]["mesh_path"]
+        shutil.copy2(winner_path, out_path)
+        return {"mesh_path": str(out_path), "comfyui_path": winner_path}, report
+
+    def _score_candidate(self, seed, mesh_path, mask, ensemble_module, mesh_metrics):
+        entry = {"seed": seed, "mesh_path": mesh_path, "metrics": {}, "points": None}
+        try:
+            mesh = mesh_metrics.load_glb(mesh_path)
+        except Exception as exc:                       # noqa: BLE001 - recorded
+            entry["error"] = f"{type(exc).__name__}: {exc}"
+            return entry
+        verts = mesh_metrics.normalise(mesh["verts"])
+        welded, faces, _kept = mesh_metrics.weld(verts, mesh["faces"])
+        metrics = {}
+        metrics.update(mesh_metrics.topology(welded, faces))
+        metrics.update({k: v for k, v in mesh_metrics.dihedrals(welded, faces).items()
+                        if not k.startswith("_")})
+        metrics.update(mesh_metrics.self_intersections(welded, faces))
+        if mask is not None:
+            metrics.update(mesh_metrics.silhouette(
+                welded, faces, self._scoring_camera(), mask))
+        entry["metrics"] = metrics
+        entry["points"] = ensemble_module.sample_surface(welded, faces)
+        return entry
+
+    @staticmethod
+    def _scoring_camera():
+        """A fixed camera for the best_of silhouette.
+
+        The camera behind a caller's image is unknown, so this is not an attempt
+        to reconstruct it: it is one fixed frame that every candidate is drawn
+        through, and ``mesh_metrics.best_orientation`` searches the 48 signed
+        axis labellings inside it.  The IoU that comes out is a comparison
+        between candidates, never an absolute quality score - exactly the reading
+        the structure tier gives its own silhouette number.
+        """
+        from . import multiview
+        fov = multiview.DEFAULT_FOV_DEG
+        return {"azimuth_deg": 0.0, "elevation_deg": 0.0, "fov_deg": fov,
+                "resolution": 256, "distance": multiview.distance_for_fov(fov)}
+
+    # -- shared probe plumbing --------------------------------------------
+    def _harvest_mask(self, staged, options, prefix, plan, cancel_event, job_id,
+                      telemetry):
+        """The prepared front silhouette, from a graph with no sampler in it."""
+        started = time.time()
+        graph = self.graph_for(staged, options, prefix, plan)
+        if not structure_probe.has_mask_chain(graph):
+            return None, 0
+        try:
+            entry = self.client.run_graph(
+                structure_probe.build_mask_graph(graph, f"{prefix}_probe"),
+                prompt_id=None,
+                cancel_event=cancel_event,
+                progress=lambda *a: None,
+                timeout_s=self.config.job_timeout_s,
+                telemetry=telemetry,
+            )
+        except Cancelled:
+            raise            # Cancelled IS a BackendError - do not swallow it
+        except BackendError:
+            # A missing silhouette costs the gate, not the job: best_of still
+            # ranks on topology and the Chamfer medoid, and the report says
+            # mask_used: false rather than implying a check that never ran.
+            return None, int((time.time() - started) * 1000)
+        return self._read_mask(entry), int((time.time() - started) * 1000)
+
+    def _read_mask(self, entry):
+        paths = structure_probe.find_images(entry, structure_probe.NODE_MASK_SAVE,
+                                            self.config)
+        for path in reversed(paths):
+            if not Path(path).is_file():
+                continue
+            try:
+                import numpy as np
+                from PIL import Image
+                with Image.open(path) as handle:
+                    grey = np.asarray(handle.convert("L"), dtype=np.float64) / 255.0
+            except Exception:                          # noqa: BLE001 - optional
+                continue
+            # ImageCropToMask composites ``image * mask`` over the template's
+            # black background, and the image here IS the mask, so the saved
+            # pixel is mask**2.  0.25 is therefore mask > 0.5, not a guess.
+            return grey > 0.25
+        return None
+
+    @staticmethod
+    def _structure_resolution(graph):
+        node = graph.get(structure_probe.NODE_STRUCTURE_DECODE) or {}
+        return str((node.get("inputs") or {}).get("resolution", "32"))
+
+    @staticmethod
+    def _read_grid_mesh(path):
+        from ..tools import mesh_metrics
+        mesh = mesh_metrics.load_glb(path)
+        return mesh["verts"], mesh["faces"]
 
     def cancel(self, handle):
         if handle:

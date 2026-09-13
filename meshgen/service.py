@@ -168,6 +168,21 @@ class MeshgenApp:
         elif not image_path:
             raise ValueError("image_path is required (or a views block)")
 
+        if "ensemble" in options:
+            # Settled here rather than minutes later inside the job, for the same
+            # reason a views block is: a malformed request should cost nothing.
+            resolve = getattr(backend, "resolved_ensemble", None)
+            if resolve is None:
+                raise ValueError(
+                    f"backend {backend.name!r} has no seed ensemble; drop "
+                    '"ensemble" from options')
+            try:
+                # normalised in place, so the job record and the 202 show what
+                # will actually run rather than the shorthand that was sent
+                options["ensemble"] = resolve(options)
+            except BackendError as exc:
+                raise ValueError(str(exc)) from None
+
         image = Path(image_path)
         if not image.is_absolute():
             raise ValueError("image_path must be absolute")
@@ -361,6 +376,8 @@ class Handler(BaseHTTPRequestHandler):
                        "backend": job.backend, "output": job.output}
             if job.options.get("views"):
                 payload["views"] = [v["name"] for v in job.options["views"]]
+            if job.options.get("ensemble"):
+                payload["ensemble"] = job.options["ensemble"]
             return self._send(202, payload)
 
         if path.startswith("/cancel/"):

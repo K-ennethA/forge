@@ -12,6 +12,7 @@ into the existing pipeline: Blender import → voxel repair → `/check_mesh` �
 ```
 POST /generate3d  {"image_path", "backend"?, "options"?, "output"?}  -> {"job_id"}
                   {"views": {"front", "side"?, "back"?, "left"?}, ...}   (pixal3d)
+                  options.ensemble {"structure_n"?, "best_of"?}   (pick among seeds)
 GET  /job/<id>    queued | running | done | error | cancelled  (+ progress, stage)
 POST /cancel/<id> best-effort interrupt
 GET  /health      backend name/model/license/loaded + available_backends
@@ -145,6 +146,11 @@ alongside `views` (see [Multi-view](#multi-view-front--side--back--live)):
 `on_unavailable` (`"error"` / `"front_only"`), `multiview_fov_deg` (20.0 — the
 rig's FOV; it reaches `Pixal3DMultiViewConditioning.fov` directly), and `views`
 itself, which may be sent top-level or inside `options`.
+
+And one more that steers meshgen rather than the graph: **`ensemble`**
+(`{"structure_n": 1-9, "best_of": 1-5}`) — draw the sampler more than once and
+pick between the draws deterministically. Both default to 1, i.e. off. See
+[Seed ensemble](#seed-ensemble-draw-more-than-once-then-pick-deterministically).
 
 **There is no `negative_prompt`, and there should never be one.** At the shape
 stage the graph wires `negative` from the conditioning node's second output,
@@ -411,6 +417,274 @@ changing it would have been a guess wearing a measurement's clothes.
 **Cost of the whole exercise: 19 GPU runs, ~55 minutes**, one job at a time.
 
 
+
+## Seed ensemble: draw more than once, then pick deterministically
+
+A diffusion sampler's seed is a lottery ticket, and this pipeline's structure
+stage is a *high-variance* one. Measured on `hard_slab`, five seeds produced five
+occupancy grids whose pairwise IoU ran **0.53 to 0.72** — and two of the five
+disagreed with the input drawing so badly (silhouette IoU 0.18 against the best
+draw's 0.80) that no amount of downstream tuning would have saved them. Every
+setting in the section above moves the mesh by a few percent. The seed moves it
+by more than that, and until now meshgen took whatever the first draw gave.
+
+Published oracle best-of-5 on this class of model is roughly a **26% Chamfer
+improvement** (arXiv 2604.27106): the good mesh is usually already in a handful
+of draws, and the whole problem is *picking* it. Two findings settle how:
+
+- **Consensus beats a judge.** A symmetric-Chamfer **medoid** — the candidate
+  that agrees most with the others — outperformed a VLM verifier on CAD
+  generation, with the benefit plateauing around N = 9 (arXiv 2608.09706).
+- **The one image-side signal that works is geometric.** ShapeGen's picker
+  compares a rendered front-view normal map against the input with DINO cosine
+  (arXiv 2511.20624). **Render-CLIP is chance** on this task and is named here
+  only so that nobody re-adds it.
+
+So: no VLM, no CLIP, no eyeballing. Everything below is numpy over boolean grids
+and triangles, and the same request produces the same pick on any machine.
+
+```json
+POST /generate3d
+{"image_path": "C:/ref/part.png",
+ "options": {"ensemble": {"structure_n": 5}}}
+```
+
+| key | what it does | default | range |
+|---|---|---|---|
+| `structure_n` | run the **cheap head** N times at varied seeds, pick the medoid grid, then pay for the expensive tail once | **1** (off) | 1–9 |
+| `best_of` | run N **full** generations and choose between the finished meshes | **1** (off) | 1–5 |
+
+Seeds are `seed`, `seed+1`, … — never random, so two runs of the same request
+compare the same candidates. Both above 1 at once is **refused**: `best_of`
+already draws N independent structures, so consensus inside each one would hand
+every candidate the same grid and you would pay N full generations for N copies
+of one mesh. Out of range is refused with the real range, never clamped.
+
+### Why the two halves of the pipeline can be separated at all
+
+The structure stage and the shape stage meet at one narrow place:
+
+```
+KSampler(structure) → VaeDecodeStructureTrellis2 → VOXEL → Trellis2ShapeStage
+```
+
+`VaeDecodeStructureTrellis2` emits a **plain dense boolean occupancy grid**,
+`[B, R, R, R]` at R = 32 or 64, and `Trellis2ShapeStage` consumes it with
+`torch.argwhere(...)`. Everything before that seam is **seconds**; everything
+after it — shape cascade, upsample, texture, remesh, unwrap, bake — is the
+two-to-four minute tail.
+
+### Why the winner is replayed by seed, not re-injected as a grid
+
+The obvious design is to capture the VOXEL from one `/prompt` and feed it into a
+second one that starts at `Trellis2ShapeStage`. **Core cannot express that, and
+meshgen may not add a node that can.** Searched across the whole install:
+exactly four node classes touch the `VOXEL` type, and all four either produce
+one or consume one — there is **no save node and no load node for it**. Writing
+one would be a custom node, and `custom_nodes/` staying empty is the standing law
+that keeps the licence audit clean (see [the nvdiffrast trap](#the-nvdiffrast-trap)).
+
+What core *does* have is a lossless way **out**. `VoxelToMeshBasic` emits one
+axis-aligned unit cube face per exposed voxel face at **integer lattice points**,
+and `SaveGLB` writes those vertices through untouched (no node matrix, no
+rotation — checked in core's `save_glb`). That mesh *is* the grid, and
+`ensemble.occupancy_from_cube_mesh` inverts it exactly, with two details that are
+load-bearing:
+
+- **Interior voxels have no exposed face**, so the face set alone under-reports a
+  solid block. The solid is recovered by **parity**: along any axis, the faces
+  perpendicular to it sit exactly at the solid/empty transitions, so voxel *i* is
+  solid iff an odd number of transitions lie at or below it.
+- The answer is computed independently from **all three axis families and they
+  must agree**. They cannot, unless the mesh really is a closed voxel boundary —
+  which is the check that keeps a silently wrong grid, and the plausible-looking
+  consensus table built on top of it, out of the report.
+
+So the head is a **probe**, and the winner is re-run as one ordinary full
+generation at the winning seed. That costs **one extra head execution** (the
+winner's head runs twice) and needs nothing core does not already ship. It rests
+on one assumption, and the assumption is measured rather than asserted:
+
+> **Seed replay is deterministic here.** Three probes of seed 56 on `hard_steps`
+> returned byte-identical grids — 4 752 occupied voxels each, pairwise IoU
+> **1.000**. Re-check with `ab_ensemble.py repeat` after any ComfyUI or driver
+> change; if it ever stops being 1.0, the structure tier is picking a seed whose
+> grid it will not get back, and this README has to say so.
+
+### The probe graph
+
+Not a second committed template — a **pruning** of whichever graph the backend
+would have run anyway (single-view or multi-view), by reachability from the
+structure decode node, plus a small tail:
+
+```
+VaeDecodeStructureTrellis2 → VoxelToMeshBasic → SaveGLB      (the grid)
+MaskPreview → MaskToImage → ImageCropToMask → SaveImage      (the drawing)
+```
+
+55 nodes become **31**. A template refresh therefore flows into the probe
+automatically and the two can never drift — a stronger guarantee than the
+derived-and-compared one `multiview_to_3d.json` gets. Reachability is the same
+rule `tools/build_workflow.py` uses and for the same reason: this template wires
+`PreviewImage` and `MaskPreview` as **pass-through data nodes**, so pruning by
+"looks like a preview" guts the graph.
+
+The mask branch is not decoration. It puts the prepared mask through **the same
+`ImageCropToMask`** the model's input image went through, so the silhouette a
+grid is scored against is framed exactly the way the model framed the picture —
+reusing core's framing rather than re-deriving one. (`ImageCropToMask`
+composites `image × mask` over the template's black background, and here the
+image *is* the mask, so the saved pixel is `mask²` and the read-back threshold of
+0.25 is `mask > 0.5`, not a guess.)
+
+### How the pick is made
+
+**Tier 1, `structure_n`** — silhouette gate, then medoid:
+
+1. Each grid's silhouette is compared against the prepared drawing over the 24
+   axis-aligned labellings (3 projection axes × 4 quarter-turns × 2 mirrors) — a
+   search over *labelling*, not a free rotation fit, the same discipline
+   `mesh_metrics.best_orientation` uses. The labelling is chosen **once**, by the
+   candidate that explains the drawing best under any labelling, and every
+   candidate is then scored under that one; candidates read different ways round
+   are not comparable.
+2. A grid more than **0.15 IoU** below the best is rejected as not explaining the
+   drawing. The margin is **relative and has to be**: the camera behind a found
+   image is unknown — a photo is perspective at an arbitrary azimuth, a grid is
+   orthographic and axis-aligned — so the absolute number is not a quality score
+   and is never treated as one. The gate **never leaves fewer than two
+   survivors**: a gate that can empty the field decides the answer by itself.
+   It runs *before* the consensus, because two bad draws that agree with each
+   other would otherwise outvote three good ones.
+3. The **medoid** of the survivors' pairwise grid IoU wins. Ties go to the higher
+   silhouette, then to the lowest seed.
+
+**Tier 2, `best_of`** — hard gates, then rank:
+
+1. Candidates that produced no readable mesh are dropped.
+2. Topology gates on self-intersections and shell count, **relative to the best
+   in this batch** (3×, with a floor). Absolute gates are useless here and this
+   README has the measurement that proves it — a *good* run of this pipeline
+   exports 9 boundary and 210 non-manifold edges, so "must be manifold" would
+   reject every candidate every time. The limit is anchored on the batch minimum,
+   so the best candidate always survives; the gates can legitimately cut to a
+   single survivor, and when they do the report says there was no consensus left
+   to take.
+3. Rank by silhouette IoU **rounded to 3 decimals**, then by symmetric-Chamfer
+   medoid over 4 096 area-weighted surface points per mesh, then by
+   `edge_sharpness`, then by seed. The rounding is the measured part: across the
+   *entire* tuning sweep above, IoU moved only 0.9763 → 0.9801 while the meshes
+   differed enormously. It is a guard that the object was not eaten, not a
+   quality ordering — so rounding hands the decision to the consensus medoid
+   wherever the silhouettes are indistinguishable, which is nearly always.
+4. Every candidate mesh is **kept on disk** next to the output as
+   `<name>_seed<N>.glb`. You paid for them.
+
+### What the job tells you
+
+`/job/<id>` carries the request block from the moment it is queued, and replaces
+it with the finished verdict: the seeds tried, every candidate's numbers, who was
+rejected and why, the pairwise agreement matrix, the winner, one sentence of
+`why`, and `probe_ms` next to `wall_ms` so the cost is never hidden. A real run:
+
+```
+"why": "seed 58 is the medoid: its occupancy grid agrees with the other 2
+        candidate(s) at mean IoU 0.763, the highest of the 3 compared
+        (of 5 generated; 2 rejected on silhouette).",
+"rejected": [{"seed": 57, "silhouette_iou": 0.1772,
+              "reason": "silhouette IoU 0.177 is more than 0.15 below the best
+                         candidate's 0.796 - this grid does not explain the drawing"}]
+```
+
+### Measured — RTX 5070 12 GB, ComfyUI v0.35.1, `trellis2`, base seed 56
+
+**This table is PARTIAL and says so.** The sweep was stopped part-way when the
+GPU was needed elsewhere; three of nine planned rows landed. What is here was
+measured, and the gaps are named rather than estimated. Finish it with
+
+```
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble run --out <dir>
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble report <dir>
+```
+
+which resumes from `results.jsonl` and re-runs only what is missing.
+
+**Seed replay**: 3 probes of seed 56 on `hard_steps` agreed at grid IoU
+**1.000, 1.000** — 4 752 occupied voxels every time. Probe cost **6.2 s** cold,
+**1.5–1.6 s** for a repeat of a seed already drawn (ComfyUI caches the whole
+identical graph). A *distinct* seed costs ~6 s.
+
+| scene | arm | picked seed | IoU | sharp | creaseL | selfX | shells | probe | wall | VRAM |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `hard_steps` | `baseline` | 56 | 0.9755 | 0.284 | 57.9 | 0 | 38 | — | 177 s | 11.21 |
+| `hard_steps` | `structure5` | **56** | 0.9753 | 0.284 | 57.8 | 3 | 35 | 32 s | 219 s | 11.21 |
+| `hard_slab` | `structure5` | **58** | 0.8866 | 0.167 | 8.3 | 0 | 5 | 30 s | 105 s | 10.18 |
+| `hard_slab` | `baseline` | — | *not run* | | | | | | | |
+| `hard_steps` / `hard_slab` | `best_of3` | — | *not run* | | | | | | | |
+| `organic_blob` | all three | — | *not run* | | | | | | | |
+
+**Cost is ~6 s per distinct seed, and it is the only thing here that is fully
+settled.** `structure_n: 5` added **32 s to a 177 s** job (+24%) and **30 s to a
+75 s** job (+40%) — cheap in absolute terms, not free, and proportionally worse
+the smaller the object. VRAM is unchanged: the probe is the same head the full
+run already executes.
+
+### What the partial table already shows
+
+**On `hard_steps` the consensus picked the seed it started with**, and the mesh
+is the baseline mesh: IoU 0.9755 → 0.9753, sharpness 0.284 → 0.284, crease length
+57.9 → 57.8. Those deltas are **not** the ensemble — they are the *tail's* own
+run-to-run wobble at a fixed seed (self-intersections 0 → 3, shells 38 → 35 with
+identical face counts). Worth stating plainly: **the structure stage is
+bit-deterministic at a fixed seed (IoU 1.000) but the shape/texture/remesh tail
+is not quite.** So on this fixture the tier cost 42 s and bought nothing, which
+is the honest average case and exactly what a consensus picker should do when the
+first draw was already the typical one.
+
+**On `hard_slab` it earned its keep, and this is the finding.** Five seeds gave
+five very different structures — pairwise grid IoU **0.53–0.72** — and **two of
+the five contradicted the drawing outright**, at silhouette IoU **0.177 and
+0.182 against the best draw's 0.796**. Those two were rejected before the
+consensus vote, and the medoid of the survivors was seed **58**, not the seed the
+service would have used. The same spread showed on `hard_steps`: seeds 56/57/58
+agreed at IoU 0.68 / 0.72 / 0.53.
+
+So the honest reading of the tier is **insurance, not an upgrade**. It cannot
+make the typical mesh better — it can only stop you shipping the atypical one,
+and 2-in-5 draws being unusable on `hard_slab` is the measured size of that risk.
+Whether the insurance is worth 6 s per seed is the caller's call, which is why
+both tiers default to 1 rather than being switched on for everybody.
+
+**Not yet measured, and not guessed at:** whether the picked mesh scores better
+than the baseline mesh on a scene where the pick actually differs (`hard_slab`'s
+baseline row is the missing half of that comparison), anything at all about
+`best_of` on real output, and the organic control. `best_of` has been exercised
+only as far as submitting and running its candidates; its gates, its Chamfer
+medoid and its winner-copy are covered by offline tests against synthetic
+candidates, not yet by a GPU run.
+
+The harness is `tools/ab_ensemble.py`, same contract as `ab_tuning.py` — real
+jobs through the live service, scored by `mesh_metrics` against the fixtures'
+exact ground truth, one JSONL row at a time so an interrupted sweep resumes, and
+**exit 0 with a reason** on a machine with no GPU and no weights:
+
+```
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble repeat --out <dir>
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble run    --out <dir>
+service\.venv\Scripts\python.exe -m meshgen.tools.ab_ensemble report <dir>
+```
+
+`repeat` is the load-bearing one and should be run first: it is the seed-replay
+determinism check the whole structure tier rests on.
+
+**One dependency note.** meshgen's single-shot request path is stdlib-only and
+stays that way. The picker is geometry and needs **numpy** (and **PIL**, to read
+the prepared silhouette back) — both already in `service/.venv`. `meshgen.ensemble`
+is imported lazily, only when an ensemble is actually requested, and a machine
+missing either gets a sentence rather than a single-seed mesh that quietly
+pretends it was chosen.
+
+---
 
 ## Multi-view (front + side + back) — LIVE
 
@@ -859,8 +1133,8 @@ service\.venv\Scripts\python.exe -m meshgen
 service\.venv\Scripts\python.exe -m pytest meshgen/tests -q
 ```
 
-**153 tests** (39 `test_service.py` + 53 `test_multiview.py` + 61
-`test_tuning.py`), all runnable with **none** of the 23.8 GB present — they exercise the job API, config resolution,
+**223 tests** (39 `test_service.py` + 53 `test_multiview.py` + 61
+`test_tuning.py` + 70 `test_ensemble.py`), all runnable with **none** of the 23.8 GB present — they exercise the job API, config resolution,
 option validation, cancellation, the missing-models guidance, both ComfyUI
 history output shapes and the VRAM-safe defaults, against a fake adapter that
 writes a real one-triangle `.glb`.
@@ -892,6 +1166,22 @@ itself wrong is worse than none: it produces a table, and the table is believed.
 The tuned values are pinned against both committed workflow templates, so a
 future `tools/build_workflow.py` refresh that restores the demo's numbers fails
 a test instead of quietly shipping rounder meshes.
+
+`test_ensemble.py` covers the three halves of the seed ensemble that can go wrong
+independently. **The probe graph** is a pruning, so a mistake there does not
+raise — it produces a graph that runs and samples something slightly different
+from what the full run will sample, and every consensus number computed on top of
+it is then about the wrong thing; so the pruned graph is walked for dangling
+links, the sampler chain is asserted present and the expensive tail asserted
+gone, in both the single-view and the multi-view template. **The pickers** are
+tested against grids and meshes whose answer is known by construction: a grid the
+others agree with must be the medoid, a grid that contradicts the drawing must be
+rejected *before* the consensus, a gate must never empty the field, and the
+answer must not depend on the order the candidates arrived in. **The inverse of
+`VoxelToMeshBasic`** is tested against a numpy transcription of core's own
+`voxel_to_mesh`, over random grids *with a solid interior block* — the interior
+is exactly what a naive reading of the face set loses, and without that block the
+test would pass while being wrong.
 
 The real-model runs are manual gates, not pytest: they need the GPU and take
 minutes. The numbers they produced are in

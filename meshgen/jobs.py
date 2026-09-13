@@ -63,6 +63,12 @@ class Job:
                 {"name": v["name"], "azimuth_deg": v["azimuth_deg"], "path": v["path"]}
                 for v in views
             ]
+        ensemble = self.options.get("ensemble")
+        if ensemble:
+            # what was ASKED for, from the moment the job is queued.  Replaced
+            # below by the finished report - which says what was actually
+            # compared, who won and why.
+            payload["ensemble"] = dict(ensemble)
         if self.started is not None:
             payload["started"] = self.started
         if self.finished is not None:
@@ -82,6 +88,8 @@ class Job:
             })
             if self.result.get("multiview"):
                 payload["multiview"] = self.result["multiview"]
+            if self.result.get("ensemble"):
+                payload["ensemble"] = self.result["ensemble"]
         return payload
 
 
