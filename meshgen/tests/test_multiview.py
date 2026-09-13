@@ -1,18 +1,25 @@
-"""Phase 18(a) multi-view: request validation, the camera rig, and honesty.
+"""Phase 18(a) multi-view: request validation, the camera rig, the graph.
 
 Every test here runs with **none** of the weights present, no GPU, no ComfyUI
-and no network - same rule as the rest of the meshgen suite.
+and no network - same rule as the rest of the meshgen suite.  A handful
+additionally re-check their golden fixtures against the real installed ComfyUI
+and skip when it is absent, so they are evidence on this machine without being a
+requirement on any other.
 
-The rig tests are the load-bearing ones.  meshgen cannot execute a multi-view
-Pixal3D run (core v0.34.0 has no per-view camera node - see
-``backends/multiview.py``), so the camera maths is verified against two
-independent upstream sources instead of against a mesh:
+The rig and socket tests are the load-bearing ones, because the failure they
+guard against is silent.  meshgen originally mapped ``right -> 90`` and
+``left -> 270``; ComfyUI core's ``_VIEW_AZIMUTHS`` is
+``{"front": 0, "left": 90, "back": 180, "right": 270}`` - **exactly swapped**.
+Feeding a correctly named socket the other side's image raises nothing, costs
+minutes of GPU time and returns a confidently wrong mesh.  So:
 
-* ComfyUI's own ``_PROJ_FRONT_VIEW_TRANSFORM`` constant, and
-* the ``transforms.json`` TencentARC ships in ``assets/mv_images/example/``,
-
-both pinned below as golden fixtures so they hold offline, and both re-checked
-against the real installed ComfyUI when this machine has it.
+* :data:`CORE_VIEW_AZIMUTHS_GOLDEN` pins core's dict, and a second test reads it
+  straight out of the installed ``nodes_trellis2.py`` to prove the pin is real;
+* the camera maths is checked against three independent sources - core's
+  ``_PROJ_FRONT_VIEW_TRANSFORM``, core's ``_orbit_camera_to_world``, and the
+  ``transforms.json`` TencentARC ships in ``assets/mv_images/example/``;
+* the graph tests assert the wiring goes through the AZIMUTH, so a name-level
+  mistake cannot reach a socket.
 """
 
 from __future__ import annotations
@@ -40,8 +47,15 @@ from meshgen.tests.test_service import (  # noqa: F401  (fixtures)
 # --------------------------------------------------------------------------
 # golden fixtures
 # --------------------------------------------------------------------------
+#: comfy_extras/nodes_trellis2.py, ``_VIEW_AZIMUTHS``, verbatim (core v0.35.0+).
+#: THE authority for which socket is which camera.  Written out here rather than
+#: imported so that a change to meshgen's own table cannot make this test agree
+#: with itself; ``test_core_view_azimuths_match_the_installed_comfyui`` then
+#: checks this literal against the real file.
+CORE_VIEW_AZIMUTHS_GOLDEN = {"front": 0.0, "left": 90.0, "back": 180.0, "right": 270.0}
+
 #: comfy/ldm/trellis2/model.py, _PROJ_FRONT_VIEW_TRANSFORM with T[1][3] = -d.
-#: The ONLY camera core has: a module constant with no rotation parameter.
+#: The single-view camera: a module constant with no rotation parameter.
 CORE_FRONT_VIEW = [
     [1.0, 0.0, 0.0, 0.0],
     [0.0, 0.0, -1.0, None],   # None = -distance, filled in per test
@@ -148,11 +162,15 @@ def test_camera_distance_is_upstreams_within_float32():
 
 
 def test_the_four_view_rig_reproduces_upstreams_shipped_transforms_json(tmp_path):
+    # Which name goes with which azim file is DERIVED from core's dict, not
+    # chosen: azim090 is core's "left", azim270 is core's "right".
+    names = {int(az): name for name, az in CORE_VIEW_AZIMUTHS_GOLDEN.items()}
+    assert names == {0: "front", 90: "left", 180: "back", 270: "right"}
     records = multiview.normalise_views({
-        "front": str(_png(tmp_path, "view00_azim000.png")),
-        "side": str(_png(tmp_path, "view01_azim090.png")),
-        "back": str(_png(tmp_path, "view02_azim180.png")),
-        "left": str(_png(tmp_path, "view03_azim270.png")),
+        names[0]:   str(_png(tmp_path, "view00_azim000.png")),
+        names[90]:  str(_png(tmp_path, "view01_azim090.png")),
+        names[180]: str(_png(tmp_path, "view02_azim180.png")),
+        names[270]: str(_png(tmp_path, "view03_azim270.png")),
     })
     rig = multiview.camera_rig(records, fov_deg=20.0)
 
@@ -188,16 +206,65 @@ def test_every_camera_looks_at_the_origin_with_z_up():
 def test_front_is_always_frame_zero_whatever_order_it_was_given(views):
     shuffled = {"back": views["back"], "side": views["side"], "front": views["front"]}
     records = multiview.normalise_views(shuffled)
-    assert [r["name"] for r in records] == ["front", "side", "back"]
+    # rig order is core's socket order (front, left, back, right), and "side"
+    # IS "right", so it sorts last - not second as its old 90 degrees implied
+    assert [r["name"] for r in records] == ["front", "back", "side"]
     assert records[0]["azimuth_deg"] == 0.0
 
 
-def test_stage_plan_carries_everything_a_multiview_node_would_need(views):
+# --------------------------------------------------------------------------
+# the azimuth mapping - the bug that used to live here
+# --------------------------------------------------------------------------
+def test_view_azimuths_are_cores_dict_plus_one_documented_alias():
+    assert multiview.CORE_VIEW_AZIMUTHS == CORE_VIEW_AZIMUTHS_GOLDEN
+    assert multiview.VIEW_AZIMUTHS == dict(CORE_VIEW_AZIMUTHS_GOLDEN, side=270.0)
+    # the exact thing that was wrong: left and right are NOT swapped
+    assert multiview.VIEW_AZIMUTHS["left"] == 90.0
+    assert multiview.VIEW_AZIMUTHS["right"] == 270.0
+
+
+def test_core_view_azimuths_match_the_installed_comfyui():
+    """The pin above, checked against the real file rather than against us."""
+    source = Path(config_module.load().comfyui_root) / "comfy_extras" / "nodes_trellis2.py"
+    if not source.is_file():
+        pytest.skip("ComfyUI not installed on this machine")
+    text = source.read_text(encoding="utf-8", errors="replace")
+    literal = ", ".join(f'"{name}": {az}'
+                        for name, az in CORE_VIEW_AZIMUTHS_GOLDEN.items())
+    assert f"_VIEW_AZIMUTHS = {{{literal}}}" in text, (
+        "core's _VIEW_AZIMUTHS is not what meshgen pins - re-derive "
+        "VIEW_AZIMUTHS in backends/multiview.py from it"
+    )
+    assert "_VIEW_PAD = 1.1" in text
+    assert multiview.PAD_FACTOR == multiview.CORE_VIEW_PAD == 1.1
+
+
+def test_sockets_are_chosen_by_azimuth_not_by_name():
+    for name, az in CORE_VIEW_AZIMUTHS_GOLDEN.items():
+        assert multiview.core_socket_for_azimuth(az) == name
+    # the alias resolves through its azimuth to core's own socket name
+    assert multiview.core_socket_for_azimuth(multiview.VIEW_AZIMUTHS["side"]) == "right"
+    assert multiview.core_socket_for_azimuth(-90.0) == "right"  # wraps
+    with pytest.raises(multiview.MultiviewError, match="not one of core's four"):
+        multiview.core_socket_for_azimuth(45.0)
+
+
+def test_every_record_carries_the_socket_its_azimuth_resolves_to(views):
+    records = multiview.normalise_views(views)
+    assert [(r["name"], r["azimuth_deg"], r["socket"]) for r in records] == [
+        ("front", 0.0, "front"),
+        ("back", 180.0, "back"),
+        ("side", 270.0, "right"),
+    ]
+
+
+def test_stage_plan_carries_everything_the_multiview_node_needs(views):
     plan = multiview.stage_plan(multiview.normalise_views(views))
     assert plan["view_count"] == 3
     assert [v["index"] for v in plan["views"]] == [0, 1, 2]
-    assert [v["azimuth_deg"] for v in plan["views"]] == [0.0, 90.0, 180.0]
-    assert [v["path"] for v in plan["views"]] == [views["front"], views["side"], views["back"]]
+    assert [v["azimuth_deg"] for v in plan["views"]] == [0.0, 180.0, 270.0]
+    assert [v["socket"] for v in plan["views"]] == ["front", "back", "right"]
+    assert [v["path"] for v in plan["views"]] == [views["front"], views["back"], views["side"]]
     assert plan["camera_distance"] == pytest.approx(3.1192049980163574,
                                                     abs=FLOAT32_DUST)
     assert plan["transforms_json"]["frames"][0]["name"] == "azim000"
@@ -232,8 +299,8 @@ def test_unknown_view_name_lists_the_real_ones(views):
 
 
 def test_side_and_right_are_the_same_camera_so_both_is_refused(views):
-    assert multiview.VIEW_AZIMUTHS["side"] == multiview.VIEW_AZIMUTHS["right"] == 90.0
-    with pytest.raises(multiview.MultiviewError, match="same 90 degree camera"):
+    assert multiview.VIEW_AZIMUTHS["side"] == multiview.VIEW_AZIMUTHS["right"] == 270.0
+    with pytest.raises(multiview.MultiviewError, match="same 270 degree camera"):
         multiview.normalise_views({"front": views["front"], "side": views["side"],
                                    "right": views["back"]})
 
@@ -290,39 +357,158 @@ def test_a_present_weight_file_stops_being_reported(config_file, tmp_path):
     assert "truncated" in weight[0]["what"]
 
 
-def test_core_v0_34_has_no_per_view_camera_node_and_we_say_so(config_file):
-    """The evidence, as a test. When ComfyUI ships one, this fails - loudly,
-    on purpose: that is the day meshgen can build the real workflow."""
+def test_a_comfyui_without_the_node_is_reported_as_the_blocker(config_file):
+    """``config_file`` points at an empty temp tree, which stands in for an
+    install older than v0.35.0.  The verdict must still be honest there."""
     cfg = config_module.load(config_file)
     support = multiview.core_multiview_support(cfg)
     assert support["node"] is None
+    blockers = [m for m in multiview.multiview_missing(cfg) if m.get("blocker")]
+    assert len(blockers) == 1
+    assert "v0.35.0" in blockers[0]["note"] or "v0.35.0" in blockers[0]["source"]
 
 
 def test_the_node_probe_reads_the_real_installed_comfyui():
+    """Polarity flipped on 2026-09-13: this used to assert the node was ABSENT
+    and to fail the day core shipped one.  Core shipped one (v0.35.0), this
+    machine is on v0.35.1, so it now asserts the node is THERE - and fails if a
+    downgrade or a reinstall would silently take multi-view away again."""
     cfg = config_module.load()
     source = Path(cfg.comfyui_root) / "comfy_extras" / "nodes_trellis2.py"
     if not source.is_file():
         pytest.skip("ComfyUI not installed on this machine")
     support = multiview.core_multiview_support(cfg)
     assert support["checked"] == "source"
-    assert support["node"] is None, (
-        "ComfyUI core now declares a multi-view conditioning node "
-        f"({support['node']}) - build the multi-view workflow template against it"
+    assert support["node"] == multiview.MULTIVIEW_NODE, (
+        "the installed ComfyUI no longer declares "
+        f"{multiview.MULTIVIEW_NODE} - multi-view needs core v0.35.0 or newer"
     )
-    # and the single-view node it DOES have is the one we say it has
-    assert 'node_id="Pixal3DConditioning"' in source.read_text(
-        encoding="utf-8", errors="replace")
+    text = source.read_text(encoding="utf-8", errors="replace")
+    # the single-view node it also has is the one we say it has
+    assert 'node_id="Pixal3DConditioning"' in text
+    # and the node's real socket names are the ones the graph wires
+    for socket in multiview.CORE_VIEW_AZIMUTHS:
+        assert f'"{socket}"' in text
 
 
-def test_the_shipped_template_is_single_view():
-    """A regression guard on the other half of the blocker: one LoadImage, one
-    Pixal3DConditioning. If a future ComfyUI template ships more, revisit."""
+def test_the_single_view_template_stayed_single_view():
+    """The multi-view graph is DERIVED from this one, so its shape is a
+    contract: one LoadImage, one Pixal3DConditioning, one 1024/pad-1.1 crop."""
     path = Path(__file__).resolve().parents[1] / "workflows" / "image_to_3d.json"
     graph = json.loads(path.read_text(encoding="utf-8"))
     kinds = [node["class_type"] for node in graph.values()]
     assert kinds.count("LoadImage") == 1
     assert kinds.count("Pixal3DConditioning") == 1
     assert kinds.count("ImageCropToMask") == 1
+
+
+# --------------------------------------------------------------------------
+# the multi-view workflow
+# --------------------------------------------------------------------------
+WORKFLOWS = Path(__file__).resolve().parents[1] / "workflows"
+
+
+def _multiview_template():
+    return json.loads((WORKFLOWS / multiview.MULTIVIEW_WORKFLOW).read_text(
+        encoding="utf-8"))
+
+
+def test_the_multiview_template_is_exactly_what_the_generator_produces():
+    """It is derived from image_to_3d.json, never hand-edited: regenerate in
+    memory and compare, so the two cannot drift."""
+    from meshgen.tools import build_multiview_workflow
+
+    single = json.loads((WORKFLOWS / "image_to_3d.json").read_text(encoding="utf-8"))
+    assert build_multiview_workflow.build(single) == _multiview_template()
+
+
+def test_the_multiview_template_has_four_prepared_views_and_no_moge():
+    graph = _multiview_template()
+    kinds = [node["class_type"] for node in graph.values()]
+    assert kinds.count("LoadImage") == 4
+    assert kinds.count("ImageCropToMask") == 4
+    assert kinds.count(multiview.MULTIVIEW_NODE) == 1
+    assert kinds.count("Pixal3DConditioning") == 0
+    # MoGe only ever existed to estimate Pixal3DConditioning's FOV; a rig has a
+    # known one, so the branch is gone and multi-view never loads that weight
+    assert "MoGeInference" not in kinds and "MoGeGeometryToFOV" not in kinds
+    # every view crop is the framing the node documents
+    for node in graph.values():
+        if node["class_type"] == "ImageCropToMask":
+            assert node["inputs"]["pad_factor"] == multiview.CORE_VIEW_PAD
+            assert node["inputs"]["width"] == node["inputs"]["height"] == 1024
+    # one background-removal model, shared
+    assert kinds.count("LoadBackgroundRemovalModel") == 1
+
+
+def test_the_multiview_template_loads_the_multiview_checkpoint():
+    """The two checkpoints are the same size and the same architecture
+    repacked, so loading the wrong one is silent."""
+    graph = _multiview_template()
+    unet = graph[multiview.NODE_PIXAL3D_UNET]
+    assert unet["class_type"] == "UNETLoader"
+    assert unet["inputs"]["unet_name"] == "pixal3d_multiview_int8_convrot.safetensors"
+    assert unet["inputs"]["unet_name"] == multiview.MULTIVIEW_WEIGHT[1]
+
+
+def test_the_multiview_node_defaults_to_the_rig_fov():
+    node = _multiview_template()[multiview.NODE_MULTIVIEW_CONDITIONING]
+    assert node["class_type"] == multiview.MULTIVIEW_NODE
+    assert node["inputs"]["fov"] == multiview.DEFAULT_FOV_DEG == 20.0
+
+
+def test_building_a_graph_wires_each_view_to_its_azimuths_socket(views):
+    records = multiview.normalise_views(views)
+    plan = multiview.stage_plan(records)
+    staged = {"front": "a.png", "back": "b.png", "side": "c.png"}
+    graph = multiview.build_multiview_graph(_multiview_template(), plan, staged)
+
+    node = graph[multiview.NODE_MULTIVIEW_CONDITIONING]
+    # "side" landed on core's RIGHT socket because its azimuth is 270
+    assert set(node["inputs"]) == {"clip_vision_model", "fov", "front", "back", "right"}
+    assert "left" not in node["inputs"]
+
+    for socket, staged_name in (("front", "a.png"), ("back", "b.png"), ("right", "c.png")):
+        load = multiview.VIEW_CHAIN_NODES[socket]["load"]
+        assert graph[load]["inputs"]["image"] == staged_name
+        # the socket is fed by the END of that chain, not by the LoadImage
+        assert node["inputs"][socket] == [multiview.VIEW_CHAIN_OUTPUT[socket], 0]
+
+
+def test_an_unused_view_chain_is_deleted_not_left_dangling(views):
+    records = multiview.normalise_views({"front": views["front"], "side": views["side"]})
+    plan = multiview.stage_plan(records)
+    graph = multiview.build_multiview_graph(
+        _multiview_template(), plan, {"front": "a.png", "side": "c.png"})
+
+    for socket in ("left", "back"):
+        chain = multiview.VIEW_CHAIN_NODES[socket]
+        for node_id in (chain["load"],) + tuple(chain["chain"]):
+            assert node_id not in graph, f"{socket} chain node {node_id} survived"
+    # nothing left in the graph points at a node that is gone
+    for node_id, node in graph.items():
+        for key, value in node.get("inputs", {}).items():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                assert value[0] in graph, f"{node_id}.{key} -> missing {value[0]}"
+
+
+def test_a_graph_without_a_front_view_is_refused(views, tmp_path):
+    """Core poses the mesh onto whichever socket is connected first, so a
+    frontless rig silently re-bases the whole orbit."""
+    records = multiview.normalise_views(views)
+    plan = multiview.stage_plan(records)
+    plan["views"] = [v for v in plan["views"] if v["name"] != "front"]
+    with pytest.raises(multiview.MultiviewError, match="must have a front view"):
+        multiview.build_multiview_graph(_multiview_template(), plan,
+                                        {"back": "b.png", "side": "c.png"})
+
+
+def test_the_fov_the_caller_asked_for_reaches_the_node(views):
+    plan = multiview.stage_plan(multiview.normalise_views(views), fov_deg=33.0)
+    graph = multiview.build_multiview_graph(
+        _multiview_template(), plan,
+        {"front": "a.png", "back": "b.png", "side": "c.png"}, fov_deg=33.0)
+    assert graph[multiview.NODE_MULTIVIEW_CONDITIONING]["inputs"]["fov"] == 33.0
 
 
 def test_unavailable_message_names_the_file_the_size_and_the_approval_rule(config_file):
@@ -405,12 +591,13 @@ def test_pixal3d_front_only_falls_back_and_says_so(live, views):
     client, app = live
     backend = app.backends["pixal3d"]
     records = multiview.normalise_views(views)
-    image_path, note = backend.resolve_multiview(
+    image_path, note, plan = backend.resolve_multiview(
         views["front"], {"views": records, "on_unavailable": "front_only"})
     assert image_path == views["front"]
+    assert plan is None, "a fallback must not carry a multi-view plan"
     assert note["used"] is False
     assert note["fell_back_to"] == "front"
-    assert note["requested"] == ["front", "side", "back"]
+    assert note["requested"] == ["front", "back", "side"]
     assert "2 of them were ignored" in note["honesty"]
     # the rig it WOULD have used still travels with the answer
     assert len(note["camera_rig"]["frames"]) == 3
@@ -443,7 +630,7 @@ def test_views_without_image_path_uses_front(live, views, mv_capable):
     client, _app = live
     status, body = client.post("/generate3d", {"views": views})
     assert status == 202, body
-    assert body["views"] == ["front", "side", "back"]
+    assert body["views"] == ["front", "back", "side"]
     job = client.wait(body["job_id"])
     assert job["state"] == "done", job
     assert job["image_path"] == views["front"]
@@ -454,15 +641,15 @@ def test_a_queued_multiview_job_lists_its_views(live, views, mv_capable):
     status, body = client.post("/generate3d", {"views": views})
     assert status == 202
     _status, job = client.get(f"/job/{body['job_id']}")
-    assert [v["name"] for v in job["views"]] == ["front", "side", "back"]
-    assert [v["azimuth_deg"] for v in job["views"]] == [0.0, 90.0, 180.0]
+    assert [v["name"] for v in job["views"]] == ["front", "back", "side"]
+    assert [v["azimuth_deg"] for v in job["views"]] == [0.0, 180.0, 270.0]
 
 
 def test_views_may_also_arrive_inside_options(live, views, mv_capable):
     client, _app = live
     status, body = client.post("/generate3d", {"options": {"views": views}})
     assert status == 202, body
-    assert body["views"] == ["front", "side", "back"]
+    assert body["views"] == ["front", "back", "side"]
 
 
 def test_image_path_disagreeing_with_views_front_is_a_400(live, views, tmp_path):
@@ -527,7 +714,7 @@ def test_views_reach_a_backend_that_can_run_them(live, views, mv_capable):
     job = client.wait(body["job_id"])
     assert job["state"] == "done", job
     assert job["multiview"]["used"] is True
-    assert job["multiview"]["requested"] == ["front", "side", "back"]
+    assert job["multiview"]["requested"] == ["front", "back", "side"]
 
 
 def test_bad_views_are_refused_before_anything_is_queued(live, views, tmp_path):

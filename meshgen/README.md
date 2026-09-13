@@ -25,19 +25,20 @@ whether a setting fits on this card).
 
 ---
 
-## Where the 18.5 GB lives
+## Where the 23.8 GB lives
 
 **Nothing heavyweight is in this repo, and nothing heavyweight is in OneDrive.**
 The repo sits under OneDrive; the models deliberately do not.
 
 ```
 C:\forge-models\                     (outside the repo, outside OneDrive)
-  comfyui\                           git clone, pinned to tag v0.34.0
+  comfyui\                           git clone, pinned to tag v0.35.1
     .venv\                           its own venv: Python 3.14.3 + torch 2.14.0+cu130
     extra_model_paths.yaml           points ComfyUI at ..\models instead of copying
   models\
     diffusion_models\  trellis_2_int8_convrot.safetensors      4.89 GB
                        pixal3d_int8_convrot.safetensors        5.20 GB
+                       pixal3d_multiview_int8_convrot.sft      5.20 GB  (multi-view)
     vae\               trellis_2_shape_vae_bf16.safetensors     1.02 GB
                        trellis_2_texture_vae_bf16.safetensors   0.88 GB
     clip_vision\       dino_v3_L_naf_fp32.safetensors           1.13 GB
@@ -47,12 +48,12 @@ C:\forge-models\                     (outside the repo, outside OneDrive)
   comfyui-output\                    where ComfyUI writes before we collect
 ```
 
-Not present, and not fetched: `pixal3d_multiview_int8_convrot.safetensors`
-(5.20 GB) — see [Multi-view](#multi-view-front--side--back) for why downloading
-it would not be enough on its own.
+`pixal3d_multiview_int8_convrot.safetensors` (5 584 555 824 bytes, sha256
+`6b1eb332…f477`) **is present and verified** — approved and fetched 2026-09-08.
+It is the same *size* as the single-view checkpoint: same architecture repacked.
 
-Measured on disk: **14.16 GB of weights** plus **4.29 GB** of ComfyUI and its venv
-(PyTorch 2.14.0+cu130 is most of it) — **18.45 GB total**.
+Measured on disk: **19.36 GB of weights** plus **4.45 GB** of ComfyUI and its venv
+(PyTorch 2.14.0+cu130 is most of it) — **23.81 GB total**.
 
 ### Relocating the model store
 
@@ -79,7 +80,7 @@ looked at and the URL to fetch it from — it never downloads anything on its ow
 | name | model | weights licence | notes |
 |---|---|---|---|
 | `trellis2` *(default)* | TRELLIS.2 int8 convrot | MIT — `Comfy-Org/TRELLIS.2` | the one that fits comfortably in 12 GB |
-| `pixal3d` | Pixal3D int8 convrot | MIT — `Comfy-Org/Pixal3D` | pixel-aligned; **the only backend that needs MoGe** |
+| `pixal3d` | Pixal3D int8 convrot | MIT — `Comfy-Org/Pixal3D` | pixel-aligned; **the only backend that needs MoGe**, and the only one that takes `views` |
 
 Both were run end to end on the 12 GB card and both work — see the measured
 numbers below.
@@ -92,6 +93,8 @@ Both run **entirely on ComfyUI's own core nodes** (`comfy_extras/nodes_trellis2.
 `comfy/ldm/trellis2/`, `comfy_extras/mesh3d/`) and share one official workflow
 that selects between them with a boolean — which is why the two adapters differ
 by about ten lines and inherit everything else from `backends/comfyui_base.py`.
+The multi-view graph is a fourth thing derived from that same template; see
+[Multi-view](#multi-view-front--side--back--live).
 
 Pick the default with `FORGE_MESHGEN_BACKEND=trellis2|pixal3d`, or
 `"default_backend"` in `config.json`. Any single request can override it with
@@ -114,9 +117,10 @@ supported list rather than silently ignored.
 | `uv_padding` | UV atlas padding | 1 | 1 |
 
 Three more steer meshgen rather than a node in the graph, and only mean anything
-alongside `views` (see [Multi-view](#multi-view-front--side--back)):
-`on_unavailable` (`"error"` / `"front_only"`), `multiview_fov_deg` (20.0), and
-`views` itself, which may be sent top-level or inside `options`.
+alongside `views` (see [Multi-view](#multi-view-front--side--back--live)):
+`on_unavailable` (`"error"` / `"front_only"`), `multiview_fov_deg` (20.0 — the
+rig's FOV; it reaches `Pixal3DMultiViewConditioning.fov` directly), and `views`
+itself, which may be sent top-level or inside `options`.
 
 ### Why the defaults differ from the template — this is a 12 GB card
 
@@ -178,11 +182,11 @@ Expect to repair before printing. 200k triangles checked in ~4 s.
 
 ---
 
-## Multi-view (front + side + back)
+## Multi-view (front + side + back) — LIVE
 
-**Status: the request surface is real and tested; the generation is blocked, and
-the blocker is not only a download.** Read this section before promising anyone
-multi-view.
+**Status: runs end to end, measured on this machine (2026-09-13).** It was
+blocked through ComfyUI core v0.34.x; core **v0.35.0** added
+`Pixal3DMultiViewConditioning` and that was the missing piece.
 
 ```json
 POST /generate3d
@@ -192,69 +196,187 @@ POST /generate3d
  "backend": "pixal3d"}
 ```
 
-`front` is required — Pixal3D's rig treats the first frame as the canonical front
-view and orbits everything else from it. `side` (= `right`, 90°), `back` (180°)
-and `left` (270°) are optional. `image_path` may be omitted when `views` is
-present (front stands in); giving both a different value is a 400, not a guess.
-`views` is accepted top-level or inside `options`. **Single `image_path`
-behaviour is completely unchanged** — a request without `views` takes exactly the
-code path it took before, and a test pins that.
+`front` is required — core poses the mesh to the first connected view. `image_path`
+may be omitted when `views` is present (front stands in); giving both a different
+value is a 400, not a guess. `views` is accepted top-level or inside `options`.
+**Single `image_path` behaviour is completely unchanged** — a request without
+`views` takes exactly the code path it took before, and a test pins that.
 
 Only `pixal3d` accepts views. `trellis2` refuses them and names the backend that
-does, rather than quietly ignoring the extra images.
+does, rather than quietly ignoring the extra images. 2, 3 or 4 views; one view
+alone is refused with a pointer to `image_path`, because the single-image path
+estimates the camera FOV with MoGe instead of assuming a rig.
 
-### Why it does not run here
+### Which name is which camera — read this before wiring anything
 
-Two things are missing, and **only one of them is a file**:
+ComfyUI core's own table, from `comfy_extras/nodes_trellis2.py`:
 
-1. **The weights.** `pixal3d_multiview_int8_convrot.safetensors`, 5 584 555 824
-   bytes (5.20 GB), sha256 `6b1eb332…f477`, from
-   `Comfy-Org/Pixal3D/diffusion_models/`. **Not on this machine, and meshgen has
-   not fetched it.** It needs approval like every other multi-GB download.
+```python
+_VIEW_AZIMUTHS = {"front": 0.0, "left": 90.0, "back": 180.0, "right": 270.0}
+```
 
-2. **A node that can express a per-view camera — and this one has no download.**
-   ComfyUI core v0.34.0 ships exactly one Pixal3D conditioning node,
-   `Pixal3DConditioning`, whose only camera input is a single scalar
-   `camera_angle_x`. The extrinsics come from a module constant in
-   `comfy/ldm/trellis2/model.py`:
+| meshgen name | azimuth | core socket | camera sits at |
+|---|---|---|---|
+| `front` *(required)* | 0° | `front` | −Y, in front of the object |
+| `left` | 90° | `left` | +X, off the object's **left** |
+| `back` | 180° | `back` | +Y, behind |
+| `right` | 270° | `right` | −X, off the object's **right** |
+| **`side`** | **270°** | **`right`** | alias of `right` — **the object's RIGHT side** |
 
-   ```python
-   _PROJ_FRONT_VIEW_TRANSFORM = [[1, 0,  0,  0],
-                                 [0, 0, -1, -2],
-                                 [0, 1,  0,  0],
-                                 [0, 0,  0,  1]]
+**meshgen used to map `right`→90 and `left`→270 — exactly swapped**, a 180°
+error on both side cameras, fixed 2026-09-13. There is nothing to catch such a
+mistake at runtime: a correctly named socket handed the other side's image
+raises nothing and returns a confidently wrong mesh. So three things guard it
+now: `VIEW_AZIMUTHS` is *derived* from core's dict rather than written out
+again, views are wired to sockets **by azimuth value** (`core_socket_for_azimuth`)
+and never by name, and the orientation of a real run was measured (below).
 
-   def build_proj_transform_matrix(distance, batch_size, ...):
-       T = _PROJ_FRONT_VIEW_TRANSFORM.expand(batch_size, -1, -1).clone()
-       T[:, 1, 3] = -distance      # distance only. no rotation. anywhere.
-   ```
+`side` is meshgen's own name and core has no equivalent. It means **the object's
+right side**. Ask for `left` by name if you want the other one; giving both
+`side` and `right` is refused rather than guessed.
 
-   There is no rotation parameter and no view-aggregation step in core at all.
-   Handing that node a batch of four images does **not** fuse four views of one
-   object — `Trellis2ShapeStage` allocates `torch.zeros(batch_size, 32, …)`, one
-   latent per batch element, and `_back_project_to_tokens` loops over the batch
-   writing into disjoint slices. You get four separate objects, each wrongly
-   treated as a front view.
+### The graph
 
-**So downloading the weights would not unlock this.** Worse: the multi-view file
-is byte-for-byte the same *size* as the single-view checkpoint (both
-5 584 555 824) — the same architecture repacked — so core would happily load it
-and then condition every view as the front. That failure mode is confident
-garbage, not an error message. Which is exactly why meshgen refuses instead.
+`workflows/multiview_to_3d.json` is **derived** from `image_to_3d.json` by
+`tools/build_multiview_workflow.py`, never hand-edited, and a test regenerates it
+in memory and compares. The transform is four steps:
 
-`/health` reports both, and `POST /generate3d` with `views` is a **400 before
-anything is queued and before ComfyUI is ever started**, naming the file, the
-path it looked at, the size, the URL, the sha256 and the approval rule.
+1. The per-view preparation chain (`LoadImage` → `RemoveBackground` → mask →
+   `ImageCropToMask` 1024² at `pad_factor=1.1` → the pass-through preview) is
+   cloned three more times; the background-removal model is loaded once and
+   shared. **The crop contract did not have to move**: core's node documents
+   exactly that framing and uses the same `_VIEW_PAD = 1.1`, so the existing
+   single-view preparation feeds all four sockets unchanged.
+2. `Pixal3DConditioning` → `Pixal3DMultiViewConditioning`, same two outputs, so
+   everything downstream is untouched. `fov` is 20.0 for rig renders.
+3. **MoGe is deleted.** Its only consumer was the single-view node's per-image
+   FOV estimate; a rig has a known FOV. A multi-view run never loads that 0.62 GB
+   weight and never spends VRAM on it.
+4. The Pixal3D `UNETLoader` is pointed at
+   `pixal3d_multiview_int8_convrot.safetensors`. **This is the step that must
+   never be skipped** — the two checkpoints are byte-for-byte the same size and
+   the same architecture repacked, so the single-view one loads without complaint
+   and then conditions every view as the front.
 
-### What it does today
+At request time the chains for views the caller did not send are **deleted**,
+socket and all: core's inputs are optional and an optional input must be absent,
+not present-and-dangling. A test walks the pruned graph and asserts no link
+points at a node that is gone.
+
+### Measured — RTX 5070 12 GB, ComfyUI v0.35.1
+
+The test object is `tools/make_rig_views.py`: a 1.0 × 0.25 × 0.5 slab with a tall
+fin on one end and a low foot on the other, rendered on core's own rig. Three
+distinct extents and a lopsided profile, so the output mesh's own geometry says
+whether the views landed on the right cameras.
+
+| | 1 view (`image_path`) | 2 views | 3 views | 4 views |
+|---|---|---|---|---|
+| wall clock | 98.6 s | **82.4 s** | **91.0 s** | **106.3 s** |
+| peak VRAM (`nvidia-smi`, 200 ms) | — | **10.88 GB** | **10.94 GB** | **11.12 GB** of 11.94 |
+| …above idle | — | 8.50 GB | 8.47 GB | 8.70 GB |
+| output | 199,960 tris | 199,972 tris | — | 199,966 tris |
+
+Two things worth knowing:
+
+- **Extra views cost time, not VRAM.** 2 → 4 views adds ~24 s but only ~0.24 GB
+  of VRAM. That matches the code: the per-view cost is three NAF high-res feature
+  maps (two 512², one 1024², 1024 channels) allocated on
+  `comfy.model_management.intermediate_device()`, which is **CPU** on a 12 GB
+  card. The number that actually grows is system RAM — ComfyUI's peak working set
+  reached **21.0 GB of 31.6 GB** across these runs.
+- **`job.vram.peak_gb` under-reports here.** meshgen samples ComfyUI's device
+  report on a coarse interval and returned 9.4–10.5 GB for the same runs
+  `nvidia-smi` caught at 10.9–11.1 GB. Use the table above for headroom
+  decisions.
+
+### Orientation: verified against a real mesh, not just the source
+
+The bounding box of the 2-view mesh, normalised against its longest axis, versus
+the object that was rendered:
+
+```
+object   0.8696 / 1.0000 / 0.2174     (front width / height / side width)
+2 views  0.8745 / 1.0000 / 0.2255
+4 views  0.8837 / 1.0000 / 0.2303
+```
+
+Front-width ÷ side-width came out **3.88** (2 views) and **3.84** (4 views)
+against the object's 4.00. A front/side confusion — the 90° class of error —
+would have inverted that to ~0.25. **It did not.**
+
+The left↔right swap is a *mirror*, so a bounding box cannot see it. The
+discriminator is depth: the fin is on the object's front half and the foot on its
+back half. Mean depth of the fin minus mean depth of the foot:
+
+| run | fin − foot depth |
+|---|---|
+| 2 views (front + side) | **+0.116** |
+| 4 views, correct | **+0.113** |
+| 4 views, **left/right deliberately swapped** | **−0.098** |
+
+The correct runs agree with each other; feeding the 90° socket the 270° render —
+which is precisely what the old mapping did — flips the sign. That is the
+180° error, caught quantitatively on real output.
+
+**And the control that shows why any of this is worth doing:** the same front
+image through the plain single-image path produced 0.585 / 0.659 / 1.000 — the
+thin slab came out a chunky blob, depth off by roughly 3×. Multi-view recovered
+the real proportions to within 4%.
+
+### The camera rig is verified, not guessed
+
+`backends/multiview.py` builds the `transforms.json` upstream's `inference_mv.py`
+reads. It is not sent to ComfyUI — core rebuilds the identical rig internally
+from the connected sockets and `fov` — but it stays because it is the independent
+check that a socket assignment means the camera we think it does, and because it
+is what the upstream escape hatch would consume. It agrees with **three**
+sources:
+
+- `transform_matrix(0°, d)` reproduces core's `_PROJ_FRONT_VIEW_TRANSFORM` exactly;
+- all four azimuths reproduce core's own `_orbit_camera_to_world`;
+- all four reproduce the `transforms.json` TencentARC ships in
+  `assets/mv_images/example/`, to float32 precision.
+
+Camera distance falls out of the same check. Upstream ships
+`3.1192049980163574` at a 20° FOV, which is `0.55 / tan(FOV/2)` — the `0.55`
+being Pixal3D's **1.1 crop padding** on a 0.5 half-extent. Core's multi-view node
+computes `_VIEW_PAD * 0.5 / tan(fov/2)` with `_VIEW_PAD = 1.1`: the same number.
+Core's *single*-view path uses `0.5 / tan(FOV/2)` instead, because there the crop
+padding is already in the image. Our double-precision value lands 2.8e-9 from
+upstream's, which is float32 dust — upstream serialises its rig through float32.
+
+These are pytest fixtures, so they hold with no GPU, no weights and no network,
+**and** they are re-run against the real installed ComfyUI when it is present.
+
+### The working envelope, and why the defaults did not change
+
+Multi-view inherits `VRAM_SAFE_DEFAULTS` unchanged, and nothing new was invented:
+
+- **4 views is the ceiling** — core has four cameras, and 4 views at the meshgen
+  defaults peaks at 11.12 GB of 11.94, about **0.8 GB of headroom**. That headroom
+  is shared with whatever else is on the GPU (~2.4 GB of desktop here), so a
+  heavy browser is the thing most likely to push a 4-view run over. Drop to 3 or
+  2 views and it is ~0.2 GB roomier.
+- **`shape_resolution: "1536"` still OOMs**, multi-view or not — the remesh stage
+  is the ceiling and views do not move it. Same for `remesh_resolution: 768`.
+- **System RAM is the real multi-view budget**: 21.0 GB peak of 31.6 GB at these
+  settings. A 16 GB machine should expect to swap at 4 views.
+
+### If it is not available
+
+`/health` carries the verdict per backend, and `POST /generate3d` with `views` on
+a machine that cannot run one is a **400 before anything is queued and before
+ComfyUI is ever started**, naming the file, the path, the size, the URL, the
+sha256 and the approval rule. Opt in to a fallback instead:
 
 ```json
 {"views": {...}, "options": {"on_unavailable": "front_only"}}
 ```
 
-falls back to a normal single-image generation from the front view, and **says
-so in the result** — `multiview.used: false`, `fell_back_to: "front"`, the list
-of views that were ignored, and the rig it would have used:
+which does a normal single-image generation from the front view and **says so in
+the result** — `multiview.used: false`, `fell_back_to: "front"`, the views that
+were ignored, and the rig it would have used:
 
 ```
 "honesty": "3 views were given and 2 of them were ignored - this mesh was
@@ -262,73 +384,46 @@ of views that were ignored, and the rig it would have used:
 ```
 
 The default is `"error"`: silently making a worse mesh than the caller asked for
-is the one thing this must never do.
+is the one thing this must never do. The single-view control above is the
+measured reason that matters.
 
-### The camera rig is verified, not guessed
+### Why not the official Pixal3D repo
 
-`backends/multiview.py` builds the `transforms.json` upstream's `inference_mv.py`
-reads, and it is checked against **two independent upstream sources** rather than
-against a mesh we cannot generate:
-
-- `transform_matrix(0°, d)` reproduces ComfyUI core's own
-  `_PROJ_FRONT_VIEW_TRANSFORM` exactly, and
-- the full 4-view rig reproduces the `transforms.json` TencentARC ships in
-  `assets/mv_images/example/` — all four matrices, at 0°/90°/180°/270°, to
-  float32 precision.
-
-Camera distance falls out of the same check. Upstream ships
-`3.1192049980163574` at a 20° FOV, which is `0.55 / tan(FOV/2)` — the `0.55`
-being Pixal3D's **1.1 crop padding** on a 0.5 half-extent (core's
-`ImageCropToMask` tooltip: *"pad_factor=1.1 for Pixal3D"*). Core's *single*-view
-path uses `0.5 / tan(FOV/2)` instead, because there the crop padding is already
-in the image. Our double-precision value lands 2.8e-9 from upstream's, which is
-float32 dust — upstream serialises its rig through float32.
-
-Both checks are pytest fixtures, so they hold with no GPU, no weights and no
-network, **and** they are re-run against the real installed ComfyUI when it is
-present. `test_the_node_probe_reads_the_real_installed_comfyui` fails the day
-core ships a multi-view node — which is the day to build the workflow template.
-
-Deliberately **not** built: an actual multi-view ComfyUI graph. Wiring N
-`LoadImage` nodes into a conditioning node whose inputs nobody has seen would be
-inventing an interface and calling it verified. `multiview.stage_plan()` holds
-everything that *is* knowable — which files, in what order, at which azimuth,
-with which matrix — which is precisely what such a node will consume.
-
-### Configurations upstream actually supports
-
-`inference_mv.py --num_views N` takes the **first N frames** of `transforms.json`,
-so any prefix of the 4-view orbit is a legal run: 2 views (front+side), 3
-(front+side+back), or 4. Four is the only one upstream ships an example for, and
-the 90° orbit at 20° FOV with elevation 0 is the only rig it ships. **None of
-these has been executed here** — no weights, no node. Treat "2 views work well"
-as unverified until someone runs it.
-
-### VRAM: projected, not measured
-
-Nothing below was measured, because nothing could be run. It is arithmetic off
-the code, and it is here so the first real run has something to check against —
-**not** as a basis for setting defaults. No multi-view defaults have been
-invented.
-
-- **Resident weights: unchanged.** The multi-view checkpoint is the same 5.20 GB
-  as the single-view one.
-- **Per-view cost is the conditioning, not the UNet.** `Pixal3DConditioning`
-  builds and holds three NAF high-res feature maps per image for the whole run —
-  two at 512² and one at 1024², at DINOv3 ViT-L's 1024 channels. At 16-bit that
-  is `1024·1024·1024·2` = 2 GiB plus 2 × 0.5 GiB ≈ **3 GiB per view** (≈6 at
-  fp32).
-- **Mostly RAM, not VRAM.** Those tensors are allocated on
-  `comfy.model_management.intermediate_device()`, which is CPU on a 12 GB card;
-  VRAM grows where each stage's features move to the compute device. So the
-  4-view figure to watch on this machine is ≈12 GiB of *system* RAM (of 32),
-  with VRAM growth smaller but unquantified.
-- **Measure before trusting any of that.** The single-image `pixal3d` numbers
-  (249 s, 9.30 GB peak) are measured; these are not.
+`TencentARC/Pixal3D`'s `inference_mv.py` remains the escape hatch and remains
+unused — see [Licensing](#why-multi-view-is-not-implemented-against-the-official-pixal3d-repo).
+ComfyUI core got there first.
 
 ---
 
 ## Licensing — read this before shipping anything
+
+### Standing law: re-audit after every ComfyUI update
+
+A ComfyUI upgrade can pull new transitive dependencies, so the licence audit is
+not a one-off. After any change to `C:\forge-models\comfyui`, enumerate the venv
+and check `custom_nodes/`:
+
+```
+C:\forge-models\comfyui\.venv\Scripts\python.exe -m pip list --format=freeze
+dir C:\forge-models\comfyui\custom_nodes
+```
+
+**Audit of 2026-09-13, ComfyUI v0.34.0 → v0.35.1** (`12d52794` → `856a922b`):
+
+| check | result |
+|---|---|
+| installed packages | **86** |
+| `nvdiffrast` / `diffoctreerast` / `diff-gaussian-rasterization` / `simple-knn` | **0 — none present** |
+| other NC-licensed 3D packs (`kaolin`, `pytorch3d`, `vox2seq`, `flexicubes`, `xatlas`, `gsplat`, `natten`, `RMBG`/`BriaRMBG`, `utils3d`, `nerfacc`, `tiny-cuda-nn`) | **0 — none present** |
+| dist metadata containing "noncommercial" / "research only" / "CC-BY-NC" / "NVIDIA Source Code License" | **0 flagged** |
+| third-party node packs in `custom_nodes/` | **0** — only ComfyUI's own `websocket_image_save.py` and `example_node.py.example` |
+
+**Verdict: clean.** Everything the graph executes is MIT / Apache-2.0 / BSD /
+PSF / MPL, under GPL-3.0 ComfyUI run as a separate process. The v0.35.1 update
+moved five pinned packages (`comfyui-frontend-package` 1.49.6→1.51.10,
+`comfyui-workflow-templates` 0.11.48→0.11.59, `comfyui-embedded-docs`
+0.5.10→0.5.11, `comfy-kitchen` 0.2.31→0.2.33, `comfy-aimdo` 0.4.15→0.5.3) and
+nothing else; torch stayed 2.14.0+cu130. No new dependency was added by meshgen.
 
 ### The nvdiffrast trap
 
@@ -346,6 +441,10 @@ sell. The clone's `custom_nodes/` should stay empty.
 
 ### Why multi-view is not implemented against the official Pixal3D repo
 
+*(Moot since 2026-09-13 — ComfyUI core v0.35.0 ships the node and multi-view runs
+on core. Kept because the reasoning still governs any future "just use the
+research repo" temptation.)*
+
 `TencentARC/Pixal3D` is **MIT** — licensing is not the objection, and its
 `inference_mv.py` is the reference implementation of exactly what Phase 18(a)
 wants. It was still rejected, for reasons worth writing down:
@@ -359,8 +458,8 @@ wants. It was still rejected, for reasons worth writing down:
 - The 12 GB budget is unproven for it either way.
 
 So: shipped the request surface and the verified rig, refused the run honestly,
-and left the repo path documented as the escape hatch if ComfyUI core never adds
-a per-view camera node.
+and left the repo path documented as the escape hatch if ComfyUI core never added
+a per-view camera node. Core added one three weeks later.
 
 ### DINOv3 attribution
 
@@ -372,7 +471,7 @@ parts, meshes or renders made with meshgen does not.
 
 ### What each piece is under
 
-- Weights (all six files): **MIT**, from the official `Comfy-Org` Hugging Face orgs.
+- Weights (all seven files): **MIT**, from the official `Comfy-Org` Hugging Face orgs.
 - ComfyUI itself (the code executing the graph): **GPL-3.0**. It runs as a separate
   child process reached over HTTP, which is the arrangement meshgen deliberately
   keeps — the repo contains no ComfyUI code.
@@ -449,6 +548,17 @@ If node ids move, `test_workflow_template_has_the_nodes_the_adapters_patch`
 fails and the `NODE_*` constants at the top of `backends/comfyui_base.py` need
 updating.
 
+Then regenerate the multi-view sibling from it — it is derived, not maintained:
+
+```
+service\.venv\Scripts\python.exe meshgen\tools\build_multiview_workflow.py
+```
+
+That script refuses to write if any of the eleven nodes it depends on changed
+class, and `test_the_multiview_template_is_exactly_what_the_generator_produces`
+rebuilds it in memory and compares, so the committed JSON cannot drift from the
+single-view template it came from.
+
 ---
 
 ## Adding a backend
@@ -509,18 +619,24 @@ service\.venv\Scripts\python.exe -m meshgen
 service\.venv\Scripts\python.exe -m pytest meshgen/tests -q
 ```
 
-**80 tests** (39 `test_service.py` + 41 `test_multiview.py`), all runnable with
-**none** of the 18.5 GB present — they exercise the job API, config resolution,
+**92 tests** (39 `test_service.py` + 53 `test_multiview.py`), all runnable with
+**none** of the 23.8 GB present — they exercise the job API, config resolution,
 option validation, cancellation, the missing-models guidance, both ComfyUI
 history output shapes and the VRAM-safe defaults, against a fake adapter that
 writes a real one-triangle `.glb`.
 
-The multi-view half adds view validation, the camera rig against its two upstream
-golden fixtures, the availability verdict, the clean 400, the `front_only`
-fallback, and a guard that single-image behaviour is unchanged. Two of them
-re-check the golden fixtures against the **real installed ComfyUI** when it is
-present, and skip when it is not — so they are evidence on this machine and still
-green on a machine without the models.
+The multi-view half adds view validation, the azimuth mapping against core's own
+`_VIEW_AZIMUTHS`, the camera rig against its upstream golden fixtures, the
+socket-by-azimuth wiring, the derived workflow template, chain pruning, the
+availability verdict, the clean 400, the `front_only` fallback, and a guard that
+single-image behaviour is unchanged. Three re-check their golden fixtures against
+the **real installed ComfyUI** when it is present and skip when it is not — so
+they are evidence on this machine and still green on a machine without the
+models. One of those, `test_the_node_probe_reads_the_real_installed_comfyui`,
+**had its polarity flipped** on 2026-09-13: it used to fail the day core shipped
+a multi-view node, and now fails if a downgrade takes it away again.
 
 The real-model run is a manual gate, not a pytest: it needs the GPU and takes
-minutes. There is **no measured multi-view run** — see the VRAM note above.
+minutes. The numbers it produced are in
+[Multi-view](#multi-view-front--side--back--live); reproduce them with
+`tools/make_rig_views.py`.

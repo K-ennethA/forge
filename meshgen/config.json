@@ -1,5 +1,5 @@
 {
-  "_comment": "Every path to the 19 GB model install lives here. Relocating C:/forge-models means editing this file and nothing else. Forward slashes are fine on Windows.",
+  "_comment": "Every path to the 24 GB model install lives here. Relocating C:/forge-models means editing this file and nothing else. Forward slashes are fine on Windows.",
 
   "comfyui_root": "C:/forge-models/comfyui",
   "comfyui_python": "C:/forge-models/comfyui/.venv/Scripts/python.exe",

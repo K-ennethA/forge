@@ -67,7 +67,9 @@ class ComfyUIClient:
             missing.append({
                 "what": "ComfyUI checkout",
                 "path": str(main),
-                "source": "git clone --branch v0.34.0 https://github.com/Comfy-Org/ComfyUI.git",
+                # v0.35.0+ is required for multi-view (Pixal3DMultiViewConditioning);
+                # single-view works from v0.34.0.
+                "source": "git clone --branch v0.35.1 https://github.com/Comfy-Org/ComfyUI.git",
             })
         if not python.is_file():
             missing.append({

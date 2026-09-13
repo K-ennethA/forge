@@ -128,16 +128,17 @@ class ComfyUIBackend(Backend):
         return data
 
     # -- workflow --------------------------------------------------------
-    def _workflow_path(self) -> Path:
-        return self.config.workflows_dir / "image_to_3d.json"
+    def _workflow_path(self, name: str = "image_to_3d.json") -> Path:
+        return self.config.workflows_dir / name
 
-    def load_workflow(self) -> dict:
-        path = self._workflow_path()
+    def load_workflow(self, name: str = "image_to_3d.json",
+                      required=(NODE_LOAD_IMAGE, NODE_TRELLIS2_SWITCH, NODE_SAVE)) -> dict:
+        path = self._workflow_path(name)
         if not path.is_file():
             raise BackendError(f"workflow template missing: {path}")
         with open(path, "r", encoding="utf-8") as fh:
             graph = json.load(fh)
-        for node_id in (NODE_LOAD_IMAGE, NODE_TRELLIS2_SWITCH, NODE_SAVE):
+        for node_id in required:
             if node_id not in graph:
                 raise BackendError(
                     f"workflow template {path.name} has no node {node_id} - it was "
@@ -159,6 +160,15 @@ class ComfyUIBackend(Backend):
     def build_graph(self, image_name: str, options: dict, prefix: str) -> dict:
         graph = self.load_workflow()
         graph[NODE_LOAD_IMAGE]["inputs"]["image"] = image_name
+        return self.finish_graph(graph, options, prefix)
+
+    def finish_graph(self, graph: dict, options: dict, prefix: str) -> dict:
+        """Everything that is the same whichever template the graph came from.
+
+        Split out of :meth:`build_graph` so the multi-view template - which has
+        four ``LoadImage`` nodes instead of one - gets the identical switch,
+        output prefix and option handling rather than a parallel copy of it.
+        """
         graph[NODE_TRELLIS2_SWITCH]["inputs"]["value"] = bool(self.use_trellis2)
         graph[NODE_SAVE]["inputs"]["filename_prefix"] = prefix
 
@@ -188,30 +198,46 @@ class ComfyUIBackend(Backend):
     def resolve_multiview(self, image_path, options):
         """Hook: settle a ``views`` request before any GPU work starts.
 
-        Returns ``(image_path, note_or_None)``.  The base implementation refuses
-        views outright - only an adapter that declares ``supports_multiview``
-        overrides this.  Called before ComfyUI is even started so an
-        unsatisfiable request costs nothing.
+        Returns ``(image_path, note_or_None, plan_or_None)``.  ``plan`` is a
+        :func:`multiview.stage_plan` result when the run really is multi-view;
+        it is what :meth:`prepare_run` needs and it is deliberately NOT the
+        note, which goes into the caller's result payload.
+
+        The base implementation refuses views outright - only an adapter that
+        declares ``supports_multiview`` overrides this.  Called before ComfyUI is
+        even started so an unsatisfiable request costs nothing.
         """
         if (options or {}).get("views"):
             raise BackendError(
                 f"backend {self.name!r} does not accept multi-view input; "
                 "send a single image_path"
             )
-        return image_path, None
+        return image_path, None, None
+
+    def prepare_run(self, image_path, options, prefix, plan=None):
+        """Stage the inputs and build the graph.
+
+        Returns ``(graph, [staged names])``; the caller unstages every name in
+        that list when the run is over, however it ended.
+        """
+        image_name = self.client.stage_image(image_path)
+        try:
+            return self.build_graph(image_name, options or {}, prefix), [image_name]
+        except Exception:
+            self.client.unstage_image(image_name)
+            raise
 
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
 
-        image_path, multiview_note = self.resolve_multiview(image_path, options)
+        image_path, multiview_note, multiview_plan = self.resolve_multiview(image_path, options)
 
         progress(0.0, "starting ComfyUI")
         self.client.ensure_running(cancel_event=cancel_event)
 
-        image_name = self.client.stage_image(image_path)
         prefix = f"forge/{self.name}"
-        graph = self.build_graph(image_name, options or {}, prefix)
+        graph, staged_names = self.prepare_run(image_path, options, prefix, multiview_plan)
 
         started = time.time()
         telemetry = {}
@@ -226,7 +252,8 @@ class ComfyUIBackend(Backend):
                 telemetry=telemetry,
             )
         finally:
-            self.client.unstage_image(image_name)
+            for name in staged_names:
+                self.client.unstage_image(name)
         after = self.client.vram_report()
         duration_ms = int((time.time() - started) * 1000)
 

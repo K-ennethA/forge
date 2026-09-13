@@ -17,6 +17,7 @@ import struct
 import time
 from pathlib import Path
 
+from meshgen.backends import multiview
 from meshgen.backends.base import Backend, BackendError, Cancelled
 
 
@@ -117,23 +118,25 @@ class FakeBackend(Backend):
                 }]}
 
     def resolve_multiview(self, image_path, options):
+        """Same ``(image_path, note, plan)`` contract as the real adapters."""
         views = (options or {}).get("views")
         if not views:
-            return image_path, None
+            return image_path, None, None
         state = self.multiview_readiness()
         front = views[0]["path"]
         if state["available"]:
-            return front, {"requested": [v["name"] for v in views], "used": True}
+            return front, {"requested": [v["name"] for v in views], "used": True}, \
+                multiview.stage_plan(views)
         if (options or {}).get("on_unavailable") == "front_only":
             return front, {"requested": [v["name"] for v in views], "used": False,
                            "fell_back_to": "front", "front_image": front,
-                           "reason": "fake backend has no multi-view weights"}
+                           "reason": "fake backend has no multi-view weights"}, None
         raise BackendError("fake backend cannot run multi-view")
 
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
-        image_path, multiview_note = self.resolve_multiview(image_path, options)
+        image_path, multiview_note, _plan = self.resolve_multiview(image_path, options)
 
         if self._env("FORGE_MESHGEN_FAKE_FAIL") == "1":
             raise BackendError("fake backend was told to fail")

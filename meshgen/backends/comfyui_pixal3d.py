@@ -11,17 +11,18 @@ Heavier than TRELLIS.2 (a ~5.2 GB UNet against ~4.9 GB, plus MoGe resident).
 Measured on the RTX 5070 at the meshgen defaults it still fits: 249 s and a
 9.30 GB peak, against TRELLIS.2's 304 s and 8.15 GB.
 
-Multi-view (Phase 18(a)) is the only backend feature that is declared but not
-runnable.  This adapter owns the request surface, the validation and the camera
-rig; :mod:`multiview` documents exactly what is missing and why the missing
-piece is a core node rather than only a download.
+Multi-view (Phase 18(a)) is live as of ComfyUI core v0.35.0, which added
+``Pixal3DMultiViewConditioning``.  This adapter owns the request surface, the
+validation, the camera rig and the multi-view graph; :mod:`multiview` owns the
+socket mapping and documents the azimuth convention.
 """
 
 from __future__ import annotations
 
 from . import multiview
 from .base import BackendError
-from .comfyui_base import HF, MOGE_WEIGHT, ComfyUIBackend
+from .comfyui_base import (HF, MOGE_WEIGHT, NODE_SAVE, NODE_TRELLIS2_SWITCH,
+                           ComfyUIBackend)
 
 
 class Pixal3DBackend(ComfyUIBackend):
@@ -66,7 +67,9 @@ class Pixal3DBackend(ComfyUIBackend):
             "available": not missing,
             "missing": missing,
             "detail": (
-                "front + side (+ back) conditioning, 90 degree orbit"
+                "2-4 views on a 90 degree orbit through "
+                f"{multiview.MULTIVIEW_NODE}; front=0, left=90, back=180, "
+                "right/side=270"
                 if not missing else
                 "declared, not runnable here - see missing"
             ),
@@ -79,9 +82,39 @@ class Pixal3DBackend(ComfyUIBackend):
             "supported": state["supported"],
             "available": state["available"],
             "views": list(multiview.VIEW_ORDER),
+            "azimuths": dict(multiview.VIEW_AZIMUTHS),
+            "workflow": multiview.MULTIVIEW_WORKFLOW,
             "missing": state["missing"],
         }
         return data
+
+    # -- the multi-view graph --------------------------------------------
+    def load_multiview_workflow(self) -> dict:
+        """The sibling template, checked for the nodes this adapter patches."""
+        required = (multiview.NODE_MULTIVIEW_CONDITIONING,
+                    multiview.NODE_PIXAL3D_UNET,
+                    NODE_TRELLIS2_SWITCH, NODE_SAVE)
+        return self.load_workflow(multiview.MULTIVIEW_WORKFLOW, required=required)
+
+    def build_multiview_graph(self, staged, plan, options, prefix) -> dict:
+        graph = multiview.build_multiview_graph(
+            self.load_multiview_workflow(), plan, staged,
+            fov_deg=plan["camera_angle_x_deg"])
+        return self.finish_graph(graph, options or {}, prefix)
+
+    def prepare_run(self, image_path, options, prefix, plan=None):
+        if plan is None:
+            return super().prepare_run(image_path, options, prefix, plan)
+        staged = {}
+        try:
+            for view in plan["views"]:
+                staged[view["name"]] = self.client.stage_image(view["path"])
+            graph = self.build_multiview_graph(staged, plan, options, prefix)
+        except Exception:
+            for name in staged.values():
+                self.client.unstage_image(name)
+            raise
+        return graph, list(staged.values())
 
     def resolve_multiview(self, image_path, options):
         """Settle a ``views`` request before ComfyUI is started.
@@ -89,38 +122,58 @@ class Pixal3DBackend(ComfyUIBackend):
         Three outcomes, all of them explicit:
 
         * no ``views``        -> unchanged single-image behaviour, no note;
-        * views + available   -> would run the multi-view graph (unreachable
-          today, and it raises rather than pretending);
+        * views + available   -> run the multi-view graph, and say which camera
+          each image was used as;
         * views + unavailable -> refuse by name, unless the caller opted into
           ``on_unavailable: "front_only"``, in which case fall back to the front
           image and SAY SO in the result.
+
+        Returns ``(image_path, note, plan)``.
         """
         options = options or {}
         views = options.get("views")
         if not views:
-            return image_path, None
+            return image_path, None, None
 
         records = (views if isinstance(views, list)
                    else multiview.normalise_views(views))
         front = records[0]["path"]
-        plan = multiview.stage_plan(
-            records, fov_deg=float(options.get("multiview_fov_deg")
-                                   or multiview.DEFAULT_FOV_DEG))
+        fov_deg = float(options.get("multiview_fov_deg")
+                        or multiview.DEFAULT_FOV_DEG)
+        plan = multiview.stage_plan(records, fov_deg=fov_deg)
+
+        if len(records) not in multiview.SUPPORTED_VIEW_COUNTS:
+            # One view is a single-image generation with extra ceremony: core
+            # would accept it, but Pixal3DConditioning's MoGe-estimated FOV is
+            # the better path for one found image.  Say so instead of silently
+            # taking the worse route.
+            raise BackendError(
+                "views gave only a front image - drop views and send it as "
+                "image_path for the single-image path (which estimates the "
+                "camera FOV with MoGe instead of assuming a rig)"
+            )
 
         # A request is worth the round-trip that /health is not: this one is
         # about to spend minutes of GPU time if it proceeds.
         state = self.multiview_readiness(use_client=True)
         if state["available"]:
-            # Deliberately unreachable on core v0.34.0.  If a future ComfyUI
-            # ships a per-view camera node this is where the multi-view graph
-            # gets built - and it must be written against that node's real
-            # inputs, not guessed here.
-            raise BackendError(
-                "multi-view weights and a per-view camera node are both present, "
-                "but the multi-view workflow template has not been built against "
-                f"{multiview.core_multiview_support(self.config, self.client)['node']!r} "
-                "yet. See meshgen/backends/multiview.py."
-            )
+            return front, {
+                "requested": [record["name"] for record in records],
+                "used": True,
+                "view_count": plan["view_count"],
+                "node": multiview.MULTIVIEW_NODE,
+                "workflow": multiview.MULTIVIEW_WORKFLOW,
+                "model": multiview.multiview_unet_name(),
+                "fov_deg": fov_deg,
+                # by azimuth, which is the mapping that actually reached the
+                # graph - not the request name it arrived under
+                "cameras": [
+                    {"name": view["name"], "socket": view["socket"],
+                     "azimuth_deg": view["azimuth_deg"]}
+                    for view in plan["views"]
+                ],
+                "camera_rig": plan["transforms_json"],
+            }, plan
 
         mode = options.get("on_unavailable", "error")
         if mode == "front_only":
@@ -137,7 +190,7 @@ class Pixal3DBackend(ComfyUIBackend):
                     "image alone."
                 ),
                 "camera_rig": plan["transforms_json"],
-            }
+            }, None
         if mode != "error":
             raise BackendError(
                 f"on_unavailable must be 'error' or 'front_only', got {mode!r}"
