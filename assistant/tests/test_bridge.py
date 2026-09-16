@@ -489,6 +489,235 @@ def test_health_finds_the_cli_and_reports_its_version(client):
     assert body["last_auth_error"] is False
 
 
+# ---------------------------------------------------------------------------
+# version truth: which code is running, and with which settings
+# ---------------------------------------------------------------------------
+#
+# The ghost these close: a bridge left over from before a pull answers every
+# request perfectly and wrongly, and a bridge started with a different
+# FORGE_PROJECTS_DIR is indistinguishable from the right one on every other
+# field.  Both used to be invisible on the wire.
+
+def test_health_says_which_build_is_running(client):
+    """sha + pid + start time, so a stale process cannot pass for a current one."""
+    _status, body = client.request("/health")
+    build = body["build"]
+
+    assert isinstance(build["sha"], str) and build["sha"]
+    # In a checkout this is a real short sha; on a machine without git it is the
+    # honest "unknown".  Never empty, never missing -- silence is the one answer
+    # that would let a ghost through.
+    assert build["sha"] == "unknown" or (
+        4 <= len(build["sha"]) <= 40
+        and all(char in "0123456789abcdef" for char in build["sha"]))
+
+    # The pid is the bridge's own, not the test runner's: that is what makes it
+    # usable for "kill the thing that is actually answering".
+    assert isinstance(build["pid"], int) and build["pid"] > 0
+    assert build["pid"] != os.getpid()
+
+    assert build["started"].endswith("Z") and "T" in build["started"]
+    assert time.strptime(build["started"], "%Y-%m-%dT%H:%M:%SZ")
+    assert isinstance(build["uptime_s"], float) and build["uptime_s"] >= 0.0
+
+
+def test_the_sha_is_frozen_at_import_not_read_per_request(client):
+    """Two polls, one answer.  A lazily-read sha would defeat the whole point."""
+    _status, first = client.request("/health")
+    _status, second = client.request("/health")
+    assert first["build"]["sha"] == second["build"]["sha"]
+    assert first["build"]["started"] == second["build"]["started"]
+    assert first["build"]["pid"] == second["build"]["pid"]
+    # ...but uptime moves, so this is a live reading and not a cached payload.
+    assert second["build"]["uptime_s"] >= first["build"]["uptime_s"]
+
+
+def test_git_short_sha_never_raises_and_never_blocks_a_startup():
+    """A missing repo is "unknown", not an exception: no startup dies over this."""
+    assert bridge.git_short_sha(os.path.join(REPO_ROOT, "no-such-folder-here")) \
+        == "unknown"
+    # A timeout is an answer too, never a hang and never a raise.
+    assert isinstance(bridge.git_short_sha(REPO_ROOT, timeout=0.01), str)
+    # And in this checkout it is the real thing, which is what makes the
+    # staleness comparison in the add-on mean anything at all.
+    here = bridge.git_short_sha(REPO_ROOT)
+    assert here == "unknown" or all(char in "0123456789abcdef" for char in here)
+
+
+def test_health_echoes_the_config_actually_in_use(bridge_proc, tmp_path):
+    """Resolved values, not the raw environment -- the raw string explains nothing."""
+    projects = tmp_path / "somewhere-else"
+    projects.mkdir()
+    extra = tmp_path / "extra-models"
+    extra.mkdir()
+    client = bridge_proc(env_extra={
+        "FORGE_PROJECTS_DIR": str(projects),
+        "FORGE_MODELS_DIRS": str(extra),
+        "FORGE_ASSISTANT_MODEL": "haiku",
+        "FORGE_ASSISTANT_TIMEOUT": "123",
+    })
+
+    _status, body = client.request("/health")
+    config = body["config"]
+
+    assert os.path.normcase(config["projects_dir"]) == \
+        os.path.normcase(os.path.abspath(str(projects)))
+    assert any(os.path.normcase(path) == os.path.normcase(os.path.abspath(str(extra)))
+               for path in config["models_dirs"]), config["models_dirs"]
+    assert config["model"] == "haiku"
+    assert config["timeout_s"] == 123.0
+    assert config["blender"]["port"] > 0
+    # Never the artist's live Blender: the fixture pins a dead port on purpose.
+    assert config["blender"]["port"] != 9876
+    assert os.path.normcase(config["cwd"]) == os.path.normcase(REPO_ROOT)
+
+
+def test_an_unset_model_reads_as_the_cli_default_not_as_blank(client):
+    """A blank string in a diagnostic reads as "broken"; say what it means."""
+    _status, body = client.request("/health")
+    assert body["config"]["model"] == "(cli default)"
+
+
+def test_env_set_lists_names_only_and_never_values(bridge_proc, tmp_path):
+    """/health is browser-readable; a path is the artist's to publish, not ours."""
+    secret = tmp_path / "private-parts-folder"
+    secret.mkdir()
+    client = bridge_proc(env_extra={"FORGE_PROJECTS_DIR": str(secret)})
+
+    status, raw = client.request("/health")
+    assert status == 200
+    names = raw["config"]["env_set"]
+
+    assert "FORGE_PROJECTS_DIR" in names
+    assert "FORGE_ASSISTANT_PORT" in names
+    assert all(name.startswith("FORGE_") for name in names)
+    assert names == sorted(names)
+    # The value appears exactly where it was promised (resolved, under
+    # projects_dir) and nowhere in the name list.
+    assert not any("private-parts-folder" in name for name in names)
+    assert "private-parts-folder" in raw["config"]["projects_dir"]
+
+
+# ---------------------------------------------------------------------------
+# the environment registry cannot rot
+# ---------------------------------------------------------------------------
+
+#: String literals that look like a variable and are not one: a Blender
+#: collection name and an ``__all__`` entry naming a module constant.  Kept
+#: explicit rather than pattern-matched, so adding one is a decision.
+NOT_ENV_VARS = {
+    "FORGE_EXPORT_TEMP",     # addon: temp collection name (rigforge_rig.py)
+    "FORGE_RETARGET_TEMP",   # addon: temp collection name (rigforge_anim.py)
+    "FORGE_GRACE_SECONDS",   # addon: an __all__ entry, not os.environ
+}
+
+SCAN_SKIP_DIRS = {".venv", "__pycache__", ".git", "node_modules", "site-packages"}
+
+ENV_REGISTRY = os.path.join(REPO_ROOT, "docs", "env-registry.md")
+
+
+def _is_test_file(rel_path):
+    base = os.path.basename(rel_path)
+    return ("/tests/" in rel_path or base.startswith("test_")
+            or base.startswith("headless_") or base.startswith("fake_"))
+
+
+def scan_env_vars():
+    """Every ``FORGE_*`` string literal in non-test Python in the repo.
+
+    A literal scan rather than a scan for ``os.environ.get(...)``: the readers do
+    not agree on an idiom.  The bridge has ``_env()``, the MCP server has
+    ``_env_str``/``_env_int``/``_env_float``, meshgen keeps its names as the KEYS
+    of a dict literal, and ``service/mesh_input.py`` stores one in a module
+    constant.  A pattern narrow enough to match all four would be a pattern wide
+    enough to miss the fifth, so this matches the one thing every reader has in
+    common -- the name, written down -- and subtracts the short, explicit list of
+    literals that are not variables.
+    """
+    import ast
+
+    found = {}
+    for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
+        dirnames[:] = [name for name in dirnames if name not in SCAN_SKIP_DIRS]
+        for filename in filenames:
+            if not filename.endswith(".py"):
+                continue
+            path = os.path.join(dirpath, filename)
+            rel = os.path.relpath(path, REPO_ROOT).replace("\\", "/")
+            if _is_test_file(rel):
+                continue
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    tree = ast.parse(handle.read())
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Constant):
+                    continue
+                value = node.value
+                if not isinstance(value, str) or not value.startswith("FORGE_"):
+                    continue
+                if value in NOT_ENV_VARS or not value[6:]:
+                    continue
+                if not all(char.isupper() or char.isdigit() or char == "_"
+                           for char in value[6:]):
+                    continue
+                found.setdefault(value, set()).add(rel)
+    return found
+
+
+def registry_names():
+    """The first column of the registry table in docs/env-registry.md."""
+    names = []
+    with open(ENV_REGISTRY, encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line.startswith("| `FORGE_"):
+                continue
+            cell = line.split("|")[1].strip()
+            names.append(cell.strip("`"))
+    return names
+
+
+def test_the_env_registry_lists_every_variable_the_repo_reads():
+    """A new FORGE_* variable cannot ship undocumented, and a dead one cannot linger."""
+    found = scan_env_vars()
+    documented = set(registry_names())
+
+    undocumented = sorted(set(found) - documented)
+    assert not undocumented, (
+        "these FORGE_* variables are read but not in docs/env-registry.md: %s"
+        % "; ".join("%s (%s)" % (name, ", ".join(sorted(found[name])))
+                    for name in undocumented))
+
+    stale = sorted(documented - set(found))
+    assert not stale, (
+        "docs/env-registry.md documents variables nothing reads any more: %s"
+        % ", ".join(stale))
+
+
+def test_the_registry_table_is_well_formed():
+    names = registry_names()
+    assert names == sorted(names), "keep the registry alphabetical"
+    assert len(names) == len(set(names)), "a variable is listed twice"
+    # A sanity floor: the census at the time of writing was 67.  If this drops
+    # to a handful the scanner or the parser has quietly broken, and a green
+    # test would be worse than no test.
+    assert len(names) >= 60, len(names)
+
+
+def test_the_registry_documents_a_component_and_a_default_for_each():
+    with open(ENV_REGISTRY, encoding="utf-8") as handle:
+        rows = [line for line in handle if line.strip().startswith("| `FORGE_")]
+    for row in rows:
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        assert len(cells) == 4, row
+        name, component, default, description = cells
+        assert component, name
+        assert default, name
+        assert len(description) > 10, name
+
+
 def test_ask_then_poll_reaches_done(client):
     reply = client.turn("segment this into 4",
                         context={"active_object": "Cup", "script_path": "cup.py"})

@@ -1,6 +1,7 @@
 """The meshgen service: one stable image-to-3D API in front of swappable models.
 
     GET  /health           backend name/model/licence/loaded + available_backends
+                           + "build": {"sha", "pid", "started", "uptime_s"}
     POST /generate3d       {"image_path", "backend"?, "options"?, "output"?} -> {"job_id"}
     GET  /job/<id>         queued | running | done | error | cancelled (+ progress)
     POST /cancel/<id>      best-effort interrupt
@@ -13,7 +14,9 @@ lazily as a child process the first time a job actually needs it.
 from __future__ import annotations
 
 import json
+import os
 import queue
+import subprocess
 import sys
 import threading
 import time
@@ -29,6 +32,61 @@ from .backends.base import BackendError, Cancelled, NotReady
 from .comfyui_client import ComfyUIClient
 
 SERVICE_VERSION = "0.1.0"
+
+
+# ---------------------------------------------------------------------------
+# version truth (see docs/architecture.md, "What is running")
+# ---------------------------------------------------------------------------
+#
+# The same three facts under the same three key names as the bridge and the
+# geometry service: the git short-SHA of the tree this process STARTED from, its
+# pid, and when.  Read once at import, never lazily -- a checkout made after the
+# process started must not let a stale service relabel itself as current.
+#
+# meshgen is the service most likely to go stale: it is the slowest to restart
+# (ComfyUI cold start) and therefore the one an artist is most tempted to leave
+# running across a pull.
+
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+_REPO_ROOT = str(Path(__file__).resolve().parents[1])
+
+
+def _git_short_sha(root, timeout=5.0):
+    """``git rev-parse --short HEAD``, or ``"unknown"``.  Never fails a startup."""
+    try:
+        proc = subprocess.Popen(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=root or None,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            creationflags=_NO_WINDOW)
+    except Exception:  # noqa: BLE001 - no git, no repo, no permission
+        return "unknown"
+    try:
+        out, _err = proc.communicate(timeout=timeout)
+    except Exception:  # noqa: BLE001 - includes TimeoutExpired
+        try:
+            proc.kill()
+            proc.communicate(timeout=1.0)
+        except Exception:  # noqa: BLE001
+            pass
+        return "unknown"
+    if proc.returncode != 0:
+        return "unknown"
+    return (out or b"").decode("utf-8", "replace").strip() or "unknown"
+
+
+BUILD_SHA = _git_short_sha(_REPO_ROOT)
+BUILD_STARTED_AT = time.time()
+
+
+def build_info():
+    """The ``build`` block on ``/health``.  Identical keys in all three services."""
+    return {
+        "sha": BUILD_SHA,
+        "pid": os.getpid(),
+        "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(BUILD_STARTED_AT)),
+        "uptime_s": round(max(0.0, time.time() - BUILD_STARTED_AT), 3),
+    }
 
 
 def log(*parts):
@@ -75,6 +133,7 @@ class MeshgenApp:
             "status": "ok",
             "service": "meshgen",
             "version": SERVICE_VERSION,
+            "build": build_info(),
             "port": self.config.port,
             "config_file": str(self.config.source) if self.config.source else None,
             "models_root": str(self.config.models_dir),

@@ -2,7 +2,8 @@
 
 Implements the HTTP API from ``docs/architecture.md`` on 127.0.0.1:8765::
 
-    GET  /health          -> {"status": "ok", "build123d": "<version>"}
+    GET  /health          -> {"status": "ok", "build123d": "<version>",
+                              "build": {"sha", "pid", "started", "uptime_s"}}
     POST /parse_params    -> {"params": <resolved schema>}
     POST /generate        -> {"params": ..., "mesh": {...}, "stats": {...}}
     POST /export          -> {"path": "<absolute path written>"}
@@ -53,7 +54,10 @@ script it runs is one the user's own Claude session wrote.
 from __future__ import annotations
 
 import argparse
+import os
+import subprocess
 import sys
+import time
 import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -506,12 +510,67 @@ async def _validation_error_handler(
     )
 
 
+# ---------------------------------------------------------------------------
+# version truth (see docs/architecture.md, "What is running")
+# ---------------------------------------------------------------------------
+#
+# Same three facts, same three key names, in all three Forge services: the git
+# short-SHA of the tree this process STARTED from, its pid, and when.  Read once
+# at import so that a checkout made afterwards cannot relabel a stale process as
+# current -- which is the exact ghost this exists to catch.
+
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+_REPO_ROOT = str(Path(__file__).resolve().parents[1])
+
+
+def _git_short_sha(root: str, timeout: float = 5.0) -> str:
+    """``git rev-parse --short HEAD``, or ``"unknown"``.  Never fails a startup."""
+    try:
+        proc = subprocess.Popen(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=root or None,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            creationflags=_NO_WINDOW)
+    except Exception:  # noqa: BLE001 - no git, no repo, no permission
+        return "unknown"
+    try:
+        out, _err = proc.communicate(timeout=timeout)
+    except Exception:  # noqa: BLE001 - includes TimeoutExpired
+        try:
+            proc.kill()
+            proc.communicate(timeout=1.0)
+        except Exception:  # noqa: BLE001
+            pass
+        return "unknown"
+    if proc.returncode != 0:
+        return "unknown"
+    return (out or b"").decode("utf-8", "replace").strip() or "unknown"
+
+
+BUILD_SHA: str = _git_short_sha(_REPO_ROOT)
+BUILD_STARTED_AT: float = time.time()
+
+
+def build_info() -> Dict[str, Any]:
+    """The ``build`` block on ``/health``.  Identical keys in all three services."""
+    return {
+        "sha": BUILD_SHA,
+        "pid": os.getpid(),
+        "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(BUILD_STARTED_AT)),
+        "uptime_s": round(max(0.0, time.time() - BUILD_STARTED_AT), 3),
+    }
+
+
 @app.get("/health")
 def health() -> JSONResponse:
     """Liveness plus which build123d the worker actually has.
 
     Always answers 200 so a caller can tell "service down" (connection refused)
     from "service up but the kernel is missing" (status != "ok").
+
+    Also says which code is running (``build``): a geometry service left over
+    from before a pull answers every request perfectly and wrongly, and until
+    this block existed nothing on the wire could tell it from a fresh one.
     """
     try:
         info = run_health(timeout=HEALTH_TIMEOUT_S)
@@ -524,6 +583,7 @@ def health() -> JSONResponse:
                 "error": exc.message,
                 "service": __version__,
                 "slicer": health_detection(),
+                "build": build_info(),
             },
         )
 
@@ -537,6 +597,7 @@ def health() -> JSONResponse:
         # its Slice button before the user presses it.  A missing slicer is not
         # a degraded service -- everything else still works.
         "slicer": health_detection(),
+        "build": build_info(),
     }
     if not version:
         payload["error"] = info.get("build123d_error") or "build123d is not installed"

@@ -18,6 +18,9 @@ What is actually being proved, item by item:
    that refuses to push says so once and keeps working;
 2. **health row + Start services** — the four rows, both healths parsed off real
    (fake) servers, a dead port reported as down rather than as silence;
+2b. **version truth** — each service states the git SHA it was started from, and
+   a service running code this checkout no longer has reads as STALE with the
+   fix in the sentence, rather than drawing green because it answers;
 3. **quick-action chips** — the three canned sentences, sent through the one
    send path;
 4. **empty-state guidance** — every box that can be empty draws its sentence.
@@ -117,6 +120,20 @@ SEGMENT_MESH_REPLY = {
 #: repair test so the "your model has holes" path is exercised for real.
 SERVICE_MODE = {"watertight": True}
 
+#: The ``build`` block each fake puts on its ``/health``, or ``None`` for an
+#: older service that carries none.  Both fakes start with none, so every check
+#: written before version truth existed still sees exactly the payload it was
+#: written against; the staleness section sets them and puts them back.
+BUILD_STATE = {"service": None, "bridge": None}
+
+
+def _with_build(payload, which):
+    build = BUILD_STATE.get(which)
+    if build:
+        payload = dict(payload)
+        payload["build"] = dict(build)
+    return payload
+
 
 class _FakeService(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -135,7 +152,8 @@ class _FakeService(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.rstrip("/") == "/health":
-            self._send(200, {"status": "ok", "build123d": "fake-1.0"})
+            self._send(200, _with_build(
+                {"status": "ok", "build123d": "fake-1.0"}, "service"))
             return
         self._send(404, {"error": "no"})
 
@@ -189,14 +207,14 @@ class _FakeBridge(BaseHTTPRequestHandler):
             cli = {"found": True, "path": "C:/fake/claude.exe", "version": "9.9.9"}
             if not BRIDGE_STATE.get("found", True):
                 cli = {"found": False, "path": None, "hint": "The Claude CLI was not found."}
-            self._send(200, {
+            self._send(200, _with_build({
                 "status": "ok",
                 "claude_cli": cli,
                 "busy": False,
                 "queued": False,
                 "session_cost_usd": BRIDGE_STATE["cost"],
                 "last_auth_error": bool(BRIDGE_STATE.get("auth_error")),
-            })
+            }, "bridge"))
             return
         if path.startswith("/job/"):
             BRIDGE_STATE["polls"] += 1
@@ -538,6 +556,137 @@ def test_health_row(service_url, bridge_url):
           str(start_script_path()))
     check("and the port probe helper answers about a dead port",
           services.probe_port(1) is False)
+
+
+# ---------------------------------------------------------------------------
+# 2b. version truth — a stale service cannot pass for a current one
+# ---------------------------------------------------------------------------
+
+def test_stale_services_are_caught(service_url, bridge_url):
+    """Two fake SHAs: one that matches HEAD and one that does not.
+
+    The ghost: the artist pulls, restarts two of the three processes, and the
+    third keeps answering perfectly with last week's code.  Every dot stays
+    green because the service IS healthy — it is simply not the program they
+    think they are running.
+    """
+    section("2b. version truth: stale vs fresh")
+    from forge.prefs import repo_root
+    from forge.tools import services
+
+    # -- reading HEAD, without ever running git inside Blender ---------------
+    head = services.read_head_sha()
+    root = repo_root()
+    has_repo = bool(root) and os.path.exists(os.path.join(root, ".git"))
+    if has_repo:
+        check("HEAD is read straight out of .git, no subprocess",
+              bool(head) and all(c in "0123456789abcdef" for c in head), head)
+    else:
+        note("no .git here, so the HEAD read is exercised only negatively")
+    check("a folder with no repo in it says 'cannot tell', never a verdict",
+          services.read_head_sha(tempfile.gettempdir()) == "",
+          services.read_head_sha(tempfile.gettempdir()))
+    check("and so does a path that does not exist",
+          services.read_head_sha(os.path.join(tempfile.gettempdir(), "nope-xyz")) == "")
+
+    # -- the verdict, on payloads we control entirely ------------------------
+    fresh_payload = {"status": "ok", "build": {"sha": "abc1234", "pid": 7}}
+    stale_payload = {"status": "ok", "build": {"sha": "def5678", "pid": 7}}
+
+    check("a service whose sha matches HEAD is fresh",
+          services.build_verdict(fresh_payload, "abc1234") == ("abc1234", "fresh"),
+          str(services.build_verdict(fresh_payload, "abc1234")))
+    check("and one whose sha differs is stale",
+          services.build_verdict(stale_payload, "abc1234") == ("def5678", "stale"),
+          str(services.build_verdict(stale_payload, "abc1234")))
+    check("a full 40-char sha still compares, shortened",
+          services.build_verdict({"build": {"sha": "abc1234" + "0" * 33}},
+                                 "abc1234")[1] == "fresh")
+    check("a service with no build block is not judged at all",
+          services.build_verdict({"status": "ok"}, "abc1234") == ("", ""))
+    check("nor is one that cannot name its own build",
+          services.build_verdict({"build": {"sha": "unknown"}}, "abc1234")[1] == "",
+          str(services.build_verdict({"build": {"sha": "unknown"}}, "abc1234")))
+    check("nor anything at all when there is no repo to compare against",
+          services.build_verdict(fresh_payload, "")[1] == "")
+
+    # -- what that does to a row --------------------------------------------
+    row = (services.UP, "build123d fake-1.0")
+    state, detail = services.mark_build(row, fresh_payload, "abc1234")
+    check("a fresh row keeps its state and gains the sha",
+          state == services.UP and detail.endswith("build abc1234"), detail)
+    state, detail = services.mark_build(row, stale_payload, "abc1234")
+    check("a stale row turns into a warning", state == services.WARN, state)
+    check("naming the build that answered, the build that should have, and the fix",
+          detail.startswith(services.STALE_PREFIX) and "def5678" in detail
+          and "abc1234" in detail and "stop_forge" in detail and "start_forge" in detail,
+          detail)
+    check("an unjudgeable row is left exactly as it was",
+          services.mark_build(row, {"status": "ok"}, "abc1234") == row)
+
+    # -- end to end through the real poll, against the real fake servers -----
+    BUILD_STATE["service"] = {"sha": "aaaaaaa", "pid": 11, "started": "2026-09-15T00:00:00Z"}
+    BUILD_STATE["bridge"] = {"sha": "aaaaaaa", "pid": 12, "started": "2026-09-15T00:00:00Z"}
+    try:
+        health = services.poll_health(service_url + "/health",
+                                      bridge_url + "/health", "", head="aaaaaaa")
+        check("polling a matching service leaves it up, with the build named",
+              health["service"][0] == services.UP
+              and "build aaaaaaa" in health["service"][1], str(health["service"]))
+        check("and the assistant row carries it too",
+              "build aaaaaaa" in health["bridge"][1], str(health["bridge"]))
+        check("sign-in is still read off the same payload and is unaffected",
+              health["cli"][0] == services.UP, str(health["cli"]))
+
+        health = services.poll_health(service_url + "/health",
+                                      bridge_url + "/health", "", head="bbbbbbb")
+        check("the same services against a different HEAD both read STALE",
+              health["service"][0] == services.WARN
+              and health["bridge"][0] == services.WARN,
+              "%s / %s" % (health["service"], health["bridge"]))
+        check("with the fix in the sentence, not a stack trace",
+              "stop_forge" in health["service"][1], health["service"][1])
+
+        # -- and what the artist actually sees in the panel ------------------
+        if has_repo and head:
+            props = services.get_props(bpy.context)
+            BUILD_STATE["service"] = {"sha": head, "pid": 11}
+            BUILD_STATE["bridge"] = {"sha": head, "pid": 12}
+            bpy.ops.forge.services_refresh()
+            check("a service built from this checkout draws green",
+                  props.service_state == services.UP, props.service_detail)
+            check("with its build in the detail line",
+                  head in props.service_detail, props.service_detail)
+
+            BUILD_STATE["service"] = {"sha": "0badbad", "pid": 11}
+            bpy.ops.forge.services_refresh()
+            check("a service built from something else draws as a warning",
+                  props.service_state == services.WARN, props.service_state)
+            check("the row says STALE and names both builds",
+                  props.service_detail.startswith(services.STALE_PREFIX)
+                  and "0badbad" in props.service_detail
+                  and head in props.service_detail, props.service_detail)
+            check("the summary line goes red even though every dot answered",
+                  props.status_is_error, "%s / %s" % (props.status_is_error, props.status))
+            check("and it is the fix, in one sentence",
+                  "stop_forge" in props.status and "start_forge" in props.status,
+                  props.status)
+            check("the stale row is named in the summary",
+                  "Shapes" in props.status, props.status)
+            check("and stale_rows agrees with what the panel drew",
+                  services.stale_rows(props) == ["Shapes"],
+                  str(services.stale_rows(props)))
+        else:
+            note("no repo: the operator-level stale check needs a real HEAD")
+    finally:
+        BUILD_STATE["service"] = None
+        BUILD_STATE["bridge"] = None
+        bpy.ops.forge.services_refresh()
+
+    check("with the build blocks gone the rows read exactly as they used to",
+          services.get_props(bpy.context).service_state == services.UP
+          and not services.stale_rows(services.get_props(bpy.context)),
+          services.get_props(bpy.context).service_detail)
 
 
 def _chat():
@@ -1094,6 +1243,7 @@ def main():
     try:
         test_undo_checkpoints()
         test_health_row(service_url, bridge_url)
+        test_stale_services_are_caught(service_url, bridge_url)
         test_quick_actions_and_queue()
         test_check_model_against_the_contract()
         test_segment_model_loads_the_pieces()

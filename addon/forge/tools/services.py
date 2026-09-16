@@ -15,6 +15,15 @@ module answers the question up front:
   the bridge's ``/health`` (``claude_cli.found`` and ``last_auth_error``).  It
   is never probed by running the CLI: that costs money and seconds.
 
+Every one of the three HTTP rows also reports **which build answered**.  Each
+service puts the git short-SHA of the tree it started from on its ``/health``;
+this module reads the checkout's ``HEAD`` straight out of ``.git`` (no
+subprocess — nothing inside Blender may flash a console) and says ``STALE`` when
+they differ, with the one-line fix.  A service running last week's code answers
+every request perfectly and wrongly, and until this existed nothing on the wire
+told it apart from a fresh one.  No repo, or a service that cannot name its own
+build, is "cannot tell", never a verdict.
+
 Nothing here blocks a draw.  A refresh operator does the two HTTP calls on a
 worker thread and hands the answer back through a ``bpy.app.timers`` callback,
 exactly the way PartForge and the Assistant already do it.
@@ -121,6 +130,134 @@ def meshgen_base():
     return str(meshgen_url() or "http://127.0.0.1:8902").strip()
 
 
+# ---------------------------------------------------------------------------
+# staleness — is the service that answered running the code in this checkout?
+# ---------------------------------------------------------------------------
+#
+# A localhost service is a ghost waiting to happen.  The artist pulls, restarts
+# two of the three processes, and the third keeps answering perfectly with last
+# week's code: every field on its /health looks healthy, because it IS healthy —
+# it is simply not the program the artist thinks they are running.  Half a day
+# goes into debugging a bug that was fixed before lunch.
+#
+# So every Forge service now states the git short-SHA of the tree it was started
+# from, and this module compares it with the repo's HEAD.  Three answers, not
+# two: matching, differing, and *cannot tell* — a zip install has no repo, and
+# an add-on that called that "stale" would cry wolf on every machine that is not
+# a source checkout.
+#
+# HEAD is read out of ``.git`` directly rather than by running git: this code
+# runs inside Blender, and spawning a console process on a draw-adjacent path is
+# how you get a black window flashing over the artist's viewport.
+
+#: The one sentence that fixes it, wherever staleness is reported.
+STALE_FIX = "run stop_forge then start_forge"
+
+#: How a stale row's detail line begins, so the summary can find them without a
+#: sixth property: the detail IS the record, and one prefix keeps it that way.
+STALE_PREFIX = "STALE:"
+
+#: Same length as ``git rev-parse --short`` prints by default.
+SHA_LEN = 7
+
+
+def _short(sha):
+    return str(sha or "")[:SHA_LEN]
+
+
+def read_head_sha(root=None):
+    """The checkout's ``HEAD`` commit, short, or ``""`` when there is no repo.
+
+    Pure file reads: ``.git/HEAD`` is either a detached sha or ``ref: <path>``,
+    and the ref is either a loose file or a line in ``packed-refs``.  A worktree
+    or submodule has ``.git`` as a *file* pointing at the real git dir, which is
+    followed.  Anything unexpected is ``""`` — "cannot tell", never a verdict.
+    """
+    root = root if root is not None else repo_root()
+    if not root:
+        return ""
+    git_dir = os.path.join(root, ".git")
+    try:
+        if os.path.isfile(git_dir):
+            with open(git_dir, encoding="utf-8") as handle:
+                line = handle.read().strip()
+            if not line.startswith("gitdir:"):
+                return ""
+            pointed = line.split(":", 1)[1].strip()
+            git_dir = pointed if os.path.isabs(pointed) \
+                else os.path.normpath(os.path.join(root, pointed))
+        if not os.path.isdir(git_dir):
+            return ""
+        with open(os.path.join(git_dir, "HEAD"), encoding="utf-8") as handle:
+            head = handle.read().strip()
+    except (OSError, ValueError, UnicodeDecodeError):
+        return ""
+
+    if not head.startswith("ref:"):
+        return _short(head)
+
+    ref = head.split(":", 1)[1].strip()
+    loose = os.path.join(git_dir, *ref.split("/"))
+    try:
+        with open(loose, encoding="utf-8") as handle:
+            return _short(handle.read().strip())
+    except (OSError, ValueError, UnicodeDecodeError):
+        pass
+    try:
+        with open(os.path.join(git_dir, "packed-refs"), encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith(("#", "^")):
+                    continue
+                parts = line.split(None, 1)
+                if len(parts) == 2 and parts[1].strip() == ref:
+                    return _short(parts[0])
+    except (OSError, ValueError, UnicodeDecodeError):
+        pass
+    return ""
+
+
+def build_verdict(payload, head):
+    """``(sha, verdict)`` for one ``/health`` payload.
+
+    ``verdict`` is ``"fresh"``, ``"stale"``, or ``""`` for "cannot tell" — which
+    covers an older service that carries no ``build`` block at all, a service
+    whose own git lookup failed (``"unknown"``), and a checkout with no repo.
+    ``sha`` is ``""`` only when the service said nothing; an unknown SHA is still
+    worth showing, because "this process cannot name its own build" is itself
+    something the artist should see.
+    """
+    build = payload.get("build") if isinstance(payload, dict) else None
+    if not isinstance(build, dict):
+        return "", ""
+    sha = _short(build.get("sha"))
+    if not sha:
+        return "", ""
+    if sha == "unknown":
+        return sha, ""
+    head = _short(head)
+    if not head:
+        return sha, ""
+    return sha, ("fresh" if sha == head else "stale")
+
+
+def mark_build(row, payload, head):
+    """Fold the build verdict into one ``(state, detail)`` row.
+
+    Stale wins over whatever the service said about itself: a service that is
+    running the wrong code has nothing useful to report about its own health, so
+    the row becomes a warning and the detail becomes the fix.
+    """
+    sha, verdict = build_verdict(payload, head)
+    if not sha:
+        return row
+    state, detail = row
+    if verdict == "stale":
+        return WARN, "%s running %s, repo is %s - %s" % (
+            STALE_PREFIX, sha, _short(head), STALE_FIX)
+    return state, "%s - build %s" % (detail, sha)
+
+
 def meshgen_row(payload):
     """``(state, detail)`` from meshgen's ``/health``.
 
@@ -143,9 +280,16 @@ def meshgen_row(payload):
     return DOWN, "no answer"
 
 
-def poll_health(service_health_url, bridge_health_url, meshgen_health_url=""):
-    """Every health call, as one plain dict. Runs on a worker thread; no bpy."""
+def poll_health(service_health_url, bridge_health_url, meshgen_health_url="",
+                head=None):
+    """Every health call, as one plain dict. Runs on a worker thread; no bpy.
+
+    ``head`` is the checkout's HEAD sha; read once per poll (three rows, one file
+    read) and passed in so the comparison is against a single consistent answer
+    rather than three reads that could straddle a checkout.
+    """
     out = {}
+    head = read_head_sha() if head is None else head
 
     try:
         payload = get_json(service_health_url)
@@ -153,7 +297,8 @@ def poll_health(service_health_url, bridge_health_url, meshgen_health_url=""):
         out["service"] = (DOWN, _reason(exc))
     else:
         version = payload.get("build123d") or payload.get("version") or ""
-        out["service"] = (UP, ("build123d %s" % version) if version else "ready")
+        out["service"] = mark_build(
+            (UP, ("build123d %s" % version) if version else "ready"), payload, head)
 
     if meshgen_health_url:
         try:
@@ -163,7 +308,7 @@ def poll_health(service_health_url, bridge_health_url, meshgen_health_url=""):
             # detail says what it would take rather than what went wrong.
             out["meshgen"] = (DOWN, "not running - press Start services")
         else:
-            out["meshgen"] = meshgen_row(payload)
+            out["meshgen"] = mark_build(meshgen_row(payload), payload, head)
 
     try:
         payload = get_json(bridge_health_url)
@@ -175,6 +320,7 @@ def poll_health(service_health_url, bridge_health_url, meshgen_health_url=""):
     out["bridge"] = (UP, "ready" if not payload.get("busy") else "working")
     if payload.get("queued"):
         out["bridge"] = (UP, "working, one message waiting")
+    out["bridge"] = mark_build(out["bridge"], payload, head)
 
     cli = payload.get("claude_cli") if isinstance(payload.get("claude_cli"), dict) else {}
     if not cli.get("found"):
@@ -291,6 +437,16 @@ def rows(props):
 #: one of them: it is an optional 18.5 GB download, and a machine without it is
 #: a working machine.
 REQUIRED_ROWS = ("Shapes", "Assistant")
+
+
+def stale_rows(props):
+    """Labels of rows whose service is running code this checkout no longer has.
+
+    Read back off the detail lines rather than stored in a sixth property: one
+    record, so the summary sentence and the row can never disagree.
+    """
+    return [label for label, _state, detail in rows(props)
+            if str(detail or "").startswith(STALE_PREFIX)]
 
 
 # ---------------------------------------------------------------------------
@@ -428,8 +584,15 @@ class FORGE_OT_services_refresh(Operator):
             apply_health(props, value)
             down = [label for label, state, _detail in rows(props) if state == DOWN]
             required_down = [label for label in down if label in REQUIRED_ROWS]
+            stale = stale_rows(props)
             if required_down:
                 set_status(props, "Not running: %s" % ", ".join(required_down), error=True)
+            elif stale:
+                # A service running yesterday's code is worse than one that is
+                # down: it answers, convincingly, and wastes the artist's whole
+                # afternoon.  Red box, and the sentence is the fix.
+                set_status(props, "Old version still running: %s. %s."
+                           % (", ".join(stale), STALE_FIX.capitalize()), error=True)
             elif down:
                 # Only the optional row is down: say so without the red box, so
                 # a machine that simply has no picture models does not look broken.

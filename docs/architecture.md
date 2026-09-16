@@ -475,6 +475,21 @@ Templates live in `templates/`. Each PartForge project folder under `projects/<n
 - Blender add-on: zero third-party dependencies (stdlib + bpy only).
 - Service and MCP server: dependencies declared in `pyproject.toml`, installed later into local `.venv`s (not during initial build).
 - Nothing auto-launches Blender or opens windows. Headless verification only, and only when testing is requested.
+- **Every `FORGE_*` environment variable the repo reads is listed in [docs/env-registry.md](env-registry.md)** — name, component, default, effect — and a test in `assistant/tests/test_bridge.py` greps the codebase and fails if a new one ships undocumented. Six component READMEs is the same as no documentation: nobody greps six files before believing a bug.
+
+## What is running (version truth on /health)
+
+All three HTTP services — bridge (8901), geometry (8765), meshgen (8902) — carry the **same `build` block** on `GET /health`:
+
+```json
+"build": {"sha": "a1b2c3d", "pid": 12345, "started": "2026-09-15T18:22:04Z", "uptime_s": 913.4}
+```
+
+`sha` is `git rev-parse --short HEAD` for the working tree, **read once at process import**, never lazily: a checkout made after the process started must not let a stale process relabel itself as current, which is the entire point. No git, no repo, a timeout — all answer `"unknown"`, and startup never fails over it.
+
+The **bridge additionally echoes `config`**: its *resolved* settings — `projects_dir`, `models_dirs`, `model`, `timeout_s`, `blender {host, port}`, `cwd`, `uploads_dir`, `previews_dir`, `thumbs_dir`, `services` — plus `env_set`, the **names only** of the `FORGE_*` variables set in its environment. Resolved, not raw: the raw string says nothing about what defaults, `abspath` and `meshgen/config.json` did to it. Names only for `env_set`, because `/health` is readable by the browser.
+
+The add-on's health row (`addon/forge/tools/services.py`) reads the checkout's HEAD **straight out of `.git`** — no subprocess, nothing inside Blender may flash a console — and folds a verdict into each of the three rows: the SHA appended to a fresh row's detail, and a **`STALE:` warning naming both SHAs plus `run stop_forge then start_forge`** when they differ. Three answers, not two: a service with no `build` block, a `"unknown"` SHA, or a zip install with no repo is *cannot tell*, never a verdict — an add-on that cried stale on every non-checkout machine would be ignored within a week. A stale required row turns the panel's summary line red even though every dot is otherwise green, because a service answering yesterday's code convincingly is worse than one that is simply down.
 
 ### Queued lanes (recorded 2026-09-15 so they exist on disk, not in chat)
 

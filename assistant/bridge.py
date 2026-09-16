@@ -14,7 +14,11 @@ double-click.
 Endpoints
 ---------
 ``GET  /health``        -> ``{"status", "claude_cli": {"found", "path", "version"},
-                            "busy", "queued", "session_cost_usd", "last_auth_error"}``
+                            "busy", "queued", "session_cost_usd", "last_auth_error",
+                            "build": {"sha", "pid", "started", "uptime_s"},
+                            "config": {"projects_dir", "models_dirs", "model",
+                                       "timeout_s", "blender": {"host", "port"},
+                                       ..., "env_set": [names only]}}``
 ``POST /ask``           -> ``{"job_id", "state": "running"|"queued"}``
                            (409 only when a message is ALREADY waiting;
                             optional ``"model": "haiku"|"sonnet"|"opus"``)
@@ -313,6 +317,79 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(HERE, os.pardir))
 SYSTEM_PROMPT_PATH = os.path.join(HERE, "system_prompt.md")
+
+
+# ---------------------------------------------------------------------------
+# version truth — what is actually running, decided once at process start
+# ---------------------------------------------------------------------------
+#
+# A long-lived localhost service is a ghost waiting to happen: the artist pulls,
+# edits, restarts two of the three processes and the third keeps answering with
+# last week's code.  Nothing in a health payload used to distinguish that from a
+# working machine.  So every Forge service now states, on ``/health``, the git
+# short-SHA of the tree it was STARTED from, its pid, and when it started, and
+# the add-on compares that SHA against the repo's HEAD.  Three identical keys,
+# one meaning, documented in docs/architecture.md.
+#
+# The SHA is read ONCE, here, at import — not lazily on the first request.  That
+# is the whole point: a checkout made after the process started must NOT change
+# what the process says about itself, or a stale service would quietly relabel
+# itself current the moment anybody pulled.
+
+#: ``CREATE_NO_WINDOW`` where it exists (Windows), 0 elsewhere.  Law of the
+#: house: nothing Forge runs may flash a console window.
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+def git_short_sha(root, timeout=5.0):
+    """``git rev-parse --short HEAD`` for *root*, or ``"unknown"``.
+
+    Never raises and never fails a startup.  A zip install, a machine without
+    git, a detached worktree, a git that hangs on a network drive — every one of
+    those is "unknown", which the add-on reads as "cannot judge" rather than as
+    "stale".  Silence would be worse than an honest unknown.
+    """
+    try:
+        proc = subprocess.Popen(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=root or None,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            creationflags=_NO_WINDOW)
+    except Exception:  # noqa: BLE001 - no git, no repo, no permission
+        return "unknown"
+    try:
+        out, _err = proc.communicate(timeout=timeout)
+    except Exception:  # noqa: BLE001 - includes TimeoutExpired
+        try:
+            proc.kill()
+            proc.communicate(timeout=1.0)
+        except Exception:  # noqa: BLE001
+            pass
+        return "unknown"
+    if proc.returncode != 0:
+        return "unknown"
+    text = (out or b"").decode("utf-8", "replace").strip()
+    return text or "unknown"
+
+
+#: Captured at import, before anything can be edited underneath us.
+BUILD_SHA = git_short_sha(REPO_ROOT)
+BUILD_STARTED_AT = time.time()
+
+
+def _iso_utc(stamp):
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(stamp))
+
+
+def build_info():
+    """The ``build`` block every Forge ``/health`` carries. Same keys everywhere."""
+    return {
+        "sha": BUILD_SHA,
+        "pid": os.getpid(),
+        "started": _iso_utc(BUILD_STARTED_AT),
+        "uptime_s": round(max(0.0, time.time() - BUILD_STARTED_AT), 3),
+    }
+
 
 DEFAULT_PORT = 8901
 DEFAULT_TIMEOUT = 600.0
@@ -4412,6 +4489,51 @@ def service_urls():
     }
 
 
+#: Every FORGE_* name this repo reads is listed in docs/env-registry.md; a test
+#: greps the codebase and diffs it against that file, so a new one cannot ship
+#: undocumented.
+ENV_PREFIX = "FORGE_"
+
+
+def env_names_set():
+    """The ``FORGE_*`` variables present in this process's environment. NAMES ONLY.
+
+    Values are deliberately not echoed: this list is diagnostic ("the bridge you
+    are talking to was started with FORGE_ASSISTANT_TOOLS set, which is why the
+    tool list looks wrong"), and a value here could be a path the artist would
+    rather not publish on an HTTP endpoint the browser can read.  The handful of
+    values that DO matter for diagnosing a diverged process are echoed in
+    :func:`resolved_config` — resolved, not raw, which is the useful form.
+    """
+    return sorted(name for name in os.environ if name.startswith(ENV_PREFIX))
+
+
+def resolved_config():
+    """What this bridge is ACTUALLY using — resolved, never the raw environment.
+
+    The ghost this closes: two processes with the same code and different
+    ``FORGE_PROJECTS_DIR`` look identical on every other field, and the artist
+    spends an afternoon wondering why the part they just generated is not in the
+    library.  Raw env would not answer it either — the interesting value is the
+    one after defaults, ``abspath`` and the meshgen config file have had their
+    say, which is exactly what these functions return.
+    """
+    host, blender_port = blender_address()
+    return {
+        "projects_dir": projects_dir(),
+        "models_dirs": generated_model_dirs(),
+        "model": resolve_model() or "(cli default)",
+        "timeout_s": timeout_s(),
+        "blender": {"host": host, "port": blender_port},
+        "cwd": working_dir(),
+        "uploads_dir": uploads_dir(),
+        "previews_dir": previews_dir(),
+        "thumbs_dir": thumbs_dir(),
+        "services": service_urls(),
+        "env_set": env_names_set(),
+    }
+
+
 def probe_http(url, timeout=HEALTH_TIMEOUT):
     """``{"ok", "detail", "data"?}`` for one service's ``/health``."""
     request = urllib.request.Request(url + "/health",
@@ -4665,6 +4787,12 @@ class Handler(BaseHTTPRequestHandler):
                 # Read off the last failure, never by spending a turn to find
                 # out: the panel only wants to know whether to say "sign in".
                 "last_auth_error": bool(JOBS.last_auth_error),
+                # Which code is running, and with which settings.  The add-on
+                # compares "build".sha against the repo's HEAD and says STALE
+                # when they differ; "config" is what makes two processes with
+                # the same SHA and different environments tell themselves apart.
+                "build": build_info(),
+                "config": resolved_config(),
             })
             return
         if path.startswith("/job/"):
