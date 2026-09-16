@@ -35,7 +35,9 @@ Write-Host ""
 
 # --- pytest suites -----------------------------------------------------------
 Run-Suite "service"   { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\service\tests" -q --tb=line }
-Run-Suite "assistant" { $env:FORGE_ASSISTANT_LIVE_CONTEXT = "0"; & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\assistant\tests" -q --tb=line }
+# The suites isolate themselves (test_bridge spawns on a dead Blender port);
+# forcing FORGE_ASSISTANT_LIVE_CONTEXT=0 here failed all 11 live-context tests.
+Run-Suite "assistant" { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\assistant\tests" -q --tb=line }
 Run-Suite "meshgen"   { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\meshgen\tests" -q --tb=line }
 Run-Suite "mcp"       { Push-Location "$root\mcp"; & ".venv\Scripts\python.exe" -m pytest tests -q --tb=line; Pop-Location }
 
