@@ -39,7 +39,7 @@ Fresh machine: fill `templates/printer.json`, create the two venvs (`pip install
 
 ## Status
 
-Phase 0–1 in progress: scaffolding, add-on core + common ops, geometry service, MCP bridge, PARAMS→panel. Untested until first manual test session.
+Nineteen phases built and headless-verified (see docs/architecture.md, the living contract): parametric parts with panels, maker/electronics designs with BOMs, image-to-3D (single and multi-view, tuned under a geometric verifier), silhouette fitting, rigging + deformation gates, mechanism demos, floor-plan-to-level with incremental rebuilds and manual-edit absorption, live Blender context for the assistant, and a POV playtest camera. ~2,600 pytest items + ~300 headless Blender checks. Historical plan: docs/plan.md (stamped; superseded by architecture.md).
 
 ---
 

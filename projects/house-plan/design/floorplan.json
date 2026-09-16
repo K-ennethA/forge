@@ -1,0 +1,631 @@
+{
+  "version": 1,
+  "units": "mm",
+  "scale": {},
+  "defaults": {
+    "ceiling_mm": 2400.0,
+    "wall_mm": 100.0,
+    "door_w_mm": 820.0,
+    "door_h_mm": 2040.0,
+    "window_w_mm": 1200.0,
+    "window_h_mm": 1200.0,
+    "sill_mm": 900.0,
+    "label_h_mm": 850.0,
+    "floor_mm": 50.0,
+    "label_anchor": "center"
+  },
+  "rooms": [
+    {
+      "id": "kitchen",
+      "polygon_mm": [
+        [
+          0.0,
+          3600.0
+        ],
+        [
+          3600.0,
+          3600.0
+        ],
+        [
+          3600.0,
+          6600.0
+        ],
+        [
+          0.0,
+          6600.0
+        ]
+      ],
+      "label": "kitchen"
+    },
+    {
+      "id": "room3",
+      "polygon_mm": [
+        [
+          3600.0,
+          3600.0
+        ],
+        [
+          6000.0,
+          3600.0
+        ],
+        [
+          6000.0,
+          6600.0
+        ],
+        [
+          3600.0,
+          6600.0
+        ]
+      ],
+      "label": "room3"
+    },
+    {
+      "id": "closet-r3",
+      "polygon_mm": [
+        [
+          6000.0,
+          5700.0
+        ],
+        [
+          6900.0,
+          5700.0
+        ],
+        [
+          6900.0,
+          6600.0
+        ],
+        [
+          6000.0,
+          6600.0
+        ]
+      ],
+      "label": "closet"
+    },
+    {
+      "id": "closet-hall",
+      "polygon_mm": [
+        [
+          6000.0,
+          4800.0
+        ],
+        [
+          6900.0,
+          4800.0
+        ],
+        [
+          6900.0,
+          5700.0
+        ],
+        [
+          6000.0,
+          5700.0
+        ]
+      ],
+      "label": "closet"
+    },
+    {
+      "id": "bath",
+      "polygon_mm": [
+        [
+          6900.0,
+          4800.0
+        ],
+        [
+          8400.0,
+          4800.0
+        ],
+        [
+          8400.0,
+          6600.0
+        ],
+        [
+          6900.0,
+          6600.0
+        ]
+      ],
+      "label": "bath"
+    },
+    {
+      "id": "room2",
+      "polygon_mm": [
+        [
+          8400.0,
+          3600.0
+        ],
+        [
+          11400.0,
+          3600.0
+        ],
+        [
+          11400.0,
+          6600.0
+        ],
+        [
+          8400.0,
+          6600.0
+        ]
+      ],
+      "label": "room2"
+    },
+    {
+      "id": "hall",
+      "polygon_mm": [
+        [
+          6000.0,
+          3600.0
+        ],
+        [
+          7500.0,
+          3600.0
+        ],
+        [
+          7500.0,
+          2400.0
+        ],
+        [
+          8400.0,
+          2400.0
+        ],
+        [
+          8400.0,
+          4800.0
+        ],
+        [
+          6000.0,
+          4800.0
+        ]
+      ],
+      "label": "hall"
+    },
+    {
+      "id": "living-room",
+      "polygon_mm": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          8400.0,
+          0.0
+        ],
+        [
+          8400.0,
+          1500.0
+        ],
+        [
+          7500.0,
+          1500.0
+        ],
+        [
+          7500.0,
+          3600.0
+        ],
+        [
+          0.0,
+          3600.0
+        ]
+      ],
+      "label": "living room"
+    },
+    {
+      "id": "closet-entry",
+      "polygon_mm": [
+        [
+          7500.0,
+          1500.0
+        ],
+        [
+          8400.0,
+          1500.0
+        ],
+        [
+          8400.0,
+          2400.0
+        ],
+        [
+          7500.0,
+          2400.0
+        ]
+      ],
+      "label": "closet"
+    },
+    {
+      "id": "room1",
+      "polygon_mm": [
+        [
+          8400.0,
+          0.0
+        ],
+        [
+          11400.0,
+          0.0
+        ],
+        [
+          11400.0,
+          3600.0
+        ],
+        [
+          8400.0,
+          3600.0
+        ]
+      ],
+      "label": "room1"
+    },
+    {
+      "id": "garage",
+      "polygon_mm": [
+        [
+          -4200.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          3600.0
+        ],
+        [
+          -4200.0,
+          3600.0
+        ]
+      ],
+      "label": "garage"
+    }
+  ],
+  "walls": [
+    {
+      "id": "wall-x3600",
+      "from_mm": [
+        3600.0,
+        3600.0
+      ],
+      "to_mm": [
+        3600.0,
+        6600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-x6000",
+      "from_mm": [
+        6000.0,
+        3600.0
+      ],
+      "to_mm": [
+        6000.0,
+        6600.0
+      ],
+      "openings": [
+        {
+          "id": "door-room3-hall",
+          "kind": "door",
+          "at_mm": 600.0,
+          "swing": "in",
+          "hinge": "left"
+        },
+        {
+          "id": "door-room3-closet",
+          "kind": "door",
+          "at_mm": 2550.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-x6900",
+      "from_mm": [
+        6900.0,
+        4800.0
+      ],
+      "to_mm": [
+        6900.0,
+        6600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-x8400",
+      "from_mm": [
+        8400.0,
+        0.0
+      ],
+      "to_mm": [
+        8400.0,
+        6600.0
+      ],
+      "openings": [
+        {
+          "id": "door-hall-room1",
+          "kind": "door",
+          "at_mm": 3000.0,
+          "swing": "in",
+          "hinge": "left"
+        },
+        {
+          "id": "door-hall-room2",
+          "kind": "door",
+          "at_mm": 4200.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-x11400",
+      "from_mm": [
+        11400.0,
+        0.0
+      ],
+      "to_mm": [
+        11400.0,
+        6600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-garage-w",
+      "from_mm": [
+        -4200.0,
+        0.0
+      ],
+      "to_mm": [
+        -4200.0,
+        3600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-y0",
+      "from_mm": [
+        0.0,
+        6600.0
+      ],
+      "to_mm": [
+        11400.0,
+        6600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-y1800",
+      "from_mm": [
+        6000.0,
+        4800.0
+      ],
+      "to_mm": [
+        8400.0,
+        4800.0
+      ],
+      "openings": [
+        {
+          "id": "door-closethall-hall",
+          "kind": "door",
+          "at_mm": 675.0,
+          "swing": "in",
+          "hinge": "left"
+        },
+        {
+          "id": "door-bath-hall",
+          "kind": "door",
+          "at_mm": 1650.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-y3000-hallnotch",
+      "from_mm": [
+        6000.0,
+        3600.0
+      ],
+      "to_mm": [
+        7500.0,
+        3600.0
+      ],
+      "openings": [
+        {
+          "id": "doorway-hall-living",
+          "kind": "gap",
+          "at_mm": 750.0,
+          "width_mm": 1000.0
+        }
+      ]
+    },
+    {
+      "id": "wall-y3000-right",
+      "from_mm": [
+        8400.0,
+        3600.0
+      ],
+      "to_mm": [
+        11400.0,
+        3600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-x7500-leg",
+      "from_mm": [
+        7500.0,
+        1500.0
+      ],
+      "to_mm": [
+        7500.0,
+        3600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-y4200-leg",
+      "from_mm": [
+        7500.0,
+        2400.0
+      ],
+      "to_mm": [
+        8400.0,
+        2400.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-y900-closets",
+      "from_mm": [
+        6000.0,
+        5700.0
+      ],
+      "to_mm": [
+        6900.0,
+        5700.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-y5100-entrycloset",
+      "from_mm": [
+        7500.0,
+        1500.0
+      ],
+      "to_mm": [
+        8400.0,
+        1500.0
+      ],
+      "openings": [
+        {
+          "id": "door-entrycloset-living",
+          "kind": "door",
+          "at_mm": 450.0,
+          "width_mm": 700.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-garage-n",
+      "from_mm": [
+        -4200.0,
+        3600.0
+      ],
+      "to_mm": [
+        0.0,
+        3600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-x0-garage",
+      "from_mm": [
+        0.0,
+        0.0
+      ],
+      "to_mm": [
+        0.0,
+        3600.0
+      ],
+      "openings": [
+        {
+          "id": "door-garage-living",
+          "kind": "door",
+          "at_mm": 3190.0,
+          "width_mm": 820.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-x0-kitchen",
+      "from_mm": [
+        0.0,
+        3600.0
+      ],
+      "to_mm": [
+        0.0,
+        6600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-living-room3",
+      "from_mm": [
+        3600.0,
+        3600.0
+      ],
+      "to_mm": [
+        6000.0,
+        3600.0
+      ],
+      "openings": []
+    },
+    {
+      "id": "wall-front-garage",
+      "from_mm": [
+        -4200.0,
+        0.0
+      ],
+      "to_mm": [
+        0.0,
+        0.0
+      ],
+      "openings": [
+        {
+          "id": "door-garage-front",
+          "kind": "door",
+          "at_mm": 2100.0,
+          "width_mm": 820.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-front-house",
+      "from_mm": [
+        0.0,
+        0.0
+      ],
+      "to_mm": [
+        11400.0,
+        0.0
+      ],
+      "openings": [
+        {
+          "id": "house-door-1",
+          "kind": "door",
+          "at_mm": 7950.0,
+          "width_mm": 900.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    },
+    {
+      "id": "wall-living-partition",
+      "from_mm": [
+        2497.0,
+        4550.0
+      ],
+      "to_mm": [
+        2497.0,
+        6600.0
+      ],
+      "thickness_mm": 570.0,
+      "openings": [
+        {
+          "id": "door-living-partition",
+          "kind": "door",
+          "at_mm": 460.0,
+          "width_mm": 820.0,
+          "swing": "in",
+          "hinge": "left"
+        }
+      ]
+    }
+  ],
+  "labels": [],
+  "history": []
+}

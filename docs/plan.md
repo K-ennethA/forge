@@ -1,4 +1,6 @@
-# Custom AI 3D Pipeline — Plan
+> **HISTORICAL (2026-09-15).** This is the original pre-build plan, kept for the record. It is WRONG in at least three places the built system decided differently (native rigging instead of Game Rig Tools, no Mixamo, no -lod suffix). The living contract is docs/architecture.md.
+
+# Custom AI 3D Pipeline â€” Plan
 
 Two tools, one brain. Both are add-ons we own, both are driven by Claude through a local socket (MCP), and both are built on top of free, open-source foundations so nothing in the stack costs money beyond the AI itself.
 
@@ -18,7 +20,7 @@ A single Blender add-on (working name **Forge**) exposes two tool families over 
 
 Every project gets a folder with a `spec.json` (what it is, the parameters, the constraints), the generated script, exports, and preview renders. That file is the contract between you and Claude: you can edit it by hand, Claude can regenerate from it, and it is versioned in git.
 
-## 3. PartForge — describe it, get a configurable printable model
+## 3. PartForge â€” describe it, get a configurable printable model
 
 **What you experience.** You write a paragraph ("a holder that wraps a 6 in stainless bowl, decorative textured band around the bottom, four feet, two slot-in ears") and optionally drop a reference image. Claude replies with a short spec sheet: named parameters with proposed values, features, print constraints. You confirm or correct. Claude generates the part, it appears in the Blender viewport with a panel of sliders and fields (bowl diameter, wall thickness, lip height, number of segments, joint tolerance, feet count), and every change regenerates the solid. When you are happy you press Export and get one STL/3MF per segment plus a STEP for Fusion.
 
@@ -36,23 +38,23 @@ Every project gets a folder with a `spec.json` (what it is, the parameters, the 
 
 **Roles.** You: describe, confirm spec, tweak sliders, print. Claude: extract spec, write script, respond to "make the lip taller" by editing the script rather than the mesh, run checks, explain failures. Tool: turn scripts into solids, panels, checks, exports.
 
-## 4. RigForge — sculpt by hand, let the tool do the pipeline
+## 4. RigForge â€” sculpt by hand, let the tool do the pipeline
 
 **Semantic tagging is the foundation.** Everything downstream depends on Blender knowing what the parts of your sculpt are. The add-on gives you a tag panel: select faces, click "Head", "Torso", "Arm L", "Ear L", "Tail", or type a new tag. Tags are stored as vertex groups plus a `character.json` manifest that also records archetype (biped, quadruped, creature with N limbs) and motion notes you write in plain language ("ears are floppy and lag behind head", "tail drags on the ground", "hops rather than walks"). You can also tag by describing: "the two lumps on top are ears" lets Claude select by position and propose the tag for you to accept.
 
-**Stage 1 — Sculpt.** Untouched. You sculpt.
+**Stage 1 â€” Sculpt.** Untouched. You sculpt.
 
-**Stage 2 — Retopology.** One click produces a game mesh from the sculpt: voxel remesh for a clean base, Quadriflow (built-in, free) for quads at a target face count, then shrinkwrap to the sculpt and bake normals from high to low. Target polycount is a parameter per platform (desktop, mobile). Tags transfer automatically to the new mesh by proximity. Optional decimated LOD1 and LOD2.
+**Stage 2 â€” Retopology.** One click produces a game mesh from the sculpt: voxel remesh for a clean base, Quadriflow (built-in, free) for quads at a target face count, then shrinkwrap to the sculpt and bake normals from high to low. Target polycount is a parameter per platform (desktop, mobile). Tags transfer automatically to the new mesh by proximity. Optional decimated LOD1 and LOD2.
 
-**Stage 3 — UV and materials.** Auto seams derived from the tags (seam at neck, shoulders, wrists), unwrap, pack. You can override in Blender's normal UV editor.
+**Stage 3 â€” UV and materials.** Auto seams derived from the tags (seam at neck, shoulders, wrists), unwrap, pack. You can override in Blender's normal UV editor.
 
-**Stage 4 — Rig.** The tool places a Rigify metarig using the tags: it measures each tagged region's bounds and landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle) and scales and positions the metarig to the sculpt. Archetype picks the template (biped, quadruped, or a custom assembly for odd creatures, built from limb, spine and tail modules). Ears and tails become bone chains with spring/jiggle constraints per your motion notes. Rigify then generates the control rig for animation. Auto weights are applied, then per-tag cleanup rules (no head weights below the neck tag, and so on). You fix weights by hand where needed; nothing is locked.
+**Stage 4 â€” Rig.** The tool places a Rigify metarig using the tags: it measures each tagged region's bounds and landmarks (head top, chin, shoulder, elbow, wrist, hip, knee, ankle) and scales and positions the metarig to the sculpt. Archetype picks the template (biped, quadruped, or a custom assembly for odd creatures, built from limb, spine and tail modules). Ears and tails become bone chains with spring/jiggle constraints per your motion notes. Rigify then generates the control rig for animation. Auto weights are applied, then per-tag cleanup rules (no head weights below the neck tag, and so on). You fix weights by hand where needed; nothing is locked.
 
-**Stage 5 — Clothing.** Select a region or say "give it a short-sleeved shirt and shorts": the tool duplicates the tagged faces, offsets them outward, adds thickness and a Cloth modifier with a preset (cotton, leather, heavy) and a collision on the body. Two output modes: simulated cloth baked to shape keys or bones for game use, or skin-tight cloth simply weighted to the same rig. Godot does not run Blender cloth, so the bake is what ships.
+**Stage 5 â€” Clothing.** Select a region or say "give it a short-sleeved shirt and shorts": the tool duplicates the tagged faces, offsets them outward, adds thickness and a Cloth modifier with a preset (cotton, leather, heavy) and a collision on the body. Two output modes: simulated cloth baked to shape keys or bones for game use, or skin-tight cloth simply weighted to the same rig. Godot does not run Blender cloth, so the bake is what ships.
 
-**Stage 6 — Animation.** An action library with names Godot expects (`idle`, `walk`, `run`, `jump`, `attack`, plus a `-loop` suffix convention). Three ways to fill it: describe the motion and let Claude keyframe it on the control rig ("a heavy two-beat hop, ears trail"), retarget a Mixamo or other mocap clip, or hand-animate. Motion notes from the manifest are applied as secondary motion automatically (ear lag, tail follow). Everything lives in the NLA so clips can be layered and reviewed.
+**Stage 6 â€” Animation.** An action library with names Godot expects (`idle`, `walk`, `run`, `jump`, `attack`, plus a `-loop` suffix convention). Three ways to fill it: describe the motion and let Claude keyframe it on the control rig ("a heavy two-beat hop, ears trail"), retarget a Mixamo or other mocap clip, or hand-animate. Motion notes from the manifest are applied as secondary motion automatically (ear lag, tail follow). Everything lives in the NLA so clips can be layered and reviewed.
 
-**Stage 7 — Godot export.** Game Rig Tools converts the Rigify control rig to a deform-only rig, bakes all actions onto it, then exports glTF with Godot conventions: unit scale, applied transforms, Y-up, root motion bone if requested, actions named and looped, LODs and collision meshes with `-col`/`-lod` suffixes. A companion Godot import script (or `.import` settings) is emitted so the character lands as a scene with AnimationPlayer or AnimationTree ready. Round trips are cheap: change the sculpt, rerun stages 2 to 7 from the manifest.
+**Stage 7 â€” Godot export.** Game Rig Tools converts the Rigify control rig to a deform-only rig, bakes all actions onto it, then exports glTF with Godot conventions: unit scale, applied transforms, Y-up, root motion bone if requested, actions named and looped, LODs and collision meshes with `-col`/`-lod` suffixes. A companion Godot import script (or `.import` settings) is emitted so the character lands as a scene with AnimationPlayer or AnimationTree ready. Round trips are cheap: change the sculpt, rerun stages 2 to 7 from the manifest.
 
 **Roles.** You: sculpt, tag, describe motion, polish weights and animation. Claude: interpret descriptions, choose stage settings, write custom keyframe passes, explain problems. Tool: everything deterministic.
 

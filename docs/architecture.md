@@ -475,3 +475,11 @@ Templates live in `templates/`. Each PartForge project folder under `projects/<n
 - Blender add-on: zero third-party dependencies (stdlib + bpy only).
 - Service and MCP server: dependencies declared in `pyproject.toml`, installed later into local `.venv`s (not during initial build).
 - Nothing auto-launches Blender or opens windows. Headless verification only, and only when testing is requested.
+
+### Queued lanes (recorded 2026-09-15 so they exist on disk, not in chat)
+
+- **Parametric-proxy multiview conditioning** (LOW, 2-4 d, all parts on disk): render a build123d/PartForge proxy to the four canonical rig views (render_preview orthographic machinery), feed Pixal3DMultiViewConditioning via the verified camera rig in meshgen/backends/multiview.py -- SpaceControl-class spatial control through the supported interface, no custom node. The image still conditions surface detail.
+- **Auto-tagging from UniRig joints** (MED, 1-2 wk): UniRig detections + symmetry -> rigforge_tag proposals -> metarig + rig_check deformation gate; turns the generated-organic lane rig-capable without manual tags. The review ranked this the #1 competitive gap worth chasing.
+- **meshoptimizer simplifyWithAttributes ctypes binding** (LOW-MED, 3-5 d): build from MIT source (pin a commit >= 2026-09-09 for SimplifyPermissive + generateTangents; PyPI binding is stale alpha), replace Blender Decimate for UV-preserving LODs; weld positions first; assert achieved index count.
+- **quadwild-bimdf retopo + .rosy/.sharp synthesizer from tag/CAD joint data** (HIGH, the differentiated piece is the synthesizer -- our own MIT code); **PartCrafter (MIT, 8 GB)** one-day timeboxed evaluation behind the adapter seam.
+- **Flow ambient visibility + auto-capture** (2 d, review sec.3c): [Flows] line in the bridge's live-context injection; candidate flows auto-written from >=3-step successful jobs; flows/lessons.md flat anti-pattern corpus injected whole.

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4500 -300 16300 7400" font-family="sans-serif">
+  <!-- house-plan echo-back, rev 2: entry closet fronts the house door;
+       the room3/hall closets stack by depth and share the block.
+       Plan coordinates, y increases southward (as drawn). 1 unit = 1 mm. -->
+  <style>
+    .room { fill: #9a9a9a; stroke: #ffffff; stroke-width: 60; }
+    .label { fill: #111; font-size: 340px; text-anchor: middle; }
+    .small { fill: #111; font-size: 240px; text-anchor: middle; }
+    .door { fill: #cd6a6a; }
+    .gap { fill: #7cc79b; }
+    .house { fill: #3b82f6; }
+  </style>
+
+  <rect class="room" x="0" y="0" width="3600" height="3000"/>
+  <rect class="room" x="3600" y="0" width="2400" height="3000"/>
+  <rect class="room" x="6000" y="0" width="900" height="900"/>
+  <rect class="room" x="6000" y="900" width="900" height="900"/>
+  <rect class="room" x="6900" y="0" width="1500" height="1800"/>
+  <rect class="room" x="8400" y="0" width="3000" height="3000"/>
+  <polygon class="room" points="6000,1800 8400,1800 8400,4200 7500,4200 7500,3000 6000,3000"/>
+  <polygon class="room" points="0,3000 7500,3000 7500,5100 8400,5100 8400,6600 0,6600"/>
+  <rect class="room" x="7500" y="4200" width="900" height="900"/>
+  <rect class="room" x="8400" y="3000" width="3000" height="3600"/>
+  <rect class="room" x="-4200" y="3000" width="4200" height="3600"/>
+
+  <text class="label" x="1800" y="1600">kitchen</text>
+  <text class="label" x="4800" y="1600">room3</text>
+  <text class="small" x="6450" y="560">closet</text>
+  <text class="small" x="6450" y="1460">closet</text>
+  <text class="label" x="7650" y="1000">bath</text>
+  <text class="label" x="9900" y="1600">room2</text>
+  <text class="label" x="7200" y="2600">hall</text>
+  <text class="label" x="3600" y="4900">living room</text>
+  <text class="small" x="7950" y="4720">closet</text>
+  <text class="label" x="9900" y="4900">room1</text>
+  <text class="label" x="-2100" y="4900">garage</text>
+
+  <!-- room doors (red) -->
+  <rect class="door" x="5950" y="40" width="100" height="820"/>
+  <rect class="door" x="5950" y="1990" width="100" height="820"/>
+  <rect class="door" x="6265" y="1750" width="820" height="100"/>
+  <rect class="door" x="7240" y="1750" width="820" height="100"/>
+  <rect class="door" x="8350" y="1990" width="100" height="820"/>
+  <rect class="door" x="8350" y="3190" width="100" height="820"/>
+  <rect class="door" x="7600" y="5050" width="700" height="100"/>
+  <!-- open doorway (green) -->
+  <rect class="gap" x="6250" y="2950" width="1000" height="100"/>
+  <!-- house door (blue) -->
+  <rect class="house" x="7500" y="6550" width="900" height="100"/>
+
+  <!-- legend -->
+  <g transform="translate(-4200,-200)">
+    <rect class="house" x="0" y="0" width="700" height="90"/>
+    <text class="small" x="1750" y="90" text-anchor="start">house door</text>
+    <rect class="gap" x="4600" y="0" width="700" height="90"/>
+    <text class="small" x="5450" y="90" text-anchor="start">doorway</text>
+    <rect class="door" x="7900" y="0" width="700" height="90"/>
+    <text class="small" x="8750" y="90" text-anchor="start">room door</text>
+  </g>
+</svg>
