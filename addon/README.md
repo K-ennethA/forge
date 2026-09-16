@@ -661,7 +661,7 @@ nobody is allowed to fail on.
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace?` | assigns the vertices of those faces to `tag_<Name>` at weight 1.0 |
 | `rigforge_untag` | `tag`, `faces?` / `use_selection?`, `include_shared?` | drops faces from a tag; with no faces given, deletes the tag |
 | `rigforge_manifest` | `action` `save`\|`load`\|`get`, `path?`, `archetype?`, `motion_notes?`, `name?`, `create_missing_tags?` | reads/writes `character.json` |
-| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, **`unwrap?`** (default true), **`lod_budgets?`**, **`protect_seams?`**, `seams_from_tags?`, `margin?`, `angle_limit?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline in canonical order (retopo → unwrap → bake → LOD); returns object names, face counts, `uv`, `lod_reports`, `budget` |
+| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, **`unwrap?`** (default true), **`lod_budgets?`**, **`protect_seams?`** (Decimate fallback only), `seams_from_tags?`, `margin?`, `angle_limit?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline in canonical order (retopo → unwrap → bake → LOD); returns object names, face counts, `uv`, `lod_reports`, `simplifier`, `budget` |
 | `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage. Marks the mesh as really unwrapped, which is what lets a bake run |
 | `rigforge_status` | — | one-call overview: tags, archetype, motion notes, manifest path, derived meshes |
 
@@ -1576,11 +1576,14 @@ previous `_retopo` / `_lod*` objects in place, so the names stay stable.
 7. **Normal bake** (optional, `bake_normals`). High-to-low, Cycles, into a new image named
    `<obj>_retopo_normal` at `bake_resolution` (default 2048); `bake_path` also writes it
    out as a PNG.
-8. **LODs** (optional, `lods`). `<obj>_lod1`, `_lod2`, … decimated **from the unwrapped
-   LOD0** to a triangle budget, so the tags *and the atlas* come with them.
+8. **LODs** (optional, `lods`). `<obj>_lod1`, `_lod2`, … simplified **from the unwrapped
+   LOD0** to a triangle budget, so the tags *and the atlas* come with them. By meshoptimizer
+   when `native/meshopt/meshoptimizer.dll` is built, by Blender's Decimate when it is not —
+   named either way in `simplifier`.
 
 Returns the object names, a `face_counts` map keyed by name, the per-stage log, the
-transferred tags, the UV report, the bake report, `lod_reports`, `budget` and any warnings.
+transferred tags, the UV report, the bake report, `lod_reports`, `simplifier`, `budget` and
+any warnings.
 
 **The order is the feature.** The canonical finishing chain is
 `repair → retopo → UV unwrap → bake high→low → tangents → LOD`, and three of those
@@ -1617,21 +1620,77 @@ budgets** instead:
   FOV, so the level is honest from `e × 704 / 1 px` onward. Those are the numbers the Godot
   export turns into `visibility_range_begin` / `_end`.
 
-**Known limitation — UV distortion under decimation.** Blender's Decimate **Collapse** is a
-position-only quadric with no UV term at all (the modifier's `delimit` option belongs to
-Planar/Dissolve), so UV distortion across a collapse is not bounded by anything. Measured
-on the synthetic character in `headless_rigforge.py`, sharing LOD0's atlas holds well in
-practice — median UV drift 0.0003 at LOD1 and 0.0008 at LOD2, 90th percentile under 0.006
-— but the worst case is a torn island, not a small stretch. The one lever Collapse exposes
-is its vertex group, and measured on Blender 5.0.1 that group is a **hard lock, not a soft
-cost**: a vertex in it is never collapsed, whatever its weight (1.0, 0.5, 0.05) and
-whatever `vertex_group_factor` says (0.5 through 100 behave identically). On an unwrapped
-character the seam vertices *are* most of the budget, so locking them floors the reduction
-far above any LOD target. `protect_seams` (default **off**) turns it on for the cases where
-an exact atlas matters more than the face count, and the budget miss is reported. The real
-fix is a UV-aware simplifier — meshoptimizer's `simplifyWithAttributes`, which carries UVs
-in the error metric and reports the error it achieved — and building a ctypes binding for
-it is a queued lane of its own.
+**Which simplifier cut the chain — `lod_reports[].simplifier`.** Two are wired up, and the
+report says which ran, at the top of the result and on every level (and on each LOD object's
+`forge_lod` property, so the exporter can see it too):
+
+- **`"meshopt <commit>"`** — meshoptimizer's `simplifyWithAttributes` through
+  `forge.tools.meshopt`, used whenever `native/meshopt/meshoptimizer.dll` is built. Its
+  result is an index buffer into the *original* vertex buffer, so a surviving vertex keeps
+  its original position **and its original UV, bit for bit**: the levels do not merely
+  sample LOD0's atlas closely, they carry it. The report gains `result_error`,
+  `achieved_index_count`, `target_index_count` and the `attribute_weights` used.
+- **`"blender-decimate (meshopt unavailable: <reason>)"`** — the Decimate fallback, with the
+  reason the DLL was not there quoted in full. Correct, and UV-blind; see the limitation
+  below. A meshopt run that fails mid-flight falls back the same way, as
+  `"blender-decimate (meshopt failed: ...)"`.
+
+**Known limitation — UV distortion under decimation (the fallback path).** Blender's
+Decimate **Collapse** is a position-only quadric with no UV term at all (the modifier's
+`delimit` option belongs to Planar/Dissolve), so UV distortion across a collapse is not
+bounded by anything. Measured on the synthetic character in `headless_rigforge.py`, sharing
+LOD0's atlas holds well in practice — median UV drift 0.0004 at LOD1 and 0.0011 at LOD2,
+90th percentile under 0.007 — but the worst case is a torn island (0.63 at LOD1 on the same
+run), not a small stretch. The one lever Collapse exposes is its vertex group, and measured
+on Blender 5.0.1 that group is a **hard lock, not a soft cost**: a vertex in it is never
+collapsed, whatever its weight (1.0, 0.5, 0.05) and whatever `vertex_group_factor` says
+(0.5 through 100 behave identically). On an unwrapped character the seam vertices *are* most
+of the budget, so locking them floors the reduction far above any LOD target. `protect_seams`
+(default **off**) turns it on for the cases where an exact atlas matters more than the face
+count, and the budget miss is reported.
+
+**`protect_seams` is unnecessary under meshopt**, and ignored there. A UV seam is an
+attribute discontinuity the quadric already prices, the seam vertices are not locked, and
+the survivors keep their exact UVs — so there is nothing to protect and none of the budget
+is spent protecting it. The flag stays for the Decimate fallback only.
+
+### meshoptimizer (`native/meshopt`, `forge.tools.meshopt`)
+
+A ctypes binding over meshoptimizer's C interface, built from vendored MIT sources pinned at
+`3d62f11a` (2026-09-12; the floor is 2026-09-09's "Stabilize many experimental APIs", and
+the `v1.2` tag predates it). Build it with `native\meshopt\build.ps1`, which probes for
+`cl.exe`, `clang++`, `cmake`, then `zig c++` and compiles the whole library in one command —
+it is dependency-free C++ with no configure step. `native/meshopt/README.md` has the
+install-one-of-these table; **no C++ toolchain is present on this machine**, so the add-on
+currently runs the Decimate fallback and says so in every report.
+
+`simplify_lod(vertices, indices, uvs, normals, target_index_count, target_error, weights)`
+returns `(indices, result_error)`. It takes flat sequences, imports no `bpy` and uses no
+numpy (`array` buffers pointed at by ctypes, because `foreach_get` hands back flat lists),
+so it is testable and reusable outside RigForge. Three traps it encodes, all of them silent
+in the raw API:
+
+- **unwelded input no-ops.** The simplifier rebuilds topology by hashing the *raw float bits*
+  of each position, so UV-split vertices stitch back together into wedges — but a triangle
+  *soup*, where every corner carries its own position, has no shared edges at all and
+  collapses nothing while reporting success. `weld_report` counts both cases and
+  `simplify_lod` refuses a soup by name, before it even loads the library.
+- **`result_error` is not a success signal**: it is the error of what the simplifier *did*,
+  and a run that collapsed nothing reports a beautiful 0.0. The achieved index count is
+  always measured, and `require_target=True` turns a miss into `MeshoptTargetMissed`.
+- **gltfpack's UV weight is 0.0.** Its `simplifyAttributes` weights normals 0.5, colours 1.0
+  and texture coordinates `update ? 1.f : 0.f` — copying that call site verbatim is the
+  documented way to build a UV-blind "UV-aware" simplifier. The weight here is derived from
+  the mesh's own reciprocal UV density (world units per UV unit × a priority factor, clamped
+  to the researched 10–100 per-scalar band), so one number works for a 2 m character and a
+  20 cm prop. Flags otherwise follow gltfpack: `Permissive` + `Prune`.
+
+Missing DLL is never an error: every entry point still imports, `unavailable_reason()`
+returns one sentence (read from `native/meshopt/meshopt_build.json`, which the build script
+writes on success *and* on failure), and `addon/tests/headless_meshopt.py` stays green —
+library-dependent checks skip with that same reason, while argument validation, the weld
+census, the UV-weight derivation and the **binding arities checked against the vendored
+`meshoptimizer.h`** all still run.
 
 **Bake caveat.** The bake is the one step allowed to fail. It needs Cycles, and Cycles is
 a shipped add-on that a `--factory-startup` session (or a user who turned it off) leaves

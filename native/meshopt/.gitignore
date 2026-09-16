@@ -1,0 +1,9 @@
+# Build scratch: object files, the cmake throwaway project, MSVC's leavings.
+# The DLL itself is NOT ignored - a machine with a toolchain builds it once and
+# every other machine gets a working add-on out of the checkout.
+build/
+*.obj
+*.exp
+*.lib
+*.pdb
+*.ilk

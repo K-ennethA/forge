@@ -14,6 +14,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     diagnose = importlib.reload(diagnose)  # noqa: F821
     verify = importlib.reload(verify)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
+    meshopt = importlib.reload(meshopt)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
     rigforge_joints = importlib.reload(rigforge_joints)  # noqa: F821
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
@@ -38,6 +39,9 @@ else:
     from . import diagnose
     from . import verify
     from . import partforge
+    # Before rigforge: its LOD stage binds meshoptimizer through it. Registers
+    # no commands and imports no bpy - a ctypes wrapper over an optional DLL.
+    from . import meshopt
     from . import rigforge
     from . import rigforge_joints
     from . import rigforge_rig
@@ -81,6 +85,7 @@ __all__ = [
     "diagnose",
     "verify",
     "partforge",
+    "meshopt",
     "rigforge",
     "rigforge_joints",
     "rigforge_rig",

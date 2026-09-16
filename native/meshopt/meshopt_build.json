@@ -1,0 +1,10 @@
+{
+    "status":  "blocked",
+    "commit":  "3d62f11a3cea144593700a167aff14410fa084e2",
+    "commit_date":  "2026-09-12",
+    "toolchain":  "none",
+    "reason":  "no C++ toolchain on this machine (probed cl.exe via vswhere, clang++, cmake, zig - none present)",
+    "built":  "2026-09-16T04:31:11Z",
+    "abi":  "win-x64",
+    "dll":  "meshoptimizer.dll"
+}

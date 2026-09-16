@@ -513,6 +513,25 @@ def test_retopo(obj, workspace):
           result["lod_budgets"][1] < result["lod_budgets"][0] < budget["lod0"],
           str(result["lod_budgets"]))
 
+    # Which simplifier cut the chain, said out loud. The Decimate fallback is a
+    # correct answer but a UV-blind one, so a report that does not name the
+    # simplifier (and, when it fell back, *why*) hides the difference between
+    # "meshopt kept the atlas" and "nobody built the DLL".
+    from forge.tools import meshopt as mo
+
+    expected_simplifier = mo.simplifier_name()
+    check("the retopo result names the simplifier once, at the top",
+          result.get("simplifier") == expected_simplifier, str(result.get("simplifier")))
+    if mo.available():
+        check("the simplifier is meshopt at the pinned commit",
+              expected_simplifier.startswith("meshopt ")
+              and mo.commit() != "unknown", expected_simplifier)
+    else:
+        check("the fallback names Decimate and the reason meshopt is not in play",
+              expected_simplifier.startswith("blender-decimate (meshopt unavailable: ")
+              and len(mo.unavailable_reason()) > 20, expected_simplifier)
+        note("meshopt unavailable: %s" % mo.unavailable_reason())
+
     previous_triangles = rf.triangle_count(retopo)
     previous_begin = -1.0
     for report in result["lod_reports"]:
@@ -539,6 +558,23 @@ def test_retopo(obj, workspace):
               % name, report["visibility_begin"] > previous_begin,
               "%.3f vs %.3f" % (report["visibility_begin"], previous_begin))
         previous_begin = report["visibility_begin"]
+
+        check("%s records which simplifier cut it" % name,
+              report.get("simplifier") == expected_simplifier,
+              str(report.get("simplifier")))
+        check("%s stores the simplifier on the object for the exporter" % name,
+              json.loads(lod[rf.PROP_LOD]).get("simplifier") == expected_simplifier,
+              str(lod.get(rf.PROP_LOD)))
+        if mo.available():
+            # meshopt prices UV error into the collapse, so the seam lock the
+            # Decimate path needs is not merely off, it is unnecessary.
+            check("%s did not need the seam lock under meshopt" % name,
+                  report["seams_protected"] is False
+                  and report.get("achieved_index_count") is not None
+                  and report.get("attribute_weights"), str(report))
+            check("%s was weighted with a non-zero UV weight (gltfpack's trap)"
+                  % name, report["attribute_weights"][-1] > 0.0,
+                  str(report["attribute_weights"]))
 
         lod_tags = [g for g in lod.vertex_groups if g.name.startswith("tag_")]
         check("%s kept its tags" % name, len(lod_tags) >= 5,
@@ -664,11 +700,137 @@ def test_lods_share_lod0_atlas(retopo, result):
                   "90th percentile UV drift %.4f (median %.4f)" % (p90, median))
             note("%s: median UV drift %.5f, 90th %.5f, worst %.5f"
                  % (lod.name, median, p90, drift[-1]))
+            # Under meshopt the survivors are the *original* vertices carrying
+            # their *original* UVs, so the drift measured against LOD0's own
+            # vertices is not small - it is zero. The residual against the
+            # interpolated surface is only where a collapse moved a corner.
+            from forge.tools import meshopt as mo
+            if mo.available():
+                exact = sum(1 for value in drift if value == 0.0)
+                check("%s carries LOD0's UVs unchanged, not merely close"
+                      % lod.name, exact >= len(drift) // 2,
+                      "%d of %d vertices at exactly zero drift"
+                      % (exact, len(drift)))
 
         outside = [uv for uvs in lod_uv.values() for uv in uvs
                    if not (-0.002 <= uv[0] <= 1.002 and -0.002 <= uv[1] <= 1.002)]
         check("%s stays inside LOD0's 0..1 tile" % lod.name, not outside,
               "%d loop UV(s) outside" % len(outside))
+
+
+def test_meshopt_mesh_bridge(retopo):
+    """The two halves of the meshopt LOD path that are pure Blender code.
+
+    ``_mesh_to_meshopt_buffers`` splits loops into UV-unique vertices and
+    ``_rebuild_mesh_from_indices`` writes an index buffer back into a mesh.  The
+    simplifier sits between them, but neither half needs it to be tested — and
+    they are exactly the halves where the atlas can be lost: a wrong split key
+    smears UVs, a dropped deform layer loses every tag the rig needs.
+
+    Feeding the buffers straight back is therefore the sharpest test available on
+    a machine with no DLL: the rebuild must reproduce the mesh it came from,
+    triangle for triangle and UV for UV.
+    """
+    section("meshopt mesh bridge (buffers -> mesh, no DLL needed)")
+    from forge.tools import rigforge as rf
+
+    source = rf._duplicate_object(retopo, "MeshoptBridgeSource", drop_groups=False)
+    subject = rf._duplicate_object(retopo, "MeshoptBridgeRoundTrip", drop_groups=False)
+    try:
+        buffers = rf._mesh_to_meshopt_buffers(source)
+        triangles = buffers["triangles"]
+        check("the split buffers cover every triangle of the mesh",
+              triangles == rf.triangle_count(source) and triangles > 0,
+              "%d vs %d" % (triangles, rf.triangle_count(source)))
+        check("positions, UVs and normals agree on one vertex count",
+              len(buffers["positions"]) // 3 == len(buffers["split_to_vertex"])
+              and len(buffers["uvs"]) // 2 == len(buffers["split_to_vertex"])
+              and len(buffers["normals"]) // 3 == len(buffers["split_to_vertex"]),
+              "%d pos, %d uv, %d nor" % (len(buffers["positions"]) // 3,
+                                         len(buffers["uvs"]) // 2,
+                                         len(buffers["normals"]) // 3))
+        # UV seams are why there are more split vertices than mesh vertices; if
+        # they were equal the split key would be ignoring the UV.
+        check("UV seams split vertices, as an atlas-aware simplifier needs",
+              len(buffers["split_to_vertex"]) > len(source.data.vertices),
+              "%d splits vs %d vertices" % (len(buffers["split_to_vertex"]),
+                                            len(source.data.vertices)))
+
+        # Split vertices must share the *exact* position floats of the vertex
+        # they came from: that bitwise equality is what meshoptimizer's position
+        # hash stitches back together. Off by one ULP and every seam becomes a
+        # topological border and nothing collapses.
+        exact = True
+        for split, vertex_index in enumerate(buffers["split_to_vertex"]):
+            co = source.data.vertices[vertex_index].co
+            base = split * 3
+            if (buffers["positions"][base] != co[0]
+                    or buffers["positions"][base + 1] != co[1]
+                    or buffers["positions"][base + 2] != co[2]):
+                exact = False
+                break
+        check("every split shares its vertex's exact position floats", exact)
+
+        before_triangles = rf.triangle_count(source)
+        before_tags = {g.name: sum(1 for v in source.data.vertices
+                                   for e in v.groups if e.group == g.index)
+                       for g in source.vertex_groups if g.name.startswith("tag_")}
+
+        rf._rebuild_mesh_from_indices(subject, buffers, buffers["indices"])
+        check("the round trip rebuilds every triangle",
+              rf.triangle_count(subject) == before_triangles,
+              "%d vs %d" % (rf.triangle_count(subject), before_triangles))
+        check("the round trip keeps one vertex per UV-unique corner",
+              len(subject.data.vertices) == len(buffers["split_to_vertex"]),
+              "%d vs %d" % (len(subject.data.vertices),
+                            len(buffers["split_to_vertex"])))
+        check("the rebuilt mesh has LOD0's UV layer, by name",
+              [layer.name for layer in subject.data.uv_layers]
+              == [buffers["uv_name"]],
+              str([layer.name for layer in subject.data.uv_layers]))
+
+        # Every loop UV in the rebuild must be one of the UVs the source had at
+        # that position - bit for bit, not within a tolerance.
+        rebuilt = subject.data
+        layer = rebuilt.uv_layers.active
+        drifted = 0
+        for polygon in rebuilt.polygons:
+            for loop_index in polygon.loop_indices:
+                split = rebuilt.loops[loop_index].vertex_index
+                wanted = (buffers["uvs"][split * 2], buffers["uvs"][split * 2 + 1])
+                got = tuple(layer.data[loop_index].uv)
+                if got != wanted:
+                    drifted += 1
+        check("the round trip writes back bit-identical UVs", drifted == 0,
+              "%d loop UV(s) drifted" % drifted)
+
+        after_tags = {g.name: sum(1 for v in subject.data.vertices
+                                  for e in v.groups if e.group == g.index)
+                      for g in subject.vertex_groups if g.name.startswith("tag_")}
+        check("tags survive the rebuild on every surviving vertex",
+              set(after_tags) == set(before_tags)
+              and all(after_tags[name] >= before_tags[name]
+                      for name in before_tags if before_tags[name]),
+              "%s vs %s" % (sorted(after_tags.items())[:4],
+                            sorted(before_tags.items())[:4]))
+
+        # A real simplification keeps a subset of the triangles; the rebuild must
+        # then keep exactly the vertices that subset references, and no others.
+        half = buffers["indices"][:(triangles // 2) * 3]
+        partial = rf._duplicate_object(retopo, "MeshoptBridgePartial", drop_groups=False)
+        try:
+            rf._rebuild_mesh_from_indices(partial, buffers, half)
+            check("a partial index buffer keeps only the vertices it references",
+                  len(partial.data.vertices) == len(set(half)),
+                  "%d vs %d" % (len(partial.data.vertices), len(set(half))))
+            check("a partial index buffer is a real step down",
+                  0 < rf.triangle_count(partial) <= triangles // 2,
+                  "%d of %d" % (rf.triangle_count(partial), triangles))
+        finally:
+            rf._delete_object(partial.name)
+    finally:
+        rf._delete_object(source.name)
+        rf._delete_object(subject.name)
 
 
 def test_auto_uv(retopo):
@@ -991,6 +1153,7 @@ def main():
 
         retopo = test_retopo(obj, workspace)
         if retopo is not None:
+            test_meshopt_mesh_bridge(retopo)
             test_auto_uv(retopo)
         test_auto_uv_angle_fallback()
         test_operators_drive_the_same_code(obj)

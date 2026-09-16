@@ -30,6 +30,7 @@ import json
 import math
 import os
 import time
+from array import array
 
 import bmesh
 import bpy
@@ -63,6 +64,10 @@ from .common import (
     selection,
 )
 from .registry import ForgeError, command
+# The UV-aware simplifier. Optional by construction: when the DLL has not been
+# built, every call here still imports and the LOD stage falls back to Decimate
+# with the reason in the report. Nothing in meshopt.py touches bpy.
+from . import meshopt
 
 #: Vertex groups with this prefix are semantic tags. Everything else on the
 #: object (deform weights, masks) is left strictly alone.
@@ -893,8 +898,13 @@ def _protect_seams(obj):
     of the budget, and locking them floors the reduction well above any LOD
     target - which is why ``protect_seams`` is off by default and the budget
     wins.  Turn it on when an exact atlas matters more than the face count.
-    The real fix is a UV-aware simplifier; see the limitation note in
-    ``addon/README.md``.
+
+    **Only the Decimate fallback needs any of this.**  Under meshoptimizer
+    (``meshopt.simplify_lod``, the default whenever the DLL is built) a UV seam
+    is an attribute discontinuity the quadric already prices, the survivors keep
+    their original UVs bit for bit, and ``protect_seams`` is simply unnecessary -
+    it is ignored on that path.  This function is what runs when the DLL is not
+    there; see ``native/meshopt/README.md``.
     """
     indices = _seam_vertices(obj)
     if not indices:
@@ -965,6 +975,220 @@ def _decimate_to_budget(obj, budget, protect_seams=False):
         "within_budget": triangles <= budget,
         "seams_protected": bool(protected),
     }
+
+
+def _mesh_to_meshopt_buffers(obj):
+    """Flat split-vertex buffers for :mod:`meshopt`, plus the way back.
+
+    UVs live on *loops*, not vertices, so a UV-aware simplifier needs one vertex
+    per distinct ``(vertex, uv)`` corner — the same split a glTF export makes.
+    Those splits share the **exact position floats** of the Blender vertex they
+    came from, which is precisely what meshoptimizer's position hash needs to
+    stitch them back into one topological vertex with a UV discontinuity across
+    it.  That is the whole trick: the seam stays a seam for the metric, and stays
+    a single vertex for the topology.
+
+    The split key is ``(vertex_index, u, v)`` and *not* the normal: keying on the
+    normal too would split every flat-shaded corner as well, tripling the vertex
+    count to protect a channel that only weights the metric.  The normal of the
+    first corner that mints a split is the one used.
+    """
+    mesh = obj.data
+    mesh.calc_loop_triangles()
+    uv_layer = mesh.uv_layers.active
+    uv_data = uv_layer.data if uv_layer is not None else None
+
+    loop_normals = None
+    if len(mesh.loops):
+        try:
+            buffer = array("f", bytes(4 * 3 * len(mesh.loops)))
+            mesh.corner_normals.foreach_get("vector", buffer)
+            loop_normals = buffer
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            loop_normals = None
+
+    positions = array("f")
+    uvs = array("f")
+    normals = array("f")
+    indices = array("I")
+    split_of = {}
+    split_to_vertex = []
+    split_material = []
+    split_smooth = []
+
+    for triangle in mesh.loop_triangles:
+        polygon = mesh.polygons[triangle.polygon_index]
+        for loop_index, vertex_index in zip(triangle.loops, triangle.vertices):
+            if uv_data is not None:
+                uv = uv_data[loop_index].uv
+                key = (vertex_index, uv[0], uv[1])
+            else:
+                uv = None
+                key = (vertex_index, 0.0, 0.0)
+            split = split_of.get(key)
+            if split is None:
+                split = len(split_to_vertex)
+                split_of[key] = split
+                co = mesh.vertices[vertex_index].co
+                positions.extend((co[0], co[1], co[2]))
+                if uv is not None:
+                    uvs.extend((uv[0], uv[1]))
+                if loop_normals is not None:
+                    base = loop_index * 3
+                    normals.extend((loop_normals[base], loop_normals[base + 1],
+                                    loop_normals[base + 2]))
+                else:
+                    normal = mesh.vertices[vertex_index].normal
+                    normals.extend((normal[0], normal[1], normal[2]))
+                split_to_vertex.append(vertex_index)
+                split_material.append(polygon.material_index)
+                split_smooth.append(bool(polygon.use_smooth))
+            indices.append(split)
+
+    return {
+        "positions": positions,
+        "uvs": uvs if uv_data is not None else None,
+        "normals": normals,
+        "indices": indices,
+        "split_to_vertex": split_to_vertex,
+        "split_material": split_material,
+        "split_smooth": split_smooth,
+        "uv_name": uv_layer.name if uv_layer is not None else None,
+        "triangles": len(indices) // 3,
+    }
+
+
+def _rebuild_mesh_from_indices(obj, buffers, new_indices):
+    """Replace ``obj``'s geometry with the triangles meshopt returned.
+
+    The index buffer references the *original* split vertices, so every surviving
+    vertex is written back with its original position and its original UV — no
+    interpolation, no re-projection, bit-identical to LOD0's atlas.  That is the
+    property the whole lane exists for, and it is why the LODs can share one
+    baked map.
+
+    Vertex groups ride along (the tags the rig and the cloth pass read, and any
+    deform weights), copied per surviving vertex through a bmesh deform layer
+    rather than ``vertex_groups.add`` per vertex, which is thousands of RNA calls
+    for the same result.  Materials and the smooth flag are carried per vertex
+    and voted per new triangle: a collapsed triangle has no single source face,
+    so a vote is the honest answer rather than a fabricated one.
+    """
+    mesh = obj.data
+    positions = buffers["positions"]
+    uvs = buffers["uvs"]
+    split_to_vertex = buffers["split_to_vertex"]
+
+    order = []
+    new_of_split = {}
+    for split in new_indices:
+        if split not in new_of_split:
+            new_of_split[split] = len(order)
+            order.append(split)
+
+    weights = {}
+    for split in order:
+        vertex_index = split_to_vertex[split]
+        if vertex_index not in weights:
+            weights[vertex_index] = [(group.group, group.weight)
+                                     for group in mesh.vertices[vertex_index].groups]
+
+    bm = bmesh.new()
+    deform = bm.verts.layers.deform.verify()
+    uv_out = bm.loops.layers.uv.new(buffers["uv_name"]) if buffers["uv_name"] else None
+
+    bm_verts = []
+    for split in order:
+        base = split * 3
+        vert = bm.verts.new((positions[base], positions[base + 1], positions[base + 2]))
+        for group_index, weight in weights[split_to_vertex[split]]:
+            vert[deform][group_index] = weight
+        bm_verts.append(vert)
+    bm.verts.index_update()
+    bm.verts.ensure_lookup_table()
+
+    materials = buffers["split_material"]
+    smooth = buffers["split_smooth"]
+    for triangle in range(len(new_indices) // 3):
+        corner = triangle * 3
+        a, b, c = (new_indices[corner], new_indices[corner + 1], new_indices[corner + 2])
+        if a == b or b == c or a == c:
+            continue
+        try:
+            face = bm.faces.new((bm_verts[new_of_split[a]], bm_verts[new_of_split[b]],
+                                 bm_verts[new_of_split[c]]))
+        except ValueError:
+            # Duplicate face: meshopt can emit one when two collapses meet.
+            continue
+        face.material_index = max(set((materials[a], materials[b], materials[c])),
+                                  key=(materials[a], materials[b], materials[c]).count)
+        face.smooth = smooth[a] and smooth[b] and smooth[c]
+        if uv_out is not None and uvs is not None:
+            for loop, split in zip(face.loops, (a, b, c)):
+                loop[uv_out].uv = (uvs[split * 2], uvs[split * 2 + 1])
+
+    bm.to_mesh(mesh)
+    bm.free()
+    mesh.update()
+
+
+def _meshopt_to_budget(obj, budget):
+    """Collapse ``obj`` towards ``budget`` **triangles** with meshoptimizer.
+
+    Raises :class:`meshopt.MeshoptError` when the library is missing or the mesh
+    is not simplifiable, which is the caller's cue to fall back to Decimate.
+    """
+    before = triangle_count(obj)
+    budget = max(int(LOD_MIN_FACES), int(budget))
+    buffers = _mesh_to_meshopt_buffers(obj)
+    detail = {}
+    new_indices, result_error = meshopt.simplify_lod(
+        buffers["positions"], buffers["indices"],
+        uvs=buffers["uvs"], normals=buffers["normals"],
+        target_index_count=budget * 3, report=detail)
+    _rebuild_mesh_from_indices(obj, buffers, new_indices)
+    triangles = triangle_count(obj)
+    return {
+        "budget": budget,
+        # Reported for symmetry with the Decimate path; meshopt is driven by an
+        # index target, so this is the ratio it achieved, not one it was given.
+        "ratio": round(float(triangles) / float(before), 6) if before else 1.0,
+        "triangles": triangles,
+        "face_count": len(obj.data.polygons),
+        "triangles_before": before,
+        "within_budget": triangles <= budget,
+        # protect_seams is a Decimate-only lever and meshopt does not need it:
+        # a UV seam is an attribute discontinuity the metric already prices, and
+        # the survivors keep their exact UVs, so there is nothing to lock.
+        "seams_protected": False,
+        "result_error": detail.get("result_error"),
+        "achieved_index_count": detail.get("achieved_index_count"),
+        "target_index_count": detail.get("target_index_count"),
+        "attribute_weights": detail.get("attribute_weights"),
+        "split_vertices": len(buffers["split_to_vertex"]),
+        "wedges": detail.get("weld", {}).get("wedges"),
+    }
+
+
+def _simplify_to_budget(obj, budget, protect_seams=False):
+    """LOD one level down, by meshopt when it is available and Decimate when not.
+
+    Returns ``(report, simplifier)``.  A meshopt failure is never fatal: the
+    Decimate path is still correct, only UV-blind, so the fallback happens with
+    the reason recorded in ``simplifier`` rather than as an error.
+    """
+    if meshopt.available():
+        try:
+            report = _meshopt_to_budget(obj, budget)
+            report["simplifier"] = meshopt.simplifier_name()
+            return report, report["simplifier"]
+        except meshopt.MeshoptError as exc:
+            simplifier = "blender-decimate (meshopt failed: %s)" % exc
+    else:
+        simplifier = meshopt.simplifier_name()
+    report = _decimate_to_budget(obj, budget, protect_seams=protect_seams)
+    report["simplifier"] = simplifier
+    return report, simplifier
 
 
 def measure_lod_error(reference, lod, samples=2000):
@@ -1300,7 +1524,9 @@ def cmd_rigforge_retopo(params):
     seams_from_tags = get_bool(params, "seams_from_tags", True)
     # Off by default, and the docstring of _protect_seams says why: Blender's
     # Decimate vertex group is a hard lock, so protecting the seams of an
-    # unwrapped mesh costs more budget than the tearing it prevents.
+    # unwrapped mesh costs more budget than the tearing it prevents. Under
+    # meshopt (the default when the DLL is built) it is not merely off, it is
+    # unnecessary and ignored - seams survive as attribute discontinuities.
     protect_seams = get_bool(params, "protect_seams", False)
 
     if do_bake and not do_unwrap:
@@ -1423,7 +1649,8 @@ def cmd_rigforge_retopo(params):
             # Every level is decimated from LOD0, never from the level above:
             # chaining would compound the UV drift instead of measuring it once.
             lod = _duplicate_object(retopo, lod_name, drop_groups=False)
-            report = _decimate_to_budget(lod, budget, protect_seams=protect_seams)
+            report, _simplifier = _simplify_to_budget(lod, budget,
+                                                      protect_seams=protect_seams)
             error = measure_lod_error(retopo, lod)
             report.update({
                 "level": level,
@@ -1440,15 +1667,22 @@ def cmd_rigforge_retopo(params):
                 "face_count": report["face_count"], "error": report["error"],
                 "error_relative": report["error_relative"],
                 "visibility_begin": report["visibility_begin"],
+                "simplifier": report["simplifier"],
                 "source": retopo.name,
             }))
             if not report["within_budget"]:
+                if report["seams_protected"]:
+                    why = ("; protect_seams locks every seam vertex, which is what "
+                           "is holding it up")
+                elif report["simplifier"].startswith("meshopt"):
+                    why = ("; meshopt stopped at %s indices - topology or attribute "
+                           "discontinuities blocked the rest"
+                           % report.get("achieved_index_count"))
+                else:
+                    why = "; Decimate could collapse no further"
                 warnings.append(
                     "%s came out at %d triangles against a %d-triangle budget%s."
-                    % (lod.name, report["triangles"], report["budget"],
-                       "; protect_seams locks every seam vertex, which is what is "
-                       "holding it up" if report["seams_protected"]
-                       else "; Decimate could collapse no further"))
+                    % (lod.name, report["triangles"], report["budget"], why))
             if do_unwrap and not report["uv_layer"]:
                 warnings.append("%s lost its UV layer during decimation." % lod.name)
             lod_objects.append(lod)
@@ -1457,6 +1691,7 @@ def cmd_rigforge_retopo(params):
                            "budget": report["budget"], "object": lod.name,
                            "face_count": report["face_count"],
                            "triangles": report["triangles"],
+                           "simplifier": report["simplifier"],
                            "error": report["error"]})
         refresh_view_layer()
 
@@ -1486,6 +1721,11 @@ def cmd_rigforge_retopo(params):
         "quad_method": quad_method,
         "lods": lods,
         "lod_reports": lod_reports,
+        # The simplifier the chain actually ran on, named once at the top so a
+        # reader does not have to open a per-level report to find out whether the
+        # UV-aware path was in play. Same string the per-level reports carry.
+        "simplifier": (lod_reports[0]["simplifier"] if lod_reports
+                       else meshopt.simplifier_name()),
         "lod_budgets": budgets,
         "lod_budget_source": budget_source,
         "budget": {
