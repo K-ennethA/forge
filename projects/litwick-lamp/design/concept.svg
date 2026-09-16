@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="480" viewBox="0 0 680 480" font-family="Verdana, sans-serif">
+  <rect x="0" y="0" width="680" height="480" fill="#ffffff"/>
+  <text x="20" y="26" font-size="16" font-weight="bold" fill="#222">Litwick Lamp — rev 2 (AAA power): side cross-section + front view</text>
+  <text x="20" y="42" font-size="11" fill="#c0392b">Base grew 40 -&gt; 46 mm and body height 75 -&gt; 95 mm to fit the 2xAAA holder. Everything above the switch is unchanged.</text>
+
+  <!-- ===================== LEFT: side cross-section ===================== -->
+  <g>
+    <text x="70" y="66" font-size="12" fill="#666">Side cross-section</text>
+
+    <!-- taller body silhouette: 46mm base -> 69mm top, 95mm tall -->
+    <path d="M 130,420
+             C 122,340 112,280 108,240
+             L 232,240
+             C 228,280 218,340 210,420
+             Z" fill="#f2ede4" stroke="#333" stroke-width="2"/>
+
+    <!-- flame silhouette on top -->
+    <path d="M 170,240
+             C 150,220 140,185 150,155
+             C 156,135 164,120 170,100
+             C 176,120 184,135 190,155
+             C 200,185 190,220 170,240 Z"
+          fill="#f9e6c8" stroke="#c98a2b" stroke-width="2" stroke-dasharray="4,3"/>
+    <text x="196" y="160" font-size="11" fill="#c98a2b">flame (translucent,</text>
+    <text x="196" y="173" font-size="11" fill="#c98a2b">warm-white glow)</text>
+
+    <!-- plunger guide sleeve at neck -->
+    <rect x="155" y="216" width="30" height="24" fill="#ffffff" stroke="#555" stroke-width="1.5"/>
+    <text x="248" y="222" font-size="11" fill="#555">guide sleeve</text>
+    <text x="248" y="234" font-size="11" fill="#555">12 mm long, 6.4 mm bore</text>
+
+    <!-- plunger stem -->
+    <line x1="170" y1="155" x2="170" y2="216" stroke="#c98a2b" stroke-width="3" stroke-dasharray="2,3"/>
+    <text x="248" y="206" font-size="11" fill="#c98a2b">plunger, 6 mm keyed stem</text>
+
+    <!-- switch seated below guide -->
+    <rect x="150" y="258" width="40" height="24" fill="#e8e8e8" stroke="#333" stroke-width="1.5"/>
+    <text x="248" y="266" font-size="11" fill="#333">switch: 6x6 mm</text>
+    <text x="248" y="278" font-size="11" fill="#333">self-locking latch</text>
+
+    <!-- LED beside switch -->
+    <circle cx="130" cy="265" r="9" fill="#fdeccb" stroke="#c98a2b" stroke-width="1.5"/>
+    <line x1="130" y1="256" x2="130" y2="242" stroke="#c98a2b" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <text x="40" y="262" font-size="11" fill="#7a5a1a">LED 5 mm</text>
+    <text x="40" y="274" font-size="11" fill="#7a5a1a">warm white</text>
+
+    <!-- resistor, new in rev 2 -->
+    <rect x="115" y="292" width="24" height="10" fill="#e8d9b0" stroke="#7a5a1a" stroke-width="1.2"/>
+    <text x="40" y="302" font-size="10" fill="#7a5a1a">22 ohm resistor</text>
+
+    <!-- AAA holder, standing on end -->
+    <rect x="132" y="316" width="36" height="86" fill="#e0e0e0" stroke="#333" stroke-width="1.5"/>
+    <text x="248" y="340" font-size="11" fill="#333">2xAAA holder</text>
+    <text x="248" y="352" font-size="11" fill="#333">52x26x14 mm envelope</text>
+    <text x="248" y="364" font-size="11" fill="#333">stood on end</text>
+
+    <!-- base door -->
+    <rect x="88" y="418" width="164" height="10" fill="#cfcfcf" stroke="#333" stroke-width="1.5"/>
+    <text x="260" y="426" font-size="11" fill="#333">screw-off base door</text>
+  </g>
+
+  <!-- ===================== RIGHT: front view + dims ===================== -->
+  <g>
+    <text x="450" y="66" font-size="12" fill="#666">Front view</text>
+
+    <path d="M 470,240
+             C 450,220 440,185 450,155
+             C 456,135 464,120 470,100
+             C 476,120 484,135 490,155
+             C 500,185 490,220 470,240 Z"
+          fill="#f9e6c8" stroke="#c98a2b" stroke-width="2"/>
+
+    <path d="M 430,420
+             C 422,340 412,280 408,240
+             L 532,240
+             C 528,280 518,340 510,420
+             Z" fill="#f2ede4" stroke="#333" stroke-width="2"/>
+
+    <rect x="412" y="418" width="10" height="8" fill="#f2ede4" stroke="#333"/>
+    <rect x="518" y="418" width="10" height="8" fill="#f2ede4" stroke="#333"/>
+
+    <!-- overall height dimension -->
+    <line x1="570" y1="100" x2="570" y2="426" stroke="#000" stroke-width="1"/>
+    <line x1="565" y1="100" x2="575" y2="100" stroke="#000" stroke-width="1"/>
+    <line x1="565" y1="426" x2="575" y2="426" stroke="#000" stroke-width="1"/>
+    <text x="578" y="250" font-size="11" fill="#000">~140 mm assembled</text>
+    <text x="578" y="263" font-size="11" fill="#000">(95 body + 45 flame)</text>
+
+    <!-- base diameter dimension -->
+    <line x1="408" y1="440" x2="532" y2="440" stroke="#000" stroke-width="1"/>
+    <line x1="408" y1="435" x2="408" y2="445" stroke="#000" stroke-width="1"/>
+    <line x1="532" y1="435" x2="532" y2="445" stroke="#000" stroke-width="1"/>
+    <text x="418" y="456" font-size="11" fill="#000">base 46 mm — top opening 69 mm</text>
+  </g>
+
+  <text x="20" y="470" font-size="11" fill="#888">Everything from the switch up is identical to rev 1 — only the base width, body height and battery bay changed.</text>
+</svg>

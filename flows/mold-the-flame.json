@@ -1,0 +1,45 @@
+{
+  "name": "mold-the-flame",
+  "description": "Check a part's mold undercuts (will it release from a two-piece mold) and export the mold halves as STL for silicone casting.",
+  "params": {
+    "part": {
+      "value": 3,
+      "unit": "count",
+      "description": "Which piece of litwick-lamp/part.py to mold (3 = flame)"
+    },
+    "mode": {
+      "value": "printed_negative",
+      "unit": "text",
+      "description": "\"printed_negative\" (two mold halves) or \"master_box\" (figure + open box) for shapes with undercuts a rigid mold can't release"
+    }
+  },
+  "steps": [
+    {
+      "kind": "service",
+      "op": "/mold",
+      "args": {
+        "script_path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\litwick-lamp\\part.py",
+        "overrides": {
+          "part": "{{part}}"
+        },
+        "mode": "{{mode}}"
+      },
+      "label": "Check undercuts and preview the mold halves"
+    },
+    {
+      "kind": "service",
+      "op": "/export_mold",
+      "args": {
+        "script_path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\litwick-lamp\\part.py",
+        "overrides": {
+          "part": "{{part}}"
+        },
+        "mode": "{{mode}}",
+        "directory": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\litwick-lamp\\molds",
+        "basename": "litwick-flame-mold",
+        "format": "stl"
+      },
+      "label": "Export the mold halves as STL"
+    }
+  ]
+}

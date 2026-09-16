@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360" font-family="Verdana, sans-serif">
+  <rect x="0" y="0" width="480" height="360" fill="#ffffff"/>
+  <text x="20" y="26" font-size="15" font-weight="bold" fill="#222">Litwick Lamp — press-to-toggle mechanism (animated, not a simulation)</text>
+  <text x="20" y="44" font-size="11" fill="#666">Unchanged from rev 1: only the power source and LED colour changed. 20 px per 1 mm. Loops every 3 s.</text>
+
+  <!-- centreline -->
+  <line x1="240" y1="60" x2="240" y2="330" stroke="#bbb" stroke-width="1" stroke-dasharray="3,4"/>
+
+  <!-- static: guide sleeve -->
+  <rect x="205" y="160" width="70" height="40" fill="#eef1f4" stroke="#444" stroke-width="2"/>
+  <text x="300" y="175" font-size="11" fill="#444">guide sleeve</text>
+  <text x="300" y="188" font-size="11" fill="#444">12 mm, bore 6.4 mm</text>
+
+  <!-- static: switch body, seated below guide -->
+  <rect x="215" y="216" width="50" height="30" fill="#dcdcdc" stroke="#333" stroke-width="2"/>
+  <rect x="232" y="210" width="16" height="8" fill="#999" stroke="#333" stroke-width="1"/>
+  <text x="300" y="228" font-size="11" fill="#333">6x6 self-locking</text>
+  <text x="300" y="241" font-size="11" fill="#333">switch, ~250 gf</text>
+
+  <!-- static: LED + resistor, wired beside the switch -->
+  <circle cx="180" cy="230" r="12" fill="#4a3018" stroke="#c98a2b" stroke-width="1.5">
+    <animate attributeName="fill" values="#4a3018;#4a3018;#ffcf7a;#ffcf7a"
+             keyTimes="0;0.34;0.35;1" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <text x="110" y="196" font-size="11" fill="#7a5a1a">LED 5 mm warm white</text>
+  <text x="110" y="209" font-size="11" fill="#7a5a1a">+ 22 ohm resistor</text>
+  <rect x="150" y="248" width="20" height="9" fill="#e8d9b0" stroke="#7a5a1a" stroke-width="1"/>
+
+  <!-- finger arrow -->
+  <line x1="240" y1="70" x2="240" y2="100" stroke="#c0392b" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="252" y="82" font-size="11" fill="#c0392b">finger presses</text>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <!-- moving group: outer <g> is the static placement, inner <g> is animated -->
+  <g transform="translate(240,0)">
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="0 0; 0 42; 0 30; 0 30" keyTimes="0; 0.35; 0.5; 1"
+        dur="3s" repeatCount="indefinite"/>
+
+      <!-- flame cap (decoration, press-fit on the stem) -->
+      <path d="M -30,140
+               C -35,110 -20,80 0,60
+               C 20,80 35,110 30,140 Z"
+            fill="#f9e6c8" stroke="#c98a2b" stroke-width="2"/>
+
+      <!-- keyed stem -->
+      <rect x="-6" y="140" width="12" height="45" fill="#cfd3d8" stroke="#333" stroke-width="1.5"/>
+
+      <!-- retention flange -->
+      <rect x="-12" y="183" width="24" height="6" fill="#9aa0a6" stroke="#333" stroke-width="1"/>
+    </g>
+  </g>
+
+  <text x="20" y="290" font-size="12" fill="#222">Press: 2.1 mm total, stopped dead by the guide's rim.</text>
+  <text x="20" y="306" font-size="12" fill="#222">Latch (light on) happens near the bottom of that press.</text>
+  <text x="20" y="322" font-size="12" fill="#222">Release: switch's own spring lifts it back to a 1.5 mm-down "lit" rest — press again to pop free and go dark.</text>
+</svg>

@@ -74,7 +74,9 @@
     "collection": "litwick-lamp",
     "core": "litwick-lamp",
     "proposals": [
-      "litwick-lamp-flame"
+      "litwick-lamp-flame",
+      "litwick-lamp-lid",
+      "litwick-lamp-plunger"
     ]
   },
   "print": {
