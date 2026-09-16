@@ -17,7 +17,8 @@ Endpoints
                             "busy", "queued", "session_cost_usd", "last_auth_error",
                             "build": {"sha", "pid", "started", "uptime_s"},
                             "config": {"projects_dir", "models_dirs", "model",
-                                       "timeout_s", "blender": {"host", "port"},
+                                       "timeout_s", "stall_timeout_s",
+                                       "blender": {"host", "port"},
                                        ..., "env_set": [names only]}}``
 ``POST /ask``           -> ``{"job_id", "state": "running"|"queued"}``
                            (409 only when a message is ALREADY waiting;
@@ -237,6 +238,33 @@ recognise is skipped, never fatal, and a run that never prints a ``result``
 event but exits 0 is salvaged from the last parseable line (falling back to the
 text that streamed past).
 
+How a turn ends
+---------------
+``job["state"]`` is one of four, and all four are TERMINAL — a client that polls
+``GET /job/<id>`` must stop on every one of them::
+
+    done       it answered
+    error      it could not
+    cancelled  the artist pressed Stop
+    timeout    it ran out of clock, and here is how far it got
+
+``timeout`` is the Phase-17 addition and it is deliberately not ``error``.  The
+dogfood run (docs/dogfood-litwick-2026-09-16.md, B-1) lost a fifteen-minute turn
+that had already written a 441-line ``part.py``, generated it, taken a
+printability refusal, fixed it, re-checked and rendered it twice: the artist was
+shown one sentence saying it "was stopped", no reply, and a $0.00 bill.  Now the
+whole stream is accumulated as it arrives (:class:`ActivityRecorder`), so a turn
+that is killed still lands its text, the steps it completed, the files it wrote
+and whatever cost the stream mentioned, followed by one honest line saying what
+stopped it — see :func:`checkpoint_reply`.
+
+There are two clocks behind it.  ``FORGE_ASSISTANT_TIMEOUT`` is the turn budget;
+``FORGE_ASSISTANT_STALL_TIMEOUT`` is how long the CLI may say *nothing* before it
+is treated as hung.  They produce different sentences because they are different
+diagnoses: a turn killed while working may genuinely be too big, and is told so;
+a turn killed for going silent would have stalled at any size, and telling that
+artist to ask for less would be blaming them for a hang.
+
 Environment
 -----------
 ``FORGE_ASSISTANT_PORT``     listen port (default 8901)
@@ -244,7 +272,16 @@ Environment
                              The test suite points this at a fake CLI.
 ``FORGE_ASSISTANT_MODEL``    fallback ``--model`` value, used only when the
                              request named none; unset = the CLI's own default
-``FORGE_ASSISTANT_TIMEOUT``  seconds per turn (default 600)
+``FORGE_ASSISTANT_TIMEOUT``  seconds per turn (default 600).  Reaching it is no
+                             longer a failure: the turn lands as ``timeout``
+                             carrying everything the model said and did
+``FORGE_ASSISTANT_STALL_TIMEOUT``  seconds of TOTAL silence from the CLI before
+                             the turn is stopped as hung (default 300; 0 off).
+                             A separate clock from the one above, because a
+                             process that has said nothing for five minutes is
+                             not a big request, it is a hang
+``FORGE_FORCE_START``        ``1`` skips the "something is already answering on
+                             this port" guard and binds anyway
 ``FORGE_ASSISTANT_TOOLS``    ``--allowedTools`` value; unset = the Forge default.
                              Set it to the empty string for a no-tools run.
 ``FORGE_ASSISTANT_CWD``      working directory for the CLI (default: the repo root)
@@ -393,6 +430,12 @@ def build_info():
 
 DEFAULT_PORT = 8901
 DEFAULT_TIMEOUT = 600.0
+#: How long the CLI may say NOTHING — no event, no byte — before the turn is
+#: stopped.  The dogfood run's turn 3 spent 595 of its 900 seconds in dead air
+#: and then did the whole job in the five minutes that were left, so the turn
+#: budget was never the constraint: a hung process was.  A stall is killed on
+#: its own clock so the rest of the budget is still there to work in.
+DEFAULT_STALL_TIMEOUT = 300.0
 
 #: Read-only repo access plus every Forge MCP tool.  The server name comes from
 #: ``.mcp.json`` at the repo root ("forge"), so the wildcard is ``mcp__forge__*``.
@@ -539,6 +582,11 @@ SERVABLE_TYPES = {
     ".mp4": "video/mp4",
     ".glb": "model/gltf-binary",
     ".gltf": "model/gltf+json",
+    # The file an artist actually prints.  The dogfood run ended with four
+    # print STLs and two mold halves on disk and an EMPTY files list on both
+    # jobs — the one deliverable the whole pipeline exists to produce was the
+    # one thing the panel could not offer.  A download link, never a preview.
+    ".stl": "model/stl",
 }
 
 #: Servable types that the page draws as a picture rather than offering as a
@@ -587,13 +635,34 @@ IMAGE_MAGIC = {
     ".bmp": (b"BM",),
 }
 
+#: The extensions a path scan will recognise — the keys of :data:`SERVABLE_TYPES`
+#: spelled as a regex alternation, so the two can never drift apart.
+_PATH_EXTENSIONS = r"png|jpe?g|webp|bmp|svg|mp4|glb|gltf|stl"
+
 #: Absolute paths of servable files, wherever they appear in a reply, a tool
 #: argument or a tool result.  Windows drive letters and UNC/POSIX roots both;
 #: quotes, brackets and backticks end a path because markdown wraps them.
 _FILE_PATH_RE = re.compile(
     r"(?:[A-Za-z]:[\\/]|\\\\|/)[^\s\"'`<>|*?\r\n]*?"
-    r"\.(?:png|jpe?g|webp|bmp|svg|mp4|glb|gltf)\b",
+    r"\.(?:%s)\b" % _PATH_EXTENSIONS,
     re.IGNORECASE)
+
+#: The same file named the way a model actually writes it in prose:
+#: ``molds/litwick-flame-mold_mold_bottom.stl``, relative to the project it is
+#: working in.  Deliberately a SEPARATE pattern rather than a loosening of the
+#: one above, because a relative path is only a path if it resolves to a real
+#: file — the existence check against a known base directory is what keeps
+#: ``a.out/b.png``-shaped prose out of the gallery.  See
+#: :func:`find_file_paths`.
+_REL_FILE_PATH_RE = re.compile(
+    r"(?<![A-Za-z0-9_.:\\/-])"
+    r"[A-Za-z0-9_.-]+(?:[\\/][A-Za-z0-9_.-]+)*"
+    r"\.(?:%s)\b" % _PATH_EXTENSIONS,
+    re.IGNORECASE)
+
+#: How many base directories a relative path is tried against before the scan
+#: gives up.  A bound, not a tuning knob: this runs on every tool result.
+MAX_PATH_BASES = 24
 
 #: How deep into a tool's arguments the path scan walks.
 _SCAN_DEPTH = 4
@@ -606,7 +675,9 @@ DEFAULT_MESHGEN_URL = "http://127.0.0.1:8902"
 DEFAULT_BLENDER_HOST = "127.0.0.1"
 DEFAULT_BLENDER_PORT = 9876
 #: A health probe is a dot on a strip: it must never make the page wait.
-HEALTH_TIMEOUT = 2.5
+# 8.0, not 2.5: meshgen's /health measures ~2.83 s when ComfyUI is warm, and
+# the dogfood run watched a healthy service reported "not running" 3/3 times.
+HEALTH_TIMEOUT = 8.0
 #: ``flow_list`` is a folder read; ``flow_run`` can be a five-minute segment.
 FLOW_LIST_TIMEOUT = 20.0
 DEFAULT_FLOW_RUN_TIMEOUT = 900.0
@@ -860,8 +931,15 @@ LABEL_LIMIT = 160
 #: Seconds between text markers.  Text streams a token at a time; one line every
 #: couple of seconds is a progress indicator, one per token is a firehose.
 DEFAULT_TEXT_INTERVAL = 2.0
-#: How much streamed text is kept to stand in for a missing result event.
-MAX_SALVAGE_TEXT = 8000
+#: How much streamed text is kept to stand in for a missing result event, and
+#: to be handed back as the checkpoint of a turn that ran out of time.  Far
+#: larger than it was: this is a whole design explanation now, not a salvage
+#: scrap, and 8000 characters would have clipped the dogfood run's turn 2.
+MAX_SALVAGE_TEXT = 60000
+
+#: How many "and then it did X" lines a checkpoint reply may carry.  The point
+#: is to prove the work happened, not to reprint the activity feed.
+MAX_CHECKPOINT_STEPS = 40
 
 #: Only meaningful on Windows; kept as 0 elsewhere so the same call site works.
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -959,6 +1037,22 @@ def timeout_s():
     except (TypeError, ValueError):
         return DEFAULT_TIMEOUT
     return max(5.0, value)
+
+
+def stall_timeout_s():
+    """Seconds of total silence that count as a hang (0 disables the check).
+
+    Separate from :func:`timeout_s` because they answer different questions:
+    the turn budget asks "is this taking too long?", the stall clock asks "is
+    anything happening at all?".  Only the second one can be answered without
+    knowing how big the job was.
+    """
+    try:
+        value = float(str(_env("FORGE_ASSISTANT_STALL_TIMEOUT",
+                               DEFAULT_STALL_TIMEOUT)).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_STALL_TIMEOUT
+    return max(0.0, value)
 
 
 def working_dir():
@@ -1682,6 +1776,72 @@ def extract_reply(payload):
     return ""
 
 
+def compose_reply(blocks, final=""):
+    """The artist's reply: every text block the model wrote, in order.
+
+    The CLI's ``result`` field is the model's LAST message, which is why the
+    dogfood run's turn 2 delivered four lines of summary and dropped the four
+    paragraphs of reasoning that came before the tool calls — the explanation
+    is the product in a design tool, and it was the part being thrown away
+    (friction F-1).  So the reply is assembled from the stream instead, and the
+    result string is only appended when it says something the stream did not.
+
+    Joining with a blank line is not cosmetic: the blocks are paragraphs the
+    model wrote around its tool calls, and run together they read as one
+    sentence that changes subject halfway through.
+    """
+    ordered = [str(block).strip() for block in (blocks or []) if str(block).strip()]
+    final = str(final or "").strip()
+    if not ordered:
+        return final
+    joined = "\n\n".join(ordered)
+    if final and final not in joined:
+        joined = "%s\n\n%s" % (joined, final)
+    return joined
+
+
+def checkpoint_reply(recorder, limit, stalled=False, silent_for=0.0):
+    """What a turn that ran out of time still has to say for itself.
+
+    B-1 in one function.  The dogfood run's turn 3 wrote a 441-line ``part.py``,
+    generated it, hit a printability refusal, fixed it, re-checked and rendered
+    twice — and then died at the timeout reporting ``state: error``, no reply,
+    no cost, and the sentence "Try a smaller request".  Every one of those four
+    was wrong: the work was on disk, it had been described, it had been paid
+    for, and the request was never the problem.
+
+    So the reply is whatever the model actually said and did, followed by one
+    honest sentence naming what stopped it.  The advice to ask for less appears
+    only when it is true — a turn killed while it was working might genuinely
+    be too big; a turn killed because the CLI went silent would have stalled at
+    any size, and telling the artist to type less is blaming them for a hang.
+    """
+    parts = []
+    text = compose_reply(recorder.text_blocks()) if recorder is not None else ""
+    if text:
+        parts.append(text)
+    steps = recorder.steps() if recorder is not None else []
+    if steps:
+        parts.append("Steps it completed before it was stopped:\n"
+                     + "\n".join("- %s" % step for step in steps))
+    if stalled:
+        parts.append(
+            "— the assistant went silent for %.0f seconds (no text, no tool, "
+            "nothing) and was stopped there rather than left to eat the rest "
+            "of the %.0fs budget. Anything above is real and on disk. Ask "
+            "\"what got built?\" and it will pick up where this left off; the "
+            "conversation survived."
+            % (max(0.0, float(silent_for)), float(limit)))
+    else:
+        parts.append(
+            "— the turn hit the %.0fs limit — above is everything it said and "
+            "did before that; the work it completed is real and on disk. Ask "
+            "\"what got built?\" to carry on from here (the conversation "
+            "survives), or try a smaller request, or raise "
+            "FORGE_ASSISTANT_TIMEOUT." % float(limit))
+    return "\n\n".join(parts)
+
+
 # ---------------------------------------------------------------------------
 # the NDJSON stream: events in, activity out
 # ---------------------------------------------------------------------------
@@ -1723,6 +1883,32 @@ def _clip(text, limit):
     if len(text) <= limit:
         return text
     return text[: max(1, limit - 1)].rstrip() + "…"
+
+
+def _sort_key(index):
+    """Order stream block indices without assuming they are numbers."""
+    try:
+        return (0, float(index))
+    except (TypeError, ValueError):
+        return (1, str(index))
+
+
+def _first_text(value, limit=400):
+    """The readable text of a tool result, whatever shape the CLI wrapped it in."""
+    if isinstance(value, str):
+        return value[:limit]
+    if isinstance(value, dict):
+        for key in ("text", "content", "result", "output"):
+            found = _first_text(value.get(key), limit)
+            if found:
+                return found
+        return ""
+    if isinstance(value, (list, tuple)):
+        for item in list(value)[:8]:
+            found = _first_text(item, limit)
+            if found:
+                return found
+    return ""
 
 
 #: Argument names worth showing, most identifying first.  A tool call reads
@@ -1794,6 +1980,13 @@ def tool_label(name, args=None):
 class ActivityRecorder(object):
     """Turns a stream of CLI events into the job's activity list.
 
+    It is also the turn's black box.  Everything that goes past — every text
+    block the model wrote, every tool it ran and what each one answered, and
+    any cost the stream mentioned — is kept here as it arrives, so that a turn
+    which never reaches its result event still has something true to say.  That
+    is the whole of the B-1 fix: the work was always real, only the telling of
+    it was lost.
+
     Every method is defensive on purpose.  This runs on the worker thread while
     a real turn is in flight; a shape we have not seen before must cost the
     artist a missing line, never the answer.
@@ -1812,13 +2005,49 @@ class ActivityRecorder(object):
         self._said_thinking = False
         self._saw_text_delta = False
         self._pending_text = ""
-        self._all_text = ""
         self._last_text_at = 0.0
+        #: Assistant text, one entry per content block, in the order written.
+        #: A list rather than one string because the artist's reply is the
+        #: model's WHOLE side of the turn: the paragraph before a tool call is
+        #: the reasoning, and joining the blocks back up is F-1's fix.
+        self._blocks = []
+        self._open_blocks = {}      # stream block index -> text so far
+        self._text_len = 0
+        #: ``(tool label, result summary)`` for each tool, in order.
+        self._steps = []
+        self._step_index = {}       # tool_use id -> position in _steps
+        #: The last cost the stream mentioned, if any build volunteers one
+        #: before the result event.
+        self._cost = None
+        self._usage = None
 
     # -- output ----------------------------------------------------------
+    def text_blocks(self):
+        """Every assistant text block, in order, including the unfinished one."""
+        blocks = list(self._blocks)
+        for _index, text in sorted(self._open_blocks.items(),
+                                   key=lambda item: _sort_key(item[0])):
+            if text.strip():
+                blocks.append(text.strip())
+        return [block for block in blocks if block]
+
     def text(self):
-        """Everything that streamed past as assistant text."""
-        return self._all_text.strip()
+        """Everything that streamed past as assistant text, blocks rejoined."""
+        return "\n\n".join(self.text_blocks()).strip()
+
+    def steps(self):
+        """``["partforge_check: part.py → overall: warn", …]`` — what it did."""
+        out = []
+        for label, result in self._steps:
+            out.append("%s → %s" % (label, result) if result else label)
+        return out
+
+    def cost(self):
+        """The cost the stream volunteered, or ``None`` if it never did."""
+        return self._cost
+
+    def usage(self):
+        return self._usage if isinstance(self._usage, dict) else None
 
     def push(self, kind, label):
         return self.store.add_activity(self.job_id, kind, label)
@@ -1834,24 +2063,49 @@ class ActivityRecorder(object):
     def _feed(self, payload):
         if not isinstance(payload, dict):
             return
+        self._money(payload)
         kind = payload.get("type")
         if kind == "stream_event":
             self._event(payload.get("event"))
         elif kind == "assistant":
             self._message(payload.get("message"))
         elif kind == "user":
-            # A tool's *result* — where a render's path usually first appears.
-            # Nothing is logged from here (the tool call already has a line);
-            # it is read only for paths worth a token.
+            # A tool's *result*: where a render's path usually first appears,
+            # and what the tool actually ANSWERED.  Both are read here — the
+            # path for its token, the answer so a checkpoint can say "it ran
+            # partforge_check and the check passed" rather than only "it ran".
             self._files(payload.get("message"))
+            self._results(payload.get("message"))
         elif kind in ("content_block_start", "content_block_delta",
                       "content_block_stop"):
             # a build that emits the raw Anthropic events without the wrapper
             self._event(payload)
 
+    def _money(self, payload):
+        """Keep any cost or usage the stream mentions, wherever it appears.
+
+        A turn that is killed never reaches its result event, and the dogfood
+        run's fifteen-minute turn 3 was therefore billed at $0.00.  Whatever
+        the stream said before the kill is a truer number than nothing.
+        """
+        cost = payload.get("total_cost_usd")
+        if cost is None:
+            cost = payload.get("cost_usd")
+        if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+            self._cost = float(cost)
+        usage = payload.get("usage")
+        if isinstance(usage, dict) and usage:
+            self._usage = usage
+        message = payload.get("message")
+        if isinstance(message, dict):
+            nested = message.get("usage")
+            if isinstance(nested, dict) and nested:
+                self._usage = nested
+
     def _event(self, event):
         if not isinstance(event, dict):
             return
+        self._money(event)
         etype = event.get("type")
         index = event.get("index")
         if etype == "content_block_start":
@@ -1860,6 +2114,11 @@ class ActivityRecorder(object):
                 tool_id = str(block.get("id") or "block-%s" % index)
                 self._block_tools[index] = tool_id
                 self._tool(tool_id, block.get("name"), block.get("input"))
+            elif isinstance(block, dict) and block.get("type") == "text":
+                # A new paragraph starts here.  Opening it explicitly is what
+                # keeps block two from being glued to the end of block one.
+                self._open_blocks.setdefault(index, "")
+                self._append_block(index, block.get("text"))
             return
         if etype == "content_block_delta":
             delta = event.get("delta")
@@ -1868,7 +2127,9 @@ class ActivityRecorder(object):
             dtype = delta.get("type")
             if dtype == "text_delta":
                 self._saw_text_delta = True
-                self._text(delta.get("text"))
+                chunk = delta.get("text")
+                self._append_block(index, chunk)
+                self._marker(chunk)
             elif dtype == "input_json_delta":
                 tool_id = self._block_tools.get(index)
                 if tool_id:
@@ -1877,6 +2138,7 @@ class ActivityRecorder(object):
                         self._tool_json.get(tool_id, "") + chunk)[:8000]
             return
         if etype == "content_block_stop":
+            self._close_block(index)
             tool_id = self._block_tools.pop(index, None)
             if tool_id:
                 self._finish_tool(tool_id)
@@ -1896,7 +2158,8 @@ class ActivityRecorder(object):
                            block.get("input"))
             elif block.get("type") == "text" and not self._saw_text_delta:
                 # No partial messages on this build: the whole block at once.
-                self._text(block.get("text"))
+                self._whole_block(block.get("text"))
+                self._marker(block.get("text"))
 
     def _files(self, value):
         """Record any servable path in ``value`` against this job."""
@@ -1906,6 +2169,37 @@ class ActivityRecorder(object):
             pass
 
     # -- pieces ----------------------------------------------------------
+    def _results(self, message):
+        """Keep each tool result as one short line of "and this is what it said"."""
+        if not isinstance(message, dict):
+            return
+        content = message.get("content")
+        if not isinstance(content, list):
+            return
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_result":
+                continue
+            tool_id = str(block.get("tool_use_id") or "")
+            summary = _clip(_first_text(block.get("content")), TOOL_ARG_LIMIT)
+            if not summary:
+                continue
+            position = self._step_index.get(tool_id)
+            if position is None:
+                continue
+            label, _old = self._steps[position]
+            self._steps[position] = (label, summary)
+
+    def _note_step(self, tool_id, label):
+        if tool_id in self._step_index:
+            if len(self._steps) <= MAX_CHECKPOINT_STEPS:
+                position = self._step_index[tool_id]
+                self._steps[position] = (label, self._steps[position][1])
+            return
+        if len(self._steps) >= MAX_CHECKPOINT_STEPS:
+            return
+        self._step_index[tool_id] = len(self._steps)
+        self._steps.append((label, ""))
+
     def _tool(self, tool_id, name, args):
         if not name:
             return
@@ -1914,6 +2208,7 @@ class ActivityRecorder(object):
         # Before the label is clipped to a basename: the token needs the whole
         # path, and this is the last place it exists in full.
         self._files(args)
+        self._note_step(tool_id, tool_label(name, args))
         entry = self._tool_entries.get(tool_id)
         if entry is None:
             self._tool_names[tool_id] = name
@@ -1944,11 +2239,46 @@ class ActivityRecorder(object):
         entry = self._tool_entries.get(tool_id)
         if entry is None or not summarize_args(args):
             return
-        self.store.relabel_activity(
-            self.job_id, entry, tool_label(self._tool_names.get(tool_id), args))
+        label = tool_label(self._tool_names.get(tool_id), args)
+        self._note_step(tool_id, label)
+        self.store.relabel_activity(self.job_id, entry, label)
         self._tool_detailed.add(tool_id)
 
-    def _text(self, chunk):
+    # -- the model's own words -------------------------------------------
+    def _append_block(self, index, chunk):
+        """Add streamed text to the block it belongs to, capped in total."""
+        chunk = str(chunk or "")
+        if not chunk or self._text_len >= MAX_SALVAGE_TEXT:
+            return
+        room = MAX_SALVAGE_TEXT - self._text_len
+        chunk = chunk[:room]
+        self._text_len += len(chunk)
+        self._open_blocks[index] = self._open_blocks.get(index, "") + chunk
+
+    def _close_block(self, index):
+        text = self._open_blocks.pop(index, None)
+        if text is None:
+            return
+        text = text.strip()
+        if text:
+            self._blocks.append(text)
+
+    def _whole_block(self, text):
+        """A complete text block from a build that does not stream deltas."""
+        text = str(text or "").strip()
+        if not text or self._text_len >= MAX_SALVAGE_TEXT:
+            return
+        text = text[:MAX_SALVAGE_TEXT - self._text_len]
+        self._text_len += len(text)
+        self._blocks.append(text)
+
+    def _marker(self, chunk):
+        """The throttled 60-character ticker in the activity feed.
+
+        Deliberately separate from the accumulation above: this is a progress
+        indicator that may be clipped mid-word, and the reply must never be
+        assembled out of it.  That confusion is exactly friction F-1.
+        """
         chunk = str(chunk or "")
         if not chunk:
             return
@@ -1957,8 +2287,6 @@ class ActivityRecorder(object):
             self.push("status", "thinking…")
             self._said_thinking = True
         self._pending_text += chunk
-        if len(self._all_text) < MAX_SALVAGE_TEXT:
-            self._all_text += chunk
 
         now = time.time()
         if self.interval and (now - self._last_text_at) < self.interval:
@@ -2049,19 +2377,100 @@ class FileTokens(object):
 FILES = FileTokens()
 
 
-def find_file_paths(text, limit=12):
-    """Absolute paths of servable files mentioned in ``text``.
+def path_bases(text=""):
+    """Directories a relative path in a reply might be relative TO.
+
+    The working directory first, because that is where the CLI ran; then the
+    project folders, because that is what the model is usually talking about.
+    A project whose name appears in the text comes first among those — turn 8
+    of the dogfood run named ``molds/litwick-flame-mold_mold_bottom.stl`` and
+    the project was ``litwick-lamp``, so the filename itself says which folder
+    to look in, and trying that one first is both faster and less ambiguous
+    than trusting alphabetical order.
+    """
+    bases = [working_dir()]
+    root = projects_dir()
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        names = []
+    lowered = str(text or "").lower()
+    named, others = [], []
+    for name in names:
+        folder = os.path.join(root, name)
+        if not os.path.isdir(folder):
+            continue
+        (named if name.lower() in lowered else others).append(folder)
+    bases.extend(named)
+    bases.extend(others)
+    return bases[:MAX_PATH_BASES]
+
+
+def resolve_relative(candidate, bases):
+    """``candidate`` as an absolute path to a real file, or ``""``.
+
+    Existence is the whole test.  A relative path has no drive letter to prove
+    it is a path at all, so ``docs/plan.svg`` in a sentence is only treated as
+    a file when one of the base directories actually holds it — which is what
+    stops prose from becoming a broken thumbnail in the gallery.
+    """
+    text = str(candidate or "").strip().strip('"').replace("\\", "/")
+    if not text or text.startswith("/") or ":" in text:
+        return ""
+    if ".." in text.split("/"):
+        return ""
+    for base in bases or ():
+        try:
+            resolved = os.path.abspath(os.path.join(base, text))
+            if os.path.isfile(resolved):
+                return resolved
+        except (OSError, ValueError):
+            continue
+    return ""
+
+
+def find_file_paths(text, limit=12, bases=None):
+    """Paths of servable files mentioned in ``text``, resolved to absolute.
 
     Used on replies and tool results, where a render's path arrives as prose
     ("saved to C:\\forge\\projects\\cup\\render.png") rather than as a field.
+
+    Absolute paths are taken as written.  Relative ones — ``prints/body.stl``,
+    which is how a model naturally names a file it just wrote inside a project
+    — are resolved against ``bases`` and kept only if they exist.  Before that,
+    turns 8 and 11 of the dogfood run reported ``files: []`` while six finished
+    STLs sat on disk: the panel showed the artist nothing, because the only
+    paths it recognised were the ones it was never given.
     """
     if not text:
         return []
+    text = str(text)
     out = []
-    for match in _FILE_PATH_RE.finditer(str(text)):
+    spans = []
+    for match in _FILE_PATH_RE.finditer(text):
+        spans.append(match.span())
         candidate = match.group(0)
         if candidate not in out:
             out.append(candidate)
+        if len(out) >= limit:
+            return out
+
+    if bases is None:
+        bases = path_bases(text)
+    if not bases:
+        return out
+    # Blank out what the absolute pass already claimed, so the tail of
+    # ``C:\forge\projects\cup\render.png`` is not re-read as ``cup\render.png``.
+    masked = list(text)
+    for start, end in spans:
+        for position in range(start, end):
+            masked[position] = " "
+    masked = "".join(masked)
+
+    for match in _REL_FILE_PATH_RE.finditer(masked):
+        resolved = resolve_relative(match.group(0), bases)
+        if resolved and resolved not in out:
+            out.append(resolved)
         if len(out) >= limit:
             break
     return out
@@ -2352,10 +2761,19 @@ class JobStore(object):
             return entry
 
     def note_files_in(self, job_id, value, source="activity"):
-        """Note every servable path inside a value (a reply, a tool's args…)."""
+        """Note every servable path inside a value (a reply, a tool's args…).
+
+        The base directories a relative path could be relative to are worked
+        out ONCE per value rather than once per string: it is a folder listing,
+        and this runs on every tool result of every turn.
+        """
         found = []
-        for text in walk_strings(value):
-            for path in find_file_paths(text):
+        texts = [text for text in walk_strings(value) if text]
+        if not texts:
+            return found
+        bases = path_bases(" ".join(texts)[:20000])
+        for text in texts:
+            for path in find_file_paths(text, bases=bases):
                 entry = self.note_file(job_id, path, source)
                 if entry is not None:
                     found.append(entry)
@@ -2420,9 +2838,14 @@ class JobStore(object):
 
         A cancelled turn deliberately touches neither: it neither cost anything
         worth counting nor proved anything about whether we are signed in.
+
+        A timed-out turn counts exactly like a finished one.  It was fifteen
+        minutes of a paid model doing real work; the dogfood run's total read
+        $7.29 and was not $7.29, because the only turn that hit the timeout was
+        silently billed at zero.
         """
         state = job.get("state")
-        if state == "done":
+        if state in ("done", "timeout"):
             try:
                 self.session_cost_usd += float(job.get("cost_usd") or 0.0)
             except (TypeError, ValueError):
@@ -2498,8 +2921,11 @@ def public_job(job, session_cost_usd=0.0):
     if job is None:
         return None
     out = {"job_id": job["job_id"], "state": job["state"]}
+    # ``stalled`` / ``silent_for`` ride along on a timed-out turn so a client
+    # can tell "it was working and ran out of clock" from "it hung": the same
+    # distinction the reply's last sentence makes in words.
     for key in ("reply", "session_id", "cost_usd", "duration_ms", "error",
-                "model", "usage", "num_turns"):
+                "model", "usage", "num_turns", "stalled", "silent_for"):
         if job.get(key) is not None:
             out[key] = job[key]
     # What was asked, and when.  The panel ignores both; the web UI draws the
@@ -2546,13 +2972,23 @@ def _drain(stream, sink):
         pass
 
 
-def read_stream(proc, limit, recorder):
+def read_stream(proc, limit, recorder, stall_limit=None):
     """Consume the CLI's NDJSON stdout, feeding ``recorder`` as it goes.
 
-    Returns ``{"result", "last", "stdout_tail", "stderr", "code", "timed_out"}``.
-    The timeout is a watchdog thread rather than a read deadline because
-    ``readline`` blocks: when it fires the process is terminated, the pipe
+    Returns ``{"result", "last", "stdout_tail", "stderr", "code", "timed_out",
+    "stalled", "silent_for"}``.
+
+    The watchdog is a polling thread rather than a one-shot timer because it
+    now answers two questions at once: has the turn used its whole budget, and
+    has the CLI said *anything* recently.  ``readline`` blocks, so neither can
+    be a read deadline; when either fires the process is terminated, the pipe
     closes and this loop ends on its own.
+
+    The second clock is the point.  In the dogfood run 595 of turn 3's 900
+    seconds were dead air with the work still ahead of it — a hung process ate
+    the budget the turn needed.  Killing a stall on its own clock turns a lost
+    quarter of an hour into a five-minute "it went quiet, here is where we
+    were", with the rest of the budget still unspent.
     """
     stderr_chunks = []
     stderr_thread = threading.Thread(
@@ -2560,14 +2996,37 @@ def read_stream(proc, limit, recorder):
         name="ForgeAssistantStderr", daemon=True)
     stderr_thread.start()
 
-    state = {"timed_out": False}
+    if stall_limit is None:
+        stall_limit = stall_timeout_s()
+    stall_limit = max(0.0, float(stall_limit or 0.0))
+    started = time.time()
+    state = {"timed_out": False, "stalled": False, "last_event": started,
+             "silent_for": 0.0}
+    stop = threading.Event()
 
-    def on_timeout():
-        state["timed_out"] = True
-        _terminate(proc)
+    # Fine enough that a five-second stall limit in a test is honoured within a
+    # tick, coarse enough that a fifteen-minute turn is not a busy loop.
+    tick = max(0.05, min(1.0, float(limit) / 20.0,
+                         (stall_limit or float(limit)) / 20.0))
 
-    watchdog = threading.Timer(limit, on_timeout)
-    watchdog.daemon = True
+    def watch():
+        while not stop.wait(tick):
+            now = time.time()
+            if now - started >= limit:
+                state["timed_out"] = True
+                state["silent_for"] = now - state["last_event"]
+                _terminate(proc)
+                return
+            silent = now - state["last_event"]
+            if stall_limit and silent >= stall_limit:
+                state["timed_out"] = True
+                state["stalled"] = True
+                state["silent_for"] = silent
+                _terminate(proc)
+                return
+
+    watchdog = threading.Thread(target=watch, name="ForgeAssistantWatchdog",
+                                daemon=True)
     watchdog.start()
 
     result = None
@@ -2575,6 +3034,9 @@ def read_stream(proc, limit, recorder):
     tail = deque(maxlen=20)
     try:
         for raw in iter(proc.stdout.readline, b""):
+            # ANY byte counts as life, parseable or not: the stall clock asks
+            # whether the process is alive, not whether it is making sense.
+            state["last_event"] = time.time()
             line = raw.decode("utf-8", "replace")
             tail.append(line.rstrip("\r\n"))
             payload = parse_stream_line(line)
@@ -2587,7 +3049,8 @@ def read_stream(proc, limit, recorder):
     except Exception as exc:  # noqa: BLE001 - a broken pipe ends the turn, not the server
         log("[assistant] stream read failed: %s" % exc)
     finally:
-        watchdog.cancel()
+        stop.set()
+        watchdog.join(timeout=2.0)
         for stream in (proc.stdout, proc.stderr):
             try:
                 stream.close()
@@ -2606,6 +3069,8 @@ def read_stream(proc, limit, recorder):
         "stderr": b"".join(stderr_chunks).decode("utf-8", "replace"),
         "code": proc.returncode,
         "timed_out": state["timed_out"],
+        "stalled": state["stalled"],
+        "silent_for": round(float(state["silent_for"]), 3),
     }
 
 
@@ -2618,6 +3083,7 @@ def run_turn(job_id, prompt, session_id, model=""):
 
     cwd = working_dir()
     limit = timeout_s()
+    stall = stall_timeout_s()
     modes = list(PERMISSION_MODES)
     last_error = None
 
@@ -2645,16 +3111,26 @@ def run_turn(job_id, prompt, session_id, model=""):
         JOBS.attach_proc(job_id, proc)
         recorder = ActivityRecorder(JOBS, job_id)
         try:
-            outcome = read_stream(proc, limit, recorder)
+            outcome = read_stream(proc, limit, recorder, stall_limit=stall)
         except Exception as exc:  # noqa: BLE001
             JOBS.finish(job_id, state="error", error="Claude CLI failed: %s" % exc)
             return
 
         if outcome["timed_out"]:
-            JOBS.finish(job_id, state="error",
-                        error="The assistant took longer than %.0f seconds and was stopped. "
-                              "Try a smaller request, or raise FORGE_ASSISTANT_TIMEOUT."
-                              % limit)
+            # NOT an error, and not empty.  The turn ran out of clock; what it
+            # already said and did is the answer, and it is checkpointed here
+            # rather than thrown away.  See :func:`checkpoint_reply` (B-1).
+            stalled = bool(outcome.get("stalled"))
+            JOBS.finish(
+                job_id,
+                state="timeout",
+                reply=checkpoint_reply(recorder, limit, stalled=stalled,
+                                       silent_for=outcome.get("silent_for") or 0.0),
+                cost_usd=recorder.cost(),
+                usage=recorder.usage(),
+                session_id=JOBS.session_id,
+                stalled=stalled,
+                silent_for=outcome.get("silent_for") or 0.0)
             return
 
         job = JOBS.get(job_id)
@@ -2671,7 +3147,7 @@ def run_turn(job_id, prompt, session_id, model=""):
             continue
 
         payload = outcome["result"]
-        streamed = recorder.text()
+        streamed = recorder.text_blocks()
         if payload is None and code == 0:
             # Exited clean but never printed a result event. The last line that
             # parsed is the best answer available; the text that streamed past
@@ -2695,7 +3171,10 @@ def run_turn(job_id, prompt, session_id, model=""):
             JOBS.remember_session(payload.get("session_id"))
             return
 
-        reply = extract_reply(payload) or streamed
+        # Every text block, not just the CLI's final one: the reasoning the
+        # model wrote before its tool calls is the part an artist most wants
+        # and the part the old one-block reply dropped (F-1).
+        reply = compose_reply(streamed, extract_reply(payload))
         if not reply and code not in (0, 2):
             JOBS.finish(job_id, state="error",
                         error="The Claude CLI exited %s with no reply.\n%s"
@@ -4524,6 +5003,7 @@ def resolved_config():
         "models_dirs": generated_model_dirs(),
         "model": resolve_model() or "(cli default)",
         "timeout_s": timeout_s(),
+        "stall_timeout_s": stall_timeout_s(),
         "blender": {"host": host, "port": blender_port},
         "cwd": working_dir(),
         "uploads_dir": uploads_dir(),
@@ -5911,6 +6391,53 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, answer)
 
 
+#: How long the startup guard waits for whatever is already on the port.  Short
+#: on purpose: this runs before anything is bound, and a slow answer is still
+#: an answer — something is there, and that is the whole question.
+GUARD_TIMEOUT = 3.0
+
+
+def force_start():
+    """Is ``FORGE_FORCE_START`` set?  Then bind anyway and let it fail loudly."""
+    return str(_env("FORGE_FORCE_START", "") or "").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def already_serving(listen_port, host="127.0.0.1", timeout=GUARD_TIMEOUT):
+    """One line describing the process already on this port, or ``""``.
+
+    B-6: every Forge service sets ``allow_reuse_address``, so a second start
+    does not fail — it loses the port race and stays resident.  The dogfood run
+    found two of everything, including a second meshgen holding a model loader
+    on a 12 GB card.  So the question is asked before binding, over HTTP rather
+    than by looking at the port, because "is a Forge service answering here?"
+    is the thing worth knowing and ``/health`` is where it says so.
+
+    Failure to reach anything returns ``""`` — an unreachable port is a free
+    port as far as this guard is concerned, and a guard that refuses to start
+    on a bad probe would be worse than the duplicate it prevents.
+    """
+    url = "http://%s:%d/health" % (host, int(listen_port))
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            body = response.read(200000).decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001 - nothing there, or not speaking HTTP
+        return ""
+    build = {}
+    try:
+        data = json.loads(body)
+        if isinstance(data, dict) and isinstance(data.get("build"), dict):
+            build = data["build"]
+    except ValueError:
+        pass
+    return ("something is already answering on %s (pid %s, sha %s, up %ss). "
+            "Not starting a second one — set FORGE_FORCE_START=1 to override."
+            % (url, build.get("pid", "?"), build.get("sha", "?"),
+               build.get("uptime_s", "?")))
+
+
 def serve(host="127.0.0.1", listen_port=None, ready=None):
     """Run the bridge until interrupted.  ``ready`` is called with the server."""
     listen_port = int(listen_port or port())
@@ -5940,6 +6467,13 @@ def main(argv=None):
         except (IndexError, ValueError):
             log("usage: bridge.py [--port N]")
             return 2
+    if not force_start():
+        existing = already_serving(listen_port)
+        if existing:
+            # Exit 0: "it is already running" is the state the caller wanted,
+            # not a failure.  start_forge.ps1 runs this on every launch.
+            log("[assistant] %s" % existing)
+            return 0
     serve(listen_port=listen_port)
     return 0
 

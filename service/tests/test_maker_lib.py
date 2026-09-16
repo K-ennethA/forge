@@ -765,6 +765,22 @@ def test_two_aaas_make_the_resistor_compulsory_where_a_coin_cell_did_not():
     assert alkaline["runtime_hours"] > coin["runtime_hours"]
 
 
+def test_no_headroom_on_an_unprotected_supply_is_never_called_safe():
+    """Dogfood 2026-09-16 (B-2): a blue LED on 2xAAA has no room for a
+    resistor AND no internal current limit, and the verdict used to say
+    "no resistor needed" over its own warning. The headline must agree
+    with the physics: unprotected, not fine."""
+    plan = wiring.circuit_plan(color="blue", cell="aaa_pair_box")
+    assert plan["verdict"] != "no resistor needed"
+    assert "unprotected" in plan["verdict"]
+    assert "Do not wire it straight" in plan["reason"]
+    assert any("NOT current-limited" in w for w in plan["warnings"])
+    # The coin cell keeps its honest headline: its internal resistance IS
+    # a real limit, and that path still says so.
+    coin = wiring.circuit_plan(color="blue", cell="cr2032_cell")
+    assert coin["verdict"] == "no resistor needed"
+
+
 def test_the_resistor_carries_a_power_rating_with_headroom():
     plan = wiring.circuit_plan(color="red", supply_v=12.0, cell=None, switch=None)
     assert plan["resistor_ohms"] > 0.0

@@ -250,7 +250,10 @@ def circuit_plan(
     warnings: List[str] = []
 
     if headroom <= 0.02:
-        verdict = "no resistor needed"
+        # The verdict is decided AFTER the current-limit check below: "no
+        # resistor needed" was being printed for unprotected supplies too
+        # (caught in the 2026-09-16 dogfood -- 2xAAA at 8x the switch rating),
+        # and a headline that contradicts its own warning is worse than none.
         resistor = 0.0
         exact = 0.0
         # Nothing but the supply's own internal resistance limits it, and the
@@ -270,6 +273,7 @@ def circuit_plan(
             "the cell through the switch."
         )
         if supply["current_limited"]:
+            verdict = "no resistor needed"
             notes.append(
                 f"The {supply['name']}'s own internal resistance (about "
                 f"{supply['internal_resistance_ohm']:g} ohm) is the current limit "
@@ -285,6 +289,13 @@ def circuit_plan(
                 )
             )
         else:
+            verdict = "unprotected -- change the supply or the LED"
+            reason = (
+                f"a {colour['color']} LED drops {v_f:g} V against a "
+                f"{v_supply:g} V supply, so there is no room for a resistor -- "
+                "and this supply is NOT current-limited, so nothing protects "
+                "the LED. Do not wire it straight."
+            )
             warnings.append(
                 "This supply is NOT current-limited, and the LED has no headroom to "
                 "share with a resistor. Nothing is protecting the LED except the "
