@@ -126,10 +126,12 @@ def claim(value, tier, note=None, **extra):
 # print profile measures what it can measure honestly and POINTS at the tool
 # that actually answers the question.
 
+from . import rigforge as _rigforge  # one source for the platform budget
+
 PROFILES = {
     "game": {
         "gates": ("defects", "poly_budget", "uv", "loops", "silhouette"),
-        "poly_budget": 15000,  # rigforge PLATFORM_TARGETS["desktop"]
+        "poly_budget": _rigforge.PLATFORM_TARGETS["desktop"],
         "note": ("Game profile: edge loops, UVs and the polygon budget are "
                  "gated; symmetry is reported, never judged."),
     },

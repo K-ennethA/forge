@@ -2,10 +2,13 @@
 
 Governing rule: abstract difficulty away; the artist is never required to leave Blender or learn tooling.
 
+Stale-audit 2026-09-15: items 1 and 2 were SHIPPED long ago and are stamped
+below so this list stays worth reading.
+
 ## Approved next batch (build after the image-reference work lands)
 
-1. **Undo checkpoints for AI actions** — every socket command pushes a named undo step (`bpy.ops.ed.undo_push`); Ctrl+Z reverses assistant work; panel gets "Revert last AI action". Trust feature #1.
-2. **Health row + one-click Start services** — top of Forge tab: service / bridge / socket server / CLI sign-in as status dots; a Start button launches whatever is down from inside Blender (spawns the same hidden processes as start_forge). start_forge.cmd stays for terminal users.
+1. ~~**Undo checkpoints for AI actions**~~ — **SHIPPED** (`registry.py` pushes named undo steps for every non-read-only command).
+2. ~~**Health row + one-click Start services**~~ — **SHIPPED** (`addon/forge/tools/services.py`, real `/health` polling + hidden starts).
 3. **Quick-action chips** — Check printability / Segment to fit bed / Export for printing above the chat box; sends the canned message.
 4. **Empty-state guidance** — every panel box with no data states the next step in one plain sentence.
 5. **Message queue + cost footer** — queue one pending message instead of 409-busy; session cost total in the panel footer (bridge already reports cost_usd per job).
