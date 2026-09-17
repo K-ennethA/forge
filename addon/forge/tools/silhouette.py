@@ -62,11 +62,42 @@ What it is honestly not
   the anchor) and centred on it.  The command changes the shape of the sculpt,
   not where in the world it stands.
 
+Character forms — ``as_shape_key``
+----------------------------------
+The fit moves vertices and **never changes topology**: the mesh that comes out
+has the same vertices, in the same order, joined by the same edges as the mesh
+that went in.  That is exactly the precondition for a shape key, so a fitted
+variant is a legal morph target of the mesh it was fitted from.
+
+``as_shape_key`` spends that fact.  Given a name, the displacement is computed
+exactly as it always was and then written into a **new shape key** of that name
+instead of onto the base vertices: the base mesh is left pristine (value 0) and
+the fitted form is the key (value 1).  Fit the same base again with a different
+name and a second key joins the first, so one mesh carries N forms — human,
+teen-wolf, werewolf — and a game can play the transformation as a real on-screen
+morph rather than a swap between three separate meshes.
+
+Fitting again with a **name that already exists overwrites that key's
+coordinates** and says so in the report, because iterating a form (raise
+``iterations``, drop ``smooth``, try another reference) is the workflow; a
+duplicate name would leave two keys and no way to tell which one the animation
+is driving.  A mesh with no shape keys at all gets a ``Basis`` first, taken from
+its own untouched vertices, and the report says that too.
+
+What the morph honestly is: **linear interpolation of each vertex between the
+base and the fitted form**.  Nothing between value 0 and value 1 was fitted to
+anything — the intermediate shapes are an average of two outlines, not a fit to
+a third reference.  For a small change nobody will see it; for a large one (the
+Van Helsing transformation, a man into a wolf) the middle of the morph will read
+as a crude blend of both ends, and the fix is either an eased value curve or a
+third, mid-form key fitted to a mid-form reference.
+
 Undo
 ----
 This edits the artist's mesh, so it is deliberately **not** in
 ``READ_ONLY_COMMANDS``: the registry pushes ``Forge: fit_to_silhouette`` before
-it runs, and one Ctrl+Z puts the sculpt back the way it was.
+it runs, and one Ctrl+Z puts the sculpt back the way it was — including the
+shape key, which is part of the same undo step.
 
 Measurement
 -----------
@@ -211,7 +242,19 @@ SPLAT_PER_CELL = 4.0
 MIN_SPLAT_SAMPLES = 20000
 MAX_SPLAT_SAMPLES = 600000
 
-#: Fixed, so two runs of the same fit report the same IoU to the last digit.
+#: Fixed, so the sampler contributes nothing of its own between two runs: fit the
+#: SAME mesh twice and the result is bit-identical, which is what makes a
+#: shape-key fit comparable to a destructive one (``headless_silhouette.py``
+#: asserts that equality with ``array_equal``, not a tolerance).
+#:
+#: It does NOT make two SEPARATE meshes of identical geometry agree to the last
+#: digit, and that is measured rather than assumed: Blender returns the same set
+#: of loop triangles in a different ORDER each time it tessellates (960 of 960
+#: rows differed between two pristine copies of one sphere), and this sampler
+#: hands its draws out per triangle in array order, so the samples land in
+#: different places and the fit moves by ~0.3% of the model. One mesh, one
+#: cached tessellation, one answer; two copies, two answers a few thousandths
+#: apart.
 SPLAT_SEED = 20180
 
 #: A vertex that moved less than this did not move. 1 micron, well under any
@@ -235,6 +278,26 @@ HONESTY = (
     "and a concavity a ray from the centre cannot see (the gap between two legs, "
     "the inside of a horseshoe) is approximated by the outline it can see."
 )
+
+#: Added to :data:`HONESTY` whenever the fit is written as a shape key, because
+#: the thing an artist is about to do with a morph target is play it, and what
+#: happens between 0 and 1 was never fitted to anything.
+SHAPE_KEY_HONESTY = (
+    "The morph between the base mesh and this shape key is LINEAR VERTEX "
+    "INTERPOLATION: every vertex travels in a straight line from where it "
+    "starts to where the fit put it. No intermediate blend shape was re-fitted "
+    "to anything, so a large form change (a man into a wolf) will interpolate "
+    "crudely through the middle — limbs passing through the body, volumes "
+    "collapsing and re-inflating — even though both ends are correct. Ease the "
+    "key's value with an F-curve so the crude middle passes quickly, or fit a "
+    "third mid-form key to a mid-form reference and drive the two in sequence."
+)
+
+#: The name Blender gives the first (reference) key block, and the one name
+#: ``as_shape_key`` refuses: writing the fit there would move the very shape the
+#: other keys are measured against, which is the destructive edit with extra
+#: steps.
+BASIS_KEY = "Basis"
 
 
 # ---------------------------------------------------------------------------
@@ -969,6 +1032,93 @@ def _apply_symmetry(delta, partners, axis_index):
 
 
 # ---------------------------------------------------------------------------
+# writing the fit — onto the base mesh, or into a shape key beside it
+# ---------------------------------------------------------------------------
+
+def _shape_key_name(params):
+    """The validated ``as_shape_key`` name, or ``None`` when it was not given."""
+    raw = params.get("as_shape_key")
+    if raw is None:
+        return None
+    if not isinstance(raw, str) or not raw.strip():
+        raise ForgeError(
+            "'as_shape_key' is the NAME of the shape key to write the fit into "
+            "(e.g. \"werewolf-form\"), so it has to be a non-empty string; got "
+            "%r. Leave it out entirely to deform the base mesh itself." % (raw,))
+    name = raw.strip()
+    if name.lower() == BASIS_KEY.lower():
+        raise ForgeError(
+            "'as_shape_key' cannot be %r: the basis is the shape every other key "
+            "is measured against, so writing the fit there would deform the base "
+            "form and break every key already on the mesh. Give the fitted form "
+            "its own name (\"werewolf-form\"), or leave 'as_shape_key' out to "
+            "deform the base mesh deliberately." % name)
+    return name
+
+
+def _write_shape_key(obj, mesh, name, flat_local, notes, warnings):
+    """Write fitted coordinates into a named shape key, base mesh untouched.
+
+    ``flat_local`` is the same ``float32`` array the destructive path writes to
+    ``mesh.vertices``, so a key written here is bit-identical to a destructive
+    fit of the same mesh — deliberately, and pinned by test.
+
+    Returns ``{"shape_key", "shape_key_overwritten", "basis_created"}``.
+    """
+    basis_created = False
+    if mesh.shape_keys is None:
+        obj.shape_key_add(name=BASIS_KEY, from_mix=False)
+        basis_created = True
+        notes.append(
+            "%r had no shape keys, so a %r key was created first from its own "
+            "untouched vertices — a mesh cannot hold a morph target without the "
+            "shape it morphs from" % (obj.name, BASIS_KEY))
+
+    blocks = mesh.shape_keys.key_blocks
+    existing = blocks.get(name)
+    overwritten = existing is not None
+    if overwritten:
+        key = existing
+        notes.append(
+            "shape key %r already existed, so its coordinates were overwritten "
+            "in place (its slot, its value and anything driving it are "
+            "untouched) rather than a second key of the same name being added"
+            % name)
+    else:
+        key = obj.shape_key_add(name=name, from_mix=False)
+        try:
+            key.slider_min = 0.0
+            key.slider_max = 1.0
+        except (AttributeError, TypeError):  # pragma: no cover - defensive
+            pass
+
+    key.data.foreach_set("co", flat_local)
+    key.value = 1.0
+
+    if key.name != name:
+        warnings.append(
+            "Blender stored the shape key as %r rather than %r (names are capped "
+            "at 63 bytes and must be unique); drive that name, not the one asked "
+            "for." % (key.name, name))
+
+    others = [block.name for block in blocks
+              if block.name not in (key.name, blocks[0].name)
+              and getattr(block, "value", 0.0) > 0.0]
+    if others:
+        warnings.append(
+            "shape keys are ADDITIVE and %s %s above 0 alongside %r, so the "
+            "viewport is showing the forms stacked on top of each other rather "
+            "than this fit alone — set the others to 0 to see it."
+            % (", ".join(repr(other) for other in others),
+               "is" if len(others) == 1 else "are", key.name))
+
+    mesh.update()
+    return {"shape_key": key.name,
+            "shape_key_overwritten": overwritten,
+            "basis_created": basis_created}
+
+
+# ---------------------------------------------------------------------------
 # the command
 # ---------------------------------------------------------------------------
 
@@ -1013,6 +1163,17 @@ def cmd_fit_to_silhouette(params):
         mesh's projection the reference is scaled to match. ``height`` is the
         default because the vertical axis is the one front and side views share,
         which is what makes two references agree with each other.
+    ``as_shape_key``
+        Absent (the default) deforms the base mesh, exactly as it always has.
+        Given a NAME, the identical displacement is written into a shape key of
+        that name instead: the base mesh stays pristine at value 0 and the
+        fitted form is value 1, so the fit becomes a morph target rather than an
+        edit. Fit the same base again under another name to stack a second form
+        on one mesh (human, teen-wolf, werewolf); fit it again under the SAME
+        name and that key's coordinates are overwritten in place, which is how a
+        form is iterated. A mesh with no keys gets a ``Basis`` first. ``"Basis"``
+        itself is refused — see ``honesty`` for what the morph between the two
+        forms actually is.
 
     Returns a report whose load-bearing numbers are the per-view ``iou_before``
     and ``iou_after``, measured against the same frozen target on the same fixed
@@ -1049,6 +1210,8 @@ def cmd_fit_to_silhouette(params):
             "'fit' must be 'height' (the default), 'width' or 'bbox' — which "
             "extent of the mesh's projection the reference is scaled to match; "
             "got %r." % (raw_fit,))
+
+    key_name = _shape_key_name(params)
 
     raw_symmetry = params.get("symmetry")
     symmetry_axis = None
@@ -1097,7 +1260,12 @@ def cmd_fit_to_silhouette(params):
 
     shape_keys = getattr(mesh, "shape_keys", None)
     key_count = len(shape_keys.key_blocks) if shape_keys else 0
-    if key_count:
+    if key_name is not None:
+        notes.append(
+            "the fit is being written into the shape key %r: the base mesh "
+            "keeps the coordinates it has now, so value 0 is the sculpt as it "
+            "stands and value 1 is the fitted form." % key_name)
+    elif key_count:
         warnings.append(
             "%r has %d shape key(s). The fit was written to the base mesh "
             "coordinates; the shape keys still hold the positions they held, so "
@@ -1156,7 +1324,22 @@ def cmd_fit_to_silhouette(params):
     moved = int(_np.count_nonzero(distance_mm > MOVED_EPS_MM))
     applied = moved > 0
 
-    if applied:
+    key_report = {"shape_key": None, "shape_key_overwritten": False,
+                  "basis_created": False}
+    if key_name is not None:
+        # An explicitly named form is always written, even when the fit asked
+        # for no movement: the artist named a key, and a key that matches the
+        # basis is a truthful answer where a missing key is a puzzle.
+        with common.object_mode():
+            flat = verify._to_world(world, inverse).ravel().astype("f4")
+            key_report = _write_shape_key(obj, mesh, key_name, flat, notes,
+                                          warnings)
+        if not applied:
+            notes.append(
+                "nothing moved, so shape key %r holds the base mesh's own "
+                "coordinates — at value 1 it looks exactly like value 0"
+                % key_report["shape_key"])
+    elif applied:
         with common.object_mode():
             local = verify._to_world(world, inverse)
             mesh.vertices.foreach_set("co", local.ravel().astype("f4"))
@@ -1263,6 +1446,9 @@ def cmd_fit_to_silhouette(params):
         "bounds_before_mm": _bounds_mm(original),
         "bounds_after_mm": _bounds_mm(world),
         "shape_keys": key_count,
+        "shape_key": key_report["shape_key"],
+        "shape_key_overwritten": key_report["shape_key_overwritten"],
+        "basis_created": key_report["basis_created"],
         "modifiers": [m.name for m in obj.modifiers],
         "method": (
             "per view: the reference is thresholded to a binary silhouette and "
@@ -1273,9 +1459,14 @@ def cmd_fit_to_silhouette(params):
             "moves along its own radius by the ratio of the two radii at its "
             "angle, weighted by (r/R)^falloff; the displacement field (never "
             "the mesh) is Laplacian-smoothed over the edge graph and optionally "
-            "mirrored, then applied. Repeated %d time(s)."
-            % (fit, ANGLE_BINS, PROFILE_GRID, iterations)),
-        "honesty": HONESTY,
+            "mirrored, then applied. Repeated %d time(s).%s"
+            % (fit, ANGLE_BINS, PROFILE_GRID, iterations,
+               (" The result was written into the shape key %r rather than onto "
+                "the base vertices, which is legal because the fit never changes "
+                "topology: same vertices, same order, same edges."
+                % key_report["shape_key"]) if key_name is not None else "")),
+        "honesty": (HONESTY + " " + SHAPE_KEY_HONESTY
+                    if key_name is not None else HONESTY),
         "notes": notes,
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),

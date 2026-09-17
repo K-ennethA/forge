@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**79 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
+**83 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -178,12 +178,14 @@ All optional; set them in the `env` block of `.mcp.json` if the defaults do not 
 | `FORGE_SERVICE_READ_TIMEOUT` | `180.0` | seconds to wait for a build/export |
 | `FORGE_SERVICE_CHECK_TIMEOUT` | `150.0` | seconds to wait for `/check` (the service allows itself 120) |
 | `FORGE_SERVICE_SEGMENT_TIMEOUT` | `330.0` | seconds to wait for `/segment` and `/export_segments` (the service allows itself 300) |
+| `FORGE_SERVICE_MOLD_TIMEOUT` | `330.0` | seconds to wait for the four mold routes (the service allows itself 300) |
 | `FORGE_PRINTER_PATH` | `<repo>/templates/printer.json` | default printer profile for the print-readiness tools |
 | `FORGE_PROJECTS_DIR` | `<repo>/projects` | the only folder `partforge_new_part` and `save_design_doc` write to |
 | `FORGE_SERVICE_PACKAGE_ROOT` | `<repo>` | the folder **containing** `service/` — the maker tools import `components.py`, `wiring.py` and the arithmetic half of `maker_lib.py` in-process rather than over a wire (see Maker mode below). Lazy and guarded: a checkout without `service/` still runs everything else |
 | `FORGE_FLOWS_DIR` | `<repo>/flows` | the only folder `flow_save` writes to, and what `flow_list` reads (the add-on's `forge_flows_dir` preference must agree) |
 | `FORGE_FLOW_RUN_TIMEOUT` | `900.0` | seconds to wait for a whole `flow_run` (one flow can hold a 300 s `/segment` plus mesh loading) |
-| `FORGE_PREVIEWS_DIR` | `%TEMP%\forge-previews` | where `render_preview` drops the PNGs the model Reads — scratch by design, never the repo or a project |
+| `FORGE_PREVIEWS_DIR` | `%TEMP%\forge-previews` | where `render_preview` drops the PNGs the model Reads — scratch by design, never the repo or a project. Every render mints its own filename (counter **plus** a per-process stamp), so the folder only grows and is never pruned: a chat message that showed a picture keeps showing *that* picture, and deleting old renders would turn a wrong picture into a missing one. Empty it by hand whenever nothing on screen needs it |
+| `FORGE_MOLD_INPUT_DIR` | `%TEMP%\forge-mold-input` | scratch STLs exported out of Blender on their way into a mold job — inputs to a job, not artifacts; same growth note as previews |
 | `FORGE_PREVIEW_TIMEOUT` | `180.0` | seconds to wait for one `render_preview` (a Workbench render of an ordinary part is well under a second; the budget is for a dense import at 2048 px) |
 | `FORGE_MESHGEN_URL` | `http://127.0.0.1:8902` | meshgen base URL (overrides host/port) |
 | `FORGE_MESHGEN_HOST` / `FORGE_MESHGEN_PORT` | `127.0.0.1` / `8902` | meshgen address |
@@ -711,6 +713,58 @@ segment_model(object="dragon_bust", mode={"planar": [120.0]}, collection="Pieces
 # if instead the check is refused as not watertight:
 remesh(mode="voxel", object="dragon_bust")   # or the panel's Voxel Repair button
 check_model(object="dragon_bust")
+```
+
+### Molds and casting (Phase 12) — print the mold, pour the copies
+
+The geometry service has had four mold routes and a real undercut analysis since Phase 12
+(`/mold`, `/export_mold`, `/mold_mesh`, `/export_mold_mesh`, `service/undercut.py`). Until
+now nothing on this surface reached them, so the only way in was to read Forge's source and
+hand-write a flow — which is exactly what the 2026-09-16 dogfood run had to do
+(`docs/dogfood-litwick-2026-09-16.md`, finding G-1). These two tools are that lane.
+
+| Tool | Key params | What it does |
+|---|---|---|
+| `undercut_check` | `script_path` / `mesh_path` / `object`, `mode`, `parting_z_mm`, `undercut_threshold_deg`, `printer_path` | Will it come out of a mold? Per half — `none` / `mild` / `severe` — with the opposing patch area, the worst angle past vertical, the depth of sideways grip, located example faces, and the thresholds that judged it. Writes nothing. |
+| `make_mold` | `project` (required), `script_path` / `mesh_path` / `object`, `name`, `mode`, the geometry knobs, `format` | Builds the mold and writes one file per piece into `projects/<slug>/molds/`, then reports every path, the parting plane, the keys, the spout, the vents and the service's full casting instructions. |
+
+- **Run `undercut_check` first, and let its verdict pick the mode.** `none` / `mild` →
+  `mode="printed_negative"` (the default): two printed halves with the part cut out of them,
+  keyed, spouted, vented. `severe` → `mode="master_box"`: print the figure untouched plus an
+  open box, glue it down and pour **silicone** around it, because rubber flexes off an
+  undercut a rigid half grips. `recommend_master_box` is the field that says so.
+- **Three inputs, one contract.** `script_path` posts to `/mold` / `/export_mold`;
+  `mesh_path` (an .stl/.obj/.3mf on disk — a generated figure, a download) and `object` (a
+  Blender object, exported to a scratch STL in millimetres by the add-on's own `export_stl`)
+  post to `/mold_mesh` / `/export_mold_mesh`. Triangles never cross the MCP wire: the service
+  reads the file itself. So a `generate_3d` figure molds exactly the way a parametric part
+  does.
+- **The output directory is not a parameter.** `project` is, and the files land in
+  `projects/<slug>/molds/`. A mold written to a path a model invented is a mold the artist
+  cannot find, and the dogfood's hand-written flow baked an absolute machine path into a repo
+  file. `name` is a file *stem*, slugged, never a path.
+- **A mesh with holes is refused, not molded** — the same sentence `/segment_mesh` produces,
+  surfaced verbatim with the `remesh(mode="voxel")` fix appended, exactly as `check_model`
+  does.
+- **The severity is a judgement, the numbers are measurements.** The report says so and
+  carries the service's own `criterion.approximation` (depth is a radial bulge about the
+  vertical axis, so an off-centre lobe can over-report). Quote the number beside the band.
+- Both budget `FORGE_SERVICE_MOLD_TIMEOUT` (330 s, just above the service's own 300).
+- Flow legality is deliberately unchanged: `/mold` and `/export_mold` were already legal flow
+  steps, and the two `_mesh` routes are **not** — flows run inside the add-on, whose
+  `SERVICE_OPS` table does not list them, and a step `flow_save` accepts that `flow_run` then
+  refuses is worse than one that could not be saved. Adding them is a two-line change on both
+  sides at once.
+
+```text
+undercut_check(script_path="projects/litwick-lamp/part.py")
+# mold_top MILD (5.37 deg, 0.2 mm), mold_bottom NONE, recommend_master_box: false
+make_mold("litwick lamp", script_path="projects/litwick-lamp/part.py", name="litwick flame")
+# -> projects/litwick-lamp/molds/litwick-flame_mold_top.stl  (+ _mold_bottom.stl)
+
+# the generated-figure lane, no script anywhere:
+undercut_check(object="gecko")            # severe
+make_mold("gecko", object="gecko", mode="master_box", split=True)
 ```
 
 ### Base shapes and merge-for-print (Phase 11)

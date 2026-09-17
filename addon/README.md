@@ -474,7 +474,7 @@ side."* One command, one or more reference pictures, one per orthographic view.
 
 | type | params | does |
 |---|---|---|
-| `fit_to_silhouette` | `object?`, `views` (`[{"image": <path>, "axis": "front"\|"back"\|"side"\|"left"\|"right"\|"top"\|"bottom", "threshold"?: 0–1}]`) **or** the shorthand `front_image` / `side_image` / …, `strength?` (0–1, default 1), `iterations?` (1–12, default 3), `smooth?` (0–1, default 0.5), `falloff?` (0–4, default 0), `symmetry?` (false \| true \| `X`\|`Y`\|`Z`), `fit?` `height`\|`width`\|`bbox` (default `height`) | deforms the mesh until its projected outline follows the reference in every view given. **Not read-only** — it edits the artist's mesh, so the registry pushes `Forge: fit_to_silhouette` and one Ctrl+Z puts it back. Returns `{"object", "vertices", "faces", "views": [...], "strength", "iterations", "iterations_run", "smooth", "falloff", "fit", "symmetry", "symmetry_plane_mm", "applied", "moved", "moved_fraction", "max_displacement_mm", "mean_displacement_mm", "displacement_by_axis_mm", "constrained_axes", "untouched_axes", "iteration_max_mm", "dimensions_before_mm", "dimensions_after_mm", "bounds_before_mm", "bounds_after_mm", "shape_keys", "modifiers", "method", "honesty", "notes", "warnings", "seconds"}` |
+| `fit_to_silhouette` | `object?`, `views` (`[{"image": <path>, "axis": "front"\|"back"\|"side"\|"left"\|"right"\|"top"\|"bottom", "threshold"?: 0–1}]`) **or** the shorthand `front_image` / `side_image` / …, `strength?` (0–1, default 1), `iterations?` (1–12, default 3), `smooth?` (0–1, default 0.5), `falloff?` (0–4, default 0), `symmetry?` (false \| true \| `X`\|`Y`\|`Z`), `fit?` `height`\|`width`\|`bbox` (default `height`), `as_shape_key?` (a key NAME — write the fit into a shape key instead of onto the base mesh) | deforms the mesh until its projected outline follows the reference in every view given. **Not read-only** — it edits the artist's mesh, so the registry pushes `Forge: fit_to_silhouette` and one Ctrl+Z puts it back. Returns `{"object", "vertices", "faces", "views": [...], "strength", "iterations", "iterations_run", "smooth", "falloff", "fit", "symmetry", "symmetry_plane_mm", "applied", "moved", "moved_fraction", "max_displacement_mm", "mean_displacement_mm", "displacement_by_axis_mm", "constrained_axes", "untouched_axes", "iteration_max_mm", "dimensions_before_mm", "dimensions_after_mm", "bounds_before_mm", "bounds_after_mm", "shape_keys", "shape_key", "shape_key_overwritten", "basis_created", "modifiers", "method", "honesty", "notes", "warnings", "seconds"}` |
 
 Each entry of `views` comes back as `{"axis", "resolved_axis", "image", "image_size",
 "plane", "depth_axis", "constrains", "mask": {"source" (a tiered claim), "threshold",
@@ -483,6 +483,25 @@ Each entry of `views` comes back as `{"axis", "resolved_axis", "image", "image_s
 "mesh_size_before_mm", "iou_before", "iou_after", "iou_gain", "shape_iou_before",
 "shape_iou_after", "outline_error_before_mm", "outline_error_after_mm",
 "rays_unresolved", "grid", "grid_cell_mm"}`.
+
+**`as_shape_key` turns a fit into a character form instead of an edit.** The fit moves
+vertices and never changes topology — same vertices, same order, same edges — which is
+exactly what a shape key requires, so a silhouette-fitted variant is a legal morph target
+of the mesh it was fitted from. Given a name, the identical displacement is written into a
+**new shape key** of that name and the base mesh is left pristine: value 0 is the sculpt,
+value 1 is the fitted form. Fit the same base again under another name and a second key
+joins the first, so one mesh carries N forms — human → teen-wolf → werewolf — and a game
+plays the transformation as a real on-screen morph rather than swapping three meshes. Fit
+it again under the **same** name and that key's coordinates are overwritten in place
+(iterating a form is the workflow; a duplicate name would leave two keys and no way to
+tell which one the animation drives), reported as `shape_key_overwritten`. A mesh with no
+keys gets a `Basis` from its own untouched vertices first (`basis_created`), `"Basis"`
+itself is refused, and the fitted key is left at value 1 — with a warning when another
+form is also above 0, because shape keys **add up**. The honesty block gains the caveat
+that matters at play time: the morph is **linear vertex interpolation**, nothing between 0
+and 1 was fitted to anything, so a large form change (a man into a wolf) reads as a crude
+blend through the middle even though both ends are correct — ease the value with an
+F-curve, or fit a third mid-form key and drive the two in sequence.
 
 **A view only moves the two axes it can see.** `front` moves X and Z, `side` (= `right`)
 moves Y and Z, `top` moves X and Y, and the depth axis of a view is the one thing that
@@ -2332,7 +2351,9 @@ addon/forge/
   tools/verify.py        the geometric gate: verify_design (the scored, tier-stamped
                          report) and turntable (the 24-view judging rig)
   tools/silhouette.py    fit_to_silhouette: warp a sculpt until its outline matches
-                         one reference picture per orthographic view (Phase 18b)
+                         one reference picture per orthographic view (Phase 18b),
+                         onto the base mesh or into a named shape key (character
+                         forms: one mesh, N morph targets)
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
   tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
@@ -2373,7 +2394,10 @@ addon/tests/
                          fitted to ellipses it draws itself, with the right answer in
                          millimetres known by arithmetic; the untouched axis asserted
                          bit-identical; front+side together; every knob; the mask tiers;
-                         thirteen refusals; and flow legality proven by running a flow
+                         thirteen refusals; flow legality proven by running a flow; and
+                         the character forms (as_shape_key) - a key bit-identical to the
+                         destructive fit, a pristine base, overwrite, and two coexisting
+                         forms
   headless_ui_batch.py   headless checks for the UI batch: undo checkpoints, the health
                          row, the chips, the empty states, check_model/segment_model
                          against a fake service, and the flow editor
@@ -2486,7 +2510,7 @@ Covering:
     --python addon\tests\headless_silhouette.py
 ```
 
-Socket port **9904**. **105 checks**, no window, no service, no network beyond loopback,
+Socket port **9904**. **174 checks**, no window, no service, no network beyond loopback,
 and no reference pictures on disk that the suite did not draw itself. Every fixture's
 right answer is arithmetic rather than a golden file: a 1 m sphere is 2000 mm across, so
 fitted to an ellipse whose bounding box is 201 × 401 px with `fit="height"` the answer is
@@ -2519,6 +2543,23 @@ Covering:
   `heuristic` with the PLAIN BACKGROUND caveat, an explicit `threshold` honoured, and a
   single stray pixel warned about rather than cropped;
 - **shape keys** counted and warned about;
+- **character forms (`as_shape_key`), 69 of the checks** — leaving it out is today's
+  behaviour with the three new report fields empty and the mesh still key-less; giving it
+  a name writes the fit into that key **bit-identically equal (`numpy.array_equal`, not a
+  tolerance) to a destructive fit of the same mesh**, leaves the base mesh *and* the
+  `Basis` key bit-identical to the sculpt that went in, and makes the evaluated mesh the
+  pristine base at value 0 and the fitted form at value 1; a `Basis` is created when there
+  is none and reused when there is one; refitting under the same name overwrites that key
+  in place (one key, never two, and the report says `shape_key_overwritten`); two forms
+  (`teen-wolf`, `werewolf`) coexist on one base and each still reproduces **its own** fit
+  exactly; `strength` scales the key's displacement (125 mm at 0.25, 500 mm at 1.0) and
+  the base mesh is bit-identical either way; and `as_shape_key` refuses a blank name, a
+  non-string and `"Basis"` before anything is written. The destructive control is always
+  the **last** fit of the **same datablock**, because Blender re-orders its loop triangles
+  every time it tessellates (960 of 960 rows differ between two pristine copies of one
+  sphere) and the seeded rasteriser hands its samples out in that order, so two separate
+  copies land ~0.3% apart — measured, asserted as a bound, and the reason the obvious
+  "fit a copy and compare" control is not the one used;
 - **thirteen refusals**, each with a sentence: no file at the path, a misspelled view
   (with the `difflib` near miss), a view with no axis, a view with no image, no references
   at all, an empty list, two views of the same side, a threshold out of range, a strength

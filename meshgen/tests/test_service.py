@@ -660,3 +660,42 @@ def test_glb_stats_rejects_a_non_glb(tmp_path):
     path.write_bytes(b"this is not a glb at all")
     with pytest.raises(glb.GlbError):
         glb.stats(path)
+
+
+# --------------------------------------------------------------------------
+# B-6 -- a second start must not silently double up
+#
+# ThreadingHTTPServer allows address reuse, so starting meshgen twice does not
+# fail: the loser of the port race stays resident.  The 2026-09-16 dogfood run
+# found pid 31512 owning 8902 and pid 20964 sitting beside it -- a second
+# process holding a 12 GB-VRAM-class model loader that nothing would ever talk
+# to.  The guard asks the port first, over the /health this service already
+# serves, and steps aside when one answers.
+# --------------------------------------------------------------------------
+def test_the_startup_guard_sees_the_meshgen_that_is_already_running(live):
+    client, _app = live
+    line = service.already_serving(int(client.base.rsplit(":", 1)[1]))
+    # Its own /health, so its own pid and its own build sha.
+    assert str(os.getpid()) in line, line
+    assert service.BUILD_SHA in line, line
+    assert "FORGE_FORCE_START" in line, line
+
+
+def test_the_startup_guard_treats_a_dead_port_as_free():
+    import socket
+
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    port = probe.getsockname()[1]
+    probe.close()
+    assert service.already_serving(port) == ""
+
+
+def test_force_start_is_read_off_the_environment(monkeypatch):
+    monkeypatch.delenv("FORGE_FORCE_START", raising=False)
+    assert service.force_start() is False
+    for value in ("1", "true", "YES", "on"):
+        monkeypatch.setenv("FORGE_FORCE_START", value)
+        assert service.force_start() is True, value
+    monkeypatch.setenv("FORGE_FORCE_START", "0")
+    assert service.force_start() is False

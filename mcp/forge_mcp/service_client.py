@@ -12,6 +12,14 @@ Phase 2 (print readiness):
     POST /segment         -> {"mode", "joint", "cuts", "segments": [...], "plate"}
     POST /export_segments -> {"directory", "files": [...], "plate", "plate_path"}
 
+Phase 12 (molds and casting) — the same four answers for a script or a mesh:
+
+    POST /mold             -> {"pieces"/"halves", "undercuts", "instructions",
+                               "parting_z_mm", "registration_keys", "spout", ...}
+    POST /export_mold      -> /mold plus {"directory", "files": [...]}
+    POST /mold_mesh        -> /mold plus {"mesh_input", "sewing"}
+    POST /export_mold_mesh -> /export_mold plus {"mesh_input", "sewing"}
+
 Errors come back as HTTP 400 (script/param problems) or 500 (service bugs) with
 ``{"error": "...", "traceback": "..."}``.
 
@@ -257,6 +265,119 @@ def export_segments(
         body["basename"] = basename
     return _request(
         "POST", "/export_segments", body, timeout=config.SERVICE_SEGMENT_TIMEOUT
+    )
+
+
+# --- Phase 12: molds and casting -------------------------------------------
+#
+# Four routes, one body shape. The mold options (mode, parting plane, draft,
+# keys, spout, vents, undercut thresholds) are identical whether the solid came
+# from a PARAMS script or from triangles, which is why they are assembled once
+# here and the two input halves are the only difference on the wire.
+
+
+def _mold_body(
+    options: Optional[Dict[str, Any]],
+    printer: Optional[Dict[str, Any]],
+    include_mesh: bool,
+) -> Dict[str, Any]:
+    """The mold half of every mold request.
+
+    ``None`` options are dropped rather than sent: the service's own defaults
+    (auto parting plane, 2 degrees of draft, 4 mm shell, 4 keys, a spout) are
+    the right answer, and an explicit null would have to be interpreted.
+    """
+    body: Dict[str, Any] = {"include_mesh": bool(include_mesh)}
+    for key, value in (options or {}).items():
+        if value is not None:
+            body[key] = value
+    if printer:
+        body["printer"] = printer
+    return body
+
+
+def mold(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    options: Optional[Dict[str, Any]] = None,
+    include_mesh: bool = False,
+) -> Dict[str, Any]:
+    """POST /mold — the two-piece mold of a PartForge part. Writes no files."""
+    body = _mold_body(options, printer, include_mesh)
+    body["script"] = script_source
+    body["overrides"] = overrides or {}
+    return _request("POST", "/mold", body, timeout=config.SERVICE_MOLD_TIMEOUT)
+
+
+def export_mold(
+    script_source: str,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    options: Optional[Dict[str, Any]] = None,
+    directory: str = "",
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+) -> Dict[str, Any]:
+    """POST /export_mold — one file per mold piece, each centred and on Z=0."""
+    body = _mold_body(options, printer, include_mesh=False)
+    body["script"] = script_source
+    body["overrides"] = overrides or {}
+    body["directory"] = directory
+    body["format"] = fmt
+    if basename:
+        body["basename"] = basename
+    return _request("POST", "/export_mold", body, timeout=config.SERVICE_MOLD_TIMEOUT)
+
+
+def _mesh_body(
+    mesh: Optional[Dict[str, Any]],
+    file_path: Optional[str],
+) -> Dict[str, Any]:
+    """Triangles, or a file to read them from — exactly one, as the service asks."""
+    body: Dict[str, Any] = {}
+    if mesh is not None:
+        body["mesh"] = mesh
+    if file_path:
+        body["file_path"] = file_path
+    return body
+
+
+def mold_mesh(
+    mesh: Optional[Dict[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    options: Optional[Dict[str, Any]] = None,
+    include_mesh: bool = False,
+) -> Dict[str, Any]:
+    """POST /mold_mesh — the same mold, from a generated or downloaded mesh."""
+    body = _mold_body(options, printer, include_mesh)
+    body.update(_mesh_body(mesh, file_path))
+    return _request("POST", "/mold_mesh", body, timeout=config.SERVICE_MOLD_TIMEOUT)
+
+
+def export_mold_mesh(
+    mesh: Optional[Dict[str, Any]] = None,
+    file_path: Optional[str] = None,
+    printer: Optional[Dict[str, Any]] = None,
+    *,
+    options: Optional[Dict[str, Any]] = None,
+    directory: str = "",
+    basename: Optional[str] = None,
+    fmt: str = "stl",
+) -> Dict[str, Any]:
+    """POST /export_mold_mesh — /mold_mesh, written to disk one file per piece."""
+    body = _mold_body(options, printer, include_mesh=False)
+    body.update(_mesh_body(mesh, file_path))
+    body["directory"] = directory
+    body["format"] = fmt
+    if basename:
+        body["basename"] = basename
+    return _request(
+        "POST", "/export_mold_mesh", body, timeout=config.SERVICE_MOLD_TIMEOUT
     )
 
 

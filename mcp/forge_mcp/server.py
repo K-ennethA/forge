@@ -70,6 +70,7 @@ from .util import (
     fmt_mode,
     fmt_model_check_report,
     fmt_model_segment_report,
+    fmt_mold_report,
     fmt_new_part_report,
     fmt_number,
     fmt_open_report,
@@ -93,6 +94,7 @@ from .util import (
     fmt_submitted_report,
     fmt_tag_table,
     fmt_turntable_report,
+    fmt_undercut_report,
     fmt_uv_report,
     fmt_verify_report,
     fmt_vector,
@@ -104,6 +106,8 @@ from .util import (
     generated_output_path,
     keys_frame_range,
     meshgen_image_path,
+    mold_basename,
+    mold_input_path,
     next_rig_step,
     normalize_action_name,
     normalize_animation_fps,
@@ -118,6 +122,7 @@ from .util import (
     normalize_face_indices,
     normalize_keys,
     normalize_modules,
+    normalize_mold_mode,
     normalize_object_keys,
     normalize_poly_budget,
     normalize_preview_objects,
@@ -134,6 +139,7 @@ from .util import (
     ok,
     plate_items_by_name,
     preview_path,
+    project_molds_dir,
     project_paths,
     project_slug,
     read_flow_files,
@@ -184,6 +190,13 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   check it with check_model and cut it with segment_model, which work off the
   Blender object. Both refuse a mesh that is not watertight — repair that with
   remesh(mode="voxel") first, then ask again.
+- Casting is its own lane and its own order: undercut_check FIRST (will it come
+  out of a mold at all — and its verdict picks the mode), then make_mold, which
+  files the pieces in projects/<slug>/molds/ and hands back the pour
+  instructions. Both take a PartForge script, a mesh file, or a Blender object,
+  so a generated figure molds exactly the way a parametric part does. Name every
+  file the mold wrote in your reply, and say what silicone and resin they still
+  have to buy — never buy anything.
 - RigForge tools (rigforge_*) take a sculpt all the way to a game character:
   rigforge_tag (once per body part) -> rigforge_retopo -> rigforge_auto_uv ->
   rigforge_metarig -> rigforge_generate_rig -> rigforge_cloth (optional) ->
@@ -2286,6 +2299,361 @@ def segment_model(
     except ForgeError as exc:
         raise _with_repair_advice(exc) from exc
     return fmt_model_segment_report(object, result, printer_source, collection)
+
+
+# ---------------------------------------------------------------------------
+# Molds and casting (Phase 12) — "print the mold, pour twenty copies"
+#
+# The geometry service has had four mold routes and a real undercut analysis
+# since Phase 12; until now nothing on this surface reached them, so the only
+# way in was to read Forge's source and hand-write a flow (dogfood
+# 2026-09-16, G-1). These two tools are that lane:
+#
+#   undercut_check  — will it come out of a mold at all? Writes nothing.
+#   make_mold       — the mold itself, filed in projects/<slug>/molds/.
+#
+# Both take the SAME three inputs and route themselves: a PARAMS script goes to
+# /mold /export_mold, a mesh (a generated figure, a download, an object in the
+# Blender scene) goes to /mold_mesh /export_mold_mesh. The mesh never crosses
+# this wire — an object in Blender is exported to a scratch STL in millimetres
+# by the add-on's own export_stl, and the service reads that file itself.
+# ---------------------------------------------------------------------------
+
+#: A mold is only as good as the draw it was analysed against, and the service
+#: refuses the same two things /segment_mesh does — a mesh with holes and a mesh
+#: past the triangle ceiling. Both are re-dressed with _with_repair_advice, so a
+#: "repair first" reaching the artist reads the same here as everywhere else.
+_MOLD_INPUTS = ("script_path", "object", "mesh_path")
+
+
+def _mold_input(
+    script_path: Optional[str],
+    object_name: Optional[str],
+    mesh_path: Optional[str],
+) -> Dict[str, Any]:
+    """Exactly one of the three inputs, resolved before anything goes on a wire.
+
+    Returns `{"kind", "subject", "source"?, "path"?, "file_path"?}`. A Blender
+    object is exported here, not in the service call, so a scene with nothing in
+    it costs one socket round trip rather than a mold job.
+    """
+    given = [
+        name
+        for name, value in zip(_MOLD_INPUTS, (script_path, object_name, mesh_path))
+        if value is not None and str(value).strip()
+    ]
+    if not given:
+        raise ForgeError(
+            "Nothing to mold. Pass `script_path` for a PartForge part, "
+            "`mesh_path` for a file on disk (an .stl/.obj/.3mf — a generated "
+            "figure or a download), or `object` for something already in the "
+            "Blender scene."
+        )
+    if len(given) > 1:
+        raise ForgeError(
+            f"Pass ONE input, not {len(given)} ({', '.join(given)}). The mold "
+            "comes off one thing: the script, the mesh file, or the Blender "
+            "object."
+        )
+
+    if script_path and str(script_path).strip():
+        path, source = read_script(script_path)
+        return {"kind": "script", "subject": path.name, "path": path, "source": source}
+
+    if mesh_path and str(mesh_path).strip():
+        path = resolve_path(mesh_path, label="mesh path", must_exist=True)
+        return {"kind": "mesh", "subject": path.name, "file_path": str(path)}
+
+    name = str(object_name).strip()
+    # The add-on scales Blender's metres to millimetres on the way out (its
+    # `scale` default is 1000), which is the unit every number in the service
+    # is in. That is the whole reason this goes through export_stl rather than
+    # through a mesh payload assembled here.
+    out = mold_input_path(name)
+    blender_client.send_command("export_stl", {"objects": [name], "path": str(out)})
+    return {"kind": "mesh", "subject": name, "file_path": str(out), "from_blender": True}
+
+
+def _mold_options(
+    mode: str,
+    parting_z_mm: Optional[float],
+    draft_deg: Optional[float],
+    shell_mm: Optional[float],
+    clearance_mm: Optional[float],
+    registration_keys: Optional[int],
+    spout_diameter_mm: Optional[float],
+    vents: Optional[int],
+    undercut_threshold_deg: Optional[float],
+    margin_mm: Optional[float] = None,
+    pour_clearance_mm: Optional[float] = None,
+    split: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """The mold option block, checked here for the things arithmetic cannot fix.
+
+    Everything the SERVICE validates (draft against the wall angle, a spout that
+    will not fit inside the cavity) stays the service's job and comes back as
+    its own 400. What is refused here is only what would be a round trip wasted:
+    a negative dimension, and a key count that is not a whole number.
+    """
+    options: Dict[str, Any] = {"mode": normalize_mold_mode(mode)}
+
+    for name, value in (
+        ("draft_deg", draft_deg),
+        ("shell_mm", shell_mm),
+        ("clearance_mm", clearance_mm),
+        ("margin_mm", margin_mm),
+        ("pour_clearance_mm", pour_clearance_mm),
+        ("undercut_threshold_deg", undercut_threshold_deg),
+    ):
+        if value is None:
+            continue
+        number = float(value)
+        if number < 0.0:
+            raise ForgeError(f"{name} cannot be negative; got {number:g}.")
+        options[name] = number
+
+    if parting_z_mm is not None:
+        options["parting_z_mm"] = float(parting_z_mm)
+
+    if registration_keys is not None:
+        count = int(registration_keys)
+        if count < 0:
+            raise ForgeError(
+                f"registration_keys cannot be negative; got {count}. 0 means no "
+                "keys, and then the halves line up by eye — worth saying out "
+                "loud, because a mold that shifts casts a seam."
+            )
+        options["registration_keys"] = count
+
+    if spout_diameter_mm is not None:
+        diameter = float(spout_diameter_mm)
+        if diameter < 0.0:
+            raise ForgeError(
+                f"spout_diameter_mm cannot be negative; got {diameter:g}. Pass 0 "
+                "for a mold with no spout (you pour along one edge instead)."
+            )
+        options["spout"] = False if diameter == 0.0 else {"diameter_mm": diameter}
+
+    if vents is not None:
+        count = int(vents)
+        if count < 0:
+            raise ForgeError(f"vents cannot be negative; got {count}.")
+        options["vents"] = count
+
+    if split is not None:
+        options["split"] = bool(split)
+    return options
+
+
+def _mold_printer(printer_path: Optional[str]) -> tuple[Optional[Dict[str, Any]], str]:
+    """The printer profile, resolved the way every print-readiness tool does."""
+    return read_printer(printer_path)
+
+
+@app.tool()
+def undercut_check(
+    script_path: Optional[str] = None,
+    object: Optional[str] = None,
+    mesh_path: Optional[str] = None,
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+    mode: Literal["printed_negative", "master_box"] = "printed_negative",
+    parting_z_mm: Optional[float] = None,
+    undercut_threshold_deg: Optional[float] = None,
+) -> str:
+    """Will this come OUT of a mold? Run this BEFORE make_mold. Writes nothing.
+
+    The first question in the casting lane and the one nobody asks until the
+    silicone has set: after the mold is split, does each half lift straight off,
+    or does the part hang back over it? The service measures every triangle
+    against the draw direction of the half it belongs to and answers per half —
+    `none`, `mild` or `severe` — with the patch area, the worst angle past
+    vertical, how deep the sideways grip is, and located example faces to go and
+    look at.
+
+    Give it ONE of:
+
+    - `script_path` — a PartForge part (the CAD lane). `overrides` applies the
+      same way as everywhere else.
+    - `mesh_path` — an .stl/.obj/.3mf on disk: a generated figure, a download, a
+      sculpt somebody exported. Millimetres, watertight.
+    - `object` — something already in the Blender scene; it is exported to a
+      scratch STL in millimetres and the service reads that.
+
+    **The verdict decides the mold, so read it before choosing one.** `none` or
+    `mild` means two printed halves work (`make_mold()`, the default). `severe`
+    means a rigid half cannot come off the part at all, and the answer is not a
+    better parting plane — it is `make_mold(mode="master_box")`: print the
+    figure, print an open box round it, pour silicone in, and let the rubber
+    flex off the undercut. The report says which, and `recommend_master_box` is
+    the field it says it with.
+
+    Two honesty notes that must survive into your reply. The angles and areas
+    are MEASURED; the mild/severe line between them is a THRESHOLD somebody
+    chose for typical tin/platinum silicone — quote the number beside the band.
+    And depth is approximated as a radial bulge about the part's vertical axis,
+    so a lobe sitting off-centre in plan can over-report.
+
+    `parting_z_mm` forces the split height (the default is the part's widest
+    horizontal cross-section, which is almost always right).
+    `undercut_threshold_deg` is how far past vertical counts as opposing at all;
+    the default, 1 degree, is deliberately strict.
+    """
+    resolved = _mold_input(script_path, object, mesh_path)
+    printer, printer_source = _mold_printer(printer_path)
+    options = _mold_options(
+        mode,
+        parting_z_mm,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        undercut_threshold_deg,
+    )
+
+    try:
+        if resolved["kind"] == "script":
+            payload = service_client.mold(
+                resolved["source"],
+                overrides,
+                printer,
+                options=options,
+                include_mesh=False,
+            )
+        else:
+            payload = service_client.mold_mesh(
+                file_path=resolved["file_path"],
+                printer=printer,
+                options=options,
+                include_mesh=False,
+            )
+    except ForgeError as exc:
+        raise _with_repair_advice(exc) from exc
+
+    report = fmt_undercut_report(resolved["subject"], payload)
+    return f"{report}\n  printer: {printer_source}"
+
+
+@app.tool()
+def make_mold(
+    project: str,
+    script_path: Optional[str] = None,
+    object: Optional[str] = None,
+    mesh_path: Optional[str] = None,
+    name: Optional[str] = None,
+    mode: Literal["printed_negative", "master_box"] = "printed_negative",
+    overrides: Optional[Dict[str, Any]] = None,
+    printer_path: Optional[str] = None,
+    parting_z_mm: Optional[float] = None,
+    draft_deg: Optional[float] = None,
+    shell_mm: Optional[float] = None,
+    clearance_mm: Optional[float] = None,
+    registration_keys: Optional[int] = None,
+    spout_diameter_mm: Optional[float] = None,
+    vents: Optional[int] = None,
+    margin_mm: Optional[float] = None,
+    pour_clearance_mm: Optional[float] = None,
+    split: Optional[bool] = None,
+    format: Literal["stl", "step", "3mf"] = "stl",
+) -> str:
+    """Build a mold from a part or a mesh and write it into projects/<project>/molds/.
+
+    **Run `undercut_check` first.** It is the same geometry and it costs one
+    call, and its verdict is what chooses between this tool's two modes.
+
+    - `mode="printed_negative"` (default) — two printed halves with the part cut
+      out of them, mated by registration keys, with a pour spout and vents. You
+      print the halves, clamp them, and pour resin in. Good for a handful of
+      pulls; the parting line sands flush.
+    - `mode="master_box"` — the figure itself, untouched, plus an open box to
+      glue it into and pour SILICONE around. That is the answer to severe
+      undercuts and the answer to "I want twenty of these", because rubber
+      flexes off what a rigid half grips. `split=true` cuts the box in two with
+      keys so the cured rubber demolds easily.
+
+    Give it ONE input, the same three `undercut_check` takes: `script_path` (a
+    PartForge part), `mesh_path` (a generated figure or a download on disk), or
+    `object` (something in the Blender scene, exported to a scratch STL in mm).
+
+    `project` is the project the mold belongs to and the ONLY thing that decides
+    where files land — `projects/<slug>/molds/`, beside the part they came off.
+    There is no path parameter on purpose: a mold written to a path the model
+    invented is a mold the artist cannot find. `name` is the file stem
+    (`"litwick flame"` → `litwick-flame_mold_top.stl`), never a path.
+
+    The geometry knobs are all optional and all defaulted by the service:
+    `parting_z_mm` ("auto" = the widest cross-section), `draft_deg` (2),
+    `shell_mm` (4 mm of wall per side), `clearance_mm` (grow the cavity all
+    round, for a tight-fitting casting), `registration_keys` (4; 0 for none),
+    `spout_diameter_mm` (0 for no spout), `vents` (auto). The master_box ones
+    are `margin_mm` (silicone around the figure, 10), `pour_clearance_mm` (15
+    above its highest point) and `split`.
+
+    **The reply must name every file path this writes** — they are the whole
+    deliverable, and a path the artist is not shown is a file they do not have.
+    The report also carries the service's own casting instructions, start to
+    finish, and they are written for somebody who has never poured a mold: hand
+    them over rather than summarising them away. Print settings matter here in a
+    way they do not for an ordinary part (fine layers, no supports in the
+    cavity, and sand the cavity faces), and every layer line in the cavity shows
+    up on every copy.
+
+    Silicone and casting resin are not printed parts: end the turn by saying
+    what they still have to buy, with the link, as a search — and never buy
+    anything or offer to.
+    """
+    resolved = _mold_input(script_path, object, mesh_path)
+    printer, printer_source = _mold_printer(printer_path)
+    options = _mold_options(
+        mode,
+        parting_z_mm,
+        draft_deg,
+        shell_mm,
+        clearance_mm,
+        registration_keys,
+        spout_diameter_mm,
+        vents,
+        None,
+        margin_mm=margin_mm,
+        pour_clearance_mm=pour_clearance_mm,
+        split=split,
+    )
+
+    # Resolved and created BEFORE the job is submitted, so a bad project name
+    # costs nothing — the same rule generate_3d states out loud.
+    out_dir = project_molds_dir(project)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ForgeError(f"Could not create the molds directory {out_dir}: {exc}") from exc
+    basename = mold_basename(name or resolved["subject"].rsplit(".", 1)[0])
+
+    try:
+        if resolved["kind"] == "script":
+            payload = service_client.export_mold(
+                resolved["source"],
+                overrides,
+                printer,
+                options=options,
+                directory=str(out_dir),
+                basename=basename,
+                fmt=format.lower(),
+            )
+        else:
+            payload = service_client.export_mold_mesh(
+                file_path=resolved["file_path"],
+                printer=printer,
+                options=options,
+                directory=str(out_dir),
+                basename=basename,
+                fmt=format.lower(),
+            )
+    except ForgeError as exc:
+        raise _with_repair_advice(exc) from exc
+
+    return fmt_mold_report(resolved["subject"], payload, out_dir, printer_source)
 
 
 # ---------------------------------------------------------------------------

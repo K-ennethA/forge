@@ -17,9 +17,11 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -134,6 +136,17 @@ class Client(object):
             time.sleep(0.05)
         raise AssertionError("the CLI ran %d times, expected %d"
                              % (len(self.invocations()), count))
+
+
+def raw_file(client, path, timeout=20.0):
+    """``(status, bytes)`` for a ``/file/<token>`` URL — bytes, never JSON."""
+    request = urllib.request.Request(client.url(path))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read()
 
 
 def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
@@ -1483,6 +1496,360 @@ def test_a_json_only_cli_still_answers_with_an_empty_activity_list(client):
     final = client.turn("hello")
     assert final["state"] == "done"
     assert final["activity"] == []
+
+
+# ---------------------------------------------------------------------------
+# B-1 — a turn that runs out of time must not throw away finished work
+#
+# The dogfood run's turn 3 wrote a 441-line part.py, generated it, took a
+# printability refusal, fixed it, re-checked and rendered it twice — and then
+# died at the timeout with state "error", no reply, no cost and the sentence
+# "Try a smaller request", while 595 of its 900 seconds had been a stall.  Every
+# assertion below is one of those four wrongs.
+# ---------------------------------------------------------------------------
+
+PREAMBLE = ("Two things came out of switching to AAAs that change the shape: "
+            "lying sideways-on, a 40 mm base leaves under a millimetre of wall, "
+            "and a 22 ohm resistor is there for safety, not brightness.")
+
+
+def _recorder(interval=0):
+    """A real recorder over a real job, so the store's rules are in the test."""
+    store = bridge.JobStore()
+    job, _disposition = store.submit("hello", "hello")
+    return bridge.ActivityRecorder(store, job["job_id"], interval=interval)
+
+
+def _feed_two_blocks(recorder):
+    """A paragraph, a tool with its result, then a second paragraph."""
+    for index, text in ((0, "First, the reasoning."), ):
+        recorder.feed({"type": "stream_event", "event": {
+            "type": "content_block_start", "index": index,
+            "content_block": {"type": "text", "text": ""}}})
+        recorder.feed({"type": "stream_event", "event": {
+            "type": "content_block_delta", "index": index,
+            "delta": {"type": "text_delta", "text": text}}})
+        recorder.feed({"type": "stream_event", "event": {
+            "type": "content_block_stop", "index": index}})
+    recorder.feed({"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": "toolu_A",
+         "name": "mcp__forge__partforge_check",
+         "input": {"script_path": "C:\\parts\\part.py"}}]}})
+    recorder.feed({"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": "toolu_A",
+         "content": "overall: warn"}]}})
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "content_block_start", "index": 1,
+        "content_block": {"type": "text", "text": ""}}})
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "content_block_delta", "index": 1,
+        "delta": {"type": "text_delta", "text": "Then the summary."}}})
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "content_block_stop", "index": 1}})
+
+
+def test_the_recorder_keeps_every_block_and_every_step():
+    recorder = _recorder()
+    _feed_two_blocks(recorder)
+    assert recorder.text_blocks() == ["First, the reasoning.", "Then the summary."]
+    # Two paragraphs, not one run-on sentence.
+    assert recorder.text() == "First, the reasoning.\n\nThen the summary."
+    # The step says what the tool ANSWERED, which is what proves work happened.
+    assert recorder.steps() == ["partforge_check: part.py → overall: warn"]
+
+
+def test_the_recorder_keeps_an_unfinished_block_too():
+    """A kill lands mid-paragraph; the half a paragraph is still the answer."""
+    recorder = _recorder()
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "content_block_start", "index": 0,
+        "content_block": {"type": "text", "text": ""}}})
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "content_block_delta", "index": 0,
+        "delta": {"type": "text_delta", "text": "I was part way through"}}})
+    assert recorder.text_blocks() == ["I was part way through"]
+
+
+def test_the_recorder_picks_up_a_cost_the_stream_volunteered():
+    recorder = _recorder()
+    assert recorder.cost() is None
+    recorder.feed({"type": "stream_event", "event": {
+        "type": "message_delta", "delta": {},
+        "usage": {"input_tokens": 99, "output_tokens": 5},
+        "total_cost_usd": 0.42}})
+    assert recorder.cost() == pytest.approx(0.42)
+    assert recorder.usage() == {"input_tokens": 99, "output_tokens": 5}
+
+
+def test_compose_reply_keeps_every_block_in_order():
+    assert bridge.compose_reply(["one", "two"]) == "one\n\ntwo"
+    # The CLI's result field IS the last block: it must not be said twice.
+    assert bridge.compose_reply(["one", "two"], "two") == "one\n\ntwo"
+    # ...and a result the stream never carried is not dropped either.
+    assert bridge.compose_reply(["one"], "two") == "one\n\ntwo"
+    assert bridge.compose_reply([], "only this") == "only this"
+    assert bridge.compose_reply([]) == ""
+
+
+def test_the_checkpoint_blames_the_request_only_when_that_is_true():
+    recorder = _recorder()
+    _feed_two_blocks(recorder)
+
+    killed = bridge.checkpoint_reply(recorder, 900.0, stalled=False)
+    assert "First, the reasoning." in killed
+    assert "Then the summary." in killed
+    assert "partforge_check: part.py → overall: warn" in killed
+    assert "900s limit" in killed
+    assert "real and on disk" in killed
+    assert "smaller request" in killed
+
+    stalled = bridge.checkpoint_reply(recorder, 900.0, stalled=True,
+                                      silent_for=595.0)
+    assert "595 seconds" in stalled
+    assert "First, the reasoning." in stalled
+    # A stall would have killed a one-line request just as dead: never tell the
+    # artist their ask was too big for a hang.
+    assert "smaller request" not in stalled
+
+
+def test_a_turn_that_runs_out_of_time_hands_back_what_it_finished(bridge_proc):
+    client = _stream_client(bridge_proc, mode="stream_hang",
+                            FAKE_CLAUDE_PREAMBLE=PREAMBLE,
+                            FAKE_CLAUDE_STREAM_COST="0.42",
+                            FORGE_ASSISTANT_TIMEOUT="5",
+                            FORGE_ASSISTANT_STALL_TIMEOUT="0")
+    final = client.turn("approved, build the body")
+
+    # Not "error": the work is real, only the clock ran out.
+    assert final["state"] == "timeout", final
+    reply = final["reply"]
+    # The reasoning the old bridge dropped on the floor...
+    assert "lying sideways-on" in reply, reply
+    # ...what it actually ran, with what the tool said back...
+    assert "partforge_check" in reply, reply
+    assert "overall: warn" in reply, reply
+    # ...and one honest sentence about what stopped it.
+    assert "5s limit" in reply, reply
+    assert "real and on disk" in reply, reply
+    # Billed, not free.
+    assert final["cost_usd"] == pytest.approx(0.42), final
+    assert final["session_cost_usd"] == pytest.approx(0.42), final
+    assert final.get("stalled") is False, final
+    assert final["activity"], final
+
+
+def test_a_stalled_turn_is_killed_on_its_own_clock(bridge_proc):
+    """595 s of dead air must not be allowed to eat a 900 s budget."""
+    client = _stream_client(bridge_proc, mode="stream_hang",
+                            FAKE_CLAUDE_PREAMBLE=PREAMBLE,
+                            FORGE_ASSISTANT_TIMEOUT="600",
+                            FORGE_ASSISTANT_STALL_TIMEOUT="3")
+    started = time.time()
+    final = client.turn("approved, build the body")
+    elapsed = time.time() - started
+
+    assert final["state"] == "timeout", final
+    assert final.get("stalled") is True, final
+    # Killed on the stall clock, nowhere near the ten-minute budget.
+    assert elapsed < 60.0, elapsed
+    assert final["duration_ms"] < 60000, final["duration_ms"]
+    reply = final["reply"]
+    assert "silent" in reply, reply
+    assert "lying sideways-on" in reply, reply
+    assert "smaller request" not in reply, reply
+
+
+def test_the_stall_clock_can_be_switched_off(monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_STALL_TIMEOUT", "0")
+    assert bridge.stall_timeout_s() == 0.0
+    monkeypatch.setenv("FORGE_ASSISTANT_STALL_TIMEOUT", "nonsense")
+    assert bridge.stall_timeout_s() == bridge.DEFAULT_STALL_TIMEOUT
+    monkeypatch.delenv("FORGE_ASSISTANT_STALL_TIMEOUT", raising=False)
+    assert bridge.stall_timeout_s() == bridge.DEFAULT_STALL_TIMEOUT
+
+
+# ---------------------------------------------------------------------------
+# F-1 — the artist reads the whole answer, not only its last paragraph
+# ---------------------------------------------------------------------------
+
+def test_the_reply_carries_every_paragraph_the_model_wrote(bridge_proc):
+    client = _stream_client(bridge_proc, FAKE_CLAUDE_PREAMBLE=PREAMBLE)
+    final = client.turn("update the sheet for the AAA change")
+    assert final["state"] == "done", final
+    reply = final["reply"]
+    # The block written BEFORE the tool calls — the "why" — comes first...
+    assert reply.startswith(PREAMBLE), reply[:200]
+    # ...the closing summary is still there...
+    assert "wedges" in reply, reply
+    # ...and they are two paragraphs, not one sentence that changes subject.
+    assert "\n\n" in reply, reply
+    # The throttled activity ticker is a progress indicator, not the answer:
+    # it may still be clipped, and the reply must not be built out of it.
+    texts = [entry["label"] for entry in final["activity"]
+             if entry["kind"] == "text"]
+    assert texts, final["activity"]
+
+
+# ---------------------------------------------------------------------------
+# F-4 — the file an artist prints is the one the panel must not hide
+# ---------------------------------------------------------------------------
+
+def test_a_relative_path_in_the_reply_still_reaches_the_gallery(bridge_proc,
+                                                                tmp_path):
+    projects = tmp_path / "projects"
+    prints = projects / "litwick-lamp" / "prints"
+    prints.mkdir(parents=True)
+    stl = prints / "litwick-lamp-body.stl"
+    stl.write_bytes(b"solid body\nendsolid body\n")
+
+    client = _stream_client(
+        bridge_proc,
+        FORGE_PROJECTS_DIR=str(projects),
+        FAKE_CLAUDE_REPLY="Exported prints/litwick-lamp-body.stl for you.")
+    final = client.turn("where are the files I print?")
+    assert final["state"] == "done", final
+
+    files = [entry for entry in final["files"] if entry["source"] != "attachment"]
+    names = [entry["name"] for entry in files]
+    assert "litwick-lamp-body.stl" in names, final["files"]
+    entry = next(item for item in files if item["name"] == "litwick-lamp-body.stl")
+    # Minted against the project it was written in, not left as a bare word.
+    assert entry["path"] == str(stl)
+    assert entry["kind"] == "model"
+    # ...and it is actually fetchable, which is the whole point of a token.
+    status, body = raw_file(client, entry["url"])
+    assert status == 200, body
+    assert body.startswith(b"solid body")
+
+
+def test_find_file_paths_keeps_absolute_paths_and_ignores_prose(tmp_path):
+    base = tmp_path / "cup"
+    (base / "renders").mkdir(parents=True)
+    real = base / "renders" / "iso.png"
+    real.write_bytes(b"\x89PNG\r\n\x1a\n")
+
+    found = bridge.find_file_paths("saved renders/iso.png next to the part",
+                                   bases=[str(base)])
+    assert found == [str(real)]
+
+    # A file that is not there is prose, not a path: the gallery must not fill
+    # up with broken thumbnails the model merely mentioned.
+    assert bridge.find_file_paths("open renders/missing.png",
+                                  bases=[str(base)]) == []
+
+    # An absolute path is still read exactly as written, and its tail must not
+    # be re-read as a second, relative hit.
+    absolute = "C:\\forge\\projects\\cup\\renders\\iso.png"
+    assert bridge.find_file_paths(absolute, bases=[str(base)]) == [absolute]
+
+    # Nothing may climb out of the base directory.
+    assert bridge.find_file_paths("../secrets/iso.png", bases=[str(base)]) == []
+
+
+def test_the_project_named_in_the_text_is_searched_first(tmp_path, monkeypatch):
+    projects = tmp_path / "projects"
+    for name in ("aaa-first", "litwick-lamp"):
+        (projects / name / "prints").mkdir(parents=True)
+        (projects / name / "prints" / "body.stl").write_bytes(b"solid\n")
+    monkeypatch.setenv("FORGE_PROJECTS_DIR", str(projects))
+    monkeypatch.setenv("FORGE_ASSISTANT_CWD", str(tmp_path))
+
+    bases = bridge.path_bases("wrote prints/body.stl for litwick-lamp")
+    # The working directory is always first; the project the sentence names
+    # beats the one that merely sorts earlier.
+    assert bases[0] == os.path.abspath(str(tmp_path))
+    assert bases[1] == str(projects / "litwick-lamp")
+    assert bridge.find_file_paths("wrote prints/body.stl for litwick-lamp",
+                                  bases=bases) == [
+        str(projects / "litwick-lamp" / "prints" / "body.stl")]
+
+
+# ---------------------------------------------------------------------------
+# B-6 — a second start must not silently double up
+# ---------------------------------------------------------------------------
+
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Answers /health the way every Forge service does, and nothing else."""
+
+    build = {"sha": "06b6c99", "pid": 4242, "started": "2026-09-16T04:26:00Z",
+             "uptime_s": 1602.0}
+
+    def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler's naming
+        body = json.dumps({"status": "ok", "build": self.build}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):  # noqa: D102 - silence the test output
+        pass
+
+
+@pytest.fixture
+def occupied_port():
+    """A port with something already answering ``/health`` on it."""
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _HealthHandler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield server.server_address[1]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_the_guard_names_the_process_that_is_already_there(occupied_port):
+    line = bridge.already_serving(occupied_port)
+    assert "4242" in line, line
+    assert "06b6c99" in line, line
+    assert "FORGE_FORCE_START" in line, line
+
+
+def test_the_guard_treats_a_dead_port_as_free():
+    assert bridge.already_serving(free_port()) == ""
+
+
+def test_force_start_is_read_off_the_environment(monkeypatch):
+    monkeypatch.delenv("FORGE_FORCE_START", raising=False)
+    assert bridge.force_start() is False
+    for value in ("1", "true", "YES", "on"):
+        monkeypatch.setenv("FORGE_FORCE_START", value)
+        assert bridge.force_start() is True, value
+    monkeypatch.setenv("FORGE_FORCE_START", "0")
+    assert bridge.force_start() is False
+
+
+def test_a_second_bridge_exits_cleanly_instead_of_doubling_up(occupied_port):
+    """"Already running" is the state the caller wanted, so exit 0, not 1."""
+    env = dict(os.environ)
+    env.pop("FORGE_FORCE_START", None)
+    done = subprocess.run(
+        [sys.executable, BRIDGE_PY, "--port", str(occupied_port)],
+        cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, timeout=60)
+    assert done.returncode == 0, done.stdout
+    out = done.stdout.decode("utf-8", "replace")
+    assert "already answering" in out, out
+    assert "4242" in out and "06b6c99" in out, out
+
+
+def test_force_start_skips_the_guard(occupied_port):
+    env = dict(os.environ)
+    env["FORGE_FORCE_START"] = "1"
+    proc = subprocess.Popen(
+        [sys.executable, BRIDGE_PY, "--port", str(occupied_port)],
+        cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    try:
+        time.sleep(3.0)
+        proc.terminate()
+        out = (proc.communicate(timeout=20)[0] or b"").decode("utf-8", "replace")
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    assert "already answering" not in out, out
 
 
 # ---------------------------------------------------------------------------

@@ -606,7 +606,7 @@ def send_message(context, props, message, conversation="continue",
             state = request_json(job_url_base + job_id, method="GET")
             shared["activity"] = state.get("activity") or []
             shared["state"] = str(state.get("state") or "running")
-            if state.get("state") in ("done", "error", "cancelled"):
+            if state.get("state") in ("done", "error", "cancelled", "timeout"):
                 state["job_id"] = job_id
                 return state
 

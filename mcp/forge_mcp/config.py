@@ -57,6 +57,11 @@ SERVICE_READ_TIMEOUT: float = _env_float("FORGE_SERVICE_READ_TIMEOUT", 180.0)
 SERVICE_CHECK_TIMEOUT: float = _env_float("FORGE_SERVICE_CHECK_TIMEOUT", 150.0)
 SERVICE_SEGMENT_TIMEOUT: float = _env_float("FORGE_SERVICE_SEGMENT_TIMEOUT", 330.0)
 
+# Molds are the same kind of job: the service allows itself 300 s
+# (service/runner.py MOLD_TIMEOUT_S, FORGE_MOLD_TIMEOUT on its side), and a
+# two-half negative of a dense mesh spends every second of it in the kernel.
+SERVICE_MOLD_TIMEOUT: float = _env_float("FORGE_SERVICE_MOLD_TIMEOUT", 330.0)
+
 # --- meshgen HTTP (docs/architecture.md Phase 7: 127.0.0.1:8902) ------------
 # Image-to-3D. Optional on any given machine: the models are an 18.5 GB
 # download, so "not running" is a normal answer here, never an error to fix.
@@ -137,6 +142,15 @@ PREVIEWS_DIR: str = _env_str(
 # A Workbench render of an ordinary part is well under a second; the budget is
 # for a dense import at 2048 px, and it sits inside BLENDER_READ_TIMEOUT.
 PREVIEW_TIMEOUT: float = _env_float("FORGE_PREVIEW_TIMEOUT", 180.0)
+
+# --- mold inputs -------------------------------------------------------------
+# An object being molded out of the Blender scene is exported to an STL here (in
+# millimetres) and the geometry service reads that file itself. Scratch for the
+# previews' reason: it is the INPUT to a job, not something the artist keeps —
+# the mold pieces themselves land in projects/<slug>/molds/.
+MOLD_INPUT_DIR: str = _env_str(
+    "FORGE_MOLD_INPUT_DIR", str(Path(tempfile.gettempdir()) / "forge-mold-input")
+)
 
 
 def blender_address() -> str:

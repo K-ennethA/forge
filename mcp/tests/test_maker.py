@@ -239,6 +239,39 @@ def test_the_shopping_list_carries_the_purchase_notes() -> None:
     assert "heat-shrink" in text
 
 
+def test_the_shopping_list_hands_over_the_links_it_was_given() -> None:
+    """The catalogue has carried a `purchase_link` per row all along.
+
+    The 2026-09-16 dogfood asked for a shopping list WITH links and got search
+    strings and an apology (finding G-2) — not because the data was missing but
+    because this formatter read `item`, `quantity`, `source` and `note` and
+    dropped the column beside them. A link the tool has and does not print is a
+    link the artist does not get.
+    """
+    guide = maker.wiring_guide(
+        "led_5mm", color="red", cell="aaa_pair_box", cells=2
+    )
+    links = [row.get("purchase_link") for row in guide["bom"]]
+    assert all(links), "every BOM row carries a link at source"
+
+    text = call(
+        "wiring_guide",
+        {"led": "led_5mm", "color": "red", "cell": "aaa_pair_box", "cells": 2},
+    )
+    for link in links:
+        assert str(link) in text, "and every one of them reaches the report"
+    assert f"{len(links)} of the {len(guide['bom'])} lines carry a link" in text
+    # A search URL is not a promise about stock, a price or a seller, and this
+    # lane never buys anything.
+    assert "never promise a price" in text
+    assert "NEVER buy anything" in text
+
+
+def test_the_catalog_card_shows_the_link_as_well_as_the_search_term() -> None:
+    text = call("maker_components", {"filter": "tactile_6x6_latching"})
+    assert "https://" in text, "the full card carries the purchase link"
+
+
 def test_a_switchless_circuit_still_wires(dead_backends) -> None:
     text = call("wiring_guide", {"color": "white", "switch": None})
     assert "SOLDER IT IN THIS ORDER" in text

@@ -660,6 +660,11 @@ _REL_FILE_PATH_RE = re.compile(
     r"\.(?:%s)\b" % _PATH_EXTENSIONS,
     re.IGNORECASE)
 
+#: A path that carries its own root with it: a drive letter or a UNC share.
+#: Everything else the absolute pattern can match starts with a single slash,
+#: which on Windows is far more often the tail of a relative path than a root.
+_ROOTED_RE = re.compile(r"^(?:[A-Za-z]:[\\/]|\\\\)")
+
 #: How many base directories a relative path is tried against before the scan
 #: gives up.  A bound, not a tuning knob: this runs on every tool result.
 MAX_PATH_BASES = 24
@@ -2446,10 +2451,18 @@ def find_file_paths(text, limit=12, bases=None):
         return []
     text = str(text)
     out = []
-    spans = []
     for match in _FILE_PATH_RE.finditer(text):
-        spans.append(match.span())
         candidate = match.group(0)
+        if not _ROOTED_RE.match(candidate):
+            # A bare leading slash.  On POSIX that is a real root; on Windows
+            # it is almost always the tail of ``molds/flame.stl`` being read as
+            # ``/flame.stl``, which is how the relative path went missing in
+            # the first place.  Keep it only if it is a file.
+            try:
+                if not os.path.isfile(candidate):
+                    continue
+            except (OSError, ValueError):
+                continue
         if candidate not in out:
             out.append(candidate)
         if len(out) >= limit:
@@ -2459,15 +2472,11 @@ def find_file_paths(text, limit=12, bases=None):
         bases = path_bases(text)
     if not bases:
         return out
-    # Blank out what the absolute pass already claimed, so the tail of
-    # ``C:\forge\projects\cup\render.png`` is not re-read as ``cup\render.png``.
-    masked = list(text)
-    for start, end in spans:
-        for position in range(start, end):
-            masked[position] = " "
-    masked = "".join(masked)
-
-    for match in _REL_FILE_PATH_RE.finditer(masked):
+    # No masking of what the pass above claimed is needed: the relative
+    # pattern's lookbehind refuses to start after a slash, a backslash or a
+    # colon, so the tail of ``C:\forge\cup\render.png`` can never be re-read as
+    # ``cup\render.png``.
+    for match in _REL_FILE_PATH_RE.finditer(text):
         resolved = resolve_relative(match.group(0), bases)
         if resolved and resolved not in out:
             out.append(resolved)

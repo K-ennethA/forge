@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from xml.etree import ElementTree
@@ -2798,9 +2799,36 @@ PREVIEW_MAX_RESOLUTION = 2048
 #: change against the render before it needs both files to still exist.
 _preview_counter = 0
 
+#: The counter alone is NOT unique: it restarts at 1 in every new server process,
+#: and the assistant bridge starts a fresh one per conversation. The dogfood run
+#: of 2026-09-16 (finding B-4) caught what that costs — four turns wrote
+#: `preview-001-iso.png`, every one of them minted the same file token, and
+#: scrolling back through the chat showed the LAST render in all four messages.
+#: This stamp makes the name unique per process as well as per render, so a
+#: picture the artist was shown stays the picture they were shown.
+_PREVIEW_RUN_TAG = f"{os.getpid():x}{int(time.time() * 1000) & 0xFFFFFF:06x}"
+
+#: Previews are scratch by design (config.PREVIEWS_DIR is under %TEMP%), and
+#: now that every render mints its own file the folder only grows. That is the
+#: intended trade — a stale picture in the artist's chat is worse than a few MB
+#: of PNGs in a temp folder the OS clears — and it is documented in
+#: mcp/README.md beside FORGE_PREVIEWS_DIR rather than swept up automatically:
+#: deleting a render a chat message still points at would turn B-4's wrong
+#: picture into no picture at all.
+PREVIEWS_ARE_SCRATCH = (
+    "Previews are never deleted by Forge: each render mints its own file so an "
+    "older chat message keeps its own picture. The folder is scratch — "
+    "FORGE_PREVIEWS_DIR, %TEMP%\\forge-previews by default — and is safe to "
+    "empty whenever nothing on screen needs its pictures."
+)
+
 
 def preview_path(view: str, objects: Sequence[str] | None = None) -> Path:
-    """A fresh scratch .png to render into, its folder already made."""
+    """A fresh scratch .png to render into, its folder already made.
+
+    The name is unique for the life of the machine, not just of this process:
+    counter for reading order, run tag so two servers never collide.
+    """
     global _preview_counter
 
     _preview_counter += 1
@@ -2810,7 +2838,7 @@ def preview_path(view: str, objects: Sequence[str] | None = None) -> Path:
         slug = re.sub(r"[^A-Za-z0-9._-]+", "-", names[0]).strip("-")[:40]
         if slug:
             stem = f"{stem}-{slug}"
-    path = Path(config.PREVIEWS_DIR) / f"{stem}.png"
+    path = Path(config.PREVIEWS_DIR) / f"{stem}-{_PREVIEW_RUN_TAG}.png"
     ensure_parent_dir(path)
     return path
 
@@ -4662,6 +4690,10 @@ def fmt_component_card(entry: Mapping[str, Any], clone_tolerance_mm: Any = None)
     if entry.get("purchase_note"):
         lines.append("  BUY:")
         lines.extend(_wrap_note(entry["purchase_note"], "    "))
+    if entry.get("purchase_link"):
+        # A search URL, not a listing: it lands on the right shelf and nothing
+        # more. Hand it over as a link and say which it is.
+        lines.append(f"    buy: {entry['purchase_link']}")
     if entry.get("verify_against_your_part"):
         lines.append("  VERIFY AGAINST YOUR PART (say this to the artist):")
         lines.extend(_wrap_note(entry["verify_against_your_part"], "    "))
@@ -4747,6 +4779,8 @@ def fmt_component_catalog(
                 lines.extend(
                     _wrap_note("buy: " + str(entry["purchase_note"]), "      ")
                 )
+            if entry.get("purchase_link"):
+                lines.append(f"      link: {entry['purchase_link']}")
         lines.append("")
 
     lines.extend(
@@ -4915,6 +4949,7 @@ def fmt_wiring_guide(guide: Mapping[str, Any]) -> str:
     lines.append("")
 
     lines.append(f"SHOPPING LIST ({len(bom)} lines)")
+    linked = 0
     for row in bom:
         quantity = row.get("quantity")
         lines.append(
@@ -4922,7 +4957,28 @@ def fmt_wiring_guide(guide: Mapping[str, Any]) -> str:
             + (f"  [{row['source']}]" if row.get("source") else "")
         )
         lines.extend(_wrap_note(row.get("note"), "      "))
+        # The catalogue carries a search URL per line item. The dogfood run of
+        # 2026-09-16 (finding G-2) saw an assistant hand over search STRINGS and
+        # apologise for not having links, because this formatter dropped the
+        # column the data was already in. Never paraphrase a link away.
+        link = str(row.get("purchase_link") or "").strip()
+        if link:
+            linked += 1
+            lines.append(f"      buy: {link}")
     lines.append("")
+    if linked:
+        lines.extend(
+            _wrap_note(
+                f"{linked} of the {len(bom)} lines carry a link. Put them in the "
+                "reply as links — a search URL that lands on the right shelf is "
+                "the whole difference between a shopping list and homework. They "
+                "are searches, not listings, so say that: never promise a price, "
+                "a seller or that a specific item is in stock, and NEVER buy "
+                "anything or offer to.",
+                "  ",
+            )
+        )
+        lines.append("")
 
     lines.extend(
         _wrap_note(
@@ -6057,3 +6113,383 @@ def fmt_floorplan_build_report(result: Mapping[str, Any], summary: str) -> str:
     )
     lines.append("  " + str(result.get("honesty") or FLOORPLAN_HONESTY))
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Phase 12: molds and casting — "print the mold, pour the copies"
+#
+# The service has had four routes and a real undercut analysis since Phase 12
+# (/mold, /export_mold, /mold_mesh, /export_mold_mesh, service/undercut.py) and
+# no tool reached any of them. The 2026-09-16 dogfood run (finding G-1) spent
+# 170 seconds of one turn reading Forge's own source and then hand-wrote a flow
+# with absolute machine paths in it to get at them. Everything below is the
+# reporting half of the two tools that close that hole; the geometry, the
+# thresholds and the pour instructions are all the service's own.
+# ---------------------------------------------------------------------------
+
+#: Where a project keeps its molds, beside `renders/` and `models/`. The mold
+#: halves are printed files like any other, so they are filed in the project
+#: rather than in scratch — the dogfood run's two STLs landed here by hand, and
+#: the artist could not find them afterwards.
+PROJECT_MOLDS_DIRNAME = "molds"
+
+#: The two things a mold can be. `printed_negative` is the two-half box with the
+#: part cut out of it; `master_box` prints the figure untouched plus an open box
+#: to pour silicone around. The undercut analysis is what chooses between them.
+MOLD_MODES = ("printed_negative", "master_box")
+
+#: Said out loud on every mold report, for the same reason `MECHANISM_HONESTY`
+#: is: the numbers are measured and the VERDICT is a judgement call about
+#: typical silicone. The service ships its own sentence in
+#: `undercuts.criterion.approximation`; this is the framing around it.
+MOLD_HONESTY = (
+    "Undercut severity is a JUDGEMENT about typical tin/platinum silicone, not "
+    "a simulation of it: the angles and areas are measured off the real "
+    "triangles, but the line between mild and severe is a threshold somebody "
+    "chose. Quote the number beside the band that judged it, and say which "
+    "rubber you are assuming."
+)
+
+#: The casting BOM the service cannot know about, because it is not geometry.
+#: Named in the report so a mold turn ends with what to buy, the way a maker
+#: turn does — and, like `wiring_guide`'s list, it is a search, never a basket.
+MOLD_SILICONE_BOM = "https://www.smooth-on.com/category/mold-making-silicone-rubber/"
+
+
+def project_molds_dir(project: Any) -> Path:
+    """``projects/<slug>/molds`` — the slug rules and the containment check.
+
+    Both, and independently, exactly as ``project_models_dir`` does. A mold is
+    written where the artist can find it beside the part it came off, never to a
+    path the model made up: the dogfood run's hand-written flow baked an
+    absolute machine path into a repo file, which is the failure this prevents.
+    """
+    slug = project_slug(project)
+    root = projects_root()
+    folder = (root / slug / PROJECT_MOLDS_DIRNAME).resolve()
+    try:
+        folder.relative_to(root)
+    except ValueError:
+        raise ForgeError(
+            f"{slug!r} would write outside {root}. Molds only ever land in "
+            "projects/<name>/molds/."
+        ) from None
+    return folder
+
+
+def mold_basename(name: Any, default: str = "mold") -> str:
+    """The file-name stem for a mold's pieces: a NAME, never a path.
+
+    ``project_slug``'s rules for ``project_slug``'s reason — the service joins
+    this onto its own directory (``<basename>_mold_top.stl``), so a separator in
+    it is an attempt to write somewhere else.
+    """
+    raw = "" if name is None else str(name).strip().strip('"').strip()
+    if not raw:
+        return default
+    for marker in _TRAVERSAL_MARKERS:
+        if marker in raw:
+            raise ForgeError(
+                f"{name!r} is not a mold name — it looks like a path (it "
+                f"contains {marker!r}). The mold is always written into the "
+                "project's molds/ folder, so pass just a name, e.g. "
+                '"litwick flame".'
+            )
+    slug = _SLUG_SEPARATORS.sub("-", raw.lower()).strip("-")
+    if not slug:
+        raise ForgeError(
+            f"{name!r} has no letters or digits in it, so it cannot name a "
+            'file. Try something like "litwick flame".'
+        )
+    return slug[:60].rstrip("-")
+
+
+def normalize_mold_mode(mode: Any) -> str:
+    """``"printed_negative"`` / ``"master_box"``, or a refusal naming both."""
+    if mode is None:
+        return "printed_negative"
+    value = str(mode).strip().lower().replace("-", "_").replace(" ", "_")
+    if not value:
+        return "printed_negative"
+    if value not in MOLD_MODES:
+        raise ForgeError(
+            f"mode must be one of {', '.join(MOLD_MODES)} (got {mode!r}). "
+            '"printed_negative" is two printed halves with the part cut out of '
+            'them; "master_box" prints the figure plus an open box and you pour '
+            "silicone around it, which is what severe undercuts need."
+        )
+    return value
+
+
+def mold_severity(undercuts: Any) -> str:
+    """The worse of the two halves, as a plain word. ``"unknown"`` if absent."""
+    if not isinstance(undercuts, Mapping):
+        return "unknown"
+    severity = str(undercuts.get("severity") or "").strip().lower()
+    return severity or "unknown"
+
+
+def fmt_mold_mesh_input(mesh_input: Mapping[str, Any]) -> str:
+    """One line about the triangles that arrived and what had to be fixed."""
+    parts = [f"mesh in: {fmt_number(mesh_input.get('triangle_count'), 0)} triangle(s)"]
+    source = mesh_input.get("source") or mesh_input.get("file_path")
+    if source:
+        parts.append(f"from {source}")
+    repairs = mesh_input.get("repairs") or mesh_input.get("welded")
+    if repairs:
+        parts.append(f"repaired: {repairs}")
+    return ", ".join(str(one) for one in parts)
+
+
+def _mold_half_line(name: str, half: Mapping[str, Any]) -> str:
+    """One half of the undercut report as a single scannable row."""
+    severity = str(half.get("severity") or "?").upper()
+    return (
+        f"  {name:<12.12} {severity:<7.7} "
+        f"{fmt_number(half.get('opposing_area_mm2'), 1)} mm2 of opposing faces "
+        f"in {fmt_number(half.get('patch_count'), 0)} patch(es), worst "
+        f"{fmt_number(half.get('max_angle_deg'), 2)} deg past vertical with "
+        f"{fmt_number(half.get('max_depth_mm'), 2)} mm of sideways grip"
+    )
+
+
+def fmt_undercut_report(subject: str, payload: Mapping[str, Any]) -> str:
+    """Will this thing come out of a mold? The analysis, before anything is cut.
+
+    Reads the ``undercuts`` block every mold response carries
+    (``service/undercut.py``) and nothing else, so one renderer serves a script
+    and a mesh.
+    """
+    undercuts = payload.get("undercuts")
+    if not isinstance(undercuts, Mapping):
+        return (
+            f"Moldability of {subject}: the service answered without an undercut "
+            "block, which should not happen. Treat that as unknown rather than "
+            "as a pass, and run it again."
+        )
+
+    severity = mold_severity(undercuts)
+    lines = [
+        f"Moldability of {subject} — {severity.upper()} undercuts",
+        f"  {str(undercuts.get('verdict') or '?')}",
+    ]
+
+    parting = payload.get("parting_z_mm", undercuts.get("parting_z_mm"))
+    source = str(payload.get("parting_source") or "").strip()
+    lines.append(
+        f"  parting plane: z = {fmt_number(parting, 2)} mm"
+        + (f" ({source})" if source else "")
+        + "   draw: mold_top lifts +Z, mold_bottom lifts -Z"
+    )
+
+    halves = undercuts.get("halves")
+    if isinstance(halves, Mapping):
+        for name in ("mold_top", "mold_bottom"):
+            half = halves.get(name)
+            if not isinstance(half, Mapping):
+                continue
+            lines.append(_mold_half_line(name, half))
+            lines.extend(_wrap_note(half.get("detail"), "      "))
+            examples = [
+                one for one in (half.get("examples") or []) if isinstance(one, Mapping)
+            ][:3]
+            for example in examples:
+                lines.append(
+                    f"      look at {fmt_vector(example.get('position_mm'), 1)} mm — "
+                    f"{fmt_number(example.get('angle_deg'), 1)} deg, "
+                    f"{fmt_number(example.get('depth_mm'), 2)} mm deep"
+                )
+
+    if undercuts.get("recommend_master_box"):
+        lines.append("  VERDICT: a two-part printed mold will NOT open on this.")
+        lines.extend(_wrap_note(undercuts.get("recommendation"), "    "))
+        lines.append(
+            '    make_mold(mode="master_box") is the answer: print the figure '
+            "itself, print an open box round it, pour silicone in, and the "
+            "rubber flexes off what a rigid half cannot."
+        )
+    else:
+        lines.append(
+            "  VERDICT: a two-part printed mold opens on this — make_mold() "
+            '(mode="printed_negative", the default) is the right call. '
+            "recommend_master_box: false."
+        )
+
+    criterion = undercuts.get("criterion")
+    if isinstance(criterion, Mapping):
+        lines.append(
+            "  judged at: anything more than "
+            f"{fmt_number(criterion.get('threshold_deg'), 2)} deg past vertical "
+            "counts as opposing; 'severe' needs a patch past "
+            f"{fmt_number(criterion.get('mild_angle_deg'), 0)} deg AND deeper than "
+            f"{fmt_number(criterion.get('severe_min_depth_mm'), 2)} mm"
+        )
+        lines.extend(_wrap_note(criterion.get("approximation"), "    "))
+    lines.append("  " + MOLD_HONESTY)
+
+    mesh_input = payload.get("mesh_input")
+    if isinstance(mesh_input, Mapping):
+        lines.append(f"  {fmt_mold_mesh_input(mesh_input)}")
+
+    lines.append(
+        "  Nothing was written: this is the analysis, not the mold. Say the "
+        "verdict to the artist in plain words, then make_mold when they want "
+        "the files."
+    )
+    return "\n".join(lines)
+
+
+def fmt_mold_report(
+    subject: str,
+    payload: Mapping[str, Any],
+    directory: Any,
+    printer_source: str,
+) -> str:
+    """The mold that was written: what it is, what fights it, how to cast from it.
+
+    Every file path is on its own line and the pour instructions are printed in
+    full rather than summarised — they are the half of this the artist actually
+    performs, and a build turn that never names its files reads to them as a
+    turn that produced nothing (dogfood 2026-09-16, turn 11).
+    """
+    mode = str(payload.get("mode") or "printed_negative")
+    pieces = [one for one in (payload.get("pieces") or []) if isinstance(one, Mapping)]
+    files = [one for one in (payload.get("files") or []) if isinstance(one, Mapping)]
+
+    lines = [
+        f"Molded {subject} — {mode}, {len(pieces)} piece(s) into "
+        f"{payload.get('directory', directory)}",
+        f"  printer: {printer_source}",
+    ]
+
+    if mode == "master_box":
+        box = payload.get("master_box")
+        if isinstance(box, Mapping):
+            lines.append(
+                f"  pour box: {fmt_vector(box.get('size_mm'), 1)} mm, "
+                f"{fmt_number(box.get('silicone_volume_ml'), 0)} ml of silicone to "
+                f"fill it, split: {'yes' if box.get('split') else 'no'}"
+            )
+    else:
+        draft = payload.get("draft") or {}
+        keys = payload.get("registration_keys") or {}
+        spout = payload.get("spout")
+        vents = payload.get("vents") or {}
+        lines.append(
+            f"  parting plane: z = {fmt_number(payload.get('parting_z_mm'), 2)} mm "
+            f"({payload.get('parting_source') or 'auto'})   "
+            f"draft: {fmt_number(draft.get('angle_deg'), 1)} deg"
+        )
+        lines.append(
+            f"  {fmt_number(keys.get('count'), 0)} registration key(s) "
+            f"({fmt_number(keys.get('radius_mm'), 2)} mm — bumps on "
+            f"{keys.get('male_half', 'mold_top')} into dimples in "
+            f"{keys.get('female_half', 'mold_bottom')})   "
+            + (
+                f"spout {fmt_number(spout.get('diameter_mm'), 1)} mm"
+                if isinstance(spout, Mapping)
+                else "no spout"
+            )
+            + f"   {fmt_number(vents.get('count'), 0)} vent(s)"
+        )
+
+    for piece in pieces:
+        stats = piece.get("stats") or {}
+        lines.append(
+            f"    {str(piece.get('name', '?')):<14.14} "
+            f"{fmt_vector(stats.get('bounding_box_mm'), 1)} mm, "
+            f"{fmt_number(piece.get('volume_mm3'), 0)} mm3 of plastic"
+        )
+
+    severity = mold_severity(payload.get("undercuts"))
+    if severity != "unknown":
+        undercuts = payload.get("undercuts") or {}
+        lines.append(f"  undercuts: {severity.upper()} — {undercuts.get('verdict')}")
+        lines.extend(_wrap_note(undercuts.get("detail"), "    "))
+        if undercuts.get("recommend_master_box") and mode != "master_box":
+            lines.append(
+                "    WARNING: these halves are written, but this part's undercuts "
+                "say a rigid mold will not come off it. Say so before they print "
+                '— mode="master_box" and silicone is the version that works.'
+            )
+        lines.append("  " + MOLD_HONESTY)
+
+    if files:
+        lines.append("")
+        lines.append(
+            fmt_written_files(
+                [
+                    {
+                        "name": one.get("name"),
+                        "kind": one.get("kind") or one.get("format"),
+                        "path": one.get("path"),
+                    }
+                    for one in files
+                ],
+                None,
+            )
+        )
+        lines.append(
+            "  NAME EVERY ONE OF THOSE PATHS IN YOUR REPLY. A file the artist is "
+            "not told about is a file they do not have: the bridge turns a named "
+            "path into something they can open, and an unnamed one into nothing."
+        )
+
+    instructions = [str(one) for one in (payload.get("instructions") or []) if one]
+    if instructions:
+        lines.append("")
+        lines.append(f"HOW TO CAST FROM IT ({len(instructions)} steps)")
+        for index, step in enumerate(instructions, start=1):
+            folded = _wrap_note(step, "")
+            if not folded:
+                continue
+            lines.append(f"  {index:>2}. {folded[0]}")
+            lines.extend(f"      {more}" for more in folded[1:])
+
+    lines.append("")
+    lines.extend(
+        _wrap_note(
+            "WHAT THEY STILL HAVE TO BUY: none of this is in their hands yet. A "
+            "silicone mold needs rubber, and a casting needs resin, and neither "
+            "is a printed part. Put that line in the reply the way a wiring "
+            "shopping list goes in, with the link, as a search rather than a "
+            "promise about price or stock: " + MOLD_SILICONE_BOM + " . Never buy "
+            "anything and never offer to.",
+            "  ",
+        )
+    )
+
+    mesh_input = payload.get("mesh_input")
+    if isinstance(mesh_input, Mapping):
+        lines.append(f"  {fmt_mold_mesh_input(mesh_input)}")
+    return "\n".join(lines)
+
+
+#: Where an object pulled out of Blender is parked on its way to the service.
+#: Scratch, like the previews folder and for the same reason: it is an input to
+#: a job, not something the artist keeps. The service reads it off disk (its own
+#: `file_path` input), so it never crosses the MCP wire as triangles. The folder
+#: itself is `config.MOLD_INPUT_DIR` (FORGE_MOLD_INPUT_DIR); this is the leaf
+#: name that default is built from.
+MOLD_INPUT_DIRNAME = "forge-mold-input"
+
+
+def mold_input_path(name: Any) -> Path:
+    """A scratch .stl to hand the service when the mold's input is in Blender.
+
+    Unique per export, like `preview_path` and for B-4's reason: a mold of the
+    body and a mold of the flame must never be the same file on disk.
+    """
+    global _mold_input_counter
+
+    _mold_input_counter += 1
+    stem = _SLUG_SEPARATORS.sub("-", str(name or "object").lower()).strip("-")
+    stem = (stem or "object")[:40]
+    path = Path(config.MOLD_INPUT_DIR) / (
+        f"{stem}-{_mold_input_counter:03d}-{_PREVIEW_RUN_TAG}.stl"
+    )
+    ensure_parent_dir(path)
+    return path
+
+
+_mold_input_counter = 0

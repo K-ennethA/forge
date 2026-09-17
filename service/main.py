@@ -109,6 +109,10 @@ LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 #: /health may have to wait out a cold build123d import in the worker.
 HEALTH_TIMEOUT_S = 120.0
 
+#: How long the startup guard waits for whatever may already own the port.
+#: Short: this runs before uvicorn binds, and any answer at all settles it.
+GUARD_TIMEOUT_S = 3.0
+
 
 # --------------------------------------------------------------------------
 # Request models
@@ -979,6 +983,56 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def force_start() -> bool:
+    """Is ``FORGE_FORCE_START`` set?  Then bind anyway and let it fail loudly."""
+    return str(os.environ.get("FORGE_FORCE_START", "") or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def already_serving(host: str, port: int, timeout: float = GUARD_TIMEOUT_S) -> str:
+    """One line describing the service already on this port, or ``""``.
+
+    B-6 of the 2026-09-16 dogfood run: every Forge service allows address
+    reuse, so a second start does not fail — it loses the port race and stays
+    resident.  That run found two of each service alive, including a second
+    meshgen holding a model loader on a 12 GB card.  Asked over ``/health``
+    rather than by probing the socket, because the question is "is a Forge
+    service answering here?" and ``/health`` is where one says so.
+
+    Anything unreachable returns ``""``: a guard that refused to start on a bad
+    probe would be worse than the duplicate it exists to prevent.
+    """
+    import json  # noqa: PLC0415 - startup-only cost
+    import urllib.request  # noqa: PLC0415
+
+    probe_host = "127.0.0.1" if host in ("localhost", "0.0.0.0") else host
+    url = f"http://{probe_host}:{int(port)}/health"
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            body = response.read(200000).decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001 - nothing there, or not speaking HTTP
+        return ""
+    build: Dict[str, Any] = {}
+    try:
+        data = json.loads(body)
+        if isinstance(data, dict) and isinstance(data.get("build"), dict):
+            build = data["build"]
+    except ValueError:
+        pass
+    return (
+        f"something is already answering on {url} "
+        f"(pid {build.get('pid', '?')}, sha {build.get('sha', '?')}, "
+        f"up {build.get('uptime_s', '?')}s). Not starting a second one — "
+        "set FORGE_FORCE_START=1 to override."
+    )
+
+
 def run(argv: Optional[list] = None) -> int:
     """Console-script entry point (``forge-service``)."""
     import uvicorn  # noqa: PLC0415 - keep import cost out of `import service.main`
@@ -991,6 +1045,16 @@ def run(argv: Optional[list] = None) -> int:
             "arbitrary scripts and must stay on loopback "
             f"({', '.join(sorted(LOOPBACK_HOSTS))})"
         )
+
+    # After the loopback check, before anything is bound: a refusal to bind a
+    # LAN address is still a refusal even when that address is already busy.
+    if not force_start():
+        existing = already_serving(args.host, args.port)
+        if existing:
+            # Exit 0: "it is already running" is the state the caller asked
+            # for, not a failure.  start_forge.ps1 runs this on every launch.
+            print(f"[service] {existing}", flush=True)
+            return 0
 
     from .runner import get_pool  # noqa: PLC0415
 

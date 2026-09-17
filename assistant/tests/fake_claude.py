@@ -27,6 +27,20 @@ Behaviour is steered by ``FAKE_CLAUDE_MODE``:
                        the salvage path
 ``stream_slow``        the stream, sleeping ``FAKE_CLAUDE_SLEEP`` seconds after
                        the tool events, so a cancel lands mid-stream
+``stream_hang``        text and tools, then silence forever (it sleeps
+                       ``FAKE_CLAUDE_SLEEP``, default 600, and never prints a
+                       result): the turn the watchdog has to kill.  What it said
+                       and did before the silence is what the bridge must still
+                       be able to hand back — see B-1 in
+                       ``docs/dogfood-litwick-2026-09-16.md``
+
+``FAKE_CLAUDE_STREAM_COST`` makes the stream volunteer a running cost before the
+result event, so a turn that is killed can still be billed.
+
+``FAKE_CLAUDE_PREAMBLE`` adds a text block BEFORE the tool calls, which is where
+a real model puts its reasoning.  The CLI's ``result`` field only ever carries
+the LAST block, so a bridge that reads only that drops this one — the whole of
+friction F-1, reproducible in one environment variable.
 
 ``FAKE_CLAUDE_EXPECT_IMAGE`` asserts on the Phase 6c attachment block: set to a
 path, the prompt must carry that path under ``--- Attached reference image ---``
@@ -163,10 +177,29 @@ def render_events():
          "content": "wrote %s" % path}]}})
 
 
+def preamble_events():
+    """The paragraph a model writes BEFORE it touches a tool, if asked for."""
+    text = os.environ.get("FAKE_CLAUDE_PREAMBLE")
+    if not text:
+        return
+    stream_event({"type": "content_block_start", "index": 9,
+                  "content_block": {"type": "text", "text": ""}})
+    # In two pieces, so a bridge that glued the chunks together without
+    # knowing where the block ended would be indistinguishable from one that
+    # kept them apart — the split is mid-sentence on purpose.
+    half = max(1, len(text) // 2)
+    for chunk in (text[:half], text[half:]):
+        stream_event({"type": "content_block_delta", "index": 9,
+                      "delta": {"type": "text_delta", "text": chunk}})
+    stream_event({"type": "content_block_stop", "index": 9})
+
+
 def run_stream(session_id, model, mode):
     """The event sequence a real turn produces, in the real order."""
     emit({"type": "system", "subtype": "init", "session_id": session_id,
           "tools": ["mcp__forge__partforge_check"], "model": model})
+
+    preamble_events()
 
     # Tool 1: arguments stream in as partial JSON, so the label starts as the
     # bare tool name and is completed in place.
@@ -187,6 +220,21 @@ def run_stream(session_id, model, mode):
          "input": LONG_SEGMENT_ARGS}]}})
 
     render_events()
+
+    # A build that volunteers the running cost mid-stream.  Its whole purpose
+    # is the turn that never reaches its result event: that is the one the
+    # dogfood run billed at $0.00 after fifteen minutes of Sonnet.
+    cost = os.environ.get("FAKE_CLAUDE_STREAM_COST")
+    if cost:
+        stream_event({"type": "message_delta", "delta": {"stop_reason": None},
+                      "usage": {"input_tokens": 99, "output_tokens": 5},
+                      "total_cost_usd": float(cost)})
+
+    if mode == "stream_hang":
+        # Nothing more, ever: no text, no tool, no result.  The bridge has to
+        # notice by itself and keep what is already above.
+        time.sleep(float(os.environ.get("FAKE_CLAUDE_SLEEP", "600")))
+        return 0
 
     if mode == "stream_slow":
         time.sleep(float(os.environ.get("FAKE_CLAUDE_SLEEP", "30")))

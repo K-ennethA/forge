@@ -78,6 +78,9 @@ EXPECTED_TOOLS = {
     # Imported models (Phase 6d) — a downloaded mesh, no script
     "check_model",
     "segment_model",
+    # Molds and casting (Phase 12) — print the mold, pour the copies
+    "undercut_check",
+    "make_mold",
     # Base shapes and merge-for-print (Phase 11) — the drawn door, and the
     # component tree becoming one printable shell
     "profile_from_curve",
@@ -172,7 +175,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 81
+    assert len(names) == 83
 
 
 def test_every_tool_is_documented() -> None:
@@ -238,6 +241,13 @@ def test_every_tool_has_an_object_schema() -> None:
         # Phase 6d: the mesh is already in Blender, so nothing is mandatory
         ("check_model", []),
         ("segment_model", []),
+        # Phase 12: the analysis takes whichever of the three inputs there is,
+        # and refuses in prose when there is none or more than one — so nothing
+        # is required by the schema. The mold itself requires the ONE thing that
+        # decides where the files land, because a mold nobody can find is the
+        # failure this lane exists to fix.
+        ("undercut_check", []),
+        ("make_mold", ["project"]),
         # Phase 11: the samplers need to be told WHICH curve — there is no
         # "active curve" that means anything. The merge needs nothing: the
         # selection is a perfectly good answer to "which pieces".
@@ -650,6 +660,45 @@ def test_preview_paths_are_scratch_and_never_reused(monkeypatch, tmp_path: Path)
     assert first.parent.is_dir()  # the folder is made, so the add-on can write
     assert "bowl" in first.name and "iso" in first.name
     assert "front" in second.name
+
+
+def test_a_restarted_server_cannot_mint_a_name_it_already_used(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """The counter alone is not unique, and the chat remembers the difference.
+
+    Every server process starts its counter at 1, and the assistant bridge runs
+    one per conversation — so four turns of the 2026-09-16 dogfood all wrote
+    `preview-001-iso.png`, all minted the same file token, and scrolling back
+    showed the LATEST render in every one of those messages (finding B-4). The
+    per-process stamp is what makes an old message keep its own picture.
+    """
+    monkeypatch.setattr(util.config, "PREVIEWS_DIR", str(tmp_path))
+    monkeypatch.setattr(util, "_preview_counter", 0)
+    monkeypatch.setattr(util, "_PREVIEW_RUN_TAG", "aaaa111111")
+    first = util.preview_path("iso", ["flame"])
+
+    # A second server process: the counter starts again at 1, the stamp does not.
+    monkeypatch.setattr(util, "_preview_counter", 0)
+    monkeypatch.setattr(util, "_PREVIEW_RUN_TAG", "bbbb222222")
+    second = util.preview_path("iso", ["flame"])
+
+    assert first.name != second.name, "two processes must never write one file"
+    assert first.name.startswith("preview-001-iso-flame"), "still readable in order"
+    assert first.name.endswith(".png") and second.name.endswith(".png")
+
+
+def test_the_preview_run_stamp_is_stable_inside_one_process(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Unique per process, not per call: the counter is what orders the renders."""
+    monkeypatch.setattr(util.config, "PREVIEWS_DIR", str(tmp_path))
+    first = util.preview_path("iso", ["flame"])
+    second = util.preview_path("iso", ["flame"])
+    assert util._PREVIEW_RUN_TAG, "a name with no stamp collides across processes"
+    assert first.name.endswith(f"-{util._PREVIEW_RUN_TAG}.png")
+    assert second.name.endswith(f"-{util._PREVIEW_RUN_TAG}.png")
+    assert first != second
 
 
 def test_preview_path_slugs_an_awkward_object_name(monkeypatch, tmp_path: Path) -> None:

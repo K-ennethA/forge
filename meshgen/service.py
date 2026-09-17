@@ -457,8 +457,64 @@ def build_server(config=None):
     return server, app
 
 
+#: How long the startup guard waits for whatever may already own the port.
+#: Longer than the bridge's and the geometry service's, because meshgen's own
+#: /health enumerates its backends and measures ~2.8 s warm — a guard that
+#: timed out on it would wave a duplicate straight through.
+GUARD_TIMEOUT_S = 12.0
+
+
+def force_start():
+    """Is ``FORGE_FORCE_START`` set?  Then bind anyway and let it fail loudly."""
+    return str(os.environ.get("FORGE_FORCE_START", "") or "").strip().lower() in (
+        "1", "true", "yes", "on")
+
+
+def already_serving(port, timeout=GUARD_TIMEOUT_S):
+    """One line describing the meshgen already on this port, or ``""``.
+
+    B-6 of the 2026-09-16 dogfood run, and worst here: the server below sets
+    ``daemon_threads`` on a ``ThreadingHTTPServer`` that allows address reuse,
+    so a second start does not fail — it loses the port race and stays
+    resident.  That run found meshgen pid 31512 owning 8902 and pid 20964
+    sitting beside it, a second process holding a 12 GB-VRAM-class model
+    loader that nothing would ever talk to.
+
+    Anything unreachable returns ``""``: a guard that refused to start on a bad
+    probe would be worse than the duplicate it exists to prevent.
+    """
+    import urllib.request  # local: keep the import off the hot start path
+
+    url = f"http://127.0.0.1:{int(port)}/health"
+    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            body = response.read(200000).decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001 - nothing there, or not speaking HTTP
+        return ""
+    build = {}
+    try:
+        data = json.loads(body)
+        if isinstance(data, dict) and isinstance(data.get("build"), dict):
+            build = data["build"]
+    except ValueError:
+        pass
+    return (f"something is already answering on {url} "
+            f"(pid {build.get('pid', '?')}, sha {build.get('sha', '?')}, "
+            f"up {build.get('uptime_s', '?')}s). Not starting a second one — "
+            "set FORGE_FORCE_START=1 to override.")
+
+
 def main(argv=None):
     config = config_module.load()
+    if not force_start():
+        existing = already_serving(config.port)
+        if existing:
+            # Exit 0: "it is already running" is the state the caller asked
+            # for, not a failure.  start_forge.ps1 runs this on every launch.
+            log(existing)
+            return 0
     try:
         server, app = build_server(config)
     except OSError as exc:

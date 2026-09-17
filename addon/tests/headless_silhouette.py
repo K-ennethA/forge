@@ -53,7 +53,14 @@ What is actually being proved:
    out of range, an object that is not a mesh — fails with a sentence, and the
    near misses come back with a suggestion;
 9. the budget: an 8 000-vertex sphere, two references, 4 iterations, asserted
-   loosely against an upper bound.
+   loosely against an upper bound;
+10. **character forms** (``as_shape_key``): leaving it out is today's behaviour,
+    unchanged; giving it writes the identical displacement into a named shape
+    key **bit-identically equal to the destructive fit of the same sphere**,
+    leaves the base mesh bit-identical to the sculpt that went in, creates a
+    ``Basis`` when there is none, overwrites a key of the same name instead of
+    duplicating it, and stacks two forms (teen-wolf and werewolf) on one base
+    that each still reproduce their own fit exactly.
 """
 
 import json
@@ -751,6 +758,406 @@ def test_shape_keys_are_warned_about(tmpdir):
 
 
 # ---------------------------------------------------------------------------
+# 5b. character forms — as_shape_key
+# ---------------------------------------------------------------------------
+#
+# The claim under test is a strong one and it is tested as a strong one: a
+# shape-key fit is not "close to" a destructive fit, it is the SAME float32
+# array written somewhere else, so every comparison below is
+# ``numpy.array_equal`` rather than a tolerance.
+#
+# WHY THE CONTROL RUNS ON THE SAME OBJECT, LAST. Two *separate* meshes of
+# identical geometry do NOT produce identical fits, and it is worth writing down
+# why, because the obvious test (fit a copy destructively, compare) fails for a
+# reason that has nothing to do with shape keys: Blender's loop-triangle
+# tessellation returns the same SET of triangles in a DIFFERENT ORDER each time
+# it is computed (measured here: 960 of 960 rows differ between two pristine
+# copies of one sphere, and the sorted sets are equal). The rasteriser hands its
+# seeded samples out per triangle in array order, so a re-ordered tessellation
+# lands the samples in different places and the fit moves by ~0.3% of the model
+# (5 mm on a 2000 mm sphere). The same datablock keeps one cached tessellation,
+# so a key fit followed by a destructive fit of the same mesh IS bit-identical —
+# and the key fit leaves the base pristine, which is what makes that control
+# legal. Measured stable over six trials at two densities before it was relied
+# on here.
+
+#: One set of knobs for every fit in this section, so "the same fit" means the
+#: same fit and a difference can only come from where it was written.
+FORM_PARAMS = {"strength": 1.0, "iterations": 3, "smooth": 0.4}
+
+#: How far apart two fits of two SEPARATE but identical meshes may land, as a
+#: fraction of the model, given the tessellation-order noise described above.
+CROSS_MESH_NOISE = 0.01
+
+
+def key_names(name):
+    keys = bpy.data.objects[name].data.shape_keys
+    return [block.name for block in keys.key_blocks] if keys else []
+
+
+def key_coords(name, key):
+    """A shape key's own coordinates as an ``(n, 3)`` array."""
+    block = bpy.data.objects[name].data.shape_keys.key_blocks[key]
+    flat = numpy.empty(len(block.data) * 3, dtype="f8")
+    block.data.foreach_get("co", flat)
+    return flat.reshape(-1, 3)
+
+
+def evaluated_coords(name):
+    """What the viewport actually shows — the mesh after the keys are blended."""
+    bpy.context.view_layer.update()
+    deps = bpy.context.evaluated_depsgraph_get()
+    obj = bpy.data.objects[name].evaluated_get(deps)
+    mesh = obj.to_mesh()
+    flat = numpy.empty(len(mesh.vertices) * 3, dtype="f8")
+    mesh.vertices.foreach_get("co", flat)
+    out = flat.reshape(-1, 3).copy()
+    obj.to_mesh_clear()
+    return out
+
+
+def set_key_values(name, value):
+    keys = bpy.data.objects[name].data.shape_keys
+    for block in keys.key_blocks[1:]:
+        block.value = value
+
+
+def destructive_control(name, picture, **extra):
+    """Fit ``name``'s BASE mesh — the control, and always the last fit of it."""
+    params = dict(FORM_PARAMS)
+    params.update(extra)
+    reply = fit(object=name, views=[{"image": picture, "axis": "front"}],
+                **params)
+    if not ok(reply):
+        return None, reply
+    return coords_of(name), reply
+
+
+def test_as_shape_key_absent_is_todays_behaviour(tmpdir):
+    section("as_shape_key absent — the base mesh is deformed, exactly as before")
+    picture = write_mask(os.path.join(tmpdir, "form_absent.png"),
+                         ellipse_mask(512, 512, 100, 200))
+    clear_scene()
+    make_sphere("Sculpt")
+    first, reply = destructive_control("Sculpt", picture)
+    if not check("the plain fit still runs", first is not None,
+                 message(reply)[:300]):
+        return
+    data = result(reply)
+    check("no shape key is named, because none was asked for",
+          data["shape_key"] is None, str(data["shape_key"]))
+    check("nothing was overwritten and no basis was invented",
+          data["shape_key_overwritten"] is False
+          and data["basis_created"] is False,
+          "%s / %s" % (data["shape_key_overwritten"], data["basis_created"]))
+    check("the mesh still has no shape keys at all",
+          bpy.data.objects["Sculpt"].data.shape_keys is None,
+          str(key_names("Sculpt")))
+    check("the base vertices are the ones that moved",
+          data["applied"] is True and data["moved"] > 0
+          and abs(data["dimensions_after_mm"][0] - SPHERE_MM) > 100.0,
+          "moved %s, width %s mm" % (data["moved"],
+                                     data["dimensions_after_mm"][0]))
+    check("and the morph caveat is NOT in the honesty block — there is no morph",
+          "LINEAR VERTEX INTERPOLATION" not in data["honesty"],
+          data["honesty"][-120:])
+
+    # The same fit on a separate copy: near, but NOT bit-identical, and the
+    # comment at the top of this section says exactly why. Asserted so the day
+    # Blender's tessellation order becomes stable is a day somebody notices.
+    clear_scene()
+    make_sphere("Sculpt")
+    second, _reply = destructive_control("Sculpt", picture)
+    delta = (float(numpy.abs(first - second).max()) * 1000.0
+             if second is not None else float("nan"))
+    note("the same fit on a separate copy of the same sphere lands %.3f mm away "
+         "(tessellation order, not the fit)" % delta)
+    check("the same fit of a separate copy lands within %.0f%% of the model"
+          % (CROSS_MESH_NOISE * 100.0),
+          second is not None and delta < CROSS_MESH_NOISE * SPHERE_MM,
+          "%.3f mm" % delta)
+
+
+def test_the_fit_becomes_a_shape_key(tmpdir):
+    section("as_shape_key — the fitted form is a morph target, not an edit")
+    picture = write_mask(os.path.join(tmpdir, "form_wolf.png"),
+                         ellipse_mask(512, 512, 100, 200))
+    clear_scene()
+    make_sphere("Sculpt")
+    pristine = coords_of("Sculpt")
+    reply = fit(object="Sculpt", views=[{"image": picture, "axis": "front"}],
+                as_shape_key="werewolf-form", **FORM_PARAMS)
+    if not check("the shape-key fit ran", ok(reply), message(reply)[:400]):
+        return
+    data = result(reply)
+    note("key %r, basis created %s, dimensions %s mm"
+         % (data["shape_key"], data["basis_created"],
+            data["dimensions_after_mm"]))
+
+    check("the report names the key it wrote",
+          data["shape_key"] == "werewolf-form", str(data["shape_key"]))
+    check("nothing was overwritten the first time",
+          data["shape_key_overwritten"] is False,
+          str(data["shape_key_overwritten"]))
+    check("a Basis was created, because a morph needs the shape it morphs from",
+          data["basis_created"] is True, str(data["basis_created"]))
+    check("and the mesh now carries exactly Basis + the form",
+          key_names("Sculpt") == ["Basis", "werewolf-form"],
+          str(key_names("Sculpt")))
+
+    check("the BASE MESH is bit-identical to the sculpt that went in",
+          bool(numpy.array_equal(pristine, coords_of("Sculpt"))),
+          "max delta %g" % float(numpy.abs(pristine
+                                           - coords_of("Sculpt")).max()))
+    check("so is the Basis key",
+          bool(numpy.array_equal(pristine, key_coords("Sculpt", "Basis"))),
+          "max delta %g" % float(numpy.abs(pristine
+                                           - key_coords("Sculpt", "Basis")).max()))
+
+    fitted = key_coords("Sculpt", "werewolf-form")
+    check("the key holds the fit, not the base",
+          not numpy.array_equal(fitted, pristine),
+          "max delta %g" % float(numpy.abs(fitted - pristine).max()))
+
+    check("the key is left at value 1, so the artist sees what was just fitted",
+          bpy.data.objects["Sculpt"].data.shape_keys
+          .key_blocks["werewolf-form"].value == 1.0)
+    at_one = evaluated_coords("Sculpt")
+    check("and the evaluated mesh at value 1 IS the fitted form",
+          float(numpy.abs(at_one - fitted).max()) < 1e-6,
+          "max delta %g" % float(numpy.abs(at_one - fitted).max()))
+    set_key_values("Sculpt", 0.0)
+    at_zero = evaluated_coords("Sculpt")
+    check("at value 0 the evaluated mesh is the pristine base, bit-identically",
+          bool(numpy.array_equal(at_zero, pristine)),
+          "max delta %g" % float(numpy.abs(at_zero - pristine).max()))
+    set_key_values("Sculpt", 1.0)
+
+    check("the honesty block says the morph is linear vertex interpolation",
+          "LINEAR VERTEX INTERPOLATION" in data["honesty"],
+          data["honesty"][-200:])
+    check("and names the fix — an eased value curve or a mid-form key",
+          "F-curve" in data["honesty"] and "mid-form" in data["honesty"],
+          data["honesty"][-200:])
+    check("the notes say the base mesh keeps the coordinates it has",
+          any("value 0 is the sculpt" in n for n in data["notes"]),
+          str(data["notes"])[:300])
+    check("and that a Basis had to be created",
+          any("had no shape keys" in n for n in data["notes"]),
+          str(data["notes"])[:300])
+    check("the method says why writing a key is legal at all — topology",
+          "topology" in data["method"], data["method"][-200:])
+
+    # The control, last: the base is still pristine, so fitting it destructively
+    # now re-runs exactly the fit that made the key, on the same datablock.
+    wanted, reply = destructive_control("Sculpt", picture)
+    if not check("the destructive control ran on the same base", wanted is not None,
+                 message(reply)[:300]):
+        return
+    check("the key is BIT-IDENTICAL to the destructive fit of the same mesh",
+          bool(numpy.array_equal(fitted, wanted)),
+          "max delta %g" % float(numpy.abs(fitted - wanted).max()))
+
+
+def test_refitting_a_form_overwrites_its_key(tmpdir):
+    section("the same name twice — iterate the form, never duplicate the key")
+    first_pic = write_mask(os.path.join(tmpdir, "form_v1.png"),
+                           ellipse_mask(512, 512, 100, 200))
+    second_pic = write_mask(os.path.join(tmpdir, "form_v2.png"),
+                            ellipse_mask(512, 512, 170, 200))
+    clear_scene()
+    make_sphere("Sculpt")
+    pristine = coords_of("Sculpt")
+    fit(object="Sculpt", views=[{"image": first_pic, "axis": "front"}],
+        as_shape_key="werewolf-form", **FORM_PARAMS)
+    reply = fit(object="Sculpt", views=[{"image": second_pic, "axis": "front"}],
+                as_shape_key="werewolf-form", **FORM_PARAMS)
+    if not check("refitting the same form runs", ok(reply), message(reply)[:300]):
+        return
+    data = result(reply)
+    check("the report says the key was overwritten",
+          data["shape_key_overwritten"] is True,
+          str(data["shape_key_overwritten"]))
+    check("and the notes say so in words, not just a flag",
+          any("overwritten in place" in n for n in data["notes"]),
+          str(data["notes"])[:400])
+    check("no Basis was created the second time — there already was one",
+          data["basis_created"] is False, str(data["basis_created"]))
+    check("there is still exactly ONE key of that name",
+          key_names("Sculpt") == ["Basis", "werewolf-form"],
+          str(key_names("Sculpt")))
+    check("and the base mesh is still the sculpt that went in",
+          bool(numpy.array_equal(pristine, coords_of("Sculpt"))),
+          "max delta %g" % float(numpy.abs(pristine
+                                           - coords_of("Sculpt")).max()))
+    fitted = key_coords("Sculpt", "werewolf-form")
+    wanted, reply = destructive_control("Sculpt", second_pic)
+    if not check("the control ran on the same, still-pristine base",
+                 wanted is not None, message(reply)[:300]):
+        return
+    check("the key now holds the SECOND fit, bit-identically",
+          bool(numpy.array_equal(fitted, wanted)),
+          "max delta %g" % float(numpy.abs(fitted - wanted).max()))
+
+
+def test_two_forms_coexist_on_one_base(tmpdir):
+    section("human -> teen-wolf -> werewolf: two forms, one mesh, one topology")
+    teen_pic = write_mask(os.path.join(tmpdir, "form_teen.png"),
+                          ellipse_mask(512, 512, 130, 200))
+    wolf_pic = write_mask(os.path.join(tmpdir, "form_full.png"),
+                          ellipse_mask(512, 512, 190, 200))
+
+    # The control has to be the LAST fit of a mesh (it moves the base), so the
+    # two-form scene is built twice and each copy is controlled for one of its
+    # forms. Same scenario, one claim each.
+    forms = {}
+    for controlled in ("teen-wolf", "werewolf"):
+        clear_scene()
+        make_sphere("Sculpt")
+        pristine = coords_of("Sculpt")
+        reply = fit(object="Sculpt", views=[{"image": teen_pic, "axis": "front"}],
+                    as_shape_key="teen-wolf", **FORM_PARAMS)
+        if not check("the first form was fitted", ok(reply), message(reply)[:300]):
+            return
+        reply = fit(object="Sculpt", views=[{"image": wolf_pic, "axis": "front"}],
+                    as_shape_key="werewolf", **FORM_PARAMS)
+        if not check("the second form was fitted onto the same base", ok(reply),
+                     message(reply)[:300]):
+            return
+        data = result(reply)
+
+        check("both forms sit on one mesh, in the order they were fitted",
+              key_names("Sculpt") == ["Basis", "teen-wolf", "werewolf"],
+              str(key_names("Sculpt")))
+        check("the second fit reports its own key and no overwrite",
+              data["shape_key"] == "werewolf"
+              and data["shape_key_overwritten"] is False,
+              str(data["shape_key"]))
+        check("the base mesh survived both fits bit-identically",
+              bool(numpy.array_equal(pristine, coords_of("Sculpt"))),
+              "max delta %g" % float(numpy.abs(pristine
+                                               - coords_of("Sculpt")).max()))
+        set_key_values("Sculpt", 0.0)
+        check("and with every form at 0 the viewport shows the human, exactly",
+              bool(numpy.array_equal(evaluated_coords("Sculpt"), pristine)),
+              "max delta %g" % float(numpy.abs(evaluated_coords("Sculpt")
+                                               - pristine).max()))
+        set_key_values("Sculpt", 1.0)
+        check("stacking two forms above 0 is WARNED about, because keys add up",
+              any("ADDITIVE" in w for w in data["warnings"]),
+              str(data["warnings"])[:300])
+
+        forms[controlled] = {name: key_coords("Sculpt", name).copy()
+                             for name in ("teen-wolf", "werewolf")}
+        check("the two forms are different shapes, not the same fit twice",
+              not numpy.array_equal(forms[controlled]["teen-wolf"],
+                                    forms[controlled]["werewolf"]))
+
+        picture = teen_pic if controlled == "teen-wolf" else wolf_pic
+        wanted, reply = destructive_control("Sculpt", picture)
+        if not check("the %s control ran on the untouched base" % controlled,
+                     wanted is not None, message(reply)[:300]):
+            return
+        check("%s still reproduces ITS OWN fit exactly, with the other form "
+              "sitting beside it" % controlled,
+              bool(numpy.array_equal(forms[controlled][controlled], wanted)),
+              "max delta %g" % float(numpy.abs(
+                  forms[controlled][controlled] - wanted).max()))
+
+
+def test_a_form_on_a_mesh_that_already_has_keys(tmpdir):
+    section("an existing Basis is used, not replaced")
+    clear_scene()
+    obj = make_sphere("Sculpt")
+    obj.shape_key_add(name="Basis", from_mix=False)
+    obj.shape_key_add(name="Squash", from_mix=False)
+    pristine = coords_of("Sculpt")
+    picture = write_mask(os.path.join(tmpdir, "form_existing.png"),
+                         ellipse_mask(512, 512, 100, 200))
+    reply = fit(object="Sculpt", views=[{"image": picture, "axis": "front"}],
+                as_shape_key="werewolf-form", **FORM_PARAMS)
+    if not check("the fit ran on a mesh that already had keys", ok(reply),
+                 message(reply)[:300]):
+        return
+    data = result(reply)
+    check("no second Basis was invented", data["basis_created"] is False,
+          str(data["basis_created"]))
+    check("the existing keys are left where they were",
+          key_names("Sculpt") == ["Basis", "Squash", "werewolf-form"],
+          str(key_names("Sculpt")))
+    check("the old 'the fit landed on the base mesh' warning is NOT raised — "
+          "it would be false here",
+          not any("written to the base mesh" in w for w in data["warnings"]),
+          str(data["warnings"])[:300])
+    check("and the base mesh really is untouched",
+          bool(numpy.array_equal(pristine, coords_of("Sculpt"))),
+          "max delta %g" % float(numpy.abs(pristine
+                                           - coords_of("Sculpt")).max()))
+
+
+def test_strength_scales_the_key_not_the_base(tmpdir):
+    section("strength — half the form, still none of the base")
+    picture = write_mask(os.path.join(tmpdir, "form_strength.png"),
+                         ellipse_mask(512, 512, 100, 200))
+    travel = {}
+    for strength in (0.25, 1.0):
+        clear_scene()
+        make_sphere("Sculpt")
+        pristine = coords_of("Sculpt")
+        reply = fit(object="Sculpt", views=[{"image": picture, "axis": "front"}],
+                    as_shape_key="werewolf-form", strength=strength,
+                    iterations=1, smooth=0.0)
+        if not check("strength=%s ran as a shape key" % strength, ok(reply),
+                     message(reply)[:300]):
+            return
+        fitted = key_coords("Sculpt", "werewolf-form")
+        travel[strength] = float(numpy.linalg.norm(fitted - pristine,
+                                                   axis=1).max() * 1000.0)
+        check("strength=%s left the base mesh bit-identical" % strength,
+              bool(numpy.array_equal(pristine, coords_of("Sculpt"))),
+              "max delta %g" % float(numpy.abs(pristine
+                                               - coords_of("Sculpt")).max()))
+    note("the key's worst displacement: 25%% -> %.1f mm, 100%% -> %.1f mm"
+         % (travel[0.25], travel[1.0]))
+    check("strength scales the KEY's displacement",
+          travel[0.25] < travel[1.0] * 0.5,
+          "%.1f vs %.1f mm" % (travel[0.25], travel[1.0]))
+    check("and a quarter-strength form still moved something",
+          travel[0.25] > 1.0, "%.3f mm" % travel[0.25])
+
+
+def test_bad_shape_key_names(tmpdir):
+    section("as_shape_key refusals")
+    clear_scene()
+    make_sphere("Sculpt")
+    picture = write_mask(os.path.join(tmpdir, "form_bad.png"),
+                         ellipse_mask(256, 256, 60, 110))
+    views = [{"image": picture, "axis": "front"}]
+
+    reply = fit(object="Sculpt", views=views, as_shape_key="   ")
+    check("a blank key name is refused, and says what the parameter is for",
+          not ok(reply) and "as_shape_key" in message(reply),
+          message(reply)[:200])
+
+    reply = fit(object="Sculpt", views=views, as_shape_key=7)
+    check("a key name that is not a string is refused",
+          not ok(reply) and "non-empty string" in message(reply),
+          message(reply)[:200])
+
+    reply = fit(object="Sculpt", views=views, as_shape_key="Basis")
+    check("naming the basis is refused, with the reason",
+          not ok(reply) and "cannot be 'Basis'" in message(reply),
+          message(reply)[:250])
+    check("and the refusal offers both real choices",
+          "werewolf-form" in message(reply)
+          and "leave 'as_shape_key' out" in message(reply),
+          message(reply)[:300])
+    check("nothing was written on the way to any of those refusals",
+          bpy.data.objects["Sculpt"].data.shape_keys is None,
+          str(key_names("Sculpt")))
+
+
+# ---------------------------------------------------------------------------
 # 6. refusals
 # ---------------------------------------------------------------------------
 
@@ -941,6 +1348,13 @@ def main():
         test_mask_sources(tmpdir)
         test_a_speck_is_warned_about(tmpdir)
         test_shape_keys_are_warned_about(tmpdir)
+        test_as_shape_key_absent_is_todays_behaviour(tmpdir)
+        test_the_fit_becomes_a_shape_key(tmpdir)
+        test_refitting_a_form_overwrites_its_key(tmpdir)
+        test_two_forms_coexist_on_one_base(tmpdir)
+        test_a_form_on_a_mesh_that_already_has_keys(tmpdir)
+        test_strength_scales_the_key_not_the_base(tmpdir)
+        test_bad_shape_key_names(tmpdir)
         test_bad_input(tmpdir)
         test_it_is_a_legal_flow_step(tmpdir)
         test_budget(tmpdir)

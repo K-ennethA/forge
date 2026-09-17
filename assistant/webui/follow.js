@@ -191,7 +191,7 @@
    *  5. Otherwise "": the sheet does not move.
    */
   function projectFromJob(job, projects) {
-    if (!job || job.state !== "done") { return ""; }
+    if (!job || (job.state !== "done" && job.state !== "timeout")) { return ""; }
     var known = entries(projects);
     var activity = job.activity || [];
 
