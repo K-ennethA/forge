@@ -177,9 +177,16 @@ def write_joints(path, mesh, entries, axis_up="Z", unit="mm", source="test"):
 
 def test_tags_only(retopo):
     section("the tag-only fit (the baseline every comparison is against)")
-    result = call("rigforge_metarig", {"object": retopo.name, "archetype": "auto"})
+    # ``method: "tags"`` explicitly: predictions refine the *tag* fit, so the
+    # baseline every comparison below is measured against has to be the same
+    # fit. (A `joints_file` on its own selects this path too, and the next test
+    # checks that it says so.)
+    result = call("rigforge_metarig", {"object": retopo.name, "archetype": "auto",
+                                       "method": "tags"})
     meta = bpy.data.objects.get(result["metarig"])
     check("the tag-only metarig exists", meta is not None, str(result.get("metarig")))
+    check("it is the tag fit", result.get("fit_method") == "tags",
+          str(result.get("fit_method")))
     check("it reports no joints file", result.get("joints") is None,
           str(result.get("joints")))
     check("it fitted the usual bones", len(result.get("fitted_bones") or []) >= 10,
@@ -224,6 +231,12 @@ def test_joints_refine(retopo, baseline, workspace):
     result = call("rigforge_metarig", {"object": retopo.name, "archetype": "auto",
                                        "joints_file": path})
     report = result.get("joints") or {}
+    check("a joints file selects the tag fit, and the result says which fit ran",
+          result.get("fit_method") == "tags", str(result.get("fit_method")))
+    check("and the warnings explain why, rather than ignoring the file silently",
+          any("joints file" in w and "tag fit" in w
+              for w in result.get("warnings") or []),
+          str(result.get("warnings"))[:200])
     check("the result carries a joints report", bool(report), str(sorted(report)))
     check("the file was accepted (its frame checks out)", report.get("enabled") is True,
           "%s inside %s" % (report.get("inside_bbox"), report.get("joints")))
@@ -387,7 +400,8 @@ def test_joints_frame_guard(retopo, baseline, workspace):
 
 def test_joints_best_effort(retopo, workspace):
     section("best effort - named predictions place what no tag can (fingers)")
-    tags_only = call("rigforge_metarig", {"object": retopo.name, "preset": "human"})
+    tags_only = call("rigforge_metarig", {"object": retopo.name, "preset": "human",
+                                          "method": "tags"})
     meta = bpy.data.objects.get(tags_only["metarig"])
     before = bone_points(meta)
     finger = "f_index.01.L"

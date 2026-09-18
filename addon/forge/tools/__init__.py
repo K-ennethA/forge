@@ -17,6 +17,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     meshopt = importlib.reload(meshopt)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
     rigforge_joints = importlib.reload(rigforge_joints)  # noqa: F821
+    rigforge_landmarks = importlib.reload(rigforge_landmarks)  # noqa: F821
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
     rigcheck = importlib.reload(rigcheck)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
@@ -45,6 +46,10 @@ else:
     from . import meshopt
     from . import rigforge
     from . import rigforge_joints
+    # Before rigforge_rig: the metarig's default fitting path is the human
+    # rigger's workflow (orient, symmetrize, landmark one side, mirror), and it
+    # lives here. Only common + rigforge behind it.
+    from . import rigforge_landmarks
     from . import rigforge_rig
     from . import rigcheck
     from . import rigforge_anim
@@ -94,6 +99,7 @@ __all__ = [
     "meshopt",
     "rigforge",
     "rigforge_joints",
+    "rigforge_landmarks",
     "rigforge_rig",
     "rigcheck",
     "rigforge_anim",

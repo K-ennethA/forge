@@ -98,6 +98,7 @@ from mathutils import Matrix, Vector
 
 from . import diagnose
 from . import rigforge
+from . import rigforge_landmarks
 from . import rigforge_rig
 from .common import (
     M_TO_MM,
@@ -815,11 +816,29 @@ def cmd_rig_check(params):
     """Pose the rig into its extremes and measure what happens to the flesh.
 
     ``rig_check {"rig"?, "mesh"?, "poses"?: "extreme"|"quick"|"full"|[...],
-    "joints"?: [names], "max_poses"?, "intersections"?, "weight_floor"?}``
+    "joints"?: [names], "max_poses"?, "intersections"?, "weight_floor"?,
+    "render_weights"?: dir, "weight_map_bones"?: [names], "max_weight_maps"?}``
 
     Returns a per-joint report — worst volume loss, new self-intersections and
     twist collapse, each with a band — plus an overall gate.  The pose is always
     restored.
+
+    **Four placement gates run on every call** and are reported whether or not
+    they fail, because the defects they catch were found by a human staring at a
+    render and must never need that again:
+
+    * ``centering`` — how far each deform bone sits from the centroid of its own
+      limb's cross-section, in millimetres and as a percentage of that section's
+      radius;
+    * ``asymmetry`` — the left/right table: every ``.R`` bone against the mirror
+      of its ``.L`` twin.  A rigger who mirrors gets 0.0;
+    * ``side_naming`` — whether the ``.L`` bones are on the character's left at
+      all, measured against the facing the **mesh** says it has;
+    * ``overlap`` — the bone-to-bone influence overlap matrix, with every pair
+      three or more joints apart named as a defect.
+
+    ``render_weights`` additionally writes per-bone weight maps into a folder —
+    the maps, looked at, rather than counted.
     """
     started = time.monotonic()
     warnings = []
@@ -1031,10 +1050,71 @@ def cmd_rig_check(params):
     finally:
         _restore_pose(rig, snapshot, switches)
 
+    # --- the placement gates: always measured, always reported -------------
+    #
+    # Deformation is what the poses above measure. These four measure whether
+    # the skeleton was ever in the right place to begin with, which is the
+    # question a live audit had to answer by eye: bones off the limb's
+    # centreline, left and right fitted independently (6-24 mm apart), side
+    # names mirrored so .L drove the right leg, and flesh shared between bones
+    # that are nowhere near each other. All four are geometric, so the harness
+    # finds them from now on instead of the owner squinting at a render.
+    placement = {}
+    try:
+        placement["centering"] = rigforge_landmarks.bone_centering(rig, mesh)
+    except Exception as exc:  # noqa: BLE001 - a gate that cannot run says so
+        placement["centering"] = {"verdict": "unmeasured", "says": str(exc)}
+    try:
+        placement["asymmetry"] = rigforge_landmarks.bone_asymmetry(rig)
+    except Exception as exc:  # noqa: BLE001
+        placement["asymmetry"] = {"verdict": "unmeasured", "says": str(exc)}
+    try:
+        placement["side_naming"] = rigforge_landmarks.side_naming(rig, mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["side_naming"] = {"verdict": "unmeasured", "says": str(exc)}
+    try:
+        placement["overlap"] = rigforge_landmarks.influence_overlap(rig, mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["overlap"] = {"verdict": "unmeasured", "says": str(exc)}
+
+    weight_maps = None
+    maps_dir = params.get("render_weights")
+    if isinstance(maps_dir, str) and maps_dir.strip():
+        try:
+            weight_maps = rigforge_landmarks.render_weight_maps(
+                rig, mesh, maps_dir.strip(),
+                bones=(params.get("weight_map_bones") or None),
+                max_bones=get_int(params, "max_weight_maps", 8, minimum=1, maximum=64))
+        except Exception as exc:  # noqa: BLE001 - a picture, not the product
+            warnings.append("The weight maps could not be rendered (%s: %s)."
+                            % (type(exc).__name__, exc))
+
     attention = [j["label"] for j in report_joints if j["verdict"] == "attention"]
     failed = [j["label"] for j in report_joints if j["verdict"] == "fail"]
+    placement_verdicts = [block.get("verdict", "unmeasured")
+                          for block in placement.values()]
     gate = "fail" if failed else ("attention" if attention else "pass")
+    if "fail" in placement_verdicts:
+        gate = "fail"
+    elif gate == "pass" and "attention" in placement_verdicts:
+        gate = "attention"
     lines = []
+    bad_placement = False
+    for name in ("side_naming", "asymmetry", "centering", "overlap"):
+        block = placement.get(name) or {}
+        if block.get("verdict") in ("fail", "attention") and block.get("says"):
+            lines.append(block["says"])
+            bad_placement = True
+    if not bad_placement:
+        # One line, with the number worth quoting in it: a mirrored rig's
+        # left/right asymmetry, which a human's X-mirror also puts at 0.0.
+        asymmetry = placement.get("asymmetry") or {}
+        centering = placement.get("centering") or {}
+        lines.append(
+            "Placement is clean: left/right asymmetry %s mm, every sided bone on the "
+            "side its name claims, worst bone %s mm off its limb's centreline, and no "
+            "stray influence between bones."
+            % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm")))
     if failed:
         lines.append("Breaks down: %s." % ", ".join(sorted(failed)))
     if attention:
@@ -1055,6 +1135,11 @@ def cmd_rig_check(params):
         "joints_measured": len(report_joints),
         "joints_skipped": skipped,
         "shape_keys": shape_key_state(mesh),
+        "centering": placement["centering"],
+        "asymmetry": placement["asymmetry"],
+        "side_naming": placement["side_naming"],
+        "overlap": placement["overlap"],
+        "weight_maps": weight_maps,
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)
                             if global_rest_volume is not None else None),

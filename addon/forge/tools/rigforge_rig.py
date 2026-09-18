@@ -48,6 +48,7 @@ from mathutils import Matrix, Vector
 
 from . import rigforge
 from . import rigforge_joints
+from . import rigforge_landmarks
 from .common import (
     active_only,
     get_bool,
@@ -634,6 +635,116 @@ def fit_biped(meta, regions, warnings, mapping, hints=None):
     return fitted
 
 
+#: How far a landmark-fitted limb is pushed out of straight when its own
+#: geometry gives no bend, as a fraction of the limb's length.  It is the same
+#: 3% the tag fit uses, and it was **measured back up to that** after being
+#: lowered: at 0.5% ``headless_rigik``'s pole test found the knee moving
+#: **0.02 mm** over a 25% pole sweep, because Rigify derives a limb's pole angle
+#: from its *rest* plane and a limb that is straight at rest has none worth
+#: having.  The price is that a correct rig's knee really does sit a little off
+#: the line through its own flesh, which is why ``bone_centering`` gates the
+#: shaft rather than the joint and allows a quarter of the section's radius.
+LANDMARK_BEND = 0.03
+
+
+def fit_biped_landmarks(meta, landmarks, warnings, mapping, mirror=True,
+                        midplane_local=0.0):
+    """The human workflow's steps 3 and 4: place one side, then X-mirror it.
+
+    Every point here came off the mesh as a **cross-section centroid**
+    (:mod:`~forge.tools.rigforge_landmarks`), so the only thing this function
+    does is snap bones onto measurements and then reflect them.  Compare
+    :func:`fit_biped`, which places both sides independently from fractions
+    along a tag's bounding blob — that is the path that produced 6-24 mm of
+    left/right asymmetry on a live character, and it is now the fallback rather
+    than the default.
+
+    Returns ``(fitted bone names, mirror report)``.
+    """
+    edit_bones = meta.data.edit_bones
+    points = landmarks["points"]
+    fitted = []
+    frozen = set()
+
+    spine_names = ["spine", "spine.001", "spine.002", "spine.003"]
+    neck_names = ["spine.004", "spine.005", "spine.006"]
+    frozen.update(spine_names + neck_names)
+    for side in ("L", "R"):
+        frozen.update(["shoulder.%s" % side, "upper_arm.%s" % side, "forearm.%s" % side,
+                       "thigh.%s" % side, "shin.%s" % side])
+
+    torso_tag = landmarks.get("torso_tag")
+    head_tag = landmarks.get("head_tag")
+    spine_points = [points.get("hips"), points.get("spine_01"), points.get("spine_02"),
+                    points.get("spine_03"), points.get("neck_base")]
+    if all(point is not None for point in spine_points):
+        fit_chain(edit_bones, spine_names, [Vector(p) for p in spine_points],
+                  frozen, fitted)
+        if torso_tag:
+            mapping.setdefault(torso_tag, []).extend(spine_names)
+    neck_points = [points.get("neck_base"), points.get("neck_mid"),
+                   points.get("neck_top"), points.get("head_top")]
+    if all(point is not None for point in neck_points):
+        fit_chain(edit_bones, neck_names, [Vector(p) for p in neck_points],
+                  frozen, fitted)
+        if head_tag:
+            mapping.setdefault(head_tag, []).extend(neck_names[-1:])
+        if torso_tag:
+            mapping.setdefault(torso_tag, []).extend(neck_names[:-1])
+
+    for side in landmarks.get("sides", ("L",)):
+        tags = landmarks.get("tags") or {}
+        arm_tag = tags.get("arm.%s" % side)
+        leg_tag = tags.get("leg.%s" % side)
+        root = points.get("clavicle.%s" % side)
+        shoulder = points.get("shoulder.%s" % side)
+        elbow = points.get("elbow.%s" % side)
+        wrist = points.get("wrist.%s" % side)
+        if None not in (root, shoulder, elbow, wrist):
+            bent = _bend(Vector(shoulder), Vector(elbow), Vector(wrist),
+                         Vector((0.0, 1.0, 0.0)), minimum=LANDMARK_BEND)
+            names = ["shoulder.%s" % side, "upper_arm.%s" % side, "forearm.%s" % side]
+            fit_chain(edit_bones, names,
+                      [Vector(root), Vector(shoulder), bent, Vector(wrist)],
+                      frozen, fitted)
+            if arm_tag:
+                mapping.setdefault(arm_tag, []).extend(names[1:] + ["hand.%s" % side])
+
+        hip = points.get("hip.%s" % side)
+        knee = points.get("knee.%s" % side)
+        ankle = points.get("ankle.%s" % side)
+        if None not in (hip, knee, ankle):
+            bent = _bend(Vector(hip), Vector(knee), Vector(ankle),
+                         Vector((0.0, -1.0, 0.0)), minimum=LANDMARK_BEND)
+            names = ["thigh.%s" % side, "shin.%s" % side]
+            fit_chain(edit_bones, names, [Vector(hip), bent, Vector(ankle)],
+                      frozen, fitted)
+            if leg_tag:
+                mapping.setdefault(leg_tag, []).extend(
+                    names + ["foot.%s" % side, "toe.%s" % side])
+
+    mirror_report = None
+    if mirror:
+        mirror_report = rigforge_landmarks.mirror_edit_bones(
+            meta, source="L", midplane_local=midplane_local)
+        fitted.extend(name for name in mirror_report["mirrored_bones"]
+                      if name not in fitted)
+        # The mirrored bones belong to the *other* side's tag. Without this a
+        # perfectly rigged right arm reports as a tag nothing was fitted to, and
+        # the weight cleanup — which is driven by this map — has no rules for it.
+        all_tags = landmarks.get("all_tags") or {}
+        for what, names in (("arm", ["upper_arm.%s", "forearm.%s", "hand.%s"]),
+                            ("leg", ["thigh.%s", "shin.%s", "foot.%s", "toe.%s"])):
+            for side in ("L", "R"):
+                if side in landmarks.get("sides", ("L",)):
+                    continue
+                tag = all_tags.get("%s.%s" % (what, side))
+                if not tag:
+                    continue
+                mapping.setdefault(tag, []).extend(name % side for name in names)
+    return fitted, mirror_report
+
+
 def fit_best_effort(meta, hints, fitted, warnings):
     """Place bones the tags could never reach, from *named* predictions alone.
 
@@ -979,6 +1090,15 @@ def cmd_rigforge_metarig(params):
     reported as a **disagreement** and overruled, and roles the tags cannot
     cover (fingers, toes) are placed from *named* predictions as best-effort.
     Without ``joints_file`` this command behaves exactly as it always did.
+
+    **The default path is the human rigger's workflow** (``method: "landmarks"``,
+    :mod:`~forge.tools.rigforge_landmarks`): the orientation gate first, then
+    symmetrize, then joints snapped onto cross-section centroids on the
+    character's **left only**, then an exact X-mirror onto the right — which is
+    why ``mirror.residual_asymmetry_mm`` is 0.0 and not the 6-24 mm a
+    two-sided fit produces.  ``method: "tags"`` is the old fraction-of-the-blob
+    fit, and it is also where a mesh the landmarks cannot read falls back to,
+    saying so in ``warnings`` and in ``fit_method``.
     """
     obj = resolve_object(params, mesh_only=True)
     started = time.monotonic()
@@ -1004,6 +1124,33 @@ def cmd_rigforge_metarig(params):
              tuple(PRESETS) + tuple(METARIG_OPS)},
             "auto",
         )
+
+    # --- steps 1 and 2 of the human workflow, before a bone exists ---------
+    method = get_choice(params, "method",
+                        {"LANDMARKS": "landmarks", "TAGS": "tags", "AUTO": "landmarks"},
+                        "landmarks")
+    if params.get("joints_file") and params.get("method") is None:
+        # A joints file is a *refinement of the tag fit*: its predictions are
+        # blended into tag-derived landmarks and overruled by them. The landmark
+        # workflow takes every joint off the mesh's own cross-sections instead,
+        # so the two cannot both be in charge — and quietly ignoring the file
+        # the caller went to the trouble of producing is the worse of the two
+        # ways to resolve that.
+        method = "tags"
+        warnings.append(
+            "A joints file was passed, so the tag fit ran and the predictions were "
+            "blended into it. The landmark workflow measures every joint off the mesh "
+            "itself and has no use for a second opinion; pass method='landmarks' to use "
+            "it and ignore the file.")
+    prepared = None
+    if method == "landmarks" and archetype != "quadruped":
+        prepared = rigforge_landmarks.prepare_for_rigging(obj, params, warnings)
+    elif method == "landmarks":
+        method = "tags"
+        warnings.append(
+            "The landmark workflow is wired into the biped fit only (a quadruped's "
+            "limbs, spine and junctions have no agreed roles yet), so this quadruped "
+            "was fitted the old way: fractions along each tag.")
 
     regions, empty = measure_tags(obj)
     if not regions:
@@ -1085,15 +1232,61 @@ def cmd_rigforge_metarig(params):
 
         scale = _scale_metarig_to(meta, obj, regions)
 
+        landmarks = None
+        landmark_report = None
+        mirror_report = None
+        fit_method = method
+        if prepared is not None:
+            sides = ("L", "R") if prepared["symmetry_requested"] is False else ("L",)
+            try:
+                landmarks = rigforge_landmarks.biped_landmarks(
+                    obj, midplane=prepared["midplane"],
+                    character_left=prepared["character_left"],
+                    warnings=warnings, sides=sides)
+            except ForgeError as exc:
+                fit_method = "tags"
+                warnings.append(
+                    "The landmark fit could not read this mesh, so the old tag-position "
+                    "fit ran instead: %s" % exc)
+
         with active_only(meta):
             _enter_edit(meta)
             try:
                 if archetype == "quadruped":
                     fitted = fit_quadruped(meta, regions, warnings, mapping)
+                elif landmarks is not None:
+                    midplane_local = (meta.matrix_world.inverted()
+                                      @ Vector((prepared["midplane"], 0.0, 0.0))).x
+                    fitted, mirror_report = fit_biped_landmarks(
+                        meta, landmarks, warnings, mapping,
+                        mirror=(prepared["symmetry_requested"] is not False),
+                        midplane_local=midplane_local)
+                    if hints is not None:
+                        warnings.append(
+                            "method='landmarks' was asked for explicitly, so the joints "
+                            "file was read and not used: every joint here came off the "
+                            "mesh's own cross-sections.")
                 else:
                     fitted = fit_biped(meta, regions, warnings, mapping, hints=hints)
                     if hints is not None:
                         fit_best_effort(meta, hints, fitted, warnings)
+                    # The fallback keeps the rest of the human workflow. Only the
+                    # *joints* come from tag fractions instead of cross-sections;
+                    # the mesh was still oriented, symmetrized and re-sided, and
+                    # the two halves are still one mirror of the other, which is
+                    # the 0.0 mm that no two-sided fit can promise.
+                    if prepared is not None and prepared["symmetry_requested"] is not False:
+                        midplane_local = (meta.matrix_world.inverted()
+                                          @ Vector((prepared["midplane"], 0.0, 0.0))).x
+                        mirror_report = rigforge_landmarks.mirror_edit_bones(
+                            meta, source="L", midplane_local=midplane_local)
+                        fit_method = "tags+mirror"
+                        warnings.append(
+                            "The joints came from tag positions, but the rest of the "
+                            "workflow still ran: the character's left was fitted and "
+                            "mirrored onto its right, so the two sides differ by %.4f mm "
+                            "rather than by whatever two independent fits happened to "
+                            "produce." % mirror_report["residual_asymmetry_mm"])
 
                 specs = chain_tags(regions, params.get("modules"),
                                    params.get("spring_chains"), archetype)
@@ -1139,6 +1332,30 @@ def cmd_rigforge_metarig(params):
         _set_prop(obj, PROP_METARIG, meta.name)
         refresh_view_layer()
 
+    # --- the echo-back: the skeleton over the ghosted body, before skinning.
+    # A rigger looks at this before they bind anything, because this is the
+    # moment a mis-placed bone is still free. Never fatal: a render that cannot
+    # run must not cost the artist their metarig.
+    echo = None
+    if get_bool(params, "echo", True):
+        try:
+            echo = rigforge_landmarks.render_skeleton_echo(
+                meta, obj, _echo_directory(params, obj),
+                resolution=get_int(params, "echo_resolution", 768,
+                                   minimum=128, maximum=2048))
+        except Exception as exc:  # noqa: BLE001 - an artifact, not the product
+            warnings.append("The skeleton echo could not be rendered (%s: %s), so this "
+                            "fit has numbers but no picture."
+                            % (type(exc).__name__, exc))
+
+    joint_landmarks = {}
+    if landmarks is not None:
+        for role, point in sorted(landmarks["points"].items()):
+            info = dict(landmarks["detail"].get(role) or {})
+            info.pop("point", None)
+            info["mm"] = [round(v * 1000.0, 2) for v in point]
+            joint_landmarks[role] = info
+
     return {
         "object": obj.name,
         "metarig": meta.name,
@@ -1152,11 +1369,72 @@ def cmd_rigforge_metarig(params):
         "chains": chains_meta,
         "landmarks": {tag: region.as_dict() for tag, region in sorted(regions.items())},
         "joints": hints.report() if hints is not None else None,
+        "fit_method": fit_method,
+        "orientation": (prepared["orientation"] if prepared else None),
+        "symmetry": (prepared["symmetry"] if prepared else None),
+        "side_tags": (prepared["retag"] if prepared else None),
+        "midplane_mm": (round(prepared["midplane"] * 1000.0, 3) if prepared else None),
+        "joint_landmarks": joint_landmarks,
+        "mirror": mirror_report,
+        "skeleton_echo": echo,
         "scale": round(scale, 6),
         "rigify": rigify_info,
+        "says": _metarig_sentence(obj, fit_method, prepared, mirror_report, echo),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
+
+
+def _echo_directory(params, obj):
+    """Where the skeleton echo lands when the caller did not say."""
+    wanted = params.get("echo_dir") or params.get("echo_path")
+    if isinstance(wanted, str) and wanted.strip():
+        return wanted.strip()
+    base = None
+    try:
+        if bpy.data.filepath:
+            base = os.path.join(os.path.dirname(bpy.data.filepath), "forge_echo")
+    except (AttributeError, OSError):
+        base = None
+    if base is None:
+        import tempfile
+
+        base = os.path.join(tempfile.gettempdir(), "forge_echo")
+    return os.path.join(base, re.sub(r"[^A-Za-z0-9_.-]", "_", obj.name))
+
+
+def _metarig_sentence(obj, fit_method, prepared, mirror_report, echo):
+    lines = []
+    if fit_method == "landmarks":
+        lines.append(
+            "%s was rigged the way a person does it: oriented, symmetrized, joints "
+            "snapped onto the mesh's own cross-section centroids on the character's "
+            "left, then X-mirrored." % obj.name)
+    else:
+        lines.append("%s was fitted by tag position (the fallback path): joints are "
+                     "fractions along each tagged blob, not landmarks." % obj.name)
+    if prepared:
+        orientation = prepared["orientation"]
+        lines.append("It faces %s%s." % (orientation["faces"],
+                                         "" if orientation.get("rotated_deg") in (0.0, None)
+                                         else " after a %+.0f degree fix"
+                                         % orientation["rotated_deg"]))
+        symmetry = prepared["symmetry"]
+        if symmetry.get("after_mm") is not None:
+            lines.append("Mesh asymmetry %.2f mm, symmetrized to %.3f mm."
+                         % (symmetry["removed_mm"], symmetry["after_mm"]))
+        elif symmetry.get("measured_mm") is not None:
+            lines.append("Mesh asymmetry %.2f mm." % symmetry["measured_mm"])
+        if (prepared.get("retag") or {}).get("swapped_tags"):
+            lines.append("Sided tags %s were swapped to match the geometry."
+                         % ", ".join(prepared["retag"]["swapped_tags"]))
+    if mirror_report is not None:
+        lines.append("Left/right asymmetry after the mirror: %.4f mm."
+                     % mirror_report["residual_asymmetry_mm"])
+    if echo and echo.get("images"):
+        lines.append("Look at the skeleton before binding: %s."
+                     % ", ".join(entry["path"] for entry in echo["images"]))
+    return " ".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -1525,8 +1803,16 @@ def limit_and_normalize(obj, rig, max_influences=4):
             "max_influences": limit, "deform_groups": len(group_names)}
 
 
-def weight_report(obj, rig):
-    """Per-bone influence counts plus the two numbers that mean trouble."""
+def weight_report(obj, rig, overlap=True):
+    """Per-bone influence counts, the two numbers that mean trouble, and the matrix.
+
+    The counts answer *how much does each bone move*.  The **overlap matrix**
+    (:func:`~forge.tools.rigforge_landmarks.influence_overlap`) answers the
+    question the owner actually asked — *what does one movement do to another* —
+    by naming every pair of bones that share influence over the same vertices,
+    with the mass they share and the distance between them.  It rides along here
+    because a weight report without it is a list of numbers nobody can act on.
+    """
     group_names = _deform_group_indices(obj, rig)
     counts = {name: 0 for name in group_names.values()}
     unnormalized = 0
@@ -1547,9 +1833,16 @@ def weight_report(obj, rig):
             unnormalized += 1
         for element in entries:
             counts[group_names[element.group]] += 1
+    matrix = None
+    if overlap:
+        try:
+            matrix = rigforge_landmarks.influence_overlap(rig, obj)
+        except Exception as exc:  # noqa: BLE001 - a report that cannot run says so
+            matrix = {"verdict": "unmeasured", "says": str(exc)}
     return {
         "object": obj.name,
         "rig": rig.name,
+        "overlap": matrix,
         "deform_groups": len(group_names),
         "total_vertices": len(obj.data.vertices),
         "unweighted_vertices": unweighted,
