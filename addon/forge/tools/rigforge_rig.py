@@ -1669,6 +1669,467 @@ def def_bones_for_edit(edit_bones, metarig_bone):
 
 
 # ---------------------------------------------------------------------------
+# the IK control layer
+# ---------------------------------------------------------------------------
+#
+# The 2026-09-17 audit asked whether this pipeline does "best practices on
+# rigging like inverse kinematics for legs".  The answer the code gives, and
+# the reason this section exists, is in three parts:
+#
+# 1. **The rig builder is Rigify, not a custom skeleton.**  The 29 bones an
+#    audit sees are the *metarig* (``basic_human``, 29 bones).  Rigify's
+#    generate turns those 29 into a 222-bone control rig that already ships
+#    leg IK (``foot_ik``, ``thigh_ik_target`` pole, and the classic three
+#    pivots ``foot_heel_ik`` / ``foot_spin_ik`` / ``toe_ik``), arm IK
+#    (``hand_ik``, ``upper_arm_ik_target``) and a per-limb ``IK_FK`` blend on
+#    the limb's parent control.  35 of those bones deform.  So the IK was
+#    never missing from the *rig* — importing Rigify complexity is not the
+#    work, because the complexity is already generated.
+# 2. **Forge's own tooling was switching it off.**  ``rigforge_keyframe`` and
+#    ``rigforge_retarget`` called ``set_fk`` on the *whole rig* whenever any
+#    FK bone was keyed, so keying one arm silently moved both legs to FK.  An
+#    FK-keyed leg is the foot-slide anti-pattern: nothing holds the foot on
+#    the ground between keys.  That is fixed in :mod:`forge.tools.rigforge_anim`
+#    (the switch is now per limb) and this section is what makes "per limb"
+#    expressible.
+# 3. **The convention has to be stated, defaulted and reported.**  Game
+#    animation keys legs through IK targets (planted feet) and arms in FK
+#    (arcs), so a generated rig leaves this module with legs on IK, arms on
+#    FK, and both poles live — and says so in the generate report.
+#
+# Nothing here adds, removes or renames a deform bone.  Every function in this
+# section writes custom properties on control bones only, which is why
+# skinning, ``rig_check`` and the Godot export path cannot notice it.
+
+#: Rigify's per-limb IK/FK blend.  It lives on the limb's **parent** control
+#: (``thigh_parent.L``, ``upper_arm_parent.L``) and runs **0.0 = full IK,
+#: 1.0 = full FK** - the opposite way round from how it reads out loud, which
+#: is exactly the kind of thing that is worth a named constant.
+IK_FK_PROP = "IK_FK"
+
+#: Rigify's "use a real pole target instead of the IK-root's roll" switch, on
+#: the same parent control.  With it off, ``thigh_ik_target.L`` exists, is
+#: hidden, and moving it does nothing at all (measured: 0.0 mm of knee travel).
+POLE_PROP = "pole_vector"
+
+IK_MODE_IK = "ik"
+IK_MODE_FK = "fk"
+IK_MODE_BLEND = "blend"
+
+#: The game-animation convention, and the default a generated rig leaves with.
+#: Legs animate through their IK targets so the feet can be planted; arms
+#: animate in FK so the hands swing on arcs instead of being nailed in space.
+IK_CONVENTION = {"leg": IK_MODE_IK, "arm": IK_MODE_FK}
+
+#: One row per limb kind Rigify's biped generates.  ``%s`` is the side.
+#: A row whose switch or IK target is missing is skipped, so a quadruped, a
+#: half-rigged metarig or a future Rigify rename degrades to "fewer limbs
+#: reported" rather than to an exception.
+IK_LIMB_TABLE = (
+    {"limb": "leg", "label": "leg", "switch": "thigh_parent.%s",
+     "ik_target": "foot_ik.%s", "pole": "thigh_ik_target.%s",
+     "ik_root": "thigh_ik.%s", "solver": "MCH-shin_ik.%s",
+     "fk_chain": ("thigh_fk.%s", "shin_fk.%s", "foot_fk.%s", "toe_fk.%s"),
+     # The classic three-pivot foot roll. ``foot_heel_ik`` carries the roll
+     # itself (+X rolls over the ball and lifts the heel - measured, the ball
+     # and toe stay put to 0.0 mm; -X pivots about the heel for the strike),
+     # ``foot_spin_ik`` is the spin pivot under it, ``toe_ik`` the toe.
+     "roll": (("heel", "foot_heel_ik.%s"), ("spin", "foot_spin_ik.%s"),
+              ("toe", "toe_ik.%s")),
+     "deform": ("thigh.%s", "shin.%s", "foot.%s", "toe.%s"),
+     "tip": ("toe.%s", "foot.%s")},
+    {"limb": "arm", "label": "arm", "switch": "upper_arm_parent.%s",
+     "ik_target": "hand_ik.%s", "pole": "upper_arm_ik_target.%s",
+     "ik_root": "upper_arm_ik.%s", "solver": "MCH-forearm_ik.%s",
+     "fk_chain": ("upper_arm_fk.%s", "forearm_fk.%s", "hand_fk.%s"),
+     "roll": (),
+     "deform": ("upper_arm.%s", "forearm.%s", "hand.%s"),
+     "tip": ("hand.%s",)},
+)
+
+#: Control-name fragments -> the limb a bone belongs to, so a *keyed* bone can
+#: say which limb's switch it needs.  Ordered, first match wins, and the order
+#: is the whole design: "upper_arm" and "forearm" both contain "arm", and
+#: "front_thigh" contains "thigh", so the specific spellings are tested first.
+LIMB_FRAGMENTS = (
+    ("front_thigh", "front_leg"), ("front_shin", "front_leg"),
+    ("front_foot", "front_leg"), ("front_paw", "front_leg"),
+    ("front_toe", "front_leg"),
+    ("upper_arm", "arm"), ("forearm", "arm"), ("hand", "arm"), ("palm", "arm"),
+    ("thigh", "leg"), ("shin", "leg"), ("foot", "leg"), ("toe", "leg"),
+    ("heel", "leg"),
+)
+
+#: Below/above these the blend is called ik/fk rather than a blend.
+_IK_EPSILON = 1e-3
+
+
+def limb_of_bone(name):
+    """``('leg', 'L')`` for a control bone name, or ``None`` if it is not a limb.
+
+    Used to scope an FK switch to the limbs that were actually keyed.  The
+    prefixes come off first so ``DEF-thigh.L`` and ``ORG-thigh.L`` classify the
+    same way as ``thigh_fk.L``.
+    """
+    text = str(name or "").strip()
+    for prefix in CONTROL_PREFIXES + (DEF_PREFIX,):
+        if text.startswith(prefix):
+            text = text[len(prefix):]
+            break
+    lowered = text.lower()
+    side = None
+    for marker in (".l", "_l"):
+        if lowered.endswith(marker) or (marker + ".") in lowered:
+            side = "L"
+            break
+    if side is None:
+        for marker in (".r", "_r"):
+            if lowered.endswith(marker) or (marker + ".") in lowered:
+                side = "R"
+                break
+    for fragment, limb in LIMB_FRAGMENTS:
+        if fragment in lowered:
+            return (limb, side)
+    return None
+
+
+def limb_name(limb, side):
+    """``leg`` + ``L`` -> ``"leg.L"``; a sideless limb keeps its bare name."""
+    return "%s.%s" % (limb, side) if side else str(limb)
+
+
+def _mode_of(value):
+    if value <= _IK_EPSILON:
+        return IK_MODE_IK
+    if value >= 1.0 - _IK_EPSILON:
+        return IK_MODE_FK
+    return IK_MODE_BLEND
+
+
+def _ik_constraints_on(rig, bone_name):
+    """Every real ``IK`` constraint on one bone, described.
+
+    The ``muted`` flag is driver-driven (Rigify mutes the pole variant or the
+    poleless one depending on :data:`POLE_PROP`) and is only true after a
+    depsgraph evaluation, so it is *reported* and never asserted on.
+    """
+    out = []
+    bone = rig.pose.bones.get(bone_name or "")
+    if bone is None:
+        return out
+    for constraint in bone.constraints:
+        if constraint.type != "IK":
+            continue
+        out.append({
+            "bone": bone.name,
+            "constraint": constraint.name,
+            "target": getattr(getattr(constraint, "target", None), "name", None),
+            "subtarget": getattr(constraint, "subtarget", "") or None,
+            "pole_subtarget": getattr(constraint, "pole_subtarget", "") or None,
+            "chain_count": int(getattr(constraint, "chain_count", 0) or 0),
+            "muted": bool(getattr(constraint, "mute", False)),
+        })
+    return out
+
+
+def ik_limbs(rig, limbs=None):
+    """Every IK-capable limb on ``rig``: target, pole, switch, roll pivots.
+
+    ``limbs`` filters by name (``"leg.L"``, or ``"leg"`` for both sides).
+    Missing bones are skipped rather than invented: what comes back is what
+    this rig actually has.
+    """
+    wanted = None
+    if limbs:
+        wanted = {str(name).strip().lower() for name in limbs if str(name).strip()}
+    out = []
+    for row in IK_LIMB_TABLE:
+        for side in ("L", "R"):
+            def named(pattern):
+                return pattern % side if pattern and "%s" in pattern else pattern
+
+            switch = named(row["switch"])
+            target = named(row["ik_target"])
+            switch_bone = rig.pose.bones.get(switch)
+            if switch_bone is None or target not in rig.pose.bones:
+                continue
+            try:
+                blend = float(switch_bone[IK_FK_PROP])
+            except (KeyError, TypeError, ValueError):
+                continue
+            name = limb_name(row["limb"], side)
+            if wanted is not None and name.lower() not in wanted \
+                    and row["limb"].lower() not in wanted:
+                continue
+            pole = named(row["pole"])
+            pole_on = None
+            if POLE_PROP in switch_bone.keys():
+                try:
+                    pole_on = bool(switch_bone[POLE_PROP])
+                except (TypeError, ValueError):  # pragma: no cover - odd ID prop
+                    pole_on = None
+            solver = named(row["solver"])
+            constraints = _ik_constraints_on(rig, solver)
+            deform = []
+            for pattern in row["deform"]:
+                deform.extend(def_bones_for(rig, named(pattern)))
+            roll = {}
+            for label, pattern in row["roll"]:
+                bone_name = named(pattern)
+                if bone_name in rig.pose.bones:
+                    roll[label] = bone_name
+            tip = None
+            for pattern in row["tip"]:
+                candidates = def_bones_for(rig, named(pattern))
+                if candidates:
+                    tip = candidates[0]
+                    break
+            out.append({
+                "name": name,
+                "limb": row["limb"],
+                "label": "%s %s" % ({"L": "left", "R": "right"}[side], row["label"]),
+                "side": side,
+                "switch_bone": switch,
+                "switch_prop": IK_FK_PROP,
+                "ik_fk": round(blend, 4),
+                "mode": _mode_of(blend),
+                "default_mode": IK_CONVENTION.get(row["limb"], IK_MODE_FK),
+                "ik_target": target,
+                "ik_root": named(row["ik_root"]) if named(row["ik_root"]) in rig.pose.bones
+                else None,
+                "pole_target": pole if pole in rig.pose.bones else None,
+                "pole_enabled": pole_on,
+                "solver_bone": solver if solver in rig.pose.bones else None,
+                "ik_constraints": constraints,
+                "chain_count": max([c["chain_count"] for c in constraints] or [0]),
+                "fk_chain": [named(b) for b in row["fk_chain"]
+                             if named(b) in rig.pose.bones],
+                "roll_pivots": roll,
+                "deform_bones": sorted(set(deform)),
+                "tip_bone": tip,
+            })
+    return out
+
+
+def _retag(rig):
+    """Tell the depsgraph a custom property changed.
+
+    Rigify's whole IK/FK blend is **drivers reading a custom property**: the
+    ``IK_FK`` float mutes IK constraints and drives the ``ORG-`` bones' Copy
+    Transforms influences.  Writing the property does not by itself tag
+    anything for re-evaluation, so without this the value reads back correctly
+    and the rig keeps posing the old way — the most convincing kind of silent
+    no-op there is.  Measured: switching a leg to FK moved the deform bones by
+    0.0 mm until this call existed.
+    """
+    try:
+        rig.update_tag(refresh={"DATA"})
+    except (AttributeError, TypeError, RuntimeError):  # pragma: no cover
+        try:
+            rig.update_tag()
+        except (AttributeError, RuntimeError):
+            pass
+    refresh_view_layer()
+
+
+def set_limb_mode(rig, entry, mode, keyframe_at=None):
+    """Move one limb's ``IK_FK`` blend, optionally keyframing it.
+
+    Returns the value it set, or ``None`` when the property refused it.
+    """
+    bone = rig.pose.bones.get(entry["switch_bone"])
+    if bone is None:
+        return None
+    value = 1.0 if mode == IK_MODE_FK else 0.0
+    prop = entry.get("switch_prop") or IK_FK_PROP
+    try:
+        bone[prop] = value
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        return None
+    _retag(rig)
+    if keyframe_at is not None:
+        try:
+            bone.keyframe_insert('["%s"]' % prop, frame=int(keyframe_at))
+        except (RuntimeError, TypeError):  # pragma: no cover - no action yet
+            pass
+    entry["ik_fk"] = value
+    entry["mode"] = _mode_of(value)
+    return value
+
+
+def set_pole_vector(rig, entry, enabled):
+    """Switch one limb's explicit pole target on or off. ``None`` if it has none."""
+    bone = rig.pose.bones.get(entry["switch_bone"])
+    if bone is None or POLE_PROP not in bone.keys():
+        return None
+    try:
+        bone[POLE_PROP] = bool(enabled)
+    except (KeyError, TypeError, ValueError, RuntimeError):  # pragma: no cover
+        return None
+    _retag(rig)
+    entry["pole_enabled"] = bool(enabled)
+    return bool(enabled)
+
+
+def apply_ik_convention(rig, legs=None, arms=None, poles=True, keyframe_at=None,
+                        limbs=None):
+    """Put the rig on the game convention: legs IK, arms FK, poles live.
+
+    Every argument is a deliberate default rather than a rule: ``legs`` and
+    ``arms`` take ``"ik"``/``"fk"``, ``poles`` takes ``False`` for rigs whose
+    animator prefers Rigify's roll-driven knee.  Nothing here touches a deform
+    bone, so a rig that has already been skinned and checked stays valid.
+    """
+    wanted = {"leg": legs or IK_CONVENTION["leg"], "arm": arms or IK_CONVENTION["arm"]}
+    found = ik_limbs(rig, limbs)
+    changed = []
+    poled = []
+    for entry in found:
+        mode = wanted.get(entry["limb"], entry["default_mode"])
+        before = entry["mode"]
+        if set_limb_mode(rig, entry, mode, keyframe_at=keyframe_at) is not None \
+                and before != entry["mode"]:
+            changed.append("%s %s -> %s" % (entry["name"], before, entry["mode"]))
+        if poles is not None and entry["pole_target"]:
+            if set_pole_vector(rig, entry, poles) is not None and poles:
+                poled.append(entry["pole_target"])
+    return {
+        "convention": dict(wanted),
+        "poles": sorted(poled),
+        "changed": changed,
+        "limbs": found,
+    }
+
+
+def ik_summary(limbs):
+    """One sentence about what the IK layer is, for a report's ``says``."""
+    if not limbs:
+        return ("No IK limb was found on this rig: nothing here has a foot or hand IK "
+                "target, so every limb can only be animated in FK.")
+    by_mode = {}
+    for entry in limbs:
+        by_mode.setdefault(entry["mode"], []).append(entry["name"])
+    parts = ["%s on %s" % (mode.upper(), ", ".join(sorted(names)))
+             for mode, names in sorted(by_mode.items())]
+    rolls = sum(len(entry["roll_pivots"]) for entry in limbs)
+    poles = [entry["name"] for entry in limbs if entry.get("pole_enabled")]
+    text = "%d IK limb(s): %s." % (len(limbs), "; ".join(parts))
+    if poles:
+        text += " Pole targets live on %s." % ", ".join(sorted(poles))
+    if rolls:
+        text += " %d foot-roll pivot(s) available." % rolls
+    return text
+
+
+@command("rigforge_ik")
+def cmd_rigforge_ik(params):
+    """Report or set the rig's FK/IK layer, per limb.
+
+    ``rigforge_ik {"rig"?, "action"?: "report"|"set", "legs"?: "ik"|"fk",
+    "arms"?: "ik"|"fk", "limbs"?: [names], "mode"?: "ik"|"fk", "poles"?: bool,
+    "frame"?: int}``
+
+    ``report`` (the default) changes nothing.  ``set`` moves the blend and, with
+    ``frame``, keyframes it — which is what makes a clip that switches mid-shot
+    survive the export bake.
+    """
+    started = time.monotonic()
+    warnings = []
+    rig = _rig_from_params(params)
+
+    action = get_choice(params, "action", {"REPORT": "report", "SET": "set"}, "report")
+    wanted_limbs = params.get("limbs")
+    if isinstance(wanted_limbs, str):
+        wanted_limbs = [wanted_limbs]
+    if wanted_limbs is not None and not isinstance(wanted_limbs, (list, tuple)):
+        raise ForgeError("'limbs' must be a list of limb names like [\"leg.L\", \"arm\"].")
+
+    modes = {"IK": IK_MODE_IK, "FK": IK_MODE_FK}
+    mode = get_choice(params, "mode", modes, None) if params.get("mode") else None
+    legs = get_choice(params, "legs", modes, None) if params.get("legs") else None
+    arms = get_choice(params, "arms", modes, None) if params.get("arms") else None
+    poles = get_bool(params, "poles", True) if params.get("poles") is not None else None
+    frame = get_int(params, "frame", None, minimum=-1_000_000, maximum=1_000_000) \
+        if params.get("frame") is not None else None
+
+    limbs = ik_limbs(rig, wanted_limbs)
+    if wanted_limbs and not limbs:
+        raise ForgeError(
+            "No limb on %r matches %s. This rig's IK limbs are: %s."
+            % (rig.name, ", ".join(repr(str(n)) for n in wanted_limbs),
+               ", ".join(entry["name"] for entry in ik_limbs(rig)) or "none"))
+    changed = []
+    convention = None
+    if action == "set":
+        if mode is not None:
+            with object_mode():
+                for entry in limbs:
+                    before = entry["mode"]
+                    if set_limb_mode(rig, entry, mode, keyframe_at=frame) is not None \
+                            and before != entry["mode"]:
+                        changed.append("%s %s -> %s" % (entry["name"], before,
+                                                        entry["mode"]))
+                    if poles is not None and entry["pole_target"]:
+                        set_pole_vector(rig, entry, poles)
+            convention = {"all": mode}
+        else:
+            with object_mode():
+                report = apply_ik_convention(
+                    rig, legs=legs, arms=arms,
+                    poles=True if poles is None else poles,
+                    keyframe_at=frame, limbs=wanted_limbs)
+            changed = report["changed"]
+            convention = report["convention"]
+            limbs = report["limbs"]
+        refresh_view_layer()
+        limbs = ik_limbs(rig, wanted_limbs)
+    if not limbs:
+        warnings.append(
+            "No IK limb was found on %r. Rigify's biped generates foot_ik/hand_ik and "
+            "an IK_FK switch on thigh_parent/upper_arm_parent; a rig without them was "
+            "not generated by rigforge_generate_rig, or is not a biped." % rig.name)
+
+    return {
+        "rig": rig.name,
+        "action": action,
+        "limbs": limbs,
+        "limb_names": [entry["name"] for entry in limbs],
+        "convention": convention,
+        "changed": changed,
+        "frame": frame,
+        "says": ik_summary(limbs),
+        "warnings": warnings,
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+def _rig_from_params(params, key="rig"):
+    """The armature a rig-level command is about: named, active, or the only one."""
+    name = params.get(key)
+    if isinstance(name, str) and name.strip():
+        rig = find_object(name.strip())
+        if rig.type != "ARMATURE":
+            raise ForgeError("Object %r is a %s, not an armature." % (rig.name, rig.type))
+        return rig
+    active = get_view_layer().objects.active
+    if active is not None:
+        if active.type == "ARMATURE":
+            return active
+        for modifier in active.modifiers:
+            if modifier.type == "ARMATURE" and modifier.object is not None:
+                return modifier.object
+        stored = str(_prop(active, PROP_RIG, "") or "")
+        if stored and bpy.data.objects.get(stored) is not None:
+            return bpy.data.objects[stored]
+    candidates = [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]
+    if len(candidates) == 1:
+        return candidates[0]
+    raise ForgeError(
+        "No rig given and none could be guessed (%d armature(s) in the file). Pass "
+        "'rig', or select the character." % len(candidates))
+
+
+# ---------------------------------------------------------------------------
 # rigforge_generate_rig
 # ---------------------------------------------------------------------------
 
@@ -1751,6 +2212,23 @@ def cmd_rigforge_generate_rig(params):
         if do_springs and chains:
             springs = add_spring_chains(rig, chains, warnings)
 
+        # The IK layer Rigify already generated, put on the game convention and
+        # reported. Control properties only - not one deform bone moves, which
+        # is why this is safe to do to a rig that is about to be skinned.
+        ik = apply_ik_convention(
+            rig,
+            legs=get_choice(params, "ik_legs", {"IK": "ik", "FK": "fk"}, None)
+            if params.get("ik_legs") else None,
+            arms=get_choice(params, "ik_arms", {"IK": "ik", "FK": "fk"}, None)
+            if params.get("ik_arms") else None,
+            poles=get_bool(params, "ik_poles", True))
+        if not ik["limbs"]:
+            warnings.append(
+                "This rig generated no IK limb (no foot_ik/hand_ik with an IK_FK "
+                "switch), so every limb can only be animated in FK. A pure-FK leg is "
+                "the foot-slide anti-pattern - check the metarig's limb types.")
+        refresh_view_layer()
+
         regions, _empty = measure_tags(mesh)
         span = max(max(mesh.dimensions), 1e-6)
         band = band_ratio * span
@@ -1798,6 +2276,14 @@ def cmd_rigforge_generate_rig(params):
         "deform_bones": len(deform),
         "bone_count": len(rig.data.bones),
         "control_bones": len(rig.data.bones) - len(deform),
+        "ik": {
+            "convention": ik["convention"],
+            "limbs": ik["limbs"],
+            "limb_names": [entry["name"] for entry in ik["limbs"]],
+            "poles": ik["poles"],
+            "changed": ik["changed"],
+            "says": ik_summary(ik["limbs"]),
+        },
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }

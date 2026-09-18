@@ -17,6 +17,12 @@ as a glTF.  This module is what fills the character out and makes it *move*:
   pass.  This is the command Claude uses when the sculptor says "a heavy
   two-beat hop, ears trail", so a bone it cannot find is answered with the
   closest name it *can* find rather than a KeyError.
+* :func:`cmd_rigforge_walk` — the locomotion authoring path.  A walk cycle is
+  keyed on the **leg IK targets**, not on the leg's FK rotations, with the
+  stance phases world-locked so the planted foot cannot drift; hips, torso,
+  arms and the heel/ball foot roll are layered over that.  An FK-keyed walk is
+  the foot-slide anti-pattern, and ``animation_check`` measures the difference
+  in millimetres.
 * :func:`cmd_rigforge_retarget` — a mocap clip the **user supplies** (.bvh or
   .fbx, both read with importers that ship inside Blender) mapped onto the rig's
   FK controls by name heuristics and baked to an action.  Nothing is downloaded,
@@ -30,7 +36,12 @@ point they matter:
 * **retargeting lands on FK controls**, not on the deform bones, so the result is
   something the sculptor can open and fix.  Rigify limbs default to IK, so the
   rig's ``IK_FK`` switches are moved to FK and keyframed — otherwise the clip
-  would look perfect in the FK bones and export as a T-pose.
+  would look perfect in the FK bones and export as a T-pose.  A **whole-body**
+  mocap bake is the one case where switching every limb is right; a keyframe
+  pass is not, so :func:`cmd_rigforge_keyframe`'s ``"auto"`` now switches only
+  the limbs whose FK controls it is actually keying.  It used to switch all of
+  them, which meant keying one arm quietly took both legs off IK and handed the
+  next walk cycle a foot slide.
 * **rotations are euler.**  ``rotation_euler_deg`` is degrees in the bone's own
   space; a bone in quaternion mode is switched to ``XYZ`` and the switch is
   reported.  Half a keyframing API that silently ignores the mode is worse than
@@ -56,7 +67,7 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import Operator, PropertyGroup
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 from . import rigforge
 from . import rigforge_rig
@@ -1159,16 +1170,52 @@ def _vector3(value, label, key):
     return out
 
 
-def set_fk(rig, keyframe_at=None):
-    """Push every Rigify IK/FK blend to full FK, optionally keyframing it.
+def limbs_in_plan(rig, bone_names):
+    """The limb names (``leg.L``, ``arm.R``) the keyed bones belong to.
+
+    This is what makes the FK switch *scoped*.  Before it existed, keying one
+    arm in FK moved every ``IK_FK`` on the rig — including both legs — which
+    quietly turned a planted-feet leg rig into a pure-FK one and gave the clip
+    the foot slide it was rigged to avoid.
+    """
+    found = []
+    for name in bone_names:
+        classified = rigforge_rig.limb_of_bone(name)
+        if classified is None:
+            continue
+        label = rigforge_rig.limb_name(*classified)
+        if label not in found:
+            found.append(label)
+    return found
+
+
+def set_fk(rig, keyframe_at=None, limbs=None):
+    """Push Rigify IK/FK blends to full FK, optionally keyframing them.
 
     Rigify limbs ship with the blend on IK.  An FK pose — which is what both
     ``rigforge_keyframe`` and ``rigforge_retarget`` produce — is then completely
     invisible in the deform bones, so the clip looks right in the viewport's FK
     controls and exports as a T-pose.  Switching the blend is not a nicety.
+
+    ``limbs`` restricts the switch to those limb names (``["arm.L"]``).  Left
+    ``None`` it does what it always did and switches the whole rig, because
+    that is still the right answer for a full-body mocap bake.  What changed is
+    who asks for ``None``: :func:`cmd_rigforge_keyframe`'s ``"auto"`` now names
+    the limbs it keyed, so a leg on IK survives an arm being keyed in FK.
     """
+    allowed = None
+    if limbs is not None:
+        allowed = {str(name).strip().lower() for name in limbs if str(name).strip()}
     switched = []
     for bone in rig.pose.bones:
+        if allowed is not None:
+            classified = rigforge_rig.limb_of_bone(bone.name)
+            if classified is None:
+                continue
+            limb, side = classified
+            if rigforge_rig.limb_name(limb, side).lower() not in allowed \
+                    and str(limb).lower() not in allowed:
+                continue
         for key in IK_FK_KEYS:
             try:
                 if key not in bone.keys():
@@ -1244,6 +1291,7 @@ def cmd_rigforge_keyframe(params):
     bones_touched = []
     modes = {}
     fk_switched = []
+    fk_limbs = None
     keys_set = 0
     touched_curves = {}
 
@@ -1275,16 +1323,38 @@ def cmd_rigforge_keyframe(params):
                     % (index, bone.name, frame))
             plan.append((bone, frame, channels))
 
-        if fk_switch is True or (
-                fk_switch == "auto"
-                and any("_fk" in bone.name.lower() for bone, _f, _c in plan)):
+        fk_bones = [bone.name for bone, _f, _c in plan if "_fk" in bone.name.lower()]
+        scoped = None
+        if fk_switch is True:
+            # Explicit: the caller asked for the whole rig and gets it.
+            scoped = None
+        elif fk_switch == "auto" and fk_bones:
+            # Scoped: only the limbs whose FK controls are actually in this
+            # pass. Switching the rest would silently take a leg off IK, and a
+            # leg keyed in FK is the foot-slide anti-pattern (animation_check
+            # measures it in millimetres).
+            scoped = limbs_in_plan(rig, fk_bones)
+        fk_limbs = scoped
+        if fk_switch is True or (fk_switch == "auto" and fk_bones):
             at = min(frame for _bone, frame, _c in plan)
-            fk_switched = set_fk(rig, keyframe_at=at)
+            fk_switched = set_fk(rig, keyframe_at=at, limbs=scoped)
             if fk_switched:
                 warnings.append(
                     "Rigify's IK/FK blend was moved to full FK on %d limb(s) and "
                     "keyframed, so these FK poses actually reach the deform bones: %s."
-                    % (len(fk_switched), ", ".join(fk_switched)))
+                    % (len(fk_switched), ", ".join(fk_switched))
+                    + ("" if scoped is None else
+                       " Only %s was switched; every other limb kept its mode, because "
+                       "an FK-keyed leg cannot plant a foot."
+                       % ", ".join(scoped)))
+            left = [entry["name"] for entry in rigforge_rig.ik_limbs(rig)
+                    if entry["mode"] == "ik"]
+            if scoped is not None and left and any(
+                    name.startswith("leg") for name in left):
+                warnings.append(
+                    "%s stayed on IK. Key the feet through their IK targets "
+                    "(foot_ik.L/R) or use rigforge_walk; an FK-keyed leg slides."
+                    % ", ".join(sorted(left)))
 
         for bone, frame, channels in plan:
             if "rotation_euler" in channels and bone.rotation_mode not in EULER_MODES:
@@ -1343,6 +1413,642 @@ def cmd_rigforge_keyframe(params):
         "fcurves": len(rigforge_rig.action_fcurves(action)),
         "rotation_modes": modes,
         "fk_switched": fk_switched,
+        "fk_limbs": fk_limbs,
+        "warnings": warnings,
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+# ---------------------------------------------------------------------------
+# rigforge_walk — locomotion on the IK targets
+# ---------------------------------------------------------------------------
+#
+# The walk cycle is where FK keyframing stops being a stylistic choice and
+# starts being a bug.  A leg keyed on ``thigh_fk`` / ``shin_fk`` has nothing
+# holding the foot on the ground between keys: the foot's world position is
+# whatever the two rotations happen to multiply out to, it drifts every frame
+# of "stance", and the result is the oldest artefact in game animation — the
+# character moon-walking through its own footsteps.  The fix is not better
+# keys, it is a different channel: **key the foot IK target's position, and
+# hold it still while the foot is down.**
+#
+# So this command authors the four classic keys of a walk — contact, down,
+# pass, up — as *foot target positions* rather than leg rotations, with the
+# stance phase world-locked by construction, and layers the parts that really
+# are rotations (hip bob and sway, torso counter-rotation, arm swing, the
+# heel/ball foot roll) on top.
+#
+# Two modes, one geometry:
+#
+# * ``travel: true`` (the default) advances the ``root`` bone by one stride per
+#   cycle and leaves each planted foot at a **fixed world position**.  That is
+#   a root-motion clip: ``rigforge_export_godot`` with ``root_motion: true``
+#   ships the travel on the root track, and ``animation_check`` measures stance
+#   drift straight against zero.
+# * ``travel: false`` is the same cycle with the body's travel subtracted — the
+#   treadmill clip an engine plays while its own controller moves the
+#   character.  The feet must move backwards during stance; what must not
+#   happen is that they move at a *different* speed from each other or from the
+#   character, so ``animation_check``'s ``in_place`` mode measures the residual
+#   after a single shared velocity is removed.
+#
+# Both loop seamlessly: the last frame repeats the first, one stride along.
+
+#: How much of the cycle each foot spends on the ground.  0.62 is a walk (the
+#: two stance phases overlap, which is what double support *is*); below 0.5 the
+#: gait is a run and both feet leave the ground.
+DEFAULT_STANCE_FRACTION = 0.62
+
+#: Defaults as fractions of the leg's length, so the same numbers fit a
+#: 30 cm figurine and a 2 m ogre.
+STEP_LENGTH_RATIO = 0.40      #: body travel per step (half a stride)
+STEP_HEIGHT_RATIO = 0.10      #: how high the swinging foot lifts
+HIP_DROP_RATIO = 0.035        #: the two-per-cycle vertical bob
+HIP_SWAY_RATIO = 0.030        #: the one-per-cycle weight shift onto the stance leg
+
+#: How far below standing height the hips sit for the whole cycle.  Not a
+#: stylistic crouch: a rig at rest has its legs all but straight, so a hip left
+#: at standing height has no bend to spend and the leg cannot reach a stride's
+#: worth of forward step without Rigify stretching it — which reads on the
+#: deform bones as the exact foot slide this command exists to avoid.  Walking
+#: humans flex the knee through stance for the same reason.
+HIP_LOWER_RATIO = 0.045
+
+#: ...and how far the hips may be lowered *automatically* to buy a longer
+#: stride before the stride is shortened instead.  Past this it stops reading
+#: as a walk and starts reading as a crouch, which is a different clip.
+MAX_HIP_LOWER_RATIO = 0.20
+
+#: The leg may reach this fraction of its own length before Rigify's stretch
+#: starts making up the difference — and a stretched leg does not reach its
+#: target, which reads as foot slide on the deform bones.
+DEFAULT_REACH_MARGIN = 0.97
+
+#: Foot-roll shape, as fractions of the cycle.
+ROLL_FLAT_AT = 0.12           #: heel strike is over and the foot is flat
+ROLL_LIFT_FOR = 0.18          #: how long the heel-off roll takes, before toe-off
+
+DEFAULT_CYCLE_FRAMES = 32
+DEFAULT_ARM_SWING_DEG = 26.0
+DEFAULT_ELBOW_BEND_DEG = 14.0
+DEFAULT_FOOT_ROLL_DEG = 22.0
+DEFAULT_HIP_TWIST_DEG = 6.0
+
+#: The torso control, best first.
+TORSO_CONTROLS = ("torso", "hips", "chest", "spine_fk")
+ROOT_CONTROLS = ("root", "root.001")
+
+
+def _smoothstep(value):
+    value = min(1.0, max(0.0, float(value)))
+    return value * value * (3.0 - 2.0 * value)
+
+
+def _world_matrix(rig, pose_bone):
+    return rig.matrix_world @ pose_bone.matrix
+
+
+def _rest_world(rig, pose_bone):
+    """The bone's **rest** matrix in world space — pose-independent."""
+    return rig.matrix_world @ pose_bone.bone.matrix_local
+
+
+def _set_world(rig, pose_bone, matrix):
+    """Put a pose bone at a world matrix, whatever its parent chain is doing.
+
+    ``PoseBone.matrix`` is armature space and its setter resolves the parent
+    for us, which is the only reason this command can key a foot target that
+    hangs off a driven ``SWITCH_PARENT`` mechanism without knowing it exists.
+    """
+    pose_bone.matrix = rig.matrix_world.inverted_safe() @ matrix
+
+
+def _key_transform(pose_bone, frame, rotation=True, scale=False):
+    """Keyframe location (+ the rotation channel that matches the bone's mode)."""
+    count = 0
+    pose_bone.keyframe_insert("location", frame=frame)
+    count += 3
+    if rotation:
+        if pose_bone.rotation_mode == "QUATERNION":
+            pose_bone.keyframe_insert("rotation_quaternion", frame=frame)
+            count += 4
+        elif pose_bone.rotation_mode == "AXIS_ANGLE":
+            pose_bone.keyframe_insert("rotation_axis_angle", frame=frame)
+            count += 4
+        else:
+            pose_bone.keyframe_insert("rotation_euler", frame=frame)
+            count += 3
+    if scale:
+        pose_bone.keyframe_insert("scale", frame=frame)
+        count += 3
+    return count
+
+
+def _rotate_about(matrix, axis, angle, pivot):
+    """``matrix`` rotated by ``angle`` about the world ``axis`` through ``pivot``."""
+    rotation = Matrix.Rotation(angle, 4, axis)
+    return (Matrix.Translation(pivot) @ rotation @ Matrix.Translation(-pivot)) @ matrix
+
+
+def locomotion_frame(rig, limbs):
+    """The rig's own walking axes and measurements, derived rather than assumed.
+
+    ``forward`` is the direction the **toes** point (ankle to toe tip, flattened
+    onto the ground plane), so a character built facing any way walks the way it
+    faces.  ``leg_length`` is hip to ankle at rest.  Nothing here is a constant
+    in metres: every default downstream is a fraction of these.
+    """
+    up = Vector((0.0, 0.0, 1.0))
+    forwards = []
+    feet = {}
+    leg_lengths = []
+    for entry in limbs:
+        if entry["limb"] != "leg":
+            continue
+        target = rig.pose.bones.get(entry["ik_target"])
+        if target is None:
+            continue
+        ankle = _rest_world(rig, target).translation.copy()
+        ball = None
+        tip = None
+        toe = rig.pose.bones.get(entry["roll_pivots"].get("toe") or "")
+        if toe is not None:
+            rest = _rest_world(rig, toe)
+            ball = rest.translation.copy()
+            tip = (rest @ Matrix.Translation((0.0, toe.bone.length, 0.0))).translation
+        if ball is None and entry["tip_bone"]:
+            bone = rig.pose.bones.get(entry["tip_bone"])
+            if bone is not None:
+                rest = _rest_world(rig, bone)
+                ball = rest.translation.copy()
+                tip = (rest @ Matrix.Translation((0.0, bone.bone.length, 0.0))).translation
+        if ball is None:
+            ball = ankle.copy()
+        if tip is None:
+            tip = ball.copy()
+        direction = Vector((tip.x - ankle.x, tip.y - ankle.y, 0.0))
+        if direction.length > 1e-6:
+            forwards.append(direction.normalized())
+        hip = None
+        for name in entry["fk_chain"]:
+            bone = rig.pose.bones.get(name)
+            if bone is not None:
+                hip = _rest_world(rig, bone).translation.copy()
+                break
+        if hip is not None:
+            leg_lengths.append((hip - ankle).length)
+        feet[entry["name"]] = {
+            "limb": entry,
+            "side": entry["side"],
+            "target": entry["ik_target"],
+            "ankle": ankle,
+            "ball": ball,
+            "hip": hip,
+            "rest": _rest_world(rig, target),
+            "heel_pivot": entry["roll_pivots"].get("heel"),
+        }
+    if not forwards:
+        forward = Vector((0.0, -1.0, 0.0))
+    else:
+        forward = Vector((0.0, 0.0, 0.0))
+        for vector in forwards:
+            forward += vector
+        forward = forward.normalized() if forward.length > 1e-6 else Vector((0.0, -1.0, 0.0))
+    right = forward.cross(up)
+    right = right.normalized() if right.length > 1e-6 else Vector((1.0, 0.0, 0.0))
+    leg_length = sum(leg_lengths) / len(leg_lengths) if leg_lengths else 1.0
+    return {"forward": forward, "right": right, "up": up,
+            "leg_length": leg_length, "feet": feet}
+
+
+def _reach_limit(frame_info, stance_fraction, hip_low, margin):
+    """The longest step these legs can take without Rigify stretching them.
+
+    A target the leg cannot reach is worse than a short stride: the foot never
+    arrives where it was keyed, so it slides on the deform bones while the
+    control sits perfectly still, and the metric blames the animation for a
+    reach problem.  Solved in the triangle: the hip is ``drop`` above the ankle
+    at its lowest, the leg may span ``margin * leg_length``, so the horizontal
+    offset is bounded by the remaining side.  ``None`` when no leg has a hip to
+    measure from.
+    """
+    longest = None
+    for foot in frame_info["feet"].values():
+        if foot["hip"] is None:
+            continue
+        drop = (foot["hip"].z - hip_low) - foot["ankle"].z
+        span = margin * frame_info["leg_length"]
+        if drop >= span:
+            limit = 0.0
+        else:
+            limit = math.sqrt(max(0.0, span * span - drop * drop)) \
+                / max(stance_fraction, 1e-6)
+        longest = limit if longest is None else min(longest, limit)
+    return longest
+
+
+def _crouch_for(frame_info, step_length, stance_fraction, hip_drop, hip_lower,
+                margin, max_lower):
+    """Bend the knees as much as the asked-for stride needs, then clamp.
+
+    A rig at rest stands with its legs all but straight, so *every* stride
+    longer than a shuffle needs the hips lowered — a real walker's do the same
+    thing, which is why the knee is never locked through stance.  So the order
+    of preference is: deepen the crouch (up to ``max_lower``), and only then
+    shorten the step.  Returns ``(step_length, hip_lower, clamped, deepened)``.
+    """
+    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin)
+    if limit is None or step_length <= limit:
+        return step_length, hip_lower, False, False
+
+    deepened = False
+    needed = step_length * stance_fraction
+    for foot in frame_info["feet"].values():
+        if foot["hip"] is None:
+            continue
+        span = margin * frame_info["leg_length"]
+        if needed >= span:
+            # Further than the leg is long, however deep the crouch. Take every
+            # millimetre the cap allows and let the clamp below say the rest.
+            wanted = max_lower
+        else:
+            standing = foot["hip"].z - foot["ankle"].z - hip_drop
+            wanted = standing - math.sqrt(max(0.0, span * span - needed * needed))
+        if wanted > hip_lower:
+            hip_lower = min(max_lower, wanted)
+            deepened = True
+
+    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin)
+    if limit is None:
+        return step_length, hip_lower, False, deepened
+    # A hair under, after the crouch was solved for this very step, is the
+    # solution landing on its own boundary - not a clamp worth a warning.
+    if step_length > limit * (1.0 + 1e-6):
+        return limit, hip_lower, True, deepened
+    return min(step_length, limit), hip_lower, False, deepened
+
+
+def _foot_offset(u, stance_fraction, step_length, step_height, cycle_offset):
+    """One foot's ground-plane offset and lift at cycle phase ``u``.
+
+    Returns ``(along_forward, lift)`` relative to the foot's rest position,
+    before the body's own travel is added.  Stance is a **constant**, which is
+    the entire point: between contact and toe-off this function returns the
+    same number every frame, so the key it produces is the same key, so the
+    foot cannot drift.
+    """
+    stride = 2.0 * step_length
+    plant = cycle_offset + step_length * stance_fraction
+    if u <= stance_fraction:
+        return plant, 0.0
+    progress = (u - stance_fraction) / max(1e-6, 1.0 - stance_fraction)
+    along = plant + stride * _smoothstep(progress)
+    lift = step_height * math.sin(math.pi * progress)
+    return along, lift
+
+
+def _foot_roll(u, stance_fraction, roll_deg):
+    """Heel-control X rotation, in degrees, at cycle phase ``u``.
+
+    Positive rolls over the **ball** (heel-off, the ball and toe stay planted
+    to the millimetre); negative pivots about the **heel** (the strike, toe
+    up).  Zero through the middle of stance, which is the window the foot-slide
+    metric finds.
+    """
+    strike = -roll_deg * 0.6
+    if u < ROLL_FLAT_AT:
+        return strike * (1.0 - u / ROLL_FLAT_AT)
+    lift_from = max(ROLL_FLAT_AT, stance_fraction - ROLL_LIFT_FOR)
+    if u <= lift_from:
+        return 0.0
+    if u <= stance_fraction:
+        return roll_deg * (u - lift_from) / max(1e-6, stance_fraction - lift_from)
+    swing = (u - stance_fraction) / max(1e-6, 1.0 - stance_fraction)
+    # roll_deg at toe-off -> back through zero -> the strike angle at contact
+    return roll_deg + (strike - roll_deg) * _smoothstep(swing)
+
+
+@command("rigforge_walk")
+def cmd_rigforge_walk(params):
+    """Author a walk cycle on the leg IK targets, with the stance feet planted.
+
+    ``rigforge_walk {"rig"?, "action"?, "cycle_frames"?, "step_length"?,
+    "step_height"?, "stance_fraction"?, "hip_drop"?, "hip_sway"?,
+    "hip_twist_deg"?, "arm_swing_deg"?, "elbow_bend_deg"?, "foot_roll_deg"?,
+    "travel"?, "loop"?, "clear"?, "interpolation"?, "stride_width"?,
+    "reach_margin"?}``
+
+    Every length parameter is metres and every one of them defaults to a
+    fraction of *this* rig's leg, so the command works on a figurine and an
+    ogre without being told which it is.
+    """
+    started = time.monotonic()
+    warnings = []
+    rig = _rig_for(None, params, key="rig", required=True)
+    scene = get_scene()
+
+    cycle_frames = get_int(params, "cycle_frames", DEFAULT_CYCLE_FRAMES,
+                           minimum=4, maximum=600)
+    stance_fraction = get_float(params, "stance_fraction", DEFAULT_STANCE_FRACTION,
+                                minimum=0.2, maximum=0.95)
+    travel = get_bool(params, "travel", True)
+    interpolation = get_choice(
+        params, "interpolation", {name: name for name in INTERPOLATIONS}, "LINEAR")
+    clear = get_bool(params, "clear", True)
+    reach_margin = get_float(params, "reach_margin", DEFAULT_REACH_MARGIN,
+                             minimum=0.5, maximum=1.2)
+    arm_swing = math.radians(get_float(params, "arm_swing_deg", DEFAULT_ARM_SWING_DEG,
+                                       minimum=0.0, maximum=90.0))
+    elbow_bend = math.radians(get_float(params, "elbow_bend_deg", DEFAULT_ELBOW_BEND_DEG,
+                                        minimum=0.0, maximum=120.0))
+    roll_deg = get_float(params, "foot_roll_deg", DEFAULT_FOOT_ROLL_DEG,
+                         minimum=0.0, maximum=60.0)
+    hip_twist = math.radians(get_float(params, "hip_twist_deg", DEFAULT_HIP_TWIST_DEG,
+                                       minimum=0.0, maximum=45.0))
+
+    limbs = rigforge_rig.ik_limbs(rig)
+    legs = [entry for entry in limbs if entry["limb"] == "leg"]
+    if len(legs) < 2:
+        raise ForgeError(
+            "rigforge_walk keys the legs through their IK targets, and %r has %d of "
+            "them (it needs foot_ik.L and foot_ik.R with an IK_FK switch on "
+            "thigh_parent.L/R). Generate the rig with rigforge_generate_rig, or run "
+            "rigforge_ik to see what this rig actually has. Keying a walk on "
+            "thigh_fk/shin_fk instead is the foot-slide anti-pattern this command "
+            "exists to replace." % (rig.name, len(legs)))
+
+    info = locomotion_frame(rig, limbs)
+    leg_length = info["leg_length"]
+    forward, right, up = info["forward"], info["right"], info["up"]
+
+    step_length = get_float(params, "step_length", STEP_LENGTH_RATIO * leg_length,
+                            minimum=1e-4)
+    step_height = get_float(params, "step_height", STEP_HEIGHT_RATIO * leg_length,
+                            minimum=0.0)
+    hip_drop = get_float(params, "hip_drop", HIP_DROP_RATIO * leg_length, minimum=0.0)
+    hip_sway = get_float(params, "hip_sway", HIP_SWAY_RATIO * leg_length, minimum=0.0)
+    hip_lower = get_float(params, "hip_lower", HIP_LOWER_RATIO * leg_length, minimum=0.0)
+    stride_width = get_float(params, "stride_width", 0.0)
+
+    max_lower = get_float(params, "max_hip_lower", MAX_HIP_LOWER_RATIO * leg_length,
+                          minimum=0.0)
+    if params.get("hip_lower") is not None:
+        max_lower = hip_lower  # asked for explicitly: the stride gives way instead
+    step_length, hip_lower, clamped, deepened = _crouch_for(
+        info, step_length, stance_fraction, hip_drop, hip_lower, reach_margin,
+        max_lower)
+    if deepened:
+        warnings.append(
+            "The hips were lowered to %.3f m below standing height so the legs can "
+            "reach a %.3f m step without stretching. A rig at rest stands with its "
+            "legs straight; a walker's knees are not locked, and a stretched leg does "
+            "not arrive where it was keyed."
+            % (hip_lower, step_length))
+    if clamped:
+        warnings.append(
+            "step_length was shortened to %.3f m: any longer and the leg cannot reach "
+            "its own IK target at contact even with the hips at %.3f m, so Rigify's "
+            "stretch makes up the difference and the foot slides on the deform bones "
+            "while the control sits still." % (step_length, hip_lower))
+    stride = 2.0 * step_length
+
+    wanted_action = get_str(params, "action", "walk")
+    loop = get_bool(params, "loop", True) if params.get("loop") is not None else True
+    wanted_action = loop_name(wanted_action, loop)
+
+    action = bpy.data.actions.get(wanted_action)
+    created = False
+    if action is None:
+        action = bpy.data.actions.new(wanted_action)
+        action.use_fake_user = True
+        created = True
+    cleared = 0
+
+    frames = list(range(1, cycle_frames + 2))
+    keys_set = 0
+    bones_touched = []
+    modes = {}
+    previous_frame = scene.frame_current
+
+    def touched(name):
+        if name not in bones_touched:
+            bones_touched.append(name)
+
+    with object_mode():
+        assign_action(rig, action)
+        if clear:
+            cleared = clear_action(action)
+
+        # Legs on IK, arms on FK, poles live - and keyframed at frame 1, so the
+        # export bake resolves the same rig the animator saw.
+        convention = rigforge_rig.apply_ik_convention(
+            rig, poles=get_bool(params, "poles", True), keyframe_at=frames[0])
+        for entry in convention["limbs"]:
+            touched(entry["switch_bone"])
+
+        root = None
+        for name in ROOT_CONTROLS:
+            if name in rig.pose.bones:
+                root = rig.pose.bones[name]
+                break
+        if root is None and travel:
+            travel = False
+            warnings.append(
+                "This rig has no 'root' bone, so the cycle was authored in place "
+                "(travel=false). Godot's root-motion track wants a bone the skeleton "
+                "does not deform with; without one there is nothing to put it on.")
+        torso = None
+        for name in TORSO_CONTROLS:
+            if name in rig.pose.bones:
+                torso = rig.pose.bones[name]
+                break
+        if torso is None:
+            warnings.append("No torso control (torso/hips/chest) — the hips were not "
+                            "keyed, so the walk has no weight shift.")
+
+        arms = []
+        for entry in limbs:
+            if entry["limb"] != "arm":
+                continue
+            upper = next((rig.pose.bones[n] for n in entry["fk_chain"]
+                          if "upper_arm" in n and n in rig.pose.bones), None)
+            fore = next((rig.pose.bones[n] for n in entry["fk_chain"]
+                         if "forearm" in n and n in rig.pose.bones), None)
+            if upper is not None:
+                arms.append({"side": entry["side"], "upper": upper, "fore": fore,
+                             "upper_rest": _rest_world(rig, upper),
+                             "fore_rest": _rest_world(rig, fore) if fore else None})
+        if not arms:
+            warnings.append("No FK arm control was found, so the arms do not swing.")
+
+        rest_root = _rest_world(rig, root) if root is not None else None
+        rest_torso = _rest_world(rig, torso) if torso is not None else None
+        heels = {}
+        for name, foot in info["feet"].items():
+            pivot = foot.get("heel_pivot")
+            bone = rig.pose.bones.get(pivot or "")
+            if bone is None:
+                continue
+            if bone.rotation_mode == "QUATERNION":
+                modes[bone.name] = bone.rotation_mode
+                bone.rotation_mode = "XYZ"
+            heels[name] = bone
+
+        # Phase offset: the left foot contacts at the top of the cycle, the
+        # right half a cycle later. That half-cycle IS the gait.
+        offsets = {}
+        for index, name in enumerate(sorted(info["feet"])):
+            offsets[name] = 0.0 if info["feet"][name]["side"] == "L" else 0.5
+
+        plants = {name: [] for name in info["feet"]}
+        for frame in frames:
+            t = float(frame - frames[0]) / float(cycle_frames)
+            scene.frame_set(frame)
+
+            body = stride * t
+            if root is not None:
+                matrix = rest_root.copy()
+                if travel:
+                    matrix.translation = rest_root.translation + forward * body
+                _set_world(rig, root, matrix)
+                keys_set += _key_transform(root, frame)
+                touched(root.name)
+                refresh_view_layer()
+
+            for name in sorted(info["feet"]):
+                foot = info["feet"][name]
+                target = rig.pose.bones.get(foot["target"])
+                if target is None:
+                    continue
+                u = (t - offsets[name]) % 1.0
+                cycle_offset = stride * math.floor((t - offsets[name]) + 1e-9)
+                along, lift = _foot_offset(u, stance_fraction, step_length, step_height,
+                                           cycle_offset)
+                if not travel:
+                    along -= body
+                lateral = stride_width * (1.0 if foot["side"] == "L" else -1.0)
+                matrix = foot["rest"].copy()
+                matrix.translation = (foot["rest"].translation + forward * along
+                                      + right * lateral + up * lift)
+                _set_world(rig, target, matrix)
+                keys_set += _key_transform(target, frame)
+                touched(target.name)
+                if u <= stance_fraction:
+                    plants[name].append(frame)
+                heel = heels.get(name)
+                if heel is not None:
+                    heel.rotation_euler = (math.radians(
+                        _foot_roll(u, stance_fraction, roll_deg)), 0.0, 0.0)
+                    heel.keyframe_insert("rotation_euler", frame=frame)
+                    keys_set += 3
+                    touched(heel.name)
+
+            if torso is not None:
+                bob = -hip_lower - hip_drop * math.cos(4.0 * math.pi * t)
+                sway = hip_sway * math.sin(2.0 * math.pi * t)
+                matrix = rest_torso.copy()
+                matrix.translation = rest_torso.translation + up * bob + right * sway
+                if hip_twist:
+                    matrix = _rotate_about(matrix, up,
+                                           hip_twist * math.sin(2.0 * math.pi * t),
+                                           rest_torso.translation)
+                _set_world(rig, torso, matrix)
+                keys_set += _key_transform(torso, frame)
+                touched(torso.name)
+
+            for arm in arms:
+                # Opposite the leg of the same side: the left arm goes back as
+                # the left leg comes forward.
+                phase = 0.0 if arm["side"] == "L" else 0.5
+                angle = arm_swing * math.sin(2.0 * math.pi * (t - phase) + math.pi)
+                sign = 1.0 if arm["side"] == "L" else -1.0
+                upper = arm["upper"]
+                matrix = _rotate_about(arm["upper_rest"], right, angle * sign,
+                                       arm["upper_rest"].translation)
+                _set_world(rig, upper, matrix)
+                keys_set += _key_transform(upper, frame)
+                touched(upper.name)
+                if arm["fore"] is not None:
+                    refresh_view_layer()
+                    bend = elbow_bend * (0.5 + 0.5 * math.sin(
+                        2.0 * math.pi * (t - phase) + math.pi))
+                    fore_rest = arm["fore_rest"]
+                    bent = _rotate_about(fore_rest, right, bend * sign,
+                                         fore_rest.translation)
+                    carried = _rotate_about(bent, right, angle * sign,
+                                            arm["upper_rest"].translation)
+                    _set_world(rig, arm["fore"], carried)
+                    keys_set += _key_transform(arm["fore"], frame)
+                    touched(arm["fore"].name)
+
+        applied = 0
+        for curve in rigforge_rig.action_fcurves(action):
+            for point in curve.keyframe_points:
+                point.interpolation = interpolation
+                applied += 1
+            try:
+                curve.update()
+            except (AttributeError, RuntimeError):  # pragma: no cover
+                pass
+
+    scene.frame_set(previous_frame)
+    refresh_view_layer()
+
+    if modes:
+        warnings.append(
+            "Rotation mode changed to XYZ euler on %s so the foot roll is one readable "
+            "channel." % ", ".join(sorted(modes)))
+
+    steps = []
+    for name in sorted(plants):
+        runs = []
+        for frame in plants[name]:
+            if runs and frame == runs[-1][-1] + 1:
+                runs[-1].append(frame)
+            else:
+                runs.append([frame])
+        steps.append({"foot": name, "target": info["feet"][name]["target"],
+                      "stance_runs": [[run[0], run[-1]] for run in runs],
+                      "stance_frames": sum(len(run) for run in runs)})
+
+    return {
+        "rig": rig.name,
+        "action": action.name,
+        "created": created,
+        "loop": is_loop(action.name),
+        "travel": travel,
+        "cycle_frames": cycle_frames,
+        "frame_range": [frames[0], frames[-1]],
+        "stance_fraction": round(stance_fraction, 4),
+        "step_length_m": round(step_length, 5),
+        "stride_m": round(stride, 5),
+        "step_height_m": round(step_height, 5),
+        "hip_drop_m": round(hip_drop, 5),
+        "hip_sway_m": round(hip_sway, 5),
+        "hip_lower_m": round(hip_lower, 5),
+        "leg_length_m": round(leg_length, 5),
+        "step_length_reach_clamped": clamped,
+        "hip_lower_deepened": deepened,
+        "forward_axis": [round(v, 4) for v in forward],
+        "convention": convention["convention"],
+        "ik_limbs": [entry["name"] for entry in convention["limbs"]],
+        "poles": convention["poles"],
+        "feet": steps,
+        "bones": bones_touched,
+        "keys_set": keys_set,
+        "cleared_fcurves": cleared,
+        "fcurves": len(rigforge_rig.action_fcurves(action)),
+        "interpolation": interpolation,
+        "interpolated_points": applied,
+        "rotation_modes": modes,
+        "says": (
+            "%s: %d-frame cycle, %.0f mm stride, feet keyed on %s with %.0f%% of the "
+            "cycle planted. %s"
+            % (action.name, cycle_frames, stride * 1000.0,
+               " and ".join(step["target"] for step in steps),
+               stance_fraction * 100.0,
+               "The root carries the travel (export with root_motion)." if travel
+               else "In place: the feet run backwards at one shared speed.")),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }

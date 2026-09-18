@@ -1,4 +1,12 @@
-"""``rig_check`` — the headless deformation harness.
+"""``rig_check`` — the headless deformation harness, and ``animation_check``.
+
+Two gates live here.  ``rig_check`` poses the rig and measures the flesh (below).
+``animation_check`` is its sibling for a *clip*: it measures **foot slide** —
+how far a planted foot drifts through the frames it is supposed to be standing
+still — in millimetres per step, with no render and nothing judged by eye.  The
+section that implements it, near the bottom of this file, argues for every
+choice it makes.
+
 
 Every rigging tool on the market stops at "the rig generated".  Nobody ships an
 answer to the question the artist asks next, which is *does it deform*.  This
@@ -81,6 +89,7 @@ from .common import (
     M_TO_MM,
     find_object,
     get_bool,
+    get_choice,
     get_float,
     get_int,
     object_mode,
@@ -92,8 +101,13 @@ __all__ = [
     "JOINT_TABLE",
     "THRESHOLDS",
     "POSE_SETS",
+    "FOOT_SLIDE_THRESHOLDS",
+    "CONTACT_CANDIDATES",
     "enumerate_joints",
+    "contact_points",
+    "stance_runs",
     "cmd_rig_check",
+    "cmd_animation_check",
 ]
 
 
@@ -970,6 +984,492 @@ def cmd_rig_check(params):
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
+
+
+# ---------------------------------------------------------------------------
+# ``animation_check`` — the foot-slide metric
+# ---------------------------------------------------------------------------
+#
+# ``rig_check`` answers *does it deform*.  This answers the other question a
+# finished character fails on, and it is the one nobody measures: **do the feet
+# stay where they were put**.
+#
+# Foot slide is not a matter of taste.  A walk cycle whose legs were keyed in
+# FK — two rotations per leg per key — has nothing at all holding the foot on
+# the ground between those keys: the contact point's world position is whatever
+# the rotations happen to multiply out to, and it moves every frame of what is
+# supposed to be a *plant*.  In the engine the character skates.  The fix is to
+# key the foot's IK target and hold it still, and the difference between the
+# two is a **distance in millimetres**, which means it can be gated.
+#
+# What is measured
+# ----------------
+# The **ball of the foot** (the toe bone's head, which is the foot bone's tail —
+# the point a foot pivots over), tracked in world space for every frame of the
+# clip.  Not the ankle: a correct heel-off rolls the whole foot over the ball,
+# so the ankle *should* travel while the foot is planted, and measuring it
+# would fail the very technique it is supposed to reward.  Measured on Rigify's
+# generated foot roll, rolling the heel control moves the ball and toe by
+# 0.0 mm, which is exactly why the ball is the right point.
+#
+# How a stance phase is found
+# ---------------------------
+# Deterministically, from the track itself, with no tags and no VLM:
+#
+# 1. **Lowest.** The frames where the ball sits within
+#    :data:`CONTACT_BAND` of its own lowest point over the clip.
+# 2. **Contiguous.** Runs of at least :data:`MIN_STANCE_FRAMES` such frames.
+#    A run is one step.
+# 3. **Moving least.** Inside a run, leading and trailing samples travelling
+#    more than three times the run's own median speed are trimmed — that is the
+#    heel strike arriving and the toe leaving, not the plant.
+#
+# The drift of a step is the **diameter of the planted point's position cloud**
+# over that run, horizontally, in millimetres — not its distance from the first
+# sample, because a foot that slides out and back would read zero.
+#
+# Two modes, because there are two kinds of clip
+# ----------------------------------------------
+# * ``planted`` — the clip travels (root motion).  The stance foot is world
+#   fixed, so the expected drift is **zero** and the measurement is raw.
+# * ``in_place`` — the treadmill clip an engine plays while its own controller
+#   moves the character.  The feet *must* run backwards during stance; what
+#   must not vary is the speed.  One shared velocity — pooled over every stance
+#   sample of both feet — is removed first, and the residual is the slide.
+#
+# ``auto`` picks between them by asking whether the body travelled at all.
+
+#: How high above its lowest sample the ball may sit and still count as down,
+#: as a fraction of the ball's whole vertical range over the clip.
+CONTACT_BAND = 0.2
+
+#: Shorter than this and a "stance" is one frame of a swing passing through.
+MIN_STANCE_FRAMES = 3
+
+#: A sample moving faster than this multiple of its run's median speed is the
+#: strike or the toe-off, not the plant.  The floor stops a perfectly planted
+#: run (median 0) from trimming itself away over floating-point dust.
+STANCE_SPEED_FACTOR = 3.0
+STANCE_SPEED_FLOOR_MM = 1.0
+
+#: The verdict bands, in millimetres of drift per step.
+#:
+#: **Credibility tier: heuristic (proxy).**  Not calibrated against artist
+#: accept/reject decisions; they are the scale at which a slide becomes visible
+#: on a character a metre and a half tall — a few millimetres is the noise a
+#: solver leaves behind, a centimetre reads as skating at walking speed.  The
+#: number is always reported next to the band that judged it.
+FOOT_SLIDE_THRESHOLDS = {"drift_mm": {"ok": 5.0, "attention": 20.0}}
+
+#: Bones that stand in for "the body", best first, for the travel test.
+BODY_CONTROLS = ("root", "torso", "hips", "DEF-spine", "spine_fk")
+
+#: Contact-point candidates per side: ``(bone name pattern, head|tail)``.
+#: The ball first, the ankle only when there is no toe at all.
+CONTACT_CANDIDATES = (
+    ("DEF-toe.%s", "head"),
+    ("toe.%s", "head"),
+    ("ORG-toe.%s", "head"),
+    ("DEF-foot.%s", "tail"),
+    ("foot.%s", "tail"),
+    ("ORG-foot.%s", "tail"),
+    ("DEF-front_toe.%s", "head"),
+    ("DEF-front_foot.%s", "tail"),
+)
+
+
+def _slide_band(value):
+    if value is None:
+        return "unmeasured"
+    bands = FOOT_SLIDE_THRESHOLDS["drift_mm"]
+    if value <= bands["ok"]:
+        return "ok"
+    if value <= bands["attention"]:
+        return "attention"
+    return "fail"
+
+
+def contact_points(rig, wanted=None):
+    """The world point on each foot that a plant is measured at.
+
+    ``wanted`` overrides the search with explicit bone names (``"DEF-toe.L"``,
+    or ``"DEF-foot.L:tail"``), for a rig whose feet are not named like a biped's.
+    """
+    out = []
+    if wanted:
+        for raw in wanted:
+            text = str(raw).strip()
+            if not text:
+                continue
+            point = "head"
+            if ":" in text:
+                text, point = text.rsplit(":", 1)
+                point = point.strip().lower()
+                if point not in ("head", "tail"):
+                    raise ForgeError(
+                        "A foot must be named 'bone' or 'bone:head' / 'bone:tail' "
+                        "(got %r)." % raw)
+            if text not in rig.pose.bones:
+                raise ForgeError("Rig %r has no pose bone %r to measure a plant on."
+                                 % (rig.name, text))
+            side = "L" if text.endswith(".L") else ("R" if text.endswith(".R") else None)
+            out.append({"foot": text, "bone": text, "point": point, "side": side})
+        return out
+    for side in ("L", "R"):
+        for pattern, point in CONTACT_CANDIDATES:
+            name = pattern % side
+            if name in rig.pose.bones:
+                out.append({"foot": "foot.%s" % side, "bone": name, "point": point,
+                            "side": side})
+                break
+    return out
+
+
+def _point_of(rig, spec):
+    bone = rig.pose.bones[spec["bone"]]
+    local = bone.tail if spec["point"] == "tail" else bone.head
+    return rig.matrix_world @ local
+
+
+def _horizontal(vector):
+    return Vector((vector.x, vector.y, 0.0))
+
+
+def _diameter(points):
+    """The widest distance between any two of them (they are few, and this is exact)."""
+    worst = 0.0
+    for index, first in enumerate(points):
+        for second in points[index + 1:]:
+            worst = max(worst, (first - second).length)
+    return worst
+
+
+def _median(values):
+    ordered = sorted(values)
+    if not ordered:
+        return 0.0
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return 0.5 * (ordered[middle - 1] + ordered[middle])
+
+
+def stance_runs(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES):
+    """Index runs where the tracked point is down and holding still.
+
+    ``track`` is a list of world positions, one per sampled frame, in order.
+    Returns ``[[i, i+1, ...], ...]`` — see the section header for the rule.
+    """
+    if len(track) < minimum:
+        return []
+    heights = [point.z for point in track]
+    low, high = min(heights), max(heights)
+    ceiling = low + max(band * (high - low), 1e-5)
+    runs = []
+    current = []
+    for index, height in enumerate(heights):
+        if height <= ceiling:
+            current.append(index)
+        else:
+            if len(current) >= minimum:
+                runs.append(current)
+            current = []
+    if len(current) >= minimum:
+        runs.append(current)
+
+    trimmed = []
+    for run in runs:
+        speeds = [(_horizontal(track[run[i + 1]]) - _horizontal(track[run[i]])).length
+                  for i in range(len(run) - 1)]
+        if not speeds:
+            continue
+        limit = max(STANCE_SPEED_FACTOR * _median(speeds),
+                    STANCE_SPEED_FLOOR_MM / M_TO_MM)
+        start, end = 0, len(run) - 1
+        while end - start + 1 > minimum and speeds[start] > limit:
+            start += 1
+        while end - start + 1 > minimum and speeds[end - 1] > limit:
+            end -= 1
+        trimmed.append(run[start:end + 1])
+    return [run for run in trimmed if len(run) >= minimum]
+
+
+def _body_travel(rig, tracks):
+    """How far "the body" moved horizontally over the clip, and on which bone."""
+    for name in BODY_CONTROLS:
+        track = tracks.get(name)
+        if not track:
+            continue
+        return name, (_horizontal(track[-1]) - _horizontal(track[0])).length
+    return None, 0.0
+
+
+@command("animation_check")
+def cmd_animation_check(params):
+    """Measure foot slide on a clip: per-step drift in millimetres, with a verdict.
+
+    ``animation_check {"rig"?, "action"?, "mode"?: "auto"|"planted"|"in_place",
+    "frame_step"?, "contact_band"?, "min_stance_frames"?, "feet"?: [bones]}``
+
+    Deterministic and geometric — no render, no model, nothing judged by eye.
+    The rig's pose, action and the scene's frame are all restored.
+    """
+    started = time.monotonic()
+    warnings = []
+    rig = _resolve_rig_loose(params)
+    scene = bpy.context.scene
+
+    wanted_action = params.get("action")
+    if isinstance(wanted_action, str) and wanted_action.strip():
+        action = bpy.data.actions.get(wanted_action.strip())
+        if action is None:
+            raise ForgeError(
+                "No action called %r. The actions in this file are: %s."
+                % (wanted_action.strip(),
+                   ", ".join(sorted(a.name for a in bpy.data.actions)) or "none"))
+    else:
+        action = rig.animation_data.action if rig.animation_data else None
+        if action is None:
+            raise ForgeError(
+                "%r has no action assigned and none was named, so there is no "
+                "animation to measure. Pass 'action'." % rig.name)
+
+    mode = get_choice(params, "mode",
+                      {"AUTO": "auto", "PLANTED": "planted", "TRAVELLING": "planted",
+                       "IN_PLACE": "in_place", "INPLACE": "in_place"}, "auto")
+    frame_step = get_int(params, "frame_step", 1, minimum=1, maximum=10)
+    band = get_float(params, "contact_band", CONTACT_BAND, minimum=0.01, maximum=0.9)
+    minimum = get_int(params, "min_stance_frames", MIN_STANCE_FRAMES, minimum=2,
+                      maximum=1000)
+
+    raw_feet = params.get("feet")
+    if isinstance(raw_feet, str):
+        raw_feet = [raw_feet]
+    specs = contact_points(rig, raw_feet)
+    if len(specs) < 1:
+        raise ForgeError(
+            "No foot contact point was found on %r. This metric measures the ball of "
+            "the foot (DEF-toe.<side> head, or DEF-foot.<side> tail); name the bones "
+            "with 'feet' if this rig calls them something else." % rig.name)
+    if len(specs) < 2:
+        warnings.append("Only one foot (%s) was found, so this is half a gait."
+                        % specs[0]["bone"])
+
+    span = action.frame_range
+    start, end = int(math.floor(span[0])), int(math.ceil(span[1]))
+    if end <= start:
+        raise ForgeError("Action %r covers a single frame (%d); there is no motion to "
+                         "measure." % (action.name, start))
+    looping = action.name.endswith(rigforge_rig.LOOP_SUFFIX)
+    last = end - frame_step if looping and (end - start) >= 2 * frame_step else end
+    if looping and last != end:
+        warnings.append(
+            "%r is a loop, so its last frame repeats its first; the duplicate was left "
+            "out of the sample rather than counted as a second plant." % action.name)
+    frames = list(range(start, last + 1, frame_step))
+
+    snapshot = _capture_pose(rig)
+    previous_action = rig.animation_data.action if rig.animation_data else None
+    previous_frame = scene.frame_current
+    tracks = {spec["bone"]: [] for spec in specs}
+    for name in BODY_CONTROLS:
+        if name in rig.pose.bones:
+            tracks.setdefault(name, [])
+    try:
+        with object_mode():
+            rigforge_rig.assign_action(rig, action)
+            for frame in frames:
+                scene.frame_set(frame)
+                refresh_view_layer()
+                for spec in specs:
+                    tracks[spec["bone"]].append(_point_of(rig, spec))
+                for name in list(tracks):
+                    if name in rig.pose.bones and not any(
+                            s["bone"] == name for s in specs):
+                        bone = rig.pose.bones[name]
+                        tracks[name].append(rig.matrix_world @ bone.head)
+    finally:
+        scene.frame_set(previous_frame)
+        try:
+            rigforge_rig.assign_action(rig, previous_action)
+        except (AttributeError, TypeError, RuntimeError):  # pragma: no cover
+            pass
+        _restore_pose(rig, snapshot, {})
+
+    body_bone, body_travel = _body_travel(rig, tracks)
+    all_runs = {}
+    for spec in specs:
+        all_runs[spec["bone"]] = stance_runs(tracks[spec["bone"]], band=band,
+                                             minimum=minimum)
+
+    excursions = {spec["bone"]: _diameter([_horizontal(p) for p in tracks[spec["bone"]]])
+                  for spec in specs}
+    biggest = max(excursions.values()) if excursions else 0.0
+    if mode == "auto":
+        if biggest <= 1e-6:
+            mode, reason = "planted", "nothing moved horizontally at all"
+        elif body_travel > 0.2 * biggest:
+            mode = "planted"
+            reason = ("%s travelled %.0f mm across the clip, so this is a travelling "
+                      "(root-motion) clip and a planted foot should not move at all"
+                      % (body_bone, body_travel * M_TO_MM))
+        else:
+            mode = "in_place"
+            reason = ("%s travelled %.0f mm across the clip against %.0f mm of foot "
+                      "excursion, so this is an in-place (treadmill) clip and the feet "
+                      "are expected to run backwards at one shared speed"
+                      % (body_bone or "the body", body_travel * M_TO_MM,
+                         biggest * M_TO_MM))
+    else:
+        reason = "asked for by the caller"
+
+    treadmill = Vector((0.0, 0.0, 0.0))
+    if mode == "in_place":
+        # One shared velocity for the whole clip, pooled over every stance
+        # sample of both feet. Pooled rather than per-phase on purpose: a
+        # per-phase fit would subtract each foot's own slide and pass anything,
+        # and pooled rather than a median because the residual it leaves is
+        # what the gate is actually about.
+        total = Vector((0.0, 0.0, 0.0))
+        spans = 0
+        for spec in specs:
+            track = tracks[spec["bone"]]
+            for run in all_runs[spec["bone"]]:
+                if len(run) < 2:
+                    continue
+                total += _horizontal(track[run[-1]]) - _horizontal(track[run[0]])
+                spans += len(run) - 1
+        if spans:
+            treadmill = total / float(spans)
+
+    feet_report = []
+    worst_step = None
+    for spec in specs:
+        track = tracks[spec["bone"]]
+        steps = []
+        for index, run in enumerate(all_runs[spec["bone"]]):
+            points = []
+            for offset, sample in enumerate(run):
+                point = _horizontal(track[sample])
+                if mode == "in_place":
+                    point = point - treadmill * float(offset)
+                points.append(point)
+            drift = _diameter(points)
+            heights = [track[sample].z for sample in run]
+            entry = {
+                "step": index + 1,
+                "frames": [frames[run[0]], frames[run[-1]]],
+                "samples": len(run),
+                "drift_mm": round(drift * M_TO_MM, 2),
+                "lift_mm": round((max(heights) - min(heights)) * M_TO_MM, 2),
+                "drift_pct_of_excursion": (
+                    round(100.0 * drift / excursions[spec["bone"]], 2)
+                    if excursions[spec["bone"]] > 1e-9 else None),
+                "verdict": _slide_band(drift * M_TO_MM),
+            }
+            steps.append(entry)
+            if worst_step is None or entry["drift_mm"] > worst_step["drift_mm"]:
+                worst_step = dict(entry, foot=spec["foot"], bone=spec["bone"])
+        worst = max((s["drift_mm"] for s in steps), default=None)
+        verdict = _slide_band(worst)
+        if not steps:
+            verdict = "unmeasured"
+        feet_report.append({
+            "foot": spec["foot"],
+            "bone": spec["bone"],
+            "point": spec["point"],
+            "samples": len(track),
+            "ground_mm": round(min(p.z for p in track) * M_TO_MM, 2),
+            "excursion_mm": round(excursions[spec["bone"]] * M_TO_MM, 2),
+            "steps_measured": len(steps),
+            "steps": steps,
+            "worst_drift_mm": worst,
+            "verdict": verdict,
+            "says": (
+                "%s never plants: no run of %d frames sits within %.0f%% of its lowest "
+                "point, so there is no stance to measure."
+                % (spec["bone"], minimum, band * 100.0) if not steps else
+                "%s plants %d time(s); the worst step slides %.1f mm."
+                % (spec["bone"], len(steps), worst)),
+        })
+
+    measured = [foot for foot in feet_report if foot["steps_measured"]]
+    worst_overall = max((foot["worst_drift_mm"] for foot in measured), default=None)
+    gate = _slide_band(worst_overall) if measured else "unmeasured"
+    if not measured:
+        warnings.append(
+            "No stance phase was found on any foot. Either the clip has no ground "
+            "contact at all, or the feet never hold still long enough to be one - "
+            "which is itself what a pure-FK walk looks like. Lower "
+            "'min_stance_frames', or widen 'contact_band'.")
+
+    if gate == "ok":
+        says = ("Feet hold. Worst step slides %.1f mm across %d measured step(s) - "
+                "under the %.0f mm this gate calls planted."
+                % (worst_overall, sum(f["steps_measured"] for f in measured),
+                   FOOT_SLIDE_THRESHOLDS["drift_mm"]["ok"]))
+    elif gate == "unmeasured":
+        says = ("Nothing could be measured: no foot on %r holds still near the ground "
+                "for %d frames in %r." % (rig.name, minimum, action.name))
+    else:
+        says = ("Feet slide. The worst planted step moves %.1f mm (%s, frames %d-%d) - "
+                "%s. An FK-keyed leg is the usual cause; key the feet through their IK "
+                "targets (rigforge_walk) and measure again."
+                % (worst_step["drift_mm"], worst_step["bone"],
+                   worst_step["frames"][0], worst_step["frames"][1],
+                   "worth a look" if gate == "attention" else "that reads as skating"))
+
+    return {
+        "rig": rig.name,
+        "action": action.name,
+        "mode": mode,
+        "mode_reason": reason,
+        "frames": [frames[0], frames[-1]],
+        "frame_step": frame_step,
+        "samples": len(frames),
+        "looping": looping,
+        "contact_band": round(band, 4),
+        "min_stance_frames": minimum,
+        "body_bone": body_bone,
+        "body_travel_mm": round(body_travel * M_TO_MM, 2),
+        "treadmill_mm_per_frame": round(treadmill.length * M_TO_MM, 3),
+        "feet": feet_report,
+        "steps_measured": sum(foot["steps_measured"] for foot in feet_report),
+        "worst_step": worst_step,
+        "worst_drift_mm": worst_overall,
+        "gate": gate,
+        "thresholds": FOOT_SLIDE_THRESHOLDS,
+        "threshold_tier": (
+            "heuristic (proxy tier): the scale at which a slide becomes visible, not "
+            "values calibrated against artist accept/reject decisions. The measurement "
+            "is reported next to the band that judged it."),
+        "says": says,
+        "pose_restored": True,
+        "warnings": warnings,
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+def _resolve_rig_loose(params):
+    """:func:`_resolve_rig`, but a rig with no mesh on it is still a rig.
+
+    ``rig_check`` needs a skinned mesh because it measures flesh; foot slide is
+    measured on the bones, so an unskinned skeleton is a perfectly good subject
+    and refusing it would be a rule with no reason behind it.
+    """
+    try:
+        return _resolve_rig(params)
+    except ForgeError:
+        name = params.get("rig")
+        if isinstance(name, str) and name.strip():
+            raise
+        candidates = [obj for obj in bpy.data.objects if obj.type == "ARMATURE"]
+        if len(candidates) == 1:
+            return candidates[0]
+        active = bpy.context.view_layer.objects.active
+        if active is not None and active.type == "ARMATURE":
+            return active
+        raise
 
 
 # ---------------------------------------------------------------------------

@@ -689,10 +689,12 @@ nobody is allowed to fail on.
 | type | params | does |
 |---|---|---|
 | `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it to the tags; ear/tail tags become bone chains. With `joints_file`, a neural detector's predicted joints refine that fit (see [The rigging bridge](#the-rigging-bridge-phase-4-stage-4a-joints_file)). Returns `metarig`, `bone_count`, `mapping` (tag → bones), `chains`, `landmarks`, `joints`, `warnings` |
-| `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`** | Rigify generate → automatic weights → per-tag weight cleanup. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, `warnings` |
+| `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`** | Rigify generate → automatic weights → per-tag weight cleanup → the IK layer put on the game convention. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, **`ik`**, `warnings` |
+| **`rigforge_ik`** | `rig?`, `action?` `report`\|`set`, `legs?` `ik`\|`fk`, `arms?` `ik`\|`fk`, `limbs?`, `mode?`, `poles?`, `frame?` | reports or sets the **FK/IK layer, per limb**: foot/hand IK targets, knee/elbow pole targets, the three foot-roll pivots, the `IK_FK` switch on each limb's parent control, and the IK constraints with their chain counts. `set` + `frame` keyframes the switch. Control properties only — the deform set never changes. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts and the two numbers that mean trouble; or re-runs the rules |
 | `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents` |
 | **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?` | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) |
+| **`animation_check`** | `rig?`, `action?`, `mode?` `auto`\|`planted`\|`in_place`, `frame_step?`, `contact_band?`, `min_stance_frames?`, `feet?` | the **foot-slide metric**: for every stance phase in a clip, how far the planted foot drifts, in millimetres. Returns per-step drift, the worst step, a `gate` and the `thresholds` that judged it. Deterministic, geometric, nothing rendered. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 
 Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
 sketch; every one has a default that reproduces the sketch's behaviour.
@@ -703,7 +705,8 @@ sketch; every one has a default that reproduces the sketch's behaviour.
 |---|---|---|
 | `rigforge_cloth` | `object?`, `tags` \| `use_selection`, `name?`, `offset_mm?`, `thickness_mm?`, `preset` `cotton`\|`leather`\|`heavy`, `output` `skin_tight`\|`shapekeys`\|`bones`, `frames?`, `collision?`, **`self_collision?`**, **`subdivide?`**, **`rig?`** | grows a garment from the tagged faces, offsets, thickens, weights it to the rig, and (for `shapekeys`) settles it with a cloth sim baked into a `Settled` shape key. Returns `garment`, `output`, `shape_keys`, `physics`, `weights`, `sim`, `warnings` |
 | `rigforge_action` | `action` `new`\|`list`\|`delete`\|`duplicate`\|`rename`\|`push_nla`, `name?`, `source?`, `rig?`, `loop?`, **`new_name?`** | the Godot action library, with the `-loop` convention enforced in both directions. Every call returns the whole library in `actions` |
-| `rigforge_keyframe` | `rig`, `action`, `keys`, `interpolation?`, `clear?`, **`loop?`**, **`fk_switch?`** | batch keyframing on control bones. Returns `action`, `keys_set`, `frame_range`, `bones`, `rotation_modes`, `fk_switched` |
+| `rigforge_keyframe` | `rig`, `action`, `keys`, `interpolation?`, `clear?`, **`loop?`**, **`fk_switch?`** | batch keyframing on control bones. Returns `action`, `keys_set`, `frame_range`, `bones`, `rotation_modes`, `fk_switched`, **`fk_limbs`**. `fk_switch: "auto"` (the default) now switches **only the limbs it is keying** — see [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
+| **`rigforge_walk`** | `rig?`, `action?`, `cycle_frames?`, `step_length?`, `step_height?`, `stance_fraction?`, `hip_drop?`, `hip_sway?`, `hip_lower?`, `hip_twist_deg?`, `arm_swing_deg?`, `elbow_bend_deg?`, `foot_roll_deg?`, `travel?`, `stride_width?`, `reach_margin?`, `loop?`, `clear?`, `interpolation?` | authors a **walk cycle on the leg IK targets**, stance phases world-locked, with hips, torso, arm swing and the heel/ball foot roll layered over. `travel: true` (default) advances the `root` a stride per cycle; `false` is the in-place treadmill clip. Every length defaults to a fraction of *this* rig's leg. Returns the stride and step it used, the stance runs per foot, and what it keyed |
 | `rigforge_retarget` | `source_path` (.bvh/.fbx you supply), `target_rig`, `action_name`, `mapping?` `auto`\|`{src: dst}`, `loop?`, `scale?`, **`frame_step?`**, **`replace?`**, **`fk_switch?`** | imports the clip into a temp collection, maps bones by name heuristics, bakes onto the FK controls, deletes the import. Returns `action`, `mapped`, `unmapped`, `frames`, `scale` |
 
 Parameters in **bold** are additive refinements beyond the Phase 5 sketch; every one has a
@@ -2038,6 +2041,122 @@ downloads nothing and writes nothing to disk.
   the tags won, and `rig_check`'s thresholds are heuristic — otherwise an agent will read
   a `fail` as a fact about the artist's work rather than a band it can argue with.
 
+### IK, and the foot-slide gate (`rigforge_ik`, `rigforge_walk`, `animation_check`)
+
+An audit of a generated character asked the question nobody in this repo had answered in
+writing: *are we actually doing best practices, like inverse kinematics for the legs?*
+What it found was a walk cycle keyed on `thigh_fk` / `shin_fk`. Three answers came out of
+chasing it, and they are not the ones the question expects.
+
+**1. The rig builder is Rigify, and it was never short of IK.** The 29 bones an audit
+sees are the **metarig** — `basic_human`, 29 bones, which is exactly what
+`rigforge_metarig` places and fits. Rigify's generate turns those 29 into a **222-bone
+control rig**, of which 35 deform. Measured on the installed Blender 5.0.1, that rig ships:
+
+| what | bones |
+|---|---|
+| leg IK target | `foot_ik.L/R` |
+| knee pole target | `thigh_ik_target.L/R` |
+| foot roll, three pivots | `foot_heel_ik` (the roll), `foot_spin_ik` (the spin), `toe_ik` (the toe) |
+| arm IK target | `hand_ik.L/R` |
+| elbow pole target | `upper_arm_ik_target.L/R` |
+| per-limb FK/IK switch | `IK_FK` on `thigh_parent.L/R` and `upper_arm_parent.L/R` |
+| the solvers | real `IK` constraints on `MCH-shin_ik.*` / `MCH-forearm_ik.*`, chain length 2 |
+
+So there was nothing to import and nothing to build. A custom lightweight skeleton was
+the other option and it was **not taken**: it would have thrown away a foot roll, two
+pole variants per limb and a tested FK/IK blend in order to reproduce them worse.
+
+**2. Forge's own tooling was switching it off.** `rigforge_keyframe` and
+`rigforge_retarget` called `set_fk` on the **whole rig** whenever any FK bone appeared in
+the keys. Keying one arm therefore moved both legs to FK, silently, and an FK-keyed leg is
+the foot-slide anti-pattern: two rotations per leg per key, nothing at all holding the
+foot on the ground in between. `fk_switch: "auto"` now switches **only the limbs whose FK
+controls are in the pass** (reported as `fk_limbs`), warns when an IK leg was deliberately
+left alone, and `fk_switch: true` still switches everything — because a full-body mocap
+bake genuinely wants that.
+
+**3. The convention is now stated, defaulted and reported.** `rigforge_generate_rig`
+leaves every rig with **legs on IK, arms on FK** — the game-animation convention — with
+both pole targets live, and says so in its `ik` block. Pole targets matter more than they
+look: with `pole_vector` off (Rigify's default) the pole bone exists, is hidden, and
+moving it changes the knee by **0.0 mm**. Switching it on is what makes the knee
+directable.
+
+Two more things follow from this, and both are commands.
+
+**`rigforge_walk` — locomotion, keyed where it belongs.** Contact, down, pass and up, as
+**foot-target positions** rather than leg rotations, with the stance phase world-locked by
+construction: between contact and toe-off the command writes the same position every
+frame, so the foot cannot drift. Over that go the hip bob (twice a cycle) and sway (once),
+the torso twist, the FK arm swing in opposition to the legs, and the heel/ball foot roll.
+Every length parameter defaults to a fraction of *this* rig's leg, and the forward axis is
+derived from the direction the toes point, so a figurine, an ogre and a character built
+facing any direction all walk correctly without being told which they are.
+
+It also refuses to write a stride the leg cannot reach. A target out of reach is worse
+than a short stride — Rigify's stretch makes up the difference, the foot never arrives
+where it was keyed, and it slides on the deform bones while the control sits perfectly
+still. So the hips are **lowered** to buy knee bend first (a walker's knees are not
+locked), up to 20% of the leg's length, and only then is the step shortened — with a
+warning either way.
+
+`travel: true` (the default) advances `root` one stride per cycle and leaves each planted
+foot at a fixed world position: a root-motion clip, which `rigforge_export_godot
+root_motion: true` ships on the root track. `travel: false` is the same cycle with the
+body's travel subtracted — the treadmill clip an engine plays while its own controller
+moves the character. Both loop seamlessly.
+
+**`animation_check` — the number.** Foot slide is not a matter of taste, so it is measured:
+
+- **What.** The **ball of the foot** (the toe bone's head, which is the foot bone's tail),
+  tracked in world space every frame. Not the ankle: a correct heel-off rolls the whole
+  foot over the ball, so the ankle *should* travel while the foot is planted, and
+  measuring it would fail the very technique it exists to reward. Measured on the
+  generated rig, rolling the heel control 25° moves the ball and the toe by **0.0 mm**.
+- **Where.** A stance phase is found from the track itself: the frames where the ball sits
+  within 20% of its own vertical range of its lowest point, in runs of at least 3, with
+  the leading and trailing samples trimmed when they travel more than three times the
+  run's median speed — that is the strike arriving and the toe leaving, not the plant.
+- **How much.** The **diameter of the planted point's position cloud** over that run,
+  horizontally, in millimetres. A diameter rather than a distance from the first sample,
+  because a foot that slides out and comes back would otherwise read zero.
+- **Against what.** `planted` expects zero (a travelling clip). `in_place` removes **one**
+  shared velocity — pooled over every stance sample of both feet — and measures the
+  residual, because a treadmill clip's feet *must* run backwards; what must not vary is
+  the speed. `auto` picks by asking whether the body travelled at all, and says which it
+  chose and why.
+- **Verdict bands, heuristic tier:** ≤ 5 mm passes, ≤ 20 mm is worth a look, past that it
+  reads as skating. Not calibrated against artist accept/reject decisions, and the report
+  says so and quotes the measurement next to the band, exactly as `rig_check` does.
+
+**It proves itself both ways**, which is the only reason to trust it. On the synthetic
+test character, the same rig, the same 32-frame cycle:
+
+| clip | mode | worst step |
+|---|---|---|
+| `rigforge_walk`, travelling | planted | **1.1 mm** — pass |
+| `rigforge_walk`, in place | in_place | **1.0 mm** — pass |
+| the same walk keyed on `thigh_fk`/`shin_fk` | in_place | **189 mm** — fail |
+
+A 170× separation between the right channel and the wrong one, on one rig, with one
+metric. The exported, baked and re-imported `.glb` of the IK walk measures **4.3 mm**, so
+the plant survives the whole Godot path.
+
+**The export already bakes it, and that is now pinned.** `rigforge_export_godot` bakes
+each action onto the deform rig with `nla.bake(visual_keying=True)` — whatever the IK,
+drivers and secondary motion resolve to on a frame is what lands on the deform bone — and
+passes `export_force_sampling=True` to Blender's glTF exporter. Godot needs baked bone
+transforms, not IK constraints, and it gets them: the walk's source action keys **no
+deform bone at all**, and every animated node in the `.glb` is a `DEF-` bone or `root`.
+
+**MCP mirror: not done here, and not a five-line addition.** `rig_check`'s mirror is a
+~90-line tool function plus `fmt_rig_check_report` in the formatter module plus the tool
+count in the MCP test suite — `mcp/` is a different lane. `animation_check` and
+`rigforge_walk` want the same treatment (summarise per-step drift down to the gate, the
+worst step and its number; carry the "these thresholds are heuristics" caveat into the
+tool description so an agent cannot read a `fail` as a fact).
+
 ### Godot export (Phase 4, stage 7)
 
 `RigForge ▸ Godot Export` (`rigforge_export_godot`). Path, all-or-named actions, LODs,
@@ -2356,12 +2475,17 @@ addon/forge/
                          forms: one mesh, N morph targets)
   tools/partforge.py     PartForge state, HTTP client, operators
   tools/rigforge.py      RigForge tags, manifest, retopo, auto-UV, panel state + operators
-  tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export
+  tools/rigforge_rig.py  RigForge metarig fitting, Rigify generate, weights, Godot export,
+                         and the IK control layer (rigforge_ik: foot/hand targets, poles,
+                         foot roll, the per-limb FK/IK switch)
   tools/rigforge_joints.py  predicted-joint hints: the metarig fitter's third landmark
                          source (loads forge.joints/1, matches roles, rations belief)
   tools/rigcheck.py      the deformation harness: rig_check poses every joint to its
-                         extremes and measures volume / clipping / twist collapse
-  tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting
+                         extremes and measures volume / clipping / twist collapse; and
+                         animation_check, the foot-slide metric (drift per stance phase,
+                         in millimetres)
+  tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting, and
+                         rigforge_walk - a walk cycle keyed on the leg IK targets
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
   tools/flows.py         Flows: the JSON format, the runner, flow_list/flow_run, the box (6b)
   tools/model.py         Downloaded models: check_model/segment_model, the Model box (6d),
@@ -2375,6 +2499,10 @@ addon/tests/
   headless_rigforge.py   headless checks for the RigForge tag/manifest/retopo/UV stack
   headless_phase4.py     headless checks for the rig, the weights and the Godot export
   headless_phase5.py     headless checks for cloth, actions, keyframing and retargeting
+  headless_rigik.py      headless checks for the IK / locomotion layer (port 9907): the
+                         IK chains, pole targets and foot roll on the generated rig, the
+                         walk authored on the IK targets, the foot-slide metric proved
+                         both ways, and the export bake
   headless_rigbridge.py  headless checks for the rigging bridge (port 9901): joints_file
                          blending against a hand-written detector file, the frame gate,
                          and rig_check on the generated rig - no GPU, no download
@@ -2973,6 +3101,57 @@ read back off the F-curve with the right interpolation and a near-miss bone name
 with a suggestion; the retarget's mapping table, hip travel, scene cleanliness and purged
 import; and finally an export whose `.glb` carries both garments, the `Settled` morph
 target and both `-loop`-suffixed clips.
+
+### IK and locomotion (`headless_rigik.py`)
+
+Needs **no geometry service** and **downloads nothing**:
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" `
+    --background --factory-startup `
+    --python addon\tests\headless_rigik.py
+```
+
+Port 9907. It imports Phase 4's builder (which imports Phase 3's), so the three suites
+cannot drift apart, and carries the character tag → retopo → metarig → generate before
+asking anything. **106 checks**, over:
+
+- **What the builder actually is.** That generation multiplies the metarig rather than
+  shipping it (the audit's "29 bones" is the metarig), that most of the result is
+  controls, and that `rigforge_generate_rig` reports the IK layer it left the rig on.
+- **What the IK layer has.** Both legs and both arms, each with its target, its pole, its
+  `IK_FK` switch on the limb's parent control, a real IK constraint with a chain length
+  of 2, and — for the legs — all three foot-roll pivots.
+- **That it is control-layer only.** Bones, the deform set and the mesh's vertex groups
+  are captured, the FK/IK switch is flipped both ways, and all three are asserted
+  identical afterwards. This is the check that says skinning, `rig_check` and the Godot
+  export cannot notice IK.
+- **That the chains actually solve.** Moving `foot_ik.L` moves the shin and the foot and
+  *not* the thigh's root; switching that limb to FK makes the same target move nothing at
+  all, which is the false pass an FK-only pipeline lives inside. The knee pole is measured
+  over five offset directions (a pole landing in the leg's existing plane rotates nothing,
+  and which direction that is depends on the sculpt): with it enabled the knee travels
+  hundreds of millimetres, with it disabled, **0.0 mm**.
+- **The foot roll.** Rolling the heel control forward lifts the ankle by tens of
+  millimetres while the ball and the toe stay within **0.5 mm** — the ball pivot, and the
+  reason the metric measures the ball.
+- **The walk.** Keyed on `foot_ik.L/R` and the heel pivots and the root and the FK arms,
+  and asserted **not** on `thigh_fk`/`shin_fk`; the legs still on IK afterwards; the
+  stride derived from the leg; a long stride bought with knee bend; a stride longer than
+  the leg shortened rather than stretched into, with a warning; and a rig with no IK legs
+  refused by name with the command to run instead.
+- **The metric, both ways.** The travelling clip, the in-place clip read as in-place, the
+  in-place clip *forced* to read as travelling (which must look like a slide), and the
+  deliberately FK-keyed walk — asserted to be at least twenty times the IK walk's drift,
+  so the two verdicts cannot be the same clip with a different threshold.
+- **The audit's bug.** Keying `upper_arm_fk.L` switches `arm.L` and nothing else; both
+  legs are still on IK; the reply says so. `fk_switch: true` still switches the whole rig.
+- **The export bake.** That the source clip keys no deform bone at all, that
+  `visual_keying` and `export_force_sampling` are really passed (and that the installed
+  exporter really has that property, rather than `op_kwargs` dropping it), that every
+  animated node in the `.glb` is a `DEF-` bone or `root`, that `DEF-shin.L` really varies
+  across the baked action — and finally that the exported file, re-imported, still
+  measures as planted.
 
 ### The rigging bridge — `joints_file` and `rig_check` (`headless_rigbridge.py`)
 
