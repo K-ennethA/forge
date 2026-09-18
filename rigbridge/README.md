@@ -22,6 +22,50 @@ and Ollama. It is the wrong shape here, for two reasons:
 
 So: launch, detect, write JSON, exit. The consumer reads the file.
 
+## The two files here
+
+| file | runs under | imports UniRig? |
+| --- | --- | --- |
+| `detect_joints.py` | **UniRig's virtualenv only** | yes — torch, `src.*`, a `bpy` wheel |
+| `detector_runner.py` | any Python 3.8+, **including Blender's** | **no — stdlib only** |
+
+`detector_runner.py` is the wrapper the add-on uses. It spawns `detect_joints.py` in the
+virtualenv and reads the JSON back, so the process boundary that keeps UniRig's licence
+out of Forge is also the only interface — a subprocess plus a file cannot quietly become a
+library import. It adds four things the raw CLI does not have:
+
+* **A diagnosis instead of a crash.** `diagnose()` answers "can this machine detect
+  joints?" and names the first missing piece — checkout, virtualenv, checkpoint, GPU —
+  with the override that would fix it. `detect()` **never raises**; every failure is a
+  code from a closed set (`disabled`, `runner_missing`, `unirig_missing`,
+  `python_missing`, `weights_missing`, `gpu_unavailable`, `mesh_missing`,
+  `mesh_unsupported`, `busy`, `timeout`, `detector_failed`, `bad_output`) plus a sentence.
+  The caller is a rigging command; a missing optional tool must cost it a fallback, not a
+  traceback.
+* **One job at a time**, behind a lock file that expires if its owner dies. Inference
+  peaks near 8.5 GB of a 12 GB card and two at once do not both fail cleanly.
+* **A cache keyed on the mesh's own bytes** — SHA-256 of the file, plus every argument
+  that changes the answer, plus the checkpoint's identity. A hit is provable rather than a
+  filename coincidence; a mesh re-exported after an edit misses.
+* **`CREATE_NO_WINDOW`**, so a detection never flashes a console over the viewport.
+
+```
+python rigbridge\detector_runner.py --diagnose
+python rigbridge\detector_runner.py --input mesh.glb --output joints.json
+```
+
+Extra overrides: `FORGE_UNIRIG_PYTHON` (the interpreter), `FORGE_RIGBRIDGE_CACHE` (where
+detections are remembered; defaults out of tree, under `%LOCALAPPDATA%\Forge`), and
+`FORGE_RIGBRIDGE_DISABLE=1` to make every install look absent — which is how the add-on's
+degrade path is tested.
+
+**A note for consumers about `space`.** This file reports `mesh_local`, which is true of
+the file it was handed. The add-on's `rigforge_autotag` exports the mesh with its world
+transform **baked into the mesh data** and an identity object matrix, so for that path the
+frame called `mesh_local` *is* world, and it says so on the document it passes on. Do the
+same, or apply `matrix_world` yourself — the werewolf's object sits 933 mm up, and getting
+this wrong offsets every joint by that and fails the consumer's frame gate.
+
 ## Usage
 
 ```

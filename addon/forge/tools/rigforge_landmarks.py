@@ -902,6 +902,9 @@ class Limb(object):
         # runs down and an arm runs out, so a principal axis more than 60 degrees
         # from the anatomical hint is the cloud's shape talking, not the limb's.
         self.axis_from_hint = False
+        #: Set by :func:`biped_landmarks` when the hint came from a measurement
+        #: (a detected skeleton) rather than from the T-pose default.
+        self.hint_measured = False
         if axis_hint is not None:
             hint = Vector(axis_hint).normalized()
             span = sorted(self.size if hasattr(self, "size") else
@@ -1101,6 +1104,7 @@ class Limb(object):
             "stations": self.stations,
             "length_mm": round(self.length * M_TO_MM, 2),
             "axis": [round(v, 5) for v in self.axis],
+            "axis_hint_measured": bool(getattr(self, "hint_measured", False)),
             "median_girth_mm": round(self.median_girth * M_TO_MM, 2),
             "girth_mm": [round(g * M_TO_MM, 2) for g in self.girth],
         }
@@ -1207,9 +1211,39 @@ def _plausible(obj, what, proximal, middle, distal, direction):
            [round(v * M_TO_MM) for v in distal]))
 
 
+def _limb_hint(axis_hints, key, default):
+    """The direction a limb runs in: measured if anything measured it, else anatomy.
+
+    The hard-coded defaults below — an arm runs sideways, a leg runs down — are
+    a **T-pose assumption**, and they are the reason a correctly tagged limb can
+    still be refused.  The werewolf's arms hang at its sides: a perfect
+    cylindrical ``Arm.L`` tag around them has a near-vertical principal axis,
+    which is more than 60 degrees from ``+X``, so :class:`Limb` replaces the axis
+    with the hint and :func:`_limb_is_measurable` then refuses the tag for having
+    needed that replacement.  The tag was right and the hint was wrong.
+
+    So when something has actually measured the limb's direction — the joint
+    detector, through ``rigforge_autotag`` — that measurement is the hint, for
+    both the slicing axis and the plausibility gate.  With no measurement the
+    behaviour is exactly what it always was.
+    """
+    if axis_hints:
+        candidate = axis_hints.get(key)
+        if candidate is not None:
+            candidate = Vector(candidate)
+            if candidate.length > 1e-6:
+                return candidate.normalized(), True
+    return Vector(default), False
+
+
 def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
-                    warnings=None, sides=("L",)):
+                    warnings=None, sides=("L",), axis_hints=None):
     """Every joint of a biped, measured off the mesh, **one side by default**.
+
+    ``axis_hints`` (``{"arm.L": Vector, "leg.R": Vector, …}``, proximal to
+    distal) replaces the anatomical guess about which way each limb runs with a
+    *measurement* of it — see :func:`_limb_hint`.  Omitted, every hint is the
+    T-pose default this function has always used.
 
     With the default ``sides=("L",)`` the right side is not computed at all: it
     is the mirror of this, produced by :func:`mirror_edit_bones` once the left is
@@ -1354,7 +1388,10 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
         tags["arm.%s" % side] = arm_tag
 
         if leg_tag is not None:
-            leg = Limb(leg_tag, leg_points, axis_hint=Vector((0.0, 0.0, -1.0)))
+            leg_hint, leg_measured = _limb_hint(axis_hints, "leg.%s" % side,
+                                                (0.0, 0.0, -1.0))
+            leg = Limb(leg_tag, leg_points, axis_hint=leg_hint)
+            leg.hint_measured = leg_measured
             limbs["leg.%s" % side] = leg
             hip = leg.junction("hip", from_end="proximal")
             knee = leg.girth_minimum(CREASE_BAND, "knee")
@@ -1373,7 +1410,7 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             # not read as a limb, and a metarig fitted to them would be a zigzag
             # — better to say so and let the caller fall back to the old fit.
             _plausible(obj, "leg.%s" % side, hip_point, Vector(knee["point"]),
-                       Vector(ankle["point"]), Vector((0.0, 0.0, -1.0)))
+                       Vector(ankle["point"]), leg_hint)
             points["hip.%s" % side] = hip_point
             points["knee.%s" % side] = Vector(knee["point"])
             points["ankle.%s" % side] = Vector(ankle["point"])
@@ -1382,15 +1419,17 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             detail["ankle.%s" % side] = ankle
 
         if arm_tag is not None:
-            arm = Limb(arm_tag, arm_points, axis_hint=Vector((sign, 0.0, 0.0)))
+            arm_hint, arm_measured = _limb_hint(axis_hints, "arm.%s" % side,
+                                                (sign, 0.0, 0.0))
+            arm = Limb(arm_tag, arm_points, axis_hint=arm_hint)
+            arm.hint_measured = arm_measured
             limbs["arm.%s" % side] = arm
             shoulder = arm.junction("shoulder", from_end="proximal")
             elbow = arm.girth_minimum(CREASE_BAND, "elbow")
             wrist = arm.girth_minimum(DISTAL_BAND, "wrist")
             _limb_is_measurable(obj, "arm", arm, elbow)
             _plausible(obj, "arm.%s" % side, Vector(shoulder["point"]),
-                       Vector(elbow["point"]), Vector(wrist["point"]),
-                       Vector((sign, 0.0, 0.0)))
+                       Vector(elbow["point"]), Vector(wrist["point"]), arm_hint)
             points["shoulder.%s" % side] = Vector(shoulder["point"])
             points["elbow.%s" % side] = Vector(elbow["point"])
             points["wrist.%s" % side] = Vector(wrist["point"])
@@ -2731,6 +2770,26 @@ def prepare_for_rigging(obj, params, warnings):
     }
 
 
+def _measured_axis_hints(obj):
+    """Limb directions a previous ``rigforge_autotag`` measured, or ``(None, None)``.
+
+    Imported at call time rather than at module scope on purpose: auto-tagging
+    reuses this module's midplane, facing gate and principal-axis solver, so the
+    dependency runs that way round and a top-level import here would close the
+    cycle.  The lookup is a courtesy — a mesh that has never been auto-tagged
+    simply gets the anatomical defaults, which is the behaviour this module
+    shipped with.
+    """
+    try:
+        from . import rigforge_autotag
+    except ImportError:
+        return None, None
+    try:
+        return rigforge_autotag.stored_axis_hints(obj)
+    except Exception:  # noqa: BLE001 - a stale hint must never cost a fit
+        return None, None
+
+
 @command("rigforge_landmarks")
 def cmd_rigforge_landmarks(params):
     """The human rigger's workflow, steps 1-3, as a report (and optionally applied).
@@ -2767,10 +2826,14 @@ def cmd_rigforge_landmarks(params):
     landmarks = None
     error = None
     sides = ("L", "R") if prepared["symmetry_requested"] is False else ("L",)
+    axis_hints, hint_note = _measured_axis_hints(obj)
+    if hint_note:
+        warnings.append(hint_note)
     try:
         landmarks = biped_landmarks(obj, midplane=prepared["midplane"],
                                     character_left=prepared["character_left"],
-                                    warnings=warnings, sides=sides)
+                                    warnings=warnings, sides=sides,
+                                    axis_hints=axis_hints)
     except ForgeError as exc:
         error = str(exc)
 

@@ -688,7 +688,8 @@ nobody is allowed to fail on.
 
 | type | params | does |
 |---|---|---|
-| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`method?`** `landmarks`\|`tags`, **`orient?`** `fix`\|`report`\|`skip`, **`symmetry?`** (bool), **`symmetry_keep?`**, **`symmetry_tolerance_mm?`**, **`echo?`**, **`echo_dir?`**, **`echo_resolution?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it **the way a person does**: orientation gate → symmetrize → joints snapped onto the mesh's own cross-section centroids on the character's left → exact X-mirror (see [The human rigger's workflow](#the-human-riggers-workflow-orient-symmetrize-landmark-mirror)). `method: "tags"` is the old fraction-of-the-blob fit, and is also where a mesh the landmarks cannot read falls back, saying so. Ear/tail tags still become bone chains. Returns `fit_method`, `orientation`, `symmetry`, `side_tags`, `midplane_mm`, `joint_landmarks`, `mirror`, `skeleton_echo`, plus the old `metarig`, `bone_count`, `mapping`, `chains`, `landmarks`, `joints`, `says`, `warnings` |
+| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`method?`** `landmarks`\|`tags`, **`tags?`** `auto`\|`detector`\|`keep`, **`tag_radius_factor?`**, **`tag_seed?`**, **`tag_refresh?`**, **`orient?`** `fix`\|`report`\|`skip`, **`symmetry?`** (bool), **`symmetry_keep?`**, **`symmetry_tolerance_mm?`**, **`echo?`**, **`echo_dir?`**, **`echo_resolution?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it **the way a person does**: orientation gate → symmetrize → joints snapped onto the mesh's own cross-section centroids on the character's left → exact X-mirror (see [The human rigger's workflow](#the-human-riggers-workflow-orient-symmetrize-landmark-mirror)). `tags: "auto"` (default) **repairs limb tags the landmark fit cannot read** by detecting a skeleton and re-tagging along each limb's own axis — see [Auto-tagging](#auto-tagging-tags-that-follow-each-limbs-own-axis-rigforge_autotag). `method: "tags"` is the old fraction-of-the-blob fit, and is also where a mesh the landmarks cannot read falls back, saying so. Ear/tail tags still become bone chains. Returns `fit_method`, **`auto_tags`**, `orientation`, `symmetry`, `side_tags`, `midplane_mm`, `joint_landmarks`, `mirror`, `skeleton_echo`, plus the old `metarig`, `bone_count`, `mapping`, `chains`, `landmarks`, `joints`, `says`, `warnings` |
+| **`rigforge_autotag`** | `object?`, `action?` `report`\|`apply`, `source?` `auto`\|`detector`\|`box`, `joints_file?`, `radius_factor?`, `seed?`, `refresh?`, `replace?`, `rigbridge?`, `timeout?` | rebuilds the six body tags (`Head`, `Torso`, `Arm.L/R`, `Leg.L/R`) as **cylinders around each limb's own detected axis** instead of axis-aligned box bands. Runs the joint detector out of process (cached per mesh hash), names each limb chain from geometry, and tags every vertex by its distance to the nearest axis capped by that limb's own local girth. Falls back **per limb** — `unirig` → `hand` (the tag already there) → `box` — and the report names the rung for every tag. Returns `tags` (per tag: `vertices`, `source`, `why`), `sources`, `axes`, `axis_hints`, `roles`, `girth`, `detector`, `says`, `warnings` |
 | **`rigforge_landmarks`** | `object?`, `action?` `report`\|`prepare`, `orient?`, `symmetry?`, `symmetry_keep?`, `symmetry_tolerance_mm?`, `stations?` | steps 1-3 on their own. `report` measures and changes nothing: which way the character faces and on what evidence, how far out of X-symmetry it is, whether its sided tags name the halves they sit on, and where every joint's cross-section centroid is. `prepare` runs the gate for real (rotate, symmetrize, re-derive the sides) — which is exactly what `rigforge_metarig` calls |
 | **`rigforge_echo_skeleton`** | `rig?` \| `metarig?`, `mesh?`, `dir`, `views?`, `resolution?`, `deform_only?` | the **echo-back**: the placed skeleton drawn in red over the body ghosted to 22%, front and side, as PNGs the report names. What a rigger looks at before binding anything |
 | **`rigforge_weight_maps`** | `rig?`, `mesh?`, `dir`, `bones?`, `views?`, `resolution?`, `max_bones?`, `overlap?` | per-bone **weight maps** in Blender's own blue→red ramp, plus the influence-overlap matrix beside them. The maps looked at, rather than counted |
@@ -2047,6 +2048,197 @@ overlap matrix names pairs, but a weight map is a *shape*, and the artefacts tha
 a stripe of thigh caught in the hand's group, a hard edge where a smooth falloff belongs —
 are shapes. The colour attribute is added, rendered and removed; the mesh comes back
 exactly as it was found.
+
+### Auto-tagging: tags that follow each limb's own axis (`rigforge_autotag`)
+
+The landmark rigger is only ever as good as the **tags** it is handed. It measures a limb
+by slicing it perpendicular to that limb's own centreline, so a tag that is not shaped
+like a limb has no centreline to slice — and the fitter refuses it, correctly:
+
+> The tag `'Arm.L'` is not shaped like a limb: its own principal axis is not the direction
+> an arm runs in … so every cross-section taken along it would be a slice of the wrong
+> thing.
+
+That is a live, measured failure. On the werewolf character the `Arm.L` tag was an
+**axis-aligned box band** — everything outboard of a fixed `x`, above a fixed `z`. On a
+figure whose arms hang at its sides that band is a wedge of shoulder, deltoid and rib,
+219 mm wide and 636 mm tall, whose principal axis points **down the body** rather than
+down the arm. The fit fell back to the old fraction-of-the-blob tag fit, the arm bones
+splayed off the centreline, and `rig_check` reported three centering failures and an
+overlap matrix full of strays — the worst being *"96 vertices are moved by both
+`DEF-shin.R` and `DEF-spine`, two bones 360 mm apart"*.
+
+A box has three directions and they are the world's. A limb has one and it is its own.
+What knows a limb's direction is a **skeleton**, and there is a detector for those.
+
+**The method, in six steps.**
+
+1. **The skeleton** comes from UniRig, run out of process by
+   `rigbridge/detector_runner.py` (below) — an unnamed tree of joints in the mesh's own
+   frame. Nothing is matched by name: UniRig emits `bone_0`, `bone_1`, … and the add-on
+   reads those as *no name at all*.
+2. **The tree is cut into segments**: maximal runs of single-child joints between the
+   root, the branch points and the leaves. On a biped that is exactly one segment per
+   part — a spine, a neck/head, four limbs, and a twig per finger and toe.
+3. **Segments are named from geometry**, never from the detector. The chain leaving the
+   root *upwards* nearest the midplane is the spine; the one continuing above it is the
+   neck and head; the longest sided chain ending in the bottom 40% of the figure is that
+   side's leg; the longest remaining sided chain starting above the waist is that side's
+   arm. Sides come from the measured midplane and the measured facing. Every role carries
+   a sentence saying why it was named that.
+4. **A limb axis is that segment's polyline**, with three corrections that all come from
+   the skeleton stopping short of the body it describes:
+   * the **branch point is dropped** — an arm's segment starts at the chest and a leg's at
+     the pelvis, both on the midplane, and an axis starting there runs diagonally through
+     the torso. Measured: a leg tag that reached 1125 mm up a 1879 mm figure and took the
+     whole pelvis with it;
+   * the axis **continues through its longest descendant twig**, so the hand rides the
+     arm's axis and the toes the leg's;
+   * it then **grows at its far end** by however far its own flesh overshoots it (the top
+     of a skull sits 200 mm past the last neck joint). The spine also grows *downwards*,
+     but only as far as the limbs hanging off it are away from it — without that bound it
+     runs down between the thighs and the torso tag swallows the top of both legs.
+5. **Vertices are tagged by distance to an axis.** Every vertex joins the axis it is
+   nearest to, which already partitions the mesh along the *body* rather than along the
+   world. Then each limb axis measures its own **local girth** — the median radial
+   distance of its own vertices at each of 17 stations, smoothed, re-measured after every
+   reassignment — and a vertex further out than `radius_factor` (1.6) times the girth
+   there is not on that limb. It is the rib the arm is hanging beside, and it is offered
+   to the axis that *does* have room for it. The torso is the residual around the spine
+   and the head the residual around the neck; neither can reject, so **every vertex lands
+   in exactly one tag and none is dropped**.
+6. **The limb's measured direction becomes the fitter's hint.** This is the other half of
+   the fix and it is easy to miss: `biped_landmarks` used to assume an arm runs sideways
+   and a leg runs down — a **T-pose assumption**. A perfect cylindrical tag around a
+   *hanging* arm has a near-vertical principal axis, more than 60° from `+X`, so the limb
+   replaces its axis with the hint and is then refused for having needed to. The tag was
+   right and the hint was wrong. `axis_hints` replaces that guess with the measurement,
+   for both the slicing axis and the plausibility gate, and is stored on the object
+   stamped with the bounding box it was measured on so a mesh that has since moved is not
+   fitted to a stale hint.
+
+**Two decisions that were wrong first, and are now pinned by tests.**
+
+* *"Rejected by the girth cap, so give it to the torso"* put the **soles of the feet** in
+  the torso tag — a Torso reaching from 7 mm to 1420 mm on a 1879 mm figure — because a
+  heel that a thin toe station will not have has no better owner; it is a metre from the
+  spine. A rejected vertex now moves only to an axis whose *own* girth accepts it, and
+  keeps the nearest one when none does.
+* **Scoring every axis in units of its own girth does not work**, though it is the more
+  elegant rule and was implemented first. The torso is the residual and cannot reject, so
+  its claim grows, so its measured girth grows, so it claims more: on the werewolf it ran
+  away from 1279 vertices to 4678 and took most of both legs. Nearest-axis stays in
+  millimetres and the girth is a **cap**, not a scale.
+
+**Credibility, per limb.** UniRig scores F1 ≈ 0.105 on out-of-domain skeletons and misses
+extremities outright, so a detection is a *proposal*. Each limb is checked against the
+mesh it claims to describe — long enough relative to the figure, enough vertices to
+cross-section, thinner than it is long, and (the check that actually bites) the resulting
+tag's own principal axis must agree with the chain that built it to within the same 60°
+the landmark fitter will apply next. A limb that fails falls back **on its own**, and the
+report names the rung each tag stopped on:
+
+| `source` | what it means |
+|---|---|
+| `unirig` | a cylinder built along that limb's own detected axis |
+| `hand` | the tag that was already on the mesh, kept untouched |
+| `box` | this module's own axis-aligned band — the last resort, and the method whose failure is quoted at the top of this section |
+
+**`tags: "auto"` is a repair, not a rewrite.** Inside `rigforge_metarig` the default does
+*not* re-tag every mesh that meets a GPU. It attempts the landmark fit first with whatever
+tags and hints are there; a mesh it can read keeps every tag it has. Only a **refusal**
+triggers a detection — and then the rebuilt tags have to earn their place: the fit is
+retried, and if it still refuses, the original tags are **put back exactly** and the run
+says the repair did not take. So auto-tagging can only ever move a mesh from *refused* to
+*fitted*, never sideways. That guarantee is not theoretical: on the Phase 3 blob sculpt
+(a stack of spheres, not a body) the detector's tags left the fit still refusing and moved
+`thigh.L`'s head from 726 mm to 252 mm — a worse rig, arrived at more expensively. A mesh
+with **no tags at all** keeps its existing refusal and costs no detection; `tags:
+"detector"` is the explicit way to tag an untagged mesh from scratch, and refuses rather
+than falling back.
+
+**Measured on the werewolf** (`projects/werewolf/models/werewolf-wip-7.blend`, 8608-vertex
+retopo, 1879 mm tall, arms hanging), the whole chain run headless — auto-tags → landmarks
+→ `rig_check`:
+
+| | before (box tags) | after (auto tags) |
+|---|---|---|
+| `fit_method` | `tags+mirror` *(the landmark fit refused)* | **`landmarks`** |
+| gated centering failures | 3 — `shin.R.001`, `upper_arm.L.001`, `forearm.R.001` | 2 — `forearm.R`, `forearm.R.001` |
+| mean shaft offset, all gated bones | 32.6 mm | **26.5 mm** |
+| … arms only | 37.2 mm | **29.9 mm** |
+| … legs only | 28.0 mm | **23.1 mm** |
+| overlap | **fail** — 47.14 stray mass, 12 stray pairs | **attention** — 0.33, 2 pairs |
+| worst stray | 96 vertices shared by `DEF-shin.R` and `DEF-spine`, 360 mm apart | 2 vertices shared by `DEF-breast.L` and `DEF-forearm.R.001` |
+| asymmetry | ok, 0.000 mm | ok, 0.000 mm |
+
+The stray mass collapsed **143×** and the fallback is gone. Two arm failures remain, and
+the cause is measured rather than guessed: this mesh is **21.3 mm out of X-symmetry and
+was not symmetrized** because it is already unwrapped, so the rig is authored on the left
+and mirrored onto a right side that is 21 mm away from it. Re-run with `symmetry: false`,
+which fits each side to its own geometry, and both arm failures go away
+(`forearm.R` 72.3% → 51.4% attention, `forearm.R.001` 89.1% → 31.5% ok) — at the cost of
+the 0.0 mm mirror, which is why it is not the default. The residual is the unwrapped
+asymmetric mesh, not the tags.
+
+One number in that table deserves its own line, because the percentage moved the wrong
+way while the millimetres moved the right way. `DEF-forearm.R.001` improved at **every**
+station in absolute terms (86 → 51 mm at 35% along the bone), but its *percentage of the
+section radius* rose, because the section it is measured against shrank from 130 mm to
+74 mm: the bone moved out of a slice of body and into the forearm, and a correctly placed
+forearm is judged against the forearm's own radius. The proxy metric is a ratio, and the
+ratio got harder as the placement got better.
+
+Suite: `addon/tests/headless_autotag.py`, port 9910, **117 checks**, no GPU required — the
+detector's output is a file, so the suite writes its own, and a batch script stands in for
+the virtualenv's interpreter so the cache, the lock and every failure path are exercised
+without CUDA being asked a question.
+
+### The detector runner (`rigbridge/detector_runner.py`)
+
+`detect_joints.py` is the detector: it imports torch, imports UniRig, and can only run
+under UniRig's own virtualenv. `detector_runner.py` is the thing that **calls** it, and it
+is the opposite kind of code — **stdlib only**, no torch, no `bpy`, no import of anything
+under the UniRig checkout. It spawns a child process and reads a JSON file, which is why
+it is safe for Blender's own interpreter to import and why the licence boundary holds: a
+subprocess plus a file cannot accidentally become a library import.
+
+What it adds over calling the CLI by hand:
+
+* **A diagnosis instead of a crash.** One call answers "can this machine detect joints?"
+  and *names* what is missing — the checkout, the virtualenv, the checkpoint, the GPU —
+  with the environment variable that would fix it. `detect()` **never raises**: a missing
+  install, a busy GPU or a detector that dies each cost the calling rigging command a
+  *reason and a fallback*, never a traceback.
+* **One job at a time.** Skeleton inference peaks near 8.5 GB on a 12 GB card; two at once
+  do not both fail cleanly. A lock file serialises them and the second caller is told to
+  wait rather than finding out inside CUDA. A lock whose owner died expires.
+* **A cache keyed on the mesh's own bytes.** Detection costs ~8 s and ~8.5 GB; re-tagging
+  the same mesh should cost neither. The key is the SHA-256 of the file plus every
+  argument that changes the answer plus the checkpoint's identity, so a hit is *provable*
+  rather than a filename coincidence, and a mesh re-exported after an edit misses.
+* **No console window** (`CREATE_NO_WINDOW`): a rigging command must never flash a black
+  box over the viewport.
+
+Failure codes are a closed, documented set (`REASONS`): `disabled`, `runner_missing`,
+`unirig_missing`, `python_missing`, `weights_missing`, `gpu_unavailable`, `mesh_missing`,
+`mesh_unsupported`, `busy`, `timeout`, `detector_failed`, `bad_output`. Overrides:
+`FORGE_UNIRIG_ROOT`, `FORGE_UNIRIG_PYTHON`, `FORGE_UNIRIG_WEIGHTS`, `FORGE_RIGBRIDGE`
+(where this file lives, if the add-on was installed away from the repo),
+`FORGE_RIGBRIDGE_CACHE`, and `FORGE_RIGBRIDGE_DISABLE=1` to make every install look absent
+— which is how the degrade path is pinned.
+
+**One frame trap, closed at the producer.** The detector reports its coordinates as
+`mesh_local`, which is true of the file it was given. `rigforge_autotag` exports the mesh
+with its **world transform baked into the mesh data and an identity object matrix**, so
+the frame it calls `mesh_local` *is* the world frame, and says so on the document it hands
+on. The werewolf's object sits 933 mm up; without this every joint would have been offset
+by that and the whole file rejected by the frame gate.
+
+```
+python rigbridge\detector_runner.py --diagnose
+python rigbridge\detector_runner.py --input mesh.glb --output joints.json
+```
 
 ### The rigging bridge (Phase 4, stage 4a): `joints_file`
 

@@ -49,6 +49,7 @@ from mathutils import Matrix, Vector
 from . import rigforge
 from . import rigforge_joints
 from . import rigforge_landmarks
+from . import rigforge_autotag
 from .common import (
     active_only,
     get_bool,
@@ -1099,6 +1100,14 @@ def cmd_rigforge_metarig(params):
     two-sided fit produces.  ``method: "tags"`` is the old fraction-of-the-blob
     fit, and it is also where a mesh the landmarks cannot read falls back to,
     saying so in ``warnings`` and in ``fit_method``.
+
+    ``tags`` decides where the tags the fit slices come from.  ``"auto"`` (the
+    default) rebuilds each limb's tag along that limb's **own detected axis**
+    when a joint detector is installed, which is what stops a limb that lies
+    along the body from being tagged as a box band and then refused; a machine
+    without the detector keeps whatever tags the mesh has, exactly as before.
+    ``"keep"`` never touches them and ``"detector"`` refuses rather than falling
+    back.  ``auto_tags`` in the result names the source of every tag.
     """
     obj = resolve_object(params, mesh_only=True)
     started = time.monotonic()
@@ -1151,6 +1160,17 @@ def cmd_rigforge_metarig(params):
             "The landmark workflow is wired into the biped fit only (a quadruped's "
             "limbs, spine and junctions have no agreed roles yet), so this quadruped "
             "was fitted the old way: fractions along each tag.")
+
+    # --- tags that follow each limb's own axis, before the tags are read ---
+    # The landmark fitter can only be as good as the tags it is handed: a tag
+    # that is a box band rather than a tube has no centreline to slice, and the
+    # fitter refuses it (measured on the werewolf: "the tag 'Arm.L' is not shaped
+    # like a limb"). Detecting a skeleton and tagging along it is what turns that
+    # refusal into a fit, so it runs by default when the detector is installed —
+    # after the orientation gate and the symmetrize, because both move the flesh
+    # the tags describe.
+    autotag_report, axis_hints = _auto_tags(obj, params, method, archetype, prepared,
+                                            warnings)
 
     regions, empty = measure_tags(obj)
     if not regions:
@@ -1242,7 +1262,7 @@ def cmd_rigforge_metarig(params):
                 landmarks = rigforge_landmarks.biped_landmarks(
                     obj, midplane=prepared["midplane"],
                     character_left=prepared["character_left"],
-                    warnings=warnings, sides=sides)
+                    warnings=warnings, sides=sides, axis_hints=axis_hints)
             except ForgeError as exc:
                 fit_method = "tags"
                 warnings.append(
@@ -1375,6 +1395,7 @@ def cmd_rigforge_metarig(params):
         "side_tags": (prepared["retag"] if prepared else None),
         "midplane_mm": (round(prepared["midplane"] * 1000.0, 3) if prepared else None),
         "joint_landmarks": joint_landmarks,
+        "auto_tags": autotag_report,
         "mirror": mirror_report,
         "skeleton_echo": echo,
         "scale": round(scale, 6),
@@ -1383,6 +1404,174 @@ def cmd_rigforge_metarig(params):
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
+
+
+def _auto_tags(obj, params, method, archetype, prepared, warnings):
+    """Rebuild the limb tags along their own detected axes.  ``(report, hints)``.
+
+    ``tags`` is the switch, and its default is ``"auto"``, which means **repair,
+    not rewrite**.  Auto-tagging runs only when the tags on the mesh cannot
+    already be read as limbs — the landmark fit is attempted first, with
+    whatever tags and hints are there, and a mesh it can read keeps every tag it
+    has.  That ordering is not a nicety:
+
+    * a tag rebuild is a *mesh edit*, and editing an artist's painted tags
+      because a GPU was available would be the tool overreaching;
+    * the tags this fixes are exactly the ones the fitter refuses, so the
+      refusal is the signal, and there is no better one available;
+    * and it costs nothing when it is not needed — the trial fit is pure
+      geometry, so a mesh that is already fine never pays for a detection.
+
+    Two more gates, for the same reason:
+
+    * only the biped landmark path, because the quadruped fit has no agreed limb
+      roles and is measuring blob fractions either way;
+    * a limb whose detected chain is implausible keeps the tag it already had.
+
+    ``tags: "keep"`` turns it off; ``tags: "detector"`` rebuilds regardless of
+    whether the current tags would have done, and refuses if it cannot.
+
+    The hints that come back are each limb's measured direction, which is the
+    other half of the fix: a perfect cylindrical tag around a *hanging* arm is
+    still refused by a fitter that assumes arms run sideways.
+    """
+    mode = get_choice(params, "tags",
+                      {"AUTO": "auto", "DETECTOR": "detector", "UNIRIG": "detector",
+                       "KEEP": "keep", "NONE": "keep", "OFF": "keep"}, "auto")
+    stored_hints = rigforge_autotag.stored_axis_hints(obj)[0]
+    if mode == "keep":
+        return {"mode": mode, "used": False,
+                "why": "tags='keep': the tags already on the mesh were used as they are."}, \
+               stored_hints
+    if method != "landmarks" or archetype == "quadruped":
+        return {"mode": mode, "used": False,
+                "why": ("auto-tagging feeds the biped landmark fit; this run used the "
+                        "%s fit on a %s, so the tags were left alone."
+                        % (method, archetype))}, None
+
+    complaint = None
+    snapshot = None
+    if mode == "auto":
+        if not rigforge.tag_groups(obj):
+            # Repair needs something to repair. A mesh with no tags at all keeps
+            # the refusal it has always had ("tag it first"), which is a better
+            # answer than inventing a body plan for whatever it happens to be —
+            # and it costs no detection. ``tags: "detector"`` still tags from
+            # nothing, for the generated-organic lane.
+            return {"mode": mode, "used": False,
+                    "why": ("%r has no tags to repair. Auto-tagging rebuilds tags the "
+                            "landmark fit cannot read; pass tags='detector' to tag an "
+                            "untagged mesh from scratch." % obj.name)}, None
+        readable, complaint = _tags_already_measure(obj, prepared, stored_hints)
+        if readable:
+            return {"mode": mode, "used": False,
+                    "why": ("the tags already on %r measure as limbs, so they were left "
+                            "alone. Auto-tagging repairs tags the landmark fit cannot "
+                            "read; it does not overwrite tags that work."
+                            % obj.name)}, stored_hints
+        snapshot = rigforge_autotag.snapshot_tags(obj)
+
+    status = rigforge_autotag.detector_status(params.get("rigbridge"))
+    if not status.get("installed"):
+        if mode == "detector":
+            raise ForgeError(
+                "tags='detector' was asked for and joint detection is not available "
+                "here: %s" % status.get("says"))
+        # Not a warning: an optional GPU tool that is not installed is not a
+        # defect in this run, and a warning per metarig would train the artist
+        # to skim them.
+        return {"mode": mode, "used": False, "detector": status,
+                "why": status.get("says") or "the joint detector is not installed"}, \
+               rigforge_autotag.stored_axis_hints(obj)[0]
+
+    joints, detector = _detected_joints(obj, params, warnings)
+    if joints is None and mode == "detector":
+        raise ForgeError(
+            "tags='detector' was asked for and the detection did not produce joints; "
+            "see the warnings for what the runner said.")
+    report = rigforge_autotag.auto_tag(
+        obj, joints=joints, detector=detector,
+        midplane=(prepared or {}).get("midplane"),
+        character_left=(prepared or {}).get("character_left"),
+        radius_factor=get_float(params, "tag_radius_factor",
+                                rigforge_autotag.DEFAULT_RADIUS_FACTOR,
+                                minimum=1.0, maximum=6.0),
+        apply=True, replace=True, warnings=warnings)
+    report["mode"] = mode
+    hints = {}
+    for role, vector in (report.get("axis_hints") or {}).items():
+        hints[role] = Vector(vector)
+    hints = hints or None
+
+    # The repair has to prove it repaired something. A rebuild that leaves the
+    # landmark fit still refusing has not helped — and it is not neutral, because
+    # the tag fit downstream will build a rig from the new tags without comment.
+    # So `auto` is allowed to move a mesh from "refused" to "fitted" and nothing
+    # else; anything else is put back exactly as it was.
+    if snapshot is not None:
+        readable, still = _tags_already_measure(obj, prepared, hints)
+        if not readable:
+            rigforge_autotag.restore_tags(obj, snapshot)
+            warnings.append(
+                "The joint detector rebuilt %r's tags and the landmark fit still could "
+                "not read them (%s), so the original tags were put back and nothing "
+                "about this fit changed. The detector is a repair, and this one did not "
+                "take." % (obj.name, still))
+            return {"mode": mode, "used": False, "reverted": True,
+                    "attempted": report.get("sources"),
+                    "why_refused_before": complaint,
+                    "why_refused_after": still,
+                    "why": ("the rebuilt tags were refused by the landmark fit too, so "
+                            "they were reverted")}, stored_hints
+        warnings.append(
+            "The tags on %r could not be read as limbs, so the joint detector rebuilt "
+            "them and the landmark fit now reads them. The refusal was: %s"
+            % (obj.name, complaint))
+
+    report["used"] = True
+    return report, hints
+
+
+def _tags_already_measure(obj, prepared, hints):
+    """``(True, None)`` when the tags on ``obj`` can already be read as limbs.
+
+    The trial is the real thing — :func:`rigforge_landmarks.biped_landmarks`
+    with the tags and hints this fit would actually use — because any cheaper
+    proxy would eventually disagree with it, and the whole point is to predict
+    *its* verdict.  It touches nothing: the landmark pass is a measurement.
+    """
+    prepared = prepared or {}
+    try:
+        rigforge_landmarks.biped_landmarks(
+            obj, midplane=prepared.get("midplane", 0.0),
+            character_left=prepared.get("character_left", 1.0),
+            warnings=[],
+            sides=(("L", "R") if prepared.get("symmetry_requested") is False else ("L",)),
+            axis_hints=hints)
+    except ForgeError as exc:
+        return False, str(exc)
+    return True, None
+
+
+def _detected_joints(obj, params, warnings):
+    """``(joints document | None, provenance)`` — the detection, and where it came from.
+
+    The provenance travels with the report whether or not the detection worked,
+    because "the tags came from a cache hit of a run on this exact mesh" and
+    "the tags came from the box band because the GPU was busy" are the two
+    things a reader of the result most needs to tell apart.
+    """
+    result = rigforge_autotag.detect_joints_for(
+        obj, seed=get_int(params, "tag_seed", 12345, minimum=0, maximum=2 ** 31 - 1),
+        refresh=get_bool(params, "tag_refresh", False),
+        rigbridge=params.get("rigbridge"))
+    provenance = {key: value for key, value in result.items() if key != "joints"}
+    if result.get("ok"):
+        return result["joints"], provenance
+    warnings.append(
+        "Joint detection did not run for the tags (%s), so the tags on the mesh were "
+        "kept: %s" % (result.get("reason"), result.get("says") or ""))
+    return None, provenance
 
 
 def _echo_directory(params, obj):
