@@ -96,6 +96,9 @@ operator class-name prefix and not an environment variable at all.
 | `FORGE_PREVIEW_TIMEOUT` | mcp | `180.0` | Seconds to wait for one `render_preview`. |
 | `FORGE_PRINTER_PATH` | mcp | `<repo>/templates/printer.json` | Default printer profile for the print-readiness tools. |
 | `FORGE_PROJECTS_DIR` | addon, bridge, mcp | `<repo>/projects` | The one folder `partforge_new_part` writes into and the workbench, the panel and the library all read. Three components, one name â€” the single most important entry in this table. |
+| `FORGE_RIGBRIDGE` | addon | `<repo>/rigbridge` | Where the joint-detector runner lives, for an install that moved it. A wrong path is reported, never guessed around. |
+| `FORGE_RIGBRIDGE_CACHE` | rigbridge | `<rigbridge>/cache` | Detection results keyed by mesh hash + arguments + checkpoint, so re-tagging a mesh costs no GPU. |
+| `FORGE_RIGBRIDGE_DISABLE` | rigbridge | unset | `1`/`true` switches joint detection off everywhere — every caller falls back to its non-detector path and says so. |
 | `FORGE_SCRIPT_TIMEOUT` | service | `30` | Seconds one part-script run may take. |
 | `FORGE_SEGMENT_TIMEOUT` | service | `300` | Seconds for one `/segment` or `/export_segments`. |
 | `FORGE_SERVICE_CHECK_TIMEOUT` | mcp | `150.0` | Client budget for `/check`, deliberately above the service's own 120. |
@@ -111,6 +114,7 @@ operator class-name prefix and not an environment variable at all.
 | `FORGE_SLICE_TIMEOUT` | service | `600` | Seconds one slicer run may take. |
 | `FORGE_START_SCRIPT` | bridge | `<repo>/start_forge.ps1` | What `POST /services/start` runs, hidden. A `.py` path runs under this interpreter instead, which is how the tests exercise the route without PowerShell. |
 | `FORGE_TESSELLATION_TOLERANCE` | service | `0.05` | Linear deflection for tessellation, mm. |
+| `FORGE_UNIRIG_PYTHON` | rigbridge | `<root>`'s own venv interpreter | The interpreter the detector subprocess runs under — UniRig's venv, never a Forge one; a missing interpreter is a named failure code, not a crash. |
 | `FORGE_UNIRIG_ROOT` | rigbridge | `C:\forge-models\unirig` | The UniRig checkout. Out of the repo, like the rest of the model install. |
 | `FORGE_UNIRIG_WEIGHTS` | rigbridge | `<root>`'s bundled weights | Explicit path to the UniRig weights; a path that does not exist is a hard error rather than a silent fallback. |
 
