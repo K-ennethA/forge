@@ -23,6 +23,7 @@ from . import (
     floorplan,
     maker,
     meshgen_client,
+    pipeline,
     service_client,
     task_config,
     util,
@@ -184,6 +185,15 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   the sheet owns in conversation memory. A character's `symmetry` defaults to
   true: bipeds are symmetric unless the artist says otherwise, and asymmetry is
   an explicit choice recorded on the sheet.
+- A CHARACTER BUILD IS A STAGED PIPELINE THE ARTIST DRIVES, NEVER A ONE-SHOT:
+  "make the mesh", then "check it", then "now rig it". pipeline_status(project)
+  is the stage board (reference, design, generate, clean, verify_mesh, rig,
+  skin, correctives, animate, export — shorter chains for part/device/floorplan/
+  mold); pipeline_advance(project, stage) starts ONE stage and refuses to skip
+  over a gate that is red; pipeline_record(project, stage, status, numbers,
+  artifacts) is how the turn ends. Do one stage, record its verdict and its
+  files, show the artist, and let THEM say go on. A red gate blocks the next
+  stage, and stepping over one needs override=true with who and why.
 - Print readiness is a pipeline: partforge_check first; if bed_fit fails it
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
@@ -1664,6 +1674,7 @@ def save_design_doc(project: str, filename: str, content: str) -> str:
         documents=design_documents(slug),
         overwritten=existed,
         settings=task_config.mention(slug),
+        pipeline=pipeline.mention(slug),
     )
 
 
@@ -1729,7 +1740,8 @@ def task_config_init(
     sheet = task_config.new_sheet(slug, kind)
     written = task_config.write(slug, sheet)
     return task_config.fmt_init(sheet=sheet, path=written, slug=slug,
-                                replaced=replaced)
+                                replaced=replaced,
+                                pipeline=pipeline.mention(slug))
 
 
 @app.tool()
@@ -1752,7 +1764,7 @@ def task_config_get(project: str) -> str:
     slug = project_slug(project)
     sheet = task_config.read(slug)
     return task_config.fmt_get(sheet=sheet, path=task_config.config_path(slug),
-                               slug=slug)
+                               slug=slug, pipeline=pipeline.mention(slug))
 
 
 @app.tool()
@@ -1785,7 +1797,129 @@ def task_config_set(project: str, name: str, value: Any) -> str:
         settled = next(key for key in sheet["settings"]
                        if key.lower() == settled.lower())
     return task_config.fmt_set(sheet=sheet, path=written, slug=slug,
-                               name=settled, before=before, after=after)
+                               name=settled, before=before, after=after,
+                               pipeline=pipeline.mention(slug))
+
+
+@app.tool()
+def pipeline_status(project: str) -> str:
+    """The build's STAGE BOARD — what is done, what is red, what happens next.
+
+    **A character build is a staged pipeline the artist drives step by step —
+    "make the mesh", "check it", "now rig it" — never an assumed one-shot.**
+    This is the board that makes that true across turns: ten stages for a
+    character, five for a floor plan, each with the gate that decides it, the
+    numbers that gate measured, and the files the stage produced.
+
+    Call it at the START of any build turn, before doing work. The plan is read
+    off disk every time — a stage verdict remembered from earlier in the
+    conversation is a verdict the artist may have moved since, and the whole
+    reason the board is a file is that the conversation is not one.
+
+    The board reads as a column: `[x]` passed, `[!]` failed, `[>]` in progress,
+    `[ ]` pending, `[~]` overridden (a red gate somebody signed their way past,
+    with their name and reason on it). It ends with **next**, naming the exact
+    call to make.
+
+    - `project` is plain words ("werewolf"); the plan is
+      `projects/<slug>/design/build-plan.json`.
+    - Which stages exist comes from the project's **task** — the plan's own, or
+      the settings sheet's. A project with neither is told to run
+      `task_config_init` rather than handed a guessed chain.
+    - A project with no plan yet still gets a board, materialised to be looked
+      at and marked NOT ON DISK YET. Nothing is written by this call.
+
+    Writes nothing, builds nothing, measures nothing. It is the state machine —
+    you do the work between the stages and write the verdict back with
+    `pipeline_record`.
+    """
+    slug, plan, path, fresh = pipeline.load(project)
+    return pipeline.fmt_status(plan=plan, path=path, slug=slug, fresh=fresh)
+
+
+@app.tool()
+def pipeline_advance(
+    project: str,
+    stage: str,
+    override: bool = False,
+    who: str = "",
+    why: str = "",
+) -> str:
+    """Start ONE stage of a staged build. Refuses to skip over a red gate.
+
+    This is the "now rig it" call. It marks the stage in progress and writes the
+    plan — it does not do the work, and it does not do the stages after it. Do
+    that one stage, record what its gate measured, show the artist, and let
+    them say go on.
+
+    **A red gate blocks the next stage.** Advancing past a stage that failed, or
+    over one that never finished, is refused in a sentence naming what is in the
+    way and what it measured. That refusal is the feature: a rig fitted on a
+    mesh that failed its verify gate is a rig that gets thrown away, and the
+    stage board is what remembers the mesh failed.
+
+    - `override=true` goes on anyway, and needs **`who`** and **`why`**. The
+      stepped-over stage is then marked `overridden` — never `passed` — and both
+      stages carry who signed it and what they said, for good. An override with
+      no name and no reason is refused: it is a decision somebody made, and
+      three sessions later that is exactly what matters.
+    - Advancing to a stage that already passed re-opens it, which is how
+      iteration works. The report says it was re-opened rather than started.
+
+    Returns the whole board with this stage in progress, and one line saying
+    what ending it looks like.
+    """
+    slug, plan, _path, _fresh = pipeline.load(project)
+    report = pipeline.advance(plan, stage, override=override, who=who, why=why)
+    written = pipeline.write(slug, plan)
+    return pipeline.fmt_advance(plan=plan, path=written, slug=slug,
+                                report=report)
+
+
+@app.tool()
+def pipeline_record(
+    project: str,
+    stage: str,
+    status: Literal["pending", "in_progress", "passed", "failed"],
+    numbers: Optional[Dict[str, Any]] = None,
+    artifacts: Optional[Union[str, List[str]]] = None,
+    replace: bool = False,
+) -> str:
+    """How a build turn writes its result in — the verdict, the numbers, the files.
+
+    **Call this at the END of every stage, before you say anything to the
+    artist.** A stage ends with its gate verdict and its artifacts; a turn that
+    finished the work but recorded nothing leaves the next turn guessing, which
+    is how a staged build quietly becomes a one-shot again.
+
+    - `status` is what the gate actually answered: `passed`, `failed`, or
+      `in_progress`/`pending` to put the stage back. `overridden` is not
+      recordable — it is not a verdict anybody measures, it is what
+      `pipeline_advance` writes when somebody signs past a red gate.
+    - `numbers` is the gate's measurements, `{"worst_drift_mm": 1.1, "gate":
+      "ok"}`. **A stage cannot pass with nothing measured**: a green verdict
+      with no number beside it is an opinion, and the next stage has to be able
+      to read what this one got. Keep them flat — deep detail belongs in a
+      design document whose path is an artifact.
+    - `artifacts` are the paths the stage produced — a .blend, a render, a
+      .glb, exported STLs. Recorded paths are checked against disk and the board
+      marks any that are not there: a path is a claim.
+    - Numbers and artifacts MERGE into what the stage already carries, because a
+      stage is usually measured by more than one tool. `replace=true` throws the
+      previous ones away instead.
+
+    Record the failure honestly when the gate is red. A red stage blocks the
+    stages after it, which is the point — the fix ladder is worked to green, or
+    the failure itself is presented to the artist as the result.
+
+    Returns the whole board with this stage settled, and names anything on the
+    gate that nothing was recorded for.
+    """
+    slug, plan, _path, _fresh = pipeline.load(project)
+    report = pipeline.record(plan, stage, status, numbers, artifacts,
+                             replace=replace)
+    written = pipeline.write(slug, plan)
+    return pipeline.fmt_record(plan=plan, path=written, slug=slug, report=report)
 
 
 @app.tool()
@@ -4847,6 +4981,7 @@ def floorplan_validate(
         saved=saved_path,
         overwritten=overwritten,
         from_settings=from_settings,
+        pipeline=pipeline.mention(slug) if slug else "",
     )
 
 

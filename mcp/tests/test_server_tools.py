@@ -74,6 +74,10 @@ EXPECTED_TOOLS = {
     "task_config_init",
     "task_config_get",
     "task_config_set",
+    # The staged build pipeline — the board the artist drives one stage at a time
+    "pipeline_status",
+    "pipeline_advance",
+    "pipeline_record",
     # PartForge print readiness (Phase 2)
     "partforge_check",
     "partforge_segment",
@@ -179,7 +183,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 86
+    assert len(names) == 89
 
 
 def test_every_tool_is_documented() -> None:

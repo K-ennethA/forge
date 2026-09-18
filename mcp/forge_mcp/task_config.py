@@ -731,6 +731,7 @@ def fmt_sheet(
     slug: str,
     head: str,
     documents: Optional[List[Dict[str, Any]]] = None,
+    pipeline: str = "",
 ) -> str:
     """**The echo-back.** Every value, and which ones are no longer default.
 
@@ -738,6 +739,12 @@ def fmt_sheet(
     whole pattern: the artist learns the control surface by watching it filled
     in, and a report that listed only what somebody had already thought to
     mention would teach them exactly the things they already knew.
+
+    *pipeline* is one line about the project's ``build-plan.json``, supplied by
+    the caller rather than computed here for the same reason *settings* is on
+    :func:`~forge_mcp.util.fmt_design_saved`: this is a formatter. A report that
+    names the settings sheet and not the stage board tells the artist half of
+    where their build's state lives.
     """
     task = str(sheet.get("task"))
     settings = sheet["settings"]
@@ -774,11 +781,13 @@ def fmt_sheet(
     if documents:
         lines.append(f"  design sheet for {slug}: "
                      + ", ".join(item["file"] for item in documents))
+    if pipeline:
+        lines.append(pipeline)
     return "\n".join(lines)
 
 
 def fmt_init(*, sheet: Mapping[str, Any], path: Path, slug: str,
-             replaced: bool) -> str:
+             replaced: bool, pipeline: str = "") -> str:
     task = sheet.get("task")
     if replaced:
         head = f"Rebuilt the settings sheet for {slug} from the {task} template"
@@ -786,7 +795,7 @@ def fmt_init(*, sheet: Mapping[str, Any], path: Path, slug: str,
         head = (f"Materialised the settings sheet for {slug} — {task}, every "
                 "knob already filled in")
     body = fmt_sheet(sheet=sheet, path=path, slug=slug, head=head,
-                     documents=design_documents(slug))
+                     documents=design_documents(slug), pipeline=pipeline)
     return body + (
         "\n  Show the artist the values that matter to them and ask which to "
         "change — that is the point of handing them a filled sheet rather than "
@@ -794,16 +803,18 @@ def fmt_init(*, sheet: Mapping[str, Any], path: Path, slug: str,
     )
 
 
-def fmt_get(*, sheet: Mapping[str, Any], path: Path, slug: str) -> str:
+def fmt_get(*, sheet: Mapping[str, Any], path: Path, slug: str,
+            pipeline: str = "") -> str:
     return fmt_sheet(
         sheet=sheet, path=path, slug=slug,
         head=f"Settings sheet for {slug}, as it stands right now",
         documents=design_documents(slug),
+        pipeline=pipeline,
     )
 
 
 def fmt_set(*, sheet: Mapping[str, Any], path: Path, slug: str, name: str,
-            before: Any, after: Any) -> str:
+            before: Any, after: Any, pipeline: str = "") -> str:
     entry = sheet["settings"][name]
     unit = entry.get("unit")
     suffix = f" {unit}" if unit else ""
@@ -814,7 +825,8 @@ def fmt_set(*, sheet: Mapping[str, Any], path: Path, slug: str, name: str,
         head = (f"{name}: {_short(before)}{suffix} -> {_short(after)}{suffix} "
                 f"on {slug}'s sheet")
     back_to_default = after == entry.get("default")
-    body = fmt_sheet(sheet=sheet, path=path, slug=slug, head=head)
+    body = fmt_sheet(sheet=sheet, path=path, slug=slug, head=head,
+                     pipeline=pipeline)
     if back_to_default:
         body += f"\n  {name} is back at its default."
     return body

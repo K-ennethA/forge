@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**86 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
+**89 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -386,6 +386,9 @@ holder, so the model **writes** the part.
 | `task_config_init` | `project`, `task`, `force` | Materialises `projects/<slug>/design/task-config.json` with **every** setting that kind of work has, at its default. `task` is `character`, `part`, `device`, `floorplan` or `mold`. Refuses to overwrite an existing sheet without `force=true`. |
 | `task_config_get` | `project` | Echoes the sheet back — every value, with the ones that differ from their default marked. Writes nothing. |
 | `task_config_set` | `project`, `name`, `value` | Changes ONE setting, validated against its choices/range/type, and echoes the whole sheet back. A refusal is a sentence and leaves the sheet untouched. |
+| `pipeline_status` | `project` | The stage board off `projects/<slug>/design/build-plan.json`: every stage, its verdict, the numbers its gate measured, the files it produced, and what **next** is. Writes nothing; a project with no plan still gets a board, marked NOT ON DISK YET. |
+| `pipeline_advance` | `project`, `stage`, `override`, `who`, `why` | Starts ONE stage. Refuses to skip over a stage that failed (quoting what it measured) or one that never finished. `override=true` needs `who` and `why`; the stepped-over stage is marked `overridden`, never `passed`. |
+| `pipeline_record` | `project`, `stage`, `status`, `numbers`, `artifacts`, `replace` | How a build turn writes its result in. `passed` with nothing measured is refused. Numbers and artifacts merge unless `replace`. Recorded paths are checked against disk. |
 
 The loop the assistant runs, and the reason each step is there:
 
@@ -533,6 +536,75 @@ Refusals, all sentences, all leaving the sheet exactly as it was: a second `init
 `force` names what would be thrown away and points at `task_config_set`; an unknown setting
 lists the ones that exist; a bad choice lists the choices; a number outside its range names
 the range; a fraction where a whole number belongs says so.
+
+### The staged build pipeline — `design/build-plan.json`
+
+Owner directive: **a character (and similar) build is a staged pipeline the artist drives
+step by step — "make the mesh", "check it", "now rig it" — never an assumed one-shot.** Each
+stage ends with its gate verdict and its artifacts, and **a red gate blocks the next stage**.
+
+Without a file that says so, the stages live in the conversation, which means they live
+nowhere: the next turn re-rolls the whole build, a failed gate is stepped over because
+nothing remembers it was red, and *"what state is this character in"* has no answer but
+scrollback.
+
+**Contract** — `projects/<slug>/design/build-plan.json`, **extended additively** over the
+shape real plans already carry (`version`, `project`, `notes`, `components`):
+
+```text
+{"version": 1, "project": "<slug>", "task": "character"|"part"|"device"|"floorplan"|"mold",
+ "notes": ..., "components": [...],          <- untouched, whatever was already there
+ "stages": [{"id", "title", "status": "pending"|"in_progress"|"passed"|"failed"|"overridden",
+             "gate": [check names], "artifacts": [paths], "numbers": {name: value},
+             "history": [...], "does", "tools": [tool names]}],
+ "history": [{"date", "note"}]}
+```
+
+The chains (`mcp/forge_mcp/pipeline.py`, one table per task, data-driven exactly as
+`task_config.TEMPLATES` is — a new task is one entry in each):
+
+| task | stages |
+|---|---|
+| `character` | reference → design → generate → clean *(symmetrize/retopo/bake/unwrap)* → verify_mesh → rig → skin → correctives → animate → export |
+| `part` | design → author → generate → check → export |
+| `device` | design → circuit → author → generate → check → export |
+| `floorplan` | extract → validate → echo *(the SVG sign-off gate)* → build → reconcile |
+| `mold` | design → source → undercut → mold → export |
+
+- **The tools are the state machine; the assistant does the work between them.** Nothing in
+  `pipeline.py` runs Blender, generates a mesh or measures anything, and `test_pipeline.py`
+  pins that by driving all three against dead backend ports.
+- **The plan settles at read time**, exactly as `task_config` does: every call goes to disk,
+  nothing caches, and an edit made in a text editor is a supported way to move a stage.
+- **Which stages exist comes from the project's task** — the plan's own, else
+  `design/task-config.json`'s. Precedence is plan → sheet, the shape `floorplan_validate`
+  already uses. A project with neither is a refusal naming `task_config_init`, never a
+  guessed chain: inventing the chain would invent the gates that block the build.
+- **A plan written before stages existed loses nothing.** The werewolf's real plan has
+  `notes` and eight `components` carrying nested measurement blocks and no `stages` at all;
+  `load` materialises the chain *beside* them, in memory, and the first write adds `task`,
+  `stages` and `history` and touches nothing else. `version` stays **1** — a version-1
+  reader that knows nothing about stages still reads every plan correctly, which is what
+  additive means.
+- **An override is signed.** Stepping over a red gate takes `override=true` plus a `who` and
+  a `why`; the stepped-over stage becomes `overridden` (never `passed`), and *both* stages
+  carry the signature in their history for good. An override with no name and no reason is
+  refused — three sessions later is exactly when that matters.
+- **A stage cannot pass with nothing measured.** A green verdict with no number beside it is
+  an opinion, and the next stage has to be able to read what this one got.
+- **Visibility:** every report that already named the settings sheet now also names the
+  board — `save_design_doc`, `task_config_init/get/set` and `floorplan_validate` — through
+  the same caller-supplies-a-line pattern (`pipeline.mention(slug)`), so no formatter grows
+  an import it does not need.
+
+```text
+pipeline_status("werewolf")                                   # where is this build
+pipeline_advance("werewolf", "rig")                           # start ONE stage
+#   ... the assistant does the rig work here ...
+pipeline_record("werewolf", "rig", "failed",
+                {"rig_check.centering": 54.1}, ["renders/skeleton_front.png"])
+pipeline_advance("werewolf", "skin")                          # REFUSED — rig is red
+```
 
 ### PartForge print readiness (Phase 2)
 

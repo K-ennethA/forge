@@ -2696,6 +2696,7 @@ def fmt_design_saved(
     documents: List[Dict[str, Any]],
     overwritten: bool,
     settings: str = "",
+    pipeline: str = "",
 ) -> str:
     """Where the document landed, and where the artist will find it.
 
@@ -2703,6 +2704,11 @@ def fmt_design_saved(
     by the caller rather than computed here, because this formatter's whole job
     is to be a formatter. It says whether the settings sheet exists, because a
     control surface nobody is told about is a control surface nobody uses.
+
+    *pipeline* is the same line for ``build-plan.json``, for the same reason and
+    from the same caller: a build is STAGED, and a report that mentions the
+    settings sheet but not the stage board shows the artist half of where their
+    build's state actually lives.
     """
     suffix = path.suffix.lower()
     lines = [
@@ -2712,6 +2718,8 @@ def fmt_design_saved(
     ]
     if settings:
         lines.append(settings)
+    if pipeline:
+        lines.append(pipeline)
     if suffix == ".svg":
         lines.append(
             "  it is a picture: name that full path in your reply and it renders "
@@ -5908,6 +5916,7 @@ def fmt_floorplan_validated(
     saved: Optional[Path],
     overwritten: bool,
     from_settings: Sequence[str] = (),
+    pipeline: str = "",
 ) -> str:
     """The plan as Forge read it: the counts, the numbers it filled in, the gate.
 
@@ -5985,6 +5994,8 @@ def fmt_floorplan_validated(
             f"  next: floorplan_diff before any later edit, so you can say which "
             f"ids rebuild; floorplan_build to materialise it in Blender."
         )
+    if pipeline:
+        lines.append(pipeline)
     lines.append("  " + FLOORPLAN_GATE)
     return "\n".join(lines)
 
