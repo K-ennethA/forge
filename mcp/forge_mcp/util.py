@@ -2695,14 +2695,23 @@ def fmt_design_saved(
     path: Path,
     documents: List[Dict[str, Any]],
     overwritten: bool,
+    settings: str = "",
 ) -> str:
-    """Where the document landed, and where the artist will find it."""
+    """Where the document landed, and where the artist will find it.
+
+    *settings* is one line about the project's ``task-config.json`` — supplied
+    by the caller rather than computed here, because this formatter's whole job
+    is to be a formatter. It says whether the settings sheet exists, because a
+    control surface nobody is told about is a control surface nobody uses.
+    """
     suffix = path.suffix.lower()
     lines = [
         f"{'Updated' if overwritten else 'Saved'} {path.name} — {path}",
         f"  design sheet for {slug}: "
         + ", ".join(item["file"] for item in documents),
     ]
+    if settings:
+        lines.append(settings)
     if suffix == ".svg":
         lines.append(
             "  it is a picture: name that full path in your reply and it renders "
@@ -5898,6 +5907,7 @@ def fmt_floorplan_validated(
     defaulted: Sequence[Tuple[str, Sequence[str]]],
     saved: Optional[Path],
     overwritten: bool,
+    from_settings: Sequence[str] = (),
 ) -> str:
     """The plan as Forge read it: the counts, the numbers it filled in, the gate.
 
@@ -5906,10 +5916,21 @@ def fmt_floorplan_validated(
     on an alias match" is a sentence the artist can correct in one word — and
     correcting it on the sheet costs nothing, while correcting it after the
     level is built costs a rebuild and possibly their hand edits.
+
+    *from_settings* names the defaults that came off the project's
+    ``task-config.json`` rather than out of the plan. Said out loud because a
+    ceiling height nobody can see the source of is a ceiling height nobody can
+    argue with.
     """
     lines = [
         f"Floor plan reads clean ({source}) — {fmt_plan_counts(tally)}."
     ]
+    if from_settings:
+        lines.append(
+            "  from the settings sheet (the plan did not say): "
+            + ", ".join(from_settings)
+            + " — change one with task_config_set, not by retyping it here."
+        )
     if saved is not None:
         lines.append(
             f"  {'updated' if overwritten else 'saved'} the normalised plan — "

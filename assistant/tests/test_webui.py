@@ -3661,6 +3661,49 @@ def test_the_card_draws_the_design_sheet_and_says_when_nothing_is_built(client):
     assert ".lib-design" in fetch_text(client, "/webui/app.css")
 
 
+# -- the task config map: the settings sheet, on the card --------------------
+
+def test_the_card_singles_out_the_settings_sheet(client):
+    """`task-config.json` is the one design document the artist ACTS on.
+
+    So it gets a panel of its own rather than a fifth row in the file list:
+    a filename with a byte count does not tell anybody that the file is where
+    symmetry and the poly budget are decided.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    assert '"task-config.json"' in script
+    assert "taskConfigNote" in script and "lib-config" in script
+    assert "Settings sheet" in script
+    assert "already filled in at its default" in script
+    css = fetch_text(client, "/webui/app.css")
+    assert ".lib-config" in css and ".lib-config-actions" in css
+
+
+def test_the_settings_sheet_on_the_card_is_read_only_and_says_who_owns_it(client):
+    """The honest version, and the reason it is the honest version.
+
+    The bridge puts a design file's NAME, size and path on a card and never its
+    contents, and it has no write route onto `projects/<slug>/design/` — the
+    MCP server's `save_design_doc` and `task_config_*` tools are the only
+    writers there are.  A key/value form here would therefore be drawn over
+    values this page has not got, with a Save button pointing at a route that
+    does not exist.  So the card routes the edit through the assistant, which
+    is the path that actually validates the value and writes it.
+    """
+    script = fetch_text(client, "/webui/app.js")
+    start = script.index("function taskConfigNote")
+    note = script[start:script.index("function libraryCard", start)]
+    # No request of any kind: it neither reads the file nor writes it, because
+    # the bridge offers no route that would do either.
+    assert "api(" not in note
+    assert 'el("input"' not in note and 'el("form"' not in note
+    assert "Save" not in note
+    # The one route that works: a sentence in the composer the artist sends.
+    assert "askAbout(" in note
+    assert "Change a setting" in note and "Show the settings" in note
+    assert "task config sheet" in note
+
+
 def test_the_reading_order_matches_the_mcp_servers(projects):
     """Two components, one order.  `forge_mcp.util.DESIGN_READING_ORDER` is the
     other copy, and a sheet that read differently on the card than in the tool

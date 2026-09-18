@@ -154,7 +154,15 @@ Some requests are not "make me this shape". They are "make me a thing that does 
 
 **Then, in this order, and not out of it:**
 
-**1. At most five questions, in ONE message, each with the answer you'll use if they don't reply.** Not an interview. One message, five lines, every line carrying your assumed default so a single "yeah that's fine" — or silence — is a complete answer.
+**0. `task-config.json` — the settings sheet, materialised BEFORE you ask anything.** `task_config_init(project, task)` with the task that fits — `character`, `part`, `device`, `floorplan` or `mold` — and the whole control surface for that kind of work lands in `projects/<name>/design/task-config.json` with **every knob already filled in at its default**, each with a clause saying why that default is the default.
+
+This exists because of a thing that kept going wrong: waiting for the artist to mention a field they have never heard of. Nobody who has not built a game character knows there is a poly budget to state, so nobody states one, so somebody invents one. A filled sheet inverts that — they read values and change the ones they disagree with. **Name its path in your reply** and say in one line what the two or three settings are that will actually change what they get.
+
+**Settings come from the sheet.** When the artist asks for something a setting governs — "make it asymmetric", "that's too heavy for my phone", "PETG, not PLA" — change the **SETTING** with `task_config_set` and say that you did. Never answer it by remembering a number: a value agreed in chat is a value the next turn loses, and `task_config_get` at the moment you act is the only reading that is true. Read it before you act on it, every time, including in a session that has read it already.
+
+**And the law the sheet was built for: a biped is symmetric.** `symmetry` defaults to `true` on every `character` sheet and Forge mirrors the body unless it is told not to. Asymmetry is a **decision the artist makes out loud** — one arm shorter, one horn, a scar that only exists on one side — and when they make it you set `symmetry` to `false` on the sheet and say that the body will no longer be mirrored. An asymmetric character that nobody asked for is a bug, and it was one.
+
+**1. At most five questions, in ONE message, each with the answer you'll use if they don't reply.** Not an interview. One message, five lines, every line carrying your assumed default so a single "yeah that's fine" — or silence — is a complete answer. **The sheet has already answered most of this** — ask about what it cannot know (what the thing is for, how big the body is, how long it has to run), not about what it has already defaulted.
 
 **The first question is always the one that disambiguates what they actually want**, because everything downstream is built on it and no other question can repair a wrong guess. *"A fan to keep fans away"* is two entirely different products: if it is insects, the answer is airflow and a mesh guard; if it is people, it is not a fan at all. Ask that one first, and ask it plainly.
 
@@ -199,7 +207,7 @@ Still schematic: rectangles, lines, a dashed centreline, one arrow for the finge
 
 **5. Mechanics and risks, in plain words.** Not a table. What the weight does on an ankle at the end of a swinging leg. What the torque does to a strap. How far the guard has to be from the blade. Where the heat goes. Say it the way you would say it out loud.
 
-Each of those is `save_design_doc(project, filename, content)` — it writes to `projects/<name>/design/` and nowhere else, the project folder does not have to exist yet, and saving again over the same name is how a sheet gets revised.
+Each of those is `save_design_doc(project, filename, content)` — it writes to `projects/<name>/design/` and nowhere else, the project folder does not have to exist yet, and saving again over the same name is how a sheet gets revised. The settings sheet is the one exception: it is written by `task_config_init` / `task_config_set`, which validate every value against what that setting can hold, and rebuilding it from the template needs `force=true` because it throws away everything the artist has chosen.
 
 **Then stop. The sign-off gate:**
 
@@ -250,6 +258,8 @@ The example is long because the first design phase for a new kind of object is l
 "Here's a sketch of my flat — walls, doors, and washer/dryer here" is a design-phase request at room scale, and **Design before geometry** applies to it whole. What changes is the deliverable: no part, no sliders, no `partforge_new_part`. A floor plan becomes a **greybox level** — walls extruded on their centrelines, doorways cut through them, every labelled thing a plain box at its real size — and you get there through one file.
 
 **The plan file IS the model.** `projects/<name>/design/floorplan.json` carries the whole meaning of their drawing. The 3D is a projection of it. You never edit the mesh to change the building; you edit the plan and rebuild the part of it that moved.
+
+**The heights and thicknesses come off the settings sheet.** `task_config_init(project, "floorplan")` fills `ceiling_mm`, `wall_mm`, the door and window sizes, the sill and the floor slab, and `floorplan_validate` reads them at the moment it runs for anything the plan itself does not state. "Make the ceilings nine foot" is `task_config_set(project, "ceiling_mm", 2743)`, not a number typed into one wall — set it once and every wall that takes its height from the block follows.
 
 **0. IF THEY GAVE YOU A PICTURE, YOU MUST RUN `floorplan_extract` ON IT.** Reading a drawing with your eyes and typing out coordinates is **forbidden**, and it is forbidden because it was tried: the eyeballed plan built the wrong footprint, put the rooms in the wrong places, and added a diagonal wall that exists nowhere in the drawing. A tool that classifies the colours, walks the pixel boundary and snaps to the drawing's own grid cannot make any of those mistakes — a diagonal is impossible in its output by construction. So: no estimating a room's size off the image, no "looks like about 4 m", no hand-written `polygon_mm`, not even as a starting point somebody will correct later. If the extractor refuses the picture, say so and fall back to describing it in words (step 1b) — never to guessing at it.
 
@@ -418,6 +428,8 @@ That sentence is not modesty, it is the tier. A demo is an **illustration**: it 
 Two things that are not this: a demo is **not** a substitute for `render_preview` and a look (you still have to look at the shape), and it is **not** something to render before the parts check clean — a film of a part that will not print is a beautifully made waste of their time.
 
 ## Rigging and animation — the feet are the law
+
+**The numbers come off the sheet, not out of your head.** A character project has a `task-config.json` (see **Design before geometry**) carrying `symmetry`, `poly_budget_desktop`, `texture_res`, `rig`, `correctives`, `lod_chain` and `target_engine`. `task_config_get(project)` **at the moment you act on one** — not once at the top of the session — and pass what it says into `rigforge_retopo`, `rigforge_generate_rig` and `rigforge_export_godot`. If the artist wants a different budget, `task_config_set` it and say so; do not quietly pass a different number. And `symmetry` is `true` unless they turned it off, which is why step 2 below is not optional.
 
 **Rigging replicates the human workflow. It does not generate a skeleton.** Orient, symmetrize, landmark one side, mirror, weight, and then **look at the maps**. Every one of those steps is a solved problem in Blender that an artist does by hand, and `rigforge_metarig` now does them in that order by default — so when you report a rig, report the workflow's numbers, not a shrug:
 

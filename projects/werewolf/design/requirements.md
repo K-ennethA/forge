@@ -141,27 +141,28 @@ C's skeleton are what make the retarget work on the Godot side.
 - **Form A (human) — the open item.** See §7 below — this is what's needed before the human
   base can be generated.
 
-## 7. What's needed before generating the human base
+## 7. What's needed before generating the human base — RESOLVED, design approved
 
-None of these exist yet for Form A. In order of how much they'd block or reshape the base
-mesh:
+Closed out on 2026-09-17. Reference added: `design/refs/Uncharted-4-Nathan-Drake-character-
+model.jpg` (a 4-pose contact sheet, head-to-mid-thigh, no full-body or back view in it).
 
-1. **Front view, A-pose** (arms at roughly 45° from the body, not a stiff T — an A-pose
-   binds more cleanly when the skeleton is rigged, avoiding shoulder pinching), full body,
-   neutral standing. Establishes width and silhouette.
-2. **Side/profile view, same pose.** A front view alone can't establish depth — chest
-   thickness, back curve, glute/quad depth — and all of those matter for how "athletic"
-   actually reads in 3D versus in a single flat silhouette.
-3. **A face reference**, front + 3/4, *only if* you have a specific face in mind for this
-   character. If not, say so and I'll design a generic Arkham-hero-adjacent face — but
-   flag this either way, because Form B's brow/ear/fang shape keys are deltas on top of
-   whatever face Form A ships with, so the base face is worth getting right once rather
-   than revisiting after Form B is already built on it.
-4. **One clarifying question, not a reference:** should the base mesh be nude/base-layer
-   (skin only — the normal choice for a riggable base you clothe later, since clothing is
-   typically its own cloth-sim layer via `rigforge_cloth`), or do you already have a specific
-   costume in mind that should be modeled in from the start? Either answer is fine — it
-   just determines whether costume references are needed now or later.
+- **Reference role: style/proportion anchor, not a likeness.** Generic game-protagonist
+  human biped, athletic build, in the spirit of that reference. Generic face — no specific
+  likeness intended, no face reference was given, so Form A ships with a generic
+  Arkham-hero-adjacent face per the original fallback in this section.
+- **Costume is modeled in, not a nude base.** Simple shirt + pants, matching the reference's
+  henley-shirt-and-cargo-pants silhouette. The reference photo also shows Drake-specific
+  loadout gear (shoulder holster, ammo pouches, rope) — that gear is NOT part of this spec;
+  "simple shirt/pants" means the plain garments only. Costume is sculpted into the base mesh
+  as its own read (not a separate cloth-sim layer), since the brief calls it "costume
+  modeled in."
+- **Coverage gap: no full body, no legs, no back view in the reference.** Anywhere the
+  reference doesn't show (legs, feet, back, exact face), standard human biped proportions
+  apply, at the already-locked 188 cm total — i.e. the §3 numbers (thigh ~47 cm, shin
+  ~49 cm, shoulder width ~50 cm, arm length ~64 cm) govern, not a guess extrapolated from
+  the photo crop.
+- A cropped single-subject front view was prepared from the contact sheet for generation
+  input: `design/refs/form-a-front-crop.png` (the centered front-facing panel, head to
+  mid-thigh, plain black background).
 
-Optional but useful: a back view of Form A, for the same reason it's useful (not blocking)
-on Form C.
+Design is approved. Building starts now, in installments — see `build-plan.json`.

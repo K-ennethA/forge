@@ -1424,6 +1424,73 @@
     });
   }
 
+  // The settings sheet the design phase materialises: every knob for that kind
+  // of work, pre-filled at its default, so the artist edits values instead of
+  // having to know which fields exist.
+  var TASK_CONFIG_FILE = "task-config.json";
+
+  function taskConfigFile(design) {
+    var found = null;
+    (design || []).forEach(function (file) {
+      if (String(file.file).toLowerCase() === TASK_CONFIG_FILE) { found = file; }
+    });
+    return found;
+  }
+
+  function askAbout(text, caret) {
+    showTab("studio");
+    var box = $("message");
+    box.value = text;
+    resize();
+    box.focus();
+    var at = typeof caret === "number" ? caret : text.length;
+    try { box.setSelectionRange(at, at); } catch (err) { /* older browsers */ }
+  }
+
+  // READ-ONLY, deliberately.  The bridge puts a design file's NAME, size and
+  // path on a card and never its contents, and it has no write route onto
+  // projects/<slug>/design/ at all — `save_design_doc` and the task_config
+  // tools are the only writers and they live in the MCP server.  So a
+  // key/value FORM here would be a form drawn over values this page has not
+  // got, with a Save button that has nowhere to POST: two lies instead of one
+  // honest sentence.  What the card does instead is name the sheet, say who
+  // owns it, and hand the artist the one route that does work end to end — a
+  // sentence in the composer that the assistant turns into a `task_config_set`
+  // call, which validates the value and writes it where every later tool reads.
+  function taskConfigNote(project, file) {
+    var box = el("div", "lib-config");
+    var head = el("div", "lib-config-head", "Settings sheet");
+    head.title = file.path;
+    box.appendChild(head);
+    box.appendChild(el("p", "lib-config-hint",
+      "Every setting for this kind of work, already filled in at its default — "
+      + "symmetry, budgets, materials, tolerances. The assistant owns this "
+      + "file: tell it to change a value and it changes the sheet, so every "
+      + "later turn reads the same number instead of remembering one."));
+
+    var row = el("div", "lib-config-actions");
+
+    var show = el("button", "btn tiny lib-config-show", "Show the settings");
+    show.type = "button";
+    show.title = "Ask the assistant to read " + file.path + " back to you";
+    show.addEventListener("click", function () {
+      askAbout("Show me the task config sheet for " + project.name
+               + " — every setting, and which ones are off their default.");
+    });
+    row.appendChild(show);
+
+    var change = el("button", "btn tiny lib-config-edit", "Change a setting");
+    change.type = "button";
+    change.title = "Writes the sentence for you — finish it and press send";
+    change.addEventListener("click", function () {
+      askAbout("On " + project.name + "'s task config sheet, set ");
+    });
+    row.appendChild(change);
+
+    box.appendChild(row);
+    return box;
+  }
+
   function libraryCard(project) {
     var card = el("section", "lib-card");
     card.dataset.project = project.name;
@@ -1513,6 +1580,9 @@
       }
       body.appendChild(sheetList);
     }
+
+    var config = taskConfigFile(design);
+    if (config) { body.appendChild(taskConfigNote(project, config)); }
 
     // The newest take plays on the card; the ones before it are named under it,
     // because a card that autoplays four films is a card nobody can read.

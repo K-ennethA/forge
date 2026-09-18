@@ -70,6 +70,10 @@ EXPECTED_TOOLS = {
     "partforge_open_in_panel",
     # The design phase (Phase 16) — requirements and a diagram before geometry
     "save_design_doc",
+    # The task config map — the settings sheet the design phase materialises
+    "task_config_init",
+    "task_config_get",
+    "task_config_set",
     # PartForge print readiness (Phase 2)
     "partforge_check",
     "partforge_segment",
@@ -175,7 +179,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 83
+    assert len(names) == 86
 
 
 def test_every_tool_is_documented() -> None:
@@ -234,6 +238,9 @@ def test_every_tool_has_an_object_schema() -> None:
         # has nowhere to live, one with no name cannot be re-saved over, and one
         # with no content is the empty file that reads as a broken tool.
         ("save_design_doc", ["project", "filename", "content"]),
+        ("task_config_init", ["project", "task"]),
+        ("task_config_get", ["project"]),
+        ("task_config_set", ["project", "name", "value"]),
         ("partforge_check", ["script_path"]),
         ("partforge_segment", ["script_path"]),
         ("partforge_load_segments", ["script_path"]),

@@ -912,6 +912,34 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .lib-design { border-left: 2px solid var(--line); padding-left: 8px; }
 .lib-design-fact { color: var(--text); }
 
+/* The task config map — the settings sheet.  It is a panel rather than another
+   row in the file list because it is the one design document the artist is
+   expected to ACT on, and because it is read-only here (the bridge serves a
+   design file's name, never its contents, and has no write route onto
+   design/): the sentence explaining who owns it has to be visible, not a
+   tooltip on a filename. */
+.lib-config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+}
+.lib-config-head {
+  font: 11.5px/1.5 var(--mono);
+  color: var(--text);
+  letter-spacing: .02em;
+}
+.lib-config-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.lib-config-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
 /* Phase 17 — the demo is the one thing on a card that is watched rather than
    read, so it gets the card's own width and the same frame the thumbnail has. */
 .lib-demos { display: flex; flex-direction: column; gap: 4px; }

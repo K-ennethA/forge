@@ -24,6 +24,7 @@ from . import (
     maker,
     meshgen_client,
     service_client,
+    task_config,
     util,
 )
 from .errors import BackendError, BackendUnavailable, ForgeError
@@ -175,6 +176,14 @@ Forge drives a Blender add-on and a Build123d geometry service on localhost.
   sheet, a hand-written concept .svg and a components proposal, each saved with
   save_design_doc into projects/<slug>/design/. Geometry starts only after the
   artist signs off on the sheet. A trivially-shaped part skips all of this.
+- The design phase ALSO materialises a settings sheet: task_config_init(project,
+  task) fills projects/<slug>/design/task-config.json with every knob that kind
+  of work has, already at its default, so the artist edits values instead of
+  having to know the fields. Settings SETTLE AT READ TIME — task_config_get
+  before acting on one, task_config_set to change one, and never carry a value
+  the sheet owns in conversation memory. A character's `symmetry` defaults to
+  true: bipeds are symmetric unless the artist says otherwise, and asymmetry is
+  an explicit choice recorded on the sheet.
 - Print readiness is a pipeline: partforge_check first; if bed_fit fails it
   hands back a `mode` object — pass it verbatim to partforge_segment (planning,
   no meshes), partforge_load_segments (same, plus the pieces laid out in the
@@ -1654,7 +1663,129 @@ def save_design_doc(project: str, filename: str, content: str) -> str:
         path=path,
         documents=design_documents(slug),
         overwritten=existed,
+        settings=task_config.mention(slug),
     )
+
+
+@app.tool()
+def task_config_init(
+    project: str,
+    task: Literal["character", "part", "device", "floorplan", "mold"],
+    force: bool = False,
+) -> str:
+    """Materialise the settings sheet for a project — every knob, pre-filled.
+
+    **Do this in the design phase, before the geometry and before the
+    questions are answered.** The sheet is
+    `projects/<project>/design/task-config.json`, and what makes it worth
+    having is that it arrives COMPLETE: every setting this kind of work has,
+    already sitting at its default, with a clause saying why that default is
+    the default. The artist then edits VALUES. They never have to know which
+    fields exist, and you never have to guess a number they did not mention.
+
+    The five tasks, and what each one is:
+
+    - `character` — a rigged, animated body headed for a game engine.
+      **`symmetry` defaults to `true`**: bipeds are symmetric unless the artist
+      says otherwise, and an asymmetric one is an explicit choice recorded here,
+      never an accident.
+    - `part` — a parametric part headed for a printer (printer profile, wall
+      thickness, whether bed fit constrains the design, export formats).
+    - `device` — a part with a circuit in it; the battery, switch and LED
+      choices are the real maker catalog's names.
+    - `floorplan` — mirrors the plan defaults the level builder actually uses,
+      so a ceiling height cannot mean two things.
+    - `mold` — parting mode, shell, draft, registration keys, silicone.
+
+    Refuses to overwrite an existing sheet: `force=true` rebuilds it from the
+    template and throws away every value the artist has set. Changing ONE
+    setting is `task_config_set`, which is almost always what was meant.
+
+    Returns the whole sheet echoed back, every value in it. Show the artist the
+    handful that matter to them and ask which to change — handing somebody a
+    filled sheet is the point, and handing them a blank question is the thing
+    this replaces.
+    """
+    slug = project_slug(project)
+    kind = task_config.normalize_task(task)
+    path = task_config.config_path(slug)
+
+    replaced = path.is_file()
+    if replaced and not force:
+        try:
+            current = task_config.read(slug)
+            summary = ", ".join(task_config.changed(current)) or "none"
+        except ForgeError:
+            summary = "unreadable"
+        raise ForgeError(
+            f"{slug} already has a settings sheet at {path} (settings changed "
+            f"from their defaults: {summary}). Rebuilding it from the template "
+            "would throw those away. To change one setting, call "
+            "task_config_set(project, name, value); to see what is on it, "
+            "task_config_get(project). Pass force=true only if the artist asked "
+            "to start the sheet over."
+        )
+
+    sheet = task_config.new_sheet(slug, kind)
+    written = task_config.write(slug, sheet)
+    return task_config.fmt_init(sheet=sheet, path=written, slug=slug,
+                                replaced=replaced)
+
+
+@app.tool()
+def task_config_get(project: str) -> str:
+    """Read the project's settings sheet — EVERY value, and which are not default.
+
+    Call this before doing work a setting governs, and call it again rather
+    than remembering what it said. The sheet on disk is the truth; a value you
+    are carrying from earlier in the conversation is a value the artist may have
+    changed since.
+
+    The report prints every setting whether or not anybody has touched it, with
+    the ones that differ from their default marked. That is deliberate: the
+    artist learns what they are allowed to control by watching the control
+    surface come back filled in, and a report that listed only what somebody had
+    already thought to mention would tell them exactly what they already knew.
+
+    Writes nothing. A project with no sheet is told how to get one.
+    """
+    slug = project_slug(project)
+    sheet = task_config.read(slug)
+    return task_config.fmt_get(sheet=sheet, path=task_config.config_path(slug),
+                               slug=slug)
+
+
+@app.tool()
+def task_config_set(project: str, name: str, value: Any) -> str:
+    """Change ONE setting on the project's sheet, and echo the whole sheet back.
+
+    **When the artist asks for something a setting governs, change the SETTING
+    and say so.** "Make it asymmetric", "that's too heavy for mobile", "use
+    PETG walls" — each of those is a value on this sheet, not a note to
+    remember. A setting changed here is a setting every later tool reads; a
+    number agreed in chat is a number the next turn loses.
+
+    `value` is checked against what that setting can hold: a choice must be one
+    of its choices, a number must be inside its range, a yes/no must be one.
+    Anything else is refused in a sentence naming what would have worked, and
+    the sheet is left exactly as it was.
+
+    Setting `symmetry` to `false` on a character is a real decision, not a
+    default drifting — say out loud that the body will no longer be mirrored
+    and that the change is now on the sheet.
+
+    Returns the sheet echoed back in full, with this setting marked as changed.
+    """
+    slug = project_slug(project)
+    sheet = task_config.read(slug)
+    before, after = task_config.apply(sheet, name, value)
+    written = task_config.write(slug, sheet)
+    settled = str(name).strip().strip('"').strip()
+    if settled not in sheet["settings"]:
+        settled = next(key for key in sheet["settings"]
+                       if key.lower() == settled.lower())
+    return task_config.fmt_set(sheet=sheet, path=written, slug=slug,
+                               name=settled, before=before, after=after)
 
 
 @app.tool()
@@ -4677,6 +4808,24 @@ def floorplan_validate(
     """
     slug, source_plan, source = _plan_source(plan, project, tool="floorplan_validate")
 
+    # The settings sheet settles HERE, at read time, off disk — never from an
+    # argument a model filled in from a number it remembered. Precedence is
+    # plan, then sheet, then the service's own DEFAULTS: the plan's explicit
+    # block always wins, because a number the artist typed into this plan is a
+    # decision about this plan.
+    from_settings: List[str] = []
+    if slug is not None:
+        settled = task_config.plan_defaults(slug)
+        if settled:
+            block = dict(source_plan.get("defaults") or {})
+            for name, value in settled.items():
+                if name not in block:
+                    block[name] = value
+                    from_settings.append(name)
+            if from_settings:
+                source_plan = dict(source_plan)
+                source_plan["defaults"] = block
+
     # Normalised first, resolved second, and they are DIFFERENT documents: the
     # normalised one is what gets saved (it still knows which numbers were
     # chosen), the resolved one is what gets reported and, later, built.
@@ -4697,6 +4846,7 @@ def floorplan_validate(
         defaulted=floorplan.from_defaults(resolved),
         saved=saved_path,
         overwritten=overwritten,
+        from_settings=from_settings,
     )
 
 

@@ -12,7 +12,7 @@ Wire formats are fixed by [`docs/architecture.md`](../docs/architecture.md); thi
 a thin, well-labelled wrapper over them. It holds no state and opens a fresh connection per
 call, so backends can start, stop and restart underneath it without a Claude Code restart.
 
-**83 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
+**86 tools.** Two groups are the exception to "wrapper over a wire": the four **maker mode**
 tools import `service/components.py`, `service/wiring.py` and the arithmetic half of
 `service/maker_lib.py` in-process, because a resistor calculation has no endpoint and those
 modules are dependency-free. That coupling is argued in full in `forge_mcp/maker.py`'s
@@ -382,7 +382,10 @@ holder, so the model **writes** the part.
 |---|---|---|
 | `partforge_new_part` | `name`, `script_source`, `overwrite`, `components` | Validates the script through the service's `/parse_params` and — only then — writes it to `projects/<slug>/part.py`, plus a minimal `spec.json` beside it. Returns the path and the parsed parameter table. `components` (`["collar", "ear-l"]`) records the component tree in the spec — see Phase 11 below. |
 | `partforge_open_in_panel` | `script_path` | Points Blender's Forge panel at that script and rebuilds its sliders (the `partforge_open` socket command, the panel's own Load Script path). Builds nothing — generate next. |
-| `save_design_doc` | `project`, `filename`, `content` | Writes ONE design document to `projects/<slug>/design/<filename>` and nowhere else. `.md`, `.svg` or `.json` only. The project folder need not exist — the design phase comes *before* the part. Overwriting is normal (a sheet iterates). Returns the path, the whole sheet in reading order, and the sign-off reminder. |
+| `save_design_doc` | `project`, `filename`, `content` | Writes ONE design document to `projects/<slug>/design/<filename>` and nowhere else. `.md`, `.svg` or `.json` only. The project folder need not exist — the design phase comes *before* the part. Overwriting is normal (a sheet iterates). Returns the path, the whole sheet in reading order, whether a settings sheet exists, and the sign-off reminder. |
+| `task_config_init` | `project`, `task`, `force` | Materialises `projects/<slug>/design/task-config.json` with **every** setting that kind of work has, at its default. `task` is `character`, `part`, `device`, `floorplan` or `mold`. Refuses to overwrite an existing sheet without `force=true`. |
+| `task_config_get` | `project` | Echoes the sheet back — every value, with the ones that differ from their default marked. Writes nothing. |
+| `task_config_set` | `project`, `name`, `value` | Changes ONE setting, validated against its choices/range/type, and echoes the whole sheet back. A refusal is a sentence and leaves the sheet untouched. |
 
 The loop the assistant runs, and the reason each step is there:
 
@@ -458,6 +461,78 @@ The report lists the whole sheet in reading order (`requirements.md`, `concept.s
 reads it in, and it tells the model to name an `.svg`'s full path in the reply — the
 assistant bridge mints a `/file` token for it and the diagram renders inline in the chat.
 The bridge's `GET /library` cards carry the same list as `design`.
+
+### The task config map — `design/task-config.json`
+
+> *"Our bipeds should be symmetric at least for what Forge does, unless the user specifies
+> it shouldn't be. Honestly we should have some config map for the user to select values
+> depending on the task, rather than assuming the user will tell the LLM all needed fields
+> and values."* — the owner, 2026-09-18
+
+Two failures, one file. The first is a **default nobody stated**: a biped came out
+asymmetric because symmetry was never a setting, only a thing somebody might have thought
+to ask for. The second is **the artist being asked to know the control surface**: a person
+who has never built a game character cannot mention a poly budget, so nobody mentions one,
+so something invents one.
+
+So the design phase **materialises the whole sheet with every knob pre-filled at its
+default**, and the artist edits values instead of guessing which fields exist. It is the
+vendor echo-back pattern (the control surface teaches itself by arriving already filled in)
+applied to a settings file. The shape:
+
+```json
+{"version": 1, "task": "character", "project": "gecko",
+ "settings": {"symmetry": {"value": true, "default": true,
+                           "why": "bipeds are symmetric unless you say otherwise"},
+              "poly_budget_desktop": {"value": 8000, "default": 15000,
+                                      "unit": "triangles", "min": 500, "max": 200000,
+                                      "why": "LOD0's ceiling; ..."}},
+ "history": [{"date": "...", "setting": "poly_budget_desktop", "from": 15000, "to": 8000}]}
+```
+
+The five templates (`mcp/forge_mcp/task_config.py`, one table per task):
+
+| task | settings |
+|---|---|
+| `character` | `symmetry` (**true**), `target_engine` (godot), `poly_budget_desktop` (15000 tri), `lod_chain` (auto), `texture_res` (2048), `rig` (biped_ik), `correctives` (true), `face_detail_pass` (false) |
+| `part` | `printer_profile` (templates/printer.json), `wall_mm` (2.0), `bed_fit` (design_full_size), `export_formats` (["stl"]) |
+| `device` | `battery`, `switch`, `led` — **choices are the real maker catalog's names** — and `voltage_v` (3.0 V) |
+| `floorplan` | the whole of `service.floorplan.DEFAULTS`, **generated from it**: ceiling 2400, wall 100, door 820×2040, windows, sill, label height, floor slab, label anchor |
+| `mold` | `mode` (printed_negative), `shell_mm` (4.0), `draft_deg` (2.0), `registration_keys` (4), `silicone` (tin-cure, shore 15-30) |
+
+Four rules hold it together:
+
+- **Values settle at READ time.** `task_config.setting(project, name, fallback)` is the
+  consumer API and it goes to disk on every call. Nothing caches, and nothing takes the
+  value from a tool argument a model filled in from memory — a number remembered three
+  turns ago is a number the artist has since changed. An edit made in a text editor is
+  therefore a supported way to change a setting, and is tested as one. The first real
+  consumer is **`floorplan_validate`**, which fills a plan's `defaults` block from the
+  sheet for anything the plan does not state — precedence **plan → sheet → the service's
+  own `DEFAULTS`** — and names in its report which numbers came off the sheet.
+- **Defaults are mirrored, never retyped.** The floor-plan block is built *from*
+  `service.floorplan.DEFAULTS` and the maker choices come off the component catalog, both
+  through the same lazy-and-guarded import every other service-coupled module uses. A
+  checkout with no `service/` still materialises a sheet, from written-down copies that a
+  test compares against the real ones.
+- **It is not a second writer.** The sheet goes through `save_design_doc`'s own
+  `design_paths` + `normalize_design_content`, so one set of slug/traversal/JSON checks
+  guards `projects/<slug>/design/` and this adds no new door onto it.
+- **`task-config.json` is deliberately NOT in `DESIGN_READING_ORDER`.** That tuple is the
+  order a person reads a *sheet* in and it is mirrored byte for byte in
+  `assistant/bridge.py`; the settings file is the machine's copy of what was decided, so it
+  files alphabetically exactly as `floorplan.json` does.
+
+```text
+task_config_init("gecko", "character")        # every knob, at its default, echoed back
+task_config_set("gecko", "symmetry", false)   # an explicit artist decision, on the sheet
+task_config_get("gecko")                      # read it again before acting on it
+```
+
+Refusals, all sentences, all leaving the sheet exactly as it was: a second `init` without
+`force` names what would be thrown away and points at `task_config_set`; an unknown setting
+lists the ones that exist; a bad choice lists the choices; a number outside its range names
+the range; a fraction where a whole number belongs says so.
 
 ### PartForge print readiness (Phase 2)
 
@@ -598,7 +673,7 @@ missing id is refused rather than generated.
 
 | Tool | Key params | What it does |
 |---|---|---|
-| `floorplan_validate` | `plan` (the object) and/or `project`, `save` (default **true**) | `service.validate_plan` + `fill_defaults`. Reports the counts, the resolved `defaults`, which entries took one, and every fixture's appliance match **with its confidence and the route it matched by**. With a `project` it saves the normalised plan back under `save_design_doc`'s rules. |
+| `floorplan_validate` | `plan` (the object) and/or `project`, `save` (default **true**) | `service.validate_plan` + `fill_defaults`. Reports the counts, the resolved `defaults`, which entries took one, and every fixture's appliance match **with its confidence and the route it matched by**. With a `project` it saves the normalised plan back under `save_design_doc`'s rules, and fills the `defaults` block from that project's `task-config.json` for anything the plan does not state (plan → sheet → service defaults, and it says which came off the sheet). |
 | `floorplan_diff` | `plan` (the proposal), `against` (a plan) **or** `project` (its saved plan) | `service.diff_plans` — `added` / `removed` / `changed` / `unchanged`, by id, plus the one-sentence version: *"this edit rebuilds 2 walls, adds 1 fixture and touches nothing else."* Reads nothing in Blender. |
 | `floorplan_build` | `plan` and/or `project`, `collection` (`"Floorplan"`), `mode` `update`/`rebuild`, `floor`, `sync` (default **true**) | Sends `build_floorplan` over the socket. With a `project`, `sync` **absorbs the artist's scene edits into the plan first** and the report leads with what it absorbed. Then built / updated / deleted / **unchanged** / **kept**, the door mechanism records, the bounds, and the greybox honesty line. Needs Blender. |
 | `floorplan_reconcile` | `project`, `apply` (default **false**), `collection`, `floor`, `confirm_deletions` (default **false**) | The return channel: sends the read-only `reconcile_floorplan`, reports what MOVED and by how many millimetres, what was resized, what they deleted, what boxes Forge did not build, and what no plan field can describe. `apply=true` runs `service.absorb_reconcile`, saves the plan through `floorplan_validate`'s own write path and quotes the diff — **rebuilding nothing**. Needs Blender. |

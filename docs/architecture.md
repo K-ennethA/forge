@@ -345,6 +345,39 @@ Implemented refinements (additive; the sketch below is unchanged and still bindi
 - **System prompt** gained `## Design before geometry`, placed before `## Making new parts` and cross-referencing both it and `## Making things that DO something` (whose opening now says every maker build triggers the phase). It carries the trigger law, the ≤5-questions-one-message law with stated defaults and the intent-disambiguator first, the five deliverables in order, the sign-off sentence verbatim, and the worked ankle-fan example including the honest physics verdict ("marginal in still air, nothing outdoors — here is the version that works").
 - **Tests:** `mcp/tests/test_design.py` — 70 tests inside an **856-test** MCP suite (was 786); `assistant/tests/test_webui.py` gained 13 (SVG minting/serving/CSP/attachment asymmetry, design listing and ordering, the design-only card, the mtime, the DOM anchors).
 
+#### The task config map — `design/task-config.json` (2026-09-18) — implemented
+
+Owner directive, near-verbatim: *"our bipeds should be symmetric at least for what Forge does, unless the user specifies it shouldn't be. Honestly we should have some config map for the user to select values depending on the task, rather than assuming the user will tell the LLM all needed fields and values."*
+
+Two failures, one file. A biped came out **asymmetric because symmetry was never a setting** — only a thing somebody might have thought to ask for. And an artist who has never built a game character **cannot mention a poly budget**, so nobody mentions one and something invents one. The design phase therefore materialises the whole control surface with every knob pre-filled at its default, and the artist edits **values** rather than having to know which fields exist. This is the vendor echo-back pattern (the control surface teaches itself by arriving filled in) applied to a settings file.
+
+**Contract.** `projects/<slug>/design/task-config.json`:
+
+```
+{"version": 1, "task": "character"|"part"|"device"|"floorplan"|"mold", "project": "<slug>",
+ "settings": {"<name>": {"value", "default", "unit"?, "choices"?, "min"?, "max"?, "why"?}},
+ "history":  [{"date", "setting", "from", "to"} | {"date", "note"}]}
+```
+
+**Templates** (`mcp/forge_mcp/task_config.py`, one table per task, data-driven — a new task is one entry):
+
+| task | settings, with defaults |
+|---|---|
+| `character` | **`symmetry` true** ("bipeds are symmetric unless you say otherwise"), `target_engine` godot, `poly_budget_desktop` 15000 tri, `lod_chain` auto, `texture_res` 2048, `rig` biped_ik, `correctives` true, `face_detail_pass` false |
+| `part` | `printer_profile` (`templates/printer.json`), `wall_mm` 2.0, `bed_fit` `design_full_size`, `export_formats` `["stl"]` |
+| `device` | `battery`, `switch`, `led` with **choices read off the real component catalog**, `voltage_v` 3.0 |
+| `floorplan` | **generated from `service.floorplan.DEFAULTS`** — ceiling 2400, wall 100, door 820×2040, window 1200×1200, sill 900, label height 850, floor 50, label anchor |
+| `mold` | `mode` printed_negative, `shell_mm` 4.0, `draft_deg` 2.0, `registration_keys` 4, `silicone` "tin-cure, shore 15-30" |
+
+- **Values SETTLE AT READ TIME.** `task_config.setting(project, name, fallback)` is the consumer API and it goes to disk on every call — no cache, and never a value a model passed in from memory. An edit made in a text editor is a supported way to change a setting and is tested as one. **The first real consumer is `floorplan_validate`**: `task_config.plan_defaults(project)` fills the plan's `defaults` block with anything the plan itself does not state, so precedence is **plan → sheet → the service's own `DEFAULTS`** (a number typed into *this* plan is a decision about this plan and always wins), and the report names which numbers came off the sheet. A project with no sheet, or one scoped to another task, validates exactly as before.
+- **Defaults are mirrored, never retyped.** A ceiling height that is 2400 in the sheet and 2700 in `build_floorplan` is a level built at a height nobody typed, so the floor-plan block is *generated from* the builder's own table and the maker choices come off the catalog, through the same lazy-and-guarded `service/` import every other coupled module uses. Written-down fallbacks exist for a checkout with no `service/`, and a test compares them to the real ones so they cannot drift.
+- **It is not a second writer.** The sheet goes through `save_design_doc`'s `design_paths` + `normalize_design_content`, so one set of slug/traversal/JSON checks guards `projects/<slug>/design/`.
+- **`task-config.json` is deliberately NOT in `DESIGN_READING_ORDER`** — that tuple is a *reading* order and is mirrored byte for byte in `assistant/bridge.py`; the settings file files alphabetically exactly as `floorplan.json` does.
+- **MCP: 86 tools** (was 83). `task_config_init(project, task, force=false)` materialises and refuses to overwrite without `force` (naming what would be lost and pointing at `task_config_set`); `task_config_get(project)` echoes **every** value with the non-defaults marked; `task_config_set(project, name, value)` validates against choices/range/type and refuses in a sentence leaving the sheet untouched. `save_design_doc`'s report now names the sheet, or says how to make one.
+- **Prompt:** `## Design before geometry` gains deliverable **0** (materialise the sheet *before* the questions, so fewer are needed), the law *"settings come from the sheet — change the SETTING and say so, never carry a value the sheet owns in conversation memory"*, and the symmetric-bipeds law verbatim in spirit. `## Rigging and animation` opens by reading the sheet for the budgets it passes to retopo/rig/export.
+- **Web UI: READ-ONLY, and the reason is in the code.** `GET /library` puts a design file's name, size and path on a card and **never its contents**, and the bridge has **no write route onto `projects/<slug>/design/`** at all. A key/value form would therefore be drawn over values the page has not got, with a Save button pointing at a route that does not exist. The card instead gets a `lib-config` panel naming the sheet, saying the assistant owns it, and two buttons that prefill the composer ("Show the settings" / "Change a setting") — the one path that actually validates the value and writes it. Making it editable needs a bridge route, which was out of this lane.
+- **Tests:** `mcp/tests/test_task_config.py` — **84** tests (template completeness per task, the two mirror checks against `service/`, init/get/set round-trip, the echo report marking non-defaults, settle-at-read including an out-of-band edit, the `floorplan_validate` consumer and its precedence, and the refusal set) inside a **1205-test** MCP suite (was 1121); `assistant/tests/test_webui.py` gained 2 (the card panel, and the read-only verdict asserted as *no request and no form* rather than as a comment).
+
 ### Library models section (user, 2026-09-07): all actual 3D models visible and one-click-openable
 
 Generated meshes (meshgen output dir per meshgen/config.json + FORGE_MODELS_DIRS extras) and projects/*/models/* get Library cards with Import-into-Blender and File-into-project actions. **Card click opens the model in Blender** (user extension): Blender running → import_generated into the scene; Blender closed → spawn GUI Blender with a startup import of that file (reuse Phase 15's resolve/spawn machinery; glTF import expression since .glb isn't a .blend). generate_3d(project=...) files new generations into projects/<slug>/models/ at birth.
