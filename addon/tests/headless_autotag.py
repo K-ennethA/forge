@@ -858,6 +858,177 @@ def test_provenance_and_hints(obj):
     check("and applies again when it has not", bool(back))
 
 
+#: The radius of the mitten hand on :func:`build_mitten_biped` — nearly twice
+#: the forearm's, which is what a palm is.
+MITTEN_RADIUS = 0.085
+
+#: How far past the wrist the mitten's centre sits.
+MITTEN_OFFSET = 0.055
+
+
+def build_mitten_biped(name="MittenArmBiped"):
+    """The same figure with a **mitten** on the end of each arm.
+
+    A limb is a tube right up until its extremity, where it is a hand: wider
+    than the wrist it hangs off, and *not a tube* — a ball of flesh the limb's
+    own axis runs into rather than along.  That shape is why the girth cap needs
+    a different statistic out there and the reason is visible in this fixture: a
+    median of the mitten's cross-section is pulled down by the flesh near the
+    axis (the near side of the palm, and on a real paw the fingers), so a cap
+    read off it clips the far side of the palm off the limb it belongs to.
+
+    Measured live on the werewolf, whose ``Arm.L`` girth fell to 28.8 mm at its
+    last station while its palm reaches 75 mm from the hand bone — a 46 mm cap
+    around a 75 mm palm, with a 79 mm-girth thigh hanging next to it waiting to
+    accept whatever the arm threw out.
+    """
+    existing = bpy.data.objects.get(name)
+    if existing is not None:
+        data = existing.data
+        bpy.data.objects.remove(existing, do_unlink=True)
+        if data is not None and getattr(data, "users", 1) == 0:
+            bpy.data.meshes.remove(data)
+
+    mesh = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    _tube(bm, [(0.0, 0.0, TORSO_LOW), (0.0, 0.0, 1.03), (0.0, 0.0, 1.18),
+               (0.0, 0.0, 1.30), (0.0, 0.0, PIN_Z), (0.0, 0.0, TORSO_HIGH)],
+          TORSO_RADIUS, segments=20)
+    _tube(bm, [(0.0, 0.0, 1.470), (0.0, 0.0, 1.570)], 0.055, segments=12)
+    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=12,
+                              radius=HEAD_RADIUS,
+                              matrix=__import__("mathutils").Matrix.Translation(
+                                  HEAD_CENTRE))
+    _tube(bm, [(0.0, -0.09, 1.660), (0.0, -0.165, 1.645)], 0.035, segments=10)
+    for sign in (1.0, -1.0):
+        top = Vector((sign * ARM_TOP[0], ARM_TOP[1], ARM_TOP[2]))
+        bottom = Vector((sign * ARM_BOTTOM[0], ARM_BOTTOM[1], ARM_BOTTOM[2]))
+        _tube(bm, [top, top.lerp(bottom, 0.5), bottom], ARM_RADIUS, segments=14)
+        direction = (bottom - top).normalized()
+        bmesh.ops.create_uvsphere(
+            bm, u_segments=18, v_segments=12, radius=MITTEN_RADIUS,
+            matrix=__import__("mathutils").Matrix.Translation(
+                bottom + direction * MITTEN_OFFSET))
+        leg_top = Vector((sign * LEG_TOP[0], LEG_TOP[1], LEG_TOP[2]))
+        leg_bottom = Vector((sign * LEG_BOTTOM[0], LEG_BOTTOM[1], LEG_BOTTOM[2]))
+        _tube(bm, [leg_top, leg_top.lerp(leg_bottom, 0.5), leg_bottom],
+              LEG_RADIUS, segments=14)
+        _tube(bm, [(sign * LEG_BOTTOM[0], 0.0, 0.035),
+                   (sign * LEG_BOTTOM[0], -0.115, 0.030)], 0.045, segments=10)
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    from forge.tools.common import refresh_view_layer
+
+    refresh_view_layer()
+    return obj
+
+
+def test_the_hand_rides_the_arm():
+    """The palm belongs to the arm, and the girth cap has to say so."""
+    section("the mitten hand: a limb's extremity is wider than its shaft")
+    from forge.tools import rigforge, rigforge_autotag as autotag
+    from forge.tools.common import M_TO_MM
+
+    obj = build_mitten_biped()
+    note("mitten biped: %d vertices; forearm radius %.0f mm, palm %.0f mm"
+         % (len(obj.data.vertices), ARM_RADIUS * 1000.0, MITTEN_RADIUS * 1000.0))
+    report = autotag.auto_tag(obj, joints=canned_document(), midplane=0.0,
+                              character_left=1.0, apply=True)
+    check("the arms were still built from the detected chain, mitten and all",
+          report["sources"]["Arm.L"] == "unirig"
+          and report["sources"]["Arm.R"] == "unirig", str(report["sources"]))
+
+    # Every vertex of the left palm, by construction rather than by eye.
+    top = Vector(ARM_TOP)
+    bottom = Vector(ARM_BOTTOM)
+    direction = (bottom - top).normalized()
+    centre = bottom + direction * MITTEN_OFFSET
+    matrix = obj.matrix_world
+    palm = [vertex.index for vertex in obj.data.vertices
+            if ((matrix @ vertex.co) - centre).length <= MITTEN_RADIUS + 1e-4]
+    owners = {}
+    for index in palm:
+        name = "+".join(tag_of(obj, index)) or "<none>"
+        owners[name] = owners.get(name, 0) + 1
+    note("the left palm is %d vertices; they landed in %s" % (len(palm), owners))
+    check("the palm is a real bulge on this figure, not a rounding error",
+          len(palm) > 40, "%d vertices" % len(palm))
+    check("EVERY palm vertex lands in the arm tag, not in whatever is beside it",
+          owners == {"Arm.L": len(palm)}, str(owners))
+
+    profile = report["girth"]["girth_mm"]["arm.L"]
+    distal = profile[-autotag.DISTAL_STATIONS:]
+    note("arm.L girth profile mm: %s" % profile)
+    check("and the girth profile at the distal stations reads the palm, not the "
+          "wrist it tapered from",
+          max(distal) > 1.5 * ARM_RADIUS * 1000.0,
+          "distal %s against a %.0f mm forearm" % (distal, ARM_RADIUS * 1000.0))
+    check("it reads the radius the palm was actually built at",
+          abs(max(distal) - MITTEN_RADIUS * 1000.0) < 8.0,
+          "%s vs %.0f mm" % (distal, MITTEN_RADIUS * 1000.0))
+    check("the profile widens at the extremity instead of tapering to nothing",
+          max(distal) > profile[len(profile) // 2 + 2],
+          "distal %s, mid-limb %.1f" % (distal, profile[len(profile) // 2 + 2]))
+
+    # The A/B that pins the rule: the same flesh, the same stations, the median
+    # against the distal percentile. A hand is a ball the axis runs *into*, so
+    # its near side sits close to that axis and drags a median down.
+    axis_points = [Vector([value / M_TO_MM for value in point])
+                   for point in report["axes"]["arm.L"]["points_mm"]]
+    axis = autotag.Axis("arm.L", axis_points, is_limb=True)
+    own = [axis.closest(matrix @ obj.data.vertices[index].co)
+           for index in _tagged_indices(obj, "Arm.L")]
+    median_only = autotag._girth_profile(own, distal=0)
+    with_bulge = autotag._girth_profile(own, distal=autotag.DISTAL_STATIONS)
+    note("the same flesh, median vs p%d at the tip: %s vs %s"
+         % (100 * autotag.DISTAL_PERCENTILE,
+            [round(v * M_TO_MM) for v in median_only[-autotag.DISTAL_STATIONS:]],
+            [round(v * M_TO_MM) for v in with_bulge[-autotag.DISTAL_STATIONS:]]))
+    check("a median of a hand under-reads the palm it is supposed to cap",
+          max(with_bulge[-autotag.DISTAL_STATIONS:])
+          > 1.10 * max(median_only[-autotag.DISTAL_STATIONS:]),
+          "%.1f vs %.1f mm"
+          % (max(with_bulge[-autotag.DISTAL_STATIONS:]) * M_TO_MM,
+             max(median_only[-autotag.DISTAL_STATIONS:]) * M_TO_MM))
+    check("and the two rules agree everywhere else, so nothing along the shaft "
+          "moved",
+          all(abs(a - b) < 1e-9 for a, b
+              in zip(median_only[:-autotag.DISTAL_STATIONS - 1],
+                     with_bulge[:-autotag.DISTAL_STATIONS - 1])),
+          str([round((a - b) * M_TO_MM, 2) for a, b
+               in zip(median_only, with_bulge)]))
+
+    # The median is still the rule along the shaft, where a rib is the risk.
+    shaft = profile[9:-autotag.DISTAL_STATIONS]
+    check("and the shaft is still capped on its median and stays a forearm",
+          all(value < 2.0 * ARM_RADIUS * 1000.0 for value in shaft),
+          "shaft %s" % shaft)
+
+    # And a mitten must not cost the arm its own credibility gate: a tag that
+    # has grown a palm is still a tube around its own axis, and the check the
+    # landmark fitter is about to apply is the one applied here.
+    check("the arm tag with a palm on it still passes its own limb gate",
+          report["tags"]["Arm.L"]["source"] == "unirig"
+          and not report["tags"]["Arm.L"]["why"],
+          str(report["tags"]["Arm.L"]))
+    check("and the arm's own axis hint was measured and stored",
+          "arm.L" in report["axis_hints"], str(sorted(report["axis_hints"])))
+    bpy.data.objects.remove(obj, do_unlink=True)
+
+
+def _tagged_indices(obj, tag):
+    from forge.tools import rigforge
+
+    group = obj.vertex_groups.get(rigforge.tag_group_name(tag))
+    if group is None:
+        return []
+    return [vertex.index for vertex in obj.data.vertices
+            for element in vertex.groups
+            if element.group == group.index and element.weight > 0.0]
+
+
 def _ring_cloud(z_low, z_high, radius_at, rings=60, around=20):
     """A tube of rings whose radius is a function of height — a spine to split."""
     out = []
@@ -1346,6 +1517,7 @@ def main():
         report = test_axis_tags_are_cylinders(obj)
         test_landmark_fitter_accepts(obj, report)
         test_per_limb_fallback(obj)
+        test_the_hand_rides_the_arm()
         test_spine_split_math(obj)
         test_split_is_a_view_not_a_tag(obj)
         test_provenance_and_hints(obj)

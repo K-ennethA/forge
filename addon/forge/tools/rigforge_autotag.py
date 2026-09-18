@@ -171,6 +171,30 @@ GIRTH_STATIONS = 17
 #: test meshes.
 GIRTH_PASSES = 3
 
+#: How many stations at a limb's **distal** end are capped on a high percentile
+#: of their own flesh rather than on its median, and how high.
+#:
+#: The median is the right statistic along a limb's shaft and the wrong one at
+#: its tip, and the two failures are opposite.  Along the shaft the contamination
+#: is flesh the axis over-reached *into* — the ribs an arm hangs beside — which
+#: sits far out, and a median survives it.  At the tip there is no rib: a hand is
+#: the only thing at the end of an arm, and it is a **fan**, not a tube.  A
+#: median of a paw's cross-section measures the gaps between the fingers, and
+#: capping the palm at 1.6x that clips the palm off the limb it belongs to.
+#:
+#: Measured on the werewolf's ``Arm.L``: the girth profile falls monotonically
+#: to **28.8 mm** at the last station while the palm's own flesh reaches
+#: **75 mm** from the hand bone — a cap of 46 mm against a 75 mm palm.  The palm
+#: survived only because no other axis had room for it, which is luck, not a
+#: measurement; on this figure the hand hangs beside a thigh whose girth is
+#: 79 mm and would happily have taken it.
+#:
+#: Three stations of seventeen is the last 12% of a limb, which is about what a
+#: hand or a foot is; p75 is the flesh three quarters of the way out, so it
+#: reads the palm and still ignores one stray vertex.
+DISTAL_STATIONS = 3
+DISTAL_PERCENTILE = 0.75
+
 #: A limb chain shorter than this fraction of the figure's height is not a limb
 #: — it is a finger twig, or a detection that collapsed.
 MIN_LIMB_FRACTION = 0.10
@@ -651,8 +675,8 @@ def _smooth_profile(values):
     return nxt
 
 
-def _girth_profile(samples, stations=GIRTH_STATIONS):
-    """Median radial distance at each station along an axis, gaps filled.
+def _girth_profile(samples, stations=GIRTH_STATIONS, distal=0):
+    """Radial girth at each station along an axis, gaps filled.
 
     The **median**, not a high percentile, and that is the load-bearing choice.
     The set being measured still contains whatever the axis over-claimed — the
@@ -660,13 +684,24 @@ def _girth_profile(samples, stations=GIRTH_STATIONS):
     contamination.  A median survives it as long as the limb's own flesh is the
     majority of its own neighbourhood, which for a cylinder around its own
     centreline it always is.
+
+    **Except at the last ``distal`` stations**, where the shape is a hand or a
+    foot rather than a tube and the median measures the gaps between the fingers
+    — see :data:`DISTAL_STATIONS` for the millimetres.  Those stations use
+    :data:`DISTAL_PERCENTILE`, and the smoother is not allowed to pull them back
+    below their own measurement afterwards: a [1 2 1] pass over a taper that
+    ends in a bulge is a pass that removes the bulge, which is the one feature
+    they are there to record.
     """
     buckets = [[] for _ in range(stations)]
     for distance, t in samples:
         index = max(0, min(stations - 1, int(round(t * (stations - 1)))))
         buckets[index].append(distance)
-    profile = [_percentile(bucket, 0.5) if len(bucket) >= 4 else None
-               for bucket in buckets]
+    first_distal = stations - max(0, int(distal))
+    profile = [_percentile(bucket,
+                           DISTAL_PERCENTILE if index >= first_distal else 0.5)
+               if len(bucket) >= 4 else None
+               for index, bucket in enumerate(buckets)]
     known = [value for value in profile if value is not None]
     if not known:
         return None
@@ -685,7 +720,10 @@ def _girth_profile(samples, stations=GIRTH_STATIONS):
             if best is None or abs(other - index) < abs(best[0] - index):
                 best = (other, candidate)
         filled.append(best[1] if best else fallback)
-    return _smooth_profile(filled)
+    smoothed = _smooth_profile(filled)
+    for index in range(first_distal, stations):
+        smoothed[index] = max(smoothed[index], filled[index])
+    return smoothed
 
 
 def _profile_at(profile, t):
@@ -761,7 +799,11 @@ def assign_vertices(world_points_list, axes, radius_factor=DEFAULT_RADIUS_FACTOR
         passes += 1
         for role in roles:
             samples = [table[i][role] for i, held in enumerate(owner) if held == role]
-            profiles[role] = _girth_profile(samples)
+            # Only a limb has an extremity. The torso and the head are the
+            # residual and cannot reject anything, so widening their far end
+            # would only make them accept more of what the limbs threw out.
+            profiles[role] = _girth_profile(
+                samples, distal=(DISTAL_STATIONS if axes[role].is_limb else 0))
         moved = 0
         for index, held in enumerate(owner):
             if held not in limb_roles:

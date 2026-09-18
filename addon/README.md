@@ -689,12 +689,12 @@ nobody is allowed to fail on.
 | type | params | does |
 |---|---|---|
 | `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`method?`** `landmarks`\|`tags`, **`tags?`** `auto`\|`detector`\|`keep`, **`tag_radius_factor?`**, **`tag_seed?`**, **`tag_refresh?`**, **`orient?`** `fix`\|`report`\|`skip`, **`symmetry?`** (bool), **`symmetry_keep?`**, **`symmetry_tolerance_mm?`**, **`echo?`**, **`echo_dir?`**, **`echo_resolution?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`**, **`breast_bones?`** (default false) | builds a Rigify metarig and fits it **the way a person does**: orientation gate → symmetrize → joints snapped onto the mesh's own cross-section centroids on the character's left → exact X-mirror (see [The human rigger's workflow](#the-human-riggers-workflow-orient-symmetrize-landmark-mirror)). `tags: "auto"` (default) **repairs limb tags the landmark fit cannot read** by detecting a skeleton and re-tagging along each limb's own axis — see [Auto-tagging](#auto-tagging-tags-that-follow-each-limbs-own-axis-rigforge_autotag). `method: "tags"` is the old fraction-of-the-blob fit, and is also where a mesh the landmarks cannot read falls back, saying so. Ear/tail tags still become bone chains. Returns `fit_method`, **`auto_tags`**, `orientation`, `symmetry`, `side_tags`, `midplane_mm`, `joint_landmarks` (now including `ball`/`toe_tip`/`heel`/`knuckle`), **`prebend`**, **`dropped_bones`**, `mirror`, `skeleton_echo`, plus the old `metarig`, `bone_count`, `mapping`, `chains`, `landmarks`, `joints`, `says`, `warnings` |
-| **`rigforge_autotag`** | `object?`, `action?` `report`\|`apply`, `source?` `auto`\|`detector`\|`box`, `joints_file?`, `radius_factor?`, `seed?`, `refresh?`, `replace?`, `rigbridge?`, `timeout?` | rebuilds the six body tags (`Head`, `Torso`, `Arm.L/R`, `Leg.L/R`) as **cylinders around each limb's own detected axis** instead of axis-aligned box bands. Runs the joint detector out of process (cached per mesh hash), names each limb chain from geometry, and tags every vertex by its distance to the nearest axis capped by that limb's own local girth. Falls back **per limb** — `unirig` → `hand` (the tag already there) → `box` — and the report names the rung for every tag. Returns `tags` (per tag: `vertices`, `source`, `why`), `sources`, `axes`, `axis_hints`, `roles`, `girth`, `detector`, `says`, `warnings` |
+| **`rigforge_autotag`** | `object?`, `action?` `report`\|`apply`, `source?` `auto`\|`detector`\|`box`, `joints_file?`, `radius_factor?`, `seed?`, `refresh?`, `replace?`, `rigbridge?`, `timeout?` | rebuilds the six body tags (`Head`, `Torso`, `Arm.L/R`, `Leg.L/R`) as **cylinders around each limb's own detected axis** instead of axis-aligned box bands. Runs the joint detector out of process (cached per mesh hash), names each limb chain from geometry, and tags every vertex by its distance to the nearest axis capped by that limb's own local girth. Falls back **per limb** — `unirig` → `hand` (the tag already there) → `box` — and the report names the rung for every tag. The cap is per station off the limb's own girth, and at a limb's last three stations it is a **p75** rather than a median, so a hand stays on the arm it is the end of. Returns `tags` (per tag: `vertices`, `source`, `why`), `sources`, `axes`, `axis_hints`, `roles`, `girth`, **`sub_tags`** (the `Torso`'s split into `Torso.pelvis`/`Torso.abdomen`/`Torso.chest` — a *measurement*, never a vertex group), `detector`, `says`, `warnings` |
 | **`rigforge_landmarks`** | `object?`, `action?` `report`\|`prepare`, `orient?`, `symmetry?`, `symmetry_keep?`, `symmetry_tolerance_mm?`, `stations?` | steps 1-3 on their own. `report` measures and changes nothing: which way the character faces and on what evidence, how far out of X-symmetry it is, whether its sided tags name the halves they sit on, and where every joint's cross-section centroid is. `prepare` runs the gate for real (rotate, symmetrize, re-derive the sides) — which is exactly what `rigforge_metarig` calls. Both report **`prebend`**: per knee and elbow, the signed offset from its own chord before and after the [anatomical pre-bend](#the-anatomical-pre-bend-prebend_joint), whether it was nudged, by how many millimetres, whether the flesh clamped it, and why |
 | **`rigforge_echo_skeleton`** | `rig?` \| `metarig?`, `mesh?`, `dir`, `views?`, `resolution?`, `deform_only?`, `joint_markers?` | the **echo-back**: the placed skeleton drawn in red over the body ghosted to 22%, front and side, as PNGs the report names, with a ball at every joint (`joints_marked`) so the articulation points are visible rather than one continuous stick. What a rigger looks at before binding anything |
 | **`rigforge_weight_maps`** | `rig?`, `mesh?`, `dir`, `bones?`, `views?`, `resolution?`, `max_bones?`, `overlap?` | per-bone **weight maps** in Blender's own blue→red ramp, plus the influence-overlap matrix beside them. The maps looked at, rather than counted |
 | `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`**, **`tag_constrained?`** | Rigify generate → automatic weights → per-tag weight cleanup → **the tag contract** (mask, blend, smooth — see [Tag-constrained skinning](#tag-constrained-skinning-rigforge_skin)) → the IK layer put on the game convention. `tag_constrained: false` reproduces the old, unconstrained bind. Returns `rig`, `weighted`, `cleanup_report`, **`tag_constrained`**, `spring_chains`, **`ik`**, `warnings` |
-| **`rigforge_skin`** | `object?`, `rig?`, `action?` `apply`\|`report`\|`continuity`, `max_influences?`, `blend?`, `reach?`, `smooth_passes?`, `smooth_factor?` | **the rigger's mask-then-blend, over an automatic bind**: a vertex's weight to a bone its own tag does not allow is zeroed and the rest renormalised, seams blend over a band as wide as the limb's own girth, and the holes an automatic bind leaves are filled. `report` answers *what is legal where* and changes nothing; `continuity` answers *how patchy is this bind*. Returns `weight_removed`, `borrowed_slots`, `taper_slots`, `worst_bones`, `contract` (`legal`, `hinges`, `source_counts`), `blend` (per-seam girths and widths), `continuity`, `report`, `says`, `warnings` |
+| **`rigforge_skin`** | `object?`, `rig?`, `action?` `apply`\|`report`\|`continuity`\|**`isolation`**, `max_influences?`, `blend?`, `reach?`, `smooth_passes?`, `smooth_factor?`, **`split?`** (bool, default true), **`swing_deg?`** | **the rigger's mask-then-blend, over an automatic bind**: a vertex's weight to a bone its own tag does not allow is zeroed and the rest renormalised, seams blend over a band as wide as the limb's own girth **wherever the two tags actually articulate**, and the holes an automatic bind leaves are filled. The contract is enforced at **sub-tag granularity** where a tag is too coarse to be one — the `Torso` is read as three slabs of its own spine, as a derived view that writes nothing to the mesh (`split: false` for the old whole-tag behaviour). `report` answers *what is legal where* and changes nothing; `continuity` answers *how patchy is this bind*; **`isolation`** swings the arms and answers *does the lower body follow*, in millimetres. Returns `weight_removed`, `borrowed_slots`, `taper_slots`, `worst_bones`, `contract` (`legal`, **`legal_merged`**, **`spans`**, `hinges`, `source_counts`), `blend` (per-seam girths, widths and **`refused_seams`**), **`sub_tags`**, `continuity`, **`continuity_articulated`**, **`isolation`**, `report`, `says`, `warnings` |
 | **`rigforge_ik`** | `rig?`, `action?` `report`\|`set`, `legs?` `ik`\|`fk`, `arms?` `ik`\|`fk`, `limbs?`, `mode?`, `poles?`, `frame?` | reports or sets the **FK/IK layer, per limb**: foot/hand IK targets, knee/elbow pole targets, the three foot-roll pivots, the `IK_FK` switch on each limb's parent control, and the IK constraints with their chain counts. `set` + `frame` keyframes the switch. Control properties only — the deform set never changes. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts, the two numbers that mean trouble, and the **influence overlap matrix** (`report.overlap`: which bones share which vertices, and which pairs share them across a gap they should not); or re-runs the rules |
 | `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, **bakes driven shape-key weights per frame alongside the bones**, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents`, **`morph_targets`**, **`driven_morph_targets`**, **`morph_animation`** |
@@ -2380,10 +2380,36 @@ section radius* rose, because the section it is measured against shrank from 130
 forearm is judged against the forearm's own radius. The proxy metric is a ratio, and the
 ratio got harder as the placement got better.
 
-Suite: `addon/tests/headless_autotag.py`, port 9910, **117 checks**, no GPU required — the
+**A limb is a tube until its extremity, where it is a hand.** The girth cap is a *median*
+along the shaft, and that is right: the contamination there is flesh the axis over-reached
+into — the ribs an arm hangs beside — which sits far out, and a median survives it. At the
+tip there is no rib. A hand is the only thing at the end of an arm, and it is a **ball the
+axis runs into**, not a tube: a median of its cross-section is pulled down by the flesh
+near the axis (the near side of the palm, the fingers on a real paw), and a cap read off
+that clips the far side of the palm off the limb it belongs to. Measured on the werewolf's
+`Arm.L`, the profile fell monotonically to **28.8 mm** at its last station while the palm
+reaches **75 mm** from the hand bone — a 46 mm cap around a 75 mm palm, with a 79 mm-girth
+thigh hanging beside it ready to accept whatever the arm threw out. The palm survived by
+luck, not by measurement.
+
+So the last **three** stations of a limb (`DISTAL_STATIONS`, the last 12% — about what a
+hand or a foot is) are capped on their own **p75** instead of their median, and the [1 2 1]
+smoother is not allowed to pull them back below that: a pass over a taper that ends in a
+bulge is a pass that removes the bulge. On the werewolf the arm profile's tail goes
+40.7/38.3/35.6/33.2/**28.8** → 40.7/40.6/43.2/42.1/**39.0**, and the legs' tails record the
+**foot** for the first time (68.8/72.1/74.2/73.7/68.0 → 68.8/77.6/94.8/91.7/**81.9**),
+which is a foot being wider than an ankle. The shaft is untouched.
+
+Suite: `addon/tests/headless_autotag.py`, port 9910, **158 checks**, no GPU required — the
 detector's output is a file, so the suite writes its own, and a batch script stands in for
 the virtualenv's interpreter so the cache, the lock and every failure path are exercised
-without CUDA being asked a question.
+without CUDA being asked a question. It carries a second figure, a **mitten biped** with a
+ball of a hand nearly twice the forearm's radius, where every palm vertex has to land in
+the arm tag and the distal profile has to read the palm (85 mm) rather than the wrist it
+tapered from — and where the same flesh, capped on a median, measures 71 mm instead.
+The `Torso` split is tested on point clouds rather than meshes, where a waist can be
+*built*: a trunk modelled with a 25% waist is cut at the waist's own station, a uniform one
+falls back to the midpoint and says so, and a trunk with no leg tag beside it is refused.
 
 ### Tag-constrained skinning (`rigforge_skin`)
 
@@ -2473,12 +2499,125 @@ legitimate falloff at a region's rim is not counted. Overlap catches flesh share
 bones; nothing caught flesh missing *from* one. Bands (heuristic, proxy tier): ok ≤ 0.5% of
 the bone's region, attention ≤ 3%.
 
-Suite: `addon/tests/headless_skin.py`, port 9911, **55 checks**, no Rigify and no GPU. The
+#### The Torso is one tag and thirteen bones: the sub-tag split
+
+The contract above is enforced **per tag**, and on the werewolf the `Torso` tag is one
+bucket holding the whole spine, both breasts, both pelvis bones and both shoulders. Every
+number said it was fine — cross-tag stray influence 0.000 — and it was not: a shoulder bone
+at z=1500 driving pelvis flesh at z=900 is *legal*, because both are `Torso`. The owner saw
+what that costs in the walk.
+
+So the `Torso` is read as three slabs of its own spine — `Torso.pelvis`, `Torso.abdomen`,
+`Torso.chest` — and the contract is enforced at that granularity. **Nothing is written to
+the mesh.** There is no `tag_Torso.chest` vertex group and no stored property: the split is
+recomputed from the six tags that exist, so `measure_tags`, the landmark fitter and the
+metarig keep seeing exactly one `Torso`, and a mesh re-tagged by hand can never be skinned
+against a stale split. `rigforge_skin` reports both views (`contract.legal` and
+`contract.legal_merged`), and `split: false` enforces the old whole-tag contract.
+
+**Where the two cuts come from** (`rigforge_autotag.spine_split`, on the station grid the
+girth cap already uses):
+
+1. **The pelvis ends where the legs join** — the p95 of the leg tags' own position along
+   the spine, snapped to the nearest station. Not the maximum: a limb tag's topmost
+   vertices are the ragged seam it shares with the torso. On the werewolf the p95 is
+   t=0.317 and the max t=0.421, 68 mm apart — a cut at the hip against a cut through the
+   belly.
+2. **The chest begins at the waist** — the narrowest station of the spine's own girth
+   profile between that junction and the shoulders, accepted only if it is narrower than
+   both neighbours *and* at least 2% below its band's mean. A uniform trunk has no waist,
+   and there the fallback is the midpoint between the leg junction and the top of the
+   spine, which the report says out loud. On the werewolf both rules land on **station 10**,
+   which is the corroboration that the dip is real.
+
+**A vertex is a point; a bone is a span.** A vertex lands in one slab. A bone whose span
+crosses a cut is legal on **both** — the blend zone's own rule, one level up — and the slab
+holding its midpoint stays its single owner, so "hangs from" still means something. On the
+werewolf `DEF-spine.001` and `DEF-spine.002` each cross a cut, and the flesh past the end
+of the chain belongs to the bone at that end (without which the synthetic test biped's
+pelvis slab came out with an *empty* legal set, because its `Torso` tag runs 80 mm below
+its lowest torso bone).
+
+A sibling seam's band is **not** measured in girths (`SUB_TAG_BLEND_FRACTION`, 0.25): two
+slabs of one trunk meet across the trunk and the band grows *along the spine*, so a girth
+would say how wide the body is rather than how far an influence should travel. And 0.5 is
+the value that cannot work — the two bands meet in the middle and the slab has no interior
+of its own, which is the bucket the split replaces. Measured on the werewolf (stray mass /
+punctured vertices): `0.50` 12.931/366, `0.35` 3.806/377, **`0.25` 0.586/395**, `0.10`
+0.100/415.
+
+#### Two tags touching is not two tags articulating
+
+A blend band exists so a **joint** does not crease. It was opened at every seam instead —
+everywhere two tags happen to touch — and on a figure whose arms hang at its sides **the
+hand touches the thigh**. That handed `DEF-hand.R` and `DEF-forearm.R.001` a full licence
+on leg-tagged flesh, and it is the same mistake bone heat makes at the armpit, one level
+up: spatial adjacency read as anatomical connection.
+
+What connection means is not a guess — the contract already knows it. A tag's **hinge** is
+the bone it hangs from, and the tag that owns that bone is the one it articulates with.
+`Arm.L` hinges on `DEF-shoulder.L`, so the arm blends with the slab that owns the shoulder;
+`Leg.L` hinges on the hips. `Arm.R` and `Leg.R` share no bone at all, so they do not blend,
+whatever their flesh is doing. On the werewolf that refuses eight seams
+(`Arm.R`/`Leg.R` 55 seam vertices, `Arm.L`/`Head` 78, `Leg.L`/`Torso.abdomen` 87, …).
+
+The **edge graph** everything walks is cut at those seams too, and both halves of that cost
+a run to find. Leaving the *taper* across them put the hand's weight straight back on the
+thigh through the smoother's hole filler and the swing got **worse** (353 mm → 545 mm);
+leaving the *Laplacian* across them made every rim weight fade towards a neighbour on the
+other side of the cut, so a second `apply` eroded it again and the stage stopped converging.
+
+#### The gate the owner's eyes were: `action: "isolation"`
+
+Overlap only names bones in *different* tags sharing flesh, and continuity only counts
+holes. Neither could see what the owner saw, because what the owner saw is not a weight —
+it is a **displacement**. So it is measured as one: the arm chains (and their hinges) are
+swung 30° about the character's own lateral axis, mirrored left and right the way a walk
+does, and the mean and maximum movement of the **pelvis-tagged** and **thigh-tagged**
+vertices is reported in millimetres. Near zero passes; bands (heuristic, proxy tier) are
+ok ≤ 1 mm, attention ≤ 5 mm.
+
+The question is about the *weights*, so the deform bones are driven directly with their
+rig-side constraints muted — otherwise Rigify's `COPY_TRANSFORMS` overwrites every rotation
+and the measurement is of nothing — and the baseline is captured in that same state. Every
+pose bone's `matrix_basis` and every constraint's `mute` is snapshotted and restored, and
+the restoration is **verified**: `restored_max_mm` is how far any vertex ended up from
+where it started (0.0004 mm on the werewolf, a float round trip through `matrix_basis`).
+
+One qualifier, measured rather than assumed: the thigh group is thigh-**tagged**, not
+merely thigh-weighted. The werewolf's hanging hand sits beside its thigh, so twelve `Arm.R`
+vertices carry 0.17 of `DEF-thigh.R.001` across the blend band; counting them made the
+swing's worst vertex a *hand* vertex moving 648 mm, which is a hand doing what a hand does.
+
+**Measured on `werewolf-wip-9.blend`, headless, on a scratch copy — nothing written back:**
+
+| | before (the file as it is) | after |
+|---|---|---|
+| arm-swing isolation, max | **fail** — 396.78 mm | **ok** — **0.000 mm** |
+| arm-swing isolation, mean | 1.550 mm | **0.000 mm** |
+| overlap stray mass | **fail** — 91.860, 163 pairs, 8 strays | **attention** — **0.540**, 145 pairs, 4 strays |
+| worst stray pair | `DEF-breast.L` + `DEF-pelvis.R`, **320 vertices**, 382 mm apart | same pair, **4 vertices** |
+| continuity, whole graph | attention — 245 (1.09%) | attention — 410 (1.99%) |
+| continuity, articulated graph | attention — 243 (1.08%) | attention — **263** (1.28%) |
+| weight removed | — | 638.9 (7.61%), 0.53 s |
+
+**The continuity rise is the fix, not a regression, and it is worth reading twice.** The
+gate counts a vertex with 3+ weighted neighbours and none of its own as a puncture in that
+bone's map. Where the articulation gate has deliberately cut a cliff at a non-joint, the
+hand *is supposed* to stop dead at the thigh, and the whole-graph count reads that stop as
+a hole. Over the graph the contract actually joined — the same gate, `edges=` the
+articulated graph, reported beside it as `continuity_articulated` — it is 243 → 263, which
+is the real answer. The whole-graph number is kept because it is the one `rig_check`
+reports and the one to compare across runs.
+
+Suite: `addon/tests/headless_skin.py`, port 9911, **97 checks**, no Rigify and no GPU. The
 rig is built by hand — deliberately flat in the deform hierarchy, the way Rigify leaves it
 — so the derivation is tested against a *known* tree. The figure is `headless_autotag`'s
 hanging-arm biped to its own millimetre constants, resampled three stations per radius:
 that suite's three-rings-per-limb mesh is enough to answer *which limb is this vertex on*
-and cannot express a falloff at all.
+and cannot express a falloff at all. On that figure the unconstrained bind's arm swing
+moves the lower body **123 mm** and the constrained one **0.000 mm**; a shoulder weight
+planted on pelvis flesh makes the gate fail at 128 mm and is constrained away.
 
 ### The detector runner (`rigbridge/detector_runner.py`)
 
