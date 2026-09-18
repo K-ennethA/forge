@@ -126,6 +126,9 @@ __all__ = [
     "stance_runs",
     "shape_key_state",
     "evaluated_vertex_coords",
+    "bend_direction",
+    "BEND_LIFT_FRACTION",
+    "BEND_TRAVEL_FRACTION",
     "JointProbe",
     "cmd_rig_check",
     "cmd_animation_check",
@@ -700,6 +703,37 @@ def _bend_sign(rig, joint):
     return best
 
 
+#: How far the IK target is moved, as a fraction of the limb's own rest chord
+#: (root joint to end joint).  A quarter of the chord is a long stride's worth
+#: of knee bend — large enough that a limb with a real bend plane travels a long
+#: way, small enough that no leg is asked to fold past what it can reach.
+BEND_LIFT_FRACTION = 0.25
+
+#: How far the joint must travel **in the anatomical direction**, as a fraction
+#: of the lift, before the bend counts as unambiguous.
+#:
+#: **Credibility tier: heuristic (proxy).**  The geometry says a straight limb
+#: whose chord shortens by ``d`` must move its mid joint sideways by
+#: ``0.5 * sqrt(d * (2L - d))`` — on the werewolf's 569 mm leg and a 142 mm lift
+#: that is **188 mm**, so 15% of the lift (21 mm) is a floor a correct rig clears
+#: by an order of magnitude, and a wrong one cannot reach by accident.  The
+#: measured travel is always reported next to it.
+BEND_TRAVEL_FRACTION = 0.15
+
+#: The joint must be back where it started once the pose is restored.  A tenth
+#: of a millimetre is solver dust; anything more means the harness changed the
+#: rig, which is the one thing a measurement may never do.
+BEND_RETURN_MM = 0.1
+
+#: The chain each IK limb is judged on: ``(root, mid, end)`` metarig bone names,
+#: ``%s`` the side.  ``mid`` is the joint whose travel is the measurement.
+BEND_CHAIN = {
+    "leg": ("thigh.%s", "shin.%s", "foot.%s"),
+    "front_leg": ("front_thigh.%s", "front_shin.%s", "front_foot.%s"),
+    "arm": ("upper_arm.%s", "forearm.%s", "hand.%s"),
+}
+
+
 def _capture_pose(rig):
     return {bone.name: (bone.matrix_basis.copy(), bone.rotation_mode)
             for bone in rig.pose.bones}
@@ -730,6 +764,211 @@ def _apply_rotation(bone, flex_deg, twist_deg, sign):
     """Flex about the bone's local X; twist about its own axis (local Y)."""
     bone.rotation_mode = "XYZ"
     bone.rotation_euler = (math.radians(flex_deg) * sign, math.radians(twist_deg), 0.0)
+
+
+# ---------------------------------------------------------------------------
+# the sixth placement gate: which way does the limb bend
+# ---------------------------------------------------------------------------
+
+def _world_head(rig, bone_name):
+    """The evaluated world position of a pose bone's head."""
+    bone = rig.pose.bones.get(bone_name)
+    return None if bone is None else rig.matrix_world @ bone.head.copy()
+
+
+def bend_direction(rig, lift_fraction=BEND_LIFT_FRACTION,
+                   travel_fraction=BEND_TRAVEL_FRACTION, limbs=None):
+    """**Does each limb bend the way the animal bends?**  Driven, not inspected.
+
+    The defect this exists for was found by a human watching a walk cycle: the
+    werewolf's knees folded **backwards**.  Nothing in the harness moved.
+    ``centering`` was happy (the bone was inside the flesh), ``asymmetry`` was
+    0.0 (both knees were wrong identically), ``side_naming`` was clean and the
+    foot slide was 1.1 mm — a rig can be perfectly placed, perfectly mirrored,
+    perfectly planted and still be a rig whose knees hinge the wrong way.
+
+    So this gate does not inspect anything.  It **drives the rig the way an
+    animator would** and measures what happened:
+
+    1. the limb is switched to IK with its pole live, and the pose is zeroed, so
+       the answer is a property of the rig rather than of whatever pose the file
+       was saved in;
+    2. the IK target is translated ``lift_fraction`` of the limb's own rest
+       chord **towards the limb's root** — for a leg that is the owner's own
+       test, lifting the foot;
+    3. the mid joint's travel is projected onto the direction it is *supposed*
+       to apex: a knee forward, an elbow backward, both relative to the way the
+       rig's own toes point (:func:`rigforge_rig.rig_forward_axis`);
+    4. and the joint is put back, and checked to be back.
+
+    A straight limb fails here even though it is not *wrong* anywhere: with no
+    bend plane the solver picks one, the travel is small and its sign is luck.
+    That is the point — an ambiguous rest pose is a defect, and the fix is the
+    anatomical pre-bend the landmark pass applies
+    (:func:`forge.tools.rigforge_landmarks.prebend_joint`).
+
+    Restores the pose exactly, in a ``finally``, whatever happens.
+    """
+    limbs = limbs if limbs is not None else rigforge_rig.ik_limbs(rig)
+    forward, forward_how = rigforge_rig.rig_forward_axis(rig, limbs)
+    snapshot = _capture_pose(rig)
+    switches = _ik_switches(rig)
+    # ``_ik_switches`` captures the IK_FK blends and nothing else, and this gate
+    # also switches each limb's *pole* on. A rig shipped with a pole disabled
+    # must get it back, so the pole properties join the snapshot -- same shape,
+    # same restore, one ``finally``.
+    for entry in limbs:
+        bone = rig.pose.bones.get(entry["switch_bone"] or "")
+        if bone is not None and rigforge_rig.POLE_PROP in bone.keys():
+            try:
+                switches[(bone.name, rigforge_rig.POLE_PROP)] = bone[
+                    rigforge_rig.POLE_PROP]
+            except (KeyError, TypeError, ValueError):  # pragma: no cover
+                pass
+    rows = []
+    restored_worst = 0.0
+    try:
+        with object_mode():
+            for entry in limbs:
+                chain = BEND_CHAIN.get(entry["limb"])
+                target_name = entry.get("ik_target")
+                if chain is None or not target_name:
+                    continue
+                side = entry["side"]
+                roots = _deform_for(rig, chain[0] % side)
+                mids = _deform_for(rig, chain[1] % side)
+                ends = _deform_for(rig, chain[2] % side)
+                if not roots or not mids:
+                    continue
+                want_sign = rigforge_rig.POLE_DIRECTION.get(entry["limb"], 1.0)
+
+                for bone in rig.pose.bones:
+                    bone.matrix_basis.identity()
+                rigforge_rig.set_limb_mode(rig, entry, "ik")
+                if entry.get("pole_target"):
+                    rigforge_rig.set_pole_vector(rig, entry, True)
+                refresh_view_layer()
+
+                root = _world_head(rig, roots[0])
+                joint = _world_head(rig, mids[0])
+                end = (_world_head(rig, ends[0]) if ends
+                       else rig.matrix_world @ rig.pose.bones[mids[-1]].tail.copy())
+                target_rest = _world_head(rig, target_name)
+                if root is None or joint is None or end is None or target_rest is None:
+                    continue
+                chord = (end - root).length
+                if chord < 1e-6:
+                    continue
+                want = forward * want_sign
+                axis = (end - root).normalized()
+                want = want - axis * want.dot(axis)
+                if want.length < 1e-9:
+                    continue
+                want.normalize()
+
+                lift = lift_fraction * chord
+                push = (root - end)
+                push = push.normalized() if push.length > 1e-9 else Vector((0.0, 0.0, 1.0))
+                delta = rig.matrix_world.to_3x3().inverted() @ (push * lift)
+                pose_target = rig.pose.bones[target_name]
+                pose_target.matrix = Matrix.Translation(delta) @ pose_target.matrix
+                refresh_view_layer()
+
+                target_moved = (_world_head(rig, target_name) - target_rest).length
+                travel = _world_head(rig, mids[0]) - joint
+                along = travel.dot(want)
+                required = travel_fraction * lift
+                # What a straight chain of two equal halves would do: the chord
+                # shortens by ``lift``, so the joint must swing out by half the
+                # leg of that triangle. Reported for scale, never gated on -- a
+                # limb already pre-bent moves less than this and is correct.
+                ideal = 0.5 * math.sqrt(max(lift * (2.0 * chord - lift), 0.0))
+
+                for name, (matrix, mode) in snapshot.items():
+                    bone = rig.pose.bones.get(name)
+                    if bone is not None:
+                        bone.matrix_basis = matrix.copy()
+                for bone in rig.pose.bones:
+                    bone.matrix_basis.identity()
+                refresh_view_layer()
+                returned = (_world_head(rig, mids[0]) - joint).length
+                restored_worst = max(restored_worst, returned)
+
+                rows.append({
+                    "limb": entry["name"],
+                    "label": entry["label"],
+                    "joint": mids[0],
+                    "ik_target": target_name,
+                    "pole_target": entry.get("pole_target"),
+                    "expected": "forward" if want_sign > 0 else "backward",
+                    "chord_mm": round(chord * M_TO_MM, 1),
+                    "lift_mm": round(lift * M_TO_MM, 1),
+                    "target_moved_mm": round(target_moved * M_TO_MM, 1),
+                    "travel_mm": round(travel.length * M_TO_MM, 2),
+                    "travel_along_mm": round(along * M_TO_MM, 2),
+                    "required_mm": round(required * M_TO_MM, 2),
+                    "straight_limb_ideal_mm": round(ideal * M_TO_MM, 1),
+                    "returned_mm": round(returned * M_TO_MM, 3),
+                    "correct": bool(along >= required),
+                    "backwards": bool(along < 0.0),
+                })
+    finally:
+        _restore_pose(rig, snapshot, switches)
+
+    wrong = [row for row in rows if not row["correct"]]
+    backwards = [row for row in rows if row["backwards"]]
+    if not rows:
+        verdict = "unmeasured"
+        says = ("This rig has no IK limb whose bend direction could be driven, so which "
+                "way its joints fold was not measured.")
+    elif wrong:
+        verdict = "fail"
+        worst = min(wrong, key=lambda row: row["travel_along_mm"])
+        says = (
+            "%s BENDS THE WRONG WAY: lifting %r by %.0f mm moved %s %+.1f mm %s when it "
+            "must travel at least %.0f mm %s (a straight limb would swing %.0f mm). "
+            "%sThe rest pose has no anatomical pre-bend, so the IK solver has no plane "
+            "to prefer and the joint folds whichever way it falls. The fix is upstream "
+            "and it is what a human rigger does before anything else: pre-bend the rest "
+            "pose — a knee apexes forward, an elbow backward — and generate again."
+            % (worst["label"], worst["ik_target"], worst["lift_mm"], worst["joint"],
+               abs(worst["travel_along_mm"]),
+               ("backward" if worst["expected"] == "forward" else "forward")
+               if worst["backwards"] else worst["expected"],
+               worst["required_mm"], worst["expected"],
+               worst["straight_limb_ideal_mm"],
+               "%d of %d limbs travel the wrong way outright. "
+               % (len(backwards), len(rows)) if backwards else ""))
+    else:
+        verdict = "ok"
+        worst = min(rows, key=lambda row: row["travel_along_mm"] / max(row["lift_mm"], 1e-9))
+        says = ("Every one of the %d IK limbs folds the way it should: the tightest is "
+                "%s, whose %s travels %.0f mm %s on a %.0f mm lift (minimum %.0f)."
+                % (len(rows), worst["label"], worst["joint"], worst["travel_along_mm"],
+                   worst["expected"], worst["lift_mm"], worst["required_mm"]))
+    if rows and restored_worst * M_TO_MM > BEND_RETURN_MM:
+        verdict = "fail"
+        says += (" And the pose did NOT come back: the worst joint is %.2f mm from where "
+                 "it started after restore, over a %.2f mm tolerance."
+                 % (restored_worst * M_TO_MM, BEND_RETURN_MM))
+    return {
+        "forward": [round(v, 4) for v in forward],
+        "forward_from": forward_how,
+        "limbs": rows,
+        "wrong": [row["limb"] for row in wrong],
+        "backwards": [row["limb"] for row in backwards],
+        "lift_fraction": lift_fraction,
+        "travel_fraction": travel_fraction,
+        "worst_return_mm": round(restored_worst * M_TO_MM, 3),
+        "pose_restored": True,
+        "verdict": verdict,
+        "threshold_tier": (
+            "heuristic (proxy tier): the travel floor is %.0f%% of the lift, an order of "
+            "magnitude under what a limb with a real bend plane does and out of reach of "
+            "one without. Every measurement is reported next to the band that judged it."
+            % (100.0 * travel_fraction)),
+        "says": says,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -826,7 +1065,7 @@ def cmd_rig_check(params):
     twist collapse, each with a band — plus an overall gate.  The pose is always
     restored.
 
-    **Five placement gates run on every call** and are reported whether or not
+    **Six placement gates run on every call** and are reported whether or not
     they fail, because the defects they catch were found by a human staring at a
     render and must never need that again:
 
@@ -843,7 +1082,12 @@ def cmd_rig_check(params):
       punctured: weighted far below every neighbour around them
       (:func:`forge.tools.rigforge_skin.weight_continuity`).  Overlap catches
       flesh shared between bones; this catches flesh missing from one, which is
-      what a patchy automatic bind looks like and what nothing else measured.
+      what a patchy automatic bind looks like and what nothing else measured;
+    * ``bend_direction`` — the only gate that **drives** the rig: each limb's IK
+      target is pulled towards its own root and the joint's travel is projected
+      onto the way it is supposed to fold, a knee forward and an elbow backward
+      (:func:`bend_direction`).  The other five all passed on a werewolf whose
+      knees bent backwards.
 
     ``render_weights`` additionally writes per-bone weight maps into a folder —
     the maps, looked at, rather than counted.
@@ -1060,15 +1304,16 @@ def cmd_rig_check(params):
 
     # --- the placement gates: always measured, always reported -------------
     #
-    # Deformation is what the poses above measure. These five measure whether
-    # the skeleton was ever in the right place to begin with, and whether the
-    # skin it was bound with is a skin -- the questions a live audit had to
-    # answer by eye: bones off the limb's centreline, left and right fitted
-    # independently (6-24 mm apart), side names mirrored so .L drove the right
-    # leg, flesh shared between bones that are nowhere near each other, and a
-    # weight map so patchy it had holes in the middle of a thigh. All five are
+    # Deformation is what the poses above measure. These six measure whether
+    # the skeleton was ever in the right place to begin with, whether the
+    # skin it was bound with is a skin, and whether the limbs fold the way the
+    # animal folds -- the questions a live audit had to answer by eye: bones off
+    # the limb's centreline, left and right fitted independently (6-24 mm
+    # apart), side names mirrored so .L drove the right leg, flesh shared between
+    # bones that are nowhere near each other, a weight map so patchy it had holes
+    # in the middle of a thigh, and knees that bent backwards. All six are
     # geometric, so the harness finds them from now on instead of the owner
-    # squinting at a render.
+    # squinting at a render or at a walk cycle.
     placement = {}
     try:
         placement["centering"] = rigforge_landmarks.bone_centering(rig, mesh)
@@ -1095,6 +1340,15 @@ def cmd_rig_check(params):
         placement["continuity"] = rigforge_skin.weight_continuity(rig, mesh)
     except Exception as exc:  # noqa: BLE001
         placement["continuity"] = {"verdict": "unmeasured", "says": str(exc)}
+    # The sixth, and the only one that *drives* the rig rather than measuring it
+    # at rest: which way does each limb fold. The werewolf's knees bent backwards
+    # through five clean placement gates and a 1.1 mm foot slide, because every
+    # existing number is about where a bone is and none of them is about what
+    # happens when an animator pulls on it.
+    try:
+        placement["bend_direction"] = bend_direction(rig)
+    except Exception as exc:  # noqa: BLE001
+        placement["bend_direction"] = {"verdict": "unmeasured", "says": str(exc)}
 
     weight_maps = None
     maps_dir = params.get("render_weights")
@@ -1119,7 +1373,8 @@ def cmd_rig_check(params):
         gate = "attention"
     lines = []
     bad_placement = False
-    for name in ("side_naming", "asymmetry", "centering", "overlap", "continuity"):
+    for name in ("side_naming", "bend_direction", "asymmetry", "centering", "overlap",
+                 "continuity"):
         block = placement.get(name) or {}
         if block.get("verdict") in ("fail", "attention") and block.get("says"):
             lines.append(block["says"])
@@ -1130,12 +1385,14 @@ def cmd_rig_check(params):
         asymmetry = placement.get("asymmetry") or {}
         centering = placement.get("centering") or {}
         continuity = placement.get("continuity") or {}
+        bend = placement.get("bend_direction") or {}
         lines.append(
             "Placement is clean: left/right asymmetry %s mm, every sided bone on the "
             "side its name claims, worst bone %s mm off its limb's centreline, no "
-            "stray influence between bones, and %s%% of the weighted flesh punctured."
+            "stray influence between bones, %s%% of the weighted flesh punctured, and "
+            "every IK limb folds the anatomical way (%d checked)."
             % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm"),
-               continuity.get("hole_pct")))
+               continuity.get("hole_pct"), len(bend.get("limbs") or [])))
     if failed:
         lines.append("Breaks down: %s." % ", ".join(sorted(failed)))
     if attention:
@@ -1161,6 +1418,7 @@ def cmd_rig_check(params):
         "side_naming": placement["side_naming"],
         "overlap": placement["overlap"],
         "continuity": placement["continuity"],
+        "bend_direction": placement["bend_direction"],
         "weight_maps": weight_maps,
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)

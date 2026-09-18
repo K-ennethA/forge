@@ -51,6 +51,7 @@ from . import rigforge_joints
 from . import rigforge_landmarks
 from . import rigforge_autotag
 from .common import (
+    M_TO_MM,
     active_only,
     get_bool,
     get_choice,
@@ -452,19 +453,27 @@ def fit_chain(edit_bones, names, points, frozen, report=None, bend=None):
 
 
 def _bend(a, b, c, direction, minimum=0.03):
-    """Push a straight three-point limb into a slight bend.
+    """Push a three-point limb into its **anatomical** pre-bend.
 
     Rigify's arm/leg rigs derive the IK pole from the plane of the limb; a
     perfectly straight limb (which is exactly what a blob sculpt measures as)
     leaves that plane undefined and the generated IK snaps unpredictably.
+
+    **The measurement is signed, along ``direction``, and that is the fix.**
+    This function used to ask only *how far from straight* the joint was, and
+    return it untouched whenever the answer cleared ``minimum``.  Measured on the
+    live werewolf: the knee sat **25.9 mm off the hip-to-ankle line — 4.2% of a
+    620 mm span, comfortably past the 3% test — pointing backwards**, and the
+    elbow's 31.6 mm was almost entirely *sideways* (0.08 mm of it front-to-back).
+    Both passed the old test, both left the IK plane wrong, and lifting
+    ``foot_ik.L`` by 350 mm drove the knee the wrong way.  A magnitude cannot
+    tell a knee from a knee bent backwards; only the component along the
+    direction the joint is *supposed* to apex can.
     """
     span = (c - a)
     if span.length < 1e-9:
         return b
     axis = span.normalized()
-    offset = (b - a) - axis * (b - a).dot(axis)
-    if offset.length >= minimum * span.length:
-        return b
     push = Vector(direction)
     push -= axis * push.dot(axis)
     if push.length < 1e-9:
@@ -472,12 +481,71 @@ def _bend(a, b, c, direction, minimum=0.03):
         push -= axis * push.dot(axis)
     if push.length < 1e-9:
         return b
-    return b + push.normalized() * (minimum * span.length)
+    push.normalize()
+    offset = (b - a) - axis * (b - a).dot(axis)
+    signed = offset.dot(push)
+    need = minimum * span.length
+    if signed >= need:
+        return b
+    return b + push * (need - signed)
 
 
 # ---------------------------------------------------------------------------
 # archetype fitting
 # ---------------------------------------------------------------------------
+
+#: Bones Rigify's human template carries that most characters do not want, with
+#: the switch that keeps each one.  ``breast.L``/``breast.R`` are the whole list
+#: today and they earn their place on it: they are a **female torso** feature,
+#: they are not part of any limb chain, and on a figure without one they
+#: generate ``DEF-breast.L/R`` that stand out of the chest as prongs in the
+#: skeleton echo and then sit inside the torso collecting stray influence
+#: (measured on the werewolf: ``DEF-breast.L`` sharing vertices with
+#: ``DEF-forearm.R.001``, two bones nowhere near each other).
+OPTIONAL_BONE_GROUPS = {
+    "breast_bones": ("breast.L", "breast.R"),
+}
+
+
+def drop_optional_bones(edit_target, keep):
+    """Remove the optional template bones ``keep`` does not ask for. Names dropped.
+
+    Runs on the **metarig, in edit mode, before generation**, which is the only
+    place it can run: Rigify decides what to generate from the metarig's bones,
+    so a bone deleted here never becomes a ``DEF-`` bone, never enters the deform
+    set, never gets a vertex group and never appears in a weight map. Deleting
+    the generated ``DEF-`` bone afterwards would leave its vertex group on the
+    mesh and its widget in the file.
+
+    Children come with it — a bone hanging off a bone nobody wants is nobody's
+    either — and the removal is reported rather than silent.
+    """
+    bones = edit_target.data.edit_bones
+    dropped = []
+    for switch, names in sorted(OPTIONAL_BONE_GROUPS.items()):
+        if keep.get(switch):
+            continue
+        for bone_name in names:
+            bone = bones.get(bone_name)
+            if bone is None:
+                continue
+            family = [bone]
+            frontier = [bone]
+            while frontier:
+                nxt = []
+                for parent in frontier:
+                    for child in parent.children:
+                        family.append(child)
+                        nxt.append(child)
+                frontier = nxt
+            for doomed in reversed(family):
+                try:
+                    dropped.append(doomed.name)
+                    bones.remove(doomed)
+                except (ReferenceError, RuntimeError):  # pragma: no cover
+                    dropped.pop()
+    return dropped
+
 
 def _pick_tag(regions, *candidates):
     lowered = {name.lower(): name for name in regions}
@@ -648,6 +716,35 @@ def fit_biped(meta, regions, warnings, mapping, hints=None):
 LANDMARK_BEND = 0.03
 
 
+def _fit_heel_pivot(edit_bones, side, landmarks):
+    """Put ``heel.02.<side>`` on the back of the measured sole. Names placed.
+
+    Rigify turns this one bone into ``foot_heel_ik``, the pivot the whole foot
+    roll rotates about at heel strike.  Left where the template put it — which
+    is where the *template's* heel was — a correctly fitted foot rolls about a
+    point behind or inside its own shoe.  Head and tail span the sole's own
+    measured width at its rearmost cross-section, keeping whichever way round
+    the template had them so the roll's sign does not flip.
+    """
+    foot = (landmarks.get("feet") or {}).get("leg.%s" % side)
+    bone = None
+    for pattern in ("heel.02.%s", "heel.%s", "heel.01.%s"):
+        bone = edit_bones.get(pattern % side)
+        if bone is not None:
+            break
+    if foot is None or bone is None:
+        return []
+    right = Vector(foot["right"])
+    half = max(float(foot["heel_width"]), 1e-4) * 0.5
+    centre = Vector(foot["heel"])
+    # Keep the template's own left-to-right orientation: Rigify reads the
+    # direction of this bone, and reversing it reverses the roll.
+    sign = 1.0 if (bone.tail - bone.head).dot(right) >= 0.0 else -1.0
+    bone.head = centre - right * (half * sign)
+    bone.tail = centre + right * (half * sign)
+    return [bone.name]
+
+
 def fit_biped_landmarks(meta, landmarks, warnings, mapping, mirror=True,
                         midplane_local=0.0):
     """The human workflow's steps 3 and 4: place one side, then X-mirror it.
@@ -666,6 +763,12 @@ def fit_biped_landmarks(meta, landmarks, warnings, mapping, mirror=True,
     points = landmarks["points"]
     fitted = []
     frozen = set()
+    # The same forward the landmark pass pre-bent against, not a second opinion:
+    # ``_bend`` below is a backstop for a chain the landmarks could not nudge
+    # (a clamped one, a fallback midpoint), and a backstop that disagreed with
+    # the thing it backs up would undo it.
+    forward = rigforge_landmarks.facing_vector(landmarks.get("facing") or "-Y")
+    backward = -forward
 
     spine_names = ["spine", "spine.001", "spine.002", "spine.003"]
     neck_names = ["spine.004", "spine.005", "spine.006"]
@@ -703,11 +806,18 @@ def fit_biped_landmarks(meta, landmarks, warnings, mapping, mirror=True,
         wrist = points.get("wrist.%s" % side)
         if None not in (root, shoulder, elbow, wrist):
             bent = _bend(Vector(shoulder), Vector(elbow), Vector(wrist),
-                         Vector((0.0, 1.0, 0.0)), minimum=LANDMARK_BEND)
+                         backward, minimum=LANDMARK_BEND)
             names = ["shoulder.%s" % side, "upper_arm.%s" % side, "forearm.%s" % side]
-            fit_chain(edit_bones, names,
-                      [Vector(root), Vector(shoulder), bent, Vector(wrist)],
-                      frozen, fitted)
+            chain = [Vector(root), Vector(shoulder), bent, Vector(wrist)]
+            # The hand joins the chain when the mesh had one to measure, for the
+            # same reason the foot does: dragged from the template it ended at
+            # the fingertips, and a hand bone with no knuckle in it hinges from
+            # nowhere.
+            knuckle = points.get("knuckle.%s" % side)
+            if knuckle is not None:
+                names.append("hand.%s" % side)
+                chain.append(Vector(knuckle))
+            fit_chain(edit_bones, names, chain, frozen, fitted)
             if arm_tag:
                 mapping.setdefault(arm_tag, []).extend(names[1:] + ["hand.%s" % side])
 
@@ -716,10 +826,21 @@ def fit_biped_landmarks(meta, landmarks, warnings, mapping, mirror=True,
         ankle = points.get("ankle.%s" % side)
         if None not in (hip, knee, ankle):
             bent = _bend(Vector(hip), Vector(knee), Vector(ankle),
-                         Vector((0.0, -1.0, 0.0)), minimum=LANDMARK_BEND)
+                         forward, minimum=LANDMARK_BEND)
             names = ["thigh.%s" % side, "shin.%s" % side]
-            fit_chain(edit_bones, names, [Vector(hip), bent, Vector(ankle)],
-                      frozen, fitted)
+            chain = [Vector(hip), bent, Vector(ankle)]
+            # The foot is part of the same chain, when the mesh had one to
+            # measure. It used to be *dragged* by whatever the shin's tail did,
+            # which is how the werewolf ended up with DEF-toe.L's tail 80.1 mm
+            # short of its own boot: a foot roll that pivots about a point
+            # inside the shoe rolls the shoe, not the character.
+            ball = points.get("ball.%s" % side)
+            tip = points.get("toe_tip.%s" % side)
+            if ball is not None and tip is not None:
+                names.extend(["foot.%s" % side, "toe.%s" % side])
+                chain.extend([Vector(ball), Vector(tip)])
+            fit_chain(edit_bones, names, chain, frozen, fitted)
+            fitted.extend(_fit_heel_pivot(edit_bones, side, landmarks))
             if leg_tag:
                 mapping.setdefault(leg_tag, []).extend(
                     names + ["foot.%s" % side, "toe.%s" % side])
@@ -1108,11 +1229,20 @@ def cmd_rigforge_metarig(params):
     without the detector keeps whatever tags the mesh has, exactly as before.
     ``"keep"`` never touches them and ``"detector"`` refuses rather than falling
     back.  ``auto_tags`` in the result names the source of every tag.
+
+    ``breast_bones`` (default **false**) keeps Rigify's ``breast.L/R``.  They are
+    off by default because they are a *female torso* feature this pipeline's
+    characters mostly do not have, and on one that does not they generate
+    ``DEF-`` bones that stand out of the chest as prongs and then collect stray
+    influence inside the torso.  Dropped on the **metarig**, before generation,
+    so they never reach the deform set at all.  ``dropped_bones`` says what went.
     """
     obj = resolve_object(params, mesh_only=True)
     started = time.monotonic()
     warnings = []
     rigify_info = ensure_rigify()
+    keep_breasts = {"breast_bones": get_bool(params, "breast_bones", False)}
+    dropped_bones = []
 
     archetype = get_choice(
         params, "archetype",
@@ -1262,12 +1392,28 @@ def cmd_rigforge_metarig(params):
                 landmarks = rigforge_landmarks.biped_landmarks(
                     obj, midplane=prepared["midplane"],
                     character_left=prepared["character_left"],
-                    warnings=warnings, sides=sides, axis_hints=axis_hints)
+                    warnings=warnings, sides=sides, axis_hints=axis_hints,
+                    facing=prepared["orientation"]["faces"])
             except ForgeError as exc:
                 fit_method = "tags"
                 warnings.append(
                     "The landmark fit could not read this mesh, so the old tag-position "
                     "fit ran instead: %s" % exc)
+
+        with active_only(meta):
+            _enter_edit(meta)
+            try:
+                dropped_bones = drop_optional_bones(meta, keep_breasts)
+            finally:
+                _leave_edit()
+        if dropped_bones:
+            warnings.append(
+                "Removed %d optional bone(s) from the metarig before generation: %s. "
+                "Rigify's human template carries them for a female torso; on a figure "
+                "that does not have one they generate DEF- bones that stick out of the "
+                "chest and then collect stray influence inside the torso. Pass "
+                "breast_bones=true to keep them."
+                % (len(dropped_bones), ", ".join(dropped_bones)))
 
         with active_only(meta):
             _enter_edit(meta)
@@ -1395,6 +1541,13 @@ def cmd_rigforge_metarig(params):
         "side_tags": (prepared["retag"] if prepared else None),
         "midplane_mm": (round(prepared["midplane"] * 1000.0, 3) if prepared else None),
         "joint_landmarks": joint_landmarks,
+        # The anatomical pre-bend, per joint, before the mirror: what was nudged,
+        # by how many millimetres, and why. A chain already bent the right way
+        # reports `nudged: false` and the measurement that earned it.
+        "prebend": (landmarks.get("prebend") if landmarks else []),
+        # Optional template bones removed before generation, so they never
+        # become DEF- bones, vertex groups or weight maps.
+        "dropped_bones": dropped_bones,
         "auto_tags": autotag_report,
         "mirror": mirror_report,
         "skeleton_echo": echo,
@@ -2495,6 +2648,176 @@ def apply_ik_convention(rig, legs=None, arms=None, poles=True, keyframe_at=None,
     }
 
 
+#: Which way each limb's joint (and therefore its pole target) must sit relative
+#: to the direction the rig faces.  The same anatomy
+#: :data:`~.rigforge_landmarks.PREBEND_DIRECTION` states for the landmarks; it
+#: is repeated here against the *generated* rig because the metarig and the rig
+#: are two different objects and only one of them is what an animator poses.
+POLE_DIRECTION = {"leg": 1.0, "front_leg": 1.0, "arm": -1.0}
+
+#: The chain a pole is judged against: (root deform tag, mid deform tag, end
+#: deform tag), ``%s`` the side.
+POLE_CHAIN = {
+    "leg": ("thigh.%s", "shin.%s", "foot.%s"),
+    "front_leg": ("front_thigh.%s", "front_shin.%s", "front_foot.%s"),
+    "arm": ("upper_arm.%s", "forearm.%s", "hand.%s"),
+}
+
+
+def _rest_head(rig, bone_name):
+    bone = rig.data.bones.get(bone_name)
+    return None if bone is None else rig.matrix_world @ bone.head_local
+
+
+def _rest_tail(rig, bone_name):
+    bone = rig.data.bones.get(bone_name)
+    return None if bone is None else rig.matrix_world @ bone.tail_local
+
+
+def rig_forward_axis(rig, limbs=None):
+    """Which way this rig faces, taken from **its own toes**.
+
+    Ankle to toe tip, flattened onto the ground plane, averaged over the legs —
+    the same rule ``rigforge_walk`` uses to decide which way a character walks
+    (:func:`forge.tools.rigforge_anim.locomotion_frame`), so a gate built on this
+    and the walk it protects cannot disagree about which way is forward.  It is
+    deliberately *not* ``detect_orientation``: that measures the mesh's
+    lopsidedness and it can be wrong about a digitigrade, tailed, snouted
+    character (measured on the werewolf: it reads ``+Y`` while the rig's own feet
+    run heel ``+80 mm`` to toe tip ``-87 mm``, which is ``-Y``).  A rig's feet
+    are not a statistic.
+
+    Returns ``(vector, how)``; ``how`` is ``"toes"`` or ``"convention"``.
+    """
+    limbs = limbs if limbs is not None else ik_limbs(rig)
+    total = Vector((0.0, 0.0, 0.0))
+    used = 0
+    for entry in limbs:
+        if entry["limb"] not in ("leg", "front_leg"):
+            continue
+        side = entry["side"]
+        toe_tag = "toe.%s" % side if entry["limb"] == "leg" else "front_toe.%s" % side
+        foot_tag = "foot.%s" % side if entry["limb"] == "leg" else "front_foot.%s" % side
+        feet = def_bones_for(rig, foot_tag)
+        toes = def_bones_for(rig, toe_tag)
+        ankle = _rest_head(rig, feet[0]) if feet else None
+        tip = _rest_tail(rig, toes[-1]) if toes else (
+            _rest_tail(rig, feet[-1]) if feet else None)
+        if ankle is None or tip is None:
+            continue
+        direction = Vector((tip.x - ankle.x, tip.y - ankle.y, 0.0))
+        if direction.length > 1e-6:
+            total += direction.normalized()
+            used += 1
+    if used and total.length > 1e-6:
+        return total.normalized(), "toes"
+    return Vector((0.0, -1.0, 0.0)), "convention"
+
+
+def pole_side_check(rig, limbs=None, forward=None):
+    """Does every IK pole sit on the side its limb is pre-bent towards?
+
+    A pole target is not decoration and it is not free: Rigify derives a limb's
+    pole angle from the limb's **rest plane**, so the pole lands wherever the
+    rest pose put the joint.  Pre-bend the knee forward and the pole is in front
+    of it; leave the knee sitting backwards and the pole goes behind it and then
+    *holds it there* through every solve.  That is a pole fighting the anatomy,
+    and it is invisible until an animator lifts a foot.
+
+    There is nothing to fix on this side of the generate: moving the generated
+    pole bone would leave the IK constraint's ``pole_angle`` pointing at where
+    the bone used to be, which is worse than the fault.  The fix is upstream —
+    pre-bend the metarig and generate again — so a wrong pole is reported as a
+    **fail with that sentence in it**, never quietly.
+    """
+    limbs = limbs if limbs is not None else ik_limbs(rig)
+    if forward is None:
+        forward, forward_how = rig_forward_axis(rig, limbs)
+    else:
+        forward, forward_how = Vector(forward).normalized(), "given"
+    rows = []
+    for entry in limbs:
+        pole = entry.get("pole_target")
+        chain = POLE_CHAIN.get(entry["limb"])
+        if not pole or chain is None:
+            continue
+        side = entry["side"]
+        root_bones = def_bones_for(rig, chain[0] % side)
+        mid_bones = def_bones_for(rig, chain[1] % side)
+        end_bones = def_bones_for(rig, chain[2] % side)
+        if not root_bones or not mid_bones:
+            continue
+        root = _rest_head(rig, root_bones[0])
+        joint = _rest_head(rig, mid_bones[0])
+        end = (_rest_head(rig, end_bones[0]) if end_bones
+               else _rest_tail(rig, mid_bones[-1]))
+        pole_point = _rest_head(rig, pole)
+        if root is None or joint is None or end is None or pole_point is None:
+            continue
+        span = end - root
+        if span.length < 1e-9:
+            continue
+        axis = span.normalized()
+        want = forward * POLE_DIRECTION.get(entry["limb"], 1.0)
+        want = want - axis * want.dot(axis)
+        if want.length < 1e-9:
+            continue
+        want.normalize()
+        joint_off = (joint - root) - axis * (joint - root).dot(axis)
+        pole_off = (pole_point - root) - axis * (pole_point - root).dot(axis)
+        joint_side = joint_off.dot(want)
+        pole_side = pole_off.dot(want)
+        agrees = (pole_side > 0.0) and (joint_side > 0.0)
+        rows.append({
+            "limb": entry["name"],
+            "pole": pole,
+            "pole_enabled": entry.get("pole_enabled"),
+            "expected": "forward" if POLE_DIRECTION.get(entry["limb"], 1.0) > 0
+            else "backward",
+            "joint_offset_mm": round(joint_side * M_TO_MM, 2),
+            "pole_offset_mm": round(pole_side * M_TO_MM, 2),
+            "span_mm": round(span.length * M_TO_MM, 2),
+            "joint_pct_of_span": round(100.0 * joint_side / span.length, 2),
+            "correct": bool(agrees),
+        })
+    wrong = [row for row in rows if not row["correct"]]
+    if not rows:
+        verdict = "unmeasured"
+        says = "This rig has no IK pole target to check."
+    elif not wrong:
+        verdict = "ok"
+        worst = min(rows, key=lambda row: row["pole_offset_mm"])
+        says = ("Every one of the %d IK pole targets sits on the side its limb bends "
+                "towards (closest: %s, %.1f mm %s of the chain, with its joint %.1f mm "
+                "the same way)."
+                % (len(rows), worst["limb"], worst["pole_offset_mm"], worst["expected"],
+                   worst["joint_offset_mm"]))
+    else:
+        verdict = "fail"
+        worst = min(wrong, key=lambda row: row["pole_offset_mm"])
+        says = ("IK POLES FIGHT THE ANATOMY: %d of %d. %s's pole %r sits %.1f mm on the "
+                "%s side of the chain when it must be %s, and its joint sits %.1f mm "
+                "(%.1f%% of the limb's span) the same wrong way. Rigify derives the pole "
+                "angle from the limb's REST plane, so this is not fixable on the "
+                "generated rig — moving the pole bone would leave the IK constraint's "
+                "pole_angle aimed where the bone used to be. Pre-bend the metarig (the "
+                "landmark pass does it: a knee apexes forward, an elbow backward) and "
+                "generate again."
+                % (len(wrong), len(rows), worst["limb"], worst["pole"],
+                   abs(worst["pole_offset_mm"]),
+                   "wrong" if worst["pole_offset_mm"] < 0 else "right",
+                   worst["expected"], worst["joint_offset_mm"],
+                   worst["joint_pct_of_span"]))
+    return {
+        "forward": [round(v, 4) for v in forward],
+        "forward_from": forward_how,
+        "poles": rows,
+        "wrong": [row["limb"] for row in wrong],
+        "verdict": verdict,
+        "says": says,
+    }
+
+
 def ik_summary(limbs):
     """One sentence about what the IK layer is, for a report's ``says``."""
     if not limbs:
@@ -2583,6 +2906,12 @@ def cmd_rigforge_ik(params):
             "an IK_FK switch on thigh_parent/upper_arm_parent; a rig without them was "
             "not generated by rigforge_generate_rig, or is not a biped." % rig.name)
 
+    # Whoever is asking about the IK layer is the person who most needs to know
+    # a pole is on the wrong side of its limb.
+    pole_sides = pole_side_check(rig, limbs)
+    if pole_sides["verdict"] == "fail":
+        warnings.append(pole_sides["says"])
+
     return {
         "rig": rig.name,
         "action": action,
@@ -2591,7 +2920,8 @@ def cmd_rigforge_ik(params):
         "convention": convention,
         "changed": changed,
         "frame": frame,
-        "says": ik_summary(limbs),
+        "pole_sides": pole_sides,
+        "says": "%s %s" % (ik_summary(limbs), pole_sides["says"]),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
@@ -2734,6 +3064,16 @@ def cmd_rigforge_generate_rig(params):
                 "the foot-slide anti-pattern - check the metarig's limb types.")
         refresh_view_layer()
 
+        # Straight after the convention, while the rig is still this function's
+        # business: a pole on the wrong side of its limb is a rig that bends
+        # backwards, and it is generated silently from a rest plane nobody
+        # looked at. Never fatal - the rig is still a rig, and refusing to
+        # deliver it would throw away the skinning too - but it is a fail in
+        # the report and a warning in the sentence.
+        pole_sides = pole_side_check(rig, ik["limbs"])
+        if pole_sides["verdict"] == "fail":
+            warnings.append(pole_sides["says"])
+
         regions, _empty = measure_tags(mesh)
         span = max(max(mesh.dimensions), 1e-6)
         band = band_ratio * span
@@ -2809,8 +3149,9 @@ def cmd_rigforge_generate_rig(params):
             "limbs": ik["limbs"],
             "limb_names": [entry["name"] for entry in ik["limbs"]],
             "poles": ik["poles"],
+            "pole_sides": pole_sides,
             "changed": ik["changed"],
-            "says": ik_summary(ik["limbs"]),
+            "says": "%s %s" % (ik_summary(ik["limbs"]), pole_sides["says"]),
         },
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),

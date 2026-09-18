@@ -688,10 +688,10 @@ nobody is allowed to fail on.
 
 | type | params | does |
 |---|---|---|
-| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`method?`** `landmarks`\|`tags`, **`tags?`** `auto`\|`detector`\|`keep`, **`tag_radius_factor?`**, **`tag_seed?`**, **`tag_refresh?`**, **`orient?`** `fix`\|`report`\|`skip`, **`symmetry?`** (bool), **`symmetry_keep?`**, **`symmetry_tolerance_mm?`**, **`echo?`**, **`echo_dir?`**, **`echo_resolution?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`** | builds a Rigify metarig and fits it **the way a person does**: orientation gate → symmetrize → joints snapped onto the mesh's own cross-section centroids on the character's left → exact X-mirror (see [The human rigger's workflow](#the-human-riggers-workflow-orient-symmetrize-landmark-mirror)). `tags: "auto"` (default) **repairs limb tags the landmark fit cannot read** by detecting a skeleton and re-tagging along each limb's own axis — see [Auto-tagging](#auto-tagging-tags-that-follow-each-limbs-own-axis-rigforge_autotag). `method: "tags"` is the old fraction-of-the-blob fit, and is also where a mesh the landmarks cannot read falls back, saying so. Ear/tail tags still become bone chains. Returns `fit_method`, **`auto_tags`**, `orientation`, `symmetry`, `side_tags`, `midplane_mm`, `joint_landmarks`, `mirror`, `skeleton_echo`, plus the old `metarig`, `bone_count`, `mapping`, `chains`, `landmarks`, `joints`, `says`, `warnings` |
+| `rigforge_metarig` | `object?`, `archetype?` `auto`\|`biped`\|`quadruped`\|`custom`, `modules?`, `spring_chains?`, **`preset?`**, **`method?`** `landmarks`\|`tags`, **`tags?`** `auto`\|`detector`\|`keep`, **`tag_radius_factor?`**, **`tag_seed?`**, **`tag_refresh?`**, **`orient?`** `fix`\|`report`\|`skip`, **`symmetry?`** (bool), **`symmetry_keep?`**, **`symmetry_tolerance_mm?`**, **`echo?`**, **`echo_dir?`**, **`echo_resolution?`**, **`joints_file?`**, **`joints_weight?`**, **`joints_tolerance?`**, **`joints_disagree_band?`**, **`joints_axis_up?`**, **`breast_bones?`** (default false) | builds a Rigify metarig and fits it **the way a person does**: orientation gate → symmetrize → joints snapped onto the mesh's own cross-section centroids on the character's left → exact X-mirror (see [The human rigger's workflow](#the-human-riggers-workflow-orient-symmetrize-landmark-mirror)). `tags: "auto"` (default) **repairs limb tags the landmark fit cannot read** by detecting a skeleton and re-tagging along each limb's own axis — see [Auto-tagging](#auto-tagging-tags-that-follow-each-limbs-own-axis-rigforge_autotag). `method: "tags"` is the old fraction-of-the-blob fit, and is also where a mesh the landmarks cannot read falls back, saying so. Ear/tail tags still become bone chains. Returns `fit_method`, **`auto_tags`**, `orientation`, `symmetry`, `side_tags`, `midplane_mm`, `joint_landmarks` (now including `ball`/`toe_tip`/`heel`/`knuckle`), **`prebend`**, **`dropped_bones`**, `mirror`, `skeleton_echo`, plus the old `metarig`, `bone_count`, `mapping`, `chains`, `landmarks`, `joints`, `says`, `warnings` |
 | **`rigforge_autotag`** | `object?`, `action?` `report`\|`apply`, `source?` `auto`\|`detector`\|`box`, `joints_file?`, `radius_factor?`, `seed?`, `refresh?`, `replace?`, `rigbridge?`, `timeout?` | rebuilds the six body tags (`Head`, `Torso`, `Arm.L/R`, `Leg.L/R`) as **cylinders around each limb's own detected axis** instead of axis-aligned box bands. Runs the joint detector out of process (cached per mesh hash), names each limb chain from geometry, and tags every vertex by its distance to the nearest axis capped by that limb's own local girth. Falls back **per limb** — `unirig` → `hand` (the tag already there) → `box` — and the report names the rung for every tag. Returns `tags` (per tag: `vertices`, `source`, `why`), `sources`, `axes`, `axis_hints`, `roles`, `girth`, `detector`, `says`, `warnings` |
-| **`rigforge_landmarks`** | `object?`, `action?` `report`\|`prepare`, `orient?`, `symmetry?`, `symmetry_keep?`, `symmetry_tolerance_mm?`, `stations?` | steps 1-3 on their own. `report` measures and changes nothing: which way the character faces and on what evidence, how far out of X-symmetry it is, whether its sided tags name the halves they sit on, and where every joint's cross-section centroid is. `prepare` runs the gate for real (rotate, symmetrize, re-derive the sides) — which is exactly what `rigforge_metarig` calls |
-| **`rigforge_echo_skeleton`** | `rig?` \| `metarig?`, `mesh?`, `dir`, `views?`, `resolution?`, `deform_only?` | the **echo-back**: the placed skeleton drawn in red over the body ghosted to 22%, front and side, as PNGs the report names. What a rigger looks at before binding anything |
+| **`rigforge_landmarks`** | `object?`, `action?` `report`\|`prepare`, `orient?`, `symmetry?`, `symmetry_keep?`, `symmetry_tolerance_mm?`, `stations?` | steps 1-3 on their own. `report` measures and changes nothing: which way the character faces and on what evidence, how far out of X-symmetry it is, whether its sided tags name the halves they sit on, and where every joint's cross-section centroid is. `prepare` runs the gate for real (rotate, symmetrize, re-derive the sides) — which is exactly what `rigforge_metarig` calls. Both report **`prebend`**: per knee and elbow, the signed offset from its own chord before and after the [anatomical pre-bend](#the-anatomical-pre-bend-prebend_joint), whether it was nudged, by how many millimetres, whether the flesh clamped it, and why |
+| **`rigforge_echo_skeleton`** | `rig?` \| `metarig?`, `mesh?`, `dir`, `views?`, `resolution?`, `deform_only?`, `joint_markers?` | the **echo-back**: the placed skeleton drawn in red over the body ghosted to 22%, front and side, as PNGs the report names, with a ball at every joint (`joints_marked`) so the articulation points are visible rather than one continuous stick. What a rigger looks at before binding anything |
 | **`rigforge_weight_maps`** | `rig?`, `mesh?`, `dir`, `bones?`, `views?`, `resolution?`, `max_bones?`, `overlap?` | per-bone **weight maps** in Blender's own blue→red ramp, plus the influence-overlap matrix beside them. The maps looked at, rather than counted |
 | `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`**, **`tag_constrained?`** | Rigify generate → automatic weights → per-tag weight cleanup → **the tag contract** (mask, blend, smooth — see [Tag-constrained skinning](#tag-constrained-skinning-rigforge_skin)) → the IK layer put on the game convention. `tag_constrained: false` reproduces the old, unconstrained bind. Returns `rig`, `weighted`, `cleanup_report`, **`tag_constrained`**, `spring_chains`, **`ik`**, `warnings` |
 | **`rigforge_skin`** | `object?`, `rig?`, `action?` `apply`\|`report`\|`continuity`, `max_influences?`, `blend?`, `reach?`, `smooth_passes?`, `smooth_factor?` | **the rigger's mask-then-blend, over an automatic bind**: a vertex's weight to a bone its own tag does not allow is zeroed and the rest renormalised, seams blend over a band as wide as the limb's own girth, and the holes an automatic bind leaves are filled. `report` answers *what is legal where* and changes nothing; `continuity` answers *how patchy is this bind*. Returns `weight_removed`, `borrowed_slots`, `taper_slots`, `worst_bones`, `contract` (`legal`, `hinges`, `source_counts`), `blend` (per-seam girths and widths), `continuity`, `report`, `says`, `warnings` |
@@ -699,7 +699,7 @@ nobody is allowed to fail on.
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts, the two numbers that mean trouble, and the **influence overlap matrix** (`report.overlap`: which bones share which vertices, and which pairs share them across a gap they should not); or re-runs the rules |
 | `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, **bakes driven shape-key weights per frame alongside the bones**, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents`, **`morph_targets`**, **`driven_morph_targets`**, **`morph_animation`** |
 | **`rigforge_correctives`** | `rig?`, `mesh?`, `action?` `author`\|`report`\|`clear`, `joints?`, `angle_samples?`, `strength?`, `smooth?`, `weight_floor?`, `verify?` | **corrective shape keys (JCMs) driven by bend angle** — the fix for the collapsed knee that edge loops cannot buy. Measures the pinch at each sampled angle, authors a rest-space corrective that restores it, drives it off the joint's own bend, then **re-runs the harness and reports before/after volume loss per joint per angle**. Returns `shape_keys`, `joints`, `table`, `gate_before`/`gate_after`, `rest_space`. See [Correctives](#correctives-the-collapsed-knee-rigforge_correctives) |
-| **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?`, **`render_weights?`** (a folder), **`weight_map_bones?`**, **`max_weight_maps?`** | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. **Plus four placement gates on every call, asked for or not**: `centering` (each bone against its own limb's cross-section centroid), `asymmetry` (every `.R` bone against the mirror of its `.L`), `side_naming` (are the `.L` bones on the character's left at all) and `overlap` (the bone-to-bone influence matrix). Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) and [The self-check](#the-self-check-centering-asymmetry-side-naming-overlap) |
+| **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?`, **`render_weights?`** (a folder), **`weight_map_bones?`**, **`max_weight_maps?`** | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. **Plus six placement gates on every call, asked for or not**: `centering` (each bone against its own limb's cross-section centroid), `asymmetry` (every `.R` bone against the mirror of its `.L`), `side_naming` (are the `.L` bones on the character's left at all), `overlap` (the bone-to-bone influence matrix), `continuity` (flesh missing from inside a bone's own region) and **`bend_direction`** (drive each IK target and measure which way the joint actually folds — a knee forward, an elbow backward). Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) and [The self-check](#the-self-check-centering-asymmetry-side-naming-overlap) |
 | **`animation_check`** | `rig?`, `action?`, `mode?` `auto`\|`planted`\|`in_place`, `frame_step?`, `contact_band?`, `min_stance_frames?`, `feet?` | the **foot-slide metric**: for every stance phase in a clip, how far the planted foot drifts, in millimetres. Returns per-step drift, the worst step, a `gate` and the `thresholds` that judged it. Deterministic, geometric, nothing rendered. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 
 Parameters in **bold** are additive refinements beyond `docs/architecture.md`'s Phase 4
@@ -1984,15 +1984,175 @@ skeleton in red over the body ghosted to 22%, front and side, and the result nam
 files (`skeleton_echo`). The rig's equivalent of the floor plan's approval SVG: a rigger
 looks at the skeleton inside the mesh before they bind, because that is the moment a
 mis-placed or mis-named bone is still free to fix. Armatures do not appear in a render at
-all, so the skeleton *becomes* geometry — one square prism per deform bone — and the two
-passes are composited in `bpy` (Blender's transparent film is premultiplied, so the ghost
-is an add over the background rather than a lerp). It is never fatal: a render that cannot
-run costs a warning, not the metarig. `echo: false` switches it off.
+all, so the skeleton *becomes* geometry — one square prism per deform bone, **and a ball
+at every joint** — and the two passes are composited in `bpy` (Blender's transparent film
+is premultiplied, so the ghost is an add over the background rather than a lerp). It is
+never fatal: a render that cannot run costs a warning, not the metarig. `echo: false`
+switches it off.
+
+**The balls are the owner's own note on the first echo they looked at** — *"I couldn't
+see where the bones articulate."* Sticks alone draw a chain as one continuous red worm,
+and the question this picture exists to answer, *does the knee sit where the flesh
+creases*, is a question about the **hinge**. Each bone's head and tail gets a sphere sized
+off that bone's own prism, so a finger's joints stay finger-sized; coincident joints (a
+connected chain's tail and its child's head) are welded rather than drawn twice into a
+lumpy double ball. 35 of them on the werewolf, reported as `joints_marked`;
+`joint_markers: false` gets the stick-only picture back.
 
 **Queued, not implemented:** skeleton-annotated **reference images** — the artist draws
 the skeleton over the reference and its 2D landmarks are projected onto the mesh. That is
 for references where the geometry genuinely cannot say where a joint is (baggy clothing,
 fur, armour). Everything above reads the mesh.
+
+### The anatomical pre-bend (`prebend_joint`)
+
+*(step 4a of the workflow above, between the landmarks and the mirror.)*
+
+> *"The knees bend backward."*
+
+A rigger never leaves a limb straight at rest. The knee goes a little **forward**, the
+elbow a little **back**, before anything is animated. That is not decoration: three
+collinear points give an IK solver no plane to solve in, Rigify derives a limb's pole
+angle from that same **rest plane**, and a limb with no plane folds whichever way the
+solver's floating-point dust happens to fall. Forge measured every joint off the mesh's
+own cross-sections and then shipped whatever the crease happened to be — which on the
+werewolf was **backwards**.
+
+**What was actually wrong, in one line.** The old test asked *how far from straight* a
+chain was and left it alone above 3%. A magnitude cannot tell a knee from a knee bent
+backwards. Measured on `werewolf-wip-9`:
+
+| | measured | the old test's verdict |
+|---|---|---|
+| knee.L off the hip-to-ankle line | **25.9 mm**, 4.2% of a 620 mm span, **backwards** | passes (4.2% > 3%) |
+| elbow.L off the shoulder-to-wrist line | 31.6 mm, 5.2% — of which **0.08 mm** is front-to-back | passes (5.2% > 3%) |
+| lifting `foot_ik.L` by 155 mm | knee travels **148.7 mm backwards** | — |
+| the knee pole `thigh_ik_target.L` | **625 mm behind** the chain, holding it there | — |
+
+So the measurement is now **signed, along the direction the joint is supposed to apex**,
+and there are exactly three outcomes. Already apexing the right way by at least the
+minimum: **untouched**, and the report says by how much it earned that. Collinear, or bent
+the right way but not enough: topped up to the minimum. Bent the **wrong** way: pushed
+through zero to a real bend, which costs more than the bend itself because it has to undo
+it first — the werewolf's knee moved **43.7 mm** to reach +18.6 mm.
+
+**It cannot push the joint out of the flesh.** `Limb.section_reach` measures how far the
+limb's own cross-section extends in the push direction at that station, using the same
+ring-and-gap gates `bone_centering` applies before it trusts a section's centre, and the
+nudge is capped at two thirds of it. A clamp is reported, never silent. A station that is
+not a ring falls back to the limb's median girth and says so.
+
+**It runs before the mirror**, so both sides get the identical nudge and the 0.0 mm
+asymmetry survives — a test pins that at 1e-6 mm.
+
+**How big, measured rather than chosen.** 3% of the limb's own span: the same
+`LANDMARK_BEND` the tag fit already used, and a number this project has been wrong about
+once before (it was lowered to 0.5% to flatter the centering gate, `headless_rigik`'s pole
+test measured **0.02 mm** of knee travel over a 25% pole sweep, and it went back). Swept
+on the werewolf, regenerating the rig at each step and measuring what the IK then does:
+
+| pre-bend | knee travel on a 155 mm foot lift | elbow travel on a 152 mm hand lift | `bend_direction` | worst centering |
+|---|---|---|---|---|
+| 0.0% | **−0.0 mm** — no preference at all | −0.0 mm | fail | attention, 52.5% |
+| 0.5% | 70.0 mm | 13.5 mm (under the gate's floor) | fail | attention, 55.8% |
+| 1.5% | 132.5 mm | 38.8 mm | ok | fail, 65.4% |
+| **3.0%** | **148.8 mm** | **68.9 mm** | **ok** | fail, 80.3% |
+
+The first row is the whole argument: a perfectly straight limb's joint travels **zero**
+in either direction. It is not *nearly* right, it is undefined.
+
+**The price, paid knowingly and quoted.** A pre-bent joint is a joint off its own
+cross-section's centreline, and moving a bone's head tilts its whole shaft — so
+`centering` gets worse. The gate's own threshold note already predicted the size of it
+("29% of the forearm's radius on the test character") and on the werewolf it cost 28
+points on `DEF-forearm.L`, 52.5% → 80.3%. That crosses from `attention` into `fail`
+**on this character** because its forearm starts at 52.5%: it is 21.3 mm out of
+X-symmetry and deliberately not symmetrized (it is already unwrapped), so the rig is
+authored on the left and mirrored onto a right side 21 mm away. Retuning the constant to
+flatter the gate is the mistake this project already made once; the number is reported
+next to the band instead.
+
+### The foot and the hand (`foot_landmarks`, `hand_landmarks`)
+
+*(step 4d: the two ends of the body nothing used to measure.)*
+
+> *"The foot chain does not follow the shoe."* · *"The wrist sits deep in the palm."*
+
+`biped_landmarks` stopped at the ankle and the wrist. `foot`, `toe` and `hand` were
+never fitted at all — `fit_chain` placed the long bones and `_drag_subtree` **dragged
+the rest along**, so their proportions were Rigify's template's. Measured on the
+werewolf: `DEF-toe.L`'s tail **80.1 mm short of the boot's forward extent**, the ankle
+**73 mm too high**, and `heel.02.L` — which becomes `foot_heel_ik`, the bone a heel
+strike pivots about — floating **165 mm above the sole**.
+
+Both are measured in the frame that suits them, not the one the rest of the module
+uses. A limb is a tube sliced across its own axis; **a foot is a wedge lying on the
+ground** whose joints are defined along the way the character faces, and **a hand is a
+girth profile with two turns in it**.
+
+| landmark | the rule |
+|---|---|
+| **ankle** | the height where the leg is **shortest front to back** — a foot is long and an ankle is not. The *lowest* station within 5% of the minimum, which is "just above the foot mass" rather than "somewhere up the shin" |
+| **ball** | where the sole's **forward taper begins**: the widest sole station, then forward to the first under 85% of it. A bootmaker's definition; it works on a bare foot and on a boot |
+| **toe tip** | the sole's forward extent, **12 mm back** from the last vertex, so the bone does not break the surface the instant the toe rolls. The margin is quoted, never hidden |
+| **heel** | the sole's rearmost cross-section **at ground level**, spanning its measured width — Rigify's `heel.02`, and therefore the roll pivot |
+| **wrist** | the **first** girth minimum walking down from the elbow: the forearm's taper bottoming out with the palm widening after it. *Not* the narrowest station in the distal band — **fingers are narrower than a wrist**, so that rule walks past the palm and lands in them, which is the defect |
+| **knuckles** | where the palm tapers into fingers (the same 85% rule). The hand bone ends **there**, not at the fingertips, because that is where a hand hinges |
+
+Every bone position is a **cross-section centroid**, like every other landmark here, so
+a foot bone runs through the middle of the toes rather than along the top of the sole.
+Applied before the mirror. The chains are now `thigh → shin → foot → toe` and
+`shoulder → upper_arm → forearm → hand`, one `fit_chain` call each.
+
+**Both decline rather than invent.** A leg tagged to the ankle gets no foot and says
+so; an arm tagged to the wrist gets no hand and says so. Three guards, and two of them
+were found by being wrong first:
+
+- a foot must be **1.35× longer** front-to-back than the ankle above it, **and reach
+  1.6× further in front of the ankle than behind it**. Length alone let a bare leg's
+  end cap — which flares to 1.5× the ankle's width — read as a **126 mm foot**. A
+  cone's cap is centred under the leg; a foot is not, and that asymmetry is the whole
+  difference between a foot and the bottom of a tube;
+- a palm must be **12% fatter** than the wrist before the tag counts as containing a
+  hand;
+- and the wrist search starts **from the elbow**, not from the middle of the limb. The
+  elbow is itself a girth minimum, and a band starting at mid-limb found the elbow's
+  own crease and called it the wrist — which made the synthetic biped's arm IK bend
+  backwards, caught by `bend_direction`.
+
+**Measured, on the real werewolf** (scratch copy; nothing written back):
+
+| | before (dragged from the template) | after (measured) |
+|---|---|---|
+| `DEF-toe.L` tail vs the boot's front | **80.1 mm short** | **12.0 mm** — the declared margin, exactly |
+| ankle height | 246.4 mm | **173.5 mm** |
+| foot / toe bone length | 122.7 / 63.8 mm | **172.8 / 93.7 mm** |
+| `heel.02.L` | z = 165.5 mm, above the sole | **z = 0.7 mm**, on the back of the boot |
+| `bend_direction` · `pole_sides` · `asymmetry` | — | ok · ok · **0.000 mm** |
+| `foot_ik.L` +350 mm, `DEF-shin.L` head | **+203.1 mm backward** | **−230.9 mm forward** |
+| deform bones (with `breast_bones: false`) | 35 | **33** |
+
+The hand rule **declines on the werewolf and that is the right answer**: its `Arm.L`
+tag's girth is flat at 31–45 mm for the whole 249 mm past the elbow, so there is no
+palm in the tag. The run says so and names the remedy, which is a tagging job rather
+than a fitting one. On a mitten-shaped synthetic hand the same rules land **5.3 mm**
+from the wrist ring and **26.2 mm** from the knuckle ring the builder made.
+
+### Two bones nobody wanted (`breast_bones`)
+
+Rigify's human template carries `breast.L/R`. On a jacketed male character they show as
+prongs off the chest in the skeleton echo, and they are not innocent: on the werewolf
+they appeared in **33 of the overlap gate's stray pairs**, including **129.8** units of
+shared mass between the two of them and **78.4** between `DEF-breast.L` and
+`DEF-upper_arm.L`.
+
+`rigforge_metarig` grows **`breast_bones`** (default **false**) and drops them **on the
+metarig, before generation**. That is the only place it costs nothing: a bone deleted
+there never becomes a `DEF-` bone, a vertex group or a weight map, whereas deleting the
+generated bone afterwards leaves both behind. `dropped_bones` reports what went, and a
+warning says why. The werewolf goes 35 → 33 deform bones with no breast vertex groups;
+a control rigged with them **kept** measures the same 6 unweighted vertices and the same
+unused bones less those two, so the skinning is provably unaffected.
 
 ### The self-check: centering, asymmetry, side naming, overlap
 
@@ -2041,6 +2201,36 @@ creases like a drinking straw. A pair that shares influence while sitting far ap
 **named defect**, with the worst vertex and its distance to the bone that should not have
 it. The geometric gap decides rather than the tree, because Rigify re-parents its `DEF-`
 bones into their own hierarchy and some of them are not connected to each other at all.
+
+**`bend_direction`** — the only gate that **drives** the rig instead of measuring it at
+rest, and the one the other five could not have caught. Per IK limb: switch it to IK with
+its pole live, zero the pose (so the answer is a property of the rig, not of whatever pose
+the file was saved in), translate the IK target a quarter of the limb's own rest chord
+**towards the limb's root** — for a leg that is lifting the foot, which is the owner's own
+test — and project the mid joint's travel onto the direction it is supposed to apex. A
+knee forward, an elbow backward, both relative to the way **the rig's own toes** point
+(`rigforge_rig.rig_forward_axis`, the same rule `rigforge_walk` derives its forward axis
+from, so a gate and the walk it protects cannot disagree). Then the joint is put back, and
+checked to be back: `returned_mm` must be under 0.1 mm and the whole pose is restored in a
+`finally`.
+
+The floor is 15% of the lift. That is a heuristic and the report says so, but it is a
+heuristic with a lot of daylight either side: a straight two-segment chord that shortens
+by `d` must swing its mid joint `0.5·√(d(2L−d))` sideways — 205 mm on the werewolf's leg
+— so a correct rig clears the floor by an order of magnitude and an ambiguous one cannot
+reach it by accident. The live rig measured **−148.7 mm**. Re-fitted through this lane it
+measures **+183.0 mm**, and the owner's own 350 mm foot lift goes from **+203.1 mm
+backwards to −230.9 mm forwards**.
+
+**And the poles are checked with it** — `pole_side_check`, reported by both
+`rigforge_generate_rig` and `rigforge_ik` as `pole_sides`. Rigify places each pole from
+the limb's rest plane, so a knee left sitting backwards gets a pole **behind** it that
+then holds it there through every solve. There is nothing to fix on the generated rig:
+moving the pole bone would leave the IK constraint's `pole_angle` aimed at where the bone
+used to be, which is worse than the fault. So a wrong pole is a `fail` whose sentence says
+that, and names the pre-bend as the fix. On the werewolf all four poles were wrong
+(`thigh_ik_target.L` **625 mm** on the wrong side); after the re-fit all four are right
+(**+702 mm**).
 
 **And the maps get looked at.** `rig_check {"render_weights": "<folder>"}` (or
 `rigforge_weight_maps`) renders a **per-bone weight map** over the mesh in Blender's own
@@ -3176,6 +3366,15 @@ addon/tests/
                          the builder made, the X-mirror leaves 0.0, the side-naming gate
                          screams at a mirrored .L, the overlap matrix names a polluted
                          weight, and the echo + weight maps come out as real PNGs
+  headless_prebend.py    headless checks for the anatomical pre-bend and the
+                         bend_direction gate (port 9912): the pre-bend maths measured
+                         SIGNED rather than as a magnitude (a knee 4.2% off the line
+                         BACKWARDS is the live defect and used to pass), the nudge
+                         clamped to stay inside the limb's own cross-section, applied
+                         before the mirror so both sides match to 1e-6 mm, and the gate
+                         driving a generated Rigify rig: it passes a pre-bent one and
+                         FAILS one whose knees were straightened back out, restoring the
+                         pose exactly either way
   headless_rigbridge.py  headless checks for the rigging bridge (port 9901): joints_file
                          blending against a hand-written detector file, the frame gate,
                          and rig_check on the generated rig - no GPU, no download

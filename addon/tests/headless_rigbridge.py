@@ -296,9 +296,26 @@ def test_joints_refine(retopo, baseline, workspace):
               "%.1f mm vs %.1f mm" % (entry["distance_mm"], entry["tolerance_mm"]))
         check("it carries both positions so the reader can judge",
               {"tag_mm", "predicted_mm"} <= set(entry), str(sorted(entry)))
-    check("the tags won the disagreement (the elbow did not move)",
-          (after["forearm.L"][0] - baseline["forearm.L"][0]).length < 1e-6,
-          "%.3f mm" % ((after["forearm.L"][0] - baseline["forearm.L"][0]).length * 1000.0))
+    # The tags win the disagreement: the elbow is NOT refined towards the
+    # prediction. It is not pinned in place, though, and the reason is worth
+    # stating rather than loosening a threshold over: the fit gives every limb
+    # an **anatomical pre-bend** relative to its own shoulder-to-wrist chord
+    # (rigforge_rig._bend), and the shoulder and the wrist here *were* refined,
+    # so the chord moved under it and the pre-bend is re-applied against the new
+    # one. That move is a few percent of the arm's own length -- measured,
+    # 21.3 mm -- while a refined joint moves half of the 10%-of-span
+    # disagreement, which is four times further.
+    elbow_shift = (after["forearm.L"][0] - baseline["forearm.L"][0]).length
+    towards = ((disagreement - baseline["forearm.L"][0]).length
+               - (disagreement - after["forearm.L"][0]).length)
+    note("the elbow moved %.1f mm; a refined joint would move %.1f mm (half of the "
+         "%.1f mm disagreement)" % (elbow_shift * 1000.0, far * 500.0, far * 1000.0))
+    check("the tags won the disagreement: the elbow was not refined towards the "
+          "prediction", towards < far * 0.25,
+          "%.1f mm closer of %.1f mm" % (towards * 1000.0, far * 1000.0))
+    check("...and what it did move is the anatomical pre-bend, not a refinement",
+          elbow_shift < far * 0.25,
+          "%.1f mm of a %.1f mm half-way move" % (elbow_shift * 1000.0, far * 500.0))
 
     warnings = " ".join(result.get("warnings") or [])
     check("the warnings say a detector disagreed", "disagreed with the tags" in warnings,

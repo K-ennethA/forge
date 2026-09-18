@@ -115,6 +115,9 @@ __all__ = [
     "DEFAULT_RADIUS_FACTOR",
     "PROP_TAG_SOURCE",
     "PROP_TAG_AXES",
+    "TORSO_SUB_TAGS",
+    "SPLIT_PARENT",
+    "SPLIT_STATIONS",
     "Axis",
     "segments_of",
     "classify_segments",
@@ -122,6 +125,13 @@ __all__ = [
     "assign_vertices",
     "limb_plausible",
     "box_band_groups",
+    "axis_from_cloud",
+    "spine_split",
+    "sub_tag_at",
+    "sub_tags_spanning",
+    "split_membership",
+    "split_from_clouds",
+    "split_from_groups",
     "detector_status",
     "detect_joints_for",
     "auto_tag",
@@ -187,6 +197,53 @@ MIN_ASPECT = 2.0
 #: since been rotated or rebuilt is not fitted to a stale hint.
 PROP_TAG_SOURCE = "forge_tag_source"
 PROP_TAG_AXES = "forge_tag_axes"
+
+#: The three slabs the ``Torso`` tag is cut into along its own spine, **proximal
+#: to distal**.  They are a *derived view* and never a vertex group: nothing is
+#: written to the mesh, so :func:`~forge.tools.rigforge_rig.measure_tags`, the
+#: landmark fitter and every other consumer keep seeing exactly one ``Torso``
+#: (see :func:`spine_split` for why that matters and what the split is for).
+TORSO_SUB_TAGS = ("Torso.pelvis", "Torso.abdomen", "Torso.chest")
+
+#: The tag :data:`TORSO_SUB_TAGS` are slabs of.  One name, in one place, so the
+#: merge back is a lookup rather than a string split — ``Arm.L`` also has a dot
+#: in it and parsing would turn it into ``Arm``.
+SPLIT_PARENT = "Torso"
+
+#: Stations along the spine at which the split is measured and to which both
+#: cuts are snapped.  The **same grid** :data:`GIRTH_STATIONS` caps the limb
+#: cylinders with, deliberately: a cut that lands between stations is a cut the
+#: girth profile has no opinion about.
+SPLIT_STATIONS = GIRTH_STATIONS
+
+#: Where the legs join the spine, as a percentile of the leg tags' own position
+#: along it.  **Not the maximum**: a limb tag's topmost vertices are the ragged
+#: seam it shares with the torso, and one of them is not a junction.  Measured
+#: on the werewolf, the leg tags' p95 is t=0.318 and their max t=0.421 — 68 mm
+#: apart, the difference between a cut at the hip and a cut through the belly.
+LEG_JUNCTION_PERCENTILE = 0.95
+
+#: Stations at each end of the spine that the waist search ignores.  A tag's
+#: girth always falls away at its own ends, because that is where it runs out of
+#: flesh rather than where it narrows (werewolf: 159 mm at station 14, 96 mm at
+#: station 16, and the shoulders are not a waist).
+WAIST_END_MARGIN = 2
+
+#: Stations the two cuts must be apart, so the abdomen is a slab rather than a
+#: seam.
+MIN_CUT_SEPARATION = 2
+
+#: How far below its own band's mean a local girth minimum must sit to be called
+#: a waist.  **Credibility tier: heuristic.**  Measured on the werewolf, whose
+#: waist is a 3.3% dip (152.0 mm against the band's 157.2 mm mean) — real, and
+#: shallow.  A uniform tube has a dip of a tenth of a percent, which is the
+#: median's own noise, and that must fall back rather than cut at a coincidence.
+WAIST_MIN_DIP = 0.02
+
+#: A sub-tag with fewer vertices than this cannot be measured — it has no girth,
+#: no blend band and nothing for a bone to hold — and a split that produces one
+#: is refused whole rather than applied lopsided.
+MIN_SUB_TAG_VERTICES = 12
 
 #: Where the out-of-process detector runner lives, relative to the add-on.  The
 #: add-on is installed from ``<repo>/addon``, so the sibling is
@@ -745,6 +802,247 @@ def assign_vertices(world_points_list, axes, radius_factor=DEFAULT_RADIUS_FACTOR
 
 
 # ---------------------------------------------------------------------------
+# the torso, cut along its own spine
+# ---------------------------------------------------------------------------
+
+def axis_from_cloud(points, role="spine", seed=None):
+    """The centreline of a point cloud as a two-point :class:`Axis`.
+
+    The cloud's own principal axis through its own centroid, spanning exactly
+    its own projections — so a ``Torso`` tag's axis covers the torso's *flesh*
+    rather than the detected spine chain, which stops at the shoulder girdle and
+    leaves everything above it piled on one station.
+
+    ``seed`` is the direction to start the power iteration from — the detected
+    spine's, when there is one.  Ends are ordered **proximal to distal**, which
+    for a torso means upwards: the same "the spine leaves the root going up"
+    convention :func:`classify_segments` reads the skeleton with.
+    """
+    points = [Vector(p) for p in points]
+    if len(points) < 2:
+        raise ForgeError("A %s axis needs at least two points; got %d."
+                         % (role, len(points)))
+    centre = Vector((0.0, 0.0, 0.0))
+    for point in points:
+        centre += point
+    centre /= float(len(points))
+    axis = rigforge_landmarks._principal_axis(points, centre, seed=seed)
+    projections = [(point - centre).dot(axis) for point in points]
+    low = centre + axis * min(projections)
+    high = centre + axis * max(projections)
+    if low.z > high.z:
+        low, high = high, low
+    return Axis(role, [low, high])
+
+
+def spine_split(axis, torso_points, leg_points, stations=SPLIT_STATIONS):
+    """Where to cut a ``Torso`` tag into pelvis, abdomen and chest.  Never raises.
+
+    The failure this exists to fix
+    ------------------------------
+    The tag contract (:func:`~forge.tools.rigforge_skin.legal_bone_sets`) is
+    enforced **per tag**, and on the werewolf the single ``Torso`` tag is one
+    bucket holding **thirteen** deform bones — the whole spine, both breasts,
+    both pelvis bones and both shoulders.  Cross-tag stray influence is 0.000
+    and it is still wrong: a shoulder bone at z=1500 putting weight on pelvis
+    flesh at z=900 is *legal*, because both are ``Torso``.  That flesh is in the
+    ``Torso``/``Leg`` blend band, so it shares its neighbourhood with the thighs,
+    and the owner sees it in the walk — **the arm swing tugs the thighs**.
+
+    Two cuts, and only one of them is a free choice
+    -----------------------------------------------
+    1. **The pelvis ends where the legs join.**  That is a measurement, not a
+       fraction: the :data:`LEG_JUNCTION_PERCENTILE` of the leg tags' own
+       positions along the spine, snapped to the nearest station.  It is the
+       boundary that matters for the observed defect, because it is exactly
+       where torso flesh starts blending into thigh flesh.
+    2. **The chest begins at the waist** — the narrowest station of the spine's
+       own girth profile between that junction and the shoulders, accepted only
+       when it is narrower than both its neighbours *and* at least
+       :data:`WAIST_MIN_DIP` below its band's mean.  A uniform tube has no
+       waist, and inventing one from the median's noise would be a cut at a
+       coincidence; there the fallback is the midpoint between the leg junction
+       and the top of the spine, and the report says which rule fired.
+
+    Both are snapped to the station grid the girth cap already uses, both are
+    held :data:`MIN_CUT_SEPARATION` stations apart, and the ends of the profile
+    are excluded (:data:`WAIST_END_MARGIN`) because a tag always thins where it
+    runs out of flesh.
+
+    Measured on the werewolf (``werewolf-wip-9.blend``, 1435 torso vertices,
+    a 667 mm spine): the legs' p95 lands on station 5 (t=0.3125, z=1066 mm) and
+    the waist on station 10 (t=0.625, z=1274 mm, a 3.3% dip) — and the fallback
+    midpoint lands on the same station 10, which is the corroboration that the
+    dip is a waist rather than an artefact.
+
+    Returns a report dict.  A split that cannot be measured carries ``refused``
+    with the reason and no ``cuts``; the caller then keeps the one merged tag,
+    which is the behaviour every consumer already has.
+    """
+    stations = max(2 * WAIST_END_MARGIN + MIN_CUT_SEPARATION + 2, int(stations))
+    samples = [axis.closest(point) for point in torso_points]
+    profile = _girth_profile(samples, stations)
+    report = {
+        "parent": SPLIT_PARENT,
+        "names": list(TORSO_SUB_TAGS),
+        "stations": stations,
+        "axis_mm": [[round(v * M_TO_MM, 1) for v in point] for point in axis.points],
+        "axis_length_mm": round(axis.length * M_TO_MM, 1),
+        "girth_mm": [round(value * M_TO_MM, 1) for value in (profile or ())],
+        "torso_vertices": len(torso_points),
+    }
+
+    if len(torso_points) < 3 * MIN_SUB_TAG_VERTICES:
+        report["refused"] = (
+            "the Torso tag has %d vertices, and three slabs of at least %d each "
+            "need %d" % (len(torso_points), MIN_SUB_TAG_VERTICES,
+                         3 * MIN_SUB_TAG_VERTICES))
+        return report
+    if not leg_points:
+        report["refused"] = (
+            "no leg tag has any flesh, so nothing measures where the pelvis ends; "
+            "the Torso stays one tag")
+        return report
+
+    # --- cut 1: where the legs join the spine ------------------------------
+    leg_t = sorted(axis.closest(point)[1] for point in leg_points)
+    junction = _percentile(leg_t, LEG_JUNCTION_PERCENTILE)
+    highest = stations - 1 - WAIST_END_MARGIN - MIN_CUT_SEPARATION
+    first = max(1, min(highest, int(round(junction * (stations - 1)))))
+    how_first = ("the station nearest where the legs join the spine (the leg tags' "
+                 "p%.0f sits at t=%.3f, %.0f mm up this axis)"
+                 % (100.0 * LEG_JUNCTION_PERCENTILE, junction,
+                    junction * axis.length * M_TO_MM))
+
+    # --- cut 2: the waist, or the midpoint that says it is not one ---------
+    band = list(range(first + MIN_CUT_SEPARATION, stations - WAIST_END_MARGIN))
+    second = None
+    how_second = ""
+    if profile and band:
+        mean = sum(profile[i] for i in band) / float(len(band))
+        dips = [i for i in band
+                if 0 < i < stations - 1
+                and profile[i] < profile[i - 1] and profile[i] < profile[i + 1]
+                and profile[i] <= (1.0 - WAIST_MIN_DIP) * mean]
+        if dips:
+            second = min(dips, key=lambda i: profile[i])
+            how_second = ("the narrowest station of the spine's own girth profile "
+                          "between the legs and the shoulders - the waist, %.0f mm "
+                          "against the band's %.0f mm mean (a %.1f%% dip)"
+                          % (profile[second] * M_TO_MM, mean * M_TO_MM,
+                             100.0 * (1.0 - profile[second] / max(mean, 1e-9))))
+    if second is None and band:
+        second = max(band[0], min(band[-1], (first + stations - 1) // 2))
+        how_second = ("the midpoint between the leg junction and the top of the "
+                      "spine: no station between them is narrower than both its "
+                      "neighbours by %.0f%%, so this trunk has no measurable waist"
+                      % (100.0 * WAIST_MIN_DIP))
+    if second is None or second - first < MIN_CUT_SEPARATION:
+        report["refused"] = (
+            "the legs join this spine at station %d of %d, which leaves no room for "
+            "an abdomen %d stations deep above it"
+            % (first, stations - 1, MIN_CUT_SEPARATION))
+        return report
+
+    cuts = [first / float(stations - 1), second / float(stations - 1)]
+    counts = {name: 0 for name in TORSO_SUB_TAGS}
+    for _distance, t in samples:
+        counts[sub_tag_at(t, cuts)] += 1
+    thin = sorted(name for name, count in counts.items()
+                  if count < MIN_SUB_TAG_VERTICES)
+    if thin:
+        report["refused"] = (
+            "%s would hold %s vertices and a sub-tag under %d cannot be measured, "
+            "so the Torso stays one tag"
+            % (", ".join(thin), ", ".join(str(counts[name]) for name in thin),
+               MIN_SUB_TAG_VERTICES))
+        report["would_be"] = dict(counts)
+        return report
+
+    report["cut_stations"] = [first, second]
+    report["cuts"] = [round(value, 6) for value in cuts]
+    report["cut_mm"] = [round(value * axis.length * M_TO_MM, 1) for value in cuts]
+    report["how"] = [how_first, how_second]
+    report["vertices"] = dict(counts)
+    report["says"] = (
+        "Torso split into %s at stations %d and %d of %d along its own %.0f mm "
+        "spine (%d / %d / %d vertices). %s; %s."
+        % (", ".join(TORSO_SUB_TAGS), first, second, stations - 1,
+           axis.length * M_TO_MM, counts[TORSO_SUB_TAGS[0]],
+           counts[TORSO_SUB_TAGS[1]], counts[TORSO_SUB_TAGS[2]],
+           how_first, how_second))
+    return report
+
+
+def sub_tag_at(t, cuts):
+    """Which sub-tag the spine parameter ``t`` lands in.  Half-open, proximal first."""
+    if t <= cuts[0]:
+        return TORSO_SUB_TAGS[0]
+    if t < cuts[1]:
+        return TORSO_SUB_TAGS[1]
+    return TORSO_SUB_TAGS[2]
+
+
+def sub_tags_spanning(t_low, t_high, cuts):
+    """Every sub-tag a span along the spine touches — a bone's membership.
+
+    A vertex is a point and lands in one slab; a **bone is a span**, and a bone
+    that crosses a cut belongs to the slabs on both sides of it.  That is the
+    blend zone's own rule moved up a level: where two regions meet, both sides'
+    influence is legal, or the boundary is a crease.  ``DEF-spine.001`` on the
+    werewolf runs t=0.256 to 0.505 across a cut at 0.3125, so it moves both the
+    pelvis and the abdomen — which is what a lumbar vertebra does.
+    """
+    low, high = (t_low, t_high) if t_low <= t_high else (t_high, t_low)
+    out = []
+    if low <= cuts[0]:
+        out.append(TORSO_SUB_TAGS[0])
+    if high > cuts[0] and low < cuts[1]:
+        out.append(TORSO_SUB_TAGS[1])
+    if high >= cuts[1]:
+        out.append(TORSO_SUB_TAGS[2])
+    return tuple(out) or (sub_tag_at(0.5 * (low + high), cuts),)
+
+
+def split_membership(axis, cuts, points):
+    """``[sub-tag, ...]`` for ``points``, in order — the vertex-level split."""
+    return [sub_tag_at(axis.closest(point)[1], cuts) for point in points]
+
+
+def split_from_clouds(torso_points, leg_points, seed=None, stations=SPLIT_STATIONS):
+    """``(report, axis | None)`` — :func:`spine_split` over two point clouds.
+
+    The one entry point both sides of the lane use, so the tagger's report and
+    the skinner's contract cannot drift apart: the split is **derived** from the
+    tags that exist rather than stored anywhere, which is also why a mesh
+    re-tagged by hand can never be skinned against a stale one.  The report is
+    JSON-clean (it goes out over the wire); the axis is handed back beside it
+    for the caller that has to classify vertices with it.
+    """
+    if len(torso_points) < 2:
+        return ({"parent": SPLIT_PARENT, "names": list(TORSO_SUB_TAGS),
+                 "refused": "there is no %s tag to split" % SPLIT_PARENT}, None)
+    try:
+        axis = axis_from_cloud(torso_points, "spine", seed=seed)
+    except ForgeError as exc:
+        return ({"parent": SPLIT_PARENT, "names": list(TORSO_SUB_TAGS),
+                 "refused": str(exc)}, None)
+    report = spine_split(axis, torso_points, leg_points, stations=stations)
+    return report, (None if report.get("refused") else axis)
+
+
+def split_from_groups(world_points_list, groups, seed=None,
+                      stations=SPLIT_STATIONS):
+    """:func:`split_from_clouds` from ``{tag: [vertex index]}``."""
+    torso = [world_points_list[i] for i in groups.get(SPLIT_PARENT, ())]
+    legs = [world_points_list[i]
+            for tag in sorted(groups)
+            if tag.startswith("Leg")
+            for i in groups[tag]]
+    return split_from_clouds(torso, legs, seed=seed, stations=stations)
+
+
+# ---------------------------------------------------------------------------
 # is this limb believable?
 # ---------------------------------------------------------------------------
 
@@ -1283,6 +1581,17 @@ def auto_tag(obj, joints=None, midplane=None, character_left=None,
     report["sources"] = dict(sources)
     report["applied"] = bool(apply)
 
+    # The torso's own split, measured and reported but **never written**: it is
+    # a derived view of the one Torso tag, so nothing downstream that expects
+    # six tags sees seven. See spine_split.
+    report["sub_tags"], _split_axis = split_from_groups(
+        points, final, seed=(axes["spine"].direction if "spine" in axes else None))
+    if report["sub_tags"].get("refused"):
+        warnings.append(
+            "The Torso tag was left whole: %s. Its bones stay in one legal set, "
+            "which is the behaviour before this split existed."
+            % report["sub_tags"]["refused"])
+
     if apply:
         with object_mode():
             for tag in sorted(final):
@@ -1316,6 +1625,14 @@ def _autotag_sentence(report):
     if limbs:
         lines.append("%s follow their own detected axis rather than a box band."
                      % ", ".join(limbs))
+    split = report.get("sub_tags") or {}
+    if split.get("cuts"):
+        lines.append("The Torso reads as %s along its own spine (a derived view; the "
+                     "tag itself is still one group)."
+                     % ", ".join("%s %d" % (name, split["vertices"][name])
+                                 for name in split["names"]))
+    elif split.get("refused"):
+        lines.append("The Torso stays one tag: %s." % split["refused"])
     detector = report.get("detector") or {}
     if detector.get("cached"):
         lines.append("The detection came from the cache; no GPU work was done.")

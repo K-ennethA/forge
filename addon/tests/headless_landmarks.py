@@ -216,7 +216,28 @@ TRUTH = {
 }
 
 
-def build_biped(name=BODY, asymmetry=ASYMMETRY_M):
+#: The default foot: ``(back, front, height, half_width, ball_fraction,
+#: toe_half_width)``, in metres, along the **+Y** axis this character is built
+#: facing.  One box when ``ball_fraction`` is ``None``; otherwise a wide midfoot
+#: and a narrower toe box meeting at ``ball_fraction`` of the length, which is
+#: what gives the sole a measurable **taper** — the thing
+#: ``rigforge_landmarks.foot_landmarks`` finds the ball of the foot by.
+PLAIN_FOOT = (-0.06, 0.19, 0.08, 0.05, None, None)
+
+
+def _foot(bm, centre_x, boot=None):
+    """A foot at ``centre_x``, reaching forward: the other half of "facing"."""
+    back, front, height, half, ball, toe_half = boot or PLAIN_FOOT
+    if ball is None:
+        _box(bm, (centre_x - half, back, 0.0), (centre_x + half, front, height))
+        return
+    split = back + (front - back) * ball
+    _box(bm, (centre_x - half, back, 0.0), (centre_x + half, split, height))
+    _box(bm, (centre_x - toe_half, split, 0.0),
+         (centre_x + toe_half, front, height * 0.75))
+
+
+def build_biped(name=BODY, asymmetry=ASYMMETRY_M, boot=None):
     """Cylinders and boxes: a biped facing **+Y**, 15 mm out of symmetry.
 
     The character's left is the -X side while it faces +Y (up cross forward), so
@@ -258,8 +279,7 @@ def build_biped(name=BODY, asymmetry=ASYMMETRY_M):
               (sign * (0.09 + shift), 0.0, 0.10),
               _profile(25, ((0.5, 0.58), (0.9, 0.55)), base=0.075))
         # the foot: a box reaching forward, which is the other half of "facing"
-        _box(bm, (sign * (0.09 + shift) - 0.05, -0.06, 0.0),
-             (sign * (0.09 + shift) + 0.05, 0.19, 0.08))
+        _foot(bm, sign * (0.09 + shift), boot)
         record("Leg.%s" % side, before)
 
     mesh = bpy.data.meshes.new(name)
@@ -438,8 +458,18 @@ def test_landmarks(obj):
         error = abs(measured.z - TRUTH[key].z) * 1000.0
         note("%s: %s, how=%s, %.1f mm from the ring the builder put there"
              % (role, [round(v, 1) for v in info["mm"]], info["how"], error))
-        check("%s is the girth minimum, measured, not a fraction" % role,
-              info["how"] == "minimum girth", str(info))
+        # A girth minimum, however it was reached. The wrist and the ankle have
+        # their own end-of-limb rules now (the hand's first girth minimum, the
+        # height where the leg stops being long front to back) because the plain
+        # "narrowest station in the distal band" walked past the palm into the
+        # fingers and sat the ankle high and behind a boot. What is being
+        # asserted here is unchanged and is the point: it is a **measurement**,
+        # never a fraction of the limb somebody typed.
+        how = str(info["how"])
+        check("%s is a girth minimum, measured, not a fraction" % role,
+              ("girth minimum" in how or "minimum girth" in how
+               or "shortest front to back" in how) and "fallback" not in how,
+              str(info))
         check("%s lands on the crease the builder made (within 30 mm)" % role,
               error < 30.0, "%.1f mm" % error)
 
@@ -455,6 +485,14 @@ def test_landmarks(obj):
 
     # The centreline test: the knee landmark must be on the limb's own axis, not
     # merely at the right height. This is defect (2) from the audit.
+    #
+    # With one deliberate exception, which is the other half of a correct rig:
+    # the knee carries the **anatomical pre-bend** and therefore sits a little
+    # way forward of the centreline on purpose (rigforge_landmarks.prebend_joint
+    # — a straight limb is ambiguous to IK and folds whichever way it falls).
+    # So the offset is split: across the facing axis it must still be zero, and
+    # along it, it must be exactly the pre-bend.  That is a stricter test than
+    # the one it replaces, not a weaker one.
     knee = Vector([v / 1000.0 for v in points["knee.L"]["mm"]])
     matrix = obj.matrix_world
     group = obj.vertex_groups.get("tag_Leg.L")
@@ -463,11 +501,22 @@ def test_landmarks(obj):
             if entry.group == group.index and entry.weight > 0.0
             and abs((matrix @ v.co).z - knee.z) < 0.02]
     centre = sum(band, Vector()) / len(band)
-    off = (Vector((knee.x, knee.y, 0.0)) - Vector((centre.x, centre.y, 0.0))).length
-    note("knee landmark is %.1f mm from the leg's own cross-section centroid at that "
-         "height" % (off * 1000.0))
-    check("the knee landmark is ON the limb centreline", off < 0.005,
-          "%.2f mm" % (off * 1000.0))
+    delta = Vector((knee.x, knee.y, 0.0)) - Vector((centre.x, centre.y, 0.0))
+    prebend = {entry["joint"]: entry for entry in (report.get("prebend") or [])}
+    knee_prebend = prebend.get("knee.L") or {}
+    # The character has been oriented to face -Y by this point, so "forward" is
+    # -Y and "sideways" is X.
+    note("knee landmark is %.1f mm sideways and %+.1f mm forward of the leg's own "
+         "cross-section centroid at that height; the pre-bend asked for %+.1f mm"
+         % (abs(delta.x) * 1000.0, -delta.y * 1000.0,
+            knee_prebend.get("nudge_mm") or 0.0))
+    check("the knee landmark is ON the limb centreline ACROSS the facing axis",
+          abs(delta.x) < 0.005, "%.2f mm sideways" % (abs(delta.x) * 1000.0))
+    check("and the only thing that moved it off is the anatomical pre-bend, forwards",
+          -delta.y > 0.0 and abs(-delta.y * 1000.0
+                                 - (knee_prebend.get("nudge_mm") or 0.0)) < 1.0,
+          "%+.2f mm forward vs a %+.2f mm nudge"
+          % (-delta.y * 1000.0, knee_prebend.get("nudge_mm") or 0.0))
     return report
 
 

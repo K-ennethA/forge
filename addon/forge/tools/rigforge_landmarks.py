@@ -128,6 +128,13 @@ __all__ = [
     "symmetrize_mesh",
     "retag_sides_from_geometry",
     "Limb",
+    "PREBEND_FRACTION",
+    "PREBEND_DIRECTION",
+    "facing_vector",
+    "prebend_joint",
+    "foot_landmarks",
+    "hand_landmarks",
+    "FOOT_TIP_MARGIN_MM",
     "biped_landmarks",
     "mirror_edit_bones",
     "bone_centering",
@@ -210,6 +217,108 @@ CENTERED_BONE_RE = re.compile(r"(thigh|shin|calf|upper_?arm|forearm)",
 #: the plane caught an open patch — the end of a limb, a flat slab — and the
 #: station is skipped instead of reporting the centroid of half a ring.
 MAX_SECTION_GAP_DEG = 120.0
+
+#: **The foot.**  Everything below exists because the foot chain was the one
+#: part of the skeleton nothing measured: ``biped_landmarks`` stopped at the
+#: ankle and the ``foot``/``toe`` bones were **dragged along from Rigify's
+#: template** by whatever the shin's tail moved.  On the werewolf that left
+#: ``DEF-toe.L``'s tail **80.1 mm short of the boot's forward extent**, so the
+#: character's toes end inside its shoe and the foot roll pivots about a point
+#: that is not the ball of anything.
+#:
+#: The sole slab: the bottom of the foot, as a fraction of the foot's own height
+#: (ground to ankle).  Thin enough to be the sole rather than the whole shoe,
+#: thick enough to survive a mesh whose sole is one edge loop.
+FOOT_SOLE_FRACTION = 0.30
+
+#: How many stations the sole is cut into, front to back, to find the ball.
+FOOT_STATIONS = 17
+
+#: **Where the ball is**: walking forward from the sole's widest station, the
+#: first station whose width has fallen below this fraction of that maximum.
+#: That is the definition a bootmaker uses — the ball is where the last is
+#: widest and the toe box begins to taper — and it is measurable on any shoe.
+FOOT_TAPER_FRACTION = 0.85
+
+#: How far back from the mesh's own forward extent the toe bone stops, in
+#: millimetres.  A bone that runs to the exact last vertex pokes out of the
+#: surface the moment the toe rolls; a small honest margin does not, and the
+#: report quotes it rather than hiding it inside a fudge.
+FOOT_TIP_MARGIN_MM = 12.0
+
+#: The ankle is searched for between the ground and this fraction of the way to
+#: the knee.  Above that is calf, which also tapers, and a search that ran the
+#: whole shin would sometimes find it.
+ANKLE_SEARCH_FRACTION = 0.45
+
+#: A foot has to be at least this many times longer, front to back, than the
+#: ankle above it before the leg tag is treated as containing one at all.  A tag
+#: that stops at the ankle gets no foot landmarks and says so, rather than
+#: inventing a boot out of the last two edge loops.
+FOOT_LENGTH_FACTOR = 1.35
+
+#: ...and it has to **point forward**: the sole must reach this many times
+#: further in front of the ankle than behind it.  Length alone is not enough and
+#: that was found by being wrong first — a bare leg's end cap flares out to
+#: 1.5x the ankle's own width and read as a 126 mm foot.  A cone's cap is
+#: centred under the leg; a foot is not, and that asymmetry is the whole
+#: difference between a foot and the bottom of a tube.
+FOOT_FORWARD_FACTOR = 1.6
+
+#: **The hand.**  The same defect as the foot, at the other end of the body and
+#: for the same reason: ``biped_landmarks`` stopped at the wrist and ``hand.L``
+#: was dragged from Rigify's template, so on a clean rest-pose render the wrist
+#: sat **deep in the palm** and the hand bone reached the **fingertips**.  A
+#: hand bone that ends at the fingertips has no knuckle in it, and a wrist
+#: inside the palm bends the hand from the wrong place.
+#:
+#: How many stations the arm's distal half is cut into to find them.
+HAND_STATIONS = 21
+
+#: Where the search for the wrist starts, as a fraction of the distance from the
+#: **elbow** to the far end of the arm.  It is measured from the elbow and not
+#: from the shoulder for one reason, found by being wrong first: the elbow is
+#: itself a girth minimum, and a search that began at the middle of the *whole
+#: limb* found the elbow's own crease and called it the wrist.
+HAND_BAND = 0.25
+
+#: **Where the knuckles are**: walking distally from the palm's widest station,
+#: the first station whose girth has fallen below this fraction of it.  The palm
+#: is the widest part of a hand and the fingers are the taper off it, so this is
+#: the knuckle line on a hand, on a mitten and on a glove.
+HAND_TAPER_FRACTION = 0.85
+
+#: A palm has to be at least this much fatter than the wrist above it before the
+#: arm tag is treated as containing a hand at all.  An arm tagged to the wrist
+#: is a legitimate thing to be handed.
+HAND_PALM_FACTOR = 1.12
+
+#: **The anatomical pre-bend.**  A rigger never leaves a limb straight at rest:
+#: the knee goes a little forward, the elbow a little back, *before* a single
+#: key is set.  It is not decoration.  An IK solver given three collinear points
+#: has no plane to solve in, Rigify derives a limb's pole angle from that same
+#: **rest plane**, and a limb with no plane bends whichever way the solver's
+#: floating-point dust happens to fall — which on the live werewolf was
+#: **backwards**.
+#:
+#: The size is the 3% of the limb's own span that :data:`~.rigforge_rig.
+#: LANDMARK_BEND` already uses, and that number is not a taste: it was lowered
+#: to 0.5% once to flatter the centering gate and ``headless_rigik``'s pole test
+#: measured the knee moving **0.02 mm** over a 25% pole sweep.  It went back to
+#: 3% and the centering band absorbs it.
+PREBEND_FRACTION = 0.03
+
+#: How far into the limb's own flesh the nudge is allowed to reach, as a
+#: fraction of the cross-section's own half-width in the push direction.  A
+#: pre-bend that pushes the joint *out of the body* has traded one visible
+#: defect for another, so the nudge is clamped at two thirds of the way to the
+#: skin and the clamp is reported rather than silently applied.
+PREBEND_SECTION_FRACTION = 0.667
+
+#: Which way each joint's apex must point, relative to the direction the
+#: character faces.  ``+1`` is forward, ``-1`` is backward.  This is the whole
+#: of the anatomy: **a knee apexes forward, an elbow apexes backward.**
+PREBEND_DIRECTION = {"knee": 1.0, "elbow": -1.0}
 
 #: A side is a whole dot/underscore-delimited **component** of a name, not just a
 #: suffix: Blender writes ``thigh.L`` but also ``brow.B.L.001``, and a mirror
@@ -1097,6 +1206,64 @@ class Limb(object):
             "label": label,
         }
 
+    # -- the flesh, for the pre-bend ---------------------------------------
+
+    def section_points(self, index):
+        """The raw cross-section at station ``index``, on that station's tangent.
+
+        The same widening slab :meth:`_slice` uses — one implementation of "the
+        slice of this limb here" — handed back as points rather than reduced to
+        a centroid and a radius, because the pre-bend needs to know **how far
+        the skin is** in one particular direction, not on average.
+        """
+        index = max(0, min(self.stations - 1, int(index)))
+        anchor = self.centreline[index]
+        normal = self.tangents[index]
+        half = self.half
+        chosen = []
+        for _widen in range(6):
+            chosen = [point for point in self.points
+                      if abs((point - anchor).dot(normal)) <= half]
+            if len(chosen) >= MIN_SECTION_POINTS and _angular_gap(
+                    chosen, _centroid(chosen), normal) <= MAX_SECTION_GAP_DEG:
+                return chosen
+            half *= 1.6
+        return chosen
+
+    def section_reach(self, index, direction):
+        """How far this station's flesh reaches along ``direction``, in metres.
+
+        ``(reach, why)``: ``reach`` is ``None`` when the slice is not a ring —
+        fewer than :data:`MIN_SECTION_POINTS` crossings, or an angular gap wider
+        than :data:`MAX_SECTION_GAP_DEG`, the same two gates
+        :func:`bone_centering` applies before it trusts a section's centre.  A
+        station that cannot be measured must not be allowed to *approve* a
+        nudge, so the caller falls back to the girth instead of guessing.
+        """
+        index = max(0, min(self.stations - 1, int(index)))
+        normal = self.tangents[index]
+        push = Vector(direction)
+        push = push - normal * push.dot(normal)
+        if push.length < 1e-9:
+            return None, "the push direction runs along the limb, so it has no cross-section"
+        push.normalize()
+        points = self.section_points(index)
+        if len(points) < MIN_SECTION_POINTS:
+            return None, ("the slice here has %d point(s), fewer than the %d a "
+                          "cross-section needs" % (len(points), MIN_SECTION_POINTS))
+        centre = _centroid(points)
+        gap = _angular_gap(points, centre, normal)
+        if gap > MAX_SECTION_GAP_DEG:
+            return None, ("the slice here is an open patch (%.0f degree gap, limit %.0f)"
+                          % (gap, MAX_SECTION_GAP_DEG))
+        reach = max((point - centre).dot(push) for point in points)
+        return max(reach, 0.0), None
+
+    def nearest_station(self, fraction):
+        """The station index closest to ``fraction`` of the way along the limb."""
+        position = max(0.0, min(1.0, float(fraction))) * (self.stations - 1)
+        return int(round(position))
+
     def as_dict(self):
         return {
             "tag": self.tag,
@@ -1236,8 +1403,436 @@ def _limb_hint(axis_hints, key, default):
     return Vector(default), False
 
 
+def _horizontal(vector, up=None):
+    up = Vector((0.0, 0.0, 1.0)) if up is None else Vector(up)
+    flat = Vector(vector) - up * Vector(vector).dot(up)
+    return flat.normalized() if flat.length > 1e-9 else Vector((0.0, -1.0, 0.0))
+
+
+def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
+    """The ankle, the ball, the toe tip and the heel — off the foot's own geometry.
+
+    The rest of this module measures a limb by slicing it across its own axis.
+    A foot is not that shape: it is a wedge lying on the ground, and the joints
+    an animator needs from it are defined *along the direction the character
+    faces*, not along the leg.  So this measures the foot in its own frame:
+
+    * **the ankle** is the height, between the ground and part way to the knee,
+      where the leg is **shortest front to back** — a foot is long and an ankle
+      is not, so the collapse of that length *is* the joint.  The lowest station
+      within a few percent of the minimum wins, which is "just above the foot
+      mass" rather than "somewhere up the shin";
+    * **the ball** is where the sole's **forward taper begins**: cut the sole
+      into stations front to back, take the widest, and walk forward to the first
+      station under :data:`FOOT_TAPER_FRACTION` of it.  That is a bootmaker's
+      definition and it works on a bare foot and on a boot;
+    * **the toe tip** is the mesh's own forward extent at foot height, pulled
+      back :data:`FOOT_TIP_MARGIN_MM` so the bone does not break the surface the
+      instant the toe rolls;
+    * **the heel** is the sole's rearmost point, at ground level, with the sole's
+      own width there — which is what Rigify's ``heel.02`` spans and therefore
+      where the foot roll pivots.
+
+    Every one of the three bone positions is the **cross-section centroid** at
+    its station, exactly as every other landmark in this file is, so a foot bone
+    runs through the middle of the flesh rather than along the top of the sole.
+
+    Returns ``None`` when the tag has no foot in it — a leg tagged to the ankle
+    is a legitimate thing to be handed, and inventing a boot from its last two
+    edge loops is not.  Otherwise a dict of points and how each was found.
+    """
+    if len(points) < 12:
+        return None
+    ground = min(p.z for p in points)
+    reach = max(knee.z - ground, 1e-6)
+    forward = _horizontal(forward)
+    right = Vector((0.0, 0.0, 1.0)).cross(forward).normalized()
+
+    # --- the ankle: the height where the leg stops being long front to back
+    stations = []
+    top = ground + reach * ANKLE_SEARCH_FRACTION
+    step = max((top - ground) / float(FOOT_STATIONS - 1), 1e-6)
+    for index in range(FOOT_STATIONS):
+        height = ground + step * index
+        slab = [p for p in points if abs(p.z - height) <= step * 0.75]
+        if len(slab) < 4:
+            continue
+        length = max(p.dot(forward) for p in slab) - min(p.dot(forward) for p in slab)
+        stations.append((height, length, slab))
+    if not stations:
+        return None
+    shortest = min(entry[1] for entry in stations)
+    # The lowest station within 5% of the shortest, not the shortest: above the
+    # foot the length is flat, and argmin over a flat run wanders up the shin.
+    ankle_station = next(entry for entry in stations if entry[1] <= shortest * 1.05)
+    ankle = _centroid(ankle_station[2])
+    ankle.z = ankle_station[0]
+    ankle_length = ankle_station[1]
+
+    # --- is there a foot here at all?
+    sole_top = ground + (ankle.z - ground) * FOOT_SOLE_FRACTION
+    sole = [p for p in points if p.z <= sole_top]
+    if len(sole) < 6:
+        return None
+    projections = [p.dot(forward) for p in sole]
+    back, front = min(projections), max(projections)
+    length = front - back
+    if length < FOOT_LENGTH_FACTOR * max(ankle_length, 1e-6):
+        return None
+    at_ankle = ankle.dot(forward)
+    ahead, behind = front - at_ankle, at_ankle - back
+    if ahead < FOOT_FORWARD_FACTOR * max(behind, 1e-9):
+        return None
+
+    # --- the ball: where the sole's forward taper begins
+    span = max(length / float(FOOT_STATIONS - 1), 1e-6)
+    widths = []
+    for index in range(FOOT_STATIONS):
+        at = back + span * index
+        slab = [p for p in sole if abs(p.dot(forward) - at) <= span * 0.75]
+        if len(slab) < 3:
+            widths.append((at, 0.0))
+            continue
+        widths.append((at, max(p.dot(right) for p in slab)
+                       - min(p.dot(right) for p in slab)))
+    widest = max(range(len(widths)), key=lambda i: widths[i][1])
+    limit = widths[widest][1] * FOOT_TAPER_FRACTION
+    ball_index = None
+    for index in range(widest + 1, len(widths)):
+        if widths[index][1] < limit:
+            ball_index = index
+            break
+    how = "the sole's forward taper"
+    if ball_index is None:
+        # A sole with no taper (a block, a hoof): the ball is two thirds along,
+        # which is where it is on a human foot, and the report says it is that.
+        ball_index = int(round((len(widths) - 1) * 0.66))
+        how = "two thirds along a sole with no measurable taper"
+    ball_at = widths[ball_index][0]
+    tip_at = front - FOOT_TIP_MARGIN_MM / M_TO_MM
+    if tip_at <= ball_at:
+        tip_at = ball_at + max((front - ball_at) * 0.5, 1e-4)
+
+    def section_centre(at, band):
+        """The centroid of the WHOLE foot's cross-section at ``at`` — not the
+        sole's — because a bone runs through the middle of the toes, not along
+        the ground under them."""
+        slab = [p for p in points
+                if abs(p.dot(forward) - at) <= band and p.z <= ankle.z]
+        if len(slab) < 3:
+            slab = [p for p in points if p.z <= ankle.z]
+        centre = _centroid(slab)
+        # Keep the station's own position along the facing axis: the centroid of
+        # a slab is only its centre *across* the slab.
+        centre = centre + forward * (at - centre.dot(forward))
+        return centre
+
+    ball = section_centre(ball_at, span * 0.75)
+    tip = section_centre(tip_at, span * 0.75)
+    # The toe runs level with the ball: a toe bone that dives at the tip rolls
+    # the foot into the floor.
+    tip.z = ball.z
+
+    heel_slab = [p for p in sole if p.dot(forward) <= back + span * 0.75]
+    heel = _centroid(heel_slab) if heel_slab else _centroid(sole)
+    heel = heel + forward * (back - heel.dot(forward))
+    heel.z = ground
+    heel_width = ((max(p.dot(right) for p in heel_slab)
+                   - min(p.dot(right) for p in heel_slab)) if len(heel_slab) >= 2
+                  else length * 0.35)
+
+    return {
+        "ankle": ankle,
+        "ball": ball,
+        "toe_tip": tip,
+        "heel": heel,
+        "heel_width": heel_width,
+        "right": right,
+        "forward": forward,
+        "ground": ground,
+        "length_mm": round(length * M_TO_MM, 2),
+        "ball_fraction": round((ball_at - back) / max(length, 1e-9), 3),
+        "tip_margin_mm": FOOT_TIP_MARGIN_MM,
+        "ankle_length_mm": round(ankle_length * M_TO_MM, 2),
+        "detail": {
+            "ankle": {"how": "the height where the leg is shortest front to back "
+                             "(%.1f mm, against a %.1f mm foot) — just above the foot mass"
+                             % (ankle_length * M_TO_MM, length * M_TO_MM)},
+            "ball": {"how": how, "sole_fraction": round(
+                (ball_at - back) / max(length, 1e-9), 3)},
+            "toe_tip": {"how": "the sole's forward extent, %.0f mm back from the last "
+                               "vertex" % FOOT_TIP_MARGIN_MM},
+            "heel": {"how": "the sole's rearmost cross-section, at ground level"},
+        },
+    }
+
+
+def hand_landmarks(points, elbow, axis, label="hand"):
+    """The wrist and the knuckle line — off the hand's own cross-sections.
+
+    The foot's problem, at the other end of the arm.  Two rules, and both are
+    about **where a girth profile turns**, which is the only thing a hand's
+    geometry actually says out loud:
+
+    * **the wrist** is the *first* local minimum of the arm's girth walking
+      distally from mid-limb — the taper of the forearm bottoming out, with the
+      palm widening after it.  It is deliberately not "the narrowest station in
+      the distal band": the **fingers are narrower than the wrist**, so that
+      rule walks straight past the palm and lands in them, which is exactly the
+      wrist-deep-in-the-palm the owner saw;
+    * **the knuckle line** is where the palm starts tapering into fingers: from
+      the palm's widest station, the first station under
+      :data:`HAND_TAPER_FRACTION` of it.  The hand bone ends *there*, not at the
+      fingertips, because that is where a hand hinges.
+
+    Returns ``None`` when the arm tag has no hand in it (no station after the
+    wrist is :data:`HAND_PALM_FACTOR` times fatter than the wrist), which is a
+    legitimate thing to be handed and not a thing to invent a palm out of.
+    """
+    if len(points) < 12:
+        return None
+    axis = Vector(axis)
+    if axis.length < 1e-9:
+        return None
+    axis = axis.normalized()
+    projections = [(p - elbow).dot(axis) for p in points]
+    far = max(projections)
+    if far < 1e-6:
+        return None
+    start = far * HAND_BAND
+    step = max((far - start) / float(HAND_STATIONS - 1), 1e-6)
+    stations = []
+    for index in range(HAND_STATIONS):
+        at = start + step * index
+        slab = [p for position, p in enumerate(points)
+                if abs(projections[position] - at) <= step * 0.75]
+        if len(slab) < 4:
+            continue
+        centre = _centroid(slab)
+        girth = sum(((p - centre) - axis * (p - centre).dot(axis)).length
+                    for p in slab) / float(len(slab))
+        stations.append({"at": at, "girth": girth, "centre": centre, "slab": slab})
+    if len(stations) < 5:
+        return None
+    girths = _smooth([entry["girth"] for entry in stations])
+    for index, entry in enumerate(stations):
+        entry["girth"] = girths[index]
+
+    # --- the wrist: the first place the taper bottoms out
+    wrist_index = None
+    for index in range(1, len(stations) - 1):
+        if (stations[index]["girth"] <= stations[index - 1]["girth"]
+                and stations[index]["girth"] < stations[index + 1]["girth"]):
+            wrist_index = index
+            break
+    how_wrist = "the first girth minimum walking down the arm — the forearm's taper " \
+                "bottoming out, with the palm widening after it"
+    if wrist_index is None:
+        wrist_index = min(range(len(stations)), key=lambda i: stations[i]["girth"])
+        how_wrist = ("the narrowest station in the arm's distal half (no local minimum "
+                     "— this arm's girth falls all the way to its end)")
+
+    # --- is there a hand past it?
+    after = stations[wrist_index + 1:]
+    if not after:
+        return None
+    widest = max(range(len(after)), key=lambda i: after[i]["girth"])
+    if after[widest]["girth"] < HAND_PALM_FACTOR * stations[wrist_index]["girth"]:
+        return None
+
+    limit = after[widest]["girth"] * HAND_TAPER_FRACTION
+    knuckle_index = None
+    for index in range(widest + 1, len(after)):
+        if after[index]["girth"] < limit:
+            knuckle_index = index
+            break
+    how_knuckle = "the palm's taper into the fingers"
+    if knuckle_index is None:
+        # A mitten with no taper at all, or a hand tagged only to the palm: the
+        # knuckles are the last station measured, and the report says so.
+        knuckle_index = len(after) - 1
+        how_knuckle = ("the end of the tagged hand (its palm never tapers, so there is "
+                       "no knuckle line to find)")
+
+    wrist = stations[wrist_index]["centre"].copy()
+    wrist = wrist + axis * (stations[wrist_index]["at"] - (wrist - elbow).dot(axis))
+    knuckle = after[knuckle_index]["centre"].copy()
+    knuckle = knuckle + axis * (after[knuckle_index]["at"] - (knuckle - elbow).dot(axis))
+    palm = (knuckle - wrist).length
+    return {
+        "wrist": wrist,
+        "knuckle": knuckle,
+        "palm_mm": round(palm * M_TO_MM, 2),
+        "wrist_girth_mm": round(stations[wrist_index]["girth"] * M_TO_MM, 2),
+        "palm_girth_mm": round(after[widest]["girth"] * M_TO_MM, 2),
+        "tip_mm": round((far - (wrist - elbow).dot(axis)) * M_TO_MM, 2),
+        "detail": {
+            "wrist": {"how": how_wrist,
+                      "girth_mm": round(stations[wrist_index]["girth"] * M_TO_MM, 2)},
+            "knuckle": {"how": how_knuckle,
+                        "palm_girth_mm": round(after[widest]["girth"] * M_TO_MM, 2),
+                        "girth_mm": round(after[knuckle_index]["girth"] * M_TO_MM, 2)},
+        },
+    }
+
+
+def facing_vector(faces):
+    """The unit vector a character described as ``"-Y"``/``"+X"``/… looks along."""
+    table = {"+X": Vector((1.0, 0.0, 0.0)), "-X": Vector((-1.0, 0.0, 0.0)),
+             "+Y": Vector((0.0, 1.0, 0.0)), "-Y": Vector((0.0, -1.0, 0.0))}
+    if isinstance(faces, str):
+        return table.get(faces.strip().upper(), Vector((0.0, -1.0, 0.0))).copy()
+    vector = Vector(faces)
+    return vector.normalized() if vector.length > 1e-9 else Vector((0.0, -1.0, 0.0))
+
+
+def prebend_joint(limb, proximal, joint, distal, forward, what, side,
+                  fraction=None, station_fraction=None):
+    """Guarantee a limb's rest pose carries its **anatomical** pre-bend.
+
+    This is the missed human practice, written out.  A rigger places a knee a
+    little *forward* of the line from hip to ankle and an elbow a little *back*
+    of the line from shoulder to wrist, always, before anything is animated,
+    because a straight limb is **ambiguous to IK**: three collinear points give
+    the solver no plane, Rigify derives the limb's pole angle from that same rest
+    plane, and the limb then folds whichever way it falls.  On the live werewolf
+    it fell backwards — the knee sat **25.9 mm behind** the hip-to-ankle line
+    (4.2% of a 620 mm span) and lifting ``foot_ik.L`` drove the knee *backwards*.
+
+    Three cases, and only one of them moves anything:
+
+    * the chain already apexes the right way by at least ``fraction`` of its own
+      span — **untouched**, and the report says so;
+    * it apexes the right way but not far enough, or it is collinear — pushed out
+      to exactly ``fraction``;
+    * it apexes the **wrong** way — pushed through zero to ``+fraction``, which
+      is the case the old magnitude-only test missed, because a knee 4.2% out of
+      line *backwards* passes a test that only asks how far from straight it is.
+
+    The push is clamped so it cannot leave the flesh:
+    :meth:`Limb.section_reach` measures how far the limb's own cross-section
+    extends in the push direction at that station (the same ring-and-gap gates
+    :func:`bone_centering` applies), and the joint may travel at most
+    :data:`PREBEND_SECTION_FRACTION` of it.  A clamp is reported, never silent.
+
+    Returns ``(point, report)``.  ``point`` is the nudged joint; ``report`` names
+    what happened, in millimetres, and why.
+    """
+    # Resolved here rather than as a default argument so that changing the
+    # module constant changes the behaviour: a default is bound once, at import,
+    # and a sweep of it would silently measure the same number four times.
+    fraction = PREBEND_FRACTION if fraction is None else float(fraction)
+    proximal = Vector(proximal)
+    joint = Vector(joint)
+    distal = Vector(distal)
+    span = distal - proximal
+    report = {"joint": "%s.%s" % (what, side), "limb": getattr(limb, "tag", None),
+              "span_mm": round(span.length * M_TO_MM, 2),
+              "target_fraction_pct": round(100.0 * fraction, 2)}
+    if span.length < 1e-9:
+        report.update({"nudged": False, "why": "the limb has no length to bend along"})
+        return joint, report
+
+    axis = span.normalized()
+    want = PREBEND_DIRECTION.get(what, 1.0)
+    push = Vector(forward) * want
+    push = push - axis * push.dot(axis)
+    if push.length < 1e-9:
+        # The limb runs along the facing axis (a character lying down, a limb
+        # pointing straight at the camera): there is no forward left to bend
+        # into, so nothing is invented.
+        report.update({"nudged": False,
+                       "why": ("the limb runs along the direction the character faces, "
+                               "so 'forward' has no component across it")})
+        return joint, report
+    push.normalize()
+
+    offset = (joint - proximal) - axis * (joint - proximal).dot(axis)
+    signed = offset.dot(push)
+    need = fraction * span.length
+    report.update({
+        "direction": "forward" if want > 0 else "backward",
+        "before_mm": round(signed * M_TO_MM, 2),
+        "before_pct_of_span": round(100.0 * signed / span.length, 2),
+        "off_line_mm": round(offset.length * M_TO_MM, 2),
+        "required_mm": round(need * M_TO_MM, 2),
+    })
+    if signed >= need:
+        report.update({"nudged": False, "after_mm": report["before_mm"],
+                       "why": ("already apexes %s by %.1f mm (%.1f%% of its span), which "
+                               "is more than the %.1f mm minimum — left exactly as "
+                               "measured"
+                               % (report["direction"], signed * M_TO_MM,
+                                  100.0 * signed / span.length, need * M_TO_MM))})
+        return joint, report
+
+    wanted_push = need - signed
+    limit = None
+    limit_why = None
+    if limb is not None and station_fraction is not None:
+        station = limb.nearest_station(station_fraction)
+        reach, why = limb.section_reach(station, push)
+        if reach is None:
+            limit_why = why
+        else:
+            # How much room is left between the joint and the skin, in the push
+            # direction: the section's own half-width less whatever of it the
+            # joint has already spent going the other way.
+            room = reach * PREBEND_SECTION_FRACTION
+            limit = max(room, 0.0)
+            report["section_reach_mm"] = round(reach * M_TO_MM, 2)
+            report["section_limit_mm"] = round(limit * M_TO_MM, 2)
+    if limit is None and limb is not None:
+        limit = getattr(limb, "median_girth", 0.0) * PREBEND_SECTION_FRACTION
+        report["section_limit_mm"] = round(limit * M_TO_MM, 2)
+        report["section_note"] = ("measured against the limb's median girth because %s"
+                                  % (limit_why or "the station has no cross-section"))
+
+    applied = wanted_push
+    clamped = False
+    if limit is not None and limit > 0.0 and applied > limit:
+        applied = limit
+        clamped = True
+    elif limit is not None and limit <= 0.0:
+        applied = 0.0
+        clamped = True
+
+    nudged = joint + push * applied
+    after = signed + applied
+    report.update({
+        "nudged": applied > 1e-9,
+        "nudge_mm": round(applied * M_TO_MM, 2),
+        "after_mm": round(after * M_TO_MM, 2),
+        "after_pct_of_span": round(100.0 * after / span.length, 2),
+        "clamped_by_flesh": bool(clamped),
+        "push": [round(v, 5) for v in push],
+    })
+    if applied <= 1e-9:
+        report["why"] = ("the cross-section here leaves no room to bend %s, so the joint "
+                         "was left where the mesh put it and the ambiguity stands"
+                         % report["direction"])
+    elif signed < 0.0:
+        report["why"] = ("the chain apexed %s — the WRONG way — by %.1f mm, so the joint "
+                         "was moved %.1f mm %s to %+.1f mm; a limb bent the wrong way at "
+                         "rest is a limb IK bends the wrong way for ever"
+                         % ("backward" if want > 0 else "forward",
+                            abs(signed) * M_TO_MM, applied * M_TO_MM,
+                            report["direction"], after * M_TO_MM))
+    else:
+        report["why"] = ("the chain was within %.1f mm of straight (%.1f mm of a %.1f mm "
+                         "minimum), so the joint was moved %.1f mm %s to %+.1f mm to give "
+                         "the IK solver an unambiguous plane"
+                         % (need * M_TO_MM, signed * M_TO_MM, need * M_TO_MM,
+                            applied * M_TO_MM, report["direction"], after * M_TO_MM))
+    if clamped:
+        report["why"] += ("; the full %.1f mm did not fit inside the limb's own "
+                          "cross-section and was clamped to %.1f mm"
+                          % (wanted_push * M_TO_MM, applied * M_TO_MM))
+    return nudged, report
+
+
 def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
-                    warnings=None, sides=("L",), axis_hints=None):
+                    warnings=None, sides=("L",), axis_hints=None, facing="-Y"):
     """Every joint of a biped, measured off the mesh, **one side by default**.
 
     ``axis_hints`` (``{"arm.L": Vector, "leg.R": Vector, …}``, proximal to
@@ -1252,16 +1847,26 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
     a character that is *meant* to be asymmetric gets each side measured from its
     own geometry and nothing is mirrored.
 
+    ``facing`` is the direction the character looks along (``"-Y"`` by
+    convention, or a vector).  It is what makes the **anatomical pre-bend**
+    anatomical: every knee is nudged forward and every elbow backward relative to
+    it, by :func:`prebend_joint`, *before* the caller mirrors — so both sides get
+    the identical nudge and the mirror stays at 0.0 mm.
+
     Returns ``{"points": {role: Vector}, "detail": {role: how it was found},
-    "limbs": {...}, "warnings": [...]}``.  Raises :class:`ForgeError` when the
-    mesh cannot support landmarks at all, which is the caller's signal to fall
-    back to the old tag-fraction fit and *say so*.
+    "limbs": {...}, "prebend": [...], "warnings": [...]}``.  Raises
+    :class:`ForgeError` when the mesh cannot support landmarks at all, which is
+    the caller's signal to fall back to the old tag-fraction fit and *say so*.
     """
     warnings = warnings if warnings is not None else []
     clouds = clouds if clouds is not None else tag_clouds(obj)
     points = {}
     detail = {}
     limbs = {}
+    forward = facing_vector(facing)
+    prebends = []
+    feet = {}
+    hands = {}
 
     torso_tag = _pick(clouds, "Torso", "Body", "Chest", "Spine")
     head_tag = _pick(clouds, "Head", "Skull")
@@ -1411,12 +2016,55 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             # — better to say so and let the caller fall back to the old fit.
             _plausible(obj, "leg.%s" % side, hip_point, Vector(knee["point"]),
                        Vector(ankle["point"]), leg_hint)
+            # --- the foot, in its own frame ---------------------------------
+            # The leg's cross-sections stop being the right tool at the ankle: a
+            # foot is a wedge lying on the ground and its joints are defined
+            # along the way the character faces. Measured separately, and the
+            # ankle it finds replaces the distal girth minimum, which on a
+            # booted character sits high and behind the real one. It runs BEFORE
+            # the pre-bend because the pre-bend is measured against the
+            # hip-to-ankle chord, and that chord has just moved.
+            foot = foot_landmarks(leg_points, Vector(ankle["point"]),
+                                  Vector(knee["point"]), forward,
+                                  label="leg.%s" % side)
+            ankle_point = Vector(ankle["point"])
+            ankle_detail = dict(ankle)
+            if foot is not None:
+                ankle_point = Vector(foot["ankle"])
+                ankle_detail = dict(foot["detail"]["ankle"])
+                ankle_detail["distal_girth_minimum_mm"] = [
+                    round(v * M_TO_MM, 2) for v in ankle["point"]]
+                ankle_detail["moved_from_girth_minimum_mm"] = round(
+                    (ankle_point - Vector(ankle["point"])).length * M_TO_MM, 2)
+                points["ball.%s" % side] = Vector(foot["ball"])
+                points["toe_tip.%s" % side] = Vector(foot["toe_tip"])
+                points["heel.%s" % side] = Vector(foot["heel"])
+                detail["ball.%s" % side] = foot["detail"]["ball"]
+                detail["toe_tip.%s" % side] = foot["detail"]["toe_tip"]
+                detail["heel.%s" % side] = foot["detail"]["heel"]
+                feet["leg.%s" % side] = foot
+            else:
+                warnings.append(
+                    "The %s leg tag has no foot in it (nothing below the ankle is long "
+                    "enough front to back to be one), so foot.%s and toe.%s keep the "
+                    "template's own proportions. Tag the foot with the leg if the "
+                    "character has one." % (side, side, side))
+            # The pre-bend, before the mirror: a knee apexes FORWARD.
+            knee_point, knee_prebend = prebend_joint(
+                leg, hip_point, Vector(knee["point"]), ankle_point,
+                forward, "knee", side,
+                station_fraction=knee.get("fraction"))
+            prebends.append(knee_prebend)
             points["hip.%s" % side] = hip_point
-            points["knee.%s" % side] = Vector(knee["point"])
-            points["ankle.%s" % side] = Vector(ankle["point"])
+            points["knee.%s" % side] = knee_point
+            points["ankle.%s" % side] = ankle_point
             detail["hip.%s" % side] = hip
+            knee = dict(knee)
+            knee["prebend"] = knee_prebend
+            if knee_prebend.get("nudged"):
+                knee["point"] = knee_point
             detail["knee.%s" % side] = knee
-            detail["ankle.%s" % side] = ankle
+            detail["ankle.%s" % side] = ankle_detail
 
         if arm_tag is not None:
             arm_hint, arm_measured = _limb_hint(axis_hints, "arm.%s" % side,
@@ -1430,12 +2078,51 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             _limb_is_measurable(obj, "arm", arm, elbow)
             _plausible(obj, "arm.%s" % side, Vector(shoulder["point"]),
                        Vector(elbow["point"]), Vector(wrist["point"]), arm_hint)
+            # --- the hand, the foot's problem at the other end --------------
+            # The distal girth minimum walks past the palm and lands in the
+            # fingers, because fingers are narrower than a wrist. Measured
+            # properly it is the FIRST minimum, and the hand bone stops at the
+            # knuckle line rather than at the fingertips. Before the pre-bend,
+            # because the pre-bend is measured against the shoulder-to-wrist
+            # chord and that chord has just moved.
+            hand = hand_landmarks(arm_points, Vector(elbow["point"]), arm.axis,
+                                  label="arm.%s" % side)
+            wrist_point = Vector(wrist["point"])
+            wrist_detail = dict(wrist)
+            if hand is not None:
+                wrist_point = Vector(hand["wrist"])
+                wrist_detail = dict(hand["detail"]["wrist"])
+                wrist_detail["distal_girth_minimum_mm"] = [
+                    round(v * M_TO_MM, 2) for v in wrist["point"]]
+                wrist_detail["moved_from_girth_minimum_mm"] = round(
+                    (wrist_point - Vector(wrist["point"])).length * M_TO_MM, 2)
+                points["knuckle.%s" % side] = Vector(hand["knuckle"])
+                detail["knuckle.%s" % side] = hand["detail"]["knuckle"]
+                hands["arm.%s" % side] = hand
+            else:
+                warnings.append(
+                    "The %s arm tag has no hand in it (no cross-section past the wrist "
+                    "is %.0f%% fatter than the wrist itself — a palm is), so hand.%s "
+                    "keeps the template's own proportions and its wrist stays at the "
+                    "distal girth minimum. Tag the hand with the arm if the character "
+                    "has one: this is a tagging job, not a fitting one."
+                    % (side, 100.0 * (HAND_PALM_FACTOR - 1.0), side))
+            # ... and an elbow apexes BACKWARD.
+            elbow_point, elbow_prebend = prebend_joint(
+                arm, Vector(shoulder["point"]), Vector(elbow["point"]),
+                wrist_point, forward, "elbow", side,
+                station_fraction=elbow.get("fraction"))
+            prebends.append(elbow_prebend)
             points["shoulder.%s" % side] = Vector(shoulder["point"])
-            points["elbow.%s" % side] = Vector(elbow["point"])
-            points["wrist.%s" % side] = Vector(wrist["point"])
+            points["elbow.%s" % side] = elbow_point
+            points["wrist.%s" % side] = wrist_point
             detail["shoulder.%s" % side] = shoulder
+            elbow = dict(elbow)
+            elbow["prebend"] = elbow_prebend
+            if elbow_prebend.get("nudged"):
+                elbow["point"] = elbow_point
             detail["elbow.%s" % side] = elbow
-            detail["wrist.%s" % side] = wrist
+            detail["wrist.%s" % side] = wrist_detail
             # The clavicle runs from beside the spine out to the shoulder: its
             # root is the chest's own cross-section, a little way off the
             # midplane.
@@ -1455,10 +2142,33 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             "These joints had no landmark in the geometry and fell back to a fraction "
             "of the limb: %s. That is the old guess, and it is reported as one."
             % ", ".join(fallbacks))
+    moved = [entry for entry in prebends if entry.get("nudged")]
+    backwards = [entry for entry in moved if (entry.get("before_mm") or 0.0) < 0.0]
+    if moved:
+        warnings.append(
+            "Anatomical pre-bend: %s. %s%s"
+            % (", ".join("%s %+.1f -> %+.1f mm (%s)"
+                         % (entry["joint"], entry.get("before_mm") or 0.0,
+                            entry.get("after_mm") or 0.0, entry["direction"])
+                         for entry in moved),
+               ("%d of them apexed the WRONG way and would have bent backwards under "
+                "IK. " % len(backwards)) if backwards else "",
+               "A rest pose carries a pre-bend or the IK solver has no plane to choose; "
+               "the nudge is %.0f%% of each limb's own span and it runs before the "
+               "mirror, so both sides get it identically."
+               % (100.0 * PREBEND_FRACTION)))
+    clamped = [entry for entry in moved if entry.get("clamped_by_flesh")]
+    if clamped:
+        warnings.append(
+            "The pre-bend did not fully fit inside the flesh at %s, so it was clamped "
+            "to stay inside the limb's own cross-section rather than pushing the joint "
+            "out of the body." % ", ".join(entry["joint"] for entry in clamped))
     return {"points": points, "detail": detail, "limbs": limbs,
             "midplane": midplane, "character_left": character_left,
             "sides": tuple(sides), "tags": tags, "all_tags": all_tags,
-            "torso_tag": torso_tag, "head_tag": head_tag, "warnings": warnings}
+            "torso_tag": torso_tag, "head_tag": head_tag,
+            "facing": facing, "forward": forward, "prebend": prebends,
+            "feet": feet, "hands": hands, "warnings": warnings}
 
 
 # ---------------------------------------------------------------------------
@@ -2414,17 +3124,75 @@ def _composite_ghost(body_path, overlay_path, out_path, ghost=GHOST_ALPHA,
     return _write_pixels(out_path, out, width, height)
 
 
+#: How big a joint marker is, as a multiple of the prism's own half-width at
+#: that bone.  Big enough to read as a ball rather than a lump in the shaft,
+#: small enough that two adjacent joints do not merge into one blob.
+JOINT_MARKER_SCALE = 2.1
+
+
+def _joint_ball(bm, centre, radius, segments=8, rings=4):
+    """A small UV sphere at ``centre``, welded into ``bm``.
+
+    Built by hand rather than with ``bmesh.ops.create_uvsphere`` because that
+    operator writes into the *current* mesh with its own transform matrix and
+    the surrounding code is already placing vertices in world space; two
+    coordinate conventions in one loop is how a marker ends up somewhere else.
+    """
+    poles = (bm.verts.new(centre + Vector((0.0, 0.0, radius))),
+             bm.verts.new(centre - Vector((0.0, 0.0, radius))))
+    grid = []
+    for ring in range(1, rings):
+        phi = math.pi * ring / float(rings)
+        z = math.cos(phi) * radius
+        r = math.sin(phi) * radius
+        row = []
+        for step in range(segments):
+            theta = 2.0 * math.pi * step / segments
+            row.append(bm.verts.new(centre + Vector((r * math.cos(theta),
+                                                     r * math.sin(theta), z))))
+        grid.append(row)
+    for index in range(len(grid) - 1):
+        for step in range(segments):
+            a = grid[index][step]
+            b = grid[index][(step + 1) % segments]
+            c = grid[index + 1][(step + 1) % segments]
+            d = grid[index + 1][step]
+            try:
+                bm.faces.new((a, b, c, d))
+            except ValueError:
+                continue
+    for row, pole in ((grid[0], poles[0]), (grid[-1], poles[1])):
+        for step in range(segments):
+            a = row[step]
+            b = row[(step + 1) % segments]
+            try:
+                bm.faces.new((pole, b, a) if pole is poles[0] else (pole, a, b))
+            except ValueError:
+                continue
+
+
 def _bone_sticks(armature, name="Forge Skeleton Echo", deform_only=True,
-                 thickness=0.35):
+                 thickness=0.35, joint_markers=True):
     """A mesh of square prisms, one per bone: what an armature looks like to a render.
 
     Armatures do not appear in a render at all, so the skeleton has to *become*
     geometry to be photographed.  Prisms rather than octahedra: the picture is
     read for where a bone is, not for how pretty its widget is.
+
+    **Plus a ball at every joint**, which is the owner's own note on the first
+    echo they looked at: *"I couldn't see where the bones articulate."*  A chain
+    of prisms drawn end to end is a continuous red worm — the thing a rigger
+    actually needs to find in that picture is the **hinge**, and a stick figure
+    without dots does not have one.  Each bone's head and tail get a sphere
+    sized off that bone's own prism, so a finger's joints stay finger-sized;
+    coincident joints (a connected chain's tail and its child's head) are welded
+    by the ``round``ed key below rather than drawn twice into a lumpy double
+    ball.  ``joint_markers=False`` gets the old stick-only picture back.
     """
     bm = bmesh.new()
     matrix = armature.matrix_world
     drawn = []
+    joints = {}
     bones = [b for b in armature.data.bones
              if (b.use_deform or not deform_only)]
     if not bones:
@@ -2458,6 +3226,16 @@ def _bone_sticks(armature, name="Forge Skeleton Echo", deform_only=True,
             except ValueError:
                 continue
         drawn.append(bone.name)
+        if joint_markers:
+            for end in (head, tail):
+                key = (round(end.x, 5), round(end.y, 5), round(end.z, 5))
+                # The biggest bone meeting at a joint sets the ball's size, so a
+                # wrist between a forearm and a hand reads as the forearm's
+                # joint rather than shrinking to the hand's.
+                joints[key] = (end, max(joints.get(key, (None, 0.0))[1],
+                                        radius * JOINT_MARKER_SCALE))
+    for centre, radius in joints.values():
+        _joint_ball(bm, centre, radius)
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
@@ -2465,7 +3243,7 @@ def _bone_sticks(armature, name="Forge Skeleton Echo", deform_only=True,
     obj = bpy.data.objects.new(name, mesh)
     get_scene().collection.objects.link(obj)
     refresh_view_layer()
-    return obj, drawn
+    return obj, drawn, len(joints)
 
 
 def _world_box(objects):
@@ -2484,7 +3262,8 @@ def _world_box(objects):
 
 
 def render_skeleton_echo(armature, mesh, directory, views=("FRONT", "SIDE"),
-                         resolution=768, deform_only=True, prefix="skeleton"):
+                         resolution=768, deform_only=True, prefix="skeleton",
+                         joint_markers=True):
     """The echo-back: the placed skeleton drawn over the ghosted body.
 
     The rig's equivalent of the floor plan's approval SVG.  A human rigger looks
@@ -2493,6 +3272,12 @@ def render_skeleton_echo(armature, mesh, directory, views=("FRONT", "SIDE"),
     same picture, front and side, as a file the report names.  The numbers in
     ``rig_check``'s ``centering`` block measure the same thing — the picture is
     for the artist, the number is for the gate, and they must agree.
+
+    Every joint gets a **ball** as well as its bones getting prisms
+    (``joint_markers``, default on).  Sticks alone draw a chain as one
+    continuous red worm, and the question this picture exists to answer — *does
+    the knee sit where the flesh creases* — is a question about the **hinge**,
+    which a worm does not have.
     """
     directory = resolve_path(directory, make_parents=True)
     if os.path.isfile(directory):
@@ -2504,7 +3289,8 @@ def render_skeleton_echo(armature, mesh, directory, views=("FRONT", "SIDE"),
     started = time.monotonic()
     try:
         with object_mode():
-            sticks, drawn = _bone_sticks(armature, deform_only=deform_only)
+            sticks, drawn, marked = _bone_sticks(armature, deform_only=deform_only,
+                                                 joint_markers=joint_markers)
             bounds = _world_box([mesh, sticks])
             for view in views:
                 key = str(view).upper()
@@ -2541,13 +3327,17 @@ def render_skeleton_echo(armature, mesh, directory, views=("FRONT", "SIDE"),
     return {
         "images": out,
         "bones_drawn": len(drawn),
+        "joints_marked": marked,
         "ghost_alpha": GHOST_ALPHA,
         "resolution": resolution,
         "says": ("The skeleton is drawn in red over the body at %d%% opacity, front and "
-                 "side (%s). Look at it the way a rigger looks at a rig before binding: "
-                 "every bone inside its limb, on the centreline, and the left side on "
-                 "the left." % (int(GHOST_ALPHA * 100),
-                                ", ".join(entry["path"] for entry in out))),
+                 "side, with a ball at each of its %d joints so the articulation points "
+                 "are visible rather than a continuous stick (%s). Look at it the way a "
+                 "rigger looks at a rig before binding: every bone inside its limb, on "
+                 "the centreline, the left side on the left, and each joint where the "
+                 "flesh actually creases."
+                 % (int(GHOST_ALPHA * 100), marked,
+                    ", ".join(entry["path"] for entry in out))),
         "seconds": round(time.monotonic() - started, 3),
     }
 
@@ -2833,7 +3623,8 @@ def cmd_rigforge_landmarks(params):
         landmarks = biped_landmarks(obj, midplane=prepared["midplane"],
                                     character_left=prepared["character_left"],
                                     warnings=warnings, sides=sides,
-                                    axis_hints=axis_hints)
+                                    axis_hints=axis_hints,
+                                    facing=prepared["orientation"]["faces"])
     except ForgeError as exc:
         error = str(exc)
 
@@ -2858,15 +3649,17 @@ def cmd_rigforge_landmarks(params):
         "landmarks": points,
         "limbs": ({name: limb.as_dict() for name, limb in landmarks["limbs"].items()}
                   if landmarks else {}),
+        "prebend": (landmarks.get("prebend") if landmarks else []),
         "landmark_error": error,
         "stations": stations,
-        "says": _landmark_sentence(obj, prepared, points, error),
+        "says": _landmark_sentence(obj, prepared, points, error,
+                                   landmarks.get("prebend") if landmarks else None),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
 
 
-def _landmark_sentence(obj, prepared, points, error):
+def _landmark_sentence(obj, prepared, points, error, prebend=None):
     orientation = prepared["orientation"]
     lines = ["%s faces %s (%s is its left)."
              % (obj.name, orientation["faces"],
@@ -2883,6 +3676,19 @@ def _landmark_sentence(obj, prepared, points, error):
         lines.append("%d landmark(s) taken from cross-section centroids, "
                      "character-left only; the right side is their mirror."
                      % len(points))
+    if prebend:
+        moved = [entry for entry in prebend if entry.get("nudged")]
+        if moved:
+            lines.append("Pre-bent %d joint(s) so IK has an unambiguous plane: %s."
+                         % (len(moved),
+                            ", ".join("%s %+.1f mm %s"
+                                      % (entry["joint"], entry.get("nudge_mm") or 0.0,
+                                         entry.get("direction") or "")
+                                      for entry in moved)))
+        else:
+            lines.append("Every limb already apexed the right way by more than %.0f%% "
+                         "of its span, so no pre-bend was needed."
+                         % (100.0 * PREBEND_FRACTION))
     return " ".join(lines)
 
 
@@ -2891,7 +3697,11 @@ def cmd_rigforge_echo_skeleton(params):
     """Draw the placed skeleton over the ghosted mesh, front and side.
 
     ``rigforge_echo_skeleton {"rig"|"metarig"?, "mesh"?, "dir"?, "views"?,
-    "resolution"?, "deform_only"?}``
+    "resolution"?, "deform_only"?, "joint_markers"?}``
+
+    ``joint_markers`` (default true) puts a ball at every bone head and tail, so
+    the picture shows where the skeleton **articulates** rather than one
+    continuous red stick.
     """
     started = time.monotonic()
     name = params.get("rig") or params.get("metarig") or params.get("armature")
@@ -2936,8 +3746,10 @@ def cmd_rigforge_echo_skeleton(params):
     resolution = get_int(params, "resolution", 768, minimum=PREVIEW_MIN_RESOLUTION,
                          maximum=PREVIEW_MAX_RESOLUTION)
     deform_only = get_bool(params, "deform_only", True)
-    result = render_skeleton_echo(armature, mesh, directory.strip(), views=views,
-                                  resolution=resolution, deform_only=deform_only)
+    result = render_skeleton_echo(
+        armature, mesh, directory.strip(), views=views, resolution=resolution,
+        deform_only=deform_only,
+        joint_markers=get_bool(params, "joint_markers", True))
     result.update({"armature": armature.name, "mesh": mesh.name,
                    "seconds": round(time.monotonic() - started, 3)})
     return result

@@ -648,6 +648,30 @@ def test_unconstrained_bleeds(mesh, rig, method):
     return index, bleed, torso
 
 
+#: The isolation number the unconstrained bind measures, kept so the fix can be
+#: compared against it after the stage has run over the same mesh.
+_SWING_BEFORE = {}
+
+
+def test_swing_before(mesh, rig, metarig, regions):
+    """The owner's own observation, as a number, on the bind that produced it."""
+    section("what the owner saw: an arm swing that tugs the lower body")
+    from forge.tools import rigforge_skin
+
+    result = rigforge_skin.arm_swing_isolation(rig, mesh, regions, metarig=metarig)
+    note(result["says"])
+    _SWING_BEFORE.update(result)
+    check("swinging the arms on an unconstrained bind moves the lower body a "
+          "visible distance",
+          result["verdict"] == "fail" and result["max_mm"] > 5.0,
+          "%s, %.2f mm" % (result["verdict"], result["max_mm"]))
+    worst = [row for row in result["groups"] if row["vertices"]]
+    check("and the report names which group moved and by how much",
+          any(row["max_mm"] > 5.0 for row in worst), str(worst)[:300])
+    check("the rig it borrowed was put back exactly",
+          result["restored_max_mm"] < 0.001, "%.6f mm" % result["restored_max_mm"])
+
+
 def test_constrained(mesh, rig, metarig, regions, pin, bleed_before, torso):
     section("the fix: mask, blend, smooth")
     from forge.tools import rigforge_landmarks, rigforge_skin
@@ -708,6 +732,16 @@ def test_constrained(mesh, rig, metarig, regions, pin, bleed_before, torso):
     check("and the in-limb continuity did not get worse either",
           after_continuity["holes"] <= before_continuity["holes"],
           "%d -> %d" % (before_continuity["holes"], after_continuity["holes"]))
+
+    swing = rigforge_skin.arm_swing_isolation(rig, mesh, regions, metarig=metarig)
+    note("arm-swing displacement of the lower body: %.2f mm -> %.2f mm (max), "
+         "%.3f mm -> %.3f mm (mean)"
+         % (_SWING_BEFORE["max_mm"], swing["max_mm"],
+            _SWING_BEFORE["mean_mm"], swing["mean_mm"]))
+    check("THE FIX THE OWNER ASKED FOR: the arm swing no longer moves the pelvis "
+          "or the thighs",
+          swing["verdict"] == "ok" and swing["max_mm"] < 1.0,
+          "%s, %.4f mm" % (swing["verdict"], swing["max_mm"]))
     return result
 
 
@@ -844,6 +878,241 @@ def test_continuity_finds_a_hole(mesh, rig):
           "%d vs %d" % (restored["holes"], clean["holes"]))
 
 
+def test_sub_tag_contract(mesh, rig, metarig, regions):
+    """The Torso is thirteen bones in one bucket; the split makes it a contract.
+
+    Nothing here is about *where* the cuts land — that is measured on point
+    clouds in ``headless_autotag``.  What is tested here is what the cuts buy:
+    a legal set per slab, a bone that crosses a cut legal on both sides, and a
+    merged view that is byte-for-byte the contract every other consumer had.
+    """
+    section("the Torso split: a contract finer than the tag")
+    from forge.tools import rigforge, rigforge_autotag, rigforge_rig, rigforge_skin
+
+    split, report = rigforge_skin.torso_split(mesh, regions)
+    check("the split was measured on this figure", split is not None,
+          str(report.get("refused")))
+    if split is None:
+        return None
+    note(report["says"])
+
+    names = list(rigforge_autotag.TORSO_SUB_TAGS)
+    merged = rigforge_skin.legal_bone_sets(rig, metarig, regions)["legal"]
+    contract = rigforge_skin.legal_bone_sets(rig, metarig, regions, split)
+    legal = {tag: sorted(bones) for tag, bones in contract["legal"].items()}
+    note("slabs: %s" % {name: legal.get(name) for name in names})
+
+    check("the one Torso tag became three legal sets, none of them empty",
+          all(legal.get(name) for name in names),
+          str({name: len(legal.get(name, ())) for name in names}))
+    check("and the merged view is exactly the contract every other consumer had",
+          rigforge_skin.merge_legal(contract["legal"], split)["Torso"]
+          == sorted(merged["Torso"]),
+          "%s\nvs\n%s" % (rigforge_skin.merge_legal(contract["legal"],
+                                                    split).get("Torso"),
+                          sorted(merged["Torso"])))
+    check("every deform bone is still owned by exactly one tag or slab",
+          sorted(contract["owner"]) == sorted(rigforge_rig.deform_bones(rig)),
+          "%d of %d" % (len(contract["owner"]),
+                        len(rigforge_rig.deform_bones(rig))))
+
+    chest, pelvis = names[2], names[0]
+    check("THE FIX: the shoulders and the breasts are chest bones and are NOT "
+          "legal on pelvis flesh",
+          all(bone in legal[chest] and bone not in legal[pelvis]
+              for bone in ("DEF-shoulder.L", "DEF-shoulder.R",
+                           "DEF-breast.L", "DEF-breast.R")),
+          "chest %s / pelvis %s" % (legal[chest], legal[pelvis]))
+    check("while the merged Torso makes every one of them legal down there",
+          all(bone in merged["Torso"] for bone in ("DEF-shoulder.L", "DEF-breast.L")),
+          str(sorted(merged["Torso"])))
+    check("the hips and the pelvis bones are pelvis bones",
+          all(bone in legal[pelvis]
+              for bone in ("DEF-spine", "DEF-pelvis.L", "DEF-pelvis.R")),
+          str(legal[pelvis]))
+
+    crossing = {name: spans for name, spans in contract["spans"].items()
+                if len(spans) > 1}
+    note("bones whose span crosses a cut: %s" % crossing)
+    check("a bone whose span crosses a cut is legal on BOTH slabs - blend-zone "
+          "style, one level up",
+          bool(crossing)
+          and all(all(name in legal[slab] for slab in spans)
+                  for name, spans in crossing.items()),
+          str(crossing))
+    check("and it is still owned by exactly one of them, so 'hangs from' still "
+          "means something",
+          all(contract["owner"][name] in spans
+              for name, spans in crossing.items()), str(crossing))
+
+    # The hinges the unsplit contract found are still found, at slab granularity.
+    check("Arm.L still hinges on the shoulder, which a slab now owns",
+          contract["hinges"].get("Arm.L") == ["DEF-shoulder.L"]
+          and contract["owner"]["DEF-shoulder.L"] in names,
+          "%s / %s" % (contract["hinges"].get("Arm.L"),
+                       contract["owner"].get("DEF-shoulder.L")))
+    check("and Leg.L still hinges on the hips",
+          contract["hinges"].get("Leg.L") == ["DEF-spine"],
+          str(contract["hinges"].get("Leg.L")))
+
+    # The mesh itself is untouched: this is a view, not seven tags.
+    check("no sub-tag vertex group exists on the mesh",
+          not any(rigforge.tag_display_name(group.name) in names
+                  for group in rigforge.tag_groups(mesh)),
+          str([group.name for group in rigforge.tag_groups(mesh)]))
+    fresh, _empty = rigforge_rig.measure_tags(mesh)
+    check("so measure_tags - the landmark fitter's own reader - still sees six tags",
+          sorted(fresh) == ["Arm.L", "Arm.R", "Head", "Leg.L", "Leg.R", "Torso"],
+          str(sorted(fresh)))
+    return split
+
+
+def test_articulation_gate(mesh, rig, metarig, regions, split):
+    """Two tags touching is not two tags articulating."""
+    section("the blend band: only where there is a joint")
+    from forge.tools import rigforge_skin
+
+    contract = rigforge_skin.legal_bone_sets(rig, metarig, regions, split)
+    pairs = rigforge_skin.articulations(contract, split)
+    note("articulating pairs: %s" % sorted(pairs))
+    check("an arm articulates with the slab that owns its shoulder",
+          any(pair == tuple(sorted(("Arm.L", contract["owner"]["DEF-shoulder.L"])))
+              for pair in pairs), str(sorted(pairs)))
+    check("a leg articulates with a slab that owns its hips",
+          any("Leg.L" in pair for pair in pairs), str(sorted(pairs)))
+    check("but an arm and a leg share no bone and so do not articulate",
+          ("Arm.L", "Leg.L") not in pairs and ("Arm.R", "Leg.R") not in pairs,
+          str(sorted(pairs)))
+    check("and neither does an arm and a head",
+          ("Arm.L", "Head") not in pairs and ("Arm.R", "Head") not in pairs,
+          str(sorted(pairs)))
+    check("sibling slabs of the split do, because a cut through a trunk is a joint's "
+          "worth of spine",
+          all(tuple(sorted((split.names[i], split.names[i + 1]))) in pairs
+              for i in range(len(split.names) - 1)), str(sorted(pairs)))
+
+    tags = rigforge_skin.tag_membership(mesh, split)
+    edges = rigforge_skin.vertex_edges(mesh)
+    cut = rigforge_skin.articulated_edges(edges, tags, pairs)
+    check("the edge graph everything walks is cut where it does not articulate",
+          len(cut) <= len(edges), "%d of %d edges kept" % (len(cut), len(edges)))
+    _blend, report = rigforge_skin.blend_zones(
+        mesh, tags, edges, rigforge_skin.split_regions(regions, split),
+        seam_widths=rigforge_skin.sub_tag_seam_widths(split), connected=pairs)
+    kept = {tuple(row["tags"]) for row in report["seams"]}
+    refused = {tuple(row["tags"]) for row in report["refused_seams"]}
+    note("bands kept: %s" % sorted(kept))
+    note("bands refused: %s" % sorted(refused))
+    check("every band that survived is between two tags that articulate",
+          all(pair in pairs for pair in kept), str(sorted(kept - pairs)))
+    check("and every refusal names why rather than vanishing from the report",
+          all(row.get("why") for row in report["refused_seams"]),
+          str(report["refused_seams"])[:200])
+
+    # This figure is a bag of separate tubes, so its hand never shares an edge
+    # with its thigh and there is no Arm/Leg seam to refuse - the werewolf's
+    # welded retopo has one, 55 seam vertices wide, and that is the seam that
+    # cost it 397 mm of thigh per arm swing. The refusal itself is exercised
+    # here by taking one real, articulating pair out of the set: whatever the
+    # mesh looks like, a seam the contract does not vouch for loses its band.
+    victim = sorted(kept)[0]
+    _blend, cut_report = rigforge_skin.blend_zones(
+        mesh, tags, edges, rigforge_skin.split_regions(regions, split),
+        seam_widths=rigforge_skin.sub_tag_seam_widths(split),
+        connected=pairs - {victim})
+    now_kept = {tuple(row["tags"]) for row in cut_report["seams"]}
+    now_refused = {tuple(row["tags"]) for row in cut_report["refused_seams"]}
+    check("a seam whose pair is not vouched for loses its band entirely",
+          victim in now_refused and victim not in now_kept
+          and now_kept == kept - {victim},
+          "%s: kept %s refused %s" % (str(victim), sorted(now_kept),
+                                      sorted(now_refused)))
+    check("and the sentence says out loud that a band was refused",
+          "do not articulate" in cut_report["says"], cut_report["says"][-200:])
+    fewer = rigforge_skin.articulated_edges(edges, tags, pairs - {victim})
+    check("the edge graph loses exactly the edges that cross it",
+          len(fewer) < len(cut), "%d vs %d edges" % (len(fewer), len(cut)))
+
+
+def test_isolation_and_the_planted_shoulder(mesh, rig, metarig, regions, split):
+    """The gate the owner's eyes were, and a defect planted to prove it works."""
+    section("isolation: swing the arms, measure the pelvis and the thighs")
+    from forge.tools import rigforge_skin
+
+    clean = rigforge_skin.arm_swing_isolation(rig, mesh, regions, split, metarig)
+    note(clean["says"])
+    check("the gate reports millimetres, a verdict and its own thresholds",
+          clean["max_mm"] is not None and clean["verdict"] in ("ok", "attention",
+                                                              "fail")
+          and clean.get("thresholds"), str(clean)[:200])
+    check("it measures the pelvis slab and the thighs, both non-empty",
+          all(row["vertices"] > 0 for row in clean["groups"]),
+          str([(row["group"], row["vertices"]) for row in clean["groups"]]))
+    check("a constrained skin holds the lower body still - near zero passes",
+          clean["max_mm"] < 1.0, "%.4f mm" % clean["max_mm"])
+    check("and the pose it borrowed came back to within a micron",
+          clean["restored_max_mm"] < 0.001, "%.6f mm" % clean["restored_max_mm"])
+
+    # Plant the defect: a shoulder bone driving pelvis flesh, which is legal in
+    # the merged Torso and illegal in the split one.
+    pelvis_name = split.names[0]
+    pelvis = sorted(index for index, name in split.membership.items()
+                    if name == pelvis_name)
+    victims = pelvis[:max(1, len(pelvis) // 2)]
+    group = mesh.vertex_groups.get("DEF-shoulder.L")
+    kept = {index: weights_of(mesh, index) for index in victims}
+    for index in victims:
+        group.add([int(index)], 0.6, "REPLACE")
+    mesh.data.update()
+    planted = sum(weights_of(mesh, index).get("DEF-shoulder.L", 0.0)
+                  for index in victims)
+    note("planted %.2f vertex-weights of DEF-shoulder.L on %d pelvis vertices"
+         % (planted, len(victims)))
+
+    dirty = rigforge_skin.arm_swing_isolation(rig, mesh, regions, split, metarig)
+    note(dirty["says"])
+    check("THE GATE BITES: with a shoulder stranded on the pelvis the swing moves it",
+          dirty["verdict"] == "fail" and dirty["max_mm"] > 5.0,
+          "%s, %.3f mm" % (dirty["verdict"], dirty["max_mm"]))
+    pelvis_row = {row["group"]: row for row in dirty["groups"]}[pelvis_name]
+    check("and it is the pelvis slab that moves, named, in millimetres",
+          pelvis_row["max_mm"] > 5.0, str(pelvis_row)[:200])
+    check("the report names the bone doing it, so the number can be read back",
+          any("DEF-shoulder.L" in (entry.get("arm_weights") or {})
+              for entry in pelvis_row.get("worst", [])),
+          str(pelvis_row.get("worst"))[:300])
+    check("the pose still came back to within a micron even from a failing run",
+          dirty["restored_max_mm"] < 0.001, "%.6f mm" % dirty["restored_max_mm"])
+
+    warnings = []
+    result = rigforge_skin.constrain_weights(mesh, rig, metarig, regions,
+                                             warnings=warnings, split=True)
+    left = sum(weights_of(mesh, index).get("DEF-shoulder.L", 0.0)
+               for index in victims)
+    note("shoulder weight on the pelvis slab: %.3f -> %.3f" % (planted, left))
+    check("THE FIX: the planted shoulder weight is constrained off the pelvis",
+          left <= 1e-4, "%.4f left" % left)
+
+    fixed = rigforge_skin.arm_swing_isolation(rig, mesh, regions, split, metarig)
+    note(fixed["says"])
+    check("and the isolation gate passes again",
+          fixed["verdict"] == "ok" and fixed["max_mm"] < 1.0,
+          "%s, %.4f mm" % (fixed["verdict"], fixed["max_mm"]))
+    note("  on this figure the reach rule refuses that plant as well - a shoulder "
+         "is 560 mm from this pelvis and the Torso's reach is 532 mm. What the "
+         "split is measured to add on its own is on the werewolf, where the "
+         "overlap matrix's stray mass went 91.86 -> 0.54.")
+
+    for index, weights in kept.items():
+        group.remove([int(index)])
+        for name, weight in weights.items():
+            target = mesh.vertex_groups.get(name)
+            if target is not None:
+                target.add([int(index)], weight, "REPLACE")
+    mesh.data.update()
+    return result
+
+
 def test_command_surface(mesh, rig):
     section("the command surface")
     report = call("rigforge_skin", {"object": mesh.name, "action": "report"})
@@ -881,6 +1150,29 @@ def test_command_surface(mesh, rig):
     check("and the second pass finds far less outside the contract than the first",
           again["weight_removed"] < applied["weight_removed"],
           "%.4f then %.4f" % (applied["weight_removed"], again["weight_removed"]))
+
+    isolation = call("rigforge_skin", {"object": mesh.name, "action": "isolation"})
+    note(isolation["says"])
+    check("isolation answers on its own, in millimetres, without touching a weight",
+          isolation.get("changed") == 0
+          and isolation["isolation"]["max_mm"] is not None
+          and isolation["isolation"]["restored_max_mm"] < 0.001,
+          str(isolation["isolation"])[:200])
+    check("and it reports the split it measured the pelvis with",
+          bool((isolation.get("sub_tags") or {}).get("cuts")),
+          str(isolation.get("sub_tags"))[:200])
+
+    split_off = call("rigforge_skin", {"object": mesh.name, "action": "report",
+                                       "split": False})
+    split_on = call("rigforge_skin", {"object": mesh.name, "action": "report"})
+    check("split: false enforces the contract at whole-tag granularity",
+          "Torso" in split_off["contract"]["legal"]
+          and "Torso" not in split_on["contract"]["legal"],
+          "%s / %s" % (sorted(split_off["contract"]["legal"]),
+                       sorted(split_on["contract"]["legal"])))
+    check("and the split contract's merged view is the unsplit one",
+          split_on["contract"]["legal_merged"] == split_off["contract"]["legal"],
+          str(split_on["contract"]["legal_merged"].get("Torso")))
 
     bad = call("rigforge_skin", {"object": mesh.name, "action": "nonsense"},
                expect_error=True)
@@ -951,8 +1243,14 @@ def main():
         contract, regions = test_legal_sets(mesh, rig, metarig)
         test_blend_width_follows_girth(mesh, regions)
         pin, bleed, torso = test_unconstrained_bleeds(mesh, rig, method)
+        test_swing_before(mesh, rig, metarig, regions)
         test_constrained(mesh, rig, metarig, regions, pin, bleed, torso)
         test_seam_is_smooth(mesh, rig, regions)
+        split = test_sub_tag_contract(mesh, rig, metarig, regions)
+        if split is not None:
+            test_articulation_gate(mesh, rig, metarig, regions, split)
+            test_isolation_and_the_planted_shoulder(mesh, rig, metarig, regions,
+                                                    split)
         test_continuity_finds_a_hole(mesh, rig)
         test_command_surface(mesh, rig)
         test_untagged_mesh_is_refused()

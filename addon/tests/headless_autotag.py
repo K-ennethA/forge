@@ -858,6 +858,198 @@ def test_provenance_and_hints(obj):
     check("and applies again when it has not", bool(back))
 
 
+def _ring_cloud(z_low, z_high, radius_at, rings=60, around=20):
+    """A tube of rings whose radius is a function of height — a spine to split."""
+    out = []
+    for step in range(rings + 1):
+        z = z_low + (z_high - z_low) * step / float(rings)
+        radius = radius_at(z)
+        for turn in range(around):
+            angle = 2.0 * math.pi * turn / around
+            out.append(Vector((radius * math.cos(angle), radius * math.sin(angle), z)))
+    return out
+
+
+def test_spine_split_math(obj):
+    """The Torso cut into three slabs along its own spine, on clouds not meshes.
+
+    The split is pure geometry — an axis, a station grid and two point clouds —
+    so it is tested as pure geometry, where a waist can be *built* rather than
+    hoped for.  The mesh-level consequences are ``headless_skin``'s job.
+    """
+    section("the Torso split: two cuts on the spine's own station grid")
+    from forge.tools import rigforge_autotag as autotag
+
+    # A trunk with a real waist: wide chest, 25% narrower waist, wide hips.
+    def waisted(z):
+        return 0.180 - 0.045 * math.exp(-((z - 1.150) / 0.090) ** 2)
+
+    torso = _ring_cloud(0.880, 1.500, waisted)
+    legs = _ring_cloud(0.300, 0.960, lambda _z: 0.075)
+    legs = [Vector((p.x + 0.090, p.y, p.z)) for p in legs]
+    axis = autotag.axis_from_cloud(torso, "spine")
+    check("the axis a cloud gets runs proximal (low) to distal (high)",
+          axis.points[0].z < axis.points[-1].z,
+          "%.0f -> %.0f mm" % (axis.points[0].z * 1000.0, axis.points[-1].z * 1000.0))
+    check("and it spans the cloud's own extent, not the detected chain's",
+          abs(axis.length - 0.620) < 0.002, "%.1f mm" % (axis.length * 1000.0))
+
+    split = autotag.spine_split(axis, torso, legs)
+    note(split["says"])
+    check("the split is not refused on a trunk with legs beside it",
+          "refused" not in split, split.get("refused"))
+    stations = split["stations"]
+    check("both cuts land exactly on a station of the grid the girth cap uses",
+          all(abs(split["cuts"][i] - split["cut_stations"][i] / float(stations - 1))
+              < 1e-9 for i in (0, 1))
+          and stations == autotag.GIRTH_STATIONS,
+          "%s of %d stations" % (split["cut_stations"], stations))
+
+    # 1. the pelvis cut is a measurement of where the legs are, not a fraction.
+    legs_t = sorted(axis.closest(p)[1] for p in legs)
+    p95 = legs_t[int(round(0.95 * (len(legs_t) - 1)))]
+    check("the pelvis cut is the station nearest the legs' own p95 on the spine",
+          split["cut_stations"][0] == max(1, int(round(p95 * (stations - 1)))),
+          "cut at station %d, p95 is t=%.3f" % (split["cut_stations"][0], p95))
+    check("and the report says so rather than leaving it to be inferred",
+          "legs join" in split["how"][0], split["how"][0])
+
+    # 2. the chest cut is the waist, and this trunk has one.
+    girths = split["girth_mm"]
+    second = split["cut_stations"][1]
+    check("the chest cut is the waist: narrower than both its neighbours",
+          girths[second] < girths[second - 1] and girths[second] < girths[second + 1],
+          "%s at %d, neighbours %s / %s" % (girths[second], second,
+                                            girths[second - 1], girths[second + 1]))
+    check("and it is the station the waist was actually modelled at",
+          abs((axis.points[0] + (axis.points[-1] - axis.points[0])
+               * split["cuts"][1]).z - 1.150) < 0.030,
+          "cut at z=%.0f mm, waist built at 1150 mm"
+          % ((axis.points[0] + (axis.points[-1] - axis.points[0])
+              * split["cuts"][1]).z * 1000.0))
+    check("the report names the rule that fired", "waist" in split["how"][1],
+          split["how"][1])
+    check("the two cuts are far enough apart to leave an abdomen",
+          split["cut_stations"][1] - split["cut_stations"][0]
+          >= autotag.MIN_CUT_SEPARATION, str(split["cut_stations"]))
+
+    # 3. a uniform tube has no waist, and must say so rather than cut at noise.
+    plain = _ring_cloud(0.880, 1.500, lambda _z: 0.180)
+    flat = autotag.spine_split(autotag.axis_from_cloud(plain, "spine"), plain, legs)
+    check("a uniform trunk falls back instead of cutting at the median's noise",
+          "no measurable waist" in flat["how"][1], flat["how"][1])
+    check("and the fallback still lands on a station, between the same bounds",
+          abs(flat["cuts"][1] - flat["cut_stations"][1] / float(stations - 1)) < 1e-9
+          and flat["cut_stations"][1] > flat["cut_stations"][0],
+          str(flat["cut_stations"]))
+    note("  waisted trunk cut at station %d, uniform one at %d"
+         % (split["cut_stations"][1], flat["cut_stations"][1]))
+
+    # 4. every vertex lands in exactly one slab, and the slabs are in order.
+    membership = autotag.split_membership(axis, split["cuts"], torso)
+    counts = {}
+    for name in membership:
+        counts[name] = counts.get(name, 0) + 1
+    check("every torso point lands in exactly one slab",
+          sum(counts.values()) == len(torso) and counts == split["vertices"],
+          "%s vs %s" % (counts, split["vertices"]))
+    heights = {name: [] for name in autotag.TORSO_SUB_TAGS}
+    for point, name in zip(torso, membership):
+        heights[name].append(point.z)
+    order = autotag.TORSO_SUB_TAGS
+    check("and the slabs stack up the spine in the order they are named",
+          max(heights[order[0]]) <= min(heights[order[1]]) + 1e-9
+          and max(heights[order[1]]) <= min(heights[order[2]]) + 1e-9,
+          str({name: (round(min(v) * 1000), round(max(v) * 1000))
+               for name, v in heights.items()}))
+
+    # 5. a bone is a span, and a span that crosses a cut is in both slabs.
+    cuts = split["cuts"]
+    inside = autotag.sub_tags_spanning(cuts[0] + 0.02, cuts[1] - 0.02, cuts)
+    crossing = autotag.sub_tags_spanning(cuts[0] - 0.05, cuts[0] + 0.05, cuts)
+    both_cuts = autotag.sub_tags_spanning(-0.2, 1.2, cuts)
+    check("a bone that lies inside one slab is in that slab alone",
+          inside == (order[1],), str(inside))
+    check("a bone whose span crosses a cut is in the slabs on BOTH sides of it",
+          crossing == (order[0], order[1]), str(crossing))
+    check("and one that crosses both cuts is in all three",
+          both_cuts == tuple(order), str(both_cuts))
+    check("a zero-length span still lands somewhere",
+          autotag.sub_tags_spanning(cuts[1] + 0.1, cuts[1] + 0.1, cuts)
+          == (order[2],),
+          str(autotag.sub_tags_spanning(cuts[1] + 0.1, cuts[1] + 0.1, cuts)))
+
+    # 6. refusals, named.
+    lonely = autotag.spine_split(axis, torso, [])
+    check("a trunk with no leg tag beside it is refused, not guessed at",
+          "refused" in lonely and "nothing measures where the pelvis ends"
+          in lonely["refused"], str(lonely.get("refused")))
+    tiny = _ring_cloud(0.880, 1.500, lambda _z: 0.180, rings=2, around=4)
+    thin = autotag.spine_split(autotag.axis_from_cloud(tiny, "spine"), tiny, legs)
+    check("and so is a Torso with too few vertices to make three slabs",
+          "refused" in thin and "three slabs" in thin["refused"],
+          str(thin.get("refused")))
+    note("  %s" % thin.get("refused"))
+
+
+def test_split_is_a_view_not_a_tag(obj):
+    section("the split is a derived view: the mesh still carries one Torso")
+    from forge.tools import rigforge, rigforge_autotag as autotag, rigforge_rig
+
+    before = {tag: len(members) for tag, members in _tag_counts(obj).items()}
+    groups_before = sorted(group.name for group in rigforge.tag_groups(obj))
+    properties_before = sorted(obj.keys())
+    report = autotag.auto_tag(obj, joints=canned_document(), midplane=0.0,
+                             character_left=1.0, apply=True)
+
+    split = report["sub_tags"]
+    note(split.get("says") or split.get("refused"))
+    check("every run answers the split question, with cuts or with a reason",
+          bool(split.get("cuts")) != bool(split.get("refused")),
+          str(split)[:200])
+    check("and names the three slabs and the tag they are slabs of",
+          split["names"] == list(autotag.TORSO_SUB_TAGS)
+          and split["parent"] == autotag.SPLIT_PARENT, str(split["names"]))
+    if split.get("cuts"):
+        check("the slab counts add up to the Torso tag itself",
+              sum(split["vertices"].values()) == before["Torso"],
+              "%d vs %d" % (sum(split["vertices"].values()), before["Torso"]))
+    else:
+        # This suite's biped is three rings from shoulder to wrist - enough to
+        # answer *which limb is this vertex on*, which is all tagging needs -
+        # and its whole Torso is 60-odd vertices. A slab of it is too thin to
+        # measure, so the split refuses, and refusing is the behaviour under
+        # test here: the tag stays whole and everything downstream is unmoved.
+        # The applied split lives on headless_skin's resampled figure.
+        check("a Torso too coarse to slab refuses, and says which slab was thin",
+              "cannot be measured" in split["refused"], split["refused"])
+        check("a refusal is a warning, not a failure - the tags were still written",
+              any("stays one tag" in text for text in report["warnings"]),
+              str(report["warnings"])[:300])
+
+    check("NO sub-tag vertex group was written - the fitter still sees six tags",
+          sorted(group.name for group in rigforge.tag_groups(obj)) == groups_before,
+          str(sorted(group.name for group in rigforge.tag_groups(obj))))
+    check("and no new custom property was stamped on the mesh either",
+          sorted(obj.keys()) == properties_before, str(sorted(obj.keys())))
+    check("the tags themselves are unchanged in size", _tag_counts_equal(obj, before),
+          str(before))
+
+    regions, _empty = rigforge_rig.measure_tags(obj)
+    check("measure_tags - what the landmark fitter and the metarig read - still "
+          "returns exactly the six tags",
+          sorted(regions) == ["Arm.L", "Arm.R", "Head", "Leg.L", "Leg.R", "Torso"],
+          str(sorted(regions)))
+    check("and the Torso region it measures is the whole torso, not a slab",
+          regions["Torso"].count == before["Torso"],
+          "%d vs %d" % (regions["Torso"].count, before["Torso"]))
+
+    landmarks = call("rigforge_landmarks", {"object": obj.name, "action": "report"})
+    check("the landmark fitter reads the merged Torso and still fits the figure",
+          landmarks.get("landmarks") and "hips" in landmarks["landmarks"],
+          str(sorted(landmarks.get("landmarks") or {}))[:200])
+
+
 def test_command_surface(obj, workspace):
     section("the command: report, apply, and a detector that is not there")
     joints_path = os.path.join(workspace, "canned.json")
@@ -1154,6 +1346,8 @@ def main():
         report = test_axis_tags_are_cylinders(obj)
         test_landmark_fitter_accepts(obj, report)
         test_per_limb_fallback(obj)
+        test_spine_split_math(obj)
+        test_split_is_a_view_not_a_tag(obj)
         test_provenance_and_hints(obj)
         test_command_surface(obj, workspace)
         test_metarig_end_to_end(obj, workspace)
