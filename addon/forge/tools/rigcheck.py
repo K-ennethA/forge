@@ -64,6 +64,20 @@ And every joint is **proved to drive geometry** before it is judged: if the
 first pose moves no vertex more than a hair, the joint is reported as
 unmeasured with the reason, rather than passing for having done nothing.
 
+What "the mesh" means here (shape keys and their drivers)
+---------------------------------------------------------
+Every measurement is taken on the **depsgraph-evaluated** mesh
+(``evaluated_get`` in :func:`_vertex_coords` and :func:`_evaluated_bmesh`), so
+shape keys, the drivers on their values and the armature modifier are all
+already applied.  That is what makes a **corrective shape key measurable**: with
+:mod:`forge.tools.correctives`' bend-angle drivers live, posing the joint fires
+the key and the volume-loss number this harness reports is the corrected one.
+The rest region each joint is measured over is built from those same evaluated
+rest coordinates rather than from the raw ``mesh.vertices``, because a mesh with
+shape keys is evaluated key-mix-first and the raw vertices are not the shape the
+armature deforms.  The result carries a ``shape_keys`` block saying what was
+live, so nobody has to take the paragraph's word for it.
+
 Restoring the pose
 ------------------
 Every pose bone's ``matrix_basis`` and rotation mode, and every ``IK_FK``
@@ -106,6 +120,9 @@ __all__ = [
     "enumerate_joints",
     "contact_points",
     "stance_runs",
+    "shape_key_state",
+    "evaluated_vertex_coords",
+    "JointProbe",
     "cmd_rig_check",
     "cmd_animation_check",
 ]
@@ -383,6 +400,12 @@ def _vertex_coords(obj):
         evaluated.to_mesh_clear()
 
 
+#: The same function under a public name.  ``rigforge_correctives`` measures the
+#: flesh with the harness's own reader rather than a second implementation that
+#: could drift from it — if one of them ever stops seeing shape keys, both do.
+evaluated_vertex_coords = _vertex_coords
+
+
 def _hull_volume(points):
     """Volume of the convex hull of a point cloud, in cubic metres."""
     if len(points) < 4:
@@ -499,7 +522,18 @@ class JointProbe(object):
     reads coordinates out of the evaluated mesh.
     """
 
-    def __init__(self, rig, mesh, joint, weight_floor=0.05):
+    def __init__(self, rig, mesh, joint, weight_floor=0.05, rest_world=None):
+        """``rest_world`` is the **evaluated** rest position of every vertex.
+
+        Without it the region is built from ``mesh.data.vertices[i].co``, which
+        is the raw base mesh — not what the armature deforms once the mesh
+        carries shape keys, because Blender evaluates the key mix *before* the
+        modifier stack.  A character with a form key at 1 (or a corrective at
+        rest) would then have its joint neighbourhood, its girth and its
+        cross-section slab measured on a shape nobody is looking at.  The caller
+        passes the evaluated rest coordinates; the fallback is the old
+        behaviour, which is identical whenever there are no shape keys.
+        """
         self.joint = joint
         self.mesh = mesh
         self.reason = None
@@ -527,6 +561,13 @@ class JointProbe(object):
                 parent_length = max(max(lengths), 1e-6)
 
         world = mesh.matrix_world
+        if rest_world is not None:
+            def at(index):
+                return rest_world[index]
+        else:
+            def at(index):
+                return world @ mesh.data.vertices[index].co
+        self.rest_from_evaluated = rest_world is not None
         own = _weighted_vertices(
             mesh, _group_indices(mesh, set(joint["deform_bones"])), weight_floor)
         # How thick the limb is, not just how long the bone is. A blob leg is
@@ -536,8 +577,7 @@ class JointProbe(object):
         girth = 0.0
         if own:
             distances = sorted(
-                rigforge_rig._point_segment_distance(world @ mesh.data.vertices[i].co,
-                                                     self.head, self.tail)
+                rigforge_rig._point_segment_distance(at(i), self.head, self.tail)
                 for i in own)
             girth = distances[len(distances) // 2]
         self.girth = girth
@@ -550,7 +590,7 @@ class JointProbe(object):
         slab_centre = self.head + self.axis * (self.length * SLAB_OFFSET)
         half = max(self.length * SLAB_FRACTION, 1e-6)
         for index in owned:
-            point = world @ mesh.data.vertices[index].co
+            point = at(index)
             if (point - self.head).length <= self.radius:
                 self.hull_verts.append(index)
             if abs((point - slab_centre).dot(self.axis)) <= half:
@@ -712,6 +752,45 @@ def _worst(verdicts):
     return worst
 
 
+def shape_key_state(mesh):
+    """What morph targets are live on the mesh being measured, and what drives them.
+
+    The harness reads the **depsgraph-evaluated** mesh (``_vertex_coords`` and
+    ``_evaluated_bmesh`` both go through ``evaluated_get``), so shape keys and
+    the drivers on their values are already part of every number it reports —
+    which is the whole reason a corrective shape key can be *measured* rather
+    than admired.  That is easy to assume and easy to get silently wrong, so the
+    report states it: how many keys there are, which are non-zero right now, and
+    which are driven rather than set by hand.
+    """
+    keys = getattr(mesh.data, "shape_keys", None)
+    if keys is None:
+        return {"count": 0, "driven": [], "active": [], "muted": [],
+                "evaluated": True,
+                "says": "%r has no shape keys." % mesh.name}
+    driven = []
+    if keys.animation_data is not None:
+        for fcurve in keys.animation_data.drivers:
+            path = fcurve.data_path or ""
+            if '"' in path:
+                driven.append(path.split('"')[1])
+    blocks = list(keys.key_blocks)[1:]  # the basis is the shape, not a target
+    active = [block.name for block in blocks
+              if not block.mute and abs(float(block.value)) > 1e-6]
+    muted = [block.name for block in blocks if block.mute]
+    return {
+        "count": len(blocks),
+        "driven": sorted(set(driven)),
+        "active": active,
+        "muted": muted,
+        "evaluated": True,
+        "says": ("%r carries %d morph target(s), %d of them driven; every number "
+                 "below is measured on the depsgraph-evaluated mesh, so those keys "
+                 "and their drivers are already in it."
+                 % (mesh.name, len(blocks), len(set(driven)))),
+    }
+
+
 def _sentence(label, worst, volume, twist, clip):
     if worst == "ok":
         return "The %s holds up." % label
@@ -803,9 +882,16 @@ def cmd_rig_check(params):
                                     % (bone_name, key))
             refresh_view_layer()
 
+            # The rest coordinates come first and the probes are built FROM them:
+            # a mesh with shape keys (a corrective at 0, a form key at 1) is
+            # evaluated key-mix-then-modifiers, so the raw ``vertices[i].co`` is
+            # not the shape the armature deforms and a region built on it would
+            # be measuring a body nobody is looking at.
+            rest_coords = _vertex_coords(mesh)
             probes = []
             for joint in joints:
-                probe = JointProbe(rig, mesh, joint, weight_floor)
+                probe = JointProbe(rig, mesh, joint, weight_floor,
+                                   rest_world=rest_coords)
                 if not probe.usable:
                     skipped.append({"joint": joint["joint"], "label": joint["label"],
                                     "reason": probe.reason})
@@ -818,7 +904,6 @@ def cmd_rig_check(params):
                     % (len(joints), rig.name,
                        "; ".join(sorted({s["reason"] for s in skipped})), mesh.name))
 
-            rest_coords = _vertex_coords(mesh)
             rest = {probe.joint["joint"]: probe.measure(rest_coords) for probe in probes}
 
             bm = _evaluated_bmesh(mesh)
@@ -969,6 +1054,7 @@ def cmd_rig_check(params):
         "poses_run": poses_run,
         "joints_measured": len(report_joints),
         "joints_skipped": skipped,
+        "shape_keys": shape_key_state(mesh),
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)
                             if global_rest_volume is not None else None),

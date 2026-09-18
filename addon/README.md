@@ -692,7 +692,8 @@ nobody is allowed to fail on.
 | `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`** | Rigify generate → automatic weights → per-tag weight cleanup → the IK layer put on the game convention. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, **`ik`**, `warnings` |
 | **`rigforge_ik`** | `rig?`, `action?` `report`\|`set`, `legs?` `ik`\|`fk`, `arms?` `ik`\|`fk`, `limbs?`, `mode?`, `poles?`, `frame?` | reports or sets the **FK/IK layer, per limb**: foot/hand IK targets, knee/elbow pole targets, the three foot-roll pivots, the `IK_FK` switch on each limb's parent control, and the IK constraints with their chain counts. `set` + `frame` keyframes the switch. Control properties only — the deform set never changes. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts and the two numbers that mean trouble; or re-runs the rules |
-| `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents` |
+| `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, **bakes driven shape-key weights per frame alongside the bones**, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents`, **`morph_targets`**, **`driven_morph_targets`**, **`morph_animation`** |
+| **`rigforge_correctives`** | `rig?`, `mesh?`, `action?` `author`\|`report`\|`clear`, `joints?`, `angle_samples?`, `strength?`, `smooth?`, `weight_floor?`, `verify?` | **corrective shape keys (JCMs) driven by bend angle** — the fix for the collapsed knee that edge loops cannot buy. Measures the pinch at each sampled angle, authors a rest-space corrective that restores it, drives it off the joint's own bend, then **re-runs the harness and reports before/after volume loss per joint per angle**. Returns `shape_keys`, `joints`, `table`, `gate_before`/`gate_after`, `rest_space`. See [Correctives](#correctives-the-collapsed-knee-rigforge_correctives) |
 | **`rig_check`** | `rig?`, `mesh?`, `poses?` `extreme`\|`quick`\|`full`\|`[angles]`, `joints?`, `max_poses?`, `intersections?`, `weight_floor?`, `intersection_face_limit?` | the **deformation harness**: poses every limb, spine and neck joint to its extremes and measures volume loss, new self-intersections and twist collapse on the evaluated mesh. Returns per-joint numbers with verdicts, an overall `gate`, the `thresholds` that judged them, and `pose_restored`. See [The deformation harness](#the-deformation-harness-rig_check) |
 | **`animation_check`** | `rig?`, `action?`, `mode?` `auto`\|`planted`\|`in_place`, `frame_step?`, `contact_band?`, `min_stance_frames?`, `feet?` | the **foot-slide metric**: for every stance phase in a clip, how far the planted foot drifts, in millimetres. Returns per-step drift, the worst step, a `gate` and the `thresholds` that judged it. Deterministic, geometric, nothing rendered. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 
@@ -2002,6 +2003,18 @@ bends — a game character reaches those long before a gymnast's.
 `IK_FK` value is captured up front and put back in a `finally` — finished, raised or
 interrupted. The suite asserts this bone by bone.
 
+**"The evaluated mesh" includes shape keys and their drivers, and the report says so.**
+Every number comes off the depsgraph-evaluated mesh, so morph targets and anything driving
+their values are already in it — which is what makes a corrective shape key *measurable*
+rather than admirable: with `rigforge_correctives`' bend-angle drivers live, posing the
+joint fires the key and the volume loss reported is the corrected one. The result carries a
+`shape_keys` block (`count`, `driven`, `active`, `muted`) so nobody has to take that on
+trust, and the suite proves it the only way that counts — muting the corrective makes the
+harness's number **worse again** (13.6% → 29.7% on the test limb). The rest region each
+joint is measured over is built from those same **evaluated** rest coordinates rather than
+from the raw `mesh.vertices`, because a shape-keyed mesh is evaluated key-mix-first and the
+raw vertices are not the shape the armature deforms.
+
 **The thresholds are heuristics and say so.** ≤8% volume loss / ≤20% is attention, 0 new
 intersections / ≤20 is attention, ≤15% twist collapse / ≤35% is attention. They are
 **proxy tier**: the points at which each artefact becomes visible in practice, *not*
@@ -2040,6 +2053,171 @@ downloads nothing and writes nothing to disk.
 - The honest caveats in the tool descriptions: predictions are hints, disagreements mean
   the tags won, and `rig_check`'s thresholds are heuristic — otherwise an agent will read
   a `fail` as a fact about the artist's work rather than a band it can argue with.
+
+### Correctives, the collapsed knee (`rigforge_correctives`)
+
+`rig_check` answers *does it deform*. On a real project it answered **no**: 40-50% volume
+loss at the knees and elbows at 90° of flex. This is what was done about it, and the first
+thing worth recording is the attempt that **failed**.
+
+**The edge-loop pass moved nothing: 50.3% → 51.1%.** A genuine density pass around the
+joints — more loops where the crease is — is the first thing anyone tries, and it is the
+first thing anyone should stop trying, because the measurement says it does not work. It
+does not work for a reason. Linear-blend skinning computes a posed vertex as a **weighted
+average of rigid transforms**, and the average of two rotations is a matrix *shorter* than
+either one — the further apart the bones point, the more it shrinks. At 90° the shrink is
+the collapse. Adding vertices adds samples of a function that is wrong at every sample.
+That experiment is the reason this tool exists and the reason the fix ladder below has the
+order it has.
+
+**The fix is the one every production pipeline uses**: a corrective shape key driven by the
+joint's bend angle — a JCM (joint-corrective morph, also PSD, also pose-space deformer).
+It is not a flourish; it is the standard correction term for the known error of the
+standard approximation.
+
+**What it measures.** Every vertex in the joint's neighbourhood gets a **radius**: its
+distance to the limb's two-segment skeleton (parent bone head → joint → child bone tail).
+Measured at rest against the rest skeleton and again at the pose against the *posed*
+skeleton, the shortfall is the pinch, in millimetres. Rotation-invariant by construction,
+which is the whole point — a bent limb is allowed to *move*, it is not allowed to get
+*thinner*. Nothing is sculpted, nothing is eyeballed.
+
+**Where it pushes.** Back out along the axis the distance was lost on, scaled by `strength`
+and by a **blend-band mask** `min(1, 2√(w_parent · w_child))` — zero wherever a vertex
+belongs to one bone alone, peaking exactly where the two are averaged, because that is
+where linear blending does its damage. The field is then Laplacian-smoothed over the mesh's
+edges (`silhouette._smooth_field`, the same smoother the silhouette fit uses; the MESH is
+never smoothed, only the correction).
+
+**The push along posed normals was built, measured and thrown away**, and the number is
+kept because an option removed quietly comes back as somebody's good idea in six months.
+It is the more familiar description of "restore the volume", and on the same limb it took
+the knee from 29.7% to **39.4%** — worse than doing nothing, against 13.6% for radial. Not
+because normals are a bad idea: because the combination is incoherent. The *magnitude* is
+measured as a loss of distance to the skeleton, so spending it along a different axis over-
+and under-shoots everywhere, and in the crease of a fold the two facing walls' normals
+point at each other, so the correction closes the fold it was meant to pad. Measurement and
+restoration have to share an axis. A `direction` parameter is **refused**, with that
+measurement in the refusal.
+
+**The rest-space math, because this is the part that is easy to get wrong.** A shape key is
+a *rest-pose* offset and the armature deforms the result, so a delta that looks right in
+the posed frame is **not** the delta to store. Linear-blend skinning is
+
+```
+p = M r        M = (Σ w_b)⁻¹ Σ w_b · (P_b · A_b⁻¹)
+```
+
+with `P_b` the bone's posed matrix, `A_b` its rest matrix (both armature space), conjugated
+into the mesh's own space exactly as Blender's armature modifier does it. Wanting the posed
+position to be `p + d` gives `M(r + Δr) = Mr + d`, so
+
+```
+Δr = L⁻¹ d        L = the 3×3 linear part of M
+```
+
+— the translation cancels between the two sides, which is why the pull-back is a linear
+solve per vertex and not a full inverse transform of a point. `Δr` is added to the **Basis
+key's** coordinates (not `mesh.vertices`, which is not what a shape-keyed mesh deforms).
+
+**That derivation is checked, not asserted.** `M r` is compared against the depsgraph's own
+evaluated vertex positions at the same pose, and the worst disagreement ships in the report
+as `skin_residual_mm` (**0.0001 mm** on the test limb). A large residual means something
+other than plain vertex-group skinning is deforming the mesh — a "Preserve Volume" armature
+modifier, a corrective smooth, a shrinkwrap — and the run says so instead of quietly
+authoring nonsense.
+
+**The driver: deform bones, and keyframes rather than a Python expression.**
+
+- The variable is a `ROTATION_DIFF` between **the two bones that span the joint**, chosen
+  from `(DEF-parent, DEF-child)` → `(ORG-parent, ORG-child)` → `(control parent, control)`
+  and **the first pair that actually sweeps ≥5° between rest and the sample wins** —
+  measured, then named in the report. A Rigify limb can be posed in FK *or* solved in IK,
+  and only the bones at the bottom of that stack move in both cases. The suite poses the
+  same knee both ways and the same key fires.
+- The 0→1 ramp is **keyframe points on the driver F-curve** with `CONSTANT` extrapolation,
+  not an expression. Blender gates Python-expression drivers behind the "Auto Run Python
+  Scripts" preference, and a rig that silently stops correcting itself on someone else's
+  machine is worse than no corrective. The default `GENERATOR` modifier is removed first,
+  or it overrides the keyframes.
+- With several samples the ramps are **triangular** — key *j* peaks at its own angle and
+  falls to zero at its neighbours' — so the keys interpolate instead of stacking. Measured:
+  at 60° `corr_knee_L_060` = 1.000 and `corr_knee_L_120` = 0.000; at 120°, the reverse.
+
+**It verifies itself.** After authoring, the harness is re-run over exactly the joints and
+angles in play, drivers live, and the before/after table is part of the result — so the
+number is quoted from the same instrument that failed the joint. The baseline is taken with
+every corrective on the mesh **muted**, so "before" means linear-blend skinning rather than
+"whatever the last run left"; every key stays muted until the whole run is authored, so no
+key is ever measured through another one.
+
+On the synthetic two-bone limb (`headless_correctives.py`, 820 vertices, one smooth blend
+band — the textbook case):
+
+| joint | angle | before | after | recovered |
+|---|---|---|---|---|
+| knee.L | 60° | 8.7% | **−4.9%** | all of it (the neighbourhood ends up *larger* than rest) |
+| knee.L | 90° | 29.7% | **13.6%** | 54% |
+| knee.L | 120° | 55.3% | **33.3%** | 40% |
+
+The recovery is partial and the tool says so rather than rounding up: a convex hull is
+defined by its outermost vertices, the correction only pushes the ones that actually
+pinched (212 of 380 in the band at 90° — the outer side of a bend legitimately *bulges*),
+and the smoothing that keeps the surface fair gives away some peak. **`rig_check`'s hull
+metric is not a pure pinch measurement at extreme flex either**: folding a limb changes the
+convex hull of its neighbourhood for reasons that have nothing to do with skinning, which
+is visible above as a *negative* loss at 60°. Both halves of that are reported; neither is
+smoothed over.
+
+**Defaults that matter.** `joints` omitted means *the harness picks* — `rig_check` at full
+flex, every joint whose volume verdict is not `ok`, worst first, and a warning naming them;
+if none fails, the command **refuses** and quotes the worst measurement rather than
+inventing work. `angle_samples` omitted means `[0.5, 1.0]` — **fractions of that joint's
+own extreme**, so the samples track a 140° knee and a 95° shoulder without a table; a bare
+number above 1 is refused with the fraction/degrees confusion named, and
+`{"flex_deg": 90}` is the exact-angle form (the same shape `rig_check`'s `poses` takes).
+`strength: 0` measures and writes nothing.
+
+**`action: "report"`** lists the correctives a mesh carries, whether each is driven, the
+bones driving it and the ramp; **`action: "clear"`** removes them and their drivers (and
+`joints` narrows it). Keys are named `corr_<joint>_<degrees>` — `corr_knee_L_090` — which is
+also how the two actions find their own work without a manifest and without touching an
+artist's hand-sculpted keys.
+
+**Export: glTF has morph targets and no concept of a driver.** Left alone, a corrected
+character reaches Godot with `corr_knee_L_090` present and sitting at weight 0 for ever, and
+nothing errors. `rigforge_export_godot` now bakes the other half: for every frame of every
+exported clip the driver is **evaluated through the depsgraph** (reading the *original*
+`key_blocks[...].value` returns the authored 0 at every frame — a driver writes into the
+evaluated copy, never the datablock) and keyed onto the export copy, whose inherited drivers
+are removed first because a driver beats a keyframe on the same property. Those keys go into
+an action pushed onto an NLA track **named after the clip**, which is what makes Khronos'
+exporter merge them into the same glTF animation as the bones instead of a second one nobody
+plays; the interpolation is forced `LINEAR`, because a Bezier handle between two samples of
+a ramp overshoots past 1 and a morph weight above 1 inflates the limb it was meant to
+rescue. `export_morph`, `export_morph_animation` and `export_morph_reset_sk_data` are passed
+explicitly and the suite asserts the installed 5.0.1 exporter really defines all three.
+
+Khronos' exporter *does* have a shape-key-driver path of its own (`get_sk_drivers`, live in
+`NLA_TRACKS` mode). It is deliberately **not** relied on: it samples whatever the original
+control rig happens to be posed at, and by export time the original holds one arbitrary
+action for all of the clips being written, so every clip would receive the same weight
+curve. Sampling per action, against the action, is the only version that is right for more
+than one clip. Round trip, measured: the `.glb` carries the morph target under its own name
+and a `weights` channel inside the bone clip whose baked values run
+`0.00, 0.00, 0.05, 0.20, 0.37, 0.55, 0.72, 0.86, 0.96, 1.00` across a ten-frame bend.
+
+**The fix ladder, in order, and it is the measured order:**
+
+1. **Correctives** (`rigforge_correctives`) — quote the before/after.
+2. **Weight painting** — `rigforge_weights` report, then the band rules; a joint whose flesh
+   is weighted to the wrong bones is not a skinning-approximation problem.
+3. **Never a blind density pass.** 50.3% → 51.1%. It is written down so nobody spends the
+   afternoon again.
+
+Runs under `--background`, renders nothing, downloads nothing, writes nothing to disk, and
+restores the pose in a `finally`. Suite: `addon/tests/headless_correctives.py`, port 9908,
+67 checks.
 
 ### IK, and the foot-slide gate (`rigforge_ik`, `rigforge_walk`, `animation_check`)
 
@@ -2484,6 +2662,10 @@ addon/forge/
                          extremes and measures volume / clipping / twist collapse; and
                          animation_check, the foot-slide metric (drift per stance phase,
                          in millimetres)
+  tools/correctives.py   rigforge_correctives: corrective shape keys (JCMs) driven by bend
+                         angle - measures the pinch, authors the rest-space delta through
+                         the inverse skinning transform, drives it off the joint's own
+                         bend, and re-runs the harness to report before/after
   tools/rigforge_anim.py RigForge cloth, the action library, keyframing, retargeting, and
                          rigforge_walk - a walk cycle keyed on the leg IK targets
   tools/assistant.py     Assistant chat state, bridge client, operators (Phase 6)
@@ -2503,6 +2685,11 @@ addon/tests/
                          IK chains, pole targets and foot roll on the generated rig, the
                          walk authored on the IK targets, the foot-slide metric proved
                          both ways, and the export bake
+  headless_correctives.py  headless checks for corrective shape keys (port 9908): a
+                         two-bone limb with a smooth blend band - the classic collapse -
+                         corrected, verified against the harness before/after, driven
+                         under FK and under a real IK solve, bit-identical at rest, and
+                         round-tripped through a .glb with an animated weights channel
   headless_rigbridge.py  headless checks for the rigging bridge (port 9901): joints_file
                          blending against a hand-written detector file, the frame gate,
                          and rig_check on the generated rig - no GPU, no download

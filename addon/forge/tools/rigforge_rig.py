@@ -2682,6 +2682,141 @@ def bake_action_onto(source, target, action, frame_start, frame_end, step=1):
     return result
 
 
+# ---------------------------------------------------------------------------
+# shape-key weights: the half of a corrective that glTF will not carry by itself
+# ---------------------------------------------------------------------------
+#
+# A corrective shape key is two things: a morph target and a driver that says
+# how much of it to use.  **glTF has the first and not the second.**  Morph
+# targets are a first-class part of the format; drivers are a Blender concept
+# with no glTF counterpart at all, so a rig whose knees are fixed by a
+# bend-angle driver exports with the fix present and never applied — the model
+# arrives in Godot with a ``corr_knee_L_090`` morph sitting at weight 0 for
+# ever, and nothing errors.
+#
+# The fix is the same one the bone bake uses: **sample it**.  For every frame of
+# every exported clip, the driver is evaluated (through the depsgraph, on the
+# source mesh, while the source rig plays that action) and the resulting weight
+# is written as an ordinary keyframe on the export copy's key block.  Those
+# keyframes go into an action pushed onto an NLA track **named after the clip**,
+# which is what makes Khronos' exporter merge them into the same glTF animation
+# as the armature's track rather than emitting a second, nameless one.
+#
+# Khronos' exporter does have a driver path of its own (``get_sk_drivers``): in
+# ``NLA_TRACKS`` mode it will find drivers on an exported armature's child
+# meshes and sample them.  It is deliberately **not** relied on here, and the
+# copy's inherited drivers are removed before export, because that path samples
+# whatever the *original* control rig happens to be posed at — and by export
+# time the original holds one arbitrary action for every clip being written, so
+# all of them would receive the same weight curve.  Sampling per action, against
+# the action, is the only version that is right for more than one clip.
+
+def driven_shape_keys(mesh_obj):
+    """Names of the key blocks on a mesh whose value is driven rather than set."""
+    keys = getattr(getattr(mesh_obj, "data", None), "shape_keys", None)
+    if keys is None or keys.animation_data is None:
+        return []
+    out = []
+    for fcurve in keys.animation_data.drivers:
+        path = fcurve.data_path or ""
+        if '"' in path and path.endswith(".value"):
+            name = path.split('"')[1]
+            if name in keys.key_blocks:
+                out.append(name)
+    return sorted(set(out))
+
+
+def sample_shape_key_values(mesh_obj, names, frames):
+    """``{key name: [value per frame]}`` — the drivers evaluated, not guessed.
+
+    Read off the **depsgraph-evaluated** mesh: a driver writes its result into
+    the evaluated copy and never into the datablock, so reading
+    ``key_blocks[name].value`` on the original returns whatever it was authored
+    at (0) at every frame.  That is the silent-zero bug this function exists to
+    avoid.
+    """
+    scene = get_scene()
+    samples = {name: [] for name in names}
+    for frame in frames:
+        scene.frame_set(int(frame))
+        refresh_view_layer()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated = mesh_obj.evaluated_get(depsgraph)
+        blocks = getattr(getattr(evaluated.data, "shape_keys", None), "key_blocks", None)
+        for name in names:
+            block = blocks.get(name) if blocks is not None else None
+            samples[name].append(float(block.value) if block is not None else 0.0)
+    return samples
+
+
+def bake_shape_key_values(export_mesh, samples, frames, clip_name, warnings):
+    """Key the sampled weights onto the export copy and stash them in an NLA track.
+
+    Returns ``(names actually keyed, the action holding them)``.  The copy's
+    inherited drivers are removed first: keyframes and a driver on the same
+    property is a fight the driver wins, so leaving them would make the bake a
+    no-op.
+    """
+    keys = getattr(export_mesh.data, "shape_keys", None)
+    if keys is None or not samples:
+        return [], None
+    if keys.animation_data is None:
+        keys.animation_data_create()
+    for fcurve in list(keys.animation_data.drivers):
+        try:
+            keys.animation_data.drivers.remove(fcurve)
+        except (RuntimeError, TypeError):  # pragma: no cover - defensive
+            continue
+    keys.animation_data.action = None
+
+    keyed = []
+    for index, frame in enumerate(frames):
+        for name, values in samples.items():
+            block = keys.key_blocks.get(name)
+            if block is None:
+                continue
+            block.value = values[index]
+            try:
+                block.keyframe_insert(data_path="value", frame=int(frame))
+            except (RuntimeError, TypeError) as exc:  # pragma: no cover - defensive
+                warnings.append("Could not key shape key %r for %r: %s"
+                                % (name, clip_name, exc))
+                continue
+            if name not in keyed:
+                keyed.append(name)
+    if not keyed:
+        return [], None
+
+    action = keys.animation_data.action
+    if action is None:  # pragma: no cover - keyframe_insert always makes one
+        return [], None
+    # Sampled data wants sampled interpolation: a Bezier handle between two
+    # samples of a ramp overshoots past 1, and a morph weight above 1 is a
+    # corrective that inflates the limb it was meant to rescue.
+    for curve in action_fcurves(action):
+        for point in curve.keyframe_points:
+            point.interpolation = "LINEAR"
+        curve.update()
+    action.name = "%s_forge_sk" % clip_name
+    action.use_fake_user = True
+
+    track = keys.animation_data.nla_tracks.new()
+    # The name is the contract: Khronos' exporter merges animations whose NLA
+    # tracks share a name, which is how the weights end up in the same glTF clip
+    # as the bones instead of a second animation nobody plays.
+    track.name = clip_name
+    strip = track.strips.new(clip_name, int(frames[0]), action)
+    strip.name = clip_name
+    try:
+        for slot in getattr(action, "slots", ()):
+            strip.action_slot = slot
+            break
+    except (AttributeError, TypeError, RuntimeError):  # pragma: no cover
+        pass
+    keys.animation_data.action = None
+    return keyed, action
+
+
 def constrain_to(source, target):
     """Copy Transforms on every bone of ``target`` from the same-named bone of ``source``."""
     made = 0
@@ -3061,6 +3196,8 @@ def cmd_rigforge_export_godot(params):
     renamed = []
     renamed_actions = []
     baked_actions = []
+    key_actions = []
+    morph_report = {"targets": [], "driven": [], "animated_clips": {}}
     files = []
     baked_names = []
     collision = []
@@ -3083,6 +3220,7 @@ def cmd_rigforge_export_godot(params):
 
             export_meshes = []
             origins = {}
+            sources_by_copy = {}
             sources = [(mesh, None, None) for mesh in meshes]
             lod_entries = []
             if include_lods:
@@ -3132,8 +3270,25 @@ def cmd_rigforge_export_godot(params):
                     modifier = copy.modifiers.new(name="Armature", type="ARMATURE")
                     modifier.object = export_rig
                 origins[copy.name] = origin
+                sources_by_copy[copy.name] = mesh
                 export_meshes.append(copy)
             refresh_view_layer()
+
+            # What morph targets are going out, and which of them are driven and
+            # would therefore arrive inert without the per-frame weight bake.
+            for copy in export_meshes:
+                keys = getattr(copy.data, "shape_keys", None)
+                if keys is None:
+                    continue
+                morph_report["targets"].extend(
+                    "%s/%s" % (copy.name, block.name)
+                    for block in list(keys.key_blocks)[1:] if not block.mute)
+            for copy in export_meshes:
+                source = sources_by_copy.get(copy.name)
+                if source is None:
+                    continue
+                morph_report["driven"].extend(
+                    "%s/%s" % (copy.name, name) for name in driven_shape_keys(source))
 
             # An unweighted vertex makes the glTF exporter invent a
             # ``neutral_bone`` joint and hang the geometry off it, which is how
@@ -3182,6 +3337,27 @@ def cmd_rigforge_export_godot(params):
                     baked = bake_action_onto(rig, export_rig, action, start, end, step)
                     strip_constraints(export_rig)
                     frames = list(range(start, end + 1, step))
+
+                    # The other half of the bake. Bones become keys through
+                    # nla.bake; driven morph weights have no such operator, so
+                    # they are sampled here, per clip, while the source rig is
+                    # still holding this action.
+                    for copy in export_meshes:
+                        source = sources_by_copy.get(copy.name)
+                        if source is None:
+                            continue
+                        driven = driven_shape_keys(source)
+                        if not driven:
+                            continue
+                        samples = sample_shape_key_values(source, driven, frames)
+                        keyed, key_action = bake_shape_key_values(
+                            copy, samples, frames, action.name, warnings)
+                        if key_action is not None:
+                            key_actions.append(key_action)
+                        if keyed:
+                            morph_report["animated_clips"].setdefault(
+                                action.name, []).extend(
+                                    "%s/%s" % (copy.name, name) for name in keyed)
                     if root_motion:
                         try:
                             root_report = apply_root_motion(export_rig, baked, hip, frames)
@@ -3263,7 +3439,16 @@ def cmd_rigforge_export_godot(params):
                             "export_force_sampling": True,
                             "export_skins": True,
                             "export_def_bones": False,
+                            # Morph targets, and the weight curves that make
+                            # them mean anything. export_morph_animation
+                            # defaults True but is passed explicitly because a
+                            # corrective that ships at weight 0 for ever is
+                            # exactly the kind of failure nobody sees; the reset
+                            # keeps one clip's weights out of the next clip when
+                            # only some of them are keyed.
                             "export_morph": True,
+                            "export_morph_animation": True,
+                            "export_morph_reset_sk_data": True,
                             "export_extras": True,
                             "export_leaf_bone": False,
                             "export_optimize_animation_size": False,
@@ -3316,7 +3501,7 @@ def cmd_rigforge_export_godot(params):
                 pass
         # baked clips belong to a rig that no longer exists; drop them before
         # the originals take their names back
-        for action in baked_actions:
+        for action in baked_actions + key_actions:
             try:
                 action.use_fake_user = False
                 bpy.data.actions.remove(action)
@@ -3347,6 +3532,16 @@ def cmd_rigforge_export_godot(params):
         "lods": lod_mode,
         "lod_chain": lod_chain,
         "tangents": True,
+        "morph_targets": sorted(set(morph_report["targets"])),
+        "driven_morph_targets": sorted(set(morph_report["driven"])),
+        "morph_animation": {clip: sorted(set(names))
+                            for clip, names in morph_report["animated_clips"].items()},
+        "morph_animation_note": (
+            "glTF carries morph targets but has no concept of a driver, so a driven "
+            "corrective would arrive at weight 0 for ever. Any driven key's weight is "
+            "sampled per frame per clip and keyed on the export copy, in an NLA track "
+            "named after the clip so the exporter merges it into the same animation as "
+            "the bones."),
         "files": files,
         "import_script": script_path,
         "root_motion": root_report,

@@ -22,6 +22,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     mechanism = importlib.reload(mechanism)  # noqa: F821
     silhouette = importlib.reload(silhouette)  # noqa: F821
+    correctives = importlib.reload(correctives)  # noqa: F821
     floorplan = importlib.reload(floorplan)  # noqa: F821
     pov = importlib.reload(pov)  # noqa: F821
     activity = importlib.reload(activity)  # noqa: F821
@@ -54,6 +55,11 @@ else:
     # implementation of "which pixels are the subject") and after mechanism (it
     # borrows the near-miss object resolver).
     from . import silhouette
+    # After rigcheck (it poses the rig and regions the flesh with the harness's
+    # own probe, so the corrective and the measurement agree by construction)
+    # and after silhouette (same Laplacian smoother over the displacement
+    # field, one implementation).
+    from . import correctives
     # Phase 19's floor plans. Nothing but common + registry behind it (boxes,
     # prisms and a content hash), so it sits wherever it is convenient to read —
     # next to the other "build me a shape" module.
@@ -93,6 +99,7 @@ __all__ = [
     "rigforge_anim",
     "mechanism",
     "silhouette",
+    "correctives",
     "floorplan",
     "pov",
     "activity",
