@@ -20,6 +20,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_landmarks = importlib.reload(rigforge_landmarks)  # noqa: F821
     rigforge_autotag = importlib.reload(rigforge_autotag)  # noqa: F821
     rigforge_rig = importlib.reload(rigforge_rig)  # noqa: F821
+    rigforge_skin = importlib.reload(rigforge_skin)  # noqa: F821
     rigcheck = importlib.reload(rigcheck)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     mechanism = importlib.reload(mechanism)  # noqa: F821
@@ -58,6 +59,12 @@ else:
     # than a box band to refuse.
     from . import rigforge_autotag
     from . import rigforge_rig
+    # After rigforge_rig (it reads that module's tag regions, its tag->bone
+    # mapping and its deform-bone resolver) and before rigcheck (which reports
+    # its in-limb continuity gate): tag-constrained skinning turns each tag's
+    # exact per-limb vertex membership into a mask on the automatic weights, so
+    # an arm bone cannot carry the chest that bone heat diffused it onto.
+    from . import rigforge_skin
     from . import rigcheck
     from . import rigforge_anim
     # After rigforge_anim/rigforge_rig: the mechanism demos reuse their

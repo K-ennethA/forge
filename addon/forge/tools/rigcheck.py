@@ -100,6 +100,9 @@ from . import diagnose
 from . import rigforge
 from . import rigforge_landmarks
 from . import rigforge_rig
+# The fifth placement gate: in-limb weight continuity, which is a property of
+# the skinning and therefore lives with the skinning.
+from . import rigforge_skin
 from .common import (
     M_TO_MM,
     find_object,
@@ -823,7 +826,7 @@ def cmd_rig_check(params):
     twist collapse, each with a band — plus an overall gate.  The pose is always
     restored.
 
-    **Four placement gates run on every call** and are reported whether or not
+    **Five placement gates run on every call** and are reported whether or not
     they fail, because the defects they catch were found by a human staring at a
     render and must never need that again:
 
@@ -835,7 +838,12 @@ def cmd_rig_check(params):
     * ``side_naming`` — whether the ``.L`` bones are on the character's left at
       all, measured against the facing the **mesh** says it has;
     * ``overlap`` — the bone-to-bone influence overlap matrix, with every pair
-      three or more joints apart named as a defect.
+      three or more joints apart named as a defect;
+    * ``continuity`` — per bone, how many vertices *inside* its own region are
+      punctured: weighted far below every neighbour around them
+      (:func:`forge.tools.rigforge_skin.weight_continuity`).  Overlap catches
+      flesh shared between bones; this catches flesh missing from one, which is
+      what a patchy automatic bind looks like and what nothing else measured.
 
     ``render_weights`` additionally writes per-bone weight maps into a folder —
     the maps, looked at, rather than counted.
@@ -1052,13 +1060,15 @@ def cmd_rig_check(params):
 
     # --- the placement gates: always measured, always reported -------------
     #
-    # Deformation is what the poses above measure. These four measure whether
-    # the skeleton was ever in the right place to begin with, which is the
-    # question a live audit had to answer by eye: bones off the limb's
-    # centreline, left and right fitted independently (6-24 mm apart), side
-    # names mirrored so .L drove the right leg, and flesh shared between bones
-    # that are nowhere near each other. All four are geometric, so the harness
-    # finds them from now on instead of the owner squinting at a render.
+    # Deformation is what the poses above measure. These five measure whether
+    # the skeleton was ever in the right place to begin with, and whether the
+    # skin it was bound with is a skin -- the questions a live audit had to
+    # answer by eye: bones off the limb's centreline, left and right fitted
+    # independently (6-24 mm apart), side names mirrored so .L drove the right
+    # leg, flesh shared between bones that are nowhere near each other, and a
+    # weight map so patchy it had holes in the middle of a thigh. All five are
+    # geometric, so the harness finds them from now on instead of the owner
+    # squinting at a render.
     placement = {}
     try:
         placement["centering"] = rigforge_landmarks.bone_centering(rig, mesh)
@@ -1076,6 +1086,15 @@ def cmd_rig_check(params):
         placement["overlap"] = rigforge_landmarks.influence_overlap(rig, mesh)
     except Exception as exc:  # noqa: BLE001
         placement["overlap"] = {"verdict": "unmeasured", "says": str(exc)}
+    # The fifth gate, added after a live audit: overlap sees flesh shared
+    # *between* bones, and nothing saw flesh missing *inside* one. DEF-thigh.L's
+    # weight map on the werewolf was patchy — islands with punctures — and no
+    # existing number moved at all, because no pair was wrong and no vertex was
+    # unweighted. This counts the punctures.
+    try:
+        placement["continuity"] = rigforge_skin.weight_continuity(rig, mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["continuity"] = {"verdict": "unmeasured", "says": str(exc)}
 
     weight_maps = None
     maps_dir = params.get("render_weights")
@@ -1100,7 +1119,7 @@ def cmd_rig_check(params):
         gate = "attention"
     lines = []
     bad_placement = False
-    for name in ("side_naming", "asymmetry", "centering", "overlap"):
+    for name in ("side_naming", "asymmetry", "centering", "overlap", "continuity"):
         block = placement.get(name) or {}
         if block.get("verdict") in ("fail", "attention") and block.get("says"):
             lines.append(block["says"])
@@ -1110,11 +1129,13 @@ def cmd_rig_check(params):
         # left/right asymmetry, which a human's X-mirror also puts at 0.0.
         asymmetry = placement.get("asymmetry") or {}
         centering = placement.get("centering") or {}
+        continuity = placement.get("continuity") or {}
         lines.append(
             "Placement is clean: left/right asymmetry %s mm, every sided bone on the "
-            "side its name claims, worst bone %s mm off its limb's centreline, and no "
-            "stray influence between bones."
-            % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm")))
+            "side its name claims, worst bone %s mm off its limb's centreline, no "
+            "stray influence between bones, and %s%% of the weighted flesh punctured."
+            % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm"),
+               continuity.get("hole_pct")))
     if failed:
         lines.append("Breaks down: %s." % ", ".join(sorted(failed)))
     if attention:
@@ -1139,6 +1160,7 @@ def cmd_rig_check(params):
         "asymmetry": placement["asymmetry"],
         "side_naming": placement["side_naming"],
         "overlap": placement["overlap"],
+        "continuity": placement["continuity"],
         "weight_maps": weight_maps,
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)

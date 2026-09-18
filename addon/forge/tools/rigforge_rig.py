@@ -2023,15 +2023,27 @@ def weight_report(obj, rig, overlap=True):
         for element in entries:
             counts[group_names[element.group]] += 1
     matrix = None
+    continuity = None
     if overlap:
         try:
             matrix = rigforge_landmarks.influence_overlap(rig, obj)
         except Exception as exc:  # noqa: BLE001 - a report that cannot run says so
             matrix = {"verdict": "unmeasured", "says": str(exc)}
+        # The overlap matrix answers "does this bone move flesh that is not
+        # its own"; it cannot see the other half of the live defect, which was
+        # a map that is patchy *inside* one limb. Imported here rather than at
+        # module scope because rigforge_skin is built on this module.
+        try:
+            from . import rigforge_skin
+
+            continuity = rigforge_skin.weight_continuity(rig, obj)
+        except Exception as exc:  # noqa: BLE001
+            continuity = {"verdict": "unmeasured", "says": str(exc)}
     return {
         "object": obj.name,
         "rig": rig.name,
         "overlap": matrix,
+        "continuity": continuity,
         "deform_groups": len(group_names),
         "total_vertices": len(obj.data.vertices),
         "unweighted_vertices": unweighted,
@@ -2635,7 +2647,14 @@ def _default_mesh_for(metarig, params):
 
 @command("rigforge_generate_rig")
 def cmd_rigforge_generate_rig(params):
-    """Stage 4b: Rigify generate, automatic weights, per-tag weight cleanup."""
+    """Stage 4b: Rigify generate, automatic weights, per-tag cleanup, tag contract.
+
+    The last stage is :func:`forge.tools.rigforge_skin.constrain_weights` — the
+    rigger's mask-then-blend over the bind bone heat produced, because bone heat
+    diffuses across the armpit of a clothed figure whose arms hang down and puts
+    the arm's weight on the chest.  ``tag_constrained: false`` reproduces the
+    old, unconstrained bind.
+    """
     started = time.monotonic()
     warnings = []
     ensure_rigify()
@@ -2667,6 +2686,10 @@ def cmd_rigforge_generate_rig(params):
     mesh = _default_mesh_for(metarig, params)
     do_parent = get_bool(params, "parent_with_weights", True)
     do_cleanup = get_bool(params, "cleanup", True)
+    # The tag contract. On by default because the defect it fixes was measured
+    # on a live character and bone heat produces it on every clothed figure
+    # whose arms hang down; off is for reproducing the old bind on purpose.
+    do_constrain = get_bool(params, "tag_constrained", True)
     max_influences = get_int(params, "max_influences", 4, minimum=1, maximum=12)
     band_ratio = get_float(params, "band", 0.06, minimum=0.0, maximum=1.0)
     do_springs = get_bool(params, "spring_chains", True)
@@ -2718,6 +2741,7 @@ def cmd_rigforge_generate_rig(params):
         weights = {"method": "skipped", "unweighted_after": None}
         cleanup = None
         limits = None
+        constrained = None
         if do_parent:
             for group in list(mesh.vertex_groups):
                 if group.name.startswith(DEF_PREFIX):
@@ -2737,6 +2761,23 @@ def cmd_rigforge_generate_rig(params):
                         "re-filled from the nearest bones." % (len(left), mesh.name))
                     distance_weights(mesh, rig, vertices=left, influences=max_influences)
                     limit_and_normalize(mesh, rig, max_influences)
+            # Last, and on top of whatever the bind and the cleanup produced:
+            # the tag contract. `cleanup_weights` above is a *bounding box*
+            # rule and catches the gross case; this is the tag's own per-vertex
+            # membership, which is the thing that knows a rib from an arm.
+            if do_constrain and regions:
+                from . import rigforge_skin
+
+                try:
+                    constrained = rigforge_skin.constrain_weights(
+                        mesh, rig, metarig, regions, max_influences=max_influences,
+                        warnings=warnings)
+                except ForgeError as exc:
+                    constrained = {"skipped": True, "says": str(exc)}
+                    warnings.append(
+                        "Tag-constrained skinning did not run (%s), so the weights are "
+                        "bone heat's as-is: check the chest for arm influence before "
+                        "animating." % exc)
 
         _set_prop(rig, PROP_RIG_MESH, mesh.name)
         _set_prop(rig, PROP_TAG_BONES, _prop(metarig, PROP_TAG_BONES, ""))
@@ -2754,6 +2795,11 @@ def cmd_rigforge_generate_rig(params):
         "weights": weights,
         "cleanup_report": cleanup or {"tags": [], "weights_zeroed": 0,
                                       "skipped": not do_cleanup},
+        "tag_constrained": constrained or {"skipped": True,
+                                           "says": "tag_constrained was off"
+                                           if not do_constrain else
+                                           "nothing was skinned, so there was "
+                                           "nothing to constrain"},
         "spring_chains": springs,
         "deform_bones": len(deform),
         "bone_count": len(rig.data.bones),

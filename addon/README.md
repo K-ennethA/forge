@@ -693,7 +693,8 @@ nobody is allowed to fail on.
 | **`rigforge_landmarks`** | `object?`, `action?` `report`\|`prepare`, `orient?`, `symmetry?`, `symmetry_keep?`, `symmetry_tolerance_mm?`, `stations?` | steps 1-3 on their own. `report` measures and changes nothing: which way the character faces and on what evidence, how far out of X-symmetry it is, whether its sided tags name the halves they sit on, and where every joint's cross-section centroid is. `prepare` runs the gate for real (rotate, symmetrize, re-derive the sides) — which is exactly what `rigforge_metarig` calls |
 | **`rigforge_echo_skeleton`** | `rig?` \| `metarig?`, `mesh?`, `dir`, `views?`, `resolution?`, `deform_only?` | the **echo-back**: the placed skeleton drawn in red over the body ghosted to 22%, front and side, as PNGs the report names. What a rigger looks at before binding anything |
 | **`rigforge_weight_maps`** | `rig?`, `mesh?`, `dir`, `bones?`, `views?`, `resolution?`, `max_bones?`, `overlap?` | per-bone **weight maps** in Blender's own blue→red ramp, plus the influence-overlap matrix beside them. The maps looked at, rather than counted |
-| `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`** | Rigify generate → automatic weights → per-tag weight cleanup → the IK layer put on the game convention. Returns `rig`, `weighted`, `cleanup_report`, `spring_chains`, **`ik`**, `warnings` |
+| `rigforge_generate_rig` | `metarig?`, `mesh?`, `parent_with_weights?`, `cleanup?`, **`max_influences?`**, **`band?`**, **`spring_chains?`**, **`ik_legs?`**, **`ik_arms?`**, **`ik_poles?`**, **`tag_constrained?`** | Rigify generate → automatic weights → per-tag weight cleanup → **the tag contract** (mask, blend, smooth — see [Tag-constrained skinning](#tag-constrained-skinning-rigforge_skin)) → the IK layer put on the game convention. `tag_constrained: false` reproduces the old, unconstrained bind. Returns `rig`, `weighted`, `cleanup_report`, **`tag_constrained`**, `spring_chains`, **`ik`**, `warnings` |
+| **`rigforge_skin`** | `object?`, `rig?`, `action?` `apply`\|`report`\|`continuity`, `max_influences?`, `blend?`, `reach?`, `smooth_passes?`, `smooth_factor?` | **the rigger's mask-then-blend, over an automatic bind**: a vertex's weight to a bone its own tag does not allow is zeroed and the rest renormalised, seams blend over a band as wide as the limb's own girth, and the holes an automatic bind leaves are filled. `report` answers *what is legal where* and changes nothing; `continuity` answers *how patchy is this bind*. Returns `weight_removed`, `borrowed_slots`, `taper_slots`, `worst_bones`, `contract` (`legal`, `hinges`, `source_counts`), `blend` (per-seam girths and widths), `continuity`, `report`, `says`, `warnings` |
 | **`rigforge_ik`** | `rig?`, `action?` `report`\|`set`, `legs?` `ik`\|`fk`, `arms?` `ik`\|`fk`, `limbs?`, `mode?`, `poles?`, `frame?` | reports or sets the **FK/IK layer, per limb**: foot/hand IK targets, knee/elbow pole targets, the three foot-roll pivots, the `IK_FK` switch on each limb's parent control, and the IK constraints with their chain counts. `set` + `frame` keyframes the switch. Control properties only — the deform set never changes. See [IK, and the foot-slide gate](#ik-and-the-foot-slide-gate-rigforge_ik-rigforge_walk-animation_check) |
 | `rigforge_weights` | `object?`, `action` `report`\|`cleanup`\|`normalize`, `max_influences?`, **`rig?`**, **`band?`** | per-bone influence counts, the two numbers that mean trouble, and the **influence overlap matrix** (`report.overlap`: which bones share which vertices, and which pairs share them across a gap they should not); or re-runs the rules |
 | `rigforge_export_godot` | `rig?`, `meshes?`, `path`, `actions?` `all`\|`[names]`, `root_motion?`, `deform_only?`, `godot_import_script?`, **`lods?`** `auto`\|`manual`, **`frame_step?`**, **`unit_scale?`** | bakes every action onto the deform bones, strips the control rig, **bakes driven shape-key weights per frame alongside the bones**, writes glTF (**with tangents**) + a Godot `.gd` import helper. Returns `path`, `actions`, `deform_bones`, `files`, `lods`, `lod_chain`, `tangents`, **`morph_targets`**, **`driven_morph_targets`**, **`morph_animation`** |
@@ -2193,6 +2194,101 @@ Suite: `addon/tests/headless_autotag.py`, port 9910, **117 checks**, no GPU requ
 detector's output is a file, so the suite writes its own, and a batch script stands in for
 the virtualenv's interpreter so the cache, the lock and every failure path are exercised
 without CUDA being asked a question.
+
+### Tag-constrained skinning (`rigforge_skin`)
+
+Auto-tagging works out an **exact per-limb vertex membership**. The skinning step used to
+throw it away and let Blender's bone heat decide. What that costs, measured on the
+symmetric werewolf by looking at the maps `rigforge_weight_maps` renders:
+
+- **`DEF-upper_arm.L`'s heat sat on the chest and the torso's side**, not on the arm. In
+  the walk cycle the arm's swing visibly dragged the torso with it.
+- **`DEF-thigh.L`'s map was patchy** — islands of full weight with holes between them,
+  *inside* one limb, where a thigh's falloff should be smooth.
+
+Neither is a bug in bone heat. Heat is a diffusion solve **over a connected surface**, and
+on a clothed figure whose arms hang down the surface path from the deltoid to the rib is a
+couple of centimetres — shorter than the path down the arm. It is answering a question
+about the surface; the rigger was asking a question about the **body**.
+
+A rigger does not hand-paint an arm from scratch. They **mask the limb**, let the automatic
+weights run inside the mask, then **blend the seam** so the shoulder does not crease. All
+three steps are mechanical, and `rigforge_skin` is those three steps:
+
+1. **The tag contract.** Every tag has a *legal bone set*; a vertex's weight to a bone
+   outside its tag's set is zeroed and the rest renormalised. Bone heat *inside* a limb is
+   good work — this constrains it, it does not replace it.
+2. **Blend zones.** A hard mask creases. Within a band of each tag boundary both tags'
+   bones are legal, and the band is as wide as the **thinner limb's own girth**, walked out
+   over the mesh's own edges. On the werewolf that is 68 mm at the arm/torso seam and
+   22 mm at the wrist, from the same constant.
+3. **Smoothing, where the bind is broken.** Laplacian passes over the weights, stencilled
+   to two kinds of cell: a **hole** (filled back up to the level of the neighbours that
+   carry weight) and a **mask rim** (faded towards its whole neighbourhood, zeros
+   included). Everything else keeps bone heat's answer, because bone heat's answer *along*
+   a limb is good.
+
+**The legal sets are derived, never listed.** Ownership: the stored `forge_tag_bones`
+mapping, then the nearest ancestor that has a tag, then the nearest measured tag region —
+and the report names which rung every bone stopped on. Legality adds one asymmetric rule:
+
+> A tag may be moved by the bone it hangs **from**, never by the bones that hang **off** it.
+
+So `Arm.L` gets the arm chain plus `DEF-shoulder.L`, `Leg.L` gets the leg chain plus
+`DEF-spine` (the hips), and `Torso` gets the spine, the breasts, the pelvis bones and the
+shoulders and **not** `DEF-upper_arm.L`. That last refusal is the fix.
+
+Two things the derivation has to know, both learned the hard way on the live rig.
+**Rigify's generated hierarchy is not a tree** — it re-parents every `DEF-` bone under its
+own `MCH-` scaffolding, and walking it finds a deforming ancestor for about one bone in
+thirty-five — so the parent link is read from the *metarig*. And **`.NNN` is ambiguous**:
+Rigify subdivides `upper_arm.L` into `DEF-upper_arm.L` + `DEF-upper_arm.L.001`, but its
+human metarig also has bones named `spine.001`…`spine.006`, so stripping the digits turns
+`DEF-spine.006` — the head — into `spine`, the hips. It did, and both legs were handed the
+head bone as their hip hinge.
+
+**Reach.** A *borrowed* bone (a hinge, or one lent across a seam) must also be within three
+times the lending tag's girth, fading over the last third rather than ending, because a
+hard distance threshold is a wall and a wall in a weight map is a crease. A tag's **own
+chain is exempt** — a knee is a long way from the top of its own thigh — and that exemption
+is measured: without it the werewolf's knees gained 474 new self-intersections where they
+had none.
+
+Measured on `werewolf-wip-8.blend` (8218-vertex retopo), nothing written back into it:
+
+| | before (bone heat as bound) | after |
+|---|---|---|
+| overlap stray mass | **fail** — 4.351, 3 pairs | **ok** — **0.000, no pairs** |
+| punctured vertices (the new `continuity` gate) | 417 (1.71%) | **313** (1.35%) |
+| `DEF-upper_arm.L` region / holes | 1233 verts / 13 | **918** / **8** |
+| `DEF-thigh.L` holes | 15 | **11** |
+| new self-intersections at the extremes | 950 | **2** |
+| bone centering | **fail**, 58.2 mm | **attention**, 36.0 mm |
+| `animation_check` foot slide | ok, 1.1 mm | ok, 1.1 mm |
+
+5.7% of the skin's weight sat outside its own tag; the stage runs in 0.4 s.
+
+**Read the volume table carefully after a re-skin.** `rig_check` measures each joint over
+the vertices its bones actually move, so fixing the bleed *changes the hull*: `DEF-forearm.R`'s
+elbow section was 43 803 mm² — 236 mm across, which is not an elbow — and is now
+11 464 mm², which is a forearm. A real forearm loses more of its own volume at a 120° bend
+than a forearm-plus-chest does, so that percentage goes **up** while the rig gets better.
+Where the hull is unchanged the comparison is clean and favourable (knee R 38.2% → 27.8%,
+head 6.0% → 4.2%, byte-identical section areas).
+
+**The gate it adds.** `rig_check` grows a fifth placement gate, `continuity`: per bone, how
+many vertices *inside* its own region are punctured — at least 3 neighbours the bone moves
+above 0.05, own weight under half their mean, and an absolute drop of at least 0.15 so a
+legitimate falloff at a region's rim is not counted. Overlap catches flesh shared *between*
+bones; nothing caught flesh missing *from* one. Bands (heuristic, proxy tier): ok ≤ 0.5% of
+the bone's region, attention ≤ 3%.
+
+Suite: `addon/tests/headless_skin.py`, port 9911, **55 checks**, no Rigify and no GPU. The
+rig is built by hand — deliberately flat in the deform hierarchy, the way Rigify leaves it
+— so the derivation is tested against a *known* tree. The figure is `headless_autotag`'s
+hanging-arm biped to its own millimetre constants, resampled three stations per radius:
+that suite's three-rings-per-limb mesh is enough to answer *which limb is this vertex on*
+and cannot express a falloff at all.
 
 ### The detector runner (`rigbridge/detector_runner.py`)
 
