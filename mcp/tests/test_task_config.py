@@ -124,7 +124,7 @@ def test_the_character_template_carries_the_owners_knobs() -> None:
 def test_bipeds_are_symmetric_unless_the_artist_says_otherwise() -> None:
     """THE directive. Symmetry is a setting, it defaults on, and it says why."""
     symmetry = task_config.template("character")["symmetry"]
-    assert symmetry["default"] is True and symmetry["value"] is True
+    assert symmetry["default"] == "mirror_left" and symmetry["value"] == "mirror_left"
     assert "symmetric" in symmetry["why"]
     assert "unless you say otherwise" in symmetry["why"]
 
@@ -226,7 +226,7 @@ def test_init_writes_the_sheet_where_design_docs_live(projects_dir: Path) -> Non
     assert sheet["task"] == "character"
     assert sheet["project"] == "gecko"
     assert sheet["version"] == task_config.CONFIG_VERSION
-    assert sheet["settings"]["symmetry"]["value"] is True
+    assert sheet["settings"]["symmetry"]["value"] == "mirror_left"
     assert sheet["history"] and "materialised" in sheet["history"][0]["note"]
 
 
@@ -280,16 +280,16 @@ def test_set_changes_one_value_and_leaves_the_rest(projects_dir: Path) -> None:
     sheet = sheet_on_disk(projects_dir, "gecko")
     assert sheet["settings"]["poly_budget_desktop"]["value"] == 8000
     assert sheet["settings"]["poly_budget_desktop"]["default"] == 15000
-    assert sheet["settings"]["symmetry"]["value"] is True
+    assert sheet["settings"]["symmetry"]["value"] == "mirror_left"
 
 
 def test_set_records_the_change_in_history(projects_dir: Path) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     history = sheet_on_disk(projects_dir, "gecko")["history"]
     assert history[-1]["setting"] == "symmetry"
-    assert history[-1]["from"] is True and history[-1]["to"] is False
+    assert history[-1]["from"] == "mirror_left" and history[-1]["to"] == "as_designed"
     assert history[-1]["date"]
 
 
@@ -298,19 +298,19 @@ def test_asymmetry_is_an_explicit_choice_on_the_sheet(projects_dir: Path) -> Non
     call("task_config_init", {"project": "gecko", "task": "character"})
     report = text_of(call("task_config_set", {"project": "gecko",
                                               "name": "symmetry",
-                                              "value": False}))
-    assert "true -> false" in report
+                                              "value": "as_designed"}))
+    assert "mirror_left -> as_designed" in report
     assert "CHANGED" in report
-    assert task_config.setting("gecko", "symmetry") is False
+    assert task_config.setting("gecko", "symmetry") == "as_designed"
 
 
 def test_setting_it_back_says_it_is_back_at_its_default(projects_dir) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     report = text_of(call("task_config_set", {"project": "gecko",
                                               "name": "symmetry",
-                                              "value": True}))
+                                              "value": "mirror_left"}))
     assert "back at its default" in report
     assert "none changed from their defaults yet" in report
 
@@ -355,7 +355,7 @@ def test_the_report_prints_settings_nobody_touched(projects_dir: Path) -> None:
 def test_the_report_names_the_changed_settings_in_its_tally(projects_dir) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     report = text_of(call("task_config_set", {"project": "gecko",
                                               "name": "rig",
                                               "value": "biped_fk"}))
@@ -380,7 +380,7 @@ def test_changed_is_in_sheet_order(projects_dir: Path) -> None:
     sheet = task_config.new_sheet("gecko", "character")
     assert task_config.changed(sheet) == []
     sheet["settings"]["rig"]["value"] = "none"
-    sheet["settings"]["symmetry"]["value"] = False
+    sheet["settings"]["symmetry"]["value"] = "as_designed"
     assert task_config.changed(sheet) == ["symmetry", "rig"]
 
 
@@ -404,9 +404,9 @@ def test_a_consumer_sees_an_edit_made_outside_the_tools(projects_dir: Path):
     call("task_config_init", {"project": "gecko", "task": "character"})
     path = projects_dir / "gecko" / "design" / "task-config.json"
     sheet = json.loads(path.read_text(encoding="utf-8"))
-    sheet["settings"]["symmetry"]["value"] = False
+    sheet["settings"]["symmetry"]["value"] = "as_designed"
     path.write_text(json.dumps(sheet), encoding="utf-8")
-    assert task_config.setting("gecko", "symmetry") is False
+    assert task_config.setting("gecko", "symmetry") == "as_designed"
 
 
 def test_a_consumer_of_a_project_with_no_sheet_gets_its_fallback(projects_dir):
@@ -424,9 +424,9 @@ def test_a_consumer_of_a_setting_that_does_not_exist_gets_its_fallback(
 def test_settled_is_the_whole_sheet_as_plain_values(projects_dir: Path) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     values = task_config.settled("gecko")
-    assert values["symmetry"] is False
+    assert values["symmetry"] == "as_designed"
     assert values["target_engine"] == "godot"
     assert set(values) == set(task_config.template("character"))
 
@@ -446,23 +446,23 @@ def test_exists_answers_without_raising(projects_dir: Path) -> None:
 def test_init_refuses_to_overwrite_a_sheet(projects_dir: Path) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     result = call("task_config_init", {"project": "gecko", "task": "character"})
     assert result.is_error
     message = text_of(result)
     assert "task_config_set" in message and "force=true" in message
     # And the artist's value is exactly where they left it.
-    assert task_config.setting("gecko", "symmetry") is False
+    assert task_config.setting("gecko", "symmetry") == "as_designed"
 
 
 def test_force_rebuilds_the_sheet_from_the_template(projects_dir: Path) -> None:
     call("task_config_init", {"project": "gecko", "task": "character"})
     call("task_config_set", {"project": "gecko", "name": "symmetry",
-                             "value": False})
+                             "value": "as_designed"})
     result = call("task_config_init", {"project": "gecko", "task": "character",
                                        "force": True})
     assert not result.is_error, text_of(result)
-    assert task_config.setting("gecko", "symmetry") is True
+    assert task_config.setting("gecko", "symmetry") == "mirror_left"
     assert "Rebuilt" in text_of(result)
 
 
@@ -529,11 +529,25 @@ def test_words_are_refused_where_a_number_belongs(projects_dir: Path) -> None:
 
 def test_a_non_answer_is_refused_where_a_yes_no_belongs(projects_dir: Path):
     call("task_config_init", {"project": "gecko", "task": "character"})
-    result = call("task_config_set", {"project": "gecko", "name": "symmetry",
+    result = call("task_config_set", {"project": "gecko", "name": "correctives",
                                       "value": "maybe"})
     assert result.is_error
     assert "yes/no" in text_of(result)
-    assert task_config.setting("gecko", "symmetry") is True
+    assert task_config.setting("gecko", "correctives") is True
+
+
+def test_symmetry_is_a_mode_and_defaults_to_a_hard_left_mirror(projects_dir: Path):
+    """Owner directive 2026-09-19: symmetric means SPLIT-AND-FLIP one side
+    (100%, never a tolerance snap that spares a one-sided crease); the
+    default keeps the left. as_designed follows the reference faithfully."""
+    call("task_config_init", {"project": "gecko", "task": "character"})
+    assert task_config.setting("gecko", "symmetry") == "mirror_left"
+    result = call("task_config_set", {"project": "gecko", "name": "symmetry",
+                                      "value": "maybe"})
+    assert result.is_error
+    call("task_config_set", {"project": "gecko", "name": "symmetry",
+                             "value": "as_designed"})
+    assert task_config.setting("gecko", "symmetry") == "as_designed"
 
 
 def test_a_yes_no_accepts_the_words_a_person_would_type(projects_dir: Path):

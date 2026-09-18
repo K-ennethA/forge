@@ -101,8 +101,16 @@ SETTING_KEYS: Tuple[str, ...] = (
 def _character_template() -> List[Tuple[str, Any, Dict[str, Any]]]:
     """The owner's directive, encoded: symmetry leads and it defaults to true."""
     return [
-        ("symmetry", True, {
-            "why": "bipeds are symmetric unless you say otherwise",
+        ("symmetry", "mirror_left", {
+            "choices": ["mirror_left", "mirror_right", "as_designed"],
+            "why": "bipeds are symmetric unless you say otherwise: mirror_* "
+                   "SPLITS the mesh at the midplane, keeps that side and "
+                   "flips it -- exact 100% symmetry, never averaging (a "
+                   "tolerance snap spares big one-sided features like a "
+                   "generated leg crease); the artist adds asymmetric "
+                   "touches afterwards. as_designed follows the reference "
+                   "faithfully, asymmetries included, and rigs with "
+                   "symmetry measured honestly instead of mirrored.",
         }),
         ("target_engine", "godot", {
             "choices": ["godot", "unity", "unreal", "gltf"],
