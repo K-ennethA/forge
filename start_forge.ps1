@@ -56,10 +56,13 @@ if (-not (Test-Path $venvPython)) {
 $runner = if (Test-Path $venvPythonW) { $venvPythonW } else { $venvPython }
 
 # --- the shape service -------------------------------------------------------
+# Plain python, not pythonw: service.main writes a startup banner to stdout,
+# and under pythonw there is no stdout to write to — it dies before binding
+# the port, silently.  -WindowStyle Hidden keeps the console invisible.
 if (Test-Port $servicePort) {
     Write-Host "  [ok] Shape service already running on port $servicePort"
 } else {
-    Start-Process -FilePath $runner -ArgumentList @('-m', 'service.main') `
+    Start-Process -FilePath $venvPython -ArgumentList @('-m', 'service.main') `
         -WorkingDirectory $root -WindowStyle Hidden | Out-Null
     if (Wait-Port $servicePort) {
         Write-Host "  [ok] Shape service started on port $servicePort"

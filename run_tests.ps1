@@ -47,9 +47,35 @@ if (-not $Fast) {
         Write-Host "  [FAIL] Blender not found at $blender"
         $results += [pscustomobject]@{ Suite = "blender"; Status = "FAIL"; Seconds = 0; Summary = "binary missing" }
     } else {
-        Get-ChildItem "$root\addon\tests\headless_*.py" | Sort-Object Name | ForEach-Object {
-            $suite = $_.BaseName
-            Run-Suite $suite { & $blender --background --factory-startup --python $_.FullName }
+        # A private geometry service for the suites that need one (headless_phase2
+        # talks to 8769 — deliberately not the 8765 a real session would use, so a
+        # test run can never write through the artist's live service).  Started
+        # here because "one command runs every test" includes the service that a
+        # test needs; stopped again even when a suite fails.  service.main exits 0
+        # if 8769 is already answering, so a leftover instance is reused, not hit.
+        $testSvc = Start-Process -FilePath "$root\service\.venv\Scripts\python.exe" `
+            -ArgumentList @('-m', 'service.main', '--port', '8769') `
+            -WorkingDirectory $root -WindowStyle Hidden -PassThru
+        $ready = $false
+        for ($i = 0; $i -lt 45 -and -not $ready; $i++) {
+            Start-Sleep -Milliseconds 800
+            try {
+                Invoke-WebRequest -Uri 'http://127.0.0.1:8769/health' -UseBasicParsing -TimeoutSec 2 | Out-Null
+                $ready = $true
+            } catch {}
+        }
+        if (-not $ready) {
+            Write-Host "  [warn] test geometry service on 8769 never answered; headless_phase2 will fail"
+        }
+        try {
+            Get-ChildItem "$root\addon\tests\headless_*.py" | Sort-Object Name | ForEach-Object {
+                $suite = $_.BaseName
+                Run-Suite $suite { & $blender --background --factory-startup --python $_.FullName }
+            }
+        } finally {
+            if ($testSvc -and -not $testSvc.HasExited) {
+                Stop-Process -Id $testSvc.Id -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
