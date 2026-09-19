@@ -90,6 +90,7 @@ nothing is written to disk.
 """
 
 import math
+import re
 import time
 
 import bmesh
@@ -129,6 +130,11 @@ __all__ = [
     "bend_direction",
     "BEND_LIFT_FRACTION",
     "BEND_TRAVEL_FRACTION",
+    "hand_containment",
+    "foot_height",
+    "HAND_CONTAINMENT_MM",
+    "HAND_CONTAINMENT_STATIONS",
+    "FOOT_HEIGHT_TOLERANCE_MM",
     "JointProbe",
     "cmd_rig_check",
     "cmd_animation_check",
@@ -972,6 +978,434 @@ def bend_direction(rig, lift_fraction=BEND_LIFT_FRACTION,
 
 
 # ---------------------------------------------------------------------------
+# the seventh placement gate: is the hand bone in the hand
+# ---------------------------------------------------------------------------
+
+#: How far outside its own flesh a hand bone's midpoint or tail may sit before
+#: the gate calls it out, in millimetres.  **Credibility tier: heuristic
+#: (proxy).**  Five millimetres is inside the retopo noise of any hand and a long
+#: way under the 29.7 mm the live werewolf measured.
+HAND_CONTAINMENT_MM = 5.0
+
+#: Where along the hand bone containment is measured.  The head is the wrist and
+#: belongs to the forearm as much as to the hand, so it is reported and not
+#: gated — exactly as :func:`~forge.tools.rigforge_landmarks.bone_centering`
+#: treats a bone's ends.  The **midpoint and the tail** are what the gate judges,
+#: because those are the two the owner saw outside the silhouette.
+HAND_CONTAINMENT_STATIONS = (0.0, 0.35, 0.5, 0.65, 1.0)
+HAND_GATED_STATIONS = (0.5, 1.0)
+
+#: Bones this gate is about.
+HAND_BONE_RE = re.compile(r"(?:^|[-_.])hand(?:[._]|$)", re.IGNORECASE)
+FOOT_BONE_RE = re.compile(r"(?:^|[-_.])foot(?:[._]|$)", re.IGNORECASE)
+TOE_BONE_RE = re.compile(r"(?:^|[-_.])toe(?:[._]|$)", re.IGNORECASE)
+SHIN_BONE_RE = re.compile(r"(?:^|[-_.])(?:shin|calf)(?:[._]|$)", re.IGNORECASE)
+
+
+def _side_suffix(name):
+    """``"DEF-hand.L"`` -> ``"L"``; unsided -> ``None``."""
+    _base, side = rigforge_landmarks._side_of(name)
+    return side
+
+
+def _group_points(mesh, groups, names, weight_floor):
+    """World-space vertices weighted at least ``weight_floor`` to any of ``names``."""
+    wanted = {index for index, bone in groups.items() if bone in names}
+    if not wanted:
+        return []
+    matrix = mesh.matrix_world
+    out = []
+    for vertex in mesh.data.vertices:
+        for entry in vertex.groups:
+            if entry.group in wanted and entry.weight >= weight_floor:
+                out.append(matrix @ vertex.co)
+                break
+    return out
+
+
+def _section_excursion(region, origin, axis, reach, sample, band):
+    """How far ``sample`` sticks out of the flesh, in metres.
+
+    The same question :meth:`~forge.tools.rigforge_landmarks.Limb.section_reach`
+    asks for the pre-bend, asked of a point instead of a push: cut the region
+    across ``axis`` at the sample's own station, and compare how far the sample
+    is from that section's centre with **how far the flesh reaches that way**.
+    Zero means inside.  Anything else is the millimetres of daylight, and it is
+    two numbers added together — how far past the end of the hand the sample is,
+    and how far out of the side of it — so a tail beyond the fingertips and a
+    tail out through the back of the palm both show up.
+
+    Deliberately not "is it inside the mesh": this character's retopo is a closed
+    **shell**, so a ray from any bone crosses it an even number of times and
+    parity says every bone in the body is outside.  Distance to the surface is no
+    better on a splayed paw, where the centreline runs in the air between the
+    fingers.  The flesh's own cross-section is the only honest judge.
+    """
+    axis = Vector(axis)
+    origin = Vector(origin)
+    sample = Vector(sample)
+    projection = (sample - origin).dot(axis)
+    along = max(0.0, projection - reach) + max(0.0, -projection)
+    station = min(max(projection, 0.0), reach)
+    half = band
+    slab = []
+    for _widen in range(6):
+        slab = [p for p in region if abs((p - origin).dot(axis) - station) <= half]
+        if len(slab) >= rigforge_landmarks.MIN_SECTION_POINTS:
+            break
+        half *= 1.6
+    if len(slab) < 3:
+        return None, None, along
+    centre = rigforge_landmarks._centroid(slab)
+    delta = sample - centre
+    across = delta - axis * delta.dot(axis)
+    if across.length < 1e-9:
+        return 0.0, along, along
+    push = across.normalized()
+    far = max((p - centre).dot(push) for p in slab)
+    out = max(0.0, across.length - max(far, 0.0))
+    return across.length, far, out + along
+
+
+def hand_containment(rig, mesh, weight_floor=0.2):
+    """**Is the hand bone in the hand, and does it point the way the palm does?**
+
+    The defect this exists for was found on a rest-pose render: the werewolf's
+    ``DEF-hand.L`` ran from the wrist **outboard**, away from the body, and its
+    tail sat 29.7 mm outside the mesh beside a hand that hangs straight down
+    against the thigh.  Six placement gates were clean.  They had to be: the
+    hand bone is not one of the long bones ``centering`` judges (a hand has no
+    centreline of its own), both hands were wrong identically so ``asymmetry``
+    read 0.0, the names were right, the weights were tidy and ``bend_direction``
+    only drives knees and elbows.  Nothing in the harness asks where a hand
+    points.
+
+    Two numbers, per hand, and both come off the mesh rather than off the rig:
+
+    1. **the angle** between the bone and the palm direction
+       :func:`~forge.tools.rigforge_landmarks.hand_axis` measures from the flesh
+       past the wrist — gated at
+       :data:`~forge.tools.rigforge_landmarks.HAND_AXIS_TOLERANCE_DEG`;
+    2. **containment** at the bone's midpoint and tail: how far each sits outside
+       the hand's own cross-section there (:func:`_section_excursion`), gated at
+       :data:`HAND_CONTAINMENT_MM`.
+
+    The region is cut from the hand bone's flesh **and its parent's**, along the
+    *parent's* direction, so a badly aimed hand bone cannot define the frame it
+    is then judged in.
+    """
+    groups = rigforge_landmarks._deform_groups(rig, mesh)
+    if not groups:
+        return {"hands": [], "verdict": "unmeasured",
+                "says": "%r has no deform vertex groups, so no hand could be measured "
+                        "against its flesh." % mesh.name}
+    matrix = rig.matrix_world
+    rows = []
+    for bone in rig.data.bones:
+        if not bone.use_deform or not HAND_BONE_RE.search(bone.name):
+            continue
+        head = matrix @ bone.head_local
+        tail = matrix @ bone.tail_local
+        span = tail - head
+        if span.length < 1e-6:
+            continue
+        bone_axis = span.normalized()
+        parent = bone.parent
+        arm_axis = None
+        if parent is not None:
+            arm = (matrix @ parent.tail_local) - (matrix @ parent.head_local)
+            if arm.length > 1e-6:
+                arm_axis = arm.normalized()
+        names = {bone.name}
+        if parent is not None:
+            names.add(parent.name)
+        points = _group_points(mesh, groups, names, weight_floor)
+        row = {"bone": bone.name, "side": _side_suffix(bone.name),
+               "parent": parent.name if parent is not None else None,
+               "length_mm": round(span.length * M_TO_MM, 2),
+               "flesh_vertices": len(points)}
+        if arm_axis is None:
+            row.update({"verdict": "unmeasured",
+                        "says": "%s has no parent bone to take the forearm's direction "
+                                "from, so the hand region could not be cut." % bone.name})
+            rows.append(row)
+            continue
+        if len(points) < 12:
+            row.update({"verdict": "unmeasured",
+                        "says": "%s and its parent drive %d vertices, too few to measure "
+                                "a palm from." % (bone.name, len(points))})
+            rows.append(row)
+            continue
+        palm = rigforge_landmarks.hand_axis(points, head, arm_axis, label=bone.name)
+        if palm is None:
+            row.update({"verdict": "unmeasured",
+                        "says": "%s has no flesh past its own head along the forearm, so "
+                                "there is no hand to contain it." % bone.name})
+            rows.append(row)
+            continue
+        direction = palm["direction"]
+        reach = palm["reach"]
+        region = palm["region"]
+        band = max(reach / float(rigforge_landmarks.HAND_STATIONS - 1), 1e-6) * 0.75
+        angle = math.degrees(bone_axis.angle(direction, 0.0))
+        stations = []
+        for fraction in HAND_CONTAINMENT_STATIONS:
+            sample = head + span * fraction
+            offset, far, out = _section_excursion(region, head, direction, reach,
+                                                  sample, band)
+            stations.append({
+                "fraction": round(fraction, 3),
+                "offset_mm": None if offset is None else round(offset * M_TO_MM, 2),
+                "flesh_reach_mm": None if far is None else round(far * M_TO_MM, 2),
+                "outside_mm": round(out * M_TO_MM, 2),
+            })
+        # A station whose section could not be measured does not get to *pass*:
+        # "there was no flesh there to compare with" is not "the bone is inside
+        # the flesh". It drops out, and a bone with nothing left to judge is
+        # reported unmeasured rather than clean.
+        gated = [entry for entry in stations
+                 if entry["fraction"] in HAND_GATED_STATIONS
+                 and entry["offset_mm"] is not None]
+        worst = max(gated, key=lambda e: e["outside_mm"]) if gated else None
+        tail_entry = stations[-1]
+        row.update({
+            "palm_axis": [round(v, 5) for v in direction],
+            "palm_reach_mm": round(reach * M_TO_MM, 2),
+            "palm_vertices": palm["points"],
+            "angle_deg": round(angle, 2),
+            "angle_limit_deg": rigforge_landmarks.HAND_AXIS_TOLERANCE_DEG,
+            "arm_angle_deg": palm["arm_angle_deg"],
+            "tail_outside_mm": tail_entry["outside_mm"],
+            "worst_outside_mm": worst["outside_mm"] if worst else None,
+            "worst_at_fraction": worst["fraction"] if worst else None,
+            "stations": stations,
+            "axis_how": palm["how"],
+        })
+        aimed = angle <= rigforge_landmarks.HAND_AXIS_TOLERANCE_DEG
+        held = bool(worst is not None and worst["outside_mm"] <= HAND_CONTAINMENT_MM)
+        row["aimed"] = bool(aimed)
+        row["contained"] = held
+        if worst is None:
+            row["verdict"] = "unmeasured"
+            row["says"] = ("%s's midpoint and tail have no cross-section of hand flesh "
+                           "around them to be inside or outside of, so its containment "
+                           "was not judged (it points %.1f degrees off the palm "
+                           "direction, for what that is worth)." % (bone.name, angle))
+            rows.append(row)
+            continue
+        row["verdict"] = "ok" if (aimed and held) else "fail"
+        if row["verdict"] == "ok":
+            row["says"] = ("%s points within %.1f degrees of the palm the mesh measures "
+                           "and stays inside it (worst %.1f mm at %.0f%% along)."
+                           % (bone.name, angle, worst["outside_mm"],
+                              100.0 * worst["fraction"]))
+        else:
+            row["says"] = (
+                "%s IS NOT IN ITS HAND: it points %.1f degrees off the palm direction "
+                "the mesh measures (limit %.0f), and its %s sits %.1f mm outside the "
+                "hand's own cross-section (limit %.1f). The hand region is %d vertices "
+                "reaching %.1f mm past the wrist; %s"
+                % (bone.name, angle, rigforge_landmarks.HAND_AXIS_TOLERANCE_DEG,
+                   "tail" if worst["fraction"] >= 1.0 else "midpoint",
+                   worst["outside_mm"], HAND_CONTAINMENT_MM, palm["points"],
+                   reach * M_TO_MM, palm["how"]))
+        rows.append(row)
+
+    rows.sort(key=lambda row: -(row.get("worst_outside_mm") or 0.0))
+    judged = [row for row in rows if row["verdict"] in ("ok", "fail")]
+    if not judged:
+        verdict = "unmeasured"
+        says = ("No hand bone on %r had a parent and enough flesh for its palm "
+                "direction to be measured." % rig.name)
+    else:
+        verdict = _worst([row["verdict"] for row in judged])
+        bad = [row for row in judged if row["verdict"] == "fail"]
+        if bad:
+            says = bad[0]["says"]
+            if len(bad) > 1:
+                says += (" %d of %d hands are wrong the same way, which is why the "
+                         "asymmetry gate reads 0.0 on them."
+                         % (len(bad), len(judged)))
+        else:
+            worst_row = judged[0]
+            says = ("Every hand bone runs down its own palm: worst %s, %.1f degrees off "
+                    "the measured palm axis and %.1f mm outside its cross-section."
+                    % (worst_row["bone"], worst_row["angle_deg"],
+                       worst_row["worst_outside_mm"] or 0.0))
+    return {
+        "hands": rows,
+        "measured": len(judged),
+        "verdict": verdict,
+        "containment_mm": HAND_CONTAINMENT_MM,
+        "angle_limit_deg": rigforge_landmarks.HAND_AXIS_TOLERANCE_DEG,
+        "gated_at": ("the bone's midpoint and tail; the head is the wrist, which "
+                     "belongs to the forearm as much as to the hand, so it is reported "
+                     "and not gated"),
+        "threshold_tier": (
+            "heuristic (proxy tier): 25 degrees is the slack a hand bone genuinely "
+            "needs (a knuckle line is not square to the palm) and 5 mm is inside any "
+            "hand's retopo noise. The live defect measured 62 degrees and 29.7 mm."),
+        "says": says,
+    }
+
+
+# ---------------------------------------------------------------------------
+# the eighth placement gate: how high the ankle and the toe run
+# ---------------------------------------------------------------------------
+
+#: How far the ankle or the toe may sit from the height the **mesh** puts it at,
+#: in millimetres.  **Credibility tier: heuristic (proxy).**  Two centimetres is
+#: a station's worth of slack on a foot this size and far under the 65 mm and
+#: 52 mm the live werewolf measured.
+FOOT_HEIGHT_TOLERANCE_MM = 20.0
+
+
+def foot_height(rig, mesh, weight_floor=0.2):
+    """**Is the ankle at the ankle, and does the toe run on the ground?**
+
+    The sole-fit gate already asks whether the foot chain reaches the front of
+    the boot.  It says nothing about how high off it the chain runs, and on the
+    live werewolf that is where the defect was: ``DEF-foot.L``'s head — the ankle
+    — sat at ``z = 173 mm`` on a foot whose mass stops at 110, and ``DEF-toe.L``
+    ran at ``z = 79 mm``, eight centimetres of air under a bone that is supposed
+    to roll on the floor.  Both are **measurable against the mesh**: the ankle is
+    where the leg's forward reach collapses and the toe belongs a fraction of the
+    foot's own thickness above the sole, which is exactly what
+    :func:`~forge.tools.rigforge_landmarks.foot_landmarks` now computes.
+
+    So this gate re-measures the foot from the flesh the leg chain drives and
+    quotes the difference, per side, in millimetres above the sole.
+    """
+    groups = rigforge_landmarks._deform_groups(rig, mesh)
+    if not groups:
+        return {"feet": [], "verdict": "unmeasured",
+                "says": "%r has no deform vertex groups, so no foot could be measured "
+                        "against its flesh." % mesh.name}
+    forward, forward_how = rigforge_rig.rig_forward_axis(rig)
+    matrix = rig.matrix_world
+    feet = {}
+    for bone in rig.data.bones:
+        if not bone.use_deform:
+            continue
+        side = _side_suffix(bone.name)
+        if side is None:
+            continue
+        if FOOT_BONE_RE.search(bone.name):
+            feet.setdefault(side, {}).setdefault("foot", bone)
+        elif TOE_BONE_RE.search(bone.name):
+            feet.setdefault(side, {}).setdefault("toe", bone)
+        elif SHIN_BONE_RE.search(bone.name):
+            feet.setdefault(side, {})["shin"] = bone
+
+    rows = []
+    for side in sorted(feet):
+        entry = feet[side]
+        foot_bone = entry.get("foot")
+        toe_bone = entry.get("toe")
+        shin_bone = entry.get("shin")
+        if foot_bone is None or shin_bone is None:
+            continue
+        names = {bone.name for bone in entry.values()}
+        # Every shin segment, not just the one that happened to sort first: a
+        # Rigify shin is two DEF bones and the leg column above the ankle is what
+        # the collapse rule needs to see.
+        for bone in rig.data.bones:
+            if (bone.use_deform and _side_suffix(bone.name) == side
+                    and (SHIN_BONE_RE.search(bone.name)
+                         or FOOT_BONE_RE.search(bone.name)
+                         or TOE_BONE_RE.search(bone.name))):
+                names.add(bone.name)
+        points = _group_points(mesh, groups, names, weight_floor)
+        row = {"side": side, "foot": foot_bone.name,
+               "toe": toe_bone.name if toe_bone is not None else None,
+               "flesh_vertices": len(points), "forward_from": forward_how}
+        if len(points) < 24:
+            row.update({"verdict": "unmeasured",
+                        "says": "the %s leg chain drives %d vertices, too few to measure "
+                                "a foot from." % (side, len(points))})
+            rows.append(row)
+            continue
+        ankle_now = matrix @ foot_bone.head_local
+        knee = matrix @ shin_bone.head_local
+        measured = rigforge_landmarks.foot_landmarks(points, ankle_now, knee, forward,
+                                                     label="leg.%s" % side)
+        if measured is None:
+            row.update({"verdict": "unmeasured",
+                        "says": "the %s leg chain's flesh has no foot in it to measure "
+                                "against (nothing below the ankle is long enough front "
+                                "to back)." % side})
+            rows.append(row)
+            continue
+        ground = measured["ground"]
+        ankle_want = Vector(measured["ankle"])
+        ball_want = Vector(measured["ball"])
+        ankle_mm = (ankle_now.z - ground) * M_TO_MM
+        ankle_target_mm = (ankle_want.z - ground) * M_TO_MM
+        row.update({
+            "sole_z_mm": round(ground * M_TO_MM, 2),
+            "ankle_height_mm": round(ankle_mm, 2),
+            "ankle_target_mm": round(ankle_target_mm, 2),
+            "ankle_error_mm": round(abs(ankle_mm - ankle_target_mm), 2),
+            "ankle_how": measured["detail"]["ankle"]["how"],
+            "foot_length_mm": measured["length_mm"],
+        })
+        errors = [row["ankle_error_mm"]]
+        if toe_bone is not None:
+            toe_now = matrix @ toe_bone.head_local
+            toe_mm = (toe_now.z - ground) * M_TO_MM
+            toe_target_mm = (ball_want.z - ground) * M_TO_MM
+            row.update({
+                "toe_height_mm": round(toe_mm, 2),
+                "toe_target_mm": round(toe_target_mm, 2),
+                "toe_error_mm": round(abs(toe_mm - toe_target_mm), 2),
+                "toe_how": measured["detail"]["ball"]["how"],
+            })
+            errors.append(row["toe_error_mm"])
+        row["worst_error_mm"] = round(max(errors), 2)
+        row["verdict"] = ("ok" if row["worst_error_mm"] <= FOOT_HEIGHT_TOLERANCE_MM
+                          else "fail")
+        if row["verdict"] == "ok":
+            row["says"] = ("the %s ankle sits %.0f mm above the sole where the mesh puts "
+                           "it at %.0f, and the toe at %.0f against %.0f."
+                           % (side, row["ankle_height_mm"], row["ankle_target_mm"],
+                              row.get("toe_height_mm") or 0.0,
+                              row.get("toe_target_mm") or 0.0))
+        else:
+            row["says"] = (
+                "THE %s FOOT CHAIN RUNS TOO HIGH: its ankle is %.0f mm above the sole "
+                "where the flesh puts it at %.0f (%.0f mm out, limit %.0f), and its toe "
+                "is at %.0f against %.0f. %s"
+                % (side, row["ankle_height_mm"], row["ankle_target_mm"],
+                   row["ankle_error_mm"], FOOT_HEIGHT_TOLERANCE_MM,
+                   row.get("toe_height_mm") or 0.0, row.get("toe_target_mm") or 0.0,
+                   measured["detail"]["ankle"]["how"]))
+        rows.append(row)
+
+    judged = [row for row in rows if row["verdict"] in ("ok", "fail")]
+    if not judged:
+        verdict = "unmeasured"
+        says = ("No leg chain on %r had a shin, a foot and enough flesh for its ankle "
+                "height to be measured." % rig.name)
+    else:
+        verdict = _worst([row["verdict"] for row in judged])
+        bad = [row for row in judged if row["verdict"] == "fail"]
+        says = (bad[0]["says"] if bad
+                else "Every foot chain sits where the sole puts it: %s"
+                     % "; ".join(row["says"] for row in judged))
+    return {
+        "feet": rows,
+        "measured": len(judged),
+        "verdict": verdict,
+        "tolerance_mm": FOOT_HEIGHT_TOLERANCE_MM,
+        "threshold_tier": (
+            "heuristic (proxy tier): 20 mm is a measuring station's worth of slack on a "
+            "foot this size. The live defect measured 65 mm at the ankle and 52 mm at "
+            "the toe."),
+        "says": says,
+    }
+
+
+# ---------------------------------------------------------------------------
 # verdicts
 # ---------------------------------------------------------------------------
 
@@ -1065,7 +1499,7 @@ def cmd_rig_check(params):
     twist collapse, each with a band — plus an overall gate.  The pose is always
     restored.
 
-    **Six placement gates run on every call** and are reported whether or not
+    **Eight placement gates run on every call** and are reported whether or not
     they fail, because the defects they catch were found by a human staring at a
     render and must never need that again:
 
@@ -1087,7 +1521,17 @@ def cmd_rig_check(params):
       target is pulled towards its own root and the joint's travel is projected
       onto the way it is supposed to fold, a knee forward and an elbow backward
       (:func:`bend_direction`).  The other five all passed on a werewolf whose
-      knees bent backwards.
+      knees bent backwards;
+    * ``hand_containment`` — whether each hand bone points the way its **palm**
+      does and stays inside it (:func:`hand_containment`).  The first six all
+      passed on a werewolf whose hand bones ran outboard, out of the mesh: a
+      hand is not one of the long bones ``centering`` judges, and both hands
+      were wrong identically so ``asymmetry`` read 0.0;
+    * ``foot_height`` — whether the ankle is at the height the leg's forward
+      reach collapses at, and the toe chain runs just above the sole
+      (:func:`foot_height`).  The sole-fit rule already asks whether the foot
+      reaches the front of the boot; this asks how high off it the chain runs,
+      which is where the same werewolf's ankle sat 65 mm up the shin.
 
     ``render_weights`` additionally writes per-bone weight maps into a folder —
     the maps, looked at, rather than counted.
@@ -1304,14 +1748,15 @@ def cmd_rig_check(params):
 
     # --- the placement gates: always measured, always reported -------------
     #
-    # Deformation is what the poses above measure. These six measure whether
+    # Deformation is what the poses above measure. These eight measure whether
     # the skeleton was ever in the right place to begin with, whether the
     # skin it was bound with is a skin, and whether the limbs fold the way the
     # animal folds -- the questions a live audit had to answer by eye: bones off
     # the limb's centreline, left and right fitted independently (6-24 mm
     # apart), side names mirrored so .L drove the right leg, flesh shared between
     # bones that are nowhere near each other, a weight map so patchy it had holes
-    # in the middle of a thigh, and knees that bent backwards. All six are
+    # in the middle of a thigh, knees that bent backwards, hand bones pointing
+    # outboard out of the mesh and an ankle 65 mm up the shin. All eight are
     # geometric, so the harness finds them from now on instead of the owner
     # squinting at a render or at a walk cycle.
     placement = {}
@@ -1349,6 +1794,21 @@ def cmd_rig_check(params):
         placement["bend_direction"] = bend_direction(rig)
     except Exception as exc:  # noqa: BLE001
         placement["bend_direction"] = {"verdict": "unmeasured", "says": str(exc)}
+    # The seventh and eighth, both found the same way the first six were -- by
+    # the owner looking at a rest-pose render and seeing a bone outside the
+    # silhouette. A hand bone that points outboard out of the mesh and an ankle
+    # sitting 65 mm up the shin cleared every gate above, because none of them
+    # is about a hand's direction or a foot chain's height: ``centering``
+    # deliberately does not judge hands, toes or feet, and both sides were wrong
+    # identically so ``asymmetry`` read 0.0.
+    try:
+        placement["hand_containment"] = hand_containment(rig, mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["hand_containment"] = {"verdict": "unmeasured", "says": str(exc)}
+    try:
+        placement["foot_height"] = foot_height(rig, mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["foot_height"] = {"verdict": "unmeasured", "says": str(exc)}
 
     weight_maps = None
     maps_dir = params.get("render_weights")
@@ -1373,8 +1833,8 @@ def cmd_rig_check(params):
         gate = "attention"
     lines = []
     bad_placement = False
-    for name in ("side_naming", "bend_direction", "asymmetry", "centering", "overlap",
-                 "continuity"):
+    for name in ("side_naming", "bend_direction", "hand_containment", "foot_height",
+                 "asymmetry", "centering", "overlap", "continuity"):
         block = placement.get(name) or {}
         if block.get("verdict") in ("fail", "attention") and block.get("says"):
             lines.append(block["says"])
@@ -1386,13 +1846,18 @@ def cmd_rig_check(params):
         centering = placement.get("centering") or {}
         continuity = placement.get("continuity") or {}
         bend = placement.get("bend_direction") or {}
+        hands = placement.get("hand_containment") or {}
+        feet_block = placement.get("foot_height") or {}
         lines.append(
             "Placement is clean: left/right asymmetry %s mm, every sided bone on the "
             "side its name claims, worst bone %s mm off its limb's centreline, no "
-            "stray influence between bones, %s%% of the weighted flesh punctured, and "
-            "every IK limb folds the anatomical way (%d checked)."
+            "stray influence between bones, %s%% of the weighted flesh punctured, "
+            "every IK limb folds the anatomical way (%d checked), %d hand bone(s) "
+            "inside their own palms and %d foot chain(s) at the height the sole puts "
+            "them."
             % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm"),
-               continuity.get("hole_pct"), len(bend.get("limbs") or [])))
+               continuity.get("hole_pct"), len(bend.get("limbs") or []),
+               hands.get("measured") or 0, feet_block.get("measured") or 0))
     if failed:
         lines.append("Breaks down: %s." % ", ".join(sorted(failed)))
     if attention:
@@ -1419,6 +1884,8 @@ def cmd_rig_check(params):
         "overlap": placement["overlap"],
         "continuity": placement["continuity"],
         "bend_direction": placement["bend_direction"],
+        "hand_containment": placement["hand_containment"],
+        "foot_height": placement["foot_height"],
         "weight_maps": weight_maps,
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)

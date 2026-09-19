@@ -134,6 +134,12 @@ __all__ = [
     "prebend_joint",
     "foot_landmarks",
     "hand_landmarks",
+    "hand_axis",
+    "hand_region",
+    "HAND_AXIS_TOLERANCE_DEG",
+    "HAND_KNUCKLE_FRACTION",
+    "FOOT_ANKLE_COLLAPSE_FRACTION",
+    "FOOT_TOE_LIFT_FRACTION",
     "FOOT_TIP_MARGIN_MM",
     "biped_landmarks",
     "mirror_edit_bones",
@@ -258,12 +264,48 @@ ANKLE_SEARCH_FRACTION = 0.45
 FOOT_LENGTH_FACTOR = 1.35
 
 #: ...and it has to **point forward**: the sole must reach this many times
-#: further in front of the ankle than behind it.  Length alone is not enough and
+#: further in front of the **leg column** than behind it — the column's own
+#: extent, midway between its front and its back, not the ankle joint's mass
+#: centroid, because lopsidedness is a property of the shape and not of where
+#: the retopo put its vertices.  Length alone is not enough and
 #: that was found by being wrong first — a bare leg's end cap flares out to
 #: 1.5x the ankle's own width and read as a 126 mm foot.  A cone's cap is
 #: centred under the leg; a foot is not, and that asymmetry is the whole
 #: difference between a foot and the bottom of a tube.
 FOOT_FORWARD_FACTOR = 1.6
+
+#: **How high the ankle is.**  The rule above finds *which* height by taking the
+#: station whose front-to-back length is smallest.  An ``argmin`` over a profile
+#: that is flat above the foot wanders, and on the live werewolf it wandered into
+#: a 13-vertex slab at ``z = 191 mm`` whose length read 95.7 mm against its
+#: neighbours' 150: ``DEF-foot.L``'s head landed at **z = 173 mm** on a 1.88 m
+#: character whose foot mass tops out at 110 — the ankle joint sat a hand's width
+#: up the shin, and the whole foot chain hung off it.
+#:
+#: What a person reads instead is a **step**, not a minimum, and the evidence is
+#: the one :func:`detect_orientation` already argues from: **a foot reaches
+#: forward and an ankle does not.**  So the profile measured here is how far each
+#: height reaches along the facing direction, and the ankle is where that reach
+#: *collapses* — the same "walk out from the peak until it falls below a fraction
+#: of it" shape as the ball, the hip and the shoulder.  On the werewolf the
+#: forward reach holds 150-167 mm all the way up the foot and falls to 66 mm in
+#: one 7 mm step; the ankle lands at **108 mm**, and the number it is judged
+#: against is the character's own foot, not a constant.
+FOOT_ANKLE_STATIONS = 33
+
+#: The fraction of its own peak the forward reach must fall below before the leg
+#: has stopped being a foot.  Deliberately well clear of both sides of the step —
+#: measured on the werewolf the two neighbouring stations are 116 mm and 84 mm
+#: against a 160 mm peak, so anything between 55% and 70% picks the same height.
+FOOT_ANKLE_COLLAPSE_FRACTION = 0.60
+
+#: **How high the foot and toe bones run.**  Their cross-section centroid is the
+#: middle of the *whole* foot, which on a 117 mm thick paw put ``DEF-toe.L`` at
+#: **z = 79 mm** — 8 cm of air under a bone that is supposed to roll on the
+#: ground.  A toe rolls about a point just above the sole, so the chain is placed
+#: at this fraction of **the foot's own local thickness** above the sole at that
+#: station: scale-free, per-station, per-side, and on the werewolf it is 27 mm.
+FOOT_TOE_LIFT_FRACTION = 0.25
 
 #: **The hand.**  The same defect as the foot, at the other end of the body and
 #: for the same reason: ``biped_landmarks`` stopped at the wrist and ``hand.L``
@@ -290,8 +332,87 @@ HAND_TAPER_FRACTION = 0.85
 
 #: A palm has to be at least this much fatter than the wrist above it before the
 #: arm tag is treated as containing a hand at all.  An arm tagged to the wrist
-#: is a legitimate thing to be handed.
+#: is a legitimate thing to be handed.  **Reported, no longer a veto** — see
+#: :data:`HAND_REACH_FACTOR`, which is what decides now.
 HAND_PALM_FACTOR = 1.12
+
+#: A girth minimum is only the wrist if the limb **fattens again after it** by at
+#: least this much.  Found by being wrong first, on the live werewolf: its left
+#: arm's girth profile wobbles by 2.3% at the second station of the search band,
+#: which is a local minimum in the strict sense and nothing at all in the flesh.
+#: The old rule took it, called it the wrist, found no palm past it and returned
+#: "this arm has no hand" — so ``hand.L`` kept Rigify's template proportions and
+#: the whole defect below followed from that one 2.3% wobble.  The real wrist,
+#: eight stations further down, is followed by a 9.0% rise.
+HAND_WRIST_RISE = 0.04
+
+#: **Which way the hand points.**  The wrist above was right and the hand bone
+#: was still wrong, because ``knuckle`` was the centroid of a slab cut
+#: perpendicular to the **arm's** axis.  A hand does not continue the arm — it
+#: hangs, it curls, it lies along the thigh — so slicing the hand in the
+#: forearm's frame walks the knuckle *outboard*, along the arm's own outward
+#: direction.  Measured on the live werewolf: ``DEF-hand.L`` ran from
+#: (297.6, 8.9, 950.2) mm to (358.4, 1.3, 905.1) mm — almost pure ``+X``, with
+#: its tail **29.7 mm outside the mesh**, in the air beside a hand that actually
+#: hangs straight down beside the thigh.
+#:
+#: The fix is the sole-fit recipe at the other end of the body: **stop measuring
+#: the hand in the arm's frame and measure it in its own.**  The hand region is
+#: the same slab the wrist rule already cuts — everything distal to the wrist
+#: along the arm axis — and the palm direction is that region's own long axis,
+#: walked out from the wrist:
+#:
+#: 1. aim at the region's centroid;
+#: 2. take the centroid of the distal :data:`HAND_TIP_SLAB` of the region
+#:    *measured along the current aim*, and aim at that instead;
+#: 3. repeat until it stops turning.
+#:
+#: Three lines of pure geometry, deterministic, and it converges in two passes on
+#: both of the werewolf's hands.  The principal axis of the same cloud is
+#: measured alongside it and **reported**, never used: a paw is a flat splayed
+#: blob whose dominant covariance axis is its *width*, which on the werewolf's
+#: right hand pointed 73 degrees off the way the fingers actually go.
+HAND_AXIS_PASSES = 4
+HAND_TIP_SLAB = 0.25
+
+#: Where the hand **stops**, as a percentile of its region's own projections
+#: onto the palm axis.  Not the maximum: the werewolf's right arm tag carries a
+#: four-vertex island 80 mm past the last real cross-section, which on its own
+#: stretched the measured hand from 99 mm to 184 mm.  A fingertip is many
+#: vertices and an island is a handful, so the last few percent are trimmed —
+#: and the untrimmed number is reported next to it, always.
+HAND_REACH_PERCENTILE = 0.97
+
+#: Where the hand bone's tail lands when the palm has no measurable taper: this
+#: fraction of the hand's own reach past the wrist, which is the knuckle line on
+#: a hand and the middle of the mitt on a mitten.
+HAND_KNUCKLE_FRACTION = 0.65
+
+#: ...and the band the *measured* taper has to fall inside before it is believed.
+#: A taper at 5% of the hand is the wrist ring again and one at 95% is the end
+#: cap of the mesh; neither is a knuckle line, and outside this band the fixed
+#: fraction above is used and **said**.
+HAND_KNUCKLE_BAND = (0.40, 0.85)
+
+#: **Is there a hand past the wrist at all?**  It has to reach at least this many
+#: times the wrist's own girth past it — the hand equivalent of
+#: :data:`FOOT_LENGTH_FACTOR`, and for the same reason: an arm tagged to the
+#: wrist is a legitimate thing to be handed and inventing a palm from its end cap
+#: is not.  This replaced the palm-girth veto, which on the werewolf's left hand
+#: missed by 3%: the palm measured 36.95 mm against a 33.90 mm wrist where
+#: :data:`HAND_PALM_FACTOR` wanted 37.97, and a real hand was thrown away on one
+#: millimetre of girth.  Reach is the honest question; girth is a proxy for it.
+HAND_REACH_FACTOR = 0.9
+
+#: Below this many points there is no region to take a direction from.
+HAND_REGION_MIN_POINTS = 8
+
+#: How far the hand bone may sit off the palm direction the mesh measures, in
+#: degrees, before it is a defect rather than a fit.  **Credibility tier:
+#: heuristic (proxy).**  25 degrees is the slack a hand bone genuinely needs (a
+#: knuckle line is not square to the palm) and a long way under the 62 degrees
+#: the live defect measured.
+HAND_AXIS_TOLERANCE_DEG = 25.0
 
 #: **The anatomical pre-bend.**  A rigger never leaves a limb straight at rest:
 #: the knee goes a little forward, the elbow a little back, *before* a single
@@ -1417,18 +1538,29 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
     an animator needs from it are defined *along the direction the character
     faces*, not along the leg.  So this measures the foot in its own frame:
 
-    * **the ankle** is the height, between the ground and part way to the knee,
-      where the leg is **shortest front to back** — a foot is long and an ankle
-      is not, so the collapse of that length *is* the joint.  The lowest station
-      within a few percent of the minimum wins, which is "just above the foot
-      mass" rather than "somewhere up the shin";
+    * **the ankle** is the height where the leg's **forward reach collapses** —
+      a foot reaches in front of the leg and an ankle does not, so the step off
+      the foot's own reach *is* the joint.  Walking up from the station that
+      reaches furthest, the first one under :data:`FOOT_ANKLE_COLLAPSE_FRACTION`
+      of it is the ankle's height, and the joint sits on the **leg column's own
+      centre** there (the centroid of the two stations above it, which are ankle
+      and nothing else) rather than on the centroid of a slab that still has
+      half a heel in it.  It is deliberately a *step* and not a minimum: the
+      profile above the foot is flat, an ``argmin`` over a flat run wanders, and
+      on the live werewolf it wandered 65 mm up the shin — ``DEF-foot.L``'s head
+      sat at ``z = 173 mm`` against a foot that stops at 110;
     * **the ball** is where the sole's **forward taper begins**: cut the sole
       into stations front to back, take the widest, and walk forward to the first
       station under :data:`FOOT_TAPER_FRACTION` of it.  That is a bootmaker's
       definition and it works on a bare foot and on a boot;
     * **the toe tip** is the mesh's own forward extent at foot height, pulled
       back :data:`FOOT_TIP_MARGIN_MM` so the bone does not break the surface the
-      instant the toe rolls;
+      instant the toe rolls.  The ball and the tip keep the *forward* position
+      and the *sideways* centre their cross-sections give them and take their
+      **height from the sole**: :data:`FOOT_TOE_LIFT_FRACTION` of the foot's own
+      local thickness above it.  The centroid of a whole 117 mm thick paw is
+      8 cm off the ground, and a toe that rolls about a point 8 cm up rolls the
+      character into the floor;
     * **the heel** is the sole's rearmost point, at ground level, with the sole's
       own width there — which is what Rigify's ``heel.02`` spans and therefore
       where the foot roll pivots.
@@ -1448,26 +1580,82 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
     forward = _horizontal(forward)
     right = Vector((0.0, 0.0, 1.0)).cross(forward).normalized()
 
-    # --- the ankle: the height where the leg stops being long front to back
+    # --- the ankle: the height where the leg's forward reach collapses
+    #
+    # A foot reaches in front of the leg and an ankle does not, so what is
+    # profiled here is each height's forward extent and what is looked for is the
+    # STEP off the foot's own. The old rule took the argmin of the front-to-back
+    # *length*, which above the foot is flat to within noise: on the werewolf a
+    # 13-vertex slab read 95.7 mm against its neighbours' 150 and carried the
+    # ankle 65 mm up the shin.
     stations = []
     top = ground + reach * ANKLE_SEARCH_FRACTION
-    step = max((top - ground) / float(FOOT_STATIONS - 1), 1e-6)
-    for index in range(FOOT_STATIONS):
+    step = max((top - ground) / float(FOOT_ANKLE_STATIONS - 1), 1e-6)
+    for index in range(FOOT_ANKLE_STATIONS):
         height = ground + step * index
         slab = [p for p in points if abs(p.z - height) <= step * 0.75]
         if len(slab) < 4:
             continue
-        length = max(p.dot(forward) for p in slab) - min(p.dot(forward) for p in slab)
-        stations.append((height, length, slab))
-    if not stations:
+        stations.append({
+            "z": height,
+            "front": max(p.dot(forward) for p in slab),
+            "length": (max(p.dot(forward) for p in slab)
+                       - min(p.dot(forward) for p in slab)),
+            "slab": slab,
+        })
+    if len(stations) < 4:
         return None
-    shortest = min(entry[1] for entry in stations)
-    # The lowest station within 5% of the shortest, not the shortest: above the
-    # foot the length is flat, and argmin over a flat run wanders up the shin.
-    ankle_station = next(entry for entry in stations if entry[1] <= shortest * 1.05)
-    ankle = _centroid(ankle_station[2])
-    ankle.z = ankle_station[0]
-    ankle_length = ankle_station[1]
+    # One smoothing pass, not two: the step is the signal and over-smoothing a
+    # step is how you lose it. A single [1 2 1] is enough to absorb a sparse slab.
+    smoothed = _smooth([entry["front"] for entry in stations], passes=1)
+    for index, entry in enumerate(stations):
+        entry["reach"] = smoothed[index]
+    peak = max(range(len(stations)), key=lambda i: stations[i]["reach"])
+    limit = stations[peak]["reach"] * FOOT_ANKLE_COLLAPSE_FRACTION
+    collapse = None
+    for index in range(peak + 1, len(stations)):
+        # Smoothed *and* raw. The smoothing is what stops a sparse slab firing
+        # the step early, and it is also what blurs the step across the station
+        # either side of it: on the synthetic 100 mm boot the smoothed profile
+        # collapses at 101 mm, on a slab that still has boot in it. Requiring the
+        # station to be clear of the foot on its own numbers too moves that to
+        # 108 -- genuinely above the shoe -- and leaves the werewolf's 105.7
+        # exactly where it was, because there the raw profile had already fallen.
+        if stations[index]["reach"] < limit and stations[index]["front"] < limit:
+            collapse = index
+            break
+    how_ankle = "the height where the leg's forward reach collapses off the foot's"
+    if collapse is None:
+        # Nothing above the foot in the tag at all (a leg tagged to the ankle, a
+        # cone): the old rule is the fallback and the report says it was used.
+        shortest = min(entry["length"] for entry in stations)
+        collapse = next(index for index, entry in enumerate(stations)
+                        if entry["length"] <= shortest * 1.05)
+        how_ankle = ("the shortest station front to back (this tag's forward reach "
+                     "never collapses, so there is no foot-to-ankle step to find)")
+    # The joint sits on the LEG COLUMN's centre at that height, not on the
+    # centroid of a slab that still has half a heel in it: the stations above the
+    # collapse are ankle and nothing else, so they are what says where the column
+    # is. Measured on the werewolf the two answers are 35 mm apart.
+    column = []
+    for index in range(collapse + 1, min(collapse + 4, len(stations))):
+        column.extend(stations[index]["slab"])
+    if len(column) < 4:
+        column = stations[collapse]["slab"]
+    ankle = _centroid(column)
+    ankle.z = stations[collapse]["z"]
+    # Where the leg column *is*, front to back, as the midpoint of its own
+    # extent rather than of its mass. That is the datum the "is this a foot or
+    # the end cap of a bare leg" test below needs: the question it asks is
+    # whether the sole is lopsided about the leg, and lopsidedness is a property
+    # of the shape, not of how many vertices the retopo put where. Measured on
+    # the werewolf the two answers are 11 mm apart, and the test passes on one
+    # and fails by 3 mm on the other.
+    column_forward = 0.5 * (max(p.dot(forward) for p in column)
+                            + min(p.dot(forward) for p in column))
+    ankle_length = stations[collapse]["length"]
+    ankle_reach_mm = round(stations[collapse]["reach"] * M_TO_MM, 2)
+    foot_reach_mm = round(stations[peak]["reach"] * M_TO_MM, 2)
 
     # --- is there a foot here at all?
     sole_top = ground + (ankle.z - ground) * FOOT_SOLE_FRACTION
@@ -1479,7 +1667,7 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
     length = front - back
     if length < FOOT_LENGTH_FACTOR * max(ankle_length, 1e-6):
         return None
-    at_ankle = ankle.dot(forward)
+    at_ankle = column_forward
     ahead, behind = front - at_ankle, at_ankle - back
     if ahead < FOOT_FORWARD_FACTOR * max(behind, 1e-9):
         return None
@@ -1514,9 +1702,18 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
         tip_at = ball_at + max((front - ball_at) * 0.5, 1e-4)
 
     def section_centre(at, band):
-        """The centroid of the WHOLE foot's cross-section at ``at`` — not the
-        sole's — because a bone runs through the middle of the toes, not along
-        the ground under them."""
+        """Where the foot bone runs at station ``at``: the cross-section's own
+        centre **across** the foot, and a fixed fraction of that section's
+        thickness above its **sole**.
+
+        The sideways centre is the centroid's, as it always was — a bone runs
+        through the middle of the toes, not along one wall of them.  The height
+        is not.  The centroid of a whole 117 mm thick paw is 8 cm off the
+        ground, and a toe bone 8 cm up pivots the foot roll about a point in the
+        middle of the shoe: measured on the live werewolf, ``DEF-toe.L`` ran at
+        ``z = 79 mm``.  A toe rolls just above the sole, so that is where it is
+        put, by this station's own thickness rather than by a number.
+        """
         slab = [p for p in points
                 if abs(p.dot(forward) - at) <= band and p.z <= ankle.z]
         if len(slab) < 3:
@@ -1525,10 +1722,13 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
         # Keep the station's own position along the facing axis: the centroid of
         # a slab is only its centre *across* the slab.
         centre = centre + forward * (at - centre.dot(forward))
-        return centre
+        sole_z = min(p.z for p in slab)
+        thickness = max(p.z for p in slab) - sole_z
+        centre.z = sole_z + thickness * FOOT_TOE_LIFT_FRACTION
+        return centre, sole_z, thickness
 
-    ball = section_centre(ball_at, span * 0.75)
-    tip = section_centre(tip_at, span * 0.75)
+    ball, ball_sole_z, ball_thickness = section_centre(ball_at, span * 0.75)
+    tip, tip_sole_z, tip_thickness = section_centre(tip_at, span * 0.75)
     # The toe runs level with the ball: a toe bone that dives at the tip rolls
     # the foot into the floor.
     tip.z = ball.z
@@ -1554,40 +1754,242 @@ def foot_landmarks(points, ankle_hint, knee, forward, label="foot"):
         "ball_fraction": round((ball_at - back) / max(length, 1e-9), 3),
         "tip_margin_mm": FOOT_TIP_MARGIN_MM,
         "ankle_length_mm": round(ankle_length * M_TO_MM, 2),
+        "ankle_height_mm": round((ankle.z - ground) * M_TO_MM, 2),
+        "ankle_reach_mm": ankle_reach_mm,
+        "foot_reach_mm": foot_reach_mm,
+        "toe_height_mm": round((ball.z - ground) * M_TO_MM, 2),
+        "ball_sole_mm": round((ball_sole_z - ground) * M_TO_MM, 2),
+        "ball_thickness_mm": round(ball_thickness * M_TO_MM, 2),
+        "toe_lift_fraction": FOOT_TOE_LIFT_FRACTION,
         "detail": {
-            "ankle": {"how": "the height where the leg is shortest front to back "
-                             "(%.1f mm, against a %.1f mm foot) — just above the foot mass"
-                             % (ankle_length * M_TO_MM, length * M_TO_MM)},
-            "ball": {"how": how, "sole_fraction": round(
-                (ball_at - back) / max(length, 1e-9), 3)},
+            "ankle": {"how": "%s: the foot reaches %.1f mm in front of the leg and this "
+                             "height reaches %.1f mm, %.0f%% of it (limit %.0f%%), so "
+                             "the foot has stopped — %.1f mm above the sole, on the leg "
+                             "column's own centre"
+                             % (how_ankle, foot_reach_mm, ankle_reach_mm,
+                                100.0 * ankle_reach_mm / max(foot_reach_mm, 1e-9),
+                                100.0 * FOOT_ANKLE_COLLAPSE_FRACTION,
+                                (ankle.z - ground) * M_TO_MM),
+                      "height_mm": round((ankle.z - ground) * M_TO_MM, 2),
+                      "foot_length_mm": round(length * M_TO_MM, 2)},
+            "ball": {"how": "%s, %.0f%% of the foot's own %.1f mm thickness above the "
+                            "sole there (%.1f mm up)"
+                            % (how, 100.0 * FOOT_TOE_LIFT_FRACTION,
+                               ball_thickness * M_TO_MM,
+                               (ball.z - ground) * M_TO_MM),
+                     "sole_fraction": round(
+                         (ball_at - back) / max(length, 1e-9), 3),
+                     "height_mm": round((ball.z - ground) * M_TO_MM, 2),
+                     "thickness_mm": round(ball_thickness * M_TO_MM, 2)},
             "toe_tip": {"how": "the sole's forward extent, %.0f mm back from the last "
-                               "vertex" % FOOT_TIP_MARGIN_MM},
+                               "vertex, level with the ball at %.1f mm above the sole"
+                               % (FOOT_TIP_MARGIN_MM, (tip.z - ground) * M_TO_MM),
+                        "height_mm": round((tip.z - ground) * M_TO_MM, 2),
+                        "thickness_mm": round(tip_thickness * M_TO_MM, 2),
+                        "sole_mm": round((tip_sole_z - ground) * M_TO_MM, 2)},
             "heel": {"how": "the sole's rearmost cross-section, at ground level"},
         },
     }
 
 
-def hand_landmarks(points, elbow, axis, label="hand"):
-    """The wrist and the knuckle line — off the hand's own cross-sections.
+def hand_region(points, wrist, axis):
+    """The hand itself: every point **distal to the wrist** along the arm axis.
 
-    The foot's problem, at the other end of the arm.  Two rules, and both are
-    about **where a girth profile turns**, which is the only thing a hand's
-    geometry actually says out loud:
+    One line, and it is the same cut the wrist rule already makes — the wrist is
+    a station on the arm axis, so "past it" is a half-space on that axis.  What
+    matters is that this is the **last** thing the arm's frame is used for.
+    Everything after it is measured in the hand's own.
+    """
+    wrist = Vector(wrist)
+    axis = Vector(axis)
+    if axis.length < 1e-9:
+        return []
+    axis = axis.normalized()
+    return [p for p in points if (p - wrist).dot(axis) > 0.0]
+
+
+def hand_axis(points, wrist, axis, label="hand"):
+    """**Which way the palm points**, measured from the hand's own geometry.
+
+    The bug this exists for is at the top of this module's hand constants: a
+    knuckle taken from slabs cut perpendicular to the *arm's* axis walks outboard
+    whenever the hand does not continue the arm, and no hand does.  On the live
+    werewolf that put ``DEF-hand.L``'s tail 29.7 mm outside the mesh, pointing
+    ``+X`` into the air beside a hand hanging straight down.
+
+    So the hand region (:func:`hand_region`) is asked for its own long axis, by
+    walking out from the wrist:
+
+    1. aim at the region's centroid;
+    2. take the centroid of its distal :data:`HAND_TIP_SLAB` — the slab of the
+       hand's own **length** that far from the far end, measured along the
+       current aim, widened if it does not hold a cross-section's worth of
+       points — and aim at that instead;
+    3. repeat, at most :data:`HAND_AXIS_PASSES` times or until it stops turning.
+
+    It is a fixed-point iteration on "the middle of the far end", it is pure
+    geometry, and on both of the werewolf's hands it converges in two passes —
+    16.5 degrees, then 3.8, then 2.2, then 0.9.
+
+    The slab is cut **by distance and not by rank**, and that is the whole
+    difference between a fixed point and a hill: see the comment in the loop.
+
+    The cloud's **principal axis** is measured too and *reported*, never used, as
+    the second opinion this module always takes: a paw is a flat splayed blob
+    whose dominant covariance axis is its width, and on the werewolf's right hand
+    it pointed 73 degrees off the way the fingers actually go.  A statistic does
+    not get to overrule walking to the end of the hand.
+
+    ``reach`` is where the hand **stops**, and it is deliberately not the raw
+    maximum projection: an arm tag carries loose islands, and the werewolf's
+    right arm has four vertices 80 mm past the last real cross-section which on
+    their own stretched the hand from 99 mm to 184 mm — nearly double.  It is
+    the :data:`HAND_REACH_PERCENTILE` of the region's projections instead: a
+    fingertip is *many* vertices and a stray island is a handful, so trimming the
+    last few percent drops the island and leaves the fingers, and both numbers
+    are reported so the trim is never silent.
+
+    Returns ``None`` when there is no region to measure, else a dict.
+    """
+    axis = Vector(axis)
+    if axis.length < 1e-9:
+        return None
+    axis = axis.normalized()
+    wrist = Vector(wrist)
+    region = hand_region(points, wrist, axis)
+    if len(region) < HAND_REGION_MIN_POINTS:
+        return None
+    centre = _centroid(region)
+    direction = centre - wrist
+    direction = direction.normalized() if direction.length > 1e-9 else axis.copy()
+    turns = []
+    for _pass in range(HAND_AXIS_PASSES):
+        projections = [(p - wrist).dot(direction) for p in region]
+        near, far = min(projections), max(projections)
+        if far <= 1e-9:
+            return None
+        # **The distal slab is a cross-section**, picked by how far along the
+        # hand a point is — not "the distal quarter of the points". Ranking the
+        # points looks equivalent and is not, and the difference is a runaway:
+        # the moment the aim tilts by a hair, the top quarter *by rank* is a
+        # partial ring rather than a whole one, that partial ring's centroid sits
+        # out on the rim, and the next aim tilts further towards it. Measured on
+        # the synthetic biped's 32-vertex two-ring hand, the loop walked off the
+        # tube's own axis and settled 26 degrees away on the rim — and the
+        # placement pass and the gate, starting from slightly different clouds,
+        # settled on *opposite* rims of the same cone, 38 degrees apart. Cutting
+        # by distance keeps whole rings together, so a cone's slab is a ring and
+        # its centroid is on the axis, which is a fixed point rather than a hill.
+        span = max(far - near, 1e-9)
+        fraction = HAND_TIP_SLAB
+        slab = []
+        for _widen in range(5):
+            cut = near + span * (1.0 - fraction)
+            slab = [point for index, point in enumerate(region)
+                    if projections[index] >= cut]
+            if len(slab) >= MIN_SECTION_POINTS:
+                break
+            fraction = min(1.0, fraction * 1.6)
+        if not slab:
+            break
+        nxt = _centroid(slab) - wrist
+        if nxt.length < 1e-9:
+            break
+        nxt = nxt.normalized()
+        turns.append(round(math.degrees(direction.angle(nxt, 0.0)), 3))
+        direction = nxt
+        if turns[-1] < 0.05:
+            break
+
+    ordered = sorted((p - wrist).dot(direction) for p in region)
+    raw_reach = ordered[-1]
+    if raw_reach <= 1e-9:
+        return None
+    reach = ordered[int(round(HAND_REACH_PERCENTILE * (len(ordered) - 1)))]
+    if reach <= 1e-9:
+        reach = raw_reach
+    principal = _principal_axis(region, centre)
+    if principal.dot(direction) < 0.0:
+        principal = -principal
+    return {
+        "direction": direction,
+        "region": region,
+        "reach": reach,
+        "raw_reach": raw_reach,
+        "centroid": centre,
+        "principal": principal,
+        "turns_deg": turns,
+        "points": len(region),
+        "arm_angle_deg": round(math.degrees(direction.angle(axis, 0.0)), 2),
+        "principal_angle_deg": round(
+            math.degrees(direction.angle(principal, 0.0)), 2),
+        "label": label,
+        "how": ("the hand region's own long axis: %d points past the wrist, aimed at "
+                "the centroid of their distal %.0f%% and re-aimed %d time(s) until it "
+                "stopped turning (%s degrees). It reaches %.1f mm (%.1f mm before the "
+                "distal %.0f%% of stray points were trimmed) and sits %.1f degrees off "
+                "the arm's axis, which is the whole reason a slab cut in the arm's "
+                "frame gets this wrong."
+                % (len(region), 100.0 * HAND_TIP_SLAB, len(turns),
+                   ", ".join("%.1f" % t for t in turns) or "0.0",
+                   reach * M_TO_MM, raw_reach * M_TO_MM,
+                   100.0 * (1.0 - HAND_REACH_PERCENTILE),
+                   math.degrees(direction.angle(axis, 0.0)))),
+    }
+
+
+def _hand_section_centre(region, wrist, direction, at, band):
+    """The hand's cross-section centroid ``at`` metres along the palm axis.
+
+    The slab widens until it holds a section rather than a sliver, exactly as
+    :meth:`Limb._slice` does, and the result is pushed back onto the station it
+    was asked for — a slab's centroid is only its centre *across* the slab.
+    """
+    half = band
+    slab = []
+    for _widen in range(6):
+        slab = [p for p in region if abs((p - wrist).dot(direction) - at) <= half]
+        if len(slab) >= MIN_SECTION_POINTS:
+            break
+        half *= 1.6
+    if len(slab) < 3:
+        slab = list(region)
+    centre = _centroid(slab)
+    return centre + direction * (at - (centre - wrist).dot(direction))
+
+
+def hand_landmarks(points, elbow, axis, label="hand"):
+    """The wrist, the palm direction and the knuckle line — from the hand itself.
+
+    The foot's problem, at the other end of the arm, and it took two passes to
+    finish.  The first fixed *where* the wrist is; this one fixes **which way the
+    hand points**, which is a different question and was still wrong after the
+    first.
 
     * **the wrist** is the *first* local minimum of the arm's girth walking
       distally from mid-limb — the taper of the forearm bottoming out, with the
       palm widening after it.  It is deliberately not "the narrowest station in
-      the distal band": the **fingers are narrower than the wrist**, so that
-      rule walks straight past the palm and lands in them, which is exactly the
-      wrist-deep-in-the-palm the owner saw;
-    * **the knuckle line** is where the palm starts tapering into fingers: from
-      the palm's widest station, the first station under
-      :data:`HAND_TAPER_FRACTION` of it.  The hand bone ends *there*, not at the
-      fingertips, because that is where a hand hinges.
+      the distal band": the **fingers are narrower than the wrist**, so that rule
+      walks straight past the palm and lands in them.  It is also not *any* local
+      minimum: the limb has to fatten again after it by :data:`HAND_WRIST_RISE`,
+      because a 2.3% wobble two stations into the band is a local minimum in the
+      strict sense and nothing at all in the flesh — and on the live werewolf
+      that wobble is what threw the left hand away;
+    * **the palm direction** is :func:`hand_axis`: the hand region's own long
+      axis, walked out from the wrist.  Everything below is measured along *it*
+      and not along the arm, which is the fix for a hand bone that pointed
+      outboard out of the mesh;
+    * **the knuckle line** is where the palm tapers into fingers — from the
+      palm's widest station, the first under :data:`HAND_TAPER_FRACTION` of it —
+      now measured in the hand's own frame, and believed only inside
+      :data:`HAND_KNUCKLE_BAND`.  Outside it (or with no taper at all) the tail
+      goes to :data:`HAND_KNUCKLE_FRACTION` of the hand's reach and the report
+      says which of the two it was.  Either way the tail is the **cross-section
+      centroid** at that station, so it lands in the flesh rather than on a ray.
 
-    Returns ``None`` when the arm tag has no hand in it (no station after the
-    wrist is :data:`HAND_PALM_FACTOR` times fatter than the wrist), which is a
-    legitimate thing to be handed and not a thing to invent a palm out of.
+    Returns ``None`` when the arm tag has no hand in it — nothing reaching
+    :data:`HAND_REACH_FACTOR` wrist-girths past the wrist — which is a legitimate
+    thing to be handed and not a thing to invent a palm out of.
     """
     if len(points) < 12:
         return None
@@ -1618,60 +2020,135 @@ def hand_landmarks(points, elbow, axis, label="hand"):
     for index, entry in enumerate(stations):
         entry["girth"] = girths[index]
 
-    # --- the wrist: the first place the taper bottoms out
+    # --- the wrist: the first place the taper bottoms out AND the limb fattens
+    # again afterwards. The second half of that sentence is the whole fix for the
+    # werewolf's left hand: without it a 2.3% wobble at the second station is
+    # "the wrist", nothing past it looks like a palm, and a real hand is thrown
+    # away. The rise is measured against everything distal, because a palm can be
+    # several stations further on than the wobble that pretended to be a wrist.
     wrist_index = None
+    wrist_rise = None
+    rejected = []
     for index in range(1, len(stations) - 1):
-        if (stations[index]["girth"] <= stations[index - 1]["girth"]
+        if not (stations[index]["girth"] <= stations[index - 1]["girth"]
                 and stations[index]["girth"] < stations[index + 1]["girth"]):
+            continue
+        after_max = max(entry["girth"] for entry in stations[index + 1:])
+        rise = (after_max - stations[index]["girth"]) / max(stations[index]["girth"],
+                                                            1e-9)
+        if rise >= HAND_WRIST_RISE:
             wrist_index = index
+            wrist_rise = rise
             break
-    how_wrist = "the first girth minimum walking down the arm — the forearm's taper " \
-                "bottoming out, with the palm widening after it"
+        rejected.append((index, rise))
+    how_wrist = ("the first girth minimum walking down the arm that the limb fattens "
+                 "back up from (by %.1f%%, over the %.0f%% a wobble is allowed) — the "
+                 "forearm's taper bottoming out, with the palm widening after it"
+                 % (100.0 * (wrist_rise or 0.0), 100.0 * HAND_WRIST_RISE))
     if wrist_index is None:
         wrist_index = min(range(len(stations)), key=lambda i: stations[i]["girth"])
-        how_wrist = ("the narrowest station in the arm's distal half (no local minimum "
-                     "— this arm's girth falls all the way to its end)")
-
-    # --- is there a hand past it?
-    after = stations[wrist_index + 1:]
-    if not after:
-        return None
-    widest = max(range(len(after)), key=lambda i: after[i]["girth"])
-    if after[widest]["girth"] < HAND_PALM_FACTOR * stations[wrist_index]["girth"]:
-        return None
-
-    limit = after[widest]["girth"] * HAND_TAPER_FRACTION
-    knuckle_index = None
-    for index in range(widest + 1, len(after)):
-        if after[index]["girth"] < limit:
-            knuckle_index = index
-            break
-    how_knuckle = "the palm's taper into the fingers"
-    if knuckle_index is None:
-        # A mitten with no taper at all, or a hand tagged only to the palm: the
-        # knuckles are the last station measured, and the report says so.
-        knuckle_index = len(after) - 1
-        how_knuckle = ("the end of the tagged hand (its palm never tapers, so there is "
-                       "no knuckle line to find)")
+        how_wrist = ("the narrowest station in the arm's distal half (no girth minimum "
+                     "with a palm behind it — this arm's girth falls all the way to "
+                     "its end)")
+    if rejected:
+        how_wrist += ("; %d earlier minimum(s) were wobbles and were passed over (%s)"
+                      % (len(rejected),
+                         ", ".join("%.1f%%" % (100.0 * r) for _i, r in rejected)))
 
     wrist = stations[wrist_index]["centre"].copy()
     wrist = wrist + axis * (stations[wrist_index]["at"] - (wrist - elbow).dot(axis))
-    knuckle = after[knuckle_index]["centre"].copy()
-    knuckle = knuckle + axis * (after[knuckle_index]["at"] - (knuckle - elbow).dot(axis))
+    wrist_girth = stations[wrist_index]["girth"]
+
+    # --- is there a hand past it, and WHICH WAY DOES IT POINT?
+    palm_axis = hand_axis(points, wrist, axis, label=label)
+    if palm_axis is None:
+        return None
+    if palm_axis["reach"] < HAND_REACH_FACTOR * max(wrist_girth, 1e-9):
+        return None
+    direction = palm_axis["direction"]
+    region = palm_axis["region"]
+    reach = palm_axis["reach"]
+
+    # --- the hand's own cross-sections, across the palm axis and not the arm's
+    step = max(reach / float(HAND_STATIONS - 1), 1e-6)
+    hand_stations = []
+    for index in range(HAND_STATIONS):
+        at = step * index
+        slab = [p for p in region if abs((p - wrist).dot(direction) - at) <= step * 0.75]
+        if len(slab) < 4:
+            continue
+        centre = _centroid(slab)
+        girth = sum(((p - centre) - direction * (p - centre).dot(direction)).length
+                    for p in slab) / float(len(slab))
+        hand_stations.append({"at": at, "girth": girth, "centre": centre,
+                              "count": len(slab)})
+    if len(hand_stations) < 3:
+        return None
+    girths = _smooth([entry["girth"] for entry in hand_stations])
+    for index, entry in enumerate(hand_stations):
+        entry["girth"] = girths[index]
+
+    widest = max(range(len(hand_stations)), key=lambda i: hand_stations[i]["girth"])
+    limit = hand_stations[widest]["girth"] * HAND_TAPER_FRACTION
+    knuckle_at = None
+    knuckle_girth = None
+    for index in range(widest + 1, len(hand_stations)):
+        if hand_stations[index]["girth"] < limit:
+            knuckle_at = hand_stations[index]["at"]
+            knuckle_girth = hand_stations[index]["girth"]
+            break
+    fraction = None if knuckle_at is None else knuckle_at / max(reach, 1e-9)
+    how_knuckle = ("the palm's taper into the fingers, measured across the hand's own "
+                   "axis (%.0f%% of the way along it)" % (100.0 * (fraction or 0.0)))
+    if knuckle_at is None:
+        # A mitten with no taper at all, or a hand tagged only to the palm.
+        knuckle_at = HAND_KNUCKLE_FRACTION * reach
+        how_knuckle = ("%.0f%% of the hand's own reach past the wrist (its palm never "
+                       "tapers, so there is no knuckle line to find)"
+                       % (100.0 * HAND_KNUCKLE_FRACTION))
+    elif not (HAND_KNUCKLE_BAND[0] <= fraction <= HAND_KNUCKLE_BAND[1]):
+        how_knuckle = ("%.0f%% of the hand's own reach past the wrist (the measured "
+                       "taper sits at %.0f%% along it, outside the %.0f-%.0f%% a "
+                       "knuckle line can be — that is the wrist ring again or the end "
+                       "cap, not a knuckle)"
+                       % (100.0 * HAND_KNUCKLE_FRACTION, 100.0 * fraction,
+                          100.0 * HAND_KNUCKLE_BAND[0], 100.0 * HAND_KNUCKLE_BAND[1]))
+        knuckle_at = HAND_KNUCKLE_FRACTION * reach
+
+    knuckle = _hand_section_centre(region, wrist, direction, knuckle_at, step * 0.75)
     palm = (knuckle - wrist).length
+    bone = (knuckle - wrist)
+    bone_angle = (math.degrees(bone.normalized().angle(direction, 0.0))
+                  if bone.length > 1e-9 else 0.0)
     return {
         "wrist": wrist,
         "knuckle": knuckle,
+        "palm_axis": direction,
+        "palm_reach_mm": round(reach * M_TO_MM, 2),
         "palm_mm": round(palm * M_TO_MM, 2),
-        "wrist_girth_mm": round(stations[wrist_index]["girth"] * M_TO_MM, 2),
-        "palm_girth_mm": round(after[widest]["girth"] * M_TO_MM, 2),
-        "tip_mm": round((far - (wrist - elbow).dot(axis)) * M_TO_MM, 2),
+        "wrist_girth_mm": round(wrist_girth * M_TO_MM, 2),
+        "palm_girth_mm": round(hand_stations[widest]["girth"] * M_TO_MM, 2),
+        "tip_mm": round(palm_axis["raw_reach"] * M_TO_MM, 2),
+        "knuckle_fraction": round(knuckle_at / max(reach, 1e-9), 3),
+        "bone_vs_palm_axis_deg": round(bone_angle, 2),
+        "arm_angle_deg": palm_axis["arm_angle_deg"],
+        "principal_angle_deg": palm_axis["principal_angle_deg"],
+        "axis_detail": palm_axis["how"],
         "detail": {
             "wrist": {"how": how_wrist,
-                      "girth_mm": round(stations[wrist_index]["girth"] * M_TO_MM, 2)},
+                      "girth_mm": round(wrist_girth * M_TO_MM, 2)},
+            "palm_axis": {"how": palm_axis["how"],
+                          "axis": [round(v, 5) for v in direction],
+                          "arm_angle_deg": palm_axis["arm_angle_deg"],
+                          "principal_angle_deg": palm_axis["principal_angle_deg"],
+                          "reach_mm": round(reach * M_TO_MM, 2)},
             "knuckle": {"how": how_knuckle,
-                        "palm_girth_mm": round(after[widest]["girth"] * M_TO_MM, 2),
-                        "girth_mm": round(after[knuckle_index]["girth"] * M_TO_MM, 2)},
+                        "palm_girth_mm": round(
+                            hand_stations[widest]["girth"] * M_TO_MM, 2),
+                        "girth_mm": (None if knuckle_girth is None
+                                     else round(knuckle_girth * M_TO_MM, 2)),
+                        "bone_vs_palm_axis_deg": round(bone_angle, 2),
+                        "fraction_of_hand": round(knuckle_at / max(reach, 1e-9), 3)},
         },
     }
 
@@ -2098,15 +2575,16 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
                     (wrist_point - Vector(wrist["point"])).length * M_TO_MM, 2)
                 points["knuckle.%s" % side] = Vector(hand["knuckle"])
                 detail["knuckle.%s" % side] = hand["detail"]["knuckle"]
+                detail["palm_axis.%s" % side] = hand["detail"]["palm_axis"]
                 hands["arm.%s" % side] = hand
             else:
                 warnings.append(
-                    "The %s arm tag has no hand in it (no cross-section past the wrist "
-                    "is %.0f%% fatter than the wrist itself — a palm is), so hand.%s "
-                    "keeps the template's own proportions and its wrist stays at the "
-                    "distal girth minimum. Tag the hand with the arm if the character "
-                    "has one: this is a tagging job, not a fitting one."
-                    % (side, 100.0 * (HAND_PALM_FACTOR - 1.0), side))
+                    "The %s arm tag has no hand in it (nothing reaches %.0f%% of the "
+                    "wrist's own girth past the wrist — a hand does), so hand.%s keeps "
+                    "the template's own proportions and its wrist stays at the distal "
+                    "girth minimum. Tag the hand with the arm if the character has "
+                    "one: this is a tagging job, not a fitting one."
+                    % (side, 100.0 * HAND_REACH_FACTOR, side))
             # ... and an elbow apexes BACKWARD.
             elbow_point, elbow_prebend = prebend_joint(
                 arm, Vector(shoulder["point"]), Vector(elbow["point"]),
