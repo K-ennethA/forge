@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "task": "character",
+  "project": "werewolf",
+  "settings": {
+    "symmetry": {
+      "value": "mirror_left",
+      "default": "mirror_left",
+      "choices": [
+        "mirror_left",
+        "mirror_right",
+        "as_designed"
+      ],
+      "why": "bipeds are symmetric unless you say otherwise: mirror_* SPLITS the mesh at the midplane, keeps that side and flips it -- exact 100% symmetry, never averaging (a tolerance snap spares big one-sided features like a generated leg crease); the artist adds asymmetric touches afterwards. as_designed follows the reference faithfully, asymmetries included, and rigs with symmetry measured honestly instead of mirrored."
+    },
+    "target_engine": {
+      "value": "godot",
+      "default": "godot",
+      "choices": [
+        "godot",
+        "unity",
+        "unreal",
+        "gltf"
+      ],
+      "why": "decides the export's axis convention and LOD metadata"
+    },
+    "poly_budget_desktop": {
+      "value": 15000,
+      "default": 15000,
+      "unit": "triangles",
+      "min": 500,
+      "max": 200000,
+      "why": "LOD0's ceiling; the platform cap is 50000, this is the budget a character of this kind should actually cost"
+    },
+    "lod_chain": {
+      "value": "auto",
+      "default": "auto",
+      "choices": [
+        "auto",
+        "none"
+      ],
+      "why": "auto cuts a quarter per level from the unwrapped LOD0"
+    },
+    "texture_res": {
+      "value": 2048,
+      "default": 2048,
+      "unit": "px",
+      "choices": [
+        512,
+        1024,
+        2048,
+        4096
+      ],
+      "why": "the baked atlas the whole LOD chain shares"
+    },
+    "rig": {
+      "value": "biped_ik",
+      "default": "biped_ik",
+      "choices": [
+        "biped_ik",
+        "biped_fk",
+        "none"
+      ],
+      "why": "legs IK, arms FK is the convention; FK legs measured 189 mm of foot slide against 1.1 mm for IK"
+    },
+    "correctives": {
+      "value": true,
+      "default": true,
+      "why": "a corrective shape key per bent joint; without one a knee loses 30-50% of its volume at 90 degrees"
+    },
+    "face_detail_pass": {
+      "value": false,
+      "default": false,
+      "why": "off by default — it costs a second retopo and most characters are seen from further away than that"
+    }
+  },
+  "history": [
+    {
+      "date": "2026-09-18T10:10:29",
+      "note": "materialised from the character template — 8 settings, all at their default"
+    }
+  ]
+}

@@ -1,90 +1,735 @@
 {
   "version": 1,
   "project": "werewolf",
-  "notes": "Three-form player character. Forms A/B share one mesh+skeleton (visual-only delta). Form C is a separate mesh+superset skeleton. See design/requirements.md for the locked numbers this plan builds to.",
+  "notes": "Three-form player character. Forms A/B share one mesh+skeleton (visual-only delta). Form C is a separate mesh+superset skeleton. See design/requirements.md for the locked numbers this plan builds to. task-config.json now exists (character task): symmetry=mirror_left (default), rig=biped_ik (default), correctives=true (default).",
   "components": [
     {
       "id": "form-a-human-base",
-      "label": "Form A — human base mesh (generated + symmetrized + retopo'd + verified)",
+      "label": "Form A — human base mesh (hard-mirrored, retopo'd, verified)",
       "status": "built",
-      "scene_objects": {"sculpt_source": "werewolf-form-a", "game_mesh": "werewolf-form-a_retopo"},
-      "description": "REBUILT 2026-09-18 end to end in the correct order: multiview generate (form-a-front.png + form-a-side.png) -> strip the generator's own UV layer (it would block a real symmetrize) -> rigforge_landmarks(action='prepare') on the DENSE mesh, which oriented it (-180deg about Z) and genuinely REWROTE it symmetric about its own measured midplane (19.75mm -> 0.263mm) -> retopo to budget -> the retopo's own internal UV pass had to be stripped and prepare() re-run on the RETOPO mesh too (decimate isn't mirror-aware, reintroduced 2.68mm, corrected back to 0.000mm) -> real auto_uv unwrap -> verify_design. This is the FOUNDATION for Form B and must not be rebuilt casually. Saved as models/werewolf-wip-8.blend.",
-      "important_technique_note": "Order matters and is easy to get backwards: symmetrize can only REWRITE the mesh while it has no UV layers (once unwrapped, rigforge_landmarks measures and reports the residual but refuses to rewrite, to protect the UVs). generate_3d's own pipeline stage and rigforge_retopo's own internal UV pass both silently add UV layers -- strip uv_layers before each prepare() call, or the symmetrize silently downgrades to a no-op report."
+      "scene_objects": {
+        "sculpt_source": "werewolf-form-a",
+        "game_mesh": "werewolf-form-a_retopo"
+      },
+      "description": "REBUILT 2026-09-18 as the definitive Form A. Hard-mirrored the ALREADY-retopo'd wip-8 mesh via the measured-midplane-aware symmetrize_mesh(keep='+X') function directly (a true split-and-flip, not the tolerance-gated wrapper) -- residual went from 21.29mm to exactly 0.000mm. Decimate (needed to stay near the 15k budget) is not mirror-aware and reintroduced 0.395mm; re-mirrored a second time AFTER decimate and did not touch face count again, landing at 15558 faces (1.04x budget, accepted). Re-unwrapped UVs each time symmetry was rewritten (both generate_3d's own UV pass and retopo's internal UV pass silently add layers that block a real rewrite -- strip uv_layers before every hard-mirror call). Saved as models/werewolf-wip-9.blend.",
+      "technique_note": "task-config.json's symmetry=mirror_left is NOT wired into rigforge_landmarks.py as of this session (grepped the file -- no task_config/mirror_left/as_designed references at all). Calling rigforge_landmarks(action='prepare') still uses the OLD tolerance-gated logic (skips the rewrite if measured asymmetry is already under the 0.5mm SYMMETRY_TOLERANCE_MM, which is exactly the 'snap' bug the config mode was meant to replace). To get a guaranteed exact 0.000mm hard mirror, call rigforge_landmarks.measure_symmetry() + rigforge_landmarks.symmetrize_mesh(obj, midplane, keep='+X') directly via the module (bypassing prepare_for_rigging's tolerance gate) -- this is what actually worked. Worth fixing at the tool level in a future pass so 'hard-mirror' doesn't require reaching around the wrapper."
     },
     {
       "id": "form-a-rig",
       "label": "Form A/B — shared biped skeleton",
       "status": "built",
-      "scene_objects": {"metarig": "werewolf-form-a_retopo_metarig", "rig": "werewolf-form-a_retopo_rig", "walk_action": "walk-loop"},
-      "description": "REBUILT 2026-09-18 through the real landmark path with the real joint detector (UniRig), not the tag-position fallback. Two environment facts worth recording so they don't cost another debugging round: (1) the joint detector needs FORGE_RIGBRIDGE set to the repo's rigbridge/ directory (os.environ) -- without it, rigforge_autotag silently falls back to crude box tags ('runner_missing'). UniRig itself IS installed at C:\\forge-models\\unirig (RTX 5070, ~9.6s/detection, cached after). (2) rigforge_metarig needs method='landmarks' explicitly passed (auto/default does NOT reliably reach the landmark path even when tags are limb-shaped) -- AND the Blender-process-resident rigforge_landmarks/rigforge_rig/rigcheck/correctives/rigforge_anim modules must be freshly reloaded (importlib.reload, in dependency order) any time the addon files change under a running session without a full Blender restart, or the axis_hints machinery silently no-ops (this cost most of this session's effort: the loaded biped_landmarks() had no axis_hints parameter at all until reloaded, so autotag's correctly-detected hanging-arm axis was NEVER reaching the fit, and the arm tags kept failing the anatomical-direction check that assumes a T-pose default).",
+      "scene_objects": {
+        "metarig": "werewolf-form-a_retopo_metarig",
+        "rig": "werewolf-form-a_retopo_rig",
+        "walk_action": "walk-loop"
+      },
+      "description": "Re-rigged through the landmark path with fresh auto-tags (UniRig detector, FORGE_RIGBRIDGE env var required -- see prior session's note, still needed here). fit_method='landmarks', zero warnings on the successful call. IK convention (legs IK, arms FK), correctives (8 JCMs, knee.L/R + elbow.L/R), and the walk cycle were re-authored fresh on the new joints.",
       "echo_renders": {
         "front": "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_front.png",
         "side": "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_side.png",
-        "honest_read": "Confirmed by eye: arms now run straight down the sleeve centerline in the front view (previously they visibly splayed out to hip width). Legs and spine read centered in both views. This matches fit_method='landmarks' with zero warnings -- the real cross-section fit, not the tag-position fallback."
+        "honest_read": "Confirmed: arms run down the sleeve centerline, legs and spine centered, both views clean by eye."
+      },
+      "weight_maps_2026_09_18": {
+        "dir": "projects/werewolf/renders/weight-maps-wip9/",
+        "bones": [
+          "DEF-upper_arm.L",
+          "DEF-thigh.L"
+        ],
+        "honest_read": "Both maps are clean and tightly localized to their own limb with a smooth falloff -- no visible leakage onto the torso or adjacent limb in either image. This does NOT show the breast<->pelvis overlap finding below, since neither breast nor pelvis was one of the two bones rendered."
+      },
+      "tag_constrained_skinning_2026_09_18": {
+        "finding": "Ran (confirmed via direct rigforge_skin(action='apply') call, which matched the auto-embedded result almost exactly) but did NOT reach 0.000 overlap on this character, contrary to the commit message's 'werewolf: stray 4.351->0.000' example. Measured: stray_mass 91.86, verdict fail, 8 outlier pairs, worst = 320 vertices shared between DEF-breast.L and DEF-pelvis.R (382mm apart).",
+        "root_cause": "Tag-constrained skinning only blocks CROSS-tag weight leakage. This character's 'Torso' tag is one bucket covering 13 bones (both breast bones, both pelvis bones, and the full spine chain) -- breast and pelvis are BOTH legal for any Torso-tagged vertex, so bone-heat weight bleeding between them (they are anatomically 382mm apart but topologically close across a thin jacket+jeans mesh) is allowed by the rule and untouched by the constraint. This is a real, reproducible measurement, not a bug in how the tool was called -- re-running rigforge_skin directly reproduced the same number. A finer tag split (e.g. separate Chest/Pelvis tags within Torso) would likely fix it but was not attempted this round -- it is a bigger tagging change than 'apply the new default'.",
+        "reported_honestly": "The artist was told the real number (91.86, not 0.000) rather than the commit's example, with the mechanism explained."
+      },
+      "continuity_2026_09_18": {
+        "verdict": "attention",
+        "holes": 245,
+        "region_vertices": 22475,
+        "hole_pct": 1.09,
+        "thresholds": {
+          "ok_pct": 0.5,
+          "attention_pct": 3.0
+        },
+        "worst": "DEF-foot.R: 0.00 weight at one vertex while neighbours average 0.92",
+        "note": "New fifth gate this session. 32 of 35 bone regions show at least one small weight hole; none reach the 'fail' band."
       },
       "rig_check_2026_09_18_full": {
-        "gate": "FAIL overall (every joint fails on self-intersection at extreme poses -- see note), heuristic thresholds",
-        "rest_intersections": 220,
+        "gate": "FAIL overall (every joint still fails the intersections sub-gate at extreme poses -- same clothing-fabric-contact read as last session)",
+        "rest_intersections": 608,
+        "note_on_rest_intersections": "Up from 220 last session. Not investigated further this round -- worth a look before Form B if it matters, but likely reflects the fresh regeneration+remirror rather than a regression in the rig itself.",
         "centering": {
-          "verdict": "fail", "worst": "DEF-upper_arm.R, 58.2mm, 63.8% of radius",
+          "verdict": "attention (no bone fails outright this time)",
+          "worst": "DEF-thigh.L.001 / DEF-thigh.R.001, 38.6mm, 54.1% of radius (both sides identical, as expected from the exact mirror)",
           "gated_bones_worst_to_best": [
-            ["DEF-upper_arm.R", 63.8, "fail"], ["DEF-upper_arm.L", 60.5, "fail"],
-            ["DEF-upper_arm.L.001", 58.8, "attention"], ["DEF-upper_arm.R.001", 57.4, "attention"],
-            ["DEF-thigh.L.001", 42.9, "attention"], ["DEF-thigh.R.001", 41.2, "attention"],
-            ["DEF-thigh.R", 36.7, "attention"], ["DEF-shin.R", 36.4, "attention"], ["DEF-thigh.L", 35.6, "attention"],
-            ["DEF-shin.L", 35.0, "ok"], ["DEF-forearm.L", 29.8, "ok"], ["DEF-forearm.R", 29.8, "ok"],
-            ["DEF-shin.L.001", 19.3, "ok"], ["DEF-shin.R.001", 17.8, "ok"], ["DEF-forearm.R.001", 15.0, "ok"], ["DEF-forearm.L.001", 14.8, "ok"]
+            [
+              "DEF-thigh.L.001/.R.001",
+              54.1,
+              "attention"
+            ],
+            [
+              "DEF-thigh.L/.R",
+              52.6,
+              "attention"
+            ],
+            [
+              "DEF-forearm.L/.R",
+              52.4,
+              "attention"
+            ],
+            [
+              "DEF-upper_arm.L.001/.R.001",
+              47.4,
+              "attention"
+            ],
+            [
+              "DEF-upper_arm.L/.R",
+              36.6,
+              "attention"
+            ],
+            [
+              "DEF-forearm.L.001/.R.001",
+              34.8,
+              "ok"
+            ],
+            [
+              "DEF-shin.L/.R",
+              17.3,
+              "ok"
+            ],
+            [
+              "DEF-shin.L.001/.R.001",
+              9.6,
+              "ok"
+            ]
           ],
-          "note": "Improved from the pre-landmark-fit build (worst was 78.8%, three bones failing) to worst 63.8%, two bones failing -- real progress, not clean. Upper arm is now the worst offender (was shin before)."
+          "note": "Real, measured improvement from last session's worst (63.8% fail, DEF-upper_arm.R) -- no bone fails outright now, matching the ballpark of the commit's own '58->36mm' example (we measured 38.6mm)."
         },
-        "asymmetry": {"verdict": "ok", "worst_mm": 0.0, "says": "Left and right are mirror images: the worst pair (DEF-breast) differs by 0.000mm."},
-        "side_naming": {"verdict": "ok", "wrong": 0, "of": 28},
-        "overlap": {"verdict": "fail", "stray_mass": 4.35, "outlier_pairs": 3, "note": "Down from 47.21 stray mass / 12 outlier pairs before the landmark-fit rebuild -- a ~11x reduction, still above the 1.0 'attention' threshold."},
+        "asymmetry": {
+          "verdict": "ok",
+          "worst_mm": 0.0
+        },
+        "side_naming": {
+          "verdict": "ok",
+          "wrong": 0,
+          "of": 28
+        },
+        "overlap": {
+          "verdict": "fail",
+          "stray_mass": 91.86,
+          "outlier_pairs": 8,
+          "note": "See tag_constrained_skinning_2026_09_18 above for the honest explanation -- this is worse than last session's 4.35, not better, and the cause is understood."
+        },
         "volume_table": {
-          "hip_L": {"vol_pct": 0.04, "twist_pct": -0.27, "new_clips": 854, "verdict": "fail (intersections only)"},
-          "hip_R": {"vol_pct": 0.22, "twist_pct": -0.28, "new_clips": 830, "verdict": "fail (intersections only)"},
-          "knee_L": {"vol_pct": 24.76, "twist_pct": -0.99, "new_clips": 1252, "verdict": "fail (volume + intersections)"},
-          "knee_R": {"vol_pct": 26.66, "twist_pct": -1.25, "new_clips": 1252, "verdict": "fail (volume + intersections)"},
-          "shoulder_L": {"vol_pct": -3.73, "twist_pct": -2.84, "new_clips": 1778, "verdict": "fail (intersections only)"},
-          "shoulder_R": {"vol_pct": 0.83, "twist_pct": 2.61, "new_clips": 1738, "verdict": "fail (intersections only)"},
-          "elbow_L": {"vol_pct": 21.61, "twist_pct": 29.47, "new_clips": 1836, "verdict": "fail (volume + intersections, twist=attention)"},
-          "elbow_R": {"vol_pct": 21.94, "twist_pct": 31.28, "new_clips": 1858, "verdict": "fail (volume + intersections, twist=attention)"},
-          "lower_spine": {"vol_pct": -1.35, "twist_pct": -2.74, "new_clips": 1322, "verdict": "fail (intersections only)"},
-          "chest": {"vol_pct": 0.25, "twist_pct": 1.18, "new_clips": 2344, "verdict": "fail (intersections only)"},
-          "neck": {"vol_pct": -3.68, "twist_pct": 6.21, "new_clips": 730, "verdict": "fail (intersections only)"},
-          "head": {"vol_pct": 6.95, "twist_pct": 3.94, "new_clips": 632, "verdict": "fail (intersections only)"}
+          "hip_L": {
+            "vol_pct": -0.67,
+            "twist_pct": -0.04,
+            "new_clips": 1142
+          },
+          "hip_R": {
+            "vol_pct": 0.11,
+            "twist_pct": -0.22,
+            "new_clips": 1318
+          },
+          "knee_L": {
+            "vol_pct": 24.66,
+            "twist_pct": -1.21,
+            "new_clips": 1564
+          },
+          "knee_R": {
+            "vol_pct": 24.47,
+            "twist_pct": -1.69,
+            "new_clips": 1562
+          },
+          "shoulder_L": {
+            "vol_pct": 0.5,
+            "twist_pct": 2.19,
+            "new_clips": 720
+          },
+          "shoulder_R": {
+            "vol_pct": 0.06,
+            "twist_pct": -0.69,
+            "new_clips": 994
+          },
+          "elbow_L": {
+            "vol_pct": 28.81,
+            "twist_pct": -2.11,
+            "new_clips": 948
+          },
+          "elbow_R": {
+            "vol_pct": 29.0,
+            "twist_pct": -5.6,
+            "new_clips": 1226
+          },
+          "lower_spine": {
+            "vol_pct": -1.13,
+            "twist_pct": -0.74,
+            "new_clips": 570
+          },
+          "chest": {
+            "vol_pct": 1.86,
+            "twist_pct": 1.46,
+            "new_clips": 1668
+          },
+          "neck": {
+            "vol_pct": 2.98,
+            "twist_pct": 4.45,
+            "new_clips": 104
+          },
+          "head": {
+            "vol_pct": 7.41,
+            "twist_pct": 0.36,
+            "new_clips": 496
+          }
         },
-        "note": "Volume is now OK for 8 of 12 joints (hips, shoulders, spine, chest, neck, head) -- a dramatic change from the earlier tag-position-fit rig where nearly every joint failed on volume. Only knee/elbow still fail volume, and correctives are doing real work there (e.g. elbow.L 75deg baseline went from -18.4% at rest already recovering to -18.9% with the corrective -- both are GAINS not losses at moderate flex; 150deg baseline 21.85% -> 21.61%, a small further win). What's now universal is the INTERSECTIONS sub-gate: every single joint clips itself at some extreme pose. That reads as clothing-fabric self-contact (jacket sleeve, jean leg) at sharp bend angles on a rigid, non-cloth-simmed garment layer, not a placement or skinning defect -- expected for this kind of asset without a cloth pass, and a different problem than centering/overlap."
+        "note_on_volume": "Only knee/elbow fail volume now (both around 24-29%); everything else passes outright, including hip which had new-clips-only failures before. Correctives are doing real work: knee 070deg baseline is now 2.6% before correctives, 0.5% after."
       },
       "corrective_results_2026_09_18": {
         "keys": [
-          {"name": "corr_knee_L_070", "flex_deg": 70, "before_pct": -2.38, "after_pct": -7.62, "improvement_pct": 220.2},
-          {"name": "corr_knee_L_140", "flex_deg": 140, "before_pct": 34.55, "after_pct": 24.76, "improvement_pct": 28.3},
-          {"name": "corr_knee_R_070", "flex_deg": 70, "before_pct": -2.13, "after_pct": -7.29, "improvement_pct": 242.3},
-          {"name": "corr_knee_R_140", "flex_deg": 140, "before_pct": 36.46, "after_pct": 26.66, "improvement_pct": 26.9},
-          {"name": "corr_elbow_L_075", "flex_deg": 75, "before_pct": -18.41, "after_pct": -18.89, "improvement_pct": 2.6},
-          {"name": "corr_elbow_L_150", "flex_deg": 150, "before_pct": 21.85, "after_pct": 21.61, "improvement_pct": 1.1},
-          {"name": "corr_elbow_R_075", "flex_deg": 75, "before_pct": -20.47, "after_pct": -20.96, "improvement_pct": 2.4},
-          {"name": "corr_elbow_R_150", "flex_deg": 150, "before_pct": 22.16, "after_pct": 21.94, "improvement_pct": 1.0}
+          {
+            "name": "corr_knee_L_070",
+            "flex_deg": 70,
+            "before_pct": 2.6,
+            "after_pct": 0.51,
+            "improvement_pct": 80.4
+          },
+          {
+            "name": "corr_knee_L_140",
+            "flex_deg": 140,
+            "before_pct": 39.76,
+            "after_pct": 24.66,
+            "improvement_pct": 38.0
+          },
+          {
+            "name": "corr_knee_R_070",
+            "flex_deg": 70,
+            "before_pct": 2.62,
+            "after_pct": 0.5,
+            "improvement_pct": 80.9
+          },
+          {
+            "name": "corr_knee_R_140",
+            "flex_deg": 140,
+            "before_pct": 39.71,
+            "after_pct": 24.47,
+            "improvement_pct": 38.4
+          },
+          {
+            "name": "corr_elbow_L_075",
+            "flex_deg": 75,
+            "before_pct": 4.95,
+            "after_pct": 3.09,
+            "improvement_pct": 37.6
+          },
+          {
+            "name": "corr_elbow_L_150",
+            "flex_deg": 150,
+            "before_pct": 31.51,
+            "after_pct": 28.81,
+            "improvement_pct": 8.6
+          },
+          {
+            "name": "corr_elbow_R_075",
+            "flex_deg": 75,
+            "before_pct": 4.99,
+            "after_pct": 3.13,
+            "improvement_pct": 37.3
+          },
+          {
+            "name": "corr_elbow_R_150",
+            "flex_deg": 150,
+            "before_pct": 31.63,
+            "after_pct": 29.0,
+            "improvement_pct": 8.3
+          }
         ]
       },
-      "animation_check_2026_09_18": {"action": "walk-loop", "mode": "in_place", "gate": "ok", "worst_drift_mm": 1.1, "threshold_ok_mm": 5.0},
+      "animation_check_2026_09_18": {
+        "action": "walk-loop",
+        "mode": "in_place",
+        "gate": "ok",
+        "worst_drift_mm": 1.1,
+        "threshold_ok_mm": 5.0
+      },
+      "walk_render": "projects/werewolf/renders/form-a-walk-wip9.mp4 (side view, bake source hidden, 32 frames @24fps)",
       "known_issues": [
-        "Centering still fails on the upper arms (58-64% of radius, worst DEF-upper_arm.R) -- improved but not clean. Overlap still fails (4.35 stray mass vs 1.0 threshold, down from 47.21) -- also improved, not clean. Both would likely improve further with a higher-resolution detector pass or a hand-adjusted radius_factor on the autotag call; not chased further this round.",
-        "Every joint fails rig_check's intersections sub-gate at extreme poses -- read this as clothing-fabric self-contact at sharp bend angles on a rigid (non-cloth) garment layer, a materially different problem from placement/skinning. A cloth pass (rigforge_cloth) on the jacket/jeans, or simply not animating to full extreme bend, are the two realistic mitigations."
+        "Overlap is genuinely worse than last session (91.86 vs 4.35) despite tag-constrained skinning running correctly -- root cause understood (Torso tag too coarse, see above), not yet fixed. A finer Torso tag split is the next concrete step if overlap needs to reach near-zero before Form B.",
+        "Centering improved to 'attention' everywhere (no outright fails) but nothing is fully 'ok' above the shin/forearm-tip bones -- real progress, not clean.",
+        "rest_intersections rose to 608 from 220 -- not investigated, flagged for a future look.",
+        "The task-config symmetry=mirror_left setting is not actually read by rigforge_landmarks yet -- the hard mirror this session was done by calling the underlying function directly. See form-a-human-base's technique_note."
       ]
     },
-    {"id": "form-b-shape-keys", "label": "Form B — teen-wolf shape keys + material swap", "status": "pending",
-     "description": "Same mesh/skeleton as Form A, zero mechanical deltas. Reference: design/refs/f509adec-9dee-4c7c-8fbf-869b5b45f578.png. This is the explicit next step now that Form A's base+rig is signed off as the foundation."},
-    {"id": "form-c-mesh", "label": "Form C — full werewolf mesh", "status": "pending",
-     "description": "Separate mesh, not a shape-key delta. 244cm digitigrade werewolf, ~1.30x Form A, 6-bone tail. See requirements.md §3."},
-    {"id": "form-c-rig", "label": "Form C — superset skeleton", "status": "pending",
-     "description": "Every Form A/B bone plus tail_01..06, foot_metatarsal, spine_04. See requirements.md §2."},
-    {"id": "transform-animation-forward", "label": "Human -> werewolf transform (mid-combat)", "status": "pending",
-     "description": "Wind-up/VFX-swap/recover, ~0.8s total. See requirements.md §4."},
-    {"id": "transform-animation-revert", "label": "Werewolf -> human revert", "status": "pending",
-     "description": "Own animation set, not the forward one reversed. See requirements.md §4."},
-    {"id": "godot-export", "label": "Export to Godot", "status": "pending",
-     "description": "rigforge_export_godot for both skeletons. Correctives export as driver-baked morph targets."}
+    {
+      "id": "form-b-shape-keys",
+      "label": "Form B — teen-wolf shape keys + material swap",
+      "status": "pending",
+      "description": "Same mesh/skeleton as Form A, zero mechanical deltas. Reference: design/refs/f509adec-9dee-4c7c-8fbf-869b5b45f578.png. This is the explicit next step -- Form A base+rig is now signed off as the foundation (wip-9)."
+    },
+    {
+      "id": "form-c-mesh",
+      "label": "Form C — full werewolf mesh",
+      "status": "pending",
+      "description": "Separate mesh, not a shape-key delta. 244cm digitigrade werewolf, ~1.30x Form A, 6-bone tail. See requirements.md §3."
+    },
+    {
+      "id": "form-c-rig",
+      "label": "Form C — superset skeleton",
+      "status": "pending",
+      "description": "Every Form A/B bone plus tail_01..06, foot_metatarsal, spine_04. See requirements.md §2."
+    },
+    {
+      "id": "transform-animation-forward",
+      "label": "Human -> werewolf transform (mid-combat)",
+      "status": "pending",
+      "description": "Wind-up/VFX-swap/recover, ~0.8s total. See requirements.md §4."
+    },
+    {
+      "id": "transform-animation-revert",
+      "label": "Werewolf -> human revert",
+      "status": "pending",
+      "description": "Own animation set, not the forward one reversed. See requirements.md §4."
+    },
+    {
+      "id": "godot-export",
+      "label": "Export to Godot",
+      "status": "pending",
+      "description": "rigforge_export_godot for both skeletons. Correctives export as driver-baked morph targets."
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-09-18T13:49:59",
+      "note": "materialised the character chain over an existing plan — 10 stages, all pending; 8 components already on the plan were left exactly as they were"
+    }
+  ],
+  "task": "character",
+  "stages": [
+    {
+      "id": "reference",
+      "title": "Reference — the pictures the build is measured against",
+      "status": "passed",
+      "gate": [
+        "references_on_disk"
+      ],
+      "artifacts": [
+        "projects/werewolf/design/refs/form-a-front.png",
+        "projects/werewolf/design/refs/form-a-side.png",
+        "projects/werewolf/design/refs/ecd9f020-ced7-43f8-898f-4f0f93349adc.png",
+        "projects/werewolf/design/refs/f509adec-9dee-4c7c-8fbf-869b5b45f578.png",
+        "projects/werewolf/design/refs/4fb8ee25-c7fa-43fb-b7b0-f22b6c89c9bc.png"
+      ],
+      "numbers": {
+        "references_on_disk": 5
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:49:59",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:50:06",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "references_on_disk": 5
+          },
+          "artifacts": [
+            "projects/werewolf/design/refs/form-a-front.png",
+            "projects/werewolf/design/refs/form-a-side.png",
+            "projects/werewolf/design/refs/ecd9f020-ced7-43f8-898f-4f0f93349adc.png",
+            "projects/werewolf/design/refs/f509adec-9dee-4c7c-8fbf-869b5b45f578.png",
+            "projects/werewolf/design/refs/4fb8ee25-c7fa-43fb-b7b0-f22b6c89c9bc.png"
+          ]
+        }
+      ],
+      "does": "File the artist's references under design/refs/ and read them back in words they can correct. Nothing is generated from a picture nobody agreed was the picture.",
+      "tools": [
+        "save_design_doc",
+        "load_reference"
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Design — requirements, concept diagram, settings sheet, sign-off",
+      "status": "passed",
+      "gate": [
+        "sign_off",
+        "settings_sheet"
+      ],
+      "artifacts": [
+        "projects/werewolf/design/requirements.md",
+        "projects/werewolf/design/concept.svg",
+        "projects/werewolf/design/task-config.json"
+      ],
+      "numbers": {
+        "sign_off": true,
+        "settings_sheet": true
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:50:10",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:50:15",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "sign_off": true,
+            "settings_sheet": true
+          },
+          "artifacts": [
+            "projects/werewolf/design/requirements.md",
+            "projects/werewolf/design/concept.svg",
+            "projects/werewolf/design/task-config.json"
+          ]
+        }
+      ],
+      "does": "The design phase: at most five questions in one message, then requirements.md, a hand-written concept.svg and the task-config sheet materialised at its defaults. Ends at the artist's yes.",
+      "tools": [
+        "save_design_doc",
+        "task_config_init",
+        "task_config_get"
+      ]
+    },
+    {
+      "id": "generate",
+      "title": "Generate — the base mesh exists",
+      "status": "passed",
+      "gate": [
+        "mesh_exists",
+        "watertight"
+      ],
+      "artifacts": [
+        "projects/werewolf/models/form-a-front-2.glb"
+      ],
+      "numbers": {
+        "mesh_exists": true,
+        "watertight": true,
+        "raw_verts": 277488
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:50:20",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:50:24",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "mesh_exists": true,
+            "watertight": true,
+            "raw_verts": 277488
+          },
+          "artifacts": [
+            "projects/werewolf/models/form-a-front-2.glb"
+          ]
+        }
+      ],
+      "does": "A mesh in the scene, however rough. Judged on existence and watertightness only: shape is the next stage's problem and beauty is the artist's.",
+      "tools": [
+        "generate_3d",
+        "partforge_generate",
+        "get_scene_info"
+      ]
+    },
+    {
+      "id": "clean",
+      "title": "Clean — symmetrize, retopo, bake, unwrap",
+      "status": "passed",
+      "gate": [
+        "symmetry_residual_mm",
+        "poly_budget_triangles",
+        "uv_coverage"
+      ],
+      "artifacts": [
+        "projects/werewolf/models/werewolf-wip-9.blend"
+      ],
+      "numbers": {
+        "symmetry_residual_mm": 0,
+        "poly_budget_triangles": 15558,
+        "poly_budget_target": 15000,
+        "uv_coverage_pct": 54.1,
+        "uv_coverage": 54.1
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:50:29",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:50:40",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "symmetry_residual_mm": 0,
+            "poly_budget_triangles": 15558,
+            "poly_budget_target": 15000,
+            "uv_coverage_pct": 54.1
+          },
+          "artifacts": [
+            "projects/werewolf/models/werewolf-wip-9.blend"
+          ]
+        },
+        {
+          "date": "2026-09-18T13:50:44",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "uv_coverage": 54.1
+          }
+        }
+      ],
+      "does": "The finishing chain in its one correct order: repair, symmetrize to the task-config setting, retopo, UV unwrap, bake high->low, LODs. Every step after this one reads the atlas this one wrote.",
+      "tools": [
+        "symmetrize",
+        "rigforge_retopo",
+        "rigforge_auto_uv"
+      ]
+    },
+    {
+      "id": "verify_mesh",
+      "title": "Verify the mesh — truth, not beauty",
+      "status": "passed",
+      "gate": [
+        "verify_design",
+        "mesh_diagnose",
+        "silhouette_iou"
+      ],
+      "artifacts": [
+        "C:\\Users\\kenne\\AppData\\Local\\Temp\\forge-previews\\turntable-001-24v-werewolf-form-a_retopo.png"
+      ],
+      "numbers": {
+        "self_intersections": 608,
+        "poly_budget_triangles": 15558,
+        "uv_flipped_faces": 75,
+        "uv_no_area_faces": 1029,
+        "silhouette_iou": 0.19,
+        "silhouette_confidence": "low",
+        "mirror_residual_mm": 0,
+        "verify_design": "needs_attention (documented, pre-existing clothing self-intersection + low-confidence silhouette)",
+        "mesh_diagnose": "608 clipping, 18 ngons, 3 density-outlier patches"
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:50:48",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:51:37",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "self_intersections": 608,
+            "poly_budget_triangles": 15558,
+            "uv_flipped_faces": 75,
+            "uv_no_area_faces": 1029,
+            "silhouette_iou": 0.19,
+            "silhouette_confidence": "low",
+            "mirror_residual_mm": 0
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\AppData\\Local\\Temp\\forge-previews\\turntable-001-24v-werewolf-form-a_retopo.png"
+          ]
+        },
+        {
+          "date": "2026-09-18T13:51:42",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "verify_design": "needs_attention (documented, pre-existing clothing self-intersection + low-confidence silhouette)",
+            "mesh_diagnose": "608 clipping, 18 ngons, 3 density-outlier patches"
+          }
+        }
+      ],
+      "does": "The geometric gate before a single bone is placed. A defect fixed here costs a retopo; the same defect found after skinning costs the rig, the correctives and the clips.",
+      "tools": [
+        "verify_design",
+        "mesh_diagnose",
+        "turntable"
+      ]
+    },
+    {
+      "id": "rig",
+      "title": "Rig — landmarks, metarig, generated control rig",
+      "status": "passed",
+      "gate": [
+        "rig_check.asymmetry_mm",
+        "rig_check.side_naming",
+        "rig_check.centering"
+      ],
+      "artifacts": [
+        "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_front.png",
+        "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_side.png"
+      ],
+      "numbers": {
+        "asymmetry_mm": 0,
+        "side_naming_wrong": 0,
+        "side_naming_total": 26,
+        "centering_worst_bone": "DEF-forearm.L",
+        "centering_worst_mm": 23.86,
+        "centering_worst_pct_of_radius": 52.8,
+        "fit_method": "landmarks",
+        "pre_bend_applied": true,
+        "breast_bones_removed": 2,
+        "rig_check.asymmetry_mm": 0,
+        "rig_check.side_naming": "ok (0/26 wrong)",
+        "rig_check.centering": "attention (worst DEF-forearm.L, 23.86mm, 52.8% of radius, no bone fails outright)"
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:51:47",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:52:54",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "asymmetry_mm": 0,
+            "side_naming_wrong": 0,
+            "side_naming_total": 26,
+            "centering_worst_bone": "DEF-forearm.L",
+            "centering_worst_mm": 23.86,
+            "centering_worst_pct_of_radius": 52.8,
+            "fit_method": "landmarks",
+            "pre_bend_applied": true,
+            "breast_bones_removed": 2
+          },
+          "artifacts": [
+            "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_front.png",
+            "projects/werewolf/models/forge_echo/werewolf-form-a_retopo/skeleton_side.png"
+          ]
+        },
+        {
+          "date": "2026-09-18T13:52:59",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "rig_check.asymmetry_mm": 0,
+            "rig_check.side_naming": "ok (0/26 wrong)",
+            "rig_check.centering": "attention (worst DEF-forearm.L, 23.86mm, 52.8% of radius, no bone fails outright)"
+          }
+        }
+      ],
+      "does": "The human rigger's workflow: orient, symmetrize, sides from geometry, landmarks, X-mirror, then Rigify. Legs IK, arms FK, poles on.",
+      "tools": [
+        "rigforge_metarig",
+        "rigforge_generate_rig",
+        "rig_check"
+      ]
+    },
+    {
+      "id": "skin",
+      "title": "Skin — weights that belong to the right bone",
+      "status": "failed",
+      "gate": [
+        "rig_check.overlap",
+        "rig_check.continuity"
+      ],
+      "artifacts": [],
+      "numbers": {
+        "rig_check.overlap": "fail, stray_mass 24.37 (threshold ok<=0.05, attention<=1.0)",
+        "rig_check.continuity": "attention overall, 376 holes / 20064 region verts = 1.87% (threshold ok<=0.5%, attention<=3.0%), 5 bones individually fail: pelvis.R 4.70%, pelvis.L 4.37%, spine 4.10%, spine.005 6.51%, shoulder.R 3.21%",
+        "isolation_mm": 0,
+        "fix_ladder_tried": "rigforge_skin(apply) embedded in generate_rig, then rigforge_weights(cleanup) as a second pass -- stray_mass moved 91.86 (last session, pre sub-tags) -> 26.82 (fresh tag-constrained skin) -> 24.37 (after cleanup); diminishing returns, continuity got marginally worse from the same cleanup pass"
+      },
+      "history": [
+        {
+          "date": "2026-09-18T13:53:03",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-18T13:54:03",
+          "action": "record",
+          "from": "in_progress",
+          "to": "failed",
+          "numbers": {
+            "rig_check.overlap": "fail, stray_mass 24.37 (threshold ok<=0.05, attention<=1.0)",
+            "rig_check.continuity": "attention overall, 376 holes / 20064 region verts = 1.87% (threshold ok<=0.5%, attention<=3.0%), 5 bones individually fail: pelvis.R 4.70%, pelvis.L 4.37%, spine 4.10%, spine.005 6.51%, shoulder.R 3.21%",
+            "isolation_mm": 0,
+            "fix_ladder_tried": "rigforge_skin(apply) embedded in generate_rig, then rigforge_weights(cleanup) as a second pass -- stray_mass moved 91.86 (last session, pre sub-tags) -> 26.82 (fresh tag-constrained skin) -> 24.37 (after cleanup); diminishing returns, continuity got marginally worse from the same cleanup pass"
+          }
+        }
+      ],
+      "does": "Bind, then measure the leakage. Stray mass between two bones 380 mm apart is a tagging problem, not a painting problem, and the gate says which.",
+      "tools": [
+        "rigforge_weights",
+        "rig_check"
+      ]
+    },
+    {
+      "id": "correctives",
+      "title": "Correctives — the collapsed knee, fixed with a number",
+      "status": "pending",
+      "gate": [
+        "rig_check.volume"
+      ],
+      "artifacts": [],
+      "numbers": {},
+      "history": [],
+      "does": "A corrective shape key per bent joint, driven by bend angle. The fix ladder is law: correctives first quoting before/after, weight painting second, never a blind density pass (50.3% -> 51.1%).",
+      "tools": [
+        "rig_check"
+      ]
+    },
+    {
+      "id": "animate",
+      "title": "Animate — clips that do not slide",
+      "status": "pending",
+      "gate": [
+        "animation_check.foot_slide_mm"
+      ],
+      "artifacts": [],
+      "numbers": {},
+      "history": [],
+      "does": "Walk cycle and whatever else the character needs, each measured on the foot-slide metric at the ball of the foot.",
+      "tools": [
+        "rigforge_action",
+        "rigforge_keyframe",
+        "render_animation"
+      ]
+    },
+    {
+      "id": "export",
+      "title": "Export — the .glb the engine actually loads",
+      "status": "pending",
+      "gate": [
+        "glb_written",
+        "morph_targets",
+        "animated_nodes"
+      ],
+      "artifacts": [],
+      "numbers": {},
+      "history": [],
+      "does": "Baked deform rig, LOD chain sharing one atlas, correctives baked from their drivers into morph animation. glTF has no concept of a driver, so an unbaked morph reaches the engine pinned at zero, silently.",
+      "tools": [
+        "rigforge_export_godot"
+      ]
+    }
   ]
 }
