@@ -89,10 +89,23 @@ RECORDABLE: Tuple[str, ...] = ("pending", "in_progress", "passed", "failed")
 GREEN: Tuple[str, ...] = ("passed", "overridden")
 
 #: What a stage entry may carry. `id`, `title` and `status` are always there.
+#: `cost` only shows up once something has been recorded against the stage —
+#: see :func:`coerce_cost`.
 STAGE_KEYS: Tuple[str, ...] = (
     "id", "title", "status", "gate", "artifacts", "numbers", "history",
-    "does", "tools",
+    "does", "tools", "cost",
 )
+
+#: What one cost *recording* may carry — a single turn's spend, handed to
+#: :func:`record` or :func:`advance`. Unknown keys are refused the same way an
+#: unnamed measurement is.
+COST_KEYS: Tuple[str, ...] = ("usd", "tokens_in", "tokens_out", "model")
+
+#: What a stage's *accumulated* `cost` carries once one or more recordings have
+#: folded into it. `model` becomes `models` here: a stage worked over more than
+#: one turn may have spent under more than one model, and accumulating a name
+#: by overwriting it would lose that.
+COST_TOTAL_KEYS: Tuple[str, ...] = ("usd", "tokens_in", "tokens_out", "models")
 
 #: One marker per status, so the board scans as a column rather than as prose.
 MARKERS: Dict[str, str] = {
@@ -529,6 +542,14 @@ def _validate_stage(stage: Any, index: int, where: str,
                 + ("list" if kind is list else "mapping of name to number")
                 + "."
             )
+    cost = stage.get("cost")
+    if cost is not None and not isinstance(cost, Mapping):
+        raise ForgeError(
+            f"{where}stage {ident!r}'s \"cost\" is a running total of what work "
+            f"on it has spent — {{\"usd\": 1.23, \"tokens_in\": 4000, "
+            "\"tokens_out\": 900, \"models\": [\"sonnet\"]}} — not a "
+            f"{type(cost).__name__}."
+        )
 
 
 def write(slug: str, plan: Mapping[str, Any]) -> Path:
@@ -690,11 +711,18 @@ def advance(
     override: bool = False,
     who: str = "",
     why: str = "",
+    cost: Any = None,
 ) -> Dict[str, Any]:
     """Start a stage. Refuses a skip; an override is signed and never silent.
 
     Returns a small report of what happened: the entry, what it was, whether
     anything was stepped over and whether this re-opened work already done.
+
+    *cost* works exactly as it does in :func:`record` — an optional increment
+    that accumulates onto the stage being started. It is checked and folded in
+    only once every ordering rule above has already let the advance through: a
+    red gate refuses the advance regardless of what *cost* says, the same as it
+    refuses regardless of *numbers* or *artifacts*.
     """
     index, entry = find_stage(plan, stage)
     ident = str(entry.get("id"))
@@ -707,6 +735,8 @@ def advance(
 
     if (red or unfinished) and not override:
         raise _skip_refusal(plan, ident, red, unfinished)
+
+    spent = coerce_cost(cost)
 
     signature = None
     if red or unfinished:
@@ -746,7 +776,11 @@ def advance(
             "stepped_over": stepped_over,
             "skipped": [str(item.get("id")) for item in unfinished],
         }
+    if spent:
+        record_entry["cost"] = spent
     entry.setdefault("history", []).append(record_entry)
+    if spent:
+        _accumulate_cost(entry, spent)
 
     return {
         "stage": entry,
@@ -755,6 +789,7 @@ def advance(
         "overridden": stepped_over,
         "skipped": [str(item.get("id")) for item in unfinished],
         "signature": signature,
+        "cost": spent,
     }
 
 
@@ -912,6 +947,105 @@ def coerce_artifacts(artifacts: Any) -> List[str]:
     return out
 
 
+def coerce_cost(cost: Any) -> Dict[str, Any]:
+    """One recording's spend, checked but not yet folded in. ``{}`` for none.
+
+    A stage can be worked several times — including after a red gate sends it
+    back — so this is deliberately an *increment*, not a total: what one turn
+    spent, for :func:`_accumulate_cost` to add onto what is already there.
+    """
+    if cost is None:
+        return {}
+    if not isinstance(cost, Mapping):
+        raise ForgeError(
+            "`cost` is what this recording spent — {\"usd\": 1.23, "
+            "\"tokens_in\": 4000, \"tokens_out\": 900, \"model\": \"sonnet\"} — "
+            f"not a {type(cost).__name__}. Nothing was changed."
+        )
+    unknown = [str(key) for key in cost if str(key) not in COST_KEYS]
+    if unknown:
+        raise ForgeError(
+            "`cost` only knows " + ", ".join(COST_KEYS) + " — "
+            + ", ".join(repr(key) for key in unknown)
+            + " is not one of them. Nothing was changed."
+        )
+    out: Dict[str, Any] = {}
+    for key in ("usd", "tokens_in", "tokens_out"):
+        if key not in cost:
+            continue
+        value = cost[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ForgeError(
+                f"cost.{key} is {value!r}, which is not a number. Nothing was "
+                "changed."
+            )
+        if value < 0:
+            raise ForgeError(
+                f"cost.{key} is {value!r} — spend does not go negative. "
+                "Nothing was changed."
+            )
+        out[key] = value
+    if "model" in cost:
+        model = cost["model"]
+        if not isinstance(model, str) or not model.strip():
+            raise ForgeError(
+                "cost.model is the name of the model that did the work, as a "
+                f"non-empty string — {model!r} is not one. Nothing was changed."
+            )
+        out["model"] = model.strip()
+    return out
+
+
+def _accumulate_cost(entry: Dict[str, Any],
+                     increment: Mapping[str, Any]) -> Dict[str, Any]:
+    """Fold one recording's spend into the stage's running total, in place.
+
+    ``usd``/``tokens_in``/``tokens_out`` sum; a ``model`` joins the running
+    list of distinct models this stage has been worked under rather than
+    overwriting whatever was recorded last.
+    """
+    totals: Dict[str, Any] = dict(entry.get("cost") or {})
+    for key in ("usd", "tokens_in", "tokens_out"):
+        if key in increment:
+            totals[key] = totals.get(key, 0) + increment[key]
+    model = increment.get("model")
+    if model:
+        models = list(totals.get("models") or [])
+        if model not in models:
+            models.append(model)
+        totals["models"] = models
+    entry["cost"] = totals
+    return totals
+
+
+def cost_total(plan: Mapping[str, Any]) -> Dict[str, Any]:
+    """The plan's total spend, added up from every stage that carries one.
+
+    ``{}`` — never a zero — for a plan nobody has recorded any cost against
+    yet, the same "never invent a number" rule :func:`fmt_board` follows for a
+    single stage.
+    """
+    total: Dict[str, Any] = {}
+    models: List[str] = []
+    any_cost = False
+    for entry in plan.get("stages") or []:
+        cost = entry.get("cost")
+        if not isinstance(cost, Mapping) or not cost:
+            continue
+        any_cost = True
+        for key in ("usd", "tokens_in", "tokens_out"):
+            if key in cost:
+                total[key] = total.get(key, 0) + cost[key]
+        for model in cost.get("models") or []:
+            if model not in models:
+                models.append(model)
+    if not any_cost:
+        return {}
+    if models:
+        total["models"] = models
+    return total
+
+
 def record(
     plan: Dict[str, Any],
     stage: Any,
@@ -920,18 +1054,25 @@ def record(
     artifacts: Any = None,
     *,
     replace: bool = False,
+    cost: Any = None,
 ) -> Dict[str, Any]:
     """Write a stage's result in. Returns a report of what changed.
 
     *numbers* and *artifacts* merge into what the stage already carries unless
     *replace*, because a stage is usually measured by more than one tool and the
     second call should not erase the first one's number.
+
+    *cost* is what THIS recording spent — ``{"usd": 1.23, "tokens_in": 4000,
+    "tokens_out": 900, "model": "sonnet"}`` — and it always accumulates onto
+    the stage's running total, ``replace`` or not: a stage worked three times
+    spent whatever the sum of those three turns was, never just the last one.
     """
     _index, entry = find_stage(plan, stage)
     ident = str(entry.get("id"))
     verdict = coerce_status(status)
     measured = coerce_numbers(numbers)
     produced = coerce_artifacts(artifacts)
+    spent = coerce_cost(cost)
 
     if verdict == "passed" and not measured and not (entry.get("numbers") or {}):
         raise ForgeError(
@@ -958,6 +1099,8 @@ def record(
                 existing.append(path)
         entry["artifacts"] = existing
     entry["status"] = verdict
+    if spent:
+        _accumulate_cost(entry, spent)
 
     history: Dict[str, Any] = {
         "date": _stamp(), "action": "record",
@@ -969,6 +1112,8 @@ def record(
         history["artifacts"] = produced
     if replace:
         history["replace"] = True
+    if spent:
+        history["cost"] = spent
     entry.setdefault("history", []).append(history)
 
     uncovered = [name for name in (entry.get("gate") or [])
@@ -979,6 +1124,7 @@ def record(
         "status": verdict,
         "numbers": measured,
         "artifacts": produced,
+        "cost": spent,
         "uncovered": uncovered,
         "missing_files": missing_files(entry.get("artifacts") or []),
     }
@@ -1020,6 +1166,30 @@ def _short(value: Any) -> str:
 def _numbers_line(numbers: Mapping[str, Any]) -> str:
     return ", ".join(f"{name} {_short(value)}"
                      for name, value in numbers.items())
+
+
+def _cost_line(cost: Mapping[str, Any]) -> str:
+    """One cost total, rendered the way the board quotes a measurement.
+
+    Never invents a figure: a total with no ``usd`` on it prints no dollar
+    sign, one with no tokens prints no token count.
+    """
+    bits: List[str] = []
+    if "usd" in cost:
+        try:
+            bits.append(f"${float(cost['usd']):.2f}")
+        except (TypeError, ValueError):
+            bits.append(f"${cost['usd']}")
+    tok_in = cost.get("tokens_in")
+    tok_out = cost.get("tokens_out")
+    if tok_in is not None or tok_out is not None:
+        tokens = (f"{_short(tok_in) if tok_in is not None else '-'} in / "
+                  f"{_short(tok_out) if tok_out is not None else '-'} out")
+        bits.append(f"({tokens} tokens)")
+    models = cost.get("models") or ([cost["model"]] if cost.get("model") else [])
+    if models:
+        bits.append(", ".join(str(item) for item in models))
+    return " ".join(bits)
 
 
 def tally(plan: Mapping[str, Any]) -> Dict[str, int]:
@@ -1091,6 +1261,9 @@ def fmt_board(
             for item in artifacts:
                 suffix = "   (NOT ON DISK)" if item in gone else ""
                 lines.append(f"  {pad}artifact: {item}{suffix}")
+        stage_cost = entry.get("cost")
+        if isinstance(stage_cost, Mapping) and stage_cost:
+            lines.append(f"  {pad}cost: {_cost_line(stage_cost)}")
         if status in ("pending", "in_progress"):
             gate = ", ".join(str(item) for item in entry.get("gate") or [])
             if gate:
@@ -1111,6 +1284,9 @@ def fmt_board(
         + ", ".join(f"{counts[status]} {status}" for status in STATUSES
                     if counts[status])
     )
+    total_cost = cost_total(plan)
+    if total_cost:
+        lines.append(f"  cost total: {_cost_line(total_cost)}")
     lines.append("  next: " + _next_line(plan))
 
     components = plan.get("components")
@@ -1197,6 +1373,9 @@ def fmt_advance(*, plan: Mapping[str, Any], path: Path, slug: str,
         note = (f"OVERRIDE signed by {signature['who']}: {signature['why']} — "
                 + "; ".join(parts)
                 + ". It is on both stages' history for good.")
+    if report.get("cost"):
+        spent = f"spent {_cost_line(report['cost'])} starting {ident}."
+        note = f"{note} {spent}" if note else spent
     body = fmt_board(plan=plan, path=path, slug=slug, head=head, note=note)
     gate = ", ".join(str(item) for item in entry.get("gate") or [])
     return body + (
@@ -1227,6 +1406,9 @@ def fmt_record(*, plan: Mapping[str, Any], path: Path, slug: str,
             + ", ".join(report["missing_files"])
             + " — a path is a claim, and this one does not check out."
         )
+    if report.get("cost"):
+        notes.append(f"spent {_cost_line(report['cost'])} this turn — "
+                      f"stage total: {_cost_line(entry.get('cost') or {})}.")
     body = fmt_board(plan=plan, path=path, slug=slug, head=head,
                      note=" ".join(notes))
     if verdict == "failed":
@@ -1288,6 +1470,8 @@ def fmt_status(*, plan: Mapping[str, Any], path: Path, slug: str,
 
 
 __all__ = [
+    "COST_KEYS",
+    "COST_TOTAL_KEYS",
     "GREEN",
     "MARKERS",
     "PLAN_FILENAME",
@@ -1300,8 +1484,10 @@ __all__ = [
     "blocked",
     "chain_ids",
     "coerce_artifacts",
+    "coerce_cost",
     "coerce_numbers",
     "coerce_status",
+    "cost_total",
     "exists",
     "find_stage",
     "fmt_advance",

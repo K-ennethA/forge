@@ -1844,6 +1844,7 @@ def pipeline_advance(
     override: bool = False,
     who: str = "",
     why: str = "",
+    cost: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Start ONE stage of a staged build. Refuses to skip over a red gate.
 
@@ -1865,12 +1866,18 @@ def pipeline_advance(
       three sessions later that is exactly what matters.
     - Advancing to a stage that already passed re-opens it, which is how
       iteration works. The report says it was re-opened rather than started.
+    - `cost` is optional and works exactly as it does on `pipeline_record`:
+      `{"usd": 1.23, "tokens_in": 4000, "tokens_out": 900, "model": "sonnet"}`,
+      accumulating onto the stage being started. It never overrides the
+      ordering rules above — a red gate still refuses the advance, cost or no
+      cost.
 
     Returns the whole board with this stage in progress, and one line saying
     what ending it looks like.
     """
     slug, plan, _path, _fresh = pipeline.load(project)
-    report = pipeline.advance(plan, stage, override=override, who=who, why=why)
+    report = pipeline.advance(plan, stage, override=override, who=who, why=why,
+                              cost=cost)
     written = pipeline.write(slug, plan)
     return pipeline.fmt_advance(plan=plan, path=written, slug=slug,
                                 report=report)
@@ -1884,6 +1891,7 @@ def pipeline_record(
     numbers: Optional[Dict[str, Any]] = None,
     artifacts: Optional[Union[str, List[str]]] = None,
     replace: bool = False,
+    cost: Optional[Dict[str, Any]] = None,
 ) -> str:
     """How a build turn writes its result in — the verdict, the numbers, the files.
 
@@ -1907,6 +1915,14 @@ def pipeline_record(
     - Numbers and artifacts MERGE into what the stage already carries, because a
       stage is usually measured by more than one tool. `replace=true` throws the
       previous ones away instead.
+    - `cost` is what THIS call spent doing the stage's work — `{"usd": 1.23,
+      "tokens_in": 4000, "tokens_out": 900, "model": "sonnet"}`. Unlike
+      `numbers`/`artifacts`, it always ACCUMULATES onto the stage's running
+      total regardless of `replace`, because a stage worked three times spent
+      whatever those three turns cost, never just the last one. Each recording
+      is also kept in the stage's history, so the individual spends stay
+      auditable. Unknown keys, negative amounts, or a non-string `model` are
+      refused.
 
     Record the failure honestly when the gate is red. A red stage blocks the
     stages after it, which is the point — the fix ladder is worked to green, or
@@ -1917,7 +1933,7 @@ def pipeline_record(
     """
     slug, plan, _path, _fresh = pipeline.load(project)
     report = pipeline.record(plan, stage, status, numbers, artifacts,
-                             replace=replace)
+                             replace=replace, cost=cost)
     written = pipeline.write(slug, plan)
     return pipeline.fmt_record(plan=plan, path=written, slug=slug, report=report)
 
