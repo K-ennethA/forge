@@ -161,6 +161,7 @@ __all__ = [
     "smooth_weights",
     "fill_holes",
     "constrain_weights",
+    "CONVERGE_ROUNDS",
     "weight_continuity",
     "arm_swing_isolation",
 ]
@@ -304,6 +305,19 @@ MIN_ARTICULATION_RINGS = 1.0 / REACH_BAND
 #: bands are floored against (:data:`MIN_ARTICULATION_RINGS`) and the two have
 #: to be quoted in the same units to be compared at all.
 MIN_SLAB_BANDS = 2.0
+
+#: How many times :func:`constrain_weights` may re-apply itself looking for a
+#: better skin before it gives up and keeps the best it found.
+#:
+#: **A bound on work, not a target.**  The stage has no fixed point to run to —
+#: measured on ``werewolf-wip-11`` the mass it moves decays towards a floor
+#: rather than to zero (2364, 201, 112, 78, 61, 49, 45) — so what stops it is
+#: the gate, not the movement: punctures go 474, **414**, 415, 419, 424, 426,
+#: 432 and it keeps round two.  This only has to be large enough that the
+#: improvement is never cut off before it happens, and small enough that a
+#: pathological figure cannot spend the afternoon; four rounds is two more than
+#: any figure measured here has wanted.
+CONVERGE_ROUNDS = 4
 
 #: How many rings past the tag contract's own edge a weight may taper.
 #:
@@ -1931,7 +1945,152 @@ def _distance_matrix(obj, rig, bone_names):
 def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
                       girth_fraction=BLEND_GIRTH_FRACTION, passes=SMOOTH_PASSES,
                       factor=SMOOTH_FACTOR, reach=BLEND_REACH, warnings=None,
-                      split=True):
+                      split=True, rounds=CONVERGE_ROUNDS):
+    """The stage, run until it stops improving the skin.  Keeps the best round.
+
+    **The pass count belongs here, not to the caller.**  One application of the
+    contract is not the answer: the first round is dominated by cutting the
+    automatic bind down, and the repairs it leaves — holes the smoother reached
+    only part-way into, weights the trim shuffled — need another look at a mesh
+    that has already been cut.  Measured on ``werewolf-wip-11``, one round
+    leaves 474 punctures and a second takes it to **414**.
+
+    Every caller that ran this once therefore shipped the first number.  That is
+    exactly what the live wip-12 pipeline did: ``rigforge_generate_rig``'s
+    embedded skin called it once for 474, and the two ``rigforge_weights``
+    cleanup passes that followed run a *different*, older bounding-box rule
+    which cannot converge a tag contract — they moved it to 477 and then to
+    nothing at all, which is the 477-and-stuck the run reported.
+
+    **It stops on the gate, not on the movement, because the movement does not
+    stop.** Measured over seven rounds the moved mass falls 2364, 201, 112, 78,
+    61, 49, 45 — decaying towards a floor rather than to zero, because the
+    smoother's hole repair recruits a ring of neighbours per pass (see
+    :func:`smooth_weights`).  The punctures bottom out at round two and then
+    creep back up: 474, **414**, 415, 419, 424, 426, 432.  So this runs while
+    the thing being gated actually improves, keeps the best round's weights, and
+    stops at the first round that does not — a bounded hill-climb on the same
+    measurement ``rig_check`` will make.  ``rounds`` caps the work regardless.
+
+    The report carries a ``convergence`` block: the rounds run, the mass each
+    one moved, and the punctures after each, so a figure that wants a different
+    number of rounds says so in the output rather than in someone's memory.
+    """
+    _require_numpy()
+    warnings = [] if warnings is None else warnings
+    names = sorted(rigforge_rig.deform_bones(rig))
+
+    bands = rigforge_landmarks.OVERLAP_THRESHOLDS["stray_mass"]
+
+    def better(new, old):
+        """Is ``new`` a skin worth keeping over ``old``?  ``(stray, punctures)``.
+
+        Two gates that are not commensurable, so this is a rule rather than a
+        weighted sum:
+
+        * a **material** drop in stray influence wins outright — a bone holding
+          flesh half a metre away is wrong in a way no number of tidy punctures
+          makes up for;
+        * otherwise, a skin that does not make stray worse and has fewer
+          punctures wins.
+
+        "Material" and "already good enough" both come from the overlap gate's
+        own bands rather than from new numbers: stray is clamped at the gate's
+        ``ok`` threshold, so every skin already inside it compares equal and
+        stops buying improvements it does not need, and a drop only counts as
+        material if it is at least the ``attention`` threshold.
+
+        **Both halves were measured, and each fixes what the other breaks.**
+        Ranked on raw mass alone the loop never stops: the synthetic biped's
+        tags cannot separate its arm bones, so its stray creeps 13.4, 11.5,
+        10.7, 10.3 for as long as anyone iterates and each hundredth of a
+        vertex justifies more punctures.  Ranked on the verdict band alone it
+        never starts: that same biped goes from 156 to 13.4 in one round —
+        enormous, and both are "fail", so a band comparison sees no difference
+        and the stage declines to constrain anything at all.
+        """
+        fresh = max(new[0], bands["ok"])
+        stale = max(old[0], bands["ok"])
+        if stale - fresh >= bands["attention"]:
+            return True
+        return fresh <= stale + 1e-9 and new[1] < old[1]
+
+    def score():
+        """``(stray mass, punctures)`` — the two numbers :func:`better` weighs."""
+        try:
+            stray = rigforge_landmarks.influence_overlap(rig, obj)["stray_mass"]
+        except Exception:  # noqa: BLE001 - a gate that cannot run must not stop the stage
+            stray = 0.0
+        return (float(stray), weight_continuity(rig, obj).get("holes") or 0)
+
+    # **The skin as it arrived is a candidate.** Without this the stage could
+    # not leave anything alone: asked twice, it applied twice, and the second
+    # application churned a skin it had already finished -- which is precisely
+    # the "second pass reshuffles 108 vertices" the live run reported. A stage
+    # that has nothing to improve should say so by changing nothing.
+    incoming = (score(), read_weights(obj, names).copy(), None)
+    history = [{"round": 0, "weight_moved": 0.0, "stray": incoming[0][0],
+                "holes": incoming[0][1]}]
+    best = incoming
+    for index in range(max(1, int(rounds))):
+        result = _constrain_once(obj, rig, metarig, regions,
+                                 max_influences=max_influences,
+                                 girth_fraction=girth_fraction, passes=passes,
+                                 factor=factor, reach=reach, warnings=warnings,
+                                 split=split)
+        here = score()
+        history.append({"round": index + 1,
+                        "weight_moved": result.get("weight_moved"),
+                        "stray": here[0], "holes": here[1]})
+        if better(here, best[0]):
+            best = (here, read_weights(obj, names).copy(), result)
+            continue
+        # This round did not beat what we already had, so that is the answer.
+        if best[1] is not None:
+            write_weights(obj, names, best[1])
+            refresh_view_layer()
+        break
+    if best[2] is None:
+        # Nothing beat the skin we were handed, so that is what we keep. The
+        # weights are written back regardless -- they are the stage's answer,
+        # and "what did you write" should not depend on whether the answer
+        # happened to be the input -- but the numbers describing the *work*
+        # are zero, because none was kept: this run removed nothing from the
+        # skin it is reporting on and moved nothing in it.
+        written = write_weights(obj, names, best[1])
+        refresh_view_layer()
+        best = (best[0], best[1],
+                dict(result, entries_written=written, weight_removed=0.0,
+                     weight_removed_pct=0.0, weight_moved=0.0,
+                     worst_bones=[], declined=True,
+                     says=("The skin was already better than anything another "
+                           "round produced (%d punctures against %d), so it was "
+                           "kept as it stood and nothing was removed."
+                           % (best[0][1], history[-1]["holes"]))))
+    result = best[2]
+    kept = history[-1]["round"] if best[2] is not None else 0
+    for entry in history:
+        if entry["holes"] == best[0][1] and abs(entry["stray"] - best[0][0]) < 1e-9:
+            kept = entry["round"]
+            break
+    result["convergence"] = {
+        "rounds": len(history) - 1,
+        "kept_round": kept,
+        "per_round": history,
+        "bound": int(rounds),
+        "says": ("%d round(s) run; kept round %d. Stray/punctures per round: %s."
+                 % (len(history) - 1, kept,
+                    ", ".join("%s:%.3f/%d" % (entry["round"], entry["stray"],
+                                              entry["holes"])
+                              for entry in history))),
+    }
+    return result
+
+
+def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
+                    girth_fraction=BLEND_GIRTH_FRACTION, passes=SMOOTH_PASSES,
+                    factor=SMOOTH_FACTOR, reach=BLEND_REACH, warnings=None,
+                    split=True):
     """Mask, blend, smooth — the whole stage, on an already-skinned mesh.
 
     Order matters and is the rigger's: the automatic weights are *input*, the
@@ -2352,10 +2511,11 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     # neighbour -- and only where the licence is whole, so it can lift a weight
     # back to the flesh around it without ever handing out a bone the bound
     # refused. See fill_holes for why the median is the level it lifts to.
+    trimmed = _limit_rows(weights, max(1, int(max_influences)))
+    _normalize_rows(weights)
     filled = fill_holes(weights, ramp >= 1.0 - 1e-9, linked)
     if filled:
-        _normalize_rows(weights)
-    trimmed = _limit_rows(weights, max(1, int(max_influences)))
+        _limit_rows(weights, max(1, int(max_influences)))
     live = _normalize_rows(weights)
     stranded = int(_np.count_nonzero(~live))
 

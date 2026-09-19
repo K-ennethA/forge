@@ -3229,9 +3229,64 @@ def cmd_rigforge_weights(params):
                 raise ForgeError(
                     "Cleanup needs tags: %r has no tagged geometry, so there are no "
                     "regions to keep weights inside of." % obj.name)
-            band = band_ratio * max(max(obj.dimensions), 1e-6)
-            bones_by_tag = tag_bone_map(rig, metarig, regions, band=band)
-            result = cleanup_weights(obj, rig, regions, bones_by_tag, band)
+            # **A tagged mesh is cleaned by its tag contract, not by a box.**
+            # `cleanup_weights` below is a bounding-box rule: it keeps a tag's
+            # weights inside that tag's axis-aligned extent plus a band. That
+            # was the only cleanup there was, and it is still the right answer
+            # for a mesh the contract cannot read -- but on a mesh that *has*
+            # tags it is a coarser statement of the same idea, and running it
+            # after the contract has already been enforced does not refine the
+            # skin, it disturbs it.
+            #
+            # Measured on the live wip-11 scene: the tag-constrained stage left
+            # 414 punctures and this box rule then moved 128 weights and took it
+            # to 426, on a skin whose contract was already satisfied and whose
+            # stray mass was already 0.0000. Delegating instead makes cleanup a
+            # no-op there -- `constrain_weights` keeps the skin it is handed
+            # when no round of it does better -- so the stage that understands
+            # the tags is the one that decides whether anything needs doing.
+            from . import rigforge_skin
+
+            constrained = None
+            try:
+                constrained = rigforge_skin.constrain_weights(
+                    obj, rig, metarig, regions, max_influences=max_influences,
+                    warnings=warnings)
+            except ForgeError as exc:
+                warnings.append(
+                    "Tag-constrained cleanup could not run (%s), so the weights "
+                    "were cleaned with the bounding-box rule instead." % exc)
+
+            if constrained is not None:
+                # Reported per **tag**, not per slab: the sub-tag split is a
+                # derived view of the stage's own, and a caller asking a mesh
+                # with six tags to clean itself should get six rows back.
+                folded = {}
+                for entry in constrained.get("tags") or ():
+                    name = entry.get("parent") or entry["tag"]
+                    row = folded.setdefault(name, {"tag": name, "vertices": 0,
+                                                   "weight_zeroed": 0.0,
+                                                   "sub_tags": []})
+                    row["vertices"] += int(entry.get("vertices") or 0)
+                    row["weight_zeroed"] = round(
+                        row["weight_zeroed"] + float(entry.get("weight_removed") or 0),
+                        4)
+                    if entry["tag"] != name:
+                        row["sub_tags"].append(entry["tag"])
+                result = {
+                    "rule": "tag contract",
+                    "tags": [folded[name] for name in sorted(folded)],
+                    "weights_zeroed": constrained.get("weight_removed", 0.0),
+                    "declined": bool(constrained.get("declined")),
+                    "convergence": constrained.get("convergence"),
+                    "says": constrained.get("says"),
+                }
+            else:
+                band = band_ratio * max(max(obj.dimensions), 1e-6)
+                bones_by_tag = tag_bone_map(rig, metarig, regions, band=band)
+                result = cleanup_weights(obj, rig, regions, bones_by_tag, band)
+                result["rule"] = "bounding box"
+
             result.update(limit_and_normalize(obj, rig, max_influences))
             left = _unweighted_vertices(obj, set(deform_bones(rig)))
             if left:
@@ -3240,7 +3295,14 @@ def cmd_rigforge_weights(params):
                 warnings.append("%d vertex/vertices lost every weight to the cleanup "
                                 "rules and were re-filled from the nearest bones."
                                 % len(left))
-            changed = result["weights_zeroed"] + result["limited"] + result["normalized"]
+            if result.get("declined"):
+                # The contract had nothing to add, and saying "0 changed" is the
+                # honest answer rather than counting a rewrite of the same
+                # numbers as work done.
+                changed = result["limited"] + result["normalized"]
+            else:
+                changed = (result["weights_zeroed"] + result["limited"]
+                           + result["normalized"])
 
     return {
         "object": obj.name,

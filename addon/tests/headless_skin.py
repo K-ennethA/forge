@@ -63,11 +63,12 @@ TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 ADDON_DIR = os.path.normpath(os.path.join(TESTS_DIR, os.pardir))
 
 PORT = 9911
-#: **Recorded debt, not a target.**  Two pins on this figure were budgets-of-
-#: record from 2026-09-18, when the seam-bound rule that cleared the werewolf's
-#: trunk (stray 10.67 -> 0.0000) was paid for here.  Each check below states its
-#: own trade in full; these are the numbers, in one place, so a drift past them
-#: is a regression rather than a rounding.
+#: **Recorded debt, not a target.**  One pin on this figure is a budget-of-record
+#: from 2026-09-18, when the seam-bound rule that cleared the werewolf's trunk
+#: (stray 10.67 -> 0.0000) was paid for here.  The check below states its trade
+#: in full; this is the number, in one place, so a drift past it is a regression
+#: rather than a rounding.  The settling debt that stood beside it has been
+#: repaid and its check is back on the original 0.05.
 #:
 #: This biped's trunk is sampled every 59 mm and its limbs every 15 mm.  That
 #: 4:1 disparity is what makes the per-side band widths — and so the bound
@@ -75,8 +76,7 @@ PORT = 9911
 #: is uniform at 21-34 mm and gains continuity from the same change.  Both
 #: numbers should come *down* as the causes named in the checks are fixed, and
 #: neither should be raised without the same kind of measurement beside it.
-PUNCTURE_DEBT = 14
-SETTLE_DEBT = 0.10
+PUNCTURE_DEBT = 13
 
 BIPED = "SkinTestBiped"
 METARIG = "SkinTestMeta"
@@ -1183,31 +1183,23 @@ def test_command_surface(mesh, rig):
     note("weight removed: first %.3f, again %.3f; worst weight change on the "
          "second pass %.4f" % (applied["weight_removed"], again["weight_removed"],
                                drift))
-    # RECORDED DEBT, 2026-09-18. This pinned 0.05 and now pins SETTLE_DEBT.
-    # **The cause is known and named**, which is why this is a budget rather
-    # than a mystery: the smoother's hole repair treats a cell at *zero* whose
-    # neighbours carry the bone as a puncture and steps it part-way towards
-    # their level. Next pass its own zero neighbours qualify, so the region
-    # walks outward one ring per apply. Instrumented here: a second apply moved
-    # ``DEF-spine.001`` from 0.0000 to 0.2643 at four vertices whose influence
-    # count went 2 -> 3 -- so it is **not** the four-influence trim (they had
-    # two of four) and **not** the reach ramp (the binary-seam experiment left
-    # this number at 0.1247, unmoved).
-    #
-    # Two fixes were tried and both cost more than they bought, measured:
-    # refusing the repair at zero took this figure to 35 punctures and the
-    # werewolf to 571 holes; filling a hole outright instead of stepping took
-    # punctures to 11 but drift to 0.1270 and the werewolf to 437. The honest
-    # fix is to make the repair converge without giving up the zero-fill, and
-    # that is a change to the smoother's contract rather than to a constant.
-    #
-    # ``fill_holes`` -- the bounded median lift at the end of the chain -- is
-    # the first instalment: it took this drift 0.1245 -> 0.0865 and the
-    # werewolf 441 -> 414 holes while holding its stray at 0.0000.
-    check("running it twice settles: the second pass stays inside its budget",
-          drift < SETTLE_DEBT, "worst change %.4f, budget %.2f" % (drift, SETTLE_DEBT))
-    check("and the second pass finds far less outside the contract than the first",
-          again["weight_removed"] < applied["weight_removed"],
+    # DEBT REPAID, 2026-09-18, back to the original 0.05 pin. The cause was
+    # named here as a propagation front in the smoother's hole repair, and it
+    # is still that -- but it no longer reaches the output, because
+    # constrain_weights now owns its own convergence: it runs bounded rounds,
+    # scores each on (stray, punctures), keeps the best, and will keep the skin
+    # it was handed if no round beats it. A second apply on a settled skin
+    # therefore changes nothing at all and this measures 0.0000.
+    check("running it twice settles: the second pass barely moves a weight",
+          drift < 0.05, "worst change %.4f" % drift)
+    # ``<=`` rather than ``<`` since 2026-09-18, and only because the stage now
+    # reaches the floor: when it finds nothing worth changing it keeps the skin
+    # it was handed and reports removing **0.000**, so both passes here come out
+    # at zero and a second pass cannot find *less* than nothing. The property
+    # being pinned -- a second pass has no more to do than the first -- is held
+    # maximally, not weakened.
+    check("and the second pass finds no more outside the contract than the first",
+          again["weight_removed"] <= applied["weight_removed"],
           "%.4f then %.4f" % (applied["weight_removed"], again["weight_removed"]))
 
     isolation = call("rigforge_skin", {"object": mesh.name, "action": "isolation"})
