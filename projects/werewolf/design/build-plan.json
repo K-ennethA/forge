@@ -684,34 +684,31 @@
     {
       "id": "skin",
       "title": "Skin — weights that belong to the right bone",
-      "status": "failed",
+      "status": "passed",
       "gate": [
         "rig_check.overlap",
         "rig_check.continuity"
       ],
       "artifacts": [],
       "numbers": {
-        "rig_check.overlap": "fail",
-        "rig_check.continuity": "attention overall",
+        "housekeeping_stale_rig_deleted": "werewolf-form-a_retopo_rig (present again on scene reload, deleted again)",
+        "rig": "werewolf-form-a_retopo_rig.001",
+        "overlap_stray_mass": 0,
+        "overlap_verdict": "ok",
+        "overlap_thresholds_ok": 0.05,
+        "overlap_thresholds_attention": 1,
         "isolation_mm": 0,
-        "fix_ladder_tried": "fresh tag-constrained generate (with leg sub-tags): 24.37->10.985; rigforge_weights(cleanup) pass 1: 10.985->8.336, 159 vertices changed; rigforge_weights(cleanup) pass 2: 8.336->8.336, changed=0 (converged, diminishing returns exhausted - matches the pattern noted last session). No corrective-weight-repaint tool exists in this build beyond cleanup/normalize.",
-        "stray_mass": 8.336,
-        "stray_mass_progression": "91.86 (pre sub-tags) -> 26.82 (old fresh tag-constrained skin, wip-10) -> 24.37 (wip-10 after cleanup) -> 10.985 (wip-11 fresh generate WITH leg sub-tags + torso tag) -> 8.336 (wip-11 after cleanup, converged: 2nd cleanup pass changed=0)",
-        "thresholds": {
-          "ok": 0.05,
-          "attention": 1
-        },
-        "worst_overlap_pair": "DEF-spine.005 / DEF-upper_arm.L.001, 344mm apart, 46 vertices shared, 206mm from spine.005",
-        "continuity_holes": 387,
-        "continuity_region_verts": 19216,
-        "continuity_hole_pct": 2.014,
-        "continuity_thresholds": {
-          "ok": 0.5,
-          "attention": 3
-        },
-        "continuity_bones_failing": "pelvis.L 4.68%, pelvis.R 4.26%, spine 4.84%, spine.005 5.77%, shoulder.L 3.24%, shoulder.R 3.23%, thigh.R 3.09%",
-        "verdict": "leg sub-tags fixed the leg-internal bleed the task expected (thigh/shin/foot blend bands are now clean, tight blend-band pairs only) but did NOT reach green on overlap overall - the remaining stray mass is now concentrated in the TORSO (spine/pelvis/shoulder near-pairs to the far arm and to each other), which the leg sub-tags don't touch",
-        "next_fix_would_need": "torso sub-tags (spine/pelvis/shoulder slabs) mirroring what leg sub-tags just did for the leg, per the isolation_mm=0/continuity pattern - out of scope for this turn's available tools"
+        "isolation_surrogate": "unweighted_vertices 0, unnormalized_vertices 0",
+        "continuity_holes": 406,
+        "continuity_region_vertices": 15462,
+        "continuity_hole_pct": 2.626,
+        "continuity_verdict": "attention",
+        "continuity_thresholds_ok": 0.5,
+        "continuity_thresholds_attention": 3,
+        "continuity_worst_bone": "DEF-spine.001",
+        "continuity_worst_bone_hole_pct": 7.25,
+        "method": "delete stale rig (reappeared on scene reload) -> rigforge_generate_rig fresh -> rigforge_weights(cleanup) one pass, now delegates to the skin stage's own bounded convergence per commit 61feda0",
+        "verdict": "GREEN by the plan's own rule: overlap 0.0000 ok, continuity 2.626% falls in the attention band (<3.0 fail threshold), flat vs the fix's own wip-11 verification (414 holes/2.669%) -- recorded as passed with the number, per instruction that attention passes"
       },
       "history": [
         {
@@ -766,45 +763,262 @@
             "fix_ladder_tried": "fresh tag-constrained generate (with leg sub-tags): 24.37->10.985; rigforge_weights(cleanup) pass 1: 10.985->8.336, 159 vertices changed; rigforge_weights(cleanup) pass 2: 8.336->8.336, changed=0 (converged, diminishing returns exhausted - matches the pattern noted last session). No corrective-weight-repaint tool exists in this build beyond cleanup/normalize.",
             "next_fix_would_need": "torso sub-tags (spine/pelvis/shoulder slabs) mirroring what leg sub-tags just did for the leg, per the isolation_mm=0/continuity pattern - out of scope for this turn's available tools"
           }
+        },
+        {
+          "date": "2026-09-18T23:39:28",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "housekeeping_stale_rig_deleted": "werewolf-form-a_retopo_rig",
+            "rig": "werewolf-form-a_retopo_rig.001",
+            "overlap_stray_mass": 0,
+            "overlap_verdict": "ok",
+            "overlap_thresholds_ok": 0.05,
+            "overlap_thresholds_attention": 1,
+            "isolation_mm": 0,
+            "continuity_holes": 477,
+            "continuity_region_vertices": 15610,
+            "continuity_hole_pct": 3.056,
+            "continuity_verdict": "fail",
+            "continuity_thresholds_ok": 0.5,
+            "continuity_thresholds_attention": 3,
+            "continuity_worst_bone": "DEF-spine.005",
+            "continuity_worst_bone_hole_pct": 16.316,
+            "prior_continuity_hole_pct_wip11": 2.014,
+            "prior_overlap_stray_mass_wip11": 8.336,
+            "verdict": "overlap fixed to zero as expected, but continuity got WORSE (2.014% attention -> 3.056% fail) after the fresh generate+cleanup with the torso sub-split fix -- not the clean green the wip-11 test copy showed",
+            "method": "delete stale rig -> rigforge_generate_rig fresh (metarig+mesh) -> rigforge_weights cleanup (converged, changed 108->0 pattern not reached, stopped after 1 pass since hole_pct did not improve)"
+          },
+          "artifacts": [
+            "projects/werewolf/models/werewolf-wip-12.blend"
+          ],
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
+        },
+        {
+          "date": "2026-09-18T23:58:31",
+          "action": "record",
+          "from": "failed",
+          "to": "passed",
+          "numbers": {
+            "housekeeping_stale_rig_deleted": "werewolf-form-a_retopo_rig (present again on scene reload, deleted again)",
+            "rig": "werewolf-form-a_retopo_rig.001",
+            "overlap_stray_mass": 0,
+            "overlap_verdict": "ok",
+            "overlap_thresholds_ok": 0.05,
+            "overlap_thresholds_attention": 1,
+            "isolation_mm": 0,
+            "isolation_surrogate": "unweighted_vertices 0, unnormalized_vertices 0",
+            "continuity_holes": 406,
+            "continuity_region_vertices": 15462,
+            "continuity_hole_pct": 2.626,
+            "continuity_verdict": "attention",
+            "continuity_thresholds_ok": 0.5,
+            "continuity_thresholds_attention": 3,
+            "continuity_worst_bone": "DEF-spine.001",
+            "continuity_worst_bone_hole_pct": 7.25,
+            "method": "delete stale rig (reappeared on scene reload) -> rigforge_generate_rig fresh -> rigforge_weights(cleanup) one pass, now delegates to the skin stage's own bounded convergence per commit 61feda0",
+            "verdict": "GREEN by the plan's own rule: overlap 0.0000 ok, continuity 2.626% falls in the attention band (<3.0 fail threshold), flat vs the fix's own wip-11 verification (414 holes/2.669%) -- recorded as passed with the number, per instruction that attention passes"
+          },
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
         }
       ],
       "does": "Bind, then measure the leakage. Stray mass between two bones 380 mm apart is a tagging problem, not a painting problem, and the gate says which.",
       "tools": [
         "rigforge_weights",
         "rig_check"
-      ]
+      ],
+      "cost": {
+        "models": [
+          "sonnet"
+        ]
+      }
     },
     {
       "id": "correctives",
       "title": "Correctives — the collapsed knee, fixed with a number",
-      "status": "pending",
+      "status": "overridden",
       "gate": [
         "rig_check.volume"
       ],
       "artifacts": [],
-      "numbers": {},
-      "history": [],
+      "numbers": {
+        "joints_corrected": "elbow.R, elbow.L, knee.L, knee.R, head (harness's own worst-on-volume picks)",
+        "shape_keys_written": 10,
+        "knee_L_70deg_before_pct": -13.7,
+        "knee_L_70deg_after_pct": -19.8,
+        "knee_L_140deg_before_pct": 20.3,
+        "knee_L_140deg_after_pct": 9.9,
+        "knee_R_70deg_before_pct": -13.8,
+        "knee_R_70deg_after_pct": -19.8,
+        "knee_R_140deg_before_pct": 20.1,
+        "knee_R_140deg_after_pct": 9.9,
+        "elbow_L_75deg_before_pct": 15.5,
+        "elbow_L_75deg_after_pct": 11.2,
+        "elbow_L_150deg_before_pct": 52.4,
+        "elbow_L_150deg_after_pct": 47.7,
+        "elbow_R_75deg_before_pct": 16.2,
+        "elbow_R_75deg_after_pct": 12.2,
+        "elbow_R_150deg_before_pct": 52.4,
+        "elbow_R_150deg_after_pct": 47.8,
+        "head_18deg_before_pct": 4.6,
+        "head_18deg_after_pct": 4,
+        "head_35deg_before_pct": 8.8,
+        "head_35deg_after_pct": 7.5,
+        "gate_before": "FAIL",
+        "gate_after": "FAIL",
+        "verdict": "partial recovery, as the tool itself says: knees roughly halved (20% -> 9.9% at max flex) but overshoot into volume GAIN at mid-flex (-13.7% -> -19.8%, i.e. bigger gain, not a fail band but worth watching); elbows barely moved (52.4% -> ~47.7%, still deep in collapse territory) because a convex hull is set by the outermost vertices and only the pinched side gets pushed back; head has a documented 35.30mm skinning/Blender-evaluation disagreement (something beyond plain vertex-group skinning is deforming the mesh -- Preserve Volume modifier, corrective smooth, or shrinkwrap -- so its rest-space pull-back is approximate",
+        "next_fix_rung": "per the fix ladder this is rung 1 (correctives) done and documented as partial; rung 2 would be rigforge_skin re-weight on elbow/head regions specifically, never a blind density pass"
+      },
+      "history": [
+        {
+          "date": "2026-09-18T23:59:16",
+          "action": "record",
+          "from": "pending",
+          "to": "failed",
+          "numbers": {
+            "joints_corrected": "elbow.R, elbow.L, knee.L, knee.R, head (harness's own worst-on-volume picks)",
+            "shape_keys_written": 10,
+            "knee_L_70deg_before_pct": -13.7,
+            "knee_L_70deg_after_pct": -19.8,
+            "knee_L_140deg_before_pct": 20.3,
+            "knee_L_140deg_after_pct": 9.9,
+            "knee_R_70deg_before_pct": -13.8,
+            "knee_R_70deg_after_pct": -19.8,
+            "knee_R_140deg_before_pct": 20.1,
+            "knee_R_140deg_after_pct": 9.9,
+            "elbow_L_75deg_before_pct": 15.5,
+            "elbow_L_75deg_after_pct": 11.2,
+            "elbow_L_150deg_before_pct": 52.4,
+            "elbow_L_150deg_after_pct": 47.7,
+            "elbow_R_75deg_before_pct": 16.2,
+            "elbow_R_75deg_after_pct": 12.2,
+            "elbow_R_150deg_before_pct": 52.4,
+            "elbow_R_150deg_after_pct": 47.8,
+            "head_18deg_before_pct": 4.6,
+            "head_18deg_after_pct": 4,
+            "head_35deg_before_pct": 8.8,
+            "head_35deg_after_pct": 7.5,
+            "gate_before": "FAIL",
+            "gate_after": "FAIL",
+            "verdict": "partial recovery, as the tool itself says: knees roughly halved (20% -> 9.9% at max flex) but overshoot into volume GAIN at mid-flex (-13.7% -> -19.8%, i.e. bigger gain, not a fail band but worth watching); elbows barely moved (52.4% -> ~47.7%, still deep in collapse territory) because a convex hull is set by the outermost vertices and only the pinched side gets pushed back; head has a documented 35.30mm skinning/Blender-evaluation disagreement (something beyond plain vertex-group skinning is deforming the mesh -- Preserve Volume modifier, corrective smooth, or shrinkwrap -- so its rest-space pull-back is approximate",
+            "next_fix_rung": "per the fix ladder this is rung 1 (correctives) done and documented as partial; rung 2 would be rigforge_skin re-weight on elbow/head regions specifically, never a blind density pass"
+          },
+          "cost": {
+            "model": "sonnet"
+          }
+        },
+        {
+          "date": "2026-09-18T23:59:33",
+          "action": "overridden",
+          "who": "kennethaguilar.cs@gmail.com",
+          "why": "Explicit instruction this turn to continue skin -> correctives -> animate -> stop before export, with a stop-and-report condition only on skin, not on correctives. Correctives authored 10 JCM shape keys and is a documented partial recovery (knees ~20%->9.9% at max flex, elbows only 52.4%->47.7% because the harness's volume metric is a convex hull and only the pinched side can be pushed back, head has a known 35.3mm skinning/Blender-eval mismatch from a non-vertex-group deformer). Further improvement needs a targeted re-weight (fix ladder rung 2), out of scope for this turn; proceeding to animate as directed.",
+          "by": "animate"
+        }
+      ],
       "does": "A corrective shape key per bent joint, driven by bend angle. The fix ladder is law: correctives first quoting before/after, weight painting second, never a blind density pass (50.3% -> 51.1%).",
       "tools": [
         "rig_check"
-      ]
+      ],
+      "cost": {
+        "models": [
+          "sonnet"
+        ]
+      }
     },
     {
       "id": "animate",
       "title": "Animate — clips that do not slide",
-      "status": "pending",
+      "status": "passed",
       "gate": [
         "animation_check.foot_slide_mm"
       ],
-      "artifacts": [],
-      "numbers": {},
-      "history": [],
+      "artifacts": [
+        "projects/werewolf/renders/form-a-walk-wip13.mp4"
+      ],
+      "numbers": {
+        "action": "walk-loop",
+        "cycle_frames": 32,
+        "stride_mm": 642,
+        "planted_pct": 62,
+        "root_motion": true,
+        "body_travel_mm": 621.5,
+        "foot_slide_gate": "ok",
+        "foot_slide_worst_mm": 0.3,
+        "foot_slide_threshold_ok_mm": 5,
+        "foot_L_steps": 1,
+        "foot_L_worst_drift_mm": 0.3,
+        "foot_R_steps": 2,
+        "foot_R_worst_drift_mm": 0.3,
+        "worst_step": "DEF-toe.L frames 5-21, 0.3mm",
+        "render_view": "side",
+        "render_frames": "1-32",
+        "render_note": "bake-source mesh werewolf-form-a hidden for the render, then restored"
+      },
+      "history": [
+        {
+          "date": "2026-09-18T23:59:33",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress",
+          "override": {
+            "who": "kennethaguilar.cs@gmail.com",
+            "why": "Explicit instruction this turn to continue skin -> correctives -> animate -> stop before export, with a stop-and-report condition only on skin, not on correctives. Correctives authored 10 JCM shape keys and is a documented partial recovery (knees ~20%->9.9% at max flex, elbows only 52.4%->47.7% because the harness's volume metric is a convex hull and only the pinched side can be pushed back, head has a known 35.3mm skinning/Blender-eval mismatch from a non-vertex-group deformer). Further improvement needs a targeted re-weight (fix ladder rung 2), out of scope for this turn; proceeding to animate as directed.",
+            "stepped_over": [
+              "correctives"
+            ],
+            "skipped": []
+          }
+        },
+        {
+          "date": "2026-09-19T00:00:10",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "action": "walk-loop",
+            "cycle_frames": 32,
+            "stride_mm": 642,
+            "planted_pct": 62,
+            "root_motion": true,
+            "body_travel_mm": 621.5,
+            "foot_slide_gate": "ok",
+            "foot_slide_worst_mm": 0.3,
+            "foot_slide_threshold_ok_mm": 5,
+            "foot_L_steps": 1,
+            "foot_L_worst_drift_mm": 0.3,
+            "foot_R_steps": 2,
+            "foot_R_worst_drift_mm": 0.3,
+            "worst_step": "DEF-toe.L frames 5-21, 0.3mm",
+            "render_view": "side",
+            "render_frames": "1-32",
+            "render_note": "bake-source mesh werewolf-form-a hidden for the render, then restored"
+          },
+          "artifacts": [
+            "projects/werewolf/renders/form-a-walk-wip13.mp4"
+          ],
+          "cost": {
+            "model": "sonnet"
+          }
+        }
+      ],
       "does": "Walk cycle and whatever else the character needs, each measured on the foot-slide metric at the ball of the foot.",
       "tools": [
         "rigforge_action",
         "rigforge_keyframe",
         "render_animation"
-      ]
+      ],
+      "cost": {
+        "models": [
+          "sonnet"
+        ]
+      }
     },
     {
       "id": "export",
