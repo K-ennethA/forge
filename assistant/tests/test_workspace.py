@@ -33,6 +33,7 @@ What is being pinned down, in order:
 
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -1126,3 +1127,1128 @@ def test_restoring_a_version_is_still_the_only_confirm_this_tab_adds(client):
     row = script.split("function versionRow(", 1)[1].split("\n  function ", 1)[0]
     assert row.count("window.confirm(") == 1
     assert "Nothing is overwritten and nothing is deleted" in row
+
+
+# ===========================================================================
+# Phase 19 â€” nudging a joint ("I don't know how much 10mm is here")
+# ===========================================================================
+
+
+def a_task_config(symmetry="mirror_left"):
+    """The settings sheet exactly as ``forge_mcp.task_config`` writes one."""
+    return {
+        "version": 1,
+        "task": "character",
+        "project": "werewolf",
+        "settings": {
+            "symmetry": {
+                "value": symmetry,
+                "default": "mirror_left",
+                "choices": ["mirror_left", "mirror_right", "as_designed"],
+                "why": "bipeds are symmetric unless you say otherwise",
+            },
+            "poly_budget_desktop": {"value": 15000, "default": 15000},
+        },
+    }
+
+
+def write_task_config(folder, symmetry="mirror_left"):
+    design = os.path.join(folder, "design")
+    os.makedirs(design, exist_ok=True)
+    path = os.path.join(design, "task-config.json")
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(a_task_config(symmetry), handle)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# the mirror, and the settings sheet it defaults from
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("bone,counterpart", [
+    ("DEF-foot.L", "DEF-foot.R"),
+    ("DEF-foot.R", "DEF-foot.L"),
+    ("DEF-upper_arm.L.001", "DEF-upper_arm.R.001"),
+    ("DEF-thigh_R", "DEF-thigh_L"),
+    ("DEF-hand.r", "DEF-hand.l"),
+    ("DEF-breast.L.002", "DEF-breast.R.002"),
+])
+def test_a_sided_bone_has_a_counterpart(bone, counterpart):
+    assert bridge.mirror_bone_name(bone) == counterpart
+
+
+@pytest.mark.parametrize("bone", [
+    "DEF-spine", "DEF-spine.005", "DEF-head", "root", "", "DEF-pelvis",
+])
+def test_a_centre_bone_has_no_counterpart(bone):
+    """A spine has no other side, and inventing one would edit a bone nobody named."""
+    assert bridge.mirror_bone_name(bone) == ""
+
+
+def test_the_mirrored_move_flips_x_and_nothing_else():
+    """+X is the mirror axis everywhere in Forge, so the other side is -X."""
+    assert bridge.mirrored_delta([3.0, -4.0, 5.5]) == [-3.0, -4.0, 5.5]
+
+
+@pytest.mark.parametrize("symmetry,mirrors", [
+    ("mirror_left", True),
+    ("mirror_right", True),
+    ("as_designed", False),
+])
+def test_the_mirror_default_comes_off_the_projects_own_settings(tmp_path,
+                                                                symmetry,
+                                                                mirrors):
+    folder = make_project(tmp_path, "werewolf")
+    write_task_config(folder, symmetry)
+    assert bridge.project_symmetry(folder) == symmetry
+    assert bridge.symmetry_mirrors(folder) is mirrors
+
+
+def test_a_project_with_no_settings_sheet_does_not_mirror(tmp_path):
+    """A default that edits a bone nobody named is the wrong way round."""
+    folder = make_project(tmp_path, "bare")
+    assert bridge.project_symmetry(folder) == ""
+    assert bridge.symmetry_mirrors(folder) is False
+
+
+def test_a_settings_sheet_that_will_not_parse_does_not_mirror(tmp_path):
+    folder = make_project(tmp_path, "broken")
+    write(os.path.join(folder, "design", "task-config.json"), b"{ not json,")
+    assert bridge.symmetry_mirrors(folder) is False
+
+
+def test_a_symmetry_value_this_bridge_has_never_heard_of_does_not_mirror(tmp_path):
+    folder = make_project(tmp_path, "odd")
+    write_task_config(folder, "interpretive")
+    assert bridge.project_symmetry(folder) == ""
+    assert bridge.symmetry_mirrors(folder) is False
+
+
+# ---------------------------------------------------------------------------
+# what a client may send
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("delta", [
+    None, "10", 10, [1, 2], [1, 2, 3, 4], ["1", 2, 3], [None, 0, 0],
+    [True, 0, 0], [float("nan"), 0, 0], [float("inf"), 0, 0],
+    [501.0, 0, 0], [0, 0, -500.5],
+])
+def test_a_delta_that_is_not_three_real_millimetres_is_refused(delta):
+    assert bridge.nudge_delta(delta) is None
+
+
+def test_a_real_delta_comes_back_as_three_floats():
+    assert bridge.nudge_delta([1, -2.5, 0]) == [1.0, -2.5, 0.0]
+    assert bridge.nudge_delta([500, -500, 0]) == [500.0, -500.0, 0.0]
+
+
+# ---------------------------------------------------------------------------
+# the journal
+# ---------------------------------------------------------------------------
+
+def a_record(bone="DEF-foot.L", when="2026-09-18T20:00:00Z"):
+    return {"when": when, "bone": bone, "end": "head",
+            "delta_mm": [0.0, 0.0, -10.0], "mirror": True, "source": "nudge"}
+
+
+def test_the_journal_is_created_on_the_first_edit(tmp_path):
+    """A flat list of records, oldest first — the shape already on disk."""
+    folder = make_project(tmp_path, "cup")
+    path = bridge.append_artist_edit(folder, a_record())
+    assert path and os.path.isfile(path)
+    assert path.endswith(os.path.join("design", "artist-edits.json"))
+    with open(path, encoding="utf-8") as handle:
+        journal = json.load(handle)
+    assert isinstance(journal, list), journal
+    assert len(journal) == 1
+    assert journal[0]["bone"] == "DEF-foot.L"
+    assert journal[0]["source"] == "nudge"
+    # …and no temporary file is left lying beside it.
+    assert [n for n in os.listdir(os.path.dirname(path))
+            if n.endswith(".tmp")] == []
+
+
+def test_two_edits_are_two_records_in_the_order_they_happened(tmp_path):
+    folder = make_project(tmp_path, "cup")
+    bridge.append_artist_edit(folder, a_record("DEF-foot.L", "2026-09-18T20:00:00Z"))
+    bridge.append_artist_edit(folder, a_record("DEF-hand.R", "2026-09-18T20:05:00Z"))
+    journal = bridge.read_journal(folder)
+    assert [entry["bone"] for entry in journal["edits"]] == \
+        ["DEF-foot.L", "DEF-hand.R"]
+    assert [entry["when"] for entry in journal["edits"]] == \
+        ["2026-09-18T20:00:00Z", "2026-09-18T20:05:00Z"]
+
+
+def test_the_journal_never_writes_over_one_it_cannot_read(tmp_path):
+    """An unreadable record of what somebody did by hand is still evidence."""
+    folder = make_project(tmp_path, "cup")
+    path = write(os.path.join(folder, "design", "artist-edits.json"),
+                 b"{ half a journal,")
+    assert bridge.append_artist_edit(folder, a_record()) is None
+    with open(path, "rb") as handle:
+        assert handle.read() == b"{ half a journal,"
+
+
+#: What the assistant wrote into this journal from chat, before there was a
+#: route for it: the same idea in a different shape — a joint in words and the
+#: bones it stood for, rather than one bone and one end.
+HAND_RECORD = {
+    "when": "2026-09-18T21:33:50",
+    "joint": "ankle",
+    "bones": ["DEF-foot.L/R head + coincident IK/FK/tweak/metarig endpoints"],
+    "delta_mm": [0, 0, -44],
+    "mirror": True,
+    "source": "artist decision in chat",
+}
+
+
+def test_records_written_by_hand_are_never_altered_or_dropped(tmp_path):
+    """The other writer's entries are the ones this route must not touch.
+
+    The assistant has been appending to this file from chat since before the
+    endpoint existed, in a record shape of its own.  A journal that kept only
+    the entries made by the tool reading it is not a record of anything.
+    """
+    folder = make_project(tmp_path, "werewolf")
+    path = write(os.path.join(folder, "design", "artist-edits.json"),
+                 json.dumps([HAND_RECORD], indent=2).encode("utf-8"))
+    bridge.append_artist_edit(folder, a_record("DEF-foot.L"))
+    with open(path, encoding="utf-8") as handle:
+        journal = json.load(handle)
+    assert isinstance(journal, list)
+    assert len(journal) == 2
+    # Byte-for-byte the same record, keys and all.
+    assert journal[0] == HAND_RECORD
+    assert journal[1]["source"] == "nudge"
+    assert [entry["source"] for entry in journal] == \
+        ["artist decision in chat", "nudge"]
+
+
+def test_a_journal_that_someone_wrapped_in_an_object_keeps_its_records(tmp_path):
+    folder = make_project(tmp_path, "cup")
+    write(os.path.join(folder, "design", "artist-edits.json"),
+          json.dumps({"version": 1, "edits": [a_record("DEF-old.L")]})
+          .encode("utf-8"))
+    bridge.append_artist_edit(folder, a_record("DEF-new.R"))
+    journal = bridge.read_journal(folder)
+    assert [entry["bone"] for entry in journal["edits"]] == \
+        ["DEF-old.L", "DEF-new.R"]
+
+
+def test_the_journal_is_capped_at_its_newest_records(tmp_path):
+    folder = make_project(tmp_path, "cup")
+    for index in range(5):
+        bridge.append_artist_edit(folder, a_record("DEF-bone.%03d" % index),
+                                  limit=3)
+    journal = bridge.read_journal(folder)
+    assert [entry["bone"] for entry in journal["edits"]] == \
+        ["DEF-bone.002", "DEF-bone.003", "DEF-bone.004"]
+
+
+def test_a_nudge_never_touches_the_build_plan(tmp_path):
+    """pipeline.py is that file's only writer, and a placement is not a gate."""
+    folder = make_project(tmp_path, "werewolf", plan=a_plan())
+    plan_path = os.path.join(folder, "design", "build-plan.json")
+    with open(plan_path, "rb") as handle:
+        before = handle.read()
+    bridge.append_artist_edit(folder, a_record())
+    with open(plan_path, "rb") as handle:
+        assert handle.read() == before
+
+
+# ---------------------------------------------------------------------------
+# the script Blender runs: nothing a client sends is ever code
+# ---------------------------------------------------------------------------
+
+#: Bone names that are attempts to get out of a string literal and into the
+#: script.  Every one of them must die on the ALPHABET, before any script is
+#: built â€” which is why `_BONE_NAME_RE` is an allow-list and not an escaper.
+INJECTIONS = [
+    'DEF-foot.L"); import os; os.system("calc"); ("',
+    "DEF-foot.L'); __import__('os').system('calc'); ('",
+    "DEF-foot.L\\\"",
+    "DEF-foot.L\nimport os",
+    "DEF-foot.L\\nimport os",
+    "DEF-foot.L + open('x','w').write('y')",
+    "../../../etc/passwd",
+    "DEF foot L",
+    "DEF-foot.L;print(1)",
+    "%s",
+    "{}",
+    "DEF-" + "x" * 80,
+    "",
+]
+
+
+@pytest.mark.parametrize("bone", INJECTIONS)
+def test_a_bone_name_that_could_be_code_never_reaches_a_script(bone):
+    assert not bridge._BONE_NAME_RE.match(bone) or len(bone) > 63
+
+
+@pytest.mark.parametrize("bone", ["DEF-foot.L", "DEF-upper_arm.R.001",
+                                  "root", "a", "A.1_b-c"])
+def test_a_real_bone_name_passes_the_alphabet(bone):
+    assert bridge._BONE_NAME_RE.match(bone)
+
+
+def test_the_substituted_script_is_always_valid_python():
+    """Every value goes through json.dumps, so it is a literal or nothing."""
+    code = bridge.JOINT_MOVE_SCRIPT % (
+        json.dumps("werewolf-form-a_retopo_rig"),
+        json.dumps("DEF-foot.L"),
+        json.dumps("head"),
+        json.dumps([0.0, 0.0, -10.0]),
+        json.dumps("DEF-foot.R"),
+        json.dumps([0.0, 0.0, -10.0]),
+    )
+    compile(code, "<joint>", "exec")
+    assert '"DEF-foot.L"' in code
+    assert "FORGE_JOINT" in code
+
+
+def test_the_script_has_no_formatting_holes_left_in_it():
+    """A stray %s in the template would swallow the next value as code.
+
+    The script uses ``%%`` for its own format strings, so the template takes
+    exactly six values â€” and if that ever stops being true this fails rather
+    than silently substituting a bone name into the wrong place.
+    """
+    with pytest.raises(TypeError):
+        bridge.JOINT_MOVE_SCRIPT % (json.dumps("a"),)
+    # Six holes and no more: every OTHER per-cent in the template is doubled,
+    # which is how the script's own runtime format strings survive this
+    # substitution instead of eating the value after them.
+    holes = bridge.JOINT_MOVE_SCRIPT.replace("%%", "")
+    assert holes.count("%s") == 6
+    assert "%r" not in holes
+    code = bridge.JOINT_MOVE_SCRIPT % tuple(
+        json.dumps(one) for one in ["", "DEF-a.L", "head", [0, 0, 1],
+                                    "DEF-a.R", [0, 0, 1]])
+    # …and what comes out is six JSON literals on six assignment lines.
+    assignments = [line for line in code.splitlines()
+                   if re.match(r"^(rig_name|bone_name|end|delta_mm|"
+                               r"mirror_name|mirror_delta_mm) = ", line)]
+    assert len(assignments) == 6, assignments
+    for line in assignments:
+        json.loads(line.split(" = ", 1)[1])
+
+
+# ---------------------------------------------------------------------------
+# the edit itself, run against a faked bpy â€” the chain has to stay connected
+# ---------------------------------------------------------------------------
+#
+# The socket is mocked everywhere else in this file; here the mock is one level
+# further in.  `JOINT_MOVE_SCRIPT` is the real script text, exec'd against a
+# Blender-shaped stand-in, because the one thing that has to be right â€” moving
+# a tail drags its connected children's heads, and moving a connected head
+# drags its parent's tail â€” is written in that script and nowhere else.
+
+
+class V(object):
+    """Enough of ``mathutils.Vector`` for the script to do its work."""
+
+    def __init__(self, x=0.0, y=0.0, z=0.0):
+        self.x, self.y, self.z = float(x), float(y), float(z)
+
+    def copy(self):
+        return V(self.x, self.y, self.z)
+
+    def __iter__(self):
+        return iter((self.x, self.y, self.z))
+
+    def __eq__(self, other):
+        return tuple(self) == tuple(other)
+
+    def __repr__(self):
+        return "V(%g, %g, %g)" % (self.x, self.y, self.z)
+
+
+def _as_vector(value):
+    if isinstance(value, V):
+        return value.copy()
+    return V(*tuple(value))
+
+
+class FakeBone(object):
+    """One bone, in both its edit and its rest identity (they are the same here)."""
+
+    def __init__(self, name, head, tail, parent=None, connect=False):
+        self.name = name
+        self._head = _as_vector(head)
+        self._tail = _as_vector(tail)
+        self.parent = parent
+        self.use_connect = connect
+        self.children = []
+        if parent is not None:
+            parent.children.append(self)
+
+    # The script assigns tuples to these, and reads .x/.y/.z back off them.
+    def _get_head(self):
+        return self._head
+
+    def _set_head(self, value):
+        self._head = _as_vector(value)
+
+    head = property(_get_head, _set_head)
+
+    def _get_tail(self):
+        return self._tail
+
+    def _set_tail(self, value):
+        self._tail = _as_vector(value)
+
+    tail = property(_get_tail, _set_tail)
+
+    # The rest pose reads the same points back after edit mode closes.
+    head_local = property(lambda self: self._head)
+    tail_local = property(lambda self: self._tail)
+
+
+class FakeBoneTable(object):
+    def __init__(self, bones):
+        self._bones = bones
+
+    def get(self, name, default=None):
+        for bone in self._bones:
+            if bone.name == name:
+                return bone
+        return default
+
+    def __contains__(self, name):
+        return self.get(name) is not None
+
+    def __iter__(self):
+        return iter(self._bones)
+
+
+class FakeMatrix(object):
+    """An identity world matrix: ``matrix_world @ v`` is ``v``."""
+
+    def __matmul__(self, other):
+        return other
+
+
+class FakeObject(object):
+    def __init__(self, name, kind, bones=None):
+        self.name = name
+        self.type = kind
+        self.mode = "OBJECT"
+        self.modifiers = []
+        self.matrix_world = FakeMatrix()
+        self._selected = False
+        if bones is not None:
+            table = FakeBoneTable(bones)
+            self.data = type("Data", (), {"bones": table, "edit_bones": table})()
+
+    def select_get(self):
+        return self._selected
+
+    def select_set(self, value):
+        self._selected = bool(value)
+
+
+class FakeModifier(object):
+    def __init__(self, rig):
+        self.type = "ARMATURE"
+        self.object = rig
+
+
+def a_rig(name="rig"):
+    """thigh -> shin -> foot, every joint connected, 1 unit apart going down."""
+    thigh = FakeBone("DEF-thigh.L", (0, 0, 1.0), (0, 0, 0.5))
+    shin = FakeBone("DEF-shin.L", (0, 0, 0.5), (0, 0, 0.1), thigh, connect=True)
+    foot = FakeBone("DEF-foot.L", (0, 0, 0.1), (0.1, 0, 0.1), shin, connect=True)
+    right = FakeBone("DEF-foot.R", (0, 0, 0.1), (0.1, 0, 0.1))
+    loose = FakeBone("DEF-tail.001", (0, 1, 0), (0, 1.2, 0))
+    loose.use_connect = False
+    return FakeObject(name, "ARMATURE", [thigh, shin, foot, right, loose])
+
+
+def run_joint_script(rig_objects, bone, end, delta_mm, mirror="",
+                     mirror_delta=None, rig_name="", meshes=None,
+                     unit_scale=1.0):
+    """Exec the REAL script against a fake Blender. Returns its report."""
+    printed = []
+    objects = list(rig_objects) + list(meshes or [])
+
+    scene = type("Scene", (), {})()
+    scene.objects = objects
+    scene.unit_settings = type("Units", (), {"scale_length": unit_scale})()
+
+    view = type("View", (), {})()
+    view.objects = type("Objects", (), {"active": None})()
+
+    ops_log = []
+
+    def mode_set(mode="OBJECT"):
+        ops_log.append(mode)
+        if view.objects.active is not None:
+            view.objects.active.mode = mode
+
+    fake_bpy = type("Bpy", (), {})()
+    fake_bpy.context = type("Context", (), {"scene": scene, "view_layer": view})()
+    fake_bpy.data = type("Data", (), {"objects": objects})()
+    fake_bpy.ops = type("Ops", (), {})()
+    fake_bpy.ops.object = type("ObjectOps", (), {"mode_set": staticmethod(mode_set)})()
+
+    code = bridge.JOINT_MOVE_SCRIPT % (
+        json.dumps(rig_name),
+        json.dumps(bone),
+        json.dumps(end),
+        json.dumps(list(delta_mm)),
+        json.dumps(mirror),
+        json.dumps(list(mirror_delta if mirror_delta is not None
+                        else bridge.mirrored_delta(delta_mm))),
+    )
+    namespace = {"__name__": "__forge__"}
+    import builtins
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "bpy":
+            return fake_bpy
+        return real_import(name, *args, **kwargs)
+
+    def capture(*args, **kwargs):
+        printed.append(" ".join(str(one) for one in args))
+
+    namespace["__builtins__"] = dict(vars(builtins))
+    namespace["__builtins__"]["__import__"] = fake_import
+    namespace["__builtins__"]["print"] = capture
+    try:
+        exec(compile(code, "<joint>", "exec"), namespace)  # noqa: S102
+    except SystemExit:
+        pass
+    return bridge.joint_move_report("\n".join(printed)), ops_log
+
+
+def test_moving_a_tail_drags_every_connected_childs_head():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-shin.L", "tail", [0, 0, -10])
+    assert report and report["ok"] is True, report
+    shin = rig.data.bones.get("DEF-shin.L")
+    foot = rig.data.bones.get("DEF-foot.L")
+    # 10 mm down, in metres, on a scene whose unit is the metre.
+    assert round(shin.tail.z, 6) == 0.09
+    # The foot's head IS the shin's tail: it has to have come with it.
+    assert round(foot.head.z, 6) == 0.09
+    assert tuple(foot.head) == tuple(shin.tail)
+    whys = [entry["why"] for entry in report["moved"]]
+    assert "connected child follows" in whys
+
+
+def test_moving_a_connected_head_drags_its_parents_tail():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-foot.L", "head", [0, 0, -10])
+    assert report and report["ok"] is True, report
+    foot = rig.data.bones.get("DEF-foot.L")
+    shin = rig.data.bones.get("DEF-shin.L")
+    assert round(foot.head.z, 6) == 0.09
+    assert tuple(shin.tail) == tuple(foot.head)
+    assert [entry["bone"] for entry in report["moved"]] == \
+        ["DEF-foot.L", "DEF-shin.L"]
+
+
+def test_an_unconnected_bone_takes_nothing_with_it():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-thigh.L", "head", [0, 0, -10])
+    assert report["ok"] is True
+    assert [entry["bone"] for entry in report["moved"]] == ["DEF-thigh.L"]
+    # The thigh's head is not connected to anything above it.
+    assert round(rig.data.bones.get("DEF-thigh.L").head.z, 6) == 0.99
+
+
+def test_a_mirrored_nudge_moves_both_sides():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-foot.L", "head", [5, 0, -10],
+                                    mirror="DEF-foot.R")
+    assert report["ok"] is True
+    left = rig.data.bones.get("DEF-foot.L")
+    right = rig.data.bones.get("DEF-foot.R")
+    assert round(left.head.x, 6) == 0.005
+    # X flipped, Z the same: the same move on the other side of the midplane.
+    assert round(right.head.x, 6) == -0.005
+    assert round(left.head.z, 6) == round(right.head.z, 6) == 0.09
+    assert report["mirror_bone"] == "DEF-foot.R"
+
+
+def test_a_mirror_bone_that_is_not_on_the_rig_is_simply_not_moved():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-thigh.L", "head", [5, 0, 0],
+                                    mirror="DEF-thigh.R")
+    assert report["ok"] is True
+    assert report["mirror_bone"] == ""
+    assert [entry["bone"] for entry in report["moved"]] == ["DEF-thigh.L"]
+
+
+def test_the_scenes_unit_scale_is_what_a_millimetre_means():
+    rig = a_rig()
+    run_joint_script([rig], "DEF-thigh.L", "head", [0, 0, -10], unit_scale=0.01)
+    # 1 unit = 1 cm, so 10 mm is a whole unit.
+    assert round(rig.data.bones.get("DEF-thigh.L").head.z, 6) == 0.0
+
+
+def test_a_bone_that_is_not_on_the_rig_is_refused_by_name():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-nostril.L", "head", [0, 0, -1])
+    assert report["ok"] is False
+    assert report["kind"] == "no_bone"
+    assert "DEF-nostril.L" in report["error"]
+
+
+def test_a_scene_with_no_armature_says_so():
+    mesh = FakeObject("body", "MESH")
+    report, _ops = run_joint_script([], "DEF-foot.L", "head", [0, 0, -1],
+                                    meshes=[mesh])
+    assert report["ok"] is False
+    assert report["kind"] == "no_rig"
+
+
+def test_the_rig_bound_to_the_mesh_wins_when_two_have_the_same_bone():
+    bound = a_rig("bound-rig")
+    spare = a_rig("spare-rig")
+    mesh = FakeObject("body", "MESH")
+    mesh.modifiers.append(FakeModifier(bound))
+    report, _ops = run_joint_script([bound, spare], "DEF-foot.L", "head",
+                                    [0, 0, -10], meshes=[mesh])
+    assert report["ok"] is True
+    assert report["rig"] == "bound-rig"
+    # â€¦and the one nobody is skinned to was not touched.
+    assert round(spare.data.bones.get("DEF-foot.L").head.z, 6) == 0.1
+
+
+def test_two_unbound_rigs_with_the_same_bone_ask_which():
+    report, _ops = run_joint_script([a_rig("one"), a_rig("two")],
+                                    "DEF-foot.L", "head", [0, 0, -1])
+    assert report["ok"] is False
+    assert report["kind"] == "ambiguous"
+    assert sorted(report["rigs"]) == ["one", "two"]
+
+
+def test_the_named_rig_is_the_one_that_is_edited():
+    first, second = a_rig("one"), a_rig("two")
+    report, _ops = run_joint_script([first, second], "DEF-foot.L", "head",
+                                    [0, 0, -10], rig_name="two")
+    assert report["ok"] is True and report["rig"] == "two"
+    assert round(first.data.bones.get("DEF-foot.L").head.z, 6) == 0.1
+
+
+def test_a_named_rig_that_is_not_there_is_refused():
+    report, _ops = run_joint_script([a_rig("one")], "DEF-foot.L", "head",
+                                    [0, 0, -1], rig_name="nope")
+    assert report["ok"] is False and report["kind"] == "no_rig"
+
+
+def test_the_edit_goes_through_edit_mode_and_comes_back_out():
+    rig = a_rig()
+    _report, ops = run_joint_script([rig], "DEF-foot.L", "head", [0, 0, -1])
+    assert "EDIT" in ops
+    assert ops[-1] == "OBJECT" or ops.index("EDIT") < len(ops) - 1
+    assert rig.mode == "OBJECT"
+
+
+def test_the_artists_own_selection_is_put_back():
+    """Placing a joint must not move the selection out from under them."""
+    rig = a_rig()
+    mesh = FakeObject("body", "MESH")
+    mesh.modifiers.append(FakeModifier(rig))
+    mesh.select_set(True)
+    report, _ops = run_joint_script([rig], "DEF-foot.L", "head", [0, 0, -1],
+                                    meshes=[mesh])
+    assert report["ok"] is True
+    assert mesh.select_get() is True
+    assert rig.select_get() is False
+
+
+def test_the_report_carries_the_world_positions_of_everything_that_moved():
+    rig = a_rig()
+    report, _ops = run_joint_script([rig], "DEF-foot.L", "head", [0, 0, -10])
+    positions = report["positions"]
+    assert set(positions) == {"DEF-foot.L", "DEF-shin.L"}
+    assert positions["DEF-foot.L"]["head"] == [0.0, 0.0, 0.09]
+    assert positions["DEF-shin.L"]["tail"] == [0.0, 0.0, 0.09]
+
+
+# ---------------------------------------------------------------------------
+# the route
+# ---------------------------------------------------------------------------
+
+def joint_responder(ok=True, kind="", error="", mirror_bone="DEF-foot.R"):
+    """A fake add-on that answers a nudge without running any Blender."""
+    def responder(request):
+        report = ({"ok": True, "rig": "werewolf-rig", "bone": "DEF-foot.L",
+                   "end": "head", "mirror_bone": mirror_bone,
+                   "moved": [{"bone": "DEF-foot.L", "end": "head", "why": "nudged"},
+                             {"bone": "DEF-shin.L", "end": "tail",
+                              "why": "connected parent follows"}],
+                   "positions": {"DEF-foot.L": {"head": [0, 0, 0.09],
+                                                "tail": [0.1, 0, 0.09]}},
+                   "unit_scale": 1.0}
+                  if ok else {"ok": False, "kind": kind, "error": error})
+        return {"id": request.get("id"), "status": "success",
+                "result": {"output": "Info: editing\nFORGE_JOINT "
+                                     + json.dumps(report) + "\n",
+                           "result": None}}
+    return responder
+
+
+@pytest.fixture
+def nudger(bridges, projects, fake_blender):
+    """A bridge whose Blender answers nudges, over the werewolf fixture."""
+    def factory(responder=None, symmetry="mirror_left"):
+        folder = str(projects / "werewolf")
+        if symmetry:
+            write_task_config(folder, symmetry)
+        server = fake_blender(responder or joint_responder())
+        client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                    "FORGE_BLENDER_PORT": str(server.port)})
+        return client, server
+    return factory
+
+
+def test_a_nudge_moves_the_bone_and_records_it(nudger, projects):
+    client, server = nudger()
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head",
+                 "delta_mm": [0, 0, -10]})
+    assert status == 200, body
+    assert body["project"] == "werewolf"
+    assert body["rig"] == "werewolf-rig"
+    assert body["delta_mm"] == [0.0, 0.0, -10.0]
+    assert body["symmetry"] == "mirror_left"
+    assert body["mirror"] is True
+    assert "rig_check" in body["note"]
+
+    code = server.seen[0]["params"]["code"]
+    assert server.seen[0]["type"] == "execute_python"
+    assert '"DEF-foot.L"' in code and '"DEF-foot.R"' in code
+
+    journal = json.loads(
+        (projects / "werewolf" / "design" / "artist-edits.json")
+        .read_text(encoding="utf-8"))
+    assert isinstance(journal, list)
+    assert len(journal) == 1
+    record = journal[0]
+    assert record["bone"] == "DEF-foot.L"
+    assert record["end"] == "head"
+    assert record["delta_mm"] == [0.0, 0.0, -10.0]
+    assert record["mirror"] is True
+    assert record["source"] == "nudge"
+    assert record["when"].endswith("Z")
+
+
+def test_two_nudges_are_two_records(nudger, projects):
+    client, _server = nudger()
+    for step in (-2, -3):
+        client.request("/projects/werewolf/joint_move",
+                       payload={"bone": "DEF-foot.L", "end": "head",
+                                "delta_mm": [0, 0, step]})
+    journal = json.loads(
+        (projects / "werewolf" / "design" / "artist-edits.json")
+        .read_text(encoding="utf-8"))
+    assert isinstance(journal, list)
+    assert len(journal) == 2
+    # In the order they happened, which is what an append-only trail is for.
+    assert [record["delta_mm"][2] for record in journal] == [-2.0, -3.0]
+
+
+@pytest.mark.parametrize("symmetry,mirrored", [
+    ("mirror_left", True),
+    ("mirror_right", True),
+    ("as_designed", False),
+])
+def test_the_route_mirrors_by_the_projects_own_setting(nudger, symmetry,
+                                                       mirrored):
+    client, server = nudger(joint_responder(
+        mirror_bone="DEF-foot.R" if mirrored else ""), symmetry=symmetry)
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [1, 0, 0]})
+    assert status == 200, body
+    assert body["mirror"] is mirrored
+    code = server.seen[0]["params"]["code"]
+    assert ('mirror_name = "DEF-foot.R"' in code) is mirrored
+
+
+@pytest.mark.parametrize("asked,expected", [(True, True), (False, False)])
+def test_an_explicit_mirror_beats_the_setting(nudger, asked, expected):
+    client, server = nudger(joint_responder(
+        mirror_bone="DEF-foot.R" if expected else ""), symmetry="as_designed")
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [1, 0, 0],
+                 "mirror": asked})
+    assert status == 200, body
+    assert body["mirror"] is expected
+
+
+def test_a_centre_bone_is_never_mirrored_however_symmetric_the_project(nudger):
+    client, server = nudger(joint_responder(mirror_bone=""))
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-spine", "end": "tail", "delta_mm": [0, 0, 1],
+                 "mirror": True})
+    assert status == 200, body
+    assert body["mirror"] is False
+    assert 'mirror_name = ""' in server.seen[0]["params"]["code"]
+
+
+@pytest.mark.parametrize("bone", INJECTIONS)
+def test_the_route_refuses_a_bone_name_before_blender_is_asked_anything(
+        nudger, bone, projects):
+    client, server = nudger()
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": bone, "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 400, body
+    assert "bone name" in body["error"]
+    # The whole point of the ordering: no script was built, so Blender was
+    # never handed one.
+    assert server.seen == []
+    assert not (projects / "werewolf" / "design" / "artist-edits.json").exists()
+
+
+@pytest.mark.parametrize("payload,fragment", [
+    ({"end": "head", "delta_mm": [0, 0, 1]}, "bone name"),
+    ({"bone": "DEF-foot.L", "delta_mm": [0, 0, 1]}, "Which end"),
+    ({"bone": "DEF-foot.L", "end": "middle", "delta_mm": [0, 0, 1]}, "Which end"),
+    ({"bone": "DEF-foot.L", "end": "head"}, "delta_mm"),
+    ({"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, 9000]}, "delta_mm"),
+    ({"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, 0]}, "zero"),
+    ({"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, 1],
+      "rig": "not a name"}, "object name"),
+])
+def test_a_request_that_is_not_a_nudge_is_refused(nudger, payload, fragment):
+    client, server = nudger()
+    status, body = client.request("/projects/werewolf/joint_move",
+                                  payload=payload)
+    assert status == 400, body
+    assert fragment in body["error"]
+    assert server.seen == []
+
+
+def test_the_route_needs_a_json_body(nudger):
+    client, _server = nudger()
+    status, body = client.request("/projects/werewolf/joint_move",
+                                  payload=[1, 2, 3])
+    assert status == 400
+    assert "JSON object" in body["error"]
+
+
+def test_a_project_that_is_not_there_is_a_404_and_asks_blender_nothing(nudger):
+    client, server = nudger()
+    status, _body = client.request("/projects/nope/joint_move",
+                                   payload={"bone": "DEF-foot.L", "end": "head",
+                                            "delta_mm": [0, 0, -1]})
+    assert status == 404
+    assert server.seen == []
+
+
+def test_a_bone_blender_does_not_have_is_a_404(nudger, projects):
+    client, _server = nudger(joint_responder(
+        ok=False, kind="no_bone", error="'rig' has no bone called 'DEF-x.L'."))
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-x.L", "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 404, body
+    assert "no bone called" in body["error"]
+    # A move that did not happen is not written down.
+    assert not (projects / "werewolf" / "design" / "artist-edits.json").exists()
+
+
+def test_a_scene_with_no_rig_is_a_404(nudger):
+    client, _server = nudger(joint_responder(
+        ok=False, kind="no_rig",
+        error="There is no armature in the Blender scene to nudge."))
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 404, body
+    assert "no armature" in body["error"]
+
+
+def test_two_rigs_with_the_same_bone_is_a_409(nudger):
+    client, _server = nudger(joint_responder(
+        ok=False, kind="ambiguous",
+        error="2 armatures have a bone called 'DEF-foot.L'; say which rig."))
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 409, body
+
+
+def test_a_nudge_with_blender_closed_says_so_and_writes_nothing(workspace,
+                                                                projects):
+    """The fixture's Blender port has nothing listening on it â€” the real path."""
+    status, body = workspace.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 503, body
+    assert "Blender is not running" in body["error"]
+    assert body["blender"] is False
+    assert not (projects / "werewolf" / "design" / "artist-edits.json").exists()
+
+
+def test_an_addon_that_says_nothing_readable_is_a_502(bridges, projects,
+                                                      fake_blender):
+    def responder(request):
+        return {"id": request.get("id"), "status": "success",
+                "result": {"output": "Info: nothing", "result": None}}
+
+    server = fake_blender(responder)
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request(
+        "/projects/werewolf/joint_move",
+        payload={"bone": "DEF-foot.L", "end": "head", "delta_mm": [0, 0, -1]})
+    assert status == 502, body
+    assert "could read back" in body["error"]
+
+
+def test_the_nudge_route_answers_on_both_spellings_of_the_prefix(nudger):
+    client, _server = nudger()
+    for path in ("/projects/werewolf/joint_move", "/project/werewolf/joint_move"):
+        status, _body = client.request(
+            path, payload={"bone": "DEF-foot.L", "end": "head",
+                           "delta_mm": [0, 0, -1]})
+        assert status == 200, path
+
+
+def test_a_nudge_leaves_the_build_plan_exactly_as_it_was(nudger, projects):
+    client, _server = nudger()
+    plan = projects / "werewolf" / "design" / "build-plan.json"
+    before = plan.read_bytes()
+    client.request("/projects/werewolf/joint_move",
+                   payload={"bone": "DEF-foot.L", "end": "head",
+                            "delta_mm": [0, 0, -10]})
+    assert plan.read_bytes() == before
+
+
+# ---------------------------------------------------------------------------
+# the viewer's handle maths, on a real (tiny) rigged glb
+# ---------------------------------------------------------------------------
+
+def make_rigged_glb():
+    """A skinned two-bone chain, with the second joint NESTED under the first.
+
+    That nesting is the whole point of the fixture: ``DEF-shin.L`` sits at
+    ``(0, 0.5, 0)`` in its parent's space and at ``(0, 1.5, 0)`` in the world,
+    so a handle drawn at its local translation would be half a metre up the
+    thigh â€” which is exactly the bug this test exists to catch.
+    """
+    import struct
+
+    positions = struct.pack("<9f", 0, 1, 0, 0.1, 1.5, 0, 0, 2, 0)        # 36
+    normals = struct.pack("<9f", 0, 0, 1, 0, 0, 1, 0, 0, 1)              # 36
+    indices = struct.pack("<3H", 0, 1, 2) + b"\x00\x00"                  # 6 (+2)
+    joints = struct.pack("<12B", 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)     # 12
+    weights = struct.pack("<12f", 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)    # 48
+
+    def ibm(y):
+        flat = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -y, 0, 1]
+        return struct.pack("<16f", *flat)
+
+    inverse = ibm(1.0) + ibm(1.5)                                        # 128
+    blob = positions + normals + indices + joints + weights + inverse
+    assert len(blob) == 268, len(blob)
+
+    gltf = {
+        "asset": {"version": "2.0"},
+        "scene": 0,
+        "scenes": [{"nodes": [0, 3]}],
+        "nodes": [
+            {"name": "rig", "children": [1]},
+            {"name": "DEF-thigh.L", "children": [2], "translation": [0, 1, 0]},
+            {"name": "DEF-shin.L", "translation": [0, 0.5, 0]},
+            {"name": "body", "mesh": 0, "skin": 0},
+        ],
+        "meshes": [{"name": "body", "primitives": [{
+            "attributes": {"POSITION": 0, "NORMAL": 1,
+                           "JOINTS_0": 2, "WEIGHTS_0": 3},
+            "indices": 4, "mode": 4}]}],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": 5}],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3",
+             "min": [0, 1, 0], "max": [0.1, 2, 0]},
+            {"bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3"},
+            {"bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4"},
+            {"bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4"},
+            {"bufferView": 4, "componentType": 5123, "count": 3, "type": "SCALAR"},
+            {"bufferView": 5, "componentType": 5126, "count": 2, "type": "MAT4"},
+        ],
+        "bufferViews": [
+            {"buffer": 0, "byteOffset": 0, "byteLength": 36},
+            {"buffer": 0, "byteOffset": 36, "byteLength": 36},
+            {"buffer": 0, "byteOffset": 80, "byteLength": 12},
+            {"buffer": 0, "byteOffset": 92, "byteLength": 48},
+            {"buffer": 0, "byteOffset": 72, "byteLength": 6},
+            {"buffer": 0, "byteOffset": 140, "byteLength": 128},
+        ],
+        "buffers": [{"byteLength": len(blob)}],
+    }
+
+    payload = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
+    payload += b" " * ((4 - len(payload) % 4) % 4)
+    body = blob + b"\x00" * ((4 - len(blob) % 4) % 4)
+    total = 12 + 8 + len(payload) + 8 + len(body)
+    out = struct.pack("<III", 0x46546C67, 2, total)
+    out += struct.pack("<II", len(payload), 0x4E4F534A) + payload
+    out += struct.pack("<II", len(body), 0x004E4942) + body
+    return out
+
+
+JOINT_HARNESS = r"""
+const fs = require("fs");
+global.window = {
+  requestAnimationFrame: function () { return 0; },
+  cancelAnimationFrame: function () {},
+  devicePixelRatio: 1
+};
+eval(fs.readFileSync(process.argv[2], "utf8"));
+const bytes = fs.readFileSync(process.argv[3]);
+const buffer = bytes.buffer.slice(bytes.byteOffset,
+                                  bytes.byteOffset + bytes.byteLength);
+const model = window.ForgeGLB.loadModel(buffer);
+console.log(JSON.stringify({
+  skinned: model.skinned,
+  handles: window.ForgeGLB.jointHandles(model),
+  unfiltered: window.ForgeGLB.jointHandles(model, "").length,
+  noneMatch: window.ForgeGLB.jointHandles(model, "CTRL-").length,
+  names: ["DEF-foot.L", "DEF-shin.R", "DEF-upper_arm.L.001", "DEF-spine.005",
+          "MCH-thing", "root", ""]
+    .map(n => window.ForgeGLB.plainJointName(n)),
+  // glTF is Y-up, Blender is Z-up: (x, y, z)_gltf -> (x, -z, y)_blender.
+  blender: window.ForgeGLB.toBlenderMillimetres([0.001, 0.002, 0.003])
+}));
+"""
+
+
+def run_joint_viewer(tmp_path, glb):
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("no node on this machine to run glbview.js with")
+    harness = tmp_path / "joints.js"
+    harness.write_text(JOINT_HARNESS, encoding="utf-8")
+    blob = tmp_path / "rigged.glb"
+    blob.write_bytes(glb)
+    import subprocess
+    done = subprocess.run(
+        [node, str(harness), os.path.join(WEBUI_DIR, "glbview.js"), str(blob)],
+        capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout)
+
+
+def test_a_handle_lands_on_every_joint_in_world_space(tmp_path):
+    read = run_joint_viewer(tmp_path, make_rigged_glb())
+    assert read["skinned"] == 1
+    handles = read["handles"]
+    assert [h["bone"] for h in handles] == ["DEF-thigh.L", "DEF-shin.L"]
+    assert handles[0]["position"] == [0, 1, 0]
+    # The nested one: 0.5 up from a parent that is 1.0 up, so 1.5 in the world
+    # and NOT the 0.5 its own translation says.
+    assert handles[1]["position"] == [0, 1.5, 0]
+
+
+def test_every_handle_is_a_bones_head_and_the_last_one_is_a_leaf(tmp_path):
+    read = run_joint_viewer(tmp_path, make_rigged_glb())
+    handles = read["handles"]
+    assert [h["end"] for h in handles] == ["head", "head"]
+    assert [h["leaf"] for h in handles] == [False, True]
+
+
+def test_the_handles_are_named_in_words_a_person_uses(tmp_path):
+    read = run_joint_viewer(tmp_path, make_rigged_glb())
+    assert [h["label"] for h in read["handles"]] == ["left hip", "left knee"]
+    assert read["names"] == [
+        "left ankle", "right knee", "left shoulder 2", "spine 6",
+        "thing", "root", ""]
+
+
+def test_a_prefix_that_matches_nothing_still_draws_the_rig(tmp_path):
+    """An empty viewport looks like a bug, so a rig named otherwise still shows."""
+    read = run_joint_viewer(tmp_path, make_rigged_glb())
+    assert read["unfiltered"] == 2
+    assert read["noneMatch"] == 2
+
+
+def test_the_viewers_axes_are_converted_to_blenders(tmp_path):
+    read = run_joint_viewer(tmp_path, make_rigged_glb())
+    # 1 mm right, 2 mm up and 3 mm toward the viewer in the viewer's own axes
+    # is 1 mm X, -3 mm Y and 2 mm Z in Blender's.
+    assert read["blender"] == [1, -3, 2]
+
+
+def test_a_glb_with_no_skeleton_has_no_handles(tmp_path):
+    """No skin, no joints â€” and honestly none, rather than a guess at some."""
+    read = run_joint_viewer(tmp_path, make_glb())
+    assert read["handles"] == []
+
+
+# ---------------------------------------------------------------------------
+# the page
+# ---------------------------------------------------------------------------
+
+def test_the_nudge_controls_are_on_the_page(client):
+    html = fetch_text(client, "/")
+    for anchor in ("ws-nudge", "ws-nudge-bar", "ws-nudge-name", "ws-nudge-bone",
+                   "ws-axis-up", "ws-axis-forward", "ws-axis-side",
+                   "ws-nudge-mirror", "ws-nudge-mm", "ws-nudge-scale",
+                   "ws-nudge-cancel", "ws-nudge-apply", "ws-nudge-status"):
+        assert ('id="%s"' % anchor) in html, anchor
+    # It starts hidden: the default screen is still the simple one.
+    bar = html.split('id="ws-nudge-bar"', 1)[1].split(">", 1)[0]
+    assert "hidden" in bar
+
+
+def test_the_nudge_offers_single_axes_rather_than_free_dragging(client):
+    """"Up a bit" is the request, and a one-axis drag cannot go sideways."""
+    script = fetch_text(client, "/webui/glbview.js")
+    axes = script.split("var AXES = {", 1)[1].split("};", 1)[0]
+    assert '"up / down"' in axes
+    assert '"forward / back"' in axes
+    assert '"side to side"' in axes
+    html = fetch_text(client, "/")
+    assert 'data-axis="up"' in html
+    assert 'data-axis="forward"' in html
+
+
+def test_the_readout_gives_millimetres_and_something_to_measure_them_against(
+        client):
+    """"I don't know how much 10mm is here" â€” so the mm never travels alone."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "function nudgeScaleText(" in script
+    assert "of him" in script
+    assert 'read.mm.toFixed(1) + " mm"' in script
+    # …and the distance never carries a direction with it: a drag can run
+    # along two axes one after the other, so "186 mm side to side" when
+    # 124 mm of it was vertical is a lie the viewport's own line avoids.
+    assert 'read.mm.toFixed(1) + " mm " + read.axisLabel' not in script
+    viewer = fetch_text(client, "/webui/glbview.js")
+    # The drawn half of the answer: a grey ghost where the drag started.
+    assert "HANDLE_WAS" in viewer
+    assert "state.origin" in viewer
+
+
+def test_applying_a_nudge_re_snapshots_rather_than_trusting_the_drag(client):
+    """What is on screen afterwards has to be what Blender did."""
+    script = fetch_text(client, "/webui/app.js")
+    apply_fn = script.split("function wsApplyNudge(", 1)[1] \
+                     .split("\n  function ", 1)[0]
+    assert "/joint_move" in apply_fn
+    assert "wsSnapshot()" in apply_fn
+    assert "res.data.note" in apply_fn
+
+
+def test_escape_abandons_a_placement(client):
+    script = fetch_text(client, "/webui/app.js")
+    assert 'event.key !== "Escape"' in script
+    assert "wsCancelNudge" in script
+
+
+def test_the_nudge_styles_ship_with_the_stylesheet(client):
+    css = fetch_text(client, "/webui/app.css")
+    for rule in (".ws-nudge", ".ws-nudge-mm", ".btn.ws-axis"):
+        assert rule in css, rule

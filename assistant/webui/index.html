@@ -219,12 +219,51 @@
         <div class="ws-viewer-bar">
           <button type="button" class="btn ghost tiny" id="ws-snapshot"
                   title="Export what Blender is holding right now and draw it here">Refresh from Blender</button>
+          <button type="button" class="btn ghost tiny" id="ws-nudge"
+                  title="Show a handle at every joint, and drag one to move it"
+                  disabled>Nudge</button>
           <button type="button" class="btn ghost tiny" id="ws-play"
                   title="Play the animation in this snapshot" disabled>Play</button>
           <button type="button" class="btn ghost tiny" id="ws-view-reset"
                   title="Frame the model again">Recentre</button>
           <span class="ws-viewer-note" id="ws-viewer-note">Rest pose, as of the
                 last refresh.</span>
+        </div>
+
+        <!-- Joint nudge. The artist: "I don't know how much 10mm is here."
+             The number is not the answer — seeing the handle move against the
+             leg it is on is. So this strip is deliberately thin: which joint,
+             which single direction, how far, and the two buttons that end it.
+             The measuring happens in the viewport above. -->
+        <div class="ws-nudge" id="ws-nudge-bar" hidden>
+          <div class="ws-nudge-row">
+            <span class="ws-nudge-name" id="ws-nudge-name">Click a handle to pick a joint.</span>
+            <span class="ws-nudge-bone" id="ws-nudge-bone"></span>
+          </div>
+          <div class="ws-nudge-row">
+            <span class="ws-nudge-label">Move</span>
+            <button type="button" class="btn tiny ws-axis is-on" id="ws-axis-up"
+                    data-axis="up" title="Only up and down">up / down</button>
+            <button type="button" class="btn tiny ws-axis" id="ws-axis-forward"
+                    data-axis="forward" title="Only forward and back">forward / back</button>
+            <button type="button" class="btn tiny ws-axis" id="ws-axis-side"
+                    data-axis="side" title="Only side to side">side to side</button>
+            <select id="ws-nudge-mirror" class="select tiny"
+                    title="Whether the joint on the other side moves the same amount">
+              <option value="">mirror: from settings</option>
+              <option value="1">mirror: yes</option>
+              <option value="0">mirror: no</option>
+            </select>
+          </div>
+          <div class="ws-nudge-row">
+            <span class="ws-nudge-mm" id="ws-nudge-mm">0.0 mm</span>
+            <span class="ws-nudge-scale" id="ws-nudge-scale"></span>
+            <button type="button" class="btn tiny" id="ws-nudge-cancel"
+                    title="Put it back where it was (Esc)">Cancel</button>
+            <button type="button" class="btn tiny primary" id="ws-nudge-apply"
+                    title="Move the real bone in Blender" disabled>Apply</button>
+          </div>
+          <p class="ws-nudge-status" id="ws-nudge-status"></p>
         </div>
       </div>
     </div>

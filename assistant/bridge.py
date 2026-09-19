@@ -169,6 +169,28 @@ and on ``/project/<name>/...``::
                                        orbit what Blender is holding.  503 with
                                        the usual sentence when Blender is down
 
+Phase 19 — one joint, moved by hand.  The artist: "if I am unfamiliar with
+this it's difficult, we need a simplified version in forge to edit, I don't
+know how much 10mm is here."  The last clause is the feature: 10 mm means
+nothing until it is seen against the thing it applies to, so the placement
+happens in the viewer and this route is only the part that has to happen in
+Blender::
+
+``POST /projects/<name>/joint_move``   ``{"bone", "end", "delta_mm", "mirror"}``
+                                       -> one end of one bone moved in edit
+                                       mode on the rig bound to the project's
+                                       mesh, with the chain kept connected (a
+                                       connected child's head follows a moved
+                                       tail, and a connected bone's head drags
+                                       its parent's tail).  ``mirror`` defaults
+                                       to the project's own
+                                       ``design/task-config.json`` symmetry
+                                       setting, read-only.  Every successful
+                                       move appends one record to
+                                       ``design/artist-edits.json`` — NOT to
+                                       ``build-plan.json``, which
+                                       ``forge_mcp.pipeline`` still owns alone
+
 ``POST /models/open``                  what a click on the card means — the
                                        model, in Blender, whichever state the
                                        machine is in.  Blender running:
@@ -1060,6 +1082,87 @@ SNAPSHOT_MARKER = "FORGE_SNAPSHOT "
 #: actions blocks Blender's main thread for a while, and the alternative to
 #: waiting is a viewer that says "Blender did not answer" on every real model.
 SNAPSHOT_TIMEOUT = 180.0
+
+# ---------------------------------------------------------------------------
+# Phase 19 — nudging a joint ("I don't know how much 10mm is here")
+# ---------------------------------------------------------------------------
+#
+# The artist, stuck on a bone that is a few millimetres out of place: "if I am
+# unfamiliar with this it's difficult, we need a simplified version in forge to
+# edit, I don't know how much 10mm is here."
+#
+# That last clause is the whole feature.  The number is not the problem —
+# Blender will happily take 10 mm — the problem is that 10 mm means nothing
+# until you see it against the thing it is being applied to.  So the placement
+# happens in the viewer, where the handle moves against the model, and this
+# route is only the part that has to happen in Blender: the same move, on the
+# real armature, in edit mode, with the chain kept connected.
+#
+# It is deliberately ONE kind of edit.  Not "run this operator", not "set this
+# transform" — move one end of one named bone by a measured offset, and write
+# down that it happened.
+
+#: What a bone may be called.  Blender is far more permissive than this, but a
+#: name arrives here in a request body and ends up inside a script, so the gate
+#: is an allow-list of characters rather than an escaping rule: nothing that
+#: could close a string literal or open a statement matches, which is why the
+#: refusal happens on the SHAPE of the name before any script exists.
+_BONE_NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,63}$")
+
+#: Which end of a bone a handle grabs.  A bone is a segment; both ends are
+#: joints, and which one the artist took hold of decides what follows it.
+NUDGE_ENDS = ("head", "tail")
+
+#: How far one nudge may move a joint.  A nudge is a placement fix — "the ankle
+#: is a centimetre too high" — and half a metre is already past the point where
+#: the right answer is to re-rig rather than to drag.
+MAX_NUDGE_MM = 500.0
+
+#: The settings sheet, read-only from here.  ``forge_mcp.task_config`` owns it;
+#: this route only wants to know whether the artist asked for a symmetric
+#: character, so that a nudge on the left ankle does the right one too by
+#: default.
+TASK_CONFIG_FILENAME = "task-config.json"
+#: ``task_config``'s three symmetry choices, and what each one means for a
+#: nudge.  ``as_designed`` follows the reference asymmetries included, so
+#: mirroring a hand-placed joint would be undoing the artist's own decision.
+SYMMETRY_MIRRORS = {"mirror_left": True, "mirror_right": True,
+                    "as_designed": False}
+
+#: The append-only journal of placements the artist made by hand: a flat JSON
+#: list of records, oldest first.
+#:
+#: NOT ``build-plan.json``: ``forge_mcp.pipeline`` is that file's only writer
+#: and the gates on it are measurements, not decisions.  This is the other
+#: half — the manual-edit absorption law says a hand placement must survive the
+#: next regeneration, and it cannot survive what nothing wrote down.
+#:
+#: It predates this route.  The assistant was appending to it from chat before
+#: there was an endpoint, in records shaped
+#: ``{when, joint, bones, delta_mm, mirror, source}``; a nudge writes
+#: ``{when, bone, end, delta_mm, mirror, source}`` beside them.  Both are
+#: placements, both stay, and :func:`append_artist_edit` never alters or drops
+#: one it did not write.
+JOURNAL_FILENAME = "artist-edits.json"
+JOURNAL_VERSION = 1
+#: How many records the journal keeps.  Past this the OLDEST go, which is the
+#: opposite of the activity log's rule and right for the same reason it is
+#: wrong there: the newest placement is the one in the scene.
+MAX_JOURNAL_RECORDS = 2000
+
+#: The line :data:`JOINT_MOVE_SCRIPT` reports on, and how long it may take.  An
+#: edit-mode round trip is fast; the budget is for a Blender that is busy.
+JOINT_MARKER = "FORGE_JOINT "
+JOINT_MOVE_TIMEOUT = 120.0
+
+#: What the page is told after a successful nudge.  A placement is not a
+#: measurement: moving a joint does not re-run ``rig_check``, and saying so is
+#: the difference between a tool the artist trusts and one that quietly implies
+#: the gate went green.
+NUDGE_RECHECK_HINT = (
+    "This is a placement, not a measurement — rig_check re-measures at the "
+    "next gate, and the numbers on the stage card are still the ones from the "
+    "last run.")
 
 #: Why a thumbnail cannot be taken.  A thumbnail is a photograph of the
 #: artist's work as it stands — it is deliberately NOT allowed to build the
@@ -5668,16 +5771,7 @@ def snapshot_report(output):
     print anything it likes during an export, and the last thing printed is not
     reliably ours.
     """
-    for line in reversed(str(output or "").splitlines()):
-        line = line.strip()
-        if not line.startswith(SNAPSHOT_MARKER):
-            continue
-        try:
-            payload = json.loads(line[len(SNAPSHOT_MARKER):].strip())
-        except ValueError:
-            return None
-        return payload if isinstance(payload, dict) else None
-    return None
+    return marked_report(output, SNAPSHOT_MARKER)
 
 
 def new_snapshot_path(name):
@@ -5742,6 +5836,416 @@ def blender_snapshot(name, obj=""):
         "armatures": [str(one) for one in (report.get("armatures") or [])],
         "animations": [str(one) for one in (report.get("animations") or [])],
     }, 200
+
+
+# ---------------------------------------------------------------------------
+# Phase 19 — nudging a joint: the settings, the mirror, and the journal
+# ---------------------------------------------------------------------------
+
+def read_task_config(folder):
+    """``design/task-config.json`` as a dict, or ``None``.  Read-only, always.
+
+    ``forge_mcp.task_config`` owns this file.  This route reads one setting out
+    of it and writes nothing, for the same reason the pipeline board reads the
+    build plan and writes nothing: a second writer is a way around the rules
+    the first one enforces.
+    """
+    try:
+        with open(os.path.join(folder, DESIGN_DIRNAME, TASK_CONFIG_FILENAME),
+                  encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def project_symmetry(folder):
+    """The project's ``symmetry`` setting, or ``""`` when it has none.
+
+    The sheet's shape is ``{"settings": {"symmetry": {"value": ...}}}``, which
+    is what ``task_config`` writes; a sheet that is any other shape answers
+    ``""`` rather than guessing, and a caller who wanted mirroring can still
+    ask for it explicitly.
+    """
+    config = read_task_config(folder)
+    if not config:
+        return ""
+    settings = config.get("settings")
+    if not isinstance(settings, dict):
+        return ""
+    entry = settings.get("symmetry")
+    if isinstance(entry, dict):
+        value = entry.get("value", entry.get("default"))
+    else:
+        value = entry
+    value = str(value or "").strip()
+    return value if value in SYMMETRY_MIRRORS else ""
+
+
+def symmetry_mirrors(folder):
+    """Does this project's symmetry setting mean "do the other side too"?
+
+    ``mirror_left`` / ``mirror_right`` say the character is symmetric, so a
+    joint placed on one side belongs on both.  ``as_designed`` says the
+    asymmetries are the point — mirroring there would undo the artist's own
+    decision — and so does a project with no sheet at all, because a default
+    that edits a bone nobody named is the wrong way round.
+    """
+    return SYMMETRY_MIRRORS.get(project_symmetry(folder), False)
+
+
+#: A side suffix in Blender's own convention — ``.L``, ``_R``, and the same
+#: with a ``.001`` duplicate number after it, which is what a Rigify deform
+#: chain is full of (``DEF-upper_arm.L.001``).
+_SIDE_SUFFIX_RE = re.compile(
+    r"^(?P<stem>.*?)(?P<sep>[._-])(?P<side>[LlRr])(?P<trailer>(?:\.\d+)*)$")
+_SIDE_FLIP = {"L": "R", "R": "L", "l": "r", "r": "l"}
+
+
+def mirror_bone_name(name):
+    """``"DEF-foot.L"`` -> ``"DEF-foot.R"``, or ``""`` for a bone with no side.
+
+    A spine has no counterpart and must not get one: returning ``""`` is how a
+    mirrored nudge on a centre bone becomes a single-sided nudge rather than a
+    second edit to a bone that does not exist.
+    """
+    match = _SIDE_SUFFIX_RE.match(str(name or ""))
+    if not match:
+        return ""
+    return "%s%s%s%s" % (match.group("stem"), match.group("sep"),
+                         _SIDE_FLIP[match.group("side")],
+                         match.group("trailer"))
+
+
+def mirrored_delta(delta):
+    """The same move on the other side of the midplane: X flips, nothing else.
+
+    ``+X`` is the mirror axis everywhere in Forge — it is what ``symmetrize``
+    keeps and what ``rigforge_landmarks`` measures against — so the counterpart
+    of "1 cm outward on the left" is "1 cm outward on the right", which is the
+    same Y and Z and the opposite X.
+    """
+    return [-float(delta[0]), float(delta[1]), float(delta[2])]
+
+
+def journal_path(folder):
+    """``projects/<name>/design/artist-edits.json``."""
+    return os.path.join(folder, DESIGN_DIRNAME, JOURNAL_FILENAME)
+
+
+def read_journal(folder):
+    """``{edits, exists, unreadable?}`` — the placements already written down.
+
+    The file is a flat list of record objects.  It predates this route — the
+    assistant was appending to it from chat before there was an endpoint — so
+    a journal that is an object with an ``edits`` list inside it is read for
+    its records too rather than treated as broken; what comes back either way
+    is the records, oldest first.
+
+    A file that will not parse comes back carrying ``unreadable`` rather than
+    as an empty journal, so that nothing overwrites it by mistake.
+    """
+    path = journal_path(folder)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except OSError:
+        return {"edits": [], "exists": False}
+    except ValueError:
+        return {"edits": [], "exists": True, "unreadable": True}
+    if isinstance(data, list):
+        return {"edits": [item for item in data if isinstance(item, dict)],
+                "exists": True}
+    if isinstance(data, dict) and isinstance(data.get("edits"), list):
+        return {"edits": [item for item in data["edits"]
+                          if isinstance(item, dict)], "exists": True}
+    return {"edits": [], "exists": True, "unreadable": True}
+
+
+def append_artist_edit(folder, record, limit=MAX_JOURNAL_RECORDS):
+    """Add one record to the journal, creating the file if there is none.
+
+    Append-only, and meant literally: every record already on disk is written
+    back exactly as it was read, in the order it was written, with the new one
+    after it.  The records the assistant wrote by hand carry ``joint`` and
+    ``bones`` where a nudge carries ``bone`` and ``end``; both are placements
+    and both stay, because a journal that only kept the entries made by the
+    tool that happens to be reading it is not a record of anything.
+
+    The write is atomic — a temporary file and a rename — so a crash halfway
+    through cannot leave the artist with half a journal, which is the one
+    unrecoverable thing this function could do.
+
+    Returns the path, or ``None``.
+    """
+    journal = read_journal(folder)
+    if journal.get("unreadable"):
+        return None
+    edits = journal["edits"]
+    edits.append(record)
+    if len(edits) > limit:
+        edits = edits[-limit:]
+
+    path = journal_path(folder)
+    temporary = "%s.%s.tmp" % (path, uuid.uuid4().hex[:8])
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(temporary, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(edits, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temporary, path)
+    except OSError:
+        try:
+            os.remove(temporary)
+        except OSError:
+            pass
+        return None
+    return path
+
+
+def nudge_delta(value):
+    """``[x, y, z]`` millimetres, or ``None`` if that is not what was sent.
+
+    Everything about this is checked before a script exists: three entries,
+    each a real finite number, none of them past :data:`MAX_NUDGE_MM`.  What
+    reaches Blender is three floats this function produced, never three values
+    a client chose the type of.
+    """
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        return None
+    out = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
+            return None
+        number = float(item)
+        if number != number or number in (float("inf"), float("-inf")):
+            return None
+        if abs(number) > MAX_NUDGE_MM:
+            return None
+        out.append(round(number, 4))
+    return out
+
+
+#: What a nudge runs in Blender.  Every value substituted in is produced by
+#: this file — a bone name that passed :data:`_BONE_NAME_RE`, one of the two
+#: literal strings in :data:`NUDGE_ENDS`, and floats out of :func:`nudge_delta`
+#: — and every one goes through ``json.dumps``, so nothing a client sends can
+#: be anything but a string or a number by the time Blender sees it.
+#:
+#: The edit itself is the part that has to be right: moving a bone's tail drags
+#: the head of every child that is CONNECTED to it, and moving a connected
+#: bone's head drags its parent's tail, because in both cases those two points
+#: are the same point.  Blender mostly does this itself; doing it explicitly is
+#: what makes the report say which other bones moved.
+JOINT_MOVE_SCRIPT = '''
+import bpy, json
+rig_name = %s
+bone_name = %s
+end = %s
+delta_mm = %s
+mirror_name = %s
+mirror_delta_mm = %s
+
+def _report(payload):
+    print("FORGE_JOINT " + json.dumps(payload))
+
+scene = bpy.context.scene
+view = bpy.context.view_layer
+try:
+    scale = float(scene.unit_settings.scale_length) or 1.0
+except Exception:
+    scale = 1.0
+per_mm = 1.0 / (1000.0 * scale)
+
+armatures = [o for o in scene.objects if o.type == "ARMATURE"]
+bound = set()
+for obj in scene.objects:
+    if obj.type != "MESH":
+        continue
+    for mod in obj.modifiers:
+        if mod.type == "ARMATURE" and mod.object is not None:
+            bound.add(mod.object.name)
+
+def has_bone(arm, name):
+    return name in arm.data.bones
+
+if rig_name:
+    chosen = [a for a in armatures if a.name == rig_name]
+    if not chosen:
+        _report({"ok": False, "kind": "no_rig",
+                 "error": "No armature called %%r is in the scene." %% rig_name,
+                 "rigs": [a.name for a in armatures]})
+        raise SystemExit
+elif not armatures:
+    _report({"ok": False, "kind": "no_rig",
+             "error": "There is no armature in the Blender scene to nudge.",
+             "rigs": []})
+    raise SystemExit
+else:
+    withbone = [a for a in armatures if has_bone(a, bone_name)]
+    chosen = [a for a in withbone if a.name in bound] or withbone
+
+if not chosen:
+    _report({"ok": False, "kind": "no_bone",
+             "error": "No armature in the scene has a bone called %%r." %% bone_name,
+             "rigs": [a.name for a in armatures]})
+    raise SystemExit
+if len(chosen) > 1:
+    _report({"ok": False, "kind": "ambiguous",
+             "error": "%%d armatures have a bone called %%r; say which rig."
+                      %% (len(chosen), bone_name),
+             "rigs": [a.name for a in chosen]})
+    raise SystemExit
+
+arm = chosen[0]
+if not has_bone(arm, bone_name):
+    _report({"ok": False, "kind": "no_bone",
+             "error": "%%r has no bone called %%r." %% (arm.name, bone_name),
+             "rig": arm.name,
+             "bones": sorted(b.name for b in arm.data.bones)[:60]})
+    raise SystemExit
+
+pairs = [(bone_name, end, delta_mm)]
+if mirror_name:
+    if has_bone(arm, mirror_name):
+        pairs.append((mirror_name, end, mirror_delta_mm))
+    else:
+        mirror_name = ""
+
+previous_mode = "OBJECT"
+if view.objects.active is not None:
+    previous_mode = view.objects.active.mode
+previous_active = view.objects.active
+previous_selected = [o for o in bpy.data.objects if o.select_get()]
+moved = []
+try:
+    if view.objects.active is not None and view.objects.active.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    for obj in bpy.data.objects:
+        obj.select_set(False)
+    arm.select_set(True)
+    view.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    edit = arm.data.edit_bones
+    for name, which, dmm in pairs:
+        bone = edit.get(name)
+        if bone is None:
+            continue
+        step = (dmm[0] * per_mm, dmm[1] * per_mm, dmm[2] * per_mm)
+        if which == "head":
+            bone.head = (bone.head.x + step[0], bone.head.y + step[1],
+                         bone.head.z + step[2])
+            moved.append({"bone": name, "end": "head", "why": "nudged"})
+            parent = bone.parent
+            if parent is not None and bone.use_connect:
+                parent.tail = bone.head.copy()
+                moved.append({"bone": parent.name, "end": "tail",
+                              "why": "connected parent follows"})
+        else:
+            bone.tail = (bone.tail.x + step[0], bone.tail.y + step[1],
+                         bone.tail.z + step[2])
+            moved.append({"bone": name, "end": "tail", "why": "nudged"})
+            for child in bone.children:
+                if child.use_connect:
+                    child.head = bone.tail.copy()
+                    moved.append({"bone": child.name, "end": "head",
+                                  "why": "connected child follows"})
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    positions = {}
+    for entry in moved:
+        rest = arm.data.bones.get(entry["bone"])
+        if rest is None:
+            continue
+        head = arm.matrix_world @ rest.head_local
+        tail = arm.matrix_world @ rest.tail_local
+        positions[entry["bone"]] = {
+            "head": [round(head.x, 6), round(head.y, 6), round(head.z, 6)],
+            "tail": [round(tail.x, 6), round(tail.y, 6), round(tail.z, 6)],
+        }
+    _report({"ok": True, "rig": arm.name, "bone": bone_name, "end": end,
+             "mirror_bone": mirror_name, "moved": moved,
+             "positions": positions, "unit_scale": scale})
+except Exception as exc:
+    try:
+        if view.objects.active is not None and view.objects.active.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+    except Exception:
+        pass
+    _report({"ok": False, "kind": "failed",
+             "error": "%%s: %%s" %% (type(exc).__name__, exc)})
+finally:
+    try:
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in previous_selected:
+            try:
+                obj.select_set(True)
+            except Exception:
+                pass
+        view.objects.active = previous_active
+        if previous_active is not None and previous_active.mode != previous_mode:
+            bpy.ops.object.mode_set(mode=previous_mode)
+    except Exception:
+        pass
+'''
+
+
+def marked_report(output, marker):
+    """The last ``marker``-prefixed JSON object in captured stdout, or ``None``.
+
+    Looked for by marker rather than by position, because the artist's own
+    scene can print anything it likes and the last thing printed is not
+    reliably ours.
+    """
+    for line in reversed(str(output or "").splitlines()):
+        line = line.strip()
+        if not line.startswith(marker):
+            continue
+        try:
+            payload = json.loads(line[len(marker):].strip())
+        except ValueError:
+            return None
+        return payload if isinstance(payload, dict) else None
+    return None
+
+
+def joint_move_report(output):
+    """The report line out of a nudge's ``execute_python``, or ``None``."""
+    return marked_report(output, JOINT_MARKER)
+
+
+def blender_joint_move(bone, end, delta, mirror_bone, rig=""):
+    """``(payload, status)`` — move one joint on the real armature.
+
+    Raises :class:`BlenderDown` / :class:`BlenderRefused` like every other
+    passthrough here, so the sentence an artist reads when Blender is closed is
+    the same sentence everywhere.
+    """
+    code = JOINT_MOVE_SCRIPT % (
+        json.dumps(str(rig or "")),
+        json.dumps(str(bone)),
+        json.dumps(str(end)),
+        json.dumps([float(one) for one in delta]),
+        json.dumps(str(mirror_bone or "")),
+        json.dumps([float(one) for one in mirrored_delta(delta)]),
+    )
+    result = blender_command("execute_python", {"code": code},
+                             timeout=JOINT_MOVE_TIMEOUT)
+    report = joint_move_report(result.get("output"))
+    if report is None:
+        return {"error": "Blender ran the move but said nothing this bridge "
+                         "could read back. Check Blender's system console.",
+                "output": _tail(str(result.get("output") or ""), 600)}, 502
+    if not report.get("ok"):
+        kind = str(report.get("kind") or "")
+        status = 404 if kind in ("no_bone", "no_rig") else \
+            (409 if kind == "ambiguous" else 502)
+        payload = dict(report)
+        payload.pop("ok", None)
+        payload.setdefault("error", "The joint could not be moved.")
+        return payload, status
+    return report, 200
 
 
 def scan_library(scene=True):
@@ -6279,6 +6783,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.endswith("/snapshot"):
                 self._snapshot(path[len(prefix):-len("/snapshot")])
+                return
+            if path.endswith("/joint_move"):
+                self._joint_move(path[len(prefix):-len("/joint_move")])
                 return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -7226,6 +7733,117 @@ class Handler(BaseHTTPRequestHandler):
             self._send(502, {"error": str(exc), "blender": True})
             return
         self._send(status, body)
+
+    def _joint_move(self, name):
+        """Move one end of one bone by a measured offset, and write it down.
+
+        Every field is checked here, before :data:`JOINT_MOVE_SCRIPT` is
+        formatted at all — so a bone name that could be code is refused by the
+        shape of the name and no script containing it is ever built.  That
+        ordering is the guarantee, not the escaping.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+
+        raw_bone = payload.get("bone")
+        bone = str(raw_bone or "").strip()
+        if not bone or not _BONE_NAME_RE.match(bone):
+            self._send(400, {
+                "error": "%r is not a bone name this route will act on. A bone "
+                         "is letters, digits, dot, dash and underscore — the "
+                         "alphabet Forge's own rigs use."
+                         % (str(raw_bone or "")[:80],),
+                "project": os.path.basename(folder)})
+            return
+
+        end = str(payload.get("end") or "").strip().lower()
+        if end not in NUDGE_ENDS:
+            self._send(400, {
+                "error": 'Which end? "head" or "tail" — a bone is a segment '
+                         "and both ends are joints.",
+                "project": os.path.basename(folder)})
+            return
+
+        delta = nudge_delta(payload.get("delta_mm"))
+        if delta is None:
+            self._send(400, {
+                "error": "delta_mm is three real numbers in millimetres, each "
+                         "within %g mm. A bigger move than that is a re-rig, "
+                         "not a nudge." % MAX_NUDGE_MM,
+                "project": os.path.basename(folder)})
+            return
+        if not any(delta):
+            self._send(400, {
+                "error": "That nudge is zero millimetres in every direction, "
+                         "so there is nothing to do.",
+                "project": os.path.basename(folder)})
+            return
+
+        rig = str(payload.get("rig") or "").strip()
+        if rig and not _BONE_NAME_RE.match(rig):
+            self._send(400, {
+                "error": "%r is not an object name this route will act on."
+                         % (rig[:80],),
+                "project": os.path.basename(folder)})
+            return
+
+        # The default comes off the project's own settings sheet, so a
+        # character the artist declared symmetric gets both ankles moved
+        # without anybody having to remember to ask.
+        symmetry = project_symmetry(folder)
+        wanted = payload.get("mirror")
+        mirror = symmetry_mirrors(folder) if wanted is None else bool(wanted)
+        counterpart = mirror_bone_name(bone) if mirror else ""
+
+        try:
+            body, status = blender_joint_move(bone, end, delta, counterpart, rig)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        if status != 200:
+            body["project"] = os.path.basename(folder)
+            body["bone"] = body.get("bone") or bone
+            self._send(status, body)
+            return
+
+        record = {
+            "when": _iso_utc(time.time()),
+            "bone": bone,
+            "end": end,
+            "delta_mm": delta,
+            "mirror": bool(counterpart),
+            "source": "nudge",
+            "rig": str(body.get("rig") or ""),
+            "mirror_bone": str(body.get("mirror_bone") or ""),
+        }
+        written = append_artist_edit(folder, record)
+
+        out = dict(body)
+        out.pop("ok", None)
+        out["project"] = os.path.basename(folder)
+        out["delta_mm"] = delta
+        out["mirror"] = bool(counterpart)
+        out["symmetry"] = symmetry
+        out["recorded"] = record
+        out["journal"] = written
+        if written is None:
+            # The move happened; the note about it did not.  Said out loud,
+            # because a placement nobody wrote down is one the next
+            # regeneration will quietly undo.
+            out["journal_error"] = (
+                "The move was made, but %s could not be written — this "
+                "placement is not in the journal, so note it somewhere before "
+                "the mesh is regenerated." % journal_path(folder))
+        out["note"] = NUDGE_RECHECK_HINT
+        self._send(200, out)
 
     # -- project scene files (Phase 15) ----------------------------------
     def _save_project(self, name):

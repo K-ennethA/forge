@@ -2672,14 +2672,163 @@
         var play = $("ws-play");
         play.disabled = info.animations.length === 0;
         play.textContent = "Play";
+        // A snapshot with a skeleton in it is one whose joints can be placed;
+        // one without is honestly nothing to nudge.
+        $("ws-nudge").disabled = info.joints === 0;
+        viewer.onNudge(renderNudge);
+        renderNudge(viewer.readout());
         var bits = [info.triangles.toLocaleString() + " tris"];
         if (info.skinned) { bits.push(info.skinned + " skinned"); }
+        if (info.joints) { bits.push(info.joints + " joints"); }
         if (info.animations.length) {
           bits.push(info.animations.length + " clip" +
                     (info.animations.length === 1 ? "" : "s"));
         }
         bits.push(stamp(res.data.mtime));
         viewerNote(bits.join("  ·  "));
+      });
+    });
+  }
+
+  // -- joint nudge -------------------------------------------------------
+  //
+  // "If I am unfamiliar with this it's difficult, we need a simplified
+  // version in forge to edit, I don't know how much 10mm is here."
+  //
+  // The last clause is the feature.  Nothing here tries to teach anybody what
+  // a millimetre is; it puts the number NEXT TO the thing it applies to — the
+  // handle moves against the model, a grey ghost stays where it started, and
+  // the readout says both the millimetres and what share of this character's
+  // height that is.  One axis at a time, because "up a bit" is the request and
+  // a one-axis drag cannot go sideways by accident.
+
+  function nudgeScaleText(read) {
+    if (!read.moved || !(read.height_mm > 0)) { return ""; }
+    var height = (read.height_mm / 1000).toFixed(2) + " m tall";
+    if (read.share <= 0) { return height; }
+    if (read.share < 0.01) {
+      return "1/" + Math.round(1 / read.share) + " of him  ·  " + height;
+    }
+    return (read.share * 100).toFixed(1) + "% of him  ·  " + height;
+  }
+
+  function renderNudge(read) {
+    var name = $("ws-nudge-name");
+    var bone = $("ws-nudge-bone");
+    var apply = $("ws-nudge-apply");
+    if (!read || !read.selected) {
+      name.textContent = "Click a handle to pick a joint.";
+      bone.textContent = "";
+      $("ws-nudge-mm").textContent = "0.0 mm";
+      $("ws-nudge-scale").textContent = "";
+      apply.disabled = true;
+      return;
+    }
+    // The plain name leads, and the real bone name sits beside it — a
+    // friendly label that hid which bone is about to move would be worse
+    // than no label at all.
+    name.textContent = read.label || read.bone;
+    bone.textContent = read.bone + "  ·  " + read.end;
+    // The total distance from where it started, and nothing about which way:
+    // a drag can run along two axes one after the other, and "186 mm side to
+    // side" when 124 mm of it was vertical would be a lie. Which way is what
+    // the line in the viewport is for.
+    $("ws-nudge-mm").textContent = read.mm.toFixed(1) + " mm";
+    $("ws-nudge-scale").textContent = nudgeScaleText(read);
+    apply.disabled = !read.moved;
+  }
+
+  function nudgeStatus(text, cls) {
+    var node = $("ws-nudge-status");
+    node.className = "ws-nudge-status" + (cls ? " " + cls : "");
+    node.textContent = text || "";
+  }
+
+  function wsToggleNudge() {
+    var viewer = ws.viewer;
+    if (!viewer || !viewer.supported || !ws.snapshot) { return; }
+    var on = !viewer.nudging();
+    var joints = viewer.nudge(on);
+    $("ws-nudge-bar").hidden = !on;
+    $("ws-nudge").classList.toggle("is-on", on);
+    renderNudge(viewer.readout());
+    if (!on) { nudgeStatus(""); return; }
+    if (!joints) {
+      nudgeStatus("This snapshot has no skeleton in it, so there are no "
+                  + "joints to place. Refresh with the rig in the scene.",
+                  "bad");
+      return;
+    }
+    nudgeStatus(joints + " joints. Drag a handle; the grey one stays where it "
+                + "started so you can see how far you have moved it.");
+  }
+
+  function wsSetAxis(which) {
+    var viewer = ws.viewer;
+    if (!viewer || !viewer.supported) { return; }
+    viewer.axis(which);
+    ["up", "forward", "side"].forEach(function (key) {
+      $("ws-axis-" + key).classList.toggle("is-on", key === which);
+    });
+    renderNudge(viewer.readout());
+  }
+
+  function wsCancelNudge() {
+    var viewer = ws.viewer;
+    if (!viewer || !viewer.supported) { return; }
+    viewer.cancelNudge();
+    renderNudge(viewer.readout());
+    nudgeStatus("Put back.");
+  }
+
+  function wsApplyNudge() {
+    var viewer = ws.viewer;
+    if (!viewer || !viewer.supported || !ws.project) { return; }
+    var move = viewer.commitNudge();
+    if (!move) { return; }
+    var body = { bone: move.bone, end: move.end, delta_mm: move.delta_mm };
+    var wanted = $("ws-nudge-mirror").value;
+    // Left alone, the bridge uses the project's own symmetry setting — which
+    // is the right default and the one the artist already chose once.
+    if (wanted === "1") { body.mirror = true; }
+    if (wanted === "0") { body.mirror = false; }
+
+    var apply = $("ws-nudge-apply");
+    apply.disabled = true;
+    nudgeStatus("Moving " + (move.label || move.bone) + " in Blender…");
+    api("/projects/" + encodeURIComponent(ws.project) + "/joint_move",
+        { body: body }).then(function (res) {
+      if (!res.ok) {
+        apply.disabled = false;
+        nudgeStatus(res.data.error ||
+                    ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      var said = [];
+      said.push("Moved " + move.mm.toFixed(1) + " mm");
+      if (res.data.mirror && res.data.mirror_bone) {
+        said.push("and " + res.data.mirror_bone + " with it");
+      }
+      var also = (res.data.moved || []).filter(function (entry) {
+        return entry.why && entry.why.indexOf("connected") === 0;
+      });
+      if (also.length) {
+        said.push("(" + also.length + " connected "
+                  + (also.length === 1 ? "bone" : "bones") + " followed)");
+      }
+      nudgeStatus(said.join(" ") + ". " + (res.data.note || ""));
+      if (res.data.journal_error) {
+        banner("error", res.data.journal_error);
+      }
+      // What is on screen must be what Blender did, not what was asked for —
+      // so the handles come back from a fresh export rather than from the
+      // drag that produced them.
+      wsSnapshot().then(function () {
+        if (viewer.nudging()) {
+          $("ws-nudge-bar").hidden = false;
+          viewer.nudge(true);
+          renderNudge(viewer.readout());
+        }
       });
     });
   }
@@ -3028,6 +3177,25 @@
     // things to look at for a folder read that takes milliseconds.
     $("ws-now-box").addEventListener("toggle", renderActivity);
     $("ws-snapshot").addEventListener("click", wsSnapshot);
+    $("ws-nudge").addEventListener("click", wsToggleNudge);
+    $("ws-axis-up").addEventListener("click", function () { wsSetAxis("up"); });
+    $("ws-axis-forward").addEventListener("click", function () {
+      wsSetAxis("forward");
+    });
+    $("ws-axis-side").addEventListener("click", function () {
+      wsSetAxis("side");
+    });
+    $("ws-nudge-cancel").addEventListener("click", wsCancelNudge);
+    $("ws-nudge-apply").addEventListener("click", wsApplyNudge);
+    // Esc abandons a placement, which is the reflex anybody who has used a 3D
+    // tool already has. Only while the strip is open, so it never eats an Esc
+    // meant for something else.
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") { return; }
+      if ($("ws-nudge-bar").hidden) { return; }
+      event.preventDefault();
+      wsCancelNudge();
+    });
     $("ws-play").addEventListener("click", wsTogglePlay);
     $("ws-view-reset").addEventListener("click", function () {
       if (ws.viewer && ws.viewer.supported) { ws.viewer.recentre(); }

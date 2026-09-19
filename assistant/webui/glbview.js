@@ -531,24 +531,206 @@
   // One clay material lit from the camera plus a cool fill, and an orange rim
   // so the silhouette reads against the page's own dark background — the same
   // accent the rest of this UI is built on.
+  // `tint` and `alpha` are what let one shader draw three things: the clay
+  // model, the same model ghosted back so the handles inside it read, and the
+  // handles themselves.  `flat` drops the lighting for the drag line, which is
+  // a measurement rather than a surface.
   var FRAGMENT_SHADER = [
     "precision mediump float;",
     "varying vec3 vNormal;",
     "varying vec3 vPosition;",
     "uniform vec3 eye;",
+    "uniform vec3 tint;",
+    "uniform float alpha;",
+    "uniform float flat_;",
     "void main() {",
+    "  if (flat_ > 0.5) { gl_FragColor = vec4(tint, alpha); return; }",
     "  vec3 n = normalize(vNormal);",
     "  vec3 v = normalize(eye - vPosition);",
     "  if (dot(n, v) < 0.0) { n = -n; }",
     "  float key = max(dot(n, normalize(v + vec3(0.4, 0.7, 0.2))), 0.0);",
     "  float fill = max(dot(n, normalize(vec3(-0.6, -0.2, 0.5))), 0.0);",
     "  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);",
-    "  vec3 colour = vec3(0.30, 0.31, 0.33) * (0.28 + 0.72 * key);",
+    "  vec3 colour = tint * (0.28 + 0.72 * key);",
     "  colour += vec3(0.10, 0.12, 0.16) * fill;",
     "  colour += vec3(0.95, 0.55, 0.18) * rim * 0.55;",
-    "  gl_FragColor = vec4(colour, 1.0);",
+    "  gl_FragColor = vec4(colour, alpha);",
     "}"
   ].join("\n");
+
+  //: The clay the model is drawn in when nothing is being placed.
+  var CLAY = [0.30, 0.31, 0.33];
+  //: A handle nobody has taken hold of, the one that is selected, and the
+  //: ghost left behind at the place a drag started.
+  var HANDLE = [0.55, 0.60, 0.68];
+  var HANDLE_ON = [0.95, 0.65, 0.22];
+  var HANDLE_WAS = [0.40, 0.43, 0.50];
+  //: How big a handle is, as a fraction of the model's own radius, and how
+  //: near the pointer has to be (in CSS pixels) to take hold of one.
+  var HANDLE_SCALE = 0.022;
+  var HANDLE_PICK_PX = 18;
+  //: How see-through the model goes while joints are being placed.  Enough
+  //: that a handle behind a thigh is still findable, not so little that the
+  //: silhouette stops being the reference the whole feature exists to give.
+  var GHOST_ALPHA = 0.22;
+
+  // ---------------------------------------------------------- the joints --
+  //
+  // The artist: "I don't know how much 10mm is here."  A handle at every
+  // joint, moved against the model itself, is the answer to that sentence —
+  // so these positions have to be the rig's real ones and not an estimate.
+  //
+  // They are.  A glTF skin lists its joints as NODES, and a bone's node sits
+  // at that bone's HEAD, so every joint position here is read straight out of
+  // the node hierarchy with its parents' transforms applied.  A bone's tail is
+  // not a node of its own — for an interior bone it IS the head of its child,
+  // which already has a handle, and for a leaf bone (a fingertip) glTF simply
+  // does not carry it.  So this returns heads, every one exact, and says
+  // nothing about the tips it cannot see rather than guessing at them.
+
+  var DEFORM_PREFIX = "DEF-";
+
+  //: Bone name -> what a person calls that joint.  Only the ones where the
+  //: head of the bone has an unambiguous common name: the head of the foot is
+  //: the ankle, the head of the shin is the knee.  Anything not in here keeps
+  //: its own words, and the real bone name is shown beside the plain one
+  //: either way — a friendly label that hid which bone is about to move would
+  //: be worse than no label at all.
+  var JOINT_WORDS = {
+    foot: "ankle",
+    shin: "knee",
+    thigh: "hip",
+    hand: "wrist",
+    forearm: "elbow",
+    upper_arm: "shoulder",
+    shoulder: "collarbone",
+    toe: "toe",
+    neck: "neck",
+    head: "head"
+  };
+
+  var SIDE_WORDS = { L: "left", R: "right", l: "left", r: "right" };
+
+  /** ``"DEF-foot.L"`` -> ``"left ankle"``. Never invents a side or a joint. */
+  function plainJointName(bone) {
+    var text = String(bone || "").trim();
+    if (!text) { return ""; }
+    var stem = text.replace(/^(DEF|ORG|MCH)[-_]/, "");
+    var side = "";
+    var numbered = "";
+    var match = /^(.*?)([._-])([LlRr])((?:\.\d+)*)$/.exec(stem);
+    if (match) {
+      stem = match[1];
+      side = SIDE_WORDS[match[3]] || "";
+      numbered = match[4];
+    } else {
+      var plain = /^(.*?)((?:\.\d+)+)$/.exec(stem);
+      if (plain) { stem = plain[1]; numbered = plain[2]; }
+    }
+    var word = JOINT_WORDS[stem.toLowerCase()] || stem.replace(/_/g, " ");
+    var out = side ? (side + " " + word) : word;
+    if (numbered) {
+      // ``.001`` is Blender's second bone of that name, not a decimal.
+      var nth = parseInt(numbered.replace(/^\./, ""), 10);
+      if (nth > 0) { out += " " + (nth + 1); }
+    }
+    return out;
+  }
+
+  /** Every joint in the model, as ``{bone, end, position, leaf}``.
+   *
+   * ``prefix`` filters to the deform chain, which is what a nudge may touch —
+   * but a rig whose bones are not named that way still gets handles rather
+   * than an empty viewport, because an empty viewport looks like a bug.
+   */
+  function jointHandles(model, prefix) {
+    if (prefix === undefined) { prefix = DEFORM_PREFIX; }
+    var gltf = (model && model.gltf) || {};
+    var nodes = (model && model.graph && model.graph.nodes) || [];
+    var seen = {};
+    var joints = [];
+    (gltf.skins || []).forEach(function (skin) {
+      (skin.joints || []).forEach(function (index) {
+        if (seen[index] || !nodes[index]) { return; }
+        seen[index] = true;
+        joints.push(nodes[index]);
+      });
+    });
+    if (!joints.length) { return []; }
+
+    var wanted = joints;
+    var filtered = false;
+    if (prefix) {
+      var matching = joints.filter(function (node) {
+        return String(node.name || "").indexOf(prefix) === 0;
+      });
+      if (matching.length) { wanted = matching; filtered = true; }
+    }
+    return wanted.map(function (node) {
+      var hasJointChild = (node.children || []).some(function (child) {
+        return seen[child];
+      });
+      return {
+        bone: String(node.name || ""),
+        label: plainJointName(node.name),
+        end: "head",           // a joint node sits at its bone's head
+        node: node.index,
+        leaf: !hasJointChild,
+        filtered: filtered,
+        position: [node.world[12], node.world[13], node.world[14]]
+      };
+    });
+  }
+
+  //: glTF is Y-up and Blender is Z-up, and the exporter writes
+  //: ``(x, y, z)_blender -> (x, z, -y)_gltf``.  Going back the other way is
+  //: the one conversion between the handle the artist dragged and the bone
+  //: the bridge moves, so it lives in one function with the mapping written
+  //: down beside it.  Metres in, millimetres out.
+  function toBlenderMillimetres(delta) {
+    return [
+      delta[0] * 1000,
+      -delta[2] * 1000,
+      delta[1] * 1000
+    ];
+  }
+
+  //: The three single axes a nudge may run along, in the viewer's own space.
+  //: Single axes on purpose: "up a bit" is the common case and a one-axis drag
+  //: cannot go sideways by accident, which free 3D dragging does constantly.
+  var AXES = {
+    up: { vector: [0, 1, 0], label: "up / down" },
+    forward: { vector: [0, 0, 1], label: "forward / back" },
+    side: { vector: [1, 0, 0], label: "side to side" }
+  };
+
+  /** A unit sphere as ``{position, normal, indices}`` — the handle's body. */
+  function sphere(rings, segments) {
+    var position = [], normal = [], indices = [];
+    for (var y = 0; y <= rings; y++) {
+      var phi = (y / rings) * Math.PI;
+      for (var x = 0; x <= segments; x++) {
+        var theta = (x / segments) * Math.PI * 2;
+        var px = Math.sin(phi) * Math.cos(theta);
+        var py = Math.cos(phi);
+        var pz = Math.sin(phi) * Math.sin(theta);
+        position.push(px, py, pz);
+        normal.push(px, py, pz);
+      }
+    }
+    for (var ring = 0; ring < rings; ring++) {
+      for (var seg = 0; seg < segments; seg++) {
+        var a = ring * (segments + 1) + seg;
+        var b = a + segments + 1;
+        indices.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    }
+    return {
+      position: new Float32Array(position),
+      normal: new Float32Array(normal),
+      indices: new Uint16Array(indices)
+    };
+  }
 
   function compile(gl, kind, source) {
     var shader = gl.createShader(kind);
@@ -589,19 +771,175 @@
     var uniforms = {
       model: gl.getUniformLocation(program, "model"),
       viewProjection: gl.getUniformLocation(program, "viewProjection"),
-      eye: gl.getUniformLocation(program, "eye")
+      eye: gl.getUniformLocation(program, "eye"),
+      tint: gl.getUniformLocation(program, "tint"),
+      alpha: gl.getUniformLocation(program, "alpha"),
+      flat: gl.getUniformLocation(program, "flat_")
     };
 
     var state = {
       model: null, buffers: [], frame: null,
       yaw: 0.7, pitch: 0.45, distance: 3, centre: [0, 0, 0], radius: 1,
       pan: [0, 0, 0], playing: false, animation: 0, time: 0, clock: 0,
-      dirty: true, onFrame: null
+      dirty: true, onFrame: null,
+      // -- joint nudge mode --------------------------------------------
+      nudging: false,
+      handles: [],       // {bone, end, position, ...} straight off the glb
+      picked: -1,        // which handle is selected, or -1
+      origin: null,      // where the selected handle was before the drag
+      axis: "up",        // which single axis a drag runs along
+      height: 0,         // the model's own height, the to-scale reference
+      onNudge: null
     };
     var projection = new Float32Array(16);
     var view = new Float32Array(16);
     var viewProjection = new Float32Array(16);
     var eye = new Float32Array(3);
+    var scratch = new Float32Array(16);
+
+    // The handle's body and the line a drag leaves behind it, uploaded once.
+    var ball = sphere(10, 14);
+    var ballBuffers = null;
+    var lineBuffer = null;
+    var lineData = new Float32Array(6);
+
+    function ensureHandleBuffers() {
+      if (ballBuffers) { return ballBuffers; }
+      var position = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, position);
+      gl.bufferData(gl.ARRAY_BUFFER, ball.position, gl.STATIC_DRAW);
+      var normal = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, normal);
+      gl.bufferData(gl.ARRAY_BUFFER, ball.normal, gl.STATIC_DRAW);
+      var indices = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ball.indices, gl.STATIC_DRAW);
+      lineBuffer = gl.createBuffer();
+      ballBuffers = { position: position, normal: normal, indices: indices,
+                      count: ball.indices.length };
+      return ballBuffers;
+    }
+
+    function material(tint, alpha, isFlat) {
+      gl.uniform3f(uniforms.tint, tint[0], tint[1], tint[2]);
+      gl.uniform1f(uniforms.alpha, alpha === undefined ? 1 : alpha);
+      gl.uniform1f(uniforms.flat, isFlat ? 1 : 0);
+    }
+
+    function placeBall(out, at, size) {
+      identity(out);
+      out[0] = size; out[5] = size; out[10] = size;
+      out[12] = at[0]; out[13] = at[1]; out[14] = at[2];
+      return out;
+    }
+
+    /** Recompute the camera. Called by every draw, and by anything that has
+     *  to turn a world point into a pixel.
+     *
+     *  Both, deliberately.  Picking used to read the matrix that only `draw`
+     *  wrote, so a click that arrived before the first frame — a tab that was
+     *  in the background while the snapshot loaded, which is the normal case
+     *  on a second monitor — silently hit nothing at all.
+     */
+    function updateCamera() {
+      var aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+      perspective(projection, 0.9, aspect, state.radius * 0.01,
+                  state.radius * 100);
+      var cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+      eye[0] = state.centre[0] + state.pan[0] +
+               state.distance * cp * Math.sin(state.yaw);
+      eye[1] = state.centre[1] + state.pan[1] + state.distance * sp;
+      eye[2] = state.centre[2] + state.pan[2] +
+               state.distance * cp * Math.cos(state.yaw);
+      lookAt(view, eye,
+             [state.centre[0] + state.pan[0], state.centre[1] + state.pan[1],
+              state.centre[2] + state.pan[2]], [0, 1, 0]);
+      multiply(viewProjection, projection, view);
+    }
+
+    /** World point -> CSS pixels on this canvas, or ``null`` if behind us. */
+    function project(point) {
+      var vp = viewProjection;
+      var x = vp[0] * point[0] + vp[4] * point[1] + vp[8] * point[2] + vp[12];
+      var y = vp[1] * point[0] + vp[5] * point[1] + vp[9] * point[2] + vp[13];
+      var w = vp[3] * point[0] + vp[7] * point[1] + vp[11] * point[2] + vp[15];
+      if (!(w > 1e-6)) { return null; }
+      return [(x / w * 0.5 + 0.5) * canvas.clientWidth,
+              (1 - (y / w * 0.5 + 0.5)) * canvas.clientHeight];
+    }
+
+    function handleSize() {
+      return Math.max(state.radius * HANDLE_SCALE, 1e-4);
+    }
+
+    /** The handle nearest to a point on screen, or -1. */
+    function pick(x, y) {
+      updateCamera();
+      var best = -1, bestDistance = HANDLE_PICK_PX * HANDLE_PICK_PX;
+      state.handles.forEach(function (handle, index) {
+        var at = project(handle.position);
+        if (!at) { return; }
+        var dx = at[0] - x, dy = at[1] - y;
+        var distance = dx * dx + dy * dy;
+        if (distance <= bestDistance) { bestDistance = distance; best = index; }
+      });
+      return best;
+    }
+
+    /** How far one pixel of drag moves the handle, along the locked axis.
+     *
+     * Measured rather than derived from the field of view: the axis is
+     * projected to the screen at the handle's own depth, and the pointer's
+     * travel is the least-squares projection onto that screen direction.  So
+     * an axis pointing almost at the camera moves slowly and an axis across
+     * the screen moves one-to-one, which is what dragging should feel like.
+     */
+    function axisStep(handle, dx, dy) {
+      var axis = (AXES[state.axis] || AXES.up).vector;
+      var reach = Math.max(state.radius * 0.1, 1e-5);
+      var from = project(handle.position);
+      var to = project([handle.position[0] + axis[0] * reach,
+                        handle.position[1] + axis[1] * reach,
+                        handle.position[2] + axis[2] * reach]);
+      if (!from || !to) { return null; }
+      var sx = to[0] - from[0], sy = to[1] - from[1];
+      var length = sx * sx + sy * sy;
+      // Edge-on: the axis has no screen direction to drag along, and guessing
+      // one would move the joint by an amount nobody could see.
+      if (length < 4) { return null; }
+      var along = ((dx * sx) + (dy * sy)) / length * reach;
+      return [axis[0] * along, axis[1] * along, axis[2] * along];
+    }
+
+    function nudgeReadout() {
+      var handle = state.handles[state.picked];
+      if (!handle) { return { selected: false }; }
+      var from = state.origin || handle.position;
+      var delta = [handle.position[0] - from[0],
+                   handle.position[1] - from[1],
+                   handle.position[2] - from[2]];
+      var metres = Math.hypot(delta[0], delta[1], delta[2]);
+      return {
+        selected: true,
+        bone: handle.bone,
+        label: handle.label,
+        end: handle.end,
+        axis: state.axis,
+        axisLabel: (AXES[state.axis] || AXES.up).label,
+        mm: metres * 1000,
+        // The reference that answers "I don't know how much 10mm is here":
+        // the move as a share of the model's own height, which is the thing
+        // the artist is looking at.
+        height_mm: state.height * 1000,
+        share: state.height > 0 ? (metres / state.height) : 0,
+        moved: metres > 1e-9,
+        delta_mm: toBlenderMillimetres(delta)
+      };
+    }
+
+    function tellNudge() {
+      if (state.onNudge) { state.onNudge(nudgeReadout()); }
+    }
 
     function releaseBuffers() {
       state.buffers.forEach(function (entry) {
@@ -669,13 +1007,15 @@
           if (z < min[2]) { min[2] = z; } if (z > max[2]) { max[2] = z; }
         }
       });
-      if (!isFinite(min[0])) { return { centre: [0, 0, 0], radius: 1 }; }
+      if (!isFinite(min[0])) { return { centre: [0, 0, 0], radius: 1, height: 0 }; }
       var centre = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2,
                     (min[2] + max[2]) / 2];
       var radius = Math.max(
         Math.hypot(max[0] - centre[0], max[1] - centre[1], max[2] - centre[2]),
         1e-3);
-      return { centre: centre, radius: radius };
+      // The model's own height, which is the ruler a nudge is reported
+      // against: "4 mm, a 250th of his height" says more than "4 mm".
+      return { centre: centre, radius: radius, height: max[1] - min[1] };
     }
 
     function resize() {
@@ -699,25 +1039,29 @@
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       if (!state.model) { return; }
 
-      var aspect = canvas.width / Math.max(1, canvas.height);
-      perspective(projection, 0.9, aspect, state.radius * 0.01,
-                  state.radius * 100);
-      var cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
-      eye[0] = state.centre[0] + state.pan[0] +
-               state.distance * cp * Math.sin(state.yaw);
-      eye[1] = state.centre[1] + state.pan[1] + state.distance * sp;
-      eye[2] = state.centre[2] + state.pan[2] +
-               state.distance * cp * Math.cos(state.yaw);
-      lookAt(view, eye,
-             [state.centre[0] + state.pan[0], state.centre[1] + state.pan[1],
-              state.centre[2] + state.pan[2]], [0, 1, 0]);
-      multiply(viewProjection, projection, view);
+      updateCamera();
 
       gl.useProgram(program);
       gl.uniformMatrix4fv(uniforms.viewProjection, false, viewProjection);
       gl.uniform3f(uniforms.eye, eye[0], eye[1], eye[2]);
       gl.enableVertexAttribArray(0);
       gl.enableVertexAttribArray(1);
+
+      // While joints are being placed the model goes translucent and stops
+      // writing depth, so a handle inside a thigh is still visible and still
+      // clickable — but the silhouette stays, because the silhouette IS the
+      // ruler this whole feature exists to provide.
+      if (state.nudging) {
+        material(CLAY, GHOST_ALPHA, false);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false);
+        gl.disable(gl.CULL_FACE);
+      } else {
+        material(CLAY, 1, false);
+        gl.disable(gl.BLEND);
+        gl.depthMask(true);
+      }
 
       state.buffers.forEach(function (entry) {
         var primitive = entry.primitive;
@@ -754,7 +1098,67 @@
         }
         if (!entry.normal) { gl.enableVertexAttribArray(1); }
       });
+
+      if (state.nudging) { drawHandles(); }
+
+      gl.depthMask(true);
+      gl.enable(gl.CULL_FACE);
+      gl.disable(gl.BLEND);
       state.dirty = false;
+    }
+
+    function drawHandles() {
+      var buffers = ensureHandleBuffers();
+      var size = handleSize();
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+      gl.enable(gl.CULL_FACE);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+      // Where the selected handle started, left behind in grey.  This is the
+      // to-scale reference: the distance between the two balls, seen against
+      // the leg they are on, is what "10 mm" actually looks like here.
+      if (state.origin && state.picked >= 0) {
+        material(HANDLE_WAS, 1, false);
+        gl.uniformMatrix4fv(uniforms.model, false,
+                            placeBall(scratch, state.origin, size * 0.8));
+        gl.drawElements(gl.TRIANGLES, buffers.count, gl.UNSIGNED_SHORT, 0);
+      }
+
+      state.handles.forEach(function (handle, index) {
+        var chosen = index === state.picked;
+        material(chosen ? HANDLE_ON : HANDLE, 1, false);
+        gl.uniformMatrix4fv(uniforms.model, false,
+          placeBall(scratch, handle.position, chosen ? size * 1.45 : size));
+        gl.drawElements(gl.TRIANGLES, buffers.count, gl.UNSIGNED_SHORT, 0);
+      });
+
+      // The move itself, drawn as a line between where it was and where it is.
+      var handle = state.handles[state.picked];
+      if (handle && state.origin) {
+        lineData[0] = state.origin[0];
+        lineData[1] = state.origin[1];
+        lineData[2] = state.origin[2];
+        lineData[3] = handle.position[0];
+        lineData[4] = handle.position[1];
+        lineData[5] = handle.position[2];
+        gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, lineData, gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        gl.disableVertexAttribArray(1);
+        gl.vertexAttrib3f(1, 0, 0, 1);
+        material(HANDLE_ON, 1, true);
+        gl.uniformMatrix4fv(uniforms.model, false, identity(scratch));
+        gl.disable(gl.DEPTH_TEST);
+        gl.drawArrays(gl.LINES, 0, 2);
+        gl.enable(gl.DEPTH_TEST);
+        gl.enableVertexAttribArray(1);
+      }
     }
 
     function tick(now) {
@@ -779,6 +1183,23 @@
     // -- input: orbit with the left button, pan with shift, zoom on wheel --
     var dragging = null;
     canvas.addEventListener("pointerdown", function (event) {
+      // In nudge mode a press ON a handle takes hold of it; a press anywhere
+      // else still orbits, so looking round the model never stops working.
+      if (state.nudging && !event.shiftKey) {
+        var box = canvas.getBoundingClientRect();
+        var hit = pick(event.clientX - box.left, event.clientY - box.top);
+        if (hit >= 0) {
+          if (hit !== state.picked) {
+            state.picked = hit;
+            state.origin = state.handles[hit].position.slice();
+          }
+          dragging = { x: event.clientX, y: event.clientY, joint: true };
+          state.dirty = true;
+          tellNudge();
+          try { canvas.setPointerCapture(event.pointerId); } catch (e) { /* old */ }
+          return;
+        }
+      }
       dragging = { x: event.clientX, y: event.clientY, pan: event.shiftKey };
       try { canvas.setPointerCapture(event.pointerId); } catch (e) { /* older */ }
     });
@@ -786,6 +1207,20 @@
       if (!dragging) { return; }
       var dx = event.clientX - dragging.x, dy = event.clientY - dragging.y;
       dragging.x = event.clientX; dragging.y = event.clientY;
+      if (dragging.joint) {
+        var handle = state.handles[state.picked];
+        if (handle) {
+          var step = axisStep(handle, dx, dy);
+          if (step) {
+            handle.position[0] += step[0];
+            handle.position[1] += step[1];
+            handle.position[2] += step[2];
+            state.dirty = true;
+            tellNudge();
+          }
+        }
+        return;
+      }
       if (dragging.pan) {
         var scale = state.distance / Math.max(1, canvas.clientHeight);
         state.pan[0] -= dx * scale * Math.cos(state.yaw);
@@ -827,20 +1262,104 @@
         var bounds = measure(model);
         state.centre = bounds.centre;
         state.radius = bounds.radius;
+        state.height = bounds.height;
         state.distance = bounds.radius * 2.8;
         state.pan = [0, 0, 0];
         state.yaw = 0.7;
         state.pitch = 0.35;
+        // A fresh snapshot is the new truth, so any half-finished placement
+        // against the old one is dropped rather than carried over.
+        state.handles = jointHandles(model);
+        state.picked = -1;
+        state.origin = null;
         state.dirty = true;
         return {
           objects: model.primitives.length,
           vertices: model.vertices,
           triangles: model.triangles,
           skinned: model.skinned,
+          joints: state.handles.length,
+          height_mm: bounds.height * 1000,
           animations: model.animations.map(function (a) {
             return { name: a.name, duration: a.duration };
           })
         };
+      },
+
+      // -- joint nudge mode ---------------------------------------------
+
+      /** Turn handles on or off. Returns how many joints there are to place. */
+      nudge: function (on) {
+        state.nudging = !!on;
+        if (!state.nudging) {
+          this.cancelNudge();
+        } else if (state.model && !state.handles.length) {
+          state.handles = jointHandles(state.model);
+        }
+        state.dirty = true;
+        return state.handles.length;
+      },
+
+      nudging: function () { return state.nudging; },
+
+      /** Every handle with where it currently is on screen, or ``null``.
+       *
+       * The same projection ``pick`` uses, exposed so that "the handle is
+       * drawn there but clicking it does nothing" is a question something can
+       * answer rather than a thing to squint at.
+       */
+      handles: function () {
+        updateCamera();
+        return state.handles.map(function (handle, index) {
+          return { bone: handle.bone, label: handle.label, index: index,
+                   position: handle.position.slice(),
+                   screen: project(handle.position) };
+        });
+      },
+
+      /** Which single axis a drag runs along. */
+      axis: function (which) {
+        if (which && AXES[which]) { state.axis = which; state.dirty = true; }
+        return state.axis;
+      },
+
+      axes: function () {
+        return Object.keys(AXES).map(function (key) {
+          return { key: key, label: AXES[key].label };
+        });
+      },
+
+      onNudge: function (fn) { state.onNudge = fn; },
+
+      /** What is selected and how far it has moved, right now. */
+      readout: function () { return nudgeReadout(); },
+
+      /** Put the selected handle back where it was and let go of it. */
+      cancelNudge: function () {
+        var handle = state.handles[state.picked];
+        if (handle && state.origin) {
+          handle.position[0] = state.origin[0];
+          handle.position[1] = state.origin[1];
+          handle.position[2] = state.origin[2];
+        }
+        state.picked = -1;
+        state.origin = null;
+        state.dirty = true;
+        tellNudge();
+      },
+
+      /** The move to send, in Blender's axes and millimetres, or ``null``.
+       *
+       * Nothing is applied here: this viewer draws a snapshot, and the only
+       * thing that can move a real bone is the bridge.  The page sends this,
+       * then takes a fresh snapshot, so what is on screen afterwards is what
+       * Blender actually did rather than what was asked for.
+       */
+      commitNudge: function () {
+        var read = nudgeReadout();
+        if (!read.selected || !read.moved) { return null; }
+        return { bone: read.bone, end: read.end, delta_mm: read.delta_mm,
+                 label: read.label, mm: read.mm };
       },
 
       play: function (index) {
@@ -894,11 +1413,15 @@
 
   global.ForgeGLB = {
     create: create,
-    // Exported so they can be exercised without a canvas — the parser is the
-    // half of this file that can be wrong in a way nobody sees.
+    // Exported so they can be exercised without a canvas — the parser and the
+    // joint maths are the halves of this file that can be wrong in a way
+    // nobody sees until a bone lands in the wrong place.
     parseGLB: parseGLB,
     loadModel: loadModel,
     readAccessor: readAccessor,
-    sampleChannel: sampleChannel
+    sampleChannel: sampleChannel,
+    jointHandles: jointHandles,
+    plainJointName: plainJointName,
+    toBlenderMillimetres: toBlenderMillimetres
   };
 }(window));
