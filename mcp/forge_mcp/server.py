@@ -4925,6 +4925,242 @@ def animation_check(
     return _fmt_animation_check_report(result, summary)
 
 
+#: The addon's own default for `max_extension_ratio` (rigforge_anim.py's
+#: MAX_EXTENSION_RATIO), mirrored here only so `reach_margin`'s upper bound can
+#: be computed pre-flight when `max_extension_ratio` itself is omitted.
+_PUNCH_MAX_EXTENSION_DEFAULT = 0.98
+
+_PUNCH_SIDES = {"L": "L", "LEFT": "L", "R": "R", "RIGHT": "R"}
+
+
+def _fmt_punch_report(result: Mapping[str, Any], summary: str) -> str:
+    """The strike that was authored: chamber/strike frames, the three numbers
+    the command refuses to leave unmeasured, and the feet that never moved."""
+    action = result.get("action") or "(unnamed)"
+    created = "new action" if result.get("created") else "existing action"
+    side = {"L": "left", "R": "right"}.get(str(result.get("side")), "?")
+    lines = [
+        f"Punch on '{action}' ({created}) — {summary}",
+        f"  {side} side, frames {fmt_frame_range(result.get('frame_range'))}, "
+        f"chamber f{fmt_number(result.get('chamber_frame'), 0)} -> strike "
+        f"f{fmt_number(result.get('strike_frame'), 0)}, "
+        f"{fmt_number(result.get('keys_set'), 0)} key(s) on "
+        f"{fmt_number(len(result.get('bones') or []), 0)} bone(s)",
+    ]
+    says = str(result.get("says") or "").strip()
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    lines.append(
+        f"  peak fist speed {fmt_number(result.get('peak_fist_speed_m_per_s'), 2)} "
+        f"m/s on frame {fmt_number(result.get('peak_fist_speed_frame'), 0)}"
+    )
+    extension_ratio = result.get("extension_ratio")
+    lines.append(
+        f"  extension {fmt_number(result.get('extension_m'), 3)} m of "
+        f"{fmt_number(result.get('arm_reach_m'), 3)} m reach"
+        + (
+            f" ({fmt_number(extension_ratio * 100.0, 1)}% of reach, cap "
+            f"{fmt_number((result.get('max_extension_ratio') or 0) * 100.0, 0)}%)"
+            if extension_ratio is not None
+            else ""
+        )
+        + ("" if result.get("extension_within_cap", True) else " — OVER CAP")
+    )
+
+    def _peak(name: str) -> str:
+        entry = (result.get("rotation_lead") or {}).get(name) or {}
+        degrees, frame = entry.get("degrees"), entry.get("frame")
+        if degrees is None or frame is None:
+            return "?"
+        return f"{fmt_number(degrees, 1)} deg (f{frame})"
+
+    lines.append(
+        "  rotation lead: pelvis " + _peak("pelvis") + " -> chest " + _peak("chest")
+        + " -> shoulder " + _peak("shoulder")
+    )
+    feet = result.get("feet_planted") or []
+    if feet:
+        lines.append("  feet planted (never moved): " + ", ".join(sorted(feet)))
+    return "\n".join(lines)
+
+
+@app.tool()
+def rigforge_punch(
+    rig: Optional[str] = None,
+    action: Optional[str] = None,
+    side: Optional[str] = None,
+    frames: Optional[int] = None,
+    strike_fraction: Optional[float] = None,
+    lead_frames: Optional[int] = None,
+    target_distance: Optional[float] = None,
+    target_height: Optional[float] = None,
+    hip_rotation_deg: Optional[float] = None,
+    chest_rotation_deg: Optional[float] = None,
+    shoulder_rotation_deg: Optional[float] = None,
+    weight_shift: Optional[float] = None,
+    hip_lower: Optional[float] = None,
+    guard_rise: Optional[float] = None,
+    chamber_draw: Optional[float] = None,
+    reach_margin: Optional[float] = None,
+    max_extension_ratio: Optional[float] = None,
+    loop: bool = False,
+    clear: bool = True,
+    interpolation: Literal["LINEAR", "BEZIER"] = "LINEAR",
+    poles: bool = True,
+) -> str:
+    """Author a jab/cross on the arm IK target, with both feet planted.
+
+    THIS is combat authoring on the same plant `rigforge_walk` uses for
+    locomotion — but where a walk moves the feet, a punch does the opposite: a
+    boxer's stance shift is weight transfer, the hips travelling over
+    stationary feet, so this command keys both foot IK targets at their rest
+    position on every single frame. Unkeyed, a foot inherits whatever the
+    pelvis does, and a pelvis that turns and slides drags an FK leg's foot
+    with it — `animation_check` measures the stance at 0.0 mm by construction.
+
+    The rest of the body is a kinetic chain: pelvis turns, then chest, then
+    shoulder, then the fist arrives — each peak offset from the next by
+    `lead_frames`, in that order by construction. The fist itself is keyed on
+    the arm's IK target (a straight-line jab, not an FK arc) and its target is
+    solved against the arm's own measured reach, so the same call fits a
+    figurine and an ogre without being told which. The report never leaves
+    three numbers unmeasured: peak fist speed (and the frame it happens on,
+    which is before the strike — a fist still accelerating at impact is an arm
+    being thrown, not punched), extension against the arm's own reach, and
+    peak hip/chest rotation.
+
+    Every length is metres, every angle degrees, and every default not given
+    here is a fraction of *this* rig's own arm reach, shoulder width or leg
+    length, measured off the rest pose — do not guess a number to fill a gap.
+
+    - `side`: "L"/"LEFT" or "R"/"RIGHT" (default "R") — which arm throws.
+    - `frames`: 8-600, the length of the whole clip (chamber, drive, recovery).
+    - `strike_fraction`: 0.15-0.85, where in the clip the fist is at full
+      extension.
+    - `hip_rotation_deg` / `chest_rotation_deg` / `shoulder_rotation_deg`:
+      0-60 / 0-60 / 0-45, the rotation cap for each link of the chain.
+    - `max_extension_ratio`: 0.3-1.0, the hard ceiling on how far the fist may
+      sit from the shoulder at full extension, as a fraction of the arm's
+      measured reach — past it the elbow is hyperextended and Rigify's IK
+      stretch makes up the difference.
+    - `reach_margin`: 0.2 up to `max_extension_ratio`, what the target
+      distance defaults to when `target_distance` is omitted.
+    - `lead_frames`: how many frames each link leads the next by; omit for the
+      add-on's own fraction of the clip.
+    - `target_distance` / `target_height`: metres, where the fist is aimed at
+      full extension; omit both to solve it from `reach_margin`.
+    - `weight_shift` / `hip_lower`: metres, the hip travel over the planted
+      feet and how far the hips lower to buy the stance it needs.
+    - `guard_rise` / `chamber_draw`: metres, how the fist sits at guard and how
+      far it draws back before firing.
+    - `loop`: False (default) — a punch is a strike, not a cycle; True marks
+      it a cycle and applies Godot's `-loop` name convention anyway.
+    - `clear`: True (default) wipes the action's existing keys first.
+    - `poles`: True (default) also keyframes the IK pole targets.
+    - `action`: the clip name (default "punch.<side>"); `rig`: the armature,
+      omit for the active/only one.
+
+    Run `animation_check` on the result and quote the drift — this tool plants
+    the feet, that one proves they held.
+    """
+    params: Dict[str, Any] = {
+        "loop": bool(loop),
+        "clear": bool(clear),
+        "interpolation": interpolation,
+        "poles": bool(poles),
+    }
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if action and action.strip():
+        params["action"] = action.strip()
+
+    resolved_side: Optional[str] = None
+    if side is not None:
+        normalized = str(side).strip().upper()
+        if normalized not in _PUNCH_SIDES:
+            raise ForgeError(
+                f"side must be one of L, LEFT, R, RIGHT (got {side!r})."
+            )
+        resolved_side = _PUNCH_SIDES[normalized]
+        params["side"] = resolved_side
+
+    if frames is not None:
+        if isinstance(frames, bool) or not isinstance(frames, int):
+            raise ForgeError(f"frames must be a whole number (got {frames!r}).")
+        if not 8 <= frames <= 600:
+            raise ForgeError(f"frames must be between 8 and 600 (got {frames}).")
+        params["frames"] = frames
+    if strike_fraction is not None:
+        params["strike_fraction"] = _walk_number(
+            "strike_fraction", strike_fraction, 0.15, 0.85
+        )
+    if hip_rotation_deg is not None:
+        params["hip_rotation_deg"] = _walk_number(
+            "hip_rotation_deg", hip_rotation_deg, 0.0, 60.0
+        )
+    if chest_rotation_deg is not None:
+        params["chest_rotation_deg"] = _walk_number(
+            "chest_rotation_deg", chest_rotation_deg, 0.0, 60.0
+        )
+    if shoulder_rotation_deg is not None:
+        params["shoulder_rotation_deg"] = _walk_number(
+            "shoulder_rotation_deg", shoulder_rotation_deg, 0.0, 45.0
+        )
+    if max_extension_ratio is not None:
+        params["max_extension_ratio"] = _walk_number(
+            "max_extension_ratio", max_extension_ratio, 0.3, 1.0
+        )
+    if reach_margin is not None:
+        upper = (
+            max_extension_ratio
+            if max_extension_ratio is not None
+            else _PUNCH_MAX_EXTENSION_DEFAULT
+        )
+        params["reach_margin"] = _walk_number("reach_margin", reach_margin, 0.2, upper)
+    if lead_frames is not None:
+        if isinstance(lead_frames, bool) or not isinstance(lead_frames, int):
+            raise ForgeError(
+                f"lead_frames must be a whole number (got {lead_frames!r})."
+            )
+        if lead_frames < 0:
+            raise ForgeError(
+                f"lead_frames must be zero or positive (got {lead_frames})."
+            )
+        params["lead_frames"] = lead_frames
+
+    for label, value, allow_negative in (
+        ("target_height", target_height, True),
+        ("target_distance", target_distance, False),
+        ("weight_shift", weight_shift, False),
+        ("hip_lower", hip_lower, False),
+        ("guard_rise", guard_rise, False),
+        ("chamber_draw", chamber_draw, False),
+    ):
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ForgeError(f"{label} must be a number, in metres (got {value!r}).")
+        if not allow_negative and float(value) < 0.0:
+            raise ForgeError(
+                f"{label} must be zero or positive, in metres (got {value})."
+            )
+        params[label] = float(value)
+
+    result = blender_client.send_command(
+        "rigforge_punch", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+
+    summary = (
+        (f"{frames}-frame clip" if frames is not None else "default-length clip")
+        + (f", {resolved_side} side" if resolved_side else "")
+        + (", looping (-loop)" if loop else ", one-shot")
+        + ("" if clear else ", layered onto existing keys")
+    )
+    return _fmt_punch_report(result, summary)
+
+
 @app.tool()
 def rigforge_status(object: Optional[str] = None) -> str:
     """Where is this mesh in the RigForge pipeline, and what is the next call?

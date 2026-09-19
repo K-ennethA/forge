@@ -1,5 +1,5 @@
 """The animation-chain tools: `rigforge_walk`, `animation_check`,
-`rigforge_correctives`.
+`rigforge_punch`, `rigforge_correctives`.
 
 Same shape as ``test_rigforge.py``: a fake NDJSON add-on on an ephemeral port
 (never 9876), pinned to the *contract* the socket commands actually accept
@@ -144,6 +144,76 @@ ANIMATION_CHECK_OK = {
     "says": "Feet hold. Worst step slides 1.1 mm across 2 measured step(s).",
     "warnings": [],
     "seconds": 0.31,
+}
+
+PUNCH_RESULT = {
+    "rig": "goblin_rig",
+    "action": "punch.R",
+    "created": True,
+    "loop": False,
+    "side": "R",
+    "frames": 24,
+    "frame_range": [1, 24],
+    "strike_frame": 11,
+    "chamber_frame": 4,
+    "lead_frames": 2,
+    "peak_frames": {"pelvis": 5, "chest": 7, "shoulder": 9, "fist": 11},
+    "rotation_lead": {
+        "pelvis": {"frame": 5, "degrees": 22.4},
+        "chest": {"frame": 7, "degrees": 17.6},
+        "shoulder": {"frame": 9, "degrees": 9.4},
+        "fist": {"frame": 11, "degrees": None},
+    },
+    "rotation_leads_in_order": True,
+    "hip_rotation_deg": 22.0,
+    "chest_rotation_deg": 18.0,
+    "shoulder_rotation_deg": 10.0,
+    "arm_reach_m": 0.62,
+    "extension_m": 0.605,
+    "extension_planned_m": 0.605,
+    "extension_ratio": 0.976,
+    "max_extension_ratio": 0.98,
+    "extension_tolerance": 0.01,
+    "extension_within_cap": True,
+    "fist_landed_mm": 3.2,
+    "target": [0.1, 0.6, 1.3],
+    "target_distance_m": 0.58,
+    "target_height_m": 1.3,
+    "target_reach_clamped": False,
+    "peak_fist_speed_frame": 9,
+    "peak_fist_speed_m_per_frame": 0.083,
+    "peak_fist_speed_m_per_s": 2.13,
+    "fps": 24.0,
+    "guard": [0.15, 0.35, 1.45],
+    "guard_rise_m": 0.15,
+    "chamber_draw_m": 0.05,
+    "weight_shift_m": 0.03,
+    "weight_shift_clamped": False,
+    "hip_lower_m": 0.0,
+    "hip_lower_deepened": False,
+    "shoulder_half_width_m": 0.18,
+    "leg_length_m": 0.9,
+    "forward_axis": [0.0, 1.0, 0.0],
+    "aim_yaw_deg": 12.5,
+    "feet_planted": ["foot_ik.L", "foot_ik.R"],
+    "convention": "rigify",
+    "poles": True,
+    "bones": ["foot_ik.L", "foot_ik.R", "hips", "chest", "shoulder.R", "hand_ik.R"],
+    "keys_set": 96,
+    "cleared_fcurves": 0,
+    "fcurves": 18,
+    "interpolation": "LINEAR",
+    "interpolated_points": 96,
+    "rotation_modes": {},
+    "actions_in_file": ["punch.R"],
+    "says": "punch.R: 24 frames, right fist fires from the chamber on frame 4 and "
+            "lands on frame 11. Peak fist speed 2.13 m/s on frame 9 — before the "
+            "strike, not on it. Full extension 605 mm against a measured reach of "
+            "620 mm (98%, cap 98%). Rotation peaks pelvis 22.4 deg (f5) -> chest "
+            "17.6 deg (f7) -> shoulder 9.4 deg (f9) -> fist (f11). Both feet keyed "
+            "on foot_ik.L and foot_ik.R and never moved.",
+    "warnings": [],
+    "seconds": 0.51,
 }
 
 CORRECTIVES_AUTHOR_RESULT = {
@@ -414,6 +484,211 @@ def test_animation_check_report_relays_warnings(blender) -> None:
 
     assert "WARNINGS (1):" in report
     assert "! Only one foot" in report
+
+
+# --- rigforge_punch ------------------------------------------------------------
+
+
+def test_punch_sends_the_contract_defaults(blender) -> None:
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch(rig="goblin_rig")
+
+    assert fake.requests[0]["type"] == "rigforge_punch"
+    assert sent(fake, "rigforge_punch") == {
+        "loop": False,
+        "clear": True,
+        "interpolation": "LINEAR",
+        "poles": True,
+        "rig": "goblin_rig",
+    }
+
+
+def test_punch_passes_through_every_optional_parameter(blender) -> None:
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch(
+        rig="goblin_rig",
+        action="jab",
+        side="left",
+        frames=30,
+        strike_fraction=0.4,
+        lead_frames=3,
+        target_distance=0.5,
+        target_height=1.2,
+        hip_rotation_deg=20.0,
+        chest_rotation_deg=15.0,
+        shoulder_rotation_deg=8.0,
+        weight_shift=0.04,
+        hip_lower=0.02,
+        guard_rise=0.1,
+        chamber_draw=0.06,
+        reach_margin=0.9,
+        max_extension_ratio=0.95,
+        loop=True,
+        clear=False,
+        interpolation="BEZIER",
+        poles=False,
+    )
+
+    assert sent(fake, "rigforge_punch") == {
+        "loop": True,
+        "clear": False,
+        "interpolation": "BEZIER",
+        "poles": False,
+        "rig": "goblin_rig",
+        "action": "jab",
+        "side": "L",
+        "frames": 30,
+        "strike_fraction": 0.4,
+        "lead_frames": 3,
+        "target_distance": 0.5,
+        "target_height": 1.2,
+        "hip_rotation_deg": 20.0,
+        "chest_rotation_deg": 15.0,
+        "shoulder_rotation_deg": 8.0,
+        "weight_shift": 0.04,
+        "hip_lower": 0.02,
+        "guard_rise": 0.1,
+        "chamber_draw": 0.06,
+        "reach_margin": 0.9,
+        "max_extension_ratio": 0.95,
+    }
+
+
+def test_punch_without_rig_or_action_sends_neither(blender) -> None:
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch()
+
+    params = sent(fake, "rigforge_punch")
+    assert "rig" not in params and "action" not in params and "side" not in params
+
+
+@pytest.mark.parametrize(
+    "value,normalized",
+    [("L", "L"), ("left", "L"), ("R", "R"), ("RIGHT", "R"), ("r", "R")],
+)
+def test_punch_side_is_case_insensitive_and_accepts_full_words(
+    blender, value: str, normalized: str
+) -> None:
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch(side=value)
+    assert sent(fake, "rigforge_punch")["side"] == normalized
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "fragment"),
+    [
+        ({"side": "up"}, "side must be one of L, LEFT, R, RIGHT"),
+        ({"frames": 7}, "frames must be between 8 and 600"),
+        ({"frames": 601}, "frames must be between 8 and 600"),
+        ({"frames": 12.5}, "frames must be a whole number"),
+        (
+            {"strike_fraction": 0.1},
+            "strike_fraction must be between 0.15 and 0.85",
+        ),
+        (
+            {"strike_fraction": 0.9},
+            "strike_fraction must be between 0.15 and 0.85",
+        ),
+        ({"hip_rotation_deg": -1.0}, "hip_rotation_deg must be between 0.0 and 60.0"),
+        ({"hip_rotation_deg": 61.0}, "hip_rotation_deg must be between 0.0 and 60.0"),
+        (
+            {"chest_rotation_deg": 61.0},
+            "chest_rotation_deg must be between 0.0 and 60.0",
+        ),
+        (
+            {"shoulder_rotation_deg": 46.0},
+            "shoulder_rotation_deg must be between 0.0 and 45.0",
+        ),
+        (
+            {"max_extension_ratio": 0.2},
+            "max_extension_ratio must be between 0.3 and 1.0",
+        ),
+        (
+            {"max_extension_ratio": 1.1},
+            "max_extension_ratio must be between 0.3 and 1.0",
+        ),
+        ({"reach_margin": 0.1}, "reach_margin must be between 0.2 and 0.98"),
+        ({"reach_margin": 1.0}, "reach_margin must be between 0.2 and 0.98"),
+        ({"lead_frames": -1}, "lead_frames must be zero or positive"),
+        ({"lead_frames": 2.5}, "lead_frames must be a whole number"),
+        (
+            {"target_distance": -0.1},
+            "target_distance must be zero or positive",
+        ),
+        ({"weight_shift": -0.1}, "weight_shift must be zero or positive"),
+        ({"hip_lower": -0.1}, "hip_lower must be zero or positive"),
+        ({"guard_rise": -0.1}, "guard_rise must be zero or positive"),
+        ({"chamber_draw": -0.1}, "chamber_draw must be zero or positive"),
+        ({"target_distance": "far"}, "target_distance must be a number"),
+    ],
+)
+def test_punch_rejects_out_of_range_arguments_before_the_wire(
+    kwargs: dict[str, Any], fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment.replace(".", r"\.")):
+        server.rigforge_punch(**kwargs)
+
+
+def test_punch_reach_margin_bound_tracks_a_given_max_extension_ratio(
+    blender,
+) -> None:
+    """`reach_margin`'s upper bound is `max_extension_ratio` itself when the
+    caller passes one, not the add-on's own 0.98 default."""
+    with pytest.raises(ForgeError, match=r"reach_margin must be between 0\.2 and 0\.5"):
+        server.rigforge_punch(max_extension_ratio=0.5, reach_margin=0.9)
+
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch(max_extension_ratio=0.5, reach_margin=0.4)
+    assert sent(fake, "rigforge_punch")["reach_margin"] == 0.4
+
+
+def test_punch_target_height_accepts_a_negative_number(blender) -> None:
+    """Unlike the other lengths, `target_height` has no addon-side floor."""
+    fake = blender({"rigforge_punch": PUNCH_RESULT})
+    server.rigforge_punch(target_height=-0.2)
+    assert sent(fake, "rigforge_punch")["target_height"] == -0.2
+
+
+def test_punch_report_carries_says_and_the_measured_numbers(blender) -> None:
+    blender({"rigforge_punch": PUNCH_RESULT})
+    report = server.rigforge_punch(rig="goblin_rig")
+
+    assert "Punch on 'punch.R' (new action)" in report
+    assert "right side" in report
+    assert "frames 1-24" in report
+    assert "chamber f4 -> strike f11" in report
+    assert "96 key(s)" in report
+    assert PUNCH_RESULT["says"] in report
+    assert "peak fist speed 2.13 m/s on frame 9" in report
+    assert "extension 0.605 m of 0.62 m reach" in report
+    assert "97.6% of reach, cap 98%" in report
+    assert "rotation lead: pelvis 22.4 deg (f5) -> chest 17.6 deg (f7)" in report
+    assert "shoulder 9.4 deg (f9)" in report
+    assert "feet planted (never moved): foot_ik.L, foot_ik.R" in report
+
+
+def test_punch_report_relays_warnings(blender) -> None:
+    result = dict(
+        PUNCH_RESULT,
+        warnings=["weight_shift was shortened to 30 mm"],
+        extension_within_cap=False,
+    )
+    blender({"rigforge_punch": result})
+    report = server.rigforge_punch()
+
+    assert "WARNINGS (1):" in report
+    assert "! weight_shift was shortened" in report
+    assert "OVER CAP" in report
+
+
+def test_punch_summary_reflects_frames_side_and_loop_choice(blender) -> None:
+    blender({"rigforge_punch": PUNCH_RESULT})
+    report = server.rigforge_punch(frames=30, side="L", loop=True, clear=False)
+
+    assert "30-frame clip" in report
+    assert "L side" in report
+    assert "looping (-loop)" in report
+    assert "layered onto existing keys" in report
 
 
 # --- rigforge_correctives -----------------------------------------------------

@@ -125,6 +125,7 @@ EXPECTED_TOOLS = {
     # Locomotion authoring, and the foot-slide gate that proves it held
     "rigforge_walk",
     "animation_check",
+    "rigforge_punch",
     # Mechanism demos (Phase 17) — the press, the LED, the film of both
     "animate_object",
     "set_material_emission",
@@ -188,7 +189,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 92
+    assert len(names) == 93
 
 
 def test_every_tool_is_documented() -> None:
@@ -835,6 +836,7 @@ def test_forge_status_never_fails_and_reports_every_backend(dead_backends) -> No
         "rigforge_status",
         "rigforge_walk",
         "animation_check",
+        "rigforge_punch",
         "rigforge_correctives",
     ],
 )
