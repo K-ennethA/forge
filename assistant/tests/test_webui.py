@@ -2083,10 +2083,11 @@ def test_the_studio_tab_and_its_panel_are_wired_to_each_other(client):
     html = fetch_text(client, "/")
     assert 'aria-controls="panel-studio"' in html
     assert 'aria-labelledby="tab-studio"' in html
-    # Three tabs, not four: the Chat and the Workbench are one screen now, and
-    # the two that remain are the errands that really are separate.
+    # Four tabs: the Chat and the Workbench are one screen (Studio), the
+    # Workspace follows a whole project (plan, live model, renders, versions),
+    # and the two that remain are the errands that really are separate.
     script = fetch_text(client, "/webui/app.js")
-    assert 'var TABS = ["studio", "library", "flows"];' in script
+    assert 'var TABS = ["studio", "workspace", "library", "flows"];' in script
     assert 'id="tab-chat"' not in html and 'id="tab-workbench"' not in html
 
 
@@ -3443,20 +3444,24 @@ def test_auto_follow_never_throws_on_a_job_shape_it_has_not_seen(tmp_path):
 
 
 def test_every_destructive_button_asks_first_and_says_what_undoes_it(client):
-    """Two buttons on this page destroy something, and they are not the same.
+    """Three buttons on this page confirm first, and they are not the same.
 
     Scrapping an object is a socket command with its own undo checkpoint, so it
     says which key puts it back.  Opening a project's ``.blend`` replaces the
     whole scene, and Blender resets the undo stack on a file load — so that one
     cannot promise a way back and does not pretend to: it names what would be
-    lost instead.  The count is pinned so a third destructive button cannot be
-    added without deciding which of those two it is.
+    lost instead.  Restoring a model version destroys nothing (it copies the
+    old file forward to a new version number), but it writes a file into the
+    artist's project on one click, so it asks too — and its sentence must say
+    that nothing is overwritten.  The count is pinned so a fourth confirming
+    button cannot be added without deciding which of these three it is.
     """
     html = fetch_text(client, "/")
     assert "Ctrl+Z in Blender puts it back" in html
     script = fetch_text(client, "/webui/app.js")
-    assert script.count("window.confirm(") == 2
+    assert script.count("window.confirm(") == 3
     assert "Undo does not cross a file load" in script
+    assert "Nothing is overwritten and nothing is deleted" in script
 
 
 # ===========================================================================

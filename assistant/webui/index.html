@@ -34,6 +34,8 @@
 <nav class="tabs" role="tablist">
   <button type="button" class="tab is-active" id="tab-studio" role="tab"
           aria-selected="true" aria-controls="panel-studio">Studio</button>
+  <button type="button" class="tab" id="tab-workspace" role="tab"
+          aria-selected="false" aria-controls="panel-workspace">Workspace</button>
   <button type="button" class="tab" id="tab-library" role="tab"
           aria-selected="false" aria-controls="panel-library">Library</button>
   <button type="button" class="tab" id="tab-flows" role="tab"
@@ -166,6 +168,96 @@
   </section>
 
   <!-- ------------------------------------------------------------------ -->
+  <!-- The Workspace: one screen for following a build and driving it with
+       buttons.  The artist asked for it ("we should see status updates,
+       deliverables, check progress, different versions, make decisions with
+       UI rather than chatting"), and then, having used it: "the workspace is
+       too cluttered, we should utilize the pipeline as a stage we're on and
+       can jump back n forth, for activity see the current activity and have
+       past hidden or expandable, the ui should be simpler."
+
+       So it is one stage at a time, not ten.  The stepper says where the build
+       is and gets you anywhere in one click; below it, the stage in focus
+       shows everything there is to know about that one stage — what it
+       measured, what it made, and, when its gate is red, what to do about it.
+       The model keeps its place beside them because it is the thing being
+       made.  Everything else is one line until it is asked for: the current
+       step with the rest of the history behind it, and two drawers for the
+       renders and the saved versions.
+
+       What has NOT changed is the honesty: every number comes off
+       design/build-plan.json, nothing here writes that file, and a panel with
+       nothing in it says so rather than drawing something. -->
+  <section class="panel" id="panel-workspace" role="tabpanel"
+           aria-labelledby="tab-workspace" hidden>
+
+    <div class="ws-head">
+      <select id="ws-project" class="select" aria-label="Project"></select>
+      <span class="ws-summary" id="ws-summary">Pick a project to follow.</span>
+      <button type="button" class="btn ghost tiny" id="ws-refresh"
+              title="Re-read the plan, the renders and the saved versions">Refresh</button>
+    </div>
+
+    <div class="ws-body">
+
+      <!-- The build: where it is, and the one stage you are looking at. -->
+      <div class="ws-left">
+        <div id="ws-stepper" class="ws-stepper" role="tablist"
+             aria-label="Build stages"></div>
+        <div id="ws-focus" class="ws-focus"></div>
+      </div>
+
+      <!-- The thing being made.  It earned its place. -->
+      <div class="ws-right">
+        <div id="ws-viewer" class="ws-viewer">
+          <canvas id="ws-canvas" class="ws-canvas"></canvas>
+          <div class="ws-viewer-empty" id="ws-viewer-empty">
+            <p>Press <strong>Refresh from Blender</strong> — what is in the
+               scene appears here. Drag to orbit, scroll to zoom.</p>
+          </div>
+        </div>
+        <div class="ws-viewer-bar">
+          <button type="button" class="btn ghost tiny" id="ws-snapshot"
+                  title="Export what Blender is holding right now and draw it here">Refresh from Blender</button>
+          <button type="button" class="btn ghost tiny" id="ws-play"
+                  title="Play the animation in this snapshot" disabled>Play</button>
+          <button type="button" class="btn ghost tiny" id="ws-view-reset"
+                  title="Frame the model again">Recentre</button>
+          <span class="ws-viewer-note" id="ws-viewer-note">Rest pose, as of the
+                last refresh.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- What Forge is doing: one line.  The summary IS the current step, and
+         opening it is how you get at everything before it. -->
+    <details class="ws-now" id="ws-now-box">
+      <summary><span class="ws-now-line" id="ws-now">idle</span></summary>
+      <div id="ws-history" class="ws-history"></div>
+    </details>
+
+    <!-- What has come out of it: closed until asked for. -->
+    <div class="ws-drawers">
+      <details class="ws-drawer" id="ws-renders">
+        <summary>Renders <span class="ws-count" id="ws-renders-count"></span></summary>
+        <div id="ws-deliverables" class="ws-gallery"></div>
+      </details>
+      <details class="ws-drawer" id="ws-saves">
+        <summary>Versions <span class="ws-count" id="ws-saves-count"></span></summary>
+        <div id="ws-versions" class="ws-versions"></div>
+      </details>
+    </div>
+
+    <!-- Chat, docked. Still here, no longer the only control surface. -->
+    <form class="ws-dock" id="ws-ask" autocomplete="off">
+      <textarea id="ws-message" rows="1"
+                placeholder="Say something about this build — Enter to send, Shift+Enter for a new line"></textarea>
+      <button type="submit" class="btn primary" id="ws-send">Send</button>
+      <span class="ws-dock-status" id="ws-dock-status"></span>
+    </form>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
   <section class="panel" id="panel-library" role="tabpanel"
            aria-labelledby="tab-library" hidden>
     <div class="lib-head">
@@ -222,6 +314,11 @@
 
 <script src="/webui/format.js"></script>
 <script src="/webui/follow.js"></script>
+<!-- The live model view's renderer. Vendored here rather than fetched from a
+     CDN, like everything else on this page: the machine this runs on is often
+     offline, and a viewer that needs the internet to show a local file would
+     be the one panel that cannot do its job. -->
+<script src="/webui/glbview.js"></script>
 <script src="/webui/app.js"></script>
 </body>
 </html>

@@ -1051,3 +1051,510 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
   .banner-slot { position: static; }
   .bubble.user { max-width: 100%; }
 }
+
+/* ------------------------------------------------------------- workspace -- */
+/*
+ * "The workspace is too cluttered ... the ui should be simpler."
+ *
+ * The first version was three columns of bordered panels, each with a heading
+ * and a paragraph explaining itself.  This one has two: the build on the left
+ * (a stepper and the one stage in focus) and the model on the right, with a
+ * status line, two drawers and the chat box under them.  The panel borders,
+ * the section headings and every explanatory paragraph are gone — what is on
+ * screen is the content, and the things that are not needed right now are one
+ * click away rather than one scroll away.
+ *
+ * Nothing new in the palette: the same amber, the same greys, the same lines.
+ */
+
+#panel-workspace { overflow: hidden; }
+
+.ws-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  flex: 0 0 auto;
+}
+.ws-head .select { max-width: 220px; }
+.ws-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-body {
+  flex: 1 1 auto;
+  /* A floor, not zero: opening a drawer squeezes what is above it, and a
+     squeeze that can reach zero turns the stage and the model into slivers
+     the moment somebody looks at the versions. */
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: minmax(340px, 1fr) minmax(360px, 1.1fr);
+  gap: 20px;
+  padding: 0 20px 14px;
+  overflow: hidden;
+}
+
+.ws-left { min-width: 0; min-height: 0; overflow-y: auto; padding-right: 4px; }
+.ws-right { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+
+/* -- the stepper: where the build is, and how to get anywhere on it -- */
+
+.ws-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.ws-step {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px 3px 5px;
+  cursor: pointer;
+}
+.ws-step:hover { color: var(--text); border-color: var(--accent-dim); }
+.ws-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 10px;
+  background: var(--idle);
+  color: var(--bg);
+}
+.ws-step-name { font-family: var(--mono); }
+
+.ws-step.is-passed .ws-step-num      { background: var(--ok); }
+.ws-step.is-overridden .ws-step-num  { background: var(--warn); }
+.ws-step.is-failed .ws-step-num      { background: var(--down); }
+.ws-step.is-in_progress .ws-step-num { background: var(--accent); }
+
+.ws-step.is-focus {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--bg-raised);
+}
+
+/* -- the stage in focus -- */
+
+.ws-stage { border-left: 3px solid var(--idle); padding-left: 14px; }
+.ws-stage.is-passed      { border-left-color: var(--ok); }
+.ws-stage.is-overridden  { border-left-color: var(--warn); }
+.ws-stage.is-failed      { border-left-color: var(--down); }
+.ws-stage.is-in_progress { border-left-color: var(--accent); }
+
+.ws-stage-head { display: flex; align-items: baseline; gap: 10px; }
+.ws-stage-head h3 { margin: 0; font-size: 15px; font-weight: 620; }
+.ws-verdict {
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+}
+.ws-verdict.is-passed     { color: var(--ok); }
+.ws-verdict.is-overridden { color: var(--warn); }
+.ws-verdict.is-failed     { color: var(--down); }
+.ws-verdict.is-in_progress{ color: var(--accent); }
+
+.ws-does { margin: 6px 0; font-size: 12.5px; color: var(--text-dim); }
+.ws-gate {
+  margin: 6px 0;
+  font-size: 11.5px;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.ws-numbers {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  font-size: 11.5px;
+  font-family: var(--mono);
+}
+.ws-numbers dt {
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.ws-numbers dd { margin: 0; color: var(--text); }
+
+/* A small expander for the things a stage produced and the log of how it got
+   here: real, and worth having, but not worth looking at every time. */
+.ws-sub { margin-top: 10px; }
+.ws-sub > summary {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  list-style: none;
+}
+.ws-sub > summary::-webkit-details-marker { display: none; }
+.ws-sub > summary::before { content: "▸ "; }
+.ws-sub[open] > summary::before { content: "▾ "; }
+.ws-sub > summary:hover { color: var(--text-dim); }
+
+.ws-paths {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  word-break: break-all;
+}
+.ws-signed { color: var(--warn); font-family: var(--font); margin-top: 2px; }
+
+/* -- the decision, inside the stage it is about -- */
+
+.ws-decision { margin: 12px 0; }
+.ws-decision-lead { margin: 0 0 8px; font-size: 12.5px; color: var(--down); }
+.ws-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.btn.warn { border-color: var(--warn); color: var(--warn); }
+.btn.warn:hover:not(:disabled) { background: rgba(232, 177, 60, .12); }
+
+.ws-override {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ws-override p { margin: 0; font-size: 12px; }
+
+.input {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+.input:focus { outline: none; border-color: var(--accent-dim); }
+
+/* -- the live model view: the one thing that keeps its whole panel -- */
+
+.ws-viewer {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 300px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: radial-gradient(ellipse at 50% 35%, #1d222b 0%, var(--bg-sunken) 72%);
+  overflow: hidden;
+}
+.ws-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.ws-canvas:active { cursor: grabbing; }
+.ws-viewer-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  pointer-events: none;
+}
+.ws-viewer-empty[hidden] { display: none; }
+.ws-viewer-empty p { max-width: 34ch; margin: 0; }
+
+.ws-viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  flex: 0 0 auto;
+}
+.ws-viewer-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-viewer-note.bad { color: var(--down); white-space: normal; }
+
+/* -- what is happening: one line, and everything before it behind it -- */
+
+.ws-now {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line-soft);
+  padding: 8px 20px;
+}
+.ws-now > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.ws-now > summary::-webkit-details-marker { display: none; }
+.ws-now > summary::before { content: "▸"; font-size: 10px; }
+.ws-now[open] > summary::before { content: "▾"; }
+
+.ws-now-line {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+}
+.ws-now-line.is-live { color: var(--accent); }
+.ws-now.is-live > summary::before { color: var(--accent); }
+
+.ws-history {
+  margin-top: 8px;
+  max-height: 34vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ws-past {
+  border-left: 2px solid var(--idle);
+  padding: 4px 0 4px 10px;
+  font-size: 12px;
+}
+.ws-past.is-running { border-left-color: var(--accent); }
+.ws-past.is-queued  { border-left-color: var(--warn); }
+.ws-past.is-done    { border-left-color: var(--ok); }
+.ws-past.is-error, .ws-past.is-timeout { border-left-color: var(--down); }
+.ws-past-head { display: flex; gap: 8px; align-items: baseline; font-size: 10.5px;
+                font-family: var(--mono); color: var(--text-faint); }
+.ws-past-state { color: var(--accent); }
+.ws-past-cost { margin-left: auto; }
+.ws-past-error { font-size: 11.5px; color: var(--down); margin-top: 3px; }
+
+/* -- the drawers -- */
+
+.ws-drawers {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  padding: 0 20px;
+  border-top: 1px solid var(--line-soft);
+  min-height: 0;
+}
+.ws-drawer { padding: 8px 0; }
+.ws-drawer > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.ws-drawer > summary::-webkit-details-marker { display: none; }
+.ws-drawer > summary::before { content: "▸ "; font-size: 10px; }
+.ws-drawer[open] > summary::before { content: "▾ "; }
+.ws-drawer > summary:hover { color: var(--text); }
+.ws-count { color: var(--text-faint); font-family: var(--mono); font-size: 11px; }
+
+/* An open drawer takes the whole row and scrolls inside itself, so opening
+   one squeezes the panels above rather than pushing the chat box off the
+   bottom of the screen. */
+.ws-drawer[open] {
+  flex: 1 0 100%;
+  min-height: 0;
+  max-height: 34vh;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+/* -- renders -- */
+
+.ws-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.ws-deliverable {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-sunken);
+  position: relative;
+}
+.ws-deliverable img, .ws-deliverable video {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  display: block;
+  background: #0a0c0f;
+}
+.ws-deliverable-none {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: var(--text-faint);
+}
+.ws-deliverable figcaption {
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 10.5px;
+  font-family: var(--mono);
+}
+.ws-deliverable figcaption .f {
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-deliverable figcaption .s { color: var(--text-faint); }
+.ws-deliverable-open {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(16, 18, 22, .82);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.ws-deliverable-open:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+/* -- versions -- */
+
+.ws-versions {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.ws-chain-head {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.ws-version {
+  display: flex;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  margin-bottom: 5px;
+}
+.ws-version.is-current { border-color: var(--accent-dim); background: var(--panel); }
+
+.ws-version-thumb {
+  flex: 0 0 50px;
+  height: 50px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.ws-version-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ws-version-number { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+
+.ws-version-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+.ws-version-head { display: flex; gap: 6px; align-items: baseline; width: 100%; }
+.ws-version-tag { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+.ws-version-file {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-version-current {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--accent-text);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.ws-version-facts {
+  display: flex;
+  gap: 10px;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+}
+
+/* -- the empty states, which are the same shape everywhere -- */
+
+.ws-empty { color: var(--text-dim); }
+.ws-empty strong { color: var(--text); font-weight: 600; display: block; }
+.ws-empty p { margin: 6px 0 0; font-size: 12.5px; }
+
+/* -- chat, docked -- */
+
+.ws-dock {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.ws-dock textarea {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  resize: none;
+  max-height: 140px;
+}
+.ws-dock textarea:focus { outline: none; border-color: var(--accent-dim); }
+.ws-dock-status { font-size: 11.5px; color: var(--text-faint); align-self: center; }
+
+@media (max-width: 1000px) {
+  .ws-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .ws-left { overflow: visible; }
+  .ws-viewer { min-height: 260px; }
+}

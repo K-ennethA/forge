@@ -2058,13 +2058,819 @@
     });
   }
 
+  // ------------------------------------------------------------ workspace --
+  //
+  // The artist, having used the first version of this screen: "the workspace
+  // is too cluttered, we should utilize the pipeline as a stage we're on and
+  // can jump back n forth, for activity see the current activity and have
+  // past hidden or expandable, the ui should be simpler."
+  //
+  // So: ONE stage at a time.  The stepper is a row of small chips that says
+  // where the build is and gets you to any other stage in one click; the
+  // focus panel below it is that stage in full — what its gate measured, what
+  // it produced, what it did, and, when it is red, the decision waiting on
+  // somebody.  Ten expanded cards became one.
+  //
+  // Activity is one line — what is happening NOW — with everything before it
+  // behind the same line, one click away.  The renders and the saved versions
+  // are two closed drawers with a count on them, so the default screen is:
+  // where we are, the stage we are on, the model, one status line, and chat.
+  //
+  // The rule that has not moved: nothing here is invented.  Every number is
+  // off design/build-plan.json, the bridge never writes that file, and a
+  // panel with nothing in it says so rather than drawing something.
+
+  var ws = {
+    project: null,     // the project every panel is about
+    projects: [],      // the picker's contents
+    pipeline: null,    // the last /pipeline answer
+    versions: null,    // the last /versions answer
+    deliverables: null,
+    snapshot: null,    // the last /snapshot answer
+    viewer: null,      // the ForgeGLB viewer, made once
+    focus: null,       // the stage id in focus, once the artist has picked one
+    timer: null,       // the activity tick, only while the tab is open
+    loading: false
+  };
+
+  function wsEmpty(host, title, detail) {
+    host.textContent = "";
+    var box = el("div", "ws-empty");
+    box.appendChild(el("strong", null, title));
+    if (detail) { box.appendChild(el("p", "muted small", detail)); }
+    host.appendChild(box);
+  }
+
+  //: Where the eye should land when a plan is opened, before anybody has
+  //: clicked anything: the thing that is stopping the build, else the thing
+  //: that happens next, else the last thing that happened.  The same three
+  //: answers, in the same order, that an artist asking "where are we?" wants.
+  function defaultFocus(data) {
+    var stages = (data && data.stages) || [];
+    if (!stages.length) { return null; }
+    if (data.blocked) { return data.blocked; }
+    if (data.next) { return data.next; }
+    return stages[stages.length - 1].id;
+  }
+
+  function focusedStage(data) {
+    var stages = (data && data.stages) || [];
+    var wanted = ws.focus;
+    var found = null;
+    stages.forEach(function (stage) {
+      if (stage.id === wanted) { found = stage; }
+    });
+    if (found) { return found; }
+    var fallback = defaultFocus(data);
+    stages.forEach(function (stage) {
+      if (stage.id === fallback) { found = stage; }
+    });
+    return found;
+  }
+
+  // -- the stepper -------------------------------------------------------
+  //
+  // One chip per stage, in the plan's own order — which IS the pipeline, and
+  // is what "the next stage" and "a skip" are measured against.  Colour is
+  // the verdict and nothing else; the number is the position, so "we are on
+  // 7 of 10" is readable without counting.  Past stages are clickable and
+  // view-only: looking back at what the rig gate measured changes nothing.
+
+  function stepChip(stage, index, total, focus) {
+    var chip = el("button", "ws-step is-" + stage.status);
+    chip.type = "button";
+    chip.dataset.stage = stage.id;
+    chip.setAttribute("role", "tab");
+    chip.setAttribute("aria-selected", String(stage.id === focus));
+    chip.title = (stage.title || stage.id) + " — " + stage.status.replace("_", " ")
+               + " (" + (index + 1) + " of " + total + ")";
+    chip.appendChild(el("span", "ws-step-num", String(index + 1)));
+    chip.appendChild(el("span", "ws-step-name", stage.id));
+    if (stage.id === focus) { chip.classList.add("is-focus"); }
+    chip.addEventListener("click", function () {
+      ws.focus = stage.id;
+      renderPipeline(ws.pipeline);
+    });
+    return chip;
+  }
+
+  function renderPipeline(data) {
+    var stepper = $("ws-stepper");
+    var focusHost = $("ws-focus");
+    stepper.textContent = "";
+    focusHost.textContent = "";
+    if (!data) {
+      focusHost.appendChild(el("p", "muted small", "Reading the build plan…"));
+      return;
+    }
+    if (!data.has_plan) {
+      wsEmpty(focusHost, "No build plan yet", data.note ||
+        "Ask the assistant to start one and the stages appear here.");
+      return;
+    }
+    var stages = data.stages || [];
+    var focus = (focusedStage(data) || {}).id || null;
+    stages.forEach(function (stage, index) {
+      stepper.appendChild(stepChip(stage, index, stages.length, focus));
+    });
+    var stage = focusedStage(data);
+    if (stage) { focusHost.appendChild(stagePanel(stage, data)); }
+  }
+
+  // -- the stage in focus ------------------------------------------------
+
+  function numberList(stage, full) {
+    var numbers = stage.numbers || [];
+    if (!numbers.length) { return null; }
+    var list = el("dl", "ws-numbers" + (full ? " is-full" : ""));
+    numbers.forEach(function (measured) {
+      list.appendChild(el("dt", null, measured.name));
+      list.appendChild(el("dd", null, measured.text));
+    });
+    return list;
+  }
+
+  function stagePanel(stage, data) {
+    var box = el("div", "ws-stage is-" + stage.status);
+
+    var head = el("div", "ws-stage-head");
+    head.appendChild(el("h3", null, stage.title || stage.id));
+    head.appendChild(el("span", "ws-verdict is-" + stage.status,
+                        stage.status.replace("_", " ")));
+    box.appendChild(head);
+
+    if (stage.does) { box.appendChild(el("p", "ws-does", stage.does)); }
+
+    if (stage.gate && stage.gate.length) {
+      box.appendChild(el("p", "ws-gate", "Gate: " + stage.gate.join(", ")));
+    }
+
+    // The decision lives IN the stage it is about, rather than in a panel of
+    // its own: a red gate and what to do about it are one thing.  It goes
+    // ABOVE the measurements because a gate's numbers can run to several
+    // paragraphs of recorded prose, and the one thing an artist looking at a
+    // stopped build needs must not be below them.
+    if (stage.red) { box.appendChild(decisionBlock(stage, data)); }
+
+    var numbers = numberList(stage, true);
+    if (numbers) {
+      box.appendChild(numbers);
+    } else {
+      box.appendChild(el("p", "muted small",
+        stage.green ? "This stage passed with nothing recorded against it."
+                    : "Nothing measured on this stage yet."));
+    }
+
+    var artifacts = stage.artifacts || [];
+    if (artifacts.length) {
+      var made = el("details", "ws-sub");
+      made.appendChild(el("summary", null,
+        artifacts.length + (artifacts.length === 1 ? " file" : " files")));
+      var files = el("ul", "ws-paths");
+      artifacts.forEach(function (path) {
+        var item = el("li", null, path);
+        item.title = path;   // a path on this machine, to copy into Explorer
+        files.appendChild(item);
+      });
+      made.appendChild(files);
+      if (stage.artifact_count > artifacts.length) {
+        made.appendChild(el("p", "muted small",
+          "… and " + (stage.artifact_count - artifacts.length) + " more."));
+      }
+      box.appendChild(made);
+    }
+
+    var history = stage.history || [];
+    if (history.length) {
+      var log = el("details", "ws-sub");
+      log.appendChild(el("summary", null, "history"));
+      var entries = el("ul", "ws-paths");
+      history.slice().reverse().forEach(function (entry) {
+        var item = el("li", null, entry.date + "  " + entry.action +
+                                  (entry.to ? "  → " + entry.to : ""));
+        if (entry.override && (entry.override.who || entry.override.why)) {
+          item.appendChild(el("div", "ws-signed",
+            "signed by " + (entry.override.who || "?") + " — " +
+            (entry.override.why || "no reason recorded")));
+        }
+        entries.appendChild(item);
+      });
+      log.appendChild(entries);
+      box.appendChild(log);
+    }
+    return box;
+  }
+
+  // -- decisions ---------------------------------------------------------
+  //
+  // The bridge does NOT write build-plan.json, on purpose: pipeline.py owns
+  // that file, it refuses a skip, and it will not take an override without a
+  // name and a reason recorded on it.  A second writer on a different port
+  // would be a way around all three.  So every button here composes the
+  // sentence the assistant needs and sends it down the same /ask the composer
+  // uses — the plan is still changed by the tool that knows the rules.
+
+  function decisionButton(label, title, message, cls) {
+    var button = el("button", "btn tiny" + (cls ? " " + cls : ""), label);
+    button.type = "button";
+    button.title = title;
+    button.addEventListener("click", function () { wsSend(message, label); });
+    return button;
+  }
+
+  function overrideForm(stage, project) {
+    var form = el("form", "ws-override");
+    form.appendChild(el("p", "muted small",
+      "An override is signed. The stage is marked overridden, never passed, " +
+      "and both stages keep who said so and why — so this needs both."));
+    var who = el("input", "input tiny");
+    who.type = "text";
+    who.placeholder = "who is signing this off";
+    who.required = true;
+    var why = el("input", "input tiny");
+    why.type = "text";
+    why.placeholder = "why it is acceptable to go on";
+    why.required = true;
+    form.appendChild(who);
+    form.appendChild(why);
+    var row = el("div", "ws-actions");
+    var go = el("button", "btn tiny warn", "Sign and continue");
+    go.type = "submit";
+    row.appendChild(go);
+    var cancel = el("button", "btn tiny ghost", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", function () { renderPipeline(ws.pipeline); });
+    row.appendChild(cancel);
+    form.appendChild(row);
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var name = who.value.trim(), reason = why.value.trim();
+      if (!name || !reason) { return; }
+      wsSend(
+        "Override the blocked " + stage.id + " stage on " + project +
+        " and advance the build: pipeline_advance with override=true, who=\"" +
+        name + "\", why=\"" + reason + "\". Record it exactly as I said it, " +
+        "and tell me what you stepped over.",
+        "override");
+    });
+    return form;
+  }
+
+  function decisionBlock(stage, data) {
+    var project = (data && data.project) || ws.project || "this project";
+    var box = el("div", "ws-decision");
+    box.appendChild(el("p", "ws-decision-lead",
+      "This gate is red, so the build stops here. The ways on:"));
+    var actions = el("div", "ws-actions");
+    actions.appendChild(decisionButton(
+      "Explain",
+      "Ask what these numbers mean and what would fix them",
+      "The " + stage.id + " stage of " + project + " is failing its gate (" +
+      (stage.gate || []).join(", ") + "). Read the build plan, explain in " +
+      "plain words what the measurements mean, and give me the two or three " +
+      "concrete options with what each one costs.",
+      "primary"));
+    actions.appendChild(decisionButton(
+      "Try the fix",
+      "Ask for the fix ladder to be run and the gate re-measured",
+      "Fix the " + stage.id + " stage of " + project + ": work the fix ladder " +
+      "in order, re-measure the gate, and pipeline_record the real numbers " +
+      "whichever way they come out. Do not record a pass you did not measure."));
+    actions.appendChild(decisionButton(
+      "Re-measure",
+      "Ask for the gate to be measured again without changing anything",
+      "Re-measure the " + stage.id + " gate on " + project + " without " +
+      "changing anything, and pipeline_record what you actually get."));
+    var override = el("button", "btn tiny warn", "Override…");
+    override.type = "button";
+    override.title = "Go on past a red gate. It is recorded as overridden, "
+                   + "never as passed, and it needs a name and a reason.";
+    override.addEventListener("click", function () {
+      var open = box.querySelector(".ws-override");
+      if (open) { open.remove(); return; }
+      box.appendChild(overrideForm(stage, project));
+    });
+    actions.appendChild(override);
+    box.appendChild(actions);
+    return box;
+  }
+
+  // -- what is happening, in one line ------------------------------------
+  //
+  // "For activity see the current activity and have past hidden or
+  // expandable."  The summary line is the running turn's newest step, or the
+  // word idle; opening it is how the turns before it are reached.  There is
+  // no permanent list.
+
+  function liveJob() {
+    for (var i = state.order.length - 1; i >= 0; i--) {
+      var job = state.jobs[state.order[i]];
+      if (job && (job.state === "running" || job.state === "queued")) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  function newestStep(job) {
+    var steps = (job && job.activity) || [];
+    for (var i = steps.length - 1; i >= 0; i--) {
+      if (steps[i] && steps[i].label) { return steps[i].label; }
+    }
+    return "";
+  }
+
+  function historyRow(job) {
+    var row = el("div", "ws-past is-" + (job.state || "unknown"));
+    var head = el("div", "ws-past-head");
+    head.appendChild(el("span", "ws-past-state", job.state || "?"));
+    head.appendChild(el("span", "ws-past-when", stamp(job.created_at)));
+    if (typeof job.cost_usd === "number" && job.cost_usd > 0) {
+      head.appendChild(el("span", "ws-past-cost", "$" + job.cost_usd.toFixed(2)));
+    }
+    row.appendChild(head);
+    row.appendChild(el("div", null, String(job.message || "").slice(0, 160)));
+    var steps = (job.activity || []).slice(-4);
+    if (steps.length) {
+      var list = el("ul", "ws-paths");
+      steps.forEach(function (step) {
+        list.appendChild(el("li", null, step.label || step.kind || ""));
+      });
+      row.appendChild(list);
+    }
+    if (job.error) {
+      row.appendChild(el("div", "ws-past-error", String(job.error).slice(0, 240)));
+    }
+    return row;
+  }
+
+  function renderActivity() {
+    var line = $("ws-now");
+    if (!line) { return; }
+    var box = $("ws-now-box");
+    var job = liveJob();
+    if (job) {
+      var step = newestStep(job);
+      line.className = "ws-now-line is-live";
+      line.textContent = job.state === "queued"
+        ? "queued — it goes as soon as this turn ends"
+        : (step || "working…");
+      box.classList.add("is-live");
+      // A turn that is running is the one thing on this screen that can be
+      // stopped, so the button lives on the line rather than in the drawer.
+      if (!box.querySelector(".ws-stop")) {
+        var stop = el("button", "btn tiny ghost ws-stop", "Stop");
+        stop.type = "button";
+        stop.addEventListener("click", function (event) {
+          event.preventDefault();
+          stop.disabled = true;
+          api("/cancel/" + job.job_id, { method: "POST", body: {} })
+            .then(renderActivity);
+        });
+        box.querySelector("summary").appendChild(stop);
+      }
+    } else {
+      line.className = "ws-now-line";
+      line.textContent = "idle";
+      box.classList.remove("is-live");
+      var old = box.querySelector(".ws-stop");
+      if (old) { old.remove(); }
+    }
+
+    // The drawer is only redrawn while it is open: a list nobody is looking
+    // at does not need rebuilding once a second.
+    if (!box.open) { return; }
+    var host = $("ws-history");
+    host.textContent = "";
+    var jobs = state.order.map(function (id) { return state.jobs[id]; })
+      .filter(Boolean);
+    if (!jobs.length) {
+      host.appendChild(el("p", "muted small",
+        "Nothing has run yet. Ask for something below, or press a button "
+        + "above, and the steps appear here."));
+      return;
+    }
+    jobs.slice(-8).reverse().forEach(function (past) {
+      host.appendChild(historyRow(past));
+    });
+  }
+
+  // -- the drawers: renders, and the saved versions ----------------------
+
+  function deliverableCard(file) {
+    var card = el("figure", "ws-deliverable is-" + file.kind);
+    if (file.url && file.kind === "image") {
+      var img = el("img");
+      img.src = file.url;
+      img.alt = file.file;
+      img.loading = "lazy";
+      card.appendChild(img);
+    } else if (file.url && file.kind === "video") {
+      var video = document.createElement("video");
+      video.src = file.url;
+      video.controls = true;
+      video.loop = true;
+      video.muted = true;
+      video.preload = "metadata";
+      card.appendChild(video);
+    } else {
+      card.appendChild(el("div", "ws-deliverable-none", initial(file.file)));
+    }
+    var caption = el("figcaption");
+    caption.appendChild(el("span", "f", file.file));
+    caption.appendChild(el("span", "s", stamp(file.mtime)));
+    caption.title = file.path + "  ·  " + bytes(file.size);
+    card.appendChild(caption);
+    if (file.url) {
+      var open = el("a", "ws-deliverable-open", "Open");
+      open.href = file.url;
+      open.target = "_blank";
+      open.rel = "noopener noreferrer";
+      card.appendChild(open);
+    }
+    return card;
+  }
+
+  function renderDeliverables(data) {
+    var host = $("ws-deliverables");
+    var count = $("ws-renders-count");
+    host.textContent = "";
+    if (!data) { count.textContent = ""; return; }
+    var files = data.files || [];
+    count.textContent = files.length ? String(data.total) : "none";
+    if (!files.length) {
+      host.appendChild(el("p", "muted small", data.note ||
+        "Renders, turntables and mechanism demos land in this project's "
+        + "renders/ folder and show up here."));
+      return;
+    }
+    files.forEach(function (file) { host.appendChild(deliverableCard(file)); });
+    if (data.total > files.length) {
+      host.appendChild(el("p", "muted small",
+        "… and " + (data.total - files.length) + " more in " + data.dir));
+    }
+  }
+
+  function versionRow(chain, entry, project) {
+    var row = el("div", "ws-version" + (entry.current ? " is-current" : ""));
+
+    var picture = el("div", "ws-version-thumb");
+    if (entry.thumbnail_url) {
+      var img = el("img");
+      img.src = entry.thumbnail_url;
+      img.alt = entry.file;
+      img.loading = "lazy";
+      img.title = entry.thumbnail;
+      picture.appendChild(img);
+    } else {
+      picture.appendChild(el("span", "ws-version-number", "v" + entry.version));
+    }
+    row.appendChild(picture);
+
+    var body = el("div", "ws-version-body");
+    var head = el("div", "ws-version-head");
+    head.appendChild(el("span", "ws-version-tag", "v" + entry.version));
+    head.appendChild(el("span", "ws-version-file", entry.file));
+    if (entry.current) {
+      head.appendChild(el("span", "ws-version-current", "current"));
+    }
+    body.appendChild(head);
+    var facts = el("div", "ws-version-facts");
+    facts.appendChild(el("span", null, stamp(entry.mtime)));
+    facts.appendChild(el("span", null, bytes(entry.size)));
+    facts.title = entry.path;
+    body.appendChild(facts);
+
+    if (!entry.current) {
+      var restore = el("button", "btn tiny", "Restore as new version");
+      restore.type = "button";
+      restore.title = "Copy " + entry.file + " to the end of the chain as v"
+                    + (chain.latest + 1) + ". Nothing is overwritten.";
+      restore.addEventListener("click", function () {
+        var wanted = chain.latest + 1;
+        // A confirm step, even though this destroys nothing: it adds a file
+        // to the artist's project, and a button that writes into projects/ on
+        // one click is a button that gets pressed by accident.
+        if (!window.confirm(
+              "Copy " + entry.file + " to " + chain.stem + "-" + wanted +
+              ".blend?\n\nNothing is overwritten and nothing is deleted — " +
+              entry.file + " stays exactly where it is.")) {
+          return;
+        }
+        restore.disabled = true;
+        restore.textContent = "copying…";
+        api("/projects/" + encodeURIComponent(project) + "/versions/restore",
+            { body: { file: entry.file } }).then(function (res) {
+          if (!res.ok) {
+            restore.disabled = false;
+            restore.textContent = "Restore as new version";
+            banner("error", res.data.error ||
+                   ("The bridge answered " + res.status + "."));
+            return;
+          }
+          banner("info", res.data.note || ("Restored as " + res.data.file));
+          loadVersions();
+        });
+      });
+      body.appendChild(restore);
+    }
+    row.appendChild(body);
+    return row;
+  }
+
+  function renderVersions(data) {
+    var host = $("ws-versions");
+    var count = $("ws-saves-count");
+    host.textContent = "";
+    if (!data) { count.textContent = ""; return; }
+    var chains = data.chains || [];
+    count.textContent = data.count ? String(data.count) : "none";
+    if (!chains.length) {
+      host.appendChild(el("p", "muted small", data.note ||
+        "Numbered .blend saves in this project's models/ folder appear here, "
+        + "newest first. Restoring one copies it forward; nothing is "
+        + "overwritten."));
+      return;
+    }
+    var project = data.project || ws.project;
+    chains.forEach(function (chain) {
+      var group = el("div", "ws-chain");
+      group.appendChild(el("div", "ws-chain-head", chain.stem));
+      chain.versions.slice().reverse().forEach(function (entry) {
+        group.appendChild(versionRow(chain, entry, project));
+      });
+      if (chain.trimmed) {
+        group.appendChild(el("p", "muted small",
+          "… and " + chain.trimmed + " older saves in " + data.dir));
+      }
+      host.appendChild(group);
+    });
+  }
+
+  // -- the live model view -----------------------------------------------
+
+  //: Looked up through a function so a page served without glbview.js draws
+  //: an honest empty state instead of throwing init() away on a ReferenceError.
+  function forgeGLB() {
+    return (typeof window.ForgeGLB === "object") ? window.ForgeGLB : null;
+  }
+
+  function wsViewer() {
+    if (ws.viewer) { return ws.viewer; }
+    if (!forgeGLB()) { return null; }
+    try {
+      ws.viewer = forgeGLB().create($("ws-canvas"));
+    } catch (err) {
+      ws.viewer = { supported: false, error: String(err) };
+    }
+    return ws.viewer;
+  }
+
+  function viewerNote(text, cls) {
+    var node = $("ws-viewer-note");
+    node.className = "ws-viewer-note" + (cls ? " " + cls : "");
+    node.textContent = text;
+  }
+
+  function wsSnapshot() {
+    if (!ws.project) { return Promise.resolve(); }
+    var button = $("ws-snapshot");
+    var viewer = wsViewer();
+    if (!viewer || !viewer.supported) {
+      viewerNote((viewer && viewer.error) ||
+        "The model view needs WebGL, which this browser did not give us.", "bad");
+      return Promise.resolve();
+    }
+    button.disabled = true;
+    viewerNote("Asking Blender for the scene…");
+    return api("/projects/" + encodeURIComponent(ws.project) + "/snapshot",
+               { body: {} }).then(function (res) {
+      button.disabled = false;
+      if (!res.ok) {
+        viewerNote(res.data.error ||
+                   ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      ws.snapshot = res.data;
+      if (!res.data.url) {
+        viewerNote("Blender exported the scene but the bridge could not mint "
+                   + "a link for it.", "bad");
+        return;
+      }
+      viewerNote("Loading " + bytes(res.data.size) + "…");
+      return fetch(res.data.url).then(function (response) {
+        return response.arrayBuffer();
+      }).then(function (buffer) {
+        var info;
+        try {
+          info = viewer.show(buffer);
+        } catch (err) {
+          viewerNote("That snapshot could not be read: " + err, "bad");
+          return;
+        }
+        $("ws-viewer-empty").hidden = true;
+        var play = $("ws-play");
+        play.disabled = info.animations.length === 0;
+        play.textContent = "Play";
+        var bits = [info.triangles.toLocaleString() + " tris"];
+        if (info.skinned) { bits.push(info.skinned + " skinned"); }
+        if (info.animations.length) {
+          bits.push(info.animations.length + " clip" +
+                    (info.animations.length === 1 ? "" : "s"));
+        }
+        bits.push(stamp(res.data.mtime));
+        viewerNote(bits.join("  ·  "));
+      });
+    });
+  }
+
+  function wsTogglePlay() {
+    var viewer = ws.viewer;
+    if (!viewer || !viewer.supported) { return; }
+    var button = $("ws-play");
+    if (viewer.playing()) {
+      viewer.stop();
+      button.textContent = "Play";
+      return;
+    }
+    if (viewer.play(0)) { button.textContent = "Pause"; }
+  }
+
+  // -- chat, docked ------------------------------------------------------
+  //
+  // The same /ask the composer uses, through the same code path, so a
+  // sentence sent from a decision button is a turn like any other — it lands
+  // in the Studio thread, it is billed on the same session, and it shows up
+  // on the status line above without any second mechanism.
+
+  function wsSend(text, label) {
+    var message = String(text || "").trim();
+    if (!message) { return; }
+    $("message").value = message;
+    resize();
+    send();
+    var node = $("ws-dock-status");
+    node.textContent = label ? ("sent — " + label) : "sent";
+    $("ws-message").value = "";
+    renderActivity();
+  }
+
+  // -- loading -----------------------------------------------------------
+
+  function summarise() {
+    var node = $("ws-summary");
+    if (!ws.project) { node.textContent = "Pick a project to follow."; return; }
+    var plan = ws.pipeline;
+    if (!plan || !plan.has_plan) { node.textContent = "no build plan"; return; }
+    var bits = [];
+    if (plan.task) { bits.push(plan.task); }
+    bits.push(plan.done + " of " + plan.total);
+    if (plan.blocked) {
+      bits.push("blocked at " + plan.blocked);
+    } else if (plan.next) {
+      bits.push("next: " + plan.next);
+    } else {
+      bits.push("every stage green");
+    }
+    node.textContent = bits.join("  ·  ");
+  }
+
+  function loadPipeline() {
+    if (!ws.project) { return Promise.resolve(); }
+    renderPipeline(null);
+    return api("/projects/" + encodeURIComponent(ws.project) + "/pipeline")
+      .then(function (res) {
+        if (!res.ok) {
+          ws.pipeline = null;
+          wsEmpty($("ws-focus"), "Could not read the build plan",
+                  res.data.error || ("The bridge answered " + res.status + "."));
+          summarise();
+          return;
+        }
+        ws.pipeline = res.data;
+        // The focus follows the plan unless the artist has pinned a stage
+        // that is still on it — so a refresh after a gate turns red lands on
+        // the red gate, and a refresh while reading stage 3 stays on stage 3.
+        if (!focusedStage(res.data) || ws.focus === null) {
+          ws.focus = defaultFocus(res.data);
+        }
+        renderPipeline(res.data);
+        summarise();
+      });
+  }
+
+  function loadVersions() {
+    if (!ws.project) { return Promise.resolve(); }
+    renderVersions(null);
+    return api("/projects/" + encodeURIComponent(ws.project) + "/versions")
+      .then(function (res) {
+        if (!res.ok) {
+          $("ws-saves-count").textContent = "";
+          wsEmpty($("ws-versions"), "Could not read models/",
+                  res.data.error || ("The bridge answered " + res.status + "."));
+          return;
+        }
+        ws.versions = res.data;
+        renderVersions(res.data);
+      });
+  }
+
+  function loadDeliverables() {
+    if (!ws.project) { return Promise.resolve(); }
+    renderDeliverables(null);
+    return api("/projects/" + encodeURIComponent(ws.project) + "/deliverables")
+      .then(function (res) {
+        if (!res.ok) {
+          $("ws-renders-count").textContent = "";
+          wsEmpty($("ws-deliverables"), "Could not read renders/",
+                  res.data.error || ("The bridge answered " + res.status + "."));
+          return;
+        }
+        ws.deliverables = res.data;
+        renderDeliverables(res.data);
+      });
+  }
+
+  function selectWorkspaceProject(name) {
+    var changed = name !== ws.project;
+    ws.project = name || null;
+    if (changed) { ws.focus = null; }
+    try { if (name) { localStorage.setItem("forge.project", name); } }
+    catch (e) { /* private mode */ }
+    if (!name) {
+      ws.pipeline = null;
+      renderPipeline({ has_plan: false, note: "No project selected." });
+      renderVersions({ chains: [], count: 0, note: "No project selected." });
+      renderDeliverables({ files: [], total: 0, note: "No project selected." });
+      summarise();
+      return Promise.resolve();
+    }
+    summarise();
+    return Promise.all([loadPipeline(), loadVersions(), loadDeliverables()]);
+  }
+
+  function loadWorkspace(force) {
+    if (ws.loading) { return Promise.resolve(); }
+    ws.loading = true;
+    renderActivity();
+    // /library rather than /projects, and with the scene probe off: /projects
+    // lists the folders that hold a PartForge script, which leaves out every
+    // character and every floorplan — the projects this screen exists to
+    // follow. ?scene=0 makes it a folder read that answers with Blender shut.
+    return api("/library?scene=0").then(function (res) {
+      ws.loading = false;
+      var picker = $("ws-project");
+      var list = (res.ok && res.data && res.data.projects) || [];
+      ws.projects = list;
+      var previous = ws.project;
+      picker.textContent = "";
+      if (!list.length) {
+        var none = el("option", null, "no projects yet");
+        none.value = "";
+        picker.appendChild(none);
+        return selectWorkspaceProject(null);
+      }
+      list.forEach(function (project) {
+        var option = el("option", null, project.name);
+        option.value = project.name;
+        picker.appendChild(option);
+      });
+      var saved = null;
+      try { saved = localStorage.getItem("forge.project"); } catch (e) { saved = null; }
+      var names = list.map(function (project) { return project.name; });
+      var wanted = [previous, saved, names[0]].filter(function (name) {
+        return name && names.indexOf(name) >= 0;
+      })[0];
+      picker.value = wanted;
+      if (!force && previous === wanted && ws.pipeline) {
+        renderPipeline(ws.pipeline);
+        renderVersions(ws.versions);
+        renderDeliverables(ws.deliverables);
+        summarise();
+        return;
+      }
+      return selectWorkspaceProject(wanted);
+    });
+  }
+
+  function startWorkspacePolling() {
+    if (ws.timer) { return; }
+    // Slower than the Studio's own poll: this is one line of text, and the
+    // job snapshots it reads are refreshed by that poll anyway.
+    ws.timer = setInterval(renderActivity, 1000);
+  }
+
+  function stopWorkspacePolling() {
+    if (ws.timer) { clearInterval(ws.timer); ws.timer = null; }
+  }
+
   // ----------------------------------------------------------------- tabs --
   //
-  // Three, not four.  The Studio is the working session — conversation and
-  // part sheet on one screen — and the other two are the things that are
-  // genuinely separate errands: looking along the shelf, and replaying a
-  // saved sequence.
-  var TABS = ["studio", "library", "flows"];
+  // Four now.  The Studio is the working session — conversation and part
+  // sheet on one screen — the Workspace is the build being followed and
+  // driven without typing, and the other two are the genuinely separate
+  // errands: looking along the shelf, and replaying a saved sequence.
+  var TABS = ["studio", "workspace", "library", "flows"];
 
   //: What a stored or pasted tab name means now.  Somebody with "workbench"
   //: in their localStorage from yesterday, or a #chat bookmark, lands on the
@@ -2090,6 +2896,15 @@
     // a part made in the conversation a minute ago is exactly what somebody
     // opens this tab to look for, and it is one folder read.
     if (which === "library") { loadLibrary(); }
+    // The Workspace is refetched on every open for the same reason, and its
+    // activity poll runs only while it is the tab being looked at: a status
+    // board nobody can see is a timer nobody asked for.
+    if (which === "workspace") {
+      loadWorkspace();
+      startWorkspacePolling();
+    } else {
+      stopWorkspacePolling();
+    }
     if (which === "studio") {
       if (wb.projects === null && !wb.loading) { loadStudio(); }
       scrollDown();
@@ -2201,7 +3016,32 @@
 
     $("flows-refresh").addEventListener("click", loadFlows);
     $("tab-studio").addEventListener("click", function () { showTab("studio"); });
+    $("tab-workspace").addEventListener("click", function () { showTab("workspace"); });
     $("tab-library").addEventListener("click", function () { showTab("library"); });
+
+    // -- the Workspace's own controls ----------------------------------
+    $("ws-project").addEventListener("change", function (event) {
+      selectWorkspaceProject(event.target.value);
+    });
+    $("ws-refresh").addEventListener("click", function () { loadWorkspace(true); });
+    // One Refresh for the whole tab. The per-section buttons were three more
+    // things to look at for a folder read that takes milliseconds.
+    $("ws-now-box").addEventListener("toggle", renderActivity);
+    $("ws-snapshot").addEventListener("click", wsSnapshot);
+    $("ws-play").addEventListener("click", wsTogglePlay);
+    $("ws-view-reset").addEventListener("click", function () {
+      if (ws.viewer && ws.viewer.supported) { ws.viewer.recentre(); }
+    });
+    $("ws-ask").addEventListener("submit", function (event) {
+      event.preventDefault();
+      wsSend($("ws-message").value);
+    });
+    $("ws-message").addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        wsSend($("ws-message").value);
+      }
+    });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
     $("library-refresh").addEventListener("click", loadLibrary);
     // The models row rides the same fetch: one folder read draws the whole tab,

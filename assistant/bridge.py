@@ -127,6 +127,48 @@ showing all my actual 3d models")::
                                        already indexes: this route files the
                                        artist's own models, it is not a way to
                                        copy arbitrary paths into the repo
+Phase 18 — the workspace's routes (additive, and four of the five are pure
+reads of files that already exist).  The artist: "we should see status updates,
+deliverables, check progress, different versions, make decisions with UI rather
+than chatting ... right now we have two separate windows forge and blender and
+we can't really follow along."  Every one answers on ``/projects/<name>/...``
+and on ``/project/<name>/...``::
+
+``GET  /projects/<name>/versions``     the numbered ``.blend`` chain in
+                                       ``models/`` — ``werewolf-wip.blend`` is
+                                       version 1, ``werewolf-wip-10.blend`` is
+                                       version 10 and sorts AFTER version 9,
+                                       each with its size, its date and a
+                                       still out of ``renders/`` when one is
+                                       named after it
+``POST /projects/<name>/versions/restore``
+                                       ``{"file": "werewolf-wip-7.blend"}`` ->
+                                       a COPY at the end of the chain
+                                       (``werewolf-wip-11.blend``).  Nothing is
+                                       overwritten and nothing is deleted:
+                                       "restore" means "make this one the
+                                       newest", and the only way to do that
+                                       without losing work is a copy
+``GET  /projects/<name>/pipeline``     ``design/build-plan.json`` as a stage
+                                       board — the chain, each stage's verdict,
+                                       the gate's actual measurements and the
+                                       id of the first red one.  A READER, and
+                                       permanently: ``forge_mcp.pipeline`` owns
+                                       that file, it refuses a skip and it will
+                                       not take an override without a name and
+                                       a reason on it.  The board's buttons
+                                       send a sentence to ``/ask`` and the
+                                       assistant advances the plan through the
+                                       tool that knows those rules
+``GET  /projects/<name>/deliverables`` everything in ``renders/`` worth looking
+                                       at — stills and films together, newest
+                                       first, each as a ``/file`` token
+``POST /projects/<name>/snapshot``     the live Blender scene exported to one
+                                       ``.glb`` in the previews folder and
+                                       handed back as a token, so the page can
+                                       orbit what Blender is holding.  503 with
+                                       the usual sentence when Blender is down
+
 ``POST /models/open``                  what a click on the card means — the
                                        model, in Blender, whichever state the
                                        machine is in.  Blender running:
@@ -905,6 +947,119 @@ _SLUG_SEPARATORS = re.compile(r"[^a-z0-9]+")
 #: project.  Refused rather than slugged away, because a caller who wrote one
 #: meant it, and quietly writing somewhere else is the worst outcome here.
 _SLUG_TRAVERSAL_MARKERS = ("/", "\\", "..", ":", "\x00")
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the version browser ("within forge we should see versions")
+# ---------------------------------------------------------------------------
+#
+# Forge already saves every iteration of a model as its own numbered ``.blend``
+# in ``projects/<name>/models/`` — ``werewolf-wip.blend``,
+# ``werewolf-wip-2.blend`` … ``werewolf-wip-10.blend`` — precisely so any
+# earlier version can be reopened.  Until now that was a fact about the
+# filesystem and nothing else: the one place the artist looks (this page) had no
+# idea the chain existed, so "go back two versions" meant Explorer.
+#
+# Two routes, both additive and both model-free, exactly like the Library's:
+# one reads the chain, one copies a link of it to the end.
+
+#: What a version file is.  Only ``.blend``: the numbered chain is the *scene*
+#: history, and a ``.glb`` beside it is an export of one of them, not a version
+#: of its own.  (The Models row already lists those.)
+VERSION_EXTENSIONS = (".blend",)
+
+#: A trailing ``-N`` on a file stem, which is what makes ``werewolf-wip-7`` the
+#: seventh version of ``werewolf-wip``.  Greedy on the left so ``a-1-2`` is
+#: version 2 of ``a-1``; the digit run is capped because a name ending in a
+#: forty-digit number is not a version number, it is a hash.
+_VERSION_SUFFIX_RE = re.compile(r"^(?P<base>.+)-(?P<number>\d{1,6})$")
+
+#: The version a file with no suffix is.  ``werewolf-wip.blend`` came first and
+#: ``werewolf-wip-2.blend`` is the one after it; nothing on disk says "1".
+FIRST_VERSION = 1
+
+#: How many versions one chain lists.  Same reason as :data:`MAX_MODELS_LISTED`
+#: — every listed version can mint a ``/file`` token for its picture, and a
+#: folder with three hundred saves in it must not evict the render the artist is
+#: looking at.
+MAX_VERSIONS_LISTED = 120
+
+#: Where a version's picture comes from: the project's renders folder, the same
+#: one :func:`project_demos` reads its films out of.  Stills there are named
+#: after the save they are of, which is the whole matching rule below.
+VERSION_THUMB_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
+
+#: How far :func:`next_version_name` will count before giving up.  It only ever
+#: counts past the end of the chain when the obvious name is taken, which means
+#: something else is writing into the folder at the same time.
+MAX_VERSION_SEARCH = 1000
+
+#: Why a restore was refused.  One sentence with the thing to do in it, the same
+#: shape as every other refusal on this bridge.
+VERSION_UNKNOWN_HINT = (
+    "%s is not one of this project's saved versions. Pass the file name exactly "
+    "as GET /projects/<name>/versions listed it.")
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the pipeline board's constants
+# ---------------------------------------------------------------------------
+#
+# Every name here is READ OFF ``mcp/forge_mcp/pipeline.py``, which owns the
+# file.  They are duplicated rather than imported for the same reason
+# :func:`blender_command` duplicates ``blender_client``: this process is
+# stdlib-only and cannot import the MCP package.  If ``pipeline.py``'s statuses
+# ever change, these five lines are what has to change with them — which is why
+# the board falls back to ``pending`` on a status it does not know instead of
+# refusing to draw.
+
+#: Both spellings of the project route prefix.  The workspace's five routes
+#: were specified as ``/project/<name>/...`` while every route beside them is
+#: ``/projects/<name>/...``; answering on both costs one loop in the router and
+#: saves a 404 nobody could act on.
+PROJECT_PREFIXES = ("/projects/", "/project/")
+
+#: ``forge_mcp.pipeline.PLAN_FILENAME``, under ``design/``.
+PLAN_FILENAME = "build-plan.json"
+#: ``forge_mcp.pipeline.STATUSES``.
+PLAN_STATUSES = ("pending", "in_progress", "passed", "failed", "overridden")
+#: ``forge_mcp.pipeline.GREEN`` — green enough for the next stage to start.
+PLAN_GREEN = ("passed", "overridden")
+#: ``forge_mcp.pipeline.MARKERS``, so the board and the assistant's own prose
+#: spell a stage the same way.
+PLAN_MARKERS = {"pending": "[ ]", "in_progress": "[>]", "passed": "[x]",
+                "failed": "[!]", "overridden": "[~]"}
+#: How many measurements one stage card prints, how long one of them may be,
+#: and how much of the plan's prose the panel carries.  A card is a card.
+MAX_PLAN_NUMBERS = 24
+MAX_PLAN_NUMBER_CHARS = 200
+MAX_PLAN_ARTIFACTS = 12
+MAX_PLAN_HISTORY = 6
+MAX_PLAN_COMPONENTS = 40
+MAX_PLAN_TEXT = 600
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the deliverables gallery's constants
+# ---------------------------------------------------------------------------
+
+#: What the gallery shows out of ``renders/``: the stills AND the films, because
+#: to the artist they are one thing — what this project has produced that can be
+#: looked at.  (The Library's demos row is films only, on purpose: that row is
+#: about mechanisms.)
+DELIVERABLE_EXTENSIONS = VERSION_THUMB_EXTENSIONS + DEMO_EXTENSIONS
+#: How many the gallery lists.  Same cap and the same reason as the models row:
+#: every listed file mints a ``/file`` token.
+MAX_DELIVERABLES_LISTED = 60
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the live model view's constants
+# ---------------------------------------------------------------------------
+
+#: The line :data:`SNAPSHOT_SCRIPT` prints its report on.  A marker rather than
+#: "the last line", because the artist's scene may print anything it likes.
+SNAPSHOT_MARKER = "FORGE_SNAPSHOT "
+#: How long a snapshot may take.  A glTF export of a rigged character with its
+#: actions blocks Blender's main thread for a while, and the alternative to
+#: waiting is a viewer that says "Blender did not answer" on every real model.
+SNAPSHOT_TIMEOUT = 180.0
 
 #: Why a thumbnail cannot be taken.  A thumbnail is a photograph of the
 #: artist's work as it stands — it is deliberately NOT allowed to build the
@@ -3927,7 +4082,16 @@ def project_dir(name):
     must fail on the *shape* of the name rather than on path arithmetic.
     """
     text = str(name or "").strip()
-    if not text or text in (".", "..") or not _PROJECT_NAME_RE.match(text):
+    if not text or not _PROJECT_NAME_RE.match(text):
+        return None
+    # Not just ``.`` and ``..``: Windows strips trailing dots and spaces off a
+    # path component when it opens one, so ``projects/.../models`` is opened as
+    # ``projects/models`` while every check above still sees a plain name.  The
+    # containment check below does not catch it either — ``projects/...`` really
+    # is directly under ``projects/``.  Anything that is only dots, or that ends
+    # in one, is refused instead, which costs no real project anything: a folder
+    # cannot be called that on the platform this runs on.
+    if not text.strip(".") or text != text.rstrip(". "):
         return None
     root = projects_dir()
     path = os.path.abspath(os.path.join(root, text))
@@ -4939,6 +5103,647 @@ def free_model_path(folder, filename):
     return candidate, os.path.basename(candidate) != filename
 
 
+# ---------------------------------------------------------------------------
+# Phase 18 — the version browser: reading the chain
+# ---------------------------------------------------------------------------
+
+def split_version(name):
+    """``("werewolf-wip", 7)`` for ``werewolf-wip-7.blend``.
+
+    A file with no trailing ``-N`` is version :data:`FIRST_VERSION`, because
+    that one was saved before anybody thought to number anything.  The split is
+    on the STEM, so an extension can never be mistaken for part of a number,
+    and the base is greedy so ``a-1-2`` is version 2 of ``a-1`` rather than
+    version 12 of ``a``.
+    """
+    stem = os.path.splitext(os.path.basename(str(name or "")))[0]
+    match = _VERSION_SUFFIX_RE.match(stem)
+    if not match:
+        return stem, FIRST_VERSION
+    base = match.group("base")
+    if not base:
+        return stem, FIRST_VERSION
+    return base, int(match.group("number"))
+
+
+def version_renders(folder):
+    """Every still in ``projects/<name>/renders/``, as candidate pictures.
+
+    The films in the same folder are :func:`project_demos`' job; a version's
+    picture is a still.  Nothing here is minted or opened — that happens only
+    for the versions that survive the listing cap.
+    """
+    directory = os.path.join(folder, DEMOS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    out = []
+    for name in sorted(names):
+        stem, extension = os.path.splitext(name)
+        if extension.lower() not in VERSION_THUMB_EXTENSIONS:
+            continue
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        out.append({"file": name, "stem": stem, "extension": extension.lower(),
+                    "path": path, "mtime": round(info.st_mtime, 3)})
+    return out
+
+
+#: What may follow a version's stem in the name of a picture OF that version:
+#: a separator and then something that is not a digit.  The rule exists for one
+#: case that a plain "contains" test gets wrong every time — ``werewolf-wip`` is
+#: version 1, and ``werewolf-wip-7.png`` starts with exactly those characters,
+#: so without the boundary version 7's picture hangs on version 1's row.
+_VERSION_DECORATION_RE = re.compile(r"^[-_. ]\D")
+
+
+def render_matches_version(render_stem, version_stem):
+    """Is this still a picture of that exact version, and not of its neighbour?"""
+    render_stem = str(render_stem or "")
+    version_stem = str(version_stem or "")
+    if not render_stem or not version_stem:
+        return False
+    if render_stem.lower() == version_stem.lower():
+        return True
+    # Same base and same number however the render spelled it, so a still
+    # called ``werewolf-wip-07.png`` is version 7's rather than a version of
+    # its own.
+    render_base, render_number = split_version(render_stem)
+    version_base, version_number = split_version(version_stem)
+    if (render_base.lower() == version_base.lower()
+            and render_number == version_number):
+        return True
+    if not render_stem.lower().startswith(version_stem.lower()):
+        return False
+    return bool(_VERSION_DECORATION_RE.match(render_stem[len(version_stem):]))
+
+
+def version_thumbnail(renders, version_stem):
+    """The best still for one version, or ``None``.
+
+    ``.png`` first, because that is what every renderer in Forge writes, and
+    then the newest — a version rendered twice shows the take that was made
+    last, which is the rule the demos row already plays by.
+    """
+    matches = [item for item in renders
+               if render_matches_version(item["stem"], version_stem)]
+    if not matches:
+        return None
+    matches.sort(key=lambda item: (0 if item["extension"] == ".png" else 1,
+                                   -item["mtime"], item["file"]))
+    return matches[0]
+
+
+def project_versions(folder, limit=MAX_VERSIONS_LISTED):
+    """The numbered ``.blend`` saves in ``projects/<name>/models/``, chained.
+
+    Grouped by the stem they share, sorted by version NUMBER rather than by
+    name — ``wip-10`` comes after ``wip-9``, which string sorting gets exactly
+    backwards and which is the whole reason this is a parser and not a
+    ``sorted()`` call.  The newest link of each chain is flagged ``current``.
+    """
+    directory = os.path.join(folder, MODELS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return {"dir": directory, "chains": [], "count": 0, "chain_count": 0,
+                "note": "There is no models folder at %s yet. Saves made by "
+                        "the assistant land there and appear here." % directory}
+    renders = version_renders(folder)
+    chains = {}
+    order = []
+    total = 0
+    for name in sorted(names):
+        if os.path.splitext(name)[1].lower() not in VERSION_EXTENSIONS:
+            continue
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        base, number = split_version(name)
+        key = base.lower()
+        if key not in chains:
+            chains[key] = {"stem": base, "versions": []}
+            order.append(key)
+        total += 1
+        chains[key]["versions"].append({
+            "file": name,
+            "path": path,
+            "version": number,
+            "size": int(info.st_size),
+            "mtime": round(info.st_mtime, 3),
+            "modified": _iso_utc(info.st_mtime),
+            "current": False,
+            "thumbnail": None,
+            "thumbnail_path": None,
+            "thumbnail_url": None,
+        })
+
+    out = []
+    for key in order:
+        chain = chains[key]
+        chain["versions"].sort(key=lambda item: (item["version"], item["file"]))
+        kept = chain["versions"]
+        trimmed = 0
+        if len(kept) > limit:
+            # The newest end is the end anybody is looking at.
+            trimmed = len(kept) - limit
+            kept = kept[-limit:]
+        for entry in kept:
+            picture = version_thumbnail(renders,
+                                        os.path.splitext(entry["file"])[0])
+            if picture is None:
+                continue
+            token = FILES.mint(picture["path"])
+            entry["thumbnail"] = picture["file"]
+            entry["thumbnail_path"] = picture["path"]
+            entry["thumbnail_url"] = ("/file/%s" % token) if token else None
+        if kept:
+            kept[-1]["current"] = True
+        newest = kept[-1] if kept else None
+        out.append({
+            "stem": chain["stem"],
+            "versions": kept,
+            "count": len(chain["versions"]),
+            "trimmed": trimmed,
+            "latest": newest["version"] if newest else 0,
+            "latest_file": newest["file"] if newest else "",
+            "mtime": max([item["mtime"] for item in kept] or [0.0]),
+        })
+    # The chain being worked on right now reads first.
+    out.sort(key=lambda chain: (-chain["mtime"], chain["stem"].lower()))
+    return {"dir": directory, "chains": out, "count": total,
+            "chain_count": len(out)}
+
+
+def next_version_name(directory, base, highest):
+    """``("werewolf-wip-11.blend", 11)`` — the first free name past the chain.
+
+    Never a name that already exists: a restore is a copy FORWARD, and a copy
+    that landed on top of a save the artist made last week would be the one
+    unrecoverable thing this route could do.  Same rule and the same loop as
+    :func:`free_model_path`.
+    """
+    number = max(int(highest or FIRST_VERSION), FIRST_VERSION) + 1
+    ceiling = number + MAX_VERSION_SEARCH
+    while number < ceiling:
+        name = "%s-%d%s" % (base, number, VERSION_EXTENSIONS[0])
+        if not os.path.exists(os.path.join(directory, name)):
+            return name, number
+        number += 1
+    return None, 0
+
+
+def resolve_version_file(folder, filename):
+    """The absolute path of one version file in this project, or ``None``.
+
+    The same three-gate shape as :func:`webui_asset` and :func:`project_dir`,
+    because this name arrives in a request body from a browser: one plain
+    segment out of the asset alphabet (so ``..\\..\\system_prompt.md`` fails on
+    the SHAPE of the name before any path arithmetic), an extension this route
+    has a use for, and a resolved path whose parent is still this project's own
+    models folder.
+    """
+    text = str(filename or "").strip()
+    if not text or text.startswith(".") or not _ASSET_NAME_RE.match(text):
+        return None
+    if os.path.splitext(text)[1].lower() not in VERSION_EXTENSIONS:
+        return None
+    directory = os.path.abspath(os.path.join(folder, MODELS_DIRNAME))
+    path = os.path.abspath(os.path.join(directory, text))
+    if os.path.dirname(path) != directory or not os.path.isfile(path):
+        return None
+    return path
+
+
+def highest_version(directory, base):
+    """The largest version number of ``base`` on disk, or 0."""
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return 0
+    highest = 0
+    for name in names:
+        if os.path.splitext(name)[1].lower() not in VERSION_EXTENSIONS:
+            continue
+        other_base, other_number = split_version(name)
+        if other_base.lower() == str(base or "").lower():
+            highest = max(highest, other_number)
+    return highest
+
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the pipeline board: build-plan.json, read and never written
+# ---------------------------------------------------------------------------
+#
+# The artist: "we should see status updates ... check progress ... make
+# decisions with UI rather than chatting."  The staged build already keeps all
+# of that in ``projects/<name>/design/build-plan.json`` — the MCP server's
+# ``forge_mcp.pipeline`` writes it, one stage at a time, with the gate's actual
+# measurements on every entry.  Until now the only way to see it was to ask.
+#
+# This is a READER, deliberately and permanently.  ``pipeline.py`` owns that
+# file: it validates every stage, it refuses a skip, and it will not let an
+# override past without a name and a reason on it.  A second writer on a
+# different port would be a way around all three, so the board's buttons send a
+# SENTENCE to /ask and the assistant advances the plan through the tool that
+# knows the rules.  The bridge never edits the plan.
+
+def build_plan_path(folder):
+    """``projects/<name>/design/build-plan.json`` for a resolved project folder."""
+    return os.path.join(folder, DESIGN_DIRNAME, PLAN_FILENAME)
+
+
+def read_build_plan(folder):
+    """The plan as a dict, or ``None`` when there is not one (or it is broken).
+
+    A plan that will not parse is not an error for the same reason a spec that
+    will not parse is not: the artist still has a project, and a page that
+    refuses to draw because of a trailing comma is a worse outcome than a panel
+    that says it could not read the file.
+    """
+    try:
+        with open(build_plan_path(folder), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _plan_numbers(value):
+    """A stage's ``numbers`` block as ``[{name, value, text}]``, in file order.
+
+    Kept as the gate wrote them.  ``pipeline.coerce_numbers`` allows numbers,
+    booleans and strings ("attention overall, 376 holes / 20064 region verts"),
+    so the board prints the value it was given rather than a number it made up.
+    """
+    if not isinstance(value, dict):
+        return []
+    out = []
+    for name in list(value.keys())[:MAX_PLAN_NUMBERS]:
+        measured = value[name]
+        if isinstance(measured, bool):
+            text = "yes" if measured else "no"
+        elif isinstance(measured, (int, float)):
+            text = ("%g" % measured)
+        else:
+            text = str(measured)
+        out.append({"name": str(name), "value": measured,
+                    "text": _clip(text, MAX_PLAN_NUMBER_CHARS)})
+    return out
+
+
+def _plan_history(value):
+    """The last few entries of a stage's history, newest last (as written)."""
+    if not isinstance(value, list):
+        return []
+    out = []
+    for item in value[-MAX_PLAN_HISTORY:]:
+        if not isinstance(item, dict):
+            continue
+        entry = {"date": str(item.get("date") or ""),
+                 "action": str(item.get("action") or ""),
+                 "from": str(item.get("from") or ""),
+                 "to": str(item.get("to") or "")}
+        override = item.get("override")
+        if isinstance(override, dict):
+            entry["override"] = {"who": str(override.get("who") or ""),
+                                 "why": str(override.get("why") or "")}
+        if str(item.get("action") or "") == "overridden":
+            entry["override"] = {"who": str(item.get("who") or ""),
+                                 "why": str(item.get("why") or "")}
+        out.append(entry)
+    return out
+
+
+def pipeline_board(folder, name=""):
+    """``build-plan.json`` as the stage board draws it.
+
+    Every field here comes off the file.  Nothing is inferred, nothing is
+    filled in and a plan that is missing is *said* to be missing, because a
+    board that invented a green stage would be worse than no board: the whole
+    point of the gates is that they are measured.
+    """
+    path = build_plan_path(folder)
+    plan = read_build_plan(folder)
+    if plan is None:
+        return {
+            "project": name or os.path.basename(folder),
+            "path": path,
+            "has_plan": False,
+            "exists": os.path.isfile(path),
+            "stages": [],
+            "components": [],
+            "counts": {},
+            "note": ("%s could not be read as a build plan." % path)
+                    if os.path.isfile(path) else
+                    ("There is no build plan for this project yet. Ask the "
+                     "assistant to start one and the stages appear here."),
+        }
+
+    stages = []
+    counts = dict((status, 0) for status in PLAN_STATUSES)
+    raw_stages = plan.get("stages")
+    raw_stages = raw_stages if isinstance(raw_stages, list) else []
+    for index, item in enumerate(raw_stages):
+        if not isinstance(item, dict):
+            continue
+        status = str(item.get("status") or "")
+        if status not in PLAN_STATUSES:
+            status = "pending"
+        counts[status] = counts.get(status, 0) + 1
+        artifacts = item.get("artifacts")
+        artifacts = [str(one) for one in artifacts] if isinstance(artifacts, list) else []
+        gate = item.get("gate")
+        gate = [str(one) for one in gate] if isinstance(gate, list) else []
+        tools = item.get("tools")
+        tools = [str(one) for one in tools] if isinstance(tools, list) else []
+        stages.append({
+            "index": index,
+            "id": str(item.get("id") or ""),
+            "title": str(item.get("title") or ""),
+            "status": status,
+            "marker": PLAN_MARKERS.get(status, "[ ]"),
+            "green": status in PLAN_GREEN,
+            "red": status == "failed",
+            "gate": gate,
+            "does": str(item.get("does") or ""),
+            "tools": tools,
+            "artifacts": artifacts[:MAX_PLAN_ARTIFACTS],
+            "artifact_count": len(artifacts),
+            "numbers": _plan_numbers(item.get("numbers")),
+            "history": _plan_history(item.get("history")),
+        })
+
+    # The same two answers ``pipeline.blocked`` and ``pipeline.next_stage``
+    # give, computed the same way, so this page and the assistant never
+    # disagree about where the build is.
+    blocked = None
+    for stage in stages:
+        if stage["red"]:
+            blocked = stage
+            break
+    following = None
+    for stage in stages:
+        if not stage["green"]:
+            following = stage
+            break
+
+    components = []
+    raw_components = plan.get("components")
+    if isinstance(raw_components, list):
+        for item in raw_components[:MAX_PLAN_COMPONENTS]:
+            if not isinstance(item, dict):
+                continue
+            components.append({
+                "id": str(item.get("id") or ""),
+                "label": str(item.get("label") or item.get("id") or ""),
+                "status": str(item.get("status") or ""),
+                "description": _clip(str(item.get("description") or ""),
+                                     MAX_PLAN_TEXT),
+            })
+
+    return {
+        "project": name or str(plan.get("project") or os.path.basename(folder)),
+        "path": path,
+        "has_plan": True,
+        "exists": True,
+        "version": plan.get("version"),
+        "task": str(plan.get("task") or ""),
+        "notes": _clip(str(plan.get("notes") or ""), MAX_PLAN_TEXT),
+        "stages": stages,
+        "counts": counts,
+        "total": len(stages),
+        "done": counts.get("passed", 0) + counts.get("overridden", 0),
+        "blocked": blocked["id"] if blocked else None,
+        "blocked_stage": blocked,
+        "next": following["id"] if following else None,
+        "next_stage": following,
+        "components": components,
+        "component_count": len(raw_components) if isinstance(raw_components, list) else 0,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the deliverables gallery
+# ---------------------------------------------------------------------------
+
+def project_deliverables(folder, limit=MAX_DELIVERABLES_LISTED):
+    """Everything in ``projects/<name>/renders/`` worth looking at, newest first.
+
+    The stills and the films together, because to the artist they are one
+    thing: the output of this project that can be LOOKED at.  Tokens, for the
+    same reason :func:`project_demos` mints them — the browser is on this
+    machine but it still cannot open a path, and a gallery of filenames is the
+    state this panel exists to leave behind.
+    """
+    directory = os.path.join(folder, DEMOS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return {"dir": directory, "files": [], "count": 0, "total": 0,
+                "note": "There is no renders folder for this project yet. "
+                        "Renders, turntables and mechanism demos land there."}
+    found = []
+    for name in sorted(names):
+        extension = os.path.splitext(name)[1].lower()
+        if extension not in DELIVERABLE_EXTENSIONS:
+            continue
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        found.append((path, name, extension, info))
+    found.sort(key=lambda item: item[3].st_mtime, reverse=True)
+
+    out = []
+    for path, name, extension, info in found[:limit]:
+        token = FILES.mint(path)
+        out.append({
+            "file": name,
+            "path": path,
+            "kind": "video" if extension in DISPLAY_VIDEO_EXTENSIONS else "image",
+            "extension": extension,
+            "size": int(info.st_size),
+            "mtime": round(info.st_mtime, 3),
+            "modified": _iso_utc(info.st_mtime),
+            "token": token,
+            "url": ("/file/%s" % token) if token else None,
+        })
+    return {"dir": directory, "files": out, "count": len(out),
+            "total": len(found)}
+
+
+# ---------------------------------------------------------------------------
+# Phase 18 — the live model view: one .glb out of the running Blender
+# ---------------------------------------------------------------------------
+#
+# "It's almost like we should have a simplified blender window open within
+# forge."  This is that, in the only shape a browser can have it: the scene as
+# it stands, exported to a ``.glb`` in the previews folder, served through the
+# same ``/file/<token>`` gate as every other picture, and drawn by a viewer
+# vendored into ``webui/`` (no CDN — this page works with the machine offline).
+#
+# The export runs through ``execute_python`` because the add-on has no generic
+# glTF command: ``rigforge_export_godot`` wants an armature and bakes a whole
+# LOD chain, which is not what "show me what is in the scene" means.  The code
+# below is a CONSTANT in this file with exactly one value substituted into it —
+# a path this bridge chose, JSON-encoded — so nothing a client sends ever
+# reaches Blender as code.
+
+#: What the snapshot runs in Blender.  Selection and the active object are put
+#: back in a ``finally``: looking at the scene must never move the artist's own
+#: selection out from under them.  The last line of stdout is the report.
+SNAPSHOT_SCRIPT = '''
+import bpy, json, os
+target = %s
+only = %s
+def _report(payload):
+    print("FORGE_SNAPSHOT " + json.dumps(payload))
+view = bpy.context.view_layer
+before = [o for o in bpy.data.objects if o.select_get()]
+active = view.objects.active
+kinds = {"MESH", "ARMATURE", "CURVE", "SURFACE", "META", "FONT"}
+wanted = []
+for obj in bpy.context.scene.objects:
+    if obj.type not in kinds:
+        continue
+    if obj.hide_render or not obj.visible_get():
+        continue
+    if only and obj.name != only:
+        continue
+    wanted.append(obj)
+if only and not wanted:
+    _report({"ok": False, "error": "No visible object called %%r is in the scene." %% only})
+elif not wanted:
+    _report({"ok": False, "error": "The Blender scene has nothing visible to export."})
+else:
+    animations = sorted({a.name for a in bpy.data.actions})
+    try:
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in wanted:
+            obj.select_set(True)
+        view.objects.active = wanted[0]
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        bpy.ops.export_scene.gltf(
+            filepath=target, export_format="GLB", use_selection=True,
+            export_apply=True, export_animations=True, export_yup=True,
+            export_cameras=False, export_lights=False)
+        _report({"ok": True, "path": target,
+                 "objects": [o.name for o in wanted],
+                 "meshes": [o.name for o in wanted if o.type == "MESH"],
+                 "armatures": [o.name for o in wanted if o.type == "ARMATURE"],
+                 "animations": animations})
+    except Exception as exc:
+        _report({"ok": False, "error": "%%s: %%s" %% (type(exc).__name__, exc)})
+    finally:
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in before:
+            try:
+                obj.select_set(True)
+            except Exception:
+                pass
+        view.objects.active = active
+'''
+
+
+def snapshot_report(output):
+    """The report line out of ``execute_python``'s captured stdout, or ``None``.
+
+    Looked for by marker rather than by position: the artist's own scene can
+    print anything it likes during an export, and the last thing printed is not
+    reliably ours.
+    """
+    for line in reversed(str(output or "").splitlines()):
+        line = line.strip()
+        if not line.startswith(SNAPSHOT_MARKER):
+            continue
+        try:
+            payload = json.loads(line[len(SNAPSHOT_MARKER):].strip())
+        except ValueError:
+            return None
+        return payload if isinstance(payload, dict) else None
+    return None
+
+
+def new_snapshot_path(name):
+    """Where one project's live snapshot is written.
+
+    One file per project, overwritten, in the previews folder this bridge
+    already owns and already prunes — a snapshot is a picture of *now*, and a
+    folder of every "now" there has ever been is a leak, not a history.  The
+    chain in ``models/`` is the history, and it has its own panel.
+    """
+    directory = previews_dir()
+    try:
+        os.makedirs(directory, exist_ok=True)
+    except OSError:
+        return None
+    root = os.path.abspath(directory)
+    path = os.path.abspath(os.path.join(root, "snapshot-%s.glb" % name))
+    if os.path.dirname(path) != root:
+        return None
+    return path
+
+
+def blender_snapshot(name, obj=""):
+    """``(payload, status)`` — export the live scene to a ``.glb`` and mint it.
+
+    Raises :class:`BlenderDown` / :class:`BlenderRefused` like every other
+    passthrough on this bridge, so the one sentence the artist reads when
+    Blender is closed is the same sentence everywhere.
+    """
+    target = new_snapshot_path(name)
+    if target is None:
+        return {"error": "The previews folder (%s) could not be made, so there "
+                         "is nowhere to put the snapshot." % previews_dir()}, 500
+    code = SNAPSHOT_SCRIPT % (json.dumps(target), json.dumps(str(obj or "")))
+    result = blender_command("execute_python", {"code": code},
+                             timeout=SNAPSHOT_TIMEOUT)
+    report = snapshot_report(result.get("output"))
+    if report is None:
+        return {"error": "Blender ran the export but said nothing this bridge "
+                         "could read back. Check Blender's system console.",
+                "output": _tail(str(result.get("output") or ""), 600)}, 502
+    if not report.get("ok"):
+        return {"error": str(report.get("error")
+                             or "The snapshot could not be exported."),
+                "blender": True}, 409
+    try:
+        info = os.stat(target)
+    except OSError:
+        return {"error": "Blender reported the snapshot written, but %s is not "
+                         "there." % target}, 502
+    token = FILES.mint(target)
+    return {
+        "project": name,
+        "path": target,
+        "size": int(info.st_size),
+        "mtime": round(info.st_mtime, 3),
+        "modified": _iso_utc(info.st_mtime),
+        "token": token,
+        "url": ("/file/%s" % token) if token else None,
+        "objects": [str(one) for one in (report.get("objects") or [])],
+        "meshes": [str(one) for one in (report.get("meshes") or [])],
+        "armatures": [str(one) for one in (report.get("armatures") or [])],
+        "animations": [str(one) for one in (report.get("animations") or [])],
+    }, 200
+
+
 def scan_library(scene=True):
     """Every project as a card, plus what is in the scene right now."""
     root = projects_dir()
@@ -5346,11 +6151,38 @@ class Handler(BaseHTTPRequestHandler):
 
         # -- the library (Phase 13) --------------------------------------
         if path == "/library":
-            self._send(200, scan_library())
+            # ``?scene=0`` skips the Blender probe, which makes this a pure
+            # folder read that answers instantly with everything on the machine
+            # stopped.  The Workspace's picker asks that way: it wants the list
+            # of project FOLDERS — which is this route and not ``/projects``,
+            # because a character or a floorplan has no part script and would
+            # otherwise be missing from the one screen built to follow it.
+            # The same query-string shape as ``/projects/<name>/schema?refresh=1``.
+            self._send(200, scan_library(scene="scene=0" not in self.path))
             return
         if path.startswith("/projects/") and path.endswith("/thumbnail"):
             self._get_thumbnail(path[len("/projects/"):-len("/thumbnail")])
             return
+
+        # -- the workspace (Phase 18) ------------------------------------
+        #
+        # Both spellings of the prefix, because the workspace's routes were
+        # specified as ``/project/<name>/...`` and every route beside them is
+        # ``/projects/<name>/...``.  One line each rather than a redirect: a
+        # 404 on a route that exists under the other spelling is a bug report
+        # nobody can act on.
+        for prefix in PROJECT_PREFIXES:
+            if not path.startswith(prefix):
+                continue
+            if path.endswith("/versions"):
+                self._versions(path[len(prefix):-len("/versions")])
+                return
+            if path.endswith("/pipeline"):
+                self._pipeline(path[len(prefix):-len("/pipeline")])
+                return
+            if path.endswith("/deliverables"):
+                self._deliverables(path[len(prefix):-len("/deliverables")])
+                return
         self._send(404, {"error": "Unknown path %s" % path})
 
     def _index(self):
@@ -5436,6 +6268,18 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/projects/") and path.endswith("/save"):
             self._save_project(path[len("/projects/"):-len("/save")])
             return
+
+        # -- the workspace (Phase 18) ------------------------------------
+        for prefix in PROJECT_PREFIXES:
+            if not path.startswith(prefix):
+                continue
+            if path.endswith("/versions/restore"):
+                self._restore_version(
+                    path[len(prefix):-len("/versions/restore")])
+                return
+            if path.endswith("/snapshot"):
+                self._snapshot(path[len(prefix):-len("/snapshot")])
+                return
         self._send(404, {"error": "Unknown path %s" % path})
 
     # -- handlers --------------------------------------------------------
@@ -6249,6 +7093,139 @@ class Handler(BaseHTTPRequestHandler):
             "note": "Copied into %s. The original is still in %s."
                     % (folder, os.path.dirname(resolved)),
         })
+
+    # -- the workspace (Phase 18) ----------------------------------------
+    #
+    # Five routes, all additive, and four of the five are pure reads of files
+    # that already exist.  The one that is not — the snapshot — writes a .glb
+    # into the previews folder this bridge already owns and changes nothing in
+    # the artist's scene.  None of the five goes through the model.
+
+    def _project_folder(self, name, send=True):
+        """``project_dir`` with this bridge's own 404 on it, or ``None``."""
+        folder = project_dir(name)
+        if folder is None and send:
+            self._send(404, {
+                "error": "There is no project called %r under %s."
+                         % (str(name)[:60], projects_dir()),
+                "project": str(name)[:60]})
+        return folder
+
+    def _versions(self, name):
+        """The numbered ``.blend`` chain for one project."""
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        payload = project_versions(folder)
+        payload["project"] = os.path.basename(folder)
+        self._send(200, payload)
+
+    def _restore_version(self, name):
+        """Copy one saved version forward to the end of its chain.
+
+        Non-destructive by construction, which is the whole design: nothing is
+        overwritten, nothing is deleted and the version that was restored is
+        still exactly where it was.  "Restore" here means "make this one the
+        newest", and the way to do that without losing anything is a copy.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        raw = payload.get("file")
+        source = resolve_version_file(folder, raw)
+        if source is None:
+            # Deliberately one answer for "not a name", "wrong folder" and "not
+            # there": a client that can tell those apart can use this route to
+            # ask questions about the filesystem.
+            self._send(400, {
+                "error": VERSION_UNKNOWN_HINT % (str(raw or "")[:80] or "That"),
+                "project": os.path.basename(folder),
+                "file": str(raw or "")[:80]})
+            return
+        directory = os.path.dirname(source)
+        base, number = split_version(os.path.basename(source))
+        target_name, target_number = next_version_name(
+            directory, base, max(number, highest_version(directory, base)))
+        if not target_name:
+            self._send(409, {
+                "error": "Every name from %s-%d onwards is taken, so there is "
+                         "nowhere to copy this version to."
+                         % (base, number + 1),
+                "project": os.path.basename(folder)})
+            return
+        destination = os.path.join(directory, target_name)
+        try:
+            shutil.copy2(source, destination)
+        except OSError as exc:
+            self._send(500, {
+                "error": "Could not copy %s to %s: %s"
+                         % (os.path.basename(source), target_name, exc),
+                "project": os.path.basename(folder)})
+            return
+        try:
+            info = os.stat(destination)
+            size, mtime = int(info.st_size), round(info.st_mtime, 3)
+        except OSError:
+            size, mtime = 0, 0.0
+        self._send(200, {
+            "project": os.path.basename(folder),
+            "restored": True,
+            "stem": base,
+            "file": target_name,
+            "path": destination,
+            "version": target_number,
+            "source": os.path.basename(source),
+            "source_path": source,
+            "source_version": number,
+            "size": size,
+            "mtime": mtime,
+            "modified": _iso_utc(mtime),
+            "note": "Copied %s to %s. Nothing was overwritten and nothing was "
+                    "deleted — %s is still version %d, exactly where it was."
+                    % (os.path.basename(source), target_name,
+                       os.path.basename(source), number),
+        })
+
+    def _pipeline(self, name):
+        """``design/build-plan.json`` as the stage board, read and never written."""
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        self._send(200, pipeline_board(folder, os.path.basename(folder)))
+
+    def _deliverables(self, name):
+        """Everything in ``renders/`` worth looking at, newest first."""
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        payload = project_deliverables(folder)
+        payload["project"] = os.path.basename(folder)
+        self._send(200, payload)
+
+    def _snapshot(self, name):
+        """The live Blender scene as a ``.glb`` the page can orbit."""
+        payload = self._read_json() or {}
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        obj = payload.get("object")
+        obj = str(obj or "").strip()[:MAX_OBJECT_NAME]
+        try:
+            body, status = blender_snapshot(os.path.basename(folder), obj)
+        except BlenderDown as exc:
+            # The same sentence the rail, the panel and the flows use, and the
+            # same 503: Blender being closed is the normal state of this
+            # machine, not a failure of this route.
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        self._send(status, body)
 
     # -- project scene files (Phase 15) ----------------------------------
     def _save_project(self, name):
