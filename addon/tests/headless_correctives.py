@@ -605,6 +605,187 @@ def test_default_joint_selection(rig, mesh):
     return result
 
 
+# --- the driver's own domain ------------------------------------------------
+#
+# The bug this section exists for, measured on ``werewolf-wip-14``: four of the
+# ten shipped JCM drivers were keyed to reach 1.0 at 3.9530 rad (knee) and
+# 3.9886 rad (elbow).  ``ROTATION_DIFF`` is an angle between two orientations
+# and Blender folds it into ``[0, pi]`` before the F-curve sees it, so those
+# keys were **unreachable**: the deep-flex correctives could not exceed 0.715
+# anywhere, and at the deepest knee in any authored action (94.3 degrees) the
+# knee key delivered 0.19 where its own curve intended 0.40.
+#
+# The cause was a measurement that did not fold where the driver folds -
+# ``mathutils``' ``Quaternion.angle`` happily reports the long way round - so
+# the fix is in the measurement and these checks are on both ends of it.
+
+def driver_curves(mesh):
+    """``{key name: fcurve}`` for every corrective driver on the mesh."""
+    keys = mesh.data.shape_keys
+    out = {}
+    if keys is None or keys.animation_data is None:
+        return out
+    for fcurve in keys.animation_data.drivers:
+        path = fcurve.data_path
+        if path.startswith('key_blocks["') and path.endswith("].value"):
+            out[path.split('"')[1]] = fcurve
+    return out
+
+
+def test_fold_is_the_drivers_own(rig, mesh):
+    section("the fold: the measurement speaks the driver's units")
+    from forge.tools import correctives as cx
+
+    cases = ((0.0, 0.0), (1.1085, 1.1085), (math.pi, math.pi),
+             (3.9530, 2.0 * math.pi - 3.9530), (3.9886, 2.0 * math.pi - 3.9886),
+             (2.0 * math.pi, 0.0))
+    worst = max(abs(cx.fold_rotation_diff(raw) - want) for raw, want in cases)
+    check("every raw quaternion angle folds to the short way round, which is what "
+          "ROTATION_DIFF reports", worst < 1e-9, "worst %.3g" % worst)
+    note("the two werewolf keys: 3.9530 -> %.4f rad (%.1f deg), 3.9886 -> %.4f rad "
+         "(%.1f deg)"
+         % (cx.fold_rotation_diff(3.9530), math.degrees(cx.fold_rotation_diff(3.9530)),
+            cx.fold_rotation_diff(3.9886), math.degrees(cx.fold_rotation_diff(3.9886))))
+    check("nothing survives the fold above pi",
+          all(cx.fold_rotation_diff(raw) <= math.pi + 1e-12
+              for raw in (0.0, 1.0, 3.0, 3.9886, 5.5, 6.28, 12.0)))
+    clamped = cx.clamp_driver_domain([0.1133, 1.1085, 3.9530])
+    check("and the belt to that braces pulls an out-of-domain table back, still "
+          "strictly ascending",
+          max(clamped) <= math.pi + 1e-12
+          and all(b > a for a, b in zip(clamped, clamped[1:])),
+          str([round(v, 5) for v in clamped]))
+
+
+def test_deep_key_is_reachable(rig, mesh):
+    """The whole defect, end to end: 70/140 on the knee, like the shipped rig."""
+    section("a deep corrective reaches its own authored value")
+    call("rigforge_correctives", {"rig": rig.name, "mesh": mesh.name,
+                                  "action": "clear"})
+    result = call("rigforge_correctives", {
+        "rig": rig.name, "mesh": mesh.name, "joints": ["knee.L"],
+        "angle_samples": [{"flex_deg": 70.0}, {"flex_deg": 140.0}],
+    })
+    for warning in result.get("warnings") or []:
+        note("warning: %s" % warning)
+    joint = result["joints"][0]
+    names = result["shape_keys"]
+    check("both samples were authored, shallow and deep",
+          names == ["corr_knee_L_070", "corr_knee_L_140"], str(names))
+    note("driver bones %s, rest angle %.2f deg, curve tops out at %.4f rad "
+         "(domain cap %.4f)"
+         % (joint["driver_bones"], joint["driver_rest_angle_deg"],
+            joint["driver_curve_max_rad"], joint["driver_domain_max_rad"]))
+
+    curves = driver_curves(mesh)
+    check("every authored key has a driver", set(names) <= set(curves),
+          str(sorted(curves)))
+    worst_x, worst_key = 0.0, None
+    for name, fcurve in sorted(curves.items()):
+        for point in fcurve.keyframe_points:
+            if float(point.co.x) > worst_x:
+                worst_x, worst_key = float(point.co.x), name
+        note("  %s ramp %s" % (name, [(round(float(p.co.x), 4),
+                                       round(float(p.co.y), 3))
+                                      for p in fcurve.keyframe_points]))
+    check("NO driver f-curve keyframe sits past pi - a key the variable cannot "
+          "reach is a corrective that never arrives",
+          worst_x <= math.pi + 1e-9,
+          "worst %.4f rad on %s against pi = %.4f" % (worst_x, worst_key, math.pi))
+
+    sign = 1.0 if joint["bend_sign"] == "positive" else -1.0
+    control = rig.pose.bones["shin.L"]
+    control.rotation_mode = "XYZ"
+
+    def value_at(flex_deg, name):
+        control.rotation_euler = (math.radians(flex_deg) * sign, 0.0, 0.0)
+        bpy.context.view_layer.update()
+        return key_value(mesh, name)
+
+    deep = value_at(140.0, "corr_knee_L_140")
+    note("corr_knee_L_140 at its own 140 deg sample: %.4f "
+         "(the shipped rig's deep keys could not pass 0.715)" % (deep or 0.0))
+    check("the deep key reaches 1.0 at the angle it was authored for",
+          deep is not None and deep > 0.99, "%.4f" % (deep or 0.0))
+
+    # The number the review quoted: a knee at 94.3 degrees got 0.19 where the
+    # curve intended 0.40. Here the intent is read off the authored ramp rather
+    # than hard-coded, and the driver has to deliver it.
+    ramp = [(float(p.co.x), float(p.co.y))
+            for p in curves["corr_knee_L_140"].keyframe_points]
+    ramp.sort()
+    measured = value_at(94.3, "corr_knee_L_140")
+    lower, upper = ramp[0], ramp[-1]
+    # Where the driver actually reads at this pose, in its own folded units.
+    from forge.tools import correctives as cx
+    angle = cx._rotation_difference(rig, *joint["driver_bones"])
+    span = max(1e-9, upper[0] - lower[0])
+    intended = min(1.0, max(0.0, (angle - lower[0]) / span))
+    note("at 94.3 deg the driver reads %.4f rad; the ramp intends %.3f and the key "
+         "evaluates to %.3f" % (angle, intended, measured or 0.0))
+    check("the driver's reading is inside its own domain at a real pose",
+          angle <= math.pi + 1e-9, "%.4f rad" % angle)
+    check("and a 94-degree knee receives the value its curve intends, not a "
+          "plateau part-way up an unreachable slope",
+          measured is not None and abs(measured - intended) < 0.01,
+          "%.4f measured vs %.4f intended" % (measured or 0.0, intended))
+    check("which on this ramp is a real fraction of the correction rather than "
+          "nothing", intended > 0.2, "%.3f" % intended)
+
+    # And the fold where it bites: past half a turn ``mathutils`` reports the
+    # long way round while the driver reports the short one. That divergence is
+    # the werewolf bug in one line, so it is pinned against Blender's own
+    # evaluation rather than against arithmetic.
+    control.rotation_euler = (math.radians(220.0) * sign, 0.0, 0.0)
+    bpy.context.view_layer.update()
+    a, b = joint["driver_bones"]
+    raw = (rig.pose.bones[a].matrix.to_quaternion()
+           .rotation_difference(rig.pose.bones[b].matrix.to_quaternion()).angle)
+    folded = cx._rotation_difference(rig, a, b)
+    note("at 220 deg of flex mathutils reports %.4f rad (%.1f deg); the module "
+         "reports %.4f rad (%.1f deg)"
+         % (raw, math.degrees(raw), folded, math.degrees(folded)))
+    check("the module's reading never leaves ROTATION_DIFF's domain, whatever "
+          "mathutils says", folded <= math.pi + 1e-9, "%.4f rad" % folded)
+    check("and where the two disagree it is exactly the fold, not a different "
+          "measurement",
+          abs(folded - (2.0 * math.pi - raw if raw > math.pi else raw)) < 1e-9,
+          "raw %.6f vs folded %.6f" % (raw, folded))
+    clear_pose(rig)
+    return result
+
+
+def test_regenerating_lands_the_fix(rig, mesh, previous):
+    """A character that already carries keys has to come out corrected too."""
+    section("re-keying an existing character lands the corrected curves")
+    before = {name: [(round(float(p.co.x), 6), round(float(p.co.y), 6))
+                     for p in fcurve.keyframe_points]
+              for name, fcurve in driver_curves(mesh).items()}
+    check("the mesh already carries the keys to be regenerated",
+          set(before) >= set(previous["shape_keys"]), str(sorted(before)))
+
+    again = call("rigforge_correctives", {
+        "rig": rig.name, "mesh": mesh.name, "joints": ["knee.L"],
+        "angle_samples": [{"flex_deg": 70.0}, {"flex_deg": 140.0}],
+    })
+    after = {name: [(round(float(p.co.x), 6), round(float(p.co.y), 6))
+                    for p in fcurve.keyframe_points]
+             for name, fcurve in driver_curves(mesh).items()}
+    check("the keys were overwritten in place rather than duplicated",
+          sorted(after) == sorted(before), str(sorted(after)))
+    check("re-keying is deterministic - the same curves come back", after == before,
+          str([name for name in after if after[name] != before.get(name)]))
+    worst = max((x for rows in after.values() for x, _ in rows), default=0.0)
+    check("and the regenerated curves are inside the domain, so a character keyed "
+          "before the fix comes out corrected", worst <= math.pi + 1e-9,
+          "worst %.4f rad" % worst)
+    joint = again["joints"][0]
+    check("the report quotes the domain it kept to",
+          joint["driver_curve_max_rad"] <= joint["driver_domain_max_rad"] + 1e-9,
+          "%.4f vs %.4f" % (joint["driver_curve_max_rad"],
+                            joint["driver_domain_max_rad"]))
+
+
 # --- the export -------------------------------------------------------------
 
 def author_bend_action(rig, authored):
@@ -810,6 +991,9 @@ def main():
         test_report_and_clear(rig, mesh)
         test_refusals(rig, mesh)
         test_two_samples_ramp(rig, mesh)
+        test_fold_is_the_drivers_own(rig, mesh)
+        deep = test_deep_key_is_reachable(rig, mesh)
+        test_regenerating_lands_the_fix(rig, mesh, deep)
         test_the_rejected_alternative(rig, mesh)
         test_default_joint_selection(rig, mesh)
     except Exception:  # noqa: BLE001

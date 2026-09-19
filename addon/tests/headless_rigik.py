@@ -481,15 +481,60 @@ def test_walk(rig):
                                     "step_length": 0.6 * result["leg_length_m"]})
     for warning in longer.get("warnings") or []:
         note("warning: %s" % warning)
-    check("a long stride is bought with knee bend, not refused",
+    # Not refused, and paid for in the right order: the knees bend first and
+    # the stride gives only when the crouch has spent everything it is allowed.
+    # Measured against this build's own ceiling rather than against the default
+    # walk's crouch, because on a rig with no anatomical pre-bend the default
+    # walk is already at that ceiling - which is a fact about the rig, not a
+    # failure of this clip.
+    check("a long stride is bought with knee bend before it is ever refused",
           longer["hip_lower_deepened"] is True
-          and longer["hip_lower_m"] > result["hip_lower_m"],
-          "hips at %.3f m (was %.3f m), clamped=%s"
-          % (longer["hip_lower_m"], result["hip_lower_m"],
-             longer["step_length_reach_clamped"]))
-    check("and the step asked for survives",
-          abs(longer["step_length_m"] - 0.6 * result["leg_length_m"]) < 1e-4,
-          "%.4f m" % longer["step_length_m"])
+          and (not longer["step_length_reach_clamped"]
+               or longer["hip_lower_m"] >= longer["max_hip_lower_m"] - 1e-6),
+          "hips at %.3f m of a %.3f m ceiling (default walk needed %.3f m), "
+          "clamped=%s" % (longer["hip_lower_m"], longer["max_hip_lower_m"],
+                          result["hip_lower_m"],
+                          longer["step_length_reach_clamped"]))
+    # The contract, not the wish.  `rigforge_walk` no longer takes the rest-pose
+    # solve's word for what the leg can reach: it authors the cycle, measures
+    # the hip-to-ankle span on the deform chain, and re-keys with deeper hips -
+    # or, when the crouch has run out, a shorter step - until no frame asks the
+    # leg for more than it has.  So whether a 0.6-leg stride survives is a fact
+    # about *this build's* geometry, and the test is that the command tells the
+    # truth about which case it is: the step survives when the legs can reach
+    # it, and shortens with a warning quoting the measured reach when they
+    # cannot.  Asserting the step unconditionally was only ever passing because
+    # the old solve was optimistic - on the werewolf that optimism was 1.3258 of
+    # the leg's own length, paid for in stretched deform bones.
+    asked = 0.6 * result["leg_length_m"]
+    reached = longer["leg_reach_ratio"]
+    note("asked %.3f m; got %.3f m with the worst planted leg at %.5f of its own "
+         "measured reach after %d authoring pass(es); hips at %.3f m of a %.3f m "
+         "ceiling"
+         % (asked, longer["step_length_m"], reached or 0.0,
+            longer["reach_passes"], longer["hip_lower_m"],
+            longer["max_hip_lower_m"]))
+    note("worst frame: %s" % longer["leg_reach_worst"])
+    if not longer["step_length_reach_clamped"]:
+        check("and the step asked for survives, because this build's legs can "
+              "reach it", abs(longer["step_length_m"] - asked) < 1e-4,
+              "%.4f m against %.4f m asked" % (longer["step_length_m"], asked))
+    else:
+        check("and where this build's legs cannot reach it the step is shortened "
+              "rather than stretched into - by exactly what the measured reach "
+              "left, after the crouch had spent everything it was allowed",
+              longer["step_length_m"] < asked
+              and longer["hip_lower_m"] >= longer["max_hip_lower_m"] - 1e-6,
+              "%.4f m of %.4f m asked, hips %.4f m of %.4f m"
+              % (longer["step_length_m"], asked, longer["hip_lower_m"],
+                 longer["max_hip_lower_m"]))
+        check("...and says so in a warning that quotes the reach it measured",
+              any("reach" in warning for warning in longer.get("warnings") or []),
+              str(longer.get("warnings"))[:240])
+    check("either way no planted leg is asked to stand further from the hip than "
+          "it reaches - which is the whole reason the step may not survive",
+          reached is not None and reached <= 1.0,
+          "%.5f of its own measured reach" % (reached or 0.0))
 
     greedy = call("rigforge_walk", {"rig": rig.name, "action": "lunge",
                                     "cycle_frames": 24,

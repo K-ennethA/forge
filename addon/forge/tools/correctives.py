@@ -185,6 +185,20 @@ PUSH_DIRECTION = "radial"
 #: tried.
 MIN_DRIVER_SWEEP_DEG = 5.0
 
+#: The hard ceiling on any authored driver-curve keyframe's **x**, in radians.
+#:
+#: ``ROTATION_DIFF`` is the angle between two orientations, and Blender folds it
+#: into ``[0, pi]`` before the F-curve ever sees it (``driver_get_variable_value``
+#: takes ``2*acos(q.w)``, then returns ``2*pi - angle`` whenever that lands past
+#: ``pi``).  A keyframe at ``3.95 rad`` is therefore not a steep ramp, it is an
+#: **unreachable** one: the curve's CONSTANT extrapolation never gets there and
+#: the corrective plateaus part-way up its own slope.  Measured on
+#: ``werewolf-wip-14``: four of ten keys were authored to reach 1.0 at
+#: 3.9530 rad (knee) and 3.9886 rad (elbow), so the deepest knee in any shipped
+#: action (94.3 deg) received 0.19 where the curve intended 0.40, and the deep
+#: keys could not exceed 0.715 anywhere.
+DRIVER_DOMAIN_MAX = math.pi
+
 #: Above this the skinning model and the depsgraph disagree enough that the
 #: pull-back is not trustworthy, and the run says so.
 SKIN_RESIDUAL_WARN_MM = 0.5
@@ -463,11 +477,33 @@ def _driver_candidates(rig, joint, parent_names, child_names):
     return out
 
 
+def fold_rotation_diff(angle):
+    """Fold a raw quaternion angle into ``ROTATION_DIFF``'s own ``[0, pi]`` domain.
+
+    Blender's driver evaluates the variable as ``abs(2*acos(q.w))`` and then
+    returns ``2*pi - angle`` whenever that lands past ``pi``, because a rotation
+    of 226.5 degrees one way *is* a rotation of 133.5 degrees the other and the
+    driver reports the short way round.  ``mathutils`` does not fold: a knee bent
+    140 degrees hands Python 3.953 rad where the driver will hand the F-curve
+    2.330 rad.  Every authored curve domain in this module goes through here, so
+    the ramp is keyed in the units the driver actually speaks.
+    """
+    angle = abs(float(angle)) % (2.0 * math.pi)
+    if angle > math.pi:
+        angle = 2.0 * math.pi - angle
+    return angle
+
+
 def _rotation_difference(rig, a, b):
-    """The ``ROTATION_DIFF`` driver's own quantity, in radians, read directly."""
+    """The ``ROTATION_DIFF`` driver's own quantity, in radians, read directly.
+
+    Folded into ``[0, pi]`` — see :func:`fold_rotation_diff`.  Without the fold
+    the measurement and the driver disagree past a half turn, and the ramp is
+    keyed to an angle its own driver can never produce.
+    """
     qa = (rig.matrix_world @ rig.pose.bones[a].matrix).to_quaternion()
     qb = (rig.matrix_world @ rig.pose.bones[b].matrix).to_quaternion()
-    return qa.rotation_difference(qb).angle
+    return fold_rotation_diff(qa.rotation_difference(qb).angle)
 
 
 def _make_driver(shape_keys, key_name, rig, bone_a, bone_b, ramp):
@@ -505,12 +541,34 @@ def _make_driver(shape_keys, key_name, rig, bone_a, bone_b, ramp):
     # more, which Blender reports as ``Keyframe not in F-Curve``.
     while len(fcurve.keyframe_points):
         fcurve.keyframe_points.remove(fcurve.keyframe_points[-1])
-    for angle, value in ramp:
+    # The last line of defence on the domain: whatever the ramp says, no key is
+    # written where the variable cannot go (see :data:`DRIVER_DOMAIN_MAX`).
+    for angle, value in zip(clamp_driver_domain([a for a, _ in ramp]),
+                            [v for _, v in ramp]):
         point = fcurve.keyframe_points.insert(float(angle), float(value))
         point.interpolation = "LINEAR"
     fcurve.extrapolation = "CONSTANT"
     fcurve.update()
     return fcurve
+
+
+def clamp_driver_domain(angles):
+    """Force an ascending angle table inside ``[0, DRIVER_DOMAIN_MAX]``.
+
+    :func:`fold_rotation_diff` already keeps a *measured* angle inside the
+    domain, so on a healthy joint this is the identity.  It is here as the
+    belt to that braces: an angle handed in from anywhere else (a re-key on a
+    character whose old curves were authored past pi, a caller-supplied sample
+    table) is pulled back to the last reachable radian rather than keyed where
+    the driver can never go.  Strict ascent is preserved by stepping the
+    survivors down from the cap, because two keys sharing an *x* is one key.
+    """
+    out = [min(max(0.0, float(value)), DRIVER_DOMAIN_MAX) for value in angles]
+    step = 1e-4
+    for index in range(len(out) - 1, 0, -1):
+        if out[index - 1] >= out[index]:
+            out[index - 1] = max(0.0, out[index] - step)
+    return out
 
 
 def _build_ramps(angles):
@@ -1032,7 +1090,24 @@ def _author_joint(rig, mesh, joint, angles, base_coords, rest_local, rest_world,
 
     # --- phase B: write the keys and their ramps.
     shape_keys = _shape_keys_for(mesh, notes)
-    ramps = _build_ramps([rest_angle] + sample_angles)
+    #
+    # The domain is clamped before the ramps are built, not after: a ramp whose
+    # top key sits past pi is a corrective that never reaches its own authored
+    # value, because ROTATION_DIFF cannot produce an angle the driver has
+    # already folded away.  Both the F-curve and the reported ``driver_ramp``
+    # come out of the same clamped table, so what the report prints is what the
+    # driver will read.
+    domain = clamp_driver_domain([rest_angle] + sample_angles)
+    if any(abs(a - b) > 1e-9 for a, b in zip(domain, [rest_angle] + sample_angles)):
+        warnings.append(
+            "%s's driver ramp was pulled back inside ROTATION_DIFF's own domain "
+            "([0, %.4f] rad): %s -> %s. A keyframe past pi is unreachable, so the "
+            "corrective would have plateaued part-way up its own slope."
+            % (joint["label"], DRIVER_DOMAIN_MAX,
+               ", ".join("%.4f" % value for value in [rest_angle] + sample_angles),
+               ", ".join("%.4f" % value for value in domain)))
+    rest_angle, sample_angles = domain[0], domain[1:]
+    ramps = _build_ramps(domain)
     keys = []
     worst_residual = max(sample["stats"]["skin_residual_mm"] for sample in samples)
     if worst_residual > SKIN_RESIDUAL_WARN_MM:
@@ -1091,6 +1166,8 @@ def _author_joint(rig, mesh, joint, angles, base_coords, rest_local, rest_world,
         "driver_bones": list(driver_pair),
         "driver_variable": "rotation_difference",
         "driver_rest_angle_deg": round(math.degrees(rest_angle), 2),
+        "driver_domain_max_rad": round(DRIVER_DOMAIN_MAX, 6),
+        "driver_curve_max_rad": round(max(domain), 6),
         "region_vertices": len(indices),
         "band_vertices": int(_np.count_nonzero(band > 1e-6)),
         "skin_residual_mm": worst_residual,

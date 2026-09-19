@@ -1248,6 +1248,103 @@ def set_fk(rig, keyframe_at=None, limbs=None):
     return switched
 
 
+#: Rigify's per-limb stretch blend, on the same switch bone as ``IK_FK``.
+IK_STRETCH_PROP = "IK_Stretch"
+
+#: What a planted-foot clip keys it to, for the whole clip.
+PLANTED_IK_STRETCH = 0.0
+
+
+def plant_ik_stretch(rig, limbs, frames, kinds=("leg", "front_leg"),
+                     value=PLANTED_IK_STRETCH):
+    """Key ``IK_Stretch = 0`` across a clip, and hand back what to restore.
+
+    **Why this is not optional.**  Rigify ships ``IK_Stretch = 1.0`` on every
+    limb, which means an IK target the chain cannot reach does not clamp at full
+    extension — the chain *grows*.  On a rig standing at 99.8% of its own leg
+    length that turns any disagreement between where the body is and where the
+    foot is planted into literal stretching of the leg mesh, and it does it
+    silently: the control sits exactly where it was keyed, the deform bones are
+    the ones that lie.  Measured on ``werewolf-wip-14``'s walk, the left leg
+    chain grew **+261.7 mm = +32.6% of its own length** at frame 33; the same
+    switch squashed the jump's legs -4.8% at the apex.
+
+    Stretch is a cinematic effect — squash-and-stretch on a cartoon leap — and
+    an effect belongs in the clip that asks for it, never in the default.  So
+    every command here that plants a foot keys the property to 0 for the whole
+    clip: two keys, first frame and last, which with any interpolation is a
+    constant channel, and with the export bake is a constant track.
+
+    The **live** property is put back afterwards by the caller (pass the
+    returned ``restore`` list to :func:`restore_ik_stretch`), so clearing or
+    unassigning the action leaves the rig exactly as the animator had it rather
+    than silently re-authoring their rig defaults.
+
+    Returns ``{"bones", "keys", "value", "restore", "missing"}``.
+    """
+    bones = []
+    restore = []
+    missing = []
+    keys = 0
+    wanted = tuple(kinds)
+    for entry in limbs:
+        if entry.get("limb") not in wanted:
+            continue
+        bone = rig.pose.bones.get(entry.get("switch_bone") or "")
+        if bone is None:
+            continue
+        if IK_STRETCH_PROP not in bone.keys():
+            missing.append(bone.name)
+            continue
+        try:
+            prior = float(bone[IK_STRETCH_PROP])
+        except (TypeError, ValueError):  # pragma: no cover - odd ID property
+            missing.append(bone.name)
+            continue
+        try:
+            bone[IK_STRETCH_PROP] = float(value)
+        except (KeyError, TypeError, ValueError, RuntimeError):  # pragma: no cover
+            missing.append(bone.name)
+            continue
+        restore.append((bone.name, prior))
+        for frame in frames:
+            try:
+                bone.keyframe_insert('["%s"]' % IK_STRETCH_PROP, frame=int(frame))
+                keys += 1
+            except (RuntimeError, TypeError):  # pragma: no cover - no action yet
+                break
+        bones.append(bone.name)
+    return {"bones": bones, "keys": keys, "value": float(value),
+            "restore": restore, "missing": sorted(set(missing))}
+
+
+def restore_ik_stretch(rig, restore):
+    """Put the live ``IK_Stretch`` values back where :func:`plant_ik_stretch` found them."""
+    put_back = {}
+    for name, prior in restore or ():
+        bone = rig.pose.bones.get(name)
+        if bone is None or IK_STRETCH_PROP not in bone.keys():
+            continue
+        try:
+            bone[IK_STRETCH_PROP] = float(prior)
+        except (KeyError, TypeError, ValueError, RuntimeError):  # pragma: no cover
+            continue
+        put_back[name] = round(float(prior), 6)
+    return put_back
+
+
+def ik_stretch_report(planted, put_back):
+    """The block every planted-foot command returns, so a gate can read it."""
+    return {
+        "property": IK_STRETCH_PROP,
+        "keyed_to": planted["value"],
+        "bones": list(planted["bones"]),
+        "keys": planted["keys"],
+        "restored_to": put_back,
+        "without_the_property": planted["missing"],
+    }
+
+
 @command("rigforge_keyframe")
 def cmd_rigforge_keyframe(params):
     """Batch keyframing on the control rig — the described-motion command.
@@ -1493,6 +1590,11 @@ MAX_HIP_LOWER_RATIO = 0.20
 #: target, which reads as foot slide on the deform bones.
 DEFAULT_REACH_MARGIN = 0.97
 
+#: How much of the leg's own measured limit the reach clamp keeps in hand when
+#: it fits the ask inside it, so the correction lands inside the reach rather
+#: than on its exact edge - where the next frame's bob puts it back outside.
+WALK_REACH_MARGIN = 0.01
+
 #: Foot-roll shape, as fractions of the cycle.
 ROLL_FLAT_AT = 0.12           #: heel strike is over and the foot is flat
 ROLL_LIFT_FOR = 0.18          #: how long the heel-off roll takes, before toe-off
@@ -1615,6 +1717,10 @@ def locomotion_frame(rig, limbs):
             "hip": hip,
             "rest": _rest_world(rig, target),
             "heel_pivot": entry["roll_pivots"].get("heel"),
+            # The toe control rotates about the ball, so it is the one pivot on
+            # the foot that can do ankle/toe work without moving the point the
+            # foot-slide gate measures. See JUMP_LOAD_TOE_LIFT_DEG.
+            "toe_pivot": entry["roll_pivots"].get("toe"),
         }
     if not forwards:
         forward = Vector((0.0, -1.0, 0.0))
@@ -1835,6 +1941,26 @@ def cmd_rigforge_walk(params):
 
     frames = list(range(1, cycle_frames + 2))
     keys_set = 0
+    #: ``(frame, limb, hip-to-ankle span, rest reach, in stance)`` — the walk's
+    #: own version of the jump's extension track, and the thing the reach clamp
+    #: below closes the loop on.
+    span_track = []
+    #: The deform hip/ankle the span is measured between, and their rest chain.
+    probe_legs = jump_legs(rig, limbs, info)
+    #: Where the ankle sits relative to its own IK target at rest.  Rigify's
+    #: ``foot_ik`` head and ``DEF-foot`` head are **not** the same point - on
+    #: the synthetic rig they are 34 mm apart - so "did the foot arrive?" has
+    #: to be asked about the ankle's *intended* position, not the control's.
+    #: Without this the miss reads a constant 34 mm at every frame of every
+    #: clip and a clamp driving it grinds the stride away for nothing.
+    rest_gap = {}
+    for _name, _leg in probe_legs.items():
+        _target = rig.pose.bones.get(_leg["foot"]["target"])
+        if _target is None:
+            continue
+        rest_gap[_name] = (_rest_world(rig, rig.pose.bones[_leg["ankle_bone"]])
+                           .translation
+                           - _rest_world(rig, _target).translation)
     bones_touched = []
     modes = {}
     previous_frame = scene.frame_current
@@ -1854,6 +1980,14 @@ def cmd_rigforge_walk(params):
             rig, poles=get_bool(params, "poles", True), keyframe_at=frames[0])
         for entry in convention["limbs"]:
             touched(entry["switch_bone"])
+
+        # Every stance phase of a walk is a planted foot, so the legs may not
+        # stretch to reach a target: see plant_ik_stretch.
+        planted_stretch = plant_ik_stretch(rig, convention["limbs"],
+                                           (frames[0], frames[-1]))
+        keys_set += planted_stretch["keys"]
+        for name in planted_stretch["bones"]:
+            touched(name)
 
         root = None
         for name in ROOT_CONTROLS:
@@ -1903,6 +2037,33 @@ def cmd_rigforge_walk(params):
                 bone.rotation_mode = "XYZ"
             heels[name] = bone
 
+        # --- how far this leg actually goes, asked of the rig itself ---------
+        #
+        # Not the rest chain: `jump_legs` sums hip-to-knee-to-ankle along the
+        # pre-bent rest pose, and the IK straightens past that - measured on
+        # the synthetic rig, 528.0 mm delivered against a 510.3 mm summed
+        # chain, a 3.5% gap that a clamp built on the chain can never close.
+        # So the leg is asked: the target is pushed a long way down, the
+        # solver does what it does with IK_Stretch keyed to 0, and the
+        # hip-to-ankle distance that comes back IS the limit. Two evaluations,
+        # once, before anything is keyed.
+        max_span = {}
+        for name in sorted(probe_legs):
+            leg = probe_legs[name]
+            target = rig.pose.bones.get(leg["foot"]["target"])
+            if target is None:
+                continue
+            rest = _rest_world(rig, target)
+            far = rest.copy()
+            far.translation = rest.translation - up * (2.0 * leg["reach"])
+            _set_world(rig, target, far)
+            refresh_view_layer()
+            hip = rig.matrix_world @ rig.pose.bones[leg["hip_bone"]].head
+            ankle = rig.matrix_world @ rig.pose.bones[leg["ankle_bone"]].head
+            max_span[name] = (hip - ankle).length
+            target.matrix_basis.identity()
+        refresh_view_layer()
+
         # Phase offset: the left foot contacts at the top of the cycle, the
         # right half a cycle later. That half-cycle IS the gait.
         offsets = {}
@@ -1910,85 +2071,272 @@ def cmd_rigforge_walk(params):
             offsets[name] = 0.0 if info["feet"][name]["side"] == "L" else 0.5
 
         plants = {name: [] for name in info["feet"]}
-        for frame in frames:
-            t = float(frame - frames[0]) / float(cycle_frames)
-            scene.frame_set(frame)
+        # One pass over the cycle.  A function rather than a bare loop so the
+        # reach clamp below can re-author with a deeper crouch: the leg's own
+        # reach is *measured on the posed rig* rather than solved off the rest
+        # geometry, because the rest solve was out by 4% on the synthetic rig
+        # (it models the hips as a plumb drop and ignores the sway, the twist
+        # and the offset between the torso control and the hip socket) and 4%
+        # of a leg is exactly the over-reach that used to be paid for in
+        # stretched deform bones.
+        def _author_pass():
+            keys = 0
+            del span_track[:]
+            for name in plants:
+                del plants[name][:]
+            for frame in frames:
+                t = float(frame - frames[0]) / float(cycle_frames)
+                scene.frame_set(frame)
 
-            body = stride * t
-            if root is not None:
-                matrix = rest_root.copy()
-                if travel:
-                    matrix.translation = rest_root.translation + forward * body
-                _set_world(rig, root, matrix)
-                keys_set += _key_transform(root, frame)
-                touched(root.name)
-                refresh_view_layer()
-
-            for name in sorted(info["feet"]):
-                foot = info["feet"][name]
-                target = rig.pose.bones.get(foot["target"])
-                if target is None:
-                    continue
-                u = (t - offsets[name]) % 1.0
-                cycle_offset = stride * math.floor((t - offsets[name]) + 1e-9)
-                along, lift = _foot_offset(u, stance_fraction, step_length, step_height,
-                                           cycle_offset)
-                if not travel:
-                    along -= body
-                lateral = stride_width * (1.0 if foot["side"] == "L" else -1.0)
-                matrix = foot["rest"].copy()
-                matrix.translation = (foot["rest"].translation + forward * along
-                                      + right * lateral + up * lift)
-                _set_world(rig, target, matrix)
-                keys_set += _key_transform(target, frame)
-                touched(target.name)
-                if u <= stance_fraction:
-                    plants[name].append(frame)
-                heel = heels.get(name)
-                if heel is not None:
-                    heel.rotation_euler = (math.radians(
-                        _foot_roll(u, stance_fraction, roll_deg)), 0.0, 0.0)
-                    heel.keyframe_insert("rotation_euler", frame=frame)
-                    keys_set += 3
-                    touched(heel.name)
-
-            if torso is not None:
-                bob = -hip_lower - hip_drop * math.cos(4.0 * math.pi * t)
-                sway = hip_sway * math.sin(2.0 * math.pi * t)
-                matrix = rest_torso.copy()
-                matrix.translation = rest_torso.translation + up * bob + right * sway
-                if hip_twist:
-                    matrix = _rotate_about(matrix, up,
-                                           hip_twist * math.sin(2.0 * math.pi * t),
-                                           rest_torso.translation)
-                _set_world(rig, torso, matrix)
-                keys_set += _key_transform(torso, frame)
-                touched(torso.name)
-
-            for arm in arms:
-                # Opposite the leg of the same side: the left arm goes back as
-                # the left leg comes forward.
-                phase = 0.0 if arm["side"] == "L" else 0.5
-                angle = arm_swing * math.sin(2.0 * math.pi * (t - phase) + math.pi)
-                sign = 1.0 if arm["side"] == "L" else -1.0
-                upper = arm["upper"]
-                matrix = _rotate_about(arm["upper_rest"], right, angle * sign,
-                                       arm["upper_rest"].translation)
-                _set_world(rig, upper, matrix)
-                keys_set += _key_transform(upper, frame)
-                touched(upper.name)
-                if arm["fore"] is not None:
+                body = stride * t
+                # What the body has travelled in world space this frame: the root's
+                # own translation when this is a root-motion clip, and nothing at
+                # all when it is the treadmill. Every anchor below that belongs to
+                # the character rather than to the floor rides it.
+                carry = body if travel else 0.0
+                if root is not None:
+                    matrix = rest_root.copy()
+                    if travel:
+                        matrix.translation = rest_root.translation + forward * body
+                    _set_world(rig, root, matrix)
+                    keys += _key_transform(root, frame)
+                    touched(root.name)
                     refresh_view_layer()
-                    bend = elbow_bend * (0.5 + 0.5 * math.sin(
-                        2.0 * math.pi * (t - phase) + math.pi))
-                    fore_rest = arm["fore_rest"]
-                    bent = _rotate_about(fore_rest, right, bend * sign,
-                                         fore_rest.translation)
-                    carried = _rotate_about(bent, right, angle * sign,
-                                            arm["upper_rest"].translation)
-                    _set_world(rig, arm["fore"], carried)
-                    keys_set += _key_transform(arm["fore"], frame)
-                    touched(arm["fore"].name)
+
+                stance_now = set()
+                for name in sorted(info["feet"]):
+                    foot = info["feet"][name]
+                    target = rig.pose.bones.get(foot["target"])
+                    if target is None:
+                        continue
+                    u = (t - offsets[name]) % 1.0
+                    cycle_offset = stride * math.floor((t - offsets[name]) + 1e-9)
+                    along, lift = _foot_offset(u, stance_fraction, step_length, step_height,
+                                               cycle_offset)
+                    if not travel:
+                        along -= body
+                    lateral = stride_width * (1.0 if foot["side"] == "L" else -1.0)
+                    matrix = foot["rest"].copy()
+                    matrix.translation = (foot["rest"].translation + forward * along
+                                          + right * lateral + up * lift)
+                    _set_world(rig, target, matrix)
+                    keys += _key_transform(target, frame)
+                    touched(target.name)
+                    if u <= stance_fraction:
+                        plants[name].append(frame)
+                        stance_now.add(name)
+                    heel = heels.get(name)
+                    if heel is not None:
+                        heel.rotation_euler = (math.radians(
+                            _foot_roll(u, stance_fraction, roll_deg)), 0.0, 0.0)
+                        heel.keyframe_insert("rotation_euler", frame=frame)
+                        keys += 3
+                        touched(heel.name)
+
+                if torso is not None:
+                    bob = -hip_lower - hip_drop * math.cos(4.0 * math.pi * t)
+                    sway = hip_sway * math.sin(2.0 * math.pi * t)
+                    # ``carry`` is the whole of defect #1.  Every world matrix in
+                    # this loop is absolute, and the torso's used to be built off
+                    # the *rest* position - which, with the root travelling forward
+                    # underneath it, keyed a local translation that cancelled the
+                    # travel exactly and pinned the hips in world space while the
+                    # feet walked away from them.  On a rig with IK_Stretch = 1 the
+                    # leg then simply grew (+32.6% at f33 on werewolf-wip-14), and
+                    # the cycle could not close: f33's torso sat one stride behind
+                    # f1's in root space.  The travel rides the root, so everything
+                    # that is supposed to travel with the body adds it here too.
+                    anchor = rest_torso.translation + forward * carry
+                    matrix = rest_torso.copy()
+                    matrix.translation = anchor + up * bob + right * sway
+                    if hip_twist:
+                        matrix = _rotate_about(matrix, up,
+                                               hip_twist * math.sin(2.0 * math.pi * t),
+                                               anchor)
+                    _set_world(rig, torso, matrix)
+                    keys += _key_transform(torso, frame)
+                    touched(torso.name)
+                    refresh_view_layer()
+
+                for arm in arms:
+                    # Opposite the leg of the same side: the left arm goes back as
+                    # the left leg comes forward.
+                    #
+                    # The swing is authored as a world *rotation* and the location
+                    # basis is then zeroed, so the arm rides the spine it hangs off
+                    # instead of being re-pinned to a rest position the travelling
+                    # body has already left behind - the same trick the punch and
+                    # the jump use on the chest, and the other half of the seam fix
+                    # above.
+                    phase = 0.0 if arm["side"] == "L" else 0.5
+                    angle = arm_swing * math.sin(2.0 * math.pi * (t - phase) + math.pi)
+                    sign = 1.0 if arm["side"] == "L" else -1.0
+                    upper = arm["upper"]
+                    matrix = _rotate_about(arm["upper_rest"], right, angle * sign,
+                                           arm["upper_rest"].translation)
+                    _set_world(rig, upper, matrix)
+                    upper.location = (0.0, 0.0, 0.0)
+                    keys += _key_transform(upper, frame)
+                    touched(upper.name)
+                    if arm["fore"] is not None:
+                        refresh_view_layer()
+                        bend = elbow_bend * (0.5 + 0.5 * math.sin(
+                            2.0 * math.pi * (t - phase) + math.pi))
+                        fore_rest = arm["fore_rest"]
+                        bent = _rotate_about(fore_rest, right, bend * sign,
+                                             fore_rest.translation)
+                        carried = _rotate_about(bent, right, angle * sign,
+                                                arm["upper_rest"].translation)
+                        _set_world(rig, arm["fore"], carried)
+                        arm["fore"].location = (0.0, 0.0, 0.0)
+                        keys += _key_transform(arm["fore"], frame)
+                        touched(arm["fore"].name)
+
+                # --- what the leg was actually asked for, on the posed rig ---
+                # Between the same two deform bones the rest chain was summed
+                # between, so the ratio is one triangle rather than two. This
+                # is the number the whole command turns on: over 1.0 the IK
+                # target is further away than the leg is long, and something
+                # downstream - stretch, or a foot that never arrives - has to
+                # pay for it.
+                if probe_legs:
+                    refresh_view_layer()
+                    for name in sorted(probe_legs):
+                        leg = probe_legs[name]
+                        target = rig.pose.bones.get(leg["foot"]["target"])
+                        if target is None or name not in max_span:
+                            continue
+                        hip = rig.matrix_world @ rig.pose.bones[leg["hip_bone"]].head
+                        ankle = (rig.matrix_world
+                                 @ rig.pose.bones[leg["ankle_bone"]].head)
+                        # Where the ankle is *asked* to be: the target, plus the
+                        # rest offset between the control and the joint.
+                        want = (rig.matrix_world @ target.head) + rest_gap[name]
+                        asked = hip - want
+                        span_track.append((
+                            frame, name, asked.length,
+                            asked.length / max_span[name], name in stance_now,
+                            Vector((asked.x, asked.y, 0.0)).length, asked.z,
+                            (hip - ankle).length))
+            return keys
+
+        # --- the reach clamp, closed on what the rig actually did ------------
+        #
+        # `_crouch_for` solves the stride against a model of the leg, and the
+        # model is optimistic: it drops the hips down a plumb line from their
+        # rest position, ignores the sway, the twist and the gap between the
+        # torso control and the hip socket, and takes the *lowest* bob rather
+        # than the highest.  Measured on the synthetic rig it cleared a stride
+        # the posed leg then over-reached by 0.3%, and on werewolf-wip-14 the
+        # same optimism (compounded by the travel bug) asked the left leg for
+        # 1.3258 of its own length.  So the solve is now only the opening bid:
+        # the clip is authored, the span is measured on the deform bones, and
+        # if any frame asked for more leg than there is the hips go down and
+        # the cycle is re-keyed.  With IK_Stretch keyed to 0 an over-reach can
+        # no longer be paid for in bone length, so this is what pays for it.
+        # It is a **solve**, not a ladder, and it is solved on what the leg was
+        # ASKED for against what it can actually give.
+        #
+        # Two wrong metrics were measured and thrown away first, and both are
+        # worth recording.  Hip-to-ankle over the leg's *rest chain* SATURATES
+        # once ``IK_Stretch`` is keyed to 0 - it sat at exactly 1.0348 for a
+        # 279 mm step and for a 387 mm one, so five passes moved it not at all.
+        # Straight ankle-to-target distance is a constant 34 mm on this rig,
+        # because ``foot_ik``'s head and ``DEF-foot``'s head are different
+        # points, and a clamp chasing it ground a 193 mm stride down to 20 mm.
+        # What is left is the honest question: is the place the ankle was asked
+        # to be further from the hip than the leg can reach?
+        #
+        # The correction is then arithmetic rather than a guess.  The ask is a
+        # right triangle from the hip - the crouch moves its vertical side, the
+        # stride scales its horizontal one - and it has to fit inside the leg's
+        # measured limit:
+        #
+        #     S = max_span * (1 - margin),  ask^2 = flat^2 + vert^2
+        #     deepen by  d = vert - sqrt(S^2 - flat^2)      (the crouch first)
+        #     then scale the step by  sqrt(S^2 - vert^2) / flat
+        def _worst_row(stance_only=True):
+            rows = [row for row in span_track if not stance_only or row[4]]
+            if not rows:
+                return None
+            return max(rows, key=lambda row: row[3])
+
+        keys_set += _author_pass()
+        reach_passes = 1
+        over_before = None
+        over_after = None
+        for _attempt in range(4):
+            row = _worst_row()
+            if row is None:
+                break
+            if over_before is None:
+                over_before = row[3]
+            over_after = row[3]
+            if row[3] <= 1.0:
+                break
+            flat, vert = row[5], row[6]
+            # Fit the ask inside the leg's own measured limit, with a hair of
+            # margin so the solve lands inside rather than on the edge (where
+            # the next frame's bob puts it back outside).
+            span_target = max_span[row[1]] * (1.0 - WALK_REACH_MARGIN)
+            moved = False
+            if hip_lower < max_lower - 1e-9 and span_target > flat:
+                wanted = abs(vert) - math.sqrt(max(0.0, span_target * span_target
+                                                   - flat * flat))
+                if wanted > 1e-6:
+                    hip_lower = min(max_lower, hip_lower + wanted)
+                    deepened = moved = True
+            if not moved:
+                # The crouch has nothing left (or the stride alone is longer
+                # than the leg however deep the knees go), so the stride is
+                # what gives - by exactly the horizontal side the triangle
+                # leaves once the vertical one is fixed.
+                room = span_target * span_target - vert * vert
+                factor = (math.sqrt(room) / flat) if room > 0.0 and flat > 1e-9 else 0.5
+                new_step = step_length * max(0.1, min(0.995, factor))
+                if new_step < step_length - 1e-9:
+                    step_length = new_step
+                    stride = 2.0 * step_length
+                    clamped = moved = True
+            if not moved:
+                break
+            clear_action(action)
+            rigforge_rig.apply_ik_convention(
+                rig, poles=get_bool(params, "poles", True), keyframe_at=frames[0])
+            again = plant_ik_stretch(rig, convention["limbs"],
+                                     (frames[0], frames[-1]))
+            keys_set = again["keys"] + _author_pass()
+            reach_passes += 1
+        row = _worst_row()
+        if row is not None:
+            over_after = row[3]
+        swing_row = _worst_row(stance_only=False)
+        swing_over = swing_row[3] if swing_row is not None else 0.0
+        if over_after is not None and over_after > 1.0:
+            warnings.append(
+                "A planted foot is still asked to stand %.4f of the leg's own measured "
+                "reach from the hip after %d pass(es), with the hips at %.0f mm of a "
+                "%.0f mm ceiling and a %.0f mm step. With %s keyed to 0 an "
+                "out-of-reach target cannot be paid for in bone length, so what gives "
+                "is the foot: it slides. This rest pose has no knee bend left to spend "
+                "- the anatomical pre-bend upstream is the real fix."
+                % (over_after, reach_passes, hip_lower * 1000.0,
+                   max_lower * 1000.0, step_length * 1000.0, IK_STRETCH_PROP))
+        elif reach_passes > 1:
+            warnings.append(
+                "The cycle was re-authored %d time(s): the stride the rest-pose solve "
+                "cleared asked a planted leg for %.4f of its own measured reach, so "
+                "the hips went to %.0f mm and the step to %.0f mm. Solved from the "
+                "posed rig's own triangle, not modelled."
+                % (reach_passes - 1, over_before or 0.0,
+                   hip_lower * 1000.0, step_length * 1000.0))
+        if swing_over > 1.0 and swing_over > over_after + 1e-9:
+            warnings.append(
+                "A swinging foot is asked for %.4f of the leg's reach at its worst. "
+                "That is not foot slide - the foot is off the ground - but the leg "
+                "cannot make the arc, so the lift reads shallower than the %.0f mm it "
+                "was given. Lower 'step_height' or shorten the stride if it shows."
+                % (swing_over, step_height * 1000.0))
 
         applied = 0
         for curve in rigforge_rig.action_fcurves(action):
@@ -2002,11 +2350,22 @@ def cmd_rigforge_walk(params):
 
     scene.frame_set(previous_frame)
     refresh_view_layer()
+    # After the frame restore, not before: an animated ID property is stamped
+    # back onto the original pose bone every time the scene is evaluated, so a
+    # restore that runs before the last frame_set is immediately overwritten by
+    # the clip's own 0. The command has to leave the rig as it found it.
+    stretch_restored = restore_ik_stretch(rig, planted_stretch["restore"])
 
     if modes:
         warnings.append(
             "Rotation mode changed to XYZ euler on %s so the foot roll is one readable "
             "channel." % ", ".join(sorted(modes)))
+    if planted_stretch["missing"]:
+        warnings.append(
+            "No %s property on %s, so nothing stops this rig's legs stretching to reach "
+            "a target they cannot make. On a Rigify rig that property is how a planted "
+            "foot stays planted."
+            % (IK_STRETCH_PROP, ", ".join(planted_stretch["missing"])))
 
     steps = []
     for name in sorted(plants):
@@ -2035,6 +2394,13 @@ def cmd_rigforge_walk(params):
         "hip_drop_m": round(hip_drop, 5),
         "hip_sway_m": round(hip_sway, 5),
         "hip_lower_m": round(hip_lower, 5),
+        # How deep the crouch was *allowed* to go before the stride had to give
+        # instead. A caller (or a gate) that wants to know whether a shortened
+        # step was inevitable on this rig needs both numbers, not just one.
+        "max_hip_lower_m": round(max_lower, 5),
+        "step_length_requested_m": round(
+            get_float(params, "step_length", STEP_LENGTH_RATIO * leg_length,
+                      minimum=1e-4), 5),
         "leg_length_m": round(leg_length, 5),
         "step_length_reach_clamped": clamped,
         "hip_lower_deepened": deepened,
@@ -2042,6 +2408,37 @@ def cmd_rigforge_walk(params):
         "convention": convention["convention"],
         "ik_limbs": [entry["name"] for entry in convention["limbs"]],
         "poles": convention["poles"],
+        "ik_stretch": ik_stretch_report(planted_stretch, stretch_restored),
+        # --- the reach, against the leg's own MEASURED limit ------------------
+        # Over 1.0 the ankle was asked to stand further from the hip than this
+        # leg goes, and with IK_Stretch keyed to 0 that is paid for in foot
+        # slide rather than in bone length. The denominator is measured off the
+        # rig, not summed off the rest chain - see `max_span`.
+        "leg_reach_ratio": (round(over_after, 5)
+                            if over_after is not None else None),
+        "leg_reach_ratio_first_pass": (round(over_before, 5)
+                                       if over_before is not None else None),
+        "swing_reach_ratio": round(swing_over, 5),
+        "leg_max_span_m": ({name: round(value, 5)
+                            for name, value in sorted(max_span.items())}
+                           if max_span else None),
+        "leg_reach_m": (round(min(leg["reach"] for leg in probe_legs.values()), 5)
+                        if probe_legs else None),
+        "reach_passes": reach_passes,
+        # The frame the clamp solved against, with the triangle it solved in.
+        "leg_reach_worst": ({
+            "frame": _worst_row()[0], "limb": _worst_row()[1],
+            "asked_mm": round(_worst_row()[2] * M_TO_MM, 2),
+            "ratio": round(_worst_row()[3], 5),
+            "in_stance": bool(_worst_row()[4]),
+            "flat_mm": round(_worst_row()[5] * M_TO_MM, 2),
+            "vert_mm": round(_worst_row()[6] * M_TO_MM, 2),
+            "delivered_mm": round(_worst_row()[7] * M_TO_MM, 2),
+        } if _worst_row() is not None else None),
+        # The seam is closed by construction, not by measurement: at t=1 every
+        # channel is its own t=0 value one stride along, and the travel is on
+        # the root, so the pose in root space repeats exactly.
+        "loop_closes_in": "root space" if travel else "world space",
         "feet": steps,
         "bones": bones_touched,
         "keys_set": keys_set,
@@ -2662,6 +3059,15 @@ def cmd_rigforge_punch(params):
         for entry in convention["limbs"]:
             touched(entry["switch_bone"])
 
+        # A punch is the planted-foot clip: the feet never move for the whole
+        # 24 frames, so the legs have no business stretching. See
+        # plant_ik_stretch.
+        planted_stretch = plant_ik_stretch(rig, convention["limbs"],
+                                           (frames[0], frames[-1]))
+        keys_set += planted_stretch["keys"]
+        for name in planted_stretch["bones"]:
+            touched(name)
+
         def _control(names):
             for name in names:
                 if name in rig.pose.bones:
@@ -2838,11 +3244,21 @@ def cmd_rigforge_punch(params):
 
     scene.frame_set(previous_frame)
     refresh_view_layer()
+    # After the frame restore, not before: an animated ID property is stamped
+    # back onto the original pose bone every time the scene is evaluated, so a
+    # restore that runs before the last frame_set is immediately overwritten by
+    # the clip's own 0. The command has to leave the rig as it found it.
+    stretch_restored = restore_ik_stretch(rig, planted_stretch["restore"])
 
     if modes:
         warnings.append(
             "Rotation mode changed to XYZ euler on %s so the planted foot roll is one "
             "readable channel." % ", ".join(sorted(modes)))
+    if planted_stretch["missing"]:
+        warnings.append(
+            "No %s property on %s, so nothing stops this rig's legs stretching under a "
+            "hip turn the planted feet have to absorb."
+            % (IK_STRETCH_PROP, ", ".join(planted_stretch["missing"])))
     if previous_action is not None and previous_action is not action:
         warnings.append(
             "%r was the action on %r and is now %r; %r was left in the file with a fake "
@@ -2941,6 +3357,7 @@ def cmd_rigforge_punch(params):
         "feet_planted": sorted(info["feet"][name]["target"] for name in info["feet"]),
         "convention": convention["convention"],
         "poles": convention["poles"],
+        "ik_stretch": ik_stretch_report(planted_stretch, stretch_restored),
         "bones": bones_touched,
         "keys_set": keys_set,
         "cleared_fcurves": cleared,
@@ -3071,6 +3488,53 @@ JUMP_ARM_BACK_DEG = 35.0
 JUMP_ARM_UP_DEG = 110.0
 JUMP_ELBOW_BEND_DEG = 20.0
 JUMP_FOOT_ROLL_DEG = 22.0
+
+# --- the countermovement, and why the old crouch did not read --------------
+#
+# The anticipation used to be a plumb drop: 128 mm of hip travel straight down
+# a vertical line, in 0.333 s, with the trunk left vertical, the ankles pinned
+# and the feet 11.7 mm through the floor.  Every one of those numbers was
+# *delivered to spec* — and the reviewer could not see a crouch, because a
+# plumb drop is not what a countermovement jump looks like.  A real load goes
+# **down and back**: the hips travel rearward over the heels, the trunk folds
+# forward over the knees to keep the centre of mass over the feet, the ankles
+# dorsiflex, and the whole thing takes long enough to read.  The drive is then
+# the mirror image — **up and forward**.  These four defaults are that shape.
+
+#: How far the hips travel *rearward* at the bottom of the load, as a fraction
+#: of the crouch depth.  The gate wants >= 0.3; a real countermovement is
+#: nearer half, which is where this sits.  Measured before: 0.00 mm.
+JUMP_HIP_SETBACK_RATIO = 0.5
+
+#: ...and how far forward of the guard the hips are driven at takeoff, as a
+#: fraction of the same setback.  This is the "and forward" half: a body that
+#: loads backwards and launches straight up has thrown its weight nowhere.
+JUMP_HIP_DRIVE_RATIO = 0.35
+
+#: How far the **torso control itself** folds forward at the bottom of the
+#: load.  Distinct from ``chest_pitch_deg``, which is the upper spine's own
+#: lean on top of this: the trunk folding is the hip hinge, and it is the
+#: single biggest thing missing from the old crouch's silhouette.
+JUMP_TORSO_FOLD_DEG = 20.0
+
+#: Toe lift at the bottom of the load, in degrees, on the toe control.  The
+#: ankle work goes here rather than on ``foot_heel_ik`` for a measured reason:
+#: the heel control pivots the whole foot, which moves the **ball** — the exact
+#: point the foot-slide gate measures — whereas the toe control rotates about
+#: the ball and leaves it where it was keyed to 0.0 mm.  Weight back on the
+#: heels, toes light, is what a load does; it is also the only version of it
+#: that a planted-foot clip can afford.
+JUMP_LOAD_TOE_LIFT_DEG = 9.0
+
+#: The shortest anticipation the reviewer could read, in seconds.  The old
+#: default was 8 frames = 0.333 s at 24 fps and the note was "it is fast".  The
+#: window is lengthened to meet this before the clip is laid out, and the
+#: report quotes what it ended up with.
+JUMP_MIN_ANTICIPATION_S = 0.35
+
+#: How far the evaluated mesh may sit below the sole plane before the crouch is
+#: pulled back, in metres.  Not zero: a skinned surface has float dust on it.
+JUMP_FLOOR_TOLERANCE_M = 0.001
 
 #: The heel-strike angle at landing contact, as a fraction of ``foot_roll_deg``.
 #: Small on purpose: the roll pivots about the heel, which lifts the **ball** —
@@ -3225,6 +3689,14 @@ def cmd_rigforge_jump(params):
     chest_pitch = math.radians(get_float(params, "chest_pitch_deg",
                                          JUMP_CHEST_PITCH_DEG, minimum=0.0,
                                          maximum=45.0))
+    torso_fold = math.radians(get_float(params, "torso_fold_deg",
+                                        JUMP_TORSO_FOLD_DEG, minimum=0.0,
+                                        maximum=60.0))
+    toe_lift = get_float(params, "load_toe_lift_deg", JUMP_LOAD_TOE_LIFT_DEG,
+                         minimum=0.0, maximum=45.0)
+    min_anticipation_s = get_float(params, "anticipation_seconds",
+                                   JUMP_MIN_ANTICIPATION_S, minimum=0.0, maximum=3.0)
+    floor_clamp = get_bool(params, "floor_clamp", True)
     arm_back = math.radians(get_float(params, "arm_swing_back_deg", JUMP_ARM_BACK_DEG,
                                       minimum=0.0, maximum=90.0))
     arm_up = math.radians(get_float(params, "arm_swing_up_deg", JUMP_ARM_UP_DEG,
@@ -3275,6 +3747,9 @@ def cmd_rigforge_jump(params):
                               minimum=0.0, maximum=MAX_CROUCH_RATIO * leg_length)
     tuck_height = get_float(params, "tuck_height", TUCK_HEIGHT_RATIO * leg_length,
                             minimum=0.0, maximum=leg_length)
+    hip_setback = get_float(params, "hip_setback",
+                            JUMP_HIP_SETBACK_RATIO * crouch_depth,
+                            minimum=0.0, maximum=leg_length)
     if landing_depth <= crouch_depth and params.get("landing_depth") is None:
         warnings.append(
             "The landing absorb (%.0f mm) is no deeper than the anticipation crouch "
@@ -3307,6 +3782,21 @@ def cmd_rigforge_jump(params):
                airtime_requested * fps, fps, airborne_frames))
 
     anticipation = max(2, int(round(anticipation_fraction * total_frames)))
+    # The load has to last long enough to read. `anticipation_fraction` says
+    # what share of the clip it wants; this says what it may not go under, in
+    # seconds, because 0.333 s of load is the number the review called "fast"
+    # and a fraction of a short clip is how it got there. The clip lengthens to
+    # hold it - the warning below says so - rather than the load being squeezed.
+    anticipation_floor = int(math.ceil(min_anticipation_s * fps - 1e-9))
+    anticipation_lengthened = anticipation_floor > anticipation
+    if anticipation_lengthened:
+        warnings.append(
+            "The anticipation was lengthened from %d frames (%.3f s) to %d (%.3f s) to "
+            "meet the %.2f s floor: a countermovement that loads faster than that does "
+            "not read as a crouch, whatever depth it reaches. The clip grows to hold it."
+            % (anticipation, anticipation / fps, anticipation_floor,
+               anticipation_floor / fps, min_anticipation_s))
+        anticipation = anticipation_floor
     launch = max(2, int(round(launch_fraction * total_frames)))
     landing = max(2, int(round(landing_fraction * total_frames)))
     recover = max(2, int(round(recover_fraction * total_frames)))
@@ -3357,27 +3847,81 @@ def cmd_rigforge_jump(params):
                            max_extension * leg_reach * 1000.0))
 
     # --- the channels, as tables of key poses ------------------------------
-    hip_anchors = [(1, 0.0), (f_crouch, -crouch_depth), (f_takeoff, extension_rise),
-                   (f_apex, 0.0), (f_land, 0.0), (f_absorb, -landing_depth),
-                   (end_frame, 0.0)]
-    tuck_anchors = [(f_takeoff, 0.0), (f_apex, tuck_height), (f_land, 0.0)]
-    pitch_anchors = [(1, 0.0), (f_crouch, -chest_pitch),
-                     (f_takeoff, 0.15 * chest_pitch), (f_apex, 0.0),
-                     (f_land, -0.4 * chest_pitch), (f_absorb, -chest_pitch),
-                     (end_frame, 0.0)]
-    arm_anchors = [(1, 0.0), (f_crouch, -arm_back), (f_takeoff, arm_up),
-                   (f_apex, 0.6 * arm_up), (f_land, 0.3 * arm_up),
-                   (f_absorb, 0.15 * arm_up), (end_frame, 0.0)]
-    elbow_anchors = [(1, 0.0), (f_crouch, elbow_bend), (f_takeoff, 0.3 * elbow_bend),
-                     (f_apex, 0.6 * elbow_bend), (f_land, 0.2 * elbow_bend),
-                     (f_absorb, elbow_bend), (end_frame, 0.0)]
-    # Heel roll: 0 flat, + rolls over the ball (heel off, toes last), - pivots
-    # about the heel (the strike, toe up). Measured on Rigify's generated foot
-    # roll, + moves the ball by 0.0 mm - which is why the takeoff can roll hard
-    # and the landing may not.
-    roll_anchors = [(1, 0.0), (f_crouch, 0.0), (f_takeoff, roll_deg),
-                    (f_apex, roll_deg), (f_land, -strike_ratio * roll_deg),
-                    (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
+    #
+    # Rebuilt rather than written once, because the floor clamp below may shrink
+    # the crouch and re-key: a table built from the parameters has to be built
+    # from the *current* parameters.
+    channels = {}
+
+    def _build_channels(crouch, absorb, setback):
+        drive = JUMP_HIP_DRIVE_RATIO * setback
+        channels["hip"] = [
+            (1, 0.0), (f_crouch, -crouch), (f_takeoff, extension_rise),
+            (f_apex, 0.0), (f_land, 0.0), (f_absorb, -absorb), (end_frame, 0.0)]
+        # Down **and back**, then up **and forward**: the hips travel rearward
+        # over the heels through the load and are driven ahead of the guard at
+        # takeoff. Before this channel existed the hips dropped a plumb line -
+        # hip setback measured 0.00 mm at every frame of the load, which is the
+        # single reason the crouch did not read.
+        #
+        # The **absorb** deliberately carries none of it. A catch is not a
+        # load run backwards: the knee has to travel forward over a planted
+        # foot to give, and pulling the hips rearward there cancels exactly
+        # that travel (measured: the landing knee went from +64.4 mm forward
+        # to -45.0 mm the moment the absorb was given a setback of its own).
+        channels["setback"] = [
+            (1, 0.0), (f_crouch, -setback), (f_takeoff, drive), (f_apex, 0.0),
+            (f_land, 0.0), (f_absorb, 0.0), (end_frame, 0.0)]
+        # The trunk folds forward over the load and extends through the drive.
+        # Negative is forward, the same sign the chest pitch uses.
+        #
+        # The **catch** gets none of it, for the same reason the setback does
+        # not: the fold pivots about the torso's own head, which swings the
+        # pelvis - and with it the hip sockets - rearward, and that is exactly
+        # the travel a landing knee needs forward. Measured, a fold on the
+        # absorb took the landing knee from +64.4 mm forward to -9.2 mm. The
+        # lean a landing does have is the chest's, which is where it always
+        # was.
+        channels["fold"] = [
+            (1, 0.0), (f_crouch, -torso_fold), (f_takeoff, 0.15 * torso_fold),
+            (f_apex, 0.0), (f_land, 0.0), (f_absorb, 0.0), (end_frame, 0.0)]
+        channels["tuck"] = [(f_takeoff, 0.0), (f_apex, tuck_height), (f_land, 0.0)]
+        channels["pitch"] = [
+            (1, 0.0), (f_crouch, -chest_pitch), (f_takeoff, 0.15 * chest_pitch),
+            (f_apex, 0.0), (f_land, -0.4 * chest_pitch), (f_absorb, -chest_pitch),
+            (end_frame, 0.0)]
+        channels["arm"] = [
+            (1, 0.0), (f_crouch, -arm_back), (f_takeoff, arm_up),
+            (f_apex, 0.6 * arm_up), (f_land, 0.3 * arm_up),
+            (f_absorb, 0.15 * arm_up), (end_frame, 0.0)]
+        channels["elbow"] = [
+            (1, 0.0), (f_crouch, elbow_bend), (f_takeoff, 0.3 * elbow_bend),
+            (f_apex, 0.6 * elbow_bend), (f_land, 0.2 * elbow_bend),
+            (f_absorb, elbow_bend), (end_frame, 0.0)]
+        # Heel roll: 0 flat, + rolls over the ball (heel off, toes last), -
+        # pivots about the heel (the strike, toe up). Measured on Rigify's
+        # generated foot roll, + moves the ball by 0.0 mm - which is why the
+        # takeoff can roll hard and the landing may not.
+        channels["roll"] = [
+            (1, 0.0), (f_crouch, 0.0), (f_takeoff, roll_deg), (f_apex, roll_deg),
+            (f_land, -strike_ratio * roll_deg),
+            (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
+        # Toe work, on the one foot pivot that turns about the ball and so
+        # leaves the measured plant point exactly where it was keyed: toes up
+        # through the load (weight back on the heels, with the hips), pointed
+        # through the flight, up again for the heel-first contact.
+        #
+        # The toes point in FLIGHT and nowhere else. Pointed on a grounded
+        # frame they go through the floor, and the takeoff is the worst of
+        # them: the heel is already rolled hard over the ball there, so a
+        # pointed toe on top of it drove the sole 8.7 mm under the plane on the
+        # synthetic rig.
+        channels["toe"] = [
+            (1, 0.0), (f_crouch, toe_lift), (f_takeoff, 0.0),
+            (f_apex, -0.6 * toe_lift), (f_land, toe_lift),
+            (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
+
+    _build_channels(crouch_depth, landing_depth, hip_setback)
 
     def _root_offset(frame):
         """The ballistic translation: zero on the ground, a parabola in flight."""
@@ -3396,8 +3940,10 @@ def cmd_rigforge_jump(params):
         return launch_speed * elapsed - 0.5 * gravity * elapsed * elapsed
 
     def _body_offset(frame):
-        """Where the hips ride: the root's arc plus the crouch/extend curve."""
-        return _root_offset(frame) + up * _track_at(frame, hip_anchors)
+        """Where the hips ride: the root's arc, the crouch/extend curve, the setback."""
+        return (_root_offset(frame)
+                + up * _track_at(frame, channels["hip"])
+                + forward * _track_at(frame, channels["setback"]))
 
     # --- the action ---------------------------------------------------------
     default_name = "jump-forward" if jump_distance > 1e-6 else "jump"
@@ -3427,6 +3973,9 @@ def cmd_rigforge_jump(params):
 
     root_track = []
     torso_track = []
+    #: ``(frame, along-forward, height)`` for the hips, in the rig's own walking
+    #: frame — what the anticipation gate reads the setback and the depth off.
+    hip_track = []
     extension_track = []
 
     with object_mode():
@@ -3443,6 +3992,17 @@ def cmd_rigforge_jump(params):
         for entry in convention["limbs"]:
             touched(entry["switch_bone"])
 
+        # The takeoff plant, the landing plant and the absorb are all planted
+        # feet, and the tuck in between is a fold rather than a stretch - so
+        # the whole clip is keyed stretch-free. See plant_ik_stretch: with the
+        # Rigify default of 1.0 this jump squashed its own legs -4.8% at the
+        # apex instead of folding the knee.
+        planted_stretch = plant_ik_stretch(rig, convention["limbs"],
+                                           (frames[0], frames[-1]))
+        keys_set += planted_stretch["keys"]
+        for name in planted_stretch["bones"]:
+            touched(name)
+
         def _control(names):
             for name in names:
                 if name in rig.pose.bones:
@@ -3452,6 +4012,17 @@ def cmd_rigforge_jump(params):
         root = _control(ROOT_CONTROLS)
         torso = _control(TORSO_CONTROLS)
         chest = _control(CHEST_CONTROLS)
+        # The bone an animator - and every gate that reads this clip - calls
+        # "the hips". Distinct from the torso control, which on a Rigify spine
+        # sits at the spine's own pivot rather than at the pelvis.
+        hips_bone = _control(("hips",)) or torso
+        # ...and the hip JOINT, which is what the trunk actually folds about.
+        # Averaged over the legs off their own rest chain, so it is the point
+        # between the hip sockets rather than a control's origin.
+        hip_pivot_rest = Vector((0.0, 0.0, 0.0))
+        for leg in legs.values():
+            hip_pivot_rest = hip_pivot_rest + leg["hip"]
+        hip_pivot_rest = hip_pivot_rest / float(max(1, len(legs)))
         if torso is None:
             raise ForgeError(
                 "rigforge_jump drives the body through the torso control, and %r has "
@@ -3492,123 +4063,560 @@ def cmd_rigforge_jump(params):
         rest_chest = _rest_world(rig, chest) if chest is not None else None
 
         heels = {}
+        toes = {}
+        toe_sign = {}
         for name, foot in info["feet"].items():
             heel = rig.pose.bones.get(foot.get("heel_pivot") or "")
-            if heel is None:
-                continue
-            if heel.rotation_mode == "QUATERNION":
-                modes[heel.name] = heel.rotation_mode
-                heel.rotation_mode = "XYZ"
-            heels[name] = heel
+            if heel is not None:
+                if heel.rotation_mode == "QUATERNION":
+                    modes[heel.name] = heel.rotation_mode
+                    heel.rotation_mode = "XYZ"
+                heels[name] = heel
+            toe = rig.pose.bones.get(foot.get("toe_pivot") or "")
+            if toe is not None:
+                if toe.rotation_mode == "QUATERNION":
+                    modes[toe.name] = toe.rotation_mode
+                    toe.rotation_mode = "XYZ"
+                toes[name] = toe
+                # Which way local +X lifts the toe tip, derived from the bone's
+                # own rest orientation rather than assumed: a rotation about
+                # local X takes the bone's +Y (the direction it points) toward
+                # its local +Z, so the tip rises when that axis points up. A
+                # foot built on the other roll reads -1 here and the same
+                # authored degrees still lift the toes.
+                rest_toe = _rest_world(rig, toe)
+                toe_sign[name] = 1.0 if rest_toe.col[2].z >= 0.0 else -1.0
 
         # The two ends the extension is measured between are the two ends the
         # reach was summed between (see `jump_legs`).
         thigh_probe = {name: leg["hip_bone"] for name, leg in legs.items()}
         ankle_probe = {name: leg["ankle_bone"] for name, leg in legs.items()}
 
-        for frame in frames:
-            scene.frame_set(frame)
-            offset = _root_offset(frame)
-            body = _body_offset(frame)
-            tuck = _track_at(frame, tuck_anchors) if f_takeoff < frame < f_land else 0.0
+        # One pass over the whole clip.  It is a function rather than a bare
+        # loop so the floor clamp below can ask for a second pass with a
+        # shallower crouch: everything written here is a pure function of the
+        # `channels` table, so re-running it re-authors the clip rather than
+        # layering on it (the action is cleared between passes), and the
+        # determinism the suite pins is unchanged.
+        def _author_pass():
+            keys = 0
+            del root_track[:]
+            del torso_track[:]
+            del hip_track[:]
+            del extension_track[:]
+            for frame in frames:
+                scene.frame_set(frame)
+                offset = _root_offset(frame)
+                body = _body_offset(frame)
+                tuck = (_track_at(frame, channels["tuck"])
+                        if f_takeoff < frame < f_land else 0.0)
 
-            # 1. The root carries the ballistic arc, and nothing else does. It
-            #    is keyed first because every world matrix below is resolved
-            #    through it.
-            matrix = rest_root.copy()
-            matrix.translation = rest_root.translation + offset
-            _set_world(rig, root, matrix)
-            keys_set += _key_transform(root, frame)
-            touched(root.name)
-            refresh_view_layer()
-
-            # 2. The feet. Grounded: the rest position (or the landing spot),
-            #    constant, which is why the plants cannot drift. Airborne: the
-            #    root's arc plus the tuck, which is what a knee bend is when the
-            #    foot is keyed on an IK target.
-            for name in sorted(info["feet"]):
-                foot = info["feet"][name]
-                target = rig.pose.bones.get(foot["target"])
-                if target is None:
-                    continue
-                matrix = foot["rest"].copy()
-                matrix.translation = foot["rest"].translation + offset + up * tuck
-                _set_world(rig, target, matrix)
-                keys_set += _key_transform(target, frame)
-                touched(target.name)
-                heel = heels.get(name)
-                if heel is not None:
-                    heel.rotation_euler = (
-                        math.radians(_track_at(frame, roll_anchors)), 0.0, 0.0)
-                    heel.keyframe_insert("rotation_euler", frame=frame)
-                    keys_set += 3
-                    touched(heel.name)
-
-            # 3. The hips: the crouch, the extension, the absorb.
-            matrix = rest_torso.copy()
-            matrix.translation = rest_torso.translation + body
-            _set_world(rig, torso, matrix)
-            keys_set += _key_transform(torso, frame)
-            touched(torso.name)
-            refresh_view_layer()
-
-            # 4. The chest pitch, set in world space and then pinned back onto
-            #    the spine. The world matrix is what makes the lean a *lean*
-            #    whatever the hips are doing underneath it; zeroing the location
-            #    basis afterwards is the punch's head trick - the bone rides its
-            #    parent and only its rotation is authored, so the arc the hips
-            #    are on is not keyed into the spine twice.
-            if chest is not None:
-                anchor = rest_chest.translation + body
-                matrix = rest_chest.copy()
-                matrix.translation = anchor
-                matrix = _rotate_about(matrix, right, _track_at(frame, pitch_anchors),
-                                       anchor)
-                _set_world(rig, chest, matrix)
-                chest.location = (0.0, 0.0, 0.0)
-                keys_set += _key_transform(chest, frame)
-                touched(chest.name)
+                # 1. The root carries the ballistic arc, and nothing else does. It
+                #    is keyed first because every world matrix below is resolved
+                #    through it.
+                matrix = rest_root.copy()
+                matrix.translation = rest_root.translation + offset
+                _set_world(rig, root, matrix)
+                keys += _key_transform(root, frame)
+                touched(root.name)
                 refresh_view_layer()
 
-            # 5. The arms. Both the same way, unlike a walk: a jump's arms swing
-            #    back together and throw up together, because they are adding
-            #    momentum rather than balancing a gait.
-            swing = _track_at(frame, arm_anchors)
-            bend = _track_at(frame, elbow_anchors)
-            for arm in arms:
-                anchor = arm["upper_rest"].translation + body
-                matrix = arm["upper_rest"].copy()
-                matrix.translation = anchor
-                matrix = _rotate_about(matrix, right, swing, anchor)
-                _set_world(rig, arm["upper"], matrix)
-                arm["upper"].location = (0.0, 0.0, 0.0)
-                keys_set += _key_transform(arm["upper"], frame)
-                touched(arm["upper"].name)
-                if arm["fore"] is not None:
-                    refresh_view_layer()
-                    fore_anchor = arm["fore_rest"].translation + body
-                    bent = arm["fore_rest"].copy()
-                    bent.translation = fore_anchor
-                    bent = _rotate_about(bent, right, bend, fore_anchor)
-                    carried = _rotate_about(bent, right, swing, anchor)
-                    _set_world(rig, arm["fore"], carried)
-                    arm["fore"].location = (0.0, 0.0, 0.0)
-                    keys_set += _key_transform(arm["fore"], frame)
-                    touched(arm["fore"].name)
-            refresh_view_layer()
+                # 2. The feet. Grounded: the rest position (or the landing spot),
+                #    constant, which is why the plants cannot drift. Airborne: the
+                #    root's arc plus the tuck, which is what a knee bend is when the
+                #    foot is keyed on an IK target.
+                for name in sorted(info["feet"]):
+                    foot = info["feet"][name]
+                    target = rig.pose.bones.get(foot["target"])
+                    if target is None:
+                        continue
+                    matrix = foot["rest"].copy()
+                    matrix.translation = foot["rest"].translation + offset + up * tuck
+                    _set_world(rig, target, matrix)
+                    keys += _key_transform(target, frame)
+                    touched(target.name)
+                    heel = heels.get(name)
+                    if heel is not None:
+                        heel.rotation_euler = (
+                            math.radians(_track_at(frame, channels["roll"])), 0.0, 0.0)
+                        heel.keyframe_insert("rotation_euler", frame=frame)
+                        keys += 3
+                        touched(heel.name)
+                    toe = toes.get(name)
+                    if toe is not None:
+                        toe.rotation_euler = (
+                            toe_sign[name] * math.radians(_track_at(frame, channels["toe"])),
+                            0.0, 0.0)
+                        toe.keyframe_insert("rotation_euler", frame=frame)
+                        keys += 3
+                        touched(toe.name)
 
-            # --- measurement, on the posed rig rather than on the parameters --
-            root_track.append((frame, (rig.matrix_world @ root.head).z,
-                               _ideal_rise(frame)))
-            torso_track.append((frame, (rig.matrix_world @ torso.head).z))
-            # Every frame, not just the takeoff: the cap is a statement about
-            # the whole clip, and the cheapest way to be sure the peak really is
-            # at full extension is to look at all of them.
-            for name in sorted(legs):
-                hip = rig.matrix_world @ rig.pose.bones[thigh_probe[name]].head
-                ankle = rig.matrix_world @ rig.pose.bones[ankle_probe[name]].head
-                extension_track.append((frame, name, (hip - ankle).length,
-                                        legs[name]["reach"]))
+                # 3. The hips: the crouch, the extension, the absorb - and the
+                #    trunk folding forward over them.
+                #
+                #    The fold pivots about the **hip joint**, not about the
+                #    torso control's own head, and that is not a detail. A
+                #    countermovement trunk fold is a rotation at the hip; pivot
+                #    it at the spine-base control instead and every point above
+                #    that control - including Rigify's own `hips` box, whose
+                #    head sits above and ahead of it - swings FORWARD while the
+                #    torso goes back. Measured on the synthetic rig: torso.head
+                #    -38.6 mm (rearward, correct) and hips.head +38.0 mm
+                #    (forward), from one authored setback, so the clip read as
+                #    a crouch on one bone and as its opposite on another.
+                #    Pivoting at the hip socket keeps the whole pelvis with the
+                #    setback and leans only what is above it.
+                fold = _track_at(frame, channels["fold"])
+                hip_pivot = hip_pivot_rest + body
+                anchor = rest_torso.translation + body
+                matrix = rest_torso.copy()
+                matrix.translation = anchor
+                if fold:
+                    matrix = _rotate_about(matrix, right, fold, hip_pivot)
+                _set_world(rig, torso, matrix)
+                keys += _key_transform(torso, frame)
+                touched(torso.name)
+                refresh_view_layer()
+
+                # 4. The chest pitch, set in world space and then pinned back onto
+                #    the spine. The world matrix is what makes the lean a *lean*
+                #    whatever the hips are doing underneath it; zeroing the location
+                #    basis afterwards is the punch's head trick - the bone rides its
+                #    parent and only its rotation is authored, so the arc the hips
+                #    are on is not keyed into the spine twice.
+                if chest is not None:
+                    matrix = rest_chest.copy()
+                    matrix.translation = rest_chest.translation + body
+                    # The trunk's hinge first, about the same hip joint the
+                    # torso turned about - the chest matrix is absolute, so
+                    # without this the upper spine would stand back up and
+                    # quietly cancel the fold - and then the chest's own lean
+                    # on top of it, about wherever the hinge left it.
+                    if fold:
+                        matrix = _rotate_about(matrix, right, fold, hip_pivot)
+                    matrix = _rotate_about(matrix, right,
+                                           _track_at(frame, channels["pitch"]),
+                                           matrix.translation)
+                    _set_world(rig, chest, matrix)
+                    chest.location = (0.0, 0.0, 0.0)
+                    keys += _key_transform(chest, frame)
+                    touched(chest.name)
+                    refresh_view_layer()
+
+                # 5. The arms. Both the same way, unlike a walk: a jump's arms swing
+                #    back together and throw up together, because they are adding
+                #    momentum rather than balancing a gait.
+                swing = _track_at(frame, channels["arm"])
+                bend = _track_at(frame, channels["elbow"])
+                #    They ride the trunk's hinge too, for the same reason the
+                #    chest does: an absolute world matrix that ignores the fold
+                #    leaves the shoulders behind the body they hang off.
+                for arm in arms:
+                    matrix = arm["upper_rest"].copy()
+                    matrix.translation = arm["upper_rest"].translation + body
+                    if fold:
+                        matrix = _rotate_about(matrix, right, fold, hip_pivot)
+                    anchor = matrix.translation.copy()
+                    matrix = _rotate_about(matrix, right, swing, anchor)
+                    _set_world(rig, arm["upper"], matrix)
+                    arm["upper"].location = (0.0, 0.0, 0.0)
+                    keys += _key_transform(arm["upper"], frame)
+                    touched(arm["upper"].name)
+                    if arm["fore"] is not None:
+                        refresh_view_layer()
+                        bent = arm["fore_rest"].copy()
+                        bent.translation = arm["fore_rest"].translation + body
+                        if fold:
+                            bent = _rotate_about(bent, right, fold, hip_pivot)
+                        bent = _rotate_about(bent, right, bend,
+                                             bent.translation.copy())
+                        carried = _rotate_about(bent, right, swing, anchor)
+                        _set_world(rig, arm["fore"], carried)
+                        arm["fore"].location = (0.0, 0.0, 0.0)
+                        keys += _key_transform(arm["fore"], frame)
+                        touched(arm["fore"].name)
+                refresh_view_layer()
+
+                # --- measurement, on the posed rig rather than on the parameters --
+                root_track.append((frame, (rig.matrix_world @ root.head).z,
+                                   _ideal_rise(frame)))
+                # SIGN CONVENTION, stated once and used everywhere below:
+                # `forward` is the rig's own facing, flattened onto the ground
+                # (ankle to toe tip - the same axis `rig_forward_axis`
+                # returns).  **Setback is positive rearward**, i.e. along
+                # -forward, and it is the hip's offset from the ANKLE LINE
+                # rather than its absolute position, so a jump that travels
+                # does not read its own travel as setback.
+                #
+                # And "the hips" is the hip JOINT - the average of the deform
+                # thigh heads - not a spine control's origin.  Rigify's `hips`
+                # control points downward, so its head sits about a third of
+                # the way up the trunk; any forward fold swings that point
+                # forward however far back the pelvis goes, which is a fact
+                # about where the bone's head is and not about the pose.  The
+                # control is measured too, and reported, so the difference is
+                # visible rather than argued about.
+                flat = Vector((forward.x, forward.y, 0.0))
+                flat = flat.normalized() if flat.length > 1e-9 else forward
+
+                def _behind(point, base):
+                    offset = point - base
+                    return -Vector((offset.x, offset.y, 0.0)).dot(flat)
+
+                ankle_now = Vector((0.0, 0.0, 0.0))
+                socket = Vector((0.0, 0.0, 0.0))
+                for name in sorted(legs):
+                    ankle_now = (ankle_now + rig.matrix_world
+                                 @ rig.pose.bones[ankle_probe[name]].head)
+                    socket = (socket + rig.matrix_world
+                              @ rig.pose.bones[thigh_probe[name]].head)
+                ankle_now = ankle_now / float(max(1, len(legs)))
+                socket = socket / float(max(1, len(legs)))
+                hips_now = rig.matrix_world @ hips_bone.head
+                hip_track.append((frame, _behind(socket, ankle_now), socket.z,
+                                  _behind(hips_now, ankle_now), hips_now.z))
+                # The crouch and the absorb are read on the hip joint for the
+                # same reason: it is the point the trunk folds about, so its
+                # height is the depth the clip bought rather than the depth
+                # plus whatever the lean did to a control above it.
+                torso_track.append((frame, socket.z))
+                # Every frame, not just the takeoff: the cap is a statement about
+                # the whole clip, and the cheapest way to be sure the peak really is
+                # at full extension is to look at all of them.
+                for name in sorted(legs):
+                    hip = rig.matrix_world @ rig.pose.bones[thigh_probe[name]].head
+                    ankle = rig.matrix_world @ rig.pose.bones[ankle_probe[name]].head
+                    extension_track.append((frame, name, (hip - ankle).length,
+                                            legs[name]["reach"]))
+            return keys
+
+        # --- the floor clamp ------------------------------------------------
+        #
+        # The review's fourth complaint about the crouch was that part of the
+        # drop was spent *below the floor*: the evaluated mesh's lowest vertex
+        # went from +0.7 mm to -11.7 mm at the crouch bottom, so 12 mm of a
+        # 130 mm load never appeared in the silhouette at all.  A deeper crouch
+        # that sinks is not a deeper crouch.
+        #
+        # The sole plane is not guessed: it is the lowest point the *same*
+        # evaluated mesh reaches on the guard frame, which is the pose the
+        # landmarks' ground plane was fitted to.  If any frame goes below it,
+        # the crouch and the absorb are pulled back by exactly the overshoot
+        # and the clip is re-authored — a fixed-point iteration, capped at
+        # three passes and never taking more than half the asked-for depth, so
+        # a mesh that intersects the floor for a reason of its own says so in a
+        # warning instead of grinding the crouch away to nothing.
+        skinned = [obj for obj in bpy.data.objects
+                   if obj.type == "MESH" and any(
+                       getattr(mod, "type", "") == "ARMATURE"
+                       and getattr(mod, "object", None) is rig
+                       for mod in obj.modifiers)]
+
+        # Which vertices *are* the sole.  Not the whole mesh: a deep absorb
+        # legitimately takes the hips - and on a short-legged character the
+        # crotch - below where they stood, and failing a jump for that would be
+        # failing it for squatting.  What may never happen is the **foot**
+        # going through the plane it is standing on, which is what the review
+        # measured (+0.7 mm to -11.7 mm) and what "the feet sink" means.  The
+        # sole is every vertex whose dominant deform weight is a foot or toe
+        # bone; a mesh with no such weights falls back to all of it, because
+        # something is better measured than nothing.
+        sole_bones = set()
+        for entry in limbs:
+            if entry["limb"] not in ("leg", "front_leg"):
+                continue
+            for name in entry["deform_bones"]:
+                if "foot" in name or "toe" in name or "paw" in name:
+                    sole_bones.add(name)
+
+        # Dominance is judged among the **deform** groups only.  A generated
+        # mesh also carries the region tags the autotagger left on it
+        # (``tag_Leg.L`` and friends, weight 1.0 everywhere they apply), and a
+        # plain "largest weight wins" scan hands every vertex to a tag group
+        # and finds no feet at all - which is how this measurement first came
+        # back clamping the crouch against a swinging hand.
+        deform_names = {bone.name for bone in rig.data.bones
+                        if getattr(bone, "use_deform", False)}
+
+        def _sole_indices(obj):
+            groups = {group.index: group.name for group in obj.vertex_groups}
+            deform = {index for index, name in groups.items() if name in deform_names}
+            wanted = {index for index, name in groups.items() if name in sole_bones}
+            if not wanted:
+                return None
+            out = []
+            for vertex in obj.data.vertices:
+                best, best_weight = None, 0.0
+                for item in vertex.groups:
+                    if item.group in deform and item.weight > best_weight:
+                        best, best_weight = item.group, item.weight
+                if best in wanted:
+                    out.append(vertex.index)
+            return out or None
+
+        soles = {obj.name: _sole_indices(obj) for obj in skinned}
+
+        def _lowest_z():
+            """The lowest evaluated **sole** vertex of every mesh this rig deforms.
+
+            ``None`` when no mesh has foot-weighted geometry: a sole plane that
+            cannot be found is not a licence to measure something else.
+            """
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            lowest = None
+            for obj in skinned:
+                indices = soles.get(obj.name)
+                if not indices:
+                    continue
+                evaluated = obj.evaluated_get(depsgraph)
+                mesh = evaluated.to_mesh()
+                try:
+                    matrix = evaluated.matrix_world
+                    for index in indices:
+                        if index >= len(mesh.vertices):
+                            continue
+                        z = (matrix @ mesh.vertices[index].co).z
+                        if lowest is None or z < lowest:
+                            lowest = z
+                finally:
+                    evaluated.to_mesh_clear()
+            return lowest
+
+        def _floor_scan(plane):
+            """How far the sole goes below ``plane``, per grounded phase.
+
+            Returns ``{"load": (mm below, frame), "catch": (...)}``.  Split by
+            phase because the two are driven by *different* depths - the
+            anticipation by ``crouch_depth``, the absorb by ``landing_depth`` -
+            and scaling both because one of them sinks throws away depth the
+            other never spent.  Only the grounded frames are scanned: between
+            takeoff and landing the character is in the air by construction and
+            the scan is the expensive half of an authoring pass.
+            """
+            out = {"load": (0.0, None), "catch": (0.0, None)}
+            for frame in frames:
+                if f_takeoff < frame < f_land:
+                    continue
+                phase = "load" if frame <= f_takeoff else "catch"
+                scene.frame_set(frame)
+                refresh_view_layer()
+                low = _lowest_z()
+                if low is None:
+                    continue
+                depth = plane - low
+                if depth > out[phase][0]:
+                    out[phase] = (depth, frame)
+            return out
+
+        def _reauthor(crouch, absorb):
+            """Re-key the whole clip at these depths. Returns the key count."""
+            _build_channels(crouch, absorb, hip_setback)
+            clear_action(action)
+            rigforge_rig.apply_ik_convention(
+                rig, legs="ik", arms="fk", poles=get_bool(params, "poles", True),
+                keyframe_at=frames[0])
+            again = plant_ik_stretch(rig, convention["limbs"],
+                                     (frames[0], frames[-1]))
+            return again["keys"] + _author_pass()
+
+        keys_set += _author_pass()
+        floor_plane = None
+        floor_passes = 1
+        floor_before = None
+        floor_after = None
+        floor_frame = None
+        crouch_clamped = False
+        floor_solve = []
+        floor_depth_independent = False
+        if floor_clamp and skinned:
+            scene.frame_set(frames[0])
+            refresh_view_layer()
+            floor_plane = _lowest_z()
+            if floor_plane is None:
+                warnings.append(
+                    "The sole plane could not be found: no mesh skinned to %r has any "
+                    "geometry whose heaviest deform weight is one of %s, so there is "
+                    "nothing to measure a floor against and the crouch was not clamped."
+                    % (rig.name, ", ".join(sorted(sole_bones)) or "a foot bone"))
+        if floor_plane is not None:
+            # --- the solve, not an iteration ---------------------------------
+            #
+            # The sole's dip is a monotone function of how far the hips travel
+            # down in that phase, and we know one point of it exactly: at zero
+            # depth the pose IS the guard frame, which is the pose the plane was
+            # measured on, so ``dip(0) = 0``.  One authored pass gives a second
+            # point, ``dip(1) = p``.  A secant through those two solves directly
+            # for the scale that puts the sole on the plane - no backoff ladder,
+            # and the answer does not depend on how big the first reading was.
+            #
+            # The first correction is deliberately the *conservative* end of
+            # that solve (the chord of a curve that starts flat and steepens
+            # lies above it, so it under-shoots the depth it could have kept),
+            # so a second secant through the two **measured** points recovers
+            # the depth the first one gave away.  At most: correct, recover,
+            # verify.
+            tolerance = JUMP_FLOOR_TOLERANCE_M
+            target = 0.5 * tolerance
+            asked = {"load": crouch_depth, "catch": landing_depth}
+            scale = {"load": 1.0, "catch": 1.0}
+            #: ``(scale, dip)`` samples per phase.  ``(0, 0)`` is not an
+            #: assumption: at zero depth the pose is the guard frame, which is
+            #: the frame the plane itself was measured on.
+            samples = {"load": [(0.0, 0.0)], "catch": [(0.0, 0.0)]}
+            floor_scale = 0.25
+
+            def _worst(scan):
+                row = max(scan.values(), key=lambda entry: entry[0])
+                return row[0], row[1]
+
+            def _solve(phase):
+                """Where a secant through the bracketing samples puts ``target``."""
+                rows = sorted(set(samples[phase]))
+                below = [row for row in rows if row[1] <= target]
+                above = [row for row in rows if row[1] > target]
+                if not above:
+                    return 1.0
+                low = below[-1] if below else (0.0, 0.0)
+                high = above[0]
+                if high[1] - low[1] <= 1e-12:  # pragma: no cover - equal readings
+                    return low[0]
+                span = (target - low[1]) / (high[1] - low[1])
+                return max(floor_scale,
+                           min(1.0, low[0] + (high[0] - low[0]) * span))
+
+            scan = _floor_scan(floor_plane)
+            floor_before, floor_frame = _worst(scan)
+            #: The deepest pose measured clear of the plane, and - for a rig
+            #: where no pose is clear - the one that came closest.  A solve
+            #: that ends worse than a pose it already measured has to hand
+            #: that pose back; shrinking a crouch by 75% and keeping a *bigger*
+            #: dip than it started with is the worst of both.
+            best_clear = None
+            best_effort = (floor_before, crouch_depth, landing_depth, dict(scale))
+            if floor_before <= tolerance:
+                best_clear = (crouch_depth, landing_depth, dict(scale))
+            # The loop does not stop at "clear": a first correction from the
+            # chord through (0, 0) is deliberately the conservative end of the
+            # solve, and stopping there throws away depth the geometry would
+            # have allowed (measured: 77 mm of crouch cut to 19 mm to buy
+            # 3.24 mm, when 27 mm was clear).  It stops when the secant has
+            # nothing left to say in either direction.
+            for _attempt in range(3):
+                moved = False
+                for phase in ("load", "catch"):
+                    samples[phase].append((scale[phase], scan[phase][0]))
+                    wanted = _solve(phase)
+                    # Shrink only a phase that is actually through the plane;
+                    # a phase already clear may only be handed depth *back*.
+                    if scan[phase][0] <= tolerance and wanted < scale[phase]:
+                        continue
+                    if abs(wanted - scale[phase]) > 1e-4:
+                        scale[phase] = wanted
+                        moved = True
+                if not moved:
+                    # Nothing left to solve. Either the pose is clear at the
+                    # depth it asked for - the ordinary case, one pass, no
+                    # re-authoring - or the dip did not move with the depth at
+                    # all, in which case the depth is not what is putting the
+                    # sole through the plane and backing off further would only
+                    # cost the pose for nothing. The warning below tells them
+                    # apart.
+                    if _worst(scan)[0] > tolerance:
+                        floor_depth_independent = True
+                    break
+                crouch_depth = asked["load"] * scale["load"]
+                landing_depth = asked["catch"] * scale["catch"]
+                # The absorb has to stay deeper than the crouch whatever the
+                # solve does to them separately, and only ever by shrinking.
+                ratio = (asked["catch"] / asked["load"]) if asked["load"] > 1e-9 else 1.0
+                if ratio > 1.0 and landing_depth <= crouch_depth:
+                    crouch_depth = landing_depth / ratio
+                keys_set = _reauthor(crouch_depth, landing_depth)
+                floor_passes += 1
+                crouch_clamped = (crouch_depth < asked["load"] - 1e-9
+                                  or landing_depth < asked["catch"] - 1e-9)
+                scan = _floor_scan(floor_plane)
+                floor_solve.append({
+                    "pass": floor_passes,
+                    "crouch_mm": round(crouch_depth * 1000.0, 2),
+                    "absorb_mm": round(landing_depth * 1000.0, 2),
+                    "load_mm": round(scan["load"][0] * M_TO_MM, 4),
+                    "catch_mm": round(scan["catch"][0] * M_TO_MM, 4),
+                })
+                now = _worst(scan)[0]
+                if now <= tolerance:
+                    if best_clear is None or crouch_depth > best_clear[0]:
+                        best_clear = (crouch_depth, landing_depth, dict(scale))
+                # A shallower pose has to be better by more than the whole
+                # tolerance to be worth having: trading 150 mm of crouch for
+                # 0.09 mm of dip is the review's complaint in the other
+                # direction.
+                if now < best_effort[0] - tolerance:
+                    best_effort = (now, crouch_depth, landing_depth, dict(scale))
+                elif now > floor_before + 1e-9:
+                    # Shallower and *worse*: the response is not monotone in
+                    # the depth, so there is nothing here for a secant to
+                    # solve. Stop before another pass costs more of the pose.
+                    floor_depth_independent = True
+                    break
+            # A recovery pass is allowed to overshoot - that is what makes it a
+            # solve rather than a ratchet - so if the clip ends through the
+            # plane, the best pose it actually measured is what gets authored:
+            # the deepest clear one, or failing that the shallowest dip.
+            if _worst(scan)[0] > tolerance:
+                if best_clear is not None:
+                    keep = best_clear
+                else:
+                    keep = best_effort[1:]
+                if (abs(keep[0] - crouch_depth) > 1e-9
+                        or abs(keep[1] - landing_depth) > 1e-9):
+                    crouch_depth, landing_depth, scale = keep
+                    keys_set = _reauthor(crouch_depth, landing_depth)
+                    floor_passes += 1
+                    crouch_clamped = (crouch_depth < asked["load"] - 1e-9
+                                      or landing_depth < asked["catch"] - 1e-9)
+                    scan = _floor_scan(floor_plane)
+                    floor_solve.append({
+                        "pass": floor_passes, "restored": True,
+                        "crouch_mm": round(crouch_depth * 1000.0, 2),
+                        "absorb_mm": round(landing_depth * 1000.0, 2),
+                        "load_mm": round(scan["load"][0] * M_TO_MM, 4),
+                        "catch_mm": round(scan["catch"][0] * M_TO_MM, 4),
+                    })
+            floor_after, floor_frame = _worst(scan)
+            if floor_after > JUMP_FLOOR_TOLERANCE_M and floor_depth_independent:
+                warnings.append(
+                    "The sole sits %.2f mm below its plane at frame %s and scaling the "
+                    "crouch did not move it (%s). That is not a depth problem: "
+                    "something other than how far the hips travel is putting this foot "
+                    "through the floor - the heel roll, the landing strike, or geometry "
+                    "that already intersects the ground at rest. The crouch was put "
+                    "back to the best depth measured (%.0f mm) rather than ground away "
+                    "for nothing."
+                    % (floor_after * M_TO_MM, floor_frame,
+                       "; ".join(
+                           "%s %s" % (phase, ", ".join(
+                               "%.0f%% -> %.2f mm" % (row[0] * 100.0, row[1] * M_TO_MM)
+                               for row in sorted(set(samples[phase])) if row[0] > 0.0))
+                           for phase in ("load", "catch")),
+                       crouch_depth * 1000.0))
+            elif floor_after > JUMP_FLOOR_TOLERANCE_M:
+                warnings.append(
+                    "The sole still reaches %.2f mm below its plane at frame %s after "
+                    "%d pass(es), with the crouch solved down to %.0f mm and the absorb "
+                    "to %.0f mm. A crouch that sinks spends its depth under the floor "
+                    "instead of in the silhouette."
+                    % (floor_after * M_TO_MM, floor_frame, floor_passes,
+                       crouch_depth * 1000.0, landing_depth * 1000.0))
+            elif crouch_clamped:
+                warnings.append(
+                    "The crouch was solved back to %.0f mm and the absorb to %.0f mm so "
+                    "the sole stays on its plane: at the asked-for %.0f / %.0f mm it "
+                    "went %.2f mm through. Solved from the measured dip in %d pass(es), "
+                    "not stepped down."
+                    % (crouch_depth * 1000.0, landing_depth * 1000.0,
+                       asked["load"] * 1000.0, asked["catch"] * 1000.0,
+                       floor_before * M_TO_MM, floor_passes))
 
         applied = 0
         for curve in rigforge_rig.action_fcurves(action):
@@ -3622,11 +4630,21 @@ def cmd_rigforge_jump(params):
 
     scene.frame_set(previous_frame)
     refresh_view_layer()
+    # After the frame restore, not before: an animated ID property is stamped
+    # back onto the original pose bone every time the scene is evaluated, so a
+    # restore that runs before the last frame_set is immediately overwritten by
+    # the clip's own 0. The command has to leave the rig as it found it.
+    stretch_restored = restore_ik_stretch(rig, planted_stretch["restore"])
 
     if modes:
         warnings.append(
             "Rotation mode changed to XYZ euler on %s so the foot roll is one readable "
             "channel." % ", ".join(sorted(modes)))
+    if planted_stretch["missing"]:
+        warnings.append(
+            "No %s property on %s, so nothing stops this rig's legs squashing instead "
+            "of folding when the hips drop onto a planted foot."
+            % (IK_STRETCH_PROP, ", ".join(planted_stretch["missing"])))
     if previous_action is not None and previous_action is not action:
         warnings.append(
             "%r was the action on %r and is now %r; %r was left in the file with a fake "
@@ -3647,6 +4665,34 @@ def cmd_rigforge_jump(params):
     absorb_measured = stand_z - min((z for frame, z in torso_track
                                      if frame >= f_land), default=stand_z)
     absorb_deeper = absorb_measured > crouch_measured
+
+    # --- does the anticipation read? ---------------------------------------
+    # All four numbers the review's `anticipation_reads` gate asks for, taken
+    # off the posed rig rather than off the parameters that asked for them.
+    # ``hip_track`` rows are ``(frame, socket setback, socket height, control
+    # setback, control height)`` with **rearward positive** (see the sign
+    # convention where the track is filled).  So the setback the load buys is
+    # simply how much further behind the ankles the hips finish than they
+    # started, and it needs no sign gymnastics here.
+    load_rows = [row for row in hip_track if row[0] <= f_crouch]
+    stand_back = load_rows[0][1] if load_rows else 0.0
+    stand_high = load_rows[0][2] if load_rows else 0.0
+    stand_control = load_rows[0][3] if load_rows else 0.0
+    bottom = min(load_rows, key=lambda row: row[2]) if load_rows else None
+    hip_drop_measured = (stand_high - bottom[2]) if bottom else 0.0
+    hip_setback_measured = max((row[1] - stand_back for row in load_rows), default=0.0)
+    control_setback_measured = max((row[3] - stand_control for row in load_rows),
+                                   default=0.0)
+    setback_ratio = (hip_setback_measured / hip_drop_measured
+                     if hip_drop_measured > 1e-9 else 0.0)
+    anticipation_seconds = (f_crouch - 1) / fps
+    # The drive is measured out of the load, not out of the guard: "up and
+    # forward" is what the body does from the bottom of the countermovement,
+    # and the hips are still behind the guard when the toes leave the floor -
+    # which is correct, and would read as a negative drive against the guard.
+    drive_rows = [row for row in hip_track if f_crouch <= row[0] <= f_takeoff]
+    bottom_back = drive_rows[0][1] if drive_rows else stand_back
+    hip_drive_measured = max((bottom_back - row[1] for row in drive_rows), default=0.0)
 
     extension_rows = [(span / reach, frame, name)
                       for frame, name, span, reach in extension_track if reach > 1e-9]
@@ -3733,6 +4779,39 @@ def cmd_rigforge_jump(params):
         "jump_distance_m": round(jump_distance, 5),
         "crouch_depth_m": round(crouch_depth, 5),
         "crouch_measured_m": round(crouch_measured, 5),
+        # --- the countermovement, measured on the posed rig ------------------
+        "anticipation_frames": anticipation,
+        "anticipation_seconds": round(anticipation_seconds, 5),
+        "anticipation_min_seconds": round(min_anticipation_s, 5),
+        "anticipation_lengthened": bool(anticipation_lengthened),
+        "hip_setback_m": round(hip_setback, 5),
+        "hip_setback_measured_m": round(hip_setback_measured, 5),
+        "hip_control_setback_measured_m": round(control_setback_measured, 5),
+        "hip_setback_bone": "+".join(sorted(thigh_probe.values())),
+        "hip_control_bone": hips_bone.name,
+        "hip_setback_sign": "positive is rearward, along -forward_axis, "
+                            "measured from the ankle line, on the hip joint "
+                            "(the deform thigh heads)",
+        "hip_drop_measured_m": round(hip_drop_measured, 5),
+        "hip_setback_ratio": round(setback_ratio, 5),
+        "hip_drive_measured_m": round(hip_drive_measured, 5),
+        "torso_fold_deg": round(math.degrees(torso_fold), 3),
+        "load_toe_lift_deg": round(toe_lift, 3),
+        "floor_plane_z_m": (round(floor_plane, 6) if floor_plane is not None else None),
+        "floor_penetration_mm": (round(floor_after * M_TO_MM, 4)
+                                 if floor_after is not None else None),
+        "floor_penetration_before_mm": (round(floor_before * M_TO_MM, 4)
+                                        if floor_before is not None else None),
+        "floor_penetration_frame": floor_frame,
+        "floor_passes": floor_passes,
+        "floor_solve": floor_solve,
+        "floor_depth_independent": bool(floor_depth_independent),
+        "sole_bones": sorted(sole_bones),
+        "sole_vertices": {name: (len(value) if value is not None else None)
+                          for name, value in sorted(soles.items())},
+        "crouch_floor_clamped": bool(crouch_clamped),
+        "meshes_measured": sorted(obj.name for obj in skinned),
+        "ik_stretch": ik_stretch_report(planted_stretch, stretch_restored),
         "landing_depth_m": round(landing_depth, 5),
         "absorb_measured_m": round(absorb_measured, 5),
         "absorb_deeper_than_crouch": bool(absorb_deeper),
@@ -3782,14 +4861,21 @@ def cmd_rigforge_jump(params):
             "%.0f mm by the frame rounding), %d frames of airtime (%.3f s at %.3g fps, "
             "g = %.3g m/s^2), max parabola deviation %.3f mm. Leg extension peaks at "
             "%.1f%% of a %.0f mm reach (cap %.0f%%). Landing absorbs %.0f mm against a "
-            "%.0f mm anticipation crouch. Feet planted on %s through takeoff and "
-            "landing."
+            "%.0f mm anticipation crouch. The load takes %.3f s and the hips travel "
+            "%.0f mm back for %.0f mm down (setback ratio %.2f) before driving %.0f mm "
+            "forward out of it; the sole stays %.1f mm clear of its plane. Feet "
+            "planted on %s "
+            "through takeoff and landing."
             % (action.name, total_frames, apex_reached * 1000.0, apex_height * 1000.0,
                apex_actual * 1000.0, airborne_frames, airtime, fps, gravity,
                parabola_deviation * M_TO_MM,
                (extension_ratio or 0.0) * 100.0, leg_reach * 1000.0,
                max_extension * 100.0, absorb_measured * 1000.0,
                crouch_measured * 1000.0,
+               anticipation_seconds, hip_setback_measured * 1000.0,
+               hip_drop_measured * 1000.0, setback_ratio,
+               hip_drive_measured * 1000.0,
+               -(floor_after or 0.0) * M_TO_MM,
                " and ".join(sorted(info["feet"][name]["target"]
                                    for name in info["feet"])))),
         "warnings": warnings,

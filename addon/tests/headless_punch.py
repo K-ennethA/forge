@@ -317,6 +317,82 @@ def test_feet_never_move(rig, action_name):
     return result
 
 
+def test_legs_cannot_stretch(rig, action_name, report):
+    """A punch is the planted-foot clip, so its legs may not change length.
+
+    Rigify ships ``IK_Stretch = 1.0``, which means an IK target the chain
+    cannot reach makes the chain *longer* rather than clamping it — measured on
+    ``werewolf-wip-14``, 99.84% leg extension at rest and every hip translation
+    immediately cashed out in stretched deform bones.  A punch turns the hips
+    22 degrees over feet that never move, so it spends the whole clip asking
+    the legs that question.  Stretch is a cinematic effect; an authored clip
+    with planted feet keys it off.
+    """
+    section("the legs cannot stretch: %s" % action_name)
+    block = report.get("ik_stretch") or {}
+    note("keyed %s to %s on %s; restored to %s"
+         % (block.get("property"), block.get("keyed_to"), block.get("bones"),
+            block.get("restored_to")))
+    check("the report carries the ik_stretch block", bool(block), str(block))
+    check("both leg switches were keyed to zero for the clip",
+          sorted(block.get("bones") or []) == ["thigh_parent.L", "thigh_parent.R"]
+          and block.get("keyed_to") == 0.0,
+          "%s -> %s" % (block.get("bones"), block.get("keyed_to")))
+
+    from forge.tools import rigforge_rig as rr
+
+    action = bpy.data.actions[action_name]
+    curves = [curve for curve in rr.action_fcurves(action)
+              if "IK_Stretch" in curve.data_path]
+    check("and the channel is in the clip, flat zero, spanning it",
+          len(curves) == 2
+          and all(point.co.y == 0.0 for curve in curves
+                  for point in curve.keyframe_points)
+          and all(min(float(p.co.x) for p in curve.keyframe_points)
+                  <= float(action.frame_range[0]) + 1e-4
+                  and max(float(p.co.x) for p in curve.keyframe_points)
+                  >= float(action.frame_range[1]) - 1e-4
+                  for curve in curves),
+          str([(curve.data_path.split('"')[1],
+                [(round(float(p.co.x), 2), round(float(p.co.y), 3))
+                 for p in curve.keyframe_points]) for curve in curves]))
+    restored = block.get("restored_to") or {}
+    check("and the report says what it put the live property back to, so clearing "
+          "the clip leaves the rig as it was found",
+          sorted(restored) == ["thigh_parent.L", "thigh_parent.R"]
+          and all(value > 0.0 for value in restored.values()), str(restored))
+
+    # ...and the thing the property exists to prevent, measured on the deform
+    # chain the solver drives rather than on the controls that sit still.
+    from forge.tools import rigforge_anim as ra
+
+    limbs = rr.ik_limbs(rig)
+    info = ra.locomotion_frame(rig, limbs)
+    probe = ra.jump_legs(rig, limbs, info)
+    check("there is a deform hip and ankle to measure between", bool(probe),
+          str(sorted(probe)))
+    if not probe:
+        return
+    bones = []
+    for leg in probe.values():
+        bones.extend((leg["hip_bone"], leg["ankle_bone"]))
+    frames, tracks = sample_clip(rig, action_name, tuple(sorted(set(bones))))
+    worst = 0.0
+    for name in sorted(probe):
+        leg = probe[name]
+        spans = [(tracks[leg["ankle_bone"]][index]
+                  - tracks[leg["hip_bone"]][index]).length
+                 for index in range(len(frames))]
+        growth = max(spans) / leg["reach"] - 1.0
+        worst = max(worst, growth)
+        note("%s: rest reach %.1f mm, span %.1f-%.1f mm across %d frames -> "
+             "%+.3f%% at its longest"
+             % (name, leg["reach"] * 1000.0, min(spans) * 1000.0,
+                max(spans) * 1000.0, len(frames), growth * 100.0))
+    check("no frame of a planted clip asks either leg for more than its own "
+          "length", worst <= 0.001, "worst %+.4f%%" % (worst * 100.0))
+
+
 def test_fist_reaches_without_hyperextending(rig, result, side):
     section("the fist: it arrives, and it never outruns the arm")
     reach = result["arm_reach_m"]
@@ -613,6 +689,8 @@ def main():
         test_defaults_are_derived(rig, right)
         test_feet_never_move(rig, PUNCH_R)
         test_feet_never_move(rig, PUNCH_L)
+        test_legs_cannot_stretch(rig, PUNCH_R, right)
+        test_legs_cannot_stretch(rig, PUNCH_L, left)
         test_fist_reaches_without_hyperextending(rig, right, "R")
         test_fist_reaches_without_hyperextending(rig, left, "L")
         test_rotation_leads(rig, right)
