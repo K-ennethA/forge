@@ -125,6 +125,12 @@ __all__ = [
     "enumerate_joints",
     "contact_points",
     "stance_runs",
+    "grounded_flags",
+    "airborne_windows",
+    "knee_points",
+    "AIRBORNE_CLEARANCE",
+    "MIN_AIRBORNE_FRAMES",
+    "PARABOLA_TOLERANCE",
     "shape_key_state",
     "evaluated_vertex_coords",
     "bend_direction",
@@ -2122,15 +2128,223 @@ def _body_travel(rig, tracks):
     return None, 0.0
 
 
+# ---------------------------------------------------------------------------
+# the airborne window — the third kind of clip
+# ---------------------------------------------------------------------------
+#
+# Everything above assumes the feet are *on the floor* and the only question is
+# whether they hold still.  A jump breaks that assumption honestly rather than
+# accidentally: for a stretch of the clip **neither** foot is on the ground, and
+# measuring slide there is measuring nothing.  A metric that scored those frames
+# would fail every correct jump ever authored, which is how a gate stops being
+# used.
+#
+# So this section adds a third reading, and the whole design constraint is that
+# **a walk and a punch must come through it unchanged**.  They do, because the
+# airborne window is not asserted by the caller — it is *detected*, from two
+# independent facts that only a jump has:
+#
+# 1. every foot sits above ``ground + clearance * range`` for a run of frames.
+#    A walk never manages it: with double support there is always a foot down,
+#    and with the swing foot lifting, the *other* one is by definition at the
+#    ground.  A punch never manages it: nothing moves vertically at all.
+# 2. **the body itself went up** over that run.  This is the condition that
+#    makes the detector safe rather than lucky.  An FK-keyed walk can swing both
+#    balls off its own lowest sample at once (the ball's height is whatever two
+#    rotations multiply out to); it cannot also lift the root, because nothing
+#    keyed it.  The check is "did the body rise", never "did it rise
+#    *ballistically*" — that second question is a **gate**, below, and a detector
+#    that asked it could never fail.
+#
+# Why auto-detection rather than a mode the caller passes
+# -------------------------------------------------------
+# ``mode="jump"`` exists and is honoured (and refused, loudly, on a clip with no
+# airborne window).  But the default is auto, because the alternative is a gate
+# that reads a correct jump as a catastrophic foot slide unless somebody
+# remembered to label the clip — and the person who forgets is the person the
+# gate was built for.  ``mode="planted"`` and ``mode="in_place"`` still force the
+# old readings on a jump, so nothing was taken away.
+#
+# What the jump reading measures instead
+# --------------------------------------
+# * **the plants.**  Every *grounded* run — the takeoff plant and the landing
+#   plant, which for a forward jump are in two different places — is measured
+#   for drift, raw, with no speed trimming: a jump's plant is not a stance phase
+#   passing through, it is the frames the character is standing on the floor,
+#   and all of them count.
+# * **the parabola.**  A least-squares quadratic through the body's height over
+#   the airborne window.  The residual is reported in millimetres; the fitted
+#   curvature has to be downward, and it implies a gravity, which is printed.  A
+#   floaty arc that ignores gravity fits a quadratic badly and says so.
+# * **the landing knee.**  The mid joint of each leg has to travel in the
+#   anatomical direction (a knee apexes forward) as the landing absorbs, judged
+#   against :func:`rigforge_rig.rig_forward_axis` and
+#   :data:`rigforge_rig.POLE_DIRECTION` — the same two facts ``bend_direction``
+#   judges a rig's fold by, so the gate and the rig check cannot disagree about
+#   which way a knee goes.
+# * **hop asymmetry**, off by default: how long the clip spends with exactly one
+#   foot down.  On a two-foot jump that is a hop, but plenty of jumps are meant
+#   to be hops, so this one is only gated when the caller says what it will
+#   tolerate.
+
+#: How far above the clip's lowest contact sample a foot must sit before it
+#: counts as off the ground, as a fraction of the contact points' whole vertical
+#: range.  One shared ceiling for every foot, because "off the ground" is a
+#: statement about the floor and not about each foot's own travel.
+#:
+#: **Credibility tier: heuristic (proxy).**  Deliberately *narrow*: standing on
+#: the floor is an exact condition, not an approximate one, and the band only
+#: has to absorb the few millimetres a heel roll lifts a ball by while staying
+#: well under one frame of real flight — a 24 fps jump clears ~65 mm in its
+#: first airborne frame on a rig whose contact points travel ~290 mm in total,
+#: so a tenth of the range (29 mm) separates the two by a factor of two either
+#: way.  Narrow is the *safe* direction here, because it is the body-rise test
+#: below and not this band that keeps a badly keyed gait from reading as flight.
+AIRBORNE_CLEARANCE = 0.1
+
+#: Shorter than this and an "airborne window" is a sampling accident.
+MIN_AIRBORNE_FRAMES = 3
+
+#: How far the body control must rise over the candidate window, as a fraction
+#: of the contact points' range, before the clip is called a jump.  This is the
+#: condition that separates a jump from a badly keyed gait.
+AIRBORNE_BODY_RISE = 0.2
+
+#: How far the body's airborne height may sit off its own best-fit parabola, as
+#: a fraction of the rise over that window.
+#:
+#: **Credibility tier: heuristic (proxy).**  Ballistics is exact, so a clip
+#: authored from ``v*t - g*t^2/2`` fits to float dust; the tolerance is here for
+#: the frame quantisation and the IK solver, not to buy slack.  The measured
+#: deviation is always reported next to it, in millimetres.
+PARABOLA_TOLERANCE = 0.04
+
+#: How far the knee must travel forward through the landing absorb before the
+#: landing counts as one, in millimetres.  Under this the character landed
+#: stiff-legged, which is the pose a jump is supposed to not end in.
+LANDING_KNEE_TRAVEL_MM = 1.0
+
+
+def _ground_span(tracks, specs):
+    """``(lowest, highest)`` contact sample over every foot and every frame."""
+    lows = [min(point.z for point in tracks[spec["bone"]]) for spec in specs]
+    highs = [max(point.z for point in tracks[spec["bone"]]) for spec in specs]
+    return min(lows), max(highs)
+
+
+def grounded_flags(tracks, specs, clearance=AIRBORNE_CLEARANCE):
+    """Per foot, per sampled frame: is this contact point on the ground?
+
+    Returns ``(ground, high, ceiling, {bone: [bool, ...]})``.  The floor for the
+    ceiling stops a clip with no vertical motion at all — a punch — from calling
+    float dust a lift-off.
+    """
+    ground, high = _ground_span(tracks, specs)
+    ceiling = ground + max(clearance * (high - ground), 1e-5)
+    flags = {spec["bone"]: [point.z <= ceiling for point in tracks[spec["bone"]]]
+             for spec in specs}
+    return ground, high, ceiling, flags
+
+
+def _runs_of(values, minimum):
+    """Index runs of at least ``minimum`` consecutive true values."""
+    runs = []
+    current = []
+    for index, value in enumerate(values):
+        if value:
+            current.append(index)
+        else:
+            if len(current) >= minimum:
+                runs.append(current)
+            current = []
+    if len(current) >= minimum:
+        runs.append(current)
+    return runs
+
+
+def airborne_windows(flags, samples, minimum=MIN_AIRBORNE_FRAMES):
+    """Index runs where **every** foot is off the ground."""
+    if not flags:
+        return []
+    off = [not any(flags[bone][index] for bone in flags) for index in range(samples)]
+    return _runs_of(off, minimum)
+
+
+def _fit_parabola(values):
+    """Least-squares quadratic over the sample index.
+
+    Returns ``(a, b, c, worst residual)`` for ``a*i^2 + b*i + c``, or ``None``
+    when there are too few samples for the fit to mean anything.  Three points
+    define a parabola exactly, so four is the first count at which a residual is
+    evidence rather than arithmetic.
+    """
+    count = len(values)
+    if count < 4:
+        return None
+    xs = [float(index) for index in range(count)]
+    s1 = sum(xs)
+    s2 = sum(x * x for x in xs)
+    s3 = sum(x * x * x for x in xs)
+    s4 = sum(x * x * x * x for x in xs)
+    t0 = sum(values)
+    t1 = sum(x * y for x, y in zip(xs, values))
+    t2 = sum(x * x * y for x, y in zip(xs, values))
+    matrix = Matrix(((s4, s3, s2), (s3, s2, s1), (s2, s1, float(count))))
+    try:
+        solved = matrix.inverted() @ Vector((t2, t1, t0))
+    except ValueError:  # pragma: no cover - a degenerate sample spacing
+        return None
+    a, b, c = float(solved.x), float(solved.y), float(solved.z)
+    worst = max(abs(y - (a * x * x + b * x + c)) for x, y in zip(xs, values))
+    return a, b, c, worst
+
+
+def knee_points(rig):
+    """The mid joint of each IK leg — what a landing's absorb is measured on.
+
+    Same chain ``bend_direction`` judges the rig's fold on
+    (:data:`BEND_CHAIN`), so the two cannot disagree about which bone is the
+    knee.  Empty on a rig with no legs, which is not an error here: the clip is
+    simply read the old way.
+    """
+    out = []
+    try:
+        limbs = rigforge_rig.ik_limbs(rig)
+    except (AttributeError, RuntimeError, TypeError, KeyError):  # pragma: no cover
+        return out
+    for entry in limbs:
+        if entry.get("limb") not in ("leg", "front_leg"):
+            continue
+        chain = BEND_CHAIN.get(entry["limb"])
+        if chain is None:
+            continue
+        mids = _deform_for(rig, chain[1] % entry["side"])
+        if mids and mids[0] in rig.pose.bones:
+            out.append({"limb": entry["name"], "side": entry["side"],
+                        "label": entry.get("label") or entry["name"],
+                        "bone": mids[0]})
+    return out
+
+
 @command("animation_check")
 def cmd_animation_check(params):
     """Measure foot slide on a clip: per-step drift in millimetres, with a verdict.
 
-    ``animation_check {"rig"?, "action"?, "mode"?: "auto"|"planted"|"in_place",
-    "frame_step"?, "contact_band"?, "min_stance_frames"?, "feet"?: [bones]}``
+    ``animation_check {"rig"?, "action"?, "mode"?: "auto"|"planted"|"in_place"
+    |"jump", "frame_step"?, "contact_band"?, "min_stance_frames"?,
+    "feet"?: [bones], "airborne_clearance"?, "min_airborne_frames"?,
+    "parabola_tolerance"?, "hop_tolerance_frames"?}``
 
     Deterministic and geometric — no render, no model, nothing judged by eye.
     The rig's pose, action and the scene's frame are all restored.
+
+    A clip with an **airborne window** — a run of frames where every foot is off
+    the ground *and* the body rose to put them there — is read as a jump: slide
+    is not measured through the flight, the grounded plants either side of it are
+    measured raw, and four more things are gated (the parabola, the landing knee,
+    the plants, and optionally hop asymmetry).  See the section header above for
+    why that detection is automatic and why a walk or a punch cannot trip it.
+    ``"airborne"`` in the result is ``null`` on every clip that is not one.
     """
     started = time.monotonic()
     warnings = []
@@ -2154,11 +2368,21 @@ def cmd_animation_check(params):
 
     mode = get_choice(params, "mode",
                       {"AUTO": "auto", "PLANTED": "planted", "TRAVELLING": "planted",
-                       "IN_PLACE": "in_place", "INPLACE": "in_place"}, "auto")
+                       "IN_PLACE": "in_place", "INPLACE": "in_place",
+                       "JUMP": "jump", "AIRBORNE": "jump"}, "auto")
     frame_step = get_int(params, "frame_step", 1, minimum=1, maximum=10)
     band = get_float(params, "contact_band", CONTACT_BAND, minimum=0.01, maximum=0.9)
     minimum = get_int(params, "min_stance_frames", MIN_STANCE_FRAMES, minimum=2,
                       maximum=1000)
+    clearance = get_float(params, "airborne_clearance", AIRBORNE_CLEARANCE,
+                          minimum=0.01, maximum=0.9)
+    min_airborne = get_int(params, "min_airborne_frames", MIN_AIRBORNE_FRAMES,
+                           minimum=2, maximum=1000)
+    parabola_tolerance = get_float(params, "parabola_tolerance", PARABOLA_TOLERANCE,
+                                   minimum=0.0005, maximum=1.0)
+    hop_tolerance = params.get("hop_tolerance_frames")
+    if hop_tolerance is not None:
+        hop_tolerance = get_int(params, "hop_tolerance_frames", minimum=0, maximum=1000)
 
     raw_feet = params.get("feet")
     if isinstance(raw_feet, str):
@@ -2193,6 +2417,13 @@ def cmd_animation_check(params):
     for name in BODY_CONTROLS:
         if name in rig.pose.bones:
             tracks.setdefault(name, [])
+    # The knees ride along in the sample loop whatever the clip turns out to be.
+    # Nothing downstream of the jump branch reads them, so a walk and a punch
+    # are measured on exactly the numbers they always were; what this buys is
+    # that the landing gate never needs a second pass over the action.
+    knees = knee_points(rig)
+    for entry in knees:
+        tracks.setdefault(entry["bone"], [])
     try:
         with object_mode():
             rigforge_rig.assign_action(rig, action)
@@ -2223,7 +2454,43 @@ def cmd_animation_check(params):
     excursions = {spec["bone"]: _diameter([_horizontal(p) for p in tracks[spec["bone"]]])
                   for spec in specs}
     biggest = max(excursions.values()) if excursions else 0.0
-    if mode == "auto":
+
+    # --- is this a jump? --------------------------------------------------
+    ground_z, high_z, ceiling_z, foot_grounded = grounded_flags(tracks, specs,
+                                                                clearance)
+    windows = airborne_windows(foot_grounded, len(frames), min_airborne)
+    body_track = tracks.get(body_bone) or []
+    foot_range = high_z - ground_z
+    body_rise = 0.0
+    if windows and body_track:
+        grounded_body = [body_track[index].z for index in range(len(frames))
+                         if any(foot_grounded[bone][index] for bone in foot_grounded)]
+        floor = _median(grounded_body) if grounded_body else body_track[0].z
+        body_rise = max(max(body_track[index].z for index in window) - floor
+                        for window in windows)
+    looks_airborne = bool(windows) and body_rise > AIRBORNE_BODY_RISE * foot_range
+
+    if mode == "jump" and not windows:
+        raise ForgeError(
+            "mode='jump' was asked for, but %r has no airborne window: no run of %d "
+            "frames has every foot above %.1f mm (the lowest contact sample plus %.0f%% "
+            "of the %.1f mm the feet travel vertically). Either this clip never leaves "
+            "the ground, or the feet do not clear it far enough to be called flight — "
+            "lower 'airborne_clearance' or 'min_airborne_frames' if you disagree with "
+            "where that line is."
+            % (action.name, min_airborne, (ceiling_z - ground_z) * M_TO_MM,
+               clearance * 100.0, foot_range * M_TO_MM))
+    if mode == "auto" and looks_airborne:
+        mode = "jump"
+    if mode == "jump":
+        reason = (
+            "every foot leaves the ground for %d frame(s) across %d window(s) while %s "
+            "rises %.0f mm, so this is a jump: slide is not measured through the "
+            "flight, and the plants either side of it are"
+            % (sum(len(window) for window in windows), len(windows),
+               body_bone or "the body", body_rise * M_TO_MM)
+            if looks_airborne else "asked for by the caller")
+    elif mode == "auto":
         if biggest <= 1e-6:
             mode, reason = "planted", "nothing moved horizontally at all"
         elif body_travel > 0.2 * biggest:
@@ -2260,6 +2527,25 @@ def cmd_animation_check(params):
         if spans:
             treadmill = total / float(spans)
 
+    #: Which sample indices each foot is *on the ground* for, in jump mode.  Not
+    #: :func:`stance_runs`: that finds the frames a foot holds still near its own
+    #: lowest point and trims the fast samples off each end, which is exactly
+    #: right for a gait and exactly wrong here.  A jump's plant is not a phase
+    #: passing through — it is every frame the character is standing on the
+    #: floor, including the frame it pushes off on and the frame it lands on, and
+    #: all of them have to hold.  Two samples is the shortest run a drift exists
+    #: for.
+    phases = {}
+    if mode == "jump":
+        after = windows[-1][-1] if windows else -1
+        for spec in specs:
+            runs = _runs_of(foot_grounded[spec["bone"]], 2)
+            all_runs[spec["bone"]] = runs
+            phases[spec["bone"]] = [
+                "landing" if run[0] > after else
+                ("takeoff" if windows and run[-1] < windows[0][0] else "ground")
+                for run in runs]
+
     feet_report = []
     worst_step = None
     for spec in specs:
@@ -2285,6 +2571,8 @@ def cmd_animation_check(params):
                     if excursions[spec["bone"]] > 1e-9 else None),
                 "verdict": _slide_band(drift * M_TO_MM),
             }
+            if mode == "jump":
+                entry["phase"] = phases[spec["bone"]][index]
             steps.append(entry)
             if worst_step is None or entry["drift_mm"] > worst_step["drift_mm"]:
                 worst_step = dict(entry, foot=spec["foot"], bone=spec["bone"])
@@ -2310,6 +2598,11 @@ def cmd_animation_check(params):
                 "%s plants %d time(s); the worst step slides %.1f mm."
                 % (spec["bone"], len(steps), worst)),
         })
+        if mode == "jump":
+            feet_report[-1]["grounded_samples"] = sum(
+                1 for value in foot_grounded[spec["bone"]] if value)
+            feet_report[-1]["airborne_samples"] = sum(
+                1 for value in foot_grounded[spec["bone"]] if not value)
 
     measured = [foot for foot in feet_report if foot["steps_measured"]]
     worst_overall = max((foot["worst_drift_mm"] for foot in measured), default=None)
@@ -2337,11 +2630,207 @@ def cmd_animation_check(params):
                    worst_step["frames"][0], worst_step["frames"][1],
                    "worth a look" if gate == "attention" else "that reads as skating"))
 
+    # --- the four things only a jump can be asked --------------------------
+    airborne_report = None
+    if mode == "jump":
+        fps = 24.0
+        render = getattr(scene, "render", None)
+        if render is not None:
+            fps = float(getattr(render, "fps", 24) or 24) / float(
+                getattr(render, "fps_base", 1.0) or 1.0)
+        fps = fps / float(frame_step)
+
+        # (c) the parabola. One least-squares quadratic per window; the fit has
+        #     to curve downward and the residual has to be small against the
+        #     rise. A clip that goes up and comes down in straight lines fits a
+        #     near-zero curvature and is caught by the sign, not by the residual.
+        window_rows = []
+        worst_deviation = None
+        parabola_verdict = "unmeasured"
+        for index, window in enumerate(windows):
+            heights = [body_track[sample].z for sample in window] if body_track else []
+            rise = (max(heights) - min(heights)) if heights else 0.0
+            fit = _fit_parabola(heights)
+            row = {
+                "window": index + 1,
+                "frames": [frames[window[0]], frames[window[-1]]],
+                "samples": len(window),
+                # The *detected* window, which is the frames neither foot is on
+                # the floor for - a frame or so shorter than the flight, since
+                # the takeoff and landing frames are themselves grounded.
+                "airborne_frames": len(window),
+                "airborne_s": round(len(window) / fps, 4) if fps > 0 else None,
+                "rise_mm": round(rise * M_TO_MM, 2),
+                "deviation_mm": None,
+                "tolerance_mm": round(
+                    max(parabola_tolerance * rise, 1e-4) * M_TO_MM, 3),
+                "implied_gravity_m_per_s2": None,
+                "verdict": "unmeasured",
+            }
+            if fit is not None:
+                a, _b, _c, residual = fit
+                gravity = -2.0 * a * fps * fps
+                row["deviation_mm"] = round(residual * M_TO_MM, 3)
+                row["implied_gravity_m_per_s2"] = round(gravity, 3)
+                allowed = max(parabola_tolerance * rise, 1e-4)
+                row["verdict"] = ("ok" if (residual <= allowed and gravity > 0.0)
+                                  else "fail")
+                worst_deviation = (residual if worst_deviation is None
+                                   else max(worst_deviation, residual))
+            window_rows.append(row)
+        verdicts = [row["verdict"] for row in window_rows]
+        if verdicts:
+            parabola_verdict = "fail" if "fail" in verdicts else (
+                "ok" if "ok" in verdicts else "unmeasured")
+        if parabola_verdict == "fail":
+            bad = next(row for row in window_rows if row["verdict"] == "fail")
+            warnings.append(
+                "The airborne body does not follow a ballistic arc: over frames %d-%d "
+                "it sits up to %s mm off its own best-fit parabola (tolerance %s mm) "
+                "and the fit implies g = %s m/s^2. A jump whose height curve is not "
+                "v*t - g*t^2/2 reads as floaty however pretty the keys are."
+                % (bad["frames"][0], bad["frames"][1], bad["deviation_mm"],
+                   bad["tolerance_mm"], bad["implied_gravity_m_per_s2"]))
+
+        # (b) the landing knee, judged the way `bend_direction` judges a fold:
+        #     the rig's own forward axis, and the direction this limb is
+        #     supposed to apex in.
+        knee_rows = []
+        knee_verdict = "unmeasured"
+        absorb_bone = None
+        if knees and windows:
+            # NOT the bone the parabola is measured on. The root is where the
+            # ballistic arc lives and it is *flat* once the character is back on
+            # the floor by construction, so asking it where the absorb bottoms
+            # out returns the contact frame and the knee measures 0.00 mm
+            # forward on a perfectly good landing. The absorb is a hip that
+            # sinks over planted feet, so the bottom is read off whichever body
+            # control actually travels vertically after contact.
+            contact = windows[-1][-1] + 1
+            tail = list(range(contact, len(frames)))
+            for name in BODY_CONTROLS:
+                track = tracks.get(name)
+                if not tail or not track or len(track) <= tail[-1]:
+                    continue
+                heights = [track[index].z for index in tail]
+                span = max(heights) - min(heights)
+                if span > 1e-6 and (absorb_bone is None or span > absorb_bone[1]):
+                    absorb_bone = (name, span)
+            forward, forward_how = rigforge_rig.rig_forward_axis(rig)
+            if tail and absorb_bone is not None:
+                sink = tracks[absorb_bone[0]]
+                bottom = min(tail, key=lambda i: sink[i].z)
+                for entry in knees:
+                    track = tracks.get(entry["bone"]) or []
+                    if len(track) <= bottom:
+                        continue
+                    sign = rigforge_rig.POLE_DIRECTION.get(
+                        "front_leg" if "front" in entry["limb"] else "leg", 1.0)
+                    want = forward * sign
+                    travel = track[bottom] - track[contact]
+                    along = travel.dot(want)
+                    knee_rows.append({
+                        "limb": entry["limb"],
+                        "joint": entry["bone"],
+                        "expected": "forward" if sign > 0 else "backward",
+                        "contact_frame": frames[contact],
+                        "absorb_frame": frames[bottom],
+                        "travel_mm": round(travel.length * M_TO_MM, 2),
+                        "travel_along_mm": round(along * M_TO_MM, 2),
+                        "required_mm": LANDING_KNEE_TRAVEL_MM,
+                        "correct": bool(along * M_TO_MM >= LANDING_KNEE_TRAVEL_MM),
+                    })
+        if knee_rows:
+            knee_verdict = "ok" if all(row["correct"] for row in knee_rows) else "fail"
+        if knee_verdict == "fail":
+            bad = min(knee_rows, key=lambda row: row["travel_along_mm"])
+            warnings.append(
+                "The landing does not absorb anatomically: %s travels %+.2f mm %s "
+                "between contact (frame %d) and the bottom of the absorb (frame %d), "
+                "when a knee has to apex %s by at least %.1f mm. Either the landing is "
+                "stiff-legged, or this leg folds the wrong way and rig_check's "
+                "bend_direction gate will say so too."
+                % (bad["joint"], bad["travel_along_mm"], bad["expected"],
+                   bad["contact_frame"], bad["absorb_frame"], bad["expected"],
+                   LANDING_KNEE_TRAVEL_MM))
+
+        # (d) hop asymmetry. Off unless the caller says what it will tolerate:
+        #     plenty of jumps are *meant* to be hops, and a gate that assumes
+        #     otherwise is a gate people switch off.
+        single = [sum(1 for bone in foot_grounded if foot_grounded[bone][index]) == 1
+                  for index in range(len(frames))]
+        hop_runs = _runs_of(single, 1)
+        longest_hop = max((len(run) for run in hop_runs), default=0)
+        hop_verdict = "unmeasured"
+        if hop_tolerance is not None and len(specs) >= 2:
+            hop_verdict = "ok" if longest_hop <= hop_tolerance else "fail"
+            if hop_verdict == "fail":
+                run = max(hop_runs, key=len)
+                warnings.append(
+                    "This two-foot jump spends %d consecutive frames (%d-%d) with "
+                    "exactly one foot on the ground, over the %d frame(s) "
+                    "'hop_tolerance_frames' allows. One foot leaving or landing ahead "
+                    "of the other is a hop, not a jump."
+                    % (longest_hop, frames[run[0]], frames[run[-1]], hop_tolerance))
+
+        airborne_report = {
+            "windows": window_rows,
+            "airborne_frames": sum(len(window) for window in windows),
+            "ground_mm": round(ground_z * M_TO_MM, 2),
+            "clearance_mm": round((ceiling_z - ground_z) * M_TO_MM, 2),
+            "airborne_clearance": round(clearance, 4),
+            "min_airborne_frames": min_airborne,
+            "foot_range_mm": round(foot_range * M_TO_MM, 2),
+            "body_rise_mm": round(body_rise * M_TO_MM, 2),
+            "detected": bool(looks_airborne),
+            "fps": round(fps, 4),
+            "parabola_tolerance": round(parabola_tolerance, 5),
+            "max_parabola_deviation_mm": (round(worst_deviation * M_TO_MM, 3)
+                                          if worst_deviation is not None else None),
+            "parabola": parabola_verdict,
+            "landing_knees": knee_rows,
+            "landing_knee": knee_verdict,
+            "absorb_bone": absorb_bone[0] if absorb_bone else None,
+            "absorb_travel_mm": (round(absorb_bone[1] * M_TO_MM, 2)
+                                 if absorb_bone else None),
+            "longest_single_foot_run": longest_hop,
+            "hop_tolerance_frames": hop_tolerance,
+            "hop_asymmetry": hop_verdict,
+            "plants_measured": sum(foot["steps_measured"] for foot in feet_report),
+            "says": None,
+        }
+
+        broken = [name for name, value in (("the ballistic arc", parabola_verdict),
+                                           ("the landing knees", knee_verdict),
+                                           ("hop asymmetry", hop_verdict))
+                  if value == "fail"]
+        if broken:
+            gate = "fail"
+            says = ("The plants hold (worst %s mm) but %s did not: see the warnings."
+                    % (worst_overall, " and ".join(broken))
+                    if _slide_band(worst_overall) == "ok" and measured else
+                    "%s And %s did not hold either." % (says, " and ".join(broken)))
+        airborne_report["says"] = (
+            "Airborne for %d frame(s) (%s s off the floor): the body rises %.0f mm and "
+            "holds its parabola to %s mm (tolerance %s mm, implied g %s m/s^2); the "
+            "landing knees travel %s; %d plant(s) measured, worst drift %s mm."
+            % (airborne_report["airborne_frames"],
+               window_rows[0]["airborne_s"] if window_rows else "?",
+               body_rise * M_TO_MM, airborne_report["max_parabola_deviation_mm"],
+               window_rows[0]["tolerance_mm"] if window_rows else "?",
+               window_rows[0]["implied_gravity_m_per_s2"] if window_rows else "?",
+               ", ".join("%s %+.2f mm %s" % (row["joint"], row["travel_along_mm"],
+                                             row["expected"])
+                         for row in knee_rows) or "unmeasured",
+               airborne_report["plants_measured"], worst_overall))
+        says = "%s %s" % (says, airborne_report["says"])
+
     return {
         "rig": rig.name,
         "action": action.name,
         "mode": mode,
         "mode_reason": reason,
+        "airborne": airborne_report,
         "frames": [frames[0], frames[-1]],
         "frame_step": frame_step,
         "samples": len(frames),

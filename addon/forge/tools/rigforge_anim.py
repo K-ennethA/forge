@@ -2971,6 +2971,833 @@ def cmd_rigforge_punch(params):
 
 
 # ---------------------------------------------------------------------------
+# rigforge_jump — a standing jump whose clock is gravity
+# ---------------------------------------------------------------------------
+#
+# The walk plants the feet.  The punch plants them harder.  A jump is the first
+# clip in this module where the feet are *supposed* to leave the ground, and it
+# is therefore the first one that can be wrong in a way neither of those two can
+# be: it can **float**.
+#
+# Floating is not a matter of taste either.  A body in flight is not being
+# animated, it is being *integrated*: from the instant the toes leave the floor
+# to the instant the heels touch it, the only thing acting on the character is
+# gravity, and the height curve is
+#
+#     z(t) = v*t - g*t^2 / 2,      v = sqrt(2 * g * apex_height)
+#
+# with airtime ``2*sqrt(2*apex_height/g)``.  So **apex_height is the parameter
+# and the airtime falls out of it.**  This command will not accept a frame count
+# for the flight, because a frame count for the flight is exactly the mistake:
+# key a 12-frame hang on a 5 cm hop and the character is on the moon, key a
+# 4-frame hang on a 60 cm leap and it is being yanked down on a string.  The
+# report quotes the implied airtime and the maximum deviation from the parabola
+# in millimetres, and ``animation_check``'s jump reading gates them.
+#
+# One honest quantisation, stated rather than hidden
+# --------------------------------------------------
+# The airtime lands between frames far more often than not.  Rounding it to
+# whole frames and keying the *requested* apex anyway would put the landing
+# somewhere between two keys, which is a discontinuity right where the impact
+# is.  So the airtime is rounded to whole frames and then the apex is **solved
+# back out of the rounded airtime** (``apex = g * airtime^2 / 8``): the parabola
+# closes exactly on the landing frame, and the report prints apex reached
+# against apex requested so the difference is visible instead of silent.
+#
+# The six phases, and what each one is for
+# ----------------------------------------
+# * **guard** (frame 1) — standing.  The clip starts and ends here.
+# * **anticipation** — the hips drop into a crouch *over stationary feet*, the
+#   arms swing back, the chest pitches forward.  This is the only place the
+#   energy for the jump can come from, and a jump without it reads as a
+#   character being lifted rather than jumping.
+# * **launch** — the hips accelerate up and the legs extend, **capped against
+#   the legs' own measured reach** the same way the punch caps the fist against
+#   the arm's: past ~98% of thigh+shin the knee is hyperextended, Rigify's IK
+#   stretch makes up the difference, and a stretched leg does not arrive where
+#   it was keyed.  The heel rolls positive over the ball, so the foot leaves the
+#   floor heel-first and **toes last**.
+# * **airborne** — the root follows the parabola; the legs tuck by a
+#   parameterised amount (the feet rise *relative to the root*, which is what a
+#   knee bend is when the foot is keyed on an IK target) and the toes point.
+# * **landing** — the feet plant heel-first at the takeoff spot, or
+#   ``jump_distance`` ahead of it, and the knees flex to absorb.  The absorb is
+#   deeper than the anticipation crouch by default, because catching a falling
+#   body takes more travel than launching a standing one.
+# * **recover** — ease back to the guard the clip started in.
+#
+# Everything is a fraction of this rig's own leg: apex, crouch, absorb, tuck.
+# Nothing here is a constant in metres.
+
+#: Standard gravity.  A parameter, because a low-gravity jump is a real art
+#: direction and the point of deriving the timing is that it stays derived.
+STANDARD_GRAVITY = 9.80665
+
+JUMP_DEFAULT_FRAMES = 36
+
+#: Defaults as fractions of the leg's measured length.
+APEX_HEIGHT_RATIO = 0.35      #: how high the hips rise at the top of the arc
+CROUCH_DEPTH_RATIO = 0.16     #: the anticipation crouch
+TUCK_HEIGHT_RATIO = 0.30      #: how far the feet rise toward the hips in flight
+MAX_CROUCH_RATIO = 0.45       #: no crouch may take the hips lower than this
+
+#: The landing absorb, as a multiple of the anticipation crouch.  Deeper on
+#: purpose: the anticipation only has to load a standing body, the absorb has to
+#: catch a falling one.
+LANDING_DEPTH_FACTOR = 1.5
+
+#: The grounded phases, as fractions of the clip.  The airborne window is *not*
+#: in this table — it is derived from the apex — so these four plus the flight
+#: are what set the clip's real length.
+JUMP_ANTICIPATION_FRACTION = 0.22
+JUMP_LAUNCH_FRACTION = 0.08
+JUMP_LANDING_FRACTION = 0.12
+JUMP_RECOVER_FRACTION = 0.22
+
+#: How far the hips rise above standing height at full extension, as a fraction
+#: of leg length — before the reach cap below cuts it down to what the legs
+#: actually have.  A rig whose rest pose is already straight has nothing to
+#: spend here and is told so.
+JUMP_EXTENSION_RISE_RATIO = 0.06
+
+#: The hard ceiling on hip-to-ankle distance at full extension, as a fraction of
+#: the leg's own measured reach (thigh + shin along the rest chain).  The exact
+#: argument as :data:`MAX_EXTENSION_RATIO` makes for the arm.
+MAX_LEG_EXTENSION_RATIO = 0.98
+LEG_EXTENSION_TOLERANCE = 0.01
+
+JUMP_CHEST_PITCH_DEG = 14.0
+JUMP_ARM_BACK_DEG = 35.0
+JUMP_ARM_UP_DEG = 110.0
+JUMP_ELBOW_BEND_DEG = 20.0
+JUMP_FOOT_ROLL_DEG = 22.0
+
+#: The heel-strike angle at landing contact, as a fraction of ``foot_roll_deg``.
+#: Small on purpose: the roll pivots about the heel, which lifts the **ball** —
+#: the very point the foot-slide metric measures — so a theatrical heel strike
+#: buys a landing that reads as not-yet-planted for several frames.
+JUMP_LANDING_STRIKE_RATIO = 0.25
+
+
+def _track_at(frame, anchors):
+    """Smoothstep between successive ``(frame, value)`` anchors.
+
+    This is the animator's own working method written down: a channel is a
+    short table of *key poses* and the frames they land on, and the computer
+    fills in between them.  Smoothstep because it leaves and arrives at every
+    anchor with zero slope, so a pose the clip passes through **holds** for an
+    instant instead of being crossed at speed — the same argument
+    :func:`_rise_fall` makes for the punch's kinetic chain, and the reason the
+    crouch reads as a crouch rather than as a bounce.
+
+    Evaluated per frame so ``LINEAR`` keyframe handles reproduce it exactly.
+    Anchors must be non-decreasing in frame; where two share a frame the later
+    one wins, which is how a hold is written.
+    """
+    if frame <= anchors[0][0]:
+        return anchors[0][1]
+    for index in range(1, len(anchors)):
+        left_frame, left_value = anchors[index - 1]
+        right_frame, right_value = anchors[index]
+        if frame <= right_frame:
+            if right_frame <= left_frame:
+                return right_value
+            span = _smoothstep((frame - left_frame) / float(right_frame - left_frame))
+            return left_value + (right_value - left_value) * span
+    return anchors[-1][1]
+
+
+#: Hip, knee, ankle — as ``(metarig tag, FK control)`` pairs, best first.  The
+#: deform bone is preferred for a reason that is not cosmetic: see
+#: :func:`jump_legs`.
+JUMP_LEG_JOINTS = (("thigh.%s", "thigh_fk.%s"), ("shin.%s", "shin_fk.%s"),
+                   ("foot.%s", "foot_fk.%s"))
+
+
+def jump_legs(rig, limbs, info):
+    """Each leg's hip, knee, ankle and **measured** reach, at rest.
+
+    ``reach`` is thigh + shin summed along the rest chain — not the straight
+    line from hip to ankle, because a leg with an anatomical pre-bend (which is
+    what ``rigforge_landmarks.prebend_joint`` puts there, and what
+    ``rig_check``'s ``bend_direction`` gate insists on) measures short that way
+    and every default derived from it would come out cramped.
+
+    The three joints are taken from the **deform** chain, and that is the whole
+    subtlety of this function.  A jump keys its legs through the IK targets, so
+    for the entire clip ``thigh_fk`` and ``foot_fk`` sit exactly where they sit
+    at rest — they are not driven, they are the *other* half of the switch.
+    Measure an extension ratio on them and every frame of every jump reports the
+    rest pose's ratio, which is a number that looks plausible, never moves, and
+    means nothing.  The deform bones are what the solver drives, so they are
+    what a posed measurement can be taken on; the reach is summed between the
+    same three heads, so the ratio is one triangle rather than two.
+    """
+    out = {}
+    for entry in limbs:
+        if entry["limb"] != "leg":
+            continue
+        foot = info["feet"].get(entry["name"])
+        if foot is None or foot["hip"] is None:
+            continue
+        side = entry["side"]
+        names = []
+        for tag, fallback in JUMP_LEG_JOINTS:
+            found = rigforge_rig.def_bones_for(rig, tag % side)
+            name = found[0] if found and found[0] in rig.pose.bones else None
+            if name is None and (fallback % side) in rig.pose.bones:
+                name = fallback % side
+            if name is not None:
+                names.append(name)
+        if len(names) < 3:
+            continue
+        points = [_rest_world(rig, rig.pose.bones[name]).translation.copy()
+                  for name in names]
+        reach = sum((points[index + 1] - points[index]).length
+                    for index in range(len(points) - 1))
+        hip, ankle = points[0], points[-1]
+        if reach <= 1e-6:
+            reach = (hip - ankle).length
+        out[entry["name"]] = {
+            "entry": entry, "foot": foot, "reach": reach,
+            "hip": hip, "ankle": ankle,
+            "hip_bone": names[0], "knee_bone": names[1], "ankle_bone": names[-1],
+            "rest_span": (hip - ankle).length,
+        }
+    return out
+
+
+def _extension_headroom(legs, cap):
+    """How far the hips may rise over planted feet before a knee hyperextends.
+
+    With the foot nailed to the floor the hip socket is ``sqrt(flat^2 + drop^2)``
+    from the ankle; raising the hips by ``r`` grows ``drop``.  The cap is
+    ``cap * reach``, so ``r <= sqrt((cap*reach)^2 - flat^2) - drop`` and the
+    answer is the tightest leg's.  ``None`` when there is no leg to measure.
+    """
+    limit = None
+    for leg in legs.values():
+        hip, ankle = leg["hip"], leg["ankle"]
+        flat = Vector((hip.x - ankle.x, hip.y - ankle.y, 0.0)).length
+        drop = hip.z - ankle.z
+        span = cap * leg["reach"]
+        room = math.sqrt(max(0.0, span * span - flat * flat))
+        headroom = room - drop
+        limit = headroom if limit is None else min(limit, headroom)
+    return limit
+
+
+@command("rigforge_jump")
+def cmd_rigforge_jump(params):
+    """Author a standing jump whose airtime is derived from its apex height.
+
+    ``rigforge_jump {"rig"?, "action"?, "frames"?, "apex_height"?,
+    "jump_distance"?, "crouch_depth"?, "landing_depth"?, "tuck_height"?,
+    "anticipation_fraction"?, "launch_fraction"?, "landing_fraction"?,
+    "recover_fraction"?, "gravity"?, "chest_pitch_deg"?, "arm_swing_back_deg"?,
+    "arm_swing_up_deg"?, "elbow_bend_deg"?, "foot_roll_deg"?,
+    "landing_strike_ratio"?, "max_extension_ratio"?, "loop"?, "clear"?,
+    "interpolation"?, "poles"?}``
+
+    Every length is metres and every default is a fraction of *this* rig's own
+    leg, measured off the rest pose.  See the section header above for what each
+    phase is and why the airtime is not something the caller gets to pick.
+    """
+    started = time.monotonic()
+    warnings = []
+    rig = _rig_for(None, params, key="rig", required=True)
+    scene = get_scene()
+
+    total_frames = get_int(params, "frames", JUMP_DEFAULT_FRAMES,
+                           minimum=12, maximum=600)
+    gravity = get_float(params, "gravity", STANDARD_GRAVITY, minimum=0.1, maximum=100.0)
+    anticipation_fraction = get_float(params, "anticipation_fraction",
+                                      JUMP_ANTICIPATION_FRACTION,
+                                      minimum=0.05, maximum=0.5)
+    launch_fraction = get_float(params, "launch_fraction", JUMP_LAUNCH_FRACTION,
+                                minimum=0.02, maximum=0.3)
+    landing_fraction = get_float(params, "landing_fraction", JUMP_LANDING_FRACTION,
+                                 minimum=0.02, maximum=0.4)
+    recover_fraction = get_float(params, "recover_fraction", JUMP_RECOVER_FRACTION,
+                                 minimum=0.05, maximum=0.5)
+    max_extension = get_float(params, "max_extension_ratio", MAX_LEG_EXTENSION_RATIO,
+                              minimum=0.3, maximum=1.0)
+    chest_pitch = math.radians(get_float(params, "chest_pitch_deg",
+                                         JUMP_CHEST_PITCH_DEG, minimum=0.0,
+                                         maximum=45.0))
+    arm_back = math.radians(get_float(params, "arm_swing_back_deg", JUMP_ARM_BACK_DEG,
+                                      minimum=0.0, maximum=90.0))
+    arm_up = math.radians(get_float(params, "arm_swing_up_deg", JUMP_ARM_UP_DEG,
+                                    minimum=0.0, maximum=170.0))
+    elbow_bend = math.radians(get_float(params, "elbow_bend_deg", JUMP_ELBOW_BEND_DEG,
+                                        minimum=0.0, maximum=120.0))
+    roll_deg = get_float(params, "foot_roll_deg", JUMP_FOOT_ROLL_DEG,
+                         minimum=0.0, maximum=60.0)
+    strike_ratio = get_float(params, "landing_strike_ratio", JUMP_LANDING_STRIKE_RATIO,
+                             minimum=0.0, maximum=1.0)
+    interpolation = get_choice(
+        params, "interpolation", {name: name for name in INTERPOLATIONS}, "LINEAR")
+    clear = get_bool(params, "clear", True)
+    loop = get_bool(params, "loop", False) if params.get("loop") is not None else False
+
+    limbs = rigforge_rig.ik_limbs(rig)
+    leg_entries = [entry for entry in limbs if entry["limb"] == "leg"]
+    if len(leg_entries) < 2:
+        raise ForgeError(
+            "rigforge_jump takes off and lands on the leg IK targets, and %r has %d "
+            "leg(s) with one (it needs foot_ik.L and foot_ik.R with an IK_FK switch on "
+            "thigh_parent.L/R). Generate the rig with rigforge_generate_rig, or run "
+            "rigforge_ik to see what this rig actually has. A jump whose legs are keyed "
+            "in FK cannot plant its takeoff or its landing, which is the foot-slide "
+            "anti-pattern animation_check measures in millimetres."
+            % (rig.name, len(leg_entries)))
+
+    info = locomotion_frame(rig, limbs)
+    forward, right, up = info["forward"], info["right"], info["up"]
+    leg_length = info["leg_length"]
+    legs = jump_legs(rig, limbs, info)
+    if not legs:
+        raise ForgeError(
+            "rigforge_jump measures the legs' reach off their own rest chain, and no leg "
+            "on %r has both a hip (thigh_fk) and a foot IK target to measure between."
+            % rig.name)
+    leg_reach = min(leg["reach"] for leg in legs.values())
+
+    apex_height = get_float(params, "apex_height", APEX_HEIGHT_RATIO * leg_length,
+                            minimum=1e-4, maximum=5.0 * leg_length)
+    jump_distance = get_float(params, "jump_distance", 0.0,
+                              minimum=0.0, maximum=6.0 * leg_length)
+    crouch_depth = get_float(params, "crouch_depth", CROUCH_DEPTH_RATIO * leg_length,
+                             minimum=0.0, maximum=MAX_CROUCH_RATIO * leg_length)
+    landing_depth = get_float(params, "landing_depth",
+                              min(LANDING_DEPTH_FACTOR * crouch_depth,
+                                  MAX_CROUCH_RATIO * leg_length),
+                              minimum=0.0, maximum=MAX_CROUCH_RATIO * leg_length)
+    tuck_height = get_float(params, "tuck_height", TUCK_HEIGHT_RATIO * leg_length,
+                            minimum=0.0, maximum=leg_length)
+    if landing_depth <= crouch_depth and params.get("landing_depth") is None:
+        warnings.append(
+            "The landing absorb (%.0f mm) is no deeper than the anticipation crouch "
+            "(%.0f mm) because the crouch cap (%.0f%% of a %.0f mm leg) caught it "
+            "first. Catching a falling body wants more travel than launching a "
+            "standing one; shorten 'crouch_depth' to get it back."
+            % (landing_depth * 1000.0, crouch_depth * 1000.0,
+               MAX_CROUCH_RATIO * 100.0, leg_length * 1000.0))
+
+    # --- the clock, and the one place physics wins -------------------------
+    fps = 24.0
+    render = getattr(scene, "render", None)
+    if render is not None:
+        fps = (float(getattr(render, "fps", 24) or 24)
+               / float(getattr(render, "fps_base", 1.0) or 1.0))
+    airtime_requested = 2.0 * math.sqrt(2.0 * apex_height / gravity)
+    airborne_frames = max(2, int(round(airtime_requested * fps)))
+    # Solve the apex back out of the rounded airtime, so the parabola closes
+    # exactly on the landing frame instead of between two keys.
+    airtime = airborne_frames / fps
+    launch_speed = 0.5 * gravity * airtime
+    apex_actual = launch_speed * launch_speed / (2.0 * gravity)
+    if abs(apex_actual - apex_height) > 1e-6:
+        warnings.append(
+            "apex_height was resolved from %.1f mm to %.1f mm: %.3f s of airtime at "
+            "%.3g m/s^2 is %.2f frames at %.3g fps, and the flight was rounded to %d "
+            "whole frames so the parabola lands on a key instead of between two. The "
+            "airtime is what is real here; the apex follows from it."
+            % (apex_height * 1000.0, apex_actual * 1000.0, airtime_requested, gravity,
+               airtime_requested * fps, fps, airborne_frames))
+
+    anticipation = max(2, int(round(anticipation_fraction * total_frames)))
+    launch = max(2, int(round(launch_fraction * total_frames)))
+    landing = max(2, int(round(landing_fraction * total_frames)))
+    recover = max(2, int(round(recover_fraction * total_frames)))
+    needed = 1 + anticipation + launch + airborne_frames + landing + recover
+    if needed > total_frames:
+        warnings.append(
+            "The clip was lengthened from %d frames to %d: %.1f mm of apex is %d frames "
+            "of flight at %.3g fps, and the grounded phases asked for %d more. Airtime "
+            "is not a frame budget - compressing it is how a jump starts reading as a "
+            "character on a string."
+            % (total_frames, needed, apex_actual * 1000.0, airborne_frames, fps,
+               needed - 1 - airborne_frames))
+        total_frames = needed
+    else:
+        recover += total_frames - needed  # the settle is the phase that may stretch
+
+    f_crouch = 1 + anticipation
+    f_takeoff = f_crouch + launch
+    f_land = f_takeoff + airborne_frames
+    f_absorb = f_land + landing
+    end_frame = f_absorb + recover
+    f_apex = f_takeoff + airborne_frames // 2
+    frames = list(range(1, end_frame + 1))
+
+    # --- the legs' own ceiling ---------------------------------------------
+    headroom = _extension_headroom(legs, max_extension)
+    wanted_rise = JUMP_EXTENSION_RISE_RATIO * leg_length
+    extension_rise = wanted_rise if headroom is None else min(wanted_rise,
+                                                              max(0.0, headroom))
+    extension_clamped = headroom is not None and headroom < wanted_rise - 1e-9
+    if extension_clamped:
+        warnings.append(
+            "The launch extension was cut from %.0f mm to %.0f mm: any further and the "
+            "hip sits more than %.0f%% of the leg's own %.0f mm reach from a planted "
+            "ankle, which is a hyperextended knee. Rigify's IK stretch makes up the "
+            "difference and a stretched leg does not arrive where it was keyed."
+            % (wanted_rise * 1000.0, extension_rise * 1000.0, max_extension * 100.0,
+               leg_reach * 1000.0))
+    if extension_rise <= 1e-6:
+        rest_span = min(leg["rest_span"] for leg in legs.values())
+        warnings.append(
+            "There is no extension left to launch with: standing still the hip is "
+            "already %.0f mm from the ankle against a %.0f%% cap of %.0f mm, so the "
+            "takeoff is carried entirely by the root leaving the ground. That is a rest "
+            "pose whose legs are all but straight; rig_check's bend_direction gate is "
+            "the one that says so properly, and the fix is the anatomical pre-bend "
+            "upstream." % (rest_span * 1000.0, max_extension * 100.0,
+                           max_extension * leg_reach * 1000.0))
+
+    # --- the channels, as tables of key poses ------------------------------
+    hip_anchors = [(1, 0.0), (f_crouch, -crouch_depth), (f_takeoff, extension_rise),
+                   (f_apex, 0.0), (f_land, 0.0), (f_absorb, -landing_depth),
+                   (end_frame, 0.0)]
+    tuck_anchors = [(f_takeoff, 0.0), (f_apex, tuck_height), (f_land, 0.0)]
+    pitch_anchors = [(1, 0.0), (f_crouch, -chest_pitch),
+                     (f_takeoff, 0.15 * chest_pitch), (f_apex, 0.0),
+                     (f_land, -0.4 * chest_pitch), (f_absorb, -chest_pitch),
+                     (end_frame, 0.0)]
+    arm_anchors = [(1, 0.0), (f_crouch, -arm_back), (f_takeoff, arm_up),
+                   (f_apex, 0.6 * arm_up), (f_land, 0.3 * arm_up),
+                   (f_absorb, 0.15 * arm_up), (end_frame, 0.0)]
+    elbow_anchors = [(1, 0.0), (f_crouch, elbow_bend), (f_takeoff, 0.3 * elbow_bend),
+                     (f_apex, 0.6 * elbow_bend), (f_land, 0.2 * elbow_bend),
+                     (f_absorb, elbow_bend), (end_frame, 0.0)]
+    # Heel roll: 0 flat, + rolls over the ball (heel off, toes last), - pivots
+    # about the heel (the strike, toe up). Measured on Rigify's generated foot
+    # roll, + moves the ball by 0.0 mm - which is why the takeoff can roll hard
+    # and the landing may not.
+    roll_anchors = [(1, 0.0), (f_crouch, 0.0), (f_takeoff, roll_deg),
+                    (f_apex, roll_deg), (f_land, -strike_ratio * roll_deg),
+                    (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
+
+    def _root_offset(frame):
+        """The ballistic translation: zero on the ground, a parabola in flight."""
+        if frame <= f_takeoff:
+            return Vector((0.0, 0.0, 0.0))
+        if frame >= f_land:
+            return forward * jump_distance
+        elapsed = (frame - f_takeoff) / fps
+        rise = launch_speed * elapsed - 0.5 * gravity * elapsed * elapsed
+        return up * rise + forward * (jump_distance * elapsed / airtime)
+
+    def _ideal_rise(frame):
+        if frame <= f_takeoff or frame >= f_land:
+            return 0.0
+        elapsed = (frame - f_takeoff) / fps
+        return launch_speed * elapsed - 0.5 * gravity * elapsed * elapsed
+
+    def _body_offset(frame):
+        """Where the hips ride: the root's arc plus the crouch/extend curve."""
+        return _root_offset(frame) + up * _track_at(frame, hip_anchors)
+
+    # --- the action ---------------------------------------------------------
+    default_name = "jump-forward" if jump_distance > 1e-6 else "jump"
+    wanted_action = get_str(params, "action", default_name)
+    wanted_action = loop_name(wanted_action, loop)
+    before_actions = sorted(existing.name for existing in bpy.data.actions)
+    action = bpy.data.actions.get(wanted_action)
+    created = False
+    if action is None:
+        action = bpy.data.actions.new(wanted_action)
+        created = True
+    # Fake user whether we made it or found it, for the same reason the punch
+    # does: a zero-user action is lost on save the moment something else is
+    # assigned to this rig.
+    action.use_fake_user = True
+
+    keys_set = 0
+    cleared = 0
+    bones_touched = []
+    modes = {}
+    previous_frame = scene.frame_current
+    previous_action = rig.animation_data.action if rig.animation_data else None
+
+    def touched(name):
+        if name and name not in bones_touched:
+            bones_touched.append(name)
+
+    root_track = []
+    torso_track = []
+    extension_track = []
+
+    with object_mode():
+        assign_action(rig, action)
+        if clear:
+            cleared = clear_action(action)
+
+        # Legs IK (the plants, and the tuck), arms FK (a swing is an arc, which
+        # is what FK is for) - keyframed at frame 1 so the export bake resolves
+        # the rig that was authored.
+        convention = rigforge_rig.apply_ik_convention(
+            rig, legs="ik", arms="fk", poles=get_bool(params, "poles", True),
+            keyframe_at=frames[0])
+        for entry in convention["limbs"]:
+            touched(entry["switch_bone"])
+
+        def _control(names):
+            for name in names:
+                if name in rig.pose.bones:
+                    return rig.pose.bones[name]
+            return None
+
+        root = _control(ROOT_CONTROLS)
+        torso = _control(TORSO_CONTROLS)
+        chest = _control(CHEST_CONTROLS)
+        if torso is None:
+            raise ForgeError(
+                "rigforge_jump drives the body through the torso control, and %r has "
+                "none of %s. Generate the rig with rigforge_generate_rig."
+                % (rig.name, ", ".join(TORSO_CONTROLS)))
+        if root is None:
+            raise ForgeError(
+                "rigforge_jump puts the ballistic arc on the root bone, and %r has none "
+                "of %s. Godot's root-motion track wants a bone the skeleton does not "
+                "deform with; without one there is nothing to put a jump's travel on, "
+                "and animation_check measures the parabola on that same bone."
+                % (rig.name, ", ".join(ROOT_CONTROLS)))
+        if chest is torso:
+            chest = None
+            warnings.append(
+                "This rig has no separate chest control, so the chest pitch was folded "
+                "into the torso: a spine that is one bone cannot lean and rise "
+                "independently.")
+
+        arms = []
+        for entry in limbs:
+            if entry["limb"] != "arm":
+                continue
+            upper = next((rig.pose.bones[name] for name in entry["fk_chain"]
+                          if "upper_arm" in name and name in rig.pose.bones), None)
+            fore = next((rig.pose.bones[name] for name in entry["fk_chain"]
+                         if "forearm" in name and name in rig.pose.bones), None)
+            if upper is not None:
+                arms.append({"side": entry["side"], "upper": upper, "fore": fore,
+                             "upper_rest": _rest_world(rig, upper),
+                             "fore_rest": _rest_world(rig, fore) if fore else None})
+        if not arms:
+            warnings.append("No FK arm control was found, so the arms do not swing - "
+                            "and an arm swing is where a jump's read of effort lives.")
+
+        rest_root = _rest_world(rig, root)
+        rest_torso = _rest_world(rig, torso)
+        rest_chest = _rest_world(rig, chest) if chest is not None else None
+
+        heels = {}
+        for name, foot in info["feet"].items():
+            heel = rig.pose.bones.get(foot.get("heel_pivot") or "")
+            if heel is None:
+                continue
+            if heel.rotation_mode == "QUATERNION":
+                modes[heel.name] = heel.rotation_mode
+                heel.rotation_mode = "XYZ"
+            heels[name] = heel
+
+        # The two ends the extension is measured between are the two ends the
+        # reach was summed between (see `jump_legs`).
+        thigh_probe = {name: leg["hip_bone"] for name, leg in legs.items()}
+        ankle_probe = {name: leg["ankle_bone"] for name, leg in legs.items()}
+
+        for frame in frames:
+            scene.frame_set(frame)
+            offset = _root_offset(frame)
+            body = _body_offset(frame)
+            tuck = _track_at(frame, tuck_anchors) if f_takeoff < frame < f_land else 0.0
+
+            # 1. The root carries the ballistic arc, and nothing else does. It
+            #    is keyed first because every world matrix below is resolved
+            #    through it.
+            matrix = rest_root.copy()
+            matrix.translation = rest_root.translation + offset
+            _set_world(rig, root, matrix)
+            keys_set += _key_transform(root, frame)
+            touched(root.name)
+            refresh_view_layer()
+
+            # 2. The feet. Grounded: the rest position (or the landing spot),
+            #    constant, which is why the plants cannot drift. Airborne: the
+            #    root's arc plus the tuck, which is what a knee bend is when the
+            #    foot is keyed on an IK target.
+            for name in sorted(info["feet"]):
+                foot = info["feet"][name]
+                target = rig.pose.bones.get(foot["target"])
+                if target is None:
+                    continue
+                matrix = foot["rest"].copy()
+                matrix.translation = foot["rest"].translation + offset + up * tuck
+                _set_world(rig, target, matrix)
+                keys_set += _key_transform(target, frame)
+                touched(target.name)
+                heel = heels.get(name)
+                if heel is not None:
+                    heel.rotation_euler = (
+                        math.radians(_track_at(frame, roll_anchors)), 0.0, 0.0)
+                    heel.keyframe_insert("rotation_euler", frame=frame)
+                    keys_set += 3
+                    touched(heel.name)
+
+            # 3. The hips: the crouch, the extension, the absorb.
+            matrix = rest_torso.copy()
+            matrix.translation = rest_torso.translation + body
+            _set_world(rig, torso, matrix)
+            keys_set += _key_transform(torso, frame)
+            touched(torso.name)
+            refresh_view_layer()
+
+            # 4. The chest pitch, set in world space and then pinned back onto
+            #    the spine. The world matrix is what makes the lean a *lean*
+            #    whatever the hips are doing underneath it; zeroing the location
+            #    basis afterwards is the punch's head trick - the bone rides its
+            #    parent and only its rotation is authored, so the arc the hips
+            #    are on is not keyed into the spine twice.
+            if chest is not None:
+                anchor = rest_chest.translation + body
+                matrix = rest_chest.copy()
+                matrix.translation = anchor
+                matrix = _rotate_about(matrix, right, _track_at(frame, pitch_anchors),
+                                       anchor)
+                _set_world(rig, chest, matrix)
+                chest.location = (0.0, 0.0, 0.0)
+                keys_set += _key_transform(chest, frame)
+                touched(chest.name)
+                refresh_view_layer()
+
+            # 5. The arms. Both the same way, unlike a walk: a jump's arms swing
+            #    back together and throw up together, because they are adding
+            #    momentum rather than balancing a gait.
+            swing = _track_at(frame, arm_anchors)
+            bend = _track_at(frame, elbow_anchors)
+            for arm in arms:
+                anchor = arm["upper_rest"].translation + body
+                matrix = arm["upper_rest"].copy()
+                matrix.translation = anchor
+                matrix = _rotate_about(matrix, right, swing, anchor)
+                _set_world(rig, arm["upper"], matrix)
+                arm["upper"].location = (0.0, 0.0, 0.0)
+                keys_set += _key_transform(arm["upper"], frame)
+                touched(arm["upper"].name)
+                if arm["fore"] is not None:
+                    refresh_view_layer()
+                    fore_anchor = arm["fore_rest"].translation + body
+                    bent = arm["fore_rest"].copy()
+                    bent.translation = fore_anchor
+                    bent = _rotate_about(bent, right, bend, fore_anchor)
+                    carried = _rotate_about(bent, right, swing, anchor)
+                    _set_world(rig, arm["fore"], carried)
+                    arm["fore"].location = (0.0, 0.0, 0.0)
+                    keys_set += _key_transform(arm["fore"], frame)
+                    touched(arm["fore"].name)
+            refresh_view_layer()
+
+            # --- measurement, on the posed rig rather than on the parameters --
+            root_track.append((frame, (rig.matrix_world @ root.head).z,
+                               _ideal_rise(frame)))
+            torso_track.append((frame, (rig.matrix_world @ torso.head).z))
+            # Every frame, not just the takeoff: the cap is a statement about
+            # the whole clip, and the cheapest way to be sure the peak really is
+            # at full extension is to look at all of them.
+            for name in sorted(legs):
+                hip = rig.matrix_world @ rig.pose.bones[thigh_probe[name]].head
+                ankle = rig.matrix_world @ rig.pose.bones[ankle_probe[name]].head
+                extension_track.append((frame, name, (hip - ankle).length,
+                                        legs[name]["reach"]))
+
+        applied = 0
+        for curve in rigforge_rig.action_fcurves(action):
+            for point in curve.keyframe_points:
+                point.interpolation = interpolation
+                applied += 1
+            try:
+                curve.update()
+            except (AttributeError, RuntimeError):  # pragma: no cover
+                pass
+
+    scene.frame_set(previous_frame)
+    refresh_view_layer()
+
+    if modes:
+        warnings.append(
+            "Rotation mode changed to XYZ euler on %s so the foot roll is one readable "
+            "channel." % ", ".join(sorted(modes)))
+    if previous_action is not None and previous_action is not action:
+        warnings.append(
+            "%r was the action on %r and is now %r; %r was left in the file with a fake "
+            "user, so nothing was lost."
+            % (previous_action.name, rig.name, action.name, previous_action.name))
+
+    # --- the numbers --------------------------------------------------------
+    ground_z = root_track[0][1] if root_track else 0.0
+    airborne_rows = [row for row in root_track if f_takeoff < row[0] < f_land]
+    apex_reached = max((row[1] - ground_z for row in airborne_rows), default=0.0)
+    parabola_deviation = max((abs((row[1] - ground_z) - row[2])
+                              for row in airborne_rows), default=0.0)
+    parabola_within = parabola_deviation <= max(1e-4, 0.01 * max(apex_actual, 1e-6))
+
+    stand_z = torso_track[0][1] if torso_track else 0.0
+    crouch_measured = stand_z - min((z for frame, z in torso_track
+                                     if frame <= f_takeoff), default=stand_z)
+    absorb_measured = stand_z - min((z for frame, z in torso_track
+                                     if frame >= f_land), default=stand_z)
+    absorb_deeper = absorb_measured > crouch_measured
+
+    extension_rows = [(span / reach, frame, name)
+                      for frame, name, span, reach in extension_track if reach > 1e-9]
+    extension_ratio = max(extension_rows)[0] if extension_rows else None
+    extension_peak_frame = max(extension_rows)[1] if extension_rows else None
+    tuck_ratio = min(extension_rows)[0] if extension_rows else None
+    tuck_frame = min(extension_rows)[1] if extension_rows else None
+    rest_ratio = max((leg["rest_span"] / leg["reach"] for leg in legs.values()
+                      if leg["reach"] > 1e-9), default=0.0)
+    # The cap governs what *this command adds*, which is why the ceiling is the
+    # cap or the rest pose, whichever is already higher. A rig generated with no
+    # anatomical pre-bend stands at 99% of its own chain length before anything
+    # is keyed; failing the jump for that would be blaming the animation for a
+    # rig defect, and the pre-bend warning above already names the real one.
+    ceiling_ratio = max(max_extension, rest_ratio)
+    extension_within_cap = (extension_ratio is None
+                            or extension_ratio <= ceiling_ratio + LEG_EXTENSION_TOLERANCE)
+    if not extension_within_cap:
+        warnings.append(
+            "Measured on the posed rig at takeoff the hip sits %.1f%% of the leg's %.0f "
+            "mm reach from the ankle, past the %.1f%% ceiling (a %.0f%% cap, or the "
+            "%.1f%% this rest pose already stands at). Lower 'max_extension_ratio', or "
+            "shorten the crouch that bought it."
+            % (extension_ratio * 100.0, leg_reach * 1000.0, ceiling_ratio * 100.0,
+               max_extension * 100.0, rest_ratio * 100.0))
+    if not parabola_within:
+        warnings.append(
+            "The root's measured height wanders %.2f mm from the parabola it was keyed "
+            "from. That should be float dust; something else is driving this bone."
+            % (parabola_deviation * M_TO_MM))
+    if not absorb_deeper:
+        warnings.append(
+            "The landing absorb (%.0f mm) is not deeper than the anticipation crouch "
+            "(%.0f mm), measured on the torso. A landing that does not give is a "
+            "character hitting the floor, not catching itself."
+            % (absorb_measured * 1000.0, crouch_measured * 1000.0))
+
+    after_actions = sorted(existing.name for existing in bpy.data.actions)
+    lost = sorted(set(before_actions) - set(after_actions))
+    if lost:  # pragma: no cover - nothing here removes an action
+        warnings.append("Action(s) %s went missing." % ", ".join(lost))
+
+    return {
+        "rig": rig.name,
+        "action": action.name,
+        "created": created,
+        "loop": is_loop(action.name),
+        "frames": total_frames,
+        "frame_range": [frames[0], frames[-1]],
+        "fps": round(fps, 4),
+        "gravity": round(gravity, 5),
+        "phases": {
+            "guard": [1, 1],
+            "anticipation": [1, f_crouch],
+            "launch": [f_crouch, f_takeoff],
+            "airborne": [f_takeoff + 1, f_land - 1],
+            "landing": [f_land, f_absorb],
+            "recover": [f_absorb, end_frame],
+        },
+        "crouch_frame": f_crouch,
+        "takeoff_frame": f_takeoff,
+        "apex_frame": f_apex,
+        "landing_frame": f_land,
+        "absorb_frame": f_absorb,
+        "airborne_frames": airborne_frames,
+        "airborne_keys": len(airborne_rows),
+        "airtime_s": round(airtime, 5),
+        "airtime_requested_s": round(airtime_requested, 5),
+        "launch_speed_m_per_s": round(launch_speed, 5),
+        "apex_requested_m": round(apex_height, 5),
+        "apex_solved_m": round(apex_actual, 5),
+        "apex_reached_m": round(apex_reached, 5),
+        "apex_error_mm": round(abs(apex_reached - apex_actual) * M_TO_MM, 3),
+        # The true peak is half a frame from the nearest key whenever the flight
+        # is an even number of frames, and a body at the top of a parabola falls
+        # ``g*dt^2/2`` in that half frame. Reported rather than hidden, because
+        # it is the entire difference between the apex solved for and the apex a
+        # sampled clip can actually show, and a gate that does not know that
+        # number would call a correct jump short.
+        "apex_peak_between_keys_mm": round(
+            0.5 * gravity * (0.5 / fps) ** 2 * M_TO_MM, 4),
+        "parabola_deviation_mm": round(parabola_deviation * M_TO_MM, 4),
+        "parabola_within_tolerance": bool(parabola_within),
+        "jump_distance_m": round(jump_distance, 5),
+        "crouch_depth_m": round(crouch_depth, 5),
+        "crouch_measured_m": round(crouch_measured, 5),
+        "landing_depth_m": round(landing_depth, 5),
+        "absorb_measured_m": round(absorb_measured, 5),
+        "absorb_deeper_than_crouch": bool(absorb_deeper),
+        "tuck_height_m": round(tuck_height, 5),
+        "extension_rise_m": round(extension_rise, 5),
+        "extension_rise_clamped": bool(extension_clamped),
+        "extension_headroom_m": (round(headroom, 5) if headroom is not None else None),
+        "leg_rest_span_m": round(min(leg["rest_span"] for leg in legs.values()), 5),
+        "leg_reach_m": round(leg_reach, 5),
+        "leg_length_m": round(leg_length, 5),
+        "extension_ratio": (round(extension_ratio, 5)
+                            if extension_ratio is not None else None),
+        "extension_peak_frame": extension_peak_frame,
+        "tuck_ratio": round(tuck_ratio, 5) if tuck_ratio is not None else None,
+        "tuck_frame": tuck_frame,
+        "legs": [{"limb": name,
+                  "hip_bone": leg["hip_bone"],
+                  "knee_bone": leg["knee_bone"],
+                  "ankle_bone": leg["ankle_bone"],
+                  "reach_m": round(leg["reach"], 5),
+                  "rest_span_m": round(leg["rest_span"], 5)}
+                 for name, leg in sorted(legs.items())],
+        "max_extension_ratio": round(max_extension, 4),
+        "rest_extension_ratio": round(rest_ratio, 5),
+        "extension_ceiling_ratio": round(ceiling_ratio, 5),
+        "extension_tolerance": LEG_EXTENSION_TOLERANCE,
+        "extension_within_cap": bool(extension_within_cap),
+        "foot_roll_deg": round(roll_deg, 3),
+        "landing_strike_deg": round(strike_ratio * roll_deg, 3),
+        "chest_pitch_deg": round(math.degrees(chest_pitch), 3),
+        "arm_swing_back_deg": round(math.degrees(arm_back), 3),
+        "arm_swing_up_deg": round(math.degrees(arm_up), 3),
+        "forward_axis": [round(value, 4) for value in forward],
+        "feet_planted": sorted(info["feet"][name]["target"] for name in info["feet"]),
+        "convention": convention["convention"],
+        "poles": convention["poles"],
+        "bones": bones_touched,
+        "keys_set": keys_set,
+        "cleared_fcurves": cleared,
+        "fcurves": len(rigforge_rig.action_fcurves(action)),
+        "interpolation": interpolation,
+        "interpolated_points": applied,
+        "rotation_modes": modes,
+        "actions_in_file": after_actions,
+        "says": (
+            "%s: %d frames. Apex %.0f mm reached against %.0f mm requested (solved to "
+            "%.0f mm by the frame rounding), %d frames of airtime (%.3f s at %.3g fps, "
+            "g = %.3g m/s^2), max parabola deviation %.3f mm. Leg extension peaks at "
+            "%.1f%% of a %.0f mm reach (cap %.0f%%). Landing absorbs %.0f mm against a "
+            "%.0f mm anticipation crouch. Feet planted on %s through takeoff and "
+            "landing."
+            % (action.name, total_frames, apex_reached * 1000.0, apex_height * 1000.0,
+               apex_actual * 1000.0, airborne_frames, airtime, fps, gravity,
+               parabola_deviation * M_TO_MM,
+               (extension_ratio or 0.0) * 100.0, leg_reach * 1000.0,
+               max_extension * 100.0, absorb_measured * 1000.0,
+               crouch_measured * 1000.0,
+               " and ".join(sorted(info["feet"][name]["target"]
+                                   for name in info["feet"])))),
+        "warnings": warnings,
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+# ---------------------------------------------------------------------------
 # rigforge_retarget
 # ---------------------------------------------------------------------------
 
