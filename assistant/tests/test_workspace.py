@@ -468,14 +468,20 @@ def test_a_report_that_is_not_json_is_no_report():
 
 
 def test_the_snapshot_script_carries_no_client_input():
-    """The only thing substituted into the code Blender runs is JSON."""
+    """The only thing substituted into the code Blender runs is JSON.
+
+    Three values now: the path, the object to export and the bone whose
+    weights get baked into vertex colours for the heatmap. All three are
+    ``json.dumps``-ed, and the last two are the ones a client can influence.
+    """
+    nasty = 'evil"); import os #'
     code = bridge.SNAPSHOT_SCRIPT % (json.dumps("C:/tmp/snapshot-cup.glb"),
-                                     json.dumps('evil"); import os #'))
+                                     json.dumps(nasty),
+                                     json.dumps(nasty))
     assert '"C:/tmp/snapshot-cup.glb"' in code
-    # Whatever an object name contains, it arrives as a JSON string literal
-    # rather than as code.
-    assert 'import os #' not in code.replace(
-        json.dumps('evil"); import os #'), "")
+    # Whatever a name contains, it arrives as a JSON string literal rather
+    # than as code.
+    assert 'import os #' not in code.replace(json.dumps(nasty), "")
     compile(code, "<snapshot>", "exec")   # it is still valid Python
 
 
@@ -1379,6 +1385,11 @@ INJECTIONS = [
     "",
 ]
 
+#: The same list without the empty string.  An absent name is not an attack —
+#: on the routes that take an optional object, rig or action it means "the
+#: tool picks", which is what those tools do.
+NAMED_INJECTIONS = [one for one in INJECTIONS if one.strip()]
+
 
 @pytest.mark.parametrize("bone", INJECTIONS)
 def test_a_bone_name_that_could_be_code_never_reaches_a_script(bone):
@@ -2251,4 +2262,898 @@ def test_escape_abandons_a_placement(client):
 def test_the_nudge_styles_ship_with_the_stylesheet(client):
     css = fetch_text(client, "/webui/app.css")
     for rule in (".ws-nudge", ".ws-nudge-mm", ".btn.ws-axis"):
+        assert rule in css, rule
+
+
+# ===========================================================================
+# Phase 20 â€” the stage as an inspection surface, and the two tiers
+# ===========================================================================
+#
+# Canned reports, shaped exactly as the add-on's own commands return them:
+# `verify_design`'s axes with `mesh_diagnose` under the defects one,
+# `rig_check`'s placement block, and `animation_check`'s gates.  The
+# normaliser is a pure function over these, so what is pinned on a model is
+# testable without a Blender anywhere.
+
+VERIFY_REPORT = {
+    "object": "werewolf-form-a_retopo",
+    "axes": {
+        "defects": {
+            "verdict": "attention",
+            "says": "608 clipping, 18 ngons",
+            "tier": "measured",
+            "detail": {
+                "face_count": 15558,
+                "self_intersections": {
+                    "count": 2, "faces": 4, "scanned": True,
+                    "examples": [
+                        {"location_mm": [10.0, -20.0, 1700.0], "faces": [3, 9]},
+                        {"location_mm": [-10.0, -20.0, 1700.0], "faces": [4, 8]},
+                    ]},
+                "zero_area_faces": {
+                    "count": 1,
+                    "examples": [{"location_mm": [0.0, 0.0, 900.0], "face": 7}]},
+                "ngons": {"count": 18, "max_sides": 6, "examples": []},
+            },
+        },
+        "poly_budget": {
+            "verdict": "pass", "says": "15558 faces, inside the 15000 budget",
+            "faces": {"value": 15558, "tier": "measured"},
+            "budget": {"value": 15000, "tier": "measured"},
+        },
+        "uv": {"verdict": "attention", "says": "75 flipped faces",
+               "present": {"value": True, "tier": "measured"}},
+    },
+}
+
+RIG_REPORT = {
+    "rig": "werewolf-form-a_retopo_rig",
+    "placement": {
+        "centering": {
+            "verdict": "attention",
+            "bones": [
+                {"bone": "DEF-thigh.L", "gated": True, "verdict": "attention",
+                 "worst_offset_mm": 38.6, "worst_offset_pct_of_radius": 54.1,
+                 "head_offset_mm": 12.0, "worst_at_fraction": 0.5},
+                {"bone": "DEF-shin.L", "gated": True, "verdict": "ok",
+                 "worst_offset_mm": 2.0, "worst_offset_pct_of_radius": 9.6},
+            ]},
+        "asymmetry": {"verdict": "ok", "worst_mm": 0.0,
+                      "says": "every .R bone mirrors its .L twin"},
+        "side_naming": {"verdict": "ok", "wrong": 0, "of": 26,
+                        "says": "0/26 wrong"},
+        "overlap": {
+            "verdict": "fail", "says": "stray mass 24.37",
+            "stray_mass": 24.37, "outlier_pairs": 8,
+            "outliers": [
+                {"a": "DEF-breast.L", "b": "DEF-pelvis.R", "gap_mm": 382.0,
+                 "shared_vertices": 320},
+            ]},
+        "continuity": {
+            "verdict": "attention", "says": "376 holes / 20064 region verts",
+            "holes": 376, "region_vertices": 20064, "hole_pct": 1.87,
+            "bones": [
+                {"bone": "DEF-pelvis.R", "verdict": "fail", "holes": 94,
+                 "hole_pct": 4.7},
+                {"bone": "DEF-foot.L", "verdict": "ok", "holes": 1,
+                 "hole_pct": 0.1},
+            ]},
+        "bend_direction": {"verdict": "fail", "says": "the knees fold backwards",
+                           "worst_bone": "DEF-shin.R"},
+    },
+}
+
+ANIMATE_REPORT = {
+    "action": "walk-loop", "mode": "in_place",
+    "gate": {"verdict": "ok", "says": "feet hold to 1.1 mm",
+             "worst_drift_mm": 1.1, "threshold_ok_mm": 5.0, "worst_frame": 12},
+    "deformation_gate": {"verdict": "fail", "says": "the legs stretch 32%",
+                         "worst_stretch_pct": 32.0, "worst_frame": 19},
+    "loop_seam_closure": {"verdict": "attention", "says": "seam is 3.2 mm open",
+                          "max_mm": 3.2},
+}
+
+
+# ---------------------------------------------------------------------------
+# severity, and the verdict words every gate in Forge writes
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("verdict,severity", [
+    ("ok", "ok"),
+    ("pass", "ok"),
+    ("attention", "attention"),
+    ("attention overall, 376 holes / 20064 region verts = 1.87%", "attention"),
+    ("fail", "fail"),
+    ("fail, stray_mass 24.37 (threshold ok<=0.05)", "fail"),
+    ("needs_attention (documented, pre-existing)", "attention"),
+    ("unmeasured", "unknown"),
+    ("not_applicable", "none"),
+    ("", "unknown"),
+    (None, "unknown"),
+    ("marinating", "unknown"),
+])
+def test_a_gates_verdict_becomes_one_of_four_colours(verdict, severity):
+    assert bridge.severity_of(verdict) == severity
+
+
+# ---------------------------------------------------------------------------
+# verify_mesh: the defects that carry a place on the model
+# ---------------------------------------------------------------------------
+
+def test_a_located_defect_becomes_a_pin_where_it_was_measured():
+    """``mesh_diagnose`` reports ``location_mm``; that is the whole feature."""
+    findings = bridge.normalize_verify(VERIFY_REPORT)
+    clipping = [one for one in findings
+                if one["gate"] == "self_intersections"]
+    assert len(clipping) == 2
+    # World millimetres in the report, world metres out of the bridge.
+    assert clipping[0]["world_pos"] == [0.01, -0.02, 1.7]
+    assert clipping[1]["world_pos"] == [-0.01, -0.02, 1.7]
+    assert clipping[0]["severity"] == "attention"
+    # Which two faces are passing through each other is what somebody who
+    # clicked the pin came to find out.
+    assert clipping[0]["numbers"]["faces"] == [3, 9]
+    assert "1 of 2" in clipping[0]["label"]
+    # Two examples of one defect are two pins, not one.
+    assert clipping[0]["id"] != clipping[1]["id"]
+
+
+def test_a_defect_that_was_counted_but_not_located_still_lists():
+    """18 ngons with no examples is still worth saying, just not pinnable."""
+    findings = bridge.normalize_verify(VERIFY_REPORT)
+    ngons = [one for one in findings if one["gate"] == "ngons"]
+    assert len(ngons) == 1
+    assert ngons[0]["world_pos"] is None
+    assert ngons[0]["numbers"]["count"] == 18
+
+
+def test_the_other_axes_list_with_their_own_numbers():
+    findings = bridge.normalize_verify(VERIFY_REPORT)
+    budget = [one for one in findings if one["gate"] == "poly_budget"][0]
+    assert budget["severity"] == "ok"
+    assert budget["world_pos"] is None
+    # A claim is {"value", "tier"}; the value is the part a person reads.
+    assert budget["numbers"]["faces"] == 15558
+    assert budget["numbers"]["budget"] == 15000
+    uv = [one for one in findings if one["gate"] == "uv"][0]
+    assert uv["severity"] == "attention"
+
+
+def test_only_the_defect_that_merging_fixes_offers_a_one_click_fix():
+    """Everything else on a mesh is a judgement, so it stays a conversation."""
+    findings = bridge.normalize_verify(VERIFY_REPORT)
+    fixable = [one for one in findings if one["fix"]]
+    assert [one["gate"] for one in fixable] == ["zero_area_faces"]
+    assert fixable[0]["fix"]["op"] == "merge_doubles"
+    assert fixable[0]["fix"]["op"] in bridge.MESH_FIX_OPS
+    clipping = [one for one in findings if one["gate"] == "self_intersections"]
+    assert all(one["fix"] is None for one in clipping)
+
+
+# ---------------------------------------------------------------------------
+# rig and skin: the gates that name a bone
+# ---------------------------------------------------------------------------
+
+def test_a_rig_finding_names_the_bone_it_measured():
+    """No coordinates are invented: bone_centering reports a NAME, so that is
+    what comes out, and the viewer places it on the joint it already drew."""
+    findings = bridge.normalize_rig(RIG_REPORT)
+    centering = [one for one in findings if one["gate"] == "centering"]
+    assert [one["bone"] for one in centering] == ["DEF-thigh.L"]
+    assert centering[0]["world_pos"] is None
+    assert centering[0]["severity"] == "attention"
+    assert centering[0]["numbers"]["worst_offset_pct_of_radius"] == 54.1
+
+
+def test_a_green_bone_is_not_a_finding():
+    findings = bridge.normalize_rig(RIG_REPORT)
+    assert "DEF-shin.L" not in [one["bone"] for one in findings]
+    assert "asymmetry" not in [one["gate"] for one in findings]
+    assert "side_naming" not in [one["gate"] for one in findings]
+
+
+def test_a_failing_placement_gate_lists_with_its_worst_bone():
+    findings = bridge.normalize_rig(RIG_REPORT)
+    bend = [one for one in findings if one["gate"] == "bend_direction"][0]
+    assert bend["severity"] == "fail"
+    assert bend["bone"] == "DEF-shin.R"
+    assert "backwards" in bend["label"]
+
+
+def test_the_skin_gates_come_out_of_the_same_run():
+    """rig_check measures placement and skinning in one pass."""
+    findings = bridge.normalize_skin(RIG_REPORT)
+    gates = [one["gate"] for one in findings]
+    assert "overlap" in gates and "continuity" in gates
+    # â€¦and the rig stage does not claim them.
+    assert "overlap" not in [one["gate"] for one in bridge.normalize_rig(RIG_REPORT)]
+
+
+def test_an_overlap_finding_names_both_bones_and_pins_on_the_first():
+    findings = bridge.normalize_skin(RIG_REPORT)
+    overlap = [one for one in findings if one["gate"] == "overlap"][0]
+    assert overlap["bone"] == "DEF-breast.L"
+    assert overlap["bones"] == ["DEF-breast.L", "DEF-pelvis.R"]
+    assert overlap["numbers"]["gap_mm"] == 382.0
+    assert overlap["severity"] == "fail"
+
+
+def test_a_continuity_hole_pins_on_the_bone_whose_region_it_is_in():
+    findings = bridge.normalize_skin(RIG_REPORT)
+    holes = [one for one in findings if one["gate"] == "continuity"]
+    assert [one["bone"] for one in holes] == ["DEF-pelvis.R"]
+    assert holes[0]["numbers"]["hole_pct"] == 4.7
+    assert "smooth it locally" in holes[0]["fix_hint"]
+
+
+# ---------------------------------------------------------------------------
+# animate
+# ---------------------------------------------------------------------------
+
+def test_the_clip_gates_that_failed_are_the_findings():
+    findings = bridge.normalize_animate(ANIMATE_REPORT)
+    gates = dict((one["gate"], one) for one in findings)
+    assert "deformation_gate" in gates
+    assert gates["deformation_gate"]["severity"] == "fail"
+    assert gates["deformation_gate"]["numbers"]["worst_frame"] == 19
+    assert gates["loop_seam_closure"]["severity"] == "attention"
+    # The foot-slide gate passed, so it is not a finding.
+    assert "gate" not in gates
+
+
+def test_a_clip_that_passes_everything_says_so_with_its_numbers():
+    findings = bridge.normalize_animate(
+        {"gate": "ok", "worst_drift_mm": 1.1, "action": "walk-loop"})
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "ok"
+    assert findings[0]["numbers"]["worst_drift_mm"] == 1.1
+
+
+# ---------------------------------------------------------------------------
+# the normaliser never takes the page down
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("report", [
+    {}, {"axes": None}, {"axes": []}, {"placement": "nope"},
+    {"placement": {"centering": {"bones": "no"}}},
+    {"axes": {"defects": {"detail": {"self_intersections": {"examples": 3}}}}},
+    {"axes": {"defects": {"detail": {"self_intersections": {
+        "count": 1, "examples": [{"location_mm": ["a", "b", "c"]}]}}}}},
+])
+def test_a_report_shaped_oddly_is_no_findings_rather_than_a_crash(report):
+    for stage in ("verify_mesh", "rig", "skin", "animate"):
+        out = bridge.normalize_findings(stage, report)
+        assert isinstance(out, list)
+
+
+def test_a_stage_with_no_check_has_no_normaliser():
+    assert bridge.normalize_findings("design", VERIFY_REPORT) == []
+    assert bridge.normalize_findings("", VERIFY_REPORT) == []
+
+
+def test_the_summary_counts_what_the_pins_will_be():
+    findings = bridge.normalize_skin(RIG_REPORT)
+    counts = bridge.findings_summary(findings)
+    assert counts["fail"] >= 2
+    assert sum(counts.values()) == len(findings)
+
+
+# ---------------------------------------------------------------------------
+# the authoring table: mirrored from the contracts, never invented
+# ---------------------------------------------------------------------------
+#
+# A canned copy of what `mcp/forge_mcp/server.py` declares and what
+# `addon/forge/tools/rigforge_anim.py` bounds them by.  If either moves, this
+# fails â€” which is the point: a slider offering a parameter the authoring tool
+# does not have is a turn that dies with a confusing error.
+
+MCP_CONTRACTS = {
+    "walk": {
+        "command": "rigforge_walk",
+        "names": {"cycle_frames", "step_length", "step_height",
+                  "stance_fraction", "hip_drop", "hip_sway", "hip_twist_deg",
+                  "arm_swing_deg", "elbow_bend_deg", "foot_roll_deg", "travel",
+                  "loop", "interpolation", "stride_width"},
+        "bounds": {"cycle_frames": (4, 600), "stance_fraction": (0.2, 0.95)},
+        "defaults": {"cycle_frames": 32, "stance_fraction": 0.62,
+                     "travel": True, "loop": True, "interpolation": "LINEAR"},
+    },
+    "punch": {
+        "command": "rigforge_punch",
+        "names": {"side", "frames", "strike_fraction", "lead_frames",
+                  "target_distance", "target_height", "hip_rotation_deg",
+                  "chest_rotation_deg", "shoulder_rotation_deg", "weight_shift",
+                  "guard_rise", "chamber_draw", "loop", "interpolation"},
+        "bounds": {"frames": (8, 600), "strike_fraction": (0.15, 0.85),
+                   "hip_rotation_deg": (0.0, 60.0),
+                   "chest_rotation_deg": (0.0, 60.0),
+                   "shoulder_rotation_deg": (0.0, 60.0)},
+        "defaults": {"frames": 24, "strike_fraction": 0.45, "loop": False,
+                     "interpolation": "LINEAR"},
+    },
+    "jump": {
+        "command": "rigforge_jump",
+        "names": {"frames", "apex_height", "jump_distance", "crouch_depth",
+                  "landing_depth", "anticipation_fraction", "gravity",
+                  "chest_pitch_deg", "arm_swing_back_deg", "arm_swing_up_deg",
+                  "elbow_bend_deg", "foot_roll_deg", "loop", "interpolation"},
+        "bounds": {"frames": (12, 600), "anticipation_fraction": (0.05, 0.5),
+                   "gravity": (0.1, 100.0)},
+        "defaults": {"frames": 36, "jump_distance": 0.0, "gravity": 9.81,
+                     "loop": False, "interpolation": "LINEAR"},
+    },
+}
+
+
+@pytest.mark.parametrize("kind", sorted(MCP_CONTRACTS))
+def test_the_param_table_matches_the_tool_that_owns_it(kind):
+    contract = MCP_CONTRACTS[kind]
+    table = bridge.AUTHORING_PARAMS[kind]
+    assert table["command"] == contract["command"]
+    names = set(row["name"] for row in table["params"])
+    # Every name this panel offers is a parameter the wrapper really takes.
+    assert names <= contract["names"], names - contract["names"]
+    rows = dict((row["name"], row) for row in table["params"])
+    for name, (low, high) in contract["bounds"].items():
+        assert name in rows, name
+        assert rows[name]["min"] == low, name
+        assert rows[name]["max"] == high, name
+    for name, value in contract["defaults"].items():
+        assert rows[name]["default"] == value, name
+
+
+def test_a_parameter_with_no_default_says_it_comes_off_the_rig():
+    """There is no number to show until the tool has run, so none is shown."""
+    for kind, table in bridge.AUTHORING_PARAMS.items():
+        for row in table["params"]:
+            if row["default"] is None and row["kind"] in ("int", "float"):
+                assert row["note"] or row["min"] is not None, (kind, row["name"])
+
+
+def test_every_row_declares_a_kind_the_ui_can_draw():
+    for table in bridge.AUTHORING_PARAMS.values():
+        for row in table["params"]:
+            assert row["kind"] in ("int", "float", "bool", "choice")
+            if row["kind"] == "choice":
+                assert row["choices"]
+
+
+@pytest.mark.parametrize("name,kind", [
+    ("walk-loop", "walk"), ("punch.R", "punch"), ("JUMP-01", "jump"),
+    ("take-14", ""), ("", ""), ("idle", ""),
+])
+def test_a_clips_name_suggests_which_tool_authored_it(name, kind):
+    assert bridge.authoring_kind(name) == kind
+
+
+# ---------------------------------------------------------------------------
+# the direct tier: authoring
+# ---------------------------------------------------------------------------
+
+def test_a_number_inside_the_bounds_is_passed_through():
+    params, error = bridge.clean_authoring_params(
+        "punch", {"strike_fraction": 0.5, "frames": 30})
+    assert error == ""
+    assert params == {"strike_fraction": 0.5, "frames": 30}
+
+
+def test_an_int_parameter_arrives_as_an_int():
+    params, _error = bridge.clean_authoring_params("walk", {"cycle_frames": 40.0})
+    assert params["cycle_frames"] == 40
+    assert isinstance(params["cycle_frames"], int)
+
+
+@pytest.mark.parametrize("kind,values,fragment", [
+    ("punch", {"strike_fraction": 0.9}, "at most 0.85"),
+    ("punch", {"strike_fraction": 0.01}, "at least 0.15"),
+    ("walk", {"cycle_frames": 2}, "at least 4"),
+    ("walk", {"cycle_frames": 9999}, "at most 600"),
+    ("punch", {"nope": 1}, "not a parameter"),
+    ("punch", {"frames": "lots"}, "is a number"),
+    ("punch", {"frames": True}, "is a number"),
+    ("walk", {"travel": 1}, "yes/no"),
+    ("walk", {"interpolation": "SPLINE"}, "one of"),
+    ("cartwheel", {"frames": 10}, "not something this panel can author"),
+    ("walk", {}, "nothing to author"),
+    ("walk", "frames=10", "JSON object"),
+])
+def test_a_parameter_the_tool_would_refuse_is_refused_here_first(kind, values,
+                                                                 fragment):
+    params, error = bridge.clean_authoring_params(kind, values)
+    assert params is None
+    assert fragment in error
+
+
+def test_a_none_means_leave_it_to_the_rig():
+    params, error = bridge.clean_authoring_params(
+        "walk", {"step_length": None, "cycle_frames": 24})
+    assert error == ""
+    assert params == {"cycle_frames": 24}
+
+
+# ---------------------------------------------------------------------------
+# the direct tier: the weight brush and the mesh repair
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("radius,ok", [
+    (5, True), (40, True), (200, True),
+    (4.9, False), (201, False), (0, False), (-10, False),
+    ("40", False), (True, False), (None, False), (float("nan"), False),
+])
+def test_the_brush_radius_is_bounded(radius, ok):
+    assert (bridge.brush_radius(radius) is not None) is ok
+
+
+@pytest.mark.parametrize("point,ok", [
+    ([0, 1, 2], True), ([0.0, -1.5, 2.25], True),
+    ([0, 1], False), ([0, 1, 2, 3], False), ("0,1,2", False),
+    ([0, 1, "2"], False), ([0, 1, True], False),
+    ([0, 1, float("inf")], False), ([0, 1, 10000], False), (None, False),
+])
+def test_a_brush_point_is_three_real_metres(point, ok):
+    assert (bridge.world_point(point) is not None) is ok
+
+
+def test_the_brush_script_is_always_valid_python():
+    code = bridge.WEIGHTS_LOCAL_SCRIPT % tuple(json.dumps(one) for one in [
+        "body", "rig", [0.0, 0.1, 0.2], 0.04, "smooth", "DEF-foot.L",
+        4, 0.5, 0.65, 20000])
+    compile(code, "<brush>", "exec")
+    assert '"DEF-foot.L"' in code
+    assert "FORGE_WEIGHTS" in code
+
+
+def test_the_brush_template_has_exactly_its_own_holes():
+    holes = bridge.WEIGHTS_LOCAL_SCRIPT.replace("%%", "")
+    assert holes.count("%s") == 10
+    with pytest.raises(TypeError):
+        bridge.WEIGHTS_LOCAL_SCRIPT % (json.dumps("a"),)
+
+
+def test_only_one_mesh_repair_is_deterministic_enough_to_be_a_button():
+    """The reasons the others are not are the design, so they are pinned."""
+    assert sorted(bridge.MESH_FIX_OPS) == ["merge_doubles"]
+    spec = bridge.MESH_FIX_OPS["merge_doubles"]
+    assert spec["command"] == "merge_by_distance"
+    assert spec["param"] == "distance_mm"
+    assert spec["min"] < spec["default"] < spec["max"]
+
+
+def test_the_brush_does_exactly_two_things():
+    assert sorted(bridge.WEIGHT_OPS) == ["harden", "smooth"]
+
+
+# ---------------------------------------------------------------------------
+# "changed since last measure"
+# ---------------------------------------------------------------------------
+
+def test_a_stage_measured_after_the_last_edit_is_not_dirty(tmp_path):
+    folder = make_project(tmp_path, "werewolf", plan=a_plan())
+    bridge.append_artist_edit(folder, {
+        "when": "2020-01-01T00:00:00Z", "bone": "DEF-foot.L", "end": "head",
+        "delta_mm": [0, 0, -1], "mirror": False, "source": "nudge"})
+    board = bridge.pipeline_board(folder, "werewolf")
+    assert bridge.dirty_stages(folder, board) == {}
+
+
+def test_a_stage_measured_before_the_last_edit_is_dirty(tmp_path):
+    folder = make_project(tmp_path, "werewolf", plan=a_plan())
+    bridge.append_artist_edit(folder, {
+        "when": "2099-01-01T00:00:00Z", "bone": "DEF-foot.L", "end": "head",
+        "delta_mm": [0, 0, -1], "mirror": False, "source": "nudge"})
+    board = bridge.pipeline_board(folder, "werewolf")
+    dirty = bridge.dirty_stages(folder, board)
+    # rig and skin both carry history in the fixture plan; reference does not.
+    assert "rig" in dirty and "skin" in dirty
+    assert "reference" not in dirty
+    assert dirty["rig"]["edited"] > dirty["rig"]["since"]
+
+
+def test_a_project_that_has_never_been_hand_edited_is_never_dirty(tmp_path):
+    folder = make_project(tmp_path, "werewolf", plan=a_plan())
+    board = bridge.pipeline_board(folder, "werewolf")
+    assert bridge.dirty_stages(folder, board) == {}
+
+
+def test_the_board_carries_the_badge_and_what_can_be_checked(nudger):
+    client, _server = nudger()
+    status, body = client.request("/projects/werewolf/pipeline")
+    assert status == 200
+    assert isinstance(body["dirty"], dict)
+    assert sorted(body["inspectable"]) == ["animate", "rig", "skin",
+                                           "verify_mesh"]
+
+
+# ---------------------------------------------------------------------------
+# the routes
+# ---------------------------------------------------------------------------
+
+def inspect_responder(report, command=None):
+    """A fake add-on that answers a check command with a canned report."""
+    def responder(request):
+        if command and request.get("type") != command:
+            return {"id": request.get("id"), "status": "error",
+                    "message": "unexpected command %r" % request.get("type")}
+        return {"id": request.get("id"), "status": "success", "result": report}
+    return responder
+
+
+@pytest.mark.parametrize("stage,command,report,gate", [
+    ("verify_mesh", "verify_design", VERIFY_REPORT, "self_intersections"),
+    ("rig", "rig_check", RIG_REPORT, "centering"),
+    ("skin", "rig_check", RIG_REPORT, "overlap"),
+])
+def test_inspect_runs_the_stages_own_command(bridges, projects, fake_blender,
+                                             stage, command, report, gate):
+    server = fake_blender(inspect_responder(report))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/inspect",
+                                  payload={"stage": stage})
+    assert status == 200, body
+    assert body["stage"] == stage
+    assert body["command"] == command
+    assert server.seen[0]["type"] == command
+    assert gate in [one["gate"] for one in body["findings"]]
+    assert body["ran_at"].endswith("Z")
+    assert body["note"]
+
+
+def test_inspect_on_a_clip_needs_the_clips_name(bridges, projects,
+                                                fake_blender):
+    server = fake_blender(inspect_responder(ANIMATE_REPORT))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/inspect",
+                                  payload={"stage": "animate"})
+    assert status == 400
+    assert "Which clip" in body["error"]
+    assert server.seen == []
+
+    status, body = client.request(
+        "/projects/werewolf/inspect",
+        payload={"stage": "animate", "action": "walk-loop"})
+    assert status == 200, body
+    assert server.seen[0]["type"] == "animation_check"
+    assert server.seen[0]["params"]["action"] == "walk-loop"
+
+
+def test_inspect_counts_what_can_be_placed(bridges, projects, fake_blender):
+    server = fake_blender(inspect_responder(VERIFY_REPORT))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    body = client.request("/projects/werewolf/inspect",
+                          payload={"stage": "verify_mesh"})[1]
+    placed = [one for one in body["findings"] if one["world_pos"]]
+    assert body["positioned"] == len(placed)
+    assert placed
+
+
+@pytest.mark.parametrize("stage", ["design", "", "generate", "../rig"])
+def test_a_stage_with_no_check_is_refused(bridges, projects, fake_blender,
+                                          stage):
+    server = fake_blender(inspect_responder(RIG_REPORT))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/inspect",
+                                  payload={"stage": stage})
+    assert status == 400, body
+    assert "no check to run" in body["error"]
+    assert server.seen == []
+
+
+@pytest.mark.parametrize("name", NAMED_INJECTIONS)
+def test_inspect_refuses_a_name_before_blender_is_asked(bridges, projects,
+                                                        fake_blender, name):
+    server = fake_blender(inspect_responder(RIG_REPORT))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request(
+        "/projects/werewolf/inspect",
+        payload={"stage": "rig", "object": name})
+    assert status == 400, body
+    assert server.seen == []
+
+
+def test_inspect_with_blender_closed_says_so(workspace):
+    status, body = workspace.request("/projects/werewolf/inspect",
+                                     payload={"stage": "rig"})
+    assert status == 503, body
+    assert "Blender is not running" in body["error"]
+
+
+def test_the_authoring_table_is_served(client):
+    status, body = client.request("/authoring")
+    assert status == 200
+    assert sorted(body["kinds"]) == ["jump", "punch", "walk"]
+    assert body["kinds"]["punch"]["command"] == "rigforge_punch"
+    assert body["note"]
+
+
+def test_authoring_re_authors_and_journals(bridges, projects, fake_blender):
+    server = fake_blender(inspect_responder(
+        {"action": "punch.R", "keys": 42, "frames": 24}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/author", payload={
+        "kind": "punch", "action": "punch.R",
+        "params": {"strike_fraction": 0.5}})
+    assert status == 200, body
+    assert body["command"] == "rigforge_punch"
+    assert server.seen[0]["type"] == "rigforge_punch"
+    assert server.seen[0]["params"]["strike_fraction"] == 0.5
+    assert server.seen[0]["params"]["action"] == "punch.R"
+
+    journal = json.loads(
+        (projects / "werewolf" / "design" / "artist-edits.json")
+        .read_text(encoding="utf-8"))
+    assert isinstance(journal, list)
+    record = journal[-1]
+    assert record["source"] == "author-panel"
+    assert record["kind"] == "punch"
+    assert record["action"] == "punch.R"
+    assert record["params"] == {"strike_fraction": 0.5}
+    assert record["when"].endswith("Z")
+
+
+def test_authoring_refuses_out_of_bounds_before_blender(bridges, projects,
+                                                        fake_blender):
+    server = fake_blender(inspect_responder({}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/author", payload={
+        "kind": "punch", "params": {"strike_fraction": 2.0}})
+    assert status == 400, body
+    assert "at most" in body["error"]
+    assert server.seen == []
+    assert not (projects / "werewolf" / "design" / "artist-edits.json").exists()
+
+
+@pytest.mark.parametrize("name", NAMED_INJECTIONS)
+def test_authoring_refuses_an_action_name_that_could_be_code(bridges, projects,
+                                                             fake_blender, name):
+    server = fake_blender(inspect_responder({}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, _body = client.request("/projects/werewolf/author", payload={
+        "kind": "walk", "action": name, "params": {"cycle_frames": 30}})
+    assert status == 400
+    assert server.seen == []
+
+
+def test_the_brush_applies_and_journals(bridges, projects, fake_blender):
+    def responder(request):
+        code = (request.get("params") or {}).get("code") or ""
+        assert "FORGE_WEIGHTS" in code
+        report = {"ok": True, "mesh": "body", "rig": "rig", "op": "smooth",
+                  "bone": "DEF-foot.L", "vertices": 120, "changed": 118,
+                  "radius_m": 0.04}
+        return {"id": request.get("id"), "status": "success",
+                "result": {"output": "FORGE_WEIGHTS " + json.dumps(report),
+                           "result": None}}
+
+    server = fake_blender(responder)
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/weights_local", payload={
+        "world_pos": [0.1, 0.0, 0.9], "radius_mm": 40, "op": "smooth",
+        "bone": "DEF-foot.L"})
+    assert status == 200, body
+    assert body["changed"] == 118
+    code = server.seen[0]["params"]["code"]
+    assert 'op = "smooth"' in code
+    assert 'only_bone = "DEF-foot.L"' in code
+    assert "radius_m = 0.04" in code
+
+    journal = json.loads(
+        (projects / "werewolf" / "design" / "artist-edits.json")
+        .read_text(encoding="utf-8"))
+    record = journal[-1]
+    assert record["source"] == "weights-brush"
+    assert record["op"] == "smooth"
+    assert record["radius_mm"] == 40.0
+    assert record["world_pos"] == [0.1, 0.0, 0.9]
+
+
+@pytest.mark.parametrize("payload,fragment", [
+    ({"world_pos": [0, 0, 1], "radius_mm": 40, "op": "melt"}, "brush does"),
+    ({"world_pos": [0, 0], "radius_mm": 40, "op": "smooth"}, "world_pos"),
+    ({"world_pos": [0, 0, 1], "radius_mm": 1, "op": "smooth"}, "radius_mm"),
+    ({"world_pos": [0, 0, 1], "radius_mm": 900, "op": "smooth"}, "radius_mm"),
+    ({"world_pos": [0, 0, 1], "radius_mm": 40, "op": "smooth",
+      "bone": "a b"}, "bone name"),
+])
+def test_the_brush_refuses_what_it_cannot_do(bridges, projects, fake_blender,
+                                             payload, fragment):
+    server = fake_blender(inspect_responder({}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/weights_local",
+                                  payload=payload)
+    assert status == 400, body
+    assert fragment in body["error"]
+    assert server.seen == []
+
+
+def test_the_mesh_fix_merges_and_journals(bridges, projects, fake_blender):
+    server = fake_blender(inspect_responder({"removed": 42, "object": "body"}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/mesh_fix", payload={
+        "finding_id": "verify_mesh:zero_area_faces:0",
+        "op": "merge_doubles", "distance_mm": 0.2})
+    assert status == 200, body
+    assert server.seen[0]["type"] == "merge_by_distance"
+    assert server.seen[0]["params"]["distance"] == pytest.approx(0.0002)
+    assert body["report"]["removed"] == 42
+    journal = json.loads(
+        (projects / "werewolf" / "design" / "artist-edits.json")
+        .read_text(encoding="utf-8"))
+    assert journal[-1]["source"] == "mesh-fix"
+    assert journal[-1]["finding_id"] == "verify_mesh:zero_area_faces:0"
+
+
+@pytest.mark.parametrize("payload,fragment", [
+    ({"op": "delete_island"}, "not a one-click repair"),
+    ({"op": "fill_hole"}, "not a one-click repair"),
+    ({"op": ""}, "not a one-click repair"),
+    ({"op": "merge_doubles", "distance_mm": 99}, "between"),
+    ({"op": "merge_doubles", "distance_mm": "near"}, "is a number"),
+])
+def test_a_repair_that_is_a_judgement_is_not_a_button(bridges, projects,
+                                                      fake_blender, payload,
+                                                      fragment):
+    server = fake_blender(inspect_responder({}))
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, body = client.request("/projects/werewolf/mesh_fix",
+                                  payload=payload)
+    assert status == 400, body
+    assert fragment in body["error"]
+    assert server.seen == []
+
+
+def test_the_heatmap_bone_goes_through_the_bone_alphabet(bridges, projects,
+                                                         fake_blender):
+    server = fake_blender(snapshot_responder())
+    client = bridges(env_extra={"FORGE_PROJECTS_DIR": str(projects),
+                                "FORGE_BLENDER_PORT": str(server.port)})
+    status, _body = client.request("/projects/werewolf/snapshot",
+                                   payload={"weight_bone": "DEF foot L"})
+    assert status == 400
+    assert server.seen == []
+
+    status, body = client.request("/projects/werewolf/snapshot",
+                                  payload={"weight_bone": "DEF-foot.L"})
+    assert status == 200, body
+    assert 'weight_bone = "DEF-foot.L"' in server.seen[-1]["params"]["code"]
+
+
+def test_the_snapshot_script_still_compiles_with_a_weight_bone():
+    code = bridge.SNAPSHOT_SCRIPT % (json.dumps("C:/t/x.glb"), json.dumps(""),
+                                     json.dumps("DEF-foot.L"))
+    compile(code, "<snap>", "exec")
+    holes = bridge.SNAPSHOT_SCRIPT.replace("%%", "")
+    assert holes.count("%s") == 3
+
+
+# ---------------------------------------------------------------------------
+# the viewer: pins on the model, and the clip controls
+# ---------------------------------------------------------------------------
+
+PIN_HARNESS = r"""
+const fs = require("fs");
+global.window = {
+  requestAnimationFrame: function () { return 0; },
+  cancelAnimationFrame: function () {},
+  devicePixelRatio: 1
+};
+eval(fs.readFileSync(process.argv[2], "utf8"));
+const bytes = fs.readFileSync(process.argv[3]);
+const buffer = bytes.buffer.slice(bytes.byteOffset,
+                                  bytes.byteOffset + bytes.byteLength);
+const model = window.ForgeGLB.loadModel(buffer);
+const handles = window.ForgeGLB.jointHandles(model);
+console.log(JSON.stringify({
+  painted: !!model.painted,
+  joints: handles.map(h => ({ bone: h.bone, position: h.position })),
+  // Blender measured this in metres, Z up; the viewer draws Y up.
+  roundTrip: window.ForgeGLB.fromBlenderMetres([0.1, -0.2, 1.7]),
+  backAgain: window.ForgeGLB.toBlenderMillimetres(
+    window.ForgeGLB.fromBlenderMetres([0.1, -0.2, 1.7]))
+}));
+"""
+
+
+def run_pin_viewer(tmp_path, glb):
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("no node on this machine to run glbview.js with")
+    harness = tmp_path / "pins.js"
+    harness.write_text(PIN_HARNESS, encoding="utf-8")
+    blob = tmp_path / "pinned.glb"
+    blob.write_bytes(glb)
+    import subprocess
+    done = subprocess.run(
+        [node, str(harness), os.path.join(WEBUI_DIR, "glbview.js"), str(blob)],
+        capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout)
+
+
+def test_a_position_blender_measured_lands_where_the_viewer_draws(tmp_path):
+    """The one conversion between a finding and a pin, both ways."""
+    read = run_pin_viewer(tmp_path, make_rigged_glb())
+    assert read["roundTrip"] == [0.1, 1.7, 0.2]
+    # â€¦and back out again in millimetres, unchanged.
+    assert [round(one, 6) for one in read["backAgain"]] == [100.0, -200.0, 1700.0]
+
+
+def test_a_bone_named_by_a_finding_resolves_to_the_joint_it_is_on(tmp_path):
+    read = run_pin_viewer(tmp_path, make_rigged_glb())
+    joints = dict((one["bone"], one["position"]) for one in read["joints"])
+    # A rig finding names DEF-shin.L and nothing else; the viewer already
+    # knows exactly where that is.
+    assert joints["DEF-shin.L"] == [0, 1.5, 0]
+    assert joints["DEF-thigh.L"] == [0, 1, 0]
+
+
+def test_a_glb_without_a_colour_layer_is_not_painted(tmp_path):
+    assert run_pin_viewer(tmp_path, make_rigged_glb())["painted"] is False
+
+
+# ---------------------------------------------------------------------------
+# the page
+# ---------------------------------------------------------------------------
+
+def test_the_stage_tools_are_on_the_page_and_start_hidden(client):
+    html = fetch_text(client, "/")
+    for anchor in ("ws-stage-tools", "ws-tools-title", "ws-inspect",
+                   "ws-tools-note", "ws-tools-body", "ws-findings"):
+        assert ('id="%s"' % anchor) in html, anchor
+    strip = html.split('id="ws-stage-tools"', 1)[1].split(">", 1)[0]
+    assert "hidden" in strip
+
+
+def test_the_controls_follow_the_stepper_and_nothing_else(client):
+    """"Blender is often overwhelming" â€” so one stage's controls at a time."""
+    script = fetch_text(client, "/webui/app.js")
+    assert "function stageToolsFollow(" in script
+    assert "stageToolsFollow(stage ? stage.id : null)" in script
+    follow = script.split("function stageToolsFollow(", 1)[1] \
+                   .split("\n  }", 1)[0]
+    # Moving off a stage drops its findings rather than leaving them on the
+    # model, and re-arms or disarms the joint handles.
+    assert "tools.findings = []" in follow
+    assert "viewer.clearPins()" in follow
+    assert 'stage === "rig"' in follow
+
+
+def test_the_direct_buttons_do_not_go_through_chat(client):
+    script = fetch_text(client, "/webui/app.js")
+    for direct, route in (("applyMeshFix", "/mesh_fix"),
+                          ("brushAt", "/weights_local"),
+                          ("reAuthor", "/author")):
+        body = script.split("function " + direct + "(", 1)[1] \
+                     .split("\n  function ", 1)[0]
+        assert route in body, direct
+        assert "wsSend(" not in body, direct
+        # â€¦and each one re-snapshots, so what is on screen is what Blender did.
+        assert "wsSnapshot(" in body, direct
+
+
+def test_a_finding_with_no_deterministic_fix_offers_only_the_ask(client):
+    script = fetch_text(client, "/webui/app.js")
+    card = script.split("function findingCard(", 1)[1] \
+                 .split("\n  function ", 1)[0]
+    assert "if (finding.fix && finding.fix.op)" in card
+    assert "Apply fix" in card
+    assert "Ask to fix this" in card
+    assert "wsSend(" in card
+
+
+def test_the_stage_tool_styles_ship_with_the_stylesheet(client):
+    css = fetch_text(client, "/webui/app.css")
+    for rule in (".ws-tools", ".ws-finding", ".ws-dot", ".ws-clips",
+                 ".ws-scrub", ".ws-params", ".ws-step.is-dirty"):
         assert rule in css, rule

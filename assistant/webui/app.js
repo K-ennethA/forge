@@ -2136,7 +2136,7 @@
   // 7 of 10" is readable without counting.  Past stages are clickable and
   // view-only: looking back at what the rig gate measured changes nothing.
 
-  function stepChip(stage, index, total, focus) {
+  function stepChip(stage, index, total, focus, dirty) {
     var chip = el("button", "ws-step is-" + stage.status);
     chip.type = "button";
     chip.dataset.stage = stage.id;
@@ -2146,6 +2146,14 @@
                + " (" + (index + 1) + " of " + total + ")";
     chip.appendChild(el("span", "ws-step-num", String(index + 1)));
     chip.appendChild(el("span", "ws-step-name", stage.id));
+    if (dirty) {
+      // The model has been hand-edited since this gate was measured, so the
+      // numbers on its card are about a model that no longer exists. Saying
+      // so is the only honest thing available short of re-running the check.
+      chip.classList.add("is-dirty");
+      chip.appendChild(el("span", "ws-step-dirty", "●"));
+      chip.title += " — edited since it was last measured; re-run its check";
+    }
     if (stage.id === focus) { chip.classList.add("is-focus"); }
     chip.addEventListener("click", function () {
       ws.focus = stage.id;
@@ -2170,11 +2178,16 @@
     }
     var stages = data.stages || [];
     var focus = (focusedStage(data) || {}).id || null;
+    var dirty = data.dirty || {};
     stages.forEach(function (stage, index) {
-      stepper.appendChild(stepChip(stage, index, stages.length, focus));
+      stepper.appendChild(stepChip(stage, index, stages.length, focus,
+                                   !!dirty[stage.id]));
     });
     var stage = focusedStage(data);
     if (stage) { focusHost.appendChild(stagePanel(stage, data)); }
+    // The viewer follows the stepper: the controls beside the model are the
+    // ones this stage needs, and no others.
+    stageToolsFollow(stage ? stage.id : null);
   }
 
   // -- the stage in focus ------------------------------------------------
@@ -2632,7 +2645,7 @@
     node.textContent = text;
   }
 
-  function wsSnapshot() {
+  function wsSnapshot(weightBone) {
     if (!ws.project) { return Promise.resolve(); }
     var button = $("ws-snapshot");
     var viewer = wsViewer();
@@ -2643,8 +2656,17 @@
     }
     button.disabled = true;
     viewerNote("Asking Blender for the scene…");
+    // A bone here asks Blender to bake that bone's weights into vertex
+    // colours before it exports, which is the only way a browser can be
+    // shown a vertex group at all.  Only ever a string: this function is one
+    // `addEventListener` slip away from being handed a click Event, and an
+    // Event serialises into the body as `{"isTrusted": false}`.
+    var body = {};
+    if (typeof weightBone === "string" && weightBone) {
+      body.weight_bone = weightBone;
+    }
     return api("/projects/" + encodeURIComponent(ws.project) + "/snapshot",
-               { body: {} }).then(function (res) {
+               { body: body }).then(function (res) {
       button.disabled = false;
       if (!res.ok) {
         viewerNote(res.data.error ||
@@ -2677,9 +2699,16 @@
         $("ws-nudge").disabled = info.joints === 0;
         viewer.onNudge(renderNudge);
         renderNudge(viewer.readout());
+        // The stage's own controls need a model to work on, so they appear
+        // once there is one — a panel of buttons over an empty viewport is
+        // four ways to get an error message.
+        renderStageTools();
         var bits = [info.triangles.toLocaleString() + " tris"];
         if (info.skinned) { bits.push(info.skinned + " skinned"); }
         if (info.joints) { bits.push(info.joints + " joints"); }
+        if (info.painted && res.data.weight_bone) {
+          bits.push("weights: " + res.data.weight_bone);
+        }
         if (info.animations.length) {
           bits.push(info.animations.length + " clip" +
                     (info.animations.length === 1 ? "" : "s"));
@@ -2862,6 +2891,572 @@
     node.textContent = label ? ("sent — " + label) : "sent";
     $("ws-message").value = "";
     renderActivity();
+  }
+
+  // -- the stage as something to work on ---------------------------------
+  //
+  // "When we click verify mesh I can click out problem issues and tell it to
+  // fix, or in rig it auto selects and shows the rig in the window so I can
+  // make small edits, and same for skin, or animate - click on a specific
+  // animation and change it."
+  //
+  // And, on the first draft of that: "i see you say a visible chat turn but
+  // I'd also like the option to make changes in a simple version, blender is
+  // often overwhelming for people so narrowing the scope could help here."
+  //
+  // So there are two tiers and one rule for which is which.  If the machine
+  // knows exactly what to do — a bounded command over numbers — it is a
+  // BUTTON, and pressing it changes the model now, with no model in the loop.
+  // If the answer needs judgement — which of three fixes, how to split a tag —
+  // it composes a sentence and the assistant works it. Every card says which
+  // it is offering, and a card with no deterministic fix offers only the ask.
+
+  var tools = {
+    stage: null,       // which stage's controls are showing
+    findings: [],      // the last /inspect answer for it
+    ran: "",           // when that check ran
+    busy: false,
+    bone: "",          // skin: which bone's weights are painted
+    radius: 40,        // skin: brush radius in millimetres
+    op: "smooth",      // skin: which repair the brush does
+    point: null,       // skin: where the last click landed, in Blender metres
+    action: "",        // animate: which clip
+    kind: "",          // animate: which authoring table
+    values: {},        // animate: the numbers the sliders hold
+    table: null,       // the authoring tables, fetched once
+    open: null         // which finding's card is open
+  };
+
+  //: Which stages have controls at all.  A stage with no check and no
+  //: authoring tool gets no strip rather than an empty one.
+  var TOOL_STAGES = {
+    verify_mesh: "Mesh",
+    rig: "Rig",
+    skin: "Skin",
+    animate: "Animation"
+  };
+
+  function toolsNote(text, cls) {
+    var node = $("ws-tools-note");
+    node.className = "ws-tools-note" + (cls ? " " + cls : "");
+    node.textContent = text || "";
+  }
+
+  function severityWord(severity) {
+    return { fail: "failing", attention: "needs attention", ok: "passing",
+             unknown: "not measured", none: "not applicable" }[severity]
+           || severity;
+  }
+
+  // -- the findings, as cards --------------------------------------------
+
+  function numbersGrid(numbers) {
+    var names = Object.keys(numbers || {});
+    if (!names.length) { return null; }
+    var list = el("dl", "ws-numbers");
+    names.forEach(function (name) {
+      list.appendChild(el("dt", null, name));
+      list.appendChild(el("dd", null, String(numbers[name])));
+    });
+    return list;
+  }
+
+  function findingCard(finding) {
+    var card = el("div", "ws-finding is-" + finding.severity);
+    card.dataset.finding = finding.id;
+    var head = el("div", "ws-finding-head");
+    head.appendChild(el("span", "ws-dot is-" + finding.severity, ""));
+    head.appendChild(el("strong", null, finding.label || finding.gate));
+    head.appendChild(el("span", "ws-finding-gate",
+                        finding.gate + "  ·  " + severityWord(finding.severity)));
+    card.appendChild(head);
+
+    var grid = numbersGrid(finding.numbers);
+    if (grid) { card.appendChild(grid); }
+    if (finding.fix_hint) {
+      card.appendChild(el("p", "ws-finding-hint", finding.fix_hint));
+    }
+
+    var row = el("div", "ws-actions");
+    if (finding.fix && finding.fix.op) {
+      // DIRECT: the one kind of repair that is a number in and a count out.
+      var apply = el("button", "btn tiny primary", "Apply fix");
+      apply.type = "button";
+      apply.title = "Runs it now. No chat, no waiting.";
+      apply.addEventListener("click", function () {
+        applyMeshFix(finding, apply);
+      });
+      row.appendChild(apply);
+    }
+    var ask = el("button", "btn tiny", finding.fix ? "Ask instead" : "Ask to fix this");
+    ask.type = "button";
+    ask.title = "Sends this finding to the assistant, which works the fix ladder";
+    ask.addEventListener("click", function () {
+      var numbers = Object.keys(finding.numbers || {}).map(function (name) {
+        return name + "=" + finding.numbers[name];
+      }).join(", ");
+      wsSend(
+        "On " + (ws.project || "this project") + ", the " + finding.stage +
+        " stage's " + finding.gate + " gate reports: " +
+        (finding.label || finding.gate) +
+        (numbers ? " (" + numbers + ")" : "") +
+        ". Work the fix ladder for it, re-measure that gate, and pipeline_record " +
+        "the real numbers whichever way they come out.",
+        finding.gate);
+    });
+    row.appendChild(ask);
+    if (finding.bone) {
+      var show = el("button", "btn tiny ghost", "Show me");
+      show.type = "button";
+      show.addEventListener("click", function () { focusFinding(finding); });
+      row.appendChild(show);
+    }
+    card.appendChild(row);
+    return card;
+  }
+
+  function focusFinding(finding) {
+    var viewer = ws.viewer;
+    tools.open = finding.id;
+    if (viewer && viewer.supported && finding.bone) {
+      // "In rig it auto selects" — clicking a red joint arms it for nudging.
+      if (tools.stage === "rig") {
+        if (!viewer.nudging()) { wsToggleNudge(); }
+        viewer.pinToHandle(finding.bone);
+      }
+      if (tools.stage === "skin") {
+        tools.bone = finding.bone;
+        renderStageTools();
+        return;
+      }
+    }
+    renderFindings();
+  }
+
+  function renderFindings() {
+    var host = $("ws-findings");
+    host.textContent = "";
+    if (!tools.findings.length) {
+      if (tools.ran) {
+        host.appendChild(el("p", "muted small",
+          "Nothing to report — every gate this check measures came back clean."));
+      }
+      return;
+    }
+    tools.findings.forEach(function (finding) {
+      var card = findingCard(finding);
+      if (finding.id === tools.open) { card.classList.add("is-open"); }
+      host.appendChild(card);
+    });
+  }
+
+  function applyMeshFix(finding, button) {
+    if (!ws.project) { return; }
+    var body = { finding_id: finding.id, op: finding.fix.op };
+    Object.keys(finding.fix).forEach(function (key) {
+      if (key !== "op") { body[key] = finding.fix[key]; }
+    });
+    button.disabled = true;
+    toolsNote("Applying…");
+    api("/projects/" + encodeURIComponent(ws.project) + "/mesh_fix",
+        { body: body }).then(function (res) {
+      button.disabled = false;
+      if (!res.ok) {
+        toolsNote(res.data.error ||
+                  ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      var report = res.data.report || {};
+      toolsNote("Done" + (report.removed !== undefined
+                          ? " — " + report.removed + " vertices merged" : "") +
+                ". " + (res.data.note || ""));
+      wsSnapshot().then(loadPipeline);
+    });
+  }
+
+  // -- running a check ---------------------------------------------------
+
+  function wsInspect() {
+    if (!ws.project || !tools.stage || tools.busy) { return; }
+    var body = { stage: tools.stage };
+    if (tools.stage === "animate") {
+      if (!tools.action) {
+        toolsNote("Pick a clip first.", "bad");
+        return;
+      }
+      body.action = tools.action;
+    }
+    tools.busy = true;
+    $("ws-inspect").disabled = true;
+    toolsNote("Measuring in Blender — this is a fresh check, not a cached one…");
+    api("/projects/" + encodeURIComponent(ws.project) + "/inspect",
+        { body: body }).then(function (res) {
+      tools.busy = false;
+      $("ws-inspect").disabled = false;
+      if (!res.ok) {
+        toolsNote(res.data.error ||
+                  ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      tools.findings = res.data.findings || [];
+      tools.ran = res.data.ran_at || "";
+      var counts = res.data.summary || {};
+      var bits = [];
+      ["fail", "attention", "ok", "unknown"].forEach(function (key) {
+        if (counts[key]) { bits.push(counts[key] + " " + severityWord(key)); }
+      });
+      toolsNote(bits.length ? bits.join(", ") : "nothing to report");
+      var viewer = ws.viewer;
+      if (viewer && viewer.supported) {
+        var placed = viewer.showPins(tools.findings);
+        viewer.onPin(function (pin) {
+          tools.open = pin.id;
+          renderFindings();
+          var card = document.querySelector('[data-finding="' +
+                                            pin.id.replace(/"/g, '') + '"]');
+          if (card) { card.scrollIntoView({ block: "nearest" }); }
+        });
+        if (placed) {
+          toolsNote(toolsNoteText(bits, placed));
+        }
+      }
+      renderFindings();
+    });
+  }
+
+  function toolsNoteText(bits, placed) {
+    return (bits.length ? bits.join(", ") : "nothing to report") +
+           "  ·  " + placed + " on the model";
+  }
+
+  // -- skin: the brush ----------------------------------------------------
+
+  function brushAt(point) {
+    if (!ws.project || !point) { return; }
+    var body = { world_pos: point, radius_mm: tools.radius, op: tools.op };
+    if (tools.bone) { body.bone = tools.bone; }
+    toolsNote("Smoothing…");
+    api("/projects/" + encodeURIComponent(ws.project) + "/weights_local",
+        { body: body }).then(function (res) {
+      if (!res.ok) {
+        toolsNote(res.data.error ||
+                  ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      toolsNote(res.data.op + " — " + res.data.changed + " vertices. " +
+                (res.data.note || ""));
+      wsSnapshot(tools.bone).then(loadPipeline);
+    });
+  }
+
+  // -- animate: the clip, the scrubber, the numbers -----------------------
+
+  function loadAuthoring() {
+    if (tools.table) { return Promise.resolve(tools.table); }
+    return api("/authoring").then(function (res) {
+      tools.table = (res.ok && res.data) || null;
+      return tools.table;
+    });
+  }
+
+  function paramRow(spec) {
+    var row = el("label", "ws-param");
+    row.appendChild(el("span", "ws-param-name", spec.name.replace(/_/g, " ")));
+    var input;
+    if (spec.kind === "bool") {
+      input = el("input");
+      input.type = "checkbox";
+      input.checked = tools.values[spec.name] !== undefined
+        ? !!tools.values[spec.name] : !!spec.default;
+      input.addEventListener("change", function () {
+        tools.values[spec.name] = input.checked;
+      });
+    } else if (spec.kind === "choice") {
+      input = el("select", "select tiny");
+      (spec.choices || []).forEach(function (choice) {
+        var option = el("option", null, choice);
+        option.value = choice;
+        input.appendChild(option);
+      });
+      input.value = tools.values[spec.name] || spec.default || "";
+      input.addEventListener("change", function () {
+        tools.values[spec.name] = input.value;
+      });
+    } else {
+      input = el("input", "input tiny");
+      input.type = "number";
+      if (spec.min !== null && spec.min !== undefined) { input.min = spec.min; }
+      if (spec.max !== null && spec.max !== undefined) { input.max = spec.max; }
+      input.step = spec.kind === "int" ? 1 : 0.01;
+      input.placeholder = spec.default === null || spec.default === undefined
+        ? (spec.note || "from the rig") : String(spec.default);
+      if (tools.values[spec.name] !== undefined) {
+        input.value = tools.values[spec.name];
+      }
+      input.addEventListener("input", function () {
+        var text = input.value.trim();
+        if (!text) { delete tools.values[spec.name]; return; }
+        var number = parseFloat(text);
+        if (isFinite(number)) { tools.values[spec.name] = number; }
+      });
+    }
+    row.appendChild(input);
+    var bounds = [];
+    if (spec.min !== null && spec.min !== undefined) { bounds.push("≥ " + spec.min); }
+    if (spec.max !== null && spec.max !== undefined) { bounds.push("≤ " + spec.max); }
+    row.title = (spec.note || "") + (bounds.length ? "  (" + bounds.join(", ") + ")" : "");
+    if (bounds.length) { row.appendChild(el("span", "ws-param-bounds", bounds.join(" "))); }
+    return row;
+  }
+
+  function reAuthor(button) {
+    if (!ws.project || !tools.kind) { return; }
+    if (!Object.keys(tools.values).length) {
+      toolsNote("Change a number first.", "bad");
+      return;
+    }
+    button.disabled = true;
+    toolsNote("Re-authoring " + tools.action + " in Blender…");
+    api("/projects/" + encodeURIComponent(ws.project) + "/author", {
+      body: { kind: tools.kind, action: tools.action, params: tools.values }
+    }).then(function (res) {
+      button.disabled = false;
+      if (!res.ok) {
+        toolsNote(res.data.error ||
+                  ("The bridge answered " + res.status + "."), "bad");
+        return;
+      }
+      toolsNote("Re-authored " + (tools.action || tools.kind) + ". " +
+                (res.data.note || ""));
+      wsSnapshot().then(loadPipeline);
+    });
+  }
+
+  function renderAnimateTools(host) {
+    var viewer = ws.viewer;
+    var clips = (viewer && viewer.supported) ? viewer.actions() : [];
+    if (!clips.length) {
+      host.appendChild(el("p", "muted small",
+        "This snapshot carries no animation. Refresh from Blender with the "
+        + "rig in the scene."));
+      return;
+    }
+    var list = el("div", "ws-clips");
+    clips.forEach(function (clip) {
+      var button = el("button", "btn tiny ws-clip" +
+                      (clip.name === tools.action ? " is-on" : ""), clip.name);
+      button.type = "button";
+      button.addEventListener("click", function () {
+        tools.action = clip.name;
+        tools.kind = "";
+        tools.values = {};
+        if (viewer.play(clip.index)) { $("ws-play").textContent = "Pause"; }
+        renderStageTools();
+      });
+      list.appendChild(button);
+    });
+    host.appendChild(list);
+    if (!tools.action) {
+      host.appendChild(el("p", "muted small", "Pick a clip to play and edit."));
+      return;
+    }
+
+    // The scrubber: where the clip is, and a way to hold it there.
+    var scrub = el("div", "ws-scrub");
+    var slider = el("input");
+    slider.type = "range";
+    slider.min = 0;
+    slider.max = 1000;
+    slider.step = 1;
+    var at = viewer.at() || { fraction: 0, frame: 0, frames: 0 };
+    slider.value = Math.round(at.fraction * 1000);
+    var readout = el("span", "ws-scrub-at",
+                     "frame " + at.frame + " / " + at.frames);
+    slider.addEventListener("input", function () {
+      var now = viewer.seek(slider.value / 1000);
+      if (now) {
+        readout.textContent = "frame " + now.frame + " / " + now.frames;
+        $("ws-play").textContent = "Play";
+      }
+    });
+    scrub.appendChild(slider);
+    scrub.appendChild(readout);
+    host.appendChild(scrub);
+
+    var kind = "";
+    var lowered = tools.action.toLowerCase();
+    [["walk", ["walk", "stride"]], ["punch", ["punch", "jab", "cross"]],
+     ["jump", ["jump", "leap", "hop"]]].forEach(function (pair) {
+      if (kind) { return; }
+      pair[1].forEach(function (word) {
+        if (!kind && lowered.indexOf(word) >= 0) { kind = pair[0]; }
+      });
+    });
+    tools.kind = kind;
+    if (!kind || !tools.table) {
+      host.appendChild(el("p", "muted small",
+        "No authoring tool matches this clip's name, so there are no numbers "
+        + "to change here. Ask the assistant about it instead."));
+      var ask = el("button", "btn tiny", "Ask about this clip");
+      ask.type = "button";
+      ask.addEventListener("click", function () {
+        wsSend("Tell me how " + tools.action + " on " + ws.project +
+               " was authored and what I could change about it.", "clip");
+      });
+      host.appendChild(ask);
+      return;
+    }
+
+    var spec = (tools.table.kinds || {})[kind];
+    if (!spec) { return; }
+    host.appendChild(el("p", "muted small",
+      spec.label + " — the numbers " + spec.command + " takes. Blank means "
+      + "the tool sizes it off the rig."));
+    var grid = el("div", "ws-params");
+    spec.params.forEach(function (one) { grid.appendChild(paramRow(one)); });
+    host.appendChild(grid);
+
+    var row = el("div", "ws-actions");
+    var apply = el("button", "btn tiny primary", "Re-author now");
+    apply.type = "button";
+    apply.title = "Runs " + spec.command + " straight away. No chat.";
+    apply.addEventListener("click", function () { reAuthor(apply); });
+    row.appendChild(apply);
+    var reset = el("button", "btn tiny ghost", "Reset");
+    reset.type = "button";
+    reset.addEventListener("click", function () {
+      tools.values = {};
+      renderStageTools();
+    });
+    row.appendChild(reset);
+    var ask2 = el("button", "btn tiny", "Ask instead");
+    ask2.type = "button";
+    ask2.addEventListener("click", function () {
+      var said = Object.keys(tools.values).map(function (name) {
+        return name + " " + tools.values[name];
+      }).join(", ");
+      wsSend("Re-author " + tools.action + " on " + ws.project +
+             (said ? " with " + said : "") +
+             ", keep everything else, then run animation_check on it.", "clip");
+    });
+    row.appendChild(ask2);
+    host.appendChild(row);
+  }
+
+  function renderSkinTools(host) {
+    var viewer = ws.viewer;
+    var joints = (viewer && viewer.supported) ? viewer.handles() : [];
+    if (!joints.length) {
+      host.appendChild(el("p", "muted small",
+        "This snapshot carries no skeleton, so there are no weights to look "
+        + "at. Refresh from Blender with the rig in the scene."));
+      return;
+    }
+    var row = el("div", "ws-tools-row");
+    row.appendChild(el("span", "ws-tools-label", "Paint"));
+    var picker = el("select", "select tiny");
+    var none = el("option", null, "no bone — plain clay");
+    none.value = "";
+    picker.appendChild(none);
+    joints.forEach(function (joint) {
+      var option = el("option", null, joint.label + "  (" + joint.bone + ")");
+      option.value = joint.bone;
+      picker.appendChild(option);
+    });
+    picker.value = tools.bone;
+    picker.addEventListener("change", function () {
+      tools.bone = picker.value;
+      toolsNote(tools.bone ? ("Painting " + tools.bone + "…") : "Clearing…");
+      wsSnapshot(tools.bone).then(function () { renderStageTools(); });
+    });
+    row.appendChild(picker);
+    host.appendChild(row);
+
+    var brush = el("div", "ws-tools-row");
+    brush.appendChild(el("span", "ws-tools-label", "Brush"));
+    var radius = el("input");
+    radius.type = "range";
+    radius.min = 5;
+    radius.max = 200;
+    radius.step = 1;
+    radius.value = tools.radius;
+    var size = el("span", "ws-tools-value", tools.radius + " mm");
+    radius.addEventListener("input", function () {
+      tools.radius = parseInt(radius.value, 10);
+      size.textContent = tools.radius + " mm";
+    });
+    brush.appendChild(radius);
+    brush.appendChild(size);
+    ["smooth", "harden"].forEach(function (op) {
+      var button = el("button", "btn tiny ws-op" +
+                      (tools.op === op ? " is-on" : ""), op);
+      button.type = "button";
+      button.title = op === "smooth"
+        ? "Fills holes in a bone's region by averaging with the neighbours"
+        : "Pulls a vertex towards its strongest bone, for stray influence";
+      button.addEventListener("click", function () {
+        tools.op = op;
+        renderStageTools();
+      });
+      brush.appendChild(button);
+    });
+    host.appendChild(brush);
+    host.appendChild(el("p", "muted small",
+      "Click the model to " + tools.op + " the weights around that point. "
+      + "Escape backs out."));
+  }
+
+  function renderStageTools() {
+    var host = $("ws-tools-body");
+    var strip = $("ws-stage-tools");
+    var stage = tools.stage;
+    if (!stage || !TOOL_STAGES[stage] || !ws.snapshot) {
+      strip.hidden = true;
+      return;
+    }
+    strip.hidden = false;
+    $("ws-tools-title").textContent = TOOL_STAGES[stage];
+    $("ws-inspect").hidden = false;
+    host.textContent = "";
+    if (stage === "animate") {
+      renderAnimateTools(host);
+    } else if (stage === "skin") {
+      renderSkinTools(host);
+    } else if (stage === "rig") {
+      host.appendChild(el("p", "muted small",
+        "The skeleton is on the model. Drag a joint to move it; press Check "
+        + "now to measure where every bone sits."));
+    } else {
+      host.appendChild(el("p", "muted small",
+        "Press Check now to measure the mesh. Anything it can place shows as "
+        + "a pin you can click."));
+    }
+    renderFindings();
+  }
+
+  //: Called whenever the stepper's focus moves. The strip follows it, and a
+  //: stage's findings never outlive the stage they were measured on.
+  function stageToolsFollow(stage) {
+    if (stage === tools.stage) { return; }
+    tools.stage = stage;
+    tools.findings = [];
+    tools.ran = "";
+    tools.open = null;
+    tools.action = "";
+    tools.values = {};
+    var viewer = ws.viewer;
+    if (viewer && viewer.supported) {
+      viewer.clearPins();
+      // "In rig it auto selects and shows the rig in the window."
+      if (stage === "rig" && ws.snapshot && !viewer.nudging()) {
+        wsToggleNudge();
+      } else if (stage !== "rig" && viewer.nudging()) {
+        wsToggleNudge();
+      }
+    }
+    if (stage === "animate" && !tools.table) { loadAuthoring().then(renderStageTools); }
+    toolsNote("");
+    renderStageTools();
   }
 
   // -- loading -----------------------------------------------------------
@@ -3176,8 +3771,43 @@
     // One Refresh for the whole tab. The per-section buttons were three more
     // things to look at for a folder read that takes milliseconds.
     $("ws-now-box").addEventListener("toggle", renderActivity);
-    $("ws-snapshot").addEventListener("click", wsSnapshot);
+    // Wrapped, not passed: wsSnapshot takes a bone name, and a bare listener
+    // would hand it the click Event instead.
+    $("ws-snapshot").addEventListener("click", function () { wsSnapshot(); });
     $("ws-nudge").addEventListener("click", wsToggleNudge);
+    $("ws-inspect").addEventListener("click", wsInspect);
+
+    // Skin mode's brush: a click on the model, not a drag of it. The viewer
+    // itself takes pin clicks and joint drags first, so this only ever sees
+    // the ones that landed on bare mesh.
+    (function () {
+      var canvas = $("ws-canvas");
+      var down = null;
+      canvas.addEventListener("pointerdown", function (event) {
+        down = { x: event.clientX, y: event.clientY };
+      });
+      canvas.addEventListener("pointerup", function (event) {
+        var start = down;
+        down = null;
+        if (!start || tools.stage !== "skin") { return; }
+        if (Math.abs(event.clientX - start.x) > 4 ||
+            Math.abs(event.clientY - start.y) > 4) { return; }
+        var viewer = ws.viewer;
+        if (!viewer || !viewer.supported || viewer.nudging()) { return; }
+        var box = canvas.getBoundingClientRect();
+        var px = event.clientX - box.left, py = event.clientY - box.top;
+        // A click that landed on a pin is the pin's, not the brush's.
+        var onPin = viewer.pins().some(function (pin) {
+          return pin.screen &&
+                 Math.hypot(pin.screen[0] - px, pin.screen[1] - py) < 18;
+        });
+        if (onPin) { return; }
+        var found = viewer.surfaceAt(px, py);
+        if (!found) { toolsNote("That click missed the mesh.", "bad"); return; }
+        tools.point = found.blender;
+        brushAt(found.blender);
+      });
+    }());
     $("ws-axis-up").addEventListener("click", function () { wsSetAxis("up"); });
     $("ws-axis-forward").addEventListener("click", function () {
       wsSetAxis("forward");

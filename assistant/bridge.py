@@ -399,6 +399,7 @@ Web UI environment (Phase 9)
 
 import base64
 import binascii
+import calendar
 import json
 import os
 import re
@@ -1163,6 +1164,284 @@ NUDGE_RECHECK_HINT = (
     "This is a placement, not a measurement — rig_check re-measures at the "
     "next gate, and the numbers on the stage card are still the ones from the "
     "last run.")
+
+# ---------------------------------------------------------------------------
+# Phase 20 — the stage as an inspection surface
+# ---------------------------------------------------------------------------
+#
+# The artist: "when we click verify mesh I can click out problem issues and
+# tell it to fix, or in rig it auto selects and shows the rig in the window so
+# I can make small edits, and same for skin, or animate - click on a specific
+# animation and change it."
+#
+# Each stage of the build already HAS a check that produces exactly this: a
+# list of things that are wrong, most of them with a place on the model.  Until
+# now that list was prose in a chat reply.  This turns it back into what it
+# was measured from — points on the mesh, bones on the skeleton — so "fix that
+# one" is a click on the thing rather than a sentence describing it.
+#
+# No new measurements are invented here.  ``/inspect`` runs the stage's own
+# command through the same socket helper every other passthrough uses, and
+# :func:`normalize_findings` reshapes the report it gets back.  A finding this
+# bridge cannot place, it does not place.
+
+#: Which command answers for which stage, and with which of its gates.  Read
+#: off the add-on's registry and the MCP wrappers; a stage not in here has no
+#: inspection, which is the honest answer for one that has no check.
+INSPECT_STAGES = {
+    "verify_mesh": {
+        "command": "verify_design",
+        "label": "Verify the mesh",
+        "cost": "Re-measures the mesh: defects, UVs, the polygon budget and "
+                "the silhouette. Seconds on a game-budget mesh.",
+    },
+    "rig": {
+        "command": "rig_check",
+        "label": "Rig",
+        "cost": "Poses the rig into its extremes and measures what happens to "
+                "the flesh. A minute or more on a full deform chain.",
+    },
+    "skin": {
+        "command": "rig_check",
+        "label": "Skin",
+        "cost": "The same run as the rig check — the skin gates (overlap and "
+                "continuity) come out of it.",
+    },
+    "animate": {
+        "command": "animation_check",
+        "label": "Animate",
+        "cost": "Steps the clip frame by frame and measures foot slide. "
+                "Seconds per clip.",
+    },
+}
+
+#: How long a check may take.  ``rig_check`` drives the rig through every
+#: extreme pose and measures the mesh at each one; it is the slowest read in
+#: Forge and a timeout here reads to the artist as "the button does nothing".
+INSPECT_TIMEOUT = 900.0
+
+#: The verdict words every gate in Forge uses, mapped onto the three colours a
+#: pin can be.  ``unmeasured`` is deliberately its own answer rather than a
+#: quiet "ok": a gate that could not run has not passed.
+SEVERITIES = {
+    "ok": "ok", "pass": "ok", "good": "ok",
+    "attention": "attention", "needs_attention": "attention", "warn": "attention",
+    "fail": "fail", "failed": "fail", "bad": "fail",
+    "unmeasured": "unknown", "not_applicable": "none", "skipped": "none",
+}
+
+#: How many findings one stage hands the page.  A pin per defect on a mesh with
+#: six hundred self-intersections is not a surface anybody can click.
+MAX_FINDINGS = 80
+#: How many positioned examples one gate contributes.  ``mesh_diagnose`` caps
+#: its own examples at 25; this is the same idea one level up.
+MAX_FINDING_EXAMPLES = 12
+
+#: ``mesh_diagnose`` reports example locations in world MILLIMETRES
+#: (``diagnose._mm``), and everything else in Forge speaks metres.  One
+#: conversion, named, rather than a 0.001 sprinkled through the normaliser.
+MM_TO_M = 0.001
+
+# ---------------------------------------------------------------------------
+# Phase 20 — the authoring parameters, mirrored from the tools that own them
+# ---------------------------------------------------------------------------
+#
+# "Click on a specific animation and change it."  The panel that lets somebody
+# do that has to know what a walk or a punch actually takes — and it must not
+# make any of it up, because a slider offering a parameter the authoring tool
+# does not have is a turn that fails with a confusing error.
+#
+# So every row below is read off the two files that own these contracts:
+# ``mcp/forge_mcp/server.py``'s wrapper signatures for the NAMES and types, and
+# ``addon/forge/tools/rigforge_anim.py``'s ``get_int``/``get_float`` calls for
+# the BOUNDS and defaults.  Where the add-on derives a default from the rig's
+# own leg length there is no number to quote and this says so instead of
+# inventing one — that is what ``"from the rig"`` means on a row.
+
+def _param(name, kind, default=None, minimum=None, maximum=None,
+           choices=None, note=""):
+    return {"name": name, "kind": kind, "default": default,
+            "min": minimum, "max": maximum,
+            "choices": list(choices) if choices else None, "note": note}
+
+
+#: Sized off the rig rather than fixed, so the same command works on a
+#: figurine and an ogre.  There is no number to show until the tool has run.
+FROM_RIG = "sized off this rig's own leg length"
+
+AUTHORING_PARAMS = {
+    "walk": {
+        "command": "rigforge_walk",
+        "label": "Walk cycle",
+        "params": [
+            _param("cycle_frames", "int", 32, 4, 600,
+                   note="frames for one full cycle"),
+            _param("stance_fraction", "float", 0.62, 0.2, 0.95,
+                   note="how much of the cycle a foot is on the ground"),
+            _param("step_length", "float", None, note=FROM_RIG),
+            _param("step_height", "float", None, note=FROM_RIG),
+            _param("hip_drop", "float", None, note=FROM_RIG),
+            _param("hip_sway", "float", None, note=FROM_RIG),
+            _param("hip_twist_deg", "float", None, note=FROM_RIG),
+            _param("arm_swing_deg", "float", None, note=FROM_RIG),
+            _param("elbow_bend_deg", "float", None, note=FROM_RIG),
+            _param("foot_roll_deg", "float", None, note=FROM_RIG),
+            _param("stride_width", "float", None, note=FROM_RIG),
+            _param("travel", "bool", True, note="move the body forward"),
+            _param("loop", "bool", True),
+            _param("interpolation", "choice", "LINEAR",
+                   choices=("LINEAR", "BEZIER")),
+        ],
+    },
+    "punch": {
+        "command": "rigforge_punch",
+        "label": "Punch",
+        "params": [
+            _param("side", "choice", None, choices=("L", "R"),
+                   note="which arm throws it"),
+            _param("frames", "int", 24, 8, 600),
+            _param("strike_fraction", "float", 0.45, 0.15, 0.85,
+                   note="where in the clip the fist lands"),
+            _param("lead_frames", "int", None, note=FROM_RIG),
+            _param("target_distance", "float", None, note=FROM_RIG),
+            _param("target_height", "float", None, note=FROM_RIG),
+            _param("hip_rotation_deg", "float", None, 0.0, 60.0),
+            _param("chest_rotation_deg", "float", None, 0.0, 60.0),
+            _param("shoulder_rotation_deg", "float", None, 0.0, 60.0),
+            _param("weight_shift", "float", None, note=FROM_RIG),
+            _param("guard_rise", "float", None, note=FROM_RIG),
+            _param("chamber_draw", "float", None, note=FROM_RIG),
+            _param("loop", "bool", False),
+            _param("interpolation", "choice", "LINEAR",
+                   choices=("LINEAR", "BEZIER")),
+        ],
+    },
+    "jump": {
+        "command": "rigforge_jump",
+        "label": "Jump",
+        "params": [
+            _param("frames", "int", 36, 12, 600),
+            _param("apex_height", "float", None, note=FROM_RIG),
+            _param("jump_distance", "float", 0.0, note="0 is a standing jump"),
+            _param("crouch_depth", "float", None, note=FROM_RIG),
+            _param("landing_depth", "float", None, note=FROM_RIG),
+            _param("anticipation_fraction", "float", None, 0.05, 0.5),
+            _param("gravity", "float", 9.81, 0.1, 100.0,
+                   note="metres per second squared"),
+            _param("chest_pitch_deg", "float", None, note=FROM_RIG),
+            _param("arm_swing_back_deg", "float", None, note=FROM_RIG),
+            _param("arm_swing_up_deg", "float", None, note=FROM_RIG),
+            _param("elbow_bend_deg", "float", None, note=FROM_RIG),
+            _param("foot_roll_deg", "float", None, note=FROM_RIG),
+            _param("loop", "bool", False),
+            _param("interpolation", "choice", "LINEAR",
+                   choices=("LINEAR", "BEZIER")),
+        ],
+    },
+}
+
+#: Which table a clip's own name suggests.  A guess, and labelled as one on the
+#: way out: an action called ``walk-loop`` is almost certainly a walk, and an
+#: action called ``take-14`` is not any of these.
+AUTHORING_HINTS = (
+    ("walk", ("walk", "stride", "locomotion")),
+    ("punch", ("punch", "jab", "cross", "strike")),
+    ("jump", ("jump", "leap", "hop")),
+)
+
+# ---------------------------------------------------------------------------
+# Phase 20 — the two tiers
+# ---------------------------------------------------------------------------
+#
+# The artist again, on the first draft of this: "i see you say a visible chat
+# turn but I'd also like the option to make changes in a simple version,
+# blender is often overwhelming for people so narrowing the scope could help
+# here."
+#
+# So every control on a stage falls into one of two tiers, and which tier it is
+# in is decided by ONE question: is there a deterministic executor for it?
+#
+#   DIRECT — the machine already knows exactly what to do.  Validated numbers
+#   go to a bounded command, the journal gets a line, the viewer re-snapshots,
+#   and no model is involved at all.  Instant, and cheap.
+#
+#   CHAT — the answer depends on judgement.  Which of three fixes to try, how
+#   to split a tag, whether a gate may be overridden: these compose a sentence
+#   and the assistant works the ladder, because a button that picked one for
+#   you would be picking wrong a third of the time and silently.
+#
+# What made the direct tier, and what did not, is written down in
+# :data:`MESH_FIX_OPS` and :data:`WEIGHT_OPS` beside the reason.
+
+#: How far a local weight brush may reach.  Small because it is a repair, not a
+#: paint: the gates it exists to answer (a hole in one bone's region, a stray
+#: strand across a jacket) are centimetres across.
+MIN_BRUSH_MM = 5.0
+MAX_BRUSH_MM = 200.0
+#: How many vertices one brush stroke may touch.  A radius big enough to catch
+#: half a character is a radius that should have been a re-skin.
+MAX_BRUSH_VERTICES = 20000
+#: Laplacian passes and blend factor for the local smooth.  The add-on's own
+#: ``rigforge_skin.smooth_weights`` uses the same shape of pass; these are its
+#: defaults, kept in step deliberately.
+BRUSH_PASSES = 4
+BRUSH_FACTOR = 0.5
+#: How hard "harden" pushes the winning bone.  Not to 1.0: a hard 1.0 is a
+#: rigid vertex and a visible crease, which is the defect, not the fix.
+BRUSH_HARDEN = 0.65
+
+#: The local weight operations, and what each one is for.
+#:
+#: Both are DIRECT: the operation is fully specified by a point, a radius and a
+#: verb, and there is nothing to decide.  Neither exists as an add-on command —
+#: ``rigforge_weights`` works on the whole mesh and ``smooth_weights`` is a
+#: module-level function over numpy arrays that this process cannot import — so
+#: the template below implements the minimal vertex-set variant with the same
+#: maths.  **That is the one place in this phase where geometry code lives in
+#: the bridge rather than in the add-on, and it should be promoted into
+#: ``rigforge_skin`` as a ``region`` action when somebody is next in there.**
+WEIGHT_OPS = {
+    "smooth": "average each touched vertex's weights with its neighbours' and "
+              "renormalise — what a hole in a bone's region needs",
+    "harden": "push each touched vertex towards its strongest bone and "
+              "renormalise — what a strand of stray influence needs",
+}
+
+#: The mesh repairs that are deterministic enough to be a button.
+#:
+#: Exactly one made it.  ``merge_doubles`` is ``merge_by_distance``, an add-on
+#: command that takes a distance and removes vertices closer together than it —
+#: a number in, a count out, nothing judged.
+#:
+#: What did NOT make it, and why, because the reasons are the design:
+#:
+#: * **delete a loose island** — ``separate_loose`` splits a mesh into its
+#:   pieces and deletes none of them, and WHICH piece is junk is exactly the
+#:   judgement: on this project one "loose island" was a tooth.
+#: * **fill a hole** — there is no bounded fill command in the registry, and a
+#:   hole filled the wrong way across a mouth is worse than the hole.
+#: * **the clipping/ngon/density defects** — the fix is a retopo or a weight
+#:   pass, which is the fix ladder, which is a conversation.
+#:
+#: Every finding whose fix is not on this list keeps its chat button and only
+#: its chat button.  A pin that offered a wrong one-click fix would be worse
+#: than a pin that offered none.
+MESH_FIX_OPS = {
+    "merge_doubles": {
+        "command": "merge_by_distance",
+        "label": "Merge vertices this close together",
+        "param": "distance_mm",
+        "min": 0.001,
+        "max": 10.0,
+        "default": 0.1,
+        "note": "removes vertices closer together than this; the count it "
+                "removed comes back",
+    },
+}
+
+#: What a direct edit calls itself in the journal.  One per surface, so the
+#: trail says which control the artist actually used.
+EDIT_SOURCES = ("nudge", "author-panel", "weights-brush", "mesh-fix")
 
 #: Why a thumbnail cannot be taken.  A thumbnail is a photograph of the
 #: artist's work as it stands — it is deliberately NOT allowed to build the
@@ -5713,6 +5992,7 @@ SNAPSHOT_SCRIPT = '''
 import bpy, json, os
 target = %s
 only = %s
+weight_bone = %s
 def _report(payload):
     print("FORGE_SNAPSHOT " + json.dumps(payload))
 view = bpy.context.view_layer
@@ -5734,7 +6014,43 @@ elif not wanted:
     _report({"ok": False, "error": "The Blender scene has nothing visible to export."})
 else:
     animations = sorted({a.name for a in bpy.data.actions})
+    painted = []
+    baked = ""
     try:
+        # The weight heatmap.  glTF has no concept of a vertex group, so the
+        # only way a browser can show one bone's influence is as COLOR_0 — a
+        # temporary layer, written here, exported, and removed in the finally
+        # below so the artist's mesh is exactly as it was found.
+        if weight_bone:
+            for obj in wanted:
+                if obj.type != "MESH":
+                    continue
+                group = obj.vertex_groups.get(weight_bone)
+                if group is None:
+                    continue
+                mesh = obj.data
+                layer = mesh.color_attributes.new(
+                    name="FORGE_WEIGHT", type="FLOAT_COLOR", domain="POINT")
+                index = group.index
+                for vertex in mesh.vertices:
+                    share = 0.0
+                    for entry in vertex.groups:
+                        if entry.group == index:
+                            share = float(entry.weight)
+                            break
+                    # Blue at nothing, red at everything, through the middle —
+                    # the same ramp Blender's own weight paint uses, so the
+                    # picture in the browser reads like the one in the viewport.
+                    if share <= 0.5:
+                        low = share * 2.0
+                        colour = (0.0, low, 1.0 - low, 1.0)
+                    else:
+                        high = (share - 0.5) * 2.0
+                        colour = (high, 1.0 - high, 0.0, 1.0)
+                    layer.data[vertex.index].color = colour
+                mesh.color_attributes.active_color = layer
+                painted.append((mesh, layer.name))
+                baked = weight_bone
         for obj in bpy.data.objects:
             obj.select_set(False)
         for obj in wanted:
@@ -5749,10 +6065,18 @@ else:
                  "objects": [o.name for o in wanted],
                  "meshes": [o.name for o in wanted if o.type == "MESH"],
                  "armatures": [o.name for o in wanted if o.type == "ARMATURE"],
-                 "animations": animations})
+                 "animations": animations,
+                 "weight_bone": baked})
     except Exception as exc:
         _report({"ok": False, "error": "%%s: %%s" %% (type(exc).__name__, exc)})
     finally:
+        for mesh, name in painted:
+            try:
+                layer = mesh.color_attributes.get(name)
+                if layer is not None:
+                    mesh.color_attributes.remove(layer)
+            except Exception:
+                pass
         for obj in bpy.data.objects:
             obj.select_set(False)
         for obj in before:
@@ -5794,7 +6118,7 @@ def new_snapshot_path(name):
     return path
 
 
-def blender_snapshot(name, obj=""):
+def blender_snapshot(name, obj="", weight_bone=""):
     """``(payload, status)`` — export the live scene to a ``.glb`` and mint it.
 
     Raises :class:`BlenderDown` / :class:`BlenderRefused` like every other
@@ -5805,7 +6129,8 @@ def blender_snapshot(name, obj=""):
     if target is None:
         return {"error": "The previews folder (%s) could not be made, so there "
                          "is nowhere to put the snapshot." % previews_dir()}, 500
-    code = SNAPSHOT_SCRIPT % (json.dumps(target), json.dumps(str(obj or "")))
+    code = SNAPSHOT_SCRIPT % (json.dumps(target), json.dumps(str(obj or "")),
+                              json.dumps(str(weight_bone or "")))
     result = blender_command("execute_python", {"code": code},
                              timeout=SNAPSHOT_TIMEOUT)
     report = snapshot_report(result.get("output"))
@@ -5835,6 +6160,7 @@ def blender_snapshot(name, obj=""):
         "meshes": [str(one) for one in (report.get("meshes") or [])],
         "armatures": [str(one) for one in (report.get("armatures") or [])],
         "animations": [str(one) for one in (report.get("animations") or [])],
+        "weight_bone": str(report.get("weight_bone") or ""),
     }, 200
 
 
@@ -6248,6 +6574,795 @@ def blender_joint_move(bone, end, delta, mirror_bone, rig=""):
     return report, 200
 
 
+# ---------------------------------------------------------------------------
+# Phase 20 — turning a check's report back into things on the model
+# ---------------------------------------------------------------------------
+
+def severity_of(verdict):
+    """One of ``ok`` / ``attention`` / ``fail`` / ``unknown`` / ``none``."""
+    text = str(verdict or "").strip().lower()
+    # A verdict is often a sentence with the band at the front of it
+    # ("attention overall, 376 holes / 20064 region verts").
+    head = re.split(r"[\s,(;:]", text, maxsplit=1)[0]
+    return SEVERITIES.get(head, SEVERITIES.get(text, "unknown"))
+
+
+def _finding(stage, gate, label, verdict, numbers=None, bone="",
+             world_pos=None, fix_hint="", fix=None):
+    """One row of the findings list, in the shape the page draws."""
+    out = {
+        "id": "%s:%s:%s" % (stage, gate, bone or (label or "")[:40]),
+        "stage": stage,
+        "gate": gate,
+        "label": label,
+        "severity": severity_of(verdict),
+        "verdict": str(verdict or ""),
+        "bone": bone,
+        "world_pos": list(world_pos) if world_pos else None,
+        "numbers": dict(numbers or {}),
+        "fix_hint": fix_hint,
+        # Present only when there IS a deterministic executor for this one.
+        # Its absence is what makes the page show a chat button instead.
+        "fix": dict(fix) if fix else None,
+    }
+    return out
+
+
+def _number_map(source, keys):
+    """The named keys that are actually present, as a plain ``{name: value}``."""
+    out = {}
+    if not isinstance(source, dict):
+        return out
+    for key in keys:
+        if key not in source or source[key] is None:
+            continue
+        value = source[key]
+        if isinstance(value, (int, float, bool, str)):
+            out[key] = value
+        elif isinstance(value, list) and len(value) <= 8 and all(
+                isinstance(one, (int, float, str)) for one in value):
+            # ``faces: [3, 9]`` — which two faces are passing through each
+            # other is exactly what somebody clicking the pin wants to know.
+            out[key] = list(value)
+    return out
+
+
+def _defect_findings(stage, name, label, block, fix_hint="", fix=None):
+    """A finding per located example of one ``mesh_diagnose`` defect.
+
+    ``mesh_diagnose`` reports ``examples[].location_mm`` — the defect's place
+    on the model, in world millimetres.  That is the whole reason this feature
+    can put a pin anywhere: the number was always there, it just never left
+    the report.
+    """
+    if not isinstance(block, dict):
+        return []
+    count = int(block.get("count") or 0)
+    if not count:
+        return []
+    examples = block.get("examples")
+    examples = examples if isinstance(examples, list) else []
+    out = []
+    for index, example in enumerate(examples[:MAX_FINDING_EXAMPLES]):
+        if not isinstance(example, dict):
+            continue
+        where = example.get("location_mm")
+        position = None
+        if isinstance(where, (list, tuple)) and len(where) == 3:
+            try:
+                position = [round(float(one) * MM_TO_M, 6) for one in where]
+            except (TypeError, ValueError):
+                position = None
+        entry = _finding(
+            stage, name,
+            "%s (%d of %d)" % (label, index + 1, count),
+            "attention",
+            numbers=_number_map(example, ("face", "faces", "sides")),
+            world_pos=position, fix_hint=fix_hint, fix=fix)
+        entry["id"] = "%s:%s:%d" % (stage, name, index)
+        out.append(entry)
+    if not out:
+        # Counted but not located: still worth saying, just not pinnable.
+        out.append(_finding(stage, name, "%s — %d" % (label, count),
+                            "attention", numbers={"count": count},
+                            fix_hint=fix_hint, fix=fix))
+    return out
+
+
+def normalize_verify(report, stage="verify_mesh"):
+    """``verify_design``'s axes, as findings.
+
+    Its ``defects`` axis carries ``mesh_diagnose``'s whole result under
+    ``detail``, which is where the located examples live; every other axis is a
+    verdict with numbers and no place on the model, so it lists in the panel
+    rather than pinning.
+    """
+    findings = []
+    axes = report.get("axes") if isinstance(report, dict) else None
+    axes = axes if isinstance(axes, dict) else {}
+
+    detail = (axes.get("defects") or {}).get("detail")
+    detail = detail if isinstance(detail, dict) else {}
+    located = (
+        ("self_intersections", "Faces passing through each other",
+         "A retopo fixes clipping; merging doubles will not.", None),
+        ("zero_area_faces", "Faces with no area",
+         "Merging vertices this close together usually removes these.",
+         {"op": "merge_doubles", "distance_mm": 0.1}),
+        ("ngons", "Faces with more than four sides",
+         "Triangulate or retopologise; a game mesh should not ship ngons.",
+         None),
+        ("loose_parts", "Pieces not joined to the mesh",
+         "Which loose piece is junk is a judgement — a tooth is a loose "
+         "piece too.", None),
+    )
+    for key, label, hint, fix in located:
+        findings.extend(_defect_findings(stage, key, label, detail.get(key),
+                                         hint, fix))
+
+    for name, axis in axes.items():
+        if not isinstance(axis, dict):
+            continue
+        if name == "defects" and findings:
+            continue
+        numbers = {}
+        for key, value in axis.items():
+            if key in ("verdict", "says", "tier", "detail", "source"):
+                continue
+            # Every claim is ``{"value": ..., "tier": ...}``; the value is the
+            # part a person reads.
+            if isinstance(value, dict) and "value" in value:
+                if isinstance(value["value"], (int, float, bool, str)):
+                    numbers[key] = value["value"]
+            elif isinstance(value, (int, float, bool, str)):
+                numbers[key] = value
+        findings.append(_finding(
+            stage, name, str(axis.get("says") or name),
+            axis.get("verdict"), numbers=numbers))
+    return findings
+
+
+def _gate_block(report, name):
+    """One placement gate out of a ``rig_check`` report, wherever it sits."""
+    if not isinstance(report, dict):
+        return {}
+    placement = report.get("placement")
+    if isinstance(placement, dict) and isinstance(placement.get(name), dict):
+        return placement[name]
+    block = report.get(name)
+    return block if isinstance(block, dict) else {}
+
+
+#: Which ``rig_check`` gates belong to which stage.  The same command answers
+#: for both — it measures placement and skinning in one pass — so the split is
+#: about which stage's card a finding belongs on, not about running it twice.
+RIG_GATES = ("centering", "asymmetry", "side_naming", "bend_direction",
+             "hand_containment", "foot_height", "ik_reach_headroom")
+SKIN_GATES = ("overlap", "continuity")
+
+
+def normalize_rig(report, stage="rig"):
+    """``rig_check``'s placement gates, as findings anchored to bones.
+
+    No world positions here, and none invented: ``bone_centering`` reports a
+    bone NAME and a number, not a point.  The viewer already knows where every
+    joint is — it drew a handle on each one — so a finding that names a bone is
+    a finding it can place exactly.
+    """
+    findings = []
+    centering = _gate_block(report, "centering")
+    rows = centering.get("bones")
+    rows = rows if isinstance(rows, list) else []
+    for row in rows[:MAX_FINDINGS]:
+        if not isinstance(row, dict):
+            continue
+        verdict = row.get("verdict")
+        if severity_of(verdict) in ("ok", "none"):
+            continue
+        bone = str(row.get("bone") or "")
+        findings.append(_finding(
+            stage, "centering",
+            "%s sits off its limb's centreline" % bone,
+            verdict,
+            numbers=_number_map(row, ("worst_offset_mm",
+                                      "worst_offset_pct_of_radius",
+                                      "head_offset_mm",
+                                      "head_offset_pct_of_radius",
+                                      "worst_at_fraction")),
+            bone=bone,
+            fix_hint="Nudge the joint onto the centre of its limb, or re-fit "
+                     "the landmarks."))
+
+    for name in RIG_GATES:
+        if name == "centering":
+            continue
+        block = _gate_block(report, name)
+        if not block:
+            continue
+        verdict = block.get("verdict")
+        if severity_of(verdict) in ("ok", "none"):
+            continue
+        findings.append(_finding(
+            stage, name, str(block.get("says") or name), verdict,
+            numbers=_number_map(block, ("worst_mm", "worst", "wrong", "of",
+                                        "count", "ratio", "headroom")),
+            bone=str(block.get("worst_bone") or ""),
+            fix_hint="This gate is a placement problem; the fix ladder is the "
+                     "assistant's to work."))
+    return findings[:MAX_FINDINGS]
+
+
+def normalize_skin(report, stage="skin"):
+    """The skin gates out of the same ``rig_check`` report.
+
+    ``overlap`` names PAIRS of bones and how far apart they are; ``continuity``
+    names a bone and how much of its own region is punctured.  Both anchor to a
+    bone, so both pin onto the skeleton.
+    """
+    findings = []
+    overlap = _gate_block(report, "overlap")
+    outliers = overlap.get("outliers")
+    outliers = outliers if isinstance(outliers, list) else []
+    if not outliers and isinstance(overlap.get("pairs"), list):
+        outliers = overlap["pairs"]
+    for index, pair in enumerate(outliers[:MAX_FINDING_EXAMPLES]):
+        if not isinstance(pair, dict):
+            continue
+        first = str(pair.get("a") or pair.get("bone_a") or "")
+        second = str(pair.get("b") or pair.get("bone_b") or "")
+        entry = _finding(
+            stage, "overlap",
+            "%s and %s share flesh" % (first or "?", second or "?"),
+            pair.get("verdict") or "fail",
+            numbers=_number_map(pair, ("gap_mm", "shared_vertices", "vertices",
+                                       "stray_mass", "mass")),
+            bone=first,
+            fix_hint="Stray influence between two bones this far apart is a "
+                     "tagging problem. The brush can harden it locally; a real "
+                     "fix is a finer tag split.")
+        entry["bones"] = [name for name in (first, second) if name]
+        entry["id"] = "%s:overlap:%d" % (stage, index)
+        findings.append(entry)
+
+    continuity = _gate_block(report, "continuity")
+    rows = continuity.get("bones")
+    rows = rows if isinstance(rows, list) else []
+    for row in rows[:MAX_FINDING_EXAMPLES]:
+        if not isinstance(row, dict):
+            continue
+        verdict = row.get("verdict")
+        if severity_of(verdict) in ("ok", "none"):
+            continue
+        bone = str(row.get("bone") or "")
+        findings.append(_finding(
+            stage, "continuity",
+            "%s has holes in its own region" % bone, verdict,
+            numbers=_number_map(row, ("holes", "region_vertices", "hole_pct",
+                                      "worst")),
+            bone=bone,
+            fix_hint="A hole is missing flesh, not stray flesh: smooth it "
+                     "locally with the brush."))
+
+    for name in SKIN_GATES:
+        block = _gate_block(report, name)
+        if not block:
+            continue
+        verdict = block.get("verdict")
+        if severity_of(verdict) in ("ok", "none"):
+            continue
+        findings.append(_finding(
+            stage, name + "_overall", str(block.get("says") or name), verdict,
+            numbers=_number_map(block, ("stray_mass", "outlier_pairs", "holes",
+                                        "region_vertices", "hole_pct"))))
+    return findings[:MAX_FINDINGS]
+
+
+def normalize_animate(report, stage="animate"):
+    """``animation_check``'s gates for one clip.
+
+    Foot slide is a number about a whole clip rather than a point on a mesh, so
+    nothing here pins; what it gets instead is the frame the worst reading
+    happened on, which is what the scrubber is for.
+    """
+    findings = []
+    if not isinstance(report, dict):
+        return findings
+    gates = (("gate", "Foot slide", ("worst_drift_mm", "threshold_ok_mm",
+                                     "worst_frame", "mode", "action")),
+             ("deformation_gate", "Deformation",
+              ("worst_stretch_pct", "worst_frame")),
+             ("loop_seam_closure", "Loop seam", ("max_mm", "frames")),
+             ("bone_stretch_budget", "Bone stretch", ("worst_pct", "limb")),
+             ("ik_reach_headroom", "Reach headroom", ("worst", "leg")))
+    for key, label, keys in gates:
+        block = report.get(key)
+        if isinstance(block, dict):
+            verdict = block.get("verdict") or block.get("gate")
+            numbers = _number_map(block, keys)
+            says = str(block.get("says") or label)
+        elif isinstance(block, str):
+            verdict, numbers, says = block, {}, label
+        else:
+            continue
+        if severity_of(verdict) in ("ok", "none"):
+            continue
+        findings.append(_finding(stage, key, says, verdict, numbers=numbers,
+                                 fix_hint="Re-author the clip with different "
+                                          "numbers, or ask for the fix."))
+    if not findings:
+        # A clip that passes is worth saying out loud, with its numbers.
+        findings.append(_finding(
+            stage, "gate", "This clip passes its gates.",
+            report.get("gate") or "ok",
+            numbers=_number_map(report, ("worst_drift_mm", "action", "mode",
+                                         "frames"))))
+    return findings
+
+
+#: Which normaliser answers for which stage.
+NORMALIZERS = {
+    "verify_mesh": normalize_verify,
+    "rig": normalize_rig,
+    "skin": normalize_skin,
+    "animate": normalize_animate,
+}
+
+
+def normalize_findings(stage, report):
+    """The stage's report, as the list of things the page can put on a model."""
+    handler = NORMALIZERS.get(str(stage or ""))
+    if handler is None:
+        return []
+    try:
+        return handler(report if isinstance(report, dict) else {})
+    except (TypeError, ValueError, KeyError, AttributeError):
+        # A report shaped in a way this bridge has never seen is not a reason
+        # to take the page down; it is a reason to show nothing and say so.
+        return []
+
+
+def findings_summary(findings):
+    """How many of each colour, so a stage card can say it in one line."""
+    counts = {}
+    for entry in findings:
+        counts[entry["severity"]] = counts.get(entry["severity"], 0) + 1
+    return counts
+
+
+# ---------------------------------------------------------------------------
+# Phase 20 — the direct tier
+# ---------------------------------------------------------------------------
+
+def authoring_kind(action):
+    """Which authoring table a clip's name suggests, or ``""``."""
+    text = str(action or "").strip().lower()
+    for kind, words in AUTHORING_HINTS:
+        for word in words:
+            if word in text:
+                return kind
+    return ""
+
+
+def authoring_table(kind=""):
+    """The parameter tables, or one of them. Static, and mirrored not invented."""
+    if kind:
+        entry = AUTHORING_PARAMS.get(kind)
+        return dict(entry) if entry else None
+    return {
+        "kinds": dict((name, dict(entry))
+                      for name, entry in AUTHORING_PARAMS.items()),
+        "note": "Names and types come from the MCP wrappers "
+                "(rigforge_walk / rigforge_punch / rigforge_jump); bounds and "
+                "defaults from the add-on's own get_int/get_float calls. A "
+                "parameter with no default is sized off the rig when the tool "
+                "runs, and there is no number to show until it has.",
+    }
+
+
+def clean_authoring_params(kind, values):
+    """``(params, error)`` — the caller's numbers, checked against the table.
+
+    Nothing a client sends survives this except a value of the declared type
+    inside the declared bounds under a name the table already knows.  A
+    parameter that is not on the table is refused rather than passed through:
+    the point of mirroring the contract is that a slider cannot ask the
+    authoring tool for something it does not have.
+    """
+    entry = AUTHORING_PARAMS.get(str(kind or ""))
+    if entry is None:
+        return None, ("%r is not something this panel can author. It knows %s."
+                      % (str(kind or "")[:40],
+                         ", ".join(sorted(AUTHORING_PARAMS))))
+    if not isinstance(values, dict):
+        return None, "The parameters must be a JSON object."
+    table = dict((row["name"], row) for row in entry["params"])
+    out = {}
+    for name, value in values.items():
+        row = table.get(str(name))
+        if row is None:
+            return None, ("%r is not a parameter of %s. It takes %s."
+                          % (str(name)[:40], entry["command"],
+                             ", ".join(sorted(table))))
+        if value is None:
+            continue           # "leave it to the rig"
+        kindof = row["kind"]
+        if kindof == "bool":
+            if not isinstance(value, bool):
+                return None, "%s is a yes/no." % name
+            out[name] = value
+            continue
+        if kindof == "choice":
+            if value not in (row["choices"] or ()):
+                return None, ("%s is one of %s."
+                              % (name, ", ".join(row["choices"] or ())))
+            out[name] = value
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None, "%s is a number." % name
+        number = float(value)
+        if number != number or number in (float("inf"), float("-inf")):
+            return None, "%s is a number." % name
+        if row["min"] is not None and number < row["min"]:
+            return None, ("%s is at least %g." % (name, row["min"]))
+        if row["max"] is not None and number > row["max"]:
+            return None, ("%s is at most %g." % (name, row["max"]))
+        out[name] = int(round(number)) if kindof == "int" else round(number, 6)
+    if not out:
+        return None, "Nothing was changed, so there is nothing to author."
+    return out, ""
+
+
+def brush_radius(value):
+    """A brush radius in millimetres, or ``None``."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    if number < MIN_BRUSH_MM or number > MAX_BRUSH_MM:
+        return None
+    return round(number, 3)
+
+
+def world_point(value):
+    """A point in world metres, or ``None``. Bounded, because it is a place."""
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        return None
+    out = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
+            return None
+        number = float(item)
+        if number != number or number in (float("inf"), float("-inf")):
+            return None
+        if abs(number) > 1000.0:
+            return None
+        out.append(round(number, 6))
+    return out
+
+
+#: The local weight brush.  Two operations over one ball of vertices, with the
+#: same Laplacian shape ``rigforge_skin.smooth_weights`` uses — see
+#: :data:`WEIGHT_OPS` for why this lives here for now and where it should go.
+WEIGHTS_LOCAL_SCRIPT = '''
+import bpy, json
+from mathutils import Vector
+mesh_name = %s
+rig_name = %s
+centre = %s
+radius_m = %s
+op = %s
+only_bone = %s
+passes = %s
+factor = %s
+harden = %s
+limit = %s
+
+def _report(payload):
+    print("FORGE_WEIGHTS " + json.dumps(payload))
+
+scene = bpy.context.scene
+view = bpy.context.view_layer
+
+def pick_mesh():
+    if mesh_name:
+        found = bpy.data.objects.get(mesh_name)
+        return found if found is not None and found.type == "MESH" else None
+    best = None
+    for candidate in scene.objects:
+        if candidate.type != "MESH":
+            continue
+        for mod in candidate.modifiers:
+            if mod.type != "ARMATURE" or mod.object is None:
+                continue
+            if rig_name and mod.object.name != rig_name:
+                continue
+            if best is None or len(candidate.data.vertices) > len(best.data.vertices):
+                best = candidate
+    return best
+
+obj = pick_mesh()
+if obj is None:
+    _report({"ok": False, "kind": "no_mesh",
+             "error": "No skinned mesh is in the scene to brush."})
+    raise SystemExit
+
+rig = None
+for mod in obj.modifiers:
+    if mod.type == "ARMATURE" and mod.object is not None:
+        rig = mod.object
+        break
+if rig is None:
+    _report({"ok": False, "kind": "no_rig",
+             "error": "%%r has no armature modifier, so it has no weights."
+                      %% obj.name})
+    raise SystemExit
+
+deform = set(bone.name for bone in rig.data.bones if bone.use_deform)
+groups = {}
+for group in obj.vertex_groups:
+    if group.name in deform:
+        groups[group.index] = group.name
+if not groups:
+    _report({"ok": False, "kind": "no_weights",
+             "error": "%%r has no deform vertex groups to brush." %% obj.name})
+    raise SystemExit
+if only_bone and only_bone not in deform:
+    _report({"ok": False, "kind": "no_bone",
+             "error": "%%r is not a deform bone on %%r." %% (only_bone, rig.name)})
+    raise SystemExit
+
+previous_mode = "OBJECT"
+previous_active = view.objects.active
+if previous_active is not None:
+    previous_mode = previous_active.mode
+previous_selected = [o for o in bpy.data.objects if o.select_get()]
+
+try:
+    if previous_active is not None and previous_active.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+    matrix = obj.matrix_world
+    point = Vector((centre[0], centre[1], centre[2]))
+    vertices = obj.data.vertices
+
+    only_index = None
+    if only_bone:
+        group = obj.vertex_groups.get(only_bone)
+        only_index = group.index if group is not None else -1
+
+    touched = []
+    for vertex in vertices:
+        if (matrix @ vertex.co - point).length > radius_m:
+            continue
+        if only_index is not None:
+            if only_index < 0:
+                continue
+            if not any(entry.group == only_index and entry.weight > 0.0
+                       for entry in vertex.groups):
+                continue
+        touched.append(vertex.index)
+        if len(touched) > limit:
+            break
+
+    if len(touched) > limit:
+        _report({"ok": False, "kind": "too_big",
+                 "error": "That radius covers more than %%d vertices. Use a "
+                          "smaller one — this is a repair, not a re-skin."
+                          %% limit,
+                 "vertices": len(touched)})
+        raise SystemExit
+    if not touched:
+        _report({"ok": False, "kind": "empty",
+                 "error": "Nothing is within that radius of that point."})
+        raise SystemExit
+
+    # Weight rows for the touched set and everything one edge away from it,
+    # because a smoothing pass reads its neighbours.
+    wanted = set(touched)
+    neighbours = {}
+    for edge in obj.data.edges:
+        a, b = edge.vertices[0], edge.vertices[1]
+        if a in wanted or b in wanted:
+            neighbours.setdefault(a, []).append(b)
+            neighbours.setdefault(b, []).append(a)
+    needed = set(wanted)
+    for index in touched:
+        needed.update(neighbours.get(index, ()))
+
+    weights = {}
+    for index in needed:
+        row = {}
+        for entry in vertices[index].groups:
+            if entry.group in groups and entry.weight > 0.0:
+                row[entry.group] = float(entry.weight)
+        weights[index] = row
+
+    if op == "smooth":
+        for _pass in range(passes):
+            updated = {}
+            for index in touched:
+                ring = neighbours.get(index, ())
+                if not ring:
+                    continue
+                total = {}
+                for other in ring:
+                    for key, value in weights.get(other, {}).items():
+                        total[key] = total.get(key, 0.0) + value
+                own = weights.get(index, {})
+                blended = {}
+                for key in set(own) | set(total):
+                    mean = total.get(key, 0.0) / float(len(ring))
+                    blended[key] = (own.get(key, 0.0) * (1.0 - factor)
+                                    + mean * factor)
+                updated[index] = blended
+            weights.update(updated)
+    else:
+        for index in touched:
+            own = weights.get(index, {})
+            if not own:
+                continue
+            strongest = max(own, key=lambda key: own[key])
+            hardened = {}
+            for key, value in own.items():
+                if key == strongest:
+                    hardened[key] = value + (1.0 - value) * harden
+                else:
+                    hardened[key] = value * (1.0 - harden)
+            weights[index] = hardened
+
+    changed = 0
+    for index in touched:
+        row = weights.get(index, {})
+        total = sum(row.values())
+        if total <= 0.0:
+            continue
+        changed += 1
+        for group_index, name in groups.items():
+            group = obj.vertex_groups.get(name)
+            if group is None:
+                continue
+            share = row.get(group_index, 0.0) / total
+            if share > 1e-5:
+                group.add([index], share, "REPLACE")
+            else:
+                group.remove([index])
+    obj.data.update()
+
+    _report({"ok": True, "mesh": obj.name, "rig": rig.name, "op": op,
+             "bone": only_bone, "vertices": len(touched), "changed": changed,
+             "radius_m": radius_m})
+except Exception as exc:
+    _report({"ok": False, "kind": "failed",
+             "error": "%%s: %%s" %% (type(exc).__name__, exc)})
+finally:
+    try:
+        for other in bpy.data.objects:
+            other.select_set(False)
+        for other in previous_selected:
+            try:
+                other.select_set(True)
+            except Exception:
+                pass
+        view.objects.active = previous_active
+        if previous_active is not None and previous_active.mode != previous_mode:
+            bpy.ops.object.mode_set(mode=previous_mode)
+    except Exception:
+        pass
+'''
+
+#: The marker :data:`WEIGHTS_LOCAL_SCRIPT` reports on, and how long a stroke
+#: may take.  A brush is meant to feel instant; the budget is for a Blender
+#: that is busy with something else.
+WEIGHTS_MARKER = "FORGE_WEIGHTS "
+WEIGHTS_TIMEOUT = 120.0
+
+
+def weights_local_report(output):
+    """The report line out of a brush stroke, or ``None``."""
+    return marked_report(output, WEIGHTS_MARKER)
+
+
+def blender_weights_local(centre, radius_mm, op, bone="", mesh="", rig=""):
+    """``(payload, status)`` — one local weight repair on the real mesh."""
+    code = WEIGHTS_LOCAL_SCRIPT % (
+        json.dumps(str(mesh or "")),
+        json.dumps(str(rig or "")),
+        json.dumps([float(one) for one in centre]),
+        json.dumps(float(radius_mm) / 1000.0),
+        json.dumps(str(op)),
+        json.dumps(str(bone or "")),
+        json.dumps(int(BRUSH_PASSES)),
+        json.dumps(float(BRUSH_FACTOR)),
+        json.dumps(float(BRUSH_HARDEN)),
+        json.dumps(int(MAX_BRUSH_VERTICES)),
+    )
+    result = blender_command("execute_python", {"code": code},
+                             timeout=WEIGHTS_TIMEOUT)
+    report = weights_local_report(result.get("output"))
+    if report is None:
+        return {"error": "Blender ran the brush but said nothing this bridge "
+                         "could read back. Check Blender's system console.",
+                "output": _tail(str(result.get("output") or ""), 600)}, 502
+    if not report.get("ok"):
+        kind = str(report.get("kind") or "")
+        status = 404 if kind in ("no_mesh", "no_rig", "no_bone", "no_weights") \
+            else (409 if kind in ("too_big", "empty") else 502)
+        payload = dict(report)
+        payload.pop("ok", None)
+        payload.setdefault("error", "The brush could not be applied.")
+        return payload, status
+    return report, 200
+
+
+# ---------------------------------------------------------------------------
+# Phase 20 — "changed since last measure"
+# ---------------------------------------------------------------------------
+
+def _plan_stamp(text):
+    """A plan history date as a comparable float, or 0.0.
+
+    ``pipeline.py`` writes ``datetime.now().isoformat(timespec="seconds")`` —
+    local time with no zone on it — and the journal writes UTC with a ``Z``.
+    Both are parsed here and the ``Z`` is honoured; a plan stamp with no zone
+    is read as local, which is what it is.
+    """
+    raw = str(text or "").strip()
+    if not raw:
+        return 0.0
+    zoned = raw.endswith("Z")
+    if zoned:
+        raw = raw[:-1]
+    try:
+        parts = time.strptime(raw[:19], "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return 0.0
+    return calendar.timegm(parts) if zoned else time.mktime(parts)
+
+
+def stage_last_measured(stage):
+    """When this stage's gate was last recorded, off its own history."""
+    newest = 0.0
+    for entry in (stage.get("history") or []):
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("action") or "") not in ("record", "advance",
+                                                  "overridden"):
+            continue
+        newest = max(newest, _plan_stamp(entry.get("date")))
+    return newest
+
+
+def dirty_stages(folder, board):
+    """Which stages have been hand-edited since their gate was last measured.
+
+    The badge this feeds is the one honest thing to say after a direct edit:
+    the numbers on the card are from the last run, the model is not what it was
+    when they were taken, and only re-running the check can close that gap.
+    Computed from the journal's own timestamps against the plan's — the bridge
+    writes neither of those, it only compares them.
+    """
+    journal = read_journal(folder)
+    edits = journal.get("edits") or []
+    newest_edit = 0.0
+    for record in edits:
+        newest_edit = max(newest_edit, _plan_stamp(record.get("when")))
+    if not newest_edit:
+        return {}
+    out = {}
+    for stage in (board.get("stages") or []):
+        if not isinstance(stage, dict):
+            continue
+        measured = stage_last_measured(stage)
+        if measured and newest_edit > measured:
+            out[stage["id"]] = {"since": measured, "edited": newest_edit}
+    return out
+
+
+def scan_library(scene=True):
+    """Every project as a card, plus what is in the scene right now."""
+
+
 def scan_library(scene=True):
     """Every project as a card, plus what is in the scene right now."""
     root = projects_dir()
@@ -6640,6 +7755,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/services/health":
             self._send(200, services_health())
             return
+        if path == "/authoring":
+            self._authoring()
+            return
 
         # -- the workbench (Phase 11) ------------------------------------
         if path == "/projects":
@@ -6786,6 +7904,18 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.endswith("/joint_move"):
                 self._joint_move(path[len(prefix):-len("/joint_move")])
+                return
+            if path.endswith("/inspect"):
+                self._inspect(path[len(prefix):-len("/inspect")])
+                return
+            if path.endswith("/author"):
+                self._author(path[len(prefix):-len("/author")])
+                return
+            if path.endswith("/weights_local"):
+                self._weights_local(path[len(prefix):-len("/weights_local")])
+                return
+            if path.endswith("/mesh_fix"):
+                self._mesh_fix(path[len(prefix):-len("/mesh_fix")])
                 return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -7702,7 +8832,15 @@ class Handler(BaseHTTPRequestHandler):
         folder = self._project_folder(name)
         if folder is None:
             return
-        self._send(200, pipeline_board(folder, os.path.basename(folder)))
+        board = pipeline_board(folder, os.path.basename(folder))
+        # Which stages have been hand-edited since their gate was last
+        # measured.  Computed from two files this bridge only reads, and the
+        # only honest thing to say after a direct edit: the model has moved,
+        # the numbers have not.
+        board["dirty"] = dirty_stages(folder, board)
+        board["inspectable"] = dict(
+            (stage, INSPECT_STAGES[stage]["cost"]) for stage in INSPECT_STAGES)
+        self._send(200, board)
 
     def _deliverables(self, name):
         """Everything in ``renders/`` worth looking at, newest first."""
@@ -7721,8 +8859,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         obj = payload.get("object")
         obj = str(obj or "").strip()[:MAX_OBJECT_NAME]
+        # The heatmap's bone goes through the same alphabet gate as a nudge's,
+        # for the same reason: it ends up inside the export script.
+        weight_bone = str(payload.get("weight_bone") or "").strip()
+        if weight_bone and not _BONE_NAME_RE.match(weight_bone):
+            self._send(400, {
+                "error": "%r is not a bone name this route will act on."
+                         % weight_bone[:60],
+                "project": os.path.basename(folder)})
+            return
         try:
-            body, status = blender_snapshot(os.path.basename(folder), obj)
+            body, status = blender_snapshot(os.path.basename(folder), obj,
+                                            weight_bone)
         except BlenderDown as exc:
             # The same sentence the rail, the panel and the flows use, and the
             # same 503: Blender being closed is the normal state of this
@@ -7844,6 +8992,291 @@ class Handler(BaseHTTPRequestHandler):
                 "the mesh is regenerated." % journal_path(folder))
         out["note"] = NUDGE_RECHECK_HINT
         self._send(200, out)
+
+    # -- the stage as an inspection surface (Phase 20) --------------------
+
+    def _inspect(self, name):
+        """Run one stage's own check and hand back its findings, placed.
+
+        On demand, and only on demand: this is a fresh live measurement that
+        can take a minute, so it happens when somebody presses the button and
+        never because a panel was opened.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        stage = str(payload.get("stage") or "").strip()
+        spec = INSPECT_STAGES.get(stage)
+        if spec is None:
+            self._send(400, {
+                "error": "%r has no check to run. The stages that do are %s."
+                         % (stage[:40], ", ".join(sorted(INSPECT_STAGES))),
+                "project": os.path.basename(folder)})
+            return
+
+        # Only names this bridge has checked reach the command, and only under
+        # keys it chose itself: nothing a client sends becomes a key.
+        params = {}
+        for key in ("object", "rig", "action"):
+            raw = payload.get(key)
+            if raw is None or str(raw).strip() == "":
+                continue
+            value = str(raw).strip()
+            if not _BONE_NAME_RE.match(value):
+                self._send(400, {
+                    "error": "%r is not a name this route will pass on."
+                             % value[:60],
+                    "project": os.path.basename(folder)})
+                return
+            params[key] = value
+        if stage == "animate" and "action" not in params:
+            self._send(400, {
+                "error": "Which clip? Pass the action's name — the model view "
+                         "lists the ones this snapshot carries.",
+                "project": os.path.basename(folder)})
+            return
+
+        try:
+            report = blender_command(spec["command"], params,
+                                     timeout=INSPECT_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True,
+                             "command": spec["command"]})
+            return
+
+        findings = normalize_findings(stage, report)
+        self._send(200, {
+            "project": os.path.basename(folder),
+            "stage": stage,
+            "command": spec["command"],
+            "params": params,
+            "ran_at": _iso_utc(time.time()),
+            "findings": findings,
+            "summary": findings_summary(findings),
+            "positioned": len([one for one in findings
+                               if one["world_pos"] or one["bone"]]),
+            "note": spec["cost"],
+        })
+
+    def _authoring(self):
+        """The authoring parameter tables. Static, mirrored, never invented."""
+        self._send(200, authoring_table())
+
+    def _author(self, name):
+        """DIRECT: re-author one clip from the panel's own numbers.
+
+        No model in the loop.  ``rigforge_walk`` / ``punch`` / ``jump`` are
+        bounded commands over numbers, so the panel can drive them itself —
+        which is the whole point of the two tiers: a slider and Apply, instead
+        of a sentence and a wait.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        kind = str(payload.get("kind") or "").strip()
+        params, error = clean_authoring_params(kind, payload.get("params"))
+        if params is None:
+            self._send(400, {"error": error,
+                             "project": os.path.basename(folder)})
+            return
+        for key in ("rig", "action"):
+            raw = payload.get(key)
+            if raw is None or str(raw).strip() == "":
+                continue
+            value = str(raw).strip()
+            if not _BONE_NAME_RE.match(value):
+                self._send(400, {
+                    "error": "%r is not a name this route will pass on."
+                             % value[:60],
+                    "project": os.path.basename(folder)})
+                return
+            params[key] = value
+
+        command = AUTHORING_PARAMS[kind]["command"]
+        try:
+            report = blender_command(command, params, timeout=INSPECT_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True,
+                             "command": command})
+            return
+
+        record = {
+            "when": _iso_utc(time.time()),
+            "joint": AUTHORING_PARAMS[kind]["label"],
+            "action": str(params.get("action") or report.get("action") or ""),
+            "kind": kind,
+            "params": dict((key, value) for key, value in params.items()
+                           if key not in ("rig", "action")),
+            "mirror": False,
+            "source": "author-panel",
+        }
+        written = append_artist_edit(folder, record)
+        self._send(200, {
+            "project": os.path.basename(folder),
+            "kind": kind,
+            "command": command,
+            "params": params,
+            "report": report,
+            "recorded": record,
+            "journal": written,
+            "note": NUDGE_RECHECK_HINT,
+        })
+
+    def _weights_local(self, name):
+        """DIRECT: one local weight repair, bounded by a point and a radius."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        op = str(payload.get("op") or "").strip().lower()
+        if op not in WEIGHT_OPS:
+            self._send(400, {
+                "error": "The brush does %s." % " or ".join(sorted(WEIGHT_OPS)),
+                "project": os.path.basename(folder)})
+            return
+        centre = world_point(payload.get("world_pos"))
+        if centre is None:
+            self._send(400, {
+                "error": "world_pos is three numbers — a point on the model, "
+                         "in metres.",
+                "project": os.path.basename(folder)})
+            return
+        radius = brush_radius(payload.get("radius_mm"))
+        if radius is None:
+            self._send(400, {
+                "error": "radius_mm is between %g and %g. A bigger brush than "
+                         "that is a re-skin, not a repair."
+                         % (MIN_BRUSH_MM, MAX_BRUSH_MM),
+                "project": os.path.basename(folder)})
+            return
+        bone = str(payload.get("bone") or "").strip()
+        if bone and not _BONE_NAME_RE.match(bone):
+            self._send(400, {
+                "error": "%r is not a bone name this route will act on."
+                         % bone[:60],
+                "project": os.path.basename(folder)})
+            return
+
+        try:
+            body, status = blender_weights_local(centre, radius, op, bone)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+        if status != 200:
+            body["project"] = os.path.basename(folder)
+            self._send(status, body)
+            return
+
+        record = {
+            "when": _iso_utc(time.time()),
+            "joint": "weights near a point",
+            "bone": bone,
+            "op": op,
+            "world_pos": centre,
+            "radius_mm": radius,
+            "vertices": int(body.get("changed") or 0),
+            "mirror": False,
+            "source": "weights-brush",
+        }
+        written = append_artist_edit(folder, record)
+        out = dict(body)
+        out.pop("ok", None)
+        out.update({"project": os.path.basename(folder), "recorded": record,
+                    "journal": written, "note": NUDGE_RECHECK_HINT})
+        self._send(200, out)
+
+    def _mesh_fix(self, name):
+        """DIRECT, for the one repair that is a number in and a count out."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        op = str(payload.get("op") or "").strip()
+        spec = MESH_FIX_OPS.get(op)
+        if spec is None:
+            self._send(400, {
+                "error": "%r is not a one-click repair. The only one that is "
+                         "deterministic enough is %s; everything else is a "
+                         "judgement, so it stays a conversation."
+                         % (op[:40], ", ".join(sorted(MESH_FIX_OPS))),
+                "project": os.path.basename(folder)})
+            return
+        raw = payload.get(spec["param"], spec["default"])
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            self._send(400, {"error": "%s is a number." % spec["param"],
+                             "project": os.path.basename(folder)})
+            return
+        value = float(raw)
+        if value != value or not (spec["min"] <= value <= spec["max"]):
+            self._send(400, {
+                "error": "%s is between %g and %g."
+                         % (spec["param"], spec["min"], spec["max"]),
+                "project": os.path.basename(folder)})
+            return
+        params = {"distance": round(value / 1000.0, 9)}
+        target = str(payload.get("object") or "").strip()
+        if target:
+            if not _BONE_NAME_RE.match(target):
+                self._send(400, {
+                    "error": "%r is not a name this route will pass on."
+                             % target[:60],
+                    "project": os.path.basename(folder)})
+                return
+            params["object"] = target
+
+        try:
+            report = blender_command(spec["command"], params,
+                                     timeout=WEIGHTS_TIMEOUT)
+        except BlenderDown as exc:
+            self._send(503, {"error": str(exc), "blender": False})
+            return
+        except BlenderRefused as exc:
+            self._send(502, {"error": str(exc), "blender": True})
+            return
+
+        record = {
+            "when": _iso_utc(time.time()),
+            "joint": spec["label"],
+            "op": op,
+            spec["param"]: round(value, 4),
+            "finding_id": str(payload.get("finding_id") or "")[:120],
+            "mirror": False,
+            "source": "mesh-fix",
+        }
+        written = append_artist_edit(folder, record)
+        self._send(200, {
+            "project": os.path.basename(folder),
+            "op": op,
+            "command": spec["command"],
+            "params": params,
+            "report": report,
+            "recorded": record,
+            "journal": written,
+            "note": NUDGE_RECHECK_HINT,
+        })
 
     # -- project scene files (Phase 15) ----------------------------------
     def _save_project(self, name):

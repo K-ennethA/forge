@@ -308,11 +308,32 @@
           ? null : readFloats(gltf, bin, attributes.NORMAL);
         var indices = prim.indices === undefined
           ? null : readAccessor(gltf, bin, prim.indices);
+        // COLOR_0 is how a weight heatmap reaches a browser: glTF has no
+        // vertex groups, so the bridge bakes one bone's influence into vertex
+        // colours before it exports. VEC4 with alpha is common; only the rgb
+        // is wanted here.
+        var painted = null;
+        if (attributes.COLOR_0 !== undefined) {
+          var read = readFloats(gltf, bin, attributes.COLOR_0);
+          if (read) {
+            if (read.size === 3) {
+              painted = read.data;
+            } else if (read.size === 4) {
+              painted = new Float32Array(read.count * 3);
+              for (var v = 0; v < read.count; v++) {
+                painted[v * 3] = read.data[v * 4];
+                painted[v * 3 + 1] = read.data[v * 4 + 1];
+                painted[v * 3 + 2] = read.data[v * 4 + 2];
+              }
+            }
+          }
+        }
         var entry = {
           node: node,
           name: node.name + "/" + (mesh.name || "mesh"),
           position: position.data,
           normal: normal ? normal.data : null,
+          colour: painted,
           indices: indices ? indices.data : null,
           count: indices ? indices.count : position.count,
           vertices: position.count,
@@ -376,7 +397,8 @@
     return {
       gltf: gltf, graph: graph, primitives: primitives,
       animations: animations, skinned: skinned,
-      vertices: vertices, triangles: triangles
+      vertices: vertices, triangles: triangles,
+      painted: primitives.some(function (one) { return !!one.colour; })
     };
   }
 
@@ -516,14 +538,17 @@
   var VERTEX_SHADER = [
     "attribute vec3 position;",
     "attribute vec3 normal;",
+    "attribute vec3 colour;",
     "uniform mat4 model;",
     "uniform mat4 viewProjection;",
     "varying vec3 vNormal;",
     "varying vec3 vPosition;",
+    "varying vec3 vColour;",
     "void main() {",
     "  vec4 world = model * vec4(position, 1.0);",
     "  vPosition = world.xyz;",
     "  vNormal = mat3(model) * normal;",
+    "  vColour = colour;",
     "  gl_Position = viewProjection * world;",
     "}"
   ].join("\n");
@@ -543,6 +568,8 @@
     "uniform vec3 tint;",
     "uniform float alpha;",
     "uniform float flat_;",
+    "uniform float painted;",
+    "varying vec3 vColour;",
     "void main() {",
     "  if (flat_ > 0.5) { gl_FragColor = vec4(tint, alpha); return; }",
     "  vec3 n = normalize(vNormal);",
@@ -551,12 +578,28 @@
     "  float key = max(dot(n, normalize(v + vec3(0.4, 0.7, 0.2))), 0.0);",
     "  float fill = max(dot(n, normalize(vec3(-0.6, -0.2, 0.5))), 0.0);",
     "  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);",
-    "  vec3 colour = tint * (0.28 + 0.72 * key);",
-    "  colour += vec3(0.10, 0.12, 0.16) * fill;",
-    "  colour += vec3(0.95, 0.55, 0.18) * rim * 0.55;",
+    // A weight heatmap is a MEASUREMENT painted on the mesh, so it keeps its
+    // own colour and only takes enough shading to read as a surface. The clay
+    // lighting would turn a blue thigh grey and lose the thing being shown.
+    "  vec3 base = mix(tint, vColour, painted);",
+    "  vec3 colour = base * (0.28 + 0.72 * key);",
+    "  colour += vec3(0.10, 0.12, 0.16) * fill * (1.0 - painted);",
+    "  colour += vec3(0.95, 0.55, 0.18) * rim * 0.55 * (1.0 - painted);",
     "  gl_FragColor = vec4(colour, alpha);",
     "}"
   ].join("\n");
+
+  //: Pin colours, by the severity the gate reported.  Nothing invents a
+  //: colour: an ``unmeasured`` gate is grey, not green.
+  var PIN_COLOURS = {
+    fail: [0.88, 0.30, 0.26],
+    attention: [0.91, 0.69, 0.24],
+    ok: [0.34, 0.78, 0.54],
+    unknown: [0.45, 0.48, 0.55],
+    none: [0.45, 0.48, 0.55]
+  };
+  //: A pin is bigger than a nudge handle — it is the thing being pointed at.
+  var PIN_SCALE = 0.030;
 
   //: The clay the model is drawn in when nothing is being placed.
   var CLAY = [0.30, 0.31, 0.33];
@@ -695,6 +738,11 @@
     ];
   }
 
+  /** The other way: a point Blender measured, in metres, put in the viewer. */
+  function fromBlenderMetres(point) {
+    return [point[0], point[2], -point[1]];
+  }
+
   //: The three single axes a nudge may run along, in the viewer's own space.
   //: Single axes on purpose: "up a bit" is the common case and a one-axis drag
   //: cannot go sideways by accident, which free 3D dragging does constantly.
@@ -762,6 +810,7 @@
     gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
     gl.bindAttribLocation(program, 0, "position");
     gl.bindAttribLocation(program, 1, "normal");
+    gl.bindAttribLocation(program, 2, "colour");
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       return { supported: false,
@@ -774,7 +823,8 @@
       eye: gl.getUniformLocation(program, "eye"),
       tint: gl.getUniformLocation(program, "tint"),
       alpha: gl.getUniformLocation(program, "alpha"),
-      flat: gl.getUniformLocation(program, "flat_")
+      flat: gl.getUniformLocation(program, "flat_"),
+      painted: gl.getUniformLocation(program, "painted")
     };
 
     var state = {
@@ -789,7 +839,11 @@
       origin: null,      // where the selected handle was before the drag
       axis: "up",        // which single axis a drag runs along
       height: 0,         // the model's own height, the to-scale reference
-      onNudge: null
+      onNudge: null,
+      // -- stage inspection: the check's findings, on the model -----------
+      pins: [],          // {id, position, severity, bone, label}
+      pinned: -1,        // which pin is open, or -1
+      onPin: null
     };
     var projection = new Float32Array(16);
     var view = new Float32Array(16);
@@ -872,18 +926,105 @@
       return Math.max(state.radius * HANDLE_SCALE, 1e-4);
     }
 
-    /** The handle nearest to a point on screen, or -1. */
-    function pick(x, y) {
+    /** The nearest of ``list`` to a point on screen, or -1. */
+    function nearest(list, x, y) {
       updateCamera();
       var best = -1, bestDistance = HANDLE_PICK_PX * HANDLE_PICK_PX;
-      state.handles.forEach(function (handle, index) {
-        var at = project(handle.position);
+      list.forEach(function (item, index) {
+        var at = project(item.position);
         if (!at) { return; }
         var dx = at[0] - x, dy = at[1] - y;
         var distance = dx * dx + dy * dy;
         if (distance <= bestDistance) { bestDistance = distance; best = index; }
       });
       return best;
+    }
+
+    /** The handle nearest to a point on screen, or -1. */
+    function pick(x, y) {
+      return nearest(state.handles, x, y);
+    }
+
+    /** The point on the MESH under a pixel, or ``null``.
+     *
+     * The weight brush needs a place on the surface, not a place in the air,
+     * and a browser has no depth buffer to read back — so this is a real ray
+     * cast against the triangles the viewer already holds.  Möller-Trumbore,
+     * nearest hit wins.  Fifteen thousand triangles is a couple of
+     * milliseconds on a click, which is what a click can afford.
+     */
+    function surfacePoint(x, y) {
+      if (!state.model) { return null; }
+      updateCamera();
+      var width = canvas.clientWidth || 1, height = canvas.clientHeight || 1;
+      var ndcX = (x / width) * 2 - 1;
+      var ndcY = 1 - (y / height) * 2;
+      // The camera's own axes, read out of the view matrix's rows.
+      var right = [view[0], view[4], view[8]];
+      var up = [view[1], view[5], view[9]];
+      var forward = [-view[2], -view[6], -view[10]];
+      var tanHalf = Math.tan(0.9 / 2);
+      var aspect = width / height;
+      var dir = [
+        forward[0] + right[0] * ndcX * tanHalf * aspect + up[0] * ndcY * tanHalf,
+        forward[1] + right[1] * ndcX * tanHalf * aspect + up[1] * ndcY * tanHalf,
+        forward[2] + right[2] * ndcX * tanHalf * aspect + up[2] * ndcY * tanHalf
+      ];
+      var length = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+      dir[0] /= length; dir[1] /= length; dir[2] /= length;
+
+      var best = Infinity, hit = null;
+      state.model.primitives.forEach(function (primitive) {
+        var points = primitive.position;
+        if (primitive.skin) {
+          // The skinned positions are written by the draw loop, and a click
+          // can arrive before one has ever run — or while the tab is in the
+          // background and the loop is paused. Skinning here costs a few
+          // milliseconds and makes the answer independent of the frame rate.
+          points = applySkin(state.model, primitive);
+          if (!points) { return; }
+        }
+        var world = primitive.skin ? null : primitive.node.world;
+        var indices = primitive.indices;
+        var total = primitive.count;
+        function vertex(slot) {
+          var index = indices ? indices[slot] : slot;
+          var px = points[index * 3], py = points[index * 3 + 1],
+              pz = points[index * 3 + 2];
+          if (!world) { return [px, py, pz]; }
+          return [
+            world[0] * px + world[4] * py + world[8] * pz + world[12],
+            world[1] * px + world[5] * py + world[9] * pz + world[13],
+            world[2] * px + world[6] * py + world[10] * pz + world[14]
+          ];
+        }
+        for (var slot = 0; slot + 2 < total; slot += 3) {
+          var a = vertex(slot), b = vertex(slot + 1), c = vertex(slot + 2);
+          var e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+          var e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+          var p = [dir[1] * e2[2] - dir[2] * e2[1],
+                   dir[2] * e2[0] - dir[0] * e2[2],
+                   dir[0] * e2[1] - dir[1] * e2[0]];
+          var det = e1[0] * p[0] + e1[1] * p[1] + e1[2] * p[2];
+          if (Math.abs(det) < 1e-12) { continue; }
+          var inv = 1 / det;
+          var t = [eye[0] - a[0], eye[1] - a[1], eye[2] - a[2]];
+          var u = (t[0] * p[0] + t[1] * p[1] + t[2] * p[2]) * inv;
+          if (u < 0 || u > 1) { continue; }
+          var q = [t[1] * e1[2] - t[2] * e1[1],
+                   t[2] * e1[0] - t[0] * e1[2],
+                   t[0] * e1[1] - t[1] * e1[0]];
+          var v = (dir[0] * q[0] + dir[1] * q[1] + dir[2] * q[2]) * inv;
+          if (v < 0 || u + v > 1) { continue; }
+          var distance = (e2[0] * q[0] + e2[1] * q[1] + e2[2] * q[2]) * inv;
+          if (distance > 1e-5 && distance < best) {
+            best = distance;
+            hit = [eye[0] + dir[0] * distance, eye[1] + dir[1] * distance,
+                   eye[2] + dir[2] * distance];
+          }
+        }
+      });
+      return hit;
     }
 
     /** How far one pixel of drag moves the handle, along the locked axis.
@@ -945,6 +1086,7 @@
       state.buffers.forEach(function (entry) {
         if (entry.position) { gl.deleteBuffer(entry.position); }
         if (entry.normal) { gl.deleteBuffer(entry.normal); }
+        if (entry.colour) { gl.deleteBuffer(entry.colour); }
         if (entry.indices) { gl.deleteBuffer(entry.indices); }
       });
       state.buffers = [];
@@ -963,6 +1105,11 @@
           gl.bindBuffer(gl.ARRAY_BUFFER, entry.normal);
           gl.bufferData(gl.ARRAY_BUFFER, primitive.normal,
                         primitive.skin ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+        }
+        if (primitive.colour) {
+          entry.colour = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, entry.colour);
+          gl.bufferData(gl.ARRAY_BUFFER, primitive.colour, gl.STATIC_DRAW);
         }
         if (primitive.indices) {
           entry.indices = gl.createBuffer();
@@ -1050,8 +1197,9 @@
       // While joints are being placed the model goes translucent and stops
       // writing depth, so a handle inside a thigh is still visible and still
       // clickable — but the silhouette stays, because the silhouette IS the
-      // ruler this whole feature exists to provide.
-      if (state.nudging) {
+      // ruler this whole feature exists to provide.  Pins want the same thing
+      // for the same reason.
+      if (state.nudging || state.pins.length) {
         material(CLAY, GHOST_ALPHA, false);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -1090,6 +1238,15 @@
           gl.disableVertexAttribArray(1);
           gl.vertexAttrib3f(1, 0, 0, 1);
         }
+        if (entry.colour) {
+          gl.enableVertexAttribArray(2);
+          gl.bindBuffer(gl.ARRAY_BUFFER, entry.colour);
+          gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+          gl.uniform1f(uniforms.painted, 1);
+        } else {
+          gl.disableVertexAttribArray(2);
+          gl.uniform1f(uniforms.painted, 0);
+        }
         if (entry.indices) {
           gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, entry.indices);
           gl.drawElements(gl.TRIANGLES, primitive.count, entry.indexType, 0);
@@ -1098,8 +1255,10 @@
         }
         if (!entry.normal) { gl.enableVertexAttribArray(1); }
       });
+      gl.disableVertexAttribArray(2);
+      gl.uniform1f(uniforms.painted, 0);
 
-      if (state.nudging) { drawHandles(); }
+      if (state.nudging || state.pins.length) { drawHandles(); }
 
       gl.depthMask(true);
       gl.enable(gl.CULL_FACE);
@@ -1130,11 +1289,25 @@
         gl.drawElements(gl.TRIANGLES, buffers.count, gl.UNSIGNED_SHORT, 0);
       }
 
-      state.handles.forEach(function (handle, index) {
-        var chosen = index === state.picked;
-        material(chosen ? HANDLE_ON : HANDLE, 1, false);
+      if (state.nudging) {
+        state.handles.forEach(function (handle, index) {
+          var chosen = index === state.picked;
+          material(chosen ? HANDLE_ON : HANDLE, 1, false);
+          gl.uniformMatrix4fv(uniforms.model, false,
+            placeBall(scratch, handle.position, chosen ? size * 1.45 : size));
+          gl.drawElements(gl.TRIANGLES, buffers.count, gl.UNSIGNED_SHORT, 0);
+        });
+      }
+
+      // The findings, on the thing they were measured from.  Drawn after the
+      // handles and bigger than them, because in a stage that has both, the
+      // pin is what the artist came to look at.
+      var pinSize = Math.max(state.radius * PIN_SCALE, 1e-4);
+      state.pins.forEach(function (pin, index) {
+        var open = index === state.pinned;
+        material(PIN_COLOURS[pin.severity] || PIN_COLOURS.unknown, 1, false);
         gl.uniformMatrix4fv(uniforms.model, false,
-          placeBall(scratch, handle.position, chosen ? size * 1.45 : size));
+          placeBall(scratch, pin.position, open ? pinSize * 1.5 : pinSize));
         gl.drawElements(gl.TRIANGLES, buffers.count, gl.UNSIGNED_SHORT, 0);
       });
 
@@ -1183,11 +1356,27 @@
     // -- input: orbit with the left button, pan with shift, zoom on wheel --
     var dragging = null;
     canvas.addEventListener("pointerdown", function (event) {
+      var frame = canvas.getBoundingClientRect();
+      var px = event.clientX - frame.left, py = event.clientY - frame.top;
+
+      // A pin is the thing the artist came to click, so it is tried first —
+      // and clicking one never orbits, because a finding card opening under a
+      // spinning model is nobody's idea of a click.
+      if (state.pins.length && !event.shiftKey) {
+        var found = nearest(state.pins, px, py);
+        if (found >= 0) {
+          state.pinned = found;
+          state.dirty = true;
+          if (state.onPin) { state.onPin(state.pins[found], found); }
+          return;
+        }
+      }
+
       // In nudge mode a press ON a handle takes hold of it; a press anywhere
       // else still orbits, so looking round the model never stops working.
       if (state.nudging && !event.shiftKey) {
-        var box = canvas.getBoundingClientRect();
-        var hit = pick(event.clientX - box.left, event.clientY - box.top);
+        var box = frame;
+        var hit = pick(px, py);
         if (hit >= 0) {
           if (hit !== state.picked) {
             state.picked = hit;
@@ -1272,12 +1461,15 @@
         state.handles = jointHandles(model);
         state.picked = -1;
         state.origin = null;
+        state.pins = [];
+        state.pinned = -1;
         state.dirty = true;
         return {
           objects: model.primitives.length,
           vertices: model.vertices,
           triangles: model.triangles,
           skinned: model.skinned,
+          painted: !!model.painted,
           joints: state.handles.length,
           height_mm: bounds.height * 1000,
           animations: model.animations.map(function (a) {
@@ -1301,6 +1493,131 @@
       },
 
       nudging: function () { return state.nudging; },
+
+      // -- stage inspection: findings, on the model ----------------------
+
+      /** Put the check's findings on the model. Returns how many landed.
+       *
+       * A finding either carries a world position (a defect the mesh check
+       * located) or names a bone (a gate the rig check measured), and a bone
+       * is resolved against the joints this glb already carries.  One that is
+       * neither is not placed and not faked — it lists in the panel instead.
+       */
+      showPins: function (findings) {
+        if (state.model && !state.handles.length) {
+          state.handles = jointHandles(state.model);
+        }
+        var joints = {};
+        state.handles.forEach(function (handle) {
+          joints[handle.bone] = handle.position;
+        });
+        state.pins = [];
+        state.pinned = -1;
+        (findings || []).forEach(function (finding) {
+          var at = null;
+          if (finding.world_pos && finding.world_pos.length === 3) {
+            at = fromBlenderMetres(finding.world_pos);
+          } else if (finding.bone && joints[finding.bone]) {
+            at = joints[finding.bone].slice();
+          }
+          if (!at) { return; }
+          state.pins.push({
+            id: finding.id, bone: finding.bone || "",
+            label: finding.label || finding.gate || "",
+            gate: finding.gate || "",
+            severity: finding.severity || "unknown",
+            position: at, finding: finding
+          });
+        });
+        state.dirty = true;
+        return state.pins.length;
+      },
+
+      clearPins: function () {
+        state.pins = [];
+        state.pinned = -1;
+        state.dirty = true;
+      },
+
+      pins: function () {
+        updateCamera();
+        return state.pins.map(function (pin, index) {
+          return { id: pin.id, bone: pin.bone, label: pin.label,
+                   severity: pin.severity, index: index,
+                   position: pin.position.slice(),
+                   screen: project(pin.position) };
+        });
+      },
+
+      onPin: function (fn) { state.onPin = fn; },
+
+      /** Where on the mesh a pixel is, in BLENDER metres, or ``null``.
+       *
+       * Blender's axes on the way out, because the only caller is the weight
+       * brush and the brush is a bridge route — one conversion, at the edge.
+       */
+      surfaceAt: function (x, y) {
+        var found = surfacePoint(x, y);
+        if (!found) { return null; }
+        return { viewer: found,
+                 blender: [found[0], -found[2], found[1]] };
+      },
+
+      /** Select the joint a pin sits on, ready to nudge it. */
+      pinToHandle: function (bone) {
+        var wanted = -1;
+        state.handles.forEach(function (handle, index) {
+          if (handle.bone === bone) { wanted = index; }
+        });
+        if (wanted < 0) { return false; }
+        state.picked = wanted;
+        state.origin = state.handles[wanted].position.slice();
+        state.dirty = true;
+        tellNudge();
+        return true;
+      },
+
+      // -- the clip list and the scrubber ---------------------------------
+
+      actions: function () {
+        if (!state.model) { return []; }
+        return state.model.animations.map(function (animation, index) {
+          return { name: animation.name, duration: animation.duration,
+                   index: index, playing: state.playing &&
+                                          state.animation === index };
+        });
+      },
+
+      /** Put the clip at a fraction of its length and hold it there. */
+      seek: function (fraction) {
+        if (!state.model || !state.model.animations.length) { return null; }
+        var animation = state.model.animations[state.animation];
+        var where = Math.max(0, Math.min(1, Number(fraction) || 0));
+        state.playing = false;
+        state.clock = 0;
+        state.time = animation.duration * where;
+        poseAt(state.model, animation, state.time);
+        state.dirty = true;
+        return this.at();
+      },
+
+      /** Where the current clip is right now, in seconds and in frames. */
+      at: function () {
+        if (!state.model || !state.model.animations.length) { return null; }
+        var animation = state.model.animations[state.animation];
+        var span = animation.duration || 0;
+        return {
+          name: animation.name, index: state.animation,
+          time: state.time, duration: span,
+          fraction: span > 0 ? (state.time / span) : 0,
+          // glTF carries seconds; 24 fps is what every Forge clip is authored
+          // at (`render_animation` and `rigforge_walk` both assume it), so the
+          // frame number is a reading rather than a guess.
+          frame: Math.round(state.time * 24),
+          frames: Math.round(span * 24),
+          playing: state.playing
+        };
+      },
 
       /** Every handle with where it currently is on screen, or ``null``.
        *
@@ -1422,6 +1739,7 @@
     sampleChannel: sampleChannel,
     jointHandles: jointHandles,
     plainJointName: plainJointName,
-    toBlenderMillimetres: toBlenderMillimetres
+    toBlenderMillimetres: toBlenderMillimetres,
+    fromBlenderMetres: fromBlenderMetres
   };
 }(window));

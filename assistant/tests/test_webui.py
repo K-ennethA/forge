@@ -764,7 +764,10 @@ def test_the_page_only_talks_to_routes_this_bridge_serves(client):
                       "/library",
                       # the library's models row: import into the running
                       # Blender, file into a project, open the file
-                      "/models/import", "/models/file", "/models/open"}, called
+                      "/models/import", "/models/file", "/models/open",
+                      # the workspace's authoring param tables (walk/punch/
+                      # jump sliders), served by GET /authoring
+                      "/authoring"}, called
 
 
 def test_the_reply_is_the_only_html_the_page_ever_builds(client):

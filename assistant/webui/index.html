@@ -230,6 +230,26 @@
                 last refresh.</span>
         </div>
 
+        <!-- The stage in focus, as something to work on rather than read.
+             The artist: "when we click verify mesh I can click out problem
+             issues and tell it to fix, or in rig it auto selects and shows
+             the rig in the window so I can make small edits, and same for
+             skin, or animate - click on a specific animation and change it."
+
+             One strip, filled by whichever stage the stepper is on, holding
+             at most the controls that stage needs — "blender is often
+             overwhelming for people", and four stages' worth of controls all
+             at once would be exactly that. -->
+        <div class="ws-tools" id="ws-stage-tools" hidden>
+          <div class="ws-tools-head">
+            <span class="ws-tools-title" id="ws-tools-title"></span>
+            <button type="button" class="btn tiny" id="ws-inspect">Check now</button>
+            <span class="ws-tools-note" id="ws-tools-note"></span>
+          </div>
+          <div id="ws-tools-body" class="ws-tools-body"></div>
+          <div id="ws-findings" class="ws-findings"></div>
+        </div>
+
         <!-- Joint nudge. The artist: "I don't know how much 10mm is here."
              The number is not the answer — seeing the handle move against the
              leg it is on is. So this strip is deliberately thin: which joint,
