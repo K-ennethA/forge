@@ -135,7 +135,9 @@ __all__ = [
     "TorsoSplit",
     "SplitSet",
     "torso_split",
+    "chain_groups",
     "leg_chain_joints",
+    "tag_ring_spacing",
     "leg_splits",
     "body_split",
     "split_regions",
@@ -157,6 +159,7 @@ __all__ = [
     "read_weights",
     "write_weights",
     "smooth_weights",
+    "fill_holes",
     "constrain_weights",
     "weight_continuity",
     "arm_swing_isolation",
@@ -285,6 +288,22 @@ REACH_BAND = 0.35
 #: — 8 punctures and a settled second pass — and the werewolf's leg-internal
 #: stray mass stays at 0.0000 throughout, so this floor is not what buys that.
 MIN_ARTICULATION_RINGS = 1.0 / REACH_BAND
+
+#: How many blend bands long a slab must be for the cut that opens it to be
+#: worth making.  **Two: one growing in from each end.**
+#:
+#: A band grows inward from every cut, so a slab carries one at each end.  If
+#: the two meet, there is no interior where only that slab's own bones are
+#: legal — and a slab with no interior is exactly the single merged bucket the
+#: whole split exists to replace.  :data:`SUB_TAG_BLEND_FRACTION` already makes
+#: this argument about the band *fraction* (that 0.5 is the value which cannot
+#: work); this is the same statement as a length, which is the form a cut can
+#: actually be refused on.
+#:
+#: Measured in the split tag's **own** ring spacing, because that is what its
+#: bands are floored against (:data:`MIN_ARTICULATION_RINGS`) and the two have
+#: to be quoted in the same units to be compared at all.
+MIN_SLAB_BANDS = 2.0
 
 #: How many rings past the tag contract's own edge a weight may taper.
 #:
@@ -623,29 +642,47 @@ class _SubRegion(rigforge_rig.Region):
         self.end = rigforge_rig._slab_centroid(points, self._projections, high, half)
 
 
-def torso_split(obj, regions, enabled=True):
-    """``(TagSplit | None, report)`` — the Torso read as three slabs, or not.
+def tag_ring_spacing(obj, tag):
+    """One tag's own median edge length, in metres — the ring spacing of its flesh.
 
-    Refuses rather than guesses, and the report says which: a torso with no leg
-    tag beside it has nothing measuring where its pelvis ends, and a slab too
-    thin to measure is worse than no split at all.  A refusal costs the merged
-    ``Torso`` contract that was there before this existed.
+    The same measurement :func:`_tag_edge_spacing` makes for the blend bands,
+    taken here from the mesh's vertex groups because it is needed *before* the
+    split exists and so before there are any sub-tags to key it by.
     """
-    parent = rigforge_autotag.SPLIT_PARENT
-    if not enabled:
-        return None, {"parent": parent, "names": list(rigforge_autotag.TORSO_SUB_TAGS),
-                      "refused": "the split was switched off for this run"}
-    region = regions.get(parent)
-    if region is None:
-        return None, {"parent": parent, "names": list(rigforge_autotag.TORSO_SUB_TAGS),
-                      "refused": "there is no %s tag on %r to split" % (parent, obj.name)}
-    legs = [point for tag in sorted(regions)
-            if tag.startswith("Leg") for point in regions[tag]._points]
-    report, axis = rigforge_autotag.split_from_clouds(
-        region._points, legs, seed=Vector(region.axis))
-    if axis is None:
-        return None, report
+    group = obj.vertex_groups.get(rigforge.tag_group_name(tag))
+    if group is None:
+        return 0.0
+    inside = set()
+    for vertex in obj.data.vertices:
+        for element in vertex.groups:
+            if element.group == group.index and element.weight > 0.0:
+                inside.add(vertex.index)
+                break
+    matrix = obj.matrix_world
+    vertices = obj.data.vertices
+    lengths = []
+    for edge in obj.data.edges:
+        one, other = edge.vertices
+        if one in inside and other in inside:
+            lengths.append(((matrix @ vertices[one].co)
+                            - (matrix @ vertices[other].co)).length)
+    if not lengths:
+        return 0.0
+    lengths.sort()
+    middle = len(lengths) // 2
+    return (lengths[middle] if len(lengths) % 2
+            else 0.5 * (lengths[middle - 1] + lengths[middle]))
 
+
+def _slab_view(obj, region, parent, axis, report):
+    """``TagSplit | None`` — a measured split report turned into the derived view.
+
+    The half every split shares: classify the parent tag's vertices and its
+    measured cloud into the slabs the report cut, and measure each slab about
+    the axis it was cut along.
+    """
+    names = tuple(report["names"])
+    cuts = report["cuts"]
     # The Region's own point list is in the same order tag_points() walked the
     # mesh in, so the membership can be keyed back to vertex indices only by
     # walking the group again. Cheaper and less fragile: classify by position.
@@ -657,40 +694,111 @@ def torso_split(obj, regions, enabled=True):
             for element in vertex.groups:
                 if element.group == group.index and element.weight > 0.0:
                     membership[vertex.index] = rigforge_autotag.sub_tag_at(
-                        axis.closest(matrix @ vertex.co)[1], report["cuts"])
+                        axis.closest(matrix @ vertex.co)[1], cuts, names)
                     break
-    clouds = {name: [] for name in report["names"]}
+    clouds = {name: [] for name in names}
     for point in region._points:
         clouds[rigforge_autotag.sub_tag_at(axis.closest(point)[1],
-                                           report["cuts"])].append(point)
+                                           cuts, names)].append(point)
     sub_regions = {name: _SubRegion(name, points, axis.direction, parent)
                    for name, points in clouds.items() if len(points) >= 2}
-    if len(sub_regions) != len(report["names"]):
+    if len(sub_regions) != len(names):
+        return None
+    return TagSplit(report, axis, membership, sub_regions)
+
+
+def torso_split(obj, regions, rig=None, metarig=None, enabled=True):
+    """``(TagSplit | None, report)`` — the Torso read as slabs of its own spine.
+
+    **One slab per vertebra where the rig allows it**, cut at the spine chain's
+    own joints (:func:`~forge.tools.rigforge_autotag.torso_chain_split`); the
+    three-landmark pelvis / abdomen / chest split
+    (:func:`~forge.tools.rigforge_autotag.spine_split`) is the fallback for a
+    trunk whose chain cannot be read, and was the whole story before the chain
+    was available here.  Both are the same recipe at different resolutions, and
+    the report says which one fired.
+
+    Refuses rather than guesses, and the report says which: a torso with no leg
+    tag beside it has nothing measuring where its pelvis ends, and a slab too
+    thin to measure is worse than no split at all.  A refusal costs the merged
+    ``Torso`` contract that was there before this existed.
+    """
+    parent = rigforge_autotag.SPLIT_PARENT
+    fallback_names = list(rigforge_autotag.TORSO_SUB_TAGS)
+    if not enabled:
+        return None, {"parent": parent, "names": fallback_names,
+                      "refused": "the split was switched off for this run"}
+    region = regions.get(parent)
+    if region is None:
+        return None, {"parent": parent, "names": fallback_names,
+                      "refused": "there is no %s tag on %r to split" % (parent, obj.name)}
+
+    # --- the fine cut: one slab per segment of the spine -------------------
+    chain_report = None
+    if rig is not None:
+        owner, _source = bone_owners(rig, metarig, regions)
+        root, groups = chain_groups(rig, owner, parent, metarig)
+        if root is not None and len(groups) >= 2:
+            names = rigforge_autotag.torso_sub_tags(base for base, _p in groups)
+            joints = [(groups[position][0], groups[position][1])
+                      for position in range(1, len(groups))]
+            chain_report, axis = rigforge_autotag.split_from_torso_cloud(
+                parent, region._points, root, joints, names,
+                seed=Vector(region.axis),
+                min_slab=(MIN_SLAB_BANDS * MIN_ARTICULATION_RINGS
+                          * tag_ring_spacing(obj, parent)))
+            if axis is not None:
+                view = _slab_view(obj, region, parent, axis, chain_report)
+                if view is not None:
+                    chain_report["measured_in"] = "the spine chain's own joints"
+                    return view, chain_report
+                chain_report = dict(chain_report)
+                chain_report.pop("cuts", None)
+                chain_report["refused"] = (
+                    "a slab of the chain split came out with under two vertices")
+
+    # --- the fallback: the three landmarks ---------------------------------
+    legs = [point for tag in sorted(regions)
+            if tag.startswith("Leg") for point in regions[tag]._points]
+    report, axis = rigforge_autotag.split_from_clouds(
+        region._points, legs, seed=Vector(region.axis))
+    if chain_report is not None:
+        report = dict(report)
+        report["chain_refused"] = chain_report.get("refused")
+    if axis is None:
+        return None, report
+    view = _slab_view(obj, region, parent, axis, report)
+    if view is None:
         report = dict(report)
         report.pop("cuts", None)
         report["refused"] = ("a slab of the split came out with under two vertices, "
                              "so it cannot be measured")
         return None, report
-    return TagSplit(report, axis, membership, sub_regions), report
+    report["measured_in"] = "the leg junction and the waist"
+    return view, report
 
 
-def leg_chain_joints(rig, owner, tag, metarig=None, known=None):
-    """``(hip, [(label, point), ...])`` — one leg chain's own segment boundaries.
+def chain_groups(rig, owner, tag, metarig=None, known=None):
+    """``(root point, [(base, head point), ...])`` — a tag's own chain, proximal first.
 
-    Where a leg's cuts come from, read off the rig rather than guessed at.  The
-    leg's deform bones are walked **in chain order** from the bone that hangs
+    Where a tag's cuts come from, read off the rig rather than guessed at.  The
+    tag's deform bones are walked **in chain order** from the bone that hangs
     off something else, and consecutive bones are grouped by the *metarig bone
     they were generated from* — so ``DEF-thigh.R`` and ``DEF-thigh.R.001`` are
     one group, and Rigify's subdivision does not turn one thigh into two.  The
     boundary between one group and the next is a **joint**: on a Rigify leg the
-    first is the knee and the second is the ankle, and both sit where the
-    landmark fitter put them, which is the girth minimum it measured.
+    first is the knee and the second is the ankle, and on a spine every one of
+    them is a vertebral joint.  All of them sit where the landmark fitter put
+    them, which is the girth minimum it measured.
 
     Grouping by source bone rather than matching the names ``thigh``/``shin``/
     ``foot`` is what makes this a structural read: a chain of four groups (a leg
-    with a toe) gives the same two joints as a chain of three, because only the
-    first two boundaries are asked for, and a limb whose bones are named
-    something else entirely still splits at its own joints.
+    with a toe) gives the same two joints as a chain of three, because a leg
+    split asks only for the first two, and a limb whose bones are named
+    something else entirely still splits at its own joints.  It is also what
+    lets the **trunk** use the same walk: ``Torso``'s owned bones are the spine
+    chain with the pelvis and shoulder bones hanging off it, and the longest
+    path through them is the spine.
 
     Where the chain branches — a foot with several toes — the **longest** branch
     is followed, which is the one that runs the length of the limb.  Ties go to
@@ -775,15 +883,30 @@ def leg_chain_joints(rig, owner, tag, metarig=None, known=None):
     chain = longest(root, {root})
     matrix = rig.matrix_world
     head = rig.data.bones.get(groups[chain[0]][0])
-    hip = (matrix @ head.head_local) if head is not None else None
-    joints = []
-    for position in range(1, len(chain)):
-        bone = rig.data.bones.get(groups[chain[position]][0])
+    root_point = (matrix @ head.head_local) if head is not None else None
+    out = []
+    for position, base in enumerate(chain):
+        bone = rig.data.bones.get(groups[base][0])
         if bone is None:
             continue
-        joints.append(("%s/%s" % (chain[position - 1], chain[position]),
-                       matrix @ bone.head_local))
-    return hip, joints
+        out.append((base, matrix @ bone.head_local, position))
+    return root_point, [(base, point) for base, point, _p in out]
+
+
+def leg_chain_joints(rig, owner, tag, metarig=None, known=None):
+    """``(hip, [(label, point), ...])`` — one limb's joints, from :func:`chain_groups`.
+
+    The joints are the boundaries *between* the chain's groups, so a chain of
+    four groups (a leg with a toe) has three of them and a leg split asks for
+    the first two — the knee and the ankle.
+    """
+    root, groups = chain_groups(rig, owner, tag, metarig, known)
+    if root is None:
+        return None, []
+    joints = [("%s/%s" % (groups[position - 1][0], groups[position][0]),
+               groups[position][1])
+              for position in range(1, len(groups))]
+    return root, joints
 
 
 def leg_splits(obj, regions, rig, metarig=None, enabled=True):
@@ -870,7 +993,7 @@ def body_split(obj, regions, rig=None, metarig=None, enabled=True):
     ``SplitSet``, and the merged contract that was there before this existed is
     what the caller falls back to.
     """
-    torso, torso_report = torso_split(obj, regions, enabled=enabled)
+    torso, torso_report = torso_split(obj, regions, rig, metarig, enabled=enabled)
     legs, leg_reports = leg_splits(obj, regions, rig, metarig, enabled=enabled)
     members = ([torso] if torso is not None else []) + list(legs)
     if not members:
@@ -1591,6 +1714,10 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
             "unfloored_mm": round(measured * M_TO_MM, 1),
             "width_by_tag_mm": {tag: round(value * M_TO_MM, 1)
                                 for tag, value in sorted(side_width.items())},
+            "floor_by_tag_mm": {
+                tag: round(MIN_ARTICULATION_RINGS
+                           * (spacing.get(tag) or median_edge) * M_TO_MM, 1)
+                for tag in sorted(both)},
             "seam_vertices": len(seeds),
             "zone_vertices": len(distance),
         })
@@ -1621,6 +1748,8 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
         "min_rings": MIN_BLEND_RINGS,
         "min_articulation_rings": MIN_ARTICULATION_RINGS,
         "median_edge_mm": round(median_edge * M_TO_MM, 2),
+        "tag_edge_mm": {tag: round(value * M_TO_MM, 2)
+                        for tag, value in sorted(spacing.items())},
         "girths_mm": {tag: round(value * M_TO_MM, 1)
                       for tag, value in sorted(girths.items())},
         "blend_vertices": total,
@@ -1949,57 +2078,83 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     # ``DEF-shin.R`` -- the bone that actually starts at the knee -- and nothing
     # past it.
     #
-    # **A band too thin to hold its own falloff is not a bound, it is a cliff**,
-    # and bounding a reach with one is worse than not bounding it. That is the
-    # same rule -- and so the same number -- as MIN_ARTICULATION_RINGS, which
-    # floors the band itself; here it decides whether a band is solid enough to
-    # bound a *reach* with. Since blend_zones now applies that floor, a seam
-    # below it is one whose band was floored in a tag whose local rings are
-    # coarser than the figure's median, and bounding a borrowed bone to it would
-    # still be cutting inside one ring of the mesh this vertex is on.
+    # A band too thin to hold its own falloff is not a bound but a cliff, and
+    # bounding a reach with one is worse than not bounding it -- which is why
+    # this used to skip any seam under ``MIN_ARTICULATION_RINGS`` of the
+    # figure's **median** edge. That guard is gone, and deliberately:
+    # :func:`blend_zones` now floors every articulating band at that same number
+    # of the seam's own **local** rings, so the precondition holds everywhere by
+    # construction and re-testing it against a global median only gets the
+    # answer wrong. Measured -- the werewolf's median edge is 25.1 mm, so the
+    # old guard demanded 71.7 mm and skipped the 67.7 mm arm/chest seam, which
+    # is 2.86 local rings and perfectly solid. That skip was the whole reason
+    # the fix below appeared to do nothing.
     #
-    # Measured, and this is the guard the synthetic biped needed. Its rings are
-    # 15.1 mm and two of its seams come out barely over one ring wide --
-    # ``Torso.abdomen/Torso.pelvis`` at 20.5 mm and its ankle at 20.2 mm.
-    # Bounding a borrowed bone to those cut 30.1 vertex-weights where the whole
-    # figure only had 9.0 to cut, and a second ``apply`` stopped converging
-    # (worst weight change 0.084, against a suite that pins it under 0.05). The
-    # werewolf's knee is 84 mm against 24.6 mm rings, which is a band with room
-    # for a falloff in it, and it is the one that matters.
-    #
-    # Cross-*tag* seams keep the girth rule, which is what it is for.
+    # **Every articulating seam, not only the sibling cuts.** Restricting this
+    # to slabs of one tag was an accident of where it was found, and the trunk
+    # is where that shows: ``Torso.chest``'s girth is 152.7 mm, so it lent its
+    # bones **458 mm** in every direction, and the band only had to put a vertex
+    # within 68 mm of the shoulder seam for the whole chest to become legal on
+    # it. Measured on the werewolf: 31 ``Arm.L``-tagged deltoid vertices carried
+    # ``DEF-spine.005`` from 180-230 mm away while ``DEF-upper_arm.L.001`` --
+    # the arm's own bone, exempt -- carried them too, and that pair alone was
+    # **2.86 of stray mass** at a bone gap of 344 mm. The seam between them is
+    # 68 mm wide. Nothing about a trunk being thick says its bones should reach
+    # half a metre down someone's arm; what a seam lends, the seam bounds.
     median_edge = (blend_report.get("median_edge_mm") or 0.0) / M_TO_MM
-    floor = MIN_ARTICULATION_RINGS * median_edge
+    # Keyed ``(borrower, lender)`` and taken from the band's **borrower-side**
+    # width, because that is the side the borrowed weight lands on: the same
+    # seam reaches 68 mm into the werewolf's arm and 82 mm into its chest, and
+    # which of those bounds a bone depends on whose flesh it is being lent to.
     seam_widths = {}
     for row in blend_report.get("seams", ()):
         one, other = row["tags"]
-        if split_view is None or split_view.parent_of(one) is None:
-            continue
-        if split_view.parent_of(one) != split_view.parent_of(other):
-            continue
-        width = row["width_mm"] / M_TO_MM
-        if width < floor:
-            continue
-        key = (one, other) if one <= other else (other, one)
-        seam_widths[key] = width
+        by_tag = row.get("width_by_tag_mm") or {}
+        for borrower, lender in ((one, other), (other, one)):
+            seam_widths[(borrower, lender)] = (
+                by_tag.get(borrower, row["width_mm"]) / M_TO_MM)
+
+    hinge_columns = {tag: frozenset(column_of[name] for name in names
+                                    if name in column_of)
+                     for tag, names in hinge_of.items()}
+    owner_column = {column_of[name]: tag for name, tag in owner_of.items()
+                    if name in column_of}
+
     def across(tag, lender, base):
         """The reach for a bone of ``lender`` on ``tag``'s flesh."""
         if lender is None or lender == tag:
             return base
-        key = (tag, lender) if tag <= lender else (lender, tag)
-        width = seam_widths.get(key)
+        width = seam_widths.get((tag, lender))
         return base if width is None else width
 
     distances = _distance_matrix(obj, rig, bone_names)
-    def licence(distance, limit):
-        """1 inside the reach, ramping to 0 over its last :data:`REACH_BAND`."""
+    def licence(distance, limit, band=REACH_BAND):
+        """1 inside the reach, ramping to 0 over its last ``band`` fraction.
+
+        ``band`` is :data:`REACH_BAND` for a *reach* — a rule about how far a
+        bone's own flesh extends, where the falloff is a rounding of the edge.
+        It is **1.0 for a seam band**, where the falloff is the whole point: a
+        band exists to hand a vertex from one tag to the next, so the influence
+        it lends should fade across all of it rather than sit at full strength
+        for two thirds and drop off a step. Measured on the werewolf, where
+        cliffing at the band's edge left a rim of punctures on every bone whose
+        bound had just been tightened.
+        """
         if limit <= 0.0 or distance >= limit:
             return 0.0
-        band = limit * REACH_BAND
-        if band <= 0.0:
+        width = limit * band
+        if width <= 0.0:
             return 1.0
-        return min(1.0, (limit - distance) / band)
+        return min(1.0, (limit - distance) / width)
 
+    # One ring of *this vertex's own* topology, for the taper below. A figure
+    # whose trunk is sampled four times more coarsely than its limbs -- the
+    # synthetic test biped, 59 mm against 15 mm -- has no single ring size, and
+    # a taper quoted in the figure's median is too thin on the coarse half.
+    _spacing = {tag: value / M_TO_MM
+                for tag, value in (blend_report.get("tag_edge_mm") or {}).items()}
+    ring = _np.array([max([_spacing.get(tag, median_edge) for tag in tags[index]]
+                          or [median_edge]) for index in range(count)], dtype="f8")
     ramp = _np.zeros((count, len(bone_names)), dtype="f8")
     radius = _np.zeros(count, dtype="f8")
     # Where the sibling-band rule above held a bone to less than its tag's own
@@ -2012,6 +2167,14 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     # that pins the second pass under 0.05. A column any tag grants at the full
     # reach is not capped at all, so every pre-existing taper is untouched.
     capped = _np.zeros((count, len(bone_names)), dtype="f8")
+    # Marked whenever a seam held a bone to less than its tag's own reach --
+    # separately from the width, because a seam can hold a bone to zero and zero
+    # is still a bound: without the flag that read as "never capped" and the mask
+    # fell back to the loose radius.
+    narrowed = _np.zeros((count, len(bone_names)), dtype=bool)
+    # Where a bone is the vertex's own tag's own bone -- not borrowed across any
+    # seam, at any licence. The only place a hole-fill may lift: see fill_holes.
+    owned_here = _np.zeros((count, len(bone_names)), dtype=bool)
     uncapped = _np.zeros((count, len(bone_names)), dtype=bool)
     untagged = 0
     borrowed = 0
@@ -2031,6 +2194,7 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
         for tag in own:
             limit = allowance.get(tag, 0.0)
             own_columns = owned_for.get(tag, ())
+            hinges_here = hinge_columns.get(tag, ())
             for column in columns_for.get(tag, ()):
                 # A tag's own chain runs the length of its own limb and is not
                 # subject to the reach: a knee vertex is a long way from the top
@@ -2040,10 +2204,37 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
                 # scaling the thigh down at the knee sharpens the bend into a
                 # fold. The reach is about *borrowed* influence -- and which
                 # bones those are is the ``owned_for`` question above.
-                value = 1.0 if column in own_columns else licence(row[column], limit)
-                # A bone its own tag grants at the full reach is never capped,
-                # whatever a neighbouring slab lends it at: see ``capped``.
-                uncapped[index, column] = True
+                if column in own_columns:
+                    value = 1.0
+                    bound = limit
+                    owned_here[index, column] = True
+                elif column in hinges_here:
+                    # **The hinge keeps the girth reach.** A tag hangs off this
+                    # bone and rotates *about* it, so its influence reaching
+                    # into the tag is the joint working, not a bleed -- which is
+                    # what BLEND_REACH is for and why it is three girths.
+                    # Measured: bounding hinges to the seam band as well takes
+                    # the werewolf's stray to 0.0000 and is not worth having --
+                    # it strands 481 vertices onto a refill and puts the skin at
+                    # 619 punctures against a single-pass baseline of 474.
+                    bound = limit
+                    value = licence(row[column], bound)
+                else:
+                    # A **span-crosser**: legal on this tag only because the
+                    # bone pokes over the cut. It has no claim on the slab's
+                    # interior, so the seam that lends it bounds it -- the same
+                    # rule the blend band below obeys. Measured on the
+                    # werewolf's thigh, whose girth lends 245 mm: ``DEF-shin.R``
+                    # reached up from across the knee to meet the hips coming
+                    # down, and that pair was 1.26 of stray mass at a bone gap
+                    # of 392 mm. The knee seam is 86 mm wide.
+                    bound = across(tag, owner_column.get(column), limit)
+                    value = licence(row[column], bound)
+                if bound < limit:
+                    capped[index, column] = max(capped[index, column], bound)
+                    narrowed[index, column] = True
+                else:
+                    uncapped[index, column] = True
                 if value > ramp[index, column]:
                     ramp[index, column] = value
         for tag in blend[index]:
@@ -2061,6 +2252,7 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
                 value = licence(row[column], lent)
                 if lent < limit:
                     capped[index, column] = max(capped[index, column], lent)
+                    narrowed[index, column] = True
                 else:
                     uncapped[index, column] = True
                 if value > ramp[index, column]:
@@ -2107,9 +2299,18 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     # which grants its single nearest legal bone *past* every reach on purpose,
     # had that one weight masked straight back off and came out of the stage
     # with no weight at all.
-    tightened = (capped > 0.0) & ~uncapped
+    tightened = narrowed & ~uncapped
+    # **Plus one ring**, and that ring is the difference between a bound and a
+    # cliff. The ramp already fades a borrowed bone out over the last
+    # REACH_BAND of its bound, but the mask cut the weight off at the bound
+    # exactly, so the outermost ramped weight sat next to a hard zero and the
+    # hole detector -- rightly -- called it a puncture: on the werewolf that was
+    # about a hundred extra holes, concentrated on the spine bones whose bounds
+    # had just been tightened. One ring is what SMOOTH_DILATION gives every
+    # other boundary in this stage for exactly the same reason, and it is small
+    # enough that the next ``apply`` still finds the weights where it left them.
     reachable[tightened] = _np.maximum(
-        capped, _np.where(hard, distances, 0.0))[tightened]
+        capped + ring[:, None], _np.where(hard, distances, 0.0))[tightened]
     mask = _dilate(hard, fine, SMOOTH_DILATION) & (distances <= reachable)
     tolerance_slots = int(_np.count_nonzero(mask & ~hard))
 
@@ -2145,6 +2346,15 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
 
     weights = smooth_weights(weights, mask, linked, passes, factor)
     _normalize_rows(weights)
+    # The dents the smoother's own repair does not reach, taken out directly
+    # against the gate's definition of one. It runs on the graph the contract
+    # joined -- a "neighbour" across a seam the articulation rule cut is not a
+    # neighbour -- and only where the licence is whole, so it can lift a weight
+    # back to the flesh around it without ever handing out a bone the bound
+    # refused. See fill_holes for why the median is the level it lifts to.
+    filled = fill_holes(weights, ramp >= 1.0 - 1e-9, linked)
+    if filled:
+        _normalize_rows(weights)
     trimmed = _limit_rows(weights, max(1, int(max_influences)))
     live = _normalize_rows(weights)
     stranded = int(_np.count_nonzero(~live))
@@ -2197,6 +2407,7 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
         "weight_removed_pct": round(100.0 * removed_mass / max(before_total, 1e-9), 3),
         "weight_moved": round(moved, 4),
         "refilled_vertices": refilled,
+        "filled_holes": filled,
         "stranded_vertices": stranded,
         "trimmed_vertices": trimmed,
         "entries_written": written,
@@ -2251,6 +2462,81 @@ def _bones_by_source(source):
 # ---------------------------------------------------------------------------
 # the gate this adds: in-limb continuity
 # ---------------------------------------------------------------------------
+
+def fill_holes(weights, allowed, edges, floor=REGION_FLOOR, ratio=HOLE_RATIO,
+               min_drop=HOLE_MIN_DROP, min_neighbours=HOLE_MIN_NEIGHBOURS):
+    """Lift each punctured weight to its own neighbourhood's median.  In place.
+
+    The repair for the defect :func:`weight_continuity` measures, written from
+    **that function's own predicate** rather than beside it: a weight is a hole
+    when at least ``min_neighbours`` of its neighbours carry the bone above
+    ``floor``, it sits under ``ratio`` of their median, and the gap is at least
+    ``min_drop``.  Gate and repair are two views of one definition and share one
+    set of constants, so they cannot drift into disagreeing about what a hole is.
+
+    **Median, and that is what makes it idempotent.**  A repaired vertex *is*
+    the neighbourhood median, so the predicate that selected it is false on the
+    next pass and a second run moves nothing — unlike a partial step towards a
+    mean, which keeps moving and never arrives.  It is also exactly what a
+    weight-painter does to a spot dent: not a blur of the neighbourhood, but
+    that one vertex brought up to the level around it.
+
+    ``allowed`` is the ``(V, B)`` boolean of what the contract **fully**
+    licenses.  A hole-fill must never hand a vertex a bone the seam bound denied
+    it, so it repairs only where the licence is whole: where a bone is borrowed
+    at a partial licence the low weight is the taper doing its job, which is the
+    same reason :data:`HOLE_MIN_DROP` exists.
+
+    Returns the number of weights lifted.
+    """
+    _require_numpy()
+    if not len(edges) or not weights.size:
+        return 0
+    a, b = edges[:, 0], edges[:, 1]
+    inside = weights >= floor
+    neighbours = _np.zeros(weights.shape, dtype="i8")
+    _np.add.at(neighbours, a, inside[b].astype("i8"))
+    _np.add.at(neighbours, b, inside[a].astype("i8"))
+    # The same exact prefilter weight_continuity uses: a hole sits under
+    # ``ratio`` times a median that cannot exceed 1.0, so anything at or above
+    # ``ratio`` cannot be one and the per-vertex median runs on a few rows.
+    # ``inside`` on the vertex itself as well as on its neighbours, and that is
+    # the one place this departs from the gate's predicate -- deliberately, and
+    # it is the difference between a repair and an expansion. The gate counts a
+    # vertex at zero surrounded by carriers as a hole, which it is; but lifting
+    # it does not mend a dent, it hands the bone a vertex it did not reach, and
+    # a bone that reaches further shares flesh with whatever else is there.
+    # Measured on the werewolf: filling from zero put ``DEF-hand.R`` on one
+    # vertex that already carried ``DEF-upper_arm.R`` 353 mm away and took the
+    # stray mass from 0.0000 to 0.2956 -- two vertices, and still a bone holding
+    # flesh it has no business holding. A vertex already inside the region is a
+    # vertex the bone demonstrably reaches, and raising it to the level around
+    # it cannot extend anything.
+    candidate = ((neighbours >= int(min_neighbours))
+                 & (weights >= floor) & (weights < ratio) & allowed)
+    adjacency = None
+    filled = 0
+    for column in range(weights.shape[1]):
+        suspects = _np.nonzero(candidate[:, column])[0]
+        if not suspects.size:
+            continue
+        if adjacency is None:
+            adjacency = _adjacency(edges, weights.shape[0])
+        for index in suspects:
+            index = int(index)
+            around = sorted(float(weights[n, column]) for n in adjacency[index]
+                            if weights[n, column] >= floor)
+            if len(around) < int(min_neighbours):
+                continue
+            middle = len(around) // 2
+            median = (around[middle] if len(around) % 2
+                      else 0.5 * (around[middle - 1] + around[middle]))
+            mine = float(weights[index, column])
+            if mine < ratio * median and (median - mine) >= min_drop:
+                weights[index, column] = median
+                filled += 1
+    return filled
+
 
 def weight_continuity(rig, mesh, floor=REGION_FLOOR, max_bones=400,
                       ratio=HOLE_RATIO, min_drop=HOLE_MIN_DROP,

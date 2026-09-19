@@ -1070,6 +1070,178 @@ def spine_split(axis, torso_points, leg_points, stations=SPLIT_STATIONS):
 # a leg, cut at its own knee and its own ankle
 # ---------------------------------------------------------------------------
 
+def chain_split(axis, points, parent, joints, names, stations=SPLIT_STATIONS,
+                merge_thin=True, min_slab=0.0):
+    """Cut a tag into one slab per segment of the chain that deforms it.
+
+    The engine under :func:`leg_split` and :func:`torso_chain_split`, and the
+    third and most general statement of the same recipe: **a tag should be no
+    coarser than the chain that moves it**.  The contract is enforced per tag,
+    so a tag holding a chain of N bones is a bucket in which all N are legal on
+    all of its flesh — and two bones at opposite ends of that chain then hold
+    the same vertices while sitting half a metre apart.  Cutting the tag at the
+    chain's own joints gives each bone a slab of its own, and everything else
+    (the span rule, the hinge rule, the bands) already knows what to do with it.
+
+    ``joints`` is ``[(name, world point), ...]``, proximal to distal: the point
+    where each slab *after the first* begins.  ``names`` is one longer, the
+    first being the proximal slab's.  Cuts are the joints' own positions
+    projected onto ``axis`` — **full precision and unsnapped**, for the reason
+    :func:`leg_split` gives: the bone at a joint has its head at exactly that
+    ``t``, and rounding decides whether the span rule sees it.
+
+    ``merge_thin`` decides what happens to a slab too small to measure.  A leg
+    wants three slabs or none, because "thigh, shin, foot" is the claim being
+    made and two of them is a different claim — so it refuses.  A spine wants as
+    many slabs as its vertebrae will carry: the werewolf's ``DEF-spine.004`` and
+    ``DEF-spine.005`` are 28 mm each and a slab there would hold almost nothing,
+    so those cuts are **dropped** and the neighbouring slabs merge, keeping the
+    proximal one's name.  Merging is the honest answer there because the result
+    is still a correct — just coarser — statement of the same contract.
+
+    Returns a report dict of the shape :func:`spine_split` returns.
+    """
+    stations = max(MIN_CUT_SEPARATION + 3, int(stations))
+    samples = [axis.closest(point) for point in points]
+    report = {
+        "parent": parent,
+        "names": list(names),
+        "stations": stations,
+        "axis_mm": [[round(v * M_TO_MM, 1) for v in point] for point in axis.points],
+        "axis_length_mm": round(axis.length * M_TO_MM, 1),
+        "points": len(points),
+        "joints": [str(label) for label, _point in joints],
+        "joint_mm": [[round(v * M_TO_MM, 1) for v in Vector(point)]
+                     for _label, point in joints],
+    }
+    if len(names) != len(joints) + 1:
+        report["refused"] = ("%d slab name(s) were offered for %d joint(s); a chain "
+                             "split names one slab more than it has cuts"
+                             % (len(names), len(joints)))
+        return report
+    if not joints:
+        report["refused"] = ("this chain has no joint inside it, so there is nothing "
+                             "to cut %s at" % parent)
+        return report
+    if len(points) < 2 * MIN_SUB_TAG_VERTICES:
+        report["refused"] = (
+            "the %s tag has %d vertices, and slabs of at least %d each need %d"
+            % (parent, len(points), MIN_SUB_TAG_VERTICES, 2 * MIN_SUB_TAG_VERTICES))
+        return report
+
+    cuts = [axis.closest(Vector(point))[1] for _label, point in joints]
+    report["joint_t"] = [round(value, 6) for value in cuts]
+    report["joint_height_mm"] = [round(axis.at(value).z * M_TO_MM, 1) for value in cuts]
+
+    # A joint outside the flesh this tag actually holds cuts nothing, and a cut
+    # at t=0 or t=1 opens a slab with nothing in it. Both are dropped rather
+    # than refused: a chain routinely runs past the end of the tag it moves.
+    #
+    # **Strictly at the ends, and not "within a station of" them.** The station
+    # grid is a reporting unit here, not a measurement -- these cuts are joint
+    # positions -- and how much flesh a slab holds is asked directly, below, in
+    # vertices. Measured the hard way: the artist moved this werewolf's ankles
+    # down 44 mm, which put the ankle cut at t=0.943 of the leg's own axis, and
+    # a one-station margin refused **both legs** over a foot slab that in fact
+    # held 300-odd vertices. An artist's joint placement is an input, not an
+    # error, and a guard that turns one into a refusal is the guard's bug.
+    kept = [(cut, names[index + 1]) for index, cut in enumerate(cuts)
+            if 0.0 < cut < 1.0]
+    kept.sort()
+    live = [names[0]] + [name for _cut, name in kept]
+    live_cuts = [cut for cut, _name in kept]
+
+    # Drop the cut whose slab is thinnest until every slab can be measured.
+    #
+    # **Thin means two different things and a slab has to survive both.** Too
+    # few vertices and there is nothing to measure. Too *short* and there is
+    # nothing left of it once its own blend bands are cut -- ``min_slab`` is the
+    # caller's statement, in metres along this axis, of how long a slab must be
+    # to still have an interior. See ``rigforge_skin.MIN_SLAB_BANDS`` for why
+    # that is a correctness rule rather than a preference.
+    while live_cuts:
+        counts = {name: 0 for name in live}
+        for _distance, t in samples:
+            counts[sub_tag_at(t, live_cuts, live)] += 1
+        edges = [0.0] + list(live_cuts) + [1.0]
+        extent = {live[index]: (edges[index + 1] - edges[index]) * axis.length
+                  for index in range(len(live))}
+        thin = [name for name in live if counts[name] < MIN_SUB_TAG_VERTICES]
+        short = []
+        if min_slab > 0.0 and len(live) > 2:
+            short = [name for name in live if extent[name] < min_slab]
+            thin += [name for name in short if name not in thin]
+        if not thin:
+            break
+        if not merge_thin:
+            report["refused"] = (
+                "%s would hold %s vertices and a sub-tag under %d cannot be "
+                "measured, so the %s stays one tag"
+                % (", ".join(thin), ", ".join(str(counts[name]) for name in thin),
+                   MIN_SUB_TAG_VERTICES, parent))
+            report["would_be"] = dict(counts)
+            return report
+        # The thinnest slab merges into its proximal neighbour, which means
+        # dropping the cut that opens it. The proximal-most slab has no cut of
+        # its own to drop, so it merges by dropping the cut above it instead.
+        #
+        # A slab flagged for being **short** is merged by length rather than by
+        # vertex count, or the merge does not converge on even slabs: a long
+        # sparse slab would keep losing cuts to a short dense one and the split
+        # would collapse further than the rule asked for.
+        victim = (min(short, key=lambda name: extent[name]) if short
+                  else min(thin, key=lambda name: counts[name]))
+        position = live.index(victim)
+        del live_cuts[position - 1 if position > 0 else 0]
+        del live[position if position > 0 else 1]
+
+    if len(live) < 2:
+        report["refused"] = ("no joint of this chain leaves two slabs with enough "
+                             "flesh on either side to measure")
+        return report
+    if min_slab > 0.0:
+        # **A tag that cannot carry even two slabs is not split at its chain at
+        # all.** Merging stops at two because one slab is not a split; if the
+        # two that remain are still shorter than their own bands, the honest
+        # answer is that this topology has no chain split in it and the caller
+        # should use whatever coarser rule it has. Measured on the synthetic
+        # test biped: its 290 mm trunk is sampled every 59 mm, so its bands
+        # floor to 169 mm and *any* cut leaves slabs that are entirely band.
+        # Forcing two anyway put the whole trunk in one blend zone, which made
+        # the shoulder legal on pelvis flesh and moved the lower body **54 mm**
+        # when the arms swung -- the exact defect this lane exists to prevent.
+        edges = [0.0] + list(live_cuts) + [1.0]
+        shortest = min((edges[index + 1] - edges[index]) * axis.length
+                       for index in range(len(live)))
+        if shortest < min_slab:
+            report["refused"] = (
+                "this chain's slabs come out %.0f mm at best and a slab needs %.0f mm "
+                "to have an interior once its own blend bands are cut, so %s is not "
+                "fine enough to split at its chain"
+                % (shortest * M_TO_MM, min_slab * M_TO_MM, parent))
+            return report
+
+    counts = {name: 0 for name in live}
+    for _distance, t in samples:
+        counts[sub_tag_at(t, live_cuts, live)] += 1
+    report["names"] = list(live)
+    report["cuts"] = [float(value) for value in live_cuts]
+    report["cut_mm"] = [round(value * axis.length * M_TO_MM, 1) for value in live_cuts]
+    report["cut_height_mm"] = [round(axis.at(value).z * M_TO_MM, 1)
+                               for value in live_cuts]
+    report["dropped"] = [name for name in names if name not in live]
+    report["vertices"] = dict(counts)
+    report["says"] = (
+        "%s split into %d slab(s) at its own chain's joints (%s), %s vertices%s."
+        % (parent, len(live), ", ".join("%.0f mm" % h
+                                        for h in report["cut_height_mm"]),
+           " / ".join(str(counts[name]) for name in live),
+           ("; %d cut(s) dropped because the slab would have been too thin to "
+            "measure: %s" % (len(report["dropped"]), ", ".join(report["dropped"])))
+           if report["dropped"] else ""))
+    return report
+
+
 def leg_sub_tags(parent):
     """``('Leg.L.thigh', 'Leg.L.shin', 'Leg.L.foot')`` for ``parent='Leg.L'``.
 
@@ -1182,10 +1354,10 @@ def leg_split(axis, leg_points, parent, joints, stations=SPLIT_STATIONS):
             "%d apart, which leaves no room for a shin %d stations deep between them"
             % (first, second, (second - first) / stride, last, MIN_CUT_SEPARATION))
         return report
-    if first <= stride or second >= 1.0 - stride:
+    if not (0.0 < first and second < 1.0):
         report["refused"] = (
             "this leg's knee sits at t=%.3f and its ankle at t=%.3f on its own axis, "
-            "and a cut within one station of an end leaves a slab with no interior"
+            "and a cut at an end of the axis opens a slab with nothing in it"
             % (first, second))
         return report
 
@@ -1233,6 +1405,64 @@ def leg_split(axis, leg_points, parent, joints, stations=SPLIT_STATIONS):
     return report
 
 
+def torso_sub_tags(bases):
+    """``Torso.spine``, ``Torso.spine.002``… — one slab name per spine segment.
+
+    Named after the metarig bone each slab is cut to hold, exactly as a leg's
+    slabs are named after thigh / shin / foot, so a legal set reads back to the
+    vertebra it belongs to instead of to an index nobody can check.
+    """
+    return tuple("%s.%s" % (SPLIT_PARENT, base) for base in bases)
+
+
+def torso_chain_split(axis, torso_points, parent, root, joints, names,
+                      stations=SPLIT_STATIONS, min_slab=0.0):
+    """The ``Torso`` cut at **every joint of its own spine**, not at three landmarks.
+
+    The failure this exists to fix, measured on ``werewolf-wip-11``
+    ---------------------------------------------------------------
+    :func:`spine_split` cuts the trunk into pelvis / abdomen / chest, and on
+    this figure that leaves ``Torso.chest`` holding **five** spine bones plus
+    both shoulders — a 250 mm slab in which ``DEF-spine.001`` and
+    ``DEF-spine.005`` are both legal everywhere, because both are the slab's
+    *own* bones and a tag's own chain is exempt from the reach.  They duly
+    shared 45 vertices while sitting **361 mm apart**, and after every other
+    stray pair on the figure had been cleared that one pair was the entire
+    remaining 6.37 of stray mass.
+
+    Three slabs was never the claim — it was as fine as the landmarks available
+    at the time allowed.  The spine's own joints are landmarks too, they are
+    already fitted, and there is one for every bone.  So the trunk is cut the
+    way a leg is: one slab per segment, at the segment's own joint, full
+    precision.  A vertebra that is too short to own a measurable slab has its
+    cut dropped and merges upward — see :func:`chain_split`.
+    """
+    return chain_split(axis, torso_points, parent, joints, names,
+                       stations=stations, merge_thin=True,
+                       min_slab=min_slab)
+
+
+def split_from_torso_cloud(parent, torso_points, root, joints, names, seed=None,
+                           stations=SPLIT_STATIONS, min_slab=0.0):
+    """``(report, axis | None)`` — :func:`torso_chain_split` over the trunk's cloud.
+
+    ``root`` is the head of the spine chain — the hips — and it orients the
+    axis, so ``t=0`` is the pelvis end on a figure modelled to any convention,
+    the same way a leg is oriented off its hip.
+    """
+    if len(torso_points) < 2:
+        return ({"parent": parent, "names": list(names),
+                 "refused": "there is no %s tag to split" % parent}, None)
+    try:
+        axis = axis_from_cloud(torso_points, parent, seed=seed, proximal=root)
+    except ForgeError as exc:
+        return ({"parent": parent, "names": list(names), "refused": str(exc)}, None)
+    report = torso_chain_split(axis, torso_points, parent, root, joints, names,
+                               stations=stations,
+                               min_slab=min_slab)
+    return report, (None if report.get("refused") else axis)
+
+
 def split_from_leg_cloud(parent, leg_points, root, joints, seed=None,
                          stations=SPLIT_STATIONS):
     """``(report, axis | None)`` — :func:`leg_split` over one leg's point cloud.
@@ -1260,15 +1490,15 @@ def sub_tag_at(t, cuts, names=TORSO_SUB_TAGS):
     """Which sub-tag the axis parameter ``t`` lands in.  Half-open, proximal first.
 
     ``names`` is the slab naming — :data:`TORSO_SUB_TAGS` by default, or one
-    leg's own :func:`leg_sub_tags`.  The *rule* is the same either way and that
-    is the point of the parameter: one cut function, so a leg's slabs cannot
-    drift into meaning something different from a torso's.
+    leg's own :func:`leg_sub_tags`, or one per vertebra.  Any number of cuts,
+    with ``len(names) == len(cuts) + 1``.  The *rule* is the same however many
+    there are and that is the point of the parameter: one cut function, so a
+    leg's slabs cannot drift into meaning something different from a torso's.
     """
-    if t <= cuts[0]:
-        return names[0]
-    if t < cuts[1]:
-        return names[1]
-    return names[2]
+    for index, cut in enumerate(cuts):
+        if (t <= cut) if index == 0 else (t < cut):
+            return names[index]
+    return names[-1]
 
 
 def sub_tags_spanning(t_low, t_high, cuts, names=TORSO_SUB_TAGS):
@@ -1283,12 +1513,17 @@ def sub_tags_spanning(t_low, t_high, cuts, names=TORSO_SUB_TAGS):
     """
     low, high = (t_low, t_high) if t_low <= t_high else (t_high, t_low)
     out = []
-    if low <= cuts[0]:
-        out.append(names[0])
-    if high > cuts[0] and low < cuts[1]:
-        out.append(names[1])
-    if high >= cuts[1]:
-        out.append(names[2])
+    for index in range(len(names)):
+        under = cuts[index - 1] if index > 0 else None
+        over = cuts[index] if index < len(cuts) else None
+        if under is None:
+            touches = low <= over
+        elif over is None:
+            touches = high >= under
+        else:
+            touches = high > under and low < over
+        if touches:
+            out.append(names[index])
     return tuple(out) or (sub_tag_at(0.5 * (low + high), cuts, names),)
 
 
