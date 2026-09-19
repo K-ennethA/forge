@@ -126,6 +126,7 @@ EXPECTED_TOOLS = {
     "rigforge_walk",
     "animation_check",
     "rigforge_punch",
+    "rigforge_jump",
     # Mechanism demos (Phase 17) — the press, the LED, the film of both
     "animate_object",
     "set_material_emission",
@@ -189,7 +190,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 93
+    assert len(names) == 94
 
 
 def test_every_tool_is_documented() -> None:
@@ -837,6 +838,7 @@ def test_forge_status_never_fails_and_reports_every_backend(dead_backends) -> No
         "rigforge_walk",
         "animation_check",
         "rigforge_punch",
+        "rigforge_jump",
         "rigforge_correctives",
     ],
 )

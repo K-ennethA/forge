@@ -4851,11 +4851,15 @@ def _fmt_animation_check_report(result: Mapping[str, Any], summary: str) -> str:
 def animation_check(
     rig: Optional[str] = None,
     action: Optional[str] = None,
-    mode: Literal["auto", "planted", "in_place"] = "auto",
+    mode: Literal["auto", "planted", "in_place", "jump", "airborne"] = "auto",
     frame_step: Optional[int] = None,
     contact_band: Optional[float] = None,
     min_stance_frames: Optional[int] = None,
     feet: Optional[List[str]] = None,
+    airborne_clearance: Optional[float] = None,
+    min_airborne_frames: Optional[int] = None,
+    parabola_tolerance: Optional[float] = None,
+    hop_tolerance_frames: Optional[int] = None,
 ) -> str:
     """Does the clip's planted foot HOLD? Measure drift, in millimetres, per step.
 
@@ -4864,15 +4868,26 @@ def animation_check(
     (a run of frames where that point sits near its lowest point) and measures
     how far it drifts within that run. A few millimetres is planted; centimetres
     is skating. Works on any clip: `rigforge_walk`'s output, a hand-keyed
-    `rigforge_keyframe` clip, or one `rigforge_retarget` imported from mocap.
-    The rig's pose, action and the scene's current frame are all restored.
+    `rigforge_keyframe` clip, `rigforge_punch`'s strike, `rigforge_jump`'s
+    flight, or one `rigforge_retarget` imported from mocap. The rig's pose,
+    action and the scene's current frame are all restored.
+
+    A clip with an **airborne window** — a run of frames where every foot is
+    off the ground *and* the body rose to put them there — is read as a jump:
+    slide is not measured through the flight, the grounded takeoff/landing
+    plants are measured raw either side of it, and the parabola, the landing
+    knee and the plants are gated (plus, optionally, hop asymmetry). This is
+    detected automatically (a walk or a punch cannot trip it), so a jump
+    clip never needs to be labelled to be measured correctly.
 
     - `mode`: "auto" (default) tells a root-motion clip from an in-place one by
-      how far the body travels against how far the feet swing, and measures
-      accordingly. Force "planted" (a travelling/root-motion clip — the foot
-      should not move at all in world space) or "in_place" (a treadmill clip —
-      the feet are expected to run backwards at one shared speed) when you
-      already know which this is.
+      how far the body travels against how far the feet swing, detects an
+      airborne window the same way, and measures accordingly. Force "planted"
+      (a travelling/root-motion clip — the foot should not move at all in
+      world space), "in_place" (a treadmill clip — the feet are expected to
+      run backwards at one shared speed), or "jump"/"airborne" (force the
+      jump reading; refused loudly if the clip has no airborne window) when
+      you already know which this is.
     - `feet`: bone names to measure (the toe/foot deform bones); omit to let the
       add-on find them by its own naming convention.
     - `frame_step`: 1-10, sample every Nth frame — coarser is faster on a long
@@ -4881,6 +4896,18 @@ def animation_check(
       as "planted".
     - `min_stance_frames`: 2-1000, the shortest run of frames that counts as a
       stance rather than noise.
+    - `airborne_clearance`: 0.01-0.9, how far above the clip's lowest contact
+      sample a foot must sit — as a fraction of the contact points' vertical
+      range — before it counts as off the ground.
+    - `min_airborne_frames`: 2-1000, the shortest run of every-foot-off-ground
+      frames that counts as flight rather than a sampling accident.
+    - `parabola_tolerance`: 0.0005-1.0, how far the body's airborne height may
+      sit off its own best-fit parabola, as a fraction of the rise over that
+      window, before the gate calls the arc not ballistic.
+    - `hop_tolerance_frames`: how long the clip may spend with exactly one foot
+      down before hop asymmetry gates it; omit to leave that check off — a
+      two-foot jump landing as a hop is only a problem when you say what you
+      will tolerate.
 
     **The gate's thresholds are heuristics** — the scale at which skating becomes
     visible, not values calibrated against what an artist would accept. Quote
@@ -4910,6 +4937,36 @@ def animation_check(
                 f"min_stance_frames must be between 2 and 1000 (got {min_stance_frames})."
             )
         params["min_stance_frames"] = min_stance_frames
+    if airborne_clearance is not None:
+        params["airborne_clearance"] = _walk_number(
+            "airborne_clearance", airborne_clearance, 0.01, 0.9
+        )
+    if min_airborne_frames is not None:
+        if isinstance(min_airborne_frames, bool) or not isinstance(min_airborne_frames, int):
+            raise ForgeError(
+                f"min_airborne_frames must be a whole number (got {min_airborne_frames!r})."
+            )
+        if not 2 <= min_airborne_frames <= 1000:
+            raise ForgeError(
+                f"min_airborne_frames must be between 2 and 1000 "
+                f"(got {min_airborne_frames})."
+            )
+        params["min_airborne_frames"] = min_airborne_frames
+    if parabola_tolerance is not None:
+        params["parabola_tolerance"] = _walk_number(
+            "parabola_tolerance", parabola_tolerance, 0.0005, 1.0
+        )
+    if hop_tolerance_frames is not None:
+        if isinstance(hop_tolerance_frames, bool) or not isinstance(hop_tolerance_frames, int):
+            raise ForgeError(
+                f"hop_tolerance_frames must be a whole number (got {hop_tolerance_frames!r})."
+            )
+        if not 0 <= hop_tolerance_frames <= 1000:
+            raise ForgeError(
+                f"hop_tolerance_frames must be between 0 and 1000 "
+                f"(got {hop_tolerance_frames})."
+            )
+        params["hop_tolerance_frames"] = hop_tolerance_frames
     names = [str(name).strip() for name in (feet or []) if str(name).strip()]
     if names:
         params["feet"] = names
@@ -5159,6 +5216,256 @@ def rigforge_punch(
         + ("" if clear else ", layered onto existing keys")
     )
     return _fmt_punch_report(result, summary)
+
+
+def _fmt_jump_report(result: Mapping[str, Any], summary: str) -> str:
+    """The standing jump that was authored: apex reached against requested (and
+    the residual the frame rounding leaves between keys), the airtime and how
+    well it fit its own parabola, the leg extension against its cap, and the
+    landing absorb depth against the anticipation crouch."""
+    action = result.get("action") or "(unnamed)"
+    created = "new action" if result.get("created") else "existing action"
+    lines = [
+        f"Jump on '{action}' ({created}) — {summary}",
+        f"  frames {fmt_frame_range(result.get('frame_range'))}, "
+        f"takeoff f{fmt_number(result.get('takeoff_frame'), 0)} -> apex "
+        f"f{fmt_number(result.get('apex_frame'), 0)} -> land "
+        f"f{fmt_number(result.get('landing_frame'), 0)}, "
+        f"{fmt_number(result.get('keys_set'), 0)} key(s) on "
+        f"{fmt_number(len(result.get('bones') or []), 0)} bone(s)",
+    ]
+    says = str(result.get("says") or "").strip()
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    apex_reached = result.get("apex_reached_m")
+    apex_requested = result.get("apex_requested_m")
+    apex_solved = result.get("apex_solved_m")
+    lines.append(
+        f"  apex {fmt_number((apex_reached or 0.0) * 1000.0, 0)} mm reached against "
+        f"{fmt_number((apex_requested or 0.0) * 1000.0, 0)} mm requested (solved to "
+        f"{fmt_number((apex_solved or 0.0) * 1000.0, 0)} mm by the frame rounding, "
+        f"{fmt_number(result.get('apex_peak_between_keys_mm'), 3)} mm residual "
+        "between keys)"
+    )
+    lines.append(
+        f"  airtime {fmt_number(result.get('airborne_frames'), 0)} frame(s) "
+        f"({fmt_number(result.get('airtime_s'), 3)} s), max parabola deviation "
+        f"{fmt_number(result.get('parabola_deviation_mm'), 3)} mm"
+        + (
+            ""
+            if result.get("parabola_within_tolerance", True)
+            else " — OUT OF TOLERANCE"
+        )
+    )
+    extension_ratio = result.get("extension_ratio")
+    lines.append(
+        "  extension peaks at "
+        + (
+            f"{fmt_number(extension_ratio * 100.0, 1)}%"
+            if extension_ratio is not None
+            else "?"
+        )
+        + f" of a {fmt_number(result.get('leg_reach_m'), 3)} m reach (cap "
+        f"{fmt_number((result.get('max_extension_ratio') or 0) * 100.0, 0)}%)"
+        + ("" if result.get("extension_within_cap", True) else " — OVER CAP")
+    )
+    lines.append(
+        f"  landing absorbs {fmt_number(result.get('absorb_measured_m'), 3)} m "
+        f"against a {fmt_number(result.get('crouch_measured_m'), 3)} m "
+        "anticipation crouch"
+        + ("" if result.get("absorb_deeper_than_crouch", True) else " — NOT DEEPER")
+    )
+    feet = result.get("feet_planted") or []
+    if feet:
+        lines.append(
+            "  feet planted (takeoff & landing): " + ", ".join(sorted(feet))
+        )
+    return "\n".join(lines)
+
+
+@app.tool()
+def rigforge_jump(
+    rig: Optional[str] = None,
+    action: Optional[str] = None,
+    frames: Optional[int] = None,
+    apex_height: Optional[float] = None,
+    jump_distance: Optional[float] = None,
+    crouch_depth: Optional[float] = None,
+    landing_depth: Optional[float] = None,
+    tuck_height: Optional[float] = None,
+    anticipation_fraction: Optional[float] = None,
+    launch_fraction: Optional[float] = None,
+    landing_fraction: Optional[float] = None,
+    recover_fraction: Optional[float] = None,
+    gravity: Optional[float] = None,
+    chest_pitch_deg: Optional[float] = None,
+    arm_swing_back_deg: Optional[float] = None,
+    arm_swing_up_deg: Optional[float] = None,
+    elbow_bend_deg: Optional[float] = None,
+    foot_roll_deg: Optional[float] = None,
+    landing_strike_ratio: Optional[float] = None,
+    max_extension_ratio: Optional[float] = None,
+    loop: bool = False,
+    clear: bool = True,
+    interpolation: Literal["LINEAR", "BEZIER"] = "LINEAR",
+    poles: bool = True,
+) -> str:
+    """Author a standing jump on the leg IK targets, whose airtime is derived
+    from `apex_height` rather than a frame count for the flight.
+
+    THIS is the first locomotion clip whose feet are *supposed* to leave the
+    ground, so it is the first one that can be wrong by floating rather than
+    by sliding. A body in flight is being integrated, not animated: from
+    takeoff to landing the only thing acting on the root is gravity, so
+    `apex_height` is the parameter and the airtime falls out of it — this
+    command does not take a frame count for the flight. The requested airtime
+    is rounded to whole frames so the landing closes exactly on a key, and the
+    apex is solved back out of that rounded airtime; the report quotes both
+    numbers so the difference is visible instead of silent. Legs are keyed on
+    their IK targets (the plants at takeoff and landing), arms swing on FK,
+    the launch extension is capped against the legs' own measured reach the
+    same way `rigforge_punch` caps the fist, and the landing absorb is deeper
+    than the anticipation crouch by default because catching a falling body
+    takes more travel than launching a standing one.
+
+    Every length is metres, every angle degrees, and every default not given
+    here is a fraction of *this* rig's own leg length, measured off the rest
+    pose — do not guess a number to fill a gap.
+
+    - `frames`: 12-600, the length of the whole clip (guard, anticipation,
+      launch, flight, landing, recover) — lengthened automatically if the
+      flight plus the grounded phases will not fit.
+    - `apex_height`: metres, how high the hips rise at the top of the arc;
+      omit for 35% of the leg length. Zero or positive only here — the
+      add-on owns the rig-relative floor/ceiling (1e-4 m up to 5x leg length)
+      and reports if it had to resolve the requested value.
+    - `jump_distance` / `crouch_depth` / `landing_depth` / `tuck_height`:
+      metres; zero or positive only here for the same reason — each has its
+      own rig-relative cap the add-on enforces and explains in a warning if
+      it had to clamp.
+    - `anticipation_fraction` / `launch_fraction` / `landing_fraction` /
+      `recover_fraction`: 0.05-0.5 / 0.02-0.3 / 0.02-0.4 / 0.05-0.5, each
+      grounded phase's share of the clip. The airborne window is not one of
+      these fractions — it is derived from `apex_height`.
+    - `gravity`: 0.1-100 m/s^2, the jump's own clock; a low-gravity jump is a
+      real art direction and the point of deriving the timing is that it
+      stays derived.
+    - `chest_pitch_deg` / `arm_swing_back_deg` / `arm_swing_up_deg` /
+      `elbow_bend_deg` / `foot_roll_deg`: 0-45 / 0-90 / 0-170 / 0-120 / 0-60,
+      the secondary motion angles.
+    - `landing_strike_ratio`: 0-1, the heel-strike angle at landing contact as
+      a fraction of `foot_roll_deg` — small by default, because the roll
+      pivots about the heel and lifts the ball, the very point the foot-slide
+      metric measures.
+    - `max_extension_ratio`: 0.3-1.0, the hard ceiling on hip-to-ankle
+      distance at full extension, as a fraction of the leg's own measured
+      reach — past it the knee is hyperextended and Rigify's IK stretch makes
+      up the difference.
+    - `loop`: False (default) — a jump is a beat, not a cycle; True marks it a
+      cycle and applies Godot's `-loop` name convention anyway.
+    - `clear`: True (default) wipes the action's existing keys first.
+    - `poles`: True (default) also keyframes the IK pole targets.
+    - `action`: the clip name (default "jump", or "jump-forward" when
+      `jump_distance` is given); `rig`: the armature, omit for the
+      active/only one.
+
+    Run `animation_check` on the result and pass `mode="jump"` (or leave it on
+    "auto" — a clip with an airborne window is detected as one) to gate the
+    plants, the parabola and the landing knee.
+    """
+    params: Dict[str, Any] = {
+        "loop": bool(loop),
+        "clear": bool(clear),
+        "interpolation": interpolation,
+        "poles": bool(poles),
+    }
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if action and action.strip():
+        params["action"] = action.strip()
+
+    if frames is not None:
+        if isinstance(frames, bool) or not isinstance(frames, int):
+            raise ForgeError(f"frames must be a whole number (got {frames!r}).")
+        if not 12 <= frames <= 600:
+            raise ForgeError(f"frames must be between 12 and 600 (got {frames}).")
+        params["frames"] = frames
+    if anticipation_fraction is not None:
+        params["anticipation_fraction"] = _walk_number(
+            "anticipation_fraction", anticipation_fraction, 0.05, 0.5
+        )
+    if launch_fraction is not None:
+        params["launch_fraction"] = _walk_number(
+            "launch_fraction", launch_fraction, 0.02, 0.3
+        )
+    if landing_fraction is not None:
+        params["landing_fraction"] = _walk_number(
+            "landing_fraction", landing_fraction, 0.02, 0.4
+        )
+    if recover_fraction is not None:
+        params["recover_fraction"] = _walk_number(
+            "recover_fraction", recover_fraction, 0.05, 0.5
+        )
+    if gravity is not None:
+        params["gravity"] = _walk_number("gravity", gravity, 0.1, 100.0)
+    if chest_pitch_deg is not None:
+        params["chest_pitch_deg"] = _walk_number(
+            "chest_pitch_deg", chest_pitch_deg, 0.0, 45.0
+        )
+    if arm_swing_back_deg is not None:
+        params["arm_swing_back_deg"] = _walk_number(
+            "arm_swing_back_deg", arm_swing_back_deg, 0.0, 90.0
+        )
+    if arm_swing_up_deg is not None:
+        params["arm_swing_up_deg"] = _walk_number(
+            "arm_swing_up_deg", arm_swing_up_deg, 0.0, 170.0
+        )
+    if elbow_bend_deg is not None:
+        params["elbow_bend_deg"] = _walk_number(
+            "elbow_bend_deg", elbow_bend_deg, 0.0, 120.0
+        )
+    if foot_roll_deg is not None:
+        params["foot_roll_deg"] = _walk_number(
+            "foot_roll_deg", foot_roll_deg, 0.0, 60.0
+        )
+    if landing_strike_ratio is not None:
+        params["landing_strike_ratio"] = _walk_number(
+            "landing_strike_ratio", landing_strike_ratio, 0.0, 1.0
+        )
+    if max_extension_ratio is not None:
+        params["max_extension_ratio"] = _walk_number(
+            "max_extension_ratio", max_extension_ratio, 0.3, 1.0
+        )
+
+    for label, value in (
+        ("apex_height", apex_height),
+        ("jump_distance", jump_distance),
+        ("crouch_depth", crouch_depth),
+        ("landing_depth", landing_depth),
+        ("tuck_height", tuck_height),
+    ):
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ForgeError(f"{label} must be a number, in metres (got {value!r}).")
+        if float(value) < 0.0:
+            raise ForgeError(
+                f"{label} must be zero or positive, in metres (got {value})."
+            )
+        params[label] = float(value)
+
+    result = blender_client.send_command(
+        "rigforge_jump", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+
+    summary = (
+        (f"{frames}-frame clip" if frames is not None else "default-length clip")
+        + (", looping (-loop)" if loop else ", one-shot")
+        + ("" if clear else ", layered onto existing keys")
+    )
+    return _fmt_jump_report(result, summary)
 
 
 @app.tool()

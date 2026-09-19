@@ -216,6 +216,99 @@ PUNCH_RESULT = {
     "seconds": 0.51,
 }
 
+JUMP_RESULT = {
+    "rig": "goblin_rig",
+    "action": "jump",
+    "created": True,
+    "loop": False,
+    "frames": 36,
+    "frame_range": [1, 36],
+    "fps": 24.0,
+    "gravity": 9.80665,
+    "phases": {
+        "guard": [1, 1],
+        "anticipation": [1, 9],
+        "launch": [9, 12],
+        "airborne": [13, 21],
+        "landing": [22, 26],
+        "recover": [26, 36],
+    },
+    "crouch_frame": 9,
+    "takeoff_frame": 12,
+    "apex_frame": 16,
+    "landing_frame": 22,
+    "absorb_frame": 26,
+    "airborne_frames": 10,
+    "airborne_keys": 9,
+    "airtime_s": 0.417,
+    "airtime_requested_s": 0.42,
+    "launch_speed_m_per_s": 2.04,
+    "apex_requested_m": 0.245,
+    "apex_solved_m": 0.213,
+    "apex_reached_m": 0.211,
+    "apex_error_mm": 2.0,
+    "apex_peak_between_keys_mm": 4.3,
+    "parabola_deviation_mm": 0.6,
+    "parabola_within_tolerance": True,
+    "jump_distance_m": 0.0,
+    "crouch_depth_m": 0.112,
+    "crouch_measured_m": 0.109,
+    "landing_depth_m": 0.168,
+    "absorb_measured_m": 0.171,
+    "absorb_deeper_than_crouch": True,
+    "tuck_height_m": 0.21,
+    "extension_rise_m": 0.042,
+    "extension_rise_clamped": False,
+    "extension_headroom_m": 0.09,
+    "leg_rest_span_m": 0.68,
+    "leg_reach_m": 0.7,
+    "leg_length_m": 0.7,
+    "extension_ratio": 0.965,
+    "extension_peak_frame": 12,
+    "tuck_ratio": 0.62,
+    "tuck_frame": 16,
+    "legs": [
+        {
+            "limb": "leg.L", "hip_bone": "thigh.L", "knee_bone": "shin.L",
+            "ankle_bone": "foot.L", "reach_m": 0.7, "rest_span_m": 0.68,
+        },
+        {
+            "limb": "leg.R", "hip_bone": "thigh.R", "knee_bone": "shin.R",
+            "ankle_bone": "foot.R", "reach_m": 0.7, "rest_span_m": 0.68,
+        },
+    ],
+    "max_extension_ratio": 0.98,
+    "rest_extension_ratio": 0.971,
+    "extension_ceiling_ratio": 0.98,
+    "extension_tolerance": 0.01,
+    "extension_within_cap": True,
+    "foot_roll_deg": 22.0,
+    "landing_strike_deg": 5.5,
+    "chest_pitch_deg": 14.0,
+    "arm_swing_back_deg": 35.0,
+    "arm_swing_up_deg": 110.0,
+    "forward_axis": [0.0, 1.0, 0.0],
+    "feet_planted": ["foot_ik.L", "foot_ik.R"],
+    "convention": "rigify",
+    "poles": True,
+    "bones": ["foot_ik.L", "foot_ik.R", "root", "torso", "chest"],
+    "keys_set": 220,
+    "cleared_fcurves": 0,
+    "fcurves": 30,
+    "interpolation": "LINEAR",
+    "interpolated_points": 220,
+    "rotation_modes": {},
+    "actions_in_file": ["jump"],
+    "says": "jump: 36 frames. Apex 211 mm reached against 245 mm requested (solved to "
+            "213 mm by the frame rounding), 10 frames of airtime (0.417 s at 24 fps, "
+            "g = 9.81 m/s^2), max parabola deviation 0.600 mm. Leg extension peaks at "
+            "96.5% of a 700 mm reach (cap 98%). Landing absorbs 171 mm against a "
+            "109 mm anticipation crouch. Feet planted on foot_ik.L and foot_ik.R "
+            "through takeoff and landing.",
+    "warnings": [],
+    "seconds": 0.63,
+}
+
 CORRECTIVES_AUTHOR_RESULT = {
     "rig": "goblin_rig",
     "mesh": "goblin_retopo",
@@ -446,6 +539,89 @@ def test_animation_check_passes_through_every_optional_parameter(blender) -> Non
     ],
 )
 def test_animation_check_rejects_out_of_range_numbers(
+    kwargs: dict[str, Any], fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment.replace(".", r"\.")):
+        server.animation_check(**kwargs)
+
+
+def test_animation_check_passes_through_the_jump_reading_parameters(blender) -> None:
+    fake = blender({"animation_check": ANIMATION_CHECK_OK})
+    server.animation_check(
+        mode="jump",
+        airborne_clearance=0.15,
+        min_airborne_frames=4,
+        parabola_tolerance=0.02,
+        hop_tolerance_frames=6,
+    )
+
+    assert sent(fake, "animation_check") == {
+        "mode": "jump",
+        "airborne_clearance": 0.15,
+        "min_airborne_frames": 4,
+        "parabola_tolerance": 0.02,
+        "hop_tolerance_frames": 6,
+    }
+
+
+def test_animation_check_mode_accepts_airborne_as_a_synonym_for_jump(blender) -> None:
+    fake = blender({"animation_check": ANIMATION_CHECK_OK})
+    server.animation_check(mode="airborne")
+    assert sent(fake, "animation_check")["mode"] == "airborne"
+
+
+def test_animation_check_hop_tolerance_frames_omitted_means_off(blender) -> None:
+    fake = blender({"animation_check": ANIMATION_CHECK_OK})
+    server.animation_check(mode="jump")
+    assert "hop_tolerance_frames" not in sent(fake, "animation_check")
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "fragment"),
+    [
+        (
+            {"airborne_clearance": 0.0},
+            "airborne_clearance must be between 0.01 and 0.9",
+        ),
+        (
+            {"airborne_clearance": 1.0},
+            "airborne_clearance must be between 0.01 and 0.9",
+        ),
+        (
+            {"min_airborne_frames": 1},
+            "min_airborne_frames must be between 2 and 1000",
+        ),
+        (
+            {"min_airborne_frames": 1001},
+            "min_airborne_frames must be between 2 and 1000",
+        ),
+        (
+            {"min_airborne_frames": 2.5},
+            "min_airborne_frames must be a whole number",
+        ),
+        (
+            {"parabola_tolerance": 0.0001},
+            "parabola_tolerance must be between 0.0005 and 1.0",
+        ),
+        (
+            {"parabola_tolerance": 1.1},
+            "parabola_tolerance must be between 0.0005 and 1.0",
+        ),
+        (
+            {"hop_tolerance_frames": -1},
+            "hop_tolerance_frames must be between 0 and 1000",
+        ),
+        (
+            {"hop_tolerance_frames": 1001},
+            "hop_tolerance_frames must be between 0 and 1000",
+        ),
+        (
+            {"hop_tolerance_frames": 3.5},
+            "hop_tolerance_frames must be a whole number",
+        ),
+    ],
+)
+def test_animation_check_rejects_out_of_range_jump_reading_parameters(
     kwargs: dict[str, Any], fragment: str
 ) -> None:
     with pytest.raises(ForgeError, match=fragment.replace(".", r"\.")):
@@ -687,6 +863,210 @@ def test_punch_summary_reflects_frames_side_and_loop_choice(blender) -> None:
 
     assert "30-frame clip" in report
     assert "L side" in report
+    assert "looping (-loop)" in report
+    assert "layered onto existing keys" in report
+
+
+# --- rigforge_jump --------------------------------------------------------------
+
+
+def test_jump_sends_the_contract_defaults(blender) -> None:
+    fake = blender({"rigforge_jump": JUMP_RESULT})
+    server.rigforge_jump(rig="goblin_rig")
+
+    assert fake.requests[0]["type"] == "rigforge_jump"
+    assert sent(fake, "rigforge_jump") == {
+        "loop": False,
+        "clear": True,
+        "interpolation": "LINEAR",
+        "poles": True,
+        "rig": "goblin_rig",
+    }
+
+
+def test_jump_passes_through_every_optional_parameter(blender) -> None:
+    fake = blender({"rigforge_jump": JUMP_RESULT})
+    server.rigforge_jump(
+        rig="goblin_rig",
+        action="jump-forward",
+        frames=40,
+        apex_height=0.3,
+        jump_distance=0.5,
+        crouch_depth=0.12,
+        landing_depth=0.2,
+        tuck_height=0.25,
+        anticipation_fraction=0.25,
+        launch_fraction=0.1,
+        landing_fraction=0.15,
+        recover_fraction=0.25,
+        gravity=9.8,
+        chest_pitch_deg=16.0,
+        arm_swing_back_deg=30.0,
+        arm_swing_up_deg=100.0,
+        elbow_bend_deg=25.0,
+        foot_roll_deg=20.0,
+        landing_strike_ratio=0.3,
+        max_extension_ratio=0.95,
+        loop=True,
+        clear=False,
+        interpolation="BEZIER",
+        poles=False,
+    )
+
+    assert sent(fake, "rigforge_jump") == {
+        "loop": True,
+        "clear": False,
+        "interpolation": "BEZIER",
+        "poles": False,
+        "rig": "goblin_rig",
+        "action": "jump-forward",
+        "frames": 40,
+        "anticipation_fraction": 0.25,
+        "launch_fraction": 0.1,
+        "landing_fraction": 0.15,
+        "recover_fraction": 0.25,
+        "gravity": 9.8,
+        "chest_pitch_deg": 16.0,
+        "arm_swing_back_deg": 30.0,
+        "arm_swing_up_deg": 100.0,
+        "elbow_bend_deg": 25.0,
+        "foot_roll_deg": 20.0,
+        "landing_strike_ratio": 0.3,
+        "max_extension_ratio": 0.95,
+        "apex_height": 0.3,
+        "jump_distance": 0.5,
+        "crouch_depth": 0.12,
+        "landing_depth": 0.2,
+        "tuck_height": 0.25,
+    }
+
+
+def test_jump_without_rig_or_action_sends_neither(blender) -> None:
+    fake = blender({"rigforge_jump": JUMP_RESULT})
+    server.rigforge_jump()
+
+    params = sent(fake, "rigforge_jump")
+    assert "rig" not in params and "action" not in params
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "fragment"),
+    [
+        ({"frames": 11}, "frames must be between 12 and 600"),
+        ({"frames": 601}, "frames must be between 12 and 600"),
+        ({"frames": 12.5}, "frames must be a whole number"),
+        (
+            {"anticipation_fraction": 0.04},
+            "anticipation_fraction must be between 0.05 and 0.5",
+        ),
+        (
+            {"anticipation_fraction": 0.51},
+            "anticipation_fraction must be between 0.05 and 0.5",
+        ),
+        ({"launch_fraction": 0.01}, "launch_fraction must be between 0.02 and 0.3"),
+        ({"launch_fraction": 0.31}, "launch_fraction must be between 0.02 and 0.3"),
+        ({"landing_fraction": 0.01}, "landing_fraction must be between 0.02 and 0.4"),
+        ({"landing_fraction": 0.41}, "landing_fraction must be between 0.02 and 0.4"),
+        ({"recover_fraction": 0.04}, "recover_fraction must be between 0.05 and 0.5"),
+        ({"recover_fraction": 0.51}, "recover_fraction must be between 0.05 and 0.5"),
+        ({"gravity": 0.05}, "gravity must be between 0.1 and 100.0"),
+        ({"gravity": 101.0}, "gravity must be between 0.1 and 100.0"),
+        ({"chest_pitch_deg": -1.0}, "chest_pitch_deg must be between 0.0 and 45.0"),
+        ({"chest_pitch_deg": 46.0}, "chest_pitch_deg must be between 0.0 and 45.0"),
+        (
+            {"arm_swing_back_deg": -1.0},
+            "arm_swing_back_deg must be between 0.0 and 90.0",
+        ),
+        (
+            {"arm_swing_back_deg": 91.0},
+            "arm_swing_back_deg must be between 0.0 and 90.0",
+        ),
+        (
+            {"arm_swing_up_deg": -1.0},
+            "arm_swing_up_deg must be between 0.0 and 170.0",
+        ),
+        (
+            {"arm_swing_up_deg": 171.0},
+            "arm_swing_up_deg must be between 0.0 and 170.0",
+        ),
+        ({"elbow_bend_deg": -1.0}, "elbow_bend_deg must be between 0.0 and 120.0"),
+        ({"elbow_bend_deg": 121.0}, "elbow_bend_deg must be between 0.0 and 120.0"),
+        ({"foot_roll_deg": -1.0}, "foot_roll_deg must be between 0.0 and 60.0"),
+        ({"foot_roll_deg": 61.0}, "foot_roll_deg must be between 0.0 and 60.0"),
+        (
+            {"landing_strike_ratio": -0.1},
+            "landing_strike_ratio must be between 0.0 and 1.0",
+        ),
+        (
+            {"landing_strike_ratio": 1.1},
+            "landing_strike_ratio must be between 0.0 and 1.0",
+        ),
+        (
+            {"max_extension_ratio": 0.2},
+            "max_extension_ratio must be between 0.3 and 1.0",
+        ),
+        (
+            {"max_extension_ratio": 1.1},
+            "max_extension_ratio must be between 0.3 and 1.0",
+        ),
+        ({"apex_height": -0.1}, "apex_height must be zero or positive"),
+        ({"apex_height": "high"}, "apex_height must be a number"),
+        ({"jump_distance": -0.1}, "jump_distance must be zero or positive"),
+        ({"crouch_depth": -0.1}, "crouch_depth must be zero or positive"),
+        ({"landing_depth": -0.1}, "landing_depth must be zero or positive"),
+        ({"tuck_height": -0.1}, "tuck_height must be zero or positive"),
+    ],
+)
+def test_jump_rejects_out_of_range_arguments_before_the_wire(
+    kwargs: dict[str, Any], fragment: str
+) -> None:
+    with pytest.raises(ForgeError, match=fragment.replace(".", r"\.")):
+        server.rigforge_jump(**kwargs)
+
+
+def test_jump_report_carries_says_and_the_measured_numbers(blender) -> None:
+    blender({"rigforge_jump": JUMP_RESULT})
+    report = server.rigforge_jump(rig="goblin_rig")
+
+    assert "Jump on 'jump' (new action)" in report
+    assert "frames 1-36" in report
+    assert "takeoff f12 -> apex f16 -> land f22" in report
+    assert "220 key(s)" in report
+    assert JUMP_RESULT["says"] in report
+    assert "apex 211 mm reached against 245 mm requested" in report
+    assert (
+        "solved to 213 mm by the frame rounding, 4.3 mm residual between keys"
+        in report
+    )
+    assert "airtime 10 frame(s) (0.417 s), max parabola deviation 0.6 mm" in report
+    assert "extension peaks at 96.5% of a 0.7 m reach (cap 98%)" in report
+    assert "landing absorbs 0.171 m against a 0.109 m anticipation crouch" in report
+    assert "feet planted (takeoff & landing): foot_ik.L, foot_ik.R" in report
+
+
+def test_jump_report_relays_warnings(blender) -> None:
+    result = dict(
+        JUMP_RESULT,
+        warnings=["apex_height was resolved from 245 mm to 213 mm"],
+        parabola_within_tolerance=False,
+        extension_within_cap=False,
+        absorb_deeper_than_crouch=False,
+    )
+    blender({"rigforge_jump": result})
+    report = server.rigforge_jump()
+
+    assert "WARNINGS (1):" in report
+    assert "! apex_height was resolved" in report
+    assert "OUT OF TOLERANCE" in report
+    assert "OVER CAP" in report
+    assert "NOT DEEPER" in report
+
+
+def test_jump_summary_reflects_frames_and_loop_choice(blender) -> None:
+    blender({"rigforge_jump": JUMP_RESULT})
+    report = server.rigforge_jump(frames=40, loop=True, clear=False)
+
+    assert "40-frame clip" in report
     assert "looping (-loop)" in report
     assert "layered onto existing keys" in report
 
