@@ -124,14 +124,20 @@ from .registry import ForgeError, command
 __all__ = [
     "BLEND_GIRTH_FRACTION",
     "BLEND_REACH",
+    "MIN_ARTICULATION_RINGS",
     "SMOOTH_PASSES",
     "SMOOTH_FACTOR",
     "SUB_TAG_BLEND_FRACTION",
     "CONTINUITY_THRESHOLDS",
     "ISOLATION_THRESHOLDS",
     "ISOLATION_SWING_DEG",
+    "TagSplit",
     "TorsoSplit",
+    "SplitSet",
     "torso_split",
+    "leg_chain_joints",
+    "leg_splits",
+    "body_split",
     "split_regions",
     "sub_tag_seam_widths",
     "source_bone_names",
@@ -251,6 +257,35 @@ SMOOTH_PASSES = 4
 #: resolution.
 REACH_BAND = 0.35
 
+#: The floor under an **articulating** seam's band, in rings of the topology at
+#: that seam.  :data:`MIN_BLEND_RINGS` is a floor against a band being
+#: *degenerate*; this is a floor against it being a **cliff**, and those are two
+#: different failures that need two different numbers.
+#:
+#: **It is the same rule as :data:`REACH_BAND`, so it is the same number.** A
+#: band's weights fall off over its outer ``REACH_BAND`` fraction, and a falloff
+#: with no vertex in it is not a falloff — it is a step from full weight to
+#: nothing across one edge, which creases.  For the falloff to contain at least
+#: one ring the band must be at least ``1 / REACH_BAND`` rings wide.  Nothing
+#: here is tuned: the constant is the one already governing the ramp.
+#:
+#: The coarser the mesh the **wider** the band this gives, which is the right
+#: way round and is the point.  A low-resolution figure does not need its joints
+#: refused or cut hard; it needs proportionally more room to fall off in.
+#:
+#: Measured in **local** rings — the tag's own median edge, not the figure's —
+#: because a retopo is not uniform: the synthetic test biped's arm is sampled
+#: every 15 mm and its trunk every 59 mm, and a floor quoted in the whole
+#: figure's rings is a floor for neither.
+#:
+#: **Measured, and the neighbouring values are not equivalent.** On the biped,
+#: at 2.0 rings the skin came out with 14 punctures against the unconstrained
+#: bind's 9; at 3.0 it came out clean but a second ``apply`` stopped converging
+#: (the suite pins the second pass under 0.05).  At ``1 / REACH_BAND`` both hold
+#: — 8 punctures and a settled second pass — and the werewolf's leg-internal
+#: stray mass stays at 0.0000 throughout, so this floor is not what buys that.
+MIN_ARTICULATION_RINGS = 1.0 / REACH_BAND
+
 #: How many rings past the tag contract's own edge a weight may taper.
 #:
 #: **Measured, twice, in both directions.**  Zero — the contract enforced to the
@@ -327,6 +362,7 @@ CONTINUITY_THRESHOLDS = {"hole_pct": {"ok": 0.5, "attention": 3.0}}
 #: 25 mm here) takes over and the number stops moving at all.
 SUB_TAG_BLEND_FRACTION = 0.25
 
+
 #: How far the isolation measurement swings the arms, in degrees, about the
 #: character's own lateral axis — a walk's forward/back swing, mirrored L/R.
 #: Big enough that a stray influence is millimetres rather than rounding, small
@@ -362,31 +398,42 @@ def _band(value, key, thresholds=None):
 
 
 # ---------------------------------------------------------------------------
-# the Torso, read as three slabs of its own spine
+# a tag, read as three slabs of its own axis
 # ---------------------------------------------------------------------------
 
-class TorsoSplit(object):
-    """The ``Torso`` tag read as pelvis / abdomen / chest — a **derived view**.
+class TagSplit(object):
+    """One tag read as three slabs of its own axis — a **derived view**.
 
     The failure this exists to fix
     ------------------------------
-    The tag contract is enforced per tag, and on the werewolf ``Torso`` is one
-    bucket holding **thirteen** deform bones.  ``rig_check``'s cross-tag stray
-    mass is 0.000 and the walk still shows the arm swing tugging the thighs,
-    because nothing in that number is wrong: a shoulder bone putting weight on
-    pelvis flesh is *legal* — both are ``Torso`` — and pelvis flesh sits in the
-    ``Torso``/``Leg`` blend band, where it is shared with the thighs.  The
-    contract needs to be finer than the tag, and
-    :func:`~forge.tools.rigforge_autotag.spine_split` measures where.
+    The tag contract is enforced per tag, and a tag can be too coarse to *be* a
+    contract.  On the werewolf ``Torso`` is one bucket holding **thirteen**
+    deform bones: ``rig_check``'s cross-tag stray mass is 0.000 and the walk
+    still shows the arm swing tugging the thighs, because nothing in that number
+    is wrong — a shoulder bone putting weight on pelvis flesh is *legal*, both
+    are ``Torso``, and pelvis flesh sits in the ``Torso``/``Leg`` blend band
+    where it is shared with the thighs.  ``Leg.R`` is the same failure one tag
+    over: one bucket holding the whole leg chain, where ``DEF-foot.R`` on thigh
+    flesh 340 mm away is legal because both are ``Leg.R`` — measured at **4.67
+    vertex-weights** on this figure.  The contract needs to be finer than the
+    tag, and :func:`~forge.tools.rigforge_autotag.spine_split` (for a trunk) and
+    :func:`~forge.tools.rigforge_autotag.leg_split` (for a limb with joints of
+    its own) measure where.
+
+    One class, two recipes, because the *rule* is the same either way: three
+    slabs along the tag's own axis, cut at measured landmarks, with a blend band
+    only where the two slabs meeting at a cut actually articulate.  What differs
+    is where the cuts come from, and that lives in the two split functions.
 
     Nothing is written to the mesh
     ------------------------------
-    There is no ``tag_Torso.chest`` vertex group and no stored property.  The
-    split is recomputed from the six tags that exist, every time it is needed,
-    so :func:`~forge.tools.rigforge_rig.measure_tags`, the landmark fitter and
-    every other consumer keep seeing exactly one ``Torso`` — and a mesh that has
-    since been re-tagged by hand can never be skinned against a stale split,
-    because there is no stale split to be had.
+    There is no ``tag_Torso.chest`` vertex group, no ``tag_Leg.R.foot`` group
+    and no stored property.  The split is recomputed from the six tags that
+    exist, every time it is needed, so
+    :func:`~forge.tools.rigforge_rig.measure_tags`, the landmark fitter and
+    every other consumer keep seeing exactly one ``Torso`` and one ``Leg.R`` —
+    and a mesh that has since been re-tagged by hand can never be skinned
+    against a stale split, because there is no stale split to be had.
     """
 
     def __init__(self, report, axis, membership, regions):
@@ -405,14 +452,14 @@ class TorsoSplit(object):
     # -- geometry ---------------------------------------------------------
 
     def t_of(self, point):
-        """Where a world-space point sits along the spine, 0 (pelvis) to 1."""
+        """Where a world-space point sits along this tag's axis, 0 to 1, proximal first."""
         return self.axis.closest(Vector(point))[1]
 
     def of_point(self, point):
-        return rigforge_autotag.sub_tag_at(self.t_of(point), self.cuts)
+        return rigforge_autotag.sub_tag_at(self.t_of(point), self.cuts, self.names)
 
     def of_span(self, t_low, t_high):
-        return rigforge_autotag.sub_tags_spanning(t_low, t_high, self.cuts)
+        return rigforge_autotag.sub_tags_spanning(t_low, t_high, self.cuts, self.names)
 
     def of_bone(self, rig, name):
         """``(primary sub-tag, every sub-tag the bone spans)`` — the bone rule.
@@ -438,6 +485,10 @@ class TorsoSplit(object):
         """A sub-tag folded back into the tag it is a slab of; anything else kept."""
         return self.parent if tag in self.names else tag
 
+    def parent_of(self, tag):
+        """The tag a sub-tag is a slab of, or ``None`` for anything else."""
+        return self.parent if tag in self.names else None
+
     def substitute(self, tags):
         """``tag_membership``'s per-vertex sets, with the parent tag refined."""
         out = []
@@ -448,6 +499,102 @@ class TorsoSplit(object):
             sub = self.membership.get(index)
             out.append(frozenset((entry - {self.parent}) | {sub or self.parent}))
         return out
+
+    # -- the one-member case of the composite protocol ---------------------
+    # So every consumer can walk ``split.members`` without asking whether it was
+    # handed one split or several.
+
+    @property
+    def members(self):
+        return (self,)
+
+    @property
+    def parents(self):
+        return (self.parent,)
+
+    def member_for_tag(self, tag):
+        return self if tag in self.names else None
+
+    def member_for_parent(self, parent):
+        return self if parent == self.parent else None
+
+
+class SplitSet(object):
+    """Every derived sub-tag view on one mesh, read as one split.
+
+    A figure has more than one tag too coarse to be a contract — a trunk and two
+    legs on this one — and they are cut against different landmarks by different
+    functions.  What every consumer downstream wants is *one* object answering
+    "what slab is this vertex in, what slabs does this bone span, what does this
+    sub-tag fold back to", so this is that object and each :class:`TagSplit`
+    keeps its own axis, its own cuts and its own naming underneath it.
+
+    Holding them together rather than threading two parameters everywhere is
+    what keeps the contract honest: ``legal_bone_sets`` re-owns a bone against
+    **its own** parent's split, and a bone the trunk owns is never measured
+    against a leg's axis.
+    """
+
+    def __init__(self, members, torso_report=None, leg_reports=None):
+        self.members = tuple(members)
+        #: The spine split's own report, for the ``sub_tags`` key every existing
+        #: consumer already reads.
+        self.torso_report = dict(torso_report or {})
+        #: ``{parent tag: report}`` for the legs, beside it rather than inside
+        #: it, because a caller reading ``sub_tags`` must not silently start
+        #: getting something of a different shape.
+        self.leg_reports = dict(leg_reports or {})
+        self._by_parent = {member.parent: member for member in self.members}
+        self._by_name = {name: member
+                         for member in self.members for name in member.names}
+        self.names = tuple(name for member in self.members for name in member.names)
+        self.parents = tuple(member.parent for member in self.members)
+        self.regions = {name: region for member in self.members
+                        for name, region in member.regions.items()}
+
+    @property
+    def parent(self):
+        """The trunk's parent tag when there is one, for the messages that name one."""
+        torso = self._by_parent.get(rigforge_autotag.SPLIT_PARENT)
+        if torso is not None:
+            return torso.parent
+        return self.parents[0] if self.parents else None
+
+    def member_for_tag(self, tag):
+        return self._by_name.get(tag)
+
+    def member_for_parent(self, parent):
+        return self._by_parent.get(parent)
+
+    def merged(self, tag):
+        member = self._by_name.get(tag)
+        return member.parent if member is not None else tag
+
+    def parent_of(self, tag):
+        member = self._by_name.get(tag)
+        return member.parent if member is not None else None
+
+    def substitute(self, tags):
+        out = list(tags)
+        for member in self.members:
+            out = member.substitute(out)
+        return out
+
+    def without(self, member):
+        """A copy with one member dropped — how a starved slab is taken back.
+
+        Per member, deliberately: a leg slab no bone reaches is a reason to stop
+        splitting **that leg**, and taking the trunk's split back with it would
+        cost a fix that is working to pay for one that is not.
+        """
+        return SplitSet([other for other in self.members if other is not member],
+                        self.torso_report, self.leg_reports)
+
+
+#: The old name, from when the trunk was the only tag too coarse to be a
+#: contract.  Kept so ``isinstance(split, TorsoSplit)`` and every import of it
+#: still mean what they meant.
+TorsoSplit = TagSplit
 
 
 class _SubRegion(rigforge_rig.Region):
@@ -477,7 +624,7 @@ class _SubRegion(rigforge_rig.Region):
 
 
 def torso_split(obj, regions, enabled=True):
-    """``(TorsoSplit | None, report)`` — the Torso read as three slabs, or not.
+    """``(TagSplit | None, report)`` — the Torso read as three slabs, or not.
 
     Refuses rather than guesses, and the report says which: a torso with no leg
     tag beside it has nothing measuring where its pelvis ends, and a slab too
@@ -524,37 +671,244 @@ def torso_split(obj, regions, enabled=True):
         report["refused"] = ("a slab of the split came out with under two vertices, "
                              "so it cannot be measured")
         return None, report
-    return TorsoSplit(report, axis, membership, sub_regions), report
+    return TagSplit(report, axis, membership, sub_regions), report
+
+
+def leg_chain_joints(rig, owner, tag, metarig=None, known=None):
+    """``(hip, [(label, point), ...])`` — one leg chain's own segment boundaries.
+
+    Where a leg's cuts come from, read off the rig rather than guessed at.  The
+    leg's deform bones are walked **in chain order** from the bone that hangs
+    off something else, and consecutive bones are grouped by the *metarig bone
+    they were generated from* — so ``DEF-thigh.R`` and ``DEF-thigh.R.001`` are
+    one group, and Rigify's subdivision does not turn one thigh into two.  The
+    boundary between one group and the next is a **joint**: on a Rigify leg the
+    first is the knee and the second is the ankle, and both sit where the
+    landmark fitter put them, which is the girth minimum it measured.
+
+    Grouping by source bone rather than matching the names ``thigh``/``shin``/
+    ``foot`` is what makes this a structural read: a chain of four groups (a leg
+    with a toe) gives the same two joints as a chain of three, because only the
+    first two boundaries are asked for, and a limb whose bones are named
+    something else entirely still splits at its own joints.
+
+    Where the chain branches — a foot with several toes — the **longest** branch
+    is followed, which is the one that runs the length of the limb.  Ties go to
+    the lower name, so two runs over the same rig give the same answer.
+
+    The walk is at **group** level and that is not a detail.
+    :func:`deform_parent` answers the metarig's question — *what does this limb
+    hang off* — so it resolves every segment of one metarig bone to the same
+    ancestor: on this rig both ``DEF-thigh.R`` and ``DEF-thigh.R.001`` report
+    ``DEF-spine``, which as a bone-level tree is two roots and no chain at all
+    (measured: it found **0 joints** and refused both legs).  Between *groups*
+    the same function is exactly right — ``DEF-shin.R`` reports
+    ``DEF-thigh.R.001``, the thigh group's distal end — so the groups chain up
+    cleanly, and the ordering *inside* a group comes from the generated rig's
+    own hierarchy, which does link a segment to the one before it.
+    """
+    known = known if known is not None else source_bone_names(rig, metarig)
+    members = sorted(name for name, held in owner.items() if held == tag)
+    if not members:
+        return None, []
+
+    # --- the groups: one per metarig bone this limb was generated from ----
+    groups = {}
+    for name in members:
+        groups.setdefault(metarig_base(name, known) or name, []).append(name)
+
+    def ordered(names):
+        """One group's segments, proximal to distal.
+
+        The generated rig *does* parent ``DEF-shin.R.001`` to ``DEF-shin.R``, so
+        a segment with no parent inside its own group is the proximal one and
+        the rest follow it.  Rigify's ``base``, ``base.001``, ``base.002``
+        naming sorts the same way and is the fallback for a rig whose segments
+        are not parented to each other.
+        """
+        inside = set(names)
+        parent_of = {}
+        for name in names:
+            bone = rig.data.bones.get(name)
+            cursor = bone.parent if bone is not None else None
+            while cursor is not None and cursor.name not in inside:
+                cursor = cursor.parent
+            parent_of[name] = cursor.name if cursor is not None else None
+        out = []
+        cursor = sorted(name for name in names if parent_of[name] is None)
+        cursor = cursor[0] if cursor else sorted(names)[0]
+        seen = set()
+        while cursor is not None and cursor not in seen:
+            seen.add(cursor)
+            out.append(cursor)
+            nxt = sorted(name for name in names
+                         if parent_of[name] == cursor and name not in seen)
+            cursor = nxt[0] if nxt else None
+        return out + sorted(set(names) - seen)
+
+    groups = {base: ordered(names) for base, names in groups.items()}
+
+    # --- the group tree, from the metarig's own structure -----------------
+    children = {}
+    roots = []
+    for base, names in sorted(groups.items()):
+        held = deform_parent(rig, names[0], metarig, known)
+        held = metarig_base(held, known) if held else None
+        if held in groups and held != base:
+            children.setdefault(held, []).append(base)
+        else:
+            roots.append(base)
+    if not roots:
+        return None, []
+    root = sorted(roots)[0]
+
+    def longest(base, seen):
+        best = []
+        for child in sorted(children.get(base, ())):
+            if child in seen:
+                continue
+            branch = longest(child, seen | {child})
+            if len(branch) > len(best):
+                best = branch
+        return [base] + best
+
+    chain = longest(root, {root})
+    matrix = rig.matrix_world
+    head = rig.data.bones.get(groups[chain[0]][0])
+    hip = (matrix @ head.head_local) if head is not None else None
+    joints = []
+    for position in range(1, len(chain)):
+        bone = rig.data.bones.get(groups[chain[position]][0])
+        if bone is None:
+            continue
+        joints.append(("%s/%s" % (chain[position - 1], chain[position]),
+                       matrix @ bone.head_local))
+    return hip, joints
+
+
+def leg_splits(obj, regions, rig, metarig=None, enabled=True):
+    """``([TagSplit, ...], {parent: report})`` — every ``Leg`` tag read as three slabs.
+
+    Per side and per leg, each against **its own** axis and its own chain's own
+    joints.  Nothing here mirrors one side onto the other, and nothing checks
+    whether they match: on this werewolf they happen to be mirrored, and a
+    figure whose legs are not — a limp, a prosthesis, ``symmetry: as_designed``
+    — is cut correctly twice rather than once and copied.
+
+    Refuses per leg rather than as a set.  One leg with no readable chain costs
+    that leg's split and leaves the other's standing, because the coarse
+    contract it falls back to is exactly the contract that was there before.
+    """
+    tags = sorted(tag for tag in regions
+                  if tag == rigforge_autotag.LEG_SPLIT_PREFIX
+                  or tag.startswith(rigforge_autotag.LEG_SPLIT_PREFIX + "."))
+    if not enabled:
+        return [], {tag: {"parent": tag,
+                          "names": list(rigforge_autotag.leg_sub_tags(tag)),
+                          "refused": "the split was switched off for this run"}
+                    for tag in tags}
+    reports = {}
+    splits = []
+    if rig is None:
+        return [], {tag: {"parent": tag,
+                          "names": list(rigforge_autotag.leg_sub_tags(tag)),
+                          "refused": ("there is no rig here to read this leg's own "
+                                      "knee and ankle off")}
+                    for tag in tags}
+    known = source_bone_names(rig, metarig)
+    owner, _source = bone_owners(rig, metarig, regions)
+    matrix = obj.matrix_world
+    for tag in tags:
+        region = regions[tag]
+        hip, joints = leg_chain_joints(rig, owner, tag, metarig, known)
+        if hip is None:
+            reports[tag] = {
+                "parent": tag,
+                "names": list(rigforge_autotag.leg_sub_tags(tag)),
+                "refused": ("no deform bone belongs to %s, so there is no chain to "
+                            "read its knee and its ankle off" % tag),
+            }
+            continue
+        report, axis = rigforge_autotag.split_from_leg_cloud(
+            tag, region._points, hip, joints, seed=Vector(region.axis))
+        reports[tag] = report
+        if axis is None:
+            continue
+        membership = {}
+        group = obj.vertex_groups.get(rigforge.tag_group_name(tag))
+        names = rigforge_autotag.leg_sub_tags(tag)
+        if group is not None:
+            for vertex in obj.data.vertices:
+                for element in vertex.groups:
+                    if element.group == group.index and element.weight > 0.0:
+                        membership[vertex.index] = rigforge_autotag.sub_tag_at(
+                            axis.closest(matrix @ vertex.co)[1], report["cuts"], names)
+                        break
+        clouds = {name: [] for name in names}
+        for point in region._points:
+            clouds[rigforge_autotag.sub_tag_at(
+                axis.closest(point)[1], report["cuts"], names)].append(point)
+        sub_regions = {name: _SubRegion(name, points, axis.direction, tag)
+                       for name, points in clouds.items() if len(points) >= 2}
+        if len(sub_regions) != len(names):
+            report = dict(report)
+            report.pop("cuts", None)
+            report["refused"] = ("a slab of the split came out with under two "
+                                 "vertices, so it cannot be measured")
+            reports[tag] = report
+            continue
+        splits.append(TagSplit(report, axis, membership, sub_regions))
+    return splits, reports
+
+
+def body_split(obj, regions, rig=None, metarig=None, enabled=True):
+    """``(SplitSet | None, torso report, {leg tag: report})`` — every split on one mesh.
+
+    The one place the derived views are built, so a caller cannot enforce the
+    contract against a subset of them by accident.  A refusal anywhere costs
+    that tag's split and nothing else; a refusal everywhere costs the whole
+    ``SplitSet``, and the merged contract that was there before this existed is
+    what the caller falls back to.
+    """
+    torso, torso_report = torso_split(obj, regions, enabled=enabled)
+    legs, leg_reports = leg_splits(obj, regions, rig, metarig, enabled=enabled)
+    members = ([torso] if torso is not None else []) + list(legs)
+    if not members:
+        return None, torso_report, leg_reports
+    return SplitSet(members, torso_report, leg_reports), torso_report, leg_reports
 
 
 def split_regions(regions, split):
-    """``regions`` with the split tag replaced by its slabs.  A copy, never in place."""
+    """``regions`` with every split tag replaced by its slabs.  A copy, never in place."""
     if split is None:
         return dict(regions)
-    out = {tag: region for tag, region in regions.items() if tag != split.parent}
+    parents = set(split.parents)
+    out = {tag: region for tag, region in regions.items() if tag not in parents}
     out.update(split.regions)
     return out
 
 
 def sub_tag_seam_widths(split, fraction=SUB_TAG_BLEND_FRACTION):
-    """``{(tagA, tagB): metres}`` for the seams *inside* a split tag.
+    """``{(tagA, tagB): metres}`` for the seams *inside* each split tag.
 
     See :data:`SUB_TAG_BLEND_FRACTION` for why a sibling seam is not measured in
-    girths.  Only sibling pairs are listed; every other seam keeps the girth
-    rule, which is what it is for.
+    girths.  Only sibling pairs of the **same** parent are listed — ``Leg.R``'s
+    thigh and shin, never ``Leg.R``'s shin and ``Leg.L``'s — and every other
+    seam keeps the girth rule, which is what it is for.
     """
     if split is None:
         return {}
     out = {}
-    names = list(split.names)
-    for position in range(len(names) - 1):
-        one, other = names[position], names[position + 1]
-        lengths = [split.regions[name].length for name in (one, other)
-                   if name in split.regions]
-        if not lengths:
-            continue
-        key = (one, other) if one <= other else (other, one)
-        out[key] = fraction * min(lengths)
+    for member in split.members:
+        names = list(member.names)
+        for position in range(len(names) - 1):
+            one, other = names[position], names[position + 1]
+            lengths = [member.regions[name].length for name in (one, other)
+                       if name in member.regions]
+            if not lengths:
+                continue
+            key = (one, other) if one <= other else (other, one)
+            out[key] = fraction * min(lengths)
     return out
 
 
@@ -738,15 +1092,24 @@ def bone_owners(rig, metarig=None, regions=None):
 def legal_bone_sets(rig, metarig=None, regions=None, split=None):
     """``{tag: set(deform bone names)}`` — the tag contract, derived not listed.
 
-    With a ``split`` (:class:`TorsoSplit`) the contract is enforced at **sub-tag
-    granularity**: every bone the split's parent tag owns is re-owned by the
-    slab its own midpoint is in, and a bone whose **span** crosses a cut is
-    legal on both slabs — the blend zone's rule, one level up.  On the werewolf
-    that turns one bucket of thirteen bones into ``Torso.pelvis`` (the hips and
-    both pelvis bones), ``Torso.abdomen`` and ``Torso.chest`` (both breasts,
-    both shoulders and the upper spine), with ``DEF-spine.001`` and
-    ``DEF-spine.002`` in two slabs each because they cross a cut.  The shoulder
-    is then no longer legal on pelvis flesh, which is the whole fix.
+    With a ``split`` (a :class:`TagSplit`, or a :class:`SplitSet` of them) the
+    contract is enforced at **sub-tag granularity**: every bone a split parent
+    tag owns is re-owned by the slab its own midpoint is in — measured against
+    *that parent's* own axis — and a bone whose **span** crosses a cut is legal
+    on both slabs, the blend zone's rule one level up.  On the werewolf that
+    turns one bucket of thirteen bones into ``Torso.pelvis`` (the hips and both
+    pelvis bones), ``Torso.abdomen`` and ``Torso.chest`` (both breasts, both
+    shoulders and the upper spine), with ``DEF-spine.001`` and ``DEF-spine.002``
+    in two slabs each because they cross a cut.  The shoulder is then no longer
+    legal on pelvis flesh, which is the whole fix.
+
+    The legs are cut the same way and for the same reason: ``Leg.R`` becomes
+    ``Leg.R.thigh`` (``DEF-thigh.R`` and ``DEF-thigh.R.001``), ``Leg.R.shin``
+    and ``Leg.R.foot`` (the foot and the toe), so ``DEF-foot.R`` stops being
+    legal on thigh flesh 340 mm away.  Its hinge — ``DEF-shin.R.001``, the bone
+    it hangs from — joins the foot slab's legal set and is held to
+    :data:`BLEND_REACH`, which is the ankle band, and there is no band at all
+    anywhere the leg does not bend.
 
     Without one, the behaviour is exactly what it was.
 
@@ -774,32 +1137,39 @@ def legal_bone_sets(rig, metarig=None, regions=None, split=None):
     spans = {}
     if split is not None:
         matrix = rig.matrix_world
-        raw = {}
-        for name, tag in sorted(owner.items()):
-            if tag != split.parent:
-                continue
-            bone = rig.data.bones.get(name)
-            if bone is None:
-                continue
-            head = matrix @ bone.head_local
-            tail = matrix @ bone.tail_local
-            raw[name] = (split.t_of(head), split.t_of(tail), (head + tail) * 0.5)
-        lowest = min((min(a, b) for a, b, _mid in raw.values()), default=0.0)
-        highest = max((max(a, b) for a, b, _mid in raw.values()), default=1.0)
-        for name, (first, second, middle) in sorted(raw.items()):
-            low, high = (first, second) if first <= second else (second, first)
-            # **The flesh past the end of the chain belongs to the bone at that
-            # end.** Measured on the synthetic test biped, whose Torso tag runs
-            # 80 mm below its lowest torso bone (the residual takes the groin):
-            # without this the pelvis slab came out with an *empty* legal set
-            # and the whole split had to be taken back. A slab below the lowest
-            # bone has no other owner, and a skin with no owner is not a skin.
-            if low <= lowest + 1e-9:
-                low = -1.0
-            if high >= highest - 1e-9:
-                high = 2.0
-            owner[name] = split.of_point(middle)
-            spans[name] = rigforge_autotag.sub_tags_spanning(low, high, split.cuts)
+        # Per member, and against **that** member's own axis: a bone the trunk
+        # owns is never measured along a leg's centreline, and each leg's own
+        # ends are found on its own chain rather than on its sibling's.
+        for member in split.members:
+            raw = {}
+            for name, tag in sorted(owner.items()):
+                if tag != member.parent:
+                    continue
+                bone = rig.data.bones.get(name)
+                if bone is None:
+                    continue
+                head = matrix @ bone.head_local
+                tail = matrix @ bone.tail_local
+                raw[name] = (member.t_of(head), member.t_of(tail), (head + tail) * 0.5)
+            lowest = min((min(a, b) for a, b, _mid in raw.values()), default=0.0)
+            highest = max((max(a, b) for a, b, _mid in raw.values()), default=1.0)
+            for name, (first, second, middle) in sorted(raw.items()):
+                low, high = (first, second) if first <= second else (second, first)
+                # **The flesh past the end of the chain belongs to the bone at
+                # that end.** Measured on the synthetic test biped, whose Torso
+                # tag runs 80 mm below its lowest torso bone (the residual takes
+                # the groin): without this the pelvis slab came out with an
+                # *empty* legal set and the whole split had to be taken back. A
+                # slab below the lowest bone has no other owner, and a skin with
+                # no owner is not a skin. It holds a leg the same way, where the
+                # Leg tag runs past the toe and past the top of the thigh.
+                if low <= lowest + 1e-9:
+                    low = -1.0
+                if high >= highest - 1e-9:
+                    high = 2.0
+                owner[name] = member.of_point(middle)
+                spans[name] = rigforge_autotag.sub_tags_spanning(
+                    low, high, member.cuts, member.names)
     legal = {}
     hinges = {}
     if split is not None:
@@ -854,7 +1224,10 @@ def articulations(contract, split=None):
     ``Leg.R`` share no bone at all, so they do not — whatever their flesh is
     doing.  Sibling slabs of a split tag are added, because they are one body
     cut for the contract's sake and every cut between them is a joint's worth of
-    spine.
+    spine.  On a **leg** that is not an approximation at all: the two cuts are
+    the knee and the ankle, so a sibling seam there is an articulation in the
+    strictest sense, and the band the articulation rule opens sits exactly where
+    the joint bends and nowhere else.
     """
     owner = contract["owner"]
     spans = contract.get("spans") or {}
@@ -873,10 +1246,11 @@ def articulations(contract, split=None):
                     continue
                 out.add((tag, other) if tag <= other else (other, tag))
     if split is not None:
-        names = list(split.names)
-        for position in range(len(names) - 1):
-            one, other = names[position], names[position + 1]
-            out.add((one, other) if one <= other else (other, one))
+        for member in split.members:
+            names = list(member.names)
+            for position in range(len(names) - 1):
+                one, other = names[position], names[position + 1]
+                out.add((one, other) if one <= other else (other, one))
     return out
 
 
@@ -1047,6 +1421,43 @@ def tag_girths(regions):
     return out
 
 
+def _tag_edge_spacing(tags, edges, world):
+    """``{tag: metres}`` — each tag's **own** median edge, its ring spacing.
+
+    The ruler :data:`MIN_ARTICULATION_RINGS` is quoted in.  A retopo is not
+    uniform, so the mesh's overall median edge is the wrong ruler for a band at
+    one particular joint: on the synthetic biped the arm is sampled every 15 mm
+    and the trunk every 59 mm, and a floor quoted in the whole figure's rings is
+    a floor for neither.
+
+    Per **tag**, not per seam, and that is not a detail.  A seam is a handful of
+    vertices where two separately-built tubes are welded together, and those
+    weld edges are as long as the gap they bridge rather than as long as a ring:
+    measured at the biped's armpit, ten seam vertices whose incident edges run
+    59 mm, on an arm whose rings are 15 mm.  Floored off those the arm/torso
+    band came out 118 mm — wider than the leg/torso band, on a figure whose arm
+    is the thinner limb, which inverts the ordering this module is built on.
+    The band is walked *into* the tag, so the tag's own spacing is what it has
+    to cross.
+    """
+    lengths = {}
+    for a, b in edges:
+        a, b = int(a), int(b)
+        shared = tags[a] & tags[b]
+        if not shared:
+            continue
+        step = (world[a] - world[b]).length
+        for tag in shared:
+            lengths.setdefault(tag, []).append(step)
+    out = {}
+    for tag, values in lengths.items():
+        values.sort()
+        middle = len(values) // 2
+        out[tag] = (values[middle] if len(values) % 2
+                    else 0.5 * (values[middle - 1] + values[middle]))
+    return out
+
+
 def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
                 seam_widths=None, connected=None):
     """Which extra tags each vertex may borrow bones from, and how wide that band is.
@@ -1089,6 +1500,7 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
                 seams.setdefault(key, set()).update((a, b))
     lengths.sort()
     median_edge = lengths[len(lengths) // 2] if lengths else 0.0
+    spacing = _tag_edge_spacing(tags, edges, world)
 
     overrides = dict(seam_widths or {})
     blend = [set() for _ in range(count)]
@@ -1112,8 +1524,35 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
         # see SUB_TAG_BLEND_FRACTION. Everything else is.
         override = overrides.get((one, other))
         measured = girth_fraction * girth if override is None else override
-        width = max(measured, MIN_BLEND_RINGS * median_edge)
+        # ...and whatever it is measured in, it is floored at the topology it
+        # has to cross. This seam articulates -- the ones that do not were
+        # refused above -- so a band here is a joint's falloff, and a falloff
+        # needs somewhere to happen. See MIN_ARTICULATION_RINGS.
+        #
+        # **The floor is per side, because the two sides of a joint are not the
+        # same mesh.** One width floored at the coarser side's rings lets a
+        # trunk dictate the band on a limb -- measured, that gave the synthetic
+        # biped the *same* 118 mm band at its arm/torso and leg/torso seams,
+        # which is the "one distance for the whole character" MIN_BLEND_RINGS
+        # exists to avoid. One width floored at the finer side's rings leaves
+        # the coarse side still cliffed, which on the same figure left the
+        # foot's own map punctured at the ankle (``DEF-foot.L`` at 0.20 where
+        # its neighbours averaged 0.48). So each side gets a band two of **its
+        # own** rings deep: the band reaches 29.6 mm into that biped's foot and
+        # 49.4 mm into its shin, and neither side sets the other's.
         both = {one, other}
+        side_width = {}
+        for tag in both:
+            side_width[tag] = max(measured, MIN_BLEND_RINGS * median_edge,
+                                  MIN_ARTICULATION_RINGS
+                                  * (spacing.get(tag) or median_edge))
+        # The seam's one reported width is the **thinner** tag's, which is the
+        # side that governed ``measured`` in the first place -- so a caller
+        # comparing seams across a figure still sees a number that tracks the
+        # limbs' girths rather than the trunk's topology.
+        thinner = (one if girths.get(one, 0.0) <= girths.get(other, 0.0) else other)
+        local = spacing.get(thinner) or median_edge
+        width = side_width[thinner]
         distance = {}
         queue = []
         for seed in sorted(seeds):
@@ -1132,7 +1571,9 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
                 if not (tags[neighbour] & both):
                     continue
                 step = here + (world[index] - world[neighbour]).length
-                if step > width:
+                # How deep the band runs is asked of the side it is running
+                # into, not of the seam as a whole.
+                if step > max(side_width[tag] for tag in (tags[neighbour] & both)):
                     continue
                 if step < distance.get(neighbour, step + 1.0):
                     distance[neighbour] = step
@@ -1141,8 +1582,15 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
             "tags": [one, other],
             "girth_mm": round(girth * M_TO_MM, 1),
             "width_mm": round(width * M_TO_MM, 1),
-            "measured_in": "girth" if override is None else "slab length",
+            "measured_in": ("girth" if override is None else "slab length")
+                           + (", floored at %.1f local rings" % MIN_ARTICULATION_RINGS
+                              if width > measured + 1e-12 else ""),
             "rings": round(width / median_edge, 2) if median_edge > 0.0 else None,
+            "local_edge_mm": round(local * M_TO_MM, 2),
+            "local_rings": round(width / local, 2) if local > 0.0 else None,
+            "unfloored_mm": round(measured * M_TO_MM, 1),
+            "width_by_tag_mm": {tag: round(value * M_TO_MM, 1)
+                                for tag, value in sorted(side_width.items())},
             "seam_vertices": len(seeds),
             "zone_vertices": len(distance),
         })
@@ -1171,6 +1619,7 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
         "refused_seams": refused,
         "girth_fraction": girth_fraction,
         "min_rings": MIN_BLEND_RINGS,
+        "min_articulation_rings": MIN_ARTICULATION_RINGS,
         "median_edge_mm": round(median_edge * M_TO_MM, 2),
         "girths_mm": {tag: round(value * M_TO_MM, 1)
                       for tag, value in sorted(girths.items())},
@@ -1365,9 +1814,11 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     limb untouched.
 
     ``split`` (default on) enforces the contract at **sub-tag granularity**
-    where a tag is too coarse to be a contract — see :class:`TorsoSplit`.  It is
-    a derived view: nothing is written to the mesh, and a split that cannot be
-    measured costs a warning and the merged contract, never the stage.
+    where a tag is too coarse to be a contract — the ``Torso`` as three slabs of
+    its own spine and each ``Leg`` as thigh / shin / foot of its own chain; see
+    :class:`TagSplit`.  It is a derived view: nothing is written to the mesh,
+    and a split that cannot be measured costs a warning and the merged contract
+    for **that tag**, never the stage and never the other tags' splits.
     """
     _require_numpy()
     warnings = [] if warnings is None else warnings
@@ -1385,32 +1836,58 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
             "rigforge_autotag (or tag by hand) first." % obj.name)
 
     column_of = {name: index for index, name in enumerate(bone_names)}
-    if isinstance(split, TorsoSplit):
-        split_view, split_report = split, split.report
+    if isinstance(split, SplitSet):
+        split_view = split
+        split_report, leg_reports = split.torso_report, split.leg_reports
+    elif isinstance(split, TagSplit):
+        # A single tag's view, handed in on its own: wrap it so everything below
+        # walks ``members`` without a second code path.
+        split_view = SplitSet([split], split.report, {})
+        split_report, leg_reports = split.report, {}
     else:
-        split_view, split_report = torso_split(obj, regions, enabled=bool(split))
-    if split_view is None and split_report.get("refused") and split:
-        warnings.append("The %s tag was not split: %s. Its bones stay in one legal "
-                        "set." % (split_report.get("parent"),
-                                  split_report["refused"]))
+        split_view, split_report, leg_reports = body_split(
+            obj, regions, rig, metarig, enabled=bool(split))
+    if split:
+        for report in [split_report] + [leg_reports[tag] for tag in sorted(leg_reports)]:
+            if report.get("refused") and (split_view is None
+                                          or report.get("parent") not in
+                                          split_view.parents):
+                warnings.append("The %s tag was not split: %s. Its bones stay in one "
+                                "legal set." % (report.get("parent"),
+                                                report["refused"]))
     contract = legal_bone_sets(rig, metarig, regions, split_view)
     legal = contract["legal"]
-    if split_view is not None:
-        starved = sorted(name for name in split_view.names if not legal.get(name))
-        if starved:
-            # A slab no bone reaches has no contract to enforce and would leave
-            # its flesh unconstrained. Better the coarse contract that worked.
-            warnings.append(
-                "The split was taken back: %s would have no deform bone at all, and "
-                "flesh with an empty legal set is flesh with no contract. The %s tag "
-                "stays whole." % (", ".join(starved), split_view.parent))
-            split_report = dict(split_report)
-            split_report.pop("cuts", None)
-            split_report["refused"] = ("%s would hold no deform bone"
-                                       % ", ".join(starved))
+    while split_view is not None:
+        # A slab no bone reaches has no contract to enforce and would leave its
+        # flesh unconstrained. Better the coarse contract that worked -- but
+        # only for **that tag**: taking the trunk's split back because a leg's
+        # foot slab is starved would pay for a broken fix with a working one.
+        starved = None
+        for member in split_view.members:
+            empty = sorted(name for name in member.names if not legal.get(name))
+            if empty:
+                starved = (member, empty)
+                break
+        if starved is None:
+            break
+        member, empty = starved
+        warnings.append(
+            "The %s split was taken back: %s would have no deform bone at all, and "
+            "flesh with an empty legal set is flesh with no contract. That tag stays "
+            "whole." % (member.parent, ", ".join(empty)))
+        taken = dict(member.report)
+        taken.pop("cuts", None)
+        taken["refused"] = "%s would hold no deform bone" % ", ".join(empty)
+        if member.parent == rigforge_autotag.SPLIT_PARENT:
+            split_report = taken
+        else:
+            leg_reports = dict(leg_reports)
+            leg_reports[member.parent] = taken
+        split_view = split_view.without(member)
+        if not split_view.members:
             split_view = None
-            contract = legal_bone_sets(rig, metarig, regions)
-            legal = contract["legal"]
+        contract = legal_bone_sets(rig, metarig, regions, split_view)
+        legal = contract["legal"]
 
     regions_used = split_regions(regions, split_view)
     tags = tag_membership(obj, split_view)
@@ -1425,14 +1902,94 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
                          if name in column_of]
                    for tag, names in legal.items()}
     hinge_of = {tag: set(names) for tag, names in contract["hinges"].items()}
+    # A tag's **own** bones — the ones exempt from the reach below. "Own" is
+    # ownership, not legality, and the distinction cost a run to find. A bone is
+    # legal on a slab for three different reasons and only one of them makes it
+    # that slab's own: it is *owned* there (its midpoint is in the slab), it is
+    # the slab's **hinge** (the bone the slab hangs from), or its **span**
+    # crosses a cut into the slab. The last two are borrowed influence and the
+    # reach is what holds them near the joint they came from.
+    #
+    # Measured on the werewolf's legs, where the coarse rule breaks down. With
+    # the span-crossers exempt, ``DEF-foot.R`` -- legal on ``Leg.R.shin`` only
+    # because its head sits at the ankle cut -- had licence 1.0 over the **whole
+    # 330 mm shin slab**, and so did ``DEF-thigh.R.001`` reaching down from the
+    # knee: the two ends of the leg held the middle of it jointly, and the
+    # leg-internal stray mass stalled at 5.92 with the split otherwise working.
+    # Holding them to the reach is the articulation rule applied where it was
+    # already meant to apply -- a band at the knee and a band at the ankle,
+    # nothing in between.
+    #
+    # It is also what keeps the stage **converging**. Exempting a span-crosser
+    # lets it hold flesh the next ``apply`` will not: on the synthetic biped a
+    # second pass moved a weight by 0.056 against a suite that pins it under
+    # 0.05, and ownership rather than legality settles it.
+    owner_of = contract["owner"]
     owned_for = {tag: frozenset(column_of[name] for name in names
                                 if name in column_of
-                                and name not in hinge_of.get(tag, ()))
+                                and name not in hinge_of.get(tag, ())
+                                and owner_of.get(name, tag) == tag)
                  for tag, names in legal.items()}
     # One reach per tag, off that tag's own measured girth: a bone is legal on a
     # vertex when the tag says so *and* the bone is near enough to be part of
     # that flesh. See BLEND_REACH for the three attempts this replaced.
     allowance = {tag: reach * girths.get(tag, 0.0) for tag in legal}
+    # ...except across a **sibling cut**, where the reach is that cut's own
+    # blend band -- the width :func:`blend_zones` just used, read back rather
+    # than recomputed so the two can never disagree. Same argument as
+    # SUB_TAG_BLEND_FRACTION, one step further along: a girth says how thick a
+    # limb is, and what is bounded here is how far an influence travels *along*
+    # it, away from a joint. A vertex may borrow across a seam exactly as far as
+    # the band reaches, and no further.
+    #
+    # Measured on the werewolf's knee -- the shin slab's girth gives a 186 mm
+    # reach, long enough for ``DEF-shin.R.001`` (167 mm below the knee, the
+    # *far* end of the shin) to hold thigh flesh in the knee band, and that pair
+    # alone was 1.48 of stray mass. The knee's own band is 84 mm, which reaches
+    # ``DEF-shin.R`` -- the bone that actually starts at the knee -- and nothing
+    # past it.
+    #
+    # **A band too thin to hold its own falloff is not a bound, it is a cliff**,
+    # and bounding a reach with one is worse than not bounding it. That is the
+    # same rule -- and so the same number -- as MIN_ARTICULATION_RINGS, which
+    # floors the band itself; here it decides whether a band is solid enough to
+    # bound a *reach* with. Since blend_zones now applies that floor, a seam
+    # below it is one whose band was floored in a tag whose local rings are
+    # coarser than the figure's median, and bounding a borrowed bone to it would
+    # still be cutting inside one ring of the mesh this vertex is on.
+    #
+    # Measured, and this is the guard the synthetic biped needed. Its rings are
+    # 15.1 mm and two of its seams come out barely over one ring wide --
+    # ``Torso.abdomen/Torso.pelvis`` at 20.5 mm and its ankle at 20.2 mm.
+    # Bounding a borrowed bone to those cut 30.1 vertex-weights where the whole
+    # figure only had 9.0 to cut, and a second ``apply`` stopped converging
+    # (worst weight change 0.084, against a suite that pins it under 0.05). The
+    # werewolf's knee is 84 mm against 24.6 mm rings, which is a band with room
+    # for a falloff in it, and it is the one that matters.
+    #
+    # Cross-*tag* seams keep the girth rule, which is what it is for.
+    median_edge = (blend_report.get("median_edge_mm") or 0.0) / M_TO_MM
+    floor = MIN_ARTICULATION_RINGS * median_edge
+    seam_widths = {}
+    for row in blend_report.get("seams", ()):
+        one, other = row["tags"]
+        if split_view is None or split_view.parent_of(one) is None:
+            continue
+        if split_view.parent_of(one) != split_view.parent_of(other):
+            continue
+        width = row["width_mm"] / M_TO_MM
+        if width < floor:
+            continue
+        key = (one, other) if one <= other else (other, one)
+        seam_widths[key] = width
+    def across(tag, lender, base):
+        """The reach for a bone of ``lender`` on ``tag``'s flesh."""
+        if lender is None or lender == tag:
+            return base
+        key = (tag, lender) if tag <= lender else (lender, tag)
+        width = seam_widths.get(key)
+        return base if width is None else width
+
     distances = _distance_matrix(obj, rig, bone_names)
     def licence(distance, limit):
         """1 inside the reach, ramping to 0 over its last :data:`REACH_BAND`."""
@@ -1445,6 +2002,17 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
 
     ramp = _np.zeros((count, len(bone_names)), dtype="f8")
     radius = _np.zeros(count, dtype="f8")
+    # Where the sibling-band rule above held a bone to less than its tag's own
+    # reach, and how far. The **smoothing mask has to be told**, or the stage
+    # stops converging: the mask is what bounds the smoother, it was bounded by
+    # the loose ``radius`` alone, and a weight the ramp refused but the mask
+    # allowed is a weight the smoother puts back and the *next* ``apply`` cuts
+    # again. Measured on the synthetic biped -- a second pass removed 23.5 of
+    # the 30.1 the first one did and moved a weight by 0.100, against a suite
+    # that pins the second pass under 0.05. A column any tag grants at the full
+    # reach is not capped at all, so every pre-existing taper is untouched.
+    capped = _np.zeros((count, len(bone_names)), dtype="f8")
+    uncapped = _np.zeros((count, len(bone_names)), dtype=bool)
     untagged = 0
     borrowed = 0
     stranded_rows = []
@@ -1470,16 +2038,31 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
                 # the reach applied to a tag's own bones the werewolf's knees
                 # gained 474 new self-intersections at the extremes, because
                 # scaling the thigh down at the knee sharpens the bend into a
-                # fold. The reach is about *borrowed* influence.
+                # fold. The reach is about *borrowed* influence -- and which
+                # bones those are is the ``owned_for`` question above.
                 value = 1.0 if column in own_columns else licence(row[column], limit)
+                # A bone its own tag grants at the full reach is never capped,
+                # whatever a neighbouring slab lends it at: see ``capped``.
+                uncapped[index, column] = True
                 if value > ramp[index, column]:
                     ramp[index, column] = value
         for tag in blend[index]:
             if tag in own:
                 continue
             limit = allowance.get(tag, 0.0)
+            lent = limit
+            for mine in own:
+                lent = min(lent, across(mine, tag, limit))
             for column in columns_for.get(tag, ()):
-                value = licence(row[column], limit)
+                # Same rule as above: what a neighbouring **slab** lends across
+                # a cut is held to that cut's band. A bone this flesh's own slab
+                # hangs from needs no exception here -- it is already in its own
+                # tag's legal set and took the girth reach in the loop above.
+                value = licence(row[column], lent)
+                if lent < limit:
+                    capped[index, column] = max(capped[index, column], lent)
+                else:
+                    uncapped[index, column] = True
                 if value > ramp[index, column]:
                     if ramp[index, column] <= 0.0:
                         borrowed += 1
@@ -1516,7 +2099,18 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
     # below and the smoother further down. See articulated_edges.
     linked = articulated_edges(edges, tags, articulations(contract, split_view))
     fine = taper_edges(obj, linked, tags, regions_used, girth_fraction)
-    mask = _dilate(hard, fine, SMOOTH_DILATION) & (distances <= radius[:, None])
+    reachable = _np.broadcast_to(radius[:, None], capped.shape).copy()
+    # Only the capped slots move, so a run with no split -- or one where no seam
+    # was tight enough to bound a reach -- gets exactly the mask it always got.
+    # A capped slot is still never narrower than the ramp it is a taper on:
+    # without that floor a vertex rescued by the out-of-reach fallback above,
+    # which grants its single nearest legal bone *past* every reach on purpose,
+    # had that one weight masked straight back off and came out of the stage
+    # with no weight at all.
+    tightened = (capped > 0.0) & ~uncapped
+    reachable[tightened] = _np.maximum(
+        capped, _np.where(hard, distances, 0.0))[tightened]
+    mask = _dilate(hard, fine, SMOOTH_DILATION) & (distances <= reachable)
     tolerance_slots = int(_np.count_nonzero(mask & ~hard))
 
     before = read_weights(obj, bone_names)
@@ -1575,8 +2169,8 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
             "weight_removed": round(float(removed[rows].sum()), 4),
             "blend_vertices": int(sum(1 for index in members if blend[index])),
         }
-        if split_view is not None and tag in split_view.names:
-            entry["parent"] = split_view.parent
+        if split_view is not None and split_view.parent_of(tag):
+            entry["parent"] = split_view.parent_of(tag)
         per_tag.append(entry)
 
     contract_bones = sum(len(names) for names in legal.values())
@@ -1611,6 +2205,7 @@ def constrain_weights(obj, rig, metarig=None, regions=None, max_influences=4,
         "tags": per_tag,
         "blend": blend_report,
         "sub_tags": split_report,
+        "leg_sub_tags": {tag: leg_reports[tag] for tag in sorted(leg_reports)},
         "contract": {
             "legal": {tag: sorted(names) for tag, names in sorted(legal.items())},
             # The same contract as every consumer that expects one tag sees it,
@@ -1879,11 +2474,23 @@ def arm_swing_isolation(rig, mesh, regions=None, split=None, metarig=None,
     if regions is None:
         regions, _empty = rigforge_rig.measure_tags(mesh)
     if split is None:
-        split, _report = torso_split(mesh, regions)
+        split, _torso, _legs = body_split(mesh, regions, rig, metarig)
+    if isinstance(split, TagSplit):
+        split = SplitSet([split], split.report, {})
 
     known = source_bone_names(rig, metarig)
     contract = legal_bone_sets(rig, metarig, regions, split)
     owner = contract["owner"]
+    if split is not None:
+        # **Merged, and this qualifier is load-bearing.** The contract re-owns a
+        # split tag's bones to its slabs, so with the legs split there is no
+        # bone whose owner is ``Leg.R`` any more and the thigh group below came
+        # out empty -- the gate would have gone on reporting 0.00 mm because it
+        # had stopped measuring anything. Chain resolution asks the *tag*'s
+        # question ("which bones are this limb"), so it reads the merged view.
+        owner = {name: split.merged(tag) for name, tag in owner.items()}
+    torso_split_view = (split.member_for_parent(rigforge_autotag.SPLIT_PARENT)
+                        if split is not None else None)
     arm_tags = sorted(tag for tag in regions if tag.startswith("Arm"))
     leg_tags = sorted(tag for tag in regions if tag.startswith("Leg"))
     if not arm_tags:
@@ -1897,8 +2504,8 @@ def arm_swing_isolation(rig, mesh, regions=None, split=None, metarig=None,
     # the body rather than taken from the world, so a character modelled on a
     # different convention swings its arms rather than its shoulders.
     trunk = regions.get(rigforge_autotag.SPLIT_PARENT)
-    if split is not None:
-        up = Vector(split.axis.direction)
+    if torso_split_view is not None:
+        up = Vector(torso_split_view.axis.direction)
     elif trunk is not None:
         up = Vector(trunk.axis).normalized()
     else:
@@ -1931,10 +2538,11 @@ def arm_swing_isolation(rig, mesh, regions=None, split=None, metarig=None,
 
     # --- what must not move ----------------------------------------------
     groups = {}
-    if split is not None:
-        pelvis_name = split.names[0]
-        groups[pelvis_name] = sorted(index for index, name in split.membership.items()
-                                     if name == pelvis_name)
+    if torso_split_view is not None:
+        pelvis_name = torso_split_view.names[0]
+        groups[pelvis_name] = sorted(
+            index for index, name in torso_split_view.membership.items()
+            if name == pelvis_name)
         pelvis_how = "the %s slab of the split" % pelvis_name
     else:
         parent = rigforge_autotag.SPLIT_PARENT
@@ -2131,7 +2739,7 @@ def cmd_rigforge_skin(params):
     pelvis and the thighs*, in millimetres.
 
     ``split: false`` enforces the contract at whole-tag granularity, which is
-    what it did before :class:`TorsoSplit` existed — useful for measuring the
+    what it did before :class:`TagSplit` existed — useful for measuring the
     difference rather than taking it on trust.
     """
     obj = resolve_object(params, mesh_only=True)
@@ -2171,7 +2779,9 @@ def cmd_rigforge_skin(params):
             "Tag-constrained skinning needs tags: %r has no tagged geometry. Run "
             "rigforge_autotag first." % obj.name)
 
-    split_view, split_report = torso_split(obj, regions, enabled=use_split)
+    split_view, split_report, leg_reports = body_split(obj, regions, rig, metarig,
+                                                       enabled=use_split)
+    leg_sub_tags = {tag: leg_reports[tag] for tag in sorted(leg_reports)}
 
     if action == "isolation":
         with object_mode():
@@ -2179,6 +2789,7 @@ def cmd_rigforge_skin(params):
                                             swing_deg=swing_deg)
         return {"object": obj.name, "rig": rig.name, "action": action, "changed": 0,
                 "isolation": isolation, "sub_tags": split_report,
+                "leg_sub_tags": leg_sub_tags,
                 "warnings": warnings, "says": isolation["says"]}
 
     if action == "report":
@@ -2203,12 +2814,15 @@ def cmd_rigforge_skin(params):
             },
             "blend": blend_report,
             "sub_tags": split_report,
+            "leg_sub_tags": leg_sub_tags,
             "warnings": warnings,
             "says": ("%d tag(s)%s, %d deform bone(s). %s"
                      % (len(regions),
                         (" read as %d with the %s split"
-                         % (len(regions) + len(split_view.names) - 1,
-                            split_view.parent)) if split_view is not None else "",
+                         % (len(regions) + len(split_view.names)
+                            - len(split_view.parents),
+                            ", ".join(sorted(split_view.parents))))
+                        if split_view is not None else "",
                         len(rigforge_rig.deform_bones(rig)),
                         blend_report["says"])),
         }

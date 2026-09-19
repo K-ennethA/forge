@@ -118,6 +118,8 @@ __all__ = [
     "TORSO_SUB_TAGS",
     "SPLIT_PARENT",
     "SPLIT_STATIONS",
+    "LEG_SUB_TAG_SUFFIXES",
+    "LEG_SPLIT_PREFIX",
     "Axis",
     "segments_of",
     "classify_segments",
@@ -127,11 +129,14 @@ __all__ = [
     "box_band_groups",
     "axis_from_cloud",
     "spine_split",
+    "leg_sub_tags",
+    "leg_split",
     "sub_tag_at",
     "sub_tags_spanning",
     "split_membership",
     "split_from_clouds",
     "split_from_groups",
+    "split_from_leg_cloud",
     "detector_status",
     "detect_joints_for",
     "auto_tag",
@@ -269,6 +274,18 @@ WAIST_MIN_DIP = 0.02
 #: is refused whole rather than applied lopsided.
 MIN_SUB_TAG_VERTICES = 12
 
+#: The slabs a ``Leg`` tag is cut into, **proximal to distal**, as suffixes on
+#: the parent tag's own name — ``Leg.L`` becomes ``Leg.L.thigh``,
+#: ``Leg.L.shin``, ``Leg.L.foot``.  Suffixes rather than whole names because
+#: there are two legs and each is split against **its own** measurements; see
+#: :func:`leg_split` for the defect this exists to fix.
+LEG_SUB_TAG_SUFFIXES = ("thigh", "shin", "foot")
+
+#: The tag-name prefix whose tags get the leg split.  ``Leg.L`` and ``Leg.R``
+#: on a biped; anything else named ``Leg*`` on a figure with more of them, which
+#: is why this is a prefix rather than a pair of names.
+LEG_SPLIT_PREFIX = "Leg"
+
 #: Where the out-of-process detector runner lives, relative to the add-on.  The
 #: add-on is installed from ``<repo>/addon``, so the sibling is
 #: ``<repo>/rigbridge``.  ``FORGE_RIGBRIDGE`` overrides it for an install that
@@ -347,6 +364,27 @@ class Axis(object):
         if best_distance is None:
             best_distance = (point - self.points[0]).length
         return best_distance, (best_arc / self.length if self.length > 1e-9 else 0.0)
+
+    def at(self, t):
+        """The world-space point at arclength fraction ``t`` — :meth:`closest` inverted.
+
+        A cut is a ``t``, and everything a human reads a cut back against is a
+        *place*: "the knee is 507 mm up" is checkable against the rig and
+        "t=0.417" is not.  Clamped at both ends, so a bone span that runs past
+        the flesh still names a point on the axis.
+        """
+        if len(self.points) < 2 or self.length <= 1e-9:
+            return self.points[0].copy()
+        arc = max(0.0, min(1.0, float(t))) * self.length
+        for index in range(len(self.points) - 1):
+            step = self.lengths[index]
+            if step <= 1e-9:
+                continue
+            if arc <= self.cumulative[index + 1] or index == len(self.points) - 2:
+                factor = (arc - self.cumulative[index]) / step
+                factor = max(0.0, min(1.0, factor))
+                return self.points[index].lerp(self.points[index + 1], factor)
+        return self.points[-1].copy()
 
     def extend_distal(self, amount):
         if amount <= 1e-9:
@@ -847,7 +885,7 @@ def assign_vertices(world_points_list, axes, radius_factor=DEFAULT_RADIUS_FACTOR
 # the torso, cut along its own spine
 # ---------------------------------------------------------------------------
 
-def axis_from_cloud(points, role="spine", seed=None):
+def axis_from_cloud(points, role="spine", seed=None, proximal=None):
     """The centreline of a point cloud as a two-point :class:`Axis`.
 
     The cloud's own principal axis through its own centroid, spanning exactly
@@ -859,6 +897,14 @@ def axis_from_cloud(points, role="spine", seed=None):
     spine's, when there is one.  Ends are ordered **proximal to distal**, which
     for a torso means upwards: the same "the spine leaves the root going up"
     convention :func:`classify_segments` reads the skeleton with.
+
+    ``proximal`` is a world-space point that says which end *is* the proximal
+    one, and it overrides the upwards rule.  A **leg hangs the other way**: its
+    proximal end is the hip, at the *top*, so ordering it upwards would put
+    ``t=0`` at the toe and make every sub-tag read back to front.  Passing the
+    hip joint is the measurement that settles it, and it is a measurement rather
+    than a "legs point down" assumption — a figure modelled on any convention,
+    or a limb that is not a leg at all, orders itself off its own chain root.
     """
     points = [Vector(p) for p in points]
     if len(points) < 2:
@@ -872,7 +918,11 @@ def axis_from_cloud(points, role="spine", seed=None):
     projections = [(point - centre).dot(axis) for point in points]
     low = centre + axis * min(projections)
     high = centre + axis * max(projections)
-    if low.z > high.z:
+    if proximal is not None:
+        near = Vector(proximal)
+        if (low - near).length > (high - near).length:
+            low, high = high, low
+    elif low.z > high.z:
         low, high = high, low
     return Axis(role, [low, high])
 
@@ -1016,17 +1066,213 @@ def spine_split(axis, torso_points, leg_points, stations=SPLIT_STATIONS):
     return report
 
 
-def sub_tag_at(t, cuts):
-    """Which sub-tag the spine parameter ``t`` lands in.  Half-open, proximal first."""
+# ---------------------------------------------------------------------------
+# a leg, cut at its own knee and its own ankle
+# ---------------------------------------------------------------------------
+
+def leg_sub_tags(parent):
+    """``('Leg.L.thigh', 'Leg.L.shin', 'Leg.L.foot')`` for ``parent='Leg.L'``.
+
+    Per side, from that side's own tag name.  Nothing here assumes a left and a
+    right, and nothing assumes there are two of them.
+    """
+    return tuple("%s.%s" % (parent, suffix) for suffix in LEG_SUB_TAG_SUFFIXES)
+
+
+def leg_split(axis, leg_points, parent, joints, stations=SPLIT_STATIONS):
+    """Where to cut a ``Leg`` tag into thigh, shin and foot.  Never raises.
+
+    The failure this exists to fix
+    ------------------------------
+    The same one :func:`spine_split` fixes, one tag over.  The contract
+    (:func:`~forge.tools.rigforge_skin.legal_bone_sets`) is enforced **per tag**,
+    and one ``Leg.R`` tag is a single bucket holding the whole leg chain — both
+    thigh segments, both shin segments, the foot and the toe.  Cross-*tag* stray
+    influence is 0.000 and it is still wrong: ``DEF-foot.R`` putting weight on
+    shin flesh 340 mm away is *legal*, because both are ``Leg.R``.  Measured on
+    the werewolf that is **4.67 vertex-weights** shared by ``DEF-foot.R`` and
+    ``DEF-thigh.R.001``, and 3.59 more shared by ``DEF-shin.R.001`` and
+    ``DEF-thigh.R`` — the leg's own ends holding each other's flesh.
+
+    Where the two cuts come from, and neither is a free choice
+    ---------------------------------------------------------
+    A leg is not a trunk and its cuts are not a percentile and a girth dip.  A
+    leg already **has** its landmarks, fitted: the knee and the ankle are the
+    joints of its own deform chain, which the landmark fitter placed at the
+    girth minima it measured.  So both cuts are the chain's own segment
+    boundaries — the point where the thigh bones stop and the shin bones start,
+    and the point where the shin bones stop and the foot starts — projected onto
+    this leg's own axis and snapped to the same station grid the girth cap and
+    the spine split use.
+
+    That makes the cut a **measurement of the rig that is actually there**
+    rather than a fraction of a limb, and it is per side: each leg is cut at its
+    own joints, off its own axis, and a figure whose legs are not mirrored is
+    cut correctly twice rather than once and copied.  Symmetry is a mode the
+    caller chooses, never an assumption this function makes.
+
+    ``joints`` is ``[(label, world point), ...]``, proximal to distal — the knee
+    first, the ankle second, as :func:`~forge.tools.rigforge_skin.leg_chain_joints`
+    reads them off the chain.
+
+    Returns a report dict of the same shape :func:`spine_split` returns.  A split
+    that cannot be measured carries ``refused`` with the reason and no ``cuts``;
+    the caller then keeps the one merged ``Leg`` tag, which is the behaviour
+    every consumer already has.
+    """
+    names = leg_sub_tags(parent)
+    stations = max(MIN_CUT_SEPARATION + 3, int(stations))
+    samples = [axis.closest(point) for point in leg_points]
+    profile = _girth_profile(samples, stations)
+    report = {
+        "parent": parent,
+        "names": list(names),
+        "stations": stations,
+        "axis_mm": [[round(v * M_TO_MM, 1) for v in point] for point in axis.points],
+        "axis_length_mm": round(axis.length * M_TO_MM, 1),
+        "girth_mm": [round(value * M_TO_MM, 1) for value in (profile or ())],
+        "leg_vertices": len(leg_points),
+        "joints": [str(label) for label, _point in joints],
+        "joint_mm": [[round(v * M_TO_MM, 1) for v in Vector(point)]
+                     for _label, point in joints],
+    }
+
+    if len(leg_points) < 3 * MIN_SUB_TAG_VERTICES:
+        report["refused"] = (
+            "the %s tag has %d vertices, and three slabs of at least %d each need %d"
+            % (parent, len(leg_points), MIN_SUB_TAG_VERTICES,
+               3 * MIN_SUB_TAG_VERTICES))
+        return report
+    if len(joints) < 2:
+        report["refused"] = (
+            "this leg's deform chain has %d joint(s) inside it and a thigh / shin / "
+            "foot split needs two; there is nothing measuring where its knee and its "
+            "ankle are, so the %s tag stays one tag" % (len(joints), parent))
+        return report
+
+    # --- both cuts: the chain's own joints, on this leg's own axis ---------
+    joint_t = [axis.closest(Vector(point))[1] for _label, point in joints[:2]]
+    report["joint_t"] = [round(value, 6) for value in joint_t]
+    report["joint_height_mm"] = [round(axis.at(value).z * M_TO_MM, 1)
+                                 for value in joint_t]
+    if joint_t[0] >= joint_t[1]:
+        report["refused"] = (
+            "this leg's %s joint projects onto its own axis at t=%.3f and its %s joint "
+            "at t=%.3f, so the chain doubles back on itself and there is no slab "
+            "between them" % (joints[0][0], joint_t[0], joints[1][0], joint_t[1]))
+        return report
+
+    # **Not snapped to the station grid, and that is the one place this departs
+    # from the spine's recipe.**  The spine's cuts are snapped because they are
+    # *read off* the girth profile, and a cut between two stations is a cut that
+    # profile has no opinion about.  A leg's cuts are read off a **joint**,
+    # which is a position, and quantising it throws away precision to buy
+    # nothing: measured on this werewolf the ankle sits at t=0.849 and the
+    # nearest of 17 stations is t=0.875, putting the cut **30 mm below the
+    # ankle** and handing the foot bone a slab of shin. The stations stay in the
+    # report as corroboration and as the unit the separation rule is in, because
+    # "the two cuts must leave a slab between them" is a statement about the
+    # grid the girth is sampled on.
+    last = stations - 1
+    first, second = joint_t[0], joint_t[1]
+    stride = 1.0 / float(last)
+    if second - first < MIN_CUT_SEPARATION * stride:
+        report["refused"] = (
+            "this leg's knee sits at t=%.3f and its ankle at t=%.3f, %.1f stations of "
+            "%d apart, which leaves no room for a shin %d stations deep between them"
+            % (first, second, (second - first) / stride, last, MIN_CUT_SEPARATION))
+        return report
+    if first <= stride or second >= 1.0 - stride:
+        report["refused"] = (
+            "this leg's knee sits at t=%.3f and its ankle at t=%.3f on its own axis, "
+            "and a cut within one station of an end leaves a slab with no interior"
+            % (first, second))
+        return report
+
+    how = [("the %s joint of this leg's own deform chain (t=%.3f on its own %.0f mm "
+            "axis, %.0f mm up, nearest station %d of %d)"
+            % (label, value, axis.length * M_TO_MM, axis.at(value).z * M_TO_MM,
+               int(round(value * last)), last))
+           for (label, _point), value in zip(joints[:2], joint_t)]
+
+    cuts = [first, second]
+    counts = {name: 0 for name in names}
+    for _distance, t in samples:
+        counts[sub_tag_at(t, cuts, names)] += 1
+    thin = sorted(name for name, count in counts.items()
+                  if count < MIN_SUB_TAG_VERTICES)
+    if thin:
+        report["refused"] = (
+            "%s would hold %s vertices and a sub-tag under %d cannot be measured, "
+            "so the %s stays one tag"
+            % (", ".join(thin), ", ".join(str(counts[name]) for name in thin),
+               MIN_SUB_TAG_VERTICES, parent))
+        report["would_be"] = dict(counts)
+        return report
+
+    report["cut_stations"] = [int(round(value * last)) for value in cuts]
+    # **Full precision, unlike the spine's.** The spine's cuts are snapped to
+    # the station grid, so they are exact fractions and rounding them for the
+    # report costs nothing. A leg's cut is a joint's own position, and the bone
+    # at that joint has a head at *exactly* that t -- so whether
+    # :func:`sub_tags_spanning` sees it as crossing the cut turns on the last
+    # few bits. Rounded to six places the cut came out a hair below the head and
+    # ``DEF-shin.R`` dropped out of the thigh slab's legal set entirely, leaving
+    # the knee with no shin bone on the thigh side of it at all.
+    report["cuts"] = [float(value) for value in cuts]
+    report["cut_mm"] = [round(value * axis.length * M_TO_MM, 1) for value in cuts]
+    report["cut_height_mm"] = [round(axis.at(value).z * M_TO_MM, 1) for value in cuts]
+    report["how"] = how
+    report["vertices"] = dict(counts)
+    report["says"] = (
+        "%s split into %s at t=%.3f and t=%.3f along its own %.0f mm axis "
+        "(%d / %d / %d vertices), cut at its own %s and %s joints. %s; %s."
+        % (parent, ", ".join(names), cuts[0], cuts[1],
+           axis.length * M_TO_MM, counts[names[0]], counts[names[1]], counts[names[2]],
+           joints[0][0], joints[1][0], how[0], how[1]))
+    return report
+
+
+def split_from_leg_cloud(parent, leg_points, root, joints, seed=None,
+                         stations=SPLIT_STATIONS):
+    """``(report, axis | None)`` — :func:`leg_split` over one leg's point cloud.
+
+    The one entry point both sides of the lane use, the way
+    :func:`split_from_clouds` is for the spine: the split is **derived** from the
+    tag and the chain that exist rather than stored anywhere, so the tagger's
+    report and the skinner's contract cannot drift apart.  ``root`` is the head
+    of the leg's own chain — the hip — and it is what orients the axis, so
+    ``t=0`` is the hip on a figure modelled to any convention.
+    """
+    names = list(leg_sub_tags(parent))
+    if len(leg_points) < 2:
+        return ({"parent": parent, "names": names,
+                 "refused": "there is no %s tag to split" % parent}, None)
+    try:
+        axis = axis_from_cloud(leg_points, parent, seed=seed, proximal=root)
+    except ForgeError as exc:
+        return ({"parent": parent, "names": names, "refused": str(exc)}, None)
+    report = leg_split(axis, leg_points, parent, joints, stations=stations)
+    return report, (None if report.get("refused") else axis)
+
+
+def sub_tag_at(t, cuts, names=TORSO_SUB_TAGS):
+    """Which sub-tag the axis parameter ``t`` lands in.  Half-open, proximal first.
+
+    ``names`` is the slab naming — :data:`TORSO_SUB_TAGS` by default, or one
+    leg's own :func:`leg_sub_tags`.  The *rule* is the same either way and that
+    is the point of the parameter: one cut function, so a leg's slabs cannot
+    drift into meaning something different from a torso's.
+    """
     if t <= cuts[0]:
-        return TORSO_SUB_TAGS[0]
+        return names[0]
     if t < cuts[1]:
-        return TORSO_SUB_TAGS[1]
-    return TORSO_SUB_TAGS[2]
+        return names[1]
+    return names[2]
 
 
-def sub_tags_spanning(t_low, t_high, cuts):
-    """Every sub-tag a span along the spine touches — a bone's membership.
+def sub_tags_spanning(t_low, t_high, cuts, names=TORSO_SUB_TAGS):
+    """Every sub-tag a span along the axis touches — a bone's membership.
 
     A vertex is a point and lands in one slab; a **bone is a span**, and a bone
     that crosses a cut belongs to the slabs on both sides of it.  That is the
@@ -1038,12 +1284,12 @@ def sub_tags_spanning(t_low, t_high, cuts):
     low, high = (t_low, t_high) if t_low <= t_high else (t_high, t_low)
     out = []
     if low <= cuts[0]:
-        out.append(TORSO_SUB_TAGS[0])
+        out.append(names[0])
     if high > cuts[0] and low < cuts[1]:
-        out.append(TORSO_SUB_TAGS[1])
+        out.append(names[1])
     if high >= cuts[1]:
-        out.append(TORSO_SUB_TAGS[2])
-    return tuple(out) or (sub_tag_at(0.5 * (low + high), cuts),)
+        out.append(names[2])
+    return tuple(out) or (sub_tag_at(0.5 * (low + high), cuts, names),)
 
 
 def split_membership(axis, cuts, points):
