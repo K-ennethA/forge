@@ -1,0 +1,26 @@
+[
+    {
+        "when": "2026-09-18T21:33:50",
+        "joint": "ankle",
+        "bones": ["DEF-foot.L/R head + coincident IK/FK/tweak/metarig endpoints"],
+        "delta_mm": [0, 0, -44],
+        "mirror": true,
+        "source": "artist decision in chat"
+    },
+    {
+        "when": "2026-09-18T21:33:50",
+        "joint": "head top",
+        "bones": ["DEF-spine.006 tail + coincident endpoints"],
+        "delta_mm": [0, 0, -12],
+        "mirror": false,
+        "source": "artist decision in chat (seat inside crown)"
+    },
+    {
+        "when": "2026-09-18T21:37:37",
+        "joint": "head top",
+        "bones": ["DEF-spine.006 tail + coincident endpoints"],
+        "delta_mm": [0, 0, -40],
+        "mirror": false,
+        "source": "artist decision in chat (second pass, total -52 from scalp peak)"
+    }
+]
