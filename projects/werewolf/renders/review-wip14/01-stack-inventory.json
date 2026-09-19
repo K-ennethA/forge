@@ -1,0 +1,2545 @@
+{
+ "objects": [
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "werewolf-form-a",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "werewolf-form-a_retopo",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": "werewolf-form-a_retopo_rig.001"
+  },
+  {
+   "name": "werewolf-form-a_retopo_metarig",
+   "type": "ARMATURE",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "werewolf-form-a_retopo_rig.001",
+   "type": "ARMATURE",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_chest",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_heel_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_heel_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_spin_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_spin_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_foot_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_forearm_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hand_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_head",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_hips",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_neck",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_root",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shin_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shoulder.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_shoulder.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_spine_fk",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_spine_fk.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_spine_fk.002",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_spine_fk.003",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_ik_target.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_ik_target.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_parent.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_parent.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_thigh_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_toe_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_toe_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_toe_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_toe_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_torso",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine.002",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine.003",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine.004",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_tweak_spine.005",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_ik_target.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_ik_target.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_parent.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_parent.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_upper_arm_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_VIS_thigh_ik_pole.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_VIS_thigh_ik_pole.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_VIS_upper_arm_ik_pole.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig.001_VIS_upper_arm_ik_pole.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_chest",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_heel_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_heel_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_spin_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_spin_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_foot_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_forearm_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hand_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_head",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_hips",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_neck",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_root",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shin_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shoulder.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_shoulder.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_spine_fk",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_spine_fk.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_spine_fk.002",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_spine_fk.003",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_ik_target.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_ik_target.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_parent.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_parent.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_thigh_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_toe_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_toe_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_toe_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_toe_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_torso",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine.002",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine.003",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine.004",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_tweak_spine.005",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_fk.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_fk.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_ik.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_ik.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_ik_target.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_ik_target.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_parent.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_parent.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_tweak.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_tweak.L.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_tweak.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_upper_arm_tweak.R.001",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_VIS_thigh_ik_pole.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_VIS_thigh_ik_pole.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_VIS_upper_arm_ik_pole.L",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  },
+  {
+   "name": "WGT-werewolf-form-a_retopo_rig_VIS_upper_arm_ik_pole.R",
+   "type": "MESH",
+   "hide_viewport": false,
+   "hide_render": false,
+   "parent": null
+  }
+ ],
+ "mesh_found": true,
+ "rig_found": true,
+ "mesh_stats": {
+  "vertices": 8405,
+  "polygons": 15558,
+  "vertex_groups": 39,
+  "scale": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0,
+    0.9327020645141602
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ]
+ },
+ "modifiers": [
+  {
+   "index": 0,
+   "name": "Armature.001",
+   "type": "ARMATURE",
+   "show_viewport": true,
+   "show_render": true,
+   "show_in_editmode": false,
+   "props": {
+    "name": "Armature.001",
+    "show_viewport": true,
+    "show_render": true,
+    "show_in_editmode": false,
+    "show_on_cage": false,
+    "show_expanded": true,
+    "is_active": true,
+    "use_pin_to_last": false,
+    "use_apply_on_spline": false,
+    "object": "<Object:werewolf-form-a_retopo_rig.001>",
+    "use_bone_envelopes": false,
+    "use_vertex_groups": true,
+    "use_deform_preserve_volume": false,
+    "use_multi_modifier": false,
+    "vertex_group": "",
+    "invert_vertex_group": false
+   }
+  }
+ ],
+ "mesh_constraints": [],
+ "has_shape_keys": true,
+ "shape_key_block": {
+  "name": "Key",
+  "use_relative": true,
+  "eval_time": 0.0
+ },
+ "shape_keys": [
+  {
+   "name": "Basis",
+   "value": 1.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": null,
+   "has_driver": false
+  },
+  {
+   "name": "corr_knee_L_070",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-thigh.L.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-shin.L",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.113258495926857,
+       0.0
+      ],
+      "LINEAR",
+      [
+       -0.21847914159297943,
+       0.0
+      ],
+      [
+       0.4449961185455322,
+       0.0
+      ]
+     ],
+     [
+      [
+       1.108471393585205,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.7767337560653687,
+       1.0
+      ],
+      [
+       2.0566422939300537,
+       1.0
+      ]
+     ],
+     [
+      [
+       3.952983856201172,
+       0.0
+      ],
+      "LINEAR",
+      [
+       3.0048129558563232,
+       0.0
+      ],
+      [
+       4.901154518127441,
+       0.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_knee_L_140",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-thigh.L.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-shin.L",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       1.108471393585205,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.16030055284500122,
+       0.0
+      ],
+      [
+       2.0566422939300537,
+       0.0
+      ]
+     ],
+     [
+      [
+       3.952983856201172,
+       1.0
+      ],
+      "LINEAR",
+      [
+       3.0048129558563232,
+       1.0
+      ],
+      [
+       4.901154518127441,
+       1.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_knee_R_070",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-thigh.R.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-shin.R",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.113258495926857,
+       0.0
+      ],
+      "LINEAR",
+      [
+       -0.2184789925813675,
+       0.0
+      ],
+      [
+       0.4449959993362427,
+       0.0
+      ]
+     ],
+     [
+      [
+       1.1084709167480469,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.7767333984375,
+       1.0
+      ],
+      [
+       2.0566418170928955,
+       1.0
+      ]
+     ],
+     [
+      [
+       3.952983856201172,
+       0.0
+      ],
+      "LINEAR",
+      [
+       3.0048129558563232,
+       0.0
+      ],
+      [
+       4.9011549949646,
+       0.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_knee_R_140",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-thigh.R.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-shin.R",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       1.1084709167480469,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.16029995679855347,
+       0.0
+      ],
+      [
+       2.0566418170928955,
+       0.0
+      ]
+     ],
+     [
+      [
+       3.952983856201172,
+       1.0
+      ],
+      "LINEAR",
+      [
+       3.0048129558563232,
+       1.0
+      ],
+      [
+       4.9011549949646,
+       1.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_elbow_L_075",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-upper_arm.L.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-forearm.L",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.32340702414512634,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.10267950594425201,
+       0.0
+      ],
+      [
+       0.5441345572471619,
+       0.0
+      ]
+     ],
+     [
+      [
+       0.9855896234512329,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.7648621201515198,
+       1.0
+      ],
+      [
+       1.9865927696228027,
+       1.0
+      ]
+     ],
+     [
+      [
+       3.9885990619659424,
+       0.0
+      ],
+      "LINEAR",
+      [
+       2.987596035003662,
+       0.0
+      ],
+      [
+       4.989602088928223,
+       0.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_elbow_L_150",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-upper_arm.L.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-forearm.L",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.9855896234512329,
+       0.0
+      ],
+      "LINEAR",
+      [
+       -0.015413522720336914,
+       0.0
+      ],
+      [
+       1.9865927696228027,
+       0.0
+      ]
+     ],
+     [
+      [
+       3.9885990619659424,
+       1.0
+      ],
+      "LINEAR",
+      [
+       2.987596035003662,
+       1.0
+      ],
+      [
+       4.989602088928223,
+       1.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_elbow_R_075",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-upper_arm.R.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-forearm.R",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.32340702414512634,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.10267950594425201,
+       0.0
+      ],
+      [
+       0.5441345572471619,
+       0.0
+      ]
+     ],
+     [
+      [
+       0.9855896234512329,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.7648621201515198,
+       1.0
+      ],
+      [
+       1.9865927696228027,
+       1.0
+      ]
+     ],
+     [
+      [
+       3.9885990619659424,
+       0.0
+      ],
+      "LINEAR",
+      [
+       2.987596035003662,
+       0.0
+      ],
+      [
+       4.989602088928223,
+       0.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_elbow_R_150",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-upper_arm.R.001",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-forearm.R",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.9855896234512329,
+       0.0
+      ],
+      "LINEAR",
+      [
+       -0.015413522720336914,
+       0.0
+      ],
+      [
+       1.9865927696228027,
+       0.0
+      ]
+     ],
+     [
+      [
+       3.9885990619659424,
+       1.0
+      ],
+      "LINEAR",
+      [
+       2.987596035003662,
+       1.0
+      ],
+      [
+       4.989602088928223,
+       1.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_head_018",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-spine.005",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-spine.006",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.13087908923625946,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.11632250994443893,
+       0.0
+      ],
+      [
+       0.14543567597866058,
+       0.0
+      ]
+     ],
+     [
+      [
+       0.17454883456230164,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.1599922478199005,
+       1.0
+      ],
+      [
+       0.27636003494262695,
+       1.0
+      ]
+     ],
+     [
+      [
+       0.4799824655056,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.37817126512527466,
+       0.0
+      ],
+      [
+       0.5817936658859253,
+       0.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  },
+  {
+   "name": "corr_head_035",
+   "value": 0.0,
+   "slider_min": 0.0,
+   "slider_max": 1.0,
+   "mute": false,
+   "relative_key": "Basis",
+   "vertex_group": "",
+   "driver": {
+    "expression": "0.0",
+    "type": "AVERAGE",
+    "variables": [
+     {
+      "name": "bend",
+      "type": "ROTATION_DIFF",
+      "targets": [
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-spine.005",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       },
+       {
+        "id": "werewolf-form-a_retopo_rig.001",
+        "id_type": "OBJECT",
+        "bone_target": "DEF-spine.006",
+        "transform_type": "LOC_X",
+        "transform_space": "WORLD_SPACE",
+        "rotation_mode": "AUTO",
+        "data_path": ""
+       }
+      ]
+     }
+    ],
+    "keyframes": [
+     [
+      [
+       0.17454883456230164,
+       0.0
+      ],
+      "LINEAR",
+      [
+       0.07273762673139572,
+       0.0
+      ],
+      [
+       0.27636003494262695,
+       0.0
+      ]
+     ],
+     [
+      [
+       0.4799824655056,
+       1.0
+      ],
+      "LINEAR",
+      [
+       0.37817126512527466,
+       1.0
+      ],
+      [
+       0.5817936658859253,
+       1.0
+      ]
+     ]
+    ],
+    "modifiers": [],
+    "extrapolation": "CONSTANT"
+   },
+   "has_driver": true
+  }
+ ],
+ "vertex_group_names": [
+  "tag_Head",
+  "tag_Torso",
+  "tag_Arm.L",
+  "tag_Arm.R",
+  "tag_Leg.L",
+  "tag_Leg.R",
+  "DEF-spine",
+  "DEF-spine.001",
+  "DEF-spine.002",
+  "DEF-spine.003",
+  "DEF-spine.004",
+  "DEF-spine.005",
+  "DEF-spine.006",
+  "DEF-pelvis.L",
+  "DEF-pelvis.R",
+  "DEF-thigh.L",
+  "DEF-thigh.L.001",
+  "DEF-shin.L",
+  "DEF-shin.L.001",
+  "DEF-foot.L",
+  "DEF-toe.L",
+  "DEF-thigh.R",
+  "DEF-thigh.R.001",
+  "DEF-shin.R",
+  "DEF-shin.R.001",
+  "DEF-foot.R",
+  "DEF-toe.R",
+  "DEF-shoulder.L",
+  "DEF-upper_arm.L",
+  "DEF-upper_arm.L.001",
+  "DEF-forearm.L",
+  "DEF-forearm.L.001",
+  "DEF-hand.L",
+  "DEF-shoulder.R",
+  "DEF-upper_arm.R",
+  "DEF-upper_arm.R.001",
+  "DEF-forearm.R",
+  "DEF-forearm.R.001",
+  "DEF-hand.R"
+ ],
+ "rig": {
+  "bones": 216,
+  "deform_bones": [
+   "DEF-foot.L",
+   "DEF-foot.R",
+   "DEF-forearm.L",
+   "DEF-forearm.L.001",
+   "DEF-forearm.R",
+   "DEF-forearm.R.001",
+   "DEF-hand.L",
+   "DEF-hand.R",
+   "DEF-pelvis.L",
+   "DEF-pelvis.R",
+   "DEF-shin.L",
+   "DEF-shin.L.001",
+   "DEF-shin.R",
+   "DEF-shin.R.001",
+   "DEF-shoulder.L",
+   "DEF-shoulder.R",
+   "DEF-spine",
+   "DEF-spine.001",
+   "DEF-spine.002",
+   "DEF-spine.003",
+   "DEF-spine.004",
+   "DEF-spine.005",
+   "DEF-spine.006",
+   "DEF-thigh.L",
+   "DEF-thigh.L.001",
+   "DEF-thigh.R",
+   "DEF-thigh.R.001",
+   "DEF-toe.L",
+   "DEF-toe.R",
+   "DEF-upper_arm.L",
+   "DEF-upper_arm.L.001",
+   "DEF-upper_arm.R",
+   "DEF-upper_arm.R.001"
+  ],
+  "scale": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "matrix_world": [
+   [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ]
+ },
+ "pose_constraints_count": 120,
+ "pose_constraints_sample": {
+  "DEF-spine": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.001"
+   }
+  ],
+  "DEF-spine.001": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.001"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.002"
+   }
+  ],
+  "DEF-spine.002": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.002"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.003"
+   }
+  ],
+  "DEF-spine.003": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.003"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "tweak_spine.004"
+   }
+  ],
+  "DEF-spine.004": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-spine.004"
+   }
+  ],
+  "DEF-spine.005": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-spine.005"
+   }
+  ],
+  "DEF-spine.006": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-spine.006"
+   }
+  ],
+  "VIS_upper_arm_ik_pole.L": [
+   {
+    "type": "COPY_LOCATION",
+    "name": "Copy Location",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-forearm.L"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "upper_arm_ik_target.L"
+   }
+  ],
+  "VIS_upper_arm_ik_pole.R": [
+   {
+    "type": "COPY_LOCATION",
+    "name": "Copy Location",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-forearm.R"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "upper_arm_ik_target.R"
+   }
+  ],
+  "VIS_thigh_ik_pole.L": [
+   {
+    "type": "COPY_LOCATION",
+    "name": "Copy Location",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-shin.L"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "thigh_ik_target.L"
+   }
+  ],
+  "VIS_thigh_ik_pole.R": [
+   {
+    "type": "COPY_LOCATION",
+    "name": "Copy Location",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "ORG-shin.R"
+   },
+   {
+    "type": "STRETCH_TO",
+    "name": "Stretch To",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "thigh_ik_target.R"
+   }
+  ],
+  "MCH-torso.parent": [
+   {
+    "type": "ARMATURE",
+    "name": "SWITCH_PARENT",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": null
+   }
+  ],
+  "MCH-spine.001": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 0.5,
+    "mute": false,
+    "subtarget": "hips"
+   }
+  ],
+  "MCH-spine": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 0.5,
+    "mute": false,
+    "subtarget": "hips"
+   }
+  ],
+  "ORG-thigh.L": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "thigh_fk.L"
+   },
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms.001",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "thigh_ik.L"
+   }
+  ],
+  "ORG-shin.L": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "shin_fk.L"
+   },
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms.001",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "MCH-shin_ik.L"
+   }
+  ],
+  "ORG-foot.L": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "foot_fk.L"
+   },
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms.001",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "MCH-thigh_ik_target.L"
+   }
+  ],
+  "ORG-toe.L": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "toe_fk.L"
+   },
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms.001",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "toe_ik.L"
+   }
+  ],
+  "MCH-shin_tweak.L": [
+   {
+    "type": "COPY_SCALE",
+    "name": "Copy Scale",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "MCH-thigh_parent.L"
+   }
+  ],
+  "MCH-shin_tweak.L.001": [
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "shin_tweak.L"
+   },
+   {
+    "type": "COPY_TRANSFORMS",
+    "name": "Copy Transforms.001",
+    "influence": 0.5,
+    "mute": false,
+    "subtarget": "foot_tweak.L"
+   },
+   {
+    "type": "DAMPED_TRACK",
+    "name": "Damped Track",
+    "influence": 1.0,
+    "mute": false,
+    "subtarget": "foot_tweak.L"
+   }
+  ]
+ },
+ "actions": [
+  {
+   "name": "jump",
+   "frame_range": [
+    1.0,
+    36.0
+   ],
+   "fcurves": 73,
+   "id_root": null,
+   "assigned_to": [
+    "werewolf-form-a_retopo_rig.001"
+   ],
+   "bones": [
+    "chest",
+    "foot_heel_ik.L",
+    "foot_heel_ik.R",
+    "foot_ik.L",
+    "foot_ik.R",
+    "forearm_fk.L",
+    "forearm_fk.R",
+    "root",
+    "thigh_parent.L",
+    "thigh_parent.R",
+    "torso",
+    "upper_arm_fk.L",
+    "upper_arm_fk.R",
+    "upper_arm_parent.L",
+    "upper_arm_parent.R"
+   ]
+  },
+  {
+   "name": "punch.L",
+   "frame_range": [
+    1.0,
+    24.0
+   ],
+   "fcurves": 72,
+   "id_root": null,
+   "assigned_to": [],
+   "bones": [
+    "chest",
+    "foot_heel_ik.L",
+    "foot_heel_ik.R",
+    "foot_ik.L",
+    "foot_ik.R",
+    "hand_ik.L",
+    "hand_ik.R",
+    "head",
+    "hips",
+    "shoulder.L",
+    "thigh_parent.L",
+    "thigh_parent.R",
+    "torso",
+    "upper_arm_parent.L",
+    "upper_arm_parent.R"
+   ]
+  },
+  {
+   "name": "punch.R",
+   "frame_range": [
+    1.0,
+    24.0
+   ],
+   "fcurves": 72,
+   "id_root": null,
+   "assigned_to": [],
+   "bones": [
+    "chest",
+    "foot_heel_ik.L",
+    "foot_heel_ik.R",
+    "foot_ik.L",
+    "foot_ik.R",
+    "hand_ik.L",
+    "hand_ik.R",
+    "head",
+    "hips",
+    "shoulder.R",
+    "thigh_parent.L",
+    "thigh_parent.R",
+    "torso",
+    "upper_arm_parent.L",
+    "upper_arm_parent.R"
+   ]
+  },
+  {
+   "name": "walk-loop",
+   "frame_range": [
+    1.0,
+    33.0
+   ],
+   "fcurves": 66,
+   "id_root": null,
+   "assigned_to": [],
+   "bones": [
+    "foot_heel_ik.L",
+    "foot_heel_ik.R",
+    "foot_ik.L",
+    "foot_ik.R",
+    "forearm_fk.L",
+    "forearm_fk.R",
+    "root",
+    "thigh_parent.L",
+    "thigh_parent.R",
+    "torso",
+    "upper_arm_fk.L",
+    "upper_arm_fk.R",
+    "upper_arm_parent.L",
+    "upper_arm_parent.R"
+   ]
+  }
+ ],
+ "scene_frame_range": [
+  1,
+  250
+ ]
+}

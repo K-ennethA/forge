@@ -1,0 +1,227 @@
+{
+ "leg_residual_maps": [
+  {
+   "action": "punch.R",
+   "frame": 5,
+   "scale_red_mm": 32.06,
+   "leg_max_mm": 49.64,
+   "leg_p95_mm": 20.68,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_legonly_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_legonly_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 31,
+   "scale_red_mm": 70.17,
+   "leg_max_mm": 85.71,
+   "leg_p95_mm": 52.55,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_legonly_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_legonly_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 33,
+   "scale_red_mm": 83.2,
+   "leg_max_mm": 99.35,
+   "leg_p95_mm": 63.23,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_legonly_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_legonly_side.png"
+   ]
+  }
+ ],
+ "walk_seam_frames": [
+  {
+   "frame": 25,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f25_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f25_front.png"
+   ]
+  },
+  {
+   "frame": 27,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f27_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f27_front.png"
+   ]
+  },
+  {
+   "frame": 29,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f29_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f29_front.png"
+   ]
+  },
+  {
+   "frame": 31,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f31_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f31_front.png"
+   ]
+  },
+  {
+   "frame": 33,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f33_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f33_front.png"
+   ]
+  },
+  {
+   "frame": 1,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f01_side.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\walk_seam_f01_front.png"
+   ]
+  }
+ ],
+ "jump_crouch_kinematics": [
+  {
+   "frame": 1,
+   "hip_z_mm": 861.37,
+   "knee_z_mm": 511.4,
+   "knee_y_mm": 43.55,
+   "knee_forward_of_ankle_mm": -7.36,
+   "knee_forward_of_toe_mm": 102.41,
+   "hip_behind_ankle_mm": 30.74,
+   "thigh_from_vertical_deg": 8.41,
+   "shin_from_vertical_deg": 4.47,
+   "ankle_z_mm": 64.23
+  },
+  {
+   "frame": 2,
+   "hip_z_mm": 855.86,
+   "knee_z_mm": 509.43,
+   "knee_y_mm": 31.51,
+   "knee_forward_of_ankle_mm": -19.4,
+   "knee_forward_of_toe_mm": 90.37,
+   "hip_behind_ankle_mm": 30.74,
+   "thigh_from_vertical_deg": 10.22,
+   "shin_from_vertical_deg": 4.81,
+   "ankle_z_mm": 64.24
+  },
+  {
+   "frame": 3,
+   "hip_z_mm": 841.32,
+   "knee_z_mm": 504.42,
+   "knee_y_mm": 0.71,
+   "knee_forward_of_ankle_mm": -50.19,
+   "knee_forward_of_toe_mm": 59.57,
+   "hip_behind_ankle_mm": 30.74,
+   "thigh_from_vertical_deg": 15.2,
+   "shin_from_vertical_deg": 7.35,
+   "ankle_z_mm": 64.24
+  },
+  {
+   "frame": 4,
+   "hip_z_mm": 820.77,
+   "knee_z_mm": 497.15,
+   "knee_y_mm": -33.21,
+   "knee_forward_of_ankle_mm": -84.11,
+   "knee_forward_of_toe_mm": 25.65,
+   "hip_behind_ankle_mm": 30.74,
+   "thigh_from_vertical_deg": 21.07,
+   "shin_from_vertical_deg": 11.31,
+   "ankle_z_mm": 64.24
+  },
+  {
+   "frame": 5,
+   "hip_z_mm": 797.21,
+   "knee_z_mm": 488.58,
+   "knee_y_mm": -62.96,
+   "knee_forward_of_ankle_mm": -113.87,
+   "knee_forward_of_toe_mm": -4.1,
+   "hip_behind_ankle_mm": 30.74,
+   "thigh_from_vertical_deg": 26.55,
+   "shin_from_vertical_deg": 15.16,
+   "ankle_z_mm": 64.27
+  },
+  {
+   "frame": 6,
+   "hip_z_mm": 773.66,
+   "knee_z_mm": 479.93,
+   "knee_y_mm": -87.05,
+   "knee_forward_of_ankle_mm": -137.96,
+   "knee_forward_of_toe_mm": -28.19,
+   "hip_behind_ankle_mm": 30.73,
+   "thigh_from_vertical_deg": 31.24,
+   "shin_from_vertical_deg": 18.43,
+   "ankle_z_mm": 64.33
+  },
+  {
+   "frame": 7,
+   "hip_z_mm": 753.1,
+   "knee_z_mm": 472.18,
+   "knee_y_mm": -103.71,
+   "knee_forward_of_ankle_mm": -154.62,
+   "knee_forward_of_toe_mm": -44.85,
+   "hip_behind_ankle_mm": 30.73,
+   "thigh_from_vertical_deg": 34.73,
+   "shin_from_vertical_deg": 20.8,
+   "ankle_z_mm": 64.36
+  },
+  {
+   "frame": 8,
+   "hip_z_mm": 738.57,
+   "knee_z_mm": 466.71,
+   "knee_y_mm": -114.39,
+   "knee_forward_of_ankle_mm": -165.31,
+   "knee_forward_of_toe_mm": -55.53,
+   "hip_behind_ankle_mm": 30.73,
+   "thigh_from_vertical_deg": 37.07,
+   "shin_from_vertical_deg": 22.36,
+   "ankle_z_mm": 64.36
+  },
+  {
+   "frame": 9,
+   "hip_z_mm": 733.05,
+   "knee_z_mm": 464.61,
+   "knee_y_mm": -118.11,
+   "knee_forward_of_ankle_mm": -169.02,
+   "knee_forward_of_toe_mm": -59.25,
+   "hip_behind_ankle_mm": 30.73,
+   "thigh_from_vertical_deg": 37.91,
+   "shin_from_vertical_deg": 22.91,
+   "ankle_z_mm": 64.36
+  },
+  {
+   "frame": 10,
+   "hip_z_mm": 766.32,
+   "knee_z_mm": 484.85,
+   "knee_y_mm": -103.37,
+   "knee_forward_of_ankle_mm": -150.03,
+   "knee_forward_of_toe_mm": -44.51,
+   "hip_behind_ankle_mm": 34.98,
+   "thigh_from_vertical_deg": 34.62,
+   "shin_from_vertical_deg": 20.15,
+   "ankle_z_mm": 75.08
+  },
+  {
+   "frame": 11,
+   "hip_z_mm": 828.11,
+   "knee_z_mm": 520.9,
+   "knee_y_mm": -66.51,
+   "knee_forward_of_ankle_mm": -102.53,
+   "knee_forward_of_toe_mm": -7.64,
+   "hip_behind_ankle_mm": 45.62,
+   "thigh_from_vertical_deg": 27.13,
+   "shin_from_vertical_deg": 13.65,
+   "ankle_z_mm": 93.55
+  },
+  {
+   "frame": 12,
+   "hip_z_mm": 861.37,
+   "knee_z_mm": 538.9,
+   "knee_y_mm": -37.64,
+   "knee_forward_of_ankle_mm": -66.58,
+   "knee_forward_of_toe_mm": 21.22,
+   "hip_behind_ankle_mm": 52.71,
+   "thigh_from_vertical_deg": 21.73,
+   "shin_from_vertical_deg": 9.11,
+   "ankle_z_mm": 102.67
+  }
+ ]
+}

@@ -1,0 +1,3267 @@
+{
+ "deform_bones": [
+  {
+   "bone": "DEF-spine",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "root",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "tweak_spine",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "tweak_spine.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.001",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "tweak_spine.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "tweak_spine.002",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.002",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "tweak_spine.002",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "tweak_spine.003",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.003",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine.002",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "tweak_spine.003",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "tweak_spine.004",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.004",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine.003",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "ORG-spine.004",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.005",
+   "bbone_segments": 8,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine.004",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "ORG-spine.005",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-spine.006",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-spine.005",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "ORG-spine.006",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-pelvis.L",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-pelvis.L",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-pelvis.R",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-pelvis.R",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-thigh.L",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-spine",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "thigh_tweak.L",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "thigh_tweak.L.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-thigh.L.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-thigh.L",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "thigh_tweak.L.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "shin_tweak.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shin.L",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-thigh.L.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "shin_tweak.L",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "shin_tweak.L.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shin.L.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-shin.L",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "shin_tweak.L.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "foot_tweak.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-foot.L",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-shin.L.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "foot_tweak.L",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "ORG-toe.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-toe.L",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-foot.L",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "ORG-toe.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-thigh.R",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-spine",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "thigh_tweak.R",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "thigh_tweak.R.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-thigh.R.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-thigh.R",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "thigh_tweak.R.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "shin_tweak.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shin.R",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-thigh.R.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "shin_tweak.R",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "shin_tweak.R.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shin.R.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-shin.R",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "shin_tweak.R.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "foot_tweak.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-foot.R",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-shin.R.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "foot_tweak.R",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "ORG-toe.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-toe.R",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-foot.R",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "ORG-toe.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shoulder.L",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-shoulder.L",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-upper_arm.L",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-shoulder.L",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "upper_arm_tweak.L",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "upper_arm_tweak.L.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-upper_arm.L.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-upper_arm.L",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "upper_arm_tweak.L.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "forearm_tweak.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-forearm.L",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-upper_arm.L.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "forearm_tweak.L",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "forearm_tweak.L.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-forearm.L.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-forearm.L",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "forearm_tweak.L.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "hand_tweak.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-hand.L",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-forearm.L.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "hand_tweak.L",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-shoulder.R",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-shoulder.R",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-upper_arm.R",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "ORG-shoulder.R",
+   "use_connect": false,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "upper_arm_tweak.R",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "upper_arm_tweak.R.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-upper_arm.R.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-upper_arm.R",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "upper_arm_tweak.R.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "forearm_tweak.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-forearm.R",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-upper_arm.R.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "forearm_tweak.R",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "forearm_tweak.R.001",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-forearm.R.001",
+   "bbone_segments": 10,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-forearm.R",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "forearm_tweak.R.001",
+     1.0,
+     false
+    ],
+    [
+     "STRETCH_TO",
+     "hand_tweak.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  },
+  {
+   "bone": "DEF-hand.R",
+   "bbone_segments": 1,
+   "handle_type_start": "AUTO",
+   "handle_type_end": "AUTO",
+   "custom_handle_start": null,
+   "custom_handle_end": null,
+   "parent": "DEF-forearm.R.001",
+   "use_connect": true,
+   "envelope_distance": 0.25,
+   "constraints": [
+    [
+     "COPY_TRANSFORMS",
+     "hand_tweak.R",
+     1.0,
+     false
+    ]
+   ],
+   "pose_bbone": {
+    "easein": 0.0,
+    "easeout": 0.0,
+    "curveinx": 0.0,
+    "curveinz": 0.0,
+    "curveoutx": 0.0,
+    "curveoutz": 0.0,
+    "scalein": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "scaleout": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rollin": 0.0,
+    "rolloutx": 0.0
+   }
+  }
+ ],
+ "rig_drivers": [
+  {
+   "path": "pose.bones[\"MCH-upper_arm_parent.L\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"FK_limb_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"upper_arm_ik_target.L\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"VIS_upper_arm_ik_pole.L\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.L\"].constraints[\"Limit Distance\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_Stretch\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-forearm_ik.L\"].constraints[\"IK\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-forearm_ik.L\"].constraints[\"IK.001\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-upper_arm.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-forearm.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-hand.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_parent.R\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"FK_limb_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"upper_arm_ik_target.R\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"VIS_upper_arm_ik_pole.R\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.R\"].constraints[\"Limit Distance\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_Stretch\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-forearm_ik.R\"].constraints[\"IK\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-forearm_ik.R\"].constraints[\"IK.001\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-upper_arm.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-forearm.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-hand.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-ROT-neck\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"torso\"][\"neck_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-ROT-head\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"torso\"][\"head_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_parent.L\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"FK_limb_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"thigh_ik_target.L\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"VIS_thigh_ik_pole.L\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.L\"].constraints[\"Limit Distance\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_Stretch\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-shin_ik.L\"].constraints[\"IK\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-shin_ik.L\"].constraints[\"IK.001\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-thigh.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-shin.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-foot.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-toe.L\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_parent.R\"].constraints[\"Copy Rotation\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"FK_limb_follow\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"thigh_ik_target.R\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"VIS_thigh_ik_pole.R\"].hide",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.R\"].constraints[\"Limit Distance\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_Stretch\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-shin_ik.R\"].constraints[\"IK\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-shin_ik.R\"].constraints[\"IK.001\"].mute",
+   "index": 0,
+   "expr": "False",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_vector\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-thigh.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-shin.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-foot.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"ORG-toe.R\"].constraints[\"Copy Transforms.001\"].influence",
+   "index": 0,
+   "expr": "1.0",
+   "type": "SUM",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_FK\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-torso.parent\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"torso\"][\"torso_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[6].weight",
+   "index": 0,
+   "expr": "var == 7",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-hand_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-upper_arm_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[6].weight",
+   "index": 0,
+   "expr": "var == 7",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"upper_arm_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.L\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.L\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-foot_ik.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"IK_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[0].weight",
+   "index": 0,
+   "expr": "var == 1",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[1].weight",
+   "index": 0,
+   "expr": "var == 2",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[2].weight",
+   "index": 0,
+   "expr": "var == 3",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[3].weight",
+   "index": 0,
+   "expr": "var == 4",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[4].weight",
+   "index": 0,
+   "expr": "var == 5",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "path": "pose.bones[\"MCH-thigh_ik_target.parent.R\"].constraints[\"SWITCH_PARENT\"].targets[5].weight",
+   "index": 0,
+   "expr": "var == 6",
+   "type": "SCRIPTED",
+   "vars": [
+    {
+     "name": "var",
+     "type": "SINGLE_PROP",
+     "targets": [
+      {
+       "id": "werewolf-form-a_retopo_rig.001",
+       "bone": "",
+       "transform": "LOC_X",
+       "space": "WORLD_SPACE",
+       "path": "pose.bones[\"thigh_parent.R\"][\"pole_parent\"]"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "rig_driver_count": 89
+}

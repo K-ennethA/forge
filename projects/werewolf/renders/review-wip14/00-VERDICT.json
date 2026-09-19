@@ -1,0 +1,597 @@
+{
+ "subject": "werewolf-wip-14.blend / werewolf-form-a_retopo on werewolf-form-a_retopo_rig.001",
+ "method": "copies only; Blender 5.0.1 --background --factory-startup --enable-autoexec; no repo code or blend modified; add-on imported (never registered - register() arms the socket timer) for render_weight_maps / _render_pass / _weight_color.",
+ "q1_deformation_stack": {
+  "modifiers": [
+   {
+    "index": 0,
+    "name": "Armature.001",
+    "type": "ARMATURE",
+    "object": "werewolf-form-a_retopo_rig.001",
+    "use_deform_preserve_volume": false,
+    "use_bone_envelopes": false,
+    "use_vertex_groups": true,
+    "use_multi_modifier": false,
+    "vertex_group": "",
+    "show_viewport": true,
+    "show_render": true
+   }
+  ],
+  "corrective_smooth": null,
+  "shrinkwrap": null,
+  "data_transfer": null,
+  "object_constraints": [],
+  "verdict": "ONE modifier. Preserve Volume is OFF. There is no Corrective Smooth, no Shrinkwrap, no DataTransfer, no second armature, no object constraint. The flagged 35.3 mm 'beyond plain vertex-group skinning' mismatch is NOT a modifier: it is (a) 10-segment B-Bones with STRETCH_TO on every limb/spine DEF bone, and (b) the 10 JCM shape keys.",
+  "non_lbs_deformation": {
+   "bbone_segments": {
+    "spine DEF-spine..005": 8,
+    "limb DEF-* chains": 10,
+    "DEF-spine.006 / pelvis / hand / foot / toe / shoulder": 1
+   },
+   "handles": "AUTO on every bone (no custom handles) - the implicit handles are the connected parent/child in the DEF chain",
+   "stretch_to": "every 8/10-segment DEF bone carries COPY_TRANSFORMS(<tweak>) + STRETCH_TO(<next tweak>), volume=VOLUME_XZX, bulge=1.0, keep_axis=SWING_Y, influence=1.0",
+   "ik_stretch": {
+    "thigh_parent.L/R IK_Stretch": 1.0,
+    "thigh_parent.L/R IK_FK": 0.0,
+    "upper_arm_parent.L/R IK_Stretch": 1.0,
+    "upper_arm_parent.L/R IK_FK": 1.0
+   },
+   "why_it_matters": "IK_Stretch=1.0 on legs that are in full IK means the DEF bones change LENGTH whenever the foot IK target is farther from the hip than the leg can reach. That is literal stretching of the leg mesh."
+  }
+ },
+ "q1_shape_keys": {
+  "count": 10,
+  "block": "Key",
+  "relative": true,
+  "all_relative_to": "Basis",
+  "driver_pattern": "AVERAGE driver, one ROTATION_DIFF variable between two DEF bones, mapped through a 2-3 point LINEAR f-curve, CONSTANT extrapolation",
+  "keys": [
+   {
+    "key": "corr_knee_L_070",
+    "drivers_on": [
+     "DEF-thigh.L.001",
+     "DEF-shin.L"
+    ],
+    "curve_rad": [
+     [
+      0.1133,
+      0.0
+     ],
+     [
+      1.1085,
+      1.0
+     ],
+     [
+      3.953,
+      0.0
+     ]
+    ],
+    "max_basis_delta_mm": 21.15,
+    "moved_verts": 215,
+    "region": "leg (100%)"
+   },
+   {
+    "key": "corr_knee_L_140",
+    "drivers_on": [
+     "DEF-thigh.L.001",
+     "DEF-shin.L"
+    ],
+    "curve_rad": [
+     [
+      1.1085,
+      0.0
+     ],
+     [
+      3.953,
+      1.0
+     ]
+    ],
+    "max_basis_delta_mm": 65.15,
+    "moved_verts": 269,
+    "region": "leg (100%)"
+   },
+   {
+    "key": "corr_knee_R_070",
+    "drivers_on": [
+     "DEF-thigh.R.001",
+     "DEF-shin.R"
+    ],
+    "curve_rad": [
+     [
+      0.1133,
+      0.0
+     ],
+     [
+      1.1085,
+      1.0
+     ],
+     [
+      3.953,
+      0.0
+     ]
+    ],
+    "max_basis_delta_mm": 21.6,
+    "moved_verts": 219,
+    "region": "leg (100%)"
+   },
+   {
+    "key": "corr_knee_R_140",
+    "drivers_on": [
+     "DEF-thigh.R.001",
+     "DEF-shin.R"
+    ],
+    "curve_rad": [
+     [
+      1.1085,
+      0.0
+     ],
+     [
+      3.953,
+      1.0
+     ]
+    ],
+    "max_basis_delta_mm": 61.35,
+    "moved_verts": 274,
+    "region": "leg (100%)"
+   },
+   {
+    "key": "corr_elbow_L_075",
+    "drivers_on": [
+     "DEF-upper_arm.L.001",
+     "DEF-forearm.L"
+    ],
+    "curve_rad": [
+     [
+      0.3234,
+      0.0
+     ],
+     [
+      0.9856,
+      1.0
+     ],
+     [
+      3.9886,
+      0.0
+     ]
+    ],
+    "max_basis_delta_mm": 22.31,
+    "moved_verts": 185,
+    "region": "arm (100%)"
+   },
+   {
+    "key": "corr_elbow_L_150",
+    "drivers_on": [
+     "DEF-upper_arm.L.001",
+     "DEF-forearm.L"
+    ],
+    "curve_rad": [
+     [
+      0.9856,
+      0.0
+     ],
+     [
+      3.9886,
+      1.0
+     ]
+    ],
+    "max_basis_delta_mm": 59.02,
+    "moved_verts": 233,
+    "region": "arm (100%)"
+   },
+   {
+    "key": "corr_elbow_R_075",
+    "drivers_on": [
+     "DEF-upper_arm.R.001",
+     "DEF-forearm.R"
+    ],
+    "curve_rad": [
+     [
+      0.3234,
+      0.0
+     ],
+     [
+      0.9856,
+      1.0
+     ],
+     [
+      3.9886,
+      0.0
+     ]
+    ],
+    "max_basis_delta_mm": 20.91,
+    "moved_verts": 187,
+    "region": "arm (100%)"
+   },
+   {
+    "key": "corr_elbow_R_150",
+    "drivers_on": [
+     "DEF-upper_arm.R.001",
+     "DEF-forearm.R"
+    ],
+    "curve_rad": [
+     [
+      0.9856,
+      0.0
+     ],
+     [
+      3.9886,
+      1.0
+     ]
+    ],
+    "max_basis_delta_mm": 59.84,
+    "moved_verts": 231,
+    "region": "arm (100%)"
+   },
+   {
+    "key": "corr_head_018",
+    "drivers_on": [
+     "DEF-spine.005",
+     "DEF-spine.006"
+    ],
+    "curve_rad": [
+     [
+      0.1309,
+      0.0
+     ],
+     [
+      0.1745,
+      1.0
+     ],
+     [
+      0.48,
+      0.0
+     ]
+    ],
+    "max_basis_delta_mm": 3.95,
+    "moved_verts": 57,
+    "region": "head/neck"
+   },
+   {
+    "key": "corr_head_035",
+    "drivers_on": [
+     "DEF-spine.005",
+     "DEF-spine.006"
+    ],
+    "curve_rad": [
+     [
+      0.1745,
+      0.0
+     ],
+     [
+      0.48,
+      1.0
+     ]
+    ],
+    "max_basis_delta_mm": 10.47,
+    "moved_verts": 61,
+    "region": "head/neck"
+   }
+  ],
+  "cross_region_leak": "NONE. Every knee key moves ONLY leg-region vertices (leg share of displacement 1.0000); every elbow key moves ONLY arm-region vertices (leg share 0.0000); head keys move 57-61 head/neck vertices. No corrective key touches a vertex outside its own limb."
+ },
+ "q4_correctives_audit": {
+  "deep_key_domain_bug": {
+   "fact": "ROTATION_DIFF is an angle between two orientations: its domain is [0, pi] = [0, 3.1416] rad. Both deep keys are keyed to reach 1.0 at 3.9530 rad (knee, 226.5 deg) and 3.9886 rad (elbow, 228.5 deg), which the driver input CANNOT reach.",
+   "knee_140_max_reachable_value": 0.7147,
+   "elbow_150_max_reachable_value": 0.7179,
+   "confirmed_by_measurement": {
+    "corr_elbow_R_150 peak over punch.R": 0.7179,
+    "predicted ceiling": 0.7179,
+    "corr_knee_140 peak over jump (knee reaches 94.3 deg)": 0.1887,
+    "value it should have at 94.3 deg if keyed at 140 deg": 0.403
+   },
+   "effect": "the deep-flex correctives deliver at most 71.5-71.8% of their authored shape, and in practice 19% at the deepest knee in any action. Deep-flex volume loss therefore stays uncorrected: jump f17, knee 94.3 deg, knee-hull volume -29.3% without keys, still -22.8% with them."
+  },
+  "volume_overshoot_not_reproduced": {
+   "probe": "convex hull of the 212 vertices within 120 mm of the knee joint, rest hull 2887.3 cm3",
+   "finding": "at EVERY frame of every authored action the knee JCMs move the hull TOWARD rest, never past it. Worst mid-flex sample (walk f14, knee 22.7 deg): -7.3% -> -5.2%. Deepest (jump f17, 94.3 deg): -29.3% -> -22.8%. The '-13.7% -> -19.8% overshoot into volume GAIN' reported by the correctives stage is NOT present in the shipped animation. The +1.4% to +3.4% 'gains' that do appear are at knee angles of 0-8 deg where the JCM value is 0.000 - they are the straightened leg, not the correctives."
+  },
+  "knee_jcm_during_punch": {
+   "fires": true,
+   "values": "corr_knee_L_070 0.413-0.441, corr_knee_R_070 0.290-0.413 across all 24 frames of punch.R; both _140 keys stay at 0.000",
+   "is_it_a_driver_bug": "NO. The punch's own base pose drops the torso 40.37 mm and stands the character on 30.0 deg knees for the whole action, so a 30 deg knee corrective is correct. What the strike changes is small: the torso lean straightens the right knee 30.0 -> 23.0 deg, moving corr_knee_R_070 0.413 -> 0.290 (delta 0.123) and the leg surface by 8.66 -> 9.22 mm max (delta 0.56 mm)."
+  },
+  "walk_thigh_shin_surface_displacement_from_jcm": {
+   "max_mm": 13.33,
+   "at": "walk-loop f1, knee.L 43.5 deg",
+   "typical_stance_mm": "11.3-12.1",
+   "mean_over_limb_mm": 0.3,
+   "punch_max_mm": 9.22,
+   "jump_max_mm": 19.45
+  }
+ },
+ "q2_contribution_decomposition": {
+  "definition": "leg region = 3867 vertices whose dominant deform weight is DEF-spine (hips), DEF-pelvis.*, DEF-thigh.*, DEF-shin.*, DEF-foot.*, DEF-toe.*; arm region = 2445 vertices on DEF-shoulder/upper_arm/forearm/hand.",
+  "lbs_validation": "manual LBS reproduces the depsgraph to 0.0005 mm at rest; every vertex's weights sum to exactly 1.0000.",
+  "arm_only_isolation_THE_ANSWER": {
+   "what": "the whole rig rested, then ONLY the arm controls (hand_ik.L/R, shoulder.L/R, upper_arm_fk.L/R, forearm_fk.L/R, upper_arm_parent.L/R + their IK_FK props) re-driven to their authored values, evaluated through the real rig with IK, B-Bones, STRETCH_TO and the JCM drivers all live.",
+   "leg_displacement_mm": {
+    "punch.R f5": 0.0,
+    "punch.R f6": 0.0,
+    "punch.R f8": 0.0,
+    "walk-loop f14": 0.0,
+    "walk-loop f31": 0.0,
+    "jump f9": 0.0,
+    "jump f27": 0.0
+   },
+   "arm_displacement_mm_same_poses": {
+    "punch.R f5": 752.49,
+    "punch.R f6": 748.74,
+    "walk-loop f31": 145.06,
+    "jump f27": 472.36
+   },
+   "verdict": "ARMS MOVE THE LEGS BY EXACTLY 0.00 mm. The weight-bleed hypothesis is REFUTED."
+  },
+  "torso_only_isolation": {
+   "controls": [
+    "torso",
+    "chest",
+    "hips",
+    "head",
+    "neck"
+   ],
+   "leg_displacement_mm": {
+    "punch.R f5": 137.36,
+    "punch.R f6": 136.68,
+    "walk-loop f14": 349.83,
+    "walk-loop f31": 757.64,
+    "jump f9": 211.81,
+    "jump f27": 281.41
+   },
+   "verdict": "100% of the leg motion during a punch comes from the torso/hips controls, which move on the same frames as the arms. The artist saw a correlation."
+  },
+  "feet_only_isolation_leg_mm": {
+   "punch.R f5": 0.0,
+   "walk-loop f14": 205.59,
+   "walk-loop f31": 424.84,
+   "jump f9": 0.0
+  },
+  "weight_bleed_measured": {
+   "non_leg_weight_resident_on_leg_region": {
+    "only_bone": "DEF-spine.001",
+    "total_mass": 7.1032,
+    "vertices": 20,
+    "max_fraction_on_one_vertex": 0.47795,
+    "p95_fraction": 0.0,
+    "mean_fraction": 0.00184
+   },
+   "no_arm_bone_has_any_weight_on_any_leg_region_vertex": true,
+   "peak_displacement_it_causes_mm": {
+    "punch.R f5": 3.91,
+    "walk-loop": 0.0,
+    "jump": 0.0
+   }
+  },
+  "leg_residual_vs_rigid_leg_chain_mm": {
+   "punch.R f5": {
+    "max": 49.64,
+    "p95": 20.55,
+    "worst_vertex": 5587,
+    "worst_vertex_weights": [
+     [
+      "DEF-shin.R.001",
+      1.0
+     ]
+    ],
+    "split": {
+     "weights_bleed": 0.0,
+     "shape_keys": 0.0,
+     "non_rigid_bone_deformation": 49.64
+    }
+   },
+   "walk-loop f31": {
+    "max": 85.71,
+    "p95_leg": 70.17
+   },
+   "walk-loop f33": {
+    "max": 99.35
+   },
+   "reading": "on the worst punch vertex the residual is 100% non-rigid BONE deformation (B-Bone curvature + STRETCH_TO/IK-stretch length change) on a vertex bound 1.0 to a single bone - not weights, not shape keys."
+  }
+ },
+ "q5_verdict": {
+  "mechanisms_ranked_by_contribution": [
+   {
+    "rank": 1,
+    "mechanism": "walk-loop: leg IK stretch. The body's forward travel is authored on the torso control (0 -> 641.6 mm over 33 frames) while the foot IK targets cycle in root space, so the hip runs away from the planted foot. With thigh_parent IK_Stretch = 1.0 the leg simply extends.",
+    "numbers": "left leg chain +261.67 mm = +32.58% of its own length at f33 (hip-to-ankle distance = 1.3258 x leg length); +207.31 mm (+25.81%) at f31; the right leg is +58.99 mm (+7.34%) over f1-f7. Per-bone: each of the 4 left leg DEF bones grows 51.8 mm at f31.",
+    "also": "the loop does not close: extension_frac_L is 1.3258 at f33 and 0.9071 at f1, a 281 mm pop at the seam every cycle."
+   },
+   {
+    "rank": 2,
+    "mechanism": "jump: leg IK squash. Same switch, opposite sign - the DEF bones COMPRESS rather than the knee folding.",
+    "numbers": "-38.34 mm = -4.77% leg chain at f17 (apex, knee 94.3 deg); -28.17 mm (-3.51%) at the crouch bottom; -34.49 mm (-4.29%) at landing f27."
+   },
+   {
+    "rank": 3,
+    "mechanism": "punch: torso lean on a body already standing at 94.9% leg extension. Feet planted (feet-only isolation = 0.00 mm), so all 137.4 mm of leg motion is the hips.",
+    "numbers": "leg chain -15.26 mm (-1.90%) held for all 24 frames; knee.R swings 30.0 -> 23.0 deg; leg residual vs a rigid leg chain 49.64 mm max / 20.55 mm p95."
+   },
+   {
+    "rank": 4,
+    "mechanism": "JCM correctives firing on the legs during arm-timed action.",
+    "numbers": "9.22 mm max leg-surface shift during punch.R, 13.33 mm during walk, 19.45 mm during jump. Real, visible at close range, but an order of magnitude below the IK stretch."
+   },
+   {
+    "rank": 5,
+    "mechanism": "weight bleed. DEF-spine.001 on 20 pelvis-top vertices.",
+    "numbers": "3.91 mm max in punch.R f5, 0.00 mm in walk and jump."
+   }
+  ],
+  "artist_hypothesis": "REFUTED. 'If we had proper bones and heatmaps' assumed weight bleed. Arm-only motion displaces the leg region by 0.00 mm at every frame tested, no arm bone carries any weight on any leg-region vertex, and no elbow corrective key touches a leg vertex. The heatmaps are clean. It is NOT the weights and it is NOT (only) the correctives - it is the IK/STRETCH_TO stack: IK_Stretch = 1.0 on legs that stand at 99.84% of their own reach, driven by animation whose body travel and foot plants disagree.",
+  "recommended_fixes": [
+   "1. walk-loop: put the forward travel on root (or make it in-place) so the foot IK targets and the hips share one travel. Re-key the seam so f33 == f1.",
+   "2. Set thigh_parent.L/R['IK_Stretch'] = 0.0 (and key it) for any action with planted feet, so an unreachable target clamps at full extension instead of growing the leg. If stretch is wanted as a squash-and-stretch effect, bound it explicitly.",
+   "3. Lower the rest stance: 99.84% extension leaves no IK headroom, so every hip translation immediately hits the reach limit. Rest the knees at ~15-20 deg.",
+   "4. Re-key the deep correctives' driver curves to their real angles: 1.0 at 2.4435 rad (140 deg) for the knee and 2.6180 rad (150 deg) for the elbow, not 3.953 / 3.9886 rad, which are outside the pi-radian domain of a ROTATION_DIFF.",
+   "5. jump: the crouch is real (see below) but unreadable - add hip setback, a forward torso fold and ankle roll, and slow the load."
+  ],
+  "proposed_gates": [
+   {
+    "name": "leg_isolation_under_arm_motion",
+    "metric": "max displacement of leg-region vertices when ONLY the arm controls are driven to their authored per-frame values, everything else at rest, evaluated through the live rig (IK, B-Bones, STRETCH_TO, drivers on)",
+    "threshold": "<= 1.0 mm on any frame of any authored action",
+    "measured_now": "0.00 mm - this gate PASSES today and would not have caught the bug, which is why the next two matter"
+   },
+   {
+    "name": "bone_stretch_budget",
+    "metric": "abs(sum(DEF chain length) / rest chain length - 1) per limb per frame",
+    "threshold": "<= 2.0% attention, <= 5.0% fail, on every frame of every authored action; 0% for any limb whose end effector is in a planted/contact run",
+    "measured_now": "walk-loop left leg 32.58% FAIL (f33), 25.81% (f31); jump 4.77% ATTENTION (f17); punch 1.90% ok",
+    "why": "this is the single number that turns 'the legs visibly stretch' into a machine check, and it is the one no existing gate measures"
+   },
+   {
+    "name": "ik_reach_headroom",
+    "metric": "hip-to-ankle distance / leg chain rest length, per leg per frame",
+    "threshold": "<= 1.00 always (never over-reach); warn above 0.98",
+    "measured_now": "walk-loop peaks at 1.3258; rest pose already 0.9984"
+   },
+   {
+    "name": "loop_seam_closure",
+    "metric": "max per-vertex distance between the evaluated mesh at the first and last frame of any action named *-loop",
+    "threshold": "<= 1.0 mm",
+    "measured_now": "walk-loop: the left leg alone differs by 281 mm of chain length"
+   },
+   {
+    "name": "corrective_driver_domain",
+    "metric": "for every shape-key driver whose variable is ROTATION_DIFF, the largest f-curve keyframe x must be <= pi radians",
+    "threshold": "hard fail above pi",
+    "measured_now": "4 of 10 keys fail: knee _140 at 3.9530 rad, elbow _150 at 3.9886 rad"
+   },
+   {
+    "name": "corrective_never_overshoots",
+    "metric": "knee/elbow hull volume with keys on must lie between the keys-off volume and the rest volume, at every sampled flex angle",
+    "threshold": "no crossing past rest",
+    "measured_now": "PASSES on every frame of every action"
+   }
+  ]
+ },
+ "q_jump_crouch_addendum": {
+  "question": "the artist reports no visible crouch before takeoff",
+  "was_it_clamped_or_keyed_to_a_dead_control": "NO. The crouch is authored on the torso control's Z and it reaches the mesh in full.",
+  "authored_vs_measured": {
+   "spec": "crouch_depth 0.16 x leg_length = 0.16 x 803.3 mm = 128.5 mm",
+   "measured_hip_drop_mm": 128.32,
+   "measured_head_top_drop_mm": 130.4,
+   "note": "the spec was delivered to within 0.2 mm - nothing was clamped or scaled away"
+  },
+  "per_frame_anticipation": [
+   {
+    "frame": 1,
+    "torso_z_mm": 0.0,
+    "hips_z_mm": 861.37,
+    "head_top_z_mm": 1879.8,
+    "knee_deg": 6.5,
+    "knee_fwd_of_ankle_mm": -7.36,
+    "hip_behind_ankle_mm": 30.74,
+    "leg_extension_frac": 0.9984
+   },
+   {
+    "frame": 2,
+    "torso_z_mm": -5.51,
+    "hips_z_mm": 855.86,
+    "head_top_z_mm": 1874.4,
+    "knee_deg": 9.9,
+    "knee_fwd_of_ankle_mm": -19.4,
+    "hip_behind_ankle_mm": 30.74,
+    "leg_extension_frac": 0.9918
+   },
+   {
+    "frame": 3,
+    "torso_z_mm": -20.05,
+    "hips_z_mm": 841.32,
+    "head_top_z_mm": 1860.3,
+    "knee_deg": 19.4,
+    "knee_fwd_of_ankle_mm": -50.19,
+    "hip_behind_ankle_mm": 30.74,
+    "leg_extension_frac": 0.9738
+   },
+   {
+    "frame": 4,
+    "torso_z_mm": -40.6,
+    "hips_z_mm": 820.77,
+    "head_top_z_mm": 1840.0,
+    "knee_deg": 30.1,
+    "knee_fwd_of_ankle_mm": -84.11,
+    "hip_behind_ankle_mm": 30.74,
+    "leg_extension_frac": 0.9484
+   },
+   {
+    "frame": 5,
+    "torso_z_mm": -64.16,
+    "hips_z_mm": 797.21,
+    "head_top_z_mm": 1816.2,
+    "knee_deg": 39.9,
+    "knee_fwd_of_ankle_mm": -113.87,
+    "hip_behind_ankle_mm": 30.74,
+    "leg_extension_frac": 0.9193
+   },
+   {
+    "frame": 6,
+    "torso_z_mm": -87.72,
+    "hips_z_mm": 773.66,
+    "head_top_z_mm": 1792.1,
+    "knee_deg": 48.1,
+    "knee_fwd_of_ankle_mm": -137.96,
+    "hip_behind_ankle_mm": 30.73,
+    "leg_extension_frac": 0.8901
+   },
+   {
+    "frame": 7,
+    "torso_z_mm": -108.27,
+    "hips_z_mm": 753.1,
+    "head_top_z_mm": 1770.6,
+    "knee_deg": 54.1,
+    "knee_fwd_of_ankle_mm": -154.62,
+    "hip_behind_ankle_mm": 30.73,
+    "leg_extension_frac": 0.8647
+   },
+   {
+    "frame": 8,
+    "torso_z_mm": -122.81,
+    "hips_z_mm": 738.57,
+    "head_top_z_mm": 1755.2,
+    "knee_deg": 58.1,
+    "knee_fwd_of_ankle_mm": -165.31,
+    "hip_behind_ankle_mm": 30.73,
+    "leg_extension_frac": 0.8467
+   },
+   {
+    "frame": 9,
+    "torso_z_mm": -128.32,
+    "hips_z_mm": 733.05,
+    "head_top_z_mm": 1749.4,
+    "knee_deg": 59.5,
+    "knee_fwd_of_ankle_mm": -169.02,
+    "hip_behind_ankle_mm": 30.73,
+    "leg_extension_frac": 0.8399
+   },
+   {
+    "frame": 12,
+    "torso_z_mm": 0.0,
+    "hips_z_mm": 861.37,
+    "head_top_z_mm": 1878.9,
+    "knee_deg": 29.4,
+    "knee_fwd_of_ankle_mm": -66.58,
+    "hip_behind_ankle_mm": 52.71,
+    "leg_extension_frac": 0.9504
+   }
+  ],
+  "why_it_does_not_read": [
+   "hip setback is EXACTLY 0.00 mm: hip_behind_ankle stays 30.74 -> 30.73 mm through the whole load. A real jump load takes the hips back over the heels; here they drop straight down a plumb line.",
+   "no torso fold: the torso control's rotation stays at rest, so the trunk stays vertical (and pitches slightly BACK) instead of folding forward over the knees.",
+   "no ankle work: ankle_z is pinned at 64.2-64.4 mm and foot_ik stays at (0,0,0) - no heel lift, no toe roll, no weight shift.",
+   "it is fast: at 24 fps the whole load is frames 1-9 = 0.333 s, and the deepest half (past -64 mm) is frames 5-9 = 0.208 s; the launch is frames 9-12 = 0.125 s.",
+   "it is shallow against the silhouette: 130.4 mm of a 1879.8 mm standing height = 6.9%.",
+   "the feet sink: mesh lowest Z goes +0.7 mm to -11.7 mm at the crouch bottom, so part of the drop is spent below the floor plane rather than in the silhouette.",
+   "the geometry tears at the hip during the load (visible in jump_anticipation_f09_side.png), which reads as a glitch rather than a pose."
+  ],
+  "recommended_fix": "keep the 128 mm depth but add (a) hip setback of roughly 0.5 x crouch depth along -forward, (b) torso pitch forward ~15-20 deg, (c) ankle dorsiflexion / heel contact so the feet stay on the plane, (d) stretch the load from 8 frames to 12-14 with a slow-out, and (e) clamp the crouch so mesh lowest Z never goes below 0.",
+  "proposed_gate": {
+   "name": "anticipation_reads",
+   "metric": "on any action carrying an anticipation window: silhouette height drop as a fraction of standing height, hip setback in mm, and window duration in seconds, all measured on the EVALUATED mesh",
+   "threshold": "height drop >= 8% of standing height, hip setback >= 0.3 x crouch depth, window >= 0.35 s, and mesh lowest Z >= -1 mm throughout",
+   "measured_now": "6.9% / 0.00 mm / 0.333 s / -11.7 mm - fails 4 of 4"
+  }
+ }
+}

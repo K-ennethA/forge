@@ -1,0 +1,366 @@
+{
+ "weight_maps": [
+  {
+   "bone": "DEF-upper_arm.L",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-upper_arm.L_front.png",
+   "mass": 473.805,
+   "vertices": 815
+  },
+  {
+   "bone": "DEF-upper_arm.L",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-upper_arm.L_side.png",
+   "mass": 473.805,
+   "vertices": 815
+  },
+  {
+   "bone": "DEF-upper_arm.R",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-upper_arm.R_front.png",
+   "mass": 483.641,
+   "vertices": 834
+  },
+  {
+   "bone": "DEF-upper_arm.R",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-upper_arm.R_side.png",
+   "mass": 483.641,
+   "vertices": 834
+  },
+  {
+   "bone": "DEF-spine.005",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine.005_front.png",
+   "mass": 73.881,
+   "vertices": 203
+  },
+  {
+   "bone": "DEF-spine.005",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine.005_side.png",
+   "mass": 73.881,
+   "vertices": 203
+  },
+  {
+   "bone": "DEF-spine.001",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine.001_front.png",
+   "mass": 526.589,
+   "vertices": 735
+  },
+  {
+   "bone": "DEF-spine.001",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine.001_side.png",
+   "mass": 526.589,
+   "vertices": 735
+  },
+  {
+   "bone": "DEF-spine",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine_front.png",
+   "mass": 631.57,
+   "vertices": 1138
+  },
+  {
+   "bone": "DEF-spine",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-spine_side.png",
+   "mass": 631.57,
+   "vertices": 1138
+  },
+  {
+   "bone": "DEF-pelvis.L",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-pelvis.L_front.png",
+   "mass": 88.957,
+   "vertices": 388
+  },
+  {
+   "bone": "DEF-pelvis.L",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-pelvis.L_side.png",
+   "mass": 88.957,
+   "vertices": 388
+  },
+  {
+   "bone": "DEF-pelvis.R",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-pelvis.R_front.png",
+   "mass": 85.443,
+   "vertices": 388
+  },
+  {
+   "bone": "DEF-pelvis.R",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-pelvis.R_side.png",
+   "mass": 85.443,
+   "vertices": 388
+  },
+  {
+   "bone": "DEF-thigh.L",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-thigh.L_front.png",
+   "mass": 207.886,
+   "vertices": 498
+  },
+  {
+   "bone": "DEF-thigh.L",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-thigh.L_side.png",
+   "mass": 207.886,
+   "vertices": 498
+  },
+  {
+   "bone": "DEF-thigh.R",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-thigh.R_front.png",
+   "mass": 199.042,
+   "vertices": 498
+  },
+  {
+   "bone": "DEF-thigh.R",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-thigh.R_side.png",
+   "mass": 199.042,
+   "vertices": 498
+  },
+  {
+   "bone": "DEF-shin.L",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-shin.L_front.png",
+   "mass": 334.462,
+   "vertices": 861
+  },
+  {
+   "bone": "DEF-shin.L",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-shin.L_side.png",
+   "mass": 334.462,
+   "vertices": 861
+  },
+  {
+   "bone": "DEF-shin.R",
+   "view": "front",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-shin.R_front.png",
+   "mass": 335.264,
+   "vertices": 868
+  },
+  {
+   "bone": "DEF-shin.R",
+   "view": "side",
+   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\renders\\review-wip14\\weights\\weights_DEF-shin.R_side.png",
+   "mass": 335.264,
+   "vertices": 868
+  }
+ ],
+ "residual_maps": [
+  {
+   "action": "punch.R",
+   "frame": 5,
+   "kind": "total",
+   "scale_red_mm": 750.71,
+   "max_mm": 788.737,
+   "p95_mm": 652.833,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_total_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_total_side.png"
+   ]
+  },
+  {
+   "action": "punch.R",
+   "frame": 5,
+   "kind": "stretch",
+   "scale_red_mm": 11.137,
+   "max_mm": 24.691,
+   "p95_mm": 6.921,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_stretch_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_stretch_side.png"
+   ]
+  },
+  {
+   "action": "punch.R",
+   "frame": 5,
+   "kind": "jcm",
+   "scale_red_mm": 11.193,
+   "max_mm": 24.007,
+   "p95_mm": 1.747,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_jcm_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_punchR_f5_jcm_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 31,
+   "kind": "total",
+   "scale_red_mm": 116.582,
+   "max_mm": 133.125,
+   "p95_mm": 74.807,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_total_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_total_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 31,
+   "kind": "stretch",
+   "scale_red_mm": 48.461,
+   "max_mm": 55.474,
+   "p95_mm": 34.14,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_stretch_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_stretch_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 31,
+   "kind": "jcm",
+   "scale_red_mm": 5.0,
+   "max_mm": 8.041,
+   "p95_mm": 0.155,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_jcm_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f31_jcm_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 33,
+   "kind": "total",
+   "scale_red_mm": 64.16,
+   "max_mm": 69.969,
+   "p95_mm": 64.16,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_total_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_total_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 33,
+   "kind": "stretch",
+   "scale_red_mm": 61.077,
+   "max_mm": 69.969,
+   "p95_mm": 42.947,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_stretch_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_stretch_side.png"
+   ]
+  },
+  {
+   "action": "walk-loop",
+   "frame": 33,
+   "kind": "jcm",
+   "scale_red_mm": 5.0,
+   "max_mm": 11.545,
+   "p95_mm": 0.143,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_jcm_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_walkloop_f33_jcm_side.png"
+   ]
+  },
+  {
+   "action": "jump",
+   "frame": 9,
+   "kind": "total",
+   "scale_red_mm": 237.984,
+   "max_mm": 260.376,
+   "p95_mm": 205.108,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_total_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_total_side.png"
+   ]
+  },
+  {
+   "action": "jump",
+   "frame": 9,
+   "kind": "stretch",
+   "scale_red_mm": 6.996,
+   "max_mm": 7.458,
+   "p95_mm": 5.424,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_stretch_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_stretch_side.png"
+   ]
+  },
+  {
+   "action": "jump",
+   "frame": 9,
+   "kind": "jcm",
+   "scale_red_mm": 8.621,
+   "max_mm": 18.657,
+   "p95_mm": 1.1,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_jcm_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\residual_jump_f9_jcm_side.png"
+   ]
+  }
+ ],
+ "jump_frames": [
+  {
+   "frame": 1,
+   "hips_z_mm": 861.37,
+   "head_top_z_mm": 1879.78,
+   "knee_L_deg": 6.49,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f01_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f01_side.png"
+   ]
+  },
+  {
+   "frame": 3,
+   "hips_z_mm": 841.32,
+   "head_top_z_mm": 1860.28,
+   "knee_L_deg": 19.38,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f03_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f03_side.png"
+   ]
+  },
+  {
+   "frame": 5,
+   "hips_z_mm": 797.21,
+   "head_top_z_mm": 1816.24,
+   "knee_L_deg": 39.91,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f05_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f05_side.png"
+   ]
+  },
+  {
+   "frame": 7,
+   "hips_z_mm": 753.1,
+   "head_top_z_mm": 1770.63,
+   "knee_L_deg": 54.09,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f07_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f07_side.png"
+   ]
+  },
+  {
+   "frame": 9,
+   "hips_z_mm": 733.05,
+   "head_top_z_mm": 1749.37,
+   "knee_L_deg": 59.46,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f09_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f09_side.png"
+   ]
+  },
+  {
+   "frame": 12,
+   "hips_z_mm": 861.37,
+   "head_top_z_mm": 1878.94,
+   "knee_L_deg": 29.43,
+   "paths": [
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f12_front.png",
+    "C:/Users/kenne/OneDrive/Desktop/git/forge/projects/werewolf/renders/review-wip14\\jump_anticipation_f12_side.png"
+   ]
+  }
+ ]
+}
