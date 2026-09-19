@@ -940,7 +940,10 @@
         "animation_check.foot_slide_mm"
       ],
       "artifacts": [
-        "projects/werewolf/renders/form-a-walk-wip13.mp4"
+        "projects/werewolf/renders/form-a-walk-wip13.mp4",
+        "projects/werewolf/renders/form-a-punch-wip14.mp4",
+        "projects/werewolf/renders/form-a-jump-wip14.mp4",
+        "projects/werewolf/models/werewolf-wip-14.blend"
       ],
       "numbers": {
         "action": "walk-loop",
@@ -959,7 +962,53 @@
         "worst_step": "DEF-toe.L frames 5-21, 0.3mm",
         "render_view": "side",
         "render_frames": "1-32",
-        "render_note": "bake-source mesh werewolf-form-a hidden for the render, then restored"
+        "render_note": "bake-source mesh werewolf-form-a hidden for the render, then restored",
+        "combat_set": "punch.R, punch.L, jump authored on wip-13 base (walk-loop stage carried forward)",
+        "punch_R_action": "punch.R",
+        "punch_R_frames": "1-24",
+        "punch_R_peak_fist_speed_mps": 3.11,
+        "punch_R_peak_fist_speed_frame": 9,
+        "punch_R_extension_mm": 534,
+        "punch_R_reach_mm": 550,
+        "punch_R_extension_pct_of_reach": 97.1,
+        "punch_R_extension_cap_pct": 98,
+        "punch_R_rotation_lead": "pelvis 22.0deg f5 -> chest 39.3deg f7 -> shoulder 47.9deg f8 -> fist f11",
+        "punch_R_foot_slide_gate": "ok",
+        "punch_R_foot_slide_worst_mm": 0,
+        "punch_L_action": "punch.L",
+        "punch_L_frames": "1-24",
+        "punch_L_peak_fist_speed_mps": 3.11,
+        "punch_L_extension_mm": 534,
+        "punch_L_reach_mm": 550,
+        "punch_L_extension_pct_of_reach": 97.1,
+        "punch_L_rotation_lead": "pelvis 22.0deg f5 -> chest 39.3deg f7 -> shoulder 47.9deg f8 -> fist f11 (mirrored, not separately animation_checked per this turn's instructions - authoring is symmetric to punch.R which measured 0.0mm)",
+        "jump_action": "jump",
+        "jump_frames": "1-36",
+        "jump_apex_requested_mm": 280.7,
+        "jump_apex_resolved_mm": 257.5,
+        "jump_apex_residual_mm": 2.128,
+        "jump_airtime_frames": 11,
+        "jump_airtime_s": 0.458,
+        "jump_gravity_mps2": 9.81,
+        "jump_parabola_deviation_mm": 0.001,
+        "jump_parabola_tolerance_mm": 6.81,
+        "jump_landing_knee_travel_mm": 184.33,
+        "jump_extension_pct_of_reach": 99.8,
+        "jump_extension_cap_pct": 98,
+        "jump_rest_pose_note": "rest-pose hip-to-ankle already 802mm of 803mm reach (99.75%), above the 787mm/98% cap before any launch extension is added - pre-existing near-straight rest pose flagged by rig_check.bend_direction upstream, not introduced by this jump; launch extension itself was clamped to 0mm by the tool",
+        "jump_foot_slide_gate": "ok",
+        "jump_foot_slide_worst_mm": 3.57,
+        "jump_foot_slide_threshold_mm": 5,
+        "jump_plants_measured": 4,
+        "walk_loop_untouched": true,
+        "walk_loop_frames": 32,
+        "walk_loop_loop": true,
+        "walk_loop_verification_method": "rigforge_action list before/after: frame count (32) and loop flag (yes) unchanged; action kept a fake user through punch.R/punch.L/jump each becoming active in turn, so it was never orphaned or deleted - this is a metadata check, not a byte-level file diff",
+        "combat_foot_slide_gate": "ok",
+        "combat_foot_slide_worst_mm": 3.57,
+        "combat_foot_slide_threshold_mm": 5,
+        "animation_check.foot_slide_mm": 3.57,
+        "blend_saved": "werewolf-wip-14.blend (copy of Blender add-on's own save_project_blend output, repositioned into projects/werewolf/models/ to match the wip-9..wip-13 convention; the artist's own live session file is unchanged and still saves to werewolf-wip-13.blend)"
       },
       "history": [
         {
@@ -1006,6 +1055,78 @@
           "cost": {
             "model": "sonnet"
           }
+        },
+        {
+          "date": "2026-09-19T02:10:56",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "combat_set": "punch.R, punch.L, jump authored on wip-13 base (walk-loop stage carried forward)",
+            "punch_R_action": "punch.R",
+            "punch_R_frames": "1-24",
+            "punch_R_peak_fist_speed_mps": 3.11,
+            "punch_R_peak_fist_speed_frame": 9,
+            "punch_R_extension_mm": 534,
+            "punch_R_reach_mm": 550,
+            "punch_R_extension_pct_of_reach": 97.1,
+            "punch_R_extension_cap_pct": 98,
+            "punch_R_rotation_lead": "pelvis 22.0deg f5 -> chest 39.3deg f7 -> shoulder 47.9deg f8 -> fist f11",
+            "punch_R_foot_slide_gate": "ok",
+            "punch_R_foot_slide_worst_mm": 0,
+            "punch_L_action": "punch.L",
+            "punch_L_frames": "1-24",
+            "punch_L_peak_fist_speed_mps": 3.11,
+            "punch_L_extension_mm": 534,
+            "punch_L_reach_mm": 550,
+            "punch_L_extension_pct_of_reach": 97.1,
+            "punch_L_rotation_lead": "pelvis 22.0deg f5 -> chest 39.3deg f7 -> shoulder 47.9deg f8 -> fist f11 (mirrored, not separately animation_checked per this turn's instructions - authoring is symmetric to punch.R which measured 0.0mm)",
+            "jump_action": "jump",
+            "jump_frames": "1-36",
+            "jump_apex_requested_mm": 280.7,
+            "jump_apex_resolved_mm": 257.5,
+            "jump_apex_residual_mm": 2.128,
+            "jump_airtime_frames": 11,
+            "jump_airtime_s": 0.458,
+            "jump_gravity_mps2": 9.81,
+            "jump_parabola_deviation_mm": 0.001,
+            "jump_parabola_tolerance_mm": 6.81,
+            "jump_landing_knee_travel_mm": 184.33,
+            "jump_extension_pct_of_reach": 99.8,
+            "jump_extension_cap_pct": 98,
+            "jump_rest_pose_note": "rest-pose hip-to-ankle already 802mm of 803mm reach (99.75%), above the 787mm/98% cap before any launch extension is added - pre-existing near-straight rest pose flagged by rig_check.bend_direction upstream, not introduced by this jump; launch extension itself was clamped to 0mm by the tool",
+            "jump_foot_slide_gate": "ok",
+            "jump_foot_slide_worst_mm": 3.57,
+            "jump_foot_slide_threshold_mm": 5,
+            "jump_plants_measured": 4,
+            "walk_loop_untouched": true,
+            "walk_loop_frames": 32,
+            "walk_loop_loop": true,
+            "walk_loop_verification_method": "rigforge_action list before/after: frame count (32) and loop flag (yes) unchanged; action kept a fake user through punch.R/punch.L/jump each becoming active in turn, so it was never orphaned or deleted - this is a metadata check, not a byte-level file diff"
+          },
+          "artifacts": [
+            "projects/werewolf/renders/form-a-punch-wip14.mp4",
+            "projects/werewolf/renders/form-a-jump-wip14.mp4"
+          ],
+          "cost": {
+            "model": "sonnet"
+          }
+        },
+        {
+          "date": "2026-09-19T02:11:34",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "combat_foot_slide_gate": "ok",
+            "combat_foot_slide_worst_mm": 3.57,
+            "combat_foot_slide_threshold_mm": 5,
+            "animation_check.foot_slide_mm": 3.57,
+            "blend_saved": "werewolf-wip-14.blend (copy of Blender add-on's own save_project_blend output, repositioned into projects/werewolf/models/ to match the wip-9..wip-13 convention; the artist's own live session file is unchanged and still saves to werewolf-wip-13.blend)"
+          },
+          "artifacts": [
+            "projects/werewolf/models/werewolf-wip-14.blend"
+          ]
         }
       ],
       "does": "Walk cycle and whatever else the character needs, each measured on the foot-slide metric at the ball of the foot.",
