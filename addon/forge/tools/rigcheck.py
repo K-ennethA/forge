@@ -122,6 +122,23 @@ __all__ = [
     "POSE_SETS",
     "FOOT_SLIDE_THRESHOLDS",
     "CONTACT_CANDIDATES",
+    "STRETCH_CHAIN",
+    "STRETCH_THRESHOLDS",
+    "CONTACT_STRETCH_EPSILON_PCT",
+    "IK_REACH_THRESHOLDS",
+    "LOOP_SEAM_TOLERANCE_MM",
+    "CORRECTIVE_DOMAIN_MAX_RAD",
+    "ANTICIPATION_THRESHOLDS",
+    "limb_chains",
+    "chain_sample",
+    "bone_stretch_budget",
+    "ik_reach_headroom",
+    "ik_reach_headroom_rest",
+    "loop_seam_closure",
+    "corrective_driver_domain",
+    "anticipation_window",
+    "anticipation_reads",
+    "sole_vertex_indices",
     "enumerate_joints",
     "contact_points",
     "stance_runs",
@@ -1505,7 +1522,7 @@ def cmd_rig_check(params):
     twist collapse, each with a band — plus an overall gate.  The pose is always
     restored.
 
-    **Eight placement gates run on every call** and are reported whether or not
+    **Ten placement gates run on every call** and are reported whether or not
     they fail, because the defects they catch were found by a human staring at a
     render and must never need that again:
 
@@ -1537,7 +1554,16 @@ def cmd_rig_check(params):
       reach collapses at, and the toe chain runs just above the sole
       (:func:`foot_height`).  The sole-fit rule already asks whether the foot
       reaches the front of the boot; this asks how high off it the chain runs,
-      which is where the same werewolf's ankle sat 65 mm up the shin.
+      which is where the same werewolf's ankle sat 65 mm up the shin;
+    * ``ik_reach_headroom`` — whether the **rest stance** leaves an animator any
+      reach to use, as hip-to-ankle over the leg's own chain length
+      (:func:`ik_reach_headroom_rest`).  The eight above all passed on a rig
+      standing at 0.9984 of its own reach, which is why its walk could only
+      grow the leg;
+    * ``corrective_driver_domain`` — whether every ``ROTATION_DIFF``-driven
+      shape key is keyed inside the ``[0, pi]`` its driver actually has
+      (:func:`corrective_driver_domain`).  Four of the same character's ten JCM
+      keys peak at 3.95-3.99 rad and can never fire past 71.5%.
 
     ``render_weights`` additionally writes per-bone weight maps into a folder —
     the maps, looked at, rather than counted.
@@ -1815,6 +1841,22 @@ def cmd_rig_check(params):
         placement["foot_height"] = foot_height(rig, mesh)
     except Exception as exc:  # noqa: BLE001
         placement["foot_height"] = {"verdict": "unmeasured", "says": str(exc)}
+    # The ninth and tenth, from the wip-14 audit. Both are about the rig as
+    # built rather than about any clip: a leg that stands at 99.84% of its own
+    # reach has no headroom for an animator to use, and a corrective keyed at
+    # 3.95 rad is keyed outside the domain of the ROTATION_DIFF that drives it.
+    # Neither is visible in a weight map, a hull volume or a foot slide, which
+    # is why eight clean placement gates and a 1.1 mm walk shipped a character
+    # whose legs stretched 32% and whose deep correctives never fired.
+    try:
+        placement["ik_reach_headroom"] = ik_reach_headroom_rest(rig)
+    except Exception as exc:  # noqa: BLE001
+        placement["ik_reach_headroom"] = {"verdict": "unmeasured", "says": str(exc)}
+    try:
+        placement["corrective_driver_domain"] = corrective_driver_domain(mesh)
+    except Exception as exc:  # noqa: BLE001
+        placement["corrective_driver_domain"] = {"verdict": "unmeasured",
+                                                 "says": str(exc)}
 
     weight_maps = None
     maps_dir = params.get("render_weights")
@@ -1839,6 +1881,11 @@ def cmd_rig_check(params):
         gate = "attention"
     lines = []
     bad_placement = False
+    # The eight placement gates decide the clean line between them, exactly as
+    # they did before the ninth and tenth existed. A rig whose bones are all in
+    # the right place still *is* one when its rest stance has no reach left, and
+    # the two new gates say their own piece below rather than silencing a
+    # sentence that is true and that other things read.
     for name in ("side_naming", "bend_direction", "hand_containment", "foot_height",
                  "asymmetry", "centering", "overlap", "continuity"):
         block = placement.get(name) or {}
@@ -1864,6 +1911,25 @@ def cmd_rig_check(params):
             % (asymmetry.get("worst_asymmetry_mm"), centering.get("worst_offset_mm"),
                continuity.get("hole_pct"), len(bend.get("limbs") or []),
                hands.get("measured") or 0, feet_block.get("measured") or 0))
+    # The ninth and tenth, appended rather than woven in, so every sentence the
+    # eight above produce keeps the position it had: a caller that reads the
+    # head of `says` for the worst placement fault still finds it there.
+    headroom = placement.get("ik_reach_headroom") or {}
+    domain = placement.get("corrective_driver_domain") or {}
+    clean_extra = []
+    for block in (headroom, domain):
+        if block.get("verdict") in ("fail", "attention") and block.get("says"):
+            lines.append(block["says"])
+    if headroom.get("verdict") == "ok":
+        clean_extra.append("the rest stance leaves reach in hand (worst leg at %s of "
+                           "its own chain length)"
+                           % headroom.get("worst_extension_frac"))
+    if domain.get("verdict") == "ok" and domain.get("measured"):
+        clean_extra.append("all %d ROTATION_DIFF corrective(s) are keyed inside the "
+                           "pi-radian domain" % domain["measured"])
+    if clean_extra:
+        lines.append("%s%s." % (clean_extra[0][0].upper(),
+                                ", and ".join(clean_extra)[1:]))
     if failed:
         lines.append("Breaks down: %s." % ", ".join(sorted(failed)))
     if attention:
@@ -1892,6 +1958,8 @@ def cmd_rig_check(params):
         "bend_direction": placement["bend_direction"],
         "hand_containment": placement["hand_containment"],
         "foot_height": placement["foot_height"],
+        "ik_reach_headroom": placement["ik_reach_headroom"],
+        "corrective_driver_domain": placement["corrective_driver_domain"],
         "weight_maps": weight_maps,
         "rest_intersections": rest_intersections,
         "rest_volume_mm3": (round(global_rest_volume * (M_TO_MM ** 3), 1)
@@ -2326,6 +2394,959 @@ def knee_points(rig):
     return out
 
 
+# ---------------------------------------------------------------------------
+# the five gates a live audit found that nothing here measured
+# ---------------------------------------------------------------------------
+#
+# ``projects/werewolf/renders/review-wip14/00-VERDICT.json`` is the audit.  It
+# took a finished character apart and found four user-visible defects that every
+# gate above passed clean, because every gate above is about **weights** (whose
+# flesh is whose) or about **where a point ended up** (the ball of the foot, the
+# hull around a joint) and not one of them is about the **bones' own length**,
+# the reach they have left, the seam of a loop, or whether a driver's curve can
+# be reached at all.  The isolation machinery proved the weights innocent to
+# 0.00 mm; the artist could still see the leg stretching.
+#
+# 1. ``bone_stretch_budget`` — ``IK_Stretch = 1.0`` on a leg means the DEF bones
+#    *grow* when the foot target is further from the hip than the leg can reach.
+#    On the audited walk the left leg chain grew **+32.58% of its own length**,
+#    51.8 mm on each of its four DEF bones, and no number in this file moved:
+#    the weights were clean, the foot was planted to 1.1 mm, the hull around the
+#    knee was fine.  Sum the DEF chain's segment lengths and divide by rest and
+#    the defect is one number per limb per frame.  Any stretch at all while the
+#    end effector is **planted** is worse than the percentage says — a planted
+#    foot and a moving hip is precisely the disagreement that grows the leg — so
+#    a contact run tolerates none and says which frames it found.
+# 2. ``ik_reach_headroom`` — the upstream disease.  A rig whose legs stand at
+#    99.84% of their own reach has no headroom: the first hip translation of any
+#    animation hits the limit, and from there the solver either clamps (a pop)
+#    or stretches (a visible skin).  Measured per frame on a clip, and at
+#    **rest** in ``rig_check``, where the fix belongs.
+# 3. ``loop_seam_closure`` — a walk that ends somewhere other than it started
+#    pops once per cycle forever.  The audited loop's left leg alone differed by
+#    281 mm across the seam.  Measured on the evaluated mesh, vertex by vertex,
+#    because that is what the player sees.
+# 4. ``corrective_driver_domain`` — ``ROTATION_DIFF`` is an angle between two
+#    orientations, so its domain is ``[0, pi]``.  Four of the audited character's
+#    ten JCM keys reach 1.0 at 3.95-3.99 rad, which the driver input cannot
+#    reach: the deep-flex correctives deliver at most 71.5% of the shape they
+#    were sculpted as, and nothing said so.
+# 5. ``anticipation_reads`` — the audited jump's crouch is *physically there*
+#    (128.3 mm of hip drop against a 128.5 mm spec) and still does not read: no
+#    hip setback at all, 0.333 s long, 6.9% of the silhouette, and the feet sink
+#    11.7 mm through the floor at the bottom.  Every one of those is a number.
+#
+# All five are geometric, deterministic and headless, like everything else here,
+# and each reports its measurement next to the band that judged it.
+
+#: The DEF chain whose *length* is the stretch budget, per limb kind.  The foot
+#: and the hand are deliberately not in it: a foot roll changes the ankle's
+#: position and not the leg's length, and a chain that included it would report
+#: the roll as stretch.
+STRETCH_CHAIN = {
+    "leg": ("thigh.%s", "shin.%s"),
+    "front_leg": ("front_thigh.%s", "front_shin.%s"),
+    "arm": ("upper_arm.%s", "forearm.%s"),
+}
+
+#: How far a limb's DEF chain may drift from its own rest length, as a
+#: percentage, before the skin reads as stretching.
+#:
+#: **Credibility tier: heuristic (proxy).**  2% of an 800 mm leg is 16 mm of
+#: chain spread over four bones, which is under the silhouette's own noise; 5%
+#: is 40 mm and visible on a limb in motion.  The audited defect was 32.58%.
+STRETCH_THRESHOLDS = {"stretch_pct": {"ok": 2.0, "attention": 5.0}}
+
+#: What counts as "nonzero" stretch during a contact run.  Not literally zero:
+#: a B-Bone chain evaluated through a solver leaves float dust, and a gate that
+#: fired on dust would be switched off within a week.  A tenth of a percent of
+#: an 800 mm leg is 0.8 mm.
+CONTACT_STRETCH_EPSILON_PCT = 0.1
+
+#: Root-to-tip distance over rest chain length: 1.0 is the chain pulled
+#: perfectly straight, above it is a target the limb cannot reach.
+#:
+#: **Credibility tier: derived, not heuristic.**  1.00 is geometry, not taste —
+#: past it the solver is being asked for a length the bones do not have.  0.98
+#: is the warning line, and it is the one the audit actually recommends moving:
+#: a rest stance at 0.9984 leaves 1.3 mm of headroom on an 800 mm leg.
+IK_REACH_THRESHOLDS = {"extension_frac": {"warn": 0.98, "fail": 1.0}}
+
+#: How far the evaluated mesh may differ between a loop's first and last frame.
+#:
+#: **Credibility tier: derived.**  A loop either closes or it does not; 1 mm is
+#: the allowance for the solver's own dust on a character a metre and a half
+#: tall, not a budget to spend.
+LOOP_SEAM_TOLERANCE_MM = 1.0
+
+#: The domain of a ``ROTATION_DIFF`` driver variable, in radians.  Not a
+#: threshold: it is the range of the function.
+CORRECTIVE_DOMAIN_MAX_RAD = math.pi
+
+#: What an anticipation has to do before an audience reads it as one.
+#:
+#: **Credibility tier: heuristic (proxy).**  These are the four numbers the
+#: audit measured on a crouch that was physically present and still invisible —
+#: it dropped 6.9% of the silhouette, set the hips back 0.00 mm, took 0.333 s
+#: and put the feet 11.7 mm under the floor.  Each is reported next to its band.
+ANTICIPATION_THRESHOLDS = {
+    "height_drop_frac": 0.08,
+    "hip_setback_frac_of_depth": 0.3,
+    "window_s": 0.35,
+    "floor_mm": -1.0,
+}
+
+
+def _stretch_band(value):
+    if value is None:
+        return "unmeasured"
+    bands = STRETCH_THRESHOLDS["stretch_pct"]
+    if value <= bands["ok"]:
+        return "ok"
+    if value <= bands["attention"]:
+        return "attention"
+    return "fail"
+
+
+def _reach_band(value):
+    if value is None:
+        return "unmeasured"
+    bands = IK_REACH_THRESHOLDS["extension_frac"]
+    if value > bands["fail"]:
+        return "fail"
+    if value > bands["warn"]:
+        return "attention"
+    return "ok"
+
+
+def limb_chains(rig):
+    """Every limb whose DEF chain has a length worth measuring.
+
+    Built from :func:`rigforge_rig.ik_limbs` so the limbs this gate knows about
+    are exactly the limbs the rig reports having, and from :func:`_deform_for`
+    so a subdivided ``DEF-thigh.L``/``DEF-thigh.L.001`` pair is one chain rather
+    than two bones with the same name.  Empty on a rig with no IK limbs, which
+    is not an error: the clip is simply read without this gate.
+    """
+    out = []
+    try:
+        limbs = rigforge_rig.ik_limbs(rig)
+    except (AttributeError, RuntimeError, TypeError, KeyError):  # pragma: no cover
+        return out
+    matrix = rig.matrix_world
+    for entry in limbs:
+        patterns = STRETCH_CHAIN.get(entry.get("limb"))
+        if not patterns:
+            continue
+        names = []
+        for pattern in patterns:
+            names.extend(sorted(_deform_for(rig, pattern % entry["side"])))
+        names = [name for name in names if name in rig.pose.bones]
+        if len(names) < 2:
+            continue
+        lengths = []
+        for name in names:
+            bone = rig.data.bones[name]
+            lengths.append(((matrix @ bone.tail_local)
+                            - (matrix @ bone.head_local)).length)
+        total = sum(lengths)
+        if total <= 1e-9:
+            continue
+        first = rig.data.bones[names[0]]
+        last = rig.data.bones[names[-1]]
+        out.append({
+            "limb": entry["name"],
+            "kind": entry["limb"],
+            "side": entry["side"],
+            "label": entry.get("label") or entry["name"],
+            "bones": names,
+            "rest_lengths": lengths,
+            "rest_length": total,
+            "rest_span": ((matrix @ last.tail_local)
+                          - (matrix @ first.head_local)).length,
+        })
+    return out
+
+
+def chain_sample(rig, chain):
+    """``(summed DEF length, root-to-tip distance)`` at the current frame, in metres.
+
+    The first number is what stretches.  The second is what the IK solver was
+    asked for: the hip-to-ankle distance an animator's foot target implies.
+    """
+    matrix = rig.matrix_world
+    bones = rig.pose.bones
+    total = 0.0
+    for name in chain["bones"]:
+        bone = bones[name]
+        total += ((matrix @ bone.tail) - (matrix @ bone.head)).length
+    first = bones[chain["bones"][0]]
+    last = bones[chain["bones"][-1]]
+    span = ((matrix @ last.tail) - (matrix @ first.head)).length
+    return total, span
+
+
+def bone_stretch_budget(chains, samples, frames, contact_runs=None):
+    """Per limb, per frame: how far the DEF chain is from its own rest length.
+
+    ``samples`` is ``{limb name: [(length, span) per sampled frame]}`` — what
+    :func:`chain_sample` collected as the clip was walked.  ``contact_runs`` is
+    ``{limb name: [[sample index, ...], ...]}``: the runs of frames that limb's
+    end effector was planted for, per the stance detection the foot-slide
+    metric already does.
+
+    A plant is the one place the chain's length may not **move**, because a
+    planted foot and a travelling hip is exactly the disagreement that grows
+    the leg, so any change across a contact run is at minimum attention
+    whatever the percentage against rest says.  What is measured across a plant
+    is the length's *spread* over the run rather than its offset from rest: a
+    boxer's stance is 1.6% shorter than rest for every frame of the clip and
+    that is a pose an animator chose, while the same leg changing by 1.6%
+    *during* a plant is the rig solving a target it cannot reach.  They are not
+    the same defect and the number that separates them is the spread.
+    """
+    contact_runs = contact_runs or {}
+    rows = []
+    for chain in chains:
+        series = samples.get(chain["limb"]) or []
+        if not series:
+            continue
+        rest = chain["rest_length"]
+        signed = [100.0 * (total / rest - 1.0) for total, _span in series]
+        magnitude = [abs(value) for value in signed]
+        worst = max(range(len(magnitude)), key=lambda index: magnitude[index])
+
+        runs = []
+        for run in contact_runs.get(chain["limb"]) or ():
+            indices = [index for index in run if index < len(series)]
+            if len(indices) < 2:
+                continue
+            values = [signed[index] for index in indices]
+            runs.append({
+                "frames": [frames[indices[0]], frames[indices[-1]]],
+                "samples": len(indices),
+                "spread_pct": round(max(values) - min(values), 3),
+                "worst_offset_pct": round(max(abs(value) for value in values), 2),
+            })
+        drifting = [run for run in runs
+                    if run["spread_pct"] > CONTACT_STRETCH_EPSILON_PCT]
+        contact_spread = max((run["spread_pct"] for run in runs), default=None)
+        verdict = _stretch_band(magnitude[worst])
+        if drifting and verdict == "ok":
+            verdict = "attention"
+        row = {
+            "limb": chain["limb"],
+            "label": chain["label"],
+            "bones": list(chain["bones"]),
+            "rest_length_mm": round(rest * M_TO_MM, 2),
+            "worst_stretch_pct": round(magnitude[worst], 2),
+            "worst_signed_pct": round(signed[worst], 2),
+            "worst_frame": frames[worst],
+            "worst_length_mm": round(series[worst][0] * M_TO_MM, 2),
+            "contact_runs": runs,
+            "contact_runs_drifting": [run["frames"] for run in drifting],
+            "worst_contact_spread_pct": contact_spread,
+            "verdict": verdict,
+        }
+        if verdict == "ok":
+            row["says"] = ("%s holds its length: worst %.2f%% at frame %d."
+                           % (chain["label"], magnitude[worst], frames[worst]))
+        else:
+            grew = "grows" if signed[worst] > 0 else "compresses by"
+            row["says"] = (
+                "%s %s %.2f%% of its own length at frame %d (%.1f mm of DEF chain "
+                "against %.1f mm at rest)%s."
+                % (chain["label"], grew, magnitude[worst], frames[worst],
+                   series[worst][0] * M_TO_MM, rest * M_TO_MM,
+                   (" and its length moves %s while the foot is planted, over frames %s"
+                    % (", ".join("%.2f%%" % run["spread_pct"] for run in drifting[:4]),
+                       "; ".join("%d-%d" % tuple(run["frames"])
+                                 for run in drifting[:4])))
+                   if drifting else ""))
+        rows.append(row)
+
+    if not rows:
+        return {"limbs": [], "measured": 0, "worst_stretch_pct": None,
+                "worst_limb": None, "worst_frame": None,
+                "thresholds": STRETCH_THRESHOLDS,
+                "contact_epsilon_pct": CONTACT_STRETCH_EPSILON_PCT,
+                "verdict": "unmeasured",
+                "says": ("No limb on this rig has a DEF chain this gate knows how to "
+                         "measure, so bone stretch was not judged.")}
+    bad = max(rows, key=lambda row: row["worst_stretch_pct"])
+    verdict = _worst([row["verdict"] for row in rows])
+    if verdict == "ok":
+        says = ("Every limb keeps its own length: worst %.2f%% on %s at frame %d, "
+                "inside the %.1f%% this gate calls solid, and nothing stretches while "
+                "planted."
+                % (bad["worst_stretch_pct"], bad["limb"], bad["worst_frame"],
+                   STRETCH_THRESHOLDS["stretch_pct"]["ok"]))
+    else:
+        says = ("The bones change length: %s The skin stretches with them - "
+                "IK_Stretch on a limb whose target is further away than it can reach "
+                "grows the DEF bones rather than clamping."
+                % " ".join(row["says"] for row in rows if row["verdict"] != "ok"))
+    return {
+        "limbs": rows,
+        "measured": len(rows),
+        "worst_stretch_pct": bad["worst_stretch_pct"],
+        "worst_limb": bad["limb"],
+        "worst_frame": bad["worst_frame"],
+        "thresholds": STRETCH_THRESHOLDS,
+        "contact_epsilon_pct": CONTACT_STRETCH_EPSILON_PCT,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def ik_reach_headroom(chains, samples, frames, kinds=("leg", "front_leg")):
+    """Per leg, per frame: hip-to-ankle distance over the leg's rest length.
+
+    Above 1.00 the animation is asking for a leg longer than the character has,
+    and what happens next is the rig's choice rather than the animator's: a
+    clamp (a pop) or a stretch (:func:`bone_stretch_budget`).  Above 0.98 there
+    is no headroom left and the next hip translation will do it.
+    """
+    rows = []
+    for chain in chains:
+        if kinds and chain["kind"] not in kinds:
+            continue
+        series = samples.get(chain["limb"]) or []
+        if not series:
+            continue
+        rest = chain["rest_length"]
+        fracs = [span / rest for _total, span in series]
+        worst = max(range(len(fracs)), key=lambda index: fracs[index])
+        verdict = _reach_band(fracs[worst])
+        rows.append({
+            "limb": chain["limb"],
+            "label": chain["label"],
+            "rest_length_mm": round(rest * M_TO_MM, 2),
+            "worst_extension_frac": round(fracs[worst], 4),
+            "worst_frame": frames[worst],
+            "worst_span_mm": round(series[worst][1] * M_TO_MM, 2),
+            "frames_over_warn": [frames[index] for index, value in enumerate(fracs)
+                                 if value > IK_REACH_THRESHOLDS["extension_frac"]["warn"]][:32],
+            "frames_over_reach": [frames[index] for index, value in enumerate(fracs)
+                                  if value > IK_REACH_THRESHOLDS["extension_frac"]["fail"]][:32],
+            "verdict": verdict,
+        })
+    if not rows:
+        return {"limbs": [], "measured": 0, "worst_extension_frac": None,
+                "worst_limb": None, "worst_frame": None,
+                "thresholds": IK_REACH_THRESHOLDS, "verdict": "unmeasured",
+                "says": "No leg chain was found, so IK reach headroom was not judged."}
+    bad = max(rows, key=lambda row: row["worst_extension_frac"])
+    verdict = _worst([row["verdict"] for row in rows])
+    if verdict == "ok":
+        says = ("The legs keep reach in hand: worst %.4f of the chain's own length "
+                "(%s, frame %d), under the %.2f this gate warns at."
+                % (bad["worst_extension_frac"], bad["limb"], bad["worst_frame"],
+                   IK_REACH_THRESHOLDS["extension_frac"]["warn"]))
+    else:
+        says = ("%s is asked for %.4f of its own length at frame %d (%.1f mm of reach "
+                "on a %.1f mm chain) - %s."
+                % (bad["limb"], bad["worst_extension_frac"], bad["worst_frame"],
+                   bad["worst_span_mm"], bad["rest_length_mm"],
+                   "past full extension, so the rig must clamp or stretch"
+                   if verdict == "fail" else
+                   "no headroom left, so the next hip translation hits the limit"))
+    return {
+        "limbs": rows,
+        "measured": len(rows),
+        "worst_extension_frac": bad["worst_extension_frac"],
+        "worst_limb": bad["limb"],
+        "worst_frame": bad["worst_frame"],
+        "thresholds": IK_REACH_THRESHOLDS,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def ik_reach_headroom_rest(rig, kinds=("leg", "front_leg")):
+    """:func:`ik_reach_headroom`, on the **rest skeleton** — the upstream disease.
+
+    Measured off ``head_local``/``tail_local`` rather than a pose, so it is a
+    property of the rig as built and no animation has to exist for it to be
+    true.  The audited character stands at 0.9984: every clip authored on it
+    starts with 1.3 mm of headroom on an 800 mm leg, which is why its walk had
+    nowhere to go but longer.
+    """
+    chains = limb_chains(rig)
+    rows = []
+    for chain in chains:
+        if kinds and chain["kind"] not in kinds:
+            continue
+        rest = chain["rest_length"]
+        frac = chain["rest_span"] / rest if rest > 1e-9 else None
+        rows.append({
+            "limb": chain["limb"],
+            "label": chain["label"],
+            "bones": list(chain["bones"]),
+            "rest_length_mm": round(rest * M_TO_MM, 2),
+            "rest_span_mm": round(chain["rest_span"] * M_TO_MM, 2),
+            "extension_frac": round(frac, 4) if frac is not None else None,
+            "headroom_mm": (round((rest - chain["rest_span"]) * M_TO_MM, 2)
+                            if frac is not None else None),
+            "verdict": _reach_band(frac),
+        })
+    if not rows:
+        return {"limbs": [], "measured": 0, "worst_extension_frac": None,
+                "thresholds": IK_REACH_THRESHOLDS, "verdict": "unmeasured",
+                "says": ("No leg chain was found on %r, so the rest stance's IK reach "
+                         "headroom was not judged." % rig.name)}
+    bad = max(rows, key=lambda row: row["extension_frac"] or 0.0)
+    verdict = _worst([row["verdict"] for row in rows])
+    if verdict == "ok":
+        says = ("The rest stance keeps reach in hand: worst %s stands at %.4f of its "
+                "own chain length (%s mm of headroom)."
+                % (bad["limb"], bad["extension_frac"], bad["headroom_mm"]))
+    else:
+        says = ("REST STANCE HAS NO IK HEADROOM: %s stands at %.4f of its own chain "
+                "length - %s mm on a %s mm leg. Every clip authored on this rig starts "
+                "at the reach limit, so the first hip translation either pops or "
+                "stretches the bones. Rest the knees at 15-20 degrees."
+                % (bad["limb"], bad["extension_frac"], bad["headroom_mm"],
+                   bad["rest_length_mm"]))
+    return {
+        "limbs": rows,
+        "measured": len(rows),
+        "worst_extension_frac": bad["extension_frac"],
+        "worst_limb": bad["limb"],
+        "thresholds": IK_REACH_THRESHOLDS,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def _deform_group_names(mesh):
+    """The vertex groups on ``mesh`` that are actually deform bones.
+
+    A production mesh carries selection groups as well — the tag groups this
+    add-on writes, an artist's ``mask_`` sets — and the heaviest group on a
+    vertex is quite often one of those.  Naming one of them as the region a
+    defect lives in would be worse than saying nothing.
+    """
+    bones = set()
+    for modifier in getattr(mesh, "modifiers", ()):
+        if modifier.type != "ARMATURE" or modifier.object is None:
+            continue
+        bones.update(bone.name for bone in modifier.object.data.bones
+                     if bone.use_deform)
+    return bones
+
+
+def _dominant_group(mesh, index, deform_only=True):
+    """The deform group that owns a vertex — what "which region" means here."""
+    try:
+        vertex = mesh.data.vertices[index]
+    except (IndexError, AttributeError):  # pragma: no cover - index came from the mesh
+        return None
+    allowed = _deform_group_names(mesh) if deform_only else None
+    by_index = {group.index: group.name for group in mesh.vertex_groups}
+    best = None
+    for entry in vertex.groups:
+        name = by_index.get(entry.group)
+        if name is None or (allowed is not None and allowed and name not in allowed):
+            continue
+        if best is None or entry.weight > best[1]:
+            best = (name, entry.weight)
+    return best[0] if best is not None else None
+
+
+def _region_of(name):
+    """A coarse, readable region for a deform bone name."""
+    if not name:
+        return "unknown"
+    limb = rigforge_rig.limb_of_bone(name)
+    if limb is None:
+        return "body"
+    kind, side = limb
+    label = kind.replace("_", " ")
+    return "%s %s" % ({"L": "left", "R": "right"}.get(side, ""), label) if side else label
+
+
+def loop_seam_closure(mesh, first_coords, last_coords, frames,
+                      root_travel=None, tolerance_mm=LOOP_SEAM_TOLERANCE_MM):
+    """How far the evaluated mesh moves across a loop's seam, worst vertex named.
+
+    Measured on the **mesh**, not the controls: a seam that closes on the root
+    and not on the left leg is still a pop, and it is the skin the player sees.
+
+    ``root_travel`` is how far the **root** bone moved between the two frames,
+    and it is subtracted before anything is compared.  A root-motion loop is
+    *supposed* to end a stride further down the floor — that displacement is
+    the clip's product, not its defect — and the question is whether the
+    character is in the same shape when it gets there.  Only the root counts:
+    travel authored on the torso or the hips instead is exactly the mistake
+    that opened the audited walk's seam, so subtracting it would hide the bug
+    this gate exists to find.
+    """
+    if not first_coords or not last_coords or len(first_coords) != len(last_coords):
+        return {"verdict": "unmeasured", "worst_mm": None, "worst_vertex": None,
+                "tolerance_mm": tolerance_mm, "frames": frames,
+                "root_travel_mm": None,
+                "says": ("The loop seam was not measured: there is no evaluated mesh "
+                         "to compare the first and last frame on.")}
+    offset = root_travel if root_travel is not None else Vector((0.0, 0.0, 0.0))
+    worst = 0.0
+    index = -1
+    for position, (first, last) in enumerate(zip(first_coords, last_coords)):
+        distance = (first - (last - offset)).length
+        if distance > worst:
+            worst, index = distance, position
+    worst_mm = worst * M_TO_MM
+    group = _dominant_group(mesh, index) if index >= 0 else None
+    verdict = "ok" if worst_mm <= tolerance_mm else "fail"
+    if verdict == "ok":
+        says = ("The loop closes: the worst vertex moves %.3f mm between frames %d and "
+                "%d, inside the %.1f mm this gate allows."
+                % (worst_mm, frames[0], frames[1], tolerance_mm))
+    else:
+        says = ("THE LOOP DOES NOT CLOSE: vertex %d (%s, on %s) sits %.1f mm apart "
+                "between frames %d and %d, against a %.1f mm tolerance. That is a pop "
+                "once per cycle, forever. Re-key the seam so the last frame is the "
+                "first."
+                % (index, _region_of(group), group or "no deform group", worst_mm,
+                   frames[0], frames[1], tolerance_mm))
+    return {
+        "verdict": verdict,
+        "worst_mm": round(worst_mm, 3),
+        "worst_vertex": index,
+        "worst_group": group,
+        "worst_region": _region_of(group),
+        "vertices": len(first_coords),
+        "frames": frames,
+        "root_travel_mm": round(offset.length * M_TO_MM, 2),
+        "tolerance_mm": tolerance_mm,
+        "says": says,
+    }
+
+
+def corrective_driver_domain(mesh, limit=CORRECTIVE_DOMAIN_MAX_RAD):
+    """Every ``ROTATION_DIFF``-driven shape key, against the domain of its driver.
+
+    ``ROTATION_DIFF`` is the angle between two orientations, so it lives in
+    ``[0, pi]`` and nothing an animator does can push it past that.  A curve
+    whose **peak** keyframe sits beyond pi is therefore a shape that can never
+    be delivered: the audited character's four deep-flex keys top out at 71.5%
+    of what was sculpted, and the volume they were sculpted to restore stays
+    lost.  A curve whose peak is reachable but whose *tail* runs past pi is a
+    lesser fault — the fall-off never completes — and is reported as attention
+    rather than passed over in silence.
+    """
+    keys = getattr(getattr(mesh, "data", None), "shape_keys", None)
+    animation = getattr(keys, "animation_data", None) if keys is not None else None
+    if animation is None:
+        return {"measured": 0, "keys": [], "unreachable": [], "clipped": [],
+                "max_rad": round(limit, 6), "worst_peak_rad": None,
+                "verdict": "unmeasured",
+                "says": ("%r carries no shape-key drivers, so there is no corrective "
+                         "driver domain to judge." % mesh.name)}
+    rows = []
+    for fcurve in animation.drivers:
+        driver = getattr(fcurve, "driver", None)
+        if driver is None:  # pragma: no cover - a driver-less driver fcurve
+            continue
+        kinds = [getattr(variable, "type", "") for variable in driver.variables]
+        if "ROTATION_DIFF" not in kinds:
+            continue
+        points = [(float(point.co.x), float(point.co.y))
+                  for point in fcurve.keyframe_points]
+        if not points:
+            continue
+        path = fcurve.data_path or ""
+        name = path.split('"')[1] if '"' in path else path
+        peak = max(points, key=lambda point: (abs(point[1]), point[0]))
+        largest = max(x for x, _y in points)
+        try:
+            reachable = round(float(fcurve.evaluate(limit)), 4)
+        except (AttributeError, RuntimeError, TypeError):  # pragma: no cover
+            reachable = None
+        if peak[0] > limit + 1e-6:
+            verdict = "fail"
+        elif largest > limit + 1e-6:
+            verdict = "attention"
+        else:
+            verdict = "ok"
+        rows.append({
+            "key": name,
+            "peak_x_rad": round(peak[0], 4),
+            "peak_x_deg": round(math.degrees(peak[0]), 1),
+            "peak_value": round(peak[1], 4),
+            "max_keyframe_x_rad": round(largest, 4),
+            "value_at_pi": reachable,
+            "keyframes": len(points),
+            "verdict": verdict,
+        })
+    if not rows:
+        return {"measured": 0, "keys": [], "unreachable": [], "clipped": [],
+                "max_rad": round(limit, 6), "worst_peak_rad": None,
+                "verdict": "unmeasured",
+                "says": ("%r has shape-key drivers but none of them reads a "
+                         "ROTATION_DIFF, so there is no domain to judge." % mesh.name)}
+    unreachable = [row for row in rows if row["verdict"] == "fail"]
+    clipped = [row for row in rows if row["verdict"] == "attention"]
+    verdict = _worst([row["verdict"] for row in rows])
+    worst = max(rows, key=lambda row: row["peak_x_rad"])
+    if verdict == "ok":
+        says = ("Every one of the %d ROTATION_DIFF corrective(s) is keyed inside the "
+                "pi-radian domain its driver has (worst peak %.4f rad)."
+                % (len(rows), worst["peak_x_rad"]))
+    elif verdict == "attention":
+        says = ("%d corrective(s) run past the pi-radian domain on the way down (%s): "
+                "their peaks are reachable but the fall-off never completes."
+                % (len(clipped), ", ".join(row["key"] for row in clipped[:6])))
+    else:
+        says = ("%d CORRECTIVE(S) ARE KEYED OUTSIDE THEIR DRIVER'S DOMAIN: %s. A "
+                "ROTATION_DIFF cannot exceed pi = %.4f rad, so those keys deliver at "
+                "most %s of the shape they were sculpted as and the volume they were "
+                "meant to restore stays lost. Re-key them at the real angle."
+                % (len(unreachable),
+                   ", ".join("%s peaks at %.4f rad (%.1f deg)"
+                             % (row["key"], row["peak_x_rad"], row["peak_x_deg"])
+                             for row in unreachable[:6]),
+                   limit,
+                   ", ".join("%s" % row["value_at_pi"] for row in unreachable[:6])))
+    return {
+        "measured": len(rows),
+        "keys": rows,
+        "unreachable": [row["key"] for row in unreachable],
+        "clipped": [row["key"] for row in clipped],
+        "max_rad": round(limit, 6),
+        "worst_peak_rad": worst["peak_x_rad"],
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def anticipation_window(heights, takeoff):
+    """``(start, bottom)`` sample indices of the load before a takeoff, or ``None``.
+
+    The bottom is the lowest the body gets before it leaves the ground; the
+    start is the highest it was on the way down to it.  Both read off the track
+    rather than asserted by the caller, for the same reason the airborne window
+    is detected rather than declared.
+    """
+    if takeoff is None or takeoff < 2:
+        return None
+    pre = list(heights[:takeoff])
+    if len(pre) < 2:
+        return None
+    bottom = min(range(len(pre)), key=lambda index: pre[index])
+    if bottom < 1:
+        return None
+    start = max(range(bottom + 1), key=lambda index: pre[index])
+    if start >= bottom:
+        return None
+    return start, bottom
+
+
+def anticipation_reads(frames, fps, load_track, hip_track, ankle_track, forward,
+                       lowest_z, highest_z, window, thresholds=None,
+                       control_track=None, sole_z=None, floor_plane=None,
+                       floor_frame=None):
+    """Does the crouch before a jump **read**, or is it only physically present?
+
+    Four measurements on the evaluated mesh and the rig, each with its own
+    verdict, because the audited jump failed all four while delivering its
+    authored depth to within 0.2 mm: the silhouette barely moved, the hips
+    dropped down a plumb line instead of back over the heels, the whole load
+    took a third of a second, and the feet finished under the floor.
+
+    **Where the hip is.**  ``hip_track`` must be the hip *joint* — the average
+    of the ``DEF-thigh`` heads — and not the ``hips`` control.  Rigify's ``hips``
+    bone points downward from the base of the spine, so its head sits some
+    300 mm above the sockets, and a trunk that folds 20 degrees over a loading
+    pelvis swings that head ~105 mm **forward** while the joint itself goes
+    ~77 mm back.  Measured on a correct countermovement: ``DEF-thigh.L/R``
+    heads -76.5 mm rearward, ``torso`` head -38.6 mm rearward, ``hips`` head
+    +38.0 mm forward.  Reading the control therefore scores a good load as
+    0.00 mm of setback, which is the same answer it gives for a pelvis that
+    dropped down a plumb line — the two become indistinguishable exactly where
+    the gate has to tell them apart.  ``control_track``, if given, is reported
+    alongside as ``hip_control_setback_mm`` and judges nothing.
+
+    Positive is rearward, along ``-forward``, from the ankle line: the same
+    convention the authoring commands key against, so the two agree by
+    construction rather than by luck.
+
+    **What the floor check measures.**  ``sole_z`` is the lowest **sole** vertex
+    per sample (:func:`sole_vertex_indices`), never the lowest vertex of the
+    whole mesh, and ``floor_plane`` is that same set's height at the clip's
+    first grounded frame — ``rigforge_anim``'s sole-plane convention, so the
+    clamp that authors the jump and the gate that judges it are looking at one
+    number.  A deep absorb legitimately takes the hips, the crotch and a
+    swinging hand below where they stood; the **foot** going through the plane
+    it is standing on is the defect.  Measured on the whole mesh the synthetic
+    character reads -13.21 mm on a clip whose sole is clear to 0.07 mm, because
+    its lowest rest vertex is a thigh and its lowest absorb vertex is a hand.
+    With no foot-weighted geometry the check reports ``None`` and says so
+    rather than inventing a floor.
+    """
+    thresholds = dict(ANTICIPATION_THRESHOLDS, **(thresholds or {}))
+    start, bottom = window
+    span = list(range(start, bottom + 1))
+
+    crouch_depth = load_track[start].z - load_track[bottom].z
+    standing_height = highest_z[start] - lowest_z[start]
+    height_drop = highest_z[start] - min(highest_z[index] for index in span)
+    height_frac = (height_drop / standing_height) if standing_height > 1e-9 else None
+
+    # Setback is a distance on the floor, so the facing is flattened onto it
+    # first: ``rig_forward_axis`` answers with the rig's forward in three
+    # dimensions, and a character whose toes point slightly down would
+    # otherwise have most of its own forward projected into the vertical and
+    # read 0 mm of setback however far back the hips went.
+    flat_forward = _horizontal(forward)
+    if flat_forward.length > 1e-9:
+        flat_forward.normalize()
+
+    def setback_at(track, index):
+        offset = track[index] - ankle_track[index]
+        return -_horizontal(offset).dot(flat_forward)
+
+    def travel(track):
+        return max(setback_at(track, index) for index in span) - setback_at(track,
+                                                                            start)
+
+    hip_setback = travel(hip_track)
+    control_setback = travel(control_track) if control_track else None
+    window_s = (bottom - start) / fps if fps > 0 else None
+    # The floor is the plane this character's own SOLE stands on, read off the
+    # first grounded frame - not world Z = 0, and not the lowest vertex of the
+    # whole body. The audited character happened to rest at +0.7 mm so world
+    # zero agreed with it to within a millimetre; a rig built on another origin
+    # would otherwise pass or fail this on where it was placed.
+    sole_z = sole_z or {}
+    measured_soles = [sole_z[index] for index in span if index in sole_z]
+    if measured_soles and floor_plane is not None:
+        lowest_sole = min(measured_soles)
+        floor_mm = lowest_sole * M_TO_MM
+        sink_mm = (lowest_sole - floor_plane) * M_TO_MM
+    else:
+        lowest_sole = None
+        floor_mm = None
+        sink_mm = None
+    required_setback = thresholds["hip_setback_frac_of_depth"] * max(crouch_depth, 0.0)
+
+    checks = [
+        {"check": "height_drop",
+         "measured": round((height_frac or 0.0) * 100.0, 2),
+         "measured_mm": round(height_drop * M_TO_MM, 2),
+         "required": round(thresholds["height_drop_frac"] * 100.0, 2),
+         "units": "% of standing height",
+         "ok": bool(height_frac is not None
+                    and height_frac >= thresholds["height_drop_frac"]),
+         "says": ("the silhouette drops %.1f mm of %.1f mm standing height (%.1f%%, "
+                  "needs %.0f%%)"
+                  % (height_drop * M_TO_MM, standing_height * M_TO_MM,
+                     (height_frac or 0.0) * 100.0,
+                     thresholds["height_drop_frac"] * 100.0))},
+        {"check": "hip_setback",
+         "measured": round(hip_setback * M_TO_MM, 2),
+         "required": round(required_setback * M_TO_MM, 2),
+         "units": "mm behind the ankles",
+         "ok": bool(hip_setback >= required_setback - 1e-9),
+         "says": ("the hip joint travels %.2f mm back over the ankles against a "
+                  "%.1f mm crouch (needs %.1f mm, %.0f%% of the depth)"
+                  % (hip_setback * M_TO_MM, crouch_depth * M_TO_MM,
+                     required_setback * M_TO_MM,
+                     thresholds["hip_setback_frac_of_depth"] * 100.0))},
+        {"check": "window",
+         "measured": round(window_s, 4) if window_s is not None else None,
+         "required": thresholds["window_s"],
+         "units": "seconds",
+         "ok": bool(window_s is not None and window_s >= thresholds["window_s"]),
+         "says": ("the load takes %s s over frames %d-%d (needs %.2f s)"
+                  % (round(window_s, 4) if window_s is not None else "?",
+                     frames[start], frames[bottom], thresholds["window_s"]))},
+        {"check": "floor",
+         "measured": round(sink_mm, 2) if sink_mm is not None else None,
+         "required": thresholds["floor_mm"],
+         "units": "mm below the sole plane it started on",
+         "ok": (None if sink_mm is None
+                else bool(sink_mm >= thresholds["floor_mm"])),
+         "says": (("the sole sinks to %.2f mm below the plane it was standing on "
+                   "(lowest sole Z %.2f mm against a %.2f mm plane, the floor allows "
+                   "%.1f mm)"
+                   % (sink_mm, floor_mm, floor_plane * M_TO_MM,
+                      thresholds["floor_mm"]))
+                  if sink_mm is not None else
+                  ("the sole could not be found: no vertex on this mesh has a foot or "
+                   "toe bone as its dominant deform weight, so there is no sole plane "
+                   "to measure against and none was invented"))},
+    ]
+    failed = [row for row in checks if row["ok"] is False]
+    unmeasured = [row for row in checks if row["ok"] is None]
+    verdict = "fail" if failed else ("attention" if unmeasured else "ok")
+    if verdict == "ok":
+        says = ("The anticipation reads: %s." % "; ".join(row["says"] for row in checks))
+    elif verdict == "attention":
+        says = ("The anticipation reads on every check that could be taken (%s), but "
+                "%s."
+                % ("; ".join(row["says"] for row in checks if row["ok"] is True),
+                   "; ".join(row["says"] for row in unmeasured)))
+    else:
+        says = ("THE ANTICIPATION DOES NOT READ (%d of %d): %s. The crouch is %.1f mm "
+                "deep and physically present - what is missing is the hip setback, the "
+                "time and the silhouette that make an audience see it."
+                % (len(failed), len(checks),
+                   "; ".join(row["says"] for row in failed), crouch_depth * M_TO_MM))
+    return {
+        "frames": [frames[start], frames[bottom]],
+        "samples": len(span),
+        "crouch_depth_mm": round(crouch_depth * M_TO_MM, 2),
+        "standing_height_mm": round(standing_height * M_TO_MM, 2),
+        "height_drop_mm": round(height_drop * M_TO_MM, 2),
+        "height_drop_pct": round((height_frac or 0.0) * 100.0, 2),
+        "hip_setback_mm": round(hip_setback * M_TO_MM, 2),
+        "hip_setback_required_mm": round(required_setback * M_TO_MM, 2),
+        "hip_setback_measured_at": "DEF-thigh heads (the hip joint)",
+        # The control's own travel, reported and never judged: it is the number
+        # that looks like the answer and is not one.
+        "hip_control_setback_mm": (round(control_setback * M_TO_MM, 2)
+                                   if control_setback is not None else None),
+        "window_s": round(window_s, 4) if window_s is not None else None,
+        "lowest_sole_z_mm": round(floor_mm, 2) if floor_mm is not None else None,
+        "sink_below_floor_mm": round(sink_mm, 2) if sink_mm is not None else None,
+        "floor_plane_mm": (round(floor_plane * M_TO_MM, 2)
+                           if floor_plane is not None else None),
+        "floor_plane_frame": floor_frame,
+        "floor_measured_at": "foot/toe-dominant vertices (the sole)",
+        # The silhouette's own lowest point, for contrast: on a deep absorb it
+        # is a hand or a hip, which is exactly why it judges nothing here.
+        "lowest_mesh_z_mm": round(min(lowest_z[index] for index in span) * M_TO_MM, 2),
+        "standing_lowest_mesh_z_mm": round(lowest_z[start] * M_TO_MM, 2),
+        "checks": checks,
+        "thresholds": thresholds,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def sole_vertex_indices(rig, mesh):
+    """The vertices that **are** the sole, or ``None`` if this mesh has none.
+
+    The same selection ``rigforge_anim``'s floor clamp makes, deliberately, so
+    the clamp and this gate measure one set rather than two: every vertex whose
+    dominant **deform** weight is a foot, toe or paw bone of a leg.
+
+    Dominance among the deform groups *only* is the whole trick.  A generated
+    mesh also carries the autotagger's region groups (``tag_Leg.L`` and
+    friends) at weight 1.0 wherever they apply, so a plain largest-weight scan
+    hands every vertex to a tag and finds no feet at all.  And restricting to
+    the sole at all is what keeps this honest: on the synthetic character the
+    lowest vertex at rest is a **thigh** and the lowest at the landing absorb
+    is a **hand**, so the whole-mesh reading called a clip whose sole stayed
+    0.07 mm clear a 13.21 mm floor breach.  What may never go through the floor
+    is the foot.
+    """
+    try:
+        limbs = rigforge_rig.ik_limbs(rig)
+    except (AttributeError, RuntimeError, TypeError, KeyError):  # pragma: no cover
+        return None
+    sole_bones = set()
+    for entry in limbs:
+        if entry.get("limb") not in ("leg", "front_leg"):
+            continue
+        for name in entry.get("deform_bones") or ():
+            if "foot" in name or "toe" in name or "paw" in name:
+                sole_bones.add(name)
+    if not sole_bones:
+        return None
+    deform_names = {bone.name for bone in rig.data.bones
+                    if getattr(bone, "use_deform", False)}
+    groups = {group.index: group.name for group in mesh.vertex_groups}
+    deform = {index for index, name in groups.items() if name in deform_names}
+    wanted = {index for index, name in groups.items() if name in sole_bones}
+    if not wanted:
+        return None
+    out = []
+    for vertex in mesh.data.vertices:
+        best, best_weight = None, 0.0
+        for item in vertex.groups:
+            if item.group in deform and item.weight > best_weight:
+                best, best_weight = item.group, item.weight
+        if best in wanted:
+            out.append(vertex.index)
+    return out or None
+
+
+def _evaluated_z_extent(obj, sole_indices=None):
+    """``(lowest, highest, lowest sole)`` world Z of the evaluated mesh.
+
+    The first two are the silhouette's own extent, which is what a height drop
+    is a fraction of.  The third is the sole, and it is ``None`` when this mesh
+    has no foot-weighted geometry rather than quietly becoming the second.
+    """
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = obj.evaluated_get(depsgraph)
+    data = evaluated.to_mesh()
+    matrix = obj.matrix_world
+    try:
+        if not len(data.vertices):
+            return None
+        low = high = (matrix @ data.vertices[0].co).z
+        for vertex in data.vertices:
+            value = (matrix @ vertex.co).z
+            low = min(low, value)
+            high = max(high, value)
+        sole = None
+        for index in sole_indices or ():
+            if index >= len(data.vertices):  # pragma: no cover - a topology change
+                continue
+            value = (matrix @ data.vertices[index].co).z
+            sole = value if sole is None else min(sole, value)
+        return low, high, sole
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def _sample_mesh_frames(rig, mesh, action, frames, coords_for=(), bone=None,
+                        sole_indices=None):
+    """Evaluate ``mesh`` at a handful of frames: Z extents, and coords where asked.
+
+    A second, tiny pass rather than work added to the clip's own sampling loop:
+    the loop measures bones and must stay exactly as cheap and exactly as
+    deterministic as it was, and the only frames this needs are a loop's two
+    seam frames and the frames of an anticipation window.
+    """
+    scene = bpy.context.scene
+    wanted = sorted(set(int(frame) for frame in frames))
+    extents = {}
+    coords = {}
+    heads = {}
+    soles = {}
+    coords_for = set(int(frame) for frame in coords_for)
+    snapshot = _capture_pose(rig)
+    previous_action = rig.animation_data.action if rig.animation_data else None
+    previous_frame = scene.frame_current
+    try:
+        with object_mode():
+            rigforge_rig.assign_action(rig, action)
+            for frame in wanted:
+                scene.frame_set(frame)
+                refresh_view_layer()
+                extent = _evaluated_z_extent(mesh, sole_indices)
+                if extent is not None:
+                    extents[frame] = (extent[0], extent[1])
+                    if extent[2] is not None:
+                        soles[frame] = extent[2]
+                if frame in coords_for:
+                    coords[frame] = _vertex_coords(mesh)
+                if bone is not None and bone in rig.pose.bones:
+                    heads[frame] = rig.matrix_world @ rig.pose.bones[bone].head
+    finally:
+        scene.frame_set(previous_frame)
+        try:
+            rigforge_rig.assign_action(rig, previous_action)
+        except (AttributeError, TypeError, RuntimeError):  # pragma: no cover
+            pass
+        _restore_pose(rig, snapshot, {})
+    return extents, coords, heads, soles
+
+
 @command("animation_check")
 def cmd_animation_check(params):
     """Measure foot slide on a clip: per-step drift in millimetres, with a verdict.
@@ -2345,6 +3366,33 @@ def cmd_animation_check(params):
     the plants, and optionally hop asymmetry).  See the section header above for
     why that detection is automatic and why a walk or a punch cannot trip it.
     ``"airborne"`` in the result is ``null`` on every clip that is not one.
+
+    **Four more gates run on every call** (the section above them argues for
+    each), added after the wip-14 audit found four user-visible defects that
+    every reading above passed clean:
+
+    * ``bone_stretch_budget`` — per limb per frame, how far the DEF chain's
+      summed length is from its own rest length.  Over 2% is attention, over 5%
+      fails, and **any** stretch during a contact run is at minimum attention
+      with the frames quoted;
+    * ``ik_reach_headroom`` — per leg per frame, hip-to-ankle distance over the
+      leg's rest chain length.  Over 0.98 warns, over 1.00 fails;
+    * ``loop_seam_closure`` — on a clip named ``*-loop`` (or flagged cyclic),
+      the largest per-vertex distance between the evaluated mesh at the first
+      and the last frame, which has to be under 1 mm.  ``null`` on a clip that
+      is not a loop;
+    * ``anticipation_reads`` — on a jump, whether the crouch reads: silhouette
+      drop, hip setback (at the hip **joint**, the ``DEF-thigh`` heads), load
+      duration and whether the **sole** stays above the plane it stood on.
+      ``null`` unless there is an airborne window.
+
+    Their rollup is ``deformation_gate``, not ``gate``.  ``gate`` is the
+    foot-slide (and airborne) verdict and stays exactly that: a clip whose feet
+    hold to 0.3 mm while its legs stretch 32% is two different answers to two
+    different questions, and flattening them into one number would lose the
+    first.  ``says`` carries the sentences either way, so nobody reads a clean
+    line over a broken loop, and a clip that trips none of these is reported
+    exactly as it was before they existed — sentence for sentence.
     """
     started = time.monotonic()
     warnings = []
@@ -2424,6 +3472,17 @@ def cmd_animation_check(params):
     knees = knee_points(rig)
     for entry in knees:
         tracks.setdefault(entry["bone"], [])
+    # The limb chains ride along in the same loop, for the same reason the knees
+    # do: two more bone reads per frame buy the stretch and reach gates without
+    # a second pass over the action, and nothing the existing readings use is
+    # touched by them.
+    chains = limb_chains(rig)
+    chain_samples = {chain["limb"]: [] for chain in chains}
+    chain_tips = {chain["limb"]: [] for chain in chains}
+    # The chain's root is the DEF-thigh head, which is the hip *joint* - the
+    # only point an anticipation's setback means anything at. See
+    # ``anticipation_reads`` for why the ``hips`` control is not it.
+    chain_roots = {chain["limb"]: [] for chain in chains}
     try:
         with object_mode():
             rigforge_rig.assign_action(rig, action)
@@ -2437,6 +3496,27 @@ def cmd_animation_check(params):
                             s["bone"] == name for s in specs):
                         bone = rig.pose.bones[name]
                         tracks[name].append(rig.matrix_world @ bone.head)
+                for chain in chains:
+                    chain_samples[chain["limb"]].append(chain_sample(rig, chain))
+                    chain_tips[chain["limb"]].append(
+                        rig.matrix_world @ rig.pose.bones[chain["bones"][-1]].tail)
+                    chain_roots[chain["limb"]].append(
+                        rig.matrix_world @ rig.pose.bones[chain["bones"][0]].head)
+            # A loop's duplicate last frame is left out of the *slide* sample so
+            # it is not counted as a second plant. The stretch and reach gates
+            # have no such reason to skip it, and on the clip this gate was
+            # built for that frame is exactly where the leg is longest - the
+            # seam is the defect. So it is sampled here, for the chains only,
+            # after every existing reading has already been taken.
+            if chains and looping and last != end:
+                scene.frame_set(end)
+                refresh_view_layer()
+                for chain in chains:
+                    chain_samples[chain["limb"]].append(chain_sample(rig, chain))
+                    chain_tips[chain["limb"]].append(
+                        rig.matrix_world @ rig.pose.bones[chain["bones"][-1]].tail)
+                    chain_roots[chain["limb"]].append(
+                        rig.matrix_world @ rig.pose.bones[chain["bones"][0]].head)
     finally:
         scene.frame_set(previous_frame)
         try:
@@ -2825,12 +3905,190 @@ def cmd_animation_check(params):
                airborne_report["plants_measured"], worst_overall))
         says = "%s %s" % (says, airborne_report["says"])
 
+    # --- the gates the wip-14 audit found missing ---------------------------
+    #
+    # Everything above is about where a *point* ended up. These are about the
+    # bones' own length, the reach they have left, whether a loop closes and
+    # whether an anticipation reads - four defects a live audit found on a
+    # character that passed every reading above.
+    #
+    # They carry their own rollup, ``deformation_gate``, rather than being
+    # folded into ``gate``. ``gate`` is the foot-slide (and airborne) verdict
+    # and a great deal already depends on it meaning exactly that; a clip whose
+    # feet hold perfectly and whose legs stretch 32% is two different answers to
+    # two different questions and deserves to report both. What ``says`` does is
+    # carry the sentences either way, so nobody reads a clean line over a
+    # broken loop -- and a clip that trips none of these comes out of this
+    # command exactly as it always did, sentence for sentence.
+    contact_runs = {}
+    for chain in chains:
+        if chain["kind"] not in ("leg", "front_leg"):
+            continue
+        for spec in specs:
+            if spec.get("side") != chain["side"]:
+                continue
+            contact_runs[chain["limb"]] = [list(run)
+                                           for run in all_runs.get(spec["bone"]) or []]
+            break
+    chain_frames = list(frames)
+    if chains and looping and last != end:
+        chain_frames.append(end)
+    stretch = bone_stretch_budget(chains, chain_samples, chain_frames, contact_runs)
+    reach = ik_reach_headroom(chains, chain_samples, chain_frames)
+
+    mesh_obj = None
+    try:
+        mesh_obj = _mesh_for(rig, params)
+    except ForgeError:
+        mesh_obj = None
+
+    # A loop is one by the name convention Godot reads, or by Blender's own
+    # cyclic flag - the gate should not care which of the two the author used.
+    seam_loop = bool(looping or getattr(action, "use_cyclic", False))
+    seam = None
+    if seam_loop:
+        if mesh_obj is None:
+            seam = loop_seam_closure(None, None, None, [start, end])
+            warnings.append(
+                "%r is a loop, but no mesh is skinned to %r, so the seam could not be "
+                "measured on the flesh." % (action.name, rig.name))
+        else:
+            # The root's own travel comes out first, measured on the same two
+            # frames the seam is: a root-motion loop is meant to finish a
+            # stride down the floor, and that displacement is the clip's
+            # product rather than a seam that failed to close.
+            _extents, seam_coords, seam_root, _soles = _sample_mesh_frames(
+                rig, mesh_obj, action, (start, end), coords_for=(start, end),
+                bone="root")
+            root_travel = None
+            if start in seam_root and end in seam_root:
+                root_travel = seam_root[end] - seam_root[start]
+            seam = loop_seam_closure(mesh_obj, seam_coords.get(start),
+                                     seam_coords.get(end), [start, end],
+                                     root_travel=root_travel)
+
+    anticipation = None
+    if mode == "jump" and windows:
+        load_bone, load_span = None, 0.0
+        takeoff = windows[0][0]
+        for name in BODY_CONTROLS:
+            track = tracks.get(name)
+            if not track or len(track) < takeoff or takeoff < 2:
+                continue
+            heights = [point.z for point in track[:takeoff]]
+            spread = max(heights) - min(heights)
+            if spread > load_span:
+                load_bone, load_span = name, spread
+        window = None
+        if load_bone is not None:
+            window = anticipation_window(
+                [point.z for point in tracks[load_bone]], takeoff)
+        leg_tips = [chain_tips[chain["limb"]] for chain in chains
+                    if chain["kind"] in ("leg", "front_leg")
+                    and chain_tips.get(chain["limb"])]
+        leg_roots = [chain_roots[chain["limb"]] for chain in chains
+                     if chain["kind"] in ("leg", "front_leg")
+                     and chain_roots.get(chain["limb"])]
+        if window is None or mesh_obj is None or not leg_tips or not leg_roots:
+            anticipation = {
+                "verdict": "unmeasured",
+                "load_bone": load_bone,
+                "says": ("The anticipation was not measured: %s."
+                         % ("no body control dips before the takeoff"
+                            if window is None else
+                            ("no mesh is skinned to %r" % rig.name)
+                            if mesh_obj is None else "no leg chain was found")),
+            }
+        else:
+            start_index, bottom_index = window
+            span_indices = list(range(start_index, bottom_index + 1))
+            # The sole plane comes off the clip's first GROUNDED frame, the
+            # same convention rigforge_anim's floor clamp uses, so the two
+            # cannot disagree about where the floor is.
+            grounded = [index for index in range(len(frames))
+                        if any(foot_grounded[bone][index] for bone in foot_grounded)]
+            plane_index = grounded[0] if grounded else start_index
+            sole_indices = sole_vertex_indices(rig, mesh_obj)
+            span_frames = [frames[index] for index in span_indices]
+            wanted_frames = sorted(set(span_frames + [frames[plane_index]]))
+            extents, _coords, _heads, sole_lows = _sample_mesh_frames(
+                rig, mesh_obj, action, wanted_frames, sole_indices=sole_indices)
+            lowest = {}
+            highest = {}
+            soles = {}
+            for index in span_indices + [plane_index]:
+                extent = extents.get(frames[index])
+                if extent is None:  # pragma: no cover - an empty evaluated mesh
+                    continue
+                lowest[index] = extent[0]
+                highest[index] = extent[1]
+                if frames[index] in sole_lows:
+                    soles[index] = sole_lows[frames[index]]
+            floor_plane = soles.get(plane_index)
+            ankles = [sum((track[index] for track in leg_tips),
+                          Vector((0.0, 0.0, 0.0))) / float(len(leg_tips))
+                      for index in range(len(frames))]
+            # The hip JOINT: the average of the DEF-thigh heads. Not the 'hips'
+            # control, whose head is ~300 mm up the spine and swings forward
+            # under a trunk fold even as the pelvis loads back.
+            hips = [sum((track[index] for track in leg_roots),
+                        Vector((0.0, 0.0, 0.0))) / float(len(leg_roots))
+                    for index in range(len(frames))]
+            control = tracks.get("hips") or tracks.get("torso")
+            forward, _how = rigforge_rig.rig_forward_axis(rig)
+            if len(lowest) < 2:  # pragma: no cover - the mesh vanished mid-clip
+                anticipation = {"verdict": "unmeasured", "load_bone": load_bone,
+                                "says": "The anticipation was not measured: the "
+                                        "evaluated mesh was empty through the load."}
+            else:
+                anticipation = anticipation_reads(
+                    frames, airborne_report["fps"] if airborne_report else 24.0,
+                    tracks[load_bone], hips, ankles, forward, lowest, highest,
+                    window, control_track=control, sole_z=soles,
+                    floor_plane=floor_plane, floor_frame=frames[plane_index])
+                anticipation["load_bone"] = load_bone
+                anticipation["sole_vertices"] = (len(sole_indices)
+                                                 if sole_indices else 0)
+                anticipation["hip_joint_bones"] = [chain["bones"][0] for chain in chains
+                                                   if chain["kind"] in ("leg",
+                                                                        "front_leg")]
+
+    new_gates = {
+        "bone_stretch_budget": stretch,
+        "ik_reach_headroom": reach,
+        "loop_seam_closure": seam,
+        "anticipation_reads": anticipation,
+    }
+    deformation_gate = "ok"
+    measured_any = False
+    for block in new_gates.values():
+        if not block:
+            continue
+        verdict = block.get("verdict")
+        if verdict in ("ok", "attention", "fail"):
+            measured_any = True
+        if verdict == "fail":
+            deformation_gate = "fail"
+        elif verdict == "attention" and deformation_gate == "ok":
+            deformation_gate = "attention"
+    if not measured_any:
+        deformation_gate = "unmeasured"
+    fired = [block["says"] for block in new_gates.values()
+             if block and block.get("verdict") in ("attention", "fail")]
+    if fired:
+        says = "%s %s" % (says, " ".join(fired))
+
     return {
         "rig": rig.name,
         "action": action.name,
         "mode": mode,
         "mode_reason": reason,
         "airborne": airborne_report,
+        "bone_stretch_budget": stretch,
+        "ik_reach_headroom": reach,
+        "loop_seam_closure": seam,
+        "anticipation_reads": anticipation,
+        "deformation_gate": deformation_gate,
         "frames": [frames[0], frames[-1]],
         "frame_step": frame_step,
         "samples": len(frames),
