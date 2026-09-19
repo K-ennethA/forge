@@ -23,6 +23,14 @@ as a glTF.  This module is what fills the character out and makes it *move*:
   arms and the heel/ball foot roll are layered over that.  An FK-keyed walk is
   the foot-slide anti-pattern, and ``animation_check`` measures the difference
   in millimetres.
+* :func:`cmd_rigforge_punch` — the combat authoring path, and the same argument
+  made twice.  The feet are keyed on the leg IK targets and do not move at all
+  (a stance shift is the hips travelling over planted feet, not the feet
+  travelling), and the fist is keyed on the **arm** IK target so its drive is a
+  straight line to a measured point rather than an FK arc.  Pelvis, chest and
+  shoulder carry the same rotation curve offset in time, so the turn travels up
+  the body — and the report proves it peaked in that order rather than claiming
+  it, alongside peak fist speed and full extension against the arm's own reach.
 * :func:`cmd_rigforge_retarget` — a mocap clip the **user supplies** (.bvh or
   .fbx, both read with importers that ship inside Blender) mapped onto the rig's
   FK controls by name heuristics and baked to an action.  Nothing is downloaded,
@@ -73,6 +81,7 @@ from . import rigforge
 from . import rigforge_rig
 from .common import (
     MM_TO_M,
+    M_TO_MM,
     active_only,
     apply_modifier,
     find_object,
@@ -2049,6 +2058,913 @@ def cmd_rigforge_walk(params):
                stance_fraction * 100.0,
                "The root carries the travel (export with root_motion)." if travel
                else "In place: the feet run backwards at one shared speed.")),
+        "warnings": warnings,
+        "seconds": round(time.monotonic() - started, 3),
+    }
+
+
+# ---------------------------------------------------------------------------
+# rigforge_punch — a jab/cross authored on planted feet
+# ---------------------------------------------------------------------------
+#
+# A walk is a locomotion problem: the feet move and the trick is keeping the
+# planted one still.  A punch is the opposite problem and the same answer.  The
+# feet do not move **at all** — a boxer's stance shift is weight transfer, the
+# hips travelling over stationary feet, not the feet travelling — so this
+# command keys both foot IK targets at their rest positions on every single
+# frame.  That is not belt-and-braces: an unkeyed foot inherits whatever the
+# pelvis does, and a pelvis that rotates 22 degrees and slides 30 mm forward
+# would drag an FK leg's foot with it.  Keyed and constant, ``animation_check``
+# measures the stance at 0.0 mm by construction.
+#
+# What the rest of the body does, and why each curve has the shape it has
+# -----------------------------------------------------------------------
+# A punch is a **kinetic chain**.  It does not start at the arm; it starts at
+# the floor and arrives at the arm last.  So every rotation in this command is
+# the same curve — rise to a peak, ease out back to guard — offset in *time*:
+#
+#   pelvis peak  ->  chest peak  ->  shoulder peak  ->  fist at full extension
+#      s - 3L          s - 2L           s - 1L                   s
+#
+# where ``s`` is the strike frame and ``L`` is ``lead_frames``.  Measured on the
+# result (world yaw against the rest pose, reported in ``rotation_lead``) the
+# peaks land in that order by construction: at the pelvis's own peak the chest
+# term is still rising, so the chest's total peaks strictly later, and the same
+# argument moves the shoulder later again.  Each segment's *total* rotation is
+# the sum of everything below it in the chain, which is what "rotation travels
+# up the body" means when you measure it rather than assert it.
+#
+# The fist is keyed on the **arm IK target**, for the same reason the feet are.
+# A jab travels in a straight line; FK rotations travel on an arc.  Keying
+# ``hand_ik`` gives the straight line for free and lands the fist on the target
+# to the millimetre, so the command can *measure* full extension against the
+# arm's own reach instead of hoping.  Both arms go to IK for the clip and the
+# switch is keyframed, so the export bake resolves what was authored.
+#
+# Three numbers this refuses to leave unmeasured, all in the report:
+#
+# * **peak fist speed**, and the frame it happens on — which is before the
+#   strike, not on it, because a fist decelerates into full extension.  A fist
+#   still accelerating at the moment of impact is an arm being thrown, not
+#   punched.
+# * **extension against reach**.  The arm's reach is measured off this rig
+#   (upper arm + forearm at rest, shoulder joint to wrist).  A target further
+#   away than ``max_extension_ratio`` of it is pulled back in rather than
+#   reached for: past roughly 98% the elbow is hyperextended, the IK solver
+#   starts stretching, and a stretched arm does not arrive where it was keyed.
+# * **peak hip and chest rotation**, in degrees, measured from the authored
+#   curves rather than echoed from the parameters.
+#
+# Everything is a fraction of this rig's own measurements — arm reach, shoulder
+# height, shoulder width, leg length — so the same call fits a 6'2" brawler and
+# a goblin without being told which it is.
+
+PUNCH_DEFAULT_FRAMES = 24
+
+#: Where in the clip the fist is at full extension, as a fraction of it.  Under
+#: half: a punch is a fast strike and a longer, slower recovery.
+PUNCH_STRIKE_FRACTION = 0.45
+
+#: Where the chamber (the small draw back before the fist fires) sits, as a
+#: fraction of the run-up to the strike.
+PUNCH_CHAMBER_FRACTION = 0.30
+
+#: How many frames each link of the kinetic chain leads the next by, as a
+#: fraction of the clip.  0.085 of a 24-frame punch is two frames, which is the
+#: "a couple of frames" an animator offsets a torso pass by.
+PUNCH_LEAD_FRACTION = 0.085
+
+#: Rotation caps, in degrees, for the three links that turn.
+DEFAULT_HIP_ROTATION_DEG = 22.0
+DEFAULT_CHEST_ROTATION_DEG = 18.0
+DEFAULT_SHOULDER_ROTATION_DEG = 10.0
+
+#: The hard ceiling on how far the fist may be from the shoulder at full
+#: extension, as a fraction of the arm's own measured reach.  Past this the
+#: elbow is hyperextended and Rigify's IK stretch makes up the difference — the
+#: arm equivalent of the foot slide ``rigforge_walk`` exists to avoid.
+MAX_EXTENSION_RATIO = 0.98
+
+#: How far past that cap the *measured* extension may land before it is worth a
+#: warning, as a fraction of reach.  The target is solved against the control
+#: rig's shoulder joint; the deform shoulder it is measured on afterwards hangs
+#: off Rigify's parent-switch machinery and can sit a millimetre or two away
+#: from it.  1% of reach is that gap, not slack in the rule.
+EXTENSION_TOLERANCE = 0.01
+
+#: What a target distance *defaults* to, as a fraction of reach: full extension
+#: with the elbow still soft.
+PUNCH_REACH_MARGIN = 0.95
+
+#: The guard, as fractions of the arm's reach above/in front of the shoulder,
+#: and of the shoulder's half-width toward the chest midline.  Together they
+#: put the fist by the cheek with the elbow folded at roughly 60% of reach.
+GUARD_RISE_RATIO = 0.25
+GUARD_FORWARD_RATIO = 0.30
+GUARD_INWARD_RATIO = 0.5
+
+#: How far the fist draws back past the guard before it fires, as a fraction of
+#: reach.  Small on purpose: a visible wind-up is a telegraph, and a telegraphed
+#: punch is a different (slower, heavier) clip.
+CHAMBER_DRAW_RATIO = 0.08
+
+#: The weight transfer: how far the hips travel over the planted feet, as a
+#: fraction of leg length, and how much of that is lateral (onto the lead foot).
+WEIGHT_SHIFT_RATIO = 0.05
+WEIGHT_SHIFT_LATERAL = 0.4
+
+#: How far the hips may be lowered to buy the stance the transfer needs before
+#: the transfer is shortened instead.  A rig at rest stands with its legs
+#: straight, and a straight leg cannot let its hip travel horizontally without
+#: the IK stretching — which is foot slide by another name.
+PUNCH_MAX_HIP_LOWER_RATIO = 0.18
+
+#: How sharply the drive from chamber to target accelerates.  >1 skews the peak
+#: speed late: the fist is fastest at about 60% of the way out and decelerating
+#: by the time it arrives.
+PUNCH_DRIVE_SKEW = 1.6
+
+#: Controls, best first.  ``pelvis`` turns, ``body`` carries the weight shift;
+#: on a rig that has only one of them they are the same bone and it does both.
+PELVIS_CONTROLS = ("hips", "torso", "spine_fk")
+BODY_CONTROLS = ("torso", "hips", "spine_fk")
+CHEST_CONTROLS = ("chest", "spine_fk.002", "spine_fk.001", "spine_fk")
+HEAD_CONTROLS = ("head", "neck")
+
+
+def _ease_out(value):
+    """0 -> 1, fast then slow: the shape a body settling back to guard makes."""
+    value = min(1.0, max(0.0, float(value)))
+    return 1.0 - (1.0 - value) ** 3
+
+
+def _rise_fall(frame, start, peak, end):
+    """One link's rotation at ``frame``: 0 at ``start``, 1 at ``peak``, 0 at ``end``.
+
+    Smoothstep both ways, which is not an aesthetic choice — it is what makes
+    the lead *hold*.  The unwind has to leave the peak with zero slope, because
+    the next link up is still rising through it: with a decay that drops away
+    at full speed the moment the pelvis tops out (a plain cubic ease-out does
+    exactly that) the pelvis loses more degrees per frame than the shoulder
+    gains, the sum peaks early, and the chain silently stops leading.  Flat off
+    the peak, accelerating, then decelerating into guard — so a body eases out
+    of its own turn instead of snapping out of it, and each link's *total*
+    still peaks strictly after the one below it.
+
+    Deterministic, no noise, evaluated per frame so ``LINEAR`` keyframe handles
+    reproduce it exactly: the easing lives in the samples, not in Bezier
+    tangents a game engine is going to resample anyway.
+    """
+    if frame <= start or frame >= end:
+        return 0.0
+    if frame <= peak:
+        return _smoothstep((frame - start) / float(max(1, peak - start)))
+    return 1.0 - _smoothstep((frame - peak) / float(max(1, end - peak)))
+
+
+def _signed_yaw(from_vector, to_vector, up):
+    """The signed angle about ``up`` that turns one horizontal vector onto another."""
+    a = Vector((from_vector.x, from_vector.y, 0.0))
+    b = Vector((to_vector.x, to_vector.y, 0.0))
+    if a.length < 1e-9 or b.length < 1e-9:
+        return 0.0
+    a.normalize()
+    b.normalize()
+    return math.atan2(a.cross(b).dot(up), a.dot(b))
+
+
+def _yaw_delta(rest, current):
+    """How far ``current`` is turned about the vertical from ``rest``, in radians.
+
+    Quaternion rather than matrix columns so a scaled control bone (Rigify has
+    several) does not read as a rotation, and exact for the pure-Z turns this
+    command authors.
+    """
+    delta = current.to_quaternion() @ rest.to_quaternion().inverted()
+    if delta.w < 0.0:
+        delta.negate()
+    return 2.0 * math.atan2(delta.z, delta.w)
+
+
+def punch_arms(rig, limbs):
+    """Each arm's shoulder joint, wrist and **measured** reach, at rest.
+
+    ``reach`` is upper arm + forearm — the shoulder joint to the wrist, summed
+    along the rest chain rather than taken as the straight line between the
+    ends, because an arm modelled with a soft elbow would otherwise measure
+    short and every default derived from it would come out cramped.
+    """
+    out = {}
+    for entry in limbs:
+        if entry["limb"] != "arm":
+            continue
+        chain = [rig.pose.bones.get(name) for name in entry["fk_chain"]]
+        chain = [bone for bone in chain if bone is not None]
+        if len(chain) < 2:
+            continue
+        points = [_rest_world(rig, bone).translation.copy() for bone in chain]
+        reach = sum((points[index + 1] - points[index]).length
+                    for index in range(len(points) - 1))
+        target = rig.pose.bones.get(entry["ik_target"])
+        if target is None or reach <= 1e-6:
+            continue
+        out[entry["side"]] = {
+            "side": entry["side"],
+            "limb": entry,
+            "shoulder": points[0],
+            "wrist": points[-1],
+            "reach": reach,
+            "target": entry["ik_target"],
+            "rest": _rest_world(rig, target),
+            "shoulder_bone": ("shoulder.%s" % entry["side"]
+                              if ("shoulder.%s" % entry["side"]) in rig.pose.bones
+                              else None),
+        }
+    return out
+
+
+def _punch_stance(info, pivot, yaw, shift, margin, hip_lower, max_lower):
+    """Bend the knees as much as the weight transfer needs, then clamp it.
+
+    The hips rotate and travel over feet that are nailed down, which means the
+    hip socket moves horizontally away from its ankle: ``sqrt(drop^2 + reach^2)``
+    has to stay inside the leg.  A rig at rest stands with its legs straight and
+    has nothing to spend, so the order of preference is the same as
+    :func:`_crouch_for`'s — deepen the stance first, shorten the transfer only
+    when the stance runs out.  Returns ``(shift, hip_lower, clamped, deepened)``.
+    """
+    needed = 0.0
+    deepened = False
+    clamped = False
+    for foot in info["feet"].values():
+        if foot["hip"] is None:
+            continue
+        hip, ankle = foot["hip"], foot["ankle"]
+        arm = Vector((hip.x - pivot.x, hip.y - pivot.y, 0.0)).length
+        # A rotation of `yaw` about the body axis moves a socket `arm` out from
+        # it by a chord of 2*arm*sin(yaw/2).
+        rotation = 2.0 * arm * math.sin(abs(yaw) * 0.5)
+        flat = Vector((hip.x - ankle.x, hip.y - ankle.y, 0.0)).length
+        drop = hip.z - ankle.z
+        span = margin * info["leg_length"]
+        # Conservative: the rotation and the shift are summed rather than
+        # composed, so the answer is never short of what the leg actually needs.
+        want = flat + rotation + shift
+        needed = max(needed, want)
+        room = math.sqrt(max(0.0, span * span - want * want))
+        lower = drop - room
+        if lower > hip_lower:
+            hip_lower = min(max_lower, lower)
+            deepened = True
+
+    if not deepened or needed <= 0.0:
+        return shift, hip_lower, clamped, deepened
+
+    # Did the stance we were allowed actually buy it? If not, the transfer is
+    # what gives way - never the plant.
+    allowed = shift
+    for foot in info["feet"].values():
+        if foot["hip"] is None:
+            continue
+        hip, ankle = foot["hip"], foot["ankle"]
+        span = margin * info["leg_length"]
+        drop = (hip.z - ankle.z) - hip_lower
+        flat = Vector((hip.x - ankle.x, hip.y - ankle.y, 0.0)).length
+        rotation = 2.0 * Vector((hip.x - pivot.x, hip.y - pivot.y, 0.0)).length \
+            * math.sin(abs(yaw) * 0.5)
+        room = math.sqrt(max(0.0, span * span - drop * drop))
+        allowed = min(allowed, max(0.0, room - flat - rotation))
+    if allowed < shift * (1.0 - 1e-6):
+        clamped = True
+        shift = allowed
+    return shift, hip_lower, clamped, deepened
+
+
+@command("rigforge_punch")
+def cmd_rigforge_punch(params):
+    """Author a jab/cross on the arm IK target, with both feet planted.
+
+    ``rigforge_punch {"rig"?, "action"?, "side"?, "frames"?, "strike_fraction"?,
+    "lead_frames"?, "target_distance"?, "target_height"?, "hip_rotation_deg"?,
+    "chest_rotation_deg"?, "shoulder_rotation_deg"?, "weight_shift"?,
+    "hip_lower"?, "guard_rise"?, "chamber_draw"?, "reach_margin"?,
+    "max_extension_ratio"?, "loop"?, "clear"?, "interpolation"?, "poles"?}``
+
+    Every length is metres and every default is a fraction of *this* rig's own
+    arm reach, shoulder width or leg length, measured off the rest pose.  See
+    the section header above for what each body part's curve is and why.
+    """
+    started = time.monotonic()
+    warnings = []
+    rig = _rig_for(None, params, key="rig", required=True)
+    scene = get_scene()
+
+    side = get_choice(params, "side",
+                      {"L": "L", "LEFT": "L", "R": "R", "RIGHT": "R"}, "R")
+    total_frames = get_int(params, "frames", PUNCH_DEFAULT_FRAMES,
+                           minimum=8, maximum=600)
+    strike_fraction = get_float(params, "strike_fraction", PUNCH_STRIKE_FRACTION,
+                                minimum=0.15, maximum=0.85)
+    hip_deg = get_float(params, "hip_rotation_deg", DEFAULT_HIP_ROTATION_DEG,
+                        minimum=0.0, maximum=60.0)
+    chest_deg = get_float(params, "chest_rotation_deg", DEFAULT_CHEST_ROTATION_DEG,
+                          minimum=0.0, maximum=60.0)
+    shoulder_deg = get_float(params, "shoulder_rotation_deg",
+                             DEFAULT_SHOULDER_ROTATION_DEG, minimum=0.0, maximum=45.0)
+    max_extension = get_float(params, "max_extension_ratio", MAX_EXTENSION_RATIO,
+                              minimum=0.3, maximum=1.0)
+    reach_margin = get_float(params, "reach_margin", PUNCH_REACH_MARGIN,
+                             minimum=0.2, maximum=max_extension)
+    interpolation = get_choice(
+        params, "interpolation", {name: name for name in INTERPOLATIONS}, "LINEAR")
+    clear = get_bool(params, "clear", True)
+    loop = get_bool(params, "loop", False) if params.get("loop") is not None else False
+
+    limbs = rigforge_rig.ik_limbs(rig)
+    legs = [entry for entry in limbs if entry["limb"] == "leg"]
+    if len(legs) < 2:
+        raise ForgeError(
+            "rigforge_punch plants the feet through their IK targets, and %r has %d "
+            "leg(s) with one (it needs foot_ik.L and foot_ik.R with an IK_FK switch on "
+            "thigh_parent.L/R). Generate the rig with rigforge_generate_rig, or run "
+            "rigforge_ik to see what this rig actually has. A punch whose legs are "
+            "keyed in FK drags its own feet across the floor as the hips turn, which "
+            "is the foot-slide anti-pattern animation_check measures in millimetres."
+            % (rig.name, len(legs)))
+
+    arms = punch_arms(rig, limbs)
+    if side not in arms:
+        raise ForgeError(
+            "rigforge_punch drives the fist through the arm's IK target, and %r has no "
+            "usable %s arm (it needs hand_ik.%s plus upper_arm_fk.%s/forearm_fk.%s to "
+            "measure the reach from). Arms found: %s."
+            % (rig.name, {"L": "left", "R": "right"}[side], side, side, side,
+               ", ".join("arm.%s" % key for key in sorted(arms)) or "none"))
+
+    info = locomotion_frame(rig, limbs)
+    forward, right, up = info["forward"], info["right"], info["up"]
+    leg_length = info["leg_length"]
+
+    punching = arms[side]
+    other_side = "R" if side == "L" else "L"
+    off = arms.get(other_side)
+    reach = punching["reach"]
+    shoulder_rest = punching["shoulder"]
+    if off is not None:
+        chest_mid = (shoulder_rest + off["shoulder"]) * 0.5
+    else:
+        chest_mid = shoulder_rest.copy()
+        warnings.append(
+            "Only the %s arm was found, so the chest midline was taken as that "
+            "shoulder and there is no off-hand guard to hold." % side)
+    #: The body's own vertical axis, through the chest midline: what the pelvis,
+    #: the chest and the shoulder all turn about.
+    pivot = Vector((chest_mid.x, chest_mid.y, 0.0))
+    half_width = abs((shoulder_rest - chest_mid).dot(right))
+    #: +1 when the punching shoulder sits on the rig's right. A turn of +theta
+    #: about `up` carries `right` onto `forward` (up x right == forward), so
+    #: this sign is what drives the punching shoulder *into* the punch whichever
+    #: way the character happens to face.
+    yaw_sign = 1.0 if (shoulder_rest - chest_mid).dot(right) >= 0.0 else -1.0
+
+    hip_rad = math.radians(hip_deg)
+    chest_rad = math.radians(chest_deg)
+    shoulder_rad = math.radians(shoulder_deg)
+
+    weight_shift = get_float(params, "weight_shift", WEIGHT_SHIFT_RATIO * leg_length,
+                             minimum=0.0, maximum=leg_length)
+    hip_lower = get_float(params, "hip_lower", 0.0, minimum=0.0, maximum=leg_length)
+    max_lower = PUNCH_MAX_HIP_LOWER_RATIO * leg_length
+    if params.get("hip_lower") is not None:
+        max_lower = hip_lower  # asked for explicitly: the transfer gives way instead
+    weight_shift, hip_lower, shift_clamped, stance_deepened = _punch_stance(
+        info, pivot, hip_rad, weight_shift, DEFAULT_REACH_MARGIN, hip_lower,
+        max_lower)
+    if stance_deepened:
+        warnings.append(
+            "The hips were lowered %.3f m into a stance so the legs can carry a "
+            "%.0f deg pelvis turn and a %.0f mm weight transfer over planted feet. A "
+            "rig at rest stands with its legs straight and has no bend to spend; a "
+            "boxer's knees are not locked for the same reason."
+            % (hip_lower, hip_deg, weight_shift * 1000.0))
+    if shift_clamped:
+        warnings.append(
+            "weight_shift was shortened to %.0f mm: any further and the hip travels "
+            "outside what the leg can reach with the foot nailed down, so the IK "
+            "stretches and the foot slides on the deform bones while the target sits "
+            "still." % (weight_shift * 1000.0))
+
+    stance_drop = up * hip_lower
+
+    # --- the clock --------------------------------------------------------
+    strike_index = 1 + int(round(strike_fraction * (total_frames - 1)))
+    strike_index = max(2, min(total_frames - 1, strike_index))
+    chamber_index = 1 + int(round(PUNCH_CHAMBER_FRACTION * (strike_index - 1)))
+    chamber_index = max(1, min(strike_index - 1, chamber_index))
+    lead = get_int(params, "lead_frames",
+                   max(1, int(round(PUNCH_LEAD_FRACTION * total_frames))),
+                   minimum=0, maximum=200)
+    room = max(0, (strike_index - 1) // 3)
+    if lead > room:
+        warnings.append(
+            "lead_frames was cut from %d to %d: the strike lands on frame %d, and the "
+            "pelvis has to peak three leads before the fist does. A longer lead needs "
+            "more frames or a later strike_fraction." % (lead, room, strike_index))
+        lead = room
+    if lead == 0:
+        warnings.append(
+            "lead_frames is 0, so the pelvis, chest, shoulder and fist all peak on the "
+            "same frame. That is a body thrown in one piece, not a kinetic chain; give "
+            "the clip more frames or a later strike_fraction to buy the offset.")
+    peaks = {
+        "pelvis": strike_index - 3 * lead,
+        "chest": strike_index - 2 * lead,
+        "shoulder": strike_index - lead,
+        "fist": strike_index,
+    }
+    # The clip starts and ends on the same settled guard pose, so the last
+    # frame already repeats the first: `loop` only decides whether the action
+    # carries Godot's `-loop` suffix, it does not change a single key.
+    end_frame = total_frames
+    frames = list(range(1, total_frames + 1))
+
+    def _curve(frame, key):
+        return _rise_fall(min(frame, end_frame), 1, peaks[key], end_frame)
+
+    def _yaw_at(frame):
+        """``(pelvis, chest, shoulder)`` world yaw — each the sum of the links below."""
+        pelvis = yaw_sign * hip_rad * _curve(frame, "pelvis")
+        chest = pelvis + yaw_sign * chest_rad * _curve(frame, "chest")
+        shoulder = chest + yaw_sign * shoulder_rad * _curve(frame, "shoulder")
+        return pelvis, chest, shoulder
+
+    def _shift_at(frame):
+        drive = _curve(frame, "pelvis")
+        return (forward * (weight_shift * drive)
+                + right * (-yaw_sign * WEIGHT_SHIFT_LATERAL * weight_shift * drive))
+
+    def _body_at(frame):
+        """The rigid frame the guard rides: the chest's turn plus the transfer."""
+        _pelvis, chest, _shoulder = _yaw_at(frame)
+        move = Matrix.Translation(_shift_at(frame) - stance_drop)
+        turn = (Matrix.Translation(pivot) @ Matrix.Rotation(chest, 4, up)
+                @ Matrix.Translation(-pivot))
+        return move @ turn
+
+    # --- the target -------------------------------------------------------
+    # Solved against where the shoulder **is at the moment of impact**, not
+    # where it sits at rest. The whole point of the kinetic chain is that the
+    # hips, chest and clavicle carry the shoulder joint forward into the punch;
+    # measuring the reach from the rest shoulder would hand the arm a target it
+    # arrives at with the elbow still folded — 64% of reach on the rig this was
+    # first measured on, which is a punch that lands short and looks it.
+    _pelvis_strike, _chest_strike, yaw_strike = _yaw_at(strike_index)
+    shoulder_strike = ((Matrix.Translation(_shift_at(strike_index) - stance_drop)
+                        @ Matrix.Translation(pivot)
+                        @ Matrix.Rotation(yaw_strike, 4, up)
+                        @ Matrix.Translation(-pivot)) @ shoulder_rest)
+
+    # Default: on the chest midline, at that shoulder's height, as far forward
+    # as the arm reaches with the elbow still soft. Solved in the triangle
+    # rather than guessed, so `target_distance` and the reach agree exactly.
+    target_height = get_float(params, "target_height", shoulder_strike.z)
+    flat = Vector((shoulder_strike.x, shoulder_strike.y, 0.0))
+    along = (pivot - flat).dot(forward)
+    lateral = (pivot - flat).dot(right)
+    rise = target_height - shoulder_strike.z
+
+    def _distance_for(span):
+        room = span * span - lateral * lateral - rise * rise
+        if room <= 0.0:
+            return None
+        return -along + math.sqrt(room)
+
+    derived = _distance_for(reach_margin * reach)
+    if derived is None:
+        raise ForgeError(
+            "A target at z=%.3f is %.0f mm off the %s shoulder's own height and "
+            "sideline before it moves forward at all, which is further than %.0f%% of "
+            "this arm's %.0f mm reach. Lower 'target_height', or raise 'reach_margin'."
+            % (target_height, math.hypot(lateral, rise) * 1000.0, side,
+               reach_margin * 100.0, reach * 1000.0))
+    target_distance = get_float(params, "target_distance", derived, minimum=0.0)
+    target = Vector((pivot.x, pivot.y, target_height)) + forward * target_distance
+    extension_planned = (target - shoulder_strike).length
+    target_clamped = False
+    if extension_planned > max_extension * reach * (1.0 + 1e-9):
+        pulled = _distance_for(max_extension * reach)
+        if pulled is None:
+            raise ForgeError(
+                "That target cannot be punched at all: it is %.0f mm off the shoulder "
+                "sideways and in height alone, against a %.0f mm arm. Move it onto the "
+                "chest midline or closer to shoulder height."
+                % (math.hypot(lateral, rise) * 1000.0, reach * 1000.0))
+        warnings.append(
+            "target_distance was pulled back from %.0f mm to %.0f mm: the fist would "
+            "otherwise be %.0f mm from the shoulder against a measured reach of %.0f mm "
+            "(%.0f%%). Past %.0f%% the elbow is hyperextended, Rigify's IK stretch "
+            "makes up the difference, and a stretched arm does not arrive where it was "
+            "keyed."
+            % (target_distance * 1000.0, pulled * 1000.0, extension_planned * 1000.0,
+               reach * 1000.0, 100.0 * extension_planned / reach,
+               max_extension * 100.0))
+        target_distance = pulled
+        target = Vector((pivot.x, pivot.y, target_height)) + forward * target_distance
+        extension_planned = (target - shoulder_strike).length
+        target_clamped = True
+
+    # --- guard and chamber, in the rest frame the body carries around -------
+    guard_rise = get_float(params, "guard_rise", GUARD_RISE_RATIO * reach, minimum=0.0)
+    guard_forward = get_float(params, "guard_forward", GUARD_FORWARD_RATIO * reach,
+                              minimum=0.0)
+    chamber_draw = get_float(params, "chamber_draw", CHAMBER_DRAW_RATIO * reach,
+                             minimum=0.0)
+
+    def _guard_for(entry):
+        sign = 1.0 if (entry["shoulder"] - chest_mid).dot(right) >= 0.0 else -1.0
+        inward = abs((entry["shoulder"] - chest_mid).dot(right)) * GUARD_INWARD_RATIO
+        return (entry["shoulder"] + up * guard_rise + forward * guard_forward
+                - right * (sign * inward))
+
+    guard = _guard_for(punching)
+    chamber = guard - forward * chamber_draw
+    guard_off = _guard_for(off) if off is not None else None
+
+    #: The fist's rest orientation points down the arm, which at rest is out to
+    #: the side; at full extension it has to point at the target. This is the
+    #: yaw that turns one onto the other, spent over the drive.
+    aim_yaw = _signed_yaw(punching["wrist"] - punching["shoulder"], forward, up)
+
+    chamber_world = _body_at(chamber_index) @ chamber
+
+    def _extension_at(frame):
+        """0 at guard, 1 with the fist on the target."""
+        if frame <= chamber_index:
+            return 0.0
+        if frame <= strike_index:
+            x = (frame - chamber_index) / float(max(1, strike_index - chamber_index))
+            return _smoothstep(min(1.0, max(0.0, x)) ** PUNCH_DRIVE_SKEW)
+        x = (frame - strike_index) / float(max(1, end_frame - strike_index))
+        return 1.0 - _ease_out(min(1.0, max(0.0, x)))
+
+    def _fist_at(frame):
+        frame = min(frame, end_frame)
+        if frame <= chamber_index:
+            # Settling into the chamber, riding the body.
+            draw = _smoothstep((frame - 1) / float(max(1, chamber_index - 1)))
+            return _body_at(frame) @ guard.lerp(chamber, draw)
+        if frame <= strike_index:
+            # The drive. A straight world-space line, by construction.
+            return chamber_world.lerp(target, _extension_at(frame))
+        back = _ease_out((frame - strike_index)
+                         / float(max(1, end_frame - strike_index)))
+        return target.lerp(_body_at(frame) @ guard, back)
+
+    # --- the action -------------------------------------------------------
+    wanted_action = get_str(params, "action", "punch.%s" % side)
+    wanted_action = loop_name(wanted_action, loop)
+    before_actions = sorted(action.name for action in bpy.data.actions)
+    action = bpy.data.actions.get(wanted_action)
+    created = False
+    if action is None:
+        action = bpy.data.actions.new(wanted_action)
+        created = True
+    # Fake user on every punch action, whether we made it or found it: the next
+    # command to assign a different action to this rig must not take the punch
+    # with it, and that is exactly what happens to a zero-user action on save.
+    action.use_fake_user = True
+
+    keys_set = 0
+    cleared = 0
+    bones_touched = []
+    modes = {}
+    previous_frame = scene.frame_current
+    previous_action = rig.animation_data.action if rig.animation_data else None
+
+    def touched(name):
+        if name and name not in bones_touched:
+            bones_touched.append(name)
+
+    fist_track = []
+    measured = {"pelvis": [], "chest": [], "shoulder": []}
+    strike_measurement = {}
+
+    with object_mode():
+        assign_action(rig, action)
+        if clear:
+            cleared = clear_action(action)
+
+        # Legs IK (the plant) and arms IK (the straight-line fist), keyframed at
+        # frame 1 so the export bake resolves the rig that was authored.
+        convention = rigforge_rig.apply_ik_convention(
+            rig, legs="ik", arms="ik", poles=get_bool(params, "poles", True),
+            keyframe_at=frames[0])
+        for entry in convention["limbs"]:
+            touched(entry["switch_bone"])
+
+        def _control(names):
+            for name in names:
+                if name in rig.pose.bones:
+                    return rig.pose.bones[name]
+            return None
+
+        body = _control(BODY_CONTROLS)
+        pelvis_bone = _control(PELVIS_CONTROLS)
+        chest_bone = _control(CHEST_CONTROLS)
+        head_bone = _control(HEAD_CONTROLS)
+        if body is None or pelvis_bone is None:
+            raise ForgeError(
+                "rigforge_punch turns the hips, and %r has none of %s to turn. Generate "
+                "the rig with rigforge_generate_rig."
+                % (rig.name, ", ".join(PELVIS_CONTROLS)))
+        if chest_bone is pelvis_bone:
+            chest_bone = None
+            warnings.append(
+                "This rig has no separate chest control, so the chest turn was folded "
+                "into the pelvis: the rotation cannot lead itself up a spine that is "
+                "one bone.")
+        if head_bone is None:
+            warnings.append("No head control, so the head does not hold the target.")
+        shoulder_bone = rig.pose.bones.get(punching["shoulder_bone"] or "")
+        if shoulder_bone is None and shoulder_deg > 0.0:
+            warnings.append(
+                "No %s control on this rig, so the shoulder does not lead the arm; the "
+                "chest hands its rotation straight to the fist."
+                % (punching["shoulder_bone"] or "clavicle"))
+
+        rest_of = {}
+        for bone in (body, pelvis_bone, chest_bone, shoulder_bone, head_bone):
+            if bone is not None:
+                rest_of[bone.name] = _rest_world(rig, bone)
+
+        heels = {}
+        for name, foot in info["feet"].items():
+            heel = rig.pose.bones.get(foot.get("heel_pivot") or "")
+            if heel is None:
+                continue
+            if heel.rotation_mode == "QUATERNION":
+                modes[heel.name] = heel.rotation_mode
+                heel.rotation_mode = "XYZ"
+            heels[name] = heel
+
+        for frame in frames:
+            scene.frame_set(frame)
+            source = min(frame, end_frame)
+            yaw_pelvis, yaw_chest, yaw_shoulder = _yaw_at(source)
+            shift = _shift_at(source) - stance_drop
+
+            # 1. The feet. Rest position, every frame, unmoved: the plant is a
+            #    constant, which is why it cannot drift.
+            for name in sorted(info["feet"]):
+                foot = info["feet"][name]
+                target_bone = rig.pose.bones.get(foot["target"])
+                if target_bone is None:
+                    continue
+                _set_world(rig, target_bone, foot["rest"].copy())
+                keys_set += _key_transform(target_bone, frame)
+                touched(target_bone.name)
+                heel = heels.get(name)
+                if heel is not None:
+                    heel.rotation_euler = (0.0, 0.0, 0.0)
+                    heel.keyframe_insert("rotation_euler", frame=frame)
+                    keys_set += 3
+                    touched(heel.name)
+
+            # 2. The body: the weight transfer, and the stance it stands in.
+            matrix = rest_of[body.name].copy()
+            matrix.translation = rest_of[body.name].translation + shift
+            if pelvis_bone is body:
+                matrix = _rotate_about(matrix, up, yaw_pelvis, pivot)
+            _set_world(rig, body, matrix)
+            keys_set += _key_transform(body, frame)
+            touched(body.name)
+            refresh_view_layer()
+
+            # 3. The pelvis, 4. the chest, 5. the shoulder — each set to its own
+            #    accumulated world yaw, so what the report measures on the bone
+            #    is the sum of every link below it whatever the parenting is.
+            for bone, yaw in ((pelvis_bone, yaw_pelvis), (chest_bone, yaw_chest),
+                              (shoulder_bone, yaw_shoulder)):
+                if bone is None or bone is body:
+                    continue
+                rest = rest_of[bone.name]
+                matrix = rest.copy()
+                matrix.translation = rest.translation + shift
+                matrix = _rotate_about(matrix, up, yaw, pivot)
+                _set_world(rig, bone, matrix)
+                keys_set += _key_transform(bone, frame)
+                touched(bone.name)
+                refresh_view_layer()
+
+            # 6. The hands. The punching fist on its path, the off hand holding
+            #    guard as the body carries it.
+            fist = _fist_at(source)
+            extension = _extension_at(source)
+            hand = rig.pose.bones.get(punching["target"])
+            if hand is not None:
+                matrix = Matrix.Rotation(yaw_chest + aim_yaw * extension, 4, up) \
+                    @ punching["rest"].copy()
+                matrix.translation = fist
+                _set_world(rig, hand, matrix)
+                keys_set += _key_transform(hand, frame)
+                touched(hand.name)
+            if off is not None:
+                off_hand = rig.pose.bones.get(off["target"])
+                if off_hand is not None:
+                    base = off["rest"].copy()
+                    base.translation = guard_off
+                    _set_world(rig, off_hand, _body_at(source) @ base)
+                    keys_set += _key_transform(off_hand, frame)
+                    touched(off_hand.name)
+            refresh_view_layer()
+
+            # 7. The head holds the target. Its rotation is set in world space,
+            #    which is the whole point: the chest turns underneath it and the
+            #    eyes stay where they were, instead of being swung off the
+            #    target by the very rotation that throws the punch.
+            if head_bone is not None:
+                # Where the head *is* is the spine's business, so the anchor is
+                # computed from the body frame rather than read back off the
+                # evaluated pose: a measured position feeds a micron of float
+                # dust into the look angle and into the location channel, and
+                # "author the same punch twice, get the same keys" is a promise
+                # that does not survive micron-sized noise. The location basis
+                # is then pinned to exactly zero and keyed there, so the head
+                # rides the neck and only its rotation is authored.
+                anchor = _body_at(source) @ rest_of[head_bone.name].translation
+                look = _signed_yaw(forward, target - anchor, up)
+                matrix = _rotate_about(rest_of[head_bone.name], up, look,
+                                       rest_of[head_bone.name].translation)
+                matrix.translation = anchor
+                _set_world(rig, head_bone, matrix)
+                head_bone.location = (0.0, 0.0, 0.0)
+                keys_set += _key_transform(head_bone, frame)
+                touched(head_bone.name)
+                refresh_view_layer()
+
+            # --- measurement, on the posed rig rather than on the parameters --
+            fist_track.append((frame, fist.copy()))
+            for key, bone in (("pelvis", pelvis_bone), ("chest", chest_bone),
+                              ("shoulder", shoulder_bone)):
+                if bone is None:
+                    continue
+                measured[key].append(
+                    (frame, abs(math.degrees(_yaw_delta(rest_of[bone.name],
+                                                        _world_matrix(rig, bone))))))
+            if frame == strike_index:
+                upper = rigforge_rig.def_bones_for(rig, "upper_arm.%s" % side)
+                joint_bone = (upper[0] if upper and upper[0] in rig.pose.bones
+                              else punching["limb"]["fk_chain"][0])
+                joint = (rig.matrix_world
+                         @ rig.pose.bones[joint_bone].head).copy()
+                deform = rigforge_rig.def_bones_for(rig, "hand.%s" % side)
+                landed = (rig.matrix_world @ rig.pose.bones[deform[0]].head
+                          if deform and deform[0] in rig.pose.bones else fist.copy())
+                strike_measurement = {
+                    "shoulder": joint,
+                    "extension_m": (fist - joint).length,
+                    "landed_mm": (landed - target).length * M_TO_MM,
+                }
+
+        applied = 0
+        for curve in rigforge_rig.action_fcurves(action):
+            for point in curve.keyframe_points:
+                point.interpolation = interpolation
+                applied += 1
+            try:
+                curve.update()
+            except (AttributeError, RuntimeError):  # pragma: no cover
+                pass
+
+    scene.frame_set(previous_frame)
+    refresh_view_layer()
+
+    if modes:
+        warnings.append(
+            "Rotation mode changed to XYZ euler on %s so the planted foot roll is one "
+            "readable channel." % ", ".join(sorted(modes)))
+    if previous_action is not None and previous_action is not action:
+        warnings.append(
+            "%r was the action on %r and is now %r; %r was left in the file with a fake "
+            "user, so nothing was lost."
+            % (previous_action.name, rig.name, action.name, previous_action.name))
+
+    # --- the numbers ------------------------------------------------------
+    speeds = [(fist_track[index][0],
+               (fist_track[index][1] - fist_track[index - 1][1]).length)
+              for index in range(1, len(fist_track))]
+    peak_speed_frame, peak_speed = max(speeds, key=lambda pair: pair[1]) \
+        if speeds else (strike_index, 0.0)
+    fps = float(getattr(getattr(scene, "render", None), "fps", 24) or 24)
+
+    def _peak(key):
+        if not measured[key]:
+            return {"frame": None, "degrees": None}
+        frame, degrees = max(measured[key], key=lambda pair: (pair[1], -pair[0]))
+        return {"frame": frame, "degrees": round(degrees, 3)}
+
+    rotation_lead = {name: _peak(name) for name in ("pelvis", "chest", "shoulder")}
+    rotation_lead["fist"] = {"frame": strike_index, "degrees": None}
+    ordered = [entry["frame"] for entry in
+               (rotation_lead["pelvis"], rotation_lead["chest"],
+                rotation_lead["shoulder"]) if entry["frame"] is not None]
+    leads_correctly = ordered == sorted(ordered) and (
+        not ordered or ordered[-1] <= strike_index)
+    if not leads_correctly:
+        warnings.append(
+            "The rotation does not travel up the body in order (pelvis %s, chest %s, "
+            "shoulder %s, fist %d). Raise 'lead_frames', or give the clip more frames."
+            % (rotation_lead["pelvis"]["frame"], rotation_lead["chest"]["frame"],
+               rotation_lead["shoulder"]["frame"], strike_index))
+
+    extension_m = strike_measurement.get("extension_m", extension_planned)
+    extension_ratio = extension_m / reach if reach > 1e-9 else None
+    landed_mm = strike_measurement.get("landed_mm")
+    within_cap = (extension_ratio is None
+                  or extension_ratio <= max_extension + EXTENSION_TOLERANCE)
+    if not within_cap:
+        warnings.append(
+            "Measured on the posed rig the fist ends %.0f mm from the shoulder, %.1f%% "
+            "of its %.0f mm reach — past the %.0f%% this command calls hyperextended. "
+            "Shorten 'target_distance'."
+            % (extension_m * 1000.0, extension_ratio * 100.0, reach * 1000.0,
+               max_extension * 100.0))
+    after_actions = sorted(a.name for a in bpy.data.actions)
+    lost = sorted(set(before_actions) - set(after_actions))
+    if lost:  # pragma: no cover - nothing here removes an action
+        warnings.append("Action(s) %s went missing." % ", ".join(lost))
+
+    return {
+        "rig": rig.name,
+        "action": action.name,
+        "created": created,
+        "loop": is_loop(action.name),
+        "side": side,
+        "frames": total_frames,
+        "frame_range": [frames[0], frames[-1]],
+        "strike_frame": strike_index,
+        "chamber_frame": chamber_index,
+        "lead_frames": lead,
+        "peak_frames": dict(peaks),
+        "rotation_lead": rotation_lead,
+        "rotation_leads_in_order": leads_correctly,
+        "hip_rotation_deg": round(hip_deg, 3),
+        "chest_rotation_deg": round(chest_deg, 3),
+        "shoulder_rotation_deg": round(shoulder_deg, 3),
+        "arm_reach_m": round(reach, 5),
+        "extension_m": round(extension_m, 5),
+        "extension_planned_m": round(extension_planned, 5),
+        "extension_ratio": round(extension_ratio, 5) if extension_ratio else None,
+        "max_extension_ratio": round(max_extension, 4),
+        "extension_tolerance": EXTENSION_TOLERANCE,
+        "extension_within_cap": bool(within_cap),
+        "fist_landed_mm": round(landed_mm, 3) if landed_mm is not None else None,
+        "target": [round(v, 5) for v in target],
+        "target_distance_m": round(target_distance, 5),
+        "target_height_m": round(target_height, 5),
+        "target_reach_clamped": target_clamped,
+        "peak_fist_speed_frame": peak_speed_frame,
+        "peak_fist_speed_m_per_frame": round(peak_speed, 5),
+        "peak_fist_speed_m_per_s": round(peak_speed * fps, 3),
+        "fps": fps,
+        "guard": [round(v, 5) for v in guard],
+        "guard_rise_m": round(guard_rise, 5),
+        "chamber_draw_m": round(chamber_draw, 5),
+        "weight_shift_m": round(weight_shift, 5),
+        "weight_shift_clamped": shift_clamped,
+        "hip_lower_m": round(hip_lower, 5),
+        "hip_lower_deepened": stance_deepened,
+        "shoulder_half_width_m": round(half_width, 5),
+        "leg_length_m": round(leg_length, 5),
+        "forward_axis": [round(v, 4) for v in forward],
+        "aim_yaw_deg": round(math.degrees(aim_yaw), 3),
+        "feet_planted": sorted(info["feet"][name]["target"] for name in info["feet"]),
+        "convention": convention["convention"],
+        "poles": convention["poles"],
+        "bones": bones_touched,
+        "keys_set": keys_set,
+        "cleared_fcurves": cleared,
+        "fcurves": len(rigforge_rig.action_fcurves(action)),
+        "interpolation": interpolation,
+        "interpolated_points": applied,
+        "rotation_modes": modes,
+        "actions_in_file": after_actions,
+        "says": (
+            "%s: %d frames, %s fist fires from the chamber on frame %d and lands on "
+            "frame %d. Peak fist speed %.2f m/s on frame %d — before the strike, not "
+            "on it. Full extension %.0f mm against a measured reach of %.0f mm "
+            "(%.0f%%, cap %.0f%%). Rotation peaks pelvis %s deg (f%s) -> chest %s deg "
+            "(f%s) -> shoulder %s deg (f%s) -> fist (f%d). Both feet keyed on %s and "
+            "never moved."
+            % (action.name, total_frames, {"L": "left", "R": "right"}[side],
+               chamber_index, strike_index, peak_speed * fps, peak_speed_frame,
+               extension_m * 1000.0, reach * 1000.0,
+               (extension_ratio or 0.0) * 100.0, max_extension * 100.0,
+               rotation_lead["pelvis"]["degrees"], rotation_lead["pelvis"]["frame"],
+               rotation_lead["chest"]["degrees"], rotation_lead["chest"]["frame"],
+               rotation_lead["shoulder"]["degrees"], rotation_lead["shoulder"]["frame"],
+               strike_index,
+               " and ".join(sorted(info["feet"][n]["target"] for n in info["feet"])))),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
