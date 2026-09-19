@@ -115,11 +115,16 @@ EXPECTED_TOOLS = {
     "rigforge_export_godot",
     # The deformation harness (Phase 4, stage 4b) — does the rig deform?
     "rig_check",
+    # The volume-loss fix — corrective (JCM) shape keys driven by bend angle
+    "rigforge_correctives",
     # RigForge cloth + animation (Phase 5)
     "rigforge_cloth",
     "rigforge_action",
     "rigforge_keyframe",
     "rigforge_retarget",
+    # Locomotion authoring, and the foot-slide gate that proves it held
+    "rigforge_walk",
+    "animation_check",
     # Mechanism demos (Phase 17) — the press, the LED, the film of both
     "animate_object",
     "set_material_emission",
@@ -183,7 +188,7 @@ def test_initialize_reports_the_server_identity() -> None:
 def test_exactly_the_contract_tools_are_exposed() -> None:
     names = {tool.name for tool in list_tools()}
     assert names == EXPECTED_TOOLS
-    assert len(names) == 89
+    assert len(names) == 92
 
 
 def test_every_tool_is_documented() -> None:
@@ -828,6 +833,9 @@ def test_forge_status_never_fails_and_reports_every_backend(dead_backends) -> No
         "segment_model",
         "rigforge_list_tags",
         "rigforge_status",
+        "rigforge_walk",
+        "animation_check",
+        "rigforge_correctives",
     ],
 )
 def test_blender_tools_report_the_addon_is_down(dead_backends, tool_name: str) -> None:

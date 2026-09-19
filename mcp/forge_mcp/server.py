@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 
 from mcp.server.mcpserver import MCPServer
 
@@ -52,6 +52,7 @@ from .util import (
     fmt_circuit_plan,
     fmt_cloth_report,
     fmt_component_catalog,
+    fmt_counted,
     fmt_design_saved,
     fmt_diagnose_report,
     fmt_emission_report,
@@ -62,6 +63,7 @@ from .util import (
     fmt_flow_list,
     fmt_flow_run_report,
     fmt_flow_saved,
+    fmt_frame_range,
     fmt_generate_report,
     fmt_joint,
     fmt_keyframe_report,
@@ -100,6 +102,7 @@ from .util import (
     fmt_uv_report,
     fmt_verify_report,
     fmt_vector,
+    fmt_warnings,
     fmt_weights_report,
     fmt_wiring_guide,
     fmt_workspace_report,
@@ -4090,6 +4093,201 @@ def rig_check(
     return fmt_rig_check_report(result, summary)
 
 
+_CORRECTIVES_AUTHOR_ONLY = ("angle_samples", "strength", "smooth", "weight_floor", "verify")
+
+
+def _fmt_correctives_report(result: Mapping[str, Any], summary: str) -> str:
+    """Whichever of author/report/clear ran, in that command's own shape."""
+    mesh = result.get("mesh") or "(unnamed)"
+    action = str(result.get("action") or "author")
+    says = str(result.get("says") or "").strip()
+
+    if action == "report":
+        entries = [e for e in (result.get("correctives") or []) if isinstance(e, Mapping)]
+        lines = [f"Correctives on '{mesh}' — {summary}"]
+        if says:
+            lines.append(f"  {says}")
+        for entry in entries:
+            bones = entry.get("driver_bones") or []
+            driven = (
+                f"driven by {', '.join(bones)}" if entry.get("driven") else "NOT driven"
+            )
+            lines.append(
+                f"  {entry.get('name', '?')}: value={fmt_number(entry.get('value'), 3)}"
+                f" ({'muted' if entry.get('muted') else 'active'}, {driven})"
+            )
+        return "\n".join(lines)
+
+    if action == "clear":
+        lines = [f"Correctives cleared on '{mesh}' — {summary}"]
+        if says:
+            lines.append(f"  {says}")
+        lines.append("  " + fmt_counted("removed", result.get("removed")))
+        lines.append("  " + fmt_counted("remaining", result.get("remaining")))
+        return "\n".join(lines)
+
+    # action == "author"
+    lines = [f"Correctives authored on '{mesh}' — {summary}"]
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+    before, after = result.get("gate_before"), result.get("gate_after")
+    if before or after:
+        lines.append(
+            f"  gate: {str(before).upper() if before else '?'} -> "
+            + (str(after).upper() if after else "(not re-verified)")
+        )
+    for row in (result.get("table") or [])[:8]:
+        if not isinstance(row, Mapping):
+            continue
+        before_pct, after_pct = row.get("volume_loss_before_pct"), row.get("volume_loss_after_pct")
+        flex_deg = row.get("flex_deg")
+        lines.append(
+            "  {label:<14} {flex:>4} deg  {before:>7} -> {after:<7} volume loss".format(
+                label=str(row.get("label") or row.get("joint") or "?")[:14],
+                # fmt_number at 0 places strips a whole float's own trailing
+                # zeros (90.0 -> "9"), so round to an int first rather than
+                # through the float formatter.
+                flex=("?" if flex_deg is None else str(int(round(float(flex_deg))))),
+                before=("-" if before_pct is None else f"{fmt_number(before_pct, 1)}%"),
+                after=("-" if after_pct is None else f"{fmt_number(after_pct, 1)}%"),
+            )
+        )
+    lines.append("  " + fmt_counted("shape keys written", result.get("shape_keys")))
+    return "\n".join(lines)
+
+
+@app.tool()
+def rigforge_correctives(
+    action: Literal["author", "report", "clear"] = "author",
+    rig: Optional[str] = None,
+    mesh: Optional[str] = None,
+    joints: Optional[List[str]] = None,
+    angle_samples: Optional[List[Any]] = None,
+    strength: Optional[float] = None,
+    smooth: Optional[float] = None,
+    weight_floor: Optional[float] = None,
+    verify: Optional[bool] = None,
+) -> str:
+    """Author bend-angle-driven corrective shape keys (JCMs), and measure the fix.
+
+    THIS is the fix for `rig_check`'s volume-loss failures, and it comes before
+    a re-weight: linear-blend skinning averages rigid transforms, and the
+    average of two rotations is shorter than either one, so a joint thins as it
+    bends no matter how good the weight paint is. A corrective shape key driven
+    by the joint's own bend angle restores the lost volume, at zero when the
+    limb is straight and full strength at the sampled angle — the same JCM every
+    production pipeline uses. It works whether the limb is posed in FK or
+    solved in IK.
+
+    `action`:
+    - "author" (default): measure the collapse, write the correctives, drive
+      each one off its joint's bend angle, then re-measure with the harness and
+      hand back the before/after volume-loss table. Always quote both numbers,
+      never just the after — the harness's volume is a convex-hull measurement,
+      so folding a limb moves it a little for reasons that are geometry, not
+      skinning, and the before/after pair from the same instrument is the only
+      reason the comparison means anything.
+    - "report": what correctives this mesh already carries, driven or not.
+    - "clear": remove the correctives (and their drivers) this tool wrote.
+      `joints` narrows it; omit for all of them.
+
+    `joints` (author/clear only): e.g. `["knee.L"]`. Omit on "author" and the
+    add-on corrects whatever `rig_check` itself measures as failing on volume at
+    full flex — it picks its own worst rather than needing a guess.
+
+    Author-only tuning, all optional:
+    - `angle_samples`: bend angles to correct at. A plain number is a FRACTION
+      of that joint's own extreme (`[0.5, 1.0]` on a 140-degree knee samples 70
+      and 140 degrees); `{"flex_deg": 90}` is an exact angle. Omit for the
+      add-on's own defaults.
+    - `strength` (0-1): how much of the measured collapse to restore.
+    - `smooth` (0-1): how far the correction blends into the surrounding mesh.
+    - `weight_floor` (0-1): the minimum bone weight for a vertex to be considered
+      part of the joint's neighbourhood.
+    - `verify`: True (default) re-runs the harness after authoring for the
+      before/after table; False skips it and the report has no after column.
+
+    There is no `direction` parameter — the restoring push is always radial,
+    outward from the limb's own posed skeleton. Pushing along the posed surface
+    normal was tried and measured worse (a knee's 29.7% loss became 39.4%,
+    against 13.6% radial), because in the crease of a fold the two facing walls'
+    normals point at each other; measurement and restoration have to share an
+    axis.
+
+    Not a substitute for a fair weight paint, and not a substitute for more
+    geometry either — a blind density pass around a real knee moved the
+    measurement 50.3% to 51.1%, inside the noise.
+    """
+    given_extra = {
+        "joints": joints,
+        "angle_samples": angle_samples,
+        "strength": strength,
+        "smooth": smooth,
+        "weight_floor": weight_floor,
+        "verify": verify,
+    }
+    if action == "report":
+        offending = [name for name, value in given_extra.items() if value is not None]
+        if offending:
+            raise ForgeError(
+                f"{', '.join(sorted(offending))} mean nothing to action='report': it "
+                "reads back whatever the mesh already carries, nothing more."
+            )
+    elif action == "clear":
+        offending = [
+            name for name in _CORRECTIVES_AUTHOR_ONLY if given_extra[name] is not None
+        ]
+        if offending:
+            raise ForgeError(
+                f"{', '.join(sorted(offending))} mean nothing to action='clear': pass "
+                "`joints` to narrow which correctives are removed, nothing else."
+            )
+
+    params: Dict[str, Any] = {"action": action}
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if mesh and mesh.strip():
+        params["mesh"] = mesh.strip()
+
+    names = [str(name).strip() for name in (joints or []) if str(name).strip()]
+    if names:
+        params["joints"] = names
+
+    if action == "author":
+        if angle_samples is not None:
+            if not isinstance(angle_samples, (list, tuple)) or not angle_samples:
+                raise ForgeError(
+                    "`angle_samples` must be a non-empty list of fractions of the "
+                    'joint\'s own extreme, 0 (exclusive) to 1, like [0.5, 1.0], or '
+                    '{"flex_deg": 90} objects for an exact angle.'
+                )
+            params["angle_samples"] = list(angle_samples)
+        for label, value in (
+            ("strength", strength), ("smooth", smooth), ("weight_floor", weight_floor)
+        ):
+            if value is not None:
+                params[label] = _walk_number(label, value, 0.0, 1.0)
+        if verify is not None:
+            params["verify"] = bool(verify)
+
+    result = blender_client.send_command(
+        "rigforge_correctives", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+
+    if action == "author":
+        summary = (
+            (f"{len(names)} named joint(s)" if names else "the harness's own worst joints")
+            + (f", strength {fmt_number(strength, 2)}" if strength is not None else "")
+            + (", not re-verified" if verify is False else "")
+        )
+    elif action == "clear":
+        summary = f"{len(names)} named joint(s)" if names else "every corrective"
+    else:
+        summary = "current state"
+    return _fmt_correctives_report(result, summary)
+
+
 # ---------------------------------------------------------------------------
 # RigForge (Phase 5) — cloth and animation
 # ---------------------------------------------------------------------------
@@ -4456,6 +4654,275 @@ def rigforge_retarget(
     )
     subject = f"'{target_rig.strip()}'" if target_rig and target_rig.strip() else "the rig"
     return fmt_retarget_report(clip.name, subject, result, summary)
+
+
+def _walk_number(name: str, value: Any, minimum: float, maximum: float) -> float:
+    """A `rigforge_walk` length/angle argument: a plain number in its own bound.
+
+    The add-on clamps these too, but the failure has to read as "that number is
+    out of range" here rather than as a mis-shapen walk discovered later.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ForgeError(f"{name} must be a number (got {value!r}).")
+    if not minimum <= float(value) <= maximum:
+        raise ForgeError(
+            f"{name} must be between {minimum} and {maximum} (got {value})."
+        )
+    return float(value)
+
+
+def _fmt_walk_report(result: Mapping[str, Any], summary: str) -> str:
+    """The cycle that was authored, the feet it planted, and what comes next."""
+    action = result.get("action") or "(unnamed)"
+    created = "new action" if result.get("created") else "existing action"
+    lines = [
+        f"Walk cycle on '{action}' ({created}) — {summary}",
+        f"  {fmt_number(result.get('keys_set'), 0)} key(s) on "
+        f"{fmt_number(len(result.get('bones') or []), 0)} bone(s), frames "
+        f"{fmt_frame_range(result.get('frame_range'))}, "
+        f"{result.get('interpolation') or '?'}",
+    ]
+    says = str(result.get("says") or "").strip()
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+    feet = [f for f in (result.get("feet") or []) if isinstance(f, Mapping)]
+    for foot in feet:
+        lines.append(
+            f"  {foot.get('foot', '?')} ({foot.get('target', '?')}): planted "
+            f"{fmt_number(foot.get('stance_frames'), 0)} of "
+            f"{fmt_number(result.get('cycle_frames'), 0)} frame(s)"
+        )
+    lines.append("  next: animation_check to measure foot slide on this clip.")
+    return "\n".join(lines)
+
+
+@app.tool()
+def rigforge_walk(
+    rig: Optional[str] = None,
+    action: Optional[str] = None,
+    cycle_frames: Optional[int] = None,
+    step_length: Optional[float] = None,
+    step_height: Optional[float] = None,
+    stance_fraction: Optional[float] = None,
+    hip_drop: Optional[float] = None,
+    hip_sway: Optional[float] = None,
+    hip_twist_deg: Optional[float] = None,
+    arm_swing_deg: Optional[float] = None,
+    elbow_bend_deg: Optional[float] = None,
+    foot_roll_deg: Optional[float] = None,
+    travel: bool = True,
+    loop: bool = True,
+    clear: bool = True,
+    interpolation: Literal["LINEAR", "BEZIER"] = "LINEAR",
+    stride_width: Optional[float] = None,
+    reach_margin: Optional[float] = None,
+) -> str:
+    """Author a walk cycle on the leg IK targets, with the stance feet planted.
+
+    THIS is locomotion. Keying `thigh_fk`/`shin_fk` by hand is the anti-pattern
+    it exists to replace: an FK-keyed leg has nothing holding the foot on the
+    ground between keys, so the character skates. `rigforge_walk` keys the feet
+    on their IK targets instead, world-locked through the stance phase, and
+    layers the hip bob, sway and twist, the arm swing and the heel/ball roll on
+    top — sized off *this* rig's own leg length, so it works on a figurine and
+    an ogre without being told which.
+
+    Every length is metres, every angle degrees, on the CONTROL rig (the same
+    one `rigforge_keyframe` uses). Omit any of them and the add-on sizes it off
+    the rig's leg — do not guess a number to fill the gap.
+
+    - `travel`: True (default) carries the root forward one stride per cycle —
+      a root-motion clip; export it with `root_motion: true`. False authors it
+      in place — the treadmill clip an engine plays under its own controller.
+    - `loop`: True (default) marks it a cycle and applies Godot's `-loop` name
+      convention (matching `rigforge_action`'s convention).
+    - `clear`: True (default) wipes the action's existing keys first, so a
+      re-run replaces the cycle instead of layering onto it.
+    - `cycle_frames`: 4-600, the length of one stride.
+    - `stance_fraction`: 0.2-0.95, how much of the cycle each foot spends planted.
+    - `arm_swing_deg` / `elbow_bend_deg` / `foot_roll_deg` / `hip_twist_deg`: the
+      secondary motion angles; each has its own bound (90 / 120 / 60 / 45 deg).
+    - `reach_margin`: 0.5-1.2, how close to the leg's full reach a step is
+      allowed to stretch before the add-on shortens the step or lowers the hips
+      instead — read the warnings if it did either.
+    - `step_length` / `step_height` / `hip_drop` / `hip_sway` / `stride_width`:
+      metres; omit any of them for the add-on's own fraction of the leg.
+    - `action`: the clip name (default "walk"); `rig`: the armature, omit for
+      the active/only one.
+
+    Run `animation_check` on the result and quote the drift in millimetres —
+    this tool plants the feet, that one proves they held.
+    """
+    params: Dict[str, Any] = {
+        "travel": bool(travel),
+        "loop": bool(loop),
+        "clear": bool(clear),
+        "interpolation": interpolation,
+    }
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if action and action.strip():
+        params["action"] = action.strip()
+    if cycle_frames is not None:
+        if isinstance(cycle_frames, bool) or not isinstance(cycle_frames, int):
+            raise ForgeError(f"cycle_frames must be a whole number (got {cycle_frames!r}).")
+        if not 4 <= cycle_frames <= 600:
+            raise ForgeError(f"cycle_frames must be between 4 and 600 (got {cycle_frames}).")
+        params["cycle_frames"] = cycle_frames
+    if stance_fraction is not None:
+        params["stance_fraction"] = _walk_number("stance_fraction", stance_fraction, 0.2, 0.95)
+    if reach_margin is not None:
+        params["reach_margin"] = _walk_number("reach_margin", reach_margin, 0.5, 1.2)
+    if arm_swing_deg is not None:
+        params["arm_swing_deg"] = _walk_number("arm_swing_deg", arm_swing_deg, 0.0, 90.0)
+    if elbow_bend_deg is not None:
+        params["elbow_bend_deg"] = _walk_number("elbow_bend_deg", elbow_bend_deg, 0.0, 120.0)
+    if foot_roll_deg is not None:
+        params["foot_roll_deg"] = _walk_number("foot_roll_deg", foot_roll_deg, 0.0, 60.0)
+    if hip_twist_deg is not None:
+        params["hip_twist_deg"] = _walk_number("hip_twist_deg", hip_twist_deg, 0.0, 45.0)
+    for label, value in (
+        ("step_length", step_length),
+        ("step_height", step_height),
+        ("hip_drop", hip_drop),
+        ("hip_sway", hip_sway),
+        ("stride_width", stride_width),
+    ):
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ForgeError(f"{label} must be a number, in metres (got {value!r}).")
+        if label != "stride_width" and float(value) < 0.0:
+            raise ForgeError(f"{label} must be zero or positive, in metres (got {value}).")
+        params[label] = float(value)
+
+    result = blender_client.send_command("rigforge_walk", params)
+
+    summary = (
+        (f"{cycle_frames}-frame cycle" if cycle_frames is not None else "default-length cycle")
+        + (", root motion" if travel else ", in place")
+        + (", looping (-loop)" if loop else ", one-shot")
+        + ("" if clear else ", layered onto existing keys")
+    )
+    return _fmt_walk_report(result, summary)
+
+
+def _fmt_animation_check_report(result: Mapping[str, Any], summary: str) -> str:
+    """The foot-slide gate: the verdict, the worst step, and each foot's table."""
+    gate = str(result.get("gate") or "?")
+    lines = [
+        f"Foot-slide check — gate: {gate.upper()} ({summary})",
+        f"  {result.get('mode') or '?'} mode ({result.get('mode_reason') or 'no reason given'})",
+        f"  frames {fmt_frame_range(result.get('frames'))}, "
+        f"{fmt_number(result.get('samples'), 0)} sample(s), "
+        f"body travel {fmt_number(result.get('body_travel_mm'), 1)} mm",
+    ]
+    says = str(result.get("says") or "").strip()
+    if says:
+        lines.append(f"  {says}")
+    lines.extend(fmt_warnings(result.get("warnings")))
+
+    feet = [f for f in (result.get("feet") or []) if isinstance(f, Mapping)]
+    for foot in feet:
+        worst = foot.get("worst_drift_mm")
+        lines.append(
+            "  {label:<10} steps={steps:>3}  worst drift={worst:>7}  {verdict}".format(
+                label=str(foot.get("foot") or foot.get("bone") or "?")[:10],
+                steps=fmt_number(foot.get("steps_measured"), 0),
+                worst=("- mm" if worst is None else f"{fmt_number(worst, 1)} mm"),
+                verdict=str(foot.get("verdict") or "?"),
+            )
+        )
+    worst_step = result.get("worst_step")
+    if isinstance(worst_step, Mapping):
+        lines.append(
+            f"  worst step: {worst_step.get('bone', '?')} frames "
+            f"{fmt_frame_range(worst_step.get('frames'))}, "
+            f"{fmt_number(worst_step.get('drift_mm'), 1)} mm"
+        )
+    tier = str(result.get("threshold_tier") or "").strip()
+    if tier:
+        lines.append(f"  {tier}")
+    return "\n".join(lines)
+
+
+@app.tool()
+def animation_check(
+    rig: Optional[str] = None,
+    action: Optional[str] = None,
+    mode: Literal["auto", "planted", "in_place"] = "auto",
+    frame_step: Optional[int] = None,
+    contact_band: Optional[float] = None,
+    min_stance_frames: Optional[int] = None,
+    feet: Optional[List[str]] = None,
+) -> str:
+    """Does the clip's planted foot HOLD? Measure drift, in millimetres, per step.
+
+    Deterministic and geometric — no render, no model, nothing judged by eye. It
+    samples every foot's contact point across the action, finds each stance
+    (a run of frames where that point sits near its lowest point) and measures
+    how far it drifts within that run. A few millimetres is planted; centimetres
+    is skating. Works on any clip: `rigforge_walk`'s output, a hand-keyed
+    `rigforge_keyframe` clip, or one `rigforge_retarget` imported from mocap.
+    The rig's pose, action and the scene's current frame are all restored.
+
+    - `mode`: "auto" (default) tells a root-motion clip from an in-place one by
+      how far the body travels against how far the feet swing, and measures
+      accordingly. Force "planted" (a travelling/root-motion clip — the foot
+      should not move at all in world space) or "in_place" (a treadmill clip —
+      the feet are expected to run backwards at one shared speed) when you
+      already know which this is.
+    - `feet`: bone names to measure (the toe/foot deform bones); omit to let the
+      add-on find them by its own naming convention.
+    - `frame_step`: 1-10, sample every Nth frame — coarser is faster on a long
+      clip.
+    - `contact_band`: 0.01-0.9, how close to a foot's lowest point still counts
+      as "planted".
+    - `min_stance_frames`: 2-1000, the shortest run of frames that counts as a
+      stance rather than noise.
+
+    **The gate's thresholds are heuristics** — the scale at which skating becomes
+    visible, not values calibrated against what an artist would accept. Quote
+    the measurement next to the band that judged it, and never call a `fail` a
+    fact about the animation.
+    """
+    params: Dict[str, Any] = {"mode": mode}
+    if rig and rig.strip():
+        params["rig"] = rig.strip()
+    if action and action.strip():
+        params["action"] = action.strip()
+    if frame_step is not None:
+        if isinstance(frame_step, bool) or not isinstance(frame_step, int):
+            raise ForgeError(f"frame_step must be a whole number (got {frame_step!r}).")
+        if not 1 <= frame_step <= 10:
+            raise ForgeError(f"frame_step must be between 1 and 10 (got {frame_step}).")
+        params["frame_step"] = frame_step
+    if contact_band is not None:
+        params["contact_band"] = _walk_number("contact_band", contact_band, 0.01, 0.9)
+    if min_stance_frames is not None:
+        if isinstance(min_stance_frames, bool) or not isinstance(min_stance_frames, int):
+            raise ForgeError(
+                f"min_stance_frames must be a whole number (got {min_stance_frames!r})."
+            )
+        if not 2 <= min_stance_frames <= 1000:
+            raise ForgeError(
+                f"min_stance_frames must be between 2 and 1000 (got {min_stance_frames})."
+            )
+        params["min_stance_frames"] = min_stance_frames
+    names = [str(name).strip() for name in (feet or []) if str(name).strip()]
+    if names:
+        params["feet"] = names
+
+    result = blender_client.send_command(
+        "animation_check", params, read_timeout=config.PREVIEW_TIMEOUT
+    )
+    summary = (
+        f"{mode} mode"
+        + (f", every {frame_step} frame(s)" if frame_step else "")
+        + (f", {len(names)} named foot/feet" if names else "")
+    )
+    return _fmt_animation_check_report(result, summary)
 
 
 @app.tool()
