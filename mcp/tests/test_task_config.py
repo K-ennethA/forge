@@ -108,10 +108,12 @@ def test_a_template_is_json_round_trippable(task: str) -> None:
 def test_the_character_template_carries_the_owners_knobs() -> None:
     settings = task_config.template("character")
     assert set(settings) == {
-        "symmetry", "target_engine", "poly_budget_desktop", "lod_chain",
-        "texture_res", "rig", "correctives", "face_detail_pass",
+        "symmetry", "target_engine", "rest_stance", "poly_budget_desktop",
+        "lod_chain", "texture_res", "rig", "correctives", "face_detail_pass",
     }
     assert settings["target_engine"]["default"] == "godot"
+    assert settings["rest_stance"]["default"] == "flexed"
+    assert settings["rest_stance"]["choices"] == ["flexed", "straight"]
     assert settings["poly_budget_desktop"]["default"] == 15000
     assert settings["poly_budget_desktop"]["unit"] == "triangles"
     assert settings["lod_chain"]["default"] == "auto"
@@ -253,7 +255,8 @@ def test_the_init_report_echoes_every_value(projects_dir: Path) -> None:
     for name in task_config.template("character"):
         assert name in report, name
     assert "none changed from their defaults yet" in report
-    assert "8 settings" in report
+    # 9 since rest_stance joined the sheet (the flexed-knee stance remedy)
+    assert "9 settings" in report
 
 
 def test_get_echoes_the_sheet_without_writing(projects_dir: Path) -> None:
@@ -348,7 +351,8 @@ def test_the_report_prints_settings_nobody_touched(projects_dir: Path) -> None:
                                               "value": 1024}))
     for name in task_config.template("character"):
         assert name in report, name
-    assert report.count("[default]") == 7
+    # 8 untouched: 9 settings since rest_stance, one changed below
+    assert report.count("[default]") == 8
     assert "CHANGED (default 2048)" in report
 
 

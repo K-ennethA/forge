@@ -1,0 +1,8 @@
+{
+    "id": "util-hint-walk",
+    "brief": "In mcp/forge_mcp/util.py, near line 2151, the 'no actions yet' hint tells the caller how to fill an empty action library:\n\n    \"  no actions yet \u2014 rigforge_action(action='new', name='idle-loop', \"\n    \"loop=true), then sketch the motion with rigforge_keyframe or import \"\n    \"a clip with rigforge_retarget.\"\n\nSince that hint was written, three authoring commands landed that are now the most common way an action gets filled: rigforge_walk (a walk cycle), rigforge_punch and rigforge_jump. Update ONLY this hint string so it also offers authoring a clip with rigforge_walk (mentioning punch/jump alongside it is welcome but optional), while keeping rigforge_keyframe and rigforge_retarget as options. Keep the file's voice: one flowing sentence, an em dash after 'no actions yet', concrete tool names. Do not change anything else in the file.",
+    "files_scope": ["mcp/forge_mcp/util.py"],
+    "acceptance_cmd": "\"C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\mcp\\.venv\\Scripts\\python.exe\" \"C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\accept_util_hint.py\"",
+    "cwd": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge",
+    "max_attempts": 3
+}

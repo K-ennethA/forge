@@ -1,0 +1,109 @@
+# Lane conventions — read before implementing, cite instead of re-deriving
+
+## The lane contract (orchestration law, 2026-09-19)
+
+A lane is ONE deliverable. Its brief must name four things, and a lane that
+cannot state all four is not ready to dispatch:
+
+1. **DELIVERABLE** — one sentence, one artifact class (a rule + its gate; a
+   panel; a fix + its pin). If the sentence needs "and" twice, split the lane.
+2. **FILES** — an explicit allowlist a diff can be audited against. Everything
+   else is read-only; a needed edit outside it is a STOP-AND-REPORT, not a
+   judgment call.
+3. **EVIDENCE** — the exact suites to run and the numbers the report must
+   quote. The lane runs those and stops; the shared gate is the orchestrator's.
+4. **STOP conditions** — done, blocked, or grown. "Grown" means the work
+   sprouted a second deliverable: report the split, do not absorb it.
+
+Resume rules: a lane is resumed only for (a) a defect found at gate in the
+work it just delivered, or (b) exactly one bounded follow-up no larger than
+the original. Anything else is a NEW lane briefed from this file plus the
+prior lane's report — never from its transcript. Rounds past the second on
+one transcript cost more than a fresh start and blur the audit trail.
+
+No waiting turns: a lane whose next step depends on an external event closes
+its turn; the event's notification resumes it.
+
+Evidence must fit the deliverable: a verification battery longer than ~15
+minutes of wall time is over-specified — prove the mechanism (a hash, an
+invariant) rather than repeating runs, and prefer one green run on top of a
+structural proof to N green runs in place of one. A long battery that is
+genuinely needed runs as ONE background script the lane launches and closes
+on, never as agent-held sequential runs.
+
+Orchestrator side: at most two implementation lanes in flight, never two in
+one file area; the shared gate launches only when no lane is editing.
+
+One page of the facts every agent lane otherwise rediscovers at full price.
+When a brief references this file, these definitions are binding; a lane that
+needs to depart from one says so in its report with the measured reason.
+
+## Measurement conventions (settled the expensive way)
+
+- **Hip joint** = the average of the `DEF-thigh` heads. Never the Rigify
+  `hips` control's head — it points downward and sits ~306 mm above the
+  sockets; a 20° trunk fold swings it forward while the pelvis loads back.
+- **Setback** is positive rearward along `−forward_axis`, measured from the
+  ankle line, at the hip joint.
+- **Sole vertices** = vertices whose dominant weight among **deform groups
+  only** is a foot/toe bone of a leg. The autotagger's `tag_*` groups carry
+  weight 1.0 and win every vertex if not excluded. The whole-mesh lowest
+  vertex is a thigh at rest and a hand at a landing absorb. Open question,
+  recorded: the werewolf's heel is `DEF-shin.*.001`-dominant and currently
+  outside the sole set (clamp and gate agree; both exclude it).
+- **Leg reach** is measured off the rig by pushing the IK target far and
+  reading what the solver returns — not summed off a pre-bent rest chain
+  (3.5% off) and not hip→ankle/rest-chain ratio (saturates once
+  `IK_Stretch = 0`; two dead metrics documented in `rigforge_anim.py`).
+- **Extension caps** measure the **deform** chain (`DEF-*`). FK bones sit at
+  rest during IK clips and report the rest pose on every frame.
+- **`ROTATION_DIFF` folds into [0, π]**; `mathutils` reports the long way
+  round. Use `correctives.fold_rotation_diff`. Curves keyed past π are
+  unreachable.
+
+## Test infrastructure
+
+- Headless suites: `"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+  --background --factory-startup --python <suite>`; discovered by
+  `run_tests.ps1`'s `addon/tests/headless_*.py` glob; print `N checks, M
+  failed` and exit 0/1.
+- **Ports**: 9876 is the live scene — never touch it from a lane. Suites bind
+  9878–9914 (taken as of 2026-09-19); new suites take the next free one and
+  say which.
+- **The shared synthetic character (`headless_rigik.build_character`) is
+  byte-deterministic since 2026-09-19** — the suite gates its own geometry
+  digest every run. Assertions still derive bounds from measured geometry as
+  good practice. The remaining nondeterminism is in the PRODUCT:
+  `rigforge_retopo`'s Quadriflow route races its own threads (225 vertices up
+  to 45.8 mm apart run-to-run); the fixture refuses that route and takes the
+  deterministic decimate fallback until the product lane fixes it.
+- A lane runs its own suite plus the suites covering files it edited — and
+  stops there. The orchestrator runs the shared gate once at commit time; do
+  not re-run other lanes' suites "in case".
+
+## Local worker gates (learned at full price, 2026-09-19)
+
+The first live dispatch replaced a 6,527-line module with a 7-line stub and
+PASSED its gate, because the gate checked only the changed detail (hint text
+present, file compiles) — both true of the stub. The dispatch's own rollback
+never fires on a green gate. Rules:
+
+- An acceptance gate must verify the WHOLE artifact, not the delta: run the
+  module's real test suite (imports alone would have caught the stub), or at
+  minimum an integrity check (line count within tolerance of the snapshot,
+  key symbols still defined).
+- A bespoke content-assertion script is the weakest acceptable gate and only
+  for files nothing imports.
+- Review the diff stat before keeping a worker pass; a chore-sized brief with
+  a thousand-line diff is the stub failure wearing a green light.
+
+## Lane hygiene
+
+- Agents never spawn agents; nothing windowed ever; never pay; no commits —
+  the orchestrator gates and commits.
+- Artist placements (design/artist-edits.json journals) are inputs, never
+  errors; code must work with them and never "correct" them.
+- Every threshold carries its derivation or its experiment; re-pin a moved
+  number honestly with the measured value, never tune one to pass.
+- `build-plan.json` has exactly one writer (`pipeline.py`); bridges and tools
+  read it only.

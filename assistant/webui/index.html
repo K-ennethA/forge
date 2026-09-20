@@ -104,9 +104,15 @@
           Attach image
           <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/bmp" hidden>
         </label>
+        <!-- Fast and Deepest are explicit choices — the message names haiku or
+             opus and that is what runs, every time. Smart sends no model at
+             all: the bridge classifies the message itself (see bridge.py's
+             classify_turn) and only spends the cheap model on turns that are
+             unmistakably read-shaped, staying on the configured model for
+             everything else. That is the "smart" in the name. -->
         <select id="model" class="select tiny" title="How much thinking to spend on this message">
           <option value="haiku">Fast</option>
-          <option value="sonnet" selected>Smart</option>
+          <option value="" selected>Smart</option>
           <option value="opus">Deepest</option>
         </select>
         <span class="composer-status" id="composer-status"></span>

@@ -566,7 +566,8 @@ def _side_tags(regions, prefix):
     return out
 
 
-def fit_biped(meta, regions, warnings, mapping, hints=None):
+def fit_biped(meta, regions, warnings, mapping, hints=None, stance_span=None,
+              stances=None):
     """Snap a human metarig onto the tagged landmarks. Returns fitted bone names.
 
     ``hints`` is an optional :class:`~.rigforge_joints.JointHints` — a neural
@@ -575,6 +576,13 @@ def fit_biped(meta, regions, warnings, mapping, hints=None):
     the way towards a believable prediction, overrules an unbelievable one, and
     records both.  With no hints the ``refine`` below is the identity function
     and this fit is bit-for-bit the tag-only fit.
+
+    ``stance_span`` is the flexed rest stance
+    (:func:`~.rigforge_landmarks.stance_flex`).  It is applied here as well as
+    on the landmark path on purpose: **this is the fallback**, the fit a mesh
+    the landmark pass could not read as a limb lands on, and a fallback that
+    skipped the stance would ship the one rig in the building with no IK reach
+    headroom.  Each leg's report is appended to ``stances`` when a list is given.
     """
     edit_bones = meta.data.edit_bones
     fitted = []
@@ -696,11 +704,32 @@ def fit_biped(meta, regions, warnings, mapping, hints=None):
         hip = refine("hip.%s" % side, hip)
         knee = refine("knee.%s" % side, leg.at(0.5))
         ankle = refine("ankle.%s" % side, leg.at(0.94))
-        knee = _bend(hip, knee, ankle, Vector((0.0, -1.0, 0.0)))
+        forward = Vector((0.0, -1.0, 0.0))
+        knee = _bend(hip, knee, ankle, forward)
+        # ...and then the stance, the same rule and the same function the
+        # landmark path uses: the ankle stays where the tags put it, the hip
+        # drops, the knee comes forward, and the chain stops resting against
+        # the IK solver's own limit.
+        hip, knee, stance = rigforge_landmarks.stance_flex(
+            None, hip, knee, ankle, forward, "knee", side,
+            span_fraction=stance_span)
+        if stances is not None:
+            stances.append(stance)
         names = ["thigh.%s" % side, "shin.%s" % side]
         fit_chain(edit_bones, names, [hip, knee, ankle], frozen, fitted)
         mapping.setdefault(tag, []).extend(names + ["foot.%s" % side, "toe.%s" % side])
 
+    flexed = [entry for entry in (stances or []) if entry.get("flexed")]
+    if flexed:
+        warnings.append(
+            "Flexed rest stance on the tag fit: %s. The ankle stayed where the tag put "
+            "it; the hip dropped and the knee came forward, so the chain rests with "
+            "reach in hand instead of against the solver's limit."
+            % ", ".join("%s %.4f -> %.4f of chain (%.1f deg)"
+                        % (entry["joint"], entry.get("extension_frac_before") or 0.0,
+                           entry.get("extension_frac_after") or 0.0,
+                           entry.get("knee_flex_deg") or 0.0)
+                        for entry in flexed))
     return fitted
 
 
@@ -1222,6 +1251,16 @@ def cmd_rigforge_metarig(params):
     fit, and it is also where a mesh the landmarks cannot read falls back to,
     saying so in ``warnings`` and in ``fit_method``.
 
+    Both paths stand the character on a **flexed knee**
+    (:func:`~.rigforge_landmarks.stance_flex`): the ankle stays where the fit
+    put it, the hip drops, and the knee comes forward until hip-to-ankle is
+    ``stance_span`` (0.97) of the leg's own chain, so ``rig_check``'s
+    ``ik_reach_headroom`` has something to pass on.  ``rest_stance: "straight"``
+    (or ``stance_span: 1.0``) rests the legs straight, the way every rig built
+    before this one did.  The ``stance`` block reports the angle it derived per
+    leg, which is a consequence of the span target and that limb's own bones
+    rather than a number anyone chose.
+
     ``tags`` decides where the tags the fit slices come from.  ``"auto"`` (the
     default) rebuilds each limb's tag along that limb's **own detected axis**
     when a joint detector is installed, which is what stops a limb that lies
@@ -1385,6 +1424,7 @@ def cmd_rigforge_metarig(params):
         landmarks = None
         landmark_report = None
         mirror_report = None
+        fallback_stances = []
         fit_method = method
         if prepared is not None:
             sides = ("L", "R") if prepared["symmetry_requested"] is False else ("L",)
@@ -1393,7 +1433,8 @@ def cmd_rigforge_metarig(params):
                     obj, midplane=prepared["midplane"],
                     character_left=prepared["character_left"],
                     warnings=warnings, sides=sides, axis_hints=axis_hints,
-                    facing=prepared["orientation"]["faces"])
+                    facing=prepared["orientation"]["faces"],
+                    stance_span=rigforge_landmarks.get_stance_span(params))
             except ForgeError as exc:
                 fit_method = "tags"
                 warnings.append(
@@ -1433,7 +1474,10 @@ def cmd_rigforge_metarig(params):
                             "file was read and not used: every joint here came off the "
                             "mesh's own cross-sections.")
                 else:
-                    fitted = fit_biped(meta, regions, warnings, mapping, hints=hints)
+                    fitted = fit_biped(meta, regions, warnings, mapping, hints=hints,
+                                       stance_span=rigforge_landmarks.get_stance_span(
+                                           params),
+                                       stances=fallback_stances)
                     if hints is not None:
                         fit_best_effort(meta, hints, fitted, warnings)
                     # The fallback keeps the rest of the human workflow. Only the
@@ -1545,6 +1589,14 @@ def cmd_rigforge_metarig(params):
         # by how many millimetres, and why. A chain already bent the right way
         # reports `nudged: false` and the measurement that earned it.
         "prebend": (landmarks.get("prebend") if landmarks else []),
+        # ...and the flexed rest stance on top of it: how much reach each leg
+        # chain has left once the hip has dropped onto a bent knee. The angle is
+        # derived from the span target and the limb's own bones, so it is
+        # reported rather than configured.
+        "stance": (landmarks.get("stance") if landmarks else fallback_stances),
+        "stance_span": (landmarks.get("stance_span") if landmarks
+                        else (rigforge_landmarks.get_stance_span(params)
+                              if fallback_stances else None)),
         # Optional template bones removed before generation, so they never
         # become DEF- bones, vertex groups or weight maps.
         "dropped_bones": dropped_bones,
@@ -2359,6 +2411,21 @@ IK_FK_PROP = "IK_FK"
 #: hidden, and moving it does nothing at all (measured: 0.0 mm of knee travel).
 POLE_PROP = "pole_vector"
 
+#: Rigify's IK stretch switch, on the same parent control: ``1.0`` lets the limb
+#: **grow** when the IK target is further away than the bones reach, ``0.0``
+#: clamps it at full extension.
+IK_STRETCH_PROP = "IK_Stretch"
+
+#: What a **generated** rig leaves with.  Rigify ships 1.0 and the wip-14 audit
+#: measured what that costs on a leg standing at 99.84% of its own reach: the
+#: walk's left leg chain grew **+261.7 mm = +32.58% of its own length**, and the
+#: jump's compressed 4.77%.  ``rigforge_anim.plant_ik_stretch`` keys it to 0 on
+#: the three clips this repo authors, which leaves every hand-keyed, retargeted
+#: or artist-authored clip on Rigify's default — that is, every clip the tools
+#: did not write.  A game rig ships with limb stretch **off**; an animator who
+#: wants squash and stretch turns it on deliberately and keys it.
+IK_STRETCH_DEFAULT = 0.0
+
 IK_MODE_IK = "ik"
 IK_MODE_FK = "fk"
 IK_MODE_BLEND = "blend"
@@ -2616,6 +2683,53 @@ def set_pole_vector(rig, entry, enabled):
     _retag(rig)
     entry["pole_enabled"] = bool(enabled)
     return bool(enabled)
+
+
+def set_ik_stretch(rig, value=IK_STRETCH_DEFAULT, limbs=None):
+    """Write ``IK_Stretch`` on every limb parent switch. What it found and set.
+
+    This is the *rig's* default rather than a clip's keyframe: Rigify generates
+    ``IK_Stretch = 1.0``, so a limb whose IK target is further from its root than
+    the bones reach **grows** instead of clamping, and the skin grows with it.
+    ``rigforge_anim.plant_ik_stretch`` keys it to 0 for the length of the three
+    clips this repo authors — belt and braces that stays — but a rig handed to an
+    animator, or retargeted from mocap, inherits whatever the rig carries.  This
+    is that carry.
+
+    Returns ``{"prop", "value", "switches": [{bone, before, after}], "changed":
+    n, "says"}``.  A rig with no limb switch reports zero and is not an error.
+    """
+    rows = []
+    for entry in ik_limbs(rig, limbs):
+        bone = rig.pose.bones.get(entry["switch_bone"])
+        if bone is None or IK_STRETCH_PROP not in bone.keys():
+            continue
+        try:
+            before = float(bone[IK_STRETCH_PROP])
+        except (KeyError, TypeError, ValueError):  # pragma: no cover
+            continue
+        try:
+            bone[IK_STRETCH_PROP] = float(value)
+        except (KeyError, TypeError, ValueError, RuntimeError):  # pragma: no cover
+            continue
+        rows.append({"limb": entry["name"], "bone": bone.name,
+                     "before": round(before, 4),
+                     "after": round(float(bone[IK_STRETCH_PROP]), 4)})
+    if rows:
+        _retag(rig)
+    changed = [row for row in rows if abs(row["before"] - row["after"]) > 1e-6]
+    if not rows:
+        says = ("No limb on %r carries an %s switch, so there is no stretch to turn "
+                "off." % (rig.name, IK_STRETCH_PROP))
+    else:
+        says = ("%s = %.1f on all %d limb switch(es)%s: an IK target further away "
+                "than the bones reach now clamps at full extension instead of "
+                "growing the limb. The audited walk grew a leg chain 32.58%% of its "
+                "own length on Rigify's stock 1.0."
+                % (IK_STRETCH_PROP, float(value), len(rows),
+                   " (%d changed)" % len(changed) if changed else " (already there)"))
+    return {"prop": IK_STRETCH_PROP, "value": float(value), "switches": rows,
+            "measured": len(rows), "changed": len(changed), "says": says}
 
 
 def apply_ik_convention(rig, legs=None, arms=None, poles=True, keyframe_at=None,
@@ -2984,6 +3098,9 @@ def cmd_rigforge_generate_rig(params):
     diffuses across the armpit of a clothed figure whose arms hang down and puts
     the arm's weight on the chest.  ``tag_constrained: false`` reproduces the
     old, unconstrained bind.
+
+    ``ik_stretch`` (default :data:`IK_STRETCH_DEFAULT`, 0.0) is the value every
+    limb parent switch leaves with.  Rigify ships 1.0; a game rig ships 0.
     """
     started = time.monotonic()
     warnings = []
@@ -3062,6 +3179,14 @@ def cmd_rigforge_generate_rig(params):
                 "This rig generated no IK limb (no foot_ik/hand_ik with an IK_FK "
                 "switch), so every limb can only be animated in FK. A pure-FK leg is "
                 "the foot-slide anti-pattern - check the metarig's limb types.")
+        # ...and the other half of the convention, which Rigify does not ship:
+        # the rig leaves here with IK stretch OFF, so a clip nothing in this repo
+        # authored still cannot grow a leg. Control property only, like the rest
+        # of this block.
+        stretch = set_ik_stretch(
+            rig,
+            get_float(params, "ik_stretch", IK_STRETCH_DEFAULT, minimum=0.0, maximum=1.0)
+            if params.get("ik_stretch") is not None else IK_STRETCH_DEFAULT)
         refresh_view_layer()
 
         # Straight after the convention, while the rig is still this function's
@@ -3151,7 +3276,9 @@ def cmd_rigforge_generate_rig(params):
             "poles": ik["poles"],
             "pole_sides": pole_sides,
             "changed": ik["changed"],
-            "says": "%s %s" % (ik_summary(ik["limbs"]), pole_sides["says"]),
+            "stretch": stretch,
+            "says": "%s %s %s" % (ik_summary(ik["limbs"]), pole_sides["says"],
+                                  stretch["says"]),
         },
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
@@ -3499,12 +3626,62 @@ def clean_def_parent(rig, bone_name, keep):
     return None
 
 
-def build_deform_rig(rig, name, collection, warnings, want_root=True):
+def flatten_bbones(armature):
+    """Set ``bbone_segments = 1`` on every bone of ``armature``. Names and counts.
+
+    **glTF has no bendy bone.**  Rigify ships 10 segments on every limb ``DEF``
+    chain and 8 on the spine, driven by the ``COPY_TRANSFORMS`` +
+    ``STRETCH_TO`` pair on each of them — and the Khronos exporter carries none
+    of it (`glTF-Blender-IO #708
+    <https://github.com/KhronosGroup/glTF-Blender-IO/issues/708>`_).  The
+    curvature is real in Blender, every gate in this repo measures it, and the
+    engine renders a straight bone instead.  The wip-14 audit put 35.3 mm of
+    "beyond plain vertex-group skinning" on exactly this.
+
+    :func:`build_deform_rig` already strips the constraints that drove the
+    segments; this strips the segments, so what the export rig deforms with is
+    what the ``.glb`` can carry.  Returns ``{"flattened": [names],
+    "count": n, "max_segments_before": n, "segments_after": 1}``.
+    """
+    flattened = []
+    worst = 1
+    for bone in armature.data.bones:
+        try:
+            segments = int(bone.bbone_segments)
+        except (AttributeError, TypeError, ValueError):  # pragma: no cover
+            continue
+        if segments <= 1:
+            continue
+        worst = max(worst, segments)
+        bone.bbone_segments = 1
+        flattened.append(bone.name)
+    flattened.sort()
+    return {
+        "flattened": flattened,
+        "count": len(flattened),
+        "max_segments_before": worst,
+        "segments_after": 1,
+        "says": (("Flattened %d bendy bone(s) to one segment (worst was %d): glTF "
+                  "carries no B-Bone, so a curved DEF chain is deformation the "
+                  "engine cannot reproduce and every gate would have credited."
+                  % (len(flattened), worst)) if flattened else
+                 "No bone on this rig carried more than one B-Bone segment."),
+    }
+
+
+def build_deform_rig(rig, name, collection, warnings, want_root=True, report=None):
     """A deform-only copy of a Rigify rig, hierarchy intact. No add-on required.
 
-    This is the job the plan gave to Game Rig Tools.  It is four steps: copy the
+    This is the job the plan gave to Game Rig Tools.  It is five steps: copy the
     armature, work out where each ``DEF-`` bone's parent went, delete everything
-    that is not a deform bone (plus a root), and re-apply the parenting.
+    that is not a deform bone (plus a root), re-apply the parenting — and
+    **flatten the B-Bones** (:func:`flatten_bbones`), because the constraints
+    that drove their curvature have just been stripped and glTF could not have
+    carried it anyway.
+
+    ``report``, when a dict is passed, receives ``bbone_flattened``; the same
+    block is stored on the copy as ``forge_bbone_flattened`` so a caller that
+    did not pass one can still read it off the object.
     """
     keep = {bone.name for bone in rig.data.bones if bone.use_deform}
     if not keep:
@@ -3557,7 +3734,16 @@ def build_deform_rig(rig, name, collection, warnings, want_root=True):
         finally:
             _leave_edit()
 
-    # a deform rig carries no rig logic: no constraints, no drivers, no custom shapes
+    # a deform rig carries no rig logic: no constraints, no drivers, no custom
+    # shapes — and no bendy bones, which are rig logic the exporter drops on the
+    # floor rather than a shape anything downstream can read.
+    bbones = flatten_bbones(copy)
+    if isinstance(report, dict):
+        report["bbone_flattened"] = bbones
+    try:
+        copy["forge_bbone_flattened"] = bbones["flattened"]
+    except (TypeError, ValueError):  # pragma: no cover
+        pass
     try:
         copy.animation_data_clear()
     except AttributeError:
@@ -4135,6 +4321,7 @@ def cmd_rigforge_export_godot(params):
     lod_chain = []
     script_path = None
     root_report = {"applied": False, "reason": "not requested"}
+    deform_report = {}
 
     try:
         with object_mode():
@@ -4143,7 +4330,8 @@ def cmd_rigforge_export_godot(params):
             refresh_view_layer()
 
             export_rig = build_deform_rig(rig, "%s_forge_export" % rig.name,
-                                          collection, warnings)
+                                          collection, warnings,
+                                          report=deform_report)
             _rename_export_object(export_rig, rig.name, renamed, source=rig)
             _apply_object_transform(export_rig, warnings)
             deform = [bone.name for bone in export_rig.data.bones
@@ -4458,6 +4646,14 @@ def cmd_rigforge_export_godot(params):
         "skipped_actions": skipped,
         "deform_bones": sorted(deform),
         "deform_bone_count": len(deform),
+        # glTF carries no bendy bone, so the export rig's DEF chains are
+        # flattened to one segment before anything is baked onto them. The count
+        # is here because a silent difference between what rig_check measured
+        # and what Godot renders is the one thing this report cannot afford.
+        "bbone_flattened": deform_report.get("bbone_flattened")
+        or {"flattened": [], "count": 0, "max_segments_before": 1,
+            "segments_after": 1,
+            "says": "The deform rig was not built by this call."},
         "meshes": [mesh.name for mesh in meshes],
         "collision_meshes": collision,
         "lods": lod_mode,

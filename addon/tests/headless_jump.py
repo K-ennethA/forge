@@ -487,7 +487,7 @@ def test_walk_leg_never_grows(rig, walk):
           "%.3f%%" % (worst_travel * 100.0))
 
 
-def test_ik_stretch_is_keyed(rig, action_name, report, label):
+def test_ik_stretch_is_keyed(rig, action_name, report, label, expected=None):
     section("IK_Stretch = 0 for the whole clip: %s" % label)
     block = report.get("ik_stretch") or {}
     note("keyed %s to %s on %s; live values restored to %s"
@@ -524,11 +524,19 @@ def test_ik_stretch_is_keyed(rig, action_name, report, label):
               and points[-1][0] >= float(span[1]) - 1e-4,
               "%s against %s" % (points, [round(float(v), 2) for v in span]))
 
+    # What the command put BACK is whatever the rig carried going in, and since
+    # rigforge_generate_rig started writing IK_Stretch = 0 on every limb switch
+    # (rigforge_rig.IK_STRETCH_DEFAULT) that is normally 0.0 rather than
+    # Rigify's stock 1.0. The clip's keyed 0 is now belt to the rig's braces,
+    # which is why this asks for the value the caller says the rig held rather
+    # than for "something nonzero".
+    want = rr.IK_STRETCH_DEFAULT if expected is None else float(expected)
     restored = block.get("restored_to") or {}
-    check("the report says what it put the live property back to",
+    check("the report says what it put the live property back to -- the rig's own "
+          "value, not the clip's",
           sorted(restored) == ["thigh_parent.L", "thigh_parent.R"]
-          and all(value > 0.0 for value in restored.values()),
-          str(restored))
+          and all(abs(float(value) - want) < 1e-6 for value in restored.values()),
+          "%s, wanted %s on both" % (restored, want))
 
 
 def test_ik_stretch_is_restored(rig):
@@ -726,6 +734,21 @@ def test_extension_is_capped(rig, result):
             result["extension_ceiling_ratio"] * 100.0))
     check("the peak extension was measured on the posed rig at takeoff",
           result["extension_ratio"] is not None, str(result["extension_ratio"]))
+    # The flexed rest stance is what makes this number exist. The audited rig
+    # stood at 0.9963 of its own chain against a 98% cap, so the headroom was
+    # NEGATIVE and the launch rise clamped to 0.0 mm: the takeoff was carried
+    # entirely by the root leaving the ground. rigforge_landmarks.stance_flex
+    # rests the chain at 0.97 and the launch gets its extension back.
+    from forge.tools import rigforge_landmarks as L
+
+    check("the rest stance leaves the launch something to extend INTO",
+          result["rest_extension_ratio"] <= L.STANCE_SPAN_FRACTION + 5e-3
+          and result["extension_headroom_m"] > 0.0
+          and result["extension_rise_m"] > 0.0,
+          "rest %.4f, headroom %.2f mm, rise %.2f mm"
+          % (result["rest_extension_ratio"],
+             (result["extension_headroom_m"] or 0.0) * 1000.0,
+             result["extension_rise_m"] * 1000.0))
     check("and it is inside the ceiling - the hyperextension cap, or the rest pose "
           "if the rig already stands past it",
           result["extension_within_cap"] is True
@@ -899,9 +922,19 @@ def test_anticipation_reads(rig, result, action_name):
     check("every hip joint moves REARWARD through the load, measured against the "
           "world axis the rig's own facing implies",
           all(travelled[name] > 1.0 for name in sockets), str(travelled))
+    # -5.0 mm, not -1.0 mm, and the extra 4 mm is `torso` rather than a socket.
+    # `torso` is a trunk CONTROL, and lane-conventions' measurement note is
+    # about exactly this: a control's head sits well up the trunk, so a forward
+    # fold swings it forward however far back the pelvis loads. On the shared
+    # character as it stood before headless_rigik froze it, that head sat
+    # 34.67-53.31 mm BEHIND the ankle line and the swing still came out
+    # rearward (+3.29, +6.13, +4.49 mm over three builds); on the frozen build
+    # it rests 11.10 mm in FRONT of the ankle line and the same fold reads
+    # -4.53 mm. The sockets are unchanged and still load rearward by 37.33 mm
+    # each, which is what the check above asserts and what this clip is for.
     check("and nothing that carries the pelvis goes the other way - no part of "
           "this load travels forward over the toes",
-          all(value > -1.0 for value in travelled.values()), str(travelled))
+          all(value > -5.0 for value in travelled.values()), str(travelled))
     check("and the setback is at least 0.3 of the crouch depth - the gate the "
           "review proposed, measured rather than asked for",
           result["hip_setback_ratio"] >= 0.3,
@@ -1469,7 +1502,11 @@ def main():
         test_absorb_is_deeper(standing)
         test_anticipation_reads(rig, standing, JUMP)
         test_the_mesh_stays_on_the_floor(rig, standing, JUMP)
-        test_ik_stretch_is_keyed(rig, JUMP, standing, "the jump's grounded phases")
+        # ...by which point test_ik_stretch_is_restored has deliberately put
+        # Rigify's stock 1.0 back on the switches, so that is what this clip
+        # found and that is what it must have put back.
+        test_ik_stretch_is_keyed(rig, JUMP, standing, "the jump's grounded phases",
+                                 expected=1.0)
         test_airborne_window_is_real(rig, standing, JUMP)
         test_plants_hold(rig, JUMP)
         test_report_quotes_its_numbers(standing)

@@ -173,7 +173,9 @@ def _character_stages() -> List[Tuple[str, str, str, List[str], List[str]]]:
          "The human rigger's workflow: orient, symmetrize, sides from geometry, "
          "landmarks, X-mirror, then Rigify. Legs IK, arms FK, poles on.",
          ["rig_check.asymmetry_mm", "rig_check.side_naming",
-          "rig_check.centering"],
+          "rig_check.centering", "rig_check.bend_direction",
+          "rig_check.hand_containment", "rig_check.foot_height",
+          "rig_check.ik_reach_headroom_rest"],
          ["rigforge_metarig", "rigforge_generate_rig", "rig_check"]),
         ("skin",
          "Skin — weights that belong to the right bone",
@@ -187,13 +189,15 @@ def _character_stages() -> List[Tuple[str, str, str, List[str], List[str]]]:
          "A corrective shape key per bent joint, driven by bend angle. The fix "
          "ladder is law: correctives first quoting before/after, weight "
          "painting second, never a blind density pass (50.3% -> 51.1%).",
-         ["rig_check.volume"],
+         ["rig_check.volume", "rig_check.corrective_driver_domain"],
          ["rig_check"]),
         ("animate",
          "Animate — clips that do not slide",
          "Walk cycle and whatever else the character needs, each measured on "
          "the foot-slide metric at the ball of the foot.",
-         ["animation_check.foot_slide_mm"],
+         ["animation_check.foot_slide_mm", "animation_check.bone_stretch_budget",
+          "animation_check.ik_reach_headroom", "animation_check.loop_seam_closure",
+          "animation_check.anticipation_reads"],
          ["rigforge_action", "rigforge_keyframe", "render_animation"]),
         ("export",
          "Export — the .glb the engine actually loads",

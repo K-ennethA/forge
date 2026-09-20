@@ -250,6 +250,122 @@ def test_bend_is_signed():
           (R._bend(a, good, c, forward, minimum=R.LANDMARK_BEND) - good).length < 1e-12)
 
 
+def test_stance_maths():
+    section("the flexed rest stance: ankle planted, hip down, knee forward")
+    from forge.tools import rigforge_landmarks as L
+
+    forward = Vector((0.0, -1.0, 0.0))  # the convention: the character faces -Y
+    hip = Vector((0.1, 0.0, 0.9))
+    ankle = Vector((0.1, 0.0, 0.1))
+    knee = (hip + ankle) * 0.5           # straight: chain == span, the worst case
+    chain = (knee - hip).length + (ankle - knee).length
+
+    moved_hip, moved_knee, report = L.stance_flex(
+        None, hip, knee, ankle, forward, "knee", "L")
+    note("says: %s" % report["why"])
+    check("a straight leg is flexed", report["flexed"] is True, str(report))
+    check("the ANKLE is the fixed point: nothing about it moves",
+          True, "the function never returns one")
+    check("the chain's own length is unchanged by the stance -- no bone grew",
+          abs(((moved_knee - moved_hip).length + (ankle - moved_knee).length) - chain)
+          < 1e-7,
+          "%.6f -> %.6f" % (chain, (moved_knee - moved_hip).length
+                            + (ankle - moved_knee).length))
+    span_after = (ankle - moved_hip).length
+    check("and the rest span lands at exactly the target fraction of it",
+          abs(span_after / chain - L.STANCE_SPAN_FRACTION) < 1e-7,
+          "%.6f of chain, target %.4f" % (span_after / chain, L.STANCE_SPAN_FRACTION))
+    check("...which the report states as the number rig_check measures",
+          abs((report["extension_frac_after"] or 0.0) - L.STANCE_SPAN_FRACTION) < 1e-4,
+          str(report["extension_frac_after"]))
+    check("the hip went DOWN and nowhere else",
+          moved_hip.z < hip.z - 1e-9
+          and abs(moved_hip.x - hip.x) < 1e-12 and abs(moved_hip.y - hip.y) < 1e-12,
+          "%s -> %s" % (list(hip), list(moved_hip)))
+    check("...by the millimetres the report quotes",
+          abs((hip - moved_hip).length * 1000.0 - report["hip_drop_mm"]) < 0.01,
+          "%.3f vs %s" % ((hip - moved_hip).length * 1000.0, report["hip_drop_mm"]))
+    check("the knee went FORWARD, which is -Y when the character faces -Y",
+          moved_knee.y < knee.y - 1e-9, "%.4f -> %.4f" % (knee.y, moved_knee.y))
+    check("...and not sideways: a stance is not a bow leg",
+          abs(moved_knee.x - hip.x) < 1e-9, "%.6f" % moved_knee.x)
+
+    # The angle is DERIVED, and this is the proof: two chains with the same span
+    # target and different bone splits land on the same fraction and different
+    # degrees.
+    equal_deg = report["knee_flex_deg"]
+    ideal = 180.0 - 2.0 * math.degrees(math.asin(L.STANCE_SPAN_FRACTION))
+    note("equal bones: %.2f deg of knee flex for a %.2f span target (closed form "
+         "180 - 2*asin(%.2f) = %.2f)"
+         % (equal_deg, L.STANCE_SPAN_FRACTION, L.STANCE_SPAN_FRACTION, ideal))
+    check("the derived angle matches the closed form for equal segments",
+          abs(equal_deg - ideal) < 0.05, "%.3f vs %.3f" % (equal_deg, ideal))
+    lopsided = hip + (ankle - hip) * 0.62
+    _hip2, _knee2, report2 = L.stance_flex(None, hip, lopsided, ankle, forward,
+                                           "knee", "L")
+    note("62/38 bones: %.2f deg for the same %.2f span target"
+         % (report2["knee_flex_deg"], L.STANCE_SPAN_FRACTION))
+    check("a different bone split gives a DIFFERENT angle at the SAME span target -- "
+          "the degrees are derived, not configured",
+          abs((report2["extension_frac_after"] or 0.0)
+              - L.STANCE_SPAN_FRACTION) < 1e-4
+          and abs(report2["knee_flex_deg"] - equal_deg) > 0.5,
+          "%.4f / %.2f deg" % (report2["extension_frac_after"],
+                               report2["knee_flex_deg"]))
+    check("and the constant is a SPAN, not an angle",
+          isinstance(L.STANCE_SPAN_FRACTION, float) and L.STANCE_SPAN_FRACTION < 1.0,
+          str(L.STANCE_SPAN_FRACTION))
+
+    # A chain already standing inside the target is left exactly as measured.
+    deep = (hip + ankle) * 0.5 + forward * 0.25
+    point_hip, point_knee, report3 = L.stance_flex(None, hip, deep, ankle, forward,
+                                                   "knee", "L")
+    note("already-flexed: %s" % report3["why"])
+    check("a leg already standing inside the target is untouched",
+          report3["flexed"] is False
+          and (point_hip - hip).length < 1e-12
+          and (point_knee - deep).length < 1e-12, str(report3))
+
+    # 1.0 is the off switch: the rig rests straight, as every rig did before.
+    _h, _k, report4 = L.stance_flex(None, hip, knee, ankle, forward, "knee", "L",
+                                    span_fraction=1.0)
+    check("span_fraction 1.0 turns the stance off",
+          report4["flexed"] is False, str(report4))
+
+    # ...and the elbow's direction still comes off the same table.
+    shoulder = Vector((0.2, 0.0, 1.3))
+    wrist = Vector((0.55, 0.0, 0.9))
+    _h, elbow, report5 = L.stance_flex(None, shoulder, (shoulder + wrist) * 0.5,
+                                       wrist, forward, "elbow", "L")
+    check("an elbow flexes BACKWARD, from the same anatomy table",
+          report5["direction"] == "backward" and elbow.y > 0.0, str(report5["direction"]))
+
+
+def test_stance_keeps_the_sideways_placement():
+    section("the stance solves the FORWARD component only")
+    from forge.tools import rigforge_landmarks as L
+
+    forward = Vector((0.0, -1.0, 0.0))
+    hip = Vector((0.1, 0.0, 0.9))
+    ankle = Vector((0.1, 0.0, 0.1))
+    # A bow-legged knee: 18 mm out along X, which the mesh measured and no rule
+    # here is entitled to throw away.
+    bowed = (hip + ankle) * 0.5 + Vector((0.018, 0.0, 0.0))
+    _moved_hip, moved_knee, report = L.stance_flex(None, hip, bowed, ankle, forward,
+                                                   "knee", "L")
+    note("bow-legged knee: x %.1f mm -> %.1f mm, forward %.1f mm"
+         % ((bowed.x - hip.x) * 1000.0, (moved_knee.x - hip.x) * 1000.0,
+            report["knee_offline_mm"]))
+    check("the measured sideways offset survives the stance",
+          abs((moved_knee.x - hip.x) - 0.018) < 1e-6,
+          "%.4f mm" % ((moved_knee.x - hip.x) * 1000.0))
+    check("...and the stance still hits its span target around it",
+          abs((report["extension_frac_after"] or 0.0)
+              - L.STANCE_SPAN_FRACTION) < 1e-4, str(report["extension_frac_after"]))
+    check("...and it did not have to trim anything to do it",
+          report["sideways_trimmed"] is False, str(report))
+
+
 # --- section 2: the nudge stays inside the flesh ----------------------------
 
 def _limb_from_tube(name, start, end, radii, segments=16):
@@ -357,6 +473,129 @@ def test_landmarks_report_the_prebend(obj):
           any("pre-bend" in w.lower() for w in report.get("warnings") or []),
           str(report.get("warnings")))
     return report
+
+
+def test_the_stance_is_authored_on_the_character(obj):
+    section("rigforge_landmarks stands the character on a flexed knee")
+    from forge.tools import rigforge_landmarks as L
+
+    straight = call("rigforge_landmarks", {"object": obj.name, "action": "prepare",
+                                           "rest_stance": "straight"})
+    flexed = call("rigforge_landmarks", {"object": obj.name, "action": "prepare"})
+    note("says: %s" % flexed["says"])
+
+    off = {entry["joint"]: entry for entry in (straight.get("stance") or [])}
+    on = {entry["joint"]: entry for entry in (flexed.get("stance") or [])}
+    check("rest_stance=\"straight\" is a real off switch",
+          off.get("knee.L", {}).get("flexed") is False, str(off.get("knee.L")))
+    check("...and it leaves the rig where every rig built before this one stood",
+          (off.get("knee.L", {}).get("extension_frac_before") or 0.0) > 0.98,
+          str(off.get("knee.L", {}).get("extension_frac_before")))
+    entry = on.get("knee.L") or {}
+    note("knee.L: %s" % entry.get("why"))
+    check("the default stance flexes the knee", entry.get("flexed") is True, str(entry))
+    check("the rest span lands at or under %.2f of the chain" % L.STANCE_SPAN_FRACTION,
+          (entry.get("extension_frac_after") or 1.0) <= L.STANCE_SPAN_FRACTION + 1e-4,
+          str(entry.get("extension_frac_after")))
+    check("...and the report quotes the angle it DERIVED, in degrees",
+          (entry.get("knee_flex_deg") or 0.0) > 5.0, str(entry.get("knee_flex_deg")))
+    check("...and the millimetres the hip dropped to buy it",
+          (entry.get("hip_drop_mm") or 0.0) > 0.0, str(entry.get("hip_drop_mm")))
+    check("...and the headroom it left, which is what the walk and the jump spend",
+          (entry.get("headroom_after_mm") or 0.0)
+          > (entry.get("headroom_before_mm") or 0.0) + 5.0,
+          "%s -> %s mm" % (entry.get("headroom_before_mm"),
+                           entry.get("headroom_after_mm")))
+    check("the stance is loud: it is in the warnings with its numbers",
+          any("stance" in str(w).lower() for w in flexed.get("warnings") or []),
+          str(flexed.get("warnings"))[:240])
+
+    # The landmark that must NOT move, because the sole fit and every foot bone
+    # below it hang off it.
+    before = straight["landmarks"]["ankle.L"]["mm"]
+    after = flexed["landmarks"]["ankle.L"]["mm"]
+    note("ankle.L %s -> %s mm" % (before, after))
+    check("THE ANKLE DID NOT MOVE: the stance is paid for by the hip and the knee",
+          max(abs(a - b) for a, b in zip(before, after)) < 0.01,
+          "%s vs %s" % (before, after))
+    for role in ("ball.L", "toe_tip.L", "heel.L"):
+        if role not in straight["landmarks"]:
+            continue
+        check("...and neither did %s, so the sole fit is untouched" % role,
+              max(abs(a - b) for a, b in zip(straight["landmarks"][role]["mm"],
+                                             flexed["landmarks"][role]["mm"])) < 0.01,
+              "%s vs %s" % (straight["landmarks"][role]["mm"],
+                            flexed["landmarks"][role]["mm"]))
+    hip_before = straight["landmarks"]["hip.L"]["mm"]
+    hip_after = flexed["landmarks"]["hip.L"]["mm"]
+    check("the hip dropped, and only dropped",
+          hip_after[2] < hip_before[2] - 1.0
+          and abs(hip_after[0] - hip_before[0]) < 0.01
+          and abs(hip_after[1] - hip_before[1]) < 0.01,
+          "%s -> %s" % (hip_before, hip_after))
+    knee_before = straight["landmarks"]["knee.L"]["mm"]
+    knee_after = flexed["landmarks"]["knee.L"]["mm"]
+    check("the knee came forward (-Y, the way this character faces)",
+          knee_after[1] < knee_before[1] - 1.0, "%s -> %s" % (knee_before, knee_after))
+    check("...and stayed on the limb's own side-to-side centreline",
+          abs(knee_after[0] - knee_before[0]) < 0.01,
+          "%s -> %s" % (knee_before[0], knee_after[0]))
+    return flexed
+
+
+def test_the_stance_survives_the_mirror(meta_result):
+    section("the stance runs BEFORE the mirror, so both legs stand identically")
+    meta = bpy.data.objects[meta_result["metarig"]]
+    stance = {entry["joint"]: entry for entry in (meta_result.get("stance") or [])}
+    check("the metarig result carries the stance block",
+          bool(stance), str(meta_result.get("stance"))[:200])
+    check("...and the span target it was built to",
+          meta_result.get("stance_span") is not None, str(meta_result.get("stance_span")))
+    mirror = meta_result.get("mirror") or {}
+    residual = mirror.get("residual_asymmetry_mm")
+    check("the mirror residual is still exactly 0.0 with a stance on the rig",
+          residual is not None and abs(float(residual)) < 1e-6, str(residual))
+
+    spans = {}
+    for side in ("L", "R"):
+        hip = meta.matrix_world @ meta.data.bones["thigh.%s" % side].head_local
+        knee = meta.matrix_world @ meta.data.bones["thigh.%s" % side].tail_local
+        ankle = meta.matrix_world @ meta.data.bones["shin.%s" % side].tail_local
+        chain = (knee - hip).length + (ankle - knee).length
+        spans[side] = ((ankle - hip).length / chain, chain,
+                       (knee - hip).cross(ankle - hip).length)
+    from forge.tools import rigforge_landmarks as L
+    for side in ("L", "R"):
+        frac, chain, _area = spans[side]
+        note("leg.%s rests at %.4f of a %.1f mm chain" % (side, frac, chain * 1000.0))
+        check("leg.%s rests inside %.2f of its own chain"
+              % (side, L.STANCE_SPAN_FRACTION),
+              frac <= L.STANCE_SPAN_FRACTION + 1e-3, "%.4f" % frac)
+    check("and the two legs rest at the same fraction to a part in ten thousand",
+          abs(spans["L"][0] - spans["R"][0]) < 1e-4,
+          "%.6f vs %.6f" % (spans["L"][0], spans["R"][0]))
+
+
+def test_the_rest_stance_has_headroom(rig):
+    section("the generated rig's rest stance has IK reach in hand")
+    from forge.tools import rigcheck, rigforge_landmarks as L
+
+    report = rigcheck.ik_reach_headroom_rest(rig)
+    note("says: %s" % report["says"])
+    check("the gate measured both legs", report.get("measured", 0) >= 2,
+          str(report.get("measured")))
+    check("the rest stance PASSES the gate that was a permanent red light",
+          report["verdict"] == "ok", report["says"])
+    for row in report["limbs"]:
+        note("%s: %.4f of a %.1f mm chain, %.1f mm of headroom"
+             % (row["limb"], row["extension_frac"], row["rest_length_mm"],
+                row["headroom_mm"]))
+        check("%s stands at or under %.2f of its own chain"
+              % (row["limb"], L.STANCE_SPAN_FRACTION),
+              row["extension_frac"] <= L.STANCE_SPAN_FRACTION + 1e-3,
+              str(row["extension_frac"]))
+        check("%s has real millimetres of headroom, not the audited 1.3 mm"
+              % row["limb"], row["headroom_mm"] > 10.0, str(row["headroom_mm"]))
 
 
 def test_the_mirror_still_holds(obj, workspace):
@@ -802,9 +1041,16 @@ def test_the_foot_follows_the_shoe(workspace):
           (full.get("bend_direction") or {}).get("verdict") == "ok",
           str((full.get("bend_direction") or {}).get("says")))
     centering = full.get("centering") or {}
-    note("centering: %s, worst %s at %s%% of its section radius"
+    # Two numbers, because a flexed rest stance makes them different things:
+    # the raw offset is how far the bone sits from the middle of the flesh a
+    # STRAIGHT-legged sculpt has there, and the excess is what is left once the
+    # chain's own rest flex is paid for. The verdict is taken on the second.
+    note("centering: %s, worst %s at %s%% of its section radius raw, %s%% once its "
+         "chain's %s mm of rest flex is allowed for"
          % (centering.get("verdict"), centering.get("worst"),
-            centering.get("worst_offset_pct_of_radius")))
+            centering.get("worst_offset_pct_of_radius"),
+            centering.get("worst_excess_pct_of_radius"),
+            centering.get("rest_flex_mm")))
     check("and the centering machinery measured the re-fitted bones",
           any(row["bone"].startswith("DEF-foot") or row["bone"].startswith("DEF-toe")
               for row in centering.get("bones") or []),
@@ -1011,6 +1257,8 @@ def main():
     workspace = tempfile.mkdtemp(prefix="forge_prebend_test_")
     try:
         test_prebend_maths()
+        test_stance_maths()
+        test_stance_keeps_the_sideways_placement()
         test_bend_is_signed()
         test_stays_inside_the_flesh()
         test_the_straight_case_is_ambiguous_not_merely_wrong()
@@ -1018,8 +1266,11 @@ def main():
         section("the character: a biped with perfectly straight limbs")
         obj = build_and_tag()
         test_landmarks_report_the_prebend(obj)
+        test_the_stance_is_authored_on_the_character(obj)
         meta_result = test_the_mirror_still_holds(obj, workspace)
-        test_the_gate_passes_a_prebent_rig(obj, meta_result)
+        test_the_stance_survives_the_mirror(meta_result)
+        rig, _generated = test_the_gate_passes_a_prebent_rig(obj, meta_result)
+        test_the_rest_stance_has_headroom(rig)
         test_the_gate_fails_a_straight_rig(obj, meta_result)
         test_breast_bones_are_optional(obj, workspace)
         test_the_echo_marks_its_joints(obj, workspace)

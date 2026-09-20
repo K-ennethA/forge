@@ -22,7 +22,9 @@ Endpoints
                                        ..., "env_set": [names only]}}``
 ``POST /ask``           -> ``{"job_id", "state": "running"|"queued"}``
                            (409 only when a message is ALREADY waiting;
-                            optional ``"model": "haiku"|"sonnet"|"opus"``)
+                            optional ``"model": "smart"|"haiku"|"sonnet"|"opus"``.
+                            No ``model`` at all means: classify the message and
+                            auto-route — see "Choosing the model per message")
 ``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
 
@@ -277,16 +279,39 @@ instead of watching a spinner.
 
 Choosing the model per message
 ------------------------------
-``POST /ask`` may carry ``"model": "haiku"|"sonnet"|"opus"`` — the artist's
-speed-versus-depth choice, made in the panel rather than in an environment
-variable they will never find.  Anything else is a 400 before a turn is spent.
-The order is: the request's model, then ``FORGE_ASSISTANT_MODEL``, then no
-``--model`` flag at all (the CLI's own default).
+``POST /ask`` may carry ``"model": "smart"|"haiku"|"sonnet"|"opus"`` — the
+artist's speed-versus-depth choice, made in the panel rather than in an
+environment variable they will never find.  Anything else is a 400 before a
+turn is spent.  ``"smart"`` is not a fourth model: it means "whichever one is
+configured", so an explicit ``smart`` and no ``model`` field at all resolve to
+the same ``--model`` value — see :func:`resolve_model`.  The order for an
+explicit choice is: the request's model, then ``FORGE_ASSISTANT_MODEL``, then
+no ``--model`` flag at all (the CLI's own default).
 
 Switching model mid-conversation is fine and needs no special handling: the next
 turn still carries ``--resume``, and the CLI continues the same conversation
 under the newly named model.  So an artist can ask Haiku for four quick exports
 and then hand the same thread to Opus for the tricky bit.
+
+Auto-routing when nothing is named
+-----------------------------------
+A request that carries no ``model`` at all (the panel's "Smart" option sends
+none, on purpose — see ``webui/app.js``) is not simply defaulted: the message
+is run through :func:`classify_turn`, a deterministic, pattern-only classifier
+with no model call of its own.  It routes to the cheap model (``haiku``) only
+for turns that are unmistakably read-shaped — a status/pipeline question, a
+request to list actions, versions or renders, or a plain what/why question —
+and only when the message contains none of :data:`BUILD_VERB_WORDS`.  Anything
+that mentions a build/fix/author/export verb, anything that looks like the
+sentence a decision-card button composed (those sentences are built out of
+exactly those verbs — "Fix the ...", "Override the blocked ...", "advance the
+build" — so they fail the verb check on their own), and anything that matches
+neither list all stay on the default model.  Ambiguous always resolves to
+"stay on default": a wrong guess toward cheap can produce a worse answer on a
+turn that mattered, while a wrong guess toward default only costs a little
+more.  The decision is recorded on the job (``routed_model``, ``model_source``)
+and returned to the client, so the activity feed can say which model actually
+served a turn that nobody explicitly chose.
 
 Reference images (Phase 6c)
 ---------------------------
@@ -595,10 +620,99 @@ ACTIVITY_VERBS = {
 IMAGE_DIVIDER = "--- Attached reference image ---"
 IMAGE_INSTRUCTION = "View this image with the Read tool BEFORE answering."
 
-#: The three models the panel offers, fastest first.  Deliberately the CLI's own
+#: The models the panel offers, cheapest first, plus ``smart`` — not a fourth
+#: model but the name for "whichever one is configured" (see
+#: :func:`resolve_model`).  The other three are deliberately the CLI's own
 #: aliases rather than pinned version ids: the artist is choosing "quick" or
 #: "careful", and the CLI is the right place for that to mean a specific model.
-MODELS = ("haiku", "sonnet", "opus")
+MODELS = ("smart", "haiku", "sonnet", "opus")
+
+# ---------------------------------------------------------------------------
+# Auto-routing — cost-tiered model choice for a turn that named no model
+# ---------------------------------------------------------------------------
+#
+# The owner's rule: cheap model for read/status turns, the configured model
+# for build turns.  Doing that with an LLM call would spend exactly the money
+# it is meant to save, so this is pattern matching over the message text —
+# deterministic, auditable, and wrong in a knowable direction (toward the
+# default model, never toward the cheap one) when it is unsure.
+#
+# BUILD_VERB_WORDS wins first: any of these words anywhere in the message and
+# the turn stays on the default model, full stop, before CHEAP_ROUTE_PATTERNS
+# is even consulted.  This is also what keeps every decision-card button (the
+# workspace tab's "Fix", "Try the fix", "Override the blocked ... stage",
+# "advance the build") off the cheap model with no special-casing of where the
+# sentence came from: those sentences are built out of exactly these verbs.
+#
+# Only once the message is clean of every build verb does it get a chance to
+# match CHEAP_ROUTE_PATTERNS — pipeline/status questions, requests to list
+# something, and plain what/why/is/are questions.  A message that matches
+# neither list, or that matches a cheap pattern but also carries a build verb,
+# stays on the default model: ambiguous means default, always.
+BUILD_VERB_WORDS = (
+    # making or changing something
+    "build", "fix", "create", "make", "author", "write", "generate",
+    "export", "render", "animate", "rig", "skin", "weight", "mirror",
+    "import", "open", "save", "snapshot", "restore", "override", "advance",
+    "sign", "continue", "delete", "remove", "move", "place", "edit",
+    "change", "set", "adjust", "apply", "record", "join", "merge", "weld",
+    "attach", "convert", "bake", "run", "implement", "refactor", "update",
+    "modify", "add", "resume", "retry", "redo", "undo", "cancel", "stop",
+    "start", "pipeline_advance", "pipeline_record",
+)
+
+#: Checked only after BUILD_VERB_WORDS finds nothing.  Deliberately narrow: a
+#: pattern here that is too eager to match would route a real build request to
+#: the cheap model, which is the one mistake this feature must never make.
+CHEAP_ROUTE_PATTERNS = (
+    r"\bstatus\b",
+    r"\bpipeline\b",
+    r"\bwhat('?s| is) (the )?(status|next|progress)\b",
+    r"\bwhich stage\b",
+    r"\bwhat stage\b",
+    r"\bhow('?s| is) it going\b",
+    r"\bwhere are we\b",
+    r"\bwhat happened\b",
+    r"\blist\b",
+    r"\bshow me\b",
+    r"\bwhich (actions|versions|renders|options)\b",
+    r"\bwhat (actions|versions|renders|options)\b",
+    r"\bwhat can (i|you)\b",
+    r"^\s*(what|why|which|who|when|is|are|does|do|can|has|have)\b.*\?\s*$",
+    r"^\s*explain\b",
+)
+
+
+def classify_turn(message):
+    """The cheap-model routing decision for a turn with no explicit ``model``.
+
+    Returns ``"haiku"`` when the message is clearly read-shaped and carries no
+    build verb, ``""`` otherwise (stay on the default model).  Pure and
+    deterministic — no LLM call, no I/O — so the dozen-messages-each-side table
+    in the tests can assert on it directly.
+    """
+    text = str(message or "").strip().lower()
+    if not text:
+        return ""
+    for word in BUILD_VERB_WORDS:
+        if re.search(r"\b%s\b" % re.escape(word), text):
+            return ""
+    for pattern in CHEAP_ROUTE_PATTERNS:
+        if re.search(pattern, text):
+            return "haiku"
+    return ""
+
+
+def job_model_key(job):
+    """Which bucket a finished job's cost belongs in, for the per-model total.
+
+    The CLI's own reported ``model`` wins — it is what actually ran — falling
+    back to what the turn asked or was auto-routed to for the rare job that
+    never got far enough to report one, and to ``"default"`` when nothing at
+    all is known (an unrouted turn on the configured model).
+    """
+    return (job.get("model") or job.get("requested_model")
+            or job.get("routed_model") or "default")
 
 #: What the Read tool can actually render.  The panel checks the same list, so a
 #: bad attachment is refused in the sidebar rather than a turn later; this is the
@@ -2153,9 +2267,12 @@ def resolve_model(requested=None):
     Request first, then ``FORGE_ASSISTANT_MODEL``, then nothing — the artist's
     choice in the panel beats the environment the bridge happened to start in,
     and with neither set the CLI uses whatever the user configured for it.
+
+    ``"smart"`` is not a model name the CLI knows; it means "the configured
+    one", so it falls through exactly like naming none at all.
     """
     text = normalize_model(requested)
-    if text:
+    if text and text != "smart":
         return text
     return str(_env("FORGE_ASSISTANT_MODEL") or "").strip()
 
@@ -3089,6 +3206,13 @@ class JobStore(object):
         #: What this conversation has cost so far, in dollars.  Reset with the
         #: session, because "this conversation" is what the number means.
         self.session_cost_usd = 0.0
+        #: The same total, split by which model actually served each turn —
+        #: keyed by the CLI's own reported ``model`` (falling back to what the
+        #: turn asked or was routed to, for a turn that never got that far, and
+        #: to ``"default"`` when neither is known).  This is the number that
+        #: answers "is auto-routing actually saving anything", which the single
+        #: total cannot.
+        self.session_cost_by_model = {}
         #: Did the most recently finished turn fail because nobody is signed in?
         self.last_auth_error = False
         #: BLENDER's clock at the last live glance — the ``since`` of the next
@@ -3106,6 +3230,7 @@ class JobStore(object):
             # The running total is per-conversation: a fresh conversation has
             # not cost anything yet, so the panel's status row starts at zero.
             self.session_cost_usd = 0.0
+            self.session_cost_by_model = {}
             # ...and neither has it looked at Blender yet.
             self.blender_seen_at = None
             return previous
@@ -3182,6 +3307,14 @@ class JobStore(object):
         that is the scene the message is about.  The model choice rides with the
         job for the same reason — a message queued as "Fast" runs as Fast even
         if the panel's selector moved while it waited.
+
+        No explicit ``model`` is the auto-routing case: :func:`classify_turn`
+        looks at the message once, here, at submit time — not at pickup, and
+        not re-run if the message is edited, because it is a decision about the
+        message the artist actually pressed Send on.  The result rides as
+        ``routed_model`` / ``model_source`` so a client can tell "you asked for
+        Fast" from "this one looked like a status question so it ran cheap"
+        from "nothing special, this is just the default model".
         """
         with self._lock:
             active = self._jobs.get(self._active) if self._active else None
@@ -3195,7 +3328,15 @@ class JobStore(object):
             job = self._new_job(message, "queued" if busy else "running")
             job["prompt"] = prompt
             job["new_conversation"] = bool(new_conversation)
-            job["requested_model"] = normalize_model(model)
+            requested = normalize_model(model)
+            job["requested_model"] = requested
+            if requested:
+                job["routed_model"] = ""
+                job["model_source"] = "explicit"
+            else:
+                routed = classify_turn(message)
+                job["routed_model"] = routed
+                job["model_source"] = "auto" if routed else "default"
 
             if busy:
                 self._pending = job["job_id"]
@@ -3211,6 +3352,7 @@ class JobStore(object):
             if new_conversation:
                 self.session_id = None
                 self.session_cost_usd = 0.0
+                self.session_cost_by_model = {}
             self._active = job["job_id"]
             return job, "running"
 
@@ -3232,6 +3374,7 @@ class JobStore(object):
             if job.get("new_conversation"):
                 self.session_id = None
                 self.session_cost_usd = 0.0
+                self.session_cost_by_model = {}
             job["state"] = "running"
             # The wait was not work: time it from the moment it actually starts,
             # so duration_ms means what it means on every other job.
@@ -3393,9 +3536,14 @@ class JobStore(object):
         state = job.get("state")
         if state in ("done", "timeout"):
             try:
-                self.session_cost_usd += float(job.get("cost_usd") or 0.0)
+                cost = float(job.get("cost_usd") or 0.0)
             except (TypeError, ValueError):
-                pass  # a build that reported cost as something odd: skip it
+                cost = None  # a build that reported cost as something odd: skip it
+            if cost is not None:
+                self.session_cost_usd += cost
+                key = job_model_key(job)
+                self.session_cost_by_model[key] = (
+                    self.session_cost_by_model.get(key, 0.0) + cost)
             # It answered, so whatever went wrong before is over.
             self.last_auth_error = False
         elif state == "error":
@@ -3462,6 +3610,17 @@ def public_activity(job):
     return entries
 
 
+def cost_by_model_snapshot():
+    """``{"haiku": 0.0123, ...}`` — the running session total, split by model.
+
+    A plain function rather than a method so ``/health`` and ``/jobs`` can both
+    call it the same way every other session-wide number on this bridge is
+    read: off ``JOBS`` directly, rounded for display.
+    """
+    return {key: round(float(value or 0.0), 6)
+            for key, value in (JOBS.session_cost_by_model or {}).items()}
+
+
 def public_job(job, session_cost_usd=0.0):
     """The subset of a job the panel is allowed to see."""
     if job is None:
@@ -3492,6 +3651,14 @@ def public_job(job, session_cost_usd=0.0):
     # before there is any result to read a model off.
     if job.get("requested_model"):
         out["requested_model"] = job["requested_model"]
+    # What the auto-router decided, when the artist asked for nothing in
+    # particular: "" (default_model_source) is worth telling apart from
+    # "haiku" (auto-routed cheap) so the activity feed can stay silent on the
+    # ordinary case and only speak up when a turn ran on a model nobody named.
+    if job.get("routed_model"):
+        out["routed_model"] = job["routed_model"]
+    if job.get("model_source"):
+        out["model_source"] = job["model_source"]
     # The conversation's running total rides on every job snapshot as well as
     # on /health: the panel already polls the job, and a second request just to
     # redraw one number would be a request per second for nothing.
@@ -3780,11 +3947,16 @@ def start_turn(job):
     queued message must resume the conversation the turn ahead of it produced.
     The model, by contrast, is the one the job was submitted with — it is the
     artist's choice for *this* message, not for whenever it reached the front.
+    An explicit choice wins; failing that, the auto-router's pick (``""`` when
+    it left the turn on the default model) — either way this is the single
+    value :func:`resolve_model` sees, so ``smart``, an explicit model, an
+    auto-routed ``haiku`` and "nothing at all" all thread through one rule.
     """
     thread = threading.Thread(
         target=_run_and_continue,
         args=(job["job_id"], job.get("prompt") or job.get("message") or "",
-              JOBS.session_id, job.get("requested_model") or ""),
+              JOBS.session_id,
+              job.get("requested_model") or job.get("routed_model") or ""),
         name="ForgeAssistantTurn", daemon=True)
     thread.start()
     return thread
@@ -7697,6 +7869,10 @@ class Handler(BaseHTTPRequestHandler):
                 "busy": self._busy(),
                 "queued": JOBS.is_queued(),
                 "session_cost_usd": round(float(JOBS.session_cost_usd or 0.0), 6),
+                # The same total, split by which model actually served each
+                # turn — how the owner can tell whether auto-routing (see
+                # classify_turn) is doing anything.
+                "session_cost_by_model": cost_by_model_snapshot(),
                 # Read off the last failure, never by spending a turn to find
                 # out: the panel only wants to know whether to say "sign in".
                 "last_auth_error": bool(JOBS.last_auth_error),

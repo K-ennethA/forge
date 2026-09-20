@@ -286,8 +286,8 @@ def test_nothing_chosen_anywhere_means_no_model_flag(monkeypatch):
     assert "--model" not in bridge.build_argv("claude", "hi", model="")
 
 
-def test_the_three_models_are_the_only_ones_offered():
-    assert bridge.MODELS == ("haiku", "sonnet", "opus")
+def test_the_four_models_are_the_only_ones_offered():
+    assert bridge.MODELS == ("smart", "haiku", "sonnet", "opus")
     for name in bridge.MODELS:
         assert bridge.model_error(name) == ""
     # forgiving about how it arrives, strict about what it is
@@ -311,6 +311,88 @@ def test_resolve_model_is_the_priority_rule(monkeypatch):
     assert bridge.resolve_model(None) == "haiku"
     monkeypatch.delenv("FORGE_ASSISTANT_MODEL", raising=False)
     assert bridge.resolve_model(None) == ""
+
+
+def test_smart_is_an_alias_for_the_configured_model_not_a_fifth_model(monkeypatch):
+    """``smart`` is on the allowlist, but it never reaches the CLI as a flag."""
+    monkeypatch.setenv("FORGE_ASSISTANT_MODEL", "sonnet")
+    assert bridge.model_error("smart") == ""
+    assert bridge.resolve_model("smart") == "sonnet"
+    # with nothing configured, "smart" and "nothing asked" both mean no flag
+    monkeypatch.delenv("FORGE_ASSISTANT_MODEL", raising=False)
+    assert bridge.resolve_model("smart") == ""
+    assert bridge.resolve_model("smart") == bridge.resolve_model(None)
+    argv = bridge.build_argv("claude", "hi", model="smart")
+    assert "--model" not in argv
+
+
+# ---------------------------------------------------------------------------
+# auto-routing — classify_turn, with no process and no model call at all
+#
+# The rule: cheap only for turns that are unmistakably read-shaped AND carry
+# no build/fix/author/export-style verb; anything ambiguous, and anything a
+# decision-card button would compose, stays on the default model.  A dozen
+# messages on each side of the line.
+# ---------------------------------------------------------------------------
+
+CHEAP_ROUTED_MESSAGES = (
+    "what's the status of the werewolf project?",
+    "what is the pipeline looking like right now?",
+    "which stage are we on?",
+    "how's it going?",
+    "where are we right now?",
+    "list the versions for the werewolf project",
+    "show me the renders",
+    "which actions can I take here?",
+    "what versions do we have?",
+    "what happened earlier today?",
+    "is the mesh gate passing?",
+    "why did that take so long?",
+)
+
+DEFAULT_ROUTED_MESSAGES = (
+    "fix the rig stage of werewolf: work the fix ladder in order, "
+    "re-measure the gate, and pipeline_record the real numbers",
+    "build me a new gear part",
+    "generate the sword with a 40mm blade",
+    "export the model to godot",
+    # a decision-card button's own composed sentence (see webui/app.js
+    # decisionBlock/overrideForm) — no special-casing needed, the verbs alone
+    # keep it off the cheap model
+    "Override the blocked skin stage on werewolf and advance the build: "
+    "pipeline_advance with override=true, who=\"ken\", why=\"signed off\". "
+    "Record it exactly as I said it, and tell me what you stepped over.",
+    "render an animation of the walk cycle",
+    "author a part.py for a shield",
+    "move the ankle joint 10mm back",
+    "restore werewolf-wip-7.blend",
+    "set the radius to 12 and rerun the gate",
+    "please make the ears bigger and re-render it",
+    "hello",  # ambiguous: no read pattern, no build verb — stays default
+)
+
+
+@pytest.mark.parametrize("message", CHEAP_ROUTED_MESSAGES)
+def test_classify_turn_routes_read_shaped_messages_cheap(message):
+    assert bridge.classify_turn(message) == "haiku", message
+
+
+@pytest.mark.parametrize("message", DEFAULT_ROUTED_MESSAGES)
+def test_classify_turn_keeps_build_and_ambiguous_messages_on_default(message):
+    assert bridge.classify_turn(message) == "", message
+
+
+def test_classify_turn_is_case_insensitive_and_handles_emptiness():
+    assert bridge.classify_turn("WHAT IS THE STATUS?") == "haiku"
+    assert bridge.classify_turn("") == ""
+    assert bridge.classify_turn(None) == ""
+    assert bridge.classify_turn("   ") == ""
+
+
+def test_a_build_verb_wins_even_inside_an_otherwise_cheap_looking_question():
+    # Shaped like a status question but asks for a change — must not slip
+    # through on the question mark alone.
+    assert bridge.classify_turn("what if I fix the gate now?") == ""
 
 
 def test_allowed_tools_env_can_be_emptied(monkeypatch):
@@ -1224,6 +1306,80 @@ def test_a_queued_message_keeps_the_model_it_was_sent_with(bridge_proc):
     assert calls[0]["argv"][calls[0]["argv"].index("--model") + 1] == "haiku"
     assert calls[1]["argv"][calls[1]["argv"].index("--model") + 1] == "opus"
     assert final["requested_model"] == "opus"
+
+
+# ---------------------------------------------------------------------------
+# auto-routing, end to end through a real subprocess
+#
+# No "model" field at all is the auto-routing case: classify_turn decides on
+# the message alone, and the decision rides on the job as
+# routed_model/model_source so a client can tell "nothing special happened"
+# (model_source "default") from "this ran cheap because it looked read-shaped"
+# (model_source "auto") from "the artist chose this" (model_source "explicit").
+# ---------------------------------------------------------------------------
+
+def test_a_read_shaped_message_with_no_model_runs_cheap(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": "haiku"})
+    reply = client.turn("what's the status of the werewolf project?")
+    assert reply["state"] == "done", reply
+    argv = client.invocations()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "haiku"
+    assert "requested_model" not in reply  # nothing was explicitly asked for
+    assert reply["routed_model"] == "haiku"
+    assert reply["model_source"] == "auto"
+
+
+def test_a_build_shaped_message_with_no_model_stays_default(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": ""})
+    reply = client.turn("fix the rig stage and re-measure the gate")
+    assert reply["state"] == "done", reply
+    assert "--model" not in client.invocations()[0]["argv"]
+    assert "requested_model" not in reply
+    assert "routed_model" not in reply
+    assert reply["model_source"] == "default"
+
+
+def test_an_ambiguous_message_with_no_model_stays_default(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": ""})
+    reply = client.turn("hello")
+    assert reply["state"] == "done", reply
+    assert "--model" not in client.invocations()[0]["argv"]
+    assert reply["model_source"] == "default"
+
+
+def test_an_explicit_model_is_never_reclassified(bridge_proc):
+    """The artist's own choice is not second-guessed by the classifier, even
+    when the message reads exactly like the cheap-routed case above."""
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": "opus"})
+    reply = client.turn("what's the status?", model="opus")
+    assert reply["state"] == "done", reply
+    assert reply["requested_model"] == "opus"
+    assert "routed_model" not in reply
+    assert reply["model_source"] == "explicit"
+
+
+def test_smart_explicit_choice_uses_the_configured_default_not_the_classifier(bridge_proc):
+    client = bridge_proc(env_extra={"FORGE_ASSISTANT_MODEL": "sonnet",
+                                    "FAKE_CLAUDE_EXPECT_MODEL": "sonnet"})
+    # A build-shaped message: if this ran through the classifier it would
+    # still stay on default, but "smart" must not even reach classify_turn —
+    # it is an explicit choice.
+    reply = client.turn("build me a new part", model="smart")
+    assert reply["state"] == "done", reply
+    assert reply["requested_model"] == "smart"
+    assert reply["model_source"] == "explicit"
+    argv = client.invocations()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "sonnet"
+
+
+def test_session_cost_tracks_per_model_on_health(bridge_proc):
+    client = bridge_proc(env_extra={"FAKE_CLAUDE_EXPECT_MODEL": "haiku"})
+    reply = client.turn("what's the status?", model="haiku")
+    assert reply["state"] == "done", reply
+    _status, health = client.request("/health")
+    by_model = health["session_cost_by_model"]
+    assert by_model.get("haiku", 0) > 0
+    assert round(sum(by_model.values()), 6) == health["session_cost_usd"]
 
 
 # ---------------------------------------------------------------------------

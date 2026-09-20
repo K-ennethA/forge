@@ -33,18 +33,21 @@ event loop (the harness drains the server queue from the main thread) and no
 window.
 """
 
+import hashlib
 import inspect
 import json
 import math
 import os
 import shutil
 import socket as socketlib
+import struct
 import sys
 import tempfile
 import threading
 import time
 import traceback
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -136,13 +139,313 @@ def call(command, params=None, timeout=1800.0, expect_error=False):
 
 
 # --- the character ----------------------------------------------------------
+#
+# Why the sculpt is assembled here instead of being taken straight from
+# ``headless_phase4.build_tagged_biped``.
+#
+# ``bmesh`` hands its elements back in allocation order, and allocation order
+# is pointer order, which ASLR changes between processes.  Measured on this
+# sculpt over fresh ``--factory-startup`` runs, three things moved:
+#
+# * the vertex order (the same 34 572 points, permuted);
+# * a 1-ULP wobble on 28 of those points - ``subdivide_edges(use_grid_fill)``
+#   averages corner coordinates in whatever order it walks them, and float32
+#   addition is not associative;
+# * **which** faces phase 3's ``build_sculpt`` punched its hole in and welded
+#   its fins onto - both steps take the *first* elements of a bmesh iteration
+#   (``[:8]``, ``break`` at two), so both follow that same pointer order.
+#
+# None of the three is large: canonicalised, two runs differ by three faces out
+# of 36 858.  But the retopo behind them is a voxel remesh followed by a
+# collapse decimate, and a decimate re-orders its whole collapse queue off one
+# changed face.  That is what produced a different character every run
+# (3 465-4 002 vertices, 484-515 mm leg chains, sometimes unweighted
+# vertices), and with it a ``headless_jump`` that passed 233/0 on one run and
+# failed 15 checks on the next.
+#
+# Proven, not assumed: feeding one byte-identical sculpt into the same
+# ``rigforge_retopo`` -> ``rigforge_metarig`` -> ``rigforge_generate_rig``
+# chain in four fresh processes returns the same retopo mesh, the same weights
+# and the same 238-bone rig every time.  So the whole fix is upstream of the
+# pipeline: give it a sculpt with a canonical order.
+#
+# The *shape* is still phase 3's - ``BLOBS`` and ``_uvsphere`` are imported,
+# not copied, and the hole/fin rules below are its rules.  Only the order the
+# elements are held in, and therefore which faces those rules pick, is ours.
+# ``SCULPT_DIGEST`` is the gate: if phase 3's sculpt changes, this suite says
+# so instead of quietly testing something else.
+
+#: Grid the sculpt's coordinates are snapped to, in metres.  A micron is ~8x
+#: the float32 ULP at this sculpt's 1.9 m extent, so it absorbs the wobble
+#: above, and it is 1/20 000 of the 20.5 mm voxel the very next stage remeshes
+#: at - far below anything downstream can measure.
+SCULPT_QUANTUM = 1e-6
+
+#: phase 3's own defect rules (``headless_rigforge.build_sculpt``): a hole of
+#: eight faces in the upper front, and two three-faced edges.
+SCULPT_HOLE_FACES = 8
+SCULPT_HOLE_MIN_Z = 1.15
+SCULPT_HOLE_MIN_Y = 0.30
+SCULPT_FINS = 2
+
+#: SHA-256 of the canonical sculpt, and of the retopo mesh ``build_character``
+#: hands on (coordinates + polygon indices + per-group weights).  Both
+#: measured over five fresh ``--background --factory-startup`` processes on
+#: Blender 5.0; both are the determinism gate, not a tolerance.
+SCULPT_DIGEST = "33285c5409d409cbf5fe5987dd51924627161c080f14dec024315789146dc715"
+CHARACTER_DIGEST = "37d86bb36622f502380d1e53626b2e46d78ac92ebf1e47923f0a9d9000542fcb"
+
+
+def geometry_digest(obj):
+    """SHA-256 over a mesh's vertex coordinates, polygons and vertex weights.
+
+    Everything a build can differ in that anything downstream can see.  The
+    coordinates go in as float64 of the stored float32, so the digest is exact
+    rather than rounded.
+    """
+    mesh = obj.data
+    sha = hashlib.sha256()
+    coords = [0.0] * (len(mesh.vertices) * 3)
+    mesh.vertices.foreach_get("co", coords)
+    sha.update(("verts=%d" % len(mesh.vertices)).encode("utf-8"))
+    sha.update(struct.pack("<%dd" % len(coords), *coords))
+    rings = []
+    for polygon in mesh.polygons:
+        rings.append(len(polygon.vertices))
+        rings.extend(polygon.vertices)
+    sha.update(("polys=%d" % len(mesh.polygons)).encode("utf-8"))
+    sha.update(struct.pack("<%dI" % len(rings), *rings))
+    for group in sorted(obj.vertex_groups, key=lambda entry: entry.name):
+        sha.update(("group=%s" % group.name).encode("utf-8"))
+        for vertex in mesh.vertices:
+            for entry in vertex.groups:
+                if entry.group == group.index:
+                    sha.update(struct.pack("<Id", vertex.index, entry.weight))
+    return sha.hexdigest()
+
+
+def _canonical_ring(ring):
+    """A face's vertex ring rotated to start at its lowest index.
+
+    Rotation only - never a reversal - so the winding, and with it the normal,
+    is the one bmesh produced.
+    """
+    pivot = ring.index(min(ring))
+    return tuple(ring[pivot:] + ring[:pivot])
+
+
+def _canonical_blobs():
+    """Phase 3's six subdivided spheres as (vertices, faces) in canonical order.
+
+    The bmesh work is phase 3's, element for element; what leaves this function
+    is sorted by position rather than by allocation.
+    """
+    import headless_rigforge as phase3
+
+    bm = bmesh.new()
+    try:
+        for _label, centre, radius in phase3.BLOBS:
+            made = phase3._uvsphere(bm, radius)
+            bmesh.ops.translate(bm, verts=made["verts"], vec=Vector(centre))
+        for _ in range(2):
+            bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1,
+                                      use_grid_fill=True)
+        bm.verts.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        keys = [(int(round(vertex.co.x / SCULPT_QUANTUM)),
+                 int(round(vertex.co.y / SCULPT_QUANTUM)),
+                 int(round(vertex.co.z / SCULPT_QUANTUM)))
+                for vertex in bm.verts]
+        rings = [[vertex.index for vertex in face.verts] for face in bm.faces]
+    finally:
+        bm.free()
+
+    if len(set(keys)) != len(keys):
+        # Two vertices a micron apart would have to be ordered by something
+        # other than position, and there is nothing deterministic left to order
+        # them by. It does not happen on this sculpt; say so loudly if it ever
+        # starts to.
+        raise AssertionError(
+            "the sculpt has %d vertices sharing a %g m grid cell: the canonical "
+            "order is no longer well defined"
+            % (len(keys) - len(set(keys)), SCULPT_QUANTUM))
+
+    order = sorted(range(len(keys)), key=lambda index: keys[index])
+    renumber = [0] * len(keys)
+    for new, old in enumerate(order):
+        renumber[old] = new
+    verts = [tuple(axis * SCULPT_QUANTUM for axis in keys[old]) for old in order]
+    faces = sorted(_canonical_ring([renumber[index] for index in ring])
+                   for ring in rings)
+    return verts, faces
+
+
+def _punch_and_weld(verts, faces):
+    """Phase 3's two deliberate defects, chosen over the canonical order.
+
+    A hole (boundary edges are non-manifold as far as Quadriflow cares) and two
+    three-faced edges - the same rules ``build_sculpt`` applies, reading down a
+    sorted list instead of down a bmesh iterator.
+    """
+    holed = []
+    for index, ring in enumerate(faces):
+        count = float(len(ring))
+        centre_y = sum(verts[i][1] for i in ring) / count
+        centre_z = sum(verts[i][2] for i in ring) / count
+        if centre_z > SCULPT_HOLE_MIN_Z and centre_y > SCULPT_HOLE_MIN_Y:
+            holed.append(index)
+            if len(holed) >= SCULPT_HOLE_FACES:
+                break
+    if len(holed) < SCULPT_HOLE_FACES:
+        raise AssertionError("the sculpt has only %d face(s) to punch a hole in"
+                             % len(holed))
+    drop = set(holed)
+    kept = [ring for index, ring in enumerate(faces) if index not in drop]
+
+    # ``bmesh.ops.delete(context="FACES")`` takes the vertices the deleted faces
+    # were the only user of with them. Phase 3's scattered hole orphans none;
+    # this one is a single compact patch, so it does.
+    used = sorted(set(vertex for ring in kept for vertex in ring))
+    if len(used) != len(verts):
+        renumber = {old: new for new, old in enumerate(used)}
+        verts = [verts[old] for old in used]
+        kept = sorted(_canonical_ring([renumber[vertex] for vertex in ring])
+                      for ring in kept)
+
+    edge_faces = {}
+    vertex_faces = {}
+    for index, ring in enumerate(kept):
+        for position, vertex in enumerate(ring):
+            other = ring[(position + 1) % len(ring)]
+            edge_faces.setdefault((min(vertex, other), max(vertex, other)),
+                                  []).append(index)
+            vertex_faces.setdefault(vertex, []).append(index)
+
+    present = set(frozenset(ring) for ring in kept)
+    fins = []
+    for edge in sorted(edge_faces):
+        if len(edge_faces[edge]) != 2:
+            continue
+        first, second = edge
+        neighbour = None
+        for index in vertex_faces.get(first, ()):
+            for vertex in kept[index]:
+                if vertex != first and vertex != second:
+                    neighbour = vertex
+                    break
+            if neighbour is not None:
+                break
+        if neighbour is None:
+            continue
+        triangle = (first, second, neighbour)
+        if frozenset(triangle) in present:
+            continue
+        present.add(frozenset(triangle))
+        fins.append(_canonical_ring(list(triangle)))
+        if len(fins) >= SCULPT_FINS:
+            break
+    if len(fins) < SCULPT_FINS:
+        raise AssertionError("only %d fin(s) could be welded onto the sculpt"
+                             % len(fins))
+    return verts, sorted(kept + fins)
+
+
+def build_canonical_sculpt(name=SCULPT):
+    """Phase 3's sculpt, in an order that does not depend on the process."""
+    verts, faces = _punch_and_weld(*_canonical_blobs())
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata([list(point) for point in verts], [],
+                     [list(ring) for ring in faces])
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    bpy.context.view_layer.update()
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    return obj
+
+
+def build_tagged_biped():
+    """``headless_phase4.build_tagged_biped``'s regions over the canonical sculpt.
+
+    The classification and the ear rule are phase 3's and phase 4's; only the
+    mesh they read is ours.
+    """
+    import headless_rigforge as phase3
+
+    obj = build_canonical_sculpt(SCULPT)
+    regions = phase3.classify_faces(obj)
+
+    # Ears: the outer caps of the head sphere, exactly as
+    # ``headless_phase4.build_tagged_biped`` cuts them.
+    ears = {"Ear.L": [], "Ear.R": []}
+    head = []
+    in_head = set(regions["Head"])
+    for index, centre in phase3.face_centres(obj):
+        if index not in in_head:
+            continue
+        if centre.z > 1.72 and abs(centre.x) > 0.10:
+            ears["Ear.L" if centre.x > 0 else "Ear.R"].append(index)
+        else:
+            head.append(index)
+    regions["Head"] = head
+    regions.update(ears)
+    return obj, regions
+
+
+#: Why the shared character is not built through Quadriflow.
+#:
+#: With the sculpt above pinned byte for byte, everything in
+#: ``cmd_rigforge_retopo`` is deterministic except one stage.  Measured over
+#: nine fresh processes on the identical sculpt: the voxel remesh returns the
+#: same 26 674-vertex mesh every time, and the shrinkwrap, the tag transfer and
+#: the unwrap are each a pure function of what they are handed - but
+#: ``bpy.ops.object.quadriflow_remesh`` returns four different meshes.  Its
+#: *topology* is stable (3 574 vertices, 3 453 faces, identical polygon
+#: indices, every run); its vertex *positions* are not - 225 of those 3 574
+#: vertices land up to **45.8 mm** apart between runs, with ``seed=0`` fixed
+#: and symmetry off.  That is Blender's own multi-threaded solver racing, in
+#: C++, and nothing this repo passes it changes it.
+#:
+#: So the fixture takes ``cmd_rigforge_retopo``'s **own** documented fallback -
+#: the collapse decimate to the same target - by refusing the Quadriflow stage
+#: up front.  Nothing is stubbed out: the refusal goes down the error path the
+#: command already has for a Quadriflow that will not solve, the warning it
+#: raises is printed, and ``build_character`` asserts that is the route it
+#: took.  The decimate path is a pure function of its input and measures
+#: byte-identical across processes.
+#:
+#: The product-side defect this pins around is real and is NOT this lane's:
+#: ``rigforge_retopo`` cannot currently produce the same game mesh twice from
+#: the same sculpt.  That fix belongs in ``addon/forge/tools`` - a deterministic
+#: retopo route, or a seeded/serialised Quadriflow - and is reported as its own
+#: lane.
+QUAD_REMESH_PINNED = (
+    "pinned by headless_rigik.build_character: Blender's Quadriflow solver "
+    "returns different vertex positions for the same input on every run "
+    "(measured: identical topology, 225 of 3574 vertices up to 45.8 mm apart "
+    "over fresh processes, seed=0), so the shared test character is built down "
+    "this command's own collapse-decimate fallback, which is deterministic."
+)
+
+
+def _pinned_quad_remesh(*_args, **_kwargs):
+    from forge.tools.registry import ForgeError
+
+    raise ForgeError(QUAD_REMESH_PINNED)
+
 
 def build_character():
     """Phase 3's sculpt, tagged, retopologised, metarigged and generated."""
     section("the character (Phase 3/4 builders, reused)")
-    import headless_phase4 as phase4
 
-    obj, regions = phase4.build_tagged_biped()
+    obj, regions = build_tagged_biped()
+    sculpt_digest = geometry_digest(obj)
+    note("sculpt: %d verts, %d faces, sha256 %s"
+         % (len(obj.data.vertices), len(obj.data.polygons), sculpt_digest))
+    check("the sculpt is the pinned, canonical build -- the same bytes every "
+          "process", sculpt_digest == SCULPT_DIGEST,
+          "%s, expected %s" % (sculpt_digest, SCULPT_DIGEST))
     for name, faces in sorted(regions.items()):
         if faces:
             call("rigforge_tag", {"object": obj.name, "tag": name, "faces": faces,
@@ -150,11 +453,35 @@ def build_character():
     call("rigforge_manifest", {"object": obj.name, "action": "get",
                                "archetype": "biped"})
     started = time.monotonic()
-    call("rigforge_retopo", {"object": obj.name, "target_faces": 4000,
-                             "platform": "mobile", "lods": 0})
+    from forge.tools import common as forge_common
+
+    was = forge_common._quad_remesh
+    forge_common._quad_remesh = _pinned_quad_remesh
+    try:
+        retopo_report = call("rigforge_retopo", {"object": obj.name,
+                                                 "target_faces": 4000,
+                                                 "platform": "mobile", "lods": 0})
+    finally:
+        forge_common._quad_remesh = was
+    for warning in retopo_report.get("warnings") or []:
+        note("warning: %s" % warning)
+    quad = [stage for stage in retopo_report.get("stages") or []
+            if stage.get("stage") == "quad_remesh"]
+    check("the retopo took the deterministic collapse-decimate route, not the "
+          "racing Quadriflow one",
+          len(quad) == 1 and quad[0].get("method") == "decimate_fallback",
+          str(quad))
     retopo = bpy.data.objects.get(RETOPO)
     if not check("the retopo mesh exists", retopo is not None):
         raise AssertionError("no retopo mesh")
+
+    character_digest = geometry_digest(retopo)
+    note("character: %d verts, %d faces, sha256 %s"
+         % (len(retopo.data.vertices), len(retopo.data.polygons), character_digest))
+    check("...and it is the pinned character -- coordinates, polygons and "
+          "weights, byte for byte, on every run",
+          character_digest == CHARACTER_DIGEST,
+          "%s, expected %s" % (character_digest, CHARACTER_DIGEST))
 
     meta = call("rigforge_metarig", {"object": RETOPO, "archetype": "auto"})
     generated = call("rigforge_generate_rig", {"metarig": meta["metarig"],
@@ -202,6 +529,98 @@ def test_what_the_builder_is(meta, generated, rig):
     check("and the pole targets were switched on",
           len(ik.get("poles") or []) == 4, str(ik.get("poles")))
     note("ik says: %s" % ik.get("says"))
+
+
+def test_ik_stretch_ships_off(rig, generated):
+    section("the rig LEAVES generation with IK stretch off")
+    from forge.tools import rigforge_rig as rr
+
+    block = (generated.get("ik") or {}).get("stretch") or {}
+    note("says: %s" % block.get("says"))
+    check("the generate report carries an ik.stretch block", bool(block), str(block))
+    check("it wrote the property on every limb switch the rig has",
+          block.get("measured", 0) == len(generated.get("ik", {}).get("limbs") or []),
+          "%s of %s" % (block.get("measured"),
+                        len(generated.get("ik", {}).get("limbs") or [])))
+    check("...to zero, which is the value a game rig ships",
+          block.get("value") == rr.IK_STRETCH_DEFAULT == 0.0,
+          "%s / %s" % (block.get("value"), rr.IK_STRETCH_DEFAULT))
+    check("and it says what Rigify had it on before -- 1.0, the audited default",
+          all(abs(float(row["before"]) - 1.0) < 1e-6
+              for row in block.get("switches") or []),
+          str(block.get("switches")))
+
+    # The rig itself, not the report about it. This is the number every clip
+    # the tools did NOT author inherits: a retarget, a hand-keyed pose, an
+    # animator opening the file.
+    live = {}
+    for entry in rr.ik_limbs(rig):
+        bone = rig.pose.bones.get(entry["switch_bone"])
+        if bone is not None and rr.IK_STRETCH_PROP in bone.keys():
+            live[bone.name] = round(float(bone[rr.IK_STRETCH_PROP]), 6)
+    note("live on the rig: %s" % live)
+    check("all four limb switches read 0.0 on the rig, with no clip assigned",
+          len(live) == 4 and all(value == 0.0 for value in live.values()), str(live))
+    check("...including the ARMS, which no authored clip ever planted",
+          live.get("upper_arm_parent.L") == 0.0
+          and live.get("upper_arm_parent.R") == 0.0, str(live))
+
+    # And it is a function, not a side effect of generation: setting it back
+    # and calling again restores it, and the report says what it changed.
+    for name in live:
+        rig.pose.bones[name][rr.IK_STRETCH_PROP] = 1.0
+    again = rr.set_ik_stretch(rig)
+    check("set_ik_stretch puts it back and counts what it changed",
+          again["changed"] == 4
+          and all(rig.pose.bones[name][rr.IK_STRETCH_PROP] == 0.0 for name in live),
+          str(again["switches"]))
+    idle = rr.set_ik_stretch(rig)
+    check("...and says 'already there' when nothing needed changing",
+          idle["changed"] == 0 and idle["measured"] == 4, idle["says"])
+
+
+def test_bbones_are_flattened(rig):
+    section("the export rig carries no bendy bone: glTF cannot")
+    from forge.tools import rigforge_rig as rr
+
+    control = {bone.name: int(bone.bbone_segments) for bone in rig.data.bones
+               if bone.use_deform and int(bone.bbone_segments) > 1}
+    note("the CONTROL rig carries %d multi-segment deform bone(s); worst %d segments"
+         % (len(control), max(control.values()) if control else 1))
+    check("Rigify really did ship bendy DEF bones to flatten -- otherwise this "
+          "test proves nothing", len(control) >= 4, str(sorted(control.items())[:6]))
+
+    collection = bpy.data.collections.new("FORGE_BBONE_TEST")
+    bpy.context.scene.collection.children.link(collection)
+    report = {}
+    try:
+        export_rig = rr.build_deform_rig(rig, "%s_bbone_test" % rig.name, collection,
+                                         [], report=report)
+        block = report.get("bbone_flattened") or {}
+        note("says: %s" % block.get("says"))
+        check("build_deform_rig reports what it flattened", bool(block), str(block)[:200])
+        check("...how many, and it is the count the control rig carried",
+              block.get("count") == len(control),
+              "%s vs %s" % (block.get("count"), len(control)))
+        check("...and the worst segment count it found, quoted",
+              block.get("max_segments_before") == max(control.values()),
+              "%s vs %s" % (block.get("max_segments_before"), max(control.values())))
+        left = {bone.name: int(bone.bbone_segments) for bone in export_rig.data.bones
+                if int(bone.bbone_segments) != 1}
+        check("EVERY bone on the deform rig is a single segment",
+              not left, str(sorted(left.items())[:8]))
+        check("the flattened names are on the copy, for a caller that kept no report",
+              sorted(export_rig.get("forge_bbone_flattened") or [])
+              == sorted(block.get("flattened") or []),
+              str(list(export_rig.get("forge_bbone_flattened") or [])[:4]))
+        check("and the control rig was NOT touched -- the artist's rig still bends",
+              all(int(rig.data.bones[name].bbone_segments) == segments
+                  for name, segments in control.items()),
+              str(sorted(control.items())[:4]))
+    finally:
+        for obj in list(collection.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+        bpy.data.collections.remove(collection)
 
 
 # --- rigforge_ik ------------------------------------------------------------
@@ -755,6 +1174,15 @@ def test_export_bakes_ik(rig, mesh, workspace):
     check("the glTF exists", os.path.isfile(path) and os.path.getsize(path) > 1024,
           "%s bytes" % (os.path.getsize(path) if os.path.exists(path) else "missing"))
 
+    flattened = result.get("bbone_flattened") or {}
+    note("bbones: %s" % flattened.get("says"))
+    check("the export report quotes how many bendy bones it flattened",
+          (flattened.get("count") or 0) > 0 and flattened.get("segments_after") == 1,
+          str({k: v for k, v in flattened.items() if k != "flattened"}))
+    check("...and names them, so the difference from the authoring scene is readable",
+          len(flattened.get("flattened") or []) == flattened.get("count"),
+          str((flattened.get("flattened") or [])[:4]))
+
     import headless_phase4 as phase4
 
     doc = phase4.parse_gltf(path)
@@ -900,6 +1328,8 @@ def main():
             raise AssertionError("no rig; the rest of the suite needs one")
 
         test_what_the_builder_is(meta, generated, rig)
+        test_ik_stretch_ships_off(rig, generated)
+        test_bbones_are_flattened(rig)
         test_ik_report(rig)
         test_ik_is_control_layer_only(rig, mesh)
         test_ik_solves(rig)

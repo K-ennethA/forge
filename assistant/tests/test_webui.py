@@ -723,9 +723,19 @@ def test_the_script_never_reaches_for_an_element_the_page_lacks(client):
 
 
 def test_the_model_selector_offers_the_three_the_bridge_accepts(client):
+    """Fast and Deepest are explicit (haiku/opus); Smart sends none at all.
+
+    ``bridge.MODELS`` also allows ``"smart"`` and ``"sonnet"`` as explicit
+    values (for an API caller, not this page) — the selector does not need an
+    option for either: Smart's whole point is that it asks for nothing and
+    lets the bridge's classifier decide (see test_bridge.py's classify_turn
+    tests), which is a strictly more useful default than pinning "sonnet".
+    """
     html = fetch_text(client, "/")
-    for model in bridge.MODELS:
+    for model in ("haiku", "opus"):
         assert ('value="%s"' % model) in html, model
+    assert 'id="model"' in html
+    assert re.search(r'<option value=""\s*selected>Smart</option>', html), html
     for label in ("Fast", "Smart", "Deepest"):
         assert ">%s<" % label in html, label
 

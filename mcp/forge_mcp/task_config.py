@@ -116,6 +116,16 @@ def _character_template() -> List[Tuple[str, Any, Dict[str, Any]]]:
             "choices": ["godot", "unity", "unreal", "gltf"],
             "why": "decides the export's axis convention and LOD metadata",
         }),
+        ("rest_stance", "flexed", {
+            "choices": ["flexed", "straight"],
+            "why": "flexed rests the knees so hip->ankle spans 0.97 of the "
+                   "leg's own chain (~28 deg) -- the headroom IK needs to "
+                   "compress in a walk and extend in a jump; a rig that "
+                   "rests above 0.98 of reach shipped a +32% leg stretch "
+                   "and a jump with zero launch. straight keeps the "
+                   "modeled pose for characters whose design demands it, "
+                   "and the reach-headroom gate then says what that costs.",
+        }),
         ("poly_budget_desktop", 15000, {
             "unit": "triangles",
             "min": 500,

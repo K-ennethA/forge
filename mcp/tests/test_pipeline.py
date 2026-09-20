@@ -198,6 +198,50 @@ def test_the_character_gates_name_the_real_forge_measurements() -> None:
     assert "morph_targets" in gates["export"]
 
 
+def test_the_rig_stage_gates_on_all_seven_rig_check_placement_checks() -> None:
+    """wip-14 taught rig_check four more placement checks — hand containment,
+    foot height, rest-stance IK headroom, corrective driver domain — beside the
+    three the rig stage already gated on, and bend_direction had been measured
+    since the backward-knee bug without ever being named in the plan. A
+    werewolf whose hand bones ran outboard of the mesh, or whose rest stance
+    stood at 0.9984 of its own IK reach, passed every one of the old three
+    gates; a named gate is the only thing that makes a build stop for it."""
+    gates = {stage["id"]: stage["gate"]
+             for stage in pipeline.stage_template("character")}
+    assert gates["rig"] == [
+        "rig_check.asymmetry_mm", "rig_check.side_naming",
+        "rig_check.centering", "rig_check.bend_direction",
+        "rig_check.hand_containment",
+        "rig_check.foot_height", "rig_check.ik_reach_headroom_rest",
+    ]
+
+
+def test_the_correctives_stage_gates_on_its_own_driver_domain_check() -> None:
+    """corrective_driver_domain only means something once a corrective shape
+    key exists to have a driver domain — that is the correctives stage, not
+    rig, so it lands beside `volume` rather than up with rig's landmark
+    checks."""
+    gates = {stage["id"]: stage["gate"]
+             for stage in pipeline.stage_template("character")}
+    assert gates["correctives"] == [
+        "rig_check.volume", "rig_check.corrective_driver_domain",
+    ]
+
+
+def test_the_animate_stage_gates_on_all_five_deformation_checks() -> None:
+    """The audit's finding, verbatim: the animate stage gated on foot_slide_mm
+    alone, so a clip that stretched its DEF bones past their stretch budget, or
+    a loop that did not close its own seam, or an anticipation crouch that
+    never read, would sail the whole wip-14 wave through the build plan."""
+    gates = {stage["id"]: stage["gate"]
+             for stage in pipeline.stage_template("character")}
+    assert gates["animate"] == [
+        "animation_check.foot_slide_mm", "animation_check.bone_stretch_budget",
+        "animation_check.ik_reach_headroom", "animation_check.loop_seam_closure",
+        "animation_check.anticipation_reads",
+    ]
+
+
 def test_an_unknown_task_is_refused_with_the_list() -> None:
     with pytest.raises(ForgeError) as exc:
         pipeline.stage_template("statue")
@@ -666,6 +710,79 @@ def test_driving_the_werewolf_plan_keeps_its_components(
     assert after["notes"] == WEREWOLF_PLAN["notes"]
     stage = next(item for item in after["stages"] if item["id"] == "reference")
     assert stage["status"] == "passed"
+
+
+#: A plan shaped like the werewolf's real one ALREADY IS today: stages
+#: materialised under the pre-remedy templates, rig/correctives/animate
+#: carrying the old, shorter gate lists, and rig already `passed` on them.
+ALREADY_STAGED_PLAN: dict = {
+    "version": 1,
+    "project": "werewolf",
+    "task": "character",
+    "stages": [
+        {"id": "rig", "title": "Rig — landmarks, metarig, generated control rig",
+         "status": "passed",
+         "gate": ["rig_check.asymmetry_mm", "rig_check.side_naming",
+                  "rig_check.centering"],
+         "artifacts": [], "numbers": {"asymmetry_mm": 0.4}, "history": []},
+        {"id": "correctives",
+         "title": "Correctives — the collapsed knee, fixed with a number",
+         "status": "overridden", "gate": ["rig_check.volume"],
+         "artifacts": [], "numbers": {}, "history": []},
+        {"id": "animate", "title": "Animate — clips that do not slide",
+         "status": "passed", "gate": ["animation_check.foot_slide_mm"],
+         "artifacts": [], "numbers": {"foot_slide_mm": 3.1}, "history": []},
+    ],
+    "history": [{"date": "2026-09-18T00:00:00", "note": "materialised"}],
+}
+
+
+def test_an_existing_plans_gate_lists_are_never_rebuilt_behind_the_artist(
+        projects_dir: Path) -> None:
+    """The invariant `load` documents: 'a plan that predates the stages block
+    ... gets the chain materialised in memory' — but only when `stages` is
+    missing or empty. A plan that already has a `stages` block, even one
+    written under the pre-remedy templates, keeps exactly the gate lists it
+    was written with; the new six-gate rig / five-gate animate / two-gate
+    correctives lists only ever appear in a plan materialised fresh. This is
+    the werewolf as it stands today — passed on the old three-name rig gate —
+    and this remedy does not go back and rewrite that history."""
+    design = projects_dir / "werewolf" / "design"
+    design.mkdir(parents=True)
+    (design / "build-plan.json").write_text(
+        json.dumps(ALREADY_STAGED_PLAN, indent=2), encoding="utf-8")
+    sheet("werewolf", "character")
+
+    slug, plan, _path, fresh = pipeline.load("werewolf")
+    assert fresh is False, "a plan with a stages block already on it is read, " \
+        "not rematerialised"
+    gates = {stage["id"]: stage["gate"] for stage in plan["stages"]}
+    assert gates["rig"] == [
+        "rig_check.asymmetry_mm", "rig_check.side_naming", "rig_check.centering",
+    ], "the old three-gate rig list survives untouched"
+    assert gates["correctives"] == ["rig_check.volume"]
+    assert gates["animate"] == ["animation_check.foot_slide_mm"]
+    assert plan["stages"][0]["status"] == "passed", \
+        "already-recorded verdicts are not disturbed either"
+
+    # Writing it back changes nothing about the gate lists: the new template's
+    # richer gates are not silently folded onto a plan that never asked for a
+    # rematerialise.
+    pipeline.write(slug, plan)
+    after = plan_on_disk(projects_dir, "werewolf")
+    gates_after = {stage["id"]: stage["gate"] for stage in after["stages"]}
+    assert gates_after == gates, \
+        "a write never upgrades an already-staged plan's gate lists"
+
+    # The NEW template, materialised fresh for a different project, does carry
+    # the remedy's fuller gate lists — proving the two plans diverge only
+    # because one already existed and one did not.
+    fresh_gates = {stage["id"]: stage["gate"]
+                   for stage in pipeline.stage_template("character")}
+    assert fresh_gates["rig"] != gates["rig"]
+    assert len(fresh_gates["rig"]) == 7
+    assert fresh_gates["correctives"] != gates["correctives"]
+    assert fresh_gates["animate"] != gates["animate"]
 
 
 def test_a_plan_that_is_not_a_plan_is_refused_and_nothing_is_rebuilt(

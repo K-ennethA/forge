@@ -504,19 +504,40 @@ def test_landmarks(obj):
     delta = Vector((knee.x, knee.y, 0.0)) - Vector((centre.x, centre.y, 0.0))
     prebend = {entry["joint"]: entry for entry in (report.get("prebend") or [])}
     knee_prebend = prebend.get("knee.L") or {}
+    stance = {entry["joint"]: entry for entry in (report.get("stance") or [])}
+    knee_stance = stance.get("knee.L") or {}
     # The character has been oriented to face -Y by this point, so "forward" is
     # -Y and "sideways" is X.
     note("knee landmark is %.1f mm sideways and %+.1f mm forward of the leg's own "
-         "cross-section centroid at that height; the pre-bend asked for %+.1f mm"
+         "cross-section centroid at that height; the pre-bend asked for %+.1f mm and "
+         "the flexed stance took it to %+.1f mm"
          % (abs(delta.x) * 1000.0, -delta.y * 1000.0,
-            knee_prebend.get("nudge_mm") or 0.0))
+            knee_prebend.get("nudge_mm") or 0.0,
+            knee_stance.get("knee_offline_mm") or 0.0))
     check("the knee landmark is ON the limb centreline ACROSS the facing axis",
           abs(delta.x) < 0.005, "%.2f mm sideways" % (abs(delta.x) * 1000.0))
-    check("and the only thing that moved it off is the anatomical pre-bend, forwards",
+    # Two rules put the knee forward and NOTHING else does: the pre-bend gives
+    # IK its plane, and the flexed stance (which subsumes it) gives the chain
+    # its reach headroom. The stance's own report says where it left the joint,
+    # so this is measured against that number rather than against a constant.
+    # 5 mm of slack because the two are not the same measurement: the stance
+    # measures perpendicular to the hip-to-ankle chord, this measures the Y gap
+    # to the cross-section centroid in a 40 mm slab at the knee's own height,
+    # and the chord is a couple of degrees off vertical (the hip sits inside
+    # the pelvis, the ankle on the leg's own axis).
+    check("and the only things that moved it off are the pre-bend and the stance, "
+          "forwards",
           -delta.y > 0.0 and abs(-delta.y * 1000.0
-                                 - (knee_prebend.get("nudge_mm") or 0.0)) < 1.0,
-          "%+.2f mm forward vs a %+.2f mm nudge"
-          % (-delta.y * 1000.0, knee_prebend.get("nudge_mm") or 0.0))
+                                 - (knee_stance.get("knee_offline_mm") or 0.0)) < 5.0,
+          "%+.2f mm forward vs a %+.2f mm stance offset (pre-bend alone was %+.2f mm)"
+          % (-delta.y * 1000.0, knee_stance.get("knee_offline_mm") or 0.0,
+             knee_prebend.get("nudge_mm") or 0.0))
+    check("...and the stance is the bigger of the two, because a pre-bend is a plane "
+          "and a stance is a pose",
+          (knee_stance.get("knee_offline_mm") or 0.0)
+          > (knee_prebend.get("nudge_mm") or 0.0),
+          "%s vs %s" % (knee_stance.get("knee_offline_mm"),
+                        knee_prebend.get("nudge_mm")))
     return report
 
 
@@ -722,6 +743,29 @@ def test_placement_gates(rig, mesh):
               and row.get("worst_offset_pct_of_radius") is not None
               for row in centering["bones"]),
           str(centering["bones"][:1]))
+    # The rig rests on a flexed knee (rigforge_landmarks.stance_flex), and the
+    # mesh was sculpted standing straight, so a correct thigh bone really does
+    # sit well off the middle of the flesh at that height. The gate reports that
+    # raw offset and judges what is LEFT once the chain's own rest flex is paid
+    # for, so both numbers have to be there and the verdict has to follow the
+    # second one.
+    check("every bone also reports the rest flex its chain carries, and the excess",
+          all(row.get("rest_flex_mm") is not None
+              and row.get("worst_excess_mm") is not None
+              and row.get("worst_excess_pct_of_radius") is not None
+              for row in centering["bones"]),
+          str({k: v for k, v in centering["bones"][0].items() if k != "stations"}))
+    worst = next((row for row in centering["bones"] if row["gated"]), None)
+    note("worst gated bone %s: %.1f mm off raw (%.0f%% of radius), %.1f mm of that is "
+         "the stance, %.1f mm excess (%.0f%%)"
+         % (worst["bone"], worst["worst_offset_mm"],
+            worst["worst_offset_pct_of_radius"] or 0.0, worst["rest_flex_mm"] or 0.0,
+            worst["worst_excess_mm"] or 0.0,
+            worst["worst_excess_pct_of_radius"] or 0.0))
+    check("the raw offset is bigger than the excess -- the stance is real and it is "
+          "being accounted for, not ignored",
+          (worst["worst_offset_mm"] or 0.0) > (worst["worst_excess_mm"] or 0.0),
+          "%s vs %s" % (worst["worst_offset_mm"], worst["worst_excess_mm"]))
     check("the landmark-fitted rig is centred in its limbs",
           centering["verdict"] == "ok", centering["says"])
     check("the gate judges the long bones and says which ones",

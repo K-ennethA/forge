@@ -222,8 +222,21 @@
 
   //: The selector says Fast/Smart/Deepest, so the footer does too — an artist
   //: choosing "how much thinking" should not have to remember which alias that
-  //: was.  The CLI's own reported model still shows when nothing was asked for.
-  var MODEL_LABELS = { haiku: "Fast", sonnet: "Smart", opus: "Deepest" };
+  //: was.  "smart" only ever shows up as a REQUESTED model (an API caller that
+  //: named it explicitly); the selector's own Smart option sends no model at
+  //: all and is the auto-routed case handled below.
+  var MODEL_LABELS = { haiku: "Fast", smart: "Smart", sonnet: "Smart", opus: "Deepest" };
+
+  //: What to say about the model on a job nobody named one for.  "" (the
+  //: ordinary case: the message stayed on the configured model) says nothing —
+  //: a pill on every turn would be noise.  A non-empty ``routed_model`` means
+  //: classify_turn judged this one read-shaped and ran it cheap, which is
+  //: exactly the case worth surfacing: the artist typed a plain question, and
+  //: it cost less than the rest of the conversation.
+  function autoRouteLabel(job) {
+    if (!job.routed_model) { return null; }
+    return (MODEL_LABELS[job.routed_model] || job.routed_model) + " (auto)";
+  }
 
   function footer(job) {
     var foot = el("div", "foot");
@@ -232,7 +245,9 @@
       foot.appendChild(el("span", "pill" + (cls ? " " + cls : ""), text));
     }
     if (job.state === "queued") { pill("waiting its turn", "queued"); }
-    pill(MODEL_LABELS[job.requested_model] || job.model || null);
+    pill(job.requested_model
+      ? (MODEL_LABELS[job.requested_model] || job.requested_model)
+      : autoRouteLabel(job));
     if (job.duration_ms) { pill((job.duration_ms / 1000).toFixed(1) + " s"); }
     if (typeof job.cost_usd === "number") { pill("$" + job.cost_usd.toFixed(4)); }
     if (job.created_at) { pill(relTime(job.created_at)); }

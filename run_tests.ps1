@@ -33,6 +33,28 @@ function Run-Suite([string]$Name, [scriptblock]$Body) {
 Write-Host "Forge test run  $(Get-Date -Format s)  $(git -C $root rev-parse --short HEAD)"
 Write-Host ""
 
+# --- pre-flight: the live services must match HEAD ---------------------------
+# Two suites (headless_phase2's pf_health, headless_ui_batch's stale rows)
+# probe the REAL services and correctly fail when a service was started from
+# an older commit. Restarting here costs seconds; a 40-minute run that fails
+# on staleness costs the whole run. Only done when a service answers with a
+# sha that differs from HEAD.
+$head = (git -C $root rev-parse --short HEAD).Trim()
+$stale = $false
+foreach ($port in 8765, 8901, 8902) {
+    try {
+        $health = Invoke-WebRequest -Uri "http://127.0.0.1:$port/health" -UseBasicParsing -TimeoutSec 3 |
+            Select-Object -ExpandProperty Content | ConvertFrom-Json
+        $sha = $health.build.sha
+        if ($sha -and $sha -ne "unknown" -and $sha -ne $head) { $stale = $true }
+    } catch {}
+}
+if ($stale) {
+    Write-Host "  [pre] a service predates HEAD ($head) - restarting via stop_forge/start_forge"
+    & "$root\stop_forge.ps1" | Out-Null
+    & "$root\start_forge.ps1" | Out-Null
+}
+
 # --- pytest suites -----------------------------------------------------------
 Run-Suite "service"   { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\service\tests" -q --tb=line }
 # The suites isolate themselves (test_bridge spawns on a dead Blender port);

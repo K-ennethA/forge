@@ -2149,8 +2149,9 @@ def fmt_action_report(action: str, result: Mapping[str, Any], summary: str) -> s
     elif action == "list":
         lines.append(
             "  no actions yet — rigforge_action(action='new', name='idle-loop', "
-            "loop=true), then sketch the motion with rigforge_keyframe or import "
-            "a clip with rigforge_retarget."
+            "loop=true), then author a clip with rigforge_walk, rigforge_punch "
+            "or rigforge_jump, sketch the motion with rigforge_keyframe, or "
+            "import one with rigforge_retarget."
         )
     else:
         lines.append("  (the add-on reported no action library)")

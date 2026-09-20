@@ -130,6 +130,8 @@ __all__ = [
     "Limb",
     "PREBEND_FRACTION",
     "PREBEND_DIRECTION",
+    "STANCE_SPAN_FRACTION",
+    "stance_flex",
     "facing_vector",
     "prebend_joint",
     "foot_landmarks",
@@ -217,6 +219,28 @@ LIMB_BONE_RE = re.compile(
 #: everyone to ignore the gate.  They are still measured and reported.
 CENTERED_BONE_RE = re.compile(r"(thigh|shin|calf|upper_?arm|forearm)",
                               re.IGNORECASE)
+
+#: The two-bone chains whose **rest flex** the centering gate expects to see,
+#: proximal stem first.  A limb that rests flexed (:func:`stance_flex`) puts its
+#: own bones off the straight line through its flesh by a distance the chain
+#: itself states, and a mesh sculpted standing straight has its centreline on
+#: that straight line.  Neither is a defect; the difference between them is
+#: arithmetic, and :func:`bone_centering` subtracts it rather than failing the
+#: rig for carrying the stance the pipeline just authored.
+CENTERING_FLEX_CHAINS = (
+    ("front_thigh", "front_shin"),
+    ("upper_arm", "forearm"),
+    ("thigh", "shin"),
+    ("thigh", "calf"),
+)
+
+#: The axis a limb's rest flex may **not** use.  A knee folds forward and an
+#: elbow backward — in the plane of the body's facing, never across it — and
+#: this module orients every character so that across is ``X``
+#: (:data:`CONVENTION`).  So the flex allowance is flattened onto the sagittal
+#: plane before anything is forgiven: a joint dragged sideways out of its limb
+#: earns nothing, which is the defect :func:`bone_centering` exists for.
+CENTERING_FLEX_FORBIDDEN_AXIS = Vector((1.0, 0.0, 0.0))
 
 #: A cross-section has to go most of the way round the bone to have a
 #: meaningful centre.  A gap this wide between two neighbouring crossings means
@@ -440,6 +464,33 @@ PREBEND_SECTION_FRACTION = 0.667
 #: character faces.  ``+1`` is forward, ``-1`` is backward.  This is the whole
 #: of the anatomy: **a knee apexes forward, an elbow apexes backward.**
 PREBEND_DIRECTION = {"knee": 1.0, "elbow": -1.0}
+
+#: **The flexed rest stance**, as a fraction of the leg's own chain length —
+#: ``hip-to-ankle distance / (thigh + shin)`` at rest.
+#:
+#: The pre-bend above is a *lateral apex*: it gives IK a plane to solve in and
+#: it is 3% of the limb's span, which on an 800 mm leg shortens hip-to-ankle by
+#: **under a millimetre**.  It is not a stance, and the wip-14 audit measured
+#: what that costs: the shipped werewolf stood at **0.9984 of its own reach**,
+#: 1.3 mm of headroom, so the first hip translation of every clip hit the limit
+#: and Rigify's ``IK_Stretch`` grew the bones rather than folding the knee
+#: (walk ``+32.58%``, jump ``-4.77%``, jump launch rise clamped to **0.0 mm**).
+#:
+#: **Credibility tier: derived, not heuristic.**  0.97 is the number
+#: ``rigcheck.IK_REACH_THRESHOLDS`` warns at (0.98) with a margin under it, and
+#: the knee angle is *not* a constant here: it falls out of this fraction and
+#: the limb's own two segment lengths (:func:`stance_flex` reports the degrees
+#: it derived).  For equal segments the identity is ``span/chain = sin(phi/2)``
+#: with ``phi`` the interior knee angle, so 0.97 is a **28.1 degree** flex —
+#: the audit's "~12 degrees" is 0.9945 of chain and leaves 4 mm on an 800 mm
+#: leg, which is the defect again with a smaller number on it.
+#:
+#: 1.0 turns the stance off (the rig rests straight, as it did before).
+STANCE_SPAN_FRACTION = 0.97
+
+#: Which joint each limb kind flexes to make its stance, and which end of the
+#: chain moves to pay for it.  Only the leg has a stance: an arm hangs.
+STANCE_JOINT = {"leg": "knee"}
 
 #: A side is a whole dot/underscore-delimited **component** of a name, not just a
 #: suffix: Blender writes ``thigh.L`` but also ``brow.B.L.001``, and a mirror
@@ -2308,8 +2359,227 @@ def prebend_joint(limb, proximal, joint, distal, forward, what, side,
     return nudged, report
 
 
+def stance_flex(limb, proximal, joint, distal, forward, what, side,
+                span_fraction=None, station_fraction=None, up=None):
+    """Stand the limb on a **flexed** joint, the way a person poses a rest stance.
+
+    :func:`prebend_joint` above answers *which way* the joint folds.  This
+    answers *how much slack the chain has left*, which is a different question
+    and the one the wip-14 audit put a number on: a leg whose hip sits 0.9984 of
+    its own chain length from its ankle has 1.3 mm of reach in hand, so the
+    first hip translation of the first clip is already at the solver's limit.
+    From there IK either pops or — with Rigify's stock ``IK_Stretch = 1.0`` —
+    grows the bones, which is the 261.7 mm of stretched leg the artist saw.
+
+    **The three joints do not all move.**  A rigger posing a relaxed stance
+    leaves the foot on the floor, lets the hips sink, and the knee comes forward
+    to meet them; that is what this does, in that order:
+
+    * the **ankle does not move at all** — it is the sole-fitted landmark
+      (:func:`foot_landmarks`) and every foot bone below it hangs off it, so
+      moving it would undo the fit and the floor contact with it;
+    * the **hip drops** along ``up`` until its distance to the ankle is
+      ``span_fraction`` of the chain — the stance's whole purpose, solved as a
+      quadratic rather than iterated;
+    * the **knee** is then the one point that satisfies both bone lengths, and
+      it lands *forward*, along the same :data:`PREBEND_DIRECTION` the pre-bend
+      used, so the two rules cannot disagree about which way a knee goes.
+
+    **Neither bone changes length**, which is what makes the fraction mean what
+    ``rigcheck.ik_reach_headroom_rest`` measures: that gate's denominator is the
+    summed DEF chain and its numerator is hip-to-ankle.  Any sideways offset the
+    measured knee already carried (a bow-legged character) is **kept** — only
+    the forward component is solved for.
+
+    The knee angle is *derived*, never given: ``phi = acos((u^2 + l^2 - d^2) /
+    (2ul))``.  It is reported in degrees so the number can be argued with.
+
+    Returns ``(proximal, joint, report)`` — the moved hip, the moved knee, and
+    what happened in millimetres.
+    """
+    fraction = STANCE_SPAN_FRACTION if span_fraction is None else float(span_fraction)
+    proximal = Vector(proximal)
+    joint = Vector(joint)
+    distal = Vector(distal)
+    upper = (joint - proximal).length
+    lower = (distal - joint).length
+    chain = upper + lower
+    span = (distal - proximal).length
+    report = {"joint": "%s.%s" % (what, side), "limb": getattr(limb, "tag", None),
+              "target_span_fraction": round(fraction, 4),
+              "chain_mm": round(chain * M_TO_MM, 2),
+              "upper_mm": round(upper * M_TO_MM, 2),
+              "lower_mm": round(lower * M_TO_MM, 2),
+              "span_before_mm": round(span * M_TO_MM, 2),
+              "extension_frac_before": (round(span / chain, 4) if chain > 1e-9
+                                        else None)}
+    if chain <= 1e-9 or span <= 1e-9:
+        report.update({"flexed": False, "span_after_mm": report["span_before_mm"],
+                       "extension_frac_after": report["extension_frac_before"],
+                       "why": "the limb has no length to stand on"})
+        return proximal, joint, report
+
+    target = fraction * chain
+    if span <= target + 1e-9:
+        report.update({
+            "flexed": False,
+            "span_after_mm": report["span_before_mm"],
+            "extension_frac_after": report["extension_frac_before"],
+            "knee_flex_deg": round(_flex_degrees(upper, lower, span), 2),
+            "hip_drop_mm": 0.0, "knee_travel_mm": 0.0,
+            "why": ("already stands at %.4f of its own chain, inside the %.2f the "
+                    "stance asks for — left exactly as measured"
+                    % (span / chain, fraction)),
+        })
+        return proximal, joint, report
+
+    up = Vector(up) if up is not None else Vector((0.0, 0.0, 1.0))
+    up = up.normalized() if up.length > 1e-9 else Vector((0.0, 0.0, 1.0))
+    v = proximal - distal
+    rise = v.dot(up)
+    disc = rise * rise - v.length_squared + target * target
+    if rise > 1e-9 and disc >= 0.0:
+        drop = rise - math.sqrt(disc)
+        how = "lowered along %s" % _axis_word(up)
+    else:
+        # The hip is not above the ankle (a limb measured lying down, a
+        # quadruped's foreleg): there is no "height" to lose, so the hip is
+        # brought in along the chord instead and the report says which it was.
+        drop = None
+        how = ("pulled straight in along the hip-to-ankle chord, because the hip "
+               "is not above the ankle and there is no height to lower")
+    if drop is not None:
+        new_proximal = proximal - up * drop
+    else:
+        new_proximal = distal + v.normalized() * target
+        drop = (proximal - new_proximal).length
+
+    axis_vector = distal - new_proximal
+    distance = axis_vector.length
+    if distance <= 1e-9:
+        report.update({"flexed": False, "span_after_mm": report["span_before_mm"],
+                       "extension_frac_after": report["extension_frac_before"],
+                       "why": "the stance collapsed the chain onto a point"})
+        return proximal, joint, report
+    axis = axis_vector / distance
+
+    want = PREBEND_DIRECTION.get(what, 1.0)
+    push = Vector(forward) * want
+    push = push - axis * push.dot(axis)
+    if push.length < 1e-9:
+        report.update({
+            "flexed": False,
+            "span_after_mm": report["span_before_mm"],
+            "extension_frac_after": report["extension_frac_before"],
+            "why": ("the limb runs along the direction the character faces, so there "
+                    "is no forward left for the joint to travel into"),
+        })
+        return proximal, joint, report
+    push.normalize()
+
+    # Whatever sideways placement the measured joint already had is kept: only
+    # the forward component is solved for.  ``side_offset`` is the part of the
+    # old offset perpendicular to BOTH the chain and the push.
+    old_offset = (joint - new_proximal) - axis * (joint - new_proximal).dot(axis)
+    sideways = old_offset - push * old_offset.dot(push)
+    along = (upper * upper - lower * lower + distance * distance) / (2.0 * distance)
+    height_sq = upper * upper - along * along - sideways.length_squared
+    trimmed = False
+    if height_sq < 0.0:
+        # A knee carrying a big sideways offset can leave no room for the
+        # forward one. The forward travel is what the stance is for, so the
+        # sideways component is what gives way - and it is said.
+        room = max(upper * upper - along * along, 0.0)
+        if sideways.length > 1e-9 and room > 0.0:
+            sideways = sideways.normalized() * math.sqrt(room) * 0.5
+            height_sq = room - sideways.length_squared
+        else:
+            sideways = Vector((0.0, 0.0, 0.0))
+            height_sq = room
+        trimmed = True
+    height = math.sqrt(max(height_sq, 0.0))
+    new_joint = new_proximal + axis * along + sideways + push * height
+
+    achieved = (distal - new_proximal).length
+    flex_deg = _flex_degrees(upper, lower, achieved)
+    report.update({
+        "flexed": True,
+        "direction": "forward" if want > 0 else "backward",
+        "hip_moved": how,
+        "hip_drop_mm": round(drop * M_TO_MM, 2),
+        "span_after_mm": round(achieved * M_TO_MM, 2),
+        "extension_frac_after": round(achieved / chain, 4),
+        "headroom_before_mm": round((chain - span) * M_TO_MM, 2),
+        "headroom_after_mm": round((chain - achieved) * M_TO_MM, 2),
+        "knee_flex_deg": round(flex_deg, 2),
+        "knee_travel_mm": round((new_joint - joint).length * M_TO_MM, 2),
+        "knee_offline_mm": round(height * M_TO_MM, 2),
+        "sideways_trimmed": bool(trimmed),
+        "push": [round(value, 5) for value in push],
+    })
+    if limb is not None and station_fraction is not None:
+        station = limb.nearest_station(station_fraction)
+        reach, why = limb.section_reach(station, push)
+        if reach is None:
+            report["section_note"] = why
+        else:
+            report["section_reach_mm"] = round(reach * M_TO_MM, 2)
+            report["inside_flesh"] = bool(height <= reach)
+    report["why"] = (
+        "the chain stood at %.4f of its own %.1f mm length (%.1f mm of headroom); the "
+        "hip was %s by %.1f mm and the %s travelled %.1f mm %s to %.1f mm off the "
+        "hip-to-ankle line, which lands the stance at %.4f — a %.1f degree flex, "
+        "derived from the %.2f span target and this limb's own %.1f / %.1f mm bones"
+        % (span / chain, chain * M_TO_MM, (chain - span) * M_TO_MM, how,
+           drop * M_TO_MM, what, (new_joint - joint).length * M_TO_MM,
+           report["direction"], height * M_TO_MM, achieved / chain, flex_deg,
+           fraction, upper * M_TO_MM, lower * M_TO_MM))
+    return new_proximal, new_joint, report
+
+
+def get_stance_span(params):
+    """``stance_span`` off a command's parameters, or the module default.
+
+    One reader for every command that fits landmarks, so ``rigforge_landmarks``,
+    ``rigforge_metarig`` and ``rigforge_generate_rig`` cannot end up standing the
+    same character three different ways.  ``rest_stance: "straight"`` is the
+    task-config spelling of ``1.0`` and is accepted here too, so the setting can
+    move into ``mcp/forge_mcp/task_config.py`` without this file changing again.
+    """
+    rest = params.get("rest_stance") if isinstance(params, dict) else None
+    if isinstance(rest, str) and rest.strip():
+        word = rest.strip().lower()
+        if word in ("straight", "none", "off"):
+            return 1.0
+        if word not in ("flexed", "flex", "default"):
+            raise ForgeError("'rest_stance' must be \"flexed\" or \"straight\", got %r."
+                             % rest)
+    if isinstance(params, dict) and params.get("stance_span") is not None:
+        return get_float(params, "stance_span", STANCE_SPAN_FRACTION,
+                         minimum=0.5, maximum=1.0)
+    return STANCE_SPAN_FRACTION
+
+
+def _flex_degrees(upper, lower, span):
+    """How many degrees off straight the joint between two bones sits."""
+    if upper <= 1e-9 or lower <= 1e-9:
+        return 0.0
+    cosine = (upper * upper + lower * lower - span * span) / (2.0 * upper * lower)
+    cosine = max(-1.0, min(1.0, cosine))
+    return 180.0 - math.degrees(math.acos(cosine))
+
+
+def _axis_word(vector):
+    """``+Z`` for the world up, or the vector itself when it is not an axis."""
+    for index, name in ((0, "X"), (1, "Y"), (2, "Z")):
+        if abs(vector[index]) > 0.999:
+            return "%s%s" % ("+" if vector[index] > 0 else "-", name)
+    return "(%.3f, %.3f, %.3f)" % (vector[0], vector[1], vector[2])
+
+
 def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
-                    warnings=None, sides=("L",), axis_hints=None, facing="-Y"):
+                    warnings=None, sides=("L",), axis_hints=None, facing="-Y",
+                    stance_span=None):
     """Every joint of a biped, measured off the mesh, **one side by default**.
 
     ``axis_hints`` (``{"arm.L": Vector, "leg.R": Vector, …}``, proximal to
@@ -2330,8 +2600,14 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
     it, by :func:`prebend_joint`, *before* the caller mirrors — so both sides get
     the identical nudge and the mirror stays at 0.0 mm.
 
+    ``stance_span`` is the flexed rest stance (:data:`STANCE_SPAN_FRACTION`,
+    0.97 of the leg's own chain): it runs straight after the pre-bend, on the
+    same side, for the same reason — the hip drops, the knee comes forward, the
+    **ankle does not move**, and the mirror copies the result.  ``1.0`` rests the
+    legs straight, which is what every rig built before this did.
+
     Returns ``{"points": {role: Vector}, "detail": {role: how it was found},
-    "limbs": {...}, "prebend": [...], "warnings": [...]}``.  Raises
+    "limbs": {...}, "prebend": [...], "stance": [...], "warnings": [...]}``.  Raises
     :class:`ForgeError` when the mesh cannot support landmarks at all, which is
     the caller's signal to fall back to the old tag-fraction fit and *say so*.
     """
@@ -2341,7 +2617,10 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
     detail = {}
     limbs = {}
     forward = facing_vector(facing)
+    stance_span = (STANCE_SPAN_FRACTION if stance_span is None
+                   else max(0.5, min(1.0, float(stance_span))))
     prebends = []
+    stances = []
     feet = {}
     hands = {}
 
@@ -2532,13 +2811,28 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
                 forward, "knee", side,
                 station_fraction=knee.get("fraction"))
             prebends.append(knee_prebend)
+            # ...and then the STANCE, which is the other half of the same idea:
+            # the pre-bend says which way the knee folds, this says how much
+            # reach the chain has left to fold WITH. Ankle untouched, hip
+            # lowered, knee forward — and still before the mirror, so the right
+            # side gets the identical stance and the asymmetry stays 0.0.
+            hip_point, knee_point, knee_stance = stance_flex(
+                leg, hip_point, knee_point, ankle_point,
+                forward, "knee", side, span_fraction=stance_span,
+                station_fraction=knee.get("fraction"))
+            stances.append(knee_stance)
             points["hip.%s" % side] = hip_point
             points["knee.%s" % side] = knee_point
             points["ankle.%s" % side] = ankle_point
+            hip = dict(hip)
+            hip["stance"] = knee_stance
+            if knee_stance.get("flexed"):
+                hip["point"] = hip_point
             detail["hip.%s" % side] = hip
             knee = dict(knee)
             knee["prebend"] = knee_prebend
-            if knee_prebend.get("nudged"):
+            knee["stance"] = knee_stance
+            if knee_prebend.get("nudged") or knee_stance.get("flexed"):
                 knee["point"] = knee_point
             detail["knee.%s" % side] = knee
             detail["ankle.%s" % side] = ankle_detail
@@ -2641,11 +2935,41 @@ def biped_landmarks(obj, clouds=None, midplane=0.0, character_left=1.0,
             "The pre-bend did not fully fit inside the flesh at %s, so it was clamped "
             "to stay inside the limb's own cross-section rather than pushing the joint "
             "out of the body." % ", ".join(entry["joint"] for entry in clamped))
+    flexed = [entry for entry in stances if entry.get("flexed")]
+    if flexed:
+        warnings.append(
+            "Flexed rest stance: %s. The ankle did not move; the hip dropped and the "
+            "knee came forward, so the chain rests at %.2f of its own length instead of "
+            "against the solver's limit. The angle is derived from that fraction and "
+            "each limb's own bones, and the stance runs before the mirror, so both "
+            "sides get it identically."
+            % (", ".join("%s %.4f -> %.4f of chain (%.1f deg, hip down %.1f mm, knee "
+                         "forward %.1f mm)"
+                         % (entry["joint"], entry.get("extension_frac_before") or 0.0,
+                            entry.get("extension_frac_after") or 0.0,
+                            entry.get("knee_flex_deg") or 0.0,
+                            entry.get("hip_drop_mm") or 0.0,
+                            entry.get("knee_offline_mm") or 0.0)
+                         for entry in flexed), stance_span))
+    outside = [entry for entry in flexed if entry.get("inside_flesh") is False]
+    if outside:
+        warnings.append(
+            "The stance takes %s past the limb's own cross-section (%s). That is the "
+            "price of flexing a rest pose on a mesh sculpted with straight legs: the "
+            "joint is where a standing character's knee is, and the flesh is where the "
+            "sculpt left it. rig_check's centering gate measures the gap; sculpt the "
+            "character with its knees already bent, or lower stance_span, to close it."
+            % (", ".join(entry["joint"] for entry in outside),
+               ", ".join("%s %.1f mm forward against %.1f mm of section"
+                         % (entry["joint"], entry.get("knee_offline_mm") or 0.0,
+                            entry.get("section_reach_mm") or 0.0)
+                         for entry in outside)))
     return {"points": points, "detail": detail, "limbs": limbs,
             "midplane": midplane, "character_left": character_left,
             "sides": tuple(sides), "tags": tags, "all_tags": all_tags,
             "torso_tag": torso_tag, "head_tag": head_tag,
             "facing": facing, "forward": forward, "prebend": prebends,
+            "stance": stances, "stance_span": stance_span,
             "feet": feet, "hands": hands, "warnings": warnings}
 
 
@@ -3011,6 +3335,116 @@ def _edge_neighbours(mesh):
 CENTERING_STATIONS = (0.0, 0.35, 0.5, 0.65, 1.0)
 
 
+def rest_flex_chords(rig):
+    """Per long bone, the **rest flex its own chain carries** — as a lookup.
+
+    The chord is the straight line between a limb chain's two ends — hip to
+    ankle, shoulder to wrist — taken off the rig's rest skeleton.  A chain that
+    rests flexed (:func:`stance_flex`, :func:`prebend_joint`) holds its middle
+    bones off that line on purpose, by an amount that is therefore *computable*
+    rather than a threshold somebody chose.
+
+    The flex is read from the chain's **three joints** (hip, knee, ankle) and
+    never from the bone being judged, which is the whole point: a bone dragged
+    off its limb does not get to enlarge its own allowance by moving.  Each
+    entry is ``(chord start, chord axis, joint points, joint arc lengths, arc
+    before this bone, this bone's length)``.
+
+    Empty for a rig with no recognisable limb chain, which makes the caller fall
+    back to the plain "how far from the flesh's centre" question.
+    """
+    out = {}
+    if rig is None or getattr(rig, "data", None) is None:
+        return out
+    matrix = rig.matrix_world
+    for stems in CENTERING_FLEX_CHAINS:
+        grouped = {}
+        for bone in rig.data.bones:
+            if not bone.use_deform:
+                continue
+            text = bone.name
+            for prefix in ("DEF-", "ORG-", "MCH-"):
+                if text.startswith(prefix):
+                    text = text[len(prefix):]
+                    break
+            base, side = _side_of(text)
+            lowered = base.lower()
+            for index, stem in enumerate(stems):
+                if lowered == stem or lowered.startswith(stem + "."):
+                    grouped.setdefault(side, {}).setdefault(index, []).append(bone)
+                    break
+        for by_stem in grouped.values():
+            if len(by_stem) < len(stems):
+                continue
+            ordered = []
+            joints = []
+            for index in range(len(stems)):
+                segment = sorted(by_stem[index], key=lambda bone: bone.name)
+                if not joints:
+                    joints.append(matrix @ segment[0].head_local)
+                joints.append(matrix @ segment[-1].tail_local)
+                ordered.extend(segment)
+            span = joints[-1] - joints[0]
+            if span.length < 1e-9:
+                continue
+            axis = span / span.length
+            arcs = [0.0]
+            for index in range(1, len(joints)):
+                arcs.append(arcs[-1] + (joints[index] - joints[index - 1]).length)
+            travelled = 0.0
+            for bone in ordered:
+                length = ((matrix @ bone.tail_local)
+                          - (matrix @ bone.head_local)).length
+                out.setdefault(bone.name,
+                               (joints[0], axis, joints, arcs, travelled, length))
+                travelled += length
+    return out
+
+
+def _flex_allowance(chord, fraction, bone_axis):
+    """How far off the flesh's centreline this station is *entitled* to be.
+
+    The station's place in the chain is its **arc length**, and the point the
+    chain's own joints put there is the one that earns the allowance.  Returned
+    negated — the flesh sits on the chord and the bone off it, so the offset the
+    gate measures (bone to flesh) points back towards the chord — and flattened
+    into the plane that offset lives in.
+    """
+    if chord is None:
+        return Vector((0.0, 0.0, 0.0))
+    start, axis, joints, arcs, before, length = chord
+    travelled = before + fraction * length
+    ideal = joints[-1]
+    for index in range(1, len(joints)):
+        if travelled <= arcs[index] or index == len(joints) - 1:
+            segment = arcs[index] - arcs[index - 1]
+            step = 0.0 if segment < 1e-9 else (travelled - arcs[index - 1]) / segment
+            step = max(0.0, min(1.0, step))
+            ideal = joints[index - 1] + (joints[index] - joints[index - 1]) * step
+            break
+    delta = ideal - start
+    allowance = -(delta - axis * delta.dot(axis))
+    sideways = CENTERING_FLEX_FORBIDDEN_AXIS
+    allowance = allowance - sideways * allowance.dot(sideways)
+    return allowance - bone_axis * allowance.dot(bone_axis)
+
+
+def _excess_offset(offset, allowance):
+    """The part of ``offset`` the chain's own rest flex does **not** explain.
+
+    Everything perpendicular to the allowance is kept in full — that is the
+    "bone painted onto one wall of the limb" defect this gate was built for, and
+    a stance cannot excuse it — and along the allowance, up to its own length is
+    spent before anything counts.
+    """
+    length = allowance.length
+    if length < 1e-9:
+        return offset.copy()
+    direction = allowance / length
+    spent = max(0.0, min(length, offset.dot(direction)))
+    return offset - direction * spent
+
+
 def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
                    min_vertices=8):
     """Is each bone actually **inside** the flesh it drives, on its centreline?
@@ -3025,6 +3459,20 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
 
     Reported in millimetres **and** as a percentage of the section's own radius,
     because 8 mm off centre is nothing on a thigh and catastrophic on a finger.
+
+    **The rest flex is allowed for, and it is arithmetic rather than a slacker
+    threshold.**  A limb chain that rests flexed — the anatomical pre-bend, and
+    the flexed stance :func:`stance_flex` authors — holds its middle bones off
+    the straight line between its own two ends on purpose, while a character
+    sculpted standing straight has its flesh's centreline *on* that line.  The
+    gap between the two is the stance, exactly, and :func:`rest_flex_chords`
+    computes it from the rig's own skeleton.  So each station spends that much
+    offset **along that direction** for free and is judged on what is left:
+    ``excess_mm``.  Everything across the flex direction still counts in full,
+    which is the defect this gate exists for — a bone painted onto one wall of
+    its limb is off-centre whatever the stance is doing.  The raw
+    ``offset_mm`` is reported beside it, always, so the number the owner asked
+    for by name never moved.
     """
     groups = _deform_groups(rig, mesh)
     if not groups:
@@ -3042,6 +3490,7 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
 
     rows = []
     rig_matrix = rig.matrix_world
+    chords = rest_flex_chords(rig)
     for bone in rig.data.bones:
         if not bone.use_deform:
             continue
@@ -3070,7 +3519,10 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
             if gap > MAX_SECTION_GAP_DEG:
                 continue
             delta = (centre - station)
-            offset = (delta - axis * delta.dot(axis)).length
+            offset_vector = delta - axis * delta.dot(axis)
+            offset = offset_vector.length
+            allowance = _flex_allowance(chords.get(bone.name), fraction, axis)
+            excess = _excess_offset(offset_vector, allowance).length
             radius = sum(((point - centre) - axis * (point - centre).dot(axis)).length
                          for point in section) / float(len(section))
             entries.append({
@@ -3078,8 +3530,12 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
                 "section_points": len(section),
                 "section_gap_deg": round(gap, 1),
                 "offset_mm": round(offset * M_TO_MM, 2),
+                "rest_flex_mm": round(allowance.length * M_TO_MM, 2),
+                "excess_mm": round(excess * M_TO_MM, 2),
                 "radius_mm": round(radius * M_TO_MM, 2),
                 "offset_pct_of_radius": (round(100.0 * offset / radius, 1)
+                                         if radius > 1e-9 else None),
+                "excess_pct_of_radius": (round(100.0 * excess / radius, 1)
                                          if radius > 1e-9 else None),
             })
         if not entries:
@@ -3095,8 +3551,12 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
         # asked for by name.
         shaft = [entry for entry in entries
                  if 0.0 < entry["fraction"] < 1.0] or entries
+        # Two "worst" stations, deliberately: the raw one is the number this
+        # gate has always printed, and the excess one is the number it now
+        # judges, once the chain's own rest flex has been paid for.
         worst = max(shaft, key=lambda e: e["offset_pct_of_radius"] or 0.0)
-        verdict = _band(worst["offset_pct_of_radius"],
+        worst_excess = max(shaft, key=lambda e: e["excess_pct_of_radius"] or 0.0)
+        verdict = _band(worst_excess["excess_pct_of_radius"],
                         CENTERING_THRESHOLDS["offset_pct_of_radius"])
         rows.append({
             "bone": bone.name,
@@ -3107,10 +3567,14 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
             "worst_offset_mm": worst["offset_mm"],
             "worst_offset_pct_of_radius": worst["offset_pct_of_radius"],
             "worst_at_fraction": worst["fraction"],
+            "rest_flex_mm": worst_excess["rest_flex_mm"],
+            "worst_excess_mm": worst_excess["excess_mm"],
+            "worst_excess_pct_of_radius": worst_excess["excess_pct_of_radius"],
+            "worst_excess_at_fraction": worst_excess["fraction"],
             "verdict": verdict,
             "stations": entries,
         })
-    rows.sort(key=lambda row: -(row["worst_offset_pct_of_radius"] or 0.0))
+    rows.sort(key=lambda row: -(row["worst_excess_pct_of_radius"] or 0.0))
     judged = [row for row in rows if row["gated"]] or rows
     verdict = _worst([row["verdict"] for row in judged]) if judged else "unmeasured"
     worst_row = judged[0] if judged else None
@@ -3118,16 +3582,22 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
         says = "No bone had enough skinned geometry around it to be centred or not."
     elif verdict == "ok":
         says = ("Every measured bone sits on its limb's centreline: worst %s, %.1f mm "
-                "off (%.0f%% of that section's radius)."
-                % (worst_row["bone"], worst_row["worst_offset_mm"],
-                   worst_row["worst_offset_pct_of_radius"] or 0.0))
-    else:
-        says = ("%s is %.1f mm off the centre of its own cross-section (%.0f%% of the "
-                "section radius) at %.0f%% along the bone — the bone is not inside the "
-                "middle of the flesh it drives."
+                "off (%.0f%% of that section's radius), of which %.1f mm is the rest "
+                "flex its own chain carries — %.1f mm left unaccounted for."
                 % (worst_row["bone"], worst_row["worst_offset_mm"],
                    worst_row["worst_offset_pct_of_radius"] or 0.0,
-                   100.0 * worst_row["worst_at_fraction"]))
+                   worst_row["rest_flex_mm"] or 0.0,
+                   worst_row["worst_excess_mm"] or 0.0))
+    else:
+        says = ("%s is %.1f mm off the centre of its own cross-section at %.0f%% along "
+                "the bone, and %.1f mm of that (%.0f%% of the section radius) is more "
+                "than the %.1f mm its chain's own rest flex explains — the bone is not "
+                "inside the middle of the flesh it drives."
+                % (worst_row["bone"], worst_row["worst_offset_mm"],
+                   100.0 * worst_row["worst_excess_at_fraction"],
+                   worst_row["worst_excess_mm"] or 0.0,
+                   worst_row["worst_excess_pct_of_radius"] or 0.0,
+                   worst_row["rest_flex_mm"] or 0.0))
     return {
         "bones": rows,
         "measured": len(rows),
@@ -3135,6 +3605,10 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
         "worst_offset_mm": worst_row["worst_offset_mm"] if worst_row else None,
         "worst_offset_pct_of_radius": (worst_row["worst_offset_pct_of_radius"]
                                        if worst_row else None),
+        "worst_excess_mm": worst_row["worst_excess_mm"] if worst_row else None,
+        "worst_excess_pct_of_radius": (worst_row["worst_excess_pct_of_radius"]
+                                       if worst_row else None),
+        "rest_flex_mm": worst_row["rest_flex_mm"] if worst_row else None,
         "verdict": verdict,
         "thresholds": CENTERING_THRESHOLDS,
         "gated_bones": [row["bone"] for row in rows if row["gated"]],
@@ -3144,7 +3618,12 @@ def bone_centering(rig, mesh, weight_floor=0.2, stations=CENTERING_STATIONS,
                         "define the IK plane. "
                         "Only the long bones (thigh, shin, upper arm, forearm) are "
                         "gated: a hand, a toe, a clavicle or a foot runs through flesh "
-                        "with no centreline of its own."),
+                        "with no centreline of its own. "
+                        "The verdict is taken on the EXCESS offset: the chain's own "
+                        "rest flex (the pre-bend, and the flexed stance) is subtracted "
+                        "along its own direction first, because a mesh sculpted with "
+                        "straight legs and a rig that rests on bent ones differ by "
+                        "exactly that much and neither of them is wrong."),
         "threshold_tier": ("heuristic (proxy tier): a third of the section's radius is "
                            "the slack a correct rig uses — a knee sits forward of the "
                            "hip-to-ankle line by 3% of the limb's length to give Rigify "
@@ -4064,7 +4543,8 @@ def cmd_rigforge_landmarks(params):
 
     ``rigforge_landmarks {"object"?, "action"?: "report"|"prepare",
     "orient"?: "fix"|"report"|"skip", "symmetry"?: bool, "symmetry_keep"?: "+X"|"-X",
-    "symmetry_tolerance_mm"?, "stations"?}``
+    "symmetry_tolerance_mm"?, "stations"?, "stance_span"?,
+    "rest_stance"?: "flexed"|"straight"}``
 
     ``report`` measures and changes nothing.  ``prepare`` runs the gate for real:
     rotates the mesh onto the convention, symmetrizes it about its measured
@@ -4078,6 +4558,7 @@ def cmd_rigforge_landmarks(params):
     action = get_choice(params, "action", {"REPORT": "report", "PREPARE": "prepare",
                                            "APPLY": "prepare"}, "report")
     stations = get_int(params, "stations", STATIONS, minimum=9, maximum=129)
+    stance_span = get_stance_span(params)
 
     if action == "report":
         orientation = detect_orientation(obj)
@@ -4102,7 +4583,8 @@ def cmd_rigforge_landmarks(params):
                                     character_left=prepared["character_left"],
                                     warnings=warnings, sides=sides,
                                     axis_hints=axis_hints,
-                                    facing=prepared["orientation"]["faces"])
+                                    facing=prepared["orientation"]["faces"],
+                                    stance_span=stance_span)
     except ForgeError as exc:
         error = str(exc)
 
@@ -4128,16 +4610,20 @@ def cmd_rigforge_landmarks(params):
         "limbs": ({name: limb.as_dict() for name, limb in landmarks["limbs"].items()}
                   if landmarks else {}),
         "prebend": (landmarks.get("prebend") if landmarks else []),
+        "stance": (landmarks.get("stance") if landmarks else []),
+        "stance_span": (landmarks.get("stance_span") if landmarks
+                        else stance_span),
         "landmark_error": error,
         "stations": stations,
         "says": _landmark_sentence(obj, prepared, points, error,
-                                   landmarks.get("prebend") if landmarks else None),
+                                   landmarks.get("prebend") if landmarks else None,
+                                   landmarks.get("stance") if landmarks else None),
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
 
 
-def _landmark_sentence(obj, prepared, points, error, prebend=None):
+def _landmark_sentence(obj, prepared, points, error, prebend=None, stance=None):
     orientation = prepared["orientation"]
     lines = ["%s faces %s (%s is its left)."
              % (obj.name, orientation["faces"],
@@ -4167,6 +4653,21 @@ def _landmark_sentence(obj, prepared, points, error, prebend=None):
             lines.append("Every limb already apexed the right way by more than %.0f%% "
                          "of its span, so no pre-bend was needed."
                          % (100.0 * PREBEND_FRACTION))
+    if stance:
+        flexed = [entry for entry in stance if entry.get("flexed")]
+        if flexed:
+            lines.append("Flexed the rest stance on %d leg(s) — ankle planted, hip "
+                         "down, knee forward: %s."
+                         % (len(flexed),
+                            ", ".join("%s %.4f -> %.4f of chain (%.1f deg)"
+                                      % (entry["joint"],
+                                         entry.get("extension_frac_before") or 0.0,
+                                         entry.get("extension_frac_after") or 0.0,
+                                         entry.get("knee_flex_deg") or 0.0)
+                                      for entry in flexed)))
+        else:
+            lines.append("Every leg already stood inside %.2f of its own chain, so the "
+                         "stance left it alone." % STANCE_SPAN_FRACTION)
     return " ".join(lines)
 
 

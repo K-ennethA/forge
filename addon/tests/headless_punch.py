@@ -357,10 +357,18 @@ def test_legs_cannot_stretch(rig, action_name, report):
                 [(round(float(p.co.x), 2), round(float(p.co.y), 3))
                  for p in curve.keyframe_points]) for curve in curves]))
     restored = block.get("restored_to") or {}
+    # What it puts back is what the rig carried going in, and since
+    # rigforge_generate_rig started writing IK_Stretch = 0 on every limb switch
+    # at generation time (rigforge_rig.IK_STRETCH_DEFAULT) that is 0.0 rather
+    # than Rigify's stock 1.0 -- the clip's keyed zero is now belt to the rig's
+    # braces. So this asks for the rig's own value, not for "something nonzero".
     check("and the report says what it put the live property back to, so clearing "
           "the clip leaves the rig as it was found",
           sorted(restored) == ["thigh_parent.L", "thigh_parent.R"]
-          and all(value > 0.0 for value in restored.values()), str(restored))
+          and all(abs(float(value) - rr.IK_STRETCH_DEFAULT) < 1e-6
+                  for value in restored.values()),
+          "%s, against the rig's generated default of %s"
+          % (restored, rr.IK_STRETCH_DEFAULT))
 
     # ...and the thing the property exists to prevent, measured on the deform
     # chain the solver drives rather than on the controls that sit still.
