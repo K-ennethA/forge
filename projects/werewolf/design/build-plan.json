@@ -510,19 +510,21 @@
         "mesh_diagnose",
         "silhouette_iou"
       ],
-      "artifacts": [
-        "C:\\Users\\kenne\\AppData\\Local\\Temp\\forge-previews\\turntable-001-24v-werewolf-form-a_retopo.png"
-      ],
+      "artifacts": [],
       "numbers": {
-        "self_intersections": 608,
-        "poly_budget_triangles": 15558,
-        "uv_flipped_faces": 75,
-        "uv_no_area_faces": 1029,
-        "silhouette_iou": 0.19,
-        "silhouette_confidence": "low",
-        "mirror_residual_mm": 0,
-        "verify_design": "needs_attention (documented, pre-existing clothing self-intersection + low-confidence silhouette)",
-        "mesh_diagnose": "608 clipping, 18 ngons, 3 density-outlier patches"
+        "wip": "16",
+        "part_bridges_before": "RED - 73 welding edges, 72 faces, 43310.7mm2 across both sides (Arm.R<->Leg.R: 47 edges/30942.2mm2; Arm.L<->Leg.L: 26 edges/12368.5mm2)",
+        "part_bridges_repair_method": "low-level registry.dispatch(\"mesh_repair_bridges\") via execute_blender_python - no MCP wrapper exists yet for this addon command, so invoked its registered handler directly (same code path a wrapped tool would use)",
+        "part_bridges_repair_result": "faces_removed 77, edges_removed 73, holes_filled 10, holes_refused 0, shells_before 1, shells_after 3 (2 flaps freed)",
+        "part_bridges_after": "GREEN - count 0, faces 0, area_mm2 0.0, clean true",
+        "detached_pieces": "11 verts (Arm.R/Leg.L/Leg.R corner) + 6 verts (Arm.R/Leg.R) = 17 verts total, both near the right hand as predicted - separated with separate_loose and deleted (werewolf-form-a_retopo.001, .002)",
+        "verts_before_repair": 8405,
+        "verts_after_repair_and_cleanup": 8384,
+        "faces_after": 15488,
+        "side_effect_self_intersections": "608 -> 628 (+20), from the 10 rim-fill patches at the amputation sites",
+        "side_effect_ngons": "18 -> 23, largest grew from 6-sided to 13-sided, same fill-patch cause",
+        "side_effect_note": "expected byproduct of an arbitrary hole-fill, not a new defect class; both pre-existing self-intersection and ngon issues were already documented at stage 5 in earlier wips",
+        "suspected_remaining": "Head/Torso patch at (4.09, -47.85, 1535.48)mm flagged as suspected (176mm from main seam) but NOT classified as a bridge - reported only, not repaired, per the tool's own non-adjacent-parts-only rule"
       },
       "history": [
         {
@@ -558,6 +560,31 @@
             "verify_design": "needs_attention (documented, pre-existing clothing self-intersection + low-confidence silhouette)",
             "mesh_diagnose": "608 clipping, 18 ngons, 3 density-outlier patches"
           }
+        },
+        {
+          "date": "2026-09-19T18:24:34",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "wip": "16",
+            "part_bridges_before": "RED - 73 welding edges, 72 faces, 43310.7mm2 across both sides (Arm.R<->Leg.R: 47 edges/30942.2mm2; Arm.L<->Leg.L: 26 edges/12368.5mm2)",
+            "part_bridges_repair_method": "low-level registry.dispatch(\"mesh_repair_bridges\") via execute_blender_python - no MCP wrapper exists yet for this addon command, so invoked its registered handler directly (same code path a wrapped tool would use)",
+            "part_bridges_repair_result": "faces_removed 77, edges_removed 73, holes_filled 10, holes_refused 0, shells_before 1, shells_after 3 (2 flaps freed)",
+            "part_bridges_after": "GREEN - count 0, faces 0, area_mm2 0.0, clean true",
+            "detached_pieces": "11 verts (Arm.R/Leg.L/Leg.R corner) + 6 verts (Arm.R/Leg.R) = 17 verts total, both near the right hand as predicted - separated with separate_loose and deleted (werewolf-form-a_retopo.001, .002)",
+            "verts_before_repair": 8405,
+            "verts_after_repair_and_cleanup": 8384,
+            "faces_after": 15488,
+            "side_effect_self_intersections": "608 -> 628 (+20), from the 10 rim-fill patches at the amputation sites",
+            "side_effect_ngons": "18 -> 23, largest grew from 6-sided to 13-sided, same fill-patch cause",
+            "side_effect_note": "expected byproduct of an arbitrary hole-fill, not a new defect class; both pre-existing self-intersection and ngon issues were already documented at stage 5 in earlier wips",
+            "suspected_remaining": "Head/Torso patch at (4.09, -47.85, 1535.48)mm flagged as suspected (176mm from main seam) but NOT classified as a bridge - reported only, not repaired, per the tool's own non-adjacent-parts-only rule"
+          },
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
         }
       ],
       "does": "The geometric gate before a single bone is placed. A defect fixed here costs a retopo; the same defect found after skinning costs the rig, the correctives and the clips.",
@@ -565,7 +592,12 @@
         "verify_design",
         "mesh_diagnose",
         "turntable"
-      ]
+      ],
+      "cost": {
+        "models": [
+          "sonnet"
+        ]
+      }
     },
     {
       "id": "rig",
@@ -741,26 +773,28 @@
       ],
       "artifacts": [],
       "numbers": {
-        "wip": "15",
+        "wip": "16",
         "rig": "werewolf-form-a_retopo_rig",
-        "method": "generate_rig automatic weights + per-tag cleanup + normalize, then rigforge_weights cleanup pass (0 changes needed - already converged)",
+        "method": "full split set - rigforge_generate_rig fresh automatic weights + per-tag cleanup + normalize (re-run against the bridge-repaired mesh), then rigforge_weights cleanup pass (0 changes needed - already converged)",
         "overlap_stray_mass": 0,
         "overlap_verdict": "ok",
         "overlap_pairs_total": 83,
         "isolation_unweighted_vertices": 0,
         "isolation_unnormalized_vertices": 0,
         "isolation_over_influenced": 0,
-        "continuity_holes": 427,
-        "continuity_region_vertices": 15537,
-        "continuity_hole_pct": 2.748,
+        "continuity_holes": 417,
+        "continuity_region_vertices": 15501,
+        "continuity_hole_pct": 2.69,
         "continuity_verdict": "attention",
         "continuity_thresholds_ok": 0.5,
         "continuity_thresholds_attention_fail": 3,
         "continuity_worst_bone": "DEF-spine.001",
-        "continuity_worst_bone_hole_pct": 6.98,
-        "continuity_note": "attention band, under the 3.0% fail line - recorded passed per the plan's own attention-passes rule, same as wip-11/wip-14",
+        "continuity_worst_bone_hole_pct": 6.961,
+        "continuity_note": "attention band, under 3.0% fail line; slightly better than wip-15 (2.748% -> 2.69%) despite fewer total vertices - the bridge repair did not make continuity worse",
+        "cross_tag_zeroed_note": "254 vertices weighted only to bones their tag does not allow, re-filled from nearest allowed bone (was 264 at wip-15) - automatic weight heat still shows some cross-tag proximity influence near hand/thigh even after the bridge cut, since disconnected shells close in 3D space can still fall to nearest-bone fallback; the per-tag cleanup rule catches and corrects it every time regardless",
         "max_influences": 4,
-        "deform_groups": 33
+        "deform_groups": 33,
+        "verts_bound": 8384
       },
       "history": [
         {
@@ -911,6 +945,40 @@
           "cost": {
             "model": "sonnet"
           }
+        },
+        {
+          "date": "2026-09-19T18:25:28",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "wip": "16",
+            "rig": "werewolf-form-a_retopo_rig",
+            "method": "full split set - rigforge_generate_rig fresh automatic weights + per-tag cleanup + normalize (re-run against the bridge-repaired mesh), then rigforge_weights cleanup pass (0 changes needed - already converged)",
+            "overlap_stray_mass": 0,
+            "overlap_verdict": "ok",
+            "overlap_pairs_total": 83,
+            "isolation_unweighted_vertices": 0,
+            "isolation_unnormalized_vertices": 0,
+            "isolation_over_influenced": 0,
+            "continuity_holes": 417,
+            "continuity_region_vertices": 15501,
+            "continuity_hole_pct": 2.69,
+            "continuity_verdict": "attention",
+            "continuity_thresholds_ok": 0.5,
+            "continuity_thresholds_attention_fail": 3,
+            "continuity_worst_bone": "DEF-spine.001",
+            "continuity_worst_bone_hole_pct": 6.961,
+            "continuity_note": "attention band, under 3.0% fail line; slightly better than wip-15 (2.748% -> 2.69%) despite fewer total vertices - the bridge repair did not make continuity worse",
+            "cross_tag_zeroed_note": "254 vertices weighted only to bones their tag does not allow, re-filled from nearest allowed bone (was 264 at wip-15) - automatic weight heat still shows some cross-tag proximity influence near hand/thigh even after the bridge cut, since disconnected shells close in 3D space can still fall to nearest-bone fallback; the per-tag cleanup rule catches and corrects it every time regardless",
+            "max_influences": 4,
+            "deform_groups": 33,
+            "verts_bound": 8384
+          },
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
         }
       ],
       "does": "Bind, then measure the leakage. Stray mass between two bones 380 mm apart is a tagging problem, not a painting problem, and the gate says which.",
@@ -933,31 +1001,29 @@
       ],
       "artifacts": [],
       "numbers": {
-        "wip": "15",
-        "method": "cleared 10 stale wip-14 correctives (keyed outside pi-domain) then re-authored fresh against the flexed-stance rig",
-        "joints_corrected": "elbow.L, elbow.R, head (harness's own worst-on-volume picks - knee no longer among them)",
+        "wip": "16",
+        "method": "cleared 6 wip-15 correctives, re-authored fresh against the re-skinned (post-bridge-repair) mesh",
+        "joints_corrected": "elbow.L, elbow.R, head (same picks as wip-15)",
         "shape_keys_written": 6,
-        "knee_note": "knee L/R no longer fail on volume at all (vol -0% / -1.5% at max flex) as a side-effect of the flexed rest stance itself - no knee corrective needed this round",
-        "elbow_L_75deg_before_pct": 15.5,
-        "elbow_L_75deg_after_pct": 11.2,
-        "elbow_L_150deg_before_pct": 52.4,
+        "elbow_L_75deg_before_pct": 15.8,
+        "elbow_L_75deg_after_pct": 11.5,
+        "elbow_L_150deg_before_pct": 52.3,
         "elbow_L_150deg_after_pct": 43.2,
-        "elbow_R_75deg_before_pct": 16.2,
-        "elbow_R_75deg_after_pct": 12.2,
-        "elbow_R_150deg_before_pct": 52.4,
-        "elbow_R_150deg_after_pct": 43.3,
-        "elbow_verdict": "still limited - improved vs wip-14 (47.7/47.8 -> 43.2/43.3) now that the driver reaches full domain strength, but still deep collapse territory; convex-hull volume metric only pushes back the pinched side, honestly recorded as partial",
-        "head_18deg_before_pct": 4.7,
-        "head_18deg_after_pct": 4.1,
-        "head_35deg_before_pct": 9.3,
-        "head_35deg_after_pct": 7.9,
+        "elbow_R_75deg_before_pct": 15.5,
+        "elbow_R_75deg_after_pct": 11.2,
+        "elbow_R_150deg_before_pct": 52.3,
+        "elbow_R_150deg_after_pct": 43.2,
+        "elbow_verdict": "essentially unchanged from wip-15 (52.4/52.4 -> 43.2/43.3 there; 52.3/52.3 -> 43.2/43.2 here) - the bridge repair touched hand/thigh flesh, not the elbow joint, so this number was not expected to move and did not",
+        "head_18deg_before_pct": 4.9,
+        "head_18deg_after_pct": 4.2,
+        "head_35deg_before_pct": 9.7,
+        "head_35deg_after_pct": 8.4,
         "head_skinning_eval_disagreement_mm": 31.69,
-        "head_note": "down from 35.30mm in wip-14 but still present - non-vertex-group deformer approximation caveat stands",
-        "corrective_driver_domain_gate": "PASS - all 6 ROTATION_DIFF correctives keyed inside [0, pi] domain, confirmed by rig_check (was 4 violations at wip-14, peaking ~3.95rad)",
+        "corrective_driver_domain_gate": "PASS - all 6 ROTATION_DIFF correctives keyed inside [0, pi] domain (confirmed by rig_check)",
         "gate_before": "FAIL",
         "gate_after": "FAIL",
-        "gate_after_note": "overall rig_check gate stays FAIL, but the remaining fails (hip/shoulder/chest/lower-spine/neck) are driven by NEW self-intersection counts from pre-existing clothing clipping (608 face pairs at rest, documented since stage 5 verify_mesh), not by volume or the corrective domain - unrelated to this stage's fix",
-        "next_fix_rung": "rung 1 (correctives) done for elbow/head; rung 2 (targeted rigforge_skin re-weight on elbow/head regions) remains open, never a blind density pass"
+        "gate_after_note": "overall rig_check gate stays FAIL for the same reason as wip-15: pre-existing clothing self-intersection (now 624 face pairs at rest, up from 608, due to the bridge repair's rim-fill patches) drives new-clips fails on most joints, unrelated to correctives; new worst centering bone is DEF-forearm.L.001 at 24.9mm (66% of radius) - smaller in absolute terms than wip-15's shin.L 117.1mm, not investigated further this stage since centering is the rig stage's gate, not this one's",
+        "next_fix_rung": "rung 1 (correctives) done for elbow/head again; rung 2 (targeted re-weight) remains open, never a blind density pass"
       },
       "history": [
         {
@@ -1040,6 +1106,41 @@
           "cost": {
             "model": "sonnet"
           }
+        },
+        {
+          "date": "2026-09-19T18:26:06",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "wip": "16",
+            "method": "cleared 6 wip-15 correctives, re-authored fresh against the re-skinned (post-bridge-repair) mesh",
+            "joints_corrected": "elbow.L, elbow.R, head (same picks as wip-15)",
+            "shape_keys_written": 6,
+            "elbow_L_75deg_before_pct": 15.8,
+            "elbow_L_75deg_after_pct": 11.5,
+            "elbow_L_150deg_before_pct": 52.3,
+            "elbow_L_150deg_after_pct": 43.2,
+            "elbow_R_75deg_before_pct": 15.5,
+            "elbow_R_75deg_after_pct": 11.2,
+            "elbow_R_150deg_before_pct": 52.3,
+            "elbow_R_150deg_after_pct": 43.2,
+            "elbow_verdict": "essentially unchanged from wip-15 (52.4/52.4 -> 43.2/43.3 there; 52.3/52.3 -> 43.2/43.2 here) - the bridge repair touched hand/thigh flesh, not the elbow joint, so this number was not expected to move and did not",
+            "head_18deg_before_pct": 4.9,
+            "head_18deg_after_pct": 4.2,
+            "head_35deg_before_pct": 9.7,
+            "head_35deg_after_pct": 8.4,
+            "head_skinning_eval_disagreement_mm": 31.69,
+            "corrective_driver_domain_gate": "PASS - all 6 ROTATION_DIFF correctives keyed inside [0, pi] domain (confirmed by rig_check)",
+            "gate_before": "FAIL",
+            "gate_after": "FAIL",
+            "gate_after_note": "overall rig_check gate stays FAIL for the same reason as wip-15: pre-existing clothing self-intersection (now 624 face pairs at rest, up from 608, due to the bridge repair's rim-fill patches) drives new-clips fails on most joints, unrelated to correctives; new worst centering bone is DEF-forearm.L.001 at 24.9mm (66% of radius) - smaller in absolute terms than wip-15's shin.L 117.1mm, not investigated further this stage since centering is the rig stage's gate, not this one's",
+            "next_fix_rung": "rung 1 (correctives) done for elbow/head again; rung 2 (targeted re-weight) remains open, never a blind density pass"
+          },
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
         }
       ],
       "does": "A corrective shape key per bent joint, driven by bend angle. The fix ladder is law: correctives first quoting before/after, weight painting second, never a blind density pass (50.3% -> 51.1%).",
@@ -1060,61 +1161,50 @@
         "animation_check.foot_slide_mm"
       ],
       "artifacts": [
-        "projects/werewolf/renders/form-a-walk-wip15.mp4",
-        "projects/werewolf/renders/form-a-punch-wip15.mp4",
-        "projects/werewolf/renders/form-a-jump-wip15.mp4",
-        "projects/werewolf/models/werewolf-wip-15.blend"
+        "projects/werewolf/renders/form-a-walk-wip16.mp4",
+        "projects/werewolf/renders/form-a-punch-wip16.mp4",
+        "projects/werewolf/renders/form-a-jump-wip16.mp4",
+        "projects/werewolf/models/werewolf-wip-16.blend"
       ],
       "numbers": {
-        "wip": "15",
+        "wip": "16",
         "rig": "werewolf-form-a_retopo_rig",
+        "note_on_gate_fields": "gait_opposition/strike_lead/bone_stretch_budget/ik_reach_headroom/loop_seam_closure/anticipation_reads/deformation_gate are computed by the addon but not yet surfaced by the MCP animation_check text formatter - pulled via registry.dispatch(\"animation_check\", ...) directly (same escape-hatch pattern as mesh_repair_bridges) to get the real numbers rather than parsing prose",
         "walk_action": "walk-loop",
-        "walk_cycle_frames": 32,
-        "walk_stride_mm": 589,
-        "walk_planted_pct": 65.6,
-        "walk_root_motion": true,
-        "walk_body_travel_mm": 570.5,
-        "walk_foot_slide_gate": "ok",
+        "walk_frames": "1-33 (32-frame cycle)",
+        "walk_stride_mm": 589.03,
+        "walk_gate": "ok",
         "walk_foot_slide_worst_mm": 0.3,
-        "walk_worst_step": "DEF-toe.L frames 5-21",
-        "walk_seam_closure": "0mm by construction - loop authored on the root so the last frame (33) duplicates frame 1 exactly",
-        "walk_leg_compression_pct": "L 2.19% at f29, R 2.07% at f15 (IK_Stretch, honestly noted)",
-        "punch_R_action": "punch.R",
-        "punch_R_frames": "1-24",
+        "walk_gait_opposition_verdict": "ok - all 4 pairs (arm.L/leg.L, arm.R/leg.R, arm.L/arm.R, leg.L/leg.R) at 180.0deg phase lag against a 180deg target - CORRECTED from the old bug (both hands swung in unison)",
+        "walk_strike_lead_verdict": "ok - foot.L 176.68mm/30.0% of stride, foot.R 176.68mm/30.0% of stride, both ahead of the hip and symmetric - CORRECTED from the old bug (right foot landed 19% BEHIND the hip)",
+        "walk_loop_seam_closure": "ok - worst vertex moves 0.000mm between frame 1 and 33, tolerance 1.0mm - matches the ~0mm expectation",
+        "walk_bone_stretch_budget": "attention - worst 1.43% (leg.L frame29, leg.R frame13), IK_Stretch under load, arms hold length exactly (0.00%)",
+        "walk_ik_reach_headroom": "ok - worst 0.9652 of chain (leg.L frame9), under the 0.98 warn line",
+        "walk_deformation_gate": "attention (driven by the stretch budget reading, not slide/seam/gait/strike which are all ok)",
+        "punch_R_gate": "ok",
+        "punch_R_worst_drift_mm": 0,
+        "punch_R_bone_stretch_budget": "attention - worst 2.72% (arm.R frame6)",
+        "punch_R_ik_reach_headroom": "ok - worst 0.9378 (leg.R frame5)",
         "punch_R_peak_fist_speed_mps": 3.11,
         "punch_R_extension_pct_of_reach": 96.9,
-        "punch_R_rotation_lead": "pelvis 22.0deg f5 -> chest 39.3deg f7 -> shoulder 47.9deg f8 -> fist f11",
-        "punch_R_foot_slide_gate": "ok",
-        "punch_R_foot_slide_worst_mm": 0,
-        "punch_L_action": "punch.L",
-        "punch_L_frames": "1-24",
-        "punch_L_peak_fist_speed_mps": 3.11,
-        "punch_L_extension_pct_of_reach": 96.9,
-        "punch_L_foot_slide_gate": "ok",
-        "punch_L_foot_slide_worst_mm": 0,
-        "punch_L_verification_note": "measured directly this round (not assumed symmetric)",
+        "punch_L_gate": "ok",
+        "punch_L_worst_drift_mm": 0,
+        "punch_L_bone_stretch_budget": "attention - worst 2.72% (arm.L frame6)",
+        "punch_L_ik_reach_headroom": "ok - worst 0.9378 (leg.L frame5)",
+        "punch_L_verification_note": "measured directly, not assumed symmetric",
         "jump_action": "jump",
         "jump_frames": "1-36",
-        "jump_apex_requested_mm": 257.7,
+        "jump_gate": "ok",
+        "jump_worst_drift_mm": 3.57,
+        "jump_bone_stretch_budget": "attention - worst 2.35% (leg.L/R frame18)",
+        "jump_ik_reach_headroom": "ok - worst 0.97 (leg.L frame1)",
+        "jump_anticipation_reads_verdict": "PASS - silhouette drops 10.7% of standing height (needs 8%); hip travels 58.89mm back over ankles against a 138.8mm crouch (needs 41.6mm/30% of depth); load takes 0.375s (needs 0.35s); sole sinks -0.18mm (floor allows -1.0mm)",
         "jump_apex_resolved_mm": 257.5,
-        "jump_apex_residual_mm": 2.128,
-        "jump_airtime_frames": 11,
-        "jump_airtime_s": 0.458,
-        "jump_parabola_deviation_mm": 0.001,
-        "jump_parabola_tolerance_mm": 6.81,
-        "jump_extension_pct_of_reach": 97,
-        "jump_extension_cap_pct": 98,
-        "jump_anticipation_real_countermovement": "hips travel 59mm back for 118mm down (setback ratio 0.50) before driving 41mm forward - genuine countermovement, first time (was flagged as near-straight rest pose limiting jump upstream in wip-14)",
-        "jump_anticipation_gate": "PASS",
-        "jump_foot_slide_gate": "ok",
-        "jump_foot_slide_worst_mm": 3.57,
-        "jump_foot_slide_threshold_mm": 5,
-        "jump_landing_knee_travel_mm": 140.02,
+        "jump_parabola_deviation_mm": 0,
         "render_view_walk": "side",
         "render_view_punch": "iso (front-3/4)",
         "render_view_jump": "side",
-        "render_note": "bake-source mesh werewolf-form-a hidden for each render (objects=[retopo mesh only]), then restored; active action was explicitly reactivated immediately before each render since authoring the next clip switches the rig's active action",
-        "blend_saved": "werewolf-wip-15.blend (copy of Blender add-on's own save_project_blend output, repositioned into projects/werewolf/models/ to match the wip-9..wip-14 convention; artist's own live session file unchanged, still saves to werewolf-wip-13.blend)"
+        "blend_saved": "werewolf-wip-16.blend (copy of add-on's save_project_blend output, repositioned into projects/werewolf/models/; artist's own live session file unchanged, still saves to werewolf-wip-15.blend)"
       },
       "history": [
         {
@@ -1295,6 +1385,62 @@
             "projects/werewolf/renders/form-a-punch-wip15.mp4",
             "projects/werewolf/renders/form-a-jump-wip15.mp4",
             "projects/werewolf/models/werewolf-wip-15.blend"
+          ],
+          "replace": true,
+          "cost": {
+            "model": "sonnet"
+          }
+        },
+        {
+          "date": "2026-09-19T18:29:55",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "wip": "16",
+            "rig": "werewolf-form-a_retopo_rig",
+            "note_on_gate_fields": "gait_opposition/strike_lead/bone_stretch_budget/ik_reach_headroom/loop_seam_closure/anticipation_reads/deformation_gate are computed by the addon but not yet surfaced by the MCP animation_check text formatter - pulled via registry.dispatch(\"animation_check\", ...) directly (same escape-hatch pattern as mesh_repair_bridges) to get the real numbers rather than parsing prose",
+            "walk_action": "walk-loop",
+            "walk_frames": "1-33 (32-frame cycle)",
+            "walk_stride_mm": 589.03,
+            "walk_gate": "ok",
+            "walk_foot_slide_worst_mm": 0.3,
+            "walk_gait_opposition_verdict": "ok - all 4 pairs (arm.L/leg.L, arm.R/leg.R, arm.L/arm.R, leg.L/leg.R) at 180.0deg phase lag against a 180deg target - CORRECTED from the old bug (both hands swung in unison)",
+            "walk_strike_lead_verdict": "ok - foot.L 176.68mm/30.0% of stride, foot.R 176.68mm/30.0% of stride, both ahead of the hip and symmetric - CORRECTED from the old bug (right foot landed 19% BEHIND the hip)",
+            "walk_loop_seam_closure": "ok - worst vertex moves 0.000mm between frame 1 and 33, tolerance 1.0mm - matches the ~0mm expectation",
+            "walk_bone_stretch_budget": "attention - worst 1.43% (leg.L frame29, leg.R frame13), IK_Stretch under load, arms hold length exactly (0.00%)",
+            "walk_ik_reach_headroom": "ok - worst 0.9652 of chain (leg.L frame9), under the 0.98 warn line",
+            "walk_deformation_gate": "attention (driven by the stretch budget reading, not slide/seam/gait/strike which are all ok)",
+            "punch_R_gate": "ok",
+            "punch_R_worst_drift_mm": 0,
+            "punch_R_bone_stretch_budget": "attention - worst 2.72% (arm.R frame6)",
+            "punch_R_ik_reach_headroom": "ok - worst 0.9378 (leg.R frame5)",
+            "punch_R_peak_fist_speed_mps": 3.11,
+            "punch_R_extension_pct_of_reach": 96.9,
+            "punch_L_gate": "ok",
+            "punch_L_worst_drift_mm": 0,
+            "punch_L_bone_stretch_budget": "attention - worst 2.72% (arm.L frame6)",
+            "punch_L_ik_reach_headroom": "ok - worst 0.9378 (leg.L frame5)",
+            "punch_L_verification_note": "measured directly, not assumed symmetric",
+            "jump_action": "jump",
+            "jump_frames": "1-36",
+            "jump_gate": "ok",
+            "jump_worst_drift_mm": 3.57,
+            "jump_bone_stretch_budget": "attention - worst 2.35% (leg.L/R frame18)",
+            "jump_ik_reach_headroom": "ok - worst 0.97 (leg.L frame1)",
+            "jump_anticipation_reads_verdict": "PASS - silhouette drops 10.7% of standing height (needs 8%); hip travels 58.89mm back over ankles against a 138.8mm crouch (needs 41.6mm/30% of depth); load takes 0.375s (needs 0.35s); sole sinks -0.18mm (floor allows -1.0mm)",
+            "jump_apex_resolved_mm": 257.5,
+            "jump_parabola_deviation_mm": 0,
+            "render_view_walk": "side",
+            "render_view_punch": "iso (front-3/4)",
+            "render_view_jump": "side",
+            "blend_saved": "werewolf-wip-16.blend (copy of add-on's save_project_blend output, repositioned into projects/werewolf/models/; artist's own live session file unchanged, still saves to werewolf-wip-15.blend)"
+          },
+          "artifacts": [
+            "projects/werewolf/renders/form-a-walk-wip16.mp4",
+            "projects/werewolf/renders/form-a-punch-wip16.mp4",
+            "projects/werewolf/renders/form-a-jump-wip16.mp4",
+            "projects/werewolf/models/werewolf-wip-16.blend"
           ],
           "replace": true,
           "cost": {
