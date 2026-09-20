@@ -867,6 +867,85 @@ def test_walk(rig):
           all(value >= 0.5 * result["cycle_frames"] for value in stance.values()),
           str(stance))
 
+    section("rigforge_walk - the gait, not just the mechanics")
+    # The wip-15 artist review: "the opposite arm should move on opposite leg"
+    # and "the foot should land in front of the center of the model". Both are
+    # authored properties now, and both are measured back off the clip by
+    # animation_check's own gates further down.
+    note("arm_phase %s deg (contralateral=%s, forward sign probed at %s mm), "
+         "strike lead %s of a %.0f mm stride = %s mm, stance reach factor %s"
+         % (result["arm_phase_deg"], result["arm_swing_contralateral"],
+            result["arm_forward_probe_mm"], result["strike_lead"],
+            result["stride_m"] * 1000.0, result["strike_lead_mm"],
+            result["stance_reach_factor"]))
+    check("the arms are authored half a cycle out of phase with the leg on their "
+          "own side - which is the opposite leg's strike",
+          result["arm_phase_deg"] == 180.0
+          and result["arm_swing_contralateral"] is True,
+          "%s deg" % result["arm_phase_deg"])
+    check("which way a swing carries the hand was MEASURED off the rig, not "
+          "assumed, and comes out the same for two mirrored arms rotating about "
+          "one world axis",
+          set(result["arm_forward_sign"]) == {"L", "R"}
+          and len(set(result["arm_forward_sign"].values())) == 1
+          and all(abs(value) > 0.5
+                  for value in result["arm_forward_probe_mm"].values()),
+          "%s from a probe of %s mm" % (result["arm_forward_sign"],
+                                        result["arm_forward_probe_mm"]))
+    check("the heel is authored to land a third of a stride IN FRONT of the hip "
+          "joint, inside the classical 25-35%",
+          0.25 <= result["strike_lead"] <= 0.35
+          and abs(result["strike_lead_mm"]
+                  - result["strike_lead"] * result["stride_m"] * 1000.0) < 0.5,
+          "%s of a stride = %s mm" % (result["strike_lead"],
+                                      result["strike_lead_mm"]))
+    check("and the reach model knows the stride is now spent either side of the "
+          "hip rather than symmetrically about it",
+          abs(result["stance_reach_factor"]
+              - 2.0 * max(result["strike_lead"],
+                          result["stance_fraction"] - result["strike_lead"])) < 1e-6,
+          str(result["stance_reach_factor"]))
+    check("the says sentence carries both numbers, so a caller who reads nothing "
+          "else still sees the gait",
+          "in front of the hip joint" in result["says"]
+          and "out of phase" in result["says"], result["says"][:240])
+
+    gait = call("animation_check", {"rig": rig.name, "action": WALK_LOOP})
+    opposition = gait.get("gait_opposition") or {}
+    lead = gait.get("strike_lead") or {}
+    note("gait_opposition %s (%s); strike_lead %s (%s)"
+         % (opposition.get("verdict"), opposition.get("says"),
+            lead.get("verdict"), lead.get("says")))
+    check("measured back off the authored clip, every arm/leg pair is half a "
+          "cycle apart",
+          opposition.get("verdict") == "ok"
+          and all(abs(abs(row["phase_lag_deg"]) - 180.0) < 1.0
+                  for row in opposition.get("pairs") or []
+                  if row["phase_lag_deg"] is not None),
+          str([(row["pair"], row["phase_lag_deg"])
+               for row in opposition.get("pairs") or []]))
+    check("...including the two hands against each other, which is the reading "
+          "that caught wip-15 swinging both arms in unison",
+          any(row["pair"] == "arm.L vs arm.R"
+              and abs(abs(row["phase_lag_deg"] or 0.0) - 180.0) < 1.0
+              for row in opposition.get("pairs") or []),
+          str([(row["pair"], row["phase_lag_deg"])
+               for row in opposition.get("pairs") or []]))
+    check("and BOTH heels strike the same distance in front of the hip joint - "
+          "the wip-15 defect was that only the left one did",
+          lead.get("verdict") == "ok"
+          and len(lead.get("strikes") or []) == 2
+          and abs(lead["strikes"][0]["lead_mm"]
+                  - lead["strikes"][1]["lead_mm"]) < 1.0,
+          str([(row["foot"], row["lead_mm"], row["lead_pct_of_stride"])
+               for row in lead.get("strikes") or []]))
+    check("...at the fraction of the stride it was authored for",
+          all(abs(row["lead_pct_of_stride"] - result["strike_lead"] * 100.0) < 1.0
+              for row in lead.get("strikes") or []),
+          "authored %s, measured %s" % (result["strike_lead"],
+                                        [row["lead_pct_of_stride"]
+                                         for row in lead.get("strikes") or []]))
+
     section("rigforge_walk - a stride the leg cannot reach")
     # A leg that cannot reach its own target does not arrive where it was keyed,
     # so it slides on the deform bones while the control sits still. The command
@@ -949,6 +1028,18 @@ def test_walk(rig):
         note("%s: %s" % (name, reached["says"]))
         check("%s still plants its feet" % name, reached["gate"] == "ok",
               "%s (%s mm)" % (reached["gate"], reached["worst_drift_mm"]))
+        # The stride these two clips end up with is whatever the reach clamp
+        # left, and the gait is a property of the stride rather than of its
+        # length: a shortened step still lands its heel a third of it in front
+        # of the hips, and still swings the opposite arm.
+        check("%s keeps its gait whatever the clamp did to the stride" % name,
+              (reached.get("gait_opposition") or {}).get("verdict") == "ok"
+              and (reached.get("strike_lead") or {}).get("verdict") == "ok",
+              "opposition %s, strike lead %s (%s mm, %s%% of stride)"
+              % ((reached.get("gait_opposition") or {}).get("verdict"),
+                 (reached.get("strike_lead") or {}).get("verdict"),
+                 (reached.get("strike_lead") or {}).get("worst_lead_mm"),
+                 (reached.get("strike_lead") or {}).get("worst_lead_pct_of_stride")))
 
     section("rigforge_walk - in place (the treadmill clip)")
     second = call("rigforge_walk", {"rig": rig.name, "action": TREADMILL,

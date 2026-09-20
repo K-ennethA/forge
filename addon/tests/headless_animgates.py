@@ -1,4 +1,4 @@
-"""Headless add-on tests for the five gates the wip-14 audit found missing.
+"""Headless add-on tests for the gates two artist reviews found missing.
 
 Run it inside Blender, never windowed::
 
@@ -35,9 +35,23 @@ measure those four things:
   invisible: 6.9% of the silhouette, 0.00 mm of hip setback, 0.333 s long, and
   the feet 11.7 mm under the floor.
 
+The wip-15 review of the walk added two more, and they are about **craft**
+rather than about mechanics — the clip they were found on held its feet to
+0.19 mm and closed its loop to 0.001 mm:
+
+* ``gait_opposition`` — the phase between each hand's forward swing and its own
+  side's foot strike.  The reviewed walk swung both arms in **unison** (0.0
+  degrees between the two hands) where a gait puts them half a cycle apart.
+* ``strike_lead`` — how far in front of the hip joint each heel lands, in
+  millimetres and as a share of the stride.  The reviewed walk struck +115 mm
+  (+30.8% of the stride) with the left foot and **-72 mm (-19.2%)** with the
+  right, on the same clip: exactly half a stride apart, because the plant was
+  solved against the floor and never against the body.
+
 Each is proved twice: **red** on a defect this file constructs (a torso-travel
 walk with Rigify's stock ``IK_Stretch = 1.0`` put back, a driver keyed past pi,
-a deliberately shallow and fast crouch) and **green or truthfully-verdicted** on
+a deliberately shallow and fast crouch, a walk authored with ``arm_phase_deg: 0``
+and one with ``strike_lead: 0``) and **green or truthfully-verdicted** on
 the healthy clip.  Where a healthy synthetic clip legitimately trips a gate the
 suite pins the *measured* verdict with its number rather than forcing a pass:
 the synthetic rig has the same stock Rigify stretch switches the audited one
@@ -83,6 +97,12 @@ JUMP = "jump"
 FLAT_JUMP = "jump-flat"
 STRETCH = "stretchwalk"
 STRETCH_LOOP = STRETCH + "-loop"
+#: The two wip-15 craft defects, each rebuilt through the parameter that
+#: authors it, so the gait gates are proved red on the very thing they exist for.
+SAME_SIDE = "samesidewalk"
+SAME_SIDE_LOOP = SAME_SIDE + "-loop"
+UNDERFOOT = "underfootwalk"
+UNDERFOOT_LOOP = UNDERFOOT + "-loop"
 
 _RESULTS = []
 
@@ -586,6 +606,10 @@ def test_healthy_clips_are_measured_honestly(rig, walk, punch):
     check("and it is not airborne, so it carries no anticipation block",
           punch.get("anticipation_reads") is None,
           str(punch.get("anticipation_reads")))
+    check("and it is not a gait either - a punch's heels never leave the floor and "
+          "come back, so neither gait block is measured on it",
+          punch.get("gait_opposition") is None and punch.get("strike_lead") is None,
+          "%s / %s" % (punch.get("gait_opposition"), punch.get("strike_lead")))
 
 
 def test_existing_keys_are_untouched(rig, walk, punch, jump):
@@ -628,8 +652,9 @@ def test_existing_keys_are_untouched(rig, walk, punch, jump):
     check("every key animation_check published before these gates existed is still "
           "there", expected <= set(walk), str(sorted(expected - set(walk))))
     added = {"bone_stretch_budget", "ik_reach_headroom", "loop_seam_closure",
-             "anticipation_reads", "deformation_gate"}
-    check("and exactly five keys were added, no more",
+             "anticipation_reads", "gait_opposition", "strike_lead",
+             "deformation_gate"}
+    check("and exactly seven keys were added, no more",
           set(walk) - expected == added, str(sorted(set(walk) - expected - added)))
     check("the two calls that measured these are deterministic",
           call("animation_check", {"rig": rig.name,
@@ -785,6 +810,140 @@ def test_loop_seam_closes_on_a_good_loop(rig):
           "judged - a stride down the floor is the clip's product, not its defect",
           (seam.get("root_travel_mm") or 0.0) > 1.0,
           "%s mm of root travel removed" % seam.get("root_travel_mm"))
+
+
+def test_gait_gates(rig, walk, jump):
+    """The wip-15 artist review, both halves: GREEN on the fixed walk, RED on
+    each defect rebuilt through the parameter that authors it."""
+    section("gait_opposition / strike_lead - GREEN on the walk the artist asked for")
+    opposition = walk.get("gait_opposition") or {}
+    lead = walk.get("strike_lead") or {}
+    note("%s: opposition %s (worst pair %s at %s deg), strike lead %s (worst %s mm "
+         "= %s%% of a %s mm stride, heels %s)"
+         % (WALK_LOOP, opposition.get("verdict"), opposition.get("worst_pair"),
+            opposition.get("worst_phase_lag_deg"), lead.get("verdict"),
+            lead.get("worst_lead_mm"), lead.get("worst_lead_pct_of_stride"),
+            lead.get("stride_mm"), lead.get("heel_bones")))
+    check("a walk is a gait, so it carries both gait blocks",
+          opposition and lead, "%s / %s" % (bool(opposition), bool(lead)))
+    check("every arm/leg pair on the fixed walk is half a cycle apart",
+          opposition.get("verdict") == "ok",
+          str([(row["pair"], row["phase_lag_deg"])
+               for row in opposition.get("pairs") or []]))
+    check("the verdict is the one its own worst number implies",
+          opposition.get("verdict") == (
+              "fail" if abs(opposition.get("worst_phase_lag_deg") or 0.0) <= 90.0
+              else ("ok" if abs(opposition["worst_phase_lag_deg"]) >= 135.0
+                    else "attention")),
+          "%s at %s deg" % (opposition.get("verdict"),
+                            opposition.get("worst_phase_lag_deg")))
+    check("it gates all four pairings - each arm against its own leg, the arms "
+          "against each other and the legs against each other",
+          {row["pair"] for row in opposition.get("pairs") or []}
+          == {"arm.L vs leg.L", "arm.R vs leg.R", "arm.L vs arm.R",
+              "leg.L vs leg.R"},
+          str([row["pair"] for row in opposition.get("pairs") or []]))
+    check("both heels strike in front of the hip joint, inside the classical band",
+          lead.get("verdict") == "ok"
+          and all(25.0 <= row["lead_pct_of_stride"] <= 35.0
+                  for row in lead.get("strikes") or []),
+          str([(row["foot"], row["lead_mm"], row["lead_pct_of_stride"])
+               for row in lead.get("strikes") or []]))
+    check("and it says where it measured them - the heel against the hip JOINT, "
+          "not the hips control",
+          "DEF-thigh" in (lead.get("measured_at") or "")
+          and "heel" in (lead.get("measured_at") or ""), str(lead.get("measured_at")))
+    check("every frame it quotes is a frame of the clip",
+          all(walk["frames"][0] <= row["strike_frame"] <= walk["frames"][1]
+              for row in lead.get("strikes") or []),
+          str([row["strike_frame"] for row in lead.get("strikes") or []]))
+    if jump is not None:
+        check("a jump is not a gait: its feet leave together and come back "
+              "together, so it carries neither block",
+              jump.get("gait_opposition") is None and jump.get("strike_lead") is None,
+              "%s / %s" % (jump.get("gait_opposition"), jump.get("strike_lead")))
+
+    section("gait_opposition - RED, the wip-15 arms rebuilt through the parameter")
+    # "the opposite arm should move on opposite leg, so not left arm and left
+    # leg". `arm_phase_deg: 0` authors exactly that - the arm's forward peak on
+    # its OWN foot's strike - and nothing else about the clip changes.
+    info = call("rigforge_walk", {"rig": rig.name, "action": SAME_SIDE,
+                                  "cycle_frames": 24, "arm_phase_deg": 0.0})
+    note(info["says"])
+    check("the command took the defect it was asked for rather than silently "
+          "correcting it", info["arm_phase_deg"] == 0.0
+          and info["arm_swing_contralateral"] is False,
+          "%s deg" % info["arm_phase_deg"])
+    broken = call("animation_check", {"rig": rig.name, "action": SAME_SIDE_LOOP})
+    bad = broken.get("gait_opposition") or {}
+    note("%s: opposition %s, worst pair %s at %s deg"
+         % (SAME_SIDE_LOOP, bad.get("verdict"), bad.get("worst_pair"),
+            bad.get("worst_phase_lag_deg")))
+    check("the gate fails a same-side swing", bad.get("verdict") == "fail",
+          str(bad.get("verdict")))
+    check("...on both arms, not just the one that happens to be sampled first",
+          all(row["verdict"] == "fail" for row in bad.get("pairs") or []
+              if row["kind"] == "arm-to-its-own-leg"),
+          str([(row["pair"], row["phase_lag_deg"], row["verdict"])
+               for row in bad.get("pairs") or []]))
+    check("and it quotes the measured phase lag rather than asserting a verdict",
+          bad.get("worst_phase_lag_deg") is not None
+          and abs(bad["worst_phase_lag_deg"]) <= 90.0
+          and ("%.1f degrees apart" % abs(bad["worst_phase_lag_deg"]))
+          in (bad.get("says") or ""),
+          "%s deg in %r" % (bad.get("worst_phase_lag_deg"),
+                            (bad.get("says") or "")[:160]))
+    check("the sentence reaches the top-level says, so nobody reads a clean line "
+          "over a broken gait",
+          "do not oppose" in (broken.get("says") or ""),
+          (broken.get("says") or "")[-200:])
+    check("and it costs the deformation rollup, not the foot-slide gate: the feet "
+          "on this clip hold exactly as well as they did",
+          broken.get("deformation_gate") == "fail" and broken.get("gate") == "ok"
+          and broken["worst_drift_mm"] == walk["worst_drift_mm"],
+          "gate %s at %s mm, deformation_gate %s"
+          % (broken.get("gate"), broken.get("worst_drift_mm"),
+             broken.get("deformation_gate")))
+    check("the strike lead is untouched by the arm defect - two gates, two "
+          "answers", (broken.get("strike_lead") or {}).get("verdict") == "ok",
+          str((broken.get("strike_lead") or {}).get("worst_lead_mm")))
+
+    section("strike_lead - RED, a foot that lands under the body")
+    # "the foot should land in front of the center of the model so in front".
+    # `strike_lead: 0` plants the heel directly under the hip joint, which is
+    # where the wip-15 right foot landed and worse.
+    info = call("rigforge_walk", {"rig": rig.name, "action": UNDERFOOT,
+                                  "cycle_frames": 24, "strike_lead": 0.0})
+    note(info["says"])
+    check("the command authored the plant it was asked for",
+          info["strike_lead"] == 0.0 and info["strike_lead_mm"] == 0.0,
+          "%s of a stride" % info["strike_lead"])
+    under = call("animation_check", {"rig": rig.name, "action": UNDERFOOT_LOOP})
+    row = under.get("strike_lead") or {}
+    note("%s: strike lead %s, worst %s mm (%s%% of a %s mm stride) on %s"
+         % (UNDERFOOT_LOOP, row.get("verdict"), row.get("worst_lead_mm"),
+            row.get("worst_lead_pct_of_stride"), row.get("stride_mm"),
+            row.get("worst_foot")))
+    check("the gate fails a heel that lands at or behind the hip joint",
+          row.get("verdict") == "fail", str(row.get("verdict")))
+    check("and quotes both the millimetres and the share of the stride",
+          row.get("worst_lead_mm") is not None
+          and row.get("worst_lead_pct_of_stride") is not None
+          and abs(row["worst_lead_mm"]) < 1.0,
+          "%s mm / %s%%" % (row.get("worst_lead_mm"),
+                            row.get("worst_lead_pct_of_stride")))
+    check("the sentence names the foot and the frame it struck on",
+          (row.get("worst_foot") or "?") in (row.get("says") or "")
+          and "in front of the body" in (row.get("says") or ""),
+          (row.get("says") or "")[:200])
+    check("it costs the deformation rollup and leaves the foot-slide gate alone",
+          under.get("deformation_gate") == "fail" and under.get("gate") == "ok",
+          "gate %s, deformation_gate %s" % (under.get("gate"),
+                                            under.get("deformation_gate")))
+    check("and the arms are still correct on it - the two defects are "
+          "independent, which is why they are two gates",
+          (under.get("gait_opposition") or {}).get("verdict") == "ok",
+          str((under.get("gait_opposition") or {}).get("worst_phase_lag_deg")))
 
 
 def test_anticipation_reads(rig, mesh, jump):
@@ -1025,6 +1184,7 @@ def main():
 
         test_healthy_clips_are_measured_honestly(rig, walk, punch)
         test_existing_keys_are_untouched(rig, walk, punch, jump)
+        test_gait_gates(rig, walk, jump)
         test_loop_seam_closes_on_a_good_loop(rig)
         test_anticipation_reads(rig, mesh, jump)
         if jump_info is not None:

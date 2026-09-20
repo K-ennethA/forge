@@ -1605,6 +1605,34 @@ DEFAULT_ELBOW_BEND_DEG = 14.0
 DEFAULT_FOOT_ROLL_DEG = 22.0
 DEFAULT_HIP_TWIST_DEG = 6.0
 
+#: Where each arm's **forward** peak sits relative to its own side's foot
+#: strike, in degrees of the cycle.  180 is the whole of classical gait: the
+#: left arm is forward when the left foot is *back*, which is to say when the
+#: RIGHT foot strikes.  It is not a style setting — an arm swinging with the leg
+#: on its own side (0 here) is the oldest amateur tell in walk animation, and it
+#: is what this rig authored until wip-15.  Exposed as a parameter only so the
+#: defect can be reconstructed on purpose: ``animation_check``'s
+#: ``gait_opposition`` gate is built against it.
+DEFAULT_ARM_PHASE_DEG = 180.0
+
+#: How far **ahead of the hip joint** the striking heel lands, as a fraction of
+#: the stride.
+#:
+#: **Credibility tier: derived from the classical walk-cycle reference.**  A
+#: walker's heel contacts 25–35% of a stride in front of the pelvis and the
+#: torso then passes over the planted foot through mid-stance; a foot that lands
+#: under or behind the body is the character walking into its own feet.  0.30 is
+#: the middle of that band, and it is measured back out by
+#: ``animation_check``'s ``strike_lead`` gate rather than asserted.
+DEFAULT_STRIKE_LEAD = 0.30
+
+#: The test rotation the arm's forward direction is **asked of the rig** with.
+#: Which way a positive rotation about the walk frame's ``right`` axis carries
+#: the hand depends on the arm's rest pose, and a first-order cross product gets
+#: it wrong on a rig whose arms are not a plumb hang — so it is probed, once,
+#: the same way ``max_span`` probes the leg rather than summing a rest chain.
+ARM_SIGN_PROBE_DEG = 10.0
+
 #: The torso control, best first.
 TORSO_CONTROLS = ("torso", "hips", "chest", "spine_fk")
 ROOT_CONTROLS = ("root", "root.001")
@@ -1736,7 +1764,25 @@ def locomotion_frame(rig, limbs):
             "leg_length": leg_length, "feet": feet}
 
 
-def _reach_limit(frame_info, stance_fraction, hip_low, margin):
+def stance_reach_factor(stance_fraction, strike_lead):
+    """How far the ankle swings from the hip during stance, per metre of step.
+
+    The foot is planted ``strike_lead`` of a stride in front of the hip joint at
+    the strike and the body then walks over it, so by toe-off it is
+    ``stance_fraction - strike_lead`` of a stride behind.  The leg has to make
+    whichever of those two is longer, and both are fractions of the **stride**,
+    which is two steps — hence the 2.
+
+    Before the strike lead was authored this was simply ``stance_fraction``,
+    which is the same number only when the strike lands at exactly half the
+    stance (``strike_lead == stance_fraction / 2``).
+    """
+    return 2.0 * max(float(strike_lead),
+                     max(0.0, float(stance_fraction) - float(strike_lead)))
+
+
+def _reach_limit(frame_info, stance_fraction, hip_low, margin,
+                 reach_factor=None):
     """The longest step these legs can take without Rigify stretching them.
 
     A target the leg cannot reach is worse than a short stride: the foot never
@@ -1747,6 +1793,7 @@ def _reach_limit(frame_info, stance_fraction, hip_low, margin):
     offset is bounded by the remaining side.  ``None`` when no leg has a hip to
     measure from.
     """
+    factor = (stance_fraction if reach_factor is None else reach_factor)
     longest = None
     for foot in frame_info["feet"].values():
         if foot["hip"] is None:
@@ -1757,13 +1804,13 @@ def _reach_limit(frame_info, stance_fraction, hip_low, margin):
             limit = 0.0
         else:
             limit = math.sqrt(max(0.0, span * span - drop * drop)) \
-                / max(stance_fraction, 1e-6)
+                / max(factor, 1e-6)
         longest = limit if longest is None else min(longest, limit)
     return longest
 
 
 def _crouch_for(frame_info, step_length, stance_fraction, hip_drop, hip_lower,
-                margin, max_lower):
+                margin, max_lower, reach_factor=None):
     """Bend the knees as much as the asked-for stride needs, then clamp.
 
     A rig at rest stands with its legs all but straight, so *every* stride
@@ -1772,12 +1819,14 @@ def _crouch_for(frame_info, step_length, stance_fraction, hip_drop, hip_lower,
     of preference is: deepen the crouch (up to ``max_lower``), and only then
     shorten the step.  Returns ``(step_length, hip_lower, clamped, deepened)``.
     """
-    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin)
+    factor = (stance_fraction if reach_factor is None else reach_factor)
+    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin,
+                         factor)
     if limit is None or step_length <= limit:
         return step_length, hip_lower, False, False
 
     deepened = False
-    needed = step_length * stance_fraction
+    needed = step_length * factor
     for foot in frame_info["feet"].values():
         if foot["hip"] is None:
             continue
@@ -1793,7 +1842,8 @@ def _crouch_for(frame_info, step_length, stance_fraction, hip_drop, hip_lower,
             hip_lower = min(max_lower, wanted)
             deepened = True
 
-    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin)
+    limit = _reach_limit(frame_info, stance_fraction, hip_lower + hip_drop, margin,
+                         factor)
     if limit is None:
         return step_length, hip_lower, False, deepened
     # A hair under, after the crouch was solved for this very step, is the
@@ -1803,17 +1853,20 @@ def _crouch_for(frame_info, step_length, stance_fraction, hip_drop, hip_lower,
     return min(step_length, limit), hip_lower, False, deepened
 
 
-def _foot_offset(u, stance_fraction, step_length, step_height, cycle_offset):
+def _foot_offset(u, stance_fraction, stride, step_height, plant):
     """One foot's ground-plane offset and lift at cycle phase ``u``.
 
     Returns ``(along_forward, lift)`` relative to the foot's rest position,
-    before the body's own travel is added.  Stance is a **constant**, which is
-    the entire point: between contact and toe-off this function returns the
-    same number every frame, so the key it produces is the same key, so the
-    foot cannot drift.
+    before the body's own travel is added.  ``plant`` is where this foot stands
+    for *this* step — computed by the caller from the strike lead, because where
+    a foot lands relative to the body is the gait, not a detail of the curve.
+
+    Stance is a **constant**, which is the entire point: between contact and
+    toe-off this function returns the same number every frame, so the key it
+    produces is the same key, so the foot cannot drift.  One swing carries the
+    foot forward by a whole stride, which is what puts the next plant one stride
+    down the floor from this one.
     """
-    stride = 2.0 * step_length
-    plant = cycle_offset + step_length * stance_fraction
     if u <= stance_fraction:
         return plant, 0.0
     progress = (u - stance_fraction) / max(1e-6, 1.0 - stance_fraction)
@@ -1849,13 +1902,25 @@ def cmd_rigforge_walk(params):
 
     ``rigforge_walk {"rig"?, "action"?, "cycle_frames"?, "step_length"?,
     "step_height"?, "stance_fraction"?, "hip_drop"?, "hip_sway"?,
-    "hip_twist_deg"?, "arm_swing_deg"?, "elbow_bend_deg"?, "foot_roll_deg"?,
-    "travel"?, "loop"?, "clear"?, "interpolation"?, "stride_width"?,
-    "reach_margin"?}``
+    "hip_twist_deg"?, "arm_swing_deg"?, "arm_phase_deg"?, "elbow_bend_deg"?,
+    "foot_roll_deg"?, "strike_lead"?, "travel"?, "loop"?, "clear"?,
+    "interpolation"?, "stride_width"?, "reach_margin"?}``
 
     Every length parameter is metres and every one of them defaults to a
     fraction of *this* rig's leg, so the command works on a figurine and an
     ogre without being told which it is.
+
+    Two of the parameters are gait rather than styling, and both have a gate in
+    ``animation_check`` that measures them back off the result:
+
+    * ``arm_phase_deg`` (default 180) — where each arm's forward peak sits
+      relative to its **own** side's foot strike.  180 is contralateral swing:
+      left arm forward on the right foot's contact.  0 authors the amateur
+      same-side swing on purpose, which is how ``gait_opposition`` is proved
+      red;
+    * ``strike_lead`` (default 0.30) — how far in front of the hip joint the
+      **heel** lands, as a fraction of the stride.  0 lands it under the body,
+      which is how ``strike_lead`` is proved red.
     """
     started = time.monotonic()
     warnings = []
@@ -1874,8 +1939,16 @@ def cmd_rigforge_walk(params):
                              minimum=0.5, maximum=1.2)
     arm_swing = math.radians(get_float(params, "arm_swing_deg", DEFAULT_ARM_SWING_DEG,
                                        minimum=0.0, maximum=90.0))
+    arm_phase_deg = get_float(params, "arm_phase_deg", DEFAULT_ARM_PHASE_DEG,
+                              minimum=0.0, maximum=360.0)
+    arm_phase = math.radians(arm_phase_deg)
     elbow_bend = math.radians(get_float(params, "elbow_bend_deg", DEFAULT_ELBOW_BEND_DEG,
                                         minimum=0.0, maximum=120.0))
+    # 0.45 rather than 0.5: past half the stance the foot is behind the body for
+    # most of the plant instead of in front of it for most of it, and the leg
+    # runs out of reach forward before it runs out backward.
+    strike_lead = get_float(params, "strike_lead", DEFAULT_STRIKE_LEAD,
+                            minimum=0.0, maximum=0.45)
     roll_deg = get_float(params, "foot_roll_deg", DEFAULT_FOOT_ROLL_DEG,
                          minimum=0.0, maximum=60.0)
     hip_twist = math.radians(get_float(params, "hip_twist_deg", DEFAULT_HIP_TWIST_DEG,
@@ -1909,9 +1982,10 @@ def cmd_rigforge_walk(params):
                           minimum=0.0)
     if params.get("hip_lower") is not None:
         max_lower = hip_lower  # asked for explicitly: the stride gives way instead
+    reach_factor = stance_reach_factor(stance_fraction, strike_lead)
     step_length, hip_lower, clamped, deepened = _crouch_for(
         info, step_length, stance_fraction, hip_drop, hip_lower, reach_margin,
-        max_lower)
+        max_lower, reach_factor)
     if deepened:
         warnings.append(
             "The hips were lowered to %.3f m below standing height so the legs can "
@@ -2020,7 +2094,10 @@ def cmd_rigforge_walk(params):
             if upper is not None:
                 arms.append({"side": entry["side"], "upper": upper, "fore": fore,
                              "upper_rest": _rest_world(rig, upper),
-                             "fore_rest": _rest_world(rig, fore) if fore else None})
+                             "fore_rest": _rest_world(rig, fore) if fore else None,
+                             # Which way a positive rotation about `right` takes
+                             # the hand. Probed below, not assumed.
+                             "forward_sign": 1.0, "forward_probe_mm": None})
         if not arms:
             warnings.append("No FK arm control was found, so the arms do not swing.")
 
@@ -2064,11 +2141,98 @@ def cmd_rigforge_walk(params):
             target.matrix_basis.identity()
         refresh_view_layer()
 
+        # --- which way a positive rotation swings the hand, asked of the rig --
+        #
+        # The swing is a rotation about the walk frame's `right` axis, and
+        # whether +10 degrees about it carries the hand forward or backward
+        # depends on the arm's rest pose. A first-order cross product answers
+        # that wrongly on any arm that is not a plumb hang (measured on the
+        # synthetic biped: the cross product says forward, the rig delivers
+        # backward), and an arm swinging the wrong way is an arm swinging with
+        # the leg on its own side no matter what the phase says. So the rig is
+        # asked, once, exactly as `max_span` asks the leg.
+        for arm in arms:
+            upper = arm["upper"]
+            tip = arm["fore"] if arm["fore"] is not None else upper
+            upper.matrix_basis.identity()
+            if arm["fore"] is not None:
+                arm["fore"].matrix_basis.identity()
+            refresh_view_layer()
+            before = ((rig.matrix_world @ tip.tail)
+                      - (rig.matrix_world @ upper.head)).dot(forward)
+            probe = _rotate_about(arm["upper_rest"], right,
+                                  math.radians(ARM_SIGN_PROBE_DEG),
+                                  arm["upper_rest"].translation)
+            _set_world(rig, upper, probe)
+            upper.location = (0.0, 0.0, 0.0)
+            refresh_view_layer()
+            after = ((rig.matrix_world @ tip.tail)
+                     - (rig.matrix_world @ upper.head)).dot(forward)
+            moved = after - before
+            arm["forward_sign"] = -1.0 if moved < 0.0 else 1.0
+            arm["forward_probe_mm"] = round(moved * M_TO_MM, 3)
+            upper.matrix_basis.identity()
+        if arms and all(abs(arm["forward_probe_mm"] or 0.0) < 0.5 for arm in arms):
+            warnings.append(
+                "A %.0f degree test rotation moved no hand more than half a "
+                "millimetre along the walk's forward axis, so which way these arms "
+                "swing could not be measured and the swing was authored on the "
+                "positive rotation. Arms posed along the swing axis (a flat T-pose) "
+                "have no forward component to rotate."
+                % ARM_SIGN_PROBE_DEG)
+        refresh_view_layer()
+
         # Phase offset: the left foot contacts at the top of the cycle, the
         # right half a cycle later. That half-cycle IS the gait.
         offsets = {}
         for index, name in enumerate(sorted(info["feet"])):
             offsets[name] = 0.0 if info["feet"][name]["side"] == "L" else 0.5
+        #: The same half-cycle, by side, because it is what the ARMS are keyed
+        #: against: each arm's phase is its own leg's phase plus `arm_phase`.
+        side_offset = {}
+        for name, value in offsets.items():
+            side_offset.setdefault(info["feet"][name]["side"], value)
+
+        # --- where each foot lands, relative to the BODY ---------------------
+        #
+        # Defect #2 of the wip-15 review, in the artist's words: "the foot
+        # should land in front of the center of the model". It did not. The
+        # plant used to be `step_length * stance_fraction` ahead of the foot's
+        # own REST position for both feet, which is a position on the floor and
+        # says nothing about where the body is when the foot gets there. The
+        # left foot contacts at the top of the cycle, when the body has not
+        # travelled yet, so it read about right by accident; the right foot
+        # contacts half a cycle later, by which time the body has walked half a
+        # stride past it, and it landed 0.19 of a stride BEHIND the hip.
+        #
+        # So the plant is solved from what it actually means: at this foot's
+        # contact the body has travelled `stride * offset`, and the HEEL - the
+        # part that strikes - is to be `strike_lead` of a stride in front of the
+        # hip joint. The heel rides the target, so:
+        #
+        #     plant = stride * offset  +  strike_lead * stride  +  (hip0 - heel0)
+        #
+        # where the last term is the rest offset between the heel and the hip
+        # joint along forward, which is what turns "the target went here" into
+        # "the heel landed there". The foot roll pivots about the heel at the
+        # strike, so the roll does not move the point this is solved for.
+        heel_to_hip = {}
+        for name, foot in info["feet"].items():
+            hip = (probe_legs[name]["hip"] if name in probe_legs else foot["hip"])
+            if hip is None:
+                heel_to_hip[name] = 0.0
+                continue
+            heel_bone = rig.pose.bones.get(foot.get("heel_pivot") or "")
+            heel = (_rest_world(rig, heel_bone).translation if heel_bone is not None
+                    else foot["rest"].translation)
+            heel_to_hip[name] = (hip - heel).dot(forward)
+        if any(rig.pose.bones.get(foot.get("heel_pivot") or "") is None
+               for foot in info["feet"].values()):
+            warnings.append(
+                "At least one foot has no heel pivot, so the strike lead was solved "
+                "on the IK target instead of the heel. The foot still lands in front "
+                "of the hips; where its heel lands depends on the offset between the "
+                "two, which this rig does not expose.")
 
         plants = {name: [] for name in info["feet"]}
         # One pass over the cycle.  A function rather than a bare loop so the
@@ -2111,8 +2275,10 @@ def cmd_rigforge_walk(params):
                         continue
                     u = (t - offsets[name]) % 1.0
                     cycle_offset = stride * math.floor((t - offsets[name]) + 1e-9)
-                    along, lift = _foot_offset(u, stance_fraction, step_length, step_height,
-                                               cycle_offset)
+                    plant = (cycle_offset + stride * offsets[name]
+                             + stride * strike_lead + heel_to_hip[name])
+                    along, lift = _foot_offset(u, stance_fraction, stride,
+                                               step_height, plant)
                     if not travel:
                         along -= body
                     lateral = stride_width * (1.0 if foot["side"] == "L" else -1.0)
@@ -2159,8 +2325,24 @@ def cmd_rigforge_walk(params):
                     refresh_view_layer()
 
                 for arm in arms:
-                    # Opposite the leg of the same side: the left arm goes back as
-                    # the left leg comes forward.
+                    # --- contralateral swing, which is defect #1 of wip-15 ----
+                    #
+                    # `drive` is +1 when this arm is at its FORWARD peak and -1
+                    # at its back peak, and it is phased off this arm's OWN
+                    # side's foot: at `arm_phase = pi` the left arm's forward
+                    # peak lands exactly on the left foot's *back* peak, which
+                    # is the right foot's strike. That is classical gait, and it
+                    # is what the code used to get wrong twice over - once in
+                    # the quarter-cycle `sin` (the arm peaked at mid-stance) and
+                    # once in a per-side `sign` flip that, combined with the
+                    # per-side half-cycle offset, cancelled to nothing and swung
+                    # BOTH arms in unison (measured: 0.0 degrees of phase
+                    # between the two hands).
+                    #
+                    # The side now lives in the phase, where it belongs, and the
+                    # only per-side number left is `forward_sign` - which is
+                    # measured off the rig above, not assumed, and is the same
+                    # for two mirrored arms rotating about one world axis.
                     #
                     # The swing is authored as a world *rotation* and the location
                     # basis is then zeroed, so the arm rides the spine it hangs off
@@ -2168,9 +2350,10 @@ def cmd_rigforge_walk(params):
                     # body has already left behind - the same trick the punch and
                     # the jump use on the chest, and the other half of the seam fix
                     # above.
-                    phase = 0.0 if arm["side"] == "L" else 0.5
-                    angle = arm_swing * math.sin(2.0 * math.pi * (t - phase) + math.pi)
-                    sign = 1.0 if arm["side"] == "L" else -1.0
+                    phase = side_offset.get(arm["side"], 0.0)
+                    drive = math.cos(2.0 * math.pi * (t - phase) + arm_phase)
+                    sign = arm["forward_sign"]
+                    angle = arm_swing * drive
                     upper = arm["upper"]
                     matrix = _rotate_about(arm["upper_rest"], right, angle * sign,
                                            arm["upper_rest"].translation)
@@ -2180,8 +2363,12 @@ def cmd_rigforge_walk(params):
                     touched(upper.name)
                     if arm["fore"] is not None:
                         refresh_view_layer()
-                        bend = elbow_bend * (0.5 + 0.5 * math.sin(
-                            2.0 * math.pi * (t - phase) + math.pi))
+                        # The elbow is most flexed at the arm's forward peak,
+                        # and flexion carries the hand the same way the swing
+                        # does - so it rides `forward_sign` too. It used to ride
+                        # the per-side flip, which hyperextended one elbow
+                        # through the whole cycle.
+                        bend = elbow_bend * (0.5 + 0.5 * drive)
                         fore_rest = arm["fore_rest"]
                         bent = _rotate_about(fore_rest, right, bend * sign,
                                              fore_rest.translation)
@@ -2394,6 +2581,19 @@ def cmd_rigforge_walk(params):
         "hip_drop_m": round(hip_drop, 5),
         "hip_sway_m": round(hip_sway, 5),
         "hip_lower_m": round(hip_lower, 5),
+        # --- the gait, as it was authored -------------------------------------
+        # 180 degrees is contralateral swing and 0.30 of a stride is the heel
+        # landing in front of the hips; `animation_check`'s `gait_opposition`
+        # and `strike_lead` gates measure both back off the result rather than
+        # trusting these.
+        "arm_phase_deg": round(arm_phase_deg, 3),
+        "arm_swing_contralateral": bool(abs(arm_phase_deg - 180.0) <= 45.0),
+        "arm_forward_sign": {arm["side"]: arm["forward_sign"] for arm in arms},
+        "arm_forward_probe_mm": {arm["side"]: arm["forward_probe_mm"]
+                                 for arm in arms},
+        "strike_lead": round(strike_lead, 5),
+        "strike_lead_mm": round(strike_lead * stride * M_TO_MM, 2),
+        "stance_reach_factor": round(reach_factor, 5),
         # How deep the crouch was *allowed* to go before the stride had to give
         # instead. A caller (or a gate) that wants to know whether a shortened
         # step was inevitable on this rig needs both numbers, not just one.
@@ -2449,10 +2649,13 @@ def cmd_rigforge_walk(params):
         "rotation_modes": modes,
         "says": (
             "%s: %d-frame cycle, %.0f mm stride, feet keyed on %s with %.0f%% of the "
-            "cycle planted. %s"
+            "cycle planted. The heel strikes %.0f mm (%.0f%% of the stride) in front "
+            "of the hip joint and the arms swing %.0f degrees out of phase with the "
+            "leg on their own side. %s"
             % (action.name, cycle_frames, stride * 1000.0,
                " and ".join(step["target"] for step in steps),
-               stance_fraction * 100.0,
+               stance_fraction * 100.0, strike_lead * stride * M_TO_MM,
+               strike_lead * 100.0, arm_phase_deg,
                "The root carries the travel (export with root_motion)." if travel
                else "In place: the feet run backwards at one shared speed.")),
         "warnings": warnings,

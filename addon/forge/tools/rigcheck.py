@@ -3225,6 +3225,345 @@ def anticipation_reads(frames, fps, load_track, hip_track, ankle_track, forward,
     }
 
 
+# ---------------------------------------------------------------------------
+# the gait gates — the two craft errors a reference sheet catches in a second
+# ---------------------------------------------------------------------------
+#
+# Everything above measures whether a clip is mechanically sound: the feet hold,
+# the bones keep their length, the loop closes.  A walk can pass every one of
+# those and still be *wrong*, and the wip-15 artist review found two of the
+# oldest ways, neither of which any reading above can see:
+#
+# 1. **The arms swung with the leg on their own side.**  The classic amateur
+#    tell — a human's left arm is forward when the RIGHT foot strikes, because
+#    the arms cancel the angular momentum the legs make.  Measured on the wip-15
+#    walk the two hands swung in *unison*, 0.0 degrees apart.
+# 2. **The foot landed under the body instead of in front of it.**  A walker's
+#    heel contacts a quarter to a third of a stride ahead of the pelvis and the
+#    torso then travels over the planted foot through mid-stance.  Measured on
+#    wip-15 the left heel struck 115 mm ahead (+30.8% of the stride) and the
+#    right struck 72 mm *behind* (-19.2%) — the same clip, the same command,
+#    exactly half a stride apart, because the plant was solved against the floor
+#    and never against the body.
+#
+# Both are geometry, so both can be gated.
+#
+# **Opposition** is read as a phase: the fundamental of each hand's forward
+# offset from its own shoulder gives the frame that arm is furthest forward on,
+# and the strike frames give the phase reference for the legs.  Half a cycle
+# between an arm's forward peak and its own side's foot strike is contralateral
+# swing; nothing between them is the amateur read.  Phase rather than a
+# correlation coefficient because the number a report has to carry is "how far
+# out", in degrees, and because a leg's stride is not a sinusoid — the
+# correlation of a correct walk lands well short of -1 for reasons that are
+# about stance fraction and not about the gait.
+#
+# **Strike lead** is read at the strike, on the heel, against the hip JOINT (the
+# ``DEF-thigh`` heads — see the lane conventions and ``anticipation_reads``: the
+# ``hips`` control is 300 mm up the spine and is not the pelvis).  The heel
+# rather than the ball because the heel is what strikes; the hip joint rather
+# than the root because "in front of the centre of the model" is a statement
+# about the body, and the root is on the floor.
+#
+# Both are null on a clip that is not a gait: a jump, a punch, anything whose
+# feet never leave the ground and come back.
+
+#: Where the heel is, best first.  Rigify's ``foot_heel_ik`` is the pivot the
+#: strike rotates about, which makes its head the one point on the foot that a
+#: correct heel-first contact holds perfectly still.
+HEEL_CANDIDATES = (
+    "foot_heel_ik.%s",
+    "heel.02.%s",
+    "heel.%s",
+    "ORG-heel.02.%s",
+)
+
+#: How far an arm's forward peak may sit from half a cycle after its own side's
+#: foot strike, before the swing stops reading as contralateral.
+#:
+#: **Credibility tier: derived.**  180 degrees is the gait; 90 is not a taste
+#: line either — at a quarter cycle of error the arm's forward peak sits at
+#: mid-stance, equidistant from both feet's strikes, so opposition has stopped
+#: being visible at all and anything at or under it reads as same-side swing.
+#: 135 is the halfway house between the two and is the only judgement in the
+#: pair: an arm 45 degrees out is late, not wrong.
+GAIT_OPPOSITION_THRESHOLDS = {"phase_lag_deg": {"fail_at_or_below": 90.0,
+                                                "ok_at_or_above": 135.0}}
+
+#: How far in front of the hip joint the heel has to strike, as a fraction of
+#: the stride.
+#:
+#: **Credibility tier: derived from the classical walk-cycle reference** (25-35%
+#: of the stride at contact), with one hard line and one soft one.  At or behind
+#: the hip is a **fail** and that is not a threshold at all — it is the
+#: character walking into its own feet, which is what the artist named. 0.15 is
+#: the soft line: half the reference's own minimum, below which the contact
+#: stops reading as a leg reaching ahead of the body.
+STRIKE_LEAD_THRESHOLDS = {"lead_frac_of_stride": {"fail_at_or_below": 0.0,
+                                                  "ok_at_or_above": 0.15}}
+
+#: An arm whose hand swings less than this fraction of the leg's own stride
+#: amplitude is not swinging, and the phase of a flat signal is noise.  Reported
+#: as ``unmeasured`` with the number, never as a pass.
+GAIT_SWING_FLOOR_FRAC = 0.10
+
+
+def heel_points(rig):
+    """The bone whose head is the heel, per side, or an empty list."""
+    out = []
+    for side in ("L", "R"):
+        for pattern in HEEL_CANDIDATES:
+            name = pattern % side
+            if name in rig.pose.bones:
+                out.append({"side": side, "bone": name})
+                break
+    return out
+
+
+def contact_starts(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES,
+                   looping=False):
+    """Sample indices where this point *arrives* on the ground.
+
+    The down-runs are :func:`stance_runs`', so a strike is judged by exactly the
+    rule the foot-slide metric judges a plant by.  What this adds is the rising
+    edge: the first sample of a run whose predecessor was **not** down.  On a
+    loop the predecessor of sample 0 is the last sample, so a run that wraps the
+    seam is one plant and not two; off a loop sample 0 is never a strike,
+    because a clip may simply open mid-stance and there is no way to tell.
+
+    That edge is also what makes these gates ignore a clip that is not a gait: a
+    punch's heels are on the floor for every frame of it and never arrive.
+    """
+    runs = stance_runs(track, band=band, minimum=minimum)
+    down = set()
+    for run in runs:
+        down.update(run)
+    if not down:
+        return []
+    count = len(track)
+    starts = []
+    for index in sorted(down):
+        if index == 0:
+            if looping and (count - 1) not in down:
+                starts.append(index)
+            continue
+        if (index - 1) not in down:
+            starts.append(index)
+    return starts
+
+
+def _cycle_harmonic(values, cycle):
+    """``(peak_phase, amplitude)`` of the one-per-cycle component of ``values``.
+
+    ``peak_phase`` is in turns, ``[0, 1)`` — the fraction of a cycle at which
+    the signal is at its maximum, which is the only thing the opposition gate
+    wants from a swing.  The mean comes out first so a hand that hangs 40 mm in
+    front of its shoulder at rest does not tilt the answer.
+    """
+    count = len(values)
+    if count < 3 or cycle < 2:
+        return None, 0.0
+    mean = sum(values) / float(count)
+    real = imaginary = 0.0
+    for index, value in enumerate(values):
+        angle = 2.0 * math.pi * index / float(cycle)
+        centred = value - mean
+        real += centred * math.cos(angle)
+        imaginary += centred * math.sin(angle)
+    amplitude = 2.0 * math.hypot(real, imaginary) / float(count)
+    if amplitude <= 1e-9:
+        return None, 0.0
+    return (math.atan2(imaginary, real) / (2.0 * math.pi)) % 1.0, amplitude
+
+
+def _fold_turns_to_deg(turns):
+    """A circular difference in turns, folded to degrees in ``(-180, 180]``."""
+    degrees = (float(turns) % 1.0) * 360.0
+    if degrees > 180.0:
+        degrees -= 360.0
+    return degrees
+
+
+def _opposition_band(lag_deg):
+    if lag_deg is None:
+        return "unmeasured"
+    bands = GAIT_OPPOSITION_THRESHOLDS["phase_lag_deg"]
+    magnitude = abs(lag_deg)
+    if magnitude <= bands["fail_at_or_below"]:
+        return "fail"
+    if magnitude >= bands["ok_at_or_above"]:
+        return "ok"
+    return "attention"
+
+
+def _strike_lead_band(fraction):
+    if fraction is None:
+        return "unmeasured"
+    bands = STRIKE_LEAD_THRESHOLDS["lead_frac_of_stride"]
+    if fraction <= bands["fail_at_or_below"]:
+        return "fail"
+    if fraction >= bands["ok_at_or_above"]:
+        return "ok"
+    return "attention"
+
+
+def gait_opposition(signals, strikes, cycle):
+    """Is each arm forward when the **opposite** foot strikes?
+
+    ``signals`` is ``{("arm"|"leg", side): [forward offset from the limb's own
+    root, per sample]}``; ``strikes`` is ``{side: [sample index, ...]}``;
+    ``cycle`` is the cycle length in samples.  Every row is a circular phase
+    difference in degrees, and 180 is the answer to all of them.
+    """
+    rows = []
+    peaks = {}
+    amplitudes = {}
+    for key, values in signals.items():
+        phase, amplitude = _cycle_harmonic(values, cycle)
+        peaks[key] = phase
+        amplitudes[key] = amplitude
+    leg_amplitude = max(
+        [amplitudes.get(("leg", side), 0.0) for side in ("L", "R")] or [0.0])
+    floor = GAIT_SWING_FLOOR_FRAC * leg_amplitude
+
+    for side in ("L", "R"):
+        arm_phase = peaks.get(("arm", side))
+        arm_amplitude = amplitudes.get(("arm", side), 0.0)
+        first = (strikes.get(side) or [None])[0]
+        row = {
+            "pair": "arm.%s vs leg.%s" % (side, side),
+            "kind": "arm-to-its-own-leg",
+            "strike_sample": first,
+            "swing_mm": round(arm_amplitude * M_TO_MM, 2),
+            "swing_floor_mm": round(floor * M_TO_MM, 2),
+            "phase_lag_deg": None,
+            "verdict": "unmeasured",
+            "expected_deg": 180.0,
+        }
+        if arm_phase is not None and first is not None and arm_amplitude > floor:
+            row["phase_lag_deg"] = round(
+                _fold_turns_to_deg(arm_phase - first / float(cycle)), 2) or 0.0
+            row["verdict"] = _opposition_band(row["phase_lag_deg"])
+        rows.append(row)
+
+    for kind, label in (("arm", "arm.L vs arm.R"), ("leg", "leg.L vs leg.R")):
+        left, right = peaks.get((kind, "L")), peaks.get((kind, "R"))
+        amplitude = min(amplitudes.get((kind, "L"), 0.0),
+                        amplitudes.get((kind, "R"), 0.0))
+        row = {"pair": label, "kind": "%s-to-%s" % (kind, kind),
+               "strike_sample": None,
+               "swing_mm": round(amplitude * M_TO_MM, 2),
+               "swing_floor_mm": round(floor * M_TO_MM, 2),
+               "phase_lag_deg": None, "verdict": "unmeasured",
+               "expected_deg": 180.0}
+        if left is not None and right is not None and amplitude > floor:
+            row["phase_lag_deg"] = round(_fold_turns_to_deg(left - right), 2) or 0.0
+            row["verdict"] = _opposition_band(row["phase_lag_deg"])
+        rows.append(row)
+
+    verdict = _worst([row["verdict"] for row in rows])
+    measured = [row for row in rows if row["phase_lag_deg"] is not None]
+    worst_row = (min(measured, key=lambda row: abs(row["phase_lag_deg"]))
+                 if measured else None)
+    if verdict in ("attention", "fail") and worst_row is not None:
+        says = (
+            "The arms do not oppose the legs: %s are %.1f degrees apart where a "
+            "gait puts them %.0f, and at or under %.0f the arm's forward peak sits "
+            "at mid-stance - as close to its own foot's strike as to the other's, "
+            "which is the same-side swing a reference sheet catches in a second. "
+            "Author the walk with 'arm_phase_deg' at 180."
+            % (worst_row["pair"], abs(worst_row["phase_lag_deg"]),
+               worst_row["expected_deg"],
+               GAIT_OPPOSITION_THRESHOLDS["phase_lag_deg"]["fail_at_or_below"]))
+    elif verdict == "ok" and worst_row is not None:
+        says = ("The arms oppose the legs: the closest pair (%s) is %.1f degrees "
+                "apart, against the %.0f a gait wants."
+                % (worst_row["pair"], abs(worst_row["phase_lag_deg"]),
+                   worst_row["expected_deg"]))
+    else:
+        says = ("Arm/leg opposition was not measured: no arm swings more than "
+                "%.1f mm, which is a tenth of the legs' own stride."
+                % (floor * M_TO_MM))
+    return {
+        "pairs": rows,
+        "cycle_samples": cycle,
+        "measured": len(measured),
+        "worst_pair": worst_row["pair"] if worst_row else None,
+        "worst_phase_lag_deg": (worst_row["phase_lag_deg"] if worst_row else None),
+        "expected_phase_lag_deg": 180.0,
+        "thresholds": GAIT_OPPOSITION_THRESHOLDS,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
+def strike_lead(heel_tracks, hip_tracks, strikes, forward, stride, frames):
+    """How far in front of the hip joint each heel lands, in mm and % of stride.
+
+    ``heel_tracks`` / ``hip_tracks`` are ``{side: [world point per sample]}``
+    (the hip is the ``DEF-thigh`` head — the joint, not the control).  ``stride``
+    is the character's own travel per cycle, in metres, or ``None`` when the
+    clip does not give one; the millimetres are gated either way and the
+    percentage is reported when there is a stride to divide by.
+    """
+    rows = []
+    for side in ("L", "R"):
+        heels = heel_tracks.get(side) or []
+        hips = hip_tracks.get(side) or []
+        for index in strikes.get(side) or []:
+            if index >= len(heels) or index >= len(hips):
+                continue
+            lead = (heels[index] - hips[index]).dot(forward)
+            fraction = (lead / stride) if stride and stride > 1e-9 else None
+            rows.append({
+                "foot": "foot.%s" % side,
+                "strike_frame": frames[index] if index < len(frames) else None,
+                "lead_mm": round(lead * M_TO_MM, 2) or 0.0,
+                "lead_pct_of_stride": ((round(fraction * 100.0, 2) or 0.0)
+                                       if fraction is not None else None),
+                "verdict": (_strike_lead_band(fraction) if fraction is not None
+                            else ("fail" if lead <= 0.0 else "unmeasured")),
+            })
+    verdict = _worst([row["verdict"] for row in rows]) if rows else "unmeasured"
+    # The worst strike is the one with the worst *verdict* first and the
+    # shortest lead second: two heels that land 0.0 mm apart are not the same
+    # reading when one of them is a hair behind the hips and the other a hair
+    # in front, and the sentence has to quote the one that failed.
+    _rank = {"ok": 0, "unmeasured": 1, "attention": 2, "fail": 3}
+    worst_row = (max(rows, key=lambda row: (_rank.get(row["verdict"], 0),
+                                            -row["lead_mm"]))
+                 if rows else None)
+    if verdict in ("attention", "fail") and worst_row is not None:
+        says = (
+            "A foot does not land in front of the body: %s strikes %+.1f mm (%s%% of "
+            "the stride) from the hip joint at frame %s, and a walker's heel contacts "
+            "25-35%% of a stride AHEAD of the pelvis with the torso passing over the "
+            "planted foot through mid-stance. A heel that lands under or behind the "
+            "hips is the character walking into its own feet."
+            % (worst_row["foot"], worst_row["lead_mm"],
+               worst_row["lead_pct_of_stride"], worst_row["strike_frame"]))
+    elif verdict == "ok" and worst_row is not None:
+        says = ("Every heel strikes ahead of the hips; the shortest lead is %.1f mm "
+                "(%s%% of the stride) on %s."
+                % (worst_row["lead_mm"], worst_row["lead_pct_of_stride"],
+                   worst_row["foot"]))
+    else:
+        says = "No heel strike was found to measure a lead at."
+    return {
+        "strikes": rows,
+        "measured": len(rows),
+        "stride_mm": round(stride * M_TO_MM, 2) if stride else None,
+        "worst_foot": worst_row["foot"] if worst_row else None,
+        "worst_lead_mm": worst_row["lead_mm"] if worst_row else None,
+        "worst_lead_pct_of_stride": (worst_row["lead_pct_of_stride"]
+                                     if worst_row else None),
+        "measured_at": "heel head against the DEF-thigh head (the hip joint)",
+        "thresholds": STRIKE_LEAD_THRESHOLDS,
+        "verdict": verdict,
+        "says": says,
+    }
+
+
 def sole_vertex_indices(rig, mesh):
     """The vertices that **are** the sole, or ``None`` if this mesh has none.
 
@@ -3367,9 +3706,10 @@ def cmd_animation_check(params):
     why that detection is automatic and why a walk or a punch cannot trip it.
     ``"airborne"`` in the result is ``null`` on every clip that is not one.
 
-    **Four more gates run on every call** (the section above them argues for
-    each), added after the wip-14 audit found four user-visible defects that
-    every reading above passed clean:
+    **Six more gates run on every call** (the sections above them argue for
+    each): four added after the wip-14 audit found four user-visible defects
+    that every reading above passed clean, and two after the wip-15 artist
+    review found two craft errors in the walk itself:
 
     * ``bone_stretch_budget`` — per limb per frame, how far the DEF chain's
       summed length is from its own rest length.  Over 2% is attention, over 5%
@@ -3384,7 +3724,19 @@ def cmd_animation_check(params):
     * ``anticipation_reads`` — on a jump, whether the crouch reads: silhouette
       drop, hip setback (at the hip **joint**, the ``DEF-thigh`` heads), load
       duration and whether the **sole** stays above the plane it stood on.
-      ``null`` unless there is an airborne window.
+      ``null`` unless there is an airborne window;
+    * ``gait_opposition`` — the phase between each arm's forward swing and its
+      own side's foot strike.  Half a cycle is contralateral swing; at or under
+      a quarter cycle the arm is swinging with the leg on its own side, which is
+      the classic amateur tell.  ``null`` on a clip that is not a gait;
+    * ``strike_lead`` — at each heel strike, how far in front of the hip joint
+      (the ``DEF-thigh`` heads) that heel landed, in millimetres and as a
+      percentage of the stride.  At or behind the hips fails.  ``null`` on a
+      clip that is not a gait.
+
+    A clip **is** a gait here when its heels leave the ground and come back — a
+    punch's never do and a jump's leave together, so neither carries either
+    block.
 
     Their rollup is ``deformation_gate``, not ``gate``.  ``gate`` is the
     foot-slide (and airborne) verdict and stays exactly that: a clip whose feet
@@ -3471,6 +3823,12 @@ def cmd_animation_check(params):
     # that the landing gate never needs a second pass over the action.
     knees = knee_points(rig)
     for entry in knees:
+        tracks.setdefault(entry["bone"], [])
+    # The heels ride along for the same reason, and they are the only point the
+    # strike-lead gate can be asked about: the ball is what a plant is measured
+    # at, the heel is what *lands*. One more bone read per frame.
+    heels = heel_points(rig)
+    for entry in heels:
         tracks.setdefault(entry["bone"], [])
     # The limb chains ride along in the same loop, for the same reason the knees
     # do: two more bone reads per frame buy the stretch and reach gates without
@@ -3936,6 +4294,68 @@ def cmd_animation_check(params):
     stretch = bone_stretch_budget(chains, chain_samples, chain_frames, contact_runs)
     reach = ik_reach_headroom(chains, chain_samples, chain_frames)
 
+    # --- the two gait gates -------------------------------------------------
+    #
+    # Null on anything that is not a gait, and "a gait" is not a name or a mode:
+    # it is a heel that leaves the ground and comes back. A punch's heels never
+    # do, a jump's leave together, and neither carries these blocks at all.
+    opposition = None
+    lead = None
+    gait_forward, gait_forward_how = rigforge_rig.rig_forward_axis(rig)
+    heel_tracks = {entry["side"]: tracks.get(entry["bone"]) or []
+                   for entry in heels}
+    hip_tracks = {}
+    gait_signals = {}
+    for chain in chains:
+        if chain["kind"] not in ("leg", "front_leg", "arm"):
+            continue
+        roots = chain_roots.get(chain["limb"]) or []
+        tips = chain_tips.get(chain["limb"]) or []
+        if len(roots) < len(frames) or len(tips) < len(frames):
+            continue
+        kind = "arm" if chain["kind"] == "arm" else "leg"
+        if kind == "leg" and chain["side"] not in hip_tracks:
+            hip_tracks[chain["side"]] = roots[:len(frames)]
+        gait_signals[(kind, chain["side"])] = [
+            (tips[index] - roots[index]).dot(gait_forward)
+            for index in range(len(frames))]
+    gait_strikes = {side: contact_starts(track, band=band, minimum=minimum,
+                                         looping=looping)
+                    for side, track in heel_tracks.items()}
+    is_gait = (mode in ("planted", "in_place")
+               and len([side for side in ("L", "R") if gait_strikes.get(side)]) >= 2)
+    if is_gait:
+        # The cycle, in samples: one foot's strike to its own next strike when
+        # the clip is long enough to show two, and otherwise the whole sample
+        # window - which is exactly one cycle on a loop, since the duplicate
+        # last frame was dropped above.
+        spans = []
+        for side in ("L", "R"):
+            indices = gait_strikes.get(side) or []
+            spans.extend(indices[index + 1] - indices[index]
+                         for index in range(len(indices) - 1))
+        cycle_samples = (int(round(sum(spans) / float(len(spans)))) if spans
+                         else (len(frames) if looping else 0))
+        # The character's own forward speed, per sample, from whichever end of
+        # the treadmill this clip is: the hip joint travels on a root-motion
+        # clip, and on an in-place clip the floor travels under it instead.
+        speed = 0.0
+        if mode == "in_place":
+            speed = -treadmill.dot(gait_forward)
+        elif hip_tracks and len(frames) > 1:
+            advances = [(track[-1] - track[0]).dot(gait_forward)
+                        for track in hip_tracks.values()]
+            speed = (sum(advances) / len(advances)) / float(len(frames) - 1)
+        gait_stride = (speed * cycle_samples) if cycle_samples and speed > 0 else None
+        if cycle_samples >= 2:
+            opposition = gait_opposition(gait_signals, gait_strikes, cycle_samples)
+            opposition["forward_axis_from"] = gait_forward_how
+        lead = strike_lead(heel_tracks, hip_tracks, gait_strikes, gait_forward,
+                           gait_stride, frames)
+        lead["heel_bones"] = {entry["side"]: entry["bone"] for entry in heels}
+        lead["cycle_samples"] = cycle_samples
+        lead["forward_axis_from"] = gait_forward_how
+
     mesh_obj = None
     try:
         mesh_obj = _mesh_for(rig, params)
@@ -4058,6 +4478,8 @@ def cmd_animation_check(params):
         "ik_reach_headroom": reach,
         "loop_seam_closure": seam,
         "anticipation_reads": anticipation,
+        "gait_opposition": opposition,
+        "strike_lead": lead,
     }
     deformation_gate = "ok"
     measured_any = False
@@ -4088,6 +4510,8 @@ def cmd_animation_check(params):
         "ik_reach_headroom": reach,
         "loop_seam_closure": seam,
         "anticipation_reads": anticipation,
+        "gait_opposition": opposition,
+        "strike_lead": lead,
         "deformation_gate": deformation_gate,
         "frames": [frames[0], frames[-1]],
         "frame_step": frame_step,
