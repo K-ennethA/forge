@@ -32,6 +32,12 @@ What it measures, and why each one is on the list:
   is still wrong, because the defect is in the *faces*: any relative motion
   stretches the bridging faces into a visible membrane. See
   :func:`bridge_report`.
+* **misplaced junctions** — the same defect inside a pair that *is* adjacent.
+  An arm welded to the ribcage 300 mm below its own shoulder is an
+  ``Arm``/``Torso`` contact like the shoulder itself, and only the rig can tell
+  them apart: the junction bends about a bone, and where that bone cannot reach
+  both sides there is nothing to blend and the contact tears. See
+  :class:`JunctionRule`.
 
 Read-only, always.  It answers a question and changes nothing, so it pushes no
 undo step and it is safe to run on a timer while the artist works.
@@ -81,6 +87,10 @@ __all__ = [
     "tags_adjacent",
     "dominant_tags",
     "bridge_report",
+    # misplaced junctions
+    "JunctionRule",
+    "junction_rule",
+    "rig_for",
 ]
 
 
@@ -505,6 +515,55 @@ def scale_report(obj, size_mm):
 #   resolve (1 for a hip seam, 19 for the membrane) measure Rigify's control
 #   plumbing rather than anatomy.
 #
+# A third signal — the POSED mesh, which :data:`BRIDGE_OUTLIER_FACTOR` below
+# names as the way out of its own blind spot — was measured on 2026-09-19 and
+# is REJECTED for the same reason, with harder numbers.  Recorded at length
+# because it is the obvious next idea and it costs a day to re-measure.
+#
+# * *Posed elongation* — drive the rig through its own actions (the werewolf's
+#   ``jump``/``punch.L``/``punch.R``/``walk-loop``, eight frames each), and
+#   score every edge by ``max(posed length) / rest length``.  The signal is
+#   real: on wip-15 the CONFIRMED ``Arm/Leg`` membrane runs at a median of
+#   **17.9x** (``Arm.R/Leg.R``, n=47) and **19.8x** (``Arm.L/Leg.L``, n=26),
+#   against **1.2x** for the legitimate hip seams (``Leg.*/Torso``, n=433) and
+#   **1.1x** for the neck (``Head/Torso``, n=23).  What fails is the
+#   **threshold**.  No fence derived from a pair's own distribution works,
+#   because on a welded pair the weld IS most of the distribution: on wip-16,
+#   Tukey's far-out fence (q75 + 3 IQR) over ``Arm.R/Torso`` lands at x25.7 and
+#   flags **0** of the 135 edges that carry the defect, while the same fence
+#   over the clean ``Leg.R/Torso`` lands at x2.4 and flags **7**.  Otsu on the
+#   logs splits ``Arm.R/Torso`` at 93 of 135 and ``Leg.R/Torso`` at 10 of 219;
+#   the largest-log-gap cut gives 104 and 4.  Every rule is either backwards or
+#   arbitrary.
+# * *Posed elongation normalised by the local skin* — divide an edge's
+#   elongation by the largest elongation among the WITHIN-part edges touching
+#   its endpoints ("does this boundary line stretch more than the skin it is
+#   attached to?").  This is the best of the family and it nearly works: on
+#   wip-15 the confirmed membrane never drops below **4.8** (median 16.5-18.6)
+#   while the neck seam never passes **0.90** and the hip seams sit at p95
+#   **1.4**.  It still cannot cut the werewolf's armpit, because the whole
+#   ``Arm/Torso`` and ``Arm/Head`` junction reads weld-like along its entire
+#   length (medians 3.8 and 3.3, q75 6.8 and 6.9) — a fence that takes the
+#   armpit also takes the shoulder, and a fence that spares the shoulder takes
+#   nothing.
+#
+# The reason is worth stating once, because it retires the whole idea: **the
+# posed mesh is a deterministic function of the rest positions, the weights and
+# the bone motion.  It carries no information the weights do not.**  Where the
+# weights break, the posed mesh tears, and a tear is indistinguishable from a
+# weld.  The werewolf's arm root is exactly that: measured on wip-16, adjacent
+# vertices across the junction at z = 1.17 m carry ``DEF-spine.001`` 1.00 and
+# ``DEF-upper_arm.R.001`` 1.00 — not one shared bone — while the hip carries a
+# blended ``DEF-pelvis.R``/``DEF-thigh.R`` pair and stays quiet at 1.2x.  The
+# arm is held on by a hard weight break along its whole root, so every edge
+# there stretches whether it is weld or anatomy.  Separating them needs the
+# skin fixed first (an ``Arm``-root weight-blend lane), or an artist-marked
+# cut; it does not need more geometry.  Nothing rest-pose rescues it either:
+# the fold across that junction is smooth (dihedral median 2 deg, q25 -10, q75
+# 15, the same as ordinary surface), and the confirmed membrane's rest edges
+# are ordinary length (1.07-1.31x their own local skin edge) while the
+# legitimate neck seam's are the longest on the mesh (3.25x).
+#
 # What survived as the secondary signal is cheap, needs no rig, and falls out of
 # machinery the report needs anyway: within a pair that IS adjacent, the two
 # parts should meet at ONE seam.  A contact patch sitting far away from that
@@ -570,17 +629,23 @@ BRIDGE_LINK_FACTOR = 3.0
 #: the werewolf, which keeps the armpit and the shoulder-top one seam.  It never
 #: touches ``clean``.
 #:
-#: **Its measured blind spot, recorded rather than papered over.**  The
-#: werewolf also has the forearm welded to the flank at z ~ 1.15 m.  Half of
-#: that weld is ``Arm``/``Leg`` and the primary rule takes it; the other half is
+#: **Its measured blind spot, and what closed it.**  The werewolf also has the
+#: forearm welded to the flank at z ~ 1.15 m.  Half of that weld is
+#: ``Arm``/``Leg`` and the primary rule takes it; the other half is
 #: ``Arm.R``/``Torso``, which is a legitimate pair, and the weld runs
 #: *continuously* into the genuine armpit seam — one patch, no spatial gap — so
-#: no outlier test can separate them.  The cost is visible: after the repair the
-#: worst edge anywhere on the mesh still stretches to **536.9 mm** at frame 13
-#: of the rig's own ``jump`` action (it was 1198.8 mm before), and it is that
-#: ``Arm.R``/``Torso`` edge.  Separating a weld from the seam it grew out of
-#: needs the posed mesh — an armature and its actions — which is data this
-#: stage does not have.  That is a ``verify_anim`` gate, not this one.
+#: no outlier test can separate them.  The cost was visible: after the repair
+#: the worst edge anywhere on the mesh still stretched to **536.9 mm** at frame
+#: 13 of the rig's own ``jump`` action (it was 1198.8 mm before), and it was
+#: that ``Arm.R``/``Torso`` edge.  **The posed mesh does not rescue it** — that
+#: was measured and rejected on 2026-09-19, the third rejected signal in the
+#: section header above.
+#:
+#: What did rescue it is not a spatial test at all but the rig's own contract:
+#: see :class:`JunctionRule`, which asks *which slab is this contact in, and can
+#: the junction's own bone reach it* and cuts the werewolf's 89 lower-armpit
+#: edges without touching the 188 shoulder ones beside them.  This factor stays
+#: as the signal that needs no rig, and stays report-only.
 BRIDGE_OUTLIER_FACTOR = 6.0
 
 #: The repair's refusal line.  A bridge that eats more than this fraction of a
@@ -651,6 +716,246 @@ def dominant_tags(obj):
                 best_name, best_weight, best_index = name, weight, entry.group
         mapping[vertex.index] = best_name
     return mapping, groups
+
+
+# ---------------------------------------------------------------------------
+# misplaced junctions — cross-part contact inside a LEGAL pair, in the wrong PLACE
+# ---------------------------------------------------------------------------
+#
+# The residual the section above documents and cannot cut.  ``ANATOMY_ADJACENT``
+# says ``Arm``/``Torso`` is a legitimate pair, so every edge between them is
+# waved through — and on the werewolf **45 of them per side are a weld**.  The
+# arm tube is fused to the ribcage at z = 1.17–1.33 m, three hundred millimetres
+# below its own shoulder joint: ``Arm.*``/``Torso.spine.001`` (9 edges left,
+# 8 right) and ``Arm.*``/``Torso.spine.002`` (35 left, 37 right).  The real
+# shoulder junction — ``Arm.*``/``Torso.spine.003``, 98 and 90 edges — is
+# anatomy and must stay.  A pair-level rule cannot tell them apart because they
+# are *the same pair*.
+#
+# The arm-root weight-blend lane (2026-09-19) proved the residual is GEOMETRY
+# rather than skinning, by measuring both ways out and failing at both:
+# trunk-weighting the welded flesh tears the arm at 636 mm posed;
+# arm-weighting it re-admits 3.19 of stray mass and tears the hip at 368 mm
+# against a 31 mm rest edge.  ``rigforge_skin.articulations`` carries that
+# measurement in its own comment and refuses to open a band there.  So the skin
+# is right and the mesh is wrong, and this is the check that says so.
+#
+# The rule, derived — no free constant, no threshold, nothing tuned
+# ----------------------------------------------------------------
+# ``rigforge_skin`` already cuts a trunk into **slabs** of its own spine and a
+# leg into thigh/shin/foot (:class:`~forge.tools.rigforge_skin.TagSplit`), and
+# its contract already names, per tag, the **hinge** — the bone that tag hangs
+# from, the one the articulation rule blends the junction about.  ``Arm.L``
+# hinges on ``DEF-shoulder.L``; ``Leg.R.thigh`` hinges on ``DEF-spine``, the
+# hips; ``Head`` hinges on ``DEF-spine.005``.  Legality is per SLAB: the
+# werewolf's ``DEF-shoulder.L`` is legal on ``Torso.spine.003`` and on nothing
+# else, because that is the slab it lives in.
+#
+#     A cross-part contact is a junction only where the bone that junction
+#     bends about can reach **both** sides of it.  Where it cannot, the two
+#     sides have no bone in common, nothing blends, and the contact is a weld
+#     however smooth the surface looks.
+#
+# Read off the contract that is already there, per refined (slab-level) pair:
+# the contact is legitimate when either side's hinge bone is in the other
+# side's legal set.  Measured on werewolf-wip-16, every legal-pair contact on
+# the figure:
+#
+#   ================================  =====  =========
+#   refined pair                      edges  verdict
+#   ================================  =====  =========
+#   ``Arm.L``/``Torso.spine.003``        98  junction   (owns ``DEF-shoulder.L``)
+#   ``Arm.R``/``Torso.spine.003``        90  junction
+#   ``Head``/``Torso.spine.003``         23  junction   (owns ``DEF-spine.005``)
+#   ``Leg.L.thigh``/``Torso.spine``     100  junction   (owns ``DEF-spine``)
+#   ``Leg.R.thigh``/``Torso.spine``      99  junction
+#   ``Leg.L.thigh``/``Torso.spine.001`` 118  junction   (hinges on ``DEF-spine``)
+#   ``Leg.R.thigh``/``Torso.spine.001`` 120  junction
+#   ``Arm.L``/``Torso.spine.002``        35  MISPLACED
+#   ``Arm.R``/``Torso.spine.002``        37  MISPLACED
+#   ``Arm.L``/``Torso.spine.001``         9  MISPLACED
+#   ``Arm.R``/``Torso.spine.001``         8  MISPLACED
+#   ================================  =====  =========
+#
+# **The hip is the row that makes the rule rather than breaks it.**  238 of the
+# leg's edges land on ``Torso.spine.001``, the abdomen slab, which does *not*
+# own ``DEF-spine``.  "Owns" alone would call the whole upper hip seam a weld.
+# It is legitimate because ``Torso.spine.001`` **hinges on** ``DEF-spine`` — the
+# contract says that bone reaches this flesh — so the two sides do share the
+# bone the hip bends about.  Legality, not ownership, is the line; ownership is
+# just the case where the bone lives there.
+#
+# Where the rule keeps quiet, deliberately
+# ----------------------------------------
+# * **No slab granularity, no opinion.**  ``Arm``/``Head`` is the trapezius
+#   seam — 149 edges on this figure, neither tag split — and neither hinge is in
+#   the other's legal set, so a bare "do they share the hinge" test would fire
+#   149 false positives on the one mesh this gate exists for.  A contact is only
+#   judged when at least one end was refined into a slab, because only then does
+#   the question "is this the right *place*?" mean anything.
+# * **No anchor, no opinion.**  If no refined pair under two tags reads as a
+#   junction — a rig with no metarig whose hinges do not resolve, say — then the
+#   rule does not know where the right place IS and cannot call any place wrong.
+#   It says so in ``junction.note`` rather than reddening the whole seam.
+# * **No rig, no check.**  Slab ownership is a fact about the armature, so this
+#   category runs where a rig exists and is skipped with a sentence where one
+#   does not.  ``verify_mesh`` on a raw retopo gets the tag-adjacency rule and a
+#   note; the same mesh after ``rigforge_generate_rig`` gets both.
+
+
+class JunctionRule(object):
+    """Where a limb may touch the trunk, read off the rig's own contract.
+
+    Holds three things and nothing else: the slab each vertex of a split tag
+    landed in, which tag each slab is a slab of, and — per tag and per slab —
+    the hinge bones and the legal bone set
+    :func:`~forge.tools.rigforge_skin.legal_bone_sets` derived.  Nothing here
+    re-derives anatomy; it asks the contract the skinner enforces.
+    """
+
+    def __init__(self, membership, parent_of, hinges, legal, note=""):
+        #: ``{vertex index: sub-tag}`` for every vertex of a split tag.
+        self.membership = dict(membership)
+        self._parent_of = dict(parent_of)
+        self._by_parent = {}
+        for name, parent in sorted(self._parent_of.items()):
+            self._by_parent.setdefault(parent, []).append(name)
+        self.hinges = {key: frozenset(value) for key, value in hinges.items()}
+        self.legal = {key: frozenset(value) for key, value in legal.items()}
+        #: Every slab name, for the report — the reader should be able to see
+        #: which view the verdicts were reached in.
+        self.slabs = tuple(sorted(self._parent_of))
+        self.note = note
+        self._anchors = {}
+
+    # -- the slab view -----------------------------------------------------
+
+    def merged(self, tag):
+        """A slab folded back into the tag it is a slab of; anything else kept."""
+        return self._parent_of.get(tag, tag)
+
+    def refine(self, index, tag):
+        """``tag``, replaced by the slab this vertex landed in where there is one."""
+        sub = self.membership.get(index)
+        if sub is not None and self._parent_of.get(sub) == tag:
+            return sub
+        return tag
+
+    def _views(self, base):
+        """The slabs of ``base``, or ``base`` itself when it is not split."""
+        return self._by_parent.get(base) or (base,)
+
+    # -- the rule ----------------------------------------------------------
+
+    def joined(self, tag_a, tag_b):
+        """Can the bone this junction bends about reach both sides of it?"""
+        empty = frozenset()
+        return bool(self.hinges.get(tag_a, empty) & self.legal.get(tag_b, empty)
+                    or self.hinges.get(tag_b, empty) & self.legal.get(tag_a, empty))
+
+    def anchored(self, base_a, base_b):
+        """Is there ANY place these two tags read as a real junction?
+
+        Without one there is no right place, so no place can be the wrong one.
+        """
+        key = (base_a, base_b) if base_a <= base_b else (base_b, base_a)
+        cached = self._anchors.get(key)
+        if cached is None:
+            cached = any(self.joined(one, other)
+                         for one in self._views(base_a)
+                         for other in self._views(base_b))
+            self._anchors[key] = cached
+        return cached
+
+    def misplaced(self, tag_a, tag_b):
+        """``True`` when this refined contact is a junction in the wrong place.
+
+        Both arguments are already refined (see :meth:`refine`).  Returns
+        ``False`` for anything the rule has no opinion about — same part, no
+        slab granularity, or no anchor — so a caller can use it as a plain
+        predicate without re-checking the guards.
+        """
+        base_a, base_b = self.merged(tag_a), self.merged(tag_b)
+        if base_a == base_b:
+            return False
+        if tag_a == base_a and tag_b == base_b:
+            return False
+        if not self.anchored(base_a, base_b):
+            return False
+        return not self.joined(tag_a, tag_b)
+
+
+def junction_rule(obj, rig=None, metarig=None):
+    """``(JunctionRule | None, note)`` — the slab view plus the rig's contract.
+
+    Lazily imported from ``rigforge_skin`` inside the call, never at module
+    scope: ``diagnose`` sits BELOW ``rigforge`` in the import order (``rigcheck``
+    and ``verify`` import this module) and must stay there.  Nothing in
+    ``rigforge_skin``'s own import list reaches back here, so the deferred
+    import cannot close a cycle.
+
+    A missing rig, a missing split or a refusal anywhere underneath costs the
+    category and returns a sentence, never an exception: ``mesh_diagnose`` runs
+    at the retopo stage where there may be no armature at all, and a check that
+    raises there would take the whole report down with it.
+    """
+    if rig is None:
+        return None, ("Skipped the misplaced-junction check: %r is not bound to "
+                      "an armature, and which slab of the trunk carries a limb's "
+                      "junction bone is a fact about the rig. Pass 'rig', or run "
+                      "this again after rigforge_generate_rig." % obj.name)
+    try:
+        from . import rigforge_rig, rigforge_skin
+    except ImportError as error:  # pragma: no cover - the add-on ships both
+        return None, ("Skipped the misplaced-junction check: %s." % error)
+    try:
+        if metarig is None:
+            stored = str(rigforge_rig._prop(obj, rigforge_rig.PROP_METARIG, "") or "")
+            if stored:
+                metarig = bpy.data.objects.get(stored)
+        regions, _empty = rigforge_rig.measure_tags(obj)
+        if not regions:
+            return None, ("Skipped the misplaced-junction check: %r has no tagged "
+                          "geometry to read slabs off." % obj.name)
+        split, _torso, _legs = rigforge_skin.body_split(obj, regions, rig, metarig)
+        if split is None:
+            return None, ("Skipped the misplaced-junction check: no tag on %r could "
+                          "be cut into slabs, so there is no finer place to test a "
+                          "junction against." % obj.name)
+        contract = rigforge_skin.legal_bone_sets(rig, metarig, regions, split)
+    except (AttributeError, IndexError, KeyError, RuntimeError, ReferenceError,
+            TypeError, ValueError) as error:
+        return None, ("Skipped the misplaced-junction check: the tag contract "
+                      "could not be read off %r (%s)." % (rig.name, error))
+    membership = {}
+    parent_of = {}
+    for member in split.members:
+        for name in member.names:
+            parent_of[name] = member.parent
+        membership.update(member.membership)
+    rule = JunctionRule(membership, parent_of, contract.get("hinges") or {},
+                        contract.get("legal") or {})
+    return rule, ""
+
+
+def _contact_is_defect(tag_a, tag_b, rule=None):
+    """Must these two (refined) tags NOT share surface?
+
+    One predicate for both categories, so the detector, the repair's cut and
+    every rim fill agree by construction rather than by two lists staying in
+    step.  The anatomy table is asked in the COARSE view — ``Torso.spine.002``
+    is not a part name and ``tags_adjacent`` has no opinion about it — and the
+    junction rule is asked in the refined one.
+    """
+    if not tag_a or not tag_b:
+        return False
+    base_a = rule.merged(tag_a) if rule is not None else tag_a
+    base_b = rule.merged(tag_b) if rule is not None else tag_b
+    if tags_adjacent(base_a, base_b) is False:
+        return True
+    if rule is None:
+        return False
+    return rule.misplaced(tag_a, tag_b)
 
 
 def _median_edge_length(mesh):
@@ -763,22 +1068,39 @@ def _faces_by_edge(mesh, edge_indices):
 
 
 def bridge_report(obj, limit=DEFAULT_EXAMPLES, matrix=None,
-                  vertex_limit=BRIDGE_VERTEX_LIMIT):
+                  vertex_limit=BRIDGE_VERTEX_LIMIT, rule=None):
     """Faces welded between parts that must stay separate, and WHERE.
 
     Reads the object's own mesh (not the evaluated one): tags live on the cage,
     the repair edits the cage, and a membrane is a property of the rest surface
     rather than of whatever pose the depsgraph happens to be holding.
 
-    The result carries, per non-adjacent pair, one entry per contact patch with
-    its edge count, face count, bridged area in mm^2 and its centroid in world
-    millimetres — the shape the workspace pins want.  ``suspected`` holds the
-    secondary signal (outlying patches inside a LEGAL pair) and ``unclassified``
-    holds pairs the anatomy table has no opinion about; neither gates.
+    Two categories, reported apart and gated together:
+
+    * ``pairs`` — contact between two parts that are **not anatomically
+      adjacent** at all (a hand fused to a thigh).  Needs only the mesh and its
+      tags.  ``count``/``faces``/``area_mm2`` are this category's totals.
+    * ``misplaced`` — contact inside a pair that IS adjacent but in a place
+      where the junction cannot bend, keyed by the refined **slab** pair (the
+      werewolf's arm welded to the abdomen, 300 mm below its own shoulder).
+      Needs ``rule``, a :class:`JunctionRule` from :func:`junction_rule`;
+      without one the category is empty and ``junction`` says why.
+      ``misplaced_edges``/``misplaced_faces``/``misplaced_area_mm2`` are its
+      totals, kept separate so the two rules stay separately auditable.
+
+    Both are one entry per contact patch with its edge count, face count,
+    bridged area in mm^2 and its centroid in world millimetres — the shape the
+    workspace pins want.  ``suspected`` holds the weaker spatial-outlier signal
+    (see :data:`BRIDGE_OUTLIER_FACTOR`) and ``unclassified`` holds pairs the
+    anatomy table has no opinion about; neither gates.
     """
     mesh = obj.data
     blank = {
         "count": 0, "faces": 0, "area_mm2": 0.0, "pairs": [], "examples": [],
+        "misplaced": [], "misplaced_edges": 0, "misplaced_faces": 0,
+        "misplaced_area_mm2": 0.0, "misplaced_examples": [],
+        "junction": {"scanned": rule is not None,
+                     "slabs": list(rule.slabs) if rule is not None else []},
         "suspected": [], "unclassified": [], "tags": [], "scanned": False,
     }
     dominant, groups = dominant_tags(obj)
@@ -809,7 +1131,16 @@ def bridge_report(obj, limit=DEFAULT_EXAMPLES, matrix=None,
         if verdict is None:
             unclassified[pair] = unclassified.get(pair, 0) + 1
             continue
-        entries_by_pair.setdefault((pair, bool(verdict)), []).append(
+        kind = "junction" if verdict else "bridge"
+        if verdict and rule is not None:
+            # Refined and keyed on the SLAB pair: "Arm.R / Torso.spine.002" is
+            # the whole finding, and folding it back to "Arm.R / Torso" would
+            # throw away the only thing that separates it from the shoulder.
+            refined = (rule.refine(a, tag_a), rule.refine(b, tag_b))
+            if rule.misplaced(*refined):
+                kind = "misplaced"
+                pair = tuple(sorted(refined))
+        entries_by_pair.setdefault((pair, kind), []).append(
             (edge.index, a, b, mid))
 
     # A face can bridge two parts without owning a single bad EDGE: corners in
@@ -819,8 +1150,8 @@ def bridge_report(obj, limit=DEFAULT_EXAMPLES, matrix=None,
     # and it is precisely the shape a careless hole-fill leaves behind — so the
     # faces are counted as well as the edges.
     bad_keys = set()
-    for (_pair, legal), entries in entries_by_pair.items():
-        if legal:
+    for (_pair, kind), entries in entries_by_pair.items():
+        if kind != "bridge":
             continue
         for _edge, a, b, _mid in entries:
             bad_keys.add((min(a, b), max(a, b)))
@@ -882,14 +1213,25 @@ def bridge_report(obj, limit=DEFAULT_EXAMPLES, matrix=None,
                                     entry["location_mm"]))
         return out
 
+    def summarise(pair, found):
+        """One reportable row for a pair, from its clustered patches."""
+        places = [{key: value for key, value in patch.items()
+                   if not key.startswith("_")} for patch in found]
+        return {
+            "parts": list(pair),
+            "edges": sum(patch["edges"] for patch in found),
+            "faces": sum(patch["faces"] for patch in found),
+            "area_mm2": round(sum(patch["area_mm2"] for patch in found), 3),
+            "places": places[:limit],
+            "place_count": len(places),
+        }
+
     pairs = []
+    misplaced = []
     suspected = []
-    total_edges = 0
-    total_faces = 0
-    total_area = 0.0
-    for (pair, legal), entries in sorted(entries_by_pair.items()):
+    for (pair, kind), entries in sorted(entries_by_pair.items()):
         found = patches(entries)
-        if legal:
+        if kind == "junction":
             if len(found) < 2:
                 continue
             seam = found[0]["_centre"]
@@ -906,47 +1248,54 @@ def bridge_report(obj, limit=DEFAULT_EXAMPLES, matrix=None,
                            (patch["_centre"] - seam).length * common.M_TO_MM))
                     suspected.append(record)
             continue
-        places = [{key: value for key, value in patch.items()
-                   if not key.startswith("_")} for patch in found]
-        pair_edges = sum(patch["edges"] for patch in found)
-        pair_faces = sum(patch["faces"] for patch in found)
-        pair_area = sum(patch["area_mm2"] for patch in found)
-        total_edges += pair_edges
-        total_faces += pair_faces
-        total_area += pair_area
-        pairs.append({
-            "parts": list(pair),
-            "edges": pair_edges,
-            "faces": pair_faces,
-            "area_mm2": round(pair_area, 3),
-            "places": places[:limit],
-            "place_count": len(places),
-        })
+        row = summarise(pair, found)
+        if kind == "misplaced":
+            row["why"] = (
+                "%s and %s do touch legitimately somewhere, but not here: %s "
+                "does not carry the bone %s's junction bends about, so the two "
+                "sides share no bone and this contact is a weld."
+                % (rule.merged(pair[0]), rule.merged(pair[1]), pair[1], pair[0]))
+            misplaced.append(row)
+        else:
+            pairs.append(row)
 
-    pairs.sort(key=lambda entry: (-entry["area_mm2"], -entry["edges"],
-                                  entry["parts"]))
+    by_size = lambda entry: (-entry["area_mm2"], -entry["edges"], entry["parts"])
+    pairs.sort(key=by_size)
+    misplaced.sort(key=by_size)
     suspected.sort(key=lambda entry: (-entry["area_mm2"], entry["location_mm"]))
-    examples = []
-    for pair in pairs:
-        for place in pair["places"]:
-            examples.append({
-                "parts": pair["parts"],
-                "location_mm": place["location_mm"],
-                "faces": place["faces"],
-                "area_mm2": place["area_mm2"],
-            })
-    examples.sort(key=lambda entry: (-entry["area_mm2"], entry["location_mm"]))
+
+    def located(rows):
+        out = []
+        for row in rows:
+            for place in row["places"]:
+                out.append({
+                    "parts": row["parts"],
+                    "location_mm": place["location_mm"],
+                    "faces": place["faces"],
+                    "area_mm2": place["area_mm2"],
+                })
+        out.sort(key=lambda entry: (-entry["area_mm2"], entry["location_mm"]))
+        return out[:limit]
 
     corner_area_mm2 = round(corner_area * common.M_TO_MM * common.M_TO_MM, 3)
+    junction = {"scanned": rule is not None,
+                "slabs": list(rule.slabs) if rule is not None else []}
     result = {
-        "count": int(total_edges),
-        "faces": int(total_faces + corner_count),
-        "area_mm2": round(total_area + corner_area_mm2, 3),
+        "count": int(sum(row["edges"] for row in pairs)),
+        "faces": int(sum(row["faces"] for row in pairs) + corner_count),
+        "area_mm2": round(sum(row["area_mm2"] for row in pairs)
+                          + corner_area_mm2, 3),
         "corner_faces": {"count": int(corner_count),
                          "area_mm2": corner_area_mm2,
                          "examples": corner_hits},
         "pairs": pairs,
-        "examples": examples[:limit],
+        "examples": located(pairs),
+        "misplaced": misplaced,
+        "misplaced_edges": int(sum(row["edges"] for row in misplaced)),
+        "misplaced_faces": int(sum(row["faces"] for row in misplaced)),
+        "misplaced_area_mm2": round(sum(row["area_mm2"] for row in misplaced), 3),
+        "misplaced_examples": located(misplaced),
+        "junction": junction,
         "suspected": suspected[:limit],
         "unclassified": [{"parts": list(pair), "edges": count}
                          for pair, count in sorted(unclassified.items())],
@@ -987,6 +1336,22 @@ def verdict_lines(result):
                         "" if bridges.get("faces") == 1 else "s",
                         bridges.get("area_mm2", 0.0), bridges.get("count", 0),
                         "" if bridges.get("count") == 1 else "s", place))
+    if bridges.get("misplaced_edges"):
+        where = bridges.get("misplaced_examples") or []
+        place = ""
+        if where:
+            place = (" — the worst is around %s mm, where %s meets %s"
+                     % (", ".join("%g" % v for v in where[0]["location_mm"]),
+                        where[0]["parts"][0], where[0]["parts"][1]))
+        lines.append("%d face%s join two parts that do meet somewhere, but not "
+                     "here (%.1f mm2 across %d edge%s)%s. The junction bends "
+                     "about a bone that cannot reach this flesh, so nothing "
+                     "blends across it and it tears like a weld."
+                     % (bridges.get("misplaced_faces", 0),
+                        "" if bridges.get("misplaced_faces") == 1 else "s",
+                        bridges.get("misplaced_area_mm2", 0.0),
+                        bridges["misplaced_edges"],
+                        "" if bridges["misplaced_edges"] == 1 else "s", place))
     clip = result.get("self_intersections") or {}
     if clip.get("count"):
         where = clip.get("examples") or []
@@ -1038,6 +1403,34 @@ def verdict_lines(result):
 # the command
 # ---------------------------------------------------------------------------
 
+def rig_for(obj, params=None):
+    """The armature this mesh is bound to, or ``None`` — never an error.
+
+    Deliberately not ``rigforge_rig._rig_for_mesh``, which raises: this module
+    runs at the retopo stage where there is often no armature yet, and a
+    diagnostic that refuses to answer *"what is wrong with this mesh"* because
+    it has not been rigged is a diagnostic nobody runs.  A ``rig`` named in
+    ``params`` and not found IS an error, because that is a typo rather than a
+    stage of the pipeline.
+    """
+    name = (params or {}).get("rig")
+    if isinstance(name, str) and name.strip():
+        rig = bpy.data.objects.get(name.strip())
+        if rig is None:
+            raise ForgeError("No object named %r to read slabs off." % name.strip())
+        if rig.type != "ARMATURE":
+            raise ForgeError("Object %r is a %s, not an armature."
+                             % (rig.name, rig.type))
+        return rig
+    for modifier in getattr(obj, "modifiers", ()) or ():
+        if modifier.type == "ARMATURE" and modifier.object is not None:
+            return modifier.object
+    parent = getattr(obj, "parent", None)
+    if parent is not None and getattr(parent, "type", "") == "ARMATURE":
+        return parent
+    return None
+
+
 def _evaluated_mesh(obj, apply_modifiers):
     """``(mesh, owner, evaluated)`` — free ``owner`` with ``to_mesh_clear``."""
     if not apply_modifiers or not getattr(obj, "modifiers", None):
@@ -1063,6 +1456,10 @@ def cmd_mesh_diagnose(params):
       (default true) rather than the raw cage.
     - ``density_ratio``: how much denser (or sparser) than the median a region
       has to be before it is worth mentioning; default 4.
+    - ``rig``: which armature to read the tag contract off, for the
+      misplaced-junction category; omitted = the mesh's own armature modifier
+      or armature parent, and no rig at all means that one category is skipped
+      with a sentence in ``notes`` (see :func:`junction_rule`).
 
     Read-only: it answers a question, changes nothing and pushes no undo step,
     which is what makes it safe to run on the buddy timer while they work.
@@ -1123,7 +1520,11 @@ def cmd_mesh_diagnose(params):
         # tags live on the cage, the repair edits the cage, and a weld is a
         # property of the rest surface rather than of the pose the depsgraph is
         # holding this frame.
-        bridges = bridge_report(obj, limit=limit, matrix=matrix)
+        rule, junction_note = junction_rule(obj, rig_for(obj, params))
+        bridges = bridge_report(obj, limit=limit, matrix=matrix, rule=rule)
+        if junction_note:
+            bridges.setdefault("junction", {})["note"] = junction_note
+            notes.append(junction_note)
         if bridges.get("note"):
             notes.append(bridges["note"])
     finally:
@@ -1170,10 +1571,12 @@ def cmd_mesh_diagnose(params):
     result["verdict"] = verdict_lines(result)
     result["clean"] = (
         not clipping.get("count")
-        # Red on a bridge between NON-ADJACENT parts only. `suspected` (the
-        # secondary signal) and `unclassified` (parts the anatomy table has no
-        # opinion about) are reported and never gate.
+        # Red on a bridge between NON-ADJACENT parts, and on a misplaced
+        # junction — both are welds and both tear under pose. `suspected` (the
+        # weaker spatial-outlier signal) and `unclassified` (parts the anatomy
+        # table has no opinion about) are reported and never gate.
         and not bridges.get("count") and not bridges.get("faces")
+        and not bridges.get("misplaced_edges")
         and topology["watertight"]
         and not zero["count"]
         and not dense and not starved
@@ -1315,14 +1718,24 @@ def _boundary_loops(bm, skip_keys):
     return loops, strays
 
 
-def _nonadjacent_pair(parts):
-    """The first non-adjacent pair among ``parts``, or ``None``."""
+def _defect_pair(parts, rule=None):
+    """The first pair among ``parts`` that must not share surface, or ``None``.
+
+    With a :class:`JunctionRule` this covers both categories — a non-adjacent
+    pair and a misplaced junction — so the cut, every fill and the detector
+    read the same line rather than two lists that have to be kept in step.
+    """
     ordered = sorted(part for part in parts if part)
     for index, first in enumerate(ordered):
         for second in ordered[index + 1:]:
-            if tags_adjacent(first, second) is False:
+            if _contact_is_defect(first, second, rule):
                 return (first, second)
     return None
+
+
+def _nonadjacent_pair(parts):
+    """The first non-adjacent pair among ``parts``, or ``None``."""
+    return _defect_pair(parts, None)
 
 
 def _rim_direction(edge):
@@ -1347,11 +1760,11 @@ def _shell_groups(bm):
     return sorted(groups.values(), key=lambda members: -len(members))
 
 
-def _patch_ok(created, dominant):
+def _patch_ok(created, dominant, rule=None):
     """Is this fill legal — no re-bridge, and nothing left non-manifold?"""
     for face in created:
         parts = {dominant.get(vert.index) for vert in face.verts}
-        if _nonadjacent_pair(parts):
+        if _defect_pair(parts, rule):
             return False
         for edge in face.edges:
             if len(edge.link_faces) > 2:
@@ -1365,24 +1778,259 @@ def _drop(bm, faces):
         bmesh.ops.delete(bm, geom=live, context="FACES_ONLY")
 
 
-def _close_rim(bm, cycle, edges, dominant):
+#: Above this many vertices a rim gets neither of the two searching fills — both
+#: are O(n^2) in the rim's length, and a rim that long is a deletion set this
+#: tool got wrong rather than a hole to be clever about.  The werewolf's armpit
+#: rims are 4 to 28 vertices and its hand/thigh rims smaller still, so this is a
+#: guard rather than a working limit.
+BRIDGE_MAX_FILL_RIM = 512
+
+
+def _ring_edges(cycle, edges):
+    """``edges`` reordered so entry *k* joins ``cycle[k]`` and ``cycle[k+1]``.
+
+    ``_boundary_loops`` already walks in that order, but it has a second exit
+    (a rim that closes onto an edge it has already used) that can leave the two
+    lists off by one.  Rebuilding the ring from the vertex pairs costs nothing
+    and means the chord search below cannot silently slice the wrong arc.
+    """
+    lookup = {}
+    for edge in edges:
+        lookup[frozenset((edge.verts[0].index, edge.verts[1].index))] = edge
+    ring = []
+    count = len(cycle)
+    for position in range(count):
+        edge = lookup.get(frozenset((cycle[position].index,
+                                     cycle[(position + 1) % count].index)))
+        if edge is None:
+            return None
+        ring.append(edge)
+    return ring
+
+
+def _split_fill(bm, cycle, edges, dominant, rule):
+    """Close a rim as TWO patches either side of a chord neither of them crosses.
+
+    The fill the werewolf's armpit needs, and the one the fan cannot give it.
+    After the cut, each of those rims reads (in walk order) a run of ``Arm.R``,
+    one ``Torso.spine.003`` vertex, a run of ``Torso.spine.002`` and ``.001``,
+    and a second ``Torso.spine.003`` vertex — an arm-to-abdomen edge is exactly
+    what was deleted, so the rim can only cross between arm and trunk at the
+    shoulder slab, where the junction is real.  A single n-gon over that rim
+    puts an ``Arm.R`` corner and a ``Torso.spine.002`` corner on one face: the
+    weld, back.  A fan from the shoulder-slab pivot is legal face by face and
+    geometrically worse — it spans 260 mm of open slot with triangles from one
+    vertex and re-creates the membrane under a legitimate label, which the
+    detector would then pass.
+
+    Cutting the rim at the two shoulder-slab vertices instead gives an arm arc
+    and a trunk arc that share exactly those two endpoints, and one chord
+    between them closes both: the arm closes as an arm, the trunk as a trunk,
+    the chord carries two faces so nothing is left open, and — the part that
+    shows up in the posed numbers — **not one new cross-part edge is created**,
+    because the chord's two ends are in the same part.  Measured on wip-16
+    against the ear clip below, which does create some: 10 faces added rather
+    than 92, and the worst posed ``Arm``/``Torso`` edge after a re-skin at
+    293.7 mm rather than 324.1 mm.
+
+    The chord is found rather than assumed: every pair of rim vertices whose
+    two arcs and whose own endpoints are all defect-free is a candidate, and
+    the **shortest** one wins — a chord is a straight line through whatever the
+    rim curves around, so the shortest legal one cuts through least.  Ties
+    break on the vertex indices, so the choice is the same on every run and
+    every machine.  It returns ``None`` — leaving the mesh untouched, for the
+    ear clip below — on any rim where no such pair exists.
+    """
+    count = len(cycle)
+    if count < 4 or count > BRIDGE_MAX_FILL_RIM:
+        return None
+    ring = _ring_edges(cycle, edges)
+    if ring is None:
+        return None
+    parts = [dominant.get(vert.index) for vert in cycle]
+    names = sorted({part for part in parts if part})
+    if len(names) < 2:
+        return None  # a single-part rim never needed splitting
+    bit_of = {name: index for index, name in enumerate(names)}
+    bits = [1 << bit_of[part] if part else 0 for part in parts]
+    memo = {}
+
+    def mask_ok(mask):
+        answer = memo.get(mask)
+        if answer is None:
+            answer = _defect_pair([names[bit] for bit in range(len(names))
+                                   if mask >> bit & 1], rule) is None
+            memo[mask] = answer
+        return answer
+
+    # Suffix and prefix unions, so the far arc's parts are one OR rather than a
+    # walk and the whole search stays quadratic instead of cubic.
+    suffix = [0] * (count + 1)
+    for position in range(count - 1, -1, -1):
+        suffix[position] = suffix[position + 1] | bits[position]
+    prefix = [0] * (count + 1)
+    for position in range(count):
+        prefix[position + 1] = prefix[position] | bits[position]
+
+    candidates = []
+    for low in range(count - 2):
+        near = bits[low] | bits[low + 1]
+        for high in range(low + 2, count):
+            near |= bits[high]
+            # Both arcs have to be a face: three corners each, counting the two
+            # they share.
+            if low + count - high < 2:
+                break
+            if _contact_is_defect(parts[low], parts[high], rule):
+                continue
+            if not mask_ok(near):
+                continue
+            if not mask_ok(suffix[high] | prefix[low + 1]):
+                continue
+            span = (cycle[low].co - cycle[high].co).length
+            candidates.append((round(float(span), 9), low, high))
+    candidates.sort()
+    for _span, low, high in candidates:
+        made = _two_patches(bm, cycle, ring, low, high, dominant, rule)
+        if made:
+            return made
+    return None
+
+
+def _two_patches(bm, cycle, ring, low, high, dominant, rule):
+    """Build the chord and the two n-gons, or roll the lot back and return None."""
+    one, other = cycle[low], cycle[high]
+    chord = bm.edges.get((one, other))
+    minted = chord is None
+    if minted:
+        try:
+            chord = bm.edges.new((one, other))
+        except ValueError:  # pragma: no cover - defensive
+            return None
+
+    def unmint():
+        if minted and chord.is_valid and not chord.link_faces:
+            bmesh.ops.delete(bm, geom=[chord], context="EDGES")
+
+    created = []
+    for arc in (list(ring[low:high]) + [chord],
+                list(ring[high:]) + list(ring[:low]) + [chord]):
+        try:
+            made = bmesh.ops.contextual_create(bm, geom=arc)
+        except (RuntimeError, ValueError):  # pragma: no cover - defensive
+            made = {}
+        faces = list(made.get("faces", ()))
+        if len(faces) != 1:
+            _drop(bm, created + faces)
+            unmint()
+            return None
+        created.extend(faces)
+    if _patch_ok(created, dominant, rule):
+        return created
+    _drop(bm, created)
+    unmint()
+    return None
+
+
+def _ear_fill(bm, cycle, edges, dominant, rule):
+    """Close a rim by clipping **legal ears**, so no new face re-welds anything.
+
+    The general case, for a rim no single chord splits in two.  On wip-15 the
+    hand/thigh weld runs into the armpit one, so after the cut a rim carries
+    ``Arm``, ``Leg.*.thigh`` and three trunk slabs at once: no pivot is
+    compatible with all of them (the fan refuses outright and the hole stays
+    open — 106 boundary edges measured), and no single chord leaves two
+    defect-free arcs, because that rim wants three.
+
+    An ear is three CONSECUTIVE rim vertices, so it inherits the rim's own
+    shape instead of reaching across the hole, and a triangle is only clipped
+    when its three parts may share a face — which makes re-welding impossible
+    by construction rather than by a check after the fact.  The shortest legal
+    ear goes first (ties on the clipped vertex's index, so the walk is
+    identical on every machine), which closes a slot the way a zip does, from
+    its narrow ends inward.
+
+    Returns the new faces, or ``None`` having left the mesh exactly as it was
+    when no legal triangulation exists.
+    """
+    count = len(cycle)
+    if count < 3 or count > BRIDGE_MAX_FILL_RIM:
+        return None
+    ring = _ring_edges(cycle, edges)
+    if ring is None:
+        return None
+    # Winding, decided once off the surface being closed: a new face has to
+    # traverse every shared edge the opposite way to the face already on it, or
+    # the patch faces backwards.
+    first, second = _rim_direction(ring[0])
+    forward = first is cycle[0] and second is cycle[1]
+
+    live = list(cycle)
+    created = []
+    while True:
+        best = None
+        total = len(live)
+        for position in range(total):
+            prev = live[position - 1]
+            cur = live[position]
+            nxt = live[(position + 1) % total]
+            if _defect_pair({dominant.get(vert.index)
+                             for vert in (prev, cur, nxt)}, rule):
+                continue
+            if total > 3:
+                # The edge this ear leaves behind becomes the new rim, so it
+                # cannot already be carrying two faces of its own.
+                closing = bm.edges.get((prev, nxt))
+                if closing is not None and len(closing.link_faces) >= 2:
+                    continue
+            if bm.faces.get((prev, cur, nxt)) is not None:
+                continue
+            span = ((prev.co - cur.co).length + (cur.co - nxt.co).length
+                    + (nxt.co - prev.co).length)
+            key = (round(float(span), 9), int(cur.index))
+            if best is None or key < best[0]:
+                best = (key, position, (prev, cur, nxt))
+        if best is None:
+            _drop(bm, created)
+            return None
+        _key, position, (prev, cur, nxt) = best
+        try:
+            created.append(bm.faces.new((nxt, cur, prev) if forward
+                                        else (prev, cur, nxt)))
+        except ValueError:  # pragma: no cover - the pre-checks cover this
+            _drop(bm, created)
+            return None
+        if total <= 3:
+            break
+        live.pop(position)
+    if _patch_ok(created, dominant, rule):
+        return created
+    _drop(bm, created)
+    return None
+
+
+def _close_rim(bm, cycle, edges, dominant, rule=None):
     """Close one rim without re-welding anything. Returns the new faces or None.
 
-    Two strategies, cheapest first:
+    Three strategies, cheapest first:
 
     1. **One n-gon over the rim's own edges** (``contextual_create``). It adds no
        new edge at all, so it cannot join two vertices that were not already
        joined — the safest possible fill. It is used whenever the rim's parts
-       contain no non-adjacent pair, which covers every rim that is wholly
-       inside one part.
-    2. **A triangle fan from a part-compatible pivot**, for a rim that spans two
-       parts which must not touch. The pivot is the lowest-index rim vertex
-       whose part is adjacent to *every* part on the rim, so every edge the fan
-       creates is a within-part or junction edge. At each end of the werewolf's
-       hand/thigh weld the rim reads ``Arm.R, Arm.R, Torso, Leg.R, Leg.R,
-       Leg.R, Torso``: an n-gon there would put an ``Arm.R`` corner and a
-       ``Leg.R`` corner on one face and the membrane would be back, while a fan
-       from a ``Torso`` vertex only ever makes ``Torso``-to-something edges.
+       contain no pair that must stay apart, which covers every rim that is
+       wholly inside one part.
+    2. **Two n-gons either side of a chord** (:func:`_split_fill`), for a rim
+       that cuts cleanly into two arcs which must not touch each other. It adds
+       exactly one edge and that edge is inside one part, so the arm closes as
+       an arm and the trunk as a trunk with no new contact between them. This
+       is the werewolf armpit's fill.
+    3. **Legal ear clipping** (:func:`_ear_fill`), for a rim that wants more
+       than two arcs — wip-15's, where the hand/thigh weld runs into the armpit
+       one and the rim carries five parts.
+    4. **A triangle fan from a part-compatible pivot**, kept as the last
+       fallback. The pivot is the lowest-index rim vertex whose part may touch
+       *every* part on the rim, so every edge the fan creates is a within-part
+       or junction edge.
 
     Every candidate is built, checked by :func:`_patch_ok` and rolled back if it
     re-bridges or leaves an edge with three faces, so a fill that cannot be done
@@ -1390,21 +2038,26 @@ def _close_rim(bm, cycle, edges, dominant):
     """
     parts = {dominant.get(vert.index) for vert in cycle}
     parts.discard(None)
-    if not _nonadjacent_pair(parts):
+    if not _defect_pair(parts, rule):
         try:
             made = bmesh.ops.contextual_create(bm, geom=list(edges))
             created = list(made.get("faces", ()))
         except (RuntimeError, ValueError):  # pragma: no cover - defensive
             created = []
-        if created and _patch_ok(created, dominant):
+        if created and _patch_ok(created, dominant, rule):
             return created
         _drop(bm, created)
+
+    for fill in (_split_fill, _ear_fill):
+        made = fill(bm, cycle, edges, dominant, rule)
+        if made:
+            return made
 
     for pivot in sorted(cycle, key=lambda vert: vert.index):
         mine = dominant.get(pivot.index)
         if mine is None:
             continue
-        if any(tags_adjacent(mine, other) is False
+        if any(_contact_is_defect(mine, other, rule)
                for other in parts if other != mine):
             continue
         created = []
@@ -1419,7 +2072,7 @@ def _close_rim(bm, cycle, edges, dominant):
             except ValueError:
                 created = None
                 break
-        if created and _patch_ok(created, dominant):
+        if created and _patch_ok(created, dominant, rule):
             return created
         _drop(bm, created or ())
     return None
@@ -1435,7 +2088,16 @@ def cmd_mesh_repair_bridges(params):
     their own part's surface**, so the arm closes as an arm and the thigh as a
     thigh and nothing new crosses between them.
 
+    It cuts the **misplaced junctions** too, on the same pass and by the same
+    rule: a contact inside an adjacent pair that sits where the junction cannot
+    bend (see :class:`JunctionRule`).  That category needs the rig, so the
+    detector and the cut both read the one supplied or discovered here, and a
+    mesh with no armature gets the tag-adjacency cut alone and a sentence
+    saying so.
+
     - ``object``: which mesh; omitted = the active object.
+    - ``rig``: which armature to read the tag contract off; omitted = the
+      mesh's own armature modifier or armature parent.
     - ``dry_run``: measure and report the plan, change nothing (default false).
     - ``max_fraction``: refuse when a bridge would take more than this fraction
       of any one part's faces (default :data:`BRIDGE_REPAIR_MAX_FRACTION`, 5%).
@@ -1460,11 +2122,15 @@ def cmd_mesh_repair_bridges(params):
 
     started = time.monotonic()
     matrix = getattr(obj, "matrix_world", None)
-    before = bridge_report(obj, limit=limit, matrix=matrix)
+    rule, junction_note = junction_rule(obj, rig_for(obj, params))
+    before = bridge_report(obj, limit=limit, matrix=matrix, rule=rule)
+    if junction_note:
+        before.setdefault("junction", {})["note"] = junction_note
     result = {
         "object": obj.name,
         "dry_run": bool(dry_run),
         "max_fraction": max_fraction,
+        "junction_note": junction_note,
         "before": before,
         "repaired": False,
         "faces_removed": 0,
@@ -1481,7 +2147,7 @@ def cmd_mesh_repair_bridges(params):
         result["after"] = before
         result["duration_ms"] = int((time.monotonic() - started) * 1000.0)
         return result
-    if not before.get("count"):
+    if not before.get("count") and not before.get("misplaced_edges"):
         result["message"] = ("No cross-part bridges on %r: every edge either "
                              "stays inside one part or crosses a legitimate "
                              "junction." % obj.name)
@@ -1490,6 +2156,17 @@ def cmd_mesh_repair_bridges(params):
         return result
 
     dominant, _groups = dominant_tags(obj)
+    # Two views of the same tags, on purpose. `refined` (slab granularity) is
+    # what the cut and every rim fill read, because a misplaced junction is
+    # only visible there. `dominant` (the coarse part) is what the refusal line
+    # below is measured in, because BRIDGE_REPAIR_MAX_FRACTION is derived from
+    # how much of a PART a weld may eat — measured against a slab instead, the
+    # werewolf's own armpit (94 faces off one chest slab) would refuse itself.
+    refined = dict(dominant)
+    if rule is not None:
+        for index, tag in dominant.items():
+            if tag is not None:
+                refined[index] = rule.refine(index, tag)
     with common.object_mode():
         bm = bmesh.new()
         try:
@@ -1500,11 +2177,11 @@ def cmd_mesh_repair_bridges(params):
 
             bad_edges = []
             for edge in bm.edges:
-                tag_a = dominant.get(edge.verts[0].index)
-                tag_b = dominant.get(edge.verts[1].index)
+                tag_a = refined.get(edge.verts[0].index)
+                tag_b = refined.get(edge.verts[1].index)
                 if tag_a is None or tag_b is None or tag_a == tag_b:
                     continue
-                if tags_adjacent(tag_a, tag_b) is False:
+                if _contact_is_defect(tag_a, tag_b, rule):
                     bad_edges.append(edge)
 
             doomed = []
@@ -1582,9 +2259,9 @@ def cmd_mesh_repair_bridges(params):
             faces_before_fill = len(bm.faces)
             filled = 0
             for cycle, edges in loops:
-                parts = {dominant.get(vert.index) for vert in cycle}
+                parts = {refined.get(vert.index) for vert in cycle}
                 parts.discard(None)
-                created = _close_rim(bm, cycle, edges, dominant)
+                created = _close_rim(bm, cycle, edges, refined, rule)
                 if created is None:
                     # No vertex on this rim is adjacent to all the others, so
                     # every way of closing it re-welds something. Leave the hole
@@ -1645,20 +2322,29 @@ def cmd_mesh_repair_bridges(params):
     obj.data.update()
     common.refresh_view_layer()
 
-    after = bridge_report(obj, limit=limit, matrix=matrix)
+    # Rebuilt, not reused: the sweep of orphaned vertices at the end of the edit
+    # RENUMBERS the mesh, and `rule`'s slab membership is keyed on the numbering
+    # we walked in with. Reusing it read 233 phantom misplaced edges on a mesh
+    # the detector calls clean when asked again from scratch.
+    rule, junction_note = junction_rule(obj, rig_for(obj, params))
+    after = bridge_report(obj, limit=limit, matrix=matrix, rule=rule)
+    if junction_note:
+        after.setdefault("junction", {})["note"] = junction_note
     result["after"] = after
     result["repaired"] = True
     result["vertices_after"] = len(obj.data.vertices)
-    result["clean"] = not after.get("count")
+    result["clean"] = not after.get("count") and not after.get("misplaced_edges")
+    cut = [" and ".join(row["parts"])
+           for row in before["pairs"] + before.get("misplaced", [])]
+    left = after.get("count", 0) + after.get("misplaced_edges", 0)
     result["message"] = (
         "Removed %d bridging face%s and %d welding edge%s between %s on %r, "
         "closed %d hole%s inside their own parts; %d bridging edge%s left."
         % (result["faces_removed"], "" if result["faces_removed"] == 1 else "s",
            result["edges_removed"], "" if result["edges_removed"] == 1 else "s",
-           ", ".join(" and ".join(pair["parts"]) for pair in before["pairs"]),
-           obj.name, result["holes_filled"],
+           ", ".join(cut), obj.name, result["holes_filled"],
            "" if result["holes_filled"] == 1 else "s",
-           after.get("count", 0), "" if after.get("count") == 1 else "s"))
+           left, "" if left == 1 else "s"))
     result["duration_ms"] = int((time.monotonic() - started) * 1000.0)
     return result
 

@@ -6,9 +6,12 @@ Run it inside Blender, never windowed::
         --background --factory-startup ^
         --python addon\\tests\\headless_bridges.py
 
-No window, no port, no rig: the detector and the repair are pure mesh work and
-are driven through ``registry.dispatch`` directly.  (Ports 9878-9914 are taken
-as of 2026-09-19; this suite needs none of them.)
+No window and no port: everything is driven through ``registry.dispatch``
+directly.  (Ports 9878-9914 are taken as of 2026-09-19; this suite needs none
+of them.)  The first rule here is pure mesh work and needs no rig; the second
+(misplaced junctions) reads the tag contract off an armature, so the checks
+for it build one — ``headless_skin``'s biped and its metarig, imported rather
+than rebuilt — and say so where they do.
 
 The defect
 ----------
@@ -44,9 +47,18 @@ What is pinned here
    :data:`WEREWOLF_AREA_MM2` of bridging surface between ``Arm.R``/``Leg.R``
    and ``Arm.L``/``Leg.L``, then zero after the repair, with the tags and
    weights of every surviving vertex unchanged.
+7. **Misplaced junctions** — the second category (``diagnose.JunctionRule``):
+   a contact inside a pair that IS adjacent but in a place where the junction
+   cannot bend. Pinned three ways: the rule's own derivation on a hand-built
+   contract (no rig, no mesh); a constructed weld on the skin suite's biped,
+   welded once below its shoulder (red, cut, green) and once at it (green,
+   untouched); and the werewolf **wip-16** numbers — the lower-armpit weld this
+   lane exists for, :data:`WEREWOLF16_MISPLACED_EDGES` edges over
+   :data:`WEREWOLF16_MISPLACED_FACES` faces at z 1.17-1.38 m, with the
+   legitimate shoulder contact and the whole hip seam left alone.
 
-The werewolf blend is a working asset rather than a tracked one, so a checkout
-without it is normal: those checks say so and are skipped rather than failed.
+The werewolf blends are working assets rather than tracked ones, so a checkout
+without them is normal: those checks say so and are skipped rather than failed.
 """
 
 import os
@@ -63,6 +75,12 @@ REPO_DIR = os.path.normpath(os.path.join(ADDON_DIR, os.pardir))
 
 SOURCE = os.path.join(REPO_DIR, "projects", "werewolf", "models",
                       "werewolf-wip-15.blend")
+#: The current working asset, and the one the misplaced-junction rule was
+#: derived and measured against.  wip-15 stays beside it because it is the mesh
+#: the ``Arm``/``Leg`` membrane was filmed on and the two categories are pinned
+#: on the meshes that carry them.
+SOURCE16 = os.path.join(REPO_DIR, "projects", "werewolf", "models",
+                        "werewolf-wip-16.blend")
 MESH_NAME = "werewolf-form-a_retopo"
 
 #: What the detector measures on werewolf-wip-15, exactly.  Two welds per side:
@@ -72,9 +90,31 @@ MESH_NAME = "werewolf-form-a_retopo"
 WEREWOLF_EDGES = 73
 WEREWOLF_FACES = 72
 WEREWOLF_AREA_MM2 = 43310.71
-#: The repair's own numbers on that mesh.
-WEREWOLF_FACES_REMOVED = 77
-WEREWOLF_RIMS = 10
+#: The repair's own numbers on that mesh.  **Re-pinned 2026-09-19** from 77/10:
+#: the repair now cuts the misplaced junctions on the same pass, and wip-15 has
+#: the same lower-armpit weld wip-16 does (:data:`WEREWOLF_MISPLACED_EDGES`
+#: edges on top of the 73 ``Arm``/``Leg`` ones).  The membrane numbers above are
+#: unchanged, which is the point: the second category added work, it did not
+#: move the first one's answer.
+WEREWOLF_FACES_REMOVED = 162
+WEREWOLF_RIMS = 11
+#: The misplaced-junction half of wip-15's welds.
+WEREWOLF_MISPLACED_EDGES = 84
+
+#: werewolf-wip-16, the mesh this lane's rule was derived on.  The whole defect
+#: is the arm fused to the ribcage below its own shoulder: 45 edges on the left
+#: (``Torso.spine.002`` 35 + ``.001`` 9, and one more face than edges) and 44 on
+#: the right (37 + 8).  There is no ``Arm``/``Leg`` membrane left on this wip,
+#: so the first category reads zero and every number here is the second one.
+WEREWOLF16_MISPLACED_EDGES = 89
+WEREWOLF16_MISPLACED_FACES = 93
+WEREWOLF16_MISPLACED_AREA_MM2 = 58552.73
+WEREWOLF16_FACES_REMOVED = 94
+WEREWOLF16_RIMS = 5
+#: The height band the weld sits in, in world millimetres — 300 mm below the
+#: shoulder joint the arm actually hangs from.
+WEREWOLF16_Z_LOW = 1100.0
+WEREWOLF16_Z_HIGH = 1400.0
 
 #: Area comparisons are in square millimetres on a metre-scale mesh, so an
 #: absolute tolerance of a hundredth of a square millimetre is the float noise
@@ -523,6 +563,286 @@ def _read_only_commands():
 
 
 # ---------------------------------------------------------------------------
+# 7. misplaced junctions — the rule, on a hand-built contract
+# ---------------------------------------------------------------------------
+
+def _rule(hinges, legal, membership=None):
+    """A :class:`JunctionRule` over a two-slab trunk, with no rig and no mesh."""
+    from forge.tools import diagnose
+
+    return diagnose.JunctionRule(
+        membership or {},
+        {"Torso.spine": "Torso", "Torso.spine.001": "Torso"},
+        hinges, legal)
+
+
+def test_the_junction_rule():
+    """The derivation, stated as cases, so a change to it has to be deliberate.
+
+    The trunk here is two slabs: ``Torso.spine`` owns the hip bone ``H`` and
+    ``Torso.spine.001`` owns the shoulder bone ``S`` and hinges on ``H``.  That
+    is the werewolf's shape in miniature — a limb hanging off the top slab, and
+    a lower slab the hip bone still reaches.
+    """
+    section("the misplaced-junction rule, on a hand-built contract")
+    hinges = {"Arm.L": {"S"}, "Leg.L": {"H"}, "Torso.spine.001": {"H"}}
+    legal = {
+        "Arm.L": {"UA", "S"},
+        "Leg.L": {"TH", "H"},
+        "Torso.spine": {"H", "P"},
+        "Torso.spine.001": {"S", "H"},
+    }
+    rule = _rule(hinges, legal)
+
+    check("an arm on the slab that OWNS its shoulder bone is a junction",
+          rule.misplaced("Arm.L", "Torso.spine.001") is False)
+    check("the same arm on the slab below it is misplaced",
+          rule.misplaced("Arm.L", "Torso.spine") is True)
+    check("a leg on the slab that owns the hips is a junction",
+          rule.misplaced("Leg.L", "Torso.spine") is False)
+    check("and on the slab ABOVE it too, because that slab hinges on the same "
+          "hip bone — legality, not ownership, is the line",
+          rule.misplaced("Leg.L", "Torso.spine.001") is False)
+    check("a contact with no slab granularity gets no opinion (the trapezius)",
+          rule.misplaced("Arm.L", "Head") is False)
+    check("nor does one inside a single part",
+          rule.misplaced("Torso.spine", "Torso.spine.001") is False)
+
+    # No anchor: an arm whose hinge resolves to nothing the trunk carries. The
+    # rule then has no right place to measure a wrong one against and keeps
+    # quiet, rather than reddening the whole seam.
+    orphan = _rule({"Arm.L": {"GHOST"}}, legal)
+    check("with no legitimate place anywhere, no place is called wrong",
+          orphan.misplaced("Arm.L", "Torso.spine") is False
+          and orphan.anchored("Arm.L", "Torso") is False)
+    check("and with one, the rule is back on",
+          rule.anchored("Arm.L", "Torso") is True)
+
+    check("merged() folds a slab back to its tag",
+          rule.merged("Torso.spine.001") == "Torso"
+          and rule.merged("Arm.L") == "Arm.L")
+    check("refine() only replaces a tag with a slab OF that tag",
+          _rule(hinges, legal, {7: "Torso.spine"}).refine(7, "Arm.L") == "Arm.L",
+          "a Torso slab must not be handed to an Arm vertex")
+
+
+# ---------------------------------------------------------------------------
+# 7b. misplaced junctions — a constructed weld on a real rigged figure
+# ---------------------------------------------------------------------------
+
+def build_rigged_biped():
+    """The skin suite's hanging-arm biped, tagged, rigged and bound.
+
+    Imported rather than rebuilt: it is the one synthetic figure in the repo
+    whose metarig carries the real parent tree and the ``forge_tag_bones``
+    mapping, which is exactly what ``legal_bone_sets`` (and so this rule) has
+    to read.  Its arms hang 100 mm clear of the flank and touch nothing, so any
+    cross-part contact on it is one this suite put there on purpose.
+    """
+    import headless_autotag
+    import headless_skin
+    from forge.tools import rigforge_autotag
+
+    clear_scene()
+    mesh = headless_skin.build_fine_biped()
+    rigforge_autotag.auto_tag(mesh, joints=headless_autotag.canned_document(),
+                             midplane=0.0, character_left=1.0, apply=True)
+    metarig = headless_skin.build_metarig()
+    rig = headless_skin.build_deform_rig(metarig)
+    headless_skin.bind(mesh, rig, method="DISTANCE")
+    bpy.context.view_layer.objects.active = mesh
+    return mesh, rig
+
+
+def weld_to_slab(mesh, rig, limb, slab):
+    """Fuse ``limb``'s nearest flesh to ``slab``'s with one quad. Returns its verts.
+
+    The smallest honest weld: two existing limb vertices joined to the two
+    trunk vertices nearest them, so the geometry is continuous across a
+    junction that should not be one and nothing else about the figure moves.
+    """
+    import bmesh
+    from forge.tools import diagnose
+
+    dominant, _groups = diagnose.dominant_tags(mesh)
+    rule, skipped = diagnose.junction_rule(mesh, rig)
+    if rule is None:
+        return None, skipped
+    matrix = mesh.matrix_world
+    verts = mesh.data.vertices
+    neighbours = {}
+    for edge in mesh.data.edges:
+        a, b = edge.vertices
+        neighbours.setdefault(a, []).append(b)
+        neighbours.setdefault(b, []).append(a)
+    mine = [v.index for v in verts if dominant.get(v.index) == limb]
+    theirs = [v.index for v in verts
+              if rule.refine(v.index, dominant.get(v.index) or "") == slab]
+    if not mine or not theirs:
+        return None, "no %s or no %s on this figure" % (limb, slab)
+    pair = min(((matrix @ verts[a].co - matrix @ verts[b].co).length, a, b)
+               for a in mine for b in theirs)
+    _gap, a0, t0 = pair
+    partner = min(
+        ((matrix @ verts[a].co - matrix @ verts[b].co).length, a, b)
+        for a in neighbours.get(a0, ()) if dominant.get(a) == limb
+        for b in neighbours.get(t0, ())
+        if rule.refine(b, dominant.get(b) or "") == slab)
+    _gap, a1, t1 = partner
+
+    bm = bmesh.new()
+    bm.from_mesh(mesh.data)
+    bm.verts.ensure_lookup_table()
+    try:
+        bm.faces.new((bm.verts[a0], bm.verts[a1], bm.verts[t1], bm.verts[t0]))
+    except ValueError as error:
+        bm.free()
+        return None, str(error)
+    bm.to_mesh(mesh.data)
+    bm.free()
+    mesh.data.update()
+    return (a0, a1, t0, t1), ""
+
+
+def test_constructed_misplaced_weld():
+    section("a constructed misplaced junction: red, cut, green")
+    from forge.tools import diagnose
+
+    mesh, rig = build_rigged_biped()
+    rule, skipped = diagnose.junction_rule(mesh, rig)
+    check("the slab view comes off the rig", rule is not None, skipped)
+    if rule is None:
+        return
+    note("slabs: %s" % (rule.slabs,))
+
+    trunk = [name for name in rule.slabs if rule.merged(name) == "Torso"]
+    shoulder = [name for name in trunk if not rule.misplaced("Arm.L", name)]
+    below = [name for name in trunk if rule.misplaced("Arm.L", name)]
+    check("the contract names the slab the arm hangs from", len(shoulder) >= 1,
+          trunk)
+    check("and at least one it does not", bool(below), trunk)
+    if not (shoulder and below):
+        return
+    note("Arm.L articulates with %s, not with %s" % (shoulder, below))
+
+    # The baseline, not a zero. This figure is a bag of separate tubes whose
+    # caps put two corner faces across the midline at the crotch and the
+    # shoulders, and its tag adjacency has always read that way — so what is
+    # asserted below is that the weld changes nothing except the weld.
+    baseline = command("mesh_diagnose", object=mesh.name)["part_bridges"]
+    note("baseline: count=%d faces=%d (%d corner) misplaced=%d"
+         % (baseline["count"], baseline["faces"],
+            baseline["corner_faces"]["count"], baseline["misplaced_edges"]))
+    check("the untouched figure carries no misplaced junction",
+          baseline["misplaced_edges"] == 0, baseline["misplaced"])
+    before_counts = mesh_signature(mesh)[:3]
+    before_groups = group_snapshot(mesh)
+
+    # --- the legitimate junction first: welded AT the shoulder slab, green ---
+    made, why = weld_to_slab(mesh, rig, "Arm.L", shoulder[0])
+    check("a weld at the shoulder slab was constructed", made is not None, why)
+    legit = command("mesh_diagnose", object=mesh.name)["part_bridges"]
+    check("contact on the slab the arm hangs from is NOT flagged",
+          legit["misplaced_edges"] == 0 and legit["count"] == 0,
+          (legit["misplaced_edges"], legit["misplaced"]))
+
+    # --- and the same weld one slab down, red -------------------------------
+    mesh, rig = build_rigged_biped()
+    made, why = weld_to_slab(mesh, rig, "Arm.L", below[0])
+    check("a weld below the shoulder slab was constructed", made is not None, why)
+    if made is None:
+        return
+    result = command("mesh_diagnose", object=mesh.name)
+    bridges = result["part_bridges"]
+    note("misplaced: %d edges / %d faces, pairs %s"
+         % (bridges["misplaced_edges"], bridges["misplaced_faces"],
+            [row["parts"] for row in bridges["misplaced"]]))
+    check("the detector finds it", bridges["misplaced_edges"] == 2,
+          bridges["misplaced_edges"])
+    check("and the face that carries it", bridges["misplaced_faces"] == 1,
+          bridges["misplaced_faces"])
+    check("named by the SLAB, not by the part",
+          [row["parts"] for row in bridges["misplaced"]]
+          == [sorted(["Arm.L", below[0]])],
+          [row["parts"] for row in bridges["misplaced"]])
+    check("in one place, with an area and a location",
+          bridges["misplaced"][0]["place_count"] == 1
+          and bridges["misplaced"][0]["area_mm2"] > 0.0
+          and len(bridges["misplaced_examples"][0]["location_mm"]) == 3,
+          bridges["misplaced"][0])
+    check("the first category does not move — this is not a bridge",
+          bridges["count"] == baseline["count"]
+          and bridges["faces"] == baseline["faces"],
+          (bridges["count"], bridges["faces"]))
+    check("the gate is red", result["clean"] is False)
+    lines = [line for line in result["verdict"] if "not here" in line]
+    check("and the verdict says where and why", bool(lines), result["verdict"])
+    if lines:
+        note(lines[0])
+
+    repaired = command("mesh_repair_bridges", object=mesh.name)
+    note(repaired["message"])
+    check("the repair cut it", repaired["repaired"] is True
+          and repaired["faces_removed"] == 1, repaired.get("faces_removed"))
+    after = command("mesh_diagnose", object=mesh.name)
+    check("the detector is clean of the category afterwards",
+          after["part_bridges"]["misplaced_edges"] == 0
+          and after["part_bridges"]["count"] == baseline["count"]
+          and after["part_bridges"]["faces"] == baseline["faces"],
+          after["part_bridges"])
+    check("and the verdict stops saying it",
+          not any("not here" in line for line in after["verdict"]),
+          after["verdict"])
+    check("the figure is back to the counts we started from",
+          mesh_signature(mesh)[:3] == before_counts,
+          (mesh_signature(mesh)[:3], before_counts))
+    check("with every vertex's tags and weights untouched",
+          group_snapshot(mesh) == before_groups)
+
+
+def test_no_rig_means_no_opinion():
+    section("no rig: the category is skipped out loud, never guessed at")
+    mesh, rig = build_rigged_biped()
+    made, why = weld_to_slab(mesh, rig, "Arm.L", [
+        name for name in _slabs(mesh, rig) if "Torso" in name][0])
+    # Drop the binding so the mesh cannot find an armature at all.
+    for modifier in list(mesh.modifiers):
+        mesh.modifiers.remove(modifier)
+    mesh.parent = None
+    result = command("mesh_diagnose", object=mesh.name)
+    bridges = result["part_bridges"]
+    check("the junction scan says it did not run",
+          bridges["junction"]["scanned"] is False, bridges["junction"])
+    check("and says why, in a sentence with the word rig in it",
+          "armature" in str(bridges["junction"].get("note", "")),
+          bridges["junction"].get("note"))
+    check("the note reaches the report's own notes",
+          any("misplaced-junction" in line for line in result["notes"]),
+          result["notes"])
+    check("nothing is called misplaced without the contract to say so",
+          bridges["misplaced_edges"] == 0, bridges["misplaced"])
+    check("the tag-adjacency category still runs", bridges["scanned"] is True)
+    # And naming a rig explicitly brings it back.
+    named = command("mesh_diagnose", object=mesh.name, rig=rig.name)
+    check("naming the rig turns the category back on",
+          named["part_bridges"]["junction"]["scanned"] is True
+          and named["part_bridges"]["misplaced_edges"] > 0,
+          named["part_bridges"]["misplaced_edges"])
+    status, _result, message = dispatch("mesh_diagnose", object=mesh.name,
+                                        rig="Nessie")
+    check("and a rig name that is a typo is refused with one sentence",
+          status == "error" and "No object named" in message, message)
+
+
+def _slabs(mesh, rig):
+    from forge.tools import diagnose
+
+    rule, _skipped = diagnose.junction_rule(mesh, rig)
+    return [name for name in (rule.slabs if rule else ())
+            if rule.misplaced("Arm.L", name)]
+
+
+# ---------------------------------------------------------------------------
 # 6. the werewolf
 # ---------------------------------------------------------------------------
 
@@ -562,6 +882,18 @@ def test_werewolf_numbers(copy_path):
     check("and the gate is red on it", result["clean"] is False)
     check("with the membrane named in the verdict, first",
           "weld body parts" in result["verdict"][0], result["verdict"][0])
+
+    # This wip carries the lower-armpit weld too, on top of the membrane. It is
+    # pinned here rather than only on wip-16 because the two categories have to
+    # coexist on one mesh without either moving the other's answer.
+    note("misplaced as well: %d edges over %d faces in %s"
+         % (bridges["misplaced_edges"], bridges["misplaced_faces"],
+            [row["parts"] for row in bridges["misplaced"]]))
+    check("the second category sees the arm root on this wip as well",
+          bridges["misplaced_edges"] == WEREWOLF_MISPLACED_EDGES,
+          bridges["misplaced_edges"])
+    check("and it did not disturb the membrane's own numbers",
+          bridges["count"] == WEREWOLF_EDGES, bridges["count"])
 
     # The hands-beside-thighs weld is the big one and it is where the artist
     # says it is: low on the outside of the figure, not up at the shoulder.
@@ -676,6 +1008,124 @@ def test_werewolf_separation(copy_path):
           after["part_bridges"]["count"] == 0)
 
 
+def test_werewolf16_misplaced(copy_path):
+    """The defect this lane exists for, on the current wip, measured."""
+    section("werewolf-wip-16: the arm welded to the ribcage below its shoulder")
+    bpy.ops.wm.open_mainfile(filepath=copy_path)
+    obj = bpy.data.objects.get(MESH_NAME)
+    if obj is None:
+        check("the copy has %r" % MESH_NAME, False,
+              sorted(o.name for o in bpy.data.objects)[:5])
+        return
+    bpy.context.view_layer.objects.active = obj
+    before_groups = group_snapshot(obj)
+
+    result = command("mesh_diagnose", object=obj.name, examples=10)
+    bridges = result["part_bridges"]
+    note("slabs: %s" % bridges["junction"]["slabs"])
+    note("%d misplaced edges over %d faces, %.2f mm2, in %d pair(s)"
+         % (bridges["misplaced_edges"], bridges["misplaced_faces"],
+            bridges["misplaced_area_mm2"], len(bridges["misplaced"])))
+    for row in bridges["misplaced"]:
+        for place in row["places"]:
+            note("   %s at %s mm  (%d faces, %.1f mm2)"
+                 % (" / ".join(row["parts"]), place["location_mm"],
+                    place["faces"], place["area_mm2"]))
+
+    check("the junction scan ran off the mesh's own rig",
+          bridges["junction"]["scanned"] is True, bridges["junction"])
+    check("the misplaced edges are pinned",
+          bridges["misplaced_edges"] == WEREWOLF16_MISPLACED_EDGES,
+          bridges["misplaced_edges"])
+    check("the faces that carry them are pinned",
+          bridges["misplaced_faces"] == WEREWOLF16_MISPLACED_FACES,
+          bridges["misplaced_faces"])
+    check("and the area",
+          abs(bridges["misplaced_area_mm2"] - WEREWOLF16_MISPLACED_AREA_MM2)
+          < AREA_EPSILON, bridges["misplaced_area_mm2"])
+
+    found = {tuple(row["parts"]): row["edges"] for row in bridges["misplaced"]}
+    check("both sides, on both slabs below the shoulder",
+          found == {("Arm.L", "Torso.spine.001"): 9,
+                    ("Arm.L", "Torso.spine.002"): 35,
+                    ("Arm.R", "Torso.spine.001"): 8,
+                    ("Arm.R", "Torso.spine.002"): 37}, found)
+    heights = [place["location_mm"][2] for row in bridges["misplaced"]
+               for place in row["places"]]
+    check("every patch is in the lower-armpit band, not at the shoulder",
+          heights and all(WEREWOLF16_Z_LOW < z < WEREWOLF16_Z_HIGH
+                          for z in heights), sorted(heights))
+
+    # The two things the rule must NOT take. `Torso.spine.003` owns
+    # `DEF-shoulder.*`, so the shoulder junction is anatomy; the hip seam runs
+    # onto `Torso.spine.001`, which does not own the hips but hinges on them.
+    check("the legitimate shoulder contact is not flagged, at all",
+          not [row for row in bridges["misplaced"]
+               if "Torso.spine.003" in row["parts"]],
+          [row["parts"] for row in bridges["misplaced"]])
+    check("nor is one millimetre of the hip seam",
+          not [row for row in bridges["misplaced"]
+               if any(part.startswith("Leg") for part in row["parts"])],
+          [row["parts"] for row in bridges["misplaced"]])
+    check("and there is no Arm/Leg membrane left on this wip to confuse it",
+          bridges["count"] == 0 and bridges["faces"] == 0, bridges["pairs"])
+    check("the gate is red on it", result["clean"] is False)
+
+    repaired = command("mesh_repair_bridges", object=obj.name, examples=10)
+    note(repaired["message"])
+    check("the repair cut the weld",
+          repaired["faces_removed"] == WEREWOLF16_FACES_REMOVED,
+          repaired["faces_removed"])
+    check("and opened the rims this lane measured",
+          repaired["rims"] == WEREWOLF16_RIMS, repaired["rims"])
+    check("closing every one of them inside its own parts",
+          repaired["holes_filled"] == repaired["rims"]
+          and not repaired["holes_refused"],
+          (repaired["holes_filled"], repaired["holes_refused"]))
+    check("the repair says it is clean", repaired["clean"] is True,
+          repaired.get("message"))
+    check("no piece of the figure was set free",
+          repaired["shells_after"] == repaired["shells_before"] == 1,
+          (repaired["shells_before"], repaired["shells_after"]))
+
+    after = command("mesh_diagnose", object=obj.name, examples=10)
+    check("the detector is clean afterwards",
+          after["part_bridges"]["misplaced_edges"] == 0
+          and after["part_bridges"]["count"] == 0, after["part_bridges"])
+    check("the junction scan still ran, so that zero is a measurement",
+          after["part_bridges"]["junction"]["scanned"] is True)
+    check("and the mesh is sealed", after["topology"]["watertight"] is True,
+          after["topology"])
+
+    after_groups = group_snapshot(obj)
+    changed = [key for key in after_groups
+               if before_groups.get(key) != after_groups[key]]
+    check("every surviving vertex kept its tags and its DEF weights",
+          not changed, changed[:3])
+    check("no vertex was invented", set(after_groups) <= set(before_groups))
+    note("%d of %d vertices survived; %d went with the weld"
+         % (len(after_groups), len(before_groups),
+            len(before_groups) - len(after_groups)))
+
+    # The production skin path over the repaired mesh: the numbers the lane's
+    # report quotes, and the proof the cut left something skinnable behind.
+    skin = command("rigforge_skin", object=obj.name, action="apply")
+    isolation = command("rigforge_skin", object=obj.name, action="isolation")
+    note(isolation["says"])
+    check("an arm swing still moves the lower body by 0.00 mm",
+          isolation["isolation"]["max_mm"] == 0.0
+          and isolation["isolation"]["mean_mm"] == 0.0,
+          isolation["isolation"])
+    from forge.tools import rigforge_landmarks
+    rig = bpy.data.objects.get("werewolf-form-a_retopo_rig")
+    overlap = rigforge_landmarks.influence_overlap(rig, obj)
+    note("stray_mass after the re-skin: %s" % overlap["stray_mass"])
+    check("and stray influence is still nil",
+          float(overlap["stray_mass"]) == 0.0, overlap["stray_mass"])
+    check("the re-skin reported what it constrained", bool(skin.get("says")),
+          skin.get("says"))
+
+
 # ---------------------------------------------------------------------------
 
 def main():
@@ -695,29 +1145,42 @@ def main():
         test_repair_refuses_when_the_bridge_is_too_big()
         test_repair_on_a_clean_mesh_is_a_no_op()
         test_bad_parameters()
+        test_the_junction_rule()
     except Exception:  # noqa: BLE001
         traceback.print_exc()
         check("the constructed-bridge harness ran to completion", False,
               "unhandled exception")
 
-    if not os.path.exists(SOURCE):
-        section("werewolf-wip-15")
-        note("SKIP: %s is not in this checkout." % SOURCE)
-        note("It is a working asset rather than a tracked one, so this is "
-             "normal on a fresh clone; those checks have nothing to measure "
-             "and are not a regression.")
-    else:
+    try:
+        test_constructed_misplaced_weld()
+        test_no_rig_means_no_opinion()
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+        check("the constructed misplaced-junction harness ran to completion",
+              False, "unhandled exception")
+
+    for source, tests in ((SOURCE, (test_werewolf_numbers,
+                                    test_werewolf_separation)),
+                          (SOURCE16, (test_werewolf16_misplaced,))):
+        label = os.path.basename(source)
+        if not os.path.exists(source):
+            section(label)
+            note("SKIP: %s is not in this checkout." % source)
+            note("It is a working asset rather than a tracked one, so this is "
+                 "normal on a fresh clone; those checks have nothing to measure "
+                 "and are not a regression.")
+            continue
         workspace = tempfile.mkdtemp(prefix="forge_bridges_")
         copy_path = os.path.join(workspace, "werewolf-bridges-copy.blend")
         try:
-            shutil.copyfile(SOURCE, copy_path)
-            note("testing against a copy at %s" % copy_path)
+            shutil.copyfile(source, copy_path)
+            note("testing against a copy of %s at %s" % (label, copy_path))
             note("the original is never opened for writing")
-            test_werewolf_numbers(copy_path)
-            test_werewolf_separation(copy_path)
+            for test in tests:
+                test(copy_path)
         except Exception:  # noqa: BLE001
             traceback.print_exc()
-            check("the werewolf harness ran to completion", False,
+            check("the %s harness ran to completion" % label, False,
                   "unhandled exception")
         finally:
             try:

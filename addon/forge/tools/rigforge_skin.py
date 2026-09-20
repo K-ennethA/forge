@@ -1378,9 +1378,26 @@ def articulations(contract, split=None):
             holders = set(spans.get(bone, ()))
             if bone in owner:
                 holders.add(owner[bone])
-            for other in holders:
+            for other in sorted(holders):
                 if other == tag:
                     continue
+                # **Measured and rejected, 2026-09-19, so nobody pays for it
+                # twice:** spreading this to the holder's *other slabs* — "a tag
+                # that hangs off one slab of the trunk hangs off the trunk" —
+                # to open a band at the werewolf's armpit, where the ``Arm.R``
+                # root crosses ``Torso.spine.003``, ``.002`` and ``.001`` but
+                # only ``.003`` owns ``DEF-shoulder.R``.  It opens the armpit
+                # (those 8 worst edges go from 636 mm posed to 225 mm) and it
+                # re-admits the defect this whole rule exists for: with the
+                # ``Arm.L``/``Torso.spine.001`` band open, flank flesh 300 mm
+                # below the shoulder borrows ``DEF-forearm.L`` and
+                # ``DEF-upper_arm.L.001`` — the arm hangs *beside* the ribcage
+                # there — the one-ring taper carries them onto ``Leg.L.thigh``
+                # flesh at 0.25 and 0.29, and the hip seam tears at **368 mm
+                # posed against a 31 mm rest** (was 110 mm), with 3.19 of stray
+                # mass.  A limb welded to a trunk below its own joint is not a
+                # joint, and no weight blend makes it behave: see the report on
+                # the arm root's lower 45 edges.
                 out.add((tag, other) if tag <= other else (other, tag))
     if split is not None:
         for member in split.members:
@@ -1722,6 +1739,12 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
             "measured_in": ("girth" if override is None else "slab length")
                            + (", floored at %.1f local rings" % MIN_ARTICULATION_RINGS
                               if width > measured + 1e-12 else ""),
+            # The same fact as ``measured_in``, as a flag rather than a
+            # sentence, because :func:`constrain_weights` has to branch on it:
+            # a band measured in girths runs *around* a joint between two
+            # different bodies, and a band measured in slab length runs *along*
+            # one body. See the seam bound there.
+            "in_girths": bool(override is None),
             "rings": round(width / median_edge, 2) if median_edge > 0.0 else None,
             "local_edge_mm": round(local * M_TO_MM, 2),
             "local_rings": round(width / local, 2) if local > 0.0 else None,
@@ -2265,13 +2288,55 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
     # width, because that is the side the borrowed weight lands on: the same
     # seam reaches 68 mm into the werewolf's arm and 82 mm into its chest, and
     # which of those bounds a bone depends on whose flesh it is being lent to.
+    #
+    # **Plus the lender's own girth, and without it the bound is unsatisfiable.**
+    # The band is a distance walked over the *skin*; this bound is a distance to
+    # a *bone*, and a bone sits about one of its own tag's girths underneath the
+    # skin it belongs to. So a bone standing exactly at the seam is already a
+    # girth away from the vertex on the other side of it, and a bound of the
+    # band width alone asks for a bone that is nearer to the borrower's flesh
+    # than it is to its own. A limb gets away with it: the werewolf's shin is
+    # 66 mm thick and its knee band is 98 mm, so the band covers the girth by
+    # accident. A trunk does not: ``Torso.spine.003`` is 153 mm thick and the
+    # shoulder band is 68 mm, so **no torso bone could be lent to arm flesh at
+    # any distance** and the whole arm root came out as a hard weight break --
+    # adjacent vertices at 1.00 ``DEF-spine.001`` beside 1.00
+    # ``DEF-upper_arm.R.001`` with not one shared bone, and 636 mm of posed
+    # stretch across an 84 mm rest edge. Measured against the healthy hip, which
+    # blends only because ``DEF-spine`` is the thigh's *hinge* and hinges keep
+    # the girth reach; the shoulder's hinge ``DEF-shoulder.R`` sits at the top of
+    # the shoulder and never reaches the armpit 320 mm below it.
+    #
+    # It is still a bound and still the seam's: what it says is *"a lent bone
+    # may be one girth under its own skin, plus the depth of the band it is
+    # being lent into, and no further"*. On the werewolf that is 221 mm at the
+    # shoulder (68 + 153) where the girth reach was 458 mm, and 165 mm at the
+    # knee (98 + 66) -- which still refuses ``DEF-shin.R.001``, the bone 167 mm
+    # below the knee whose reach up the thigh was 1.48 of stray mass, because
+    # the nearest thigh vertex to it is further than the bound.
     seam_widths = {}
     for row in blend_report.get("seams", ()):
         one, other = row["tags"]
         by_tag = row.get("width_by_tag_mm") or {}
+        # **Only where the band itself is measured in girths.** A sibling cut's
+        # band is measured in the slab's own length *along* the spine
+        # (:data:`SUB_TAG_BLEND_FRACTION`, which exists because a trunk's girth
+        # says how wide the body is and not how far an influence should travel
+        # along it), and adding a girth to it puts the cross-body scale straight
+        # back into an along-body measure. Measured on the werewolf, both ways:
+        # with the girth added to the sibling cuts, ``DEF-spine.005`` reached
+        # 215 mm down onto ``Torso.spine.002`` flesh that already carried
+        # ``DEF-spine.001`` -- 2.7 of stray mass at a 361 mm gap -- and
+        # ``DEF-shin.L.001`` reached 164 mm up across the knee for another
+        # 0.05 of leg-internal stray. Without it, both are 0.0000 and the
+        # arm/torso seam -- a band around a joint between two different bodies,
+        # where the girth is exactly the depth the lender's bone sits at -- is
+        # untouched.
+        depth = 1.0 if row.get("in_girths", True) else 0.0
         for borrower, lender in ((one, other), (other, one)):
             seam_widths[(borrower, lender)] = (
-                by_tag.get(borrower, row["width_mm"]) / M_TO_MM)
+                by_tag.get(borrower, row["width_mm"]) / M_TO_MM
+                + girths.get(lender, 0.0) * depth)
 
     hinge_columns = {tag: frozenset(column_of[name] for name in names
                                     if name in column_of)
@@ -2280,11 +2345,16 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
                     if name in column_of}
 
     def across(tag, lender, base):
-        """The reach for a bone of ``lender`` on ``tag``'s flesh."""
+        """The reach for a bone of ``lender`` on ``tag``'s flesh.
+
+        Never wider than ``base``: a seam bound exists to narrow a reach, and a
+        thick lender beside a wide band must not end up licensing more than the
+        borrower's own girth reach would have.
+        """
         if lender is None or lender == tag:
             return base
-        width = seam_widths.get((tag, lender))
-        return base if width is None else width
+        bound = seam_widths.get((tag, lender))
+        return base if bound is None else min(base, bound)
 
     distances = _distance_matrix(obj, rig, bone_names)
     def licence(distance, limit, band=REACH_BAND):
@@ -2470,7 +2540,24 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
     # enough that the next ``apply`` still finds the weights where it left them.
     reachable[tightened] = _np.maximum(
         capped + ring[:, None], _np.where(hard, distances, 0.0))[tightened]
-    mask = _dilate(hard, fine, SMOOTH_DILATION) & (distances <= reachable)
+    # **The ring is a taper on a licence, never a licence of its own.** A slot
+    # no tag at this vertex considered at all is not a bound that was loosened;
+    # it is a bone that has no business here, and ``radius`` -- one scalar per
+    # vertex, the loosest reach any of its tags grants -- is the wrong bound for
+    # it by a long way. Measured on the werewolf, where the seam bound above
+    # widened enough for the difference to show: ``DEF-spine.001`` is
+    # ``Torso.spine.002``'s **hinge**, so it is hard on that slab out to three
+    # trunk girths; one ring of tolerance carried it across the sibling cut onto
+    # ``Torso.spine.003`` flesh that never licensed it, where the smoother left
+    # it sitting beside ``DEF-spine.005`` -- 24 chest vertices, **2.71 of stray
+    # mass** at a bone gap of 361 mm. Requiring the slot to be licensed
+    # *somewhere* on this vertex keeps every taper the contract's own boundary
+    # needs (a band vertex has considered both sides by construction) and stops
+    # the one-ring hop being a way for an influence to walk the body seam by
+    # seam.
+    licensed = narrowed | uncapped | hard
+    mask = (_dilate(hard, fine, SMOOTH_DILATION) & licensed
+            & (distances <= reachable))
     tolerance_slots = int(_np.count_nonzero(mask & ~hard))
 
     before = read_weights(obj, bone_names)

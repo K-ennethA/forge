@@ -1072,6 +1072,149 @@ def test_articulation_gate(mesh, rig, metarig, regions, split):
           len(fewer) < len(cut), "%d vs %d edges" % (len(fewer), len(cut)))
 
 
+def test_seam_bound_carries_the_lenders_depth(mesh, rig, metarig, regions, split):
+    """A lent bone sits under its lender's skin, and the bound has to say so.
+
+    The defect this pins, measured on ``werewolf-wip-16`` on 2026-09-19: the
+    seam bound held a borrowed bone to the band's width alone, and a band is a
+    distance walked over the *skin* while the bound is a distance to a *bone*.
+    On a limb the two happen to be comparable (the werewolf's shin is 66 mm
+    thick and its knee band is 98 mm), so nothing showed.  On a trunk they are
+    not: ``Torso.spine.003`` is 153 mm thick and the shoulder band is 68 mm, so
+    **no torso bone satisfied the bound at any distance** and the whole arm root
+    came out as a hard weight break — 1.00 ``DEF-spine.001`` beside 1.00
+    ``DEF-upper_arm.R.001``, not one shared bone, 636 mm of posed stretch across
+    an 84 mm rest edge.  Adding the lender's girth took that junction's shoulder
+    half from 55.6% of its edges sharing a bone to 100%, and its worst posed
+    edge from 339.9 mm to 241.1 mm.
+
+    The **sibling cuts do not get it**, and that half of the rule is load
+    bearing.  Their band is measured in the slab's own length along the spine
+    (:data:`~forge.tools.rigforge_skin.SUB_TAG_BLEND_FRACTION`, which exists
+    because a trunk's girth says how wide a body is and not how far an influence
+    should travel along it), so a girth added there is a cross-body scale in an
+    along-body measure.  Measured with it added: ``DEF-spine.005`` reached
+    215 mm down onto ``Torso.spine.002`` flesh that already carried
+    ``DEF-spine.001`` — 2.7 of stray mass at a 361 mm bone gap — and
+    ``DEF-shin.L.001`` reached 164 mm across the knee for 0.05 more of
+    leg-internal stray.  Without it both are 0.0000.
+    """
+    section("the seam bound: the band, plus how deep the lender's bone sits")
+    from forge.tools import rigforge_skin
+
+    contract = rigforge_skin.legal_bone_sets(rig, metarig, regions, split)
+    pairs = rigforge_skin.articulations(contract, split)
+    tags = rigforge_skin.tag_membership(mesh, split)
+    edges = rigforge_skin.vertex_edges(mesh)
+    used = rigforge_skin.split_regions(regions, split)
+    _blend, report = rigforge_skin.blend_zones(
+        mesh, tags, edges, used,
+        seam_widths=rigforge_skin.sub_tag_seam_widths(split), connected=pairs)
+    girths = rigforge_skin.tag_girths(used)
+
+    in_girths = {tuple(row["tags"]): row["in_girths"] for row in report["seams"]}
+    note("seams by how their band is measured: %s"
+         % {"/".join(key): ("girth" if value else "slab length")
+            for key, value in sorted(in_girths.items())})
+    check("every seam says which ruler its band was measured with",
+          all("in_girths" in row for row in report["seams"]),
+          str(report["seams"])[:200])
+    limb = [key for key, value in in_girths.items() if value]
+    sibling = [key for key, value in in_girths.items() if not value]
+    check("a seam between two different bodies is measured in girths",
+          any(set(key) & {"Arm.L", "Arm.R", "Leg.L", "Leg.R", "Head"}
+              for key in limb), str(sorted(limb)))
+    check("and a cut between two slabs of one body is not",
+          sibling and all(split.parent_of(key[0]) is not None
+                          and split.parent_of(key[0]) == split.parent_of(key[1])
+                          for key in sibling), str(sorted(sibling)))
+
+    # The bound itself, rebuilt exactly as ``_constrain_once`` builds it, so a
+    # change to one has to be a change to both.
+    bounds = {}
+    for row in report["seams"]:
+        one, other = row["tags"]
+        by_tag = row.get("width_by_tag_mm") or {}
+        depth = 1.0 if row["in_girths"] else 0.0
+        for borrower, lender in ((one, other), (other, one)):
+            bounds[(borrower, lender)] = (
+                by_tag.get(borrower, row["width_mm"])
+                + girths.get(lender, 0.0) * rigforge_skin.M_TO_MM * depth)
+    note("seam bounds (mm): %s"
+         % {"%s<-%s" % key: round(value, 1) for key, value in sorted(bounds.items())})
+    trunk = [key for key in bounds if key[0] in ("Arm.L", "Arm.R")
+             and split.parent_of(key[1]) is not None]
+    check("an arm's bound on a trunk bone clears that trunk's own girth, or no "
+          "bone under trunk skin could ever satisfy it",
+          trunk and all(bounds[key] > girths[key[1]] * rigforge_skin.M_TO_MM
+                        for key in trunk),
+          str({"%s<-%s" % key: round(bounds[key], 1) for key in trunk}))
+    check("and a sibling cut's bound is exactly its band, with nothing added",
+          all(abs(bounds[(one, other)]
+                  - ((report_row.get("width_by_tag_mm") or {}).get(
+                      one, report_row["width_mm"]))) < 1e-9
+              for report_row in report["seams"] if not report_row["in_girths"]
+              for one, other in ((report_row["tags"][0], report_row["tags"][1]),
+                                 (report_row["tags"][1], report_row["tags"][0]))),
+          str({"%s<-%s" % key: round(bounds[key], 1)
+               for key in bounds if key in
+               [(a, b) for a, b in sibling] + [(b, a) for a, b in sibling]}))
+
+
+def test_junction_blend(mesh, rig, regions, split):
+    """Across a junction that articulates, neighbours share a bone.
+
+    The metric the arm-root lane measures the werewolf with, run here on the
+    figure the module is built against: per cross-junction edge, does either end
+    carry a bone the other end also carries?  A junction at 0% is a hard weight
+    break — the arm hanging off a cliff — and it is what the posed mesh tears
+    along.  The werewolf's healthy hip sits at 100% with a median per-bone
+    discontinuity of 0.21; its arm root's shoulder half went 55.6% -> 100% and
+    0.54 -> 0.30 with the seam bound above.
+    """
+    section("the junction-blend metric: neighbours across a joint share a bone")
+    from forge.tools import rigforge_skin
+
+    tags = rigforge_skin.tag_membership(mesh, split)
+    edges = rigforge_skin.vertex_edges(mesh)
+    names = sorted(rigforge_rig_deform(rig))
+    weights = rigforge_skin.read_weights(mesh, names)
+    floor = rigforge_skin.REGION_FLOOR
+
+    rows = {}
+    for a, b in edges:
+        a, b = int(a), int(b)
+        if not tags[a] or not tags[b] or (tags[a] & tags[b]):
+            continue
+        for one in sorted(tags[a]):
+            for other in sorted(tags[b]):
+                key = (one, other) if one <= other else (other, one)
+                rows.setdefault(key, []).append((a, b))
+
+    for key in sorted(rows):
+        items = rows[key]
+        shared = 0
+        worst = 0.0
+        for a, b in items:
+            here = {column for column in range(len(names)) if weights[a, column] >= floor}
+            there = {column for column in range(len(names)) if weights[b, column] >= floor}
+            if here & there:
+                shared += 1
+            worst = max(worst, max(abs(float(weights[a, c]) - float(weights[b, c]))
+                                   for c in (here | there)) if (here | there) else 0.0)
+        note("%-34s %3d edges, %5.1f%% share a bone, worst per-bone step %.2f"
+             % ("/".join(key), len(items), 100.0 * shared / len(items), worst))
+        rows[key] = 100.0 * shared / len(items)
+
+    arm = [value for key, value in rows.items()
+           if "Arm.L" in key and split.parent_of(key[0] if key[1] == "Arm.L"
+                                                 else key[1]) is not None]
+    check("the arm's junction with the trunk is a blend, not a cliff: every "
+          "cross-junction edge shares a bone",
+          arm and min(arm) >= 99.9, str({"/".join(k): round(v, 1)
+                                         for k, v in sorted(rows.items())}))
+
+
 def test_isolation_and_the_planted_shoulder(mesh, rig, metarig, regions, split):
     """The gate the owner's eyes were, and a defect planted to prove it works."""
     section("isolation: swing the arms, measure the pelvis and the thighs")
@@ -1300,6 +1443,9 @@ def main():
         split = test_sub_tag_contract(mesh, rig, metarig, regions)
         if split is not None:
             test_articulation_gate(mesh, rig, metarig, regions, split)
+            test_seam_bound_carries_the_lenders_depth(mesh, rig, metarig, regions,
+                                                      split)
+            test_junction_blend(mesh, rig, regions, split)
             test_isolation_and_the_planted_shoulder(mesh, rig, metarig, regions,
                                                     split)
         test_continuity_finds_a_hole(mesh, rig)
