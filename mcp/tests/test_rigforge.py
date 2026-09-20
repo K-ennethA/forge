@@ -402,6 +402,22 @@ def test_retopo_sends_every_contract_parameter(blender) -> None:
     }
 
 
+def test_method_stays_off_the_wire_when_auto(blender) -> None:
+    """Same rule as bake_resolution: the add-on's own default is not resent."""
+    fake = blender({"rigforge_retopo": RETOPO_RESULT})
+    server.rigforge_retopo(object="goblin")
+
+    assert "method" not in sent(fake, "rigforge_retopo")
+
+
+def test_the_deterministic_route_is_asked_for_by_name(blender) -> None:
+    fake = blender({"rigforge_retopo": RETOPO_RESULT})
+    report = server.rigforge_retopo(method="decimate", object="goblin")
+
+    assert sent(fake, "rigforge_retopo")["method"] == "decimate"
+    assert "deterministic decimate route" in report
+
+
 def test_bake_resolution_is_omitted_when_nothing_is_baked(blender) -> None:
     """Same rule as remesh's voxel_size: a setting for a mode you are not in
     does not go on the wire."""

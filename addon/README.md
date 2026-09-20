@@ -680,7 +680,7 @@ nobody is allowed to fail on.
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace?` | assigns the vertices of those faces to `tag_<Name>` at weight 1.0 |
 | `rigforge_untag` | `tag`, `faces?` / `use_selection?`, `include_shared?` | drops faces from a tag; with no faces given, deletes the tag |
 | `rigforge_manifest` | `action` `save`\|`load`\|`get`, `path?`, `archetype?`, `motion_notes?`, `name?`, `create_missing_tags?` | reads/writes `character.json` |
-| `rigforge_retopo` | `target_faces?`, `platform?`, `lods?`, **`unwrap?`** (default true), **`lod_budgets?`**, **`protect_seams?`** (Decimate fallback only), `seams_from_tags?`, `margin?`, `angle_limit?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline in canonical order (retopo → unwrap → bake → LOD); returns object names, face counts, `uv`, `lod_reports`, `simplifier`, `budget` |
+| `rigforge_retopo` | `target_faces?`, `platform?`, **`method?`** (`auto`\|`quad`\|`decimate`; `decimate` is the deterministic route), `lods?`, **`unwrap?`** (default true), **`lod_budgets?`**, **`protect_seams?`** (Decimate fallback only), `seams_from_tags?`, `margin?`, `angle_limit?`, `bake_normals?`, `bake_resolution?`, `bake_path?`, `voxel_size?`, `keep_original` | the stage 2 pipeline in canonical order (retopo → unwrap → bake → LOD); returns object names, face counts, `method`/`quad_method`/`deterministic`, `uv`, `lod_reports`, `simplifier`, `budget` |
 | `rigforge_auto_uv` | `seams_from_tags?`, `margin?`, `angle_limit?`, `method?` | seams, unwrap, pack; returns island count and UV coverage. Marks the mesh as really unwrapped, which is what lets a bake run |
 | `rigforge_status` | — | one-call overview: tags, archetype, motion notes, manifest path, derived meshes |
 
@@ -1591,6 +1591,16 @@ previous `_retopo` / `_lod*` objects in place, so the names stay stable.
    stored in the manifest's `retopo` block comes next. If Quadriflow still fails, the run
    does not die: it falls back to a collapse decimate to the same target and says so in
    `warnings` and in `quad_method`.
+
+   **`method` picks this stage, and it is a determinism choice.** Quadriflow's vertex
+   positions vary run to run — its solve rides Blender's task scheduler, and on the pinned
+   test sculpt fresh processes return identical topology but 225 of 3 574 vertices up to
+   45.8 mm apart (`seed=0`; `OMP_NUM_THREADS=1` changes nothing, only a whole-process
+   `blender --threads 1` launch stills it, which no call can set). `method: "auto"`
+   (default) is the behaviour above; `"quad"` is Quadriflow only and refuses rather than
+   falling back; `"decimate"` takes the collapse decimate straight to the target — a pure
+   function of its input, the same mesh on every run, and the route anything digest-pinned
+   should ask for. The result's `deterministic` flag is true on either decimate route.
 4. **Shrinkwrap** the result back onto the sculpt (`NEAREST_SURFACEPOINT`, applied), so
    the quads sit on the original silhouette rather than on the voxel approximation of it.
    No modifiers are left on the output.

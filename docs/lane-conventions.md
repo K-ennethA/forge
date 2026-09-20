@@ -73,10 +73,13 @@ needs to depart from one says so in its report with the measured reason.
 - **The shared synthetic character (`headless_rigik.build_character`) is
   byte-deterministic since 2026-09-19** — the suite gates its own geometry
   digest every run. Assertions still derive bounds from measured geometry as
-  good practice. The remaining nondeterminism is in the PRODUCT:
-  `rigforge_retopo`'s Quadriflow route races its own threads (225 vertices up
-  to 45.8 mm apart run-to-run); the fixture refuses that route and takes the
-  deterministic decimate fallback until the product lane fixes it.
+  good practice. The product's deterministic retopo route is
+  `rigforge_retopo` `method="decimate"` (2026-09-19): the fixture asks for it
+  by name and `headless_rigforge` gates it with a two-run digest comparison.
+  The Quadriflow route stays nondeterministic at normal threading (225
+  vertices up to 45.8 mm apart run-to-run; `OMP_NUM_THREADS=1` changes
+  nothing, only a whole-process `blender --threads 1` launch stills it, 7/7
+  byte-identical — a launch flag no call can set).
 - A lane runs its own suite plus the suites covering files it edited — and
   stops there. The orchestrator runs the shared gate once at commit time; do
   not re-run other lanes' suites "in case".

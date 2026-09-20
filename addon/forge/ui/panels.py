@@ -868,6 +868,11 @@ class VIEW3D_PT_forge_retopo(_ForgePanel, Panel):
 
         column = layout.column(align=True)
         column.prop(rf, "platform", expand=True)
+        column.prop(rf, "retopo_method")
+        if rf.retopo_method != "decimate":
+            row = column.row()
+            row.active = False
+            row.label(text="Quadriflow output varies run to run")
         column.prop(rf, "target_faces")
         if rf.target_faces <= 0:
             row = column.row()

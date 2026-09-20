@@ -3618,6 +3618,7 @@ def rigforge_manifest(
 def rigforge_retopo(
     platform: Literal["desktop", "mobile"] = "desktop",
     target_faces: Optional[int] = None,
+    method: Literal["auto", "quad", "decimate"] = "auto",
     lods: int = 0,
     bake_normals: bool = False,
     bake_resolution: int = 2048,
@@ -3635,6 +3636,13 @@ def rigforge_retopo(
     - "desktop": 15000 faces — the templates/character.json desktop budget.
     - "mobile":  5000 faces — for phone targets and crowds.
 
+    - `method` picks how the quads are cut, and it is a determinism choice.
+      "auto" (default): Quadriflow, falling back to a collapse decimate if it
+      refuses the mesh — best quads, but Quadriflow's vertex positions vary run
+      to run. "quad": Quadriflow only, fails rather than falling back.
+      "decimate": collapse decimate straight to the target — the same sculpt
+      returns the same mesh on every run, so use it for anything that must
+      replay exactly (digest-pinned assets, reproducible builds).
     - `lods`: extra decimated levels beyond the base mesh (0 = none, 2 is
       typical: half and quarter density).
     - `bake_normals`: bake the sculpt's detail into a normal map on the retopo
@@ -3679,9 +3687,17 @@ def rigforge_retopo(
     )
     if bake_normals:
         params["bake_resolution"] = int(bake_resolution)
+    if method != "auto":
+        # The add-on's default is the same "auto"; only a real choice goes on
+        # the wire, same rule as bake_resolution above.
+        params["method"] = method
 
     result = blender_client.send_command("rigforge_retopo", params)
     summary = f"{target} face target ({source}), {int(lods)} extra LOD(s)"
+    if method == "decimate":
+        summary += ", deterministic decimate route"
+    elif method == "quad":
+        summary += ", Quadriflow only"
     if bake_normals:
         summary += f", normals baked at {int(bake_resolution)} px"
     if not keep_original:

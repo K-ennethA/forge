@@ -404,37 +404,18 @@ def build_tagged_biped():
 #: *topology* is stable (3 574 vertices, 3 453 faces, identical polygon
 #: indices, every run); its vertex *positions* are not - 225 of those 3 574
 #: vertices land up to **45.8 mm** apart between runs, with ``seed=0`` fixed
-#: and symmetry off.  That is Blender's own multi-threaded solver racing, in
-#: C++, and nothing this repo passes it changes it.
+#: and symmetry off.  The race rides Blender's task scheduler:
+#: ``OMP_NUM_THREADS=1`` changes nothing, and only a whole-process
+#: ``blender --threads 1`` launch stills it (measured 2026-09-19, 7/7
+#: byte-identical) - a launch flag no call can set, so no per-call Quadriflow
+#: invocation is deterministic in a normally-threaded Blender.
 #:
-#: So the fixture takes ``cmd_rigforge_retopo``'s **own** documented fallback -
-#: the collapse decimate to the same target - by refusing the Quadriflow stage
-#: up front.  Nothing is stubbed out: the refusal goes down the error path the
-#: command already has for a Quadriflow that will not solve, the warning it
-#: raises is printed, and ``build_character`` asserts that is the route it
-#: took.  The decimate path is a pure function of its input and measures
-#: byte-identical across processes.
-#:
-#: The product-side defect this pins around is real and is NOT this lane's:
-#: ``rigforge_retopo`` cannot currently produce the same game mesh twice from
-#: the same sculpt.  That fix belongs in ``addon/forge/tools`` - a deterministic
-#: retopo route, or a seeded/serialised Quadriflow - and is reported as its own
-#: lane.
-QUAD_REMESH_PINNED = (
-    "pinned by headless_rigik.build_character: Blender's Quadriflow solver "
-    "returns different vertex positions for the same input on every run "
-    "(measured: identical topology, 225 of 3574 vertices up to 45.8 mm apart "
-    "over fresh processes, seed=0), so the shared test character is built down "
-    "this command's own collapse-decimate fallback, which is deterministic."
-)
-
-
-def _pinned_quad_remesh(*_args, **_kwargs):
-    from forge.tools.registry import ForgeError
-
-    raise ForgeError(QUAD_REMESH_PINNED)
-
-
+#: The product answered (2026-09-19) with ``method="decimate"`` on
+#: ``rigforge_retopo`` - the collapse decimate to the same target as a
+#: first-class route, a pure function of its input and byte-identical across
+#: processes.  The fixture asks for it by name; ``CHARACTER_DIGEST`` above is
+#: the cross-process pin, and ``headless_rigforge`` gates the route's two-run
+#: determinism on its own sculpt.
 def build_character():
     """Phase 3's sculpt, tagged, retopologised, metarigged and generated."""
     section("the character (Phase 3/4 builders, reused)")
@@ -453,23 +434,18 @@ def build_character():
     call("rigforge_manifest", {"object": obj.name, "action": "get",
                                "archetype": "biped"})
     started = time.monotonic()
-    from forge.tools import common as forge_common
-
-    was = forge_common._quad_remesh
-    forge_common._quad_remesh = _pinned_quad_remesh
-    try:
-        retopo_report = call("rigforge_retopo", {"object": obj.name,
-                                                 "target_faces": 4000,
-                                                 "platform": "mobile", "lods": 0})
-    finally:
-        forge_common._quad_remesh = was
+    retopo_report = call("rigforge_retopo", {"object": obj.name,
+                                             "target_faces": 4000,
+                                             "platform": "mobile", "lods": 0,
+                                             "method": "decimate"})
     for warning in retopo_report.get("warnings") or []:
         note("warning: %s" % warning)
     quad = [stage for stage in retopo_report.get("stages") or []
             if stage.get("stage") == "quad_remesh"]
     check("the retopo took the deterministic collapse-decimate route, not the "
           "racing Quadriflow one",
-          len(quad) == 1 and quad[0].get("method") == "decimate_fallback",
+          len(quad) == 1 and quad[0].get("method") == "decimate"
+          and retopo_report.get("deterministic") is True,
           str(quad))
     retopo = bpy.data.objects.get(RETOPO)
     if not check("the retopo mesh exists", retopo is not None):

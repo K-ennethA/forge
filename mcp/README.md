@@ -1099,7 +1099,7 @@ unwrap. Each takes an optional `object` name; omitted means the active object.
 | `rigforge_tag` | `tag`, `faces` \| `use_selection`, `replace` | Label faces as a body part ("Head", "Arm.L", "Ear.R"). Exactly one of `faces` / `use_selection`. |
 | `rigforge_untag` | `tag`, `faces` \| `use_selection` | Remove faces from a tag, or omit both to delete the tag entirely. Never touches geometry. |
 | `rigforge_manifest` | `action` `save`/`load`/`get`, `path`, `archetype`, `motion_notes` | Read or write the character's `character.json` (see `templates/`). |
-| `rigforge_retopo` | `platform` `desktop`/`mobile`, `target_faces`, `lods`, `bake_normals`, `bake_resolution`, `keep_original` | Voxel remesh → Quadriflow → shrinkwrap → tag transfer, plus optional normal bake and LODs. Tables every object it created with its face count. |
+| `rigforge_retopo` | `platform` `desktop`/`mobile`, `target_faces`, `method` `auto`/`quad`/`decimate` (`decimate` is deterministic — same sculpt, same mesh, every run; Quadriflow's output varies), `lods`, `bake_normals`, `bake_resolution`, `keep_original` | Voxel remesh → Quadriflow or collapse decimate → shrinkwrap → tag transfer, plus optional normal bake and LODs. Tables every object it created with its face count. |
 | `rigforge_auto_uv` | `seams_from_tags`, `margin`, `angle_limit` | Seams at tag boundaries, unwrap, pack. Reports islands and UV coverage. |
 
 Tags are vertex groups prefixed `tag_` on the object; the add-on owns that prefix, so pass

@@ -19,9 +19,11 @@ the server queue from the main thread itself), and there is no window, viewport
 or 3D area (so every code path under test has to work without one).
 """
 
+import hashlib
 import json
 import os
 import shutil
+import struct
 import socket as socketlib
 import sys
 import tempfile
@@ -718,6 +720,93 @@ def test_lods_share_lod0_atlas(retopo, result):
               "%d loop UV(s) outside" % len(outside))
 
 
+def geometry_digest(obj):
+    """SHA-256 over coordinates, polygon rings and vertex weights.
+
+    The same fields ``headless_rigik.geometry_digest`` hashes when it pins the
+    shared character - everything downstream can see a build differ in.
+    """
+    mesh = obj.data
+    sha = hashlib.sha256()
+    coords = [0.0] * (len(mesh.vertices) * 3)
+    mesh.vertices.foreach_get("co", coords)
+    sha.update(("verts=%d" % len(mesh.vertices)).encode("utf-8"))
+    sha.update(struct.pack("<%dd" % len(coords), *coords))
+    rings = []
+    for polygon in mesh.polygons:
+        rings.append(len(polygon.vertices))
+        rings.extend(polygon.vertices)
+    sha.update(("polys=%d" % len(mesh.polygons)).encode("utf-8"))
+    sha.update(struct.pack("<%dI" % len(rings), *rings))
+    for group in sorted(obj.vertex_groups, key=lambda entry: entry.name):
+        sha.update(("group=%s" % group.name).encode("utf-8"))
+        for vertex in mesh.vertices:
+            for entry in vertex.groups:
+                if entry.group == group.index:
+                    sha.update(struct.pack("<Id", vertex.index, entry.weight))
+    return sha.hexdigest()
+
+
+def test_retopo_deterministic_route(obj):
+    """``method="decimate"`` must return the same game mesh twice.
+
+    Quadriflow cannot (measured 2026-09-19: identical topology, 225 of 3574
+    vertex positions up to 45.8 mm apart across fresh processes with seed=0;
+    only a whole-process ``blender --threads 1`` launch stills it, which no
+    call can set).  The decimate route is the product's deterministic option,
+    so it is gated here the only way determinism can be: run it twice on
+    byte-identical input and compare digests.  Cross-process stability of the
+    same route is pinned separately by ``headless_rigik.CHARACTER_DIGEST``.
+    """
+    section("rigforge_retopo method='decimate' -> the same mesh twice")
+    from forge.tools import rigforge as rf
+
+    refused = call("rigforge_retopo", {"object": obj.name, "method": "voxel"},
+                   expect_error=True)
+    check("an unknown method is refused by name",
+          refused.get("status") == "error" and "'method'" in (refused.get("message") or ""),
+          refused.get("message"))
+
+    digests = []
+    for run in (1, 2):
+        copy = rf._duplicate_object(obj, "DeterminismSculpt%d" % run,
+                                    drop_groups=False)
+        result = call("rigforge_retopo", {"object": copy.name,
+                                          "target_faces": 4000,
+                                          "platform": "mobile", "lods": 0,
+                                          "unwrap": False,
+                                          "method": "decimate"})
+        stage = [entry for entry in result["stages"]
+                 if entry["stage"] == "quad_remesh"]
+        check("run %d took the decimate route it was asked for" % run,
+              len(stage) == 1 and stage[0]["method"] == "decimate"
+              and result["quad_method"] == "decimate"
+              and result["method"] == "decimate",
+              str(stage))
+        check("run %d reports itself deterministic, and not as a fallback" % run,
+              result.get("deterministic") is True
+              and not any("Quadriflow" in w for w in result.get("warnings") or []),
+              str(result.get("warnings")))
+        made = bpy.data.objects.get(copy.name + "_retopo")
+        if not check("run %d produced a retopo mesh" % run, made is not None):
+            return
+        faces = len(made.data.polygons)
+        # Decimate's ratio is a *triangle* budget (``_decimate_to_budget``'s
+        # docstring), so a 4000-face ask against the ~26k-quad voxel mesh
+        # lands between the target (every coplanar pair rejoined) and twice
+        # it (nothing rejoined) in polygons - measured 6767 faces, 4002
+        # vertices, on this sculpt. The vertex count is what tracks the ask.
+        check("run %d landed inside the decimate route's triangle-budget "
+              "band" % run, 4000 <= faces <= 8400,
+              "%d faces, %d verts" % (faces, len(made.data.vertices)))
+        digests.append(geometry_digest(made))
+        note("run %d: %d faces, sha256 %s" % (run, faces, digests[-1]))
+
+    check("two runs on byte-identical input return byte-identical geometry -- "
+          "coordinates, polygons and weights",
+          len(digests) == 2 and digests[0] == digests[1], str(digests))
+
+
 def test_meshopt_mesh_bridge(retopo):
     """The two halves of the meshopt LOD path that are pure Blender code.
 
@@ -1152,6 +1241,7 @@ def main():
         test_status_command(obj)
 
         retopo = test_retopo(obj, workspace)
+        test_retopo_deterministic_route(obj)
         if retopo is not None:
             test_meshopt_mesh_bridge(retopo)
             test_auto_uv(retopo)
