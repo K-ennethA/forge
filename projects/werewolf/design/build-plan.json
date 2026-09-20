@@ -1591,19 +1591,116 @@
     {
       "id": "export",
       "title": "Export — the .glb the engine actually loads",
-      "status": "pending",
+      "status": "passed",
       "gate": [
         "glb_written",
         "morph_targets",
         "animated_nodes"
       ],
-      "artifacts": [],
-      "numbers": {},
-      "history": [],
+      "artifacts": [
+        "projects/werewolf/export/werewolf-form-a.glb",
+        "projects/werewolf/export/werewolf-form-a_import.gd"
+      ],
+      "numbers": {
+        "wip": 17,
+        "glb_written": true,
+        "morph_targets": true,
+        "animated_nodes": true,
+        "export_deform_bone_count": 33,
+        "export_total_joint_count_incl_root": 34,
+        "bbone_flattened_count": 22,
+        "bbone_flattened_bones": "DEF-spine, DEF-spine.001-005 (8 segments each); DEF-thigh/shin.L/R + .001 and DEF-upper_arm/forearm.L/R + .001 (10 segments each) - all flattened to straight glTF joints since glTF has no B-Bone curve concept",
+        "actions_exported": "jump, punch.L, punch.R, walk-loop (4 of 4)",
+        "export_triangle_count": 16768,
+        "export_triangle_count_note": "ground-truth from raw glTF indices accessor (50304/3); matches live evaluated-mesh triangle count exactly (16768=16768)",
+        "export_vertex_count_gltf": 9190,
+        "export_vertex_count_blender_mesh": 8382,
+        "export_vertex_count_note": "expected glTF per-attribute vertex splitting from UV seams/split normals, not data loss - Blender mesh vertex count and glTF unique-position-attribute count are different things by definition",
+        "file_size_mb": 11,
+        "morph_target_count": 6,
+        "morph_target_names": "corr_elbow_L_075, corr_elbow_L_150, corr_elbow_R_075, corr_elbow_R_150, corr_head_018, corr_head_035",
+        "morph_target_note": "names match correctives stage exactly; each action carries 1 weights-channel driving all 6 targets",
+        "animated_nodes_per_action": 34,
+        "animated_channels_per_action": "34 translation + 34 rotation + 1 weights = 69 channels/action, 103 total incl. baseline",
+        "parity_bone_count_live": 33,
+        "parity_bone_count_reimport": 34,
+        "parity_bone_count_note": "reimport 34 includes the 'root' motion/anchor node added by baking (not a live-rig deform bone; expected)",
+        "parity_action_count_match": "4/4 - jump, punch.L, punch.R, walk-loop (reimport suffixed .001 by Blender's own name-collision handling, same clips)",
+        "parity_triangle_count_match": "16768 live == 16768 reimport (ground truth from JSON), exact",
+        "parity_vertex_count_note": "8382 Blender verts (live) vs 9190 glTF-unique verts (reimport/file) - expected UV/normal seam splitting, not a defect",
+        "parity_ankle_L_drift_mm": 0,
+        "parity_head_top_drift_mm": 0,
+        "parity_wrist_L_drift_mm": 0,
+        "parity_spotcheck_note": "first pass measured head-top via DEF-spine.006.tail_local (a leaf bone with no children) which diverged ~297mm on reimport - traced to glTF having no tail/length concept for leaf joints, so Blender's reimporter synthesizes an arbitrary tail; corrected to use DEF-spine.006 HEAD (real joint data) plus the mesh's own top vertex, both of which matched live to 0.00mm - false alarm from methodology, not an export defect",
+        "parity_investigated_artifact": "a 42-vert unparented 'Icosphere' object appeared in the reimport, filed under a 'glTF_not_exported' collection Blender's own importer created; raw glTF JSON parse confirmed the file itself has exactly 36 nodes (33 deform + root + mesh node + armature node), 1 mesh, 1 skin, no lights, no extra geometry - the Icosphere is a reimport-session artifact of Blender's own importer, not present in the shipped file",
+        "scene_changed": false,
+        "blend_saved": "none needed - export and parity check are read-only, live scene confirmed identical (162 objects, same active object) before and after"
+      },
+      "history": [
+        {
+          "date": "2026-09-20T08:58:11",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-20T09:02:51",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "wip": 17,
+            "glb_written": true,
+            "morph_targets": true,
+            "animated_nodes": true,
+            "export_deform_bone_count": 33,
+            "export_total_joint_count_incl_root": 34,
+            "bbone_flattened_count": 22,
+            "bbone_flattened_bones": "DEF-spine, DEF-spine.001-005 (8 segments each); DEF-thigh/shin.L/R + .001 and DEF-upper_arm/forearm.L/R + .001 (10 segments each) - all flattened to straight glTF joints since glTF has no B-Bone curve concept",
+            "actions_exported": "jump, punch.L, punch.R, walk-loop (4 of 4)",
+            "export_triangle_count": 16768,
+            "export_triangle_count_note": "ground-truth from raw glTF indices accessor (50304/3); matches live evaluated-mesh triangle count exactly (16768=16768)",
+            "export_vertex_count_gltf": 9190,
+            "export_vertex_count_blender_mesh": 8382,
+            "export_vertex_count_note": "expected glTF per-attribute vertex splitting from UV seams/split normals, not data loss - Blender mesh vertex count and glTF unique-position-attribute count are different things by definition",
+            "file_size_mb": 11,
+            "morph_target_count": 6,
+            "morph_target_names": "corr_elbow_L_075, corr_elbow_L_150, corr_elbow_R_075, corr_elbow_R_150, corr_head_018, corr_head_035",
+            "morph_target_note": "names match correctives stage exactly; each action carries 1 weights-channel driving all 6 targets",
+            "animated_nodes_per_action": 34,
+            "animated_channels_per_action": "34 translation + 34 rotation + 1 weights = 69 channels/action, 103 total incl. baseline",
+            "parity_bone_count_live": 33,
+            "parity_bone_count_reimport": 34,
+            "parity_bone_count_note": "reimport 34 includes the 'root' motion/anchor node added by baking (not a live-rig deform bone; expected)",
+            "parity_action_count_match": "4/4 - jump, punch.L, punch.R, walk-loop (reimport suffixed .001 by Blender's own name-collision handling, same clips)",
+            "parity_triangle_count_match": "16768 live == 16768 reimport (ground truth from JSON), exact",
+            "parity_vertex_count_note": "8382 Blender verts (live) vs 9190 glTF-unique verts (reimport/file) - expected UV/normal seam splitting, not a defect",
+            "parity_ankle_L_drift_mm": 0,
+            "parity_head_top_drift_mm": 0,
+            "parity_wrist_L_drift_mm": 0,
+            "parity_spotcheck_note": "first pass measured head-top via DEF-spine.006.tail_local (a leaf bone with no children) which diverged ~297mm on reimport - traced to glTF having no tail/length concept for leaf joints, so Blender's reimporter synthesizes an arbitrary tail; corrected to use DEF-spine.006 HEAD (real joint data) plus the mesh's own top vertex, both of which matched live to 0.00mm - false alarm from methodology, not an export defect",
+            "parity_investigated_artifact": "a 42-vert unparented 'Icosphere' object appeared in the reimport, filed under a 'glTF_not_exported' collection Blender's own importer created; raw glTF JSON parse confirmed the file itself has exactly 36 nodes (33 deform + root + mesh node + armature node), 1 mesh, 1 skin, no lights, no extra geometry - the Icosphere is a reimport-session artifact of Blender's own importer, not present in the shipped file",
+            "scene_changed": false,
+            "blend_saved": "none needed - export and parity check are read-only, live scene confirmed identical (162 objects, same active object) before and after"
+          },
+          "artifacts": [
+            "projects/werewolf/export/werewolf-form-a.glb",
+            "projects/werewolf/export/werewolf-form-a_import.gd"
+          ],
+          "cost": {
+            "model": "sonnet"
+          }
+        }
+      ],
       "does": "Baked deform rig, LOD chain sharing one atlas, correctives baked from their drivers into morph animation. glTF has no concept of a driver, so an unbaked morph reaches the engine pinned at zero, silently.",
       "tools": [
         "rigforge_export_godot"
-      ]
+      ],
+      "cost": {
+        "models": [
+          "sonnet"
+        ]
+      }
     }
   ]
 }
