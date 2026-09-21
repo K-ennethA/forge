@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "task": "part",
+  "project": "eevee-bowl-v2",
+  "settings": {
+    "printer_profile": {
+      "value": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\templates\\printer.json",
+      "default": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\templates\\printer.json",
+      "why": "every tolerance and the bed size come from this file; the built-in fallback is an Elegoo Centauri Carbon"
+    },
+    "wall_mm": {
+      "value": 3.0,
+      "default": 2.0,
+      "unit": "mm",
+      "min": 0.4,
+      "max": 20.0,
+      "why": "five 0.4 mm perimeters. The profile's 0.8 mm minimum is a floor, not a target"
+    },
+    "bed_fit": {
+      "value": "design_full_size",
+      "default": "design_full_size",
+      "choices": [
+        "design_full_size",
+        "must_fit_bed"
+      ],
+      "why": "a part is designed at the size it SHOULD be — a bed_fit fail with a feasible split is print planning, not a design fault"
+    },
+    "export_formats": {
+      "value": [
+        "stl"
+      ],
+      "default": [
+        "stl"
+      ],
+      "choices": [
+        "stl",
+        "step",
+        "3mf"
+      ],
+      "why": "stl for the slicer, step for anyone who has to edit it in CAD, 3mf to carry the plate layout"
+    }
+  },
+  "history": [
+    {
+      "date": "2026-09-21T09:36:00",
+      "note": "materialised from the part template — 4 settings, all at their default"
+    },
+    {
+      "date": "2026-09-21T09:41:59",
+      "setting": "wall_mm",
+      "from": 2.0,
+      "to": 3.0
+    }
+  ]
+}

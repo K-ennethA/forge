@@ -1,0 +1,1 @@
+Retry of the Eevee-inspired dog bowl, this time from its full design sheet (in refs). A 3D-printed bowl holder with a removable stainless steel insert: printed base with a fur-collar ring, two ears that slot into the base sides, a tail that mounts on the back, optional rubber feet. The sheet carries the dimensions and materials.

@@ -1,0 +1,598 @@
+{
+  "version": 1,
+  "project": "eevee-bowl-v2",
+  "task": "part",
+  "stages": [
+    {
+      "id": "design",
+      "title": "Design — requirements, concept diagram, settings sheet, sign-off",
+      "status": "passed",
+      "gate": [
+        "sign_off",
+        "settings_sheet"
+      ],
+      "artifacts": [
+        "design/requirements.md",
+        "design/task-config.json",
+        "design/refs/design-sheet.webp",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\requirements.md",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\task-config.json",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\refs\\design-sheet.webp"
+      ],
+      "numbers": {
+        "sign_off": true,
+        "settings_sheet": true,
+        "wall_mm": 3,
+        "insert_seat_clearance_mm": 0.5,
+        "ear_slot_clearance_mm": 0.2,
+        "collar_clearance_mm": 0.15,
+        "tail_dovetail_boss_mm": 10
+      },
+      "history": [
+        {
+          "date": "2026-09-21T09:42:15",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-21T09:42:18",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "sign_off": true,
+            "settings_sheet": true,
+            "wall_mm": 3,
+            "insert_seat_clearance_mm": 0.5,
+            "ear_slot_clearance_mm": 0.2,
+            "collar_clearance_mm": 0.15,
+            "tail_dovetail_boss_mm": 10
+          },
+          "artifacts": [
+            "design/requirements.md",
+            "design/task-config.json",
+            "design/refs/design-sheet.webp"
+          ]
+        },
+        {
+          "date": "2026-09-21T09:42:22",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "sign_off": true,
+            "settings_sheet": true,
+            "wall_mm": 3,
+            "insert_seat_clearance_mm": 0.5,
+            "ear_slot_clearance_mm": 0.2,
+            "collar_clearance_mm": 0.15,
+            "tail_dovetail_boss_mm": 10
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\requirements.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\task-config.json",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\refs\\design-sheet.webp"
+          ]
+        }
+      ],
+      "does": "A functional, wearable, multi-component or novel part gets the design phase first. A trivially-shaped part skips straight to author.",
+      "tools": [
+        "save_design_doc",
+        "task_config_init"
+      ]
+    },
+    {
+      "id": "author",
+      "title": "Author — write the part script",
+      "status": "passed",
+      "gate": [
+        "params_parse"
+      ],
+      "artifacts": [
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\spec.json"
+      ],
+      "numbers": {
+        "params_parse": true,
+        "param_count": 32
+      },
+      "history": [
+        {
+          "date": "2026-09-21T09:51:58",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-21T09:54:53",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "params_parse": true,
+            "param_count": 32
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\spec.json"
+          ]
+        }
+      ],
+      "does": "partforge_new_part is the only tool that writes source, and it validates the PARAMS block through the service before anything touches disk.",
+      "tools": [
+        "partforge_new_part",
+        "partforge_parse_params"
+      ]
+    },
+    {
+      "id": "generate",
+      "title": "Generate — the solid builds and lands in Blender",
+      "status": "passed",
+      "gate": [
+        "watertight",
+        "bounding_box_mm"
+      ],
+      "artifacts": [
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\generate-log.md",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md"
+      ],
+      "numbers": {
+        "watertight_base": true,
+        "watertight_ear": true,
+        "watertight_tail": true,
+        "watertight_collar": true,
+        "bbox_base_mm": [
+          173.48,
+          170.27,
+          76.8
+        ],
+        "bbox_ear_mm": [
+          30.06,
+          81.06,
+          9
+        ],
+        "bbox_tail_mm": [
+          29.3,
+          88.42,
+          9
+        ],
+        "bbox_collar_mm": [
+          197.5,
+          198.01,
+          36.44
+        ],
+        "watertight": true,
+        "pieces": 4,
+        "bbox_base_x_mm": 173.48,
+        "bbox_base_y_mm": 170.27,
+        "bbox_base_z_mm": 76.8,
+        "bbox_collar_x_mm": 197.5,
+        "bbox_collar_y_mm": 198.01,
+        "bounding_box_mm": [
+          173.48,
+          170.27,
+          76.8
+        ],
+        "assembly_render": true,
+        "organic_rework": true,
+        "ear_watertight": true,
+        "tail_watertight": true,
+        "collar_watertight": true,
+        "base_watertight": true,
+        "cutouts_fixed": true
+      },
+      "history": [
+        {
+          "date": "2026-09-21T09:54:55",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-21T09:55:36",
+          "action": "record",
+          "from": "in_progress",
+          "to": "passed",
+          "numbers": {
+            "watertight_base": true,
+            "watertight_ear": true,
+            "watertight_tail": true,
+            "watertight_collar": true,
+            "bbox_base_mm": [
+              173.48,
+              170.27,
+              76.8
+            ],
+            "bbox_ear_mm": [
+              30.06,
+              81.06,
+              9
+            ],
+            "bbox_tail_mm": [
+              29.3,
+              88.42,
+              9
+            ],
+            "bbox_collar_mm": [
+              197.5,
+              198.01,
+              36.44
+            ]
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py"
+          ]
+        },
+        {
+          "date": "2026-09-21T09:55:50",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "watertight": true,
+            "pieces": 4,
+            "bbox_base_x_mm": 173.48,
+            "bbox_base_y_mm": 170.27,
+            "bbox_base_z_mm": 76.8,
+            "bbox_collar_x_mm": 197.5,
+            "bbox_collar_y_mm": 198.01
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\generate-log.md"
+          ]
+        },
+        {
+          "date": "2026-09-21T09:55:55",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "bounding_box_mm": [
+              173.48,
+              170.27,
+              76.8
+            ]
+          }
+        },
+        {
+          "date": "2026-09-21T10:12:34",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "assembly_render": true
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T11:09:30",
+          "action": "record",
+          "from": "passed",
+          "to": "passed",
+          "numbers": {
+            "organic_rework": true,
+            "ear_watertight": true,
+            "tail_watertight": true,
+            "collar_watertight": true,
+            "base_watertight": true,
+            "cutouts_fixed": true
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        }
+      ],
+      "does": "Build the solid and push it into the scene in one call, then look at it. A part that will not build is a script bug, not a design fault.",
+      "tools": [
+        "partforge_generate",
+        "partforge_open_in_panel",
+        "render_preview"
+      ]
+    },
+    {
+      "id": "check",
+      "title": "Check — will this print",
+      "status": "failed",
+      "gate": [
+        "bed_fit",
+        "min_wall",
+        "overhangs",
+        "watertight"
+      ],
+      "artifacts": [
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\check-log.md",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\collar-before-coarse.png",
+        "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\collar-after-fix.png"
+      ],
+      "numbers": {
+        "bed_fit": true,
+        "watertight": true,
+        "min_wall_base_mm": 1.805,
+        "min_wall_ear_mm": 2.1,
+        "min_wall_tail_mm": 0.115,
+        "min_wall_collar_mm": 0.017,
+        "overhangs_base_mm2": 2542.5,
+        "overhangs_ear_mm2": 63.3,
+        "overhangs_tail_mm2": 92,
+        "overhangs_collar_mm2": 464.2,
+        "min_wall_tail_pass": false,
+        "min_wall": 0,
+        "overhangs": 2532.7,
+        "tail_dovetail_width_mm": 6,
+        "tail_root_widen_mm": 0.386,
+        "tail_deficit_final_mm": 0.172,
+        "tail_joint": "round_peg",
+        "tail_peg_diameter_mm": 6.8,
+        "tail_root_measured_mm": 8.84,
+        "min_wall_ear_l_mm": 0,
+        "min_wall_ear_r_mm": 0,
+        "min_wall_ear_pass": false,
+        "min_wall_collar_pass": false,
+        "sculpts_watertight_after_remesh": true,
+        "collar_probes_failing_before": 314,
+        "collar_probes_failing_after": 3,
+        "all_sculpts_watertight": true,
+        "ear_regression": true,
+        "seating_peg_tip_offset_ear_mm": 0.33,
+        "seating_peg_tip_offset_tail_mm": 0,
+        "base_min_wall_mm": 1.805,
+        "base_overhang_mm2": 2542.5,
+        "ear_l_min_wall_mm": 0,
+        "ear_l_fail_probes": 467,
+        "ear_l_total_probes": 2769,
+        "ear_r_min_wall_mm": 0,
+        "ear_r_fail_probes": 464,
+        "ear_r_total_probes": 2750,
+        "tail_min_wall_mm": 0.115,
+        "tail_fail_probes": 18,
+        "tail_total_probes": 3907,
+        "collar_min_wall_mm": 0.017,
+        "collar_fail_probes": 3,
+        "collar_total_probes": 44,
+        "ear_r_seating_measured_offset_mm": 0.886
+      },
+      "history": [
+        {
+          "date": "2026-09-21T09:55:56",
+          "action": "advance",
+          "from": "pending",
+          "to": "in_progress"
+        },
+        {
+          "date": "2026-09-21T10:09:58",
+          "action": "record",
+          "from": "in_progress",
+          "to": "failed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.764,
+            "min_wall_ear_mm": 2.1,
+            "min_wall_tail_mm": 0.283,
+            "min_wall_collar_mm": 2.66,
+            "overhangs_base_mm2": 2666.9,
+            "overhangs_ear_mm2": 63.3,
+            "overhangs_tail_mm2": 65,
+            "overhangs_collar_mm2": 464.2,
+            "min_wall_tail_pass": false
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\check-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py"
+          ]
+        },
+        {
+          "date": "2026-09-21T10:10:02",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "min_wall": 0.283,
+            "overhangs": 2666.9
+          }
+        },
+        {
+          "date": "2026-09-21T10:18:07",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.764,
+            "min_wall_ear_mm": 2.1,
+            "min_wall_tail_mm": 0.628,
+            "min_wall_collar_mm": 2.66,
+            "overhangs_base_mm2": 2610.1,
+            "overhangs_ear_mm2": 63.3,
+            "overhangs_tail_mm2": 39.4,
+            "overhangs_collar_mm2": 464.2,
+            "min_wall_tail_pass": false,
+            "min_wall": 0.628,
+            "overhangs": 2610.1,
+            "tail_dovetail_width_mm": 6,
+            "tail_root_widen_mm": 0.386,
+            "tail_deficit_final_mm": 0.172
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\check-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T10:25:43",
+          "action": "record",
+          "from": "failed",
+          "to": "passed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.767,
+            "min_wall_ear_mm": 2.1,
+            "min_wall_tail_mm": 2.38,
+            "min_wall_collar_mm": 2.66,
+            "overhangs_base_mm2": 2532.7,
+            "overhangs_ear_mm2": 63.3,
+            "overhangs_tail_mm2": 92,
+            "overhangs_collar_mm2": 464.2,
+            "min_wall_tail_pass": true,
+            "min_wall": 1.767,
+            "overhangs": 2532.7,
+            "tail_joint": "round_peg",
+            "tail_peg_diameter_mm": 6.8,
+            "tail_root_measured_mm": 8.84
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\check-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\part.py",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T11:09:35",
+          "action": "record",
+          "from": "passed",
+          "to": "failed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.767,
+            "min_wall_ear_l_mm": 0.077,
+            "min_wall_ear_r_mm": 0.001,
+            "min_wall_tail_mm": 0.301,
+            "min_wall_collar_mm": 0.587,
+            "min_wall": 0.001,
+            "min_wall_ear_pass": false,
+            "min_wall_tail_pass": false,
+            "min_wall_collar_pass": false,
+            "overhangs_base_mm2": 2532.7,
+            "sculpts_watertight_after_remesh": true
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T11:17:36",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.805,
+            "min_wall_ear_l_mm": 0.002,
+            "min_wall_ear_r_mm": 0.001,
+            "min_wall_tail_mm": 0.315,
+            "min_wall_collar_mm": 0.017,
+            "min_wall": 0.001,
+            "min_wall_ear_pass": false,
+            "min_wall_tail_pass": false,
+            "min_wall_collar_pass": false,
+            "collar_probes_failing_before": 314,
+            "collar_probes_failing_after": 3,
+            "overhangs_base_mm2": 2542.5,
+            "all_sculpts_watertight": true
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\collar-before-coarse.png",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\collar-after-fix.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T11:27:19",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "bed_fit": true,
+            "watertight": true,
+            "min_wall_base_mm": 1.805,
+            "min_wall_ear_l_mm": 0,
+            "min_wall_ear_r_mm": 0,
+            "min_wall_tail_mm": 0.115,
+            "min_wall_collar_mm": 0.017,
+            "min_wall": 0,
+            "min_wall_ear_pass": false,
+            "min_wall_tail_pass": false,
+            "min_wall_collar_pass": false,
+            "ear_regression": true,
+            "seating_peg_tip_offset_ear_mm": 0.33,
+            "seating_peg_tip_offset_tail_mm": 0,
+            "overhangs_base_mm2": 2542.5,
+            "all_sculpts_watertight": true
+          },
+          "artifacts": [
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\design\\organic-rework-log.md",
+            "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\eevee-bowl-v2\\renders\\assembly-v2.png"
+          ]
+        },
+        {
+          "date": "2026-09-21T11:39:01",
+          "action": "record",
+          "from": "failed",
+          "to": "failed",
+          "numbers": {
+            "base_min_wall_mm": 1.805,
+            "base_overhang_mm2": 2542.5,
+            "ear_l_min_wall_mm": 0,
+            "ear_l_fail_probes": 467,
+            "ear_l_total_probes": 2769,
+            "ear_r_min_wall_mm": 0,
+            "ear_r_fail_probes": 464,
+            "ear_r_total_probes": 2750,
+            "tail_min_wall_mm": 0.115,
+            "tail_fail_probes": 18,
+            "tail_total_probes": 3907,
+            "collar_min_wall_mm": 0.017,
+            "collar_fail_probes": 3,
+            "collar_total_probes": 44,
+            "ear_r_seating_measured_offset_mm": 0.886
+          }
+        }
+      ],
+      "does": "Bed fit, minimum wall, overhangs, watertight. A bed_fit fail with a feasible split is print PLANNING and never justifies shrinking the part: the mode object it hands back goes verbatim to segment.",
+      "tools": [
+        "partforge_check",
+        "partforge_segment"
+      ]
+    },
+    {
+      "id": "export",
+      "title": "Export — files for the slicer",
+      "status": "pending",
+      "gate": [
+        "files_written"
+      ],
+      "artifacts": [],
+      "numbers": {},
+      "history": [],
+      "does": "One file per format the sheet asks for, plus the packed plate when the part prints as pieces.",
+      "tools": [
+        "partforge_export",
+        "partforge_export_segments"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-09-21T09:42:15",
+      "note": "materialised the part chain — 5 stages, all pending"
+    }
+  ]
+}
