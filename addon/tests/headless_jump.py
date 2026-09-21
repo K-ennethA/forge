@@ -1093,19 +1093,37 @@ def test_the_mesh_stays_on_the_floor(rig, result, action_name):
          "the clip is %.2f mm at frame %d -> %.2f mm below the plane"
          % (plane * 1000.0, frames[0], lows[worst_frame] * 1000.0, worst_frame,
             penetration))
-    # FLOOR_DEBT, 2026-09-20: this fixture measures 1.0677 mm, 0.07 over the
-    # 1 mm contract, and the residual is provably not skinning's to fix — the
-    # offending vertex carries DEF-foot.R at exactly 1.000 (a rigid body), the
-    # sole contact-lock already took the crouch from 2.220 to this, and the
-    # werewolf measures 0.279 mm on the same code. Two named causes, each with
-    # its own repayment: the fixture's foot chain sits 14.06 mm BELOW its own
-    # sole (a landmark fit failure on this degenerate figure — both its legs
-    # refuse the leg split), and the clamp's catch phase declines the last
-    # correction (the chipped floor-clamp solver lane's defects 3 and 4).
-    # When either lands, this debt pin fails LOW and re-pins to the contract.
-    FLOOR_DEBT = 1.10
-    check("the sole stays within the recorded floor debt (contract 1 mm; "
-          "fixture debt 1.0677 mm, causes named above, was -11.7 mm once)",
+    # FLOOR_DEBT REPAID, 2026-09-21 — this pin is the 1 mm contract again.
+    #
+    # The debt was 1.0677 mm and the second of its two named causes has landed.
+    # The clamp was solving against an *assumed* anchor, dip(0) = 0, on the
+    # argument that a zero-depth pose is the guard frame the plane was measured
+    # on. It is not: a zero-depth load still carries the toe lift and a
+    # zero-depth catch still carries the heel strike. Measured here, this
+    # fixture's catch dips the same 1.0677 mm at zero depth as at full — so the
+    # old solve spent three passes shrinking a 76 mm crouch to 19 mm against a
+    # curve that does not exist, clipped the one correction it did compute to a
+    # hard 0.25 floor, and then declined to keep the better of two poses it had
+    # measured because the improvement was under a tolerance.
+    #
+    # With every anchor measured, the clamp finds what the residual actually
+    # is. It is the landing heel strike: Rigify pivots this figure's heel
+    # 28.42 mm BELOW its own sole (the ball sits 14.05 mm under it too — the
+    # landmark fit failure on this degenerate figure, whose legs refuse the leg
+    # split), and 9.67 mm of sole lies behind that pivot, so 5.5 deg of strike
+    # swings it 28.42*(1-cos) + 9.67*sin = 1.058 mm under the plane. Arithmetic,
+    # not skinning, and nothing the crouch depth can reach. The clamp now solves
+    # the grounded ankle work the same way it solves the depth — from its own
+    # measured anchors — keeps 46% of the strike, and the sole clears at
+    # 0.4616 mm with the crouch still at the full 76.0 mm it asked for.
+    #
+    # The landmark defect is still there, and it is still the whole reason a
+    # strike has to be paid for on this figure at all: on the werewolf, whose
+    # feet are fitted, the same code spends nothing and measures 0.2793 mm.
+    # When the landmark fit is repaired this number falls again on its own.
+    FLOOR_DEBT = 1.0
+    check("the sole stays within the 1 mm contract (measured 0.4616 mm on this "
+          "fixture; was 1.0677 mm of debt, and -11.7 mm once)",
           penetration <= FLOOR_DEBT,
           "%.3f mm at frame %d" % (penetration, worst_frame))
     check("and the command measured the same thing and said so",

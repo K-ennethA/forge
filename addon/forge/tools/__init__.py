@@ -25,6 +25,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
     mechanism = importlib.reload(mechanism)  # noqa: F821
     silhouette = importlib.reload(silhouette)  # noqa: F821
+    spriteforge = importlib.reload(spriteforge)  # noqa: F821
     correctives = importlib.reload(correctives)  # noqa: F821
     floorplan = importlib.reload(floorplan)  # noqa: F821
     pov = importlib.reload(pov)  # noqa: F821
@@ -74,6 +75,11 @@ else:
     # implementation of "which pixels are the subject") and after mechanism (it
     # borrows the near-miss object resolver).
     from . import silhouette
+    # After verify (it reads pixels through that module's image loader and wears
+    # its credibility tiers, so there is one implementation of "open a picture
+    # and say which pixels are the subject"). Nothing else behind it: the card
+    # is numpy, bmesh and common's mesh builder.
+    from . import spriteforge
     # After rigcheck (it poses the rig and regions the flesh with the harness's
     # own probe, so the corrective and the measurement agree by construction)
     # and after silhouette (same Laplacian smoother over the displacement
@@ -120,6 +126,7 @@ __all__ = [
     "rigforge_anim",
     "mechanism",
     "silhouette",
+    "spriteforge",
     "correctives",
     "floorplan",
     "pov",

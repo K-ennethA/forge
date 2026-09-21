@@ -3739,6 +3739,15 @@ JUMP_MIN_ANTICIPATION_S = 0.35
 #: pulled back, in metres.  Not zero: a skinned surface has float dust on it.
 JUMP_FLOOR_TOLERANCE_M = 0.001
 
+#: A safety stop on the floor solve — **not** a pass budget.  The solve ends
+#: when the sole is clear of its plane, or when the last correction stopped
+#: reducing the dip; it is the contract that says when to stop, not a counter.
+#: This bound only exists so a pathological rig that improves by a hair every
+#: pass cannot author forever, and it is set far above any measured solve (the
+#: frozen fixture's worst case takes 5 authoring passes, the werewolf 1).  The
+#: three-pass budget this replaces was stopping solves that were still moving.
+JUMP_FLOOR_MAX_PASSES = 12
+
 #: The heel-strike angle at landing contact, as a fraction of ``foot_roll_deg``.
 #: Small on purpose: the roll pivots about the heel, which lifts the **ball** —
 #: the very point the foot-slide metric measures — so a theatrical heel strike
@@ -4056,7 +4065,13 @@ def cmd_rigforge_jump(params):
     # from the *current* parameters.
     channels = {}
 
-    def _build_channels(crouch, absorb, setback):
+    def _build_channels(crouch, absorb, setback, ankle=None):
+        # ``ankle`` is how much of the **grounded** ankle work each phase
+        # keeps: the load's toe lift, the landing's heel strike.  1.0 is the
+        # authored pose; the floor clamp spends it only when it has measured
+        # that this is what is putting the sole through the plane.
+        load_ankle = 1.0 if ankle is None else max(0.0, float(ankle.get("load", 1.0)))
+        catch_ankle = 1.0 if ankle is None else max(0.0, float(ankle.get("catch", 1.0)))
         drive = JUMP_HIP_DRIVE_RATIO * setback
         channels["hip"] = [
             (1, 0.0), (f_crouch, -crouch), (f_takeoff, extension_rise),
@@ -4105,9 +4120,16 @@ def cmd_rigforge_jump(params):
         # pivots about the heel (the strike, toe up). Measured on Rigify's
         # generated foot roll, + moves the ball by 0.0 mm - which is why the
         # takeoff can roll hard and the landing may not.
+        #
+        # The **strike** is grounded ankle work — frame ``f_land`` is standing
+        # on the floor — so it is one of the two anchors the floor clamp is
+        # allowed to spend.  It has to be: measured on the frozen fixture, the
+        # 5.5 deg strike is the *whole* of that clip's floor dip, because the
+        # heel this rig pivots about sits 28.4 mm under its own sole with
+        # 9.7 mm of sole behind it (see the landmark note in the clamp).
         channels["roll"] = [
             (1, 0.0), (f_crouch, 0.0), (f_takeoff, roll_deg), (f_apex, roll_deg),
-            (f_land, -strike_ratio * roll_deg),
+            (f_land, -strike_ratio * roll_deg * catch_ankle),
             (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
         # Toe work, on the one foot pivot that turns about the ball and so
         # leaves the measured plant point exactly where it was keyed: toes up
@@ -4119,9 +4141,17 @@ def cmd_rigforge_jump(params):
         # them: the heel is already rolled hard over the ball there, so a
         # pointed toe on top of it drove the sole 8.7 mm under the plane on the
         # synthetic rig.
+        #
+        # Zeroing the takeoff fixed the one frame that had been measured and
+        # left the other two grounded anchors — the bottom of the load and the
+        # contact — keyed on faith.  Every grounded anchor now carries the
+        # phase's solved ankle scale instead, so the clamp can measure what
+        # each one costs and keep as much of it as the floor will carry.  On a
+        # rig where it costs nothing (the frozen fixture: 0.0000 mm) the scale
+        # stays at 1.0 and the pose is untouched.
         channels["toe"] = [
-            (1, 0.0), (f_crouch, toe_lift), (f_takeoff, 0.0),
-            (f_apex, -0.6 * toe_lift), (f_land, toe_lift),
+            (1, 0.0), (f_crouch, toe_lift * load_ankle), (f_takeoff, 0.0),
+            (f_apex, -0.6 * toe_lift), (f_land, toe_lift * catch_ankle),
             (min(f_land + 2, f_absorb), 0.0), (end_frame, 0.0)]
 
     _build_channels(crouch_depth, landing_depth, hip_setback)
@@ -4611,9 +4641,9 @@ def cmd_rigforge_jump(params):
                     out[phase] = (depth, frame)
             return out
 
-        def _reauthor(crouch, absorb):
-            """Re-key the whole clip at these depths. Returns the key count."""
-            _build_channels(crouch, absorb, hip_setback)
+        def _reauthor(crouch, absorb, ankle=None):
+            """Re-key the whole clip at these levers. Returns the key count."""
+            _build_channels(crouch, absorb, hip_setback, ankle)
             clear_action(action)
             rigforge_rig.apply_ik_convention(
                 rig, legs="ik", arms="fk", poles=get_bool(params, "poles", True),
@@ -4631,6 +4661,8 @@ def cmd_rigforge_jump(params):
         crouch_clamped = False
         floor_solve = []
         floor_depth_independent = False
+        #: How much of each phase's **grounded** ankle work survived the solve.
+        ankle = {"load": 1.0, "catch": 1.0}
         if floor_clamp and skinned:
             scene.frame_set(frames[0])
             refresh_view_layer()
@@ -4642,73 +4674,162 @@ def cmd_rigforge_jump(params):
                     "nothing to measure a floor against and the crouch was not clamped."
                     % (rig.name, ", ".join(sorted(sole_bones)) or "a foot bone"))
         if floor_plane is not None:
-            # --- the solve, not an iteration ---------------------------------
+            # --- the solve, and every anchor in it is measured ----------------
             #
             # The sole's dip is a monotone function of how far the hips travel
-            # down in that phase, and we know one point of it exactly: at zero
-            # depth the pose IS the guard frame, which is the pose the plane was
-            # measured on, so ``dip(0) = 0``.  One authored pass gives a second
-            # point, ``dip(1) = p``.  A secant through those two solves directly
-            # for the scale that puts the sole on the plane - no backoff ladder,
-            # and the answer does not depend on how big the first reading was.
+            # down in that phase, and a secant through two points of it solves
+            # directly for the scale that puts the sole on the plane - no
+            # backoff ladder, and the answer does not depend on how big the
+            # first reading was.  What this used to get wrong was the points.
             #
-            # The first correction is deliberately the *conservative* end of
-            # that solve (the chord of a curve that starts flat and steepens
-            # lies above it, so it under-shoots the depth it could have kept),
-            # so a second secant through the two **measured** points recovers
-            # the depth the first one gave away.  At most: correct, recover,
-            # verify.
+            # ``dip(0) = 0`` was *assumed*, on the argument that at zero depth
+            # the pose is the guard frame the plane was measured on.  It is
+            # not.  A zero-depth load still carries the toe lift and a
+            # zero-depth catch still carries the heel strike, and both are keyed
+            # on frames that are standing on the floor.  Measured on the frozen
+            # fixture: the catch dips the same 1.0677 mm at zero depth as at
+            # full, so the assumed anchor had the secant solving a curve that
+            # does not exist and every correction it computed was spent for
+            # nothing (76 mm of crouch cut to 19 mm, dip unchanged to four
+            # decimals).  The zero anchor is now **measured**, the moment the
+            # solve first needs it, and that reading is what tells the depth
+            # apart from everything else that can put a sole under a floor.
+            #
+            # Whatever is left after the depth has been measured powerless is
+            # by definition not the depth's, and on a grounded frame the other
+            # thing keyed is the **ankle**: the load's toe lift and the
+            # landing's heel strike.  Those are solved the same way, from their
+            # own measured anchors, and only once the depth has been ruled out.
             tolerance = JUMP_FLOOR_TOLERANCE_M
             target = 0.5 * tolerance
             asked = {"load": crouch_depth, "catch": landing_depth}
             scale = {"load": 1.0, "catch": 1.0}
-            #: ``(scale, dip)`` samples per phase.  ``(0, 0)`` is not an
-            #: assumption: at zero depth the pose is the guard frame, which is
-            #: the frame the plane itself was measured on.
-            samples = {"load": [(0.0, 0.0)], "catch": [(0.0, 0.0)]}
-            floor_scale = 0.25
+            #: ``(scale, dip)`` per phase - every row a reading off the posed
+            #: mesh.  Nothing is seeded, because a seeded row is a guess the
+            #: secant cannot tell from a measurement.
+            samples = {"load": [], "catch": []}
+            ankle_samples = {"load": [], "catch": []}
 
-            def _worst(scan):
-                row = max(scan.values(), key=lambda entry: entry[0])
+            def _worst(rows):
+                row = max(rows.values(), key=lambda entry: entry[0])
                 return row[0], row[1]
 
-            def _solve(phase):
-                """Where a secant through the bracketing samples puts ``target``."""
-                rows = sorted(set(samples[phase]))
-                below = [row for row in rows if row[1] <= target]
+            def _secant(rows):
+                """Where a secant through the measured rows puts ``target``.
+
+                ``None`` when the rows do not bracket it: there is nothing to
+                interpolate between, and the honest answer is to go and measure
+                another point rather than extrapolate off the end of two.
+                """
+                rows = sorted(set(rows))
                 above = [row for row in rows if row[1] > target]
+                below = [row for row in rows if row[1] <= target]
                 if not above:
                     return 1.0
-                low = below[-1] if below else (0.0, 0.0)
-                high = above[0]
+                if not below:
+                    return None
+                low, high = below[-1], above[0]
                 if high[1] - low[1] <= 1e-12:  # pragma: no cover - equal readings
                     return low[0]
                 span = (target - low[1]) / (high[1] - low[1])
-                return max(floor_scale,
-                           min(1.0, low[0] + (high[0] - low[0]) * span))
+                # Not clipped to a floor of its own.  A solve that computes
+                # 0.098 and hands back 0.25 has stopped solving: the clip then
+                # carries a dip the clamp already knew how to remove, and the
+                # warning blames the geometry for the clamp's own arithmetic.
+                # The only bounds here are the ones the scale itself means.
+                return min(1.0, max(0.0, low[0] + (high[0] - low[0]) * span))
 
             scan = _floor_scan(floor_plane)
             floor_before, floor_frame = _worst(scan)
-            #: The deepest pose measured clear of the plane, and - for a rig
-            #: where no pose is clear - the one that came closest.  A solve
-            #: that ends worse than a pose it already measured has to hand
-            #: that pose back; shrinking a crouch by 75% and keeping a *bigger*
-            #: dip than it started with is the worst of both.
+            for phase in ("load", "catch"):
+                samples[phase].append((scale[phase], scan[phase][0]))
+
+            #: The deepest pose measured **clear** of the plane, and - for a rig
+            #: where no pose is clear - the one with the smallest measured dip.
+            #: Both are kept unconditionally.  The old guard demanded an
+            #: improvement of a whole tolerance before it would believe one,
+            #: which is how a measured 1.28 mm pose was thrown away in favour of
+            #: a 2.22 mm one: a pose that measures better IS better, and a
+            #: deadband on "better" is a deadband on the contract.
             best_clear = None
-            best_effort = (floor_before, crouch_depth, landing_depth, dict(scale))
-            if floor_before <= tolerance:
-                best_clear = (crouch_depth, landing_depth, dict(scale))
-            # The loop does not stop at "clear": a first correction from the
-            # chord through (0, 0) is deliberately the conservative end of the
-            # solve, and stopping there throws away depth the geometry would
-            # have allowed (measured: 77 mm of crouch cut to 19 mm to buy
-            # 3.24 mm, when 27 mm was clear).  It stops when the secant has
-            # nothing left to say in either direction.
-            for _attempt in range(3):
+            best_effort = (floor_before, crouch_depth, landing_depth,
+                           dict(scale), dict(ankle))
+
+            def _record(crouch, absorb, ankles):
+                """Remember this measured pose if it beats what we have."""
+                nonlocal best_clear, best_effort
+                now = _worst(scan)[0]
+                if now <= tolerance:
+                    # Among clear poses, depth first and then how much of the
+                    # ankle work survived: both are what the clip is *for*, and
+                    # a dip the floor cannot tell apart is no reason to spend
+                    # either.
+                    score = (round(crouch + absorb, 9),
+                             round(ankles["load"] + ankles["catch"], 9))
+                    if best_clear is None or score > best_clear[0]:
+                        best_clear = (score, crouch, absorb, dict(scale), dict(ankles))
+                if now < best_effort[0] - 1e-12:
+                    best_effort = (now, crouch, absorb, dict(scale), dict(ankles))
+
+            #: What the rig is *actually* keyed at right now.  Tracked rather
+            #: than inferred from the working scales, because a probe that gets
+            #: handed back leaves the clip on the probe until something
+            #: re-authors it - and a solve that restores by comparing against
+            #: the numbers it meant instead of the ones it keyed has quietly
+            #: shipped the probe.
+            live = {"crouch": crouch_depth, "absorb": landing_depth,
+                    "ankle": dict(ankle)}
+
+            def _author_at(crouch, absorb, ankles, extra=None):
+                """Re-author at these levers, measure the sole, keep the best."""
+                nonlocal keys_set, floor_passes, scan, crouch_clamped
+                keys_set = _reauthor(crouch, absorb, ankles)
+                live["crouch"], live["absorb"] = crouch, absorb
+                live["ankle"] = dict(ankles)
+                floor_passes += 1
+                crouch_clamped = (crouch < asked["load"] - 1e-9
+                                  or absorb < asked["catch"] - 1e-9)
+                scan = _floor_scan(floor_plane)
+                entry = {
+                    "pass": floor_passes,
+                    "crouch_mm": round(crouch * 1000.0, 2),
+                    "absorb_mm": round(absorb * 1000.0, 2),
+                    "load_mm": round(scan["load"][0] * M_TO_MM, 4),
+                    "catch_mm": round(scan["catch"][0] * M_TO_MM, 4),
+                }
+                if (ankles["load"] < 1.0 - 1e-9) or (ankles["catch"] < 1.0 - 1e-9):
+                    entry["ankle"] = {"load": round(ankles["load"], 4),
+                                      "catch": round(ankles["catch"], 4)}
+                entry.update(extra or {})
+                floor_solve.append(entry)
+                _record(crouch, absorb, ankles)
+                return _worst(scan)[0]
+
+            _record(crouch_depth, landing_depth, ankle)
+
+            # --- the depth ---------------------------------------------------
+            #
+            # Iterate on the contract, not on a counter: while the sole is
+            # through the plane *and* the last correction reduced the dip.  A
+            # fixed budget of three passes stops a solve that is still moving
+            # and lets one that is going nowhere spend two more re-authorings
+            # proving it; the contract is the only honest stopping rule, and
+            # JUMP_FLOOR_MAX_PASSES is a safety stop, not a budget.
+            previous = floor_before
+            while _worst(scan)[0] > tolerance and floor_passes < JUMP_FLOOR_MAX_PASSES:
                 moved = False
                 for phase in ("load", "catch"):
-                    samples[phase].append((scale[phase], scan[phase][0]))
-                    wanted = _solve(phase)
+                    wanted = _secant(samples[phase])
+                    if wanted is None:
+                        # Nothing measured clears the target, so there is no
+                        # bracket.  Measure the far anchor - this phase at zero
+                        # depth - instead of assuming what it reads.
+                        if not any(row[0] <= 1e-9 for row in samples[phase]):
+                            wanted = 0.0
+                        else:
+                            # Zero depth measured and the sole is still
+                            # through: the depth is not what is doing it.
+                            continue
                     # Shrink only a phase that is actually through the plane;
                     # a phase already clear may only be handed depth *back*.
                     if scan[phase][0] <= tolerance and wanted < scale[phase]:
@@ -4717,13 +4838,6 @@ def cmd_rigforge_jump(params):
                         scale[phase] = wanted
                         moved = True
                 if not moved:
-                    # Nothing left to solve. Either the pose is clear at the
-                    # depth it asked for - the ordinary case, one pass, no
-                    # re-authoring - or the dip did not move with the depth at
-                    # all, in which case the depth is not what is putting the
-                    # sole through the plane and backing off further would only
-                    # cost the pose for nothing. The warning below tells them
-                    # apart.
                     if _worst(scan)[0] > tolerance:
                         floor_depth_independent = True
                     break
@@ -4734,73 +4848,97 @@ def cmd_rigforge_jump(params):
                 ratio = (asked["catch"] / asked["load"]) if asked["load"] > 1e-9 else 1.0
                 if ratio > 1.0 and landing_depth <= crouch_depth:
                     crouch_depth = landing_depth / ratio
-                keys_set = _reauthor(crouch_depth, landing_depth)
-                floor_passes += 1
-                crouch_clamped = (crouch_depth < asked["load"] - 1e-9
-                                  or landing_depth < asked["catch"] - 1e-9)
-                scan = _floor_scan(floor_plane)
-                floor_solve.append({
-                    "pass": floor_passes,
-                    "crouch_mm": round(crouch_depth * 1000.0, 2),
-                    "absorb_mm": round(landing_depth * 1000.0, 2),
-                    "load_mm": round(scan["load"][0] * M_TO_MM, 4),
-                    "catch_mm": round(scan["catch"][0] * M_TO_MM, 4),
-                })
-                now = _worst(scan)[0]
-                if now <= tolerance:
-                    if best_clear is None or crouch_depth > best_clear[0]:
-                        best_clear = (crouch_depth, landing_depth, dict(scale))
-                # A shallower pose has to be better by more than the whole
-                # tolerance to be worth having: trading 150 mm of crouch for
-                # 0.09 mm of dip is the review's complaint in the other
-                # direction.
-                if now < best_effort[0] - tolerance:
-                    best_effort = (now, crouch_depth, landing_depth, dict(scale))
-                elif now > floor_before + 1e-9:
-                    # Shallower and *worse*: the response is not monotone in
-                    # the depth, so there is nothing here for a secant to
-                    # solve. Stop before another pass costs more of the pose.
+                    # ...and the sample is labelled with the scale the pose
+                    # actually got.  A row filed under a scale the clip never
+                    # carried is the same fiction as an assumed anchor.
+                    if asked["load"] > 1e-9:
+                        scale["load"] = crouch_depth / asked["load"]
+                now = _author_at(crouch_depth, landing_depth, ankle)
+                for phase in ("load", "catch"):
+                    samples[phase].append((scale[phase], scan[phase][0]))
+                if now >= previous - 1e-9:
+                    # The correction did not reduce the dip.  Whatever is
+                    # putting this sole through the floor, it is not the depth,
+                    # and another pass would only cost more of the pose.
                     floor_depth_independent = True
                     break
-            # A recovery pass is allowed to overshoot - that is what makes it a
-            # solve rather than a ratchet - so if the clip ends through the
-            # plane, the best pose it actually measured is what gets authored:
-            # the deepest clear one, or failing that the shallowest dip.
-            if _worst(scan)[0] > tolerance:
-                if best_clear is not None:
-                    keep = best_clear
-                else:
-                    keep = best_effort[1:]
-                if (abs(keep[0] - crouch_depth) > 1e-9
-                        or abs(keep[1] - landing_depth) > 1e-9):
-                    crouch_depth, landing_depth, scale = keep
-                    keys_set = _reauthor(crouch_depth, landing_depth)
-                    floor_passes += 1
-                    crouch_clamped = (crouch_depth < asked["load"] - 1e-9
-                                      or landing_depth < asked["catch"] - 1e-9)
-                    scan = _floor_scan(floor_plane)
-                    floor_solve.append({
-                        "pass": floor_passes, "restored": True,
-                        "crouch_mm": round(crouch_depth * 1000.0, 2),
-                        "absorb_mm": round(landing_depth * 1000.0, 2),
-                        "load_mm": round(scan["load"][0] * M_TO_MM, 4),
-                        "catch_mm": round(scan["catch"][0] * M_TO_MM, 4),
-                    })
+                previous = now
+
+            # The depth solve leaves the clip on whatever it last tried, which
+            # may be the zero-depth probe.  Put the best measured pose back
+            # before anything else is measured against it.
+            keep = ((best_clear[1], best_clear[2], best_clear[4]) if best_clear
+                    else (best_effort[1], best_effort[2], best_effort[4]))
+            if (abs(keep[0] - live["crouch"]) > 1e-9
+                    or abs(keep[1] - live["absorb"]) > 1e-9):
+                crouch_depth, landing_depth, ankle = keep[0], keep[1], dict(keep[2])
+                scale = {"load": (crouch_depth / asked["load"]
+                                  if asked["load"] > 1e-9 else 1.0),
+                         "catch": (landing_depth / asked["catch"]
+                                   if asked["catch"] > 1e-9 else 1.0)}
+                _author_at(crouch_depth, landing_depth, ankle, {"restored": True})
+
+            # --- what the depth could not reach ------------------------------
+            #
+            # The grounded ankle work, solved exactly like the depth: measure
+            # it at zero, and if that is what was doing it, secant back to the
+            # most of it the floor will carry.  Spent only on a phase that is
+            # still through the plane, so a clip the depth already cleared is
+            # authored with its ankle work untouched.
+            for phase in ("load", "catch"):
+                if scan[phase][0] <= tolerance or floor_passes >= JUMP_FLOOR_MAX_PASSES:
+                    continue
+                before_ankle = scan[phase][0]
+                ankle_samples[phase].append((ankle[phase], before_ankle))
+                ankle[phase] = 0.0
+                _author_at(crouch_depth, landing_depth, ankle, {"ankle_probe": phase})
+                ankle_samples[phase].append((0.0, scan[phase][0]))
+                if scan[phase][0] >= before_ankle - 1e-9:
+                    # Not the ankle either.  Hand it straight back: a pose is
+                    # never paid for with animation that bought nothing.
+                    ankle[phase] = 1.0
+                    continue
+                wanted = _secant(ankle_samples[phase])
+                if wanted is None:
+                    wanted = 0.0
+                if (abs(wanted - ankle[phase]) > 1e-4
+                        and floor_passes < JUMP_FLOOR_MAX_PASSES):
+                    ankle[phase] = wanted
+                    _author_at(crouch_depth, landing_depth, ankle,
+                               {"ankle_solve": phase})
+
+            # Whatever the last probe left on the rig, the clip is authored at
+            # the best pose this solve actually measured - unconditionally.
+            if best_clear is not None:
+                keep = (best_clear[1], best_clear[2], best_clear[3], best_clear[4])
+            else:
+                keep = (best_effort[1], best_effort[2], best_effort[3], best_effort[4])
+            crouch_depth, landing_depth = keep[0], keep[1]
+            scale, ankle = dict(keep[2]), dict(keep[3])
+            if (abs(keep[0] - live["crouch"]) > 1e-9
+                    or abs(keep[1] - live["absorb"]) > 1e-9
+                    or abs(keep[3]["load"] - live["ankle"]["load"]) > 1e-9
+                    or abs(keep[3]["catch"] - live["ankle"]["catch"]) > 1e-9):
+                _author_at(crouch_depth, landing_depth, ankle, {"restored": True})
+
             floor_after, floor_frame = _worst(scan)
+            ankle_spent = [phase for phase in ("load", "catch")
+                           if ankle[phase] < 1.0 - 1e-9]
             if floor_after > JUMP_FLOOR_TOLERANCE_M and floor_depth_independent:
                 warnings.append(
-                    "The sole sits %.2f mm below its plane at frame %s and scaling the "
-                    "crouch did not move it (%s). That is not a depth problem: "
-                    "something other than how far the hips travel is putting this foot "
-                    "through the floor - the heel roll, the landing strike, or geometry "
-                    "that already intersects the ground at rest. The crouch was put "
-                    "back to the best depth measured (%.0f mm) rather than ground away "
-                    "for nothing."
+                    "The sole sits %.2f mm below its plane at frame %s and neither the "
+                    "depth nor the grounded ankle work moved it (%s). That is not a "
+                    "pose problem: something that is not keyed by this clip is putting "
+                    "this foot through the floor - a foot chain fitted below its own "
+                    "sole, or geometry that already intersects the ground at rest. The "
+                    "crouch was put back to the best depth measured (%.0f mm) rather "
+                    "than ground away for nothing."
                     % (floor_after * M_TO_MM, floor_frame,
                        "; ".join(
                            "%s %s" % (phase, ", ".join(
-                               "%.0f%% -> %.2f mm" % (row[0] * 100.0, row[1] * M_TO_MM)
-                               for row in sorted(set(samples[phase])) if row[0] > 0.0))
+                               "%.0f%% -> %.3f mm" % (row[0] * 100.0, row[1] * M_TO_MM)
+                               for row in sorted(set(samples[phase]
+                                                     + ankle_samples[phase]))))
                            for phase in ("load", "catch")),
                        crouch_depth * 1000.0))
             elif floor_after > JUMP_FLOOR_TOLERANCE_M:
@@ -4820,6 +4958,18 @@ def cmd_rigforge_jump(params):
                     % (crouch_depth * 1000.0, landing_depth * 1000.0,
                        asked["load"] * 1000.0, asked["catch"] * 1000.0,
                        floor_before * M_TO_MM, floor_passes))
+            if ankle_spent:
+                warnings.append(
+                    "The grounded ankle work was solved back on the %s (%s) so the sole "
+                    "stays on its plane: at full it went %.3f mm through and the depth "
+                    "was measured powerless against it. That is the foot chain, not the "
+                    "pose - this rig pivots its heel below its own sole, so any ankle "
+                    "angle on a grounded frame swings the heel under the floor."
+                    % (" and ".join(ankle_spent),
+                       ", ".join("%s toe/strike at %.0f%% of the authored angle"
+                                 % (phase, ankle[phase] * 100.0)
+                                 for phase in ankle_spent),
+                       floor_before * M_TO_MM))
 
         applied = 0
         for curve in rigforge_rig.action_fcurves(action):
@@ -4999,7 +5149,11 @@ def cmd_rigforge_jump(params):
         "hip_setback_ratio": round(setback_ratio, 5),
         "hip_drive_measured_m": round(hip_drive_measured, 5),
         "torso_fold_deg": round(math.degrees(torso_fold), 3),
-        "load_toe_lift_deg": round(toe_lift, 3),
+        # What was *authored* at the bottom of the load, which is the asked-for
+        # lift times whatever the floor left of it (see floor_ankle_scale).
+        "load_toe_lift_deg": round(toe_lift * ankle["load"], 3),
+        "load_toe_lift_asked_deg": round(toe_lift, 3),
+        "landing_strike_deg": round(strike_ratio * roll_deg * ankle["catch"], 3),
         "floor_plane_z_m": (round(floor_plane, 6) if floor_plane is not None else None),
         "floor_penetration_mm": (round(floor_after * M_TO_MM, 4)
                                  if floor_after is not None else None),
@@ -5009,6 +5163,11 @@ def cmd_rigforge_jump(params):
         "floor_passes": floor_passes,
         "floor_solve": floor_solve,
         "floor_depth_independent": bool(floor_depth_independent),
+        #: How much of each phase's grounded ankle work (the load's toe lift,
+        #: the landing's heel strike) the floor left in the clip.  1.0 is the
+        #: authored angle; anything less was measured, not guessed.
+        "floor_ankle_scale": {phase: round(ankle[phase], 4)
+                              for phase in ("load", "catch")},
         "sole_bones": sorted(sole_bones),
         "sole_vertices": {name: (len(value) if value is not None else None)
                           for name, value in sorted(soles.items())},
