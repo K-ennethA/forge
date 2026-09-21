@@ -32,6 +32,13 @@
 </header>
 
 <nav class="tabs" role="tablist">
+  <button type="button" class="tab" id="tab-home" role="tab"
+          aria-selected="false" aria-controls="panel-home">Home</button>
+  <!-- The planning room belongs to one project, so it is hidden until there
+       is one to plan. It is still a real tab: #planning is a URL, and the
+       button appears the moment a project is being planned. -->
+  <button type="button" class="tab" id="tab-planning" role="tab"
+          aria-selected="false" aria-controls="panel-planning" hidden>Plan</button>
   <button type="button" class="tab is-active" id="tab-studio" role="tab"
           aria-selected="true" aria-controls="panel-studio">Studio</button>
   <button type="button" class="tab" id="tab-workspace" role="tab"
@@ -62,13 +69,145 @@
 
 <main>
   <!-- ------------------------------------------------------------------ -->
+  <!-- Home, top half (docs/ux-flow.md Screen 1).  One prompt box and the five
+       workflows that already exist as task chains.  Typing can IMPLY a
+       workflow and never picks one: the matching card lights up and the person
+       clicks it.  That is the config-map law — select, don't make the model
+       guess — and it is why the button stays disabled until a card is chosen.
+
+       Below it, the library half: every project as a card with a progress
+       ring off its own build plan. -->
+  <section class="panel" id="panel-home" role="tabpanel"
+           aria-labelledby="tab-home" hidden>
+    <div class="home">
+      <h2>Start something</h2>
+
+      <form class="home-start" id="home-start" autocomplete="off">
+        <div class="home-promptbox" id="home-dropzone">
+          <textarea id="home-prompt" rows="3"
+                    placeholder="What are you making? “a werewolf character for my game”"></textarea>
+          <div class="home-refs" id="home-refs"></div>
+          <label class="attach-label btn tiny" for="home-file">
+            Add photos
+            <input type="file" id="home-file" multiple
+                   accept="image/png,image/jpeg,image/webp,image/bmp" hidden>
+          </label>
+        </div>
+
+        <div class="home-cards" id="home-cards"></div>
+
+        <div class="home-go">
+          <label for="home-name">Call it</label>
+          <input type="text" id="home-name" class="input" placeholder="werewolf">
+          <button type="submit" class="btn primary" id="home-create" disabled>Plan it</button>
+          <span class="home-status" id="home-status"></span>
+        </div>
+      </form>
+
+      <p class="muted small">Pick the kind of thing it is — what you type just
+         lights one up. Photos you drop here come with you.</p>
+
+      <!-- --------------------------------------------------------------- -->
+      <!-- Home, bottom half (docs/ux-flow.md Screen 1).  "Every project as a
+           card: thumbnail (newest render), name, workflow badge, progress ring
+           off its real build-plan ("7/10"), last touched.  Click → that
+           project's Studio, exactly where it left off."
+
+           The ring is the honest part: a project with no build plan reads
+           "not started", never 0/0.  The grid is drawn from /library/cards,
+           so nothing here is a hardcoded project name. -->
+      <div class="home-block" id="home-library-block">
+        <h2>Your projects</h2>
+        <div class="proj-grid" id="home-library"></div>
+
+        <!-- The path-entry flow, folded away until the tile is clicked.  A
+             web page cannot open a file picker that returns a path, and the
+             help text says so in those words rather than leaving somebody
+             hunting for a Browse button that cannot exist. -->
+        <form class="attach" id="home-attach" autocomplete="off" hidden>
+          <label for="attach-path">Where is the .blend file?</label>
+          <input type="text" id="attach-path" class="input"
+                 placeholder="C:\Users\you\Documents\wolf.blend">
+          <div class="attach-go">
+            <button type="submit" class="btn primary" id="attach-go">Add Forge to it</button>
+            <button type="button" class="btn ghost" id="attach-cancel">Cancel</button>
+            <span class="attach-status" id="attach-status"></span>
+          </div>
+          <p class="attach-help" id="attach-help">A web page
+             cannot open a file picker that gives Forge a path, so type or
+             paste the whole one. In File Explorer: find the file, hold Shift,
+             right-click it, choose <b>Copy as path</b>, paste it here.
+             Your file is copied into the new project and never
+             moved — the original stays exactly where it is.</p>
+        </form>
+
+        <p class="muted small">Click a project to pick it up where you left
+           off. The number on each one is its real build plan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <!-- The planning room (docs/ux-flow.md Screen 2).  References on the left,
+       the plan on the right, one button at the end.
+
+       The chat here is not a second chat: the Studio's own conversation column
+       is MOVED into this panel while the planning room is open and moved back
+       when it closes.  One thread, one composer, one session — a design
+       conversation that lived in a different box would be a second history of
+       the same project. -->
+  <section class="panel" id="panel-planning" role="tabpanel"
+           aria-labelledby="tab-planning" hidden>
+    <div class="plan-head">
+      <div>
+        <h2 id="plan-title">Planning</h2>
+        <p class="muted small" id="plan-kind"></p>
+      </div>
+      <button type="button" class="btn ghost tiny" id="plan-refresh"
+              title="Re-read the board and the sheet">Refresh</button>
+      <button type="button" class="btn ghost tiny" id="plan-back"
+              title="Back to Home (Esc)">Back</button>
+    </div>
+
+    <div class="plan-body">
+      <div class="plan-left">
+        <h3>Reference board</h3>
+        <div class="ref-grid" id="plan-refs"></div>
+        <label class="attach-label btn tiny" for="plan-file">
+          Add photos
+          <input type="file" id="plan-file" multiple
+                 accept="image/png,image/jpeg,image/webp,image/bmp" hidden>
+        </label>
+        <p class="muted small">Say which side each photo shows — front, back
+           and side are what the shape is built from; general is just the look.</p>
+        <p class="ref-status" id="plan-refs-status"></p>
+      </div>
+
+      <div class="plan-right">
+        <h3>The plan</h3>
+        <div class="plan-chat" id="plan-chat"></div>
+
+        <h3>The sheet</h3>
+        <div class="plan-sheet" id="plan-sheet"></div>
+        <p class="muted small">Every setting is already filled in. Tap one to
+           read why it is set that way, and change it if it is wrong.</p>
+      </div>
+    </div>
+
+    <div class="plan-foot">
+      <button type="button" class="btn primary" id="plan-build">Start building</button>
+      <span class="plan-status" id="plan-status"></span>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
   <!-- The Studio: ONE screen for one working session.  The conversation and
        the part's own numbers are the same job — asking the assistant to make
        the top 1.5× the bottom took 155 seconds and 41 cents, and typing 1.5
        into a box takes two.  So they sit side by side and neither is a tab
        away from the other.  Below 1100 px they stack, chat first. -->
   <section class="panel" id="panel-studio" role="tabpanel" aria-labelledby="tab-studio">
-   <div class="studio">
+   <div class="studio" id="studio">
     <div class="studio-chat" id="studio-chat">
     <div class="thread" id="thread">
       <div class="empty" id="empty">

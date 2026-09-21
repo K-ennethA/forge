@@ -7775,6 +7775,1097 @@ def start_services():
 
 
 # ---------------------------------------------------------------------------
+# Phase 21 — the reference board ("an untagged pile of images is a guess")
+# ---------------------------------------------------------------------------
+#
+# docs/ux-flow.md, Screen 2: "Drop photos.  Each gets a type tag — Front / Back
+# / Side / Floor plan / General — and an optional plain-text note.  Tags are
+# data: they drive the multiview conditioning (the back-reference lesson: an
+# untagged pile of images is why the model's back was a guess)."
+#
+# So the board is two files on disk and nothing clever: the images in
+# ``projects/<name>/design/refs/`` and one manifest beside them saying what each
+# of them IS.  The manifest is read the way the artist-edits journal is read and
+# written the way it is written — every record already on disk goes back exactly
+# as it came off, the write is a temporary file and a rename, and a file that
+# will not parse is never overwritten.  A photo in ``refs/`` with no record is
+# not an error either: it lists as untagged, which is how the projects that
+# predate this lane (the werewolf has twelve) surface their photos at all.
+
+#: ``projects/<name>/design/refs/`` — where a reference photo lives.  The
+#: folder the assistant has been writing references into since the design phase
+#: existed; this lane only gives it a manifest and a door.
+REFS_DIRNAME = "refs"
+#: ``projects/<name>/design/refs-manifest.json`` — BESIDE ``refs/``, not inside
+#: it, so a manifest can never be mistaken for a reference.
+REFS_MANIFEST_FILENAME = "refs-manifest.json"
+REFS_MANIFEST_VERSION = 1
+
+#: What a reference can BE.  Five, closed, lowercase: ``front``/``back``/
+#: ``side`` are the ones meshgen conditions on, ``floorplan`` is the drawing a
+#: level is greyboxed from, and ``general`` is "this is the vibe" — a photo
+#: that must not be fed to a view-conditioned generator as if it were a view.
+REF_TAGS = ("front", "back", "side", "floorplan", "general")
+#: What an upload that named no tag gets.  ``general`` and not ``front``: an
+#: unlabelled photo claiming to be the front view is exactly the failure the
+#: tags exist to stop.
+DEFAULT_REF_TAG = "general"
+
+#: How long a note may be.  A note is "this jacket, but longer", and it goes to
+#: the assistant verbatim; a paragraph past this is a message, not a caption.
+MAX_REF_NOTE = 400
+#: How many entries the board draws.  A board is a board.
+MAX_REFS_LISTED = 200
+
+
+def refs_dir(folder, create=False):
+    """``projects/<name>/design/refs``, or ``None`` if that is not inside it.
+
+    Arithmetic on top of the alphabet gate :func:`project_dir` already applied
+    to the name — the same two-independent-guards rule as
+    :func:`project_models_dir`, which is the only other place this process
+    makes a folder the artist did not name.
+    """
+    if not folder:
+        return None
+    root = os.path.abspath(folder)
+    path = os.path.abspath(os.path.join(root, DESIGN_DIRNAME, REFS_DIRNAME))
+    if os.path.dirname(os.path.dirname(path)) != root:
+        return None
+    if create:
+        try:
+            os.makedirs(path, exist_ok=True)
+        except OSError:
+            return None
+    return path
+
+
+def refs_manifest_path(folder):
+    """``projects/<name>/design/refs-manifest.json``."""
+    return os.path.join(folder, DESIGN_DIRNAME, REFS_MANIFEST_FILENAME)
+
+
+def normalize_ref_tag(value, default=""):
+    """One of :data:`REF_TAGS`, or *default*.
+
+    Case and surrounding quotes are forgiven because a tag arrives from a
+    dropdown in a browser and from ``curl`` alike; anything that is not one of
+    the five is NOT forgiven, because a sixth tag is a reference the generator
+    will silently ignore.
+    """
+    text = str(value or "").strip().strip('"').strip().lower()
+    if not text:
+        return default
+    text = text.replace(" ", "").replace("-", "").replace("_", "")
+    if text == "floorplan":
+        return "floorplan"
+    return text if text in REF_TAGS else default
+
+
+def ref_note(value):
+    """A note as it will be stored: one line's worth of plain text, capped."""
+    text = str(value if value is not None else "")
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    return text[:MAX_REF_NOTE]
+
+
+def ref_path(folder, name):
+    """The absolute path of one reference image, or ``None``.
+
+    Three gates, the same three as :func:`webui_asset`: one plain segment out
+    of the alphabet, an extension that is an image, and a resolved path still
+    directly inside ``refs/``.  ``..%2F..%2Fsystem_prompt.md`` fails on the
+    first of them, before any path arithmetic happens.
+    """
+    text = str(name or "").strip()
+    if not text or not _ASSET_NAME_RE.match(text) or text.startswith("."):
+        return None
+    if os.path.splitext(text)[1].lower() not in IMAGE_EXTENSIONS:
+        return None
+    directory = refs_dir(folder)
+    if not directory:
+        return None
+    path = os.path.abspath(os.path.join(directory, text))
+    if os.path.dirname(path) != os.path.abspath(directory):
+        return None
+    return path
+
+
+def read_refs_manifest(folder):
+    """``{records, exists, unreadable?}`` — what the board has been told.
+
+    Read exactly the way :func:`read_journal` reads the artist's journal, and
+    for the same reasons: a flat list is the file, an object with a ``refs``
+    list inside it is also read for its records (the assistant was writing
+    these by hand before there was an endpoint), and a file that will not parse
+    comes back carrying ``unreadable`` so that nothing overwrites it.
+    """
+    try:
+        with open(refs_manifest_path(folder), encoding="utf-8") as handle:
+            data = json.load(handle)
+    except OSError:
+        return {"records": [], "exists": False}
+    except ValueError:
+        return {"records": [], "exists": True, "unreadable": True}
+    if isinstance(data, list):
+        return {"records": [item for item in data if isinstance(item, dict)],
+                "exists": True}
+    if isinstance(data, dict) and isinstance(data.get("refs"), list):
+        return {"records": [item for item in data["refs"]
+                            if isinstance(item, dict)], "exists": True}
+    return {"records": [], "exists": True, "unreadable": True}
+
+
+def write_refs_manifest(folder, records):
+    """Write the manifest atomically.  Returns the path, or ``None``.
+
+    A temporary file and a rename, like the journal: a crash halfway through
+    must not be able to leave the artist with half a board.  The caller hands
+    over the WHOLE list including every record it read and did not change —
+    this function adds nothing and drops nothing.
+    """
+    path = refs_manifest_path(folder)
+    temporary = "%s.%s.tmp" % (path, uuid.uuid4().hex[:8])
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(temporary, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(list(records), handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temporary, path)
+    except OSError:
+        try:
+            os.remove(temporary)
+        except OSError:
+            pass
+        return None
+    return path
+
+
+def ref_record(file, tag, note, added=None):
+    """One manifest record: ``{file, tag, note, added}``, in that order."""
+    return {
+        "file": str(file),
+        "tag": normalize_ref_tag(tag, DEFAULT_REF_TAG),
+        "note": ref_note(note),
+        "added": added or _iso_utc(time.time()),
+    }
+
+
+def add_ref_record(folder, file, tag, note):
+    """Append one record, keeping every record already there byte-identical.
+
+    Append-only in spirit, and meant literally: the records on disk are written
+    back exactly as they were read — every key they carry, in the order they
+    carry it — with the new one after them.  A second record for a filename
+    that is already listed is not possible here: uploads are given a unique
+    name (:func:`safe_upload_name`), and a re-tag is :func:`retag_ref`.
+
+    Returns ``(record, path)``, or ``(None, None)`` when the manifest is
+    unreadable — which is a refusal, never a silent rewrite.
+    """
+    manifest = read_refs_manifest(folder)
+    if manifest.get("unreadable"):
+        return None, None
+    record = ref_record(file, tag, note)
+    records = manifest["records"] + [record]
+    path = write_refs_manifest(folder, records)
+    if path is None:
+        return None, None
+    return record, path
+
+
+def edit_ref_record(folder, file, changes):
+    """Change one record's fields in place; every other record is untouched.
+
+    The edited record keeps every key it already had — a record the assistant
+    wrote by hand with a ``prompt`` or a ``source`` on it comes back with that
+    key still on it — because a re-tag is a change of one field, not a
+    replacement of the row.  A file that is in ``refs/`` but has no record yet
+    (every photo that predates this lane) gets its first record here, which is
+    how an old project's pile becomes a tagged board.
+
+    Returns ``(record, path)``, or ``(None, None)`` if there is nothing to edit.
+    """
+    manifest = read_refs_manifest(folder)
+    if manifest.get("unreadable"):
+        return None, None
+    records = manifest["records"]
+    found = None
+    for index, item in enumerate(records):
+        if str(item.get("file") or "") == file:
+            found = index
+            break
+    if found is None:
+        if ref_path(folder, file) is None or not os.path.isfile(
+                ref_path(folder, file)):
+            return None, None
+        record = ref_record(file, changes.get("tag"), changes.get("note"))
+        records = records + [record]
+        path = write_refs_manifest(folder, records)
+        return (record, path) if path else (None, None)
+
+    record = dict(records[found])
+    if "tag" in changes:
+        record["tag"] = normalize_ref_tag(changes["tag"], DEFAULT_REF_TAG)
+    if "note" in changes:
+        record["note"] = ref_note(changes["note"])
+    records = records[:found] + [record] + records[found + 1:]
+    path = write_refs_manifest(folder, records)
+    return (record, path) if path else (None, None)
+
+
+def refs_board(folder, limit=MAX_REFS_LISTED):
+    """The board: every tagged record, then every photo nobody has tagged.
+
+    An image in ``refs/`` with no record lists as ``tag: ""`` and
+    ``tracked: false`` rather than not listing at all — the werewolf has twelve
+    of those and they are the whole reason this route exists on old projects.
+    A record whose file has gone lists as ``missing`` rather than vanishing,
+    because a board that quietly drops rows is a board that cannot be audited.
+    """
+    directory = refs_dir(folder)
+    manifest = read_refs_manifest(folder)
+    on_disk = {}
+    if directory:
+        try:
+            names = os.listdir(directory)
+        except OSError:
+            names = []
+        for name in names:
+            if os.path.splitext(name)[1].lower() not in IMAGE_EXTENSIONS:
+                continue
+            path = os.path.join(directory, name)
+            try:
+                info = os.stat(path)
+            except OSError:
+                continue
+            if not os.path.isfile(path):
+                continue
+            on_disk[name] = info
+
+    def entry(name, tag, note, added, tracked, info):
+        token = FILES.mint(os.path.join(directory, name)) if (
+            directory and info is not None) else None
+        return {
+            "file": name,
+            "tag": tag,
+            "note": note,
+            "added": added,
+            "tracked": tracked,
+            "missing": info is None,
+            "bytes": int(info.st_size) if info is not None else 0,
+            "mtime": round(info.st_mtime, 3) if info is not None else 0.0,
+            "url": ("/file/%s" % token) if token else None,
+        }
+
+    out = []
+    listed = set()
+    for record in manifest["records"]:
+        name = str(record.get("file") or "")
+        if not name or name in listed:
+            continue
+        listed.add(name)
+        out.append(entry(name, normalize_ref_tag(record.get("tag"),
+                                                 DEFAULT_REF_TAG),
+                         ref_note(record.get("note")),
+                         str(record.get("added") or ""), True,
+                         on_disk.get(name)))
+
+    # Newest first among the untagged: the photo just dropped in by hand is the
+    # one somebody opened this screen to label.  Name breaks a tie so two files
+    # written in the same second do not swap places between two reads.
+    untracked = sorted((name for name in on_disk if name not in listed),
+                       key=lambda name: (-on_disk[name].st_mtime, name))
+    for name in untracked:
+        out.append(entry(name, "", "", "", False, on_disk[name]))
+
+    counts = {}
+    for item in out:
+        counts[item["tag"]] = counts.get(item["tag"], 0) + 1
+    return {
+        "refs": out[:limit],
+        "count": len(out),
+        "total": len(out),
+        "tags": list(REF_TAGS),
+        "counts": counts,
+        "untagged": sum(1 for item in out if not item["tag"]),
+        "manifest": refs_manifest_path(folder),
+        "manifest_exists": bool(manifest.get("exists")),
+        "manifest_unreadable": bool(manifest.get("unreadable")),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Phase 21 — the five workflows, and which one the words imply
+# ---------------------------------------------------------------------------
+#
+# docs/ux-flow.md, Screen 1: "five workflow cards: Character · 3D-Print Part ·
+# Device · Floor Plan · Mold — the five task chains that already exist.  Typing
+# can imply the workflow but never silently: the matching card lights up and
+# the person confirms with a click (the config-map law — select, don't make the
+# model guess)."
+#
+# The five and their blurbs are ``forge_mcp.task_config.TASKS`` and
+# ``TASK_BLURB``, mirrored here for the same reason the pipeline's statuses are
+# mirrored: this process is stdlib-only and cannot import the MCP package.  A
+# test reads both out of ``mcp/forge_mcp/task_config.py`` and fails if they
+# have drifted, which is the only thing that keeps a mirror honest.
+
+#: The card's name.  Title case and the artist's words — ``task_config``'s keys
+#: are what the tools take, and "floorplan" is not a thing anybody says.
+WORKFLOW_LABELS = {
+    "character": "Character",
+    "part": "3D-Print Part",
+    "device": "Device",
+    "floorplan": "Floor Plan",
+    "mold": "Mold",
+}
+
+#: ``forge_mcp.task_config.TASKS``, in its order — which is the order the cards
+#: are drawn in and the tie-break for a suggestion.
+WORKFLOW_TASKS = ("character", "part", "device", "floorplan", "mold")
+
+#: ``forge_mcp.task_config.TASK_BLURB``, verbatim.
+WORKFLOW_BLURBS = {
+    "character": "a rigged, animated body headed for a game engine",
+    "part": "a parametric part headed for a printer",
+    "device": "a part with a circuit in it — a switch, a cell, a light",
+    "floorplan": "a drawing of rooms headed for a greybox level",
+    "mold": "a figure headed for silicone and resin",
+}
+
+#: **The suggestion map, as data.**  Words an artist actually types, per task.
+#:
+#: Deliberately dull: a word matched on its own boundaries scores one point for
+#: its task, the highest score wins, and a tie is broken by
+#: :data:`WORKFLOW_TASKS` order.  No weights, no stemming, no model — because
+#: the suggestion is never the decision.  The card lights up and the PERSON
+#: clicks it (the config-map law), so the cost of a wrong guess is one glance
+#: and the cost of a clever one nobody can predict is a screen that feels
+#: haunted.
+#:
+#: No word appears under two tasks; the test asserts that, because two owners
+#: for one word is how a tie becomes a coin toss.
+WORKFLOW_KEYWORDS = {
+    "character": ("character", "creature", "monster", "werewolf", "beast",
+                  "person", "body", "rig", "rigged", "animate", "animated",
+                  "animation", "npc", "avatar", "hero", "villain", "biped",
+                  "dragon", "skeleton", "walk cycle", "game character"),
+    "part": ("part", "bracket", "holder", "mount", "print", "printed",
+             "printer", "printable", "3d print", "clip", "hook", "stand",
+             "enclosure", "adapter", "spacer", "knob", "handle", "tray",
+             "clearance", "tolerance", "screw"),
+    "device": ("device", "circuit", "led", "light", "lamp", "switch",
+               "battery", "cell", "sensor", "button", "wiring", "wire",
+               "electronics", "powered", "blinks"),
+    "floorplan": ("floor plan", "floorplan", "room", "rooms", "house",
+                  "apartment", "level", "layout", "blueprint", "wall", "walls",
+                  "kitchen", "bedroom", "bathroom", "hallway", "storey",
+                  "floors", "greybox"),
+    "mold": ("mold", "mould", "silicone", "resin", "cast", "casting",
+             "figurine", "figure", "miniature", "sprue", "parting line",
+             "draft angle"),
+}
+
+#: A keyword matched on word boundaries, cached per keyword.  ``\bpart\b`` and
+#: not ``"part" in text``, or every apartment in the world is a bracket.
+_WORKFLOW_WORD_RE = {}
+
+
+def _workflow_word(keyword):
+    pattern = _WORKFLOW_WORD_RE.get(keyword)
+    if pattern is None:
+        pattern = re.compile(r"(?<![a-z0-9])%s(?![a-z0-9])"
+                             % re.escape(keyword))
+        _WORKFLOW_WORD_RE[keyword] = pattern
+    return pattern
+
+
+def normalize_task_name(value):
+    """One of :data:`WORKFLOW_TASKS`, or ``""``.
+
+    The mirror of ``task_config.normalize_task`` minus its exception: this is a
+    gate on a request body, and a refusal here is an HTTP answer rather than a
+    sentence for a model to read.
+    """
+    text = str(value or "").strip().strip('"').strip().lower()
+    return text if text in WORKFLOW_TASKS else ""
+
+
+def workflow_list():
+    """The five cards, in ``TASKS`` order, each with its one-line blurb."""
+    return [{
+        "task": task,
+        "label": WORKFLOW_LABELS[task],
+        "blurb": WORKFLOW_BLURBS[task],
+        "keywords": list(WORKFLOW_KEYWORDS[task]),
+    } for task in WORKFLOW_TASKS]
+
+
+def suggest_workflow(text):
+    """Which card the words imply — ``{task, score, matched, scores}``.
+
+    Deterministic and explained: the same sentence always lights the same card,
+    and ``matched`` says which words did it, so "why is it suggesting that"
+    has an answer that is not a shrug.  Nothing here decides anything — the
+    person clicks.
+    """
+    lowered = str(text or "").lower()
+    scores = {}
+    matched = {}
+    for task in WORKFLOW_TASKS:
+        hits = [word for word in WORKFLOW_KEYWORDS[task]
+                if _workflow_word(word).search(lowered)]
+        scores[task] = len(hits)
+        matched[task] = hits
+    best = ""
+    for task in WORKFLOW_TASKS:          # TASKS order IS the tie-break
+        if scores[task] and scores[task] > scores.get(best, 0):
+            best = task
+    return {
+        "task": best,
+        "score": scores.get(best, 0),
+        "matched": matched.get(best, []),
+        "scores": scores,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Phase 21 — making a project ("Start something")
+# ---------------------------------------------------------------------------
+#
+# The folder, the prompt and the references are this process's business: they
+# are files, and writing a file is not a decision.  Everything downstream of
+# them is NOT: ``task_config_init`` materialises the settings sheet,
+# ``pipeline.py`` is the only writer of ``build-plan.json``, and both of those
+# are MCP tools the assistant drives.  So creation stops where the rules start
+# — it writes what it can and then composes the design-stage turn, exactly the
+# way the workspace's decision buttons compose theirs.  There is no second
+# writer on this port.
+
+#: How much of the artist's own words are kept.  A prompt is a description, and
+#: a novel pasted into it is a conversation.
+MAX_PROJECT_PROMPT = 4000
+#: Where those words are written down.  Its own file, not ``requirements.md``:
+#: the requirements sheet is what the design conversation SETTLES, and this is
+#: what was asked for before anybody talked about it.
+PROMPT_FILENAME = "prompt.md"
+
+
+def write_project_prompt(folder, prompt):
+    """Save the artist's own words verbatim.  Returns the path, or ``None``.
+
+    Verbatim means verbatim: the file is the prompt and a trailing newline, no
+    heading and no wrapper, because this is the text the design turn quotes and
+    the two must not be able to disagree.
+    """
+    path = os.path.join(folder, DESIGN_DIRNAME, PROMPT_FILENAME)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(prompt.rstrip("\n") + "\n")
+    except OSError:
+        return None
+    return path
+
+
+def resolve_dropped_upload(path):
+    """An upload this bridge itself saved, or ``None``.
+
+    The Home screen's references are dropped before the project exists, so they
+    go through ``POST /upload`` first and arrive here as paths.  A path is
+    never taken on trust: what may be copied into a project is exactly what
+    this process wrote into :func:`uploads_dir` and nothing else — the same
+    rule, and the same directory-equality check rather than a prefix test, as
+    :func:`resolve_indexed_model`.
+    """
+    resolved = normalize_image_path(path)
+    if not resolved:
+        return None
+    if os.path.splitext(resolved)[1].lower() not in IMAGE_EXTENSIONS:
+        return None
+    try:
+        if not os.path.isfile(resolved):
+            return None
+    except OSError:
+        return None
+    wanted = os.path.normcase(os.path.normpath(uploads_dir()))
+    if os.path.normcase(os.path.dirname(resolved)) != wanted:
+        return None
+    return resolved
+
+
+def carry_refs_into(folder, dropped):
+    """Copy the Home screen's dropped references onto the new board.
+
+    Returns ``(records, problems)``.  A reference that cannot be copied is a
+    problem reported beside the project, never a failed creation: the project
+    and its prompt are the thing being made, and a photo that did not make it
+    across is something the artist can drop again.
+    """
+    records = []
+    problems = []
+    if not dropped:
+        return records, problems
+    directory = refs_dir(folder, create=True)
+    if directory is None:
+        return records, ["The references folder could not be made."]
+    for item in dropped[:MAX_REFS_LISTED]:
+        if isinstance(item, str):
+            item = {"path": item}
+        if not isinstance(item, dict):
+            problems.append("A reference was not a path or an object.")
+            continue
+        source = resolve_dropped_upload(item.get("path"))
+        if source is None:
+            problems.append("%r is not an image this bridge uploaded."
+                            % str(item.get("path"))[:80])
+            continue
+        name = safe_upload_name(item.get("name") or os.path.basename(source))
+        try:
+            shutil.copy2(source, os.path.join(directory, name))
+        except OSError as exc:
+            problems.append("Could not copy %s: %s" % (name, exc))
+            continue
+        record, path = add_ref_record(folder, name, item.get("tag"),
+                                      item.get("note"))
+        if record is None:
+            problems.append("%s was copied but could not be written to the "
+                            "manifest." % name)
+            continue
+        records.append(record)
+    return records, problems
+
+
+def design_turn(slug, task, prompt, refs):
+    """The sentence that starts the design stage, with the prompt verbatim.
+
+    Composed here and sent down the same ``/ask`` the composer uses, so the
+    settings sheet is still materialised by ``task_config_init`` and the stage
+    board is still written by ``pipeline.py``.  The artist's words are quoted
+    whole and unedited — a summary of what somebody asked for is the one thing
+    a design turn must not start from.
+    """
+    lines = [
+        "A new project: %s — a %s build (%s)." % (slug, task,
+                                                  WORKFLOW_BLURBS.get(task, "")),
+        "",
+        "What the artist asked for, in their own words, verbatim:",
+        '"""',
+        prompt.rstrip("\n"),
+        '"""',
+        "",
+    ]
+    if refs:
+        tally = {}
+        for record in refs:
+            tally[record["tag"]] = tally.get(record["tag"], 0) + 1
+        lines.append(
+            "They put %d reference photo%s on the board: %s. The tags are data "
+            "— front/back/side are the views, general is the vibe and is not a "
+            "view. Read them, and read any note on them word for word."
+            % (len(refs), "" if len(refs) == 1 else "s",
+               ", ".join("%d %s" % (count, tag)
+                         for tag, count in sorted(tally.items()))))
+        lines.append("")
+    lines.extend([
+        "Start the design stage for %s:" % slug,
+        "- task_config_init(\"%s\", \"%s\") so the settings sheet exists with "
+        "every knob at its default, and show me the handful that matter here."
+        % (slug, task),
+        "- pipeline_status(\"%s\") so we are both looking at the same board."
+        % slug,
+        "- save_design_doc for the requirements once they have settled.",
+        "",
+        "Ask me at most five questions — only the ones you cannot answer from "
+        "the words and the photos above. Do not build any geometry yet: this "
+        "is the planning room.",
+    ])
+    return "\n".join(lines)
+
+
+def build_turn(slug, task):
+    """The "Start building" sentence: the board decides, not this button.
+
+    *task* is whatever the settings sheet says, and "" when the project has no
+    sheet yet — which is a real state (the design turn may still be running).
+    The sentence then asks for the sheet to be made rather than naming a kind
+    of build nobody has chosen.
+    """
+    lines = [
+        "Start building %s — the planning is done." % slug,
+        "",
+        "pipeline_status(\"%s\") first, then pipeline_advance to the first "
+        "stage that is not done yet, and do that ONE stage. Record what its "
+        "gate actually measured with pipeline_record, whichever way it comes "
+        "out, and stop there so I can look." % slug,
+        "",
+    ]
+    if task:
+        lines.append(
+            "Every value you need is on the sheet — task_config_get(\"%s\") "
+            "reads it at the moment you run, and a %s build's knobs are all "
+            "on it. Do not carry a number from this conversation."
+            % (slug, task))
+    else:
+        lines.append(
+            "%s has no settings sheet yet, so materialise one with "
+            "task_config_init before the first stage and show me what is on "
+            "it — every value the build reads is settled there, never in this "
+            "conversation." % slug)
+    return "\n".join(lines)
+
+
+def setting_turn(slug, name, value):
+    """The sentence that changes one knob.
+
+    ``task_config.coerce`` decides what a value may be — a choice off the
+    entry's own list, a number inside its own range — and it lives in the MCP
+    package.  So the knob card asks for the change rather than making it, and
+    the refusal the artist reads on a bad value is the one that module writes,
+    naming the setting and what it can be.  The value is rendered with
+    ``json.dumps`` so a string arrives quoted and a number does not.
+    """
+    return "\n".join([
+        "task_config_set(\"%s\", \"%s\", %s) on %s's settings sheet."
+        % (slug, name, json.dumps(value), slug),
+        "",
+        "Then tell me in one line what it was, what it is now, and what that "
+        "changes about the build. If the value is not one that setting can "
+        "take, say so and change nothing.",
+    ])
+
+
+def create_project_folder(slug):
+    """Make ``projects/<slug>/design/``.  Returns the folder, or ``None``."""
+    root = projects_dir()
+    folder = os.path.abspath(os.path.join(root, slug))
+    if os.path.dirname(folder) != root:
+        return None
+    try:
+        os.makedirs(os.path.join(folder, DESIGN_DIRNAME), exist_ok=True)
+    except OSError:
+        return None
+    return folder
+
+
+# ---------------------------------------------------------------------------
+# Phase 21 — the library half of Home: one card per project
+# ---------------------------------------------------------------------------
+#
+# docs/ux-flow.md, Screen 1: "Every project as a card: thumbnail (newest
+# render), name, workflow badge, progress ring off its real build-plan
+# ("7/10"), last touched.  Click -> that project's Studio, exactly where it
+# left off."
+#
+# Every one of those five facts already exists somewhere in this file, and this
+# section invents none of them.  The badge is the task on ``task-config.json``
+# (``read_task_config``), the ring is ``pipeline_board``'s own ``done`` and
+# ``total`` — the same reading the stage board draws from, so the two screens
+# can never disagree about where a build is — and the picture is the newest
+# still in ``renders/``, minted through the token gate everything else on this
+# page goes through.
+#
+# The one rule that took the werewolf to learn: a project with no PartForge
+# script is still a project.  ``scan_library`` answers ``None`` for a folder
+# with neither a script nor a design sheet, which is right for the workbench's
+# part picker and wrong for a shelf whose whole job is "what am I working on".
+# So the card list walks ``projects/`` itself and every folder on it lists.
+
+#: How many cards the shelf draws.  A person has projects, not a database of
+#: them; past this the answer is a search box, which is a different lane.
+MAX_LIBRARY_CARDS = 120
+
+#: The folders whose newest file counts as "last touched": the meshes, the
+#: renders and the design sheet.  Not ``exports/`` — a re-export of last
+#: month's part is a file operation, not work on the project — and not the
+#: folder's own mtime, which Windows moves for reasons nobody can see.
+TOUCHED_DIRNAMES = (MODELS_DIRNAME, DEMOS_DIRNAME, DESIGN_DIRNAME)
+
+#: A day and a week, in seconds — the units a shelf is actually read in.
+DAY_SECONDS = 86400.0
+WEEK_SECONDS = 7 * DAY_SECONDS
+
+
+def touched_words(mtime, now=None):
+    """``"12 min ago"``, ``"3 days ago"``, ``"never"`` — the card's last line.
+
+    :func:`relative_age` for anything inside a day, because that is the wording
+    the live strip already uses and two spellings of "5 min ago" on one screen
+    is a bug nobody can point at.  Days and weeks past that, because "312 h
+    ago" is arithmetic rather than an answer.
+    """
+    try:
+        stamp = float(mtime or 0.0)
+    except (TypeError, ValueError):
+        stamp = 0.0
+    if stamp <= 0:
+        return "never"
+    seconds = (time.time() if now is None else float(now)) - stamp
+    if seconds < 0:
+        # A file stamped in the future (a clock change, a copy off another
+        # machine) is not a reason to print a negative age.
+        return "just now"
+    if seconds < DAY_SECONDS:
+        return relative_age(seconds)
+    if seconds < WEEK_SECONDS:
+        days = int(round(seconds / DAY_SECONDS))
+        return "%d day%s ago" % (days, "" if days == 1 else "s")
+    weeks = int(seconds // WEEK_SECONDS)
+    return "%d week%s ago" % (weeks, "" if weeks == 1 else "s")
+
+
+def project_touched(folder):
+    """When this project was last worked on — the newest file under
+    :data:`TOUCHED_DIRNAMES`, or ``0.0`` when there is nothing in any of them.
+
+    One level deep and a ``stat`` each: the shelf is a folder read and must
+    still draw with Blender shut, the geometry service stopped and the network
+    off.  ``0.0`` is returned rather than the folder's own mtime so that "this
+    project has nothing in it yet" is a fact the card can print instead of a
+    date that means nothing.
+    """
+    newest = 0.0
+    for name in TOUCHED_DIRNAMES:
+        directory = os.path.join(folder, name)
+        try:
+            entries = os.listdir(directory)
+        except OSError:
+            continue
+        for entry in entries:
+            path = os.path.join(directory, entry)
+            try:
+                info = os.stat(path)
+            except OSError:
+                continue
+            if not os.path.isfile(path):
+                continue
+            newest = max(newest, info.st_mtime)
+    return round(newest, 3)
+
+
+def newest_render(folder):
+    """The newest still in ``renders/`` as ``{file, url, mtime}``, or ``None``.
+
+    The same folder, the same extensions and the same ``FILES.mint`` gate as
+    :func:`project_deliverables` — a card shows a picture the gallery already
+    serves, and no new power is added here.  What is different is the *count*:
+    the token store is an LRU of :data:`MAX_FILE_TOKENS`, so minting every
+    render of twenty projects to draw twenty thumbnails would quietly evict the
+    tokens the conversation's own images are hanging on.  One mint per card.
+    """
+    directory = os.path.join(folder, DEMOS_DIRNAME)
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return None
+    best = None
+    for name in sorted(names):
+        if os.path.splitext(name)[1].lower() not in VERSION_THUMB_EXTENSIONS:
+            continue
+        path = os.path.join(directory, name)
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        if not os.path.isfile(path):
+            continue
+        if best is None or info.st_mtime > best[2]:
+            best = (path, name, info.st_mtime)
+    if best is None:
+        return None
+    token = FILES.mint(best[0])
+    if not token:
+        return None
+    return {"file": best[1], "path": best[0], "mtime": round(best[2], 3),
+            "url": "/file/%s" % token}
+
+
+def library_card(folder, name="", now=None):
+    """One project as the Home shelf draws it.  Nothing here is invented.
+
+    The progress ring is the honest part.  A project with a build plan carries
+    ``done``/``total`` straight off it; a project without one carries ``None``
+    for both and ``state: "not_started"``, because ``0/0`` on a card is a
+    number that looks measured and is not.  ``blocked`` is the stage the plan
+    itself says is red — the same answer ``pipeline.blocked`` gives, computed
+    by the same ``pipeline_board`` the stage board reads.
+    """
+    project = name or os.path.basename(os.path.normpath(folder))
+    sheet = read_task_config(folder)
+    task = normalize_task_name((sheet or {}).get("task"))
+    board = pipeline_board(folder, project)
+    render = newest_render(folder)
+    mtime = project_touched(folder)
+
+    card = {
+        "name": project,
+        "path": folder,
+        "task": task,
+        # The badge reads in the artist's words, and an unnamed workflow is
+        # said to be unnamed rather than guessed from the folder's contents.
+        "label": WORKFLOW_LABELS.get(task, ""),
+        "blurb": WORKFLOW_BLURBS.get(task, ""),
+        "has_sheet": bool(task),
+        "has_plan": bool(board.get("has_plan")),
+        "thumbnail": render,
+        "mtime": mtime,
+        "modified": _iso_utc(mtime) if mtime else "",
+        "touched": touched_words(mtime, now),
+    }
+
+    if not board.get("has_plan"):
+        card.update({
+            "done": None, "total": None, "state": "not_started",
+            "blocked": "", "blocked_title": "", "next": "", "next_title": "",
+            "progress": "not started",
+            "note": board.get("note", ""),
+        })
+        return card
+
+    done = int(board.get("done") or 0)
+    total = int(board.get("total") or 0)
+    blocked = board.get("blocked_stage") or {}
+    following = board.get("next_stage") or {}
+    card.update({
+        "done": done,
+        "total": total,
+        "blocked": str(board.get("blocked") or ""),
+        "blocked_title": str(blocked.get("title") or blocked.get("id") or ""),
+        "next": str(board.get("next") or ""),
+        "next_title": str(following.get("title") or following.get("id") or ""),
+        "progress": "%d/%d" % (done, total),
+        # Complete is every stage green, which is what the ring turning green
+        # means; a plan with no stages on it is not complete, it is empty.
+        "state": ("complete" if total and done >= total
+                  else ("blocked" if board.get("blocked") else "building")),
+        "note": "",
+    })
+    return card
+
+
+def library_cards(limit=MAX_LIBRARY_CARDS, now=None):
+    """Every project folder as a card, newest work first.
+
+    Every folder, not every folder with a script in it: the ``?scene=0`` lesson
+    from the workspace picker, which listed four bowl holders and no characters
+    because ``project_entry`` answers ``None`` for a project whose geometry is
+    a mesh rather than a PartForge script.
+    """
+    root = projects_dir()
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return {"dir": root, "projects": [], "count": 0, "total": 0,
+                "note": "There is no projects folder at %s yet. Start "
+                        "something above and the first card appears here."
+                        % root}
+    found = []
+    for name in names:
+        folder = os.path.join(root, name)
+        if not _PROJECT_NAME_RE.match(name) or not os.path.isdir(folder):
+            continue
+        found.append(library_card(folder, name, now))
+    # Newest work first, and a project nothing has been written into yet sorts
+    # by name at the bottom rather than jumping to the top on a 0.0.
+    found.sort(key=lambda card: (-card["mtime"], card["name"]))
+    return {"dir": root, "projects": found[:limit], "count": len(found[:limit]),
+            "total": len(found)}
+
+
+# ---------------------------------------------------------------------------
+# Phase 21 — adding Forge to a .blend somebody already has
+# ---------------------------------------------------------------------------
+#
+# docs/ux-flow.md, Screen 1: "A third, quieter entry: **'Add Forge to an
+# existing .blend'** — pick a file, Forge wraps a project around it (its mesh
+# enters the pipeline at verify_mesh; no generation stages pretend to have
+# run)."
+#
+# Three things make this safe to have at all:
+#
+# 1. **The file is COPIED, never moved.**  The artist's own file stays exactly
+#    where it is, byte for byte.  Whatever happens to the project afterwards,
+#    the thing they spent a weekend on is still on their disk at the path they
+#    know it by.  A tool that moved it would be asking for trust it has not
+#    earned.
+# 2. **The source must be OUTSIDE ``projects/``.**  Attaching is "wrap a new
+#    project around this file"; pointed at a file that is already inside a
+#    project, that would duplicate a mesh into a second folder and leave two
+#    projects quietly sharing a history.  Refused, with the plain reason.
+# 3. **Nothing is written that this process does not own.**  No build plan
+#    (``pipeline.py`` is its only writer) and no settings sheet
+#    (``task_config`` coerces every value that goes on one).  The folder, the
+#    prompt file and the copy are files; everything past them is a turn.
+
+#: What may be attached.  One extension, deliberately: this is "the Blender
+#: file I have been working in", and a ``.glb`` or an ``.stl`` is the Models
+#: row's job (``POST /models/import``), which already exists.
+ATTACH_EXTENSION = ".blend"
+
+#: The copy's name inside the new project: ``<slug>-wip-1.blend``.  It is the
+#: version chain's own spelling (:func:`split_version` reads it as version 1 of
+#: ``<slug>-wip``), so the file the artist attached is version one of their
+#: project and ``Save a new version`` carries straight on from it.
+ATTACH_STEM = "%s-wip-1"
+
+
+def attach_source(path):
+    """``(resolved path, refusal)`` for a ``.blend`` somebody typed in.
+
+    Plain words on every refusal, because the person reading them is typing a
+    path into a text box and the only useful answer is which part of it is
+    wrong.  The gates, in the order a wrong path trips them:
+
+    * a whole path, starting at the drive — a relative one would resolve
+      against whatever folder this process happens to have been started in,
+      which is a file nobody chose;
+    * ``.blend``;
+    * it is there, and it is a file;
+    * it is NOT inside ``projects/`` — checked on the resolved path, so
+      ``...\\projects\\..\\projects\\werewolf\\models\\x.blend`` is refused for
+      what it resolves to rather than for how it is spelled.
+    """
+    raw = str(path or "").strip().strip('"').strip()
+    if not raw:
+        return "", ("Type the path of the .blend file you want to add Forge "
+                    "to.")
+    if not _ROOTED_RE.match(os.path.expandvars(os.path.expanduser(raw))):
+        return "", ("Type the whole path, starting with the drive letter — "
+                    "like C:\\Users\\you\\Documents\\wolf.blend.")
+    resolved = normalize_image_path(raw)
+    if not resolved:
+        return "", "That is not a path."
+    if os.path.splitext(resolved)[1].lower() != ATTACH_EXTENSION:
+        return "", ("%s is not a .blend file. This is for a Blender file you "
+                    "already have; a .glb or an .stl goes in through the "
+                    "Models row instead." % os.path.basename(resolved))
+    try:
+        if os.path.isdir(resolved):
+            return "", "%s is a folder, not a Blender file." % resolved
+        if not os.path.isfile(resolved):
+            return "", ("There is no file at %s. Check the path and try "
+                        "again." % resolved)
+    except OSError as exc:
+        return "", "%s could not be read: %s" % (resolved, exc)
+    root = os.path.normcase(os.path.normpath(projects_dir()))
+    inside = os.path.normcase(os.path.normpath(resolved))
+    if inside == root or inside.startswith(root + os.sep):
+        return "", ("%s is already inside %s, so it already belongs to a "
+                    "project. This is for a file from somewhere else on your "
+                    "machine." % (os.path.basename(resolved), projects_dir()))
+    return resolved, ""
+
+
+def attach_prompt_text(source, stored):
+    """``design/prompt.md`` for an attached file: where it came from.
+
+    The creation flow writes the artist's own words here.  There are no words
+    to write for an attach, so what goes in the file is the one fact that
+    matters six months later and is otherwise nowhere on disk: which file on
+    this machine this project started as.
+    """
+    return "\n".join([
+        "Forge was added to a Blender file that already existed.",
+        "",
+        "Source: %s" % source,
+        "Copied in as: %s" % os.path.join(MODELS_DIRNAME, stored),
+        "",
+        "The source file was copied, not moved — it is still where it was.",
+        "The mesh in it already exists, so this project enters the pipeline "
+        "at verify_mesh: nothing before that stage ran here.",
+    ])
+
+
+def attach_turn(slug, source, stored):
+    """The kickoff turn for an attached file.
+
+    It says the one thing the plan must not get wrong — the mesh came from
+    somewhere else, so the stages before ``verify_mesh`` did not run and may
+    not be recorded as if they had.  ``pipeline_advance``'s override is the
+    mechanism that already exists for stepping past a stage nobody measured,
+    and it refuses to do it without a name and a reason on it, which is exactly
+    the audit trail this case needs.
+    """
+    return "\n".join([
+        "%s is a new project wrapped around a Blender file I already had: %s."
+        % (slug, source),
+        "",
+        "The file was copied, not moved — my original is untouched — and the "
+        "copy is %s in the project." % os.path.join(MODELS_DIRNAME, stored),
+        "",
+        "The mesh already exists, so this build enters the pipeline at "
+        "verify_mesh. Nothing before that stage ran here and nothing may be "
+        "recorded as if it had.",
+        "",
+        "So, in order:",
+        "- Ask me which of the five this is — character, part, device, "
+        "floorplan or mold — and task_config_init(\"%s\", <that>) so the "
+        "settings sheet exists at its defaults." % slug,
+        "- pipeline_status(\"%s\") so we are both looking at the same board."
+        % slug,
+        "- Then open the copy, look at what is actually in it, and tell me in "
+        "plain words what the mesh is: how many objects, whether it is one "
+        "watertight body, whether it is already rigged.",
+        "- Take it to verify_mesh. The stages before it are not passed and "
+        "must not be marked passed: step over them with an override signed "
+        "\"came from an existing .blend\", so the board says out loud that "
+        "they were never measured.",
+        "",
+        "Do not generate any geometry. The mesh is the one I brought.",
+    ])
+
+
+def attach_blend(slug, source):
+    """Wrap a project around *source*.  Returns ``(body, error)``.
+
+    Exactly one of the two is ``None``.  ``error`` is ``(status, payload)``,
+    the shape :meth:`Handler._compose_turn` uses, so a refusal reads the same
+    whichever gate produced it.
+    """
+    if project_dir(slug) is not None:
+        return None, (409, {
+            "error": "There is already a project called %r. Pick another name "
+                     "for this one." % slug, "project": slug})
+    folder = create_project_folder(slug)
+    if folder is None:
+        return None, (500, {"error": "Could not make %s."
+                                     % os.path.join(projects_dir(), slug)})
+    directory = project_models_dir(slug, create=True)
+    if directory is None:
+        return None, (500, {"error": "Could not make the models folder in %s."
+                                     % folder, "project": slug})
+    wanted = "%s%s" % (ATTACH_STEM % slug, ATTACH_EXTENSION)
+    target, renamed = free_model_path(directory, wanted)
+    try:
+        # copy2, and copy2 only: the source is the artist's file and this
+        # process never touches it again after reading it.
+        shutil.copy2(source, target)
+    except (OSError, shutil.Error) as exc:
+        return None, (500, {
+            "error": "Could not copy %s into the project: %s" % (source, exc),
+            "project": slug})
+    stored = os.path.basename(target)
+    prompt_path = os.path.join(folder, DESIGN_DIRNAME, PROMPT_FILENAME)
+    written = write_project_prompt(folder, attach_prompt_text(source, stored))
+    return {
+        "project": slug,
+        "folder": folder,
+        "source": source,
+        # Said in the answer as well as done on disk, because "did it move my
+        # file?" is the first question anybody has about this button.
+        "source_kept": os.path.isfile(source),
+        "copied": True,
+        "moved": False,
+        "model": target,
+        "file": stored,
+        "renamed": renamed,
+        "prompt_path": written or prompt_path,
+        "enters_at": "verify_mesh",
+    }, None
+
+
+# ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
 
@@ -7935,6 +9026,12 @@ class Handler(BaseHTTPRequestHandler):
             self._authoring()
             return
 
+        # -- the creation flow (Phase 21) --------------------------------
+        if path == "/workflows":
+            self._send(200, {"workflows": workflow_list(),
+                             "tasks": list(WORKFLOW_TASKS)})
+            return
+
         # -- the workbench (Phase 11) ------------------------------------
         if path == "/projects":
             self._send(200, scan_projects())
@@ -7958,6 +9055,16 @@ class Handler(BaseHTTPRequestHandler):
             # The same query-string shape as ``/projects/<name>/schema?refresh=1``.
             self._send(200, scan_library(scene="scene=0" not in self.path))
             return
+        # -- Home's shelf (Phase 21) -------------------------------------
+        #
+        # Beside ``/library`` rather than inside it: that answer is the
+        # Library tab's — a part's spec, its parameters, its exports, its
+        # design files, plus the models row and the live scene — and a card on
+        # Home needs five facts out of three files.  One route per screen, so
+        # neither grows fields the other needs.
+        if path == "/library/cards":
+            self._send(200, library_cards())
+            return
         if path.startswith("/projects/") and path.endswith("/thumbnail"):
             self._get_thumbnail(path[len("/projects/"):-len("/thumbnail")])
             return
@@ -7980,6 +9087,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.endswith("/deliverables"):
                 self._deliverables(path[len(prefix):-len("/deliverables")])
+                return
+            # -- the planning room (Phase 21) ----------------------------
+            if path.endswith("/refs"):
+                self._refs(path[len(prefix):-len("/refs")])
+                return
+            if path.endswith("/task_config"):
+                self._task_config(path[len(prefix):-len("/task_config")])
                 return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -8027,6 +9141,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/flows/run":
             self._flows_run()
+            return
+
+        # -- the creation flow (Phase 21) --------------------------------
+        #
+        # Before the ``/projects/<name>/...`` routes below, because the project
+        # this one makes does not exist yet: ``create`` is a verb here, never a
+        # folder name (``project_slug`` would happily accept it as one, which
+        # is why this line comes first and answers on the exact path).
+        if path == "/projects/create":
+            self._create_project()
+            return
+        # The same reason ``create`` is a verb above: ``attach`` names an
+        # action, never a folder, and it answers on the exact path.
+        if path == "/projects/attach":
+            self._attach_blend()
+            return
+        if path == "/workflows/suggest":
+            self._suggest_workflow()
             return
 
         # -- the workbench (Phase 11) ------------------------------------
@@ -8092,6 +9224,25 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.endswith("/mesh_fix"):
                 self._mesh_fix(path[len(prefix):-len("/mesh_fix")])
+                return
+            # -- the planning room (Phase 21) ----------------------------
+            #
+            # The longer suffixes first: ``/refs/tag`` also ends with nothing
+            # else, but ``/refs`` would swallow it if it were checked above.
+            if path.endswith("/refs/tag"):
+                self._retag_ref(path[len(prefix):-len("/refs/tag")])
+                return
+            if path.endswith("/refs/note"):
+                self._annotate_ref(path[len(prefix):-len("/refs/note")])
+                return
+            if path.endswith("/refs"):
+                self._add_ref(path[len(prefix):-len("/refs")])
+                return
+            if path.endswith("/task_config"):
+                self._set_task_config(path[len(prefix):-len("/task_config")])
+                return
+            if path.endswith("/build"):
+                self._start_building(path[len(prefix):-len("/build")])
                 return
         self._send(404, {"error": "Unknown path %s" % path})
 
@@ -9026,6 +10177,459 @@ class Handler(BaseHTTPRequestHandler):
         payload = project_deliverables(folder)
         payload["project"] = os.path.basename(folder)
         self._send(200, payload)
+
+    # -- the planning room (Phase 21) ------------------------------------
+    def _refs(self, name):
+        """The reference board: tagged records first, untagged photos after."""
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        board = refs_board(folder)
+        board["project"] = os.path.basename(folder)
+        self._send(200, board)
+
+    def _add_ref(self, name):
+        """Browser bytes into ``design/refs/``, with a tag and a note on them.
+
+        The same two gates as ``POST /upload`` — :func:`upload_error` checks
+        the extension AND the magic bytes, :func:`safe_upload_name` makes the
+        filename this process's own choice rather than the browser's — plus one
+        more that only matters here: the tag must be one of the five, because
+        an unknown tag is a reference the generator will quietly not condition
+        on, which is exactly the failure the board exists to end.
+        """
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        content_type = str(self.headers.get("Content-Type") or "")
+        body = self._read_body(max_upload_bytes() + 65536)
+        if body is None:
+            self._send(413, {"error": "That image is larger than the %d MB limit."
+                                      % (max_upload_bytes() // 1048576)})
+            return
+
+        tag, note = DEFAULT_REF_TAG, ""
+        if "multipart/form-data" in content_type.lower():
+            filename, data = parse_multipart(body, content_type)
+            if data is None:
+                self._send(400, {"error": "No file was found in that upload."})
+                return
+        else:
+            try:
+                payload = json.loads(body.decode("utf-8")) if body else None
+            except (ValueError, UnicodeDecodeError):
+                payload = None
+            if not isinstance(payload, dict):
+                self._send(400, {"error": "Send {\"name\": ..., \"data\": "
+                                          "\"<base64>\", \"tag\": ...} or a "
+                                          "multipart form."})
+                return
+            filename = payload.get("name")
+            if payload.get("tag") is not None:
+                tag = normalize_ref_tag(payload.get("tag"))
+                if not tag:
+                    self._send(400, {"error": self._tag_refusal(payload.get("tag"))})
+                    return
+            note = ref_note(payload.get("note"))
+            encoded = payload.get("data")
+            if isinstance(encoded, str) and not encoded.strip():
+                data = b""
+            else:
+                data = decode_base64(encoded)
+                if data is None:
+                    self._send(400, {"error": "That image did not decode. Expected "
+                                              "base64 (a data: URL is fine)."})
+                    return
+
+        problem = upload_error(filename, data)
+        if problem:
+            self._send(413 if len(data) > max_upload_bytes() else 400,
+                       {"error": problem})
+            return
+
+        directory = refs_dir(folder, create=True)
+        if directory is None:
+            self._send(500, {"error": "Could not make the references folder in "
+                                      "%s." % folder})
+            return
+        stored = safe_upload_name(filename)
+        try:
+            with open(os.path.join(directory, stored), "wb") as handle:
+                handle.write(data)
+        except OSError as exc:
+            self._send(500, {"error": "Could not save the reference: %s" % exc})
+            return
+
+        record, manifest = add_ref_record(folder, stored, tag, note)
+        if record is None:
+            # The photo is on disk and the manifest is not writable.  Said
+            # plainly rather than rolled back: the bytes are the artist's, and
+            # an untagged photo still lists on the board.
+            self._send(500, {
+                "error": "The photo was saved but %s could not be written. It "
+                         "is on the board as untagged."
+                         % refs_manifest_path(folder),
+                "project": os.path.basename(folder), "file": stored})
+            return
+        self._send(200, {"project": os.path.basename(folder),
+                         "ref": record, "manifest": manifest,
+                         "bytes": len(data)})
+
+    def _tag_refusal(self, given):
+        return ("%r is not a reference type. The five are %s — front, back and "
+                "side are the views the generation conditions on, floorplan is "
+                "a drawing of rooms, and general is everything else."
+                % (str(given)[:40], ", ".join(REF_TAGS)))
+
+    def _edit_ref(self, name, field):
+        """``/refs/tag`` and ``/refs/note`` — one field, one record."""
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        wanted = str(payload.get("file") or "").strip()
+        # The shape gate first, then existence — and a record already on the
+        # board counts as existence, so a note can still be fixed on a photo
+        # somebody has since moved (the board lists that one as `missing`).
+        resolved = ref_path(folder, wanted)
+        known = resolved is not None and (
+            os.path.isfile(resolved)
+            or any(str(item.get("file") or "") == wanted
+                   for item in read_refs_manifest(folder)["records"]))
+        if not wanted or not known:
+            self._send(404, {"error": "There is no reference called %r on this "
+                                      "board." % wanted[:80],
+                             "project": os.path.basename(folder)})
+            return
+        if field == "tag":
+            tag = normalize_ref_tag(payload.get("tag"))
+            if not tag:
+                self._send(400, {"error": self._tag_refusal(payload.get("tag"))})
+                return
+            changes = {"tag": tag}
+        else:
+            changes = {"note": ref_note(payload.get("note"))}
+        record, manifest = edit_ref_record(folder, wanted, changes)
+        if record is None:
+            self._send(500, {
+                "error": "%s could not be written, so nothing was changed."
+                         % refs_manifest_path(folder),
+                "project": os.path.basename(folder)})
+            return
+        self._send(200, {"project": os.path.basename(folder),
+                         "ref": record, "manifest": manifest})
+
+    def _retag_ref(self, name):
+        self._edit_ref(name, "tag")
+
+    def _annotate_ref(self, name):
+        self._edit_ref(name, "note")
+
+    def _task_config(self, name):
+        """``design/task-config.json`` as the knob cards read it.
+
+        Read-only, like the pipeline board next door: ``forge_mcp.task_config``
+        owns this file, it is the thing every tool settles its values against,
+        and a second writer on this port would be a way around the coercion
+        rules that make a value on it trustworthy.  A change goes back through
+        ``task_config_set`` in a composed turn — see ``POST /projects/<name>/
+        task_config`` in the page, which is a sentence, not a write.
+        """
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        project = os.path.basename(folder)
+        sheet = read_task_config(folder)
+        path = os.path.join(folder, DESIGN_DIRNAME, TASK_CONFIG_FILENAME)
+        if not isinstance(sheet, dict) or not isinstance(sheet.get("settings"),
+                                                         dict):
+            self._send(200, {
+                "project": project, "path": path, "has_sheet": False,
+                "task": "", "settings": [], "count": 0,
+                "note": "No settings sheet yet. The design conversation "
+                        "materialises it — every knob for this kind of work, "
+                        "already filled in at its default."})
+            return
+        task = str(sheet.get("task") or "")
+        settings = []
+        for setting, entry in sheet["settings"].items():
+            if not isinstance(entry, dict):
+                continue
+            settings.append({
+                "name": setting,
+                "value": entry.get("value"),
+                "default": entry.get("default"),
+                "unit": entry.get("unit", ""),
+                "choices": entry.get("choices"),
+                "min": entry.get("min"),
+                "max": entry.get("max"),
+                "why": entry.get("why", ""),
+                "changed": entry.get("value") != entry.get("default"),
+            })
+        self._send(200, {
+            "project": project, "path": path, "has_sheet": True,
+            "task": task,
+            "blurb": WORKFLOW_BLURBS.get(task, ""),
+            "label": WORKFLOW_LABELS.get(task, task),
+            "settings": settings,
+            "count": len(settings),
+            "changed": [item["name"] for item in settings if item["changed"]],
+        })
+
+    # -- the creation flow (Phase 21) ------------------------------------
+    def _suggest_workflow(self):
+        """Which card these words light up.  Nothing is decided here.
+
+        A POST rather than a GET with the text in a query string: the prompt is
+        the artist's own description of what they are making, and a description
+        does not belong in a URL that lands in an access log.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        found = suggest_workflow(payload.get("prompt"))
+        found["workflows"] = workflow_list()
+        self._send(200, found)
+
+    def _compose_turn(self, message):
+        """Send a sentence THIS process composed down the same ``/ask`` road.
+
+        The decision-button pattern, factored: the plan is still changed by the
+        tool that knows the rules, the turn is billed on the same session, and
+        it shows up in the Studio thread like anything else the artist typed.
+        Returns ``(payload, error)``; exactly one of them is not ``None``.
+        """
+        info = claude_info()
+        if not info.get("found"):
+            return None, (503, {"error": INSTALL_HINT})
+        live = ""
+        try:
+            live, seen_at = live_context_for_turn(JOBS.blender_since())
+            JOBS.note_blender_seen(seen_at)
+        except Exception:  # noqa: BLE001 - never fail a turn over awareness
+            live = ""
+        prompt = build_prompt(message, None, live=live)
+        job, disposition = JOBS.submit(message, prompt, new_conversation=False,
+                                       model=normalize_model(None))
+        if disposition == "rejected":
+            return None, (409, {
+                "error": "One message is already waiting its turn. Wait for the "
+                         "assistant to get to it, or press Stop.",
+                "job_id": job["job_id"], "state": "queued"})
+        if disposition == "queued":
+            return {"job_id": job["job_id"], "state": "queued",
+                    "queued": True}, None
+        start_turn(job)
+        return {"job_id": job["job_id"], "state": "running",
+                "queued": False}, None
+
+    def _create_project(self):
+        """Make the folder, save the words, carry the photos, start the plan.
+
+        The order matters and it is the whole design.  Everything this process
+        may do by itself happens first and is reported whether or not a turn
+        can be spent: the folder, the prompt file, the references.  Only then
+        is the design turn composed — because ``task_config_init`` and
+        ``pipeline.py`` own what comes next, and a bridge that wrote a settings
+        sheet or a build plan here would be the second writer both of those
+        exist to prevent.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+
+        slug = project_slug(payload.get("name"))
+        if not slug:
+            self._send(400, {"error": "That is not a project name. Plain words "
+                                      "are fine — \"werewolf\", \"router "
+                                      "bracket\" — but not a path."})
+            return
+        task = normalize_task_name(payload.get("task"))
+        if not task:
+            self._send(400, {
+                "error": "Pick one of the five: "
+                         + ", ".join("%s (%s)" % (name, WORKFLOW_BLURBS[name])
+                                     for name in WORKFLOW_TASKS) + "."})
+            return
+        prompt = str(payload.get("prompt") or "").strip()
+        if not prompt:
+            self._send(400, {"error": "Say what you are making first — the "
+                                      "design turn starts from your own words."})
+            return
+        prompt = prompt[:MAX_PROJECT_PROMPT]
+
+        if project_dir(slug) is not None:
+            self._send(409, {
+                "error": "There is already a project called %r. Open it, or "
+                         "pick another name." % slug,
+                "project": slug})
+            return
+        folder = create_project_folder(slug)
+        if folder is None:
+            self._send(500, {"error": "Could not make %s."
+                                      % os.path.join(projects_dir(), slug)})
+            return
+        prompt_path = write_project_prompt(folder, prompt)
+        if prompt_path is None:
+            self._send(500, {"error": "Could not write the prompt into %s."
+                                      % folder, "project": slug})
+            return
+        records, problems = carry_refs_into(folder, payload.get("refs"))
+
+        body = {
+            "project": slug,
+            "task": task,
+            "label": WORKFLOW_LABELS[task],
+            "blurb": WORKFLOW_BLURBS[task],
+            "folder": folder,
+            "prompt_path": prompt_path,
+            "refs": records,
+            "problems": problems,
+        }
+        message = design_turn(slug, task, prompt, records)
+        body["turn"] = message
+        result, error = self._compose_turn(message)
+        if error is not None:
+            status, detail = error
+            # The project exists either way, and saying so is the difference
+            # between "try again" and "you now have two folders".
+            body.update(detail)
+            body["created"] = True
+            body["planned"] = False
+            self._send(status, body)
+            return
+        body.update(result)
+        body["created"] = True
+        body["planned"] = True
+        self._send(200, body)
+
+    def _attach_blend(self):
+        """Wrap a new project around a ``.blend`` the artist already has.
+
+        Same shape as :meth:`_create_project` and for the same reason: every
+        file this process is allowed to write is written first and reported
+        whether or not a turn can be spent, and only then is the kickoff turn
+        composed.  It writes no build plan and no settings sheet — the mesh
+        entering at ``verify_mesh`` is something the PIPELINE has to record,
+        with an override that carries a name and a reason, and a bridge that
+        wrote those stages itself would be exactly the silent green stage the
+        flow doc says must never appear.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        source, refusal = attach_source(payload.get("path"))
+        if refusal:
+            self._send(400, {"error": refusal})
+            return
+        # The name defaults to the file's own — somebody who typed a path has
+        # already said what this is called, and asking twice is a form.  An
+        # empty box is the default, not a refusal, which is why the strip
+        # happens before the ``or``.
+        given = str(payload.get("name") or "").strip()
+        slug = project_slug(given
+                            or os.path.splitext(os.path.basename(source))[0])
+        if not slug:
+            self._send(400, {"error": "That is not a project name. Plain words "
+                                      "are fine — \"wolf\", \"router bracket\" "
+                                      "— but not a path."})
+            return
+        body, error = attach_blend(slug, source)
+        if error is not None:
+            status, detail = error
+            self._send(status, detail)
+            return
+        message = attach_turn(slug, source, body["file"])
+        body["turn"] = message
+        result, error = self._compose_turn(message)
+        if error is not None:
+            status, detail = error
+            # The project and the copy exist either way.
+            body.update(detail)
+            body["created"] = True
+            body["planned"] = False
+            self._send(status, body)
+            return
+        body.update(result)
+        body["created"] = True
+        body["planned"] = True
+        self._send(200, body)
+
+    def _set_task_config(self, name):
+        """Ask for one knob to be changed.  This process writes nothing.
+
+        The sheet's owner is ``forge_mcp.task_config``: it coerces the value
+        against the entry's own type, its own choices and its own range, and it
+        appends the change to the sheet's history.  A write from here would
+        skip all three, so this route composes the call and the assistant makes
+        it — exactly what the workspace's decision buttons do with the plan.
+        """
+        payload = self._read_json()
+        if payload is None:
+            self._send(400, {"error": "The request body was not a JSON object."})
+            return
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        project = os.path.basename(folder)
+        setting = str(payload.get("name") or "").strip()
+        if not setting:
+            self._send(400, {"error": "Which setting? Pass {\"name\": ..., "
+                                      "\"value\": ...}.", "project": project})
+            return
+        if "value" not in payload:
+            self._send(400, {"error": "No value was sent for %r." % setting[:60],
+                             "project": project})
+            return
+        sheet = read_task_config(folder)
+        settings = (sheet or {}).get("settings")
+        if not isinstance(settings, dict) or setting not in settings:
+            self._send(404, {
+                "error": "%r is not a setting on %s's sheet." % (setting[:60],
+                                                                 project),
+                "project": project})
+            return
+        message = setting_turn(project, setting, payload.get("value"))
+        result, error = self._compose_turn(message)
+        if error is not None:
+            status, detail = error
+            detail["project"] = project
+            self._send(status, detail)
+            return
+        result.update({"project": project, "setting": setting,
+                       "turn": message})
+        self._send(200, result)
+
+    def _start_building(self, name):
+        """"Start building" — the kickoff turn, and nothing else.
+
+        It does not advance the plan: ``pipeline_advance`` refuses to skip a
+        red gate and will not take an override without a name and a reason on
+        it, and a button on this port that moved the board would be a way past
+        all three.  So it asks, the way every other decision on this page asks.
+        """
+        self._read_json()   # drain: see _read_json's note about keep-alive
+        folder = self._project_folder(name)
+        if folder is None:
+            return
+        project = os.path.basename(folder)
+        sheet = read_task_config(folder)
+        task = normalize_task_name((sheet or {}).get("task"))
+        message = build_turn(project, task)
+        result, error = self._compose_turn(message)
+        if error is not None:
+            status, detail = error
+            detail["project"] = project
+            self._send(status, detail)
+            return
+        result.update({"project": project, "task": task, "turn": message})
+        self._send(200, result)
 
     def _snapshot(self, name):
         """The live Blender scene as a ``.glb`` the page can orbit."""

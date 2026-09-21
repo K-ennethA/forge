@@ -475,6 +475,17 @@
     $("file").value = "";
   }
 
+  //: The same FileReader as `attach`, as a promise — the reference board
+  //: uploads several files in a row and needs them to arrive in order.
+  function readAsDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("unreadable")); };
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function attach(file) {
     if (!file) { return; }
     var status = $("composer-status");
@@ -3623,13 +3634,781 @@
     if (ws.timer) { clearInterval(ws.timer); ws.timer = null; }
   }
 
+  // ------------------------------------------------- home: start something --
+  //
+  // docs/ux-flow.md Screen 1, top half: one prompt box and five workflow
+  // cards.  "Typing can imply the workflow but never silently: the matching
+  // card lights up and the person confirms with a click (the config-map law —
+  // select, don't make the model guess)."
+  //
+  // So there are two states on a card and they are different things.  SUGGESTED
+  // is what the words implied — drawn with a hint, worth nothing on its own.
+  // PICKED is what the person clicked, and it is the only one the button reads.
+  // Typing never picks, and picking is never undone by more typing.
+
+  //: The five reference types, in the order the tag chip cycles through them.
+  //: The bridge's ``REF_TAGS`` is the same five in the same order (a test pins
+  //: the two together): front, back and side are the views the generation
+  //: conditions on, floorplan is a drawing of rooms, general is the look.
+  var REF_TAGS = ["front", "back", "side", "floorplan", "general"];
+  var REF_TAG_LABELS = {
+    front: "Front", back: "Back", side: "Side",
+    floorplan: "Floor plan", general: "General", "": "Untagged"
+  };
+
+  var home = {
+    workflows: null,   // the last /workflows answer
+    pick: "",          // the card the PERSON clicked — the only one that counts
+    suggested: "",     // the card the words implied
+    refs: [],          // {path, name, url, tag, note} from POST /upload
+    creating: false
+  };
+
+  function nextRefTag(tag) {
+    var at = REF_TAGS.indexOf(tag);
+    return REF_TAGS[(at + 1) % REF_TAGS.length];
+  }
+
+  function homeStatus(text, cls) {
+    var node = $("home-status");
+    node.textContent = text || "";
+    node.className = "home-status" + (cls ? " " + cls : "");
+  }
+
+  function renderWorkflowCards() {
+    var host = $("home-cards");
+    host.textContent = "";
+    var list = (home.workflows && home.workflows.workflows) || [];
+    if (!list.length) {
+      host.appendChild(el("p", "muted small",
+        "The five workflows could not be read from the bridge."));
+      return;
+    }
+    list.forEach(function (flow) {
+      var card = el("button", "wf-card");
+      card.type = "button";
+      card.dataset.task = flow.task;
+      if (home.pick === flow.task) { card.classList.add("is-pick"); }
+      else if (home.suggested === flow.task) { card.classList.add("is-hint"); }
+      card.setAttribute("aria-pressed", String(home.pick === flow.task));
+      card.appendChild(el("span", "wf-name", flow.label));
+      card.appendChild(el("span", "wf-hint", flow.blurb));
+      if (home.pick !== flow.task && home.suggested === flow.task) {
+        card.appendChild(el("span", "wf-flag", "sounds like this one"));
+      }
+      card.addEventListener("click", function () { pickWorkflow(flow.task); });
+      host.appendChild(card);
+    });
+  }
+
+  function pickWorkflow(task) {
+    home.pick = home.pick === task ? "" : task;
+    renderWorkflowCards();
+    updateCreateButton();
+  }
+
+  function updateCreateButton() {
+    var prompt = $("home-prompt").value.trim();
+    var name = $("home-name").value.trim();
+    $("home-create").disabled = !!home.creating || !prompt || !home.pick ||
+                                !(name || prompt);
+  }
+
+  //: The suggestion comes off the bridge, which owns the keyword map as data
+  //: (``WORKFLOW_KEYWORDS``).  One implementation of the rule, on the side that
+  //: can be tested, and a POST rather than a query string because what somebody
+  //: is making is their business and not an access log's.
+  var askSuggestion = debounce(function () {
+    var text = $("home-prompt").value;
+    if (!text.trim()) {
+      home.suggested = "";
+      renderWorkflowCards();
+      return;
+    }
+    api("/workflows/suggest", { body: { prompt: text } }).then(function (res) {
+      if (!res.ok) { return; }
+      home.suggested = res.data.task || "";
+      renderWorkflowCards();
+    });
+  }, 250);
+
+  function suggestName() {
+    // A name, suggested and always editable: the first few words of what they
+    // typed, which is what they would have written anyway.  The bridge slugs
+    // it, and an empty box falls back to this same text.
+    var box = $("home-name");
+    if (box.dataset.touched === "1") { return; }
+    var words = $("home-prompt").value.trim().split(/\s+/).slice(0, 4);
+    box.value = words.join(" ").replace(/[^A-Za-z0-9 _-]+/g, "").trim();
+  }
+
+  function renderHomeRefs() {
+    var host = $("home-refs");
+    host.textContent = "";
+    home.refs.forEach(function (ref, index) {
+      var tile = el("div", "ref-chip");
+      if (ref.url) {
+        var img = el("img", "ref-chip-thumb");
+        img.src = ref.url;
+        img.alt = ref.name;
+        tile.appendChild(img);
+      }
+      var tag = el("button", "tag-chip", REF_TAG_LABELS[ref.tag] || ref.tag);
+      tag.type = "button";
+      tag.title = "What this photo shows — click to change it";
+      tag.addEventListener("click", function () {
+        ref.tag = nextRefTag(ref.tag);
+        renderHomeRefs();
+      });
+      tile.appendChild(tag);
+      var drop = el("button", "btn tiny ghost", "Remove");
+      drop.type = "button";
+      drop.addEventListener("click", function () {
+        home.refs.splice(index, 1);
+        renderHomeRefs();
+      });
+      tile.appendChild(drop);
+      host.appendChild(tile);
+    });
+  }
+
+  function homeAttach(files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) { return Promise.resolve(); }
+    homeStatus("adding " + list.length + " photo" +
+               (list.length === 1 ? "" : "s") + "…");
+    return list.reduce(function (chain, file) {
+      return chain.then(function () {
+        return readAsDataURL(file).then(function (data) {
+          return api("/upload", { body: { name: file.name, data: data } })
+            .then(function (res) {
+              if (!res.ok) {
+                homeStatus(res.data.error || "That image was refused.", "bad");
+                return;
+              }
+              home.refs.push({ path: res.data.path, name: res.data.name,
+                               url: res.data.url, tag: "general", note: "" });
+              renderHomeRefs();
+            });
+        }, function () {
+          homeStatus("Could not read " + file.name + ".", "bad");
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      if (home.refs.length) { homeStatus(""); }
+    });
+  }
+
+  function createProject(event) {
+    if (event) { event.preventDefault(); }
+    var prompt = $("home-prompt").value.trim();
+    if (!prompt) { homeStatus("Say what you are making first.", "bad"); return; }
+    if (!home.pick) {
+      homeStatus("Pick the kind of thing it is.", "bad");
+      return;
+    }
+    var name = $("home-name").value.trim() || prompt;
+    home.creating = true;
+    updateCreateButton();
+    homeStatus("making the project…");
+    api("/projects/create", { body: {
+      name: name, task: home.pick, prompt: prompt,
+      refs: home.refs.map(function (ref) {
+        return { path: ref.path, name: ref.name, tag: ref.tag, note: ref.note };
+      })
+    } }).then(function (res) {
+      home.creating = false;
+      updateCreateButton();
+      if (!res.ok && !res.data.created) {
+        homeStatus(res.data.error || ("The bridge answered " + res.status + "."),
+                   "bad");
+        return;
+      }
+      if (!res.ok) {
+        // Made, but the first turn could not be spent — say both.
+        banner("warn", res.data.error || "The project was made but the plan "
+               + "could not be started.");
+      }
+      home.refs = [];
+      renderHomeRefs();
+      $("home-prompt").value = "";
+      $("home-name").value = "";
+      $("home-name").dataset.touched = "";
+      home.pick = "";
+      home.suggested = "";
+      renderWorkflowCards();
+      homeStatus("");
+      openPlanning(res.data.project, res.data.task);
+      loadJobs();
+    });
+  }
+
+  function loadWorkflows() {
+    if (home.workflows) { return Promise.resolve(); }
+    return api("/workflows").then(function (res) {
+      home.workflows = res.ok ? res.data : { workflows: [] };
+      renderWorkflowCards();
+    });
+  }
+
+  // ----------------------------------------------- home: your projects --
+  //
+  // docs/ux-flow.md Screen 1, bottom half: "Every project as a card:
+  // thumbnail (newest render), name, workflow badge, progress ring off its
+  // real build-plan ("7/10"), last touched.  Click → that project's Studio,
+  // exactly where it left off."
+  //
+  // Every value on a card comes off /library/cards, which composes it from
+  // the three files that already hold it — the settings sheet, the build plan
+  // and the renders folder.  Nothing is computed twice on this side, and a
+  // project with no plan is drawn as "not started" rather than as 0/10: a
+  // grey zero reads as a measurement, and there has been no measurement.
+
+  var shelf = {
+    data: null,
+    loading: false,
+    attaching: false
+  };
+
+  //: What the ring says and how loudly.  Three readings, never a fourth.
+  function ringText(card) {
+    if (!card.has_plan) { return "not started"; }
+    return card.progress || "";
+  }
+
+  function projectCard(card) {
+    var tile = el("button", "proj-card");
+    tile.type = "button";
+    tile.dataset.project = card.name;
+
+    var frame = el("div", "proj-thumb");
+    if (card.thumbnail && card.thumbnail.url) {
+      var img = el("img");
+      // The mtime rides in the query string for the same reason the Library
+      // tab's thumbnails carry one: the URL is otherwise stable and a
+      // re-render would keep showing yesterday's picture.
+      img.src = card.thumbnail.url + "?t=" + numberOr(card.thumbnail.mtime, 0);
+      img.alt = "the newest render of " + card.name;
+      img.loading = "lazy";
+      frame.appendChild(img);
+    } else {
+      frame.appendChild(el("span", null, "no render yet"));
+    }
+    tile.appendChild(frame);
+
+    var top = el("div", "proj-row");
+    top.appendChild(el("span", "proj-name", card.name));
+    var ring = el("span", "proj-ring is-" + (card.state || "not_started"),
+                  ringText(card));
+    ring.title = card.has_plan
+      ? (card.done + " of " + card.total + " stages done")
+      : "No build plan yet — nothing has been measured.";
+    top.appendChild(ring);
+    tile.appendChild(top);
+
+    var bottom = el("div", "proj-row");
+    bottom.appendChild(el("span", "proj-badge",
+                          card.label || "kind not set yet"));
+    bottom.appendChild(el("span", "proj-when", card.touched || ""));
+    tile.appendChild(bottom);
+
+    // The one extra line, and only when there is something to say: which
+    // stage is red.  That is where clicking lands, so the card says it first.
+    if (card.blocked) {
+      tile.appendChild(el("p", "proj-blocked",
+                          "stuck at " + (card.blocked_title || card.blocked)));
+    }
+
+    tile.title = card.name + " — " + (card.has_plan
+      ? (card.progress + " stages done") : "not started yet");
+    tile.addEventListener("click", function () { resumeProject(card.name); });
+    return tile;
+  }
+
+  //: Pick a project up where it was left.  The Workspace's own focus rule
+  //: does the rest: `ws.focus` cleared means `defaultFocus` chooses, and that
+  //: is the blocked stage, else the next one, else the last thing that
+  //: happened — the three answers in the order somebody asking "where are we"
+  //: wants them.  The cached panels are cleared too, or `loadWorkspace` would
+  //: redraw the last project's plan under this project's name.
+  function resumeProject(name) {
+    if (!name) { return; }
+    ws.project = name;
+    ws.focus = null;
+    ws.pipeline = null;
+    ws.versions = null;
+    ws.deliverables = null;
+    try { localStorage.setItem("forge.project", name); }
+    catch (e) { /* private mode */ }
+    showTab("workspace");
+  }
+
+  function renderShelf(data) {
+    var host = $("home-library");
+    host.textContent = "";
+    var cards = (data && data.projects) || [];
+    cards.forEach(function (card) { host.appendChild(projectCard(card)); });
+    if (!cards.length) {
+      var none = el("p", "muted small", (data && data.note) ||
+        "Nothing here yet — describe something above and it lands here.");
+      host.appendChild(none);
+    }
+    // The third, quieter entry.  Always last, always the same tile.
+    var add = el("button", "proj-add", "+ add Forge to an existing .blend");
+    add.type = "button";
+    add.id = "home-attach-open";
+    add.addEventListener("click", openAttach);
+    host.appendChild(add);
+  }
+
+  function loadHomeLibrary() {
+    if (shelf.loading) { return Promise.resolve(); }
+    shelf.loading = true;
+    return api("/library/cards").then(function (res) {
+      shelf.loading = false;
+      if (!res.ok) {
+        shelf.data = null;
+        renderShelf({ projects: [], note: res.data.error ||
+          ("The bridge answered " + res.status + ".") });
+        return;
+      }
+      shelf.data = res.data;
+      renderShelf(res.data);
+    }, function () { shelf.loading = false; });
+  }
+
+  // -- "add Forge to an existing .blend" ---------------------------------
+  //
+  // A text field and nothing else, because a web page has no way to ask the
+  // operating system for the path of a file: the file picker every browser
+  // has hands over BYTES with the path stripped off, and the whole point here
+  // is the path — the file stays where it is and Forge copies it.  The help
+  // text says that in those words rather than leaving somebody hunting for a
+  // Browse button that cannot exist.
+
+  function attachStatus(text, cls) {
+    var node = $("attach-status");
+    node.textContent = text || "";
+    node.className = "attach-status" + (cls ? " " + cls : "");
+  }
+
+  function openAttach() {
+    $("home-attach").hidden = false;
+    attachStatus("");
+    $("attach-path").focus();
+  }
+
+  function closeAttach() {
+    $("home-attach").hidden = true;
+    $("attach-path").value = "";
+    attachStatus("");
+  }
+
+  function attachExisting(event) {
+    if (event) { event.preventDefault(); }
+    if (shelf.attaching) { return; }
+    var typed = $("attach-path").value.trim();
+    if (!typed) {
+      attachStatus("Type the path of the .blend file first.", "bad");
+      return;
+    }
+    shelf.attaching = true;
+    $("attach-go").disabled = true;
+    attachStatus("copying it into a new project…");
+    api("/projects/attach", { body: { path: typed } }).then(function (res) {
+      shelf.attaching = false;
+      $("attach-go").disabled = false;
+      if (!res.ok && !res.data.created) {
+        // The bridge's refusals are already in plain words and name the part
+        // of the path that is wrong; showing anything else would be worse.
+        attachStatus(res.data.error || ("The bridge answered " + res.status
+                                        + "."), "bad");
+        return;
+      }
+      if (!res.ok) {
+        banner("warn", res.data.error || "The project was made but the first "
+               + "turn could not be started.");
+      }
+      closeAttach();
+      loadHomeLibrary();
+      loadJobs();
+      // The file is now a project with a mesh in it and no plan, so the
+      // planning room is the wrong room: the conversation that materialises
+      // the plan is the Studio's.
+      showTab("studio");
+    }, function () {
+      shelf.attaching = false;
+      $("attach-go").disabled = false;
+      attachStatus("The bridge could not be reached.", "bad");
+    });
+  }
+
+  // -------------------------------------------------- the planning room --
+  //
+  // docs/ux-flow.md Screen 2.  Two halves and one button: the reference board,
+  // which is the tags the generation actually reads, and the plan — the design
+  // conversation plus the settings sheet it fills in.
+  //
+  // Nothing on this screen writes a file the assistant owns.  The tags and the
+  // notes are the bridge's own (they are a manifest beside the photos); the
+  // sheet's values belong to task_config, which coerces them against each
+  // setting's own type and range, so a knob ASKS and the assistant sets.
+
+  var plan = {
+    project: null,
+    task: "",
+    board: null,
+    sheet: null,
+    loading: false
+  };
+
+  function planStatus(text, cls) {
+    var node = $("plan-status");
+    node.textContent = text || "";
+    node.className = "plan-status" + (cls ? " " + cls : "");
+  }
+
+  function refsStatus(text, cls) {
+    var node = $("plan-refs-status");
+    node.textContent = text || "";
+    node.className = "ref-status" + (cls ? " " + cls : "");
+  }
+
+  //: The Studio's conversation column, moved rather than copied.  One thread,
+  //: one composer, one session: a design conversation in its own box would be
+  //: a second history of the same project.
+  function hostChat(where) {
+    var chat = $("studio-chat");
+    if (where === "planning") {
+      if (chat.parentNode !== $("plan-chat")) { $("plan-chat").appendChild(chat); }
+      return;
+    }
+    if (chat.parentNode !== $("studio")) {
+      $("studio").insertBefore(chat, $("studio-rail"));
+    }
+  }
+
+  function planPath(suffix) {
+    return "/projects/" + encodeURIComponent(plan.project) + suffix;
+  }
+
+  function refTile(ref) {
+    var tile = el("div", "ref-tile" + (ref.missing ? " is-missing" : ""));
+    var frame = el("div", "ref-thumb");
+    if (ref.url) {
+      var img = el("img");
+      img.src = ref.url;
+      img.alt = ref.file;
+      img.loading = "lazy";
+      frame.appendChild(img);
+    } else {
+      frame.appendChild(el("span", "muted small",
+        ref.missing ? "file gone" : "no preview"));
+    }
+    tile.appendChild(frame);
+
+    var tag = el("button", "tag-chip" + (ref.tag ? "" : " is-untagged"),
+                 REF_TAG_LABELS[ref.tag] || ref.tag || "Untagged");
+    tag.type = "button";
+    tag.title = "What this photo shows — click to change it";
+    tag.addEventListener("click", function () {
+      var wanted = nextRefTag(ref.tag || "");
+      tag.disabled = true;
+      api(planPath("/refs/tag"), { body: { file: ref.file, tag: wanted } })
+        .then(function (res) {
+          tag.disabled = false;
+          if (!res.ok) {
+            refsStatus(res.data.error || "That tag was refused.", "bad");
+            return;
+          }
+          ref.tag = res.data.ref.tag;
+          ref.tracked = true;
+          tag.textContent = REF_TAG_LABELS[ref.tag] || ref.tag;
+          tag.classList.remove("is-untagged");
+          refsStatus(ref.file + " is the " + (REF_TAG_LABELS[ref.tag] ||
+                     ref.tag).toLowerCase() + ".");
+        });
+    });
+    tile.appendChild(tag);
+
+    var note = el("input", "input tiny ref-note");
+    note.type = "text";
+    note.value = ref.note || "";
+    note.placeholder = "note — “this jacket, but longer”";
+    note.title = "Goes to the assistant word for word";
+    function saveNote() {
+      if (note.value === (ref.note || "")) { return; }
+      api(planPath("/refs/note"), { body: { file: ref.file, note: note.value } })
+        .then(function (res) {
+          if (!res.ok) {
+            refsStatus(res.data.error || "That note was not saved.", "bad");
+            return;
+          }
+          ref.note = res.data.ref.note;
+          note.value = ref.note;
+          refsStatus("Note saved.");
+        });
+    }
+    note.addEventListener("change", saveNote);
+    note.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") { event.preventDefault(); note.blur(); }
+    });
+    tile.appendChild(note);
+    return tile;
+  }
+
+  function renderRefBoard(data) {
+    var host = $("plan-refs");
+    host.textContent = "";
+    var refs = (data && data.refs) || [];
+    refs.forEach(function (ref) { host.appendChild(refTile(ref)); });
+    var add = el("button", "ref-add");
+    add.type = "button";
+    add.textContent = refs.length ? "Drop photos here" : "Drop your photos here";
+    add.addEventListener("click", function () { $("plan-file").click(); });
+    host.appendChild(add);
+    if (data && data.manifest_unreadable) {
+      refsStatus("The board's manifest could not be read, so nothing will be "
+                 + "written to it: " + data.manifest, "bad");
+    }
+  }
+
+  function loadPlanRefs() {
+    if (!plan.project) { return Promise.resolve(); }
+    return api(planPath("/refs")).then(function (res) {
+      if (!res.ok) {
+        refsStatus(res.data.error || ("The bridge answered " + res.status + "."),
+                   "bad");
+        return;
+      }
+      plan.board = res.data;
+      renderRefBoard(res.data);
+    });
+  }
+
+  function planAttach(files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length || !plan.project) { return Promise.resolve(); }
+    refsStatus("adding " + list.length + " photo" +
+               (list.length === 1 ? "" : "s") + "…");
+    return list.reduce(function (chain, file) {
+      return chain.then(function () {
+        return readAsDataURL(file).then(function (data) {
+          return api(planPath("/refs"), { body: {
+            name: file.name, data: data, tag: "general" } })
+            .then(function (res) {
+              if (!res.ok) {
+                refsStatus(res.data.error || "That image was refused.", "bad");
+              }
+            });
+        }, function () {
+          refsStatus("Could not read " + file.name + ".", "bad");
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      refsStatus("");
+      return loadPlanRefs();
+    });
+  }
+
+  // -- the sheet, as knob cards ------------------------------------------
+
+  function knobLabel(name) {
+    var words = String(name || "").replace(/[_-]+/g, " ").trim();
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  }
+
+  function knobControl(setting) {
+    var choices = setting.choices;
+    if (typeof setting["default"] === "boolean") {
+      var yesno = el("select", "select tiny");
+      [["true", "yes"], ["false", "no"]].forEach(function (pair) {
+        var option = el("option", null, pair[1]);
+        option.value = pair[0];
+        yesno.appendChild(option);
+      });
+      yesno.value = String(!!setting.value);
+      yesno.dataset.kind = "bool";
+      return yesno;
+    }
+    if (choices && choices.length) {
+      var select = el("select", "select tiny");
+      choices.forEach(function (choice) {
+        var option = el("option", null, String(choice));
+        option.value = String(choice);
+        select.appendChild(option);
+      });
+      select.value = Array.isArray(setting.value)
+        ? String(setting.value[0]) : String(setting.value);
+      select.dataset.kind = Array.isArray(setting["default"]) ? "list" : "choice";
+      return select;
+    }
+    var box = el("input", "input tiny");
+    box.type = typeof setting["default"] === "number" ? "number" : "text";
+    box.value = Array.isArray(setting.value)
+      ? setting.value.join(", ") : String(setting.value);
+    box.dataset.kind = Array.isArray(setting["default"])
+      ? "list" : (typeof setting["default"] === "number" ? "number" : "text");
+    return box;
+  }
+
+  function knobValue(control) {
+    var kind = control.dataset.kind;
+    if (kind === "bool") { return control.value === "true"; }
+    if (kind === "number") { return parseFloat(control.value); }
+    if (kind === "list") {
+      return String(control.value).split(",").map(function (item) {
+        return item.trim();
+      }).filter(function (item) { return item; });
+    }
+    return control.value;
+  }
+
+  function knobCard(setting) {
+    var card = el("div", "knob" + (setting.changed ? " is-changed" : ""));
+    var head = el("div", "knob-head");
+    head.appendChild(el("span", "knob-name", knobLabel(setting.name)));
+    if (setting.unit) { head.appendChild(el("span", "knob-unit", setting.unit)); }
+    var why = el("button", "knob-why", "why");
+    why.type = "button";
+    why.title = "What this setting decides";
+    card.appendChild(head);
+
+    var control = knobControl(setting);
+    control.addEventListener("change", function () {
+      var value = knobValue(control);
+      control.disabled = true;
+      api(planPath("/task_config"), { body: { name: setting.name, value: value } })
+        .then(function (res) {
+          control.disabled = false;
+          if (!res.ok) {
+            planStatus(res.data.error || "That change was not sent.", "bad");
+            return;
+          }
+          planStatus("Asked for " + knobLabel(setting.name).toLowerCase()
+                     + " — the sheet updates when the answer lands.");
+        });
+    });
+    head.appendChild(control);
+    head.appendChild(why);
+
+    var reason = el("p", "knob-reason", setting.why ||
+      "No note on this one yet — the sheet explains the rest.");
+    reason.hidden = true;
+    why.addEventListener("click", function () {
+      reason.hidden = !reason.hidden;
+      why.classList.toggle("is-open", !reason.hidden);
+    });
+    card.appendChild(reason);
+    return card;
+  }
+
+  function renderSheetKnobs(data) {
+    var host = $("plan-sheet");
+    host.textContent = "";
+    if (!data || !data.has_sheet) {
+      host.appendChild(el("p", "muted small", (data && data.note) ||
+        "No settings sheet yet."));
+      return;
+    }
+    (data.settings || []).forEach(function (setting) {
+      host.appendChild(knobCard(setting));
+    });
+  }
+
+  function loadPlanSheet() {
+    if (!plan.project) { return Promise.resolve(); }
+    return api(planPath("/task_config")).then(function (res) {
+      if (!res.ok) {
+        renderSheetKnobs(null);
+        return;
+      }
+      plan.sheet = res.data;
+      if (res.data.task) {
+        plan.task = res.data.task;
+        $("plan-kind").textContent = res.data.label + " — " + res.data.blurb;
+      }
+      renderSheetKnobs(res.data);
+    });
+  }
+
+  function adoptPlanning(project, task) {
+    plan.project = project;
+    plan.task = task || "";
+    plan.board = null;
+    plan.sheet = null;
+    $("plan-title").textContent = project;
+    $("plan-kind").textContent = task || "";
+    $("tab-planning").hidden = false;
+    planStatus("");
+    refsStatus("");
+  }
+
+  function openPlanning(project, task) {
+    if (!project) { return; }
+    adoptPlanning(project, task);
+    // Remembered, so a reload does not throw somebody out of the room they
+    // are standing in — the same reason the Workspace remembers its project.
+    try { localStorage.setItem("forge.planning", project); }
+    catch (e) { /* private mode */ }
+    showTab("planning");
+  }
+
+  //: The room this page was left in last time, if the project is still there.
+  function restorePlanning() {
+    var saved = null;
+    try { saved = localStorage.getItem("forge.planning"); }
+    catch (e) { saved = null; }
+    if (!saved) { return Promise.resolve(); }
+    return api("/projects/" + encodeURIComponent(saved) + "/task_config")
+      .then(function (res) {
+        if (!res.ok) {
+          try { localStorage.removeItem("forge.planning"); }
+          catch (e) { /* private mode */ }
+          return;
+        }
+        adoptPlanning(saved, res.data.task || "");
+      });
+  }
+
+  function loadPlanning() {
+    if (!plan.project || plan.loading) { return Promise.resolve(); }
+    plan.loading = true;
+    return Promise.all([loadPlanRefs(), loadPlanSheet()]).then(function () {
+      plan.loading = false;
+    }, function () { plan.loading = false; });
+  }
+
+  function startBuilding() {
+    if (!plan.project) { return; }
+    planStatus("starting the build…");
+    api(planPath("/build"), { body: {} }).then(function (res) {
+      if (!res.ok) {
+        planStatus(res.data.error || ("The bridge answered " + res.status + "."),
+                   "bad");
+        return;
+      }
+      planStatus("");
+      // The person lands where the build actually happens, on their project.
+      // `ws.project` and the stored name are both set before the tab opens, so
+      // the Workspace's own load picks this project rather than the one that
+      // happened to be open — it prefers `previous`, then what was stored.
+      ws.project = plan.project;
+      try { localStorage.setItem("forge.project", plan.project); }
+      catch (e) { /* private mode */ }
+      showTab("workspace");
+      loadJobs();
+    });
+  }
+
   // ----------------------------------------------------------------- tabs --
   //
-  // Four now.  The Studio is the working session — conversation and part
-  // sheet on one screen — the Workspace is the build being followed and
-  // driven without typing, and the other two are the genuinely separate
-  // errands: looking along the shelf, and replaying a saved sequence.
-  var TABS = ["studio", "workspace", "library", "flows"];
+  // Six now.  Home is where something starts, the planning room is the one
+  // project being described, the Studio is the working session — conversation
+  // and part sheet on one screen — the Workspace is the build being followed
+  // and driven without typing, and the two that remain are the genuinely
+  // separate errands: looking along the shelf, and replaying a saved sequence.
+  var TABS = ["home", "planning", "studio", "workspace", "library", "flows"];
 
   //: What a stored or pasted tab name means now.  Somebody with "workbench"
   //: in their localStorage from yesterday, or a #chat bookmark, lands on the
@@ -3642,7 +4421,12 @@
   }
 
   function showTab(which) {
-    which = tabName(which) || "studio";
+    // Home, now that both of its halves exist: it is where the app opens and
+    // where a name nobody recognises lands.
+    which = tabName(which) || "home";
+    // The planning room belongs to one project.  Asked for with none open, it
+    // is Home that is wanted — that is where a project starts.
+    if (which === "planning" && !plan.project) { which = "home"; }
     TABS.forEach(function (name) {
       var on = name === which;
       document.getElementById("panel-" + name).hidden = !on;
@@ -3650,6 +4434,14 @@
       tab.classList.toggle("is-active", on);
       tab.setAttribute("aria-selected", String(on));
     });
+    // The conversation column is moved, not copied: the planning room shows
+    // the SAME thread and the same composer the Studio does.
+    hostChat(which === "planning" ? "planning" : "studio");
+    // The shelf is refetched every time Home is opened, for the same reason
+    // the Library tab is: a project made a minute ago is exactly what
+    // somebody comes back here to find, and it is one folder read.
+    if (which === "home") { loadWorkflows(); loadHomeLibrary(); }
+    if (which === "planning") { loadPlanning(); }
     if (which === "flows" && state.flows === null) { loadFlows(); }
     // The library is refetched every time it is opened, unlike the flows:
     // a part made in the conversation a minute ago is exactly what somebody
@@ -3687,10 +4479,15 @@
   //: The tab this page was left on last time, with the pre-Studio names
   //: rewritten — and rewritten in storage too, so the alias is only ever read
   //: once per browser.
+  //:
+  //: The fallback is **home**: the flow doc's first line about Screen 1 is
+  //: "the app opens here", and both of its halves exist now.  A browser that
+  //: was left on another tab still opens on that tab — this is the default,
+  //: not an override.
   function storedTab() {
     var saved = null;
     try { saved = localStorage.getItem("forge.tab"); } catch (e) { saved = null; }
-    var wanted = tabName(saved) || "studio";
+    var wanted = tabName(saved) || "home";
     if (saved && saved !== wanted) {
       try { localStorage.setItem("forge.tab", wanted); } catch (e) { /* private */ }
     }
@@ -3856,6 +4653,139 @@
       }
     });
     $("tab-flows").addEventListener("click", function () { showTab("flows"); });
+
+    // -- Home: start something (Phase 21)
+    $("tab-home").addEventListener("click", function () { showTab("home"); });
+    $("tab-planning").addEventListener("click", function () {
+      showTab("planning");
+    });
+    $("home-start").addEventListener("submit", createProject);
+    $("home-prompt").addEventListener("input", function () {
+      suggestName();
+      updateCreateButton();
+      askSuggestion();
+    });
+    $("home-name").addEventListener("input", function () {
+      $("home-name").dataset.touched = "1";
+      updateCreateButton();
+    });
+    $("home-file").addEventListener("change", function (event) {
+      homeAttach(event.target.files);
+      event.target.value = "";
+    });
+    // References dropped straight onto the prompt.  The page already has a
+    // document-wide drop that attaches one image to the composer, so this one
+    // stops there: a photo dropped on Home belongs to the project about to be
+    // made, not to the conversation.
+    ["dragover", "dragenter"].forEach(function (name) {
+      $("home-dropzone").addEventListener(name, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        $("home-dropzone").classList.add("is-over");
+      });
+    });
+    ["dragleave", "drop"].forEach(function (name) {
+      $("home-dropzone").addEventListener(name, function () {
+        $("home-dropzone").classList.remove("is-over");
+      });
+    });
+    $("home-dropzone").addEventListener("drop", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var files = event.dataTransfer && event.dataTransfer.files;
+      if (files && files.length) { homeAttach(files); }
+    });
+
+    // -- Home's shelf, and the path-entry flow under it (Phase 21)
+    $("home-attach").addEventListener("submit", attachExisting);
+    $("attach-cancel").addEventListener("click", closeAttach);
+    // One box and one button: Enter means "go", which is the reflex of
+    // anybody who has just pasted a path. Wired explicitly rather than left
+    // to the browser's implicit submission, so the gesture is this page's own
+    // behaviour and not a rule that varies by form shape and browser.
+    $("attach-path").addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" || event.shiftKey) { return; }
+      event.preventDefault();
+      attachExisting();
+    });
+
+    // -- the planning room (Phase 21)
+    $("plan-back").addEventListener("click", function () { showTab("home"); });
+    $("plan-refresh").addEventListener("click", function () {
+      plan.loading = false;
+      loadPlanning();
+    });
+    $("plan-build").addEventListener("click", startBuilding);
+    $("plan-file").addEventListener("change", function (event) {
+      planAttach(event.target.files);
+      event.target.value = "";
+    });
+    ["dragover", "dragenter"].forEach(function (name) {
+      $("plan-refs").addEventListener(name, function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        $("plan-refs").classList.add("is-over");
+      });
+    });
+    ["dragleave", "drop"].forEach(function (name) {
+      $("plan-refs").addEventListener(name, function () {
+        $("plan-refs").classList.remove("is-over");
+      });
+    });
+    $("plan-refs").addEventListener("drop", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var files = event.dataTransfer && event.dataTransfer.files;
+      if (files && files.length) { planAttach(files); }
+    });
+
+    // Escape backs out, on both new screens and with no modifier: out of the
+    // planning room to Home, and out of a half-typed prompt on Home.  Never
+    // out of a note or a name somebody is in the middle of typing — Escape
+    // leaves the box first, which is what every other text field on this
+    // machine does.
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") { return; }
+      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      var active = document.activeElement;
+      if (!$("panel-planning").hidden) {
+        if (active && active !== document.body &&
+            $("panel-planning").contains(active)) {
+          active.blur();
+          return;
+        }
+        event.preventDefault();
+        showTab("home");
+        return;
+      }
+      if (!$("panel-home").hidden) {
+        if (active && active !== document.body &&
+            $("panel-home").contains(active)) {
+          active.blur();
+          return;
+        }
+        // The path-entry flow backs out first: it is the thing that was
+        // opened last, so it is the thing Escape closes.
+        if (!$("home-attach").hidden) {
+          event.preventDefault();
+          closeAttach();
+          return;
+        }
+        if (!$("home-prompt").value && !home.pick) { return; }
+        event.preventDefault();
+        $("home-prompt").value = "";
+        $("home-name").value = "";
+        $("home-name").dataset.touched = "";
+        home.pick = "";
+        home.suggested = "";
+        renderWorkflowCards();
+        updateCreateButton();
+        homeStatus("");
+      }
+    });
+
     $("library-refresh").addEventListener("click", loadLibrary);
     // The models row rides the same fetch: one folder read draws the whole tab,
     // and a second button that refetched half of it would be two answers that
@@ -3920,13 +4850,18 @@
     // A link wins over what was open last time: somebody who typed #library
     // meant it.
     var opening = tabFromHash() || tab;
-    showTab(opening);
+    // The planning room is restored BEFORE the tab opens, so a reload inside
+    // it lands back in it rather than on Home.  A project that has since gone
+    // just means the remembered name is dropped.
+    restorePlanning().then(function () {
+      showTab(opening);
+      if (opening === "studio") { $("message").focus(); }
+    });
     // The Studio is the working screen, so its rail is loaded at startup even
     // when the page opens on the Library — coming back to the Studio should
     // not be a second wait.
     if (wb.projects === null && !wb.loading) { loadStudio(); }
     setInterval(refreshHealth, 15000);
-    if (opening === "studio") { $("message").focus(); }
   }
 
   if (document.readyState === "loading") {

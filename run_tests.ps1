@@ -55,13 +55,32 @@ if ($stale) {
     & "$root\start_forge.ps1" | Out-Null
 }
 
-# --- pytest suites -----------------------------------------------------------
-Run-Suite "service"   { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\service\tests" -q --tb=line }
-# The suites isolate themselves (test_bridge spawns on a dead Blender port);
-# forcing FORGE_ASSISTANT_LIVE_CONTEXT=0 here failed all 11 live-context tests.
-Run-Suite "assistant" { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\assistant\tests" -q --tb=line }
-Run-Suite "meshgen"   { & "$root\service\.venv\Scripts\python.exe" -m pytest "$root\meshgen\tests" -q --tb=line }
-Run-Suite "mcp"       { Push-Location "$root\mcp"; & ".venv\Scripts\python.exe" -m pytest tests -q --tb=line; Pop-Location }
+# --- pytest suites, in parallel ----------------------------------------------
+# The four suites are independent processes (each isolates itself; test_bridge
+# spawns on a dead Blender port, and forcing FORGE_ASSISTANT_LIVE_CONTEXT=0
+# here once failed all 11 live-context tests). Serially they cost the SUM of
+# their times (~40 min); as jobs the wall time is the assistant suite alone
+# (~23 min). Each job carries its own stopwatch so per-suite seconds stay
+# honest rather than reading as collection time.
+$pytestJobs = @(
+    @{ Name = "service";   Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\service\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
+    @{ Name = "assistant"; Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\assistant\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
+    @{ Name = "meshgen";   Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\meshgen\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
+    @{ Name = "mcp";       Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); Set-Location "$r\mcp"; $out = & ".venv\Scripts\python.exe" -m pytest tests -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
+)
+$running = @{}
+foreach ($j in $pytestJobs) { $running[$j.Name] = Start-Job -ScriptBlock $j.Cmd -ArgumentList $root }
+foreach ($j in $pytestJobs) {
+    $name = $j.Name
+    $res = Receive-Job -Job $running[$name] -Wait -AutoRemoveJob
+    $out = @($res.Out)
+    $line = ($out | Select-String -Pattern "passed|failed|checks" | Select-Object -Last 1)
+    $summary = if ($line) { $line.Line.Trim() } else { "(no summary line)" }
+    $status = if ($res.Code -eq 0) { "PASS" } else { "FAIL" }
+    $results += [pscustomobject]@{ Suite = $name; Status = $status; Seconds = $res.Secs; Summary = $summary }
+    if ($res.Code -ne 0) { $failTails[$name] = ($out | Select-Object -Last 15) -join "`n" }
+    Write-Host ("  [{0}] {1}  ({2}s)  {3}" -f $status, $name, $res.Secs, $summary)
+}
 
 # --- headless Blender suites -------------------------------------------------
 if (-not $Fast) {

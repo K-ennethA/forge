@@ -1715,3 +1715,405 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
   .ws-left { overflow: visible; }
   .ws-viewer { min-height: 260px; }
 }
+
+/* ===========================================================================
+ * Phase 21 — Home's top half, and the planning room
+ *
+ * docs/ux-flow.md Screens 1 and 2.  Two rules run through both: plain words,
+ * and at most one caption per section.  A card that is SUGGESTED is drawn
+ * differently from a card that was PICKED, because they are different facts —
+ * the first is what the words implied and the second is what somebody chose.
+ * ======================================================================== */
+
+.home {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 26px 20px 30px;
+}
+.home > * { max-width: var(--shell); margin-left: auto; margin-right: auto; }
+.home h2 { font-size: 20px; margin: 0 0 14px; }
+
+.home-start { display: flex; flex-direction: column; gap: 14px; }
+
+.home-promptbox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.home-promptbox.is-over { border-color: var(--accent); }
+.home-promptbox textarea {
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  resize: vertical;
+  min-height: 62px;
+}
+.home-promptbox textarea:focus { outline: none; }
+.home-promptbox .attach-label { align-self: flex-start; }
+
+.home-refs { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-refs:empty { display: none; }
+
+.ref-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 5px 7px;
+}
+.ref-chip-thumb {
+  width: 36px; height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.wf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  cursor: pointer;
+  min-height: 74px;
+}
+.wf-card:hover { border-color: var(--accent-dim); }
+.wf-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.wf-card.is-hint { border-color: var(--accent-dim); border-style: dashed; }
+.wf-card.is-pick { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.wf-card.is-pick .wf-name { color: var(--accent); }
+.wf-name { font-weight: 600; font-size: 14px; }
+.wf-hint { font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }
+.wf-flag { font-size: 10.5px; color: var(--accent); }
+
+.home-go { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.home-go label { font-size: 12.5px; color: var(--text-dim); }
+.home-go .input { width: 220px; }
+.home-status { font-size: 12px; color: var(--text-faint); }
+.home-status.bad { color: var(--down); }
+
+/* -- the planning room ---------------------------------------------------- */
+
+.plan-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 20px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.plan-head h2 { font-size: 18px; margin: 0; }
+.plan-head > div:first-child { flex: 1 1 auto; }
+.plan-head p { margin: 3px 0 0; }
+
+.plan-body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 16px;
+  min-height: 0;
+  padding: 14px 20px;
+}
+.plan-left, .plan-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.plan-left h3, .plan-right h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-faint);
+  margin: 0;
+}
+.plan-left .attach-label { align-self: flex-start; }
+
+.ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 9px;
+}
+.ref-grid.is-over { outline: 2px dashed var(--accent); outline-offset: 4px; }
+
+.ref-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px;
+}
+.ref-tile.is-missing { opacity: .55; }
+.ref-thumb {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sunken);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ref-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.tag-chip {
+  align-self: flex-start;
+  font: inherit;
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.tag-chip.is-untagged { color: var(--text-faint); border-color: var(--line); }
+.tag-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.ref-note { width: 100%; font-size: 11.5px; }
+
+.ref-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  background: transparent;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  min-height: 96px;
+  cursor: pointer;
+}
+.ref-add:hover { border-color: var(--accent-dim); color: var(--text-dim); }
+
+.ref-status { font-size: 11.5px; color: var(--text-faint); margin: 0; }
+.ref-status.bad { color: var(--down); }
+
+/* The Studio's conversation column, hosted here while the room is open. */
+.plan-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  max-height: 48vh;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.plan-chat .thread { padding: 14px 14px 4px; }
+/* The Studio's own narrow-screen rule gives the chat column a 74vh floor,
+   which is right when it IS the screen and wrong when it is one box on this
+   one.  Hosted here it fills the box it was given and no more. */
+.plan-chat .studio-chat { flex: 1 1 auto; min-height: 0; }
+
+.plan-sheet { display: flex; flex-direction: column; gap: 6px; }
+
+.knob {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.knob.is-changed { border-color: var(--accent-dim); }
+.knob-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.knob-name { flex: 1 1 auto; font-size: 13px; }
+.knob-unit { font-size: 11px; color: var(--text-faint); }
+.knob-head .input, .knob-head .select { max-width: 170px; }
+.knob-why {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-faint);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.knob-why.is-open { color: var(--accent); border-color: var(--accent-dim); }
+.knob-reason {
+  margin: 7px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.plan-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 16px;
+  border-top: 1px solid var(--line-soft);
+}
+.plan-status { font-size: 12px; color: var(--text-faint); }
+.plan-status.bad { color: var(--down); }
+
+@media (max-width: 1000px) {
+  /* Stacked, and a block rather than a one-column grid: two grid rows inside
+     a flex item of fixed height get squeezed to half each and their contents
+     draw over one another.  A block lets them be as tall as they are and the
+     body scroll. */
+  .plan-body { display: block; overflow-y: auto; }
+  .plan-left, .plan-right { overflow: visible; }
+  .plan-left { margin-bottom: 16px; }
+  .plan-chat { max-height: 60vh; }
+}
+
+/* ===========================================================================
+ * Phase 21 — Home's library half: one card per project
+ *
+ * docs/ux-flow.md Screen 1, and the approved wireframe's "Your projects".
+ * The ring carries the whole design rule: green when every stage is green,
+ * amber while there is work left, and QUIET — no colour, no border — when
+ * there is no build plan at all.  A project that has not started must not be
+ * drawn as one that is stuck at zero.
+ * ======================================================================== */
+
+.home-block { margin-top: 30px; }
+.home-block h2 { font-size: 20px; margin: 0 0 14px; }
+
+.proj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 11px;
+}
+
+.proj-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 9px;
+  cursor: pointer;
+}
+.proj-card:hover { border-color: var(--accent-dim); }
+.proj-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.proj-thumb {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--bg-sunken);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 6px;
+}
+.proj-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.proj-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+.proj-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj-when { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+
+.proj-badge {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* The ring. Three states and three readings, never a fourth. */
+.proj-ring {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+  border: 1.5px solid var(--idle);
+  color: var(--text-faint);
+}
+.proj-ring.is-complete { border-color: var(--ok); color: var(--ok); }
+.proj-ring.is-building { border-color: var(--accent); color: var(--accent); }
+.proj-ring.is-blocked { border-color: var(--down); color: var(--down); }
+/* not_started keeps the quiet default above — no ring colour, because there
+   is no measurement behind it yet. */
+
+.proj-blocked { font-size: 11px; color: var(--down); line-height: 1.35; }
+
+.proj-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  background: transparent;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  min-height: 120px;
+  cursor: pointer;
+}
+.proj-add:hover { border-color: var(--accent-dim); color: var(--text-dim); }
+.proj-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* -- the path-entry flow -------------------------------------------------- */
+
+.attach {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 13px;
+}
+.attach label { font-size: 12.5px; color: var(--text-dim); }
+.attach .input { width: 100%; font-family: var(--mono); font-size: 12.5px; }
+.attach-go { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.attach-status { font-size: 12px; color: var(--text-faint); }
+.attach-status.bad { color: var(--down); }
+.attach-help {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}

@@ -697,6 +697,42 @@ PAGE_ANCHORS = (
     ("library", "the card grid"),
     ("library-scene", "the works-in-progress row"),
     ("library-refresh", "the library refresh button"),
+    # -- Home's top half (Phase 21): one prompt, five cards
+    ("tab-home", "the home tab"),
+    ("panel-home", "the home panel"),
+    ("home-start", "the start-something form"),
+    ("home-dropzone", "the prompt box references drop onto"),
+    ("home-prompt", "the one prompt box"),
+    ("home-refs", "the references waiting to be carried in"),
+    ("home-file", "the photo picker"),
+    ("home-cards", "the five workflow cards"),
+    ("home-name", "what to call it"),
+    ("home-create", "Plan it"),
+    ("home-status", "where Home says what happened"),
+    # -- Home's library half (Phase 21): the shelf, and the quieter entry
+    ("home-library-block", "the Your-projects section"),
+    ("home-library", "the project card grid"),
+    ("home-attach", "the path-entry flow for an existing .blend"),
+    ("attach-path", "where the .blend path is typed"),
+    ("attach-go", "Add Forge to it"),
+    ("attach-cancel", "backing out of the path-entry flow"),
+    ("attach-status", "where the attach flow says what happened"),
+    ("attach-help", "why there is no file picker, in plain words"),
+    # -- the planning room (Phase 21)
+    ("tab-planning", "the planning tab"),
+    ("panel-planning", "the planning panel"),
+    ("plan-title", "which project is being planned"),
+    ("plan-kind", "which workflow it is"),
+    ("plan-back", "Back (Esc)"),
+    ("plan-refresh", "re-read the board and the sheet"),
+    ("plan-refs", "the reference board"),
+    ("plan-file", "the board's photo picker"),
+    ("plan-refs-status", "where the board says what happened"),
+    ("plan-chat", "where the Studio's conversation is hosted"),
+    ("plan-sheet", "the settings sheet as knob cards"),
+    ("plan-build", "Start building"),
+    ("plan-status", "where the planning room says what happened"),
+    ("studio", "the studio's two columns, so the chat can be moved back"),
 )
 
 
@@ -777,7 +813,19 @@ def test_the_page_only_talks_to_routes_this_bridge_serves(client):
                       "/models/import", "/models/file", "/models/open",
                       # the workspace's authoring param tables (walk/punch/
                       # jump sliders), served by GET /authoring
-                      "/authoring"}, called
+                      "/authoring",
+                      # the creation flow (Phase 21): the five workflow cards,
+                      # the keyword suggestion behind them, and the route that
+                      # materialises a project.  The planning room's own routes
+                      # are built by `planPath` and so are not literals here —
+                      # test_planning.py drives each of them against a real
+                      # bridge instead.
+                      "/workflows", "/workflows/suggest",
+                      "/projects/create",
+                      # Home's library half (Phase 21): the cards, and the
+                      # third quieter entry that wraps a project around a
+                      # .blend somebody already has.
+                      "/library/cards", "/projects/attach"}, called
 
 
 def test_the_reply_is_the_only_html_the_page_ever_builds(client):
@@ -2096,11 +2144,14 @@ def test_the_studio_tab_and_its_panel_are_wired_to_each_other(client):
     html = fetch_text(client, "/")
     assert 'aria-controls="panel-studio"' in html
     assert 'aria-labelledby="tab-studio"' in html
-    # Four tabs: the Chat and the Workbench are one screen (Studio), the
+    # Six tabs now: the Chat and the Workbench are one screen (Studio), the
     # Workspace follows a whole project (plan, live model, renders, versions),
-    # and the two that remain are the errands that really are separate.
+    # two are the errands that really are separate — and Phase 21 added the
+    # two screens a project is BORN on: Home (start something) and the
+    # planning room that a new project lands in.
     script = fetch_text(client, "/webui/app.js")
-    assert 'var TABS = ["studio", "workspace", "library", "flows"];' in script
+    assert ('var TABS = ["home", "planning", "studio", "workspace", '
+            '"library", "flows"];') in script
     assert 'id="tab-chat"' not in html and 'id="tab-workbench"' not in html
 
 
