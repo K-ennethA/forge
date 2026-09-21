@@ -1600,7 +1600,11 @@ def cmd_rigforge_retopo(params):
             # The deterministic route (see the docstring): the same ops the
             # auto fallback runs, chosen up front instead of on failure.
             quad_method = "decimate"
-            current = len(retopo.data.polygons)
+            # Decimate's ratio is a triangle budget (see triangle_count's
+            # docstring); the voxel remesh above produced quads, so convert
+            # before computing the ratio or a 5000-face ask yields ~10000
+            # triangles instead of ~5000.
+            current = triangle_count(retopo)
             if current > target_faces:
                 _decimate(retopo, float(target_faces) / float(current))
         else:
@@ -1615,7 +1619,9 @@ def cmd_rigforge_retopo(params):
                 quad_method = "decimate_fallback"
                 warnings.append("Quadriflow failed after the voxel pass (%s); fell back to "
                                 "a collapse decimate to the same target." % exc)
-                current = len(retopo.data.polygons)
+                # Same triangle-vs-quad conversion as the method="decimate"
+                # branch above (this runs the same ops per the comment there).
+                current = triangle_count(retopo)
                 if current > target_faces:
                     _decimate(retopo, float(target_faces) / float(current))
         stages.append({"stage": "quad_remesh", "method": quad_method,

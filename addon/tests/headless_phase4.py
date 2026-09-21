@@ -114,32 +114,96 @@ def call(command, params=None, timeout=1800.0, expect_error=False):
 
 
 # --- the tagged biped -------------------------------------------------------
+#
+# Why the sculpt comes from ``headless_rigik`` and the retopo asks for
+# ``method="decimate"`` (frozen 2026-09-20).
+#
+# Until today this suite built its fixture with ``headless_rigforge.build_sculpt``
+# and retopologised it on the default (Quadriflow) route.  Both are
+# nondeterministic, and they compounded:
+#
+# 1. ``build_sculpt`` reads a live ``bmesh``, which hands its elements back in
+#    allocation order — pointer order, which ASLR permutes between processes.
+#    Measured on this sculpt (see ``headless_rigik``'s note): the same 34 572
+#    points permuted, a 1-ULP wobble on 28 of them from
+#    ``subdivide_edges(use_grid_fill=True)``, and — because the hole (``[:8]``)
+#    and the two fins (``break`` at two) take the *first* elements of a bmesh
+#    iteration — a different hole and different fins every run.
+# 2. ``rigforge_retopo`` with no ``method`` runs Quadriflow, whose solve rides
+#    Blender's task scheduler: identical topology but 225 of 3 574 vertices up
+#    to 45.8 mm apart between processes, with ``seed=0`` and symmetry off.
+#    ``OMP_NUM_THREADS=1`` does not still it; only ``blender --threads 1``
+#    does, and that is a launch flag no call can set.
+#
+# Either one alone re-orders the collapse-decimate queue behind it and hands
+# stage 4 a different character — different weights, and with them a head-band
+# margin that drifted across this suite's pin.  That is the "phase4 blob
+# flake": 179 checks / 0 failed and "no head-bone weight survives below the
+# neck band" on identical code, back to back.
+#
+# The fix is the one ``headless_rigik`` settled on 2026-09-19, applied here:
+# take its canonical sculpt (phase 3's shape and phase 3's defect rules, in an
+# order sorted by position instead of by allocation) and ask the product for
+# its deterministic retopo route by name.  Both ends are gated by a SHA-256
+# below, so drift fails loudly instead of flickering.
+
+#: SHA-256 of the retopo mesh this suite rigs — coordinates, polygon indices
+#: and per-group (tag) weights, via ``headless_rigik.geometry_digest``.  This
+#: is *not* ``headless_rigik.CHARACTER_DIGEST``: that one pins a 4 000-face,
+#: no-LOD character, this suite asks for 5 000 faces with two LODs.
+#:
+#: Re-pinned 2026-09-20 by the decimate-ratio fix below (``rigforge.py``'s
+#: ``method="decimate"`` branch was spending the face budget in triangles
+#: against a quad count, landing at ~2x — see ``RETOPO_TRIANGLES``).  Fixing
+#: the ratio changes the retopo mesh itself, so this digest necessarily moves
+#: with it.  Measured over five fresh ``--background --factory-startup``
+#: processes on Blender 5.0 on the fixed route, identical 5/5.  It is a
+#: determinism gate, not a tolerance.
+RETOPO_DIGEST = "83f43eb2f0d0ee8971cfd1015943650bf77a92fa1eec91cc06a06c2abd07a139"
+
+#: The neck band, in metres below the Head tag's floor: the zone where head and
+#: torso weights are *meant* to blend, so head weight inside it is not a defect.
+#:
+#: Re-measured 2026-09-20 alongside ``RETOPO_DIGEST`` above: the decimate-ratio
+#: fix changes the retopo mesh, which moves where stage 4's heat-weighting
+#: solve puts the head/torso boundary.  On the fixed character, ``DEF-spine.006``
+#: weight on ``tag_Torso`` vertices reaches **23.9812 mm** below the Head tag
+#: floor: the deepest is vertex 702 carrying 0.2213 at z = 1.344, against a
+#: floor at z = 1.368.  Identical in five fresh
+#: ``--background --factory-startup`` processes, to the digit.
+#:
+#: Pinned at 58 mm — ~2.4x the measured reach, the same headroom multiplier
+#: the previous pin used (20 mm was 2.4x its era's 8.3455 mm reach), so a
+#: millimetre of legitimate blend movement does not cry wolf while a real
+#: regression still fails loudly.
+NECK_BAND = 0.058
+
+#: The triangle count the deterministic retopo route lands on for
+#: ``target_faces=5000``.
+#:
+#: Until 2026-09-20 ``cmd_rigforge_retopo``'s ``method="decimate"`` branch set
+#: the Decimate ratio to ``target_faces / len(polygons)``, but Decimate's
+#: ratio is a **triangle** budget while ``len(polygons)`` counted the voxel
+#: remesh's quads — about half the triangles — so the budget was spent at
+#: ~2x: 10 000 triangles / 8 760 polygons out of 33 426 quads, every frozen
+#: run. Fixed by converting through ``triangle_count()`` before computing the
+#: ratio (mirroring ``_decimate_to_budget``'s math), landing on budget:
+#: measured 5 000 triangles / 4 694 polygons, identical across five fresh
+#: ``--background --factory-startup`` processes.
+RETOPO_TRIANGLES = 5000
+
 
 def build_tagged_biped():
     """Phase 3's synthetic sculpt, tagged the way stage 4 expects to find it.
 
-    The builder is imported rather than copied: if the Phase 3 sculpt changes,
-    this suite must be looking at the same thing.
+    Imported rather than copied, so the suites cannot drift apart — but from
+    ``headless_rigik``'s canonical builder rather than phase 3's bmesh one, for
+    the reason written out above.  The shape, the classification and the ear
+    rule are still phase 3's and this file's; only the element order is fixed.
     """
-    import headless_rigforge as phase3
+    import headless_rigik as rigik
 
-    obj = phase3.build_sculpt(SCULPT)
-    regions = phase3.classify_faces(obj)
-
-    # Ears: the outer caps of the head sphere. They are what makes this a test
-    # of chains and secondary motion and not just of a humanoid template.
-    ears = {"Ear.L": [], "Ear.R": []}
-    head = []
-    for index, centre in phase3.face_centres(obj):
-        if index not in set(regions["Head"]):
-            continue
-        if centre.z > 1.72 and abs(centre.x) > 0.10:
-            ears["Ear.L" if centre.x > 0 else "Ear.R"].append(index)
-        else:
-            head.append(index)
-    regions["Head"] = head
-    regions.update(ears)
-    return obj, regions
+    return rigik.build_tagged_biped()
 
 
 def bounds_of(obj, tag):
@@ -219,13 +283,42 @@ def test_setup(obj, regions):
 def test_retopo(obj):
     section("retopo to 5000 faces (the mesh stage 4 rigs)")
     result = call("rigforge_retopo", {"object": obj.name, "target_faces": 5000,
-                                      "platform": "mobile", "lods": 2})
+                                      "platform": "mobile", "lods": 2,
+                                      "method": "decimate"})
     retopo = bpy.data.objects.get(RETOPO)
     if not check("the retopo mesh exists", retopo is not None, str(result["objects"])):
         return None
-    check("it is roughly the 5000-face target",
-          abs(len(retopo.data.polygons) - 5000) <= 1500,
-          "%d faces" % len(retopo.data.polygons))
+
+    # --- the second half of the determinism gate (see the note above
+    # build_tagged_biped): the deterministic route was taken, and it landed on
+    # the pinned mesh.
+    import headless_rigik as rigik
+
+    quad = [stage for stage in result.get("stages") or []
+            if stage.get("stage") == "quad_remesh"]
+    check("the retopo took the deterministic collapse-decimate route, not the "
+          "racing Quadriflow one",
+          len(quad) == 1 and quad[0].get("method") == "decimate"
+          and result.get("deterministic") is True,
+          str(quad))
+    digest = rigik.geometry_digest(retopo)
+    note("retopo digest: %d verts, %d faces, sha256 %s"
+         % (len(retopo.data.vertices), len(retopo.data.polygons), digest))
+    check("...and it is the pinned character this suite rigs -- coordinates, "
+          "polygons and tag weights, byte for byte, on every run",
+          digest == RETOPO_DIGEST, "%s, expected %s" % (digest, RETOPO_DIGEST))
+    from forge.tools import rigforge as rf
+
+    note("stages: %s" % [(s.get("stage"), s.get("method"), s.get("face_count"))
+                         for s in result.get("stages") or []])
+    note("retopo: %d polys, %d tris" % (len(retopo.data.polygons),
+                                        rf.triangle_count(retopo)))
+    triangles = rf.triangle_count(retopo)
+    check("it lands on the deterministic route's measured triangle budget "
+          "(see RETOPO_TRIANGLES)",
+          abs(triangles - RETOPO_TRIANGLES) <= RETOPO_TRIANGLES // 10,
+          "%d triangles (%d polys), expected %d +/- 10%%"
+          % (triangles, len(retopo.data.polygons), RETOPO_TRIANGLES))
     tags = [g.name for g in retopo.vertex_groups if g.name.startswith("tag_")]
     check("all eight tags transferred", len(tags) == 8, str(sorted(tags)))
     populated = call("rigforge_list_tags", {"object": RETOPO})
@@ -425,13 +518,31 @@ def test_generate(meta, retopo):
     head_indices = {retopo.vertex_groups[name].index for name in head_bones
                     if retopo.vertex_groups.get(name) is not None}
     matrix = retopo.matrix_world
+    reach = 0.0          # how far below the Head tag's floor head weight survives
+    deepest = None
+    for vertex in retopo.data.vertices:
+        if not any(e.group == torso_group.index and e.weight > 0.0 for e in vertex.groups):
+            continue
+        point = matrix @ vertex.co
+        for element in vertex.groups:
+            if element.group in head_indices and element.weight > 0.0:
+                drop = head_bounds[0].z - point.z
+                if drop > reach:
+                    reach = drop
+                    deepest = (vertex.index, element.weight, point.z)
+    note("head weight (DEF-spine.006) on torso vertices reaches %.1f mm below "
+         "the Head tag floor (z=%.3f); band is %.1f mm"
+         % (reach * 1000.0, head_bounds[0].z, NECK_BAND * 1000.0))
+    if deepest is not None:
+        note("  deepest: vertex %d, weight %.4f, z=%.3f" % deepest)
+
     worst = None
     checked = 0
     for vertex in retopo.data.vertices:
         if not any(e.group == torso_group.index and e.weight > 0.0 for e in vertex.groups):
             continue
         point = matrix @ vertex.co
-        if point.z > head_bounds[0].z - 0.15:
+        if point.z > head_bounds[0].z - NECK_BAND:
             continue  # inside the neck band, where blending is the point
         checked += 1
         for element in vertex.groups:
@@ -440,7 +551,9 @@ def test_generate(meta, retopo):
     check("there are torso vertices well below the neck to test", checked > 20,
           "%d vertices" % checked)
     check("no head-bone weight survives below the neck band", worst is None,
-          "vertex %s still has %.4f of DEF-spine.006 at z=%.3f" % worst if worst else "")
+          "vertex %s still has %.4f of DEF-spine.006 at z=%.3f (band %.0f mm, "
+          "measured reach %.1f mm)" % (worst + (NECK_BAND * 1000.0, reach * 1000.0))
+          if worst else "")
 
     from forge.tools import rigforge_rig as rr
 
@@ -944,8 +1057,16 @@ def main():
     workspace = tempfile.mkdtemp(prefix="forge_phase4_test_")
     try:
         obj, regions = build_tagged_biped()
-        note("sculpt: %d faces, regions %s"
-             % (len(obj.data.polygons), {k: len(v) for k, v in sorted(regions.items())}))
+        import headless_rigik as rigik
+
+        sculpt_digest = rigik.geometry_digest(obj)
+        note("sculpt: %d verts, %d faces, sha256 %s, regions %s"
+             % (len(obj.data.vertices), len(obj.data.polygons), sculpt_digest,
+                {k: len(v) for k, v in sorted(regions.items())}))
+        check("the sculpt is the pinned, canonical build -- the same bytes "
+              "every process",
+              sculpt_digest == rigik.SCULPT_DIGEST,
+              "%s, expected %s" % (sculpt_digest, rigik.SCULPT_DIGEST))
         test_setup(obj, regions)
         retopo = test_retopo(obj)
         if retopo is None:

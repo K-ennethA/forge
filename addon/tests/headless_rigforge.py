@@ -791,13 +791,16 @@ def test_retopo_deterministic_route(obj):
         if not check("run %d produced a retopo mesh" % run, made is not None):
             return
         faces = len(made.data.polygons)
+        note("run %d: %d tris" % (run, rf.triangle_count(made)))
         # Decimate's ratio is a *triangle* budget (``_decimate_to_budget``'s
-        # docstring), so a 4000-face ask against the ~26k-quad voxel mesh
-        # lands between the target (every coplanar pair rejoined) and twice
-        # it (nothing rejoined) in polygons - measured 6767 faces, 4002
-        # vertices, on this sculpt. The vertex count is what tracks the ask.
+        # docstring; ``rigforge_retopo``'s method="decimate" branch was fixed
+        # 2026-09-20 to convert through it too), so a 4000-triangle ask lands
+        # on budget in triangles and, after Collapse rejoins coplanar pairs
+        # back into quads, somewhere between the target and half of it in
+        # polygons - measured 4000 triangles / 3606 polygons / 2002 vertices,
+        # on this sculpt.
         check("run %d landed inside the decimate route's triangle-budget "
-              "band" % run, 4000 <= faces <= 8400,
+              "band" % run, 1800 <= faces <= 4200,
               "%d faces, %d verts" % (faces, len(made.data.vertices)))
         digests.append(geometry_digest(made))
         note("run %d: %d faces, sha256 %s" % (run, faces, digests[-1]))

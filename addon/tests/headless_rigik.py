@@ -193,7 +193,16 @@ SCULPT_FINS = 2
 #: measured over five fresh ``--background --factory-startup`` processes on
 #: Blender 5.0; both are the determinism gate, not a tolerance.
 SCULPT_DIGEST = "33285c5409d409cbf5fe5987dd51924627161c080f14dec024315789146dc715"
-CHARACTER_DIGEST = "37d86bb36622f502380d1e53626b2e46d78ac92ebf1e47923f0a9d9000542fcb"
+#: Re-pinned 2026-09-20: rigforge_retopo's decimate branch was spending its
+#: triangle budget at 2x against a quad count (a 4000 ask yielded ~8000
+#: triangles); the fix makes both the primary branch and decimate_fallback
+#: count triangles, so the same 4000-triangle ask now yields a mesh with
+#: roughly half as many vertices and faces as before (1894 verts, 3779 faces
+#: measured on the fixed build). SCULPT_DIGEST above is unchanged - the fix is
+#: downstream of the sculpt - and CHARACTER_DIGEST is the new mesh's own
+#: digest, re-measured identical over five fresh
+#: ``--background --factory-startup`` processes on Blender 5.0.
+CHARACTER_DIGEST = "01f22c97997d0d0529b150a644a6a97f9c12fdb9d2b96c790ab6c892efba08b0"
 
 
 def geometry_digest(obj):

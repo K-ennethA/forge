@@ -156,6 +156,8 @@ __all__ = [
     "blend_zones",
     "articulated_edges",
     "taper_edges",
+    "SOLE_CONTACT_FRACTION",
+    "sole_contact_band",
     "read_weights",
     "write_weights",
     "smooth_weights",
@@ -394,6 +396,46 @@ CONTINUITY_THRESHOLDS = {"hole_pct": {"ok": 0.5, "attention": 3.0}}
 #: Below about 0.10 the ring floor (:data:`MIN_BLEND_RINGS` x the median edge,
 #: 25 mm here) takes over and the number stops moving at all.
 SUB_TAG_BLEND_FRACTION = 0.25
+
+#: The top of the **sole contact band**, as a fraction of the foot's own local
+#: thickness above the sole at that station.
+#:
+#: **Not a new number.**  It is
+#: :data:`~forge.tools.rigforge_landmarks.FOOT_TOE_LIFT_FRACTION` — the height
+#: the foot and toe bones are *placed* at, per station, per side, by the same
+#: convention that says "a toe rolls about a point just above the sole".  The
+#: band below that line is the flesh the character stands on, and the chain that
+#: line belongs to is the chain that owns it.  Quoting the same constant is what
+#: makes the two rules one rule: the ankle blend band starts **above** the
+#: contact band by construction, because the bone line is the contact band's
+#: ceiling and the ankle is above the bone line.
+#:
+#: Measured, on the frozen fixture (``CHARACTER_DIGEST 01f22c97...``), why a
+#: band is needed at all: the plane-defining right-heel vertex (``v1861``) came
+#: out of the automatic bind at ``DEF-foot.R 0.689 / DEF-shin.R.001 0.180 /
+#: DEF-toe.R 0.110 / DEF-shin.R 0.021`` — **31.1% of a contact vertex above the
+#: ankle**.  With this rule it comes out at ``DEF-foot.R 1.000`` and its own dip
+#: over the jump goes from **2.221 mm to 0.008 mm**.  The ankle articulation
+#: band legally lends shin weight into the foot; on a coarse sole that band
+#: reaches the contact surface itself, and a contact surface that bends with the
+#: ankle is a foot that goes through the floor.  The werewolf's own plane vertex
+#: (toe 0.5305 / foot 0.4695, **zero shin**) is what a human painter produces,
+#: it measures 0.2793 mm, and this rule leaves both untouched.
+#:
+#: **What it does not fix, recorded rather than hidden.**  Locking the sole also
+#: makes the two lowest foot vertices of the fixture *foot-dominant*, so they
+#: enter the dominance-based sole set (33 vertices -> 43) that
+#: ``rigcheck.sole_vertex_indices`` and ``rigforge_anim``'s clamp both select —
+#: they were exact ``foot``/``shin.001`` ties that group order gave to the shin
+#: — the same "the heel is ``DEF-shin.*.001``-dominant and therefore outside the
+#: sole set" that ``docs/lane-conventions.md`` records as an open question on
+#: the werewolf, here on the fixture and here closed.  The gate then
+#: measures a plane 1.344 mm lower and a vertex it had never seen, and the
+#: jump's worst frame moves off the crouch (frame 10) onto the landing plant
+#: (frame 22), where ``v1862`` — at ``DEF-foot.R`` **1.000**, so a rigid body —
+#: still dips 1.0677 mm.  That residual is the foot bone's own trajectory and no
+#: weight can change it.
+SOLE_CONTACT_FRACTION = rigforge_landmarks.FOOT_TOE_LIFT_FRACTION
 
 
 #: How far the isolation measurement swings the arms, in degrees, about the
@@ -1795,6 +1837,281 @@ def blend_zones(obj, tags, edges, regions, girth_fraction=BLEND_GIRTH_FRACTION,
     }
 
 
+def _point_segment_distance(point, head, tail):
+    """Distance from a world point to a bone's segment — the scalar
+    :func:`_distance_matrix` computes for every vertex at once, for the handful
+    of bones :func:`sole_contact_band` needs it for."""
+    segment = tail - head
+    length_sq = segment.dot(segment)
+    if length_sq < 1e-18:
+        return (point - head).length
+    t = max(0.0, min(1.0, (point - head).dot(segment) / length_sq))
+    return (point - (head + segment * t)).length
+
+
+def sole_contact_band(obj, rig, metarig, regions, tags, split, column_of, spacing,
+                      median_edge, fraction=SOLE_CONTACT_FRACTION):
+    """``({vertex: {column: licence}}, report)`` — the sole, locked to its foot.
+
+    The failure this exists to fix
+    ------------------------------
+    **The sole is rigid to the foot**, and the tag contract alone cannot say so.
+    A leg is a limb, so the ankle seam legally lends the shin's bones down into
+    the foot — that is :func:`blend_zones` doing exactly its job, and on a limb
+    it is right, because an ankle articulates and flesh across an articulation
+    has to blend or it creases.  What the band cannot know is that one surface
+    of the foot is not flesh at all in the deforming sense: it is the **contact
+    patch the character stands on**, and a contact patch that bends with the
+    ankle drives itself through the floor.
+
+    Measured on the frozen fixture: the vertex that *defines* the standing plane
+    carried 31.1% of its weight above the ankle, and that 31.1% is 100% of the
+    jump's 2.220 mm of floor penetration at the crouch.  A painter never paints
+    it that way, and nothing in the contract stops the solver from doing so on a
+    sole coarse enough that the ankle's band reaches the ground.
+
+    The rule, and where every number in it comes from
+    ------------------------------------------------
+    Inside each foot, the **sole band** is the flesh below the height the foot
+    chain's own bones were *placed* at — :data:`SOLE_CONTACT_FRACTION` of the
+    foot's own **local** thickness above the sole, at that vertex's own station,
+    which is :data:`~forge.tools.rigforge_landmarks.FOOT_TOE_LIFT_FRACTION` and
+    the toe-height convention restated.  Nothing here is tuned, and the ankle
+    blend band starts above the contact band by construction rather than by a
+    margin: the band's ceiling *is* the bone line, and the ankle sits above the
+    bone line by definition of where the foot chain begins.
+
+    * **Local** means a cross-section, not the foot: the station is a slab one
+      of *this tag's own* rings thick (``spacing``) about the vertex's position
+      along the chain's own forward axis, and the thickness is that slab's own.
+      Same shape as :func:`~forge.tools.rigforge_landmarks.section_centre`,
+      which is what placed the bone in the first place.  A heel 110 mm thick and
+      a toe 30 mm thick get a 27 mm band and a 7 mm band, off one constant.
+    * **Forward** is the foot chain's own long horizontal axis, read off the
+      bones (the widest-separated pair of chain endpoints, projected flat), so
+      nothing here assumes which way the character faces.
+
+    **The foot is read off the chain, not off the sub-tag split, and that was
+    measured.**  The obvious place to put this rule is inside a ``Leg.*.foot``
+    slab, because that slab is cut at the ankle and is exactly the right set.
+    On the frozen fixture there is no such slab: *both* legs refuse the split
+    (``Leg.R``'s knee sits at ``t=0.389`` and its ankle at ``t=0.467``, 1.2
+    stations of 16 apart, and ``Leg.L``'s chain doubles back on its own axis),
+    and a rule that only fires where the split succeeds does not fire on the
+    figure whose sole goes through the floor.  So the foot is located the way
+    :func:`leg_splits` locates the ankle in the first place — off
+    :func:`chain_groups`, the tag's own deform chain grouped by the metarig bone
+    each segment came from.  The groups past the second joint are the foot
+    chain (on a Rigify leg: thigh, shin, **foot, toe**), the head of the first
+    of them *is* the ankle, and the foot is the tag's flesh at or below it —
+    the same ``p.z <= ankle.z`` cut :func:`section_centre` makes.  Where the
+    split does succeed this is the same set of vertices, because the slab is cut
+    at the same joint; where it does not, the rule still holds.
+
+    Within the band a vertex is confined to the **foot chain** — **zero
+    above-ankle entries** — and inside the chain each bone is held to **one
+    local foot thickness** of its own segment, with the module's own
+    :data:`REACH_BAND` falloff on the last third of it.  The caller takes the
+    minimum against the ramp it already had and renormalises.
+
+    **The intra-chain bound is not optional and it is not a hard ball line.**
+    The toe bone is *in* the chain, so the confinement on its own leaves a heel
+    vertex carrying toe weight — and a heel that carries toe weight rides the
+    toe's grounded-frame excursion down.  Measured on the fixture: confinement
+    alone takes the plane vertex to ``DEF-foot.R 0.8621 / DEF-toe.R 0.1379`` and
+    the jump floor to **4.5089 mm**, *worse* than the 2.2200 mm it started at,
+    because the shin weight it removed had been averaging the toe's dive away.
+    The painter's rule — heel to the foot, toe pad to the toe, both at the ball
+    — fixes that, but applied as a **hard span test** it is a weight cliff
+    exactly where the toe rolls, and the werewolf measures it as a defect: that
+    figure's plane vertex is a real blend, ``DEF-toe.R 0.5305 / DEF-foot.R
+    0.4695``, and a hard ball line flattens it to ``DEF-toe.R 1.000``.  One
+    forced application each, same figure::
+
+        no lock       386 punctures / 2.388% (art. 238 / 1.473%), floor 0.2793
+        confine only  412 punctures / 2.572% (art. 264 / 1.648%), floor 0.2793
+        hard ball     438 punctures / 2.762% (art. 290 / 1.829%), floor 0.3400
+                      ...and the plane vertex's 0.5305/0.4695 becomes toe 1.000
+        this rule     426 punctures / 2.675% (art. 278 / 1.745%), floor 0.2793
+                      ...and the plane vertex keeps 0.5305 / 0.4695 exactly
+
+    So the ball line is a **falloff**, not a switch, and its width is not a new
+    number: a bone sits about one of its own tag's girths under the skin it
+    belongs to — the argument :func:`_constrain_once`'s seam bound already makes
+    — and for a foot bone that girth is the foot's own local thickness, which
+    this function has already measured at this station.  A ball vertex is on
+    both bones and keeps both; a heel vertex is a foot-thickness and more from
+    the toe's segment and keeps the foot.  The nearest chain bone always keeps a
+    full licence, so no contact vertex can be left with nothing.
+
+    This is a **hard licence edge, not a hole**.  The caller clears the
+    confinement out of ``narrowed``/``uncapped`` as well as out of the ramp, so
+    ``licensed`` is false there and the one-ring taper, the smoothing mask and
+    :func:`fill_holes` all refuse it for the same reason they refuse a bone the
+    seam bound denied — and for the reason ``fill_holes`` will not lift a weight
+    from zero: a vertex the bone does not reach is not a dent in a region, it is
+    outside one.
+
+    Returns an empty band and a report saying why for any figure with no leg
+    tag, no readable leg chain, or a chain with no foot on the end of it.
+    """
+    prefix = rigforge_autotag.LEG_SPLIT_PREFIX
+    empty = {"fraction": float(fraction), "feet": [], "vertices": 0}
+    if rig is None or not regions:
+        empty["says"] = ("There is no rig or no tagged geometry here, so there is no "
+                         "foot chain to read a contact band off; the sole keeps "
+                         "whatever the tag contract gives it.")
+        return {}, empty
+    known = source_bone_names(rig, metarig)
+    owner_of, _source = bone_owners(rig, metarig, regions)
+    matrix = obj.matrix_world
+    points = [matrix @ vertex.co for vertex in obj.data.vertices]
+    rig_matrix = rig.matrix_world
+    out = {}
+    feet = []
+    leg_tags = sorted(tag for tag in regions
+                      if tag == prefix or tag.startswith(prefix + "."))
+    for tag in leg_tags:
+        # The chain's groups, proximal first. A leg split asks this same
+        # function for its knee and its ankle; what is wanted here is what comes
+        # *after* the ankle, which is the foot and whatever hangs off it.
+        root, groups = chain_groups(rig, owner_of, tag, metarig, known)
+        if root is None or len(groups) < 3:
+            feet.append({"tag": tag, "chain": [], "band_vertices": 0,
+                         "foot_vertices": 0,
+                         "refused": ("this leg's chain has %d group(s), so it has no "
+                                     "joint past the knee to call an ankle"
+                                     % len(groups))})
+            continue
+        ankle_z = groups[2][1].z
+        foot_bases = {base for base, _point in groups[2:]}
+        chain = sorted(name for name, held in owner_of.items()
+                       if held == tag and name in column_of
+                       and (metarig_base(name, known) or name) in foot_bases)
+        members = [index for index in range(len(points))
+                   if points[index].z <= ankle_z + 1e-9
+                   and any(other == tag or (split is not None
+                                            and split.parent_of(other) == tag)
+                           for other in tags[index])]
+        if not chain or len(members) < 3:
+            feet.append({"tag": tag, "chain": chain, "band_vertices": 0,
+                         "foot_vertices": len(members),
+                         "ankle_mm": round(ankle_z * M_TO_MM, 2),
+                         "refused": ("no deform bone of this leg belongs to its own "
+                                     "foot chain" if not chain else
+                                     "this leg has under three vertices below its "
+                                     "own ankle, so it is tagged to the ankle and "
+                                     "has no foot")})
+            continue
+
+        # --- the chain's own forward axis, flat. The widest-separated pair of
+        # endpoints is the direction the chain runs in, and a foot chain runs
+        # the length of the foot -- which is the one thing every foot has.
+        ends = []
+        for name in chain:
+            bone = rig.data.bones.get(name)
+            if bone is None:
+                continue
+            ends.append(rig_matrix @ bone.head_local)
+            ends.append(rig_matrix @ bone.tail_local)
+        forward, widest = None, 0.0
+        for first in range(len(ends)):
+            for second in range(first + 1, len(ends)):
+                delta = ends[second] - ends[first]
+                delta.z = 0.0
+                if delta.length > widest:
+                    widest, forward = delta.length, delta
+        if forward is None or widest <= 1e-9:
+            feet.append({"tag": tag, "chain": chain, "band_vertices": 0,
+                         "foot_vertices": len(members),
+                         "ankle_mm": round(ankle_z * M_TO_MM, 2),
+                         "refused": "this foot chain has no horizontal length to "
+                                    "station the sole along"})
+            continue
+        forward = forward.normalized()
+
+        # Each chain bone as a segment, for the intra-chain bound below.
+        segments = []
+        for name in chain:
+            bone = rig.data.bones.get(name)
+            if bone is None or name not in column_of:
+                continue
+            segments.append((column_of[name], rig_matrix @ bone.head_local,
+                             rig_matrix @ bone.tail_local))
+        # The station's half-width is this tag's own ring, which with a split is
+        # carried on its slabs rather than on the parent name.
+        half = max([spacing[key] for key in spacing
+                    if key == tag or (split is not None
+                                      and split.parent_of(key) == tag)]
+                   or [median_edge])
+        half = max(half, 1e-6)
+        along = {index: points[index].dot(forward) for index in members}
+        banded = 0
+        thickest = 0.0
+        ceiling = 0.0
+        for index in members:
+            at = along[index]
+            station = [points[other].z for other in members
+                       if abs(along[other] - at) <= half]
+            low, high = min(station), max(station)
+            top = low + (high - low) * fraction
+            if points[index].z > top + 1e-9:
+                continue
+            # The intra-chain bound: one local foot thickness to the bone's own
+            # segment, falling off over its last REACH_BAND. Same shape as
+            # ``_constrain_once``'s ``licence``, and the same constant.
+            limit = max(high - low, 1e-6)
+            here = {}
+            nearest, best = None, None
+            for column, head, tail in segments:
+                gap = _point_segment_distance(points[index], head, tail)
+                if best is None or gap < best:
+                    nearest, best = column, gap
+                if gap >= limit:
+                    continue
+                width = limit * REACH_BAND
+                here[column] = (1.0 if width <= 0.0
+                                else min(1.0, (limit - gap) / width))
+            if nearest is not None:
+                # A contact vertex always keeps its nearest chain bone whole:
+                # the bound is there to refuse the *far* end of the chain, and a
+                # sole vertex with no licence at all is a hole, not a rule.
+                here[nearest] = 1.0
+            out[index] = here
+            banded += 1
+            thickest = max(thickest, high - low)
+            ceiling = max(ceiling, (top - low))
+        feet.append({
+            "tag": tag,
+            "chain": chain,
+            "ankle_mm": round(ankle_z * M_TO_MM, 2),
+            "foot_vertices": len(members),
+            "band_vertices": banded,
+            "band_pct": round(100.0 * banded / max(len(members), 1), 2),
+            "station_mm": round(half * M_TO_MM, 2),
+            "thickest_station_mm": round(thickest * M_TO_MM, 2),
+            "band_ceiling_mm": round(ceiling * M_TO_MM, 2),
+        })
+    total = sum(row.get("band_vertices", 0) for row in feet)
+    if not feet:
+        says = ("This figure has no leg tag, so there is no foot chain to find a "
+                "sole on; the tag contract is unchanged.")
+    else:
+        says = ("%d sole-band vertex/vertices over %d leg(s) are confined to their "
+                "own foot chain (%.0f%% of local foot thickness, the same fraction "
+                "the toe bone is placed at): %s."
+                % (total, len(feet), 100.0 * fraction,
+                   "; ".join("%s -> %s, %d of %d vertices below a %s mm ankle%s"
+                             % (row["tag"], "+".join(row["chain"]) or "nothing",
+                                row.get("band_vertices", 0), row["foot_vertices"],
+                                row.get("ankle_mm"),
+                                (" (refused: %s)" % row["refused"])
+                                if row.get("refused") else "")
+                             for row in feet)))
+    return out, {"fraction": float(fraction), "feet": feet, "vertices": total,
+                 "says": says}
+
+
 # ---------------------------------------------------------------------------
 # weights as a matrix
 # ---------------------------------------------------------------------------
@@ -2384,6 +2701,14 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
                 for tag, value in (blend_report.get("tag_edge_mm") or {}).items()}
     ring = _np.array([max([_spacing.get(tag, median_edge) for tag in tags[index]]
                           or [median_edge]) for index in range(count)], dtype="f8")
+    # **The sole is rigid to the foot.** The one place in this stage where a
+    # legal borrow has to be refused anyway, because the surface in question is
+    # not flesh that bends -- it is what the character stands on. See
+    # sole_contact_band for the measurement and for why the fraction is the
+    # toe-height convention rather than a number of its own.
+    sole, sole_report = sole_contact_band(obj, rig, metarig, regions, tags,
+                                          split_view, column_of, _spacing,
+                                          median_edge)
     ramp = _np.zeros((count, len(bone_names)), dtype="f8")
     radius = _np.zeros(count, dtype="f8")
     # Where the sibling-band rule above held a bone to less than its tag's own
@@ -2405,6 +2730,10 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
     # seam, at any licence. The only place a hole-fill may lift: see fill_holes.
     owned_here = _np.zeros((count, len(bone_names)), dtype=bool)
     uncapped = _np.zeros((count, len(bone_names)), dtype=bool)
+    # Where the sole lock refused a bone the tag contract would have allowed.
+    # Kept as its own array rather than folded into the ramp, because it has to
+    # be taken out of the *licence* too: see the block after the loop.
+    confined = _np.zeros((count, len(bone_names)), dtype=bool)
     untagged = 0
     borrowed = 0
     stranded_rows = []
@@ -2488,6 +2817,22 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
                     if ramp[index, column] <= 0.0:
                         borrowed += 1
                     ramp[index, column] = value
+        keep = sole.get(index)
+        if keep is not None:
+            # A contact vertex. Everything but its own foot chain goes, at any
+            # licence and from either loop above -- a shin lent across the ankle
+            # seam most of all. The contract that allowed it is not wrong; it is
+            # simply not the rule that governs a surface the character stands
+            # on. Inside the chain the band's own bound applies on top of
+            # whatever licence the tag contract had already worked out.
+            allowed_row = _np.zeros(len(bone_names), dtype=bool)
+            for column in keep:
+                allowed_row[column] = True
+            ramp[index][~allowed_row] = 0.0
+            confined[index] = ~allowed_row
+            for column, scale in keep.items():
+                if scale < ramp[index, column]:
+                    ramp[index, column] = scale
         if not ramp[index].any():
             # Reach is a rule about a limb's own scale, and a limb whose bones
             # all sit further away than that is a measurement this module got
@@ -2495,6 +2840,12 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
             # tag allows wins, and the count is reported.
             candidates = [column for tag in (own or blend[index])
                           for column in columns_for.get(tag, ())]
+            if keep is not None:
+                # The rescue may not undo the lock: a stranded contact vertex
+                # takes the nearest bone of its own foot chain, not the nearest
+                # bone its tag happens to allow.
+                candidates = [column for column in candidates
+                              if column in keep] or sorted(keep)
             if candidates:
                 ramp[index, min(candidates, key=lambda c: row[c])] = 1.0
                 stranded_rows.append(index)
@@ -2506,6 +2857,21 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
             "%d vertex/vertices of %r sit further from every bone their tag allows "
             "than that tag's own girth allows for; each kept its single nearest "
             "legal bone." % (len(stranded_rows), obj.name))
+    if sole:
+        # **The confinement is an edge of the licence, not a hole in it.** The
+        # ramp alone would not hold: ``mask`` is grown one ring off ``hard``,
+        # the smoother writes inside ``mask``, and ``fill_holes`` lifts wherever
+        # the licence is whole -- so a bone refused here on one vertex and
+        # allowed on its neighbour would simply be walked back in, one ring per
+        # apply, exactly as a seam-bound bone would be without ``licensed``.
+        # Clearing the slot out of the licence is what makes it a boundary, and
+        # it is the same statement fill_holes makes when it declines to lift a
+        # weight from zero: a vertex a bone does not reach is not a dent in that
+        # bone's region, it is outside it.
+        narrowed[confined] = False
+        uncapped[confined] = False
+        capped[confined] = 0.0
+        owned_here[confined] = False
 
     # The contract, enforced with one ring of tolerance at its boundary -- and
     # the tolerance is not a fudge, it is the taper. A mask cut to the exact
@@ -2557,7 +2923,7 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
     # seam.
     licensed = narrowed | uncapped | hard
     mask = (_dilate(hard, fine, SMOOTH_DILATION) & licensed
-            & (distances <= reachable))
+            & (distances <= reachable) & ~confined)
     tolerance_slots = int(_np.count_nonzero(mask & ~hard))
 
     before = read_weights(obj, bone_names)
@@ -2662,6 +3028,7 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
                         for name, mass in offenders[:12]],
         "tags": per_tag,
         "blend": blend_report,
+        "sole_lock": sole_report,
         "sub_tags": split_report,
         "leg_sub_tags": {tag: leg_reports[tag] for tag in sorted(leg_reports)},
         "contract": {
@@ -2681,10 +3048,13 @@ def _constrain_once(obj, rig, metarig=None, regions=None, max_influences=4,
         "max_influences": int(max_influences),
         "says": ("%.2f vertex-weights (%.2f%% of the skin) sat on bones the vertex's "
                  "own tag does not allow and were removed; %d vertices sit in a blend "
-                 "band where two tags' bones are both legal. Worst offender: %s."
+                 "band where two tags' bones are both legal.%s Worst offender: %s."
                  % (removed_mass,
                     100.0 * removed_mass / max(before_total, 1e-9),
                     blend_report["blend_vertices"],
+                    (" %d sole-band vertex/vertices are locked to their own foot "
+                     "chain, with no above-ankle weight at all."
+                     % sole_report["vertices"]) if sole_report["vertices"] else "",
                     ("%s, %.2f vertex-weights outside its own limb"
                      % (offenders[0][0], offenders[0][1])) if offenders
                     else "none - every weight was already inside its tag")),
