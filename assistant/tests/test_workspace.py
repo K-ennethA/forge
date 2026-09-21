@@ -808,10 +808,14 @@ def test_the_page_loads_the_viewer_locally_and_not_from_a_cdn(client):
 
 def test_the_workspace_tab_and_its_panels_are_on_the_page(client):
     html = fetch_text(client, "/")
+    # ``ws-ask``/``ws-message`` were the proxy chat box, whose whole job was
+    # to type into the Studio's composer and press its Send.  With the Studio
+    # tab gone, the real column is hosted in the dock (``ws-chat``) and the
+    # proxy is not needed to exist alongside the thing it stood in for.
     for anchor in ("tab-workspace", "panel-workspace", "ws-project",
                    "ws-summary", "ws-stepper", "ws-focus",
                    "ws-viewer", "ws-canvas", "ws-now", "ws-history",
-                   "ws-deliverables", "ws-versions", "ws-ask", "ws-message"):
+                   "ws-deliverables", "ws-versions", "ws-dock", "ws-chat"):
         assert ('id="%s"' % anchor) in html, anchor
 
 
@@ -825,18 +829,22 @@ def test_the_default_screen_is_five_things_and_not_ten(client):
     cards, the standing activity list, the renders and the versions — are
     pinned here as ``<details>`` that start CLOSED, and the headings and
     explanatory paragraphs they carried are pinned as gone.
+
+    The count moved from three to four when the Flows tab folded in: the
+    saved sequences are a fourth drawer, shut like the rest.  The claim this
+    test makes is unchanged — nothing new is permanently open.
     """
     import re
 
     html = fetch_text(client, "/")
     workspace = html.split('id="panel-workspace"', 1)[1].split("</section>", 1)[0]
 
-    # Three <details>, and every one of them starts shut.
+    # Four <details>, and every one of them starts shut.
     tags = re.findall(r"<details\b[^>]*>", workspace)
-    assert len(tags) == 3, \
-        "the default screen has %d collapsible panels, not 3: %s" % (len(tags), tags)
+    assert len(tags) == 4, \
+        "the default screen has %d collapsible panels, not 4: %s" % (len(tags), tags)
     assert not [tag for tag in tags if re.search(r"\bopen\b", tag)], tags
-    for anchor in ("ws-now-box", "ws-renders", "ws-saves"):
+    for anchor in ("ws-now-box", "ws-renders", "ws-saves", "ws-flows"):
         assert [tag for tag in tags if ('id="%s"' % anchor) in tag], anchor
 
     # The old chrome: one <h2> and four <h3> section headings, five

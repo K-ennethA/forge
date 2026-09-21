@@ -31,22 +31,24 @@
   </div>
 </header>
 
+<!-- Two destinations, not six tabs (docs/ux-flow.md, "Navigation is Home ↔
+     Studio").  Home is the app; the Studio is ONE project, and it has two
+     rooms — Plan and Workspace — so the person can get back to the plan
+     without leaving the project.  Both of those are hidden until a project is
+     open, which is what makes the shape two destinations rather than three.
+
+     The three that died and where they went: Library → Home owns it (the
+     shelf, plus the files drawer under it); Flows → the three flow buttons
+     below this bar, with the saved sequences as a Workspace drawer; Studio →
+     its chat is docked in both rooms and its part sheet is the Workspace's
+     "Let me adjust" tier. -->
 <nav class="tabs" role="tablist">
-  <button type="button" class="tab" id="tab-home" role="tab"
-          aria-selected="false" aria-controls="panel-home">Home</button>
-  <!-- The planning room belongs to one project, so it is hidden until there
-       is one to plan. It is still a real tab: #planning is a URL, and the
-       button appears the moment a project is being planned. -->
+  <button type="button" class="tab is-active" id="tab-home" role="tab"
+          aria-selected="true" aria-controls="panel-home">Home</button>
   <button type="button" class="tab" id="tab-planning" role="tab"
           aria-selected="false" aria-controls="panel-planning" hidden>Plan</button>
-  <button type="button" class="tab is-active" id="tab-studio" role="tab"
-          aria-selected="true" aria-controls="panel-studio">Studio</button>
   <button type="button" class="tab" id="tab-workspace" role="tab"
-          aria-selected="false" aria-controls="panel-workspace">Workspace</button>
-  <button type="button" class="tab" id="tab-library" role="tab"
-          aria-selected="false" aria-controls="panel-library">Library</button>
-  <button type="button" class="tab" id="tab-flows" role="tab"
-          aria-selected="false" aria-controls="panel-flows">Flows</button>
+          aria-selected="false" aria-controls="panel-workspace" hidden>Workspace</button>
 </nav>
 
 <!-- The flow buttons live OUTSIDE the panels on purpose: they are the two or
@@ -78,7 +80,7 @@
        Below it, the library half: every project as a card with a progress
        ring off its own build plan. -->
   <section class="panel" id="panel-home" role="tabpanel"
-           aria-labelledby="tab-home" hidden>
+           aria-labelledby="tab-home">
     <div class="home">
       <h2>Start something</h2>
 
@@ -144,6 +146,40 @@
         <p class="muted small">Click a project to pick it up where you left
            off. The number on each one is its real build plan.</p>
       </div>
+
+      <!-- --------------------------------------------------------------- -->
+      <!-- The old Library tab, folded in.  "Library IS the home screen", so
+           the cards above are the library; what the tab ALSO held — the file
+           facts on a project, every 3D file on this machine, and whatever
+           Blender is holding that has no folder yet — is everything a beginner
+           does not need on the way in.  So it is one drawer, shut, and
+           nothing that was reachable stopped being reachable: Open, Save
+           scene, Open in Studio, Import, File into a project, Open in Blender
+           are all still the buttons on these cards. -->
+      <details class="home-drawer" id="home-files">
+        <summary>Files on this machine <span class="home-count" id="home-files-count"></span></summary>
+
+        <p class="muted small">Your saved projects and their files, every 3D
+           file Forge can see, and whatever Blender is holding right now.
+           Click a model to open it in Blender, or file it into a project.</p>
+
+        <div class="home-drawer-row">
+          <h3>Saved projects</h3>
+          <button type="button" class="btn ghost tiny" id="library-refresh">Refresh</button>
+        </div>
+        <div id="library" class="lib-grid"></div>
+
+        <div class="home-drawer-row">
+          <h3>Models</h3>
+          <button type="button" class="btn ghost tiny" id="models-refresh">Refresh</button>
+        </div>
+        <div id="library-models" class="lib-grid lib-grid-compact"></div>
+
+        <div class="home-drawer-row">
+          <h3>In progress</h3>
+        </div>
+        <div id="library-scene" class="lib-grid"></div>
+      </details>
     </div>
   </section>
 
@@ -201,12 +237,19 @@
   </section>
 
   <!-- ------------------------------------------------------------------ -->
-  <!-- The Studio: ONE screen for one working session.  The conversation and
-       the part's own numbers are the same job — asking the assistant to make
-       the top 1.5× the bottom took 155 seconds and 41 cents, and typing 1.5
-       into a box takes two.  So they sit side by side and neither is a tab
-       away from the other.  Below 1100 px they stack, chat first. -->
-  <section class="panel" id="panel-studio" role="tabpanel" aria-labelledby="tab-studio">
+  <!-- The old Studio tab, off the nav bar and kept as a HOST.  Its two halves
+       both moved out and neither was rewritten:
+
+       * the conversation column (#studio-chat) is docked — in the planning
+         room while that is open, in the Workspace the rest of the time.  It
+         is MOVED, never copied: one thread, one composer, one session.
+       * the part sheet (#studio-rail) is the Workspace's "Let me adjust"
+         tier for a part-shaped project.
+
+       Nothing is ever shown from here; this element is where the two columns
+       live when no room is holding them, so a move is always a move home and
+       back rather than a rebuild that would lose the thread. -->
+  <section class="panel is-offstage" id="panel-studio" hidden aria-hidden="true">
    <div class="studio" id="studio">
     <div class="studio-chat" id="studio-chat">
     <div class="thread" id="thread">
@@ -389,9 +432,16 @@
           <div class="ws-tools-head">
             <span class="ws-tools-title" id="ws-tools-title"></span>
             <button type="button" class="btn tiny" id="ws-inspect">Check now</button>
+            <button type="button" class="btn tiny ghost" id="ws-tools-close"
+                    title="Back out of the hands-on controls (Esc)">Done</button>
             <span class="ws-tools-note" id="ws-tools-note"></span>
           </div>
           <div id="ws-tools-body" class="ws-tools-body"></div>
+          <!-- The old Studio's part sheet, hosted here.  A part-shaped project
+               IS a script over numbers, so "Let me adjust" on one of those
+               means the sliders and the Apply & rebuild button that already
+               existed — moved in whole, not reimplemented. -->
+          <div id="ws-adjust-rail" class="ws-adjust-rail" hidden></div>
           <div id="ws-findings" class="ws-findings"></div>
         </div>
 
@@ -450,70 +500,30 @@
         <summary>Versions <span class="ws-count" id="ws-saves-count"></span></summary>
         <div id="ws-versions" class="ws-versions"></div>
       </details>
+      <!-- The old Flows tab, folded in.  The three buttons an artist actually
+           presses already sit above every screen; what the tab held besides
+           them was the list of saved sequences, which is a project-adjacent
+           thing you replay — so it is a drawer beside the renders and the
+           versions, shut like they are. -->
+      <details class="ws-drawer" id="ws-flows">
+        <summary>Recorded steps <span class="ws-count" id="ws-flows-count"></span></summary>
+        <div id="flows"></div>
+        <button type="button" class="btn ghost tiny" id="flows-refresh">Refresh</button>
+      </details>
     </div>
 
-    <!-- Chat, docked. Still here, no longer the only control surface. -->
-    <form class="ws-dock" id="ws-ask" autocomplete="off">
-      <textarea id="ws-message" rows="1"
-                placeholder="Say something about this build — Enter to send, Shift+Enter for a new line"></textarea>
-      <button type="submit" class="btn primary" id="ws-send">Send</button>
+    <!-- Chat, docked — and it is now the Studio's OWN thread and composer,
+         moved in rather than a second box that retyped into them.  The
+         workspace used to carry a proxy textarea whose whole job was to set
+         the Studio composer's value and press its Send; with the Studio tab
+         gone, the real thing lives here and the answers are readable where
+         the question was asked. -->
+    <div class="ws-dock" id="ws-dock">
+      <div class="ws-chat" id="ws-chat"></div>
       <span class="ws-dock-status" id="ws-dock-status"></span>
-    </form>
+    </div>
   </section>
 
-  <!-- ------------------------------------------------------------------ -->
-  <section class="panel" id="panel-library" role="tabpanel"
-           aria-labelledby="tab-library" hidden>
-    <div class="lib-head">
-      <div>
-        <h2>Library</h2>
-        <p class="muted">Everything you have made. Each card is a folder in
-           <code>projects/</code> — what it is, how many dimensions it has, the
-           pieces it is made of and the files it has exported. Pictures are kept
-           from the last time it was rendered.</p>
-      </div>
-      <button type="button" class="btn ghost" id="library-refresh">Refresh</button>
-    </div>
-
-    <div id="library" class="lib-grid"></div>
-
-    <div class="lib-head lib-head-second">
-      <div>
-        <h3>Models</h3>
-        <p class="muted small">Every 3D file on this machine Forge can see — the
-           meshes the picture-to-3D service generated, and anything in
-           <code>projects/&lt;name&gt;/models/</code>. Newest first.
-           <strong>Click a card to open that model in Blender</strong> — it lands
-           in your scene if Blender is running, and Blender starts with it if
-           not. Or file one into a project so it lives beside its part.</p>
-      </div>
-      <button type="button" class="btn ghost" id="models-refresh">Refresh</button>
-    </div>
-    <div id="library-models" class="lib-grid lib-grid-compact"></div>
-
-    <div class="lib-head lib-head-second">
-      <div>
-        <h3>In progress</h3>
-        <p class="muted small">What Blender is holding right now — a generated
-           mesh, a sculpt, the pieces a segment produced. These have no folder
-           yet, which is fine; they are still your work.</p>
-      </div>
-    </div>
-    <div id="library-scene" class="lib-grid"></div>
-  </section>
-
-  <!-- ------------------------------------------------------------------ -->
-  <section class="panel" id="panel-flows" role="tabpanel" aria-labelledby="tab-flows" hidden>
-    <div class="flows-head">
-      <div>
-        <h2>Flows</h2>
-        <p class="muted">Saved sequences that replay exactly, with no model in
-           the loop. They run in Blender, so Blender has to be open.</p>
-      </div>
-      <button type="button" class="btn ghost" id="flows-refresh">Refresh</button>
-    </div>
-    <div id="flows"></div>
-  </section>
 </main>
 
 <script src="/webui/format.js"></script>

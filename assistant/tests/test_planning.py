@@ -787,7 +787,12 @@ def test_the_planning_room_hosts_the_studios_own_chat(planning):
     # The planning room's markup holds no thread and no composer of its own.
     assert 'id="thread"' not in room and 'id="composer"' not in room
     assert "function hostChat(" in script
-    assert '$("plan-chat").appendChild(chat)' in script
+    # One host per room, picked by name and appended to — the planning room's
+    # is #plan-chat.  (The Workspace gained one of its own when the Studio tab
+    # died; the mechanism is the same, which is why it is now a lookup rather
+    # than an if.)
+    assert 'where === "planning" ? $("plan-chat")' in script
+    assert "host.appendChild(chat)" in script
 
 
 def test_the_page_and_the_bridge_agree_on_the_five_tags(planning):

@@ -572,6 +572,9 @@
     var host = $("flows");
     host.textContent = "";
     var flows = (data && data.flows) || [];
+    // The drawer's own count, the way the renders and versions drawers carry
+    // theirs — so a shut drawer still says whether there is anything in it.
+    $("ws-flows-count").textContent = flows.length ? String(flows.length) : "";
     if (!flows.length) {
       host.appendChild(el("p", "muted",
         "No flows saved yet. Finish a multi-step job in the chat and ask the " +
@@ -1433,8 +1436,17 @@
       });
   }
 
+  //: "Open in Studio" still means what it says — the Studio is now the
+  //: project's own screen rather than a tab of its own, so this opens the
+  //: Workspace ON that project with the part sheet pointed at it.  The sheet
+  //: itself is one button away there ("Let me adjust"), not a second tab.
   function openInStudio(name) {
-    showTab("studio");
+    ws.project = name;
+    ws.focus = null;
+    ws.pipeline = null;
+    try { localStorage.setItem("forge.project", name); }
+    catch (e) { /* private mode */ }
+    showTab("workspace");
     return whenProjectsLoaded().then(function () {
       var picker = $("project");
       picker.value = name;
@@ -1443,7 +1455,7 @@
                         "”. Press Refresh on it and try again.");
         return;
       }
-      // Opened by hand from the Library, so it is pinned: the artist went
+      // Opened by hand from the shelf, so it is pinned: the artist went
       // looking for this one and should not lose it to the next turn.
       pinProject(name);
       return selectProject(name);
@@ -1463,8 +1475,28 @@
     return found;
   }
 
-  function askAbout(text, caret) {
-    showTab("studio");
+  //: Where the conversation IS, now that it has no tab of its own: docked in
+  //: whichever room is open.  So "take me to the composer" means "open the
+  //: project's Workspace", and `project` is the one the button was pressed on
+  //: when the caller knows it.
+  //:
+  //: With no project open at all there is no room to dock in — and that is
+  //: fine, because there is ONE thread: the turn still goes, and it is on
+  //: screen the moment any project is opened.  The caller says so rather than
+  //: pretending the message went nowhere.
+  function showChat(project) {
+    if (project) {
+      ws.project = project;
+      try { localStorage.setItem("forge.project", project); }
+      catch (e) { /* private mode */ }
+    }
+    if (!openProject()) { refreshTabs(); return false; }
+    showTab("workspace");
+    return true;
+  }
+
+  function askAbout(text, caret, project) {
+    showChat(project);
     var box = $("message");
     box.value = text;
     resize();
@@ -1501,7 +1533,8 @@
     show.title = "Ask the assistant to read " + file.path + " back to you";
     show.addEventListener("click", function () {
       askAbout("Show me the task config sheet for " + project.name
-               + " — every setting, and which ones are off their default.");
+               + " — every setting, and which ones are off their default.",
+               undefined, project.name);
     });
     row.appendChild(show);
 
@@ -1509,7 +1542,8 @@
     change.type = "button";
     change.title = "Writes the sentence for you — finish it and press send";
     change.addEventListener("click", function () {
-      askAbout("On " + project.name + "'s task config sheet, set ");
+      askAbout("On " + project.name + "'s task config sheet, set ",
+               undefined, project.name);
     });
     row.appendChild(change);
 
@@ -2043,7 +2077,15 @@
   // Blender directly, with no model in the loop.
 
   function sendCanned(message) {
-    showTab("studio");
+    // These three are about the Blender SCENE rather than about one project,
+    // so they are pressable with no project open — and then there is no room
+    // for the answer to land in.  It still lands: there is one thread, and
+    // opening any project shows it.  Saying that is better than a button that
+    // looks like it did nothing.
+    if (!showChat()) {
+      banner("info", "Sent. Open a project to watch it — the conversation is "
+                   + "the same one in every project's Workspace.");
+    }
     $("message").value = message;
     resize();
     send();
@@ -2162,16 +2204,128 @@
   // 7 of 10" is readable without counting.  Past stages are clickable and
   // view-only: looking back at what the rig gate measured changes nothing.
 
+  // -- the plain words -----------------------------------------------------
+  //
+  // docs/ux-flow.md Screen 3: "Every stage chip carries a plain-word name and
+  // a one-line 'what happens here'."
+  //
+  // A TABLE BESIDE THE IDS, not a rename.  `build-plan.json` is written by
+  // pipeline.py and its stage ids are canonical — they are what
+  // pipeline_advance, pipeline_record and every gate name are spelled in, and
+  // every sentence this screen composes still says the id.  This maps the ids
+  // the board hands us onto words somebody who has never opened Blender can
+  // read, and it covers every id in every one of pipeline.py's five templates
+  // (a test walks that source and fails on a stage with no words here).
+  //
+  // The `does` line is one sentence and is about what HAPPENS, not about what
+  // the gate is called: "Bones go in, in the right places" rather than
+  // "rig_check.asymmetry_mm".  The gate names are still on the stage, below.
+  var STAGE_WORDS = {
+    // -- character
+    reference:   { name: "References",
+                   does: "Your photos get filed and read back to you, so the build has something to copy." },
+    design:      { name: "The plan",
+                   does: "A few questions, then every setting is written down before anything gets built." },
+    generate:    { name: "First shape",
+                   does: "A rough 3D shape gets built and lands in Blender for you to look at." },
+    clean:       { name: "Clean-up",
+                   does: "The rough shape is tidied and evened up, and given a surface that can take colour." },
+    verify_mesh: { name: "Mesh check",
+                   does: "The shape is measured for holes and mistakes before a single bone goes in." },
+    rig:         { name: "Skeleton",
+                   does: "Bones go in, in the right places, so the body can be posed." },
+    skin:        { name: "Attach skin",
+                   does: "The body is attached to the bones, and anything following the wrong one is measured." },
+    correctives: { name: "Joint fixes",
+                   does: "Bent elbows and knees stop collapsing, one fix per joint." },
+    animate:     { name: "Animations",
+                   does: "Walks and other moves are made, and checked for feet that slide." },
+    export:      { name: "Ship it",
+                   does: "The files you actually use get written — for your game, your printer or your slicer." },
+    // -- 3D-print part, and the device lane that shares it
+    author:      { name: "The recipe",
+                   does: "Forge writes the recipe that builds your part out of the numbers you gave it." },
+    check:       { name: "Print check",
+                   does: "Will it fit the bed, is anything too thin, will it print at all." },
+    circuit:     { name: "The circuit",
+                   does: "The real components, the voltage and the resistor are picked before the shape is drawn." },
+    // -- floor plan
+    extract:     { name: "Read the drawing",
+                   does: "Your floor plan is turned into measured rooms, doors and fittings." },
+    validate:    { name: "Plan check",
+                   does: "Every room and every label is checked to be one Forge understands." },
+    echo:        { name: "Your say-so",
+                   does: "Forge draws back what it read, so you correct the drawing rather than the model." },
+    build:       { name: "Build the rooms",
+                   does: "Walls, doors and fittings are built in 3D from the plan." },
+    reconcile:   { name: "Keep them in step",
+                   does: "Anything moved by hand is compared with the plan, so the two still agree." },
+    // -- mould
+    source:      { name: "The figure",
+                   does: "The thing being moulded is chosen and checked for holes." },
+    undercut:    { name: "Will it come out",
+                   does: "Forge checks the figure can actually be pulled out of a mould." },
+    mold:        { name: "The mould",
+                   does: "Two mould halves are cut, with keys, a pour hole and air vents." }
+  };
+
+  //: The words for a stage id, or the id itself made readable.  A plan from a
+  //: template this page has never seen still draws — with its own id as the
+  //: name and no promise about what happens there, which is honest.
+  function stageWords(id) {
+    return STAGE_WORDS[id] ||
+           { name: String(id || "").replace(/_/g, " "), does: "" };
+  }
+
+  //: One sentence about what was MEASURED here, off the board and nothing
+  //: else: the verdict, and how many measurements are recorded against it.
+  //: No number is invented and no gate is summarised into a word it did not
+  //: report — "N measurements" is a count of what the file holds.
+  function stageSummary(stage, dirty) {
+    var words = stageWords(stage.id);
+    var count = (stage.numbers || []).length;
+    var measured = count === 1 ? "1 measurement" : count + " measurements";
+    var lead;
+    if (stage.red) {
+      lead = words.name + " was measured and something is wrong — " + measured +
+             " recorded, and the build stops here until it is sorted out.";
+    } else if (stage.status === "overridden") {
+      lead = words.name + " did not pass, and somebody signed it off anyway — " +
+             measured + " recorded.";
+    } else if (stage.green) {
+      lead = count
+        ? words.name + " is done, and everything it checks came back clean — " +
+          measured + " recorded."
+        : words.name + " is done, with nothing recorded against it.";
+    } else if (stage.status === "in_progress") {
+      lead = words.name + " is being worked on right now" +
+             (count ? ", with " + measured + " so far." : ".");
+    } else {
+      lead = count
+        ? words.name + " has not run yet, though " + measured + " already sit against it."
+        : words.name + " has not happened yet — nothing has been measured here.";
+    }
+    if (dirty) {
+      lead += " The model has been edited by hand since, so these numbers are "
+            + "about a model that no longer exists — run its check again.";
+    }
+    return lead;
+  }
+
   function stepChip(stage, index, total, focus, dirty) {
+    var words = stageWords(stage.id);
     var chip = el("button", "ws-step is-" + stage.status);
     chip.type = "button";
     chip.dataset.stage = stage.id;
     chip.setAttribute("role", "tab");
     chip.setAttribute("aria-selected", String(stage.id === focus));
-    chip.title = (stage.title || stage.id) + " — " + stage.status.replace("_", " ")
-               + " (" + (index + 1) + " of " + total + ")";
+    // The chip says the plain name; the hover says what happens there, then
+    // the id the plan is actually written in, then the verdict and position.
+    chip.title = words.name + (words.does ? " — " + words.does : "") + "\n"
+               + stage.id + "  ·  " + stage.status.replace("_", " ")
+               + "  ·  " + (index + 1) + " of " + total;
     chip.appendChild(el("span", "ws-step-num", String(index + 1)));
-    chip.appendChild(el("span", "ws-step-name", stage.id));
+    chip.appendChild(el("span", "ws-step-name", words.name));
     if (dirty) {
       // The model has been hand-edited since this gate was measured, so the
       // numbers on its card are about a model that no longer exists. Saying
@@ -2229,20 +2383,124 @@
     return list;
   }
 
+  //: The big three, in the flow doc's order: *Looks good* (advance) · *Fix
+  //: these* (the findings pins) · *Let me adjust* (the direct-edit tier).
+  //:
+  //: "Looks good" composes a sentence and sends it down the same /ask the
+  //: decision cards use, for the same reason they do: pipeline.py owns
+  //: build-plan.json, it refuses a skip, and a second writer on this port
+  //: would be a way around that.  So the button asks for pipeline_advance; it
+  //: does not advance anything itself.
+  function bigThree(stage, data) {
+    var project = (data && data.project) || ws.project || "this project";
+    var words = stageWords(stage.id);
+    var row = el("div", "ws-big");
+
+    var good = el("button", "btn ws-big-act is-good", "Looks good");
+    good.type = "button";
+    good.title = "Move the build on to the next step";
+    good.addEventListener("click", function () {
+      wsSend(
+        "I have looked at the " + stage.id + " stage (" + words.name + ") of " +
+        project + " and it looks right to me. Advance the build: " +
+        "pipeline_advance past " + stage.id + ", and tell me which stage is " +
+        "next. Do not record a pass you did not measure.",
+        "looks good");
+    });
+    row.appendChild(good);
+
+    // The pins are this stage's own findings, and only while the strip is
+    // still on this stage — a count carried over from another stage would be
+    // a number about the wrong thing.
+    var pins = (tools.stage === stage.id) ? tools.findings.length : 0;
+    var checkable = !!TOOL_STAGES[stage.id];
+    var fix = el("button", "btn ws-big-act is-fix",
+                 pins ? ("Fix these (" + pins + (pins === 1 ? " pin)" : " pins)"))
+                      : "Fix these");
+    fix.type = "button";
+    fix.title = checkable
+      ? "Run this stage's own check and pin what it finds on the model"
+      : "Ask for the fix ladder to be worked on this stage";
+    fix.addEventListener("click", function () {
+      if (checkable) {
+        wsOpenAdjust();
+        wsInspect();
+        return;
+      }
+      wsSend(
+        "On " + project + ", look at the " + stage.id + " stage (" + words.name +
+        "), tell me in plain words what is wrong with it, work the fix ladder " +
+        "in order, then re-measure its gate and pipeline_record the real " +
+        "numbers whichever way they come out.",
+        stage.id + " fix");
+    });
+    row.appendChild(fix);
+
+    var adjust = el("button", "btn ws-big-act is-adjust", "Let me adjust");
+    adjust.type = "button";
+    adjust.title = "Open the hands-on controls for this stage";
+    adjust.addEventListener("click", wsOpenAdjust);
+    row.appendChild(adjust);
+    return row;
+  }
+
+  //: The scoped change box.  "'Make the boots chunkier' typed at the rig
+  //: stage is a stage-scoped turn, not a global one" — so the sentence it
+  //: composes names the stage and says what it may touch.
+  function scopeBox(stage, data) {
+    var project = (data && data.project) || ws.project || "this project";
+    var words = stageWords(stage.id);
+    var form = el("form", "ws-scope");
+    form.setAttribute("autocomplete", "off");
+    var input = el("input", "input ws-scope-input");
+    input.type = "text";
+    input.placeholder = "Change something here — “make the boots chunkier”";
+    input.setAttribute("aria-label", "Change something at the " + words.name +
+                                     " step");
+    form.appendChild(input);
+    var go = el("button", "btn tiny primary", "Send");
+    go.type = "submit";
+    form.appendChild(go);
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var said = input.value.trim();
+      if (!said) { return; }
+      input.value = "";
+      wsSend(
+        "On " + project + ", at the " + stage.id + " stage (" + words.name +
+        "): " + said + ". Keep this scoped to the " + stage.id + " stage — do " +
+        "not touch the other stages — then re-measure the " + stage.id +
+        " gate and pipeline_record what you actually get.",
+        stage.id + " change");
+    });
+    return form;
+  }
+
   function stagePanel(stage, data) {
     var box = el("div", "ws-stage is-" + stage.status);
+    var words = stageWords(stage.id);
+    var dirty = !!((data && data.dirty) || {})[stage.id];
 
+    // Plain words lead.  The plan's own title is still here, one line down,
+    // because it is the sentence pipeline.py wrote and the artist may want it.
     var head = el("div", "ws-stage-head");
-    head.appendChild(el("h3", null, stage.title || stage.id));
+    head.appendChild(el("h3", null, words.name));
     head.appendChild(el("span", "ws-verdict is-" + stage.status,
                         stage.status.replace("_", " ")));
     box.appendChild(head);
 
-    if (stage.does) { box.appendChild(el("p", "ws-does", stage.does)); }
+    if (words.does) { box.appendChild(el("p", "ws-does", words.does)); }
 
-    if (stage.gate && stage.gate.length) {
-      box.appendChild(el("p", "ws-gate", "Gate: " + stage.gate.join(", ")));
-    }
+    // What was measured, in one sentence, BEFORE anything else — the flow
+    // doc's order: what was measured, what it looks like, then the actions.
+    box.appendChild(el("p", "ws-lead" + (dirty ? " is-dirty" : ""),
+                       stageSummary(stage, dirty)));
+
+    box.appendChild(bigThree(stage, data));
+    box.appendChild(scopeBox(stage, data));
+    box.appendChild(el("p", "ws-scope-note",
+      "Typed there, it changes the “" + words.name +
+      "” step and nothing else."));
 
     // The decision lives IN the stage it is about, rather than in a panel of
     // its own: a red gate and what to do about it are one thing.  It goes
@@ -2251,14 +2509,26 @@
     // stopped build needs must not be below them.
     if (stage.red) { box.appendChild(decisionBlock(stage, data)); }
 
+    // Everything the workspace already showed, kept and put behind one line:
+    // the plan's own wording, the gate names, and the measurements as the
+    // gates wrote them.  Nothing here was deleted — it stopped leading.
+    var detail = el("details", "ws-sub ws-detail");
+    detail.appendChild(el("summary", null, "The numbers, in full"));
+    detail.appendChild(el("p", "ws-stage-title", stage.title || stage.id));
+    detail.appendChild(el("p", "ws-gate", "Stage id: " + stage.id));
+    if (stage.does) { detail.appendChild(el("p", "ws-gate", stage.does)); }
+    if (stage.gate && stage.gate.length) {
+      detail.appendChild(el("p", "ws-gate", "Gate: " + stage.gate.join(", ")));
+    }
     var numbers = numberList(stage, true);
     if (numbers) {
-      box.appendChild(numbers);
+      detail.appendChild(numbers);
     } else {
-      box.appendChild(el("p", "muted small",
+      detail.appendChild(el("p", "muted small",
         stage.green ? "This stage passed with nothing recorded against it."
                     : "Nothing measured on this stage yet."));
     }
+    box.appendChild(detail);
 
     var artifacts = stage.artifacts || [];
     if (artifacts.length) {
@@ -2915,7 +3185,6 @@
     send();
     var node = $("ws-dock-status");
     node.textContent = label ? ("sent — " + label) : "sent";
-    $("ws-message").value = "";
     renderActivity();
   }
 
@@ -2950,17 +3219,63 @@
     kind: "",          // animate: which authoring table
     values: {},        // animate: the numbers the sliders hold
     table: null,       // the authoring tables, fetched once
-    open: null         // which finding's card is open
+    open: null,        // which finding's card is open
+    adjust: false      // whether "Let me adjust" has been pressed on this stage
   };
 
-  //: Which stages have controls at all.  A stage with no check and no
-  //: authoring tool gets no strip rather than an empty one.
+  //: Which stages have a CHECK behind them — the thing "Fix these" runs.  A
+  //: stage without one still gets the hands-on tier and the change box; its
+  //: Fix button asks instead of measuring, and says so.
   var TOOL_STAGES = {
     verify_mesh: "Mesh",
     rig: "Rig",
     skin: "Skin",
     animate: "Animation"
   };
+
+  //: Which tasks author a part script, and so have a part sheet worth moving
+  //: into the adjust tier.  A character's numbers are its gates, not a PARAMS
+  //: block, and a rail with nothing in it would be a panel that lies.
+  var PART_TASKS = ["part", "device"];
+
+  function isPartTask() {
+    var task = (ws.pipeline && ws.pipeline.task) || "";
+    return PART_TASKS.indexOf(task) >= 0;
+  }
+
+  //: "Let me adjust" — the direct-edit tier, opened by a button rather than
+  //: appearing on its own.  Everything in it is what was already there: the
+  //: stage's own controls, the nudge handles, the brush, the sliders, and for
+  //: a part-shaped project the whole part sheet.
+  //: Redraw the focused stage without refetching anything.  The big three
+  //: read the strip's state — "Fix these (3 pins)" is a count of what the
+  //: last check found — so anything that changes that state redraws them.
+  function refreshFocus() {
+    if (ws.pipeline) { renderPipeline(ws.pipeline); }
+  }
+
+  function wsOpenAdjust() {
+    tools.adjust = true;
+    renderStageTools();
+    var strip = $("ws-stage-tools");
+    if (!strip.hidden && strip.scrollIntoView) {
+      strip.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  //: …and Escape, or Done, backs out of it.  No modifier, like everything
+  //: else on these screens.
+  function wsCloseAdjust() {
+    tools.adjust = false;
+    tools.findings = [];
+    tools.ran = "";
+    tools.open = null;
+    var viewer = ws.viewer;
+    if (viewer && viewer.supported) { viewer.clearPins(); }
+    toolsNote("");
+    renderStageTools();
+    refreshFocus();
+  }
 
   function toolsNote(text, cls) {
     var node = $("ws-tools-note");
@@ -3147,6 +3462,8 @@
         }
       }
       renderFindings();
+      // …and "Fix these" now knows how many pins it put on the model.
+      refreshFocus();
     });
   }
 
@@ -3436,26 +3753,45 @@
     var host = $("ws-tools-body");
     var strip = $("ws-stage-tools");
     var stage = tools.stage;
-    if (!stage || !TOOL_STAGES[stage] || !ws.snapshot) {
+    // The strip is LED by the big three now: it opens when somebody presses
+    // "Let me adjust" or "Fix these", and it stays open while there are pins
+    // on the model to work through.  Nothing in it was removed.
+    if (!stage || !(tools.adjust || tools.findings.length)) {
       strip.hidden = true;
+      hostRail("studio");
       return;
     }
     strip.hidden = false;
-    $("ws-tools-title").textContent = TOOL_STAGES[stage];
-    $("ws-inspect").hidden = false;
+    $("ws-tools-title").textContent = stageWords(stage).name;
+    $("ws-inspect").hidden = !TOOL_STAGES[stage];
     host.textContent = "";
-    if (stage === "animate") {
+    // The old Studio's part sheet is the adjust tier for a part-shaped
+    // project, moved in whole.
+    hostRail(isPartTask() ? "workspace" : "studio");
+    // One caption, and it is about the thing this stage can actually do now:
+    // the controls if the model is here, the one thing to press if it is not,
+    // and — for a stage with no check at all — where to say it in words.  A
+    // part's sheet above needs no snapshot, so it never draws the nag.
+    if (stage === "animate" && ws.snapshot) {
       renderAnimateTools(host);
-    } else if (stage === "skin") {
+    } else if (stage === "skin" && ws.snapshot) {
       renderSkinTools(host);
-    } else if (stage === "rig") {
+    } else if (stage === "rig" && ws.snapshot) {
       host.appendChild(el("p", "muted small",
         "The skeleton is on the model. Drag a joint to move it; press Check "
         + "now to measure where every bone sits."));
-    } else {
+    } else if (TOOL_STAGES[stage] && ws.snapshot) {
       host.appendChild(el("p", "muted small",
         "Press Check now to measure the mesh. Anything it can place shows as "
         + "a pin you can click."));
+    } else if (TOOL_STAGES[stage]) {
+      host.appendChild(el("p", "muted small",
+        "Press Refresh from Blender to bring the model over — the hands-on "
+        + "controls work on what is in the picture."));
+    } else if (!isPartTask()) {
+      host.appendChild(el("p", "muted small",
+        "This step has no hands-on controls of its own. Say what you want "
+        + "changed in the box beside the stage and it stays scoped to it."));
     }
     renderFindings();
   }
@@ -3470,6 +3806,9 @@
     tools.open = null;
     tools.action = "";
     tools.values = {};
+    // The hands-on tier is opened per stage: moving the stepper closes it, so
+    // nobody arrives at a new step with the last one's controls up.
+    tools.adjust = false;
     var viewer = ws.viewer;
     if (viewer && viewer.supported) {
       viewer.clearPins();
@@ -3567,6 +3906,13 @@
     if (changed) { ws.focus = null; }
     try { if (name) { localStorage.setItem("forge.project", name); } }
     catch (e) { /* private mode */ }
+    // With no project there is no Studio, so there is no tab for one: the
+    // remembered name is dropped too, or the tab would come back on reload.
+    if (!name) {
+      try { localStorage.removeItem("forge.project"); }
+      catch (e) { /* private mode */ }
+    }
+    refreshTabs();
     if (!name) {
       ws.pipeline = null;
       renderPipeline({ has_plan: false, note: "No project selected." });
@@ -4034,8 +4380,8 @@
       loadJobs();
       // The file is now a project with a mesh in it and no plan, so the
       // planning room is the wrong room: the conversation that materialises
-      // the plan is the Studio's.
-      showTab("studio");
+      // the plan is the one docked in this project's Workspace.
+      showChat(res.data.project || "");
     }, function () {
       shelf.attaching = false;
       $("attach-go").disabled = false;
@@ -4077,15 +4423,42 @@
   //: The Studio's conversation column, moved rather than copied.  One thread,
   //: one composer, one session: a design conversation in its own box would be
   //: a second history of the same project.
+  //:
+  //: With the Studio tab gone it is moved to whichever room is open — the
+  //: planning room's right-hand column, or the Workspace's dock — and parked
+  //: back on the off-stage host for Home.  The Workspace used to carry a
+  //: proxy textarea that typed into this composer and pressed its Send; that
+  //: box is gone and this is what is in its place, so an answer is readable
+  //: where the question was asked.
   function hostChat(where) {
     var chat = $("studio-chat");
-    if (where === "planning") {
-      if (chat.parentNode !== $("plan-chat")) { $("plan-chat").appendChild(chat); }
+    var host = where === "planning" ? $("plan-chat")
+             : where === "workspace" ? $("ws-chat")
+             : null;
+    if (host) {
+      if (chat.parentNode !== host) { host.appendChild(chat); }
       return;
     }
     if (chat.parentNode !== $("studio")) {
       $("studio").insertBefore(chat, $("studio-rail"));
     }
+  }
+
+  //: The Studio's part sheet, moved the same way.  A part-shaped project IS a
+  //: script over numbers, so the Workspace's "Let me adjust" tier for one is
+  //: this rail — the sliders, Apply & rebuild, the preview and the scene
+  //: strip that already existed, not a second set of them.
+  function hostRail(where) {
+    var rail = $("studio-rail");
+    var slot = $("ws-adjust-rail");
+    if (where === "workspace") {
+      if (rail.parentNode !== slot) { slot.appendChild(rail); }
+      slot.hidden = false;
+      if (wb.projects === null && !wb.loading) { loadStudio(); }
+      return;
+    }
+    slot.hidden = true;
+    if (rail.parentNode !== $("studio")) { $("studio").appendChild(rail); }
   }
 
   function planPath(suffix) {
@@ -4403,30 +4776,74 @@
 
   // ----------------------------------------------------------------- tabs --
   //
-  // Six now.  Home is where something starts, the planning room is the one
-  // project being described, the Studio is the working session — conversation
-  // and part sheet on one screen — the Workspace is the build being followed
-  // and driven without typing, and the two that remain are the genuinely
-  // separate errands: looking along the shelf, and replaying a saved sequence.
-  var TABS = ["home", "planning", "studio", "workspace", "library", "flows"];
+  // TWO DESTINATIONS (docs/ux-flow.md: "Navigation is Home ↔ Studio").  Home
+  // is the app — start something, and the shelf of everything made so far.
+  // The Studio is ONE project, and it has two rooms because a plan is
+  // something you come back to: Plan and Workspace.  Both of those are scoped
+  // to the open project, so with no project open there is exactly one tab.
+  //
+  // The three that died, and where every one of their contents went:
+  //   Library — Home owns it.  The shelf is the library; the file facts, the
+  //             models row and the works-in-progress are Home's files drawer,
+  //             with the same cards and the same buttons.
+  //   Flows   — the three flow buttons already sit above every screen; the
+  //             saved sequences are a Workspace drawer.
+  //   Studio  — its chat is docked in both rooms (moved, not copied) and its
+  //             part sheet is the Workspace's "Let me adjust" tier.
+  var TABS = ["home", "planning", "workspace"];
+
+  //: The rooms that belong to one project.  With none open they are not tabs
+  //: at all, which is what makes this two destinations rather than three.
+  var PROJECT_TABS = ["planning", "workspace"];
 
   //: What a stored or pasted tab name means now.  Somebody with "workbench"
-  //: in their localStorage from yesterday, or a #chat bookmark, lands on the
-  //: screen that swallowed both rather than on the default by accident.
-  var TAB_ALIASES = { chat: "studio", workbench: "studio" };
+  //: in their localStorage from last year, a #chat bookmark, or a #library
+  //: link from before this lane, lands on the screen that swallowed it rather
+  //: than on the default by accident.
+  var TAB_ALIASES = {
+    chat: "workspace", workbench: "workspace", studio: "workspace",
+    library: "home", flows: "home"
+  };
 
   function tabName(which) {
     var name = TAB_ALIASES[which] || which;
     return TABS.indexOf(name) >= 0 ? name : "";
   }
 
+  //: The project the Studio is open on, if any.  `ws.project` once the
+  //: Workspace has loaded, the planning room's project while that is open,
+  //: and the remembered name before either has run — which is what lets the
+  //: two project tabs be right on the very first paint after a reload.
+  function openProject() {
+    if (ws.project) { return ws.project; }
+    if (plan.project) { return plan.project; }
+    var saved = null;
+    try { saved = localStorage.getItem("forge.project"); } catch (e) { saved = null; }
+    return saved || "";
+  }
+
+  //: Which tabs exist right now.  Called after anything that opens or closes a
+  //: project, and once at startup.
+  function refreshTabs() {
+    var project = openProject();
+    // Both rooms belong to the open project.  docs/ux-flow.md Screen 2 is
+    // "new project, or ANY TIME from the Studio", so Plan is a tab for as
+    // long as there is a project — not only while one is being planned.
+    $("tab-planning").hidden = !project;
+    $("tab-workspace").hidden = !project;
+    // A room whose project has gone is not a room to be standing in.  This
+    // cannot loop: showTab("home") hides the panel, so the call it makes back
+    // into here fails this test.
+    if (!project && !$("panel-workspace").hidden) { showTab("home"); }
+  }
+
   function showTab(which) {
-    // Home, now that both of its halves exist: it is where the app opens and
-    // where a name nobody recognises lands.
+    // Home: where the app opens, and where a name nobody recognises lands.
     which = tabName(which) || "home";
-    // The planning room belongs to one project.  Asked for with none open, it
-    // is Home that is wanted — that is where a project starts.
+    // A room belongs to one project.  Asked for with none open, it is Home
+    // that is wanted — that is where a project starts.
     if (which === "planning" && !plan.project) { which = "home"; }
+    if (which === "workspace" && !openProject()) { which = "home"; }
     TABS.forEach(function (name) {
       var on = name === which;
       document.getElementById("panel-" + name).hidden = !on;
@@ -4434,33 +4851,26 @@
       tab.classList.toggle("is-active", on);
       tab.setAttribute("aria-selected", String(on));
     });
-    // The conversation column is moved, not copied: the planning room shows
-    // the SAME thread and the same composer the Studio does.
-    hostChat(which === "planning" ? "planning" : "studio");
-    // The shelf is refetched every time Home is opened, for the same reason
-    // the Library tab is: a project made a minute ago is exactly what
-    // somebody comes back here to find, and it is one folder read.
+    refreshTabs();
+    // The conversation column is moved, not copied: both rooms show the SAME
+    // thread and the same composer, and Home parks it back off-stage.
+    hostChat(which);
+    // The shelf is refetched every time Home is opened: a project made a
+    // minute ago is exactly what somebody comes back here to find, and it is
+    // one folder read.
     if (which === "home") { loadWorkflows(); loadHomeLibrary(); }
     if (which === "planning") { loadPlanning(); }
-    if (which === "flows" && state.flows === null) { loadFlows(); }
-    // The library is refetched every time it is opened, unlike the flows:
-    // a part made in the conversation a minute ago is exactly what somebody
-    // opens this tab to look for, and it is one folder read.
-    if (which === "library") { loadLibrary(); }
     // The Workspace is refetched on every open for the same reason, and its
     // activity poll runs only while it is the tab being looked at: a status
     // board nobody can see is a timer nobody asked for.
     if (which === "workspace") {
       loadWorkspace();
       startWorkspacePolling();
+      scrollDown();
     } else {
       stopWorkspacePolling();
     }
-    if (which === "studio") {
-      if (wb.projects === null && !wb.loading) { loadStudio(); }
-      scrollDown();
-    }
-    // Linkable: #library is a URL that opens on the library, which is what a
+    // Linkable: #workspace is a URL that opens on the build, which is what a
     // second monitor and a bookmark are for.  Written with replaceState so the
     // back button still leaves the page instead of walking the tabs.
     try {
@@ -4571,9 +4981,12 @@
     });
 
     $("flows-refresh").addEventListener("click", loadFlows);
-    $("tab-studio").addEventListener("click", function () { showTab("studio"); });
     $("tab-workspace").addEventListener("click", function () { showTab("workspace"); });
-    $("tab-library").addEventListener("click", function () { showTab("library"); });
+    // The old Flows tab, as a drawer: fetched the first time it is opened,
+    // the way the tab used to be.
+    $("ws-flows").addEventListener("toggle", function () {
+      if ($("ws-flows").open && state.flows === null) { loadFlows(); }
+    });
 
     // -- the Workspace's own controls ----------------------------------
     $("ws-project").addEventListener("change", function (event) {
@@ -4588,6 +5001,7 @@
     $("ws-snapshot").addEventListener("click", function () { wsSnapshot(); });
     $("ws-nudge").addEventListener("click", wsToggleNudge);
     $("ws-inspect").addEventListener("click", wsInspect);
+    $("ws-tools-close").addEventListener("click", wsCloseAdjust);
 
     // Skin mode's brush: a click on the model, not a drag of it. The viewer
     // itself takes pin clicks and joint drags first, so this only ever sees
@@ -4642,22 +5056,19 @@
     $("ws-view-reset").addEventListener("click", function () {
       if (ws.viewer && ws.viewer.supported) { ws.viewer.recentre(); }
     });
-    $("ws-ask").addEventListener("submit", function (event) {
-      event.preventDefault();
-      wsSend($("ws-message").value);
-    });
-    $("ws-message").addEventListener("keydown", function (event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        wsSend($("ws-message").value);
-      }
-    });
-    $("tab-flows").addEventListener("click", function () { showTab("flows"); });
-
     // -- Home: start something (Phase 21)
     $("tab-home").addEventListener("click", function () { showTab("home"); });
+    // The planning room is "new project, or any time from the Studio", so
+    // pressing Plan on a project that is already building ADOPTS it: the
+    // board and the sheet are read for the open project rather than for
+    // whichever one happened to be planned last.
     $("tab-planning").addEventListener("click", function () {
-      showTab("planning");
+      var project = openProject();
+      if (!project || plan.project === project) { showTab("planning"); return; }
+      api("/projects/" + encodeURIComponent(project) + "/task_config")
+        .then(function (res) {
+          openPlanning(project, (res.ok && res.data.task) || "");
+        });
     });
     $("home-start").addEventListener("submit", createProject);
     $("home-prompt").addEventListener("input", function () {
@@ -4739,17 +5150,38 @@
       if (files && files.length) { planAttach(files); }
     });
 
-    // Escape backs out, on both new screens and with no modifier: out of the
-    // planning room to Home, and out of a half-typed prompt on Home.  Never
-    // out of a note or a name somebody is in the middle of typing — Escape
-    // leaves the box first, which is what every other text field on this
-    // machine does.
+    // Escape backs out, on every screen and with no modifier: out of the
+    // hands-on controls in the Workspace, out of the Workspace to Home, out of
+    // the planning room to Home, and out of a half-typed prompt on Home.
+    // Never out of a note or a name somebody is in the middle of typing —
+    // Escape leaves the box first, which is what every other text field on
+    // this machine does.
     document.addEventListener("keydown", function (event) {
       if (event.key !== "Escape") { return; }
       if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) {
         return;
       }
       var active = document.activeElement;
+      if (!$("panel-workspace").hidden) {
+        // A placement in progress owns Escape — the handler above it cancels
+        // that, and one keypress must not also back out of the tier it is in.
+        if (!$("ws-nudge-bar").hidden) { return; }
+        if (active && active !== document.body &&
+            $("panel-workspace").contains(active)) {
+          active.blur();
+          return;
+        }
+        // The adjust tier backs out first: it is the thing that was opened
+        // last, so it is the thing Escape closes.
+        if (!$("ws-stage-tools").hidden) {
+          event.preventDefault();
+          wsCloseAdjust();
+          return;
+        }
+        event.preventDefault();
+        showTab("home");
+        return;
+      }
       if (!$("panel-planning").hidden) {
         if (active && active !== document.body &&
             $("panel-planning").contains(active)) {
@@ -4787,10 +5219,15 @@
     });
 
     $("library-refresh").addEventListener("click", loadLibrary);
-    // The models row rides the same fetch: one folder read draws the whole tab,
-    // and a second button that refetched half of it would be two answers that
-    // could disagree.
+    // The models row rides the same fetch: one folder read draws the whole
+    // drawer, and a second button that refetched half of it would be two
+    // answers that could disagree.
     $("models-refresh").addEventListener("click", loadLibrary);
+    // The old Library tab, as Home's files drawer: read the first time it is
+    // opened and on every open after, which is what the tab did.
+    $("home-files").addEventListener("toggle", function () {
+      if ($("home-files").open) { loadLibrary(); }
+    });
     // …and a link somebody pasted, or edited in the address bar.
     window.addEventListener("hashchange", function () {
       var wanted = tabFromHash();
@@ -4837,8 +5274,17 @@
       if (saved) { $("model").value = saved; }
     } catch (e) { /* private mode: the default is fine */ }
 
+    // The remembered project, read before the first paint: the two project
+    // tabs exist only when one is open, and a reload must not hide the room
+    // the person was standing in for as long as a fetch takes.  The Workspace
+    // validates the name against /library the moment it loads and clears it
+    // if the folder has gone.
+    try { ws.project = localStorage.getItem("forge.project") || null; }
+    catch (e) { /* private mode */ }
+
     wire();
     resize();
+    refreshTabs();
     placeholder("Press Render to look at what is in the scene.");
     loadJobs();
     refreshHealth();
@@ -4855,11 +5301,9 @@
     // just means the remembered name is dropped.
     restorePlanning().then(function () {
       showTab(opening);
-      if (opening === "studio") { $("message").focus(); }
     });
-    // The Studio is the working screen, so its rail is loaded at startup even
-    // when the page opens on the Library — coming back to the Studio should
-    // not be a second wait.
+    // The part sheet is loaded at startup even though it now lives behind
+    // "Let me adjust" — opening the adjust tier should not be a second wait.
     if (wb.projects === null && !wb.loading) { loadStudio(); }
     setInterval(refreshHealth, 15000);
   }

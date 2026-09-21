@@ -645,6 +645,14 @@ def fetch_text(client, path):
 #: Phase 14 merged the Chat and Workbench tabs into ONE screen, so the chat's
 #: anchors and the part sheet's anchors are now both inside ``panel-studio``.
 #: The ids themselves did not move house: the sheet was relocated, not rewritten.
+#:
+#: The tab-collapse lane went one further: ``panel-studio`` is no longer a tab
+#: at all, it is the OFF-STAGE HOST the two halves live on when no room is
+#: holding them.  Every id below still exists and is still reachable — the
+#: Studio's chat is docked in the planning room and the Workspace, its part
+#: sheet is the Workspace's "Let me adjust" tier, the Library's grids are
+#: Home's files drawer and the Flows list is a Workspace drawer.  What is gone
+#: from this list is exactly three tab BUTTONS and two panel shells.
 PAGE_ANCHORS = (
     ("thread", "the conversation"),
     ("empty", "the empty state"),
@@ -662,12 +670,11 @@ PAGE_ANCHORS = (
     ("start-services", "Start services"),
     ("new-conversation", "New conversation"),
     ("banners", "where errors land"),
-    ("tab-studio", "the studio tab"),
-    ("tab-flows", "the flows tab"),
-    ("panel-studio", "the studio panel"),
-    ("panel-flows", "the flows panel"),
-    ("flows", "the flows list"),
+    ("panel-studio", "the off-stage host the chat and the part sheet live on"),
+    ("flows", "the flows list, now inside the Workspace's drawer"),
     ("flows-refresh", "the flows refresh button"),
+    ("ws-flows", "the Recorded steps drawer the Flows tab folded into"),
+    ("ws-flows-count", "how many saved sequences there are"),
     # -- the studio's two columns (Phase 14)
     ("studio-chat", "the conversation column"),
     ("studio-rail", "the part rail"),
@@ -691,12 +698,13 @@ PAGE_ANCHORS = (
     ("wb-view", "which way to look at it"),
     ("scene", "the scene components panel"),
     ("scene-refresh", "the scene refresh button"),
-    # -- the library (Phase 13)
-    ("tab-library", "the library tab"),
-    ("panel-library", "the library panel"),
+    # -- the library (Phase 13), now Home's files drawer
+    ("home-files", "the drawer the Library tab folded into"),
     ("library", "the card grid"),
+    ("library-models", "every 3D file on this machine"),
     ("library-scene", "the works-in-progress row"),
     ("library-refresh", "the library refresh button"),
+    ("models-refresh", "the models refresh button"),
     # -- Home's top half (Phase 21): one prompt, five cards
     ("tab-home", "the home tab"),
     ("panel-home", "the home panel"),
@@ -733,6 +741,11 @@ PAGE_ANCHORS = (
     ("plan-build", "Start building"),
     ("plan-status", "where the planning room says what happened"),
     ("studio", "the studio's two columns, so the chat can be moved back"),
+    # -- the Studio's two halves, in the rooms they were folded into
+    ("ws-dock", "the Workspace's dock"),
+    ("ws-chat", "where the Studio's conversation is hosted in the Workspace"),
+    ("ws-adjust-rail", "where the part sheet is hosted in Let me adjust"),
+    ("ws-tools-close", "backing out of the hands-on controls"),
 )
 
 
@@ -2132,27 +2145,37 @@ def test_the_check_in_button_says_exactly_what_the_addon_says():
     assert ('CHECK_IN_LEAD = "%s"' % CANNED["flow-check"][1]) in source
 
 
-def test_the_flow_row_is_outside_both_panels(client):
-    """Always visible means always visible: above <main>, not inside a tab."""
+def test_the_flow_row_is_outside_every_panel(client):
+    """Always visible means always visible: above <main>, not inside a tab.
+
+    This is also the Flows tab's obituary: the three buttons an artist
+    actually presses were never in that tab, so killing it cost nothing here.
+    """
     html = fetch_text(client, "/")
     row = html.index('id="flow-buttons"')
     assert row < html.index("<main>")
-    assert row > html.index('id="tab-studio"')
+    assert row > html.index('id="tab-workspace"')
 
 
-def test_the_studio_tab_and_its_panel_are_wired_to_each_other(client):
+def test_the_navigation_is_two_destinations(client):
+    """Home, and the one project's two rooms (docs/ux-flow.md, Screen 3).
+
+    Phase 14 merged Chat and Workbench into the Studio; Phase 21 added Home
+    and the planning room; this lane folded the last three tabs in.  What is
+    left is the flow doc's own sentence: "Navigation is Home ↔ Studio."
+    """
     html = fetch_text(client, "/")
-    assert 'aria-controls="panel-studio"' in html
-    assert 'aria-labelledby="tab-studio"' in html
-    # Six tabs now: the Chat and the Workbench are one screen (Studio), the
-    # Workspace follows a whole project (plan, live model, renders, versions),
-    # two are the errands that really are separate — and Phase 21 added the
-    # two screens a project is BORN on: Home (start something) and the
-    # planning room that a new project lands in.
     script = fetch_text(client, "/webui/app.js")
-    assert ('var TABS = ["home", "planning", "studio", "workspace", '
-            '"library", "flows"];') in script
-    assert 'id="tab-chat"' not in html and 'id="tab-workbench"' not in html
+    assert 'var TABS = ["home", "planning", "workspace"];' in script
+    assert 'aria-controls="panel-workspace"' in html
+    assert 'aria-labelledby="tab-workspace"' in html
+    for gone in ("tab-chat", "tab-workbench", "tab-studio", "tab-library",
+                 "tab-flows"):
+        assert ('id="%s"' % gone) not in html, gone
+    # The Studio's panel is still there — as the off-stage host its chat and
+    # its part sheet live on between rooms, not as a screen.
+    assert 'id="panel-studio"' in html
+    assert 'aria-labelledby="tab-studio"' not in html
 
 
 # ===========================================================================
@@ -2733,22 +2756,29 @@ def test_a_whole_scene_render_is_nobodys_thumbnail(bridges, projects,
 # the library — the page
 # ===========================================================================
 
-def test_the_library_tab_and_its_panel_are_wired_to_each_other(client):
+def test_the_library_lives_on_home_now(client):
+    """"Library IS the home screen."  The tab is gone; the cards are not.
+
+    Home's shelf is the library proper; the grids the tab also carried — the
+    file facts, every model on the machine, and what Blender is holding — are
+    one drawer under it, with the same cards and the same buttons.
+    """
     html = fetch_text(client, "/")
-    assert 'aria-controls="panel-library"' in html
-    assert 'aria-labelledby="tab-library"' in html
-    # It comes after the Studio: the Studio is the working session — asking
-    # for a part and editing it — and this is the shelf you look along after.
-    assert html.index('id="tab-studio"') < html.index('id="tab-library"')
-    assert html.index('id="tab-library"') < html.index('id="tab-flows"')
+    assert 'id="tab-library"' not in html and 'id="panel-library"' not in html
+    home = html[html.index('id="panel-home"'):html.index('id="panel-planning"')]
+    assert 'id="home-library"' in home          # the shelf
+    assert 'id="home-files"' in home            # the drawer the tab became
+    assert home.index('id="home-library"') < home.index('id="home-files"')
 
 
-def test_the_library_is_linkable(client):
-    """#library is a URL, so it can be bookmarked and pasted."""
+def test_a_tab_link_is_still_linkable(client):
+    """#workspace is a URL, so it can be bookmarked and pasted — and a
+    #library link from before this lane resolves to where the library went."""
     script = fetch_text(client, "/webui/app.js")
     assert "function tabFromHash()" in script
     assert "hashchange" in script
     assert "replaceState" in script
+    assert 'library: "home"' in script
 
 
 def test_the_library_cards_carry_their_four_buttons(client):
@@ -2762,15 +2792,17 @@ def test_the_library_cards_carry_their_four_buttons(client):
     assert '"Save scene")' in script and "function saveProject(" in script
 
 
-def test_the_library_panel_carries_both_grids_and_its_refresh(client):
+def test_the_files_drawer_carries_both_grids_and_its_refresh(client):
     """The saved parts and the works in progress are two rows, not one list.
 
     A sculpt with no folder is still the artist's work and belongs on the page;
     it is not, however, a project, and a card that implied it was would send
-    somebody looking for a folder that is not there.
+    somebody looking for a folder that is not there.  Folding the tab into a
+    drawer moved the rows; it did not merge them.
     """
     html = fetch_text(client, "/")
-    panel = html[html.index('id="panel-library"'):html.index('id="panel-flows"')]
+    home = html[html.index('id="panel-home"'):html.index('id="panel-planning"')]
+    panel = home[home.index('id="home-files"'):]
     assert 'id="library"' in panel and 'class="lib-grid"' in panel
     assert 'id="library-scene"' in panel
     assert 'id="library-refresh"' in panel
@@ -2823,13 +2855,18 @@ def test_a_card_says_what_it_is_made_of_and_what_it_exported(client):
     assert ".lib-chip.is-proposal" in fetch_text(client, "/webui/app.css")
 
 
-def test_open_in_studio_switches_the_tab_and_the_selection(client):
-    """Both halves, in that order — a tab switch that left the picker on the
-    previous part would be a button that lies about what it did."""
+def test_open_in_studio_switches_the_screen_and_the_selection(client):
+    """Both halves, in that order — a switch that left the picker on the
+    previous part would be a button that lies about what it did.
+
+    The Studio is a project's own screen now rather than a tab, so the screen
+    it switches to is that project's Workspace; the part sheet it points at is
+    one button away there ("Let me adjust").
+    """
     script = fetch_text(client, "/webui/app.js")
     body = script[script.index("function openInStudio("):]
     body = body[:body.index("\n  function ")]
-    assert 'showTab("studio")' in body
+    assert 'showTab("workspace")' in body
     assert "selectProject(name)" in body
     # …and it pins, because somebody who went looking for this part in the
     # Library should not lose it to the next thing the conversation does.
@@ -2839,14 +2876,17 @@ def test_open_in_studio_switches_the_tab_and_the_selection(client):
     assert "function whenProjectsLoaded()" in script
 
 
-def test_the_library_is_refetched_every_time_the_tab_is_opened(client):
+def test_the_library_is_refetched_every_time_its_drawer_is_opened(client):
     """Unlike the flows and the workbench, which are loaded once.
 
     A part made in the chat a minute ago is exactly what somebody opens this
-    tab to look for, and it costs one folder read.
+    to look for, and it costs one folder read.  The tab became a drawer; the
+    refetch rule came with it.
     """
     script = fetch_text(client, "/webui/app.js")
-    assert 'if (which === "library") { loadLibrary(); }' in script
+    body = script[script.index('$("home-files").addEventListener("toggle"'):]
+    body = body[:body.index("});") + 3]
+    assert "loadLibrary();" in body
     assert "function loadLibrary()" in script
     assert 'api("/library")' in script
 
@@ -3237,9 +3277,14 @@ def test_the_card_says_whether_there_is_a_scene_file(client):
 # into the rail are one rebuild each.
 
 def studio_panel(client):
-    """The Studio panel's markup, on its own."""
+    """The Studio host's markup, on its own.
+
+    It is no longer a tab — it is where the conversation column and the part
+    sheet live when no room is holding them — but both halves are still one
+    element, which is what keeps a move a move rather than a rebuild.
+    """
     html = fetch_text(client, "/")
-    return html[html.index('id="panel-studio"'):html.index('id="panel-library"')]
+    return html[html.index('id="panel-studio"'):html.index('id="panel-workspace"')]
 
 
 def test_the_studio_holds_the_conversation_and_the_sheet_on_one_screen(client):
@@ -3330,14 +3375,16 @@ def test_a_held_down_enter_does_not_queue_a_second_rebuild(client):
     assert "if (button.disabled) { return Promise.resolve(); }" in body
 
 
-def test_the_old_tab_names_land_on_the_studio(client):
+def test_the_old_tab_names_land_where_their_screens_went(client):
     """A bookmark of #chat and a localStorage of "workbench" both still work.
 
-    The two tabs became one screen; somebody's browser does not know that, and
-    a stored name from yesterday must not drop them on a default by accident.
+    Those two tabs became one screen, and that screen then became a project's
+    Workspace; somebody's browser does not know either of those things, and a
+    stored name from last year must not drop them on a default by accident.
     """
     script = fetch_text(client, "/webui/app.js")
-    assert 'var TAB_ALIASES = { chat: "studio", workbench: "studio" };' in script
+    assert 'chat: "workspace", workbench: "workspace", studio: "workspace"' \
+        in script
     assert "function storedTab()" in script
     body = script[script.index("function storedTab()"):]
     body = body[:body.index("\n  // ---")]

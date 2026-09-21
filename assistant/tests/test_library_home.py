@@ -709,17 +709,23 @@ def test_home_is_the_tab_the_app_opens_on(shelved):
     assert '|| "studio";' not in script
 
 
-def test_the_six_tabs_are_still_the_six(shelved):
-    """The pin lane 1 set, unmoved: this lane adds no tab."""
+def test_the_tabs_are_home_and_one_projects_two_rooms(shelved):
+    """Lane 1's pin, moved: the tab-collapse lane took three tabs away.
+
+    Six was the number while the old UI was still mixed in.  The shape the
+    flow doc asks for is Home ↔ Studio, and the Studio is a project's two
+    rooms — so the list is three names and two of them are scoped.
+    """
     script = fetch_text(shelved, "/webui/app.js")
-    assert ('var TABS = ["home", "planning", "studio", "workspace", '
-            '"library", "flows"];') in script
+    assert 'var TABS = ["home", "planning", "workspace"];' in script
 
 
 def test_the_library_half_is_its_own_section_with_one_caption(shelved):
     html = fetch_text(shelved, "/")
+    # The shelf, up to the files drawer the old Library tab folded into —
+    # which is its own section, with its own single caption.
     block = html[html.index('id="home-library-block"'):
-                 html.index('id="panel-planning"')]
+                 html.index('id="home-files"')]
     assert 'id="home-library"' in block
     # One caption for the section, and no more — the beginner bar's rule.
     assert block.count('class="muted small"') == 1

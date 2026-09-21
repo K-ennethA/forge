@@ -551,13 +551,9 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 
 /* ----------------------------------------------------------------- flows -- */
 
-#panel-flows { overflow-y: auto; padding: 24px 20px 40px; }
-#panel-flows > * { max-width: var(--shell); margin-left: auto; margin-right: auto; }
-
-.flows-head { display: flex; align-items: flex-start; gap: 20px; }
-.flows-head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 620; }
-.flows-head p { margin: 0; max-width: 60ch; font-size: 13.5px; }
-.flows-head .btn { margin-left: auto; flex: 0 0 auto; }
+/* The Flows tab's panel shell and its heading row are gone: the saved
+   sequences are a drawer in the Workspace now, and a drawer already has a
+   heading — its own summary line.  The .flow cards below are untouched. */
 
 .muted { color: var(--text-dim); }
 
@@ -811,17 +807,11 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 /* -------------------------------------------------------------- library -- */
 
 /* The shelf you look along to find a part. Everything on a card is a folder
-   read, so the grid draws with nothing else on the machine running. */
+   read, so the grid draws with nothing else on the machine running.
 
-#panel-library { overflow-y: auto; padding: 24px 20px 40px; }
-#panel-library > * { max-width: 1240px; margin-left: auto; margin-right: auto; }
-
-.lib-head { display: flex; align-items: flex-start; gap: 20px; }
-.lib-head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 620; }
-.lib-head h3 { margin: 0 0 4px; font-size: 14.5px; font-weight: 620; }
-.lib-head p { margin: 0; max-width: 72ch; font-size: 13.5px; }
-.lib-head .btn { margin-left: auto; flex: 0 0 auto; }
-.lib-head-second { margin-top: 34px; border-top: 1px solid var(--line-soft); padding-top: 22px; }
+   The Library tab's own panel shell is gone — these grids are Home's files
+   drawer now — so the panel rules went with it.  The cards themselves did not
+   change, which is the point: nothing the tab could do stopped being doable. */
 
 /* auto-fill rather than a fixed count: one part is one card, twelve parts are
    a grid, and a narrow window is a column — without a media query per size. */
@@ -1172,6 +1162,52 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 .ws-verdict.is-in_progress{ color: var(--accent); }
 
 .ws-does { margin: 6px 0; font-size: 12.5px; color: var(--text-dim); }
+
+/* -- the beginner pass: what was measured, then the big three -- *
+
+   docs/ux-flow.md Screen 3.  The order on the page is the order somebody
+   reads in: the plain name, the one line about what happens here, ONE
+   sentence about what was measured, and then the three things there are to
+   do about it.  Everything the panel used to lead with is still on it, one
+   line down, behind "The numbers, in full". */
+
+.ws-lead {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.ws-lead.is-dirty { color: var(--warn); }
+
+.ws-big { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ws-big-act {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+.ws-big-act.is-good {
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 620;
+}
+.ws-big-act.is-fix { border-color: var(--accent-dim); color: var(--accent); }
+.ws-big-act.is-good:hover:not(:disabled) { border-color: var(--ok); }
+.ws-big-act.is-fix:hover:not(:disabled) { border-color: var(--accent); }
+
+/* The scoped change box: a prompt that belongs to ONE stage. */
+.ws-scope { display: flex; gap: 8px; margin-top: 12px; }
+.ws-scope-input { flex: 1 1 auto; min-width: 0; font-size: 13px; }
+.ws-scope-note {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.ws-detail .ws-stage-title {
+  margin: 6px 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
 .ws-gate {
   margin: 6px 0;
   font-size: 11.5px;
@@ -1370,6 +1406,18 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 }
 .ws-tools-note.bad { color: var(--down); }
 .ws-tools-body { display: flex; flex-direction: column; gap: 8px; }
+
+/* The old Studio's part sheet, hosted inside the adjust tier.  It keeps its
+   own scrolling; what it loses is the left border and the fixed width it had
+   as a rail of its own. */
+.ws-adjust-rail { min-width: 0; }
+.ws-adjust-rail .studio-rail {
+  border-left: none;
+  background: transparent;
+  overflow: visible;
+  padding: 0;
+}
+.ws-adjust-rail[hidden] { display: none; }
 .ws-tools-body > p { margin: 0; }
 .ws-tools-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ws-tools-label { font-size: 11.5px; color: var(--text-dim); min-width: 4ch; }
@@ -1684,14 +1732,38 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 
 /* -- chat, docked -- */
 
+/* The dock holds the Studio's REAL conversation column now, not a proxy box
+   that typed into it — so it has to give the thread somewhere to be.  A
+   share of the screen with a ceiling on it: the build is the thing being
+   looked at, and the chat is one input among several. */
 .ws-dock {
-  flex: 0 0 auto;
+  /* Shrinkable: the build is the thing being looked at, so when the screen
+     is short the chat gives way rather than pushing its own composer off the
+     bottom of a panel that does not scroll. */
+  flex: 0 1 auto;
   display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  padding: 10px 20px 14px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
   border-top: 1px solid var(--line-soft);
+  max-height: 42vh;
+  min-height: 120px;
+  overflow: hidden;
 }
+.ws-chat {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+/* The conversation column is sized by whatever room is holding it.  The
+   Studio's own narrow-width rule gives it a 74vh floor so it does not
+   collapse when it stacks above the part rail — in the dock that floor would
+   push the composer off the bottom, so the dock sets its own. */
+.ws-chat .studio-chat { flex: 1 1 auto; min-width: 0; min-height: 0; }
+.ws-chat .thread { min-height: 0; }
+.ws-dock .ws-dock-status { padding: 0 20px 6px; align-self: flex-start; }
+
 .ws-dock textarea {
   flex: 1 1 auto;
   font: inherit;
@@ -1996,6 +2068,35 @@ main { flex: 1 1 auto; display: flex; min-height: 0; }
 
 .home-block { margin-top: 30px; }
 .home-block h2 { font-size: 20px; margin: 0 0 14px; }
+
+/* The old Library tab, folded into Home as one drawer.  Shut by default,
+   because a beginner's Home is "start something" and "your projects" — the
+   file facts underneath are for the person who came looking for a file. */
+.home-drawer {
+  margin-top: 26px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+.home-drawer > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 620;
+  color: var(--text-dim);
+  list-style: none;
+}
+.home-drawer > summary::-webkit-details-marker { display: none; }
+.home-drawer > summary::before { content: "▸ "; color: var(--text-faint); }
+.home-drawer[open] > summary::before { content: "▾ "; }
+.home-drawer > summary:hover { color: var(--text); }
+.home-count { font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
+.home-drawer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 18px 0 8px;
+}
+.home-drawer-row h3 { margin: 0; font-size: 14px; font-weight: 620; }
+.home-drawer-row .btn { margin-left: auto; }
 
 .proj-grid {
   display: grid;
