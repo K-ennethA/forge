@@ -316,11 +316,29 @@ PARAMS = {
 }
 
 #: Where the ears and the tail plug in, in degrees round the rim.
-#: Measured off the sheet's own top view: the ears sit ~48 deg either side of
-#: the back axis (180 deg, where the tail is) -- toward the back, not near
-#: the front -- derived from the ear tips' pixel position relative to the
-#: top-view circle's centre (dx=207/213px, dy=192/187px -> atan2 ~47-49 deg).
-_EAR_ANGLES_DEG = (132.0, 228.0)
+#:
+#: CORRECTED -- the previous derivation measured the right pixels but
+#: anchored them to the wrong axis. It read the ear tips as "48 deg either
+#: side of the back axis (180 deg, where the tail is)", which put both ears
+#: 132/228 deg -- right next to the tail. The sheet's top view (and the two
+#: assembled-photo angles beside it) shows the opposite: the ears flank the
+#: FACE side, directly across the bowl from the tail, and the tail is the
+#: one thing that does NOT appear in the top view at all (it's low and to
+#: the back, hidden under the rim from directly above).
+#:
+#: Re-measured from the top-view circle, pixel-fit (not eyeballed): circle
+#: centre (120, 134) in the cropped panel's own coordinates, radius ~76 px
+#: for the plain rim ring, found by fitting the two thin concentric circles
+#: independent of the ears/feet/text noise. Ear tips read at (58, 68) and
+#: (182, 70) in the same coordinates -- symmetric about the centre to
+#: within 2 px, confirming the pixel fit. Angle of each tip from the
+#: vertical (front, 0 deg -- opposite the tail's 180 deg): atan2(dx, -dy)
+#: gives 43.2 deg and 44.1 deg either side, average 43.7 deg.
+#:
+#: So: front axis (0 deg) +/- 43.7 deg, not back axis (180 deg) +/- 48 deg.
+#: Old: (132.0, 228.0) -- both hugging the tail.
+#: New: (43.7, 316.3) -- flanking the face, opposite the tail.
+_EAR_ANGLES_DEG = (43.7, 316.3)
 _TAIL_ANGLE_DEG = 180.0
 
 #: Material left around a socket inside its lug.

@@ -1,0 +1,31 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "eevee-bowl-v2-bore-cutter",
+  "description": "eevee-bowl-v2-bore-cutter \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "radius": {
+      "value": 73.5,
+      "unit": "mm",
+      "min": 10.0,
+      "max": 200.0,
+      "description": "Bore radius"
+    },
+    "height": {
+      "value": 40.0,
+      "unit": "mm",
+      "min": 5.0,
+      "max": 100.0,
+      "description": "Cutter height, overshoots both ends"
+    }
+  },
+  "features": [],
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}

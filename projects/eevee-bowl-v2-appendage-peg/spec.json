@@ -1,0 +1,31 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "eevee-bowl-v2-appendage-peg",
+  "description": "eevee-bowl-v2-appendage-peg \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "diameter": {
+      "value": 6.0,
+      "unit": "mm",
+      "min": 2.0,
+      "max": 12.0,
+      "description": "Peg diameter"
+    },
+    "length": {
+      "value": 11.0,
+      "unit": "mm",
+      "min": 4.0,
+      "max": 20.0,
+      "description": "Peg length"
+    }
+  },
+  "features": [],
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}

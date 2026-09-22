@@ -14,6 +14,8 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     diagnose = importlib.reload(diagnose)  # noqa: F821
     verify = importlib.reload(verify)  # noqa: F821
     partforge = importlib.reload(partforge)  # noqa: F821
+    bosses = importlib.reload(bosses)  # noqa: F821
+    seating = importlib.reload(seating)  # noqa: F821
     meshopt = importlib.reload(meshopt)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
     rigforge_joints = importlib.reload(rigforge_joints)  # noqa: F821
@@ -44,6 +46,16 @@ else:
     from . import diagnose
     from . import verify
     from . import partforge
+    # Reversible boss attachment (union a peg, keep the cutter). Only common +
+    # registry behind it — a boolean, a hidden collection and a JSON ledger on
+    # the target — so it sits next to the other "change this mesh" module rather
+    # than after the things that happen to call it.
+    from . import bosses
+    # After bosses: the peg half of a seat is read straight out of that module's
+    # ledger (and carried along when the part moves, so a seated part keeps its
+    # attachments reversible). Only common + bosses + registry behind it — a
+    # cylinder fit over mesh vertices and a rigid transform.
+    from . import seating
     # Before rigforge: its LOD stage binds meshoptimizer through it. Registers
     # no commands and imports no bpy - a ctypes wrapper over an optional DLL.
     from . import meshopt
@@ -116,6 +128,8 @@ __all__ = [
     "diagnose",
     "verify",
     "partforge",
+    "bosses",
+    "seating",
     "meshopt",
     "rigforge",
     "rigforge_joints",

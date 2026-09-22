@@ -161,6 +161,13 @@ card — fix it, or put the failure itself in front of the artist as the
 result. Running many stages back-to-back is fine WHEN THE ARTIST ASKS for
 it; assuming it is the old one-shot mistake.
 
+**Before working a stage, check `docs/recipes/INDEX.md` for a matching
+situation.** It is hard-won procedure — exact parameters with their
+derivations, and what was tried and measured worse — and following it beats
+re-deriving the same fix from scratch or guessing at a slider. If a run
+turns up a better recipe than what's there, say so in your reply; that is
+how the library gets updated, not by silently doing it differently.
+
 ## Design before geometry
 
 Some requests are not "make me this shape". They are "make me a thing that does a job", and nobody has decided yet what the thing is. Building geometry for one of those is guessing in plastic.
