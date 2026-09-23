@@ -1,0 +1,39 @@
+{
+  "name": "ear-sculpt",
+  "version": 1,
+  "mode": "part",
+  "timeout_s": 1800,
+  "image": "ear_ref.png",
+  "inputs": {
+    "ear_ref.png": "COPY of projects/eevee-bowl-v2/design/refs/crops/ear_ref.png (sha256 a629a559776f98d1f9d4c13a4946ac67aeec894c1cf6a07dcaa6bf8bfab90d3c) - both ears, front view, frozen 2026-09-23",
+    "ear_single_ref.png": "COPY of projects/eevee-bowl-v2/design/refs/crops/ear_single_ref.png (sha256 24b48679ab52b4ab2e2c4646b711fa4e421e0502e0e306d76d8af19ca1aa6de7) - one ear, detail"
+  },
+  "defects_encoded": "projects/eevee-bowl-v2/design/review-log.md, 2026-09-21 paused round: 'the ears have the correct indentation but no volume to them and are angled the same direction instead of towards us'",
+  "prompt": "Benchmark task ear-sculpt. Sculpt the pair of Eevee ears shown in the attached reference crop (front view; a second crop of one ear is at benchmark/tasks/ear-sculpt/ear_single_ref.png). Work in a new project named bench-ear-sculpt and build ONLY the two ears, as two separate mesh objects named Ear_L and Ear_R - no bowl, no pegs. Each ear is a closed, printable shell with real volume: a rounded back and the recessed inner face from the reference, not a flat slab with an inset. Every wall must be at least 0.8 mm (the printer profile's minimum wall). Place them as they sit on the bowl: the bowl's front axis is +X, up is +Z, 1 mm = 0.001 Blender units, the ears stand on the rim at +43.7 and -43.7 degrees about Z from +X, and each ear's inner face turns toward the front with MIRRORED yaw - one ear rotated +theta about Z and the other -theta, never one transform copied to both. When done, save the scene with save_project_blend for project bench-ear-sculpt. Do not ask me anything; this is an unattended benchmark run.",
+  "artifact": "projects/bench-ear-sculpt/bench-ear-sculpt.blend",
+  "printer": "templates/printer.json",
+  "gates": {
+    "checks": ["bed_fit", "min_wall", "overhangs", "watertight"],
+    "parts": [{"match": "(?i)(^|[^a-z])ear", "count": 2}]
+  },
+  "expected": {
+    "ear_count": {
+      "kind": "part_count", "match": "(?i)(^|[^a-z])ear", "expected": 2, "tol": 0,
+      "why": "two ears; the pattern matches Ear_L / ear-l-sculpt and not gear/linear"
+    },
+    "ear_min_wall_mm": {
+      "kind": "min_wall", "match": "(?i)(^|[^a-z])ear", "min": 0.8,
+      "why": "templates/printer.json min_wall_thickness = 0.8 mm - the printable floor projects/eevee-bowl-v2/design/task-config.json points at ('The profile's 0.8 mm minimum is a floor, not a target'). Measured by the min_wall gate's own probes (service/checks.py check_min_wall); 'at least probe_mm' when no probe met the far side"
+    },
+    "ear_mirrored_yaw": {
+      "kind": "mirrored_yaw", "match": "(?i)(^|[^a-z])ear", "count": 2,
+      "front_axis": [1.0, 0.0, 0.0], "up_axis": [0.0, 0.0, 1.0],
+      "min_abs_deg": 1.0, "mirror_tol_deg": 20.0,
+      "why": "front axis +X: projects/eevee-bowl-v2/part.py places ears with Rot(0,0,angle)*Pos(lug_cr,0,..) at _EAR_ANGLES_DEG = (43.7, 316.3), 'front axis (0 deg) +/- 43.7 deg'. Each ear's face axis (thinnest surface principal axis, signed toward +X) must yaw to opposite sides of +X AND the two axes must be mirror images across the X-Z plane. Calibration 2026-09-23 on the artist-rejected pair (eevee-bowl-wip.blend, ear-l-sculpt / ear-r-sculpt, 'angled the same direction'): yaws -50.6 / +41.9 deg (the sign test alone PASSES them) but mirror angle 66.9 deg (one transform rotated 87.4 deg about Z) - the mirror clause is what catches the defect. mirror_tol_deg 20 is an ASSUMPTION (rejected 66.9, exact mirror 0 by construction); settle it by measuring the first artist-accepted pair. min_abs_deg 1.0 is a numerical guard only"
+    },
+    "ear_volume_ratio": {
+      "kind": "volume_ratio", "match": "(?i)(^|[^a-z])ear", "min": 0.15,
+      "why": "enclosed volume / oriented-bounding-box volume, per ear, minimum over ears; an open or zero-thickness sheet measures 0, a solid ellipsoid pi/6 = 0.524. Calibration 2026-09-23 on the artist-rejected 'no volume to them' pair (eevee-bowl-wip.blend): 0.0783 (ear-l-sculpt, 1154 mm3 in a 15.8 x 11.8 x 78.6 mm box) and 0.0769 (ear-r-sculpt). Floor 0.15 = about 2x the rejected value so a marginal thickening does not pass. ASSUMPTION: settle by measuring the first artist-accepted ear"
+    }
+  }
+}

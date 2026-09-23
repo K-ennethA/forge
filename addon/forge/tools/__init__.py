@@ -16,6 +16,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     partforge = importlib.reload(partforge)  # noqa: F821
     bosses = importlib.reload(bosses)  # noqa: F821
     seating = importlib.reload(seating)  # noqa: F821
+    trackforge = importlib.reload(trackforge)  # noqa: F821
     meshopt = importlib.reload(meshopt)  # noqa: F821
     rigforge = importlib.reload(rigforge)  # noqa: F821
     rigforge_joints = importlib.reload(rigforge_joints)  # noqa: F821
@@ -56,6 +57,9 @@ else:
     # attachments reversible). Only common + bosses + registry behind it — a
     # cylinder fit over mesh vertices and a rigid transform.
     from . import seating
+    # Grab-and-track: named trackers (a JSON ledger per object) plus a solved
+    # translate-with-axis-locks. Only common + registry behind it.
+    from . import trackforge
     # Before rigforge: its LOD stage binds meshoptimizer through it. Registers
     # no commands and imports no bpy - a ctypes wrapper over an optional DLL.
     from . import meshopt
@@ -130,6 +134,7 @@ __all__ = [
     "partforge",
     "bosses",
     "seating",
+    "trackforge",
     "meshopt",
     "rigforge",
     "rigforge_joints",

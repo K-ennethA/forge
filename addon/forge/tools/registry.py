@@ -110,6 +110,11 @@ READ_ONLY_COMMANDS = frozenset({
     # artist actually wants back. Its sibling `build_floorplan` is deliberately
     # NOT here — that one builds objects, and Ctrl+Z has to reach it.
     "reconcile_floorplan",
+    # Pure ledger/scene reads: `list_bosses` reports the boss ledger, `probe` and
+    # `list_trackers` read tracker positions (trackforge) and write nothing.
+    "list_bosses",
+    "probe",
+    "list_trackers",
 })
 
 #: Flipped off the first time ``bpy.ops.ed.undo_push`` refuses, so a Blender

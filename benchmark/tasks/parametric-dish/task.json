@@ -1,0 +1,43 @@
+{
+  "name": "parametric-dish",
+  "version": 1,
+  "mode": "part",
+  "timeout_s": 900,
+  "prompt": "Benchmark task parametric-dish. Create a new PartForge part project named bench-parametric-dish: a plain round dish. Outer diameter 120 mm, overall height 25 mm, side wall 3 mm thick, flat floor 4 mm thick, open top. No fillets, no chamfers, no feet, no text, nothing else. Centre it on the origin in X and Y with its base on Z = 0 and +Z up. Generate it, run partforge_check on it, then export it with partforge_export as STL to projects/bench-parametric-dish/models/dish.stl. Do not ask me anything; this is an unattended benchmark run.",
+  "artifact": "projects/bench-parametric-dish/models/dish.stl",
+  "printer": "templates/printer.json",
+  "gates": {
+    "checks": ["bed_fit", "min_wall", "overhangs", "watertight"],
+    "parts": [{"match": null, "count": 1}]
+  },
+  "expected": {
+    "part_count": {
+      "kind": "part_count", "match": null, "expected": 1, "tol": 0,
+      "why": "partforge_export writes one solid to one STL"
+    },
+    "diameter_x_mm": {
+      "kind": "overall_dim", "axis": "x", "expected": 120.0, "tol": 0.5,
+      "why": "prompt: outer diameter 120 mm. tol 0.5 mm covers the tessellation's chord sag (a 120 mm circle at the service's default tolerance sags well under 0.1 mm) with margin; a wrong parameter (e.g. radius used as diameter) misses by 60 mm"
+    },
+    "diameter_y_mm": {
+      "kind": "overall_dim", "axis": "y", "expected": 120.0, "tol": 0.5,
+      "why": "as diameter_x_mm; the second axis catches an oval or a rectangle"
+    },
+    "height_mm": {
+      "kind": "overall_dim", "axis": "z", "expected": 25.0, "tol": 0.3,
+      "why": "prompt: overall height 25 mm; planar faces tessellate exactly, tol is slicer-irrelevant slop"
+    },
+    "wall_thickness_mm": {
+      "kind": "ray", "match": null,
+      "origin_mm": [100.0, 0.37, 12.5], "direction": [-1.0, 0.0, 0.0],
+      "measure": "span", "between": [0, 1], "expected": 3.0, "tol": 0.2,
+      "why": "prompt: side wall 3 mm. A horizontal ray at mid-height enters the outer wall then leaves through the inner wall; the span is the wall. y = 0.37 keeps the ray off tessellation edges (sqrt(60^2-0.37^2) - sqrt(57^2-0.37^2) = 3.0001 mm)"
+    },
+    "floor_thickness_mm": {
+      "kind": "ray", "match": null,
+      "origin_mm": [0.37, 0.53, 100.0], "direction": [0.0, 0.0, -1.0],
+      "measure": "span", "between": [0, 1], "expected": 4.0, "tol": 0.2,
+      "why": "prompt: floor 4 mm. A vertical ray near the axis hits the cavity floor then the base; the span is the floor. Off-axis by (0.37, 0.53) to miss the cap's fan-centre vertex"
+    }
+  }
+}

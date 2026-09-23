@@ -26,6 +26,7 @@ updated.
 |---|---|
 | [deterministic-image-extraction.md](deterministic-image-extraction.md) | The artist gave you a picture (a floor plan, or anything whose measurements matter) that has to become geometry. |
 | [fixture-freezing.md](fixture-freezing.md) | A test suite needs the same synthetic geometry every run for its thresholds/digests to mean anything. |
+| [measure-with-trackers.md](measure-with-trackers.md) | Any spatial adjustment: track the landmarks, move with `grab_to`, verify with `probe`, and render only for appearance. |
 
 ## Rigging / skinning
 

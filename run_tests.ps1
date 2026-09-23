@@ -67,6 +67,7 @@ $pytestJobs = @(
     @{ Name = "assistant"; Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\assistant\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
     @{ Name = "meshgen";   Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\meshgen\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
     @{ Name = "mcp";       Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); Set-Location "$r\mcp"; $out = & ".venv\Scripts\python.exe" -m pytest tests -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
+    @{ Name = "benchmark"; Cmd = { param($r) $sw=[System.Diagnostics.Stopwatch]::StartNew(); $out = & "$r\service\.venv\Scripts\python.exe" -m pytest "$r\benchmark\tests" -q --tb=line 2>&1 | ForEach-Object {"$_"}; [pscustomobject]@{Out=$out; Code=$LASTEXITCODE; Secs=[int]$sw.Elapsed.TotalSeconds} } }
 )
 $running = @{}
 foreach ($j in $pytestJobs) { $running[$j.Name] = Start-Job -ScriptBlock $j.Cmd -ArgumentList $root }
