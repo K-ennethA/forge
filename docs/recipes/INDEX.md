@@ -21,6 +21,7 @@ updated.
 | [organic-path-choice.md](organic-path-choice.md) | The deliverable is a purely organic form (character part, shape from a picture): choose the sculpt lane before writing anything, and save the deliverable the moment it exists. |
 | [print-min-wall-triage.md](print-min-wall-triage.md) | `partforge_check` fails and you need the right first move, not a guess. |
 | [constructional-thinness.md](constructional-thinness.md) | `min_wall` fails where faces converge (tip, root ring, wedge) and fixes only move the probe: rebuild the generator with separation enforced at that boundary — never patch locally. |
+| [outline-face-curve-fidelity.md](outline-face-curve-fidelity.md) | A traced-outline face is built with `Spline` but the script's own width/band reasoning assumes linear interpolation between the same points — the spline can overshoot and pinch a band the math called safe. |
 
 ## Pipeline / infrastructure
 

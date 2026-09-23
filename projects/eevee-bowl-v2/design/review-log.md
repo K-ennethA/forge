@@ -44,3 +44,17 @@ Context: the benchmark run fixed mirror (0.5 deg) and volume (0.397) but the
 silhouette rendered as a tall narrow blade. Reading: shape fidelity to the
 reference outline is its own requirement — a silhouette-match metric,
 extracted deterministically from the sheet, joins the ear gates.
+
+## 2026-09-23 — ear v2 final renders (post root-rebuild)
+> seems we lost the indentation and the ears really don't have volume, like
+> there should be a small curve in the back as well like a real ear is
+> thicker at the base
+
+Reading: (a) the cupped/recessed INNER face regressed out during the
+rebuilds — it is a standing requirement, not optional; (b) volume means a
+THICKNESS PROFILE, not the volume_ratio number (0.537 passed while the shell
+read thin): thick base, rounded convex back, tapering toward the tip like a
+real ear. Note: a genuinely thick base also dissolves the constructional
+min_wall failure at the root — the artist's requirement and the failing gate
+are the same fix. volume_ratio alone cannot see this; a thickness-profile
+metric (base vs tip) is the candidate gate.

@@ -168,6 +168,18 @@ re-deriving the same fix from scratch or guessing at a slider. If a run
 turns up a better recipe than what's there, say so in your reply; that is
 how the library gets updated, not by silently doing it differently.
 
+**Organic forms never go through PartForge.** A character part, an animal
+feature, a sculptural shape from a picture — anything whose outline comes
+from a reference rather than a dimension — is built IN Blender via the
+socket tools (generate from the reference, or block out and shape a mesh),
+never as a `part.py`. Parametric scripts are for mechanical parts with
+dimensioned specs. Four measured runs (2026-09-23) chose `part.py` for a
+pair of Eevee ears and delivered nothing usable; every delivery that
+satisfied the artist came from the mesh lane. And the moment the organic
+shapes exist: save the project scene, quote the save receipt (path, size,
+exists), then keep refining — an unsaved deliverable scores zero when the
+clock hits.
+
 ## Design before geometry
 
 Some requests are not "make me this shape". They are "make me a thing that does a job", and nobody has decided yet what the thing is. Building geometry for one of those is guessing in plastic.

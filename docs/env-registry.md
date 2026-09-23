@@ -55,8 +55,8 @@ operator class-name prefix and not an environment variable at all.
 | `FORGE_ASSISTANT_TIMEOUT` | bridge | `600` | Seconds one turn may take. Floored at 5. Reaching it is not a failure: the turn lands as `timeout` carrying everything the model said and did. |
 | `FORGE_ASSISTANT_TOOLS` | bridge | `Read,Glob,Grep,mcp__forge__*` | The `--allowedTools` value. `""` is a legal setting and means a no-tools run. The assistant never holds `Write`; widening this is what would break that. |
 | `FORGE_ASSISTANT_UPLOADS` | bridge | `assistant/uploads` | Where `POST /upload` writes. Beside the bridge so it is obvious to find and to delete. |
-| `FORGE_BENCH_BRIDGE` | benchmark | `http://127.0.0.1:8901` | Bridge URL the benchmark runner submits its task turns to. Point it at a stub bridge to exercise the runner without paying for a model turn. |
 | `FORGE_ASSISTANT_VERBOSE` | bridge | unset | Any non-empty value prints the HTTP access log. |
+| `FORGE_BENCH_BRIDGE` | benchmark | `http://127.0.0.1:8901` | Bridge URL the benchmark runner submits its task turns to. Point it at a stub bridge to exercise the runner without paying for a model turn. |
 | `FORGE_BLENDER_CONNECT_TIMEOUT` | mcp | `2.0` | Seconds to wait for the Blender socket to accept. Short, so "is Blender up?" fails fast. |
 | `FORGE_BLENDER_EXE` | bridge | discovered | Full path to `blender.exe`, for the two routes that *start* Blender rather than talking to it. Unset = `PATH`, then the installer's own folders. |
 | `FORGE_BLENDER_HOST` | bridge, mcp | `127.0.0.1` | Host of the add-on's command socket. |
