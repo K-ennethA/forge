@@ -20,6 +20,7 @@ updated.
 | [sculpted-part-hybrid-rule.md](sculpted-part-hybrid-rule.md) | A design needs both mechanical function and organic character ("a real X that looks like Y"). |
 | [organic-path-choice.md](organic-path-choice.md) | The deliverable is a purely organic form (character part, shape from a picture): choose the sculpt lane before writing anything, and save the deliverable the moment it exists. |
 | [print-min-wall-triage.md](print-min-wall-triage.md) | `partforge_check` fails and you need the right first move, not a guess. |
+| [constructional-thinness.md](constructional-thinness.md) | `min_wall` fails where faces converge (tip, root ring, wedge) and fixes only move the probe: rebuild the generator with separation enforced at that boundary — never patch locally. |
 
 ## Pipeline / infrastructure
 

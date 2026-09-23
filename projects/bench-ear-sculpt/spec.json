@@ -1,0 +1,97 @@
+{
+  "_comment": "Contract between you and Claude for this part. Claude regenerates part.py from this; edit freely. Created by partforge_new_part.",
+  "name": "bench-ear-sculpt",
+  "description": "bench-ear-sculpt \u2014 written by the Forge Assistant. Replace this line with what the part is for, what it fits, and anything it has to clear.",
+  "reference_images": [],
+  "parameters": {
+    "side": {
+      "value": 1,
+      "unit": "count",
+      "min": -1.0,
+      "max": 1.0,
+      "step": 2.0,
+      "description": "+1 the left ear (mirrors the outline, yaws +yaw_deg), -1 the right ear"
+    },
+    "ear_length": {
+      "value": 42.0,
+      "unit": "mm",
+      "min": 20.0,
+      "max": 70.0,
+      "step": 1.0,
+      "description": "Root to tip length of the ear"
+    },
+    "ear_width": {
+      "value": 24.0,
+      "unit": "mm",
+      "min": 12.0,
+      "max": 40.0,
+      "step": 1.0,
+      "description": "Width of the ear at its widest"
+    },
+    "thickness": {
+      "value": 8.0,
+      "unit": "mm",
+      "min": 4.0,
+      "max": 14.0,
+      "step": 0.5,
+      "description": "Overall depth from the rounded back to the front rim"
+    },
+    "back_round": {
+      "value": 3.2,
+      "unit": "mm",
+      "min": 0.5,
+      "max": 6.5,
+      "step": 0.1,
+      "description": "How strongly the back domes; stepped down if the kernel refuses it"
+    },
+    "rim_margin": {
+      "value": 0.24,
+      "unit": "ratio",
+      "min": 0.12,
+      "max": 0.35,
+      "step": 0.01,
+      "description": "Solid border left around the recessed inner face, as a fraction of the outline"
+    },
+    "pocket_depth": {
+      "value": 1.8,
+      "unit": "mm",
+      "min": 0.5,
+      "max": 4.0,
+      "step": 0.1,
+      "description": "How deep the inner face is recessed below the rim"
+    },
+    "rim_radius": {
+      "value": 34.0,
+      "unit": "mm",
+      "min": 15.0,
+      "max": 80.0,
+      "step": 1.0,
+      "description": "Distance of the ear's root from the bowl's centre (Z) axis"
+    },
+    "rim_height": {
+      "value": 20.0,
+      "unit": "mm",
+      "min": 0.0,
+      "max": 60.0,
+      "step": 1.0,
+      "description": "Height of the ear's root above Z = 0"
+    },
+    "yaw_deg": {
+      "value": 43.7,
+      "unit": "deg",
+      "min": 10.0,
+      "max": 75.0,
+      "step": 0.1,
+      "description": "Yaw about Z from +X; mirrored in sign by side, never copied unmirrored"
+    }
+  },
+  "features": [],
+  "print": {
+    "printer": "templates/printer.json",
+    "segments": "auto",
+    "joint_type": "dovetail",
+    "mold_mode": false
+  },
+  "script": "part.py",
+  "exports": []
+}
