@@ -1,0 +1,125 @@
+{
+  "schema": "forge-benchmark-report/1",
+  "task": "parametric-dish",
+  "task_version": 1,
+  "mode": "part",
+  "git_sha": "71ed8b3",
+  "git_dirty": false,
+  "started_at": "2026-09-23T17:39:20Z",
+  "wall_seconds": 57.92,
+  "final_state": "done",
+  "job_id": "53c7d20703f2",
+  "runner_deadline_hit": false,
+  "error": null,
+  "bridge": {
+    "duration_s": 57.297,
+    "cost_usd": 0.5384284,
+    "model": null,
+    "num_turns": 8
+  },
+  "artifact": {
+    "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-parametric-dish\\models\\dish.stl",
+    "exists": true,
+    "fresh": true,
+    "mtime": "2026-09-23T17:40:14Z"
+  },
+  "gates": {
+    "passed": 4,
+    "total": 4,
+    "failures": []
+  },
+  "fidelity": {
+    "part_count": {
+      "kind": "part_count",
+      "measured": 1,
+      "expected": 1.0,
+      "tol": 0.0,
+      "op": "==",
+      "error": 0.0,
+      "pass": true,
+      "closeness": 1.0,
+      "detail": [
+        "dish"
+      ]
+    },
+    "diameter_x_mm": {
+      "kind": "overall_dim",
+      "measured": 119.9254150390625,
+      "expected": 120.0,
+      "tol": 0.5,
+      "op": "==",
+      "error": 0.0745849609375,
+      "pass": true,
+      "closeness": 0.8701933290843424,
+      "detail": {
+        "min_mm": -59.9254150390625,
+        "max_mm": 60.0
+      }
+    },
+    "diameter_y_mm": {
+      "kind": "overall_dim",
+      "measured": 119.96269989013672,
+      "expected": 120.0,
+      "tol": 0.5,
+      "op": "==",
+      "error": 0.03730010986328125,
+      "pass": true,
+      "closeness": 0.9305786297479588,
+      "detail": {
+        "min_mm": -59.98134994506836,
+        "max_mm": 59.98134994506836
+      }
+    },
+    "height_mm": {
+      "kind": "overall_dim",
+      "measured": 25.0,
+      "expected": 25.0,
+      "tol": 0.3,
+      "op": "==",
+      "error": 0.0,
+      "pass": true,
+      "closeness": 1.0,
+      "detail": {
+        "min_mm": 0.0,
+        "max_mm": 25.0
+      }
+    },
+    "wall_thickness_mm": {
+      "kind": "ray",
+      "measured": 2.999999987953103,
+      "expected": 3.0,
+      "tol": 0.2,
+      "op": "==",
+      "error": 1.2046896813444619e-08,
+      "pass": true,
+      "closeness": 0.9999999397655196,
+      "detail": {
+        "hits_mm": [
+          40.018465897249754,
+          43.01846588520286,
+          156.92914581298828,
+          159.9254150390625
+        ]
+      }
+    },
+    "floor_thickness_mm": {
+      "kind": "ray",
+      "measured": 4.003372664624564,
+      "expected": 4.0,
+      "tol": 0.2,
+      "op": "==",
+      "error": 0.0033726646245639813,
+      "pass": true,
+      "closeness": 0.9834163326187908,
+      "detail": {
+        "hits_mm": [
+          95.99662733537544,
+          100.0
+        ]
+      }
+    }
+  },
+  "score": 96.403,
+  "appearance_score": null,
+  "measure_seconds": 1.391
+}

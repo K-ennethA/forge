@@ -22,7 +22,7 @@ from benchmark.report import SCHEMA, validate_report  # noqa: E402
 
 
 def report(wall=100.0, gates=6, fid_pass=2, score=50.0, task="t", total=8,
-           metrics=("a", "b", "c", "d")):
+           metrics=("a", "b", "c", "d"), delivered=True):
     fidelity = {}
     for index, name in enumerate(metrics):
         fidelity[name] = {"measured": 1.0, "expected": 1.0, "tol": 0.1,
@@ -31,7 +31,9 @@ def report(wall=100.0, gates=6, fid_pass=2, score=50.0, task="t", total=8,
             "started_at": "2026-09-23T00:00:00Z", "wall_seconds": wall,
             "final_state": "done",
             "gates": {"passed": gates, "total": total, "failures": []},
-            "fidelity": fidelity, "score": score}
+            "fidelity": fidelity, "score": score,
+            "artifact": {"path": "x", "exists": delivered, "fresh": delivered,
+                         "mtime": None}}
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +60,37 @@ def test_slightly_slower_within_tolerance_better_quality_ships():
 
 def test_faster_and_better_ships():
     assert sufficiency(report(wall=100, score=50), report(wall=80, score=60))["verdict"] == "SHIP"
+
+
+def test_faster_but_no_artifact_rejects():
+    out = sufficiency(report(wall=100), report(wall=90, delivered=False))
+    assert out["verdict"] == "REJECT"
+    assert any("delivered no artifact" in r for r in out["reasons"])
+
+
+def test_zero_quality_both_faster_no_artifact_rejects():
+    # The measured 2026-09-23 case: both runs scored 0 with nothing on disk,
+    # and a 2.5% time win must not ship nothing.
+    out = sufficiency(report(wall=664.9, gates=0, fid_pass=0, score=0.0, delivered=False),
+                      report(wall=648.5, gates=0, fid_pass=0, score=0.0, delivered=False))
+    assert out["verdict"] == "REJECT"
+    assert any("delivered no artifact" in r for r in out["reasons"])
+
+
+def test_undelivered_baseline_cannot_time_regress_a_delivering_candidate():
+    # The measured 2026-09-23 case: a zero-delivery baseline at 665s must not
+    # mark a delivering, quality-dominant candidate at 893s as a regression.
+    out = sufficiency(report(wall=664.9, gates=0, fid_pass=0, score=0.0, delivered=False),
+                      report(wall=893.4, gates=8, fid_pass=4, score=100.0))
+    assert out["verdict"] == "SHIP"
+    assert not out["time"]["regressed"]
+    assert any("time not comparable" in r for r in out["reasons"])
+
+
+def test_both_delivered_keeps_normal_time_rule():
+    out = sufficiency(report(wall=100, gates=6), report(wall=120, gates=7))
+    assert out["verdict"] == "REJECT"
+    assert out["time"]["regressed"]
 
 
 def test_nothing_improved_rejects():

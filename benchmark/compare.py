@@ -73,16 +73,31 @@ def sufficiency(baseline: Mapping[str, Any], candidate: Mapping[str, Any],
     time_regressed = t1 > t0 * (1.0 + regression_pct / 100.0)
     delta_pct = ((t1 - t0) / t0 * 100.0) if t0 > 0 else (0.0 if t1 == t0 else float("inf"))
 
+    # A baseline that delivered no artifact has no meaningful time: it
+    # "finished" by giving up. Its clock cannot regress a candidate that
+    # actually delivered. (Measured 2026-09-23: a zero-delivery baseline at
+    # 665s marked a delivering 100-point candidate at 893s "time regressed".)
+    baseline_delivered = bool((baseline.get("artifact") or {}).get("exists"))
+    candidate_delivered_early = bool((candidate.get("artifact") or {}).get("exists"))
+    time_incomparable = candidate_delivered_early and not baseline_delivered
+    if time_incomparable:
+        time_decreased = False
+        time_regressed = False
+
     q0 = quality_key(baseline)
     q1 = quality_key(candidate)
     quality_increased = q1 > q0
     quality_regressed = q1 < q0
 
     reasons = []
-    time_word = ("decreased" if time_decreased else
-                 "regressed" if time_regressed else "held")
-    reasons.append("time %s: %.3fs -> %.3fs (%+.1f%%, regression past +%g%%)"
-                   % (time_word, t0, t1, delta_pct, regression_pct))
+    if time_incomparable:
+        reasons.append("time not comparable: baseline delivered no artifact "
+                       "(%.3fs of not delivering vs %.3fs)" % (t0, t1))
+    else:
+        time_word = ("decreased" if time_decreased else
+                     "regressed" if time_regressed else "held")
+        reasons.append("time %s: %.3fs -> %.3fs (%+.1f%%, regression past +%g%%)"
+                       % (time_word, t0, t1, delta_pct, regression_pct))
     quality_word = ("increased" if quality_increased else
                     "regressed" if quality_regressed else "held")
     reasons.append("quality %s: (gates, fidelity passes, score) %s -> %s"
@@ -91,6 +106,15 @@ def sufficiency(baseline: Mapping[str, Any], candidate: Mapping[str, Any],
     improved = time_decreased or quality_increased
     regressed = time_regressed or quality_regressed
     ship = improved and not regressed
+
+    # A candidate that produced no artifact has delivered nothing; a time win
+    # over the baseline cannot ship nothing. (Measured 2026-09-23: an
+    # ear-sculpt candidate 2.5% faster than a zero-score baseline, both with
+    # no file on disk, printed SHIP under the rule above.)
+    delivered = bool((candidate.get("artifact") or {}).get("exists"))
+    if ship and not delivered:
+        ship = False
+        reasons.append("candidate delivered no artifact; nothing to ship")
     if not improved:
         reasons.append("neither time decreased nor quality increased")
     if time_regressed:

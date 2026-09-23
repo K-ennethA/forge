@@ -18,6 +18,7 @@ updated.
 | [peg-boss-junctions.md](peg-boss-junctions.md) | Attaching a parametric peg/boss onto a sculpted part by boolean union, especially when the angle needs iterating. |
 | [seating.md](seating.md) | A part has to seat precisely onto another part's socket or bore. |
 | [sculpted-part-hybrid-rule.md](sculpted-part-hybrid-rule.md) | A design needs both mechanical function and organic character ("a real X that looks like Y"). |
+| [organic-path-choice.md](organic-path-choice.md) | The deliverable is a purely organic form (character part, shape from a picture): choose the sculpt lane before writing anything, and save the deliverable the moment it exists. |
 | [print-min-wall-triage.md](print-min-wall-triage.md) | `partforge_check` fails and you need the right first move, not a guess. |
 
 ## Pipeline / infrastructure

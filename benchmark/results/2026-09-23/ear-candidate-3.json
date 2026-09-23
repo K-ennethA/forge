@@ -1,0 +1,81 @@
+{
+  "schema": "forge-benchmark-report/1",
+  "task": "ear-sculpt",
+  "task_version": 1,
+  "mode": "part",
+  "git_sha": "71ed8b3",
+  "git_dirty": true,
+  "started_at": "2026-09-23T18:27:01Z",
+  "wall_seconds": 893.352,
+  "final_state": "done",
+  "job_id": "c4d1d013f09c",
+  "runner_deadline_hit": false,
+  "error": null,
+  "bridge": {
+    "duration_s": 892.381,
+    "cost_usd": 2.1485546000000006,
+    "model": null,
+    "num_turns": 36
+  },
+  "artifact": {
+    "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend",
+    "exists": false,
+    "fresh": false,
+    "mtime": null
+  },
+  "gates": {
+    "passed": 0,
+    "total": 8,
+    "failures": [
+      "no measurement: no artifact at C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend"
+    ]
+  },
+  "fidelity": {
+    "ear_count": {
+      "kind": "part_count",
+      "measured": null,
+      "expected": 2,
+      "tol": 0,
+      "op": "==",
+      "pass": false,
+      "closeness": 0.0,
+      "detail": "no artifact at C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend"
+    },
+    "ear_min_wall_mm": {
+      "kind": "min_wall",
+      "measured": null,
+      "expected": 0.8,
+      "tol": null,
+      "op": ">=",
+      "pass": false,
+      "closeness": 0.0,
+      "detail": "no artifact at C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend"
+    },
+    "ear_mirrored_yaw": {
+      "kind": "mirrored_yaw",
+      "measured": {},
+      "expected": "yaw signs opposite about up, |yaw| >= 1 deg, face axes mirror images within 20 deg",
+      "tol": 20.0,
+      "op": "mirrored",
+      "pass": false,
+      "closeness": 0.0,
+      "why_failed": [
+        "need exactly 2 parts with a defined face axis"
+      ],
+      "detail": "no artifact at C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend"
+    },
+    "ear_volume_ratio": {
+      "kind": "volume_ratio",
+      "measured": null,
+      "expected": 0.15,
+      "tol": null,
+      "op": ">=",
+      "pass": false,
+      "closeness": 0.0,
+      "detail": "no artifact at C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\bench-ear-sculpt\\bench-ear-sculpt.blend"
+    }
+  },
+  "score": 0.0,
+  "appearance_score": null,
+  "measure_seconds": 0.0
+}
