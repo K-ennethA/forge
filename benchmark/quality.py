@@ -64,7 +64,7 @@ DEFAULT_UNIT_SCALE = {".glb": 1000.0, ".gltf": 1000.0, ".blend": 1000.0,
                       ".stl": 1.0, ".obj": 1.0}
 
 METRIC_KINDS = ("overall_dim", "part_count", "volume", "ray", "min_wall",
-                "mirrored_yaw", "volume_ratio")
+                "mirrored_yaw", "volume_ratio", "silhouette_iou")
 
 #: A hook for a later appearance lane; deterministic tiers only in this one.
 appearance_score = None
@@ -217,7 +217,7 @@ def measure(task: Mapping[str, Any], meshes: Mapping[str, Tuple[list, list]],
     measured: Dict[str, Any] = {}
     for metric, spec in (task.get("expected") or {}).items():
         try:
-            measured[metric] = _measure_metric(spec, names, part, meshes, printer)
+            measured[metric] = _measure_metric(spec, names, part, meshes, printer, task)
         except Exception as exc:  # noqa: BLE001 - one bad metric never sinks the rest
             measured[metric] = {"value": None, "detail": "measurement failed: %s" % exc}
 
@@ -231,7 +231,7 @@ def measure(task: Mapping[str, Any], meshes: Mapping[str, Tuple[list, list]],
     return {"gate_rows": gate_rows, "measured": measured, "parts": summary}
 
 
-def _measure_metric(spec, names, part, meshes, printer):
+def _measure_metric(spec, names, part, meshes, printer, task=None):
     kind = spec["kind"]
     chosen = select(names, spec.get("match"))
 
@@ -286,6 +286,22 @@ def _measure_metric(spec, names, part, meshes, printer):
             p = part(n)
             per[n] = geometry.volume_ratio(p.vertices, p.triangles)
         return {"value": min(r["ratio"] for r in per.values()), "detail": per}
+
+    if kind == "silhouette_iou":
+        # benchmark/silhouette.py: each part projected onto its widest OBB plane,
+        # outline traced, normalized (unit height, principal axes, up = up_axis),
+        # IoU against the task's frozen outline on a fixed grid, mirror-invariant.
+        from benchmark import silhouette
+
+        base = (task or {}).get("_dir") or REPO_ROOT
+        reference = silhouette.load_outline(os.path.join(base, spec["outline"]))
+        up = spec.get("up_axis", (0.0, 0.0, 1.0))
+        grid = int(spec.get("grid", silhouette.GRID))
+        per = {}
+        for n in chosen:
+            p = part(n)
+            per[n] = silhouette.measure_part(p.vertices, p.triangles, reference, up, grid)
+        return {"value": min(r["iou"] for r in per.values()), "detail": per}
 
     if kind == "mirrored_yaw":
         front = spec.get("front_axis", (1.0, 0.0, 0.0))

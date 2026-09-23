@@ -1,15 +1,17 @@
 {
   "name": "ear-sculpt",
-  "version": 1,
+  "version": 2,
   "mode": "part",
   "timeout_s": 1800,
   "image": "ear_ref.png",
   "inputs": {
     "ear_ref.png": "COPY of projects/eevee-bowl-v2/design/refs/crops/ear_ref.png (sha256 a629a559776f98d1f9d4c13a4946ac67aeec894c1cf6a07dcaa6bf8bfab90d3c) - both ears, front view, frozen 2026-09-23",
-    "ear_single_ref.png": "COPY of projects/eevee-bowl-v2/design/refs/crops/ear_single_ref.png (sha256 24b48679ab52b4ab2e2c4646b711fa4e421e0502e0e306d76d8af19ca1aa6de7) - one ear, detail"
+    "ear_single_ref.png": "COPY of projects/eevee-bowl-v2/design/refs/crops/ear_single_ref.png (sha256 24b48679ab52b4ab2e2c4646b711fa4e421e0502e0e306d76d8af19ca1aa6de7) - one ear, detail",
+    "eevee_sheet.png": "COPY of projects/eevee-bowl-v2/design/refs/eevee-sheet-artist-2026-09-23.png (sha256 ca0dafd9ed017c52e29880175b76b0b5ce36fc8404a537cb80be5bc3888401e3) - the artist's character sheet, 2026-09-23: 'ears are more curved like this'",
+    "ear_outline.json": "DERIVED from eevee_sheet.png by benchmark/silhouette.py extract_ear_outline (front view, image-left ear; crop, border flood, pixel-corner trace, ear/head junction = the two deepest convexity defects) - regenerate with 'python benchmark/silhouette.py --write-ear-outline', byte-stable (benchmark/tests/test_silhouette.py checks it against a fresh extraction)"
   },
   "defects_encoded": "projects/eevee-bowl-v2/design/review-log.md, 2026-09-21 paused round: 'the ears have the correct indentation but no volume to them and are angled the same direction instead of towards us'",
-  "prompt": "Benchmark task ear-sculpt. Sculpt the pair of Eevee ears shown in the attached reference crop (front view; a second crop of one ear is at benchmark/tasks/ear-sculpt/ear_single_ref.png). Work in a new project named bench-ear-sculpt and build ONLY the two ears, as two separate mesh objects named Ear_L and Ear_R - no bowl, no pegs. Each ear is a closed, printable shell with real volume: a rounded back and the recessed inner face from the reference, not a flat slab with an inset. Every wall must be at least 0.8 mm (the printer profile's minimum wall). Place them as they sit on the bowl: the bowl's front axis is +X, up is +Z, 1 mm = 0.001 Blender units, the ears stand on the rim at +43.7 and -43.7 degrees about Z from +X, and each ear's inner face turns toward the front with MIRRORED yaw - one ear rotated +theta about Z and the other -theta, never one transform copied to both. When done, save the scene with save_project_blend for project bench-ear-sculpt. Do not ask me anything; this is an unattended benchmark run.",
+  "prompt": "Benchmark task ear-sculpt. Sculpt the pair of Eevee ears shown in the attached reference crop (front view; a second crop of one ear is at benchmark/tasks/ear-sculpt/ear_single_ref.png). The ear SHAPE comes from the artist's character sheet at benchmark/tasks/ear-sculpt/eevee_sheet.png - the artist's words: 'ears are more curved like this'. Each ear's outline seen face-on is scored against the front-view ear outline in that sheet (top-left pose). Work in a new project named bench-ear-sculpt and build ONLY the two ears, as two separate mesh objects named Ear_L and Ear_R - no bowl, no pegs. Each ear is a closed, printable shell with real volume: a rounded back and the recessed inner face from the reference, not a flat slab with an inset. Every wall must be at least 0.8 mm (the printer profile's minimum wall). Place them as they sit on the bowl: the bowl's front axis is +X, up is +Z, 1 mm = 0.001 Blender units, the ears stand on the rim at +43.7 and -43.7 degrees about Z from +X, and each ear's inner face turns toward the front with MIRRORED yaw - one ear rotated +theta about Z and the other -theta, never one transform copied to both. When done, save the scene with save_project_blend for project bench-ear-sculpt. Do not ask me anything; this is an unattended benchmark run.",
   "artifact": "projects/bench-ear-sculpt/bench-ear-sculpt.blend",
   "printer": "templates/printer.json",
   "gates": {
@@ -34,6 +36,11 @@
     "ear_volume_ratio": {
       "kind": "volume_ratio", "match": "(?i)(^|[^a-z])ear", "min": 0.15,
       "why": "enclosed volume / oriented-bounding-box volume, per ear, minimum over ears; an open or zero-thickness sheet measures 0, a solid ellipsoid pi/6 = 0.524. Calibration 2026-09-23 on the artist-rejected 'no volume to them' pair (eevee-bowl-wip.blend): 0.0783 (ear-l-sculpt, 1154 mm3 in a 15.8 x 11.8 x 78.6 mm box) and 0.0769 (ear-r-sculpt). Floor 0.15 = about 2x the rejected value so a marginal thickening does not pass. ASSUMPTION: settle by measuring the first artist-accepted ear"
+    },
+    "ear_silhouette_iou": {
+      "kind": "silhouette_iou", "match": "(?i)(^|[^a-z])ear", "outline": "ear_outline.json",
+      "up_axis": [0.0, 0.0, 1.0], "grid": 256, "min": 0.74,
+      "why": "shape fidelity to the reference outline, per ear, minimum over ears (benchmark/silhouette.py): the ear's evaluated mesh projected onto its widest OBB plane, the projection's true boundary traced (not a hull - the ear curve is concave), normalized (centroid at origin, long principal axis up toward +Z, unit height; width kept, so the aspect is part of the shape) and scored by intersection-over-union against ear_outline.json on a 256x256 grid, the better of the ear and its mirror. The per-OBB mirror/volume metrics pass a well-mirrored wrong shape; this one does not. Calibration 2026-09-23: the artist-rejected blade ears (projects/bench-ear-sculpt/bench-ear-sculpt.blend, Ear_L/Ear_R, 'ears are more curved like this') measure 0.6256 / 0.6256 (aspect 0.199 vs the reference's 0.326) while passing mirrored yaw (0.50 deg) and volume ratio (0.397) - the per-OBB metrics cannot see the defect (that pair also fails min_wall, 0.057 mm, a separate defect); a constructed curved leaf pair (addon/tests/headless_benchmark.py _leaf: half-width 0.165 H at the base tapering as (1-t)^0.7 to a 1 mm half-width tip, midline bent 0.12 H t^2) 0.7834 / 0.7855 (its mirror); 4x30x60 mm slabs 0.4141; the reference outline extruded into a 4 mm prism 0.9939 (the pipeline's own loss); the outline against itself 1.0 and against its mirror 1.0 (unmirrored overlap 0.837: the reference ear is not symmetric). Floor 0.74 sits between the blade (0.6256) and the leaf (0.7834), closer to the leaf. ASSUMPTION: settle by measuring the first artist-accepted ear"
     }
   }
 }

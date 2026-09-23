@@ -135,5 +135,6 @@ def test_frozen_tasks_load():
     ear = quality.load_task(os.path.join(REPO_ROOT, "benchmark", "tasks", "ear-sculpt"))
     assert os.path.isfile(os.path.join(ear["_dir"], ear["image"]))
     kinds = {spec["kind"] for spec in ear["expected"].values()}
-    assert kinds == {"part_count", "min_wall", "mirrored_yaw", "volume_ratio"}
+    assert kinds == {"part_count", "min_wall", "mirrored_yaw", "volume_ratio",
+                     "silhouette_iou"}
     assert ear["expected"]["ear_min_wall_mm"]["min"] == quality.load_printer(ear)["min_wall_thickness"]

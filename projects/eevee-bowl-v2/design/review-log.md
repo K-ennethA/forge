@@ -34,3 +34,13 @@ sculpt needs true shell depth (thickness/curvature), not another inset pass;
 (c) the two ears carry the SAME rotation — placement must MIRROR the yaw per
 side (+theta / -theta toward the front) so both inner faces turn toward the
 viewer like the sheet's front view, instead of copying one transform to both.
+
+## 2026-09-23 — benchmark ears (front/three-quarter/top renders)
+> ears are more curved like this [+ Eevee character sheet:
+> refs/eevee-sheet-artist-2026-09-23.png — wide base, curved leaf shape,
+> pointed tip]
+
+Context: the benchmark run fixed mirror (0.5 deg) and volume (0.397) but the
+silhouette rendered as a tall narrow blade. Reading: shape fidelity to the
+reference outline is its own requirement — a silhouette-match metric,
+extracted deterministically from the sheet, joins the ear gates.

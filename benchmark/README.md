@@ -22,14 +22,20 @@ says whether a candidate run is good enough to ship against a baseline.
 | task | artifact | gates | fidelity |
 |---|---|---|---|
 | `tasks/parametric-dish` | `projects/bench-parametric-dish/models/dish.stl` | 1 part x 4 | part count, diameter x/y, height, wall span, floor span |
-| `tasks/ear-sculpt` | `projects/bench-ear-sculpt/bench-ear-sculpt.blend` | 2 ears x 4 | ear count, min wall >= 0.8 mm, mirrored yaw, volume ratio >= 0.15 |
+| `tasks/ear-sculpt` | `projects/bench-ear-sculpt/bench-ear-sculpt.blend` | 2 ears x 4 | ear count, min wall >= 0.8 mm, mirrored yaw, volume ratio >= 0.15, silhouette IoU >= 0.74 |
 
-`ear-sculpt` encodes the artist's latest ear defects: no volume, and both ears
-angled the same direction. Its reference crops are copies of
-`projects/eevee-bowl-v2/design/refs/crops/`, with their hashes in `task.json`.
-Two ear thresholds are **assumptions** calibrated only against the rejected
-pair in `eevee-bowl-wip.blend`: volume ratio 0.15 (the rejected ears measure
-0.077/0.078) and mirror tolerance 20 deg (the rejected pair measures 66.9).
+`ear-sculpt` encodes the artist's ear defects: no volume, both ears angled the
+same direction, and (2026-09-23, "ears are more curved like this") a blade
+silhouette instead of the sheet's wide-based curved leaf. Its reference crops
+are copies of `projects/eevee-bowl-v2/design/refs/crops/`, plus the artist's
+character sheet `eevee_sheet.png`, with hashes in `task.json`. The silhouette
+metric compares each ear's projected outline against `ear_outline.json`,
+extracted deterministically from the sheet (`silhouette.py --write-ear-outline`).
+Three ear thresholds are **assumptions** calibrated only against measured
+rejects: volume ratio 0.15 (the rejected ears measure 0.077/0.078), mirror
+tolerance 20 deg (the rejected pair measures 66.9), and silhouette IoU 0.74
+(the rejected blades measure 0.6256, a constructed curved leaf 0.7834, the
+reference's own extrusion 0.9939).
 Re-pin both after measuring the first ear pair the artist accepts:
 
     "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup ^

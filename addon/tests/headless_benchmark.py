@@ -30,7 +30,15 @@ fixture is built from numbers this file wrote down:
   Z — the artist's "angled the same direction" defect: only the mirror clause
   fails, at the analytic ``acos|cos^2(30) cos(180) + sin^2(30)|`` = 60 deg;
   (C) two 1.2 mm curved shells, mirrored: only the volume ratio fails, at the
-  analytic polygon-sector ratio — the "no volume to them" defect;
+  analytic polygon-sector ratio — the "no volume to them" defect.  A slab and a
+  shell are rectangles face-on, so (A)-(C) also fail the silhouette metric and
+  their per-OBB claims are asserted over the other four metrics;
+* **the silhouette calibration** (``ear_silhouette_iou``, benchmark/silhouette.py)
+  — (D) the DELIVERED blade ears in ``projects/bench-ear-sculpt`` (the pair the
+  artist answered with "ears are more curved like this"): only the silhouette
+  fails; (E) a constructed curved leaf pair, mirrored: all five metrics pass;
+  (F) the frozen reference outline itself extruded into a 4 mm prism: the
+  pipeline's own loss.  The floor must sit between (D) and (E);
 * **round trips** — the dish exported to ``.glb`` and written to ``.blend``,
   cleared, loaded back through the harness's own ``load_artifact`` and
   re-measured: the same numbers;
@@ -96,6 +104,23 @@ SHELL_R_OUT = 21.2
 SHELL_SPAN_DEG = 120.0
 SHELL_SEGMENTS = 48
 SHELL_HEIGHT = 60.0
+
+#: the curved-leaf fixture (E), in units of its height: half-width 0.165 H at
+#: the base (the reference outline's measured aspect is 0.326, i.e. a 0.163 H
+#: half-width), tapering as (1 - t)^0.7, the midline bent 0.12 H * t^2
+#: sideways — a wide base, a curved edge, a pointed tip.  Not fit to the
+#: outline: a family member picked by its aspect and a visible bend.  The tip
+#: keeps a 1 mm half-width: tapered to a true point, its last 1.3 rows are
+#: under the 0.8 mm wall and min_wall measured 0.587 mm there on the first run.
+LEAF_HEIGHT = 60.0
+LEAF_HALF_WIDTH = 0.165
+LEAF_BEND = 0.12
+LEAF_POWER = 0.7
+LEAF_THICK = 4.0
+LEAF_ROWS = 48
+LEAF_TIP_HALF_MM = 1.0
+BLADE_BLEND = os.path.join(REPO_ROOT, "projects", "bench-ear-sculpt", "bench-ear-sculpt.blend")
+SILHOUETTE = "ear_silhouette_iou"
 
 _RESULTS = []
 
@@ -239,6 +264,52 @@ def _shell():
     return verts, faces
 
 
+def _leaf():
+    """A closed curved-leaf prism: thin along X, width along Y, height along Z."""
+    n, h = LEAF_ROWS, LEAF_HEIGHT
+    left, right = [], []
+    for i in range(n + 1):
+        t = i / n
+        mid = LEAF_BEND * h * t * t
+        w = max(LEAF_TIP_HALF_MM, LEAF_HALF_WIDTH * h * (1.0 - t) ** LEAF_POWER)
+        left.append((mid - w, t * h))
+        right.append((mid + w, t * h))
+    ring = right + left[::-1]  # R_i -> i, L_i -> 2n + 1 - i
+    count = len(ring)
+    verts = [(x, y, z) for x in (LEAF_THICK / 2.0, -LEAF_THICK / 2.0) for (y, z) in ring]
+    faces = []
+    for side in (0, count):
+        for i in range(n):
+            faces.append((side + 2 * n + 1 - i, side + i, side + i + 1, side + 2 * n - i))
+    for i in range(count):
+        j = (i + 1) % count
+        faces.append((i, j, count + j, count + i))
+    return verts, faces
+
+
+def _extruded_outline(payload, mm_per_px=0.7):
+    """The frozen outline's pixel polygon as a 4 mm prism (ngon caps, ear-clipped)."""
+    ring = [(x * mm_per_px, -y * mm_per_px) for x, y in payload["ear_px"]["polygon"]]
+    n = len(ring)
+    verts = [(x, y, z) for x in (2.0, -2.0) for (y, z) in ring]
+    faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))]
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append((i, j, n + j, n + i))
+    return verts, faces
+
+
+def _triangulate(obj):
+    """Ear-clip every ngon in place: the service's own triangulation fans, and a
+    fan of a concave cap is not the cap."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.triangulate(bm, faces=bm.faces, quad_method="BEAUTY", ngon_method="EAR_CLIP")
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+
+
 def _rz(deg):
     return Matrix.Rotation(math.radians(deg), 4, "Z")
 
@@ -334,8 +405,11 @@ def test_ears_mirrored(task):
     f = graded["fidelity"]
     check("8/8 gates (2 ears x 4 checks)", graded["gates"]["passed"] == 8 == graded["gates"]["total"],
           graded["gates"])
-    check("all 4 ear metrics pass", passes(graded) == set(task["expected"]),
+    check("all 4 per-OBB ear metrics pass", passes(graded) == set(task["expected"]) - {SILHOUETTE},
           {k: (r["measured"], r["pass"]) for k, r in f.items()})
+    check("a rectangular slab is not the ear outline (silhouette fails)",
+          not f[SILHOUETTE]["pass"], f[SILHOUETTE]["measured"])
+    note("slab silhouette IoU %.4f" % f[SILHOUETTE]["measured"])
     yaws = f["ear_mirrored_yaw"]["measured"]["yaw_deg"]
     check("yaws are +30 / -30 to float32",
           abs(yaws["Ear_L"] - EAR_YAW_DEG) < F32_DEG and abs(yaws["Ear_R"] + EAR_YAW_DEG) < F32_DEG, yaws)
@@ -358,7 +432,8 @@ def test_ears_rotated_copy(task):
     _m, graded = measure_scene(task)
     f = graded["fidelity"]
     failed = set(task["expected"]) - passes(graded)
-    check("only the mirrored-yaw metric fails", failed == {"ear_mirrored_yaw"}, sorted(failed))
+    check("of the per-OBB metrics only mirrored yaw fails",
+          failed - {SILHOUETTE} == {"ear_mirrored_yaw"}, sorted(failed))
     tau, phi = math.radians(COPY_TILT_DEG), math.radians(COPY_LOCAL_YAW_DEG)
     analytic = math.degrees(math.acos(abs(math.cos(tau) ** 2 * math.cos(2 * phi)
                                           + math.sin(tau) ** 2)))
@@ -381,7 +456,8 @@ def test_ears_thin_shells(task):
     _m, graded = measure_scene(task)
     f = graded["fidelity"]
     failed = set(task["expected"]) - passes(graded)
-    check("only the volume ratio fails", failed == {"ear_volume_ratio"}, sorted(failed))
+    check("of the per-OBB metrics only the volume ratio fails",
+          failed - {SILHOUETTE} == {"ear_volume_ratio"}, sorted(failed))
     # analytic: N trapezoids of a polygonal annular sector, in a height x chord x sagitta box
     half = math.radians(SHELL_SPAN_DEG) / 2.0
     step = 2.0 * half / SHELL_SEGMENTS
@@ -396,6 +472,101 @@ def test_ears_thin_shells(task):
     check("and the shells are still mirrored", f["ear_mirrored_yaw"]["pass"],
           f["ear_mirrored_yaw"]["measured"])
     return graded
+
+
+def test_blade_calibration(task):
+    section("ear-sculpt (D): the DELIVERED blade ears - 'ears are more curved like this'")
+    from benchmark import blender_measure, quality
+
+    if not check("the delivered blend exists", os.path.isfile(BLADE_BLEND), BLADE_BLEND):
+        return None
+    clear_scene()
+    measurement = blender_measure.measure_artifact(task, BLADE_BLEND)
+    graded = quality.grade(task, measurement)
+    f = graded["fidelity"]
+    check("the blades pass the per-OBB shape metrics (mirrored yaw, volume ratio)",
+          f["ear_mirrored_yaw"]["pass"] and f["ear_volume_ratio"]["pass"],
+          {k: (r["measured"], r["pass"]) for k, r in f.items()})
+    check("and fail the silhouette - the defect the artist named",
+          not f[SILHOUETTE]["pass"], f[SILHOUETTE]["measured"])
+    # the delivered pair also fails min_wall (measured 0.0572 mm, 2026-09-23) -
+    # a second, separate defect of that artifact, recorded not asserted here
+    note("delivered min wall %s mm (pass=%s)" % (f["ear_min_wall_mm"]["measured"],
+                                                 f["ear_min_wall_mm"]["pass"]))
+    detail = f[SILHOUETTE].get("detail") or {}
+    check("both blades measured (Ear_L, Ear_R)", sorted(detail) == ["Ear_L", "Ear_R"], sorted(detail))
+    iou = f[SILHOUETTE]["measured"]
+    note("blade IoU %s, aspect %s (reference %.4f); mirror %.3f deg, volume ratio %.4f"
+         % ({k: round(v["iou"], 4) for k, v in detail.items()},
+            {k: round(v["aspect"], 4) for k, v in detail.items()},
+            next(iter(detail.values()))["reference_aspect"],
+            f["ear_mirrored_yaw"]["measured"]["mirror_angle_deg"], f["ear_volume_ratio"]["measured"]))
+    return iou
+
+
+def test_leaf_calibration(task):
+    section("ear-sculpt (E): a curved leaf pair, mirrored - every metric passes")
+    clear_scene()
+    verts, faces = _leaf()
+    mirrored = [(x, -y, z) for x, y, z in verts]
+    _object("Ear_L", verts, faces, _place(EAR_YAW_DEG, (55.0, 50.0, 100.0)))
+    _object("Ear_R", mirrored, faces, _place(-EAR_YAW_DEG, (55.0, -50.0, 100.0)))
+    _m, graded = measure_scene(task)
+    f = graded["fidelity"]
+    check("8/8 gates", graded["gates"]["passed"] == 8 == graded["gates"]["total"], graded["gates"])
+    check("all 5 ear metrics pass", passes(graded) == set(task["expected"]),
+          {k: (r["measured"], r["pass"]) for k, r in f.items()})
+    detail = f[SILHOUETTE].get("detail") or {}
+    # not bit-equal: the working raster is anchored at the projection's min
+    # corner, so a mirrored projection is sampled at different cell offsets
+    # (0.0028 apart on the first run) - bounded well under any floor margin
+    check("the mirrored pair scores the same to 0.005 (mirror-invariant)",
+          abs(detail["Ear_L"]["iou"] - detail["Ear_R"]["iou"]) < 0.005,
+          {k: v["iou"] for k, v in detail.items()})
+    iou = f[SILHOUETTE]["measured"]
+    note("leaf IoU %s, aspect %.4f" % ({k: round(v["iou"], 4) for k, v in detail.items()},
+                                      detail["Ear_L"]["aspect"]))
+    return iou
+
+
+def test_reference_extruded(task):
+    section("ear-sculpt (F): the frozen outline itself, extruded - the pipeline's own loss")
+    from benchmark import silhouette
+
+    with open(os.path.join(EAR_TASK, "ear_outline.json"), "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    reference = silhouette.load_outline(os.path.join(EAR_TASK, "ear_outline.json"))
+    check("the outline against itself is exactly 1.0",
+          silhouette.silhouette_iou(reference["polygon"], reference["polygon"])["iou"] == 1.0)
+    pixel = [(float(x), -float(y)) for x, y in payload["ear_px"]["polygon"]]
+    mirror = silhouette.normalize([(-x, y) for x, y in pixel], up=(0.0, 1.0))
+    score = silhouette.silhouette_iou(mirror["polygon"], reference["polygon"])
+    check("the outline against its mirror image is 1.0 to 1e-9 (mirror-invariant)",
+          score["iou"] > 1.0 - 1e-9 and score["mirrored"], score)
+    note("reference vs its mirror: %.6f (unmirrored overlap %.4f - the ear is not symmetric)"
+         % (score["iou"], score["iou_plain"]))
+    clear_scene()
+    verts, faces = _extruded_outline(payload)
+    obj = _object("Ear_L", verts, faces, _place(-20.0, (40.0, 30.0, 90.0), _ry(-15.0)))
+    _triangulate(obj)
+    _m, graded = measure_scene(task)
+    iou = graded["fidelity"][SILHOUETTE]["measured"]
+    # the canonical cell is 1/128 of the height and the trace 4x finer, so only
+    # boundary cells can disagree: measured 0.9939 in the pure-Python run
+    check("the extruded outline scores >= 0.98", iou is not None and iou >= 0.98, iou)
+    note("extruded reference IoU %.4f (tilted 15 deg, yawed -20 deg)" % iou)
+    return iou
+
+
+def test_floor_between(task, blade, leaf):
+    section("the silhouette floor sits between the blade and the leaf")
+    floor = task["expected"][SILHOUETTE]["min"]
+    ok = blade is not None and leaf is not None and blade < floor < leaf
+    check("blade %s < floor %.2f < leaf %s" % (blade and round(blade, 4), floor,
+                                                leaf and round(leaf, 4)), ok)
+    if ok:
+        check("closer to the leaf than to the blade", leaf - floor < floor - blade,
+              (leaf - floor, floor - blade))
 
 
 def test_round_trips(task, reference, workdir):
@@ -494,6 +665,10 @@ def main():
         test_ears_mirrored(ear_task)
         test_ears_rotated_copy(ear_task)
         test_ears_thin_shells(ear_task)
+        blade = test_blade_calibration(ear_task)
+        leaf = test_leaf_calibration(ear_task)
+        test_reference_extruded(ear_task)
+        test_floor_between(ear_task, blade, leaf)
         glb, in_process = test_round_trips(dish_task, reference, workdir)
         test_spawn_path(dish_task, glb, in_process, workdir)
         test_determinism(dish_task)
