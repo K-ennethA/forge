@@ -6,6 +6,12 @@ script never saves, and refuses to run on the source file itself):
     blender --background --factory-startup <copy.blend> --python build_werewolf_escaped.py -- <out.glb>
 
 What it does, in order (numbers measured 2026-09-24):
+  0. the look (look_werewolf_escaped.py): custom normals dropped, 31 n-gons
+     triangulated so tangents can be built (2 folded duplicate pairs removed), winding recomputed outward, fully
+     smooth shading (no sharps), and region colour from the tags + the palette
+     sample_palette.py derives from refs/form-a-front.png (palette.json), shipped as
+     COLOR_0 through one Principled material. Replaces the generator material whose
+     atlas no longer matched this retopo's UVs (the patchy "choppy" look).
   1. walk-loop goes in place. The source walk is a root-motion clip (root travels
      0.5889 m over its 32-frame cycle = 0.4417 m/s); the game's controller moves
      the body (CharacterModel.set_locomotion), so the root travel is zeroed and
@@ -23,6 +29,14 @@ What it does, in order (numbers measured 2026-09-24):
      export_anim_slide_to_zero, so every clip starts at t=0 and a loop's wrap
      carries no one-frame hold.
 
+  6. Image inventory is pinned: the glb's glTF images[] (index order) must equal
+     werewolf_escaped.images.json or the build fails - Godot extracts embedded images
+     as <kind>_Image_N.png and the game commits them, so count/order/names must not
+     churn. The colour ships as COLOR_0, so the pinned inventory is empty ([]); the
+     generator's three 2048 px maps (Image_2, Image_1, Image_0) are gone.
+  7. manifest.json is written beside <out.glb>: scale, clip_map and walk_speed_mps
+     (the in-place walk's natural speed at game scale = stride speed x scale).
+
 Verify the result with verify_game_glb.py next to this file.
 """
 import bpy, sys, os, math, json
@@ -35,6 +49,8 @@ if os.path.basename(_here).startswith("werewolf-wip-") and \
         os.path.dirname(_here).endswith(os.path.join("werewolf", "models")):
     raise SystemExit("Run this on a COPY of the wip blend, not the source.")
 sys.path.insert(0, ADDON)
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 import addon_utils
 addon_utils.enable("forge", default_set=True, persistent=False)
 from forge.tools import rigforge_rig as rr, rigforge_anim as ra
@@ -45,6 +61,11 @@ if not argv:
     raise SystemExit("usage: ... --python build_werewolf_escaped.py -- <out.glb>")
 OUT = argv[0]
 YAW = 180.0
+# Game-side scale of this kind, carried from the manifest delivered 2026-09-24
+# (1.133 x the 1.8791 m bind height = 2.129 m in game; the kind's spec height is 2.05 m).
+SCALE = 1.133
+CLIP_MAP = {"idle": "idle", "walk": "walk", "jump": "jump", "attack_1": "punch_R",
+            "attack_2": "punch_L"}
 
 RIG = "werewolf-form-a_retopo_rig"
 MESH = "werewolf-form-a_retopo"
@@ -67,6 +88,11 @@ scene = bpy.context.scene
 rig = bpy.data.objects[RIG]
 mesh = bpy.data.objects[MESH]
 print("FPS", scene.render.fps)
+
+# --- 0. look: shading + region colour
+import look_werewolf_escaped as look
+look_report = look.apply(mesh, os.path.join(HERE, "palette.json"))
+print("LOOK", json.dumps(look_report, default=str))
 
 
 def reset_pose():
@@ -93,8 +119,9 @@ for c in rr.action_fcurves(walk):
             p.handle_right.y = 0.0
         c.update()
 walk_frames = walk.frame_range[1] - walk.frame_range[0]
+walk_mps = abs(stride) / (walk_frames / scene.render.fps)
 print("WALK root travel removed: stride_m=%.4f over %d frames = %.4f m/s"
-      % (abs(stride), walk_frames, abs(stride) / (walk_frames / scene.render.fps)))
+      % (abs(stride), walk_frames, walk_mps))
 
 # --- 2. idle-loop
 # Unassign first: evaluating the depsgraph flushes the assigned clip's values back
@@ -245,4 +272,24 @@ for k in ("path", "actions", "deform_bone_count", "bbone_flattened", "morph_targ
     if k == "morph_animation" and isinstance(v, dict):
         v = {clip: len(names) for clip, names in v.items()}
     print("EXPORT", k, json.dumps(v, default=str))
+
+# --- 6. image inventory, pinned
+import struct
+with open(OUT, "rb") as f:
+    blob = f.read()
+_jlen = struct.unpack_from("<I", blob, 12)[0]
+_gltf = json.loads(blob[20:20 + _jlen])
+inventory = [[im.get("name"), im.get("mimeType")] for im in _gltf.get("images", [])]
+pinned = json.load(open(os.path.join(HERE, "werewolf_escaped.images.json")))
+print("IMAGES", json.dumps(inventory), "pinned", json.dumps(pinned))
+if inventory != pinned:
+    raise RuntimeError("image inventory %s != pinned %s: Godot would re-extract and churn "
+                       "the committed <kind>_Image_N.png files" % (inventory, pinned))
+
+# --- 7. manifest beside the glb
+manifest = {"scale": SCALE, "walk_speed_mps": round(walk_mps * SCALE, 4), "clip_map": CLIP_MAP}
+with open(os.path.join(os.path.dirname(os.path.abspath(OUT)), "manifest.json"), "w") as f:
+    json.dump(manifest, f, indent=2)
+    f.write("\n")
+print("MANIFEST", json.dumps(manifest))
 print("DONE")

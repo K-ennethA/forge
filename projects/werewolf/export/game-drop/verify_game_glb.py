@@ -2,12 +2,20 @@
 
 Usage (any Python with numpy; Blender's bundled one works):
     python verify_game_glb.py <kind.glb> [manifest.json] [--expect-height 2.1]
+                              [--expect-images <kind>.images.json]
 
-Asserts: one scene, one skin; bind pose resolves (joint world @ IBM == I, so the
+Asserts: one scene, one skin; NORMAL + TANGENT shipped; bind pose resolves (joint world @ IBM == I, so the
 rendered bind pose IS the POSITION data); feet at origin; facing -Z (ankle ->
 toe on -Z); morph targets present; every clip starts at t=0; every clip_map
 value exists under the name Godot will give it. Prints every number; exits with
 the fail count.
+
+Image inventory: Godot extracts every embedded glTF image on import as
+<kind>_Image_N.png (N = glTF image index) and the game repo commits those files, so
+a rebuild that changes the image count, order or names churns tracked files. The
+inventory (glTF images[] in index order: name, mimeType) is always printed; with
+--expect-images it must equal the JSON list in that file exactly - count, order and
+names. werewolf_escaped.images.json beside this file is that kind's pinned list.
 
 Godot 4.6's glTF importer renames clips (measured 2026-09-24 on a headless
 import): a trailing "-loop" is stripped and the clip set to LOOP_LINEAR
@@ -80,7 +88,12 @@ def trs(node):
     return m
 
 
-def main(path, manifest_path=None, expect_height=None):
+def image_inventory(j):
+    """[(name, mimeType)] in glTF index order - the order Godot numbers them by."""
+    return [[im.get("name"), im.get("mimeType")] for im in j.get("images", [])]
+
+
+def main(path, manifest_path=None, expect_height=None, expect_images=None):
     j, binc = load(path)
     nodes = j["nodes"]
     parent = {}
@@ -109,6 +122,22 @@ def main(path, manifest_path=None, expect_height=None):
     names = {nodes[i].get("name"): i for i in joints}
     print("   joints=%d meshes=%d" % (len(joints), len(j.get("meshes", []))))
 
+    print("== image inventory (Godot extracts these as <kind>_Image_N.png, N = index)")
+    inv = image_inventory(j)
+    for k, (name, mime) in enumerate(inv):
+        print("   [%d] %r %s" % (k, name, mime))
+    print("   images=%d textures=%d materials=%d" % (len(inv), len(j.get("textures", [])),
+                                                 len(j.get("materials", []))))
+    img_names = [n for n, _ in inv]
+    check("image names unique", len(set(img_names)) == len(img_names), str(img_names))
+    if expect_images is not None:
+        want = json.load(open(expect_images))
+        want = [list(w) if isinstance(w, (list, tuple)) else [w, None] for w in want]
+        got = [[n, m if want and k < len(want) and want[k][1] is not None else None]
+               for k, (n, m) in enumerate(inv)]
+        check("image inventory matches %s (count, order, names)" % expect_images,
+              got == want, "got %s want %s" % (got, want))
+
     print("== bind pose")
     ibm = accessor(j, binc, skin["inverseBindMatrices"])
     worst = 0.0
@@ -123,6 +152,7 @@ def main(path, manifest_path=None, expect_height=None):
     lo = np.full(3, 1e9); hi = np.full(3, -1e9)
     tris = 0
     targets = []
+    attrs = []
     for i in mesh_nodes:
         m = j["meshes"][nodes[i]["mesh"]]
         for p in m["primitives"]:
@@ -131,6 +161,14 @@ def main(path, manifest_path=None, expect_height=None):
             tris += j["accessors"][p["indices"]]["count"] // 3
             targets.append(len(p.get("targets", [])))
             print("   primitive attrs:", sorted(p["attributes"]))
+            attrs.append(set(p["attributes"]))
+            if "COLOR_0" in p["attributes"]:
+                col = accessor(j, binc, p["attributes"]["COLOR_0"])
+                ca = j["accessors"][p["attributes"]["COLOR_0"]]
+                if ca.get("normalized"):
+                    col = col / {5121: 255.0, 5123: 65535.0}[ca["componentType"]]
+                print("   COLOR_0 %s linear min=%s max=%s" % (ca["type"], np.round(col.min(0), 4),
+                                                           np.round(col.max(0), 4)))
         tn = m.get("extras", {}).get("targetNames")
         print("   mesh %r tris=%d morph targets=%s names=%s" % (m.get("name"), tris, targets, tn))
     height = hi[1] - lo[1]
@@ -141,6 +179,8 @@ def main(path, manifest_path=None, expect_height=None):
     check("centred on origin in X/Z within 5 cm", abs(cx) < 0.05 and abs(cz) < 0.05,
           "bbox centre x=%.4f z=%.4f" % (cx, cz))
     check("morph targets present", all(t > 0 for t in targets), str(targets))
+    check("NORMAL + TANGENT on every primitive (smooth shading and a stable tangent basis ship)",
+          all({"NORMAL", "TANGENT"} <= a for a in attrs), str([sorted(a) for a in attrs]))
 
     print("== facing (ankle -> toe tip, joints in world space at bind)")
     fz = []
@@ -193,8 +233,13 @@ def main(path, manifest_path=None, expect_height=None):
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:]]
     expect = None
+    images = None
     if "--expect-height" in args:
         i = args.index("--expect-height")
         expect = float(args[i + 1])
         del args[i:i + 2]
-    sys.exit(main(args[0], args[1] if len(args) > 1 else None, expect))
+    if "--expect-images" in args:
+        i = args.index("--expect-images")
+        images = args[i + 1]
+        del args[i:i + 2]
+    sys.exit(main(args[0], args[1] if len(args) > 1 else None, expect, images))
