@@ -1,12 +1,13 @@
 """Headless look-dev stills / previews of a game-drop .glb, rendered as the game would see it.
 
-    blender --background --factory-startup --python render_look.py -- <in.glb> <out_prefix> [stills|turntable|walk]
+    blender --background --factory-startup --python render_look.py -- <in.glb> <out_prefix> [stills|turntable|walk|clips <spec> [angle]]
 
 Imports the glb into an empty scene (so what renders is exactly what ships), lights
 it with a fixed key/fill/rim + grey world, and renders with EEVEE:
   stills    -> <prefix>_front.png, <prefix>_threequarter.png (1024 px)
   turntable -> <prefix>_turntable.mp4 (72 frames, 360 deg, idle clip playing)
   walk      -> <prefix>_walk.mp4 (the walk clip, two loops, three-quarter camera)
+  clips     -> <prefix>.mp4 (clips back to back, e.g. "run-loop*3" or "fall*2+land")
 The glb faces glTF +Z-forward-in-Blender-terms: the importer maps glTF -Z (Godot
 forward) to Blender +Y, so the "front" camera sits on +Y looking back at -Y.
 """
@@ -128,6 +129,32 @@ elif MODE == "turntable":
         for k in fc.keyframe_points:
             k.interpolation = "LINEAR"
     movie(PREFIX + "_turntable.mp4")
+elif MODE == "clips":
+    # clips <spec> [angle_deg]: glTF clips back to back on one NLA track, spec like
+    # "run-loop*3" or "fall*2+land"; each clip plays its whole key range. A repeat
+    # maps the loop's last key (a copy of its first) onto the next cycle's first
+    # frame, so nothing is held or skipped at the wrap.
+    spec = argv[3]
+    angle = float(argv[4]) if len(argv) > 4 else 40.0
+    arm.animation_data.action = None
+    for tr in arm.animation_data.nla_tracks:
+        tr.mute = True
+    track = arm.animation_data.nla_tracks.new()
+    start = 1
+    for part in spec.split("+"):
+        name, _, times = part.partition("*")
+        act = next(a for a in bpy.data.actions if a.name == name or a.name.startswith(name + "_"))
+        f0, f1 = act.frame_range
+        strip = track.strips.new(name, int(start), act)
+        strip.action_frame_start, strip.action_frame_end = f0, f1
+        strip.repeat = float(times or 1)
+        strip.extrapolation = "NOTHING"
+        start = strip.frame_end
+        print("STRIP", act.name, "frames", strip.frame_start, strip.frame_end)
+    scene.frame_start, scene.frame_end = 1, int(start)
+    scene.render.fps = 24
+    aim(angle)
+    movie(PREFIX + ".mp4")
 else:
     act = play("walk")
     f0, f1 = (int(act.frame_range[0]), int(act.frame_range[1])) if act else (1, 32)
