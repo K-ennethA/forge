@@ -1,0 +1,139 @@
+{
+ "unit": "blightcap",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\shroom_grunt.blend",
+ "yaw_fix_deg": 180.0,
+ "tier": "crowd",
+ "tri_budget": [
+  3000,
+  5000
+ ],
+ "max_height": 1.8,
+ "max_footprint": 1.9,
+ "tris_source": 19052,
+ "source_bbox_after_rotation": [
+  [
+   -1.374,
+   -1.155,
+   0.014
+  ],
+  [
+   1.361,
+   1.092,
+   2.274
+  ]
+ ],
+ "geometry_fix": {
+  "rim_vertices": 2005,
+  "rim_roughness_before": 0.1135,
+  "global_roughness_before": 0.0996,
+  "rim_roughness_after": 0.057,
+  "global_roughness_after": 0.0723,
+  "rule": "rim weight = smoothstep(h,0.55,0.72) * smoothstep(r,0.62rmax,0.80rmax); Taubin 12 it (weight max(w,0.35)) + 36 it (rim)"
+ },
+ "scale_factor": 0.693975,
+ "bound_by": "footprint",
+ "blightcap_lean": {
+  "feet_xy": [
+   -0.0009,
+   0.0896
+  ],
+  "cap_rim_xy": [
+   0.0059,
+   0.2897
+  ],
+  "crown_xy": [
+   0.005,
+   -0.3725
+  ],
+  "rim_to_crown_angle_from_minusY_deg": -0.1
+ },
+ "facing": {
+  "rule": "body band under the cap (h 0.40-0.75, r < 0.62 cap radius): anchor = centroid, landmark = Laplacian^2-weighted centroid (carved eyes + mouth)",
+  "anchor": [
+   0.0,
+   0.1067,
+   0.8729
+  ],
+  "landmark": [
+   -0.0146,
+   -0.0977,
+   0.8667
+  ],
+  "source_angle_from_minusY_deg": 175.9,
+  "final_angle_from_minusY_deg": -4.1
+ },
+ "reclamp_factor": 0.999824,
+ "regions_faces": {
+  "stalk_body": 5000,
+  "root_legs": 397,
+  "arm_tips": 86,
+  "cap_top": 1247,
+  "cap_crown": 266,
+  "gills": 1334,
+  "spots": 122,
+  "face_features": 100
+ },
+ "palette_srgb": {
+  "stalk_body": [
+   216,
+   202,
+   168
+  ],
+  "root_legs": [
+   126,
+   98,
+   70
+  ],
+  "arm_tips": [
+   170,
+   150,
+   118
+  ],
+  "cap_top": [
+   172,
+   72,
+   50
+  ],
+  "cap_crown": [
+   138,
+   54,
+   40
+  ],
+  "gills": [
+   122,
+   88,
+   74
+  ],
+  "spots": [
+   236,
+   224,
+   190
+  ],
+  "face_features": [
+   58,
+   40,
+   34
+  ]
+ },
+ "cavity_shade_k": 0.3,
+ "material": {
+  "roughness": 0.6,
+  "coat": 0.0,
+  "emission_strength": 1.5
+ },
+ "tris_final": 5000,
+ "digest_geometry_colour": "40869c122b640541",
+ "final_bbox": [
+  [
+   -0.95,
+   -0.7815,
+   0.0
+  ],
+  [
+   0.95,
+   0.7815,
+   1.569
+  ]
+ ],
+ "seconds": 0.4
+}
