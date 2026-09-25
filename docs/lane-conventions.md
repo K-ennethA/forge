@@ -131,9 +131,18 @@ bar, never the reverse.
   scores time and quality — freehand vs pipeline on the same task is a
   comparison to RUN, not to argue.
 
-## Quality tier (2026-09-24, artist reset)
+## Quality tier is a per-asset knob (2026-09-24, artist)
 
-Delivered game characters target the semi-realistic tier: 30–50k tris,
-baked normal/AO detail from a high-poly source, real texturing — not the
-16.7k flat-shaded tier ("low poly and low detail" is below the bar).
-Low-poly stays acceptable only for drafts and unshipped placeholders.
+The tier is DETERMINED per asset by its role and platform budget, not fixed
+globally: a hero character earns the semi-realistic tier (30–50k tris,
+baked normal/AO detail from a high-poly source, real texturing); a crowd
+NPC, background prop, or mobile-budget asset may correctly be low-poly —
+"low poly for a game where it doesn't matter, or something more realistic."
+
+The pipeline serves both from ONE high-detail master per asset: build/
+generate high, then bake down to the requested budget (this is also how
+LODs fall out for free). The tier is declared in the asset's task config
+and the delivery is gated against the declared budget, not a universal one.
+What was actually below the bar on the first protagonist: an asset in a
+HERO role delivered at crowd quality — a mismatch of tier to role, which
+this knob exists to prevent.
