@@ -1,12 +1,12 @@
-"""werewolf_escaped game drop: forge werewolf Form A -> git/werewolf model-swap contract.
+﻿"""protagonist_human game drop: forge werewolf Form A (the human form) -> git/werewolf model-swap contract.
 
 Run headless on a COPY of projects/werewolf/models/werewolf-wip-17.blend (the
 script never saves, and refuses to run on the source file itself):
 
-    blender --background --factory-startup <copy.blend> --python build_werewolf_escaped.py -- <out.glb>
+    blender --background --factory-startup <copy.blend> --python build_protagonist_human.py -- <out.glb>
 
 What it does, in order (numbers measured 2026-09-24):
-  0. the look (look_werewolf_escaped.py): custom normals dropped, 31 n-gons
+  0. the look (look_protagonist_human.py): custom normals dropped, 31 n-gons
      triangulated so tangents can be built (2 folded duplicate pairs removed), winding recomputed outward, fully
      smooth shading (no sharps), and region colour from the tags + the palette
      sample_palette.py derives from refs/form-a-front.png (palette.json), shipped as
@@ -30,7 +30,7 @@ What it does, in order (numbers measured 2026-09-24):
      carries no one-frame hold.
 
   6. Image inventory is pinned: the glb's glTF images[] (index order) must equal
-     werewolf_escaped.images.json or the build fails - Godot extracts embedded images
+     protagonist_human.images.json or the build fails - Godot extracts embedded images
      as <kind>_Image_N.png and the game commits them, so count/order/names must not
      churn. The colour ships as COLOR_0, so the pinned inventory is empty ([]); the
      generator's three 2048 px maps (Image_2, Image_1, Image_0) are gone.
@@ -58,12 +58,13 @@ from forge.tools.registry import dispatch
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 if not argv:
-    raise SystemExit("usage: ... --python build_werewolf_escaped.py -- <out.glb>")
+    raise SystemExit("usage: ... --python build_protagonist_human.py -- <out.glb>")
 OUT = argv[0]
 YAW = 180.0
-# Game-side scale of this kind, carried from the manifest delivered 2026-09-24
-# (1.133 x the 1.8791 m bind height = 2.129 m in game; the kind's spec height is 2.05 m).
-SCALE = 1.133
+# Game-side scale of this kind, set by the game session at the recast
+# (werewolf d1905e5): 0.9444 x the 1.853 m idle-pose height = 1.75 m, the
+# contract height for a humanoid. walk_speed_mps follows as 0.4417 x scale.
+SCALE = 0.9444
 CLIP_MAP = {"idle": "idle", "walk": "walk", "jump": "jump", "attack_1": "punch_R",
             "attack_2": "punch_L"}
 
@@ -90,7 +91,7 @@ mesh = bpy.data.objects[MESH]
 print("FPS", scene.render.fps)
 
 # --- 0. look: shading + region colour
-import look_werewolf_escaped as look
+import look_protagonist_human as look
 look_report = look.apply(mesh, os.path.join(HERE, "palette.json"))
 print("LOOK", json.dumps(look_report, default=str))
 
@@ -280,7 +281,7 @@ with open(OUT, "rb") as f:
 _jlen = struct.unpack_from("<I", blob, 12)[0]
 _gltf = json.loads(blob[20:20 + _jlen])
 inventory = [[im.get("name"), im.get("mimeType")] for im in _gltf.get("images", [])]
-pinned = json.load(open(os.path.join(HERE, "werewolf_escaped.images.json")))
+pinned = json.load(open(os.path.join(HERE, "protagonist_human.images.json")))
 print("IMAGES", json.dumps(inventory), "pinned", json.dumps(pinned))
 if inventory != pinned:
     raise RuntimeError("image inventory %s != pinned %s: Godot would re-extract and churn "
@@ -293,3 +294,4 @@ with open(os.path.join(os.path.dirname(os.path.abspath(OUT)), "manifest.json"), 
     f.write("\n")
 print("MANIFEST", json.dumps(manifest))
 print("DONE")
+
