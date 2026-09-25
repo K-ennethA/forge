@@ -1,0 +1,118 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-monster_rigged.blend",
+ "meshes": [
+  "Monster"
+ ],
+ "verts": 9006,
+ "bbox_min": [
+  -14.405,
+  -11.725,
+  -0.0
+ ],
+ "bbox_max": [
+  14.399,
+  11.822,
+  30.788
+ ],
+ "centroid": [
+  -0.006,
+  -0.282,
+  9.999
+ ],
+ "top30": {
+  "n": 1355,
+  "feature_offset_xy": [
+   -0.0722,
+   0.1766
+  ],
+  "feature_angle_from_minusY_deg": -157.8,
+  "lap_energy": {
+   "minusY": 19.48398,
+   "plusY": 18.956,
+   "minusX": 20.51504,
+   "plusX": 17.92494
+  },
+  "extent_y": [
+   -4.951,
+   5.317
+  ]
+ },
+ "head_top15": {
+  "n": 199,
+  "feature_offset_xy": [
+   -0.0473,
+   -0.2771
+  ],
+  "feature_angle_from_minusY_deg": -9.7,
+  "lap_energy": {
+   "minusY": 2.97901,
+   "plusY": 2.32484,
+   "minusX": 2.65967,
+   "plusX": 2.64419
+  },
+  "extent_y": [
+   -2.884,
+   0.265
+  ]
+ },
+ "chest_35_75": {
+  "n": 2471,
+  "feature_offset_xy": [
+   -0.0376,
+   -0.0995
+  ],
+  "feature_angle_from_minusY_deg": -20.7,
+  "lap_energy": {
+   "minusY": 34.04763,
+   "plusY": 35.96925,
+   "minusX": 34.53018,
+   "plusX": 35.48671
+  },
+  "extent_y": [
+   -4.951,
+   5.55
+  ]
+ },
+ "materials": {
+  "summoner_body": {
+   "faces": 5220,
+   "centroid": [
+    0.009,
+    -0.235,
+    16.929
+   ],
+   "dir_angle_from_minusY_deg": 161.6,
+   "horiz_offset": 0.0496
+  },
+  "summoner_flame": {
+   "faces": 4819,
+   "centroid": [
+    0.001,
+    -0.656,
+    10.157
+   ],
+   "dir_angle_from_minusY_deg": 1.2,
+   "horiz_offset": 0.3734
+  },
+  "summoner_mouth": {
+   "faces": 79,
+   "centroid": [
+    -0.134,
+    -4.513,
+    21.248
+   ],
+   "dir_angle_from_minusY_deg": -1.7,
+   "horiz_offset": 4.2325
+  },
+  "summoner_roots": {
+   "faces": 6083,
+   "centroid": [
+    0.024,
+    0.117,
+    3.655
+   ],
+   "dir_angle_from_minusY_deg": 175.6,
+   "horiz_offset": 0.4005
+  }
+ }
+}

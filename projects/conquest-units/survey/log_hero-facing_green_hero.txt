@@ -1,0 +1,6 @@
+00:00.906  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-green_hero.blend"
+00:00.953  reports          | WARNING Object has non-uniform scale, sculpting may be unpredictable
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+HERO_FACING {"top30": {"n": 9363, "feature_offset_xy": [0.1888, -0.1418], "feature_angle_from_minusY_deg": 53.1, "lap_energy": {"minusY": 0.14133, "plusY": 0.08464, "minusX": 0.09069, "plusX": 0.13528}, "extent_y": [-0.759, 0.626]}, "head_top15": {"n": 1799, "feature_offset_xy": [0.0099, -0.1334], "feature_angle_from_minusY_deg": 4.2, "lap_energy": {"minusY": 0.07661, "plusY": 0.02396, "minusX": 0.0494, "plusX": 0.05118}, "extent_y": [-0.743, 0.451]}, "chest_35_75": {"n": 93731, "feature_offset_xy": [-0.014, 0.1174], "feature_angle_from_minusY_deg": -173.2, "lap_energy": {"minusY": 0.54484, "plusY": 0.71697, "minusX": 0.74422, "plusX": 0.51759}, "extent_y": [-0.957, 1.185]}}
+
+Blender quit

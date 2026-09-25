@@ -32,7 +32,10 @@ else:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=SRC)
 
-ORIG_DIR = r"C:\Users\kenne\OneDrive\Documents\CONQUEST"
+# hero wave (2026-09-25): hero originals live one level up, in Documents\ -- override via env.
+# SURVEY_TACTICAL=1 adds the glb-mode tactical view to blend mode. Both unset = prior behaviour.
+ORIG_DIR = os.environ.get("SURVEY_ORIG_DIR", r"C:\Users\kenne\OneDrive\Documents\CONQUEST")
+BLEND_TACTICAL = os.environ.get("SURVEY_TACTICAL") == "1"
 scene = bpy.context.scene
 dg =bpy.context.evaluated_depsgraph_get()
 
@@ -266,9 +269,12 @@ def aim(angle_deg, elev_deg, fill=1.08):
 
 outs = []
 views = [("front", 0.0, 5.0, 1024, 1.0), ("threequarter", 40.0, 15.0, 1024, 1.0)]
-if MODE == "glb":
+if MODE == "glb" or BLEND_TACTICAL:
     # tactical zoom: 55 deg down, three-quarter; unit ~100 px tall in a 256 frame
     views.append(("tactical", 40.0, 55.0, 256, 1.6))
+if os.environ.get("SURVEY_SIDE") == "1":
+    # facing evidence: profile from +X (90 deg), 512 px -- a nose/visor/foot direction reads here
+    views.append(("side", 90.0, 5.0, 512, 1.0))
 for tag, ang, elev, res, fill in views:
     scene.render.resolution_x = scene.render.resolution_y = res
     scene.render.resolution_percentage = 100

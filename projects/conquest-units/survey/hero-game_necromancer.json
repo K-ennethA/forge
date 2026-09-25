@@ -1,0 +1,122 @@
+{
+ "mode": "glb",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\dark\\necromancer.glb",
+ "yaw_deg": 180.0,
+ "objects": [
+  {
+   "name": "necromancer",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.866,
+    1.093,
+    1.8
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 9406,
+   "faces": 9996,
+   "tris_base": 9996,
+   "loose_shells": 819,
+   "boundary_edges": 7402,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 1.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [
+    "necromancer_mat"
+   ],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 9996,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 819,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 2.01,
+    "overlap": false,
+    "coverage": 0.1192,
+    "overlap_note": "summed UV area is 29% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.717,
+     "p05": 0.497,
+     "p95": 1.763,
+     "worst_factor": 2.01
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "necromancer_mat",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.85,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "necromancer"
+ ],
+ "render_tris_total": 9996,
+ "bbox_min": [
+  -0.433,
+  -0.546,
+  0.0
+ ],
+ "bbox_max": [
+  0.433,
+  0.546,
+  1.8
+ ],
+ "bbox_size_wdh": [
+  0.866,
+  1.093,
+  1.8
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_necromancer_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_necromancer_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_necromancer_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_necromancer_side.png"
+ ]
+}

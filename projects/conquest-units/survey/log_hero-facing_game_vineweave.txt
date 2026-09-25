@@ -1,0 +1,7 @@
+10:33:18 | INFO: Data are loaded, start creating Blender stuff
+10:33:18 | INFO: Blender create Mesh node vineweave_mesh
+10:33:18 | INFO: glTF import finished in 0.01s
+HERO_FACING {"top30": {"n": 1110, "feature_offset_xy": [0.0277, -0.0222], "feature_angle_from_minusY_deg": 51.3, "lap_energy": {"minusY": 0.19215, "plusY": 0.09454, "minusX": 0.11689, "plusX": 0.16979}, "extent_y": [-0.188, 0.108]}, "head_top15": {"n": 385, "feature_offset_xy": [-0.0009, 0.0008], "feature_angle_from_minusY_deg": -130.6, "lap_energy": {"minusY": 0.08099, "plusY": 0.04727, "minusX": 0.06402, "plusX": 0.06423}, "extent_y": [-0.182, 0.073]}, "chest_35_75": {"n": 7677, "feature_offset_xy": [0.0181, 0.0224], "feature_angle_from_minusY_deg": 141.1, "lap_energy": {"minusY": 0.7309, "plusY": 1.32196, "minusX": 1.04462, "plusX": 1.00824}, "extent_y": [-0.231, 0.231]}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

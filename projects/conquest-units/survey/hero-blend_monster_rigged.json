@@ -1,0 +1,442 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-monster_rigged.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "FillR",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "FillT",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Monster",
+   "type": "MESH",
+   "parent": "MonsterRig",
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    28.758,
+    23.57,
+    30.473
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [
+    {
+     "type": "ARMATURE",
+     "name": "Armature",
+     "object": "MonsterRig"
+    }
+   ],
+   "verts": 9006,
+   "faces": 16201,
+   "tris_base": 18000,
+   "loose_shells": 3,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [],
+   "color_attributes": [],
+   "materials": [
+    "summoner_body",
+    "summoner_roots",
+    "summoner_flame",
+    "summoner_mouth"
+   ],
+   "vertex_groups": 13,
+   "shape_keys": [],
+   "tris_evaluated": 18000
+  },
+  {
+   "name": "MonsterRig",
+   "type": "ARMATURE",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    28.256,
+    21.886,
+    28.785
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "bones": 13,
+   "bone_names": [
+    "root",
+    "spine",
+    "chest",
+    "head",
+    "crown",
+    "arm.L",
+    "blade.L",
+    "arm.R",
+    "blade.R",
+    "skirt.F",
+    "skirt.B",
+    "skirt.L",
+    "skirt.R"
+   ],
+   "active_action": null,
+   "nla_tracks": [
+    "idle",
+    "walk",
+    "attack",
+    "hit",
+    "death"
+   ]
+  },
+  {
+   "name": "RecolorCam",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "SunR",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "SunT",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "TintCam",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "summoner_body",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.022,
+    0.019,
+    0.024,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.85,
+   "images": [],
+   "uses_color_attribute": false
+  },
+  {
+   "name": "summoner_flame",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.5,
+    0.05,
+    0.015,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.9,
+   "images": [],
+   "uses_color_attribute": false
+  },
+  {
+   "name": "summoner_mouth",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.48,
+    0.02,
+    0.02,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.6,
+   "images": [],
+   "uses_color_attribute": false
+  },
+  {
+   "name": "summoner_roots",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.045,
+    0.014,
+    0.016,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.92,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [
+  {
+   "name": "attack",
+   "frame_range": [
+    1.0,
+    16.0
+   ],
+   "fcurves": 78,
+   "users": 2,
+   "fake_user": true
+  },
+  {
+   "name": "death",
+   "frame_range": [
+    1.0,
+    26.0
+   ],
+   "fcurves": 78,
+   "users": 2,
+   "fake_user": true
+  },
+  {
+   "name": "hit",
+   "frame_range": [
+    1.0,
+    10.0
+   ],
+   "fcurves": 78,
+   "users": 2,
+   "fake_user": true
+  },
+  {
+   "name": "idle",
+   "frame_range": [
+    1.0,
+    48.0
+   ],
+   "fcurves": 78,
+   "users": 2,
+   "fake_user": true
+  },
+  {
+   "name": "walk",
+   "frame_range": [
+    1.0,
+    20.0
+   ],
+   "fcurves": 78,
+   "users": 2,
+   "fake_user": true
+  }
+ ],
+ "armatures": [
+  "MonsterRig"
+ ],
+ "render_meshes": [
+  "Monster"
+ ],
+ "render_tris_total": 18000,
+ "bbox_min": [
+  -14.506,
+  -11.154,
+  0.016
+ ],
+ "bbox_max": [
+  14.252,
+  12.416,
+  30.489
+ ],
+ "bbox_size_wdh": [
+  28.758,
+  23.57,
+  30.473
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_rigged_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_rigged_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_rigged_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_rigged_side.png"
+ ]
+}

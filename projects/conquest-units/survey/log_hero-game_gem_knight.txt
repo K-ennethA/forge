@@ -1,0 +1,16 @@
+Warning: addon-module forge found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\addon\\forge\\__init__.py'
+10:33:02 | INFO: Data are loaded, start creating Blender stuff
+10:33:02 | INFO: Blender create Mesh node gem_knight_mesh
+10:33:02 | INFO: glTF import finished in 0.01s
+00:02.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_front.png'
+00:02.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_threequarter.png'
+00:02.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_tactical.png'
+00:02.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-game_gem_knight_side.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\hero-game_gem_knight.json
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

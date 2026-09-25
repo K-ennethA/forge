@@ -1,0 +1,5 @@
+00:00.969  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-necromancer.blend"
+HERO_FACING {"top30": {"n": 3472, "feature_offset_xy": [0.0533, 0.3091], "feature_angle_from_minusY_deg": 170.2, "lap_energy": {"minusY": 0.5531, "plusY": 0.75238, "minusX": 0.61438, "plusX": 0.69111}, "extent_y": [-4.939, 1.23]}, "head_top15": {"n": 1802, "feature_offset_xy": [0.0101, 0.1484], "feature_angle_from_minusY_deg": 176.1, "lap_energy": {"minusY": 0.26299, "plusY": 0.26716, "minusX": 0.25955, "plusX": 0.27059}, "extent_y": [-1.22, 1.22]}, "chest_35_75": {"n": 6390, "feature_offset_xy": [0.0834, 1.437], "feature_angle_from_minusY_deg": 176.7, "lap_energy": {"minusY": 0.57481, "plusY": 2.59064, "minusX": 1.46354, "plusX": 1.70192}, "extent_y": [-4.987, 2.292]}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

@@ -1,0 +1,8 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\survey.py:80: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  info = {"name": mat.name, "users": mat.users, "use_nodes": mat.use_nodes,
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\survey.py:82: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  if mat.use_nodes and mat.node_tree:
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\survey.py:222: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\survey.py:247: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True

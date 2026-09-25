@@ -80,3 +80,20 @@ foot-pad sink), then author sitting as poses/clips: sitting idle (dormant,
 rooted - the boss-intro state), stand_up transition, standing idle
 (current creak/sway), sit_down; retune the lumber walk on the standing
 rest. Silhouette approval by render sheet before clips.
+
+## 2026-09-25 - Eldroot standing v2 spec (artist, verbatim)
+> its taller standing but the two legs in front should be fully extended,
+> meaning he should double in height, hes just sitting in the air now, do
+> you understand the requirement before spending more time on this
+
+> we may need model changes to make the feet wider as well to sell it better
+
+Spec: standing = front legs at FULL extension, straight load-bearing
+columns - total height roughly DOUBLES (seated ~2.7 m -> standing ~5+ m;
+the ratio is the point). The 0.45 m lift is REJECTED ("sitting in the
+air"). Sitting re-derived as the fold-back pose. MODEL CHANGE approved:
+widen the foot pads so the standing stance reads stable. Game-side height
+cap (3.4 m boss allowance) will uniformly scale the model; the state RATIO
+survives the scale - raising the cap is the artist's game-side call.
+Approval point: seated-vs-standing sheet with the height ratio quoted,
+before clips are finalized.

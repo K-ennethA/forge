@@ -1,0 +1,14 @@
+00:00.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-green_hero.blend"
+00:01.031  reports          | WARNING Object has non-uniform scale, sculpting may be unpredictable
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+00:02.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_front.png'
+00:03.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_threequarter.png'
+00:03.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_tactical.png'
+00:03.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\hero-green_hero_side.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\hero-blend_green_hero.json
+
+Blender quit

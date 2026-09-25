@@ -1,0 +1,88 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\earth\\gem_knight.glb",
+ "meshes": [
+  "gem_knight"
+ ],
+ "verts": 6439,
+ "bbox_min": [
+  -0.655,
+  -0.19,
+  -0.0
+ ],
+ "bbox_max": [
+  0.655,
+  0.19,
+  1.8
+ ],
+ "centroid": [
+  0.006,
+  -0.029,
+  0.995
+ ],
+ "top30": {
+  "n": 1560,
+  "feature_offset_xy": [
+   0.002,
+   -0.01
+  ],
+  "feature_angle_from_minusY_deg": 11.5,
+  "lap_energy": {
+   "minusY": 0.09743,
+   "plusY": 0.05757,
+   "minusX": 0.08112,
+   "plusX": 0.07388
+  },
+  "extent_y": [
+   -0.156,
+   0.13
+  ]
+ },
+ "head_top15": {
+  "n": 226,
+  "feature_offset_xy": [
+   0.003,
+   0.0036
+  ],
+  "feature_angle_from_minusY_deg": 140.4,
+  "lap_energy": {
+   "minusY": 0.01726,
+   "plusY": 0.0235,
+   "minusX": 0.01873,
+   "plusX": 0.02203
+  },
+  "extent_y": [
+   -0.156,
+   0.004
+  ]
+ },
+ "chest_35_75": {
+  "n": 4745,
+  "feature_offset_xy": [
+   0.0111,
+   0.0017
+  ],
+  "feature_angle_from_minusY_deg": 98.5,
+  "lap_energy": {
+   "minusY": 0.26701,
+   "plusY": 0.23929,
+   "minusX": 0.2453,
+   "plusX": 0.261
+  },
+  "extent_y": [
+   -0.19,
+   0.19
+  ]
+ },
+ "materials": {
+  "gem_knight_mat": {
+   "faces": 9790,
+   "centroid": [
+    0.002,
+    -0.027,
+    1.003
+   ],
+   "dir_angle_from_minusY_deg": -109.4,
+   "horiz_offset": 0.0044
+  }
+ }
+}

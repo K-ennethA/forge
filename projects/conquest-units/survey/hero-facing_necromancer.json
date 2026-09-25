@@ -1,0 +1,111 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-necromancer.blend",
+ "meshes": [
+  "Sphere",
+  "Sphere.001",
+  "Sphere.002",
+  "Sphere.003",
+  "Sphere.004",
+  "Sphere.005",
+  "Sphere.006",
+  "Sphere.007",
+  "Sphere.008",
+  "Sphere.009",
+  "Sphere.010",
+  "Sphere.011",
+  "Sphere.012",
+  "Sphere.013",
+  "Sphere.014",
+  "Sphere.015",
+  "Sphere.016",
+  "Sphere.017",
+  "Sphere.018",
+  "Sphere.019",
+  "Sphere.020",
+  "Sphere.021",
+  "Sphere.022",
+  "Sphere.023"
+ ],
+ "verts": 149184,
+ "bbox_min": [
+  -3.129,
+  -4.987,
+  0.006
+ ],
+ "bbox_max": [
+  3.129,
+  2.921,
+  13.014
+ ],
+ "centroid": [
+  -0.026,
+  -0.126,
+  2.783
+ ],
+ "top30": {
+  "n": 3472,
+  "feature_offset_xy": [
+   0.0533,
+   0.3091
+  ],
+  "feature_angle_from_minusY_deg": 170.2,
+  "lap_energy": {
+   "minusY": 0.5531,
+   "plusY": 0.75238,
+   "minusX": 0.61438,
+   "plusX": 0.69111
+  },
+  "extent_y": [
+   -4.939,
+   1.23
+  ]
+ },
+ "head_top15": {
+  "n": 1802,
+  "feature_offset_xy": [
+   0.0101,
+   0.1484
+  ],
+  "feature_angle_from_minusY_deg": 176.1,
+  "lap_energy": {
+   "minusY": 0.26299,
+   "plusY": 0.26716,
+   "minusX": 0.25955,
+   "plusX": 0.27059
+  },
+  "extent_y": [
+   -1.22,
+   1.22
+  ]
+ },
+ "chest_35_75": {
+  "n": 6390,
+  "feature_offset_xy": [
+   0.0834,
+   1.437
+  ],
+  "feature_angle_from_minusY_deg": 176.7,
+  "lap_energy": {
+   "minusY": 0.57481,
+   "plusY": 2.59064,
+   "minusX": 1.46354,
+   "plusX": 1.70192
+  },
+  "extent_y": [
+   -4.987,
+   2.292
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 149168,
+   "centroid": [
+    -0.026,
+    -0.126,
+    2.783
+   ],
+   "dir_angle_from_minusY_deg": 175.3,
+   "horiz_offset": 0.0001
+  }
+ }
+}

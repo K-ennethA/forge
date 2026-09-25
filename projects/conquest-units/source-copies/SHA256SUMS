@@ -4,3 +4,10 @@ c4e19252461e412c5309f671061910c37f96a790d4a5ca059e7715daa70f933f  flower_grunt.b
 ff1a17c32466e1b16af61841d5251d762bb1f96b83573a500af435ea2b13cf20  parasite_grunt.blend
 f6249b2e7a7847f59c010f5055bfc011f8b367a519c4c3232ca1c24652590449  shroom_grunt.blend
 e1f010533f931936abeee57b54244e9da0699fcd6b2f24ede750624559c3111b  tree_grunt.blend
+# hero wave: sha256 of the ORIGINALS in C:\Users\kenne\OneDrive\Documents\<name>.blend (copied 2026-09-25 as hero-<name>.blend; copies byte-identical, re-hashed after copy)
+d1cf3de515f548e9d7066a8a44d19dfa0b7381233da148124a823b75e8f73602  hero-green_hero.blend
+b769afffba9e44fe3ffed2d314c10bcae13e81d8a693418578eb6820bfdbe4ed  hero-gem_knight.blend
+56cce302f39622bd832feca0db2b541388ceb212a0bf5e9f4bff40d54eaa18f0  hero-necromancer.blend
+310a564d629bd67b5b79185c8aa98450efc7e18a19d2713bffb8d11d09b9158c  hero-monster.blend
+a7a18a2b29bd28166e4a9f716c35354ae34e2fe791fa03840bc488299ace001d  hero-monster2.blend
+4518a8176b043c1f84d31464ed3ec2953f68b651bae4b6f2ccde0f41545b7ed2  hero-monster_rigged.blend

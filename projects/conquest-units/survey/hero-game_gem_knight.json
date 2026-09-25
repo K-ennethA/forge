@@ -1,0 +1,122 @@
+{
+ "mode": "glb",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\earth\\gem_knight.glb",
+ "yaw_deg": 180.0,
+ "objects": [
+  {
+   "name": "gem_knight",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    1.31,
+    0.379,
+    1.8
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 6439,
+   "faces": 9790,
+   "tris_base": 9790,
+   "loose_shells": 106,
+   "boundary_edges": 2928,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 1.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [
+    "gem_knight_mat"
+   ],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 9790,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 106,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.35,
+    "overlap": false,
+    "coverage": 0.322,
+    "overlap_note": "summed UV area is 16% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.014,
+     "p05": 0.74,
+     "p95": 1.166,
+     "worst_factor": 1.35
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "gem_knight_mat",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.85,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "gem_knight"
+ ],
+ "render_tris_total": 9790,
+ "bbox_min": [
+  -0.655,
+  -0.19,
+  -0.0
+ ],
+ "bbox_max": [
+  0.655,
+  0.19,
+  1.8
+ ],
+ "bbox_size_wdh": [
+  1.31,
+  0.379,
+  1.8
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_gem_knight_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_gem_knight_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_gem_knight_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-game_gem_knight_side.png"
+ ]
+}

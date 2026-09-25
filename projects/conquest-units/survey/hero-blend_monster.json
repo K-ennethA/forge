@@ -1,0 +1,142 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-monster.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Sphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    28.973,
+    23.645,
+    30.936
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 276686,
+   "faces": 276592,
+   "tris_base": 553184,
+   "loose_shells": 47,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 553184,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": null,
+    "flipped_faces": 1709,
+    "degenerate_faces": 272560,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 14.3369,
+    "overlap_note": "summed UV area is 1431% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "Sphere"
+ ],
+ "render_tris_total": 553184,
+ "bbox_min": [
+  -14.492,
+  -11.726,
+  -0.582
+ ],
+ "bbox_max": [
+  14.481,
+  11.919,
+  30.353
+ ],
+ "bbox_size_wdh": [
+  28.973,
+  23.645,
+  30.936
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-monster_side.png"
+ ]
+}

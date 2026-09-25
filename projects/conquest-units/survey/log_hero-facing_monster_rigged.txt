@@ -1,0 +1,5 @@
+00:01.000  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-monster_rigged.blend"
+HERO_FACING {"top30": {"n": 1355, "feature_offset_xy": [-0.0722, 0.1766], "feature_angle_from_minusY_deg": -157.8, "lap_energy": {"minusY": 19.48398, "plusY": 18.956, "minusX": 20.51504, "plusX": 17.92494}, "extent_y": [-4.951, 5.317]}, "head_top15": {"n": 199, "feature_offset_xy": [-0.0473, -0.2771], "feature_angle_from_minusY_deg": -9.7, "lap_energy": {"minusY": 2.97901, "plusY": 2.32484, "minusX": 2.65967, "plusX": 2.64419}, "extent_y": [-2.884, 0.265]}, "chest_35_75": {"n": 2471, "feature_offset_xy": [-0.0376, -0.0995], "feature_angle_from_minusY_deg": -20.7, "lap_energy": {"minusY": 34.04763, "plusY": 35.96925, "minusX": 34.53018, "plusX": 35.48671}, "extent_y": [-4.951, 5.55]}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

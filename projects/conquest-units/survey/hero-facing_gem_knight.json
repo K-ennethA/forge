@@ -1,0 +1,94 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-gem_knight.blend",
+ "meshes": [
+  "Sphere",
+  "Sphere.001",
+  "Sphere.002",
+  "Sphere.003",
+  "Sphere.004",
+  "Sphere.005",
+  "Sphere.006"
+ ],
+ "verts": 9004,
+ "bbox_min": [
+  -8.947,
+  -2.132,
+  0.123
+ ],
+ "bbox_max": [
+  8.857,
+  3.018,
+  24.58
+ ],
+ "centroid": [
+  -0.014,
+  0.19,
+  14.012
+ ],
+ "top30": {
+  "n": 2042,
+  "feature_offset_xy": [
+   -0.054,
+   -0.4289
+  ],
+  "feature_angle_from_minusY_deg": -7.2,
+  "lap_energy": {
+   "minusY": 1.22452,
+   "plusY": 0.49568,
+   "minusX": 0.85038,
+   "plusX": 0.86982
+  },
+  "extent_y": [
+   -1.672,
+   2.21
+  ]
+ },
+ "head_top15": {
+  "n": 275,
+  "feature_offset_xy": [
+   0.0015,
+   -0.1713
+  ],
+  "feature_angle_from_minusY_deg": 0.5,
+  "lap_energy": {
+   "minusY": 0.26603,
+   "plusY": 0.1547,
+   "minusX": 0.20007,
+   "plusX": 0.22065
+  },
+  "extent_y": [
+   -1.672,
+   0.5
+  ]
+ },
+ "chest_35_75": {
+  "n": 7133,
+  "feature_offset_xy": [
+   -0.0316,
+   -0.0875
+  ],
+  "feature_angle_from_minusY_deg": -19.8,
+  "lap_energy": {
+   "minusY": 2.73125,
+   "plusY": 1.97134,
+   "minusX": 2.36947,
+   "plusX": 2.33312
+  },
+  "extent_y": [
+   -2.132,
+   3.018
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 9182,
+   "centroid": [
+    -0.014,
+    0.184,
+    13.94
+   ],
+   "dir_angle_from_minusY_deg": -3.1,
+   "horiz_offset": 0.006
+  }
+ }
+}

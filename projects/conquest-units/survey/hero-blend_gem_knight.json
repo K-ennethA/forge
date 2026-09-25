@@ -1,0 +1,498 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-gem_knight.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Sphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    10.997,
+    5.15,
+    8.272
+   ],
+   "scale": [
+    2.006,
+    2.006,
+    2.006
+   ],
+   "modifiers": [],
+   "verts": 6112,
+   "faces": 6110,
+   "tris_base": 12220,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 12220,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 43,
+    "degenerate_faces": 5265,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 3.9,
+    "overlap": true,
+    "coverage": 2.1094,
+    "overlap_note": "summed UV area is 114% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 3.898,
+     "worst_factor": 3.9
+    }
+   }
+  },
+  {
+   "name": "Sphere.001",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    1.802,
+    1.934,
+    2.906
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.12
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 34.01,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.17,
+     "p05": 0.473,
+     "p95": 34.01,
+     "worst_factor": 34.01
+    }
+   }
+  },
+  {
+   "name": "Sphere.002",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.715,
+    1.702,
+    6.67
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    2.397
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 12.91,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.286,
+     "p05": 0.411,
+     "p95": 12.909,
+     "worst_factor": 12.91
+    }
+   }
+  },
+  {
+   "name": "Sphere.003",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.298,
+    1.998,
+    7.902
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    -4.038
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.51,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.039,
+     "p05": 0.56,
+     "p95": 6.511,
+     "worst_factor": 6.51
+    }
+   }
+  },
+  {
+   "name": "Sphere.004",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.715,
+    1.702,
+    6.67
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    2.397
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 12.91,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.286,
+     "p05": 0.411,
+     "p95": 12.909,
+     "worst_factor": 12.91
+    }
+   }
+  },
+  {
+   "name": "Sphere.005",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.298,
+    1.998,
+    7.902
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    -4.038
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.51,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.039,
+     "p05": 0.56,
+     "p95": 6.511,
+     "worst_factor": 6.51
+    }
+   }
+  },
+  {
+   "name": "Sphere.006",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.975,
+    2.207,
+    5.673
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    -2.291
+   ],
+   "modifiers": [],
+   "verts": 482,
+   "faces": 512,
+   "tris_base": 960,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 960,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 12.36,
+    "overlap": false,
+    "coverage": 0.9375,
+    "overlap_note": "summed UV area is 6% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.091,
+     "p05": 0.482,
+     "p95": 12.356,
+     "worst_factor": 12.36
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "Material",
+   "users": 0,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.5,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "Sphere",
+  "Sphere.001",
+  "Sphere.002",
+  "Sphere.003",
+  "Sphere.004",
+  "Sphere.005",
+  "Sphere.006"
+ ],
+ "render_tris_total": 17980,
+ "bbox_min": [
+  -9.235,
+  -2.132,
+  -0.052
+ ],
+ "bbox_max": [
+  9.145,
+  3.018,
+  24.58
+ ],
+ "bbox_size_wdh": [
+  18.38,
+  5.15,
+  24.632
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-gem_knight_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-gem_knight_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-gem_knight_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\hero-gem_knight_side.png"
+ ]
+}
