@@ -1,0 +1,788 @@
+{
+ "unit": "eldroot",
+ "stage": "standing-rest rebuild + state clips",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eldroot.blend",
+ "fps": 24,
+ "dz_m": 0.45,
+ "dy_m": 0.0,
+ "z_pad_m": 0.1,
+ "band_rings": 3,
+ "seated_actions_removed": [
+  "idle",
+  "walk"
+ ],
+ "mesh_before": {
+  "verts": 12502,
+  "tris": 25000,
+  "uv_sha": "7523d6cf97b6e4cd",
+  "faces_sha": "1321aed72d5d7ba9",
+  "coords_sha": "59bc24edba8dabd1",
+  "bbox": [
+   [
+    -1.9,
+    -1.1348,
+    0.0
+   ],
+   [
+    1.9,
+    1.1348,
+    2.7108
+   ]
+  ]
+ },
+ "seated_junction": {
+  "verts": 103,
+  "z_range": [
+   0.472,
+   1.157
+  ],
+  "note": "leg columns fuse to the trunk front along their upper-medial back; below z_min they are free columns"
+ },
+ "harmonic": {
+  "region_verts": 2262,
+  "unknowns": 1937,
+  "pad_verts": 325,
+  "h_range_in_region": [
+   0.0141,
+   0.99367
+  ]
+ },
+ "recentre_shift_m": [
+  -0.0,
+  -0.0,
+  0.0
+ ],
+ "rest_rebuild": {
+  "faces_stretched": 4107,
+  "principal_stretch_max": 2.583,
+  "principal_stretch_p95": 1.685,
+  "principal_stretch_median": 1.308,
+  "compression_min": 0.467,
+  "area_ratio_max": 2.409,
+  "area_ratio_p95": 1.628,
+  "flipped_faces": 0,
+  "trunk_band_max_lag_mm": 146.2,
+  "trunk_band_lag_note": "pure-trunk verts inside the band trail the trunk's rise by (1-h)*|DV| -- the thigh root forming out of the belly"
+ },
+ "mesh_after": {
+  "uv_sha": "7523d6cf97b6e4cd",
+  "faces_sha": "1321aed72d5d7ba9",
+  "uv_identical": true,
+  "coords_sha": "6c922a835e1a0a7c",
+  "bbox": [
+   [
+    -1.9,
+    -1.1348,
+    0.0
+   ],
+   [
+    1.9,
+    1.1348,
+    3.1608
+   ]
+  ],
+  "height_m": 3.1608
+ },
+ "bake_check": {
+  "method": "UVs byte-identical (sha) -> the packed bakes index the same texels; tangent-space normal map stays valid under deformation iff no face flips and UV handedness vs geometry is unchanged; texel density change = 1/area ratio",
+  "uv_handedness_changed_faces": 0,
+  "zero_area_uv_faces": 0,
+  "stretched_gt_1.2_faces": 3246,
+  "ao_mean_all": 0.778,
+  "ao_mean_stretched": 0.698,
+  "normal_dev_mean_all": 0.0897,
+  "normal_dev_mean_stretched": 0.0949,
+  "texel_density_min_ratio_stretched": 0.415
+ },
+ "leg_h_profile": {
+  "L": {
+   "h_p50_p90_p97_max": [
+    0.383,
+    0.665,
+    0.744,
+    0.806
+   ],
+   "knee_h": 0.4131
+  },
+  "R": {
+   "h_p50_p90_p97_max": [
+    0.385,
+    0.675,
+    0.757,
+    0.821
+   ],
+   "knee_h": 0.3921
+  }
+ },
+ "leg_landmarks_standing": {
+  "L": {
+   "hip": [
+    0.3113,
+    -0.8434,
+    1.2283
+   ],
+   "knee": [
+    0.5779,
+    -0.875,
+    0.687
+   ],
+   "ankle": [
+    0.6095,
+    -0.8465,
+    0.14
+   ],
+   "toe": [
+    0.6095,
+    -1.0665,
+    0.14
+   ],
+   "pad_centroid": [
+    0.6095,
+    -0.8465,
+    0.0478
+   ]
+  },
+  "R": {
+   "hip": [
+    -0.2897,
+    -0.8281,
+    1.1831
+   ],
+   "knee": [
+    -0.5658,
+    -0.8683,
+    0.657
+   ],
+   "ankle": [
+    -0.609,
+    -0.8471,
+    0.14
+   ],
+   "toe": [
+    -0.609,
+    -1.0671,
+    0.14
+   ],
+   "pad_centroid": [
+    -0.609,
+    -0.8471,
+    0.0464
+   ]
+  }
+ },
+ "reweight": {
+  "region_verts": 2262,
+  "verts_changed_gt_1e-3": 1804,
+  "verts_changed_outside_region": 0,
+  "seated_leg_weight_leak_outside_region": 0.0,
+  "max_influences": 3,
+  "per_bone_dominant": {
+   "pelvis": 2718,
+   "chest": 3060,
+   "crown": 1372,
+   "upperarm.L": 1015,
+   "forearm.L": 791,
+   "upperarm.R": 1022,
+   "forearm.R": 838,
+   "thigh.L": 28,
+   "shin.L": 518,
+   "foot.L": 293,
+   "thigh.R": 41,
+   "shin.R": 531,
+   "foot.R": 275
+  },
+  "rule": "outside R: seated weights verbatim; in R: hat functions of h (foot/shin/up at h=0/HK/1), 'up' split thigh:trunk by the seated leg weight (trunk share -> the vertex's dominant seated trunk bone)"
+ },
+ "sit_reconstruction_max_mm": 0.0004,
+ "rest_equals_standing_mesh_max_mm": 0.0003,
+ "pad_sole_verts": {
+  "L": 43,
+  "R": 47
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4066
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.25,
+    0.8
+   ],
+   "tail": [
+    0.0,
+    -0.15,
+    1.7
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.15,
+    1.7
+   ],
+   "tail": [
+    0.0,
+    -0.1,
+    2.7
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1,
+    2.7
+   ],
+   "tail": [
+    0.0,
+    -0.12,
+    3.16
+   ]
+  },
+  {
+   "name": "upperarm.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.95,
+    -0.15,
+    1.4
+   ],
+   "tail": [
+    1.42,
+    -0.35,
+    1.32
+   ]
+  },
+  {
+   "name": "forearm.L",
+   "parent": "upperarm.L",
+   "deform": true,
+   "head": [
+    1.42,
+    -0.35,
+    1.32
+   ],
+   "tail": [
+    1.4786,
+    -0.2977,
+    0.4611
+   ]
+  },
+  {
+   "name": "upperarm.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.95,
+    -0.15,
+    1.4
+   ],
+   "tail": [
+    -1.42,
+    -0.35,
+    1.32
+   ]
+  },
+  {
+   "name": "forearm.R",
+   "parent": "upperarm.R",
+   "deform": true,
+   "head": [
+    -1.42,
+    -0.35,
+    1.32
+   ],
+   "tail": [
+    -1.4744,
+    -0.3006,
+    0.4606
+   ]
+  },
+  {
+   "name": "thigh.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.3113,
+    -0.8434,
+    1.2283
+   ],
+   "tail": [
+    0.5779,
+    -0.875,
+    0.687
+   ]
+  },
+  {
+   "name": "shin.L",
+   "parent": "thigh.L",
+   "deform": true,
+   "head": [
+    0.5779,
+    -0.875,
+    0.687
+   ],
+   "tail": [
+    0.6095,
+    -0.8465,
+    0.14
+   ]
+  },
+  {
+   "name": "foot.L",
+   "parent": "shin.L",
+   "deform": true,
+   "head": [
+    0.6095,
+    -0.8465,
+    0.14
+   ],
+   "tail": [
+    0.6095,
+    -1.0665,
+    0.14
+   ]
+  },
+  {
+   "name": "thigh.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.2897,
+    -0.8281,
+    1.1831
+   ],
+   "tail": [
+    -0.5658,
+    -0.8683,
+    0.657
+   ]
+  },
+  {
+   "name": "shin.R",
+   "parent": "thigh.R",
+   "deform": true,
+   "head": [
+    -0.5658,
+    -0.8683,
+    0.657
+   ],
+   "tail": [
+    -0.609,
+    -0.8471,
+    0.14
+   ]
+  },
+  {
+   "name": "foot.R",
+   "parent": "shin.R",
+   "deform": true,
+   "head": [
+    -0.609,
+    -0.8471,
+    0.14
+   ],
+   "tail": [
+    -0.609,
+    -1.0671,
+    0.14
+   ]
+  }
+ ],
+ "bone_count": 14,
+ "leg_chain_lengths_m": {
+  "L": {
+   "thigh": 0.6042,
+   "shin": 0.5486
+  },
+  "R": {
+   "thigh": 0.5955,
+   "shin": 0.5192
+  }
+ },
+ "clips": {
+  "sitting_idle": {
+   "action": "sitting_idle",
+   "kind": "loop",
+   "frames": 145,
+   "cycle_frames": 144,
+   "seconds": 6.0,
+   "ik_reach_max": {
+    "leg.L": 0.9788,
+    "arm.L": 0.7884,
+    "leg.R": 0.9788,
+    "arm.R": 0.7874
+   },
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 7e-05,
+   "leg_telescope_gap_max_mm": 273.6,
+   "extent": {
+    "footprint": 3.8,
+    "width": 3.8,
+    "depth": 2.2746,
+    "height": 2.7137,
+    "top_z": 2.7137,
+    "min_z": -0.0
+   },
+   "pad_sole_min_z_mm": {
+    "L": 0.81,
+    "R": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 140.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 140.0
+    },
+    "forearm.L:tail": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 11.13
+    },
+    "forearm.R:tail": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 10.59
+    }
+   },
+   "vs_seated_sculpt_max_mm": 7.94,
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "forearm.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "forearm.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 145, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 4 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "stand_up": {
+   "action": "stand_up",
+   "kind": "oneshot",
+   "frames": 97,
+   "duration_frames": 96,
+   "seconds": 4.0,
+   "ik_reach_max": {
+    "leg.L": 0.9788,
+    "arm.L": 0.9558,
+    "leg.R": 0.9788,
+    "arm.R": 0.9556
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0001,
+   "leg_telescope_gap_max_mm": 273.6,
+   "extent": {
+    "footprint": 3.8,
+    "width": 3.8,
+    "depth": 2.4536,
+    "height": 3.1777,
+    "top_z": 3.1777,
+    "min_z": -0.0
+   },
+   "pad_sole_min_z_mm": {
+    "L": 0.81,
+    "R": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 97,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 97,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    }
+   },
+   "join_mm": {
+    "first_vs_sitting_idle_f1": 0.0,
+    "last_vs_idle_f1": 0.0
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "unmeasured",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {},
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "idle": {
+   "action": "idle",
+   "kind": "loop",
+   "frames": 97,
+   "cycle_frames": 96,
+   "seconds": 4.0,
+   "ik_reach_max": {
+    "leg.L": 0.9578,
+    "leg.R": 0.9661
+   },
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0001,
+   "leg_telescope_gap_max_mm": 0.0,
+   "extent": {
+    "footprint": 3.8297,
+    "width": 3.8297,
+    "depth": 2.306,
+    "height": 3.1525,
+    "top_z": 3.1525,
+    "min_z": -0.0
+   },
+   "pad_sole_min_z_mm": {
+    "L": 0.81,
+    "R": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 96,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 96,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    }
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 97, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "sit_down": {
+   "action": "sit_down",
+   "kind": "oneshot",
+   "frames": 85,
+   "duration_frames": 84,
+   "seconds": 3.5,
+   "ik_reach_max": {
+    "leg.L": 0.9896,
+    "leg.R": 0.9897,
+    "arm.L": 0.9151,
+    "arm.R": 0.914
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0001,
+   "leg_telescope_gap_max_mm": 273.6,
+   "extent": {
+    "footprint": 3.8009,
+    "width": 3.8009,
+    "depth": 2.4383,
+    "height": 3.1568,
+    "top_z": 3.1568,
+    "min_z": -0.0
+   },
+   "pad_sole_min_z_mm": {
+    "L": 0.81,
+    "R": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 85,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 85,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 140.0
+    }
+   },
+   "join_mm": {
+    "first_vs_idle_f1": 0.0,
+    "last_vs_sitting_idle_f1": 0.0
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "unmeasured",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {},
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "walk": {
+   "action": "walk",
+   "kind": "loop",
+   "frames": 65,
+   "cycle_frames": 64,
+   "seconds": 2.6667,
+   "ik_reach_max": {
+    "leg.L": 0.9531,
+    "leg.R": 0.9515
+   },
+   "stride_m": 0.28,
+   "duty": 0.75,
+   "speed_m_per_s": 0.14,
+   "belt_m_per_frame": 0.005833333333333334,
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0001,
+   "leg_telescope_gap_max_mm": 0.0,
+   "extent": {
+    "footprint": 3.9254,
+    "width": 3.9254,
+    "depth": 2.3731,
+    "height": 3.1395,
+    "top_z": 3.1395,
+    "min_z": -0.0
+   },
+   "pad_sole_min_z_mm": {
+    "L": 0.81,
+    "R": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 49,
+     "worst_drift_mm": 0.0004,
+     "contact_z_mm": 140.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 49,
+     "worst_drift_mm": 0.0004,
+     "contact_z_mm": 140.0
+    }
+   },
+   "forge_animation_check": {
+    "mode": "in_place",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 2,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 65, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 3 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  }
+ },
+ "seconds": 3.6
+}

@@ -1,0 +1,6 @@
+00:00.843  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\eldroot.blend"
+Info: Saved copy as "eldroot_standing.blend"
+STAND_DONE {"sit_reconstruction_max_mm": 0.0004, "rest_equals_standing_mesh_max_mm": 0.0003, "seconds": 3.6}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

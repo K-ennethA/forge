@@ -68,3 +68,15 @@ the maw color region is painted on the tail. Fix: rotate 180, re-region
 (maw/face colors to the true front if a mouth feature exists there; the
 tail recolored as the attachment organ - it may keep the glowing threads,
 which suit a spine-hook), update the audit JSON, re-check, re-render.
+
+## 2026-09-25 - Eldroot sit/stand request
+> for eldroot, it is currently sitting can we make it stand up by animating
+> bones or remeshing or something? so it can sit and stand?
+
+Reading: the sculpt is seated/planted; the boss should have BOTH states.
+Plan: rebuild the rest pose STANDING (legs extended via rig-guided mesh
+work, extra leg bones - knee + foot per leg, which also fixes the 24 mm
+foot-pad sink), then author sitting as poses/clips: sitting idle (dormant,
+rooted - the boss-intro state), stand_up transition, standing idle
+(current creak/sway), sit_down; retune the lumber walk on the standing
+rest. Silhouette approval by render sheet before clips.
