@@ -118,3 +118,27 @@ creature (crystal faceting fits). HERO BUDGET approved: higher quality
 supported (30-50k hero tier stands). SCOPE EXPANDED: mosquitopire,
 Fidough, magmoo, vampito, huntress, supaoctto join the Conquest roster -
 survey them like the others.
+
+## 2026-09-25 - six-newcomer verdicts (artist, verbatim)
+> mosquitopire is facing the wrong way, lets drop fidough for now(or
+> explore completing this model off reference models not adding to
+> conquest) magmoo seems like we didn't capture the rest of the model,
+> that model was meant to have disjointed blends as its a lava lizard that
+> can spread its form, vampito is a worse mosquitopire(but maybe vampito
+> is the better name to keep)
+
+> huntress lets drop,
+
+> supaccotto is a sideview and not facing front
+
+Readings: MOSQUITOPIRE facing confirmed wrong (matches the +Y audit;
+rotate 180 in the improve wave). FIDOUGH dropped from Conquest; optional
+side exploration: complete the model from reference models, outside the
+roster. MAGMOO under-captured: it is a LAVA LIZARD that SPREADS ITS FORM -
+the model is meant to have disjointed pieces; re-inspect the blend for
+hidden/unrendered objects and collections the survey missed. VAMPITO:
+model superseded by mosquitopire, NAME likely kept - one unit going
+forward (mosquitopire sculpt, vampito name, pending the artist settling
+the name). HUNTRESS dropped. SUPAOCTTO: the shown render was a side view,
+not its front - true front is the mask/goggles side (consistent with the
++Y audit; rotate 180).

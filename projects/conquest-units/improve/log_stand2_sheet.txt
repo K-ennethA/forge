@@ -1,0 +1,21 @@
+00:01.000  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\eldroot_standing2.blend"
+00:02.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_front.png'
+00:02.531  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_threequarter.png'
+00:02.843  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_side.png'
+00:03.093  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_tactical.png'
+00:04.671  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_front.png'
+00:05.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_threequarter.png'
+00:06.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_side.png'
+00:06.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\standing_tactical.png
+HEIGHTS seated 2.7108 sit_pose 2.7136 standing 5.4216 ratio 2.0000
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\eldroot-standing2\compare_tactical.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

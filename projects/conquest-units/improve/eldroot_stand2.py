@@ -20,8 +20,10 @@ it (v1 measured the folds). So:
      hemispherical cap from the knee-cap centre); rays whose hit lands on trunk-owned surface (nearest low
      vertex not leg-dominant) are the fused back -> filled by periodic interpolation + the opposite side's
      high-frequency detail. Result: the sculpted column, closed.
-  B. TRUNK: the low's leg faces (+ junction faces) removed; each front hole closed by a constrained-Delaunay
-     membrane (harmonic lift, boundary fixed). Trunk + arms move RIGIDLY (stretch 1.000, 0 flips).
+  B. TRUNK: the low's leg faces (+ junction faces + the trunk-weighted inner knee lobes in front of the belly)
+     removed; each front hole closed by a constrained-Delaunay membrane (bi-Laplacian lift, boundary 1-ring
+     fixed; closure audited: every edge shared once per direction). Trunk + arms move RIGIDLY (stretch 1.000,
+     0 flips).
   C. LEGS (new, rigid shells, one bone each): thigh (hip -> knee), shin (knee -> ankle, the sculpted column
      with its mossy knee cap on top), foot (the column's pad, WIDENED + flattened: flat sole, root-toe lobes).
      Leg lengths are SOLVED so that (i) standing height = RATIO x seated height with straight, vertical-plane
@@ -64,11 +66,15 @@ RATIO = opt("--ratio", 2.0)          # standing height / seated height (artist: 
 X_HIP = 0.45                        # hip joints (trunk coords): inside the trunk base, 0.35 above it
 Z_HIP = 0.35
 Z_ANK = 0.15                        # ankle joint height (inside the 0.30 m foot shell)
-FOOT_W = 1.8                        # foot pad radius factor at the sole (artist: "make the feet wider")
+LEG_SX, LEG_SY = 1.25, 1.45         # leg thickening vs the sculpted column (x, y): a 5.4 m body on the sculpted
+                                    # 0.48 x 0.32 m column read as stilts on the first draft render
+LEG_CUT = 0.05                      # trunk faces with ANY seated leg weight > this go with the legs (the crease band)
+FOOT_W = 1.42                       # foot pad radius factor at the sole, vs the thickened leg column (artist: "make the feet
+                                    # wider"): ~1.8x the sculpted column's width, feet 0.2 m apart at the inner edges
 FOOT_COLLAR = 1.1                   # foot top collar radius factor (encloses the shin through the walk tilt)
 FOOT_FWD = 0.15                     # sole centre ahead of the ankle (toes forward) -> pads centred under the COM
 TOE_A = 0.28                        # root-toe lobe amplitude (5 lobes, one straight ahead)
-THIGH_TAPER = (0.80, 1.10)          # thigh radius factor knee -> hip (narrower at the knee: the cap lip shows)
+THIGH_TAPER = (0.85, 1.15)          # thigh radius factor knee -> hip (narrower at the knee: the cap lip shows)
 NT_HI, NT_LO = 180, 28              # azimuth samples: high master / low game mesh
 DZ_HI = 0.006                       # high ring spacing (m)
 report = {"unit": "eldroot", "stage": "standing v2 - full leg extension (model change)", "source": bpy.data.filepath,
@@ -206,9 +212,10 @@ for s in "LR":
     m = legw[s] >= 0.5
     P = W0[m]
     # centroid polyline of the leg column (5 cm slabs) -> arc length; free vs fused span from the junction loop
-    zs = np.arange(0.0, P[:, 2].max() + 1e-9, 0.05)
-    cents = [P[(P[:, 2] >= z) & (P[:, 2] < z + 0.05)].mean(0) for z in zs if ((P[:, 2] >= z) & (P[:, 2] < z + 0.05)).any()]
+    zs = np.arange(0.0, P[:, 2].max() + 1e-9, 0.10)
+    cents = [P[(P[:, 2] >= z) & (P[:, 2] < z + 0.10)].mean(0) for z in zs if ((P[:, 2] >= z) & (P[:, 2] < z + 0.10)).any()]
     cents = np.array(cents)
+    cents[1:-1] = (cents[:-2] + 2 * cents[1:-1] + cents[2:]) / 4.0     # slab centroids jitter where the column fuses
     arc = float(np.linalg.norm(np.diff(cents, axis=0), axis=1).sum())
     free_rings = P[(P[:, 2] > 0.10) & (P[:, 2] < 0.45)]
     AXIS[s] = np.array([np.median(free_rings[:, 0]), np.median(free_rings[:, 1])])
@@ -297,7 +304,7 @@ for s in "LR":
     for i, ph in enumerate(PHI):
         for j, t in enumerate(TH):
             RCd[i, j], VC[i, j] = ray((ax, ay, ZC), (math.cos(ph) * math.cos(t), math.cos(ph) * math.sin(t), math.sin(ph)))
-    ref = np.median(np.where(VS[(ZS > 0.1) & (ZS < 0.45)], RSd[(ZS > 0.1) & (ZS < 0.45)], np.nan), axis=0)
+    ref = np.nanmedian(np.where(VS[(ZS > 0.1) & (ZS < 0.45)], RSd[(ZS > 0.1) & (ZS < 0.45)], np.nan), axis=0)
     VS &= (RSd <= 1.35 * np.nan_to_num(ref, nan=0.3)[None, :]) & (RSd > 0.02)
     VC &= (RCd < 0.5) & (RCd > 0.01)
     RS, fS = fill_rings(RSd, VS)
@@ -359,11 +366,120 @@ oi = bm.verts.layers.int.new("oi")
 for v in bm.verts:
     v[oi] = v.index
 bm.verts.ensure_lookup_table()
-kill = [f for f in bm.faces if any(legdom[v.index] for v in f.verts)]
-report["trunk_edit"] = {"faces_removed_leg": int(sum(1 for f in kill if all(legdom[v.index] for v in f.verts))),
-                        "faces_removed_junction": int(sum(1 for f in kill if not all(legdom[v.index] for v in f.verts)))}
+legcut = leg_any > LEG_CUT
+# knee lobes: the sculpt's leg anatomy continues past the weighted column - an inner knee lobe (z 1.0-1.3,
+# x 0.2-0.45) protrudes to y -0.90 and is weighted to the TRUNK (ray slices of the seated low, lane report).
+# Left on, it reads as a pair of horns on the standing chest (first v2 render). Rule: trunk faces entirely in
+# front of the trunk's front surface (y < LOBE_Y; the belly/chin front measures -0.42..-0.52 at |x| < 0.45)
+# below the chin (z < LOBE_Z) belong to the legs.
+LOBE_Y, LOBE_Z = -0.58, 1.45
+lobe = (W0[:, 1] < LOBE_Y) & (W0[:, 2] < LOBE_Z) & (np.abs(W0[:, 0]) < 0.95)
+legcut_all = legcut | lobe
+kill = [f for f in bm.faces if any(legcut[v.index] for v in f.verts) or all(lobe[v.index] for v in f.verts)]
+report["trunk_edit"] = {"leg_cut_weight": LEG_CUT,
+                        "faces_removed_leg": int(sum(1 for f in kill if all(legdom[v.index] for v in f.verts))),
+                        "faces_removed_junction_band": int(sum(1 for f in kill if any(legcut[v.index] for v in f.verts)
+                                                               and not all(legdom[v.index] for v in f.verts))),
+                        "faces_removed_knee_lobe": int(sum(1 for f in kill if not any(legcut[v.index] for v in f.verts))),
+                        "knee_lobe_rule": "trunk faces with every vertex at y < %.2f, z < %.2f, |x| < 0.95 (seated coords)" % (LOBE_Y, LOBE_Z)}
 bmesh.ops.delete(bm, geom=kill, context="FACES_ONLY")
 bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+# drop slivers the cut isolated (face islands < 2% of the trunk) and any non-manifold fans they leave
+isl = []
+seen_f = set()
+for f0 in bm.faces:
+    if f0.index in seen_f:
+        continue
+    comp, st = [], [f0]; seen_f.add(f0.index)
+    while st:
+        f = st.pop(); comp.append(f)
+        for e in f.edges:
+            for g in e.link_faces:
+                if g.index not in seen_f:
+                    seen_f.add(g.index); st.append(g)
+    isl.append(comp)
+small = [f for comp in isl if len(comp) < 0.02 * len(bm.faces) for f in comp]
+report["trunk_edit"]["islands_after_cut"] = [len(c) for c in isl]
+report["trunk_edit"]["sliver_faces_dropped"] = len(small)
+if small:
+    bmesh.ops.delete(bm, geom=small, context="FACES_ONLY")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+def unpinch():
+    for _ in range(4):                                  # faces hanging by one edge into the hole (boundary pinches)
+        bm.verts.ensure_lookup_table()
+        pinch = [v for v in bm.verts if sum(1 for e in v.link_edges if len(e.link_faces) == 1) > 2]
+        if not pinch:
+            break
+        drop = {f for v in pinch for f in v.link_faces if sum(1 for e in f.edges if len(e.link_faces) == 1) >= 1}
+        report["trunk_edit"]["pinch_faces_dropped"] = report["trunk_edit"].get("pinch_faces_dropped", 0) + len(drop)
+        bmesh.ops.delete(bm, geom=list(drop), context="FACES_ONLY")
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+
+
+def bm_hole_loops():
+    nb_ = defaultdict(list)
+    for e in bm.edges:
+        if len(e.link_faces) == 1:
+            a_, b_ = e.verts
+            nb_[a_].append(b_); nb_[b_].append(a_)
+    out, seen_ = [], set()
+    for st in list(nb_):
+        if st in seen_:
+            continue
+        lp, prev, cur = [st], None, st; seen_.add(st)
+        while True:
+            nx = [x for x in nb_[cur] if x is not prev and x not in seen_]
+            if not nx:
+                break
+            prev, cur = cur, nx[0]; lp.append(cur); seen_.add(cur)
+        out.append(lp)
+    return out
+
+
+def projects_simply(P3):
+    """Does the loop project to a SIMPLE polygon on the best-fit plane or a blend toward the front (-Y) view?"""
+    c = P3.mean(0)
+    n_fit = np.linalg.svd(P3 - c)[2][2]
+    if n_fit[1] > 0:
+        n_fit = -n_fit
+    m = len(P3)
+    for w in (0.0, 0.25, 0.5, 0.75, 1.0):
+        nrm = (1 - w) * n_fit + w * np.array([0.0, -1.0, 0.0]); nrm /= np.linalg.norm(nrm)
+        a = np.array([0.0, 0.0, 1.0]) if abs(nrm[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+        e1 = a - nrm * (a @ nrm); e1 /= np.linalg.norm(e1); e2 = np.cross(nrm, e1)
+        Q = np.stack([(P3 - c) @ e1, (P3 - c) @ e2], 1)
+        ok = True
+        for i in range(m):
+            p1, p2 = Q[i], Q[(i + 1) % m]
+            for j in range(i + 2, m):
+                if (j + 1) % m == i:
+                    continue
+                q1, q2 = Q[j], Q[(j + 1) % m]
+                d1 = np.cross(p2 - p1, q1 - p1); d2 = np.cross(p2 - p1, q2 - p1)
+                d3 = np.cross(q2 - q1, p1 - q1); d4 = np.cross(q2 - q1, p2 - q1)
+                if d1 * d2 < 0 and d3 * d4 < 0:
+                    ok = False; break
+            if not ok:
+                break
+        if ok:
+            return True
+    return False
+
+
+unpinch()
+# a folded hole boundary (no simple projection) fills as a fin; grow that hole ring by ring until it projects simply
+grown = []
+for _ in range(6):
+    bad = [lp for lp in bm_hole_loops() if not projects_simply(np.array([v.co[:] for v in lp]))]
+    if not bad:
+        break
+    for lp in bad:
+        grown.append([round(float(np.mean([v.co.x for v in lp])), 3), len(lp)])
+    drop = {f for lp in bad for v in lp for f in v.link_faces}
+    bmesh.ops.delete(bm, geom=list(drop), context="FACES_ONLY")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    unpinch()
+report["trunk_edit"]["hole_rings_grown_to_simple_projection"] = grown
 bm.verts.ensure_lookup_table(); bm.faces.ensure_lookup_table()
 for i, v in enumerate(bm.verts):
     v.index = i
@@ -404,13 +520,18 @@ report["trunk_edit"]["holes"] = [{"verts": len(lp), "centroid": TV[lp].mean(0).r
 assert len(loops_) == 2, "expected one front hole per leg, got %d" % len(loops_)
 
 
-def cdt_patch(P3, spacing, boundary_ids=None):
-    """Constrained-Delaunay membrane over a closed 3D loop P3 (ordered). Returns (V3, tris, nb) with the
-    first nb vertices = the loop. Interior lifted harmonically (uniform Laplacian, boundary fixed)."""
-    c = P3.mean(0)
-    U, Sv, Vt = np.linalg.svd(P3 - c)
-    e1, e2 = Vt[0], Vt[1]
-    Q = np.stack([(P3 - c) @ e1, (P3 - c) @ e2], 1)
+def cdt_patch(P3, spacing, plane=None, Q2=None):
+    """Constrained-Delaunay membrane over a closed 3D loop P3 (ordered). Returns (V3, tris, nb, new_pts,
+    plane, V2) with the first nb vertices = the loop. Interior lifted harmonically (uniform Laplacian,
+    boundary fixed); V2 = the plane coordinates (same order). Q2: explicit 2D loop coordinates (a disk
+    parameterisation) instead of a planar projection."""
+    if plane is None:
+        c = P3.mean(0)
+        U, Sv, Vt = np.linalg.svd(P3 - c)
+        e1, e2 = Vt[0], Vt[1]
+    else:
+        c, e1, e2 = plane
+    Q = np.stack([(P3 - c) @ e1, (P3 - c) @ e2], 1) if Q2 is None else np.asarray(Q2, float)
     nb = len(Q)
     path = [(Q[i], Q[(i + 1) % nb]) for i in range(nb)]
 
@@ -478,13 +599,109 @@ def cdt_patch(P3, spacing, boundary_ids=None):
     # reorder: loop verts first (in loop order), then interior
     order = np.concatenate([np.array([int(np.nonzero(mp == i)[0][0]) for i in range(nb)]), free])
     inv = np.empty(n_all, dtype=np.int64); inv[order] = np.arange(n_all)
-    return X[order], inv[tris], nb, new_pts, (e1, e2)
+    return X[order], inv[tris], nb, new_pts, (c, e1, e2), V2[order]
+
+
+ntv_ = len(TV)
+
+
+def lift_bilap(Vp, Tp, nb, lp):
+    """Least-squares bi-Laplacian lift: the interior minimises sum ||L x||^2 over interior + loop rows with the
+    loop verts' trunk 1-ring fixed -> the membrane continues the trunk's surface tangentially."""
+    ni = len(Vp) - nb
+    gid = np.concatenate([np.array(lp), ntv_ + np.arange(ni)])
+    nbrs = defaultdict(set)
+    for t in Tp:
+        g = gid[t]
+        for k in range(3):
+            nbrs[int(g[k])].add(int(g[(k + 1) % 3])); nbrs[int(g[k])].add(int(g[(k + 2) % 3]))
+    for f in TF[np.isin(TF, lp).any(1)]:
+        for k in range(3):
+            nbrs[int(f[k])].add(int(f[(k + 1) % 3])); nbrs[int(f[k])].add(int(f[(k + 2) % 3]))
+    Xall = {int(g): (TV[g] if g < ntv_ else Vp[nb + g - ntv_]) for g in nbrs}
+    rows = [int(g) for g in gid]
+    A = np.zeros((len(rows), ni)); B = np.zeros((len(rows), 3))
+    for r, g in enumerate(rows):
+        terms = [(g, float(len(nbrs[g])))] + [(j, -1.0) for j in nbrs[g]]
+        for j, w in terms:
+            if j >= ntv_:
+                A[r, j - ntv_] += w
+            else:
+                B[r] -= w * TV[j]
+    X, *_ = np.linalg.lstsq(A, B, rcond=None)
+    out = Vp.copy(); out[nb:] = X
+    return out
+
+
+def bary_map(Q2, V2, T, X3):
+    """2D points Q2 -> 3D on the piecewise-linear membrane (V2 plane coords, T tris, X3 lifted coords)."""
+    a, b, c = V2[T[:, 0]], V2[T[:, 1]], V2[T[:, 2]]
+    den = (b[:, 1] - c[:, 1]) * (a[:, 0] - c[:, 0]) + (c[:, 0] - b[:, 0]) * (a[:, 1] - c[:, 1])
+    fn = np.cross(X3[T[:, 1]] - X3[T[:, 0]], X3[T[:, 2]] - X3[T[:, 0]])
+    fn /= np.maximum(np.linalg.norm(fn, axis=1), 1e-12)[:, None]
+    P = np.zeros((len(Q2), 3)); N = np.zeros((len(Q2), 3))
+    for i, q in enumerate(Q2):
+        l1 = ((b[:, 1] - c[:, 1]) * (q[0] - c[:, 0]) + (c[:, 0] - b[:, 0]) * (q[1] - c[:, 1])) / den
+        l2 = ((c[:, 1] - a[:, 1]) * (q[0] - c[:, 0]) + (a[:, 0] - c[:, 0]) * (q[1] - c[:, 1])) / den
+        l3 = 1 - l1 - l2
+        k = int(np.argmax(np.minimum(np.minimum(l1, l2), l3)))
+        P[i] = l1[k] * X3[T[k, 0]] + l2[k] * X3[T[k, 1]] + l3[k] * X3[T[k, 2]]
+        N[i] = fn[k]
+    return P, N
+
+
+def bark_noise(P):
+    """Deterministic bark-like relief (vertical furrows), metres."""
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    return (0.6 * np.sin(38.0 * x + 2.5 * np.sin(7.0 * z) + 11.0 * y) + 0.3 * np.sin(71.0 * x - 23.0 * y + 5.0 * z)
+            + 0.25 * np.sin(17.0 * z + 29.0 * x)) * 0.004
+
+
+def plane_of(P3, nrm):
+    nrm = nrm / np.linalg.norm(nrm)
+    a = np.array([0.0, 0.0, 1.0]) if abs(nrm[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    e1 = a - nrm * (a @ nrm); e1 /= np.linalg.norm(e1)
+    return (P3.mean(0), e1, np.cross(nrm, e1))
+
+
+def best_patch(P3, spacing):
+    """The loop must project WITHOUT self-intersection (a CDT intersection point splits a boundary edge and the
+    membrane no longer shares the trunk's edges). Candidates: the best-fit plane, then blends toward the front
+    (-Y) projection; the first with zero intersection points wins."""
+    c = P3.mean(0)
+    n_fit = np.linalg.svd(P3 - c)[2][2]
+    if n_fit[1] > 0:
+        n_fit = -n_fit
+    tried = []
+    for w in (0.0, 0.25, 0.5, 0.75, 1.0):
+        nrm = (1 - w) * n_fit + w * np.array([0.0, -1.0, 0.0])
+        pl = plane_of(P3, nrm)
+        res = cdt_patch(P3, spacing, pl)
+        tried.append((w, res[3]))
+        if res[3] == 0:
+            return res, tried, None
+    # no planar projection is simple: arc-length disk parameterisation (a circle of the loop's perimeter - always
+    # a simple polygon; the bi-Laplacian lift places the interior from connectivity alone)
+    seg = np.linalg.norm(np.roll(P3, -1, 0) - P3, axis=1)
+    per = float(seg.sum())
+    th = TAU * np.concatenate([[0.0], np.cumsum(seg)[:-1]]) / per
+    Qc = (per / TAU) * np.stack([np.cos(th), np.sin(th)], 1)
+    pl = plane_of(P3, n_fit)
+    Qp = np.stack([(P3 - pl[0]) @ pl[1], (P3 - pl[0]) @ pl[2]], 1)
+    a_proj = 0.5 * abs(float(np.sum(Qp[:, 0] * np.roll(Qp[:, 1], -1) - np.roll(Qp[:, 0], -1) * Qp[:, 1])))
+    a_disk = per * per / (2 * TAU)
+    dscale = math.sqrt(a_disk / max(a_proj, 1e-9))
+    res = cdt_patch(P3, spacing * dscale, pl, Q2=Qc)   # same interior density as a planar fill
+    tried.append(("disk", res[3]))
+    return res, tried, (Qc, dscale)
 
 
 patches = []
 for lp in loops_:
     P3 = TV[lp]
-    Vp, Tp, nb, newp, _ = cdt_patch(P3, 0.065)
+    (Vp, Tp, nb, newp, plane, V2p), tried, Qdisk = best_patch(P3, 0.035)
+    report["trunk_edit"].setdefault("membrane_projection_tries", []).append([[w if isinstance(w, str) else round(w, 2), k] for w, k in tried])
+    Vp = lift_bilap(Vp, Tp, nb, lp)
     # winding: the loop edge (lp[0] -> lp[1]) must run opposite to the trunk face
     a_, b_ = 0, 1
     t_has = None
@@ -497,12 +714,24 @@ for lp in loops_:
     trunk_ab = edge_dir[(lp[0], lp[1])]
     if t_has is not None and t_has == trunk_ab:
         Tp = Tp[:, ::-1]
-    Vh, Th, nbh, newh, _ = cdt_patch(np.concatenate([np.linspace(P3[i], P3[(i + 1) % len(P3)], 6, endpoint=False) for i in range(len(P3))]), 0.012)
+    Pd = np.concatenate([np.linspace(P3[i], P3[(i + 1) % len(P3)], 4, endpoint=False) for i in range(len(P3))])
+    Qd, dsc = None, 1.0
+    if Qdisk is not None:
+        Qc_, dsc = Qdisk
+        Qd = np.concatenate([np.linspace(Qc_[i], Qc_[(i + 1) % len(Qc_)], 4, endpoint=False) for i in range(len(Qc_))])
+    _, Th, nbh, newh, _, V2h = cdt_patch(Pd, 0.012 * dsc, plane, Q2=Qd)
+    Vh, Nh = bary_map(V2h, V2p, Tp, Vp)                   # the high membrane lies ON the low membrane ...
+    dB = np.array([np.min(np.linalg.norm(V2p[:nb] - q, axis=1)) for q in V2h])
+    Vh = Vh + Nh * (bark_noise(Vh) * smoothstep(0.0, 0.05, dB))[:, None]     # ... plus bark relief for the bake
     patches.append({"loop": lp, "V": Vp, "T": Tp, "nb": nb, "Vh": Vh, "Th": Th, "cdt_new_points": newp + newh,
                     "side": "L" if P3[:, 0].mean() > 0 else "R"})
 report["trunk_edit"]["membranes"] = [{"side": p["side"], "low_verts_added": int(len(p["V"]) - p["nb"]), "low_tris": int(len(p["T"])),
                                       "high_tris": int(len(p["Th"])), "cdt_intersection_points": int(p["cdt_new_points"])}
                                      for p in patches]
+report["trunk_edit"]["membrane_rule"] = ("constrained Delaunay in the loop's best-fit plane (3.5 cm spacing; blends toward the "
+                                         "front projection, then an arc-length disk parameterisation, until the loop is simple), "
+                                         "least-squares bi-Laplacian lift with the trunk 1-ring fixed (tangent-continuous); high = "
+                                         "the same surface at 1.2 cm + 4 mm deterministic bark relief")
 
 # centre of mass of the closed trunk (seated coords): divergence theorem over trunk + membranes
 CV = [TV]; CF = [TF]; off_ = len(TV)
@@ -574,8 +803,15 @@ def loft(rings, pole_a=None, pole_b=None):
     return V, np.array(F)
 
 
+def aniso(nt):
+    """Leg thickening: the sculpted column profile scaled (LEG_SX, LEG_SY) about its axis (azimuth kept)."""
+    th = np.arange(nt) * TAU / nt
+    return np.sqrt((LEG_SX * np.cos(th)) ** 2 + (LEG_SY * np.sin(th)) ** 2)
+
+
 def ring_pts(C, ex, ey, r, nt):
     th = np.arange(nt) * TAU / nt
+    r = r * aniso(nt)
     return C[None, :] + r[:, None] * (np.cos(th)[:, None] * ex[None, :] + np.sin(th)[:, None] * ey[None, :])
 
 
@@ -599,8 +835,8 @@ def shell_leg(s, hi_res):
     # ---- shin: dome (inside the foot) + band (stretched once over [0.25, ZC]) + sculpted cap
     rings = []
     rb = at_theta(r_side(s, 0.25, lp), nt)
-    for hq in ((-0.10, -0.05, 0.0) if not hi_res else np.linspace(-0.10, 0.0, 12)[:-1]):
-        d = (0.08 - hq) / 0.20
+    for hq in ((-0.03, 0.0) if not hi_res else np.linspace(-0.03, 0.0, 8)[:-1]):
+        d = (0.08 - hq) / 0.12                          # shallow dome: stays above the sole through the shin tilt
         rings.append(ring_pts(A + u * hq, ex, ey, rb * math.sqrt(max(1 - d * d, 0.05)), nt))
     nband = max(2, int(round((H_B - 0.08) / (DZ_HI if hi_res else 0.075))))
     for i in range(nband + 1):
@@ -612,10 +848,10 @@ def shell_leg(s, hi_res):
     for k in ks:
         ph = PHI[k]; rr = at_theta(r_cap(s, k, lp), nt)
         th = np.arange(nt) * TAU / nt
-        dirs = math.cos(ph) * (np.cos(th)[:, None] * ex + np.sin(th)[:, None] * ey) + math.sin(ph) * u
+        dirs = math.cos(ph) * aniso(nt)[:, None] * (np.cos(th)[:, None] * ex + np.sin(th)[:, None] * ey) + math.sin(ph) * u
         rings.append(Cc[None, :] + rr[:, None] * dirs)
     top = Cc + u * float(np.mean(r_cap(s, len(PHI) - 1)))
-    bot = A + u * (-0.12)
+    bot = A + u * (-0.045)
     out["shin"] = loft(rings, bot, top)
     out["shin_stretch"] = (H_B - 0.08) / (ZC - 0.25)
     # ---- thigh: knee dome + band (mirror-tiled x2) + hip dome
@@ -642,13 +878,15 @@ def shell_leg(s, hi_res):
     zf = ([0.0, 0.015, 0.05, 0.10, 0.16, 0.23, 0.30] if not hi_res else list(np.arange(0.0, 0.30 + 1e-9, DZ_HI)))
     toe = np.maximum(0.0, np.cos(5 * (th + math.pi / 2))) ** 4          # lobe straight ahead (-Y) + 4 around
     for z in zf:
-        zsrc = 0.04 + z * (0.28 / 0.30)
+        # profile = the sculpted COLUMN band (z 0.25-0.53), not its tapering pad tip (half-extent 0.10 m, narrower
+        # than the column: a 1.6x widening of the tip gave a sole no wider than the leg on the first v2 render)
+        zsrc = 0.25 + z * (0.28 / 0.30)
         w = 1.0 - float(smoothstep(0.0, 0.26, z))
         fac = FOOT_COLLAR + (FOOT_W - FOOT_COLLAR) * w
         rr = at_theta(r_side(s, zsrc, lp), nt) * fac * (1.0 + TOE_A * toe * (1.0 - float(smoothstep(0.0, 0.14, z))))
         C = np.array([A[0], A[1] - FOOT_FWD * w, z])
         rings.append(ring_pts(C, np.array([1.0, 0, 0]), np.array([0, 1.0, 0]), rr, nt))
-    rtop = at_theta(r_side(s, 0.32, lp), nt) * FOOT_COLLAR
+    rtop = at_theta(r_side(s, 0.53, lp), nt) * FOOT_COLLAR
     for z, f_ in ((0.34, 0.85), (0.38, 0.55)) if not hi_res else [(0.30 + q, math.sqrt(max(1 - (q / 0.12) ** 2, 0.05))) for q in np.linspace(0.0, 0.11, 12)[1:]]:
         rings.append(ring_pts(np.array([A[0], A[1], z]), np.array([1.0, 0, 0]), np.array([0, 1.0, 0]), rtop * f_, nt))
     out["foot"] = loft(rings, np.array([A[0], A[1] - FOOT_FWD, 0.0]), np.array([A[0], A[1], 0.42]))
@@ -678,6 +916,19 @@ for s in "LR":
         shell_rep["%s.%s" % (part, s)] = {"tris_low": int(len(F)), "tris_high": int(len(LEGS_HI[s][part][1])),
                                           "volume_m3": round(signed_volume(V, F), 4)}
 fx0 = report["column_profile"]["L"]["pad_half_extent_m"]
+_band = (ZS > 0.10) & (ZS < 0.45)
+col_half = {s: {"x": float(np.median((COL[s]["RS"][_band] * np.abs(np.cos(TH))[None, :]).max(1))),
+                "y": float(np.median((COL[s]["RS"][_band] * np.abs(np.sin(TH))[None, :]).max(1)))} for s in "LR"}
+sole_half = {s: LEGS_HI[s]["foot_extent"] for s in "LR"}
+report["foot_widening_factors"] = {
+    s: {"sculpted_column_half_extent_m_z0.10-0.45": {k: round(v, 4) for k, v in col_half[s].items()},
+        "sculpted_pad_tip_half_extent_m": report["column_profile"][s]["pad_half_extent_m"],
+        "new_sole_half_extent_m": {"x": round(sole_half[s]["sole_half_x"], 4), "y": round(sole_half[s]["sole_half_y"], 4)},
+        "width_x_vs_sculpted_column": round(sole_half[s]["sole_half_x"] / col_half[s]["x"], 3),
+        "depth_y_vs_sculpted_column": round(sole_half[s]["sole_half_y"] / col_half[s]["y"], 3),
+        "width_x_vs_sculpted_pad_tip": round(sole_half[s]["sole_half_x"] / report["column_profile"][s]["pad_half_extent_m"]["x"], 3),
+        "sole_area_vs_sculpted_column_section": round(sole_half[s]["sole_half_x"] * sole_half[s]["sole_half_y"] / (col_half[s]["x"] * col_half[s]["y"]), 3)}
+    for s in "LR"}
 report["legs"] = {"shells": shell_rep,
                   "shin_detail_stretch": round(LEGS_LO["L"]["shin_stretch"], 3),
                   "thigh_detail_scale_mirror_tiled_x2": round(LEGS_LO["L"]["thigh_detail_scale"], 3),
@@ -731,17 +982,34 @@ for s in "LR":
         nrm = np.cross(VL[Fp[:, 1]] - VL[Fp[:, 0]], VL[Fp[:, 2]] - VL[Fp[:, 0]])
         pa, pb = J[a0] + S_RC, J[a1] + S_RC
         if part == "foot":
-            pa = np.array([pa[0], pa[1], 0.0]); pb = np.array([pa[0], pa[1], 0.42])
-        ab = pb - pa
-        tpar = np.clip(((cen - pa) @ ab) / max(ab @ ab, 1e-12), 0, 1)
-        out_ = cen - (pa + tpar[:, None] * ab)
+            # the foot's rings are centred FOOT_FWD ahead of the ankle at the sole (toes forward): the outward
+            # reference is that ring-centre line, clamped inside the shell (z 0.10-0.30)
+            zc = np.clip(cen[:, 2], 0.10, 0.30)
+            ctr = np.stack([np.full(len(cen), pa[0]), pa[1] - FOOT_FWD * (1.0 - smoothstep(0.0, 0.26, zc)), zc], 1)
+            out_ = cen - ctr
+        else:
+            ab = pb - pa
+            tpar = np.clip(((cen - pa) @ ab) / max(ab @ ab, 1e-12), 0, 1)
+            out_ = cen - (pa + tpar[:, None] * ab)
         inv_ += int(((nrm * out_).sum(1) < -1e-12).sum())
 report["rest_rebuild"]["leg_shell_inverted_faces"] = inv_
 report["rest_rebuild"]["tris_total"] = int(len(FL))
+# closure: every edge of trunk+membranes and of each shell used exactly twice, once per direction
+def edge_audit(Fs):
+    cnt = defaultdict(int)
+    for f in Fs:
+        for k in range(3):
+            cnt[(int(f[k]), int(f[(k + 1) % 3]))] += 1
+    bad_dir = sum(1 for e, c in cnt.items() if c > 1)
+    open_ = sum(1 for e in cnt if (e[1], e[0]) not in cnt)
+    return {"directed_edge_duplicates": bad_dir, "open_edges": open_}
+report["rest_rebuild"]["trunk_plus_membranes_closure"] = edge_audit(FL[np.isin(fkind, ("trunk", "membrane"))])
+report["rest_rebuild"]["shell_closure"] = {f"{p}.{s}": edge_audit(FL[vlabel[FL[:, 0]] == f"{p}.{s}"]) for s in "LR" for p in ("thigh", "shin", "foot")}
 
 # high master (rest frame): trunk high minus the legs + membrane highs + shell highs
 _, nnear = None, None
-hi_leg = np.array([legdom[kd0.find(p)[1]] for p in WH])
+removed_low = np.ones(n0, bool); removed_low[TOI] = False      # every low vertex the cut (+ hole growth) took
+hi_leg = np.array([removed_low[kd0.find(p)[1]] for p in WH])
 keepF = ~hi_leg[FH].any(1)
 HV = [WH + T_REST]; HF = [FH[keepF]]; hoff = len(WH)
 for p in patches:
@@ -798,7 +1066,7 @@ FNr /= np.maximum(np.linalg.norm(FNr, axis=1), 1e-12)[:, None]
 newf = fkind != "trunk"
 # membranes are judged in trunk (seated) coordinates like their neighbours; legs in the rest frame
 FCq = FC.copy()
-FCq[fkind == "membrane"] -= T_REST
+FCq[np.isin(fkind, ("membrane", "trunk"))] -= T_REST
 fh_ = FCq[:, 2] / H_SEAT
 fcav = np.zeros(nf)
 for i in np.nonzero(newf & (fkind != "membrane"))[0]:
@@ -818,8 +1086,16 @@ ntr = len(TF)
 COLC[:ntr] = TCOL; GLOWC[:ntr] = TGLOW
 COLC[ntr:, :, :3] = colf[ntr:, None, :]; COLC[ntr:, :, 3] = 1.0
 GLOWC[ntr:, :, 3] = 1.0
-moss_new = int((t_ > 0.5).sum())
-report["look"] = {"trunk_corner_colours": "verbatim (approved palette)", "new_faces": int(newf.sum()),
+# the leg/trunk crease no longer exists: trunk faces near the cut lose its cavity darkening (blend to the plain
+# region rule over 5-15 cm from the cut), everything else keeps its approved colour verbatim
+loopv = np.concatenate([np.array(lp) for lp in loops_])
+Ftc = TV[TF].mean(1)
+dband = np.min(np.stack([np.linalg.norm(Ftc - TV[v], axis=1) for v in loopv]), axis=0)
+wb = 1 - smoothstep(0.05, 0.15, dband)
+COLC[:ntr, :, :3] = COLC[:ntr, :, :3] * (1 - wb[:, None, None]) + colf[:ntr, None, :] * wb[:, None, None]
+report["look"] = {"trunk_corner_colours": "verbatim (approved palette) except the old crease band",
+                  "trunk_faces_recoloured_crease_band": {"any": int((wb > 1e-3).sum()), "full": int((wb > 0.999).sum())},
+                  "new_faces": int(newf.sum()),
                   "new_faces_by_kind": {k: int((fkind == k).sum()) for k in ("membrane", "thigh", "shin", "foot")},
                   "rule": "improve_unit eldroot regions (old_bark / root_feet by height / moss up-facing / hollow_dark cavity) + cavity shade k 0.45 + jitter"}
 
@@ -1066,7 +1342,6 @@ def perp_pole(hd, kn, tl):
     return p.normalized()
 
 
-POLE_LEG = Vector((0.0, -1.0, 1.0)).normalized()        # knee forward standing, forward-up folded (seated)
 POLE_ARM = {s: perp_pole(RH["upperarm." + s], RH["forearm." + s], RT["forearm." + s]) for s in "LR"}
 DSIT = Vector((0.0, DY_SIT, -Z_B))
 PIVOT = Vector((0.0, -0.35, 0.05)) + Vector(T_REST)     # trunk front-bottom edge (rest)
@@ -1122,7 +1397,12 @@ def solve(P):
     for s in "LR":
         H = G["pelvis"] @ RH["thigh." + s]
         A_ = Vector(P.get("feet", {}).get(s, ANKLE[s]))
-        Kp, Tp, reach = ik2(H, A_, LL1[s], LL2[s], Rp @ POLE_LEG)
+        # knee pole: the in-sagittal-plane perpendicular of hip->ankle, bent the forward/up way: forward while
+        # the leg hangs straight, UP when folded (seated: hip behind the ankle -> the knee rises over it).
+        # Never parallel to the leg (the old forward->up blend went degenerate mid stand_up with the hip over
+        # the ankle, and the knee flipped out sideways: a shin 99.5 mm under the floor at stand_up frame 65).
+        pole = (A_ - H).normalized().cross(Rp @ Vector((1.0, 0.0, 0.0)))
+        Kp, Tp, reach = ik2(H, A_, LL1[s], LL2[s], pole)
         reach_log.setdefault("leg." + s, []).append(reach)
         Rt = aim_R(Rp, RT["thigh." + s] - RH["thigh." + s], Kp - H)
         G["thigh." + s] = G_about(H, Rt, RH["thigh." + s])
@@ -1236,7 +1516,7 @@ LTOT = min(LL1[s] + LL2[s] for s in "LR")
 clamp_log = {"frames": 0}
 
 
-def reach_clamp(P, cap=0.992):
+def reach_clamp(P, cap=0.9985):
     """Keep every planted leg inside cap x full reach by lowering the hips (never lifts)."""
     Rp = eul(P.get("pelvis", (0, 0, 0)))
     for _ in range(3):
@@ -1261,7 +1541,7 @@ def reach_clamp(P, cap=0.992):
 
 def idle_P(t):
     """Standing idle: the seated wave's creak-sway ported; knees ~10 deg off straight (the columns stay columns)."""
-    return {"lift": -0.016 + 0.004 * sn(t) - 0.004,
+    return {"lift": -0.026 + 0.005 * sn(t),
             "pelvis": (0.5 * sn(t, 2), 1.0 * sn(t), 0.5 * sn(t, 1, 0.9)),
             "chest": (1.0 * sn(t, 2, -0.5), 1.5 * sn(t, 1, -0.5), 1.0 * sn(t, 1, -0.3)),
             "crown": (1.5 * sn(t, 1, -1.4), 3.0 * sn(t, 1, -1.2), 2.0 * sn(t, 1, -0.4)),
@@ -1295,54 +1575,102 @@ def blendP(Pa, Pb, x):
 I0, S0 = idle_P(0.0), sit_P(0.0)
 STAND_S, SIT_S = 5.0, 4.5
 
+# ---- the rise path (hips), shared by stand_up and sit_down. The first v2 clips moved the hips forward over the
+# feet while still low: a 2.9 m leg compressed to ~1 m folds the knee 1.2 m forward and DOWN (shin 80 deg over,
+# 195 mm under the floor). Rule: the path is driven by the KNEE - it stays over the ankle, tipping at most
+# PSI_MAX forward mid-rise - and the thigh swings from its seated angle (back-down) to vertical around it. The hips
+# rise behind the feet first (knuckles still planted), then arc forward over the pads.
+PSI_MAX = math.radians(24.0)
+A_M = (ANKLE["L"] + ANKLE["R"]) / 2
+RHM = (RH["thigh.L"] + RH["thigh.R"]) / 2
+L1M = (LL1["L"] + LL1["R"]) / 2
+L2M = (LL2["L"] + LL2["R"]) / 2
+H_SEAT_W = RHM + DSIT
+H_STAND_W = PIVOT + eul(I0["pelvis"]) @ (RHM - PIVOT) + Vector((0.0, 0.0, I0["lift"]))   # idle frame 1 hips, exactly
+K_SEAT_W = A_M + Vector((0.0, 0.0, L2M))
+_v = H_SEAT_W - K_SEAT_W
+A_SEAT = math.atan2(_v.z, _v.y)                         # thigh elevation in the sagittal plane, from rearward (+Y)
+L1YZ = math.hypot(_v.y, _v.z)
+
+
+def _path_raw(g):
+    psi = PSI_MAX * math.sin(math.pi * g)
+    a = A_SEAT + (math.pi / 2 - A_SEAT) * g
+    K = A_M + L2M * Vector((0.0, -math.sin(psi), math.cos(psi)))
+    return K + L1YZ * Vector((0.0, math.cos(a), math.sin(a)))
+
+
+_E0 = H_SEAT_W - _path_raw(0.0)
+_E1 = H_STAND_W - _path_raw(1.0)
+
+
+def hip_path(g):
+    return _path_raw(g) + _E0 * (1.0 - g) + _E1 * g
+
+
+def hips_to(P, H):
+    """Pelvis translation that puts the mid-hip at H under the pose's pelvis rotation (about PIVOT)."""
+    Rp = eul(P.get("pelvis", (0, 0, 0)))
+    d = H - PIVOT - Rp @ (RHM - PIVOT)
+    # floor guard: a forward pitch about the hips would sink the trunk front edge; while seated-low the trunk
+    # instead rocks on that edge (PIVOT never below its seated height)
+    d.z = max(d.z, DSIT.z)
+    P["py"], P["lift"] = d.y, d.z
+    return P
+
+
+report["rise_path"] = {"knee_tip_max_deg": math.degrees(PSI_MAX), "thigh_seated_elevation_deg": round(math.degrees(A_SEAT), 2),
+                       "endpoint_corrections_mm": {"seat": round(_E0.length * 1000, 2), "stand": round(_E1.length * 1000, 2)},
+                       "rule": "knee = ankle + L2 tipped psi(g) = PSI_MAX sin(pi g) forward; hip = knee + L1 at elevation "
+                               "lerp(seated, 90 deg, g); endpoint residuals blended out linearly"}
+
 
 def stand_up_P(ts):
     """Seated 2.7 m -> standing 5.4 m, 5.0 s, feet planted the whole way.
-    0.0-1.0 stir: crown lifts, chest swells, knuckles press.   0.7-1.5 load: lean 12 deg onto knuckles + feet.
-    1.3-2.15 STRAIN: the sculpted base is rooted - it lifts 0.10 m with a 7 Hz tremble, then TEARS FREE (a
-    0.06 m jerk at 2.1 s).   1.3-3.3 the trunk travels forward over the feet (1 m); 2.0-4.3 the big rise
-    (legs unfold ~140 deg at the knee); knuckles push until 2.5 s, peel 2.3-3.0, swing to hang.
-    4.2-5.0 settle: the mass overshoots 5 cm, the lean rocks back 2 deg, crown nods - into idle frame 1."""
-    rise = s01((ts - 2.0) / 2.3)
-    fwd = s01((ts - 1.3) / 2.0)
-    P = blendP(S0, I0, rise)
-    strain = win(ts, 1.3, 1.9) * (1 - rise)
+    0.0-1.0 stir: crown lifts, chest swells, knuckles press.   0.7-2.6 load: the trunk pitches 16 deg onto the
+    knuckles.   1.3-2.15 STRAIN: the sculpted base is rooted - it lifts 0.10 m with a 7 Hz tremble, then TEARS
+    FREE (a 0.06 m jerk at 2.1 s).   1.6-4.3 the big rise along the knee-driven path: the hips climb behind the
+    feet, then arc forward over the pads as the legs lock straight; knuckles push until 2.3 s, peel 2.1-2.7, swing
+    to hang.   4.2-5.0 settle: the mass lands on the columns - knees give 5 cm and recover, the lean rocks back
+    2 deg, crown nods - into idle frame 1."""
+    g = s01((ts - 1.6) / 2.7)
+    P = blendP(S0, I0, g)
+    strain = win(ts, 1.3, 1.9) * (1 - g)
     trem = bump(ts, 1.75, 0.45)
-    tear = win(ts, 2.02, 2.16) * (1 - rise)
-    P["lift"] = lerp(-Z_B, I0["lift"], rise) + (0.10 * strain + 0.06 * tear) * (1 - rise) \
-        + 0.008 * math.sin(TAU * 7.0 * ts) * trem + 0.05 * bump(ts, 4.45, 0.35) - 0.02 * bump(ts, 4.8, 0.2)
-    P["py"] = lerp(DY_SIT, 0.0, fwd)
-    lean = 12.0 * win(ts, 0.7, 1.5) * (1 - win(ts, 2.8, 3.9)) - 2.0 * bump(ts, 4.4, 0.4)
+    tear = win(ts, 2.02, 2.16) * (1 - g)
+    lean = 16.0 * win(ts, 0.7, 2.0) * (1 - win(ts, 2.6, 4.0)) - 2.0 * bump(ts, 4.4, 0.4)
     P["pelvis"] = v3add(P["pelvis"], (lean, 1.2 * math.sin(TAU * 6.0 * ts) * trem, 0.0))
+    hips_to(P, hip_path(g))
+    P["lift"] += (0.10 * strain + 0.06 * tear) * (1 - g) + 0.008 * math.sin(TAU * 7.0 * ts) * trem - 0.05 * bump(ts, 4.45, 0.35)
     P["chest"] = v3add(P["chest"], (3.5 * bump(ts, 0.5, 0.5) + 5.0 * bump(ts, 1.8, 0.5) - 3.5 * bump(ts, 3.9, 0.5), 0.0, 0.0))
     P["crown"] = v3add(P["crown"], (-4.0 * bump(ts, 0.45, 0.45) - 7.0 * bump(ts, 4.2, 0.55) + 1.5 * math.sin(TAU * 6.5 * ts) * trem + 3.0 * bump(ts, 2.1, 0.12), 0.0, 0.0))
-    peel = s01((ts - 2.3) / 0.7)
+    peel = s01((ts - 2.1) / 0.6)
     for s in "LR":
-        P["arms"][s]["plant"] = 1.0 - s01((ts - 2.55) / 0.55)
+        P["arms"][s]["plant"] = 1.0 - s01((ts - 2.3) / 0.5)
         P["arms"][s]["peel"] = peel
-        P["arms"][s]["rot"] = lerp((0, 0, 0), I0["arms"][s]["rot"], s01((ts - 2.5) / 1.5))
-        P["arms"][s]["fore"] = lerp((0, 0, 0), I0["arms"][s]["fore"], s01((ts - 2.5) / 1.5))
+        P["arms"][s]["rot"] = lerp((0, 0, 0), I0["arms"][s]["rot"], s01((ts - 2.6) / 1.5))
+        P["arms"][s]["fore"] = lerp((0, 0, 0), I0["arms"][s]["fore"], s01((ts - 2.6) / 1.5))
     return reach_clamp(P)
 
 
 def sit_down_P(ts):
-    """Standing -> seated, 4.5 s, feet planted. 0-0.7 the crown dips, weight settles. 0.5-3.3 the hips drop
-    (lowering LEADS: the legs fold first) and travel back 1 m (0.9-3.5); lean 8 deg forward to counter the
-    mass, back to upright before touch-down. 2.8-3.7 knuckles reach down and plant. 3.5 touch-down: the base
-    lands with a thud (chest + crown shudder), 3.7-4.5 settles into sitting_idle frame 1."""
-    low_ = s01((ts - 0.5) / 3.0)
-    back = s01((ts - 0.9) / 2.6)
-    P = blendP(I0, S0, low_)
-    P["lift"] = lerp(I0["lift"], -Z_B, low_)
-    P["py"] = lerp(0.0, DY_SIT, back)
-    lean = 8.0 * win(ts, 0.5, 1.4) * (1 - win(ts, 2.5, 3.3))
+    """Standing -> seated, 4.5 s, feet planted. 0-0.7 the crown dips, weight settles. 0.5-3.5 the hips run the
+    rise path backwards: they arc back off the pads and sink behind the feet (knees tip forward <= 24 deg); the
+    trunk pitches 10 deg forward to counter the mass, upright again before touch-down. 2.6-3.5 knuckles reach down
+    and plant. 3.5 touch-down: the base lands with a thud (chest + crown shudder), 3.7-4.5 settles into
+    sitting_idle frame 1."""
+    g = 1.0 - s01((ts - 0.5) / 3.0)
+    P = blendP(I0, S0, 1.0 - g)
+    lean = 10.0 * win(ts, 0.5, 1.4) * (1 - win(ts, 2.4, 3.3))
     P["pelvis"] = v3add(P["pelvis"], (lean, 0.0, 0.0))
+    hips_to(P, hip_path(g))
     thud = bump(ts, 3.62, 0.22)
+    P["lift"] += -0.008 * thud                        # the seated base clears the floor by 10.6 mm
     P["chest"] = v3add(P["chest"], (2.5 * bump(ts, 2.0, 0.7) - 2.5 * thud, 0.0, 0.0))
     P["crown"] = v3add(P["crown"], (3.0 * bump(ts, 0.4, 0.4) + 4.0 * thud + 2.0 * bump(ts, 4.0, 0.35), 0.0, 0.0))
-    reach = s01((ts - 2.8) / 0.9)
+    reach = s01((ts - 2.6) / 0.9)
     for s in "LR":
-        P["arms"][s]["plant"] = s01((ts - 2.4) / 0.5)
+        P["arms"][s]["plant"] = s01((ts - 2.3) / 0.5)
         P["arms"][s]["peel"] = 1.0 - reach
         P["arms"][s]["rot"] = lerp(I0["arms"][s]["rot"], (0, 0, 0), s01((ts - 1.5) / 1.5))
         P["arms"][s]["fore"] = lerp(I0["arms"][s]["fore"], (0, 0, 0), s01((ts - 1.5) / 1.5))
@@ -1395,8 +1723,8 @@ def walk_P(t):
     return P
 
 
-# proof: sitting = the sculpt's trunk exactly (rigid), measured on the evaluated mesh
-apply(solve(S0))
+# proof: sitting = the sculpt's trunk exactly (rigid), measured on the evaluated mesh (no breathing)
+apply(solve({"lift": -Z_B, "py": DY_SIT, "arms": {s: {"plant": 1.0} for s in "LR"}}))
 Cs = mesh_coords()
 trunk_orig_rest = W0[TOI] + np.array([0.0, DY_SIT, 0.0]) + S_RC
 report["sit_pose"] = {"trunk_vs_sculpt_max_mm": round(float(np.linalg.norm(Cs[:ntv] - trunk_orig_rest, axis=1).max()) * 1000, 4)}
@@ -1515,6 +1843,12 @@ for name, kind, N, fn in CLIPS:
         for pb in pose:
             stretch = max(stretch, abs(pb.length - pb.bone.length) / pb.bone.length)
         C = mesh_coords()
+        if C[:, 2].min() < lo_[2]:
+            iz = int(C[:, 2].argmin())
+            info["lowest_vertex"] = {"z_mm": round(float(C[iz, 2]) * 1000, 2), "frame": f, "part": str(vlabel[iz]),
+                                     "vertex": iz, "co": C[iz].round(4).tolist(), "rest_co": VL[iz].round(4).tolist(),
+                                     "bone_matrix": [list(map(lambda x: round(x, 4), r)) for r in pose[str(vlabel[iz])].matrix]
+                                     if str(vlabel[iz]) in pose else None}
         lo_ = np.minimum(lo_, C.min(0)); hi_ = np.maximum(hi_, C.max(0))
         tmin = min(tmin, float(C[:ntv, 2].min()))
         for s in "LR":
@@ -1618,14 +1952,14 @@ for s in "LR":
 Mtot = sum(v for v, _ in vt)
 COM_S = sum(v * c for v, c in vt) / Mtot
 soles = VL[sole["L"] | sole["R"]][:, :2]
-hl = hull2(soles)
-dmin = 1e9; inside = True
+hl = hull2(soles)                                        # CCW (monotone chain)
+sd = []
 for i in range(len(hl)):
     a, b = hl[i], hl[(i + 1) % len(hl)]
-    e = b - a; nrm = np.array([e[1], -e[0]]) / np.linalg.norm(e)
-    dist = float((COM_S[:2] - a) @ nrm)
-    dmin = min(dmin, abs(dist))
-    inside &= dist <= 0 if (np.array([hl[:, 0].mean(), hl[:, 1].mean()]) - a) @ nrm <= 0 else dist >= 0
+    e = b - a
+    sd.append(float((e[0] * (COM_S[1] - a[1]) - e[1] * (COM_S[0] - a[0])) / np.linalg.norm(e)))   # >0 = inside side
+inside = min(sd) >= 0
+dmin = min(abs(x) for x in sd)
 per_foot = {s: VL[sole[s]][:, :2].mean(0).round(4).tolist() for s in "LR"}
 report["balance"] = {"com_rest_xyz": COM_S.round(4).tolist(), "sole_centres_xy": per_foot,
                      "com_y_minus_mean_sole_y_m": round(float(COM_S[1] - np.mean([per_foot[s][1] for s in "LR"])), 4),
