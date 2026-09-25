@@ -1,0 +1,121 @@
+{
+ "mode": "glb",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\forest\\eldroot.glb",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "eldroot",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    3.8,
+    2.27,
+    2.714
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 10973,
+   "faces": 16000,
+   "tris_base": 16000,
+   "loose_shells": 315,
+   "boundary_edges": 5440,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 1.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [
+    "eldroot_mat"
+   ],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 16000,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 315,
+    "flipped_faces": 1,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.86,
+    "overlap": false,
+    "coverage": 0.2643,
+    "overlap_note": "summed UV area is 17% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.87,
+     "p05": 0.651,
+     "p95": 1.855,
+     "worst_factor": 1.86
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "eldroot_mat",
+   "users": 1,
+   "use_nodes": true,
+   "viewport_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.34,
+    0.28,
+    0.2,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.85,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "eldroot"
+ ],
+ "render_tris_total": 16000,
+ "bbox_min": [
+  -1.9,
+  -1.135,
+  -0.0
+ ],
+ "bbox_max": [
+  1.9,
+  1.135,
+  2.714
+ ],
+ "bbox_size_wdh": [
+  3.8,
+  2.27,
+  2.714
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\game_eldroot_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\game_eldroot_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\game_eldroot_tactical.png"
+ ]
+}

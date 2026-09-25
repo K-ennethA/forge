@@ -1,0 +1,14 @@
+Warning: addon-module forge found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\addon\\forge\\__init__.py'
+20:21:21 | INFO: Data are loaded, start creating Blender stuff
+20:21:21 | INFO: Blender create Mesh node Sphere
+20:21:21 | INFO: glTF import finished in 0.19s
+00:02.468  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_front.png'
+00:02.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_threequarter.png'
+00:02.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\reference_game_monster_duskmaw_tactical.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\reference_game_monster_duskmaw.json
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

@@ -1,0 +1,9 @@
+00:00.906  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\shroom_grunt.blend"
+00:02.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\blend_shroom_grunt_front.png'
+00:02.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\blend_shroom_grunt_threequarter.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\blend_shroom_grunt_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\blend_shroom_grunt_threequarter.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\blend_shroom_grunt.json
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

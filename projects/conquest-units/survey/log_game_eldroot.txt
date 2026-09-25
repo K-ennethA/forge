@@ -1,0 +1,14 @@
+Warning: addon-module forge found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\addon\\forge\\__init__.py'
+20:19:20 | INFO: Data are loaded, start creating Blender stuff
+20:19:20 | INFO: Blender create Mesh node eldroot_mesh
+20:19:20 | INFO: glTF import finished in 0.02s
+00:02.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_front.png'
+00:02.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_threequarter.png'
+00:02.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_tactical.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\game_eldroot_tactical.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\game_eldroot.json
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit
