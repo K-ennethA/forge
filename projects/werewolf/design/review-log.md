@@ -46,3 +46,74 @@ now (30-50k tris, baked normal/AO detail, real texturing per
 docs/research/3d-generation-and-detailing.md) rather than "low-poly first,
 semi-real later". The game's own placeholder philosophy still holds for
 NON-shipped drafts, but delivered characters aim at the higher tier.
+
+## 2026-09-25 - custom protagonist renders (mpfb_custom_*)
+> the hair is wrong and is there a way we can make the clothes not skin
+> tight so it feels more feel and not like a skin suit
+
+Reading: (a) HAIR rejected - the cap + messy-cards combo does not read as
+the reference's dark tousled mop; needs a modeled hair mass (clumped,
+directional, low-poly) rather than thin cards; (b) CLOTHES read as a skin
+suit because the garments were built by offsetting the body surface, so
+they track every body curve. Real garments need their own silhouette:
+the jacket hangs from the shoulder line and falls straight past the waist
+(boxy, air between leather and torso, open front standing off the chest),
+sleeves are cylinders wider than the arm; jeans fall straight from the
+hip as fabric tubes with bunching at knee and ankle, not leg-shaped.
+Drape/gravity shape + fold geometry, THEN the MPFB fit binding (fitting
+does not require tightness). Fit checks must change too: poke-through
+stays zero but a MINIMUM CLEARANCE band (except at shoulders/waistband
+anchor lines) becomes the new gate so tightness is measured, not eyeballed.
+
+## 2026-09-25 - outfit v2 verdict + gate recalibration (artist, verbatim)
+> the outfit had some more issues, the butt area is tight and then goes
+> loose and is not fluid, the bicep area of the leather jacket should be
+> tight and not loose like the rest of the material since they have
+> muscular build and a little tighter on the forearms and wrist but not
+> skin tight
+
+> [crouch] thats fine for now ... [gate recalibration] yea sure, i havent
+> seen the updated animations
+
+Readings: v3 fit is DIFFERENTIAL - a real jacket on a muscular build:
+biceps TIGHT (cloth follows the muscle), forearms/wrists a little tighter
+than the body drape but not skin-tight; the torso drape stands. JEANS
+seat: the tight-then-loose transition at the butt is not fluid - the seat
+needs one continuous fall (fitted at the seat top flowing into the
+straight leg, no abrupt ease change). Clearance gate gets PER-ZONE floors
+(bicep/forearm zones get lower floors by design, not by failure). Crouch
+approved for now. Mocap-norm gate recalibration approved (opposition etc.
+re-pinned to real-human values).
+
+## 2026-09-25 - mocap preview verdict (artist, verbatim)
+> the model seems broken on all the animations and isn't using the new
+> model youve been showing so its hard to tell
+> like a weird shoulder makes walking hard to judge
+> on running the thigh more slides than moving up
+> crouching should have the character bend the knees as well and have the
+> arms flared out at an angle
+
+Readings: the previews show the OLD shipped body (Form A conversion) - the
+mocap was retargeted onto it because it IS the in-game character; the MPFB
+body has not shipped yet. Verdict: judging motion on the old body is
+wasted - the mocap set gets retargeted onto the MPFB v3 body next (its
+game_engine rig + clean weights) and re-previewed there. Defects to carry
+into that pass as measured checks: (a) shoulder deformation = the old
+body's known weight defect (elbow/trapezius items from the Form A backlog)
+- expected to die with the body swap, verify; (b) RUN: the thigh
+translates/slides instead of rotating up - measure hip-joint rotation
+amplitude on the retarget and fix mapping/IK if it persists on the new
+body; (c) CROUCH: must have real KNEE BEND (verify knee flexion angles
+came through the retarget - the artist sees none) and ARMS FLARED OUT at
+an angle for balance - an authored adjustment layer on the crouch pair or
+a different source style, artist words win over source fidelity here.
+
+## 2026-09-25 - outfit v3 delivered (differential fit)
+Per-zone clearance gate: bicep 4.6/6.1 mm (tight, reads the muscle),
+forearm 8.9/10.0, wrist 8.5/9.8, torso drape untouched (15.2/46.0), seat
+now one smooth C2 fall (ease 10.5->20 mm, worst drawdown 0.8 mm vs v2's
+9.7 mm collapse-and-refill). v2 re-scored as the rejected baseline (its
+uniform-loose sleeves fail every sleeve zone). Poke-through 0; canary
+fires. Untested: the tight sleeves in MOTION - the retarget-onto-MPFB
+wave covers it. Pre-existing, out of spec: jeans yoke cleft line,
+jagged back-pocket stitches.

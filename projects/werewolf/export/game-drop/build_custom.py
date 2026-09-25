@@ -15,13 +15,20 @@ Builds, end to end and headless:
   * a forge-modelled low-poly hair mass (scalp shell + clumped directional locks), fitted as an
     MPFB hair asset (v1's CC0 cap + alpha cards were rejected),
   * low-poly CC0 ankle boots, a CC0 tee, palette colours from palette.json,
-  * garment poke-through checks + the MINIMUM-CLEARANCE gate (per-garment air-gap histograms,
-    anchor bands declared) in the A-pose + hair crown coverage + tri breakdown + UV metrics.
+  * v3 (2026-09-25 "outfit v2 verdict") DIFFERENTIAL fit: hulled-slice sleeves tight over the
+    biceps, easing through the elbow, a little tighter than the body drape to a snug cuff (torso
+    drape unchanged); the jeans seat as one designed, monotone ease curve from the fitted seat top
+    into a monotone straight-leg taper,
+  * garment poke-through checks + the PER-ZONE MINIMUM-CLEARANCE gate (CLEARANCE_ZONES: declared
+    zones, floors + median bands, v2 rejected baselines; the seat ease curve scored for
+    monotonic smoothness) in the A-pose + hair crown coverage + tri breakdown + UV metrics.
 
 build     : blender --background --factory-startup --python build_custom.py -- build <out.blend> <report.json>
 render    : blender --background --factory-startup <out.blend> --python build_custom.py -- render <prefix> [stills|turntable|all]
 clearance : blender --background --factory-startup <any.blend> --python build_custom.py -- clearance <out.json>
 sidebyside: blender --background --factory-startup --python build_custom.py -- sidebyside <left.png> <right.png> <out.png>
+grid      : blender --background --factory-startup --python build_custom.py -- grid <out.png> <a.png> <b.png> [...]   (2 columns)
+render modes: all | stills | turntable | face | fit (jacket_closeup + arm) | compare (arm + seat)
 """
 import bpy, bmesh, sys, os, json, math, heapq, uuid, addon_utils
 from mathutils import Vector
@@ -76,6 +83,12 @@ FEET = {"foot_l", "foot_r", "ball_l", "ball_r"}
 def _smooth(e0, e1, x):
     t = max(0.0, min(1.0, (x - e0) / (e1 - e0)))
     return t * t * (3 - 2 * t)
+
+
+def _smoother(e0, e1, x):
+    """C2 smootherstep: zero slope AND curvature at both ends (no visible kink where a blend ends)."""
+    t = max(0.0, min(1.0, (x - e0) / (e1 - e0)))
+    return t * t * t * (t * (6 * t - 15) + 10)
 
 
 def lin(c):
@@ -169,7 +182,8 @@ class Body:
 class Layer:
     """A garment already on the body: a candidate point must sit `margin` further from the body
     than the layer does locally (signed distance measured against the body, whose normals are
-    reliable, instead of trusting the CC0 garment's own winding)."""
+    reliable, instead of trusting the CC0 garment's own winding). `margin` may be a function of
+    the candidate point (v3: the tight sleeve sits a leather thickness over the tee sleeve)."""
 
     def __init__(self, obj, body, margin, reach=0.035, zmax=None):
         dg = bpy.context.evaluated_depsgraph_get()
@@ -180,6 +194,9 @@ class Layer:
         ev.to_mesh_clear()
         self.body, self.margin, self.reach, self.zmax = body, margin, reach, zmax
 
+    def m(self, p):
+        return self.margin(p) if callable(self.margin) else self.margin
+
     def need(self, p):
         if self.zmax is not None and p.z > self.zmax:
             return None
@@ -187,7 +204,7 @@ class Layer:
         if loc is None:
             return None
         s_layer, _, _ = self.body.sd(loc)
-        return s_layer + self.margin
+        return s_layer + self.m(p)
 
     def push(self, p):
         """Clear the layer along ITS OWN outward normal (oriented away from the body): where a
@@ -202,8 +219,9 @@ class Layer:
         if n.dot(bn) < 0:
             n = -n
         s = (p - loc).dot(n)
-        if s < self.margin:
-            return p + n * (self.margin - s)
+        mg = self.m(p)
+        if s < mg:
+            return p + n * (mg - s)
         return p
 
 
@@ -635,72 +653,192 @@ def _bins(pts_t, lo, hi, n):
     return out
 
 
-class Sleeve:
-    """A sleeve = two straight cylinders (upper arm, forearm) around the limb's centroid lines,
-    radius = the widest arm section + ease (not arm-shaped), the centre dropped by `sag` so the
-    leather rests on top of the arm and hangs underneath; blended across the elbow bisector plane.
-    The forearm cylinder runs on past the region's cuff to the wrist (extra length -> cuff stack)."""
+# ----------------------------------------------------------------------------------------------
+# v3 SLEEVE (2026-09-25 artist, "outfit v2 verdict": "the bicep area of the leather jacket should be
+# tight and not loose like the rest of the material since they have muscular build and a little
+# tighter on the forearms and wrist but not skin tight"). v2's sleeve was a straight cylinder of the
+# widest arm section + 19 mm (bicep median clearance ~30-39 mm: loose). v3 is DIFFERENTIAL: per
+# slice along each limb segment the cross-section is the convex hull of the arm skin (the leather
+# bridges the small concavities between muscle bellies but reads the muscle), offset by an ease
+# PROFILE along the arm - tight over the biceps, easing out through the elbow (bunching kept),
+# a little tighter than the body drape along the forearm, tapering snug to the cuff. The zone
+# boundaries are the SAME declared rules the clearance gate scores (jacket_zone).
+# ----------------------------------------------------------------------------------------------
+SLEEVE_EASE = {"bicep": 0.0050, "elbow": 0.0120, "forearm": 0.0095, "wrist": 0.0085}
+# enforce() floors per zone (skin) and the tee margin under the sleeve (a leather thickness over
+# the CC0 tee sleeve instead of the torso's 7 mm air layer) - each a little above the gate floor
+# (MPFB refit drifts <= 0.2 mm, see refit_max_dev_mm)
+SLEEVE_DMIN = {"bicep": 0.0046, "elbow": 0.0046, "forearm": 0.0086, "wrist": 0.0086}
+SLEEVE_TEE_MARGIN = 0.0015
+ZONE_T = {"bicep_end": 0.85, "elbow_end": 0.15, "forearm_end": 0.75}   # t along shoulder->elbow / elbow->wrist
+HAND_PREFIX = ("hand", "thumb", "index", "middle", "ring", "pinky")
 
-    def __init__(self, body, s, ease, cuff_ease, sag, t_region_end=0.96):
+
+def _seg_t(bones, a, b, p):
+    P0, P1 = bones[a][0], bones[b][0]
+    A = P1 - P0
+    return (p - P0).dot(A) / A.length_squared
+
+
+def jacket_zone(b, dom, bones):
+    """Declared jacket zone of a skin point b (dominant bone dom): bicep / elbow / forearm / wrist
+    along the arm bones, torso otherwise. Shared by the build (ease, floors) and the gate."""
+    if dom in ARM_UP:
+        s = dom[-1]
+        return "bicep" if _seg_t(bones, "upperarm_" + s, "lowerarm_" + s, b) < ZONE_T["bicep_end"] else "elbow"
+    if dom in ARM_LO:
+        s = dom[-1]
+        t = _seg_t(bones, "lowerarm_" + s, "hand_" + s, b)
+        if t < ZONE_T["elbow_end"]:
+            return "elbow"
+        return "forearm" if t < ZONE_T["forearm_end"] else "wrist"
+    if dom and dom.startswith(HAND_PREFIX):
+        return "wrist"
+    return "torso"
+
+
+def _poly_centroid(poly):
+    a = cx = cy = 0.0
+    n = len(poly)
+    for k in range(n):
+        x0, y0 = poly[k]
+        x1, y1 = poly[(k + 1) % n]
+        c = x0 * y1 - x1 * y0
+        a += c
+        cx += (x0 + x1) * c
+        cy += (y0 + y1) * c
+    if abs(a) < 1e-12:
+        return (sum(p[0] for p in poly) / n, sum(p[1] for p in poly) / n)
+    return (cx / (3 * a), cy / (3 * a))
+
+
+class Sleeve:
+    """v3 differential sleeve: two hulled-slice tubes (upper arm, forearm) blended across the elbow
+    bisector plane. Slice k of a segment = convex hull of the arm skin within the slab around t_k
+    (projected into the plane normal to the bone), re-centred on a smoothed centreline; the cloth
+    radius at (t, angle) = hull ray + ease(t). The forearm tube runs on past the region's cuff to
+    the wrist (extra length -> cuff stack), as in v2."""
+    NB, NTH = 25, 48
+
+    def __init__(self, body, s, t_region_end=0.96):
         self.S = body.bones["upperarm_" + s][0]
         self.E = body.bones["lowerarm_" + s][0]
         self.W = body.bones["hand_" + s][0]
-        self.sag, self.t_end = sag, t_region_end
+        self.t_end = t_region_end
+        e = SLEEVE_EASE
+        ease_up = lambda t: e["bicep"] + (e["elbow"] - e["bicep"]) * _smooth(0.70, 1.0, t)
+        ease_lo = lambda t: (e["elbow"] + (e["forearm"] - e["elbow"]) * _smooth(0.0, 0.30, t)
+                             + (e["wrist"] - e["forearm"]) * _smooth(0.55, 0.90, t))
         idx = [i for i in range(len(body.co)) if body.in_body[i] and body.dom[i] in ("upperarm_" + s, "lowerarm_" + s)]
+        arm_tree = body.part_tree({"upperarm_" + s, "lowerarm_" + s})
         self.segs = []
-        for P0, P1 in ((self.S, self.E), (self.E, self.W)):
+        for P0, P1, efn in ((self.S, self.E, ease_up), (self.E, self.W, ease_lo)):
             A = P1 - P0
             L = A.length
             A = A / L
-            pts = [((body.co[i] - P0).dot(A) / L, body.co[i]) for i in idx]
-            bins = _bins(pts, 0.0, 1.0, 10)
-            offs = []
-            for k, bp in enumerate(bins):
-                if bp and 0.2 <= (k + 0.5) / 10 <= 0.9:
-                    c = sum(bp, Vector()) / len(bp)
-                    o = c - P0
-                    o -= A * o.dot(A)
-                    offs.append(o)
-            off = sum(offs, Vector()) / max(1, len(offs))
-            rad = []
-            for k, bp in enumerate(bins):
-                c = P0 + A * ((k + 0.5) / 10 * L) + off
-                rr = 0.0
-                for p in bp:
-                    u = p - c
-                    u -= A * u.dot(A)
-                    rr = max(rr, u.length)
-                rad.append(rr)
-            g = Vector((0, 0, -1)) - A * (-A.z)
-            g = g.normalized() if g.length > 1e-6 else Vector((0, 0, -1))
-            self.segs.append({"P0": P0, "A": A, "L": L, "off": off, "rad": rad, "g": g})
+            e1 = A.cross(Vector((0.0, 0.0, 1.0)))
+            if e1.length < 1e-6:
+                e1 = A.cross(Vector((1.0, 0.0, 0.0)))
+            e1.normalize()
+            e2 = A.cross(e1).normalized()
+            ts = [-0.1 + 1.2 * k / (self.NB - 1) for k in range(self.NB)]
+            half = 1.5 * (ts[1] - ts[0])
+            loc = []
+            for i in idx:
+                r = body.co[i] - P0
+                t = r.dot(A) / L
+                u = r - A * r.dot(A)
+                if u.length < 0.13:
+                    loc.append((t, u.dot(e1), u.dot(e2)))
+            # the basemesh arm rings are sparse and oblique to the bone: a vertex slab gives sliver
+            # hulls. Sample each slice's true cross-section by casting rays in the slice plane
+            # inward onto the arm surface (as Envelope does for the torso), then hull the hits.
+            hulls = []
+            for tk in ts:
+                near_ = [(x, y) for t, x, y in loc if abs(t - tk) <= half]
+                if len(near_) < 6:
+                    hulls.append(None)
+                    continue
+                c0 = (sum(x for x, _ in near_) / len(near_), sum(y for _, y in near_) / len(near_))
+                O = P0 + A * (tk * L) + e1 * c0[0] + e2 * c0[1]
+                hits = []
+                for a in range(self.NTH):
+                    ang = 2 * math.pi * a / self.NTH
+                    dv = e1 * math.cos(ang) + e2 * math.sin(ang)
+                    hit, _, _, _ = arm_tree.ray_cast(O + dv * 0.13, -dv, 0.13)
+                    if hit is not None:
+                        q = hit - P0
+                        hits.append((q.dot(e1), q.dot(e2)))
+                hulls.append(_hull2d(hits) if len(hits) >= 0.75 * self.NTH else None)
+            good = [k for k, h in enumerate(hulls) if h and len(h) >= 3]
+            for k in range(self.NB):
+                if not (hulls[k] and len(hulls[k]) >= 3):
+                    hulls[k] = hulls[min(good, key=lambda g: abs(g - k))]
+            raw_c = [_poly_centroid(h) for h in hulls]
+            cen = []
+            for k in range(self.NB):
+                ks = range(max(0, k - 2), min(self.NB, k + 3))
+                cen.append((sum(raw_c[j][0] for j in ks) / len(ks), sum(raw_c[j][1] for j in ks) / len(ks)))
+            th = [2 * math.pi * a / self.NTH for a in range(self.NTH)]
+            R = []
+            for k, h in enumerate(hulls):
+                cx, cy = cen[k]
+                sh = [(x - cx, y - cy) for x, y in h]
+                row = [_ray_poly(sh, a) for a in th]
+                if any(r is None for r in row):          # smoothed centre fell outside: use the raw one
+                    cen[k] = raw_c[k]
+                    sh = [(x - raw_c[k][0], y - raw_c[k][1]) for x, y in h]
+                    row = [_ray_poly(sh, a) or 0.0 for a in th]
+                R.append(row)
+            # one [1 2 1] pass along the arm: the hull rows are slab samples, not a surface
+            Rs = [[(R[max(0, k - 1)][a] + 2 * R[k][a] + R[min(self.NB - 1, k + 1)][a]) / 4 for a in range(self.NTH)]
+                  for k in range(self.NB)]
+            self.segs.append({"P0": P0, "A": A, "L": L, "e1": e1, "e2": e2, "ts": ts, "cen": cen, "R": Rs,
+                              "ease": efn})
         up, lo = self.segs
-        R_up = max(up["rad"][3:9]) + ease          # mid upper arm (t 0.3-0.9): bins 0-2 hold the shoulder cap, 9 the elbow point
-        R_cuff = max(lo["rad"][-3:]) + cuff_ease
-        R_elb = max(R_up * 0.97, R_cuff)
-        up["R"] = lambda t: R_up
-        lo["R"] = lambda t: R_elb + (R_cuff - R_elb) * max(0.0, min(1.0, t))
-        self.info = {"R_upper_mm": round(R_up * 1000, 1), "R_elbow_mm": round(R_elb * 1000, 1),
-                     "R_cuff_mm": round(R_cuff * 1000, 1),
-                     "arm_r_max_upper_mm": round(max(up["rad"][3:9]) * 1000, 1),
-                     "arm_r_wrist_mm": round(max(lo["rad"][-3:]) * 1000, 1)}
-        nb = (up["A"] + lo["A"]).normalized()
-        self.elbow_n = nb
+        bic = [max(up["R"][k]) for k, t in enumerate(up["ts"]) if 0.35 <= t <= 0.8]
+        fore = [max(lo["R"][k]) for k, t in enumerate(lo["ts"]) if 0.15 <= t <= 0.75]
+        self.info = {"hull_r_max_bicep_mm": round(max(bic) * 1000, 1), "hull_r_max_forearm_mm": round(max(fore) * 1000, 1),
+                     "hull_r_wrist_mm": round(max(lo["R"][min(range(self.NB), key=lambda k: abs(lo["ts"][k] - 1.0))]) * 1000, 1),
+                     "ease_mm": {k: round(v * 1000, 1) for k, v in SLEEVE_EASE.items()}}
+        self.elbow_n = (up["A"] + lo["A"]).normalized()
+
+    def _look(self, sg, t):
+        f = (t - sg["ts"][0]) / (sg["ts"][1] - sg["ts"][0])
+        k = max(0, min(self.NB - 2, int(math.floor(f))))
+        return k, max(0.0, min(1.0, f - k))
+
+    def _centre(self, sg, t):
+        k, w = self._look(sg, t)
+        cx = sg["cen"][k][0] * (1 - w) + sg["cen"][k + 1][0] * w
+        cy = sg["cen"][k][1] * (1 - w) + sg["cen"][k + 1][1] * w
+        return sg["P0"] + sg["A"] * (t * sg["L"]) + sg["e1"] * cx + sg["e2"] * cy
+
+    def _radius(self, sg, t, ang):
+        k, w = self._look(sg, t)
+        fa = (ang % (2 * math.pi)) / (2 * math.pi) * self.NTH
+        a0 = int(math.floor(fa)) % self.NTH
+        a1 = (a0 + 1) % self.NTH
+        ta = fa - math.floor(fa)
+        r0 = sg["R"][k][a0] * (1 - ta) + sg["R"][k][a1] * ta
+        r1 = sg["R"][k + 1][a0] * (1 - ta) + sg["R"][k + 1][a1] * ta
+        return r0 * (1 - w) + r1 * w
 
     def _seg(self, sg, b, n, lower):
         t = (b - sg["P0"]).dot(sg["A"]) / sg["L"]
         ta = t
         if lower and t > 0.7:
             ta = 0.7 + (t - 0.7) * (1.0 - 0.7) / (self.t_end - 0.7)   # stretch the cuff to the wrist
-        c = sg["P0"] + sg["A"] * (ta * sg["L"]) + sg["off"]
-        u = b - (sg["P0"] + sg["A"] * (t * sg["L"]) + sg["off"])
+        u = b - self._centre(sg, t)
         u -= sg["A"] * u.dot(sg["A"])
         ru = u.length
         if ru < 1e-6:
             u = n - sg["A"] * n.dot(sg["A"])
-        u.normalize()
-        R = max(sg["R"](t), ru + 0.014)       # never inside a bulge the cylinder did not budget for
-        return c + sg["g"] * self.sag + u * R, u, t
+        ang = math.atan2(u.dot(sg["e2"]), u.dot(sg["e1"]))
+        d = (sg["e1"] * math.cos(ang) + sg["e2"] * math.sin(ang)).normalized()
+        ez = sg["ease"](t)
+        R = max(self._radius(sg, ta, ang) + ez, ru + 0.6 * ez)    # never inside a bulge the hull missed
+        return self._centre(sg, ta) + d * R, d, t
 
     def target(self, b, n):
         tu, uu, t_up = self._seg(self.segs[0], b, n, False)
@@ -711,12 +849,13 @@ class Sleeve:
         return p, u, (t_up, t_lo, w)
 
 
+
 class LegTube:
     """A jeans leg = a straight tube from the hip to the ankle around the leg's centroid line (not
     leg-shaped): radius from the thigh at the crotch tapering to the knee, then straight to a hem
     wide enough to stack over the boot, never closer than `ease_min` to the widest local section."""
 
-    def __init__(self, body, s, z_c, hem, knee_z, ease_top, ease_low, bridge=0.12):
+    def __init__(self, body, s, z_c, hem, knee_z, ease_top, ease_low, bridge=0.12, monotone=False):
         # the skin rings of the basemesh leg are sparse (~7 verts per 2 cm slice): centre each
         # slice on its bounding-box middle (a vertex centroid is biased toward the denser side),
         # then smooth that centreline heavily - the tube follows the leg's overall line, not its
@@ -761,12 +900,25 @@ class LegTube:
         R_top = max(r for zz, r in zip(self.bz, rad) if z_c - 0.08 <= zz <= z_c) + ease_top
         R_low = max(r for zz, r in zip(self.bz, rad) if hem + 0.05 <= zz <= knee_z) + ease_low
         prof = []
-        for z in self.bz:
-            if z >= knee_z:
-                lin_ = R_low + (R_top - R_low) * min(1.0, (z - knee_z) / (z_c - knee_z))
-                prof.append(max(lin_, rwin(z, bridge) + ease_top))
-            else:
-                prof.append(R_low)
+        if monotone:
+            # v3: the thigh is ONE straight taper crotch -> knee. v2 took max(taper, bridged local
+            # bulge): the bridge window reached the buttock underside, so the tube bulged under the
+            # seat and pinched back in 60-100 mm lower (the second dip in v2's seat ease curve).
+            # Instead raise the taper's top radius just enough that it clears every thigh section
+            # below the seat by ease_top - one scalar, so the profile stays linear and monotone.
+            f = lambda z: min(1.0, (z - knee_z) / (z_c - knee_z))
+            for zz, r in zip(self.bz, rad):
+                if knee_z + 0.02 <= zz <= z_c - 0.03 and f(zz) > 1e-3:
+                    R_top = max(R_top, R_low + (r + ease_top - R_low) / f(zz))
+            for z in self.bz:
+                prof.append(R_low + (R_top - R_low) * f(z) if z >= knee_z else R_low)
+        else:
+            for z in self.bz:
+                if z >= knee_z:
+                    lin_ = R_low + (R_top - R_low) * min(1.0, (z - knee_z) / (z_c - knee_z))
+                    prof.append(max(lin_, rwin(z, bridge) + ease_top))
+                else:
+                    prof.append(R_low)
         self.prof = prof
         self.R_top, self.R_low = R_top, R_low
         self.info = {"R_top_mm": round(R_top * 1000, 1), "R_below_knee_mm": round(R_low * 1000, 1),
@@ -881,7 +1033,8 @@ def build_jeans(body, layers, rep):
     # crotch apex = lowest skin point of the region on the midline
     z_c = min(body.co[v[src]].z for v in bmr.verts if abs(body.co[v[src]].x) < 0.02)
     knee_z = (knee["l"].z + knee["r"].z) / 2
-    tubes = {s: LegTube(body, s, z_c, HEM, knee_z, ease_top=0.011, ease_low=0.015, bridge=0.08) for s in "lr"}
+    tubes = {s: LegTube(body, s, z_c, HEM, knee_z, ease_top=0.011, ease_low=0.015, bridge=0.08, monotone=True)
+             for s in "lr"}
     htree = body.part_tree({"pelvis", "spine_01", "thigh_l", "thigh_r"}, z_c - 0.04, 1.16)
     ay = sum(body.co[i].y for i in range(len(body.co)) if body.in_body[i] and body.dom[i] == "pelvis") / \
         max(1, sum(1 for i in range(len(body.co)) if body.in_body[i] and body.dom[i] == "pelvis"))
@@ -889,18 +1042,75 @@ def build_jeans(body, layers, rep):
     hipenv = Envelope(htree, 0.0, ay, zs, z_fall=1.10)
     EASE_HIP = 0.013
     ANCHOR = 0.008
+    # v3 SEAT FALL (2026-09-25 artist: "the butt area is tight and then goes loose and is not
+    # fluid"). v2 hung the seat envelope straight down from the buttock apex and handed it to the
+    # leg tube over a 60 mm window at the crotch: the cloth stood 28 mm off the skin under the seat,
+    # then snapped in to 18 mm within 30 mm of height, back out to 29 and in again to 23 (the leg
+    # tube's own bridged bulge). v3 designs the transition CURVE instead of blending two shapes:
+    #   * the rear hand-over from the seat envelope to the leg tube runs from the seat apex to the
+    #     crotch as one C2 (smootherstep) blend (front/sides keep v2's 60 mm window),
+    #   * over the rear fall (seat apex -> crotch, buttock columns, cleft excluded) the cloth sits
+    #     on a designed ease level E(z): EASE_SEAT at the apex rising C2-smoothly to EASE_FALL at
+    #     the crotch - each vertex marched out along its drape direction until it is E(z) off the
+    #     skin (the level set bridges the gluteal fold with a rounded fill, it does not track it),
+    #   * the leg tube is a monotone taper (LegTube monotone), so the fall's end ease carries on
+    #     down the thigh without a second pinch.
+    EASE_SEAT = 0.0105
+    EASE_FALL = 0.0200
+    lmk = seat_landmarks(body)
+    SEAT_Z = lmk["seat_z"]
+    E_seat = lambda z: EASE_SEAT + (EASE_FALL - EASE_SEAT) * _smoother(SEAT_Z, z_c - 0.01, z)
     rep["jeans_drape"] = {"crotch_z": round(z_c, 4), "knee_z": round(knee_z, 4), "hip_axis_y": round(ay, 4),
-                          "ease_hip_mm": EASE_HIP * 1000, "anchor_mm": ANCHOR * 1000,
+                          "ease_hip_mm": EASE_HIP * 1000, "ease_seat_mm": EASE_SEAT * 1000, "ease_fall_mm": EASE_FALL * 1000,
+                          "anchor_mm": ANCHOR * 1000,
+                          "seat_fall_window_z": [round(z_c - 0.01, 4), round(SEAT_Z, 4)],
+                          "design_ease_curve_mm": [[round(z, 2), round(E_seat(z) * 1000, 1)]
+                                                   for z in [SEAT_Z - 0.02 * k for k in range(8)]],
                           "tube": {s: t.info for s, t in tubes.items()}}
+
+    def w_seat(b):
+        # rear buttock columns from just above the seat apex down to the crotch. The cleft band
+        # stays on the hull (bridged, v2): a level set there dips into the crease and folds the
+        # cloth over at the cleft base (measured: 8 body points outside the jeans).
+        return back_w(b) * _smooth(SEAT_Z + 0.01, SEAT_Z - 0.03, b.z) * _smooth(z_c - 0.04, z_c + 0.01, b.z) *             _smooth(0.015, 0.045, abs(b.x))
+
+    def level(q0, d, e):
+        """Move the (ordered) drape target q0 along its drape direction onto the E level: inward
+        while it stands further than e off the skin, outward while it is closer / inside. Starting
+        from the drape target (not the skin point) keeps neighbour order across the gluteal fold."""
+        sd0 = body.sd(q0)[0]
+        step = -0.001 if sd0 > e else 0.001
+        q = q0
+        for _ in range(90):
+            nq = q + d * step
+            s_ = body.sd(nq)[0]
+            if step < 0 and s_ < e:
+                break
+            q = nq
+            if step > 0 and s_ >= e:
+                break
+        return q
+
+    def back_w(b):
+        dy = b.y - ay
+        r = math.hypot(b.x, dy)
+        return _smooth(0.0, 0.6, dy / r) if r > 1e-6 else 0.0
 
     def fn(v, b, n, dom):
         s = "l" if b.x > 0 else "r"
         pt, ut = tubes[s].target(b)
-        ph, uh = hipenv.target(b, EASE_HIP)
+        bw = back_w(b)
+        ph, uh = hipenv.target(b, EASE_HIP + (EASE_SEAT - EASE_HIP) * bw)
         rxy = math.hypot(b.x, b.y - ay)
-        w_hip = _smooth(z_c - 0.01, z_c + 0.05, b.z) * _smooth(0.015, 0.045, rxy)
+        z_hi = (z_c + 0.05) + (SEAT_Z - (z_c + 0.05)) * bw
+        # rear: one C2 fall from the seat apex; front/sides: v2's smoothstep window, unchanged
+        wz = _smooth(z_c - 0.01, z_hi, b.z) * (1 - bw) + _smoother(z_c - 0.01, z_hi, b.z) * bw
+        w_hip = wz * _smooth(0.015, 0.045, rxy)
         free = pt.lerp(ph, w_hip)
         d = ut.lerp(uh, w_hip).normalized()
+        ws = w_seat(b)
+        if ws > 0.0:
+            free = free.lerp(level(free, d, E_seat(b.z)), ws)
         w_free = _smooth(WAIST(b) - 0.008, WAIST(b) - 0.045, b.z)
         p = (b + n * ANCHOR).lerp(free, w_free)
         return p, d.lerp(n, 1 - w_free).normalized()
@@ -974,7 +1184,12 @@ def build_jeans(body, layers, rep):
                                                   + 1.8 * mnoise.noise(p * 6.0)))
         a += 0.003 * (0.5 + 0.5 * mnoise.noise(p * 8.0))
         P[i] = p + d * a
-    dmin = lambda i: 0.008
+    # floors: the waistband anchor keeps v2's 8 mm; below it the declared gate floor (10 mm, +0.3 mm
+    # for the MPFB refit drift) is CONSTRUCTED rather than hoped for (v2's front-crotch vertex held
+    # 10.9 mm by luck over an 8 mm floor), lifted toward the designed ease on the rear fall
+    WS = [w_seat(B[i][0]) for i in range(len(P))]
+    WF = [_smooth(WAIST(B[i][0]) - 0.008, WAIST(B[i][0]) - 0.045, B[i][0].z) for i in range(len(P))]
+    dmin = lambda i: max(0.008 + 0.0023 * WF[i], 0.008 + max(0.0, E_seat(B[i][0].z) - 0.001 - 0.008) * WS[i])
     enforce(P, [v.index for v in bmr.verts], body, dmin, layers)
     for v in bmr.verts:
         v.co = P[v.index]
@@ -1124,7 +1339,7 @@ def build_jacket(body, layers, rep):
     ay = sum(p.y for p in tv) / len(tv)
     zs = [HEM - 0.03 + 0.01 * k for k in range(int((1.58 - HEM) / 0.01) + 2)]
     env = Envelope(ttree, 0.0, ay, zs, z_fall=Z_YOKE)
-    sleeves = {s: Sleeve(body, s, ease=0.019, cuff_ease=0.019, sag=0.004) for s in "lr"}
+    sleeves = {s: Sleeve(body, s) for s in "lr"}
     ANCHOR = 0.010
 
     def ease(z):
@@ -1139,6 +1354,15 @@ def build_jacket(body, layers, rep):
         wd = min(min(_smooth(0.05, ANCHOR_R["shoulder"] - 0.005, (b - shoulder[s]).length),
                      _smooth(0.03, ANCHOR_R["armpit"] - 0.005, (b - pits[s]).length)) for s in "lr")
         return wz * wd
+
+    # v3: under the sleeve zones the leather sits a leather thickness over the tee sleeve (the
+    # torso keeps the 7 mm air layer); blended off the anchor band like the skin floors
+    def tee_margin(p):
+        b, n, dom = body.near(p)
+        if jacket_zone(b, dom, body.bones) in SLEEVE_DMIN:
+            return 0.007 + (SLEEVE_TEE_MARGIN - 0.007) * w_free_of(b)
+        return 0.007
+    layers[0].margin = tee_margin
 
     def fn(v, b, n, dom):
         wf = w_free_of(b)
@@ -1173,9 +1397,18 @@ def build_jacket(body, layers, rep):
     anchored = {v.index for v in bmr.verts if w_free_of(B[v.index][0]) < 0.95}
     # in the armpit core the crease is narrower than two clearances: let the membrane bridge it
     # below the apex (small skin floor there; the tee push still keeps it over the tee)
+    # v3: the sleeve zones carry their own (lower) skin floors, reached smoothly off the anchor band
+    zone = [jacket_zone(b, dom, body.bones) for b, n, dom in B]
+    wfree = [w_free_of(b) for b, n, dom in B]
+
     def dmin_j(i):
         b = B[i][0]
-        return 0.004 if min((b - pits[s]).length for s in "lr") < 0.07 else 0.012
+        if min((b - pits[s]).length for s in "lr") < 0.07:
+            return 0.004
+        z = zone[i]
+        if z in SLEEVE_DMIN:
+            return 0.012 + (SLEEVE_DMIN[z] - 0.012) * wfree[i]
+        return 0.012
 
     relax(bmr, 40, 0.5, anchored, body, dmin_j, layers, P)
     snap()
@@ -1196,15 +1429,18 @@ def build_jacket(body, layers, rep):
             r = p - (up["P0"] + up["A"] * ((p - up["P0"]).dot(up["A"])))
             ang = math.atan2(r.z, r.y)
             ez = (b - sl.E).dot(sl.elbow_n)
-            a += 0.0065 * math.exp(-(ez / 0.07) ** 2) * \
+            # v3: the elbow bunching is kept at v2's amplitude but held to the crook (sigma 50 mm,
+            # v2 70 mm spilled folds up onto the biceps); the cuff stack is lower (snug cuff)
+            a += 0.0065 * math.exp(-(ez / 0.05) ** 2) * \
                 (0.5 + 0.5 * math.sin(ez / 0.03 * 2 * math.pi + 2.2 * ang + 1.5 * mnoise.noise(p * 6.0)))
             cz = max(0.0, (t_lo - 0.62) / (sl.t_end - 0.62)) if w > 0.5 else 0.0
-            a += 0.0075 * min(1.0, cz) * (0.5 + 0.5 * math.sin(t_lo * sl.segs[1]["L"] / 0.032 * 2 * math.pi
+            a += 0.0040 * min(1.0, cz) * (0.5 + 0.5 * math.sin(t_lo * sl.segs[1]["L"] / 0.032 * 2 * math.pi
                                                                  + 1.7 * ang + 1.2 * mnoise.noise(p * 5.0)))
+            a += 0.0012 * (0.5 + 0.5 * mnoise.noise(p * 9.0))   # leather stretched over muscle: less lumpy
         else:
             low = _smooth(HEM + 0.22, HEM, p.z)
             a += 0.005 * low * (0.5 + 0.5 * math.sin(math.atan2(p.y - ay, p.x) * 9.0 + 3.0 * mnoise.noise(p * 3.0)))
-        a += 0.003 * (0.5 + 0.5 * mnoise.noise(p * 9.0))
+            a += 0.003 * (0.5 + 0.5 * mnoise.noise(p * 9.0))
         P[i] = p + d * (a * w_free_of(b))       # no folds on the anchored band (converging normals crumple)
     dmin = dmin_j
     enforce(P, [v.index for v in bmr.verts], body, dmin, layers)
@@ -2107,21 +2343,56 @@ def inside_check(shell, body_tree, reach=0.03, tol=0.0005):
     return {"inside_body": bad, "worst_mm": round(worst * 1000, 2), "tested": len(shell["pts"])}
 
 
-# MINIMUM CLEARANCE gate (2026-09-25 artist review: "not like a skin suit"). Air gap = unsigned
-# distance from each cloth-shell vertex (kind 0: no rims/zip/collar) to the nearest SKIN point
-# (full basemesh, masks off), in the rest A-pose. Everything outside the declared anchor bands must
-# hold the floor; the median floor is what separates "draped" from "offset skin" (a uniform
-# 12 mm offset passes a 10 mm min but still tracks every curve). Anchor bands are geometric
-# (landmark rules, identical for v1 and v2) so the rejected baseline is scored by the same ruler:
-#   jacket: the shoulder line = the yoke and above (z >= shoulder joint - 65 mm), the shoulder cap
-#           (within 120 mm of either shoulder joint) and the armhole underarm (within 100 mm of
-#           the armpit apex) - where a jacket hangs from and where torso and sleeve meet;
-#   jeans : the waistband = the band from the tilted waist plane down 50 mm (the hip-bone seat).
-# Floors are picked from what the constructed v2 drape holds (see report) with material stack
-# derivation: jacket = tee (~3 mm) + leather (~1.5 mm) + a visible air gap >= 10 mm -> 15 mm min;
-# jeans = denim (~1 mm) + a visible gap at the tightest point (seat/crotch) -> 10 mm min.
-CLEARANCE_GATE = {"jacket": {"min_mm": 15.0, "median_mm": 30.0},
-                  "jeans": {"min_mm": 10.0, "median_mm": 25.0}}
+# PER-ZONE MINIMUM-CLEARANCE gate. v2 (2026-09-25 "not like a skin suit") scored ONE min/median per
+# garment; v3 (2026-09-25 "outfit v2 verdict": biceps tight, forearm/wrist a little tighter than the
+# body drape, seat one continuous fall) scores DECLARED zones - the lower sleeve floors are the
+# design, not a failure. Air gap = unsigned distance from each cloth-shell vertex (kind 0: no
+# rims/zip/collar) to the nearest SKIN point (full basemesh, masks off), rest A-pose. Zones are
+# assigned by declared landmark rules (jacket_zone / jeans_zone), identical for every version, so a
+# rejected baseline is scored by the same ruler. First match wins: anchor band (exempt, v2 rules
+# unchanged) -> zone rules. A zone passes when every vertex holds min_mm and the zone median lies in
+# median_mm [lo, hi] (None = open). Floors: jacket torso = tee (~3 mm) + leather (~1.5 mm) + a
+# visible air gap >= 10 mm -> 15 min / 30 median (v2, unchanged); sleeve bands are the artist's
+# numbers; jeans leg = denim (~1 mm) + visible gap at the tightest point -> 10 min / 25 median (v2,
+# unchanged); seat top fitted 8-12. The seat_fall zone is scored by its ease CURVE (below).
+CLEARANCE_ZONES = {
+    "jacket": {
+        "bicep":   {"rule": "upperarm-dominant skin, t < %.2f shoulder->elbow" % ZONE_T["bicep_end"],
+                    "min_mm": 4.0, "median_mm": [4.0, 8.0],
+                    "rejected_baseline_v2": {"n": 394, "min": 16.5, "median": 34.6}},
+        "elbow":   {"rule": "upperarm t >= %.2f or lowerarm t < %.2f (eases through, bunching)" % (ZONE_T["bicep_end"], ZONE_T["elbow_end"]),
+                    "min_mm": 4.0, "median_mm": [4.0, 20.0],
+                    "rejected_baseline_v2": {"n": 342, "min": 17.2, "median": 43.3}},
+        "forearm": {"rule": "lowerarm t in [%.2f, %.2f) elbow->wrist" % (ZONE_T["elbow_end"], ZONE_T["forearm_end"]),
+                    "min_mm": 8.0, "median_mm": [8.0, 14.0],
+                    "rejected_baseline_v2": {"n": 408, "min": 23.7, "median": 32.6}},
+        "wrist":   {"rule": "lowerarm t >= %.2f, or hand-dominant skin" % ZONE_T["forearm_end"],
+                    "min_mm": 8.0, "median_mm": [8.0, 12.0],
+                    "rejected_baseline_v2": {"n": 266, "min": 23.5, "median": 32.1}},
+        "torso":   {"rule": "everything else outside the anchor band (boxy drape, v2 stands)",
+                    "min_mm": 15.0, "median_mm": [30.0, None]},
+    },
+    "jeans": {
+        "seat_top":  {"rule": "rear-facing skin (n.y > 0.3, |x| < 0.16) at/above the seat apex",
+                      "min_mm": 8.0, "median_mm": [8.0, 12.0]},
+        "seat_fall": {"rule": "rear-facing skin from the seat apex down to crotch - 100 mm",
+                      "min_mm": 8.0, "median_mm": [None, None]},
+        "hip":       {"rule": "front/sides above the crotch", "min_mm": 10.0, "median_mm": [None, None]},
+        "leg":       {"rule": "below the crotch, not seat", "min_mm": 10.0, "median_mm": [25.0, None]},
+    },
+}
+# Seat EASE CURVE (the artist's "tight and then goes loose and is not fluid"): per 1 cm height step
+# down the buttock columns (0.04 <= |x| <= 0.13, seat_top + seat_fall vertices), the median air gap
+# of the vertices within +-10 mm. From the seat top to the fall's end it must be MONOTONIC
+# (never fall more than max_dip_mm below its running maximum going down - the per-bin sampling
+# noise of a 4-36 vertex median) and SMOOTH (no step larger than max_step_mm per cm: the
+# fitted-to-leg rise is ~15 mm over ~20 cm, ~0.75 mm/cm on average; 3 mm/cm allows a 4x local rate
+# but not v2's collapse). Its end must reach the leg floor (end_min_mm).
+# Rejected baseline v2: 13.1 (z 1.01) rising to 27.7 (0.94), collapsing to 18.0 (0.91: the hung
+# seat envelope handed to the leg tube over 60 mm), back up to 28.8 (0.85), down to 22.7 (0.80);
+# worst drawdown 9.7 mm, worst step 5.5 mm/cm -> FAIL.
+SEAT_CURVE = {"abs_x_m": [0.04, 0.13], "bin_m": 0.01, "half_window_m": 0.010,
+              "max_dip_mm": 1.5, "max_step_mm": 3.0, "end_min_mm": 10.0}
 CLEAR_BINS_MM = [0, 5, 10, 15, 20, 30, 40, 60, 80, 1e9]
 ANCHOR_R = {"shoulder": 0.12, "armpit": 0.10}
 
@@ -2141,9 +2412,24 @@ def armpit(body, s):
     return min(cand, key=lambda p: p.z)
 
 
+def seat_landmarks(body):
+    """Crotch apex = lowest midline skin point (|x| < 20 mm) of the trunk/legs above the knees;
+    seat apex = the rearmost skin point of the buttocks (pelvis/thigh-dominant, 30-150 mm off the
+    midline, between the crotch and the waist)."""
+    knee_z = (body.bones["calf_l"][0].z + body.bones["calf_r"][0].z) / 2
+    z_c = min(body.co[i].z for i in range(len(body.co)) if body.in_body[i] and abs(body.co[i].x) < 0.02
+              and body.dom[i] in (TORSO | LEGS) and body.co[i].z > knee_z + 0.1)
+    butt = [body.co[i] for i in range(len(body.co)) if body.in_body[i]
+            and body.dom[i] in ("pelvis", "thigh_l", "thigh_r") and 0.03 < abs(body.co[i].x) < 0.15
+            and z_c < body.co[i].z < 1.12]
+    apex = max(butt, key=lambda p: p.y)
+    return {"crotch_z": z_c, "seat_z": apex.z, "seat_y": apex.y, "fall_end_z": z_c - 0.10}
+
+
 def _landmarks(rig, body):
     b = {n: rig.matrix_world @ rig.data.bones[n].head_local for n in ("upperarm_l", "upperarm_r", "pelvis")}
     b["armpit_l"], b["armpit_r"] = armpit(body, "l"), armpit(body, "r")
+    b.update(seat_landmarks(body))
     return b
 
 
@@ -2158,6 +2444,15 @@ def anchor_band(key, p, lm):
     return False
 
 
+def jeans_zone(p, b, n, lm):
+    back = n.y > 0.3 and abs(b.x) < 0.16
+    if back and p.z >= lm["seat_z"]:
+        return "seat_top"
+    if back and p.z >= lm["fall_end_z"]:
+        return "seat_fall"
+    return "leg" if p.z < lm["crotch_z"] else "hip"
+
+
 def _pct(xs, q):
     if not xs:
         return None
@@ -2167,55 +2462,99 @@ def _pct(xs, q):
     return xs[f] + (xs[c] - xs[f]) * (k - f)
 
 
+def _summ(xs):
+    xs = sorted(xs)
+    if not xs:
+        return {"n": 0}
+    hist = {}
+    for lo_, hi_ in zip(CLEAR_BINS_MM[:-1], CLEAR_BINS_MM[1:]):
+        hist["%g-%s" % (lo_, "inf" if hi_ > 1e8 else "%g" % hi_)] = sum(1 for x in xs if lo_ <= x < hi_)
+    hist["<0"] = sum(1 for x in xs if x < 0)
+    return {"n": len(xs), "min": round(xs[0], 1), "p5": round(_pct(xs, 0.05), 1),
+            "median": round(_pct(xs, 0.5), 1), "p95": round(_pct(xs, 0.95), 1),
+            "max": round(xs[-1], 1), "hist_mm": hist}
+
+
+def seat_curve(samples, lm):
+    """samples: (z, gap_mm, |x|) of seat_top + seat_fall vertices -> the ease-vs-height curve + verdict."""
+    c = SEAT_CURVE
+    col = [(z, d) for z, d, ax in samples if c["abs_x_m"][0] <= ax <= c["abs_x_m"][1]]
+    if not col:
+        return {"curve": [], "pass": False}
+    z = math.floor(max(z for z, _ in col) / c["bin_m"]) * c["bin_m"]
+    curve = []
+    while z >= lm["fall_end_z"] - 1e-9:
+        ds = sorted(d for zz, d in col if abs(zz - z) <= c["half_window_m"])
+        if ds:
+            curve.append([round(z, 3), len(ds), round(_pct(ds, 0.5), 1)])
+        z -= c["bin_m"]
+    steps = [round(b[2] - a[2], 1) for a, b in zip(curve[:-1], curve[1:])]
+    run, worst_dip = -1e9, 0.0
+    for _, _, e in curve:                     # drawdown below the running maximum, top -> down
+        run = max(run, e)
+        worst_dip = min(worst_dip, e - run)
+    worst_step = max([0.0] + [abs(s) for s in steps])
+    ok = (-worst_dip <= c["max_dip_mm"] and worst_step <= c["max_step_mm"] and curve[-1][2] >= c["end_min_mm"])
+    return {"curve_z_n_median_mm": curve, "steps_mm": steps, "worst_dip_mm": round(worst_dip, 1),
+            "worst_step_mm": round(worst_step, 1), "rule": dict(c), "pass": bool(ok)}
+
+
 def clearance_stats(body, obj, key, lm):
     pts, polys, kinds = eval_points(obj)
     shell = set()
     for i, f in enumerate(polys):
         if kinds is None or kinds[i] == 0:
             shell.update(f)
-    free, anch = [], []
-    tight = []
+    zones = {z: [] for z in CLEARANCE_ZONES[key]}
+    anch, free, tight, seat = [], [], [], []
     for i in sorted(shell):
         p = pts[i]
         s, loc, n = body.sd(p)
         d = (p - loc).length * (1 if s >= 0 else -1) * 1000.0
         if anchor_band(key, p, lm):
             anch.append(d)
-        else:
-            free.append(d)
-            tight.append((d, p))
-    tight.sort(key=lambda t: t[0])
-
-    def summ(xs):
-        xs = sorted(xs)
-        if not xs:
-            return {"n": 0}
-        hist = {}
-        for lo_, hi_ in zip(CLEAR_BINS_MM[:-1], CLEAR_BINS_MM[1:]):
-            hist["%g-%s" % (lo_, "inf" if hi_ > 1e8 else "%g" % hi_)] = sum(1 for x in xs if lo_ <= x < hi_)
-        hist["<0"] = sum(1 for x in xs if x < 0)
-        return {"n": len(xs), "min": round(xs[0], 1), "p5": round(_pct(xs, 0.05), 1),
-                "median": round(_pct(xs, 0.5), 1), "p95": round(_pct(xs, 0.95), 1),
-                "max": round(xs[-1], 1), "hist_mm": hist}
-
-    g = CLEARANCE_GATE[key]
-    fr = summ(free)
-    ok = fr["n"] > 0 and fr["min"] >= g["min_mm"] and fr["median"] >= g["median_mm"]
-    return {"free": fr, "anchor_band": summ(anch), "anchor_fraction": round(len(anch) / max(1, len(anch) + len(free)), 3),
-            "gate": dict(g), "pass": bool(ok),
-            "tightest_free": [[round(d, 1)] + [round(c, 3) for c in p] for d, p in tight[:6]]}
+            continue
+        _, _, dom = body.near(p)
+        z = jacket_zone(loc, dom, body.bones) if key == "jacket" else jeans_zone(p, loc, n, lm)
+        zones[z].append(d)
+        free.append(d)
+        tight.append((d, z, p))
+        if z in ("seat_top", "seat_fall"):
+            seat.append((p.z, d, abs(p.x)))
+    out_z, ok = {}, True
+    for z, xs in zones.items():
+        g = CLEARANCE_ZONES[key][z]
+        sm = _summ(xs)
+        lo, hi = g["median_mm"]
+        zok = sm["n"] > 0 and sm["min"] >= g["min_mm"] and (lo is None or sm["median"] >= lo) and \
+            (hi is None or sm["median"] <= hi)
+        worst = sorted((t for t in tight if t[1] == z), key=lambda t: t[0])[:3]
+        out_z[z] = {"gate": {"min_mm": g["min_mm"], "median_mm": g["median_mm"]}, "stats": sm, "pass": bool(zok),
+                    "tightest": [[round(d, 1)] + [round(c, 3) for c in p] for d, _, p in worst]}
+        ok = ok and zok
+    res = {"zones": out_z, "anchor_band": _summ(anch), "free_all": _summ(free),
+           "anchor_fraction": round(len(anch) / max(1, len(anch) + len(free)), 3)}
+    if key == "jeans":
+        res["seat_curve"] = seat_curve(seat, lm)
+        ok = ok and res["seat_curve"]["pass"]
+    res["pass"] = bool(ok)
+    return res
 
 
 def clearance(blend_report):
-    """Score the loaded .blend (v1 or v2) against the minimum-clearance gate."""
+    """Score the loaded .blend (any version) against the per-zone minimum-clearance gate."""
     bm = bpy.data.objects["Protagonist"]
     rig = bpy.data.objects["Protagonist.rig"]
     body = Body(bm, rig)
     lm = _landmarks(rig, body)
     out = {k: clearance_stats(body, bpy.data.objects["Protagonist." + k], k, lm) for k in ("jacket", "jeans")}
+    out["landmarks"] = {k: (round(v, 4) if isinstance(v, float) else [round(c, 4) for c in v]) for k, v in lm.items()}
     json.dump(out, open(blend_report, "w"), indent=1)
-    print("CLEARANCE", json.dumps(out, indent=1))
+    print("CLEARANCE", json.dumps({k: {"pass": v["pass"], **({z: [r["stats"].get("min"), r["stats"].get("median"), r["pass"]]
+                                                               for z, r in v["zones"].items()})}
+                                   for k, v in out.items() if k != "landmarks"}, indent=1))
     return out
+
 
 
 def tris(obj):
@@ -2547,10 +2886,25 @@ def render(prefix, mode="all"):
         still("face")
         cam_d.lens = 50
     if mode in ("stills", "all", "fit"):
-        # A-pose garment-fit closeup: collar, zip, chest pocket, sleeve join
+        # A-pose garment-fit closeup: collar, zip, chest pocket, sleeve join and (v3) the left
+        # biceps in frame
         cam_d.lens = 85
-        aim(30.0, elev=0.02, tgt=Vector((0.08, centre.y, 1.38)), d=1.2)
+        aim(30.0, elev=0.02, tgt=Vector((0.15, centre.y, 1.37)), d=1.35)
         still("jacket_closeup")
+        cam_d.lens = 50
+    if mode in ("stills", "all", "fit", "compare"):
+        # v3: A-pose arm closeup - the left sleeve from the front-outside, shoulder to cuff, so the
+        # biceps read (tight), the elbow bunching and the forearm/cuff taper are all in one frame
+        cam_d.lens = 85
+        aim(35.0, elev=0.0, tgt=Vector((0.37, -0.06, 1.34)), d=1.15)
+        still("arm")
+        cam_d.lens = 50
+    if mode in ("stills", "all", "compare"):
+        # v3: seat closeup from behind-left - the jeans' rear silhouette from the waistband over
+        # the seat into the thigh (the fall the artist flagged)
+        cam_d.lens = 85
+        aim(125.0, elev=0.0, tgt=Vector((0.0, 0.03, 0.9)), d=1.55)
+        still("seat")
         cam_d.lens = 50
     if mode in ("turntable", "all"):
         n = 72
@@ -2590,6 +2944,30 @@ def render(prefix, mode="all"):
         print("WROTE", scene.render.filepath)
 
 
+def grid(out_png, pngs, ncols=2, gap=8):
+    """Compose same-size renders row-major into an ncols grid with thin dark separators."""
+    import numpy as np
+    ims = [bpy.data.images.load(os.path.abspath(p)) for p in pngs]
+    w, h = ims[0].size
+    assert all(tuple(im.size) == (w, h) for im in ims), "renders must share a resolution"
+    a = [np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4) for im in ims]
+    rows_n = (len(a) + ncols - 1) // ncols
+    W, H = ncols * w + (ncols - 1) * gap, rows_n * h + (rows_n - 1) * gap
+    out = np.zeros((H, W, 4), dtype=np.float32)
+    out[..., :3] = 0.08
+    out[..., 3] = 1.0
+    for k, im in enumerate(a):
+        r, c = divmod(k, ncols)
+        y0 = H - (r + 1) * h - r * gap          # Blender pixel rows run bottom-up
+        out[y0:y0 + h, c * (w + gap):c * (w + gap) + w] = im
+    o = bpy.data.images.new("grid", W, H)
+    o.pixels = out.ravel()
+    o.filepath_raw = os.path.abspath(out_png)
+    o.file_format = "PNG"
+    o.save()
+    print("WROTE", out_png)
+
+
 def side_by_side(left_png, right_png, out_png, gap=8):
     """Compose two same-size renders left|right (v1 | v2) with a thin dark separator."""
     import numpy as np
@@ -2618,5 +2996,7 @@ if __name__ == "__main__":
         clearance(ARGS[1])
     elif ARGS and ARGS[0] == "sidebyside":
         side_by_side(ARGS[1], ARGS[2], ARGS[3])
+    elif ARGS and ARGS[0] == "grid":
+        grid(ARGS[1], ARGS[2:])
     else:
         print(__doc__)
