@@ -142,3 +142,48 @@ forward (mosquitopire sculpt, vampito name, pending the artist settling
 the name). HUNTRESS dropped. SUPAOCTTO: the shown render was a side view,
 not its front - true front is the mask/goggles side (consistent with the
 +Y audit; rotate 180).
+
+## 2026-09-25 - Eldroot v2 sheet verdict (artist, verbatim + annotated images)
+> can we look at this circled portion and make it look more like this
+> second picture
+> essentially blend the torso into the legs like a tree skirt armor piece
+> and the knees more like this last picture like wooden trunks
+
+Annotated refs saved: design/refs/eldroot-v3-groin-circled.png (the
+dangling lower-trunk mass between the legs is REJECTED), eldroot-v3-
+skirt-silhouette.png (the drawn W hem: the lower torso flares and blends
+OVER the thigh tops like a tree-skirt armor piece / tassets),
+eldroot-v3-knee-collars.png (the drawn M zigzags: thigh-shin joins become
+jagged bark COLLARS overlapping the piece below, telescoping like stacked
+wooden trunks - which turns the rigid-shell seams into intentional design).
+Everything else on the v2 sheet stands (2.0x ratio, wide feet, clips).
+
+## 2026-09-25 - full answer set (artist, verbatim)
+> magmoo missing pieces were never done, its essentially a serpent no arms
+> or legs and should be disjointed lava blobs that can form together to
+> create one serpent creature or bounce around separting itself into 3
+> parts head portion and upper, main body, and long tail, it can have its
+> body on the floor and head and tail in motion
+
+> [vampito name] yes confirmed ... [it] fly/hover
+
+> the cape is tentancles so they should move a bit, they are its tentacles
+> that have evolved into a cape so have less movement than its main arm and
+> leg tentacles, essentially it functions as a cape, and in between the
+> cape tentacles we want them connected by water. he walks upright on two
+> legs
+
+> lets finish models before we import into godot, we want to update the
+> meshes for the exisiting matching characters
+
+> [duskmaw re-run] yes can re-run as well ... [blightcap] keep bounce for now
+
+Readings: MAGMOO is a fresh build - lava serpent, no limbs, THREE
+disjointed blob segments (head+upper / main body / long tail) that join
+into one serpent or bounce apart; rest state = body on floor, head and
+tail in motion; the existing 34k blob becomes the main body. VAMPITO =
+mosquitopire's model + the vampito name, flies/hovers. SUPAOCTTO: the
+cape IS evolved tentacles - subtle secondary motion (less than limbs),
+WATER membranes connecting the cape tentacles; walks upright on two legs.
+SHIP PATH DEFERRED: finish/update all matching characters' meshes first,
+then import. Duskmaw pipeline re-run approved. Blightcap keeps the bounce.

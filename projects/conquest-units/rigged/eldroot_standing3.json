@@ -1,0 +1,2884 @@
+{
+ "unit": "eldroot",
+ "stage": "standing v3 - tree-skirt + trunk collars on v2 full extension",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\eldroot.blend",
+ "fps": 24,
+ "ratio_target": 2.0,
+ "rejected_baseline": "rigged/eldroot_standing.blend (v1, 0.45 m harmonic lift, height 3.16 m = 1.17x)",
+ "seated_actions_removed": [
+  "idle",
+  "walk"
+ ],
+ "seated": {
+  "verts": 12502,
+  "tris": 25000,
+  "height_m": 2.7108,
+  "coords_sha": "59bc24edba8dabd1",
+  "bbox": [
+   [
+    -1.9,
+    -1.1348,
+    0.0
+   ],
+   [
+    1.9,
+    1.1348,
+    2.7108
+   ]
+  ]
+ },
+ "seated_leg_bone_chain_m": {
+  "L": {
+   "thigh": 0.4084,
+   "shin": 0.4387
+  },
+  "R": {
+   "thigh": 0.4084,
+   "shin": 0.4421
+  }
+ },
+ "high_master": {
+  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\ancient_tree.blend",
+  "tris": 250616,
+  "verts": 125310,
+  "scale_factor": 0.056205,
+  "scale_factor_improve_report": 0.056205,
+  "translation_fit_m": [
+   -5e-05,
+   0.00023,
+   -0.00087
+  ],
+  "low_to_high_residual_mm": {
+   "mean": 0.4,
+   "p95": 1.01,
+   "max": 3.71
+  },
+  "smooth_face_fraction": 0.0,
+  "seconds": 1.8,
+  "standing_tris": 722435,
+  "trunk_high_faces_removed_as_leg": 39571
+ },
+ "measure": {
+  "L": {
+   "column_top_z_m": 1.1549,
+   "centroid_polyline_arc_m": 1.1725,
+   "leg_verts": 811,
+   "junction_loop_verts": 60,
+   "junction_loop_length_m": 2.911,
+   "fused_z_range_m": [
+    0.502,
+    1.155
+   ],
+   "free_column_below_m": 0.502
+  },
+  "R": {
+   "column_top_z_m": 1.1573,
+   "centroid_polyline_arc_m": 1.1806,
+   "leg_verts": 825,
+   "junction_loop_verts": 56,
+   "junction_loop_length_m": 2.731,
+   "fused_z_range_m": [
+    0.472,
+    1.157
+   ],
+   "free_column_below_m": 0.472
+  },
+  "unfolded_as_sculpted": {
+   "bone_chain_m": 0.8488,
+   "geometry_arc_m": 1.1766,
+   "note": "the column is a knee-up shin; its thigh is not sculpted (fused into the trunk front). Standing on the sculpted column alone lifts the trunk base by at most its arc length",
+   "max_height_m": 3.887,
+   "max_ratio": 1.434
+  }
+ },
+ "column_profile": {
+  "L": {
+   "axis_xy": [
+    0.62,
+    -0.8244
+   ],
+   "rings_side": 152,
+   "rings_cap": 30,
+   "azimuths": 180,
+   "fused_or_missed_filled_pct_side": 25.7,
+   "fused_filled_pct_above_z0.47": 37.9,
+   "fused_filled_pct_below_z0.45": 11.2,
+   "cap_filled_pct": 46.6,
+   "pad_half_extent_m": {
+    "x": 0.0995,
+    "y": 0.1171
+   },
+   "radius_median_m": 0.1841
+  },
+  "R": {
+   "axis_xy": [
+    -0.6158,
+    -0.8194
+   ],
+   "rings_side": 152,
+   "rings_cap": 30,
+   "azimuths": 180,
+   "fused_or_missed_filled_pct_side": 27.4,
+   "fused_filled_pct_above_z0.47": 38.9,
+   "fused_filled_pct_below_z0.45": 14.0,
+   "cap_filled_pct": 48.6,
+   "pad_half_extent_m": {
+    "x": 0.1042,
+    "y": 0.1141
+   },
+   "radius_median_m": 0.1868
+  }
+ },
+ "trunk_edit": {
+  "leg_cut_weight": 0.05,
+  "faces_removed_leg": 3152,
+  "faces_removed_junction_band": 558,
+  "faces_removed_knee_lobe": 893,
+  "knee_lobe_rule": "trunk faces with every vertex at y < -0.58, z < 1.45, |x| < 0.95 (seated coords)",
+  "islands_after_cut": [
+   20397
+  ],
+  "sliver_faces_dropped": 0,
+  "hole_rings_grown_to_simple_projection": [
+   [
+    0.32,
+    50
+   ]
+  ],
+  "hole_boundary_max_degree": 2,
+  "holes": [
+   {
+    "verts": 47,
+    "centroid": [
+     0.284,
+     -0.543,
+     0.6
+    ]
+   },
+   {
+    "verts": 47,
+    "centroid": [
+     -0.307,
+     -0.582,
+     0.637
+    ]
+   }
+  ],
+  "membrane_projection_tries": [
+   [
+    [
+     0.0,
+     0
+    ]
+   ],
+   [
+    [
+     0.0,
+     0
+    ]
+   ]
+  ],
+  "membranes": [
+   {
+    "side": "L",
+    "low_verts_added": 157,
+    "low_tris": 359,
+    "high_tris": 3276,
+    "cdt_intersection_points": 0
+   },
+   {
+    "side": "R",
+    "low_verts_added": 157,
+    "low_tris": 359,
+    "high_tris": 3250,
+    "cdt_intersection_points": 0
+   }
+  ],
+  "membrane_rule": "constrained Delaunay in the loop's best-fit plane (3.5 cm spacing; blends toward the front projection, then an arc-length disk parameterisation, until the loop is simple), least-squares bi-Laplacian lift with the trunk 1-ring fixed (tangent-continuous); high = the same surface at 1.2 cm + 4 mm deterministic bark relief"
+ },
+ "trunk_mass": {
+  "closed_volume_m3": 4.8811,
+  "com_trunk_coords": [
+   -0.0011,
+   0.1453,
+   1.1732
+  ],
+  "rule": "uniform density; divergence theorem over trunk + arms + membranes"
+ },
+ "leg_solve": {
+  "hip_trunk_coords": [
+   0.45,
+   0.2953,
+   0.35
+  ],
+  "ankle_x": 0.6179,
+  "ankle_z": 0.15,
+  "seated_ankle_y_trunk_coords": -0.8219,
+  "trunk_rise_m": 2.7108,
+  "thigh_L1_m": 1.5928,
+  "shin_L2_m": 1.3228,
+  "leg_total_m": 2.9156,
+  "seated_knee_joint_z_m": 1.4728,
+  "sculpt_knee_cap_top_z_m": 1.1561,
+  "seated_knee_cap_top_z_m": 1.5759,
+  "seated_trunk_offset_from_stand_m": [
+   0.0,
+   1.1172,
+   -2.7108
+  ],
+  "rule": "standing: straight legs hip->ankle, height = RATIO x seated; seated: trunk on its sculpted base, feet planted, shin vertical over the sculpted ankle -> L2 = (S^2-dx^2-dy^2-c^2)/(2(S+c)), L1 = S-L2"
+ },
+ "length_added_m": {
+  "leg_total_new": 2.9156,
+  "sculpted_arc": 1.1766,
+  "added": 1.739,
+  "note": "hip->ankle; plus the 0.30 m foot shell below the ankle"
+ },
+ "foot_widening_factors": {
+  "L": {
+   "sculpted_column_half_extent_m_z0.10-0.45": {
+    "x": 0.2769,
+    "y": 0.2029
+   },
+   "sculpted_pad_tip_half_extent_m": {
+    "x": 0.0995,
+    "y": 0.1171
+   },
+   "new_sole_half_extent_m": {
+    "x": 0.5067,
+    "y": 0.457
+   },
+   "width_x_vs_sculpted_column": 1.83,
+   "depth_y_vs_sculpted_column": 2.252,
+   "width_x_vs_sculpted_pad_tip": 5.093,
+   "sole_area_vs_sculpted_column_section": 4.12
+  },
+  "R": {
+   "sculpted_column_half_extent_m_z0.10-0.45": {
+    "x": 0.2747,
+    "y": 0.208
+   },
+   "sculpted_pad_tip_half_extent_m": {
+    "x": 0.1042,
+    "y": 0.1141
+   },
+   "new_sole_half_extent_m": {
+    "x": 0.5007,
+    "y": 0.4608
+   },
+   "width_x_vs_sculpted_column": 1.823,
+   "depth_y_vs_sculpted_column": 2.215,
+   "width_x_vs_sculpted_pad_tip": 4.805,
+   "sole_area_vs_sculpted_column_section": 4.037
+  }
+ },
+ "legs": {
+  "shells": {
+   "thigh.L": {
+    "tris_low": 1400,
+    "tris_high": 105840,
+    "volume_m3": 0.4795
+   },
+   "shin.L": {
+    "tris_low": 1456,
+    "tris_high": 95040,
+    "volume_m3": 0.4165
+   },
+   "foot.L": {
+    "tris_low": 616,
+    "tris_high": 28800,
+    "volume_m3": 0.1598
+   },
+   "thigh.R": {
+    "tris_low": 1400,
+    "tris_high": 105840,
+    "volume_m3": 0.4818
+   },
+   "shin.R": {
+    "tris_low": 1456,
+    "tris_high": 95040,
+    "volume_m3": 0.4196
+   },
+   "foot.R": {
+    "tris_low": 616,
+    "tris_high": 28800,
+    "volume_m3": 0.1615
+   }
+  },
+  "shin_detail_stretch": 1.628,
+  "thigh_detail_scale_mirror_tiled_x2": 1.138,
+  "foot_widening": {
+   "sole_radius_factor": 1.42,
+   "collar_factor": 1.1,
+   "toe_lobes": 5,
+   "toe_amplitude": 0.28,
+   "sculpted_pad_half_extent_m": {
+    "x": 0.0995,
+    "y": 0.1171
+   },
+   "new_sole_half_extent_m": {
+    "sole_half_x": 0.5067,
+    "sole_half_y": 0.457
+   },
+   "blend": "radius factor smoothstep(z, 0, 0.26 m) from 1.4x at the sole to 1.1x at the ankle collar; sole flat at z = 0",
+   "toes_forward_m": 0.15
+  }
+ },
+ "recentre_shift_m": [
+  -0.0,
+  -0.20997,
+  -0.0
+ ],
+ "rest_rebuild": {
+  "trunk_faces_kept": 20298,
+  "trunk_edge_stretch_max_abs": 0.0,
+  "trunk_flipped_faces": 0,
+  "trunk_transform": "rigid translation [0.0, -0.21, 2.7108]",
+  "leg_shell_inverted_faces": 0,
+  "tris_total": 27960,
+  "trunk_plus_membranes_closure": {
+   "directed_edge_duplicates": 0,
+   "open_edges": 0
+  },
+  "shell_closure": {
+   "thigh.L": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "shin.L": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "foot.L": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "thigh.R": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "shin.R": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "foot.R": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   }
+  }
+ },
+ "crowns": {
+  "knee.L": {
+   "teeth": 5,
+   "rim_above_joint_m": [
+    -0.005,
+    0.382
+   ],
+   "inner_clearance_to_thigh_m_min": 0.0467,
+   "wall_m": 0.045,
+   "outer_radius_vs_band_top": 1.516,
+   "floor_below_joint_m": 0.16
+  },
+  "knee.R": {
+   "teeth": 6,
+   "rim_above_joint_m": [
+    -0.012,
+    0.398
+   ],
+   "inner_clearance_to_thigh_m_min": 0.0467,
+   "wall_m": 0.045,
+   "outer_radius_vs_band_top": 1.515,
+   "floor_below_joint_m": 0.16
+  },
+  "ankle.L": {
+   "teeth": 4,
+   "rim_z_m": [
+    0.357,
+    0.517
+   ],
+   "inner_clearance_to_shin_m_min": 0.0667,
+   "wall_m": 0.045,
+   "outer_radius_vs_v2_collar": 1.304
+  },
+  "ankle.R": {
+   "teeth": 7,
+   "rim_z_m": [
+    0.348,
+    0.584
+   ],
+   "inner_clearance_to_shin_m_min": 0.0667,
+   "wall_m": 0.045,
+   "outer_radius_vs_v2_collar": 1.302
+  },
+  "knots": {
+   "knee.L": [
+    {
+     "azimuth_deg": 38.6,
+     "height_m": 0.098,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 77.1,
+     "height_m": 0.316,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 102.9,
+     "height_m": 0.038,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 141.4,
+     "height_m": 0.324,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 167.1,
+     "height_m": 0.008,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 205.7,
+     "height_m": 0.382,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 257.1,
+     "height_m": -0.005,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 295.7,
+     "height_m": 0.341,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 321.4,
+     "height_m": 0.041,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 347.1,
+     "height_m": 0.315,
+     "kind": "tip"
+    }
+   ],
+   "ankle.L": [
+    {
+     "azimuth_deg": 25.7,
+     "height_m": 0.25,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 51.4,
+     "height_m": 0.074,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 90.0,
+     "height_m": 0.237,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 141.4,
+     "height_m": 0.087,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 167.1,
+     "height_m": 0.209,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 218.6,
+     "height_m": 0.101,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 257.1,
+     "height_m": 0.304,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 321.4,
+     "height_m": 0.077,
+     "kind": "valley"
+    }
+   ],
+   "knee.R": [
+    {
+     "azimuth_deg": 25.7,
+     "height_m": 0.056,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 51.4,
+     "height_m": 0.305,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 90.0,
+     "height_m": 0.008,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 115.7,
+     "height_m": 0.356,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 141.4,
+     "height_m": -0.018,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 154.3,
+     "height_m": 0.314,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 180.0,
+     "height_m": 0.082,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 205.7,
+     "height_m": 0.203,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 244.3,
+     "height_m": 0.079,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 257.1,
+     "height_m": 0.331,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 295.7,
+     "height_m": 0.072,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 334.3,
+     "height_m": 0.398,
+     "kind": "tip"
+    }
+   ],
+   "ankle.R": [
+    {
+     "azimuth_deg": 0.0,
+     "height_m": 0.078,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 38.6,
+     "height_m": 0.31,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 77.1,
+     "height_m": 0.088,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 102.9,
+     "height_m": 0.304,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 128.6,
+     "height_m": 0.063,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 141.4,
+     "height_m": 0.288,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 167.1,
+     "height_m": 0.067,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 192.9,
+     "height_m": 0.304,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 218.6,
+     "height_m": 0.068,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 231.4,
+     "height_m": 0.209,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 257.1,
+     "height_m": 0.085,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 282.9,
+     "height_m": 0.26,
+     "kind": "tip"
+    },
+    {
+     "azimuth_deg": 308.6,
+     "height_m": 0.085,
+     "kind": "valley"
+    },
+    {
+     "azimuth_deg": 334.3,
+     "height_m": 0.202,
+     "kind": "tip"
+    }
+   ]
+  },
+  "faces_low": {
+   "collar": 448,
+   "collar_rim": 224,
+   "collar_in": 280
+  },
+  "rule": "lower piece's top rim rises as a hollow jagged crown around the upper piece (traced M points up: tips 0.20-0.41 m above the knee joint); teeth on the 28-azimuth game grid, irregular gaps >= 3 samples; knee-pit teeth x0.45, ankle front/back teeth x0.70 (fold/tilt planes); the lower piece flares into its crown (shin over its top 0.45 m, foot from z 0.14)"
+ },
+ "skirt": {
+  "axis_y": 0.0393,
+  "trunk_base_z": 2.7214,
+  "attach_z_front_back_sides": [
+   3.3014,
+   3.3814
+  ],
+  "hem_z": {
+   "front_tip": 2.3012,
+   "front_notches": [
+    2.5402,
+    2.6038
+   ],
+   "sides_+x_-x": [
+    2.0328,
+    2.1097
+   ],
+   "back_tip": 2.2572,
+   "lowest": 2.0328,
+   "initial_guess_depth_below_trunk_base_m": {
+    "tip": 0.44,
+    "notches_-x_+x": [
+     0.11,
+     0.18
+    ],
+    "corners_-x_+x": [
+     0.48,
+     0.55
+    ],
+    "back_scale": 0.7
+   }
+  },
+  "radius_m": {
+   "attach_min_max": [
+    0.626,
+    1.004
+   ],
+   "hem_min_max": [
+    0.842,
+    1.052
+   ],
+   "half_width_x_at_hem": 0.908,
+   "front_y_at_hem": -0.973
+  },
+  "per_azimuth": {
+   "phi_deg": [
+    -90.0,
+    -82.5,
+    -75.0,
+    -67.5,
+    -60.0,
+    -52.5,
+    -45.0,
+    -37.5,
+    -30.0,
+    -22.5,
+    -15.0,
+    -7.5,
+    0.0,
+    7.5,
+    15.0,
+    22.5,
+    30.0,
+    37.5,
+    45.0,
+    52.5,
+    60.0,
+    67.5,
+    75.0,
+    82.5,
+    90.0,
+    97.5,
+    105.0,
+    112.5,
+    120.0,
+    127.5,
+    135.0,
+    142.5,
+    150.0,
+    157.5,
+    165.0,
+    172.5,
+    180.0,
+    187.5,
+    195.0,
+    202.5,
+    210.0,
+    217.5,
+    225.0,
+    232.5,
+    240.0,
+    247.5,
+    255.0,
+    262.5
+   ],
+   "hem_z": [
+    2.301,
+    2.54,
+    2.499,
+    2.417,
+    2.345,
+    2.28,
+    2.22,
+    2.164,
+    2.12,
+    2.092,
+    2.072,
+    2.052,
+    2.033,
+    2.058,
+    2.083,
+    2.121,
+    2.165,
+    2.226,
+    2.166,
+    2.362,
+    2.387,
+    2.402,
+    2.52,
+    2.594,
+    2.257,
+    2.638,
+    2.549,
+    2.462,
+    2.32,
+    2.302,
+    2.315,
+    2.105,
+    2.234,
+    2.179,
+    2.17,
+    2.118,
+    2.11,
+    2.128,
+    2.147,
+    2.166,
+    2.183,
+    2.208,
+    2.232,
+    2.283,
+    2.336,
+    2.382,
+    2.473,
+    2.604
+   ],
+   "r_attach": [
+    0.94,
+    0.932,
+    0.943,
+    0.956,
+    0.954,
+    0.907,
+    0.83,
+    0.74,
+    0.667,
+    0.628,
+    0.626,
+    0.644,
+    0.666,
+    0.687,
+    0.707,
+    0.725,
+    0.736,
+    0.741,
+    0.746,
+    0.761,
+    0.79,
+    0.828,
+    0.865,
+    0.888,
+    0.898,
+    0.888,
+    0.865,
+    0.829,
+    0.79,
+    0.763,
+    0.749,
+    0.744,
+    0.739,
+    0.727,
+    0.709,
+    0.688,
+    0.667,
+    0.645,
+    0.627,
+    0.629,
+    0.668,
+    0.745,
+    0.844,
+    0.936,
+    0.989,
+    1.004,
+    0.992,
+    0.968
+   ],
+   "r_hem": [
+    1.013,
+    1.001,
+    1.002,
+    1.006,
+    1.009,
+    1.012,
+    1.016,
+    1.019,
+    1.015,
+    1.004,
+    0.978,
+    0.94,
+    0.904,
+    0.881,
+    0.871,
+    0.866,
+    0.86,
+    0.849,
+    0.842,
+    0.852,
+    0.877,
+    0.904,
+    0.924,
+    0.934,
+    0.938,
+    0.934,
+    0.924,
+    0.904,
+    0.877,
+    0.853,
+    0.843,
+    0.85,
+    0.864,
+    0.873,
+    0.878,
+    0.887,
+    0.908,
+    0.942,
+    0.976,
+    0.997,
+    0.997,
+    1.0,
+    1.013,
+    1.032,
+    1.047,
+    1.052,
+    1.046,
+    1.031
+   ],
+   "binding_z_rtrunk_rthigh_g": [
+    [
+     3.131,
+     0.817,
+     0.0,
+     0.639
+    ],
+    [
+     3.131,
+     0.849,
+     0.0,
+     0.643
+    ],
+    [
+     3.111,
+     0.898,
+     0.0,
+     0.701
+    ],
+    [
+     3.131,
+     0.951,
+     0.0,
+     0.666
+    ],
+    [
+     3.171,
+     0.941,
+     0.0,
+     0.577
+    ],
+    [
+     2.291,
+     0.0,
+     0.901,
+     1.0
+    ],
+    [
+     2.291,
+     0.0,
+     0.901,
+     1.0
+    ],
+    [
+     2.191,
+     0.0,
+     0.939,
+     1.0
+    ],
+    [
+     2.131,
+     0.0,
+     0.93,
+     1.0
+    ],
+    [
+     2.111,
+     0.0,
+     0.913,
+     1.0
+    ],
+    [
+     2.131,
+     0.0,
+     0.855,
+     1.0
+    ],
+    [
+     2.171,
+     0.0,
+     0.814,
+     1.0
+    ],
+    [
+     2.151,
+     0.0,
+     0.792,
+     1.0
+    ],
+    [
+     3.091,
+     0.553,
+     0.76,
+     0.853
+    ],
+    [
+     3.111,
+     0.587,
+     0.76,
+     0.817
+    ],
+    [
+     3.091,
+     0.602,
+     0.76,
+     0.841
+    ],
+    [
+     3.091,
+     0.633,
+     0.754,
+     0.83
+    ],
+    [
+     2.931,
+     0.577,
+     0.685,
+     0.981
+    ],
+    [
+     2.931,
+     0.62,
+     0.643,
+     0.978
+    ],
+    [
+     3.111,
+     0.7,
+     0.0,
+     0.747
+    ],
+    [
+     3.051,
+     0.717,
+     0.0,
+     0.844
+    ],
+    [
+     3.011,
+     0.746,
+     0.0,
+     0.892
+    ],
+    [
+     2.931,
+     0.77,
+     0.0,
+     0.964
+    ],
+    [
+     3.171,
+     0.838,
+     0.0,
+     0.527
+    ],
+    [
+     3.271,
+     0.875,
+     0.0,
+     0.141
+    ],
+    [
+     3.191,
+     0.843,
+     0.0,
+     0.461
+    ],
+    [
+     2.931,
+     0.77,
+     0.0,
+     0.964
+    ],
+    [
+     3.011,
+     0.747,
+     0.0,
+     0.892
+    ],
+    [
+     3.031,
+     0.716,
+     0.0,
+     0.873
+    ],
+    [
+     3.091,
+     0.699,
+     0.0,
+     0.787
+    ],
+    [
+     2.851,
+     0.55,
+     0.625,
+     0.999
+    ],
+    [
+     2.931,
+     0.579,
+     0.68,
+     0.981
+    ],
+    [
+     3.091,
+     0.634,
+     0.753,
+     0.83
+    ],
+    [
+     3.091,
+     0.603,
+     0.766,
+     0.841
+    ],
+    [
+     3.111,
+     0.588,
+     0.766,
+     0.817
+    ],
+    [
+     3.091,
+     0.555,
+     0.766,
+     0.853
+    ],
+    [
+     2.151,
+     0.0,
+     0.798,
+     1.0
+    ],
+    [
+     2.171,
+     0.0,
+     0.82,
+     1.0
+    ],
+    [
+     2.311,
+     0.0,
+     0.855,
+     1.0
+    ],
+    [
+     2.211,
+     0.0,
+     0.917,
+     1.0
+    ],
+    [
+     2.191,
+     0.0,
+     0.917,
+     1.0
+    ],
+    [
+     2.211,
+     0.0,
+     0.917,
+     1.0
+    ],
+    [
+     2.291,
+     0.0,
+     0.902,
+     1.0
+    ],
+    [
+     2.291,
+     0.0,
+     0.902,
+     1.0
+    ],
+    [
+     3.231,
+     0.969,
+     0.0,
+     0.381
+    ],
+    [
+     3.211,
+     0.984,
+     0.0,
+     0.425
+    ],
+    [
+     3.191,
+     0.958,
+     0.0,
+     0.474
+    ],
+    [
+     3.171,
+     0.887,
+     0.0,
+     0.527
+    ]
+   ]
+  },
+  "plate_m": 0.05,
+  "air_gap_to_swept_thigh_m": 0.03,
+  "sweep": {
+   "pitch_deg": [
+    -27.0,
+    6.0
+   ],
+   "roll_deg": 3.0,
+   "samples": 50544,
+   "outside_trunk": 43295
+  },
+  "rest_clearance": {
+   "swept_column_gap_min_m": 0.03,
+   "rest_thigh_vertex_to_skirt_min_m": 0.008
+  },
+  "low": {
+   "verts": 672,
+   "tris": 1344,
+   "azimuths": 48,
+   "rings": 14,
+   "closure": {
+    "directed_edge_duplicates": 0,
+    "open_edges": 0
+   },
+   "volume_m3": 0.3584
+  },
+  "high": {
+   "verts": 22752,
+   "tris": 45504,
+   "azimuths": 288
+  },
+  "trace": "design/refs/eldroot-v3-trace.json (eldroot3_trace_refs.py: crops registered on renders/eldroot-standing2/standing_front.png, strokes back-projected through the v2 sheet camera)",
+  "hem_calibration_in_drawing_view": {
+   "stroke_knots_px_u": [
+    415.0,
+    478.0,
+    489.0,
+    513.0,
+    578.0
+   ],
+   "stroke_knots_px_v": [
+    594.7,
+    541.8,
+    588.1,
+    551.1,
+    605.3
+   ],
+   "knot_roles": [
+    "corner -x (image left)",
+    "notch -x",
+    "tip",
+    "notch +x",
+    "corner +x"
+   ],
+   "calibrated_depth_below_trunk_base_m": {
+    "tip": 0.42,
+    "notches_-x_+x": [
+     0.118,
+     0.181
+    ],
+    "corners_-x_+x": [
+     0.612,
+     0.689
+    ]
+   },
+   "hem_change_per_pass_m": [
+    0.26,
+    0.0078,
+    0.0
+   ],
+   "knot_row_residual_px": [
+    0.0,
+    -0.0,
+    0.0,
+    -0.0,
+    -0.0
+   ]
+  },
+  "seconds": 0.3,
+  "sit_state_search": {
+   "chosen": {
+    "pitch_deg": -5.0,
+    "back_m": 0.0,
+    "lift_m": 0.6801,
+    "top_z_m": 1.448,
+    "thigh_pen_visible_mm": 231.7,
+    "thigh_pen_incl_inside_trunk_mm": 231.7,
+    "shin_pen_visible_mm": 149.6,
+    "top_rim_exposure_mm": 0.0
+   },
+   "cost": 0.3065,
+   "rigid_with_pelvis_lifted_only": {
+    "pitch_deg": 0.0,
+    "back_m": 0.0,
+    "lift_m": 0.688,
+    "top_z_m": 1.449,
+    "thigh_pen_visible_mm": 250.7,
+    "thigh_pen_incl_inside_trunk_mm": 250.7,
+    "shin_pen_visible_mm": 134.0,
+    "top_rim_exposure_mm": 46.7
+   },
+   "grid": [
+    {
+     "pitch_deg": -50.0,
+     "back_m": 0.0,
+     "lift_m": 0.8601,
+     "top_z_m": 2.138,
+     "thigh_pen_visible_mm": 165.0,
+     "thigh_pen_incl_inside_trunk_mm": 169.4,
+     "shin_pen_visible_mm": 180.6,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -50.0,
+     "back_m": 0.1,
+     "lift_m": 0.9367,
+     "top_z_m": 2.138,
+     "thigh_pen_visible_mm": 157.9,
+     "thigh_pen_incl_inside_trunk_mm": 171.2,
+     "shin_pen_visible_mm": 151.3,
+     "top_rim_exposure_mm": 17.3
+    },
+    {
+     "pitch_deg": -50.0,
+     "back_m": 0.2,
+     "lift_m": 1.0133,
+     "top_z_m": 2.138,
+     "thigh_pen_visible_mm": 161.7,
+     "thigh_pen_incl_inside_trunk_mm": 162.0,
+     "shin_pen_visible_mm": 115.1,
+     "top_rim_exposure_mm": 70.9
+    },
+    {
+     "pitch_deg": -40.0,
+     "back_m": 0.0,
+     "lift_m": 0.8491,
+     "top_z_m": 2.033,
+     "thigh_pen_visible_mm": 166.9,
+     "thigh_pen_incl_inside_trunk_mm": 166.9,
+     "shin_pen_visible_mm": 276.2,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -40.0,
+     "back_m": 0.1,
+     "lift_m": 0.9134,
+     "top_z_m": 2.033,
+     "thigh_pen_visible_mm": 191.5,
+     "thigh_pen_incl_inside_trunk_mm": 191.5,
+     "shin_pen_visible_mm": 235.4,
+     "top_rim_exposure_mm": 24.1
+    },
+    {
+     "pitch_deg": -40.0,
+     "back_m": 0.2,
+     "lift_m": 0.9777,
+     "top_z_m": 2.033,
+     "thigh_pen_visible_mm": 217.9,
+     "thigh_pen_incl_inside_trunk_mm": 217.9,
+     "shin_pen_visible_mm": 177.8,
+     "top_rim_exposure_mm": 92.4
+    },
+    {
+     "pitch_deg": -30.0,
+     "back_m": 0.0,
+     "lift_m": 0.8021,
+     "top_z_m": 1.867,
+     "thigh_pen_visible_mm": 196.5,
+     "thigh_pen_incl_inside_trunk_mm": 196.5,
+     "shin_pen_visible_mm": 298.2,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -30.0,
+     "back_m": 0.1,
+     "lift_m": 0.8521,
+     "top_z_m": 1.867,
+     "thigh_pen_visible_mm": 224.1,
+     "thigh_pen_incl_inside_trunk_mm": 224.1,
+     "shin_pen_visible_mm": 232.7,
+     "top_rim_exposure_mm": 55.4
+    },
+    {
+     "pitch_deg": -30.0,
+     "back_m": 0.2,
+     "lift_m": 0.9021,
+     "top_z_m": 1.867,
+     "thigh_pen_visible_mm": 226.0,
+     "thigh_pen_incl_inside_trunk_mm": 226.0,
+     "shin_pen_visible_mm": 163.9,
+     "top_rim_exposure_mm": 141.7
+    },
+    {
+     "pitch_deg": -25.0,
+     "back_m": 0.0,
+     "lift_m": 0.7654,
+     "top_z_m": 1.763,
+     "thigh_pen_visible_mm": 209.5,
+     "thigh_pen_incl_inside_trunk_mm": 209.5,
+     "shin_pen_visible_mm": 279.5,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -25.0,
+     "back_m": 0.1,
+     "lift_m": 0.8076,
+     "top_z_m": 1.763,
+     "thigh_pen_visible_mm": 247.3,
+     "thigh_pen_incl_inside_trunk_mm": 247.3,
+     "shin_pen_visible_mm": 218.8,
+     "top_rim_exposure_mm": 64.1
+    },
+    {
+     "pitch_deg": -25.0,
+     "back_m": 0.2,
+     "lift_m": 0.8499,
+     "top_z_m": 1.763,
+     "thigh_pen_visible_mm": 257.9,
+     "thigh_pen_incl_inside_trunk_mm": 257.9,
+     "shin_pen_visible_mm": 138.2,
+     "top_rim_exposure_mm": 154.5
+    },
+    {
+     "pitch_deg": -20.0,
+     "back_m": 0.0,
+     "lift_m": 0.7203,
+     "top_z_m": 1.657,
+     "thigh_pen_visible_mm": 232.6,
+     "thigh_pen_incl_inside_trunk_mm": 232.6,
+     "shin_pen_visible_mm": 283.8,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -20.0,
+     "back_m": 0.1,
+     "lift_m": 0.7545,
+     "top_z_m": 1.657,
+     "thigh_pen_visible_mm": 250.5,
+     "thigh_pen_incl_inside_trunk_mm": 250.5,
+     "shin_pen_visible_mm": 194.9,
+     "top_rim_exposure_mm": 65.7
+    },
+    {
+     "pitch_deg": -20.0,
+     "back_m": 0.2,
+     "lift_m": 0.7887,
+     "top_z_m": 1.657,
+     "thigh_pen_visible_mm": 254.3,
+     "thigh_pen_incl_inside_trunk_mm": 254.3,
+     "shin_pen_visible_mm": 108.7,
+     "top_rim_exposure_mm": 159.4
+    },
+    {
+     "pitch_deg": -15.0,
+     "back_m": 0.0,
+     "lift_m": 0.7053,
+     "top_z_m": 1.586,
+     "thigh_pen_visible_mm": 224.7,
+     "thigh_pen_incl_inside_trunk_mm": 224.7,
+     "shin_pen_visible_mm": 227.8,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -15.0,
+     "back_m": 0.1,
+     "lift_m": 0.7312,
+     "top_z_m": 1.586,
+     "thigh_pen_visible_mm": 232.9,
+     "thigh_pen_incl_inside_trunk_mm": 232.9,
+     "shin_pen_visible_mm": 158.4,
+     "top_rim_exposure_mm": 62.6
+    },
+    {
+     "pitch_deg": -15.0,
+     "back_m": 0.2,
+     "lift_m": 0.7571,
+     "top_z_m": 1.586,
+     "thigh_pen_visible_mm": 252.4,
+     "thigh_pen_incl_inside_trunk_mm": 252.4,
+     "shin_pen_visible_mm": 72.7,
+     "top_rim_exposure_mm": 159.0
+    },
+    {
+     "pitch_deg": -10.0,
+     "back_m": 0.0,
+     "lift_m": 0.6832,
+     "top_z_m": 1.504,
+     "thigh_pen_visible_mm": 240.3,
+     "thigh_pen_incl_inside_trunk_mm": 240.3,
+     "shin_pen_visible_mm": 189.1,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -10.0,
+     "back_m": 0.1,
+     "lift_m": 0.7006,
+     "top_z_m": 1.504,
+     "thigh_pen_visible_mm": 246.0,
+     "thigh_pen_incl_inside_trunk_mm": 246.0,
+     "shin_pen_visible_mm": 108.5,
+     "top_rim_exposure_mm": 51.7
+    },
+    {
+     "pitch_deg": -10.0,
+     "back_m": 0.2,
+     "lift_m": 0.7179,
+     "top_z_m": 1.504,
+     "thigh_pen_visible_mm": 255.9,
+     "thigh_pen_incl_inside_trunk_mm": 255.9,
+     "shin_pen_visible_mm": 17.9,
+     "top_rim_exposure_mm": 150.1
+    },
+    {
+     "pitch_deg": -5.0,
+     "back_m": 0.0,
+     "lift_m": 0.6801,
+     "top_z_m": 1.448,
+     "thigh_pen_visible_mm": 231.7,
+     "thigh_pen_incl_inside_trunk_mm": 231.7,
+     "shin_pen_visible_mm": 149.6,
+     "top_rim_exposure_mm": 0.0
+    },
+    {
+     "pitch_deg": -5.0,
+     "back_m": 0.1,
+     "lift_m": 0.6888,
+     "top_z_m": 1.448,
+     "thigh_pen_visible_mm": 250.9,
+     "thigh_pen_incl_inside_trunk_mm": 250.9,
+     "shin_pen_visible_mm": 63.7,
+     "top_rim_exposure_mm": 34.9
+    },
+    {
+     "pitch_deg": -5.0,
+     "back_m": 0.2,
+     "lift_m": 0.6975,
+     "top_z_m": 1.448,
+     "thigh_pen_visible_mm": 258.4,
+     "thigh_pen_incl_inside_trunk_mm": 258.4,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 134.4
+    },
+    {
+     "pitch_deg": 0.0,
+     "back_m": 0.0,
+     "lift_m": 0.688,
+     "top_z_m": 1.449,
+     "thigh_pen_visible_mm": 250.7,
+     "thigh_pen_incl_inside_trunk_mm": 250.7,
+     "shin_pen_visible_mm": 134.0,
+     "top_rim_exposure_mm": 46.7
+    },
+    {
+     "pitch_deg": 0.0,
+     "back_m": 0.1,
+     "lift_m": 0.688,
+     "top_z_m": 1.449,
+     "thigh_pen_visible_mm": 233.8,
+     "thigh_pen_incl_inside_trunk_mm": 233.8,
+     "shin_pen_visible_mm": 42.4,
+     "top_rim_exposure_mm": 11.3
+    },
+    {
+     "pitch_deg": 0.0,
+     "back_m": 0.2,
+     "lift_m": 0.688,
+     "top_z_m": 1.449,
+     "thigh_pen_visible_mm": 253.4,
+     "thigh_pen_incl_inside_trunk_mm": 253.4,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 111.2
+    },
+    {
+     "pitch_deg": 10.0,
+     "back_m": 0.0,
+     "lift_m": 0.6889,
+     "top_z_m": 1.486,
+     "thigh_pen_visible_mm": 258.5,
+     "thigh_pen_incl_inside_trunk_mm": 258.5,
+     "shin_pen_visible_mm": 124.1,
+     "top_rim_exposure_mm": 123.6
+    },
+    {
+     "pitch_deg": 10.0,
+     "back_m": 0.1,
+     "lift_m": 0.6715,
+     "top_z_m": 1.486,
+     "thigh_pen_visible_mm": 246.8,
+     "thigh_pen_incl_inside_trunk_mm": 246.8,
+     "shin_pen_visible_mm": 33.5,
+     "top_rim_exposure_mm": 56.8
+    },
+    {
+     "pitch_deg": 10.0,
+     "back_m": 0.2,
+     "lift_m": 0.6541,
+     "top_z_m": 1.486,
+     "thigh_pen_visible_mm": 252.2,
+     "thigh_pen_incl_inside_trunk_mm": 252.2,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 42.3
+    },
+    {
+     "pitch_deg": 20.0,
+     "back_m": 0.0,
+     "lift_m": 0.7359,
+     "top_z_m": 1.635,
+     "thigh_pen_visible_mm": 246.8,
+     "thigh_pen_incl_inside_trunk_mm": 246.8,
+     "shin_pen_visible_mm": 106.9,
+     "top_rim_exposure_mm": 124.7
+    },
+    {
+     "pitch_deg": 20.0,
+     "back_m": 0.1,
+     "lift_m": 0.7017,
+     "top_z_m": 1.635,
+     "thigh_pen_visible_mm": 257.7,
+     "thigh_pen_incl_inside_trunk_mm": 257.7,
+     "shin_pen_visible_mm": 20.8,
+     "top_rim_exposure_mm": 59.7
+    },
+    {
+     "pitch_deg": 20.0,
+     "back_m": 0.2,
+     "lift_m": 0.6675,
+     "top_z_m": 1.635,
+     "thigh_pen_visible_mm": 259.6,
+     "thigh_pen_incl_inside_trunk_mm": 259.6,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 3.0
+    },
+    {
+     "pitch_deg": 30.0,
+     "back_m": 0.0,
+     "lift_m": 0.8472,
+     "top_z_m": 1.833,
+     "thigh_pen_visible_mm": 241.4,
+     "thigh_pen_incl_inside_trunk_mm": 241.4,
+     "shin_pen_visible_mm": 78.8,
+     "top_rim_exposure_mm": 121.7
+    },
+    {
+     "pitch_deg": 30.0,
+     "back_m": 0.1,
+     "lift_m": 0.7972,
+     "top_z_m": 1.833,
+     "thigh_pen_visible_mm": 238.2,
+     "thigh_pen_incl_inside_trunk_mm": 238.2,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 59.7
+    },
+    {
+     "pitch_deg": 30.0,
+     "back_m": 0.2,
+     "lift_m": 0.7472,
+     "top_z_m": 1.833,
+     "thigh_pen_visible_mm": 235.4,
+     "thigh_pen_incl_inside_trunk_mm": 235.4,
+     "shin_pen_visible_mm": 0.0,
+     "top_rim_exposure_mm": 9.8
+    }
+   ],
+   "seconds": 1.6,
+   "rule": "cost = thigh penetration + 0.5 shin penetration + 2 x top-rim exposure (m), on sitting_idle frame 1; transitions blend by smoothstep(40, 120 deg thigh fold)"
+  },
+  "sit_if_rigid_with_pelvis": {
+   "hem_min_z_m": -0.678,
+   "note": "why the skirt has its own bone: glued to the pelvis the plate would sit this far under the floor in sitting_idle"
+  },
+  "rest_contact": {
+   "skirt_thigh_triangle_overlap_pairs": 0,
+   "skirt_thigh_penetration_mm": 0.0,
+   "thigh_vertex_to_skirt_min_gap_mm": 8.0,
+   "skirt_arm_overlap_pairs": 0,
+   "skirt_vertex_to_arm_min_gap_mm": 102.8,
+   "top_rim_exposure_mm": 0.0
+  }
+ },
+ "look": {
+  "trunk_corner_colours": "verbatim (approved palette) except the old crease band",
+  "trunk_faces_recoloured_crease_band": {
+   "any": 703,
+   "full": 248
+  },
+  "new_faces": 9006,
+  "new_faces_by_kind": {
+   "membrane": 718,
+   "thigh": 2800,
+   "shin": 2912,
+   "foot": 1232,
+   "skirt": 1344
+  },
+  "v3_hollow_dark_faces": 664,
+  "v3_crown_rim_faces": 224,
+  "rule": "improve_unit eldroot regions (old_bark / root_feet by height / moss up-facing / hollow_dark cavity) + cavity shade k 0.45 + jitter"
+ },
+ "uv": {
+  "uv_sha": "d612fc322a749262",
+  "method": "fresh Smart UV (improve_unit params: 66 deg, margin 0.004) on the whole standing mesh",
+  "linear_texel_density_uv_per_m": {
+   "trunk_median": 0.0845,
+   "legs_median": 0.0849,
+   "legs_p05_p95": [
+    0.0753,
+    0.0909
+   ],
+   "trunk_p05_p95": [
+    0.0748,
+    0.0909
+   ]
+  },
+  "approved_seated_density_ref": 0.1316
+ },
+ "bake": {
+  "pass_all": {
+   "NORMAL": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 2.9
+   },
+   "AO": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 1.9
+   }
+  },
+  "isolated_passes": {
+   "trunk": {
+    "faces": 21016,
+    "normal_texels_from_isolated_pass": 680681,
+    "ao_texels_from_isolated_pass": 170272,
+    "seconds": 1.5
+   },
+   "thigh": {
+    "faces": 2800,
+    "normal_texels_from_isolated_pass": 225265,
+    "ao_texels_from_isolated_pass": 56611,
+    "seconds": 1.2
+   },
+   "shin": {
+    "faces": 2912,
+    "normal_texels_from_isolated_pass": 280364,
+    "ao_texels_from_isolated_pass": 70633,
+    "seconds": 1.3
+   },
+   "foot": {
+    "faces": 1232,
+    "normal_texels_from_isolated_pass": 162439,
+    "ao_texels_from_isolated_pass": 40569,
+    "seconds": 1.2
+   },
+   "skirt": {
+    "faces": 1344,
+    "normal_texels_from_isolated_pass": 431147,
+    "ao_texels_from_isolated_pass": 107910,
+    "seconds": 1.3
+   }
+  },
+  "rule": "base pass: whole low vs every high (margins); then each group's texels re-baked against its own high only (normal projection isolated, AO occluded by the whole scene)",
+  "normal_covered_texels": 0.7887,
+  "normal_detail_fraction_dev_gt_0.05": 0.5353,
+  "normal_dev_mean": 0.1262,
+  "legs": {
+   "texels": 671841,
+   "baked_pct": 99.44,
+   "detail_fraction_dev_gt_0.05": 0.6467,
+   "normal_dev_mean": 0.1441
+  },
+  "trunk": {
+   "texels": 665222,
+   "baked_pct": 99.99,
+   "detail_fraction_dev_gt_0.05": 0.1281,
+   "normal_dev_mean": 0.027
+  },
+  "membranes": {
+   "texels": 16995,
+   "baked_pct": 99.89
+  },
+  "v3_skirt_outer": {
+   "faces": 960,
+   "texels": 232564,
+   "baked_pct": 99.92,
+   "detail_fraction_dev_gt_0.05": 0.7571,
+   "normal_dev_mean": 0.1236,
+   "ao_baked_pct": 100.0,
+   "ao_mean": 0.7944
+  },
+  "v3_skirt_inner": {
+   "faces": 384,
+   "texels": 198778,
+   "baked_pct": 100.0,
+   "detail_fraction_dev_gt_0.05": 0.5885,
+   "normal_dev_mean": 0.1382,
+   "ao_baked_pct": 100.0,
+   "ao_mean": 0.0842
+  },
+  "v3_collars_outer_and_rim": {
+   "faces": 672,
+   "texels": 81672,
+   "baked_pct": 99.99,
+   "detail_fraction_dev_gt_0.05": 0.7885,
+   "normal_dev_mean": 0.188,
+   "ao_baked_pct": 100.0,
+   "ao_mean": 0.7494
+  },
+  "v3_collars_inner": {
+   "faces": 280,
+   "texels": 92799,
+   "baked_pct": 99.65,
+   "detail_fraction_dev_gt_0.05": 0.9957,
+   "normal_dev_mean": 0.3618,
+   "ao_baked_pct": 100.0,
+   "ao_mean": 0.0797
+  },
+  "ao_covered_texels": 0.9251,
+  "ao_mean": 0.5274,
+  "ao_p05": 0.0,
+  "approved_seated_reference": {
+   "normal_covered_texels": 0.7129,
+   "normal_detail_fraction_dev_gt_0.05": 0.1992,
+   "normal_dev_mean": 0.0369,
+   "ao_covered_texels": 0.7864,
+   "ao_mean": 0.7891
+  },
+  "pixel_sha": {
+   "normal": "d23657088b2f99b8",
+   "ao": "7c3d18c3a1a2dff1"
+  },
+  "cage_extrusion": 0.076,
+  "seconds_uv_and_bake": 18.0
+ },
+ "reweight": {
+  "trunk_verts_verbatim": 10186,
+  "trunk_verts_seated_leg_share_folded_to_pelvis": 10,
+  "membrane_verts_inverse_distance_from_boundary": 314,
+  "leg_shell_verts_rigid": 3484,
+  "skirt_verts_rigid": 672,
+  "max_influences": 3,
+  "per_bone_dominant": {
+   "pelvis": 2429,
+   "chest": 3043,
+   "crown": 1372,
+   "upperarm.L": 1015,
+   "forearm.L": 791,
+   "upperarm.R": 1022,
+   "forearm.R": 838,
+   "thigh.L": 702,
+   "shin.L": 730,
+   "foot.L": 310,
+   "thigh.R": 702,
+   "shin.R": 730,
+   "foot.R": 310,
+   "skirt": 672
+  }
+ },
+ "rest_equals_standing_mesh_max_mm": 0.0008,
+ "rise_path": {
+  "knee_tip_max_deg": 24.000000000000004,
+  "thigh_seated_elevation_deg": -45.14,
+  "endpoint_corrections_mm": {
+   "seat": 0.0,
+   "stand": 22.4
+  },
+  "rule": "knee = ankle + L2 tipped psi(g) = PSI_MAX sin(pi g) forward; hip = knee + L1 at elevation lerp(seated, 90 deg, g); endpoint residuals blended out linearly"
+ },
+ "sit_pose": {
+  "trunk_vs_sculpt_max_mm": 0.0011,
+  "sculpt_leg_surface_to_new_legs_mm": {
+   "mean": 56.3,
+   "p95": 139.8,
+   "max": 186.3
+  },
+  "visible_new_leg_surface_to_sculpt_mm": {
+   "verts": 2936,
+   "mean": 278.9,
+   "p95": 685.7
+  },
+  "knee_cap_top_z_m": {
+   "L": 1.8429,
+   "R": 1.8584
+  },
+  "sculpt_knee_cap_top_z_m": 1.1561,
+  "seated_height_m": 2.7108
+ },
+ "pad_sole_verts": {
+  "L": 29,
+  "R": 29
+ },
+ "balance": {
+  "com_rest_xyz": [
+   -0.0012,
+   -0.0396,
+   3.1383
+  ],
+  "sole_centres_xy": {
+   "L": [
+    0.6486,
+    -0.1087
+   ],
+   "R": [
+    -0.6533,
+    -0.118
+   ]
+  },
+  "com_y_minus_mean_sole_y_m": 0.0737,
+  "com_inside_support_polygon": true,
+  "com_margin_to_support_edge_m": 0.3696,
+  "support_polygon_extent_m": {
+   "x": 2.024,
+   "y": 0.91
+  },
+  "rule": "uniform density over trunk (closed) + leg shells, rest pose; support = convex hull of both flat soles"
+ },
+ "heights": {
+  "seated_m": 2.7108,
+  "standing_m": 5.4216,
+  "ratio": 2.0,
+  "sitting_pose_m": 2.7108,
+  "v1_rejected_standing_m": 3.1608,
+  "v1_ratio": 1.166
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4066
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.46,
+    3.0608
+   ],
+   "tail": [
+    0.0,
+    -0.36,
+    3.9608
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.36,
+    3.9608
+   ],
+   "tail": [
+    0.0,
+    -0.31,
+    4.9608
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.31,
+    4.9608
+   ],
+   "tail": [
+    0.0,
+    -0.33,
+    5.4208
+   ]
+  },
+  {
+   "name": "upperarm.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.95,
+    -0.36,
+    3.6608
+   ],
+   "tail": [
+    1.42,
+    -0.56,
+    3.5808
+   ]
+  },
+  {
+   "name": "forearm.L",
+   "parent": "upperarm.L",
+   "deform": true,
+   "head": [
+    1.42,
+    -0.56,
+    3.5808
+   ],
+   "tail": [
+    1.4786,
+    -0.5077,
+    2.7219
+   ]
+  },
+  {
+   "name": "upperarm.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.95,
+    -0.36,
+    3.6608
+   ],
+   "tail": [
+    -1.42,
+    -0.56,
+    3.5808
+   ]
+  },
+  {
+   "name": "forearm.R",
+   "parent": "upperarm.R",
+   "deform": true,
+   "head": [
+    -1.42,
+    -0.56,
+    3.5808
+   ],
+   "tail": [
+    -1.4744,
+    -0.5105,
+    2.7214
+   ]
+  },
+  {
+   "name": "thigh.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.45,
+    0.0854,
+    3.0608
+   ],
+   "tail": [
+    0.5417,
+    0.0854,
+    1.4706
+   ]
+  },
+  {
+   "name": "shin.L",
+   "parent": "thigh.L",
+   "deform": true,
+   "head": [
+    0.5417,
+    0.0854,
+    1.4706
+   ],
+   "tail": [
+    0.6179,
+    0.0854,
+    0.15
+   ]
+  },
+  {
+   "name": "foot.L",
+   "parent": "shin.L",
+   "deform": true,
+   "head": [
+    0.6179,
+    0.0854,
+    0.15
+   ],
+   "tail": [
+    0.6179,
+    -0.2146,
+    0.15
+   ]
+  },
+  {
+   "name": "thigh.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.45,
+    0.0854,
+    3.0608
+   ],
+   "tail": [
+    -0.5417,
+    0.0854,
+    1.4706
+   ]
+  },
+  {
+   "name": "shin.R",
+   "parent": "thigh.R",
+   "deform": true,
+   "head": [
+    -0.5417,
+    0.0854,
+    1.4706
+   ],
+   "tail": [
+    -0.6179,
+    0.0854,
+    0.15
+   ]
+  },
+  {
+   "name": "foot.R",
+   "parent": "shin.R",
+   "deform": true,
+   "head": [
+    -0.6179,
+    0.0854,
+    0.15
+   ],
+   "tail": [
+    -0.6179,
+    -0.2146,
+    0.15
+   ]
+  },
+  {
+   "name": "skirt",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0854,
+    3.0608
+   ],
+   "tail": [
+    0.0,
+    0.0854,
+    3.5608
+   ]
+  }
+ ],
+ "bone_count": 15,
+ "leg_chain_lengths_m": {
+  "L": {
+   "thigh": 1.5928,
+   "shin": 1.3228
+  },
+  "R": {
+   "thigh": 1.5928,
+   "shin": 1.3228
+  }
+ },
+ "clips": {
+  "sitting_idle": {
+   "action": "sitting_idle",
+   "kind": "loop",
+   "frames": 145,
+   "cycle_frames": 144,
+   "seconds": 6.0,
+   "ik_reach_max": {
+    "leg.L": 0.3935,
+    "arm.L": 0.7884,
+    "leg.R": 0.3935,
+    "arm.R": 0.7874
+   },
+   "reach_clamped_frames": 0,
+   "skirt_bone": {
+    "thigh_fold_deg_max": 134.8,
+    "sit_pitch_deg_max_abs": 5.0,
+    "floor_ride_lift_m_max": 0.6801,
+    "frames_moved": 145
+   },
+   "lowest_vertex": {
+    "z_mm": 0.01,
+    "frame": 1,
+    "part": "foot.R",
+    "vertex": 13700,
+    "co": [
+     -0.9663,
+     -0.2324,
+     0.0
+    ],
+    "rest_co": [
+     -0.9663,
+     -0.2324,
+     0.0
+    ],
+    "bone_matrix": [
+     [
+      -1.0,
+      0.0,
+      -0.0,
+      -0.6179
+     ],
+     [
+      -0.0,
+      -1.0,
+      -0.0,
+      0.0854
+     ],
+     [
+      0.0,
+      -0.0,
+      1.0,
+      0.15
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "seam_residual_mm": 0.0,
+   "skirt_contact": {
+    "skirt_thigh_worst_penetration_mm": 231.7,
+    "at_frame": 1,
+    "skirt_thigh_worst_VISIBLE_penetration_mm": 231.7,
+    "visible_at_frame": 1,
+    "frames_with_skirt_thigh_triangle_overlap": 145,
+    "frames": 145,
+    "skirt_min_z_mm": 10.0,
+    "skirt_min_z_frame": 1,
+    "top_rim_worst_exposure_outside_trunk_mm": 0.0,
+    "top_rim_exposure_frame": 0,
+    "frames_with_skirt_shin_overlap_info": 145
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.00083,
+   "joint_gap_max_mm": 0.0079,
+   "trunk_min_z_mm": 10.59,
+   "extent": {
+    "footprint": 3.8,
+    "width": 3.8,
+    "depth": 2.6688,
+    "height": 2.7137,
+    "top_z": 2.7137,
+    "min_z": 0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 150.01
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 150.01
+    },
+    "forearm.L:tail": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 11.13
+    },
+    "forearm.R:tail": {
+     "stance_runs": 1,
+     "stance_frames": 144,
+     "worst_drift_mm": 0.0,
+     "contact_z_mm": 10.59
+    }
+   },
+   "pad_sole_during_contact": {
+    "L": {
+     "sole_z_min_mm": 0.006,
+     "sole_z_max_mm": 0.006
+    },
+    "R": {
+     "sole_z_min_mm": 0.005,
+     "sole_z_max_mm": 0.006
+    }
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "forearm.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "forearm.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 145, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 4 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "stand_up": {
+   "action": "stand_up",
+   "kind": "oneshot",
+   "frames": 121,
+   "duration_frames": 120,
+   "seconds": 5.0,
+   "ik_reach_max": {
+    "leg.L": 0.9912,
+    "arm.L": 0.9351,
+    "leg.R": 0.991,
+    "arm.R": 0.9343
+   },
+   "reach_clamped_frames": 0,
+   "skirt_bone": {
+    "thigh_fold_deg_max": 139.0,
+    "sit_pitch_deg_max_abs": 5.0,
+    "floor_ride_lift_m_max": 0.6801,
+    "frames_moved": 81
+   },
+   "lowest_vertex": {
+    "z_mm": -0.01,
+    "frame": 75,
+    "part": "foot.R",
+    "vertex": 13705,
+    "co": [
+     -0.6179,
+     -0.5748,
+     -0.0
+    ],
+    "rest_co": [
+     -0.6179,
+     -0.5747,
+     0.0
+    ],
+    "bone_matrix": [
+     [
+      -1.0,
+      -0.0,
+      0.0,
+      -0.6179
+     ],
+     [
+      -0.0,
+      -1.0,
+      0.0,
+      0.0853
+     ],
+     [
+      -0.0,
+      -0.0,
+      1.0,
+      0.15
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "skirt_contact": {
+    "skirt_thigh_worst_penetration_mm": 263.2,
+    "at_frame": 50,
+    "skirt_thigh_worst_VISIBLE_penetration_mm": 263.2,
+    "visible_at_frame": 50,
+    "frames_with_skirt_thigh_triangle_overlap": 83,
+    "frames": 121,
+    "skirt_min_z_mm": 10.0,
+    "skirt_min_z_frame": 42,
+    "top_rim_worst_exposure_outside_trunk_mm": 37.5,
+    "top_rim_exposure_frame": 38,
+    "frames_with_skirt_shin_overlap_info": 45
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0009,
+   "joint_gap_max_mm": 0.0121,
+   "trunk_min_z_mm": 10.42,
+   "extent": {
+    "footprint": 3.8008,
+    "width": 3.8008,
+    "depth": 3.301,
+    "height": 5.412,
+    "top_z": 5.412,
+    "min_z": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 121,
+     "worst_drift_mm": 0.0124,
+     "contact_z_mm": 149.99
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 121,
+     "worst_drift_mm": 0.012,
+     "contact_z_mm": 149.99
+    }
+   },
+   "pad_sole_during_contact": {
+    "L": {
+     "sole_z_min_mm": -0.009,
+     "sole_z_max_mm": 0.006
+    },
+    "R": {
+     "sole_z_min_mm": -0.009,
+     "sole_z_max_mm": 0.006
+    }
+   },
+   "join_mm": {
+    "first_vs_sitting_idle_f1": 0.0,
+    "last_vs_idle_f1": 0.0
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "unmeasured",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.01,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.01,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {},
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "idle": {
+   "action": "idle",
+   "kind": "loop",
+   "frames": 97,
+   "cycle_frames": 96,
+   "seconds": 4.0,
+   "ik_reach_max": {
+    "leg.L": 0.9937,
+    "leg.R": 0.9966
+   },
+   "reach_clamped_frames": 0,
+   "skirt_bone": {
+    "thigh_fold_deg_max": 8.39,
+    "sit_pitch_deg_max_abs": 0.0,
+    "floor_ride_lift_m_max": 0.0,
+    "frames_moved": 0
+   },
+   "lowest_vertex": {
+    "z_mm": -0.0,
+    "frame": 91,
+    "part": "foot.L",
+    "vertex": 11948,
+    "co": [
+     0.6969,
+     0.2816,
+     -0.0
+    ],
+    "rest_co": [
+     0.6969,
+     0.2816,
+     0.0
+    ],
+    "bone_matrix": [
+     [
+      -1.0,
+      -0.0,
+      0.0,
+      0.6179
+     ],
+     [
+      0.0,
+      -1.0,
+      -0.0,
+      0.0854
+     ],
+     [
+      -0.0,
+      0.0,
+      1.0,
+      0.15
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "seam_residual_mm": 0.0,
+   "skirt_contact": {
+    "skirt_thigh_worst_penetration_mm": 0.0,
+    "at_frame": 0,
+    "skirt_thigh_worst_VISIBLE_penetration_mm": 0.0,
+    "visible_at_frame": 0,
+    "frames_with_skirt_thigh_triangle_overlap": 0,
+    "frames": 97,
+    "skirt_min_z_mm": 1993.03,
+    "skirt_min_z_frame": 33,
+    "top_rim_worst_exposure_outside_trunk_mm": 0.0,
+    "top_rim_exposure_frame": 0,
+    "frames_with_skirt_shin_overlap_info": 0,
+    "thigh_vertex_to_skirt_min_gap_mm": 9.6,
+    "gap_frame": 20,
+    "frames_with_skirt_arm_overlap": 0,
+    "skirt_vertex_to_arm_min_gap_mm": 95.1,
+    "arm_gap_frame": 50
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.00083,
+   "joint_gap_max_mm": 0.0025,
+   "trunk_min_z_mm": 2652.59,
+   "extent": {
+    "footprint": 3.8251,
+    "width": 3.8251,
+    "depth": 1.9666,
+    "height": 5.42,
+    "top_z": 5.42,
+    "min_z": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 96,
+     "worst_drift_mm": 0.0005,
+     "contact_z_mm": 150.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 96,
+     "worst_drift_mm": 0.0004,
+     "contact_z_mm": 150.0
+    }
+   },
+   "pad_sole_during_contact": {
+    "L": {
+     "sole_z_min_mm": -0.0,
+     "sole_z_max_mm": 0.001
+    },
+    "R": {
+     "sole_z_min_mm": -0.0,
+     "sole_z_max_mm": 0.001
+    }
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 97, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "sit_down": {
+   "action": "sit_down",
+   "kind": "oneshot",
+   "frames": 109,
+   "duration_frames": 108,
+   "seconds": 4.5,
+   "ik_reach_max": {
+    "leg.L": 0.9912,
+    "leg.R": 0.991,
+    "arm.L": 0.8081,
+    "arm.R": 0.8072
+   },
+   "reach_clamped_frames": 0,
+   "skirt_bone": {
+    "thigh_fold_deg_max": 135.21,
+    "sit_pitch_deg_max_abs": 5.0,
+    "floor_ride_lift_m_max": 0.6881,
+    "frames_moved": 72
+   },
+   "lowest_vertex": {
+    "z_mm": -0.01,
+    "frame": 43,
+    "part": "foot.L",
+    "vertex": 11963,
+    "co": [
+     0.6179,
+     -0.5603,
+     -0.0
+    ],
+    "rest_co": [
+     0.6179,
+     -0.5603,
+     0.0
+    ],
+    "bone_matrix": [
+     [
+      -1.0,
+      0.0,
+      -0.0,
+      0.6179
+     ],
+     [
+      0.0,
+      -1.0,
+      0.0,
+      0.0854
+     ],
+     [
+      -0.0,
+      -0.0,
+      1.0,
+      0.15
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "skirt_contact": {
+    "skirt_thigh_worst_penetration_mm": 261.1,
+    "at_frame": 63,
+    "skirt_thigh_worst_VISIBLE_penetration_mm": 260.0,
+    "visible_at_frame": 43,
+    "frames_with_skirt_thigh_triangle_overlap": 75,
+    "frames": 109,
+    "skirt_min_z_mm": 10.0,
+    "skirt_min_z_frame": 70,
+    "top_rim_worst_exposure_outside_trunk_mm": 37.8,
+    "top_rim_exposure_frame": 71,
+    "frames_with_skirt_shin_overlap_info": 42
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.0009,
+   "joint_gap_max_mm": 0.0123,
+   "trunk_min_z_mm": 10.58,
+   "extent": {
+    "footprint": 3.8034,
+    "width": 3.8034,
+    "depth": 3.2094,
+    "height": 5.4122,
+    "top_z": 5.4122,
+    "min_z": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 109,
+     "worst_drift_mm": 0.0114,
+     "contact_z_mm": 149.99
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 109,
+     "worst_drift_mm": 0.0108,
+     "contact_z_mm": 149.99
+    }
+   },
+   "pad_sole_during_contact": {
+    "L": {
+     "sole_z_min_mm": -0.009,
+     "sole_z_max_mm": 0.007
+    },
+    "R": {
+     "sole_z_min_mm": -0.009,
+     "sole_z_max_mm": 0.006
+    }
+   },
+   "join_mm": {
+    "first_vs_idle_f1": 0.0,
+    "last_vs_sitting_idle_f1": 0.0
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "unmeasured",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 1,
+      "worst_drift_mm": 0.01,
+      "verdict": "ok"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 1,
+      "worst_drift_mm": 0.01,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {},
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "walk": {
+   "action": "walk",
+   "kind": "loop",
+   "frames": 161,
+   "cycle_frames": 160,
+   "seconds": 6.6667,
+   "ik_reach_max": {
+    "leg.L": 0.9986,
+    "leg.R": 0.9986
+   },
+   "reach_clamped_frames": 0,
+   "skirt_bone": {
+    "thigh_fold_deg_max": 17.84,
+    "sit_pitch_deg_max_abs": 0.0,
+    "floor_ride_lift_m_max": 0.0,
+    "frames_moved": 0
+   },
+   "stride_m": 0.7,
+   "duty": 0.75,
+   "swing_lift_m": 0.18,
+   "speed_m_per_s": 0.14,
+   "belt_m_per_frame": 0.005833333333333333,
+   "lowest_vertex": {
+    "z_mm": -0.0,
+    "frame": 131,
+    "part": "foot.L",
+    "vertex": 11963,
+    "co": [
+     0.6179,
+     -0.3853,
+     -0.0
+    ],
+    "rest_co": [
+     0.6179,
+     -0.5603,
+     0.0
+    ],
+    "bone_matrix": [
+     [
+      -1.0,
+      0.0,
+      -0.0,
+      0.6179
+     ],
+     [
+      0.0,
+      -1.0,
+      -0.0,
+      0.2604
+     ],
+     [
+      -0.0,
+      -0.0,
+      1.0,
+      0.15
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "seam_residual_mm": 0.0,
+   "skirt_contact": {
+    "skirt_thigh_worst_penetration_mm": 0.0,
+    "at_frame": 0,
+    "skirt_thigh_worst_VISIBLE_penetration_mm": 0.0,
+    "visible_at_frame": 0,
+    "frames_with_skirt_thigh_triangle_overlap": 0,
+    "frames": 161,
+    "skirt_min_z_mm": 1945.61,
+    "skirt_min_z_frame": 75,
+    "top_rim_worst_exposure_outside_trunk_mm": 0.0,
+    "top_rim_exposure_frame": 0,
+    "frames_with_skirt_shin_overlap_info": 0,
+    "thigh_vertex_to_skirt_min_gap_mm": 8.2,
+    "gap_frame": 1,
+    "frames_with_skirt_arm_overlap": 0,
+    "skirt_vertex_to_arm_min_gap_mm": 90.6,
+    "arm_gap_frame": 153
+   },
+   "root_max_offset_mm": 0.0,
+   "bone_rigid_stretch_max_pct": 0.00085,
+   "joint_gap_max_mm": 0.0059,
+   "trunk_min_z_mm": 2580.75,
+   "extent": {
+    "footprint": 3.9466,
+    "width": 3.9466,
+    "depth": 2.0114,
+    "height": 5.3947,
+    "top_z": 5.3947,
+    "min_z": -0.0
+   },
+   "contact_slide": {
+    "foot.L": {
+     "stance_runs": 1,
+     "stance_frames": 121,
+     "worst_drift_mm": 0.0009,
+     "contact_z_mm": 150.0
+    },
+    "foot.R": {
+     "stance_runs": 1,
+     "stance_frames": 121,
+     "worst_drift_mm": 0.0009,
+     "contact_z_mm": 150.0
+    }
+   },
+   "pad_sole_during_contact": {
+    "L": {
+     "sole_z_min_mm": -0.001,
+     "sole_z_max_mm": 0.001
+    },
+    "R": {
+     "sole_z_min_mm": -0.001,
+     "sole_z_max_mm": 0.001
+    }
+   },
+   "forge_animation_check": {
+    "mode": "in_place",
+    "gate": "attention",
+    "deformation_gate": "ok",
+    "feet": [
+     {
+      "bone": "foot.L",
+      "steps": 2,
+      "worst_drift_mm": 6.71,
+      "verdict": "attention"
+     },
+     {
+      "bone": "foot.R",
+      "steps": 2,
+      "worst_drift_mm": 2.24,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 161, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet slide. The worst planted step moves 6.7 mm (foot.L, frames 1-3) - worth a look. An FK-keyed leg is the usual cause; key the feet through their IK targets (rigforge_walk) and measure again."
+   }
+  }
+ },
+ "mesh_final": {
+  "verts": 14666,
+  "tris": 29304,
+  "coords_sha": "0212a84de0e495d3",
+  "faces_sha": "092bff61c00f82f0",
+  "bbox": [
+   [
+    -1.9,
+    -0.9831,
+    0.0
+   ],
+   [
+    1.9,
+    0.9777,
+    5.4216
+   ]
+  ]
+ },
+ "seconds": 53.7
+}
