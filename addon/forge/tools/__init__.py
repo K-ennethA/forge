@@ -26,6 +26,7 @@ if "bpy" in locals():  # add-on reload (Blender keeps modules alive)
     rigforge_skin = importlib.reload(rigforge_skin)  # noqa: F821
     rigcheck = importlib.reload(rigcheck)  # noqa: F821
     rigforge_anim = importlib.reload(rigforge_anim)  # noqa: F821
+    rigforge_mocap = importlib.reload(rigforge_mocap)  # noqa: F821
     mechanism = importlib.reload(mechanism)  # noqa: F821
     silhouette = importlib.reload(silhouette)  # noqa: F821
     spriteforge = importlib.reload(spriteforge)  # noqa: F821
@@ -84,6 +85,9 @@ else:
     from . import rigforge_skin
     from . import rigcheck
     from . import rigforge_anim
+    # After rigforge_anim and rigcheck: the mocap driver calls the retarget and
+    # the gates (lazily, inside its commands) and adds motion_stats.
+    from . import rigforge_mocap
     # After rigforge_anim/rigforge_rig: the mechanism demos reuse their
     # slotted-action helpers (Blender 5.0 has no ``action.fcurves``).
     from . import mechanism
@@ -143,6 +147,7 @@ __all__ = [
     "rigforge_rig",
     "rigcheck",
     "rigforge_anim",
+    "rigforge_mocap",
     "mechanism",
     "silhouette",
     "spriteforge",

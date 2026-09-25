@@ -75,7 +75,7 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import Operator, PropertyGroup
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 from . import rigforge
 from . import rigforge_rig
@@ -5551,19 +5551,267 @@ class _bones_bakeable(object):
         return False
 
 
+#: Slots that exist once per side.
+SIDED_SLOTS = ("shoulder", "upperarm", "forearm", "hand", "thigh", "shin", "foot", "toe")
+
+RETARGET_ROOT_MODES = {"KEEP": "keep", "IN_PLACE": "in_place", "INPLACE": "in_place",
+                       "ROOT": "root"}
+
+#: The rig's root control, which carries the travel in ``root_motion: "root"``
+#: (the house root-motion convention: walk-loop's travel lives on ``root``).
+ROOT_CONTROL = "root"
+
+
+def _slot_target(slot_name, side, target_bones):
+    """First control of ``slot_name`` the target rig has, and what was tried."""
+    tried = []
+    for template in SLOT_TARGETS.get(slot_name, ()):
+        candidate = template.format(S=side) if side else template
+        tried.append(candidate)
+        if candidate in target_bones:
+            return candidate, tried
+    return None, tried
+
+
+def _slot_of_target(name):
+    """``(slot, side)`` for a control named in :data:`SLOT_TARGETS`, else ``None``."""
+    for slot_name, templates in SLOT_TARGETS.items():
+        for template in templates:
+            if "{S}" in template:
+                for side in ("L", "R"):
+                    if template.format(S=side) == name:
+                        return slot_name, side
+            elif template == name:
+                return slot_name, None
+    return None
+
+
+def preset_mapping(preset, source_rig, target_rig):
+    """``{source: target}`` from one of ``rigforge_mocap.MAPPING_PRESETS``."""
+    from . import rigforge_mocap as mocap
+
+    target_bones = {bone.name for bone in target_rig.pose.bones}
+    mapped = []
+    unmapped = []
+    taken = {}
+    for bone in source_rig.pose.bones:
+        slot = mocap.preset_slot(preset, bone.name, _normalise_bone)
+        if slot is False:
+            unmapped.append({"source": bone.name,
+                             "reason": "not a joint the %r preset names" % preset})
+            continue
+        if slot is None:
+            unmapped.append({"source": bone.name,
+                             "reason": "the %r preset leaves it out on purpose" % preset})
+            continue
+        slot_name, side = slot
+        target, tried = _slot_target(slot_name, side, target_bones)
+        if target is None:
+            unmapped.append({"source": bone.name,
+                             "reason": "slot %r has no control bone on this rig (tried %s)"
+                                       % (slot_name, ", ".join(tried) or "nothing")})
+            continue
+        if target in taken:
+            unmapped.append({"source": bone.name, "reason": "%r was already taken by %r"
+                                                            % (target, taken[target])})
+            continue
+        taken[target] = bone.name
+        mapped.append({"source": bone.name, "target": target, "slot": slot_name,
+                       "side": side})
+    return mapped, unmapped
+
+
+def _missing_slots(by_slot, required):
+    missing = []
+    for slot_name in required:
+        sides = ("L", "R") if slot_name in SIDED_SLOTS else (None,)
+        for side in sides:
+            if (slot_name, side) not in by_slot:
+                missing.append(slot_name + ("." + side if side else ""))
+    return missing
+
+
+def _rest_head(by_slot, rest, key, slot_name, side=None):
+    entry = by_slot.get((slot_name, side))
+    if entry is None:
+        return None
+    return rest[entry[key]].translation.copy()
+
+
+def _body_frame(by_slot, rest, key):
+    """``(lower, upper, left_vector, how)`` off a rest skeleton, or ``None``."""
+    thighs = [_rest_head(by_slot, rest, key, "thigh", side) for side in ("L", "R")]
+    if all(p is not None for p in thighs):
+        lower, lower_how = (thighs[0] + thighs[1]) / 2.0, "hip joints"
+    else:
+        lower, lower_how = _rest_head(by_slot, rest, key, "hips"), "hips"
+    upper, upper_how = None, None
+    for slot_name in ("head", "neck", "chest"):
+        upper = _rest_head(by_slot, rest, key, slot_name)
+        if upper is not None:
+            upper_how = slot_name
+            break
+    left, left_how = None, None
+    for slot_name in ("thigh", "upperarm", "shoulder", "shin", "foot"):
+        a = _rest_head(by_slot, rest, key, slot_name, "L")
+        b = _rest_head(by_slot, rest, key, slot_name, "R")
+        if a is not None and b is not None and (a - b).length > 1e-9:
+            left, left_how = a - b, slot_name
+            break
+    if lower is None or upper is None or left is None:
+        return None
+    return lower, upper, left, "%s -> %s up, %s pair across" % (lower_how, upper_how, left_how)
+
+
+#: A body line within this many degrees of a world axis is taken to stand ON
+#: that axis. Mocap files are written axis-aligned (Y-up or Z-up), and both a
+#: rig and an actor lean a little at rest - the werewolf's hips-to-head line
+#: is 1.19 deg off vertical. Reading that lean as "up" tilts the whole
+#: performance, floor included, by the difference (measured: every limb 1.19
+#: deg off the source on the CMU fixture, 41 mm of floor tilt over its 2 m).
+UP_SNAP_DEG = 30.0
+
+
+def _snap_axis(vector):
+    """The signed world axis nearest ``vector``, if within UP_SNAP_DEG."""
+    best = max(range(3), key=lambda i: abs(vector[i]))
+    axis = Vector((0.0, 0.0, 0.0))
+    axis[best] = 1.0 if vector[best] > 0.0 else -1.0
+    if math.degrees(axis.angle(vector)) <= UP_SNAP_DEG:
+        return axis
+    return None
+
+
+def _basis(lower, upper, left):
+    up = upper - lower
+    if up.length < 1e-9:
+        return None
+    up.normalize()
+    lean = None
+    snapped = _snap_axis(up)
+    if snapped is not None:
+        lean = math.degrees(snapped.angle(up))
+        up = snapped
+    side = left - up * left.dot(up)
+    if side.length < 1e-9:
+        return None
+    side.normalize()
+    forward = side.cross(up)
+    return Matrix((side, forward, up)).transposed(), side, forward, up, lean
+
+
+def _leg_chain(by_slot, rest, key):
+    """Mean thigh->knee->ankle length at rest, or ``None``."""
+    lengths = []
+    for side in ("L", "R"):
+        points = [_rest_head(by_slot, rest, key, slot_name, side)
+                  for slot_name in ("thigh", "shin", "foot")]
+        if all(p is not None for p in points):
+            lengths.append((points[1] - points[0]).length + (points[2] - points[1]).length)
+    return sum(lengths) / len(lengths) if lengths else None
+
+
+def _extent_along(rig, axis):
+    values = []
+    for bone in rig.data.bones:
+        for point in (bone.head_local, bone.tail_local):
+            values.append((rig.matrix_world @ point).dot(axis))
+    return (max(values) - min(values)) if values else 0.0
+
+
+def _segment_dir(entry, by_slot, rest, key):
+    """The anatomical segment's rest direction: head to the next joint's head."""
+    end_slot = SEGMENT_END_SLOTS.get(entry["slot"])
+    if end_slot is not None:
+        tail = _rest_head(by_slot, rest, key, end_slot, entry["side"])
+        head = rest[entry[key]].translation
+        if tail is not None and (tail - head).length > 1e-9:
+            return (tail - head).normalized()
+    return (rest[entry[key]].to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized()
+
+
+#: Slot -> the slot whose head is this segment's far end (same side).
+SEGMENT_END_SLOTS = {"thigh": "shin", "shin": "foot", "foot": "toe",
+                     "shoulder": "upperarm", "upperarm": "forearm", "forearm": "hand"}
+
+#: Slots whose rest direction is reconciled (T-pose arms onto an A-pose rig).
+#: Axial slots are left as they are: both rests are upright once the global
+#: orientation step has run, and a hips/chest *control* rarely points along
+#: its anatomical segment (Rigify's torso points backwards).
+ALIGNED_SLOTS = SIDED_SLOTS
+
+
+def _quat_of(matrix):
+    return matrix.to_3x3().normalized().to_quaternion()
+
+
+def _key_empty(obj, frames, rotations, locations):
+    obj.rotation_mode = "QUATERNION"
+    for index, frame in enumerate(frames):
+        if rotations is not None:
+            obj.rotation_quaternion = rotations[index]
+            obj.keyframe_insert("rotation_quaternion", frame=frame)
+        if locations is not None:
+            obj.location = locations[index]
+            obj.keyframe_insert("location", frame=frame)
+
+
 @command("rigforge_retarget")
 def cmd_rigforge_retarget(params):
-    """Map a user-supplied mocap clip onto the rig's FK controls and bake it.
+    """Map a user-supplied mocap clip onto the rig's controls and bake it.
 
-    The transfer is a constraint bake, not matrix arithmetic: a Copy Rotation in
-    world space on every mapped control plus one Copy Location for the hips, then
-    ``nla.bake(visual_keying=True)``.  That is more robust than solving the local
-    rotations by hand because Blender's own evaluator does the rest-orientation
-    algebra, and it is the same mechanism Phase 4's export bake already trusts.
+    ``rigforge_retarget {"target_rig", "source_path", "action_name"?, "loop"?,
+    "mapping"?: "auto"|"cmu"|"mixamo"|{source: target}, "scale"?: "auto"|n,
+    "fps"?, "root_motion"?: "keep"|"in_place"|"root", "heading"?:
+    "auto"|"rest"|"travel", "legs"?: "fk"|"ik", "find_loop"?, "loop_min_s"?,
+    "loop_max_s"?, "loop_max_residual_deg"?, "require_slots"?, "frame_step"?,
+    "fk_switch"?, "replace"?}``
+
+    **The transfer is rest-relative**, not a copy of world orientations.  For
+    every mapped bone the source's world rotation *relative to its own rest* is
+    carried over, after three reconciliations measured off the two rest
+    skeletons: the global orientation (which way is up and which way the body
+    faces - a Z-up file facing +X lands the same as a Y-up one facing +Z), the
+    per-limb rest direction (a T-pose arm onto an A-pose rig), and the scale
+    (leg chain over leg chain, so a stride lands as the same fraction of the
+    leg; height only when there are no legs).  The earlier version copied world
+    rotations straight across, which is only right when both skeletons share
+    every bone's rest orientation: measured on the CMU fixture it put the thigh
+    132 degrees and the upper arm 122 degrees off the source.
+
+    The take is sampled once per source frame and **resampled to ``fps``**
+    (default: the scene's) by slerp, so a 120 fps take is not played 5x slow.
+    The hips pivot about the **hip joints** and sit at the source's height
+    above its own flat-foot ankle, scaled; ``root_motion`` then keeps the
+    travel on the hips (``keep``, the default), removes it (``in_place``: the
+    body oscillates about the rest position and ``speed_mps`` reports what was
+    taken out), or moves it onto the ``root`` control (``root``).
+    ``heading: "travel"`` turns the whole performance so it travels along the
+    rig's forward axis; ``auto`` does that when the hips travel more than half
+    a leg, and uses the rest facing otherwise.
+
+    ``legs: "ik"`` keys the leg IK targets (foot position and rotation, knee
+    pole, toe) instead of the FK chain, with the ankle placed by the source's
+    hip-to-ankle vector scaled: a planted source foot is a planted target foot
+    whatever the thigh/shin ratio of the two bodies, and ``IK_Stretch`` is
+    keyed to 0 like every other planted-foot clip here.
+
+    ``find_loop`` searches the take for the window whose seam poses AND
+    velocities match best, crops to it and spreads the seam residual across
+    it, so the last frame is the first. ``loop_max_residual_deg`` refuses a
+    take whose best seam still needs more than that spread.
+
+    Constraint bake as before: per control, an Empty carries the solved world
+    matrix and a world-space Copy Rotation/Location puts the control on it,
+    then ``nla.bake(visual_keying=True)``.  Blender's evaluator still does the
+    parent-space algebra; the math above only decides where each control goes.
+    ``transfer_check`` reads the baked controls back against those targets.
 
     Every imported object is deleted in a ``finally``.  A retarget that fails
     leaves the file exactly as it found it.
     """
+    from . import rigforge_mocap as mocap
+
     started = time.monotonic()
     warnings = []
     scene = get_scene()
@@ -5596,13 +5844,52 @@ def cmd_rigforge_retarget(params):
         scale = get_float(params, "scale", minimum=1e-6, maximum=1e6)
 
     raw_mapping = params.get("mapping", "auto")
-    if isinstance(raw_mapping, str) and raw_mapping.strip().lower() != "auto":
-        raise ForgeError("'mapping' must be \"auto\" or a {source: target} object.")
+    preset = None
+    if isinstance(raw_mapping, str):
+        low = raw_mapping.strip().lower()
+        if low in mocap.MAPPING_PRESETS:
+            preset = low
+        elif low != "auto":
+            raise ForgeError("'mapping' must be \"auto\", a preset (%s) or a {source: "
+                             "target} object." % ", ".join(sorted(mocap.MAPPING_PRESETS)))
+    elif not isinstance(raw_mapping, dict):
+        raise ForgeError("'mapping' must be \"auto\", a preset (%s) or a {source: "
+                         "target} object." % ", ".join(sorted(mocap.MAPPING_PRESETS)))
+
+    scene_fps = float(scene.render.fps) / float(scene.render.fps_base or 1.0)
+    fps_out = get_float(params, "fps", scene_fps, minimum=1.0, maximum=240.0)
+    root_mode = get_choice(params, "root_motion", RETARGET_ROOT_MODES, "keep")
+    heading_mode = get_choice(params, "heading", {"AUTO": "auto", "REST": "rest",
+                                                  "TRAVEL": "travel"}, "auto")
+    legs_mode = get_choice(params, "legs", {"FK": "fk", "IK": "ik"}, "fk")
+    find_loop = get_bool(params, "find_loop", False)
+    loop_min_s = get_float(params, "loop_min_s", 0.5, minimum=0.05, maximum=600.0)
+    loop_max_s = None
+    if params.get("loop_max_s") is not None:
+        loop_max_s = get_float(params, "loop_max_s", minimum=loop_min_s, maximum=600.0)
+    max_residual = get_float(params, "loop_max_residual_deg", mocap.LOOP_MAX_RESIDUAL_DEG,
+                             minimum=0.0, maximum=180.0)
+    raw_require = params.get("require_slots") or []
+    if isinstance(raw_require, str):
+        raw_require = [raw_require]
+    required = []
+    for slot_name in raw_require:
+        slot_name = str(slot_name).strip().lower()
+        if slot_name not in SLOT_TARGETS:
+            raise ForgeError("require_slots: %r is not a slot. Slots are: %s."
+                             % (slot_name, ", ".join(sorted(SLOT_TARGETS))))
+        required.append(slot_name)
 
     existing = bpy.data.actions.get(action_name)
     if existing is not None and not replace:
         raise ForgeError("An action named %r already exists; pass 'replace': true to "
                          "overwrite it, or pick another 'action_name'." % action_name)
+
+    # --- the file is judged before any importer sees it
+    extension = os.path.splitext(path)[1].lower()
+    source_info = None
+    if extension == ".bvh":
+        source_info = mocap.validate_bvh(mocap.read_bvh(path), path)
 
     previous_frame = scene.frame_current
     previous_range = (scene.frame_start, scene.frame_end)
@@ -5616,17 +5903,18 @@ def cmd_rigforge_retarget(params):
     collection = None
     known_actions = set(bpy.data.actions)
     baked = None
+    baked_name = ""
     mapped = []
     unmapped = []
     fk_switched = []
-    frame_start = frame_end = 0
+    constrained = []
     kind = ""
-    # captured while the import is still alive: the ``finally`` deletes it, and a
-    # removed datablock's Python handle raises on ``.name``.
     source_name = ""
     mapping_mode = "auto"
     replaced = False
     made = 0
+    stretch_restore = []
+    report = {}
     try:
         with object_mode():
             collection = bpy.data.collections.new(TEMP_COLLECTION)
@@ -5662,28 +5950,27 @@ def cmd_rigforge_retarget(params):
             if clip is None:
                 raise ForgeError("The imported skeleton %r carries no animation."
                                  % source_rig.name)
-            frame_start = int(math.floor(float(clip.frame_range[0])))
-            frame_end = int(math.ceil(float(clip.frame_range[1])))
-            if frame_end <= frame_start:
-                frame_end = frame_start + 1
-
-            # --- scale the source to the rig, then align their hips at rest
-            source_height = _armature_height(source_rig)
-            target_height = _armature_height(target_rig)
-            if scale_mode == "auto":
-                if source_height <= 1e-9:
-                    scale = 1.0
-                    warnings.append("The clip's skeleton has no height; scale 1.0 "
-                                    "was used.")
-                else:
-                    scale = target_height / source_height
-            source_rig.scale = (scale, scale, scale)
-            refresh_view_layer()
+            clip_first = int(math.floor(float(clip.frame_range[0])))
+            clip_last = int(math.ceil(float(clip.frame_range[1])))
+            if source_info is not None:
+                frame_time = source_info["frame_time"]
+                source_frames = source_info["frames"]
+            else:
+                # FBX: the importer lays the take out on the scene's own clock.
+                frame_time = 1.0 / scene_fps
+                source_frames = max(2, clip_last - clip_first + 1)
 
             # --- mapping
             if isinstance(raw_mapping, dict):
                 mapped, unmapped = explicit_mapping(raw_mapping, source_rig, target_rig)
                 mapping_mode = "explicit"
+                for entry in mapped:
+                    found = _slot_of_target(entry["target"])
+                    if found is not None:
+                        entry["slot"], entry["side"] = found
+            elif preset is not None:
+                mapped, unmapped = preset_mapping(preset, source_rig, target_rig)
+                mapping_mode = preset
             else:
                 mapped, unmapped = auto_mapping(source_rig, target_rig)
                 mapping_mode = "auto"
@@ -5694,54 +5981,470 @@ def cmd_rigforge_retarget(params):
                     "know."
                     % (os.path.basename(path), target_rig.name,
                        ", ".join(sorted(b.name for b in source_rig.pose.bones))[:400]))
-
-            root_pair = next((entry for entry in mapped
-                              if entry.get("slot") == ROOT_SLOT), None)
-            if root_pair is not None:
-                source_bone = source_rig.pose.bones[root_pair["source"]]
-                target_bone = target_rig.pose.bones[root_pair["target"]]
-                source_rest = source_rig.matrix_world @ source_bone.bone.head_local
-                target_rest = target_rig.matrix_world @ target_bone.bone.head_local
-                source_rig.location = source_rig.location + (target_rest - source_rest)
-                refresh_view_layer()
-
-            if fk_switch:
-                fk_switched = set_fk(target_rig, keyframe_at=None)
-                if fk_switched:
-                    warnings.append(
-                        "Rigify's IK/FK blend was moved to full FK on %d limb(s) so the "
-                        "retargeted FK rotations reach the deform bones; the switch is "
-                        "keyframed into the baked action." % len(fk_switched))
-
-            # --- constraints
-            made = 0
+            by_slot = {}
             for entry in mapped:
-                bone = target_rig.pose.bones[entry["target"]]
-                constraint = bone.constraints.new("COPY_ROTATION")
-                constraint.name = "Forge Retarget Rot"
-                constraint.target = source_rig
-                constraint.subtarget = entry["source"]
-                constraint.target_space = "WORLD"
-                constraint.owner_space = "WORLD"
-                constraint.mix_mode = "REPLACE"
-                made += 1
-                if root_pair is not None and entry is root_pair:
+                if entry.get("slot") not in (None, "explicit"):
+                    by_slot.setdefault((entry["slot"], entry.get("side")), entry)
+            missing = _missing_slots(by_slot, required)
+            if missing:
+                raise ForgeError(
+                    "%s maps %d joint(s) onto %r, but %d required slot(s) are missing: "
+                    "%s (required: %s). The skeleton's %d joints are: %s. Pass an "
+                    "explicit 'mapping' or a preset if they exist under other names."
+                    % (os.path.basename(path), len(mapped), target_rig.name, len(missing),
+                       ", ".join(missing), ", ".join(required), len(source_rig.pose.bones),
+                       ", ".join(b.name for b in source_rig.pose.bones)[:400]))
+
+            # --- rest geometry, both skeletons, world space
+            src_rest = {}
+            for entry in mapped:
+                bone = source_rig.data.bones[entry["source"]]
+                src_rest[entry["source"]] = source_rig.matrix_world @ bone.matrix_local
+            tgt_rest = {}
+            for bone in target_rig.data.bones:
+                tgt_rest[bone.name] = target_rig.matrix_world @ bone.matrix_local
+
+            # --- global orientation: up and facing, measured on both rests
+            orientation = {"how": None, "rotation_deg": 0.0}
+            src_frame = _body_frame(by_slot, src_rest, "source")
+            tgt_frame = _body_frame(by_slot, tgt_rest, "target")
+            src_basis = _basis(*src_frame[:3]) if src_frame else None
+            tgt_basis = _basis(*tgt_frame[:3]) if tgt_frame else None
+            if src_basis is None or tgt_basis is None:
+                g3 = Matrix.Identity(3)
+                up = Vector((0.0, 0.0, 1.0))
+                forward_t = Vector((0.0, -1.0, 0.0))
+                warnings.append(
+                    "Could not read which way the %s faces (it needs a left/right pair "
+                    "- thighs, upper arms or shoulders - and a hips-to-head line among "
+                    "the mapped bones), so the importer's axes were taken as the rig's."
+                    % ("clip" if src_basis is None else "rig"))
+            else:
+                g3 = tgt_basis[0] @ src_basis[0].transposed()
+                up = tgt_basis[3]
+                forward_t = tgt_basis[2]
+                orientation = {
+                    "how": src_frame[3],
+                    "source_up": [round(v, 4) for v in src_basis[3]],
+                    "source_forward": [round(v, 4) for v in src_basis[2]],
+                    "target_up": [round(v, 4) for v in tgt_basis[3]],
+                    "target_forward": [round(v, 4) for v in tgt_basis[2]],
+                    "rotation_deg": round(math.degrees(g3.to_quaternion().angle), 3),
+                    # the rest lean each body line had before it was snapped to
+                    # its world axis (None: not within UP_SNAP_DEG, used as is)
+                    "source_lean_deg": (round(src_basis[4], 3)
+                                        if src_basis[4] is not None else None),
+                    "target_lean_deg": (round(tgt_basis[4], 3)
+                                        if tgt_basis[4] is not None else None),
+                }
+            gq = g3.to_quaternion()
+
+            # --- scale: leg chain over leg chain, height as the fallback
+            src_leg = _leg_chain(by_slot, src_rest, "source")
+            tgt_leg = _leg_chain(by_slot, tgt_rest, "target")
+            src_up = (g3.transposed() @ up).normalized()
+            if scale_mode == "auto":
+                if src_leg and tgt_leg:
+                    scale = tgt_leg / src_leg
+                    scale_basis = "leg_chain"
+                else:
+                    source_height = _extent_along(source_rig, src_up)
+                    target_height = _extent_along(target_rig, up)
+                    if source_height <= 1e-9:
+                        scale = 1.0
+                        warnings.append("The clip's skeleton has no height; scale 1.0 "
+                                        "was used.")
+                    else:
+                        scale = target_height / source_height
+                    scale_basis = "height"
+                    warnings.append("No thigh/shin/foot chain on both skeletons, so the "
+                                    "scale is height over height (%.6f)." % scale)
+            else:
+                scale_basis = "explicit"
+            leg_t = tgt_leg or max(1e-6, 0.5 * _extent_along(target_rig, up))
+
+            # --- sample the take, once per source frame, in world space
+            sources = sorted({entry["source"] for entry in mapped})
+            raw = {name: [] for name in sources}
+            pose = source_rig.pose.bones
+            for index in range(source_frames):
+                scene.frame_set(clip_first + index)
+                for name in sources:
+                    raw[name].append(source_rig.matrix_world @ pose[name].matrix)
+            bad = [name for name in sources
+                   if any(not all(math.isfinite(v) for row in m for v in row)
+                          for m in raw[name])]
+            if bad:
+                raise ForgeError("The imported take evaluates to non-finite transforms "
+                                 "on %d bone(s): %s." % (len(bad), ", ".join(bad[:5])))
+
+            # --- resample to the output clock
+            duration = (source_frames - 1) * frame_time
+            count = int(math.floor(duration * fps_out + 1e-6)) + 1
+            if count < 2:
+                raise ForgeError("The take lasts %.4f s, under one frame at %g fps."
+                                 % (duration, fps_out))
+            src_rot = {name: [] for name in sources}
+            src_pos = {name: [] for name in sources}
+            quats = {name: mocap.same_hemisphere([_quat_of(m) for m in raw[name]])
+                     for name in sources}
+            for j in range(count):
+                u = (j / fps_out) / frame_time
+                i0 = min(int(math.floor(u + 1e-9)), source_frames - 2)
+                f = min(1.0, max(0.0, u - i0))
+                for name in sources:
+                    src_rot[name].append(mocap.slerp(quats[name][i0], quats[name][i0 + 1], f))
+                    src_pos[name].append(raw[name][i0].translation.lerp(
+                        raw[name][i0 + 1].translation, f))
+            raw = None
+
+            def to_t(vector):
+                return (g3 @ vector) * scale
+
+            def flat(vector):
+                return vector - up * vector.dot(up)
+
+            # --- hip joints, the pelvis pivot
+            thighs = [by_slot.get(("thigh", side)) for side in ("L", "R")]
+            hips_entry = by_slot.get(("hips", None))
+            if all(thighs):
+                src_mid = [(src_pos[thighs[0]["source"]][j] + src_pos[thighs[1]["source"]][j])
+                           / 2.0 for j in range(count)]
+                src_mid_rest = (src_rest[thighs[0]["source"]].translation
+                                + src_rest[thighs[1]["source"]].translation) / 2.0
+                tgt_mid_rest = (tgt_rest[thighs[0]["target"]].translation
+                                + tgt_rest[thighs[1]["target"]].translation) / 2.0
+            elif hips_entry is not None:
+                src_mid = list(src_pos[hips_entry["source"]])
+                src_mid_rest = src_rest[hips_entry["source"]].translation.copy()
+                tgt_mid_rest = tgt_rest[hips_entry["target"]].translation.copy()
+            else:
+                src_mid = None
+
+            # --- heading
+            yaw = 0.0
+            travel = Vector((0.0, 0.0, 0.0))
+            if src_mid is not None:
+                travel = flat(to_t(src_mid[-1] - src_mid[0]))
+            use_travel = heading_mode == "travel" or (
+                heading_mode == "auto" and travel.length > 0.5 * leg_t)
+            if use_travel and travel.length > 1e-6:
+                a = flat(forward_t).normalized()
+                b = travel.normalized()
+                yaw = math.atan2(b.cross(a).dot(up), b.dot(a))
+            elif heading_mode == "travel":
+                warnings.append("heading 'travel' was asked for, but the hips do not "
+                                "travel; the rest facing was used.")
+            yq = Quaternion(up, yaw)
+            heading = {"mode": heading_mode, "used": "travel" if yaw else "rest",
+                       "yaw_deg": round(math.degrees(yaw), 3),
+                       "source_travel_m": round(travel.length, 4)}
+
+            # --- rotations: the rest-relative transfer
+            rotations = {}
+            alignment = {}
+            for entry in mapped:
+                src_q = gq @ _quat_of(src_rest[entry["source"]])
+                tgt_q = _quat_of(tgt_rest[entry["target"]])
+                swing = Quaternion()
+                if entry.get("slot") in ALIGNED_SLOTS:
+                    d_s = g3 @ _segment_dir(entry, by_slot, src_rest, "source")
+                    d_t = _segment_dir(entry, by_slot, tgt_rest, "target")
+                    swing = d_s.rotation_difference(d_t)
+                    alignment[entry["target"]] = round(math.degrees(swing.angle), 2)
+                offset = swing.inverted() @ tgt_q
+                inverse_rest = src_q.inverted()
+                track = []
+                for j in range(count):
+                    delta = yq @ gq @ src_rot[entry["source"]][j] @ inverse_rest
+                    track.append((delta @ offset).normalized())
+                rotations[entry["target"]] = mocap.same_hemisphere(track)
+
+            def delta_of(target, j):
+                return rotations[target][j] @ _quat_of(tgt_rest[target]).inverted()
+
+            # --- the hip joints' path on the target
+            feet = [by_slot.get(("foot", side)) for side in ("L", "R")]
+            tgt_mid = None
+            if src_mid is not None:
+                start = to_t(src_mid[0])
+                if all(feet):
+                    ankles = [to_t(src_pos[e["source"]][j]).dot(up)
+                              for e in feet for j in range(count)]
+                    src_floor = min(ankles)
+                    tgt_floor = min(tgt_rest[e["target"]].translation.dot(up) for e in feet)
+                    vertical = "ankle"
+                else:
+                    src_floor = start.dot(up)
+                    tgt_floor = tgt_mid_rest.dot(up)
+                    vertical = "first_frame"
+                    warnings.append("No foot is mapped on both sides, so the hips keep "
+                                    "their height relative to the first frame.")
+                base = flat(tgt_mid_rest)
+                tgt_mid = []
+                for j in range(count):
+                    p = to_t(src_mid[j])
+                    tgt_mid.append(base + (yq @ flat(p - start))
+                                   + up * (tgt_floor + (p.dot(up) - src_floor)))
+            else:
+                vertical = None
+
+            # --- tracks: one per baked control, world space
+            tracks = {}
+            root_entry = hips_entry
+            ik_legs = []
+            leg_targets = set()
+            if legs_mode == "ik":
+                limbs = {entry["side"]: entry for entry in rigforge_rig.ik_limbs(target_rig)
+                         if entry["limb"] == "leg"}
+                for side in ("L", "R"):
+                    chain = [by_slot.get((slot_name, side))
+                             for slot_name in ("thigh", "shin", "foot")]
+                    if side not in limbs or not all(chain) or tgt_mid is None:
+                        raise ForgeError(
+                            "legs: \"ik\" needs an IK leg on %r and a mapped thigh, shin "
+                            "and foot on side %s (found: IK leg %s, %s)."
+                            % (target_rig.name, side, side in limbs,
+                               ", ".join("%s=%s" % (s, bool(e)) for s, e in
+                                         zip(("thigh", "shin", "foot"), chain))))
+                    ik_legs.append((side, limbs[side], chain,
+                                    by_slot.get(("toe", side))))
+                    leg_targets.update(e["target"] for e in chain)
+                    toe = by_slot.get(("toe", side))
+                    if toe is not None:
+                        leg_targets.add(toe["target"])
+            for entry in mapped:
+                if entry["target"] in leg_targets:
+                    continue
+                tracks[entry["target"]] = {"rot": list(rotations[entry["target"]]),
+                                           "loc": None}
+            if root_entry is not None and tgt_mid is not None:
+                target = root_entry["target"]
+                pivot = tgt_rest[target].translation - tgt_mid_rest
+                tracks[target]["loc"] = [tgt_mid[j] + delta_of(target, j) @ pivot
+                                         for j in range(count)]
+            elif root_entry is not None:
+                warnings.append("The hips are mapped but nothing gives them a path; "
+                                "they rotate in place.")
+            for side, limb, chain, toe in ik_legs:
+                thigh, shin, foot = chain
+                src_hip_side = src_rest[thigh["source"]].translation - src_mid_rest
+                tgt_hip_side = tgt_rest[thigh["target"]].translation - tgt_mid_rest
+                width_fix = flat(tgt_hip_side - to_t(src_hip_side))
+                ankle_rest = tgt_rest[foot["target"]].translation
+                foot_ik = limb["ik_target"]
+                ik_offset = tgt_rest[foot_ik].translation - ankle_rest
+                ik_q = _quat_of(tgt_rest[foot_ik])
+                rot, loc = [], []
+                for j in range(count):
+                    ankle = (tgt_mid[j] + yq @ to_t(src_pos[foot["source"]][j] - src_mid[j])
+                             + width_fix)
+                    d = delta_of(foot["target"], j)
+                    rot.append((d @ ik_q).normalized())
+                    loc.append(ankle + d @ ik_offset)
+                tracks[foot_ik] = {"rot": mocap.same_hemisphere(rot), "loc": loc}
+                pole = limb.get("pole_target")
+                if pole and limb.get("pole_enabled") is not False:
+                    hip_rest = tgt_rest[thigh["target"]].translation
+                    knee_rest = tgt_rest[shin["target"]].translation
+                    pole_rest = tgt_rest[pole].translation
+                    locs = []
+                    for j in range(count):
+                        body = delta_of(root_entry["target"], j) if root_entry else Quaternion()
+                        hip = tgt_mid[j] + body @ (hip_rest - tgt_mid_rest)
+                        d = delta_of(thigh["target"], j)
+                        knee = hip + d @ (knee_rest - hip_rest)
+                        locs.append(knee + d @ (pole_rest - knee_rest))
+                    tracks[pole] = {"rot": None, "loc": locs}
+                toe_ik = limb["roll_pivots"].get("toe")
+                if toe is not None and toe_ik:
+                    toe_q = _quat_of(tgt_rest[toe_ik])
+                    tracks[toe_ik] = {"rot": mocap.same_hemisphere(
+                        [(delta_of(toe["target"], j) @ toe_q).normalized()
+                         for j in range(count)]), "loc": None}
+
+            # --- the loop window
+            loop_report = None
+            window = (0, count - 1)
+            if find_loop:
+                rot_tracks = {name: t["rot"] for name, t in tracks.items() if t["rot"]}
+                heights = [p.dot(up) for p in tgt_mid] if tgt_mid else None
+                min_samples = max(2, int(math.ceil(loop_min_s * fps_out)))
+                max_samples = (int(math.floor(loop_max_s * fps_out))
+                               if loop_max_s is not None else None)
+                found = mocap.find_loop_window(rot_tracks, heights, leg_t, min_samples,
+                                               max_samples)
+                if found is None:
+                    raise ForgeError(
+                        "No loop window fits: the take is %d frames at %g fps (%.3f s) and "
+                        "a loop of at least %.3f s needs %d plus the two it compares "
+                        "velocity over." % (count, fps_out, duration, loop_min_s,
+                                            min_samples))
+                window = (found["start"], found["end"])
+                loop_report = {
+                    "window_frames": [found["start"] + 1, found["end"] + 1],
+                    "window_s": [round(found["start"] / fps_out, 4),
+                                 round(found["end"] / fps_out, 4)],
+                    "length_frames": found["end"] - found["start"],
+                    "length_s": round((found["end"] - found["start"]) / fps_out, 4),
+                    "seam_cost_deg": round(found["cost_deg"], 4),
+                    "windows_tried": found["windows_tried"],
+                }
+            s0, s1 = window
+            for track in tracks.values():
+                for key in ("rot", "loc"):
+                    if track[key] is not None:
+                        track[key] = track[key][s0:s1 + 1]
+            mid = tgt_mid[s0:s1 + 1] if tgt_mid else None
+            count = s1 - s0 + 1
+            # measured on the world paths BEFORE the travel comes out: a planted
+            # foot is still there, so its share of the seam correction is zero
+            seam_weights = {name: mocap.path_weights(track["loc"])
+                            for name, track in tracks.items() if track["loc"] is not None}
+
+            # --- root motion
+            root_report = {"mode": root_mode, "speed_mps": None, "travel_direction": None}
+            velocity = Vector((0.0, 0.0, 0.0))
+            if mid is not None and count > 1:
+                if find_loop:
+                    velocity = flat(mid[-1] - mid[0]) / float(count - 1)
+                else:
+                    n = float(count)
+                    jm = (count - 1) / 2.0
+                    pm = sum((flat(p) for p in mid), Vector()) / n
+                    den = sum((j - jm) ** 2 for j in range(count))
+                    velocity = sum(((flat(mid[j]) - pm) * (j - jm) for j in range(count)),
+                                   Vector()) / den if den else Vector()
+                speed = velocity.length * fps_out
+                root_report["speed_mps"] = round(speed, 4)
+                if speed > 1e-6:
+                    root_report["travel_direction"] = [round(v, 4)
+                                                       for v in velocity.normalized()]
+                    root_report["travel_along_forward"] = round(
+                        velocity.normalized().dot(flat(forward_t).normalized()), 4)
+                centre = (sum((flat(mid[j]) - velocity * j for j in range(count)), Vector())
+                          / float(count)) - flat(tgt_mid_rest)
+                if root_mode == "in_place":
+                    for track in tracks.values():
+                        if track["loc"] is not None:
+                            track["loc"] = [p - velocity * j - centre
+                                            for j, p in enumerate(track["loc"])]
+                    root_report["removed_m"] = round(velocity.length * (count - 1), 4)
+                elif root_mode == "root":
+                    if ROOT_CONTROL not in target_rig.pose.bones:
+                        raise ForgeError("root_motion \"root\" needs a %r control on %r."
+                                         % (ROOT_CONTROL, target_rig.name))
+                    rest = tgt_rest[ROOT_CONTROL].translation
+                    tracks[ROOT_CONTROL] = {
+                        "rot": [_quat_of(tgt_rest[ROOT_CONTROL])] * count,
+                        "loc": [rest + velocity * j + centre for j in range(count)]}
+            elif root_mode != "keep":
+                warnings.append("root_motion %r was asked for, but the hips have no path "
+                                "to take the travel from." % root_mode)
+
+            # --- seam
+            seam_report = None
+            if find_loop:
+                travel_vec = (velocity * (count - 1)) if root_mode != "in_place" else Vector()
+                residuals = mocap.close_seam(tracks, travel=travel_vec, weights=seam_weights)
+                worst = sorted(((r.get("rot_deg", 0.0), name)
+                                for name, r in residuals.items()), reverse=True)
+                worst_loc = max((r.get("loc_mm", 0.0) for r in residuals.values()), default=0.0)
+                seam_report = {"residual_deg": {name: r.get("rot_deg") for name, r
+                                                in residuals.items() if "rot_deg" in r},
+                               "residual_mm": {name: r.get("loc_mm") for name, r
+                                               in residuals.items() if "loc_mm" in r},
+                               "worst_deg": worst[0][0] if worst else 0.0,
+                               "worst_bone": worst[0][1] if worst else None,
+                               "worst_mm": round(worst_loc, 4),
+                               "max_residual_deg": max_residual}
+                if worst and worst[0][0] > max_residual:
+                    raise ForgeError(
+                        "The best loop window (frames %d-%d, seam cost %.2f deg) still "
+                        "leaves %s %.2f deg off at the seam, over the %.1f deg "
+                        "'loop_max_residual_deg' allows (next: %s). This take does not "
+                        "hold a clean cycle; trim it or raise the limit."
+                        % (loop_report["window_frames"][0], loop_report["window_frames"][1],
+                           loop_report["seam_cost_deg"], worst[0][1], worst[0][0],
+                           max_residual, ", ".join("%s %.2f" % (n, v)
+                                                   for v, n in worst[1:3])))
+
+            # --- the IK/FK convention, live for the bake
+            frames = list(range(1, count + 1))
+            if legs_mode == "ik":
+                if fk_switch:
+                    fk_switched = set_fk(target_rig, keyframe_at=None,
+                                         limbs=["arm.L", "arm.R"])
+                for side, limb, _chain, _toe in ik_legs:
+                    bone = target_rig.pose.bones[limb["switch_bone"]]
+                    bone[rigforge_rig.IK_FK_PROP] = 0.0
+                    if IK_STRETCH_PROP in bone.keys():
+                        stretch_restore.append((bone.name, float(bone[IK_STRETCH_PROP])))
+                        bone[IK_STRETCH_PROP] = PLANTED_IK_STRETCH
+                    for pivot in limb["roll_pivots"].values():
+                        if pivot not in tracks and pivot in target_rig.pose.bones:
+                            tracks.setdefault(pivot, {"rot": None, "loc": None,
+                                                      "rest": True})
+                # the production clip keys the root control too, at rest unless it
+                # carries the travel, so no live root pose can ride along with it
+                if ROOT_CONTROL in target_rig.pose.bones:
+                    tracks.setdefault(ROOT_CONTROL, {"rot": None, "loc": None,
+                                                     "rest": True})
+                rigforge_rig._retag(target_rig)
+            elif fk_switch:
+                fk_switched = set_fk(target_rig, keyframe_at=None)
+            if fk_switched:
+                warnings.append(
+                    "Rigify's IK/FK blend was moved to full FK on %d limb(s) so the "
+                    "retargeted FK rotations reach the deform bones; the switch is "
+                    "keyframed into the baked action." % len(fk_switched))
+
+            # --- the bake starts from REST on every bone: a control the clip does
+            # not key (and every parent of one that it does) otherwise bakes
+            # whatever pose the last clip left on it. Measured: the second of two
+            # identical retargets baked the torso 0.5889 m apart from the first -
+            # walk-loop's root travel, still on the live root. The live pose is
+            # put back in the finally.
+            for bone in target_rig.pose.bones:
+                bone.matrix_basis = Matrix.Identity(4)
+            refresh_view_layer()
+
+            # --- empties carry the solved matrices; constraints put controls on them
+            made = 0
+            for name, track in tracks.items():
+                if track.get("rest"):
+                    constrained.append(name)
+                    continue
+                empty = bpy.data.objects.new("FORGE_RT_%s" % name, None)
+                collection.objects.link(empty)
+                _key_empty(empty, frames, track["rot"], track["loc"])
+                bone = target_rig.pose.bones[name]
+                if track["rot"] is not None:
+                    constraint = bone.constraints.new("COPY_ROTATION")
+                    constraint.name = "Forge Retarget Rot"
+                    constraint.target = empty
+                    constraint.target_space = "WORLD"
+                    constraint.owner_space = "WORLD"
+                    constraint.mix_mode = "REPLACE"
+                    made += 1
+                if track["loc"] is not None:
                     location = bone.constraints.new("COPY_LOCATION")
                     location.name = "Forge Retarget Loc"
-                    location.target = source_rig
-                    location.subtarget = entry["source"]
+                    location.target = empty
                     location.target_space = "WORLD"
                     location.owner_space = "WORLD"
                     location.use_offset = False
                     made += 1
+                constrained.append(name)
+            refresh_view_layer()
 
-            scene.frame_start = frame_start
-            scene.frame_end = frame_end
+            scene.frame_start = 1
+            scene.frame_end = count
             if target_rig.animation_data is None:
                 target_rig.animation_data_create()
             target_rig.animation_data.action = None
 
-            targets = [entry["target"] for entry in mapped]
+            targets = list(constrained)
             with active_only(target_rig), _bones_bakeable(target_rig, targets):
                 try:
                     bpy.ops.object.mode_set(mode="POSE")
@@ -5765,8 +6468,8 @@ def cmd_rigforge_retarget(params):
                                len(targets),
                                ", ".join(sorted(set(targets) - selected))))
                     status = bpy.ops.nla.bake(**op_kwargs(bpy.ops.nla.bake, {
-                        "frame_start": frame_start,
-                        "frame_end": frame_end,
+                        "frame_start": 1,
+                        "frame_end": count,
                         "step": step,
                         "only_selected": True,
                         "visual_keying": True,
@@ -5793,8 +6496,53 @@ def cmd_rigforge_retarget(params):
             # bakes the control rig per action, and a switch that is only a live
             # property would be whatever the last command left it at.
             if fk_switched:
-                for frame in (frame_start, frame_end):
-                    set_fk(target_rig, keyframe_at=frame)
+                for frame in (1, count):
+                    set_fk(target_rig, keyframe_at=frame,
+                           limbs=["arm.L", "arm.R"] if legs_mode == "ik" else None)
+            stretch_block = None
+            if legs_mode == "ik":
+                for side, limb, _chain, _toe in ik_legs:
+                    bone = target_rig.pose.bones[limb["switch_bone"]]
+                    for frame in (1, count):
+                        bone.keyframe_insert('["%s"]' % rigforge_rig.IK_FK_PROP,
+                                             frame=frame)
+                planted = plant_ik_stretch(target_rig, [limb for _s, limb, _c, _t in ik_legs],
+                                           (1, count))
+                stretch_block = planted
+
+            # --- read the baked controls back against where they were sent
+            check_rot = {}
+            check_loc = {}
+            probe = sorted(set(list(range(0, count, max(1, count // 12))) + [count - 1]))
+            for j in probe:
+                scene.frame_set(j + 1)
+                for name, track in tracks.items():
+                    if track.get("rest"):
+                        continue
+                    world = target_rig.matrix_world @ target_rig.pose.bones[name].matrix
+                    if track["rot"] is not None:
+                        error = mocap.angle_deg(_quat_of(world), track["rot"][j])
+                        check_rot[name] = max(check_rot.get(name, 0.0), error)
+                    if track["loc"] is not None:
+                        error = (world.translation - track["loc"][j]).length * M_TO_MM
+                        check_loc[name] = max(check_loc.get(name, 0.0), error)
+            worst_rot = max(check_rot.items(), key=lambda kv: kv[1], default=(None, 0.0))
+            worst_loc = max(check_loc.items(), key=lambda kv: kv[1], default=(None, 0.0))
+            report["transfer_check"] = {
+                "frames_checked": len(probe),
+                "worst_rotation_deg": round(worst_rot[1], 4),
+                "worst_rotation_bone": worst_rot[0],
+                "worst_position_mm": round(worst_loc[1], 4),
+                "worst_position_bone": worst_loc[0],
+                "rotation_deg": {k: round(v, 4) for k, v in sorted(check_rot.items())},
+                "position_mm": {k: round(v, 4) for k, v in sorted(check_loc.items())},
+            }
+            if worst_rot[1] > 1.0 or worst_loc[1] > 1.0:
+                warnings.append(
+                    "The bake did not land every control where it was sent: %s %.2f deg, "
+                    "%s %.2f mm. Something on the rig (a constraint, a lock) is fighting "
+                    "the retarget." % (worst_rot[0], worst_rot[1], worst_loc[0],
+                                       worst_loc[1]))
 
             replaced = False
             if baked.name != action_name:
@@ -5808,18 +6556,43 @@ def cmd_rigforge_retarget(params):
                 baked.name = action_name
             baked.use_fake_user = True
             baked_name = baked.name
+            report.update({
+                "fps": fps_out,
+                "source": source_info,
+                "resampled": {"source_fps": round(1.0 / frame_time, 4),
+                              "source_frames": source_frames,
+                              "output_fps": fps_out,
+                              "output_frames": count},
+                "scale_basis": scale_basis,
+                "leg_chain_m": {"source": round(src_leg, 6) if src_leg else None,
+                                "target": round(tgt_leg, 6) if tgt_leg else None},
+                "orientation": orientation,
+                "heading": heading,
+                "rest_alignment_deg": alignment,
+                "root_motion": root_report,
+                "hip_height_from": vertical,
+                "legs": {"mode": legs_mode,
+                         "ik_controls": sorted(name for name in tracks
+                                               if name not in rotations
+                                               and name != ROOT_CONTROL)},
+                "loop_window": loop_report,
+                "seam_residual": seam_report,
+                "baked_controls": sorted(constrained),
+                "ik_stretch": (ik_stretch_report(stretch_block, {})
+                               if stretch_block else None),
+                "mapping_preset_status": mocap.PRESET_STATUS if preset else None,
+            })
     finally:
         # constraints come off the *real* rig whatever happened
-        for entry in mapped:
-            bone = target_rig.pose.bones.get(entry["target"])
-            if bone is None:
-                continue
+        for bone in target_rig.pose.bones:
             for constraint in list(bone.constraints):
                 if constraint.name.startswith("Forge Retarget"):
                     try:
                         bone.constraints.remove(constraint)
                     except (RuntimeError, ReferenceError):
                         pass
+        if stretch_restore:
+            restore_ik_stretch(target_rig, stretch_restore)
         if collection is not None:
             _delete_objects(list(collection.objects))
             try:
@@ -5849,16 +6622,18 @@ def cmd_rigforge_retarget(params):
                     assign_action(target_rig, previous_action)
             except (AttributeError, TypeError, RuntimeError):
                 pass
-            for name, matrix in previous_matrices.items():
-                bone = target_rig.pose.bones.get(name)
-                if bone is not None:
-                    try:
-                        bone.matrix_basis = matrix
-                    except (RuntimeError, ValueError):
-                        pass
+        # the live pose goes back either way (the bake ran from rest); a keyed
+        # channel of the new clip overrides it on the next evaluation
+        for name, matrix in previous_matrices.items():
+            bone = target_rig.pose.bones.get(name)
+            if bone is not None:
+                try:
+                    bone.matrix_basis = matrix
+                except (RuntimeError, ValueError):
+                    pass
         refresh_view_layer()
 
-    return {
+    result = {
         "action": baked_name,
         "loop": is_loop(baked_name),
         "target_rig": target_rig.name,
@@ -5871,8 +6646,8 @@ def cmd_rigforge_retarget(params):
         "unmapped": [entry["source"] for entry in unmapped],
         "unmapped_detail": unmapped,
         "unmapped_count": len(unmapped),
-        "frames": max(0, frame_end - frame_start),
-        "frame_range": [frame_start, frame_end],
+        "frames": max(0, report.get("resampled", {}).get("output_frames", 1) - 1),
+        "frame_range": [1, report.get("resampled", {}).get("output_frames", 1)],
         "frame_step": step,
         "scale": round(float(scale), 6),
         "scale_mode": scale_mode,
@@ -5882,6 +6657,8 @@ def cmd_rigforge_retarget(params):
         "warnings": warnings,
         "seconds": round(time.monotonic() - started, 3),
     }
+    result.update(report)
+    return result
 
 
 # ---------------------------------------------------------------------------
