@@ -2,7 +2,12 @@
 
     GET  /health           backend name/model/licence/loaded + available_backends
                            + "build": {"sha", "pid", "started", "uptime_s"}
+    GET  /capabilities     per backend: conditioning (single image / multi-view),
+                           seed handling, ensemble tiers, accepted options
     POST /generate3d       {"image_path", "backend"?, "options"?, "output"?} -> {"job_id"}
+                           options.seed absent -> drawn, recorded in job + result
+    POST /generate_ensemble  as /generate3d + {"n"} or {"seeds": [...]}: N full
+                           generations, every candidate returned UNRANKED
     GET  /job/<id>         queued | running | done | error | cancelled (+ progress)
     POST /cancel/<id>      best-effort interrupt
 
@@ -27,6 +32,7 @@ from pathlib import Path
 from . import backends as backend_registry
 from . import config as config_module
 from . import jobs as jobs_module
+from .backends import base as backend_base
 from .backends import multiview
 from .backends.base import BackendError, Cancelled, NotReady
 from .comfyui_client import ComfyUIClient
@@ -215,7 +221,88 @@ class MeshgenApp:
             )
         return front, options
 
+    def capabilities(self):
+        """``GET /capabilities``: what each backend takes, declared by the backend."""
+        backends = {}
+        for name, backend in self.backends.items():
+            try:
+                caps = backend.capabilities()
+            except Exception as exc:  # an adapter must never break the listing
+                caps = {"name": name, "error": str(exc)}
+            caps["default"] = name == self.default_backend_name
+            backends[name] = caps
+        return {
+            "service": "meshgen",
+            "version": SERVICE_VERSION,
+            "default_backend": self.default_backend_name,
+            "backend_param": ('"backend": one of the names below, on /generate3d and '
+                              "/generate_ensemble; omit it for default_backend"),
+            "backends": backends,
+            "endpoints": {
+                "POST /generate3d": "one mesh; options.seed optional (drawn and "
+                                    "recorded when absent); options.ensemble picks "
+                                    "a winner inside meshgen",
+                "POST /generate_ensemble": "N meshes at N seeds, unranked - "
+                                           'body as /generate3d plus "n" or "seeds"',
+                "GET /job/<id>": "state; seed block; candidates for an ensemble job",
+            },
+        }
+
+    @staticmethod
+    def _settle_seed(options):
+        """Resolve the seed before queueing, so the 202 already carries it."""
+        try:
+            return backend_base.resolve_seed(options)
+        except BackendError as exc:
+            raise ValueError(str(exc)) from None
+
     def submit(self, image_path, backend_name, options, output, views=None):
+        backend, image, options, out_path = self._prepare(
+            image_path, backend_name, options, output, views)
+        options, seed_source = self._settle_seed(options)
+        job = self.store.create(str(image), backend.name, options, str(out_path))
+        job.seed_source = seed_source
+        self.queue.put(job.id)
+        log(f"queued job {job.id} backend={backend.name} image={image.name} "
+            f"seed={options['seed']} ({seed_source})")
+        return job
+
+    def submit_candidates(self, image_path, backend_name, options, output,
+                          views=None, n=None, seeds=None):
+        """``/generate_ensemble``: N full generations at N seeds, unranked."""
+        options = dict(options or {})
+        if "ensemble" in options:
+            raise ValueError(
+                "options.ensemble picks a winner inside meshgen; /generate_ensemble "
+                "returns every candidate unranked - send one or the other")
+        backend, image, options, out_path = self._prepare(
+            image_path, backend_name, options, output, views)
+        if not hasattr(backend, "generate_candidates"):
+            raise ValueError(f"backend {backend.name!r} cannot fan out candidates")
+        base = backend_base
+        try:
+            if seeds is not None:
+                seed_list = base.candidate_seeds(options, n=n, seeds=seeds)
+                seed_source = base.SEED_CALLER
+            else:
+                options, seed_source = self._settle_seed(options)
+                seed_list = base.candidate_seeds(options, n=n)
+        except BackendError as exc:
+            raise ValueError(str(exc)) from None
+        job = self.store.create(str(image), backend.name, options, str(out_path))
+        job.seed_source = seed_source
+        job.candidate_seeds = seed_list
+        self.queue.put(job.id)
+        log(f"queued candidates job {job.id} backend={backend.name} "
+            f"image={image.name} seeds={seed_list} ({seed_source})")
+        return job
+
+    def _prepare(self, image_path, backend_name, options, output, views=None):
+        """Everything both submit routes validate before a job exists."""
+        if backend_name is not None and not isinstance(backend_name, str):
+            raise ValueError(
+                f"backend must be a string naming one of {sorted(self.backends)}, "
+                f"got {type(backend_name).__name__}")
         backend = self.resolve_backend(backend_name)
         options = dict(options or {})
         if views is None:
@@ -256,11 +343,7 @@ class MeshgenApp:
                 raise ValueError("output must end in .glb (the backends produce binary glTF)")
         else:
             out_path = image.with_name(image.stem + f"_{backend.name}.glb")
-
-        job = self.store.create(str(image), backend.name, options, str(out_path))
-        self.queue.put(job.id)
-        log(f"queued job {job.id} backend={backend.name} image={image.name}")
-        return job
+        return backend, image, options, out_path
 
     def cancel(self, job_id):
         job = self.store.get(job_id)
@@ -309,20 +392,32 @@ class MeshgenApp:
 
         try:
             backend = self.resolve_backend(job.backend)
-            result = backend.generate(
-                job.image_path,
-                job.options,
-                job.output,
-                progress=progress,
-                cancel_event=job.cancel_event,
-                job_id=job.id,
-            )
+            if job.candidate_seeds is not None:
+                result = backend.generate_candidates(
+                    job.image_path,
+                    job.options,
+                    job.output,
+                    job.candidate_seeds,
+                    progress=progress,
+                    cancel_event=job.cancel_event,
+                    job_id=job.id,
+                )
+            else:
+                result = backend.generate(
+                    job.image_path,
+                    job.options,
+                    job.output,
+                    progress=progress,
+                    cancel_event=job.cancel_event,
+                    job_id=job.id,
+                )
             job.result = result
             job.state = jobs_module.DONE
             job.progress = 1.0
             job.stage = None
-            log(f"job {job.id} done -> {result.get('mesh_path')} "
-                f"({result.get('duration_ms')} ms)")
+            produced = (result.get("mesh_path")
+                        or (result.get("ensemble") or {}).get("kept"))
+            log(f"job {job.id} done -> {produced} ({result.get('duration_ms')} ms)")
         except Cancelled as exc:
             job.state = jobs_module.CANCELLED
             job.error = str(exc)
@@ -386,6 +481,8 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
         if path in ("/health", "/"):
             return self._send(200, self.app.health())
+        if path == "/capabilities":
+            return self._send(200, self.app.capabilities())
         if path == "/jobs":
             return self._send(200, {"jobs": [j.as_dict() for j in self.app.store.all()]})
         if path.startswith("/job/"):
@@ -402,7 +499,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             return self._send(400, {"error": str(exc)})
 
-        if path == "/generate3d":
+        if path in ("/generate3d", "/generate_ensemble"):
             options = body.get("options") or {}
             if not isinstance(options, dict):
                 return self._send(400, {"error": "options must be an object"})
@@ -413,8 +510,13 @@ class Handler(BaseHTTPRequestHandler):
             if not image_path and not views:
                 return self._send(400, {"error": "image_path is required"})
             try:
-                job = self.app.submit(image_path, body.get("backend"), options,
-                                      body.get("output"), views=views)
+                if path == "/generate_ensemble":
+                    job = self.app.submit_candidates(
+                        image_path, body.get("backend"), options, body.get("output"),
+                        views=views, n=body.get("n"), seeds=body.get("seeds"))
+                else:
+                    job = self.app.submit(image_path, body.get("backend"), options,
+                                          body.get("output"), views=views)
             except KeyError as exc:
                 return self._send(400, {
                     "error": f"unknown backend {exc.args[0]!r}",
@@ -435,8 +537,20 @@ class Handler(BaseHTTPRequestHandler):
                        "backend": job.backend, "output": job.output}
             if job.options.get("views"):
                 payload["views"] = [v["name"] for v in job.options["views"]]
+            # from the request as settled, not job.as_dict(): the worker may
+            # already be running it, and the 202 describes what was queued
             if job.options.get("ensemble"):
                 payload["ensemble"] = job.options["ensemble"]
+            if job.candidate_seeds is not None:
+                payload["mode"] = "candidates"
+                payload["ensemble"] = {"tier": "candidates",
+                                       "n": len(job.candidate_seeds),
+                                       "seeds": list(job.candidate_seeds),
+                                       "scored": False}
+            seed = job.options.get("seed")
+            if seed is None and job.candidate_seeds:
+                seed = job.candidate_seeds[0]
+            payload["seed"] = {"value": seed, "source": job.seed_source}
             return self._send(202, payload)
 
         if path.startswith("/cancel/"):

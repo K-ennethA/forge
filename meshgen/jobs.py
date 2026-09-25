@@ -41,6 +41,10 @@ class Job:
         self.started = None
         self.finished = None
         self.cancel_event = threading.Event()
+        #: "caller" | "drawn" | None (set by the service when it settles the seed)
+        self.seed_source = None
+        #: the seed list of a /generate_ensemble job; None for /generate3d
+        self.candidate_seeds = None
 
     # -- serialisation ---------------------------------------------------
     def as_dict(self) -> dict:
@@ -69,6 +73,18 @@ class Job:
             # below by the finished report - which says what was actually
             # compared, who won and why.
             payload["ensemble"] = dict(ensemble)
+        if self.candidate_seeds is not None:
+            # an unscored fan-out: says so, and names every seed, from the queue on
+            payload["mode"] = "candidates"
+            payload["ensemble"] = {"tier": "candidates", "n": len(self.candidate_seeds),
+                                   "seeds": list(self.candidate_seeds), "scored": False}
+        seed = self.options.get("seed")
+        if seed is None and self.candidate_seeds:
+            seed = self.candidate_seeds[0]
+        if seed is not None:
+            # the seed is part of the record from the moment the job exists, so a
+            # run can be replayed whether or not the caller chose the seed
+            payload["seed"] = {"value": seed, "source": self.seed_source}
         if self.started is not None:
             payload["started"] = self.started
         if self.finished is not None:
@@ -86,6 +102,19 @@ class Job:
                 "vram": self.result.get("vram"),
                 "model": self.result.get("model"),
             })
+            if self.result.get("options") is not None:
+                payload["options"] = self.result["options"]
+            if self.result.get("seed"):
+                # the backend knows which seed the MESH came from (a picked
+                # ensemble's winner) and the four sampler seeds; the service
+                # knows whether the caller chose it - the record carries both
+                merged = dict(payload.get("seed") or {})
+                merged.update(self.result["seed"])
+                if self.seed_source is not None:
+                    merged["source"] = self.seed_source
+                payload["seed"] = merged
+            if self.result.get("candidates") is not None:
+                payload["candidates"] = self.result["candidates"]
             if self.result.get("multiview"):
                 payload["multiview"] = self.result["multiview"]
             if self.result.get("ensemble"):

@@ -12,10 +12,15 @@ into the existing pipeline: Blender import → voxel repair → `/check_mesh` �
 ```
 POST /generate3d  {"image_path", "backend"?, "options"?, "output"?}  -> {"job_id"}
                   {"views": {"front", "side"?, "back"?, "left"?}, ...}   (pixal3d)
+                  options.seed    absent -> drawn at random AND recorded
                   options.ensemble {"structure_n"?, "best_of"?}   (pick among seeds)
+POST /generate_ensemble   same body + {"n"} or {"seeds": [...]}  -> {"job_id"}
+                  N full generations, every candidate returned UNRANKED
 GET  /job/<id>    queued | running | done | error | cancelled  (+ progress, stage)
 POST /cancel/<id> best-effort interrupt
 GET  /health      backend name/model/license/loaded + available_backends
+GET  /capabilities  per backend: conditioning (single image / multi-view set),
+                  seed handling, ensemble tiers, accepted options
 ```
 
 A finished job carries `mesh_path`, `stats: {verts, faces, ...}`, `duration_ms`,
@@ -23,6 +28,11 @@ A finished job carries `mesh_path`, `stats: {verts, faces, ...}`, `duration_ms`,
 `before_gb` / `peak_gb` / `after_gb` / `total_gb` (peak is sampled while the job
 runs — the before/after pair misses it, and peak is the number that decides
 whether a setting fits on this card).
+
+Every job also carries a `seed` block from the moment it is queued (the 202
+has it too): `{"value", "source": "caller" | "drawn"}`, and once done
+`"base"` (the request's seed) and `"stages"` (the four sampler seeds actually
+submitted). See [Seeds](#seeds-every-sampler-every-run-recorded).
 
 ---
 
@@ -112,7 +122,8 @@ supported list rather than silently ignored.
 | `remesh_resolution` | remesh grid | 768 | **512** |
 | `texture_resolution` | baked texture size | 4096 | **2048** |
 | `target_face_count` | decimation target | 700000 | **200000** |
-| `seed` | structure sampler seed | 56 | 56 |
+| `seed` | master seed for all four samplers ([Seeds](#seeds-every-sampler-every-run-recorded)) | 56 / 42 / 42 / 43 | **drawn, recorded** |
+| `texture_seed` | texture sampler only (re-roll texture on a fixed shape) | 43 | from `seed` |
 | `steps` | structure sampler steps | 12 | 12 |
 | `cfg` | structure sampler CFG | 7.5 | 7.5 |
 | `uv_padding` | UV atlas padding | 1 | 1 |
@@ -454,8 +465,9 @@ POST /generate3d
 | `structure_n` | run the **cheap head** N times at varied seeds, pick the medoid grid, then pay for the expensive tail once | **1** (off) | 1–9 |
 | `best_of` | run N **full** generations and choose between the finished meshes | **1** (off) | 1–5 |
 
-Seeds are `seed`, `seed+1`, … — never random, so two runs of the same request
-compare the same candidates. Both above 1 at once is **refused**: `best_of`
+Seeds are `seed`, `seed+1`, … — never random past the base, so two runs with
+the same `seed` compare the same candidates. With no `seed` the base is drawn
+once and recorded (`seed.base` on the job); send it back to replay the set. Both above 1 at once is **refused**: `best_of`
 already draws N independent structures, so consensus inside each one would hand
 every candidate the same grid and you would pay N full generations for N copies
 of one mesh. Out of range is refused with the real range, never clamped.
@@ -693,6 +705,94 @@ the prepared silhouette back) — both already in `service/.venv`. `meshgen.ense
 is imported lazily, only when an ensemble is actually requested, and a machine
 missing either gets a sentence rather than a single-seed mesh that quietly
 pretends it was chosen.
+
+---
+
+## Seeds: every sampler, every run, recorded
+
+**The defect this closes.** Until 2026-09-24 an absent `seed` meant the
+template's fixed 56 on the structure sampler, and the three tail samplers
+(shape 42, upsample 42, texture 43) never moved at all. A caller that did not
+pass a seed got one sample, however many times it asked: twelve "ear
+generations" in the eevee project were byte-duplicates of a single shape
+(docs/research/3d-generation-and-detailing.md, Step 0).
+
+Now:
+
+- **Absent seed -> drawn, and recorded.** meshgen draws from the OS entropy pool
+  in `[0, 2**32)` (exact in any JSON client) *before* the job is queued, so the
+  202, `/job/<id>` and the result all carry it with `source: "drawn"`. Sending
+  that value back as `options.seed` replays the request.
+- **One `seed`, all four KSamplers.** `SEED_STAGES` in `backends/comfyui_base.py`
+  derives each stage as `seed + offset (mod 2**64)` with the template's own
+  spacing (0 / -14 / -14 / -13), so **`seed: 56` builds a graph byte-identical to
+  the template** and every number measured at seed 56 in this README stays
+  reproducible. A test pins the offsets against both workflow templates.
+- **`texture_seed`** overrides the texture sampler alone: the structure-locked
+  re-roll (same shape seeds, new texture draw).
+- **Strict:** a bool, a float, a negative number or anything past `2**64-1` is a
+  400, never coerced; a decimal string is accepted (64-bit clients).
+
+**What is tested and what is not.** Same request + same seed -> the same graph
+submission is asserted (graph equality, per sampler). That the GPU then returns
+the same *mesh* is a separate claim: bit-deterministic replay is measured for
+the structure stage only (3 probes of seed 56, grid IoU 1.000, above); the
+shape/texture tail wobbles slightly run to run. Full-pipeline determinism at a
+fixed seed is an **ASSUMPTION** until a GPU replay run (two full generations,
+one seed, mesh digests compared) settles it.
+
+## Unscored candidates: `/generate_ensemble`
+
+The candidate-ensemble pattern (draw N seeds, score deterministically, keep the
+best) with the scoring left to the caller — the benchmark / silhouette machinery
+outside meshgen. meshgen stays dumb and honest here: it generates, it does not
+judge.
+
+```json
+POST /generate_ensemble
+{"image_path": "C:/ref/ear.png", "n": 5, "options": {"seed": 56}}
+{"views": {...}, "backend": "pixal3d", "seeds": [56, 91, 4]}
+```
+
+| field | meaning |
+|---|---|
+| `n` | 1–9 candidates at `seed, seed+1, …` (base drawn + recorded when absent) |
+| `seeds` | an explicit list instead (distinct, 1–9); refused next to `options.seed` |
+| everything else | exactly as `/generate3d` (`image_path` / `views`, `backend`, `options`, `output`) |
+
+The cap is 9 — the consensus plateau `structure_n` also uses — and each
+candidate is a full run (82–304 s measured), so the ceiling is ~45 min of GPU.
+`options.ensemble` next to it is refused: that tier picks, this one does not.
+
+The finished job has **`mesh_path: null` on purpose** (nothing was picked) and:
+
+```
+"candidates": [{"index": 1, "seed": 56, "mesh_path": ".../ear_trellis2_seed56.glb",
+                "stats": {...}, "duration_ms": ..., "peak_vram_gb": ...,
+                "stage_seeds": {"structure": 56, "shape": 42, "upsample": 42,
+                                "texture": 43}}, ...],
+"ensemble": {"tier": "candidates", "scored": false, "winner": null,
+             "seeds": [...], "kept": [...], "failed": 0}
+```
+
+Inputs are staged once for the whole fan-out (one `LoadImage` filename, so
+ComfyUI's cache skips background removal and the encoder after the first seed).
+A candidate whose run fails is recorded with its `error` and the rest continue;
+only when every candidate fails does the job fail. No GPU run of this endpoint
+has been made yet; the shape above is from the mocked-ComfyUI tests.
+
+## Capabilities: `GET /capabilities`
+
+Each backend declares what it takes, so a caller introspects instead of
+guessing: `conditioning.single_image` and `conditioning.multi_view`
+(`supported` = the adapter can take a view set; `available` = this machine can
+run one, with `missing` naming the files when not; for pixal3d also the view
+names, 2–4 view counts, azimuths, default FOV and core node), the `seed` surface
+(range, the four samplers and their offsets, what happens when absent), both
+ensemble surfaces with their ranges, and the accepted `options`. `default` marks
+the backend a request without `"backend"` gets — `trellis2` in the shipped
+`config.json`, unchanged. Cheap like `/health`: it never starts or queries
+ComfyUI.
 
 ---
 
@@ -1143,8 +1243,8 @@ service\.venv\Scripts\python.exe -m meshgen
 service\.venv\Scripts\python.exe -m pytest meshgen/tests -q
 ```
 
-**223 tests** (39 `test_service.py` + 53 `test_multiview.py` + 61
-`test_tuning.py` + 70 `test_ensemble.py`), all runnable with **none** of the 23.8 GB present — they exercise the job API, config resolution,
+**291 tests** (42 `test_service.py` + 53 `test_multiview.py` + 61
+`test_tuning.py` + 70 `test_ensemble.py` + 65 `test_seeding.py`), all runnable with **none** of the 23.8 GB present — they exercise the job API, config resolution,
 option validation, cancellation, the missing-models guidance, both ComfyUI
 history output shapes and the VRAM-safe defaults, against a fake adapter that
 writes a real one-triangle `.glb`.

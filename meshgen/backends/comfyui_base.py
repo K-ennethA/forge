@@ -15,7 +15,9 @@ from pathlib import Path
 
 from .. import glb
 from . import structure_probe
-from .base import (Backend, BackendError, Cancelled, NotReady, ensemble_seeds)
+from .base import (SEED_MAX, Backend, BackendError, Cancelled, NotReady,
+                   candidate_path, candidates_payload, coerce_seed, ensemble_seeds,
+                   resolve_seed, _raise_if_all_failed)
 
 HF = "https://huggingface.co"
 
@@ -30,6 +32,9 @@ NODE_REMESH = "241"
 NODE_DECIMATE = "186"
 NODE_UNWRAP = "196"
 NODE_STRUCTURE_SAMPLER = "3"   # the first of four KSamplers; the one seed/steps steer
+NODE_SHAPE_SAMPLER = "18"      # KSampler on Trellis2ShapeStage
+NODE_UPSAMPLE_SAMPLER = "23"   # KSampler on Trellis2UpsampleStage (feeds shape decode)
+NODE_TEXTURE_SAMPLER = "12"    # KSampler on Trellis2TextureStage
 NODE_UPSAMPLE = "94"
 NODE_SMOOTH_NORMALS_UV = "238"    # decimate -> here -> UnwrapMesh (splits UV islands)
 NODE_SMOOTH_NORMALS_OUT = "260"   # textured mesh -> here -> the exported .glb
@@ -110,6 +115,37 @@ HARD_SURFACE_PRESET = {
 NON_GRAPH_OPTIONS = {"backend", "views", "on_unavailable", "multiview_fov_deg",
                      "hard_surface", "ensemble"}
 
+#: Every KSampler in both templates, as ``(stage, node id, offset)``.  ``seed``
+#: is ONE request option and reaches all four: stage seed = ``seed + offset``
+#: (mod 2**64, the sampler's range).
+#:
+#: The offsets are the committed templates' own spacing (structure 56, shape 42,
+#: upsample 42, texture 43), so ``seed: 56`` builds a graph whose sampler seeds
+#: are byte-identical to the template - every number measured at seed 56 in
+#: meshgen/README.md stays reproducible.  Before this table only the structure
+#: sampler moved with ``seed``; the three tail samplers sat at 42/42/43 forever.
+#: A test pins these against both templates.
+#:
+#: ``texture_seed`` overrides the texture stage alone: the structure-locked
+#: re-roll (same shape, new texture draw) that docs/research/
+#: 3d-generation-and-detailing.md section 4.1 describes.
+SEED_STAGES = (
+    ("structure", NODE_STRUCTURE_SAMPLER, 0),
+    ("shape", NODE_SHAPE_SAMPLER, -14),
+    ("upsample", NODE_UPSAMPLE_SAMPLER, -14),
+    ("texture", NODE_TEXTURE_SAMPLER, -13),
+)
+SEED_OPTIONS = ("seed", "texture_seed")
+
+
+def stage_seeds(seed, texture_seed=None) -> dict:
+    """``{stage: seed}`` for one master seed.  Pure; same in, same out."""
+    seed = coerce_seed(seed)
+    out = {stage: (seed + offset) % (SEED_MAX + 1) for stage, _node, offset in SEED_STAGES}
+    if texture_seed is not None:
+        out["texture"] = coerce_seed(texture_seed)
+    return out
+
 
 def _boolean(value):
     """Strict bool coercion - ``bool("false")`` is True, and that is a trap.
@@ -139,7 +175,10 @@ _boolean.__name__ = "boolean"
 #: normals.  Setting only one of them gives a mesh whose atlas and whose shading
 #: disagree about where the creases are.
 OPTION_SPEC = {
-    "seed": (NODE_STRUCTURE_SAMPLER, "seed", int),
+    # both seeds are validated here and then written by _apply_stage_seeds,
+    # which derives all four samplers from them (see SEED_STAGES)
+    "seed": (NODE_STRUCTURE_SAMPLER, "seed", coerce_seed),
+    "texture_seed": (NODE_TEXTURE_SAMPLER, "seed", coerce_seed),
     "steps": (NODE_STRUCTURE_SAMPLER, "steps", int),
     "cfg": (NODE_STRUCTURE_SAMPLER, "cfg", float),
     "texture_resolution": (NODE_TEXTURE_RESOLUTION, "value", int),
@@ -313,7 +352,8 @@ class ComfyUIBackend(Backend):
         graph[NODE_SAVE]["inputs"]["filename_prefix"] = prefix
 
         unknown = []
-        for key, value in self.resolved_options(options).items():
+        resolved = self.resolved_options(options)
+        for key, value in resolved.items():
             if key in NON_GRAPH_OPTIONS:
                 continue
             spec = OPTION_SPEC.get(key)
@@ -337,7 +377,51 @@ class ComfyUIBackend(Backend):
                 f"unknown option(s): {', '.join(sorted(unknown))}. "
                 f"Supported: {', '.join(sorted(OPTION_SPEC))}"
             )
+        self._apply_stage_seeds(graph, resolved)
         return graph
+
+    @staticmethod
+    def _apply_stage_seeds(graph, resolved):
+        """Write every sampler's seed from the one master seed.
+
+        No ``seed`` in the options (a direct graph build; the service and
+        :meth:`generate` always resolve one first) derives from the template's
+        own structure seed, which reproduces the template exactly.
+        """
+        base = resolved.get("seed")
+        if base is None:
+            node = graph.get(NODE_STRUCTURE_SAMPLER) or {}
+            base = (node.get("inputs") or {}).get("seed")
+            if base is None:
+                return
+        seeds = stage_seeds(base, resolved.get("texture_seed"))
+        for stage, node_id, _offset in SEED_STAGES:
+            if node_id in graph:
+                graph[node_id]["inputs"]["seed"] = seeds[stage]
+
+    def stage_seeds_for(self, options) -> dict:
+        """The four sampler seeds a run with these options gets."""
+        resolved = self.resolved_options(options)
+        return stage_seeds(resolved["seed"], resolved.get("texture_seed"))
+
+    # -- capabilities -----------------------------------------------------
+    option_names = tuple(OPTION_SPEC) + ("hard_surface", "ensemble")
+
+    def seed_capabilities(self) -> dict:
+        data = super().seed_capabilities()
+        data.update({
+            "samplers": {stage: {"node": node_id, "offset": offset}
+                         for stage, node_id, offset in SEED_STAGES},
+            "derivation": "stage seed = (seed + offset) mod 2**64; seed 56 "
+                          "reproduces the template's sampler seeds exactly",
+            "texture_seed": "optional override of the texture sampler alone "
+                            "(re-roll the texture on a fixed shape)",
+            "determinism": "same request + same seed -> identical graph submission "
+                           "(tested). Bit-identical GPU output at a fixed seed is "
+                           "measured for the structure stage only; the shape/"
+                           "texture tail wobbles slightly (README, seed ensemble).",
+        })
+        return data
 
     # -- generation ------------------------------------------------------
     def resolve_multiview(self, image_path, options):
@@ -415,7 +499,10 @@ class ComfyUIBackend(Backend):
     def generate(self, image_path, options, out_path, progress=None, cancel_event=None, job_id=None):
         self.ensure_ready()
         progress = progress or (lambda *a: None)
-        options = dict(options or {})
+        # resolved ONCE, here: every graph this job builds (probes, candidates,
+        # the final run) derives from this one seed, and the result records it
+        options, seed_source = resolve_seed(options)
+        base_seed = int(options["seed"])
         ensemble_options = self.resolved_ensemble(options)
 
         image_path, multiview_note, multiview_plan = self.resolve_multiview(image_path, options)
@@ -435,6 +522,7 @@ class ComfyUIBackend(Backend):
                 result, report = self._run_best_of(
                     staged, options, out_path, prefix, multiview_plan,
                     ensemble_options, progress, cancel_event, job_id, telemetry)
+                options["seed"] = int(report["winner"]["seed"])
             else:
                 if ensemble_options["structure_n"] > 1:
                     winning_seed, report = self._structure_consensus(
@@ -469,6 +557,10 @@ class ComfyUIBackend(Backend):
             "model": self.model,
             "duration_ms": duration_ms,
             "options": self.resolved_options(options),
+            # the seed the MESH came from: after a structure_n pick that is the
+            # winner, not the base the request carried (report.seed_base has it)
+            "seed": {"value": int(options["seed"]), "base": base_seed,
+                     "source": seed_source, "stages": self.stage_seeds_for(options)},
             "vram": {
                 "before_gb": (before or {}).get("vram_used_gb"),
                 "after_gb": (after or {}).get("vram_used_gb"),
@@ -484,6 +576,104 @@ class ComfyUIBackend(Backend):
         if report is not None:
             report["wall_ms"] = duration_ms
             payload["ensemble"] = report
+        return payload
+
+    # -- unscored fan-out (/generate_ensemble) -----------------------------
+    def generate_candidates(self, image_path, options, out_path, seeds,
+                            progress=None, cancel_event=None, job_id=None):
+        """N seeds -> N full generations, staged ONCE, returned unranked.
+
+        Same loop as the ``best_of`` tier minus the scorer: meshgen stays dumb
+        and honest here, and the caller's benchmark/silhouette machinery picks.
+        Staging once keeps every candidate's ``LoadImage`` filename identical,
+        so ComfyUI's execution cache skips background removal and the image
+        encoder after the first seed.
+        """
+        self.ensure_ready()
+        progress = progress or (lambda *a: None)
+        options = dict(options or {})
+        if self.resolved_ensemble(options) != self.resolved_ensemble({}):
+            raise BackendError(
+                "options.ensemble picks a winner and /generate_ensemble returns "
+                "every candidate unranked - use one or the other")
+        options.pop("ensemble", None)
+        image_path, multiview_note, plan = self.resolve_multiview(image_path, options)
+
+        progress(0.0, "starting ComfyUI")
+        self.client.ensure_running(cancel_event=cancel_event)
+        prefix = f"forge/{self.name}"
+        started = time.time()
+        before = self.client.vram_report()
+        count = len(seeds)
+        candidates = []
+        peaks = []
+
+        staged, staged_names = self.stage_inputs(image_path, plan)
+        try:
+            for index, seed in enumerate(seeds, 1):
+                if cancel_event is not None and cancel_event.is_set():
+                    raise Cancelled("cancelled during the candidate fan-out")
+                progress((index - 1) / count, f"candidate {index}/{count} (seed {seed})")
+                run_options = {**options, "seed": int(seed)}
+                record = {"index": index, "seed": int(seed),
+                          "stage_seeds": self.stage_seeds_for(run_options)}
+                telemetry = {}
+                t0 = time.time()
+                # outside the per-candidate catch: a graph that cannot be built
+                # is a bad request, identical for every seed - fail the job now
+                graph = self.graph_for(staged, run_options, prefix, plan)
+                try:
+                    entry = self.client.run_graph(
+                        graph,
+                        # a fresh canonical uuid per sub-run - see _structure_consensus
+                        prompt_id=None,
+                        cancel_event=cancel_event,
+                        progress=lambda fraction, label, i=index: progress(
+                            None if fraction is None else ((i - 1) + float(fraction)) / count,
+                            f"{i}/{count}: {label}" if label else None),
+                        timeout_s=self.config.job_timeout_s,
+                        telemetry=telemetry,
+                    )
+                    produced = self.client.collect_output(
+                        entry, candidate_path(out_path, seed))
+                except Cancelled:
+                    raise            # Cancelled IS a BackendError - never swallow it
+                except BackendError as exc:
+                    record.update({"mesh_path": None, "error": str(exc),
+                                   "duration_ms": int((time.time() - t0) * 1000)})
+                    candidates.append(record)
+                    continue
+                try:
+                    mesh_stats = glb.stats(produced["mesh_path"])
+                except (glb.GlbError, OSError):
+                    mesh_stats = {}
+                if telemetry.get("peak_vram_gb") is not None:
+                    peaks.append(telemetry["peak_vram_gb"])
+                record.update({
+                    "mesh_path": produced["mesh_path"],
+                    "comfyui_path": produced.get("comfyui_path"),
+                    "stats": mesh_stats,
+                    "duration_ms": int((time.time() - t0) * 1000),
+                    "peak_vram_gb": telemetry.get("peak_vram_gb"),
+                })
+                candidates.append(record)
+        finally:
+            for name in staged_names:
+                self.client.unstage_image(name)
+        _raise_if_all_failed(candidates)
+        after = self.client.vram_report()
+        vram = {
+            "before_gb": (before or {}).get("vram_used_gb"),
+            "after_gb": (after or {}).get("vram_used_gb"),
+            "peak_gb": max(peaks) if peaks else None,
+            "total_gb": (before or {}).get("vram_total_gb"),
+            "device": (before or {}).get("name"),
+        }
+        payload = candidates_payload(self, candidates, list(seeds),
+                                     self.resolved_options(options), started,
+                                     vram=vram, multiview_note=multiview_note)
+        payload["seed"]["stages"] = self.stage_seeds_for(
+            {**options, "seed": int(seeds[0])})
         return payload
 
     # -- tier 1: structure consensus --------------------------------------

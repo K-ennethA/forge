@@ -88,6 +88,23 @@ class Pixal3DBackend(ComfyUIBackend):
         }
         return data
 
+    def capabilities(self) -> dict:
+        data = super().capabilities()
+        data["conditioning"]["single_image"]["detail"] = (
+            "one image; camera FOV estimated by MoGe (Pixal3DConditioning)")
+        data["conditioning"]["multi_view"].update({
+            "request": 'views: {"front", "side"?, "back"?, "left"?} '
+                       "(top level or inside options)",
+            "views": list(multiview.VIEW_ORDER),
+            "view_counts": sorted(multiview.SUPPORTED_VIEW_COUNTS),
+            "azimuths_deg": dict(multiview.VIEW_AZIMUTHS),
+            "fov_deg_default": multiview.DEFAULT_FOV_DEG,
+            "node": multiview.MULTIVIEW_NODE,
+            "model": multiview.multiview_unet_name(),
+            "on_unavailable": ["error", "front_only"],
+        })
+        return data
+
     # -- the multi-view graph --------------------------------------------
     def load_multiview_workflow(self) -> dict:
         """The sibling template, checked for the nodes this adapter patches."""
