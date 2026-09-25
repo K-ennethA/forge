@@ -18,6 +18,18 @@ Checks every render-visible mesh together (the unit as the game would receive it
                 heuristic false (forge verify.uv_metrics, raster 512).
   flat_shaded   0 smooth faces (faceted look, docs/BLENDER_RIGGING.md "Facet, don't smooth").
   colour        a colour attribute exists and the material reads it.
+Rigged files (an ARMATURE is present; rig wave 2026-09-25) are measured at the REST pose for the
+seven checks above (feet-at-origin and cell-fit must survive rigging), plus:
+  rig_root      bone 'root' exists, is parentless and non-deforming, its head is at the origin,
+                the armature object transform is identity, and in every frame of every clip the
+                posed root head stays at the origin (< 1e-6: clips are in place; Conquest glides).
+  clip_names    every action is named idle / walk (or idle-loop / walk-loop), and Conquest's
+                UnitAnimator._find_clip (exact name, then the part after '|', then 'contains',
+                case-insensitive) resolves CLIP_IDLE and CLIP_WALK to two distinct clips.
+  clip_loops    per clip: 24 fps, manual frame range + cyclic flag, and the evaluated mesh at the
+                first and last frame agree to < 1 mm (seam closed). Clip extents are reported.
+  skin          an Armature modifier on the unit mesh targets the rig; every vertex's deform
+                weights sum to 1 (+-1e-3); no unweighted vertex; <= 4 influences (glTF joints).
 Prints CHECK <json> and 'N checks, M failed'; exits 1 on any failure.
 """
 import bpy, sys, os, json, math
@@ -41,6 +53,10 @@ def flag(name, n=1, cast=float):
 
 
 meshes = [o for o in bpy.context.scene.objects if o.type == "MESH" and not o.hide_render]
+rigs = [o for o in bpy.context.scene.objects if o.type == "ARMATURE"]
+for r_ in rigs:                       # the seven base checks measure the bind (rest) pose
+    r_.data.pose_position = "REST"
+bpy.context.view_layer.update()
 checks = []
 
 
@@ -123,6 +139,84 @@ else:
           flipped=flipped_tot, meshes=uv_reports)
     check("flat_shaded", smooth == 0, smooth_faces=smooth, faces=faces_tot)
     check("colour", colour_ok)
+
+if meshes and rigs:
+    sys.path.insert(0, HERE)
+    import rigkit as K  # noqa: E402
+    scene = bpy.context.scene
+    rig = rigs[0]
+    rig.data.pose_position = "POSE"
+    main = max(meshes, key=lambda o: len(o.data.polygons))
+    # --- rig_root
+    rb = rig.data.bones.get("root")
+    rig_ident = bool(np.abs(np.array(rig.matrix_world) - np.eye(4)).max() < 1e-6)
+    root_ok = rb is not None and rb.parent is None and not rb.use_deform and \
+        Vector(rb.head_local).length < 1e-6 and rig_ident
+    acts = list(bpy.data.actions)
+    worst_root = 0.0
+    clip_rows = []
+    for act in acts:
+        K.assign_action(rig, act)
+        f0, f1 = int(round(act.frame_range[0])), int(round(act.frame_range[1]))
+        lo_c, hi_c = np.full(3, 1e9), np.full(3, -1e9)
+        coords = {}
+        for f in range(f0, f1 + 1):
+            scene.frame_set(f)
+            if rb is not None:
+                worst_root = max(worst_root, (rig.matrix_world @ rig.pose.bones["root"].head).length)
+            ev = main.evaluated_get(bpy.context.evaluated_depsgraph_get())
+            me = ev.to_mesh()
+            co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+            ev.to_mesh_clear()
+            lo_c = np.minimum(lo_c, co.min(0)); hi_c = np.maximum(hi_c, co.max(0))
+            if f in (f0, f1):
+                coords[f] = co
+        seam = float(np.linalg.norm(coords[f0] - coords[f1], axis=1).max()) * 1000.0
+        clip_rows.append({"clip": act.name, "frames": [f0, f1], "cyclic": bool(getattr(act, "use_cyclic", False)),
+                          "manual_range": bool(act.use_frame_range), "seam_mm": round(seam, 4),
+                          "extent": {"footprint": round(float(max(hi_c[0] - lo_c[0], hi_c[1] - lo_c[1])), 4),
+                                     "height": round(float(hi_c[2] - lo_c[2]), 4), "min_z": round(float(lo_c[2]), 4)}})
+    rig.animation_data.action = None
+    check("rig_root", root_ok and worst_root < 1e-6, root_present=rb is not None,
+          root_head=[round(v, 6) for v in rb.head_local] if rb else None, armature_identity=rig_ident,
+          root_max_offset_over_clips=round(worst_root, 8), bones=len(rig.data.bones))
+    # --- clip_names (Conquest UnitAnimator._find_clip, 3 passes)
+    names = [a.name for a in acts]
+
+    def find_clip(base):
+        want = base.lower()
+        for n in names:
+            if n.lower() == want:
+                return n, "exact"
+        for n in names:
+            if n.split("|")[-1].lower() == want:
+                return n, "after-|"
+        for n in names:
+            if want in n.lower():
+                return n, "contains"
+        return None, None
+    idle_c, idle_how = find_clip("idle")
+    walk_c, walk_how = find_clip("walk")
+    bad = [n for n in names if n not in K.ALLOWED_CLIP_NAMES]
+    check("clip_names", not bad and idle_c is not None and walk_c is not None and idle_c != walk_c,
+          clips=names, not_allowed=bad, idle=[idle_c, idle_how], walk=[walk_c, walk_how])
+    # --- clip_loops
+    fps = scene.render.fps / scene.render.fps_base
+    check("clip_loops", fps == K.FPS and bool(clip_rows) and
+          all(r["cyclic"] and r["manual_range"] and r["seam_mm"] < 1.0 for r in clip_rows),
+          fps=fps, clips=clip_rows)
+    # --- skin
+    mods = [m for m in main.modifiers if m.type == "ARMATURE" and m.object is rig]
+    deform = {b.name for b in rig.data.bones if b.use_deform}
+    gidx = {g.index: g.name for g in main.vertex_groups if g.name in deform}
+    sums, infl = [], []
+    for v in main.data.vertices:
+        ws = [g.weight for g in v.groups if g.group in gidx and g.weight > 0.0]
+        sums.append(sum(ws)); infl.append(len(ws))
+    sums = np.array(sums); infl = np.array(infl)
+    check("skin", bool(mods) and bool(np.all(np.abs(sums - 1.0) < 1e-3)) and int((infl == 0).sum()) == 0 and int(infl.max()) <= 4,
+          armature_modifier=bool(mods), weight_sum_min=round(float(sums.min()), 5), weight_sum_max=round(float(sums.max()), 5),
+          unweighted=int((infl == 0).sum()), max_influences=int(infl.max()), deform_bones=len(deform))
 
 failed = [c for c in checks if not c["pass"]]
 res = {"file": bpy.data.filepath, "checks": checks, "passed": len(checks) - len(failed), "failed": len(failed)}

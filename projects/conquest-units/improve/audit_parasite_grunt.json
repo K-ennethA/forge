@@ -151,5 +151,17 @@
   0.05,
   -0.35,
   1.553
- ]
+ ],
+ "facing_record": {
+  "date": "2026-09-25",
+  "artist": "mythocrall is facing the wrong way, that thing is a tail that attaches to the spine",
+  "superseded_reading": "the y -3.8 protrusion was read as the head/maw -> yaw 0 (front = -Y as sculpted)",
+  "corrected_reading": "the y -3.8 protrusion (bbox_min y, bands 0-2 ymin) is the TAIL, the spine-attachment organ; the true front is the +Y end (two eye sockets over a mouth arch between the two front lobes)",
+  "source_true_front": "+Y",
+  "yaw_fix_deg": 180.0,
+  "facing_rule": "tail tip (farthest XY vertex from the centroid) -> vertex centroid",
+  "source_angle_from_minusY_deg": 179.3,
+  "final_angle_from_minusY_deg": -0.7,
+  "roster_note": "a roster model_yaw_deg that compensated the old reading is now 180 deg off for this unit"
+ }
 }

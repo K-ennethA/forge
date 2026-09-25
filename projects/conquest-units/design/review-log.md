@@ -48,3 +48,23 @@ Readings:
 - Style question (faceted vs smooth) was not answered; proceeding faceted
   per docs/BLENDER_RIGGING.md and the low-poly art direction, to be
   confirmed on the next render sheet.
+
+## 2026-09-25 - improved render sheet (11 renders, front + threequarter)
+> coloring looks good
+
+APPROVED: the look wave palettes and (implicitly, visible in the approved
+renders) the faceted style. Crowd budget 3-5k stands as the working
+assumption. First artist-accepted look - palette RGBs in improved/*.json
+are now reference values.
+
+## 2026-09-25 - Mycothrall correction
+> mythocrall is facing the wrong way, that thing is a tail that attaches to
+> the spine
+
+Reading: the protrusion the facing audit read as a head/maw (y -3.8) is a
+TAIL - the spine-attachment organ. True front is the opposite end; the
+audit evidence was misinterpreted, so the improved copy faces backwards AND
+the maw color region is painted on the tail. Fix: rotate 180, re-region
+(maw/face colors to the true front if a mouth feature exists there; the
+tail recolored as the attachment organ - it may keep the glowing threads,
+which suit a spine-hook), update the audit JSON, re-check, re-render.

@@ -1,7 +1,7 @@
 {
  "unit": "mycothrall",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\parasite_grunt.blend",
- "yaw_fix_deg": 0.0,
+ "yaw_fix_deg": 180.0,
  "tier": "crowd",
  "tri_budget": [
   3000,
@@ -12,13 +12,13 @@
  "tris_source": 11248,
  "source_bbox_after_rotation": [
   [
-   -2.302,
-   -3.8,
+   -2.303,
+   -2.303,
    -0.012
   ],
   [
-   2.303,
-   2.303,
+   2.302,
+   3.8,
    1.553
   ]
  ],
@@ -30,27 +30,29 @@
  "scale_factor": 0.31127,
  "bound_by": "footprint",
  "facing": {
-  "rule": "vertex centroid -> farthest XY vertex (the head/maw protrusion)",
+  "rule": "tail tip (farthest XY vertex from the centroid = the spine-attachment tail, artist 2026-09-25) -> vertex centroid: the body lies ahead of its tail",
   "anchor": [
-   0.0009,
-   0.1892,
-   0.2289
-  ],
-  "landmark": [
-   -0.0121,
-   -0.95,
+   0.0121,
+   0.95,
    0.0461
   ],
-  "source_angle_from_minusY_deg": -0.7,
+  "landmark": [
+   -0.0009,
+   -0.1892,
+   0.2289
+  ],
+  "source_angle_from_minusY_deg": 179.3,
   "final_angle_from_minusY_deg": -0.7
  },
  "reclamp_factor": 0.999716,
  "regions_faces": {
   "body": 4000,
   "underside": 2345,
-  "maw_head": 372,
-  "maw_inner": 13,
-  "threads": 250
+  "attach_stalk": 372,
+  "attach_hook": 188,
+  "face_plate": 649,
+  "maw_inner": 302,
+  "threads": 173
  },
  "palette_srgb": {
   "body": [
@@ -63,7 +65,22 @@
    26,
    78
   ],
-  "maw_head": [
+  "attach_stalk": [
+   118,
+   34,
+   100
+  ],
+  "attach_hook": [
+   206,
+   255,
+   74
+  ],
+  "attach_hook_emission_x0.35": [
+   206,
+   255,
+   74
+  ],
+  "face_plate": [
    255,
    130,
    152
@@ -91,7 +108,7 @@
   "emission_strength": 1.5
  },
  "tris_final": 4000,
- "digest_geometry_colour": "888b3f9040194b0e",
+ "digest_geometry_colour": "00d58c125ba8846e",
  "final_bbox": [
   [
    -0.7157,
@@ -104,5 +121,5 @@
    0.4814
   ]
  ],
- "seconds": 0.2
+ "seconds": 0.1
 }

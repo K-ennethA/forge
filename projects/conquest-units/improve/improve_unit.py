@@ -46,7 +46,9 @@ UNITS = {
     "barkling":   dict(src="tree_grunt",     yaw=0.0,   max_h=1.8, max_fp=1.9, tris=5000,  tier="crowd", budget=[3000, 5000]),
     "petalfang":  dict(src="flower_grunt",   yaw=180.0, max_h=1.8, max_fp=1.9, tris=4500,  tier="crowd", budget=[3000, 5000]),
     "blightcap":  dict(src="shroom_grunt",   yaw=180.0, max_h=1.8, max_fp=1.9, tris=5000,  tier="crowd", budget=[3000, 5000]),
-    "mycothrall": dict(src="parasite_grunt", yaw=0.0,   max_h=1.8, max_fp=1.9, tris=4000,  tier="crowd", budget=[3000, 5000]),
+    # mycothrall yaw 0 -> 180 (artist 2026-09-25): the protrusion the audit read as a head/maw
+    # is a TAIL that attaches to a host's spine; the true front is the opposite end.
+    "mycothrall": dict(src="parasite_grunt", yaw=180.0, max_h=1.8, max_fp=1.9, tris=4000,  tier="crowd", budget=[3000, 5000]),
     "eldroot":    dict(src="ancient_tree",   yaw=0.0,   max_h=3.4, max_fp=3.8, tris=25000, tier="boss",  budget=[20000, 30000]),
 }
 U = UNITS[UNIT]
@@ -246,10 +248,14 @@ elif UNIT == "blightcap":
     rule = ("body band under the cap (h 0.40-0.75, r < 0.62 cap radius): anchor = centroid, landmark = "
             "Laplacian^2-weighted centroid (carved eyes + mouth)")
 else:
-    anchor = W.mean(0)
-    dxy = np.hypot(W[:, 0] - anchor[0], W[:, 1] - anchor[1])
-    landmark = W[int(np.argmax(dxy))]
-    rule = "vertex centroid -> farthest XY vertex (the head/maw protrusion)"
+    # mycothrall: the farthest XY vertex from the centroid is the TAIL tip (the spine-attachment
+    # organ, artist 2026-09-25) -- the body lies ahead of it, so tail tip -> centroid = front.
+    cen = W.mean(0)
+    dxy = np.hypot(W[:, 0] - cen[0], W[:, 1] - cen[1])
+    anchor = W[int(np.argmax(dxy))].copy()
+    landmark = cen
+    rule = ("tail tip (farthest XY vertex from the centroid = the spine-attachment tail, artist "
+            "2026-09-25) -> vertex centroid: the body lies ahead of its tail")
 HCn = HC.copy() if UNIT == "petalfang" else anchor.copy()
 dvec = landmark - anchor
 Rz = np.array(Matrix.Rotation(math.radians(-U["yaw"]), 3, "Z"))
@@ -450,17 +456,32 @@ elif UNIT == "blightcap":
     region("face_features", feat, (58, 40, 34), smoothstep(0.25, 0.5, fcav))
     cav_k = 0.30
 elif UNIT == "mycothrall":
+    # 2026-09-25 correction: the +Y protrusion (after the 180 yaw) is the TAIL, the spine-
+    # attachment organ; the true front (-Y) carries two eye sockets over a mouth arch between
+    # the two front lobes -- the maw/face colours move there, the tail becomes the attach organ.
+    ymin, ymax = Wl[:, 1].min(), Wl[:, 1].max()
+    Ly = ymax - ymin
     region("body", np.ones(nf, bool), (152, 48, 122))
     region("underside", np.ones(nf, bool), (92, 26, 78), 1 - smoothstep(-0.2, 0.25, FN[:, 2]))
-    ymin = Wl[:, 1].min()
-    head = fy < ymin + 0.24 * (Wl[:, 1].max() - ymin)
-    region("maw_head", head, (255, 130, 152), smoothstep(0.0, 1.0, (ymin + 0.24 * (Wl[:, 1].max() - ymin) - fy) / 0.12))
-    region("maw_inner", head & (fcav > 0.3), (170, 16, 48))
-    bc = np.array([0.0, ymin + 0.24 * (Wl[:, 1].max() - ymin)])
+    tail_y = ymax - 0.24 * Ly
+    tail = fy > tail_y
+    region("attach_stalk", tail, (118, 34, 100), smoothstep(0.0, 1.0, (fy - tail_y) / 0.12))
+    hook = fy > ymax - 0.09 * Ly
+    region("attach_hook", hook, (206, 255, 74))
+    glow[hook] = srgb(206, 255, 74) * 0.35
+    PAL["attach_hook_emission_x0.35"] = [206, 255, 74]
+    face_y = ymin + 0.24 * Ly
+    face = fy < face_y
+    region("face_plate", face, (255, 130, 152),
+           smoothstep(0.0, 1.0, (face_y - fy) / 0.12) * smoothstep(-0.2, 0.2, -FN[:, 1] + 0.3 * FN[:, 2]))
+    mouth = face & (FN[:, 2] < -0.25) & (np.abs(fx) < 0.30 * halfw_l)
+    region("maw_inner", (face & (fcav > 0.3)) | mouth, (170, 16, 48))
+    # threads radiate from the tail base across the back: the organ's glowing tendrils
+    bc = np.array([0.0, tail_y])
     th = np.arctan2(fx - bc[0], fy - bc[1])
-    rn = np.hypot(fx - bc[0], fy - bc[1]) / (Wl[:, 1].max() - ymin)
+    rn = np.hypot(fx - bc[0], fy - bc[1]) / Ly
     ph = (th * 11 / (2 * math.pi) + 0.18 * np.sin(rn * 9.0)) % 1.0
-    threads = (np.abs(ph - 0.5) < 0.11) & (FN[:, 2] > 0.1) & ~head & (fh_ > 0.15)
+    threads = (np.abs(ph - 0.5) < 0.11) & (FN[:, 2] > 0.1) & ~tail & ~face & (fh_ > 0.15)
     region("threads", threads, (206, 255, 74))
     glow[threads] = srgb(206, 255, 74) * 0.35
     PAL["threads_emission_x0.35"] = [206, 255, 74]

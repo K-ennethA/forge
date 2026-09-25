@@ -1,0 +1,226 @@
+00:00.938  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\mycothrall.blend"
+00:02.078  render           | Video append frame 1
+00:02.219  render           | Video append frame 2
+00:02.344  render           | Video append frame 3
+00:02.469  render           | Video append frame 4
+00:02.594  render           | Video append frame 5
+00:02.735  render           | Video append frame 6
+00:02.875  render           | Video append frame 7
+00:03.000  render           | Video append frame 8
+00:03.141  render           | Video append frame 9
+00:03.266  render           | Video append frame 10
+00:03.406  render           | Video append frame 11
+00:03.531  render           | Video append frame 12
+00:03.672  render           | Video append frame 13
+00:03.813  render           | Video append frame 14
+00:03.938  render           | Video append frame 15
+00:04.078  render           | Video append frame 16
+00:04.203  render           | Video append frame 17
+00:04.328  render           | Video append frame 18
+00:04.453  render           | Video append frame 19
+00:04.578  render           | Video append frame 20
+00:04.719  render           | Video append frame 21
+00:04.844  render           | Video append frame 22
+00:04.985  render           | Video append frame 23
+00:05.110  render           | Video append frame 24
+00:05.235  render           | Video append frame 25
+00:05.375  render           | Video append frame 26
+00:05.500  render           | Video append frame 27
+00:05.641  render           | Video append frame 28
+00:05.766  render           | Video append frame 29
+00:05.922  render           | Video append frame 30
+00:06.047  render           | Video append frame 31
+00:06.188  render           | Video append frame 32
+00:06.313  render           | Video append frame 33
+00:06.453  render           | Video append frame 34
+00:06.578  render           | Video append frame 35
+00:06.703  render           | Video append frame 36
+00:06.828  render           | Video append frame 37
+00:06.969  render           | Video append frame 38
+00:07.094  render           | Video append frame 39
+00:07.219  render           | Video append frame 40
+00:07.360  render           | Video append frame 41
+00:07.485  render           | Video append frame 42
+00:07.625  render           | Video append frame 43
+00:07.750  render           | Video append frame 44
+00:07.891  render           | Video append frame 45
+00:08.016  render           | Video append frame 46
+00:08.141  render           | Video append frame 47
+00:08.281  render           | Video append frame 48
+00:08.422  render           | Video append frame 49
+00:08.563  render           | Video append frame 50
+00:08.688  render           | Video append frame 51
+00:08.828  render           | Video append frame 52
+00:08.953  render           | Video append frame 53
+00:09.078  render           | Video append frame 54
+00:09.219  render           | Video append frame 55
+00:09.360  render           | Video append frame 56
+00:09.500  render           | Video append frame 57
+00:09.641  render           | Video append frame 58
+00:09.781  render           | Video append frame 59
+00:09.906  render           | Video append frame 60
+00:10.047  render           | Video append frame 61
+00:10.172  render           | Video append frame 62
+00:10.313  render           | Video append frame 63
+00:10.453  render           | Video append frame 64
+00:10.594  render           | Video append frame 65
+00:10.719  render           | Video append frame 66
+00:10.875  render           | Video append frame 67
+00:11.000  render           | Video append frame 68
+00:11.141  render           | Video append frame 69
+00:11.281  render           | Video append frame 70
+00:11.422  render           | Video append frame 71
+00:11.547  render           | Video append frame 72
+00:11.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:11.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.063  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.219  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:12.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:13.094  render           | Video append frame 1
+00:13.235  render           | Video append frame 2
+00:13.360  render           | Video append frame 3
+00:13.500  render           | Video append frame 4
+00:13.625  render           | Video append frame 5
+00:13.766  render           | Video append frame 6
+00:13.906  render           | Video append frame 7
+00:14.047  render           | Video append frame 8
+00:14.188  render           | Video append frame 9
+00:14.313  render           | Video append frame 10
+00:14.453  render           | Video append frame 11
+00:14.578  render           | Video append frame 12
+00:14.703  render           | Video append frame 13
+00:14.844  render           | Video append frame 14
+00:14.985  render           | Video append frame 15
+00:15.110  render           | Video append frame 16
+00:15.250  render           | Video append frame 17
+00:15.391  render           | Video append frame 18
+00:15.516  render           | Video append frame 19
+00:15.656  render           | Video append frame 20
+00:15.797  render           | Video append frame 21
+00:15.938  render           | Video append frame 22
+00:16.078  render           | Video append frame 23
+00:16.235  render           | Video append frame 24
+00:16.375  render           | Video append frame 25
+00:16.516  render           | Video append frame 26
+00:16.656  render           | Video append frame 27
+00:16.797  render           | Video append frame 28
+00:16.922  render           | Video append frame 29
+00:17.063  render           | Video append frame 30
+00:17.203  render           | Video append frame 31
+00:17.328  render           | Video append frame 32
+00:17.469  render           | Video append frame 33
+00:17.594  render           | Video append frame 34
+00:17.735  render           | Video append frame 35
+00:17.875  render           | Video append frame 36
+00:18.000  render           | Video append frame 37
+00:18.141  render           | Video append frame 38
+00:18.297  render           | Video append frame 39
+00:18.438  render           | Video append frame 40
+00:18.563  render           | Video append frame 41
+00:18.703  render           | Video append frame 42
+00:18.844  render           | Video append frame 43
+00:19.000  render           | Video append frame 44
+00:19.141  render           | Video append frame 45
+00:19.281  render           | Video append frame 46
+00:19.422  render           | Video append frame 47
+00:19.563  render           | Video append frame 48
+00:19.688  render           | Video append frame 49
+00:19.828  render           | Video append frame 50
+00:19.969  render           | Video append frame 51
+00:20.094  render           | Video append frame 52
+00:20.235  render           | Video append frame 53
+00:20.360  render           | Video append frame 54
+00:20.485  render           | Video append frame 55
+00:20.625  render           | Video append frame 56
+00:20.750  render           | Video append frame 57
+00:20.875  render           | Video append frame 58
+00:21.000  render           | Video append frame 59
+00:21.141  render           | Video append frame 60
+00:21.266  render           | Video append frame 61
+00:21.406  render           | Video append frame 62
+00:21.531  render           | Video append frame 63
+00:21.656  render           | Video append frame 64
+00:21.797  render           | Video append frame 65
+00:21.922  render           | Video append frame 66
+00:22.047  render           | Video append frame 67
+00:22.172  render           | Video append frame 68
+00:22.313  render           | Video append frame 69
+00:22.453  render           | Video append frame 70
+00:22.578  render           | Video append frame 71
+00:22.719  render           | Video append frame 72
+00:22.844  render           | Video append frame 73
+00:22.985  render           | Video append frame 74
+00:23.110  render           | Video append frame 75
+00:23.250  render           | Video append frame 76
+00:23.375  render           | Video append frame 77
+00:23.500  render           | Video append frame 78
+00:23.641  render           | Video append frame 79
+00:23.766  render           | Video append frame 80
+00:23.906  render           | Video append frame 81
+00:24.031  render           | Video append frame 82
+00:24.172  render           | Video append frame 83
+00:24.313  render           | Video append frame 84
+00:24.453  render           | Video append frame 85
+00:24.594  render           | Video append frame 86
+00:24.719  render           | Video append frame 87
+00:24.860  render           | Video append frame 88
+00:24.985  render           | Video append frame 89
+00:25.110  render           | Video append frame 90
+00:25.235  render           | Video append frame 91
+00:25.375  render           | Video append frame 92
+00:25.500  render           | Video append frame 93
+00:25.610  render           | Video append frame 94
+00:25.735  render           | Video append frame 95
+00:25.860  render           | Video append frame 96
+00:25.985  render           | Video append frame 97
+00:26.094  render           | Video append frame 98
+00:26.203  render           | Video append frame 99
+00:26.313  render           | Video append frame 100
+00:26.422  render           | Video append frame 101
+00:26.516  render           | Video append frame 102
+00:26.625  render           | Video append frame 103
+00:26.735  render           | Video append frame 104
+00:26.860  render           | Video append frame 105
+00:26.969  render           | Video append frame 106
+00:27.078  render           | Video append frame 107
+00:27.172  render           | Video append frame 108
+00:27.266  render           | Video append frame 109
+00:27.375  render           | Video append frame 110
+00:27.485  render           | Video append frame 111
+00:27.563  render           | Video append frame 112
+00:27.656  render           | Video append frame 113
+00:27.750  render           | Video append frame 114
+00:27.844  render           | Video append frame 115
+00:27.938  render           | Video append frame 116
+00:28.016  render           | Video append frame 117
+00:28.110  render           | Video append frame 118
+00:28.203  render           | Video append frame 119
+00:28.297  render           | Video append frame 120
+00:28.391  render           | Video append frame 121
+00:28.469  render           | Video append frame 122
+00:28.563  render           | Video append frame 123
+00:28.656  render           | Video append frame 124
+00:28.735  render           | Video append frame 125
+00:28.813  render           | Video append frame 126
+00:28.906  render           | Video append frame 127
+00:29.000  render           | Video append frame 128
+00:29.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.235  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.688  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+00:29.938  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\_tile_mycothrall.png'
+EXTENTS walk (-0.72, -1.01, -0.008) (0.721, 0.958, 0.493)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\mycothrall_walk.mp4 frames 72 loops 3 cycle 24
+WROTE sheet walk
+EXTENTS idle (-0.717, -0.95, 0.002) (0.717, 0.973, 0.499)
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\animated\mycothrall_idle.mp4 frames 128 loops 2 cycle 64
+WROTE sheet idle
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

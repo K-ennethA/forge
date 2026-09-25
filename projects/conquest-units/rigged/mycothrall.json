@@ -1,0 +1,549 @@
+{
+ "unit": "mycothrall",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\mycothrall.blend",
+ "fps": 24,
+ "verts": 2002,
+ "part_label_counts": {
+  "core": 1441,
+  "lobeF.L": 39,
+  "lobeF.R": 40,
+  "lobeM.L": 170,
+  "lobeM.R": 175,
+  "tail": 137
+ },
+ "weights_gate_fallback_verts": 0,
+ "weights": {
+  "body": {
+   "verts_any": 1582,
+   "verts_dominant": 688
+  },
+  "fore": {
+   "verts_any": 1817,
+   "verts_dominant": 750
+  },
+  "tail.1": {
+   "verts_any": 174,
+   "verts_dominant": 0
+  },
+  "tail.2": {
+   "verts_any": 182,
+   "verts_dominant": 136
+  },
+  "lobeF1.L": {
+   "verts_any": 31,
+   "verts_dominant": 0
+  },
+  "lobeF2.L": {
+   "verts_any": 106,
+   "verts_dominant": 39
+  },
+  "lobeF1.R": {
+   "verts_any": 28,
+   "verts_dominant": 0
+  },
+  "lobeF2.R": {
+   "verts_any": 101,
+   "verts_dominant": 40
+  },
+  "lobeM1.L": {
+   "verts_any": 302,
+   "verts_dominant": 76
+  },
+  "lobeM2.L": {
+   "verts_any": 162,
+   "verts_dominant": 97
+  },
+  "lobeM1.R": {
+   "verts_any": 305,
+   "verts_dominant": 81
+  },
+  "lobeM2.R": {
+   "verts_any": 167,
+   "verts_dominant": 95
+  }
+ },
+ "weighting": "proximity bands: part label = argmin(polyline distance - part radius); bone gated to its parts; w = 1/d^4 to the bone segment; 3 neighbour-mean passes; top-3; detached islands rigid to their nearest body vertex",
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.0722
+   ],
+   "gate": null
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.3,
+    0.15
+   ],
+   "tail": [
+    0.0,
+    -0.05,
+    0.2
+   ],
+   "gate": null
+  },
+  {
+   "name": "fore",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.05,
+    0.2
+   ],
+   "tail": [
+    0.0,
+    -0.45,
+    0.22
+   ],
+   "gate": null
+  },
+  {
+   "name": "lobeF1.L",
+   "parent": "fore",
+   "deform": true,
+   "head": [
+    0.05,
+    -0.66,
+    0.18
+   ],
+   "tail": [
+    0.1,
+    -0.85,
+    0.2
+   ],
+   "gate": [
+    "lobeF.L"
+   ]
+  },
+  {
+   "name": "lobeF2.L",
+   "parent": "lobeF1.L",
+   "deform": true,
+   "head": [
+    0.1,
+    -0.85,
+    0.2
+   ],
+   "tail": [
+    0.1877,
+    -0.9465,
+    0.0046
+   ],
+   "gate": [
+    "lobeF.L"
+   ]
+  },
+  {
+   "name": "lobeF1.R",
+   "parent": "fore",
+   "deform": true,
+   "head": [
+    -0.05,
+    -0.66,
+    0.18
+   ],
+   "tail": [
+    -0.1,
+    -0.85,
+    0.2
+   ],
+   "gate": [
+    "lobeF.R"
+   ]
+  },
+  {
+   "name": "lobeF2.R",
+   "parent": "lobeF1.R",
+   "deform": true,
+   "head": [
+    -0.1,
+    -0.85,
+    0.2
+   ],
+   "tail": [
+    -0.1871,
+    -0.9457,
+    0.0043
+   ],
+   "gate": [
+    "lobeF.R"
+   ]
+  },
+  {
+   "name": "lobeM1.L",
+   "parent": "fore",
+   "deform": true,
+   "head": [
+    0.24,
+    -0.26,
+    0.16
+   ],
+   "tail": [
+    0.55,
+    -0.42,
+    0.16
+   ],
+   "gate": [
+    "lobeM.L"
+   ]
+  },
+  {
+   "name": "lobeM2.L",
+   "parent": "lobeM1.L",
+   "deform": true,
+   "head": [
+    0.55,
+    -0.42,
+    0.16
+   ],
+   "tail": [
+    0.6479,
+    -0.3854,
+    0.0028
+   ],
+   "gate": [
+    "lobeM.L"
+   ]
+  },
+  {
+   "name": "lobeM1.R",
+   "parent": "fore",
+   "deform": true,
+   "head": [
+    -0.24,
+    -0.26,
+    0.16
+   ],
+   "tail": [
+    -0.55,
+    -0.42,
+    0.16
+   ],
+   "gate": [
+    "lobeM.R"
+   ]
+  },
+  {
+   "name": "lobeM2.R",
+   "parent": "lobeM1.R",
+   "deform": true,
+   "head": [
+    -0.55,
+    -0.42,
+    0.16
+   ],
+   "tail": [
+    -0.6526,
+    -0.3907,
+    0.0021
+   ],
+   "gate": [
+    "lobeM.R"
+   ]
+  },
+  {
+   "name": "tail.1",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    0.38,
+    0.2
+   ],
+   "tail": [
+    0.0,
+    0.66,
+    0.1
+   ],
+   "gate": [
+    "tail"
+   ]
+  },
+  {
+   "name": "tail.2",
+   "parent": "tail.1",
+   "deform": true,
+   "head": [
+    0.0,
+    0.66,
+    0.1
+   ],
+   "tail": [
+    0.0,
+    0.93,
+    0.065
+   ],
+   "gate": [
+    "tail"
+   ]
+  }
+ ],
+ "bone_count": 13,
+ "chains": {
+  "lobeF1.L": {
+   "lower": "lobeF2.L",
+   "contact": [
+    0.1877,
+    -0.9465,
+    0.0046
+   ],
+   "kind": "ground",
+   "pole": [
+    -0.089,
+    -0.551,
+    0.83
+   ]
+  },
+  "lobeF1.R": {
+   "lower": "lobeF2.R",
+   "contact": [
+    -0.1871,
+    -0.9457,
+    0.0043
+   ],
+   "kind": "ground",
+   "pole": [
+    0.087,
+    -0.552,
+    0.83
+   ]
+  },
+  "lobeM1.L": {
+   "lower": "lobeM2.L",
+   "contact": [
+    0.6479,
+    -0.3854,
+    0.0028
+   ],
+   "kind": "ground",
+   "pole": [
+    0.157,
+    -0.532,
+    0.832
+   ]
+  },
+  "lobeM1.R": {
+   "lower": "lobeM2.R",
+   "contact": [
+    -0.6526,
+    -0.3907,
+    0.0021
+   ],
+   "kind": "ground",
+   "pole": [
+    -0.157,
+    -0.519,
+    0.84
+   ]
+  }
+ },
+ "clips": {
+  "idle": {
+   "action": "idle",
+   "frames": 65,
+   "cycle_frames": 64,
+   "cycle_s": 2.6667,
+   "reach_max": {
+    "lobeF1.L": 0.9017,
+    "lobeM1.R": 0.8712,
+    "lobeF1.R": 0.8904,
+    "lobeM1.L": 0.8671
+   },
+   "thread_shimmer": {
+    "socket": "Principled BSDF.Emission Strength",
+    "base": 1.5,
+    "law": "base*(1+0.45 sin(3*2pi t)+0.25 sin(7*2pi t+1))",
+    "slots": [
+     "OBmycothrall_rig",
+     "NTShader Nodetree"
+    ]
+   },
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 9e-05,
+   "extent": {
+    "footprint": 1.9243,
+    "width": 1.4337,
+    "depth": 1.9243,
+    "height": 0.4979,
+    "min_z": 0.0018
+   },
+   "contact_slide": {
+    "lobeF1.L": {
+     "contact": "lobeF2.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 56,
+     "worst_drift_mm": 0.0474,
+     "ground_z_mm": 4.63
+    },
+    "lobeF1.R": {
+     "contact": "lobeF2.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 56,
+     "worst_drift_mm": 0.0004,
+     "ground_z_mm": 4.35
+    },
+    "lobeM1.L": {
+     "contact": "lobeM2.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 56,
+     "worst_drift_mm": 0.1883,
+     "ground_z_mm": 2.78
+    },
+    "lobeM1.R": {
+     "contact": "lobeM2.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 56,
+     "worst_drift_mm": 0.0473,
+     "ground_z_mm": 2.12
+    }
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "worst_drift_mm": 0.74,
+    "feet": [
+     {
+      "bone": "lobeF2.L",
+      "steps": 2,
+      "worst_drift_mm": 0.05,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeF2.R",
+      "steps": 2,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeM2.L",
+      "steps": 2,
+      "worst_drift_mm": 0.74,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeM2.R",
+      "steps": 2,
+      "worst_drift_mm": 0.05,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 65, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.7 mm across 8 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "walk": {
+   "action": "walk",
+   "frames": 25,
+   "cycle_frames": 24,
+   "cycle_s": 1.0,
+   "reach_max": {
+    "lobeF1.L": 0.971,
+    "lobeM1.R": 0.9136,
+    "lobeF1.R": 0.9702,
+    "lobeM1.L": 0.9054
+   },
+   "stride_m": 0.12,
+   "duty": 0.75,
+   "speed_m_per_s": 0.16,
+   "belt_m_per_frame": 0.006666666666666666,
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 8e-05,
+   "extent": {
+    "footprint": 1.9673,
+    "width": 1.4407,
+    "depth": 1.9673,
+    "height": 0.5023,
+    "min_z": -0.0081
+   },
+   "contact_slide": {
+    "lobeF1.L": {
+     "contact": "lobeF2.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 19,
+     "worst_drift_mm": 0.0003,
+     "ground_z_mm": 4.63
+    },
+    "lobeF1.R": {
+     "contact": "lobeF2.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 19,
+     "worst_drift_mm": 0.0003,
+     "ground_z_mm": 4.35
+    },
+    "lobeM1.L": {
+     "contact": "lobeM2.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 19,
+     "worst_drift_mm": 0.0002,
+     "ground_z_mm": 2.78
+    },
+    "lobeM1.R": {
+     "contact": "lobeM2.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 19,
+     "worst_drift_mm": 0.0002,
+     "ground_z_mm": 2.12
+    }
+   },
+   "forge_animation_check": {
+    "mode": "in_place",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "worst_drift_mm": 0,
+    "feet": [
+     {
+      "bone": "lobeF2.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeF2.R",
+      "steps": 2,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeM2.L",
+      "steps": 2,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "lobeM2.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 25, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 6 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  }
+ },
+ "seconds": 0.4
+}

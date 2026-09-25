@@ -1,0 +1,521 @@
+{
+ "unit": "barkling",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\barkling.blend",
+ "fps": 24,
+ "verts": 2502,
+ "part_label_counts": {
+  "arm.L": 628,
+  "arm.R": 621,
+  "core": 910,
+  "leg.B": 95,
+  "leg.F": 55,
+  "leg.L": 92,
+  "leg.R": 101
+ },
+ "weights_gate_fallback_verts": 0,
+ "weights": {
+  "trunk": {
+   "verts_any": 2280,
+   "verts_dominant": 925
+  },
+  "arm.L": {
+   "verts_any": 738,
+   "verts_dominant": 624
+  },
+  "arm.R": {
+   "verts_any": 735,
+   "verts_dominant": 616
+  },
+  "thigh.L": {
+   "verts_any": 148,
+   "verts_dominant": 32
+  },
+  "shin.L": {
+   "verts_any": 107,
+   "verts_dominant": 59
+  },
+  "thigh.R": {
+   "verts_any": 165,
+   "verts_dominant": 38
+  },
+  "shin.R": {
+   "verts_any": 121,
+   "verts_dominant": 62
+  },
+  "thigh.F": {
+   "verts_any": 117,
+   "verts_dominant": 15
+  },
+  "shin.F": {
+   "verts_any": 89,
+   "verts_dominant": 36
+  },
+  "thigh.B": {
+   "verts_any": 151,
+   "verts_dominant": 57
+  },
+  "shin.B": {
+   "verts_any": 118,
+   "verts_dominant": 38
+  }
+ },
+ "weighting": "proximity bands: part label = argmin(polyline distance - part radius); bone gated to its parts; w = 1/d^4 to the bone segment; 3 neighbour-mean passes; top-3; detached islands rigid to their nearest body vertex",
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.209
+   ],
+   "gate": null
+  },
+  {
+   "name": "trunk",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.03,
+    0.22
+   ],
+   "tail": [
+    0.0,
+    -0.06,
+    1.25
+   ],
+   "gate": null
+  },
+  {
+   "name": "arm.L",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    0.3,
+    -0.15,
+    0.92
+   ],
+   "tail": [
+    0.92,
+    -0.14,
+    1.01
+   ],
+   "gate": [
+    "arm.L"
+   ]
+  },
+  {
+   "name": "arm.R",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    -0.3,
+    -0.15,
+    0.92
+   ],
+   "tail": [
+    -0.92,
+    -0.14,
+    1.01
+   ],
+   "gate": [
+    "arm.R"
+   ]
+  },
+  {
+   "name": "thigh.L",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    0.12,
+    -0.035,
+    0.24
+   ],
+   "tail": [
+    0.42,
+    -0.035,
+    0.17
+   ],
+   "gate": [
+    "leg.L"
+   ]
+  },
+  {
+   "name": "shin.L",
+   "parent": "thigh.L",
+   "deform": true,
+   "head": [
+    0.42,
+    -0.035,
+    0.17
+   ],
+   "tail": [
+    0.4214,
+    -0.0312,
+    0.0106
+   ],
+   "gate": [
+    "leg.L"
+   ]
+  },
+  {
+   "name": "thigh.R",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    -0.12,
+    -0.035,
+    0.24
+   ],
+   "tail": [
+    -0.42,
+    -0.035,
+    0.17
+   ],
+   "gate": [
+    "leg.R"
+   ]
+  },
+  {
+   "name": "shin.R",
+   "parent": "thigh.R",
+   "deform": true,
+   "head": [
+    -0.42,
+    -0.035,
+    0.17
+   ],
+   "tail": [
+    -0.427,
+    -0.039,
+    0.0109
+   ],
+   "gate": [
+    "leg.R"
+   ]
+  },
+  {
+   "name": "thigh.F",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1,
+    0.24
+   ],
+   "tail": [
+    0.0,
+    -0.37,
+    0.12
+   ],
+   "gate": [
+    "leg.F"
+   ]
+  },
+  {
+   "name": "shin.F",
+   "parent": "thigh.F",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.37,
+    0.12
+   ],
+   "tail": [
+    -0.0032,
+    -0.3019,
+    0.0
+   ],
+   "gate": [
+    "leg.F"
+   ]
+  },
+  {
+   "name": "thigh.B",
+   "parent": "trunk",
+   "deform": true,
+   "head": [
+    0.0,
+    0.1,
+    0.24
+   ],
+   "tail": [
+    0.0,
+    0.4,
+    0.14
+   ],
+   "gate": [
+    "leg.B"
+   ]
+  },
+  {
+   "name": "shin.B",
+   "parent": "thigh.B",
+   "deform": true,
+   "head": [
+    0.0,
+    0.4,
+    0.14
+   ],
+   "tail": [
+    -0.0117,
+    0.3441,
+    0.0004
+   ],
+   "gate": [
+    "leg.B"
+   ]
+  }
+ ],
+ "bone_count": 12,
+ "chains": {
+  "thigh.L": {
+   "lower": "shin.L",
+   "contact": [
+    0.4214,
+    -0.0312,
+    0.0106
+   ],
+   "kind": "ground",
+   "pole": [
+    0.606,
+    -0.023,
+    0.795
+   ]
+  },
+  "thigh.R": {
+   "lower": "shin.R",
+   "contact": [
+    -0.427,
+    -0.039,
+    0.0109
+   ],
+   "kind": "ground",
+   "pole": [
+    -0.598,
+    0.024,
+    0.801
+   ]
+  },
+  "thigh.F": {
+   "lower": "shin.F",
+   "contact": [
+    -0.0032,
+    -0.3019,
+    0.0
+   ],
+   "kind": "ground",
+   "pole": [
+    0.021,
+    -0.765,
+    0.644
+   ]
+  },
+  "thigh.B": {
+   "lower": "shin.B",
+   "contact": [
+    -0.0117,
+    0.3441,
+    0.0004
+   ],
+   "kind": "ground",
+   "pole": [
+    0.07,
+    0.701,
+    0.71
+   ]
+  }
+ },
+ "clips": {
+  "idle": {
+   "action": "idle",
+   "frames": 49,
+   "cycle_frames": 48,
+   "cycle_s": 2.0,
+   "reach_max": {
+    "thigh.L": 0.8091,
+    "thigh.R": 0.8285,
+    "thigh.F": 0.7301,
+    "thigh.B": 0.7394
+   },
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 3e-05,
+   "extent": {
+    "footprint": 1.848,
+    "width": 1.848,
+    "depth": 1.0385,
+    "height": 1.3964,
+    "min_z": -0.0002
+   },
+   "contact_slide": {
+    "thigh.L": {
+     "contact": "shin.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 48,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 10.57
+    },
+    "thigh.R": {
+     "contact": "shin.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 48,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 10.93
+    },
+    "thigh.F": {
+     "contact": "shin.F:tail",
+     "stance_runs": 1,
+     "stance_frames": 48,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": -0.0
+    },
+    "thigh.B": {
+     "contact": "shin.B:tail",
+     "stance_runs": 1,
+     "stance_frames": 48,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 0.37
+    }
+   },
+   "forge_animation_check": {
+    "mode": "planted",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "worst_drift_mm": 0,
+    "feet": [
+     {
+      "bone": "shin.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.F",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.B",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 49, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 4 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  },
+  "walk": {
+   "action": "walk",
+   "frames": 17,
+   "cycle_frames": 16,
+   "cycle_s": 0.6667,
+   "reach_max": {
+    "thigh.F": 0.8136,
+    "thigh.B": 0.8635,
+    "thigh.L": 0.8189,
+    "thigh.R": 0.8185
+   },
+   "stride_m": 0.16,
+   "duty": 0.6,
+   "speed_m_per_s": 0.4,
+   "belt_m_per_frame": 0.016666666666666666,
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 4e-05,
+   "extent": {
+    "footprint": 1.8889,
+    "width": 1.8889,
+    "depth": 1.1153,
+    "height": 1.3919,
+    "min_z": -0.0041
+   },
+   "contact_slide": {
+    "thigh.L": {
+     "contact": "shin.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 10,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 10.57
+    },
+    "thigh.R": {
+     "contact": "shin.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 10,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 10.93
+    },
+    "thigh.F": {
+     "contact": "shin.F:tail",
+     "stance_runs": 1,
+     "stance_frames": 10,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": -0.0
+    },
+    "thigh.B": {
+     "contact": "shin.B:tail",
+     "stance_runs": 1,
+     "stance_frames": 10,
+     "worst_drift_mm": 0.0001,
+     "ground_z_mm": 0.37
+    }
+   },
+   "forge_animation_check": {
+    "mode": "in_place",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "worst_drift_mm": 2.84,
+    "feet": [
+     {
+      "bone": "shin.L",
+      "steps": 2,
+      "worst_drift_mm": 2.84,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.R",
+      "steps": 2,
+      "worst_drift_mm": 2.84,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.F",
+      "steps": 1,
+      "worst_drift_mm": 1.42,
+      "verdict": "ok"
+     },
+     {
+      "bone": "shin.B",
+      "steps": 1,
+      "worst_drift_mm": 1.42,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 17, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 2.8 mm across 6 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  }
+ },
+ "seconds": 0.3
+}

@@ -1,0 +1,400 @@
+{
+ "unit": "petalfang",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\petalfang.blend",
+ "fps": 24,
+ "verts": 2576,
+ "part_label_counts": {
+  "core": 549,
+  "head": 211,
+  "tB": 287,
+  "tF.L": 265,
+  "tF.R": 240,
+  "tFS.L": 285,
+  "tFS.R": 285,
+  "tS.L": 227,
+  "tS.R": 227
+ },
+ "weights_gate_fallback_verts": 0,
+ "detached_islands_rigid": 42,
+ "weights": {
+  "bulb": {
+   "verts_any": 1595,
+   "verts_dominant": 553
+  },
+  "neck": {
+   "verts_any": 292,
+   "verts_dominant": 210
+  },
+  "tendril.FS.L": {
+   "verts_any": 397,
+   "verts_dominant": 284
+  },
+  "tendril.FS.R": {
+   "verts_any": 391,
+   "verts_dominant": 285
+  },
+  "tendril.S.L": {
+   "verts_any": 301,
+   "verts_dominant": 226
+  },
+  "tendril.S.R": {
+   "verts_any": 297,
+   "verts_dominant": 227
+  },
+  "tendril.B": {
+   "verts_any": 353,
+   "verts_dominant": 287
+  },
+  "pull1.L": {
+   "verts_any": 377,
+   "verts_dominant": 147
+  },
+  "pull2.L": {
+   "verts_any": 251,
+   "verts_dominant": 118
+  },
+  "pull1.R": {
+   "verts_any": 366,
+   "verts_dominant": 156
+  },
+  "pull2.R": {
+   "verts_any": 232,
+   "verts_dominant": 83
+  }
+ },
+ "weighting": "proximity bands: part label = argmin(polyline distance - part radius); bone gated to its parts; w = 1/d^4 to the bone segment; 3 neighbour-mean passes; top-3; detached islands rigid to their nearest body vertex",
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.114
+   ],
+   "gate": null
+  },
+  {
+   "name": "bulb",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.06,
+    0.02
+   ],
+   "tail": [
+    0.0,
+    -0.06,
+    0.24
+   ],
+   "gate": null
+  },
+  {
+   "name": "neck",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.09,
+    0.24
+   ],
+   "tail": [
+    0.0,
+    -0.11,
+    0.6
+   ],
+   "gate": [
+    "head"
+   ]
+  },
+  {
+   "name": "tendril.FS.L",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    0.205,
+    -0.241,
+    0.258
+   ],
+   "tail": [
+    0.91,
+    -0.291,
+    0.719
+   ],
+   "gate": [
+    "tFS.L"
+   ]
+  },
+  {
+   "name": "tendril.FS.R",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    -0.205,
+    -0.241,
+    0.258
+   ],
+   "tail": [
+    -0.91,
+    -0.291,
+    0.719
+   ],
+   "gate": [
+    "tFS.R"
+   ]
+  },
+  {
+   "name": "tendril.S.L",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    0.296,
+    0.016,
+    0.241
+   ],
+   "tail": [
+    0.691,
+    0.049,
+    0.713
+   ],
+   "gate": [
+    "tS.L"
+   ]
+  },
+  {
+   "name": "tendril.S.R",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    -0.296,
+    0.016,
+    0.241
+   ],
+   "tail": [
+    -0.691,
+    0.049,
+    0.713
+   ],
+   "gate": [
+    "tS.R"
+   ]
+  },
+  {
+   "name": "tendril.B",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    0.002,
+    0.176,
+    0.17
+   ],
+   "tail": [
+    0.001,
+    0.637,
+    0.634
+   ],
+   "gate": [
+    "tB"
+   ]
+  },
+  {
+   "name": "pull1.L",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    0.2,
+    -0.28,
+    0.27
+   ],
+   "tail": [
+    0.33,
+    -0.53,
+    0.6
+   ],
+   "gate": [
+    "tF.L"
+   ]
+  },
+  {
+   "name": "pull2.L",
+   "parent": "pull1.L",
+   "deform": true,
+   "head": [
+    0.33,
+    -0.53,
+    0.6
+   ],
+   "tail": [
+    0.5275,
+    -0.6632,
+    0.61
+   ],
+   "gate": [
+    "tF.L"
+   ]
+  },
+  {
+   "name": "pull1.R",
+   "parent": "bulb",
+   "deform": true,
+   "head": [
+    -0.2,
+    -0.28,
+    0.27
+   ],
+   "tail": [
+    -0.33,
+    -0.53,
+    0.6
+   ],
+   "gate": [
+    "tF.R"
+   ]
+  },
+  {
+   "name": "pull2.R",
+   "parent": "pull1.R",
+   "deform": true,
+   "head": [
+    -0.33,
+    -0.53,
+    0.6
+   ],
+   "tail": [
+    -0.493,
+    -0.6589,
+    0.6209
+   ],
+   "gate": [
+    "tF.R"
+   ]
+  }
+ ],
+ "bone_count": 12,
+ "chains": {
+  "pull1.L": {
+   "lower": "pull2.L",
+   "contact": [
+    0.5275,
+    -0.6632,
+    0.61
+   ],
+   "kind": "tip",
+   "pole": [
+    0.282,
+    0.188,
+    0.941
+   ]
+  },
+  "pull1.R": {
+   "lower": "pull2.R",
+   "contact": [
+    -0.493,
+    -0.6589,
+    0.6209
+   ],
+   "kind": "tip",
+   "pole": [
+    -0.282,
+    0.188,
+    0.941
+   ]
+  }
+ },
+ "clips": {
+  "idle": {
+   "action": "idle",
+   "frames": 73,
+   "cycle_frames": 72,
+   "cycle_s": 3.0,
+   "reach_max": {},
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 4e-05,
+   "extent": {
+    "footprint": 2.0304,
+    "width": 2.0304,
+    "depth": 1.5419,
+    "height": 0.8602,
+    "min_z": -0.0015
+   },
+   "contact_slide": {},
+   "forge_animation_check": {
+    "skipped": "no planted contacts in this clip"
+   }
+  },
+  "walk": {
+   "action": "walk",
+   "frames": 41,
+   "cycle_frames": 40,
+   "cycle_s": 1.6667,
+   "reach_max": {
+    "pull1.L": 0.7843,
+    "pull1.R": 0.8205
+   },
+   "stride_m": 0.28,
+   "duty": 0.5,
+   "speed_m_per_s": 0.336,
+   "belt_m_per_frame": 0.014000000000000002,
+   "seam_residual_mm": 0.0,
+   "root_max_offset_mm": 0.0,
+   "bone_stretch_max_pct": 4e-05,
+   "extent": {
+    "footprint": 2.0869,
+    "width": 2.0869,
+    "depth": 1.5719,
+    "height": 0.7774,
+    "min_z": -0.0071
+   },
+   "contact_slide": {
+    "pull1.L": {
+     "contact": "pull2.L:tail",
+     "stance_runs": 1,
+     "stance_frames": 21,
+     "worst_drift_mm": 0.0003,
+     "ground_z_mm": 80.0
+    },
+    "pull1.R": {
+     "contact": "pull2.R:tail",
+     "stance_runs": 1,
+     "stance_frames": 21,
+     "worst_drift_mm": 0.0003,
+     "ground_z_mm": 80.0
+    }
+   },
+   "forge_animation_check": {
+    "mode": "in_place",
+    "gate": "ok",
+    "deformation_gate": "ok",
+    "worst_drift_mm": 0,
+    "feet": [
+     {
+      "bone": "pull2.L",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     },
+     {
+      "bone": "pull2.R",
+      "steps": 1,
+      "worst_drift_mm": 0.0,
+      "verdict": "ok"
+     }
+    ],
+    "loop_seam_closure": {
+     "verdict": "ok",
+     "says": "The loop closes: the worst vertex moves 0.000 mm between frames 1 and 41, inside the 1.0 mm this gate allows."
+    },
+    "says": "Feet hold. Worst step slides 0.0 mm across 2 measured step(s) - under the 5 mm this gate calls planted."
+   }
+  }
+ },
+ "seconds": 0.5
+}
