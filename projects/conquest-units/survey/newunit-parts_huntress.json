@@ -1,0 +1,177 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-huntress.blend",
+ "unit_centroid": [
+  0.078,
+  0.153,
+  -3.485
+ ],
+ "unit_bbox_min": [
+  -12.536,
+  -8.96,
+  -8.568
+ ],
+ "unit_bbox_max": [
+  12.54,
+  9.878,
+  2.181
+ ],
+ "parts": [
+  {
+   "name": "Icosphere",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 10940,
+   "bbox_min": [
+    -0.906,
+    -1.274,
+    -2.563
+   ],
+   "bbox_max": [
+    0.905,
+    0.972,
+    1.001
+   ],
+   "centre": [
+    -0.001,
+    -0.151,
+    -0.781
+   ],
+   "negative_scale": false,
+   "signed_volume": 6.0842,
+   "normals": "outward",
+   "vert_digest": "e336eb4913b87284",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -14.6,
+   "horiz_offset": 0.314
+  },
+  {
+   "name": "Icosphere.001",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 2148,
+   "bbox_min": [
+    -1.875,
+    -2.135,
+    -1.311
+   ],
+   "bbox_max": [
+    1.85,
+    1.532,
+    2.323
+   ],
+   "centre": [
+    -0.012,
+    -0.302,
+    0.506
+   ],
+   "negative_scale": false,
+   "signed_volume": 14.209,
+   "normals": "outward",
+   "vert_digest": "db4c2e47d9458d8b",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -11.2,
+   "horiz_offset": 0.464
+  },
+  {
+   "name": "Icosphere.002",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 2410,
+   "bbox_min": [
+    -9.222,
+    -4.796,
+    -10.416
+   ],
+   "bbox_max": [
+    8.962,
+    3.15,
+    -0.719
+   ],
+   "centre": [
+    -0.13,
+    -0.823,
+    -5.568
+   ],
+   "negative_scale": true,
+   "signed_volume": -328.1998,
+   "normals": "INVERTED",
+   "vert_digest": "08f95c6a81719f09",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -12.0,
+   "horiz_offset": 0.998
+  },
+  {
+   "name": "Icosphere.003",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 42,
+   "bbox_min": [
+    -2.13,
+    -1.687,
+    -13.079
+   ],
+   "bbox_max": [
+    2.13,
+    1.687,
+    -9.705
+   ],
+   "centre": [
+    0.0,
+    0.0,
+    -11.392
+   ],
+   "negative_scale": false,
+   "signed_volume": 23.3236,
+   "normals": "outward",
+   "vert_digest": "0a9dc860c81f0031",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -27.0,
+   "horiz_offset": 0.172
+  },
+  {
+   "name": "Icosphere.004",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 24066,
+   "bbox_min": [
+    -12.536,
+    -8.96,
+    -8.568
+   ],
+   "bbox_max": [
+    12.54,
+    9.878,
+    2.181
+   ],
+   "centre": [
+    0.002,
+    0.459,
+    -3.193
+   ],
+   "negative_scale": false,
+   "signed_volume": 1298.5252,
+   "normals": "outward",
+   "vert_digest": "07166bad15e3317f",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -166.0,
+   "horiz_offset": 0.315
+  }
+ ],
+ "armatures": [],
+ "actions": []
+}

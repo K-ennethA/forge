@@ -1,0 +1,53 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-magmoo.blend",
+ "unit_centroid": [
+  0.384,
+  0.348,
+  0.606
+ ],
+ "unit_bbox_min": [
+  -1.532,
+  -1.389,
+  -0.956
+ ],
+ "unit_bbox_max": [
+  2.51,
+  2.32,
+  1.97
+ ],
+ "parts": [
+  {
+   "name": "Icosphere",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 17200,
+   "bbox_min": [
+    -1.532,
+    -1.389,
+    -0.956
+   ],
+   "bbox_max": [
+    2.51,
+    2.32,
+    1.97
+   ],
+   "centre": [
+    0.489,
+    0.466,
+    0.507
+   ],
+   "negative_scale": false,
+   "signed_volume": 7.2876,
+   "normals": "outward",
+   "vert_digest": "16064c5151e7f685",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 138.4,
+   "horiz_offset": 0.158
+  }
+ ],
+ "armatures": [],
+ "actions": []
+}

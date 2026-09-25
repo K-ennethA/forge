@@ -1,0 +1,14 @@
+00:00.922  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-Fidough.blend"
+00:00.969  reports          | WARNING Object has negative scale, sculpting may be unpredictable
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+00:04.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_front.png'
+00:04.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_threequarter.png'
+00:04.610  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_tactical.png'
+00:04.735  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\survey\newunit-Fidough_side.png
+SURVEY_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\newunit-blend_Fidough.json
+
+Blender quit

@@ -97,3 +97,24 @@ cap (3.4 m boss allowance) will uniformly scale the model; the state RATIO
 survives the scale - raising the cap is the artist's game-side call.
 Approval point: seated-vs-standing sheet with the height ratio quoted,
 before clips are finalized.
+
+## 2026-09-25 - hero survey answers (artist, verbatim)
+> mortis is meant to be a necromancer with a floating book of the dead, he
+> is carried by the dead and stand on their arms, he is a robed figure, we
+> can make updates to make all this more clear.
+
+> geode is facing the correct way he is a sentient diamond rock creature.
+> in game they are less zoomed in but we can support higher quality if
+> thats what youre asking
+
+> the other blends, lets pull in the other blends as well mosquitopire,
+> and all the rest you mentioned
+
+Readings: MORTIS identity locked - robed necromancer, FLOATING book of the
+dead, CARRIED BY THE DEAD standing on their arms (the "grave slab" and the
+twenty hands ARE the dead carrying him - not defects; the rework makes all
+three reads clearer). GEODE facing confirmed -Y; sentient diamond rock
+creature (crystal faceting fits). HERO BUDGET approved: higher quality
+supported (30-50k hero tier stands). SCOPE EXPANDED: mosquitopire,
+Fidough, magmoo, vampito, huntress, supaoctto join the Conquest roster -
+survey them like the others.

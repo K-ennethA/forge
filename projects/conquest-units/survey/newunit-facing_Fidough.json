@@ -1,0 +1,93 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-Fidough.blend",
+ "meshes": [
+  "Body",
+  "Ear",
+  "Head",
+  "Scruff",
+  "sculpt_Icosphere",
+  "Snout"
+ ],
+ "verts": 222982,
+ "bbox_min": [
+  -2.17,
+  -0.917,
+  -1.078
+ ],
+ "bbox_max": [
+  1.095,
+  1.167,
+  1.298
+ ],
+ "centroid": [
+  -0.095,
+  0.006,
+  -0.217
+ ],
+ "top30": {
+  "n": 4530,
+  "feature_offset_xy": [
+   0.3539,
+   0.0018
+  ],
+  "feature_angle_from_minusY_deg": 90.3,
+  "lap_energy": {
+   "minusY": 0.01349,
+   "plusY": 0.01454,
+   "minusX": 0.00448,
+   "plusX": 0.02355
+  },
+  "extent_y": [
+   -0.729,
+   1.167
+  ]
+ },
+ "head_top15": {
+  "n": 1173,
+  "feature_offset_xy": [
+   0.0786,
+   -0.3375
+  ],
+  "feature_angle_from_minusY_deg": 13.1,
+  "lap_energy": {
+   "minusY": 0.01142,
+   "plusY": 0.00399,
+   "minusX": 0.00617,
+   "plusX": 0.00923
+  },
+  "extent_y": [
+   -0.612,
+   1.127
+  ]
+ },
+ "chest_35_75": {
+  "n": 115245,
+  "feature_offset_xy": [
+   -1.0532,
+   0.0753
+  ],
+  "feature_angle_from_minusY_deg": -94.1,
+  "lap_energy": {
+   "minusY": 0.02228,
+   "plusY": 0.02667,
+   "minusX": 0.04775,
+   "plusX": 0.0012
+  },
+  "extent_y": [
+   -0.917,
+   1.166
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 222970,
+   "centroid": [
+    -0.095,
+    0.006,
+    -0.217
+   ],
+   "dir_angle_from_minusY_deg": 83.3,
+   "horiz_offset": 0.0001
+  }
+ }
+}

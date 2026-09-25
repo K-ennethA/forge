@@ -1,0 +1,5 @@
+00:00.860  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-magmoo.blend"
+LANDMARKS {"plan_centre": [0.489, 0.466], "height": 2.926, "crown": {"n": 469, "centroid": [-0.013, -0.008, 1.908], "dir_deg": -46.7, "offset": 0.691}, "ground": {"n": 192, "centroid": [-1.065, -0.967, -0.911], "dir_deg": -47.3}, "principal_axis_xy": [-0.744, -0.668], "axis_ratio": 2.81, "ends": {"end_pos": {"n": 2580, "dir_deg": -47.5, "mean_z": 0.259, "lap_mean": 0.00545, "lap_p95": 0.01454}, "end_neg": {"n": 2580, "dir_deg": 131.3, "mean_z": 0.515, "lap_mean": 0.00262, "lap_p95": 0.00606}}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

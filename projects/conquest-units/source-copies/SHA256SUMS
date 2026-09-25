@@ -11,3 +11,11 @@ b769afffba9e44fe3ffed2d314c10bcae13e81d8a693418578eb6820bfdbe4ed  hero-gem_knigh
 310a564d629bd67b5b79185c8aa98450efc7e18a19d2713bffb8d11d09b9158c  hero-monster.blend
 a7a18a2b29bd28166e4a9f716c35354ae34e2fe791fa03840bc488299ace001d  hero-monster2.blend
 4518a8176b043c1f84d31464ed3ec2953f68b651bae4b6f2ccde0f41545b7ed2  hero-monster_rigged.blend
+# new-unit wave: sha256 of the ORIGINALS in C:\Users\kenne\OneDrive\Documents\<name>.blend (copied 2026-09-25 as newunit-<name>.blend, cp -p; copies byte-identical, re-hashed after copy; originals re-hashed after the survey, unchanged)
+9f7776fd1728fd914e512157ca0b57feca85595c12f4a363e0792bc95c54e5bd  newunit-mosquitopire.blend
+eaa51d4b1b06c06665582235ea93dd55d141f20c7cb642024cb68c4f6b866ff4  newunit-Fidough.blend
+8bfee80eac303ba9a7f0fcce0990a7a061ba0ce34b534354170ff2a9580ce630  newunit-magmoo.blend
+7a791ca55ce7ef9697b9b448b1afb1997cbbffd6e472cfe691f8f7c9caab9880  newunit-vampito.blend
+0bff8db377d6f6356bb7afc3cbf0cd6e0bc28950c233e208da9edc9c91cdbe57  newunit-huntress.blend
+988efdedcc4438ab0e745d809ab7ccdbed6adf3aaed072178e707d3fc46f878f  newunit-supaoctto.blend
+6c67de5b738c9ccb4c52bc4478a81cb80d6934fb10ac739553fc20902723ceab  newunit-supaoctto_rig.blend

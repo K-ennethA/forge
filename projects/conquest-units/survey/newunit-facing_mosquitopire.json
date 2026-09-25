@@ -1,0 +1,95 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-mosquitopire.blend",
+ "meshes": [
+  "Cylinder",
+  "Cylinder.001",
+  "Sphere",
+  "Sphere.001",
+  "Sphere.002",
+  "Sphere.003",
+  "Sphere.004",
+  "Sphere.005"
+ ],
+ "verts": 93602,
+ "bbox_min": [
+  -9.348,
+  -5.874,
+  0.595
+ ],
+ "bbox_max": [
+  9.349,
+  3.618,
+  12.69
+ ],
+ "centroid": [
+  -0.007,
+  -3.241,
+  6.704
+ ],
+ "top30": {
+  "n": 5126,
+  "feature_offset_xy": [
+   -0.0499,
+   2.0853
+  ],
+  "feature_angle_from_minusY_deg": -178.6,
+  "lap_energy": {
+   "minusY": 2.93218,
+   "plusY": 27.01634,
+   "minusX": 15.24566,
+   "plusX": 14.70286
+  },
+  "extent_y": [
+   -4.788,
+   3.262
+  ]
+ },
+ "head_top15": {
+  "n": 891,
+  "feature_offset_xy": [
+   0.0522,
+   0.9715
+  ],
+  "feature_angle_from_minusY_deg": 176.9,
+  "lap_energy": {
+   "minusY": 0.08706,
+   "plusY": 21.81527,
+   "minusX": 10.96574,
+   "plusX": 10.93659
+  },
+  "extent_y": [
+   -1.525,
+   1.77
+  ]
+ },
+ "chest_35_75": {
+  "n": 71732,
+  "feature_offset_xy": [
+   0.1197,
+   0.0313
+  ],
+  "feature_angle_from_minusY_deg": 104.7,
+  "lap_energy": {
+   "minusY": 20.74266,
+   "plusY": 13.97927,
+   "minusX": 17.02736,
+   "plusX": 17.69457
+  },
+  "extent_y": [
+   -5.745,
+   3.618
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 93580,
+   "centroid": [
+    -0.007,
+    -3.241,
+    6.703
+   ],
+   "dir_angle_from_minusY_deg": -15.6,
+   "horiz_offset": 0.0004
+  }
+ }
+}

@@ -1,0 +1,393 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-vampito.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Body-Upper",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    3.352,
+    3.525,
+    2.935
+   ],
+   "scale": [
+    1.762,
+    1.762,
+    1.468
+   ],
+   "modifiers": [],
+   "verts": 42,
+   "faces": 80,
+   "tris_base": 80,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 80,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.13,
+    "overlap": false,
+    "coverage": 0.2863,
+    "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.047,
+     "p05": 0.882,
+     "p95": 1.047,
+     "worst_factor": 1.13
+    }
+   }
+  },
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Eyes",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.76,
+    1.151,
+    0.798
+   ],
+   "scale": [
+    0.388,
+    0.587,
+    0.388
+   ],
+   "modifiers": [],
+   "verts": 42,
+   "faces": 80,
+   "tris_base": 80,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 80,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.57,
+    "overlap": false,
+    "coverage": 0.2863,
+    "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.088,
+     "p05": 0.636,
+     "p95": 1.524,
+     "worst_factor": 1.57
+    }
+   }
+  },
+  {
+   "name": "Head",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.124,
+    4.846,
+    2.615
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 2518,
+   "faces": 2516,
+   "tris_base": 5032,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 5032,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 2405,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Icosphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.494,
+    2.981,
+    5.142
+   ],
+   "scale": [
+    -1.311,
+    -1.491,
+    -2.571
+   ],
+   "modifiers": [],
+   "verts": 42,
+   "faces": 80,
+   "tris_base": 80,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 80,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.13,
+    "overlap": false,
+    "coverage": 0.2863,
+    "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.047,
+     "p05": 0.882,
+     "p95": 1.047,
+     "worst_factor": 1.13
+    }
+   }
+  },
+  {
+   "name": "Icosphere.001",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    23.424,
+    3.647,
+    9.329
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [
+    {
+     "type": "MIRROR",
+     "name": "Mirror"
+    }
+   ],
+   "verts": 17506,
+   "faces": 17504,
+   "tris_base": 35008,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 70016,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 15,
+    "degenerate_faces": 17390,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.8302,
+    "overlap_note": "summed UV area is 96% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "Material",
+   "users": 0,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.5,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "Body-Upper",
+  "Eyes",
+  "Head",
+  "Icosphere",
+  "Icosphere.001"
+ ],
+ "render_tris_total": 75288,
+ "bbox_min": [
+  -11.712,
+  -3.76,
+  -10.184
+ ],
+ "bbox_max": [
+  11.712,
+  2.642,
+  0.887
+ ],
+ "bbox_size_wdh": [
+  23.424,
+  6.401,
+  11.071
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-vampito_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-vampito_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-vampito_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-vampito_side.png"
+ ]
+}

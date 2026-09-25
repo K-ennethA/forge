@@ -1,0 +1,610 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto_rig.blend",
+ "unit_centroid": [
+  -0.114,
+  -1.147,
+  -5.031
+ ],
+ "unit_bbox_min": [
+  -10.641,
+  -4.972,
+  -15.272
+ ],
+ "unit_bbox_max": [
+  10.138,
+  2.893,
+  5.731
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": "Armature",
+   "verts": 24822,
+   "bbox_min": [
+    -7.334,
+    -1.877,
+    -14.992
+   ],
+   "bbox_max": [
+    7.345,
+    1.851,
+    -0.277
+   ],
+   "centre": [
+    0.005,
+    -0.013,
+    -7.635
+   ],
+   "negative_scale": true,
+   "signed_volume": -105.429,
+   "normals": "INVERTED",
+   "vert_digest": "19237dd80ae9ce77",
+   "modifiers": [
+    "ARMATURE"
+   ],
+   "vertex_groups": [
+    "spine_1",
+    "spine_2",
+    "spine_3",
+    "spine_4",
+    "neck",
+    "head",
+    "shoulder_l",
+    "arm_1_l",
+    "arm_2_l",
+    "arm_3_l",
+    "hand_l",
+    "shoulder_r",
+    "arm_1_r",
+    "arm_2_r",
+    "arm_3_r",
+    "hand_r",
+    "thigh_l",
+    "leg_l",
+    "foot_l",
+    "thigh_r",
+    "leg_r",
+    "foot_r"
+   ],
+   "dir_from_unit_centroid_deg": 174.0,
+   "horiz_offset": 1.141
+  },
+  {
+   "name": "Cape",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 47284,
+   "bbox_min": [
+    -10.641,
+    -4.972,
+    -15.272
+   ],
+   "bbox_max": [
+    10.138,
+    -0.129,
+    0.695
+   ],
+   "centre": [
+    -0.252,
+    -2.551,
+    -7.288
+   ],
+   "negative_scale": false,
+   "signed_volume": 77.8388,
+   "normals": "outward",
+   "vert_digest": "55346c7a36320f5c",
+   "modifiers": [
+    "MIRROR"
+   ],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -5.6,
+   "horiz_offset": 1.41
+  },
+  {
+   "name": "Head",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 8994,
+   "bbox_min": [
+    -2.6,
+    -2.504,
+    -1.544
+   ],
+   "bbox_max": [
+    2.601,
+    2.691,
+    5.731
+   ],
+   "centre": [
+    0.0,
+    0.093,
+    2.093
+   ],
+   "negative_scale": false,
+   "signed_volume": 89.5603,
+   "normals": "outward",
+   "vert_digest": "390f85161fb4113a",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 174.7,
+   "horiz_offset": 1.246
+  },
+  {
+   "name": "Icosphere",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 2140,
+   "bbox_min": [
+    -0.926,
+    1.812,
+    -0.0
+   ],
+   "bbox_max": [
+    0.918,
+    2.48,
+    1.15
+   ],
+   "centre": [
+    -0.004,
+    2.146,
+    0.575
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.4486,
+   "normals": "outward",
+   "vert_digest": "bd82c1fb17c1c8a3",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.1,
+   "horiz_offset": 3.295
+  },
+  {
+   "name": "Mask",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 8678,
+   "bbox_min": [
+    -2.837,
+    2.176,
+    0.927
+   ],
+   "bbox_max": [
+    2.84,
+    2.86,
+    4.305
+   ],
+   "centre": [
+    0.001,
+    2.518,
+    2.616
+   ],
+   "negative_scale": false,
+   "signed_volume": 2.6161,
+   "normals": "outward",
+   "vert_digest": "9d95a66278d2ddc5",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.2,
+   "horiz_offset": 3.667
+  },
+  {
+   "name": "Mask-Goggles",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 6304,
+   "bbox_min": [
+    -1.953,
+    2.188,
+    1.413
+   ],
+   "bbox_max": [
+    1.948,
+    2.893,
+    2.82
+   ],
+   "centre": [
+    -0.003,
+    2.54,
+    2.116
+   ],
+   "negative_scale": false,
+   "signed_volume": 1.321,
+   "normals": "outward",
+   "vert_digest": "a83f2026972ed34a",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.3,
+   "horiz_offset": 3.689
+  }
+ ],
+ "armatures": [
+  {
+   "object": "Armature",
+   "data": "Armature.001",
+   "scale": [
+    2.592,
+    2.592,
+    2.592
+   ],
+   "location": [
+    0.0,
+    0.0,
+    -9.177
+   ],
+   "bones": [
+    {
+     "name": "spine_1",
+     "deform": true,
+     "parent": null,
+     "head": [
+      0.0,
+      0.0,
+      -9.177
+     ],
+     "tail": [
+      0.015,
+      -0.431,
+      -6.569
+     ]
+    },
+    {
+     "name": "spine_2",
+     "deform": true,
+     "parent": "spine_1",
+     "head": [
+      0.015,
+      -0.431,
+      -6.569
+     ],
+     "tail": [
+      -0.013,
+      -0.034,
+      -4.324
+     ]
+    },
+    {
+     "name": "spine_3",
+     "deform": true,
+     "parent": "spine_2",
+     "head": [
+      -0.013,
+      -0.034,
+      -4.324
+     ],
+     "tail": [
+      -0.016,
+      0.187,
+      -2.605
+     ]
+    },
+    {
+     "name": "spine_4",
+     "deform": true,
+     "parent": "spine_3",
+     "head": [
+      -0.016,
+      0.187,
+      -2.605
+     ],
+     "tail": [
+      0.0,
+      0.0,
+      -1.021
+     ]
+    },
+    {
+     "name": "neck",
+     "deform": true,
+     "parent": "spine_4",
+     "head": [
+      0.0,
+      0.0,
+      -1.021
+     ],
+     "tail": [
+      0.0,
+      0.0,
+      -0.357
+     ]
+    },
+    {
+     "name": "head",
+     "deform": true,
+     "parent": "neck",
+     "head": [
+      0.0,
+      0.0,
+      -0.357
+     ],
+     "tail": [
+      0.0,
+      0.0,
+      5.187
+     ]
+    },
+    {
+     "name": "shoulder_l",
+     "deform": true,
+     "parent": "spine_3",
+     "head": [
+      -2.204,
+      0.107,
+      -1.502
+     ],
+     "tail": [
+      -3.068,
+      -0.408,
+      -3.367
+     ]
+    },
+    {
+     "name": "arm_1_l",
+     "deform": true,
+     "parent": "shoulder_l",
+     "head": [
+      -3.068,
+      -0.408,
+      -3.367
+     ],
+     "tail": [
+      -3.844,
+      -0.383,
+      -5.14
+     ]
+    },
+    {
+     "name": "arm_2_l",
+     "deform": true,
+     "parent": "arm_1_l",
+     "head": [
+      -3.844,
+      -0.383,
+      -5.14
+     ],
+     "tail": [
+      -5.002,
+      -0.305,
+      -6.724
+     ]
+    },
+    {
+     "name": "arm_3_l",
+     "deform": true,
+     "parent": "arm_2_l",
+     "head": [
+      -5.002,
+      -0.305,
+      -6.724
+     ],
+     "tail": [
+      -5.981,
+      0.084,
+      -7.802
+     ]
+    },
+    {
+     "name": "hand_l",
+     "deform": true,
+     "parent": "arm_3_l",
+     "head": [
+      -5.981,
+      0.084,
+      -7.802
+     ],
+     "tail": [
+      -7.119,
+      1.262,
+      -9.629
+     ]
+    },
+    {
+     "name": "shoulder_r",
+     "deform": true,
+     "parent": "spine_3",
+     "head": [
+      2.204,
+      0.107,
+      -1.502
+     ],
+     "tail": [
+      3.068,
+      -0.408,
+      -3.367
+     ]
+    },
+    {
+     "name": "arm_1_r",
+     "deform": true,
+     "parent": "shoulder_r",
+     "head": [
+      3.068,
+      -0.408,
+      -3.367
+     ],
+     "tail": [
+      3.844,
+      -0.383,
+      -5.14
+     ]
+    },
+    {
+     "name": "arm_2_r",
+     "deform": true,
+     "parent": "arm_1_r",
+     "head": [
+      3.844,
+      -0.383,
+      -5.14
+     ],
+     "tail": [
+      5.002,
+      -0.305,
+      -6.724
+     ]
+    },
+    {
+     "name": "arm_3_r",
+     "deform": true,
+     "parent": "arm_2_r",
+     "head": [
+      5.002,
+      -0.305,
+      -6.724
+     ],
+     "tail": [
+      5.981,
+      0.084,
+      -7.802
+     ]
+    },
+    {
+     "name": "hand_r",
+     "deform": true,
+     "parent": "arm_3_r",
+     "head": [
+      5.981,
+      0.084,
+      -7.802
+     ],
+     "tail": [
+      7.119,
+      1.262,
+      -9.629
+     ]
+    },
+    {
+     "name": "thigh_l",
+     "deform": true,
+     "parent": "spine_1",
+     "head": [
+      -1.078,
+      -0.337,
+      -9.12
+     ],
+     "tail": [
+      -1.741,
+      -0.415,
+      -11.68
+     ]
+    },
+    {
+     "name": "leg_l",
+     "deform": true,
+     "parent": "thigh_l",
+     "head": [
+      -1.741,
+      -0.415,
+      -11.68
+     ],
+     "tail": [
+      -2.036,
+      -0.46,
+      -13.09
+     ]
+    },
+    {
+     "name": "foot_l",
+     "deform": true,
+     "parent": "leg_l",
+     "head": [
+      -2.036,
+      -0.46,
+      -13.09
+     ],
+     "tail": [
+      -2.349,
+      -0.503,
+      -14.172
+     ]
+    },
+    {
+     "name": "thigh_r",
+     "deform": true,
+     "parent": "spine_1",
+     "head": [
+      1.078,
+      -0.337,
+      -9.12
+     ],
+     "tail": [
+      1.741,
+      -0.415,
+      -11.68
+     ]
+    },
+    {
+     "name": "leg_r",
+     "deform": true,
+     "parent": "thigh_r",
+     "head": [
+      1.741,
+      -0.415,
+      -11.68
+     ],
+     "tail": [
+      2.036,
+      -0.46,
+      -13.09
+     ]
+    },
+    {
+     "name": "foot_r",
+     "deform": true,
+     "parent": "leg_r",
+     "head": [
+      2.036,
+      -0.46,
+      -13.09
+     ],
+     "tail": [
+      2.349,
+      -0.503,
+      -14.172
+     ]
+    }
+   ],
+   "coverage": {
+    "Body": {
+     "bound": true,
+     "weighted_frac": 0.9956
+    },
+    "Cape": {
+     "bound": false,
+     "weighted_frac": 0.0
+    },
+    "Head": {
+     "bound": false,
+     "weighted_frac": 0.0
+    },
+    "Icosphere": {
+     "bound": false,
+     "weighted_frac": 0.0
+    },
+    "Mask": {
+     "bound": false,
+     "weighted_frac": 0.0
+    },
+    "Mask-Goggles": {
+     "bound": false,
+     "weighted_frac": 0.0
+    }
+   },
+   "action": null,
+   "nla": []
+  }
+ ],
+ "actions": []
+}

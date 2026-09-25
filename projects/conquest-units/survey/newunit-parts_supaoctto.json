@@ -1,0 +1,210 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto.blend",
+ "unit_centroid": [
+  -0.114,
+  -1.148,
+  -5.03
+ ],
+ "unit_bbox_min": [
+  -10.641,
+  -4.972,
+  -15.272
+ ],
+ "unit_bbox_max": [
+  10.138,
+  2.893,
+  5.731
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 24822,
+   "bbox_min": [
+    -7.242,
+    -1.877,
+    -14.992
+   ],
+   "bbox_max": [
+    7.256,
+    1.845,
+    -0.277
+   ],
+   "centre": [
+    0.007,
+    -0.016,
+    -7.635
+   ],
+   "negative_scale": true,
+   "signed_volume": -104.4225,
+   "normals": "INVERTED",
+   "vert_digest": "3a38844d1d6424b1",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 173.9,
+   "horiz_offset": 1.138
+  },
+  {
+   "name": "Cape",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 47284,
+   "bbox_min": [
+    -10.641,
+    -4.972,
+    -15.272
+   ],
+   "bbox_max": [
+    10.138,
+    -0.129,
+    0.695
+   ],
+   "centre": [
+    -0.252,
+    -2.551,
+    -7.288
+   ],
+   "negative_scale": false,
+   "signed_volume": 77.8388,
+   "normals": "outward",
+   "vert_digest": "55346c7a36320f5c",
+   "modifiers": [
+    "MIRROR"
+   ],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -5.6,
+   "horiz_offset": 1.41
+  },
+  {
+   "name": "Head",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 8994,
+   "bbox_min": [
+    -2.6,
+    -2.504,
+    -1.544
+   ],
+   "bbox_max": [
+    2.601,
+    2.691,
+    5.731
+   ],
+   "centre": [
+    0.0,
+    0.093,
+    2.093
+   ],
+   "negative_scale": false,
+   "signed_volume": 89.5603,
+   "normals": "outward",
+   "vert_digest": "390f85161fb4113a",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 174.7,
+   "horiz_offset": 1.246
+  },
+  {
+   "name": "Icosphere",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 2140,
+   "bbox_min": [
+    -0.926,
+    1.812,
+    -0.0
+   ],
+   "bbox_max": [
+    0.918,
+    2.48,
+    1.15
+   ],
+   "centre": [
+    -0.004,
+    2.146,
+    0.575
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.4486,
+   "normals": "outward",
+   "vert_digest": "bd82c1fb17c1c8a3",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.1,
+   "horiz_offset": 3.295
+  },
+  {
+   "name": "Mask",
+   "render_visible": false,
+   "hide_render": false,
+   "hide_viewport": true,
+   "parent": null,
+   "verts": 8678,
+   "bbox_min": [
+    -2.837,
+    2.176,
+    0.927
+   ],
+   "bbox_max": [
+    2.84,
+    2.86,
+    4.305
+   ],
+   "centre": [
+    0.001,
+    2.518,
+    2.616
+   ],
+   "negative_scale": false,
+   "signed_volume": 2.6161,
+   "normals": "outward",
+   "vert_digest": "9d95a66278d2ddc5",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.2,
+   "horiz_offset": 3.667
+  },
+  {
+   "name": "Mask-Goggles",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 6304,
+   "bbox_min": [
+    -1.953,
+    2.188,
+    1.413
+   ],
+   "bbox_max": [
+    1.948,
+    2.893,
+    2.82
+   ],
+   "centre": [
+    -0.003,
+    2.54,
+    2.116
+   ],
+   "negative_scale": false,
+   "signed_volume": 1.321,
+   "normals": "outward",
+   "vert_digest": "a83f2026972ed34a",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 178.3,
+   "horiz_offset": 3.689
+  }
+ ],
+ "armatures": [],
+ "actions": []
+}

@@ -1,0 +1,68 @@
+{
+ "rig_file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto_rig.blend",
+ "unrigged_file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto.blend",
+ "parts": [
+  {
+   "part": "Mask-Goggles",
+   "verts_rig": 6304,
+   "verts_unrigged": 6304,
+   "max_local_vert_diff": 0.0,
+   "moved_verts": 0,
+   "max_matrix_world_diff": 2.921313,
+   "parent_rig": null,
+   "parent_unrigged": null
+  },
+  {
+   "part": "Mask",
+   "verts_rig": 8678,
+   "verts_unrigged": 8678,
+   "max_local_vert_diff": 0.0,
+   "moved_verts": 0,
+   "max_matrix_world_diff": 4.000926,
+   "parent_rig": null,
+   "parent_unrigged": null
+  },
+  {
+   "part": "Icosphere",
+   "verts_rig": 2140,
+   "verts_unrigged": 2140,
+   "max_local_vert_diff": 0.0,
+   "moved_verts": 0,
+   "max_matrix_world_diff": 2.467138,
+   "parent_rig": null,
+   "parent_unrigged": null
+  },
+  {
+   "part": "Head",
+   "verts_rig": 8994,
+   "verts_unrigged": 8994,
+   "max_local_vert_diff": 0.0,
+   "moved_verts": 0,
+   "max_matrix_world_diff": 0.790196,
+   "parent_rig": null,
+   "parent_unrigged": null
+  },
+  {
+   "part": "Cape",
+   "verts_rig": 23642,
+   "verts_unrigged": 23642,
+   "max_local_vert_diff": 0.0,
+   "moved_verts": 0,
+   "max_matrix_world_diff": 2.129777,
+   "parent_rig": null,
+   "parent_unrigged": null
+  },
+  {
+   "part": "Body",
+   "verts_rig": 24822,
+   "verts_unrigged": 24822,
+   "max_local_vert_diff": 0.218751,
+   "moved_verts": 5535,
+   "max_matrix_world_diff": 6.771403,
+   "parent_rig": "Armature",
+   "parent_unrigged": null
+  }
+ ],
+ "stored_pose_max_basis_dev": 0.0,
+ "pose_position": "POSE"
+}

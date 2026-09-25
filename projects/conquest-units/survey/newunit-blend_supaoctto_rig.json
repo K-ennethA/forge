@@ -1,0 +1,437 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto_rig.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Armature",
+   "type": "ARMATURE",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    14.238,
+    1.764,
+    19.36
+   ],
+   "scale": [
+    2.592,
+    2.592,
+    2.592
+   ],
+   "modifiers": [],
+   "bones": 22,
+   "bone_names": [
+    "spine_1",
+    "spine_2",
+    "spine_3",
+    "spine_4",
+    "neck",
+    "head",
+    "shoulder_l",
+    "arm_1_l",
+    "arm_2_l",
+    "arm_3_l",
+    "hand_l",
+    "shoulder_r",
+    "arm_1_r",
+    "arm_2_r",
+    "arm_3_r",
+    "hand_r",
+    "thigh_l",
+    "leg_l",
+    "foot_l",
+    "thigh_r",
+    "leg_r",
+    "foot_r"
+   ],
+   "active_action": null,
+   "nla_tracks": []
+  },
+  {
+   "name": "Body",
+   "type": "MESH",
+   "parent": "Armature",
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    14.678,
+    3.729,
+    14.715
+   ],
+   "scale": [
+    1.867,
+    1.105,
+    -4.546
+   ],
+   "modifiers": [
+    {
+     "type": "ARMATURE",
+     "name": "Armature",
+     "object": "Armature"
+    }
+   ],
+   "verts": 24822,
+   "faces": 24818,
+   "tris_base": 49636,
+   "loose_shells": 2,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 22,
+   "shape_keys": [],
+   "tris_evaluated": 49636,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 2,
+    "flipped_faces": 116,
+    "degenerate_faces": 24447,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 1.0217,
+    "overlap_note": "summed UV area is 201% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Cape",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    5.198,
+    20.78,
+    15.718
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [
+    {
+     "type": "MIRROR",
+     "name": "Mirror"
+    }
+   ],
+   "verts": 23642,
+   "faces": 23642,
+   "tris_base": 47284,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 94568,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 68,
+    "degenerate_faces": 22928,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 1.6784,
+    "overlap_note": "summed UV area is 320% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Head",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    5.201,
+    5.196,
+    7.275
+   ],
+   "scale": [
+    1.0,
+    1.231,
+    1.79
+   ],
+   "modifiers": [],
+   "verts": 8994,
+   "faces": 8992,
+   "tris_base": 17984,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 17984,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 21,
+    "degenerate_faces": 8626,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.7927,
+    "overlap_note": "summed UV area is 93% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Icosphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    1.844,
+    0.668,
+    1.15
+   ],
+   "scale": [
+    0.526,
+    0.526,
+    0.526
+   ],
+   "modifiers": [],
+   "verts": 2140,
+   "faces": 2138,
+   "tris_base": 4276,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 4276,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 13,
+    "degenerate_faces": 2024,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 3.66,
+    "overlap": true,
+    "coverage": 0.8159,
+    "overlap_note": "summed UV area is 93% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 3.661,
+     "worst_factor": 3.66
+    }
+   }
+  },
+  {
+   "name": "Mask",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": true,
+   "dimensions": [
+    5.676,
+    0.684,
+    3.378
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 8678,
+   "faces": 8676,
+   "tris_base": 17352,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 17352,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 43,
+    "degenerate_faces": 8511,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 1.181,
+    "overlap_note": "summed UV area is 177% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Mask-Goggles",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    3.901,
+    0.705,
+    1.407
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 6304,
+   "faces": 6302,
+   "tris_base": 12604,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 12604,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 25,
+    "degenerate_faces": 6172,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.9591,
+    "overlap_note": "summed UV area is 126% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [
+  "Armature.001"
+ ],
+ "render_meshes": [
+  "Body",
+  "Cape",
+  "Head",
+  "Icosphere",
+  "Mask-Goggles"
+ ],
+ "render_tris_total": 179068,
+ "bbox_min": [
+  -10.67,
+  -5.804,
+  -15.389
+ ],
+ "bbox_max": [
+  10.187,
+  2.893,
+  5.731
+ ],
+ "bbox_size_wdh": [
+  20.858,
+  8.697,
+  21.12
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-supaoctto_rig_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-supaoctto_rig_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-supaoctto_rig_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-supaoctto_rig_side.png"
+ ]
+}

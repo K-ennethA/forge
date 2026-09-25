@@ -1,0 +1,5 @@
+00:00.828  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-supaoctto.blend"
+LANDMARKS {"plan_centre": [-0.252, -1.04], "height": 21.002, "crown": {"n": 925, "centroid": [0.01, -0.087, 5.304], "dir_deg": 164.6, "offset": 0.988}, "ground": {"n": 709, "centroid": [-0.128, -2.881, -14.791], "dir_deg": 3.8}, "principal_axis_xy": [-1.0, -0.022], "axis_ratio": 2.32, "ends": {"end_pos": {"n": 13432, "dir_deg": -77.1, "mean_z": -9.432, "lap_mean": 0.00356, "lap_p95": 0.0111}, "end_neg": {"n": 13432, "dir_deg": 78.8, "mean_z": -9.357, "lap_mean": 0.00362, "lap_p95": 0.01144}}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

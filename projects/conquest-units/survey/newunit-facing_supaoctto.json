@@ -1,0 +1,92 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto.blend",
+ "meshes": [
+  "Body",
+  "Cape",
+  "Head",
+  "Mask-Goggles",
+  "sculpt_Icosphere"
+ ],
+ "verts": 89544,
+ "bbox_min": [
+  -10.641,
+  -4.972,
+  -15.272
+ ],
+ "bbox_max": [
+  10.138,
+  2.893,
+  5.731
+ ],
+ "centroid": [
+  -0.114,
+  -1.148,
+  -5.03
+ ],
+ "top30": {
+  "n": 18871,
+  "feature_offset_xy": [
+   -0.096,
+   -0.357
+  ],
+  "feature_angle_from_minusY_deg": -15.1,
+  "lap_energy": {
+   "minusY": 0.26663,
+   "plusY": 0.21154,
+   "minusX": 0.23658,
+   "plusX": 0.24158
+  },
+  "extent_y": [
+   -2.504,
+   2.893
+  ]
+ },
+ "head_top15": {
+  "n": 5337,
+  "feature_offset_xy": [
+   0.0077,
+   0.7514
+  ],
+  "feature_angle_from_minusY_deg": 179.4,
+  "lap_energy": {
+   "minusY": 0.01658,
+   "plusY": 0.03294,
+   "minusX": 0.02462,
+   "plusX": 0.02489
+  },
+  "extent_y": [
+   -2.504,
+   2.873
+  ]
+ },
+ "chest_35_75": {
+  "n": 45415,
+  "feature_offset_xy": [
+   -0.011,
+   0.2372
+  ],
+  "feature_angle_from_minusY_deg": -177.3,
+  "lap_energy": {
+   "minusY": 1.09616,
+   "plusY": 1.59926,
+   "minusX": 1.36977,
+   "plusX": 1.32565
+  },
+  "extent_y": [
+   -4.587,
+   2.449
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 89534,
+   "centroid": [
+    -0.114,
+    -1.148,
+    -5.03
+   ],
+   "dir_angle_from_minusY_deg": -20.5,
+   "horiz_offset": 0.0002
+  }
+ }
+}

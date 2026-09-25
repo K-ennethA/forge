@@ -1,0 +1,5 @@
+00:00.797  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-huntress.blend"
+PARTS_JSON C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\survey\newunit-parts_huntress.json
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

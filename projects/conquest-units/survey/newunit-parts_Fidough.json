@@ -1,0 +1,208 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-Fidough.blend",
+ "unit_centroid": [
+  -0.095,
+  0.006,
+  -0.217
+ ],
+ "unit_bbox_min": [
+  -2.17,
+  -0.917,
+  -1.078
+ ],
+ "unit_bbox_max": [
+  1.095,
+  1.167,
+  1.298
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 213762,
+   "bbox_min": [
+    -1.172,
+    -0.917,
+    -1.078
+   ],
+   "bbox_max": [
+    1.095,
+    0.916,
+    0.449
+   ],
+   "centre": [
+    -0.039,
+    -0.0,
+    -0.314
+   ],
+   "negative_scale": false,
+   "signed_volume": 3.9116,
+   "normals": "outward",
+   "vert_digest": "f67e9f294d5becac",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 83.7,
+   "horiz_offset": 0.057
+  },
+  {
+   "name": "Ear",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 1844,
+   "bbox_min": [
+    -1.963,
+    0.615,
+    0.343
+   ],
+   "bbox_max": [
+    -0.963,
+    1.167,
+    1.298
+   ],
+   "centre": [
+    -1.463,
+    0.891,
+    0.82
+   ],
+   "negative_scale": true,
+   "signed_volume": -0.2693,
+   "normals": "INVERTED",
+   "vert_digest": "94c511ef65b3c1fc",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -122.9,
+   "horiz_offset": 1.629
+  },
+  {
+   "name": "Head",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 1844,
+   "bbox_min": [
+    -1.956,
+    -0.729,
+    -0.024
+   ],
+   "bbox_max": [
+    -0.629,
+    0.729,
+    1.283
+   ],
+   "centre": [
+    -1.293,
+    0.0,
+    0.629
+   ],
+   "negative_scale": false,
+   "signed_volume": 1.262,
+   "normals": "outward",
+   "vert_digest": "7b16567ba3d56d99",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -89.7,
+   "horiz_offset": 1.198
+  },
+  {
+   "name": "Icosphere",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 1844,
+   "bbox_min": [
+    -2.123,
+    -0.075,
+    0.578
+   ],
+   "bbox_max": [
+    -1.965,
+    0.127,
+    0.736
+   ],
+   "centre": [
+    -2.044,
+    0.026,
+    0.657
+   ],
+   "negative_scale": true,
+   "signed_volume": -0.0023,
+   "normals": "INVERTED",
+   "vert_digest": "bb25fd01cd37e5d4",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -90.6,
+   "horiz_offset": 1.949
+  },
+  {
+   "name": "Scruff",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 1844,
+   "bbox_min": [
+    -1.492,
+    -0.771,
+    -0.541
+   ],
+   "bbox_max": [
+    -0.959,
+    0.771,
+    0.349
+   ],
+   "centre": [
+    -1.226,
+    0.0,
+    -0.096
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.2616,
+   "normals": "outward",
+   "vert_digest": "ff1755eb9eaaa7e8",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -89.7,
+   "horiz_offset": 1.131
+  },
+  {
+   "name": "Snout",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 1844,
+   "bbox_min": [
+    -2.17,
+    -0.273,
+    0.143
+   ],
+   "bbox_max": [
+    -1.772,
+    0.308,
+    0.708
+   ],
+   "centre": [
+    -1.971,
+    0.017,
+    0.426
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.0668,
+   "normals": "outward",
+   "vert_digest": "5242079d8518e6f6",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -90.3,
+   "horiz_offset": 1.876
+  }
+ ],
+ "armatures": [],
+ "actions": []
+}

@@ -1,0 +1,112 @@
+{
+ "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-vampito.blend",
+ "checks": [
+  {
+   "check": "cell_fit",
+   "pass": false,
+   "footprint": 23.424,
+   "height": 11.0709,
+   "width": 23.424,
+   "depth": 6.4015,
+   "max_footprint": 1.9,
+   "max_height": 1.8
+  },
+  {
+   "check": "feet_origin",
+   "pass": false,
+   "min_z": -10.18355,
+   "centre_xy": [
+    -0.0,
+    -0.55894
+   ],
+   "transforms_applied": false
+  },
+  {
+   "check": "facing_-Y",
+   "pass": false,
+   "reason": "no conquest_front_anchor/landmark props: facing unverifiable"
+  },
+  {
+   "check": "tri_budget",
+   "pass": false,
+   "tris": 75288,
+   "budget": [
+    0,
+    1000000000
+   ],
+   "tier": null,
+   "declared": false
+  },
+  {
+   "check": "uv_health",
+   "pass": false,
+   "zero_area_faces": 37185,
+   "zero_area_pct": 98.467,
+   "flipped": 124,
+   "meshes": [
+    {
+     "mesh": "Head",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 10,
+     "overlap": true,
+     "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.8016,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Body-Upper",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.2863,
+     "area_distortion_p95": 1.047
+    },
+    {
+     "mesh": "Icosphere",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.2863,
+     "area_distortion_p95": 1.047
+    },
+    {
+     "mesh": "Icosphere.001",
+     "layers": 1,
+     "islands": 2,
+     "flipped": 114,
+     "overlap": true,
+     "overlap_note": "summed UV area is 292% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 1.6605,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Eyes",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.2863,
+     "area_distortion_p95": 1.524
+    }
+   ]
+  },
+  {
+   "check": "flat_shaded",
+   "pass": true,
+   "smooth_faces": 0,
+   "faces": 37764
+  },
+  {
+   "check": "colour",
+   "pass": false
+  }
+ ],
+ "passed": 1,
+ "failed": 6
+}

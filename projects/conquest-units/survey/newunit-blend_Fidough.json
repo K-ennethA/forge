@@ -1,0 +1,443 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-Fidough.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Body",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    2.267,
+    1.833,
+    1.527
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 213762,
+   "faces": 213760,
+   "tris_base": 427520,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 427520,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": null,
+    "flipped_faces": 12,
+    "degenerate_faces": 213646,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Ear",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    1.0,
+    0.531,
+    0.971
+   ],
+   "scale": [
+    0.537,
+    -0.262,
+    0.544
+   ],
+   "modifiers": [],
+   "verts": 1844,
+   "faces": 1842,
+   "tris_base": 3684,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 3684,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 1730,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.26,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 6.264,
+     "worst_factor": 6.26
+    }
+   }
+  },
+  {
+   "name": "Head",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    1.327,
+    1.457,
+    1.307
+   ],
+   "scale": [
+    0.599,
+    0.763,
+    0.667
+   ],
+   "modifiers": [],
+   "verts": 1844,
+   "faces": 1842,
+   "tris_base": 3684,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 3684,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 1730,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.23,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 6.227,
+     "worst_factor": 6.23
+    }
+   }
+  },
+  {
+   "name": "Icosphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.159,
+    0.202,
+    0.158
+   ],
+   "scale": [
+    -0.087,
+    -0.087,
+    -0.087
+   ],
+   "modifiers": [],
+   "verts": 1844,
+   "faces": 1842,
+   "tris_base": 3684,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 3684,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 1730,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.18,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 6.179,
+     "worst_factor": 6.18
+    }
+   }
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Scruff",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.532,
+    1.543,
+    0.89
+   ],
+   "scale": [
+    0.384,
+    1.0,
+    0.363
+   ],
+   "modifiers": [],
+   "verts": 1844,
+   "faces": 1842,
+   "tris_base": 3684,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 3684,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 1730,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 5.71,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 5.714,
+     "worst_factor": 5.71
+    }
+   }
+  },
+  {
+   "name": "Snout",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.399,
+    0.582,
+    0.565
+   ],
+   "scale": [
+    0.24,
+    0.221,
+    0.293
+   ],
+   "modifiers": [],
+   "verts": 1844,
+   "faces": 1842,
+   "tris_base": 3684,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 3684,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 10,
+    "degenerate_faces": 1730,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 6.0,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 6.0,
+     "worst_factor": 6.0
+    }
+   }
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [
+  {
+   "name": "Material",
+   "users": 0,
+   "use_nodes": true,
+   "viewport_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "node_types": [
+    "ShaderNodeBsdfPrincipled",
+    "ShaderNodeOutputMaterial"
+   ],
+   "principled_base_color": [
+    0.8,
+    0.8,
+    0.8,
+    1.0
+   ],
+   "base_color_linked_from": null,
+   "roughness": 0.5,
+   "images": [],
+   "uses_color_attribute": false
+  }
+ ],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "Body",
+  "Ear",
+  "Head",
+  "Icosphere",
+  "Scruff",
+  "Snout"
+ ],
+ "render_tris_total": 445940,
+ "bbox_min": [
+  -2.17,
+  -0.917,
+  -1.078
+ ],
+ "bbox_max": [
+  1.095,
+  1.26,
+  1.357
+ ],
+ "bbox_size_wdh": [
+  3.265,
+  2.177,
+  2.435
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-Fidough_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-Fidough_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-Fidough_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-Fidough_side.png"
+ ]
+}

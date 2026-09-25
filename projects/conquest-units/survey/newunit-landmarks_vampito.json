@@ -1,0 +1,47 @@
+{
+ "plan_centre": [
+  -0.0,
+  -0.559
+ ],
+ "height": 11.071,
+ "crown": {
+  "n": 531,
+  "centroid": [
+   -0.0,
+   0.016,
+   0.682
+  ],
+  "dir_deg": -180.0,
+  "offset": 0.575
+ },
+ "ground": {
+  "n": 564,
+  "centroid": [
+   -0.0,
+   1.168,
+   -9.987
+  ],
+  "dir_deg": 180.0
+ },
+ "principal_axis_xy": [
+  -1.0,
+  -0.0
+ ],
+ "axis_ratio": 5.8,
+ "ends": {
+  "end_pos": {
+   "n": 5649,
+   "dir_deg": -93.6,
+   "mean_z": -2.918,
+   "lap_mean": 0.00525,
+   "lap_p95": 0.01244
+  },
+  "end_neg": {
+   "n": 5649,
+   "dir_deg": 93.6,
+   "mean_z": -2.918,
+   "lap_mean": 0.00525,
+   "lap_p95": 0.01244
+  }
+ }
+}

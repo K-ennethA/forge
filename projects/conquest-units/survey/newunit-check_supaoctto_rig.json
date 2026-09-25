@@ -1,0 +1,161 @@
+{
+ "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto_rig.blend",
+ "checks": [
+  {
+   "check": "cell_fit",
+   "pass": false,
+   "footprint": 20.7789,
+   "height": 21.0024,
+   "width": 20.7789,
+   "depth": 7.8644,
+   "max_footprint": 1.9,
+   "max_height": 1.8
+  },
+  {
+   "check": "feet_origin",
+   "pass": false,
+   "min_z": -15.27171,
+   "centre_xy": [
+    -0.25185,
+    -1.03963
+   ],
+   "transforms_applied": false
+  },
+  {
+   "check": "facing_-Y",
+   "pass": false,
+   "reason": "no conquest_front_anchor/landmark props: facing unverifiable"
+  },
+  {
+   "check": "tri_budget",
+   "pass": false,
+   "tris": 196420,
+   "budget": [
+    0,
+    1000000000
+   ],
+   "tier": null,
+   "declared": false
+  },
+  {
+   "check": "uv_health",
+   "pass": false,
+   "zero_area_faces": 95747,
+   "zero_area_pct": 97.492,
+   "flipped": 932,
+   "meshes": [
+    {
+     "mesh": "Head",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 21,
+     "overlap": true,
+     "overlap_note": "summed UV area is 93% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.7927,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Cape",
+     "layers": 1,
+     "islands": 2,
+     "flipped": 714,
+     "overlap": true,
+     "overlap_note": "summed UV area is 740% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 3.3568,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Body",
+     "layers": 1,
+     "islands": 2,
+     "flipped": 116,
+     "overlap": true,
+     "overlap_note": "summed UV area is 201% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 1.0217,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Mask",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 43,
+     "overlap": true,
+     "overlap_note": "summed UV area is 177% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 1.181,
+     "area_distortion_p95": 0.0
+    },
+    {
+     "mesh": "Icosphere",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 13,
+     "overlap": true,
+     "overlap_note": "summed UV area is 93% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.8159,
+     "area_distortion_p95": 3.661
+    },
+    {
+     "mesh": "Mask-Goggles",
+     "layers": 1,
+     "islands": 1,
+     "flipped": 25,
+     "overlap": true,
+     "overlap_note": "summed UV area is 126% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.9591,
+     "area_distortion_p95": 0.0
+    }
+   ]
+  },
+  {
+   "check": "flat_shaded",
+   "pass": true,
+   "smooth_faces": 0,
+   "faces": 98210
+  },
+  {
+   "check": "colour",
+   "pass": false
+  },
+  {
+   "check": "rig_root",
+   "pass": false,
+   "root_present": false,
+   "root_head": null,
+   "armature_identity": false,
+   "root_max_offset_over_clips": 0.0,
+   "bones": 22
+  },
+  {
+   "check": "clip_names",
+   "pass": false,
+   "clips": [],
+   "not_allowed": [],
+   "idle": [
+    null,
+    null
+   ],
+   "walk": [
+    null,
+    null
+   ]
+  },
+  {
+   "check": "clip_loops",
+   "pass": false,
+   "fps": 24.0,
+   "clips": []
+  },
+  {
+   "check": "skin",
+   "pass": false,
+   "armature_modifier": true,
+   "weight_sum_min": 0.0,
+   "weight_sum_max": 2.85285,
+   "unweighted": 108,
+   "max_influences": 6,
+   "deform_bones": 22
+  }
+ ],
+ "passed": 1,
+ "failed": 10
+}

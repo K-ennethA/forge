@@ -1,0 +1,270 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-mosquitopire.blend",
+ "unit_centroid": [
+  -0.007,
+  -3.241,
+  6.704
+ ],
+ "unit_bbox_min": [
+  -9.348,
+  -5.874,
+  0.595
+ ],
+ "unit_bbox_max": [
+  9.349,
+  3.618,
+  12.69
+ ],
+ "parts": [
+  {
+   "name": "Cylinder",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 96,
+   "bbox_min": [
+    0.085,
+    0.14,
+    11.225
+   ],
+   "bbox_max": [
+    0.725,
+    1.77,
+    12.69
+   ],
+   "centre": [
+    0.405,
+    0.955,
+    11.958
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.0071,
+   "normals": "outward",
+   "vert_digest": "0bc93caf01c3f985",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 174.4,
+   "horiz_offset": 4.216
+  },
+  {
+   "name": "Cylinder.001",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 96,
+   "bbox_min": [
+    -0.598,
+    0.107,
+    11.225
+   ],
+   "bbox_max": [
+    -0.044,
+    1.766,
+    12.69
+   ],
+   "centre": [
+    -0.321,
+    0.937,
+    11.958
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.0071,
+   "normals": "outward",
+   "vert_digest": "e1cacca43ce7a44a",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -175.7,
+   "horiz_offset": 4.19
+  },
+  {
+   "name": "Sphere",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 2000,
+   "bbox_min": [
+    -1.334,
+    -1.778,
+    8.03
+   ],
+   "bbox_max": [
+    1.334,
+    3.618,
+    11.316
+   ],
+   "centre": [
+    0.0,
+    0.92,
+    9.673
+   ],
+   "negative_scale": false,
+   "signed_volume": 9.9138,
+   "normals": "outward",
+   "vert_digest": "c1035d445589c942",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 179.9,
+   "horiz_offset": 4.161
+  },
+  {
+   "name": "Sphere.001",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 77170,
+   "bbox_min": [
+    -9.348,
+    -5.874,
+    0.595
+   ],
+   "bbox_max": [
+    9.349,
+    -0.21,
+    9.175
+   ],
+   "centre": [
+    0.001,
+    -3.042,
+    4.885
+   ],
+   "negative_scale": false,
+   "signed_volume": 50.1015,
+   "normals": "outward",
+   "vert_digest": "c4af67dc802a2d0b",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 177.8,
+   "horiz_offset": 0.199
+  },
+  {
+   "name": "Sphere.002",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 7644,
+   "bbox_min": [
+    -2.928,
+    -5.745,
+    6.399
+   ],
+   "bbox_max": [
+    2.928,
+    -1.512,
+    10.081
+   ],
+   "centre": [
+    0.0,
+    -3.628,
+    8.24
+   ],
+   "negative_scale": false,
+   "signed_volume": 15.609,
+   "normals": "outward",
+   "vert_digest": "5a1db8b4e3f49ed8",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 1.0,
+   "horiz_offset": 0.387
+  },
+  {
+   "name": "Sphere.003",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 482,
+   "bbox_min": [
+    0.218,
+    -0.369,
+    10.344
+   ],
+   "bbox_max": [
+    1.093,
+    0.783,
+    11.251
+   ],
+   "centre": [
+    0.655,
+    0.207,
+    10.798
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.4052,
+   "normals": "outward",
+   "vert_digest": "3092576de41b8322",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 169.1,
+   "horiz_offset": 3.511
+  },
+  {
+   "name": "Sphere.004",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 482,
+   "bbox_min": [
+    -1.139,
+    -0.45,
+    10.307
+   ],
+   "bbox_max": [
+    -0.301,
+    0.668,
+    11.273
+   ],
+   "centre": [
+    -0.72,
+    0.109,
+    10.79
+   ],
+   "negative_scale": false,
+   "signed_volume": 0.4043,
+   "normals": "outward",
+   "vert_digest": "4adb3ef8ec8908ae",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": -168.0,
+   "horiz_offset": 3.425
+  },
+  {
+   "name": "Sphere.005",
+   "render_visible": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "parent": null,
+   "verts": 5632,
+   "bbox_min": [
+    -8.871,
+    -4.745,
+    4.474
+   ],
+   "bbox_max": [
+    8.943,
+    -1.518,
+    8.478
+   ],
+   "centre": [
+    0.036,
+    -3.131,
+    6.476
+   ],
+   "negative_scale": true,
+   "signed_volume": -24.7991,
+   "normals": "INVERTED",
+   "vert_digest": "438834bb150e7e1f",
+   "modifiers": [],
+   "vertex_groups": [],
+   "dir_from_unit_centroid_deg": 158.8,
+   "horiz_offset": 0.118
+  }
+ ],
+ "armatures": [],
+ "actions": []
+}

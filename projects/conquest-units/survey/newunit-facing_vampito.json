@@ -1,0 +1,92 @@
+{
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-vampito.blend",
+ "meshes": [
+  "Body-Upper",
+  "Eyes",
+  "Head",
+  "sculpt_Icosphere",
+  "sculpt_Icosphere.001"
+ ],
+ "verts": 37656,
+ "bbox_min": [
+  -11.712,
+  -3.76,
+  -10.184
+ ],
+ "bbox_max": [
+  11.712,
+  2.642,
+  0.887
+ ],
+ "centroid": [
+  -0.001,
+  0.548,
+  -3.85
+ ],
+ "top30": {
+  "n": 13314,
+  "feature_offset_xy": [
+   -0.0715,
+   -0.3238
+  ],
+  "feature_angle_from_minusY_deg": -12.4,
+  "lap_energy": {
+   "minusY": 2.05073,
+   "plusY": 1.05503,
+   "minusX": 1.56266,
+   "plusX": 1.5431
+  },
+  "extent_y": [
+   -3.76,
+   2.141
+  ]
+ },
+ "head_top15": {
+  "n": 1818,
+  "feature_offset_xy": [
+   -0.4771,
+   -0.2552
+  ],
+  "feature_angle_from_minusY_deg": -61.9,
+  "lap_energy": {
+   "minusY": 0.27987,
+   "plusY": 0.18304,
+   "minusX": 0.36341,
+   "plusX": 0.09949
+  },
+  "extent_y": [
+   -2.397,
+   1.087
+  ]
+ },
+ "chest_35_75": {
+  "n": 21236,
+  "feature_offset_xy": [
+   -0.0,
+   -0.6267
+  ],
+  "feature_angle_from_minusY_deg": -0.0,
+  "lap_energy": {
+   "minusY": 4.12496,
+   "plusY": 1.50844,
+   "minusX": 2.51222,
+   "plusX": 3.12118
+  },
+  "extent_y": [
+   -1.762,
+   2.642
+  ]
+ },
+ "materials": {
+  "<none>": {
+   "faces": 37764,
+   "centroid": [
+    -0.001,
+    0.546,
+    -3.846
+   ],
+   "dir_angle_from_minusY_deg": -19.1,
+   "horiz_offset": 0.0022
+  }
+ }
+}

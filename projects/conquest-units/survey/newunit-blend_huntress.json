@@ -1,0 +1,336 @@
+{
+ "mode": "blend",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-huntress.blend",
+ "yaw_deg": 0.0,
+ "objects": [
+  {
+   "name": "Camera",
+   "type": "CAMERA",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  },
+  {
+   "name": "Icosphere",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": true,
+   "dimensions": [
+    1.811,
+    2.245,
+    3.564
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 10940,
+   "faces": 10938,
+   "tris_base": 21876,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 21876
+  },
+  {
+   "name": "Icosphere.001",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": true,
+   "dimensions": [
+    3.725,
+    3.668,
+    3.634
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": [],
+   "verts": 2148,
+   "faces": 2146,
+   "tris_base": 4292,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 4292,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 11,
+    "degenerate_faces": 2042,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.773,
+    "overlap_note": "summed UV area is 87% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Icosphere.002",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": true,
+   "dimensions": [
+    18.184,
+    7.945,
+    9.697
+   ],
+   "scale": [
+    -3.485,
+    -2.911,
+    -4.15
+   ],
+   "modifiers": [],
+   "verts": 2410,
+   "faces": 2408,
+   "tris_base": 4816,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 4816,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 12,
+    "degenerate_faces": 2295,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.8016,
+    "overlap_note": "summed UV area is 89% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Icosphere.003",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": true,
+   "dimensions": [
+    4.26,
+    3.374,
+    3.374
+   ],
+   "scale": [
+    2.24,
+    1.687,
+    1.687
+   ],
+   "modifiers": [],
+   "verts": 42,
+   "faces": 80,
+   "tris_base": 80,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 80,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 0,
+    "degenerate_faces": 0,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 1.13,
+    "overlap": false,
+    "coverage": 0.2863,
+    "overlap_note": "summed UV area is 22% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 1.047,
+     "p05": 0.882,
+     "p95": 1.047,
+     "worst_factor": 1.13
+    }
+   }
+  },
+  {
+   "name": "Icosphere.004",
+   "type": "MESH",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    25.076,
+    18.838,
+    10.749
+   ],
+   "scale": [
+    2.248,
+    2.248,
+    2.248
+   ],
+   "modifiers": [],
+   "verts": 24066,
+   "faces": 24064,
+   "tris_base": 48128,
+   "loose_shells": 1,
+   "boundary_edges": 0,
+   "nonmanifold_edges_gt2": 0,
+   "smooth_face_fraction": 0.0,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "color_attributes": [],
+   "materials": [],
+   "vertex_groups": 0,
+   "shape_keys": [],
+   "tris_evaluated": 48128,
+   "uv": {
+    "layer": "UVMap",
+    "layers": [
+     "UVMap"
+    ],
+    "islands": 1,
+    "flipped_faces": 17,
+    "degenerate_faces": 23938,
+    "out_of_bounds_loops": 0,
+    "area_distortion": 0.0,
+    "overlap": true,
+    "coverage": 0.8446,
+    "overlap_note": "summed UV area is 99% above the rasterised coverage at 512x512 \u2014 the islands very likely overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+    "distortion_detail": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "worst_factor": 0.0
+    }
+   }
+  },
+  {
+   "name": "Light",
+   "type": "LIGHT",
+   "parent": null,
+   "in_view_layer": true,
+   "hide_render": false,
+   "hide_viewport": false,
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "modifiers": []
+  }
+ ],
+ "unit_scale": 1.0,
+ "scenes": [
+  "Scene"
+ ],
+ "materials": [],
+ "images": [
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "packed": false,
+   "size": [
+    0,
+    0
+   ]
+  }
+ ],
+ "actions": [],
+ "armatures": [],
+ "render_meshes": [
+  "Icosphere.004"
+ ],
+ "render_tris_total": 48128,
+ "bbox_min": [
+  -12.536,
+  -8.96,
+  -8.568
+ ],
+ "bbox_max": [
+  12.54,
+  9.878,
+  2.181
+ ],
+ "bbox_size_wdh": [
+  25.076,
+  18.838,
+  10.749
+ ],
+ "renders": [
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-huntress_front.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-huntress_threequarter.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-huntress_tactical.png",
+  "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\survey\\newunit-huntress_side.png"
+ ]
+}

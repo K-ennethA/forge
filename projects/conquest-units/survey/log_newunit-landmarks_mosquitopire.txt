@@ -1,0 +1,5 @@
+00:01.094  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-mosquitopire.blend"
+LANDMARKS {"plan_centre": [0.001, -1.128], "height": 12.095, "crown": {"n": 64, "centroid": [0.063, 1.729, 12.69], "dir_deg": 178.8, "offset": 2.858}, "ground": {"n": 1347, "centroid": [0.001, -5.041, 0.859], "dir_deg": 0.0}, "principal_axis_xy": [-1.0, 0.0], "axis_ratio": 3.04, "ends": {"end_pos": {"n": 14041, "dir_deg": -68.7, "mean_z": 7.656, "lap_mean": 0.00738, "lap_p95": 0.02602}, "end_neg": {"n": 14041, "dir_deg": 68.7, "mean_z": 7.659, "lap_mean": 0.00764, "lap_p95": 0.02788}}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit
