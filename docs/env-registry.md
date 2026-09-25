@@ -45,6 +45,7 @@ operator class-name prefix and not an environment variable at all.
 | `FORGE_ASSISTANT_CLAUDE` | bridge | discovered | Full path to the Claude CLI, skipping discovery. The tests point it at `fake_claude.py`. |
 | `FORGE_ASSISTANT_CWD` | bridge | the repo root | Working directory the CLI runs in. Must be the repo root or `.mcp.json` and `--resume` both stop resolving. |
 | `FORGE_ASSISTANT_LIVE_CONTEXT` | bridge | `1` | The live Blender glance before a turn. `0`/`off`/`false`/`no` disables it â€” what a test harness sets so nothing probes the artist's live port. |
+| `FORGE_ASSISTANT_MAX_TURN_USD` | bridge | unset (off) | Per-turn spend cap in dollars. When the turn's spend passes it (the CLI's own figure if the stream gave one, else its per-message usage priced at list rates) the CLI's whole process tree is stopped and the job lands in the distinct terminal state `over_budget`, with what it said, did and cost. Unset, empty, zero, negative or unparseable = off. |
 | `FORGE_ASSISTANT_MAX_UPLOAD_MB` | bridge | `20` | Cap on `POST /upload`, in megabytes. |
 | `FORGE_ASSISTANT_MODEL` | bridge | unset | Fallback `--model`, used only when the request named none. Unset = the CLI's own configured default. |
 | `FORGE_ASSISTANT_PORT` | bridge | `8901` | Listen port (loopback only). |
@@ -53,6 +54,7 @@ operator class-name prefix and not an environment variable at all.
 | `FORGE_ASSISTANT_TEXT_INTERVAL` | bridge | `2.0` | Seconds between `text` activity markers; `0` records every chunk. |
 | `FORGE_ASSISTANT_THUMBS` | bridge | `assistant/thumbs` | The library's thumbnail cache, one PNG per project. Not temp: a card has to draw before anything is running. |
 | `FORGE_ASSISTANT_TIMEOUT` | bridge | `600` | Seconds one turn may take. Floored at 5. Reaching it is not a failure: the turn lands as `timeout` carrying everything the model said and did. |
+| `FORGE_ASSISTANT_TOKEN_FILE` | bridge, benchmark | `assistant/.bridge-token` | Where the bridge writes the bearer token it mints at every start, and where local clients (the benchmark runner) read it. Every POST to the bridge must carry `Authorization: Bearer <token>`; the web UI gets it inside the page instead. The tests point it at a sandbox file so a test bridge never overwrites the live one's. |
 | `FORGE_ASSISTANT_TOOLS` | bridge | `Read,Glob,Grep,mcp__forge__*` | The `--allowedTools` value. `""` is a legal setting and means a no-tools run. The assistant never holds `Write`; widening this is what would break that. |
 | `FORGE_ASSISTANT_UPLOADS` | bridge | `assistant/uploads` | Where `POST /upload` writes. Beside the bridge so it is obvious to find and to delete. |
 | `FORGE_ASSISTANT_VERBOSE` | bridge | unset | Any non-empty value prints the HTTP access log. |

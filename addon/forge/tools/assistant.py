@@ -111,6 +111,25 @@ def bridge_url(path=""):
     return base + "/" + str(path).lstrip("/")
 
 
+def _bridge_token():
+    """The bridge requires ``Authorization: Bearer <token>`` on every POST.
+
+    The token lives beside the bridge (assistant/.bridge-token, overridable
+    with FORGE_ASSISTANT_TOKEN_FILE) and changes on every bridge start, so it
+    is re-read per request rather than cached.
+    """
+    path = os.environ.get("FORGE_ASSISTANT_TOKEN_FILE")
+    if not path:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            os.pardir, os.pardir, os.pardir,
+                            "assistant", ".bridge-token")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        return ""
+
+
 def request_json(url, payload=None, timeout=HTTP_TIMEOUT, method=None):
     data = None
     headers = {"Accept": "application/json"}
@@ -119,6 +138,10 @@ def request_json(url, payload=None, timeout=HTTP_TIMEOUT, method=None):
         headers["Content-Type"] = "application/json"
     if method is None:
         method = "POST" if data is not None else "GET"
+    if method != "GET":
+        token = _bridge_token()
+        if token:
+            headers["Authorization"] = "Bearer " + token
 
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -606,7 +629,8 @@ def send_message(context, props, message, conversation="continue",
             state = request_json(job_url_base + job_id, method="GET")
             shared["activity"] = state.get("activity") or []
             shared["state"] = str(state.get("state") or "running")
-            if state.get("state") in ("done", "error", "cancelled", "timeout"):
+            if state.get("state") in ("done", "error", "cancelled", "timeout",
+                                      "over_budget"):
                 state["job_id"] = job_id
                 return state
 

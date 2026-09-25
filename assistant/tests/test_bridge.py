@@ -52,19 +52,38 @@ def free_port():
 class Client(object):
     """Tiny HTTP client for the bridge under test."""
 
-    def __init__(self, port, log_path):
+    def __init__(self, port, log_path, token_path=None):
         self.port = port
         self.log_path = log_path
+        #: Where this bridge wrote its request token — read, like every
+        #: local client does, from the file (review finding 1).
+        self.token_path = token_path
+        self.token = None
 
     def url(self, path):
         return "http://127.0.0.1:%d%s" % (self.port, path)
 
-    def request(self, path, payload=None, method=None, timeout=30.0):
+    def load_token(self):
+        if self.token_path and os.path.isfile(self.token_path):
+            with open(self.token_path, "r", encoding="ascii") as handle:
+                self.token = handle.read().strip() or None
+        return self.token
+
+    def auth_headers(self):
+        """``{"Authorization": "Bearer <token>"}`` — what every POST must carry."""
+        return {"Authorization": "Bearer %s" % self.token} if self.token else {}
+
+    def request(self, path, payload=None, method=None, timeout=30.0, headers=None,
+                token=True):
         data = None
+        extra = headers or {}
         headers = {"Accept": "application/json"}
+        if token:
+            headers.update(self.auth_headers())
         if payload is not None:
             data = json.dumps(payload).encode("utf-8")
             headers["Content-Type"] = "application/json"
+        headers.update(extra)
         request = urllib.request.Request(
             self.url(path), data=data, headers=headers,
             method=method or ("POST" if data is not None else "GET"))
@@ -154,6 +173,12 @@ def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
     log_path = str(tmp_path / "fake_claude.log")
     env = dict(os.environ)
     env.update({
+        # Never the repo's real .bridge-token: that one belongs to the live
+        # bridge, and its clients read it.
+        "FORGE_ASSISTANT_TOKEN_FILE": str(tmp_path / ("bridge-token-%d" % port)),
+        # The sandbox is the uploads folder, so an image a test writes there is
+        # an attachment /ask may take (and nothing lands in the repo's uploads).
+        "FORGE_ASSISTANT_UPLOADS": str(tmp_path),
         "FORGE_ASSISTANT_PORT": str(port),
         "FORGE_ASSISTANT_CLAUDE": claude,
         "FORGE_ASSISTANT_CWD": REPO_ROOT,
@@ -172,7 +197,7 @@ def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
         cwd=REPO_ROOT, env=env,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    client = Client(port, log_path)
+    client = Client(port, log_path, env["FORGE_ASSISTANT_TOKEN_FILE"])
     deadline = time.time() + 20.0
     while time.time() < deadline:
         if proc.poll() is not None:
@@ -188,6 +213,8 @@ def start_bridge(tmp_path, env_extra=None, claude=FAKE_CLI, python_exe=None):
     else:
         proc.terminate()
         raise AssertionError("bridge never answered /health on port %d" % port)
+    # Written before the server starts answering, so /health means it is there.
+    client.load_token()
     return proc, client
 
 
@@ -1081,11 +1108,18 @@ def test_session_cost_adds_up_and_a_new_conversation_zeroes_it(client):
     assert client.turn("three")["session_cost_usd"] == pytest.approx(0.0123)
 
 
-def test_a_failed_turn_costs_the_conversation_nothing(bridge_proc):
+def test_a_failed_turn_is_billed_what_the_cli_said_it_cost(bridge_proc):
+    """Re-pinned 2026-09-25 (review-assistant.md finding 5).  This used to
+    assert $0.00: errors were billed at nothing, so an ``error_max_turns`` — the
+    most expensive error there is — vanished from the conversation's total.
+    The fake's error result reports $0.0123 and one turn; both are kept."""
     client = bridge_proc(env_extra={"FAKE_CLAUDE_MODE": "api_error"})
-    assert client.turn("hello")["state"] == "error"
+    failed = client.turn("hello")
+    assert failed["state"] == "error"
+    assert failed["cost_usd"] == pytest.approx(0.0123), failed
+    assert failed["num_turns"] == 1, failed
     _status, health = client.request("/health")
-    assert health["session_cost_usd"] == 0.0
+    assert health["session_cost_usd"] == pytest.approx(0.0123)
 
 
 def test_a_signed_out_cli_is_reported_on_health_and_clears_again(bridge_proc, tmp_path):
@@ -1977,10 +2011,12 @@ def test_force_start_is_read_off_the_environment(monkeypatch):
     assert bridge.force_start() is False
 
 
-def test_a_second_bridge_exits_cleanly_instead_of_doubling_up(occupied_port):
+def test_a_second_bridge_exits_cleanly_instead_of_doubling_up(occupied_port, tmp_path):
     """"Already running" is the state the caller wanted, so exit 0, not 1."""
     env = dict(os.environ)
     env.pop("FORGE_FORCE_START", None)
+    token = tmp_path / "bridge-token"
+    env["FORGE_ASSISTANT_TOKEN_FILE"] = str(token)
     done = subprocess.run(
         [sys.executable, BRIDGE_PY, "--port", str(occupied_port)],
         cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE,
@@ -1989,11 +2025,15 @@ def test_a_second_bridge_exits_cleanly_instead_of_doubling_up(occupied_port):
     out = done.stdout.decode("utf-8", "replace")
     assert "already answering" in out, out
     assert "4242" in out and "06b6c99" in out, out
+    # the copy that stood down never touched the running bridge's token
+    assert not token.exists()
 
 
-def test_force_start_skips_the_guard(occupied_port):
+def test_force_start_skips_the_guard(occupied_port, tmp_path):
     env = dict(os.environ)
     env["FORGE_FORCE_START"] = "1"
+    # never the repo's real token file: that one is the live bridge's
+    env["FORGE_ASSISTANT_TOKEN_FILE"] = str(tmp_path / "bridge-token")
     proc = subprocess.Popen(
         [sys.executable, BRIDGE_PY, "--port", str(occupied_port)],
         cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE,

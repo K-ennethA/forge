@@ -24,12 +24,27 @@ if REPO_ROOT not in sys.path:
 from benchmark import quality, runner  # noqa: E402
 from benchmark.report import validate_report  # noqa: E402
 
+#: The token the stub demands, as the real bridge demands its own (review
+#: finding 1): every POST must carry ``Authorization: Bearer <token>``, and the
+#: runner reads it from ``FORGE_ASSISTANT_TOKEN_FILE``.
+STUB_TOKEN = "stub-token-0123456789"
+
+
+@pytest.fixture(autouse=True)
+def token_file(tmp_path, monkeypatch):
+    """Point the runner at a token file holding the stub's token."""
+    path = tmp_path / "bridge-token"
+    path.write_text(STUB_TOKEN, encoding="ascii")
+    monkeypatch.setenv("FORGE_ASSISTANT_TOKEN_FILE", str(path))
+    return path
+
 
 class StubBridge:
     """Scripted bridge. ``script`` maps a poll index to a (status, body) reply."""
 
     def __init__(self, finish_after_s=0.3, final_state="done", artifact=None,
                  ask_status=200, fail_polls=0, never_finish=False):
+        self.refused = []
         self.finish_after_s = finish_after_s
         self.final_state = final_state
         self.artifact = artifact
@@ -57,6 +72,13 @@ class StubBridge:
             def do_POST(self):
                 length = int(self.headers.get("Content-Length") or 0)
                 body = json.loads(self.rfile.read(length) or b"{}")
+                if self.headers.get("Authorization") != "Bearer %s" % STUB_TOKEN:
+                    stub.refused.append(self.path)
+                    self._send(401, {"error": "This bridge needs its token"})
+                    return
+                if self.headers.get("Content-Type") != "application/json":
+                    self._send(415, {"error": "Send this as application/json"})
+                    return
                 if self.path == "/ask":
                     stub.asks.append(body)
                     if stub.ask_status != 200:
@@ -219,6 +241,42 @@ def test_runner_deadline_cancels_a_job_that_never_ends(tmp_path, monkeypatch):
     assert report["final_state"] == "timeout" and report["runner_deadline_hit"] is True
     assert stub.cancels == ["job-1"]
     assert 0.3 <= report["wall_seconds"] < 2.0
+
+
+def test_the_runner_sends_the_token_from_the_token_file(tmp_path, token_file):
+    """Every POST carried it (the stub refuses one that does not)…"""
+    with StubBridge(never_finish=True) as stub:
+        client = runner.BridgeClient(stub.url)
+        status, _body = client.ask("hi")
+        assert status == 200 and stub.refused == []
+        assert client.cancel("job-1")[0] == 200
+        # …re-read per call: a restarted bridge's new token is picked up
+        token_file.write_text("a-new-token", encoding="ascii")
+        assert client.ask("again")[0] == 401
+        assert stub.refused == ["/ask"]
+
+
+def test_a_missing_token_is_a_refused_run_that_says_why(tmp_path, monkeypatch):
+    monkeypatch.setenv("FORGE_ASSISTANT_TOKEN_FILE", str(tmp_path / "absent"))
+    with StubBridge() as stub:
+        report = runner.run_task(write_task(tmp_path, tmp_path / "none.stl"),
+                                 str(tmp_path / "r.json"),
+                                 bridge=runner.BridgeClient(stub.url), poll_s=0.02,
+                                 evaluate=FakeEvaluate())
+    assert report["final_state"] == "refused"
+    assert "token" in report["error"]
+    assert stub.asks == [] and stub.refused == ["/ask"]
+
+
+def test_an_over_budget_turn_is_terminal(tmp_path):
+    with StubBridge(finish_after_s=0.05, final_state="over_budget") as stub:
+        report = runner.run_task(write_task(tmp_path, tmp_path / "none.stl"),
+                                 str(tmp_path / "r.json"),
+                                 bridge=runner.BridgeClient(stub.url), poll_s=0.02,
+                                 evaluate=FakeEvaluate())
+    assert report["final_state"] == "over_budget"
+    assert report["runner_deadline_hit"] is False
+    assert validate_report(report) == []
 
 
 def test_transient_poll_failures_are_ridden_out(tmp_path):

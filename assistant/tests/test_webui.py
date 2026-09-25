@@ -998,8 +998,15 @@ def test_the_job_endpoint_gained_the_same_fields(client):
 # tokens and /file
 # ===========================================================================
 
+def _in_uploads(tmp_path, name):
+    """An attachment where /ask accepts one: the uploads folder (finding 1)."""
+    folder = tmp_path / "uploads"
+    folder.mkdir(exist_ok=True)
+    return write_png(folder / name)
+
+
 def test_an_attachment_is_minted_and_served(client, tmp_path):
-    sketch = write_png(tmp_path / "sketch.png")
+    sketch = _in_uploads(tmp_path, "sketch.png")
     _status, asked = client.ask("what is this?", context={"image_path": sketch})
     job = client.wait(asked["job_id"])
 
@@ -1099,7 +1106,7 @@ def test_a_readable_file_is_still_refused_without_a_token(client, tmp_path):
 
 
 def test_a_token_whose_file_vanished_is_a_plain_404(client, tmp_path):
-    sketch = write_png(tmp_path / "gone.png")
+    sketch = _in_uploads(tmp_path, "gone.png")
     _status, asked = client.ask("look", context={"image_path": sketch})
     job = client.wait(asked["job_id"])
     url = job["files"][0]["url"]
@@ -1148,7 +1155,8 @@ def test_upload_accepts_multipart(client):
 
     request = urllib.request.Request(
         client.url("/upload"), data=payload,
-        headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
+        headers=dict(client.auth_headers(),
+                     **{"Content-Type": "multipart/form-data; boundary=" + boundary}))
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open(request, timeout=20) as response:
         body = json.loads(response.read().decode("utf-8"))
@@ -2202,7 +2210,8 @@ def test_a_post_body_never_poisons_the_next_request_on_the_connection(bridges,
     try:
         body = json.dumps({}).encode("utf-8")
         connection.request("POST", first, body=body,
-                           headers={"Content-Type": "application/json"})
+                           headers=dict(client.auth_headers(),
+                                        **{"Content-Type": "application/json"}))
         connection.getresponse().read()
         # …and now the *next* request on the same socket.
         connection.request("GET", "/health")
@@ -2710,7 +2719,8 @@ def test_a_thumbnail_post_never_poisons_the_next_request(bridges, projects):
     try:
         connection.request("POST", "/projects/nope/thumbnail",
                            body=json.dumps({"view": "front"}).encode("utf-8"),
-                           headers={"Content-Type": "application/json"})
+                           headers=dict(client.auth_headers(),
+                                        **{"Content-Type": "application/json"}))
         assert connection.getresponse().read()
         connection.request("GET", "/health")
         response = connection.getresponse()

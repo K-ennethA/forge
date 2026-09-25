@@ -27,6 +27,13 @@ Endpoints
                             auto-route — see "Choosing the model per message")
 ``GET  /job/<id>``      -> ``{"state", "activity", "session_cost_usd", "reply"?, ...}``
 ``POST /cancel/<id>``   -> ``{"state": "cancelled"}``
+``POST /cancel``        -> the running job, cancelled (404 "Nothing is running.")
+
+Every POST needs ``Authorization: Bearer <token>`` (the token is minted at
+start and written to ``assistant/.bridge-token``; the page gets it inside
+itself), a JSON body (multipart on the two upload routes), and no foreign
+``Origin``; every request needs a loopback ``Host``.  See "request
+authentication" beside ``DEFAULT_STALL_TIMEOUT``.
 
 Live context (the copilot's eyes)
 ---------------------------------
@@ -329,13 +336,21 @@ text that streamed past).
 
 How a turn ends
 ---------------
-``job["state"]`` is one of four, and all four are TERMINAL — a client that polls
+``job["state"]`` is one of five, and all five are TERMINAL — a client that polls
 ``GET /job/<id>`` must stop on every one of them::
 
-    done       it answered
-    error      it could not
-    cancelled  the artist pressed Stop
-    timeout    it ran out of clock, and here is how far it got
+    done         it answered
+    error        it could not
+    cancelled    the artist pressed Stop
+    timeout      it ran out of clock, and here is how far it got
+    over_budget  FORGE_ASSISTANT_MAX_TURN_USD stopped it, and here is how far
+
+Every one of them carries ``cost_usd`` / ``usage`` / ``num_turns`` when the
+stream said anything: the result event's own figures when it arrived, else the
+per-message ledger priced at list rates with ``cost_estimated: true``.  A result
+that was read before a kill or a cancel lands as ``done``.  Cancel, timeout and
+the cap stop the CLI's whole process tree (a Job Object on Windows), and so does
+the bridge dying.
 
 ``timeout`` is the Phase-17 addition and it is deliberately not ``error``.  The
 dogfood run (docs/dogfood-litwick-2026-09-16.md, B-1) lost a fifteen-minute turn
@@ -425,9 +440,11 @@ Web UI environment (Phase 9)
 import base64
 import binascii
 import calendar
+import hmac
 import json
 import os
 import re
+import secrets
 import shutil
 import socket
 import subprocess
@@ -526,6 +543,88 @@ DEFAULT_TIMEOUT = 600.0
 #: budget was never the constraint: a hung process was.  A stall is killed on
 #: its own clock so the rest of the budget is still there to work in.
 DEFAULT_STALL_TIMEOUT = 300.0
+
+# ---------------------------------------------------------------------------
+# request authentication (review-assistant.md finding 1)
+# ---------------------------------------------------------------------------
+#
+# The bridge is a localhost HTTP server whose /ask starts a turn that can call
+# ``execute_blender_python``.  Loopback binding stops the network; it does not
+# stop a web page the artist has open, which can POST ``text/plain`` to
+# 127.0.0.1 as a CORS "simple request" with no preflight.  Three checks close
+# that, each on its own:
+#
+# * **Host** must name loopback (or the address this server is bound to) on
+#   every request.  A DNS-rebinding page arrives as ``Host: evil.example``; this
+#   is what stops it reading ``/`` (which carries the token) or ``/jobs``.
+# * **Origin**, when a browser sends one, must be this bridge's own origin.
+# * **A bearer token** on every POST.  It is minted at start, handed to the web
+#   UI inside the page this bridge serves, and written to ``.bridge-token``
+#   beside this file for local clients (the benchmark runner, the add-on).
+#   ``Authorization`` is not a CORS-safelisted header, so a cross-origin page
+#   cannot even send it without a preflight this server never answers.
+# * **Content-Type** must be ``application/json`` on a POST with a body
+#   (``multipart/form-data`` also on the two upload routes), so the body can
+#   never ride a simple request either.
+
+#: Where the token is written unless ``FORGE_ASSISTANT_TOKEN_FILE`` says
+#: otherwise.  A dotfile beside the bridge: every local client already knows
+#: where the repo is.
+TOKEN_FILENAME = ".bridge-token"
+#: The ``<meta>`` the page carries the token in; app.js reads it by this name.
+TOKEN_META_NAME = "forge-bridge-token"
+#: Host names every request may carry (with any port).  The bound address is
+#: added at request time when the server listens somewhere else explicitly.
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+#: Routes whose body may be a multipart form (the two browser uploads).
+MULTIPART_SUFFIXES = ("/upload", "/refs")
+
+# ---------------------------------------------------------------------------
+# what a turn costs while it is still running (review findings 5 and 9)
+# ---------------------------------------------------------------------------
+#
+# The CLI states a turn's dollar total only on its final ``result`` event.  A
+# turn that times out, errors mid-way, is cancelled or is stopped by the spend
+# cap never gets there, so the bridge prices the per-message ``usage`` it saw
+# instead and marks the figure ``cost_estimated``.  USD per million tokens:
+# ``(model id fragment, input, output, cache write (5 min), cache read)``,
+# first match wins, so the more specific fragment is listed first.  Source:
+# the Anthropic model price table as of 2026-06 (claude-api skill cache); the
+# cache-write column is 1.25x input and cache-read 0.1x input where the table
+# names no special rate.  An estimate, never a bill: the result event's own
+# total always replaces it when it arrives.
+MODEL_PRICES_PER_MTOK = (
+    ("fable-5-1", 10.0, 50.0, 12.5, 0.25),
+    ("mythos-5-1", 10.0, 50.0, 12.5, 0.25),
+    ("fable", 10.0, 50.0, 12.5, 1.0),
+    ("mythos", 10.0, 50.0, 12.5, 1.0),
+    ("opus-5-5", 4.0, 20.0, 5.0, 0.20),
+    ("opus-5", 5.0, 25.0, 6.25, 0.50),
+    ("opus-4-8", 5.0, 25.0, 6.25, 0.50),
+    ("opus-4-7", 5.0, 25.0, 6.25, 0.50),
+    ("opus-4-6", 5.0, 25.0, 6.25, 0.50),
+    ("opus-4-5", 5.0, 25.0, 6.25, 0.50),
+    ("opus-4", 15.0, 75.0, 18.75, 1.50),
+    ("opus", 5.0, 25.0, 6.25, 0.50),
+    ("sonnet-5", 2.0, 10.0, 2.5, 0.20),
+    ("sonnet", 3.0, 15.0, 3.75, 0.30),
+    ("3-5-haiku", 0.8, 4.0, 1.0, 0.08),
+    ("haiku", 1.0, 5.0, 1.25, 0.10),
+)
+#: A model the table does not know is priced as Opus 5: the default Claude Code
+#: model family, and for a spend cap an over-estimate is the safe direction
+#: against every cheaper model.
+DEFAULT_MODEL_PRICE = (5.0, 25.0, 6.25, 0.50)
+#: The usage fields that are token counts, and the price column each bills at.
+USAGE_PRICE_COLUMNS = (("input_tokens", 0), ("output_tokens", 1),
+                       ("cache_creation_input_tokens", 2),
+                       ("cache_read_input_tokens", 3))
+
+#: The terminal state of a turn stopped by ``FORGE_ASSISTANT_MAX_TURN_USD``.
+#: Distinct from ``timeout`` and ``cancelled`` on purpose: a client (and the
+#: benchmark report) has to tell "the cap stopped it" from "the clock did" and
+#: from "somebody pressed Stop".
+OVER_BUDGET_STATE = "over_budget"
 
 #: Read-only repo access plus every Forge MCP tool.  The server name comes from
 #: ``.mcp.json`` at the repo root ("forge"), so the wildcard is ``mcp__forge__*``.
@@ -1711,6 +1810,29 @@ def stall_timeout_s():
     return max(0.0, value)
 
 
+def max_turn_usd():
+    """The per-turn spend cap in dollars, or ``None`` when there is none.
+
+    ``FORGE_ASSISTANT_MAX_TURN_USD``: unset, empty, zero, negative or not a
+    number all mean "off" — a cap that silently stopped every turn because of a
+    typo would be worse than no cap.
+    """
+    raw = str(_env("FORGE_ASSISTANT_MAX_TURN_USD", "") or "").strip()
+    if not raw:
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def token_file():
+    """Where this bridge writes its request token (``FORGE_ASSISTANT_TOKEN_FILE``)."""
+    return os.path.abspath(str(_env("FORGE_ASSISTANT_TOKEN_FILE",
+                                    os.path.join(HERE, TOKEN_FILENAME))))
+
+
 def working_dir():
     """Where the CLI runs.  Must be the repo root so ``.mcp.json`` is found.
 
@@ -2183,6 +2305,58 @@ def image_error(path):
     return ""
 
 
+def _within(path, root):
+    """Is ``path`` inside ``root`` (or ``root`` itself)?  Both resolved first."""
+    try:
+        path = os.path.normcase(os.path.realpath(path))
+        root = os.path.normcase(os.path.realpath(root))
+        return os.path.commonpath([path, root]) == root
+    except (ValueError, OSError):
+        return False  # different drives, or a path the OS will not resolve
+
+
+def attachment_roots():
+    """The folders an ``/ask`` attachment may come from: the repo and uploads."""
+    return [REPO_ROOT, uploads_dir()]
+
+
+def _in_refs_dir(path):
+    """Is ``path`` directly inside some ``<projects>/<name>/design/refs/``?"""
+    real = os.path.realpath(path)
+    refs = os.path.dirname(real)
+    design = os.path.dirname(refs)
+    project = os.path.dirname(design)
+    if (os.path.normcase(os.path.basename(refs)) != os.path.normcase(REFS_DIRNAME)
+            or os.path.normcase(os.path.basename(design))
+            != os.path.normcase(DESIGN_DIRNAME)):
+        return False
+    return (os.path.normcase(os.path.dirname(project))
+            == os.path.normcase(os.path.realpath(projects_dir())))
+
+
+def image_location_error(path):
+    """Why this attachment's LOCATION is refused, or ``""`` (review finding 1).
+
+    ``context.image_path`` is the one place a client-chosen path becomes a
+    ``/file`` token anyone polling ``/jobs`` can fetch, and a path the model is
+    told to Read.  So it must already live somewhere this bridge treats as the
+    artist's workspace: the repo, the uploads folder ``POST /upload`` writes,
+    or a project's ``design/refs``.  Anything else is refused by name, with the
+    road that does work — upload it — spelled out.
+    """
+    resolved = normalize_image_path(path)
+    if not resolved:
+        return ""
+    if any(_within(resolved, root) for root in attachment_roots()):
+        return ""
+    if _in_refs_dir(resolved):
+        return ""
+    return ("%s is outside the folders an attachment may come from (the repo "
+            "%s, the uploads folder %s, or a project's design/refs). Upload it "
+            "instead (POST /upload, or drop it on the page)."
+            % (resolved, REPO_ROOT, uploads_dir()))
+
+
 def split_image(context):
     """``(context without the attachment, absolute image path)``.
 
@@ -2459,7 +2633,8 @@ def compose_reply(blocks, final=""):
     return joined
 
 
-def checkpoint_reply(recorder, limit, stalled=False, silent_for=0.0):
+def checkpoint_reply(recorder, limit, stalled=False, silent_for=0.0,
+                     reason="timeout", spent=None, cap=None):
     """What a turn that ran out of time still has to say for itself.
 
     B-1 in one function.  The dogfood run's turn 3 wrote a 441-line ``part.py``,
@@ -2474,6 +2649,11 @@ def checkpoint_reply(recorder, limit, stalled=False, silent_for=0.0):
     only when it is true — a turn killed while it was working might genuinely
     be too big; a turn killed because the CLI went silent would have stalled at
     any size, and telling the artist to type less is blaming them for a hang.
+
+    ``reason`` names what stopped it: ``"timeout"`` (the clocks above),
+    ``"cancelled"`` (the artist pressed Stop) or ``"over_budget"`` (the
+    per-turn spend cap, with ``spent`` and ``cap`` in dollars).  The body — what
+    it said and did — is the same for all three; only the last sentence moves.
     """
     parts = []
     text = compose_reply(recorder.text_blocks()) if recorder is not None else ""
@@ -2483,7 +2663,19 @@ def checkpoint_reply(recorder, limit, stalled=False, silent_for=0.0):
     if steps:
         parts.append("Steps it completed before it was stopped:\n"
                      + "\n".join("- %s" % step for step in steps))
-    if stalled:
+    if reason == "cancelled":
+        parts.append(
+            "— stopped at your request. Above is everything it said and did "
+            "before that; the work it completed is real and on disk. Ask "
+            "\"what got built?\" to carry on from here.")
+    elif reason == OVER_BUDGET_STATE:
+        parts.append(
+            "— stopped by the spend cap: this turn had used about $%.2f, over "
+            "the FORGE_ASSISTANT_MAX_TURN_USD limit of $%.2f. Above is "
+            "everything it said and did before that; the work it completed is "
+            "real and on disk. Ask \"what got built?\" to carry on, or raise "
+            "the cap." % (float(spent or 0.0), float(cap or 0.0)))
+    elif stalled:
         parts.append(
             "— the assistant went silent for %.0f seconds (no text, no tool, "
             "nothing) and was stopped there rather than left to eat the rest "
@@ -2636,6 +2828,32 @@ def tool_label(name, args=None):
     return "%s: %s" % (label, summary) if summary else label
 
 
+def model_price(model):
+    """``(input, output, cache write, cache read)`` USD per million tokens."""
+    name = str(model or "").lower()
+    for fragment, *price in MODEL_PRICES_PER_MTOK:
+        if fragment in name:
+            return tuple(price)
+    return DEFAULT_MODEL_PRICE
+
+
+def _token_count(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    return max(0, int(value))
+
+
+def estimate_cost(usage, model):
+    """Dollars for one message's ``usage`` at ``model``'s list price."""
+    if not isinstance(usage, dict):
+        return 0.0
+    price = model_price(model)
+    total = 0.0
+    for field, column in USAGE_PRICE_COLUMNS:
+        total += _token_count(usage.get(field)) * price[column]
+    return total / 1e6
+
+
 class ActivityRecorder(object):
     """Turns a stream of CLI events into the job's activity list.
 
@@ -2679,6 +2897,121 @@ class ActivityRecorder(object):
         #: before the result event.
         self._cost = None
         self._usage = None
+        #: The turn's own ledger (review finding 5).  One entry per API message
+        #: the stream mentioned — keyed by the message id — holding the model
+        #: that served it and the HIGHEST value each usage field reached: the
+        #: CLI repeats a message's usage on message_start, message_delta and
+        #: every assembled ``assistant`` event, and a field only ever grows, so
+        #: max-per-message then sum-across-messages counts each token once.
+        self._messages = OrderedDict()
+        self._current_message = None
+        self._assistant_ids = set()
+        self._session_id = None
+        self._model = None
+        #: What the job asked or was routed to — the price of last resort for
+        #: a message whose model the stream never named.
+        self.fallback_model = ""
+
+    # -- the turn's ledger -----------------------------------------------
+    def session_id(self):
+        """The session the stream announced (``system/init``), or ``None``."""
+        return self._session_id
+
+    def model(self):
+        """The model the stream announced, or ``None``."""
+        return self._model
+
+    def num_turns(self):
+        """Distinct assistant messages seen — API round trips — or ``None``."""
+        return len(self._assistant_ids) or None
+
+    def summed_usage(self):
+        """Every message's usage added up, or ``None`` if none was seen."""
+        if not self._messages:
+            return None
+        total = {}
+        for record in self._messages.values():
+            for field, value in record["usage"].items():
+                total[field] = total.get(field, 0) + value
+        return total
+
+    def estimated_cost(self):
+        """The ledger priced per message at its model's list price, or ``None``."""
+        if not self._messages:
+            return None
+        return sum(estimate_cost(record["usage"],
+                                 record["model"] or self._model
+                                 or self.fallback_model)
+                   for record in self._messages.values())
+
+    def spent(self):
+        """``(dollars, estimated)`` so far: the stream's own figure when it gave
+        one, else the priced ledger; ``(None, False)`` when there is neither."""
+        if self._cost is not None:
+            return self._cost, False
+        estimate = self.estimated_cost()
+        if estimate is None:
+            return None, False
+        return round(estimate, 6), True
+
+    def totals(self):
+        """The fields a job that never reached its result event lands with."""
+        cost, estimated = self.spent()
+        out = {"cost_usd": cost,
+               "usage": self.summed_usage() or self.usage(),
+               "num_turns": self.num_turns(),
+               "model": self._model}
+        if estimated:
+            out["cost_estimated"] = True
+        return out
+
+    def _ledger(self, message_id, model=None, usage=None):
+        key = str(message_id or self._current_message or "message-0")
+        record = self._messages.get(key)
+        if record is None:
+            record = {"model": None, "usage": {}}
+            self._messages[key] = record
+        if model and not record["model"]:
+            record["model"] = str(model)
+        if isinstance(usage, dict):
+            for field, _column in USAGE_PRICE_COLUMNS:
+                if field in usage:
+                    record["usage"][field] = max(record["usage"].get(field, 0),
+                                                 _token_count(usage.get(field)))
+        return key
+
+    def _account(self, payload):
+        """Fold one event into the ledger. Shapes as the CLI's stream-json emits."""
+        kind = payload.get("type")
+        session = payload.get("session_id")
+        if isinstance(session, str) and session and not self._session_id:
+            self._session_id = session
+        if kind == "system" and payload.get("subtype") == "init":
+            if payload.get("model"):
+                self._model = str(payload.get("model"))
+            return
+        event = payload.get("event") if kind == "stream_event" else (
+            payload if kind in ("message_start", "message_delta") else None)
+        if isinstance(event, dict):
+            etype = event.get("type")
+            if etype == "message_start" and isinstance(event.get("message"), dict):
+                message = event["message"]
+                self._current_message = self._ledger(
+                    message.get("id") or "message-%d" % len(self._messages),
+                    message.get("model"), message.get("usage"))
+                if message.get("id"):
+                    self._assistant_ids.add(str(message["id"]))
+            elif etype == "message_delta":
+                self._ledger(None, None, event.get("usage"))
+            return
+        if kind == "assistant" and isinstance(payload.get("message"), dict):
+            message = payload["message"]
+            if message.get("id"):
+                self._assistant_ids.add(str(message["id"]))
+                self._ledger(message["id"], message.get("model"),
+                             message.get("usage"))
+            if message.get("model") and not self._model:
+                self._model = str(message.get("model"))
 
     # -- output ----------------------------------------------------------
     def text_blocks(self):
@@ -2722,6 +3055,10 @@ class ActivityRecorder(object):
     def _feed(self, payload):
         if not isinstance(payload, dict):
             return
+        try:
+            self._account(payload)
+        except Exception:  # noqa: BLE001 - a ledger shape we do not know costs a number, never the feed
+            pass
         self._money(payload)
         kind = payload.get("type")
         if kind == "stream_event":
@@ -3506,7 +3843,11 @@ class JobStore(object):
             job = self._jobs.get(job_id)
             if job is None:
                 return
-            if job.get("cancelled") and fields.get("state") != "cancelled":
+            # A cancel turns an unfinished turn into "cancelled" — but never a
+            # FINISHED one.  A result event that arrived before the kill is the
+            # answer, with its reply and its cost (review finding 6).
+            if (job.get("cancelled")
+                    and fields.get("state") not in ("cancelled", "done")):
                 fields = dict(fields)
                 fields["state"] = "cancelled"
                 fields.setdefault("error", "Cancelled.")
@@ -3525,16 +3866,19 @@ class JobStore(object):
     def _record_outcome(self, job):
         """Fold a finished turn into the two session-wide signals. Lock held.
 
-        A cancelled turn deliberately touches neither: it neither cost anything
-        worth counting nor proved anything about whether we are signed in.
+        Every terminal state is billed what it cost (review finding 5).  A
+        timed-out turn was fifteen minutes of a paid model doing real work; the
+        dogfood run's total read $7.29 and was not $7.29, because the only turn
+        that hit the timeout was silently billed at zero.  An ``error_max_turns``
+        is the most expensive error there is, and a cancelled or over-budget
+        turn spent real tokens before it was stopped.  A turn that never
+        started carries no cost and adds nothing.
 
-        A timed-out turn counts exactly like a finished one.  It was fifteen
-        minutes of a paid model doing real work; the dogfood run's total read
-        $7.29 and was not $7.29, because the only turn that hit the timeout was
-        silently billed at zero.
+        The sign-in signal is separate: only a turn that answered clears it,
+        and only an error sets it.  A cancel proves nothing either way.
         """
         state = job.get("state")
-        if state in ("done", "timeout"):
+        if job.get("cost_usd") is not None or state in ("done", "timeout"):
             try:
                 cost = float(job.get("cost_usd") or 0.0)
             except (TypeError, ValueError):
@@ -3544,10 +3888,19 @@ class JobStore(object):
                 key = job_model_key(job)
                 self.session_cost_by_model[key] = (
                     self.session_cost_by_model.get(key, 0.0) + cost)
+        if state in ("done", "timeout"):
             # It answered, so whatever went wrong before is over.
             self.last_auth_error = False
         elif state == "error":
             self.last_auth_error = looks_like_auth_error(job.get("error"))
+
+    def running_job_id(self):
+        """The id of the turn that is running right now, or ``None``."""
+        with self._lock:
+            active = self._jobs.get(self._active) if self._active else None
+            if active is not None and active["state"] == "running":
+                return active["job_id"]
+            return None
 
     def cancel(self, job_id):
         with self._lock:
@@ -3574,8 +3927,272 @@ class JobStore(object):
         return job
 
 
+# ---------------------------------------------------------------------------
+# the CLI's whole process tree (review finding 4)
+# ---------------------------------------------------------------------------
+#
+# ``claude.exe`` is not one process: it starts the forge MCP server, Bash-tool
+# shells and whatever those start.  TerminateProcess on the one PID leaves every
+# one of them running, still driving Blender with nobody reading them — and so
+# does the bridge itself dying, because a Windows child outlives its parent.
+#
+# So on Windows every CLI starts SUSPENDED, is put in a Job Object of its own
+# with ``JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE``, and only then resumed: nothing it
+# ever starts can be born outside the job.  Cancel, timeout and the spend cap
+# call ``TerminateJobObject`` (the whole tree at once); a turn that ends
+# normally closes the handle, which reaps anything it left behind; and when the
+# bridge dies the OS closes the handle for it, which is the kill-on-close
+# promise.  Elsewhere the CLI leads a new session and the group is signalled.
+
+_IS_WINDOWS = os.name == "nt"
+CREATE_SUSPENDED = 0x00000004
+_JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+_JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
+_TH32CS_SNAPTHREAD = 0x00000004
+_THREAD_SUSPEND_RESUME = 0x0002
+_WIN32_API = {}
+
+
+def _win32():
+    """The handful of kernel32 calls the job object needs, bound once."""
+    if _WIN32_API:
+        return _WIN32_API
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    class IoCounters(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_ulonglong) for name in (
+            "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
+            "ReadTransferCount", "WriteTransferCount", "OtherTransferCount")]
+
+    class BasicLimits(ctypes.Structure):
+        _fields_ = [("PerProcessUserTimeLimit", ctypes.c_int64),
+                    ("PerJobUserTimeLimit", ctypes.c_int64),
+                    ("LimitFlags", wintypes.DWORD),
+                    ("MinimumWorkingSetSize", ctypes.c_size_t),
+                    ("MaximumWorkingSetSize", ctypes.c_size_t),
+                    ("ActiveProcessLimit", wintypes.DWORD),
+                    ("Affinity", ctypes.c_size_t),
+                    ("PriorityClass", wintypes.DWORD),
+                    ("SchedulingClass", wintypes.DWORD)]
+
+    class ExtendedLimits(ctypes.Structure):
+        _fields_ = [("BasicLimitInformation", BasicLimits),
+                    ("IoInfo", IoCounters),
+                    ("ProcessMemoryLimit", ctypes.c_size_t),
+                    ("JobMemoryLimit", ctypes.c_size_t),
+                    ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                    ("PeakJobMemoryUsed", ctypes.c_size_t)]
+
+    class ThreadEntry(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD),
+                    ("th32ThreadID", wintypes.DWORD),
+                    ("th32OwnerProcessID", wintypes.DWORD),
+                    ("tpBasePri", wintypes.LONG), ("tpDeltaPri", wintypes.LONG),
+                    ("dwFlags", wintypes.DWORD)]
+
+    signatures = {
+        "CreateJobObjectW": (wintypes.HANDLE, [ctypes.c_void_p, wintypes.LPCWSTR]),
+        "SetInformationJobObject": (wintypes.BOOL, [wintypes.HANDLE, ctypes.c_int,
+                                                    ctypes.c_void_p, wintypes.DWORD]),
+        "AssignProcessToJobObject": (wintypes.BOOL, [wintypes.HANDLE, wintypes.HANDLE]),
+        "TerminateJobObject": (wintypes.BOOL, [wintypes.HANDLE, wintypes.UINT]),
+        "CloseHandle": (wintypes.BOOL, [wintypes.HANDLE]),
+        "CreateToolhelp32Snapshot": (wintypes.HANDLE, [wintypes.DWORD, wintypes.DWORD]),
+        "Thread32First": (wintypes.BOOL, [wintypes.HANDLE, ctypes.POINTER(ThreadEntry)]),
+        "Thread32Next": (wintypes.BOOL, [wintypes.HANDLE, ctypes.POINTER(ThreadEntry)]),
+        "OpenThread": (wintypes.HANDLE, [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]),
+        "ResumeThread": (wintypes.DWORD, [wintypes.HANDLE]),
+    }
+    for name, (restype, argtypes) in signatures.items():
+        function = getattr(kernel32, name)
+        function.restype = restype
+        function.argtypes = argtypes
+    _WIN32_API.update(ctypes=ctypes, k32=kernel32, ExtendedLimits=ExtendedLimits,
+                      ThreadEntry=ThreadEntry,
+                      invalid=ctypes.c_void_p(-1).value)
+    return _WIN32_API
+
+
+def _new_kill_job():
+    """A fresh kill-on-close Job Object handle, or ``None`` if one cannot be had."""
+    try:
+        api = _win32()
+        k32, ctypes = api["k32"], api["ctypes"]
+        job = k32.CreateJobObjectW(None, None)
+        if not job:
+            return None
+        info = api["ExtendedLimits"]()
+        info.BasicLimitInformation.LimitFlags = _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not k32.SetInformationJobObject(job, _JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+                                           ctypes.byref(info), ctypes.sizeof(info)):
+            k32.CloseHandle(job)
+            return None
+        return job
+    except Exception:  # noqa: BLE001 - no job object is a degraded kill, not a failed turn
+        return None
+
+
+def _resume_process(pid):
+    """Resume every thread of a process created with ``CREATE_SUSPENDED``.
+
+    ``Popen`` closes the primary thread's handle and keeps no thread id, so the
+    threads are found the documented way: a Toolhelp snapshot.
+    """
+    api = _win32()
+    k32, ctypes = api["k32"], api["ctypes"]
+    snapshot = k32.CreateToolhelp32Snapshot(_TH32CS_SNAPTHREAD, 0)
+    if not snapshot or snapshot == api["invalid"]:
+        return False
+    resumed = False
+    try:
+        entry = api["ThreadEntry"]()
+        entry.dwSize = ctypes.sizeof(entry)
+        more = k32.Thread32First(snapshot, ctypes.byref(entry))
+        while more:
+            if entry.th32OwnerProcessID == pid:
+                thread = k32.OpenThread(_THREAD_SUSPEND_RESUME, False,
+                                        entry.th32ThreadID)
+                if thread:
+                    if k32.ResumeThread(thread) != 0xFFFFFFFF:
+                        resumed = True
+                    k32.CloseHandle(thread)
+            more = k32.Thread32Next(snapshot, ctypes.byref(entry))
+    finally:
+        k32.CloseHandle(snapshot)
+    return resumed
+
+
+class ProcessTree(object):
+    """The kill switch for one CLI and everything it starts.  Idempotent."""
+
+    def __init__(self, job=None, group=None):
+        self._lock = threading.Lock()
+        self._job = job        # Windows: the Job Object handle
+        self._group = group    # POSIX: the session/process-group id
+        self.killed = False
+
+    @property
+    def contained(self):
+        return self._job is not None or self._group is not None
+
+    def kill(self):
+        """Every process in the tree, now.  Safe to call from any thread."""
+        with self._lock:
+            if self.killed:
+                return
+            self.killed = True
+            if self._job is not None:
+                try:
+                    _win32()["k32"].TerminateJobObject(self._job, 1)
+                except Exception:  # noqa: BLE001
+                    pass
+            elif self._group is not None:
+                try:
+                    import signal
+                    os.killpg(self._group, signal.SIGKILL)
+                except Exception:  # noqa: BLE001 - already gone
+                    pass
+
+    def close(self):
+        """Release the handle.  On Windows this kills whatever is still in it."""
+        with self._lock:
+            job, self._job = self._job, None
+            if job is not None:
+                try:
+                    _win32()["k32"].CloseHandle(job)
+                except Exception:  # noqa: BLE001
+                    pass
+            elif self._group is not None and not self.killed:
+                # POSIX has no kill-on-close: reap stragglers the same way.
+                self.killed = True
+                try:
+                    import signal
+                    os.killpg(self._group, signal.SIGKILL)
+                except Exception:  # noqa: BLE001
+                    pass
+
+
+def spawn_cli(argv, cwd):
+    """``Popen`` the CLI with its whole tree under one kill switch.
+
+    Returns the ``Popen``; its ``forge_tree`` attribute is the
+    :class:`ProcessTree`.  A machine that refuses a job object still gets its
+    turn — with ``contained`` False and ``taskkill /T`` as the fallback — rather
+    than no turn at all.
+    """
+    common = dict(cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                  stdin=subprocess.DEVNULL)
+    if not _IS_WINDOWS:
+        proc = subprocess.Popen(argv, start_new_session=True, **common)
+        proc.forge_tree = ProcessTree(group=proc.pid)
+        return proc
+
+    job = _new_kill_job()
+    flags = CREATE_NO_WINDOW | (CREATE_SUSPENDED if job is not None else 0)
+    proc = subprocess.Popen(argv, creationflags=flags, **common)
+    if job is None:
+        proc.forge_tree = ProcessTree()
+        return proc
+    k32 = _win32()["k32"]
+    try:
+        assigned = bool(k32.AssignProcessToJobObject(job, int(proc._handle)))
+    except Exception:  # noqa: BLE001
+        assigned = False
+    if not assigned:
+        log("[assistant] could not put the CLI in a job object; cancel falls "
+            "back to taskkill /T")
+        k32.CloseHandle(job)
+        job = None
+    try:
+        resumed = _resume_process(proc.pid)
+    except Exception:  # noqa: BLE001
+        resumed = False
+    if not resumed:
+        # A suspended CLI would sit there until the stall clock: say so now.
+        tree = ProcessTree(job)
+        tree.kill()
+        tree.close()
+        try:
+            proc.kill()
+        except Exception:  # noqa: BLE001
+            pass
+        raise OSError("the CLI was created suspended and could not be resumed")
+    proc.forge_tree = ProcessTree(job)
+    return proc
+
+
+def _taskkill_tree(pid):
+    """``taskkill /T /F`` — the tree kill for a CLI that has no job object."""
+    try:
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(int(pid))],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       creationflags=CREATE_NO_WINDOW, timeout=15)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _release_tree(proc):
+    """A turn is over: close its job, reaping anything it left running."""
+    tree = getattr(proc, "forge_tree", None)
+    if isinstance(tree, ProcessTree):
+        tree.close()
+
+
 def _terminate(proc):
-    """SIGINT is unreliable on Windows; terminate, then kill if it lingers."""
+    """Stop the CLI AND everything it started; then make sure of the CLI itself.
+
+    SIGINT is unreliable on Windows, and terminating the one PID is how the
+    MCP server and tool shells used to be orphaned (review finding 4).
+    """
+    tree = getattr(proc, "forge_tree", None)
+    if isinstance(tree, ProcessTree):
+        if tree.contained:
+            tree.kill()
+        elif _IS_WINDOWS and getattr(proc, "pid", None):
+            _taskkill_tree(proc.pid)
     try:
         proc.terminate()
     except Exception:  # noqa: BLE001
@@ -3629,8 +4246,12 @@ def public_job(job, session_cost_usd=0.0):
     # ``stalled`` / ``silent_for`` ride along on a timed-out turn so a client
     # can tell "it was working and ran out of clock" from "it hung": the same
     # distinction the reply's last sentence makes in words.
+    # ``cost_estimated`` is true when ``cost_usd`` was priced from the usage
+    # the stream carried rather than read off the CLI's own result event;
+    # ``spend_cap_usd`` rides on a turn the per-turn cap stopped.
     for key in ("reply", "session_id", "cost_usd", "duration_ms", "error",
-                "model", "usage", "num_turns", "stalled", "silent_for"):
+                "model", "usage", "num_turns", "stalled", "silent_for",
+                "cost_estimated", "spend_cap_usd"):
         if job.get(key) is not None:
             out[key] = job[key]
     # What was asked, and when.  The panel ignores both; the web UI draws the
@@ -3676,6 +4297,14 @@ def public_job(job, session_cost_usd=0.0):
 # running a turn
 # ---------------------------------------------------------------------------
 
+def cancel_all_running():
+    """Stop the running turn's whole tree — the bridge is shutting down."""
+    job_id = JOBS.running_job_id()
+    if job_id:
+        JOBS.cancel(job_id)
+    return job_id
+
+
 def _drain(stream, sink):
     """Read a pipe to EOF into ``sink``. Keeps stderr from filling and blocking."""
     try:
@@ -3685,11 +4314,12 @@ def _drain(stream, sink):
         pass
 
 
-def read_stream(proc, limit, recorder, stall_limit=None):
+def read_stream(proc, limit, recorder, stall_limit=None, spend_cap=None):
     """Consume the CLI's NDJSON stdout, feeding ``recorder`` as it goes.
 
     Returns ``{"result", "last", "stdout_tail", "stderr", "code", "timed_out",
-    "stalled", "silent_for"}``.
+    "stalled", "silent_for", "over_budget", "spent", "spend_cap"}``.
+    ``spend_cap`` defaults to :func:`max_turn_usd`; ``0`` switches it off.
 
     The watchdog is a polling thread rather than a one-shot timer because it
     now answers two questions at once: has the turn used its whole budget, and
@@ -3745,6 +4375,9 @@ def read_stream(proc, limit, recorder, stall_limit=None):
     result = None
     last = None
     tail = deque(maxlen=20)
+    cap = max_turn_usd() if spend_cap is None else (spend_cap or None)
+    state["over_budget"] = False
+    state["spent"] = None
     try:
         for raw in iter(proc.stdout.readline, b""):
             # ANY byte counts as life, parseable or not: the stall clock asks
@@ -3759,6 +4392,16 @@ def read_stream(proc, limit, recorder, stall_limit=None):
             if looks_like_result(payload):
                 result = payload
             recorder.feed(payload)
+            # The spend cap (FORGE_ASSISTANT_MAX_TURN_USD), checked on every
+            # event rather than on a clock: a runaway spends fastest exactly
+            # when it is busiest.  Never once the result is in — a finished
+            # turn is not a runaway, whatever it cost.
+            if cap and result is None and not state["over_budget"]:
+                spent, _estimated = recorder.spent()
+                if spent is not None and spent > cap:
+                    state["over_budget"] = True
+                    state["spent"] = spent
+                    _terminate(proc)
     except Exception as exc:  # noqa: BLE001 - a broken pipe ends the turn, not the server
         log("[assistant] stream read failed: %s" % exc)
     finally:
@@ -3773,6 +4416,9 @@ def read_stream(proc, limit, recorder, stall_limit=None):
             proc.wait(timeout=15)
         except Exception:  # noqa: BLE001
             _terminate(proc)
+        # The CLI has exited however it ended; anything it started that is
+        # still running (an MCP server, a tool shell) goes with the job now.
+        _release_tree(proc)
         stderr_thread.join(timeout=2.0)
 
     return {
@@ -3784,7 +4430,34 @@ def read_stream(proc, limit, recorder, stall_limit=None):
         "timed_out": state["timed_out"],
         "stalled": state["stalled"],
         "silent_for": round(float(state["silent_for"]), 3),
+        "over_budget": state["over_budget"],
+        "spent": state["spent"],
+        "spend_cap": cap,
     }
+
+
+def result_fields(payload, recorder):
+    """The job fields a result event lands with, the stream's ledger beneath.
+
+    The result's own numbers win where it has them — they are the CLI's bill,
+    not an estimate.  Where it lacks one (a salvaged stream that never printed
+    its result, a build that omits a field) the ledger fills the gap, and a
+    priced-from-usage cost says so with ``cost_estimated``.
+    """
+    fields = recorder.totals() if recorder is not None else {}
+    fields = {key: value for key, value in fields.items() if value is not None}
+    if payload.get("total_cost_usd") is not None:
+        fields["cost_usd"] = payload.get("total_cost_usd")
+        fields.pop("cost_estimated", None)
+    if payload.get("model"):
+        fields["model"] = payload.get("model")
+    if isinstance(payload.get("usage"), dict):
+        fields["usage"] = payload.get("usage")
+    if payload.get("num_turns") is not None:
+        fields["num_turns"] = payload.get("num_turns")
+    fields["session_id"] = payload.get("session_id") or (
+        recorder.session_id() if recorder is not None else None)
+    return fields
 
 
 def run_turn(job_id, prompt, session_id, model=""):
@@ -3808,14 +4481,7 @@ def run_turn(job_id, prompt, session_id, model=""):
         argv = build_argv(claude_path, prompt, session_id=session_id,
                           permission_mode=mode, model=model)
         try:
-            proc = subprocess.Popen(
-                argv,
-                cwd=cwd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.DEVNULL,
-                creationflags=CREATE_NO_WINDOW,
-            )
+            proc = spawn_cli(argv, cwd)
         except OSError as exc:
             JOBS.finish(job_id, state="error",
                         error="Could not start the Claude CLI (%s): %s" % (claude_path, exc))
@@ -3823,43 +4489,72 @@ def run_turn(job_id, prompt, session_id, model=""):
 
         JOBS.attach_proc(job_id, proc)
         recorder = ActivityRecorder(JOBS, job_id)
+        recorder.fallback_model = model or ""
         try:
             outcome = read_stream(proc, limit, recorder, stall_limit=stall)
         except Exception as exc:  # noqa: BLE001
-            JOBS.finish(job_id, state="error", error="Claude CLI failed: %s" % exc)
+            JOBS.finish(job_id, state="error", error="Claude CLI failed: %s" % exc,
+                        **recorder.totals())
             return
 
-        if outcome["timed_out"]:
-            # NOT an error, and not empty.  The turn ran out of clock; what it
-            # already said and did is the answer, and it is checkpointed here
-            # rather than thrown away.  See :func:`checkpoint_reply` (B-1).
-            stalled = bool(outcome.get("stalled"))
-            JOBS.finish(
-                job_id,
-                state="timeout",
-                reply=checkpoint_reply(recorder, limit, stalled=stalled,
-                                       silent_for=outcome.get("silent_for") or 0.0),
-                cost_usd=recorder.cost(),
-                usage=recorder.usage(),
-                session_id=JOBS.session_id,
-                stalled=stalled,
-                silent_for=outcome.get("silent_for") or 0.0)
-            return
+        payload = outcome["result"]
+        # A result event that was read is the answer, whatever the clocks or a
+        # Stop press did afterwards (review finding 6): the process lingering
+        # past the budget while its children shut down is not a timeout, and a
+        # cancel that lands after the reply is not a cancel.
+        if payload is None:
+            # Whatever stopped it, the stream's own ledger is what it cost
+            # (review finding 5): the result event that would have carried the
+            # total never came.
+            session = recorder.session_id() or JOBS.session_id
+            if outcome.get("over_budget"):
+                JOBS.finish(
+                    job_id,
+                    state=OVER_BUDGET_STATE,
+                    reply=checkpoint_reply(recorder, limit, reason=OVER_BUDGET_STATE,
+                                           spent=outcome.get("spent"),
+                                           cap=outcome.get("spend_cap")),
+                    error="Stopped by the spend cap.",
+                    session_id=session,
+                    spend_cap_usd=outcome.get("spend_cap"),
+                    **recorder.totals())
+                return
 
-        job = JOBS.get(job_id)
-        if job is not None and job.get("cancelled"):
-            JOBS.finish(job_id, state="cancelled", error="Cancelled.")
-            return
+            if outcome["timed_out"]:
+                # NOT an error, and not empty.  The turn ran out of clock; what
+                # it already said and did is the answer, and it is checkpointed
+                # here rather than thrown away.  See :func:`checkpoint_reply`.
+                stalled = bool(outcome.get("stalled"))
+                JOBS.finish(
+                    job_id,
+                    state="timeout",
+                    reply=checkpoint_reply(recorder, limit, stalled=stalled,
+                                           silent_for=outcome.get("silent_for") or 0.0),
+                    session_id=session,
+                    stalled=stalled,
+                    silent_for=outcome.get("silent_for") or 0.0,
+                    **recorder.totals())
+                return
+
+            job = JOBS.get(job_id)
+            if job is not None and job.get("cancelled"):
+                fields = recorder.totals()
+                if recorder.text_blocks() or recorder.steps():
+                    fields["reply"] = checkpoint_reply(recorder, limit,
+                                                       reason="cancelled")
+                JOBS.finish(job_id, state="cancelled", error="Cancelled.",
+                            session_id=session, **fields)
+                return
 
         stderr = outcome["stderr"]
         code = outcome["code"]
 
         # Step down through the permission-mode flags an older build rejects.
-        if code not in (0, 2) and mode and _looks_like_bad_flag(stderr, "--permission-mode"):
+        if (payload is None and code not in (0, 2) and mode
+                and _looks_like_bad_flag(stderr, "--permission-mode")):
             last_error = _tail(stderr)
             continue
 
-        payload = outcome["result"]
         streamed = recorder.text_blocks()
         if payload is None and code == 0:
             # Exited clean but never printed a result event. The last line that
@@ -3873,14 +4568,17 @@ def run_turn(job_id, prompt, session_id, model=""):
             JOBS.finish(
                 job_id, state="error",
                 error="The Claude CLI did not return readable JSON (exit %s).\n%s"
-                      % (code, detail))
+                      % (code, detail),
+                **recorder.totals())
             return
 
         if payload.get("is_error") or payload.get("subtype") in ("error", "error_max_turns"):
             message = extract_reply(payload) or payload.get("error") or "The assistant errored."
             message = friendly_error(str(message))
+            # The payload's own cost and turn count are kept: error_max_turns
+            # is the most expensive error class there is (review finding 5).
             JOBS.finish(job_id, state="error", error=message[:4000],
-                        session_id=payload.get("session_id"))
+                        **result_fields(payload, recorder))
             JOBS.remember_session(payload.get("session_id"))
             return
 
@@ -3891,7 +4589,8 @@ def run_turn(job_id, prompt, session_id, model=""):
         if not reply and code not in (0, 2):
             JOBS.finish(job_id, state="error",
                         error="The Claude CLI exited %s with no reply.\n%s"
-                              % (code, _tail(stderr)))
+                              % (code, _tail(stderr)),
+                        **recorder.totals())
             return
 
         new_session = payload.get("session_id")
@@ -3900,12 +4599,7 @@ def run_turn(job_id, prompt, session_id, model=""):
             job_id,
             state="done",
             reply=reply or "(the assistant returned an empty reply)",
-            session_id=new_session,
-            cost_usd=payload.get("total_cost_usd"),
-            model=payload.get("model"),
-            usage=payload.get("usage") if isinstance(payload.get("usage"), dict) else None,
-            num_turns=payload.get("num_turns"),
-        )
+            **result_fields(payload, recorder))
         return
 
     JOBS.finish(job_id, state="error",
@@ -8869,9 +9563,160 @@ def attach_blend(slug, source):
 # HTTP
 # ---------------------------------------------------------------------------
 
+_TOKEN_LOCK = threading.Lock()
+_TOKEN = []
+
+
+def bridge_token():
+    """This process's request token: minted once, on first use, never logged."""
+    with _TOKEN_LOCK:
+        if not _TOKEN:
+            _TOKEN.append(secrets.token_urlsafe(32))
+        return _TOKEN[0]
+
+
+def write_token_file(path=None):
+    """Write the token where local clients read it.  Returns the path.
+
+    Written to a temporary name and renamed over the old one, so a client
+    reading it mid-restart sees the old token or the new one, never half of
+    either.  Created owner-read/write-only on POSIX; on Windows the file
+    inherits the user-profile ACL of the folder it lives in (the user, SYSTEM
+    and Administrators).  A new token every start: a stale file names a token
+    no running bridge accepts.
+    """
+    path = os.path.abspath(path or token_file())
+    folder = os.path.dirname(path)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    temporary = "%s.%d.tmp" % (path, os.getpid())
+    handle = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(handle, "w", encoding="ascii") as stream:
+        stream.write(bridge_token())
+    os.replace(temporary, path)
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+    return path
+
+
+def token_matches(header):
+    """Does an ``Authorization`` header carry this bridge's token?"""
+    text = str(header or "").strip()
+    if not text.lower().startswith("bearer "):
+        return False
+    offered = text[len("bearer "):].strip()
+    return bool(offered) and hmac.compare_digest(offered.encode("utf-8"),
+                                                 bridge_token().encode("utf-8"))
+
+
+def _host_name(value):
+    """The host part of a ``Host`` header, lowercased, brackets and port gone."""
+    text = str(value or "").strip().lower()
+    if text.startswith("["):
+        return text[1:text.find("]")] if "]" in text else text[1:]
+    if text.count(":") == 1:
+        return text.split(":", 1)[0]
+    return text
+
+
+def page_with_token(body):
+    """``index.html`` with this bridge's token in a ``<meta>`` the page reads.
+
+    Only ever served by this bridge, same-origin, with ``Cache-Control:
+    no-store``; the Host check is what keeps a rebinding page from reading it.
+    """
+    meta = ('<meta name="%s" content="%s">' % (TOKEN_META_NAME, bridge_token())
+            ).encode("ascii")
+    if b"<head>" in body:
+        return body.replace(b"<head>", b"<head>\n" + meta, 1)
+    return meta + b"\n" + body
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "ForgeAssistant/1.0"
     protocol_version = "HTTP/1.1"
+
+    # -- who may call (review finding 1) ---------------------------------
+    def _refuse(self, status, message, headers=None):
+        """Refuse without reading the body — and so close the connection.
+
+        The body of a refused request is never read (it may be large, and it is
+        not wanted), so the socket cannot be reused: a keep-alive connection
+        with an unread body parses that body as the next request.
+        """
+        self.close_connection = True
+        body = json.dumps({"error": message}).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except OSError:
+            pass
+        return False
+
+    def _allowed_hosts(self):
+        hosts = set(LOOPBACK_HOSTS)
+        try:
+            bound = str(self.server.server_address[0] or "").lower()
+        except Exception:  # noqa: BLE001
+            bound = ""
+        if bound and bound not in ("0.0.0.0", "::"):
+            hosts.add(bound)
+        return hosts
+
+    def _own_origins(self):
+        try:
+            listen = int(self.server.server_address[1])
+        except Exception:  # noqa: BLE001
+            listen = port()
+        return set("http://%s:%d" % ("[%s]" % host if ":" in host else host, listen)
+                   for host in self._allowed_hosts())
+
+    def _gate(self, path, post):
+        """Host and Origin on every request; token and body type on a POST.
+
+        Returns True when the request may proceed; otherwise it has already
+        been answered.
+        """
+        host = self.headers.get("Host")
+        if host is not None and _host_name(host) not in self._allowed_hosts():
+            return self._refuse(403, "Refused: Host %r is not this bridge. It answers "
+                                     "on 127.0.0.1 / localhost only." % host)
+        origin = self.headers.get("Origin")
+        if origin is not None and origin.strip().rstrip("/").lower() \
+                not in self._own_origins():
+            return self._refuse(403, "Refused: requests from %r are not accepted; "
+                                     "only this bridge's own page may call it."
+                                     % origin)
+        if not post:
+            return True
+        if not token_matches(self.headers.get("Authorization")):
+            return self._refuse(
+                401, "This bridge needs its token: send 'Authorization: Bearer "
+                     "<token>' with the contents of %s (rewritten every time the "
+                     "bridge starts)." % token_file(),
+                {"WWW-Authenticate": 'Bearer realm="forge-bridge"'})
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if length > 0:
+            kind = str(self.headers.get("Content-Type") or "").split(";", 1)[0]
+            kind = kind.strip().lower()
+            allowed = ["application/json"]
+            if path.endswith(MULTIPART_SUFFIXES):
+                allowed.append("multipart/form-data")
+            if kind not in allowed:
+                return self._refuse(415, "Send this as %s (got %r)."
+                                         % (" or ".join(allowed), kind or "nothing"))
+        return True
 
     # -- plumbing --------------------------------------------------------
     def log_message(self, fmt, *args):  # quieter than the default access log
@@ -8951,6 +9796,8 @@ class Handler(BaseHTTPRequestHandler):
     # -- routes ----------------------------------------------------------
     def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler's naming
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
+        if not self._gate(path, post=False):
+            return
         if path == "/health":
             self._send(200, {
                 "status": "ok",
@@ -9106,12 +9953,28 @@ class Handler(BaseHTTPRequestHandler):
                 b"assistant/webui/index.html is missing.</p>",
                 "text/html; charset=utf-8")
             return
-        self._send_bytes(200, asset[0], asset[1])
+        # The page is the one client that cannot read the token file, so it
+        # is handed the token inside itself (review finding 1).
+        self._send_bytes(200, page_with_token(asset[0]), asset[1],
+                         {"Referrer-Policy": "no-referrer"})
 
     def do_POST(self):  # noqa: N802
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
+        if not self._gate(path, post=True):
+            return
         if path == "/ask":
             self._ask()
+            return
+        if path == "/cancel":
+            # No id: stop whatever is running.  The runaway control — the one
+            # that works without knowing (or having lost) the job id.
+            self._read_json()
+            job_id = JOBS.running_job_id()
+            if job_id is None:
+                self._send(404, {"error": "Nothing is running."})
+                return
+            JOBS.cancel(job_id)
+            self._send(200, JOBS.snapshot(job_id))
             return
         if path.startswith("/cancel/"):
             self._read_json()   # drain, even though there is nothing to read
@@ -9271,7 +10134,8 @@ class Handler(BaseHTTPRequestHandler):
 
         context = payload.get("context")
         if isinstance(context, dict):
-            problem = image_error(context.get("image_path"))
+            problem = (image_error(context.get("image_path"))
+                       or image_location_error(context.get("image_path")))
             if problem:
                 # Refuse before spending a turn: the model cannot Read a file
                 # that is not there, and "I couldn't see your image" three
@@ -11260,6 +12124,14 @@ def serve(host="127.0.0.1", listen_port=None, ready=None):
     listen_port = int(listen_port or port())
     httpd = ThreadingHTTPServer((host, listen_port), Handler)
     httpd.daemon_threads = True
+    # After the bind, so a second copy that lost the port race never
+    # overwrites the token of the bridge that is actually answering.
+    try:
+        written = write_token_file()
+        log("[assistant] request token written to %s" % written)
+    except OSError as exc:
+        log("[assistant] could not write the request token to %s: %s — local "
+            "clients will be refused" % (token_file(), exc))
     info = claude_info()
     log("[assistant] listening on http://%s:%d  (claude: %s)"
         % (host, httpd.server_address[1],
@@ -11271,6 +12143,12 @@ def serve(host="127.0.0.1", listen_port=None, ready=None):
     except KeyboardInterrupt:
         pass
     finally:
+        # A clean shutdown stops the running turn's whole tree itself; an
+        # unclean one relies on the job object's kill-on-close.
+        try:
+            cancel_all_running()
+        except Exception:  # noqa: BLE001
+            pass
         httpd.server_close()
     return httpd
 

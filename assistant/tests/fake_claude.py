@@ -65,6 +65,23 @@ then clear.
 the bridge a real path to mint a ``/file`` token for — one arriving through the
 activity, one arriving through the reply.
 
+``FAKE_CLAUDE_CHILD_PIDFILE`` makes the fake start a child of its own (a
+sleeping Python, the stand-in for the MCP server and the tool shells a real CLI
+starts) and write ``{"cli": <own pid>, "child": <child pid>}`` there once it
+has.  It is how the tests prove a cancel, a timeout or the bridge's own death
+takes the CLI's WHOLE tree down, not just the process the bridge spawned.
+
+``FAKE_CLAUDE_USAGE=N`` streams N API messages' worth of usage before the tool
+calls — ``message_start`` (with an id, a model and the input/cache tokens), a
+``message_delta`` growing the output count, and the assembled ``assistant``
+event repeating it all — each message 1000 input + 2000 cache-read + 500
+output tokens.  ``FAKE_CLAUDE_USAGE_MODEL`` names the model those messages
+say they ran on.  This is the ledger a turn with no result event is billed from.
+
+``FAKE_CLAUDE_LINGER=S`` keeps the process (and its stdout) alive S seconds
+AFTER the result event, the way a real CLI does while its children shut down;
+``FAKE_CLAUDE_LINGER_FLAG`` names a file written the moment the result is out.
+
 ``FAKE_CLAUDE_STREAM=1`` selects ``stream`` without naming a mode, and
 ``FAKE_CLAUDE_STREAM_FILE`` names a flag file whose existence does the same.
 The *output* shape and the *flags the bridge must pass* are deliberately
@@ -77,10 +94,65 @@ The bridge runs this file through ``sys.executable`` because
 
 import json
 import os
+import subprocess
 import sys
 import time
 
 REPLY = "OK - the fake assistant answered."
+
+#: One streamed API message's usage (see ``FAKE_CLAUDE_USAGE``).
+USAGE_START = {"input_tokens": 1000, "cache_read_input_tokens": 2000,
+               "cache_creation_input_tokens": 0, "output_tokens": 1}
+USAGE_OUTPUT = 500
+
+
+def spawn_grandchild():
+    """A long-lived child, with both pids written where the test can read them."""
+    pidfile = os.environ.get("FAKE_CLAUDE_CHILD_PIDFILE")
+    if not pidfile:
+        return
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(600)"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    temporary = pidfile + ".tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump({"cli": os.getpid(), "child": child.pid}, handle)
+    os.replace(temporary, pidfile)
+
+
+def usage_events(model):
+    """``FAKE_CLAUDE_USAGE`` messages' worth of the per-message usage events."""
+    try:
+        count = int(os.environ.get("FAKE_CLAUDE_USAGE") or 0)
+    except ValueError:
+        count = 0
+    model = os.environ.get("FAKE_CLAUDE_USAGE_MODEL") or model
+    for number in range(1, count + 1):
+        message_id = "msg_fake_%02d" % number
+        stream_event({"type": "message_start", "message": {
+            "id": message_id, "type": "message", "role": "assistant",
+            "model": model, "content": [], "usage": dict(USAGE_START)}})
+        stream_event({"type": "message_delta",
+                      "delta": {"stop_reason": "tool_use"},
+                      "usage": {"output_tokens": USAGE_OUTPUT}})
+        stream_event({"type": "message_stop"})
+        final = dict(USAGE_START, output_tokens=USAGE_OUTPUT)
+        emit({"type": "assistant", "message": {
+            "id": message_id, "model": model, "role": "assistant",
+            "content": [], "usage": final}})
+
+
+def linger():
+    """Stay alive after the result, stdout still open, if asked to."""
+    flag_file = os.environ.get("FAKE_CLAUDE_LINGER_FLAG")
+    if flag_file:
+        with open(flag_file, "w", encoding="utf-8") as handle:
+            handle.write("result sent")
+    seconds = float(os.environ.get("FAKE_CLAUDE_LINGER") or 0)
+    if seconds > 0:
+        time.sleep(seconds)
 
 #: Kept in step with ``bridge.IMAGE_DIVIDER`` on purpose rather than imported:
 #: this file stands in for a separate program, and a copy that drifts is exactly
@@ -199,6 +271,7 @@ def run_stream(session_id, model, mode):
     emit({"type": "system", "subtype": "init", "session_id": session_id,
           "tools": ["mcp__forge__partforge_check"], "model": model})
 
+    usage_events(model)
     preamble_events()
 
     # Tool 1: arguments stream in as partial JSON, so the label starts as the
@@ -262,6 +335,7 @@ def run_stream(session_id, model, mode):
         "model": model,
         "usage": {"input_tokens": 11, "output_tokens": 7},
     })
+    linger()
     return 0
 
 
@@ -289,6 +363,7 @@ def main():
             handle.write(json.dumps(record) + "\n")
 
     mode = os.environ.get("FAKE_CLAUDE_MODE", "ok")
+    spawn_grandchild()
 
     # A flag file, not a mode: the bridge process carries one environment for
     # its whole life, and a test that watches the signed-out signal clear needs
@@ -407,6 +482,8 @@ def main():
         # exactly the failure salvage_json() exists for
         sys.stdout.write("(node:1234) ExperimentalWarning: something\n")
     sys.stdout.write(json.dumps(payload) + "\n")
+    sys.stdout.flush()
+    linger()
     return 0
 
 

@@ -1,0 +1,4 @@
+# The bridge's per-process request token (rewritten at every start) and the
+# temporary name it is written under before the rename.
+.bridge-token
+.bridge-token.*.tmp

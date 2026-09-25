@@ -21,7 +21,9 @@ from typing import Any, List, Mapping
 
 SCHEMA = "forge-benchmark-report/1"
 
-TERMINAL_STATES = ("done", "error", "timeout", "cancelled")
+#: ``over_budget``: the bridge's per-turn spend cap (FORGE_ASSISTANT_MAX_TURN_USD)
+#: stopped the turn — terminal, and distinct from ``timeout`` on purpose.
+TERMINAL_STATES = ("done", "error", "timeout", "cancelled", "over_budget")
 FINAL_STATES = TERMINAL_STATES + ("refused",)
 
 REQUIRED = {

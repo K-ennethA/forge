@@ -68,17 +68,43 @@ _NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 # the bridge, over plain HTTP
 # ---------------------------------------------------------------------------
 
-class BridgeClient:
-    """``/ask``, ``/job/<id>`` and ``/cancel/<id>`` — nothing else."""
+def default_token_file() -> str:
+    """Where the bridge writes its request token (``FORGE_ASSISTANT_TOKEN_FILE``)."""
+    return os.path.abspath(os.environ.get("FORGE_ASSISTANT_TOKEN_FILE")
+                           or os.path.join(REPO_ROOT, "assistant", ".bridge-token"))
 
-    def __init__(self, base_url: str = DEFAULT_BRIDGE, http_timeout: float = 30.0):
+
+class BridgeClient:
+    """``/ask``, ``/job/<id>`` and ``/cancel/<id>`` — nothing else.
+
+    Every POST carries ``Authorization: Bearer <token>``: the bridge mints a
+    token at start, writes it to ``assistant/.bridge-token`` and refuses a POST
+    without it.  The file is re-read on every call, so a bridge restarted
+    mid-run (a new token) does not strand the run.
+    """
+
+    def __init__(self, base_url: str = DEFAULT_BRIDGE, http_timeout: float = 30.0,
+                 token_file: Optional[str] = None):
         self.base_url = base_url.rstrip("/")
         self.http_timeout = http_timeout
+        self.token_file = token_file
+
+    def token(self) -> Optional[str]:
+        path = self.token_file or default_token_file()
+        try:
+            with open(path, "r", encoding="ascii") as handle:
+                return handle.read().strip() or None
+        except OSError:
+            return None  # the bridge will say, by name, which file it wanted
 
     def _call(self, method: str, path: str, body: Optional[dict] = None) -> Tuple[int, dict]:
         data = json.dumps(body).encode("utf-8") if body is not None else None
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        token = self.token()
+        if token:
+            headers["Authorization"] = "Bearer %s" % token
         request = urllib.request.Request(self.base_url + path, data=data, method=method,
-                                         headers={"Content-Type": "application/json"})
+                                         headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=self.http_timeout) as response:
                 raw = response.read()

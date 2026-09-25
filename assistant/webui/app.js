@@ -26,10 +26,19 @@
   }
 
   // ----------------------------------------------------------------- http --
+  // The bridge refuses a POST without its request token (review finding 1:
+  // any page in the browser could otherwise drive /ask).  It hands the token
+  // to this page, and only this page, inside the <meta> it serves it in.
+  var BRIDGE_TOKEN = (function () {
+    var meta = document.querySelector('meta[name="forge-bridge-token"]');
+    return meta ? (meta.getAttribute("content") || "") : "";
+  })();
+
   function api(path, options) {
     options = options || {};
     var init = { method: options.method || (options.body ? "POST" : "GET"),
                  headers: { "Accept": "application/json" } };
+    if (BRIDGE_TOKEN) { init.headers["Authorization"] = "Bearer " + BRIDGE_TOKEN; }
     if (options.body !== undefined) {
       init.headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(options.body);
