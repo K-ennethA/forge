@@ -5745,6 +5745,183 @@ def _quat_of(matrix):
     return matrix.to_3x3().normalized().to_quaternion()
 
 
+#: A take's sample counts as a flat-footed plant when the ankle sits within
+#: this fraction of its vertical range above its lowest point AND the ball is
+#: planted by the plant rule (_plant_runs: slow and low). Measured on CMU 08_01
+#: (walk): at such samples the foot's rest-relative rotation is 28.3-30.8 deg
+#: (the ASF zero pose is not a flat foot) and its ankle->ball line 17.8-28.7
+#: deg down against 10.3 at rest - carried across through the rest pose, the
+#: rig's planted foot stood toes-up with its ball ~75 mm off the floor.
+FLAT_STANCE_BAND = 0.15
+FLAT_STANCE_MIN_SAMPLES = 3
+
+#: Slot -> the slot whose rest swing it inherits when its own segment has no
+#: far joint to be read off (a hand's children sit on it in the CMU files).
+PARENT_SWING = {"hand": "forearm"}
+
+
+#: Foot locking (the standard mocap plant cleanup). A ball sample is planted
+#: when it moves slower than LOCK_SPEED_FRACTION of the body's mean speed
+#: (never under LOCK_SPEED_FLOOR_MPS, so a standing take still locks) and sits
+#: within LOCK_HEIGHT_FRACTION of its vertical range (at least LOCK_HEIGHT_MIN_M)
+#: of the floor. Why it exists, measured on CMU 08_01 (walk): the take's own
+#: ball slips 23 mm through one plant and its floor differs 35 mm between two
+#: plants of the same foot (marker-fitting noise, not motion) - carried across
+#: verbatim that is a 20-39 mm slide on the rig against the 5 mm gate.
+LOCK_SPEED_FRACTION = 0.25
+LOCK_SPEED_FLOOR_MPS = 0.10
+LOCK_HEIGHT_FRACTION = 0.30
+LOCK_HEIGHT_MIN_M = 0.05
+LOCK_MIN_SAMPLES = 3
+#: How long the locked offset takes to fade in before a plant and out after it.
+LOCK_BLEND_S = 0.1
+#: The IK ankle is kept within this fraction of the leg chain from the hip
+#: joint: past it the solver runs out of leg and, with IK_Stretch keyed to 0,
+#: the foot misses its target (measured on 08_01 before the cap: 1.044 of the
+#: chain at a toe-off, 6.8 mm miss). ik_reach_headroom warns over 0.98.
+REACH_CAP = 0.98
+#: Radius of the max-then-box smoothing on the hip lowering, seconds.
+HIP_LOWER_SMOOTH_S = 0.1
+
+
+def _plant_runs(points, up, mid, fps):
+    """Plants of one ball track: ``(runs, down flags, speed limit, height band)``.
+
+    See LOCK_SPEED_FRACTION for the rule. ``mid`` is the body (hip-joint) path
+    whose mean horizontal speed scales the limit."""
+    count = len(points)
+
+    def flat_len(v):
+        return (v - up * v.dot(up)).length
+
+    body = sum(flat_len(mid[j + 1] - mid[j]) for j in range(len(mid) - 1)) * fps / max(
+        1, len(mid) - 1)
+    limit = max(LOCK_SPEED_FLOOR_MPS, LOCK_SPEED_FRACTION * body)
+    heights = [p.dot(up) for p in points]
+    low = min(heights)
+    band = max(LOCK_HEIGHT_MIN_M, LOCK_HEIGHT_FRACTION * (max(heights) - low))
+    speed = []
+    for j in range(count):
+        a, b = max(0, j - 1), min(count - 1, j + 1)
+        speed.append((points[b] - points[a]).length * fps / float(max(1, b - a)))
+    down = [speed[j] <= limit and heights[j] - low <= band for j in range(count)]
+    runs, start = [], None
+    for j in range(count + 1):
+        if j < count and down[j]:
+            if start is None:
+                start = j
+        elif start is not None:
+            if j - start >= LOCK_MIN_SAMPLES:
+                runs.append((start, j - 1))
+            start = None
+    return runs, down, limit, band
+
+
+def _ground_track(balls_by_side, mid, up, fps):
+    """Per-sample floor height under the take, relative to its lowest plant.
+
+    Each plant of each foot reads the floor as its ball's mean height; between
+    plants the floor is interpolated in time, and held past the first and last.
+    Measured on CMU 08_01: two plants of the left foot 35 mm apart (the same
+    flat lab floor) - carried across, the hips ride that step and a locked foot
+    on the one floor leaves the leg 35 mm short of it."""
+    marks = []
+    for points in balls_by_side:
+        runs, _down, _limit, _band = _plant_runs(points, up, mid, fps)
+        for a, b in runs:
+            marks.append(((a + b) / 2.0,
+                          sum(points[j].dot(up) for j in range(a, b + 1)) / float(b - a + 1)))
+    count = len(mid)
+    if not marks:
+        return [0.0] * count, {"plants": 0, "floor_span_mm": 0.0}
+    marks.sort()
+    low = min(z for _t, z in marks)
+    out = []
+    for j in range(count):
+        if j <= marks[0][0]:
+            z = marks[0][1]
+        elif j >= marks[-1][0]:
+            z = marks[-1][1]
+        else:
+            for (t0, z0), (t1, z1) in zip(marks, marks[1:]):
+                if t0 <= j <= t1:
+                    z = z0 if t1 - t0 < 1e-9 else z0 + (z1 - z0) * (j - t0) / (t1 - t0)
+                    break
+        out.append(z - low)
+    return out, {"plants": len(marks),
+                 "floor_span_mm": round((max(z for _t, z in marks) - low) * M_TO_MM, 2)}
+
+
+def _lock_plants(balls, floor_z, up, mid, fps):
+    """Lock each detected plant of ``balls`` (world ball positions, edited in
+    place) to one point on the floor, fading the offset in and out. Report."""
+    count = len(balls)
+    if count < LOCK_MIN_SAMPLES or not mid:
+        return {"plants": 0}
+
+    def flat_len(v):
+        return (v - up * v.dot(up)).length
+
+    runs, down, limit, band = _plant_runs(balls, up, mid, fps)
+    original = [p.copy() for p in balls]
+    blend = max(1, int(round(LOCK_BLEND_S * fps)))
+    fade = {}
+    worst_slip = 0.0
+    worst_height = 0.0
+    for a, b in runs:
+        pts = original[a:b + 1]
+        centre = sum(((p - up * p.dot(up)) for p in pts), Vector()) / float(len(pts))
+        lock = centre + up * floor_z
+        worst_slip = max(worst_slip, max(flat_len(p - q) for p in pts for q in pts))
+        worst_height = max(worst_height, max(abs(p.dot(up) - floor_z) for p in pts))
+        for j in range(a, b + 1):
+            balls[j] = lock.copy()
+        for edge, step in ((a, -1), (b, 1)):
+            offset = lock - original[edge]
+            for k in range(1, blend + 1):
+                j = edge + step * k
+                if j < 0 or j >= count or down[j] and any(r[0] <= j <= r[1] for r in runs):
+                    break
+                w = 1.0 - k / float(blend + 1)
+                if w > fade.get(j, (0.0, None))[0]:
+                    fade[j] = (w, offset)
+    for j, (w, offset) in fade.items():
+        balls[j] = original[j] + offset * w
+    # ... and no ball under the floor it was locked to: 100STYLE's toe joint
+    # dips 20-30 mm below its own plant height for a frame or two at every
+    # heel-off (Crouched_FW), which on the rig reads as the toe sinking into
+    # the ground and, to the slide gate, as a second plant
+    floored = 0
+    for j, p in enumerate(balls):
+        sink = floor_z - p.dot(up)
+        if sink > 0.0:
+            balls[j] = p + up * sink
+            floored += 1
+    return {"plants": len(runs), "frames_locked": sum(b - a + 1 for a, b in runs),
+            "frames_floored": floored, "_runs": runs,
+            "speed_limit_mps": round(limit, 4), "height_band_mm": round(band * M_TO_MM, 1),
+            "worst_slip_removed_mm": round(worst_slip * M_TO_MM, 2),
+            "worst_height_fix_mm": round(worst_height * M_TO_MM, 2)}
+
+
+def _twist_then_tilt(q, axis):
+    """``(twist, tilt)`` with ``q == twist @ tilt``; twist is about ``axis``.
+
+    Applied to a planted foot's rest-relative rotation: the tilt is what makes
+    the sole sit off the floor (it is calibrated away), the twist is the
+    toe-out (it is kept)."""
+    r = q.inverted()
+    v = Vector((r.x, r.y, r.z))
+    p = axis * v.dot(axis)
+    twist = Quaternion((r.w, p.x, p.y, p.z))
+    if twist.magnitude < 1e-9:
+        twist = Quaternion()
+    else:
+        twist.normalize()
+    swing = r @ twist.inverted()
+    return twist.inverted(), swing.inverted()
+
+
 def _key_empty(obj, frames, rotations, locations):
     obj.rotation_mode = "QUATERNION"
     for index, frame in enumerate(frames):
@@ -5862,6 +6039,8 @@ def cmd_rigforge_retarget(params):
     heading_mode = get_choice(params, "heading", {"AUTO": "auto", "REST": "rest",
                                                   "TRAVEL": "travel"}, "auto")
     legs_mode = get_choice(params, "legs", {"FK": "fk", "IK": "ik"}, "fk")
+    foot_lock = get_bool(params, "foot_lock", True)
+    reach_limit = get_bool(params, "reach_limit", True)
     find_loop = get_bool(params, "find_loop", False)
     loop_min_s = get_float(params, "loop_min_s", 0.5, minimum=0.05, maximum=600.0)
     loop_max_s = None
@@ -6140,20 +6319,96 @@ def cmd_rigforge_retarget(params):
                        "yaw_deg": round(math.degrees(yaw), 3),
                        "source_travel_m": round(travel.length, 4)}
 
+            # --- the flat-foot reference, per side, measured on the take itself
+            # (see FLAT_STANCE_BAND): a foot planted flat in the take is planted
+            # flat on the rig, whatever either skeleton's rest calls "foot".
+            # The take's floor first (see _ground_track): every height below is
+            # measured above the floor the foot actually stood on.
+            ground = [0.0] * count
+            ground_report = None
+            src_toes = [by_slot.get(("toe", side)) for side in ("L", "R")]
+            if foot_lock and src_mid is not None and all(src_toes):
+                ground, ground_report = _ground_track(
+                    [[to_t(p) for p in src_pos[e["source"]]] for e in src_toes],
+                    [to_t(p) for p in src_mid], up, fps_out)
+            flat_ref = {}
+            flat_report = {}
+            for side in ("L", "R"):
+                foot_e = by_slot.get(("foot", side))
+                toe_e = by_slot.get(("toe", side))
+                if foot_e is None or toe_e is None:
+                    continue
+                ankle_z = [to_t(p).dot(up) - ground[j]
+                           for j, p in enumerate(src_pos[foot_e["source"]])]
+                ball_z = [to_t(p).dot(up) - ground[j]
+                          for j, p in enumerate(src_pos[toe_e["source"]])]
+                a_lo, a_hi = min(ankle_z), max(ankle_z)
+                # the ball is "down" by the plant rule (slow and low), not by its
+                # own minimum: 100STYLE's toe joint dips 20-30 mm under its plant
+                # height for a frame at every heel-off (Crouched_FW), so a band
+                # off the minimum found no flat sample at all
+                ball_down = None
+                if src_mid is not None:
+                    _runs, ball_down, _l, _b = _plant_runs(
+                        [to_t(p) - up * ground[j]
+                         for j, p in enumerate(src_pos[toe_e["source"]])],
+                        up, [to_t(p) for p in src_mid], fps_out)
+                if ball_down is None:
+                    b_lo, b_hi = min(ball_z), max(ball_z)
+                    ball_down = [ball_z[j] - b_lo <= FLAT_STANCE_BAND * max(1e-9, b_hi - b_lo)
+                                 for j in range(count)]
+                flat_j = [j for j in range(count)
+                          if ankle_z[j] - a_lo <= FLAT_STANCE_BAND * max(1e-9, a_hi - a_lo)
+                          and ball_down[j]]
+                if len(flat_j) < FLAT_STANCE_MIN_SAMPLES:
+                    flat_report[side] = {"frames": len(flat_j), "used": False}
+                    continue
+                side_ref = {"frames": flat_j}
+                for entry in (foot_e, toe_e):
+                    inverse_rest = (gq @ _quat_of(src_rest[entry["source"]])).inverted()
+                    deltas = mocap.same_hemisphere(
+                        [gq @ src_rot[entry["source"]][j] @ inverse_rest for j in flat_j])
+                    mean = Quaternion((sum(q.w for q in deltas), sum(q.x for q in deltas),
+                                       sum(q.y for q in deltas), sum(q.z for q in deltas)))
+                    mean.normalize()
+                    twist, tilt = _twist_then_tilt(mean, up)
+                    side_ref[entry["target"]] = tilt
+                    flat_report.setdefault(side, {"frames": len(flat_j), "used": True})[
+                        entry["slot"]] = {"tilt_deg": round(math.degrees(tilt.angle), 2),
+                                          "toe_out_deg": round(math.degrees(twist.angle), 2)}
+                flat_ref[side] = side_ref
+
             # --- rotations: the rest-relative transfer
             rotations = {}
             alignment = {}
-            for entry in mapped:
+            swings = {}
+            for entry in sorted(mapped, key=lambda e: e.get("slot") == "hand"):
                 src_q = gq @ _quat_of(src_rest[entry["source"]])
                 tgt_q = _quat_of(tgt_rest[entry["target"]])
                 swing = Quaternion()
-                if entry.get("slot") in ALIGNED_SLOTS:
+                tilt = None
+                ref = flat_ref.get(entry.get("side")) or {}
+                if entry.get("slot") in ("foot", "toe") and entry["target"] in ref:
+                    # calibrated on the planted frames instead of the rest pose
+                    tilt = ref[entry["target"]]
+                    alignment[entry["target"]] = round(math.degrees(tilt.angle), 2)
+                elif entry.get("slot") in PARENT_SWING and (
+                        PARENT_SWING[entry["slot"]], entry.get("side")) in swings:
+                    # no far joint to read the segment off (the CMU hand's two
+                    # children sit ON it, so the importer's bone axis is arbitrary:
+                    # measured 159.9 deg on 08_01): the parent segment's swing
+                    swing = swings[(PARENT_SWING[entry["slot"]], entry.get("side"))]
+                    alignment[entry["target"]] = round(math.degrees(swing.angle), 2)
+                elif entry.get("slot") in ALIGNED_SLOTS:
                     d_s = g3 @ _segment_dir(entry, by_slot, src_rest, "source")
                     d_t = _segment_dir(entry, by_slot, tgt_rest, "target")
                     swing = d_s.rotation_difference(d_t)
                     alignment[entry["target"]] = round(math.degrees(swing.angle), 2)
+                swings[(entry.get("slot"), entry.get("side"))] = swing
                 offset = swing.inverted() @ tgt_q
                 inverse_rest = src_q.inverted()
+                if tilt is not None:
+                    inverse_rest = (tilt @ src_q).inverted()
                 track = []
                 for j in range(count):
                     delta = yq @ gq @ src_rot[entry["source"]][j] @ inverse_rest
@@ -6169,7 +6424,7 @@ def cmd_rigforge_retarget(params):
             if src_mid is not None:
                 start = to_t(src_mid[0])
                 if all(feet):
-                    ankles = [to_t(src_pos[e["source"]][j]).dot(up)
+                    ankles = [to_t(src_pos[e["source"]][j]).dot(up) - ground[j]
                               for e in feet for j in range(count)]
                     src_floor = min(ankles)
                     tgt_floor = min(tgt_rest[e["target"]].translation.dot(up) for e in feet)
@@ -6185,7 +6440,7 @@ def cmd_rigforge_retarget(params):
                 for j in range(count):
                     p = to_t(src_mid[j])
                     tgt_mid.append(base + (yq @ flat(p - start))
-                                   + up * (tgt_floor + (p.dot(up) - src_floor)))
+                                   + up * (tgt_floor + (p.dot(up) - src_floor) - ground[j]))
             else:
                 vertical = None
 
@@ -6193,6 +6448,7 @@ def cmd_rigforge_retarget(params):
             tracks = {}
             root_entry = hips_entry
             ik_legs = []
+            anchors = {}
             leg_targets = set()
             if legs_mode == "ik":
                 limbs = {entry["side"]: entry for entry in rigforge_rig.ik_limbs(target_rig)
@@ -6218,14 +6474,16 @@ def cmd_rigforge_retarget(params):
                     continue
                 tracks[entry["target"]] = {"rot": list(rotations[entry["target"]]),
                                            "loc": None}
-            if root_entry is not None and tgt_mid is not None:
-                target = root_entry["target"]
-                pivot = tgt_rest[target].translation - tgt_mid_rest
-                tracks[target]["loc"] = [tgt_mid[j] + delta_of(target, j) @ pivot
-                                         for j in range(count)]
-            elif root_entry is not None:
-                warnings.append("The hips are mapped but nothing gives them a path; "
-                                "they rotate in place.")
+            def hip_at(side_rest, j):
+                body = delta_of(root_entry["target"], j) if root_entry else Quaternion()
+                return tgt_mid[j] + body @ (side_rest - tgt_mid_rest)
+
+            # --- pass 1: where each IK ankle goes (world, before any travel is
+            # taken out), then the hips come down wherever a leg cannot reach it
+            leg_ankles = {}
+            weight_paths = {}
+            plant_runs = {}
+            ball_geo = {}
             for side, limb, chain, toe in ik_legs:
                 thigh, shin, foot = chain
                 src_hip_side = src_rest[thigh["source"]].translation - src_mid_rest
@@ -6236,12 +6494,113 @@ def cmd_rigforge_retarget(params):
                 ik_offset = tgt_rest[foot_ik].translation - ankle_rest
                 ik_q = _quat_of(tgt_rest[foot_ik])
                 rot, loc = [], []
+                # The ankle is hung off the BALL when the foot is calibrated: the
+                # ball is the point a planted foot pivots over (animation_check
+                # measures it), and the two feet differ in length and ankle height,
+                # so an ankle carried across verbatim puts the rig's ball
+                # somewhere the take's never was through every heel-off (measured
+                # on 08_01: 45 mm of sideways ball travel in one plant).
+                balls = None
+                if toe is not None and side in flat_ref:
+                    ball_rest = tgt_rest[toe["target"]].translation
+                    foot_vec = ball_rest - ankle_rest
+                    balls = [tgt_mid[j] + yq @ to_t(src_pos[toe["source"]][j] - src_mid[j])
+                             + width_fix for j in range(count)]
+                    planted = flat_ref[side]["frames"]
+                    lift = sum(ball_rest.dot(up) - balls[j].dot(up)
+                               for j in planted) / float(len(planted))
+                    balls = [p + up * lift for p in balls]
+                    anchors[side] = {"point": "ball", "height_fix_mm": round(lift * M_TO_MM, 2)}
+                    if foot_lock:
+                        lock = _lock_plants(balls, ball_rest.dot(up), up, tgt_mid, fps_out)
+                        plant_runs[limb["ik_target"]] = lock.pop("_runs", [])
+                        anchors[side]["lock"] = lock
+                else:
+                    anchors[side] = {"point": "ankle", "height_fix_mm": 0.0}
+                hip_rest_side = tgt_rest[thigh["target"]].translation
+                reach_cap = REACH_CAP * (
+                    (tgt_rest[shin["target"]].translation - hip_rest_side).length
+                    + (ankle_rest - tgt_rest[shin["target"]].translation).length)
+                ankles = []
                 for j in range(count):
-                    ankle = (tgt_mid[j] + yq @ to_t(src_pos[foot["source"]][j] - src_mid[j])
-                             + width_fix)
                     d = delta_of(foot["target"], j)
+                    if balls is not None:
+                        ankles.append(balls[j] - d @ foot_vec)
+                    else:
+                        ankles.append(tgt_mid[j] + yq @ to_t(src_pos[foot["source"]][j]
+                                                              - src_mid[j]) + width_fix)
+                leg_ankles[side] = (hip_rest_side, reach_cap, ankles)
+                if balls is not None:
+                    weight_paths[limb["ik_target"]] = balls
+                    ball_geo[limb["ik_target"]] = (
+                        _quat_of(tgt_rest[limb["ik_target"]]),
+                        tgt_rest[limb["ik_target"]].translation - ankle_rest, foot_vec)
+
+            # The legs are scaled by their chains, but the two bodies' ankle
+            # heights are not in that ratio, so a leg the take held nearly
+            # straight can come out a few percent too short on the rig (measured
+            # on 08_01 with the plants locked: 1.038 of the chain at mid-stance).
+            # The hips come down to meet it - the planted feet never move - by
+            # the least that clears every leg, max-filtered then box-blurred over
+            # HIP_LOWER_SMOOTH_S so it never pops (the blur of a same-radius max
+            # filter is >= the original at every sample).
+            lowering = [0.0] * count
+            if reach_limit and leg_ankles and tgt_mid is not None:
+                need = []
+                for j in range(count):
+                    worst = 0.0
+                    for side_rest, cap, ankles in leg_ankles.values():
+                        v = hip_at(side_rest, j) - ankles[j]
+                        horizontal = (v - up * v.dot(up)).length
+                        if horizontal < cap:
+                            worst = max(worst, v.dot(up) - math.sqrt(cap * cap
+                                                                     - horizontal ** 2))
+                    need.append(max(0.0, worst))
+                radius = max(1, int(round(HIP_LOWER_SMOOTH_S * fps_out)))
+                peak = [max(need[max(0, j - radius):j + radius + 1]) for j in range(count)]
+                lowering = [sum(peak[max(0, j - radius):j + radius + 1])
+                            / float(len(peak[max(0, j - radius):j + radius + 1]))
+                            for j in range(count)]
+                tgt_mid = [p - up * lowering[j] for j, p in enumerate(tgt_mid)]
+            hip_lowering = {"max_mm": round(max(lowering) * M_TO_MM, 2) if lowering else 0.0,
+                            "mean_mm": round(sum(lowering) / max(1, len(lowering)) * M_TO_MM,
+                                             2),
+                            "frames": sum(1 for v in lowering if v > 1e-6)}
+
+            if root_entry is not None and tgt_mid is not None:
+                target = root_entry["target"]
+                pivot = tgt_rest[target].translation - tgt_mid_rest
+                tracks[target]["loc"] = [tgt_mid[j] + delta_of(target, j) @ pivot
+                                         for j in range(count)]
+            elif root_entry is not None:
+                warnings.append("The hips are mapped but nothing gives them a path; "
+                                "they rotate in place.")
+
+            # --- pass 2: the IK tracks
+            for side, limb, chain, toe in ik_legs:
+                thigh, shin, foot = chain
+                ankle_rest = tgt_rest[foot["target"]].translation
+                foot_ik = limb["ik_target"]
+                ik_offset = tgt_rest[foot_ik].translation - ankle_rest
+                ik_q = _quat_of(tgt_rest[foot_ik])
+                hip_rest_side, reach_cap, ankles = leg_ankles[side]
+                rot, loc = [], []
+                pulled = []
+                for j in range(count):
+                    d = delta_of(foot["target"], j)
+                    ankle = ankles[j]
+                    if reach_limit:
+                        # only where lowering the hips could not help (a foot
+                        # further out horizontally than the leg is long)
+                        reach = ankle - hip_at(hip_rest_side, j)
+                        if reach.length > reach_cap + 1e-6:
+                            pulled.append((round((reach.length - reach_cap) * M_TO_MM, 2), j))
+                            ankle = hip_at(hip_rest_side, j) + reach.normalized() * reach_cap
                     rot.append((d @ ik_q).normalized())
                     loc.append(ankle + d @ ik_offset)
+                anchors[side]["reach_cap"] = {
+                    "cap_m": round(reach_cap, 5), "frames_pulled": len(pulled),
+                    "worst_pull_mm": max(pulled)[0] if pulled else 0.0}
                 tracks[foot_ik] = {"rot": mocap.same_hemisphere(rot), "loc": loc}
                 pole = limb.get("pole_target")
                 if pole and limb.get("pole_enabled") is not False:
@@ -6299,8 +6658,14 @@ def cmd_rigforge_retarget(params):
             count = s1 - s0 + 1
             # measured on the world paths BEFORE the travel comes out: a planted
             # foot is still there, so its share of the seam correction is zero
-            seam_weights = {name: mocap.path_weights(track["loc"])
-                            for name, track in tracks.items() if track["loc"] is not None}
+            # A ball-anchored IK target is weighted by its BALL's path: through a
+            # heel-off the ankle (and the target) rises while the ball holds, and
+            # weighting by the target put the seam correction into the plant
+            # (measured on CMU 16_46: the right ball held 24 mm off the floor
+            # through its last plant before the seam).
+            seam_weights = {name: mocap.path_weights(
+                weight_paths[name][s0:s1 + 1] if name in weight_paths else track["loc"])
+                for name, track in tracks.items() if track["loc"] is not None}
 
             # --- root motion
             root_report = {"mode": root_mode, "speed_mps": None, "travel_direction": None}
@@ -6346,7 +6711,47 @@ def cmd_rigforge_retarget(params):
             seam_report = None
             if find_loop:
                 travel_vec = (velocity * (count - 1)) if root_mode != "in_place" else Vector()
+                # a ball-anchored IK target is closed on its BALL: the seam spread
+                # also turns the foot, and a turned foot swings its ball ~150 mm
+                # from the ankle - measured on CMU 16_46, both plants 4.4 / 25 mm
+                # off the floor after a plain closure of the target
+                ball_before = {}
+                for name, (ik_q, ik_off, fvec) in ball_geo.items():
+                    rot, loc = tracks[name]["rot"], tracks[name]["loc"]
+                    ball_before[name] = [
+                        loc[j] + (rot[j] @ ik_q.inverted()) @ (fvec - ik_off)
+                        for j in range(count)]
                 residuals = mocap.close_seam(tracks, travel=travel_vec, weights=seam_weights)
+                for name, before in ball_before.items():
+                    ik_q, ik_off, fvec = ball_geo[name]
+                    error = before[-1] - before[0] - travel_vec
+                    share = seam_weights.get(name) or [j / float(max(1, count - 1))
+                                                       for j in range(count)]
+                    # the HEIGHT of the residual (swings differ in height stride
+                    # to stride) goes into the swing frames only, zero at the
+                    # longest plant, so every plant in the window stays on the
+                    # floor; the rest is spread by the ball's path as before
+                    planted, anchor_run = set(), None
+                    for a, b in plant_runs.get(name, ()):
+                        a, b = max(a, s0), min(b, s1)
+                        if a > b:
+                            continue
+                        planted.update(range(a - s0, b - s0 + 1))
+                        if anchor_run is None or b - a > anchor_run[1] - anchor_run[0]:
+                            anchor_run = (a - s0, b - s0)
+                    swing = [0.0]
+                    for j in range(1, count):
+                        swing.append(swing[-1] + (0.0 if j in planted and j - 1 in planted
+                                                  else 1.0))
+                    rise = error.dot(up)
+                    level = error - up * rise
+                    zero = swing[anchor_run[0]] if anchor_run else 0.0
+                    rot, loc = tracks[name]["rot"], tracks[name]["loc"]
+                    for j in range(count):
+                        lift = (rise * (swing[j] - zero) / swing[-1] if swing[-1] > 0.0
+                                else rise * share[j])
+                        ball = before[j] - level * share[j] - up * lift
+                        loc[j] = ball - (rot[j] @ ik_q.inverted()) @ (fvec - ik_off)
                 worst = sorted(((r.get("rot_deg", 0.0), name)
                                 for name, r in residuals.items()), reverse=True)
                 worst_loc = max((r.get("loc_mm", 0.0) for r in residuals.values()), default=0.0)
@@ -6368,6 +6773,63 @@ def cmd_rigforge_retarget(params):
                            loop_report["seam_cost_deg"], worst[0][1], worst[0][0],
                            max_residual, ", ".join("%s %.2f" % (n, v)
                                                    for v, n in worst[1:3])))
+
+            # --- reach again, on the final tracks: the seam spread moves feet and
+            # hips after the first lowering was solved (measured on CMU 16_46: a
+            # leg asked for 1.011 of its chain at the seam frame), so the hips
+            # come down once more by whatever the closed loop still needs -
+            # smoothed circularly on a loop so the seam stays closed
+            if reach_limit and ik_legs and root_entry is not None and \
+                    (tracks.get(root_entry["target"]) or {}).get("loc"):
+                rt = root_entry["target"]
+                pivot = tgt_rest[rt].translation - tgt_mid_rest
+
+                def win_delta(target, j):
+                    return rotations[target][s0 + j] @ _quat_of(tgt_rest[target]).inverted()
+
+                need = []
+                for j in range(count):
+                    body = win_delta(rt, j)
+                    mid_j = tracks[rt]["loc"][j] - body @ pivot
+                    worst_need = 0.0
+                    for side, limb, chain, _toe in ik_legs:
+                        side_rest, cap, _ankles = leg_ankles[side]
+                        hip = mid_j + body @ (side_rest - tgt_mid_rest)
+                        foot_t = chain[2]["target"]
+                        ik_off = (tgt_rest[limb["ik_target"]].translation
+                                  - tgt_rest[foot_t].translation)
+                        ankle = tracks[limb["ik_target"]]["loc"][j] - win_delta(foot_t, j) @ ik_off
+                        v = hip - ankle
+                        horizontal = flat(v).length
+                        if horizontal < cap:
+                            worst_need = max(worst_need, v.dot(up) - math.sqrt(
+                                cap * cap - horizontal ** 2))
+                    need.append(max(0.0, worst_need))
+                again = [0.0] * count
+                if max(need) > 1e-6:
+                    period = count - 1 if find_loop and count > 2 else count
+                    radius = max(1, int(round(HIP_LOWER_SMOOTH_S * fps_out)))
+
+                    def at(values, k):
+                        if period == count - 1:
+                            return values[k % period]
+                        return values[min(max(k, 0), period - 1)]
+                    peak = [max(at(need, j + k) for k in range(-radius, radius + 1))
+                            for j in range(period)]
+                    again = [sum(at(peak, j + k) for k in range(-radius, radius + 1))
+                             / float(2 * radius + 1) for j in range(period)]
+                    if period == count - 1:
+                        again.append(again[0])
+                    movers = [rt] + [limb.get("pole_target") for _s, limb, _c, _t in ik_legs
+                                     if limb.get("pole_target") in tracks]
+                    for name in movers:
+                        loc = tracks[name]["loc"]
+                        if loc:
+                            tracks[name]["loc"] = [p - up * again[j] for j, p in enumerate(loc)]
+                hip_lowering["after_seam"] = {
+                    "max_mm": round(max(again) * M_TO_MM, 2),
+                    "mean_mm": round(sum(again) / max(1, len(again)) * M_TO_MM, 2),
+                    "frames": sum(1 for v in again if v > 1e-6)}
 
             # --- the IK/FK convention, live for the bake
             frames = list(range(1, count + 1))
@@ -6569,6 +7031,10 @@ def cmd_rigforge_retarget(params):
                 "orientation": orientation,
                 "heading": heading,
                 "rest_alignment_deg": alignment,
+                "foot_flat_calibration": flat_report,
+                "ground": ground_report,
+                "ik_anchor": anchors,
+                "hip_lowering": hip_lowering,
                 "root_motion": root_report,
                 "hip_height_from": vertical,
                 "legs": {"mode": legs_mode,
@@ -6580,7 +7046,8 @@ def cmd_rigforge_retarget(params):
                 "baked_controls": sorted(constrained),
                 "ik_stretch": (ik_stretch_report(stretch_block, {})
                                if stretch_block else None),
-                "mapping_preset_status": mocap.PRESET_STATUS if preset else None,
+                "mapping_preset_status": (mocap.PRESET_STATUS_BY_NAME.get(preset)
+                                          if preset else None),
             })
     finally:
         # constraints come off the *real* rig whatever happened

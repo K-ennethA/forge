@@ -2146,11 +2146,20 @@ def _median(values):
     return 0.5 * (ordered[middle - 1] + ordered[middle])
 
 
-def stance_runs(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES):
+def stance_runs(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES, relative=False):
     """Index runs where the tracked point is down and holding still.
 
     ``track`` is a list of world positions, one per sampled frame, in order.
     Returns ``[[i, i+1, ...], ...]`` — see the section header for the rule.
+
+    ``relative`` (the in-place treadmill): "moving" in rule 3 is measured
+    against the run's own median velocity, not against standing still. On a
+    treadmill every planted sample moves at the belt speed, so an absolute
+    3x-median trim can never fire and the heel arriving and the toe leaving
+    were counted as the plant. Measured on one retargeted CMU walk (08_01):
+    47.84 mm worst step in place against 5.06 mm for the same motion kept on
+    root motion and measured planted. The drift itself is still measured
+    against the one pooled belt speed; only the trim is per run.
     """
     if len(track) < minimum:
         return []
@@ -2169,12 +2178,16 @@ def stance_runs(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES):
     if len(current) >= minimum:
         runs.append(current)
 
-    trimmed = []
-    for run in runs:
-        speeds = [(_horizontal(track[run[i + 1]]) - _horizontal(track[run[i]])).length
-                  for i in range(len(run) - 1)]
-        if not speeds:
-            continue
+    def trim(run):
+        steps = [_horizontal(track[run[i + 1]]) - _horizontal(track[run[i]])
+                 for i in range(len(run) - 1)]
+        if not steps:
+            return None
+        if relative:
+            belt = Vector((_median([s.x for s in steps]), _median([s.y for s in steps]),
+                           _median([s.z for s in steps])))
+            steps = [s - belt for s in steps]
+        speeds = [s.length for s in steps]
         limit = max(STANCE_SPEED_FACTOR * _median(speeds),
                     STANCE_SPEED_FLOOR_MM / M_TO_MM)
         start, end = 0, len(run) - 1
@@ -2182,7 +2195,22 @@ def stance_runs(track, band=CONTACT_BAND, minimum=MIN_STANCE_FRAMES):
             start += 1
         while end - start + 1 > minimum and speeds[end - 1] > limit:
             end -= 1
-        trimmed.append(run[start:end + 1])
+        return run[start:end + 1]
+
+    trimmed = []
+    for run in runs:
+        run = trim(run)
+        # relative: the belt is re-read on what is left until nothing more
+        # trims - a running ball skims low through late swing, inside the band,
+        # and those samples drag the first median off the belt (CMU 16_46: a
+        # 6-sample plant of which 4 were planted)
+        while relative and run is not None:
+            again = trim(run)
+            if again is None or len(again) == len(run):
+                break
+            run = again
+        if run is not None:
+            trimmed.append(run)
     return [run for run in trimmed if len(run) >= minimum]
 
 
@@ -3693,7 +3721,13 @@ def cmd_animation_check(params):
     ``animation_check {"rig"?, "action"?, "mode"?: "auto"|"planted"|"in_place"
     |"jump", "frame_step"?, "contact_band"?, "min_stance_frames"?,
     "feet"?: [bones], "airborne_clearance"?, "min_airborne_frames"?,
-    "parabola_tolerance"?, "hop_tolerance_frames"?}``
+    "parabola_tolerance"?, "hop_tolerance_frames"?, "motion_quality"?: false}``
+
+    ``motion_quality: true`` adds the gait-quality tier
+    (``rigforge_mocap.MOTION_QUALITY_THRESHOLDS``, pinned against retargeted
+    real mocap): ``motion_quality`` carries each floor with its measurement and
+    ``motion_quality_gate`` its rollup. Off by default - an idle or a punch
+    is not a gait and the floors say nothing about it.
 
     Deterministic and geometric — no render, no model, nothing judged by eye.
     The rig's pose, action and the scene's frame are all restored.
@@ -3783,6 +3817,7 @@ def cmd_animation_check(params):
     hop_tolerance = params.get("hop_tolerance_frames")
     if hop_tolerance is not None:
         hop_tolerance = get_int(params, "hop_tolerance_frames", minimum=0, maximum=1000)
+    want_quality = get_bool(params, "motion_quality", False)
 
     raw_feet = params.get("feet")
     if isinstance(raw_feet, str):
@@ -3948,6 +3983,11 @@ def cmd_animation_check(params):
 
     treadmill = Vector((0.0, 0.0, 0.0))
     if mode == "in_place":
+        # the stance trim measured against the belt, not against standing still
+        # (see stance_runs' ``relative``)
+        for spec in specs:
+            all_runs[spec["bone"]] = stance_runs(tracks[spec["bone"]], band=band,
+                                                 minimum=minimum, relative=True)
         # One shared velocity for the whole clip, pooled over every stance
         # sample of both feet. Pooled rather than per-phase on purpose: a
         # per-phase fit would subtract each foot's own slide and pass anything,
@@ -4500,7 +4540,20 @@ def cmd_animation_check(params):
     if fired:
         says = "%s %s" % (says, " ".join(fired))
 
+    # --- the motion-quality tier (optional; the drop-in build turns it on for
+    # gait clips): pinned floors that a robotic clip falls under. Its own
+    # rollup, like deformation_gate, because it answers a third question.
+    quality = None
+    if want_quality:
+        from . import rigforge_mocap
+        quality = rigforge_mocap.motion_quality(
+            rigforge_mocap.motion_statistics(rig, action))
+        if quality["verdict"] == "fail":
+            says = "%s %s" % (says, quality["says"])
+
     return {
+        "motion_quality": quality,
+        "motion_quality_gate": quality["verdict"] if quality else None,
         "rig": rig.name,
         "action": action.name,
         "mode": mode,

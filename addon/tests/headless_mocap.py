@@ -399,14 +399,20 @@ def test_presets_and_root_modes():
     preset = call("rigforge_retarget", {"target_rig": RIG, "source_path": CMU,
                                         "action_name": "cmu_preset", "mapping": "cmu"})
     mapped = {m["source"]: m["target"] for m in preset["mapped"]}
-    check("the cmu preset maps lowerback onto the spine and thorax onto the chest",
-          mapped.get("lowerback") == "spine_fk.001" and mapped.get("thorax") == "chest",
+    # lowerback used to take spine_fk.001 - the head of basic_spine's REVERSED hip
+    # chain, which swung the pelvis about the torso pivot (measured on CMU 08_01:
+    # both hip joints 45-50 mm off the retarget's path). Dropped on measurement.
+    check("the cmu preset maps thorax onto the chest and nothing onto spine_fk.001",
+          mapped.get("thorax") == "chest" and "spine_fk.001" not in mapped.values(),
           json.dumps(mapped))
     reasons = {m["source"]: m["reason"] for m in preset["unmapped_detail"]}
-    check("and leaves upperback/upperneck/lhipjoint out on purpose, saying so",
-          all("on purpose" in reasons.get(n, "") for n in ("upperback", "upperneck",
-                                                             "lhipjoint")),
+    check("and leaves lowerback/upperback/upperneck/lhipjoint out on purpose, saying so",
+          all("on purpose" in reasons.get(n, "") for n in ("lowerback", "upperback",
+                                                             "upperneck", "lhipjoint")),
           json.dumps(reasons)[:300])
+    check("the cmu preset reports itself verified against real files",
+          "verified" in (preset.get("mapping_preset_status") or ""),
+          preset.get("mapping_preset_status"))
     keep = preset
     in_place = call("rigforge_retarget", {"target_rig": RIG, "source_path": CMU,
                                           "action_name": "cmu_inplace",
@@ -484,6 +490,14 @@ def test_driver_contract():
     got = contract["natural_speed_mps"]
     check("natural speed %.4f m/s is the take's own over the window x scale (%.4f)"
           % (got, want), abs(got - want) / want < 0.01)
+    cleanup = {k: retarget.get(k) for k in ("foot_flat_calibration", "ground", "ik_anchor",
+                                             "hip_lowering")}
+    note("plant cleanup: %s" % json.dumps(cleanup)[:600])
+    check("the plant cleanup reports itself: flat-stance calibration used on both feet, "
+          "ball anchors, a hip-lowering figure",
+          all((cleanup["foot_flat_calibration"].get(s) or {}).get("used") for s in "LR")
+          and all(cleanup["ik_anchor"][s]["point"] == "ball" for s in "LR")
+          and cleanup["hip_lowering"] is not None, json.dumps(cleanup)[:400])
     check("the legs were retargeted through IK (foot, pole, toe targets baked)",
           {"foot_ik.L", "foot_ik.R", "thigh_ik_target.L", "toe_ik.R"}
           <= set(retarget["legs"]["ik_controls"]), str(retarget["legs"]))
@@ -519,11 +533,15 @@ def test_driver_contract():
 
 
 def test_motion_stats(driver_result):
-    section("motion_stats: the quality-gate scaffold (measured, no thresholds)")
+    section("motion_stats and the pinned motion-quality tier")
+    from forge.tools import rigforge_mocap as mocap
     g = generator()
     stats = driver_result["motion_stats"]
-    check("the scaffold says it has no thresholds, and has none",
-          stats["thresholds"] is None and "NO pass/fail" in stats["status"])
+    check("the stats carry the pinned floors and say where they came from",
+          stats["thresholds"] == mocap.MOTION_QUALITY_THRESHOLDS
+          and "pinned" in stats["status"], stats["status"])
+    check("the trunk/leg speed ratio is emitted (%s)" % stats.get("trunk_to_leg_speed_ratio"),
+          isinstance(stats.get("trunk_to_leg_speed_ratio"), float))
     joints = stats["joints"]
     frames = stats["frames"][1] - stats["frames"][0]
     check("angular speed pooled over %d DEF joints x %d steps" % (joints, frames),
@@ -555,9 +573,43 @@ def test_motion_stats(driver_result):
                                  walk["angular_speed_deg_s"]["trunk"]["p50"]))
     check("the same command reads the procedural walk-loop (the comparison baseline)",
           walk["action"] == "walk-loop" and walk["footfall"]["strike_frames"].get("L"))
+    # the tier on the clip whose kind the artist rejected: a rigid trunk and a
+    # head locked to the horizon (trunk p50 0.0 deg/s on this walk)
+    gated = call("animation_check", {"rig": RIG, "action": "walk-loop",
+                                     "motion_quality": True})
+    quality = gated.get("motion_quality") or {}
+    failed = sorted(c["metric"] for c in quality.get("checks", []) if c["verdict"] == "fail")
+    note("procedural walk-loop motion quality: %s" % json.dumps(quality.get("checks")))
+    check("animation_check's motion-quality tier fails the procedural walk on all three "
+          "floors (%s)" % ", ".join(failed),
+          gated.get("motion_quality_gate") == "fail" and failed == sorted(
+              mocap.MOTION_QUALITY_THRESHOLDS), json.dumps(quality)[:400])
+    plain = call("animation_check", {"rig": RIG, "action": "walk-loop"})
+    check("and is off unless asked for (motion_quality null, gate and deformation "
+          "gate unchanged)", plain.get("motion_quality") is None
+          and plain.get("gate") == gated.get("gate")
+          and plain.get("deformation_gate") == gated.get("deformation_gate"))
     reply = call("motion_stats", {"rig": RIG, "action": "nope"}, expect_error=True)
     check("an unknown action is refused by name", reply.get("status") == "error"
           and "nope" in (reply.get("message") or ""))
+
+
+def test_in_place_trim():
+    section("animation_check's in-place stance trim measures against the belt")
+    from forge.tools import rigcheck
+    # one ball on a 60 mm/frame belt: two samples of the heel arriving (low,
+    # slow), six planted, two of the toe leaving - all inside the contact band
+    ys = [0.0, 0.010, 0.080, 0.140, 0.200, 0.260, 0.320, 0.380, 0.400, 0.410, 0.600, 0.900]
+    zs = [0.030, 0.010, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.008, 0.015, 0.200, 0.300]
+    track = [Vector((0.0, y, z)) for y, z in zip(ys, zs)]
+    absolute = rigcheck.stance_runs(track)
+    relative = rigcheck.stance_runs(track, relative=True)
+    note("absolute trim %s, relative trim %s" % (absolute, relative))
+    check("the absolute trim keeps the arriving/leaving samples on a belt (it cannot "
+          "fire when every planted sample moves)", absolute and len(absolute[0]) > 7,
+          str(absolute))
+    check("the relative trim keeps exactly the belt-speed plant (samples 2-7)",
+          relative == [[2, 3, 4, 5, 6, 7]], str(relative))
 
 
 def test_determinism():
@@ -630,6 +682,7 @@ def main():
         test_presets_and_root_modes()
         driver = test_driver_contract()
         test_motion_stats(driver)
+        test_in_place_trim()
         test_determinism()
     except Exception:  # noqa: BLE001
         traceback.print_exc()

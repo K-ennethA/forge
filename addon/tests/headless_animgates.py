@@ -654,8 +654,14 @@ def test_existing_keys_are_untouched(rig, walk, punch, jump):
     added = {"bone_stretch_budget", "ik_reach_headroom", "loop_seam_closure",
              "anticipation_reads", "gait_opposition", "strike_lead",
              "deformation_gate"}
-    check("and exactly seven keys were added, no more",
-          set(walk) - expected == added, str(sorted(set(walk) - expected - added)))
+    # 2026-09-24: the optional motion-quality tier (rigforge_mocap
+    # MOTION_QUALITY_THRESHOLDS) - null unless "motion_quality": true is passed
+    quality_keys = {"motion_quality", "motion_quality_gate"}
+    check("and exactly seven keys were added, plus the two of the off-by-default "
+          "motion-quality tier (null here), no more",
+          set(walk) - expected == added | quality_keys
+          and walk.get("motion_quality") is None and walk.get("motion_quality_gate") is None,
+          str(sorted(set(walk) - expected - added - quality_keys)))
     check("the two calls that measured these are deterministic",
           call("animation_check", {"rig": rig.name,
                                    "action": WALK_LOOP})["worst_drift_mm"]

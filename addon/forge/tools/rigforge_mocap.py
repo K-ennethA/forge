@@ -21,11 +21,13 @@ clip the drop-in build can ship":
   residual left at the seam is spread across the window so the last frame is
   the first frame exactly.  The residual is reported, and refused past a
   caller-set ceiling.
-* :func:`motion_statistics` / ``motion_stats`` — the scaffold for the motion
-  quality gate the artist's "clearly broken" verdict asked for: joint angular
-  speed and acceleration distributions, footfall timing regularity, posture
-  variance.  **No thresholds.**  Every block says so; the numbers get pinned
-  against real mocap once it arrives, not invented here.
+* :func:`motion_statistics` / ``motion_stats`` — the motion statistics the
+  artist's "clearly broken" verdict asked for: joint angular speed and
+  acceleration distributions, footfall timing regularity, posture variance.
+  :data:`MOTION_QUALITY_THRESHOLDS` pins three gait floors on them, measured
+  on retargeted real mocap against the rejected procedural clips (derivation
+  beside the table); :func:`motion_quality` applies them and
+  ``animation_check {"motion_quality": true}`` gates on them.
 * ``rigforge_mocap_clip`` — the driver: .bvh in -> retarget (IK legs, in place,
   loop found and closed) -> ``animation_check`` gates -> ``motion_stats`` -> a
   named action with a contract block the drop-in build can read.
@@ -250,7 +252,16 @@ MAPPING_PRESETS = {
     # cgspeed BVH conversion's. ASSUMPTION until a vetted file is read.
     "cmu": {
         "root": ("hips", None), "hips": ("hips", None),
-        "lowerback": ("spine", None), "upperback": None, "thorax": ("chest", None),
+        # LowerBack sits ON the hips in both spellings (cgspeed README: "lowerback
+        # is in the same location as hip") and bends the spine segment above
+        # them. Its old slot, spine_fk.001, is the head of Rigify basic_spine's
+        # REVERSED hip chain (spine_fk.001 -> MCH-spine -> spine_fk -> ORG-spine
+        # -> DEF-thigh), so keying it swung the pelvis about the torso pivot:
+        # measured on CMU 08_01, both hip joints 45-50 mm off the path the
+        # retarget placed them on, and every leg-reach sum built on that path
+        # wrong by as much. The rig's only upper-body control above the pivot
+        # that deforms is `chest`, which the thorax already takes.
+        "lowerback": None, "upperback": None, "thorax": ("chest", None),
         "spine": None, "spine1": ("chest", None),
         "lowerneck": ("neck", None), "upperneck": None, "neck": ("neck", None),
         "neck1": None, "head": ("head", None),
@@ -273,6 +284,23 @@ MAPPING_PRESETS = {
         "leftforearm": ("forearm", "L"), "rightforearm": ("forearm", "R"),
         "lefthand": ("hand", "L"), "righthand": ("hand", "R"),
     },
+    # 100STYLE (Mason et al., Zenodo 8127870). Read off the files themselves
+    # (2026-09-24): its "Shoulder" is the upper arm and "Collar" the clavicle -
+    # the reverse of what the CMU table calls a shoulder, hence its own table.
+    # Chest..Chest3 bend the spine below the rig's one deforming upper-body
+    # control; Chest4 (the thorax) takes `chest`, as CMU's thorax does.
+    "100style": {
+        "hips": ("hips", None), "chest": None, "chest2": None, "chest3": None,
+        "chest4": ("chest", None), "neck": ("neck", None), "head": ("head", None),
+        "leftcollar": ("shoulder", "L"), "rightcollar": ("shoulder", "R"),
+        "leftshoulder": ("upperarm", "L"), "rightshoulder": ("upperarm", "R"),
+        "leftelbow": ("forearm", "L"), "rightelbow": ("forearm", "R"),
+        "leftwrist": ("hand", "L"), "rightwrist": ("hand", "R"),
+        "lefthip": ("thigh", "L"), "righthip": ("thigh", "R"),
+        "leftknee": ("shin", "L"), "rightknee": ("shin", "R"),
+        "leftankle": ("foot", "L"), "rightankle": ("foot", "R"),
+        "lefttoe": ("toe", "L"), "righttoe": ("toe", "R"),
+    },
     # Mixamo (``mixamorig:`` prefix optional). ASSUMPTION until a vetted file is read.
     "mixamo": {
         "hips": ("hips", None), "spine": ("spine", None), "spine1": None,
@@ -288,8 +316,17 @@ MAPPING_PRESETS = {
     },
 }
 
-PRESET_STATUS = ("assumption: written from the published CMU/ASF, cgspeed-BVH and "
-                 "Mixamo naming conventions; not yet verified against a vetted file")
+#: Per preset: verified against real files, or still an assumption.
+PRESET_STATUS_BY_NAME = {
+    "cmu": ("verified 2026-09-24 against the cgspeed 2010 BVH conversion (CMU takes "
+            "08_01, 16_21, 39_01, 16_45, 16_46, 09_06, 78_06, 78_12): all 31 joint "
+            "names read, 20 mapped; LowerBack dropped on measurement (see the table)"),
+    "100style": ("read off the 100STYLE files (Crouched_FW / Crouched_ID, 2026-09-24): "
+                 "23 joints, 20 mapped, Chest..Chest3 left out on purpose"),
+    "mixamo": ("assumption: written from the published Mixamo naming convention; not "
+               "yet verified against a vetted file"),
+}
+PRESET_STATUS = PRESET_STATUS_BY_NAME["mixamo"]
 
 #: The slots a locomotion clip cannot do without; a sided slot means both sides.
 LOCOMOTION_SLOTS = ("hips", "thigh", "shin", "foot")
@@ -465,8 +502,87 @@ def close_seam(tracks, travel=None, weights=None):
 # motion statistics (the quality-gate scaffold: measured, never judged)
 # ---------------------------------------------------------------------------
 
-STATS_STATUS = ("scaffold: measured only, NO pass/fail thresholds. They get pinned "
-                "against license-vetted mocap when it arrives, not invented here.")
+STATS_STATUS = ("measured. The gait-quality floors (MOTION_QUALITY_THRESHOLDS) were "
+                "pinned 2026-09-24 on retargeted real mocap against the procedural "
+                "clips the artist rejected; motion_quality() applies them, "
+                "animation_check's motion_quality tier gates on them.")
+
+#: The motion-quality tier: floors a gait clip has to clear, each pinned by the
+#: honest-pin rule - measured on both populations, placed with margin to both,
+#: derivation quoted. Measured 2026-09-24 on the werewolf rig (24 fps, one
+#: cycle per loop), motion_stats on:
+#:   REAL (retargeted): CMU 08_01, 16_21, 39_01 walks; CMU 16_46, 16_45 runs;
+#:     100STYLE Crouched_FW crouch walk. (16_21 and 16_45 miss the slide gate -
+#:     12.2 / 35.7 mm - and are kept as motion samples: these metrics read
+#:     the trunk and head, which the plant cleanup never touches.)
+#:   PROCEDURAL (the clips the artist called "clearly broken"): walk-loop,
+#:     run-loop, sprint-loop as build_protagonist_human.py authored them.
+#:
+#: metric                       procedural max    real min (gaits)  floor
+#: trunk_to_leg_speed_ratio     0.0147 (run)      0.1414 (crouch)   0.07
+#: trunk_pitch_std_deg          0.0045 (sprint)   0.6796 (39_01)    0.30
+#: head_pitch_std_deg           0.0027 (walk)     0.7520 (16_45)    0.35
+#:
+#: Each floor sits at about half the lowest real reading (2.0x / 2.3x / 2.1x
+#: under it, so a real take a bit stiffer than these six still passes) and
+#: 4.8x / 67x / 130x over the highest procedural one (so the rejected clips
+#: fail on every floor, not on one).
+#:
+#: Measured and deliberately NOT pinned:
+#:   * step-interval CV - a one-cycle loop has two step intervals, so a clean
+#:     real take reads 0.0 exactly like a procedural one (08_01: 0.0; the real
+#:     range is 0.0-0.125): it cannot separate them.
+#:   * accel peak/median - the procedural run (p90 3.21) and sprint (2.89) are
+#:     SMOOTHER than real runs (3.66-4.69); only the procedural walk spikes
+#:     (max 6497), and the real crouch walk's max reads 407. No floor or
+#:     ceiling separates the populations.
+#:   * raw trunk angular speed - the real crouch walk (p50 5.96 deg/s) sits
+#:     beside the procedural run (4.39); divided by the legs' own speed it
+#:     separates 10x, which is why the ratio is pinned instead.
+MOTION_QUALITY_THRESHOLDS = {
+    "trunk_to_leg_speed_ratio": {"min": 0.07},
+    "trunk_pitch_std_deg": {"min": 0.30},
+    "head_pitch_std_deg": {"min": 0.35},
+}
+
+MOTION_QUALITY_WHY = {
+    "trunk_to_leg_speed_ratio": ("the trunk's joints turn at %.4f of the legs' median "
+                                 "angular speed - a torso carried rigid on moving legs"),
+    "trunk_pitch_std_deg": ("the hip-to-neck line pitches by %.3f deg (std) through the "
+                            "cycle - the trunk does not ride the stride"),
+    "head_pitch_std_deg": ("the head pitches by %.3f deg (std) through the cycle - a "
+                           "head locked to the horizon"),
+}
+
+
+def motion_quality(stats):
+    """Apply MOTION_QUALITY_THRESHOLDS to a :func:`motion_statistics` block."""
+    posture = stats.get("posture") or {}
+    values = {
+        "trunk_to_leg_speed_ratio": stats.get("trunk_to_leg_speed_ratio"),
+        "trunk_pitch_std_deg": posture.get("trunk_pitch_std_deg"),
+        "head_pitch_std_deg": posture.get("head_pitch_std_deg"),
+    }
+    checks = []
+    failed = []
+    for name, band in MOTION_QUALITY_THRESHOLDS.items():
+        value = values.get(name)
+        if value is None:
+            checks.append({"metric": name, "value": None, "min": band["min"],
+                           "verdict": "unmeasured"})
+            continue
+        ok = value >= band["min"]
+        checks.append({"metric": name, "value": value, "min": band["min"],
+                       "verdict": "ok" if ok else "fail"})
+        if not ok:
+            failed.append("%s (floor %s)" % (MOTION_QUALITY_WHY[name] % value, band["min"]))
+    measured = [c for c in checks if c["verdict"] != "unmeasured"]
+    verdict = "unmeasured" if not measured else ("fail" if failed else "ok")
+    says = ("Motion quality: %s." % "; ".join(failed)) if failed else (
+        "Motion quality: every floor cleared." if measured else
+        "Motion quality: nothing to measure.")
+    return {"verdict": verdict, "checks": checks, "thresholds": MOTION_QUALITY_THRESHOLDS,
+            "says": says}
 
 _SPLIT_SEGMENT = re.compile(r"\.[LR]\.\d+$")
 
@@ -658,10 +774,14 @@ def motion_statistics(rig, action):
         footfall["says"] = "no heel strike found: this clip is not a gait"
 
     ranked = sorted(posture, key=lambda item: -item[1])
+    legs_p50 = (_percentiles(speed["legs"]) or {}).get("p50")
+    trunk_p50 = (_percentiles(speed["trunk"]) or {}).get("p50")
     return {
         "action": action.name,
         "status": STATS_STATUS,
-        "thresholds": None,
+        "thresholds": MOTION_QUALITY_THRESHOLDS,
+        "trunk_to_leg_speed_ratio": (round(trunk_p50 / legs_p50, 4)
+                                     if legs_p50 and trunk_p50 is not None else None),
         "fps": fps,
         "frames": [start, end],
         "looping": looping,
@@ -710,11 +830,11 @@ def _resolve_action(params, rig):
 
 @command("motion_stats")
 def cmd_motion_stats(params):
-    """``motion_stats {"rig"?, "action"?}`` - the quality-gate scaffold.
+    """``motion_stats {"rig"?, "action"?}`` - the motion statistics of one clip.
 
     Joint angular speed / acceleration distributions (DEF joints, parent frame),
-    footfall timing regularity and posture variance for one clip. Measured
-    only: ``thresholds`` is always ``null`` until real mocap pins them.
+    footfall timing regularity and posture variance. ``quality`` applies the
+    pinned gait floors (MOTION_QUALITY_THRESHOLDS) - meaningful on a gait only.
     """
     from . import rigcheck
 
@@ -722,6 +842,7 @@ def cmd_motion_stats(params):
     rig = rigcheck._resolve_rig_loose(params)
     action = _resolve_action(params, rig)
     stats = motion_statistics(rig, action)
+    stats["quality"] = motion_quality(stats)
     stats["rig"] = rig.name
     stats["seconds"] = round(time.monotonic() - started, 3)
     return stats
@@ -738,7 +859,11 @@ def cmd_rigforge_mocap_clip(params):
 
     ``rigforge_mocap_clip {"target_rig", "source_path", "clip": "walk",
     "loop"?: true, "root_motion"?: "in_place", "legs"?: "ik", "mapping"?,
-    "heading"?, "fps"?, "require_slots"?, "check_mode"?, "strict"?, ...}``
+    "heading"?, "fps"?, "require_slots"?, "check_mode"?, "strict"?,
+    "motion_quality"?: false, "foot_lock"?, "reach_limit"?, ...}``
+
+    ``motion_quality: true`` (gait clips) runs animation_check's motion-quality
+    tier and a clip under any pinned floor is not ready.
 
     Retargets with the production defaults (IK legs so plants survive a
     proportion change, in place because the game's controller moves the body,
@@ -779,13 +904,16 @@ def cmd_rigforge_mocap_clip(params):
         "require_slots": require,
         "replace": get_bool(params, "replace", True),
     }
-    for key in ("fps", "loop_min_s", "loop_max_s", "loop_max_residual_deg"):
+    for key in ("fps", "loop_min_s", "loop_max_s", "loop_max_residual_deg", "foot_lock",
+                "reach_limit"):
         if params.get(key) is not None:
             retarget_params[key] = params[key]
     retarget = rigforge_anim.cmd_rigforge_retarget(retarget_params)
     action_name = retarget["action"]
+    want_quality = get_bool(params, "motion_quality", False)
     check = rigcheck.cmd_animation_check({"rig": retarget["target_rig"],
-                                          "action": action_name, "mode": check_mode})
+                                          "action": action_name, "mode": check_mode,
+                                          "motion_quality": want_quality})
     rig = bpy.data.objects[retarget["target_rig"]]
     stats = motion_statistics(rig, bpy.data.actions[action_name])
 
@@ -799,6 +927,8 @@ def cmd_rigforge_mocap_clip(params):
     if loop and seam.get("verdict") not in (None, "ok"):
         failed.append("loop seam %s (worst %s mm, tolerance %s mm)"
                       % (seam.get("verdict"), seam.get("worst_mm"), seam.get("tolerance_mm")))
+    if want_quality and check.get("motion_quality_gate") != "ok":
+        failed.append("motion quality %s" % check.get("motion_quality_gate"))
     root = retarget.get("root_motion") or {}
     contract = {
         "action": action_name,
@@ -812,6 +942,7 @@ def cmd_rigforge_mocap_clip(params):
         "deformation_gate": check.get("deformation_gate"),
         "worst_drift_mm": check.get("worst_drift_mm"),
         "seam": {"verdict": seam.get("verdict"), "worst_mm": seam.get("worst_mm")} if seam else None,
+        "motion_quality_gate": check.get("motion_quality_gate"),
         "ready": not failed,
         "failed": failed,
     }

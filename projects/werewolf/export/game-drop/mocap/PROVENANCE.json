@@ -1,0 +1,49 @@
+{
+  "about": "Frozen mocap selection for protagonist_human's locomotion. Crops re-derivable and checkable with freeze_mocap.py; zips, hashes and licence verdicts in C:/forge-assets/thirdparty/MANIFEST.md (license research: docs/research/mocap-and-base-mesh.md). Rows are 0-based MOTION rows, inclusive.",
+  "credits": {
+    "cmu": "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217. (courtesy acknowledgment requested; BVH conversion by B. Hahne, cgspeed 2010 release)",
+    "100style": "Locomotion styles derived from the 100STYLE dataset (Mason et al.), CC BY 4.0. (OBLIGATION: this line in the shipped game's credits)"
+  },
+  "clips": [
+    {
+      "clip": "walk-loop",
+      "file": "cmu_08_01.bvh",
+      "why": "CMU subject 08 'walk': straight (1.00), steady, the brisker of the clean walks (1.533 m/s at rig scale vs 39_01 1.392) toward the game's 2.0 m/s walk",
+      "source": {"dataset": "cmu", "zip": "cmu-cgspeed/cmuconvert-mb2-01-09.zip", "zip_sha256_16": "8822D96DAC5694CB",
+                 "member": "08/08_01.bvh", "member_sha256": "4e6cc1e0aa8b6b112be25b6aab5db8f176094181280b2c8ebcf903ede66e6e98",
+                 "rows": [1, 277], "rows_note": "row 0 is the converter's added T-pose, dropped; 120 fps"},
+      "crop_sha256": "9b65a1090d56b121eb53f65b656daec2a6f63e19b968cd52b75f82c043884f53",
+      "license": "CMU: free for any use incl. commercial; do not resell the data itself"
+    },
+    {
+      "clip": "run-loop",
+      "file": "cmu_16_46.bvh",
+      "why": "CMU subject 16 'run/jog': the fastest take that holds a clean cycle and a planted slide (3.745 m/s at rig scale); 78_06/78_12 (faster, ~0.9 s long) and 09_06 hold no clean cycle (loop residual 86.6/31.1/32.2 deg), 16_45 slides 35.7 mm",
+      "source": {"dataset": "cmu", "zip": "cmu-cgspeed/cmuconvert-mb2-15-19.zip", "zip_sha256_16": "24651F3C6DB18EE8",
+                 "member": "16/16_46.bvh", "member_sha256": "3cb60c5b83b15a8ad51e8911e2566d0cdd8dfe4186bdbbe237c19ab97d36bb35",
+                 "rows": [1, 136], "rows_note": "row 0 is the converter's added T-pose, dropped; 120 fps"},
+      "crop_sha256": "37cce0530fd47c1a7fd3472a583e7acbc87cd8701d7969037c288bf3300361de",
+      "license": "CMU: free for any use incl. commercial; do not resell the data itself"
+    },
+    {
+      "clip": "crouch_walk-loop",
+      "file": "s100_Crouched_FW.bvh",
+      "why": "100STYLE 'Crouched' (squat slightly and bend back), forward walk: the straight leg of the room at rows 610-870 (heading within ~8 deg), 60 fps",
+      "source": {"dataset": "100style", "zip": "100style/100STYLE.zip", "zip_sha256_16": "2C3B4017F8E2397E",
+                 "member": "100STYLE/Crouched/Crouched_FW.bvh", "member_sha256": "e4242640c94810a6c5f1df0d0d0bb78c8ffaed4bb79a7569ba3391e57a34ac8a",
+                 "rows": [610, 870], "rows_note": "inside Frame_Cuts.csv FW 430-6762"},
+      "crop_sha256": "4152fbade855ddc69172ff0ecd69373786840122e57854187debfa082904c10b",
+      "license": "CC BY 4.0 (credit line required)"
+    },
+    {
+      "clip": "crouch_idle-loop",
+      "file": "s100_Crouched_ID.bvh",
+      "why": "100STYLE 'Crouched' idle, rows 600-1200 (10 s), 60 fps",
+      "source": {"dataset": "100style", "zip": "100style/100STYLE.zip", "zip_sha256_16": "2C3B4017F8E2397E",
+                 "member": "100STYLE/Crouched/Crouched_ID.bvh", "member_sha256": "aa03c9671f38ca05e1073e8b15f961d3c4672f3e4e9ef21748dca1dabfa95e95",
+                 "rows": [600, 1200], "rows_note": "inside Frame_Cuts.csv ID 568-1250"},
+      "crop_sha256": "2dba87af12951b14c79751710133fe6700e1c9edfcbbbfa05122a82c95cec11a",
+      "license": "CC BY 4.0 (credit line required)"
+    }
+  ]
+}
