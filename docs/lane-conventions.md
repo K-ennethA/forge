@@ -110,3 +110,30 @@ never fires on a green gate. Rules:
   number honestly with the measured value, never tune one to pass.
 - `build-plan.json` has exactly one writer (`pipeline.py`); bridges and tools
   read it only.
+
+## Two speeds (2026-09-24, from the artist's speed critique)
+
+The artist's parity bar: forge output must at least MATCH a freehand agent
+run of the same task — in quality AND wall time. The process serves that
+bar, never the reverse.
+
+- **Draft mode** — any FIRST version of an asset, and all exploration: one
+  agent turn. Generate, save with a receipt, render, show the artist.
+  No lane ceremony, no gate wall, no benchmark run. Minutes, not hours.
+  Drafts are never consumed by the game or a print.
+- **Production mode** — only what a consumer actually takes (the game's
+  drop-ins, printable exports) gets the reproducible build, the gates, and
+  the contract checker. That work earned its rules: every production
+  delivery this week landed in one attempt because of them.
+- **Commit gates are scoped**: run the suites the change touches; the full
+  parallel wall runs on a schedule or before a release wave, not per commit.
+- **When in doubt, measure**: the benchmark's sufficiency rule already
+  scores time and quality — freehand vs pipeline on the same task is a
+  comparison to RUN, not to argue.
+
+## Quality tier (2026-09-24, artist reset)
+
+Delivered game characters target the semi-realistic tier: 30–50k tris,
+baked normal/AO detail from a high-poly source, real texturing — not the
+16.7k flat-shaded tier ("low poly and low detail" is below the bar).
+Low-poly stays acceptable only for drafts and unshipped placeholders.
