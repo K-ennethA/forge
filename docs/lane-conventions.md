@@ -104,6 +104,10 @@ never fires on a green gate. Rules:
 
 - Agents never spawn agents; nothing windowed ever; never pay; no commits —
   the orchestrator gates and commits.
+- "Nothing windowed" includes the in-app browser pane (2026-09-24: a
+  download agent's navigate calls kept fronting the pane on the artist).
+  Agents use WebFetch and command-line fetches; the browser pane is the
+  orchestrator's, and only when the artist should look at it.
 - Artist placements (design/artist-edits.json journals) are inputs, never
   errors; code must work with them and never "correct" them.
 - Every threshold carries its derivation or its experiment; re-pin a moved
