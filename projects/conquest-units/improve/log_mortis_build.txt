@@ -1,0 +1,19 @@
+00:00.781  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-necromancer.blend"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "mortis.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\mortis.blend 40.1
+Info: Saved copy as "mortis.blend"
+RIG_DONE {"bone_count": 27, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"grave": 1922, "body": 3751, "chest": 1483, "head": 4270, "book": 3502, "dead_arm.00": 222, "dead_arm.01": 222, "dead_arm.02": 222, "dead_arm.03": 222, "dead_arm.04": 222, "dead_arm.05": 222, "dead_arm.06": 222, "dead_arm.07": 222, "dead_arm.08": 222, "dead_arm.09": 222, "dead_arm.10": 222, "dead_arm.11": 222, "dead_arm.12": 222, "dead_arm.13": 222, "dead_arm.14": 222, "dead_arm.15": 222, "dead_arm.16": 222, "dead_arm.17": 222, "dead_arm.18": 222, "dead_arm.19": 222}, "rule": "rigid parts: slab -> grave, face -> head, book -> book, arm k -> dead_arm.k (1.0); robe: z bands body -> chest (Z_CHEST +-0.8) -> head (Z_NECK -1.0..-0.2, the hood rides the head)"}, "seconds": 41.3}
+IDLE {"status": "PROPOSED - the artist judges", "action": "idle", "frames": 121, "cycle_frames": 120, "cycle_s": 5.0, "keyed_rotation": ["body", "chest", "head", "book", "dead_arm.00", "dead_arm.01", "dead_arm.02", "dead_arm.03", "dead_arm.04", "dead_arm.05", "dead_arm.06", "dead_arm.07", "dead_arm.08", "dead_arm.09", "dead_arm.10", "dead_arm.11", "dead_arm.12", "dead_arm.13", "dead_arm.14", "dead_arm.15", "dead_arm.16", "dead_arm.17", "dead_arm.18", "dead_arm.19"], "keyed_location": ["body", "book", "dead_arm.00", "dead_arm.01", "dead_arm.02", "dead_arm.03", "dead_arm.04", "dead_arm.05", "dead_arm.06", "dead_arm.07", "dead_arm.08", "dead_arm.09", "dead_arm.10", "dead_arm.11", "dead_arm.12", "dead_arm.13", "dead_arm.14", "dead_arm.15", "dead_arm.16", "dead_arm.17", "dead_arm.18", "dead_arm.19"], "never_keyed": ["root", "grave", "dead_arms"], "seam_residual_mm": 0.0, "slab_motion_max": 0.0, "min_z": 0.0, "book_clearance_min": 1.9276, "book_clearance_rest": 1.9761, "carrier_vs_hem_vertical_mismatch_max": 0.000128, "amplitude_max_displacement_sculpt_units": {"robe": 0.124, "head": 0.1018, "book": 0.2096, "carriers": 0.04, "perimeter_arms": 0.0468}, "amplitude_pct_of_height": {"robe": 0.954, "head": 0.783, "book": 1.612, "carriers": 0.308, "perimeter_arms": 0.36}, "carriers": ["dead_arm.00", "dead_arm.01", "dead_arm.02", "dead_arm.03", "dead_arm.04", "dead_arm.06", "dead_arm.07", "dead_arm.08", "dead_arm.10", "dead_arm.12", "dead_arm.13", "dead_arm.14", "dead_arm.15", "dead_arm.16", "dead_arm.18"], "perimeter": ["dead_arm.05", "dead_arm.09", "dead_arm.11", "dead_arm.17", "dead_arm.19"], "motion": {"hover_bob": 0.08, "body_sway_deg": 0.35, "chest_breath_deg": 0.9, "head_deg": [0.8, 1.6], "book_bob": 0.14, "book_turn_deg": [2.0, 4.0, 2.5], "arm_shift_deg": 1.1, "arm_heave_perimeter": 0.35, "harmonics": [1, 2]}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

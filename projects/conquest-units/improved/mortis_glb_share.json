@@ -1,0 +1,24 @@
+{
+ "glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\dark\\necromancer.glb",
+ "tris": 9996,
+ "fit": {
+  "yaw_deg": 0.0,
+  "scale": 7.2269,
+  "mean_nearest_dist_sculpt_units": 0.0189
+ },
+ "tris_per_part": {
+  "slab": 288,
+  "robe": 1062,
+  "head": 331,
+  "book": 756,
+  "hands": 7559
+ },
+ "shares": {
+  "slab": 0.0288,
+  "robe": 0.1062,
+  "head": 0.0331,
+  "book": 0.0756,
+  "hands": 0.7562
+ },
+ "rule": "glb triangle centroid -> nearest source-sculpt vertex's part, after a bbox fit into the sculpt frame"
+}

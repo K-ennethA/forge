@@ -1,0 +1,576 @@
+{
+ "unit": "mortis",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\mortis.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "grave": 1922,
+   "body": 3751,
+   "chest": 1483,
+   "head": 4270,
+   "book": 3502,
+   "dead_arm.00": 222,
+   "dead_arm.01": 222,
+   "dead_arm.02": 222,
+   "dead_arm.03": 222,
+   "dead_arm.04": 222,
+   "dead_arm.05": 222,
+   "dead_arm.06": 222,
+   "dead_arm.07": 222,
+   "dead_arm.08": 222,
+   "dead_arm.09": 222,
+   "dead_arm.10": 222,
+   "dead_arm.11": 222,
+   "dead_arm.12": 222,
+   "dead_arm.13": 222,
+   "dead_arm.14": 222,
+   "dead_arm.15": 222,
+   "dead_arm.16": 222,
+   "dead_arm.17": 222,
+   "dead_arm.18": 222,
+   "dead_arm.19": 222
+  },
+  "rule": "rigid parts: slab -> grave, face -> head, book -> book, arm k -> dead_arm.k (1.0); robe: z bands body -> chest (Z_CHEST +-0.8) -> head (Z_NECK -1.0..-0.2, the hood rides the head)"
+ },
+ "idle": {
+  "status": "PROPOSED - the artist judges",
+  "action": "idle",
+  "frames": 121,
+  "cycle_frames": 120,
+  "cycle_s": 5.0,
+  "keyed_rotation": [
+   "body",
+   "chest",
+   "head",
+   "book",
+   "dead_arm.00",
+   "dead_arm.01",
+   "dead_arm.02",
+   "dead_arm.03",
+   "dead_arm.04",
+   "dead_arm.05",
+   "dead_arm.06",
+   "dead_arm.07",
+   "dead_arm.08",
+   "dead_arm.09",
+   "dead_arm.10",
+   "dead_arm.11",
+   "dead_arm.12",
+   "dead_arm.13",
+   "dead_arm.14",
+   "dead_arm.15",
+   "dead_arm.16",
+   "dead_arm.17",
+   "dead_arm.18",
+   "dead_arm.19"
+  ],
+  "keyed_location": [
+   "body",
+   "book",
+   "dead_arm.00",
+   "dead_arm.01",
+   "dead_arm.02",
+   "dead_arm.03",
+   "dead_arm.04",
+   "dead_arm.05",
+   "dead_arm.06",
+   "dead_arm.07",
+   "dead_arm.08",
+   "dead_arm.09",
+   "dead_arm.10",
+   "dead_arm.11",
+   "dead_arm.12",
+   "dead_arm.13",
+   "dead_arm.14",
+   "dead_arm.15",
+   "dead_arm.16",
+   "dead_arm.17",
+   "dead_arm.18",
+   "dead_arm.19"
+  ],
+  "never_keyed": [
+   "root",
+   "grave",
+   "dead_arms"
+  ],
+  "seam_residual_mm": 0.0,
+  "slab_motion_max": 0.0,
+  "min_z": 0.0,
+  "book_clearance_min": 1.9276,
+  "book_clearance_rest": 1.9761,
+  "carrier_vs_hem_vertical_mismatch_max": 0.000128,
+  "amplitude_max_displacement_sculpt_units": {
+   "robe": 0.124,
+   "head": 0.1018,
+   "book": 0.2096,
+   "carriers": 0.04,
+   "perimeter_arms": 0.0468
+  },
+  "amplitude_pct_of_height": {
+   "robe": 0.954,
+   "head": 0.783,
+   "book": 1.612,
+   "carriers": 0.308,
+   "perimeter_arms": 0.36
+  },
+  "carriers": [
+   "dead_arm.00",
+   "dead_arm.01",
+   "dead_arm.02",
+   "dead_arm.03",
+   "dead_arm.04",
+   "dead_arm.06",
+   "dead_arm.07",
+   "dead_arm.08",
+   "dead_arm.10",
+   "dead_arm.12",
+   "dead_arm.13",
+   "dead_arm.14",
+   "dead_arm.15",
+   "dead_arm.16",
+   "dead_arm.18"
+  ],
+  "perimeter": [
+   "dead_arm.05",
+   "dead_arm.09",
+   "dead_arm.11",
+   "dead_arm.17",
+   "dead_arm.19"
+  ],
+  "motion": {
+   "hover_bob": 0.08,
+   "body_sway_deg": 0.35,
+   "chest_breath_deg": 0.9,
+   "head_deg": [
+    0.8,
+    1.6
+   ],
+   "book_bob": 0.14,
+   "book_turn_deg": [
+    2.0,
+    4.0,
+    2.5
+   ],
+   "arm_shift_deg": 1.1,
+   "arm_heave_perimeter": 0.35,
+   "harmonics": [
+    1,
+    2
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    1.9498
+   ]
+  },
+  {
+   "name": "grave",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0001,
+    1.0825,
+    0.0
+   ],
+   "tail": [
+    0.0001,
+    1.0825,
+    1.999
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0258,
+    0.6599,
+    2.4917
+   ],
+   "tail": [
+    0.0258,
+    0.6599,
+    6.4945
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0258,
+    0.6599,
+    6.4945
+   ],
+   "tail": [
+    0.0258,
+    0.6599,
+    9.7945
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0258,
+    0.6599,
+    9.7945
+   ],
+   "tail": [
+    0.0258,
+    0.6599,
+    12.9988
+   ]
+  },
+  {
+   "name": "book",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0009,
+    -3.1073,
+    8.4733
+   ],
+   "tail": [
+    -0.0009,
+    -3.1073,
+    9.4733
+   ]
+  },
+  {
+   "name": "dead_arms",
+   "parent": "root",
+   "deform": false,
+   "head": [
+    0.0001,
+    1.0825,
+    1.999
+   ],
+   "tail": [
+    0.0001,
+    1.0825,
+    2.999
+   ]
+  },
+  {
+   "name": "dead_arm.00",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -0.6314,
+    1.0639,
+    1.4215
+   ],
+   "tail": [
+    -0.6314,
+    1.0639,
+    3.5029
+   ]
+  },
+  {
+   "name": "dead_arm.01",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -1.6851,
+    1.0639,
+    1.4501
+   ],
+   "tail": [
+    -1.6851,
+    1.0639,
+    3.5315
+   ]
+  },
+  {
+   "name": "dead_arm.02",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    0.5155,
+    1.0639,
+    0.8115
+   ],
+   "tail": [
+    0.5155,
+    1.0639,
+    2.8929
+   ]
+  },
+  {
+   "name": "dead_arm.03",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    1.6921,
+    1.0639,
+    1.028
+   ],
+   "tail": [
+    1.6921,
+    1.0639,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.04",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -0.6314,
+    2.1402,
+    1.2094
+   ],
+   "tail": [
+    -0.6314,
+    2.1402,
+    3.2907
+   ]
+  },
+  {
+   "name": "dead_arm.05",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    1.6907,
+    2.205,
+    1.028
+   ],
+   "tail": [
+    1.6907,
+    2.205,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.06",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    0.5155,
+    2.1402,
+    1.028
+   ],
+   "tail": [
+    0.5155,
+    2.1402,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.07",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -1.686,
+    2.1505,
+    1.2844
+   ],
+   "tail": [
+    -1.686,
+    2.1505,
+    3.3658
+   ]
+  },
+  {
+   "name": "dead_arm.08",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -0.6314,
+    -0.9567,
+    1.149
+   ],
+   "tail": [
+    -0.6314,
+    -0.9567,
+    3.2304
+   ]
+  },
+  {
+   "name": "dead_arm.09",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -1.6851,
+    -0.9567,
+    1.2408
+   ],
+   "tail": [
+    -1.6851,
+    -0.9567,
+    3.3221
+   ]
+  },
+  {
+   "name": "dead_arm.10",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    0.5155,
+    -0.9567,
+    1.028
+   ],
+   "tail": [
+    0.5155,
+    -0.9567,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.11",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    1.6922,
+    -0.9556,
+    1.5773
+   ],
+   "tail": [
+    1.6922,
+    -0.9556,
+    3.8201
+   ]
+  },
+  {
+   "name": "dead_arm.12",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -0.6314,
+    0.1197,
+    1.028
+   ],
+   "tail": [
+    -0.6314,
+    0.1197,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.13",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -1.6851,
+    0.1197,
+    1.2693
+   ],
+   "tail": [
+    -1.6851,
+    0.1197,
+    3.3506
+   ]
+  },
+  {
+   "name": "dead_arm.14",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    0.5155,
+    0.1197,
+    1.4228
+   ],
+   "tail": [
+    0.5155,
+    0.1197,
+    3.5041
+   ]
+  },
+  {
+   "name": "dead_arm.15",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    1.6921,
+    0.1197,
+    1.028
+   ],
+   "tail": [
+    1.6921,
+    0.1197,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.16",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    0.5741,
+    3.0567,
+    1.028
+   ],
+   "tail": [
+    0.5741,
+    3.0567,
+    3.1093
+   ]
+  },
+  {
+   "name": "dead_arm.17",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    1.6261,
+    3.1156,
+    1.5921
+   ],
+   "tail": [
+    1.6261,
+    3.1156,
+    3.6734
+   ]
+  },
+  {
+   "name": "dead_arm.18",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -0.571,
+    2.9925,
+    0.8717
+   ],
+   "tail": [
+    -0.571,
+    2.9925,
+    2.953
+   ]
+  },
+  {
+   "name": "dead_arm.19",
+   "parent": "dead_arms",
+   "deform": true,
+   "head": [
+    -1.7458,
+    2.9267,
+    1.028
+   ],
+   "tail": [
+    -1.7458,
+    2.9267,
+    3.1093
+   ]
+  }
+ ],
+ "bone_count": 27,
+ "deform_bone_count": 25,
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\mortis.json",
+ "seconds": 41.3
+}

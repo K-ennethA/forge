@@ -1,0 +1,500 @@
+{
+ "unit": "mortis",
+ "conquest_character_id": "necromancer",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-necromancer.blend",
+ "tier": "hero",
+ "tri_budget": [
+  25000,
+  40000
+ ],
+ "yaw_fix_deg": 0.0,
+ "overrides": {},
+ "tris_source": 298272,
+ "source_shares": {
+  "hands": 0.9151,
+  "head": 0.0143,
+  "robe": 0.0423,
+  "book": 0.025
+ },
+ "origin_shift_sculpt_units": [
+  0.0,
+  -1.08262,
+  0.00553
+ ],
+ "tris_final": 38640,
+ "tris_per_part": {
+  "slab": 3840,
+  "robe": 13000,
+  "head": 6000,
+  "book": 7000,
+  "hands_total": 8800,
+  "per_hand": [
+   440
+  ]
+ },
+ "redistribution": {
+  "hands_share": {
+   "source": 0.9151,
+   "final": 0.2277
+  },
+  "head_share": {
+   "source": 0.0143,
+   "final": 0.1553
+  },
+  "robe_share": {
+   "source": 0.0423,
+   "final": 0.3364
+  },
+  "book_share": {
+   "source": 0.025,
+   "final": 0.1812
+  },
+  "note": "the shipped glb's shares are measured by improve/mortis_glb_audit.py (improved/mortis_glb_share.json)"
+ },
+ "eye_rule": {
+  "rule": "head faces in the front half, 45-80% of the head height, deeper than EYE_DEPTH_FRAC x max below the head's convex hull; glow = deeper than 60% of the max",
+  "max_depth": 0.1178,
+  "socket_faces": 213,
+  "glow_faces": 83,
+  "socket_x_split": [
+   105,
+   108
+  ]
+ },
+ "book_rule": {
+  "tilt_deg": 20.0,
+  "page_faces": 2153,
+  "rune_faces": 88,
+  "cover_faces": 3100,
+  "edge_faces": 1747,
+  "rule": "book-local normals: up > 0.45 pages, down < -0.35 or low side band = cover, other sides = page edges; runes = page faces with cavity > RUNE_CAV outside the gutter"
+ },
+ "robe_rule": {
+  "hem_z_mean": 2.4933,
+  "opening_x": 0.0049,
+  "opening_top_z": 7.5945,
+  "under_faces": 1262,
+  "trim_faces": 1615,
+  "lining_faces": 584,
+  "rim_faces": 168
+ },
+ "regions_faces": {
+  "robe": 8086,
+  "robe_under": 669,
+  "trim": 1615,
+  "robe_shadow": 2630,
+  "face": 5787,
+  "eye_socket": 130,
+  "eye_glow": 83,
+  "book_cover": 3100,
+  "book_page": 2065,
+  "book_edge": 1747,
+  "book_rune": 88,
+  "dead_arm": 3145,
+  "dead_fist": 5655,
+  "slab_stone": 2178,
+  "slab_top": 1100,
+  "grave_glow": 562
+ },
+ "cavity_shade_k": 0.4,
+ "facing": {
+  "rule": "face-mask faces centroid -> eye-socket faces centroid",
+  "anchor": [
+   0.0035,
+   0.6642,
+   11.1344
+  ],
+  "landmark": [
+   0.0023,
+   0.0034,
+   11.3134
+  ],
+  "angle_from_minusY_deg": -0.1
+ },
+ "geometry": {
+  "high_cleanup": {
+   "slab": {
+    "subdiv": 1,
+    "smooth_iter": 0,
+    "tris_high": 3968,
+    "bbox_change": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "robe": {
+    "subdiv": 1,
+    "smooth_iter": 8,
+    "tris_high": 50432,
+    "bbox_change": [
+     -0.0315,
+     -0.0705,
+     -0.0126
+    ]
+   },
+   "head": {
+    "subdiv": 1,
+    "smooth_iter": 4,
+    "tris_high": 17104,
+    "bbox_change": [
+     -0.0055,
+     -0.0956,
+     -0.0067
+    ]
+   },
+   "book": {
+    "subdiv": 1,
+    "smooth_iter": 3,
+    "tris_high": 29872,
+    "bbox_change": [
+     -0.0144,
+     -0.015,
+     -0.0077
+    ]
+   },
+   "hand.00": {
+    "subdiv": 0,
+    "smooth_iter": 3,
+    "tris_high": 13648,
+    "bbox_change": [
+     -0.0019,
+     -0.0013,
+     -0.0015
+    ]
+   },
+   "hands_bbox_change_max": 0.0019
+  },
+  "book_clearance_rest": 1.9761,
+  "natural": {
+   "height": 12.9994,
+   "width": 6.258,
+   "depth": 8.0084,
+   "footprint": 8.0084,
+   "units": "sculpt units (authored at natural proportions, no refit)",
+   "export_cell_fit_report_only": {
+    "scale": 0.13847,
+    "height_m": 1.8,
+    "bound_by": "height",
+    "ceilings": [
+     1.8,
+     1.9
+    ]
+   },
+   "shipped_glb_height_m": 1.8
+  }
+ },
+ "bake_groups": {
+  "robe": 13000,
+  "head": 6000,
+  "book": 7000,
+  "slab": 3840,
+  "hands": 8800
+ },
+ "bake": {
+  "pass_all": {
+   "NORMAL": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 8.4
+   },
+   "AO": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 3.5
+   }
+  },
+  "isolated_passes": {
+   "robe": {
+    "faces": 13000,
+    "normal_texels": 677254,
+    "ao_texels": 169292,
+    "seconds": 1.4
+   },
+   "head": {
+    "faces": 6000,
+    "normal_texels": 58384,
+    "ao_texels": 14624,
+    "seconds": 0.9
+   },
+   "book": {
+    "faces": 7000,
+    "normal_texels": 119108,
+    "ao_texels": 29779,
+    "seconds": 1.0
+   },
+   "slab": {
+    "faces": 3840,
+    "normal_texels": 501583,
+    "ao_texels": 125387,
+    "seconds": 1.1
+   },
+   "hands": {
+    "faces": 8800,
+    "normal_texels": 466899,
+    "ao_texels": 116598,
+    "seconds": 9.6
+   }
+  },
+  "rule": "base pass: whole low vs every high group (margins); then each group's texels re-baked against its own high only (robe / head / book / slab / 20 arms), AO occluded by the whole scene; low hidden from rays",
+  "uv_texels_normal": 1823228,
+  "uv_coverage": 0.4347,
+  "normal_baked_pct_of_uv_texels": 100.0,
+  "normal_detail_fraction_dev_gt_0.05": 0.2419,
+  "normal_dev_mean": 0.0398,
+  "ao_baked_pct_of_uv_texels": 100.0,
+  "ao_mean": 0.6193,
+  "ao_p05": 0.0,
+  "per_region_normal": {
+   "robe": {
+    "texels": 476628,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0168
+   },
+   "robe_under": {
+    "texels": 27478,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0343
+   },
+   "trim": {
+    "texels": 49402,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0272
+   },
+   "robe_shadow": {
+    "texels": 123746,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.013
+   },
+   "face": {
+    "texels": 57026,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0138
+   },
+   "eye_socket": {
+    "texels": 902,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0423
+   },
+   "eye_glow": {
+    "texels": 456,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0609
+   },
+   "book_cover": {
+    "texels": 51589,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0287
+   },
+   "book_page": {
+    "texels": 37891,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0242
+   },
+   "book_edge": {
+    "texels": 27252,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0381
+   },
+   "book_rune": {
+    "texels": 2376,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0224
+   },
+   "dead_arm": {
+    "texels": 223466,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0486
+   },
+   "dead_fist": {
+    "texels": 243433,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.1034
+   },
+   "slab_stone": {
+    "texels": 302230,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0461
+   },
+   "slab_top": {
+    "texels": 133659,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0389
+   },
+   "grave_glow": {
+    "texels": 65694,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0187
+   }
+  },
+  "pixel_sha": {
+   "normal": "0c66c66fadbde690",
+   "ao": "485b705aa8079b84"
+  },
+  "cage_extrusion": 0.08,
+  "resolution": {
+   "normal": 2048,
+   "ao": 1024
+  },
+  "seconds": 36.0
+ },
+ "uv": {
+  "method": "Smart UV after decimation (66 deg, margin 0.004), whole joined low, repacked",
+  "faces": 38640,
+  "zero_area_faces": 0,
+  "flipped_faces": 0,
+  "uv_sha": "3989574414e17e2c"
+ },
+ "digest_geometry_colour": "34f0746a50569af6",
+ "final_bbox": [
+  [
+   -3.129,
+   -4.004,
+   0.0
+  ],
+  [
+   3.129,
+   4.004,
+   12.9988
+  ]
+ ],
+ "palette": {
+  "default": {
+   "robe": {
+    "rgb": [
+     52,
+     38,
+     66
+    ]
+   },
+   "robe_under": {
+    "rgb": [
+     104,
+     26,
+     40
+    ]
+   },
+   "trim": {
+    "rgb": [
+     186,
+     156,
+     96
+    ]
+   },
+   "robe_shadow": {
+    "rgb": [
+     16,
+     11,
+     20
+    ]
+   },
+   "face": {
+    "rgb": [
+     200,
+     194,
+     176
+    ]
+   },
+   "eye_socket": {
+    "rgb": [
+     28,
+     22,
+     28
+    ]
+   },
+   "eye_glow": {
+    "rgb": [
+     60,
+     120,
+     70
+    ],
+    "emission": [
+     130,
+     255,
+     160
+    ],
+    "emission_scale": 1.0
+   },
+   "book_cover": {
+    "rgb": [
+     74,
+     36,
+     28
+    ]
+   },
+   "book_page": {
+    "rgb": [
+     220,
+     202,
+     156
+    ]
+   },
+   "book_edge": {
+    "rgb": [
+     170,
+     148,
+     104
+    ]
+   },
+   "book_rune": {
+    "rgb": [
+     70,
+     150,
+     90
+    ],
+    "emission": [
+     120,
+     255,
+     150
+    ],
+    "emission_scale": 0.9
+   },
+   "dead_arm": {
+    "rgb": [
+     150,
+     156,
+     140
+    ]
+   },
+   "dead_fist": {
+    "rgb": [
+     206,
+     204,
+     186
+    ]
+   },
+   "slab_stone": {
+    "rgb": [
+     66,
+     68,
+     76
+    ]
+   },
+   "slab_top": {
+    "rgb": [
+     54,
+     46,
+     42
+    ]
+   },
+   "grave_glow": {
+    "rgb": [
+     50,
+     90,
+     60
+    ],
+    "emission": [
+     90,
+     210,
+     120
+    ],
+    "emission_scale": 0.55
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\mortis\\default.json"
+  ]
+ }
+}

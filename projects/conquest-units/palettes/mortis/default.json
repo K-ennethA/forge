@@ -1,0 +1,24 @@
+{
+ "unit": "mortis",
+ "skin": "default",
+ "description": "Dark hero (Conquest 'necromancer'): violet-black hooded robe over an oxblood underlayer, tarnished bone-gold trim; pale ashen face with necro-green eye glow; the floating book of the dead in dark leather with parchment pages and glowing glyphs; the dead who carry him in pale ash and bone against a dark grave slab, grave-light where they rise.",
+ "regions": {
+  "robe":        {"rgb": [52, 38, 66],    "note": "outer robe - dark violet-black cloth"},
+  "robe_under":  {"rgb": [104, 26, 40],   "note": "underlayer seen through the front opening - oxblood"},
+  "trim":        {"rgb": [186, 156, 96],  "note": "hem, opening edges, hood rim - tarnished bone-gold"},
+  "robe_shadow": {"rgb": [16, 11, 20],    "note": "hood lining + hem underside - near-black so the face pops"},
+  "face":        {"rgb": [200, 194, 176], "note": "pale ashen face mask"},
+  "eye_socket":  {"rgb": [28, 22, 28],    "note": "eye hollows"},
+  "eye_glow":    {"rgb": [60, 120, 70], "emission": [130, 255, 160], "emission_scale": 1.0, "note": "deep eye glow, necro green"},
+  "book_cover":  {"rgb": [74, 36, 28],    "note": "book cover + spine - dark leather"},
+  "book_page":   {"rgb": [220, 202, 156], "note": "open pages - old parchment"},
+  "book_edge":   {"rgb": [170, 148, 104], "note": "page block edges (the stripes)"},
+  "book_rune":   {"rgb": [70, 150, 90], "emission": [120, 255, 150], "emission_scale": 0.9, "note": "carved glyphs - glowing"},
+  "dead_arm":    {"rgb": [150, 156, 140], "note": "the dead who carry him - ashen grey-green flesh"},
+  "dead_fist":   {"rgb": [206, 204, 186], "note": "raised fists - bone-pale (the carrying read)"},
+  "slab_stone":  {"rgb": [66, 68, 76],    "note": "grave slab sides - dark stone"},
+  "slab_top":    {"rgb": [54, 46, 42],    "note": "grave earth on the slab top"},
+  "grave_glow":  {"rgb": [50, 90, 60], "emission": [90, 210, 120], "emission_scale": 0.55, "note": "grave-light where the dead rise"}
+ },
+ "material": {"roughness": 0.82, "emission_strength": 1.5}
+}

@@ -1,0 +1,6 @@
+00:00.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-necromancer.blend"
+20:46:50 | INFO: Data are loaded, start creating Blender stuff
+20:46:50 | INFO: Blender create Mesh node necromancer_mesh
+20:46:50 | INFO: glTF import finished in 0.03s
+GLB_AUDIT {"glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\dark\\necromancer.glb", "tris": 9996, "fit": {"yaw_deg": 0.0, "scale": 7.2269, "mean_nearest_dist_sculpt_units": 0.0189}, "tris_per_part": {"slab": 288, "robe": 1062, "head": 331, "book": 756, "hands": 7559}, "shares": {"slab": 0.0288, "robe": 0.1062, "head": 0.0331, "book": 0.0756, "hands": 0.7562}, "rule": "glb triangle centroid -> nearest source-sculpt vertex's part, after a bbox fit into the sculpt frame"}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
