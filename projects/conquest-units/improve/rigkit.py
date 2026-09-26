@@ -16,7 +16,8 @@ import numpy as np
 
 CLIP_NAMES = ("idle", "walk")                     # Conquest UnitAnimator CLIP_IDLE / CLIP_WALK
 ALLOWED_CLIP_NAMES = ("idle", "walk", "idle-loop", "walk-loop",
-                      "ball", "ball-loop")        # special forms (magmoo goo-ball, artist 2026-09-26); UnitAnimator ignores extras
+                      "ball", "ball-loop",        # special forms (magmoo goo-ball, artist 2026-09-26); UnitAnimator ignores extras
+                      "float", "float-loop")      # supaoctto float-up arms-crossed cape-flare (artist 2026-09-26)
 FPS = 24
 
 

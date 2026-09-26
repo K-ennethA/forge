@@ -1,17 +1,19 @@
-"""Before/after sheet (v2): v1 (basalt crust serpent, renders/magmoo/magmoo_<view>.png, kept from the v1 lane) vs
-v2 combined (the one long serpent, rest pose) vs v2 split (the idle's split peak). Pure image assembly, no scene.
+"""Before/after sheet (v3): v2 (opaque goo, eyeball spheres; renders/magmoo/magmoo_v2_<view>.png, kept from the v2
+lane) vs v3 (translucent goo, eye sockets; magmoo_v3_<view>.png). Pure image assembly, no scene.
 
     blender --background --factory-startup --python magmoo_before_after.py
 
-Rows (top -> bottom): threequarter, side, front. Each tile is framed on its own model's projected bounds (the survey
-rule): this compares look and silhouette, not absolute size.
+Rows (top -> bottom): threequarter, front, tactical, head, eyeprofile. Left column v2, right column v3. Each tile is
+framed on its own model's projected bounds (the survey rule): this compares look and silhouette, not absolute size.
+magmoo_v2_eyeprofile.png was rendered once from the v2 rigged blend with the v3 magmoo_render.py (same view rule)
+before the v3 build replaced it.
 """
 import bpy, os
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 R = os.path.normpath(os.path.join(HERE, "..", "renders", "magmoo"))
-cols = [os.path.join(R, "magmoo_%s.png"), os.path.join(R, "magmoo_v2_%s.png"), os.path.join(R, "magmoo_v2_split_%s.png")]
+cols = [os.path.join(R, "magmoo_v2_%s.png"), os.path.join(R, "magmoo_v3_%s.png")]
 T = 512
 
 
@@ -25,13 +27,18 @@ def tile(path):
 
 
 rows = []
-for view in ("front", "side", "threequarter"):      # pixel rows are bottom-up: last listed = top row
+for view in ("eyeprofile", "head", "tactical", "front", "threequarter"):   # pixel rows are bottom-up: last = top row
     row = [tile(c % view) for c in cols]
     sep = np.ones((T, 6, 4), np.float32)
-    rows.append(np.concatenate([row[0], sep, row[1], sep, row[2]], axis=1))
+    rows.append(np.concatenate([row[0], sep, row[1]], axis=1))
 hsep = np.ones((6, rows[0].shape[1], 4), np.float32)
-sheet = np.concatenate([rows[0], hsep, rows[1], hsep, rows[2]], axis=0)
-out = os.path.join(R, "magmoo_v2_before_after.png")
+parts = []
+for i, r in enumerate(rows):
+    parts.append(r)
+    if i < len(rows) - 1:
+        parts.append(hsep)
+sheet = np.concatenate(parts, axis=0)
+out = os.path.join(R, "magmoo_v3_before_after.png")
 im = bpy.data.images.new("ba", sheet.shape[1], sheet.shape[0], alpha=True)
 im.pixels.foreach_set(sheet.ravel())
 im.filepath_raw = out; im.file_format = "PNG"; im.save()

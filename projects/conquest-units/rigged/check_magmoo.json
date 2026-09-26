@@ -14,7 +14,7 @@
   {
    "check": "feet_origin",
    "pass": true,
-   "min_z": -0.0,
+   "min_z": 0.0,
    "centre_xy": [
     0.0,
     -0.0
@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 40876,
+   "tris": 48238,
    "budget": [
     30000,
     50000
@@ -50,12 +50,12 @@
     {
      "mesh": "magmoo_head",
      "layers": 1,
-     "islands": 144,
+     "islands": 156,
      "flipped": 0,
      "overlap": false,
      "overlap_note": "summed UV area is 10% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.6947,
-     "area_distortion_p95": 1.139
+     "coverage": 0.6363,
+     "area_distortion_p95": 1.136
     },
     {
      "mesh": "magmoo_mid",
@@ -78,6 +78,16 @@
      "area_distortion_p95": 1.136
     },
     {
+     "mesh": "magmoo_ball",
+     "layers": 1,
+     "islands": 70,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 8% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.6321,
+     "area_distortion_p95": 1.18
+    },
+    {
      "mesh": "magmoo_droplets",
      "layers": 1,
      "islands": 33,
@@ -93,7 +103,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 40876
+   "faces": 48238
   },
   {
    "check": "colour",
@@ -110,12 +120,13 @@
    ],
    "armature_identity": true,
    "root_max_offset_over_clips": 0.0,
-   "bones": 24
+   "bones": 25
   },
   {
    "check": "clip_names",
    "pass": true,
    "clips": [
+    "ball",
     "idle",
     "walk"
    ],
@@ -135,6 +146,21 @@
    "fps": 24.0,
    "clips": [
     {
+     "clip": "ball",
+     "frames": [
+      1,
+      121
+     ],
+     "cyclic": true,
+     "manual_range": true,
+     "seam_mm": 0.0,
+     "extent": {
+      "footprint": 9.3349,
+      "height": 2.3438,
+      "min_z": 0.0
+     }
+    },
+    {
      "clip": "idle",
      "frames": [
       1,
@@ -146,7 +172,7 @@
      "extent": {
       "footprint": 9.8132,
       "height": 2.3438,
-      "min_z": -0.0
+      "min_z": 0.0
      }
     },
     {
@@ -159,9 +185,9 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 9.5732,
-      "height": 2.3438,
-      "min_z": -0.0
+      "footprint": 8.7974,
+      "height": 4.021,
+      "min_z": 0.2625
      }
     }
    ]
@@ -174,7 +200,7 @@
    "weight_sum_max": 1.0,
    "unweighted": 0,
    "max_influences": 2,
-   "deform_bones": 23
+   "deform_bones": 24
   }
  ],
  "passed": 10,

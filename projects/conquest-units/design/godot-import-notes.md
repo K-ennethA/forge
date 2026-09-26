@@ -44,3 +44,15 @@ Units are authored at natural proportions; cell_fit is report-only during
 authoring. The game scales at import — the import wave must pick and pin the
 per-unit scale factors (assets.conf allowances are the reference; eldroot's
 was already raised 3.4 → 5.6 with artist authorization).
+
+## 5. Translucent units (magmoo v3): alpha blend + sorting
+
+The glb material is alphaMode BLEND, single-sided; per-region alpha rides
+COLOR_0.a (VEC4) x baseColorFactor[3]. The Conquest glow shader (item 1)
+must multiply COLOR.a into ALPHA and use depth_prepass_alpha (or
+StandardMaterial3D transparency = Alpha Depth Pre-Pass) with cull_back.
+Without the prepass, Godot sorts per mesh instance only; magmoo's 5 skinned
+meshes interpenetrate at the joins (goo into goo) and triangles draw in
+index order, so the inner plugs show and flicker. With it, only the front
+goo surface blends over the world. Evidence:
+renders/magmoo/magmoo_v3_sorting_modes.png + magmoo_v3_translucency.json.

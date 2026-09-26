@@ -422,3 +422,18 @@ complementing inner (lens) color. (5) mouth piece removed, replaced by a
 small circular hole. (6) general polish: smoother surfaces/textures,
 better-aligned part placement, and a thin neck so the head connects to the
 body instead of floating.
+
+## 2026-09-26 — Supaoctto v2 addendum (artist verbatim)
+
+"chest emblem should be something more appropriate for an octopus superhero
+than just a circle, and he walks with confidence like a stride
+
+an animation can have him float up cross his arms, the cape flares a little
+bit like if theres wind and then floats back down"
+
+Binding reading: (1) emblem redesigned as an octopus-superhero mark (e.g. a
+stylized octopus/tentacle-swirl sigil), not a plain circle. (2) walk gains
+confidence - a stride (assertive, purposeful; more than the calm stroll).
+(3) NEW clip "float": he floats up, crosses his arms, the cape flares a
+little as if in wind, then floats back down - ALLOWED_CLIP_NAMES extended
+with float/float-loop.

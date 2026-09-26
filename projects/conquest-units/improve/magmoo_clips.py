@@ -1,11 +1,13 @@
 """Magmoo animated previews (duskmaw_clips.py copied, not imported: multi-mesh unit + the material glow slot).
-v2: --prefix names the outputs (magmoo_v2 keeps the v1 previews beside them).
+v2: --prefix names the outputs (magmoo_v2 keeps the v1 previews beside them). v3: + the 'ball' clip; the walk is the
+flying S-arc (its top sheet is where the horizontal S reads). --clips idle,walk,ball picks clips.
 In-memory only; never saves the blend.
 
-    blender --background <rigged/magmoo.blend> --factory-startup --python magmoo_clips.py -- <out_dir> [res] [sheet] [--prefix P]
+    blender --background <rigged/magmoo.blend> --factory-startup --python magmoo_clips.py -- <out_dir> [res] [sheet] \
+        [--prefix P] [--clips idle,walk,ball]
 
-Writes <out_dir>/magmoo_{idle,walk}.mp4 (H.264, 24 fps) and, with 'sheet', magmoo_{idle,walk}_sheet.png (8 frames of
-one cycle, 4x2) plus magmoo_walk_top_sheet.png (the slither seen from above: the travelling wave reads best there).
+Writes <out_dir>/<P>_{idle,walk,ball}.mp4 (H.264, 24 fps) and, with 'sheet', <P>_<clip>_sheet.png (8 frames of
+one cycle, 4x2) plus <P>_walk_top_sheet.png (the flight seen from above: the travelling S reads best there).
 Lighting = the survey rules (key/fill/rim suns, grey world, Standard view transform, dark floor at z = 0). Loops play by
 a CYCLES modifier on every fcurve (in memory); the material's glow-pulse slot is bound with the rig slot. The camera
 is fit to the union of the clip's posed extents (projected), and never moves during a clip.
@@ -147,8 +149,9 @@ def write_sheet(tag, N):
     print("WROTE sheet", tag)
 
 
-VIEW = {"idle": (38.0, 16.0), "walk": (32.0, 34.0)}
-for clip in ("idle", "walk"):
+VIEW = {"idle": (38.0, 16.0), "walk": (34.0, 22.0), "ball": (32.0, 14.0)}
+CLIPS = argv[argv.index("--clips") + 1].split(",") if "--clips" in argv else ["idle", "walk", "ball"]
+for clip in CLIPS:
     act = bpy.data.actions.get(clip)
     if act is None:
         print("NO CLIP", clip); continue
@@ -180,5 +183,5 @@ for clip in ("idle", "walk"):
     if SHEET:
         write_sheet(clip, N)
         if clip == "walk":
-            fit_camera(P, 0.0, 89.0, fill=1.02)
+            fit_camera(P, 0.0, 89.0, fill=1.15)   # v3: the droplet trail + tail tip stay in frame
             write_sheet("walk_top", N)

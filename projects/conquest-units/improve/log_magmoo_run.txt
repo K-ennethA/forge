@@ -1,17 +1,23 @@
-﻿build exit=0 determinism-rerun exit=0 build_wall_s=45.5
-split peak frame = 31
+﻿build exit=0 determinism-rerun exit=0 build_wall_s=56.9
+split peak frame = 31 ; ball hold frame = 61
 check_improved exit=1
 check_rigged exit=1
+translucency exit=0
+translucency_obs exit=0
 render_default exit=0
 render_split exit=0
+render_ball exit=0
+render_fly exit=0
 render_obsidian exit=0
-render_obs_split exit=0
-clips_mp4 exit=0
+render_obs_ball exit=0
+clips_idle exit=0
+clips_walk exit=0
+clips_ball exit=0
 before_after exit=0
 check_improved : 7 checks, 1 failed
 check_rigged : 11 checks, 1 failed
-DIGEST run1 full=7b5402185c64cb52 geo=0cf9c6a3296ca31c glb=b7032ff7079769c7
-DIGEST run2 full=7b5402185c64cb52 geo=0cf9c6a3296ca31c glb=b7032ff7079769c7
+DIGEST run1 full=65b2b5b23736b903 geo=f533af66b7348877 glb=3316779140e3334c
+DIGEST run2 full=65b2b5b23736b903 geo=f533af66b7348877 glb=3316779140e3334c
 DETERMINISM identical=True glb_identical=True
-gates_renders_wall_s=46.2 total_wall_s=91.8
+gates_renders_wall_s=58.7 total_wall_s=115.6
 ALL DONE

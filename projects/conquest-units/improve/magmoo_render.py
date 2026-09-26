@@ -1,4 +1,4 @@
-"""Magmoo v2 stills, the survey's lighting/camera rules. In-memory only; never saves.
+"""Magmoo stills (v3), the survey's lighting/camera rules. In-memory only; never saves.
 
     blender --background <blend> --factory-startup --python magmoo_render.py -- <out_prefix> [views] \
         [--pose <clip>:<frame>] [--res N]
@@ -6,10 +6,15 @@
 views (comma list; default front,threequarter,side,tactical,head):
   front / threequarter / side / tactical   fit to the unit's projected extent (tactical = 256 px, 55 deg down)
   head       the head closeup: frames the eye + pupil regions (+ margin) from 30 deg off the front, 12 deg up
+  eyeprofile v3 inset proof: looks across the head, tangent to the +X eye's surrounding goo (camera direction
+             perpendicular to that eye's outward axis and to the head's forward axis), so that eye sits ON the head's
+             silhouette -- a socket shows as a notch in the outline, a protruding eyeball (v2) as a bump
   droplets   the droplet / gap closeup: frames the droplets + the torn-end (core) faces round them, from the side
   top        straight down
---pose idle:66 poses the rig at that clip frame (the split peak) before rendering; otherwise the REST pose (combined).
-Framing uses the EVALUATED (posed) meshes; the floor sits at z = 0.
+--pose idle:66 poses the rig at that clip frame before rendering; otherwise the REST pose (combined).
+Framing uses the EVALUATED (posed) meshes and skips COLLAPSED pieces (evaluated extent < 0.2: the v3 goo ball riding
+tiny inside the mound, or the pieces absorbed into the ball at the ball clip's hold). The floor sits at z = 0.
+The material is used as saved (v3: translucent, Eevee DITHERED, backface culling).
 """
 import bpy, sys, os, math
 import numpy as np
@@ -45,11 +50,12 @@ dg = bpy.context.evaluated_depsgraph_get()
 
 
 def eval_mesh(o):
-    """-> (world verts, face centres, face region names or None)"""
+    """-> (world verts, face centres, face normals, face region names or None)"""
     ev = o.evaluated_get(dg)
     me = ev.to_mesh()
     co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
     fc = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("center", fc); fc = fc.reshape(-1, 3)
+    fn = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", fn); fn = fn.reshape(-1, 3)
     reg = None
     if "region_id" in me.attributes and "conquest_regions" in o.data:
         names = list(o.data["conquest_regions"])
@@ -57,10 +63,11 @@ def eval_mesh(o):
         reg = np.array(names)[rid]
     ev.to_mesh_clear()
     M = np.array(o.matrix_world)
-    return co @ M[:3, :3].T + M[:3, 3], fc @ M[:3, :3].T + M[:3, 3], reg
+    return co @ M[:3, :3].T + M[:3, 3], fc @ M[:3, :3].T + M[:3, 3], fn @ M[:3, :3].T, reg
 
 
 EV = {o.name: eval_mesh(o) for o in meshes}
+EV = {n: v for n, v in EV.items() if float(np.ptp(v[0], axis=0).max()) > 0.2}      # skip collapsed pieces
 ALLP = np.vstack([v[0][::5] for v in EV.values()])
 lo, hi = ALLP.min(0), ALLP.max(0)
 size = Vector(hi - lo)
@@ -121,11 +128,10 @@ def perspective_refine(P, fill, iters=6):
         cam.location = Vector(np.array(cam.location) + R_[:, 0] * cx * zm * t + R_[:, 1] * cy * zm * t + R_[:, 2] * zm * (ext * fill - 1.0))
 
 
-def aim(angle_deg, elev_deg, fill=1.08, P=None):
-    """fit the PROJECTED extent of P (default: the whole posed unit) for this view direction."""
+def aim_dir(dn, fill=1.08, P=None):
+    """fit the PROJECTED extent of P (default: the whole posed unit) seen from direction dn (unit, toward camera)."""
     P = ALLP if P is None else P
-    a, e = math.radians(angle_deg), math.radians(elev_deg)
-    dn = np.array([math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)])
+    dn = np.asarray(dn, float) / np.linalg.norm(dn)
     right = np.cross([0, 0, 1.0], dn) if abs(dn[2]) < 0.999 else np.array([1.0, 0, 0])
     right /= np.linalg.norm(right); up = np.cross(dn, right)
     pr, pu = P @ right, P @ up
@@ -137,24 +143,58 @@ def aim(angle_deg, elev_deg, fill=1.08, P=None):
     perspective_refine(P, fill * 1.06)
 
 
-def region_pts(pred, obj_pred=lambda n: True):
-    out = [fc[np.array([pred(r) for r in reg])] for n, (v, fc, reg) in EV.items() if reg is not None and obj_pred(n)]
-    out = [o for o in out if len(o)]
-    return np.vstack(out) if out else None
+def aim(angle_deg, elev_deg, fill=1.08, P=None):
+    a, e = math.radians(angle_deg), math.radians(elev_deg)
+    aim_dir(np.array([math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)]), fill, P)
+
+
+def region_sel(pred, obj_pred=lambda n: True):
+    """-> (face centres, face normals) of the matching regions on the non-collapsed pieces"""
+    C, N = [], []
+    for n, (v, fc, fn, reg) in EV.items():
+        if reg is None or not obj_pred(n):
+            continue
+        m = np.array([pred(r) for r in reg])
+        if m.any():
+            C.append(fc[m]); N.append(fn[m])
+    return (np.vstack(C), np.vstack(N)) if C else (None, None)
 
 
 table = {"front": (0.0, 5.0, RES, 1.0, None), "threequarter": (40.0, 15.0, RES, 1.0, None),
          "side": (90.0, 8.0, RES, 1.0, None), "tactical": (40.0, 55.0, 256, 1.6, None), "top": (0.0, 89.9, RES, 1.02, None)}
-E = region_pts(lambda r: r in ("eye", "pupil"))
+E, EN = region_sel(lambda r: r in ("eye", "pupil"))
 if E is not None:
     c_ = E.mean(0)
     rr = max(float(np.linalg.norm(E - c_, axis=1).max()) * 2.4, 1.1)
     box = np.vstack([c_ + np.array(o) * rr for o in [(1, 1, 1), (-1, -1, -1), (1, -1, 1), (-1, 1, -1)]])
     table["head"] = (30.0, 12.0, RES, 1.0, box)
+    # eyeprofile: split the eye faces into the two eyes along their principal axis; the +X eye's outward axis n1 comes
+    # from its RIM (the goo lip round the socket is what the eye sits in: the socket walls' own normals point inward).
+    # Camera direction = n1 x f (f = the head's forward axis, perpendicular to the eye line and the eye normals), so the
+    # image runs along the head and the eye's cross-section outline is the silhouette at that column.
+    X = E - c_
+    L = np.linalg.svd(X, full_matrices=False)[2][0]
+    if L[0] < 0:
+        L = -L
+    side = X @ L > 0
+    c1 = E[side].mean(0)
+    Gc, Gn = region_sel(lambda r: r not in ("eye", "pupil"))
+    ring = np.linalg.norm(Gc - c1, axis=1) < float(np.linalg.norm(E[side] - c1, axis=1).max()) * 1.6
+    n1 = Gn[ring].mean(0); n1 /= np.linalg.norm(n1)
+    c2 = E[~side].mean(0)
+    ring2 = np.linalg.norm(Gc - c2, axis=1) < float(np.linalg.norm(E[~side] - c2, axis=1).max()) * 1.6
+    n2 = Gn[ring2].mean(0); n2 /= np.linalg.norm(n2)
+    f = np.cross(L, n1 + n2); f /= np.linalg.norm(f)
+    dn = np.cross(n1, f); dn /= np.linalg.norm(dn)
+    if dn[2] < 0:
+        dn = -dn
+    rr2 = float(np.linalg.norm(E[side] - c1, axis=1).max())
+    box2 = np.vstack([c1 + f * rr2 * 6.0, c1 - f * rr2 * 6.0, c1 + n1 * rr2 * 3.0, c1 - n1 * rr2 * 3.0])
+    table["eyeprofile"] = (dn, None, RES, 1.0, box2)
 dname = next((n for n in EV if n.endswith("_droplets")), None)
 if dname is not None:
     D = EV[dname][0]
-    C = region_pts(lambda r: r == "core", lambda n: n != dname)
+    C, _ = region_sel(lambda r: r == "core", lambda n: n != dname)
     parts = [D]
     if C is not None:
         near = np.min(np.linalg.norm(C[:, None, :] - D[None, ::40, :], axis=2), axis=1) < 1.2
@@ -166,7 +206,10 @@ for tag in VIEWS:
     ang, elev, res, fill, P = table[tag]
     scene.render.resolution_x = scene.render.resolution_y = res
     scene.render.resolution_percentage = 100
-    aim(ang, elev, fill, P)
+    if elev is None:
+        aim_dir(ang, fill, P)
+    else:
+        aim(ang, elev, fill, P)
     scene.render.filepath = "%s_%s.png" % (PREFIX, tag)
     bpy.ops.render.render(write_still=True)
     print("WROTE", scene.render.filepath)

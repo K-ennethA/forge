@@ -1,6 +1,6 @@
 {
  "unit": "magmoo",
- "version": "v2 goo",
+ "version": "v3 goo",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.blend",
  "fps": 24,
  "bones": [
@@ -411,9 +411,26 @@
     3.4697
    ],
    "length": 0.3
+  },
+  {
+   "name": "ball",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    0.0001,
+    -0.2933,
+    0.55
+   ],
+   "tail": [
+    0.0001,
+    -0.2933,
+    0.85
+   ],
+   "length": 0.3
   }
  ],
- "bone_count": 24,
+ "bone_count": 25,
  "segment_chains": {
   "head": [
    "head.0",
@@ -445,9 +462,12 @@
    "drop.2",
    "drop.3",
    "drop.4"
+  ],
+  "ball": [
+   "ball"
   ]
  },
- "separability": "each piece's sub-chain root (head.0 / body.0 / tail.0) and every droplet bone is parented straight to 'root'; every piece mesh is weighted only to its own sub-chain (verified below)",
+ "separability": "each piece's sub-chain root (head.0 / body.0 / tail.0), every droplet bone and the ball bone are parented straight to 'root'; every piece mesh is weighted only to its own sub-chain (verified below)",
  "weights": {
   "head": {
    "bones": [
@@ -455,8 +475,8 @@
     "head.1"
    ],
    "per_bone_dominant": {
-    "head.0": 4439,
-    "head.1": 1760
+    "head.0": 4453,
+    "head.1": 1923
    },
    "audit": {
     "weight_sum_min": 1.0,
@@ -515,10 +535,10 @@
     "tail.10"
    ],
    "per_bone_dominant": {
-    "tail.0": 4784,
-    "tail.1": 1495,
-    "tail.2": 762,
-    "tail.3": 210,
+    "tail.0": 7027,
+    "tail.1": 0,
+    "tail.2": 0,
+    "tail.3": 224,
     "tail.4": 221,
     "tail.5": 174,
     "tail.6": 172,
@@ -527,6 +547,15 @@
     "tail.9": 187,
     "tail.10": 668
    },
+   "v3_mound_rigid": {
+    "mound_verts_forced_tail0": 6673,
+    "tail_exits_mound_at_arc": 0.9295,
+    "root_blend": [
+     0.0,
+     0.6
+    ],
+    "tail0_full_weight_verts": 6874
+   },
    "audit": {
     "weight_sum_min": 1.0,
     "weight_sum_max": 1.0,
@@ -534,9 +563,7 @@
     "max_influences": 2,
     "bones_used": [
      "tail.0",
-     "tail.1",
      "tail.10",
-     "tail.2",
      "tail.3",
      "tail.4",
      "tail.5",
@@ -570,10 +597,25 @@
      "drop.4"
     ]
    }
+  },
+  "ball": {
+   "bones": [
+    "ball"
+   ],
+   "rule": "the ball rigid on its own bone (weight 1); the clip scales the bone",
+   "audit": {
+    "weight_sum_min": 1.0,
+    "weight_sum_max": 1.0,
+    "unweighted": 0,
+    "max_influences": 1,
+    "bones_used": [
+     "ball"
+    ]
+   }
   }
  },
  "idle": {
-  "status": "PROPOSED v2 (artist 2026-09-26: pieces separate then combine into one long serpent)",
+  "status": "APPROVED v2 motion (artist 2026-09-26 v3: 'otherwise looks fine'), re-verified on the v3 mesh",
   "frames": 145,
   "cycle_frames": 144,
   "cycle_s": 6.0,
@@ -581,9 +623,10 @@
    "magmoo_head": 0.0,
    "magmoo_mid": 0.0,
    "magmoo_tail": 0.0,
-   "magmoo_droplets": 0.0
+   "magmoo_droplets": 0.0,
+   "magmoo_ball": 0.0
   },
-  "min_z": -0.0,
+  "min_z": 0.0,
   "root_offset_max": 0.0,
   "head_yaw_deg_range": [
    -12.0,
@@ -610,6 +653,11 @@
     1e-06,
     1e-06
    ]
+  },
+  "extent": {
+   "width": 4.5874,
+   "length": 17.8198,
+   "height": 7.0737
   },
   "mesh_gap_every_4th_frame": {
    "crown": [
@@ -853,7 +901,7 @@
     ],
     [
      89,
-     0.0003
+     0.0002
     ],
     [
      93,
@@ -861,7 +909,7 @@
     ],
     [
      97,
-     0.0
+     0.0001
     ],
     [
      101,
@@ -869,11 +917,11 @@
     ],
     [
      105,
-     0.0001
+     0.0002
     ],
     [
      109,
-     0.0001
+     0.0
     ],
     [
      113,
@@ -920,11 +968,6 @@
   "mesh_gap_frame_of_max": {
    "crown": 29,
    "head": 33
-  },
-  "extent": {
-   "width": 4.5891,
-   "length": 17.8198,
-   "height": 7.0737
   },
   "split_cycle": {
    "crown": {
@@ -1000,7 +1043,7 @@
   }
  },
  "walk": {
-  "status": "PROPOSED v2 (in-place slither, combined)",
+  "status": "PROPOSED v3 (flying S-arc, artist 2026-09-26: 'a flying slither arc moving in a sin/cosine horizontal s shape like a flying dragon')",
   "frames": 49,
   "cycle_frames": 48,
   "cycle_s": 2.0,
@@ -1008,25 +1051,26 @@
    "magmoo_head": 0.0,
    "magmoo_mid": 0.0,
    "magmoo_tail": 0.0,
-   "magmoo_droplets": 0.0
+   "magmoo_droplets": 0.0,
+   "magmoo_ball": 0.0
   },
-  "min_z": -0.0,
+  "min_z": 0.262463,
   "root_offset_max": 0.0,
   "head_yaw_deg_range": [
-   -2.067,
-   2.192
+   -6.863,
+   6.863
   ],
   "tail_tip_x_range": [
-   -0.6025,
-   0.7438
+   -1.4587,
+   1.4587
   ],
   "join_opening_units_max": {
-   "crown": 0.08,
-   "head": 0.0
+   "crown": 0.0,
+   "head": 0.0343
   },
   "join_opening_frame_of_max": {
-   "crown": 13,
-   "head": 26
+   "crown": 45,
+   "head": 11
   },
   "join_opening_first_last": {
    "crown": [
@@ -1034,118 +1078,69 @@
     0.0
    ],
    "head": [
-    1e-06,
-    1e-06
+    0.034322,
+    0.034322
    ]
-  },
-  "mesh_gap_every_6th_frame": {
-   "crown": [
-    [
-     1,
-     0.0001
-    ],
-    [
-     7,
-     0.0002
-    ],
-    [
-     13,
-     0.0001
-    ],
-    [
-     19,
-     0.0001
-    ],
-    [
-     25,
-     0.0
-    ],
-    [
-     31,
-     0.0002
-    ],
-    [
-     37,
-     0.0003
-    ],
-    [
-     43,
-     0.0002
-    ],
-    [
-     49,
-     0.0001
-    ]
-   ],
-   "head": [
-    [
-     1,
-     0.0002
-    ],
-    [
-     7,
-     0.0003
-    ],
-    [
-     13,
-     0.0001
-    ],
-    [
-     19,
-     0.0
-    ],
-    [
-     25,
-     0.0002
-    ],
-    [
-     31,
-     0.0002
-    ],
-    [
-     37,
-     0.0001
-    ],
-    [
-     43,
-     0.0
-    ],
-    [
-     49,
-     0.0002
-    ]
-   ]
-  },
-  "mesh_gap_max": {
-   "crown": 0.0003,
-   "head": 0.0003
-  },
-  "mesh_gap_frame_of_max": {
-   "crown": 37,
-   "head": 7
   },
   "extent": {
-   "width": 4.8996,
-   "length": 14.6864,
-   "height": 4.8128
+   "width": 6.8979,
+   "length": 17.8358,
+   "height": 4.2801
   },
   "implied_forward_speed": {
-   "wave_speed_units_per_s": 3.5,
-   "m_per_s_at_report_only_cell_fit": 0.4561
+   "wave_speed_units_per_s": 5.5,
+   "m_per_s_at_report_only_cell_fit": 0.7168,
+   "rule": "a flying serpent that 'swims' the air with no slip advances one wavelength per cycle"
+  },
+  "s_wave": {
+   "wavelength_arc": 11.0,
+   "body_arc_length": 16.3754,
+   "waves_along_body": 1.489,
+   "heading_amp_deg": {
+    "head_end": 6.0,
+    "body": 36.0,
+    "tail_tip": 50.0
+   },
+   "pitch_amp_deg": 8.0,
+   "vertical_wavelength": 11.0,
+   "lateral_displacement_amp": {
+    "head_joints": 0.7565,
+    "mid_mound_joints": 1.2564,
+    "tail_joints": 1.4587,
+    "tail_tip": 1.4587
+   },
+   "centreline_z": {
+    "mean": 2.75,
+    "min": 2.3066,
+    "max": 3.1934
+   },
+   "head_joint_z_range": [
+    2.547,
+    2.953
+   ],
+   "head_yaw_deg_range": [
+    -6.863,
+    6.863
+   ],
+   "head_pitch_deg_range": [
+    -1.166,
+    1.166
+   ],
+   "lowest_mesh_point_z_over_clip": 0.262463,
+   "rest_pose": "on the floor (min z 0): the clip lifts the serpent; the game crossfades idle <-> walk"
   },
   "motion": {
-   "wavelength": 7.0,
-   "amp_head_deg": 5.0,
-   "amp_body_deg": 10.0,
-   "amp_tail_tip_deg": 38.0,
-   "head_follow": 0.25,
-   "goo_bob": 0.08,
+   "hover": 2.75,
+   "bob": 0.14,
+   "mound_tilt": 1.0,
+   "head_follow": 0.2,
+   "drop_trail_gap": 0.6,
    "glow_pulse": 0.18,
-   "state": "combined serpent (joins closed)",
+   "state": "combined serpent (joins closed), airborne",
    "wave_direction": "head -> tail (posterior travelling wave = forward propulsion toward -Y)",
    "procrustes_yaw_deg_range": [
-    -2.7231,
-    2.8311
+    -4.7148,
+    4.7148
    ],
    "glow": {
     "socket": "Principled BSDF.Emission Strength",
@@ -1161,15 +1156,306 @@
    ]
   }
  },
- "anim_seconds": 6.2,
- "digest_full": "7b5402185c64cb52",
- "digest_geometry_colour_uv": "0cf9c6a3296ca31c",
+ "ball": {
+  "status": "PROPOSED v3 (artist 2026-09-26: 'all the goop goes into one big ball of goop with his eyes and ears just showing')",
+  "frames": 121,
+  "cycle_frames": 120,
+  "cycle_s": 5.0,
+  "seam_first_last_max_per_object_mm": {
+   "magmoo_head": 0.0,
+   "magmoo_mid": 0.0,
+   "magmoo_tail": 0.0,
+   "magmoo_droplets": 0.0,
+   "magmoo_ball": 0.0
+  },
+  "min_z": -2e-06,
+  "root_offset_max": 0.0,
+  "head_yaw_deg_range": [
+   0.0,
+   0.0
+  ],
+  "tail_tip_x_range": [
+   -3.6533,
+   0.0416
+  ],
+  "join_opening_units_max": {
+   "crown": 0.173,
+   "head": 3.2071
+  },
+  "join_opening_frame_of_max": {
+   "crown": 23,
+   "head": 20
+  },
+  "join_opening_first_last": {
+   "crown": [
+    0.0,
+    0.0
+   ],
+   "head": [
+    0.0,
+    0.0
+   ]
+  },
+  "extent": {
+   "width": 6.4236,
+   "length": 14.579,
+   "height": 6.4258
+  },
+  "hold": {
+   "frame": 61,
+   "ball_extent": {
+    "width_x": 3.7538,
+    "depth_y": 3.758,
+    "top_z": 4.0503,
+    "min_z": 0.0
+   },
+   "other_pieces_max_reach_from_ball_centre": {
+    "magmoo_head": 0.051,
+    "magmoo_mid": 0.0476,
+    "magmoo_tail": 0.0363,
+    "magmoo_droplets": 0.0032
+   },
+   "ball_radius": 1.8069,
+   "all_other_pieces_inside": true
+  },
+  "timing_frames": {
+   "converge_start": 8,
+   "ball_formed": 37,
+   "release_start": 85,
+   "serpent_again": 114,
+   "hold_measured_at": 61
+  },
+  "loop_choice": "round trip serpent -> ball -> serpent inside the clip: the goo visibly flows in and out (a hold-only loop would show nothing of the merge, and a crossfade from idle cannot fake it)",
+  "motion": {
+   "ball_radius": 1.8069,
+   "breath_amp": 0.045,
+   "breaths": 2,
+   "curl_deg": 240.0,
+   "swirl_deg": 90.0,
+   "absorb_scale": 0.01,
+   "windows": {
+    "drops": [
+     0.0,
+     0.55
+    ],
+    "mid": [
+     0.1,
+     0.75
+    ],
+    "tail": [
+     0.15,
+     1.0
+    ],
+    "head_move": [
+     0.0,
+     0.55
+    ],
+    "head_absorb": [
+     0.5,
+     1.0
+    ],
+    "grow": [
+     0.08,
+     1.0
+    ]
+   },
+   "timing": [
+    0.06,
+    0.3,
+    0.7,
+    0.94
+   ],
+   "head_floor_clamp_frames": 24,
+   "procrustes_yaw_deg_range": [
+    0.0,
+    0.0
+   ],
+   "glow": {
+    "socket": "Principled BSDF.Emission Strength",
+    "base": 1.5,
+    "range": [
+     1.5,
+     2.085
+    ]
+   },
+   "slots": [
+    "OBmagmoo_rig",
+    "NTShader Nodetree"
+   ]
+  },
+  "form": {
+   "volumes": {
+    "head": 7.2527,
+    "mid": 6.5506,
+    "tail": 10.8089,
+    "droplets": 0.0971
+   },
+   "total_volume": 24.7093,
+   "radius": 1.8069,
+   "diameter": 3.6137,
+   "size_rule": "radius of a sphere holding the pieces' summed volume x BALL_SIZE 1.00 (joins overlap goo-into-goo, so this slightly over-counts)",
+   "centre_in_clip": [
+    0.0,
+    0.0,
+    1.5123
+   ],
+   "slump": 0.1,
+   "eye_azimuth_deg": 21.811,
+   "eye_elevation_deg": 14.0,
+   "eye_spacing": 1.3028,
+   "ear": {
+    "length": 0.95,
+    "root_r": 0.3,
+    "azimuth_deg": 30.0,
+    "elevation_deg": 56.0,
+    "lean_back_deg": 36.0
+   },
+   "bind": {
+    "position": [
+     0.0001,
+     -0.2933,
+     0.55
+    ],
+    "scale": 0.006,
+    "bind_radius": 0.01084
+   },
+   "finish": {
+    "voxel": 0.03,
+    "remesh_tris": 146048,
+    "area": 44.181,
+    "target_tris": 5686,
+    "tris": 5686,
+    "specks": [
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     },
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     }
+    ],
+    "seconds": 2.6,
+    "protected": {
+     "zones": 2,
+     "remesh_tris_kept": 2648,
+     "area": 0.7742
+    }
+   },
+   "sdf": {
+    "step": 0.03,
+    "mt_verts": 220512,
+    "mt_tris": 441020,
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "grid": [
+     222,
+     222,
+     222
+    ],
+    "nan": 0,
+    "seconds": 5.1
+   },
+   "protrusion_by_region": {
+    "goo_cool": {
+     "faces": 626,
+     "max_height_over_base": 0.0014,
+     "faces_above_0.05": 0
+    },
+    "goo": {
+     "faces": 3290,
+     "max_height_over_base": 0.8153,
+     "faces_above_0.05": 438
+    },
+    "goo_hot": {
+     "faces": 572,
+     "max_height_over_base": 0.9386,
+     "faces_above_0.05": 377
+    },
+    "flame": {
+     "faces": 207,
+     "max_height_over_base": 1.0109,
+     "faces_above_0.05": 207
+    },
+    "eye": {
+     "faces": 1688,
+     "max_height_over_base": -0.0347,
+     "faces_above_0.05": 0
+    },
+    "pupil": {
+     "faces": 617,
+     "max_height_over_base": -0.1762,
+     "faces_above_0.05": 0
+    }
+   },
+   "what_protrudes": {
+    "rule": "faces standing > 0.05 above the ball's base (sagging sphere) surface, by where they are",
+    "ears": {
+     "faces": 803,
+     "max_height": 1.0109
+    },
+    "ball_surface": {
+     "faces": 219,
+     "max_height": 0.6955
+    },
+    "eye_sockets_max_height": -0.0347,
+    "eye_sockets_deepest": -0.2756
+   },
+   "measured_extent": {
+    "width_x": 3.7538,
+    "depth_y": 3.758,
+    "height_z": 4.0503
+   }
+  }
+ },
+ "anim_seconds": 6.6,
+ "digest_full": "65b2b5b23736b903",
+ "digest_geometry_colour_uv": "f533af66b7348877",
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.glb",
-  "bytes": 8683568,
-  "sha256_16": "b7032ff7079769c7",
-  "seconds": 1.0,
-  "structure": "armature identity + 4 skinned mesh children (head/mid/tail/droplets), natural scale; report-only cell fit 0.13032"
+  "bytes": 9817504,
+  "sha256_16": "3316779140e3334c",
+  "seconds": 1.5,
+  "carries": {
+   "materials": [
+    {
+     "name": "magmoo_mat",
+     "alphaMode": "BLEND",
+     "baseColorFactor": [
+      1,
+      1,
+      1,
+      1
+     ],
+     "doubleSided": false,
+     "extensions": [
+      "KHR_materials_emissive_strength"
+     ]
+    }
+   ],
+   "colour_sets": {
+    "COLOR_0": [
+     "VEC4"
+    ],
+    "COLOR_1": [
+     "VEC4"
+    ]
+   },
+   "animations": [
+    "ball",
+    "idle",
+    "walk"
+   ],
+   "meshes": 5,
+   "skins": 1,
+   "joints": 25,
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength"
+   ]
+  },
+  "structure": "armature identity + 5 skinned mesh children (head/mid/tail/droplets/ball), natural scale; report-only cell fit 0.13032"
  },
  "skins": {
   "default": {
@@ -1290,13 +1576,13 @@
     "pass": true
    },
    "region_faces": {
-    "goo_cool": 6082,
-    "goo": 20892,
-    "goo_hot": 7125,
-    "flame": 4179,
-    "core": 1480,
-    "eye": 1009,
-    "pupil": 109
+    "goo_cool": 6300,
+    "goo": 24369,
+    "goo_hot": 8637,
+    "flame": 4721,
+    "core": 1479,
+    "eye": 2088,
+    "pupil": 644
    },
    "region_mean_linear": {
     "Col": {
@@ -1331,7 +1617,7 @@
       0.6038
      ],
      "pupil": [
-      0.0092,
+      0.0091,
       0.0024,
       0.0024
      ]
@@ -1343,7 +1629,7 @@
       0.0003
      ],
      "goo": [
-      0.3,
+      0.2999,
       0.0076,
       0.0009
      ],
@@ -1374,7 +1660,7 @@
      ]
     }
    },
-   "vertex_positions_sha": "205c57547c82bf29"
+   "vertex_positions_sha": "1dc52a36f0d5ee79"
   },
   "obsidian": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo__obsidian.blend",
@@ -1498,13 +1784,13 @@
     "pass": true
    },
    "region_faces": {
-    "goo_cool": 6082,
-    "goo": 20892,
-    "goo_hot": 7125,
-    "flame": 4179,
-    "core": 1480,
-    "eye": 1009,
-    "pupil": 109
+    "goo_cool": 6300,
+    "goo": 24369,
+    "goo_hot": 8637,
+    "flame": 4721,
+    "core": 1479,
+    "eye": 2088,
+    "pupil": 644
    },
    "region_mean_linear": {
     "Col": {
@@ -1521,7 +1807,7 @@
      "goo_hot": [
       0.0176,
       0.0513,
-      0.2159
+      0.2158
      ],
      "flame": [
       0.1559,
@@ -1534,7 +1820,7 @@
       1.0
      ],
      "eye": [
-      0.8069,
+      0.807,
       0.956,
       1.0
      ],
@@ -1582,15 +1868,15 @@
      ]
     }
    },
-   "geometry_colour_uv_digest": "a15c23b985d77872",
-   "vertex_positions_sha": "205c57547c82bf29"
+   "geometry_colour_uv_digest": "af7298ff3eed74e8",
+   "vertex_positions_sha": "1dc52a36f0d5ee79"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: region face counts identical, vertex positions identical, colours differ only by the palette table; the default digest is restored after the swap",
-   "default_digest_before": "0cf9c6a3296ca31c",
-   "default_digest_after_restore": "0cf9c6a3296ca31c"
+   "default_digest_before": "f533af66b7348877",
+   "default_digest_after_restore": "f533af66b7348877"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.json",
- "seconds": 44.0
+ "seconds": 55.4
 }
