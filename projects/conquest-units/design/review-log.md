@@ -277,3 +277,34 @@ connected to the body. Optional electricity arcs visually wire the parts
 together. Locomotion is a fairly normal walk on the leg crystals with a
 float-ish quality (soft contacts, slight body float allowed). Idle must be
 revised to match (no independent part drift; keep core pulse).
+
+## 2026-09-25 — Duskmaw v2 feedback (artist verbatim, binding)
+
+"duskmaw - the mouth silhouette is good, we should have an idle animation
+where the mouth piece does a chomp
+
+the side of its shadow legs need work, the bottom should almost be uniform
+like a shadow coming out of the ground, and its movement should be gliding
+as well
+
+this whole model might need some work, lets simply the face(head, the actual
+mouth with teeth is a bit lost in this) it doesnt read like a mouth, the
+model is meant to be inspired by aku or father from the code name kids next
+door, essentially a shadowy figure/monster
+
+it also needs a better recolor, maybe red around its chest/leg mouth piece
+to show its a mouth that it devours you with
+
+also the mouth from the back side of it should be closed, like right now you
+can see through him but the mouth should close like an actual mouth"
+
+Binding reading: (1) keep the maw silhouette, ADD a chomp beat to idle
+(chest jaw + skirt jaw close/open). (2) skirt/leg bottom -> near-uniform
+shadow rising out of the ground; locomotion clip becomes a GLIDE. (3)
+simplify the head/face - crisp shadow-figure read (Aku / Father from KND
+reference: flat dark silhouette, sharp simple features); current teeth-mouth
+on the face is lost/muddy. (4) recolor: red framing around the chest+skirt
+maw so it reads as the devouring mouth. (5) the maw must be CLOSED from
+behind - no seeing through the body; back walls like a real mouth.
+Reference identity: shadowy figure/monster (Aku, Samurai Jack; Father,
+Codename: Kids Next Door).
