@@ -562,3 +562,28 @@ dimple goes. The mouth has two states: CLOSED = nothing visible at all
 opening (asymmetric upturned corner). Animated via shape key/morph so it
 exports; closed is the rest state. When it opens is lane-proposed
 (natural candidates: the float hold, brief idle beats) - artist to veto.
+
+## 2026-09-26 — Supaoctto v3 addendum (artist verbatim + 2 annotations)
+
+References saved: design/reference/supaoctto-v3-belt-annotation.png (red
+belt drawn at the waist: side plates + dipped centre, superhero belt) and
+supaoctto-v3-starfish-mask-annotation.png (red star-arm strokes drawn
+around the visor: starfish-inspired mask).
+
+"would a belt like this help supacctto design
+
+can we also try a version of the mask more like this, star fish inspire to
+give the aquatic hero vibe better"
+
+Orchestrator's design answer (given to artist): yes on the belt - it
+anchors the waist on an otherwise uninterrupted blue body and is the
+strongest superhero-coding accessory; echo the accents (render gold and
+orange versions to pick from). Starfish mask worth trying as a variant
+beside the W visor.
+
+Binding scope for the v3 lane (with the smirk mouth): (1) BELT per the
+annotation - side plates, dipped centre; render in gold and in orange for
+the artist's pick. (2) STARFISH MASK VERSION - star arms radiating around
+the eyes per the annotation, rendered as a variant alongside the current
+W visor (both kept until the artist picks). (3) smirk mouth per the
+earlier v3 entry.
