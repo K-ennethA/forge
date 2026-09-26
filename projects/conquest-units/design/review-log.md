@@ -607,3 +607,47 @@ prior art). Two deviations from the sheet: (1) the amber/yellow becomes a
 FIREFLY-GLOW color (bioluminescent green-tinged yellow) through the glow
 tiers; (2) the smoky wings emerge FROM the side-thruster holes, not from
 the back. Queued after supaoctto v3.
+
+## 2026-09-26 — Cross-unit feedback round (artist verbatim)
+
+Reference saved: design/reference/magmoo-v5-rest-pose-reference.png (the
+wanted default pose: head arched up in the air, droplets hanging, mound +
+tail grounded - "paused in motion").
+
+"for magmoo this is a lot better, can we make him floatier while jumping
+also default position should be more like this right now all his pieces are
+on the floor but we want some still flying as if he was paused in motion
+
+Also we had said only carved out eye, but lets actually put a red goo eye
+no pupil just one solid piece where its carved out
+
+and make him more red overall than the solid orange he has right now, the
+accent colors are fine
+
+duskmaw is much better and fine for now
+
+for supactto lets keep the non star-fish design for the goggles but instead
+of the octopus on the chest lets put the starfish there
+
+possibly another version of the starfish mask is to not have it glued to
+his skin meaning it comes off towards the tips and doesn't connect with his
+face
+
+firefly is near perfect, my only note is too make the wings smokier like
+heavier smoke but its almost perfect"
+
+Binding readings:
+- MAGMOO v5: (1) floatier leap - more hang time, softer gravity feel.
+  (2) REST POSE per the reference image: head/neck arched up off the
+  floor with droplets hanging, mound + tail grounded - paused mid-motion,
+  not all pieces flat on the floor. Idle beats (ball, S-rise) restage
+  from that pose. (3) eyes = solid RED GOO eye filling the carved socket,
+  no pupil, one piece. (4) body MORE RED than the current orange; accents
+  stay.
+- DUSKMAW: v4 APPROVED - "much better and fine for now". Parked.
+- SUPAOCTTO v4: W visor stays (starfish mask NOT the default); the chest
+  emblem becomes the STARFISH (replacing the octopus sigil); plus try a
+  starfish-mask variant where the star arms detach toward the tips -
+  not glued to the face, tips floating off the skin.
+- FIREFLY: near perfect; wings get HEAVIER smoke (denser/smokier read) -
+  orchestrator handles as a direct tweak.
