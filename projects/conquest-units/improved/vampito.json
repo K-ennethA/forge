@@ -100,21 +100,30 @@
   }
  },
  "tris_source": 187144,
+ "wing_grow": {
+  "x0": 3.0,
+  "span_grow": 0.18,
+  "tall_grow": 0.5,
+  "z_pivot": 7.7081,
+  "half_span_before": 9.3487,
+  "half_span_after": 10.4915,
+  "hand_x_deformed": 8.6652
+ },
  "source_floor_gap": 0.5953,
  "natural": {
   "height": 12.0985,
-  "width": 18.7022,
+  "width": 20.9781,
   "depth": 9.4479,
-  "footprint": 18.7022,
+  "footprint": 20.9781,
   "units": "sculpt units (natural proportions, no refit)",
   "origin_shift_sculpt_units_after_yaw": [
-   0.00367,
+   -0.00282,
    1.15843,
    0.5917
   ],
   "export_cell_fit_report_only": {
-   "scale": 0.10159,
-   "height_m": 1.2291,
+   "scale": 0.09057,
+   "height_m": 1.0958,
    "footprint_m": 1.9,
    "bound_by": "footprint (wingspan)",
    "ceilings": [
@@ -125,49 +134,49 @@
  },
  "retopo": {
   "method": "6 parts joined -> voxel remesh (0.050) -> collapse decimation (deterministic) -> main shell; antennae decimated on their own (60 tris each target)",
-  "remesh_tris": 323968,
-  "decimated_tris": 9482,
+  "remesh_tris": 379484,
+  "decimated_tris": 9486,
   "antenna_tris": [
    60,
    60
   ],
   "specks_dropped": {
-   "pieces": 10,
+   "pieces": 8,
    "kept": 1,
-   "dropped_verts": 27
+   "dropped_verts": 21
   },
-  "seconds": 4.3,
+  "seconds": 3.1,
   "low_to_sculpt_distance": {
-   "mean": 0.0056,
-   "p99": 0.027,
-   "max": 0.048,
-   "pct_of_height_p99": 0.223
+   "mean": 0.0057,
+   "p99": 0.0275,
+   "max": 0.0543,
+   "pct_of_height_p99": 0.228
   },
   "visible_sculpt_to_low_distance": {
    "mean": 0.0121,
-   "p99": 0.1101,
+   "p99": 0.1095,
    "max": 0.6521,
    "per_part": {
     "Sphere": {
      "group": "head",
      "sampled": 2000,
      "visible": 1859,
-     "p99": 0.0267,
+     "p99": 0.0261,
      "max": 0.1277
     },
     "Sphere.001": {
      "group": "body",
      "sampled": 4062,
-     "visible": 2962,
-     "p99": 0.0736,
+     "visible": 3021,
+     "p99": 0.0704,
      "max": 0.3649
     },
     "Sphere.002": {
      "group": "collar",
      "sampled": 7600,
-     "visible": 6149,
-     "p99": 0.1308,
-     "max": 0.3615
+     "visible": 6150,
+     "p99": 0.1317,
+     "max": 0.3649
     },
     "Sphere.003": {
      "group": "eyes",
@@ -186,9 +195,9 @@
     "Sphere.005": {
      "group": "membrane",
      "sampled": 5616,
-     "visible": 3748,
-     "p99": 0.0741,
-     "max": 0.1644
+     "visible": 3788,
+     "p99": 0.0754,
+     "max": 0.1798
     }
    },
    "rule": "sculpt vertices (subsampled ~4k per part) not inside another part -> nearest low surface"
@@ -196,7 +205,7 @@
  },
  "head_probe": {
   "head_origin": [
-   -0.0037,
+   0.0028,
    -1.1584,
    9.3425
   ],
@@ -215,32 +224,32 @@
    {
     "field": "fe",
     "tau": 0.0,
-    "edge_splits": 13,
-    "face_connects": 18
+    "edge_splits": 10,
+    "face_connects": 14
    },
    {
     "field": "fc",
     "tau": 0.0,
-    "edge_splits": 140,
-    "face_connects": 156
+    "edge_splits": 123,
+    "face_connects": 139
    },
    {
     "field": "fm",
     "tau": 0.0,
-    "edge_splits": 236,
-    "face_connects": 279
+    "edge_splits": 242,
+    "face_connects": 291
    },
    {
     "field": "fh",
     "tau": 0.0,
-    "edge_splits": 16,
-    "face_connects": 17
+    "edge_splits": 15,
+    "face_connects": 16
    },
    {
     "field": "z",
     "tau": 4.4,
-    "edge_splits": 28,
-    "face_connects": 35
+    "edge_splits": 25,
+    "face_connects": 32
    },
    {
     "field": "ax",
@@ -250,30 +259,30 @@
    },
    {
     "field": "ax",
-    "tau": 7.9,
+    "tau": 8.6652,
     "edge_splits": 0,
     "face_connects": 0
    },
    {
     "field": "z",
     "tau": 5.4,
-    "edge_splits": 24,
-    "face_connects": 26
+    "edge_splits": 33,
+    "face_connects": 37
    },
    {
     "field": "dh",
     "tau": 1.5052,
     "edge_splits": 32,
-    "face_connects": 38
+    "face_connects": 37
    },
    {
     "field": "dh",
     "tau": 2.8128,
-    "edge_splits": 18,
-    "face_connects": 23
+    "edge_splits": 23,
+    "face_connects": 26
    }
   ],
-  "seconds": 3.1,
+  "seconds": 2.0,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fe=0.000": 0,
@@ -282,13 +291,13 @@
    "fh=0.000": 0,
    "z=4.400": 0,
    "ax=1.500": 0,
-   "ax=7.900": 0,
+   "ax=8.665": 0,
    "z=5.400": 0,
    "dh=1.505": 0,
    "dh=2.813": 0
   }
  },
- "tris_final": 10700,
+ "tris_final": 10696,
  "region_rule": {
   "part_voronoi": "each low vertex's owner = the nearest source part group (body+arms / head+proboscis / eyes / collar / membranes); boundaries cut along (nearest-other distance - own distance) = 0",
   "abdomen": "body surface below ABD_Z within ABD_R of the midline",
@@ -299,47 +308,47 @@
   "antennae": "the two decimated antenna rods"
  },
  "regions_faces": {
-  "body": 846,
-  "abdomen": 853,
-  "wing_arm": 1538,
-  "talon": 186,
-  "membrane": 2771,
-  "collar": 3265,
-  "head": 736,
-  "eyes": 104,
-  "proboscis": 179,
-  "proboscis_tip": 102,
+  "body": 756,
+  "abdomen": 775,
+  "wing_arm": 1560,
+  "talon": 340,
+  "membrane": 3109,
+  "collar": 2998,
+  "head": 672,
+  "eyes": 94,
+  "proboscis": 169,
+  "proboscis_tip": 103,
   "antennae": 120
  },
  "cavity_shade_k": 0.4,
- "cavity_seconds": 0.6,
+ "cavity_seconds": 0.4,
  "regions_area_share": {
-  "body": 0.0968,
-  "abdomen": 0.1193,
-  "wing_arm": 0.1598,
-  "talon": 0.0131,
-  "membrane": 0.3158,
-  "collar": 0.1826,
-  "head": 0.0842,
-  "eyes": 0.0074,
-  "proboscis": 0.0122,
-  "proboscis_tip": 0.0052,
-  "antennae": 0.0036
+  "body": 0.0817,
+  "abdomen": 0.1005,
+  "wing_arm": 0.1855,
+  "talon": 0.03,
+  "membrane": 0.3534,
+  "collar": 0.1541,
+  "head": 0.071,
+  "eyes": 0.0063,
+  "proboscis": 0.0102,
+  "proboscis_tip": 0.0044,
+  "antennae": 0.003
  },
  "facing": {
   "rule": "head primitive origin (the sculpt's head-ball centre) -> centroid of the proboscis prong tips (head-part vertices within PROB_TIP_LEN of the farthest from that origin)",
   "tip_vertices": 48,
   "prong_tips_x": [
-   -0.673,
-   0.666
+   -0.667,
+   0.673
   ],
   "anchor": [
-   -0.0037,
+   0.0028,
    -1.1584,
    9.3425
   ],
   "landmark": [
-   -0.0037,
+   0.0028,
    -4.414,
    8.459
   ],
@@ -357,7 +366,7 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.4
   },
   "AO": {
    "result": [
@@ -365,74 +374,74 @@
    ],
    "seconds": 0.4
   },
-  "uv_texels_normal": 402343,
-  "uv_coverage": 0.3837,
-  "normal_baked_pct_of_uv_texels": 99.79,
-  "normal_detail_fraction_dev_gt_0.05": 0.5882,
-  "normal_dev_mean": 0.1014,
+  "uv_texels_normal": 405953,
+  "uv_coverage": 0.3871,
+  "normal_baked_pct_of_uv_texels": 99.82,
+  "normal_detail_fraction_dev_gt_0.05": 0.5655,
+  "normal_dev_mean": 0.0967,
   "ao_baked_pct_of_uv_texels": 100.0,
-  "ao_mean": 0.7888,
+  "ao_mean": 0.8108,
   "ao_p05": 0.3137,
   "per_region_normal": {
    "body": {
-    "texels": 39792,
+    "texels": 33757,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0513
+    "normal_dev_mean": 0.0531
    },
    "abdomen": {
-    "texels": 48957,
+    "texels": 41324,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0704
+    "normal_dev_mean": 0.0712
    },
    "wing_arm": {
-    "texels": 66460,
+    "texels": 78057,
     "baked_pct": 99.99,
-    "normal_dev_mean": 0.057
+    "normal_dev_mean": 0.051
    },
    "talon": {
-    "texels": 5439,
-    "baked_pct": 99.98,
-    "normal_dev_mean": 0.0873
+    "texels": 12822,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0807
    },
    "membrane": {
-    "texels": 124094,
-    "baked_pct": 99.97,
-    "normal_dev_mean": 0.1052
+    "texels": 140876,
+    "baked_pct": 99.96,
+    "normal_dev_mean": 0.0987
    },
    "collar": {
-    "texels": 72812,
-    "baked_pct": 98.88,
-    "normal_dev_mean": 0.1918
+    "texels": 61844,
+    "baked_pct": 98.93,
+    "normal_dev_mean": 0.1977
    },
    "head": {
-    "texels": 33965,
+    "texels": 28681,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0758
+    "normal_dev_mean": 0.0782
    },
    "eyes": {
-    "texels": 2912,
+    "texels": 2464,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1333
+    "normal_dev_mean": 0.1382
    },
    "proboscis": {
-    "texels": 4713,
+    "texels": 3855,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1104
+    "normal_dev_mean": 0.1114
    },
    "proboscis_tip": {
-    "texels": 2017,
+    "texels": 1682,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1762
+    "normal_dev_mean": 0.1783
    },
    "antennae": {
-    "texels": 1451,
+    "texels": 1313,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.2075
+    "normal_dev_mean": 0.2109
    }
   },
   "pixel_sha": {
-   "normal": "0dc699c4a6b0f935",
-   "ao": "92fe453d85452ad8"
+   "normal": "cfff0c560d047f83",
+   "ao": "587a13eecd79ae87"
   },
   "cage_extrusion": 0.06,
   "resolution": {
@@ -440,24 +449,24 @@
    "ao": 512
   },
   "high_tris": 187144,
-  "seconds": 4.3
+  "seconds": 2.9
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 10700,
+  "faces": 10696,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "0d14971ffdced48b"
+  "uv_sha": "dba4df1799c534de"
  },
- "digest_geometry_colour": "835191e90d9f7a6c",
+ "digest_geometry_colour": "f2fe9b357f0f7dfc",
  "final_bbox": [
   [
-   -9.3511,
+   -10.4891,
    -4.724,
    0.0
   ],
   [
-   9.3511,
+   10.4891,
    4.724,
    12.0985
   ]

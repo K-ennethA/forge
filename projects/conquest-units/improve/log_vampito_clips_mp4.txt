@@ -1,192 +1,192 @@
-00:01.938  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampito.blend"
-00:04.516  render           | Video append frame 1
-00:04.844  render           | Video append frame 2
-00:05.156  render           | Video append frame 3
-00:05.375  render           | Video append frame 4
-00:05.688  render           | Video append frame 5
-00:05.875  render           | Video append frame 6
-00:06.141  render           | Video append frame 7
-00:06.297  render           | Video append frame 8
-00:06.469  render           | Video append frame 9
-00:06.594  render           | Video append frame 10
-00:06.719  render           | Video append frame 11
-00:06.860  render           | Video append frame 12
-00:06.985  render           | Video append frame 13
-00:07.110  render           | Video append frame 14
-00:07.219  render           | Video append frame 15
-00:07.344  render           | Video append frame 16
-00:07.469  render           | Video append frame 17
-00:07.594  render           | Video append frame 18
-00:07.719  render           | Video append frame 19
-00:07.844  render           | Video append frame 20
-00:07.969  render           | Video append frame 21
-00:08.110  render           | Video append frame 22
-00:08.235  render           | Video append frame 23
-00:08.360  render           | Video append frame 24
-00:08.485  render           | Video append frame 25
-00:08.610  render           | Video append frame 26
-00:08.735  render           | Video append frame 27
-00:08.875  render           | Video append frame 28
-00:09.047  render           | Video append frame 29
-00:09.172  render           | Video append frame 30
-00:09.297  render           | Video append frame 31
-00:09.406  render           | Video append frame 32
-00:09.547  render           | Video append frame 33
-00:09.672  render           | Video append frame 34
-00:09.797  render           | Video append frame 35
-00:09.922  render           | Video append frame 36
-00:10.063  render           | Video append frame 37
-00:10.188  render           | Video append frame 38
-00:10.313  render           | Video append frame 39
-00:10.422  render           | Video append frame 40
-00:10.547  render           | Video append frame 41
-00:10.672  render           | Video append frame 42
-00:10.797  render           | Video append frame 43
-00:10.922  render           | Video append frame 44
-00:11.047  render           | Video append frame 45
-00:11.188  render           | Video append frame 46
-00:11.313  render           | Video append frame 47
-00:11.453  render           | Video append frame 48
-00:11.594  render           | Video append frame 49
-00:11.750  render           | Video append frame 50
-00:11.906  render           | Video append frame 51
-00:12.063  render           | Video append frame 52
-00:12.219  render           | Video append frame 53
-00:12.375  render           | Video append frame 54
-00:12.516  render           | Video append frame 55
-00:12.672  render           | Video append frame 56
-00:12.813  render           | Video append frame 57
-00:12.953  render           | Video append frame 58
-00:13.110  render           | Video append frame 59
-00:13.250  render           | Video append frame 60
-00:13.375  render           | Video append frame 61
-00:13.500  render           | Video append frame 62
-00:13.625  render           | Video append frame 63
-00:13.766  render           | Video append frame 64
-00:13.906  render           | Video append frame 65
-00:14.047  render           | Video append frame 66
-00:14.188  render           | Video append frame 67
-00:14.344  render           | Video append frame 68
-00:14.485  render           | Video append frame 69
-00:14.610  render           | Video append frame 70
-00:14.750  render           | Video append frame 71
-00:14.891  render           | Video append frame 72
-00:15.031  render           | Video append frame 73
-00:15.156  render           | Video append frame 74
-00:15.281  render           | Video append frame 75
-00:15.422  render           | Video append frame 76
-00:15.547  render           | Video append frame 77
-00:15.688  render           | Video append frame 78
-00:15.828  render           | Video append frame 79
-00:15.953  render           | Video append frame 80
-00:16.094  render           | Video append frame 81
-00:16.235  render           | Video append frame 82
-00:16.360  render           | Video append frame 83
-00:16.485  render           | Video append frame 84
-00:16.625  render           | Video append frame 85
-00:16.750  render           | Video append frame 86
-00:16.875  render           | Video append frame 87
-00:17.000  render           | Video append frame 88
-00:17.141  render           | Video append frame 89
-00:17.266  render           | Video append frame 90
-00:17.391  render           | Video append frame 91
-00:17.516  render           | Video append frame 92
-00:17.641  render           | Video append frame 93
-00:17.781  render           | Video append frame 94
-00:17.906  render           | Video append frame 95
-00:18.047  render           | Video append frame 96
-00:18.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:18.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:18.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:18.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:18.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:19.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:19.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:19.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:19.735  render           | Video append frame 1
-00:19.875  render           | Video append frame 2
-00:20.016  render           | Video append frame 3
-00:20.141  render           | Video append frame 4
-00:20.266  render           | Video append frame 5
-00:20.391  render           | Video append frame 6
-00:20.516  render           | Video append frame 7
-00:20.641  render           | Video append frame 8
-00:20.766  render           | Video append frame 9
-00:20.891  render           | Video append frame 10
-00:21.016  render           | Video append frame 11
-00:21.141  render           | Video append frame 12
-00:21.281  render           | Video append frame 13
-00:21.406  render           | Video append frame 14
-00:21.531  render           | Video append frame 15
-00:21.672  render           | Video append frame 16
-00:21.813  render           | Video append frame 17
-00:21.953  render           | Video append frame 18
-00:22.078  render           | Video append frame 19
-00:22.219  render           | Video append frame 20
-00:22.360  render           | Video append frame 21
-00:22.500  render           | Video append frame 22
-00:22.625  render           | Video append frame 23
-00:22.750  render           | Video append frame 24
-00:22.891  render           | Video append frame 25
-00:23.031  render           | Video append frame 26
-00:23.172  render           | Video append frame 27
-00:23.406  render           | Video append frame 28
-00:23.641  render           | Video append frame 29
-00:23.813  render           | Video append frame 30
-00:24.000  render           | Video append frame 31
-00:24.156  render           | Video append frame 32
-00:24.328  render           | Video append frame 33
-00:24.485  render           | Video append frame 34
-00:24.641  render           | Video append frame 35
-00:24.797  render           | Video append frame 36
-00:24.938  render           | Video append frame 37
-00:25.094  render           | Video append frame 38
-00:25.235  render           | Video append frame 39
-00:25.375  render           | Video append frame 40
-00:25.516  render           | Video append frame 41
-00:25.672  render           | Video append frame 42
-00:25.813  render           | Video append frame 43
-00:26.000  render           | Video append frame 44
-00:26.172  render           | Video append frame 45
-00:26.328  render           | Video append frame 46
-00:26.469  render           | Video append frame 47
-00:26.688  render           | Video append frame 48
-00:26.875  render           | Video append frame 49
-00:27.031  render           | Video append frame 50
-00:27.188  render           | Video append frame 51
-00:27.500  render           | Video append frame 52
-00:27.719  render           | Video append frame 53
-00:27.891  render           | Video append frame 54
-00:28.031  render           | Video append frame 55
-00:28.172  render           | Video append frame 56
-00:28.313  render           | Video append frame 57
-00:28.469  render           | Video append frame 58
-00:28.641  render           | Video append frame 59
-00:28.766  render           | Video append frame 60
-00:28.953  render           | Video append frame 61
-00:29.094  render           | Video append frame 62
-00:29.219  render           | Video append frame 63
-00:29.391  render           | Video append frame 64
-00:29.531  render           | Video append frame 65
-00:29.672  render           | Video append frame 66
-00:29.813  render           | Video append frame 67
-00:29.969  render           | Video append frame 68
-00:30.078  render           | Video append frame 69
-00:30.188  render           | Video append frame 70
-00:30.297  render           | Video append frame 71
-00:30.406  render           | Video append frame 72
-00:30.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:30.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:30.860  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:30.985  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:31.110  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:31.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:31.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-00:31.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
-EXTENTS idle (-9.666, -4.871, 0.0) (9.621, 5.403, 14.194)
+00:01.281  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampito.blend"
+00:02.859  render           | Video append frame 1
+00:03.078  render           | Video append frame 2
+00:03.297  render           | Video append frame 3
+00:03.531  render           | Video append frame 4
+00:03.703  render           | Video append frame 5
+00:03.922  render           | Video append frame 6
+00:04.078  render           | Video append frame 7
+00:04.219  render           | Video append frame 8
+00:04.312  render           | Video append frame 9
+00:04.437  render           | Video append frame 10
+00:04.531  render           | Video append frame 11
+00:04.625  render           | Video append frame 12
+00:04.703  render           | Video append frame 13
+00:04.797  render           | Video append frame 14
+00:04.875  render           | Video append frame 15
+00:04.969  render           | Video append frame 16
+00:05.047  render           | Video append frame 17
+00:05.140  render           | Video append frame 18
+00:05.219  render           | Video append frame 19
+00:05.312  render           | Video append frame 20
+00:05.406  render           | Video append frame 21
+00:05.500  render           | Video append frame 22
+00:05.594  render           | Video append frame 23
+00:05.687  render           | Video append frame 24
+00:05.781  render           | Video append frame 25
+00:05.875  render           | Video append frame 26
+00:05.969  render           | Video append frame 27
+00:06.047  render           | Video append frame 28
+00:06.140  render           | Video append frame 29
+00:06.234  render           | Video append frame 30
+00:06.312  render           | Video append frame 31
+00:06.406  render           | Video append frame 32
+00:06.500  render           | Video append frame 33
+00:06.578  render           | Video append frame 34
+00:06.672  render           | Video append frame 35
+00:06.765  render           | Video append frame 36
+00:06.844  render           | Video append frame 37
+00:06.937  render           | Video append frame 38
+00:07.015  render           | Video append frame 39
+00:07.094  render           | Video append frame 40
+00:07.187  render           | Video append frame 41
+00:07.281  render           | Video append frame 42
+00:07.359  render           | Video append frame 43
+00:07.453  render           | Video append frame 44
+00:07.547  render           | Video append frame 45
+00:07.625  render           | Video append frame 46
+00:07.719  render           | Video append frame 47
+00:07.797  render           | Video append frame 48
+00:07.890  render           | Video append frame 49
+00:07.969  render           | Video append frame 50
+00:08.062  render           | Video append frame 51
+00:08.156  render           | Video append frame 52
+00:08.234  render           | Video append frame 53
+00:08.328  render           | Video append frame 54
+00:08.406  render           | Video append frame 55
+00:08.500  render           | Video append frame 56
+00:08.578  render           | Video append frame 57
+00:08.656  render           | Video append frame 58
+00:08.750  render           | Video append frame 59
+00:08.828  render           | Video append frame 60
+00:08.922  render           | Video append frame 61
+00:09.000  render           | Video append frame 62
+00:09.094  render           | Video append frame 63
+00:09.172  render           | Video append frame 64
+00:09.265  render           | Video append frame 65
+00:09.344  render           | Video append frame 66
+00:09.422  render           | Video append frame 67
+00:09.515  render           | Video append frame 68
+00:09.609  render           | Video append frame 69
+00:09.687  render           | Video append frame 70
+00:09.781  render           | Video append frame 71
+00:09.875  render           | Video append frame 72
+00:09.953  render           | Video append frame 73
+00:10.047  render           | Video append frame 74
+00:10.125  render           | Video append frame 75
+00:10.219  render           | Video append frame 76
+00:10.297  render           | Video append frame 77
+00:10.390  render           | Video append frame 78
+00:10.484  render           | Video append frame 79
+00:10.562  render           | Video append frame 80
+00:10.656  render           | Video append frame 81
+00:10.734  render           | Video append frame 82
+00:10.812  render           | Video append frame 83
+00:10.906  render           | Video append frame 84
+00:10.984  render           | Video append frame 85
+00:11.062  render           | Video append frame 86
+00:11.140  render           | Video append frame 87
+00:11.234  render           | Video append frame 88
+00:11.312  render           | Video append frame 89
+00:11.390  render           | Video append frame 90
+00:11.484  render           | Video append frame 91
+00:11.562  render           | Video append frame 92
+00:11.640  render           | Video append frame 93
+00:11.734  render           | Video append frame 94
+00:11.812  render           | Video append frame 95
+00:11.906  render           | Video append frame 96
+00:12.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.140  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.687  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:12.797  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:13.000  render           | Video append frame 1
+00:13.078  render           | Video append frame 2
+00:13.172  render           | Video append frame 3
+00:13.250  render           | Video append frame 4
+00:13.328  render           | Video append frame 5
+00:13.422  render           | Video append frame 6
+00:13.500  render           | Video append frame 7
+00:13.578  render           | Video append frame 8
+00:13.672  render           | Video append frame 9
+00:13.750  render           | Video append frame 10
+00:13.828  render           | Video append frame 11
+00:13.922  render           | Video append frame 12
+00:14.000  render           | Video append frame 13
+00:14.078  render           | Video append frame 14
+00:14.172  render           | Video append frame 15
+00:14.250  render           | Video append frame 16
+00:14.344  render           | Video append frame 17
+00:14.437  render           | Video append frame 18
+00:14.515  render           | Video append frame 19
+00:14.609  render           | Video append frame 20
+00:14.687  render           | Video append frame 21
+00:14.781  render           | Video append frame 22
+00:14.875  render           | Video append frame 23
+00:14.953  render           | Video append frame 24
+00:15.047  render           | Video append frame 25
+00:15.125  render           | Video append frame 26
+00:15.219  render           | Video append frame 27
+00:15.312  render           | Video append frame 28
+00:15.406  render           | Video append frame 29
+00:15.484  render           | Video append frame 30
+00:15.562  render           | Video append frame 31
+00:15.656  render           | Video append frame 32
+00:15.734  render           | Video append frame 33
+00:15.812  render           | Video append frame 34
+00:15.906  render           | Video append frame 35
+00:15.984  render           | Video append frame 36
+00:16.062  render           | Video append frame 37
+00:16.156  render           | Video append frame 38
+00:16.234  render           | Video append frame 39
+00:16.312  render           | Video append frame 40
+00:16.406  render           | Video append frame 41
+00:16.484  render           | Video append frame 42
+00:16.578  render           | Video append frame 43
+00:16.656  render           | Video append frame 44
+00:16.750  render           | Video append frame 45
+00:16.828  render           | Video append frame 46
+00:16.922  render           | Video append frame 47
+00:17.015  render           | Video append frame 48
+00:17.109  render           | Video append frame 49
+00:17.187  render           | Video append frame 50
+00:17.281  render           | Video append frame 51
+00:17.359  render           | Video append frame 52
+00:17.453  render           | Video append frame 53
+00:17.531  render           | Video append frame 54
+00:17.625  render           | Video append frame 55
+00:17.719  render           | Video append frame 56
+00:17.797  render           | Video append frame 57
+00:17.890  render           | Video append frame 58
+00:17.969  render           | Video append frame 59
+00:18.047  render           | Video append frame 60
+00:18.140  render           | Video append frame 61
+00:18.219  render           | Video append frame 62
+00:18.297  render           | Video append frame 63
+00:18.390  render           | Video append frame 64
+00:18.469  render           | Video append frame 65
+00:18.547  render           | Video append frame 66
+00:18.640  render           | Video append frame 67
+00:18.719  render           | Video append frame 68
+00:18.797  render           | Video append frame 69
+00:18.890  render           | Video append frame 70
+00:18.969  render           | Video append frame 71
+00:19.062  render           | Video append frame 72
+00:19.187  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.312  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.531  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.640  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+00:19.984  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\_tile_vampito.png'
+EXTENTS idle (-11.328, -4.872, 0.0) (11.291, 5.402, 14.696)
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\vampito_idle.mp4 frames 96 loops 2 cycle 48
 WROTE sheet idle
-EXTENTS walk (-9.736, -5.105, 0.0) (9.689, 6.544, 14.364)
+EXTENTS walk (-11.444, -5.108, 0.0) (11.414, 6.54, 15.444)
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampito\vampito_walk.mp4 frames 72 loops 3 cycle 24
 WROTE sheet walk
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

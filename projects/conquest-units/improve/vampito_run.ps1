@@ -17,9 +17,22 @@ if (-not $SkipBuild) {
   $null = $bp.Handle; $null = $dp.Handle
   $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode)"
-  $d1 = (Get-Content "$P\rigged\vampito.json" -Raw | ConvertFrom-Json).digest.combined
-  $d2 = (Get-Content "$I\log_vampito_digest2.json" -Raw | ConvertFrom-Json).digest.combined
-  $line = "DIGEST build=$d1 twin=$d2 identical=$($d1 -eq $d2)"
+  # Per-part digest gate. Every part must match EXCEPT bake_normal, which is not byte-deterministic on this
+  # mesh (per-process Cycles tie-break on the thin membrane; see vampito_bake_diff.py for the measurement) and
+  # is instead compared against pinned pixel tolerances.
+  $j1 = (Get-Content "$P\rigged\vampito.json" -Raw | ConvertFrom-Json).digest
+  $j2 = (Get-Content "$I\log_vampito_digest2.json" -Raw | ConvertFrom-Json).digest
+  $mismatch = @()
+  foreach ($k in $j1.parts.PSObject.Properties.Name) { if ($j1.parts.$k -ne $j2.parts.$k) { $mismatch += $k } }
+  if ($mismatch.Count -eq 0) {
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=True"
+  } elseif ($mismatch.Count -eq 1 -and $mismatch[0] -eq "bake_normal") {
+    $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.exe"
+    $bd = & $VPY -P "$I\vampito_bake_diff.py" "$env:TEMP\vampito_normal_main.npy" "$env:TEMP\vampito_normal_twin.npy"
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=except-bake $bd gate=$(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' })"
+  } else {
+    $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=FALSE mismatched=$($mismatch -join ',') gate=FAIL"
+  }
   $line; $line | Out-File -Encoding utf8 "$I\log_vampito_digest.txt"
 }
 $vJobs = @(

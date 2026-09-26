@@ -67,6 +67,12 @@ ABD_R = 1.6                           # ... within this |x| of the midline
 WING_X = 1.5                          # "wing arm line": body surface beyond this |x| is wing arm
 HAND_X = 7.9                          # "talon line": the hanging wing hands outside this |x| ...
 TALON_Z = 5.4                         # ... and below this height are talons
+# wing enlargement (artist 2026-09-25: "scale the wings to be larger ... a little longer in width but the height of the
+# wings (mainly at the end as well at the tips from top to bottom)"). Tip-weighted: smoothstep 0 at WING_GROW_X0 -> 1 at
+# the tip, applied to the SOURCE parts before remesh/bake so regions, weights and bakes stay consistent.
+WING_GROW_X0 = 3.0                    # "where the wing growth starts" (|x|; shoulder bands 1.3-2.3 stay untouched)
+WING_SPAN_GROW = 0.18                 # "wing width growth" at the tip (fraction of the distance beyond the start)
+WING_TALL_GROW = 0.50                 # "wing height growth" at the tip (top-to-bottom, about the wing mid-height)
 PROB_R_K = 1.12                       # "proboscis base": head surface farther than this x (median head radius) from the head origin
 PROB_TIP_LEN = 1.0                    # "blood tip length": the outer part of the proboscis that is blood red
 CUT_SNAP = 0.18                       # iso-cut: crossings this close to a vertex snap to it (no sliver triangles)
@@ -224,6 +230,36 @@ for o in src_objs:
                                       "winding_flipped": det < 0, "crumbs": cr}
 report["tris_source"] = tris_source
 head_origin = RY @ head_origin_src
+# ---- wing enlargement (see the WING_GROW_* knobs): tip-weighted span + height growth on the source parts
+_wing_all = np.vstack([V for nm, (V, _) in PARTS.items() if PART_OF[nm] in ("body", "membrane")])
+_wx_max = float(np.abs(_wing_all[:, 0]).max())
+_wz_piv = float(_wing_all[np.abs(_wing_all[:, 0]) > WING_GROW_X0, 2].mean())
+
+
+def _wing_t(ax):
+    u = np.clip((ax - WING_GROW_X0) / max(_wx_max - WING_GROW_X0, 1e-9), 0.0, 1.0)
+    return u * u * (3.0 - 2.0 * u)
+
+
+def wing_grow(V):
+    V = V.copy()
+    ax = np.abs(V[:, 0])
+    t = _wing_t(ax)
+    V[:, 0] = np.sign(V[:, 0]) * (ax + np.clip(ax - WING_GROW_X0, 0.0, None) * WING_SPAN_GROW * t)
+    V[:, 2] = _wz_piv + (V[:, 2] - _wz_piv) * (1.0 + WING_TALL_GROW * t)
+    return V
+
+
+def wing_grow_x(x):
+    t = float(_wing_t(np.array([abs(x)]))[0])
+    return abs(x) + max(abs(x) - WING_GROW_X0, 0.0) * WING_SPAN_GROW * t
+
+
+PARTS = {k: (wing_grow(v), f) for k, (v, f) in PARTS.items()}
+HAND_X_D = wing_grow_x(HAND_X)               # the talon line, carried out with the growth
+report["wing_grow"] = {"x0": WING_GROW_X0, "span_grow": WING_SPAN_GROW, "tall_grow": WING_TALL_GROW,
+                       "z_pivot": round(_wz_piv, 4), "half_span_before": round(_wx_max, 4),
+                       "half_span_after": round(wing_grow_x(_wx_max), 4), "hand_x_deformed": round(HAND_X_D, 4)}
 for o in list(bpy.data.objects):             # the source objects (8 meshes, camera, light) never reach the outputs
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):
@@ -409,10 +445,10 @@ in_head = lambda v: v[LAY["fh"]] > -TOL
 abd_gate = lambda a, b: a[LAY["ax"]] < ABD_R and b[LAY["ax"]] < ABD_R and in_body(a) and in_body(b)
 arm_gate = lambda a, b: all(in_body(v) and v[LAY["z"]] > ABD_Z - 0.3 for v in (a, b))
 hand_gate = lambda a, b: all(in_body(v) and v[LAY["z"]] < TALON_Z + 0.3 for v in (a, b))
-talon_gate = lambda a, b: all(in_body(v) and v[LAY["ax"]] > HAND_X - 0.3 for v in (a, b))
+talon_gate = lambda a, b: all(in_body(v) and v[LAY["ax"]] > HAND_X_D - 0.3 for v in (a, b))
 head_gate = lambda a, b: in_head(a) and in_head(b)
 CUTS = [("fe", 0.0, None), ("fc", 0.0, None), ("fm", 0.0, None), ("fh", 0.0, None),
-        ("z", ABD_Z, abd_gate), ("ax", WING_X, arm_gate), ("ax", HAND_X, hand_gate), ("z", TALON_Z, talon_gate),
+        ("z", ABD_Z, abd_gate), ("ax", WING_X, arm_gate), ("ax", HAND_X_D, hand_gate), ("z", TALON_Z, talon_gate),
         ("dh", PROB_R, head_gate), ("dh", DH_TIP, head_gate)]
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
@@ -450,7 +486,7 @@ rid[owner == 1] = R_["head"]; rid[owner == 2] = R_["eyes"]; rid[owner == 3] = R_
 rid[g_body & (FVAL["z"] < ABD_Z) & (FVAL["ax"] < ABD_R)] = R_["abdomen"]
 arm = g_body & (FVAL["ax"] > WING_X) & (FVAL["z"] > ABD_Z - 0.3)
 rid[arm] = R_["wing_arm"]
-rid[g_body & (FVAL["ax"] > HAND_X) & (FVAL["z"] < TALON_Z)] = R_["talon"]
+rid[g_body & (FVAL["ax"] > HAND_X_D) & (FVAL["z"] < TALON_Z)] = R_["talon"]
 rid[(owner == 1) & (FVAL["dh"] > PROB_R)] = R_["proboscis"]
 rid[(owner == 1) & (FVAL["dh"] > DH_TIP)] = R_["proboscis_tip"]
 # final mesh = cut shell + the two antennae islands
@@ -690,7 +726,16 @@ def set_tex_paths(rel_prefix):
         img.filepath = rel_prefix + nm
 
 
-bstats["pixel_sha"] = {"normal": sha(px[:, :3]), "ao": sha(pa[:, :1])}
+# hash the 8-bit quantization (the shipped artifact is the 8-bit PNG), and dump the float buffer for the runner's
+# bake tolerance gate: the NORMAL bake is not byte-deterministic on this mesh - a per-process Cycles tie-break on the
+# thin membrane flips a couple of texels by one 8-bit step (measured 2026-09-25: 2 of 1,048,576 texels, max delta
+# 0.0039, across 13 probe runs; AO and every geometry digest were always identical). vampito_run.ps1 compares the two
+# builds' buffers against limits pinned from that measurement instead of demanding an impossible exact hash.
+bstats["pixel_sha"] = {"normal": sha(np.clip(np.rint(px[:, :3] * 255.0), 0, 255).astype(np.uint8)),
+                       "ao": sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))}
+import tempfile  # noqa: E402
+np.save(os.path.join(tempfile.gettempdir(), "vampito_normal_twin.npy" if DIGEST_ONLY else "vampito_normal_main.npy"),
+        px[:, :3])
 bstats["cage_extrusion"] = BAKE_CAGE
 bstats["resolution"] = {"normal": RN, "ao": RA}
 bstats["high_tris"] = report["tris_source"]
