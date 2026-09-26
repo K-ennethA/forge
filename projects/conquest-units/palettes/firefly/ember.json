@@ -1,0 +1,18 @@
+{
+ "unit": "firefly",
+ "skin": "ember",
+ "extends": "default",
+ "description": "The reference sheet's ORIGINAL amber accents (swap proof + direct A/B for the artist against the firefly-glow default): amber bands, lenses, antenna vanes, port rings, abdomen tip; orange exhaust flame with a pale-gold core. Geometry, regions, alphas and glow tiers identical; only colours change.",
+ "regions": {
+  "band":          {"rgb": [214, 152, 44],  "emission": [230, 140, 30],  "note": "sheet amber"},
+  "lens_cell":     {"rgb": [228, 164, 56],  "emission": [240, 150, 40]},
+  "lens_grid":     {"rgb": [120, 80, 24],   "emission": [200, 110, 30]},
+  "antenna_vane":  {"rgb": [216, 154, 48],  "emission": [230, 140, 30]},
+  "port_glow":     {"rgb": [232, 164, 52],  "emission": [240, 150, 40]},
+  "abdomen_tip":   {"rgb": [240, 176, 64],  "emission": [250, 160, 50]},
+  "nozzle_throat": {"rgb": [250, 196, 96],  "emission": [255, 180, 80]},
+  "flame_lick":    {"rgb": [226, 86, 22],   "emission": [235, 80, 20]},
+  "flame_outer":   {"rgb": [255, 142, 42],  "emission": [255, 120, 30]},
+  "flame_core":    {"rgb": [255, 224, 140], "emission": [255, 212, 120]}
+ }
+}

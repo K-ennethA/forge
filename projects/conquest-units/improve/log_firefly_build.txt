@@ -1,0 +1,20 @@
+SDF {"step": 0.015, "grid": [104, 100, 285], "ops": ["union", "union", "union", "union", "union", "union", "union", "union", "union"], "high_tris": 537384, "high_verts": 268694, "crumbs": {"pieces": 1, "dropped_verts": 0}, "seconds": 3.4}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "firefly.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\firefly.blend 16.9
+Info: Saved copy as "firefly.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+12:43:00 | INFO: Starting glTF 2.0 export
+12:43:00 | INFO: Extracting primitive: firefly
+12:43:00 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
+12:43:00 | INFO: Primitives created: 2
+12:43:00 | INFO: Extracting primitive: firefly_flame
+12:43:00 | INFO: Primitives created: 1
+12:43:00 | INFO: Finished glTF 2.0 export in 0.17869114875793457 s
+
+Info: Saved copy as "firefly__ember.blend"
+RIG_DONE {"bone_count": 21, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"body": 2878, "abdomen": 1165, "head": 4188, "flame": 0, "antenna.L.0": 106, "antenna.L.1": 142, "antenna.R.0": 106, "antenna.R.1": 142, "wing.L.low.0": 64, "wing.L.low.1": 88, "wing.L.low.2": 80, "wing.L.up.0": 72, "wing.L.up.1": 80, "wing.L.up.2": 72, "wing.R.low.0": 64, "wing.R.low.1": 88, "wing.R.low.2": 80, "wing.R.up.0": 72, "wing.R.up.1": 80, "wing.R.up.2": 72}, "flame_object": "all 1024 vertices 1.0 on 'flame'", "rule": "shell: head above NECK_Z blend, abdomen below WAIST_Z blend, body between; goggles/lenses/straps head; thruster cans body; nozzle abdomen; antennae + smoke sheets: rigkit.vine_weights arc-length hat weights along their chain (root blends from the parent: the smoke root is pinned in its hole)"}, "digest": {"parts": {"bake_normal": "2c4fa9244a282fa6", "bake_ao": "f0ab625fc2904dcc", "geometry_colour_uv": "651d5c5b08af77a0", "weights": "6fc780ed06ecbd6e", "keys": "d86323e14cbc38ac", "clip_samples": "7d3d9ae36c88ce2b"}, "combined": "f33198c8a7b05d78"}, "seconds": 17.5}
+CLIP {"status": "PLACEHOLDER (movement wave pending the artist's answers)", "frames": [1, 49], "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "seam_flame_mm": 0.0, "min_z": 0.29, "hover": 0.35, "bob": 0.06, "wing_drift_deg": [3.0, 7.0], "root_offset_max": 0.0}
+GLB {"materials": [{"name": "firefly_body", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}, {"name": "firefly_smoke", "alphaMode": "BLEND", "doubleSided": true, "textures": []}, {"name": "firefly_flame", "alphaMode": "BLEND", "doubleSided": false, "textures": []}], "primitives": [{"mesh": "firefly", "material": "firefly_body", "colour_sets": ["COLOR_0", "COLOR_1"]}, {"mesh": "firefly", "material": "firefly_smoke", "colour_sets": ["COLOR_0", "COLOR_1"]}, {"mesh": "firefly_flame", "material": "firefly_flame", "colour_sets": ["COLOR_0", "COLOR_1"]}], "nodes": ["abdomen", "antenna.L.0", "antenna.L.1", "antenna.R.0", "antenna.R.1", "body", "firefly", "firefly_flame", "firefly_rig", "flame", "head", "root", "wing.L.low.0", "wing.L.low.1", "wing.L.low.2", "wing.L.up.0", "wing.L.up.1", "wing.L.up.2", "wing.R.low.0", "wing.R.low.1", "wing.R.low.2", "wing.R.up.0", "wing.R.up.1", "wing.R.up.2"], "animations": ["idle"], "skins": 1, "joints": 21, "extensionsUsed": ["KHR_materials_emissive_strength"]}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

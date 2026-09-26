@@ -1,0 +1,1129 @@
+{
+ "unit": "firefly",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firefly.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 2878,
+   "abdomen": 1165,
+   "head": 4188,
+   "flame": 0,
+   "antenna.L.0": 106,
+   "antenna.L.1": 142,
+   "antenna.R.0": 106,
+   "antenna.R.1": 142,
+   "wing.L.low.0": 64,
+   "wing.L.low.1": 88,
+   "wing.L.low.2": 80,
+   "wing.L.up.0": 72,
+   "wing.L.up.1": 80,
+   "wing.L.up.2": 72,
+   "wing.R.low.0": 64,
+   "wing.R.low.1": 88,
+   "wing.R.low.2": 80,
+   "wing.R.up.0": 72,
+   "wing.R.up.1": 80,
+   "wing.R.up.2": 72
+  },
+  "flame_object": "all 1024 vertices 1.0 on 'flame'",
+  "rule": "shell: head above NECK_Z blend, abdomen below WAIST_Z blend, body between; goggles/lenses/straps head; thruster cans body; nozzle abdomen; antennae + smoke sheets: rigkit.vine_weights arc-length hat weights along their chain (root blends from the parent: the smoke root is pinned in its hole)"
+ },
+ "clips": {
+  "idle": {
+   "status": "PLACEHOLDER (movement wave pending the artist's answers)",
+   "frames": [
+    1,
+    49
+   ],
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_flame_mm": 0.0,
+   "min_z": 0.29,
+   "hover": 0.35,
+   "bob": 0.06,
+   "wing_drift_deg": [
+    3.0,
+    7.0
+   ],
+   "root_offset_max": 0.0
+  },
+  "walk": "NOT BUILT: locomotion identity (darts vs cruise, wings flap vs drift, flame always-on vs perch, machine vs bug-fused) awaits the artist; clip_names fails on the missing walk by design"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0006,
+    -0.3279,
+    3.9
+   ],
+   "tail": [
+    0.0006,
+    -0.3279,
+    4.9
+   ]
+  },
+  {
+   "name": "abdomen",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0006,
+    -0.3279,
+    3.0
+   ],
+   "tail": [
+    0.0006,
+    -0.3279,
+    2.2
+   ]
+  },
+  {
+   "name": "flame",
+   "parent": "abdomen",
+   "deform": true,
+   "head": [
+    0.0006,
+    -0.3279,
+    2.06
+   ],
+   "tail": [
+    0.0006,
+    -0.3279,
+    0.0
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0006,
+    -0.3279,
+    5.12
+   ],
+   "tail": [
+    0.0006,
+    -0.3279,
+    6.17
+   ]
+  },
+  {
+   "name": "antenna.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.1461,
+    -0.2817,
+    6.1196
+   ],
+   "tail": [
+    0.3533,
+    -0.2486,
+    6.7823
+   ]
+  },
+  {
+   "name": "antenna.L.1",
+   "parent": "antenna.L.0",
+   "deform": true,
+   "head": [
+    0.3533,
+    -0.2486,
+    6.7823
+   ],
+   "tail": [
+    0.503,
+    -0.2131,
+    7.4923
+   ]
+  },
+  {
+   "name": "antenna.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.1449,
+    -0.2817,
+    6.1196
+   ],
+   "tail": [
+    -0.3522,
+    -0.2486,
+    6.7823
+   ]
+  },
+  {
+   "name": "antenna.R.1",
+   "parent": "antenna.R.0",
+   "deform": true,
+   "head": [
+    -0.3522,
+    -0.2486,
+    6.7823
+   ],
+   "tail": [
+    -0.5018,
+    -0.2131,
+    7.4923
+   ]
+  },
+  {
+   "name": "wing.L.low.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.6495,
+    -0.2115,
+    3.3974
+   ],
+   "tail": [
+    1.0824,
+    -0.0108,
+    3.3588
+   ]
+  },
+  {
+   "name": "wing.L.low.1",
+   "parent": "wing.L.low.0",
+   "deform": true,
+   "head": [
+    1.0824,
+    -0.0108,
+    3.3588
+   ],
+   "tail": [
+    1.4256,
+    0.2918,
+    3.2736
+   ]
+  },
+  {
+   "name": "wing.L.low.2",
+   "parent": "wing.L.low.1",
+   "deform": true,
+   "head": [
+    1.4256,
+    0.2918,
+    3.2736
+   ],
+   "tail": [
+    1.5965,
+    0.5233,
+    2.8281
+   ]
+  },
+  {
+   "name": "wing.L.up.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5487,
+    -0.2305,
+    4.503
+   ],
+   "tail": [
+    1.1467,
+    -0.0501,
+    4.4424
+   ]
+  },
+  {
+   "name": "wing.L.up.1",
+   "parent": "wing.L.up.0",
+   "deform": true,
+   "head": [
+    1.1467,
+    -0.0501,
+    4.4424
+   ],
+   "tail": [
+    1.7176,
+    0.189,
+    4.2858
+   ]
+  },
+  {
+   "name": "wing.L.up.2",
+   "parent": "wing.L.up.1",
+   "deform": true,
+   "head": [
+    1.7176,
+    0.189,
+    4.2858
+   ],
+   "tail": [
+    1.8679,
+    0.3031,
+    3.5967
+   ]
+  },
+  {
+   "name": "wing.R.low.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.6484,
+    -0.2115,
+    3.3974
+   ],
+   "tail": [
+    -1.0759,
+    -0.0143,
+    3.3644
+   ]
+  },
+  {
+   "name": "wing.R.low.1",
+   "parent": "wing.R.low.0",
+   "deform": true,
+   "head": [
+    -1.0759,
+    -0.0143,
+    3.3644
+   ],
+   "tail": [
+    -1.4244,
+    0.2918,
+    3.2531
+   ]
+  },
+  {
+   "name": "wing.R.low.2",
+   "parent": "wing.R.low.1",
+   "deform": true,
+   "head": [
+    -1.4244,
+    0.2918,
+    3.2531
+   ],
+   "tail": [
+    -1.5857,
+    0.5067,
+    2.895
+   ]
+  },
+  {
+   "name": "wing.R.up.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.5475,
+    -0.2305,
+    4.503
+   ],
+   "tail": [
+    -1.1716,
+    -0.0416,
+    4.4172
+   ]
+  },
+  {
+   "name": "wing.R.up.1",
+   "parent": "wing.R.up.0",
+   "deform": true,
+   "head": [
+    -1.1716,
+    -0.0416,
+    4.4172
+   ],
+   "tail": [
+    -1.7422,
+    0.2022,
+    4.2471
+   ]
+  },
+  {
+   "name": "wing.R.up.2",
+   "parent": "wing.R.up.1",
+   "deform": true,
+   "head": [
+    -1.7422,
+    0.2022,
+    4.2471
+   ],
+   "tail": [
+    -1.8679,
+    0.3058,
+    3.5604
+   ]
+  }
+ ],
+ "bone_count": 21,
+ "deform_bone_count": 20,
+ "digest": {
+  "parts": {
+   "bake_normal": "2c4fa9244a282fa6",
+   "bake_ao": "f0ab625fc2904dcc",
+   "geometry_colour_uv": "651d5c5b08af77a0",
+   "weights": "6fc780ed06ecbd6e",
+   "keys": "d86323e14cbc38ac",
+   "clip_samples": "7d3d9ae36c88ce2b"
+  },
+  "combined": "f33198c8a7b05d78"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.glb",
+  "bytes": 4985408,
+  "seconds": 0.4,
+  "carries": {
+   "materials": [
+    {
+     "name": "firefly_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "firefly_smoke",
+     "alphaMode": "BLEND",
+     "doubleSided": true,
+     "textures": []
+    },
+    {
+     "name": "firefly_flame",
+     "alphaMode": "BLEND",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "firefly",
+     "material": "firefly_body",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "firefly",
+     "material": "firefly_smoke",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "firefly_flame",
+     "material": "firefly_flame",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    }
+   ],
+   "nodes": [
+    "abdomen",
+    "antenna.L.0",
+    "antenna.L.1",
+    "antenna.R.0",
+    "antenna.R.1",
+    "body",
+    "firefly",
+    "firefly_flame",
+    "firefly_rig",
+    "flame",
+    "head",
+    "root",
+    "wing.L.low.0",
+    "wing.L.low.1",
+    "wing.L.low.2",
+    "wing.L.up.0",
+    "wing.L.up.1",
+    "wing.L.up.2",
+    "wing.R.low.0",
+    "wing.R.low.1",
+    "wing.R.low.2",
+    "wing.R.up.0",
+    "wing.R.up.1",
+    "wing.R.up.2"
+   ],
+   "animations": [
+    "idle"
+   ],
+   "skins": 1,
+   "joints": 21,
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength"
+   ]
+  },
+  "structure": "armature identity + skinned 'firefly' (body opaque + smoke BLEND primitives) + skinned 'firefly_flame' (own node, BLEND); natural scale; report-only cell fit 0.23958"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.blend",
+   "palette": {
+    "shell": {
+     "rgb": [
+      36,
+      36,
+      40
+     ]
+    },
+    "band": {
+     "rgb": [
+      170,
+      198,
+      70
+     ],
+     "emission": [
+      160,
+      225,
+      58
+     ],
+     "emission_scale": 0.12
+    },
+    "pack": {
+     "rgb": [
+      48,
+      48,
+      54
+     ]
+    },
+    "rail": {
+     "rgb": [
+      60,
+      60,
+      66
+     ]
+    },
+    "helmet": {
+     "rgb": [
+      44,
+      44,
+      49
+     ]
+    },
+    "strap": {
+     "rgb": [
+      22,
+      22,
+      24
+     ]
+    },
+    "mask": {
+     "rgb": [
+      30,
+      30,
+      33
+     ]
+    },
+    "goggle_cup": {
+     "rgb": [
+      34,
+      34,
+      37
+     ]
+    },
+    "snout": {
+     "rgb": [
+      32,
+      32,
+      35
+     ]
+    },
+    "filter": {
+     "rgb": [
+      56,
+      56,
+      62
+     ]
+    },
+    "goggle_rim": {
+     "rgb": [
+      20,
+      20,
+      22
+     ]
+    },
+    "lens_cell": {
+     "rgb": [
+      206,
+      236,
+      92
+     ],
+     "emission": [
+      190,
+      255,
+      70
+     ],
+     "emission_scale": 0.55
+    },
+    "lens_grid": {
+     "rgb": [
+      96,
+      118,
+      34
+     ],
+     "emission": [
+      140,
+      200,
+      40
+     ],
+     "emission_scale": 0.18
+    },
+    "antenna_vane": {
+     "rgb": [
+      176,
+      206,
+      74
+     ],
+     "emission": [
+      160,
+      225,
+      58
+     ],
+     "emission_scale": 0.2
+    },
+    "antenna_stalk": {
+     "rgb": [
+      34,
+      34,
+      38
+     ]
+    },
+    "port_rim": {
+     "rgb": [
+      46,
+      46,
+      52
+     ]
+    },
+    "port_glow": {
+     "rgb": [
+      200,
+      236,
+      80
+     ],
+     "emission": [
+      185,
+      255,
+      70
+     ],
+     "emission_scale": 0.65
+    },
+    "port_hole": {
+     "rgb": [
+      14,
+      14,
+      15
+     ]
+    },
+    "nozzle": {
+     "rgb": [
+      52,
+      52,
+      58
+     ]
+    },
+    "abdomen_tip": {
+     "rgb": [
+      214,
+      245,
+      110
+     ],
+     "emission": [
+      200,
+      255,
+      90
+     ],
+     "emission_scale": 0.85
+    },
+    "nozzle_throat": {
+     "rgb": [
+      226,
+      250,
+      140
+     ],
+     "emission": [
+      205,
+      255,
+      100
+     ],
+     "emission_scale": 0.95
+    },
+    "smoke_root": {
+     "rgb": [
+      74,
+      76,
+      81
+     ]
+    },
+    "smoke": {
+     "rgb": [
+      108,
+      112,
+      118
+     ]
+    },
+    "smoke_wisp": {
+     "rgb": [
+      150,
+      154,
+      160
+     ]
+    },
+    "smoke_edge": {
+     "rgb": [
+      128,
+      132,
+      138
+     ]
+    },
+    "flame_lick": {
+     "rgb": [
+      164,
+      220,
+      56
+     ],
+     "emission": [
+      148,
+      232,
+      48
+     ],
+     "emission_scale": 1.0
+    },
+    "flame_outer": {
+     "rgb": [
+      184,
+      232,
+      66
+     ],
+     "emission": [
+      168,
+      246,
+      56
+     ],
+     "emission_scale": 1.2
+    },
+    "flame_core": {
+     "rgb": [
+      242,
+      255,
+      196
+     ],
+     "emission": [
+      236,
+      255,
+      172
+     ],
+     "emission_scale": 1.6
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "band": 0.12,
+     "lens_cell": 0.55,
+     "port_glow": 0.65,
+     "abdomen_tip": 0.85,
+     "nozzle_throat": 0.95,
+     "flame_lick": 1.0,
+     "flame_outer": 1.2,
+     "flame_core": 1.6
+    },
+    "grade": [
+     "band",
+     "lens_cell",
+     "port_glow",
+     "abdomen_tip",
+     "nozzle_throat",
+     "flame_lick",
+     "flame_outer",
+     "flame_core"
+    ],
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "band": 73.1,
+     "lens_cell": 72.5,
+     "lens_grid": 75.7,
+     "antenna_vane": 73.6,
+     "port_glow": 73.8,
+     "abdomen_tip": 73.8,
+     "nozzle_throat": 73.1,
+     "flame_lick": 80.5,
+     "flame_outer": 77.3,
+     "flame_core": 73.2
+    },
+    "firefly_hue_window": [
+     60,
+     100
+    ],
+    "hue_pass": true
+   }
+  },
+  "ember": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly__ember.blend",
+   "palette": {
+    "shell": {
+     "rgb": [
+      36,
+      36,
+      40
+     ]
+    },
+    "band": {
+     "rgb": [
+      214,
+      152,
+      44
+     ],
+     "emission": [
+      230,
+      140,
+      30
+     ],
+     "emission_scale": 0.12
+    },
+    "pack": {
+     "rgb": [
+      48,
+      48,
+      54
+     ]
+    },
+    "rail": {
+     "rgb": [
+      60,
+      60,
+      66
+     ]
+    },
+    "helmet": {
+     "rgb": [
+      44,
+      44,
+      49
+     ]
+    },
+    "strap": {
+     "rgb": [
+      22,
+      22,
+      24
+     ]
+    },
+    "mask": {
+     "rgb": [
+      30,
+      30,
+      33
+     ]
+    },
+    "goggle_cup": {
+     "rgb": [
+      34,
+      34,
+      37
+     ]
+    },
+    "snout": {
+     "rgb": [
+      32,
+      32,
+      35
+     ]
+    },
+    "filter": {
+     "rgb": [
+      56,
+      56,
+      62
+     ]
+    },
+    "goggle_rim": {
+     "rgb": [
+      20,
+      20,
+      22
+     ]
+    },
+    "lens_cell": {
+     "rgb": [
+      228,
+      164,
+      56
+     ],
+     "emission": [
+      240,
+      150,
+      40
+     ],
+     "emission_scale": 0.55
+    },
+    "lens_grid": {
+     "rgb": [
+      120,
+      80,
+      24
+     ],
+     "emission": [
+      200,
+      110,
+      30
+     ],
+     "emission_scale": 0.18
+    },
+    "antenna_vane": {
+     "rgb": [
+      216,
+      154,
+      48
+     ],
+     "emission": [
+      230,
+      140,
+      30
+     ],
+     "emission_scale": 0.2
+    },
+    "antenna_stalk": {
+     "rgb": [
+      34,
+      34,
+      38
+     ]
+    },
+    "port_rim": {
+     "rgb": [
+      46,
+      46,
+      52
+     ]
+    },
+    "port_glow": {
+     "rgb": [
+      232,
+      164,
+      52
+     ],
+     "emission": [
+      240,
+      150,
+      40
+     ],
+     "emission_scale": 0.65
+    },
+    "port_hole": {
+     "rgb": [
+      14,
+      14,
+      15
+     ]
+    },
+    "nozzle": {
+     "rgb": [
+      52,
+      52,
+      58
+     ]
+    },
+    "abdomen_tip": {
+     "rgb": [
+      240,
+      176,
+      64
+     ],
+     "emission": [
+      250,
+      160,
+      50
+     ],
+     "emission_scale": 0.85
+    },
+    "nozzle_throat": {
+     "rgb": [
+      250,
+      196,
+      96
+     ],
+     "emission": [
+      255,
+      180,
+      80
+     ],
+     "emission_scale": 0.95
+    },
+    "smoke_root": {
+     "rgb": [
+      74,
+      76,
+      81
+     ]
+    },
+    "smoke": {
+     "rgb": [
+      108,
+      112,
+      118
+     ]
+    },
+    "smoke_wisp": {
+     "rgb": [
+      150,
+      154,
+      160
+     ]
+    },
+    "smoke_edge": {
+     "rgb": [
+      128,
+      132,
+      138
+     ]
+    },
+    "flame_lick": {
+     "rgb": [
+      226,
+      86,
+      22
+     ],
+     "emission": [
+      235,
+      80,
+      20
+     ],
+     "emission_scale": 1.0
+    },
+    "flame_outer": {
+     "rgb": [
+      255,
+      142,
+      42
+     ],
+     "emission": [
+      255,
+      120,
+      30
+     ],
+     "emission_scale": 1.2
+    },
+    "flame_core": {
+     "rgb": [
+      255,
+      224,
+      140
+     ],
+     "emission": [
+      255,
+      212,
+      120
+     ],
+     "emission_scale": 1.6
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\firefly\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\firefly\\ember.json"
+   ],
+   "glow_tiers": {
+    "skin": "ember",
+    "emission_scale_tiers": {
+     "band": 0.12,
+     "lens_cell": 0.55,
+     "port_glow": 0.65,
+     "abdomen_tip": 0.85,
+     "nozzle_throat": 0.95,
+     "flame_lick": 1.0,
+     "flame_outer": 1.2,
+     "flame_core": 1.6
+    },
+    "grade": [
+     "band",
+     "lens_cell",
+     "port_glow",
+     "abdomen_tip",
+     "nozzle_throat",
+     "flame_lick",
+     "flame_outer",
+     "flame_core"
+    ],
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "band": 38.1,
+     "lens_cell": 37.7,
+     "lens_grid": 35.0,
+     "antenna_vane": 37.9,
+     "port_glow": 37.3,
+     "abdomen_tip": 38.2,
+     "nozzle_throat": 39.0,
+     "flame_lick": 18.8,
+     "flame_outer": 28.2,
+     "flame_core": 43.8
+    },
+    "firefly_hue_window": [
+     60,
+     100
+    ],
+    "hue_pass": false
+   },
+   "region_faces": {
+    "firefly": {
+     "shell": 2676,
+     "band": 2087,
+     "pack": 459,
+     "rail": 334,
+     "helmet": 1533,
+     "strap": 638,
+     "mask": 713,
+     "goggle_cup": 606,
+     "snout": 256,
+     "filter": 198,
+     "goggle_rim": 576,
+     "lens_cell": 876,
+     "lens_grid": 876,
+     "antenna_vane": 194,
+     "antenna_stalk": 360,
+     "port_rim": 560,
+     "port_glow": 112,
+     "port_hole": 112,
+     "nozzle": 192,
+     "abdomen_tip": 96,
+     "nozzle_throat": 96,
+     "smoke_root": 168,
+     "smoke": 355,
+     "smoke_wisp": 181,
+     "smoke_edge": 136
+    },
+    "firefly_flame": {
+     "flame_outer": 570,
+     "flame_lick": 180,
+     "flame_core": 330
+    }
+   },
+   "geometry_colour_uv_digest": "e1b227a06fc495ee"
+  },
+  "repaint_proof": {
+   "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
+   "default_digest_before": "651d5c5b08af77a0",
+   "default_digest_after_restore": "651d5c5b08af77a0"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firefly.json",
+ "seconds": 17.5
+}

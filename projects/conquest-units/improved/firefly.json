@@ -1,0 +1,839 @@
+{
+ "unit": "firefly",
+ "conquest_character_id": "firefly",
+ "source": "none: first fully from-scratch unit (sheet design/reference/firefly-character-sheet.webp)",
+ "tier": "regular",
+ "tri_budget": [
+  8000,
+  22000
+ ],
+ "units": "sheet units: 1 unit = 100 px of the reference sheet (orthographic views); floor z = 0 at the flame tip",
+ "overrides": {},
+ "sdf": {
+  "step": 0.015,
+  "grid": [
+   104,
+   100,
+   285
+  ],
+  "ops": [
+   "union",
+   "union",
+   "union",
+   "union",
+   "union",
+   "union",
+   "union",
+   "union",
+   "union"
+  ],
+  "high_tris": 537384,
+  "high_verts": 268694,
+  "crumbs": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "seconds": 3.4
+ },
+ "retopo": {
+  "method": "SDF marching tetrahedra (step 0.015) -> collapse decimation (deterministic)",
+  "decimated_tris": 7600,
+  "specks": {
+   "pieces": 1,
+   "dropped_verts": 0
+  },
+  "low_to_high": {
+   "mean": 0.00076,
+   "p99": 0.00216,
+   "max": 0.00364
+  },
+  "high_to_low_sampled": {
+   "p99": 0.00176,
+   "max": 0.00632
+  },
+  "seconds": 4.7
+ },
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "f_pack",
+    "tau": 0.0,
+    "edge_splits": 62,
+    "face_connects": 84
+   },
+   {
+    "field": "f_rail",
+    "tau": 0.0,
+    "edge_splits": 99,
+    "face_connects": 116
+   },
+   {
+    "field": "f_head",
+    "tau": 0.0,
+    "edge_splits": 124,
+    "face_connects": 148
+   },
+   {
+    "field": "f_helmet",
+    "tau": 0.0,
+    "edge_splits": 37,
+    "face_connects": 48
+   },
+   {
+    "field": "f_cup",
+    "tau": 0.0,
+    "edge_splits": 19,
+    "face_connects": 29
+   },
+   {
+    "field": "f_snout",
+    "tau": 0.0,
+    "edge_splits": 56,
+    "face_connects": 60
+   },
+   {
+    "field": "f_canister",
+    "tau": 0.0,
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "b_A_top",
+    "tau": 4.95,
+    "edge_splits": 8,
+    "face_connects": 13
+   },
+   {
+    "field": "b_B_top",
+    "tau": 4.05,
+    "edge_splits": 52,
+    "face_connects": 61
+   },
+   {
+    "field": "b_C_top",
+    "tau": 2.75,
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "b_A_bot",
+    "tau": 4.45,
+    "edge_splits": 40,
+    "face_connects": 50
+   },
+   {
+    "field": "b_B_bot",
+    "tau": 3.6,
+    "edge_splits": 57,
+    "face_connects": 68
+   },
+   {
+    "field": "b_C_bot",
+    "tau": 2.5,
+    "edge_splits": 47,
+    "face_connects": 51
+   },
+   {
+    "field": "z",
+    "tau": 3.8,
+    "edge_splits": 28,
+    "face_connects": 29
+   },
+   {
+    "field": "z",
+    "tau": 4.35,
+    "edge_splits": 2,
+    "face_connects": 2
+   }
+  ],
+  "seconds": 2.5,
+  "shell_tris_after_cuts": 8862
+ },
+ "flame": {
+  "tris": 2040,
+  "outer_open_edges": 0,
+  "core_open_edges": 0,
+  "top_z": 2.06,
+  "max_r": 0.39,
+  "core_tip_z": 0.62,
+  "rule": "own object 'firefly_flame' (toggle = hide the node), skinned 100% to bone 'flame'"
+ },
+ "centre_shift": [
+  -0.000579,
+  0.3279,
+  0.0
+ ],
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "band": 0.12,
+    "lens_cell": 0.55,
+    "port_glow": 0.65,
+    "abdomen_tip": 0.85,
+    "nozzle_throat": 0.95,
+    "flame_lick": 1.0,
+    "flame_outer": 1.2,
+    "flame_core": 1.6
+   },
+   "grade": [
+    "band",
+    "lens_cell",
+    "port_glow",
+    "abdomen_tip",
+    "nozzle_throat",
+    "flame_lick",
+    "flame_outer",
+    "flame_core"
+   ],
+   "grade_pass": true,
+   "accent_hue_deg": {
+    "band": 73.1,
+    "lens_cell": 72.5,
+    "lens_grid": 75.7,
+    "antenna_vane": 73.6,
+    "port_glow": 73.8,
+    "abdomen_tip": 73.8,
+    "nozzle_throat": 73.1,
+    "flame_lick": 80.5,
+    "flame_outer": 77.3,
+    "flame_core": 73.2
+   },
+   "firefly_hue_window": [
+    60,
+    100
+   ],
+   "hue_pass": true
+  }
+ },
+ "regions_faces": {
+  "firefly": {
+   "shell": 2676,
+   "band": 2087,
+   "pack": 459,
+   "rail": 334,
+   "helmet": 1533,
+   "strap": 638,
+   "mask": 713,
+   "goggle_cup": 606,
+   "snout": 256,
+   "filter": 198,
+   "goggle_rim": 576,
+   "lens_cell": 876,
+   "lens_grid": 876,
+   "antenna_vane": 194,
+   "antenna_stalk": 360,
+   "port_rim": 560,
+   "port_glow": 112,
+   "port_hole": 112,
+   "nozzle": 192,
+   "abdomen_tip": 96,
+   "nozzle_throat": 96,
+   "smoke_root": 168,
+   "smoke": 355,
+   "smoke_wisp": 181,
+   "smoke_edge": 136
+  },
+  "firefly_flame": {
+   "flame_outer": 570,
+   "flame_lick": 180,
+   "flame_core": 330
+  }
+ },
+ "alpha": {
+  "main": {
+   "shell": 1.0,
+   "band": 1.0,
+   "pack": 1.0,
+   "rail": 1.0,
+   "helmet": 1.0,
+   "strap": 1.0,
+   "mask": 1.0,
+   "goggle_cup": 1.0,
+   "snout": 1.0,
+   "filter": 1.0,
+   "goggle_rim": 1.0,
+   "lens_cell": 1.0,
+   "lens_grid": 1.0,
+   "antenna_vane": 1.0,
+   "antenna_stalk": 1.0,
+   "port_rim": 1.0,
+   "port_glow": 1.0,
+   "port_hole": 1.0,
+   "nozzle": 1.0,
+   "abdomen_tip": 1.0,
+   "nozzle_throat": 1.0,
+   "smoke_root": 0.6200000047683716,
+   "smoke": 0.47999998927116394,
+   "smoke_wisp": 0.5,
+   "smoke_edge": 0.25999999046325684
+  },
+  "flame": {
+   "flame_outer": 0.7200000286102295,
+   "flame_lick": 0.550000011920929,
+   "flame_core": 1.0
+  },
+  "material_alpha": 1.0
+ },
+ "regions_area_share": {
+  "shell": 0.1411,
+  "band": 0.1071,
+  "pack": 0.0261,
+  "rail": 0.0091,
+  "helmet": 0.0537,
+  "strap": 0.0305,
+  "mask": 0.0208,
+  "goggle_cup": 0.0171,
+  "snout": 0.0048,
+  "filter": 0.0022,
+  "goggle_rim": 0.0148,
+  "lens_cell": 0.0039,
+  "lens_grid": 0.0032,
+  "antenna_vane": 0.0204,
+  "antenna_stalk": 0.0064,
+  "port_rim": 0.0497,
+  "port_glow": 0.0079,
+  "port_hole": 0.0056,
+  "nozzle": 0.0402,
+  "abdomen_tip": 0.0062,
+  "nozzle_throat": 0.0152,
+  "smoke_root": 0.0148,
+  "smoke": 0.2156,
+  "smoke_wisp": 0.1115,
+  "smoke_edge": 0.0721
+ },
+ "facing": {
+  "rule": "head (helmet) centre -> respirator filter-canister tip on the midline",
+  "anchor": [
+   0.0006,
+   -0.3279,
+   5.62
+  ],
+  "landmark": [
+   0.0006,
+   -0.9057,
+   5.1085
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 20762,
+  "main": 18722,
+  "flame": 2040,
+  "shell": 8862,
+  "goggle_rim.L": 576,
+  "lens.L": 1314,
+  "goggle_rim.R": 576,
+  "lens.R": 1314,
+  "snout_rib.0": 240,
+  "snout_rib.1": 240,
+  "strap.band": 324,
+  "strap.top.L": 236,
+  "strap.top.R": 236,
+  "port.L.low": 336,
+  "port.L.up": 336,
+  "port.R.low": 336,
+  "port.R.up": 336,
+  "nozzle": 704,
+  "antenna.L": 538,
+  "antenna.R": 538,
+  "wing.L.low.main": 210,
+  "wing.L.low.layer": 210,
+  "wing.L.up.main": 210,
+  "wing.L.up.layer": 210,
+  "wing.R.low.main": 210,
+  "wing.R.low.layer": 210,
+  "wing.R.up.main": 210,
+  "wing.R.up.layer": 210
+ },
+ "tier_rationale": "REGULAR role (a line unit, not a boss or hero): window [8000, 22000], the same ceiling class as supaoctto's regular tier. The sheet's hard-surface detail -- honeycomb lenses, straps, four rimmed thrusters, serrated feathers, eight smoke sheets, a lobed flame -- needs ~2x crowd density to read, so the build lands mid-window.",
+ "open_edges": {
+  "closed_parts": {
+   "shell": 0,
+   "goggle_rim.L": 0,
+   "goggle_rim.R": 0,
+   "snout_rib.0": 0,
+   "snout_rib.1": 0,
+   "strap.band": 0,
+   "strap.top.L": 0,
+   "strap.top.R": 0,
+   "port.L.low": 0,
+   "port.L.up": 0,
+   "port.R.low": 0,
+   "port.R.up": 0,
+   "nozzle": 0,
+   "antenna.L": 0,
+   "antenna.R": 0
+  },
+  "open_parts": {
+   "lens.L": 66,
+   "lens.R": 66,
+   "wing.L.low.main": 44,
+   "wing.L.low.layer": 44,
+   "wing.L.up.main": 44,
+   "wing.L.up.layer": 44,
+   "wing.R.low.main": 44,
+   "wing.R.low.layer": 44,
+   "wing.R.up.main": 44,
+   "wing.R.up.layer": 44
+  },
+  "rule": "every solid is closed; open = the single-surface smoke sheets (double-sided material) and the lens domes (rim buried under the goggle ring)"
+ },
+ "measure": {
+  "bbox": [
+   [
+    -1.8679,
+    -0.9736,
+    0.0
+   ],
+   [
+    1.8679,
+    0.9736,
+    7.5131
+   ]
+  ],
+  "height": 7.5131,
+  "width_x": 3.7359,
+  "depth_y": 1.9472,
+  "sheet_px_equivalent": {
+   "height_px": 751.3,
+   "wingspan_px": 373.6
+  },
+  "export_cell_fit_report_only": {
+   "scale": 0.23958,
+   "height_m": 1.8,
+   "footprint_m": 0.895,
+   "bound_by": "height"
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.6
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.4
+  },
+  "cage_extrusion": 0.02,
+  "cage_rule": "3 x the sampled high->low p99 distance (floor 0.02)",
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 542072,
+  "high_rule": "SDF shell (marching tets) + every closed part; smoke sheets excluded (see-through)",
+  "body_uv_texels_normal": 275498,
+  "normal_baked_pct_of_body_texels": 99.97,
+  "normal_detail_fraction_dev_gt_0.05": 0.4573,
+  "ao_baked_pct_of_body_texels": 100.0,
+  "ao_mean": 0.7519,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "2c4fa9244a282fa6",
+   "ao": "f0ab625fc2904dcc"
+  },
+  "seconds": 3.0
+ },
+ "digest_geometry_colour_uv": "651d5c5b08af77a0",
+ "palette": {
+  "default": {
+   "shell": {
+    "rgb": [
+     36,
+     36,
+     40
+    ]
+   },
+   "band": {
+    "rgb": [
+     170,
+     198,
+     70
+    ],
+    "emission": [
+     160,
+     225,
+     58
+    ],
+    "emission_scale": 0.12
+   },
+   "pack": {
+    "rgb": [
+     48,
+     48,
+     54
+    ]
+   },
+   "rail": {
+    "rgb": [
+     60,
+     60,
+     66
+    ]
+   },
+   "helmet": {
+    "rgb": [
+     44,
+     44,
+     49
+    ]
+   },
+   "strap": {
+    "rgb": [
+     22,
+     22,
+     24
+    ]
+   },
+   "mask": {
+    "rgb": [
+     30,
+     30,
+     33
+    ]
+   },
+   "goggle_cup": {
+    "rgb": [
+     34,
+     34,
+     37
+    ]
+   },
+   "snout": {
+    "rgb": [
+     32,
+     32,
+     35
+    ]
+   },
+   "filter": {
+    "rgb": [
+     56,
+     56,
+     62
+    ]
+   },
+   "goggle_rim": {
+    "rgb": [
+     20,
+     20,
+     22
+    ]
+   },
+   "lens_cell": {
+    "rgb": [
+     206,
+     236,
+     92
+    ],
+    "emission": [
+     190,
+     255,
+     70
+    ],
+    "emission_scale": 0.55
+   },
+   "lens_grid": {
+    "rgb": [
+     96,
+     118,
+     34
+    ],
+    "emission": [
+     140,
+     200,
+     40
+    ],
+    "emission_scale": 0.18
+   },
+   "antenna_vane": {
+    "rgb": [
+     176,
+     206,
+     74
+    ],
+    "emission": [
+     160,
+     225,
+     58
+    ],
+    "emission_scale": 0.2
+   },
+   "antenna_stalk": {
+    "rgb": [
+     34,
+     34,
+     38
+    ]
+   },
+   "port_rim": {
+    "rgb": [
+     46,
+     46,
+     52
+    ]
+   },
+   "port_glow": {
+    "rgb": [
+     200,
+     236,
+     80
+    ],
+    "emission": [
+     185,
+     255,
+     70
+    ],
+    "emission_scale": 0.65
+   },
+   "port_hole": {
+    "rgb": [
+     14,
+     14,
+     15
+    ]
+   },
+   "nozzle": {
+    "rgb": [
+     52,
+     52,
+     58
+    ]
+   },
+   "abdomen_tip": {
+    "rgb": [
+     214,
+     245,
+     110
+    ],
+    "emission": [
+     200,
+     255,
+     90
+    ],
+    "emission_scale": 0.85
+   },
+   "nozzle_throat": {
+    "rgb": [
+     226,
+     250,
+     140
+    ],
+    "emission": [
+     205,
+     255,
+     100
+    ],
+    "emission_scale": 0.95
+   },
+   "smoke_root": {
+    "rgb": [
+     74,
+     76,
+     81
+    ]
+   },
+   "smoke": {
+    "rgb": [
+     108,
+     112,
+     118
+    ]
+   },
+   "smoke_wisp": {
+    "rgb": [
+     150,
+     154,
+     160
+    ]
+   },
+   "smoke_edge": {
+    "rgb": [
+     128,
+     132,
+     138
+    ]
+   },
+   "flame_lick": {
+    "rgb": [
+     164,
+     220,
+     56
+    ],
+    "emission": [
+     148,
+     232,
+     48
+    ],
+    "emission_scale": 1.0
+   },
+   "flame_outer": {
+    "rgb": [
+     184,
+     232,
+     66
+    ],
+    "emission": [
+     168,
+     246,
+     56
+    ],
+    "emission_scale": 1.2
+   },
+   "flame_core": {
+    "rgb": [
+     242,
+     255,
+     196
+    ],
+    "emission": [
+     236,
+     255,
+     172
+    ],
+    "emission_scale": 1.6
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\firefly\\default.json"
+  ],
+  "provenance": "authored from the sheet's palette swatches; accents shifted to firefly glow (artist)"
+ },
+ "wings": {
+  "wing.L.low.main": {
+   "top_edge_length": 1.5138,
+   "neck_len": 0.24,
+   "sweep_deg": 44.0,
+   "root_half_height": 0.112,
+   "drop": 2.05,
+   "tris": 210
+  },
+  "wing.L.low.layer": {
+   "top_edge_length": 1.3772,
+   "neck_len": 0.2968,
+   "sweep_deg": 62.0,
+   "root_half_height": 0.0896,
+   "drop": 1.763,
+   "tris": 210
+  },
+  "wing.L.up.main": {
+   "top_edge_length": 2.2107,
+   "neck_len": 0.2,
+   "sweep_deg": 24.0,
+   "root_half_height": 0.1126,
+   "drop": 3.2,
+   "tris": 210
+  },
+  "wing.L.up.layer": {
+   "top_edge_length": 1.9442,
+   "neck_len": 0.2421,
+   "sweep_deg": 42.0,
+   "root_half_height": 0.0901,
+   "drop": 2.752,
+   "tris": 210
+  },
+  "wing.R.low.main": {
+   "top_edge_length": 1.5138,
+   "neck_len": 0.24,
+   "sweep_deg": 44.0,
+   "root_half_height": 0.112,
+   "drop": 2.05,
+   "tris": 210
+  },
+  "wing.R.low.layer": {
+   "top_edge_length": 1.3772,
+   "neck_len": 0.2968,
+   "sweep_deg": 62.0,
+   "root_half_height": 0.0896,
+   "drop": 1.763,
+   "tris": 210
+  },
+  "wing.R.up.main": {
+   "top_edge_length": 2.2107,
+   "neck_len": 0.2,
+   "sweep_deg": 24.0,
+   "root_half_height": 0.1126,
+   "drop": 3.2,
+   "tris": 210
+  },
+  "wing.R.up.layer": {
+   "top_edge_length": 1.9442,
+   "neck_len": 0.2421,
+   "sweep_deg": 42.0,
+   "root_half_height": 0.0901,
+   "drop": 2.752,
+   "tris": 210
+  }
+ },
+ "ports": {
+  "L.low": {
+   "surface": [
+    0.6007,
+    -0.2221,
+    3.4
+   ],
+   "axis": [
+    0.9758,
+    0.2124,
+    -0.0525
+   ],
+   "r_out": 0.205,
+   "r_in": 0.14,
+   "stretch": 1.0,
+   "proud": 0.17
+  },
+  "L.up": {
+   "surface": [
+    0.5293,
+    -0.2347,
+    4.5
+   ],
+   "axis": [
+    0.9658,
+    0.2102,
+    0.1518
+   ],
+   "r_out": 0.13,
+   "r_in": 0.088,
+   "stretch": 1.6,
+   "proud": 0.1
+  },
+  "R.low": {
+   "surface": [
+    -0.5996,
+    -0.2221,
+    3.4
+   ],
+   "axis": [
+    -0.9758,
+    0.2124,
+    -0.0525
+   ],
+   "r_out": 0.205,
+   "r_in": 0.14,
+   "stretch": 1.0,
+   "proud": 0.17
+  },
+  "R.up": {
+   "surface": [
+    -0.5282,
+    -0.2347,
+    4.5
+   ],
+   "axis": [
+    -0.9658,
+    0.2102,
+    0.1518
+   ],
+   "r_out": 0.13,
+   "r_in": 0.088,
+   "stretch": 1.6,
+   "proud": 0.1
+  }
+ }
+}

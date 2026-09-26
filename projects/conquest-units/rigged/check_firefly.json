@@ -1,0 +1,146 @@
+{
+ "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.blend",
+ "checks": [
+  {
+   "check": "cell_fit",
+   "pass": false,
+   "footprint": 3.7359,
+   "height": 7.5131,
+   "width": 3.7359,
+   "depth": 1.9472,
+   "max_footprint": 1.9,
+   "max_height": 1.8
+  },
+  {
+   "check": "feet_origin",
+   "pass": true,
+   "min_z": 0.0,
+   "centre_xy": [
+    0.0,
+    0.0
+   ],
+   "transforms_applied": true
+  },
+  {
+   "check": "facing_-Y",
+   "pass": true,
+   "angle_from_minusY_deg": 0.0,
+   "tolerance_deg": 30.0,
+   "rule": "head (helmet) centre -> respirator filter-canister tip on the midline",
+   "yaw_fix_deg": 0.0
+  },
+  {
+   "check": "tri_budget",
+   "pass": true,
+   "tris": 20762,
+   "budget": [
+    8000,
+    22000
+   ],
+   "tier": "regular",
+   "declared": true
+  },
+  {
+   "check": "uv_health",
+   "pass": true,
+   "zero_area_faces": 49,
+   "zero_area_pct": 0.317,
+   "flipped": 0,
+   "meshes": [
+    {
+     "mesh": "firefly",
+     "layers": 1,
+     "islands": 476,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 24% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.4589,
+     "area_distortion_p95": 1.145
+    },
+    {
+     "mesh": "firefly_flame",
+     "layers": 1,
+     "islands": 94,
+     "flipped": 0,
+     "overlap": false,
+     "overlap_note": "summed UV area is 20% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.5312,
+     "area_distortion_p95": 1.179
+    }
+   ]
+  },
+  {
+   "check": "flat_shaded",
+   "pass": true,
+   "smooth_faces": 0,
+   "faces": 15470
+  },
+  {
+   "check": "colour",
+   "pass": true
+  },
+  {
+   "check": "rig_root",
+   "pass": true,
+   "root_present": true,
+   "root_head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "armature_identity": true,
+   "root_max_offset_over_clips": 0.0,
+   "bones": 21
+  },
+  {
+   "check": "clip_names",
+   "pass": false,
+   "clips": [
+    "idle"
+   ],
+   "not_allowed": [],
+   "idle": [
+    "idle",
+    "exact"
+   ],
+   "walk": [
+    null,
+    null
+   ]
+  },
+  {
+   "check": "clip_loops",
+   "pass": true,
+   "fps": 24.0,
+   "clips": [
+    {
+     "clip": "idle",
+     "frames": [
+      1,
+      49
+     ],
+     "cyclic": true,
+     "manual_range": true,
+     "seam_mm": 0.0,
+     "extent": {
+      "footprint": 3.8459,
+      "height": 6.0845,
+      "min_z": 1.8455
+     }
+    }
+   ]
+  },
+  {
+   "check": "skin",
+   "pass": true,
+   "armature_modifier": true,
+   "weight_sum_min": 1.0,
+   "weight_sum_max": 1.0,
+   "unweighted": 0,
+   "max_influences": 2,
+   "deform_bones": 20
+  }
+ ],
+ "passed": 9,
+ "failed": 2
+}
