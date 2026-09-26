@@ -117,6 +117,9 @@ class Grid:
 
     def apply(self, fn, lo, hi, k, mode="union"):
         """fn(P) -> distances; evaluated in [lo, hi] grown by k + band; combined by smooth union / subtraction."""
+        # two far-outside cells (both clipped to +BAND) smooth-union to BAND - k/4: keep that clearly positive, or the
+        # blend grows spurious inside regions across the whole evaluation box (magmoo v2 found this at k = 0.45)
+        assert mode != "union" or self.band - k / 4.0 > 0.1 * self.band, "smooth-union k %.3f too large for band %.3f" % (k, self.band)
         g = k + self.band
         i0, i1 = self._box(np.asarray(lo) - g, np.asarray(hi) + g)
         if np.any(i1 <= i0):

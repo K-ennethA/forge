@@ -1,5 +1,6 @@
 {
  "unit": "magmoo",
+ "version": "v2 goo",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.blend",
  "fps": 24,
  "bones": [
@@ -21,106 +22,38 @@
    "length": 0.5
   },
   {
-   "name": "neck.0",
+   "name": "head.0",
    "parent": "root",
    "deform": true,
    "connected": false,
    "head": [
-    -0.2147,
-    -6.2192,
-    0.64
+    0.0001,
+    -4.0464,
+    3.1251
    ],
    "tail": [
-    -0.2147,
-    -7.0956,
-    0.8121
+    0.0001,
+    -5.4701,
+    2.4804
    ],
-   "length": 0.8931
+   "length": 1.5628
   },
   {
-   "name": "neck.1",
-   "parent": "neck.0",
+   "name": "head.1",
+   "parent": "head.0",
    "deform": true,
    "connected": true,
    "head": [
-    -0.2147,
-    -7.0956,
-    0.8121
+    0.0001,
+    -5.4701,
+    2.4804
    ],
    "tail": [
-    -0.2147,
-    -7.6461,
-    1.5055
+    0.0001,
+    -7.2555,
+    1.8297
    ],
-   "length": 0.8853
-  },
-  {
-   "name": "neck.2",
-   "parent": "neck.1",
-   "deform": true,
-   "connected": true,
-   "head": [
-    -0.2147,
-    -7.6461,
-    1.5055
-   ],
-   "tail": [
-    -0.2147,
-    -7.617,
-    2.3918
-   ],
-   "length": 0.8869
-  },
-  {
-   "name": "neck.3",
-   "parent": "neck.2",
-   "deform": true,
-   "connected": true,
-   "head": [
-    -0.2147,
-    -7.617,
-    2.3918
-   ],
-   "tail": [
-    -0.2147,
-    -7.5192,
-    3.22
-   ],
-   "length": 0.8339
-  },
-  {
-   "name": "head",
-   "parent": "neck.3",
-   "deform": true,
-   "connected": true,
-   "head": [
-    -0.2147,
-    -7.5192,
-    3.22
-   ],
-   "tail": [
-    -0.2147,
-    -9.375,
-    2.6542
-   ],
-   "length": 1.9401
-  },
-  {
-   "name": "tongue",
-   "parent": "head",
-   "deform": true,
-   "connected": false,
-   "head": [
-    -0.2147,
-    -8.5957,
-    2.7841
-   ],
-   "tail": [
-    -0.2147,
-    -9.8935,
-    2.5121
-   ],
-   "length": 1.3259
+   "length": 1.9003
   },
   {
    "name": "body.0",
@@ -128,16 +61,16 @@
    "deform": true,
    "connected": false,
    "head": [
-    -0.2147,
-    -5.0624,
-    0.7107
+    0.0001,
+    -0.3933,
+    1.5
    ],
    "tail": [
-    -0.2147,
-    -3.7511,
-    0.7759
+    0.0001,
+    -0.5533,
+    2.4451
    ],
-   "length": 1.313
+   "length": 0.9586
   },
   {
    "name": "body.1",
@@ -145,16 +78,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    -0.2147,
-    -3.7511,
-    0.7759
+    0.0001,
+    -0.5533,
+    2.4451
    ],
    "tail": [
-    -0.2147,
-    -2.4397,
-    0.8411
+    0.0001,
+    -1.0954,
+    3.2268
    ],
-   "length": 1.313
+   "length": 0.9512
   },
   {
    "name": "body.2",
@@ -162,16 +95,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    -0.2147,
-    -2.4397,
-    0.8411
+    0.0001,
+    -1.0954,
+    3.2268
    ],
    "tail": [
-    -0.2147,
-    -1.1283,
-    0.9064
+    0.0001,
+    -1.9277,
+    3.6896
    ],
-   "length": 1.313
+   "length": 0.9523
   },
   {
    "name": "body.3",
@@ -179,16 +112,33 @@
    "deform": true,
    "connected": true,
    "head": [
-    -0.2147,
-    -1.1283,
-    0.9064
+    0.0001,
+    -1.9277,
+    3.6896
    ],
    "tail": [
-    -0.2147,
-    0.183,
-    0.9716
+    0.0001,
+    -2.8747,
+    3.6913
    ],
-   "length": 1.313
+   "length": 0.947
+  },
+  {
+   "name": "body.4",
+   "parent": "body.3",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.0001,
+    -2.8747,
+    3.6913
+   ],
+   "tail": [
+    0.0001,
+    -3.7433,
+    3.3
+   ],
+   "length": 0.9526
   },
   {
    "name": "tail.0",
@@ -196,16 +146,16 @@
    "deform": true,
    "connected": false,
    "head": [
-    -0.2147,
-    1.0033,
-    0.492
+    0.0001,
+    -0.3933,
+    1.5
    ],
    "tail": [
-    -0.1219,
-    1.7044,
-    0.4321
+    0.0001,
+    0.1567,
+    0.4368
    ],
-   "length": 0.7098
+   "length": 1.197
   },
   {
    "name": "tail.1",
@@ -213,16 +163,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    -0.1219,
-    1.7044,
-    0.4321
+    0.0001,
+    0.1567,
+    0.4368
    ],
    "tail": [
-    0.0326,
-    2.3994,
-    0.4311
+    0.0179,
+    0.8164,
+    0.4093
    ],
-   "length": 0.712
+   "length": 0.6605
   },
   {
    "name": "tail.2",
@@ -230,16 +180,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.0326,
-    2.3994,
-    0.4311
+    0.0179,
+    0.8164,
+    0.4093
    ],
    "tail": [
-    0.2221,
-    3.0871,
-    0.4193
+    0.1439,
+    1.4632,
+    0.3814
    ],
-   "length": 0.7134
+   "length": 0.6595
   },
   {
    "name": "tail.3",
@@ -247,16 +197,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.2221,
-    3.0871,
-    0.4193
+    0.1439,
+    1.4632,
+    0.3814
    ],
    "tail": [
-    0.4144,
-    3.7734,
-    0.3658
+    0.3448,
+    2.0919,
+    0.3533
    ],
-   "length": 0.7148
+   "length": 0.6607
   },
   {
    "name": "tail.4",
@@ -264,16 +214,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.4144,
-    3.7734,
-    0.3658
+    0.3448,
+    2.0919,
+    0.3533
    ],
    "tail": [
-    0.5775,
-    4.4685,
-    0.3198
+    0.5248,
+    2.7269,
+    0.3247
    ],
-   "length": 0.7154
+   "length": 0.6606
   },
   {
    "name": "tail.5",
@@ -281,16 +231,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.5775,
-    4.4685,
-    0.3198
+    0.5248,
+    2.7269,
+    0.3247
    ],
    "tail": [
-    0.6833,
-    5.1763,
-    0.2996
+    0.6386,
+    3.3766,
+    0.2956
    ],
-   "length": 0.7159
+   "length": 0.6602
   },
   {
    "name": "tail.6",
@@ -298,16 +248,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.6833,
-    5.1763,
-    0.2996
+    0.6386,
+    3.3766,
+    0.2956
    ],
    "tail": [
-    0.7121,
-    5.8915,
-    0.2728
+    0.6569,
+    4.0357,
+    0.2659
    ],
-   "length": 0.7163
+   "length": 0.66
   },
   {
    "name": "tail.7",
@@ -315,16 +265,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.7121,
-    5.8915,
-    0.2728
+    0.6569,
+    4.0357,
+    0.2659
    ],
    "tail": [
-    0.6587,
-    6.6048,
-    0.2298
+    0.5747,
+    4.69,
+    0.2355
    ],
-   "length": 0.7166
+   "length": 0.6601
   },
   {
    "name": "tail.8",
@@ -332,16 +282,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.6587,
-    6.6048,
-    0.2298
+    0.5747,
+    4.69,
+    0.2355
    ],
    "tail": [
-    0.5329,
-    7.3094,
-    0.1892
+    0.4137,
+    5.3297,
+    0.204
    ],
-   "length": 0.7169
+   "length": 0.6605
   },
   {
    "name": "tail.9",
@@ -349,16 +299,16 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.5329,
-    7.3094,
-    0.1892
+    0.4137,
+    5.3297,
+    0.204
    ],
    "tail": [
-    0.3568,
-    8.0042,
-    0.1662
+    0.2141,
+    5.9587,
+    0.1709
    ],
-   "length": 0.7172
+   "length": 0.6607
   },
   {
    "name": "tail.10",
@@ -366,50 +316,115 @@
    "deform": true,
    "connected": true,
    "head": [
-    0.3568,
-    8.0042,
-    0.1662
+    0.2141,
+    5.9587,
+    0.1709
    ],
    "tail": [
-    0.1622,
-    8.6886,
-    0.2427
+    0.0243,
+    6.5903,
+    0.1326
    ],
-   "length": 0.7156
+   "length": 0.6606
   },
   {
-   "name": "tail.11",
-   "parent": "tail.10",
+   "name": "drop.0",
+   "parent": "root",
    "deform": true,
-   "connected": true,
+   "connected": false,
    "head": [
-    0.1622,
-    8.6886,
-    0.2427
+    0.9718,
+    -0.7334,
+    2.0345
    ],
    "tail": [
-    -0.0106,
-    9.3465,
-    0.4677
+    0.9718,
+    -0.7334,
+    2.3345
    ],
-   "length": 0.7164
+   "length": 0.3
+  },
+  {
+   "name": "drop.1",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -1.0667,
+    -0.2333,
+    1.9267
+   ],
+   "tail": [
+    -1.0667,
+    -0.2333,
+    2.2267
+   ],
+   "length": 0.3
+  },
+  {
+   "name": "drop.2",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    0.2448,
+    0.5859,
+    2.1854
+   ],
+   "tail": [
+    0.2448,
+    0.5859,
+    2.4854
+   ],
+   "length": 0.3
+  },
+  {
+   "name": "drop.3",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    0.9425,
+    -3.6223,
+    2.8895
+   ],
+   "tail": [
+    0.9425,
+    -3.6223,
+    3.1895
+   ],
+   "length": 0.3
+  },
+  {
+   "name": "drop.4",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -0.8928,
+    -3.5554,
+    3.1697
+   ],
+   "tail": [
+    -0.8928,
+    -3.5554,
+    3.4697
+   ],
+   "length": 0.3
   }
  ],
- "bone_count": 23,
+ "bone_count": 24,
  "segment_chains": {
-  "upper": [
-   "neck.0",
-   "neck.1",
-   "neck.2",
-   "neck.3",
-   "head",
-   "tongue"
+  "head": [
+   "head.0",
+   "head.1"
   ],
-  "body": [
+  "mid": [
    "body.0",
    "body.1",
    "body.2",
-   "body.3"
+   "body.3",
+   "body.4"
   ],
   "tail": [
    "tail.0",
@@ -422,27 +437,26 @@
    "tail.7",
    "tail.8",
    "tail.9",
-   "tail.10",
-   "tail.11"
+   "tail.10"
+  ],
+  "droplets": [
+   "drop.0",
+   "drop.1",
+   "drop.2",
+   "drop.3",
+   "drop.4"
   ]
  },
- "separability": "each segment's sub-chain root (neck.0 / body.0 / tail.0) is parented straight to 'root'; every segment mesh is weighted only to its own sub-chain (verified below)",
+ "separability": "each piece's sub-chain root (head.0 / body.0 / tail.0) and every droplet bone is parented straight to 'root'; every piece mesh is weighted only to its own sub-chain (verified below)",
  "weights": {
-  "upper": {
+  "head": {
    "bones": [
-    "neck.0",
-    "neck.1",
-    "neck.2",
-    "neck.3",
-    "head",
-    "tongue"
+    "head.0",
+    "head.1"
    ],
    "per_bone_dominant": {
-    "neck.0": 2081,
-    "neck.1": 852,
-    "neck.2": 661,
-    "neck.3": 2270,
-    "head": 1989
+    "head.0": 4439,
+    "head.1": 1760
    },
    "audit": {
     "weight_sum_min": 1.0,
@@ -450,28 +464,26 @@
     "unweighted": 0,
     "max_influences": 2,
     "bones_used": [
-     "head",
-     "neck.0",
-     "neck.1",
-     "neck.2",
-     "neck.3",
-     "tongue"
+     "head.0",
+     "head.1"
     ]
    },
    "only_own_chain": true
   },
-  "body": {
+  "mid": {
    "bones": [
     "body.0",
     "body.1",
     "body.2",
-    "body.3"
+    "body.3",
+    "body.4"
    ],
    "per_bone_dominant": {
-    "body.0": 1419,
-    "body.1": 1766,
-    "body.2": 2465,
-    "body.3": 2153
+    "body.0": 1432,
+    "body.1": 603,
+    "body.2": 815,
+    "body.3": 550,
+    "body.4": 1550
    },
    "audit": {
     "weight_sum_min": 1.0,
@@ -482,7 +494,8 @@
      "body.0",
      "body.1",
      "body.2",
-     "body.3"
+     "body.3",
+     "body.4"
     ]
    },
    "only_own_chain": true
@@ -499,22 +512,20 @@
     "tail.7",
     "tail.8",
     "tail.9",
-    "tail.10",
-    "tail.11"
+    "tail.10"
    ],
    "per_bone_dominant": {
-    "tail.0": 1161,
-    "tail.1": 582,
-    "tail.2": 625,
-    "tail.3": 666,
-    "tail.4": 478,
-    "tail.5": 531,
-    "tail.6": 375,
-    "tail.7": 513,
-    "tail.8": 393,
-    "tail.9": 346,
-    "tail.10": 320,
-    "tail.11": 419
+    "tail.0": 4784,
+    "tail.1": 1495,
+    "tail.2": 762,
+    "tail.3": 210,
+    "tail.4": 221,
+    "tail.5": 174,
+    "tail.6": 172,
+    "tail.7": 170,
+    "tail.8": 171,
+    "tail.9": 187,
+    "tail.10": 668
    },
    "audit": {
     "weight_sum_min": 1.0,
@@ -525,7 +536,6 @@
      "tail.0",
      "tail.1",
      "tail.10",
-     "tail.11",
      "tail.2",
      "tail.3",
      "tail.4",
@@ -538,78 +548,439 @@
    },
    "only_own_chain": true
   },
-  "bridges": {
+  "droplets": {
    "bones": [
-    "body.0",
-    "body.3",
-    "neck.0",
-    "tail.0"
+    "drop.0",
+    "drop.1",
+    "drop.2",
+    "drop.3",
+    "drop.4"
    ],
-   "rule": "strand fraction u: (1-u) to segment A's end bone, u to B's start bone",
+   "rule": "each droplet rigid on its own bone (weight 1)",
    "audit": {
     "weight_sum_min": 1.0,
     "weight_sum_max": 1.0,
     "unweighted": 0,
-    "max_influences": 2,
+    "max_influences": 1,
     "bones_used": [
-     "body.0",
-     "body.3",
-     "neck.0",
-     "tail.0"
+     "drop.0",
+     "drop.1",
+     "drop.2",
+     "drop.3",
+     "drop.4"
     ]
    }
   }
  },
  "idle": {
-  "status": "PROPOSED (artist 2026-09-25: body on the floor, head and tail in motion)",
-  "frames": 97,
-  "cycle_frames": 96,
-  "cycle_s": 4.0,
-  "seam_first_last_max_per_object_x1000": {
-   "magmoo_upper": 0.0,
-   "magmoo_body": 0.0,
+  "status": "PROPOSED v2 (artist 2026-09-26: pieces separate then combine into one long serpent)",
+  "frames": 145,
+  "cycle_frames": 144,
+  "cycle_s": 6.0,
+  "seam_first_last_max_per_object_mm": {
+   "magmoo_head": 0.0,
+   "magmoo_mid": 0.0,
    "magmoo_tail": 0.0,
-   "magmoo_bridges": 0.0
+   "magmoo_droplets": 0.0
   },
   "min_z": -0.0,
   "root_offset_max": 0.0,
-  "head_tip_z_range": [
-   2.4949,
-   2.8179
+  "head_yaw_deg_range": [
+   -12.0,
+   7.493
   ],
-  "head_tip_x_range": [
-   -0.8046,
-   0.3752
-  ],
-  "body_vertex_max_displacement": 0.0,
   "tail_tip_x_range": [
-   -0.5737,
-   0.5755
+   -0.3748,
+   0.4401
   ],
-  "segment_gap_min_max_every_6th_frame": {
-   "upper|body": [
-    0.2629,
-    0.2652
+  "join_opening_units_max": {
+   "crown": 2.7522,
+   "head": 2.6348
+  },
+  "join_opening_frame_of_max": {
+   "crown": 27,
+   "head": 33
+  },
+  "join_opening_first_last": {
+   "crown": [
+    0.0,
+    0.0
    ],
-   "body|tail": [
-    0.2683,
-    0.2683
+   "head": [
+    1e-06,
+    1e-06
    ]
   },
+  "mesh_gap_every_4th_frame": {
+   "crown": [
+    [
+     1,
+     0.0
+    ],
+    [
+     5,
+     0.0
+    ],
+    [
+     9,
+     0.0
+    ],
+    [
+     13,
+     0.0
+    ],
+    [
+     17,
+     0.0
+    ],
+    [
+     21,
+     0.2938
+    ],
+    [
+     25,
+     1.1423
+    ],
+    [
+     29,
+     1.1707
+    ],
+    [
+     33,
+     0.9502
+    ],
+    [
+     37,
+     0.8265
+    ],
+    [
+     41,
+     0.8303
+    ],
+    [
+     45,
+     0.8889
+    ],
+    [
+     49,
+     0.9527
+    ],
+    [
+     53,
+     1.004
+    ],
+    [
+     57,
+     1.0376
+    ],
+    [
+     61,
+     1.0493
+    ],
+    [
+     65,
+     1.0357
+    ],
+    [
+     69,
+     0.9995
+    ],
+    [
+     73,
+     0.9497
+    ],
+    [
+     77,
+     0.8998
+    ],
+    [
+     81,
+     0.8631
+    ],
+    [
+     85,
+     0.8497
+    ],
+    [
+     89,
+     0.6278
+    ],
+    [
+     93,
+     0.0
+    ],
+    [
+     97,
+     0.0001
+    ],
+    [
+     101,
+     0.0002
+    ],
+    [
+     105,
+     0.0
+    ],
+    [
+     109,
+     0.0001
+    ],
+    [
+     113,
+     0.0002
+    ],
+    [
+     117,
+     0.0001
+    ],
+    [
+     121,
+     0.0
+    ],
+    [
+     125,
+     0.0
+    ],
+    [
+     129,
+     0.0001
+    ],
+    [
+     133,
+     0.0
+    ],
+    [
+     137,
+     0.0
+    ],
+    [
+     141,
+     0.0
+    ],
+    [
+     145,
+     0.0
+    ]
+   ],
+   "head": [
+    [
+     1,
+     0.0001
+    ],
+    [
+     5,
+     0.0001
+    ],
+    [
+     9,
+     0.0001
+    ],
+    [
+     13,
+     0.0001
+    ],
+    [
+     17,
+     0.0001
+    ],
+    [
+     21,
+     0.0001
+    ],
+    [
+     25,
+     0.0
+    ],
+    [
+     29,
+     0.4021
+    ],
+    [
+     33,
+     0.7238
+    ],
+    [
+     37,
+     0.6124
+    ],
+    [
+     41,
+     0.5111
+    ],
+    [
+     45,
+     0.4842
+    ],
+    [
+     49,
+     0.4814
+    ],
+    [
+     53,
+     0.5024
+    ],
+    [
+     57,
+     0.5234
+    ],
+    [
+     61,
+     0.5478
+    ],
+    [
+     65,
+     0.5429
+    ],
+    [
+     69,
+     0.5029
+    ],
+    [
+     73,
+     0.4739
+    ],
+    [
+     77,
+     0.4611
+    ],
+    [
+     81,
+     0.4058
+    ],
+    [
+     85,
+     0.0001
+    ],
+    [
+     89,
+     0.0003
+    ],
+    [
+     93,
+     0.0001
+    ],
+    [
+     97,
+     0.0
+    ],
+    [
+     101,
+     0.0
+    ],
+    [
+     105,
+     0.0001
+    ],
+    [
+     109,
+     0.0001
+    ],
+    [
+     113,
+     0.0003
+    ],
+    [
+     117,
+     0.0001
+    ],
+    [
+     121,
+     0.0004
+    ],
+    [
+     125,
+     0.0001
+    ],
+    [
+     129,
+     0.0002
+    ],
+    [
+     133,
+     0.0002
+    ],
+    [
+     137,
+     0.0001
+    ],
+    [
+     141,
+     0.0001
+    ],
+    [
+     145,
+     0.0001
+    ]
+   ]
+  },
+  "mesh_gap_max": {
+   "crown": 1.1707,
+   "head": 0.7238
+  },
+  "mesh_gap_frame_of_max": {
+   "crown": 29,
+   "head": 33
+  },
   "extent": {
-   "width": 2.3723,
-   "length": 21.0131,
-   "height": 4.3166
+   "width": 4.5891,
+   "length": 17.8198,
+   "height": 7.0737
+  },
+  "split_cycle": {
+   "crown": {
+    "split_start_frame": 15,
+    "open_past_5pct_frames": [
+     17,
+     95
+    ],
+    "peak_frame": 27,
+    "peak_envelope": 1.1253,
+    "merge_start_frame": 87,
+    "squelch_overshoot_envelope": -0.1253,
+    "settled_within_2pct_from_frame": 107
+   },
+   "head": {
+    "split_start_frame": 21,
+    "open_past_5pct_frames": [
+     23,
+     87
+    ],
+    "peak_frame": 33,
+    "peak_envelope": 1.1262,
+    "merge_start_frame": 80,
+    "squelch_overshoot_envelope": -0.1261,
+    "settled_within_2pct_from_frame": 99
+   }
+  },
+  "split_peak_frame": 31,
+  "rest_extent": {
+   "width": 4.5874,
+   "length": 14.579,
+   "height": 4.7328
   },
   "motion": {
-   "neck_sway_deg": 11.0,
-   "nod_deg": 5.0,
-   "tail_tip_deg": 16.0,
-   "glow_pulse": 0.35,
-   "tongue_scale": [
+   "split_gap_mid": 2.4,
+   "split_gap_head": 2.3,
+   "tail_drift": 0.3,
+   "timing": {
+    "crown": [
+     0.1,
+     0.6
+    ],
+    "head": [
+     0.14,
+     0.55
+    ]
+   },
+   "spring_hz_damping": [
     1.0,
-    1.9
+    0.55
    ],
+   "head_tilt_deg": 10.0,
+   "head_look_deg": 12.0,
+   "bob": 0.1,
+   "tail_tip_deg": 14.0,
+   "glow_pulse": 0.4,
    "procrustes_yaw_deg_range": [
     0.0,
     0.0
@@ -619,7 +990,7 @@
     "base": 1.5,
     "range": [
      1.5,
-     2.025
+     2.1757
     ]
    },
    "slots": [
@@ -629,63 +1000,152 @@
   }
  },
  "walk": {
-  "status": "PROPOSED (in-place slither)",
+  "status": "PROPOSED v2 (in-place slither, combined)",
   "frames": 49,
   "cycle_frames": 48,
   "cycle_s": 2.0,
-  "seam_first_last_max_per_object_x1000": {
-   "magmoo_upper": 0.0,
-   "magmoo_body": 0.0,
+  "seam_first_last_max_per_object_mm": {
+   "magmoo_head": 0.0,
+   "magmoo_mid": 0.0,
    "magmoo_tail": 0.0,
-   "magmoo_bridges": 0.0
+   "magmoo_droplets": 0.0
   },
   "min_z": -0.0,
   "root_offset_max": 0.0,
-  "head_tip_z_range": [
-   2.6542,
-   2.6542
+  "head_yaw_deg_range": [
+   -2.067,
+   2.192
   ],
-  "head_tip_x_range": [
-   -1.0357,
-   0.6064
-  ],
-  "body_vertex_max_displacement": 0.203,
   "tail_tip_x_range": [
-   -1.386,
-   1.5543
+   -0.6025,
+   0.7438
   ],
-  "segment_gap_min_max_every_6th_frame": {
-   "upper|body": [
-    0.2588,
-    0.2664
+  "join_opening_units_max": {
+   "crown": 0.08,
+   "head": 0.0
+  },
+  "join_opening_frame_of_max": {
+   "crown": 13,
+   "head": 26
+  },
+  "join_opening_first_last": {
+   "crown": [
+    0.0,
+    0.0
    ],
-   "body|tail": [
-    0.2667,
-    0.2737
+   "head": [
+    1e-06,
+    1e-06
    ]
   },
+  "mesh_gap_every_6th_frame": {
+   "crown": [
+    [
+     1,
+     0.0001
+    ],
+    [
+     7,
+     0.0002
+    ],
+    [
+     13,
+     0.0001
+    ],
+    [
+     19,
+     0.0001
+    ],
+    [
+     25,
+     0.0
+    ],
+    [
+     31,
+     0.0002
+    ],
+    [
+     37,
+     0.0003
+    ],
+    [
+     43,
+     0.0002
+    ],
+    [
+     49,
+     0.0001
+    ]
+   ],
+   "head": [
+    [
+     1,
+     0.0002
+    ],
+    [
+     7,
+     0.0003
+    ],
+    [
+     13,
+     0.0001
+    ],
+    [
+     19,
+     0.0
+    ],
+    [
+     25,
+     0.0002
+    ],
+    [
+     31,
+     0.0002
+    ],
+    [
+     37,
+     0.0001
+    ],
+    [
+     43,
+     0.0
+    ],
+    [
+     49,
+     0.0002
+    ]
+   ]
+  },
+  "mesh_gap_max": {
+   "crown": 0.0003,
+   "head": 0.0003
+  },
+  "mesh_gap_frame_of_max": {
+   "crown": 37,
+   "head": 7
+  },
   "extent": {
-   "width": 3.7437,
-   "length": 19.7453,
-   "height": 4.3015
+   "width": 4.8996,
+   "length": 14.6864,
+   "height": 4.8128
   },
   "implied_forward_speed": {
-   "wave_speed_units_per_s": 4.0,
-   "body_lengths_per_s": 0.1969,
-   "m_per_s_at_report_only_cell_fit": 0.385,
-   "rule": "lateral undulation, zero-slip upper bound: forward speed = wave speed = wavelength / cycle time (the body follows its own path); real slip makes it slower -- the game glides the unit at its own speed"
+   "wave_speed_units_per_s": 3.5,
+   "m_per_s_at_report_only_cell_fit": 0.4561
   },
   "motion": {
-   "wavelength": 8.0,
-   "amp_neck_deg": 6.0,
-   "amp_body_deg": 11.0,
-   "amp_tail_tip_deg": 40.0,
+   "wavelength": 7.0,
+   "amp_head_deg": 5.0,
+   "amp_body_deg": 10.0,
+   "amp_tail_tip_deg": 38.0,
    "head_follow": 0.25,
+   "goo_bob": 0.08,
    "glow_pulse": 0.18,
+   "state": "combined serpent (joins closed)",
    "wave_direction": "head -> tail (posterior travelling wave = forward propulsion toward -Y)",
    "procrustes_yaw_deg_range": [
-    -5.8435,
-    5.8435
+    -2.7231,
+    2.8311
    ],
    "glow": {
     "socket": "Principled BSDF.Emission Strength",
@@ -701,299 +1161,308 @@
    ]
   }
  },
- "anim_seconds": 3.9,
- "digest_full": "821bd195ec6204ee",
- "digest_geometry_colour_uv": "10c98fbe464a56d6",
+ "anim_seconds": 6.2,
+ "digest_full": "7b5402185c64cb52",
+ "digest_geometry_colour_uv": "0cf9c6a3296ca31c",
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.glb",
-  "bytes": 10090484,
-  "sha256_16": "4038bb6929ba8518",
-  "seconds": 0.7,
-  "structure": "armature identity + 4 skinned mesh children (upper/body/tail/bridges), natural scale; report-only cell fit 0.09624"
+  "bytes": 8683568,
+  "sha256_16": "b7032ff7079769c7",
+  "seconds": 1.0,
+  "structure": "armature identity + 4 skinned mesh children (head/mid/tail/droplets), natural scale; report-only cell fit 0.13032"
  },
  "skins": {
   "default": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.blend",
    "palette": {
-    "crust": {
+    "goo_cool": {
      "rgb": [
-      40,
-      32,
-      31
-     ]
+      126,
+      16,
+      10
+     ],
+     "emission": [
+      190,
+      22,
+      8
+     ],
+     "emission_scale": 0.14
     },
-    "crust_hot": {
+    "goo": {
      "rgb": [
-      82,
+      214,
       38,
-      24
+      14
      ],
      "emission": [
       255,
-      70,
-      12
+      44,
+      10
      ],
-     "emission_scale": 0.1
+     "emission_scale": 0.3
     },
-    "crack": {
+    "goo_hot": {
      "rgb": [
-      236,
-      96,
-      26
+      246,
+      88,
+      18
      ],
      "emission": [
       255,
-      92,
-      16
+      84,
+      14
      ],
-     "emission_scale": 0.6
+     "emission_scale": 0.55
     },
     "flame": {
      "rgb": [
       255,
       156,
-      50
+      36
      ],
      "emission": [
       255,
-      130,
-      30
+      136,
+      26
      ],
      "emission_scale": 0.85
     },
     "core": {
      "rgb": [
       255,
-      196,
-      96
+      218,
+      112
      ],
      "emission": [
       255,
-      150,
-      44
+      186,
+      70
      ],
-     "emission_scale": 1.1
-    },
-    "maw": {
-     "rgb": [
-      255,
-      118,
-      36
-     ],
-     "emission": [
-      255,
-      96,
-      20
-     ],
-     "emission_scale": 1.3
+     "emission_scale": 1.15
     },
     "eye": {
      "rgb": [
       255,
-      238,
-      160
+      246,
+      204
      ],
      "emission": [
       255,
-      214,
-      110
+      232,
+      170
      ],
      "emission_scale": 1.6
+    },
+    "pupil": {
+     "rgb": [
+      24,
+      8,
+      8
+     ]
     }
    },
    "glow_tiers": {
     "skin": "default",
     "emission_scale_tiers": {
-     "crust_hot": 0.1,
-     "crack": 0.6,
+     "goo_cool": 0.14,
+     "goo": 0.3,
+     "goo_hot": 0.55,
      "flame": 0.85,
-     "core": 1.1,
-     "maw": 1.3,
+     "core": 1.15,
      "eye": 1.6
     },
     "rank": [
      "eye",
-     "maw",
      "core",
      "flame",
-     "crack",
-     "crust_hot"
+     "goo_hot",
+     "goo",
+     "goo_cool"
+    ],
+    "grade": [
+     "goo_cool",
+     "goo",
+     "goo_hot",
+     "flame",
+     "core",
+     "eye"
     ],
     "pass": true
    },
    "region_faces": {
-    "crust": 18888,
-    "crust_hot": 13970,
-    "crack": 6690,
-    "flame": 2943,
-    "core": 1920,
-    "maw": 865,
-    "eye": 282
+    "goo_cool": 6082,
+    "goo": 20892,
+    "goo_hot": 7125,
+    "flame": 4179,
+    "core": 1480,
+    "eye": 1009,
+    "pupil": 109
    },
    "region_mean_linear": {
     "Col": {
-     "crust": [
-      0.0212,
-      0.0144,
-      0.0137
+     "goo_cool": [
+      0.2086,
+      0.0052,
+      0.003
      ],
-     "crust_hot": [
-      0.0844,
+     "goo": [
+      0.6726,
       0.0194,
-      0.0091
+      0.0044
      ],
-     "crack": [
-      0.8388,
-      0.117,
-      0.0103
+     "goo_hot": [
+      0.9215,
+      0.0976,
+      0.006
      ],
      "flame": [
       1.0,
-      0.3325,
-      0.0319
+      0.3324,
+      0.0176
      ],
      "core": [
       1.0,
-      0.552,
-      0.117
-     ],
-     "maw": [
-      1.0,
-      0.1812,
-      0.0176
+      0.7011,
+      0.162
      ],
      "eye": [
       1.0,
-      0.855,
-      0.3515
+      0.9216,
+      0.6038
+     ],
+     "pupil": [
+      0.0092,
+      0.0024,
+      0.0024
      ]
     },
     "Glow": {
-     "crust": [
-      0.0,
-      0.0,
-      0.0
+     "goo_cool": [
+      0.0721,
+      0.0011,
+      0.0003
      ],
-     "crust_hot": [
-      0.1,
-      0.0061,
-      0.0004
+     "goo": [
+      0.3,
+      0.0076,
+      0.0009
      ],
-     "crack": [
-      0.6,
-      0.0642,
-      0.0031
+     "goo_hot": [
+      0.55,
+      0.0488,
+      0.0024
      ],
      "flame": [
       0.85,
-      0.1898,
-      0.011
+      0.2093,
+      0.0088
      ],
      "core": [
-      1.1,
-      0.3355,
-      0.0277
-     ],
-     "maw": [
-      1.3,
-      0.1521,
-      0.0091
+      1.15,
+      0.5647,
+      0.0704
      ],
      "eye": [
       1.6,
-      1.0759,
-      0.2495
+      1.2911,
+      0.6432
+     ],
+     "pupil": [
+      0.0,
+      0.0,
+      0.0
      ]
     }
-   }
+   },
+   "vertex_positions_sha": "205c57547c82bf29"
   },
   "obsidian": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo__obsidian.blend",
    "palette": {
-    "crust": {
+    "goo_cool": {
      "rgb": [
-      18,
-      18,
-      26
-     ]
-    },
-    "crust_hot": {
-     "rgb": [
+      6,
+      6,
+      9
+     ],
+     "emission": [
+      10,
       30,
+      90
+     ],
+     "emission_scale": 0.01
+    },
+    "goo": {
+     "rgb": [
+      12,
+      12,
+      16
+     ],
+     "emission": [
+      20,
+      60,
+      160
+     ],
+     "emission_scale": 0.02
+    },
+    "goo_hot": {
+     "rgb": [
       36,
-      70
+      64,
+      128
      ],
      "emission": [
       40,
       110,
       255
      ],
-     "emission_scale": 0.1
-    },
-    "crack": {
-     "rgb": [
-      60,
-      170,
-      255
-     ],
-     "emission": [
-      30,
-      140,
-      255
-     ],
-     "emission_scale": 0.6
+     "emission_scale": 0.45
     },
     "flame": {
      "rgb": [
-      120,
-      210,
+      110,
+      196,
       255
      ],
      "emission": [
       60,
-      180,
+      170,
       255
      ],
      "emission_scale": 0.85
     },
     "core": {
      "rgb": [
+      196,
+      238,
+      255
+     ],
+     "emission": [
+      120,
+      210,
+      255
+     ],
+     "emission_scale": 1.15
+    },
+    "eye": {
+     "rgb": [
+      232,
+      250,
+      255
+     ],
+     "emission": [
       170,
       232,
       255
      ],
-     "emission": [
-      90,
-      200,
-      255
-     ],
-     "emission_scale": 1.1
-    },
-    "maw": {
-     "rgb": [
-      80,
-      190,
-      255
-     ],
-     "emission": [
-      40,
-      150,
-      255
-     ],
-     "emission_scale": 1.3
-    },
-    "eye": {
-     "rgb": [
-      225,
-      248,
-      255
-     ],
-     "emission": [
-      160,
-      230,
-      255
-     ],
      "emission_scale": 1.6
+    },
+    "pupil": {
+     "rgb": [
+      4,
+      4,
+      8
+     ]
     }
    },
    "palette_files": [
@@ -1003,117 +1472,125 @@
    "glow_tiers": {
     "skin": "obsidian",
     "emission_scale_tiers": {
-     "crust_hot": 0.1,
-     "crack": 0.6,
+     "goo_cool": 0.01,
+     "goo": 0.02,
+     "goo_hot": 0.45,
      "flame": 0.85,
-     "core": 1.1,
-     "maw": 1.3,
+     "core": 1.15,
      "eye": 1.6
     },
     "rank": [
      "eye",
-     "maw",
      "core",
      "flame",
-     "crack",
-     "crust_hot"
+     "goo_hot",
+     "goo",
+     "goo_cool"
+    ],
+    "grade": [
+     "goo_cool",
+     "goo",
+     "goo_hot",
+     "flame",
+     "core",
+     "eye"
     ],
     "pass": true
    },
    "region_faces": {
-    "crust": 18888,
-    "crust_hot": 13970,
-    "crack": 6690,
-    "flame": 2943,
-    "core": 1920,
-    "maw": 865,
-    "eye": 282
+    "goo_cool": 6082,
+    "goo": 20892,
+    "goo_hot": 7125,
+    "flame": 4179,
+    "core": 1480,
+    "eye": 1009,
+    "pupil": 109
    },
    "region_mean_linear": {
     "Col": {
-     "crust": [
-      0.006,
-      0.006,
-      0.0103
+     "goo_cool": [
+      0.0018,
+      0.0018,
+      0.0027
      ],
-     "crust_hot": [
-      0.013,
+     "goo": [
+      0.0037,
+      0.0037,
+      0.0052
+     ],
+     "goo_hot": [
       0.0176,
-      0.0612
-     ],
-     "crack": [
-      0.0452,
-      0.402,
-      1.0
+      0.0513,
+      0.2159
      ],
      "flame": [
-      0.1878,
-      0.6445,
+      0.1559,
+      0.552,
       1.0
      ],
      "core": [
-      0.402,
-      0.807,
-      1.0
-     ],
-     "maw": [
-      0.0802,
-      0.5149,
+      0.552,
+      0.855,
       1.0
      ],
      "eye": [
-      0.7529,
-      0.9387,
+      0.8069,
+      0.956,
       1.0
+     ],
+     "pupil": [
+      0.0012,
+      0.0012,
+      0.0024
      ]
     },
     "Glow": {
-     "crust": [
+     "goo_cool": [
       0.0,
-      0.0,
-      0.0
+      0.0001,
+      0.001
      ],
-     "crust_hot": [
-      0.0021,
-      0.0156,
-      0.1
+     "goo": [
+      0.0001,
+      0.0009,
+      0.007
      ],
-     "crack": [
-      0.0078,
-      0.1573,
-      0.6
+     "goo_hot": [
+      0.0095,
+      0.0702,
+      0.45
      ],
      "flame": [
       0.0384,
-      0.3879,
+      0.3417,
       0.85
      ],
      "core": [
-      0.1125,
-      0.6353,
-      1.1
-     ],
-     "maw": [
-      0.0276,
-      0.3965,
-      1.3
+      0.216,
+      0.7412,
+      1.15
      ],
      "eye": [
-      0.5625,
-      1.2661,
+      0.6432,
+      1.2911,
       1.6
+     ],
+     "pupil": [
+      0.0,
+      0.0,
+      0.0
      ]
     }
    },
-   "geometry_colour_uv_digest": "81c5cf1e8488ef35",
-   "vertex_positions_sha": "a6598183215a257e"
+   "geometry_colour_uv_digest": "a15c23b985d77872",
+   "vertex_positions_sha": "205c57547c82bf29"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: region face counts identical, vertex positions identical, colours differ only by the palette table; the default digest is restored after the swap",
-   "default_digest_before": "10c98fbe464a56d6",
-   "default_digest_after_restore": "10c98fbe464a56d6"
+   "default_digest_before": "0cf9c6a3296ca31c",
+   "default_digest_after_restore": "0cf9c6a3296ca31c"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.json",
- "seconds": 72.8
+ "seconds": 44.0
 }

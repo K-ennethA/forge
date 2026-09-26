@@ -1,6 +1,6 @@
-# Magmoo build, one command (hidden, headless). Reads source-copies/newunit-magmoo.blend + palettes/magmoo/ only.
-# Writes improved/magmoo.{blend,json} + improved/magmoo_source_blob.blend, rigged/magmoo.{blend,json,glb},
-# rigged/magmoo__obsidian.blend, improved/check_magmoo.json, rigged/check_magmoo.json, renders/magmoo/.
+# Magmoo v2 (lava goo serpent) build, one command (hidden, headless). Reads source-copies/newunit-magmoo.blend +
+# palettes/magmoo/ only. Writes improved/magmoo.{blend,json}, rigged/magmoo.{blend,json,glb}, rigged/magmoo__obsidian.blend,
+# improved/check_magmoo.json, rigged/check_magmoo.json, renders/magmoo/magmoo_v2_* (v1 renders are kept).
 # Determinism: a SECOND full build runs in parallel into a temp outroot; its digests must equal run 1's (quoted at the end).
 # -SkipBuild re-runs only the gates + renders.
 param([switch]$SkipBuild)
@@ -22,14 +22,18 @@ if (-not $SkipBuild) {
   "build exit=$($b1.ExitCode) determinism-rerun exit=$($b2.ExitCode) build_wall_s=$([math]::Round(((Get-Date) - $T0).TotalSeconds, 1))"
   if ($b1.ExitCode -ne 0) { "BUILD FAILED - see log_magmoo_build.*"; exit 1 }
 }
+$r1 = Get-Content "$P\rigged\magmoo.json" -Raw | ConvertFrom-Json
+$PK = $r1.idle.split_peak_frame
+"split peak frame = $PK"
 $T1 = Get-Date
 $jobs = @(
   @("check_improved",  @("--background","`"$P\improved\magmoo.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_magmoo.json`"")),
   @("check_rigged",    @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_magmoo.json`"")),
-  @("render_default",  @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo`"")),
-  @("render_obsidian", @("--background","`"$P\rigged\magmoo__obsidian.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo_obsidian`"","front,threequarter,side,head,gap_tail")),
-  @("render_source",   @("--background","`"$P\improved\magmoo_source_blob.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\source_blob`"","front,threequarter,side")),
-  @("clips_mp4",       @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\magmoo_clips.py`"","--","`"$OUT`"","768","sheet"))
+  @("render_default",  @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo_v2`"","front,threequarter,side,tactical,head")),
+  @("render_split",    @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo_v2_split`"","front,threequarter,side,tactical,droplets","--pose","idle:$PK")),
+  @("render_obsidian", @("--background","`"$P\rigged\magmoo__obsidian.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo_v2_obsidian`"","front,threequarter")),
+  @("render_obs_split",@("--background","`"$P\rigged\magmoo__obsidian.blend`"","--factory-startup","--python","`"$I\magmoo_render.py`"","--","`"$OUT\magmoo_v2_obsidian_split`"","threequarter","--pose","idle:$PK")),
+  @("clips_mp4",       @("--background","`"$P\rigged\magmoo.blend`"","--factory-startup","--python","`"$I\magmoo_clips.py`"","--","`"$OUT`"","768","sheet","--prefix","magmoo_v2"))
 )
 $procs = @()
 foreach ($j in $jobs) {
@@ -41,7 +45,6 @@ $ba = Start-Process -FilePath $B -ArgumentList @("--background","--factory-start
 $null = $ba.Handle; $ba.WaitForExit(); "before_after exit=$($ba.ExitCode)"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_magmoo_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 if (-not $SkipBuild) {
-  $r1 = Get-Content "$P\rigged\magmoo.json" -Raw | ConvertFrom-Json
   $r2 = Get-Content "$DET\rigged\magmoo.json" -Raw | ConvertFrom-Json
   "DIGEST run1 full=$($r1.digest_full) geo=$($r1.digest_geometry_colour_uv) glb=$($r1.glb.sha256_16)"
   "DIGEST run2 full=$($r2.digest_full) geo=$($r2.digest_geometry_colour_uv) glb=$($r2.glb.sha256_16)"

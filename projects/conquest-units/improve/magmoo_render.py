@@ -1,51 +1,69 @@
-"""Magmoo stills, the survey's lighting/camera rules (geode_render.py copied, not imported). In-memory only; never saves.
+"""Magmoo v2 stills, the survey's lighting/camera rules. In-memory only; never saves.
 
-    blender --background <blend> --factory-startup --python magmoo_render.py -- <out_prefix> [views]
+    blender --background <blend> --factory-startup --python magmoo_render.py -- <out_prefix> [views] \
+        [--pose <clip>:<frame>] [--res N]
 
-views (comma list; default all): front, threequarter, side, tactical, head, gap_upper, gap_tail.
-  head      the head closeup: frames the eye + maw regions (+ margin) from 30 deg off the front, 12 deg up
-  gap_*     the molten gap closeups: frames that gap's bridge strands + the core (molten end) faces round them,
-            from the side (70 deg) and 18 deg up, so the disjointed ends and the lava strands read together
-Framing: every view is fit to the render-visible meshes (rest pose), the floor sits at z = 0.
+views (comma list; default front,threequarter,side,tactical,head):
+  front / threequarter / side / tactical   fit to the unit's projected extent (tactical = 256 px, 55 deg down)
+  head       the head closeup: frames the eye + pupil regions (+ margin) from 30 deg off the front, 12 deg up
+  droplets   the droplet / gap closeup: frames the droplets + the torn-end (core) faces round them, from the side
+  top        straight down
+--pose idle:66 poses the rig at that clip frame (the split peak) before rendering; otherwise the REST pose (combined).
+Framing uses the EVALUATED (posed) meshes; the floor sits at z = 0.
 """
-import bpy, sys, math
+import bpy, sys, os, math
 import numpy as np
 from mathutils import Vector
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import rigkit as K  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 PREFIX = argv[0]
 VIEWS = argv[1].split(",") if len(argv) > 1 and not argv[1].startswith("--") else \
-    ["front", "threequarter", "side", "tactical", "head", "gap_upper", "gap_tail"]
+    ["front", "threequarter", "side", "tactical", "head"]
 RES = int(argv[argv.index("--res") + 1]) if "--res" in argv else 1024
+POSE = argv[argv.index("--pose") + 1] if "--pose" in argv else None
 scene = bpy.context.scene
-for o in scene.objects:
-    if o.type == "ARMATURE":
-        o.data.pose_position = "REST"
-bpy.context.view_layer.update()
+rig = next((o for o in scene.objects if o.type == "ARMATURE"), None)
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
+mat = meshes[0].data.materials[0] if meshes and meshes[0].data.materials else None
+if rig is not None:
+    if POSE:
+        clip, fr = POSE.split(":")
+        act = bpy.data.actions[clip]
+        K.assign_action(rig, act)
+        if mat is not None and any("nodes[" in fc.data_path for fc in K.action_fcurves(act)):
+            K.assign_action(mat.node_tree, act)
+        rig.data.pose_position = "POSE"
+        scene.frame_set(int(fr))
+    else:
+        rig.data.pose_position = "REST"
+bpy.context.view_layer.update()
 dg = bpy.context.evaluated_depsgraph_get()
-lo = Vector((1e9, 1e9, 1e9)); hi = -lo
-for o in meshes:
-    for c in o.evaluated_get(dg).bound_box:
-        w = o.matrix_world @ Vector(c)
-        lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
-size = hi - lo
 
 
-def region_points(pred, obj_pred=lambda o: True):
-    out = []
-    for o in meshes:
-        me = o.data
-        if "region_id" not in me.attributes or not obj_pred(o):
-            continue
-        names = list(me["conquest_regions"])
+def eval_mesh(o):
+    """-> (world verts, face centres, face region names or None)"""
+    ev = o.evaluated_get(dg)
+    me = ev.to_mesh()
+    co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    fc = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("center", fc); fc = fc.reshape(-1, 3)
+    reg = None
+    if "region_id" in me.attributes and "conquest_regions" in o.data:
+        names = list(o.data["conquest_regions"])
         rid = np.empty(len(me.polygons), dtype=np.int32); me.attributes["region_id"].data.foreach_get("value", rid)
-        fc = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("center", fc); fc = fc.reshape(-1, 3)
-        m = np.array([pred(names[r]) for r in rid])
-        if m.any():
-            out.append(fc[m] @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3])
-    return np.vstack(out) if out else None
+        reg = np.array(names)[rid]
+    ev.to_mesh_clear()
+    M = np.array(o.matrix_world)
+    return co @ M[:3, :3].T + M[:3, 3], fc @ M[:3, :3].T + M[:3, 3], reg
 
+
+EV = {o.name: eval_mesh(o) for o in meshes}
+ALLP = np.vstack([v[0][::5] for v in EV.values()])
+lo, hi = ALLP.min(0), ALLP.max(0)
+size = Vector(hi - lo)
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.film_transparent = False
@@ -73,12 +91,12 @@ def light(name, energy, rot_deg, color=(1, 1, 1)):
 
 light("s_key", 3.2, (50, 0, 150)); light("s_fill", 1.0, (65, 0, 215), (0.85, 0.9, 1.0)); light("s_rim", 2.0, (60, 0, 10))
 lrig.rotation_euler = (0, 0, math.radians(180))
-centre = (lo + hi) / 2
+centre = Vector((lo + hi) / 2)
 radius = max(size.length / 2, 1e-3)
 fm_me = bpy.data.meshes.new("s_floor"); R = radius * 6
 fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
 floor = bpy.data.objects.new("s_floor", fm_me); scene.collection.objects.link(floor)
-floor.location = (centre.x, centre.y, lo.z)
+floor.location = (centre.x, centre.y, 0.0)
 fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True
 fm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.11, 1)
 fm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1.0
@@ -90,84 +108,65 @@ scene.camera = cam
 half_fov = math.atan(18.0 / 50.0)
 
 
-def world_verts(o):
-    co = np.empty(len(o.data.vertices) * 3); o.data.vertices.foreach_get("co", co)
-    M = np.array(o.matrix_world)
-    return co.reshape(-1, 3) @ M[:3, :3].T + M[:3, 3]
-
-
-ALLP = np.vstack([world_verts(o)[::7] for o in meshes])
-
-
-def aim(angle_deg, elev_deg, fill=1.08, c=None, rad=None):
-    """c/rad given: frame that sphere. Otherwise fit the model's PROJECTED extent for this view direction (a long
-    serpent seen end-on would be a speck inside its bounding sphere)."""
-    a, e = math.radians(angle_deg), math.radians(elev_deg)
-    d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
-    fitted = c is None
-    if fitted:
-        dn = np.array(d); right = np.cross([0, 0, 1.0], dn); right /= np.linalg.norm(right); up = np.cross(dn, right)
-        pr, pu = ALLP @ right, ALLP @ up
-        c = Vector(right * (pr.min() + pr.max()) / 2 + up * (pu.min() + pu.max()) / 2 + dn * float(np.mean(ALLP @ dn)))
-        rad = max(pr.max() - pr.min(), pu.max() - pu.min()) / 2 * 1.06
-        dist = rad / math.tan(half_fov) * fill + float((ALLP @ dn).max() - np.mean(ALLP @ dn))
-    else:
-        dist = rad / math.sin(half_fov) * fill
-    cam.location = c + d * dist
-    cam.rotation_euler = (c - cam.location).to_track_quat("-Z", "Y").to_euler()
-    if fitted:
-        perspective_refine(ALLP, fill * 1.06)
-
-
 def perspective_refine(P, fill, iters=6):
-    """perspective fit (the orthographic estimate over-sizes the far end): re-centre the projected points and set the
-    depth so the larger half-extent lands at 1 / fill of the half-frame; the view direction never changes."""
     t = math.tan(half_fov)
     for _ in range(iters):
-        R = np.array(cam.rotation_euler.to_matrix())
-        q = (P - np.array(cam.location)) @ R
+        R_ = np.array(cam.rotation_euler.to_matrix())
+        q = (P - np.array(cam.location)) @ R_
         zc = -q[:, 2]
         x, y = q[:, 0] / zc / t, q[:, 1] / zc / t
         cx, cy = (x.min() + x.max()) / 2, (y.min() + y.max()) / 2
         ext = max(x.max() - x.min(), y.max() - y.min()) / 2
         zm = float(np.median(zc))
-        loc = np.array(cam.location) + R[:, 0] * cx * zm * t + R[:, 1] * cy * zm * t + R[:, 2] * zm * (ext * fill - 1.0)
-        cam.location = Vector(loc)
+        cam.location = Vector(np.array(cam.location) + R_[:, 0] * cx * zm * t + R_[:, 1] * cy * zm * t + R_[:, 2] * zm * (ext * fill - 1.0))
 
 
-def frame_pts(P, grow, minr):
-    a_, b_ = Vector(P.min(0)), Vector(P.max(0))
-    return (a_ + b_) / 2, max((b_ - a_).length / 2 * grow, minr)
+def aim(angle_deg, elev_deg, fill=1.08, P=None):
+    """fit the PROJECTED extent of P (default: the whole posed unit) for this view direction."""
+    P = ALLP if P is None else P
+    a, e = math.radians(angle_deg), math.radians(elev_deg)
+    dn = np.array([math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)])
+    right = np.cross([0, 0, 1.0], dn) if abs(dn[2]) < 0.999 else np.array([1.0, 0, 0])
+    right /= np.linalg.norm(right); up = np.cross(dn, right)
+    pr, pu = P @ right, P @ up
+    c = right * (pr.min() + pr.max()) / 2 + up * (pu.min() + pu.max()) / 2 + dn * float(np.mean(P @ dn))
+    rad = max(pr.max() - pr.min(), pu.max() - pu.min()) / 2 * 1.06
+    dist = rad / math.tan(half_fov) * fill + float((P @ dn).max() - np.mean(P @ dn))
+    cam.location = Vector(c + dn * dist)
+    cam.rotation_euler = (Vector(c) - cam.location).to_track_quat("-Z", "Y" if abs(dn[2]) < 0.999 else "X").to_euler()
+    perspective_refine(P, fill * 1.06)
 
 
-table = {"front": (0.0, 5.0, RES, 1.0, None, None), "threequarter": (40.0, 15.0, RES, 1.0, None, None),
-         "side": (90.0, 8.0, RES, 1.0, None, None), "tactical": (40.0, 55.0, 256, 1.6, None, None)}
-E = region_points(lambda n: n in ("eye", "maw"))
+def region_pts(pred, obj_pred=lambda n: True):
+    out = [fc[np.array([pred(r) for r in reg])] for n, (v, fc, reg) in EV.items() if reg is not None and obj_pred(n)]
+    out = [o for o in out if len(o)]
+    return np.vstack(out) if out else None
+
+
+table = {"front": (0.0, 5.0, RES, 1.0, None), "threequarter": (40.0, 15.0, RES, 1.0, None),
+         "side": (90.0, 8.0, RES, 1.0, None), "tactical": (40.0, 55.0, 256, 1.6, None), "top": (0.0, 89.9, RES, 1.02, None)}
+E = region_pts(lambda r: r in ("eye", "pupil"))
 if E is not None:
-    c_, r_ = frame_pts(E, 1.9, 0.9)
-    table["head"] = (30.0, 12.0, RES, 1.0, c_, r_)
-body = next((o for o in meshes if o.get("conquest_segment") == "body"), None)
-if body is not None:
-    by = np.array([(body.matrix_world @ Vector(c)).y for c in body.bound_box])
-    ymid = float((by.min() + by.max()) / 2)
-    for tag, pred in (("gap_upper", lambda y: y < ymid), ("gap_tail", lambda y: y > ymid)):
-        C = region_points(lambda n: n == "core")
-        if C is None:
-            continue
-        C = C[np.array([pred(y) for y in C[:, 1]])]
-        B = region_points(lambda n: True, lambda o: o.get("conquest_segment") == "bridges")
-        if B is not None:
-            B = B[np.array([pred(y) for y in B[:, 1]])]
-            C = np.vstack([C, B])
-        c_, r_ = frame_pts(C, 2.4, 1.4)
-        table[tag] = (70.0, 18.0, RES, 1.0, c_, r_)
+    c_ = E.mean(0)
+    rr = max(float(np.linalg.norm(E - c_, axis=1).max()) * 2.4, 1.1)
+    box = np.vstack([c_ + np.array(o) * rr for o in [(1, 1, 1), (-1, -1, -1), (1, -1, 1), (-1, 1, -1)]])
+    table["head"] = (30.0, 12.0, RES, 1.0, box)
+dname = next((n for n in EV if n.endswith("_droplets")), None)
+if dname is not None:
+    D = EV[dname][0]
+    C = region_pts(lambda r: r == "core", lambda n: n != dname)
+    parts = [D]
+    if C is not None:
+        near = np.min(np.linalg.norm(C[:, None, :] - D[None, ::40, :], axis=2), axis=1) < 1.2
+        parts.append(C[near])
+    table["droplets"] = (62.0, 14.0, RES, 1.15, np.vstack(parts))
 for tag in VIEWS:
     if tag not in table:
         print("SKIP", tag); continue
-    ang, elev, res, fill, c, rad = table[tag]
+    ang, elev, res, fill, P = table[tag]
     scene.render.resolution_x = scene.render.resolution_y = res
     scene.render.resolution_percentage = 100
-    aim(ang, elev, fill, c, rad)
+    aim(ang, elev, fill, P)
     scene.render.filepath = "%s_%s.png" % (PREFIX, tag)
     bpy.ops.render.render(write_still=True)
     print("WROTE", scene.render.filepath)

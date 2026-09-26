@@ -4,10 +4,10 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 19.7422,
-   "height": 4.3015,
-   "width": 2.1462,
-   "depth": 19.7422,
+   "footprint": 14.579,
+   "height": 4.7328,
+   "width": 4.5874,
+   "depth": 14.579,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -16,23 +16,23 @@
    "pass": true,
    "min_z": 0.0,
    "centre_xy": [
-    0.00033,
-    0.00657
+    0.0,
+    0.0
    ],
    "transforms_applied": true
   },
   {
    "check": "facing_-Y",
    "pass": true,
-   "angle_from_minusY_deg": 0.0,
+   "angle_from_minusY_deg": -0.09,
    "tolerance_deg": 30.0,
-   "rule": "midpoint of the two eye sockets -> the snout tip (head frame, built facing -Y)",
+   "rule": "midpoint of the two eyes -> the snout tip (the head's rounded front on its axis)",
    "yaw_fix_deg": 0.0
   },
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 45558,
+   "tris": 40876,
    "budget": [
     30000,
     50000
@@ -48,44 +48,44 @@
    "flipped": 0,
    "meshes": [
     {
-     "mesh": "magmoo_upper",
+     "mesh": "magmoo_head",
      "layers": 1,
-     "islands": 456,
+     "islands": 144,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 15% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.603,
-     "area_distortion_p95": 1.142
+     "overlap_note": "summed UV area is 10% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.6947,
+     "area_distortion_p95": 1.139
     },
     {
-     "mesh": "magmoo_body",
+     "mesh": "magmoo_mid",
      "layers": 1,
-     "islands": 364,
+     "islands": 82,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 13% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.6476,
-     "area_distortion_p95": 1.141
+     "overlap_note": "summed UV area is 8% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.6094,
+     "area_distortion_p95": 1.152
     },
     {
      "mesh": "magmoo_tail",
      "layers": 1,
-     "islands": 365,
+     "islands": 256,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 20% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.2943,
-     "area_distortion_p95": 1.169
+     "overlap_note": "summed UV area is 12% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.4382,
+     "area_distortion_p95": 1.136
     },
     {
-     "mesh": "magmoo_bridges",
+     "mesh": "magmoo_droplets",
      "layers": 1,
-     "islands": 40,
+     "islands": 33,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 23% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4734,
-     "area_distortion_p95": 1.162
+     "overlap_note": "summed UV area is 17% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.596,
+     "area_distortion_p95": 1.18
     }
    ]
   },
@@ -93,7 +93,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 45558
+   "faces": 40876
   },
   {
    "check": "colour",

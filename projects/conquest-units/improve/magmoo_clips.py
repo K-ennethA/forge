@@ -1,7 +1,8 @@
 """Magmoo animated previews (duskmaw_clips.py copied, not imported: multi-mesh unit + the material glow slot).
+v2: --prefix names the outputs (magmoo_v2 keeps the v1 previews beside them).
 In-memory only; never saves the blend.
 
-    blender --background <rigged/magmoo.blend> --factory-startup --python magmoo_clips.py -- <out_dir> [res] [sheet]
+    blender --background <rigged/magmoo.blend> --factory-startup --python magmoo_clips.py -- <out_dir> [res] [sheet] [--prefix P]
 
 Writes <out_dir>/magmoo_{idle,walk}.mp4 (H.264, 24 fps) and, with 'sheet', magmoo_{idle,walk}_sheet.png (8 frames of
 one cycle, 4x2) plus magmoo_walk_top_sheet.png (the slither seen from above: the travelling wave reads best there).
@@ -25,7 +26,7 @@ os.makedirs(OUT, exist_ok=True)
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
 meshes = [o for o in scene.objects if o.type == "MESH" and o.parent is rig and not o.hide_render]
-UNIT = "magmoo"
+UNIT = argv[argv.index("--prefix") + 1] if "--prefix" in argv else "magmoo"
 mat = meshes[0].data.materials[0]
 nt = mat.node_tree
 

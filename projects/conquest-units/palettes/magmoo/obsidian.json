@@ -2,15 +2,15 @@
  "unit": "magmoo",
  "skin": "obsidian",
  "extends": "default",
- "description": "Obsidian: black volcanic glass crust with cold blue-white magma - same regions, same glow tiers, palette swap only.",
+ "description": "v2 Obsidian goo: black volcanic-glass slime with cold blue-white heat - same regions, same heat grade, palette swap only. The body goes near-black glossy with a faint blue sheen; the heat tiers (flow patches, flame tips, torn-end cores, droplets, eyes) burn blue-white.",
  "regions": {
-  "crust":     {"rgb": [18, 18, 26],    "note": "black volcanic glass"},
-  "crust_hot": {"rgb": [30, 36, 70],    "emission": [40, 110, 255],  "emission_scale": 0.10},
-  "crack":     {"rgb": [60, 170, 255],  "emission": [30, 140, 255],  "emission_scale": 0.60},
-  "flame":     {"rgb": [120, 210, 255], "emission": [60, 180, 255],  "emission_scale": 0.85},
-  "core":      {"rgb": [170, 232, 255], "emission": [90, 200, 255],  "emission_scale": 1.10},
-  "maw":       {"rgb": [80, 190, 255],  "emission": [40, 150, 255],  "emission_scale": 1.30},
-  "eye":       {"rgb": [225, 248, 255], "emission": [160, 230, 255], "emission_scale": 1.60}
+  "goo_cool": {"rgb": [6, 6, 9],       "emission": [10, 30, 90],    "emission_scale": 0.01},
+  "goo":      {"rgb": [12, 12, 16],    "emission": [20, 60, 160],   "emission_scale": 0.02},
+  "goo_hot":  {"rgb": [36, 64, 128],   "emission": [40, 110, 255],  "emission_scale": 0.45},
+  "flame":    {"rgb": [110, 196, 255], "emission": [60, 170, 255],  "emission_scale": 0.85},
+  "core":     {"rgb": [196, 238, 255], "emission": [120, 210, 255], "emission_scale": 1.15},
+  "eye":      {"rgb": [232, 250, 255], "emission": [170, 232, 255], "emission_scale": 1.60},
+  "pupil":    {"rgb": [4, 4, 8]}
  },
- "material": {"roughness": 0.35}
+ "material": {"roughness": 0.18}
 }
