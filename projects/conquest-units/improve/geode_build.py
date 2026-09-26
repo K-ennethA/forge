@@ -91,6 +91,7 @@ ARC_GAPS = [("torso", "head", "neck"), ("torso", "arm.L", "shoulder"), ("torso",
 #            mode (artist 2026-09-25): "neck" = the head arc goes straight down like a neck (plumb anchor pair);
 #            "shoulder" = the torso end attaches up in the shoulder band instead of the horizontal nearest pair.
 ARC_NECK_PLUMB_W = 8.0                              # "how strictly vertical the neck arc is" (horizontal-offset weight)
+ARC_NECK_CENTER_W = 4.0                             # "how strongly the neck sits on the chest centerline" (x=0 pull)
 ARC_SHOULDER_FRAC = 0.80                            # "how high on the torso the arm arcs attach" (0 = torso bottom, 1 = top)
 ARC_SHOULDER_W = 2.0                                # "how strongly the arm arcs snap to that height"
 ARC_STRANDS = 2                                     # "arc count per gap" (strands)
@@ -835,7 +836,8 @@ for gi, gap in enumerate(ARC_GAPS):
     A, B = PART_V[pa], PART_V[pb]
     d2 = ((A[:, None, :] - B[None, :, :]) ** 2).sum(-1)
     if anchor_mode == "neck":
-        d2 = d2 + ((A[:, None, :2] - B[None, :, :2]) ** 2).sum(-1) * ARC_NECK_PLUMB_W
+        d2 = d2 + ((A[:, None, :2] - B[None, :, :2]) ** 2).sum(-1) * ARC_NECK_PLUMB_W \
+                + (A[:, None, 0] ** 2 + B[None, :, 0] ** 2) * ARC_NECK_CENTER_W
     elif anchor_mode == "shoulder":
         z_t = A[:, 2].min() + ARC_SHOULDER_FRAC * (A[:, 2].max() - A[:, 2].min())
         d2 = d2 + (((A[:, 2] - z_t) * ARC_SHOULDER_W) ** 2)[:, None]

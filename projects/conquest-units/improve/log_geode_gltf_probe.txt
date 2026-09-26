@@ -1,14 +1,14 @@
-00:01.406  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode.blend"
+00:01.625  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode.blend"
 INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
-21:55:35 | INFO: Starting glTF 2.0 export
-21:55:35 | INFO: Extracting primitive: geode
-21:55:35 | INFO: Primitives created: 1
-21:55:35 | INFO: Finished glTF 2.0 export in 0.25834059715270996 s
+21:57:40 | INFO: Starting glTF 2.0 export
+21:57:40 | INFO: Extracting primitive: geode
+21:57:40 | INFO: Primitives created: 1
+21:57:40 | INFO: Finished glTF 2.0 export in 0.2663440704345703 s
 
-21:55:35 | INFO: Starting glTF 2.0 export
-21:55:35 | INFO: Extracting primitive: geode
-21:55:35 | INFO: Primitives created: 1
-21:55:35 | INFO: Finished glTF 2.0 export in 0.15793609619140625 s
+21:57:40 | INFO: Starting glTF 2.0 export
+21:57:40 | INFO: Extracting primitive: geode
+21:57:40 | INFO: Primitives created: 1
+21:57:40 | INFO: Finished glTF 2.0 export in 0.1880168914794922 s
 
 GLTF_PROBE ACTIONS {"glow_colour_set_exported_as_COLOR_1": true, "animated_emission_exported": false, "core_scale_pulse_exported": true, "walk_clip_exported": true, "arc_flicker_morph_weights_exported": true, "material_emissive_is_uniform_factor": true} ["KHR_materials_emissive_strength"]
 GLTF_PROBE SCENE {"glow_colour_set_exported_as_COLOR_1": true, "animated_emission_exported": true, "core_scale_pulse_exported": true, "walk_clip_exported": true, "arc_flicker_morph_weights_exported": true, "material_emissive_is_uniform_factor": true} ["KHR_materials_emissive_strength", "KHR_animation_pointer"]

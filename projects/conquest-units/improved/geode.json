@@ -150,7 +150,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 0,
-   "seconds": 1.08,
+   "seconds": 1.48,
    "tris": 2452,
    "signed_volume": 115.773,
    "volume_ratio_vs_source": 0.9962,
@@ -225,7 +225,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 0,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "tris": 412,
    "signed_volume": 11.937,
    "volume_ratio_vs_source": 0.9757,
@@ -328,7 +328,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 3,
-   "seconds": 0.08,
+   "seconds": 0.12,
    "tris": 470,
    "signed_volume": 13.721,
    "volume_ratio_vs_source": 0.9687,
@@ -375,7 +375,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 10,
-   "seconds": 0.11,
+   "seconds": 0.13,
    "tris": 512,
    "signed_volume": 8.385,
    "volume_ratio_vs_source": 0.9698,
@@ -482,26 +482,26 @@
    {
     "gap": "torso|head",
     "anchor": "neck",
-    "nearest_gap": 2.6978,
+    "nearest_gap": 2.8616,
     "anchor_a": [
-     0.972,
-     -0.696,
-     16.884
+     0.089,
+     -1.773,
+     16.343
     ],
     "anchor_b": [
-     0.596,
-     -0.878,
-     19.272
+     0.046,
+     -1.468,
+     19.043
     ],
     "strands": [
      {
-      "surface_gap": 2.3826,
-      "length_with_sink": 2.7426,
+      "surface_gap": 2.8515,
+      "length_with_sink": 3.2115,
       "jag_amp": 0.42
      },
      {
-      "surface_gap": 2.4132,
-      "length_with_sink": 2.7732,
+      "surface_gap": 2.8355,
+      "length_with_sink": 3.1955,
       "jag_amp": 0.42
      }
     ]
@@ -672,7 +672,7 @@
   "faces": 5704,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "5205d24c48309dbd"
+  "uv_sha": "07f2a767b58fcadf"
  },
  "inner_rule": {
   "rule": "facet centroid deeper than INNER_DEPTH x part diagonal below the part's convex hull",
@@ -787,7 +787,7 @@
   ],
   "angle_from_minusY_deg": 0.07
  },
- "digest_geometry_colour": "d0284e8875a94222",
+ "digest_geometry_colour": "37413a5ae2ea69cf",
  "final_bbox": [
   [
    -8.9239,

@@ -229,7 +229,7 @@
    14.9762,
    15.7723
   ],
-  "arc_max_vertex_jump_per_frame": 0.7895,
+  "arc_max_vertex_jump_per_frame": 0.7518,
   "clearance_over_loop_every_4th_frame": {
    "torso|head": {
     "overlap_tri_pairs_max": 0,
@@ -370,7 +370,7 @@
    "KEKey"
   ]
  },
- "anim_seconds": 1.67,
+ "anim_seconds": 1.96,
  "bones": [
   {
    "name": "root",
@@ -816,5 +816,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\geode.json",
- "seconds": 6.4
+ "seconds": 7.4
 }
