@@ -31,6 +31,13 @@ Pipeline:
      belt, collar + throat gem, cape (solidified torn sheet), hair (scalp cap + lens-section locks), sword (+ tassel).
   5. palette, UVs, bake (normal + AO from the subdivided MPFB high + parts), rig (MPFB game_engine skeleton + hair /
      cape / sword / tassel chains), clips idle + walk, glb, skins.
+
+v2 (design/review-log.md 2026-09-26 "Vampwarrior v2 feedback"): lips re-anchored on the measured mouth slit (front-surface
+profile; v1 sat ~1 cm low), eye liner = a fine band measured from the lid edge (LINER_W), hair rebuilt as unified masses
+(HAIR_STYLE A / B / C; A default), CEL treatment (AO collapsed into flat tone bands in Col, rough, no specular, maps
+unwired), inverted-hull outline shells (own meshes, skinned, glTF cull-back), clips de-stiffened (eased idle sway,
+chest / head overlap, hair + cape follow-through as damped springs in periodic steady state), toe-dip fix.
+    [--scratch <dir>]                (exploration: every output goes to <dir>, nothing in the project is written)
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, tempfile, addon_utils
 import numpy as np
@@ -76,8 +83,10 @@ LEGLINE_DZ, LEGLINE_SLOPE = 0.0, 0.9  # leg opening: crotch + dz, rising with |x
 TRIM_W = 0.009                        # "seam trim" width
 SEAM_X = (0.052, 0.078)               # front princess seams: |x| at the underbust .. at the waist
 UNDERBUST_DZ = -0.02                  # underbust trim: this far below the bust apex height
-LIP = (0.026, 0.0105)                 # painted lips: half width / half height of the lip ellipse
-LINER_R = 0.0055                      # "eye liner": dark lid margin this far out from the eyeball
+LIP = (0.026, 0.0105, 0.0135)         # painted lips: half width / upper-lip height above the slit / lower-lip depth below
+LIP_DZ = 0.0                          # "lipstick up/down": extra shift of the painted lips off the measured mouth slit (m)
+LINER_W = 0.0016                      # "eye liner width": the dark line's visible width out from the lid edge (m)
+LINER_R_V1 = 0.0055                   # v1's liner rule (sphere height), kept only to quote the before-width
 # ---- eyes + fangs
 EYE_IRIS_DEG, EYE_PUPIL_DEG = 36.0, 13.0  # iris / pupil cone half-angles on the eyeball (seen from the front)
 FANG_LEN, FANG_R = 0.0085, 0.0022     # "fangs": visible length below the lip line, root radius
@@ -98,6 +107,7 @@ BELT_H, BELT_T = 0.032, 0.008
 COLLAR_H = (0.045, 0.085)             # "high collar" height at the front / back
 COLLAR_GAP, COLLAR_FLARE, COLLAR_T = 0.008, 0.028, 0.004
 COLLAR_OPEN_DEG = 34.0                # the collar is open this wide at the front (the gem sits in the gap)
+COLLAR_NU = 34                        # collar columns round the neck (v1 44; v2 funds the outline shell)
 GEM_R = 0.0115
 # ---- cape
 CAPE_PHI = 78.0                       # "cape wrap": half-angle from the back centre at the shoulders (deg)
@@ -105,7 +115,7 @@ CAPE_PHI_HEM = 98.0                   # ... at the hem (it flares round the legs
 CAPE_TOP_DZ = (0.03, -0.04)           # top edge: at the back of the neck base (+ up) / at the shoulder tips
 CAPE_HEM_Z = 0.13                     # "cape length": hem height (ankle)
 CAPE_CLEAR, CAPE_FLARE = 0.028, 0.20  # clearance off the back, extra flare at the hem
-CAPE_NU, CAPE_NV = 44, 26
+CAPE_NU, CAPE_NV = 36, 20             # cape grid (v2: 44 x 26 -> 36 x 20 to fund the outline shell in the hero window)
 CAPE_TEAR = (0.20, 0.07)              # "torn hem": longest tear, shortest tear (m) -- hash-alternated per column
 CAPE_SLITS = [(0.22, 0.55), (0.5, 0.42), (0.77, 0.6)]   # (column fraction, slit height as a fraction of the drop)
 CAPE_T = 0.0045
@@ -118,6 +128,18 @@ LOCK_T = 0.016                        # lock half-thickness (a clump)
 LOCK_RINGS = 36                       # "hair lock detail": cross-sections per lock
 HAIR_TIP_Z = 1.05                     # "hair length": the back cascade ends at the waist
 HAIR_SPREAD = (0.8, 0.95)             # the back cascade's fan across the back at the shoulders / lower (x its head angle)
+# v2 hair: unified masses (clumps = closed solids that overlap into one mass, carved grooves between / down them,
+# pointed clump tips that separate toward the ends). Artist picks A / B / C from the options sheet.
+HAIR_STYLE = "A"                      # "hair option": A broad smooth masses / B chunkier ribbon locks / C v1 locks merged
+HAIR_OPTS = {
+    "A": {"kind": "mass", "front_clumps": 2, "back_clumps": 5, "cols": 7, "rows": 18, "T": 0.022, "edge_t": 0.35,
+          "sub": 2, "sub_depth": 0.22, "overlap": 0.30, "split": 0.25, "tip_w": 0.10, "off": 0.003},
+    "B": {"kind": "mass", "front_clumps": 3, "back_clumps": 7, "cols": 5, "rows": 18, "T": 0.024, "edge_t": 0.30,
+          "sub": 1, "sub_depth": 0.0, "overlap": 0.10, "split": 0.60, "tip_w": 0.10, "off": 0.003},
+    "C": {"kind": "locks", "w_k": 1.7, "t_k": 1.25},
+}
+HAIR_FRONT_TIP_Z = (1.12, 1.08, 1.15)  # front masses' tip heights across (inner / middle / outer edge)
+HAIR_BACK_PSI = (108.0, 252.0)        # the back mass's span round the head (deg from the front; v1 locks 116 .. 244)
 # ---- sword (in the sword's own frame; see vampwarrior_parts.sword)
 SWORD = {"blade_len": 1.24, "blade_w": 0.072, "blade_w_at": 0.42, "base_w": 0.028, "tip_pow": 0.8, "thick": 0.0085,
          "edge_t": 0.0, "serr_n": 15, "serr_depth": 0.16, "serr_pow": 0.75, "vein_w": 0.16, "n_st": 40,
@@ -127,7 +149,26 @@ SWORD_REST = (-0.46, -0.08)           # rest pose: the sword stands point-down h
 # ---- bake
 BAKE_RES = (2048, 1024)               # normal, AO texture sizes (hero tier)
 CUT_SNAP = 0.12
-# ---- rig
+# ---- v2 cel-shade treatment (artist 2026-09-26: "cell shaded ... comic book style / animated art feeling")
+CEL_SHADE = True                      # "cel shade": True = flat tone bands in the vertex colours, no normal / AO maps in
+                                      #   the material, no specular; False = the v1 realistic material
+CEL_BANDS = ((0.55, 1.0), (0.25, 0.82), (-1.0, 0.64))   # "tone bands": (face AO at or above, colour multiplier) --
+                                      #   lit / mid / shadow; thresholds from the measured face-AO histogram (report)
+CEL_SMOOTH = 4                        # "band smoothness": neighbour-averaging passes on the AO before banding
+CEL_JITTER = False                   # v1's +-4 % per-face value jitter (realism noise) -- off for the flat comic read
+CEL_ROUGHNESS, CEL_SPECULAR = 1.0, 0.0   # "gloss": fully rough, zero specular level (nothing reads glossy)
+OUTLINE_T = 0.005                     # "outline thickness": the inverted-hull shell sits this far out along the normals (m)
+OUTLINE_FACE_K = 0.5                  # ... x this on the head (finer lines on the face)
+OUTLINE_HAND_K = 0.6                  # ... x this on the hands / fingers
+OUTLINE_EYE_CLEAR = (0.003, 0.012)    # ... fading to 0 within this band beyond the eyeball / lip ellipse (no dark rings)
+OUTLINE_SWORD_K = 0.8                 # ... x this on the sword
+OUTLINE_TRIS = 5200                   # "outline budget": triangles for the main shell (decimated copy; sword extra) --
+                                      #   what the hero window (50k) leaves after the model
+OUTLINE_MIN_TRIS = 60                 # a small part's shell keeps at least this many triangles
+OUTLINE_DROP_K = 0.3                  # shell faces with a vertex whose zone factor is below this are dropped (eyes / mouth)
+OUTLINE_COVER_ITERS = 3              # coverage passes: push shell vertices out until face centres clear the surface ...
+OUTLINE_COVER_MAX = 1.0               # ... by at most this x their own thickness extra
+OUTLINE_SKIP = ("eye", "fang", "gem", "gem_setting", "buckle", "tassel")   # parts with no shell (tiny / inside)
 HAIR_BONES, CAPE_BONES, CAPE_CHAINS = 4, 4, 5
 GRIP_CURL = (52.0, 68.0, 46.0)        # "grip": finger curl round the handle, per joint (deg)
 GRIP_THUMB = (18.0, 26.0)             # thumb wrap (deg)
@@ -163,6 +204,18 @@ SWORD_WALK = {"out_x": -0.30, "down": 34.0, "out": 32.0, "swing": 3.0, "fore": 0
 WALK_ARM_REACH = 0.965                # the sword arm hangs at this x its full length
 WALK_CAPE = (11.0, 1.4, 4.5)          # cape trail (deg), flutter root / tip (deg)
 WALK_HAIR = (4.0, 1.2, 3.5)           # back-hair trail (deg), bounce root / tip (deg)
+# ---- v2 de-stiffening (artist standing note: "the stiffness we see in the biped models")
+IDLE_EASE = 1.8                       # "idle sway ease": weight shifts settle and hold (tanh-shaped wave; 0 = pure sine)
+IDLE_OVERLAP = (3.0, 6.0)             # chest / head follow the pelvis sway this many frames late (overlap)
+WALK_OVERLAP = (2.0, 4.0)             # walk: chest counter-yaw / head lag behind the pelvis by this many frames
+WALK_NOD = (1.4, 0.9)                 # head nod / chest bob with the step (deg, at 2 x the stride), lagged as above
+# follow-through: each hair / cape bone's world rotation is the periodic steady state of a damped spring driven by
+# its driver bone's rotation + the chain root's acceleration (a pendulum's drag); bones cascade down the chain
+FT = {"hair_front": {"driver": "head", "hz": 3.0, "zeta": 0.5, "drag": 0.8, "gain": 1.0},
+      "hair_back": {"driver": "head", "hz": 2.6, "zeta": 0.45, "drag": 1.0, "gain": 1.0},
+      "cape": {"driver": "spine_03", "hz": 2.4, "zeta": 0.5, "drag": 1.3, "gain": 1.0}}
+FT_INTO_BODY_DEG = 1.5                # soft limit on a chain's swing back INTO the body (deg)
+FT_DRIFT_K = 0.6                    # the v1 air-drift waves kept at this share on top of the follow-through
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None
@@ -173,10 +226,12 @@ for i_, a_ in enumerate(argv):
         k_, v_ = argv[i_ + 1].split("=", 1)
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
-OUT_IMPROVED = os.path.join(ROOT, "improved", UNIT + ".blend")
-OUT_RIGGED = os.path.join(ROOT, "rigged", UNIT + ".blend")
-OUT_GLB = os.path.join(ROOT, "rigged", UNIT + ".glb")
-TEX_DIR = os.path.join(ROOT, "improved", "textures")
+SCRATCH = argv[argv.index("--scratch") + 1] if "--scratch" in argv else None   # exploration: every output goes here
+OUT_IMPROVED = os.path.join(SCRATCH or os.path.join(ROOT, "improved"), UNIT + ".blend")
+OUT_RIGGED = os.path.join(SCRATCH or os.path.join(ROOT, "rigged"), UNIT + ".blend")
+OUT_GLB = os.path.join(SCRATCH or os.path.join(ROOT, "rigged"), UNIT + ".glb")
+TEX_DIR = os.path.join(SCRATCH or os.path.join(ROOT, "improved"), "textures")
+TAG = "twin" if DIGEST_ONLY else ("scratch" if SCRATCH else "main")
 report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "name_status": "WORKING NAME (artist may rename)",
           "source": "none: from the artist's three-view sheet (transcribed in design/review-log.md 2026-09-26)",
           "tier": "hero", "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}
@@ -437,13 +492,32 @@ Z_WAIST = float(_zs[int(np.argmin(_wd))])
 crotch_m = slab(torso_v, KNEE["L"][2], HIP["L"][2] + 0.05) & (np.abs(BV[:, 0]) < 0.012)
 Z_CROTCH = float(BV[crotch_m, 2].min())
 Z_UB = Z_BUST + UNDERBUST_DZ
+# mouth slit (v2 fix): v1 took the most recessed midline VERTEX in the band, which was an inner-mouth vertex ~1 cm under
+# the real slit (the lipstick sat on the lower lip + chin). v2 reads the FRONT SURFACE only: a +Y ray per 0.25 mm down the
+# midline; the two most forward bulges in the band are the upper and lower lips, the slit is the most recessed point
+# between them.
+_zt = TEETH[:, 2].min()
+_zs_l = np.arange(_zt - 0.020, _zt + 0.022, 0.00025)
+_yp = []
+for z_ in _zs_l:
+    h_ = BVH_BODY.ray_cast(Vector((0.0, -0.6, float(z_))), Vector((0.0, 1.0, 0.0)), 1.0)
+    _yp.append(h_[0][1] if h_[0] is not None else np.nan)
+_yp = np.array(_yp)
+_ypf = np.convolve(np.nan_to_num(_yp, nan=np.nanmax(_yp)), np.ones(5) / 5.0, mode="same")
+_mins = [i for i in range(3, len(_ypf) - 3) if _ypf[i] <= _ypf[i - 1] and _ypf[i] <= _ypf[i + 1]]
+_mins = sorted(sorted(_mins, key=lambda i: _ypf[i])[:2])
+_i_slit = _mins[0] + int(np.argmax(_ypf[_mins[0]:_mins[1] + 1]))
+Z_SLIT = float(_zs_l[_i_slit])
+Z_LIP = Z_SLIT + LIP_DZ
+Y_LIP = float(np.nanmin(_yp[np.abs(_zs_l - Z_SLIT) < 0.003]))
+report["lip_fix"] = {"v1_rule_z": None, "slit_z": round(Z_SLIT, 4), "lip_dz": LIP_DZ,
+                     "lower_lip_bulge_z": round(float(_zs_l[_mins[0]]), 4), "upper_lip_bulge_z": round(float(_zs_l[_mins[1]]), 4),
+                     "teeth_edge_z": round(float(_zt), 4)}
 mid = (np.abs(BV[:, 0]) < 0.004) & HEAD_B & (BV[:, 2] > MOUTH[2] - 0.045) & (BV[:, 2] < MOUTH[2] + 0.02) & (BV[:, 1] < face_front_y + 0.045)
 _mz = BV[mid]
-_mz = _mz[np.argsort(_mz[:, 2])]
-# mouth slit = the most recessed midline point between the lip bulges (search the band around the upper-teeth edge)
 _band = _mz[(_mz[:, 2] > TEETH[:, 2].min() - 0.012) & (_mz[:, 2] < TEETH[:, 2].min() + 0.014)]
-Z_LIP = float(_band[np.argmax(_band[:, 1]), 2])
-Y_LIP = float(_mz[np.abs(_mz[:, 2] - Z_LIP) < 0.012, 1].min())
+report["lip_fix"]["v1_rule_z"] = round(float(_band[np.argmax(_band[:, 1]), 2]), 4)
+report["lip_fix"]["shift_up_m"] = round(Z_LIP - report["lip_fix"]["v1_rule_z"], 4)
 _scalp = HEAD_B & (BV[:, 2] > EYE["L"]["c"][2])
 HC = np.array([0.0, 0.5 * (BV[_scalp, 1].min() + BV[_scalp, 1].max()), EYE["L"]["c"][2]])
 HR = np.array([np.abs(BV[_scalp, 0]).max(), 0.5 * (BV[_scalp, 1].max() - BV[_scalp, 1].min()), Z_TOP - HC[2]])
@@ -481,9 +555,53 @@ FIELDS["seam"] = np.abs(X) - _sx
 FIELDS["bseam"] = np.abs(X) - 0.048
 FIELDS["z"] = Z.copy()
 FIELDS["y"] = Y.copy()
-FIELDS["lip"] = (X / LIP[0]) ** 2 + ((Z - Z_LIP) / LIP[1]) ** 2 - 1.0
+FIELDS["lip"] = (X / LIP[0]) ** 2 + ((Z - Z_LIP) / np.where(Z > Z_LIP, LIP[1], LIP[2])) ** 2 - 1.0
+# eye liner (v2): a band of LINER_W measured OUT FROM THE LID EDGE in the front view. v1 painted everything within 5.5 mm
+# of the eyeball sphere, and the lower lid lies flat on the ball, so the band ran ~8 mm wide. The lid edge = per 10-deg
+# wedge round the eye, the innermost skin vertex that is front-facing and in front of the eyeball.
+BN = VP.vertex_normals(BV, BF)
+EYE_AP = {}
+
+
+def eye_polar(P, s):
+    c_, r_ = EYE[s]["c"], EYE[s]["r"]
+    d_ = P[:, [0, 2]] - c_[[0, 2]]
+    rad_ = np.hypot(d_[:, 0], d_[:, 1])
+    ang_ = np.degrees(np.arctan2(d_[:, 1], d_[:, 0] * (1.0 if s == "L" else -1.0))) % 360.0
+    yeye_ = c_[1] - np.sqrt(np.maximum(r_ * r_ - rad_ * rad_, 0.0))
+    return rad_, ang_, yeye_
+
+
+def eye_visible(P, N, s):
+    """skin not hidden by the eyeball: front half, on or outside the eyeball sphere (0.5 mm tolerance: the lids rest on
+    it). In the front half, 'outside the sphere' with a projected radius < r means IN FRONT of the ball's surface."""
+    c_, r_ = EYE[s]["c"], EYE[s]["r"]
+    d3_ = np.linalg.norm(P - c_, axis=1)
+    return (d3_ >= r_ - 0.0005) & (d3_ < r_ + 0.02) & (P[:, 1] < c_[1])
+
+
 for s in "LR":
-    FIELDS["eye_" + s] = np.linalg.norm(BV - EYE[s]["c"], axis=1) - (EYE[s]["r"] + LINER_R)
+    rad_, ang_, _ = eye_polar(BV, s)
+    vis_ = eye_visible(BV, BN, s) & HEAD_B
+    bins = np.full(36, np.nan)
+    for k in range(36):
+        w_ = vis_ & (ang_ >= 10 * k) & (ang_ < 10 * k + 10)
+        if w_.any():
+            bins[k] = rad_[w_].min()
+    ok_ = ~np.isnan(bins)
+    bins = np.interp(np.arange(36), np.nonzero(ok_)[0], bins[ok_], period=36)
+    bins = 0.25 * np.roll(bins, 1) + 0.5 * bins + 0.25 * np.roll(bins, -1)
+    EYE_AP[s] = bins
+
+
+def aperture(ang_, s):
+    return np.interp(ang_, 10.0 * np.arange(36) + 5.0, EYE_AP[s], period=360.0)
+
+
+for s in "LR":
+    rad_, ang_, _ = eye_polar(BV, s)
+    gate_ = (np.linalg.norm(BV - EYE[s]["c"], axis=1) < EYE[s]["r"] + 0.02) & (Y < EYE[s]["c"][1]) & HEAD_B
+    FIELDS["eye_" + s] = np.where(gate_, rad_ - aperture(ang_, s) - LINER_W, 1.0)
 # hairline: front above the brows, sides above the ears, nape at the back
 _ce = (HC[1] - Y) / np.maximum(np.hypot(X, Y - HC[1]), 1e-9)          # 1 = front, -1 = back
 _hl = np.where(_ce >= 0, np.interp(_ce, [0.0, 0.55, 1.0], [EYE["L"]["c"][2] + 0.018, EYE["L"]["c"][2] + 0.040,
@@ -612,6 +730,27 @@ report["iso_cuts"] = {"cuts": len(cut_log), "edge_splits": int(sum(c["edge_split
                       "seconds": round(time.time() - t_, 1), "body_tris_after_cuts": nF}
 print("CUTS", json.dumps(report["iso_cuts"]))
 CW = transfer(CV)                                   # body weights on the cut mesh (exact on the split edges)
+# liner width, v1 rule vs v2 (front view, per 10-deg wedge: outermost visible band vertex minus the lid edge)
+_CN = VP.vertex_normals(CV, CF)
+_chead = np.argmax(CW, 1) == MBI["head"]
+_lw = {}
+for s in "LR":
+    rad_, ang_, _ = eye_polar(CV, s)
+    vis_ = eye_visible(CV, _CN, s) & _chead
+    ap_ = aperture(ang_, s)
+    for tag_, inb_ in (("v1", np.linalg.norm(CV - EYE[s]["c"], axis=1) - (EYE[s]["r"] + LINER_R_V1) < 0),
+                       ("v2", rad_ - ap_ - LINER_W < 1e-6)):
+        ws_ = []
+        for k in range(36):
+            w_ = vis_ & inb_ & (ang_ >= 10 * k) & (ang_ < 10 * k + 10)
+            if w_.any():
+                ws_.append(1000.0 * float((rad_[w_] - ap_[w_]).max()))
+        _lw.setdefault(tag_, []).extend(ws_)
+report["liner_width_mm"] = {k: {"median": round(float(np.median(v)), 2), "p90": round(float(np.percentile(v, 90)), 2),
+                                "wedges": len(v)} for k, v in _lw.items()}
+report["liner_width_rule"] = ("front view, per 10-deg wedge round each eye: the outermost visible liner vertex's distance "
+                              "from the lid edge (the innermost front-facing skin in front of the eyeball)")
+print("LINER", json.dumps(report["liner_width_mm"]), "LIP", json.dumps(report["lip_fix"]))
 
 # =========================================================================== 4. parts
 PARTS = []          # dicts: name, V, F, R, w ('transfer' | 'rigid:<bone>' | 'rigid_transfer' | callable), + chain info
@@ -836,7 +975,7 @@ add_part("buckle", V_, F_, ["trim"] * len(F_), w="rigid_transfer")
 NECK_F = [f for f, n in zip(BF, fdomn) if n in ("neck_01", "spine_03", "head", "clavicle_l", "clavicle_r")]
 BVH_NECK = BVHTree.FromPolygons(BV.tolist(), NECK_F)
 Z_C0 = NECK0[2] - 0.012
-nu_c, nv_c = 44, 6
+nu_c, nv_c = COLLAR_NU, 6
 _zc = np.linspace(Z_C0, Z_C0 + COLLAR_H[1] + 0.01, 24)
 Vc = []
 for j in range(nv_c):
@@ -970,28 +1109,56 @@ def front_support(x, z, off):
     return np.array([x, y - off, z])
 
 
+HO = HAIR_OPTS[HAIR_STYLE]
+LT = LOCK_T * HO.get("t_k", 1.0)       # style C: thicker v1 locks
 LOCKS = []
-for sg, s in ((1.0, "L"), (-1.0, "R")):
-    for k, (dpsi, dx, tipz, W) in enumerate([(3.0, 0.012, 1.12, 0.019), (12.0, 0.04, 1.06, 0.022), (22.0, 0.07, 1.16, 0.021)]):
-        ctl = [on_head(sg * dpsi, 60.0 - 4 * k, LOCK_T * 0.6), on_head(sg * (40.0 + 6 * k), 36.0 - 2 * k, LOCK_T),
-               on_head(sg * (78.0 + 4 * k), 10.0, LOCK_T), on_head(sg * (96.0 + 5 * k), -16.0, LOCK_T),
-               np.array([sg * (0.10 + dx * 0.8), NECK0[1] - 0.045 + 0.01 * k, SHO[s][2] + 0.05 - 0.01 * k]),
-               front_support(sg * (0.085 + dx), Z_BUST + 0.06, LOCK_T + 0.008),
-               front_support(sg * (0.085 + dx), Z_BUST, LOCK_T + 0.01)]
-        tip = ctl[-1].copy(); tip[2] = tipz; tip[1] -= 0.012
-        ctl.append(tip)
-        LOCKS.append({"name": "lock.front.%s.%d" % (s, k), "ctl": np.array(ctl), "W": W, "chain": "hair_front." + s})
-# back cascade: psi measured from the FRONT toward +X (180 = back centre); the torso azimuth from the back is 180 - psi
-for k, psi in enumerate(np.linspace(116.0, 244.0, 9)):
+if HO["kind"] == "locks":             # style C: v1's 3 + 3 front / 9 back lens locks, wider + thicker so they merge
+    for sg, s in ((1.0, "L"), (-1.0, "R")):
+        for k, (dpsi, dx, tipz, W) in enumerate([(3.0, 0.012, 1.12, 0.019), (12.0, 0.04, 1.06, 0.022), (22.0, 0.07, 1.16, 0.021)]):
+            ctl = [on_head(sg * dpsi, 60.0 - 4 * k, LT * 0.6), on_head(sg * (40.0 + 6 * k), 36.0 - 2 * k, LT),
+                   on_head(sg * (78.0 + 4 * k), 10.0, LT), on_head(sg * (96.0 + 5 * k), -16.0, LT),
+                   np.array([sg * (0.10 + dx * 0.8), NECK0[1] - 0.045 + 0.01 * k, SHO[s][2] + 0.05 - 0.01 * k]),
+                   front_support(sg * (0.085 + dx), Z_BUST + 0.06, LT + 0.008),
+                   front_support(sg * (0.085 + dx), Z_BUST, LT + 0.01)]
+            tip = ctl[-1].copy(); tip[2] = tipz; tip[1] -= 0.012
+            ctl.append(tip)
+            LOCKS.append({"name": "lock.front.%s.%d" % (s, k), "ctl": np.array(ctl), "W": W * HO["w_k"], "chain": "hair_front." + s})
+    # back cascade: psi measured from the FRONT toward +X (180 = back centre); the torso azimuth from the back is 180 - psi
+    for k, psi in enumerate(np.linspace(116.0, 244.0, 9)):
+        pb_ = 180.0 - psi
+        ctl = [on_head(psi, 76.0, LT * 0.6), on_head(psi, 32.0, LT), on_head(psi, -12.0, LT),
+               support(pb_, HEADJ[2] - 0.035, LT + 0.004)]
+        for zz, spread in ((SHO["L"][2] - 0.03, HAIR_SPREAD[0]), (1.32, HAIR_SPREAD[1]), (1.2, HAIR_SPREAD[1])):
+            ctl.append(support(pb_ * spread, zz, LT + 0.006))
+        tipz = HAIR_TIP_Z + 0.05 * math.cos(2.3 * k) + 0.02 * abs(k - 4) / 4
+        ctl.append(support(pb_ * HAIR_SPREAD[1], tipz, LT + 0.008))
+        ch = "hair_back.L" if psi < 165 else ("hair_back.R" if psi > 195 else "hair_back.C")
+        LOCKS.append({"name": "lock.back.%d" % k, "ctl": np.array(ctl), "W": 0.033 * HO["w_k"], "chain": ch})
+
+
+def col_front(sg, s, q, off):
+    """a front-mass column at q (0 = the part edge .. 1 = the outer edge): from the centre part over the temple and the
+    ear, over the shoulder, down the front to the bust / waist."""
+    ctl = [on_head(sg * (3.0 + 34.0 * q), 62.0 - 12.0 * q, off), on_head(sg * (42.0 + 28.0 * q), 34.0 - 8.0 * q, off),
+           on_head(sg * (78.0 + 30.0 * q), 8.0, off), on_head(sg * (96.0 + 26.0 * q), -16.0, off),
+           np.array([sg * (0.088 + 0.085 * q), NECK0[1] - 0.042 + 0.035 * q, SHO[s][2] + 0.045 - 0.012 * q]),
+           front_support(sg * (0.072 + 0.095 * q), Z_BUST + 0.06, off + 0.003),
+           front_support(sg * (0.078 + 0.095 * q), Z_BUST, off + 0.004)]
+    tip = ctl[-1].copy(); tip[2] = float(np.interp(q, [0.0, 0.5, 1.0], HAIR_FRONT_TIP_Z)); tip[1] -= 0.006
+    ctl.append(tip)
+    return np.array(ctl)
+
+
+def col_back(q, off, tipz):
+    """a back-mass column at q (0 = her left side of the head .. 1 = her right): crown, down the back of the head, over
+    the collar / cape, fanning across the back to the waist."""
+    psi = HAIR_BACK_PSI[0] + (HAIR_BACK_PSI[1] - HAIR_BACK_PSI[0]) * q
     pb_ = 180.0 - psi
-    ctl = [on_head(psi, 76.0, LOCK_T * 0.6), on_head(psi, 32.0, LOCK_T), on_head(psi, -12.0, LOCK_T),
-           support(pb_, HEADJ[2] - 0.035, LOCK_T + 0.004)]
+    ctl = [on_head(psi, 76.0, off), on_head(psi, 32.0, off), on_head(psi, -12.0, off), support(pb_, HEADJ[2] - 0.035, off + 0.002)]
     for zz, spread in ((SHO["L"][2] - 0.03, HAIR_SPREAD[0]), (1.32, HAIR_SPREAD[1]), (1.2, HAIR_SPREAD[1])):
-        ctl.append(support(pb_ * spread, zz, LOCK_T + 0.006))
-    tipz = HAIR_TIP_Z + 0.05 * math.cos(2.3 * k) + 0.02 * abs(k - 4) / 4
-    ctl.append(support(pb_ * HAIR_SPREAD[1], tipz, LOCK_T + 0.008))
-    ch = "hair_back.L" if psi < 165 else ("hair_back.R" if psi > 195 else "hair_back.C")
-    LOCKS.append({"name": "lock.back.%d" % k, "ctl": np.array(ctl), "W": 0.033, "chain": ch})
+        ctl.append(support(pb_ * spread, zz, off + 0.003))
+    ctl.append(support(pb_ * HAIR_SPREAD[1], tipz, off + 0.004))
+    return np.array(ctl)
 
 
 def relax_path(C, margin, iters=6, fix=1):
@@ -1012,10 +1179,78 @@ def relax_path(C, margin, iters=6, fix=1):
 
 
 LOCK_INFO = {}
+
+
+def hair_clump(name, colfn, q0, q1, chain):
+    """one clump of a hair mass: a sheet of HO['cols'] columns x HO['rows'] rows spanning [q0, q1] widened by the overlap
+    (neighbouring clumps interpenetrate into one mass), thick in the middle / thin at its edges (the carved groove between
+    clumps) with HO['sub'] shallow strand grooves down it; below 1 - split it narrows to its own width (the clumps come
+    apart) and over the last 20 % to a point. Solidified (closed); weights like a lock (head, then its chain)."""
+    m, nr, ov = HO["cols"], HO["rows"], HO["overlap"]
+    w = q1 - q0
+    qs = np.linspace(max(0.0, q0 - ov * w), min(1.0, q1 + ov * w), m)
+    off = HO["off"]
+    cols_, sarcs = [], []
+    for q in qs:
+        C = VP.resample(VP.catmull(colfn(q), 10), 48)[0]
+        C = relax_path(C, off + 0.0015)
+        seg = np.linalg.norm(np.diff(C, axis=0), axis=1)
+        sa = np.concatenate([[0], np.cumsum(seg)])
+        srow = sa[-1] * np.linspace(0.0, 1.0, nr) ** 1.35                 # denser rows over the scalp
+        cols_.append(np.stack([np.interp(srow, sa, C[:, k]) for k in range(3)], 1))
+        sarcs.append(srow)
+    P_ = np.array(cols_)                                                   # (m, nr, 3)
+    S_ = np.array(sarcs)
+    c = (m - 1) // 2
+    v = np.linspace(0.0, 1.0, nr)
+    kfree = 0.9 * (q1 - q0) / max(qs[-1] - qs[0], 1e-9)                 # own width (no overlap), a hair narrower
+    wf = (1.0 + (kfree - 1.0) * smoothstep(1.0 - HO["split"], 1.0 - HO["split"] + 0.15, v)) * \
+        (1.0 + (HO["tip_w"] - 1.0) * smoothstep(0.8, 1.0, v) ** 0.8)
+    P_ = P_[c][None] + (P_ - P_[c][None]) * wf[None, :, None]
+    V = P_.transpose(1, 0, 2).reshape(-1, 3)                               # vertex j * m + i
+    F = VP.grid_faces(m, nr)
+    sgn = 0.0
+    for f in F[::3]:
+        q_ = V[f]; cc = q_.mean(0)
+        nn = np.cross(q_[1] - q_[0], q_[2] - q_[0])
+        h_ = BVH_HAIR.find_nearest(Vector(cc))
+        sgn += float(np.dot(nn, cc - np.array(h_[0])))
+    if sgn < 0:
+        F = [f[::-1] for f in F]
+    fcol = np.tile(np.arange(m) / (m - 1.0), nr)
+    vrow = np.repeat(v, m)
+    across = HO["edge_t"] + (1.0 - HO["edge_t"]) * np.sqrt(np.maximum(0.0, 1.0 - (2.0 * fcol - 1.0) ** 2))
+    if HO["sub"] > 1:
+        across *= 1.0 - HO["sub_depth"] * 0.5 * (1.0 + np.cos(2.0 * math.pi * HO["sub"] * fcol))
+    along = (0.35 + 0.65 * smoothstep(0.0, 0.2, vrow)) * (1.0 - 0.8 * smoothstep(0.7, 1.0, vrow))
+    Vs, Fs, Rs = VP.solidify(V, F, HO["T"] * across * along, 0.0012, "hair", "hair_shade", "hair")
+    svert = np.tile(S_.T.reshape(-1), 2)
+    Cc = P_[c]
+    dcap = np.array([BVH_CAP.find_nearest(Vector(p))[3] for p in Cc])
+    i_leave = int(np.argmax(dcap > 0.02)) if (dcap > 0.02).any() else nr // 3
+    Lc = float(S_[c][-1])
+    add_part(name, Vs, Fs, Rs, w="lock", s=svert, s_leave=float(S_[c][i_leave]), L=Lc, chain=chain, path=Cc[i_leave:])
+    LOCK_INFO[name] = {"length": round(Lc, 3), "tip_z": round(float(Cc[-1][2]), 3), "q": [round(float(qs[0]), 3), round(float(qs[-1]), 3)],
+                       "leaves_head_at_m": round(float(S_[c][i_leave]), 3),
+                       "min_clear": round(float(min(BVH_HAIR.find_nearest(Vector(p))[3] for p in P_.reshape(-1, 3))), 4)}
+
+
+if HO["kind"] == "mass":
+    for sg, s in ((1.0, "L"), (-1.0, "R")):
+        n_ = HO["front_clumps"]
+        for j in range(n_):
+            hair_clump("lock.front.%s.%d" % (s, j), lambda q, sg=sg, s=s: col_front(sg, s, q, HO["off"]), j / n_, (j + 1) / n_,
+                       "hair_front." + s)
+    n_ = HO["back_clumps"]
+    for j in range(n_):
+        tz = HAIR_TIP_Z + 0.045 * math.cos(2.3 * j + 0.4) + 0.03 * abs(j - (n_ - 1) / 2.0) / ((n_ - 1) / 2.0)
+        psi_c = HAIR_BACK_PSI[0] + (HAIR_BACK_PSI[1] - HAIR_BACK_PSI[0]) * (j + 0.5) / n_
+        ch = "hair_back.L" if psi_c < 165 else ("hair_back.R" if psi_c > 195 else "hair_back.C")
+        hair_clump("lock.back.%d" % j, lambda q, tz=tz: col_back(q, HO["off"], tz), j / n_, (j + 1) / n_, ch)
 for L_ in LOCKS:
     C = VP.catmull(L_["ctl"], 10)
     C, Ltot = VP.resample(C, LOCK_RINGS)
-    C = relax_path(C, LOCK_T + 0.003)
+    C = relax_path(C, LT + 0.003)
     seg = np.linalg.norm(np.diff(C, axis=0), axis=1)
     sarc = np.concatenate([[0], np.cumsum(seg)])
     Ltot = float(sarc[-1])
@@ -1029,7 +1264,7 @@ for L_ in LOCKS:
         nout = unit(p - np.array(q)) if np.linalg.norm(p - np.array(q)) > 1e-5 else unit([p[0], p[1] - AX_Y, 0.0])
         wdir = np.cross(nout, unit(T_[i]))
         hw = L_["W"] * (0.62 + 0.38 * math.sin(0.5 * math.pi * min(sfr / 0.45, 1.0))) * (1.0 - smoothstep(0.62, 1.0, sfr) * 0.96)
-        ht = LOCK_T * (0.75 + 0.25 * math.sin(math.pi * min(sfr / 0.5, 1.0))) * (1.0 - smoothstep(0.7, 1.0, sfr) * 0.85)
+        ht = LT * (0.75 + 0.25 * math.sin(math.pi * min(sfr / 0.5, 1.0))) * (1.0 - smoothstep(0.7, 1.0, sfr) * 0.85)
         if i == 0:
             hw *= 0.5; ht *= 0.5
         rings.append(VP.lens_ring(p, T_[i], wdir, max(hw, 0.0012), max(ht, 0.0008), 6))
@@ -1082,10 +1317,12 @@ lo0, hi0 = allV.min(0), allV.max(0)
 SHIFT = np.array([(lo0[0] + hi0[0]) / 2, (lo0[1] + hi0[1]) / 2, 0.0])
 report["centre_shift"] = SHIFT.round(6).tolist()
 report["min_z_before_shift"] = round(float(lo0[2]), 6)
-OBJ = {"main": {"V": [], "F": [], "R": [], "RANGE": {}, "n": 0}, "sword": {"V": [], "F": [], "R": [], "RANGE": {}, "n": 0}}
+OBJ = {"main": {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0},
+       "sword": {"V": [], "F": [], "R": [], "RANGE": {}, "FRANGE": {}, "n": 0}}
 for p in ISL:
     o = OBJ[p["obj"]]
     o["RANGE"][p["name"]] = (o["n"], o["n"] + len(p["V"]))
+    o["FRANGE"][p["name"]] = (len(o["F"]), len(o["F"]) + len(p["F"]))
     o["V"].append(p["V"] - SHIFT)
     o["F"] += [[i + o["n"] for i in f] for f in p["F"]]
     o["R"] += list(p["R"])
@@ -1097,6 +1334,8 @@ assert set(OBJ["sword"]["R"]) <= set(REG_S), sorted(set(OBJ["sword"]["R"]) - set
 
 
 def jitter(V, F):
+    if not CEL_JITTER:
+        return np.ones(len(F))
     FCc = np.array([np.mean(V[f], 0) for f in F])
     j = (np.sin(FCc @ np.array([12.9898, 78.233, 37.719]) * 43.7585) * 43758.5453) % 1.0
     return 0.96 + 0.08 * j
@@ -1112,6 +1351,9 @@ def make_mat(name):
     nt.links.new(vg.outputs["Color"], bsdf.inputs["Emission Color"])
     nt.links.new(vc.outputs["Color"], bsdf.inputs["Base Color"])
     mat.use_backface_culling = True
+    if CEL_SHADE:
+        bsdf.inputs["Roughness"].default_value = CEL_ROUGHNESS
+        bsdf.inputs["Specular IOR Level"].default_value = CEL_SPECULAR
     return mat
 
 
@@ -1230,7 +1472,9 @@ FOCUS = {"face": box([EYE["L"]["c"] - SHIFT, EYE["R"]["c"] - SHIFT, np.array([0,
          "hem": box(_hem[_hem[:, 1] > AX_Y - SHIFT[1]], 0.02),
          "boots": box([ANKLE["L"] - SHIFT, ANKLE["R"] - SHIFT, KNEE["L"] - SHIFT, TOE["R"] - SHIFT, np.array([0, 0, 0.0])], 0.06),
          "torso": box([SHO["L"] - SHIFT, SHO["R"] - SHIFT, np.array([0, 0, Z_BELT - 0.12]) - SHIFT], 0.05),
-         "hand": box([WRI["R"] - SHIFT], 0.12)}
+         "hand": box([WRI["R"] - SHIFT], 0.12),
+         "head": box([HC - SHIFT + np.array([0, 0, HR[2]]), HC - SHIFT - np.array([0, HR[1], 0]), HC - SHIFT + np.array([0, HR[1], 0]),
+                      SHO["L"] - SHIFT, SHO["R"] - SHIFT, np.array([0.0, Y_BUST, Z_BUST - 0.12]) - SHIFT], 0.05)}
 low["conquest_focus"] = json.dumps(FOCUS)
 
 if PREVIEW:
@@ -1308,8 +1552,8 @@ px[~cov_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 pa[~cov_a, :3] = 1.0; img_ao.pixels.foreach_set(pa.ravel())
 bstats["pixel_sha"] = {"normal": sha(np.clip(np.rint(px[:, :3] * 255.0), 0, 255).astype(np.uint8)),
                        "ao": sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))}
-np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_normal_twin.npy" if DIGEST_ONLY else "vampwarrior_normal_main.npy"), px[:, :3])
-np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_ao_twin.npy" if DIGEST_ONLY else "vampwarrior_ao_main.npy"), pa[:, :1])
+np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_normal_%s.npy" % TAG), px[:, :3])
+np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_ao_%s.npy" % TAG), pa[:, :1])
 bstats["seconds"] = round(time.time() - t_bake, 1)
 report["bake"] = bstats
 DIG["bake_normal"] = bstats["pixel_sha"]["normal"]; DIG["bake_ao"] = bstats["pixel_sha"]["ao"]
@@ -1318,14 +1562,65 @@ if not DIGEST_ONLY:
     for img, nm in ((img_n, UNIT + "_normal.png"), (img_ao, UNIT + "_ao.png")):
         img.filepath_raw = os.path.join(TEX_DIR, nm); img.file_format = "PNG"; img.save(); img.pack()
 bsdf = nt.nodes["Principled BSDF"]
-mul = nt.nodes.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"; mul.location = (-300, 300)
-mul.inputs["Factor"].default_value = 1.0
-ia = [i for i in mul.inputs if i.identifier == "A_Color"][0]; ib = [i for i in mul.inputs if i.identifier == "B_Color"][0]
-oc = [o for o in mul.outputs if o.identifier == "Result_Color"][0]
-nt.links.new(nt.nodes["col"].outputs["Color"], ia); nt.links.new(ta.outputs["Color"], ib)
-nt.links.new(oc, bsdf.inputs["Base Color"])
-nmap = nt.nodes.new("ShaderNodeNormalMap"); nmap.location = (-300, -600)
-nt.links.new(tn.outputs["Color"], nmap.inputs["Color"]); nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+if CEL_SHADE:
+    # v2 cel treatment: the AO bake is collapsed into len(CEL_BANDS) flat tone bands, one per FACE, stored as the palette's
+    # per-face shade multiplier (region_shade) -> painted into the Col vertex colours, so every palette skin keeps the
+    # bands; the material reads Col only (no AO multiply, no normal map: the baked realism stays on disk, unwired).
+    uvl = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uvl); uvl = uvl.reshape(-1, 2)
+    ix = np.clip((uvl[:, 0] * RA).astype(np.int64), 0, RA - 1); iy = np.clip((uvl[:, 1] * RA).astype(np.int64), 0, RA - 1)
+    ao_loop = pa[iy * RA + ix, 0]
+    lt_ = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_total", lt_)
+    ls_ = np.concatenate([[0], np.cumsum(lt_)[:-1]])
+    ao_face = np.add.reduceat(ao_loop, ls_) / lt_
+    ao_face_raw = ao_face.copy()
+    # smooth the AO over the surface before banding (per-face bands on the dense MPFB face read as blotches, not
+    # comic shadow shapes): face AO -> area-weighted vertex AO -> CEL_SMOOTH edge-neighbour averaging passes -> faces
+    fa0 = np.empty(len(me.polygons)); me.polygons.foreach_get("area", fa0)
+    lv_ = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv_)
+    lf_ = np.repeat(np.arange(len(me.polygons)), lt_)
+    nvv = len(me.vertices)
+    vs_ = np.zeros(nvv); vw_ = np.zeros(nvv)
+    np.add.at(vs_, lv_, ao_face[lf_] * fa0[lf_]); np.add.at(vw_, lv_, fa0[lf_])
+    vao = vs_ / np.maximum(vw_, 1e-12)
+    ed_ = np.empty(len(me.edges) * 2, dtype=np.int64); me.edges.foreach_get("vertices", ed_); ed_ = ed_.reshape(-1, 2)
+    deg_ = np.bincount(ed_.ravel(), minlength=nvv).astype(float)
+    for _ in range(CEL_SMOOTH):
+        acc_ = np.zeros(nvv)
+        np.add.at(acc_, ed_[:, 0], vao[ed_[:, 1]]); np.add.at(acc_, ed_[:, 1], vao[ed_[:, 0]])
+        vao = 0.5 * vao + 0.5 * acc_ / np.maximum(deg_, 1.0)
+    ao_face = np.add.reduceat(vao[lv_], ls_) / lt_
+    shade = np.full(len(ao_face), CEL_BANDS[-1][1])
+    for thr, mulk in reversed(CEL_BANDS):
+        shade[ao_face >= thr] = mulk
+    rid_now = np.empty(len(me.polygons), dtype=np.int32); me.attributes["region_id"].data.foreach_get("value", rid_now)
+    PAL.store_regions(me, REG, rid_now, shade)
+    PAL.paint(me, pal_default)
+    fa_ = np.empty(len(me.polygons)); me.polygons.foreach_get("area", fa_)
+    report["cel"] = {"bands": [list(b) for b in CEL_BANDS],
+                     "face_ao_quantiles": {q: round(float(np.percentile(ao_face, q)), 3) for q in (5, 10, 25, 50, 75, 90)},
+                     "band_area_share": {str(mk): round(float(fa_[shade == mk].sum() / fa_.sum()), 3) for _, mk in CEL_BANDS},
+                     "band_face_share": {str(mk): round(float((shade == mk).mean()), 3) for _, mk in CEL_BANDS},
+                     "material": {"roughness": CEL_ROUGHNESS, "specular_ior_level": CEL_SPECULAR, "normal_map": "unwired",
+                                  "ao_multiply": "unwired (collapsed into the bands)"},
+                     "jitter": CEL_JITTER,
+                     "smooth_passes": CEL_SMOOTH,
+                     "raw_face_ao_quantiles": {q: round(float(np.percentile(ao_face_raw, q)), 3) for q in (10, 25, 50, 75)},
+                     "rule": "per-face AO = the mean of the AO bake at the face's UV corners, smoothed over the surface "
+                             "(area-weighted to vertices, CEL_SMOOTH neighbour passes, back to faces); band = the first "
+                             "(threshold, multiplier) the face AO reaches; the multiplier rides region_shade into Col. "
+                             "Thresholds: 0.55 ~ the face-AO median (lit = the open half of the surface), 0.25 ~ the "
+                             "lower quartile (shadow = the occluded quarter: under the collar / fauld / cape, cavities)"}
+    DIG["cel_bands"] = sha(shade)
+    print("CEL", json.dumps(report["cel"]))
+else:
+    mul = nt.nodes.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"; mul.location = (-300, 300)
+    mul.inputs["Factor"].default_value = 1.0
+    ia = [i for i in mul.inputs if i.identifier == "A_Color"][0]; ib = [i for i in mul.inputs if i.identifier == "B_Color"][0]
+    oc = [o for o in mul.outputs if o.identifier == "Result_Color"][0]
+    nt.links.new(nt.nodes["col"].outputs["Color"], ia); nt.links.new(ta.outputs["Color"], ib)
+    nt.links.new(oc, bsdf.inputs["Base Color"])
+    nmap = nt.nodes.new("ShaderNodeNormalMap"); nmap.location = (-300, -600)
+    nt.links.new(tn.outputs["Color"], nmap.inputs["Color"]); nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
 scene.render.engine = "BLENDER_EEVEE"
 for ob_ in (HIGHB, HIGHP):
     m_ = ob_.data
@@ -1612,6 +1907,192 @@ rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 
                           "each; <= 4 influences, normalised"}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
+# =========================================================================== 7b. v2 comic line: inverted-hull outline shells
+# Per part: a decimated copy (Blender Decimate COLLAPSE, deterministic), every vertex re-projected onto the full-res part
+# surface and pushed OUT along the shell's smooth normal by OUTLINE_T x a zone factor, faces REVERSED (normals inward),
+# backface-culled material: the renderer draws only the shell's far side, which shows as a dark rim round every
+# silhouette / overlap. Skinned with the source part's weights (barycentric at the nearest source point) -> it rides every
+# clip. Two meshes: 'vampwarrior_outline' (body + outfit + hair + cape) and 'vampwarrior_sword_outline' (the sword; hide /
+# swap it with the sword). glTF: own primitives, material doubleSided false (cull back), vertex colour = palette 'outline'.
+OUTLINE_SWORD_RATIO = 0.4             # the sword shell keeps this share of the sword's triangles
+t_ = time.time()
+MAT_OUT = make_mat(UNIT + "_outline")
+MAT_OUT.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1.0
+MAT_OUT.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.0
+HEAD_J, HAND_J = J["head"], [J[n] for n in DEFORM if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb")]
+
+
+def fan(F):
+    return [[f[0], f[k], f[k + 1]] for f in F for k in range(1, len(f) - 1)]
+
+
+def zone_k(name, P, W):
+    """outline thickness factor per shell vertex (P: rest coords after SHIFT, W: its weights)."""
+    k = np.ones(len(P))
+    if name == "body":
+        dom = np.argmax(W, 1)
+        k[dom == HEAD_J] = OUTLINE_FACE_K
+        k[np.isin(dom, HAND_J)] = OUTLINE_HAND_K
+        for s in "LR":
+            d = np.linalg.norm(P - (EYE[s]["c"] - SHIFT), axis=1) - EYE[s]["r"]
+            k *= smoothstep(OUTLINE_EYE_CLEAR[0], OUTLINE_EYE_CLEAR[1], d)
+        a_ = np.array([-LIP[0], Y_LIP, Z_LIP]) - SHIFT; b_ = np.array([LIP[0], Y_LIP, Z_LIP]) - SHIFT
+        tt = np.clip((P - a_) @ (b_ - a_) / float((b_ - a_) @ (b_ - a_)), 0, 1)
+        dl = np.linalg.norm(P - (a_ + tt[:, None] * (b_ - a_)), axis=1) - LIP[2]
+        k *= smoothstep(OUTLINE_EYE_CLEAR[0], OUTLINE_EYE_CLEAR[1], dl)
+    return k
+
+
+def build_shell(key, Wsrc, ratio_fn, kmul):
+    O = OBJ[key]
+    HV, HF, HW, stats, thick = [], [], [], {}, []
+    ext_all = []
+    for name, (a, b) in O["RANGE"].items():
+        if name.split(".")[0] in OUTLINE_SKIP:
+            continue
+        f0, f1 = O["FRANGE"][name]
+        Fp = [[i - a for i in f] for f in O["F"][f0:f1]]
+        Vp = O["V"][a:b]
+        ntri = tri_count_F(Fp)
+        r = ratio_fn(ntri)
+        tmp = new_obj("_shell_tmp", Vp, Fp)
+        if r < 0.999:
+            md = tmp.modifiers.new("dec", "DECIMATE"); md.decimate_type = "COLLAPSE"; md.ratio = r
+            md.use_collapse_triangulate = True
+            if Vp[:, 0].min() < -1e-3 and Vp[:, 0].max() > 1e-3:
+                md.use_symmetry = True; md.symmetry_axis = "X"
+        me_d = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+        Vd, Fd = mesh_arrays(me_d)
+        bpy.data.meshes.remove(me_d)
+        m_ = tmp.data; bpy.data.objects.remove(tmp, do_unlink=True); bpy.data.meshes.remove(m_)
+        Fd = [f for f in Fd if len(f) >= 3]
+        if not Fd:
+            continue
+        TRp = np.array(fan(Fp))
+        bvh_p = BVHTree.FromPolygons(Vp.tolist(), TRp.tolist())
+        loc = np.empty_like(Vd); ti = np.empty(len(Vd), dtype=np.int64)
+        for i, p in enumerate(Vd):
+            l_, _, i_, _ = bvh_p.find_nearest(Vector(p)); loc[i] = l_; ti[i] = i_
+        A_, B_, C_ = Vp[TRp[ti, 0]], Vp[TRp[ti, 1]], Vp[TRp[ti, 2]]
+        v0, v1, v2 = B_ - A_, C_ - A_, loc - A_
+        d00 = (v0 * v0).sum(1); d01 = (v0 * v1).sum(1); d11 = (v1 * v1).sum(1); d20 = (v2 * v0).sum(1); d21 = (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+        bv_ = (d11 * d20 - d01 * d21) / den; bw_ = (d00 * d21 - d01 * d20) / den
+        Bc = np.clip(np.stack([1 - bv_ - bw_, bv_, bw_], 1), 0, 1); Bc /= Bc.sum(1, keepdims=True)
+        Wp = Wsrc[a:b]
+        Wd = Bc[:, 0:1] * Wp[TRp[ti, 0]] + Bc[:, 1:2] * Wp[TRp[ti, 1]] + Bc[:, 2:3] * Wp[TRp[ti, 2]]
+        Nd = VP.vertex_normals(Vd, Fd)
+        # the source's outward side: orient the shell normals with the source face normal at the nearest point
+        nsrc = np.cross(B_ - A_, C_ - A_)
+        flip = float(np.sum(np.einsum("ij,ij->i", Nd, nsrc))) < 0
+        if flip:
+            Nd = -Nd
+        kz = zone_k(name, loc, Wd)
+        tv = OUTLINE_T * kmul * kz
+        # the decimated shell would bridge the eye sockets / the mouth (a dark film over the eyes): no shell faces there
+        # (never a silhouette from any view, so no line is lost)
+        Fd = [f for f in Fd if min(kz[f]) >= OUTLINE_DROP_K]
+        if not Fd:
+            continue
+        # coverage: a decimated shell's flat faces sag INSIDE the curved source between their vertices (the line drops
+        # out). Push each vertex further out by the worst face-centre deficit round it, OUTLINE_COVER_ITERS times.
+        ext = np.zeros(len(Vd))
+        FdA = np.array([f for f in Fd if len(f) == 3]) if all(len(f) == 3 for f in Fd) else None
+        for _ in range(OUTLINE_COVER_ITERS if FdA is not None else 0):
+            Vh = loc + Nd * (tv + ext)[:, None]
+            cc_ = Vh[FdA].mean(1)
+            tf = tv[FdA].mean(1)
+            dfc = np.empty(len(FdA))
+            for i, cq in enumerate(cc_):
+                q_, n_, _, dd = bvh_p.find_nearest(Vector(cq))
+                dfc[i] = dd if float((cq - np.array(q_)) @ np.array(n_)) * (-1.0 if flip else 1.0) >= 0 else -dd
+            deficit = np.maximum(tf - dfc, 0.0)
+            add = np.zeros(len(Vd))
+            for c_ in range(3):
+                np.maximum.at(add, FdA[:, c_], deficit)
+            ext = np.minimum(ext + add, OUTLINE_COVER_MAX * np.maximum(tv, 1e-9))
+        Vh = loc + Nd * (tv + ext)[:, None]
+        Vh[:, 2] = np.maximum(Vh[:, 2], 0.0)
+        ext_all.append(ext[tv > 0] * 1000.0)
+        # effective line thickness at the shell FACE CENTRES (chords sag between the re-projected vertices)
+        full = [f for f in Fd if min(tv[f]) >= OUTLINE_T * kmul * 0.999]
+        for f in full[::2]:
+            cc = Vh[f].mean(0)
+            q_, n_, _, dd = bvh_p.find_nearest(Vector(cc))
+            thick.append(dd if float((cc - np.array(q_)) @ np.array(n_)) * (-1.0 if flip else 1.0) >= 0 else -dd)
+        used_ = np.unique(np.concatenate([np.asarray(f) for f in Fd]))
+        remap_ = -np.ones(len(Vh), dtype=np.int64); remap_[used_] = np.arange(len(used_))
+        Vh, Wd = Vh[used_], Wd[used_]
+        Fd = [[int(remap_[i]) for i in f] for f in Fd]
+        o_ = sum(len(v) for v in HV)
+        HV.append(Vh); HW.append(Wd)
+        HF += [[i + o_ for i in (f[::-1] if not flip else f)] for f in Fd]
+        stats[name] = {"src_tris": ntri, "shell_tris": tri_count_F(Fd), "ratio": round(r, 4)}
+    return np.vstack(HV), HF, prune(np.vstack(HW)), stats, np.array(thick), np.concatenate(ext_all)
+
+
+_hull_src = sum(tri_count_F(OBJ["main"]["F"][slice(*OBJ["main"]["FRANGE"][n])]) for n in OBJ["main"]["RANGE"]
+                if n.split(".")[0] not in OUTLINE_SKIP)
+R_MAIN = OUTLINE_TRIS / _hull_src
+HVm, HFm, HWm, HSm, THm, EXm = build_shell("main", WM, lambda n: max(R_MAIN, min(1.0, OUTLINE_MIN_TRIS / max(n, 1))), 1.0)
+HVs, HFs, HWs, HSs, THs, EXs = build_shell("sword", WS, lambda n: max(OUTLINE_SWORD_RATIO, min(1.0, OUTLINE_MIN_TRIS / max(n, 1))),
+                                      OUTLINE_SWORD_K)
+OUTLINES = []
+for nm_, V_, F_, W_ in ((UNIT + "_outline", HVm, HFm, HWm), (UNIT + "_sword_outline", HVs, HFs, HWs)):
+    ob_ = new_obj(nm_, V_, F_)
+    ob_.data.materials.append(MAT_OUT)
+    PAL.store_regions(ob_.data, ["outline"], np.zeros(len(F_), dtype=np.int32), np.ones(len(F_)))
+    PAL.paint(ob_.data, pal_default)
+    ob_.data.shade_flat()
+    bpy.context.view_layer.objects.active = ob_
+    for o in scene.objects:
+        o.select_set(o is ob_)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.002, area_weight=0.0, correct_aspect=True,
+                             scale_to_bounds=False)
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.pack_islands(rotate=True, margin=0.002)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for j, n in enumerate(DEFORM):
+        nz = np.nonzero(W_[:, j] > 0)[0]
+        if len(nz) == 0:
+            continue
+        vg = ob_.vertex_groups.new(name=n)
+        for wv in np.unique(np.round(W_[nz, j], 6)):
+            vg.add(nz[np.round(W_[nz, j], 6) == wv].tolist(), float(wv), "REPLACE")
+    ob_.parent = rig
+    ob_.matrix_parent_inverse = Matrix.Identity(4)
+    am = ob_.modifiers.new("Armature", "ARMATURE"); am.object = rig
+    ob_.visible_shadow = False
+    ob_["conquest_unit"] = UNIT
+    ob_["conquest_role"] = "outline shell (inverted hull): cull back faces; normals point inward by construction"
+    OUTLINES.append(ob_)
+swo_out = OUTLINES[1]
+swo_out["conquest_toggle"] = "hide / swap together with 'vampwarrior_sword'"
+_infl = np.concatenate([(HWm > 0).sum(1), (HWs > 0).sum(1)])
+_sums = np.concatenate([HWm.sum(1), HWs.sum(1)])
+_th = np.concatenate([THm, THs]) * 1000.0
+rep["outline"] = {"thickness_m": OUTLINE_T, "face_k": OUTLINE_FACE_K, "hand_k": OUTLINE_HAND_K, "sword_k": OUTLINE_SWORD_K,
+                  "eye_lip_clear_m": list(OUTLINE_EYE_CLEAR), "tris_main_shell": tri_count_F(HFm),
+                  "tris_sword_shell": tri_count_F(HFs), "main_ratio": round(R_MAIN, 4), "main_shell_src_tris": _hull_src,
+                  "skipped_parts": list(OUTLINE_SKIP),
+                  "effective_thickness_mm_at_face_centres": {"p05": round(float(np.percentile(_th, 5)), 3),
+                                                             "median": round(float(np.median(_th)), 3),
+                                                             "p95": round(float(np.percentile(_th, 95)), 3),
+                                                             "dropout_pct_below_0.5mm": round(100.0 * float((_th < 0.5).mean()), 2),
+                                                             "samples": int(len(_th))},
+                  "coverage_push_mm_at_vertices": {"iters": OUTLINE_COVER_ITERS, "cap_x_t": OUTLINE_COVER_MAX,
+                                                   "median": round(float(np.median(np.concatenate([EXm, EXs]))), 3),
+                                                   "p95": round(float(np.percentile(np.concatenate([EXm, EXs]), 95)), 3),
+                                                   "max": round(float(np.concatenate([EXm, EXs]).max()), 3)},
+                  "skin": {"max_influences": int(_infl.max()), "unweighted": int((_infl == 0).sum()),
+                           "sum_dev_max": float(np.abs(_sums - 1.0).max())},
+                  "parts": {**HSm, **{"sword:" + k: v for k, v in HSs.items()}}, "seconds": round(time.time() - t_, 1)}
+DIG["outline"] = sha(np.vstack([HVm, HVs]))
+DIG["outline_weights"] = sha(np.vstack([HWm, HWs]))
+print("OUTLINE", json.dumps({k: v for k, v in rep["outline"].items() if k != "parts"}))
+
 # =========================================================================== 8. clips (closed-form poses -> keyed FK; legs + sword arm analytic IK)
 TAU = 2 * math.pi
 
@@ -1673,6 +2154,12 @@ for s in "LR":
 ARM_LEN = {s: float(np.linalg.norm(HEADP["lowerarm_" + s.lower()] - HEADP["upperarm_" + s.lower()]) +
                     np.linalg.norm(HEADP["hand_" + s.lower()] - HEADP["lowerarm_" + s.lower()])) for s in "LR"}
 TOE_REACH = max(float(np.max((p["V"] - SHIFT - LEGS[p["side"]]["C0"]) @ p["fd"])) for p in PARTS if p["name"].startswith("toecap"))
+TOE_PTS = {}
+for s in "LR":
+    _tp = [p for p in PARTS if p["name"] in ("toecap." + s, "sole." + s)]
+    _V = np.vstack([p["V"] for p in _tp])
+    _wb = np.concatenate([smoothstep(-0.022, 0.0, (p["V"] - p["c0"]) @ p["fd"]) for p in _tp])
+    TOE_PTS[s] = (_V - SHIFT, _wb)
 ROLL = {"idle": 180.0, "walk": 0.0}   # the sword's roll about its own axis per clip (picked below: least wrist bend)
 # the grip transform G: the (rest) sword -> held in the (rest) right hand, hammer grip, blade out of the pinky side
 R_G = frame_to(HANDS["R"]["e"], -HANDS["R"]["a"])
@@ -1738,13 +2225,6 @@ def sword_arm(D, Dsw):
     return err, float(np.linalg.norm(reached - wrist))
 
 
-def chains(D, prefix, nb, rots_fn):
-    for ch in sorted(c for c in CHAIN_PTS if c.startswith(prefix)):
-        for k in range(nb):
-            n = "%s.%d" % (ch, k)
-            fk(D, n, rots_fn(ch, k))
-
-
 def tassel(D, t, amp, ph=0.0):
     top = xf(D["sword"], S_(TAS_TOP))
     R0 = Ry(amp * math.sin(TAU * t + ph)) @ Rx(0.6 * amp * math.sin(TAU * t + ph + 1.1))
@@ -1792,36 +2272,57 @@ for s in "LR":
     IDLE_FEET_C[s] = (LEGS[s]["C0"] + np.array([sg * dx, dy, 0.0]), Rz(-sg * yaw))
 
 
+def ease_wave(x):
+    """a periodic weight-shift wave that eases in, settles and holds (tanh-shaped sine; IDLE_EASE 0 = pure sine)."""
+    return math.sin(x) if IDLE_EASE <= 0 else math.tanh(IDLE_EASE * math.sin(x)) / math.tanh(IDLE_EASE)
+
+
 def pose_idle(t):
     D = {"root": np.eye(4)}
     info = {}
     br = math.sin(TAU * t)                                   # one breath per loop
-    sway = math.sin(TAU * t + 0.7)
+    sway = ease_wave(TAU * t + 0.7)
+    sway_c = ease_wave(TAU * (t - IDLE_OVERLAP[0] / IDLE_N) + 0.7)      # the chest follows the pelvis late (overlap)
+    sway_h = ease_wave(TAU * (t - IDLE_OVERLAP[1] / IDLE_N) + 0.7)      # ... the head / free arm later still
     feet = {s: (IDLE_FEET_C[s][0], IDLE_FEET_C[s][1], IDLE_FEET_C[s][1]) for s in "LR"}
     Rp = Ry(IDLE_WEIGHT[1] + 0.4 * sway) @ Rz(-2.0)
     off = np.array([IDLE_WEIGHT[0] + IDLE_SWAY * sway, 0.004, 0.0])
     dz = min(0.0, pelvis_height(Rp, off[:2], feet, IDLE_REACH))
     D["pelvis"] = Tt(off + np.array([0, 0, dz - 0.003 * (0.5 + 0.5 * br)])) @ Tr(HEADP["pelvis"], Rp)
     fk(D, "spine_01", Ry(-0.5 * IDLE_WEIGHT[1]) @ Rx(-0.3 * IDLE_BREATH_DEG * br))
-    fk(D, "spine_02", Ry(-0.4 * IDLE_WEIGHT[1] - 0.3 * sway) @ Rx(-0.5 * IDLE_BREATH_DEG * br))
-    fk(D, "spine_03", Rz(3.0) @ Rx(-IDLE_BREATH_DEG * br - 1.5))
+    fk(D, "spine_02", Ry(-0.4 * IDLE_WEIGHT[1] - 0.3 * sway_c) @ Rx(-0.5 * IDLE_BREATH_DEG * br))
+    fk(D, "spine_03", Rz(3.0) @ Ry(-0.25 * sway_c) @ Rx(-IDLE_BREATH_DEG * br - 1.5))
     fk(D, "neck_01", Rx(0.5 * IDLE_HEAD[0]))
-    fk(D, "head", Rz(IDLE_HEAD[1] * math.sin(TAU * t + 1.9)) @ Rx(0.5 * IDLE_HEAD[0] + 0.6 * math.sin(TAU * t + 0.4)) @ Ry(-1.5))
+    fk(D, "head", Rz(IDLE_HEAD[1] * math.sin(TAU * t + 1.9)) @ Rx(0.5 * IDLE_HEAD[0] + 0.6 * math.sin(TAU * t + 0.4))
+       @ Ry(-1.5 - 0.5 * sway_h))
     info.update(plant_legs(D, feet, IDLE_REACH))
     # the planted sword, leaning, with a breath sway about its tip
     Rl = Rx(SWORD_IDLE_LEAN[1] + SWORD_IDLE_SWAY * br) @ Ry(SWORD_IDLE_LEAN[0] + 0.4 * SWORD_IDLE_SWAY * sway) @ Rz(ROLL["idle"])
     Dsw = TRT(IDLE_TIP, Rl, _tip_rest)
     info["arm_R"], info["wrist_R"] = sword_arm(D, Dsw)
-    free_arm(D, "L", IDLE_LARM[0] + 1.0 * br, IDLE_LARM[1] + 1.5 * sway, IDLE_LARM[2])
+    free_arm(D, "L", IDLE_LARM[0] + 1.0 * br, IDLE_LARM[1] + 1.5 * sway_h, IDLE_LARM[2])
     fingers(D, "R", GRIP_CURL, GRIP_THUMB)
     fingers(D, "L", RELAX_CURL, (4.0, 8.0))
-    chains(D, "hair_", HAIR_BONES, lambda ch, k: Rx((0.8 if "back" in ch else -0.4) *
-                                                   K.vine_wave(t, k, HAIR_BONES, IDLE_HAIR_DEG[0], IDLE_HAIR_DEG[1], 0.7, 1, 0.9 * len(ch)))
-                                                @ Ry(0.6 * K.vine_wave(t, k, HAIR_BONES, IDLE_HAIR_DEG[0], IDLE_HAIR_DEG[1], 0.7, 1, 2.0 + len(ch))))
-    chains(D, "cape.", CAPE_BONES, lambda ch, k: Rx(0.6 + K.vine_wave(t, k, CAPE_BONES, IDLE_CAPE_DEG[0], IDLE_CAPE_DEG[1], 0.8, 1, 1.1 * int(ch[-1])))
-                                                @ Ry(0.5 * K.vine_wave(t, k, CAPE_BONES, IDLE_CAPE_DEG[0], IDLE_CAPE_DEG[1], 0.8, 1, 2.3 + int(ch[-1]))))
     tassel(D, t, 2.0)
     return D, info
+
+
+def drape_local(cn, ch, k, t):
+    """the static drape + the (scaled) v1 air-drift waves of chain bone k, as a local rotation; the follow-through lag
+    is composed on top of this in apply_chains."""
+    dk = FT_DRIFT_K
+    if cn == "idle":
+        if ch.startswith("hair"):
+            return Rx((0.8 if "back" in ch else -0.4) * dk * K.vine_wave(t, k, HAIR_BONES, IDLE_HAIR_DEG[0], IDLE_HAIR_DEG[1], 0.7, 1, 0.9 * len(ch))) \
+                @ Ry(0.6 * dk * K.vine_wave(t, k, HAIR_BONES, IDLE_HAIR_DEG[0], IDLE_HAIR_DEG[1], 0.7, 1, 2.0 + len(ch)))
+        return Rx(0.6 + dk * K.vine_wave(t, k, CAPE_BONES, IDLE_CAPE_DEG[0], IDLE_CAPE_DEG[1], 0.8, 1, 1.1 * int(ch[-1]))) \
+            @ Ry(0.5 * dk * K.vine_wave(t, k, CAPE_BONES, IDLE_CAPE_DEG[0], IDLE_CAPE_DEG[1], 0.8, 1, 2.3 + int(ch[-1])))
+    if ch.startswith("hair"):
+        a = (WALK_HAIR[0] * (k + 1) / HAIR_BONES + dk * K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 2, 0.7 * len(ch))) \
+            if "back" in ch else -1.0 + 0.5 * dk * K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 2, 0.4)
+        return Rx(a) @ Ry(0.5 * dk * K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 1, 1.3 + len(ch)))
+    return Rx(WALK_CAPE[0] * (0.55 + 0.45 * k / (CAPE_BONES - 1)) + dk * K.vine_wave(t, k, CAPE_BONES, WALK_CAPE[1], WALK_CAPE[2], 0.9, 2, 0.8 * int(ch[-1]))) \
+        @ Ry(0.5 * dk * K.vine_wave(t, k, CAPE_BONES, WALK_CAPE[1], WALK_CAPE[2], 0.9, 1, 1.7 + int(ch[-1])))
 
 
 # ---- walk: in-place stride, planted feet slide back at ground speed; the sword trails in the right hand
@@ -1859,6 +2360,16 @@ def foot_walk(s, t):
     #  floor dips -2.1 mm at x 1.0, -1.3 mm at x 0.6)
     toe = 0.0 if stance else min(0.35 * roll, 0.3 * math.degrees(math.asin(min(1.0, z / TOE_REACH))))
     Rb = yaw @ Rx(toe)
+    if not stance:
+        # v2 toe-dip fix: v1 dipped the toe-cap tip 0.63 mm under the floor at swing start. Pose the toe cap + sole rigidly
+        # (foot / ball blend as skinned) and lift the swing foot by whatever still reaches below z = 0.
+        lo_ = s.lower()
+        C_ = np.array([x, y, z])
+        pf = C_ + (TOE_PTS[s][0] - C0) @ Rf.T
+        hb = C_ + Rf @ (HEADP["ball_" + lo_] - C0)
+        pb = hb + (TOE_PTS[s][0] - HEADP["ball_" + lo_]) @ Rb.T
+        zmin = float(((1.0 - TOE_PTS[s][1]) * pf[:, 2] + TOE_PTS[s][1] * pb[:, 2]).min())
+        z += max(0.0, -zmin)
     return np.array([x, y, z]), Rf, Rb, stance
 
 
@@ -1877,11 +2388,16 @@ def pose_walk(t):
     off = np.array([WALK_PELVIS[2] * s1, 0.0, 0.0])
     dz = pelvis_height(Rp, off[:2], feet, WALK_REACH)
     D["pelvis"] = Tt(off + np.array([0, 0, dz])) @ Tr(HEADP["pelvis"], Rp)
+    # overlap: the chest's counter-yaw and bob come WALK_OVERLAP[0] frames after the pelvis, the head's WALK_OVERLAP[1]
+    tc, th = t - WALK_OVERLAP[0] / WALK_N, t - WALK_OVERLAP[1] / WALK_N
+    c1c, c1h = math.cos(TAU * tc), math.cos(TAU * th)
+    s1h = math.sin(TAU * (th - 0.05))
     fk(D, "spine_01", Rz(-0.35 * yaw) @ Ry(-0.4 * roll))
-    fk(D, "spine_02", Rz(-0.45 * yaw + 0.5 * WALK_CHEST[0] * c1) @ Ry(-0.4 * roll) @ Rx(-0.5 * WALK_CHEST[1]))
-    fk(D, "spine_03", Rz(-0.3 * yaw + 0.5 * WALK_CHEST[0] * c1) @ Ry(-0.2 * roll) @ Rx(-0.5 * WALK_CHEST[1] + 0.6 * math.sin(2 * TAU * t)))
-    fk(D, "neck_01", Rz(-0.5 * WALK_CHEST[0] * c1) @ Rx(0.5 * WALK_CHEST[1]))
-    fk(D, "head", Rz(-0.4 * WALK_CHEST[0] * c1) @ Rx(0.5 * WALK_CHEST[1] + 2.0 - 0.8 * math.sin(2 * TAU * t)) @ Ry(0.5 * roll))
+    fk(D, "spine_02", Rz(-0.45 * yaw + 0.5 * WALK_CHEST[0] * c1c) @ Ry(-0.4 * roll) @ Rx(-0.5 * WALK_CHEST[1]))
+    fk(D, "spine_03", Rz(-0.3 * yaw + 0.5 * WALK_CHEST[0] * c1c) @ Ry(-0.2 * roll) @ Rx(-0.5 * WALK_CHEST[1] + WALK_NOD[1] * math.sin(2 * TAU * tc)))
+    fk(D, "neck_01", Rz(-0.5 * WALK_CHEST[0] * c1h) @ Rx(0.5 * WALK_CHEST[1]))
+    fk(D, "head", Rz(-0.4 * WALK_CHEST[0] * c1h) @ Rx(0.5 * WALK_CHEST[1] + 2.0 - WALK_NOD[0] * math.sin(2 * TAU * th))
+       @ Ry(-0.5 * WALK_PELVIS[1] * s1h))
     info.update(plant_legs(D, feet, WALK_REACH))
     # the sword: grip beside the right hip, blade trailing back-down-out, a small pendulum with the stride
     sw = SWORD_WALK
@@ -1900,12 +2416,6 @@ def pose_walk(t):
     free_arm(D, "L", WALK_LARM[0], WALK_LARM[1] * c1, WALK_LARM[2], lag_bend=6.0 * math.cos(TAU * t - 0.6) + 6.0)
     fingers(D, "R", GRIP_CURL, GRIP_THUMB)
     fingers(D, "L", RELAX_CURL, (4.0, 8.0))
-    chains(D, "hair_", HAIR_BONES, lambda ch, k: Rx((WALK_HAIR[0] * (k + 1) / HAIR_BONES + K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 2, 0.7 * len(ch)))
-                                                    if "back" in ch else -1.0 + 0.5 * K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 2, 0.4))
-                                                @ Ry(0.5 * K.vine_wave(t, k, HAIR_BONES, WALK_HAIR[1], WALK_HAIR[2], 0.8, 1, 1.3 + len(ch))))
-    chains(D, "cape.", CAPE_BONES, lambda ch, k: Rx(WALK_CAPE[0] * (0.55 + 0.45 * k / (CAPE_BONES - 1)) +
-                                                    K.vine_wave(t, k, CAPE_BONES, WALK_CAPE[1], WALK_CAPE[2], 0.9, 2, 0.8 * int(ch[-1])))
-                                                @ Ry(0.5 * K.vine_wave(t, k, CAPE_BONES, WALK_CAPE[1], WALK_CAPE[2], 0.9, 1, 1.7 + int(ch[-1]))))
     tassel(D, t, 7.0, 0.5)
     info["stance"] = st
     info["feet"] = feet
@@ -1943,6 +2453,90 @@ def basis(D, n):
 
 
 PARENT["root"] = None
+
+
+# ---- v2 follow-through (secondary motion) for the hair + cape chains
+def rotvec(R):
+    q = Matrix(np.asarray(R).tolist()).to_quaternion()
+    if q.w < 0:
+        q.negate()
+    ax_, ang_ = q.to_axis_angle()
+    return np.array(ax_) * ang_
+
+
+def exp_rv(v):
+    a = float(np.linalg.norm(v))
+    return np.eye(3) if a < 1e-12 else K._rot(v / a, a)
+
+
+FT_CHAINS = sorted(c for c in CHAIN_PTS if c != "tassel")
+INTO_SIGN = {"hair_front": 1.0, "hair_back": -1.0, "cape": -1.0}   # the X-rotation sign that swings a chain INTO the body
+
+
+def ft_kind(ch):
+    return "cape" if ch.startswith("cape") else ch.split(".")[0]
+
+
+def ft_nb(ch):
+    return CAPE_BONES if ch.startswith("cape") else HAIR_BONES
+
+
+def secondary(cn, N):
+    """per chain bone k: world rotation y_k = H_k * y_(k-1), y_(-1) = the driver's rotation + the pendulum drag of the
+    chain root's acceleration, H = a damped spring (FT hz / zeta) applied as the PERIODIC steady state in the frequency
+    domain (so the loop stays exact). The keyed lag is y_k - (the chain parent's own rotation), soft-limited into the body."""
+    Ds = [POSE[cn](f / N)[0] for f in range(N)]
+    w = 2 * math.pi * np.fft.fftfreq(N, d=1.0 / K.FPS)
+    out, lag = {}, {}
+    lim = math.radians(FT_INTO_BODY_DEG)
+    for ch in FT_CHAINS:
+        P_ = FT[ft_kind(ch)]
+        par = CHAIN_PTS[ch][2]
+        rd = np.array([rotvec(D[P_["driver"]][:3, :3] @ Ds[0][P_["driver"]][:3, :3].T) for D in Ds])
+        rp = np.array([rotvec(D[par][:3, :3] @ Ds[0][par][:3, :3].T) for D in Ds])
+        anc = np.array([xf(D[par], HEADP[ch + ".0"]) for D in Ds])
+        acc = np.real(np.fft.ifft(np.fft.fft(anc, axis=0) * (-(w ** 2))[:, None], axis=0))
+        u = rd + P_["drag"] * np.stack([-acc[:, 1], acc[:, 0], np.zeros(N)], 1) / 9.81
+        w0 = 2 * math.pi * P_["hz"]
+        H = w0 ** 2 / (w0 ** 2 - w ** 2 + 2j * P_["zeta"] * w0 * w)
+        y, rows = u, []
+        sg_ = INTO_SIGN[ft_kind(ch)]
+        for k in range(ft_nb(ch)):
+            y = np.real(np.fft.ifft(np.fft.fft(y, axis=0) * H[:, None], axis=0))
+            d = P_["gain"] * (y - rp)
+            x_ = d[:, 0] * sg_
+            d[:, 0] = sg_ * np.where(x_ > 0, lim * np.tanh(x_ / lim), x_)
+            rows.append(d)
+        out[ch] = [[exp_rv(rows[k][f]) for k in range(len(rows))] for f in range(N)]
+        uu = u - u.mean(0)
+        ax_ = int(np.argmax(uu.var(0)))
+        tip = y[:, ax_] - y[:, ax_].mean()
+        cc = [float(np.dot(np.roll(uu[:, ax_], s_), tip)) for s_ in range(N)]
+        L_ = int(np.argmax(cc))
+        L_ = L_ - N if L_ > N // 2 else L_
+        lag[ch] = {"tip_lag_frames": L_, "axis": "xyz"[ax_], "driver_ptp_deg": round(math.degrees(float(np.ptp(uu[:, ax_]))), 2),
+                   "tip_follow_through_ptp_deg": round(math.degrees(float(np.ptp(rows[-1][:, ax_]))), 2)}
+    return out, lag
+
+
+def apply_chains(D, cn, t, f):
+    for ch in FT_CHAINS:
+        Lp = np.eye(3)
+        for k in range(ft_nb(ch)):
+            n = "%s.%d" % (ch, k)
+            Rpv = D[PARENT[n]][:3, :3]
+            Lk = SEC[cn][ch][f][k]
+            fk(D, n, Rpv.T @ Lk @ Lp.T @ Rpv @ drape_local(cn, ch, k, t))
+            Lp = Lk
+
+
+t_ = time.time()
+SEC, FT_LAG = {}, {}
+for cn, N in CLIP_N.items():
+    SEC[cn], FT_LAG[cn] = secondary(cn, N)
+rep["follow_through"] = {"params": FT, "into_body_limit_deg": FT_INTO_BODY_DEG, "drift_k": FT_DRIFT_K, "per_clip": FT_LAG,
+                         "seconds": round(time.time() - t_, 1)}
+print("FOLLOW", json.dumps(FT_LAG))
 t_ = time.time()
 ACTS, key_rows, ik_worst = {}, [], {}
 for cn, N in CLIP_N.items():
@@ -1952,6 +2546,7 @@ for cn, N in CLIP_N.items():
     prevq = {}
     for f in range(N + 1):                       # frames 1..N+1; frame N+1 == frame 1 (closed-form cycles -> exact seam)
         D, info = POSE[cn]((f % N) / N)
+        apply_chains(D, cn, (f % N) / N, f % N)
         for k_, v_ in info.items():
             if isinstance(v_, float):
                 ik_worst[(cn, k_)] = max(ik_worst.get((cn, k_), 0.0), abs(v_))
@@ -2039,7 +2634,7 @@ grip_rel = np.linalg.inv(REST4["hand_r"]) @ G @ REST4["sword"]
 for cn, N in CLIP_N.items():
     K.assign_action(rig, ACTS[cn])
     first = last = firsts = lasts = None
-    minz, minz_s, root_off, grip_dev, wrist_max = 1e9, 1e9, 0.0, 0.0, 0.0
+    minz, minz_s, root_off, grip_dev, wrist_max, minz_o = 1e9, 1e9, 0.0, 0.0, 0.0, 1e9
     tips, heels = {s: [] for s in "LR"}, {s: [] for s in "LR"}
     gaps = {"cape_to_legs": 1e9, "cape_to_left_arm": 1e9, "cape_to_right_arm": 1e9, "blade_to_cape": 1e9,
             "blade_to_legs": 1e9, "blade_to_torso": 1e9}
@@ -2053,6 +2648,7 @@ for cn, N in CLIP_N.items():
         if f == N + 1:
             last, lasts = C, Sw
         minz = min(minz, float(C[:, 2].min())); minz_s = min(minz_s, float(Sw[:, 2].min()))
+        minz_o = min(minz_o, float(eval_coords(OUTLINES[0])[:, 2].min()), float(eval_coords(OUTLINES[1])[:, 2].min()))
         tipz = min(tipz, float(Sw[tip_id, 2]))
         root_off = max(root_off, (rig.matrix_world @ rig.pose.bones["root"].head).length)
         Mh = np.array(rig.pose.bones["hand_r"].matrix); Ms = np.array(rig.pose.bones["sword"].matrix)
@@ -2074,7 +2670,8 @@ for cn, N in CLIP_N.items():
     row = {"frames": [1, N + 1], "period_frames": N, "seconds": round(N / K.FPS, 4), "cyclic": True,
            "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
            "seam_sword_mm": round(float(np.linalg.norm(firsts - lasts, axis=1).max()) * 1000, 6),
-           "min_z_main": round(minz, 5), "min_z_sword": round(minz_s, 5), "sword_tip_min_z": round(tipz, 4),
+           "min_z_main": round(minz, 5), "min_z_sword": round(minz_s, 5), "min_z_outline_shells": round(minz_o, 5),
+           "sword_tip_min_z": round(tipz, 4),
            "root_offset_max": round(root_off, 8), "grip_relation_max_dev": round(grip_dev, 8),
            "right_wrist_bend_max_deg": round(wrist_max, 2),
            "ik_unreachable_max_m": {k[1]: round(v, 5) for k, v in ik_worst.items() if k[0] == cn},
@@ -2139,11 +2736,20 @@ rep["grip"] = {"rule": "hammer grip: the handle runs along the right hand's knuc
                        "beside the right hand (not in it: in-hand at the A-pose would push the bbox off-centre)",
                "G_hand_to_sword_rest4": grip_rel.round(6).tolist(),
                "sword_roll_search": ROLL_SEARCH}
-rig["conquest_rig"] = ("vampwarrior v1: root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, "
+rep["tris_with_outline"] = {"model": report["tris"]["total"], "outline_shells": rep["outline"]["tris_main_shell"] +
+                            rep["outline"]["tris_sword_shell"],
+                            "total": report["tris"]["total"] + rep["outline"]["tris_main_shell"] + rep["outline"]["tris_sword_shell"],
+                            "budget": TRI_BUDGET}
+print("TRIS", json.dumps(rep["tris_with_outline"]))
+rig["conquest_rig"] = ("vampwarrior v2: root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, "
                        "clavicle / upperarm / lowerarm / hand + 15 finger bones per side, thigh / calf / foot / ball) + "
                        "hair_front.L/R.0-3, hair_back.L/C/R.0-3, cape.0-4.0-3 (chest children) + sword (hand_r child) > tassel.0-1")
 low["conquest_clips"] = list(CLIP_N)
-low["conquest_clip_status"] = "idle (planted-sword guard, breath) + walk (in-place stride, sword trailing); no attack/hit/death"
+low["conquest_clip_status"] = ("idle (planted-sword guard, breath, eased weight shift) + walk (in-place stride, sword trailing, "
+                               "chest / head overlap); hair + cape follow-through (damped-spring lag); no attack/hit/death")
+low["conquest_outline"] = ("comic line = inverted-hull shells '%s' + '%s' (material '%s', cull back, unlit in the game's "
+                           "toon shader); hide them to drop the line" % (OUTLINES[0].name, OUTLINES[1].name, MAT_OUT.name))
+low["conquest_cel"] = "flat tone bands baked into Col (region_shade = banded AO); material: roughness 1, specular 0, no maps"
 low["conquest_locomotion"] = "biped in heeled boots: rest pose on the floor per contract (soles z 0), clips in place"
 low["conquest_sword_grip"] = json.dumps(grip_rel.round(6).tolist())
 for m in list(bpy.data.materials):
@@ -2165,7 +2771,7 @@ bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True, relat
 
 # =========================================================================== 9. glb + skins
 for o in scene.objects:
-    o.select_set(o in (rig, low, swo))
+    o.select_set(o in (rig, low, swo, *OUTLINES))
 bpy.context.view_layer.objects.active = rig
 K.assign_action(rig, ACTS["idle"])
 t_ = time.time()
@@ -2191,22 +2797,56 @@ def glb_carries(path):
             "joints": [len(s_["joints"]) for s_ in js.get("skins", [])], "extensionsUsed": js.get("extensionsUsed", [])}
 
 
+def glb_winding(path, mesh_name):
+    """signed volume of a glb mesh (positions + indices read straight from the binary chunk): < 0 = inward faces."""
+    import struct
+    data = open(path, "rb").read()
+    L = struct.unpack("<I", data[12:16])[0]
+    js = json.loads(data[20:20 + L])
+    b0 = 20 + L + 8
+    ctype = {5123: np.uint16, 5125: np.uint32, 5126: np.float32}
+
+    def acc(i):
+        a = js["accessors"][i]; bv = js["bufferViews"][a["bufferView"]]
+        n = {"SCALAR": 1, "VEC3": 3}[a["type"]]
+        off = b0 + bv.get("byteOffset", 0) + a.get("byteOffset", 0)
+        return np.frombuffer(data, dtype=ctype[a["componentType"]], count=a["count"] * n, offset=off).reshape(-1, n)
+    vol, tris, doubles = 0.0, 0, []
+    for m in js["meshes"]:
+        if m.get("name") != mesh_name:
+            continue
+        for p in m["primitives"]:
+            P = acc(p["attributes"]["POSITION"]).astype(float)
+            I = acc(p["indices"]).reshape(-1, 3).astype(np.int64)
+            c = P.mean(0)
+            vol += float(np.einsum("ij,ij->i", P[I[:, 0]] - c, np.cross(P[I[:, 1]] - c, P[I[:, 2]] - c)).sum() / 6.0)
+            tris += len(I)
+            doubles.append(js["materials"][p["material"]].get("doubleSided", False))
+    return {"signed_volume_m3": round(vol, 6), "inward": vol < 0, "tris": tris, "double_sided": doubles}
+
+
 rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t_, 1), "carries": glb_carries(OUT_GLB),
+              "outline_in_glb": {o.name: glb_winding(OUT_GLB, o.data.name) for o in OUTLINES},
+              "body_winding_ref": glb_winding(OUT_GLB, low.data.name),
               "structure": "armature + skinned 'vampwarrior' (body, opaque) + skinned 'vampwarrior_sword' (own node, bone "
-                           "'sword'); natural scale (metres); report-only cell fit %.5f" % k_fit}
-geo0 = geometry_digest([low, swo])
+                           "'sword') + skinned outline shells 'vampwarrior_outline' / 'vampwarrior_sword_outline' (inverted "
+                           "hulls, material 'vampwarrior_outline', cull back); natural scale (metres); report-only cell fit "
+                           "%.5f" % k_fit}
+print("GLB_OUTLINE", json.dumps(rep["glb"]["outline_in_glb"]), json.dumps(rep["glb"]["body_winding_ref"]))
+ALLM = [low, swo, *OUTLINES]
+geo0 = geometry_digest(ALLM)
 rep["skins"] = {"default": {"file": OUT_RIGGED, "palette": PAL.table(pal_default), "glow_tiers": report["glow_tiers"]["default"]}}
 pal_d = PAL.load(UNIT, "dawn")
 gt_d = glow_tiers(pal_d)
 assert gt_d["grade_pass"] and gt_d["hue_pass"], gt_d
-counts_d = repaint([low, swo], pal_d)
+counts_d = repaint(ALLM, pal_d)
 out_d = OUT_RIGGED[:-6] + "__dawn.blend"
 bpy.ops.wm.save_as_mainfile(filepath=out_d, copy=True, compress=True, relative_remap=False)
 rep["skins"]["dawn"] = {"file": out_d, "palette": PAL.table(pal_d), "palette_files": pal_d["files"], "glow_tiers": gt_d,
-                        "region_faces": counts_d, "geometry_colour_uv_digest": geometry_digest([low, swo])}
-repaint([low, swo], pal_default)
+                        "region_faces": counts_d, "geometry_colour_uv_digest": geometry_digest(ALLM)}
+repaint(ALLM, pal_default)
 rep["skins"]["repaint_proof"] = {"rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-                                 "default_digest_before": geo0, "default_digest_after_restore": geometry_digest([low, swo])}
+                                 "default_digest_before": geo0, "default_digest_after_restore": geometry_digest(ALLM)}
 rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))

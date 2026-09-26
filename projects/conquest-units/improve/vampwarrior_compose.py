@@ -1,23 +1,26 @@
-"""Vampire Warrior image assembly (plain Python + PIL, no Blender): run with the forge service venv.
+"""Vampire Warrior v2 image assembly (plain Python + PIL, no Blender): run with the forge service venv.
 
     python -P vampwarrior_compose.py
 
-renders/vampwarrior/vampwarrior_sheet_fidelity.png
-    orthographic FRONT / SIDE of the build (idle frame 1, the sheet-style standing pose, sword point-down) beside the
-    sheet-fidelity notes: what matches the transcription item by item, and every simplification / lane call. The sheet
-    image itself is not on disk (design/review-log.md 2026-09-26 carries its transcription), so there is no overlay.
-renders/vampwarrior/vampwarrior_contact.png
-    every still (front / threequarter / side / back / tactical / face / face side / sword / torn hem / boots / grip hand /
-    dawn skin) + the idle and walk 8-frame sheets, labelled.
+renders/vampwarrior/ (the v1 stills vampwarrior_front / _face / _tactical stay on disk as the 'before'):
+  vampwarrior_v2_face_fix.png         lips + liner: v1 face vs v2 face (same camera) + v2 straight-on, with the numbers
+  vampwarrior_v2_hair_options.png     hair A / B / C (rows) x head / front / back three-quarter / side; A = build default
+  vampwarrior_v2_cel_before_after.png v1 | v2 asset in a stock PBR viewer | v2 + toon preview (= the proposed game shader)
+                                      x front / face / tactical
+  vampwarrior_v2_outline_near_far.png outline shell off | on x near (three-quarter, face) / far (tactical 256 + 128 px)
+  vampwarrior_v2_contact.png          every v2 still + dawn + the idle / walk 8-frame sheets
 """
+import json
 import os
 
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-R = os.path.normpath(os.path.join(HERE, "..", "renders", "vampwarrior"))
-BG = (42, 42, 42, 255)
+ROOT = os.path.normpath(os.path.join(HERE, ".."))
+R = os.path.join(ROOT, "renders", "vampwarrior")
 LAB = (235, 235, 235, 255)
+IMP = json.load(open(os.path.join(ROOT, "improved", "vampwarrior.json")))
+RIG = json.load(open(os.path.join(ROOT, "rigged", "vampwarrior.json")))
 
 
 def font(sz):
@@ -29,99 +32,81 @@ def font(sz):
     return ImageFont.load_default()
 
 
-def over_bg(path, bg=BG):
-    im = Image.open(path).convert("RGBA")
-    b = Image.new("RGBA", im.size, bg)
-    b.alpha_composite(im)
-    return b
-
-
-def label(im, text, xy=(8, 6), sz=15):
+def label(im, text, xy=(8, 6), sz=16):
     d = ImageDraw.Draw(im)
     f = font(sz)
-    w = d.textlength(text, font=f)
-    d.rectangle([xy[0] - 4, xy[1] - 3, xy[0] + w + 6, xy[1] + sz + 4], fill=(0, 0, 0, 170))
-    d.text(xy, text, fill=LAB, font=f)
+    y = xy[1]
+    for line in text.split("\n"):
+        w = d.textlength(line, font=f)
+        d.rectangle([xy[0] - 4, y - 3, xy[0] + w + 6, y + sz + 4], fill=(0, 0, 0, 185))
+        d.text((xy[0], y), line, fill=LAB, font=f)
+        y += sz + 8
     return im
 
 
-NOTES = [
-    ("SHEET-FIDELITY NOTES", None),
-    ("(sheet image not on disk: checked against the transcription, design/review-log.md 2026-09-26)", "dim"),
-    ("MATCHES", "head"),
-    ("Tall female, intimidating: 1.83 m standing (1.78 barefoot + heels), idealised long-legged MPFB2 body; chin-tucked glare in the idle.", None),
-    ("Pale skin; RED eyes (glowing iris, dark pupil) with a dark maroon lid liner; FANGS under the upper lip; deep-maroon lips.", None),
-    ("Very long bone-white hair: centre part; 3 locks a side drawn over the shoulders to the bust / waist in front; a 9-lock cascade to the waist behind. Sculpted lens-section masses, not cards.", None),
-    ("Black high-collar armoured bodice: a standing collar (silver rim, open at the throat), silver seam trim (princess + back seams, underbust band, armholes); red throat gem in a silver setting.", None),
-    ("Long TORN black cape, dark-red lining, ragged ankle hem (irregular rips + 3 slits), hanging folds.", None),
-    ("Long black gloves to above the elbow (silver cuffs).", None),
-    ("Black thigh-high heeled boots: stiletto heels, pointed toe caps, domed armoured knee cops; BARE upper thighs between boot top and fauld.", None),
-    ("Skirt fauld: 8 hanging plates with silver hems (the front one pointed).", None),
-    ("Sword nearly her height (1.53 m = 0.82 x): leaf / flame blade widest at 42 %, 15 serrations per edge pointing to the tip, dark centre vein, simple black grip, red tassel at the guard. Own object + bone.", None),
-    ("Palette chips: bone-white, pale grey, near-black, dark red, deep maroon, black.", None),
-    ("SIMPLIFICATIONS / LANE CALLS", "head"),
-    ("Bodice, gloves and boot shafts are PAINTED on the skin (form-fitting garments, clean iso-cut edges); armour relief is geometry: collar, knee cops, fauld plates, cuffs, belt.", None),
-    ("Shoulders + upper arms left bare between the armhole and the glove top (the transcription is silent on sleeves).", None),
-    ("A belt + buckle added to hang the fauld; guard / pommel coloured deep maroon; the collar opens at the front for the gem.", None),
-    ("Bind (rest) pose: the sword stands point-down beside the right hand; the clips hold it (planted in the idle, trailing in the walk).", None),
-    ("No painted brows; ears left human (neither is in the transcription).", None),
-]
+def tile(fn, T, text=None):
+    im = Image.open(os.path.join(R, fn)).convert("RGBA")
+    small = im.width <= 256
+    im = im.resize((T, T), Image.NEAREST if small else Image.LANCZOS)
+    return label(im, text) if text else im
 
 
-def notes_panel(w, h):
-    im = Image.new("RGBA", (w, h), (30, 30, 32, 255))
-    d = ImageDraw.Draw(im)
-    y = 16
-    for text, kind in NOTES:
-        sz = 22 if kind is None and text.startswith("SHEET") else (18 if kind == "head" else 15)
-        col = (255, 120, 120, 255) if kind == "head" else ((160, 160, 160, 255) if kind == "dim" else LAB)
-        if text.startswith("SHEET"):
-            sz, col = 24, (255, 255, 255, 255)
-        f = font(sz)
-        words, line = text.split(), ""
-        bullet = "" if kind in ("head", "dim") or text.startswith("SHEET") else "- "
-        lines = []
-        for wd in words:
-            t = (line + " " + wd).strip()
-            if d.textlength(bullet + t, font=f) > w - 40:
-                lines.append(line); line = wd
-            else:
-                line = t
-        lines.append(line)
-        for i, ln in enumerate(lines):
-            d.text((20 if i == 0 else 20 + d.textlength(bullet, font=f), y), (bullet if i == 0 else "") + ln, fill=col, font=f)
-            y += sz + 5
-        y += 8 if kind == "head" or text.startswith("SHEET") else 4
-    return im
+def grid(rows, T, title, out, head_h=46):
+    """rows: [[(file, label), ...], ...]"""
+    nc = max(len(r) for r in rows)
+    W, H = nc * (T + 6), len(rows) * (T + 6) + head_h
+    cs = Image.new("RGBA", (W, H), (28, 28, 30, 255))
+    d = ImageDraw.Draw(cs)
+    d.text((10, 10), title, fill=(255, 255, 255, 255), font=font(22))
+    for i, r in enumerate(rows):
+        for j, (fn, lab) in enumerate(r):
+            if fn is None:
+                continue
+            cs.paste(tile(fn, T, lab), (j * (T + 6), head_h + i * (T + 6)))
+    cs.convert("RGB").save(os.path.join(R, out))
+    print("WROTE", out)
 
 
-fr = over_bg(os.path.join(R, "vampwarrior_ortho_front.png"))
-sd = over_bg(os.path.join(R, "vampwarrior_ortho_side.png"))
-H = max(fr.height, sd.height)
-panel = notes_panel(900, H)
-out = Image.new("RGBA", (fr.width + sd.width + panel.width + 12, H), (255, 255, 255, 255))
-out.paste(label(fr, "BUILD front (ortho, idle f1)"), (0, 0)); out.paste(label(sd, "BUILD side (ortho, idle f1)"), (fr.width + 6, 0))
-out.paste(panel, (fr.width + sd.width + 12, 0))
-out.convert("RGB").save(os.path.join(R, "vampwarrior_sheet_fidelity.png"))
-print("WROTE", os.path.join(R, "vampwarrior_sheet_fidelity.png"))
+lf = IMP["lip_fix"]; lw = IMP["liner_width_mm"]
+grid([[("vampwarrior_face.png", "v1: lipstick %.1f mm low\n(on the lower lip + chin)" % (1000 * lf["shift_up_m"])),
+       ("vampwarrior_v2_face.png", "v2: lips on the mouth\n(slit z %.4f, moved up %.1f mm)" % (lf["slit_z"], 1000 * lf["shift_up_m"])),
+       ("vampwarrior_v2_face_front.png", "v2 straight on: liner %.1f mm\n(v1 %.1f mm median visible width)" % (lw["v2"]["median"], lw["v1"]["median"]))]],
+     560, "Vampwarrior v2 - face fixes: lipstick moved up onto the mouth, eye liner thinned to a fine line", "vampwarrior_v2_face_fix.png")
+
+HL = {"A": "A  broad smooth masses (BUILD DEFAULT)", "B": "B  chunkier ribbon locks", "C": "C  v1 locks, wider + thicker (merged)"}
+grid([[("vampwarrior_v2_hair%s_%s.png" % (o, v), (HL[o] if k == 0 else v)) for k, v in enumerate(("head", "front", "back_threequarter", "side"))]
+      for o in "ABC"], 420, "Vampwarrior v2 - hair options (centre part, over the shoulders in front, waist cascade behind): artist picks A / B / C",
+     "vampwarrior_v2_hair_options.png")
+
+grid([[("vampwarrior_front.png", "v1 (realistic bake)"), ("vampwarrior_v2pbr_front.png", "v2 asset, stock PBR viewer"),
+       ("vampwarrior_v2_front.png", "v2 + toon preview\n(proposed game shader)")],
+      [("vampwarrior_face.png", "v1"), ("vampwarrior_v2pbr_face.png", "v2 asset, stock PBR"), ("vampwarrior_v2_face.png", "v2 + toon preview")],
+      [("vampwarrior_tactical.png", "v1 tactical 256 px"), ("vampwarrior_v2pbr_tactical.png", "v2 stock PBR"),
+       ("vampwarrior_v2_tactical.png", "v2 + toon preview")]],
+     460, "Vampwarrior - cel-shade before / after: flat tone bands in the vertex colours, no gloss, inverted-hull comic line",
+     "vampwarrior_v2_cel_before_after.png")
+
+ol = RIG["outline"]
+grid([[("vampwarrior_v2noline_threequarter.png", "outline OFF"), ("vampwarrior_v2_threequarter.png", "outline ON: %.1f mm shell" % (1000 * ol["thickness_m"]))],
+      [("vampwarrior_v2noline_face.png", "OFF"), ("vampwarrior_v2_face.png", "ON (face x %.1f = %.1f mm)" % (ol["face_k"], 1000 * ol["thickness_m"] * ol["face_k"]))],
+      [("vampwarrior_v2noline_tactical.png", "OFF - tactical 256 px"), ("vampwarrior_v2_tactical.png", "ON - tactical 256 px")],
+      [("vampwarrior_v2noline_tactical_small.png", "OFF - 128 px"), ("vampwarrior_v2_tactical_small.png", "ON - 128 px")]],
+     440, "Vampwarrior v2 - outline near / far (shell %d + %d tris)" % (ol["tris_main_shell"], ol["tris_sword_shell"]),
+     "vampwarrior_v2_outline_near_far.png")
 
 T = 400
-items = [("vampwarrior_front.png", "front (idle f1)"), ("vampwarrior_threequarter.png", "three-quarter"),
-         ("vampwarrior_side.png", "side"), ("vampwarrior_back.png", "back"),
-         ("vampwarrior_tactical.png", "tactical (256 px)"), ("vampwarrior_face.png", "face: red eyes / fangs"),
-         ("vampwarrior_face_side.png", "face, side"), ("vampwarrior_sword.png", "sword: guard / tassel / vein"),
-         ("vampwarrior_hem.png", "cape torn hem + lining"), ("vampwarrior_boots.png", "boots: heels / knee cops"),
-         ("vampwarrior_hand.png", "grip hand"), ("vampwarrior_dawn_front.png", "dawn skin (swap proof)")]
-tiles = []
-for fn, lab in items:
-    p = os.path.join(R, fn)
-    im = Image.open(p).convert("RGBA").resize((T, T), Image.LANCZOS if not fn.endswith("tactical.png") else Image.NEAREST)
-    tiles.append(label(im, lab))
+items = [("vampwarrior_v2_front.png", "front (idle f1, toon preview)"), ("vampwarrior_v2_threequarter.png", "three-quarter"),
+         ("vampwarrior_v2_side.png", "side"), ("vampwarrior_v2_back.png", "back"),
+         ("vampwarrior_v2_tactical.png", "tactical (256 px)"), ("vampwarrior_v2_face.png", "face"),
+         ("vampwarrior_v2_face_side.png", "face, side"), ("vampwarrior_v2_sword.png", "sword"),
+         ("vampwarrior_v2_hem.png", "cape hem + lining"), ("vampwarrior_v2_boots.png", "boots"),
+         ("vampwarrior_v2_hand.png", "grip hand"), ("vampwarrior_v2_dawn_front.png", "dawn skin (swap proof)")]
+tiles = [tile(fn, T, lab) for fn, lab in items]
 W = 4 * T + 18
 sheets = []
-for clip, txt in (("idle", "idle: 8 frames over the 4 s loop (planted sword, breath, hair / cape drift)"),
-                  ("walk", "walk: 8 frames over the 1.25 s stride (in place, sword trailing, cape trailing)")):
-    s_ = Image.open(os.path.join(R, "vampwarrior_%s_sheet.png" % clip)).convert("RGBA")
+for clip, txt in (("idle", "idle: 8 frames / 4 s (eased weight shift, hair + cape follow-through)"),
+                  ("walk", "walk: 8 frames / 1.25 s (chest / head overlap, hair + cape lag and settle)")):
+    s_ = Image.open(os.path.join(R, "vampwarrior_v2_%s_sheet.png" % clip)).convert("RGBA")
     s_ = s_.resize((W, int(s_.height * W / s_.width)), Image.LANCZOS)
     sheets.append(label(s_, txt))
 Hc = 3 * (T + 6) + sum(s.height + 6 for s in sheets)
@@ -131,5 +116,5 @@ for i, t in enumerate(tiles):
 y = 3 * (T + 6)
 for s_ in sheets:
     cs.paste(s_, (0, y)); y += s_.height + 6
-cs.convert("RGB").save(os.path.join(R, "vampwarrior_contact.png"))
-print("WROTE", os.path.join(R, "vampwarrior_contact.png"))
+cs.convert("RGB").save(os.path.join(R, "vampwarrior_v2_contact.png"))
+print("WROTE vampwarrior_v2_contact.png")

@@ -49,7 +49,7 @@
   "body_h_barefoot": 1.78,
   "heel_deg": 24.0,
   "heel_lift": 0.0919,
-  "seconds": 0.8
+  "seconds": 1.3
  },
  "landmarks": {
   "height_total": 1.8323,
@@ -74,8 +74,8 @@
   "waist_z": 1.2236,
   "crotch_z": 0.9459,
   "underbust_z": 1.3552,
-  "lip_line_z": 1.6495,
-  "lip_front_y": -0.1443,
+  "lip_line_z": 1.6593,
+  "lip_front_y": -0.1455,
   "head_centre": [
    0.0,
    -0.0487,
@@ -87,12 +87,34 @@
    0.1111
   ]
  },
+ "lip_fix": {
+  "v1_rule_z": 1.6495,
+  "slit_z": 1.6593,
+  "lip_dz": 0.0,
+  "lower_lip_bulge_z": 1.6526,
+  "upper_lip_bulge_z": 1.6668,
+  "teeth_edge_z": 1.6601,
+  "shift_up_m": 0.0098
+ },
  "iso_cuts": {
   "cuts": 21,
-  "edge_splits": 1195,
-  "seconds": 13.0,
-  "body_tris_after_cuts": 29146
+  "edge_splits": 1391,
+  "seconds": 23.1,
+  "body_tris_after_cuts": 29538
  },
+ "liner_width_mm": {
+  "v1": {
+   "median": 7.07,
+   "p90": 9.17,
+   "wedges": 62
+  },
+  "v2": {
+   "median": 1.36,
+   "p90": 1.6,
+   "wedges": 60
+  }
+ },
+ "liner_width_rule": "front view, per 10-deg wedge round each eye: the outermost visible liner vertex's distance from the lid edge (the innermost front-facing skin in front of the eyeball)",
  "hidden_skin_removed": {
   "scalp_faces": 1126,
   "toe_faces": 2836,
@@ -100,7 +122,7 @@
  },
  "centre_shift": [
   -0.004708,
-  0.004669,
+  0.004343,
   0.0
  ],
  "min_z_before_shift": 0.0,
@@ -121,15 +143,15 @@
  },
  "regions_faces": {
   "vampwarrior": {
-   "skin": 7074,
-   "lips": 348,
-   "liner": 2246,
+   "skin": 8270,
+   "lips": 932,
+   "liner": 858,
    "eye_sclera": 160,
    "eye_iris": 64,
    "eye_pupil": 32,
    "fang": 36,
-   "hair": 2916,
-   "hair_shade": 2758,
+   "hair": 2550,
+   "hair_shade": 2044,
    "hair_part": 88,
    "bodice": 3520,
    "trim": 950,
@@ -142,12 +164,12 @@
    "fauld": 432,
    "fauld_trim": 224,
    "belt": 80,
-   "collar": 387,
-   "collar_trim": 139,
+   "collar": 297,
+   "collar_trim": 109,
    "gem": 40,
    "gem_setting": 80,
-   "cape_outer": 1326,
-   "cape_lining": 1116
+   "cape_outer": 862,
+   "cape_lining": 696
   },
   "vampwarrior_sword": {
    "blade": 381,
@@ -160,20 +182,20 @@
   }
  },
  "regions_area_share": {
-  "skin": 0.0653,
+  "skin": 0.0662,
   "lips": 0.0004,
-  "liner": 0.0012,
+  "liner": 0.0002,
   "eye_sclera": 0.0009,
   "eye_iris": 0.0001,
   "eye_pupil": 0.0,
   "fang": 0.0,
-  "hair": 0.119,
-  "hair_shade": 0.1068,
+  "hair": 0.1371,
+  "hair_shade": 0.0961,
   "hair_part": 0.0004,
   "bodice": 0.0593,
   "trim": 0.0082,
-  "gloves": 0.0345,
-  "boots": 0.0892,
+  "gloves": 0.0346,
+  "boots": 0.0893,
   "boot_sole": 0.0146,
   "heel": 0.0036,
   "knee_cop": 0.0109,
@@ -185,29 +207,29 @@
   "collar_trim": 0.0023,
   "gem": 0.0002,
   "gem_setting": 0.0002,
-  "cape_outer": 0.2043,
-  "cape_lining": 0.1958
+  "cape_outer": 0.2004,
+  "cape_lining": 0.192
  },
  "facing": {
   "rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
   "anchor": [
    0.0047,
-   -0.0533,
+   -0.053,
    1.7211
   ],
   "landmark": [
    0.0047,
-   -0.1639,
+   -0.1636,
    1.6908
   ],
   "angle_from_minusY_deg": 0.0
  },
  "tris": {
-  "total": 46622,
-  "main": 44372,
+  "total": 43026,
+  "main": 40776,
   "sword": 1874,
-  "body": 25184,
-  "hair_locks": 6480,
+  "body": 25576,
+  "hair_locks": 4500,
   "eye.L": 224,
   "eye.R": 224,
   "fang.L": 24,
@@ -234,10 +256,10 @@
   "fauld.7": 164,
   "belt": 320,
   "buckle": 48,
-  "collar": 1052,
+  "collar": 812,
   "gem": 64,
   "gem_setting": 160,
-  "cape": 4884,
+  "cape": 3116,
   "hair_cap": 2612,
   "tassel": 376
  },
@@ -248,22 +270,22 @@
   "bbox": [
    [
     -0.5268,
-    -0.323,
+    -0.3227,
     0.0
    ],
    [
     0.5268,
-    0.323,
-    1.8566
+    0.3227,
+    1.8481
    ]
   ],
-  "height": 1.8566,
+  "height": 1.8481,
   "width_x": 1.0537,
-  "depth_y": 0.646,
+  "depth_y": 0.6453,
   "export_cell_fit_report_only": {
-   "scale": 0.9695,
+   "scale": 0.97397,
    "height_m": 1.8,
-   "footprint_m": 1.0215
+   "footprint_m": 1.0262
   }
  },
  "parts": {
@@ -322,8 +344,8 @@
    }
   ],
   "cape": {
-   "columns": 47,
-   "rows": 26,
+   "columns": 39,
+   "rows": 20,
    "slits": 3,
    "top_z_back": 1.5984,
    "top_z_side": 1.4404,
@@ -350,94 +372,94 @@
   },
   "locks": {
    "lock.front.L.0": {
-    "length": 0.883,
-    "tip_z": 1.12,
-    "leaves_head_at_m": 0.295,
-    "min_clear": 0.019
+    "length": 0.857,
+    "tip_z": 1.094,
+    "q": [
+     0.0,
+     0.65
+    ],
+    "leaves_head_at_m": 0.259,
+    "min_clear": 0.0
    },
    "lock.front.L.1": {
-    "length": 1.001,
-    "tip_z": 1.06,
-    "leaves_head_at_m": 0.347,
-    "min_clear": 0.0188
-   },
-   "lock.front.L.2": {
-    "length": 0.925,
-    "tip_z": 1.16,
-    "leaves_head_at_m": 0.241,
-    "min_clear": 0.0187
+    "length": 0.94,
+    "tip_z": 1.105,
+    "q": [
+     0.35,
+     1.0
+    ],
+    "leaves_head_at_m": 0.231,
+    "min_clear": 0.0002
    },
    "lock.front.R.0": {
-    "length": 0.958,
-    "tip_z": 1.12,
-    "leaves_head_at_m": 0.326,
-    "min_clear": 0.019
+    "length": 0.857,
+    "tip_z": 1.094,
+    "q": [
+     0.0,
+     0.65
+    ],
+    "leaves_head_at_m": 0.259,
+    "min_clear": 0.0
    },
    "lock.front.R.1": {
-    "length": 1.052,
-    "tip_z": 1.06,
-    "leaves_head_at_m": 0.328,
-    "min_clear": 0.0011
-   },
-   "lock.front.R.2": {
-    "length": 0.87,
-    "tip_z": 1.16,
-    "leaves_head_at_m": 0.225,
-    "min_clear": 0.0184
+    "length": 0.948,
+    "tip_z": 1.105,
+    "q": [
+     0.35,
+     1.0
+    ],
+    "leaves_head_at_m": 0.232,
+    "min_clear": 0.0001
    },
    "lock.back.0": {
-    "length": 0.847,
-    "tip_z": 1.12,
-    "leaves_head_at_m": 0.262,
-    "min_clear": 0.0189
+    "length": 0.825,
+    "tip_z": 1.121,
+    "q": [
+     0.0,
+     0.26
+    ],
+    "leaves_head_at_m": 0.298,
+    "min_clear": 0.0001
    },
    "lock.back.1": {
-    "length": 0.924,
-    "tip_z": 1.032,
-    "leaves_head_at_m": 0.264,
-    "min_clear": 0.0189
+    "length": 0.908,
+    "tip_z": 1.024,
+    "q": [
+     0.14,
+     0.46
+    ],
+    "leaves_head_at_m": 0.274,
+    "min_clear": 0.0002
    },
    "lock.back.2": {
-    "length": 0.888,
-    "tip_z": 1.054,
-    "leaves_head_at_m": 0.232,
-    "min_clear": 0.019
+    "length": 0.85,
+    "tip_z": 1.063,
+    "q": [
+     0.34,
+     0.66
+    ],
+    "leaves_head_at_m": 0.257,
+    "min_clear": 0.0
    },
    "lock.back.3": {
-    "length": 0.948,
-    "tip_z": 1.088,
-    "leaves_head_at_m": 0.29,
-    "min_clear": 0.0166
+    "length": 0.85,
+    "tip_z": 1.089,
+    "q": [
+     0.54,
+     0.86
+    ],
+    "leaves_head_at_m": 0.257,
+    "min_clear": 0.0
    },
    "lock.back.4": {
-    "length": 0.967,
-    "tip_z": 1.001,
-    "leaves_head_at_m": 0.242,
-    "min_clear": 0.0189
-   },
-   "lock.back.5": {
-    "length": 0.853,
-    "tip_z": 1.079,
-    "leaves_head_at_m": 0.244,
-    "min_clear": 0.019
-   },
-   "lock.back.6": {
-    "length": 0.876,
-    "tip_z": 1.077,
-    "leaves_head_at_m": 0.273,
-    "min_clear": 0.0189
-   },
-   "lock.back.7": {
-    "length": 0.972,
-    "tip_z": 1.018,
-    "leaves_head_at_m": 0.265,
-    "min_clear": 0.0148
-   },
-   "lock.back.8": {
-    "length": 0.87,
-    "tip_z": 1.115,
-    "leaves_head_at_m": 0.281,
-    "min_clear": 0.0189
+    "length": 0.912,
+    "tip_z": 1.036,
+    "q": [
+     0.74,
+     1.0
+    ],
+    "leaves_head_at_m": 0.275,
+    "min_clear": 0.0001
    }
   }
  },
@@ -446,38 +468,87 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 2.3
+   "seconds": 3.6
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.7
+   "seconds": 3.1
   },
   "cage_extrusion": 0.012,
   "cage_rule": "12 mm: > 3 x the measured low-skin -> subdivided-high distance (p99 / max below) so every low texel finds its high surface",
   "low_to_high_skin_m": {
-   "p99": 0.00211,
+   "p99": 0.0021,
    "max": 0.00564
   },
   "resolution": {
    "normal": 2048,
    "ao": 1024
   },
-  "high_tris": 128462,
+  "high_tris": 124474,
   "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
-  "normal_baked_texels_pct": 85.93,
-  "normal_detail_fraction_dev_gt_0.05": 0.7447,
-  "ao_baked_texels_pct": 99.19,
-  "ao_mean": 0.442,
+  "normal_baked_texels_pct": 87.89,
+  "normal_detail_fraction_dev_gt_0.05": 0.7143,
+  "ao_baked_texels_pct": 98.54,
+  "ao_mean": 0.4592,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "807bad8770cba6f1",
-   "ao": "bf5ffe8bff103102"
+   "normal": "89f39e3e1bb57352",
+   "ao": "7b294e0580d2399d"
   },
-  "seconds": 5.8
+  "seconds": 9.1
  },
- "digest_geometry_colour_uv": "ea43e6e33db65ee4",
+ "cel": {
+  "bands": [
+   [
+    0.55,
+    1.0
+   ],
+   [
+    0.25,
+    0.82
+   ],
+   [
+    -1.0,
+    0.64
+   ]
+  ],
+  "face_ao_quantiles": {
+   "5": 0.0,
+   "10": 0.005,
+   "25": 0.095,
+   "50": 0.515,
+   "75": 0.787,
+   "90": 0.917
+  },
+  "band_area_share": {
+   "1.0": 0.429,
+   "0.82": 0.263,
+   "0.64": 0.308
+  },
+  "band_face_share": {
+   "1.0": 0.474,
+   "0.82": 0.16,
+   "0.64": 0.366
+  },
+  "material": {
+   "roughness": 1.0,
+   "specular_ior_level": 0.0,
+   "normal_map": "unwired",
+   "ao_multiply": "unwired (collapsed into the bands)"
+  },
+  "jitter": false,
+  "smooth_passes": 4,
+  "raw_face_ao_quantiles": {
+   "10": 0.0,
+   "25": 0.023,
+   "50": 0.516,
+   "75": 0.833
+  },
+  "rule": "per-face AO = the mean of the AO bake at the face's UV corners, smoothed over the surface (area-weighted to vertices, CEL_SMOOTH neighbour passes, back to faces); band = the first (threshold, multiplier) the face AO reaches; the multiplier rides region_shade into Col. Thresholds: 0.55 ~ the face-AO median (lit = the open half of the surface), 0.25 ~ the lower quartile (shadow = the occluded quarter: under the collar / fauld / cape, cavities)"
+ },
+ "digest_geometry_colour_uv": "ad9722649e098889",
  "palette": {
   "default": {
    "skin": {
@@ -728,6 +799,13 @@
      120,
      14,
      24
+    ]
+   },
+   "outline": {
+    "rgb": [
+     20,
+     12,
+     16
     ]
    }
   },

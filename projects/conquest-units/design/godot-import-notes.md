@@ -56,3 +56,26 @@ meshes interpenetrate at the joins (goo into goo) and triangles draw in
 index order, so the inner plugs show and flicker. With it, only the front
 goo surface blends over the world. Evidence:
 renders/magmoo/magmoo_v3_sorting_modes.png + magmoo_v3_translucency.json.
+
+## 6. Cel-shaded units (vampwarrior v2): toon shader + outline shells
+
+Toon lighting on the unit material: the asset bakes AO tone bands into
+COLOR_0 and ships roughness 1 / no specular. Game side adds a ramped
+light: snap N.L from the main light to 3 constant steps (~0.58 / 0.84 /
+1.0 at thresholds 0.30 / 0.80) and multiply by COLOR_0; emission from
+COLOR_1 (item 1). Normals are flat per the contract, so band edges follow
+triangle edges - accepted as the low-poly toon look. One shader shared by
+every cel unit.
+
+Outline shells: vampwarrior_outline + vampwarrior_sword_outline are
+inverted hulls (faces point inward, not double-sided) - make their
+material unshaded, albedo from COLOR_0 (palette 'outline' region), cast
+shadow off; hide/swap the sword outline with the sword node; hiding both
+= a quality toggle. Shells are world-space 5 mm (2.5 mm face): ~1/3 px at
+the 256 px tactical view. For a constant screen-width line, extrude
+further in the outline shader by pixel-width x view distance (small - the
+flat shading cracks at corners), or use the zero-triangle alternative: a
+next_pass material on the body with cull_front + grow; if the game goes
+that way the forge stops exporting the shells and returns ~6.4k tris to
+the model. glb lists KHR_materials_specular (specular 0); Godot may
+ignore it - roughness 1 already carries the flat look.

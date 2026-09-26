@@ -1,2 +1,5 @@
-﻿WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_sheet_fidelity.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_contact.png
+﻿WROTE vampwarrior_v2_face_fix.png
+WROTE vampwarrior_v2_hair_options.png
+WROTE vampwarrior_v2_cel_before_after.png
+WROTE vampwarrior_v2_outline_near_far.png
+WROTE vampwarrior_v2_contact.png

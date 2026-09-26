@@ -36,6 +36,11 @@ for o in scene.objects:
 for o in list(scene.objects):
     if o.type in ("CAMERA", "LIGHT"):
         bpy.data.objects.remove(o, do_unlink=True)
+import vampwarrior_toon as VT  # noqa: E402
+if "--no-outline" in argv:
+    print("HIDDEN", VT.hide_outlines(bpy))
+if "--toon" in argv:
+    print("TOON", VT.toon_preview(bpy))
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
@@ -102,9 +107,11 @@ def aim(c, rad, angle_deg, elev_deg, fill=1.08):
 
 
 table = {"front": (0.0, 5.0, 1.0), "threequarter": (35.0, 12.0, 1.0), "tactical": (40.0, 55.0, 1.6),
-         "side": (90.0, 5.0, 1.0), "back": (180.0, 5.0, 1.0)}
-close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "sword": (20.0, 6.0, 1.0), "hem": (150.0, 10.0, 1.0),
-         "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0)}
+         "tactical_small": (40.0, 55.0, 1.6), "side": (90.0, 5.0, 1.0), "back": (180.0, 5.0, 1.0),
+         "back_threequarter": (145.0, 10.0, 1.0)}
+close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": (0.0, 2.0, 0.62), "sword": (20.0, 6.0, 1.0),
+         "hem": (150.0, 10.0, 1.0), "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0),
+         "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0)}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"
@@ -116,6 +123,8 @@ for tag in VIEWS:
         ang, elev, fill = table[tag]
         if tag == "tactical":
             scene.render.resolution_x = scene.render.resolution_y = 256
+        if tag == "tactical_small":
+            scene.render.resolution_x = scene.render.resolution_y = 128
         aim(centre, radius, ang, elev, fill)
     elif tag in close:
         if FOC is not None:

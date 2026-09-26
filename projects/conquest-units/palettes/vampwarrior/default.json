@@ -36,7 +36,8 @@
   "handle":      {"rgb": [20, 18, 20],    "note": "simple black grip"},
   "pommel":      {"rgb": [70, 18, 28]},
   "tassel":      {"rgb": [170, 20, 32],   "note": "red tassel"},
-  "tassel_cord": {"rgb": [120, 14, 24]}
+  "tassel_cord": {"rgb": [120, 14, 24]},
+  "outline":     {"rgb": [20, 12, 16],    "note": "v2 comic line: the inverted-hull shell (near-black, a touch of maroon)"}
  },
- "material": {"roughness": 0.62, "emission_strength": 2.2}
+ "material": {"roughness": 1.0, "emission_strength": 2.2, "note": "v2 cel treatment: fully rough (v1 0.62), no gloss"}
 }

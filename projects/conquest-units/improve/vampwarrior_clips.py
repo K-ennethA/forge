@@ -16,12 +16,15 @@ import rigkit as K  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 OUT = argv[0]
-RES = int(argv[1]) if len(argv) > 1 else 768
+RES = int(argv[1]) if len(argv) > 1 and not argv[1].startswith("--") else 768
 os.makedirs(OUT, exist_ok=True)
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
+import vampwarrior_toon as VT  # noqa: E402
+if "--toon" in argv:
+    print("TOON", VT.toon_preview(bpy))
 meshes = [o for o in scene.objects if o.type == "MESH" and o.parent is rig]
-UNIT = max(meshes, key=lambda o: len(o.data.polygons)).name
+UNIT = argv[argv.index("--prefix") + 1] if "--prefix" in argv else max(meshes, key=lambda o: len(o.data.polygons)).name
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.film_transparent = False

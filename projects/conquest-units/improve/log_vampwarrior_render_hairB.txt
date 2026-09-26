@@ -1,0 +1,11 @@
+00:01.171  blend            | Read blend: "C:\Users\kenne\AppData\Local\Temp\vampwarrior_v2_hair\hair_B.blend"
+00:02.859  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_head.png'
+00:03.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_front.png'
+00:03.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_back_threequarter.png'
+00:03.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_side.png'
+TOON ['vampwarrior_body', 'vampwarrior_sword']
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_back_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v2_hairB_side.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
