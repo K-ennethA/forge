@@ -437,3 +437,37 @@ confidence - a stride (assertive, purposeful; more than the calm stroll).
 (3) NEW clip "float": he floats up, crosses his arms, the cape flares a
 little as if in wind, then floats back down - ALLOWED_CLIP_NAMES extended
 with float/float-loop.
+
+## 2026-09-26 — Magmoo v4 feedback (artist verbatim + 4 references)
+
+References saved to design/reference/: magmoo-v4-color-reference.png (the
+bright glossy orange lava blob with the huge mouth - the target coloring),
+magmoo-v4-eye-annotation.png (red circle drawn where the eye belongs -
+high on the head side, dragon-like), magmoo-v4-flight-annotation.png (red
+S drawn VERTICALLY over the flight render - the wanted up/down undulation;
+the mound section is inside the curve), magmoo-v4-current-flight.png.
+
+"this part should only be there when hes idle on the floor otherwise while
+flying it should just be full serpent
+
+his eyes should not be white at all or have the black, it just a carved out
+eye socked with no eye and the socket is a darker shade of red
+
+when he is in ball form have him do a small bounce
+
+coloring should mathc more this image while remaining a bit see through
+
+eye placement should be more like here like a dragons
+
+and right now hes going in an s flat but we want it up and down like"
+
+Binding reading: (1) the splash MOUND (crown + finger splats) exists only
+while grounded (idle); in FLIGHT the body reads as a clean full serpent -
+the mound section becomes a smooth body segment (swap-under-motion is the
+house pattern). (2) eyes: carved empty sockets only - NO white, NO black
+pupil, no glow; socket interior a darker shade of the body red. (3) ball
+clip gains a small bounce. (4) colors move to the reference: bright glossy
+orange lava (not deep red), still a bit see-through. (5) eyes placed high
+on the head sides like a dragon, per the circle annotation. (6) flight
+undulation becomes VERTICAL (up/down waves) instead of the flat horizontal
+S, per the drawn S.
