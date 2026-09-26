@@ -1,0 +1,16 @@
+00:01.016  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-mosquitopire.blend"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "vampito.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\vampito.blend 10.5
+CLIP idle {"frames": [1, 49], "period_frames": 48, "seconds": 2.0, "cyclic": true, "wingbeat_hz": 2.0, "seam_units": 0.0, "clearance_min_z": 1.5632, "clearance_min_z_pct_H": 12.92, "lowest_point_range": [1.5632, 2.4151], "root_offset_max": 0.0, "hand_tip_stroke_peak_to_peak": 5.4766, "hand_tip_stroke_LR_diff": 0.186321, "pitch_deg_mean": 3.0}
+CLIP walk {"frames": [1, 25], "period_frames": 24, "seconds": 1.0, "cyclic": true, "wingbeat_hz": 4.0, "seam_units": 0.0, "clearance_min_z": 2.6886, "clearance_min_z_pct_H": 22.22, "lowest_point_range": [2.6886, 3.2429], "root_offset_max": 0.0, "hand_tip_stroke_peak_to_peak": 6.8729, "hand_tip_stroke_LR_diff": 0.169857, "pitch_deg_mean": 14.0, "implied_forward_speed": {"rule": "Strouhal: U = f A / St (f = wingbeat Hz, A = hand-tip vertical stroke peak-to-peak); cruising flyers St 0.2-0.4", "units_per_s_by_St": {"0.2": 137.457, "0.3": 91.638, "0.4": 68.729}, "m_per_s_at_cell_fit_by_St": {"0.2": 13.948, "0.3": 9.299, "0.4": 6.974}, "body_lengths_per_s_at_St_0.3": 9.679, "game_m_per_unit_report_only": 0.10147}}
+Info: Saved copy as "vampito.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+22:01:30 | INFO: Starting glTF 2.0 export
+22:01:30 | INFO: Extracting primitive: vampito
+22:01:30 | INFO: Primitives created: 1
+22:01:30 | INFO: Finished glTF 2.0 export in 0.14294672012329102 s
+
+RIG_DONE {"bone_count": 8, "weights": {"max_influences": 2, "unweighted": 0, "sum_dev_max": 0.0, "per_bone_dominant": {"body": 957, "abdomen": 228, "head": 289, "wing.L": 94, "wing_tip.L": 350, "wing.R": 96, "wing_tip.R": 366}, "rule": "head = head/eyes part ownership blended +-NECK_BAND across its boundary (antennae 1.0); wings = |x| over WING_X0..WING_X1 (never the collar or head), wing -> wing_tip over X_MID +- TIP_BAND; abdomen below the waist joint +- ABD_BAND; body = the rest"}, "hover": {"hover_height": 1.815, "hover_frac_H": 0.15, "units": "sculpt units", "hover_height_m_at_cell_fit": 0.1842, "source_sculpt_floor_gap": 0.5953, "rule": "rest pose on the floor (contract feet_origin); both clips key body.location z = HOVER_FRAC x H -/+ the wingbeat bob; the contract root never moves"}, "digest": {"parts": {"bake_normal": "ab08b44769639fd0", "bake_ao": "bea8872cc0ff0f42", "geometry_colour": "221460770ace3eaa", "uv": "23b872e66a50f156", "weights": "74106308b641f545", "keys": "b3778c5c16af96e8", "clip_samples": "a6df9cda3a4c5d7b"}, "combined": "31b76d8dc3462690"}, "seconds": 11.1}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

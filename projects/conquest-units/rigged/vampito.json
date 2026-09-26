@@ -1,0 +1,232 @@
+{
+ "unit": "vampito",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampito.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 2,
+  "unweighted": 0,
+  "sum_dev_max": 0.0,
+  "per_bone_dominant": {
+   "body": 957,
+   "abdomen": 228,
+   "head": 289,
+   "wing.L": 94,
+   "wing_tip.L": 350,
+   "wing.R": 96,
+   "wing_tip.R": 366
+  },
+  "rule": "head = head/eyes part ownership blended +-NECK_BAND across its boundary (antennae 1.0); wings = |x| over WING_X0..WING_X1 (never the collar or head), wing -> wing_tip over X_MID +- TIP_BAND; abdomen below the waist joint +- ABD_BAND; body = the rest"
+ },
+ "wings_separable": "no: the wing ARMS are fused into the main sculpt shell (Sphere.001 carries thorax + abdomen + both arms and hands); the membranes are separate sculpt parts but interpenetrate the arms and fuse in the remesh. The wings still flap: they are lateral appendages joined only at the shoulder, so a 2-bone chain per side skins them cleanly (shoulder band WING_X0..WING_X1).",
+ "hover": {
+  "hover_height": 1.815,
+  "hover_frac_H": 0.15,
+  "units": "sculpt units",
+  "hover_height_m_at_cell_fit": 0.1842,
+  "source_sculpt_floor_gap": 0.5953,
+  "rule": "rest pose on the floor (contract feet_origin); both clips key body.location z = HOVER_FRAC x H -/+ the wingbeat bob; the contract root never moves"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    49
+   ],
+   "period_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "wingbeat_hz": 2.0,
+   "seam_units": 0.0,
+   "clearance_min_z": 1.5632,
+   "clearance_min_z_pct_H": 12.92,
+   "lowest_point_range": [
+    1.5632,
+    2.4151
+   ],
+   "root_offset_max": 0.0,
+   "hand_tip_stroke_peak_to_peak": 5.4766,
+   "hand_tip_stroke_LR_diff": 0.186321,
+   "pitch_deg_mean": 3.0
+  },
+  "walk": {
+   "frames": [
+    1,
+    25
+   ],
+   "period_frames": 24,
+   "seconds": 1.0,
+   "cyclic": true,
+   "wingbeat_hz": 4.0,
+   "seam_units": 0.0,
+   "clearance_min_z": 2.6886,
+   "clearance_min_z_pct_H": 22.22,
+   "lowest_point_range": [
+    2.6886,
+    3.2429
+   ],
+   "root_offset_max": 0.0,
+   "hand_tip_stroke_peak_to_peak": 6.8729,
+   "hand_tip_stroke_LR_diff": 0.169857,
+   "pitch_deg_mean": 14.0,
+   "implied_forward_speed": {
+    "rule": "Strouhal: U = f A / St (f = wingbeat Hz, A = hand-tip vertical stroke peak-to-peak); cruising flyers St 0.2-0.4",
+    "units_per_s_by_St": {
+     "0.2": 137.457,
+     "0.3": 91.638,
+     "0.4": 68.729
+    },
+    "m_per_s_at_cell_fit_by_St": {
+     "0.2": 13.948,
+     "0.3": 9.299,
+     "0.4": 6.974
+    },
+    "body_lengths_per_s_at_St_0.3": 9.679,
+    "game_m_per_unit_report_only": 0.10147
+   }
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.726
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    1.0536,
+    6.2
+   ],
+   "tail": [
+    0.0,
+    1.0536,
+    7.652
+   ]
+  },
+  {
+   "name": "abdomen",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    2.7248,
+    5.0
+   ],
+   "tail": [
+    0.0,
+    4.0659,
+    0.0
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.1508,
+    8.0002
+   ],
+   "tail": [
+    0.0005,
+    -1.1508,
+    9.3441
+   ]
+  },
+  {
+   "name": "wing.L",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    1.6,
+    0.098,
+    6.8778
+   ],
+   "tail": [
+    5.1491,
+    1.6086,
+    7.7919
+   ]
+  },
+  {
+   "name": "wing_tip.L",
+   "parent": "wing.L",
+   "deform": true,
+   "head": [
+    5.1491,
+    1.6086,
+    7.7919
+   ],
+   "tail": [
+    8.862,
+    3.4468,
+    6.6172
+   ]
+  },
+  {
+   "name": "wing.R",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -1.6,
+    0.2349,
+    6.8814
+   ],
+   "tail": [
+    -5.1491,
+    1.6805,
+    7.6904
+   ]
+  },
+  {
+   "name": "wing_tip.R",
+   "parent": "wing.R",
+   "deform": true,
+   "head": [
+    -5.1491,
+    1.6805,
+    7.6904
+   ],
+   "tail": [
+    -8.862,
+    3.4226,
+    6.7249
+   ]
+  }
+ ],
+ "bone_count": 8,
+ "deform_bone_count": 7,
+ "digest": {
+  "parts": {
+   "bake_normal": "ab08b44769639fd0",
+   "bake_ao": "bea8872cc0ff0f42",
+   "geometry_colour": "221460770ace3eaa",
+   "uv": "23b872e66a50f156",
+   "weights": "74106308b641f545",
+   "keys": "b3778c5c16af96e8",
+   "clip_samples": "a6df9cda3a4c5d7b"
+  },
+  "combined": "31b76d8dc3462690"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampito.glb",
+  "bytes": 3072084,
+  "seconds": 0.4,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.10147 reaches the regular cell (report-only)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampito.json",
+ "seconds": 11.1
+}

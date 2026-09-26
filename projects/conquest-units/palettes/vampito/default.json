@@ -1,0 +1,19 @@
+{
+ "unit": "vampito",
+ "skin": "default",
+ "description": "Vampito (the mosquitopire sculpt under the vampito name; artist 2026-09-25). Neither source blend (newunit-mosquitopire / newunit-vampito) carries a material or colour attribute and no Conquest glb exists for either, so there are no shipped RGBs to carry: this is the first authored look, built on the lane brief's read of a vampire mosquito - pale ashen body and head, a blood-engorged abdomen, deep crimson bat-wing membranes, a near-black cape collar behind the head, blood-red eyes and proboscis tip. No emission: the source has no glow.",
+ "regions": {
+  "body":          {"rgb": [214, 204, 210], "note": "thorax + chest ball - pale ashen (vampire pallor, faint lilac)"},
+  "abdomen":       {"rgb": [148, 22, 34],   "note": "the segmented hanging abdomen - engorged with blood"},
+  "wing_arm":      {"rgb": [196, 184, 192], "note": "wing leading-edge arms - pale bone, a step darker than the body"},
+  "talon":         {"rgb": [70, 44, 56],    "note": "the hanging wing hands below TALON_Z - dark talons"},
+  "membrane":      {"rgb": [104, 30, 48],   "note": "wing membranes between arm and hand - deep crimson bat-wing / cape"},
+  "collar":        {"rgb": [42, 30, 40],    "note": "the spiky mane behind the head - near-black cape collar"},
+  "head":          {"rgb": [220, 210, 214], "note": "head ball - pale"},
+  "eyes":          {"rgb": [196, 18, 30],   "note": "eye spheres - blood red (not emissive: the source has no glow)"},
+  "proboscis":     {"rgb": [84, 58, 66],    "note": "the proboscis shaft - dark"},
+  "proboscis_tip": {"rgb": [160, 20, 32],   "note": "the outer PROB_TIP_LEN of the proboscis - blood-stained tip"},
+  "antennae":      {"rgb": [60, 44, 52],    "note": "the two antennae - dark"}
+ },
+ "material": {"roughness": 0.8, "emission_strength": 1.0}
+}

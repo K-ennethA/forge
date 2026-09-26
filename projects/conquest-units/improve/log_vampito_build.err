@@ -1,0 +1,2 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\vampito_build.py:562: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
