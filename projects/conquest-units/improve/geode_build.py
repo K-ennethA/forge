@@ -70,19 +70,40 @@ CROWN_NZ, PAVILION_NZ = 0.30, -0.30                 # facet families: up-facing 
 FACET_JITTER = 0.26                                 # per-facet value variation (sparkle), +-half this
 TRI_BUDGET = [4000, 20000]                          # declared window (contract tri_budget): identity = facets, not density
 CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9                  # Conquest hero ceilings -- REPORT ONLY (scale policy 2026-09-25)
+# --------------------------------------------------------------------------- ARTIST KNOBS: motion v2 (2026-09-25)
+# Artist: "geode walks and its limbs are connected statically, maybe have some elecriticty wiring them together, so it
+# walks pretty normally, can floatish". Scale note: 1 sculpt unit ~= 7.5 cm in game (shipped height 1.8 m / 24.04).
+# ---- electricity arcs (thin jagged glowing strands bridging each gap between the static parts)
+ARC_GAPS = [("torso", "head"), ("torso", "arm.L"), ("torso", "arm.R"), ("torso", "core"),
+            ("core", "leg.L"), ("core", "leg.R")]   # "which gaps get arcs" (legs hang below the core: 2.4 vs 4.4 to the torso)
+ARC_STRANDS = 2                                     # "arc count per gap" (strands)
+ARC_SEGMENTS = 7                                    # "arc kinks": segments per strand (tris per strand = 6 x this + 2)
+ARC_JAG = 0.16                                      # "jag amplitude": zig-zag offset, fraction of the strand length ...
+ARC_JAG_MAX = 0.42                                  # ... capped at this (sculpt units) so long arcs stay arcs, not loops
+ARC_RADIUS = 0.07                                   # "arc thickness" (strand radius, sculpt units; ~5 mm in game)
+ARC_SPREAD = 0.7                                    # how far apart the strands of one gap land (sculpt units)
+ARC_SINK = 0.18                                     # how deep each strand end buries into its part (sculpt units)
+ARC_VARIANTS = 3                                    # pre-built arc shapes per gap (shape-key swaps = the flicker)
+ARC_FLICKER_HZ = 12.0                               # "flicker rate": arc shape swaps per second (snaps, CONSTANT keys)
+ARC_REGION = "arc"                                  # palette region the arcs paint from (palettes/geode/<skin>.json)
+ARC_GLOW_TIER = "top"                               # "glow tier": the arc region's glow must outshine every other region
+#                                                     in every built skin (gated); the colour/strength live in the palette
+# ---- idle v2 (whole creature is one rigid assembly: no part drifts; the core pulses in place)
 IDLE_FRAMES = 120                                   # idle loop length (24 fps -> 5 s)
-IDLE_BODY_BOB = 0.10                                # torso float (sculpt units, model is ~24.6 tall)
-IDLE_BODY_TILT_DEG = 0.8                            # torso sway
-IDLE_HEAD_BOB = 0.07                                # head float relative to the torso (gap at rest ~0.2)
-IDLE_HEAD_TILT_DEG = 2.0                            # head nod / look
-IDLE_ARM_ORBIT = 0.10                               # arm orbit radius (x/y circle) relative to the torso
-IDLE_ARM_BOB = 0.12                                 # arm float relative to the torso
-IDLE_ARM_SWING_DEG = 2.5                            # arm pendulum swing about the shoulder end
-IDLE_ARM_PHASE = 0.55 * math.pi                     # right arm lags the left by this (rad): out of phase
+IDLE_FLOAT = 0.32                                   # "idle float": whole-body lift off the ground (sculpt units; ~2.4 cm)
+IDLE_SWAY_DEG = 0.8                                 # "idle sway": fore/aft rock about the foot line
 IDLE_CORE_PULSE = 0.07                              # core contraction (scale 1 -> 1 - this; never grows past rest)
-IDLE_CORE_SINK = 0.06                               # core sinks by up to this while contracting (never rises past rest)
-IDLE_CORE_YAW_DEG = 10.0                            # core slow turn wobble
 IDLE_GLOW_PULSE = 0.45                              # glow flare on each core beat (emission strength x (1 + this))
+# ---- walk (stiff crystal biped: legs hinge at the hip, no knees; the body rocks to sell the step)
+WALK_FRAMES = 32                                    # "walk cycle": frames per stride (2 steps) at 24 fps -> 1.33 s, 90 steps/min
+WALK_LEG_SWING_DEG = 20.0                           # "step size": leg-crystal pitch each way about the hip
+WALK_ROLL_DEG = 4.0                                 # "side rock": body roll over the stance leg (lifts the swing foot)
+WALK_TORSO_YAW_DEG = 3.0                            # "shoulder counter-twist" (arms read as swinging, still rigid)
+WALK_LEAN_DEG = 2.0                                 # constant forward lean (about the ground point)
+WALK_FLOAT = 0.24                                   # "walk float": extra whole-body lift at mid-stance (sculpt units)
+WALK_CONTACT_SOFT = 0.06                            # "soft contacts": soft-min temperature of the foot solve (sculpt units)
+WALK_CORE_PULSE = 0.05                              # core contraction on each footfall
+WALK_GLOW_PULSE = 0.30                              # glow flare on each footfall
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 SKINS = ["default"]
@@ -726,6 +747,112 @@ PAIRS = [(0, 1), (0, 2), (0, 3), (0, 4), (2, 5), (2, 6), (0, 5), (0, 6), (3, 5),
 report["rest_clearance"] = clearance(LV, PAIRS)
 print("CLEAR", json.dumps(report["rest_clearance"]))
 
+# =========================================================================== 2d. electricity arcs (motion v2)
+# Per gap: ARC_STRANDS strands between the two parts' facing surfaces (nearest vertex pair, strands spread across the
+# plane the camera sees), each a jagged polyline swept by a triangular tube. ARC_VARIANTS shapes per strand share one
+# vertex layout: variant 0 is the basis, the others become shape keys (the flicker swaps them on CONSTANT keys).
+ARC_PI = len(PARTS)                                  # FPART index of the arc faces (not a rigid part)
+PART_V = {pn: LV[pmask[pn]] for pn in PARTS}
+
+
+def arc_frame(dn):
+    ref = np.array([0.0, -1.0, 0.0]) if abs(dn[1]) < 0.9 else np.array([0.0, 0.0, 1.0])
+    e1 = np.cross(dn, ref); e1 /= np.linalg.norm(e1)
+    return e1, np.cross(dn, e1)
+
+
+def arc_path(a, b, e1, e2, seed):
+    rng = np.random.default_rng(seed)
+    d = b - a
+    L = float(np.linalg.norm(d))
+    amp = min(ARC_JAG * L, ARC_JAG_MAX)
+    P = np.array([a + d * k / ARC_SEGMENTS for k in range(ARC_SEGMENTS + 1)])
+    s0 = 1.0 if rng.uniform() < 0.5 else -1.0
+    for k in range(1, ARC_SEGMENTS):
+        env = math.sin(math.pi * k / ARC_SEGMENTS) ** 0.5
+        sg = s0 * (1.0 if k % 2 else -1.0)
+        P[k] += amp * env * (sg * rng.uniform(0.45, 1.0) * e1 + rng.uniform(-0.6, 0.6) * e2)
+    return P
+
+
+def arc_tube(P, e2):
+    M = len(P) - 1
+    out = []
+    for k in range(M + 1):
+        tng = P[min(k + 1, M)] - P[max(k - 1, 0)]; tng /= np.linalg.norm(tng)
+        n1 = np.cross(tng, e2)
+        if np.linalg.norm(n1) < 1e-6:
+            n1 = np.cross(tng, np.array([0.0, 0.0, 1.0]))
+        n1 /= np.linalg.norm(n1); n2 = np.cross(tng, n1)
+        rr = ARC_RADIUS * (0.6 + 0.4 * math.sin(math.pi * k / M))
+        for q in range(3):
+            an = TAU * q / 3
+            out.append(P[k] + rr * (math.cos(an) * n1 + math.sin(an) * n2))
+    return np.array(out)
+
+
+def arc_faces(base, M):
+    F = [[base + 2, base + 1, base + 0]]                 # start cap (faces back along the strand)
+    for k in range(M):
+        for q in range(3):
+            v00, v01 = base + 3 * k + q, base + 3 * k + (q + 1) % 3
+            v10, v11 = base + 3 * (k + 1) + q, base + 3 * (k + 1) + (q + 1) % 3
+            F += [[v00, v01, v11], [v00, v11, v10]]
+    F.append([base + 3 * M, base + 3 * M + 1, base + 3 * M + 2])
+    return F
+
+
+ARC_VV = [[] for _ in range(ARC_VARIANTS)]          # per variant slot (0 = basis): arc vertex positions
+ARC_F, ARC_W, ARC_GAP_OF_V = [], [], []             # faces (local idx), (partA, partB, s) per vertex, gap per vertex
+arc_rep = []
+nb_ = 0
+for gi, (pa, pb) in enumerate(ARC_GAPS):
+    A, B = PART_V[pa], PART_V[pb]
+    d2 = ((A[:, None, :] - B[None, :, :]) ** 2).sum(-1)
+    ia, ib = np.unravel_index(int(np.argmin(d2)), d2.shape)
+    a0, b0 = A[ia], B[ib]
+    dn0 = (b0 - a0) / np.linalg.norm(b0 - a0)
+    e1g, _ = arc_frame(dn0)
+    strands = []
+    for j in range(ARC_STRANDS):
+        off = (j - (ARC_STRANDS - 1) / 2.0) * ARC_SPREAD * e1g
+        a = A[int(np.argmin(np.linalg.norm(A - (a0 + off), axis=1)))]
+        b = B[int(np.argmin(np.linalg.norm(B - (b0 + off), axis=1)))]
+        dn = (b - a) / np.linalg.norm(b - a)
+        ae, be = a - dn * ARC_SINK, b + dn * ARC_SINK
+        e1, e2 = arc_frame(dn)
+        shapes = [arc_tube(arc_path(ae, be, e1, e2, 7919 * gi + 131 * j + v), e2) for v in range(ARC_VARIANTS)]
+        # latin assignment: slot k shows variant (gi + k) % V, so every swap changes every gap's shape
+        for k in range(ARC_VARIANTS):
+            ARC_VV[k].append(shapes[(gi + k) % ARC_VARIANTS])
+        ARC_F.extend(arc_faces(nb_, ARC_SEGMENTS))
+        for kk in range(ARC_SEGMENTS + 1):
+            for q in range(3):
+                ARC_W.append((pa, pb, kk / ARC_SEGMENTS)); ARC_GAP_OF_V.append(gi)
+        nb_ += 3 * (ARC_SEGMENTS + 1)
+        strands.append({"surface_gap": round(float(np.linalg.norm(b - a)), 4), "length_with_sink": round(float(np.linalg.norm(be - ae)), 4),
+                        "jag_amp": round(min(ARC_JAG * float(np.linalg.norm(be - ae)), ARC_JAG_MAX), 4)})
+    arc_rep.append({"gap": pa + "|" + pb, "nearest_gap": round(float(np.sqrt(d2[ia, ib])), 4), "strands": strands})
+ARC_VV = [np.vstack(v) for v in ARC_VV]
+ARC_F = np.array(ARC_F, dtype=np.int64)
+n_arc_tris = len(ARC_F)
+# closed-tube orientation gate: every strand's signed volume > 0 in every variant (outward faces)
+_per = len(ARC_F) // (len(ARC_GAPS) * ARC_STRANDS)
+arc_vol_min = min(signed_volume(Vv, ARC_F[s * _per:(s + 1) * _per]) for Vv in ARC_VV for s in range(len(ARC_GAPS) * ARC_STRANDS))
+assert arc_vol_min > 0, "arc tube inside-out (signed volume %.3g)" % arc_vol_min
+nmain_v = len(LV)
+LV = np.vstack([LV, ARC_VV[0]])
+LF = np.vstack([LF, ARC_F + nmain_v])
+FPART = np.concatenate([FPART, np.full(n_arc_tris, ARC_PI)])
+FFID = np.concatenate([FFID, np.full(n_arc_tris, -1)])
+FCH = np.concatenate([FCH, np.zeros(n_arc_tris, dtype=FCH.dtype)])
+ARC_VIDX = np.arange(nmain_v, len(LV))
+report["arcs"] = {"gaps": arc_rep, "strands_per_gap": ARC_STRANDS, "segments": ARC_SEGMENTS, "variants": ARC_VARIANTS,
+                  "tris": int(n_arc_tris), "verts": int(len(ARC_VIDX)), "radius": ARC_RADIUS, "jag": ARC_JAG, "jag_max": ARC_JAG_MAX,
+                  "sink": ARC_SINK, "min_strand_signed_volume": round(float(arc_vol_min), 6), "region": ARC_REGION,
+                  "flicker": "shape-key swap: variant 0 = basis, %d shape keys, CONSTANT keys at %.0f Hz" % (ARC_VARIANTS - 1, ARC_FLICKER_HZ)}
+print("ARCS", json.dumps({k: report["arcs"][k] for k in ("tris", "verts", "min_strand_signed_volume")}))
+
 # =========================================================================== mesh object
 scene = bpy.context.scene
 for o in list(bpy.data.objects):
@@ -743,6 +870,7 @@ nf = len(me.polygons)
 assert nf == len(LF)
 report["tris_final"] = nf
 report["tris_per_part"] = {pn: int((FPART == i).sum()) for i, pn in enumerate(PARTS)}
+report["tris_per_part"]["arcs"] = int((FPART == ARC_PI).sum())
 
 # UV: Smart UV on the joined faceted mesh + pack (the contract's uv_health; no bake at this density)
 bpy.context.view_layer.objects.active = low
@@ -760,7 +888,7 @@ report["uv"] = {"method": "Smart UV (66 deg, margin 0.003) + pack, whole joined 
                 "zero_area_faces": int((np.abs(uva) < 1e-9).sum()), "flipped_faces": int((uva < -1e-12).sum()), "uv_sha": sha(UVn)}
 
 # =========================================================================== 3. regions
-REG = ["pavilion", "girdle", "crown", "edge", "inner", "eye", "core", "core_edge"]
+REG = ["pavilion", "girdle", "crown", "edge", "inner", "eye", "core", "core_edge", ARC_REGION]
 R_ = {n: i for i, n in enumerate(REG)}
 FC = np.empty(nf * 3); me.polygons.foreach_get("center", FC); FC = FC.reshape(-1, 3)
 rid = np.full(nf, R_["girdle"], dtype=np.int32)
@@ -806,11 +934,29 @@ rid[(FCH == 1)] = R_["edge"]
 cp = PARTS.index("core")
 rid[(FPART == cp) & (FCH == 0)] = R_["core"]
 rid[(FPART == cp) & (FCH == 1)] = R_["core_edge"]
+rid[FPART == ARC_PI] = R_[ARC_REGION]
 # per-facet value jitter (sparkle): one value per facet, so each facet reads as one plane
 h = (np.sin((FFID + 7.0) * 12.9898) * 43758.5453) % 1.0
 shade = np.where(FFID >= 0, 1.0 + FACET_JITTER * (h - 0.5), 1.0)
 PAL.store_regions(me, REG, rid, shade)
 pal_default = PAL.load(UNIT, "default")
+
+
+def glow_tier(pal):
+    """rank the regions by glow luminance (linear Rec.709 of emission x emission_scale); gate the arc tier."""
+    lum = {}
+    for n, v in pal["regions"].items():
+        if "emission" in v:
+            g = PAL.srgb_to_linear(v["emission"]) * v.get("emission_scale", 1.0)
+            lum[n] = round(float(0.2126 * g[0] + 0.7152 * g[1] + 0.0722 * g[2]), 4)
+    rank = sorted(lum, key=lambda n: -lum[n])
+    ok = ARC_GLOW_TIER != "top" or (ARC_REGION in lum and rank[0] == ARC_REGION)
+    return {"skin": pal["skin"], "glow_luminance": lum, "rank": rank, "arc_is_top_tier": bool(rank and rank[0] == ARC_REGION),
+            "gate": ARC_GLOW_TIER, "pass": bool(ok)}
+
+
+report["arc_glow_tier"] = {"default": glow_tier(pal_default)}
+assert report["arc_glow_tier"]["default"]["pass"], "arc glow tier gate: %r" % report["arc_glow_tier"]["default"]
 report["regions_faces"] = PAL.paint(me, pal_default)
 report["eye_rule"] = {"rule": "head gem-cut row %d: the two facets whose azimuth is nearest the front (-Y) each get a "
                               "sunk inset gem (EYE_SCALE of the facet, sunk EYE_DEPTH) = the eyes" % EYE_ROW[1],
@@ -864,6 +1010,7 @@ W = LVf
 vpart = np.zeros(len(W), dtype=np.int64)
 for i, pn in enumerate(PARTS):
     vpart[pmask[pn]] = i
+vpart[ARC_VIDX] = -1                                  # arc strands: blended between their two parts' bones (below)
 
 
 def pv(pn):
@@ -897,7 +1044,8 @@ for side in ("L", "R"):
     if ax[2] < 0:
         ax = -ax
     s = (lg - c) @ ax
-    BONES.append(("leg." + side, "root", tuple(c + ax * s.max()), tuple(tip)))
+    # v2: legs are children of the BODY (static connection; the walk hinges them at the hip = the bone head)
+    BONES.append(("leg." + side, "body", tuple(c + ax * s.max()), tuple(tip)))
 arm_data = bpy.data.armatures.new(UNIT + "_rig")
 rig = bpy.data.objects.new(UNIT + "_rig", arm_data)
 scene.collection.objects.link(rig)
@@ -917,14 +1065,36 @@ for (n, p, h, t) in BONES:
 bpy.ops.object.mode_set(mode="OBJECT")
 BONE_OF = {"torso": "body", "head": "head", "core": "core", "arm.L": "arm.L", "arm.R": "arm.R", "leg.L": "leg.L", "leg.R": "leg.R"}
 low.vertex_groups.clear()
+VG = {}
 for pn in PARTS:
-    vg = low.vertex_groups.new(name=BONE_OF[pn])
+    vg = VG[pn] = low.vertex_groups.new(name=BONE_OF[pn])
     vg.add([int(i) for i in np.nonzero(vpart == PARTS.index(pn))[0]], 1.0, "REPLACE")
+# arc strand vertex at fraction s along the strand: (1 - s) to part A's bone, s to part B's bone (2 influences, sum 1)
+for vi, (pa, pb, s_) in zip(ARC_VIDX, ARC_W):
+    if s_ < 1:
+        VG[pa].add([int(vi)], 1.0 - s_, "REPLACE")
+    if s_ > 0:
+        VG[pb].add([int(vi)], s_, "REPLACE")
 low.parent = rig
 low.matrix_parent_inverse = Matrix.Identity(4)
 amod = low.modifiers.new("Armature", "ARMATURE"); amod.object = rig
-rep["weights"] = {"rule": "rigid: every vertex 1.0 to its part's bone (one influence, no blending)",
-                  "per_bone_verts": {BONE_OF[pn]: int((vpart == PARTS.index(pn)).sum()) for pn in PARTS}}
+rep["weights"] = {"rule": "rigid parts: every vertex 1.0 to its part's bone; arc strands: linear blend part A -> part B "
+                          "along the strand (<= 2 influences, sum 1) so each arc stays wired to both ends",
+                  "per_bone_verts": {BONE_OF[pn]: int((vpart == PARTS.index(pn)).sum()) for pn in PARTS},
+                  "arc_verts": int(len(ARC_VIDX))}
+
+# shape keys: arc variants (the flicker). Basis = variant slot 0; key k moves ONLY the arc vertices to slot k.
+low.shape_key_add(name="Basis", from_mix=False)
+ARC_KEYS = []
+for k in range(1, ARC_VARIANTS):
+    kb = low.shape_key_add(name="arc_flicker_%d" % k, from_mix=False)
+    co = np.empty(len(me.vertices) * 3); kb.data.foreach_get("co", co); co = co.reshape(-1, 3)
+    co[ARC_VIDX] = ARC_VV[k]
+    kb.data.foreach_set("co", co.ravel())
+    kb.value = 0.0
+    ARC_KEYS.append(kb.name)
+me.shape_keys.use_relative = True
+rep["arc_shape_keys"] = ARC_KEYS
 
 # =========================================================================== 5. PROPOSED idle
 pose = rig.pose.bones

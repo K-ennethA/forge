@@ -28,6 +28,11 @@ if "--glb" in argv:
 for o in scene.objects:
     if o.type == "ARMATURE":
         o.data.pose_position = "REST"
+if any(o.type == "ARMATURE" for o in scene.objects):
+    # the glTF importer adds an unparented, unskinned 2 m 'Icosphere' (bone display shape): not part of the model
+    for o in list(scene.objects):
+        if o.type == "MESH" and o.parent is None and len(o.vertex_groups) == 0 and o.name.startswith("Icosphere"):
+            bpy.data.objects.remove(o, do_unlink=True)
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 dg = bpy.context.evaluated_depsgraph_get()

@@ -9,8 +9,9 @@ $OUT = "$P\renders\mortis"
 $GLB = "C:\Users\kenne\OneDrive\Desktop\git\Conquest\game\characters\models\dark\necromancer.glb"
 New-Item -ItemType Directory -Force $OUT | Out-Null
 if (-not $SkipBuild) {
-  $p = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-necromancer.blend`"","--factory-startup","--python","`"$I\mortis_rework.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_mortis_build.txt" -RedirectStandardError "$I\log_mortis_build.err"
-  $null = $p.Handle; $p.WaitForExit(); "build exit=$($p.ExitCode)"
+  # NOTE: must not be named $p — PowerShell vars are case-insensitive and $p would clobber $P (project path)
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-necromancer.blend`"","--factory-startup","--python","`"$I\mortis_rework.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_mortis_build.txt" -RedirectStandardError "$I\log_mortis_build.err"
+  $null = $bp.Handle; $bp.WaitForExit(); "build exit=$($bp.ExitCode)"
 }
 $jobs = @(
   @("check_improved", @("--background","`"$P\improved\mortis.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_mortis.json`"")),

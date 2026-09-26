@@ -60,8 +60,8 @@ TRI_BUDGET = [25000, 35000]           # declared hero-tier window (contract tri_
 ROOTS_FRAC = 0.30                     # "skirt colour line" -- roots below this fraction of the height (shipped rule)
 CROWN_FRAC = 0.90                     # "burning crown apex" above this fraction of the height (shipped rule)
 SEED_Z_FRAC = 0.45                    # tip field: geodesic distances are measured from a ring round the torso at this height
-TIP_LEN = 0.35                        # "ember tip length" -- outer fraction of each spike that burns ...
-TIP_ABS = (0.6, 3.6)                  # ... clamped to this burn length (sculpt units)
+TIP_LEN = 0.65                        # "ember tip length" -- outer fraction of each spike that burns ...
+TIP_ABS = (1.0, 6.5)                  # ... clamped to this burn length (sculpt units)
 MIN_SPIKE = 1.0                       # spikes shorter than this (sculpt units, geodesic persistence) do not burn
 SPIKE_RMIN = 0.15                     # tips nearer the vertical axis than this x H are not spikes (skirt underside centre; the crown burns by height)
 JAW_Z = (3.8, 13.0)                   # "teeth": the mouth region searched for the chest points (upper jaw) and skirt peaks (lower jaw) ...
@@ -72,6 +72,7 @@ TOOTH_ABS = (0.35, 1.1)               # ... clamped to this burn length
 TOOTH_RMIN = 3.0                      # teeth whose tip sits closer than this to the waist axis are the throat, not teeth
 ROOTS_R = 8.5                         # the lower hands (outside this radius, above ROOTS_ZLOW) keep the body colour
 ROOTS_ZLOW = 3.8                      # ... the skirt fins below this height stay roots
+HAND_Y = 3.2                          # the hands hang in the side plane: within this of the waist axis in Y (skirt fins lie outside)
 MAW_Z = (5.2, 10.4)                   # "mouth band": skirt valleys .. just above the chest's lower edge
 THROAT_R = 2.4                        # "throat" radius around the waist axis inside the mouth band
 MAW_ROUT = 6.2                        # "maw walls reach": the red stops this far from the waist axis (the lower arms stay dark)
@@ -379,7 +380,7 @@ for f in LF:
     bm.faces.new([bm.verts[i] for i in f])
 bm.verts.index_update()
 FIELDS = {"z": LV[:, 2], "r": r, "fin": f_in, "fdown": f_down, "tip": tipf, "gtip": spk_len,
-          "tlo": tlo, "glo": tlo_len, "tup": tup, "gup": tup_len}
+          "tlo": tlo, "glo": tlo_len, "tup": tup, "gup": tup_len, "ady": np.abs(LV[:, 1] - AXIS[1])}
 LAY = {k: bm.verts.layers.float.new(k) for k in FIELDS}
 for v in bm.verts:
     for k, arr in FIELDS.items():
@@ -436,11 +437,15 @@ z_in = lambda a, b: MAW_Z[0] - 1e-4 <= a[LAY["z"]] <= MAW_Z[1] + 1e-4 and MAW_Z[
 spike = lambda a, b: a[LAY["gtip"]] > MIN_SPIKE and b[LAY["gtip"]] > MIN_SPIKE
 tooth_lo = lambda a, b: a[LAY["glo"]] >= MIN_TOOTH and b[LAY["glo"]] >= MIN_TOOTH
 tooth_up = lambda a, b: a[LAY["gup"]] >= MIN_TOOTH and b[LAY["gup"]] >= MIN_TOOTH
-roots_side = lambda a, b: all(ROOTS_ZLOW - 1e-4 <= v[LAY["z"]] <= ROOTS_FRAC * H + 1e-4 for v in (a, b))
-roots_out = lambda a, b: a[LAY["r"]] >= ROOTS_R - 1e-4 and b[LAY["r"]] >= ROOTS_R - 1e-4
+in_z = lambda v: ROOTS_ZLOW - 1e-4 <= v[LAY["z"]] <= ROOTS_FRAC * H + 1e-4
+in_r = lambda v: v[LAY["r"]] >= ROOTS_R - 1e-4
+in_y = lambda v: v[LAY["ady"]] <= HAND_Y + 1e-4
+roots_side = lambda a, b: all(in_z(v) and in_y(v) for v in (a, b))
+roots_out = lambda a, b: all(in_r(v) and in_y(v) for v in (a, b))
+hand_plane = lambda a, b: all(in_r(v) and in_z(v) for v in (a, b))
 CUTS = [("z", ROOTS_FRAC * H, None), ("z", CROWN_FRAC * H, None), ("z", MAW_Z[0], None), ("z", MAW_Z[1], None),
         ("r", THROAT_R, z_in), ("r", MAW_ROUT, z_in), ("fin", MAW_IN, z_in), ("fdown", MAW_DOWN, z_in), ("tip", 0.0, spike),
-        ("r", ROOTS_R, roots_side), ("z", ROOTS_ZLOW, roots_out), ("tlo", 0.0, tooth_lo), ("tup", 0.0, tooth_up)]
+        ("r", ROOTS_R, roots_side), ("z", ROOTS_ZLOW, roots_out), ("ady", HAND_Y, hand_plane), ("tlo", 0.0, tooth_lo), ("tup", 0.0, tooth_up)]
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
 straddle = {}
@@ -479,7 +484,8 @@ REG = ["body", "roots", "flame", "maw_throat", "maw_inner"]
 R_ = {n: i for i, n in enumerate(REG)}
 zc, rc, fin_c, fdn_c, tip_c, gt_c = (FVAL[k] for k in ("z", "r", "fin", "fdown", "tip", "gtip"))
 rid = np.full(nf, R_["body"], dtype=np.int32)
-rid[(zc < ROOTS_FRAC * H) & ((rc < ROOTS_R) | (zc < ROOTS_ZLOW))] = R_["roots"]
+hand_c = (rc > ROOTS_R) & (zc > ROOTS_ZLOW) & (FVAL["ady"] < HAND_Y)
+rid[(zc < ROOTS_FRAC * H) & ~hand_c] = R_["roots"]
 band = (zc > MAW_Z[0]) & (zc < MAW_Z[1])
 rid[band & (rc < MAW_ROUT) & ((fin_c > MAW_IN) | (fdn_c > MAW_DOWN))] = R_["maw_inner"]
 rid[band & (rc < THROAT_R)] = R_["maw_throat"]
@@ -490,7 +496,7 @@ FC = np.empty(nf * 3); me.polygons.foreach_get("center", FC); FC = FC.reshape(-1
 FN = np.empty(nf * 3); me.polygon_normals.foreach_get("vector", FN); FN = FN.reshape(-1, 3)
 # boundary straddle audit: a face whose vertex field values fall on both sides of a threshold would be a sawtooth step
 report["region_rule"] = {
-    "roots": "face height < ROOTS_FRAC x H (shipped rule, now an iso-line), except the lower hands (radius > ROOTS_R above ROOTS_ZLOW)",
+    "roots": "face height < ROOTS_FRAC x H (shipped rule, now an iso-line), except the lower hands (radius > ROOTS_R above ROOTS_ZLOW, within HAND_Y of the side plane)",
     "teeth": "ember tips on the mouth's teeth: height-persistence maxima of the skirt (lower jaw) and minima "
              "of the chest (upper jaw) -- the two pieces of JAW_Z x (THROAT_R, JAW_RMAX), outer TOOTH_LEN clamped to TOOTH_ABS",
     "flame": "outer TIP_LEN of every persistent spike (geodesic persistence >= MIN_SPIKE, burn clamped to TIP_ABS), or height > CROWN_FRAC x H (shipped intent: ember-tipped spikes + crown apex)",
@@ -536,6 +542,7 @@ report["cavity_seconds"] = round(time.time() - t, 1)
 # mouth-illusion front read: the maw's front-visible share (faces whose normal faces the -Y camera)
 maw = np.isin(rid, [R_["maw_throat"], R_["maw_inner"]])
 fa = np.empty(nf); me.polygons.foreach_get("area", fa)
+report["regions_area_share"] = {n: round(float(fa[rid == R_[n]].sum() / fa.sum()), 4) for n in REG}
 report["maw"] = {"faces": int(maw.sum()), "area": round(float(fa[maw].sum()), 3),
                  "front_facing_area": round(float(fa[maw & (FN[:, 1] < -0.2)].sum()), 3),
                  "z_range": [round(float(FC[maw, 2].min()), 3), round(float(FC[maw, 2].max()), 3)] if maw.any() else None,
@@ -595,7 +602,7 @@ if PREVIEW:
             bpy.data.objects.remove(o, do_unlink=True)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
-    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "retopo", "regions_faces", "maw", "facing", "iso_cuts", "jaws",
+    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "retopo", "regions_faces", "regions_area_share", "maw", "facing", "iso_cuts", "jaws",
                                                              "region_rule")}))
     print("TIPS", json.dumps(report["tip_field"]))
     sys.stdout.flush(); os._exit(0)
@@ -875,7 +882,7 @@ sw = np.stack([np.maximum(np.cos(ang - a0), 0.0) ** 2 for a0 in sec.values()], 1
 sw /= np.maximum(sw.sum(1), 1e-9)[:, None]
 # lower arms + spiked hands (below the arm window, outside the skirt): the shipped heat weights' own-side mix
 handness = smoothstep(HAND_R[0], HAND_R[1], rr) * smoothstep(ROOTS_ZLOW - 0.5, ROOTS_ZLOW + 0.5, z) * \
-    (1 - smoothstep(HAND_ZTOP[0], HAND_ZTOP[1], z)) * (1 - armness)
+    (1 - smoothstep(HAND_ZTOP[0], HAND_ZTOP[1], z)) * (1 - armness) * (1 - smoothstep(HAND_Y - 0.8, HAND_Y + 0.8, np.abs(dy_)))
 skirtness = skirtness * (1 - handness)
 rest_w = 1 - armness - handness
 for k_, nm in enumerate(axis_names):

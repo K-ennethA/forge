@@ -19,19 +19,19 @@
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "base": 1100,
-   "spine": 4620,
+   "base": 1095,
+   "spine": 4314,
    "chest": 849,
-   "head": 1661,
-   "crown": 625,
+   "head": 1671,
+   "crown": 614,
    "arm.L": 53,
-   "blade.L": 309,
+   "blade.L": 330,
    "arm.R": 54,
-   "blade.R": 334,
-   "skirt.F": 1292,
-   "skirt.B": 1674,
-   "skirt.L": 1612,
-   "skirt.R": 1620
+   "blade.R": 332,
+   "skirt.F": 1310,
+   "skirt.B": 1809,
+   "skirt.L": 1634,
+   "skirt.R": 1635
   },
   "rule": "axis base/spine/chest/head/crown by height (smoothstep +-W_BAND at each joint); arms claim |x| > ARM_IN..ARM_OUT x W inside ARM_ZMIN..ARM_ZMAX x H, arm -> blade across the elbow; skirt sectors F/B/L/R by cos^2 of the angle about the waist axis, ramped in over SKIRT_R and out over SKIRT_ZTOP; lower arms + hands (HAND_R, above ROOTS_ZLOW, below HAND_ZTOP) take HAND_MIX = the shipped heat weights' own-side mix; the skirt PEAKS (the lore's 'bottom leg spikes') ride the skirt sectors -- they are the legs"
  },
@@ -62,8 +62,8 @@
    "vs_shipped": {
     "bone_head_max_pct_H": 0.0547,
     "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.02,
-    "surface_motion_dev_p95_pct_H": 0.2,
+    "surface_motion_dev_p50_pct_H": 0.019,
+    "surface_motion_dev_p95_pct_H": 0.171,
     "surface_motion_dev_max_pct_H": 1.451,
     "worst_vertices": [
      {
@@ -189,99 +189,88 @@
     "bone_head_max_pct_H": 0.0547,
     "bone_rot_max_deg": 0.056,
     "surface_motion_dev_p50_pct_H": 0.08,
-    "surface_motion_dev_p95_pct_H": 0.663,
-    "surface_motion_dev_max_pct_H": 5.353,
+    "surface_motion_dev_p95_pct_H": 0.536,
+    "surface_motion_dev_max_pct_H": 3.167,
     "worst_vertices": [
      {
       "xyz": [
-       -4.84,
-       7.12,
-       4.32
+       0.1,
+       4.49,
+       8.18
       ],
-      "dev_pct_H": 5.35,
+      "dev_pct_H": 3.17,
       "new_bones": {
-       "spine": 0.6,
-       "arm.R": 0.1,
-       "blade.R": 0.3
+       "skirt.B": 1.0
       },
       "shipped_bones": {
-       "skirt.B": 0.73,
-       "skirt.R": 0.25
+       "root": 0.16,
+       "spine": 0.8
       },
-      "corr_dist": 0.516
+      "corr_dist": 0.112
      },
      {
       "xyz": [
-       4.54,
-       7.18,
-       4.39
+       -0.09,
+       4.5,
+       8.2
       ],
-      "dev_pct_H": 5.22,
+      "dev_pct_H": 3.16,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.B": 1.0
       },
       "shipped_bones": {
-       "skirt.B": 0.76,
-       "skirt.L": 0.23
+       "root": 0.16,
+       "spine": 0.81
       },
-      "corr_dist": 0.288
+      "corr_dist": 0.183
      },
      {
       "xyz": [
-       -4.42,
-       7.07,
-       4.47
+       0.04,
+       4.51,
+       8.06
       ],
-      "dev_pct_H": 5.18,
+      "dev_pct_H": 3.09,
       "new_bones": {
-       "spine": 0.6,
-       "arm.R": 0.1,
-       "blade.R": 0.3
+       "skirt.B": 1.0
       },
       "shipped_bones": {
-       "skirt.B": 0.76,
-       "skirt.R": 0.22
+       "root": 0.16,
+       "spine": 0.8
       },
-      "corr_dist": 0.233
+      "corr_dist": 0.101
      },
      {
       "xyz": [
-       -5.27,
-       7.06,
-       4.15
+       -0.11,
+       4.49,
+       8.09
       ],
-      "dev_pct_H": 5.17,
+      "dev_pct_H": 3.08,
       "new_bones": {
-       "base": 0.06,
-       "spine": 0.56,
-       "arm.R": 0.09,
-       "blade.R": 0.28
+       "skirt.B": 1.0
       },
       "shipped_bones": {
-       "skirt.B": 0.73,
-       "skirt.R": 0.25
+       "root": 0.16,
+       "spine": 0.8
       },
-      "corr_dist": 0.125
+      "corr_dist": 0.147
      },
      {
       "xyz": [
-       -4.23,
-       7.04,
-       4.49
+       -0.1,
+       4.46,
+       8.06
       ],
-      "dev_pct_H": 5.12,
+      "dev_pct_H": 3.06,
       "new_bones": {
-       "spine": 0.59,
-       "arm.R": 0.1,
-       "blade.R": 0.29
+       "skirt.B": 1.0
       },
       "shipped_bones": {
-       "skirt.B": 0.76,
-       "skirt.R": 0.22
+       "root": 0.16,
+       "spine": 0.8
       },
-      "corr_dist": 0.298
+      "corr_dist": 0.119
      }
     ]
    }
@@ -311,8 +300,8 @@
    "vs_shipped": {
     "bone_head_max_pct_H": 0.0547,
     "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.007,
-    "surface_motion_dev_p95_pct_H": 3.192,
+    "surface_motion_dev_p50_pct_H": 0.0,
+    "surface_motion_dev_p95_pct_H": 2.851,
     "surface_motion_dev_max_pct_H": 28.394,
     "worst_vertices": [
      {
@@ -351,57 +340,54 @@
      },
      {
       "xyz": [
-       5.68,
-       6.84,
-       4.3
+       -7.73,
+       0.13,
+       14.43
       ],
-      "dev_pct_H": 26.22,
+      "dev_pct_H": 14.75,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "spine": 0.94
       },
       "shipped_bones": {
-       "skirt.B": 0.7,
-       "skirt.L": 0.28
+       "spine": 0.28,
+       "arm.R": 0.32,
+       "blade.R": 0.34
       },
-      "corr_dist": 0.246
+      "corr_dist": 0.277
      },
      {
       "xyz": [
-       5.94,
-       6.55,
-       4.36
+       -7.72,
+       -0.12,
+       14.39
       ],
-      "dev_pct_H": 26.19,
+      "dev_pct_H": 14.69,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "spine": 0.96
       },
       "shipped_bones": {
-       "skirt.B": 0.69,
-       "skirt.L": 0.3
+       "spine": 0.29,
+       "arm.R": 0.33,
+       "blade.R": 0.32
       },
-      "corr_dist": 0.193
+      "corr_dist": 0.241
      },
      {
       "xyz": [
-       6.12,
-       6.3,
-       4.24
+       7.52,
+       -0.41,
+       14.26
       ],
-      "dev_pct_H": 26.17,
+      "dev_pct_H": 14.59,
       "new_bones": {
-       "spine": 0.59,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "spine": 0.99
       },
       "shipped_bones": {
-       "skirt.B": 0.67,
-       "skirt.L": 0.32
+       "spine": 0.31,
+       "arm.L": 0.33,
+       "blade.L": 0.29
       },
-      "corr_dist": 0.179
+      "corr_dist": 0.341
      }
     ]
    }
@@ -431,98 +417,104 @@
     "bone_head_max_pct_H": 0.0547,
     "bone_rot_max_deg": 0.056,
     "surface_motion_dev_p50_pct_H": 0.0,
-    "surface_motion_dev_p95_pct_H": 0.603,
-    "surface_motion_dev_max_pct_H": 9.171,
+    "surface_motion_dev_p95_pct_H": 0.502,
+    "surface_motion_dev_max_pct_H": 5.963,
     "worst_vertices": [
      {
       "xyz": [
-       5.68,
-       6.84,
-       4.3
+       5.92,
+       4.71,
+       8.59
       ],
-      "dev_pct_H": 9.17,
+      "dev_pct_H": 5.96,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
-      },
-      "shipped_bones": {
-       "skirt.B": 0.7,
-       "skirt.L": 0.28
-      },
-      "corr_dist": 0.246
-     },
-     {
-      "xyz": [
-       5.94,
-       6.55,
-       4.36
-      ],
-      "dev_pct_H": 9.06,
-      "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
-      },
-      "shipped_bones": {
-       "skirt.B": 0.69,
+       "base": 0.45,
+       "skirt.B": 0.22,
        "skirt.L": 0.3
       },
-      "corr_dist": 0.193
+      "shipped_bones": {
+       "spine": 0.8,
+       "chest": 0.05,
+       "arm.L": 0.05
+      },
+      "corr_dist": 0.089
      },
      {
       "xyz": [
-       6.12,
-       6.3,
-       4.24
+       6.01,
+       4.66,
+       8.62
       ],
-      "dev_pct_H": 8.93,
+      "dev_pct_H": 5.9,
       "new_bones": {
-       "spine": 0.59,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "base": 0.49,
+       "skirt.B": 0.19,
+       "skirt.L": 0.28
       },
       "shipped_bones": {
-       "skirt.B": 0.67,
-       "skirt.L": 0.32
+       "spine": 0.8,
+       "chest": 0.05,
+       "arm.L": 0.05
       },
-      "corr_dist": 0.179
+      "corr_dist": 0.05
      },
      {
       "xyz": [
-       5.24,
-       6.97,
-       4.65
+       5.96,
+       4.46,
+       8.54
       ],
-      "dev_pct_H": 8.92,
+      "dev_pct_H": 5.85,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "base": 0.37,
+       "skirt.B": 0.24,
+       "skirt.L": 0.37
       },
       "shipped_bones": {
-       "skirt.B": 0.71,
-       "skirt.L": 0.27
+       "spine": 0.8,
+       "chest": 0.05,
+       "arm.L": 0.05
       },
-      "corr_dist": 0.268
+      "corr_dist": 0.146
      },
      {
       "xyz": [
-       4.54,
-       7.18,
-       4.39
+       5.87,
+       4.58,
+       8.55
       ],
-      "dev_pct_H": 8.88,
+      "dev_pct_H": 5.85,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "base": 0.38,
+       "skirt.B": 0.24,
+       "skirt.L": 0.35
       },
       "shipped_bones": {
-       "skirt.B": 0.76,
-       "skirt.L": 0.23
+       "spine": 0.8,
+       "chest": 0.05,
+       "arm.L": 0.05
       },
-      "corr_dist": 0.288
+      "corr_dist": 0.101
+     },
+     {
+      "xyz": [
+       5.69,
+       4.86,
+       8.66
+      ],
+      "dev_pct_H": 5.84,
+      "new_bones": {
+       "base": 0.55,
+       "spine": 0.06,
+       "skirt.B": 0.18,
+       "skirt.L": 0.21
+      },
+      "shipped_bones": {
+       "spine": 0.8,
+       "chest": 0.05,
+       "arm.L": 0.05
+      },
+      "corr_dist": 0.127
      }
     ]
    }
@@ -552,99 +544,79 @@
    "vs_shipped": {
     "bone_head_max_pct_H": 0.0547,
     "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.281,
-    "surface_motion_dev_p95_pct_H": 3.245,
-    "surface_motion_dev_max_pct_H": 30.504,
+    "surface_motion_dev_p50_pct_H": 0.27,
+    "surface_motion_dev_p95_pct_H": 2.899,
+    "surface_motion_dev_max_pct_H": 27.327,
     "worst_vertices": [
      {
       "xyz": [
-       5.68,
-       6.84,
-       4.3
+       -11.44,
+       -3.64,
+       0.63
       ],
-      "dev_pct_H": 30.5,
+      "dev_pct_H": 27.33,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.F": 0.08,
+       "skirt.R": 0.92
       },
-      "shipped_bones": {
-       "skirt.B": 0.7,
-       "skirt.L": 0.28
-      },
-      "corr_dist": 0.246
+      "shipped_bones": {},
+      "corr_dist": 0.144
      },
      {
       "xyz": [
-       4.54,
-       7.18,
-       4.39
+       -11.43,
+       -3.72,
+       0.64
       ],
-      "dev_pct_H": 30.34,
+      "dev_pct_H": 27.31,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.F": 0.08,
+       "skirt.R": 0.92
       },
-      "shipped_bones": {
-       "skirt.B": 0.76,
-       "skirt.L": 0.23
-      },
-      "corr_dist": 0.288
+      "shipped_bones": {},
+      "corr_dist": 0.156
      },
      {
       "xyz": [
-       5.94,
-       6.55,
-       4.36
+       -11.38,
+       -3.71,
+       0.59
       ],
-      "dev_pct_H": 30.08,
+      "dev_pct_H": 27.3,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.F": 0.08,
+       "skirt.R": 0.92
       },
-      "shipped_bones": {
-       "skirt.B": 0.69,
-       "skirt.L": 0.3
-      },
-      "corr_dist": 0.193
+      "shipped_bones": {},
+      "corr_dist": 0.166
      },
      {
       "xyz": [
-       5.24,
-       6.97,
-       4.65
+       -11.36,
+       -3.53,
+       0.63
       ],
-      "dev_pct_H": 29.91,
+      "dev_pct_H": 27.29,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.F": 0.07,
+       "skirt.R": 0.93
       },
-      "shipped_bones": {
-       "skirt.B": 0.71,
-       "skirt.L": 0.27
-      },
-      "corr_dist": 0.268
+      "shipped_bones": {},
+      "corr_dist": 0.093
      },
      {
       "xyz": [
-       4.92,
-       7.07,
-       4.61
+       -11.35,
+       -3.59,
+       0.74
       ],
-      "dev_pct_H": 29.82,
+      "dev_pct_H": 27.24,
       "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
+       "skirt.F": 0.08,
+       "skirt.R": 0.92
       },
-      "shipped_bones": {
-       "skirt.B": 0.73,
-       "skirt.L": 0.25
-      },
-      "corr_dist": 0.256
+      "shipped_bones": {},
+      "corr_dist": 0.045
      }
     ]
    }
@@ -656,7 +628,7 @@
   "slide": "max horizontal displacement of ground-contact vertices (rest z < 0.5% H) over the clip (a skirted glider: the skirt-flap rotation moves the hem; the shipped value is quoted beside it, scaled to the new height)",
   "in_place": "contract root never moves (root_offset_max); 'base' offsets are the shipped clips' own trunk moves (the prior art keyed root.location in BONE space: idle/walk 'bob' is a forward sway along -Y, hit a lift, death a drop)",
   "vs_shipped": "per frame: pose-bone heads (normalised by height about each floor centre) and rotations vs the shipped rig; surface motion = each new vertex's displacement vs its nearest shipped vertex's displacement (/H)",
-  "correspondence_rest_distance_p95_pct_H": 1.15
+  "correspondence_rest_distance_p95_pct_H": 1.146
  },
  "bones": [
   {
@@ -874,10 +846,10 @@
  "deform_bone_count": 13,
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
-  "bytes": 12761544,
-  "seconds": 0.7,
+  "bytes": 12727476,
+  "seconds": 0.8,
   "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05819 reaches the 1.8 m cell (report-only)"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.json",
- "seconds": 42.0
+ "seconds": 46.7
 }

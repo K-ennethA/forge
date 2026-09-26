@@ -48,7 +48,7 @@
    "dropped_verts": 9,
    "largest_dropped": 3
   },
-  "seconds": 10.7,
+  "seconds": 11.4,
   "low_to_high_distance": {
    "mean": 0.0032,
    "p99": 0.0174,
@@ -368,20 +368,26 @@
    {
     "field": "tip",
     "tau": 0.0,
-    "edge_splits": 527,
-    "face_connects": 623
+    "edge_splits": 481,
+    "face_connects": 534
    },
    {
     "field": "r",
     "tau": 8.5,
-    "edge_splits": 60,
-    "face_connects": 70
+    "edge_splits": 33,
+    "face_connects": 37
    },
    {
     "field": "z",
     "tau": 3.8,
-    "edge_splits": 30,
-    "face_connects": 34
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "ady",
+    "tau": 3.2,
+    "edge_splits": 0,
+    "face_connects": 0
    },
    {
     "field": "tlo",
@@ -396,7 +402,7 @@
     "face_connects": 135
    }
   ],
-  "seconds": 13.8,
+  "seconds": 14.0,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "z=9.281": 0,
@@ -408,15 +414,16 @@
    "fin=0.350": 0,
    "fdown=0.450": 0,
    "tip=0.000": 0,
-   "r=8.500": 3,
+   "r=8.500": 0,
    "z=3.800": 0,
+   "ady=3.200": 0,
    "tlo=0.000": 0,
    "tup=0.000": 0
   }
  },
- "tris_final": 31606,
+ "tris_final": 31400,
  "region_rule": {
-  "roots": "face height < ROOTS_FRAC x H (shipped rule, now an iso-line), except the lower hands (radius > ROOTS_R above ROOTS_ZLOW)",
+  "roots": "face height < ROOTS_FRAC x H (shipped rule, now an iso-line), except the lower hands (radius > ROOTS_R above ROOTS_ZLOW, within HAND_Y of the side plane)",
   "teeth": "ember tips on the mouth's teeth: height-persistence maxima of the skirt (lower jaw) and minima of the chest (upper jaw) -- the two pieces of JAW_Z x (THROAT_R, JAW_RMAX), outer TOOTH_LEN clamped to TOOTH_ABS",
   "flame": "outer TIP_LEN of every persistent spike (geodesic persistence >= MIN_SPIKE, burn clamped to TIP_ABS), or height > CROWN_FRAC x H (shipped intent: ember-tipped spikes + crown apex)",
   "maw_throat": "inside the mouth band MAW_Z, radius from the waist axis < THROAT_R",
@@ -431,14 +438,21 @@
   ]
  },
  "regions_faces": {
-  "body": 12526,
-  "roots": 11825,
-  "flame": 4501,
+  "body": 10888,
+  "roots": 11474,
+  "flame": 6284,
   "maw_throat": 1288,
   "maw_inner": 1466
  },
  "cavity_shade_k": 0.4,
- "cavity_seconds": 0.8,
+ "cavity_seconds": 1.0,
+ "regions_area_share": {
+  "body": 0.3472,
+  "roots": 0.4677,
+  "flame": 0.1197,
+  "maw_throat": 0.0325,
+  "maw_inner": 0.0329
+ },
  "maw": {
   "faces": 2754,
   "area": 124.892,
@@ -468,52 +482,52 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.2
+   "seconds": 1.3
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.4
+   "seconds": 1.5
   },
-  "uv_texels_normal": 2055518,
-  "uv_coverage": 0.4901,
+  "uv_texels_normal": 2094731,
+  "uv_coverage": 0.4994,
   "normal_baked_pct_of_uv_texels": 99.99,
-  "normal_detail_fraction_dev_gt_0.05": 0.132,
+  "normal_detail_fraction_dev_gt_0.05": 0.1318,
   "normal_dev_mean": 0.029,
   "ao_baked_pct_of_uv_texels": 100.0,
-  "ao_mean": 0.8065,
+  "ao_mean": 0.8059,
   "ao_p05": 0.3137,
   "per_region_normal": {
    "body": {
-    "texels": 794127,
+    "texels": 719262,
     "baked_pct": 99.99,
-    "normal_dev_mean": 0.0319
+    "normal_dev_mean": 0.0318
    },
    "roots": {
-    "texels": 993755,
+    "texels": 1008458,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0235
+    "normal_dev_mean": 0.0226
    },
    "flame": {
-    "texels": 144981,
+    "texels": 241895,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0472
+    "normal_dev_mean": 0.0452
    },
    "maw_throat": {
-    "texels": 65196,
+    "texels": 67416,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0325
+    "normal_dev_mean": 0.0326
    },
    "maw_inner": {
-    "texels": 63328,
+    "texels": 63702,
     "baked_pct": 100.0,
     "normal_dev_mean": 0.0341
    }
   },
   "pixel_sha": {
-   "normal": "484e9c7d84c6e7a7",
-   "ao": "f48a51b6f01656df"
+   "normal": "7472b0e96754f099",
+   "ao": "be2f5ecd7032146d"
   },
   "cage_extrusion": 0.15,
   "resolution": {
@@ -521,16 +535,16 @@
    "ao": 1024
   },
   "high_tris": 553184,
-  "seconds": 9.2
+  "seconds": 11.4
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 31606,
+  "faces": 31400,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "40524f9465bdff75"
+  "uv_sha": "dff173d0e6db2b72"
  },
- "digest_geometry_colour": "26584204d7110cd1",
+ "digest_geometry_colour": "478996241bef459f",
  "final_bbox": [
   [
    -14.4812,

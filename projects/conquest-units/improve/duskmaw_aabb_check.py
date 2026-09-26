@@ -170,7 +170,7 @@ for lab, path, model_scale, yaw in JOBS:
         "measured_aabb_size": msize.round(4).tolist(), "rendered_aabb_size": rsize.round(4).tolist(),
         "rendered_over_measured_height": round(float(rsize[1] / max(msize[1], 1e-9)), 4),
         "portrait_camera": {"target": target.round(4).tolist(), "position": cam.round(4).tolist(),
-                            "distance": round(dist, 4), "distance_clamped_to_min_0.3": dist <= 0.3 + 1e-9,
+                            "distance": round(dist, 4), "distance_clamped_to_min_0.3": bool(dist <= 0.3 + 1e-9),
                             "frame_height": round(frame_h, 4), "frame_y_band": [round(v, 4) for v in band],
                             "inside_rendered_model_aabb": inside,
                             "rendered_model_y": [round(float(RL[1]), 4), round(float(RH[1]), 4)],
@@ -180,5 +180,5 @@ for lab, path, model_scale, yaw in JOBS:
         "pass": bool(abs(rsize[1] / max(msize[1], 1e-9) - 1.0) < 0.01 and not inside)}
     print("AABB", lab, json.dumps({k: rows[lab][k] for k in ("measured_aabb_size", "rendered_aabb_size",
                                                                "rendered_over_measured_height", "pass")}))
-json.dump(rows, open(OUT, "w"), indent=1)
+json.dump(rows, open(OUT, "w"), indent=1, default=float)
 sys.stdout.flush()

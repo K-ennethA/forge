@@ -1,0 +1,6 @@
+AABB shipped {"measured_aabb_size": [0.1159, 0.1052, 0.1032], "rendered_aabb_size": [1.6309, 1.8, 1.5059], "rendered_over_measured_height": 17.1044, "pass": false}
+AABB rerun_natural {"measured_aabb_size": [34.0947, 30.8918, 30.3333], "rendered_aabb_size": [27.9567, 30.8918, 25.7761], "rendered_over_measured_height": 1.0, "pass": true}
+AABB rerun_roster_fit {"measured_aabb_size": [1.984, 1.7976, 1.7651], "rendered_aabb_size": [1.6268, 1.7976, 1.4999], "rendered_over_measured_height": 1.0, "pass": true}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

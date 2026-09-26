@@ -9,8 +9,8 @@ $OUT = "$P\renders\duskmaw"
 $GLB = "C:\Users\kenne\OneDrive\Desktop\git\Conquest\game\characters\models\dark\monster.glb"
 New-Item -ItemType Directory -Force $OUT | Out-Null
 if (-not $SkipBuild) {
-  $p = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-monster.blend`"","--factory-startup","--python","`"$I\duskmaw_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_build.txt" -RedirectStandardError "$I\log_duskmaw_build.err"
-  $null = $p.Handle; $p.WaitForExit(); "build exit=$($p.ExitCode)"
+  $bp = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-monster.blend`"","--factory-startup","--python","`"$I\duskmaw_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_build.txt" -RedirectStandardError "$I\log_duskmaw_build.err"
+  $null = $bp.Handle; $bp.WaitForExit(); "build exit=$($bp.ExitCode)"   # not $p: PowerShell names are case-insensitive ($P is the project path)
 }
 # natural-scale glb: the roster would carry model_scale = the report-only cell fit (improved/duskmaw.json natural.export_cell_fit_report_only.scale)
 # (the aabb check reads the fit itself: @fit)

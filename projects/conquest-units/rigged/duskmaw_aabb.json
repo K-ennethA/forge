@@ -1,0 +1,278 @@
+{
+ "shipped": {
+  "glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\Conquest\\game\\characters\\models\\dark\\monster.glb",
+  "model_scale": 1.0,
+  "model_yaw_deg": 180.0,
+  "top_nodes": [
+   "MonsterRig"
+  ],
+  "meshes": [
+   {
+    "node": "Monster",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'MonsterRig')",
+    "vertices": 16222,
+    "placement_scale": 0.058464,
+    "measured_size": [
+     0.0814,
+     0.0661,
+     0.0539
+    ],
+    "rendered_size": [
+     1.2277,
+     1.13,
+     0.673
+    ]
+   },
+   {
+    "node": "Monster",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'MonsterRig')",
+    "vertices": 18803,
+    "placement_scale": 0.058464,
+    "measured_size": [
+     0.088,
+     0.033,
+     0.0885
+    ],
+    "rendered_size": [
+     1.2356,
+     0.5652,
+     1.2369
+    ]
+   },
+   {
+    "node": "Monster",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'MonsterRig')",
+    "vertices": 15127,
+    "placement_scale": 0.058464,
+    "measured_size": [
+     0.1159,
+     0.1039,
+     0.1032
+    ],
+    "rendered_size": [
+     1.6309,
+     1.7769,
+     1.5059
+    ]
+   },
+   {
+    "node": "Monster",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'MonsterRig')",
+    "vertices": 239,
+    "placement_scale": 0.058464,
+    "measured_size": [
+     0.0184,
+     0.0071,
+     0.0085
+    ],
+    "rendered_size": [
+     0.2974,
+     0.1213,
+     0.1249
+    ]
+   }
+  ],
+  "measured_aabb_size": [
+   0.1159,
+   0.1052,
+   0.1032
+  ],
+  "rendered_aabb_size": [
+   1.6309,
+   1.8,
+   1.5059
+  ],
+  "rendered_over_measured_height": 17.1044,
+  "portrait_camera": {
+   "target": [
+    0.0009,
+    0.0802,
+    0.0027
+   ],
+   "position": [
+    0.0009,
+    0.0802,
+    0.3027
+   ],
+   "distance": 0.3,
+   "distance_clamped_to_min_0.3": true,
+   "frame_height": 0.0625,
+   "frame_y_band": [
+    0.049,
+    0.1115
+   ],
+   "inside_rendered_model_aabb": true,
+   "rendered_model_y": [
+    0.0,
+    1.8
+   ],
+   "rendered_model_z_front": 0.7785
+  },
+  "portrait_camera_if_measured_right": {
+   "target": [
+    -0.0108,
+    1.485,
+    0.0256
+   ],
+   "position": [
+    -0.0108,
+    1.485,
+    1.495
+   ],
+   "distance": 1.4695
+  },
+  "pass": false
+ },
+ "rerun_natural": {
+  "glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
+  "model_scale": 1.0,
+  "model_yaw_deg": 180.0,
+  "top_nodes": [
+   "duskmaw_rig"
+  ],
+  "meshes": [
+   {
+    "node": "duskmaw",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'duskmaw_rig')",
+    "vertices": 91407,
+    "placement_scale": 1.0,
+    "measured_size": [
+     34.0947,
+     30.8918,
+     30.3333
+    ],
+    "rendered_size": [
+     27.9567,
+     30.8918,
+     25.7761
+    ]
+   }
+  ],
+  "measured_aabb_size": [
+   34.0947,
+   30.8918,
+   30.3333
+  ],
+  "rendered_aabb_size": [
+   27.9567,
+   30.8918,
+   25.7761
+  ],
+  "rendered_over_measured_height": 1.0,
+  "portrait_camera": {
+   "target": [
+    0.0,
+    25.4857,
+    0.0
+   ],
+   "position": [
+    0.0,
+    25.4857,
+    25.2196
+   ],
+   "distance": 25.2196,
+   "distance_clamped_to_min_0.3": false,
+   "frame_height": 13.5152,
+   "frame_y_band": [
+    18.7282,
+    32.2433
+   ],
+   "inside_rendered_model_aabb": false,
+   "rendered_model_y": [
+    -0.0,
+    30.8918
+   ],
+   "rendered_model_z_front": 13.3762
+  },
+  "portrait_camera_if_measured_right": {
+   "target": [
+    -0.1762,
+    25.4857,
+    0.4882
+   ],
+   "position": [
+    -0.1762,
+    25.4857,
+    25.7078
+   ],
+   "distance": 25.2196
+  },
+  "pass": true
+ },
+ "rerun_roster_fit": {
+  "glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
+  "model_scale": 0.05819,
+  "model_yaw_deg": 180.0,
+  "top_nodes": [
+   "duskmaw_rig"
+  ],
+  "meshes": [
+   {
+    "node": "duskmaw",
+    "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 15 'duskmaw_rig')",
+    "vertices": 91407,
+    "placement_scale": 1.0,
+    "measured_size": [
+     1.984,
+     1.7976,
+     1.7651
+    ],
+    "rendered_size": [
+     1.6268,
+     1.7976,
+     1.4999
+    ]
+   }
+  ],
+  "measured_aabb_size": [
+   1.984,
+   1.7976,
+   1.7651
+  ],
+  "rendered_aabb_size": [
+   1.6268,
+   1.7976,
+   1.4999
+  ],
+  "rendered_over_measured_height": 1.0,
+  "portrait_camera": {
+   "target": [
+    0.0,
+    1.483,
+    0.0
+   ],
+   "position": [
+    0.0,
+    1.483,
+    1.4675
+   ],
+   "distance": 1.4675,
+   "distance_clamped_to_min_0.3": false,
+   "frame_height": 0.7864,
+   "frame_y_band": [
+    1.0898,
+    1.8762
+   ],
+   "inside_rendered_model_aabb": false,
+   "rendered_model_y": [
+    -0.0,
+    1.7976
+   ],
+   "rendered_model_z_front": 0.7784
+  },
+  "portrait_camera_if_measured_right": {
+   "target": [
+    -0.0103,
+    1.483,
+    0.0284
+   ],
+   "position": [
+    -0.0103,
+    1.483,
+    1.4959
+   ],
+   "distance": 1.4675
+  },
+  "pass": true
+ }
+}
