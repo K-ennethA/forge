@@ -1,0 +1,1080 @@
+{
+ "unit": "supaoctto",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "max_influences_before_cap": 4,
+  "vertices_capped_to_4": 0,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "pelvis": 332,
+   "spine": 467,
+   "chest": 1029,
+   "head": 1095,
+   "thigh.L": 53,
+   "shin.L": 69,
+   "foot.L": 37,
+   "thigh.R": 49,
+   "shin.R": 71,
+   "foot.R": 38,
+   "arm.L.0": 17,
+   "arm.L.1": 80,
+   "arm.L.2": 88,
+   "arm.L.3": 105,
+   "arm.R.0": 13,
+   "arm.R.1": 74,
+   "arm.R.2": 95,
+   "arm.R.3": 109,
+   "cape_outer.R.0": 71,
+   "cape_outer.R.1": 78,
+   "cape_outer.R.2": 82,
+   "cape_outer.R.3": 94,
+   "cape_outer.R.4": 93,
+   "cape_inner.R.0": 82,
+   "cape_inner.R.1": 96,
+   "cape_inner.R.2": 81,
+   "cape_inner.R.3": 68,
+   "cape_inner.R.4": 59,
+   "cape_inner.L.0": 85,
+   "cape_inner.L.1": 97,
+   "cape_inner.L.2": 83,
+   "cape_inner.L.3": 62,
+   "cape_inner.L.4": 69,
+   "cape_outer.L.0": 76,
+   "cape_outer.L.1": 83,
+   "cape_outer.L.2": 74,
+   "cape_outer.L.3": 78,
+   "cape_outer.L.4": 85,
+   "web.R.0": 20,
+   "web.R.1": 32,
+   "web.R.2": 40,
+   "web.C.0": 22,
+   "web.C.1": 32,
+   "web.C.2": 40,
+   "web.L.0": 20,
+   "web.L.1": 32,
+   "web.L.2": 40
+  },
+  "chains": {
+   "arm.L": {
+    "members": 330,
+    "root_blend_from_s": 0.9499
+   },
+   "leg.L": {
+    "members": 192,
+    "root_blend_from_s": 0.5997
+   },
+   "arm.R": {
+    "members": 332,
+    "root_blend_from_s": 0.9973
+   },
+   "leg.R": {
+    "members": 191,
+    "root_blend_from_s": 0.6462
+   },
+   "cape_outer.R": {
+    "members": 380
+   },
+   "cape_inner.R": {
+    "members": 303
+   },
+   "cape_inner.L": {
+    "members": 311
+   },
+   "cape_outer.L": {
+    "members": 366
+   }
+  },
+  "rule": "torso = hat over pelvis/spine/chest by height, head blended over the head-part Voronoi +-NECK_BAND; arm/leg/cape vertices = their traced chain, hat weights along the centreline arc, blended from the parent (torso weights / chest) over ROOT_BLEND at the chain root; webs = the two side chains at the same arc fraction, mixed into the web's own mid chain toward the middle of the gap"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_units": 0.0,
+   "clearance_min_z": -0.0,
+   "root_offset_max": 0.0,
+   "ik_unreachable_max": {
+    "L": 0.0,
+    "R": 0.0
+   },
+   "mean_bone_amplitude_deg": {
+    "arm": 6.03,
+    "leg": 1.206,
+    "cape": 1.641,
+    "web": 3.972
+   },
+   "cape_vs_arm_ratio": 0.272,
+   "cape_vs_leg_ratio": 1.361,
+   "per_bone_amplitude_deg": {
+    "pelvis": 0.0,
+    "spine": 1.249,
+    "chest": 0.72,
+    "head": 3.998,
+    "thigh.L": 1.385,
+    "shin.L": 2.539,
+    "foot.L": 0.0,
+    "thigh.R": 1.174,
+    "shin.R": 2.136,
+    "foot.R": 0.0,
+    "arm.L.0": 2.997,
+    "arm.L.1": 4.997,
+    "arm.L.2": 7.0,
+    "arm.L.3": 9.136,
+    "arm.R.0": 2.998,
+    "arm.R.1": 5.002,
+    "arm.R.2": 7.108,
+    "arm.R.3": 8.998,
+    "cape_outer.R.0": 0.821,
+    "cape_outer.R.1": 1.231,
+    "cape_outer.R.2": 1.641,
+    "cape_outer.R.3": 2.052,
+    "cape_outer.R.4": 2.462,
+    "cape_inner.R.0": 0.821,
+    "cape_inner.R.1": 1.231,
+    "cape_inner.R.2": 1.641,
+    "cape_inner.R.3": 2.052,
+    "cape_inner.R.4": 2.462,
+    "cape_inner.L.0": 0.821,
+    "cape_inner.L.1": 1.231,
+    "cape_inner.L.2": 1.642,
+    "cape_inner.L.3": 2.051,
+    "cape_inner.L.4": 2.462,
+    "cape_outer.L.0": 0.821,
+    "cape_outer.L.1": 1.231,
+    "cape_outer.L.2": 1.642,
+    "cape_outer.L.3": 2.052,
+    "cape_outer.L.4": 2.462,
+    "web.R.0": 1.981,
+    "web.R.1": 3.98,
+    "web.R.2": 5.958,
+    "web.C.0": 1.99,
+    "web.C.1": 3.962,
+    "web.C.2": 5.97,
+    "web.L.0": 1.986,
+    "web.L.1": 3.98,
+    "web.L.2": 5.942
+   },
+   "arm_to_web_min_gap": 1.1665,
+   "stance_tip_z_range": {
+    "L": [
+     -0.0,
+     0.0
+    ],
+    "R": [
+     -0.0,
+     0.0
+    ]
+   },
+   "stance_tip_xy_slip": {
+    "L": 0.0,
+    "R": 0.0
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    29
+   ],
+   "period_frames": 28,
+   "seconds": 1.1667,
+   "cyclic": true,
+   "seam_units": 0.0,
+   "clearance_min_z": -0.0,
+   "root_offset_max": 0.0,
+   "ik_unreachable_max": {
+    "L": 0.0,
+    "R": 0.0
+   },
+   "mean_bone_amplitude_deg": {
+    "arm": 6.681,
+    "leg": 17.924,
+    "cape": 1.516,
+    "web": 3.414
+   },
+   "cape_vs_arm_ratio": 0.227,
+   "cape_vs_leg_ratio": 0.085,
+   "per_bone_amplitude_deg": {
+    "pelvis": 4.945,
+    "spine": 1.234,
+    "chest": 11.852,
+    "head": 4.153,
+    "thigh.L": 21.137,
+    "shin.L": 18.999,
+    "foot.L": 12.5,
+    "thigh.R": 21.924,
+    "shin.R": 20.484,
+    "foot.R": 12.5,
+    "arm.L.0": 11.851,
+    "arm.L.1": 4.965,
+    "arm.L.2": 4.966,
+    "arm.L.3": 4.943,
+    "arm.R.0": 11.851,
+    "arm.R.1": 4.965,
+    "arm.R.2": 4.966,
+    "arm.R.3": 4.943,
+    "cape_outer.R.0": 0.811,
+    "cape_outer.R.1": 1.166,
+    "cape_outer.R.2": 1.514,
+    "cape_outer.R.3": 1.847,
+    "cape_outer.R.4": 2.185,
+    "cape_inner.R.0": 0.809,
+    "cape_inner.R.1": 1.151,
+    "cape_inner.R.2": 1.488,
+    "cape_inner.R.3": 1.89,
+    "cape_inner.R.4": 2.198,
+    "cape_inner.L.0": 0.805,
+    "cape_inner.L.1": 1.153,
+    "cape_inner.L.2": 1.503,
+    "cape_inner.L.3": 1.903,
+    "cape_inner.L.4": 2.234,
+    "cape_outer.L.0": 0.803,
+    "cape_outer.L.1": 1.176,
+    "cape_outer.L.2": 1.503,
+    "cape_outer.L.3": 1.918,
+    "cape_outer.L.4": 2.264,
+    "web.R.0": 1.95,
+    "web.R.1": 3.414,
+    "web.R.2": 4.88,
+    "web.C.0": 1.951,
+    "web.C.1": 3.412,
+    "web.C.2": 4.877,
+    "web.L.0": 1.952,
+    "web.L.1": 3.414,
+    "web.L.2": 4.875
+   },
+   "arm_to_web_min_gap": 0.6651,
+   "gait": {
+    "L": {
+     "tip_y_touchdown": -2.0248,
+     "tip_y_liftoff": 1.0039,
+     "step_length": 3.0287,
+     "stance_tip_z_range": [
+      -0.0,
+      0.0
+     ],
+     "stance_tip_x_slip": 0.02157,
+     "swing_tip_z_max": 1.01
+    },
+    "R": {
+     "tip_y_touchdown": -1.958,
+     "tip_y_liftoff": 1.0707,
+     "step_length": 3.0287,
+     "stance_tip_z_range": [
+      -0.0,
+      0.0
+     ],
+     "stance_tip_x_slip": 0.00986,
+     "swing_tip_z_max": 1.0363
+    }
+   },
+   "step_length_units": 3.0287,
+   "stride_units": 6.0574,
+   "cadence_steps_per_min": 102.86,
+   "implied_ground_speed": {
+    "units_per_s": 5.1921,
+    "body_heights_per_s": 0.2518,
+    "leg_reaches_per_s": 0.8914,
+    "m_per_s_at_cell_fit_report_only": 0.4532,
+    "rule": "stride (2 x mean stance-tip travel) / cycle time"
+   },
+   "step_half_travel": 1.5143,
+   "foot_lift": 0.6989,
+   "leg_reach_rest": 5.8244
+  }
+ },
+ "fk_vs_blender_pose_max_abs": 2.739087143766028e-06,
+ "motion_hierarchy": {
+  "rule": "mean over each chain group's bones of half the largest rotation between two frames of the loop (relative to the parent; constant drape offsets excluded)",
+  "idle": {
+   "arm": 6.03,
+   "leg": 1.206,
+   "cape": 1.641,
+   "web": 3.972
+  },
+  "walk": {
+   "arm": 6.681,
+   "leg": 17.924,
+   "cape": 1.516,
+   "web": 3.414
+  },
+  "cape_vs_arm": {
+   "idle": 0.272,
+   "walk": 0.227
+  },
+  "cape_vs_leg_walk": 0.085
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    1.2373
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.5121,
+    5.8454
+   ],
+   "tail": [
+    0.0,
+    -0.985,
+    8.6923
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.985,
+    8.6923
+   ],
+   "tail": [
+    0.0,
+    -1.0853,
+    11.5393
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.0853,
+    11.5393
+   ],
+   "tail": [
+    0.0,
+    -0.8206,
+    13.9795
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.8206,
+    13.9795
+   ],
+   "tail": [
+    0.0,
+    -0.8206,
+    20.621
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    2.4792,
+    -0.7125,
+    11.0975
+   ],
+   "tail": [
+    3.6639,
+    -0.6615,
+    9.5042
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    3.6639,
+    -0.6615,
+    9.5042
+   ],
+   "tail": [
+    4.8813,
+    -0.8025,
+    7.9455
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    4.8813,
+    -0.8025,
+    7.9455
+   ],
+   "tail": [
+    5.9773,
+    -1.4029,
+    6.4388
+   ]
+  },
+  {
+   "name": "arm.L.3",
+   "parent": "arm.L.2",
+   "deform": true,
+   "head": [
+    5.9773,
+    -1.4029,
+    6.4388
+   ],
+   "tail": [
+    6.9854,
+    -2.4098,
+    5.3223
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -3.1432,
+    -0.6749,
+    11.1104
+   ],
+   "tail": [
+    -4.226,
+    -0.6251,
+    9.4365
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -4.226,
+    -0.6251,
+    9.4365
+   ],
+   "tail": [
+    -5.3947,
+    -0.7441,
+    7.8335
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -5.3947,
+    -0.7441,
+    7.8335
+   ],
+   "tail": [
+    -6.4967,
+    -1.4037,
+    6.3414
+   ]
+  },
+  {
+   "name": "arm.R.3",
+   "parent": "arm.R.2",
+   "deform": true,
+   "head": [
+    -6.4967,
+    -1.4037,
+    6.3414
+   ],
+   "tail": [
+    -7.5153,
+    -2.4187,
+    5.3303
+   ]
+  },
+  {
+   "name": "cape_outer.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -3.0518,
+    0.0499,
+    14.0507
+   ],
+   "tail": [
+    -4.8084,
+    0.7887,
+    11.3156
+   ]
+  },
+  {
+   "name": "cape_outer.R.1",
+   "parent": "cape_outer.R.0",
+   "deform": true,
+   "head": [
+    -4.8084,
+    0.7887,
+    11.3156
+   ],
+   "tail": [
+    -6.3946,
+    2.1219,
+    8.7015
+   ]
+  },
+  {
+   "name": "cape_outer.R.2",
+   "parent": "cape_outer.R.1",
+   "deform": true,
+   "head": [
+    -6.3946,
+    2.1219,
+    8.7015
+   ],
+   "tail": [
+    -7.8807,
+    2.911,
+    5.8331
+   ]
+  },
+  {
+   "name": "cape_outer.R.3",
+   "parent": "cape_outer.R.2",
+   "deform": true,
+   "head": [
+    -7.8807,
+    2.911,
+    5.8331
+   ],
+   "tail": [
+    -9.2257,
+    1.8145,
+    3.1239
+   ]
+  },
+  {
+   "name": "cape_outer.R.4",
+   "parent": "cape_outer.R.3",
+   "deform": true,
+   "head": [
+    -9.2257,
+    1.8145,
+    3.1239
+   ],
+   "tail": [
+    -10.3917,
+    -0.8621,
+    1.6099
+   ]
+  },
+  {
+   "name": "cape_inner.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -1.1285,
+    -0.0833,
+    13.133
+   ],
+   "tail": [
+    -2.3889,
+    0.5806,
+    10.7449
+   ]
+  },
+  {
+   "name": "cape_inner.R.1",
+   "parent": "cape_inner.R.0",
+   "deform": true,
+   "head": [
+    -2.3889,
+    0.5806,
+    10.7449
+   ],
+   "tail": [
+    -3.6385,
+    1.4158,
+    8.3944
+   ]
+  },
+  {
+   "name": "cape_inner.R.2",
+   "parent": "cape_inner.R.1",
+   "deform": true,
+   "head": [
+    -3.6385,
+    1.4158,
+    8.3944
+   ],
+   "tail": [
+    -4.6238,
+    1.957,
+    5.8445
+   ]
+  },
+  {
+   "name": "cape_inner.R.3",
+   "parent": "cape_inner.R.2",
+   "deform": true,
+   "head": [
+    -4.6238,
+    1.957,
+    5.8445
+   ],
+   "tail": [
+    -5.3503,
+    2.1678,
+    3.1648
+   ]
+  },
+  {
+   "name": "cape_inner.R.4",
+   "parent": "cape_inner.R.3",
+   "deform": true,
+   "head": [
+    -5.3503,
+    2.1678,
+    3.1648
+   ],
+   "tail": [
+    -5.4322,
+    1.9929,
+    0.3962
+   ]
+  },
+  {
+   "name": "cape_inner.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    1.166,
+    -0.0553,
+    13.1307
+   ],
+   "tail": [
+    2.3961,
+    0.634,
+    10.7344
+   ]
+  },
+  {
+   "name": "cape_inner.L.1",
+   "parent": "cape_inner.L.0",
+   "deform": true,
+   "head": [
+    2.3961,
+    0.634,
+    10.7344
+   ],
+   "tail": [
+    3.6163,
+    1.4972,
+    8.3789
+   ]
+  },
+  {
+   "name": "cape_inner.L.2",
+   "parent": "cape_inner.L.1",
+   "deform": true,
+   "head": [
+    3.6163,
+    1.4972,
+    8.3789
+   ],
+   "tail": [
+    4.5787,
+    2.0598,
+    5.825
+   ]
+  },
+  {
+   "name": "cape_inner.L.3",
+   "parent": "cape_inner.L.2",
+   "deform": true,
+   "head": [
+    4.5787,
+    2.0598,
+    5.825
+   ],
+   "tail": [
+    5.2896,
+    2.2853,
+    3.1422
+   ]
+  },
+  {
+   "name": "cape_inner.L.4",
+   "parent": "cape_inner.L.3",
+   "deform": true,
+   "head": [
+    5.2896,
+    2.2853,
+    3.1422
+   ],
+   "tail": [
+    5.359,
+    2.1134,
+    0.3729
+   ]
+  },
+  {
+   "name": "cape_outer.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    3.0794,
+    0.1111,
+    14.0448
+   ],
+   "tail": [
+    4.8063,
+    0.8925,
+    11.302
+   ]
+  },
+  {
+   "name": "cape_outer.L.1",
+   "parent": "cape_outer.L.0",
+   "deform": true,
+   "head": [
+    4.8063,
+    0.8925,
+    11.302
+   ],
+   "tail": [
+    6.3531,
+    2.26,
+    8.681
+   ]
+  },
+  {
+   "name": "cape_outer.L.2",
+   "parent": "cape_outer.L.1",
+   "deform": true,
+   "head": [
+    6.3531,
+    2.26,
+    8.681
+   ],
+   "tail": [
+    7.8097,
+    3.0859,
+    5.8073
+   ]
+  },
+  {
+   "name": "cape_outer.L.3",
+   "parent": "cape_outer.L.2",
+   "deform": true,
+   "head": [
+    7.8097,
+    3.0859,
+    5.8073
+   ],
+   "tail": [
+    9.1682,
+    2.0238,
+    3.0912
+   ]
+  },
+  {
+   "name": "cape_outer.L.4",
+   "parent": "cape_outer.L.3",
+   "deform": true,
+   "head": [
+    9.1682,
+    2.0238,
+    3.0912
+   ],
+   "tail": [
+    10.3871,
+    -0.6302,
+    1.5766
+   ]
+  },
+  {
+   "name": "web.R.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -2.0636,
+    0.1753,
+    13.6197
+   ],
+   "tail": [
+    -3.1993,
+    0.8302,
+    11.6892
+   ]
+  },
+  {
+   "name": "web.R.1",
+   "parent": "web.R.0",
+   "deform": true,
+   "head": [
+    -3.1993,
+    0.8302,
+    11.6892
+   ],
+   "tail": [
+    -4.3622,
+    1.5077,
+    9.7844
+   ]
+  },
+  {
+   "name": "web.R.2",
+   "parent": "web.R.1",
+   "deform": true,
+   "head": [
+    -4.3622,
+    1.5077,
+    9.7844
+   ],
+   "tail": [
+    -5.3308,
+    2.3417,
+    7.8308
+   ]
+  },
+  {
+   "name": "web.C.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0103,
+    0.6311,
+    13.2691
+   ],
+   "tail": [
+    -0.0006,
+    1.1266,
+    11.4365
+   ]
+  },
+  {
+   "name": "web.C.1",
+   "parent": "web.C.0",
+   "deform": true,
+   "head": [
+    -0.0006,
+    1.1266,
+    11.4365
+   ],
+   "tail": [
+    -0.0114,
+    1.7313,
+    9.6325
+   ]
+  },
+  {
+   "name": "web.C.2",
+   "parent": "web.C.1",
+   "deform": true,
+   "head": [
+    -0.0114,
+    1.7313,
+    9.6325
+   ],
+   "tail": [
+    -0.023,
+    2.4378,
+    7.8636
+   ]
+  },
+  {
+   "name": "web.L.0",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    2.1227,
+    0.0279,
+    13.5878
+   ],
+   "tail": [
+    3.2102,
+    0.8116,
+    11.6681
+   ]
+  },
+  {
+   "name": "web.L.1",
+   "parent": "web.L.0",
+   "deform": true,
+   "head": [
+    3.2102,
+    0.8116,
+    11.6681
+   ],
+   "tail": [
+    4.3407,
+    1.5936,
+    9.7731
+   ]
+  },
+  {
+   "name": "web.L.2",
+   "parent": "web.L.1",
+   "deform": true,
+   "head": [
+    4.3407,
+    1.5936,
+    9.7731
+   ],
+   "tail": [
+    5.2829,
+    2.4581,
+    7.8114
+   ]
+  },
+  {
+   "name": "thigh.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.519,
+    -0.6358,
+    5.8426
+   ],
+   "tail": [
+    1.3416,
+    -0.6086,
+    3.2078
+   ]
+  },
+  {
+   "name": "shin.L",
+   "parent": "thigh.L",
+   "deform": true,
+   "head": [
+    1.3416,
+    -0.6086,
+    3.2078
+   ],
+   "tail": [
+    1.8786,
+    -0.5247,
+    1.127
+   ]
+  },
+  {
+   "name": "foot.L",
+   "parent": "shin.L",
+   "deform": true,
+   "head": [
+    1.8786,
+    -0.5247,
+    1.127
+   ],
+   "tail": [
+    2.3332,
+    -0.5104,
+    0.0446
+   ]
+  },
+  {
+   "name": "thigh.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -1.0306,
+    -0.5686,
+    5.8482
+   ],
+   "tail": [
+    -1.86,
+    -0.5555,
+    3.2139
+   ]
+  },
+  {
+   "name": "shin.R",
+   "parent": "thigh.R",
+   "deform": true,
+   "head": [
+    -1.86,
+    -0.5555,
+    3.2139
+   ],
+   "tail": [
+    -2.4118,
+    -0.4797,
+    1.1327
+   ]
+  },
+  {
+   "name": "foot.R",
+   "parent": "shin.R",
+   "deform": true,
+   "head": [
+    -2.4118,
+    -0.4797,
+    1.1327
+   ],
+   "tail": [
+    -2.8933,
+    -0.4437,
+    0.0
+   ]
+  }
+ ],
+ "bone_count": 48,
+ "deform_bone_count": 47,
+ "landmarks": {
+  "hip_z": 5.8454,
+  "neck_z": 13.9795,
+  "head_top_z": 20.621,
+  "leg_tips": {
+   "L": [
+    2.3332,
+    -0.5104,
+    0.0446
+   ],
+   "R": [
+    -2.8933,
+    -0.4437,
+    0.0
+   ]
+  },
+  "emblem_centre": [
+   -0.314,
+   -2.8922,
+   11.5122
+  ]
+ },
+ "digest": {
+  "parts": {
+   "bake_normal": "d55339dd97d970d3",
+   "bake_ao": "55f8cdb47980b768",
+   "geometry_colour": "65254236d13194d3",
+   "uv": "5560a55c01106457",
+   "weights": "253b1592d7259bcf",
+   "keys": "339cebd380d7ea2f",
+   "clip_samples": "0081f2216d4c6b1f"
+  },
+  "combined": "90cb5208d1ad8f2d"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\supaoctto.glb",
+  "bytes": 3911224,
+  "seconds": 0.7,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.08729 reaches the regular cell (report-only)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.json",
+ "seconds": 14.6
+}

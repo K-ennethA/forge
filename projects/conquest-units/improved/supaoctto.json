@@ -1,0 +1,771 @@
+{
+ "unit": "supaoctto",
+ "conquest_character_id": "supaoctto",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto.blend",
+ "tier": "regular",
+ "tri_budget": [
+  3000,
+  12000
+ ],
+ "yaw_fix_deg": 180.0,
+ "overrides": {},
+ "source_parts": {
+  "Body": {
+   "group": "body",
+   "tris_evaluated": 49624,
+   "det": -9.3735,
+   "winding_flipped": true,
+   "modifiers": [],
+   "crumbs": {
+    "pieces": 2,
+    "kept": 1,
+    "dropped_verts": 8
+   }
+  },
+  "Cape": {
+   "group": "cape",
+   "tris_evaluated": 94568,
+   "det": 1.0,
+   "winding_flipped": false,
+   "modifiers": [
+    "MIRROR"
+   ],
+   "crumbs": {
+    "pieces": 2,
+    "kept": 2,
+    "dropped_verts": 0
+   }
+  },
+  "Head": {
+   "group": "head",
+   "tris_evaluated": 17984,
+   "det": 2.2041,
+   "winding_flipped": false,
+   "modifiers": [],
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   }
+  },
+  "Icosphere": {
+   "group": "mouth",
+   "tris_evaluated": 4276,
+   "det": 0.1459,
+   "winding_flipped": false,
+   "modifiers": [],
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   }
+  },
+  "Mask-Goggles": {
+   "group": "goggles",
+   "tris_evaluated": 12604,
+   "det": 1.0,
+   "winding_flipped": false,
+   "modifiers": [],
+   "crumbs": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   }
+  }
+ },
+ "source_left_out": {
+  "Mask": "hidden in the view layer (artist's unused alternative to Mask-Goggles)"
+ },
+ "tris_source": 179068,
+ "sculpt_fixes": {
+  "leg_tip_z_before": {
+   "+X": -14.3733,
+   "-X": -14.9175
+  },
+  "difference": 0.5442,
+  "stretched_leg": "+X",
+  "axis": [
+   0.3075,
+   0.053,
+   -0.9501
+  ],
+  "tip_moved": 0.5728,
+  "stretch_factor_past_blend": 1.3612,
+  "span": 2.0,
+  "leg_tip_z_after": -14.9175,
+  "rule": "vertices of that leg past a plane LEG_EQ_SPAN above the tip slide along the leg axis, C1 ramp",
+  "cape_bottom_lift": {
+   "cape_min_z_before_rel_floor": -0.3543,
+   "lift": 0.7543,
+   "span": 4.0,
+   "cape_min_z_after_rel_floor": 0.4
+  }
+ },
+ "anatomy": {
+  "method": "geodesic rings from each tentacle tip (Dijkstra on the sculpt's edge graph), ring width TRACE_DS; stop when a ring's spread exceeds TRACE_MERGE_K x the median of the last 3",
+  "chains": {
+   "arm.L": {
+    "rings": 19,
+    "stop": "merged at ring 19 (spread 1.173)",
+    "tip": [
+     7.242,
+     -1.4067,
+     -9.5614
+    ],
+    "root": [
+     3.2256,
+     0.3495,
+     -4.4232
+    ],
+    "median_radius": 0.7649,
+    "length": 7.9488,
+    "members": 3100
+   },
+   "leg.L": {
+    "rings": 15,
+    "stop": "merged at ring 15 (spread 1.113)",
+    "tip": [
+     2.5485,
+     0.5884,
+     -14.9175
+    ],
+    "root": [
+     0.9945,
+     0.4054,
+     -9.6054
+    ],
+    "median_radius": 0.5828,
+    "length": 6.1472,
+    "members": 1463
+   },
+   "arm.R": {
+    "rings": 19,
+    "stop": "merged at ring 19 (spread 1.108)",
+    "tip": [
+     -7.2563,
+     -1.3564,
+     -9.6191
+    ],
+    "root": [
+     -3.3331,
+     0.3859,
+     -4.4452
+    ],
+    "median_radius": 0.8138,
+    "length": 7.9784,
+    "members": 3210
+   },
+   "leg.R": {
+    "rings": 15,
+    "stop": "merged at ring 15 (spread 1.088)",
+    "tip": [
+     -2.571,
+     0.561,
+     -14.9175
+    ],
+    "root": [
+     -1.0169,
+     0.4716,
+     -9.5919
+    ],
+    "median_radius": 0.5657,
+    "length": 6.1633,
+    "members": 1568
+   },
+   "cape_inner.L": {
+    "rings": 37,
+    "stop": "merged at ring 37 (spread 1.294)",
+    "tip": [
+     5.6131,
+     3.1566,
+     -14.5175
+    ],
+    "root": [
+     1.4201,
+     0.9879,
+     -1.7596
+    ],
+    "median_radius": 0.8449,
+    "length": 13.9698,
+    "members": 9873
+   },
+   "cape_outer.L": {
+    "rings": 44,
+    "stop": "merged at ring 44 (spread 1.204)",
+    "tip": [
+     10.6413,
+     0.413,
+     -13.3138
+    ],
+    "root": [
+     3.3336,
+     1.1542,
+     -0.8455
+    ],
+    "median_radius": 0.8418,
+    "length": 16.7117,
+    "members": 11942
+   },
+   "cape_inner.R": {
+    "rings": 37,
+    "stop": "merged at ring 37 (spread 1.291)",
+    "tip": [
+     -5.1781,
+     3.0361,
+     -14.4941
+    ],
+    "root": [
+     -0.8744,
+     0.9599,
+     -1.7574
+    ],
+    "median_radius": 0.8449,
+    "length": 13.9706,
+    "members": 9872
+   },
+   "cape_outer.R": {
+    "rings": 44,
+    "stop": "merged at ring 44 (spread 1.201)",
+    "tip": [
+     -10.1376,
+     0.1811,
+     -13.2805
+    ],
+    "root": [
+     -2.7977,
+     1.093,
+     -0.8396
+    ],
+    "median_radius": 0.8381,
+    "length": 16.7093,
+    "members": 11934
+   }
+  },
+  "cape_member_overlap": 0,
+  "cape_yoke_vertices": 3663,
+  "body_torso_vertices": 15473,
+  "seconds": 0.5,
+  "found": "Body = torso + 2 arm tentacles (bent, paddle tips) + 2 leg tentacles (pointed); Cape = 4 cape tentacles (outer + inner per side) joined at a shoulder yoke; NO webs/membranes in the sculpt"
+ },
+ "webs": {
+  "added": "3 water webs (the sculpt has none): thin closed sheets between neighbouring cape tentacles",
+  "per_web": {
+   "web.R": {
+    "between": [
+     "cape_outer.R",
+     "cape_inner.R"
+    ],
+    "tris": 464,
+    "verts": 234,
+    "closed_manifold": true,
+    "gap_width_range": [
+     2.135,
+     3.433
+    ],
+    "max_clearance_push": 0.8312,
+    "min_body_clearance": 0.1499
+   },
+   "web.C": {
+    "between": [
+     "cape_inner.R",
+     "cape_inner.L"
+    ],
+    "tris": 464,
+    "verts": 234,
+    "closed_manifold": true,
+    "gap_width_range": [
+     2.295,
+     9.399
+    ],
+    "max_clearance_push": 0.826,
+    "min_body_clearance": 0.15
+   },
+   "web.L": {
+    "between": [
+     "cape_inner.L",
+     "cape_outer.L"
+    ],
+    "tris": 464,
+    "verts": 234,
+    "closed_manifold": true,
+    "gap_width_range": [
+     2.127,
+     3.429
+    ],
+    "max_clearance_push": 0.6732,
+    "min_body_clearance": 0.1499
+   }
+  },
+  "seconds": 0.1,
+  "shape": {
+   "v_root": 0.0,
+   "v_edge": 0.62,
+   "scallop": 0.16,
+   "billow": 0.1,
+   "thickness": 0.06,
+   "clearance": 0.15,
+   "grid": [
+    8,
+    12
+   ]
+  }
+ },
+ "natural": {
+  "height": 20.6211,
+  "width": 20.7431,
+  "depth": 7.872,
+  "footprint": 20.7431,
+  "units": "sculpt units (natural proportions, no refit)",
+  "origin_shift_sculpt_units_after_yaw": [
+   0.25414,
+   1.04318,
+   -14.89032
+  ],
+  "export_cell_fit_report_only": {
+   "scale": 0.08729,
+   "height_m": 1.8,
+   "footprint_m": 1.8107,
+   "bound_by": "height",
+   "ceilings": [
+    1.8,
+    1.9
+   ]
+  }
+ },
+ "retopo": {
+  "method": "body shell (Body+Head+goggles+mouth joined) and cape shell each: voxel remesh (0.060) -> collapse decimation (deterministic); remeshed separately so the cape never fuses to the back",
+  "body_shell": {
+   "remesh_tris": 235488,
+   "decimated_tris": 6200,
+   "specks_dropped": {
+    "pieces": 1,
+    "kept": 1,
+    "dropped_verts": 0
+   }
+  },
+  "cape_shell": {
+   "remesh_tris": 215352,
+   "decimated_tris": 2598,
+   "specks_dropped": {
+    "pieces": 2,
+    "kept": 1,
+    "dropped_verts": 3
+   }
+  },
+  "seconds": 3.8,
+  "low_to_sculpt_distance": {
+   "mean": 0.0041,
+   "p99": 0.021,
+   "max": 0.0494,
+   "pct_of_height_p99": 0.102,
+   "body_shell_p99": 0.0231,
+   "cape_shell_p99": 0.0188
+  },
+  "visible_sculpt_to_low_distance": {
+   "mean": 0.0103,
+   "p99": 0.1162,
+   "max": 0.2973,
+   "per_part": {
+    "body": {
+     "sampled": 4136,
+     "visible": 3800,
+     "p99": 0.0427,
+     "max": 0.0573
+    },
+    "cape": {
+     "sampled": 4299,
+     "visible": 4299,
+     "p99": 0.0325,
+     "max": 0.294
+    },
+    "goggles": {
+     "sampled": 6304,
+     "visible": 4742,
+     "p99": 0.1497,
+     "max": 0.2973
+    },
+    "head": {
+     "sampled": 4497,
+     "visible": 3848,
+     "p99": 0.0332,
+     "max": 0.2687
+    },
+    "mouth": {
+     "sampled": 2140,
+     "visible": 1445,
+     "p99": 0.1756,
+     "max": 0.1923
+    }
+   },
+   "rule": "sculpt vertices (subsampled ~4k per part) not inside another part of the same shell -> nearest low surface of that shell"
+  }
+ },
+ "fields_seconds": 0.1,
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "fh",
+    "tau": 0.0,
+    "edge_splits": 152,
+    "face_connects": 169
+   },
+   {
+    "field": "fg",
+    "tau": 0.0,
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "fm",
+    "tau": 0.0,
+    "edge_splits": 0,
+    "face_connects": 0
+   },
+   {
+    "field": "lens",
+    "tau": 0.62,
+    "edge_splits": 42,
+    "face_connects": 53
+   },
+   {
+    "field": "armf",
+    "tau": 0.8,
+    "edge_splits": 40,
+    "face_connects": 52
+   },
+   {
+    "field": "legf",
+    "tau": 0.72,
+    "edge_splits": 38,
+    "face_connects": 44
+   },
+   {
+    "field": "emb",
+    "tau": 0.85,
+    "edge_splits": 19,
+    "face_connects": 20
+   },
+   {
+    "field": "under",
+    "tau": 0.35,
+    "edge_splits": 245,
+    "face_connects": 296
+   },
+   {
+    "field": "capef",
+    "tau": 0.88,
+    "edge_splits": 54,
+    "face_connects": 72
+   }
+  ],
+  "seconds": 2.1,
+  "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
+  "straddling_faces_after_cut": {
+   "fh=0.000": 0,
+   "fg=0.000": 0,
+   "fm=0.000": 0,
+   "lens=0.620": 0,
+   "armf=0.800": 0,
+   "legf=0.720": 0,
+   "emb=0.850": 0,
+   "under=0.350": 0,
+   "capef=0.880": 0
+  }
+ },
+ "tris_final": 11370,
+ "tris_breakdown": {
+  "body_shell_and_cape_shell_after_cuts": 9978,
+  "webs": 1392
+ },
+ "region_rule": {
+  "part_voronoi": "body-shell vertex owner = the nearest source part (Body / Head / Mask-Goggles / mouth); boundaries cut at 0",
+  "lens": "goggle surface inside LENS_K of that goggle's half-extent ellipse (x, z)",
+  "mask": "the rest of the goggles",
+  "arm_tip / leg_tip": "the traced arm / leg tentacle past ARM_TIP_FRAC / LEG_TIP_FRAC of its centreline",
+  "emblem": "chest disc of radius EMBLEM_R around the most forward torso point at EMBLEM_Z_FRAC (hip -> neck)",
+  "cape_under": "cape surface whose smoothed normal faces the body axis more than UNDER_T (the sucker-side lining)",
+  "cape_tip": "cape tentacle past CAPE_TIP_FRAC",
+  "membrane": "the built water webs",
+  "membrane_rim": "web faces past WEB_RIM_W of the depth (the free edge)"
+ },
+ "regions_faces": {
+  "skin": 3741,
+  "head": 1642,
+  "arm_tip": 310,
+  "leg_tip": 202,
+  "emblem": 41,
+  "mask": 555,
+  "lens": 135,
+  "mouth": 156,
+  "cape": 1864,
+  "cape_under": 996,
+  "cape_tip": 336,
+  "membrane": 1236,
+  "membrane_rim": 156
+ },
+ "cavity_shade_k": 0.4,
+ "cavity_seconds": 0.4,
+ "regions_area_share": {
+  "skin": 0.2372,
+  "head": 0.1278,
+  "arm_tip": 0.0136,
+  "leg_tip": 0.0059,
+  "emblem": 0.0029,
+  "mask": 0.0083,
+  "lens": 0.0028,
+  "mouth": 0.0027,
+  "cape": 0.2251,
+  "cape_under": 0.1108,
+  "cape_tip": 0.0247,
+  "membrane": 0.2115,
+  "membrane_rim": 0.0267
+ },
+ "facing": {
+  "rule": "head (mantle) bbox centre -> centroid of the Mask-Goggles part (the mouth sits below it on the same side)",
+  "anchor": [
+   -0.2545,
+   -1.1366,
+   16.9835
+  ],
+  "landmark": [
+   -0.2476,
+   -3.5821,
+   17.0204
+  ],
+  "source_angle_from_minusY_deg": -179.84,
+  "angle_from_minusY_deg": 0.16,
+  "mouth_angle_from_minusY_deg": -0.16,
+  "cape_centroid_y": 1.533
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.4
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 0.4
+  },
+  "uv_texels_normal": 445643,
+  "uv_coverage": 0.425,
+  "web_texels_reset_flat": {
+   "normal": 112326,
+   "ao": 28062
+  },
+  "normal_baked_pct_of_sculpt_uv_texels": 99.86,
+  "normal_detail_fraction_dev_gt_0.05": 0.2143,
+  "normal_dev_mean": 0.0389,
+  "ao_baked_pct_of_sculpt_uv_texels": 100.0,
+  "ao_mean": 0.7902,
+  "ao_p05": 0.0,
+  "per_region_normal": {
+   "skin": {
+    "texels": 105700,
+    "baked_pct": 99.9,
+    "normal_dev_mean": 0.0345
+   },
+   "head": {
+    "texels": 54351,
+    "baked_pct": 99.83,
+    "normal_dev_mean": 0.0216
+   },
+   "arm_tip": {
+    "texels": 5678,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0442
+   },
+   "leg_tip": {
+    "texels": 2724,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0766
+   },
+   "emblem": {
+    "texels": 1451,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0107
+   },
+   "mask": {
+    "texels": 3592,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.1854
+   },
+   "lens": {
+    "texels": 1269,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.1178
+   },
+   "mouth": {
+    "texels": 1193,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.1473
+   },
+   "cape": {
+    "texels": 100216,
+    "baked_pct": 99.88,
+    "normal_dev_mean": 0.042
+   },
+   "cape_under": {
+    "texels": 46741,
+    "baked_pct": 99.7,
+    "normal_dev_mean": 0.0392
+   },
+   "cape_tip": {
+    "texels": 10445,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0629
+   }
+  },
+  "pixel_sha": {
+   "normal": "d55339dd97d970d3",
+   "ao": "55f8cdb47980b768"
+  },
+  "cage_extrusion": 0.08,
+  "resolution": {
+   "normal": 1024,
+   "ao": 512
+  },
+  "high_tris": 179068,
+  "seconds": 3.0
+ },
+ "uv": {
+  "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
+  "faces": 11370,
+  "zero_area_faces": 0,
+  "flipped_faces": 0,
+  "uv_sha": "5560a55c01106457"
+ },
+ "digest_geometry_colour": "65254236d13194d3",
+ "final_bbox": [
+  [
+   -10.3716,
+   -3.936,
+   0.0
+  ],
+  [
+   10.3716,
+   3.936,
+   20.6211
+  ]
+ ],
+ "palette": {
+  "default": {
+   "skin": {
+    "rgb": [
+     206,
+     78,
+     58
+    ]
+   },
+   "head": {
+    "rgb": [
+     218,
+     92,
+     68
+    ]
+   },
+   "arm_tip": {
+    "rgb": [
+     246,
+     186,
+     160
+    ]
+   },
+   "leg_tip": {
+    "rgb": [
+     240,
+     176,
+     150
+    ]
+   },
+   "emblem": {
+    "rgb": [
+     250,
+     196,
+     52
+    ]
+   },
+   "mask": {
+    "rgb": [
+     242,
+     184,
+     40
+    ]
+   },
+   "lens": {
+    "rgb": [
+     214,
+     246,
+     255
+    ],
+    "emission": [
+     140,
+     225,
+     255
+    ],
+    "emission_scale": 0.55
+   },
+   "mouth": {
+    "rgb": [
+     120,
+     34,
+     46
+    ]
+   },
+   "cape": {
+    "rgb": [
+     34,
+     60,
+     170
+    ]
+   },
+   "cape_under": {
+    "rgb": [
+     150,
+     170,
+     236
+    ]
+   },
+   "cape_tip": {
+    "rgb": [
+     70,
+     118,
+     226
+    ]
+   },
+   "membrane": {
+    "rgb": [
+     150,
+     226,
+     246
+    ],
+    "emission": [
+     60,
+     190,
+     255
+    ],
+    "emission_scale": 0.28
+   },
+   "membrane_rim": {
+    "rgb": [
+     226,
+     250,
+     255
+    ],
+    "emission": [
+     150,
+     240,
+     255
+    ],
+    "emission_scale": 0.65
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\supaoctto\\default.json"
+  ],
+  "provenance": "no shipped colours exist (the source blend is material-less, no Conquest glb): authored"
+ }
+}
