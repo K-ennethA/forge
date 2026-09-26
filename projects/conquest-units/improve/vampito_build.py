@@ -56,9 +56,11 @@ UNIT = "vampito"
 CHAR_ID = "vampito"                   # roster id: not yet in Conquest (ship path deferred by the artist)
 YAW_FIX_DEG = 180.0                   # "facing fix": applied to the mesh DATA (proboscis + face were at +Y)
 VOXEL = 0.05                          # "retopo resolution" (voxel remesh size before decimation)
-LOW_TRIS = 4300                       # "mesh detail" (decimation target before the colour-boundary cuts + antennae)
-ANT_TRIS = 40                         # "antenna detail" (each antenna, decimated on its own)
-TRI_BUDGET = [3000, 5000]             # declared crowd tier (the approved regular-unit working budget, review-log 09-25)
+LOW_TRIS = 9500                       # "mesh detail" (decimation target before the colour-boundary cuts + antennae)
+                                      #   artist 2026-09-25: "smooth some of the model so it doesnt look as low poly" --
+                                      #   raised from 4300; the budget probe showed 4k-14k all within 0.03 p99 of the sculpt
+ANT_TRIS = 60                         # "antenna detail" (each antenna, decimated on its own)
+TRI_BUDGET = [3000, 12000]            # declared tier (widened with the smoothing request, review-log 09-25)
 CRUMB_FRAC = 0.01                     # sculpt crumbs smaller than this fraction of their part are dropped
 ABD_Z = 4.4                           # "abdomen colour line": the blood-red abdomen is below this height ...
 ABD_R = 1.6                           # ... within this |x| of the midline

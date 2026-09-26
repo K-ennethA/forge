@@ -4,10 +4,10 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 18.724,
-   "height": 12.1001,
-   "width": 18.724,
-   "depth": 9.468,
+   "footprint": 18.7022,
+   "height": 12.0985,
+   "width": 18.7022,
+   "depth": 9.4479,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -32,10 +32,10 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 4788,
+   "tris": 10700,
    "budget": [
     3000,
-    5000
+    12000
    ],
    "tier": "crowd",
    "declared": true
@@ -50,12 +50,12 @@
     {
      "mesh": "vampito",
      "layers": 1,
-     "islands": 565,
+     "islands": 779,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 30% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4278,
-     "area_distortion_p95": 1.169
+     "overlap_note": "summed UV area is 29% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.3844,
+     "area_distortion_p95": 1.183
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 4788
+   "faces": 10700
   },
   {
    "check": "colour",

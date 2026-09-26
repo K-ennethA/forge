@@ -5,7 +5,7 @@
  "tier": "crowd",
  "tri_budget": [
   3000,
-  5000
+  12000
  ],
  "yaw_fix_deg": 180.0,
  "overrides": {},
@@ -102,19 +102,19 @@
  "tris_source": 187144,
  "source_floor_gap": 0.5953,
  "natural": {
-  "height": 12.1001,
-  "width": 18.724,
-  "depth": 9.468,
-  "footprint": 18.724,
+  "height": 12.0985,
+  "width": 18.7022,
+  "depth": 9.4479,
+  "footprint": 18.7022,
   "units": "sculpt units (natural proportions, no refit)",
   "origin_shift_sculpt_units_after_yaw": [
-   -0.00051,
-   1.15079,
-   0.59014
+   0.00367,
+   1.15843,
+   0.5917
   ],
   "export_cell_fit_report_only": {
-   "scale": 0.10147,
-   "height_m": 1.2278,
+   "scale": 0.10159,
+   "height_m": 1.2291,
    "footprint_m": 1.9,
    "bound_by": "footprint (wingspan)",
    "ceilings": [
@@ -124,71 +124,71 @@
   }
  },
  "retopo": {
-  "method": "6 parts joined -> voxel remesh (0.050) -> collapse decimation (deterministic) -> main shell; antennae decimated on their own (40 tris each target)",
+  "method": "6 parts joined -> voxel remesh (0.050) -> collapse decimation (deterministic) -> main shell; antennae decimated on their own (60 tris each target)",
   "remesh_tris": 323968,
-  "decimated_tris": 4282,
+  "decimated_tris": 9482,
   "antenna_tris": [
-   40,
-   40
+   60,
+   60
   ],
   "specks_dropped": {
    "pieces": 10,
    "kept": 1,
    "dropped_verts": 27
   },
-  "seconds": 3.4,
+  "seconds": 4.3,
   "low_to_sculpt_distance": {
-   "mean": 0.009,
-   "p99": 0.0342,
-   "max": 0.0573,
-   "pct_of_height_p99": 0.283
+   "mean": 0.0056,
+   "p99": 0.027,
+   "max": 0.048,
+   "pct_of_height_p99": 0.223
   },
   "visible_sculpt_to_low_distance": {
-   "mean": 0.0148,
-   "p99": 0.1086,
-   "max": 0.6477,
+   "mean": 0.0121,
+   "p99": 0.1101,
+   "max": 0.6521,
    "per_part": {
     "Sphere": {
      "group": "head",
      "sampled": 2000,
      "visible": 1859,
-     "p99": 0.0361,
-     "max": 0.1199
+     "p99": 0.0267,
+     "max": 0.1277
     },
     "Sphere.001": {
      "group": "body",
      "sampled": 4062,
-     "visible": 2834,
-     "p99": 0.0693,
-     "max": 0.3648
+     "visible": 2962,
+     "p99": 0.0736,
+     "max": 0.3649
     },
     "Sphere.002": {
      "group": "collar",
      "sampled": 7600,
-     "visible": 5476,
-     "p99": 0.1378,
-     "max": 0.2809
+     "visible": 6149,
+     "p99": 0.1308,
+     "max": 0.3615
     },
     "Sphere.003": {
      "group": "eyes",
      "sampled": 482,
-     "visible": 84,
-     "p99": 0.6171,
-     "max": 0.6477
+     "visible": 85,
+     "p99": 0.6217,
+     "max": 0.6521
     },
     "Sphere.004": {
      "group": "eyes",
      "sampled": 482,
-     "visible": 70,
-     "p99": 0.44,
-     "max": 0.4973
+     "visible": 69,
+     "p99": 0.4544,
+     "max": 0.515
     },
     "Sphere.005": {
      "group": "membrane",
      "sampled": 5616,
-     "visible": 3674,
-     "p99": 0.0746,
-     "max": 0.1705
+     "visible": 3748,
+     "p99": 0.0741,
+     "max": 0.1644
     }
    },
    "rule": "sculpt vertices (subsampled ~4k per part) not inside another part -> nearest low surface"
@@ -196,9 +196,9 @@
  },
  "head_probe": {
   "head_origin": [
-   0.0005,
-   -1.1508,
-   9.3441
+   -0.0037,
+   -1.1584,
+   9.3425
   ],
   "median_head_radius": 1.3439,
   "proboscis_dir": [
@@ -207,46 +207,46 @@
    -0.3413
   ],
   "proboscis_base_s": 1.5052,
-  "proboscis_s_max": 3.8229,
-  "tip_from_s": 2.8229
+  "proboscis_s_max": 3.8128,
+  "tip_from_s": 2.8128
  },
  "iso_cuts": {
   "cuts": [
    {
     "field": "fe",
     "tau": 0.0,
-    "edge_splits": 15,
-    "face_connects": 17
+    "edge_splits": 13,
+    "face_connects": 18
    },
    {
     "field": "fc",
     "tau": 0.0,
-    "edge_splits": 48,
-    "face_connects": 60
+    "edge_splits": 140,
+    "face_connects": 156
    },
    {
     "field": "fm",
     "tau": 0.0,
-    "edge_splits": 73,
-    "face_connects": 100
+    "edge_splits": 236,
+    "face_connects": 279
    },
    {
     "field": "fh",
     "tau": 0.0,
-    "edge_splits": 4,
-    "face_connects": 5
+    "edge_splits": 16,
+    "face_connects": 17
    },
    {
     "field": "z",
     "tau": 4.4,
-    "edge_splits": 7,
-    "face_connects": 11
+    "edge_splits": 28,
+    "face_connects": 35
    },
    {
     "field": "ax",
     "tau": 1.5,
-    "edge_splits": 16,
-    "face_connects": 22
+    "edge_splits": 42,
+    "face_connects": 46
    },
    {
     "field": "ax",
@@ -257,23 +257,23 @@
    {
     "field": "z",
     "tau": 5.4,
-    "edge_splits": 16,
-    "face_connects": 17
+    "edge_splits": 24,
+    "face_connects": 26
    },
    {
     "field": "dh",
     "tau": 1.5052,
-    "edge_splits": 24,
-    "face_connects": 27
+    "edge_splits": 32,
+    "face_connects": 38
    },
    {
     "field": "dh",
-    "tau": 2.8229,
-    "edge_splits": 10,
-    "face_connects": 14
+    "tau": 2.8128,
+    "edge_splits": 18,
+    "face_connects": 23
    }
   ],
-  "seconds": 0.6,
+  "seconds": 3.1,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fe=0.000": 0,
@@ -285,10 +285,10 @@
    "ax=7.900": 0,
    "z=5.400": 0,
    "dh=1.505": 0,
-   "dh=2.823": 0
+   "dh=2.813": 0
   }
  },
- "tris_final": 4788,
+ "tris_final": 10700,
  "region_rule": {
   "part_voronoi": "each low vertex's owner = the nearest source part group (body+arms / head+proboscis / eyes / collar / membranes); boundaries cut along (nearest-other distance - own distance) = 0",
   "abdomen": "body surface below ABD_Z within ABD_R of the midline",
@@ -299,49 +299,49 @@
   "antennae": "the two decimated antenna rods"
  },
  "regions_faces": {
-  "body": 360,
-  "abdomen": 398,
-  "wing_arm": 652,
-  "talon": 95,
-  "membrane": 1228,
-  "collar": 1432,
-  "head": 366,
-  "eyes": 50,
-  "proboscis": 86,
-  "proboscis_tip": 41,
-  "antennae": 80
+  "body": 846,
+  "abdomen": 853,
+  "wing_arm": 1538,
+  "talon": 186,
+  "membrane": 2771,
+  "collar": 3265,
+  "head": 736,
+  "eyes": 104,
+  "proboscis": 179,
+  "proboscis_tip": 102,
+  "antennae": 120
  },
  "cavity_shade_k": 0.4,
- "cavity_seconds": 0.5,
+ "cavity_seconds": 0.6,
  "regions_area_share": {
-  "body": 0.0966,
-  "abdomen": 0.1185,
-  "wing_arm": 0.1595,
-  "talon": 0.0122,
-  "membrane": 0.3171,
-  "collar": 0.1837,
-  "head": 0.0844,
-  "eyes": 0.0068,
-  "proboscis": 0.0127,
-  "proboscis_tip": 0.0048,
-  "antennae": 0.0035
+  "body": 0.0968,
+  "abdomen": 0.1193,
+  "wing_arm": 0.1598,
+  "talon": 0.0131,
+  "membrane": 0.3158,
+  "collar": 0.1826,
+  "head": 0.0842,
+  "eyes": 0.0074,
+  "proboscis": 0.0122,
+  "proboscis_tip": 0.0052,
+  "antennae": 0.0036
  },
  "facing": {
   "rule": "head primitive origin (the sculpt's head-ball centre) -> centroid of the proboscis prong tips (head-part vertices within PROB_TIP_LEN of the farthest from that origin)",
   "tip_vertices": 48,
   "prong_tips_x": [
-   -0.669,
-   0.67
+   -0.673,
+   0.666
   ],
   "anchor": [
-   0.0005,
-   -1.1508,
-   9.3441
+   -0.0037,
+   -1.1584,
+   9.3425
   ],
   "landmark": [
-   0.0005,
-   -4.4063,
-   8.4606
+   -0.0037,
+   -4.414,
+   8.459
   ],
   "source_angle_from_minusY_deg": 180.0,
   "angle_from_minusY_deg": -0.0,
@@ -363,76 +363,76 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.4
   },
-  "uv_texels_normal": 447729,
-  "uv_coverage": 0.427,
-  "normal_baked_pct_of_uv_texels": 99.81,
-  "normal_detail_fraction_dev_gt_0.05": 0.7136,
-  "normal_dev_mean": 0.1358,
+  "uv_texels_normal": 402343,
+  "uv_coverage": 0.3837,
+  "normal_baked_pct_of_uv_texels": 99.79,
+  "normal_detail_fraction_dev_gt_0.05": 0.5882,
+  "normal_dev_mean": 0.1014,
   "ao_baked_pct_of_uv_texels": 100.0,
-  "ao_mean": 0.7878,
+  "ao_mean": 0.7888,
   "ao_p05": 0.3137,
   "per_region_normal": {
    "body": {
-    "texels": 42357,
+    "texels": 39792,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0733
+    "normal_dev_mean": 0.0513
    },
    "abdomen": {
-    "texels": 52338,
+    "texels": 48957,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.078
+    "normal_dev_mean": 0.0704
    },
    "wing_arm": {
-    "texels": 73510,
-    "baked_pct": 100.0,
-    "normal_dev_mean": 0.0852
+    "texels": 66460,
+    "baked_pct": 99.99,
+    "normal_dev_mean": 0.057
    },
    "talon": {
-    "texels": 5901,
+    "texels": 5439,
     "baked_pct": 99.98,
-    "normal_dev_mean": 0.1042
+    "normal_dev_mean": 0.0873
    },
    "membrane": {
-    "texels": 144267,
+    "texels": 124094,
     "baked_pct": 99.97,
-    "normal_dev_mean": 0.144
+    "normal_dev_mean": 0.1052
    },
    "collar": {
-    "texels": 80105,
-    "baked_pct": 99.01,
-    "normal_dev_mean": 0.2572
+    "texels": 72812,
+    "baked_pct": 98.88,
+    "normal_dev_mean": 0.1918
    },
    "head": {
-    "texels": 37878,
+    "texels": 33965,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0979
+    "normal_dev_mean": 0.0758
    },
    "eyes": {
-    "texels": 2857,
+    "texels": 2912,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1426
+    "normal_dev_mean": 0.1333
    },
    "proboscis": {
-    "texels": 5419,
+    "texels": 4713,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1223
+    "normal_dev_mean": 0.1104
    },
    "proboscis_tip": {
-    "texels": 2081,
+    "texels": 2017,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.2189
+    "normal_dev_mean": 0.1762
    },
    "antennae": {
-    "texels": 1660,
+    "texels": 1451,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.2096
+    "normal_dev_mean": 0.2075
    }
   },
   "pixel_sha": {
-   "normal": "ab08b44769639fd0",
-   "ao": "bea8872cc0ff0f42"
+   "normal": "0dc699c4a6b0f935",
+   "ao": "92fe453d85452ad8"
   },
   "cage_extrusion": 0.06,
   "resolution": {
@@ -440,26 +440,26 @@
    "ao": 512
   },
   "high_tris": 187144,
-  "seconds": 2.5
+  "seconds": 4.3
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 4788,
+  "faces": 10700,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "23b872e66a50f156"
+  "uv_sha": "0d14971ffdced48b"
  },
- "digest_geometry_colour": "221460770ace3eaa",
+ "digest_geometry_colour": "835191e90d9f7a6c",
  "final_bbox": [
   [
-   -9.362,
-   -4.734,
+   -9.3511,
+   -4.724,
    0.0
   ],
   [
-   9.362,
-   4.734,
-   12.1001
+   9.3511,
+   4.724,
+   12.0985
   ]
  ],
  "palette": {
