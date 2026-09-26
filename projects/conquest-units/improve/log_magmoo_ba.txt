@@ -2,7 +2,7 @@ WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_rest_vs_reference.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_colour_compare.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_eye_closeup.png
-COLOUR {"v5_reference": 1.76, "v4_colour_reference": 19.44, "v4_threequarter": 16.86, "v5_threequarter": 1.01, "v4_side": 15.12, "v5_side": 0.98, "v4_head": 18.95, "v5_head": 1.58, "body_hue_shift_deg_threequarter": -15.85, "v5_minus_reference_deg_threequarter": -0.75}
+COLOUR {"v5_reference": 1.76, "v4_colour_reference": 19.44, "v4_threequarter": 16.86, "v5_threequarter": 1.02, "v4_side": 15.12, "v5_side": 0.98, "v4_head": 18.95, "v5_head": 1.64, "body_hue_shift_deg_threequarter": -15.84, "v5_minus_reference_deg_threequarter": -0.74}
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

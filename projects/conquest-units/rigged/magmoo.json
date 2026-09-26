@@ -597,7 +597,7 @@
   },
   "eye_goo": {
    "rule": "each goo-eye vertex copies the head-chain weights of its nearest rest head vertex",
-   "verts": 441
+   "verts": 456
   },
   "mid": {
    "bones": [
@@ -710,7 +710,7 @@
    },
    "loop_choice": "one idle loop stages both beats (artist: 'he idles between turning into a ball and the flying s shape'): rest -> ball (+ bounces) -> rest -> flying S -> rest; 8 s. The 'ball' clip keeps the ball round trip on its own for states that want only that beat."
   },
-  "author_seconds": 11.0,
+  "author_seconds": 10.8,
   "floor_contact_lift": {
    "frames_lifted": 69,
    "max": 0.2997
@@ -977,7 +977,7 @@
    "head_runs_ahead": 1.4,
    "in_place": "root at the origin; the unit's rest spot advances D per cycle toward -Y (the game glides it)",
    "frames": 64,
-   "author_seconds": 3.7,
+   "author_seconds": 3.8,
    "floor_contact_lift": {
     "frames_lifted": 45,
     "max": 0.2631
@@ -1098,7 +1098,7 @@
     82
    ]
   },
-  "author_seconds": 9.7,
+  "author_seconds": 8.4,
   "floor_contact_lift": {
    "frames_lifted": 32,
    "max": 0.0093
@@ -1240,7 +1240,7 @@
      222
     ],
     "nan": 0,
-    "seconds": 5.9
+    "seconds": 6.2
    }
   }
  },
@@ -2132,7 +2132,7 @@
    }
   ]
  },
- "anim_seconds": 26.6,
+ "anim_seconds": 25.2,
  "rest_layout": {
   "rule": "v5 bind pose = PAUSED IN MOTION (magmoo-v5-rest-pose-reference.png): the mound + curled tail lie on the floor as modelled; the mid keeps its combined arch and is lifted off the crater along the crown join axis leaned REST_MID_FWD forward; the head rides in its combined (nose-down flight) attitude + REST_HEAD_PITCH_DEG and is thrown ahead along the arch's front tangent. Surface gaps solved by bisection (BVH nearest-surface distance, every vertex) to REST_GAP_*. Droplets beside the pieces: on the floor by the mound, HANGING in the air beside the arch.",
   "targets": {
@@ -2342,15 +2342,15 @@
    0.00329,
    0.02089
   ],
-  "seconds": 1.4
+  "seconds": 1.3
  },
- "digest_full": "eb877dcd8e92a722",
- "digest_geometry_colour_uv": "ed2af9a7636f8fa9",
+ "digest_full": "8cad3c4e5f13d5a6",
+ "digest_geometry_colour_uv": "fe3eb5aba49ab654",
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.glb",
-  "bytes": 19491004,
-  "sha256_16": "7a76c458c6fb39b0",
-  "seconds": 3.8,
+  "bytes": 19511020,
+  "sha256_16": "7227e8c8b2f0fb52",
+  "seconds": 3.6,
   "carries": {
    "materials": [
     {
@@ -2575,7 +2575,7 @@
     "flame": 6247,
     "core": 1387,
     "eye": 1886,
-    "eye_goo": 1430
+    "eye_goo": 1460
    },
    "region_mean_linear": {
     "Col": {
@@ -2653,7 +2653,7 @@
      ]
     }
    },
-   "vertex_positions_sha": "77bfc6b13bebd1d3"
+   "vertex_positions_sha": "83b1afc44279fc58"
   },
   "obsidian": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo__obsidian.blend",
@@ -2790,7 +2790,7 @@
     "flame": 6247,
     "core": 1387,
     "eye": 1886,
-    "eye_goo": 1430
+    "eye_goo": 1460
    },
    "region_mean_linear": {
     "Col": {
@@ -2868,15 +2868,15 @@
      ]
     }
    },
-   "geometry_colour_uv_digest": "312b13da18d9f4d8",
-   "vertex_positions_sha": "77bfc6b13bebd1d3"
+   "geometry_colour_uv_digest": "3ff9f09b7576603d",
+   "vertex_positions_sha": "83b1afc44279fc58"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: region face counts identical, vertex positions identical, colours differ only by the palette table; the default digest is restored after the swap",
-   "default_digest_before": "ed2af9a7636f8fa9",
-   "default_digest_after_restore": "ed2af9a7636f8fa9"
+   "default_digest_before": "fe3eb5aba49ab654",
+   "default_digest_after_restore": "fe3eb5aba49ab654"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.json",
- "seconds": 74.8
+ "seconds": 78.0
 }

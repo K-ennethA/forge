@@ -104,6 +104,11 @@ EYE_ORB_BULGE = 0.012                 # "eye bulge": the goo eye's dome rises th
                                       #   (artist 2026-09-26: "the eyes don't fit" - lowered from 0.035 so the orb seats
                                       #   into the socket instead of standing proud)
 EYE_ORB_INSET = 0.006                 # the eye's back sits this far inside the carved dish (clear of the socket surface)
+EYE_ORB_FIT = "rim"                   # v5.2 "eye seating": 'rim' = the eye's top is the pre-socket goo surface itself (+ a
+                                      #   bulge fading to 0 at the traced rim): flush with the lip all round; 'axis' = the
+                                      #   v5 sphere dome on the cutter axis at the mean rim height -- the real opening is
+                                      #   tilted ~24 deg from that axis on the sloped head side, so the dish showed above
+                                      #   the orb (artist: "titled wrong"); kept only for the before numbers
 EYE_ORB_DENSITY = 1100.0              # "eye detail": triangles per square unit of the head's goo eyes
 BALL_EYE_ORB_DENSITY = 420.0          # ... of the ball's goo eyes (the ball is a coarser mesh)
 # ---- mid piece (the curved bean), knots rear (plugged into the crown) -> front (plugged into the head)
@@ -620,21 +625,116 @@ def eye_orb(S, sdf_fn, density, scale=1.0):
             else:
                 lo_h = mh
         h_rim.append(0.5 * (lo_h + hi_h))
+    h_rim_spread = float(np.ptp(h_rim))
     h_rim = float(np.mean(h_rim))
     Ri = S["Rs"] - EYE_ORB_INSET * scale
-    h_top = EYE_ORB_BULGE * scale
-    dh = h_top - h_rim
-    Rd = (a_ * a_ + dh * dh) / (2.0 * dh)
-    dome_c = p_ + n_ * (h_top - Rd)
+    # the socket's real OPENING: trace, per azimuth, where the cutter sphere (the carved dish) leaves the pre-socket goo
+    # -- walking the dish's meridian from its bottom (-n, inside the goo) up to its top (+n, outside)
+    RIM = []
+    for k in range(24):
+        e = math.cos(TAU * k / 24) * e1 + math.sin(TAU * k / 24) * e2
+        lo_t, hi_t = 0.0, math.pi
+        for _ in range(40):
+            th = 0.5 * (lo_t + hi_t)
+            if float(sdf_fn((S["cs"] + S["Rs"] * (-math.cos(th) * n_ + math.sin(th) * e))[None])[0]) > 0:
+                hi_t = th
+            else:
+                lo_t = th
+        th = 0.5 * (lo_t + hi_t)
+        RIM.append(S["cs"] + S["Rs"] * (-math.cos(th) * n_ + math.sin(th) * e))
+    RIM = np.array(RIM)
+    c_r = RIM.mean(0)
+    n_r = np.linalg.svd(RIM - c_r)[2][2]
+    n_r = n_r if n_r @ n_ > 0 else -n_r
+    a_r = float(np.linalg.norm((RIM - c_r) - np.outer((RIM - c_r) @ n_r, n_r), axis=1).mean())
+    plane_res = (RIM - c_r) @ n_r
+    lo_s, hi_s = -0.4 * scale, 0.4 * scale                          # the goo surface above the opening's centre
+    for _ in range(40):
+        ms = 0.5 * (lo_s + hi_s)
+        if float(sdf_fn((c_r + n_r * ms)[None])[0]) > 0:
+            hi_s = ms
+        else:
+            lo_s = ms
+    s_surf = 0.5 * (lo_s + hi_s)
+    if EYE_ORB_FIT == "rim":
+        # the opening is a SADDLE (the rim leaves the plane by up to ~0.07 on the curved head side): no sphere cap fits
+        # it. The eye's top IS the pre-socket goo surface lifted by a bulge that is EYE_ORB_BULGE over the opening's
+        # centre and 0 at the rim -> flush with the lip all the way round, following the head's own curvature
+        def top_sdf(P):
+            d = P - c_r
+            rho = np.linalg.norm(d - np.outer(d @ n_r, n_r), axis=1)
+            return sdf_fn(P) - EYE_ORB_BULGE * scale * np.clip(1.0 - (rho / a_r) ** 2, 0.0, 1.0)
+        Rd = None
+        ax, top_pt = n_r, c_r + n_r * (s_surf + EYE_ORB_BULGE * scale)
+    else:
+        h_top = EYE_ORB_BULGE * scale
+        dh = h_top - h_rim
+        Rd = (a_ * a_ + dh * dh) / (2.0 * dh)
+        dome_c = p_ + n_ * (h_top - Rd)
+        top_sdf = lambda P: SD.sd_sphere(P, dome_c, Rd)
+        ax, top_pt = n_, p_ + n_ * h_top
     lo_ = S["cs"] - Ri - 0.04 * scale; hi_ = S["cs"] + Ri + 0.04 * scale
     G_ = SD.Grid(lo_, hi_, 0.007 * scale, band=0.03 * scale)
-    G_.apply(lambda P: np.maximum(SD.sd_sphere(P, S["cs"], Ri), SD.sd_sphere(P, dome_c, Rd)), lo_, hi_, 0.0)
+    G_.apply(lambda P: np.maximum(SD.sd_sphere(P, S["cs"], Ri), top_sdf(P)), lo_, hi_, 0.0)
     V_, T_ = SD.polygonise(G_)
     V2, F2, fin = finish("eye_orb", V_, T_, voxel=0.009 * scale, density=density)
     hgt = (V2 - p_) @ n_
-    return V2, F2, fin, {"rim_height": round(h_rim, 5), "dome_top": round(h_top, 5), "dome_radius": round(Rd, 4),
+    bo = bvh_of(V2, F2)
+    rim_gap = [float(bo.find_nearest(Vector(q))[3]) for q in RIM]
+    fit = {"mode": EYE_ORB_FIT,
+           "opening_tilt_vs_cutter_axis_deg": round(math.degrees(math.acos(min(1.0, float(n_r @ n_)))), 3),
+           "dome_axis_vs_opening_deg": round(math.degrees(math.acos(min(1.0, float(ax @ n_r)))), 3),
+           "opening_centre_offset_from_cutter_axis": round(float(np.linalg.norm((c_r - p_) - ((c_r - p_) @ n_) * n_)), 5),
+           "rim_height_spread_along_cutter_axis": round(h_rim_spread, 5), "opening_radius": round(a_r, 5),
+           "rim_plane_residual_max": round(float(np.abs(plane_res).max()), 5),
+           "rim_to_orb_gap": {"max": round(max(rim_gap), 5), "mean": round(float(np.mean(rim_gap)), 5)},
+           "dome_top_above_goo": round(float((top_pt - (c_r + n_r * s_surf)) @ n_r), 5)}
+    return V2, F2, fin, {"rim_height": round(h_rim, 5), "dome_radius": None if Rd is None else round(Rd, 4),
                          "back_radius": round(Ri, 4), "thickness": round(float(np.ptp(hgt)), 4),
-                         "max_above_goo_surface": round(float(hgt.max()), 5), "tris": fin["tris"]}
+                         "max_above_goo_surface": round(float(hgt.max()), 5), "tris": fin["tris"], "fit": fit,
+                         "_rim": RIM, "_n_r": n_r}
+
+
+def dish_exposure(S, orb, headV, sink, scale=1.0, pre_bvh=None):
+    """how much carved dish shows round the goo eye: every dish vertex of the finished head (sunk > 0.01 below the
+    pre-socket goo, inside 1.3 x the opening) casts a ray OUT of the socket; exposed = the ray escapes without hitting
+    the eye. Directions: the opening normal (straight into the socket), the cutter axis, and the two views the renders
+    use (the head front-on, 30 deg up; the socket seen from 40 deg above its opening)."""
+    bo = bvh_of(orb[0], orb[1])
+    bh = bvh_of(headV, hF)
+    near = np.linalg.norm(headV - S["p"], axis=1) < S["a"] * 1.3
+    n_r = orb[3]["_n_r"]
+    dirs = {"opening_normal": n_r, "cutter_axis": S["n"], "front_30up": unit(np.array([0.0, -1.0, 0.577])),
+            "above_opening_40deg": unit(n_r * math.cos(math.radians(40)) + UP * math.sin(math.radians(40)))}
+    # VISIBLE carved area, ray-traced: a 64 x 64 grid of parallel view rays over the socket (1.4 x the opening) per
+    # direction; each ray's first hit is the goo eye, carved goo (sunk below the pre-socket surface: > 0.01 = any carved
+    # goo incl. the smoothed lip, > EYE_SHADE_T = the dark socket colour) or plain goo. Reported: carved hits / (carved +
+    # eye hits) = the share of the eye's visible footprint where dish shows instead of eye.
+    bpre = bvh_of(HEAD_ORIG["V"], HEAD_ORIG["F"]) if pre_bvh is None else pre_bvh
+    out = {}
+    for k, d in dirs.items():
+        d = unit(d)
+        e1 = unit(np.cross(d, X_AX) if abs(d[0]) < 0.9 else np.cross(d, UP)); e2 = np.cross(d, e1)
+        g = np.linspace(-1.4, 1.4, 64) * S["a"]
+        cnt = {"eye": 0, "lip": 0, "dark": 0}
+        for u in g:
+            for w in g:
+                o_ = S["p"] + d * 1.5 + e1 * u + e2 * w
+                ho = bo.ray_cast(Vector(o_), Vector(-d), 4.0)
+                hh = bh.ray_cast(Vector(o_), Vector(-d), 4.0)
+                if ho[0] is not None and (hh[0] is None or ho[3] <= hh[3] + 1e-6):
+                    cnt["eye"] += 1
+                elif hh[0] is not None:
+                    loc, nrm, _, dd = bpre.find_nearest(hh[0])
+                    sd_ = dd if (hh[0] - loc).dot(nrm) >= 0 else -dd
+                    if sd_ < -0.01 * scale:
+                        cnt["lip"] += 1
+                        if sd_ < -EYE_SHADE_T * scale:
+                            cnt["dark"] += 1
+        out[k] = {"eye_px": cnt["eye"], "carved_px": cnt["lip"], "dark_socket_px": cnt["dark"],
+                  "carved_share": round(cnt["lip"] / max(cnt["lip"] + cnt["eye"], 1), 4),
+                  "dark_share": round(cnt["dark"] / max(cnt["dark"] + cnt["eye"], 1), 4)}
+    return out
 
 
 _bvh_pre = bvh_of(HEAD_ORIG["V"], HEAD_ORIG["F"])
@@ -645,11 +745,12 @@ report["eye_goo"] = {
             "the carved dish sphere (shrunk EYE_ORB_INSET) intersected with a shallow dome through the socket rim; its "
             "own region 'eye_goo' (solid deep red, no glow, near-opaque); no pupil, no white. Heights along the socket "
             "axis from the pre-socket goo surface point.",
-    "orbs": [{**o_[3], "verts": len(o_[0]),
+    "orbs": [{**{k: v for k, v in o_[3].items() if not k.startswith("_")}, "verts": len(o_[0]),
               "signed_dist_to_carved_head": {"min": round(float(sd_.min()), 5), "max": round(float(sd_.max()), 5),
-                                             "frac_inside_goo": round(float((sd_ < 0).mean()), 4)}}
-             for o_, sd_ in zip(EYE_ORBS, _orb_sd)],
-    "bulge": EYE_ORB_BULGE, "inset": EYE_ORB_INSET}
+                                             "frac_inside_goo": round(float((sd_ < 0).mean()), 4)},
+              "dish_exposure": dish_exposure(S, o_, hV, H_SINK, pre_bvh=_bvh_pre)}
+             for o_, sd_, S in zip(EYE_ORBS, _orb_sd, SOCKETS)],
+    "bulge": EYE_ORB_BULGE, "inset": EYE_ORB_INSET, "fit": EYE_ORB_FIT}
 print("EYE_GOO", json.dumps(report["eye_goo"]))
 
 # =========================================================================== 2a. MID piece (SDF bean arch)
@@ -998,7 +1099,8 @@ bV[:, 2] = np.maximum(bV[:, 2], 0.0)
 PIECE_V["ball"], PIECE_F["ball"] = bV, bF
 B_SINK = ball_base_sdf(bV)
 BALL_EYE_ORBS = [eye_orb(S, ball_base_sdf, BALL_EYE_ORB_DENSITY, BALL_EYE_SCALE) for S in BALL_SOCKETS]   # ball frame
-report["eye_goo"]["ball_orbs"] = [{**o_[3], "verts": len(o_[0])} for o_ in BALL_EYE_ORBS]
+report["eye_goo"]["ball_orbs"] = [{**{k: v for k, v in o_[3].items() if not k.startswith("_")}, "verts": len(o_[0])}
+                                  for o_ in BALL_EYE_ORBS]
 MOUND_C_REST = apply_m(S_REST["tail"], np.array(MOUND_BASE[0])[None])[0]
 BALL_BIND_POS = 0.5 * (JR["tail"][0] + JR["tail"][1])    # hidden: rides tiny on the mound bone (inside the goo)
 report["ball"] = {"volumes": {k: round(v, 4) for k, v in VOL.items()}, "total_volume": round(sum(VOL.values()), 4),

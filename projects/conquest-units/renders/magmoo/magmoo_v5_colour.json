@@ -49,8 +49,8 @@
   ]
  },
  "v5_threequarter": {
-  "pixels": 107553,
-  "hue_median_deg": 1.01,
+  "pixels": 107611,
+  "hue_median_deg": 1.02,
   "hue_p25_p75_deg": [
    0.0,
    23.56
@@ -81,11 +81,11 @@
   ]
  },
  "v5_side": {
-  "pixels": 61022,
+  "pixels": 61047,
   "hue_median_deg": 0.98,
   "hue_p25_p75_deg": [
    0.0,
-   2.52
+   2.57
   ],
   "share_red_lt12deg": 0.7788,
   "share_orange_12_30deg": 0.1602,
@@ -113,21 +113,21 @@
   ]
  },
  "v5_head": {
-  "pixels": 296982,
-  "hue_median_deg": 1.58,
+  "pixels": 340992,
+  "hue_median_deg": 1.64,
   "hue_p25_p75_deg": [
-   0.59,
-   28.24
+   0.62,
+   28.57
   ],
-  "share_red_lt12deg": 0.626,
-  "share_orange_12_30deg": 0.1494,
-  "share_yellow_ge30deg": 0.2246,
+  "share_red_lt12deg": 0.6166,
+  "share_orange_12_30deg": 0.153,
+  "share_yellow_ge30deg": 0.2304,
   "median_rgb_red_band": [
-   197.0,
+   198.0,
    76.0,
    74.0
   ]
  },
- "body_hue_shift_deg_threequarter": -15.85,
- "v5_minus_reference_deg_threequarter": -0.75
+ "body_hue_shift_deg_threequarter": -15.84,
+ "v5_minus_reference_deg_threequarter": -0.74
 }

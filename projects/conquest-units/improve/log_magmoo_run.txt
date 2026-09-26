@@ -1,4 +1,4 @@
-﻿build exit=0 determinism-rerun exit=0 build_wall_s=69.8
+﻿build exit=0 determinism-rerun exit=0 build_wall_s=79.8
 ball hold frame = 67 ; idle ball hold = 49 ; idle flying-S hover = 135 ; walk mid-air (head apex) frame = 27
 check_improved exit=1
 check_rigged exit=1
@@ -17,8 +17,8 @@ clips_trans exit=0
 before_after exit=0
 check_improved : 7 checks, 1 failed
 check_rigged : 11 checks, 1 failed
-DIGEST run1 full=412c32605ce24e39 geo=5d4db52b7e795794 glb=4d1d37b598ccc0f3
-DIGEST run2 full=412c32605ce24e39 geo=5d4db52b7e795794 glb=4d1d37b598ccc0f3
+DIGEST run1 full=8cad3c4e5f13d5a6 geo=fe3eb5aba49ab654 glb=7227e8c8b2f0fb52
+DIGEST run2 full=8cad3c4e5f13d5a6 geo=fe3eb5aba49ab654 glb=7227e8c8b2f0fb52
 DETERMINISM identical=True glb_identical=True
-gates_renders_wall_s=67.9 total_wall_s=137.8
+gates_renders_wall_s=69 total_wall_s=148.9
 ALL DONE

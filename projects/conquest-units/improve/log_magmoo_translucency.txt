@@ -1,42 +1,42 @@
-00:01.453  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo.blend"
-00:03.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:04.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:04.641  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:05.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:05.453  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:05.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:06.391  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:06.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:06.985  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:07.266  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:07.688  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:08.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:08.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:08.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:09.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:09.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:10.141  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:10.641  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:10.985  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:11.391  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:11.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:12.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:12.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:13.156  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:13.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:14.188  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:14.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-00:15.156  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
-SWEEP {'goo_alpha': 0.35, 'T_mean': 0.4884, 'T_p90': 0.7327}
-SWEEP {'goo_alpha': 0.45, 'T_mean': 0.4066, 'T_p90': 0.6278}
-SWEEP {'goo_alpha': 0.55, 'T_mean': 0.3291, 'T_p90': 0.5232}
-SWEEP {'goo_alpha': 0.7, 'T_mean': 0.2181, 'T_p90': 0.3651}
-SWEEP {'goo_alpha': 0.85, 'T_mean': 0.1165, 'T_p90': 0.1997}
-SWEEP {'goo_alpha': 1.0, 'T_mean': 0.0334, 'T_p90': 0.043}
-MODE {'mode': 'dithered', 'T_mean': 0.2618, 'T_p90': 0.4292, 'mean_abs_diff_vs_dithered_0_255': 0.0}
-MODE {'mode': 'blended_overlap', 'T_mean': 0.2598, 'T_p90': 0.3914, 'mean_abs_diff_vs_dithered_0_255': 3.499}
-MODE {'mode': 'blended_prepass', 'T_mean': 0.2757, 'T_p90': 0.392, 'mean_abs_diff_vs_dithered_0_255': 4.25}
+00:01.282  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo.blend"
+00:03.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:03.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:04.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:04.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:05.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:05.735  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:06.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:06.563  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:06.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:07.313  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:07.641  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:08.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:08.407  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:08.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:09.204  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:09.641  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:10.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:10.407  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:10.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:11.110  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:11.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:11.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:12.329  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:12.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:13.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:13.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:14.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+00:14.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_tmp.png'
+SWEEP {'goo_alpha': 0.35, 'T_mean': 0.4893, 'T_p90': 0.7329}
+SWEEP {'goo_alpha': 0.45, 'T_mean': 0.4074, 'T_p90': 0.6279}
+SWEEP {'goo_alpha': 0.55, 'T_mean': 0.3298, 'T_p90': 0.5233}
+SWEEP {'goo_alpha': 0.7, 'T_mean': 0.2186, 'T_p90': 0.3654}
+SWEEP {'goo_alpha': 0.85, 'T_mean': 0.1168, 'T_p90': 0.1998}
+SWEEP {'goo_alpha': 1.0, 'T_mean': 0.0335, 'T_p90': 0.043}
+MODE {'mode': 'dithered', 'T_mean': 0.2624, 'T_p90': 0.4293, 'mean_abs_diff_vs_dithered_0_255': 0.0}
+MODE {'mode': 'blended_overlap', 'T_mean': 0.2604, 'T_p90': 0.3915, 'mean_abs_diff_vs_dithered_0_255': 3.517}
+MODE {'mode': 'blended_prepass', 'T_mean': 0.2763, 'T_p90': 0.392, 'mean_abs_diff_vs_dithered_0_255': 4.26}
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_alpha_sweep.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_sorting_modes.png
-TRANSLUCENCY {"camera": "tactical: 40 deg round, 55 deg down, fit 1.25", "resolution": 384, "silhouette_px": 8391, "palette_region_alpha": {"goo_cool": 0.7, "goo": 0.64, "goo_hot": 0.7, "flame": 0.8, "core": 0.88, "eye": 0.94, "eye_goo": 0.97}, "palette_goo_alpha": 0.64, "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible", "alpha_sweep": [{"goo_alpha": 0.35, "T_mean": 0.4884, "T_p90": 0.7327}, {"goo_alpha": 0.45, "T_mean": 0.4066, "T_p90": 0.6278}, {"goo_alpha": 0.55, "T_mean": 0.3291, "T_p90": 0.5232}, {"goo_alpha": 0.7, "T_mean": 0.2181, "T_p90": 0.3651}, {"goo_alpha": 0.85, "T_mean": 0.1165, "T_p90": 0.1997}, {"goo_alpha": 1.0, "T_mean": 0.0334, "T_p90": 0.043}], "sorting_modes": [{"mode": "dithered", "T_mean": 0.2618, "T_p90": 0.4292, "mean_abs_diff_vs_dithered_0_255": 0.0}, {"mode": "blended_overlap", "T_mean": 0.2598, "T_p90": 0.3914, "mean_abs_diff_vs_dithered_0_255": 3.499}, {"mode": "blended_prepass", "T_mean": 0.2757, "T_p90": 0.392, "mean_abs_diff_vs_dithered_0_255": 4.25}]}
+TRANSLUCENCY {"camera": "tactical: 40 deg round, 55 deg down, fit 1.25", "resolution": 384, "silhouette_px": 8385, "palette_region_alpha": {"goo_cool": 0.7, "goo": 0.64, "goo_hot": 0.7, "flame": 0.8, "core": 0.88, "eye": 0.94, "eye_goo": 0.97}, "palette_goo_alpha": 0.64, "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible", "alpha_sweep": [{"goo_alpha": 0.35, "T_mean": 0.4893, "T_p90": 0.7329}, {"goo_alpha": 0.45, "T_mean": 0.4074, "T_p90": 0.6279}, {"goo_alpha": 0.55, "T_mean": 0.3298, "T_p90": 0.5233}, {"goo_alpha": 0.7, "T_mean": 0.2186, "T_p90": 0.3654}, {"goo_alpha": 0.85, "T_mean": 0.1168, "T_p90": 0.1998}, {"goo_alpha": 1.0, "T_mean": 0.0335, "T_p90": 0.043}], "sorting_modes": [{"mode": "dithered", "T_mean": 0.2624, "T_p90": 0.4293, "mean_abs_diff_vs_dithered_0_255": 0.0}, {"mode": "blended_overlap", "T_mean": 0.2604, "T_p90": 0.3915, "mean_abs_diff_vs_dithered_0_255": 3.517}, {"mode": "blended_prepass", "T_mean": 0.2763, "T_p90": 0.392, "mean_abs_diff_vs_dithered_0_255": 4.26}]}
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
