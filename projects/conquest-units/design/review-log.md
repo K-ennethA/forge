@@ -754,3 +754,32 @@ annotation is the ARM OUTLINE: arms broad and long, shoulders down to
 about shin level, elbowless sweeps. The torso-leg blend stays the plain
 geometric blend from the v1.2 entry. Correction forwarded to the running
 movement lane before it built the strands.
+
+## 2026-09-26 — Vampwarrior v2 feedback (artist verbatim)
+
+"the lipstick does not line up with the mouth and needs to be moved up
+
+the hair is wrong, otherwise looks fine aside from the stiffness we see in
+the biped models
+
+also the the black around the eyes is too thick and should be less to have
+a thinner outline around the eye
+
+is the clothes does not 1 to 1 match the design but it looks ok
+
+the one thing I will say is can we do an edit or effects to make the model
+look cell shaded or have a more comic book style/animated art feeling so it
+matches the rest of the art weve done?"
+
+Binding reading: (1) lipstick region shifted UP to sit on the mouth. (2)
+HAIR REWORK - "wrong" (unspecified; rebuild toward the sheet reading and
+present 2-3 silhouette options; orchestrator asked the artist what
+specifically). (3) eyeliner thinner. (4) clothes accepted as-is (not 1:1
+but ok). (5) CEL-SHADE the model: comic-book/animated read to match the
+rest of the roster - asset-side treatment (quantized/banded tones in the
+vertex shading, flattened realism from the bakes, inverted-hull outline
+mesh which exports to glTF) + game-side toon shader recorded in
+godot-import-notes as the complementary path. STANDING NOTE: "the
+stiffness we see in the biped models" - biped clips need secondary motion
+(hair/cape follow-through, softer easing); applies to vampwarrior and
+future bipeds.
