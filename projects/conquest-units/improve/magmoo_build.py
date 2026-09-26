@@ -96,10 +96,13 @@ EYE_UP_DEG = 36.0                     # "eye height": each eye's axis, degrees f
 EYE_OPEN_R = 0.24                     # "eye size": socket opening radius on the goo surface
 EYE_DEPTH = 0.20                      # "eye depth": how far the socket floor sinks below the goo surface
 EYE_RIM_SOFT = 3                      # "rim softness": smoothing passes on the socket lip (clamped: may only sink)
-EYE_SHADE_T = 0.03                    # the darker socket colour starts this far below the goo surface
+EYE_SHADE_T = 0.10                    # the darker socket colour starts this far below the goo surface (deepened with the
+                                      #   v5.1 eye-fit fix: at 0.03 the socket lip painted dark and ringed the seated orb)
 EYE_PROTECT_R = 0.28                  # decimation keeps remesh density within this radius of each eye (crisp sockets)
 # v5 red goo eye: one solid lens per socket (the carved dish below, a shallow dome on top), no pupil
-EYE_ORB_BULGE = 0.035                 # "eye bulge": the goo eye's dome rises this far above the goo surface at its centre
+EYE_ORB_BULGE = 0.012                 # "eye bulge": the goo eye's dome rises this far above the goo surface at its centre
+                                      #   (artist 2026-09-26: "the eyes don't fit" - lowered from 0.035 so the orb seats
+                                      #   into the socket instead of standing proud)
 EYE_ORB_INSET = 0.006                 # the eye's back sits this far inside the carved dish (clear of the socket surface)
 EYE_ORB_DENSITY = 1100.0              # "eye detail": triangles per square unit of the head's goo eyes
 BALL_EYE_ORB_DENSITY = 420.0          # ... of the ball's goo eyes (the ball is a coarser mesh)
@@ -1350,10 +1353,10 @@ def glow_tiers(pal):
     lum = lambda n: float(np.dot(PAL.srgb_to_linear(pal["regions"][n]["rgb"]), [0.2126, 0.7152, 0.0722]))
     ok_grade = all(tier[a] < tier[b] for a, b in zip(grade, grade[1:]))
     ok_eye = tier["eye"] < tier["goo_cool"] and lum("eye") < lum("goo")
-    # v5 goo eye: a SOLID piece -- no glow above the coolest goo, near-opaque (reads as a flat solid against the
-    # glowing see-through body); its luminance vs the body is reported (default: darker; obsidian: lighter)
+    # v5.1 goo eye (artist 2026-09-26: "give me some inner glow to them"): a SOLID near-opaque piece that glows from
+    # within - tier ABOVE the body goo but BELOW the hot accents, so the eye reads lit without competing with goo_hot
     a_eg = float(pal["regions"]["eye_goo"].get("alpha", 1.0))
-    ok_eg = tier["eye_goo"] < tier["goo_cool"] and a_eg >= 0.9
+    ok_eg = tier["goo"] < tier["eye_goo"] < tier["goo_hot"] and a_eg >= 0.9
     return {"skin": pal["skin"], "emission_scale_tiers": tier, "grade": grade, "grade_pass": ok_grade,
             "eye_dark_socket_pass": ok_eye, "eye_vs_goo_luminance": [round(lum("eye"), 4), round(lum("goo"), 4)],
             "eye_goo_solid_pass": ok_eg, "eye_goo_alpha": a_eg, "eye_goo_luminance": round(lum("eye_goo"), 4),

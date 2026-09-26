@@ -10,7 +10,7 @@
   "flame":    {"rgb": [110, 196, 255], "emission": [60, 170, 255],  "emission_scale": 0.85},
   "core":     {"rgb": [196, 238, 255], "emission": [120, 210, 255], "emission_scale": 1.15},
   "eye":      {"rgb": [3, 3, 6],       "emission": [6, 12, 40],     "emission_scale": 0.005},
-  "eye_goo":  {"rgb": [18, 36, 96],    "emission": [10, 24, 80],    "emission_scale": 0.004}
+  "eye_goo":  {"rgb": [18, 36, 96],    "emission": [70, 130, 255],  "emission_scale": 0.24}
  },
  "material": {"roughness": 0.16}
 }

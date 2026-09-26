@@ -590,14 +590,14 @@
     "head.1"
    ],
    "per_bone_dominant": {
-    "head.0": 4938,
-    "head.1": 1340
+    "head.0": 4920,
+    "head.1": 1322
    },
    "only_own_chain": true
   },
   "eye_goo": {
    "rule": "each goo-eye vertex copies the head-chain weights of its nearest rest head vertex",
-   "verts": 457
+   "verts": 441
   },
   "mid": {
    "bones": [
@@ -679,7 +679,7 @@
   "root_offset_max": 0.0,
   "extent": {
    "width": 7.7283,
-   "length": 18.067,
+   "length": 18.0671,
    "height": 6.3455
   },
   "beats": {
@@ -710,7 +710,7 @@
    },
    "loop_choice": "one idle loop stages both beats (artist: 'he idles between turning into a ball and the flying s shape'): rest -> ball (+ bounces) -> rest -> flying S -> rest; 8 s. The 'ball' clip keeps the ball round trip on its own for states that want only that beat."
   },
-  "author_seconds": 10.4,
+  "author_seconds": 11.0,
   "floor_contact_lift": {
    "frames_lifted": 69,
    "max": 0.2997
@@ -791,7 +791,7 @@
     "join": "head",
     "event": "snap",
     "frame": 86,
-    "gap": 0.9741
+    "gap": 0.974
    },
    {
     "join": "head",
@@ -802,7 +802,7 @@
     "join": "head",
     "event": "snap",
     "frame": 177,
-    "gap": 0.9716
+    "gap": 0.9715
    }
   ],
   "bridge_visible_frames": {
@@ -830,7 +830,7 @@
     "key_weight_peak": 0.85,
     "height_drop_pct_by_key": 30.6,
     "head_top_gathered": 4.7883,
-    "head_top_at_crouch": 3.8909,
+    "head_top_at_crouch": 3.8908,
     "head_top_drop_pct_measured": 18.74,
     "crouch_frame": 14
    },
@@ -977,7 +977,7 @@
    "head_runs_ahead": 1.4,
    "in_place": "root at the origin; the unit's rest spot advances D per cycle toward -Y (the game glides it)",
    "frames": 64,
-   "author_seconds": 3.5,
+   "author_seconds": 3.7,
    "floor_contact_lift": {
     "frames_lifted": 45,
     "max": 0.2631
@@ -1098,7 +1098,7 @@
     82
    ]
   },
-  "author_seconds": 8.1,
+  "author_seconds": 9.7,
   "floor_contact_lift": {
    "frames_lifted": 32,
    "max": 0.0093
@@ -1240,7 +1240,7 @@
      222
     ],
     "nan": 0,
-    "seconds": 5.7
+    "seconds": 5.9
    }
   }
  },
@@ -1449,13 +1449,13 @@
     1.0397,
     1.0414,
     1.0434,
-    1.0456,
-    1.0481,
+    1.0457,
+    1.0482,
     1.0509,
-    1.0518,
+    1.0519,
     0.9859,
     0.7637,
-    0.3983,
+    0.3984,
     0.0015,
     0.0059,
     0.0,
@@ -1518,20 +1518,20 @@
     0.4332,
     0.4677,
     0.0514,
-    0.0003,
-    0.0,
+    0.0002,
+    0.0001,
     0.0004,
     0.0005,
     0.0005,
     0.0002,
     0.0022,
-    0.3809,
+    0.3808,
     0.7483,
-    0.9741,
-    1.042,
+    0.974,
+    1.0419,
     1.0421,
-    1.0406,
-    1.0392,
+    1.0405,
+    1.0391,
     1.038,
     1.037,
     1.0363,
@@ -1613,27 +1613,27 @@
     0.0001,
     0.0001,
     0.0009,
-    0.0021,
-    0.32,
+    0.002,
+    0.3201,
     0.5252,
     0.0014,
     0.1087,
-    0.9716,
-    1.5956,
-    1.7996,
+    0.9715,
+    1.5955,
+    1.7995,
     1.692,
     1.425,
     1.1207,
-    1.0033,
-    0.9406,
+    1.0032,
+    0.9405,
     1.0007,
-    1.0357,
+    1.0356,
     1.038,
     1.037,
     1.0363,
     1.0358,
     1.0355,
-    1.0356,
+    1.0355,
     1.0358
    ]
   },
@@ -1716,13 +1716,13 @@
     0.0006,
     0.0007,
     0.0008,
-    0.0004,
+    0.0005,
+    0.0002,
+    0.0009,
+    0.0007,
     0.0001,
-    0.001,
-    0.0008,
-    0.0003,
-    0.0006,
-    0.0022,
+    0.0007,
+    0.0021,
     0.0006,
     0.001,
     0.0009,
@@ -1755,11 +1755,11 @@
     0.2794,
     1.0879,
     1.5395,
-    1.5942,
-    1.5012,
+    1.5944,
+    1.5013,
     1.3273,
-    1.0618,
-    0.9653,
+    1.0616,
+    0.9652,
     1.0403,
     1.1584,
     1.1486,
@@ -1917,7 +1917,7 @@
     1.0382,
     1.0392,
     1.0403,
-    1.0406,
+    1.0407,
     1.006,
     0.8806,
     0.6507,
@@ -2024,21 +2024,21 @@
     0.0784,
     0.0003,
     0.0003,
-    0.0001,
+    0.0002,
     0.0004,
     0.0002,
     0.0001,
     0.0001,
     0.0001,
     0.0316,
-    0.3367,
-    0.6419,
+    0.3366,
+    0.6418,
     0.8737,
     1.0006,
-    1.0362,
+    1.0361,
     1.0365,
     1.0361,
-    1.0358,
+    1.0357,
     1.0356,
     1.0355,
     1.0356,
@@ -2074,7 +2074,7 @@
     "join": "head",
     "event": "snap",
     "frame": 86,
-    "gap": 0.9741
+    "gap": 0.974
    },
    {
     "join": "head",
@@ -2085,7 +2085,7 @@
     "join": "head",
     "event": "snap",
     "frame": 177,
-    "gap": 0.9716
+    "gap": 0.9715
    }
   ],
   "walk": [
@@ -2132,7 +2132,7 @@
    }
   ]
  },
- "anim_seconds": 24.2,
+ "anim_seconds": 26.6,
  "rest_layout": {
   "rule": "v5 bind pose = PAUSED IN MOTION (magmoo-v5-rest-pose-reference.png): the mound + curled tail lie on the floor as modelled; the mid keeps its combined arch and is lifted off the crater along the crown join axis leaned REST_MID_FWD forward; the head rides in its combined (nose-down flight) attitude + REST_HEAD_PITCH_DEG and is thrown ahead along the arch's front tangent. Surface gaps solved by bisection (BVH nearest-surface distance, every vertex) to REST_GAP_*. Droplets beside the pieces: on the floor by the mound, HANGING in the air beside the arch.",
   "targets": {
@@ -2342,15 +2342,15 @@
    0.00329,
    0.02089
   ],
-  "seconds": 1.3
+  "seconds": 1.4
  },
- "digest_full": "412c32605ce24e39",
- "digest_geometry_colour_uv": "5d4db52b7e795794",
+ "digest_full": "eb877dcd8e92a722",
+ "digest_geometry_colour_uv": "ed2af9a7636f8fa9",
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.glb",
-  "bytes": 19546404,
-  "sha256_16": "4d1d37b598ccc0f3",
-  "seconds": 3.2,
+  "bytes": 19491004,
+  "sha256_16": "7a76c458c6fb39b0",
+  "seconds": 3.8,
   "carries": {
    "materials": [
     {
@@ -2532,11 +2532,11 @@
       20
      ],
      "emission": [
-      120,
-      6,
-      12
+      255,
+      52,
+      30
      ],
-     "emission_scale": 0.02
+     "emission_scale": 0.42
     }
    },
    "glow_tiers": {
@@ -2548,7 +2548,7 @@
      "flame": 0.85,
      "core": 1.15,
      "eye": 0.04,
-     "eye_goo": 0.02
+     "eye_goo": 0.42
     },
     "grade": [
      "goo_cool",
@@ -2569,13 +2569,13 @@
     "pass": true
    },
    "region_faces": {
-    "goo_cool": 5784,
-    "goo": 22360,
-    "goo_hot": 9082,
+    "goo_cool": 5790,
+    "goo": 23294,
+    "goo_hot": 9128,
     "flame": 6247,
     "core": 1387,
-    "eye": 2998,
-    "eye_goo": 1474
+    "eye": 1886,
+    "eye_goo": 1430
    },
    "region_mean_linear": {
     "Col": {
@@ -2647,13 +2647,13 @@
       0.0001
      ],
      "eye_goo": [
-      0.0038,
-      0.0,
-      0.0001
+      0.42,
+      0.0144,
+      0.0055
      ]
     }
    },
-   "vertex_positions_sha": "0bf7985c0b01dad6"
+   "vertex_positions_sha": "77bfc6b13bebd1d3"
   },
   "obsidian": {
    "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo__obsidian.blend",
@@ -2743,11 +2743,11 @@
       96
      ],
      "emission": [
-      10,
-      24,
-      80
+      70,
+      130,
+      255
      ],
-     "emission_scale": 0.004
+     "emission_scale": 0.24
     }
    },
    "palette_files": [
@@ -2763,7 +2763,7 @@
      "flame": 0.85,
      "core": 1.15,
      "eye": 0.005,
-     "eye_goo": 0.004
+     "eye_goo": 0.24
     },
     "grade": [
      "goo_cool",
@@ -2784,13 +2784,13 @@
     "pass": true
    },
    "region_faces": {
-    "goo_cool": 5784,
-    "goo": 22360,
-    "goo_hot": 9082,
+    "goo_cool": 5790,
+    "goo": 23294,
+    "goo_hot": 9128,
     "flame": 6247,
     "core": 1387,
-    "eye": 2998,
-    "eye_goo": 1474
+    "eye": 1886,
+    "eye_goo": 1430
    },
    "region_mean_linear": {
     "Col": {
@@ -2862,21 +2862,21 @@
       0.0001
      ],
      "eye_goo": [
-      0.0,
-      0.0,
-      0.0003
+      0.0147,
+      0.0536,
+      0.24
      ]
     }
    },
-   "geometry_colour_uv_digest": "4341004638a00b74",
-   "vertex_positions_sha": "0bf7985c0b01dad6"
+   "geometry_colour_uv_digest": "312b13da18d9f4d8",
+   "vertex_positions_sha": "77bfc6b13bebd1d3"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: region face counts identical, vertex positions identical, colours differ only by the palette table; the default digest is restored after the swap",
-   "default_digest_before": "5d4db52b7e795794",
-   "default_digest_after_restore": "5d4db52b7e795794"
+   "default_digest_before": "ed2af9a7636f8fa9",
+   "default_digest_after_restore": "ed2af9a7636f8fa9"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.json",
- "seconds": 68.3
+ "seconds": 74.8
 }

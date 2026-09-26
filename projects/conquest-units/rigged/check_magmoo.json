@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 49332,
+   "tris": 49162,
    "budget": [
     30000,
     50000
@@ -50,12 +50,12 @@
     {
      "mesh": "magmoo",
      "layers": 1,
-     "islands": 741,
+     "islands": 738,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 16% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.6119,
-     "area_distortion_p95": 6798.447
+     "overlap_note": "summed UV area is 15% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.6148,
+     "area_distortion_p95": 6786.011
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 49332
+   "faces": 49162
   },
   {
    "check": "colour",
@@ -116,7 +116,7 @@
      "seam_mm": 0.0,
      "extent": {
       "footprint": 17.7836,
-      "height": 6.3598,
+      "height": 6.3599,
       "min_z": -0.0066
      }
     },

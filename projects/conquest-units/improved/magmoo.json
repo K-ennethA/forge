@@ -29,7 +29,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.1,
+    "seconds": 1.2,
     "protected": {
      "zones": 2,
      "remesh_tris_kept": 1458,
@@ -102,12 +102,12 @@
      },
      {
       "field": "sink",
-      "tau": -0.03,
-      "edge_splits": 83,
-      "face_connects": 101
+      "tau": -0.1,
+      "edge_splits": 47,
+      "face_connects": 51
      }
     ],
-    "eye_faces": 345
+    "eye_faces": 93
    },
    "tip_field_passes": 24,
    "mean_edge": 0.0863
@@ -145,7 +145,7 @@
      167
     ],
     "nan": 0,
-    "seconds": 2.6
+    "seconds": 2.8
    },
    "spine_arc_length": 4.8013,
    "regions_cut": {
@@ -210,7 +210,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 2.3
+    "seconds": 2.4
    },
    "sdf": {
     "step": 0.03,
@@ -312,12 +312,12 @@
      },
      {
       "field": "sink",
-      "tau": -0.03,
-      "edge_splits": 192,
-      "face_connects": 219
+      "tau": -0.1,
+      "edge_splits": 165,
+      "face_connects": 187
      }
     ],
-    "eye_faces": 2653
+    "eye_faces": 1793
    },
    "tip_field_passes": 16,
    "mean_edge": 0.1037
@@ -340,7 +340,7 @@
   "eye_zone_radius": 0.384,
   "eye_zone_verts": 904,
   "eye_zone_max_height": 0.02682,
-  "socket_verts": 110,
+  "socket_verts": 19,
   "eye_zone_deepest": -0.20363,
   "rest_of_head_decimation_noise": {
    "max_height": 0.00502,
@@ -392,57 +392,57 @@
   "orbs": [
    {
     "rim_height": -0.04253,
-    "dome_top": 0.035,
-    "dome_radius": 0.4102,
+    "dome_top": 0.012,
+    "dome_radius": 0.5554,
     "back_radius": 0.238,
-    "thickness": 0.2296,
-    "max_above_goo_surface": 0.03539,
-    "tris": 450,
-    "verts": 227,
+    "thickness": 0.2061,
+    "max_above_goo_surface": 0.0118,
+    "tris": 434,
+    "verts": 219,
     "signed_dist_to_carved_head": {
-     "min": -0.1634,
-     "max": 0.2084,
-     "frac_inside_goo": 0.2511
+     "min": -0.14618,
+     "max": 0.19086,
+     "frac_inside_goo": 0.2785
     }
    },
    {
     "rim_height": -0.03846,
-    "dome_top": 0.035,
-    "dome_radius": 0.4288,
+    "dome_top": 0.012,
+    "dome_radius": 0.596,
     "back_radius": 0.238,
-    "thickness": 0.229,
-    "max_above_goo_surface": 0.03496,
-    "tris": 456,
-    "verts": 230,
+    "thickness": 0.2057,
+    "max_above_goo_surface": 0.01162,
+    "tris": 440,
+    "verts": 222,
     "signed_dist_to_carved_head": {
-     "min": -0.17848,
-     "max": 0.21811,
-     "frac_inside_goo": 0.2783
+     "min": -0.11644,
+     "max": 0.19392,
+     "frac_inside_goo": 0.2883
     }
    }
   ],
-  "bulge": 0.035,
+  "bulge": 0.012,
   "inset": 0.006,
   "ball_orbs": [
    {
     "rim_height": -0.02618,
-    "dome_top": 0.04375,
-    "dome_radius": 0.6785,
+    "dome_top": 0.015,
+    "dome_radius": 1.1134,
     "back_radius": 0.2975,
-    "thickness": 0.2863,
-    "max_above_goo_surface": 0.04405,
-    "tris": 284,
-    "verts": 144
+    "thickness": 0.2577,
+    "max_above_goo_surface": 0.01547,
+    "tris": 278,
+    "verts": 141
    },
    {
     "rim_height": -0.02618,
-    "dome_top": 0.04375,
-    "dome_radius": 0.6785,
+    "dome_top": 0.015,
+    "dome_radius": 1.1134,
     "back_radius": 0.2975,
-    "thickness": 0.2836,
-    "max_above_goo_surface": 0.04217,
-    "tris": 284,
-    "verts": 144
+    "thickness": 0.2575,
+    "max_above_goo_surface": 0.01598,
+    "tris": 278,
+    "verts": 141
    }
   ]
  },
@@ -717,7 +717,7 @@
     222
    ],
    "nan": 0,
-   "seconds": 5.7
+   "seconds": 5.9
   }
  },
  "goo_extras": {
@@ -725,7 +725,7 @@
   "drip_tris": 68,
   "splat_tris": 436
  },
- "cut_seconds": 18.4,
+ "cut_seconds": 20.2,
  "flight_segment": {
   "rule": "shape key 'flight': every mound vertex (nearest tail-spine arc < mound exit + 0.35) maps onto a smooth round segment continuing the tail forward (unflattened space: the tube's own cross-section), seeded by closest-point projection then relaxed (uniform Laplacian, re-projected every pass, the tube boundary fixed) -> a fold-free map of the mound disc onto the segment",
   "free_verts": 6484,
@@ -746,7 +746,7 @@
    0.00329,
    0.02089
   ],
-  "seconds": 1.3
+  "seconds": 1.4
  },
  "glow_tiers": {
   "default": {
@@ -758,7 +758,7 @@
     "flame": 0.85,
     "core": 1.15,
     "eye": 0.04,
-    "eye_goo": 0.02
+    "eye_goo": 0.42
    },
    "grade": [
     "goo_cool",
@@ -779,11 +779,11 @@
    "pass": true
   }
  },
- "uv_seconds": 1.9,
+ "uv_seconds": 2.1,
  "islands": {
   "head": {
-   "verts": 6278,
-   "faces": 12552
+   "verts": 6242,
+   "faces": 12480
   },
   "mid": {
    "verts": 4604,
@@ -814,24 +814,24 @@
    "faces": 58
   },
   "ball": {
-   "verts": 3516,
-   "faces": 7028
+   "verts": 3489,
+   "faces": 6974
   },
   "eye_orb.0": {
-   "verts": 227,
-   "faces": 450
+   "verts": 219,
+   "faces": 434
   },
   "eye_orb.1": {
-   "verts": 230,
-   "faces": 456
+   "verts": 222,
+   "faces": 440
   },
   "ball_eye.0": {
-   "verts": 144,
-   "faces": 284
+   "verts": 141,
+   "faces": 278
   },
   "ball_eye.1": {
-   "verts": 144,
-   "faces": 284
+   "verts": 141,
+   "faces": 278
   },
   "bridge.crown.a": {
    "verts": 152,
@@ -900,7 +900,7 @@
   "max_offset": {
    "flight": 1.9669,
    "tuck_mid": 0.4023,
-   "sq_head": 1.1261,
+   "sq_head": 1.1256,
    "sq_mid": 1.2961,
    "sq_tail": 0.8519,
    "bulge_crown": 0.16,
@@ -909,7 +909,7 @@
   "moved_verts": {
    "flight": 6484,
    "tuck_mid": 752,
-   "sq_head": 6735,
+   "sq_head": 6683,
    "sq_mid": 4604,
    "sq_tail": 8354,
    "bulge_crown": 1947,
@@ -968,8 +968,8 @@
   }
  },
  "tris": {
-  "total": 49332,
-  "head": 12552,
+  "total": 49162,
+  "head": 12480,
   "mid": 9204,
   "tail": 16704,
   "drop.0": 182,
@@ -977,11 +977,11 @@
   "drop.2": 104,
   "drop.3": 68,
   "drop.4": 58,
-  "ball": 7028,
-  "eye_orb.0": 450,
-  "eye_orb.1": 456,
-  "ball_eye.0": 284,
-  "ball_eye.1": 284,
+  "ball": 6974,
+  "eye_orb.0": 434,
+  "eye_orb.1": 440,
+  "ball_eye.0": 278,
+  "ball_eye.1": 278,
   "bridge.crown.a": 300,
   "bridge.crown.b": 300,
   "bridge.head.a": 300,
@@ -992,15 +992,15 @@
   "splat": 436
  },
  "region_faces": {
-  "goo_cool": 5784,
-  "goo": 22360,
-  "goo_hot": 9082,
+  "goo_cool": 5790,
+  "goo": 23294,
+  "goo_hot": 9128,
   "flame": 6247,
   "core": 1387,
-  "eye": 2998,
-  "eye_goo": 1474
+  "eye": 1886,
+  "eye_goo": 1430
  },
- "digest_geometry_colour_uv": "5d4db52b7e795794",
+ "digest_geometry_colour_uv": "ed2af9a7636f8fa9",
  "palette": {
   "default": {
    "goo_cool": {
@@ -1088,16 +1088,16 @@
      20
     ],
     "emission": [
-     120,
-     6,
-     12
+     255,
+     52,
+     30
     ],
-    "emission_scale": 0.02
+    "emission_scale": 0.42
    }
   },
   "files": [
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json"
   ]
  },
- "seconds_to_improved": 39.9
+ "seconds_to_improved": 42.9
 }
