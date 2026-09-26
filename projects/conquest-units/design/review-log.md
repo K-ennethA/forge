@@ -783,3 +783,38 @@ godot-import-notes as the complementary path. STANDING NOTE: "the
 stiffness we see in the biped models" - biped clips need secondary motion
 (hair/cape follow-through, softer easing); applies to vampwarrior and
 future bipeds.
+
+## 2026-09-26 — QUEUED (artist: "for later - dont work right now")
+
+Artist verbatim:
+
+"the cel shading didnt work undo it, at least the black outline around the
+character feels off, lets keep the base, the eyeliner is now vertical it
+should outline the eyes themselves
+
+the vampire teeth seem to be over the lips instead of coming from insider/
+under them
+
+how do we get more of an animated and stylized look like the drawing
+reference
+
+for the fire spirit the walking animation should have its legs remains
+stiff more cartoon movement than realistic and faster like a little
+creature hopping around"
+
+Binding readings for the NEXT working session (nothing dispatched now):
+- VAMPWARRIOR v3: UNDO the cel treatment - at minimum remove the outline
+  shells ("black outline feels off"); keep the base model ("lets keep the
+  base": the v2 mesh/face fixes/follow-through stay). The AO tone-band
+  flattening is part of "the cel shading" - revert toward the v1 shaded
+  look unless the artist splits that hair later. EYELINER: the v2 LINER_W
+  rule produced a VERTICAL line - it must trace/outline the eye contour
+  itself. FANGS: currently sit on top of the lips - they must emerge from
+  inside/under the upper lip.
+- STYLIZATION QUESTION (orchestrator answered in chat, direction to be
+  picked): the animated look comes from drawn shadow shapes + the
+  game-side toon ramp, not auto-banded AO - candidate levers listed in
+  the chat reply; artist to choose before a v3 styling attempt.
+- FIRESPRITE walk v1.3: legs stay STIFF (no realistic knee articulation),
+  more cartoon, FASTER - a little creature hopping around (cadence up,
+  hop read over stride).
