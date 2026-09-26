@@ -514,3 +514,37 @@ Binding reading:
 - DEATH = collapse into an inert puddle - RECORDED for the deferred
   attack/death wave (not built now); spawn as rising from a puddle noted
   as the natural counterpart.
+
+## 2026-09-26 — Duskmaw v4 feedback (artist verbatim + 2 references)
+
+References saved: design/reference/duskmaw-v4-maw-curve-annotation.png (blue
+curves drawn on the v3 maw: the body should CURVE around the mouth, and a
+blue jagged line over the top lip = wanted jagged upper edge) and
+duskmaw-v4-shadowlord-reference.webp (the target identity art: a long
+slender shadow lord - horned head, yellow face, wispy clawed arms, base
+dissolving into curling tendrils spreading OUT along the floor).
+
+"duskmaw has overcorrected, his center is now too box like before it was
+like the mouth portion was part of his body, now its like we just a box on
+him and called it a day
+
+he should still curve like the blue and the red outline on top of the mouth
+should be more jagged like shown, the bottom teeth are good
+
+can we also make his torso long and more slender he seems such a box now
+
+his tendrils on the bottom should not be spiked up, lets have them more
+like tendrils reaching out on the floor
+
+more like this reference photo and more slender like shown there while
+still incorporating the mouth, we can also make the arms more like the
+reference"
+
+Binding reading: (1) kill the belly box - the maw is carved INTO a curving
+body (blue curve lines), mouth reads as part of the torso. (2) upper lip
+line more jagged per the blue zigzag; BOTTOM TEETH ARE GOOD - keep them.
+(3) torso LONG and SLENDER (the reference's proportions). (4) base
+tendrils are NOT up-spikes: curling tendrils reaching OUT along the floor
+(reference's octopus-curl base). (5) arms toward the reference: wispy,
+tapering, clawed, with trailing flame-like edges. Overall identity =
+the shadow-lord reference while keeping the devouring body maw.
