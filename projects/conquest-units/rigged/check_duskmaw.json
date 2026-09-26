@@ -4,10 +4,10 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 28.9706,
-   "height": 34.5588,
-   "width": 28.9706,
-   "depth": 17.5027,
+   "footprint": 28.9686,
+   "height": 41.7073,
+   "width": 28.9686,
+   "depth": 28.2425,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -16,7 +16,7 @@
    "pass": true,
    "min_z": 0.0,
    "centre_xy": [
-    -0.0,
+    0.0,
     0.0
    ],
    "transforms_applied": true
@@ -24,7 +24,7 @@
   {
    "check": "facing_-Y",
    "pass": true,
-   "angle_from_minusY_deg": -1.71,
+   "angle_from_minusY_deg": -0.2,
    "tolerance_deg": 30.0,
    "rule": "waist axis (at the lip's mean height) -> area centroid of the red lip region that frames the mouth opening",
    "yaw_fix_deg": 0.0
@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 28800,
+   "tris": 29398,
    "budget": [
     25000,
     35000
@@ -43,19 +43,19 @@
   {
    "check": "uv_health",
    "pass": true,
-   "zero_area_faces": 30,
-   "zero_area_pct": 0.104,
+   "zero_area_faces": 93,
+   "zero_area_pct": 0.316,
    "flipped": 0,
    "meshes": [
     {
      "mesh": "duskmaw",
      "layers": 1,
-     "islands": 932,
+     "islands": 738,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 21% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.465,
-     "area_distortion_p95": 1.126
+     "overlap_note": "summed UV area is 20% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.4982,
+     "area_distortion_p95": 1.131
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 28800
+   "faces": 29398
   },
   {
    "check": "colour",
@@ -80,7 +80,7 @@
    ],
    "armature_identity": true,
    "root_max_offset_over_clips": 0.0,
-   "bones": 12
+   "bones": 19
   },
   {
    "check": "clip_names",
@@ -114,8 +114,8 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 30.9876,
-      "height": 35.249,
+      "footprint": 28.9917,
+      "height": 42.398,
       "min_z": 0.0
      }
     },
@@ -129,8 +129,8 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 28.8233,
-      "height": 34.6634,
+      "footprint": 29.1548,
+      "height": 41.7726,
       "min_z": 0.0
      }
     }
@@ -144,7 +144,7 @@
    "weight_sum_max": 1.0,
    "unweighted": 0,
    "max_influences": 4,
-   "deform_bones": 11
+   "deform_bones": 18
   }
  ],
  "passed": 10,

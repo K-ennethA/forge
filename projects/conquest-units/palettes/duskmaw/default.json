@@ -1,12 +1,12 @@
 {
  "unit": "duskmaw",
  "skin": "default",
- "description": "Duskmaw v3 - the shadow figure (artist 2026-09-25 v2: Aku / Father (KND) / Darkrai; 2026-09-26 v3: 'the body mouth should look more like this (and colored red) with the inside just a different shade of yellow orange so we can tell its inside'). Near-black violet body; the eyes are the face's only feature (no mouth under them); a blood-red frame and red jagged teeth round the chest maw; the inside of the maw yellow-orange, hottest at the throat; the base's shadow tendrils darker still. v2's palette (dark-red inside, ember-orange teeth) is in git history.",
+ "description": "Duskmaw v4 - the shadow lord (2026-09-26 v4: the maw carved into a curving slender trunk with a jagged upper lip line, floor tendrils, clawed wispy arms; colours unchanged from v3). v3 - the shadow figure (artist 2026-09-25 v2: Aku / Father (KND) / Darkrai; 2026-09-26 v3: 'the body mouth should look more like this (and colored red) with the inside just a different shade of yellow orange so we can tell its inside'). Near-black violet body; the eyes are the face's only feature (no mouth under them); a blood-red frame and red jagged teeth round the chest maw; the inside of the maw yellow-orange, hottest at the throat; the base's shadow tendrils darker still. v2's palette (dark-red inside, ember-orange teeth) is in git history.",
  "regions": {
   "body":       {"rgb": [20, 17, 24],   "note": "near-black violet shadow body, hat, arms"},
-  "base":       {"rgb": [8, 6, 11],     "note": "the shadow tendrils rising out of the ground (+ the fused ring under them) - darker than the body so the zigzag reads; the build darkens everything below BASE_Z further toward the floor"},
+  "base":       {"rgb": [8, 6, 11],     "note": "v4: the floor tendrils curling out along the ground (+ the hem skin outside the base surface) - darker than the body; the build darkens everything below BASE_Z further toward the floor"},
   "tips":       {"rgb": [96, 26, 20], "emission": [170, 40, 16], "emission_scale": 0.3,
-                 "note": "smouldering spike tips (arms, hands, hat) - dim so the maw and eyes lead"},
+                 "note": "smouldering spike tips (claws, arm wisps, shoulder spikes, hat) - dim so the maw and eyes lead"},
   "lip":        {"rgb": [176, 16, 24], "emission": [190, 18, 22], "emission_scale": 0.3,
                  "note": "blood-red frame round the maw (the drawn red outline)"},
   "teeth":      {"rgb": [214, 34, 34], "emission": [225, 30, 28], "emission_scale": 0.35,

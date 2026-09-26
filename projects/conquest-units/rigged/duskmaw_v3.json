@@ -1,0 +1,418 @@
+{
+ "unit": "duskmaw",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.blend",
+ "fps": 24,
+ "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped since v2 (artist scope: idle + locomotion); they remain in git history with the v1 build",
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "base": 2054,
+   "sway": 1804,
+   "jaw": 1303,
+   "spine": 4139,
+   "chest": 1967,
+   "head": 1714,
+   "crown": 647,
+   "arm.L": 54,
+   "blade.L": 340,
+   "arm.R": 56,
+   "blade.R": 325
+  },
+  "ground_ring_base_weight_min": 1.0,
+  "rule": "on the pre-T coordinates: upper-jaw field u = smoothstep(MAW_MID -+ uw), uw = U_W[0] on the tooth plates (|x| < the hole, within the plate depth, front) -> U_W[1] elsewhere; u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"
+ },
+ "teeth_tips": [
+  {
+   "jaw": "upper",
+   "design_x": -3.375,
+   "vertex": 2126,
+   "xyz": [
+    -3.333,
+    -4.691,
+    10.088
+   ]
+  },
+  {
+   "jaw": "upper",
+   "design_x": -1.125,
+   "vertex": 1522,
+   "xyz": [
+    -1.139,
+    -4.458,
+    9.704
+   ]
+  },
+  {
+   "jaw": "upper",
+   "design_x": 1.125,
+   "vertex": 6228,
+   "xyz": [
+    1.116,
+    -4.477,
+    9.708
+   ]
+  },
+  {
+   "jaw": "upper",
+   "design_x": 3.375,
+   "vertex": 7661,
+   "xyz": [
+    3.393,
+    -4.192,
+    10.144
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": -2.25,
+   "vertex": 13689,
+   "xyz": [
+    -2.237,
+    -4.579,
+    7.511
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": 0.0,
+   "vertex": 13702,
+   "xyz": [
+    0.034,
+    -4.532,
+    7.667
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": 2.25,
+   "vertex": 6418,
+   "xyz": [
+    2.301,
+    -4.975,
+    7.462
+   ]
+  }
+ ],
+ "teeth_pairs": [
+  {
+   "upper_x": -1.125,
+   "lower_x": 0.0,
+   "gap_rest": 2.037
+  },
+  {
+   "upper_x": 1.125,
+   "lower_x": 0.0,
+   "gap_rest": 2.041
+  },
+  {
+   "upper_x": -1.125,
+   "lower_x": -2.25,
+   "gap_rest": 2.193
+  },
+  {
+   "upper_x": 1.125,
+   "lower_x": 2.25,
+   "gap_rest": 2.246
+  },
+  {
+   "upper_x": -3.375,
+   "lower_x": -2.25,
+   "gap_rest": 2.577
+  },
+  {
+   "upper_x": 3.375,
+   "lower_x": 2.25,
+   "gap_rest": 2.682
+  }
+ ],
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    49
+   ],
+   "loop_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
+   "root_offset_max": 0.0,
+   "spine_dz_range": [
+    -1.4457,
+    0.7063
+   ],
+   "jaw_dz_range": [
+    -0.36,
+    0.9948
+   ],
+   "upper_body_forward_lean_deg_range": [
+    0.05,
+    0.05
+   ],
+   "front_teeth_gap": {
+    "rest": 2.0371,
+    "max_open": 3.1034,
+    "min_shut": -0.4034,
+    "frame_open": 16,
+    "frame_shut": 23,
+    "travel": 3.5068,
+    "travel_pct_H": 10.147,
+    "every_pair_at_shut": [
+     -0.4034,
+     -0.4,
+     -0.2477,
+     -0.1946,
+     0.1363,
+     0.2416
+    ],
+    "pairs_interlocked_at_shut": 4,
+    "pairs": 6
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "loop_frames": 32,
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
+   "root_offset_max": 0.0,
+   "spine_dz_range": [
+    -0.3231,
+    0.2065
+   ],
+   "jaw_dz_range": [
+    -0.028,
+    -0.0126
+   ],
+   "upper_body_forward_lean_deg_range": [
+    5.55,
+    8.56
+   ],
+   "front_teeth_gap": {
+    "rest": 2.0309,
+    "max_open": 2.2528,
+    "min_shut": 1.7533,
+    "frame_open": 21,
+    "frame_shut": 13,
+    "travel": 0.4995,
+    "travel_pct_H": 1.445,
+    "every_pair_at_shut": [
+     1.8082,
+     1.7533,
+     1.9128,
+     2.0747,
+     2.3143,
+     2.4902
+    ],
+    "pairs_interlocked_at_shut": 0,
+    "pairs": 6
+   }
+  }
+ },
+ "clip_rules": {
+  "idle": "float bob (IDLE_BOB, 1 per loop) + ONE chomp per loop: wind-up open CHOMP_OPEN over open_f, accelerating snap to a tip-to-tip gap CHOMP_SHUT_GAP over shut_f, hold, ease back over rest_f; the upper jaw (spine) does CHOMP_UPPER of the travel, the lower jaw (jaw bone) the rest; arms flare CHOMP_ARMS on the bite",
+  "walk": "GLIDE: no stepping; sway leans the figure forward LEAN_DEG (+-LEAN_OSC) with GLIDE_ROLL side drift, float bob GLIDE_BOB (2 per loop), arms trail ARM_TRAIL + flutter, crown trails CROWN_TRAIL; the ground ring (base) is never keyed -- in place, the game moves the unit",
+  "keys": "every frame, LINEAR, closed-form curves (integer harmonics / beats that end at rest): last frame == first frame"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    2.0735
+   ]
+  },
+  {
+   "name": "base",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    0.6802
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    3.4009
+   ]
+  },
+  {
+   "name": "sway",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    1.5631
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    3.9831
+   ]
+  },
+  {
+   "name": "jaw",
+   "parent": "sway",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    3.9831
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    7.9431
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "sway",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    8.9881
+   ],
+   "tail": [
+    0.0217,
+    -0.9189,
+    17.6846
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0217,
+    -0.9189,
+    17.6846
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    23.676
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    23.676
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    28.4372
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0219,
+    -0.9111,
+    28.4372
+   ],
+   "tail": [
+    0.0219,
+    -0.9111,
+    34.2187
+   ]
+  },
+  {
+   "name": "arm.L",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    2.5334,
+    -1.0158,
+    20.9553
+   ],
+   "tail": [
+    7.9888,
+    -0.9111,
+    21.9755
+   ]
+  },
+  {
+   "name": "blade.L",
+   "parent": "arm.L",
+   "deform": true,
+   "head": [
+    7.9888,
+    -0.9111,
+    21.9755
+   ],
+   "tail": [
+    14.2175,
+    -0.9111,
+    20.2439
+   ]
+  },
+  {
+   "name": "arm.R",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -2.4842,
+    -1.0187,
+    20.9553
+   ],
+   "tail": [
+    -7.945,
+    -0.9111,
+    21.9755
+   ]
+  },
+  {
+   "name": "blade.R",
+   "parent": "arm.R",
+   "deform": true,
+   "head": [
+    -7.945,
+    -0.9111,
+    21.9755
+   ],
+   "tail": [
+    -14.1737,
+    -0.9111,
+    20.2439
+   ]
+  }
+ ],
+ "bone_count": 12,
+ "deform_bone_count": 11,
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
+  "bytes": 12053548,
+  "seconds": 0.7,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05209 reaches the 1.8 m cell (report-only)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.json",
+ "seconds": 74.8,
+ "digest_rig": "5035ee061aca2f84"
+}

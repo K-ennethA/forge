@@ -1,52 +1,54 @@
-"""Duskmaw v3 (hero, Conquest character_id 'monster'): the shadow-figure refinement, one headless run.
+"""Duskmaw v4 (hero, Conquest character_id 'monster'): the shadow-lord rework, one headless run.
 
     blender --background source-copies/hero-monster.blend --factory-startup --python improve/duskmaw_build.py -- \
         [--preview <out.blend>]          (geometry + regions + palette only: no bake, no rig -- fast look loop)
         [--set NAME=value ...]           (exploration override of a tunable constant; the committed build uses none)
+        [--out-root <dir>]               (determinism twin: writes improved/ + rigged/ under <dir>)
 
-Artist spec (design/review-log.md, verbatim there). v2 (2026-09-25 "Duskmaw v2 feedback" + addendum, still in force):
-  an idle CHOMP; the shadow base near-uniform, "like a shadow coming out of the ground", locomotion GLIDES; a crisp
-  shadowy figure (Aku / Father (KND) / Darkrai); red around the mouth piece; the mouth CLOSED from behind.
-v3 (2026-09-26 "Duskmaw v3 feedback" + design/reference/duskmaw-v3-{maw,hem}-annotation.png):
-  (1) no mouth under the eyes: the face is the eyes only (the grin cut is gone from the geometry);
-  (2) the body maw follows the drawn outline: a big jagged-toothed opening across the chest, frame + teeth RED, the
-      inside a distinct YELLOW-ORANGE; built procedurally (a zigzag opening through a lip/teeth plate into a closed
-      cavity), closed back kept;
-  (3) jagged shadow tendrils (flame tongues) rising off the base hem, layered on the even floor ring;
-  (4) the hanging arms thickened at the mid/elbow (a tube swept along the sculpt's own arm centreline);
-  (5) a bit taller (HEIGHT_K) with a longer, skinnier neck (NECK_K / NECK_STRETCH), applied as one smooth space map T
-      after the region cuts, so every sculpt-frame constant below keeps its v2 meaning.
+Artist spec (design/review-log.md, verbatim there). Still in force from v2/v3: an idle CHOMP, a GLIDE, a crisp shadow figure
+(Aku / Father (KND) / Darkrai), the eyes are the face (no mouth under them), a RED lip frame + teeth round the body maw with
+a YELLOW-ORANGE inside (hotter throat), the mouth CLOSED from behind, the mid-arm/elbow thickness (v3).
+v4 (2026-09-26 "Duskmaw v4 feedback" + design/reference/duskmaw-v4-maw-curve-annotation.png + duskmaw-v4-shadowlord-
+reference.webp): "his center is now too box like ... like we just put a box on him"
+  (1) NO BELLY BOX: the maw is carved into a curving elliptical trunk -- the waist curves in above and below the bite line
+      (the blue curves) and the mouth's sides follow it (the lips' outer edge sits at MAW_WRAP x the trunk half-width, so
+      the mouth wraps ~57 deg round each side); red frame, yellow-orange cavity, hot throat, closed back bowl kept;
+  (2) the top edge of the red lip line is JAGGED (irregular notches, the blue zigzag); the lower teeth are v3's exactly;
+  (3) a LONG SLENDER trunk (the reference's tapering shadow-lord trunk): TORSO_STRETCH units of extra trunk under the
+      chest, the trunk section designed slim (TRUNK_* tables) instead of v3's box;
+  (4) FLOOR TENDRILS instead of v3's up-spikes: tapered, flattened tubes radiating OUT from the hem along the floor,
+      curling at the tips (sideways spirals; three curl up off the floor like the reference's fiddleheads); the core
+      floor ring is v3's; three of them curl slowly in the idle;
+  (5) ARMS toward the reference: procedural hanging arms from the chest side -- the thick upper arm (v3's elbow
+      thickness), a long forearm slimming to the wrist, four hooked claw fingers, flame-like wisps trailing off the
+      forearm.
 
-Reads (never writes): source-copies/hero-monster.blend (the 553k-tri sculpt, opened; the brief's 'monster.blend').
+Reads (never writes): source-copies/hero-monster.blend (the 553k-tri sculpt, opened).
 Outputs:
     improved/duskmaw.blend + .json          hero-tier low, UVs, baked normal/AO, region palette (no rig)
     improved/textures/duskmaw_{normal,ao}.png
-    rigged/duskmaw.blend + .json            + jawed-totem rig (11 deform bones + contract root), clips idle (chomp) + walk (glide)
+    rigged/duskmaw.blend + .json            + shadow-lord rig (18 deform bones + contract root), clips idle (chomp) + walk (glide)
     rigged/duskmaw.glb                      identity-scale export (natural scale)
-v1 stays in git history; v2's outputs are kept beside v3 as improved/duskmaw_v2.* and rigged/duskmaw_v2.* (before column).
+v3's outputs are kept beside v4 as improved/duskmaw_v3.* and rigged/duskmaw_v3.* (before column), v2's as *_v2.*.
 
 Pipeline:
-  1. sculpt main shell -> origin (XY bbox centre, floor z = 0). Front = -Y.
-  2. SDF REBUILD (Blender geometry-node SDF grids, voxel VOX): sculpt minus the ground legs (below Z_CUT), minus its back
-     teeth/skirt (behind THETA_C) and minus its old ring-maw lips/teeth in the front (FRONTCUT, |theta| < TH_FC, up to
-     Z_TOP2), union a procedural LOWER BODY (a radial solid: rounded floor hem -> flare -> skirt -> a full barrel torso
-     in front (the maw's canvas) / the v2 waist at the back -> into the chest) and the ARM TUBES; minus the MAW
-     (a zigzag-toothed OPENING prism through the skin + a CAVITY = the frame outline x the skin inset by T_TOOTH x a
-     back BOWL -> the lips/teeth are plates of thickness T_TOOTH over a closed mouth). Then a MASKED mean smoothing
-     (face, lower body, back waist, the front torso/chest junction; never the maw) blended in SDF space, and the
-     TENDRILS (flame tongues on the hem) unioned on top AFTER the smoothing so they stay sharp.
-  3. LOW: collapse decimation (deterministic) -> main shell -> re-centre; the eye patch is refined (edges <= EYE_EDGE,
-     new vertices projected onto the high surface) so the eye outlines are crisp.
-  4. region FIELDS on the low + ISO-CONTOUR CUTS (v1 machinery): eyes, the maw frame / teeth / skin depth, the
-     tendril tongues, ember spike tips. Then the space map T (height + neck) on the low and the high.
-  5. regions -> palettes.store_regions; paint from palettes/duskmaw/default.json; Smart UV; bake normal + AO from the
-     rebuilt high.
-  6. RIG (jawed totem, local): base (ground ring, never keyed) -> sway (lean pivot) -> jaw (lower jaw) | spine (upper
-     jaw + chest) -> chest -> head -> crown, arm+blade x2, + contract 'root'. Analytic weights (computed on the
-     pre-T coordinates, bones mapped through T): an upper-jaw field split at the maw's mid line MAW_MID -- tight across
-     the tooth plates, wide through the cheeks and the back wall. Clips (keyed every frame from closed-form curves,
-     seam = 0 by construction): idle = float + one CHOMP per loop; walk = GLIDE (no stepping: forward lean, float bob,
-     arms/crown trailing; the ground ring never moves).
+  1. sculpt main shell -> origin (XY bbox centre, floor z = 0). Front = -Y. The v3 floor ring is read off the sculpt's
+     skirt; then the sculpt moves up TORSO_STRETCH (the "new frame"): only its part above Z_KEEP (chest, shoulders with
+     the raised arm spikes, neck, head, hat) is kept.
+  2. SDF REBUILD (Blender geometry-node SDF grids, voxel VOX): (sculpt - everything below Z_KEEP) U procedural TRUNK (a
+     radial solid: rounded floor hem -> bell flare -> elliptical trunk (TRUNK_* tables, PCHIP) -> blended into the
+     sculpt's chest section) U the two ARM tubes; minus the MAW (the opening = the hole prism minus the teeth prisms,
+     + the cavity = cavity outline x the skin inset by T_TOOTH x a back BOWL). Masked SDF mean (face, base flare, chest
+     junction, arm roots; never the maw). Then the CRISP parts -- floor TENDRILS (floor-cut), CLAWS, WISPS -- joined by a
+     smooth-min fillet (K_BLEND) so they grow out of the body without being eroded.
+  3. LOW: collapse decimation (deterministic) -> main shell -> re-centre; the eye patch is refined (edges <= EYE_EDGE).
+  4. region FIELDS on the low + ISO-CONTOUR CUTS: eyes, the maw frame (jagged top) / teeth / skin depth, the tendrils,
+     ember spike tips. Then the space map T (height + neck) on the low and the high.
+  5. regions -> palettes.store_regions; paint from palettes/duskmaw/default.json; Smart UV; bake normal + AO.
+  6. RIG: base (ground ring, never keyed) -> sway -> jaw | spine -> chest -> head -> crown, raised arm spikes arm+blade x2,
+     hanging arms limb+fore x2, three tendril-curl bones + contract 'root'. Analytic weights (pre-T coordinates, bones
+     mapped through T). Clips keyed every frame from closed-form curves (seam 0 by construction): idle = float + one
+     CHOMP + three tendril curls; walk = GLIDE (lean, bob, arms/crown trailing; the ground ring never moves).
   7. identity-scale glb export.
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, heapq
@@ -63,146 +65,157 @@ import rigkit as K      # noqa: E402  (read-only use)
 import palettes as PAL  # noqa: E402  (read-only use)
 
 # =========================================================================== TUNABLE CONSTANTS
-# (artist-facing names in the comments; a parameter tweak is a one-line edit + rerun). Lengths are sculpt units
-# (the figure is ~30.9 units tall; natural scale, no refit). Angles: degrees from the FRONT (-Y), both sides.
+# (artist-facing names in the comments; a parameter tweak is a one-line edit + rerun). Lengths are in units (the natural
+# scale, no refit). "sculpt frame" = heights on the original sculpt (moved up TORSO_STRETCH at load, see below); every
+# other height is in the v4 "new frame" (the final figure before the HEIGHT_K / neck map T). Angles: degrees from the
+# FRONT (-Y), both sides.
 UNIT = "duskmaw"
 CHAR_ID = "monster"
 TRI_BUDGET = [25000, 35000]           # declared hero-tier window (contract tri_budget)
-LOW_TRIS = 24000                      # "mesh detail" (decimation target before the colour cuts + eye refinement)
+LOW_TRIS = 25000                      # "mesh detail" (decimation target before the colour cuts + eye refinement)
 VOX = 0.07                            # "surface resolution": SDF voxel size of the rebuilt high surface
 SDF_BAND = 12                         # SDF narrow band (voxels) -- wide enough for the masked smoothing to move surfaces
-# ---- shadow base (feedback 2: "the bottom should almost be uniform like a shadow coming out of the ground")
-Z_CUT = 4.0                           # "leg cut": the sculpt's ground legs/spikes are replaced below this height
-CUT_OUTSET = 0.2                      # the new body meets the cut sculpt skirt this far outside it (no ledge)
-Z_BT = 4.6                            # skirt reference band top (the body follows the skirt section Z_CUT..Z_BT)
-BT_INSET = 0.3                        # the body sits this far inside the skirt above the cut (the sculpt skin wins)
+# ---- v4 PROPORTIONS ("make his torso long and more slender he seems such a box now")
+TORSO_STRETCH = 6.5                   # "torso length": extra trunk height under the chest (the kept sculpt moves up this)
+Z_KEEP_SCULPT = 13.0                  # the sculpt is kept above this sculpt-frame height (the chest's lower part); below it
+                                      # (legs, skirt spikes, old ring maw, throat, v3's hanging arms + hands) all is procedural
+HEIGHT_K = 1.10                       # "height": z scale about the floor (v3's +10 %)
+NECK_K = 0.85                         # "neck thickness": radial scale of the neck column (v3)
+NECK_Z = (15.9, 16.9, 19.9, 20.7)     # ... full inside the middle heights, ramped at the ends (sculpt frame)
+NECK_R = (2.7, 4.2)                   # ... full inside the first radius, off beyond the second
+NECK_STRETCH = 0.5                    # "neck length": extra height between the shoulders and the eyes (v3) ...
+NECK_STRETCH_Z = (16.2, 18.2)         # ... over this band (sculpt frame)
+# ---- v4 TRUNK: an elliptical section about the waist axis, PCHIP through these heights (new frame)
+TRUNK_Z = (5.2, 7.2, 11.9, 16.1)      # "trunk heights": flare top | maw bottom | WAIST | maw top
+TRUNK_W = (5.1, 4.8, 3.95, 5.2)       # "torso half-width" at those heights (the waist curve: in at the bite, out below)
+TRUNK_F = (4.3, 4.1, 3.9, 4.0)        # "torso front depth"
+TRUNK_B = (4.6, 4.2, 3.7, 4.0)        # "torso back depth" (the closed back wall behind the mouth)
+Z_CHEST = (16.1, 20.1)                # the trunk blends into the sculpt's chest section over these heights
+BODY_OVERLAP = 1.4                    # the procedural trunk runs this far up into the kept chest (junction smoothed)
+CH_INSET = 0.35                       # ... sitting this far under the chest skin
+# ---- shadow base (v2: "the bottom should almost be uniform like a shadow coming out of the ground") -- v3's floor ring
+Z_CUT, Z_BT, BT_INSET = 4.0, 4.6, 0.3 # the sculpt skirt section the floor ring is read from (sculpt frame, unmoved)
 HEM_R = 0.45                          # "hem roundness": rounded floor edge radius
 FLARE = 0.45                          # "base flare": how far the shadow spreads at the floor (x the skirt radius)
-FLARE_POW = 2.0                       # "flare curve": higher = the spread hugs the floor
+FLARE_POW = 2.0                       # "flare curve": higher = the spread hugs the floor (a bell from TRUNK_Z[0] down)
 BASE_ROUND = 0.7                      # "base uniformity": 0 = floor ring follows the skirt lobes, 1 = one round ring
-CORE_W = 16                           # "back smoothness": back/sides follow the skirt section averaged over +-CORE_W bins (2.5 deg each)
-# ---- closed back (v2 feedback 5: "the mouth from the back side of it should be closed")
-THETA_C = 100.0                       # "closed back": the sculpt's back teeth + back skirt are replaced behind this angle
-D_BLEND = 15.0                        # ... blended over +- this many degrees (the cut follows the body surface there)
-D_TOP, D_RMIN, D_RMAX = 9.0, 2.0, 8.5  # ... up to this height, between these radii (the throat column + hanging arms kept)
-Z_W0, Z_W1 = 5.0, 5.8                 # waist starts from the skirt section in this band ...
-Z_TOP = 11.2                          # ... and ends inside the chest at this height (back/sides) ...
-CH_INSET = 0.35                       # ... inset under the chest skin
-PINCH, PINCH_B = 0.2, 0.1             # "waist pinch" sides and back (fraction of the radius at mid-waist). Back was
-                                      # 0.45: that notch behind the waist let light through (3.6 % of the back-hemisphere
-                                      # rays) once the glide trailed the hanging hands out of the way -- the back stays full
-PINCH_TH = (95.0, 130.0)              # ... the back pinch ramps in over these angles
-# ---- v3 torso front: the maw's canvas (the sculpt's old ring-maw lips/teeth are cut away in front, FRONTCUT)
-TH_FC = (62.0, 82.0)                  # front wedge: full barrel inside the first angle, blended to the v2 sides by the second
-Z_TOP2 = 13.8                         # the front barrel runs up to here and meets the sculpt chest (junction smoothed)
-FRONT_INSET_TOP = 0.08                # ... sitting this far under the chest skin at the junction
-FRONT_ROUND = 5                       # "torso front smoothness": angular smoothing of the barrel (x 2.5 deg bins)
-FRONT_PINCH = 0.03                    # "front waist pinch" (v2 0.2 pinched the old ring maw; the maw needs a full canvas)
-BOX_D = 4.1                           # "belly depth": through the maw band the torso front is a rounded box this far in
-BOX_W = 5.5                           # ... front of the waist axis, this wide either side ("torso width at the maw") ...
-BOX_CR = 3.4                          # ... with this corner radius, blended in smoothly (BOX_SOFT) over the maw heights
-BOX_TH = (85.0, 118.0)                # ... and round the sides into the v2 back profile between these angles
-BOX_SOFT = 0.4                        # smooth-max softness (no crease where the box meets the natural torso)
-# ---- v3 MAW (feedback: "the body mouth should look more like this (and colored red) with the inside just a different
-# shade of yellow orange") -- front-projected (x from the waist axis, z sculpt frame), per the drawn red outline
-MAW_HW = 5.0                          # "maw half-width": outer edge of the red frame
-MAW_Z = (4.55, 12.7)                  # "maw bottom / top": outer edge of the red frame (drawn: ~15 % .. ~42 % of the height)
-MAW_CR = 1.4                          # frame corner radius
-LIP_T = (0.55, 0.6, 0.5)              # "lip width" bottom / top / sides: red frame band between the frame and the hole
-HOLE_CR = 0.9                         # rounded bottom corners of the hole
-UP_N = 4                              # "upper teeth": count across the top edge (bases touch: the drawn M zigzag)
-UP_LEN = (3.1, 3.5)                   # ... length outer / middle pair (the fangs)
-LO_X = (-1.0, 0.0, 1.0)               # "lower teeth": centres in upper-teeth pitches (they sit in the upper valleys:
-LO_LEN = (1.8, 2.0)                   # ... interlock) -- length sides / centre
-LO_BASE = 0.8                         # ... base width (x the upper pitch)
+CORE_W = 16                           # back smoothness of the skirt section (x 2.5 deg bins)
+THETA_C, D_BLEND = 100.0, 15.0        # ... the smoothed back of the skirt section starts here (v3 closed-back angles)
+# ---- v4 MAW (the mouth wraps the curving trunk; x from the waist axis, z new frame, front-projected)
+MAW_WRAP = 0.84                       # "mouth wrap": the lips' outer edge at this x the trunk half-width (sin 57 deg;
+                                      # 0.883 = 62 deg let the opening outgrow the trunk's front chord at the waist: 2.35 %
+                                      # of the side rays crossed the mouth between the jaws -- the chord 2.5 in front of
+                                      # the axis must stay wider than the opening)
+HOLE_Z = (7.75, 15.5)                 # "maw bottom / top": the opening (inside the lips)
+LIP_T = (0.55, 0.6, 0.5)              # "lip width" bottom / top / sides (red frame band round the opening)
+HOLE_CR, HOLE_CR_TOP = 0.8, 0.35      # opening corner radii bottom / top
+MAW_CR = 1.2                          # frame bottom corner radius
+JAG_N = 9                             # "upper lip jaggedness": notches along the top edge of the red lip line (blue zigzag)
+JAG_AMP = (0.3, 1.0)                  # ... notch height range (irregular: a golden-ratio sequence, deterministic)
+JAG_VALLEY = (0.0, 0.18)              # ... valley height range
+PITCH = 2.25                          # tooth pitch (v3's: "the bottom teeth are good" -- they are v3's exactly)
+UP_MID_LEN = 3.5                      # "upper fangs": the middle pair (bases 0..+-PITCH) length ...
+UP_OUT_LEN, UP_OUT_TIP_X = 2.0, 3.0   # ... the outer pair (base +-PITCH .. the mouth corner): length, tip x (corner fangs)
+LO_X = (-1.0, 0.0, 1.0)               # "lower teeth" centres in pitches (in the upper valleys: interlock) -- v3
+LO_LEN = (1.8, 2.0)                   # ... length sides / centre -- v3
+LO_BASE = 0.8                         # ... base width (x PITCH) -- v3
 T_TOOTH = 0.6                         # "tooth thickness": the lips/teeth are plates this thick over the cavity
-CAV_EXP = 0.35                        # the cavity reaches this far under the lip plates (beyond the hole outline)
-BOWL_C = (0.0, -2.9, 8.6)             # cavity back BOWL: ellipsoid centre (x/y relative to the waist axis, z) ...
-BOWL_R = (7.6, 4.1, 6.2)              # ... semi-axes: the back wall sits ~1.2 behind the axis (closed back, no see-through)
+CAV_EXP = 0.35                        # the cavity reaches this far under the lip plates (beyond the opening outline)
+BOWL_C = (0.0, -2.4, 11.6)            # cavity back BOWL: ellipsoid centre (x/y relative to the waist axis, z) ...
+BOWL_R = (6.6, 3.2, 6.5)              # ... semi-axes: the back wall sits 0.8 behind the axis (closed back, no see-through)
 OPEN_BACK = -1.2                      # the opening prism runs from the front to this y (rel. the axis): inside the cavity
-THROAT_Y = -0.9                       # cavity faces behind this y (rel. the axis) are the glowing throat (back wall)
-# ---- v3 TENDRILS (feedback: "we also lost the shadowy extensions on the bottom" + the drawn hem zigzag)
-TEND_N = 18                           # "tendril count" round the hem (one centred on the front)
-TEND_H = (3.9, 2.7)                   # "tendril height" tall / short, alternating
-TEND_JIT = 0.35                       # ... +- height variation (deterministic, left/right symmetric)
-TEND_VALLEY = 0.35                    # the zigzag's valleys sit this high: below it the tongues fuse into the even ring
-TEND_T = (0.6, 0.25)                  # "tendril thickness" at the floor / at the tip
-TEND_FLARE = 1.3                      # "tendril flare": the tips lean this far out from the skirt (flame licks)
-TEND_POW = 1.3                        # flank curve (> 1 = concave, flame-like pointed tips)
-TEND_OVL = 0.06                       # neighbouring tongues overlap this fraction (fused below the valleys)
-# ---- v3 ARMS (feedback: "the arms look like they got too skinny around the mid part, elbow area")
-ARM_TUBE_R = 1.05                     # "mid-arm thickness": radius of the tube swept along the hanging arm's centreline (the junction smoothing erodes ~0.2: 0.85 measured 0.66 after it)
-ARM_TUBE_ROOT = 1.25                  # ... x this at the torso end (an organic taper root -> mid, not a pipe)
-ARM_FIT_X = (7.8, 10.4)               # the centreline is fitted to the sculpt's arm cross-sections over this |x| range ...
-ARM_TUBE_X = (6.2, 10.9)              # ... and swept over this |x| range (into the torso side .. into the hand)
-ARM_SMOOTH_X = (5.6, 6.1, 9.9, 10.4)  # the SDF mean melts the tube into the torso / hand over this |x| band (not the claws)
-# ---- v3 PROPORTIONS (feedback: "make him a bit taller and a skinnier neck a little he seems short and fat now")
-HEIGHT_K = 1.10                       # "height": z scale about the floor (+10 %)
-NECK_K = 0.85                         # "neck thickness": radial scale of the neck column (-15 %)
-NECK_Z = (15.9, 16.9, 19.9, 20.7)     # ... full inside the middle heights, ramped at the ends (sculpt frame)
-NECK_R = (2.7, 4.2)                   # ... full inside the first radius, off beyond the second (the arms keep their roots)
-NECK_STRETCH = 0.5                    # "neck length": extra height added between the shoulders and the eyes ...
-NECK_STRETCH_Z = (16.2, 18.2)         # ... over this band (smooth)
+THROAT_Y = -1.0                       # cavity faces behind this y (rel. the axis) are the glowing throat (back wall)
+# ---- v4 FLOOR TENDRILS ("lets have them more like tendrils reaching out on the floor")
+TEND_N = 10                           # "tendril count" round the hem
+TEND_PHASE = 18.0                     # ... first tendril angle (deg from the front; none dead-centre under the maw)
+TEND_REACH = (6.0, 9.5)               # "tendril reach": length beyond the floor ring, short .. long (varied)
+TEND_ROOT_IN = 2.4                    # ... they start this far inside the floor ring (rooted in the bell)
+TEND_R0 = 1.45                        # "tendril thickness": root radius (x 0.85..1.15 varied)
+TEND_TIP_R = 0.06                     # ... tip radius
+TEND_TAPER = 0.85                     # ... taper exponent (lower = thicker for longer)
+TEND_FLAT = 0.72                      # section height / width: they lie flat on the floor
+TEND_CURL = (160.0, 270.0)            # "tendril curl": total sideways turn over the tip part (deg, varied)
+TEND_CURL_START = 0.42                # ... the curl starts this far along
+TEND_DIRS = (1, -1, -1, 1, -1, 1, 1, -1, 1, -1)   # curl direction per tendril (+ = clockwise seen from above)
+TEND_UP = (1, 8, 5)                   # "fiddleheads": these tendrils curl UP off the floor at the tip ...
+TEND_UP_DEG, TEND_UP_TURN = 215.0, 45.0   # ... vertical curl (deg) and their (smaller) sideways turn
+K_BLEND = 0.5                         # smooth-min fillet where tendrils / claws / wisps meet the body
+# ---- v4 ARMS (toward the reference: "wispy, tapering, clawed"), L side (x > 0) in the new frame; R mirrors
+ARM_PTS = ((4.6, 0.6, 20.0), (7.0, 0.5, 18.9), (9.6, 1.2, 14.2), (9.4, -2.6, 7.6))   # root (in the chest) | "shoulder"
+                                      # (leaves the body) | "elbow" | "wrist" -- x/y relative to the waist axis
+ARM_RAD = (1.3, 1.15, 1.05, 0.4)      # radius there: the upper arm keeps v3's elbow thickness, the forearm slims to the wrist
+PALM_R = 0.62                         # "hand": palm bulb radius
+CLAW_N = 4                            # "claw fingers"
+CLAW_LEN = (3.0, 3.9, 3.7, 2.8)       # ... lengths (fanned)
+CLAW_R = 0.33                         # ... base radius (to a needle tip)
+CLAW_SPREAD = 22.0                    # ... fan angle between neighbours (deg), across the outward-forward diagonal
+CLAW_HOOK = 0.55                      # ... hook: the tip curls this x the length toward the palm side
+WISP_AT = (0.05, 0.4, 0.72)           # "flame wisps": attachment points along the forearm (elbow 0 .. wrist 1)
+WISP_LEN = (4.0, 5.4, 4.5)            # ... hanging lengths
+WISP_W, WISP_T = 1.7, 0.3             # ... width (along the arm) / thickness at the root, tapering to a point
 # ---- masked smoothing (SDF mean, width SM_W voxels x SM_IT iterations, blended by the masks below)
 SM_W, SM_IT = 3, 14
-FACE_Z = (14.6, 15.4, 20.0, 20.8)     # "face smoothing" height ramps (up, down) -- feedback 3: simplify the face
+FACE_Z = (14.6, 15.4, 20.0, 20.8)     # "face smoothing" height ramps (sculpt frame)
 FACE_RAD = (4.2, 5.2)                 # ... radius ramp from the head axis
 FACE_AX_Y = 0.0
-LOW_Z = (0.3, 1.2, 4.9, 5.7)          # "base smoothing" height ramps (the skirt lobes melt into one shadow)
-LOW_RAD = (10.5, 11.5)                # ... never the hanging hands
-WAIST_TH = (82.0, 98.0)               # "back waist smoothing" angle ramp ...
-WAIST_Z = (4.8, 5.6, 10.2, 11.0)      # ... height ramps ...
-WAIST_RAD = (6.6, 7.3)                # ... radius ramp (the lower arms stay crisp)
-WAIST_K = 0.8                         # ... strength
-# ---- eyes (Aku / Father / Darkrai: the eyes ARE the face) -- (x, z) on the front of the face, mirrored
+LOW_Z = (0.3, 1.2, 4.6, 5.4)          # "base smoothing" height ramps (the bell flare)
+LOW_RAD = (8.2, 9.2)                  # ... radius ramp (never the claws)
+JUNC_Z = (18.1, 18.7, 21.4, 22.0)     # "chest junction smoothing": the trunk meets the kept chest (new frame)
+ARMROOT_X = (4.2, 4.8, 7.8, 8.6)      # "arm root smoothing": |x| ramps ...
+ARMROOT_Z = (17.1, 17.9, 21.1, 21.9)  # ... height ramps (the shoulder junction, never the forearm)
+# ---- eyes (Aku / Father / Darkrai: the eyes ARE the face) -- (x, z) on the front of the face, mirrored, SCULPT frame
 EYE_IN = (0.42, 18.72)                # "eye inner corner"
 EYE_OUT = (2.05, 19.42)               # "eye outer corner" (higher = angrier slant)
 EYE_TOP = 0.10                        # "brow arch": top edge bulge (units)
 EYE_BOT = 0.46                        # "eye height": bottom edge depth (units)
 EYE_POW = (0.9, 0.65)                 # top / bottom edge shape exponents (lower = fuller toward the corners)
-EYE_EDGE = 0.1                       # the eye patch is refined to edges no longer than this before the cut
-EYE_BOX = (2.7, 16.6, 20.4)           # refinement box: |x| < 2.7, z in [16.6, 20.4], front-facing ...
+EYE_EDGE = 0.1                        # the eye patch is refined to edges no longer than this before the cut
+EYE_BOX = (2.7, 16.6, 20.4)           # refinement box: |x| < 2.7, z in [16.6, 20.4] (sculpt frame), front-facing ...
 EYE_NEAR = 0.12                       # ... and only faces within this of an eye outline (or inside)
-# (v3: no grin -- "lets not have him have a mouth under his eyes"; palettes/duskmaw/grin.json stays on disk, unused)
-# ---- recolour (the maw's red frame/teeth + yellow-orange inside are front-projected fields of the MAW constants)
+# ---- recolour
 RED_DEPTH = 0.8                       # skin within RED_DEPTH x T_TOOTH of the surface inside the frame = red lip/teeth
 BASE_Z = 3.4                          # "shadow base line": the floor darkening ramps up to this height
 BASE_DARK = 0.55                      # ... shade multiplier at the floor
-TEND_CUT = 0.12                       # a face this far outside the base skin is on a tendril (the dark 'base' region)
-SPIKE_TIPS = True                     # ember tips on the arm / hat / hand spikes (dim; the palette 'tips' region)
-SEED_Z_FRAC = 0.45                    # tip field seed ring height (x H)
+TEND_CUT = 0.12                       # a face this far outside the base skin (and on a tendril) is the dark 'base' region
+SPIKE_TIPS = True                     # ember tips on the claws / shoulder spikes / hat spikes (dim; the palette 'tips')
+SEED_Z = 13.9                         # tip field seed ring height (sculpt frame; v3's 0.45 H)
+HAT_APEX_Z = 27.83                    # the hat apex above this is an ember tip (sculpt frame; v3's 0.9 H)
 TIP_LEN, TIP_ABS, MIN_SPIKE, SPIKE_RMIN = 0.5, (0.8, 4.0), 1.0, 0.15   # tip burn fraction / clamp / min spike / min radius (x H)
 CUT_SNAP = 0.18                       # iso-cut snap (no slivers)
 BAKE_CAGE = 0.15
 BAKE_RES = (2048, 1024)
 CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9    # Conquest hero ceilings -- REPORT ONLY (scale policy 2026-09-25)
-# ---- rig (fractions of the height H as v1's skirted totem where kept)
-BASE_BONE = (0.02, 0.10)              # ground ring bone z range (x H) -- never keyed: the shadow stays planted
-SWAY_Z = (1.4, 3.6)                   # lean pivot bone (units)
-JAW_Z = (3.6, 7.2)                    # lower jaw bone
-Z_FR = {"chest": (0.52, 0.68), "head": (0.68, 0.82), "crown": (0.82, 0.99)}
-ARM_FR = {"shoulder_x": 0.10, "elbow_x": 0.55, "tip_x": 0.98, "z_sh": 0.60, "z_el": 0.63, "z_tip": 0.58}
+# ---- rig (heights: new frame unless marked sculpt frame)
+BASE_BONE = (0.62, 3.09)              # ground ring bone z range -- never keyed: the shadow stays planted
+SWAY_Z = (1.4, 3.6)                   # lean pivot bone
+JAW_Z = (5.0, 9.0)                    # lower jaw bone (the trunk below the bite)
+CHEST_Z, HEAD_Z, CROWN_Z = (16.08, 21.02), (21.02, 25.35), (25.35, 30.61)   # (sculpt frame; v3's 0.52/0.68/0.82/0.99 H)
+RAISED_SH, RAISED_EL, RAISED_TIP = (2.90, 18.55), (7.97, 19.48), (14.20, 17.93)  # raised shoulder spikes (x, z sculpt)
+RAISED_X, RAISED_Z = (4.64, 7.53), (15.15, 20.41)  # ... their weight band |x| / z (sculpt frame; v3's ARM_IN/OUT/ZMIN/ZMAX)
 W_BAND = 1.0                          # joint softness (upper chain)
 BASE_W = (0.2, 3.2)                   # ground ring -> sway blend heights
-JAW_W = (3.6, 4.5)                    # sway -> jaw blend heights (below the lower lip frame: lip + lower teeth ride the jaw rigidly)
+JAW_W = (5.4, 6.9)                    # sway -> jaw blend heights (below the lower lip frame: lip + lower teeth ride the jaw)
 U_W = (0.55, 2.2)                     # upper-jaw split half-width about MAW_MID: across the tooth plates / cheeks + back
-ARM_IN, ARM_OUT, ARM_ZMIN, ARM_ZMAX = 0.16, 0.26, 0.49, 0.66
-HAND_R, HAND_ZTOP, HAND_Y, HAND_ZLOW = (7.4, 8.6), (12.0, 13.5), 3.2, 3.8
-HAND_MIX = {"spine": 0.6, "arm": 0.1, "blade": 0.3}
-# ---- clips (feedback 1: idle chomp; feedback 2: glide)
+ELBOW_BLEND = 0.8                     # hanging arms: limb -> fore blend half-width at the elbow (arc length)
+# ---- clips (idle chomp + tendril curls; walk = glide)
 IDLE_N = 49                           # idle frames 1..49 (48-frame loop, 2.0 s)
 CHOMP = {"open_f": (6, 16), "shut_f": (16, 19), "hold_f": (19, 23), "rest_f": (23, 36)}   # beat (frames)
 CHOMP_OPEN = 0.9                      # "chomp wind-up": extra gap at the open peak (units)
-CHOMP_SHUT_GAP = -0.45                # tightest upper/lower neighbour pair's tip-to-tip gap when shut (units; negative = the
-                                      # zigzags interlock: an upper tooth dips below its neighbours' tips into the valley)
+CHOMP_SHUT_GAP = -0.45                # tightest upper/lower neighbour pair's tip-to-tip gap when shut (negative = interlock)
 CHOMP_UPPER = 0.6                     # share of the travel done by the upper jaw (chest drops) vs the lower jaw (rises)
-CHOMP_ARMS = 9.0                      # arms flare on the bite (deg)
+CHOMP_ARMS = 9.0                      # raised shoulder spikes flare on the bite (deg)
+HANG_FLARE, CLAW_FLEX = 5.0, 8.0      # hanging arms flare out / the claws snap forward on the bite (deg)
+HANG_SWAY = 2.0                       # hanging arms idle sway (deg)
+CURL_IDX = (2, 4, 7)                  # "tendril curl": these tendrils curl slowly in the idle ...
+CURL_DEG = 10.0                       # ... by +- this (deg about the vertical, progressive toward the tip)
+CURL_PIVOT = (0.38, 0.88)             # ... the bend ramps in between these fractions of the tendril
 IDLE_BOB = 0.18                       # idle float bob of the upper body (units)
 WALK_N = 33                           # glide frames 1..33 (32-frame loop, 1.33 s)
 LEAN_DEG, LEAN_OSC = 7.0, 1.5         # "glide lean" forward + its oscillation (deg)
 GLIDE_ROLL = 2.0                      # side drift (deg)
 GLIDE_BOB = 0.25                      # float bob (units, 2 per loop)
-ARM_TRAIL, ARM_FLUTTER = 14.0, 5.0    # arms trail back + flutter (deg)
+ARM_TRAIL, ARM_FLUTTER = 14.0, 5.0    # raised spikes trail back + flutter (deg)
+HANG_TRAIL, HANG_FLUTTER = 16.0, 4.0  # hanging arms trail back + flutter (deg)
 CROWN_TRAIL = 6.0                     # crown/hat trails back like a flame (deg)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -213,6 +226,27 @@ for i_, a_ in enumerate(argv):
         k_, v_ = argv[i_ + 1].split("=", 1)
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
+# ---- sculpt-frame landmarks -> the new frame (the kept sculpt moved up TORSO_STRETCH); derived after the overrides
+S_UP = TORSO_STRETCH
+
+
+def up(z):
+    return z + S_UP
+
+
+NECK_Z = tuple(up(z) for z in NECK_Z)
+NECK_STRETCH_Z = tuple(up(z) for z in NECK_STRETCH_Z)
+FACE_Z = tuple(up(z) for z in FACE_Z)
+EYE_IN, EYE_OUT = (EYE_IN[0], up(EYE_IN[1])), (EYE_OUT[0], up(EYE_OUT[1]))
+EYE_BOX = (EYE_BOX[0], up(EYE_BOX[1]), up(EYE_BOX[2]))
+CHEST_Z, HEAD_Z, CROWN_Z = (tuple(up(z) for z in t_) for t_ in (CHEST_Z, HEAD_Z, CROWN_Z))
+RAISED_SH, RAISED_EL, RAISED_TIP = ((x, up(z)) for x, z in (RAISED_SH, RAISED_EL, RAISED_TIP))
+RAISED_Z = tuple(up(z) for z in RAISED_Z)
+SEED_Z, HAT_APEX_Z = up(SEED_Z), up(HAT_APEX_Z)
+NECK_MEAS_Z = (up(17.2), up(18.4))
+Z_KEEP = up(Z_KEEP_SCULPT)
+Z_BODY_TOP = Z_KEEP + BODY_OVERLAP
+
 # --out-root <dir>: a determinism TWIN build writes the same tree (improved/, rigged/) under <dir> instead of the project
 OUT_ROOT = argv[argv.index("--out-root") + 1] if "--out-root" in argv else ROOT
 for d_ in ("improved", "rigged"):
@@ -224,7 +258,8 @@ TEX_DIR = os.path.join(OUT_ROOT, "improved", "textures")
 # the normal-bake buffer for duskmaw_bake_diff.py (temp dir, never the project): main build 'main', twins by folder name
 NORMAL_NPY = os.path.join(__import__("tempfile").gettempdir(), "duskmaw_normal_%s.npy" %
                           ("main" if OUT_ROOT == ROOT else os.path.basename(os.path.normpath(OUT_ROOT))))
-report = {"unit": UNIT, "version": "v3 shadow figure (maw / tendrils / arms / proportions)", "conquest_character_id": CHAR_ID, "source": bpy.data.filepath,
+report = {"unit": UNIT, "version": "v4 shadow lord (curving maw / long slender trunk / floor tendrils / clawed arms)",
+          "conquest_character_id": CHAR_ID, "source": bpy.data.filepath,
           "tier": "hero", "tri_budget": TRI_BUDGET, "yaw_fix_deg": 0.0, "overrides": OVERRIDES}
 scene = bpy.context.scene
 
@@ -236,6 +271,10 @@ def sha(a):
 def smoothstep(e0, e1, x):
     t = np.clip((np.asarray(x, float) - e0) / (e1 - e0), 0.0, 1.0)
     return t * t * (3 - 2 * t)
+
+
+def ss1(e0, e1, x):
+    return float(smoothstep(e0, e1, x))
 
 
 def mesh_arrays(me, M=None):
@@ -306,43 +345,94 @@ def circ_smooth(a, w):
     return np.convolve(np.concatenate([a[-w:], a, a[:w]]), k, mode="valid")
 
 
-# =========================================================================== v3 maw outline (front projection)
-# x relative to the waist axis, z in the sculpt frame. The hole = the frame inset by the lip widths; the OPENING = the
-# hole minus the teeth (upper teeth hang from the hole's top edge, bases touching = the drawn zigzag; lower teeth rise
-# from the bottom edge in the upper valleys, so the chomp interlocks them).
-HOLE_HW = MAW_HW - LIP_T[2]
-HOLE_Z = (MAW_Z[0] + LIP_T[0], MAW_Z[1] - LIP_T[1])
-PITCH = 2.0 * HOLE_HW / UP_N
-UP_TEETH = [(-HOLE_HW + PITCH * (i + 0.5), UP_LEN[1] if i in (UP_N // 2 - 1, UP_N // 2) else UP_LEN[0]) for i in range(UP_N)]
-LO_TEETH = [(k * PITCH, LO_LEN[1] if abs(k) < 1e-9 else LO_LEN[0]) for k in LO_X]
-UP_TIPS = [(x, HOLE_Z[1] - l) for x, l in UP_TEETH]
-LO_TIPS = [(x, HOLE_Z[0] + l) for x, l in LO_TEETH]
-MAW_MID = 0.5 * (min(z for _, z in UP_TIPS) + max(z for _, z in LO_TIPS))   # the jaw split line (rig)
-SPINE_Z0 = MAW_MID + 0.3                                                   # upper jaw / spine bone head
+def pchip(xk, yk):
+    """monotone cubic (Fritsch-Carlson) through the knots; zero slope at both ends (the bell flare below and the chest
+    blend above both meet it flat). Returns a scalar function (clamped to the knot range)."""
+    xk = np.asarray(xk, float); yk = np.asarray(yk, float)
+    h = np.diff(xk); d = np.diff(yk) / h
+    m = np.zeros_like(yk)
+    for k in range(1, len(xk) - 1):
+        if d[k - 1] * d[k] > 0:
+            w1, w2 = 2 * h[k] + h[k - 1], h[k] + 2 * h[k - 1]
+            m[k] = (w1 + w2) / (w1 / d[k - 1] + w2 / d[k])
+
+    def f(z):
+        z = min(max(float(z), xk[0]), xk[-1])
+        k = min(int(np.searchsorted(xk, z, side="right")) - 1, len(xk) - 2)
+        t = (z - xk[k]) / h[k]
+        h00, h10, h01, h11 = 2 * t ** 3 - 3 * t ** 2 + 1, t ** 3 - 2 * t ** 2 + t, -2 * t ** 3 + 3 * t ** 2, t ** 3 - t ** 2
+        return float(h00 * yk[k] + h10 * h[k] * m[k] + h01 * yk[k + 1] + h11 * h[k] * m[k + 1])
+    return f
+
+
+PW, PF, PB = pchip(TRUNK_Z, TRUNK_W), pchip(TRUNK_Z, TRUNK_F), pchip(TRUNK_Z, TRUNK_B)
+
+
+# =========================================================================== v4 maw outlines (front projection)
+# x relative to the waist axis, z new frame. The opening's sides follow the trunk: hole half-width = MAW_WRAP x W(z) -
+# the side lip. OPEN = the hole prism minus the teeth prisms (upper fangs hang from the top edge, lower teeth rise in the
+# upper valleys: interlock); the red frame = the hole grown by the lip widths, its top edge jagged.
+HZ0, HZ1 = HOLE_Z
+FZ0, FZ1 = HZ0 - LIP_T[0], HZ1 + LIP_T[1]
+
+
+def frame_hw(z):
+    return MAW_WRAP * PW(z)
+
+
+def hole_hw(z):
+    return frame_hw(z) - LIP_T[2]
 
 
 def arc(cx, cz, rad, a0, a1, n=6):
     return [(cx + rad * math.cos(a), cz + rad * math.sin(a)) for a in np.linspace(a0, a1, n)]
 
 
-def opening_polygon():
-    """CCW (x right, z up, seen from the front camera) outline of the see-into part of the maw."""
-    zb, zt = HOLE_Z
-    P = arc(-HOLE_HW + HOLE_CR, zb + HOLE_CR, HOLE_CR, math.pi, 1.5 * math.pi)
-    for x, l in LO_TEETH:                                   # bottom edge, left -> right, lower teeth rising
-        bw = 0.5 * LO_BASE * PITCH
-        P += [(x - bw, zb), (x, zb + l), (x + bw, zb)]
-    P += arc(HOLE_HW - HOLE_CR, zb + HOLE_CR, HOLE_CR, 1.5 * math.pi, 2.0 * math.pi)
-    P.append((HOLE_HW, zt))
-    for x, l in reversed(UP_TEETH):                         # top edge, right -> left, upper teeth hanging
-        P += [(x, zt - l), (x - 0.5 * PITCH, zt)]
-    return np.array(P[:-1] + [(-HOLE_HW, zt)])
+def outline(hw_fun, zb, zt, cr_b, cr_t, top=None, n_side=48):
+    """CCW (x right, z up, seen from the front) outline: rounded bottom corners, sides x = +-hw_fun(z) (the waist curve),
+    rounded top corners -- or `top`, a right-to-left point list replacing the top edge (the jagged lip line)"""
+    xb = hw_fun(zb + cr_b)
+    P = arc(-xb + cr_b, zb + cr_b, cr_b, math.pi, 1.5 * math.pi, 8) + arc(xb - cr_b, zb + cr_b, cr_b, 1.5 * math.pi, 2 * math.pi, 8)
+    zs_side = np.linspace(zb + cr_b, zt - cr_t, n_side)[1:-1]
+    P += [(hw_fun(z), z) for z in zs_side]
+    if top is None:
+        xt = hw_fun(zt - cr_t)
+        P += arc(xt - cr_t, zt - cr_t, cr_t, 0.0, 0.5 * math.pi, 6) + arc(-xt + cr_t, zt - cr_t, cr_t, 0.5 * math.pi, math.pi, 6)
+    else:
+        P += top
+    P += [(-hw_fun(z), z) for z in zs_side[::-1]]
+    return np.array(P, float)
 
 
-def rrect_polygon(hw, z0, z1, cr, n=8):
-    P = arc(-hw + cr, z0 + cr, cr, math.pi, 1.5 * math.pi, n) + arc(hw - cr, z0 + cr, cr, 1.5 * math.pi, 2 * math.pi, n) + \
-        arc(hw - cr, z1 - cr, cr, 0.0, 0.5 * math.pi, n) + arc(-hw + cr, z1 - cr, cr, 0.5 * math.pi, math.pi, n)
-    return np.array(P)
+def jag_line():
+    """the red lip's top edge, right -> left: JAG_N irregular notches (peak lean + height from golden-ratio sequences)"""
+    xr = frame_hw(FZ1)
+    edges = np.linspace(xr, -xr, JAG_N + 1)
+    pts = [(xr, FZ1)]
+    for k in range(JAG_N):
+        a, b = edges[k], edges[k + 1]
+        g1, g2, g3 = (k * 0.618034 + 0.17) % 1.0, (k * 0.414214 + 0.61) % 1.0, (k * 0.732051 + 0.29) % 1.0
+        pts.append((a + (b - a) * (0.28 + 0.44 * g1), FZ1 + JAG_AMP[0] + (JAG_AMP[1] - JAG_AMP[0]) * g2))
+        if k < JAG_N - 1:
+            pts.append((b, FZ1 + JAG_VALLEY[0] + (JAG_VALLEY[1] - JAG_VALLEY[0]) * g3))
+    pts.append((-xr, FZ1))
+    return pts
+
+
+HOLE_POLY = outline(hole_hw, HZ0, HZ1, HOLE_CR, HOLE_CR_TOP)
+FRAME_POLY = outline(frame_hw, FZ0, FZ1, MAW_CR, 0.0, top=jag_line())
+CAV_POLY = outline(lambda z: hole_hw(z) + CAV_EXP, HZ0 - CAV_EXP, HZ1 + CAV_EXP, HOLE_CR + CAV_EXP, HOLE_CR_TOP + CAV_EXP)
+X_EDGE = hole_hw(HZ1) + 0.8                     # the outer fangs' bases run past the mouth corner (no sliver)
+UP_TEETH = [(-PITCH, 0.0, UP_MID_LEN, -0.5 * PITCH), (0.0, PITCH, UP_MID_LEN, 0.5 * PITCH),   # (x_a, x_b, length, tip x)
+            (PITCH, X_EDGE, UP_OUT_LEN, UP_OUT_TIP_X), (-X_EDGE, -PITCH, UP_OUT_LEN, -UP_OUT_TIP_X)]
+LO_TEETH = [(k * PITCH, LO_LEN[1] if abs(k) < 1e-9 else LO_LEN[0]) for k in LO_X]
+UP_TIPS = [(xt, HZ1 - l) for _, _, l, xt in UP_TEETH]
+LO_TIPS = [(x, HZ0 + l) for x, l in LO_TEETH]
+MAW_MID = 0.5 * (min(z for _, z in UP_TIPS) + max(z for _, z in LO_TIPS))   # the jaw split line (rig)
+SPINE_Z0 = MAW_MID + 0.3                                                   # upper jaw / spine bone head
+TOOTH_POLYS = [np.array([(xa, HZ1 + 1.0), (xa, HZ1), (xt, HZ1 - l), (xb, HZ1), (xb, HZ1 + 1.0)]) for xa, xb, l, xt in UP_TEETH] + \
+              [np.array([(x - 0.5 * LO_BASE * PITCH, HZ0 - 1.0), (x + 0.5 * LO_BASE * PITCH, HZ0 - 1.0), (x + 0.5 * LO_BASE * PITCH, HZ0),
+                         (x, HZ0 + l), (x - 0.5 * LO_BASE * PITCH, HZ0)]) for x, l in LO_TEETH]
 
 
 def poly_sdf2(P, poly):
@@ -357,17 +447,6 @@ def poly_sdf2(P, poly):
         c = ((az_ > P[:, 1]) != (bz_ > P[:, 1])) & (P[:, 0] < ax_ + (P[:, 1] - az_) * ex / (ez if abs(ez) > 1e-12 else 1e-12))
         inside ^= c
     return np.where(inside, d, -d)
-
-
-def rrect_sdf2(P, hw, z0, z1, cr):
-    """rounded rectangle, > 0 inside"""
-    cz, hh = 0.5 * (z0 + z1), 0.5 * (z1 - z0)
-    qx = np.abs(P[:, 0]) - (hw - cr); qz = np.abs(P[:, 1] - cz) - (hh - cr)
-    return -(np.hypot(np.maximum(qx, 0), np.maximum(qz, 0)) + np.minimum(np.maximum(qx, qz), 0) - cr)
-
-
-OPEN_POLY = opening_polygon()
-CAV_POLY = rrect_polygon(HOLE_HW + CAV_EXP, HOLE_Z[0] - CAV_EXP, HOLE_Z[1] + CAV_EXP, HOLE_CR + CAV_EXP)
 
 
 # =========================================================================== 1. sculpt -> origin
@@ -391,7 +470,6 @@ _rs = np.hypot(SV[:, 0], SV[:, 1])
 _col = (SV[:, 2] > 6.2) & (SV[:, 2] < 8.9) & (_rs < 2.0)
 AX = SV[_col, :2].mean(0)
 report["waist_axis_sculpt_frame"] = AX.round(4).tolist()
-# v3 neck axis: centre of the neck column's x / y extent between the shoulders and the eyes (the arms are |x| > 3 there)
 _nk = (SV[:, 2] > 16.8) & (SV[:, 2] < 18.6) & (np.abs(SV[:, 0] - AX[0]) < 3.0)
 NAX = np.array([0.5 * (SV[_nk, 0].min() + SV[_nk, 0].max()), 0.5 * (SV[_nk, 1].min() + SV[_nk, 1].max())])
 report["neck_axis_sculpt_frame"] = NAX.round(4).tolist()
@@ -400,9 +478,10 @@ report["neck_axis_sculpt_frame"] = NAX.round(4).tolist()
 t_sdf = time.time()
 NT = 144
 TH = np.linspace(-math.pi, math.pi, NT, endpoint=False)
+SIN_T, COS_T = np.sin(TH), np.cos(TH)
 dS = SV[:, :2] - AX
 rS = np.hypot(dS[:, 0], dS[:, 1]); thS = np.arctan2(dS[:, 0], -dS[:, 1])
-HANDS_S = (rS > HAND_R[0]) & (np.abs(dS[:, 1]) < HAND_Y) & (SV[:, 2] > HAND_ZLOW)
+HANDS_S = (rS > 7.4) & (np.abs(dS[:, 1]) < 3.2) & (SV[:, 2] > 3.8)   # hanging hands + raised arms: out of the sections
 
 
 def section_r(z0, z1, rmax):
@@ -413,55 +492,15 @@ def section_r(z0, z1, rmax):
     return out
 
 
-def ss1(e0, e1, x):
-    return float(smoothstep(e0, e1, x))
-
-
+# the v3 floor ring, read off the (unmoved) sculpt skirt: identical ring, identical contact
 BACK_W = smoothstep(math.radians(THETA_C - D_BLEND), math.radians(THETA_C + D_BLEND), np.abs(TH))
-PINCH_T = PINCH + (PINCH_B - PINCH) * smoothstep(math.radians(PINCH_TH[0]), math.radians(PINCH_TH[1]), np.abs(TH))
-FRONT_W = 1.0 - smoothstep(math.radians(TH_FC[0]), math.radians(TH_FC[1]), np.abs(TH))    # v3 front barrel share
-BOX_SW = 1.0 - smoothstep(math.radians(BOX_TH[0]), math.radians(BOX_TH[1]), np.abs(TH))       # the box's angular share
-
-
-def _box_radius():
-    """per angle bin: the ray from the waist axis to the rounded box |x| <= BOX_W, y >= -BOX_D (front), corner BOX_CR"""
-    rs_ = np.linspace(0.0, 14.0, 2801)
-    out = np.zeros(NT)
-    for k, th in enumerate(TH):
-        P_ = np.stack([rs_ * math.sin(th), -rs_ * math.cos(th)], 1)
-        f_ = rrect_sdf2(P_, BOX_W, -BOX_D, 12.0, BOX_CR)
-        j_ = int(np.argmax(f_ < 0)) if (f_ < 0).any() else len(rs_) - 1
-        out[k] = rs_[j_]
-    return out
-
-
-R_BOX = _box_radius()
-
-
-def smax(a, b, k):
-    """polynomial smooth max (C1): max + h^2 k / 4, h = max(k - |a - b|, 0) / k"""
-    h_ = np.maximum(k - np.abs(a - b), 0.0) / k
-    return np.maximum(a, b) + h_ * h_ * k * 0.25
-
-
-def box_w(z):
-    return ss1(MAW_Z[0] - 2.2, MAW_Z[0] - 0.2, z) * (1.0 - ss1(MAW_Z[1] + 0.1, MAW_Z[1] + 2.3, z))
-
-
-def lobe_mix(z0, z1, inset):
-    raw = section_r(z0, z1, 10.0)
-    return (circ_smooth(raw, 1) - inset) * (1 - BACK_W) + (circ_smooth(raw, CORE_W) - inset) * BACK_W
-
-
-R_bt = lobe_mix(Z_CUT, Z_BT, BT_INSET)
-R_cut = lobe_mix(Z_CUT - 0.3, Z_CUT + 0.3, -CUT_OUTSET)
+_raw = section_r(Z_CUT, Z_BT, 10.0)
+R_bt = (circ_smooth(_raw, 1) - BT_INSET) * (1 - BACK_W) + (circ_smooth(_raw, CORE_W) - BT_INSET) * BACK_W
 R_gnd = (1 - BASE_ROUND) * R_bt * (1 + FLARE) + BASE_ROUND * R_bt.mean() * (1 + FLARE)
-R_w0 = lobe_mix(Z_W0, Z_W1, BT_INSET)
-# the sculpt's chest sections per height (the v2 back/sides above Z_TOP, and the v3 front barrel's top)
-ZS_SEC = Z_TOP + 0.2 * np.arange(-2, int(round((Z_TOP2 + 1.2 - Z_TOP) / 0.2)) + 1)
+# v4: the kept sculpt moves up TORSO_STRETCH (below Z_KEEP it is cut away: the procedural trunk replaces it)
+SV[:, 2] += S_UP
+ZS_SEC = (Z_KEEP - 0.4) + 0.2 * np.arange(int(round((Z_BODY_TOP + 0.6 - (Z_KEEP - 0.4)) / 0.2)) + 1)
 SEC_TAB = np.array([circ_smooth(section_r(z_ - 0.3, z_ + 0.3, 9.3), 3) for z_ in ZS_SEC])
-R_ch = SEC_TAB[2] - CH_INSET                                  # = v2's R_ch (the section at Z_TOP)
-Z_F1 = Z_TOP2 - 2.2                                           # front: the barrel below, the chest sections above
 
 
 def R_sec(z):
@@ -470,69 +509,45 @@ def R_sec(z):
     return SEC_TAB[k_] * (1 - (f_ - k_)) + SEC_TAB[k_ + 1] * (f_ - k_)
 
 
-def R_front(z):
-    """v3 front barrel: skirt section -> chest section, barely pinched (the rounded BOX is added in R_body)"""
-    if z <= Z_F1:
-        tf = (z - Z_W0) / (Z_F1 - Z_W0)
-        t_ = ss1(0.0, 1.0, tf)
-        top = circ_smooth(R_sec(Z_F1), FRONT_ROUND) - FRONT_INSET_TOP
-        R = (circ_smooth(R_w0, FRONT_ROUND) * (1 - t_) + top * t_) * (1 - FRONT_PINCH * math.sin(math.pi * min(max(tf, 0.0), 1.0)) ** 2)
-    else:
-        R = circ_smooth(R_sec(z), FRONT_ROUND) - FRONT_INSET_TOP
+def ell_r(W, F, B):
+    """per angle bin: the radius of the elliptical trunk section (half-width W, front depth F, back depth B)"""
+    D = np.where(COS_T >= 0.0, F, B)
+    return 1.0 / np.sqrt((SIN_T / W) ** 2 + (COS_T / D) ** 2)
+
+
+def trunk_R(z):
+    R = ell_r(PW(z), PF(z), PB(z))
+    if z > Z_CHEST[0]:
+        s_ = ss1(Z_CHEST[0], Z_CHEST[1], z)
+        R = R * (1 - s_) + (R_sec(max(z, Z_KEEP - 0.3)) - CH_INSET) * s_
     return R
 
 
-def R_back(z):
-    """v2 waist (sides/back): skirt section -> chest, pinched; above Z_TOP the chest sections, inset"""
-    if z <= Z_TOP:
-        tl = (z - Z_W0) / (Z_TOP - Z_W0)
-        t_ = ss1(0.0, 1.0, tl)
-        return (R_w0 * (1 - t_) + R_ch * t_) * (1 - PINCH_T * math.sin(math.pi * min(max(tl, 0.0), 1.0)) ** 2)
-    return R_sec(z) - CH_INSET
-
-
-R_FRONT_W0 = R_front(Z_W0)
+R_FT = trunk_R(TRUNK_Z[0])
 
 
 def R_body(z):
-    """procedural lower body radius per angle bin at height z (sculpt frame): v2 profile + the v3 front, smooth-maxed
-    with the maw band's rounded BOX (the maw's canvas)"""
-    R = R_body0(z)
-    w_ = box_w(z)
-    if w_ <= 0.0:
-        return R
-    return R + BOX_SW * (smax(R, R_BOX * w_, BOX_SOFT) - R)
-
-
-def R_body0(z):
-    if z <= Z_CUT:
+    """procedural lower body radius per angle bin at height z (new frame): rounded hem -> bell flare -> the trunk"""
+    if z <= TRUNK_Z[0]:
         zc = max(z, HEM_R)
-        w = ((Z_CUT - zc) / (Z_CUT - HEM_R)) ** FLARE_POW
-        R = R_cut + (R_gnd - R_cut) * w
+        w = ((TRUNK_Z[0] - zc) / (TRUNK_Z[0] - HEM_R)) ** FLARE_POW
+        R = R_FT + (R_gnd - R_FT) * w
         if z < HEM_R:                                   # rounded hem: a quarter circle at the floor edge
             R = R - HEM_R + math.sqrt(max(HEM_R ** 2 - (HEM_R - max(z, 0.0)) ** 2, 0.0))
         return R
-    if z <= Z_W0:
-        if z <= Z_BT:
-            t = ss1(Z_CUT, Z_BT, z)
-            R = R_cut * (1 - t) + R_bt * t
-        else:
-            t = ss1(Z_BT, Z_W0, z)
-            R = R_bt * (1 - t) + R_w0 * t
-        return R + (R_FRONT_W0 - R_w0) * FRONT_W * ss1(Z_CUT, Z_W0, z)     # v3: ramps into the front barrel
-    return R_front(z) * FRONT_W + R_back(z) * (1 - FRONT_W)
+    return trunk_R(z)
 
 
 def R_hem(z):
-    """the base skin WITHOUT the rounded hem (the tendrils' reference surface)"""
-    return R_body(max(z, HEM_R)) if z <= Z_CUT else R_body(z)
+    """the base skin WITHOUT the rounded hem (the tendril region's reference surface)"""
+    return R_body(max(z, HEM_R))
 
 
 def radial_solid(Rfun, zs):
     rings = []
     for z in zs:
         R = Rfun(z)
-        rings.append(np.stack([AX[0] + R * np.sin(TH), AX[1] - R * np.cos(TH), np.full(NT, z)], 1))
+        rings.append(np.stack([AX[0] + R * SIN_T, AX[1] - R * COS_T, np.full(NT, z)], 1))
     V = np.concatenate(rings + [np.array([[AX[0], AX[1], zs[0]], [AX[0], AX[1], zs[-1]]])])
     F = []
     nr = len(zs)
@@ -574,28 +589,6 @@ def cylinder(c, rad, z0, z1, nu=64):
     return V, F
 
 
-def param_box(fun, nu, nv, nw):
-    """closed quad surface of the (u, v, w) unit box mapped through fun"""
-    V, F, idx = [], [], {}
-
-    def vid(i, j, k):
-        key = (i, j, k)
-        if key not in idx:
-            idx[key] = len(V); V.append(fun(i / nu, j / nv, k / nw))
-        return idx[key]
-    for (a, b, na, nb, fix, val, flip) in (("u", "v", nu, nv, "w", 0, True), ("u", "v", nu, nv, "w", nw, False),
-                                           ("u", "w", nu, nw, "v", 0, False), ("u", "w", nu, nw, "v", nv, True),
-                                           ("v", "w", nv, nw, "u", 0, True), ("v", "w", nv, nw, "u", nu, False)):
-        for i in range(na):
-            for j in range(nb):
-                q = []
-                for (di, dj) in ((0, 0), (1, 0), (1, 1), (0, 1)):
-                    co_ = {a: i + di, b: j + dj, fix: val}
-                    q.append(vid(co_["u"], co_["v"], co_["w"]))
-                F.append(q[::-1] if flip else q)
-    return V, F
-
-
 def prism_y(poly, y0, y1, xoff):
     """a 2D (x, z) CCW polygon extruded along y from y0 (front) to y1 (back), x offset by xoff -- outward normals"""
     n = len(poly)
@@ -603,118 +596,6 @@ def prism_y(poly, y0, y1, xoff):
     F = [list(range(n)), list(range(2 * n - 1, n - 1, -1))]
     F += [[i, n + i, n + (i + 1) % n, (i + 1) % n] for i in range(n)]
     return V, F
-
-
-def bin_of(th):
-    return int(math.floor((th + math.pi) / (2 * math.pi) * NT)) % NT
-
-
-def r_interp(Rarr, th):
-    """a per-bin radius array (samples at TH, as radial_solid places them) at a continuous angle"""
-    f_ = (th + math.pi) / (2 * math.pi) * NT
-    k_ = int(math.floor(f_)); a_ = f_ - k_
-    return float(Rarr[k_ % NT] * (1 - a_) + Rarr[(k_ + 1) % NT] * a_)
-
-
-TH_D0 = math.radians(THETA_C - D_BLEND)
-
-
-def d_fun(u, v, w):
-    th = TH_D0 + u * (2 * math.pi - 2 * TH_D0)
-    th = (th + math.pi) % (2 * math.pi) - math.pi
-    z = (Z_CUT - 0.1) + w * (D_TOP - (Z_CUT - 0.1))
-    i = int(round((th + math.pi) / (2 * math.pi) * NT)) % NT
-    full = ss1(TH_D0, math.radians(THETA_C + D_BLEND), abs(th))
-    rin = (R_body(z)[i] - 0.05) * (1 - full) + D_RMIN * full
-    rr = rin + v * (D_RMAX - rin)
-    return (AX[0] + rr * math.sin(th), AX[1] - rr * math.cos(th), z)
-
-
-def f_fun(u, v, w):
-    """v3 FRONTCUT: the sculpt's old ring-maw lips/teeth outside the front barrel (|theta| < TH_FC, up to Z_TOP2)"""
-    th = math.radians(-TH_FC[1] + u * 2 * TH_FC[1])
-    z = (Z_CUT - 0.1) + w * (Z_TOP2 - (Z_CUT - 0.1))
-    edge = ss1(math.radians(TH_FC[0]), math.radians(TH_FC[1]), abs(th))
-    rin = (r_interp(R_body(z), th) - 0.05) * (1 - edge) + (D_RMAX - 0.05) * edge
-    rr = rin + v * (D_RMAX - rin)
-    return (AX[0] + rr * math.sin(th), AX[1] - rr * math.cos(th), z)
-
-
-def arm_tube(sgn):
-    """v3 ARMS: a tube of radius ARM_TUBE_R along the hanging arm's centreline -- a line fitted (with outlier
-    rejection) to the sculpt's arm cross-section centroids over ARM_FIT_X, swept over ARM_TUBE_X"""
-    xr = sgn * (SV[:, 0] - AX[0])
-    m = (xr > ARM_FIT_X[0]) & (xr < ARM_FIT_X[1]) & (SV[:, 2] > 3.8) & (SV[:, 2] < 13.5) & (np.abs(SV[:, 1] - AX[1]) < 3.2)
-    X, Y, Z = xr[m], SV[m, 1], SV[m, 2]
-    edges_ = np.arange(ARM_FIT_X[0], ARM_FIT_X[1] + 1e-9, 0.2)
-    cx_, cy_, cz_ = [], [], []
-    for a_, b_ in zip(edges_[:-1], edges_[1:]):
-        k_ = (X >= a_) & (X < b_)
-        if k_.sum() >= 6:
-            cx_.append(0.5 * (a_ + b_)); cy_.append(float(np.median(Y[k_]))); cz_.append(float(np.median(Z[k_])))
-    cx_, cy_, cz_ = map(np.array, (cx_, cy_, cz_))
-    keep = np.ones(len(cx_), bool)
-    for _ in range(3):
-        pz = np.polyfit(cx_[keep], cz_[keep], 1); py = np.polyfit(cx_[keep], cy_[keep], 1)
-        keep = np.abs(np.polyval(pz, cx_) - cz_) < 0.8
-    xs = np.linspace(ARM_TUBE_X[0], ARM_TUBE_X[1], 48)
-    C = np.stack([AX[0] + sgn * xs, np.polyval(py, xs), np.polyval(pz, xs)], 1)
-    Tn = np.gradient(C, axis=0); Tn /= np.linalg.norm(Tn, axis=1)[:, None]
-    N1 = np.cross(Tn, [0.0, 1.0, 0.0]); N1 /= np.linalg.norm(N1, axis=1)[:, None]
-    N2 = np.cross(Tn, N1)
-    rad = ARM_TUBE_R * (0.7 + 0.3 * (1 - smoothstep(ARM_TUBE_X[1] - 0.6, ARM_TUBE_X[1], xs)))
-    rad = rad * (1 + (ARM_TUBE_ROOT - 1) * (1 - smoothstep(ARM_TUBE_X[0], ARM_TUBE_X[0] + 1.6, xs)))
-    nu = 20
-    V, F = [], []
-    for k, (c, n1, n2, rr) in enumerate(zip(C, N1, N2, rad)):
-        for i in range(nu):
-            a = 2 * math.pi * i / nu
-            V.append(tuple(c + rr * (math.cos(a) * n1 + math.sin(a) * n2)))
-    for k in range(len(C) - 1):
-        for i in range(nu):
-            F.append([k * nu + i, k * nu + (i + 1) % nu, (k + 1) * nu + (i + 1) % nu, (k + 1) * nu + i])
-    V += [tuple(C[0]), tuple(C[-1])]
-    c0, c1 = len(V) - 2, len(V) - 1
-    last = (len(C) - 1) * nu
-    for i in range(nu):
-        F.append([c0, (i + 1) % nu, i]); F.append([c1, last + i, last + (i + 1) % nu])
-    info = {"fit_points": int(keep.sum()), "z_of_x": [round(float(v), 4) for v in pz], "y_of_x": [round(float(v), 4) for v in py],
-            "ends": [C[0].round(3).tolist(), C[-1].round(3).tolist()]}
-    return V, F, info
-
-
-TEND_HW = math.pi / TEND_N * (1 + TEND_OVL)
-
-
-def tend_height(i):
-    k = min(i, TEND_N - i)                                   # left/right symmetric about the front tongue (i = 0)
-    return TEND_H[i % 2] + TEND_JIT * (2.0 * ((k * 0.6180339887) % 1.0) - 1.0)
-
-
-def tongue(i):
-    """one flame tongue on the hem: pointed (TEND_POW flanks) between two valleys at TEND_VALLEY, thickness TEND_T,
-    leaning out TEND_FLARE at the tip; its outer face follows the base skin (rounded at the floor like the hem)"""
-    thc = 2 * math.pi * i / TEND_N
-    h = tend_height(i)
-    z0 = -0.3 * VOX
-
-    def fun(u, v, w):
-        a = 2.0 * u - 1.0
-        top = TEND_VALLEY + (h - TEND_VALLEY) * (1.0 - abs(a)) ** TEND_POW
-        z = z0 + w * (top - z0)
-        th = thc + a * TEND_HW
-        th = (th + math.pi) % (2 * math.pi) - math.pi
-        zn = max(z, 0.0) / h
-        R = r_interp(R_hem(z), th)
-        off = TEND_FLARE * zn ** 2
-        t_ = TEND_T[0] + (TEND_T[1] - TEND_T[0]) * zn
-        rout = R + t_ + off
-        if z < HEM_R:
-            rout -= HEM_R - math.sqrt(max(HEM_R ** 2 - (HEM_R - max(z, 0.0)) ** 2, 0.0))
-        rin = R - 0.45 + off
-        rr = rin + v * (rout - rin)
-        return (AX[0] + rr * math.sin(th), AX[1] - rr * math.cos(th), z)
-    return param_box(fun, 14, 2, 16)
 
 
 def orient_out(V, F):
@@ -728,6 +609,161 @@ def orient_out(V, F):
     return (V, [f[::-1] for f in F]) if vol < 0 else (V, F)
 
 
+def merge(parts):
+    """one mesh from several closed pieces (each oriented outward)"""
+    V_, F_ = [], []
+    for Vp, Fp in parts:
+        Vp, Fp = orient_out(Vp, Fp)
+        F_ += [[j + len(V_) for j in f] for f in Fp]; V_ += [tuple(map(float, v)) for v in Vp]
+    return V_, F_
+
+
+def sweep(C, ra, rb=None, nu=16, n1_0=None):
+    """closed tube along the polyline C (n,3): elliptical section ra (along N1) x rb (along N2 = N1 x T), parallel-
+    transport frames from n1_0 (default: the horizontal side vector), fan caps at both ends"""
+    C = np.asarray(C, float)
+    ra = np.broadcast_to(np.asarray(ra, float), (len(C),))
+    rb = ra if rb is None else np.broadcast_to(np.asarray(rb, float), (len(C),))
+    Tn = np.gradient(C, axis=0); Tn /= np.linalg.norm(Tn, axis=1)[:, None]
+    v = np.cross(Tn[0], [0.0, 0.0, 1.0]) if n1_0 is None else np.asarray(n1_0, float)
+    if np.linalg.norm(v) < 1e-6:
+        v = np.cross(Tn[0], [0.0, 1.0, 0.0])
+    N1 = np.zeros_like(C)
+    for k in range(len(C)):
+        v = v - np.dot(v, Tn[k]) * Tn[k]; v = v / np.linalg.norm(v); N1[k] = v
+    N2 = np.cross(N1, Tn)
+    V, F = [], []
+    for k in range(len(C)):
+        for i in range(nu):
+            a = 2 * math.pi * i / nu
+            V.append(tuple(C[k] + max(ra[k], 0.008) * math.cos(a) * N1[k] + max(rb[k], 0.008) * math.sin(a) * N2[k]))
+    for k in range(len(C) - 1):
+        for i in range(nu):
+            F.append([k * nu + i, k * nu + (i + 1) % nu, (k + 1) * nu + (i + 1) % nu, (k + 1) * nu + i])
+    V += [tuple(C[0]), tuple(C[-1])]
+    c0, c1 = len(V) - 2, len(V) - 1
+    last = (len(C) - 1) * nu
+    for i in range(nu):
+        F.append([c0, (i + 1) % nu, i]); F.append([c1, last + i, last + (i + 1) % nu])
+    return V, F, Tn
+
+
+def catmull(P, n_seg=20):
+    """uniform Catmull-Rom through the points (ends duplicated): dense polyline"""
+    P = np.asarray(P, float)
+    Q = np.concatenate([P[:1] * 2 - P[1:2], P, P[-1:] * 2 - P[-2:-1]])
+    out = []
+    for k in range(1, len(Q) - 2):
+        p0, p1, p2, p3 = Q[k - 1], Q[k], Q[k + 1], Q[k + 2]
+        for t in np.linspace(0.0, 1.0, n_seg, endpoint=(k == len(Q) - 3)):
+            out.append(0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    return np.array(out)
+
+
+def bezier(P0, P1, P2, n=16):
+    t = np.linspace(0.0, 1.0, n)[:, None]
+    return (1 - t) ** 2 * P0 + 2 * (1 - t) * t * P1 + t * t * P2
+
+
+def arclen(C):
+    return np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))])
+
+
+# ---- v4 ARMS: tube root -> shoulder -> elbow -> wrist, palm bulb, CLAW_N hooked claws, flame wisps off the forearm.
+# Skeleton samples (x, y, z, radius, arc length s, side, part) drive the weights and the region masks.
+def arm_parts(sgn):
+    P = np.array([(AX[0] + sgn * x, AX[1] + y, z) for x, y, z in ARM_PTS])
+    C = catmull(P, 24)
+    s = arclen(C)
+    s_knots = [float(s[np.argmin(np.linalg.norm(C - p, axis=1))]) for p in P]
+    rad = np.interp(s, s_knots, ARM_RAD)
+    tube_V, tube_F, Tn = sweep(C, rad, nu=20)
+    D = Tn[-1]
+    palm_c = C[-1] + D * 0.35
+    palm = ellipsoid(tuple(palm_c), (PALM_R, PALM_R, PALM_R), 20, 12)
+    v_ = np.array([sgn * 0.7, -0.7, 0.0])
+    A_f = v_ - np.dot(v_, D) * D; A_f /= np.linalg.norm(A_f)
+    Hk = -sgn * np.cross(A_f, D); Hk /= np.linalg.norm(Hk)          # toward the palm side (inward-forward)
+    claws, samples = [], []
+    for k in range(CLAW_N):
+        a_ = math.radians((k - 0.5 * (CLAW_N - 1)) * CLAW_SPREAD)
+        d_ = D * math.cos(a_) + A_f * math.sin(a_)
+        L_ = CLAW_LEN[k % len(CLAW_LEN)]
+        B_ = palm_c + d_ * PALM_R * 0.55
+        Cc = bezier(B_, B_ + d_ * 0.62 * L_, B_ + d_ * 0.72 * L_ + Hk * CLAW_HOOK * L_, 18)
+        u_ = np.linspace(0.0, 1.0, len(Cc))
+        rc = CLAW_R * (1 - u_) ** 0.9 + 0.012
+        Vc, Fc, _ = sweep(Cc, rc, nu=10)
+        claws.append((Vc, Fc))
+        samples += [(*p, r_, s[-1] + 0.35 + PALM_R + L_ * u, sgn, 2) for p, r_, u in zip(Cc, rc, u_)]
+    wisps = []
+    i_el, i_wr = int(np.argmin(np.abs(s - s_knots[2]))), len(C) - 1
+    for k, (u_at, L_) in enumerate(zip(WISP_AT, WISP_LEN)):
+        i_ = int(round(i_el + u_at * (i_wr - i_el)))
+        c_, t_, r_ = C[i_], Tn[i_], rad[i_]
+        o_ = np.array([sgn * 0.9, 0.35, 0.0]); o_ = o_ - np.dot(o_, t_) * t_; o_ /= np.linalg.norm(o_)   # outward (+ a bit back)
+        P0 = c_ + o_ * r_ * 0.2
+        b_ = np.cross(o_, t_); b_ /= np.linalg.norm(b_)
+        flick = b_ * (0.22 * L_ * (1 if k % 2 == 0 else -1))                   # the flame tip flicks sideways
+        Cw = bezier(P0, P0 + o_ * 0.8 + t_ * 0.3 * L_,
+                    P0 + o_ * (0.9 + 0.3 * L_) + t_ * 0.85 * L_ + flick, 20)      # trails off the forearm, flaring out
+        u_ = np.linspace(0.0, 1.0, len(Cw))
+        ww = 0.5 * WISP_W * (1 - u_) ** 0.8 + 0.01
+        wt = 0.5 * WISP_T * (1 - 0.55 * u_) + 0.012
+        Vw, Fw, _ = sweep(Cw, ww, wt, nu=14, n1_0=o_)     # the broad side faces front (width in the arm's front plane)
+        wisps.append((Vw, Fw))
+        samples += [(*p, max(a, b), s[i_], sgn, 3) for p, a, b in zip(Cw, ww, wt)]
+    samples = [(*p, r_, s_, sgn, 1) for p, r_, s_ in zip(C, rad, s)] + [(*palm_c, PALM_R, s[-1] + 0.35, sgn, 1)] + samples
+    info = {"length_root_to_wrist": round(float(s[-1]), 3), "s_shoulder": round(s_knots[1], 3), "s_elbow": round(s_knots[2], 3),
+            "radius_shoulder_elbow_wrist": [round(float(v), 3) for v in ARM_RAD[1:]], "claws": CLAW_N,
+            "claw_tips": [np.round(c[0][-1], 3).tolist() for c in claws], "wisps": len(wisps)}
+    return (tube_V, tube_F), palm, claws, wisps, samples, {"P": P, "s_knots": s_knots, "palm": palm_c, "D": D}, info
+
+
+# ---- v4 FLOOR TENDRILS: from inside the bell, radiating out along the floor; curvature ramps in past TEND_CURL_START
+# (a sideways spiral), the TEND_UP ones curl up and over instead (fiddleheads). Flattened sections, dipped below the
+# floor and cut flat by the floor slab (flat contact).
+def tendril(i):
+    g1, g2, g3 = (i * 0.618034 + 0.30) % 1.0, (i * 0.381966 + 0.70) % 1.0, (i * 0.754878 + 0.11) % 1.0
+    phi = math.radians(TEND_PHASE + 360.0 * i / TEND_N)
+    Rg = float(np.interp(phi, TH, R_gnd, period=2 * math.pi))
+    L = TEND_REACH[0] + (TEND_REACH[1] - TEND_REACH[0]) * g1 + TEND_ROOT_IN
+    r0 = TEND_R0 * (0.85 + 0.3 * g3)
+    dirn = TEND_DIRS[i % len(TEND_DIRS)]
+    upc = i in TEND_UP
+    turn = math.radians(TEND_UP_TURN if upc else TEND_CURL[0] + (TEND_CURL[1] - TEND_CURL[0]) * g2) * dirn
+    elev = math.radians(TEND_UP_DEG) if upc else math.radians(18.0)
+    n = 90
+    ds = L / (n - 1)
+    uc = TEND_CURL_START
+    kk = turn / (L * (1 - uc) / 2.3)                         # sideways curvature scale (integral = turn)
+    ke = elev / (L * (1 - uc) / 2.5)                         # vertical curl scale (integral = elev)
+    be = -dirn * math.radians(14.0) / (2 * uc * L / math.pi) # early counter-bend (an S before the curl)
+    psi, e_ = phi, 0.0
+    p = np.array([AX[0] + (Rg - TEND_ROOT_IN) * math.sin(phi), AX[1] - (Rg - TEND_ROOT_IN) * math.cos(phi), 0.0])
+    C, rr = [], []
+    zlift = 0.0
+    for k in range(n):
+        u = k / (n - 1)
+        r_ = TEND_TIP_R + (r0 - TEND_TIP_R) * (1 - u) ** TEND_TAPER
+        C.append([p[0], p[1], r_ * TEND_FLAT * 0.8 + zlift]); rr.append(r_)
+        q = max(0.0, (u - uc) / (1 - uc))
+        psi += (kk * q ** 1.3 + (be * math.sin(math.pi * u / uc) if u < uc else 0.0)) * ds
+        e_ += ke * q ** 1.5 * ds
+        p = p + np.array([math.cos(e_) * math.sin(psi), -math.cos(e_) * math.cos(psi), 0.0]) * ds
+        zlift += math.sin(e_) * ds
+    C = np.array(C); rr = np.array(rr)
+    V, F, _ = sweep(C, rr, rr * TEND_FLAT, nu=16)
+    reach = float(np.max(np.hypot(C[:, 0] - AX[0], C[:, 1] - AX[1]) + rr))
+    u_s = np.linspace(0.0, 1.0, n)
+    samples = [(*c, r_, u, i) for c, r_, u in zip(C, rr, u_s)]
+    return (V, F), samples, {"angle_deg": round(math.degrees(phi), 1), "length": round(L, 3), "root_radius": round(r0, 3),
+                             "reach_radius": round(reach, 3), "reach_beyond_ring": round(reach - Rg, 3),
+                             "tip_height": round(float(C[-1, 2]), 3), "max_height": round(float((C[:, 2] + rr * TEND_FLAT).max()), 3),
+                             "curl_deg": round(math.degrees(turn), 1), "curls_up": bool(upc), "curl_bone": i in CURL_IDX,
+                             "pivot": C[int(CURL_PIVOT[0] * (n - 1))].round(4).tolist(), "tip": C[-1].round(4).tolist()}
+
+
 def obj_tmp(name, V, F):
     V, F = orient_out(V, F)
     m = bpy.data.meshes.new(name); m.from_pydata([tuple(map(float, v)) for v in V], [], F); m.update(); m.validate()
@@ -735,24 +771,28 @@ def obj_tmp(name, V, F):
     return o
 
 
-zs_body = np.concatenate([[-0.3 * VOX], np.linspace(0.0, HEM_R, 8)[1:], np.linspace(HEM_R, Z_W0, 40)[1:], np.linspace(Z_W0, Z_TOP2 + 0.8, 70)[1:]])
-zs_ins = np.linspace(HOLE_Z[0] - CAV_EXP - 0.6, HOLE_Z[1] + CAV_EXP + 0.6, 60)
-tube_L, tube_R = arm_tube(1), arm_tube(-1)
-tend_parts = [tongue(i) for i in range(TEND_N)]
-TV, TF = [], []
-for V_, F_ in tend_parts:
-    V_, F_ = orient_out(V_, F_)
-    TF += [[j + len(TV) for j in f] for f in F_]; TV += list(V_)
+zs_body = np.concatenate([[-0.3 * VOX], np.linspace(0.0, HEM_R, 8)[1:], np.linspace(HEM_R, TRUNK_Z[0], 44)[1:],
+                          np.linspace(TRUNK_Z[0], Z_BODY_TOP, 130)[1:]])
+zs_ins = np.linspace(HZ0 - CAV_EXP - 0.6, HZ1 + CAV_EXP + 0.6, 64)
+ARMS = {s_: arm_parts(g_) for s_, g_ in (("L", 1), ("R", -1))}
+TENDS = [tendril(i) for i in range(TEND_N)]
+tend_mesh = merge([t_[0] for t_ in TENDS])
+claw_mesh = merge([c for s_ in ARMS for c in ARMS[s_][2]])
+wisp_mesh = merge([w for s_ in ARMS for w in ARMS[s_][3]])
+arm_mesh = {s_: merge([ARMS[s_][0], ARMS[s_][1]]) for s_ in ARMS}
+teeth_mesh = merge([prism_y(tp, AX[1] - 14.5, AX[1] + OPEN_BACK + 0.5, AX[0]) for tp in TOOTH_POLYS])
+slab = merge([cylinder(AX, 30.0, -6.0, -0.3 * VOX)])
 tmp_objs = [obj_tmp("sdf_sculpt", SV, SF), obj_tmp("sdf_body", *radial_solid(R_body, zs_body)),
-            obj_tmp("sdf_legcut", *cylinder(AX, 16.0, -2.0, Z_CUT)), obj_tmp("sdf_backcut", *param_box(d_fun, 90, 6, 24)),
-            obj_tmp("sdf_frontcut", *param_box(f_fun, 72, 6, 48)),
-            obj_tmp("sdf_armL", *tube_L[:2]), obj_tmp("sdf_armR", *tube_R[:2]),
-            obj_tmp("sdf_open", *prism_y(OPEN_POLY, AX[1] - 14.0, AX[1] + OPEN_BACK, AX[0])),
+            obj_tmp("sdf_keepcut", *cylinder(AX, 16.0, -2.0, Z_KEEP)),
+            obj_tmp("sdf_armL", *arm_mesh["L"]), obj_tmp("sdf_armR", *arm_mesh["R"]),
+            obj_tmp("sdf_hole", *prism_y(HOLE_POLY, AX[1] - 14.0, AX[1] + OPEN_BACK, AX[0])),
+            obj_tmp("sdf_teeth", *teeth_mesh),
             obj_tmp("sdf_cavprism", *prism_y(CAV_POLY, AX[1] - 14.0, AX[1] + 3.0, AX[0])),
             obj_tmp("sdf_inset", *radial_solid(lambda z_: R_body(z_) - T_TOOTH, zs_ins)),
             obj_tmp("sdf_bowl", *ellipsoid((AX[0] + BOWL_C[0], AX[1] + BOWL_C[1], BOWL_C[2]), BOWL_R)),
-            obj_tmp("sdf_tend", TV, TF)]
-o_s, o_b, o_x, o_d, o_f, o_al, o_ar, o_op, o_cp, o_in, o_bw, o_t = tmp_objs
+            obj_tmp("sdf_tend", *tend_mesh), obj_tmp("sdf_floor", *slab),
+            obj_tmp("sdf_claws", *claw_mesh), obj_tmp("sdf_wisps", *wisp_mesh)]
+o_s, o_b, o_x, o_al, o_ar, o_h, o_th, o_cp, o_in, o_bw, o_t, o_fl, o_cl, o_ws = tmp_objs
 ng = bpy.data.node_groups.new("duskmaw_sdf", "GeometryNodeTree")
 ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
 NN = ng.nodes
@@ -777,7 +817,10 @@ def sdf_bool(op, g1, g2s):
 
 def nmath(op, x, y=None):
     m = NN.new("ShaderNodeMath"); m.operation = op
-    ng.links.new(x, m.inputs[0])
+    if isinstance(x, (int, float)):
+        m.inputs[0].default_value = float(x)
+    else:
+        ng.links.new(x, m.inputs[0])
     if y is not None:
         if isinstance(y, (int, float)):
             m.inputs[1].default_value = float(y)
@@ -797,11 +840,13 @@ def nband(src_, a, b, c, d):
     return nmath("MULTIPLY", mr(a, b, False), mr(c, d, True))
 
 
-A_ = sdf_bool("DIFFERENCE", sdf(o_s), [sdf(o_x), sdf(o_d), sdf(o_f)])      # sculpt minus legs, back teeth, old front maw
-CAVG = sdf_bool("INTERSECT", sdf(o_cp), [sdf(o_in), sdf(o_bw)])             # cavity: frame outline x skin inset x bowl
-U0 = sdf_bool("UNION", A_, [sdf(o_b), sdf(o_al), sdf(o_ar)])                 # + procedural lower body + arm tubes
-U_ = sdf_bool("DIFFERENCE", U0, [sdf(o_op), CAVG])                           # - the maw (opening + cavity)
-TEND = sdf(o_t)
+A_ = sdf_bool("DIFFERENCE", sdf(o_s), [sdf(o_x)])                           # the kept sculpt (above Z_KEEP)
+CAVG = sdf_bool("INTERSECT", sdf(o_cp), [sdf(o_in), sdf(o_bw)])             # cavity: outline x skin inset x bowl
+OPEN = sdf_bool("DIFFERENCE", sdf(o_h), [sdf(o_th)])                        # opening: hole minus the teeth
+U0 = sdf_bool("UNION", A_, [sdf(o_b), sdf(o_al), sdf(o_ar)])                 # + procedural trunk + arm tubes
+U_ = sdf_bool("DIFFERENCE", U0, [OPEN, CAVG])                                # - the maw
+TEND = sdf_bool("DIFFERENCE", sdf(o_t), [sdf(o_fl)])                         # tendrils, cut flat at the floor
+CRISP = sdf_bool("UNION", TEND, [sdf(o_cl), sdf(o_ws)])                      # + claws + wisps (never smoothed)
 mean_ = NN.new("GeometryNodeSDFGridMean"); mean_.inputs["Width"].default_value = SM_W; mean_.inputs["Iterations"].default_value = SM_IT
 ng.links.new(U_, mean_.inputs["Grid"])
 pos = NN.new("GeometryNodeInputPosition")
@@ -811,30 +856,32 @@ yf = nmath("SUBTRACT", Y_, float(FACE_AX_Y))
 rad_f = nmath("SQRT", nmath("ADD", nmath("MULTIPLY", X_, X_), nmath("MULTIPLY", yf, yf)))
 xa, ya = nmath("SUBTRACT", X_, float(AX[0])), nmath("SUBTRACT", Y_, float(AX[1]))
 rad_a = nmath("SQRT", nmath("ADD", nmath("MULTIPLY", xa, xa), nmath("MULTIPLY", ya, ya)))
-th_a = nmath("ABSOLUTE", nmath("DEGREES", nmath("ARCTAN2", xa, nmath("MULTIPLY", ya, -1.0))))
 m_face = nmath("MULTIPLY", nband(Z_, *FACE_Z), nband(rad_f, -1.0, -0.5, *FACE_RAD))
 m_low = nmath("MULTIPLY", nband(Z_, *LOW_Z), nband(rad_a, -1.0, -0.5, *LOW_RAD))
-m_w = nmath("MULTIPLY", nmath("MULTIPLY", nband(th_a, WAIST_TH[0], WAIST_TH[1], 400.0, 401.0), nband(Z_, *WAIST_Z)), float(WAIST_K))
-m_w = nmath("MULTIPLY", m_w, nband(rad_a, -1.0, -0.5, *WAIST_RAD))
-# v3: the front barrel meets the sculpt chest at Z_TOP2 (smoothed); the maw itself is never smoothed (crisp teeth)
-m_j = nmath("MULTIPLY", nband(Z_, Z_TOP2 - 0.9, Z_TOP2 - 0.4, Z_TOP2 + 0.5, Z_TOP2 + 1.0), nband(th_a, -2.0, -1.0, TH_FC[1], TH_FC[1] + 12.0))
-m_j = nmath("MULTIPLY", m_j, nband(rad_a, -1.0, -0.5, 7.6, 8.4))
-m_mouth = nmath("MULTIPLY", nband(xa, -(MAW_HW + 1.2), -(MAW_HW + 0.6), MAW_HW + 0.6, MAW_HW + 1.2),
-                nband(Z_, MAW_Z[0] - 1.0, MAW_Z[0] - 0.5, MAW_Z[1] + 0.3, MAW_Z[1] + 0.7))
-m_mouth = nmath("MULTIPLY", m_mouth, nband(ya, -40.0, -39.0, 1.0, 2.0))
-# v3: the arm tubes melt into the torso side and the hand (organic junctions, never the claws)
-m_arm = nmath("MULTIPLY", nband(nmath("ABSOLUTE", xa), *ARM_SMOOTH_X), nband(Z_, 5.0, 6.0, 12.8, 13.8))
+m_j = nmath("MULTIPLY", nband(Z_, *JUNC_Z), nband(rad_a, -1.0, -0.5, 7.8, 8.6))            # trunk -> kept chest
+m_arm = nmath("MULTIPLY", nband(nmath("ABSOLUTE", xa), *ARMROOT_X), nband(Z_, *ARMROOT_Z))  # arm roots melt into the chest
 m_arm = nmath("MULTIPLY", m_arm, nband(ya, -4.0, -3.4, 3.4, 4.0))
+FHW_MAX = max(frame_hw(z) for z in np.linspace(FZ0, FZ1, 40))
+m_mouth = nmath("MULTIPLY", nband(xa, -(FHW_MAX + 1.2), -(FHW_MAX + 0.6), FHW_MAX + 0.6, FHW_MAX + 1.2),
+                nband(Z_, FZ0 - 1.0, FZ0 - 0.5, FZ1 + JAG_AMP[1] + 0.3, FZ1 + JAG_AMP[1] + 0.7))
+m_mouth = nmath("MULTIPLY", m_mouth, nband(ya, -40.0, -39.0, 1.0, 2.0))
 keep_ = nmath("MULTIPLY", nmath("SUBTRACT", m_mouth, 1.0), -1.0)                # 1 - m_mouth
-mask = nmath("MULTIPLY", nmath("MAXIMUM", nmath("MAXIMUM", nmath("MAXIMUM", nmath("MAXIMUM", m_face, m_low), m_w), m_j), m_arm), keep_)
+mask = nmath("MULTIPLY", nmath("MAXIMUM", nmath("MAXIMUM", nmath("MAXIMUM", m_face, m_low), m_j), m_arm), keep_)
 s1 = NN.new("GeometryNodeSampleGrid"); ng.links.new(U_, s1.inputs["Grid"]); ng.links.new(pos.outputs[0], s1.inputs["Position"])
 s2 = NN.new("GeometryNodeSampleGrid"); ng.links.new(mean_.outputs["Grid"], s2.inputs["Grid"]); ng.links.new(pos.outputs[0], s2.inputs["Position"])
-s3 = NN.new("GeometryNodeSampleGrid"); ng.links.new(TEND, s3.inputs["Grid"]); ng.links.new(pos.outputs[0], s3.inputs["Position"])
+s3 = NN.new("GeometryNodeSampleGrid"); ng.links.new(CRISP, s3.inputs["Grid"]); ng.links.new(pos.outputs[0], s3.inputs["Position"])
 mix = NN.new("ShaderNodeMix"); mix.data_type = "FLOAT"; mix.clamp_factor = True
 ng.links.new(mask, mix.inputs["Factor"]); ng.links.new(s1.outputs["Value"], mix.inputs[2]); ng.links.new(s2.outputs["Value"], mix.inputs[3])
-final_f = nmath("MINIMUM", mix.outputs[0], s3.outputs["Value"])               # tendrils unioned AFTER the smoothing
+fa_, fb_ = mix.outputs[0], s3.outputs["Value"]
+# polynomial smooth min: min(a, b) - h^2 K / 4, h = max(K - |a - b|, 0) / K  (fillet where the crisp parts meet the body)
+h_ = nmath("DIVIDE", nmath("MAXIMUM", nmath("SUBTRACT", float(K_BLEND), nmath("ABSOLUTE", nmath("SUBTRACT", fa_, fb_))), 0.0), float(K_BLEND))
+final_f = nmath("SUBTRACT", nmath("MINIMUM", fa_, fb_), nmath("MULTIPLY", nmath("MULTIPLY", h_, h_), 0.25 * K_BLEND))
+# the fillet also acts where the tendrils' floor cut meets the body's floor (both at -0.3 VOX): it would sink the floor
+# K/4 -- so the floor slab is cut again from the final field (flat, common floor contact)
+s4 = NN.new("GeometryNodeSampleGrid"); ng.links.new(sdf(o_fl), s4.inputs["Grid"]); ng.links.new(pos.outputs[0], s4.inputs["Position"])
+final_f = nmath("MAXIMUM", final_f, nmath("MULTIPLY", s4.outputs["Value"], -1.0))
 ftg = NN.new("GeometryNodeFieldToGrid"); ftg.grid_items.new("FLOAT", "sdf")
-ng.links.new(sdf_bool("UNION", U_, [mean_.outputs["Grid"], TEND]), ftg.inputs["Topology"]); ng.links.new(final_f, ftg.inputs["sdf"])
+ng.links.new(sdf_bool("UNION", U_, [mean_.outputs["Grid"], CRISP]), ftg.inputs["Topology"]); ng.links.new(final_f, ftg.inputs["sdf"])
 g2m = NN.new("GeometryNodeGridToMesh"); g2m.inputs["Threshold"].default_value = 0.0; g2m.inputs["Adaptivity"].default_value = 0.0
 ng.links.new(ftg.outputs["sdf"], g2m.inputs["Grid"])
 ng.links.new(g2m.outputs["Mesh"], g_out.inputs[0])
@@ -862,28 +909,38 @@ def signed_volume(V, F):
 vol_h = signed_volume(HV, HF)
 if vol_h < 0:                                             # grid-to-mesh winds the shell inward: flip to outward normals
     HF = [f[::-1] for f in HF]
+
+
 def _prof(z_):
     R_ = R_body(z_)
-    return {str(d_): round(r_interp(R_, math.radians(d_)), 3) for d_ in (0, 30, 60, 90, 120, 180)}
+    return {str(d_): round(float(np.interp(math.radians(d_), TH, R_, period=2 * math.pi)), 3) for d_ in (0, 30, 60, 90, 120, 180)}
 
 
-report["sdf_rebuild"] = {"method": "geometry-node SDF grids: ((sculpt - legs(z<Z_CUT) - back teeth/skirt(|theta|>THETA_C) - "
-                                   "old front maw(FRONTCUT)) U procedural lower body U arm tubes) - maw(opening prism U cavity = "
-                                   "frame outline x skin inset T_TOOTH x back bowl); masked SDF mean (face / lower body / back waist / "
-                                   "front chest junction, never the maw) mixed in by Field-to-Grid; min(tendril tongues) on top; grid -> mesh",
+report["sdf_rebuild"] = {"method": "geometry-node SDF grids: ((sculpt above Z_KEEP) U procedural trunk U arm tubes) - maw ((hole "
+                                   "prism - teeth prisms) U cavity = outline x skin inset T_TOOTH x back bowl); masked SDF mean (face "
+                                   "/ bell flare / chest junction / arm roots, never the maw) mixed in by Field-to-Grid; smooth-min "
+                                   "(K_BLEND) with the crisp parts (floor tendrils cut flat at the floor, claws, wisps); grid -> mesh",
                          "voxel": VOX, "band_voxels": SDF_BAND, "raw_verts": n_raw,
                          "inner_shells_note": "Field-to-Grid writes only the band voxels, so thick parts get an inverted inner "
                                               "shell ~SDF_BAND voxels inside; it never touches the outer surface and is dropped "
                                               "with the specks (only the largest shell is kept)", "high_faces": len(HF), "specks_dropped": hspecks,
                          "seconds": round(time.time() - t_sdf, 1), "winding_flipped": bool(vol_h < 0), "enclosed_volume": round(abs(vol_h), 3),
-                         "profiles_sculpt_frame": {"R_ground_min_max": [round(float(R_gnd.min()), 3), round(float(R_gnd.max()), 3)],
-                                                   "R_body_by_theta_deg": {"z%.1f" % z_: _prof(z_) for z_ in (2.0, 4.5, 6.0, 8.0, 10.0, 12.0, 13.5)}},
-                         "maw": {"hole_half_width": round(HOLE_HW, 3), "hole_z": [round(v, 3) for v in HOLE_Z], "pitch": round(PITCH, 3),
+                         "trunk_new_frame_pre_K": {"torso_stretch": S_UP, "z_keep": Z_KEEP, "body_top": Z_BODY_TOP,
+                                                   "heights": list(TRUNK_Z), "half_width": list(TRUNK_W), "front": list(TRUNK_F),
+                                                   "back": list(TRUNK_B), "waist_half_width_min": round(min(PW(z) for z in np.linspace(TRUNK_Z[0], TRUNK_Z[-1], 200)), 3),
+                                                   "R_ground_min_max": [round(float(R_gnd.min()), 3), round(float(R_gnd.max()), 3)],
+                                                   "R_body_by_theta_deg": {"z%.1f" % z_: _prof(z_) for z_ in (2.0, 5.0, 6.35, 8.5, 10.8, 13.0, 14.8, 16.5, 18.5)}},
+                         "maw": {"wrap": MAW_WRAP, "hole_z": list(HOLE_Z), "frame_z": [FZ0, FZ1], "pitch": PITCH,
+                                 "hole_half_width_bottom_waist_top": [round(hole_hw(HZ0 + HOLE_CR), 3), round(hole_hw(TRUNK_Z[2]), 3), round(hole_hw(HZ1), 3)],
+                                 "frame_half_width_bottom_waist_top": [round(frame_hw(FZ0 + MAW_CR), 3), round(frame_hw(TRUNK_Z[2]), 3), round(frame_hw(FZ1), 3)],
+                                 "jag_top_line": [[round(x, 3), round(z, 3)] for x, z in jag_line()],
                                  "upper_tips_xz": [[round(x, 3), round(z, 3)] for x, z in UP_TIPS],
-                                 "lower_tips_xz": [[round(x, 3), round(z, 3)] for x, z in LO_TIPS], "mid_line_z": round(MAW_MID, 3)},
-                         "arm_tubes": {"L": tube_L[2], "R": tube_R[2], "radius": ARM_TUBE_R},
-                         "tendrils": {"count": TEND_N, "heights": [round(tend_height(i), 3) for i in range(TEND_N)]}}
-print("SDF", json.dumps(report["sdf_rebuild"]))
+                                 "lower_tips_xz": [[round(x, 3), round(z, 3)] for x, z in LO_TIPS], "mid_line_z": round(MAW_MID, 3),
+                                 "lower_teeth_final_frame": {"base_width": round(LO_BASE * PITCH, 3), "lengths_sides_centre": [round(v * HEIGHT_K, 3) for v in LO_LEN],
+                                                             "note": "identical to v3 (same LO_* constants, same HEIGHT_K)"}},
+                         "arms": {s_: ARMS[s_][6] for s_ in ARMS},
+                         "tendrils": [t_[2] for t_ in TENDS]}
+print("SDF", json.dumps({k: v for k, v in report["sdf_rebuild"].items() if k not in ("tendrils", "arms")}))
 
 # =========================================================================== 3. low: collapse decimation
 t = time.time()
@@ -898,19 +955,18 @@ S2 = np.array([(lo2[0] + hi2[0]) / 2, (lo2[1] + hi2[1]) / 2, lo2[2]])
 LV = LV - S2; HV = HV - S2; SV = SV - S2
 AX = AX - S2[:2]
 NAX = NAX - S2[:2]
-ZOFF = -S2[2]                                    # sculpt-frame heights -> final frame: z + ZOFF
+ZOFF = -S2[2]                                    # new-frame heights -> final (pre-T) frame: z + ZOFF
 SHIFT = SHIFT + S2
+# the arm / tendril skeleton samples follow the re-centre
+ARM_S = np.array([s_ for a_ in ARMS for s_ in ARMS[a_][4]], float)        # x y z r s side part
+ARM_S[:, :3] -= S2
+TEN_S = np.array([s_ for t_ in TENDS for s_ in t_[1]], float)             # x y z r u idx
+TEN_S[:, :3] -= S2
+ARM_GEO = {a_: {k: (np.asarray(v) - S2 if k in ("P", "palm") else v) for k, v in ARMS[a_][5].items()} for a_ in ARMS}
+TEN_INFO = [t_[2] for t_ in TENDS]
 HIGH = new_obj(UNIT + "_high", HV, HF)
 size = LV.max(0) - LV.min(0)
 H = float(size[2])
-fp = float(max(size[0], size[1]))
-k_fit = min(CELL_MAX_H / H, CELL_MAX_FP / fp)
-report["natural"] = {"height": round(H, 4), "width": round(float(size[0]), 4), "depth": round(float(size[1]), 4),
-                     "footprint": round(fp, 4), "units": "sculpt units (natural proportions, no refit)",
-                     "origin_shift_sculpt_units": SHIFT.round(5).tolist(),
-                     "export_cell_fit_report_only": {"scale": round(k_fit, 5), "height_m": round(H * k_fit, 4),
-                                                     "bound_by": "height" if CELL_MAX_H / H <= CELL_MAX_FP / fp else "footprint",
-                                                     "ceilings": [CELL_MAX_H, CELL_MAX_FP]}}
 report["retopo"] = {"method": "collapse decimation of the SDF surface (deterministic) -> main shell",
                     "decimated_tris": int(sum(len(f) - 2 for f in LF)), "specks_dropped": specks, "seconds": round(time.time() - t, 1)}
 bvh_high = BVHTree.FromPolygons(HV.tolist(), HF)
@@ -943,7 +999,7 @@ bm.normal_update()
 
 
 def eye_field(x, zsc):
-    """front-projected eye lens field (> 0 inside): |x| mirrored about the waist axis, zsc in the sculpt frame"""
+    """front-projected eye lens field (> 0 inside): |x| mirrored about the waist axis, zsc in the new frame"""
     x = np.abs(np.asarray(x, float) - AX[0]); zsc = np.asarray(zsc, float)
     ux = np.array(EYE_OUT) - np.array(EYE_IN); Le = float(np.linalg.norm(ux)); ux = ux / Le
     vx = np.array([-ux[1], ux[0]])
@@ -985,6 +1041,43 @@ bm.free()
 report["eye_refinement"] = {"duplicate_faces_skipped": dup0, "iterations": it, "faces_added": len(LF) - n_before, "verts_projected": moved,
                             "edge_max": EYE_EDGE, "seconds": round(time.time() - t, 1)}
 
+
+# ---- arm / tendril membership of points (pre-T frame): nearest skeleton sample, falloff past its radius
+def _kd(P):
+    kd = KDTree(len(P))
+    for i, p in enumerate(P):
+        kd.insert(Vector(p), i)
+    kd.balance()
+    return kd
+
+
+KD_ARM, KD_TEN = _kd(ARM_S[:, :3]), _kd(TEN_S[:, :3])
+R_HEM_Z = np.arange(0.0, 6.01, 0.05)
+R_HEM_TAB = np.array([R_hem(float(z_)) for z_ in R_HEM_Z])
+
+
+def membership(P):
+    """per point: arm membership a (side, arc length s, part), tendril membership t (index, fraction u) -- 0..1"""
+    a = np.zeros(len(P)); t = np.zeros(len(P))
+    a_i = np.zeros(len(P), dtype=np.int64); t_i = np.zeros(len(P), dtype=np.int64)
+    for k, p in enumerate(P):
+        _, j, d = KD_ARM.find(Vector(p)); a_i[k] = j
+        a[k] = 1.0 - ss1(ARM_S[j, 3] + 0.1, ARM_S[j, 3] + 0.45, d)
+        _, j2, d2 = KD_TEN.find(Vector(p)); t_i[k] = j2
+        t[k] = 1.0 - ss1(TEN_S[j2, 3] + 0.1, TEN_S[j2, 3] + 0.5, d2)
+    # tendrils: only outside the base skin (the rooted part is the bell); arms: fade in past the shoulder (the root is chest)
+    zq = np.clip(P[:, 2] - ZOFF, 0.0, 6.0)
+    kq = np.clip((zq / 0.05).astype(int), 0, len(R_HEM_Z) - 1)
+    d_ = P[:, :2] - AX
+    thq = np.arctan2(d_[:, 0], -d_[:, 1])
+    bq = ((thq + math.pi) / (2 * math.pi) * NT).astype(int) % NT
+    rin = np.hypot(d_[:, 0], d_[:, 1]) - R_HEM_TAB[kq, bq]
+    t *= smoothstep(-0.3, 0.4, rin) * (P[:, 2] - ZOFF < 7.0)
+    s_sh = np.array([ARM_GEO["L" if ARM_S[j, 5] > 0 else "R"]["s_knots"][1] for j in a_i])
+    a *= smoothstep(s_sh - 0.9, s_sh + 0.5, ARM_S[a_i, 4])
+    return a, a_i, t, t_i
+
+
 # =========================================================================== 4. region fields (per low vertex)
 low0 = new_obj("fields_tmp", LV, LF)
 M0 = K.MeshData(low0)
@@ -994,11 +1087,14 @@ dxy = LV[:, :2] - AX
 r = np.hypot(dxy[:, 0], dxy[:, 1])
 th_deg = np.degrees(np.abs(np.arctan2(dxy[:, 0], -dxy[:, 1])))
 zl = LV[:, 2]
-zs_ = zl - ZOFF                                               # heights in the sculpt frame (the constants' frame)
+zs_ = zl - ZOFF                                               # heights in the new frame (the constants' frame)
 elen = np.linalg.norm(LV[M0.ev[:, 0]] - LV[M0.ev[:, 1]], axis=1)
 adj = [[] for _ in range(M0.n)]
 for (a, b), l_ in zip(M0.ev, elen):
     adj[a].append((b, l_)); adj[b].append((a, l_))
+t = time.time()
+amem_v, _, tmem_v, _ = membership(LV)
+report["membership_seconds"] = round(time.time() - t, 1)
 
 
 def dijkstra(seeds, limit=np.inf):
@@ -1076,23 +1172,25 @@ def tip_rows(tl, plen_d):
 
 
 t = time.time()
-# ---- spike tips (v1 rule: geodesic distance from a torso ring; persistence per spike)
-ring = (np.abs(zl - SEED_Z_FRAC * H) < 0.35) & (r < 0.25 * H)
+# ---- spike tips (v1 rule: geodesic distance from a torso ring at the chest; persistence per spike). The floor tendrils
+# are spikes of this field too: excluded (they are the dark base), so the embers stay on claws / wisps / shoulder + hat spikes
+H_PRE0 = H
+ring = (np.abs(zs_ - SEED_Z) < 0.35) & (r < 0.25 * H)
 g = dijkstra(np.nonzero(ring)[0])
 g[~np.isfinite(g)] = 0.0
 spk, spk_plen, spk_pers = persistence(g, np.ones(M0.n, bool), MIN_SPIKE)
 tipf, spk_len, tips = burn_field(g, spk, spk_plen, TIP_LEN, TIP_ABS, MIN_SPIKE,
-                                 valid=(r[np.maximum(spk, 0)] > SPIKE_RMIN * H) & (zs_[np.maximum(spk, 0)] > BASE_Z + 1.0))
+                                 valid=(r[np.maximum(spk, 0)] > SPIKE_RMIN * H) & (tmem_v[np.maximum(spk, 0)] < 0.5))
 if not SPIKE_TIPS:
     tipf[:] = -1.0; spk_len[:] = 0.0; tips = []
-# ---- v3 maw fields (front projection x from the waist axis, z sculpt frame) + skin depth + tendril tongues
-RB_Z = np.arange(-0.2, Z_TOP2 + 1.0 + 1e-9, 0.05)
+# ---- v4 maw fields (front projection x from the waist axis, z new frame) + skin depth + tendril region
+RB_Z = np.arange(-0.2, Z_BODY_TOP + 0.2 + 1e-9, 0.05)
 RB_TAB = np.array([R_body(float(z_)) for z_ in RB_Z])       # the procedural skin radius per height x angle bin
 RH_TAB = np.array([R_hem(float(z_)) for z_ in RB_Z])        # ... without the rounded hem (the tendrils' base skin)
 
 
 def tab_at(TAB, P):
-    """per point: the table radius at its height (sculpt frame) and angle, bilinear"""
+    """per point: the table radius at its height (new frame) and angle, bilinear"""
     d_ = P[:, :2] - AX; zq = P[:, 2] - ZOFF
     f_ = np.clip((zq - RB_Z[0]) / 0.05, 0.0, len(RB_Z) - 1.000001); k_ = f_.astype(int); a_ = f_ - k_
     g_ = (np.arctan2(d_[:, 0], -d_[:, 1]) + math.pi) / (2 * math.pi) * NT; j_ = np.floor(g_).astype(int); b_ = g_ - j_
@@ -1103,17 +1201,16 @@ def tab_at(TAB, P):
 
 
 P2 = np.stack([LV[:, 0] - AX[0], zs_], 1)
-front_v = (LV[:, 1] < AX[1]) & (th_deg < TH_FC[1])
+front_v = (LV[:, 1] < AX[1]) & (th_deg < 85.0)
 dsk = tab_at(RB_TAB, LV) - r                                  # depth behind the procedural skin (> 0 inside)
-framef = np.where(front_v, np.maximum(rrect_sdf2(P2, MAW_HW, MAW_Z[0], MAW_Z[1], MAW_CR), -0.99), -1.0)
-hrectf = np.where(front_v, np.maximum(rrect_sdf2(P2, HOLE_HW, HOLE_Z[0], HOLE_Z[1], HOLE_CR), -0.99), -1.0)
+framef = np.where(front_v, np.maximum(poly_sdf2(P2, FRAME_POLY), -0.99), -1.0)
+hrectf = np.where(front_v, np.maximum(poly_sdf2(P2, HOLE_POLY), -0.99), -1.0)
 redf = RED_DEPTH * T_TOOTH - dsk                              # > 0: within the lip / teeth plate
 # inside the mouth (any depth): within the cavity outline (+ margin), in front of the back bowl, inside the skin
-cavf = np.minimum(rrect_sdf2(P2, HOLE_HW + CAV_EXP + 0.15, HOLE_Z[0] - CAV_EXP - 0.15, HOLE_Z[1] + CAV_EXP + 0.15, HOLE_CR + CAV_EXP),
-                  AX[1] + BOWL_C[1] + BOWL_R[1] + 0.3 - LV[:, 1])
-cavf = np.where(dsk > 0.05, np.maximum(cavf, -0.99), -1.0)
-hand_v = (r > HAND_R[0]) & (np.abs(dxy[:, 1]) < HAND_Y) & (zs_ > HAND_ZLOW)
-tendf = np.where((zs_ < max(TEND_H) + TEND_JIT + 1.0) & ~hand_v, np.clip(r - tab_at(RH_TAB, LV) - TEND_CUT, -0.99, 5.0), -1.0)
+cavf = np.minimum(poly_sdf2(P2, CAV_POLY) + 0.15, AX[1] + BOWL_C[1] + BOWL_R[1] + 0.3 - LV[:, 1])
+cavf = np.where((dsk > 0.05) & (zs_ < Z_CHEST[1]), np.maximum(cavf, -0.99), -1.0)
+tendf = np.where((zs_ < 6.0) & (amem_v < 0.3), np.clip(np.maximum(r - tab_at(RH_TAB, LV) - TEND_CUT, -0.99), -0.99, 5.0), -1.0)
+tendf = np.where(tmem_v > 0.5, np.maximum(tendf, 0.05), tendf)   # a whole tendril is 'base' (the lifted curls too)
 # ---- eyes (front-projected (x, z) field on the face)
 face_front = (NV[:, 1] < -0.1) & (LV[:, 1] < AX[1] - 1.0) & (zs_ > EYE_BOX[1]) & (zs_ < EYE_BOX[2])
 eyef = np.where(face_front, np.maximum(eye_field(LV[:, 0], zs_), -0.99), -1.0)
@@ -1123,7 +1220,7 @@ report["fields_seconds"] = round(time.time() - t, 1)
 bm, dup1 = bm_from(LV, LF)
 FIELDS = {"z": zl, "r": r, "th": th_deg, "tip": tipf, "gtip": spk_len, "front": front_v.astype(float), "dsk": dsk,
           "frame": framef, "hrect": hrectf, "red": redf, "cav": cavf, "yb": LV[:, 1] - AX[1] - THROAT_Y, "tend": tendf, "eye": eyef,
-          "ady": np.abs(LV[:, 1] - AX[1])}
+          "amem": amem_v, "tmem": tmem_v}
 LAY = {k: bm.verts.layers.float.new(k) for k in FIELDS}
 for v in bm.verts:
     for k, arr in FIELDS.items():
@@ -1179,7 +1276,7 @@ skin_f = lambda a, b: all(v[LAY["front"]] > 0.5 and v[LAY["dsk"]] < 0.35 and v[L
 skin_in = lambda a, b: skin_f(a, b) and a[LAY["frame"]] > 0.0 and b[LAY["frame"]] > 0.0
 in_frame = lambda a, b: all(v[LAY["front"]] > 0.5 and v[LAY["frame"]] > -1e-4 for v in (a, b))
 interior = lambda a, b: all(v[LAY["cav"]] > 0.0 and v[LAY["red"]] < 0.0 for v in (a, b))
-CUTS = [("z", 0.9 * H, None), ("tip", 0.0, spike), ("frame", 0.0, skin_f), ("hrect", 0.05, skin_in), ("red", 0.0, in_frame),
+CUTS = [("z", HAT_APEX_Z + ZOFF, None), ("tip", 0.0, spike), ("frame", 0.0, skin_f), ("hrect", 0.05, skin_in), ("red", 0.0, in_frame),
         ("yb", 0.0, interior), ("tend", 0.0, pos_("tend")), ("eye", 0.0, pos_("eye"))]
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
@@ -1202,11 +1299,11 @@ report["tris_final"] = tri_count(me)
 assert report["tris_final"] == nf
 
 
-# =========================================================================== v3 space map T (height + neck)
+# =========================================================================== space map T (height + neck; v3's, moved up)
 def T_apply(P):
-    """the v3 proportion map, smooth and monotone: (1) the neck column scaled radially by NECK_K about the neck axis
-    (full inside NECK_R[0], off beyond NECK_R[1]; ramped over NECK_Z), (2) NECK_STRETCH extra height over
-    NECK_STRETCH_Z (smoothstep displacement), (3) the whole figure scaled HEIGHT_K in z about the floor"""
+    """smooth and monotone: (1) the neck column scaled radially by NECK_K about the neck axis (full inside NECK_R[0], off
+    beyond NECK_R[1]; ramped over NECK_Z), (2) NECK_STRETCH extra height over NECK_STRETCH_Z (smoothstep displacement),
+    (3) the whole figure scaled HEIGHT_K in z about the floor"""
     P = np.array(P, float, copy=True)
     zs0 = P[:, 2] - ZOFF
     d_ = P[:, :2] - NAX
@@ -1216,6 +1313,10 @@ def T_apply(P):
     P[:, :2] = NAX + d_ * sc[:, None]
     P[:, 2] = (P[:, 2] + NECK_STRETCH * smoothstep(NECK_STRETCH_Z[0], NECK_STRETCH_Z[1], zs0)) * HEIGHT_K
     return P
+
+
+def Tz(z):
+    return float(T_apply(np.array([[AX[0] + 10.0, AX[1], z + ZOFF]]))[0, 2])   # a height on the trunk (off the neck column)
 
 
 LV_PRE = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", LV_PRE); LV_PRE = LV_PRE.reshape(-1, 3)
@@ -1228,13 +1329,19 @@ size = LVT.max(0) - LVT.min(0)
 H = float(size[2])
 fp = float(max(size[0], size[1]))
 k_fit = min(CELL_MAX_H / H, CELL_MAX_FP / fp)
-_nk0 = (LV_PRE[:, 2] - ZOFF > 17.2) & (LV_PRE[:, 2] - ZOFF < 18.4) & (np.abs(LV_PRE[:, 0] - NAX[0]) < 3.0)
-report["proportions"] = {"height_k": HEIGHT_K, "neck_k": NECK_K, "neck_stretch": NECK_STRETCH, "neck_axis": NAX.round(4).tolist(),
+_nk0 = (LV_PRE[:, 2] - ZOFF > NECK_MEAS_Z[0]) & (LV_PRE[:, 2] - ZOFF < NECK_MEAS_Z[1]) & (np.abs(LV_PRE[:, 0] - NAX[0]) < 3.0)
+report["proportions"] = {"height_k": HEIGHT_K, "neck_k": NECK_K, "neck_stretch": NECK_STRETCH, "torso_stretch": S_UP, "neck_axis": NAX.round(4).tolist(),
                          "height_before_T": round(H_PRE, 4), "height_after_T": round(H, 4), "height_gain_pct": round(100 * (H / H_PRE - 1), 2),
-                         "neck_width_z17.2-18.4_before_after": [round(float(np.ptp(LV_PRE[_nk0, 0])), 3), round(float(np.ptp(LVT[_nk0, 0])), 3)],
+                         "neck_width_before_after_T": [round(float(np.ptp(LV_PRE[_nk0, 0])), 3), round(float(np.ptp(LVT[_nk0, 0])), 3)],
+                         "trunk_final_frame": {"floor_to_chest_junction": round(Tz(Z_KEEP), 3), "maw_frame_z": [round(Tz(FZ0), 3), round(Tz(FZ1), 3)],
+                                               "waist_z": round(Tz(TRUNK_Z[2]), 3),
+                                               "v3_floor_to_chest_junction": round(13.8 * 1.10, 3),
+                                               "widths_front_view_by_design": {"maw_top": round(2 * PW(TRUNK_Z[3]), 3), "waist": round(2 * PW(TRUNK_Z[2]), 3),
+                                                                               "maw_bottom": round(2 * PW(TRUNK_Z[1]), 3), "flare_top": round(2 * PW(TRUNK_Z[0]), 3)},
+                                               "v3_width_at_the_maw_band_by_design": "2 x BOX_W = 11.0 (the rounded box)"},
                          "rule": "T applied to the low (after the region cuts) and the bake high; every constant above is in the pre-T frame"}
 report["natural"] = {"height": round(H, 4), "width": round(float(size[0]), 4), "depth": round(float(size[1]), 4),
-                     "footprint": round(fp, 4), "units": "sculpt units (natural proportions, no refit; v3 = the sculpt x T)",
+                     "footprint": round(fp, 4), "units": "sculpt units (natural proportions, no refit; v4 = the stretched sculpt x T)",
                      "origin_shift_sculpt_units": SHIFT.round(5).tolist(),
                      "export_cell_fit_report_only": {"scale": round(k_fit, 5), "height_m": round(H * k_fit, 4),
                                                      "bound_by": "height" if CELL_MAX_H / H <= CELL_MAX_FP / fp else "footprint",
@@ -1247,9 +1354,9 @@ zc, rc = FVAL["z"], FVAL["r"]
 FC = np.empty(nf * 3); me.polygons.foreach_get("center", FC); FC = FC.reshape(-1, 3)
 FN = np.empty(nf * 3); me.polygon_normals.foreach_get("vector", FN); FN = FN.reshape(-1, 3)
 rid = np.full(nf, R_["body"], dtype=np.int32)
-hand_c = (rc > HAND_R[0]) & (FVAL["ady"] < HAND_Y)
-rid[(FVAL["tend"] > 0.0) & ~hand_c] = R_["base"]
-rid[((FVAL["tip"] > 0.0) & (FVAL["gtip"] > MIN_SPIKE)) | (zc > 0.9 * H_PRE)] = R_["tips"]
+arm_c = FVAL["amem"] > 0.5
+rid[(FVAL["tend"] > 0.0) & ~arm_c] = R_["base"]
+rid[((FVAL["tip"] > 0.0) & (FVAL["gtip"] > MIN_SPIKE)) | (zc > HAT_APEX_Z + ZOFF)] = R_["tips"]
 maw_f = (FVAL["front"] > 0.5) & (FVAL["frame"] > 0.0)
 red_f = maw_f & (FVAL["red"] > 0.0)
 inner_f = (FVAL["cav"] > 0.0) & (FVAL["red"] <= 0.0)
@@ -1259,14 +1366,15 @@ rid[inner_f] = R_["maw_inner"]
 rid[inner_f & (FVAL["yb"] > 0.0)] = R_["maw_throat"]
 rid[FVAL["eye"] > 0.0] = R_["eyes"]
 report["region_rule"] = {
-    "base": "the tendril tongues + the fused ring below their valleys: faces TEND_CUT or more outside the base skin (iso-cut) -- "
-            "the dark shadow rising out of the ground; the floor darkening (BASE_DARK) ramps over every face below BASE_Z",
-    "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule) + the hat apex (> 0.9 H) -- dim embers",
-    "lip": "front skin inside the maw FRAME outline (rounded rect MAW_HW x MAW_Z, iso-cut) and outside the hole rectangle, "
+    "base": "the floor tendrils + the hem skin outside the base surface: faces TEND_CUT or more outside the base skin (iso-cut) or "
+            "on a tendril (membership > 0.5) -- the dark shadow spreading on the ground; the floor darkening (BASE_DARK) ramps "
+            "over every non-arm face below BASE_Z",
+    "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule; the floor tendrils excluded) + the hat apex -- "
+            "dim embers on the claws, wisp ends, shoulder spikes and hat",
+    "lip": "front skin inside the maw FRAME outline (the waist-curved sides, the JAGGED top line; iso-cut) and outside the opening, "
            "within RED_DEPTH x T_TOOTH of the skin -- the red frame",
-    "teeth": "the same red plate inside the hole rectangle: the zigzag tooth tabs (upper UP_N hanging, lower LO_X rising) and "
-             "their side walls -- red",
-    "maw_inner": "inside the frame and deeper than the plate: cavity walls under the lips, plate backs -- yellow-orange",
+    "teeth": "the same red plate inside the opening outline: the fangs (upper, hanging) and v3's lower teeth + their side walls -- red",
+    "maw_inner": "inside the cavity outline and deeper than the plate: cavity walls under the lips, plate backs -- yellow-orange",
     "maw_throat": "the same, behind THROAT_Y (the back bowl): the hot yellow throat",
     "eyes": "front-projected lens field on the smoothed face (EYE_IN -> EYE_OUT, EYE_TOP / EYE_BOT), iso-cut -- the face's only feature",
     "waist_axis": AX.round(4).tolist()}
@@ -1301,7 +1409,7 @@ cav_k = 0.40
 shade = 1.0 - cav_k * np.clip(fcav, 0, 1) + 0.08 * np.clip(-fcav, 0, 1)
 jit = (np.sin(FC @ np.array([12.9898, 78.233, 37.719]) * 43.7585) * 43758.5453) % 1.0
 shade *= 0.96 + 0.08 * jit
-bmask = (zc - ZOFF < BASE_Z) & ~hand_c                         # the shadow darkens toward the floor (tongues + skirt)
+bmask = (zc - ZOFF < BASE_Z) & ~arm_c                         # the shadow darkens toward the floor (tendrils + bell)
 shade[bmask] *= BASE_DARK + (1 - BASE_DARK) * smoothstep(0.0, BASE_Z, zc[bmask] - ZOFF)
 PAL.store_regions(me, REG, rid, shade)
 pal_default = PAL.load(UNIT, "default")
@@ -1311,8 +1419,8 @@ report["cavity_seconds"] = round(time.time() - t, 1)
 fa = np.empty(nf); me.polygons.foreach_get("area", fa)
 report["regions_area_share"] = {n: round(float(fa[rid == R_[n]].sum() / fa.sum()), 4) for n in REG}
 
-# facing landmark (the mouth is the identity: "chest and bottom leg spikes form a mouth"): waist axis at mouth
-# height -> area centroid of the red lip framing the opening; the eyes' centroid is reported beside it
+# facing landmark (the mouth is the identity): waist axis at mouth height -> area centroid of the red lip framing the
+# opening; the eyes' centroid is reported beside it
 lipm = rid == R_["lip"]
 anchor = np.array([AX[0], AX[1], float(np.average(FC[lipm, 2], weights=fa[lipm]))])
 landmark = np.average(FC[lipm], axis=0, weights=fa[lipm])
@@ -1358,9 +1466,15 @@ low["conquest_front_landmark"] = landmark.tolist()
 low["conquest_facing_rule"] = report["facing"]["rule"]
 low["conquest_source"] = os.path.basename(bpy.data.filepath)
 low["conquest_scale_policy"] = "natural proportions, sculpt units; game scales at import (cell fit report-only)"
-low["conquest_version"] = "duskmaw v3 (shadow figure: maw / tendrils / arms / proportions)"
-MAW_BAND = [float(T_apply(np.array([[AX[0], AX[1], z_ + ZOFF]]))[0, 2]) for z_ in HOLE_Z]
+low["conquest_version"] = "duskmaw v4 (shadow lord: curving maw / long slender trunk / floor tendrils / clawed arms)"
+MAW_BAND = [Tz(z_) for z_ in HOLE_Z]
 low["conquest_maw_band"] = MAW_BAND            # the maw's hole height band (final frame): the see-through proof's ray band
+# measurement handles (final frame) for duskmaw_base_measure.py / duskmaw_render.py
+_armP = {s_: T_apply(np.asarray(ARM_GEO[s_]["P"]) + np.array([0.0, 0.0, ZOFF])) for s_ in ARM_GEO}
+low["conquest_arm_L"] = _armP["L"].ravel().tolist()     # root, shoulder, elbow, wrist (x y z each)
+low["conquest_arm_R"] = _armP["R"].ravel().tolist()
+low["conquest_arm_radius"] = list(ARM_RAD)
+low["conquest_trunk_band"] = [Tz(TRUNK_Z[0]), Tz(Z_KEEP)]
 
 if PREVIEW:
     nt.links.new(vc.outputs["Color"], bsdf.inputs["Base Color"])
@@ -1369,8 +1483,10 @@ if PREVIEW:
             bpy.data.objects.remove(o, do_unlink=True)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
-    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "sdf_rebuild", "retopo", "eye_refinement", "regions_faces",
+    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "retopo", "eye_refinement", "regions_faces",
                                                              "regions_area_share", "facing", "tip_field", "proportions", "natural")}))
+    print("TENDRILS", json.dumps(report["sdf_rebuild"]["tendrils"]))
+    print("ARMS", json.dumps(report["sdf_rebuild"]["arms"]))
     sys.stdout.flush(); os._exit(0)
 
 # =========================================================================== 5. bake (normal + AO from the rebuilt high)
@@ -1382,9 +1498,8 @@ except Exception:
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
 scene.cycles.use_denoising = False
-# the NORMAL bake is not byte-deterministic (per-process Cycles tie-break, the vampito finding): two full v2 runs differed
-# ONLY there (geometry / colour / UV / AO / rig identical), and a single-thread bake (threads_mode FIXED, 1) did not
-# change that (tried 2026-09-26, reverted). duskmaw_run.ps1 -Determinism gates it with duskmaw_bake_diff.py instead.
+# the NORMAL bake is not byte-deterministic (per-process Cycles tie-break, the vampito finding): duskmaw_run.ps1
+# -Determinism gates it with duskmaw_bake_diff.py (every other digest must be identical)
 bk = scene.render.bake
 bk.use_selected_to_active = True; bk.cage_extrusion = BAKE_CAGE; bk.max_ray_distance = BAKE_CAGE * 2.0
 bk.margin = 16; bk.use_clear = False
@@ -1524,7 +1639,7 @@ bpy.ops.wm.save_as_mainfile(filepath=OUT_IMPROVED, copy=True, compress=True, rel
 json.dump(report, open(OUT_IMPROVED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
 print("IMPROVED_SAVED", OUT_IMPROVED, round(time.time() - T0, 1))
 
-# =========================================================================== 6. rig (jawed totem)
+# =========================================================================== 6. rig (shadow lord)
 rep = {"unit": UNIT, "source": OUT_IMPROVED, "fps": K.FPS, "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped "
        "since v2 (artist scope: idle + locomotion); they remain in git history with the v1 build"}
 scene.render.fps = K.FPS; scene.render.fps_base = 1.0
@@ -1533,24 +1648,26 @@ W_ = Mw.W                                                 # final (post-T) coord
 Wp = LV_PRE                                               # the same vertices before T: the weights' frame (constants' frame)
 lo_n, hi_n = W_.min(0), W_.max(0)
 H_new = float(hi_n[2] - lo_n[2])
-lo_p = Wp.min(0)
-Wd = float(Wp[:, 0].max() - Wp[:, 0].min())
 cx, cy = float(AX[0]), float(AX[1])                       # the rig stands on the waist axis
-zf = lambda f: lo_p[2] + H_PRE * f                        # pre-T height fractions (as v2); bones are then mapped by T
-BONES_PRE = [("base", (cx, cy, zf(BASE_BONE[0])), (cx, cy, zf(BASE_BONE[1])), "root", False),
-             ("sway", (cx, cy, SWAY_Z[0] + ZOFF), (cx, cy, SWAY_Z[1] + ZOFF), "base", False),
-             ("jaw", (cx, cy, JAW_Z[0] + ZOFF), (cx, cy, JAW_Z[1] + ZOFF), "sway", False),
-             ("spine", (cx, cy, SPINE_Z0 + ZOFF), (cx, cy, zf(Z_FR["chest"][0])), "sway", False),
-             ("chest", (cx, cy, zf(Z_FR["chest"][0])), (cx, cy, zf(Z_FR["chest"][1])), "spine", True),
-             ("head", (cx, cy, zf(Z_FR["head"][0])), (cx, cy, zf(Z_FR["head"][1])), "chest", True),
-             ("crown", (cx, cy, zf(Z_FR["crown"][0])), (cx, cy, zf(Z_FR["crown"][1])), "head", True)]
-aw = Wd * 0.5
+zo = lambda z: z + ZOFF
+BONES_PRE = [("base", (cx, cy, zo(BASE_BONE[0])), (cx, cy, zo(BASE_BONE[1])), "root", False),
+             ("sway", (cx, cy, zo(SWAY_Z[0])), (cx, cy, zo(SWAY_Z[1])), "base", False),
+             ("jaw", (cx, cy, zo(JAW_Z[0])), (cx, cy, zo(JAW_Z[1])), "sway", False),
+             ("spine", (cx, cy, zo(SPINE_Z0)), (cx, cy, zo(CHEST_Z[0])), "sway", False),
+             ("chest", (cx, cy, zo(CHEST_Z[0])), (cx, cy, zo(CHEST_Z[1])), "spine", True),
+             ("head", (cx, cy, zo(HEAD_Z[0])), (cx, cy, zo(HEAD_Z[1])), "chest", True),
+             ("crown", (cx, cy, zo(CROWN_Z[0])), (cx, cy, zo(CROWN_Z[1])), "head", True)]
 for sgn, s in ((1, "L"), (-1, "R")):
-    sh = (cx + sgn * Wd * ARM_FR["shoulder_x"], cy, zf(ARM_FR["z_sh"]))
-    el_ = (cx + sgn * aw * ARM_FR["elbow_x"], cy, zf(ARM_FR["z_el"]))
-    tp = (cx + sgn * aw * ARM_FR["tip_x"], cy, zf(ARM_FR["z_tip"]))
-    BONES_PRE.append(("arm." + s, sh, el_, "chest", False))
-    BONES_PRE.append(("blade." + s, el_, tp, "arm." + s, True))
+    BONES_PRE.append(("arm." + s, (cx + sgn * RAISED_SH[0], cy, zo(RAISED_SH[1])), (cx + sgn * RAISED_EL[0], cy, zo(RAISED_EL[1])), "chest", False))
+    BONES_PRE.append(("blade." + s, (cx + sgn * RAISED_EL[0], cy, zo(RAISED_EL[1])), (cx + sgn * RAISED_TIP[0], cy, zo(RAISED_TIP[1])), "arm." + s, True))
+    Pa = ARM_GEO[s]["P"] + np.array([0.0, 0.0, ZOFF])
+    hand_end = ARM_GEO[s]["palm"] + np.array([0.0, 0.0, ZOFF]) + ARM_GEO[s]["D"] * 1.2
+    BONES_PRE.append(("limb." + s, tuple(Pa[1]), tuple(Pa[2]), "chest", False))
+    BONES_PRE.append(("fore." + s, tuple(Pa[2]), tuple(hand_end), "limb." + s, True))
+for i in CURL_IDX:
+    tpiv = np.array(TEN_INFO[i]["pivot"]) - S2 + np.array([0.0, 0.0, ZOFF])
+    ttip = np.array(TEN_INFO[i]["tip"]) - S2 + np.array([0.0, 0.0, ZOFF])     # pivot -> tip: >= 0.5 x the tendril apart
+    BONES_PRE.append(("tend.%d" % i, tuple(tpiv), tuple(ttip), "base", False))
 BH_PRE = {b[0]: (np.array(b[1]), np.array(b[2])) for b in BONES_PRE}
 BONES = [(nm, tuple(T_apply(np.array([h]))[0]), tuple(T_apply(np.array([t_]))[0]), p_, c_) for (nm, h, t_, p_, c_) in BONES_PRE]
 arm_data = bpy.data.armatures.new(UNIT + "_rig")
@@ -1580,7 +1697,8 @@ rr = np.hypot(x_, y_)
 # upper-jaw field: split at the maw's mid line MAW_MID; tight (U_W[0]) across the tooth plates so every tooth rides its
 # jaw rigidly, wide (U_W[1]) through the cheeks, the cavity walls and the back so the bite squashes smoothly there
 dsk_w = tab_at(RB_TAB, Wp) - rr
-tight = (1 - smoothstep(HOLE_HW - 0.2, HOLE_HW + 1.0, np.abs(x_))) * (1 - smoothstep(0.9 * T_TOOTH, 1.6 * T_TOOTH, dsk_w)) * (y_ < 0)
+hw_v = np.array([hole_hw(float(z)) for z in np.clip(zsk, HZ0, HZ1)])
+tight = (1 - smoothstep(hw_v - 0.2, hw_v + 1.0, np.abs(x_))) * (1 - smoothstep(0.9 * T_TOOTH, 1.6 * T_TOOTH, dsk_w)) * (y_ < 0)
 uw = U_W[1] + (U_W[0] - U_W[1]) * tight
 u_up = smoothstep(MAW_MID - uw, MAW_MID + uw, zsk)
 # lower chain: base (ground ring) -> sway -> jaw
@@ -1597,27 +1715,45 @@ for k_, zj in enumerate(joints):
     up_w[:, k_] = prev * (1 - s_)
     prev = prev * s_
 up_w[:, 3] = prev
-# arms (v1 rule) and the hanging lower arms + hands (v1 HAND_MIX)
+# raised shoulder spikes (v1 rule, absolute bands)
 side_ = np.sign(x_)
 ax_ = np.abs(x_)
-armness = smoothstep(ARM_IN * Wd, ARM_OUT * Wd, ax_) * smoothstep(ARM_ZMIN * H_PRE - W_BAND, ARM_ZMIN * H_PRE + W_BAND, z_) * \
-    (1 - smoothstep(ARM_ZMAX * H_PRE - W_BAND, ARM_ZMAX * H_PRE + W_BAND, z_))
-elbow_x = abs(BH_PRE["arm.L"][1][0] - cx)
-bladeness = smoothstep(elbow_x - 1.2 * W_BAND, elbow_x + 1.2 * W_BAND, ax_)
-handness = smoothstep(HAND_R[0], HAND_R[1], rr) * smoothstep(HAND_ZLOW - 0.5 + ZOFF, HAND_ZLOW + 0.5 + ZOFF, z_) * \
-    (1 - smoothstep(HAND_ZTOP[0] + ZOFF, HAND_ZTOP[1] + ZOFF, z_)) * (1 - armness) * (1 - smoothstep(HAND_Y - 0.8, HAND_Y + 0.8, np.abs(y_)))
-rest_w = 1 - armness - handness
-Wt = np.zeros((Mw.n, len(DEFORM)))
+armness = smoothstep(RAISED_X[0], RAISED_X[1], ax_) * smoothstep(zo(RAISED_Z[0]) - W_BAND, zo(RAISED_Z[0]) + W_BAND, z_) * \
+    (1 - smoothstep(zo(RAISED_Z[1]) - W_BAND, zo(RAISED_Z[1]) + W_BAND, z_))
+bladeness = smoothstep(RAISED_EL[0] - 1.2 * W_BAND, RAISED_EL[0] + 1.2 * W_BAND, ax_)
+Wb = np.zeros((Mw.n, len(DEFORM)))
 for k_, nm in enumerate(names_up):
-    Wt[:, J[nm]] += up_w[:, k_] * u_up * rest_w
-Wt[:, J["base"]] += w_base * (1 - u_up) * rest_w
-Wt[:, J["sway"]] += w_sway * (1 - u_up) * rest_w
-Wt[:, J["jaw"]] += w_jaw * (1 - u_up) * rest_w
-Wt[:, J["spine"]] += handness * HAND_MIX["spine"]
+    Wb[:, J[nm]] += up_w[:, k_] * u_up * (1 - armness)
+Wb[:, J["base"]] += w_base * (1 - u_up) * (1 - armness)
+Wb[:, J["sway"]] += w_sway * (1 - u_up) * (1 - armness)
+Wb[:, J["jaw"]] += w_jaw * (1 - u_up) * (1 - armness)
 L_ = side_ > 0
 for sgn_m, s in ((L_, "L"), (~L_, "R")):
-    Wt[sgn_m, J["arm." + s]] += (armness * (1 - bladeness) + handness * HAND_MIX["arm"])[sgn_m]
-    Wt[sgn_m, J["blade." + s]] += (armness * bladeness + handness * HAND_MIX["blade"])[sgn_m]
+    Wb[sgn_m, J["arm." + s]] += (armness * (1 - bladeness))[sgn_m]
+    Wb[sgn_m, J["blade." + s]] += (armness * bladeness)[sgn_m]
+# hanging arms (limb / fore by arc length across the elbow; claws + wisps ride the fore) and floor tendrils (the ground:
+# base, the curl tendrils ramp into their bone toward the tip)
+t = time.time()
+amem, a_i, tmem, t_i = membership(Wp)
+Wa = np.zeros_like(Wb)
+for s, sgn in (("L", 1), ("R", -1)):
+    m_ = ARM_S[a_i, 5] == sgn
+    s_el = ARM_GEO[s]["s_knots"][2]
+    fore = smoothstep(s_el - ELBOW_BLEND, s_el + ELBOW_BLEND, ARM_S[a_i, 4])
+    fore = np.where(ARM_S[a_i, 6] >= 2, 1.0, fore)
+    Wa[m_, J["limb." + s]] = (1 - fore)[m_]
+    Wa[m_, J["fore." + s]] = fore[m_]
+Wtd = np.zeros_like(Wb)
+tidx = TEN_S[t_i, 5].astype(int)
+tu = TEN_S[t_i, 4]
+c_ = np.zeros(Mw.n)
+for i in CURL_IDX:
+    mi = tidx == i
+    c_[mi] = smoothstep(CURL_PIVOT[0], CURL_PIVOT[1], tu[mi])
+    Wtd[mi, J["tend.%d" % i]] = c_[mi]
+Wtd[:, J["base"]] = 1.0 - c_
+amem = np.minimum(amem, 1.0 - tmem)
+Wt = Wb * (1.0 - amem - tmem)[:, None] + Wa * amem[:, None] + Wtd * tmem[:, None]
 Wt = np.where(Wt > 1e-4, Wt, 0.0)
 if (Wt > 0).sum(1).max() > 4:
     idx = np.argsort(-Wt, 1, kind="stable")[:, 4:]
@@ -1629,14 +1765,17 @@ for j, n in enumerate(DEFORM):
     for i in np.nonzero(Wt[:, j] > 0)[0]:
         vg.add([int(i)], float(Wt[i, j]), "REPLACE")
 infl = (Wt > 0).sum(1)
+TEND_V = tmem > 0.5
 rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 0).sum()),
                   "sum_dev_max": float(np.abs(Wt.sum(1) - 1.0).max()),
                   "per_bone_dominant": {n: int((np.argmax(Wt, 1) == j).sum()) for j, n in enumerate(DEFORM)},
-                  "ground_ring_base_weight_min": round(float(Wt[z_ < lo_p[2] + 0.05, J["base"]].min()), 4),
-                  "rule": "on the pre-T coordinates: upper-jaw field u = smoothstep(MAW_MID -+ uw), uw = U_W[0] on the tooth "
-                          "plates (|x| < the hole, within the plate depth, front) -> U_W[1] elsewhere; u x (spine/chest/head/crown "
-                          "by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 "
-                          "(ARM_*, HAND_*, HAND_MIX)"}
+                  "ground_ring_base_weight_min": round(float(Wt[(z_ < lo_n[2] + 0.05) & ~(tmem > 0.05), J["base"]].min()), 4),
+                  "arm_vertices": int((amem > 0.5).sum()), "tendril_vertices": int(TEND_V.sum()), "seconds": round(time.time() - t, 1),
+                  "rule": "on the pre-T coordinates: body = upper-jaw field u (split at MAW_MID, tight on the tooth plates) x "
+                          "(spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height) + the raised spikes "
+                          "(arm/blade, v1 bands); hanging arms (membership: nearest arm skeleton sample, falloff past its radius, "
+                          "faded in past the shoulder) = limb -> fore across the elbow (claws, wisps = fore); floor tendrils "
+                          "(membership outside the base skin) = base, the CURL_IDX ones ramping into their tend.* bone toward the tip"}
 low.parent = rig
 low.matrix_parent_inverse = Matrix.Identity(4)
 amod = low.modifiers.new("Armature", "ARMATURE"); amod.object = rig
@@ -1683,7 +1822,7 @@ def chomp_curve(f):
 
 
 # the maw's tooth tips on the final mesh: per designed tooth, the lowest (upper jaw) / highest (lower jaw) vertex of the
-# 'teeth' region within its column; pairs = neighbouring upper/lower teeth (half a pitch apart: they interlock)
+# 'teeth' region within its column; pairs = neighbouring upper/lower teeth (they interlock)
 tv = np.zeros(len(W_), bool)
 for f_, rg in zip(me.polygons, rid):
     if rg == R_["teeth"]:
@@ -1694,8 +1833,8 @@ for kind, TT in (("upper", UP_TIPS), ("lower", LO_TIPS)):
         m_ = tv & (np.abs(Wp[:, 0] - cx - x_t) < 0.3 * PITCH) & (np.abs(Wp[:, 2] - ZOFF - z_t) < 1.2) & (Wp[:, 1] < cy)
         if not m_.any():
             continue
-        c_ = np.nonzero(m_)[0]
-        i_ = int(c_[np.argmin(Wp[c_, 2])] if kind == "upper" else c_[np.argmax(Wp[c_, 2])])
+        c_i = np.nonzero(m_)[0]
+        i_ = int(c_i[np.argmin(Wp[c_i, 2])] if kind == "upper" else c_i[np.argmax(Wp[c_i, 2])])
         tip_rows_.append((kind, x_t, i_))
 pairs = []
 for ku, xu, iu in tip_rows_:
@@ -1747,11 +1886,11 @@ def qmul(*qs):
 
 def idle_pose(f, t):
     g = chomp_curve(f)                                   # + = open wider
-    up = CHOMP_UPPER * g; dn = (1 - CHOMP_UPPER) * g
+    up_ = CHOMP_UPPER * g; dn = (1 - CHOMP_UPPER) * g
     bob = IDLE_BOB * math.sin(2 * math.pi * t)
     bite = max(0.0, -g) / max(GAP_REST - CHOMP_SHUT_GAP, 1e-6)          # 0..1 on the bite
     windup = max(0.0, g) / max(CHOMP_OPEN, 1e-6)
-    P = {"spine": (world_loc("spine", (0, 0, up + bob)), None),
+    P = {"spine": (world_loc("spine", (0, 0, up_ + bob)), None),
          "jaw": (world_loc("jaw", (0, 0, -dn)), None),
          "head": (None, world_rot("head", (1, 0, 0), -3.0 * windup + 2.0 * bite)),
          "crown": (None, world_rot("crown", (0, 1, 0), 2.0 * math.sin(2 * math.pi * t)))}
@@ -1759,6 +1898,12 @@ def idle_pose(f, t):
         flare = CHOMP_ARMS * (bite - 0.5 * windup)
         P["arm." + s] = (None, world_rot("arm." + s, (0, 1, 0), -sg * (flare + 2.0 * math.sin(2 * math.pi * t))))
         P["blade." + s] = (None, world_rot("blade." + s, (0, 1, 0), -sg * 0.6 * flare))
+        hang = HANG_FLARE * (bite - 0.5 * windup) + HANG_SWAY * math.sin(2 * math.pi * t + 0.9)
+        P["limb." + s] = (None, world_rot("limb." + s, (0, 1, 0), -sg * hang))
+        P["fore." + s] = (None, world_rot("fore." + s, (1, 0, 0), -CLAW_FLEX * bite + 1.5 * math.sin(2 * math.pi * t + 1.6)))
+    for k_, i in enumerate(CURL_IDX):
+        sgn_c = TEND_DIRS[i % len(TEND_DIRS)]
+        P["tend.%d" % i] = (None, world_rot("tend.%d" % i, (0, 0, 1), -sgn_c * CURL_DEG * math.sin(2 * math.pi * (t + k_ / len(CURL_IDX)))))
     return P
 
 
@@ -1773,6 +1918,8 @@ def walk_pose(f, t):
         P["arm." + s] = (None, qmul(world_rot("arm." + s, (0, 0, 1), sg * (ARM_TRAIL + ARM_FLUTTER * math.sin(w - 0.6))),
                                     world_rot("arm." + s, (0, 1, 0), -sg * 3.0 * math.sin(2 * w - 1.0))))
         P["blade." + s] = (None, world_rot("blade." + s, (0, 0, 1), sg * (0.5 * ARM_TRAIL + ARM_FLUTTER * math.sin(w - 1.4))))
+        P["limb." + s] = (None, world_rot("limb." + s, (1, 0, 0), HANG_TRAIL + HANG_FLUTTER * math.sin(w - 0.7)))
+        P["fore." + s] = (None, world_rot("fore." + s, (1, 0, 0), 0.6 * HANG_TRAIL + HANG_FLUTTER * math.sin(w - 1.5)))
     return P
 
 
@@ -1790,19 +1937,18 @@ def eval_coords(ob):
     return co.reshape(-1, 3) @ M_[:3, :3].T + M_[:3, 3]
 
 
-# tooth-tip vertex handles on the final mesh (nearest low vertices to the rest pair)
-kd_w = KDTree(len(W_))
-for i, p in enumerate(W_):
-    kd_w.insert(p, i)
-kd_w.balance()
 pair_v = [(q[0], q[1]) for q in pairs]
-ground = W_[:, 2] < lo_n[2] + 0.05
+ground = (W_[:, 2] < lo_n[2] + 0.05) & (tmem < 0.05)        # the core floor ring (the tendrils are measured apart)
+tfloor = (W_[:, 2] < lo_n[2] + 0.05) & TEND_V
+curl_v = np.isin(tidx, list(CURL_IDX)) & TEND_V & (c_ > 0.5)
+wrist_v = {s: int(np.argmin(np.linalg.norm(Wp - (ARM_GEO[s]["P"][3] + np.array([0.0, 0.0, ZOFF])), axis=1))) for s in ("L", "R")}
 clip_rep = {}
 for cn, act in NEW_ACTS.items():
     K.assign_action(rig, act)
     f0, f1 = 1, int(round(act.frame_range[1]))
     first = last = None
     gaps, gslide, gz, rootoff, spine_dz, jaw_dz, sway_deg, pair_gaps = [], 0.0, 0.0, 0.0, [], [], [], []
+    tf_lift, curl_travel, wrist_travel = 0.0, 0.0, 0.0
     for f in range(f0, f1 + 1):
         scene.frame_set(f)
         C = eval_coords(low)
@@ -1815,6 +1961,9 @@ for cn, act in NEW_ACTS.items():
             pair_gaps.append([float(C[a, 2] - C[b, 2]) for a, b in pair_v])
         gslide = max(gslide, float(np.linalg.norm((C - W_)[ground, :2], axis=1).max()))
         gz = max(gz, float(np.abs(C[ground, 2] - W_[ground, 2]).max()))
+        tf_lift = max(tf_lift, float(np.abs(C[tfloor, 2] - W_[tfloor, 2]).max()) if tfloor.any() else 0.0)
+        curl_travel = max(curl_travel, float(np.linalg.norm((C - W_)[curl_v], axis=1).max()) if curl_v.any() else 0.0)
+        wrist_travel = max(wrist_travel, max(float(np.linalg.norm(C[v] - W_[v])) for v in wrist_v.values()))
         rootoff = max(rootoff, (rig.matrix_world @ rig.pose.bones["root"].head).length)
         spine_dz.append(float((rig.pose.bones["spine"].head - arm_data.bones["spine"].head_local)[2]))
         jaw_dz.append(float((rig.pose.bones["jaw"].head - arm_data.bones["jaw"].head_local)[2]))
@@ -1823,7 +1972,8 @@ for cn, act in NEW_ACTS.items():
     seam = float(np.linalg.norm(first - last, axis=1).max())
     row = {"frames": [f0, f1], "loop_frames": f1 - f0, "seconds": round((f1 - f0) / K.FPS, 3), "cyclic": True,
            "seam_units_x1000": round(seam * 1000, 4), "ground_ring_slide_max": round(gslide, 6), "ground_ring_lift_max": round(gz, 6),
-           "root_offset_max": round(rootoff, 8),
+           "tendril_floor_lift_max": round(tf_lift, 6), "curl_tendril_tip_travel_max": round(curl_travel, 4),
+           "wrist_travel_max": round(wrist_travel, 4), "root_offset_max": round(rootoff, 8),
            "spine_dz_range": [round(min(spine_dz), 4), round(max(spine_dz), 4)], "jaw_dz_range": [round(min(jaw_dz), 4), round(max(jaw_dz), 4)],
            "upper_body_forward_lean_deg_range": [round(min(sway_deg), 2), round(max(sway_deg), 2)]}
     if gaps:
@@ -1838,10 +1988,11 @@ rep["clips"] = clip_rep
 rep["clip_rules"] = {
     "idle": "float bob (IDLE_BOB, 1 per loop) + ONE chomp per loop: wind-up open CHOMP_OPEN over open_f, accelerating snap to a "
             "tip-to-tip gap CHOMP_SHUT_GAP over shut_f, hold, ease back over rest_f; the upper jaw (spine) does CHOMP_UPPER of "
-            "the travel, the lower jaw (jaw bone) the rest; arms flare CHOMP_ARMS on the bite",
+            "the travel, the lower jaw (jaw bone) the rest; raised spikes flare CHOMP_ARMS, hanging arms flare HANG_FLARE and the "
+            "claws snap CLAW_FLEX on the bite; the CURL_IDX tendrils curl +-CURL_DEG about the vertical (a third of a loop apart)",
     "walk": "GLIDE: no stepping; sway leans the figure forward LEAN_DEG (+-LEAN_OSC) with GLIDE_ROLL side drift, float bob "
-            "GLIDE_BOB (2 per loop), arms trail ARM_TRAIL + flutter, crown trails CROWN_TRAIL; the ground ring (base) is never "
-            "keyed -- in place, the game moves the unit",
+            "GLIDE_BOB (2 per loop), raised spikes trail ARM_TRAIL, hanging arms trail HANG_TRAIL + flutter, crown trails "
+            "CROWN_TRAIL; the ground ring (base) and the tendrils are never keyed -- in place, the game moves the unit",
     "keys": "every frame, LINEAR, closed-form curves (integer harmonics / beats that end at rest): last frame == first frame"}
 rig.animation_data.action = None
 for pb in rig.pose.bones:
@@ -1852,9 +2003,10 @@ rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, 
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rig["conquest_rig"] = "duskmaw v3: jawed totem (base/sway/jaw | spine/chest/head/crown, arm+blade x2) + contract root"
+rig["conquest_rig"] = "duskmaw v4: shadow lord (base/sway/jaw | spine/chest/head/crown, raised spikes arm+blade x2, hanging " \
+                      "arms limb+fore x2, tendril curls x3) + contract root"
 low["conquest_clips"] = list(NEW_ACTS)
-low["conquest_clip_status"] = "v3: idle (float + chomp on the new maw) and walk (glide), authored; v1's carried clips live in git history"
+low["conquest_clip_status"] = "v4: idle (float + chomp on the curving maw + tendril curls) and walk (glide), authored"
 for a in list(bpy.data.actions):
     if a.name not in NEW_ACTS:
         bpy.data.actions.remove(a)

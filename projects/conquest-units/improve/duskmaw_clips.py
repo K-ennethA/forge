@@ -155,7 +155,11 @@ for clip, act_name in SHOTS:
     centre = (lo + hi) / 2
     radius = max(size.length / 2, 1e-3)
     if clip == "idle_maw":
-        centre = Vector((centre.x, centre.y, lo.z + 0.26 * size.z)); radius = 0.2 * size.z
+        if "conquest_maw_band" in mesh.keys():          # v4+: the model's own maw band (hole heights, final frame)
+            zb_ = list(mesh["conquest_maw_band"])
+            centre = Vector((centre.x, centre.y, 0.5 * (zb_[0] + zb_[1]) + 0.15)); radius = 0.9 * (zb_[1] - zb_[0])
+        else:
+            centre = Vector((centre.x, centre.y, lo.z + 0.26 * size.z)); radius = 0.2 * size.z
     if not floor_built:
         R = radius * 6
         fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])

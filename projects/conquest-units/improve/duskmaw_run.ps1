@@ -1,8 +1,8 @@
-# Duskmaw v3 (shadow figure: maw / tendrils / arms / proportions), one command (hidden, headless). Reads
-# source-copies/hero-monster.blend (and v2's kept outputs improved/duskmaw_v2.blend for the before column). Writes
-# improved/duskmaw.*, rigged/duskmaw.{blend,json,glb}, improved/check_duskmaw.json, rigged/check_duskmaw.json,
-# rigged/duskmaw_aabb.json, rigged/duskmaw_seethrough.json, rigged/duskmaw_base.json, renders/duskmaw/duskmaw_v3_*
-# (+ the extra v2 views into renders/duskmaw/v2/). -SkipBuild re-runs only the gates + renders.
+# Duskmaw v4 (shadow lord: curving maw / long slender trunk / floor tendrils / clawed arms), one command (hidden,
+# headless). Reads source-copies/hero-monster.blend (and v3's kept outputs improved/duskmaw_v3.blend for the before
+# column). Writes improved/duskmaw.*, rigged/duskmaw.{blend,json,glb}, improved/check_duskmaw.json,
+# rigged/check_duskmaw.json, rigged/duskmaw_aabb.json, rigged/duskmaw_seethrough.json, rigged/duskmaw_base.json,
+# renders/duskmaw/duskmaw_v4_* (+ v3's silhouettes into renders/duskmaw/v3/). -SkipBuild re-runs only the gates + renders.
 param([switch]$SkipBuild, [switch]$Determinism)   # -Determinism: 3 twin builds at the end, digests compared
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"
@@ -10,23 +10,23 @@ $I = "$P\improve"
 $OUT = "$P\renders\duskmaw"
 $GLB = "C:\Users\kenne\OneDrive\Desktop\git\Conquest\game\characters\models\dark\monster.glb"
 New-Item -ItemType Directory -Force $OUT | Out-Null
-New-Item -ItemType Directory -Force "$OUT\v2" | Out-Null
+New-Item -ItemType Directory -Force "$OUT\v3" | Out-Null
 $t0 = Get-Date
 if (-not $SkipBuild) {
   $bp = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\source-copies\hero-monster.blend`"","--factory-startup","--python","`"$I\duskmaw_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_duskmaw_build.txt" -RedirectStandardError "$I\log_duskmaw_build.err"
   $null = $bp.Handle; $bp.WaitForExit(); "build exit=$($bp.ExitCode) wall=$([math]::Round(((Get-Date)-$t0).TotalSeconds,1))s"   # not $p: PowerShell names are case-insensitive ($P is the project path)
   if ($bp.ExitCode -ne 0 -or -not (Select-String -Path "$I\log_duskmaw_build.txt" -Pattern "^RIG_DONE" -Quiet)) { "BUILD FAILED - stopping"; exit 1 }
 }
-$VIEWS = "front,threequarter,tactical,back,side,backthreequarter,maw,mawback,mawthreequarter,lowfront,head,headthreequarter,hem,hemthreequarter"
+$VIEWS = "front,threequarter,tactical,back,side,backthreequarter,maw,mawback,mawthreequarter,lowfront,head,hem,hemthreequarter,basetop,baselow,silhouette,silhouetteside,arm,armfront"
 $dmJobs = @(
   @("check_improved", @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_duskmaw.json`"")),
   @("check_rigged",   @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_duskmaw.json`"")),
-  @("render_after",   @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\duskmaw_v3`"",$VIEWS)),
-  @("render_v2extra", @("--background","`"$P\improved\duskmaw_v2.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\v2\duskmaw`"","hem,hemthreequarter,mawthreequarter")),
+  @("render_after",   @("--background","`"$P\improved\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\duskmaw_v4`"",$VIEWS)),
+  @("render_v3sil",   @("--background","`"$P\improved\duskmaw_v3.blend`"","--factory-startup","--python","`"$I\duskmaw_render.py`"","--","`"$OUT\v3\duskmaw`"","silhouette,silhouetteside")),
   @("aabb",           @("--background","--factory-startup","--python","`"$I\duskmaw_aabb_check.py`"","--","`"$P\rigged\duskmaw_aabb.json`"","shipped=$GLB#180@1.0","rerun_natural=$P\rigged\duskmaw.glb#180@1.0","rerun_roster_fit=$P\rigged\duskmaw.glb#180@fit")),
-  @("seethrough",     @("--background","--factory-startup","--python","`"$I\duskmaw_seethrough.py`"","--","`"$P\rigged\duskmaw_seethrough.json`"","v2_improved=`"$P\improved\duskmaw_v2.blend`"","v3_improved=`"$P\improved\duskmaw.blend`"","v3_rigged=`"$P\rigged\duskmaw.blend`"")),
-  @("clips_mp4",      @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_clips.py`"","--","`"$OUT`"","768","sheet","--tag","v3")),
-  @("base",           @("--background","--factory-startup","--python","`"$I\duskmaw_base_measure.py`"","--","`"$P\rigged\duskmaw_base.json`"","v2_improved=`"$P\improved\duskmaw_v2.blend`"","v3_improved=`"$P\improved\duskmaw.blend`""))
+  @("seethrough",     @("--background","--factory-startup","--python","`"$I\duskmaw_seethrough.py`"","--","`"$P\rigged\duskmaw_seethrough.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`"","v4_rigged=`"$P\rigged\duskmaw.blend`"")),
+  @("clips_mp4",      @("--background","`"$P\rigged\duskmaw.blend`"","--factory-startup","--python","`"$I\duskmaw_clips.py`"","--","`"$OUT`"","768","sheet","--tag","v4")),
+  @("base",           @("--background","--factory-startup","--python","`"$I\duskmaw_base_measure.py`"","--","`"$P\rigged\duskmaw_base.json`"","v3_improved=`"$P\improved\duskmaw_v3.blend`"","v4_improved=`"$P\improved\duskmaw.blend`""))
 )
 $dmProcs = @()
 foreach ($j in $dmJobs) {

@@ -11,6 +11,9 @@ its TRUE front on the -Y camera; the survey game tiles used the roster yaw 180 a
 maw closeup: front camera (0 deg, 4 deg up) framed on the chest-to-skirt band (mouth illusion) -- the 14-40% height band at
     the model centre for BOTH the rework and the shipped glb, so both sides frame the same anatomy.
 hem closeup (v3 tendrils): the 0-20% height band, front camera 8 deg up (hem) / 35 deg round and 12 deg up (hemthreequarter).
+v4 views: basetop / baselow (the floor tendrils from above / low round the side), silhouette / silhouetteside (black
+    figure on white, no floor or lights: the waist-curve proof), arm / armfront (the L arm, framed on the blend's
+    conquest_arm_L shoulder..wrist). v4 blends carry conquest_maw_band: the maw closeup frames on it.
 """
 import bpy, sys, math
 import numpy as np
@@ -126,6 +129,12 @@ table = {"front": (0.0, 5.0, 1024, 1.0, None, None), "threequarter": (40.0, 15.0
 mb = (Vector((lo.x, lo.y, lo.z + 0.14 * size.z)), Vector((hi.x, hi.y, lo.z + 0.40 * size.z)))
 mc = (mb[0] + mb[1]) / 2
 mr = 0.30 * size.x
+main_ = max(meshes, key=lambda o: len(o.data.polygons)) if meshes else None
+if main_ is not None and "conquest_maw_band" in main_.keys() and "conquest_arm_L" in main_.keys():
+    # v4+: frame the maw on the model's own maw band (the tendrils widen the bbox, so x-fractions no longer fit it)
+    zb_ = list(main_["conquest_maw_band"])
+    mc = Vector((0.0, mc.y, 0.5 * (zb_[0] + zb_[1]) + 0.15))
+    mr = 0.95 * (zb_[1] - zb_[0])
 table["maw"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
 table["mawback"] = (180.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
 # low-angle front / back: the camera sits below the mouth band looking UP through it (background through the maw = see-through)
@@ -138,9 +147,35 @@ table["mawthreequarter"] = (35.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr 
 hb = Vector((0.0, mc.y, lo.z + 0.10 * size.z))
 table["hem"] = (0.0, 8.0, 1024, 1.0, hb, 0.30 * size.x)
 table["hemthreequarter"] = (35.0, 12.0, 1024, 1.0, hb, 0.30 * size.x)
+# v4: the floor tendrils seen from above (base top-down-ish) and low round the side
+table["basetop"] = (25.0, 62.0, 1024, 1.0, Vector((0.0, 0.0, lo.z + 0.03 * size.z)), 0.52 * max(size.x, size.y))
+table["baselow"] = (60.0, 14.0, 1024, 1.0, Vector((0.0, 0.0, lo.z + 0.07 * size.z)), 0.42 * max(size.x, size.y))
+# silhouette: black figure on white, no floor, straight front (the waist-curve proof)
+table["silhouette"] = (0.0, 0.0, 1024, 1.0, None, None)
+table["silhouetteside"] = (90.0, 0.0, 1024, 1.0, None, None)
+if main_ is not None and "conquest_arm_L" in main_.keys():
+    Pa_ = np.array(main_["conquest_arm_L"]).reshape(-1, 3)
+    ac_ = Vector(tuple(0.5 * (Pa_[1] + Pa_[3]) + np.array([0.0, 0.0, -0.9])))
+    ar_ = 0.62 * float(np.linalg.norm(Pa_[1] - Pa_[3])) + 1.6
+    table["arm"] = (62.0, 6.0, 1024, 1.0, ac_, ar_)                  # the L arm (+x) from its outer front
+    table["armfront"] = (0.0, 4.0, 1024, 1.0, ac_, ar_)
+sil_mat = None
 for tag in VIEWS:
     if tag not in table:
         print("SKIP", tag); continue
+    is_sil = tag.startswith("silhouette")
+    if is_sil and sil_mat is None:
+        sil_mat = bpy.data.materials.new("sil_black"); sil_mat.use_nodes = True
+        bs_ = sil_mat.node_tree.nodes["Principled BSDF"]
+        bs_.inputs["Base Color"].default_value = (0, 0, 0, 1); bs_.inputs["Roughness"].default_value = 1.0
+        bs_.inputs["Specular IOR Level"].default_value = 0.0
+    bpy.context.view_layer.material_override = sil_mat if is_sil else None
+    floor.hide_render = is_sil
+    world.node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1) if is_sil else (0.18, 0.18, 0.19, 1)
+    world.node_tree.nodes["Background"].inputs[1].default_value = 1.0 if is_sil else 0.6
+    for o in scene.objects:
+        if o.type == "LIGHT":
+            o.hide_render = is_sil
     ang, elev, res, fill, c, rad = table[tag]
     scene.render.resolution_x = scene.render.resolution_y = res
     scene.render.resolution_percentage = 100

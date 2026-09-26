@@ -1,15 +1,15 @@
-"""Duskmaw v2 vs v3 sheets + the artist's annotations beside v3 (pure image assembly, no scene).
+"""Duskmaw v3 vs v4 sheets + the artist's v4 references beside v4 (pure image assembly, no scene).
 
     blender --background --factory-startup --python duskmaw_before_after.py
 
-v2 tiles: renders/duskmaw/v2/duskmaw_<view>.png (v2's renders, kept; the extra v2 views -- hem, hemthreequarter,
-mawthreequarter -- rendered from improved/duskmaw_v2.blend with duskmaw_render.py). v3 tiles:
-renders/duskmaw/duskmaw_v3_<view>.png. Same lights / camera rules; each tile framed on its own model's bounds.
-Annotations: design/reference/duskmaw-v3-{maw,hem}-annotation.png (the artist's red marks on v2), letterboxed.
+v3 tiles: renders/duskmaw/v3/duskmaw_<view>.png (v3's renders, archived; v3's silhouettes rendered from
+improved/duskmaw_v3.blend with duskmaw_render.py into the same folder). v4 tiles: renders/duskmaw/duskmaw_v4_<view>.png.
+Same lights / camera rules; each tile framed on its own model's bounds. References: design/reference/duskmaw-v4-maw-curve-
+annotation.png (the blue curves + zigzag on v3's maw) and duskmaw-v4-shadowlord-reference.webp, letterboxed.
 Writes:
-  duskmaw_v3_before_after.png       rows front, maw, hem, threequarter, side, back | columns v2 | v3
-  duskmaw_v3_head_before_after.png  rows head, headthreequarter                    | columns v2 | v3
-  duskmaw_v3_vs_annotation.png      rows maw, hem                                  | columns artist's mark (on v2) | v3
+  duskmaw_v4_before_after.png        rows front, maw, hem, threequarter, side, back   | columns v3 | v4
+  duskmaw_v4_vs_annotation.png       rows maw, front                                  | columns artist's reference | v4
+  duskmaw_v4_silhouette_compare.png  one row: v3 silhouette | v4 silhouette | the shadow-lord reference
 """
 import bpy, os
 import numpy as np
@@ -17,7 +17,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 R = os.path.normpath(os.path.join(HERE, "..", "renders", "duskmaw"))
 REF = os.path.normpath(os.path.join(HERE, "..", "design", "reference"))
-cols = [os.path.join(R, "v2", "duskmaw_%s.png"), os.path.join(R, "duskmaw_v3_%s.png")]
+cols = [os.path.join(R, "v3", "duskmaw_%s.png"), os.path.join(R, "duskmaw_v4_%s.png")]
 T = 512
 
 
@@ -39,8 +39,12 @@ def tile(path):
 def sheet(rows_paths, out):
     rows = []
     for paths in reversed(rows_paths):              # pixel rows are bottom-up: last listed = bottom row
-        row = [tile(p) for p in paths]
-        rows.append(np.concatenate([row[0], np.ones((T, 6, 4), np.float32), row[1]], axis=1))
+        parts = []
+        for i, p in enumerate(paths):
+            if i:
+                parts.append(np.ones((T, 6, 4), np.float32))
+            parts.append(tile(p))
+        rows.append(np.concatenate(parts, axis=1))
     parts = []
     for i, r_ in enumerate(rows):
         if i:
@@ -58,7 +62,8 @@ def views(vs):
     return [[c % v for c in cols] for v in vs]
 
 
-sheet(views(["front", "maw", "hem", "threequarter", "side", "back"]), "duskmaw_v3_before_after.png")
-sheet(views(["head", "headthreequarter"]), "duskmaw_v3_head_before_after.png")
-sheet([[os.path.join(REF, "duskmaw-v3-maw-annotation.png"), os.path.join(R, "duskmaw_v3_maw.png")],
-       [os.path.join(REF, "duskmaw-v3-hem-annotation.png"), os.path.join(R, "duskmaw_v3_front.png")]], "duskmaw_v3_vs_annotation.png")
+sheet(views(["front", "maw", "hem", "threequarter", "side", "back"]), "duskmaw_v4_before_after.png")
+sheet([[os.path.join(REF, "duskmaw-v4-maw-curve-annotation.png"), os.path.join(R, "duskmaw_v4_maw.png")],
+       [os.path.join(REF, "duskmaw-v4-shadowlord-reference.webp"), os.path.join(R, "duskmaw_v4_front.png")]], "duskmaw_v4_vs_annotation.png")
+sheet([[os.path.join(R, "v3", "duskmaw_silhouette.png"), os.path.join(R, "duskmaw_v4_silhouette.png"),
+        os.path.join(REF, "duskmaw-v4-shadowlord-reference.webp")]], "duskmaw_v4_silhouette_compare.png")

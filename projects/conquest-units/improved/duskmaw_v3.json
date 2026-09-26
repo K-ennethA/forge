@@ -1,0 +1,902 @@
+{
+ "unit": "duskmaw",
+ "version": "v3 shadow figure (maw / tendrils / arms / proportions)",
+ "conquest_character_id": "monster",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-monster.blend",
+ "tier": "hero",
+ "tri_budget": [
+  25000,
+  35000
+ ],
+ "yaw_fix_deg": 0.0,
+ "overrides": {},
+ "tris_source": 553184,
+ "source_cleanup": {
+  "pieces": 47,
+  "kept": 1,
+  "dropped_verts": 456,
+  "largest_dropped": 16,
+  "largest_pieces": [
+   {
+    "verts": 276230,
+    "kept": true,
+    "bbox": [
+     [
+      -14.49,
+      -11.73,
+      -0.58
+     ],
+     [
+      14.48,
+      11.92,
+      30.35
+     ]
+    ]
+   },
+   {
+    "verts": 16,
+    "kept": false,
+    "bbox": [
+     [
+      2.29,
+      6.02,
+      21.25
+     ],
+     [
+      2.3,
+      6.09,
+      21.31
+     ]
+    ]
+   },
+   {
+    "verts": 16,
+    "kept": false,
+    "bbox": [
+     [
+      -2.21,
+      5.8,
+      21.23
+     ],
+     [
+      -2.19,
+      5.87,
+      21.3
+     ]
+    ]
+   },
+   {
+    "verts": 16,
+    "kept": false,
+    "bbox": [
+     [
+      -1.62,
+      4.39,
+      20.9
+     ],
+     [
+      -1.58,
+      4.61,
+      20.94
+     ]
+    ]
+   },
+   {
+    "verts": 12,
+    "kept": false,
+    "bbox": [
+     [
+      0.98,
+      2.79,
+      20.5
+     ],
+     [
+      1.01,
+      2.9,
+      20.53
+     ]
+    ]
+   },
+   {
+    "verts": 12,
+    "kept": false,
+    "bbox": [
+     [
+      1.18,
+      3.3,
+      20.61
+     ],
+     [
+      1.22,
+      3.41,
+      20.64
+     ]
+    ]
+   }
+  ]
+ },
+ "waist_axis_sculpt_frame": [
+  0.0225,
+  -0.2769
+ ],
+ "neck_axis_sculpt_frame": [
+  0.0027,
+  -1.0686
+ ],
+ "sdf_rebuild": {
+  "method": "geometry-node SDF grids: ((sculpt - legs(z<Z_CUT) - back teeth/skirt(|theta|>THETA_C) - old front maw(FRONTCUT)) U procedural lower body U arm tubes) - maw(opening prism U cavity = frame outline x skin inset T_TOOTH x back bowl); masked SDF mean (face / lower body / back waist / front chest junction, never the maw) mixed in by Field-to-Grid; min(tendril tongues) on top; grid -> mesh",
+  "voxel": 0.07,
+  "band_voxels": 12,
+  "raw_verts": 746890,
+  "inner_shells_note": "Field-to-Grid writes only the band voxels, so thick parts get an inverted inner shell ~SDF_BAND voxels inside; it never touches the outer surface and is dropped with the specks (only the largest shell is kept)",
+  "high_faces": 509814,
+  "specks_dropped": {
+   "pieces": 26,
+   "kept": 1,
+   "dropped_verts": 237078,
+   "largest_dropped": 228368,
+   "largest_pieces": [
+    {
+     "verts": 509812,
+     "kept": true,
+     "bbox": [
+      [
+       -14.48,
+       -8.12,
+       -0.02
+      ],
+      [
+       14.47,
+       9.38,
+       30.89
+      ]
+     ]
+    },
+    {
+     "verts": 228368,
+     "kept": false,
+     "bbox": [
+      [
+       -9.87,
+       -5.46,
+       0.84
+      ],
+      [
+       9.66,
+       7.56,
+       26.81
+      ]
+     ]
+    },
+    {
+     "verts": 2186,
+     "kept": false,
+     "bbox": [
+      [
+       6.65,
+       -0.56,
+       7.28
+      ],
+      [
+       10.36,
+       0.42,
+       10.64
+      ]
+     ]
+    },
+    {
+     "verts": 2180,
+     "kept": false,
+     "bbox": [
+      [
+       -10.36,
+       -0.56,
+       7.28
+      ],
+      [
+       -6.58,
+       0.35,
+       10.71
+      ]
+     ]
+    },
+    {
+     "verts": 1348,
+     "kept": false,
+     "bbox": [
+      [
+       -13.09,
+       -0.14,
+       5.32
+      ],
+      [
+       -10.99,
+       0.56,
+       7.07
+      ]
+     ]
+    },
+    {
+     "verts": 1066,
+     "kept": false,
+     "bbox": [
+      [
+       10.99,
+       -0.07,
+       5.46
+      ],
+      [
+       12.74,
+       0.63,
+       7.0
+      ]
+     ]
+    }
+   ]
+  },
+  "seconds": 44.3,
+  "winding_flipped": true,
+  "enclosed_volume": 1779.295,
+  "profiles_sculpt_frame": {
+   "R_ground_min_max": [
+    7.269,
+    8.947
+   ],
+   "R_body_by_theta_deg": {
+    "z2.0": {
+     "0": 5.184,
+     "30": 5.491,
+     "60": 7.576,
+     "90": 6.65,
+     "120": 7.685,
+     "180": 8.337
+    },
+    "z4.5": {
+     "0": 4.1,
+     "30": 4.725,
+     "60": 6.568,
+     "90": 5.495,
+     "120": 6.4,
+     "180": 7.456
+    },
+    "z6.0": {
+     "0": 4.1,
+     "30": 4.725,
+     "60": 5.54,
+     "90": 5.438,
+     "120": 5.087,
+     "180": 6.491
+    },
+    "z8.0": {
+     "0": 4.1,
+     "30": 4.725,
+     "60": 5.54,
+     "90": 5.435,
+     "120": 4.94,
+     "180": 4.971
+    },
+    "z10.0": {
+     "0": 4.1,
+     "30": 4.725,
+     "60": 5.54,
+     "90": 5.918,
+     "120": 5.77,
+     "180": 4.198
+    },
+    "z12.0": {
+     "0": 4.1,
+     "30": 4.725,
+     "60": 5.54,
+     "90": 6.23,
+     "120": 5.77,
+     "180": 4.27
+    },
+    "z13.5": {
+     "0": 3.27,
+     "30": 3.744,
+     "60": 5.136,
+     "90": 6.496,
+     "120": 5.274,
+     "180": 4.849
+    }
+   }
+  },
+  "maw": {
+   "hole_half_width": 4.5,
+   "hole_z": [
+    5.1,
+    12.1
+   ],
+   "pitch": 2.25,
+   "upper_tips_xz": [
+    [
+     -3.375,
+     9.0
+    ],
+    [
+     -1.125,
+     8.6
+    ],
+    [
+     1.125,
+     8.6
+    ],
+    [
+     3.375,
+     9.0
+    ]
+   ],
+   "lower_tips_xz": [
+    [
+     -2.25,
+     6.9
+    ],
+    [
+     0.0,
+     7.1
+    ],
+    [
+     2.25,
+     6.9
+    ]
+   ],
+   "mid_line_z": 7.85
+  },
+  "arm_tubes": {
+   "L": {
+    "fit_points": 13,
+    "z_of_x": [
+     -0.8863,
+     16.4459
+    ],
+    "y_of_x": [
+     0.1455,
+     -1.227
+    ],
+    "ends": [
+     [
+      6.223,
+      -0.325,
+      10.951
+     ],
+     [
+      10.923,
+      0.359,
+      6.786
+     ]
+    ]
+   },
+   "R": {
+    "fit_points": 13,
+    "z_of_x": [
+     -0.8985,
+     16.6251
+    ],
+    "y_of_x": [
+     0.1384,
+     -1.2093
+    ],
+    "ends": [
+     [
+      -6.177,
+      -0.351,
+      11.054
+     ],
+     [
+      -10.877,
+      0.299,
+      6.831
+     ]
+    ]
+   },
+   "radius": 1.05
+  },
+  "tendrils": {
+   "count": 18,
+   "heights": [
+    3.55,
+    2.783,
+    3.715,
+    2.948,
+    3.88,
+    2.413,
+    4.046,
+    2.578,
+    4.211,
+    2.744,
+    4.211,
+    2.578,
+    4.046,
+    2.413,
+    3.88,
+    2.948,
+    3.715,
+    2.783
+   ]
+  }
+ },
+ "natural": {
+  "height": 34.5588,
+  "width": 28.9706,
+  "depth": 17.5027,
+  "footprint": 28.9706,
+  "units": "sculpt units (natural proportions, no refit; v3 = the sculpt x T)",
+  "origin_shift_sculpt_units": [
+   -0.00486,
+   0.73037,
+   -0.6034
+  ],
+  "export_cell_fit_report_only": {
+   "scale": 0.05209,
+   "height_m": 1.8,
+   "bound_by": "height",
+   "ceilings": [
+    1.8,
+    1.9
+   ]
+  }
+ },
+ "retopo": {
+  "method": "collapse decimation of the SDF surface (deterministic) -> main shell",
+  "decimated_tris": 24000,
+  "specks_dropped": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0,
+   "largest_dropped": 0,
+   "largest_pieces": [
+    {
+     "verts": 11998,
+     "kept": true,
+     "bbox": [
+      [
+       -14.48,
+       -8.12,
+       -0.02
+      ],
+      [
+       14.49,
+       9.39,
+       30.9
+      ]
+     ]
+    }
+   ]
+  },
+  "seconds": 7.4,
+  "low_to_high_distance": {
+   "mean": 0.004,
+   "p99": 0.015,
+   "max": 0.0265,
+   "pct_of_height_p99": 0.048
+  }
+ },
+ "eye_refinement": {
+  "duplicate_faces_skipped": 0,
+  "iterations": 5,
+  "faces_added": 2484,
+  "verts_projected": 1232,
+  "edge_max": 0.1,
+  "seconds": 0.4
+ },
+ "fields_seconds": 0.1,
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "z",
+    "tau": 27.8254,
+    "edge_splits": 25,
+    "face_connects": 33
+   },
+   {
+    "field": "tip",
+    "tau": 0.0,
+    "edge_splits": 360,
+    "face_connects": 429
+   },
+   {
+    "field": "frame",
+    "tau": 0.0,
+    "edge_splits": 38,
+    "face_connects": 45
+   },
+   {
+    "field": "hrect",
+    "tau": 0.05,
+    "edge_splits": 23,
+    "face_connects": 17
+   },
+   {
+    "field": "red",
+    "tau": 0.0,
+    "edge_splits": 70,
+    "face_connects": 88
+   },
+   {
+    "field": "yb",
+    "tau": 0.0,
+    "edge_splits": 75,
+    "face_connects": 80
+   },
+   {
+    "field": "tend",
+    "tau": 0.0,
+    "edge_splits": 467,
+    "face_connects": 551
+   },
+   {
+    "field": "eye",
+    "tau": 0.0,
+    "edge_splits": 115,
+    "face_connects": 148
+   }
+  ],
+  "seconds": 7.9,
+  "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects (v1 machinery)"
+ },
+ "tris_final": 28800,
+ "proportions": {
+  "height_k": 1.1,
+  "neck_k": 0.85,
+  "neck_stretch": 0.5,
+  "neck_axis": [
+   0.0021,
+   -1.7028
+  ],
+  "height_before_T": 30.9171,
+  "height_after_T": 34.5588,
+  "height_gain_pct": 11.78,
+  "neck_width_z17.2-18.4_before_after": [
+   4.51,
+   3.833
+  ],
+  "rule": "T applied to the low (after the region cuts) and the bake high; every constant above is in the pre-T frame"
+ },
+ "region_rule": {
+  "base": "the tendril tongues + the fused ring below their valleys: faces TEND_CUT or more outside the base skin (iso-cut) -- the dark shadow rising out of the ground; the floor darkening (BASE_DARK) ramps over every face below BASE_Z",
+  "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule) + the hat apex (> 0.9 H) -- dim embers",
+  "lip": "front skin inside the maw FRAME outline (rounded rect MAW_HW x MAW_Z, iso-cut) and outside the hole rectangle, within RED_DEPTH x T_TOOTH of the skin -- the red frame",
+  "teeth": "the same red plate inside the hole rectangle: the zigzag tooth tabs (upper UP_N hanging, lower LO_X rising) and their side walls -- red",
+  "maw_inner": "inside the frame and deeper than the plate: cavity walls under the lips, plate backs -- yellow-orange",
+  "maw_throat": "the same, behind THROAT_Y (the back bowl): the hot yellow throat",
+  "eyes": "front-projected lens field on the smoothed face (EYE_IN -> EYE_OUT, EYE_TOP / EYE_BOT), iso-cut -- the face's only feature",
+  "waist_axis": [
+   0.0219,
+   -0.9111
+  ]
+ },
+ "tip_field": {
+  "spikes_found": 16,
+  "spikes_xyz_len": [
+   [
+    -13.55,
+    -0.54,
+    4.74,
+    8.18
+   ],
+   [
+    13.7,
+    -0.86,
+    4.96,
+    7.81
+   ],
+   [
+    14.29,
+    0.08,
+    19.15,
+    5.57
+   ],
+   [
+    -14.28,
+    0.09,
+    19.17,
+    5.44
+   ],
+   [
+    6.51,
+    1.05,
+    21.93,
+    1.83
+   ],
+   [
+    -5.97,
+    -4.81,
+    26.15,
+    1.79
+   ],
+   [
+    -13.16,
+    -0.92,
+    10.17,
+    1.66
+   ],
+   [
+    -11.91,
+    -0.99,
+    10.97,
+    1.58
+   ],
+   [
+    5.96,
+    -4.83,
+    26.08,
+    1.58
+   ],
+   [
+    11.9,
+    -0.98,
+    10.83,
+    1.57
+   ],
+   [
+    13.09,
+    -0.84,
+    9.92,
+    1.39
+   ],
+   [
+    -6.24,
+    1.07,
+    22.1,
+    1.38
+   ],
+   [
+    -4.67,
+    -2.87,
+    26.3,
+    1.37
+   ],
+   [
+    4.55,
+    -2.74,
+    26.32,
+    1.28
+   ],
+   [
+    3.32,
+    -4.2,
+    9.26,
+    1.12
+   ],
+   [
+    -3.3,
+    -4.2,
+    9.2,
+    1.06
+   ]
+  ]
+ },
+ "regions_faces": {
+  "body": 18377,
+  "base": 4017,
+  "tips": 2786,
+  "lip": 274,
+  "maw_inner": 872,
+  "maw_throat": 776,
+  "teeth": 652,
+  "eyes": 1046
+ },
+ "cavity_shade_k": 0.4,
+ "cavity_seconds": 1.4,
+ "regions_area_share": {
+  "body": 0.6966,
+  "base": 0.0912,
+  "tips": 0.0632,
+  "lip": 0.015,
+  "maw_inner": 0.0523,
+  "maw_throat": 0.0586,
+  "teeth": 0.0223,
+  "eyes": 0.0007
+ },
+ "facing": {
+  "rule": "waist axis (at the lip's mean height) -> area centroid of the red lip region that frames the mouth opening",
+  "anchor": [
+   0.0219,
+   -0.9111,
+   9.3513
+  ],
+  "landmark": [
+   -0.077,
+   -4.2212,
+   9.3513
+  ],
+  "angle_from_minusY_deg": -1.71,
+  "eyes_centroid": [
+   0.02,
+   -3.406,
+   21.4042
+  ]
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.4
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.4
+  },
+  "uv_texels_normal": 1943478,
+  "uv_coverage": 0.4634,
+  "normal_baked_pct_of_uv_texels": 99.78,
+  "normal_dev_mean": 0.0462,
+  "ao_baked_pct_of_uv_texels": 100.0,
+  "ao_mean": 0.7641,
+  "pixel_sha": {
+   "normal": "59675ccad4c3db9b",
+   "ao": "ff879c47e8af197e"
+  },
+  "cage_extrusion": 0.15,
+  "resolution": {
+   "normal": 2048,
+   "ao": 1024
+  },
+  "high": "the SDF-rebuilt surface (509814 faces)",
+  "seconds": 7.3
+ },
+ "uv": {
+  "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
+  "faces": 28800,
+  "zero_area_faces": 30,
+  "flipped_faces": 0,
+  "uv_sha": "9ee64457dc42d45e"
+ },
+ "digest_geometry_colour": "b880c990e3fd6734",
+ "final_bbox": [
+  [
+   -14.4853,
+   -8.7514,
+   0.0
+  ],
+  [
+   14.4853,
+   8.7514,
+   34.5588
+  ]
+ ],
+ "palette": {
+  "default": {
+   "body": {
+    "rgb": [
+     20,
+     17,
+     24
+    ]
+   },
+   "base": {
+    "rgb": [
+     8,
+     6,
+     11
+    ]
+   },
+   "tips": {
+    "rgb": [
+     96,
+     26,
+     20
+    ],
+    "emission": [
+     170,
+     40,
+     16
+    ],
+    "emission_scale": 0.3
+   },
+   "lip": {
+    "rgb": [
+     176,
+     16,
+     24
+    ],
+    "emission": [
+     190,
+     18,
+     22
+    ],
+    "emission_scale": 0.3
+   },
+   "teeth": {
+    "rgb": [
+     214,
+     34,
+     34
+    ],
+    "emission": [
+     225,
+     30,
+     28
+    ],
+    "emission_scale": 0.35
+   },
+   "maw_inner": {
+    "rgb": [
+     240,
+     150,
+     38
+    ],
+    "emission": [
+     255,
+     150,
+     40
+    ],
+    "emission_scale": 0.45
+   },
+   "maw_throat": {
+    "rgb": [
+     255,
+     200,
+     80
+    ],
+    "emission": [
+     255,
+     190,
+     70
+    ],
+    "emission_scale": 1.0
+   },
+   "eyes": {
+    "rgb": [
+     255,
+     214,
+     120
+    ],
+    "emission": [
+     255,
+     200,
+     80
+    ],
+    "emission_scale": 2.0
+   },
+   "grin": {
+    "rgb": [
+     20,
+     17,
+     24
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\duskmaw\\default.json"
+  ],
+  "skins": [
+   "darkrai_eyes",
+   "default",
+   "grin"
+  ]
+ },
+ "see_through": {
+  "rule": "rays through the waist core (|u| <= 2.5 units about the waist axis, z = the maw's hole band MAW_BAND 5.63-13.33) from 24 yaws (0 = the front camera, 180 = behind); value = % of rays that pass straight through",
+  "pct_rays_through_by_yaw": {
+   "0": 0.0,
+   "15": 0.0,
+   "30": 0.0,
+   "45": 0.0,
+   "60": 0.0,
+   "75": 0.0,
+   "90": 0.0,
+   "105": 0.0,
+   "120": 0.0,
+   "135": 0.0,
+   "150": 0.0,
+   "165": 0.0,
+   "180": 0.0,
+   "195": 0.0,
+   "210": 0.0,
+   "225": 0.0,
+   "240": 0.0,
+   "255": 0.0,
+   "270": 0.0,
+   "285": 0.0,
+   "300": 0.0,
+   "315": 0.0,
+   "330": 0.0,
+   "345": 0.0
+  },
+  "max_pct": 0.0
+ }
+}

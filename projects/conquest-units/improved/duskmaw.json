@@ -1,6 +1,6 @@
 {
  "unit": "duskmaw",
- "version": "v3 shadow figure (maw / tendrils / arms / proportions)",
+ "version": "v4 shadow lord (curving maw / long slender trunk / floor tendrils / clawed arms)",
  "conquest_character_id": "monster",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-monster.blend",
  "tier": "hero",
@@ -124,310 +124,808 @@
   -1.0686
  ],
  "sdf_rebuild": {
-  "method": "geometry-node SDF grids: ((sculpt - legs(z<Z_CUT) - back teeth/skirt(|theta|>THETA_C) - old front maw(FRONTCUT)) U procedural lower body U arm tubes) - maw(opening prism U cavity = frame outline x skin inset T_TOOTH x back bowl); masked SDF mean (face / lower body / back waist / front chest junction, never the maw) mixed in by Field-to-Grid; min(tendril tongues) on top; grid -> mesh",
+  "method": "geometry-node SDF grids: ((sculpt above Z_KEEP) U procedural trunk U arm tubes) - maw ((hole prism - teeth prisms) U cavity = outline x skin inset T_TOOTH x back bowl); masked SDF mean (face / bell flare / chest junction / arm roots, never the maw) mixed in by Field-to-Grid; smooth-min (K_BLEND) with the crisp parts (floor tendrils cut flat at the floor, claws, wisps); grid -> mesh",
   "voxel": 0.07,
   "band_voxels": 12,
-  "raw_verts": 746890,
+  "raw_verts": 834244,
   "inner_shells_note": "Field-to-Grid writes only the band voxels, so thick parts get an inverted inner shell ~SDF_BAND voxels inside; it never touches the outer surface and is dropped with the specks (only the largest shell is kept)",
-  "high_faces": 509814,
+  "high_faces": 582834,
   "specks_dropped": {
-   "pieces": 26,
+   "pieces": 22,
    "kept": 1,
-   "dropped_verts": 237078,
-   "largest_dropped": 228368,
+   "dropped_verts": 251410,
+   "largest_dropped": 248028,
    "largest_pieces": [
     {
-     "verts": 509812,
+     "verts": 582834,
      "kept": true,
      "bbox": [
       [
        -14.48,
-       -8.12,
+       -13.82,
        -0.02
       ],
       [
        14.47,
-       9.38,
-       30.89
+       14.41,
+       37.39
       ]
      ]
     },
     {
-     "verts": 228368,
+     "verts": 248028,
      "kept": false,
      "bbox": [
       [
-       -9.87,
-       -5.46,
+       -9.94,
+       -5.81,
        0.84
       ],
       [
-       9.66,
-       7.56,
-       26.81
+       9.8,
+       6.37,
+       33.32
       ]
      ]
     },
     {
-     "verts": 2186,
+     "verts": 966,
      "kept": false,
      "bbox": [
       [
-       6.65,
-       -0.56,
-       7.28
+       -2.45,
+       -7.49,
+       0.84
       ],
       [
-       10.36,
-       0.42,
-       10.64
+       -1.19,
+       -5.53,
+       1.12
       ]
      ]
     },
     {
-     "verts": 2180,
+     "verts": 918,
      "kept": false,
      "bbox": [
       [
-       -10.36,
-       -0.56,
-       7.28
+       4.97,
+       -5.11,
+       0.84
       ],
       [
-       -6.58,
-       0.35,
-       10.71
+       6.79,
+       -3.64,
+       1.05
       ]
      ]
     },
     {
-     "verts": 1348,
+     "verts": 722,
      "kept": false,
      "bbox": [
       [
-       -13.09,
-       -0.14,
-       5.32
+       -2.87,
+       6.44,
+       0.84
       ],
       [
-       -10.99,
-       0.56,
-       7.07
+       -1.68,
+       7.98,
+       1.05
       ]
      ]
     },
     {
-     "verts": 1066,
+     "verts": 264,
      "kept": false,
      "bbox": [
       [
-       10.99,
-       -0.07,
-       5.46
+       -11.97,
+       0.28,
+       23.24
       ],
       [
-       12.74,
-       0.63,
-       7.0
+       -10.57,
+       0.49,
+       24.15
       ]
      ]
     }
    ]
   },
-  "seconds": 44.3,
+  "seconds": 45.0,
   "winding_flipped": true,
-  "enclosed_volume": 1779.295,
-  "profiles_sculpt_frame": {
+  "enclosed_volume": 1985.524,
+  "trunk_new_frame_pre_K": {
+   "torso_stretch": 6.5,
+   "z_keep": 19.5,
+   "body_top": 20.9,
+   "heights": [
+    5.2,
+    7.2,
+    11.9,
+    16.1
+   ],
+   "half_width": [
+    5.1,
+    4.8,
+    3.95,
+    5.2
+   ],
+   "front": [
+    4.3,
+    4.1,
+    3.9,
+    4.0
+   ],
+   "back": [
+    4.6,
+    4.2,
+    3.7,
+    4.0
+   ],
+   "waist_half_width_min": 3.95,
    "R_ground_min_max": [
     7.269,
     8.947
    ],
    "R_body_by_theta_deg": {
     "z2.0": {
-     "0": 5.184,
-     "30": 5.491,
-     "60": 7.576,
-     "90": 6.65,
-     "120": 7.685,
-     "180": 8.337
+     "0": 5.651,
+     "30": 5.807,
+     "60": 6.501,
+     "90": 6.401,
+     "120": 6.556,
+     "180": 6.573
     },
-    "z4.5": {
-     "0": 4.1,
-     "30": 4.725,
-     "60": 6.568,
-     "90": 5.495,
-     "120": 6.4,
-     "180": 7.456
+    "z5.0": {
+     "0": 4.305,
+     "30": 4.47,
+     "60": 4.865,
+     "90": 5.105,
+     "120": 4.966,
+     "180": 4.608
     },
-    "z6.0": {
-     "0": 4.1,
-     "30": 4.725,
-     "60": 5.54,
-     "90": 5.438,
-     "120": 5.087,
-     "180": 6.491
+    "z6.3": {
+     "0": 4.195,
+     "30": 4.353,
+     "60": 4.732,
+     "90": 4.962,
+     "120": 4.8,
+     "180": 4.396
     },
-    "z8.0": {
-     "0": 4.1,
-     "30": 4.725,
-     "60": 5.54,
-     "90": 5.435,
-     "120": 4.94,
-     "180": 4.971
+    "z8.5": {
+     "0": 4.02,
+     "30": 4.131,
+     "60": 4.385,
+     "90": 4.531,
+     "120": 4.381,
+     "180": 4.008
     },
-    "z10.0": {
-     "0": 4.1,
-     "30": 4.725,
-     "60": 5.54,
-     "90": 5.918,
-     "120": 5.77,
-     "180": 4.198
+    "z10.8": {
+     "0": 3.915,
+     "30": 3.944,
+     "60": 4.005,
+     "90": 4.036,
+     "120": 3.956,
+     "180": 3.741
     },
-    "z12.0": {
-     "0": 4.1,
-     "30": 4.725,
-     "60": 5.54,
-     "90": 6.23,
-     "120": 5.77,
-     "180": 4.27
+    "z13.0": {
+     "0": 3.917,
+     "30": 3.974,
+     "60": 4.097,
+     "90": 4.162,
+     "120": 4.047,
+     "180": 3.751
     },
-    "z13.5": {
-     "0": 3.27,
-     "30": 3.744,
-     "60": 5.136,
-     "90": 6.496,
-     "120": 5.274,
-     "180": 4.849
+    "z14.8": {
+     "0": 3.977,
+     "30": 4.161,
+     "60": 4.62,
+     "90": 4.915,
+     "120": 4.602,
+     "180": 3.932
+    },
+    "z16.5": {
+     "0": 3.973,
+     "30": 4.201,
+     "60": 4.801,
+     "90": 5.226,
+     "120": 4.821,
+     "180": 4.014
+    },
+    "z18.5": {
+     "0": 3.38,
+     "30": 3.76,
+     "60": 4.782,
+     "90": 5.801,
+     "120": 5.238,
+     "180": 4.334
     }
    }
   },
   "maw": {
-   "hole_half_width": 4.5,
+   "wrap": 0.84,
    "hole_z": [
-    5.1,
-    12.1
+    7.75,
+    15.5
+   ],
+   "frame_z": [
+    7.2,
+    16.1
    ],
    "pitch": 2.25,
-   "upper_tips_xz": [
+   "hole_half_width_bottom_waist_top": [
+    3.296,
+    2.818,
+    3.81
+   ],
+   "frame_half_width_bottom_waist_top": [
+    3.826,
+    3.318,
+    4.368
+   ],
+   "jag_top_line": [
     [
-     -3.375,
-     9.0
+     4.368,
+     16.1
     ],
     [
+     4.024,
+     16.827
+    ],
+    [
+     3.397,
+     16.152
+    ],
+    [
+     2.789,
+     16.417
+    ],
+    [
+     2.427,
+     16.104
+    ],
+    [
+     1.981,
+     16.707
+    ],
+    [
+     1.456,
+     16.236
+    ],
+    [
+     1.174,
+     16.997
+    ],
+    [
+     0.485,
+     16.188
+    ],
+    [
+     -0.061,
+     16.587
+    ],
+    [
+     -0.485,
+     16.139
+    ],
+    [
+     -0.868,
+     16.877
+    ],
+    [
+     -1.456,
+     16.271
+    ],
+    [
+     -2.103,
+     16.467
+    ],
+    [
+     -2.427,
+     16.223
+    ],
+    [
+     -2.91,
+     16.757
+    ],
+    [
+     -3.397,
+     16.175
+    ],
+    [
+     -3.718,
+     17.047
+    ],
+    [
+     -4.368,
+     16.1
+    ]
+   ],
+   "upper_tips_xz": [
+    [
      -1.125,
-     8.6
+     12.0
     ],
     [
      1.125,
-     8.6
+     12.0
     ],
     [
-     3.375,
-     9.0
+     3.0,
+     13.5
+    ],
+    [
+     -3.0,
+     13.5
     ]
    ],
    "lower_tips_xz": [
     [
      -2.25,
-     6.9
+     9.55
     ],
     [
      0.0,
-     7.1
+     9.75
     ],
     [
      2.25,
-     6.9
+     9.55
     ]
    ],
-   "mid_line_z": 7.85
+   "mid_line_z": 10.875,
+   "lower_teeth_final_frame": {
+    "base_width": 1.8,
+    "lengths_sides_centre": [
+     1.98,
+     2.2
+    ],
+    "note": "identical to v3 (same LO_* constants, same HEIGHT_K)"
+   }
   },
-  "arm_tubes": {
+  "arms": {
    "L": {
-    "fit_points": 13,
-    "z_of_x": [
-     -0.8863,
-     16.4459
+    "length_root_to_wrist": 15.886,
+    "s_shoulder": 2.702,
+    "s_elbow": 8.228,
+    "radius_shoulder_elbow_wrist": [
+     1.15,
+     1.05,
+     0.4
     ],
-    "y_of_x": [
-     0.1455,
-     -1.227
-    ],
-    "ends": [
+    "claws": 4,
+    "claw_tips": [
      [
-      6.223,
-      -0.325,
-      10.951
+      7.235,
+      -4.403,
+      5.741
      ],
      [
-      10.923,
-      0.359,
-      6.786
+      7.462,
+      -5.661,
+      5.317
+     ],
+     [
+      8.433,
+      -6.189,
+      5.753
+     ],
+     [
+      9.327,
+      -5.782,
+      6.609
      ]
-    ]
+    ],
+    "wisps": 3
    },
    "R": {
-    "fit_points": 13,
-    "z_of_x": [
-     -0.8985,
-     16.6251
+    "length_root_to_wrist": 15.886,
+    "s_shoulder": 2.702,
+    "s_elbow": 8.228,
+    "radius_shoulder_elbow_wrist": [
+     1.15,
+     1.05,
+     0.4
     ],
-    "y_of_x": [
-     0.1384,
-     -1.2093
-    ],
-    "ends": [
+    "claws": 4,
+    "claw_tips": [
      [
-      -6.177,
-      -0.351,
-      11.054
+      -7.19,
+      -4.403,
+      5.741
      ],
      [
-      -10.877,
-      0.299,
-      6.831
+      -7.417,
+      -5.661,
+      5.317
+     ],
+     [
+      -8.388,
+      -6.189,
+      5.753
+     ],
+     [
+      -9.282,
+      -5.782,
+      6.609
      ]
+    ],
+    "wisps": 3
+   }
+  },
+  "tendrils": [
+   {
+    "angle_deg": 18.0,
+    "length": 9.45,
+    "root_radius": 1.28,
+    "reach_radius": 12.369,
+    "reach_beyond_ring": 5.054,
+    "tip_height": 0.523,
+    "max_height": 1.659,
+    "curl_deg": 237.0,
+    "curls_up": false,
+    "curl_bone": false,
+    "pivot": [
+     2.2624,
+     -8.369,
+     0.5087
+    ],
+    "tip": [
+     4.4151,
+     -10.3226,
+     0.5231
     ]
    },
-   "radius": 1.05
-  },
-  "tendrils": {
-   "count": 18,
-   "heights": [
-    3.55,
-    2.783,
-    3.715,
-    2.948,
-    3.88,
-    2.413,
-    4.046,
-    2.578,
-    4.211,
-    2.744,
-    4.211,
-    2.578,
-    4.046,
-    2.413,
-    3.88,
-    2.948,
-    3.715,
-    2.783
+   {
+    "angle_deg": 54.0,
+    "length": 11.613,
+    "root_radius": 1.609,
+    "reach_radius": 14.782,
+    "reach_beyond_ring": 6.708,
+    "tip_height": 2.72,
+    "max_height": 3.049,
+    "curl_deg": -45.0,
+    "curls_up": true,
+    "curl_bone": false,
+    "pivot": [
+     8.3341,
+     -5.7531,
+     0.6363
+    ],
+    "tip": [
+     11.596,
+     -6.5627,
+     2.7201
+    ]
+   },
+   {
+    "angle_deg": 90.0,
+    "length": 10.276,
+    "root_radius": 1.502,
+    "reach_radius": 13.841,
+    "reach_beyond_ring": 5.875,
+    "tip_height": 0.566,
+    "max_height": 1.947,
+    "curl_deg": -211.0,
+    "curls_up": false,
+    "curl_bone": true,
+    "pivot": [
+     9.3651,
+     0.1258,
+     0.5948
+    ],
+    "tip": [
+     12.4859,
+     -1.6723,
+     0.5658
+    ]
+   },
+   {
+    "angle_deg": 126.0,
+    "length": 8.939,
+    "root_radius": 1.395,
+    "reach_radius": 13.119,
+    "reach_beyond_ring": 4.63,
+    "tip_height": 0.497,
+    "max_height": 1.809,
+    "curl_deg": 253.0,
+    "curls_up": false,
+    "curl_bone": false,
+    "pivot": [
+     7.8131,
+     4.9502,
+     0.5534
+    ],
+    "tip": [
+     8.9102,
+     7.2525,
+     0.4967
+    ]
+   },
+   {
+    "angle_deg": 162.0,
+    "length": 11.102,
+    "root_radius": 1.289,
+    "reach_radius": 15.541,
+    "reach_beyond_ring": 6.661,
+    "tip_height": 0.609,
+    "max_height": 1.67,
+    "curl_deg": -185.1,
+    "curls_up": false,
+    "curl_bone": true,
+    "pivot": [
+     2.8721,
+     9.9011,
+     0.512
+    ],
+    "tip": [
+     6.056,
+     12.9702,
+     0.6085
+    ]
+   },
+   {
+    "angle_deg": 198.0,
+    "length": 9.766,
+    "root_radius": 1.617,
+    "reach_radius": 14.15,
+    "reach_beyond_ring": 5.325,
+    "tip_height": 2.293,
+    "max_height": 2.605,
+    "curl_deg": 45.0,
+    "curls_up": true,
+    "curl_bone": false,
+    "pivot": [
+     -2.7081,
+     9.3656,
+     0.6395
+    ],
+    "tip": [
+     -2.508,
+     12.1847,
+     2.2928
+    ]
+   },
+   {
+    "angle_deg": 234.0,
+    "length": 8.429,
+    "root_radius": 1.511,
+    "reach_radius": 12.691,
+    "reach_beyond_ring": 4.224,
+    "tip_height": 0.47,
+    "max_height": 1.958,
+    "curl_deg": 269.1,
+    "curls_up": false,
+    "curl_bone": false,
+    "pivot": [
+     -7.198,
+     5.3774,
+     0.5981
+    ],
+    "tip": [
+     -9.4186,
+     5.7516,
+     0.4703
+    ]
+   },
+   {
+    "angle_deg": 270.0,
+    "length": 10.592,
+    "root_radius": 1.404,
+    "reach_radius": 14.251,
+    "reach_beyond_ring": 6.163,
+    "tip_height": 0.582,
+    "max_height": 1.82,
+    "curl_deg": -201.1,
+    "curls_up": false,
+    "curl_bone": true,
+    "pivot": [
+     -9.5583,
+     -0.692,
+     0.5567
+    ],
+    "tip": [
+     -12.9561,
+     1.2262,
+     0.5821
+    ]
+   },
+   {
+    "angle_deg": 306.0,
+    "length": 9.255,
+    "root_radius": 1.297,
+    "reach_radius": 12.685,
+    "reach_beyond_ring": 4.868,
+    "tip_height": 2.175,
+    "max_height": 2.446,
+    "curl_deg": 45.0,
+    "curls_up": true,
+    "curl_bone": false,
+    "pivot": [
+     -7.3247,
+     -5.1667,
+     0.5153
+    ],
+    "tip": [
+     -9.9242,
+     -5.8119,
+     2.1747
+    ]
+   },
+   {
+    "angle_deg": 342.0,
+    "length": 11.418,
+    "root_radius": 1.626,
+    "reach_radius": 14.338,
+    "reach_beyond_ring": 7.059,
+    "tip_height": 0.625,
+    "max_height": 2.107,
+    "curl_deg": -175.1,
+    "curls_up": false,
+    "curl_bone": false,
+    "pivot": [
+     -2.3561,
+     -9.0458,
+     0.6428
+    ],
+    "tip": [
+     -5.7161,
+     -12.421,
+     0.6248
+    ]
+   }
+  ]
+ },
+ "retopo": {
+  "method": "collapse decimation of the SDF surface (deterministic) -> main shell",
+  "decimated_tris": 25000,
+  "specks_dropped": {
+   "pieces": 1,
+   "kept": 1,
+   "dropped_verts": 0,
+   "largest_dropped": 0,
+   "largest_pieces": [
+    {
+     "verts": 12500,
+     "kept": true,
+     "bbox": [
+      [
+       -14.49,
+       -13.82,
+       -0.02
+      ],
+      [
+       14.48,
+       14.42,
+       37.39
+      ]
+     ]
+    }
    ]
+  },
+  "seconds": 7.7,
+  "low_to_high_distance": {
+   "mean": 0.0038,
+   "p99": 0.0136,
+   "max": 0.0237,
+   "pct_of_height_p99": 0.036
   }
  },
+ "eye_refinement": {
+  "duplicate_faces_skipped": 0,
+  "iterations": 5,
+  "faces_added": 2190,
+  "verts_projected": 1082,
+  "edge_max": 0.1,
+  "seconds": 0.3
+ },
+ "membership_seconds": 0.1,
+ "fields_seconds": 0.2,
+ "iso_cuts": {
+  "cuts": [
+   {
+    "field": "z",
+    "tau": 34.351,
+    "edge_splits": 26,
+    "face_connects": 31
+   },
+   {
+    "field": "tip",
+    "tau": 0.0,
+    "edge_splits": 284,
+    "face_connects": 329
+   },
+   {
+    "field": "frame",
+    "tau": 0.0,
+    "edge_splits": 67,
+    "face_connects": 84
+   },
+   {
+    "field": "hrect",
+    "tau": 0.05,
+    "edge_splits": 43,
+    "face_connects": 47
+   },
+   {
+    "field": "red",
+    "tau": 0.0,
+    "edge_splits": 100,
+    "face_connects": 122
+   },
+   {
+    "field": "yb",
+    "tau": 0.0,
+    "edge_splits": 104,
+    "face_connects": 107
+   },
+   {
+    "field": "tend",
+    "tau": 0.0,
+    "edge_splits": 346,
+    "face_connects": 376
+   },
+   {
+    "field": "eye",
+    "tau": 0.0,
+    "edge_splits": 155,
+    "face_connects": 186
+   }
+  ],
+  "seconds": 7.2,
+  "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects (v1 machinery)"
+ },
+ "tris_final": 29398,
+ "proportions": {
+  "height_k": 1.1,
+  "neck_k": 0.85,
+  "neck_stretch": 0.5,
+  "torso_stretch": 6.5,
+  "neck_axis": [
+   0.0036,
+   -1.3656
+  ],
+  "height_before_T": 37.4157,
+  "height_after_T": 41.7073,
+  "height_gain_pct": 11.47,
+  "neck_width_before_after_T": [
+   4.502,
+   3.826
+  ],
+  "trunk_final_frame": {
+   "floor_to_chest_junction": 21.473,
+   "maw_frame_z": [
+    7.943,
+    17.733
+   ],
+   "waist_z": 13.113,
+   "v3_floor_to_chest_junction": 15.18,
+   "widths_front_view_by_design": {
+    "maw_top": 10.4,
+    "waist": 7.9,
+    "maw_bottom": 9.6,
+    "flare_top": 10.2
+   },
+   "v3_width_at_the_maw_band_by_design": "2 x BOX_W = 11.0 (the rounded box)"
+  },
+  "rule": "T applied to the low (after the region cuts) and the bake high; every constant above is in the pre-T frame"
+ },
  "natural": {
-  "height": 34.5588,
-  "width": 28.9706,
-  "depth": 17.5027,
-  "footprint": 28.9706,
-  "units": "sculpt units (natural proportions, no refit; v3 = the sculpt x T)",
+  "height": 41.7073,
+  "width": 28.9686,
+  "depth": 28.2425,
+  "footprint": 28.9686,
+  "units": "sculpt units (natural proportions, no refit; v4 = the stretched sculpt x T)",
   "origin_shift_sculpt_units": [
-   -0.00486,
-   0.73037,
+   -0.00642,
+   0.39324,
    -0.6034
   ],
   "export_cell_fit_report_only": {
-   "scale": 0.05209,
+   "scale": 0.04316,
    "height_m": 1.8,
    "bound_by": "height",
    "ceilings": [
@@ -436,275 +934,171 @@
    ]
   }
  },
- "retopo": {
-  "method": "collapse decimation of the SDF surface (deterministic) -> main shell",
-  "decimated_tris": 24000,
-  "specks_dropped": {
-   "pieces": 1,
-   "kept": 1,
-   "dropped_verts": 0,
-   "largest_dropped": 0,
-   "largest_pieces": [
-    {
-     "verts": 11998,
-     "kept": true,
-     "bbox": [
-      [
-       -14.48,
-       -8.12,
-       -0.02
-      ],
-      [
-       14.49,
-       9.39,
-       30.9
-      ]
-     ]
-    }
-   ]
-  },
-  "seconds": 7.4,
-  "low_to_high_distance": {
-   "mean": 0.004,
-   "p99": 0.015,
-   "max": 0.0265,
-   "pct_of_height_p99": 0.048
-  }
- },
- "eye_refinement": {
-  "duplicate_faces_skipped": 0,
-  "iterations": 5,
-  "faces_added": 2484,
-  "verts_projected": 1232,
-  "edge_max": 0.1,
-  "seconds": 0.4
- },
- "fields_seconds": 0.1,
- "iso_cuts": {
-  "cuts": [
-   {
-    "field": "z",
-    "tau": 27.8254,
-    "edge_splits": 25,
-    "face_connects": 33
-   },
-   {
-    "field": "tip",
-    "tau": 0.0,
-    "edge_splits": 360,
-    "face_connects": 429
-   },
-   {
-    "field": "frame",
-    "tau": 0.0,
-    "edge_splits": 38,
-    "face_connects": 45
-   },
-   {
-    "field": "hrect",
-    "tau": 0.05,
-    "edge_splits": 23,
-    "face_connects": 17
-   },
-   {
-    "field": "red",
-    "tau": 0.0,
-    "edge_splits": 70,
-    "face_connects": 88
-   },
-   {
-    "field": "yb",
-    "tau": 0.0,
-    "edge_splits": 75,
-    "face_connects": 80
-   },
-   {
-    "field": "tend",
-    "tau": 0.0,
-    "edge_splits": 467,
-    "face_connects": 551
-   },
-   {
-    "field": "eye",
-    "tau": 0.0,
-    "edge_splits": 115,
-    "face_connects": 148
-   }
-  ],
-  "seconds": 7.9,
-  "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects (v1 machinery)"
- },
- "tris_final": 28800,
- "proportions": {
-  "height_k": 1.1,
-  "neck_k": 0.85,
-  "neck_stretch": 0.5,
-  "neck_axis": [
-   0.0021,
-   -1.7028
-  ],
-  "height_before_T": 30.9171,
-  "height_after_T": 34.5588,
-  "height_gain_pct": 11.78,
-  "neck_width_z17.2-18.4_before_after": [
-   4.51,
-   3.833
-  ],
-  "rule": "T applied to the low (after the region cuts) and the bake high; every constant above is in the pre-T frame"
- },
  "region_rule": {
-  "base": "the tendril tongues + the fused ring below their valleys: faces TEND_CUT or more outside the base skin (iso-cut) -- the dark shadow rising out of the ground; the floor darkening (BASE_DARK) ramps over every face below BASE_Z",
-  "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule) + the hat apex (> 0.9 H) -- dim embers",
-  "lip": "front skin inside the maw FRAME outline (rounded rect MAW_HW x MAW_Z, iso-cut) and outside the hole rectangle, within RED_DEPTH x T_TOOTH of the skin -- the red frame",
-  "teeth": "the same red plate inside the hole rectangle: the zigzag tooth tabs (upper UP_N hanging, lower LO_X rising) and their side walls -- red",
-  "maw_inner": "inside the frame and deeper than the plate: cavity walls under the lips, plate backs -- yellow-orange",
+  "base": "the floor tendrils + the hem skin outside the base surface: faces TEND_CUT or more outside the base skin (iso-cut) or on a tendril (membership > 0.5) -- the dark shadow spreading on the ground; the floor darkening (BASE_DARK) ramps over every non-arm face below BASE_Z",
+  "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule; the floor tendrils excluded) + the hat apex -- dim embers on the claws, wisp ends, shoulder spikes and hat",
+  "lip": "front skin inside the maw FRAME outline (the waist-curved sides, the JAGGED top line; iso-cut) and outside the opening, within RED_DEPTH x T_TOOTH of the skin -- the red frame",
+  "teeth": "the same red plate inside the opening outline: the fangs (upper, hanging) and v3's lower teeth + their side walls -- red",
+  "maw_inner": "inside the cavity outline and deeper than the plate: cavity walls under the lips, plate backs -- yellow-orange",
   "maw_throat": "the same, behind THROAT_Y (the back bowl): the hot yellow throat",
   "eyes": "front-projected lens field on the smoothed face (EYE_IN -> EYE_OUT, EYE_TOP / EYE_BOT), iso-cut -- the face's only feature",
   "waist_axis": [
-   0.0219,
-   -0.9111
+   0.0235,
+   -0.574
   ]
  },
  "tip_field": {
-  "spikes_found": 16,
+  "spikes_found": 18,
   "spikes_xyz_len": [
    [
-    -13.55,
-    -0.54,
-    4.74,
-    8.18
+    -7.55,
+    -5.81,
+    5.27,
+    15.52
    ],
    [
-    13.7,
-    -0.86,
-    4.96,
-    7.81
+    7.63,
+    -5.77,
+    5.27,
+    15.12
    ],
    [
-    14.29,
-    0.08,
-    19.15,
-    5.57
+    -14.19,
+    0.38,
+    25.7,
+    5.66
    ],
    [
-    -14.28,
-    0.09,
-    19.17,
-    5.44
+    14.26,
+    0.49,
+    25.65,
+    5.58
    ],
    [
-    6.51,
-    1.05,
-    21.93,
-    1.83
+    -11.63,
+    -1.2,
+    6.8,
+    2.85
    ],
    [
-    -5.97,
-    -4.81,
-    26.15,
-    1.79
+    12.4,
+    -3.1,
+    7.91,
+    2.79
    ],
    [
-    -13.16,
-    -0.92,
-    10.17,
+    -11.69,
+    -4.38,
+    6.17,
+    2.22
+   ],
+   [
+    11.13,
+    -2.81,
+    5.2,
+    1.99
+   ],
+   [
+    -8.54,
+    -6.32,
+    5.7,
+    1.89
+   ],
+   [
+    12.03,
+    1.1,
+    10.59,
+    1.76
+   ],
+   [
+    -12.54,
+    -0.36,
+    11.21,
+    1.71
+   ],
+   [
+    8.68,
+    -6.21,
+    5.69,
+    1.67
+   ],
+   [
+    -5.95,
+    -4.42,
+    32.65,
     1.66
    ],
    [
-    -11.91,
-    -0.99,
-    10.97,
-    1.58
-   ],
-   [
-    5.96,
-    -4.83,
-    26.08,
-    1.58
-   ],
-   [
-    11.9,
-    -0.98,
-    10.83,
+    5.92,
+    -4.48,
+    32.58,
     1.57
    ],
    [
-    13.09,
-    -0.84,
-    9.92,
-    1.39
+    -6.3,
+    1.43,
+    28.55,
+    1.45
    ],
    [
-    -6.24,
-    1.07,
-    22.1,
-    1.38
+    7.41,
+    -4.56,
+    5.7,
+    1.15
    ],
    [
-    -4.67,
-    -2.87,
-    26.3,
-    1.37
+    6.2,
+    1.38,
+    28.65,
+    1.15
    ],
    [
-    4.55,
-    -2.74,
-    26.32,
-    1.28
-   ],
-   [
-    3.32,
-    -4.2,
-    9.26,
-    1.12
-   ],
-   [
-    -3.3,
-    -4.2,
-    9.2,
-    1.06
+    -7.4,
+    -4.52,
+    5.69,
+    1.1
    ]
   ]
  },
  "regions_faces": {
-  "body": 18377,
-  "base": 4017,
-  "tips": 2786,
-  "lip": 274,
-  "maw_inner": 872,
-  "maw_throat": 776,
-  "teeth": 652,
-  "eyes": 1046
+  "body": 17428,
+  "base": 5292,
+  "tips": 2839,
+  "lip": 570,
+  "maw_inner": 943,
+  "maw_throat": 706,
+  "teeth": 580,
+  "eyes": 1040
  },
  "cavity_shade_k": 0.4,
- "cavity_seconds": 1.4,
+ "cavity_seconds": 1.1,
  "regions_area_share": {
-  "body": 0.6966,
-  "base": 0.0912,
-  "tips": 0.0632,
-  "lip": 0.015,
-  "maw_inner": 0.0523,
-  "maw_throat": 0.0586,
-  "teeth": 0.0223,
-  "eyes": 0.0007
+  "body": 0.6924,
+  "base": 0.155,
+  "tips": 0.0391,
+  "lip": 0.0173,
+  "maw_inner": 0.0337,
+  "maw_throat": 0.045,
+  "teeth": 0.0169,
+  "eyes": 0.0006
  },
  "facing": {
   "rule": "waist axis (at the lip's mean height) -> area centroid of the red lip region that frames the mouth opening",
   "anchor": [
-   0.0219,
-   -0.9111,
-   9.3513
+   0.0235,
+   -0.574,
+   13.378
   ],
   "landmark": [
-   -0.077,
-   -4.2212,
-   9.3513
+   0.0135,
+   -3.4428,
+   13.378
   ],
-  "angle_from_minusY_deg": -1.71,
+  "angle_from_minusY_deg": -0.2,
   "eyes_centroid": [
-   0.02,
-   -3.406,
-   21.4042
+   0.0182,
+   -3.0689,
+   28.5542
   ]
  },
  "bake": {
@@ -712,50 +1106,50 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.4
+   "seconds": 1.2
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 1.4
+   "seconds": 1.2
   },
-  "uv_texels_normal": 1943478,
-  "uv_coverage": 0.4634,
-  "normal_baked_pct_of_uv_texels": 99.78,
-  "normal_dev_mean": 0.0462,
+  "uv_texels_normal": 2089133,
+  "uv_coverage": 0.4981,
+  "normal_baked_pct_of_uv_texels": 99.98,
+  "normal_dev_mean": 0.035,
   "ao_baked_pct_of_uv_texels": 100.0,
-  "ao_mean": 0.7641,
+  "ao_mean": 0.8335,
   "pixel_sha": {
-   "normal": "59675ccad4c3db9b",
-   "ao": "ff879c47e8af197e"
+   "normal": "6b6f291dfa7b01d0",
+   "ao": "789ad95cf049ba6b"
   },
   "cage_extrusion": 0.15,
   "resolution": {
    "normal": 2048,
    "ao": 1024
   },
-  "high": "the SDF-rebuilt surface (509814 faces)",
-  "seconds": 7.3
+  "high": "the SDF-rebuilt surface (582834 faces)",
+  "seconds": 6.1
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 28800,
-  "zero_area_faces": 30,
+  "faces": 29398,
+  "zero_area_faces": 93,
   "flipped_faces": 0,
-  "uv_sha": "9ee64457dc42d45e"
+  "uv_sha": "20d49883bba00fc2"
  },
- "digest_geometry_colour": "b880c990e3fd6734",
+ "digest_geometry_colour": "9a2c643d0c077ccb",
  "final_bbox": [
   [
-   -14.4853,
-   -8.7514,
+   -14.4843,
+   -14.1213,
    0.0
   ],
   [
-   14.4853,
-   8.7514,
-   34.5588
+   14.4843,
+   14.1213,
+   41.7073
   ]
  ],
  "palette": {
@@ -870,7 +1264,7 @@
   ]
  },
  "see_through": {
-  "rule": "rays through the waist core (|u| <= 2.5 units about the waist axis, z = the maw's hole band MAW_BAND 5.63-13.33) from 24 yaws (0 = the front camera, 180 = behind); value = % of rays that pass straight through",
+  "rule": "rays through the waist core (|u| <= 2.5 units about the waist axis, z = the maw's hole band MAW_BAND 8.55-17.07) from 24 yaws (0 = the front camera, 180 = behind); value = % of rays that pass straight through",
   "pct_rays_through_by_yaw": {
    "0": 0.0,
    "15": 0.0,
