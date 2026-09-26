@@ -135,6 +135,24 @@ bar, never the reverse.
   scores time and quality — freehand vs pipeline on the same task is a
   comparison to RUN, not to argue.
 
+## Edits vs rebuilds (2026-09-25, from the artist's speed critique)
+
+Every asset is produced by a reproducible generator script (one headless
+run); the .blend is output, never the thing you edit — hand edits are
+overwritten by the next build.
+
+- **Parameter tweak** (an ease value, a color, a length, a threshold the
+  artist wants nudged): the ORCHESTRATOR edits the constant in the build
+  script directly and reruns the build — minutes, no lane, no report
+  ceremony. Renders to the artist, done.
+- **Structural change** (new geometry algorithm, new gate, new rig
+  behavior, anything touching more than declared constants): a lane, with
+  gates and a report.
+- Lane briefs must declare their tunable constants NEAR THE TOP of the
+  build script with the artist-facing name in a comment, so the next
+  parameter tweak is a one-line find. A build whose knobs are buried is a
+  defect.
+
 ## Quality tier is a per-asset knob (2026-09-24, artist)
 
 The tier is DETERMINED per asset by its role and platform budget, not fixed
