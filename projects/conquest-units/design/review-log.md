@@ -587,3 +587,23 @@ the artist's pick. (2) STARFISH MASK VERSION - star arms radiating around
 the eyes per the annotation, rendered as a variant alongside the current
 W visor (both kept until the artist picks). (3) smirk mouth per the
 earlier v3 entry.
+
+## 2026-09-26 — NEW UNIT: Firefly jet creature (artist reference sheet)
+
+Reference saved: design/reference/firefly-character-sheet.webp — "FIREFLY
+JET CREATURE" three-view sheet: firefighter-style mask with bug-eye
+goggles + simple straps/helmet, two feather antennae, jet-pack torso
+(rocket/bug fusion, banded abdomen, side thrusters), translucent smoky
+vapor wings with ragged edges, bottom flame-propulsion exhaust with a
+consistent clean flame shape.
+
+Artist (verbatim): "once thats done begin work on this firefly / the colors
+instead of that exact yellow should be more of a firefly glow type color /
+and the smokey wings should be coming out of the holes on its side"
+
+Binding reading: build a NEW unit "firefly" from the sheet (no source
+sculpt exists - first fully from-scratch build; magmoo's SDF kit is the
+prior art). Two deviations from the sheet: (1) the amber/yellow becomes a
+FIREFLY-GLOW color (bioluminescent green-tinged yellow) through the glow
+tiers; (2) the smoky wings emerge FROM the side-thruster holes, not from
+the back. Queued after supaoctto v3.
