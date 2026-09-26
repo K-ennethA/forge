@@ -80,8 +80,10 @@ LICK_K = 0.05                         # licks melt into the block over this (smo
 LICK_DEEP_T = 0.52                    # "dark-red lick tips": the outer part of every lick past this fraction
 LICK_SHARP = 1.4                      # "lick tip whip": lick radius falls as (1 - u)^this (flame tongue, not a thorn)
 # ---- arms (R = wand hand, -X; L = free claw hand, +X)
-ARM_R = {"shoulder": (-0.50, -0.02, 2.02), "ctrl": (-0.96, -0.14, 2.00), "r": (0.17, 0.085), "hand_r": 0.11}
-ARM_L = {"shoulder": (0.50, 0.0, 2.02), "ctrl": (0.98, 0.02, 1.96), "hand": (1.03, -0.06, 1.30), "r": (0.17, 0.09),
+# v1.1 (artist 2026-09-26: "longer arms that dont really have elbows just flames coming out of his torso"):
+# both arms lengthened into smooth elbowless flame sweeps; the free hand drops far lower and further out
+ARM_R = {"shoulder": (-0.50, -0.02, 2.02), "ctrl": (-1.18, -0.12, 1.86), "r": (0.16, 0.075), "hand_r": 0.11}
+ARM_L = {"shoulder": (0.50, 0.0, 2.02), "ctrl": (1.12, 0.02, 1.78), "hand": (1.38, -0.10, 0.68), "r": (0.16, 0.07),
          "hand_r": 0.10}
 ARM_LICKS = [(0.25, (0.14, 0.05, 0.32), 0.09), (0.50, (0.16, 0.0, 0.30), 0.085), (0.75, (0.12, -0.04, 0.24), 0.07)]   # (arc frac, tip offset (out, y,
                                       #   up), root radius) -- the ragged flames trailing up off each arm
@@ -89,8 +91,9 @@ CLAW = [((0.10, -0.06, -0.30), 0.070), ((0.0, -0.11, -0.34), 0.072), ((-0.08, 0.
 ARM_K = 0.10
 ARM_DEEP_T = {"L": 0.84, "R": 9.0}    # the free hand darkens at its tip; the wand hand stays orange (it grips)
 # ---- legs
-LEG = {"hip": (0.29, 0.0, 1.22), "ctrl": (0.35, -0.03, 0.55), "tip": (0.31, -0.06, -0.03), "r": (0.29, 0.05), "sharp": 0.85}
-TOES = [((0.33, -0.05, 0.28), (0.50, -0.15, 0.04), 0.08), ((0.25, 0.06, 0.32), (0.17, 0.21, 0.06), 0.07)]
+# v1.1 (artist 2026-09-26: "skinnier and pointier legs"): root radius 0.29 -> 0.21, tip 0.05 -> 0.015, sharp 0.85 -> 1.0
+LEG = {"hip": (0.29, 0.0, 1.22), "ctrl": (0.35, -0.03, 0.55), "tip": (0.31, -0.06, -0.03), "r": (0.21, 0.015), "sharp": 1.0}
+TOES = [((0.33, -0.05, 0.28), (0.48, -0.15, 0.02), 0.06), ((0.25, 0.06, 0.32), (0.17, 0.20, 0.04), 0.05)]
 LEG_K = 0.18                          # legs melt into the block over this: the sketch's block SPLITS into two legs
 LEG_DEEP_T = 0.70
 # ---- face: glowing HOLES carved into the flat front (sketch: jagged eyes, zigzag mouth; sheet: angled eyes)
@@ -102,7 +105,9 @@ MOUTH_X, MOUTH_Z = 0.34, (1.74, 2.02)  # "mouth width (half) / bottom, top"
 MOUTH_TEETH, MOUTH_TOOTH = (5, 4), 0.085   # "zigzag": teeth on the top / bottom edge, tooth depth
 MOUTH_SAG = (0.06, 0.03)              # the mouth corners pinch in (top edge drops, bottom edge rises toward the ends)
 # ---- colour zoning on the block
-FACE_SHADOW = True                    # "dark face": the sheet's dark ember face under the crown (eyes + mouth inside it)
+FACE_SHADOW = False                   # "dark face": the sheet's dark ember face under the crown (eyes + mouth inside it).
+                                      #   OFF per artist 2026-09-26: "get rid of the mask and just have his face be the
+                                      #   same as the body texture/color wise"
 SH_Z0, SH_WAVE = 1.60, (0.07, 9.0, 0.6)   # its wavy lower edge (height, (amplitude, frequency, phase))
 SH_THETA = 0.95                       # how far round the block it wraps (rad from the front centre)
 TONGUES = [(0, 0.50, 9), (26, 0.66, 9), (-24, 0.60, 9), (52, 0.95, 11), (-55, 0.90, 11), (90, 1.45, 15),

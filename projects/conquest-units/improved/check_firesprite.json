@@ -4,10 +4,10 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 2.6184,
-   "height": 4.283,
-   "width": 2.6184,
-   "depth": 1.5017,
+   "footprint": 2.9697,
+   "height": 4.2836,
+   "width": 2.9697,
+   "depth": 1.5031,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 17360,
+   "tris": 17156,
    "budget": [
     8000,
     22000
@@ -50,12 +50,12 @@
     {
      "mesh": "firesprite",
      "layers": 1,
-     "islands": 1274,
+     "islands": 1291,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 37% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.215,
-     "area_distortion_p95": 1.118
+     "overlap_note": "summed UV area is 36% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.2204,
+     "area_distortion_p95": 1.117
     },
     {
      "mesh": "firesprite_wand",
@@ -63,7 +63,7 @@
      "islands": 134,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 32% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "overlap_note": "summed UV area is 33% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
      "coverage": 0.3515,
      "area_distortion_p95": 1.145
     }
@@ -73,7 +73,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 17360
+   "faces": 17156
   },
   {
    "check": "colour",

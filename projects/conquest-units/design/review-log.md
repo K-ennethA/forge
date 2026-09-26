@@ -703,3 +703,20 @@ edge, eyes + zigzag mouth as glowing holes in the block face, ragged
 flame limbs. Wand on its own bone (game may hide/swap). Movement wave
 needs artist answers (the sheet shows idle/casting/jump/float poses;
 casting is attack-wave, deferred).
+
+## 2026-09-26 — Firesprite v1.1 feedback (artist verbatim)
+
+"for fire sprite lets get rid of the mask and just have his face be the
+same as the body texture/color wise
+also skinnier and pointier legs"
+
+"movement is floaty steps"
+
+Binding reading: (1) FACE_SHADOW off - no dark ember mask; the face is
+plain body fire, holes carry the read alone. (2) legs skinnier + pointier
+(root radius 0.29 -> 0.21, tip 0.05 -> 0.015, full sharp; toes slimmed).
+Both applied as direct orchestrator edits. (3) MOVEMENT = FLOATY STEPS:
+he steps like a walker but light - hang time between steps, soft
+contacts, drifting; grounded rest implied. The animation lane builds the
+real idle + floaty-step walk on this; flame-flow wildness still open
+(lane proposes).

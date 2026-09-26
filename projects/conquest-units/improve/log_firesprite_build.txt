@@ -1,20 +1,20 @@
 Info: Baking map saved to internal image, save it externally or pack it
 Info: Baking map saved to internal image, save it externally or pack it
 Info: Saved copy as "firesprite.blend"
-IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\firesprite.blend 46.3
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\firesprite.blend 58.6
 Info: Saved copy as "firesprite.blend"
 INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
-15:53:44 | INFO: Starting glTF 2.0 export
-15:53:44 | INFO: Extracting primitive: firesprite
-15:53:44 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
-15:53:44 | INFO: Primitives created: 2
-15:53:44 | INFO: Extracting primitive: firesprite_wand
-15:53:44 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
-15:53:44 | INFO: Primitives created: 2
-15:53:44 | INFO: Finished glTF 2.0 export in 0.21472954750061035 s
+16:04:17 | INFO: Starting glTF 2.0 export
+16:04:17 | INFO: Extracting primitive: firesprite
+16:04:17 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
+16:04:17 | INFO: Primitives created: 2
+16:04:17 | INFO: Extracting primitive: firesprite_wand
+16:04:17 | WARNING: glTF specification does not allow this case (multiple materials with different Vertex Color)
+16:04:17 | INFO: Primitives created: 2
+16:04:17 | INFO: Finished glTF 2.0 export in 0.22526335716247559 s
 
 Info: Saved copy as "firesprite__soulfire.blend"
-RIG_DONE {"bone_count": 17, "weights": {"max_influences": 4, "unweighted": 0, "sum_dev_max": 2.220446049250313e-16, "per_bone_dominant": {"body": 3632, "crown": 1989, "crown_flame.0": 478, "crown_flame.1": 165, "arm.L.0": 53, "arm.L.1": 122, "arm.L.2": 126, "arm.R.0": 37, "arm.R.1": 52, "arm.R.2": 86, "leg.L.0": 169, "leg.L.1": 296, "leg.R.0": 75, "leg.R.1": 149, "wand": 0, "wand_flame": 0}, "limbs": {"arm.L": {"length": 0.9835, "dominant_verts": 356}, "arm.R": {"length": 0.7756, "dominant_verts": 180}, "leg.L": {"length": 1.2529, "dominant_verts": 500}, "leg.R": {"length": 1.2529, "dominant_verts": 262}}, "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'", "rule": "fire shell: soft SDF ownership (tau 0.05) between the block (+ its licks) and each limb; a limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root blends into body); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by height (root blends into crown)"}, "digest": {"parts": {"bake_normal": "d23e7fd5d5a2adac", "bake_ao": "7e22be5f2eca5795", "geometry_colour_uv": "2bc7943fe4fd3ed8", "weights": "5cedb6e940662cad", "keys": "09f7952d6701b756", "clip_samples": "5e757799fce7c3ed"}, "combined": "6a7758cc76ff28bb"}, "seconds": 47.1}
-CLIP {"status": "PLACEHOLDER (movement wave pending the artist's answers)", "frames": [1, 49], "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "seam_wand_mm": 0.0, "min_z": -0.0091, "body_sway_deg": [1.0, 0.6], "arm_wave_deg": {"L": [2.0, 5.0], "R": [0.8, 1.6]}, "leg_wave_deg": [1.0, 2.5], "crown_flame": {"wave_deg": [3.0, 7.0], "stretch": 0.05}, "wand_flame": {"sway_deg": 4.0, "stretch": 0.06}, "root_offset_max": 0.0}
+RIG_DONE {"bone_count": 17, "weights": {"max_influences": 4, "unweighted": 0, "sum_dev_max": 2.220446049250313e-16, "per_bone_dominant": {"body": 3701, "crown": 1989, "crown_flame.0": 478, "crown_flame.1": 165, "arm.L.0": 85, "arm.L.1": 91, "arm.L.2": 141, "arm.R.0": 40, "arm.R.1": 56, "arm.R.2": 69, "leg.L.0": 121, "leg.L.1": 192, "leg.R.0": 60, "leg.R.1": 145, "wand": 0, "wand_flame": 0}, "limbs": {"arm.L": {"length": 1.6703, "dominant_verts": 365}, "arm.R": {"length": 0.8393, "dominant_verts": 169}, "leg.L": {"length": 1.2529, "dominant_verts": 333}, "leg.R": {"length": 1.2529, "dominant_verts": 216}}, "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'", "rule": "fire shell: soft SDF ownership (tau 0.05) between the block (+ its licks) and each limb; a limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root blends into body); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by height (root blends into crown)"}, "digest": {"parts": {"bake_normal": "04bf171808d33cfc", "bake_ao": "06041a60413390aa", "geometry_colour_uv": "58797b400fd46301", "weights": "b16d869a0fe5b5cb", "keys": "09f7952d6701b756", "clip_samples": "786f9c1e14a9f4ad"}, "combined": "a51f9928724fb50d"}, "seconds": 59.5}
+CLIP {"status": "PLACEHOLDER (movement wave pending the artist's answers)", "frames": [1, 49], "seconds": 2.0, "cyclic": true, "seam_main_mm": 0.0, "seam_wand_mm": 0.0, "min_z": -0.0123, "body_sway_deg": [1.0, 0.6], "arm_wave_deg": {"L": [2.0, 5.0], "R": [0.8, 1.6]}, "leg_wave_deg": [1.0, 2.5], "crown_flame": {"wave_deg": [3.0, 7.0], "stretch": 0.05}, "wand_flame": {"sway_deg": 4.0, "stretch": 0.06}, "root_offset_max": 0.0}
 GLB {"materials": [{"name": "firesprite_fire", "alphaMode": "BLEND", "doubleSided": false, "textures": []}, {"name": "firesprite_crown", "alphaMode": "OPAQUE", "doubleSided": false, "textures": ["baseColorTexture", "normalTexture"]}, {"name": "firesprite_wand", "alphaMode": "OPAQUE", "doubleSided": false, "textures": []}], "primitives": [{"mesh": "firesprite", "material": "firesprite_fire", "colour_sets": ["COLOR_0", "COLOR_1"]}, {"mesh": "firesprite", "material": "firesprite_crown", "colour_sets": ["COLOR_0", "COLOR_1"]}, {"mesh": "firesprite_wand", "material": "firesprite_wand", "colour_sets": ["COLOR_0", "COLOR_1"]}, {"mesh": "firesprite_wand", "material": "firesprite_fire", "colour_sets": ["COLOR_0", "COLOR_1"]}], "nodes": ["arm.L.0", "arm.L.1", "arm.L.2", "arm.R.0", "arm.R.1", "arm.R.2", "body", "crown", "crown_flame.0", "crown_flame.1", "firesprite", "firesprite_rig", "firesprite_wand", "leg.L.0", "leg.L.1", "leg.R.0", "leg.R.1", "root", "wand", "wand_flame"], "animations": ["idle"], "skins": 1, "joints": 17, "extensionsUsed": ["KHR_materials_emissive_strength"]}
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

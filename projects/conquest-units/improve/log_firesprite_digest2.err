@@ -1,2 +1,2 @@
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\firesprite_build.py:734: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\firesprite_build.py:739: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   mat.use_nodes = True

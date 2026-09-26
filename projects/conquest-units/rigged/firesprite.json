@@ -7,39 +7,39 @@
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "body": 3632,
+   "body": 3701,
    "crown": 1989,
    "crown_flame.0": 478,
    "crown_flame.1": 165,
-   "arm.L.0": 53,
-   "arm.L.1": 122,
-   "arm.L.2": 126,
-   "arm.R.0": 37,
-   "arm.R.1": 52,
-   "arm.R.2": 86,
-   "leg.L.0": 169,
-   "leg.L.1": 296,
-   "leg.R.0": 75,
-   "leg.R.1": 149,
+   "arm.L.0": 85,
+   "arm.L.1": 91,
+   "arm.L.2": 141,
+   "arm.R.0": 40,
+   "arm.R.1": 56,
+   "arm.R.2": 69,
+   "leg.L.0": 121,
+   "leg.L.1": 192,
+   "leg.R.0": 60,
+   "leg.R.1": 145,
    "wand": 0,
    "wand_flame": 0
   },
   "limbs": {
    "arm.L": {
-    "length": 0.9835,
-    "dominant_verts": 356
+    "length": 1.6703,
+    "dominant_verts": 365
    },
    "arm.R": {
-    "length": 0.7756,
-    "dominant_verts": 180
+    "length": 0.8393,
+    "dominant_verts": 169
    },
    "leg.L": {
     "length": 1.2529,
-    "dominant_verts": 500
+    "dominant_verts": 333
    },
    "leg.R": {
     "length": 1.2529,
-    "dominant_verts": 262
+    "dominant_verts": 216
    }
   },
   "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'",
@@ -56,7 +56,7 @@
    "cyclic": true,
    "seam_main_mm": 0.0,
    "seam_wand_mm": 0.0,
-   "min_z": -0.0091,
+   "min_z": -0.0123,
    "body_sway_deg": [
     1.0,
     0.6
@@ -111,14 +111,14 @@
    "parent": "root",
    "deform": true,
    "head": [
-    0.1728,
-    -0.061,
-    0.9997
+    -0.0028,
+    -0.0617,
+    1.0003
    ],
    "tail": [
-    0.1728,
-    -0.061,
-    2.5997
+    -0.0028,
+    -0.0617,
+    2.6003
    ]
   },
   {
@@ -126,14 +126,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    0.1728,
-    -0.061,
-    2.7597
+    -0.0028,
+    -0.0617,
+    2.7603
    ],
    "tail": [
-    0.1728,
-    -0.061,
-    3.1097
+    -0.0028,
+    -0.0617,
+    3.1103
    ]
   },
   {
@@ -141,14 +141,14 @@
    "parent": "crown",
    "deform": true,
    "head": [
-    0.1728,
-    -0.061,
-    2.9597
+    -0.0028,
+    -0.0617,
+    2.9604
    ],
    "tail": [
-    0.1728,
-    -0.061,
-    3.6097
+    -0.0028,
+    -0.0617,
+    3.6103
    ]
   },
   {
@@ -156,14 +156,14 @@
    "parent": "crown_flame.0",
    "deform": true,
    "head": [
-    0.1728,
-    -0.061,
-    3.6097
+    -0.0028,
+    -0.0617,
+    3.6103
    ],
    "tail": [
-    0.1728,
-    -0.061,
-    4.2597
+    -0.0028,
+    -0.0617,
+    4.2604
    ]
   },
   {
@@ -171,14 +171,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    0.6728,
-    -0.061,
-    2.0197
+    0.4972,
+    -0.0617,
+    2.0203
    ],
    "tail": [
-    0.9694,
-    -0.0599,
-    1.8923
+    0.9356,
+    -0.0684,
+    1.6881
    ]
   },
   {
@@ -186,14 +186,14 @@
    "parent": "arm.L.0",
    "deform": true,
    "head": [
-    0.9694,
-    -0.0599,
-    1.8923
+    0.9356,
+    -0.0684,
+    1.6881
    ],
    "tail": [
-    1.142,
-    -0.0844,
-    1.619
+    1.2115,
+    -0.1074,
+    1.2086
    ]
   },
   {
@@ -201,14 +201,14 @@
    "parent": "arm.L.1",
    "deform": true,
    "head": [
-    1.142,
-    -0.0844,
-    1.619
+    1.2115,
+    -0.1074,
+    1.2086
    ],
    "tail": [
-    1.2028,
-    -0.121,
-    1.2997
+    1.3772,
+    -0.1617,
+    0.6804
    ]
   },
   {
@@ -216,14 +216,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    -0.3272,
-    -0.081,
-    2.0197
+    -0.5028,
+    -0.0817,
+    2.0203
    ],
    "tail": [
-    -0.5661,
-    -0.1637,
-    1.9729
+    -0.7659,
+    -0.1349,
+    1.9427
    ]
   },
   {
@@ -231,14 +231,14 @@
    "parent": "arm.R.0",
    "deform": true,
    "head": [
-    -0.5661,
-    -0.1637,
-    1.9729
+    -0.7659,
+    -0.1349,
+    1.9427
    ],
    "tail": [
-    -0.7401,
-    -0.284,
-    1.8317
+    -0.9863,
+    -0.2386,
+    1.8132
    ]
   },
   {
@@ -246,14 +246,14 @@
    "parent": "arm.R.1",
    "deform": true,
    "head": [
-    -0.7401,
-    -0.284,
-    1.8317
+    -0.9863,
+    -0.2386,
+    1.8132
    ],
    "tail": [
-    -0.7971,
-    -0.4163,
-    1.6197
+    -0.9727,
+    -0.417,
+    1.6204
    ]
   },
   {
@@ -261,14 +261,14 @@
    "parent": "arm.R.2",
    "deform": true,
    "head": [
-    -0.7971,
-    -0.4163,
-    1.6197
+    -0.9727,
+    -0.417,
+    1.6204
    ],
    "tail": [
-    -1.0272,
-    -0.541,
-    3.0197
+    -1.2028,
+    -0.5417,
+    3.0203
    ]
   },
   {
@@ -276,14 +276,14 @@
    "parent": "wand",
    "deform": true,
    "head": [
-    -1.0272,
-    -0.541,
-    3.2397
+    -1.2028,
+    -0.5417,
+    3.2404
    ],
    "tail": [
-    -1.0272,
-    -0.541,
-    4.2197
+    -1.2028,
+    -0.5417,
+    4.2203
    ]
   },
   {
@@ -291,14 +291,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    0.4628,
-    -0.061,
-    1.2197
+    0.2872,
+    -0.0617,
+    1.2204
    ],
    "tail": [
-    0.4972,
-    -0.0899,
-    0.595
+    0.3216,
+    -0.0906,
+    0.5957
    ]
   },
   {
@@ -306,14 +306,14 @@
    "parent": "leg.L.0",
    "deform": true,
    "head": [
-    0.4972,
-    -0.0899,
-    0.595
+    0.3216,
+    -0.0906,
+    0.5957
    ],
    "tail": [
-    0.4828,
-    -0.121,
-    -0.0303
+    0.3072,
+    -0.1217,
+    -0.0297
    ]
   },
   {
@@ -321,14 +321,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    -0.1172,
-    -0.061,
-    1.2197
+    -0.2928,
+    -0.0617,
+    1.2204
    ],
    "tail": [
-    -0.1516,
-    -0.0899,
-    0.595
+    -0.3273,
+    -0.0906,
+    0.5957
    ]
   },
   {
@@ -336,14 +336,14 @@
    "parent": "leg.R.0",
    "deform": true,
    "head": [
-    -0.1516,
-    -0.0899,
-    0.595
+    -0.3273,
+    -0.0906,
+    0.5957
    ],
    "tail": [
-    -0.1372,
-    -0.121,
-    -0.0303
+    -0.3128,
+    -0.1217,
+    -0.0297
    ]
   }
  ],
@@ -351,18 +351,18 @@
  "deform_bone_count": 16,
  "digest": {
   "parts": {
-   "bake_normal": "d23e7fd5d5a2adac",
-   "bake_ao": "7e22be5f2eca5795",
-   "geometry_colour_uv": "2bc7943fe4fd3ed8",
-   "weights": "5cedb6e940662cad",
+   "bake_normal": "04bf171808d33cfc",
+   "bake_ao": "06041a60413390aa",
+   "geometry_colour_uv": "58797b400fd46301",
+   "weights": "b16d869a0fe5b5cb",
    "keys": "09f7952d6701b756",
-   "clip_samples": "5e757799fce7c3ed"
+   "clip_samples": "786f9c1e14a9f4ad"
   },
-  "combined": "6a7758cc76ff28bb"
+  "combined": "a51f9928724fb50d"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite.glb",
-  "bytes": 5483312,
+  "bytes": 5438844,
   "seconds": 0.5,
   "carries": {
    "materials": [
@@ -453,7 +453,7 @@
     "KHR_materials_emissive_strength"
    ]
   },
-  "structure": "armature identity + skinned 'firesprite' (fire BLEND + crown opaque primitives) + skinned 'firesprite_wand' (own node: bark opaque + flame BLEND); natural scale; report-only cell fit 0.42027"
+  "structure": "armature identity + skinned 'firesprite' (fire BLEND + crown opaque primitives) + skinned 'firesprite_wand' (own node: bark opaque + flame BLEND); natural scale; report-only cell fit 0.42021"
  },
  "skins": {
   "default": {
@@ -929,13 +929,13 @@
    },
    "region_faces": {
     "firesprite": {
-     "fire_shadow": 225,
-     "fire_deep": 2602,
-     "fire": 5116,
-     "fire_bright": 488,
+     "fire_shadow": 0,
+     "fire_deep": 2509,
+     "fire": 5121,
+     "fire_bright": 564,
      "fire_core": 700,
-     "hole_wall": 215,
-     "hole_glow": 280,
+     "hole_wall": 226,
+     "hole_glow": 302,
      "flame_tip": 368,
      "flame_outer": 1272,
      "flame_core": 450,
@@ -953,14 +953,14 @@
      "flame_core": 250
     }
    },
-   "geometry_colour_uv_digest": "076f1800f429f81c"
+   "geometry_colour_uv_digest": "4600b7953801ab1c"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
-   "default_digest_before": "2bc7943fe4fd3ed8",
-   "default_digest_after_restore": "2bc7943fe4fd3ed8"
+   "default_digest_before": "58797b400fd46301",
+   "default_digest_after_restore": "58797b400fd46301"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firesprite.json",
- "seconds": 47.1
+ "seconds": 59.5
 }

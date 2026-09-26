@@ -14,38 +14,32 @@
    {
     "field": "f_pocket",
     "tau": 0.0,
-    "edge_splits": 6,
-    "face_connects": 9
+    "edge_splits": 4,
+    "face_connects": 7
    },
    {
     "field": "y_pocket",
     "tau": 0.0,
-    "edge_splits": 142,
-    "face_connects": 142
+    "edge_splits": 150,
+    "face_connects": 150
    },
    {
     "field": "deep",
     "tau": 0.0,
-    "edge_splits": 537,
-    "face_connects": 611
-   },
-   {
-    "field": "shadow",
-    "tau": 0.0,
-    "edge_splits": 45,
-    "face_connects": 58
+    "edge_splits": 459,
+    "face_connects": 536
    },
    {
     "field": "tongue",
     "tau": 0.0,
-    "edge_splits": 133,
-    "face_connects": 140
+    "edge_splits": 148,
+    "face_connects": 151
    }
   ],
-  "shell_tris_after_cuts": 8926,
+  "shell_tris_after_cuts": 8722,
   "elements": 38,
   "limb_join": "FUSED: arms (k 0.10) and legs (k 0.18) smooth-union into the block -- one fire mass, no gaps",
-  "seconds": 15.1
+  "seconds": 21.8
  },
  "crown": {
   "cuts": [
@@ -107,13 +101,13 @@
   "rule": "own object 'firesprite_wand' + own bones (wand, wand_flame; wand parented to the R hand bone arm.R.2): hide or swap the node"
  },
  "centre_shift": [
-  -0.172786,
-  0.060957,
-  0.000261
+  0.002842,
+  0.061665,
+  -0.00035
  ],
  "body_axis_offset_from_origin": {
-  "x": 0.1728,
-  "y": -0.061,
+  "x": -0.0028,
+  "y": -0.0617,
   "why": "the contract centres the WHOLE bbox (wand included) on the origin"
  },
  "glow_tiers": {
@@ -172,13 +166,13 @@
  },
  "regions_faces": {
   "firesprite": {
-   "fire_shadow": 225,
-   "fire_deep": 2602,
-   "fire": 5116,
-   "fire_bright": 488,
+   "fire_shadow": 0,
+   "fire_deep": 2509,
+   "fire": 5121,
+   "fire_bright": 564,
    "fire_core": 700,
-   "hole_wall": 215,
-   "hole_glow": 280,
+   "hole_wall": 226,
+   "hole_glow": 302,
    "flame_tip": 368,
    "flame_outer": 1272,
    "flame_core": 450,
@@ -224,43 +218,43 @@
   "material_alpha": 1.0
  },
  "regions_area_share_main": {
-  "fire_shadow": 0.0477,
-  "fire_deep": 0.1097,
-  "fire": 0.3692,
-  "fire_bright": 0.05,
-  "fire_core": 0.0596,
-  "hole_wall": 0.0074,
-  "hole_glow": 0.017,
-  "flame_tip": 0.024,
-  "flame_outer": 0.0938,
-  "flame_core": 0.03,
-  "crown": 0.0818,
-  "crown_trim": 0.0555,
-  "crown_boss": 0.021,
-  "crown_gem": 0.0035,
-  "horn": 0.0297
+  "fire_shadow": 0.0,
+  "fire_deep": 0.0992,
+  "fire": 0.42,
+  "fire_bright": 0.0526,
+  "fire_core": 0.0603,
+  "hole_wall": 0.0075,
+  "hole_glow": 0.0172,
+  "flame_tip": 0.0243,
+  "flame_outer": 0.0948,
+  "flame_core": 0.0304,
+  "crown": 0.0827,
+  "crown_trim": 0.0561,
+  "crown_boss": 0.0213,
+  "crown_gem": 0.0036,
+  "horn": 0.0301
  },
  "facing": {
   "rule": "crown centre -> front diamond boss face on the midline (the sheet's front boss; the eye and mouth holes are on the same face)",
   "anchor": [
-   0.1728,
-   -0.061,
-   2.7597
+   -0.0028,
+   -0.0617,
+   2.7603
   ],
   "landmark": [
-   0.1728,
-   -0.632,
-   2.7597
+   -0.0028,
+   -0.6327,
+   2.7603
   ],
   "angle_from_minusY_deg": 0.0
  },
  "tris": {
-  "total": 17360,
-  "main": 14890,
+  "total": 17156,
+  "main": 14686,
   "wand_object": 2470,
   "core": 700,
   "crown_flame.core": 450,
-  "shell": 8926,
+  "shell": 8722,
   "crown_flame.outer": 1640,
   "crown": 3174,
   "wand": 1408,
@@ -272,23 +266,23 @@
   "body": {
    "step": 0.016,
    "grid": [
-    159,
+    184,
     110,
     244
    ],
    "ops": 41,
-   "high_tris": 582520,
-   "high_verts": 291242,
+   "high_tris": 573216,
+   "high_verts": 286596,
    "crumbs": {
-    "pieces": 1,
-    "dropped_verts": 0
+    "pieces": 2,
+    "dropped_verts": 46
    },
    "open_edges": 0,
    "nonmanifold_edges": 0,
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
-   "nodes_pushed_off_surface": 15722,
-   "seconds": 7.5
+   "nodes_pushed_off_surface": 15575,
+   "seconds": 10.1
   },
   "core": {
    "step": 0.02,
@@ -309,7 +303,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 1136,
-   "seconds": 0.3
+   "seconds": 0.4
   },
   "crown": {
    "step": 0.01,
@@ -330,7 +324,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 928,
    "nodes_pushed_off_surface": 12799,
-   "seconds": 6.8
+   "seconds": 7.7
   },
   "crown_flame.outer": {
    "step": 0.016,
@@ -351,7 +345,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 5108,
-   "seconds": 2.4
+   "seconds": 2.2
   },
   "crown_flame.core": {
    "step": 0.02,
@@ -393,7 +387,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 4058,
-   "seconds": 3.8
+   "seconds": 4.0
   },
   "wand_flame.outer": {
    "step": 0.012,
@@ -414,7 +408,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 1940,
-   "seconds": 1.3
+   "seconds": 2.1
   },
   "wand_flame.core": {
    "step": 0.015,
@@ -435,7 +429,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 332,
-   "seconds": 0.1
+   "seconds": 0.2
   }
  },
  "retopo": {
@@ -448,10 +442,10 @@
    },
    "open_edges": 0,
    "high_to_low_sampled": {
-    "p99": 0.0085,
-    "max": 0.01899
+    "p99": 0.00772,
+    "max": 0.01604
    },
-   "seconds": 5.0
+   "seconds": 8.8
   },
   "core": {
    "target": 700,
@@ -479,7 +473,7 @@
     "p99": 0.00227,
     "max": 0.00465
    },
-   "seconds": 4.1
+   "seconds": 6.7
   },
   "crown_flame.outer": {
    "target": 1500,
@@ -493,7 +487,7 @@
     "p99": 0.01221,
     "max": 0.02045
    },
-   "seconds": 1.0
+   "seconds": 1.1
   },
   "crown_flame.core": {
    "target": 450,
@@ -521,7 +515,7 @@
     "p99": 0.00257,
     "max": 0.00604
    },
-   "seconds": 1.7
+   "seconds": 2.1
   },
   "wand_flame.outer": {
    "target": 700,
@@ -535,7 +529,7 @@
     "p99": 0.0103,
     "max": 0.01633
    },
-   "seconds": 0.5
+   "seconds": 0.8
   },
   "wand_flame.core": {
    "target": 250,
@@ -549,7 +543,7 @@
     "p99": 0.00633,
     "max": 0.01015
    },
-   "seconds": 0.2
+   "seconds": 0.1
   }
  },
  "open_edges": {
@@ -565,26 +559,26 @@
  "measure": {
   "bbox": [
    [
-    -1.3092,
-    -0.7508,
+    -1.4849,
+    -0.7515,
     0.0
    ],
    [
-    1.3092,
-    0.7508,
-    4.283
+    1.4849,
+    0.7515,
+    4.2836
    ]
   ],
-  "height": 4.283,
-  "width_x": 2.6184,
-  "depth_y": 1.5017,
+  "height": 4.2836,
+  "width_x": 2.9697,
+  "depth_y": 1.5031,
   "sheet_px_equivalent": {
-   "height_px": 428.3
+   "height_px": 428.4
   },
   "export_cell_fit_report_only": {
-   "scale": 0.42027,
+   "scale": 0.42021,
    "height_m": 1.8,
-   "footprint_m": 1.1005,
+   "footprint_m": 1.2479,
    "bound_by": "height"
   }
  },
@@ -599,30 +593,30 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.8
+   "seconds": 0.6
   },
-  "cage_extrusion": 0.0255,
+  "cage_extrusion": 0.0232,
   "cage_rule": "3 x the sampled high->low p99 distance of the crown / body (floor 0.02)",
   "resolution": {
    "normal": 1024,
    "ao": 512
   },
-  "high_tris": 1240540,
+  "high_tris": 1231236,
   "high_rule": "every main-object SDF high (body, core, crown, crown flame outer + core)",
   "wired_into": "the crown material only (the fire keeps flat colour + glow + alpha; the wand is flat-shaded colour)",
-  "crown_uv_texels_normal": 45067,
-  "normal_baked_pct_of_crown_texels": 90.19,
-  "normal_detail_fraction_dev_gt_0.05": 0.7089,
+  "crown_uv_texels_normal": 46547,
+  "normal_baked_pct_of_crown_texels": 92.15,
+  "normal_detail_fraction_dev_gt_0.05": 0.7002,
   "ao_baked_pct_of_crown_texels": 100.0,
-  "ao_mean_crown": 0.5074,
+  "ao_mean_crown": 0.5035,
   "ao_p05_crown": 0.0,
   "pixel_sha": {
-   "normal": "d23e7fd5d5a2adac",
-   "ao": "7e22be5f2eca5795"
+   "normal": "04bf171808d33cfc",
+   "ao": "06041a60413390aa"
   },
-  "seconds": 2.8
+  "seconds": 2.7
  },
- "digest_geometry_colour_uv": "2bc7943fe4fd3ed8",
+ "digest_geometry_colour_uv": "58797b400fd46301",
  "palette": {
   "default": {
    "fire_shadow": {
