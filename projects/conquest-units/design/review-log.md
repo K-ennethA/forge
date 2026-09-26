@@ -720,3 +720,15 @@ he steps like a walker but light - hang time between steps, soft
 contacts, drifting; grounded rest implied. The animation lane builds the
 real idle + floaty-step walk on this; flame-flow wildness still open
 (lane proposes).
+
+## 2026-09-26 — Firesprite v1.2 feedback (artist verbatim)
+
+"can we make the torso blend better with the legs so it doesnt look like a
+rectangle on top of legs, make the arms a little bit shorter now and a
+little bit fatter otherwise good"
+
+Binding reading: (1) the block hem flows into the hips/legs as one fire
+mass (raise the leg smooth-union / flare the lower band) - no rectangle-
+on-legs read. (2) arms: shorter than v1.1's full drop, and fatter
+(roots ~0.19, tips ~0.09), still elbowless smooth sweeps. Folded into
+the running movement lane (it owns the files and rebuilds anyway).
