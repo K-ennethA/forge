@@ -548,3 +548,17 @@ tendrils are NOT up-spikes: curling tendrils reaching OUT along the floor
 (reference's octopus-curl base). (5) arms toward the reference: wispy,
 tapering, clawed, with trailing flame-like edges. Overall identity =
 the shadow-lord reference while keeping the devouring body maw.
+
+## 2026-09-26 — Supaoctto v3 feedback (artist verbatim)
+
+"for supacctoo its good only thing is the circle mouth should be more of
+smirk line when open like a confident hero, and there should be nothing
+visible when its closed so a smirk opening when open and nothing when
+closed"
+
+Binding reading: v2 approved except the mouth. The static circular siphon
+dimple goes. The mouth has two states: CLOSED = nothing visible at all
+(smooth mantle, no crease, no dimple); OPEN = a confident-hero SMIRK line
+opening (asymmetric upturned corner). Animated via shape key/morph so it
+exports; closed is the rest state. When it opens is lane-proposed
+(natural candidates: the float hold, brief idle beats) - artist to veto.
