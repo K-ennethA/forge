@@ -192,3 +192,19 @@ covered layers. Delivery-lane decisions parked: talk take is seated
 (upper body used on standing legs), one-shot travel keep-or-strip,
 combat stance yaw. Speeds for the manifest: walk 1.785, run 4.362,
 sprint 7.215, crouch_walk 0.710.
+
+## 2026-09-25 - clip previews verdict (artist, verbatim)
+> on eldroot the dissapearance and reappareance of the skirt is a little
+> too much but fine for now - better to keep iterating on others to advance
+> for the running hands should be in a soft closed position
+> for crouching number four he should have his leggs more spread apart
+> for walking number 3 his arms are too close to his side and it makes his
+> movement feel too rigid
+> small improvements here to make it more lifelike
+
+Readings: ELDROOT accepted for now (tasset fold-away noted as "a little
+too much" - candidate future polish: stagger the plate tuck or fade;
+advance other units first). CLIP REFINEMENTS (lifelike pass): RUN - hands
+in a soft closed position (finger-curl layer); CROUCH_WALK - legs more
+spread apart (stance-width layer); WALK - arms carried too close to the
+sides, reads rigid (arm-carriage angle out + freer swing).

@@ -58,3 +58,11 @@ real ear. Note: a genuinely thick base also dissolves the constructional
 min_wall failure at the root — the artist's requirement and the failing gate
 are the same fix. volume_ratio alone cannot see this; a thickness-profile
 metric (base vs tip) is the candidate gate.
+
+## 2026-09-24 — PAUSED by the artist
+Eevee bowl/ear work paused in favor of game-asset production for the Godot
+werewolf game. Resume state: research report docs/research/
+ear-pipeline-improvement.md has the round-4 plan (unit-bug fix, full
+outline, outline-inset cup, peg interface, in-turn silhouette scorer); the
+artist's two open decisions are the path choice (script-built main +
+seeded-TRELLIS experiment) and the cup/thickness numbers.

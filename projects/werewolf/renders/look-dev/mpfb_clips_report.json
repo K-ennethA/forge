@@ -1,5 +1,5 @@
 {
- "blend_in": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\models\\mpfb-clips-draft.blend",
+ "blend_in": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\build_in.blend",
  "fps": 24,
  "game_scale": 0.929615,
  "contract_height_m": 1.75,
@@ -150,6 +150,18 @@
     "head_pitch_std_deg": 1.5652,
     "step_interval_mean_s": 0.5
    },
+   "arm_abduction_take_deg": {
+    "l": {
+     "min": -3.5,
+     "max": 8.5,
+     "mean": 2.4
+    },
+    "r": {
+     "min": -8.7,
+     "max": 6.9,
+     "mean": -1.3
+    }
+   },
    "transfer_fidelity": {
     "legs": {
      "worst_mm": 0.055,
@@ -158,7 +170,7 @@
     },
     "upper": {
      "worst_mm": 4.124,
-     "where": "hand_r.head",
+     "where": "clavicle_l.tail",
      "frame": 6
     },
     "upper_deg": {
@@ -219,6 +231,19 @@
      "max_rise_above_rest": 1.6
     }
    },
+   "arm_abduction_deg": {
+    "l": {
+     "min": 8.2,
+     "max": 20.9,
+     "mean": 14.5
+    },
+    "r": {
+     "min": 2.7,
+     "max": 19.0,
+     "mean": 10.4
+    }
+   },
+   "arm_flare_layer_deg": 12.0,
    "seam_flesh": {
     "worst_mm": 0.0007,
     "mesh": "Protagonist"
@@ -257,28 +282,28 @@
    },
    "flesh": {
     "shoulder_cap_body": {
-     "strain_max_pct": 92.66,
-     "strain_p99_pct": 39.54,
+     "strain_max_pct": 76.25,
+     "strain_p99_pct": 34.22,
      "flipped_faces": 0,
      "at_frame": {
-      "strain_max_pct": 7,
+      "strain_max_pct": 8,
       "strain_p99_pct": 7,
       "flipped_faces": 1
      }
     },
     "armpit_body": {
-     "strain_max_pct": 139.71,
-     "strain_p99_pct": 52.5,
-     "flipped_faces": 14,
+     "strain_max_pct": 107.47,
+     "strain_p99_pct": 45.85,
+     "flipped_faces": 8,
      "at_frame": {
-      "strain_max_pct": 6,
+      "strain_max_pct": 15,
       "strain_p99_pct": 3,
-      "flipped_faces": 24
+      "flipped_faces": 19
      }
     },
     "shoulder_cap_jacket": {
-     "strain_max_pct": 66.42,
-     "strain_p99_pct": 50.31,
+     "strain_max_pct": 63.16,
+     "strain_p99_pct": 41.64,
      "flipped_faces": 0,
      "at_frame": {
       "strain_max_pct": 20,
@@ -287,21 +312,21 @@
      }
     },
     "armpit_jacket": {
-     "strain_max_pct": 287.05,
-     "strain_p99_pct": 50.99,
-     "flipped_faces": 9,
+     "strain_max_pct": 208.29,
+     "strain_p99_pct": 45.44,
+     "flipped_faces": 6,
      "at_frame": {
       "strain_max_pct": 19,
       "strain_p99_pct": 13,
-      "flipped_faces": 12
+      "flipped_faces": 2
      }
     },
     "sleeve_skin": {
-     "outside": 24,
-     "worst_mm": 26.83,
+     "outside": 19,
+     "worst_mm": 25.83,
      "at_frame": {
-      "outside": 1,
-      "worst_mm": 13
+      "outside": 8,
+      "worst_mm": 23
      }
     },
     "sleeve_skin_visible": {
@@ -313,11 +338,11 @@
      }
     },
     "tee_sleeve_outside_jacket": {
-     "outside": 11,
-     "worst_mm": 9.1,
+     "outside": 10,
+     "worst_mm": 9.24,
      "at_frame": {
-      "outside": 11,
-      "worst_mm": 15
+      "outside": 7,
+      "worst_mm": 16
      }
     },
     "tee_sleeve_outside_jacket_visible": {
@@ -332,7 +357,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 3.9
+   "seconds": 3.8
   },
   "run-loop": {
    "role": "run",
@@ -480,6 +505,33 @@
     "head_pitch_std_deg": 0.7913,
     "step_interval_mean_s": 0.3333
    },
+   "soft_fist_layer_deg": {
+    "index": [
+     30.0,
+     45.0,
+     25.0
+    ],
+    "middle": [
+     35.0,
+     50.0,
+     30.0
+    ],
+    "ring": [
+     40.0,
+     55.0,
+     30.0
+    ],
+    "pinky": [
+     45.0,
+     55.0,
+     30.0
+    ],
+    "thumb": [
+     10.0,
+     20.0,
+     20.0
+    ]
+   },
    "transfer_fidelity": {
     "legs": {
      "worst_mm": 0.097,
@@ -549,9 +601,68 @@
      "max_rise_above_rest": -3.0
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      30.0,
+      45.0,
+      25.0
+     ],
+     "middle": [
+      35.0,
+      50.0,
+      30.0
+     ],
+     "ring": [
+      40.0,
+      55.0,
+      30.0
+     ],
+     "pinky": [
+      45.0,
+      55.0,
+      30.0
+     ],
+     "thumb": [
+      10.0,
+      20.0,
+      20.0
+     ],
+     "thumb_tip_to_index_mm": 18.0
+    },
+    "r": {
+     "index": [
+      30.0,
+      45.0,
+      25.0
+     ],
+     "middle": [
+      35.0,
+      50.0,
+      30.0
+     ],
+     "ring": [
+      40.0,
+      55.0,
+      30.0
+     ],
+     "pinky": [
+      45.0,
+      55.0,
+      30.0
+     ],
+     "thumb": [
+      10.0,
+      20.0,
+      20.0
+     ],
+     "thumb_tip_to_index_mm": 18.0
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "seam_flesh": {
     "worst_mm": 0.0007,
-    "mesh": "Protagonist.eyebrow001"
+    "mesh": "Protagonist"
    },
    "pelvis_travel_m": {
     "first_to_last": 0.0,
@@ -662,7 +773,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 2.8
+   "seconds": 2.9
   },
   "sprint-loop": {
    "role": "sprint",
@@ -905,6 +1016,65 @@
      "max_rise_above_rest": 20.6
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      23.0,
+      28.6,
+      28.7
+     ],
+     "middle": [
+      23.2,
+      45.9,
+      44.0
+     ],
+     "ring": [
+      18.0,
+      69.1,
+      35.0
+     ],
+     "pinky": [
+      10.4,
+      51.6,
+      32.0
+     ],
+     "thumb": [
+      9.8,
+      14.1,
+      29.9
+     ],
+     "thumb_tip_to_index_mm": 44.2
+    },
+    "r": {
+     "index": [
+      7.8,
+      11.6,
+      33.6
+     ],
+     "middle": [
+      12.7,
+      103.1,
+      71.3
+     ],
+     "ring": [
+      20.4,
+      114.2,
+      78.9
+     ],
+     "pinky": [
+      21.0,
+      94.1,
+      77.5
+     ],
+     "thumb": [
+      15.7,
+      22.2,
+      30.8
+     ],
+     "thumb_tip_to_index_mm": 39.5
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "seam_flesh": {
     "worst_mm": 0.0007,
     "mesh": "Protagonist"
@@ -1019,7 +1189,7 @@
    "arm_lines_vs_take_deg": 0.83,
    "ready": true,
    "failed": [],
-   "seconds": 3.0
+   "seconds": 3.2
   },
   "crouch_walk-loop": {
    "role": "crouch_walk",
@@ -1123,11 +1293,84 @@
    },
    "frames": 29,
    "seconds_long": 1.167,
+   "stance_layer": {
+    "per_foot_mm": 70.0,
+    "bones_moved": [
+     "foot_ik.L",
+     "foot_ik.R"
+    ],
+    "take": {
+     "ankle_mm": {
+      "mean": 297.0,
+      "min": 276.8,
+      "max": 311.8
+     },
+     "knee_mm": {
+      "mean": 174.3,
+      "min": 157.8,
+      "max": 197.1
+     },
+     "knee_out_of_line_mm": {
+      "mean": -44.2,
+      "min": -101.2,
+      "max": -3.5
+     }
+    },
+    "after_on_proxy": {
+     "ankle_mm": {
+      "mean": 437.0,
+      "min": 416.8,
+      "max": 451.8
+     },
+     "knee_mm": {
+      "mean": 243.7,
+      "min": 228.3,
+      "max": 268.4
+     },
+     "knee_out_of_line_mm": {
+      "mean": -44.8,
+      "min": -98.4,
+      "max": -5.9
+     }
+    },
+    "knee_over_toes": {
+     "fraction": 1.0,
+     "turn_deg": {
+      "l": {
+       "min": -47.3,
+       "max": -25.6,
+       "mean": -32.9
+      },
+      "r": {
+       "min": 26.7,
+       "max": 37.0,
+       "mean": 30.6
+      }
+     }
+    },
+    "game": {
+     "ankle_mm": {
+      "mean": 437.0,
+      "min": 416.9,
+      "max": 451.8
+     },
+     "knee_mm": {
+      "mean": 503.0,
+      "min": 472.8,
+      "max": 548.2
+     },
+     "knee_out_of_line_mm": {
+      "mean": 84.6,
+      "min": 22.5,
+      "max": 186.0
+     }
+    }
+   },
    "crouch_depth_layer": {
-    "knee_flex_before_deg": 36.1,
+    "knee_flex_before_deg": 33.5,
     "knee_flex_after_deg": 74.9,
     "target_deg": 75.0,
-    "hips_lowered_mm": 157.3
+    "hips_lowered_mm": 165.0
    },
    "check": {
     "gate": "ok",
@@ -1137,13 +1380,13 @@
     "treadmill_mps": 0.7615,
     "stretch_worst_pct": 0.0,
     "stretch_verdict": "ok",
-    "ik_reach": 0.8374,
+    "ik_reach": 0.8439,
     "ik_reach_verdict": "ok",
     "gait_opposition": "unmeasured",
     "strike_lead": "ok",
     "motion_quality": {
      "trunk_to_leg_speed_ratio": [
-      0.1117,
+      0.1092,
       0.07,
       "ok"
      ],
@@ -1160,7 +1403,7 @@
     }
    },
    "motion_stats": {
-    "trunk_to_leg_speed_ratio": 0.1117,
+    "trunk_to_leg_speed_ratio": 0.1092,
     "trunk_pitch_std_deg": 1.3746,
     "head_pitch_std_deg": 1.3987,
     "step_interval_mean_s": 0.5833
@@ -1197,37 +1440,37 @@
    "legs": {
     "l": {
      "knee_flex_deg": {
-      "min": 66.3,
-      "max": 92.7,
-      "mean": 78.8
+      "min": 64.9,
+      "max": 91.9,
+      "mean": 78.4
      },
      "thigh_swing_deg": {
-      "min": 37.0,
-      "max": 65.0,
-      "amplitude": 28.1
+      "min": 37.1,
+      "max": 64.9,
+      "amplitude": 27.8
      },
      "hip_joint_rotation_deg": {
-      "min": 3.8,
+      "min": 4.0,
       "max": 31.4,
-      "amplitude": 27.7
+      "amplitude": 27.4
      },
      "hip_joint_fore_aft_travel_mm": 39.3
     },
     "r": {
      "knee_flex_deg": {
-      "min": 71.1,
+      "min": 71.3,
       "max": 93.0,
-      "mean": 82.6
+      "mean": 83.2
      },
      "thigh_swing_deg": {
-      "min": 27.4,
-      "max": 59.4,
-      "amplitude": 32.0
+      "min": 30.8,
+      "max": 63.0,
+      "amplitude": 32.2
      },
      "hip_joint_rotation_deg": {
-      "min": -3.2,
-      "max": 25.0,
-      "amplitude": 28.2
+      "min": -0.3,
+      "max": 28.7,
+      "amplitude": 28.9
      },
      "hip_joint_fore_aft_travel_mm": 44.1
     }
@@ -1261,13 +1504,13 @@
    "arm_flare_layer_deg": 32.0,
    "seam_flesh": {
     "worst_mm": 0.0005,
-    "mesh": "Protagonist"
+    "mesh": "Protagonist.jacket"
    },
    "pelvis_travel_m": {
     "first_to_last": 0.0,
     "max_from_start": 0.092,
     "drop_m": 0.041,
-    "pelvis_min_z_m": 0.768
+    "pelvis_min_z_m": 0.76
    },
    "speed": {
     "natural_rig_mps": 0.7634,
@@ -1283,16 +1526,16 @@
     "l": {
      "plants": 1,
      "planted_steps": 14,
-     "worst_plant_drift_mm": 9.689,
-     "worst_step_mm": 5.171
+     "worst_plant_drift_mm": 9.684,
+     "worst_step_mm": 5.172
     },
     "r": {
      "plants": 1,
      "planted_steps": 15,
-     "worst_plant_drift_mm": 9.175,
-     "worst_step_mm": 1.271
+     "worst_plant_drift_mm": 9.177,
+     "worst_step_mm": 1.273
     },
-    "worst_mm": 9.689,
+    "worst_mm": 9.684,
     "belt_mps": 0.7634
    },
    "flesh": {
@@ -1372,7 +1615,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 4.6
+   "seconds": 4.8
   },
   "crouch_idle-loop": {
    "role": "crouch_idle",
@@ -1476,11 +1719,84 @@
    },
    "frames": 54,
    "seconds_long": 2.208,
+   "stance_layer": {
+    "per_foot_mm": 70.0,
+    "bones_moved": [
+     "foot_ik.L",
+     "foot_ik.R"
+    ],
+    "take": {
+     "ankle_mm": {
+      "mean": 154.5,
+      "min": 153.8,
+      "max": 155.3
+     },
+     "knee_mm": {
+      "mean": 94.5,
+      "min": 93.4,
+      "max": 97.2
+     },
+     "knee_out_of_line_mm": {
+      "mean": -49.0,
+      "min": -54.1,
+      "max": -42.4
+     }
+    },
+    "after_on_proxy": {
+     "ankle_mm": {
+      "mean": 294.6,
+      "min": 293.8,
+      "max": 295.3
+     },
+     "knee_mm": {
+      "mean": 157.9,
+      "min": 156.7,
+      "max": 160.6
+     },
+     "knee_out_of_line_mm": {
+      "mean": -52.7,
+      "min": -57.6,
+      "max": -46.4
+     }
+    },
+    "knee_over_toes": {
+     "fraction": 1.0,
+     "turn_deg": {
+      "l": {
+       "min": -13.0,
+       "max": -10.8,
+       "mean": -11.7
+      },
+      "r": {
+       "min": 29.7,
+       "max": 31.1,
+       "mean": 30.4
+      }
+     }
+    },
+    "game": {
+     "ankle_mm": {
+      "mean": 294.6,
+      "min": 293.8,
+      "max": 295.3
+     },
+     "knee_mm": {
+      "mean": 333.1,
+      "min": 331.3,
+      "max": 335.4
+     },
+     "knee_out_of_line_mm": {
+      "mean": 34.9,
+      "min": -15.0,
+      "max": 84.9
+     }
+    }
+   },
    "crouch_depth_layer": {
     "knee_flex_before_deg": 54.9,
     "knee_flex_after_deg": 74.5,
     "target_deg": 75.0,
-    "hips_lowered_mm": 89.2
+    "hips_lowered_mm": 89.4
    },
    "check": {
     "gate": "ok",
@@ -1490,13 +1806,13 @@
     "treadmill_mps": 0.0,
     "stretch_worst_pct": 0.0,
     "stretch_verdict": "ok",
-    "ik_reach": 0.8028,
+    "ik_reach": 0.8021,
     "ik_reach_verdict": "ok",
     "gait_opposition": "fail",
     "strike_lead": "unmeasured"
    },
    "motion_stats": {
-    "trunk_to_leg_speed_ratio": 1.0296,
+    "trunk_to_leg_speed_ratio": 1.002,
     "trunk_pitch_std_deg": 0.6512,
     "head_pitch_std_deg": 0.2882,
     "step_interval_mean_s": 1.1042
@@ -1515,13 +1831,13 @@
    },
    "transfer_fidelity": {
     "legs": {
-     "worst_mm": 0.039,
+     "worst_mm": 0.041,
      "where": "ball_r.head",
-     "frame": 48
+     "frame": 51
     },
     "upper": {
      "worst_mm": 6.42,
-     "where": "clavicle_r.head",
+     "where": "head.tail",
      "frame": 40
     },
     "upper_deg": {
@@ -1533,36 +1849,36 @@
    "legs": {
     "l": {
      "knee_flex_deg": {
-      "min": 73.5,
-      "max": 75.1,
-      "mean": 74.6
+      "min": 73.3,
+      "max": 75.0,
+      "mean": 74.5
      },
      "thigh_swing_deg": {
-      "min": 50.2,
-      "max": 50.7,
-      "amplitude": 0.5
+      "min": 50.7,
+      "max": 51.3,
+      "amplitude": 0.6
      },
      "hip_joint_rotation_deg": {
-      "min": 24.2,
-      "max": 26.8,
-      "amplitude": 2.6
+      "min": 24.7,
+      "max": 27.2,
+      "amplitude": 2.5
      },
      "hip_joint_fore_aft_travel_mm": 13.0
     },
     "r": {
      "knee_flex_deg": {
-      "min": 73.2,
-      "max": 75.2,
-      "mean": 74.6
+      "min": 73.5,
+      "max": 75.5,
+      "mean": 74.8
      },
      "thigh_swing_deg": {
-      "min": 49.9,
-      "max": 50.9,
-      "amplitude": 1.0
+      "min": 49.4,
+      "max": 50.3,
+      "amplitude": 0.9
      },
      "hip_joint_rotation_deg": {
-      "min": 24.1,
-      "max": 26.4,
+      "min": 23.6,
+      "max": 25.9,
       "amplitude": 2.3
      },
      "hip_joint_fore_aft_travel_mm": 20.3
@@ -1597,7 +1913,7 @@
    "arm_flare_layer_deg": 32.0,
    "seam_flesh": {
     "worst_mm": 0.0006,
-    "mesh": "Protagonist"
+    "mesh": "Protagonist.eyebrow001"
    },
    "pelvis_travel_m": {
     "first_to_last": 0.0,
@@ -1893,6 +2209,65 @@
      "max_rise_above_rest": 21.7
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      45.9,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.9,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      40.1,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      46.5,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      14.5,
+      44.1,
+      28.6
+     ],
+     "thumb_tip_to_index_mm": 15.9
+    },
+    "r": {
+     "index": [
+      45.2,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.2,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      39.3,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      45.8,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      16.9,
+      46.0,
+      32.3
+     ],
+     "thumb_tip_to_index_mm": 12.5
+    },
+    "swing_over_clip_deg": 0.005
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.002,
     "max_from_start": 0.15,
@@ -1992,7 +2367,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 7.8
+   "seconds": 8.3
   },
   "heavy": {
    "role": "heavy",
@@ -2203,6 +2578,65 @@
      "max_rise_above_rest": 6.8
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      86.2,
+      119.2,
+      108.1
+     ],
+     "middle": [
+      87.3,
+      111.4,
+      109.7
+     ],
+     "ring": [
+      89.9,
+      107.9,
+      104.1
+     ],
+     "pinky": [
+      94.3,
+      99.6,
+      124.5
+     ],
+     "thumb": [
+      9.6,
+      39.8,
+      69.7
+     ],
+     "thumb_tip_to_index_mm": 46.1
+    },
+    "r": {
+     "index": [
+      86.2,
+      119.2,
+      108.1
+     ],
+     "middle": [
+      87.3,
+      111.4,
+      109.7
+     ],
+     "ring": [
+      92.3,
+      101.8,
+      104.1
+     ],
+     "pinky": [
+      94.6,
+      99.5,
+      124.5
+     ],
+     "thumb": [
+      10.9,
+      39.2,
+      61.3
+     ],
+     "thumb_tip_to_index_mm": 44.8
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.0,
     "max_from_start": 0.19,
@@ -2305,7 +2739,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 8.0
+   "seconds": 8.5
   },
   "counter": {
    "role": "counter",
@@ -2516,6 +2950,65 @@
      "max_rise_above_rest": 7.9
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      45.9,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.9,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      40.1,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      46.5,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      14.5,
+      44.1,
+      28.6
+     ],
+     "thumb_tip_to_index_mm": 15.9
+    },
+    "r": {
+     "index": [
+      45.2,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.2,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      39.3,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      45.8,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      16.9,
+      46.0,
+      32.3
+     ],
+     "thumb_tip_to_index_mm": 12.5
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.005,
     "max_from_start": 0.135,
@@ -2615,7 +3108,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 7.4
+   "seconds": 7.9
   },
   "dodge": {
    "role": "dodge",
@@ -2826,6 +3319,65 @@
      "max_rise_above_rest": 28.2
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      27.0,
+      15.6,
+      0.0
+     ],
+     "middle": [
+      17.1,
+      27.1,
+      0.0
+     ],
+     "ring": [
+      24.0,
+      36.2,
+      0.0
+     ],
+     "pinky": [
+      38.2,
+      36.0,
+      0.0
+     ],
+     "thumb": [
+      20.3,
+      10.3,
+      0.0
+     ],
+     "thumb_tip_to_index_mm": 37.9
+    },
+    "r": {
+     "index": [
+      25.9,
+      5.1,
+      0.0
+     ],
+     "middle": [
+      12.7,
+      25.1,
+      0.0
+     ],
+     "ring": [
+      29.7,
+      27.3,
+      0.0
+     ],
+     "pinky": [
+      47.1,
+      21.3,
+      0.0
+     ],
+     "thumb": [
+      28.2,
+      15.7,
+      0.0
+     ],
+     "thumb_tip_to_index_mm": 68.9
+    },
+    "swing_over_clip_deg": 68.961
+   },
    "pelvis_travel_m": {
     "first_to_last": 2.499,
     "max_from_start": 2.5,
@@ -2928,7 +3480,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 11.7
+   "seconds": 10.9
   },
   "hit": {
    "role": "hit",
@@ -3139,6 +3691,65 @@
      "max_rise_above_rest": 1.9
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      45.9,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.9,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      40.1,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      46.5,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      14.5,
+      44.1,
+      28.6
+     ],
+     "thumb_tip_to_index_mm": 15.9
+    },
+    "r": {
+     "index": [
+      45.2,
+      88.1,
+      51.0
+     ],
+     "middle": [
+      39.2,
+      95.9,
+      51.3
+     ],
+     "ring": [
+      39.3,
+      113.4,
+      63.1
+     ],
+     "pinky": [
+      45.8,
+      85.0,
+      119.2
+     ],
+     "thumb": [
+      16.9,
+      46.0,
+      32.3
+     ],
+     "thumb_tip_to_index_mm": 12.5
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.001,
     "max_from_start": 0.177,
@@ -3244,7 +3855,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 8.6
+   "seconds": 7.3
   },
   "hit_alt": {
    "role": "hit (alt)",
@@ -3455,6 +4066,65 @@
      "max_rise_above_rest": 9.7
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      20.1,
+      23.1,
+      11.5
+     ],
+     "middle": [
+      20.1,
+      23.1,
+      11.5
+     ],
+     "ring": [
+      20.1,
+      23.1,
+      11.5
+     ],
+     "pinky": [
+      20.8,
+      23.5,
+      11.5
+     ],
+     "thumb": [
+      36.1,
+      45.8,
+      19.0
+     ],
+     "thumb_tip_to_index_mm": 73.7
+    },
+    "r": {
+     "index": [
+      61.6,
+      96.4,
+      48.2
+     ],
+     "middle": [
+      61.6,
+      96.4,
+      48.2
+     ],
+     "ring": [
+      61.6,
+      96.4,
+      48.2
+     ],
+     "pinky": [
+      61.6,
+      96.4,
+      48.2
+     ],
+     "thumb": [
+      47.5,
+      63.0,
+      29.5
+     ],
+     "thumb_tip_to_index_mm": 56.7
+    },
+    "swing_over_clip_deg": 27.879
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.0,
     "max_from_start": 0.115,
@@ -3557,7 +4227,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 9.9
+   "seconds": 10.1
   },
   "stagger": {
    "role": "stagger",
@@ -3760,6 +4430,65 @@
      "max_rise_above_rest": 29.3
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      25.1,
+      49.3,
+      38.0
+     ],
+     "middle": [
+      22.1,
+      52.6,
+      40.2
+     ],
+     "ring": [
+      27.0,
+      60.0,
+      34.1
+     ],
+     "pinky": [
+      38.7,
+      57.2,
+      56.4
+     ],
+     "thumb": [
+      14.5,
+      41.6,
+      29.2
+     ],
+     "thumb_tip_to_index_mm": 8.7
+    },
+    "r": {
+     "index": [
+      25.6,
+      48.5,
+      37.3
+     ],
+     "middle": [
+      33.1,
+      52.0,
+      39.6
+     ],
+     "ring": [
+      29.3,
+      59.2,
+      33.6
+     ],
+     "pinky": [
+      40.4,
+      56.6,
+      54.3
+     ],
+     "thumb": [
+      17.7,
+      25.7,
+      19.7
+     ],
+     "thumb_tip_to_index_mm": 15.3
+    },
+    "swing_over_clip_deg": 99.174
+   },
    "pelvis_travel_m": {
     "first_to_last": 1.091,
     "max_from_start": 1.102,
@@ -3865,7 +4594,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 8.0
+   "seconds": 8.2
   },
   "death": {
    "role": "death",
@@ -4068,6 +4797,65 @@
      "max_rise_above_rest": 13.6
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      61.4,
+      89.9,
+      42.5
+     ],
+     "middle": [
+      62.9,
+      87.1,
+      37.8
+     ],
+     "ring": [
+      62.9,
+      67.3,
+      70.7
+     ],
+     "pinky": [
+      58.2,
+      84.9,
+      59.6
+     ],
+     "thumb": [
+      42.9,
+      31.3,
+      46.8
+     ],
+     "thumb_tip_to_index_mm": 16.8
+    },
+    "r": {
+     "index": [
+      9.8,
+      11.2,
+      7.1
+     ],
+     "middle": [
+      15.0,
+      21.4,
+      6.2
+     ],
+     "ring": [
+      20.1,
+      23.4,
+      18.8
+     ],
+     "pinky": [
+      33.4,
+      21.2,
+      29.9
+     ],
+     "thumb": [
+      16.9,
+      16.4,
+      10.2
+     ],
+     "thumb_tip_to_index_mm": 33.9
+    },
+    "swing_over_clip_deg": 39.736
+   },
    "pelvis_travel_m": {
     "first_to_last": 1.47,
     "max_from_start": 1.521,
@@ -4173,7 +4961,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 9.4
+   "seconds": 9.7
   },
   "death_alt": {
    "role": "death (alt)",
@@ -4384,6 +5172,65 @@
      "max_rise_above_rest": 39.5
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      15.4,
+      23.7,
+      26.5
+     ],
+     "middle": [
+      13.7,
+      27.5,
+      30.0
+     ],
+     "ring": [
+      13.1,
+      25.0,
+      37.1
+     ],
+     "pinky": [
+      13.6,
+      41.4,
+      29.5
+     ],
+     "thumb": [
+      21.7,
+      19.8,
+      4.8
+     ],
+     "thumb_tip_to_index_mm": 24.2
+    },
+    "r": {
+     "index": [
+      23.2,
+      20.1,
+      25.2
+     ],
+     "middle": [
+      9.2,
+      26.4,
+      38.5
+     ],
+     "ring": [
+      14.2,
+      26.6,
+      33.7
+     ],
+     "pinky": [
+      26.6,
+      37.2,
+      36.9
+     ],
+     "thumb": [
+      23.2,
+      20.3,
+      14.3
+     ],
+     "thumb_tip_to_index_mm": 38.9
+    },
+    "swing_over_clip_deg": 50.21
+   },
    "pelvis_travel_m": {
     "first_to_last": 0.91,
     "max_from_start": 0.963,
@@ -4489,7 +5336,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 13.0
+   "seconds": 13.5
   },
   "climb-loop": {
    "role": "climb",
@@ -4696,6 +5543,65 @@
      "max_rise_above_rest": 47.1
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      72.3,
+      50.5,
+      0.0
+     ],
+     "middle": [
+      70.5,
+      66.6,
+      0.0
+     ],
+     "ring": [
+      68.3,
+      62.5,
+      0.0
+     ],
+     "pinky": [
+      64.4,
+      45.3,
+      0.0
+     ],
+     "thumb": [
+      28.9,
+      42.0,
+      0.0
+     ],
+     "thumb_tip_to_index_mm": 34.6
+    },
+    "r": {
+     "index": [
+      58.3,
+      69.7,
+      0.0
+     ],
+     "middle": [
+      59.7,
+      65.4,
+      0.0
+     ],
+     "ring": [
+      55.5,
+      69.7,
+      0.0
+     ],
+     "pinky": [
+      52.5,
+      57.3,
+      0.0
+     ],
+     "thumb": [
+      23.2,
+      26.3,
+      0.0
+     ],
+     "thumb_tip_to_index_mm": 23.4
+    },
+    "swing_over_clip_deg": 100.953
+   },
    "seam_flesh": {
     "worst_mm": 0.001,
     "mesh": "Protagonist"
@@ -4783,7 +5689,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 4.6
+   "seconds": 4.9
   },
   "talk-loop": {
    "role": "talk",
@@ -4988,6 +5894,65 @@
      "max_rise_above_rest": -10.9
     }
    },
+   "finger_pose": {
+    "l": {
+     "index": [
+      53.0,
+      30.7,
+      10.7
+     ],
+     "middle": [
+      42.3,
+      29.3,
+      18.6
+     ],
+     "ring": [
+      36.6,
+      19.4,
+      16.5
+     ],
+     "pinky": [
+      26.4,
+      13.3,
+      22.4
+     ],
+     "thumb": [
+      20.0,
+      27.6,
+      5.2
+     ],
+     "thumb_tip_to_index_mm": 22.4
+    },
+    "r": {
+     "index": [
+      41.6,
+      27.7,
+      10.0
+     ],
+     "middle": [
+      33.9,
+      18.6,
+      2.7
+     ],
+     "ring": [
+      29.2,
+      18.4,
+      1.8
+     ],
+     "pinky": [
+      24.5,
+      20.9,
+      10.2
+     ],
+     "thumb": [
+      17.4,
+      29.6,
+      17.3
+     ],
+     "thumb_tip_to_index_mm": 15.2
+    },
+    "swing_over_clip_deg": 1.278
+   },
    "seam_flesh": {
     "worst_mm": 0.0009,
     "mesh": "Protagonist"
@@ -5075,7 +6040,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 13.4
+   "seconds": 15.5
   }
  },
  "proxy": {
@@ -5187,5 +6152,5 @@
   "talk-loop",
   "walk-loop"
  ],
- "seconds": 122.8
+ "seconds": 126.2
 }

@@ -22,7 +22,8 @@ clothes' vertex groups and the MPFB weights are bound to, and what Godot's human
 The reconciliation lives in one table (GAME_FROM_ORG below): neck_01 <- the Rigify neck pair,
 calf <- shin, ball <- toe, clavicle <- shoulder, lowerarm <- forearm, spine_01..03 <- spine.001..003.
 
-Fingers: CMU / 100STYLE carry no fingers (the hand is one joint) - fingers hold the MPFB rest.
+Fingers: CMU / 100STYLE carry no fingers (the hand is one joint) - fingers hold the MPFB rest,
+except where an authored layer poses them (run-loop: SOFT_FIST_CURL_DEG).
 Mixamo takes carry all 15 per hand; they are transferred straight onto the game fingers (local
 rest-relative rotations conjugated through anatomical hand frames), so the punches close into fists.
 """
@@ -49,6 +50,52 @@ FPS = 24
 # measured height (build_custom TARGET_H 1.8825 m, feet to crown). In-game speeds below = rig-scale
 # speed x GAME_SCALE. The delivery lane owns the manifest; this lane quotes.
 CONTRACT_H = 1.75
+
+# ================================================================================================
+# ARTIST KNOBS - authored layers on top of the takes. Each is a one-line edit: change the number,
+# rerun the two commands in the docstring (build, then render the clip), done.
+# ================================================================================================
+# RUN - "the running hands should be in a soft closed position" (review-log 2026-09-25, clip
+# previews verdict). The CMU run carries no finger data, so its hands rode at the MPFB rest (open).
+# A static soft-fist layer curls every finger joint by these degrees - (knuckle, middle, tip) - about
+# the finger's own flex axis (bone-local +X: the axis every Mixamo fist on this rig curls about,
+# measured, X component 0.90-1.00 on all 30 finger bones of heavy / attack_3). Soft = roughly half
+# a clenched fist (the heavy punch's fist on this rig reads knuckle 86-94, middle 100-119, tip
+# 104-124). The pinky side curls a little more than the index side, as a relaxed hand does; the
+# thumb folds in to rest along the index. Bigger numbers = tighter hand.
+SOFT_FIST_CURL_DEG = {
+    "index":  (30.0, 45.0, 25.0),
+    "middle": (35.0, 50.0, 30.0),
+    "ring":   (40.0, 55.0, 30.0),
+    "pinky":  (45.0, 55.0, 30.0),
+    "thumb":  (10.0, 20.0, 20.0),
+}
+# CROUCH_WALK - "he should have his legs more spread apart". Each foot's IK target is moved this
+# far OUTWARD (mm, per foot - the stance widens by twice this); the hips are not moved by this
+# layer, the knees follow the feet (the knee pole moves with its foot when the clip keys one).
+# Applied to crouch_walk-loop and crouch_idle-loop (so the two crouches share a stance).
+CROUCH_STANCE_WIDEN_MM = 70.0
+# ... and the knees go WITH the feet: the pole-less leg IK keeps the knee in the take's leg plane,
+# so moving only the feet left the thighs where they were and the knees caved in (measured on the
+# first build: knees 64-79 mm INSIDE the hip-ankle line on both crouches). Each leg is turned about
+# its own hip-ankle line (feet, plants and knee bend untouched) this fraction of the way toward
+# "knee over the toes": 1.0 = the knee tracks straight over the foot, 0.0 = the IK's knee.
+CROUCH_KNEE_OVER_TOES = 1.0
+# WALK - "his arms are too close to his side and it makes his movement feel too rigid". Each whole
+# arm is carried this many degrees further out from the trunk (about the body's forward axis
+# through the shoulder, the crouch flare's machinery), on top of the take's swing - whose timing
+# and amplitude stay the take's.
+WALK_ARM_CARRIAGE_DEG = 12.0
+# CROUCH (both clips) - "arms flared out at an angle" (review-log 2026-09-25 mocap verdict (c)):
+# each whole arm turned outward about the body's forward axis through the shoulder by this much on
+# top of the take. The take's own mean abduction and the result are both quoted (arm_abduction).
+ARM_FLARE_DEG = 32.0
+# CROUCH (both clips) - "should have the character bend the knees": the takes carry a real bend
+# (measured on the MPFB proxy: Crouched_ID 55 deg of knee flexion, a 'squat slightly' style), which
+# the artist read as none. This layer lowers the hips (the proxy's torso control; the IK feet stay
+# planted, so the knees fold) until the straighter leg's mean flexion reaches this - a deep game
+# crouch, not a squat. Before/after quoted per clip.
+CROUCH_KNEE_DEG = 75.0
 
 # metarig bone -> (game bone for head, game bone for tail | "tail" | point fn), roll from the game bone
 SIDES = (("L", "l"), ("R", "r"))
@@ -1041,8 +1088,13 @@ def source_slide(path):
         scene.frame_set(frame0)
 CLIPS = [
     # action,            role,          source (MOCAP_DIR / MIXAMO_DIR),          retarget params,  extras
-    ("walk-loop", "walk", "cmu_08_01.bvh", {"mapping": "cmu", "motion_quality": True}, {"gait": True}),
-    ("run-loop", "run", "cmu_16_46.bvh", {"mapping": "cmu", "motion_quality": True}, {"gait": True}),
+    # authored layers (knobs at the top): walk arm carriage, run soft fist, crouch stance width.
+    # sprint-loop keeps its Mixamo take's own fingers - already curled (see the report's
+    # sprint finger reading), so no soft-fist override.
+    ("walk-loop", "walk", "cmu_08_01.bvh", {"mapping": "cmu", "motion_quality": True},
+     {"gait": True, "arm_carriage": True}),
+    ("run-loop", "run", "cmu_16_46.bvh", {"mapping": "cmu", "motion_quality": True},
+     {"gait": True, "soft_fist": True}),
     ("sprint-loop", "sprint", "mixamo:sprint-forward.fbx",
      {"mapping": "mixamo", "motion_quality": True, "loop_whole_take": True},
      # a 7 m/s stance lasts ~0.1 s = 2.4 frames at 24 fps: the plant lock's 3-sample minimum
@@ -1054,10 +1106,10 @@ CLIPS = [
      # the X Bot to the centimetre): gait_opposition reads the take; proved per build
      {"gait": True, "lock_min_samples": 2, "belt_gate": True, "arms_from_take": True}),
     ("crouch_walk-loop", "crouch_walk", "s100_Crouched_FW.bvh",
-     {"mapping": "100style", "motion_quality": True}, {"gait": True, "crouch": True}),
+     {"mapping": "100style", "motion_quality": True}, {"gait": True, "crouch": True, "stance_widen": True}),
     ("crouch_idle-loop", "crouch_idle", "s100_Crouched_ID.bvh",
      {"mapping": "100style", "loop_min_s": 2.0, "loop_max_s": 5.0, "check_mode": "planted"},
-     {"crouch": True}),
+     {"crouch": True, "stance_widen": True}),
     ("attack_3", "attack_3", "mixamo:punch-combo.fbx", ONESHOT, {"combat": True}),
     ("heavy", "heavy", "mixamo:hook-punch-heavy.fbx", ONESHOT, {"combat": True}),
     ("counter", "counter", "mixamo:center-block-counter.fbx", ONESHOT, {"combat": True}),
@@ -1098,17 +1150,8 @@ SEAM_TOL_MM = 1.0
 # first draft's action-name clash: 714 mm).
 FIDELITY_TOL = {"legs": ("worst_mm", 1.0), "upper_deg": ("worst_deg", 0.5)}
 
-# CROUCH, the artist's directive (review-log 2026-09-25 mocap verdict (c)): "arms flared out at an
-# angle". An authored layer on both crouch clips: each whole arm turned outward about the body's
-# forward axis through the shoulder by ARM_FLARE_DEG on top of the take. The take's own mean
-# abduction and the result are both quoted (arm_abduction).
-ARM_FLARE_DEG = 32.0
-# ... and "should have the character bend the knees": the takes carry a real bend (measured on
-# the MPFB proxy: Crouched_ID 55 deg of knee flexion, a 'squat slightly' style), which the artist
-# read as none. The second authored layer lowers the hips (the proxy's torso control; the IK feet
-# stay planted, so the knees fold) until the straighter leg's mean flexion reaches
-# CROUCH_KNEE_DEG - a deep game crouch, not a squat. Before/after quoted per clip.
-CROUCH_KNEE_DEG = 75.0
+# The authored-layer knobs (ARM_FLARE_DEG, CROUCH_KNEE_DEG, CROUCH_STANCE_WIDEN_MM,
+# WALK_ARM_CARRIAGE_DEG, SOFT_FIST_CURL_DEG) live in the ARTIST KNOBS block at the top.
 # Belt-truth slide (gaits): a planted ball of an in-place clip must travel backward at exactly the
 # speed the game moves the capsule (the take's natural speed, the manifest's). Plant = the ball
 # within BELT_BAND_MM of its lowest point on two consecutive frames; per plant, the summed
@@ -1169,12 +1212,14 @@ def mean_min_knee(rows):
     return sum(vals) / len(vals)
 
 
-def lower_torso(proxy, action, drop_m):
-    """Offset the proxy's torso control down by drop_m (world) on every key of the clip."""
+def shift_bone_keys(proxy, action, bone, world_offset):
+    """Offset a proxy control's location keys by world_offset (m) on every key of the clip (its
+    parent chain is the unposed root, so the bone's rest frame maps world to its location channel).
+    Returns how many location curves were keyed (0 = the clip does not key this bone)."""
     from forge.tools import rigforge_rig as rr
-    R = proxy.data.bones["torso"].matrix_local.to_3x3().normalized()
-    local = R.inverted() @ Vector((0, 0, -drop_m))
-    path = 'pose.bones["torso"].location'
+    R = proxy.data.bones[bone].matrix_local.to_3x3().normalized()
+    local = R.inverted() @ (proxy.matrix_world.to_3x3().inverted() @ world_offset)
+    path = 'pose.bones["%s"].location' % bone
     done = 0
     for fc in rr.action_fcurves(action):
         if fc.data_path == path:
@@ -1184,8 +1229,139 @@ def lower_torso(proxy, action, drop_m):
                 kp.handle_right.y += local[fc.array_index]
             fc.update()
             done += 1
+    return done
+
+
+def lower_torso(proxy, action, drop_m):
+    """Offset the proxy's torso control down by drop_m (world) on every key of the clip."""
+    done = shift_bone_keys(proxy, action, "torso", Vector((0, 0, -drop_m)))
     if done != 3:
         raise RuntimeError("torso location curves: %d of 3" % done)
+
+
+LEFT = Vector((1, 0, 0))    # the character's left: up x forward(-Y) = +X (every clip faces -Y)
+
+
+def widen_stance(proxy, action, per_foot_mm):
+    """CROUCH_STANCE_WIDEN_MM: each foot's IK target (and its knee pole, when keyed) moved
+    per_foot_mm outward on every key - a constant offset, so every plant stays exactly as still
+    as it was. The hips are not touched."""
+    moved = {}
+    for S, sg in (("L", 1.0), ("R", -1.0)):
+        off = LEFT * (sg * per_foot_mm / 1000.0)
+        for bone in ("foot_ik." + S, "thigh_ik_target." + S):
+            if bone in proxy.pose.bones:
+                n = shift_bone_keys(proxy, action, bone, off)
+                if n:
+                    moved[bone] = n
+        if "foot_ik." + S not in moved:
+            raise RuntimeError("stance widen: foot_ik.%s carries no location keys" % S)
+    return sorted(moved)
+
+
+def knees_over_toes(proxy, frac):
+    """CROUCH_KNEE_OVER_TOES as a transfer layer: per frame and leg, thigh and calf turned together
+    about the hip->ankle line (read off the proxy's ORG joints) by frac of the angle that puts the
+    knee in the plane of that line and the foot's ankle->toe direction. A turn about the hip-ankle
+    line leaves the hip, the ankle, the foot and the knee angle exactly where they were."""
+    P = proxy.pose.bones
+    turned = {"l": [], "r": []}
+
+    def adjust(_f, want):
+        for S, s in SIDES:
+            hip, knee, ankle = P["ORG-thigh." + S].head, P["ORG-shin." + S].head, P["ORG-foot." + S].head
+            toe = P["ORG-toe." + S].tail
+            a = (ankle - hip).normalized()
+            k = (knee - hip) - a * (knee - hip).dot(a)
+            d = (toe - ankle) - a * (toe - ankle).dot(a)
+            if k.length < 1e-6 or d.length < 1e-6:
+                continue
+            ang = k.angle(d, 0.0) * (1.0 if k.cross(d).dot(a) >= 0 else -1.0)
+            R = Quaternion(a, ang * frac).to_matrix()
+            turned[s].append(math.degrees(ang * frac))
+            for b in ("thigh_", "calf_"):
+                want[b + s] = R @ want[b + s]
+    adjust.turned = turned
+    return adjust
+
+
+def chain_adjust(*fns):
+    fns = [f for f in fns if f is not None]
+    if not fns:
+        return None
+
+    def adjust(f, want):
+        for fn in fns:
+            fn(f, want)
+    return adjust
+
+
+def knee_out_of_line(rows):
+    """Knee offset from the hip->ankle line toward the character's outside, mm (negative = the knee
+    caves in toward the midline)."""
+    v = []
+    for r in rows:
+        for s, sg in (("l", 1.0), ("r", -1.0)):
+            h, k, a = r["hip_" + s], r["knee_" + s], r["ankle_" + s]
+            ax = (a - h).normalized()
+            v.append((k - (h + ax * (k - h).dot(ax))).dot(LEFT) * sg * 1000)
+    return {"mean": round(sum(v) / len(v), 1), "min": round(min(v), 1), "max": round(max(v), 1)}
+
+
+def stance_width(rows):
+    """Lateral (character left-right) separation of the ankles and of the knees, mm, over the clip."""
+    out = {}
+    for j in ("ankle", "knee"):
+        v = [abs((r[j + "_l"] - r[j + "_r"]).dot(LEFT)) * 1000 for r in rows]
+        out[j + "_mm"] = {"mean": round(sum(v) / len(v), 1), "min": round(min(v), 1), "max": round(max(v), 1)}
+    out["knee_out_of_line_mm"] = knee_out_of_line(rows)
+    return out
+
+
+FINGER_KEYS = ("index", "middle", "ring", "pinky", "thumb")
+
+
+def soft_fist_pose():
+    """{game finger bone: local basis Quaternion} - SOFT_FIST_CURL_DEG about each bone's local +X."""
+    out = {}
+    for s in ("l", "r"):
+        for f in FINGER_KEYS:
+            for k, deg in enumerate(SOFT_FIST_CURL_DEG[f], 1):
+                out["%s_%02d_%s" % (f, k, s)] = Quaternion(Vector((1, 0, 0)), math.radians(deg))
+    return out
+
+
+def finger_readings(game, n):
+    """Read back off the written action: per finger bone, the curl (deg, rest-relative) and its
+    swing over the clip (max - min); plus the fingertip-to-thumb-tip clearance the soft fist
+    leaves (thumb_03 tail to the nearest point of the index middle/tip bones, mm)."""
+    scene = bpy.context.scene
+    G = game.pose.bones
+    mw = game.matrix_world
+    vals = {}
+    clear = {"l": [], "r": []}
+
+    def seg_dist(p, a, b):
+        ab = b - a
+        t = max(0.0, min(1.0, (p - a).dot(ab) / max(1e-12, ab.length_squared)))
+        return (p - (a + ab * t)).length
+    for f in range(1, n + 1):
+        scene.frame_set(f)
+        for s in ("l", "r"):
+            for fk in FINGER_KEYS:
+                for k in (1, 2, 3):
+                    name = "%s_%02d_%s" % (fk, k, s)
+                    q = G[name].matrix_basis.to_quaternion()
+                    vals.setdefault(name, []).append(math.degrees(2 * math.acos(min(1.0, abs(q.w)))))
+            tip = mw @ G["thumb_03_" + s].tail
+            clear[s].append(min(seg_dist(tip, mw @ G["index_%02d_%s" % (k, s)].head, mw @ G["index_%02d_%s" % (k, s)].tail)
+                                for k in (2, 3)) * 1000)
+    out = {}
+    for s in ("l", "r"):
+        out[s] = {fk: [round(sum(vals["%s_%02d_%s" % (fk, k, s)]) / n, 1) for k in (1, 2, 3)] for fk in FINGER_KEYS}
+        out[s]["thumb_tip_to_index_mm"] = round(min(clear[s]), 1)
+    out["swing_over_clip_deg"] = round(max(max(v) - min(v) for v in vals.values()), 3)
+    return out
 
 
 def deepen_crouch(proxy, action, n, target_deg):
@@ -1352,6 +1528,14 @@ def run_clip(spec, proxy, game, probe, flesh_step):
         "worst_rotation_deg", "worst_rotation_bone", "worst_position_mm")}
     rep["frames"] = n
     rep["seconds_long"] = round((n - 1) / float(FPS), 3)
+    if extra.get("stance_widen"):
+        # before the depth layer, so CROUCH_KNEE_DEG is still what the crouch reaches
+        rr.assign_action(proxy, px)
+        before = stance_width(proxy_rows(proxy, n))
+        moved = widen_stance(proxy, px, CROUCH_STANCE_WIDEN_MM)
+        rr.assign_action(proxy, px)
+        rep["stance_layer"] = {"per_foot_mm": CROUCH_STANCE_WIDEN_MM, "bones_moved": moved,
+                               "take": before, "after_on_proxy": stance_width(proxy_rows(proxy, n))}
     if extra.get("crouch"):
         rep["crouch_depth_layer"] = deepen_crouch(proxy, px, n, CROUCH_KNEE_DEG)
     # proxy-side gates (the retarget's own animation_check ran before the rename and any authored
@@ -1372,12 +1556,29 @@ def run_clip(spec, proxy, game, probe, flesh_step):
         fingers, finfo = mixamo_fingers(path, dict(rt, loop=loop), n)
         rep["fingers"] = finfo
         rr.assign_action(proxy, px)
+    if extra.get("soft_fist"):
+        if fingers:
+            raise RuntimeError("soft_fist on a take that carries its own fingers (%s)" % action)
+        pose = soft_fist_pose()
+        fingers = [pose] * n
+        rep["soft_fist_layer_deg"] = SOFT_FIST_CURL_DEG
     adjust, skip = None, ()
-    if extra.get("crouch"):
+    flare = ARM_FLARE_DEG if extra.get("crouch") else (WALK_ARM_CARRIAGE_DEG if extra.get("arm_carriage") else None)
+    if flare is not None:
         rep["arm_abduction_take_deg"] = arm_abduction(proxy_rows(proxy, n))
-        adjust = flare_arms(ARM_FLARE_DEG)
+        adjust = flare_arms(flare)
         skip = tuple("%s_%s" % (b, s) for s in ("l", "r") for b in ("upperarm", "lowerarm", "hand"))
+    knees = None
+    if extra.get("stance_widen") and CROUCH_KNEE_OVER_TOES:
+        knees = knees_over_toes(proxy, CROUCH_KNEE_OVER_TOES)
+        adjust = chain_adjust(adjust, knees)
+        # the knee moved off the proxy on purpose; the hip, ankle, foot and ball are still gated
+        skip = skip + tuple("%s_%s" % (b, s) for s in ("l", "r") for b in ("thigh", "calf"))
     bases = sample_transfer(proxy, game, n, fingers=fingers, adjust=adjust)
+    if knees is not None:
+        rep["stance_layer"]["knee_over_toes"] = {"fraction": CROUCH_KNEE_OVER_TOES, "turn_deg": {
+            s: {"min": round(min(v), 1), "max": round(max(v), 1), "mean": round(sum(v) / len(v), 1)}
+            for s, v in knees.turned.items() if v}}
     if extra.get("standing_upper"):
         rep["standing_trunk_correction_deg"] = standing_upper_body(game, bases)
         skip = tuple(GAME_FROM_ORG)   # the whole body moved off the proxy on purpose
@@ -1386,9 +1587,13 @@ def run_clip(spec, proxy, game, probe, flesh_step):
     rows = joint_series(game, n)
     rep["legs"] = leg_readings(rows)
     rep["clavicle_elevation_deg"] = clavicle_elevation(rows, game)
-    if extra.get("crouch"):
+    if flare is not None:
         rep["arm_abduction_deg"] = arm_abduction(rows)
-        rep["arm_flare_layer_deg"] = ARM_FLARE_DEG
+        rep["arm_flare_layer_deg"] = flare
+    if extra.get("stance_widen"):
+        rep["stance_layer"]["game"] = stance_width(rows)
+    if fingers:
+        rep["finger_pose"] = finger_readings(game, n)
     if loop:
         rep["seam_flesh"] = seam_mm(game, n)
     pel = [r["pelvis"] for r in rows]
