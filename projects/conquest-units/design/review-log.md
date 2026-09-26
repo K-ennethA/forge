@@ -187,3 +187,56 @@ cape IS evolved tentacles - subtle secondary motion (less than limbs),
 WATER membranes connecting the cape tentacles; walks upright on two legs.
 SHIP PATH DEFERRED: finish/update all matching characters' meshes first,
 then import. Duskmaw pipeline re-run approved. Blightcap keeps the bounce.
+
+## 2026-09-25 - Eldroot v3 verdict (artist, verbatim)
+> yes split the skirt front. also can we make the arms and shoulder
+> wider/larger it looks small now in comparison to his long legs, we can
+> also make the legs a little smaller
+
+APPROVED: tasset plates - the skirt front splits into plates hinged to the
+thighs so the sit fold carries them (option b). PROPORTION PASS: shoulders
+and arms WIDER/LARGER, legs A LITTLE SMALLER - the doubled legs dwarf the
+upper body; rebalance so the standing silhouette reads powerful up top
+(standing height may drop below the exact 2.0x; keep the sit/stand ratio
+dramatic and quote the new numbers).
+
+## 2026-09-25 - Vineweave intent + scale policy (artist, verbatim)
+> vineweave arms are vines should be flexible to move
+> we shouldn't consider the game size budget too much we can always scale,
+> as long as proportions are fine then its good, its easier to scale down
+> then up
+> and ok on the rest then
+
+Readings: VINEWEAVE's arms are VINES - not limbs to re-pose into a carry,
+but flexible chains: rig them as multi-bone vine chains that MOVE (idle
+sway, curl, whip potential); the height fix comes from letting the vines
+hang/curl naturally instead of a T-span, which frees the fit box. SCALE
+POLICY (applies to ALL Conquest units): author at natural proportions -
+proportions are the quality bar, absolute size is not; the game scales at
+import, and scaling down beats scaling up. The cell-fit check moves to
+EXPORT time (report-only during authoring, enforced at ship). Queue as
+proposed is approved: Vineweave -> Mortis -> Duskmaw re-run -> vampito ->
+magmoo -> supaoctto.
+
+> geode should be colored like an emerald-ish glowy color
+
+Addendum: GEODE joins the queue - emerald-ish GLOWY coloring (deep green
+crystal with emissive glow, fits the sentient-diamond identity + the
+planned crystal faceting). Slotted into the hero block: Vineweave ->
+Mortis -> Duskmaw re-run -> Geode -> vampito -> magmoo -> supaoctto.
+
+## 2026-09-25 - Eldroot v4 delivered
+Tassets: 3 bark plates per side hinged to the thighs - v3's 232-263 mm sit
+penetration is 0 in every clip; when SEATED the plates fold up into the
+trunk (a 3,276-candidate search found no visible seated placement that
+does not stab legs/floor/knuckles), so the seated silhouette IS the
+approved original sculpt; plates show riding the thighs during the
+transitions. Residual: 13-19 mm plate-on-plate rubbing for a few
+transition frames; back-shell rim up to 49.9 mm proud in stand_up.
+Proportions: arms x1.49 cross-section, shoulders wider, legs 20% shorter -
+ratio now 1.88x. SCALE: the lane auto-refit to the 3.8 m cell (0.895x,
+standing 4.56 m) BEFORE the artist's natural-scale policy landed; per
+that policy the SHIP build uses --no-cell-refit (standing 5.10 m,
+proportions identical - uniform scale changes no pixel of the sheet).
+Bake bug caught and fixed: v4 had overwritten v3's texture files; v3
+restored byte-for-byte, v4 writes its own names.

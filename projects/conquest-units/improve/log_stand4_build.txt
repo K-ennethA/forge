@@ -1,0 +1,30 @@
+00:00.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\eldroot.blend"
+Info: Circular dependency for image "bk_n_all" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_all" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_n_trunk" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_trunk" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_n_thigh" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_thigh" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_n_shin" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_shin" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_n_foot" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_foot" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_n_skirt" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Circular dependency for image "bk_a_skirt" from object "eldroot"
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "eldroot_standing4.blend"
+STAND4_DONE {"heights": {"seated_m": 2.4258, "standing_m": 4.5605, "ratio": 1.88, "pre_refit": {"sculpt_seated_m": 2.7108, "sitting_pose_m": 2.7108, "standing_m": 5.0963, "ratio": 1.88}, "cell_refit_scale": 0.894871, "v3": {"seated_m": 2.7108, "standing_m": 5.4216, "ratio": 2.0, "leg_chain_m": 2.9156}, "leg_chain_m": {"pre_refit": 2.5909, "post_refit": 2.3186}}, "seconds": 76.0}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit
