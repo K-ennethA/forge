@@ -337,3 +337,25 @@ a splashy bottom piece with finger-like splats. (2) IDLE = the split/combine
 cycle itself: pieces separate, then combine back into the one long serpent,
 looping. Slither walk stays. Resume of paused work also ordered (duskmaw v2
 restart, then supaoctto).
+
+## 2026-09-26 — Magmoo v3 feedback (artist verbatim, binding)
+
+"can we have the eyes be within the goo so not the full circles sticking out
+more of a negative space with it
+
+also the movement for him shouldnt be a slither he should have the movement
+be a flying slither arc moving in a sin/cosine horizontal s shape like a
+flying dragon, can we have one of his animations be all the goop goes into
+one big ball of goop with his eyes and ears just showing
+
+also the lava coloring should be see transparent see through otherwise looks
+fine"
+
+Binding reading: (1) eyes recessed INTO the goo as negative space (glowing
+sockets/insets), not eyeball spheres protruding. (2) walk clip -> FLYING
+slither: airborne, body arcing in a horizontal sin/cosine S like a flying
+(chinese) dragon; rest pose still on the floor per contract. (3) NEW third
+clip "ball": all the goop merges into one big ball with only the eyes and
+ears (the head's flame licks) showing — ALLOWED_CLIP_NAMES extended with
+ball/ball-loop. (4) material becomes translucent/see-through lava; colors
+otherwise approved.
