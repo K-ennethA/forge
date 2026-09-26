@@ -1,4 +1,5 @@
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v3_before_after.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_before_after.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_colour_reference.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

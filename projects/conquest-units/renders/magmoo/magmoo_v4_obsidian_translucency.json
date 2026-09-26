@@ -1,0 +1,19 @@
+{
+ "camera": "tactical: 40 deg round, 55 deg down, fit 1.25",
+ "resolution": 384,
+ "silhouette_px": 7665,
+ "palette_region_alpha": {
+  "goo_cool": 0.7,
+  "goo": 0.64,
+  "goo_hot": 0.7,
+  "flame": 0.8,
+  "core": 0.88,
+  "eye": 0.94
+ },
+ "palette_goo_alpha": 0.64,
+ "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible",
+ "dithered_at_palette_alpha": {
+  "T_mean": 0.2974,
+  "T_p90": 0.4538
+ }
+}

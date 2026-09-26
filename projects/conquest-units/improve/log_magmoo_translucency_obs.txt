@@ -1,6 +1,6 @@
-00:01.281  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo__obsidian.blend"
-00:03.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v3_obsidian_tmp.png'
-00:04.156  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v3_obsidian_tmp.png'
-00:04.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v3_obsidian_tmp.png'
-TRANSLUCENCY {"camera": "tactical: 40 deg round, 55 deg down, fit 1.25", "resolution": 384, "silhouette_px": 13720, "palette_region_alpha": {"goo_cool": 0.6, "goo": 0.55, "goo_hot": 0.62, "flame": 0.75, "core": 0.85, "eye": 1.0, "pupil": 1.0}, "palette_goo_alpha": 0.55, "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible", "dithered_at_palette_alpha": {"T_mean": 0.3181, "T_p90": 0.5033}}
+00:01.266  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo__obsidian.blend"
+00:03.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_obsidian_tmp.png'
+00:03.563  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_obsidian_tmp.png'
+00:04.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_obsidian_tmp.png'
+TRANSLUCENCY {"camera": "tactical: 40 deg round, 55 deg down, fit 1.25", "resolution": 384, "silhouette_px": 7665, "palette_region_alpha": {"goo_cool": 0.7, "goo": 0.64, "goo_hot": 0.7, "flame": 0.8, "core": 0.88, "eye": 0.94}, "palette_goo_alpha": 0.64, "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible", "dithered_at_palette_alpha": {"T_mean": 0.2974, "T_p90": 0.4538}}
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

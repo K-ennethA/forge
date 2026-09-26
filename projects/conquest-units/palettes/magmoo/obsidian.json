@@ -2,15 +2,14 @@
  "unit": "magmoo",
  "skin": "obsidian",
  "extends": "default",
- "description": "v2 Obsidian goo: black volcanic-glass slime with cold blue-white heat - same regions, same heat grade, palette swap only. The body goes near-black glossy with a faint blue sheen; the heat tiers (flow patches, flame tips, torn-end cores, droplets, eyes) burn blue-white.",
+ "description": "v4 Obsidian goo, re-derived on the v4 region set: black volcanic-glass slime with cold blue-white heat - same regions, same heat grade, palette swap only. The body goes near-black glossy with a faint blue sheen; the heat tiers (flow patches, flame tips, torn-end cores, droplets, bridges, shed drips) burn blue-white. The v4 carved eye socket is an even darker blue-black with no glow (the default skin's rule: a darker shade of the body, no white, no pupil). Alphas inherit the default skin's.",
  "regions": {
   "goo_cool": {"rgb": [6, 6, 9],       "emission": [10, 30, 90],    "emission_scale": 0.01},
   "goo":      {"rgb": [12, 12, 16],    "emission": [20, 60, 160],   "emission_scale": 0.02},
   "goo_hot":  {"rgb": [36, 64, 128],   "emission": [40, 110, 255],  "emission_scale": 0.45},
   "flame":    {"rgb": [110, 196, 255], "emission": [60, 170, 255],  "emission_scale": 0.85},
   "core":     {"rgb": [196, 238, 255], "emission": [120, 210, 255], "emission_scale": 1.15},
-  "eye":      {"rgb": [232, 250, 255], "emission": [170, 232, 255], "emission_scale": 1.60},
-  "pupil":    {"rgb": [4, 4, 8]}
+  "eye":      {"rgb": [3, 3, 6],       "emission": [6, 12, 40],     "emission_scale": 0.005}
  },
- "material": {"roughness": 0.18}
+ "material": {"roughness": 0.16}
 }

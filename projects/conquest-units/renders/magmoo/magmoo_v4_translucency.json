@@ -1,0 +1,67 @@
+{
+ "camera": "tactical: 40 deg round, 55 deg down, fit 1.25",
+ "resolution": 384,
+ "silhouette_px": 7671,
+ "palette_region_alpha": {
+  "goo_cool": 0.7,
+  "goo": 0.64,
+  "goo_hot": 0.7,
+  "flame": 0.8,
+  "core": 0.88,
+  "eye": 0.94
+ },
+ "palette_goo_alpha": 0.64,
+ "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible",
+ "alpha_sweep": [
+  {
+   "goo_alpha": 0.35,
+   "T_mean": 0.4947,
+   "T_p90": 0.7361
+  },
+  {
+   "goo_alpha": 0.45,
+   "T_mean": 0.4099,
+   "T_p90": 0.6294
+  },
+  {
+   "goo_alpha": 0.55,
+   "T_mean": 0.3291,
+   "T_p90": 0.5243
+  },
+  {
+   "goo_alpha": 0.7,
+   "T_mean": 0.2169,
+   "T_p90": 0.3639
+  },
+  {
+   "goo_alpha": 0.85,
+   "T_mean": 0.1206,
+   "T_p90": 0.2074
+  },
+  {
+   "goo_alpha": 1.0,
+   "T_mean": 0.0392,
+   "T_p90": 0.0773
+  }
+ ],
+ "sorting_modes": [
+  {
+   "mode": "dithered",
+   "T_mean": 0.2601,
+   "T_p90": 0.4289,
+   "mean_abs_diff_vs_dithered_0_255": 0.0
+  },
+  {
+   "mode": "blended_overlap",
+   "T_mean": 0.2586,
+   "T_p90": 0.3955,
+   "mean_abs_diff_vs_dithered_0_255": 2.679
+  },
+  {
+   "mode": "blended_prepass",
+   "T_mean": 0.2656,
+   "T_p90": 0.3957,
+   "mean_abs_diff_vs_dithered_0_255": 3.035
+  }
+ ]
+}

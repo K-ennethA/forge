@@ -1,6 +1,6 @@
 {
  "unit": "magmoo",
- "version": "v3 goo",
+ "version": "v4 living goo",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-magmoo.blend",
  "tier": "hero",
  "tri_budget": [
@@ -14,9 +14,9 @@
    "finish": {
     "voxel": 0.03,
     "remesh_tris": 85836,
-    "area": 27.1353,
-    "target_tris": 9937,
-    "tris": 9936,
+    "area": 27.161,
+    "target_tris": 9556,
+    "tris": 9556,
     "specks": [
      {
       "pieces": 1,
@@ -29,140 +29,96 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.1,
+    "seconds": 1.2,
     "protected": {
      "zones": 2,
-     "remesh_tris_kept": 1140,
-     "area": 0.4783
+     "remesh_tris_kept": 1458,
+     "area": 0.6104
     },
     "sculpt": {
      "sockets": [
       {
-       "dish_verts": 216,
-       "pit_verts": 11
+       "dish_verts": 289
       },
       {
-       "dish_verts": 215,
-       "pit_verts": 12
+       "dish_verts": 299
       }
      ],
-     "rim_ring_verts": 638,
+     "rim_ring_verts": 509,
      "rim_passes": 3,
-     "rim_lift_clamps": 12
+     "rim_lift_clamps": 439
     }
    },
    "source_tris": 34396,
    "head_local_bbox": [
     [
      -0.8087,
-     -3.2003,
+     -3.2002,
      0.0001
     ],
     [
-     0.8073,
+     0.8064,
      2.0453,
      2.6437
     ]
    ],
-   "regions_faces": {
-    "goo_cool": 1324,
-    "goo": 6521,
-    "goo_hot": 3263,
-    "flame": 1069,
-    "core": 144,
-    "eye": 400,
-    "pupil": 27
-   },
-   "iso_cuts": {
+   "regions_cut": {
     "cuts": [
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 221,
-      "face_connects": 261
+      "edge_splits": 211,
+      "face_connects": 259
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 102,
-      "face_connects": 122
+      "edge_splits": 161,
+      "face_connects": 188
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 609,
-      "face_connects": 735
+      "edge_splits": 613,
+      "face_connects": 725
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 216,
-      "face_connects": 261
+      "edge_splits": 295,
+      "face_connects": 352
      },
      {
       "field": "end",
       "tau": 0.3,
-      "edge_splits": 106,
+      "edge_splits": 105,
       "face_connects": 121
      },
      {
       "field": "end",
       "tau": 0.55,
-      "edge_splits": 41,
-      "face_connects": 46
+      "edge_splits": 30,
+      "face_connects": 36
      },
      {
       "field": "sink",
-      "tau": -0.035,
-      "edge_splits": 93,
-      "face_connects": 109
-     },
-     {
-      "field": "pit",
-      "tau": 0.02,
-      "edge_splits": 18,
-      "face_connects": 21
+      "tau": -0.03,
+      "edge_splits": 83,
+      "face_connects": 101
      }
     ],
-    "straddling_faces_after_cut": {
-     "nz=-0.450": 0,
-     "mot=0.780": 0,
-     "tip=0.050": 0,
-     "tip=0.080": 0,
-     "end=0.300": 0,
-     "end=0.550": 0,
-     "sink=-0.035": 0,
-     "pit=0.020": 0
-    },
-    "eye_faces": {
-     "eye": 400,
-     "pupil": 27
-    }
+    "eye_faces": 345
    },
    "tip_field_passes": 24,
-   "mean_edge": 0.0856,
-   "tris_final": 12748,
-   "min_z": 1.3102,
-   "bbox": [
-    [
-     -0.8087,
-     -7.2895,
-     1.3102
-    ],
-    [
-     0.8074,
-     -2.2628,
-     4.7328
-    ]
-   ]
+   "mean_edge": 0.0863
   },
   "mid": {
    "finish": {
     "voxel": 0.03,
     "remesh_tris": 74480,
     "area": 23.0057,
-    "target_tris": 7592,
-    "tris": 7592,
+    "target_tris": 7017,
+    "tris": 7016,
     "specks": [
      {
       "pieces": 1,
@@ -189,90 +145,59 @@
      167
     ],
     "nan": 0,
-    "seconds": 2.7
+    "seconds": 2.5
    },
    "spine_arc_length": 4.8013,
-   "regions_faces": {
-    "goo_cool": 1797,
-    "goo": 4436,
-    "goo_hot": 1238,
-    "flame": 1875,
-    "core": 550,
-    "eye": 0,
-    "pupil": 0
-   },
-   "iso_cuts": {
+   "regions_cut": {
     "cuts": [
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 365,
-      "face_connects": 428
+      "edge_splits": 326,
+      "face_connects": 393
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 134,
-      "face_connects": 160
+      "edge_splits": 128,
+      "face_connects": 148
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 264,
-      "face_connects": 298
+      "edge_splits": 268,
+      "face_connects": 299
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 52,
-      "face_connects": 59
+      "edge_splits": 44,
+      "face_connects": 47
      },
      {
       "field": "end",
       "tau": 0.3,
-      "edge_splits": 234,
-      "face_connects": 272
+      "edge_splits": 220,
+      "face_connects": 258
      },
      {
       "field": "end",
       "tau": 0.55,
-      "edge_splits": 103,
-      "face_connects": 127
+      "edge_splits": 108,
+      "face_connects": 130
      }
-    ],
-    "straddling_faces_after_cut": {
-     "nz=-0.450": 0,
-     "mot=0.780": 0,
-     "tip=0.050": 0,
-     "tip=0.080": 0,
-     "end=0.300": 0,
-     "end=0.550": 0
-    }
-   },
-   "tip_field_passes": 20,
-   "mean_edge": 0.0943,
-   "tris_final": 9896,
-   "min_z": 0.8498,
-   "bbox": [
-    [
-     -0.6848,
-     -4.4262,
-     0.8498
-    ],
-    [
-     0.6838,
-     0.1093,
-     4.4366
     ]
-   ]
+   },
+   "tip_field_passes": 18,
+   "mean_edge": 0.0981
   },
   "tail": {
    "finish": {
     "voxel": 0.03,
-    "remesh_tris": 135836,
-    "area": 43.1452,
-    "target_tris": 14238,
-    "tris": 14238,
+    "remesh_tris": 136072,
+    "area": 43.1522,
+    "target_tris": 13161,
+    "tris": 13160,
     "specks": [
      {
       "pieces": 1,
@@ -285,132 +210,93 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 2.8
+    "seconds": 2.5
    },
    "sdf": {
     "step": 0.03,
-    "mt_verts": 212842,
-    "mt_tris": 425692,
+    "mt_verts": 211012,
+    "mt_tris": 422032,
     "open_edges": 0,
     "nonmanifold_edges": 0,
     "grid": [
      333,
-     416,
+     362,
      100
     ],
     "nan": 0,
-    "seconds": 5.8
+    "seconds": 5.1
    },
    "tail_spine_length": 6.6,
-   "regions_faces": {
-    "goo_cool": 2553,
-    "goo": 10122,
-    "goo_hot": 3564,
-    "flame": 1570,
-    "core": 215,
-    "eye": 0,
-    "pupil": 0
-   },
-   "iso_cuts": {
+   "rest_curl_deg": 105.0,
+   "regions_cut": {
     "cuts": [
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 425,
-      "face_connects": 505
+      "edge_splits": 423,
+      "face_connects": 501
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 270,
-      "face_connects": 322
+      "edge_splits": 224,
+      "face_connects": 268
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 747,
-      "face_connects": 889
+      "edge_splits": 655,
+      "face_connects": 777
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 363,
+      "edge_splits": 371,
       "face_connects": 416
      },
      {
       "field": "end",
       "tau": 0.3,
-      "edge_splits": 48,
-      "face_connects": 56
+      "edge_splits": 46,
+      "face_connects": 52
      },
      {
       "field": "end",
       "tau": 0.55,
-      "edge_splits": 40,
-      "face_connects": 48
+      "edge_splits": 53,
+      "face_connects": 56
      }
-    ],
-    "straddling_faces_after_cut": {
-     "nz=-0.450": 0,
-     "mot=0.780": 0,
-     "tip=0.050": 26,
-     "tip=0.080": 0,
-     "end=0.300": 0,
-     "end=0.550": 0
-    }
-   },
-   "tip_field_passes": 20,
-   "mean_edge": 0.094,
-   "tris_final": 18024,
-   "min_z": 0.0,
-   "bbox": [
-    [
-     -2.2937,
-     -2.0454,
-     0.0
-    ],
-    [
-     2.2937,
-     7.2895,
-     2.3438
     ]
-   ]
+   },
+   "tip_field_passes": 18,
+   "mean_edge": 0.0984
   },
   "ball": {
-   "regions_faces": {
-    "goo_cool": 626,
-    "goo": 3290,
-    "goo_hot": 572,
-    "flame": 207,
-    "core": 0,
-    "eye": 1688,
-    "pupil": 617
-   },
-   "iso_cuts": {
+   "regions_cut": {
     "cuts": [
      {
       "field": "nz",
       "tau": -0.45,
-      "edge_splits": 95,
-      "face_connects": 122
+      "edge_splits": 54,
+      "face_connects": 65
      },
      {
       "field": "mot",
       "tau": 0.78,
-      "edge_splits": 62,
-      "face_connects": 76
+      "edge_splits": 72,
+      "face_connects": 82
      },
      {
       "field": "tip",
       "tau": 0.05,
-      "edge_splits": 140,
-      "face_connects": 150
+      "edge_splits": 145,
+      "face_connects": 157
      },
      {
       "field": "tip",
       "tau": 0.08,
-      "edge_splits": 90,
-      "face_connects": 96
+      "edge_splits": 153,
+      "face_connects": 164
      },
      {
       "field": "end",
@@ -426,48 +312,15 @@
      },
      {
       "field": "sink",
-      "tau": -0.035,
-      "edge_splits": 166,
-      "face_connects": 193
-     },
-     {
-      "field": "pit",
-      "tau": 0.02,
-      "edge_splits": 104,
-      "face_connects": 116
+      "tau": -0.03,
+      "edge_splits": 192,
+      "face_connects": 219
      }
     ],
-    "straddling_faces_after_cut": {
-     "nz=-0.450": 0,
-     "mot=0.780": 0,
-     "tip=0.050": 0,
-     "tip=0.080": 0,
-     "end=0.300": 0,
-     "end=0.550": 0,
-     "sink=-0.035": 0,
-     "pit=0.020": 0
-    },
-    "eye_faces": {
-     "eye": 1688,
-     "pupil": 617
-    }
+    "eye_faces": 2653
    },
-   "tip_field_passes": 14,
-   "mean_edge": 0.111,
-   "tris_final": 7000,
-   "min_z": 0.55,
-   "bbox": [
-    [
-     -0.0112,
-     -0.3045,
-     0.55
-    ],
-    [
-     0.0113,
-     -0.282,
-     0.5743
-    ]
-   ]
+   "tip_field_passes": 16,
+   "mean_edge": 0.1037
   }
  },
  "source_mesh": {
@@ -479,57 +332,58 @@
    -0.192,
    -47.896
   ],
-  "materials": [],
-  "role_v2": "the HEAD (the sketch's rounded teardrop with flame licks trailing off the back); v1 used it as the main body",
+  "role": "the HEAD (the sketch's rounded teardrop with flame licks trailing off the back)",
   "colour_note": "no material on the mesh: goo colours are authored in palettes/magmoo"
  },
  "eye_inset_proof": {
-  "rule": "signed height of the finished head's vertices above the pre-socket (remeshed) goo surface: + = sticks out, - = sunk in. v2's eyeballs sat EYE_R x (1 - EYE_SINK) = 0.19 x 0.55 = +0.1045 above the skin.",
-  "eye_zone_radius": 0.336,
-  "eye_zone_verts": 682,
-  "eye_zone_max_height": 0.00093,
-  "socket_verts_max_height": -0.03507,
-  "eye_zone_deepest": -0.2119,
+  "rule": "signed height of the finished head's vertices above the pre-socket (remeshed) goo surface: + = sticks out, - = sunk in. v4 sockets are empty carved dishes: no eyeball, no pupil pit.",
+  "eye_zone_radius": 0.384,
+  "eye_zone_verts": 904,
+  "eye_zone_max_height": 0.02682,
+  "socket_verts": 110,
+  "eye_zone_deepest": -0.20363,
   "rest_of_head_decimation_noise": {
    "max_height": 0.00502,
-   "p99_abs": 0.00232
+   "p99_abs": 0.00248
+  },
+  "placement": {
+   "eye_y_head_local": -1.25,
+   "eye_up_deg": 36.0,
+   "v3_was": {
+    "eye_y": -2.0,
+    "eye_up_deg": 40.0
+   }
   },
   "sockets": [
    {
-    "eye_point": [
-     0.5226,
-     -2.0,
-     1.3728
+    "eye_point_head_local": [
+     0.5799,
+     -1.25,
+     1.5481
     ],
     "axis": [
-     0.6428,
+     0.5878,
      0.0,
-     0.766
+     0.809
     ],
-    "opening_r": 0.21,
-    "depth": 0.15,
-    "cutter_r": 0.222,
-    "pupil_open_r": 0.105,
-    "pupil_extra_depth": 0.075,
-    "total_depth": 0.225
+    "opening_r": 0.24,
+    "depth": 0.2,
+    "cutter_r": 0.244
    },
    {
-    "eye_point": [
-     -0.5196,
-     -2.0,
-     1.3692
+    "eye_point_head_local": [
+     -0.5716,
+     -1.25,
+     1.5367
     ],
     "axis": [
-     -0.6428,
+     -0.5878,
      0.0,
-     0.766
+     0.809
     ],
-    "opening_r": 0.21,
-    "depth": 0.15,
-    "cutter_r": 0.222,
-    "pupil_open_r": 0.105,
-    "pupil_extra_depth": 0.075,
-    "total_depth": 0.225
+    "opening_r": 0.24,
+    "depth": 0.2,
+    "cutter_r": 0.244
    }
   ]
  },
@@ -546,138 +400,176 @@
    -0.1666,
    0.986
   ],
-  "centre_shift": [
-   -5e-05,
-   0.39328,
-   0.0
-  ],
-  "torn_end_anchors": {
-   "crown|tail": [
-    9.999999747378752e-05,
-    -0.4072999954223633,
-    1.582800030708313
-   ],
-   "crown|mid": [
-    9.999999747378752e-05,
-    -0.3102000057697296,
-    1.0087000131607056
-   ],
-   "head|mid": [
-    9.999999747378752e-05,
-    -4.1921000480651855,
-    3.041100025177002
-   ],
-   "head|head": [
-    9.999999747378752e-05,
-    -3.0306999683380127,
-    3.7111001014709473
-   ]
+  "combined_join_overlap": {
+   "rule": "combined serpent (the flight state): each join is goo-into-goo -- negative = overlap depth along the join axis between the two torn-end anchors",
+   "crown": -0.5823,
+   "head": -1.3408
   }
  },
- "droplets": [
-  {
-   "join": "crown",
-   "rest": [
-    0.9717,
-    -0.3401,
-    2.0345
-   ],
-   "radius": 0.21,
-   "walk_out_steps": 53,
-   "clearance": 0.3636,
-   "tris": 198
+ "rest_layout": {
+  "rule": "the bind pose = the goo segments lying on the floor, visibly separate. Surface gaps solved by bisection (BVH nearest-surface distance, every vertex) to REST_GAP_*; tail as modelled, mid pitched level on both ends, head back in its own sculpt frame (lying on the floor), droplets on the floor beside the pieces.",
+  "targets": {
+   "head|mid": 1.1,
+   "mid|tail": 1.1
   },
-  {
-   "join": "crown",
-   "rest": [
-    -1.0667,
-    0.16,
-    1.9267
-   ],
-   "radius": 0.17,
-   "walk_out_steps": 53,
-   "clearance": 0.3182,
-   "tris": 126
+  "measured": {
+   "head|mid": {
+    "min_surface_gap": 1.0965,
+    "closest_a": [
+     -0.4768,
+     -4.5622,
+     0.8088
+    ],
+    "closest_b": [
+     -0.47519999742507935,
+     -3.468100070953369,
+     0.7369999885559082
+    ]
+   },
+   "mid|tail": {
+    "min_surface_gap": 1.1,
+    "closest_a": [
+     -0.6487,
+     1.4532,
+     0.3972
+    ],
+    "closest_b": [
+     -1.1852999925613403,
+     2.4056999683380127,
+     0.27489998936653137
+    ]
+   },
+   "head|tail": {
+    "min_surface_gap": 7.006,
+    "closest_a": [
+     -0.4452,
+     -4.5611,
+     0.8393
+    ],
+    "closest_b": [
+     0.3391000032424927,
+     2.3756000995635986,
+     0.24719999730587006
+    ]
+   }
   },
-  {
-   "join": "crown",
-   "rest": [
-    0.2448,
-    0.9791,
-    2.1854
-   ],
-   "radius": 0.13,
-   "walk_out_steps": 56,
-   "clearance": 0.2691,
-   "tris": 72
-  },
-  {
-   "join": "head",
-   "rest": [
-    0.9425,
-    -3.2291,
-    2.8895
-   ],
-   "radius": 0.16,
-   "walk_out_steps": 48,
-   "clearance": 0.3028,
-   "tris": 112
-  },
-  {
-   "join": "head",
-   "rest": [
-    -0.8929,
-    -3.1621,
-    3.1697
-   ],
-   "radius": 0.12,
-   "walk_out_steps": 46,
-   "clearance": 0.2672,
-   "tris": 62
-  }
- ],
+  "mid_pitch_deg": 28.25,
+  "droplets": [
+   {
+    "rest": [
+     2.2471,
+     3.3195,
+     0.2157
+    ],
+    "radius": 0.21,
+    "piece": "tail",
+    "clearance_to_pieces": {
+     "head": 8.1412,
+     "mid": 2.9594,
+     "tail": 0.2332
+    },
+    "in_a_gap_corridor": []
+   },
+   {
+    "rest": [
+     -2.9437,
+     4.1075,
+     0.1707
+    ],
+    "radius": 0.17,
+    "piece": "tail",
+    "clearance_to_pieces": {
+     "head": 8.8635,
+     "mid": 3.3462,
+     "tail": 0.4065
+    },
+    "in_a_gap_corridor": []
+   },
+   {
+    "rest": [
+     1.7655,
+     4.8955,
+     0.1369
+    ],
+    "radius": 0.13,
+    "piece": "tail",
+    "clearance_to_pieces": {
+     "head": 9.607,
+     "mid": 3.9937,
+     "tail": 0.3057
+    },
+    "in_a_gap_corridor": []
+   },
+   {
+    "rest": [
+     0.6891,
+     -7.4434,
+     0.1661
+    ],
+    "radius": 0.16,
+    "piece": "head",
+    "clearance_to_pieces": {
+     "head": 0.5037,
+     "mid": 3.9689,
+     "tail": 9.6637
+    },
+    "in_a_gap_corridor": []
+   },
+   {
+    "rest": [
+     -1.5293,
+     -6.5517,
+     0.1216
+    ],
+    "radius": 0.12,
+    "piece": "head",
+    "clearance_to_pieces": {
+     "head": 0.6555,
+     "mid": 3.0336,
+     "tail": 8.8083
+    },
+    "in_a_gap_corridor": []
+   }
+  ],
+  "droplets_in_a_gap_corridor": 0,
+  "centre_shift": [
+   0.4766,
+   -4.02693,
+   0.0
+  ]
+ },
  "ball": {
   "volumes": {
-   "head": 7.2527,
-   "mid": 6.5506,
-   "tail": 10.8089,
-   "droplets": 0.0971
+   "head": 7.2398,
+   "mid": 6.5502,
+   "tail": 10.8093,
+   "droplets": 0.0969
   },
-  "total_volume": 24.7093,
-  "radius": 1.8069,
-  "diameter": 3.6137,
-  "size_rule": "radius of a sphere holding the pieces' summed volume x BALL_SIZE 1.00 (joins overlap goo-into-goo, so this slightly over-counts)",
+  "total_volume": 24.6962,
+  "radius": 1.8065,
+  "diameter": 3.6131,
   "centre_in_clip": [
    0.0,
    0.0,
-   1.5123
+   1.5121
   ],
   "slump": 0.1,
-  "eye_azimuth_deg": 21.811,
-  "eye_elevation_deg": 14.0,
-  "eye_spacing": 1.3028,
-  "ear": {
-   "length": 0.95,
-   "root_r": 0.3,
-   "azimuth_deg": 30.0,
-   "elevation_deg": 56.0,
-   "lean_back_deg": 36.0
-  },
+  "eye_azimuth_deg": 25.447,
+  "eye_elevation_deg": 22.0,
   "bind": {
    "position": [
-    0.0001,
-    -0.2933,
-    0.55
+    -0.4766,
+    4.3019,
+    0.9684
    ],
-   "scale": 0.006,
-   "bind_radius": 0.01084
+   "scale": 0.01
   },
   "finish": {
    "voxel": 0.03,
-   "remesh_tris": 146048,
-   "area": 44.181,
-   "target_tris": 5686,
-   "tris": 5686,
+   "remesh_tris": 145864,
+   "area": 44.2016,
+   "target_tris": 5797,
+   "tris": 5796,
    "specks": [
     {
      "pieces": 1,
@@ -693,14 +585,14 @@
    "seconds": 2.6,
    "protected": {
     "zones": 2,
-    "remesh_tris_kept": 2648,
-    "area": 0.7742
+    "remesh_tris_kept": 3202,
+    "area": 0.9556
    }
   },
   "sdf": {
    "step": 0.03,
-   "mt_verts": 220512,
-   "mt_tris": 441020,
+   "mt_verts": 220670,
+   "mt_tris": 441336,
    "open_edges": 0,
    "nonmanifold_edges": 0,
    "grid": [
@@ -709,262 +601,343 @@
     222
    ],
    "nan": 0,
-   "seconds": 5.1
-  },
-  "protrusion_by_region": {
-   "goo_cool": {
-    "faces": 626,
-    "max_height_over_base": 0.0014,
-    "faces_above_0.05": 0
-   },
-   "goo": {
-    "faces": 3290,
-    "max_height_over_base": 0.8153,
-    "faces_above_0.05": 438
-   },
-   "goo_hot": {
-    "faces": 572,
-    "max_height_over_base": 0.9386,
-    "faces_above_0.05": 377
-   },
-   "flame": {
-    "faces": 207,
-    "max_height_over_base": 1.0109,
-    "faces_above_0.05": 207
-   },
-   "eye": {
-    "faces": 1688,
-    "max_height_over_base": -0.0347,
-    "faces_above_0.05": 0
-   },
-   "pupil": {
-    "faces": 617,
-    "max_height_over_base": -0.1762,
-    "faces_above_0.05": 0
-   }
-  },
-  "what_protrudes": {
-   "rule": "faces standing > 0.05 above the ball's base (sagging sphere) surface, by where they are",
-   "ears": {
-    "faces": 803,
-    "max_height": 1.0109
-   },
-   "ball_surface": {
-    "faces": 219,
-    "max_height": 0.6955
-   },
-   "eye_sockets_max_height": -0.0347,
-   "eye_sockets_deepest": -0.2756
-  },
-  "measured_extent": {
-   "width_x": 3.7538,
-   "depth_y": 3.758,
-   "height_z": 4.0503
+   "seconds": 5.2
   }
+ },
+ "goo_extras": {
+  "strand_tris": 300,
+  "drip_tris": 68,
+  "splat_tris": 436
+ },
+ "cut_seconds": 19.0,
+ "flight_segment": {
+  "rule": "shape key 'flight': every mound vertex (nearest tail-spine arc < mound exit + 0.35) maps onto a smooth round segment continuing the tail forward (unflattened space: the tube's own cross-section), seeded by closest-point projection then relaxed (uniform Laplacian, re-projected every pass, the tube boundary fixed) -> a fold-free map of the mound disc onto the segment",
+  "free_verts": 6484,
+  "fixed_verts": 1870,
+  "relax_passes": 900,
+  "segment": {
+   "radius": 0.4913,
+   "length_to_junction": 1.7392,
+   "front_ahead_of_tail_root": 0.95,
+   "junction_arc": 1.2786,
+   "mound_exit_arc": 0.9286
+  },
+  "faces_touching_free": 13021,
+  "flipped_faces": 164,
+  "flipped_area_frac": 0.000607,
+  "degenerate_faces": 0,
+  "free_edge_len_p05_p50": [
+   0.00329,
+   0.02089
+  ],
+  "seconds": 1.2
  },
  "glow_tiers": {
   "default": {
    "skin": "default",
    "emission_scale_tiers": {
-    "goo_cool": 0.14,
+    "goo_cool": 0.16,
     "goo": 0.3,
     "goo_hot": 0.55,
     "flame": 0.85,
     "core": 1.15,
-    "eye": 1.6
+    "eye": 0.04
    },
-   "rank": [
-    "eye",
-    "core",
-    "flame",
-    "goo_hot",
-    "goo",
-    "goo_cool"
-   ],
    "grade": [
     "goo_cool",
     "goo",
     "goo_hot",
     "flame",
-    "core",
-    "eye"
+    "core"
+   ],
+   "grade_pass": true,
+   "eye_dark_socket_pass": true,
+   "eye_vs_goo_luminance": [
+    0.047,
+    0.3052
    ],
    "pass": true
   }
  },
- "translucency": {
-  "alpha_by_region_default": {
-   "goo_cool": 0.6,
-   "goo": 0.55,
-   "goo_hot": 0.62,
-   "flame": 0.75,
-   "core": 0.85,
-   "eye": 1.0,
-   "pupil": 1.0
+ "uv_seconds": 2.2,
+ "islands": {
+  "head": {
+   "verts": 6278,
+   "faces": 12552
   },
-  "material_alpha_factor": 1.0,
-  "eevee": {
-   "surface_render_method": "DITHERED",
-   "backface_culling": true,
-   "transparent_shadow": true
+  "mid": {
+   "verts": 4604,
+   "faces": 9204
+  },
+  "tail": {
+   "verts": 8354,
+   "faces": 16704
+  },
+  "drop.0": {
+   "verts": 93,
+   "faces": 182
+  },
+  "drop.1": {
+   "verts": 61,
+   "faces": 118
+  },
+  "drop.2": {
+   "verts": 36,
+   "faces": 68
+  },
+  "drop.3": {
+   "verts": 54,
+   "faces": 104
+  },
+  "drop.4": {
+   "verts": 31,
+   "faces": 58
+  },
+  "ball": {
+   "verts": 3516,
+   "faces": 7028
+  },
+  "bridge.crown.a": {
+   "verts": 152,
+   "faces": 300
+  },
+  "bridge.crown.b": {
+   "verts": 152,
+   "faces": 300
+  },
+  "bridge.head.a": {
+   "verts": 152,
+   "faces": 300
+  },
+  "bridge.head.b": {
+   "verts": 152,
+   "faces": 300
+  },
+  "shed.0": {
+   "verts": 36,
+   "faces": 68
+  },
+  "shed.1": {
+   "verts": 36,
+   "faces": 68
+  },
+  "shed.2": {
+   "verts": 36,
+   "faces": 68
+  },
+  "splat": {
+   "verts": 220,
+   "faces": 436
   }
  },
- "droplets_object": {
-  "tris": 570,
-  "count": 5,
-  "region": "core"
+ "shape_keys": {
+  "order": [
+   "flight",
+   "tuck_mid",
+   "sq_head",
+   "sq_mid",
+   "sq_tail",
+   "bulge_crown",
+   "bulge_head"
+  ],
+  "squash_amount": 0.36,
+  "bulge": {
+   "amount": 0.16,
+   "radius": 0.95,
+   "crown:mid": {
+    "verts": 935,
+    "max_offset": 0.16
+   },
+   "crown:tail": {
+    "verts": 551,
+    "max_offset": 0.16
+   },
+   "head:mid": {
+    "verts": 935,
+    "max_offset": 0.16
+   },
+   "head:head": {
+    "verts": 808,
+    "max_offset": 0.16
+   }
+  },
+  "max_offset": {
+   "flight": 1.9669,
+   "tuck_mid": 0.4023,
+   "sq_head": 0.9665,
+   "sq_mid": 0.9384,
+   "sq_tail": 0.8519,
+   "bulge_crown": 0.16,
+   "bulge_head": 0.16
+  },
+  "moved_verts": {
+   "flight": 6484,
+   "tuck_mid": 752,
+   "sq_head": 6278,
+   "sq_mid": 4604,
+   "sq_tail": 8354,
+   "bulge_crown": 1484,
+   "bulge_head": 1743
+  },
+  "seconds": 0.1
  },
- "cut_seconds": 24.2,
  "facing": {
-  "rule": "midpoint of the two eyes -> the snout tip (the head's rounded front on its axis)",
+  "rule": "midpoint of the two eye sockets -> the snout tip (the head's rounded front on its axis)",
   "anchor": [
-   0.0016,
-   -6.2919,
-   2.7739
+   -0.4713,
+   -7.8537,
+   1.5423
   ],
   "landmark": [
-   0.0001,
-   -7.2555,
-   1.8297
+   -0.4754,
+   -9.8012,
+   0.7499
   ],
-  "angle_from_minusY_deg": -0.089
+  "angle_from_minusY_deg": -0.122
  },
- "uv_seconds": 6.1,
  "measure": {
   "bbox": [
    [
-    -2.2937,
-    -7.2895,
-    0.0
+    -3.1193,
+    -9.8039,
+    -0.0
    ],
    [
-    2.2937,
-    7.2895,
-    4.7328
+    3.1193,
+    9.8039,
+    2.6436
    ]
   ],
-  "length_y": 14.579,
-  "width_x": 4.5874,
-  "height_z": 4.7328,
-  "snout_z": 1.8297,
-  "eye_z": 2.7739,
-  "head_lowest_z": 1.3102,
-  "mid_arch_top_z": 4.4366,
-  "mid_spine_length": 4.8013,
-  "tail_spine_length": 6.6,
+  "length_y": 19.6078,
+  "width_x": 6.2386,
+  "height_z": 2.6436,
   "units": "source units (the head sculpt's own scale, natural proportions)",
+  "v3_combined_rest_was": {
+   "length_y": 14.579,
+   "width_x": 4.5874,
+   "height_z": 4.7328,
+   "cell_fit_scale": 0.13032
+  },
   "export_cell_fit_report_only": {
-   "scale": 0.13032,
+   "scale": 0.0969,
    "bound_by": "footprint",
    "length_m": 1.9,
-   "height_m": 0.6168
-  },
-  "rest_join_overlap": {
-   "rule": "combined rest: each join is goo-into-goo -- the pieces interpenetrate (negative = overlap depth along the join axis between the two torn-end anchors)",
-   "crown": -0.5823,
-   "head": -1.3408
+   "height_m": 0.2562
   }
  },
  "tris": {
-  "magmoo_head": 12748,
-  "magmoo_mid": 9896,
-  "magmoo_tail": 18024,
-  "magmoo_droplets": 570,
-  "magmoo_ball": 7000,
-  "total": 48238
+  "total": 47858,
+  "head": 12552,
+  "mid": 9204,
+  "tail": 16704,
+  "drop.0": 182,
+  "drop.1": 118,
+  "drop.2": 68,
+  "drop.3": 104,
+  "drop.4": 58,
+  "ball": 7028,
+  "bridge.crown.a": 300,
+  "bridge.crown.b": 300,
+  "bridge.head.a": 300,
+  "bridge.head.b": 300,
+  "shed.0": 68,
+  "shed.1": 68,
+  "shed.2": 68,
+  "splat": 436
  },
- "digest_geometry_colour_uv": "f533af66b7348877",
+ "region_faces": {
+  "goo_cool": 5784,
+  "goo": 22360,
+  "goo_hot": 9082,
+  "flame": 6247,
+  "core": 1387,
+  "eye": 2998
+ },
+ "digest_geometry_colour_uv": "d36108c879367da2",
  "palette": {
   "default": {
    "goo_cool": {
     "rgb": [
-     126,
-     16,
-     10
+     196,
+     62,
+     12
     ],
     "emission": [
-     190,
-     22,
-     8
+     214,
+     58,
+     10
     ],
-    "emission_scale": 0.14
+    "emission_scale": 0.16
    },
    "goo": {
     "rgb": [
-     214,
-     38,
-     14
+     242,
+     112,
+     20
     ],
     "emission": [
      255,
-     44,
-     10
+     104,
+     16
     ],
     "emission_scale": 0.3
    },
    "goo_hot": {
     "rgb": [
-     246,
-     88,
-     18
+     255,
+     152,
+     34
     ],
     "emission": [
      255,
-     84,
-     14
+     146,
+     28
     ],
     "emission_scale": 0.55
    },
    "flame": {
     "rgb": [
      255,
-     156,
-     36
+     196,
+     62
     ],
     "emission": [
      255,
-     136,
-     26
+     184,
+     52
     ],
     "emission_scale": 0.85
    },
    "core": {
     "rgb": [
      255,
-     218,
-     112
+     232,
+     146
     ],
     "emission": [
      255,
-     186,
-     70
+     218,
+     116
     ],
     "emission_scale": 1.15
    },
    "eye": {
     "rgb": [
-     255,
-     246,
-     204
+     118,
+     28,
+     8
     ],
     "emission": [
-     255,
-     232,
-     170
+     120,
+     20,
+     4
     ],
-    "emission_scale": 1.6
-   },
-   "pupil": {
-    "rgb": [
-     24,
-     8,
-     8
-    ]
+    "emission_scale": 0.04
    }
   },
   "files": [
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json"
   ]
  },
- "seconds_to_improved": 46.3
+ "seconds_to_improved": 39.7
 }

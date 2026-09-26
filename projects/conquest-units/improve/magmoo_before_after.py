@@ -1,45 +1,77 @@
-"""Before/after sheet (v3): v2 (opaque goo, eyeball spheres; renders/magmoo/magmoo_v2_<view>.png, kept from the v2
-lane) vs v3 (translucent goo, eye sockets; magmoo_v3_<view>.png). Pure image assembly, no scene.
+"""Before/after sheets (v4). Pure image assembly, no scene.
 
     blender --background --factory-startup --python magmoo_before_after.py
 
-Rows (top -> bottom): threequarter, front, tactical, head, eyeprofile. Left column v2, right column v3. Each tile is
-framed on its own model's projected bounds (the survey rule): this compares look and silhouette, not absolute size.
-magmoo_v2_eyeprofile.png was rendered once from the v2 rigged blend with the v3 magmoo_render.py (same view rule)
-before the v3 build replaced it.
+1. renders/magmoo/magmoo_v4_before_after.png -- left v3 (the combined serpent, deep-red translucent goo, glowing
+   eyes with pupils, horizontal-S flight; renders/magmoo/magmoo_v3_<view>.png, kept from the v3 lane), right v4
+   (magmoo_v4_<view>.png). Rows top -> bottom: threequarter (v4 = the segmented rest), side, tactical, head, flight side.
+2. renders/magmoo/magmoo_v4_colour_reference.png -- design/reference/magmoo-v4-color-reference.png beside the v4
+   threequarter rest and the v4 head closeup (each tile fitted into a square, aspect kept, grey padding).
+Each tile is framed on its own model's projected bounds (the survey rule): this compares look, not absolute size.
 """
 import bpy, os
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 R = os.path.normpath(os.path.join(HERE, "..", "renders", "magmoo"))
-cols = [os.path.join(R, "magmoo_v2_%s.png"), os.path.join(R, "magmoo_v3_%s.png")]
+REF = os.path.normpath(os.path.join(HERE, "..", "design", "reference", "magmoo-v4-color-reference.png"))
 T = 512
 
 
-def tile(path):
+def load(path):
     img = bpy.data.images.load(path, check_existing=False)
     w, h = img.size
-    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, img.channels)
     bpy.data.images.remove(img)
-    iy = (np.arange(T) * h / T).astype(int); ix = (np.arange(T) * w / T).astype(int)
-    return px[iy][:, ix]
+    if px.shape[2] == 3:
+        px = np.dstack([px, np.ones((h, w, 1), np.float32)])
+    return px
 
 
-rows = []
-for view in ("eyeprofile", "head", "tactical", "front", "threequarter"):   # pixel rows are bottom-up: last = top row
-    row = [tile(c % view) for c in cols]
-    sep = np.ones((T, 6, 4), np.float32)
-    rows.append(np.concatenate([row[0], sep, row[1]], axis=1))
-hsep = np.ones((6, rows[0].shape[1], 4), np.float32)
-parts = []
-for i, r in enumerate(rows):
-    parts.append(r)
-    if i < len(rows) - 1:
-        parts.append(hsep)
-sheet = np.concatenate(parts, axis=0)
-out = os.path.join(R, "magmoo_v3_before_after.png")
-im = bpy.data.images.new("ba", sheet.shape[1], sheet.shape[0], alpha=True)
-im.pixels.foreach_set(sheet.ravel())
-im.filepath_raw = out; im.file_format = "PNG"; im.save()
-print("WROTE", out)
+def tile(path, T_=T):
+    """fit into a T x T square, aspect kept (nearest sampling), grey padding."""
+    px = load(path)
+    h, w = px.shape[:2]
+    s = T_ / max(w, h)
+    nw, nh = max(1, int(w * s)), max(1, int(h * s))
+    iy = (np.arange(nh) / s).astype(int).clip(0, h - 1); ix = (np.arange(nw) / s).astype(int).clip(0, w - 1)
+    out = np.full((T_, T_, 4), 0.18, np.float32); out[..., 3] = 1.0
+    y0, x0 = (T_ - nh) // 2, (T_ - nw) // 2
+    out[y0:y0 + nh, x0:x0 + nw] = px[iy][:, ix]
+    return out
+
+
+def save(sheet, name):
+    im = bpy.data.images.new(name, sheet.shape[1], sheet.shape[0], alpha=True)
+    im.pixels.foreach_set(sheet.ravel())
+    out = os.path.join(R, name)
+    im.filepath_raw = out; im.file_format = "PNG"; im.save()
+    bpy.data.images.remove(im)
+    print("WROTE", out)
+
+
+def grid(rows):
+    sep_v = np.ones((T, 6, 4), np.float32)
+    rr = []
+    for row in rows:
+        parts = []
+        for i, t_ in enumerate(row):
+            parts.append(t_)
+            if i < len(row) - 1:
+                parts.append(sep_v)
+        rr.append(np.concatenate(parts, axis=1))
+    hsep = np.ones((6, rr[0].shape[1], 4), np.float32)
+    out = []
+    for i, r_ in enumerate(rr[::-1]):                        # pixel rows are bottom-up: the first row goes on top
+        out.append(r_)
+        if i < len(rr) - 1:
+            out.append(hsep)
+    return np.concatenate(out, axis=0)
+
+
+pairs = [("threequarter", "threequarter"), ("side", "side"), ("tactical", "tactical"), ("head", "head"),
+         ("fly_side", "fly_side")]
+save(grid([[tile(os.path.join(R, "magmoo_v3_%s.png" % a)), tile(os.path.join(R, "magmoo_v4_%s.png" % b))]
+           for a, b in pairs]), "magmoo_v4_before_after.png")
+save(grid([[tile(REF), tile(os.path.join(R, "magmoo_v4_threequarter.png")), tile(os.path.join(R, "magmoo_v4_head.png"))]]),
+     "magmoo_v4_colour_reference.png")
