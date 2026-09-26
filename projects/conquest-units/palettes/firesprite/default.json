@@ -1,0 +1,25 @@
+{
+ "unit": "firesprite",
+ "skin": "default",
+ "description": "Fire Sprite / Demon, default look, from the reference sheet's five palette chips (sampled from design/reference/firesprite-character-sheet.webp: charcoal 65,55,56 and 81,72,72; orange 249,121,53 and 250,143,61; dark red 160,45,28) plus the sheet's pale-yellow eye glow and dark ember face. The body is PURE HELLFIRE graded through glow tiers: dark ember face shadow < dark-red lick + limb tips < orange body < bright-orange rising tongues < yellow-orange hot core (seen through the shell) < eye/mouth hole walls < pale-yellow hole floors (hottest). The crown flame and the wand flame share one flame grade: red-orange tongue tips < orange outer < pale-yellow core (hottest). Crown + wand are the sheet's two charcoals (solid, opaque). 'alpha' (0-1, written to Col alpha = glTF COLOR_0.a; the fire material is alphaMode BLEND) makes the fire see-through: the licks and tongue tips thinnest, the body denser, the dark face nearly solid, the glowing holes solid; material.alpha multiplies every region (one knob for 'more / less see-through').",
+ "regions": {
+  "fire_shadow": {"rgb": [104, 40, 28],   "emission": [150, 40, 18],   "emission_scale": 0.10, "alpha": 0.95, "note": "the sheet's dark ember face under the crown (eyes + mouth sit inside it; wavy lower edge)"},
+  "fire_deep":   {"rgb": [160, 45, 28],   "emission": [205, 48, 22],   "emission_scale": 0.28, "alpha": 0.72, "note": "sheet chip DARK RED: the outer part of every flame lick, the free hand's claw, the leg / toe tips"},
+  "fire":        {"rgb": [249, 121, 53],  "emission": [250, 108, 38],  "emission_scale": 0.45, "alpha": 0.88, "note": "sheet chip ORANGE: the hellfire body block, arms, legs"},
+  "fire_bright": {"rgb": [252, 158, 68],  "emission": [255, 142, 50],  "emission_scale": 0.62, "alpha": 0.90, "note": "sheet chip ORANGE 2 (brightened): flame tongues rising from the hem round the block"},
+  "fire_core":   {"rgb": [255, 190, 92],  "emission": [255, 172, 70],  "emission_scale": 0.85, "alpha": 0.95, "note": "the hot core block inside the body (the translucent shell shows it through)"},
+  "hole_wall":   {"rgb": [255, 212, 118], "emission": [255, 196, 96],  "emission_scale": 1.05, "alpha": 1.0,  "note": "eye + mouth hole walls (outer half)"},
+  "hole_glow":   {"rgb": [255, 238, 176], "emission": [255, 230, 150], "emission_scale": 1.35, "alpha": 1.0,  "note": "eye + mouth hole floors: pale-yellow HOTTEST glow (the sheet's eye colour)"},
+  "flame_tip":   {"rgb": [214, 72, 34],   "emission": [232, 70, 28],   "emission_scale": 0.50, "alpha": 0.62, "note": "crown + wand flame tongue tips (cooler red-orange, most see-through)"},
+  "flame_outer": {"rgb": [250, 136, 56],  "emission": [255, 122, 42],  "emission_scale": 0.80, "alpha": 0.78, "note": "crown + wand flame outer mass"},
+  "flame_core":  {"rgb": [255, 234, 164], "emission": [255, 224, 140], "emission_scale": 1.40, "alpha": 0.95, "note": "crown + wand flame inner core: pale-yellow HOTTEST"},
+  "crown":       {"rgb": [65, 55, 56],    "note": "sheet chip CHARCOAL: the crown band"},
+  "crown_trim":  {"rgb": [81, 72, 72],    "note": "sheet chip CHARCOAL 2: the band's edge trim ridges"},
+  "crown_boss":  {"rgb": [72, 62, 63],    "note": "the diamond bosses (front + back)"},
+  "crown_gem":   {"rgb": [92, 82, 82],    "note": "the raised inner diamond on each boss (the sheet's inner diamond line)"},
+  "horn":        {"rgb": [46, 40, 41],    "note": "the two crescent horns (the sheet draws them darkest)"},
+  "wand_bark":   {"rgb": [70, 54, 48],    "note": "the gnarled wand shaft (sheet: charcoal-brown)"},
+  "wand_prong":  {"rgb": [86, 70, 62],    "note": "the claw prongs round the wand flame + the broken twig nubs"}
+ },
+ "material": {"roughness": 0.55, "emission_strength": 1.5, "alpha": 1.0}
+}

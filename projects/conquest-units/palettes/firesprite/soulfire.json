@@ -1,0 +1,25 @@
+{
+ "unit": "firesprite",
+ "skin": "soulfire",
+ "extends": "default",
+ "description": "SOULFIRE variant (lane pick, swap proof): blue-green hellfire graded through the same tiers (deep teal face shadow < dark teal lick tips < teal body < bright aqua tongues < pale-mint core < mint hole walls < near-white hole floors; flames teal tips < aqua outer < near-white core) with a dark IRON crown (blue-grey steel) and an ash-grey wand. Geometry, regions, alphas and emission tiers identical to the default; only colours change.",
+ "regions": {
+  "fire_shadow": {"rgb": [20, 46, 52],    "emission": [10, 60, 70]},
+  "fire_deep":   {"rgb": [18, 92, 104],   "emission": [16, 120, 130]},
+  "fire":        {"rgb": [36, 170, 164],  "emission": [30, 190, 170]},
+  "fire_bright": {"rgb": [88, 214, 190],  "emission": [70, 230, 190]},
+  "fire_core":   {"rgb": [150, 240, 214], "emission": [120, 250, 210]},
+  "hole_wall":   {"rgb": [190, 250, 228], "emission": [170, 255, 225]},
+  "hole_glow":   {"rgb": [226, 255, 242], "emission": [215, 255, 240]},
+  "flame_tip":   {"rgb": [22, 120, 128],  "emission": [20, 140, 140]},
+  "flame_outer": {"rgb": [60, 196, 180],  "emission": [50, 215, 185]},
+  "flame_core":  {"rgb": [224, 255, 240], "emission": [210, 255, 235]},
+  "crown":       {"rgb": [46, 50, 56]},
+  "crown_trim":  {"rgb": [68, 74, 82]},
+  "crown_boss":  {"rgb": [56, 61, 68]},
+  "crown_gem":   {"rgb": [84, 92, 102]},
+  "horn":        {"rgb": [32, 35, 40]},
+  "wand_bark":   {"rgb": [52, 54, 58]},
+  "wand_prong":  {"rgb": [68, 71, 76]}
+ }
+}

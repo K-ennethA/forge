@@ -1,0 +1,966 @@
+{
+ "unit": "firesprite",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firesprite.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "body": 3632,
+   "crown": 1989,
+   "crown_flame.0": 478,
+   "crown_flame.1": 165,
+   "arm.L.0": 53,
+   "arm.L.1": 122,
+   "arm.L.2": 126,
+   "arm.R.0": 37,
+   "arm.R.1": 52,
+   "arm.R.2": 86,
+   "leg.L.0": 169,
+   "leg.L.1": 296,
+   "leg.R.0": 75,
+   "leg.R.1": 149,
+   "wand": 0,
+   "wand_flame": 0
+  },
+  "limbs": {
+   "arm.L": {
+    "length": 0.9835,
+    "dominant_verts": 356
+   },
+   "arm.R": {
+    "length": 0.7756,
+    "dominant_verts": 180
+   },
+   "leg.L": {
+    "length": 1.2529,
+    "dominant_verts": 500
+   },
+   "leg.R": {
+    "length": 1.2529,
+    "dominant_verts": 262
+   }
+  },
+  "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'",
+  "rule": "fire shell: soft SDF ownership (tau 0.05) between the block (+ its licks) and each limb; a limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root blends into body); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by height (root blends into crown)"
+ },
+ "clips": {
+  "idle": {
+   "status": "PLACEHOLDER (movement wave pending the artist's answers)",
+   "frames": [
+    1,
+    49
+   ],
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_wand_mm": 0.0,
+   "min_z": -0.0091,
+   "body_sway_deg": [
+    1.0,
+    0.6
+   ],
+   "arm_wave_deg": {
+    "L": [
+     2.0,
+     5.0
+    ],
+    "R": [
+     0.8,
+     1.6
+    ]
+   },
+   "leg_wave_deg": [
+    1.0,
+    2.5
+   ],
+   "crown_flame": {
+    "wave_deg": [
+     3.0,
+     7.0
+    ],
+    "stretch": 0.05
+   },
+   "wand_flame": {
+    "sway_deg": 4.0,
+    "stretch": 0.06
+   },
+   "root_offset_max": 0.0
+  },
+  "walk": "NOT BUILT: locomotion identity (float vs hop, grounded vs hovering rest, flame-flow wildness) awaits the artist; clip_names fails on the missing walk by design"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.4
+   ]
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.1728,
+    -0.061,
+    0.9997
+   ],
+   "tail": [
+    0.1728,
+    -0.061,
+    2.5997
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.1728,
+    -0.061,
+    2.7597
+   ],
+   "tail": [
+    0.1728,
+    -0.061,
+    3.1097
+   ]
+  },
+  {
+   "name": "crown_flame.0",
+   "parent": "crown",
+   "deform": true,
+   "head": [
+    0.1728,
+    -0.061,
+    2.9597
+   ],
+   "tail": [
+    0.1728,
+    -0.061,
+    3.6097
+   ]
+  },
+  {
+   "name": "crown_flame.1",
+   "parent": "crown_flame.0",
+   "deform": true,
+   "head": [
+    0.1728,
+    -0.061,
+    3.6097
+   ],
+   "tail": [
+    0.1728,
+    -0.061,
+    4.2597
+   ]
+  },
+  {
+   "name": "arm.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.6728,
+    -0.061,
+    2.0197
+   ],
+   "tail": [
+    0.9694,
+    -0.0599,
+    1.8923
+   ]
+  },
+  {
+   "name": "arm.L.1",
+   "parent": "arm.L.0",
+   "deform": true,
+   "head": [
+    0.9694,
+    -0.0599,
+    1.8923
+   ],
+   "tail": [
+    1.142,
+    -0.0844,
+    1.619
+   ]
+  },
+  {
+   "name": "arm.L.2",
+   "parent": "arm.L.1",
+   "deform": true,
+   "head": [
+    1.142,
+    -0.0844,
+    1.619
+   ],
+   "tail": [
+    1.2028,
+    -0.121,
+    1.2997
+   ]
+  },
+  {
+   "name": "arm.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3272,
+    -0.081,
+    2.0197
+   ],
+   "tail": [
+    -0.5661,
+    -0.1637,
+    1.9729
+   ]
+  },
+  {
+   "name": "arm.R.1",
+   "parent": "arm.R.0",
+   "deform": true,
+   "head": [
+    -0.5661,
+    -0.1637,
+    1.9729
+   ],
+   "tail": [
+    -0.7401,
+    -0.284,
+    1.8317
+   ]
+  },
+  {
+   "name": "arm.R.2",
+   "parent": "arm.R.1",
+   "deform": true,
+   "head": [
+    -0.7401,
+    -0.284,
+    1.8317
+   ],
+   "tail": [
+    -0.7971,
+    -0.4163,
+    1.6197
+   ]
+  },
+  {
+   "name": "wand",
+   "parent": "arm.R.2",
+   "deform": true,
+   "head": [
+    -0.7971,
+    -0.4163,
+    1.6197
+   ],
+   "tail": [
+    -1.0272,
+    -0.541,
+    3.0197
+   ]
+  },
+  {
+   "name": "wand_flame",
+   "parent": "wand",
+   "deform": true,
+   "head": [
+    -1.0272,
+    -0.541,
+    3.2397
+   ],
+   "tail": [
+    -1.0272,
+    -0.541,
+    4.2197
+   ]
+  },
+  {
+   "name": "leg.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.4628,
+    -0.061,
+    1.2197
+   ],
+   "tail": [
+    0.4972,
+    -0.0899,
+    0.595
+   ]
+  },
+  {
+   "name": "leg.L.1",
+   "parent": "leg.L.0",
+   "deform": true,
+   "head": [
+    0.4972,
+    -0.0899,
+    0.595
+   ],
+   "tail": [
+    0.4828,
+    -0.121,
+    -0.0303
+   ]
+  },
+  {
+   "name": "leg.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.1172,
+    -0.061,
+    1.2197
+   ],
+   "tail": [
+    -0.1516,
+    -0.0899,
+    0.595
+   ]
+  },
+  {
+   "name": "leg.R.1",
+   "parent": "leg.R.0",
+   "deform": true,
+   "head": [
+    -0.1516,
+    -0.0899,
+    0.595
+   ],
+   "tail": [
+    -0.1372,
+    -0.121,
+    -0.0303
+   ]
+  }
+ ],
+ "bone_count": 17,
+ "deform_bone_count": 16,
+ "digest": {
+  "parts": {
+   "bake_normal": "d23e7fd5d5a2adac",
+   "bake_ao": "7e22be5f2eca5795",
+   "geometry_colour_uv": "2bc7943fe4fd3ed8",
+   "weights": "5cedb6e940662cad",
+   "keys": "09f7952d6701b756",
+   "clip_samples": "5e757799fce7c3ed"
+  },
+  "combined": "6a7758cc76ff28bb"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite.glb",
+  "bytes": 5483312,
+  "seconds": 0.5,
+  "carries": {
+   "materials": [
+    {
+     "name": "firesprite_fire",
+     "alphaMode": "BLEND",
+     "doubleSided": false,
+     "textures": []
+    },
+    {
+     "name": "firesprite_crown",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "firesprite_wand",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "firesprite",
+     "material": "firesprite_fire",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "firesprite",
+     "material": "firesprite_crown",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "firesprite_wand",
+     "material": "firesprite_wand",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "firesprite_wand",
+     "material": "firesprite_fire",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    }
+   ],
+   "nodes": [
+    "arm.L.0",
+    "arm.L.1",
+    "arm.L.2",
+    "arm.R.0",
+    "arm.R.1",
+    "arm.R.2",
+    "body",
+    "crown",
+    "crown_flame.0",
+    "crown_flame.1",
+    "firesprite",
+    "firesprite_rig",
+    "firesprite_wand",
+    "leg.L.0",
+    "leg.L.1",
+    "leg.R.0",
+    "leg.R.1",
+    "root",
+    "wand",
+    "wand_flame"
+   ],
+   "animations": [
+    "idle"
+   ],
+   "skins": 1,
+   "joints": 17,
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength"
+   ]
+  },
+  "structure": "armature identity + skinned 'firesprite' (fire BLEND + crown opaque primitives) + skinned 'firesprite_wand' (own node: bark opaque + flame BLEND); natural scale; report-only cell fit 0.42027"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite.blend",
+   "palette": {
+    "fire_shadow": {
+     "rgb": [
+      104,
+      40,
+      28
+     ],
+     "emission": [
+      150,
+      40,
+      18
+     ],
+     "emission_scale": 0.1
+    },
+    "fire_deep": {
+     "rgb": [
+      160,
+      45,
+      28
+     ],
+     "emission": [
+      205,
+      48,
+      22
+     ],
+     "emission_scale": 0.28
+    },
+    "fire": {
+     "rgb": [
+      249,
+      121,
+      53
+     ],
+     "emission": [
+      250,
+      108,
+      38
+     ],
+     "emission_scale": 0.45
+    },
+    "fire_bright": {
+     "rgb": [
+      252,
+      158,
+      68
+     ],
+     "emission": [
+      255,
+      142,
+      50
+     ],
+     "emission_scale": 0.62
+    },
+    "fire_core": {
+     "rgb": [
+      255,
+      190,
+      92
+     ],
+     "emission": [
+      255,
+      172,
+      70
+     ],
+     "emission_scale": 0.85
+    },
+    "hole_wall": {
+     "rgb": [
+      255,
+      212,
+      118
+     ],
+     "emission": [
+      255,
+      196,
+      96
+     ],
+     "emission_scale": 1.05
+    },
+    "hole_glow": {
+     "rgb": [
+      255,
+      238,
+      176
+     ],
+     "emission": [
+      255,
+      230,
+      150
+     ],
+     "emission_scale": 1.35
+    },
+    "flame_tip": {
+     "rgb": [
+      214,
+      72,
+      34
+     ],
+     "emission": [
+      232,
+      70,
+      28
+     ],
+     "emission_scale": 0.5
+    },
+    "flame_outer": {
+     "rgb": [
+      250,
+      136,
+      56
+     ],
+     "emission": [
+      255,
+      122,
+      42
+     ],
+     "emission_scale": 0.8
+    },
+    "flame_core": {
+     "rgb": [
+      255,
+      234,
+      164
+     ],
+     "emission": [
+      255,
+      224,
+      140
+     ],
+     "emission_scale": 1.4
+    },
+    "crown": {
+     "rgb": [
+      65,
+      55,
+      56
+     ]
+    },
+    "crown_trim": {
+     "rgb": [
+      81,
+      72,
+      72
+     ]
+    },
+    "crown_boss": {
+     "rgb": [
+      72,
+      62,
+      63
+     ]
+    },
+    "crown_gem": {
+     "rgb": [
+      92,
+      82,
+      82
+     ]
+    },
+    "horn": {
+     "rgb": [
+      46,
+      40,
+      41
+     ]
+    },
+    "wand_bark": {
+     "rgb": [
+      70,
+      54,
+      48
+     ]
+    },
+    "wand_prong": {
+     "rgb": [
+      86,
+      70,
+      62
+     ]
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "fire_shadow": 0.1,
+     "fire_deep": 0.28,
+     "fire": 0.45,
+     "fire_bright": 0.62,
+     "fire_core": 0.85,
+     "hole_wall": 1.05,
+     "hole_glow": 1.35,
+     "flame_tip": 0.5,
+     "flame_outer": 0.8,
+     "flame_core": 1.4
+    },
+    "luminance": {
+     "fire_shadow": 0.0454,
+     "fire_deep": 0.0943,
+     "fire": 0.3407,
+     "fire_bright": 0.4557,
+     "fire_core": 0.5886,
+     "hole_wall": 0.6965,
+     "hole_glow": 0.8554,
+     "flame_tip": 0.1905,
+     "flame_outer": 0.3822,
+     "flame_core": 0.8279
+    },
+    "hue_deg": {
+     "fire_shadow": 9.5,
+     "fire_deep": 7.7,
+     "fire": 20.8,
+     "fire_bright": 29.3,
+     "fire_core": 36.1,
+     "hole_wall": 41.2,
+     "hole_glow": 47.1,
+     "flame_tip": 12.7,
+     "flame_outer": 24.7,
+     "flame_core": 46.2
+    },
+    "hue_window": [
+     0.0,
+     60.0
+    ],
+    "gates": {
+     "body_emission_rises": true,
+     "body_luminance_rises": true,
+     "flame_emission_rises": true,
+     "flame_luminance_rises": true,
+     "hottest_outshine_all": true,
+     "hue_in_window": true
+    },
+    "pass": true
+   }
+  },
+  "soulfire": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite__soulfire.blend",
+   "palette": {
+    "fire_shadow": {
+     "rgb": [
+      20,
+      46,
+      52
+     ],
+     "emission": [
+      10,
+      60,
+      70
+     ],
+     "emission_scale": 0.1
+    },
+    "fire_deep": {
+     "rgb": [
+      18,
+      92,
+      104
+     ],
+     "emission": [
+      16,
+      120,
+      130
+     ],
+     "emission_scale": 0.28
+    },
+    "fire": {
+     "rgb": [
+      36,
+      170,
+      164
+     ],
+     "emission": [
+      30,
+      190,
+      170
+     ],
+     "emission_scale": 0.45
+    },
+    "fire_bright": {
+     "rgb": [
+      88,
+      214,
+      190
+     ],
+     "emission": [
+      70,
+      230,
+      190
+     ],
+     "emission_scale": 0.62
+    },
+    "fire_core": {
+     "rgb": [
+      150,
+      240,
+      214
+     ],
+     "emission": [
+      120,
+      250,
+      210
+     ],
+     "emission_scale": 0.85
+    },
+    "hole_wall": {
+     "rgb": [
+      190,
+      250,
+      228
+     ],
+     "emission": [
+      170,
+      255,
+      225
+     ],
+     "emission_scale": 1.05
+    },
+    "hole_glow": {
+     "rgb": [
+      226,
+      255,
+      242
+     ],
+     "emission": [
+      215,
+      255,
+      240
+     ],
+     "emission_scale": 1.35
+    },
+    "flame_tip": {
+     "rgb": [
+      22,
+      120,
+      128
+     ],
+     "emission": [
+      20,
+      140,
+      140
+     ],
+     "emission_scale": 0.5
+    },
+    "flame_outer": {
+     "rgb": [
+      60,
+      196,
+      180
+     ],
+     "emission": [
+      50,
+      215,
+      185
+     ],
+     "emission_scale": 0.8
+    },
+    "flame_core": {
+     "rgb": [
+      224,
+      255,
+      240
+     ],
+     "emission": [
+      210,
+      255,
+      235
+     ],
+     "emission_scale": 1.4
+    },
+    "crown": {
+     "rgb": [
+      46,
+      50,
+      56
+     ]
+    },
+    "crown_trim": {
+     "rgb": [
+      68,
+      74,
+      82
+     ]
+    },
+    "crown_boss": {
+     "rgb": [
+      56,
+      61,
+      68
+     ]
+    },
+    "crown_gem": {
+     "rgb": [
+      84,
+      92,
+      102
+     ]
+    },
+    "horn": {
+     "rgb": [
+      32,
+      35,
+      40
+     ]
+    },
+    "wand_bark": {
+     "rgb": [
+      52,
+      54,
+      58
+     ]
+    },
+    "wand_prong": {
+     "rgb": [
+      68,
+      71,
+      76
+     ]
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\firesprite\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\firesprite\\soulfire.json"
+   ],
+   "glow_tiers": {
+    "skin": "soulfire",
+    "emission_scale_tiers": {
+     "fire_shadow": 0.1,
+     "fire_deep": 0.28,
+     "fire": 0.45,
+     "fire_bright": 0.62,
+     "fire_core": 0.85,
+     "hole_wall": 1.05,
+     "hole_glow": 1.35,
+     "flame_tip": 0.5,
+     "flame_outer": 0.8,
+     "flame_core": 1.4
+    },
+    "luminance": {
+     "fire_shadow": 0.0235,
+     "fire_deep": 0.0878,
+     "fire": 0.318,
+     "fire_bright": 0.5389,
+     "fire_core": 0.7366,
+     "hole_wall": 0.8492,
+     "hole_glow": 0.941,
+     "flame_tip": 0.1516,
+     "flame_outer": 0.4374,
+     "flame_core": 0.9366
+    },
+    "hue_deg": {
+     "fire_shadow": 191.2,
+     "fire_deep": 188.4,
+     "fire": 177.3,
+     "fire_bright": 168.6,
+     "fire_core": 162.7,
+     "hole_wall": 158.0,
+     "hole_glow": 153.1,
+     "flame_tip": 184.5,
+     "flame_outer": 172.9,
+     "flame_core": 151.0
+    },
+    "hue_window": null,
+    "gates": {
+     "body_emission_rises": true,
+     "body_luminance_rises": true,
+     "flame_emission_rises": true,
+     "flame_luminance_rises": true,
+     "hottest_outshine_all": true
+    },
+    "pass": true
+   },
+   "region_faces": {
+    "firesprite": {
+     "fire_shadow": 225,
+     "fire_deep": 2602,
+     "fire": 5116,
+     "fire_bright": 488,
+     "fire_core": 700,
+     "hole_wall": 215,
+     "hole_glow": 280,
+     "flame_tip": 368,
+     "flame_outer": 1272,
+     "flame_core": 450,
+     "crown": 879,
+     "crown_trim": 888,
+     "crown_boss": 510,
+     "crown_gem": 137,
+     "horn": 760
+    },
+    "firesprite_wand": {
+     "wand_bark": 930,
+     "wand_prong": 478,
+     "flame_tip": 215,
+     "flame_outer": 597,
+     "flame_core": 250
+    }
+   },
+   "geometry_colour_uv_digest": "076f1800f429f81c"
+  },
+  "repaint_proof": {
+   "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
+   "default_digest_before": "2bc7943fe4fd3ed8",
+   "default_digest_after_restore": "2bc7943fe4fd3ed8"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firesprite.json",
+ "seconds": 47.1
+}
