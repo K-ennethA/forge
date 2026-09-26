@@ -3,7 +3,9 @@ lane never touches the shared file). In-memory only; never saves.
 
     blender --background <blend> --factory-startup --python duskmaw_render.py -- <out_prefix> [views] [--glb <path> --yaw <deg>]
 
-views: comma list of front, threequarter, tactical, maw (default front,threequarter,tactical,maw).
+views: comma list of front, threequarter, tactical, maw, back, side, backthreequarter, mawback, lowfront, lowback, head,
+    headthreequarter (default front,threequarter,tactical,maw).
+--skin <unit>:<skin>: repaint in memory from palettes/<unit>/<skin>.json before rendering (palette variants).
 --glb: clear the scene, import the shipped glb and yaw it (the shipped monster.glb imports facing -Y: yaw 0 shows
 its TRUE front on the -Y camera; the survey game tiles used the roster yaw 180 and rendered its back).
 maw closeup: front camera (0 deg, 4 deg up) framed on the chest-to-skirt band (mouth illusion) -- the 14-40% height band at
@@ -33,6 +35,10 @@ if any(o.type == "ARMATURE" for o in scene.objects):
     for o in list(scene.objects):
         if o.type == "MESH" and o.parent is None and len(o.vertex_groups) == 0 and o.name.startswith("Icosphere"):
             bpy.data.objects.remove(o, do_unlink=True)
+if "--skin" in argv:                      # in-memory palette swap (palettes.py, read-only use); never saved
+    sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
+    import palettes as PAL
+    PAL.repaint_scene(argv[argv.index("--skin") + 1].split(":")[0], argv[argv.index("--skin") + 1].split(":")[1])
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 dg = bpy.context.evaluated_depsgraph_get()
@@ -113,11 +119,20 @@ def aim(angle_deg, elev_deg, fill=1.08, c=None, rad=None):
 
 
 table = {"front": (0.0, 5.0, 1024, 1.0, None, None), "threequarter": (40.0, 15.0, 1024, 1.0, None, None),
-         "tactical": (40.0, 55.0, 256, 1.6, None, None)}
+         "tactical": (40.0, 55.0, 256, 1.6, None, None),
+         "back": (180.0, 5.0, 1024, 1.0, None, None), "side": (90.0, 5.0, 1024, 1.0, None, None),
+         "backthreequarter": (140.0, 15.0, 1024, 1.0, None, None)}
 mb = (Vector((lo.x, lo.y, lo.z + 0.14 * size.z)), Vector((hi.x, hi.y, lo.z + 0.40 * size.z)))
 mc = (mb[0] + mb[1]) / 2
 mr = 0.30 * size.x
 table["maw"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
+table["mawback"] = (180.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr)
+# low-angle front / back: the camera sits below the mouth band looking UP through it (background through the maw = see-through)
+table["lowfront"] = (0.0, -6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.30 * size.z)), 0.36 * size.x)
+table["lowback"] = (180.0, -6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.30 * size.z)), 0.36 * size.x)
+# head closeup: the head/hat band (58-100 % of the height) on the front camera
+table["head"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
+table["headthreequarter"] = (30.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
 for tag in VIEWS:
     if tag not in table:
         print("SKIP", tag); continue

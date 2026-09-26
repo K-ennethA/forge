@@ -1,10 +1,10 @@
-21:39:34 | INFO: Data are loaded, start creating Blender stuff
-21:39:34 | INFO: Blender create Mesh node Sphere
-21:39:35 | INFO: glTF import finished in 0.29s
-00:03.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_front.png'
+09:18:07 | INFO: Data are loaded, start creating Blender stuff
+09:18:07 | INFO: Blender create Mesh node Sphere
+09:18:08 | INFO: glTF import finished in 0.31s
+00:03.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_front.png'
 00:04.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_threequarter.png'
-00:04.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_tactical.png'
-00:04.531  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_maw.png'
+00:04.218  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_tactical.png'
+00:04.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_maw.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_tactical.png

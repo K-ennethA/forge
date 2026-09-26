@@ -1,0 +1,85 @@
+﻿# one-time v1 baseline (2026-09-25): duskmaw_seethrough.py on the v1 build (git HEAD before the v2 rework: improved/duskmaw.blend + rigged/duskmaw.blend, byte copies)
+{
+ "rule": "Per blend: rays through the WAIST CORE -- |u| <= 2.5 units either side of the waist axis, heights 6.0-9.2 (the mouth band\nbetween the chest's underside and the skirt's peaks), step 0.1 -- from 24 yaws round the figure (0 = the front camera,\n180 = straight behind). Value = % of those rays that pass through the model without hitting anything (v1 = the open\nring maw; v2 must be 0 from every side, including the front: there the rays enter the mouth and stop on the throat).\nRigged blends are also measured on every 4th frame of every clip (the chomp's open/shut and the glide's lean).\nWaist axis: v2 carries it (conquest_front_anchor x/y = the waist axis); otherwise the throat column's centre\n(vertices at z 6.2-8.9 within 2 units of the origin), the rule the build uses on the sculpt.",
+ "blends": {
+  "v1_improved": {
+   "file": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\v1\\duskmaw.blend",
+   "axis_xy": [
+    -0.017,
+    -0.3112
+   ],
+   "rest": {
+    "0": 54.31,
+    "15": 37.08,
+    "30": 24.84,
+    "45": 27.45,
+    "60": 22.46,
+    "75": 18.42,
+    "90": 29.06,
+    "105": 16.46,
+    "120": 21.81,
+    "135": 27.09,
+    "150": 24.54,
+    "165": 36.72,
+    "180": 54.31,
+    "195": 37.08,
+    "210": 24.84,
+    "225": 27.45,
+    "240": 22.46,
+    "255": 18.42,
+    "270": 29.06,
+    "285": 16.46,
+    "300": 21.81,
+    "315": 27.09,
+    "330": 24.54,
+    "345": 36.72
+   },
+   "rest_max_pct": 54.31,
+   "rest_front_pct": 54.31,
+   "rest_back_pct": 54.31
+  },
+  "v1_rigged": {
+   "file": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\v1\\duskmaw_rigged.blend",
+   "axis_xy": [
+    -0.017,
+    -0.3112
+   ],
+   "rest": {
+    "0": 54.31,
+    "15": 37.08,
+    "30": 24.84,
+    "45": 27.45,
+    "60": 22.46,
+    "75": 18.42,
+    "90": 29.06,
+    "105": 16.46,
+    "120": 21.81,
+    "135": 27.09,
+    "150": 24.54,
+    "165": 36.72,
+    "180": 54.31,
+    "195": 37.08,
+    "210": 24.84,
+    "225": 27.45,
+    "240": 22.46,
+    "255": 18.42,
+    "270": 29.06,
+    "285": 16.46,
+    "300": 21.81,
+    "315": 27.09,
+    "330": 24.54,
+    "345": 36.72
+   },
+   "rest_max_pct": 54.31,
+   "rest_front_pct": 54.31,
+   "rest_back_pct": 54.31,
+   "posed_max_pct_by_clip": {
+    "attack": 54.49,
+    "death": 100.0,
+    "hit": 54.31,
+    "idle": 54.49,
+    "walk": 54.01
+   }
+  }
+ }
+}

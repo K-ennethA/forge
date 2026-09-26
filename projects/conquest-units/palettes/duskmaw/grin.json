@@ -1,0 +1,9 @@
+{
+ "unit": "duskmaw",
+ "skin": "grin",
+ "extends": "default",
+ "description": "Reading-B variant of the face feedback ('the actual mouth with teeth is a bit lost in this'): the simplified face keeps ONE crisp mouth - a glowing crescent grin under the eyes (Aku-style) - instead of going mouthless. Paint-only: same geometry as default.",
+ "regions": {
+  "grin": {"rgb": [255, 150, 60], "emission": [255, 130, 40], "emission_scale": 1.2, "note": "glowing crescent grin under the eyes"}
+ }
+}

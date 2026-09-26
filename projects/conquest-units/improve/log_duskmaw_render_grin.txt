@@ -1,0 +1,8 @@
+00:01.438  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\duskmaw.blend"
+00:03.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_variant_grin_head.png'
+00:04.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_variant_grin_front.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_variant_grin_head.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\duskmaw_variant_grin_front.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

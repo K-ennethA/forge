@@ -1,44 +1,45 @@
-"""Duskmaw (hero, Conquest character_id 'monster') re-run through the shared pipeline, one headless run.
+"""Duskmaw v2 (hero, Conquest character_id 'monster'): the shadow-figure rework, one headless run.
 
     blender --background source-copies/hero-monster.blend --factory-startup --python improve/duskmaw_build.py -- \
-        [--preview <out.blend>]          (geometry + UV + regions + palette only: no bake, no rig -- fast look loop)
+        [--preview <out.blend>]          (geometry + regions + palette only: no bake, no rig -- fast look loop)
         [--set NAME=value ...]           (exploration override of a tunable constant; the committed build uses none)
 
-Reads (never writes): source-copies/hero-monster.blend (the 553k sculpt, opened), source-copies/hero-monster_rigged.blend
-(the SHIPPED rig, its 5 approved clips and 4 approved materials; appended in memory for the retarget + palette fidelity
-check, removed before any save).
-Outputs:
-    improved/duskmaw.blend + .json          hero-tier retopo, UVs, baked normal/AO, region palette (no rig)
-    improved/textures/duskmaw_{normal,ao}.png
-    rigged/duskmaw.blend + .json            + skirted-totem rig (13 totem bones + contract root), the 5 carried clips
-    rigged/duskmaw.glb                      IDENTITY-SCALE export (no scaled parent node; natural scale) -- the portrait fix
+Artist spec (design/review-log.md, 2026-09-25 "Duskmaw v2 feedback" + "Duskmaw v2 addendum", verbatim there):
+  keep the mouth silhouette + an idle CHOMP; the shadow legs' bottom near-uniform, "like a shadow coming out of the
+  ground", locomotion GLIDES; simplify the face (Aku / Father (KND) / Darkrai: a crisp shadowy figure); red around the
+  chest/leg mouth piece so it reads as the devouring mouth; the mouth CLOSED from behind ("like an actual mouth").
 
-Artist identity (design/review-log.md, verbatim): "duskmaw is a shadowy monster ... its thematic is meant to be its chest
-and bottom leg spikes form a mouth when looking at it". Scale policy (2026-09-25): natural proportions; cell fit is
-report-only until ship. The shipped palette RGBs and the 5 clips (idle, walk, attack, hit, death) are APPROVED and kept.
+Reads (never writes): source-copies/hero-monster.blend (the 553k-tri sculpt, opened; the brief's 'monster.blend').
+Outputs:
+    improved/duskmaw.blend + .json          hero-tier low, UVs, baked normal/AO, region palette (no rig)
+    improved/textures/duskmaw_{normal,ao}.png
+    rigged/duskmaw.blend + .json            + jawed-totem rig (11 deform bones + contract root), clips idle (chomp) + walk (glide)
+    rigged/duskmaw.glb                      identity-scale export (natural scale)
+v1 (the 5 carried shipped clips attack/hit/death included) stays in git history (commit before this rework).
 
 Pipeline:
-  1. sculpt main shell (46 sculpt crumbs of 8-16 verts dropped) to the origin: XY bbox centre, floor at z = 0. Front = -Y
-     (the sculpted face under the hat; the shipped glb imports front -Y too -- roster yaw 180 is what showed its back).
-  2. LOW: voxel remesh (single manifold shell) + collapse decimation (deterministic), tiny remesh islands dropped.
-  3. region FIELDS on the low (per vertex): height, radius from the waist axis, inward-facing (normal . -r_hat),
-     downward-facing, and spike TIPNESS (protrusion off a Laplacian-smoothed body -> geodesic distance from the body core
-     -> fraction of each spike's own length, steepest-ascent to its tip).
-  4. ISO-CONTOUR CUTS: every region boundary is cut into the mesh along the field's iso-line (edge splits at the
-     interpolated crossing + face connects), so colour edges are smooth lines, not the per-face sawtooth of the shipped
-     4-material paint. Regions are then read per face (no face straddles a boundary).
-  5. regions -> palettes.store_regions; paint from palettes/duskmaw/default.json (shipped RGBs).
-  6. Smart UV + pack; bake normal + AO from the 553k sculpt.
-  7. RIG (skirted-totem archetype, implemented locally -- rigkit has no such archetype; candidate for porting): the prior
-     art's bone fractions on the new bounds (13 totem bones; the shipped deforming 'root' becomes 'base') + a contract
-     'root' (non-deforming, at the origin, never keyed). Analytic weights: axis z-bands, arm/blade segments, 4 skirt
-     sectors (<= 4 influences). Clips: the shipped fcurves copied key-for-key ('root' -> 'base'; location keys scaled by
-     H_new / H_old) -- motion carried, then measured against the shipped rig frame by frame.
-  8. identity-scale glb export.
+  1. sculpt main shell -> origin (XY bbox centre, floor z = 0). Front = -Y.
+  2. SDF REBUILD (Blender geometry-node SDF grids, voxel VOX): sculpt minus the ground legs (below Z_CUT) and minus its
+     back teeth/skirt (behind THETA_C), union a procedural LOWER BODY (a radial solid: rounded floor hem -> flare ->
+     skirt -> pinched waist -> into the chest) from which the THROAT (ellipsoid CAV x the body's inside, open only in
+     the front THETA_OPEN) is carved; then a MASKED mean smoothing (face, lower body, back waist) blended in SDF space.
+     Result = the new high surface (bake source) -- closed: the mouth has a back wall, no see-through.
+  3. LOW: collapse decimation (deterministic) -> main shell -> re-centre; the eye patch is refined (edges <= EYE_EDGE,
+     new vertices projected onto the high surface) so the eye outlines are crisp.
+  4. region FIELDS on the low + ISO-CONTOUR CUTS (v1 machinery): eyes, throat membership, red-lip geodesic band,
+     teeth (height persistence on the sculpt-derived jaws), ember spike tips, shadow-base line.
+  5. regions -> palettes.store_regions; paint from palettes/duskmaw/default.json; Smart UV; bake normal + AO from the
+     rebuilt high.
+  6. RIG (jawed totem, local): base (ground ring, never keyed) -> sway (lean pivot) -> jaw (lower jaw) | spine (upper
+     jaw + chest) -> chest -> head -> crown, arm+blade x2, + contract 'root'. Analytic weights: an upper-jaw field
+     (sculpt-derived chest = 1, sculpt-derived lower teeth = 0, the rest by height) splits the mouth.
+     Clips (keyed every frame from closed-form curves, seam = 0 by construction): idle = float + one CHOMP per loop;
+     walk = GLIDE (no stepping: forward lean, float bob, arms/crown trailing; the ground ring never moves).
+  7. identity-scale glb export.
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, heapq
 import numpy as np
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, Quaternion
 from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
 
@@ -51,51 +52,114 @@ import palettes as PAL  # noqa: E402  (read-only use)
 
 # =========================================================================== TUNABLE CONSTANTS
 # (artist-facing names in the comments; a parameter tweak is a one-line edit + rerun). Lengths are sculpt units
-# (the sculpt is ~30.9 units tall; natural scale, no refit).
+# (the figure is ~30.9 units tall; natural scale, no refit). Angles: degrees from the FRONT (-Y), both sides.
 UNIT = "duskmaw"
 CHAR_ID = "monster"
-VOXEL = 0.07                          # "retopo resolution" (voxel remesh size before decimation)
-LOW_TRIS = 27000                      # "mesh detail" (decimation target before the colour-boundary cuts)
 TRI_BUDGET = [25000, 35000]           # declared hero-tier window (contract tri_budget)
-ROOTS_FRAC = 0.30                     # "skirt colour line" -- roots below this fraction of the height (shipped rule)
-CROWN_FRAC = 0.90                     # "burning crown apex" above this fraction of the height (shipped rule)
-SEED_Z_FRAC = 0.45                    # tip field: geodesic distances are measured from a ring round the torso at this height
-TIP_LEN = 0.65                        # "ember tip length" -- outer fraction of each spike that burns ...
-TIP_ABS = (1.0, 6.5)                  # ... clamped to this burn length (sculpt units)
-MIN_SPIKE = 1.0                       # spikes shorter than this (sculpt units, geodesic persistence) do not burn
-SPIKE_RMIN = 0.15                     # tips nearer the vertical axis than this x H are not spikes (skirt underside centre; the crown burns by height)
-JAW_Z = (3.8, 13.0)                   # "teeth": the mouth region searched for the chest points (upper jaw) and skirt peaks (lower jaw) ...
-JAW_RMAX = 7.7                        # ... out to this radius from the waist axis
-MIN_TOOTH = 0.5                       # a tooth must rise this far above its notch (height persistence, sculpt units)
-TOOTH_LEN = 0.4                       # "ember fang tips": outer fraction of each tooth that burns ...
-TOOTH_ABS = (0.35, 1.1)               # ... clamped to this burn length
-TOOTH_RMIN = 3.0                      # teeth whose tip sits closer than this to the waist axis are the throat, not teeth
-ROOTS_R = 8.5                         # the lower hands (outside this radius, above ROOTS_ZLOW) keep the body colour
-ROOTS_ZLOW = 3.8                      # ... the skirt fins below this height stay roots
-HAND_Y = 3.2                          # the hands hang in the side plane: within this of the waist axis in Y (skirt fins lie outside)
-MAW_Z = (5.2, 10.4)                   # "mouth band": skirt valleys .. just above the chest's lower edge
-THROAT_R = 2.4                        # "throat" radius around the waist axis inside the mouth band
-MAW_ROUT = 6.2                        # "maw walls reach": the red stops this far from the waist axis (the lower arms stay dark)
-MAW_IN = 0.35                         # "inner maw walls": skirt/chest faces turned toward the throat more than this
-MAW_DOWN = 0.45                       # "chest underside": faces pointing down more than this inside the mouth band
-CUT_SNAP = 0.18                       # iso-cut: crossings this close to a vertex snap to it (no sliver triangles)
-BAKE_CAGE = 0.15                      # bake cage extrusion (sculpt units)
-BAKE_RES = (2048, 1024)               # normal, AO texture sizes
+LOW_TRIS = 24000                      # "mesh detail" (decimation target before the colour cuts + eye refinement)
+VOX = 0.07                            # "surface resolution": SDF voxel size of the rebuilt high surface
+SDF_BAND = 12                         # SDF narrow band (voxels) -- wide enough for the masked smoothing to move surfaces
+# ---- shadow base (feedback 2: "the bottom should almost be uniform like a shadow coming out of the ground")
+Z_CUT = 4.0                           # "leg cut": the sculpt's ground legs/spikes are replaced below this height
+CUT_OUTSET = 0.2                      # the new body meets the cut sculpt skirt this far outside it (no ledge)
+Z_BT = 4.6                            # skirt reference band top (the body follows the skirt section Z_CUT..Z_BT)
+BT_INSET = 0.3                        # the body sits this far inside the skirt above the cut (the sculpt skin wins)
+HEM_R = 0.45                          # "hem roundness": rounded floor edge radius
+FLARE = 0.45                          # "base flare": how far the shadow spreads at the floor (x the skirt radius)
+FLARE_POW = 2.0                       # "flare curve": higher = the spread hugs the floor
+BASE_ROUND = 0.7                      # "base uniformity": 0 = floor ring follows the skirt lobes, 1 = one round ring
+CORE_W = 16                           # "back smoothness": back/sides follow the skirt section averaged over +-CORE_W bins (2.5 deg each)
+# ---- closed mouth (feedback 5: "the mouth from the back side of it should be closed")
+THETA_OPEN = 70.0                     # "mouth width": half-angle of the open front
+THETA_C = 100.0                       # "closed back": the sculpt's back teeth + back skirt are replaced behind this angle
+D_BLEND = 15.0                        # ... blended over +- this many degrees (the cut follows the body surface there)
+D_TOP, D_RMIN, D_RMAX = 9.0, 2.0, 8.5  # ... up to this height, between these radii (the throat column + hanging arms kept)
+Z_W0, Z_W1 = 5.0, 5.8                 # waist starts from the skirt section in this band ...
+Z_TOP = 11.2                          # ... and ends inside the chest at this height
+CH_INSET = 0.35                       # ... inset under the chest skin
+PINCH, PINCH_B = 0.2, 0.1             # "waist pinch" front/sides and back (fraction of the radius at mid-waist). Back was
+                                      # 0.45: that notch behind the waist let light through (3.6 % of the back-hemisphere
+                                      # rays) once the glide trailed the hanging hands out of the way -- the back stays full
+PINCH_TH = (95.0, 130.0)              # ... the back pinch ramps in over these angles
+FRONT_INSET = 0.35                    # the waist hides inside the sculpt lips in the open front (the lips are the sculpt's)
+CAV = (0.0, -2.2, 7.8)                # "throat": ellipsoid carved behind the lips (centre, relative to the waist axis x/y) ...
+CAV_R = (5.0, 3.8, 2.2)               # ... semi-axes x / y / z
+T_WALL = 1.0                          # "cheek wall": the throat stays this far inside the body surface (no see-through)
+# ---- masked smoothing (SDF mean, width SM_W voxels x SM_IT iterations, blended by the masks below)
+SM_W, SM_IT = 3, 14
+FACE_Z = (14.6, 15.4, 20.0, 20.8)     # "face smoothing" height ramps (up, down) -- feedback 3: simplify the face
+FACE_RAD = (4.2, 5.2)                 # ... radius ramp from the head axis
+FACE_AX_Y = 0.0
+LOW_Z = (0.3, 1.2, 4.9, 5.7)          # "base smoothing" height ramps (the skirt lobes melt into one shadow)
+LOW_RAD = (10.5, 11.5)                # ... never the hanging hands
+WAIST_TH = (82.0, 98.0)               # "back waist smoothing" angle ramp ...
+WAIST_Z = (4.8, 5.6, 10.2, 11.0)      # ... height ramps ...
+WAIST_RAD = (6.6, 7.3)                # ... radius ramp (the lower arms stay crisp)
+WAIST_K = 0.8                         # ... strength
+# ---- eyes (Aku / Father / Darkrai: the eyes ARE the face) -- (x, z) on the front of the face, mirrored
+EYE_IN = (0.42, 18.72)                # "eye inner corner"
+EYE_OUT = (2.05, 19.42)               # "eye outer corner" (higher = angrier slant)
+EYE_TOP = 0.10                        # "brow arch": top edge bulge (units)
+EYE_BOT = 0.46                        # "eye height": bottom edge depth (units)
+EYE_POW = (0.9, 0.65)                 # top / bottom edge shape exponents (lower = fuller toward the corners)
+EYE_EDGE = 0.1                       # the eye patch is refined to edges no longer than this before the cut
+EYE_BOX = (2.7, 16.6, 20.4)           # refinement box: |x| < 2.7, z in [16.6, 20.4], front-facing ...
+EYE_NEAR = 0.12                       # ... and only faces within this of an eye / grin outline (or inside)
+GRIN_Z = (17.25, 0.18, 0.55)          # variant "grin" (palette 'grin' only; default paints it as the face):
+GRIN_W = 1.55                         # ... centre z, band half-height, corner lift, half-width
+# ---- recolour (feedback 4: "red around its chest/leg mouth piece")
+LIP_W = 0.65                          # "red lip width": geodesic band framing the mouth opening, outer surface
+LIP_TH = 95.0                         # ... only within this angle of the front
+TEETH_TH = 75.0                       # "teeth reach": ember teeth only within this angle of the front (the first v2 preview
+                                      # lit tooth tips at ~85 deg that showed as two orange dots from BEHIND)
+THROAT_R = 1.9                        # the throat column inside the maw (glows)
+THROAT_BACK = 0.4                     # cavity faces behind the axis + this glow as throat; the rest is the inner mouth
+CAV_TOL = 0.03                        # cavity membership tolerance (ellipsoid value 1 + CAV_TOL)
+BASE_Z = 3.4                          # "shadow base line": below this the base region (darkens toward the floor)
+BASE_DARK = 0.55                      # ... shade multiplier at the floor
+SPIKE_TIPS = True                     # ember tips on the arm / hat / hand spikes (dim; the palette 'tips' region)
+SEED_Z_FRAC = 0.45                    # tip field seed ring height (x H)
+TIP_LEN, TIP_ABS, MIN_SPIKE, SPIKE_RMIN = 0.5, (0.8, 4.0), 1.0, 0.15   # tip burn fraction / clamp / min spike / min radius (x H)
+MIN_TOOTH = 0.45                      # a tooth rises this far above its root (height persistence)
+TOOTH_LEN, TOOTH_ABS = 0.4, (0.3, 0.8)   # "ember teeth": outer fraction of each tooth that burns, clamped
+SCULPT_TOL = 0.12                     # a low vertex within this of the sculpt surface is sculpt-derived (teeth search) ...
+JAW_RMAX = 8.0                        # ... inside this radius (the hanging hands are not teeth) ...
+UP_JAW_Z, LO_JAW_Z = (8.1, 11.0), (5.4, 8.6)   # ... upper jaw (chest points) / lower jaw (skirt peaks) height windows
+CUT_SNAP = 0.18                       # iso-cut snap (no slivers)
+BAKE_CAGE = 0.15
+BAKE_RES = (2048, 1024)
 CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9    # Conquest hero ceilings -- REPORT ONLY (scale policy 2026-09-25)
-# skirted-totem archetype (prior art tools/blender/autorig_skirted_totem.py, fractions of height H / width W)
-Z_FR = {"root": (0.06, 0.30), "spine": (0.30, 0.52), "chest": (0.52, 0.68), "head": (0.68, 0.82), "crown": (0.82, 0.99)}
-ARM_FR = {"shoulder_x": 0.10, "elbow_x": 0.55, "tip_x": 0.98, "z_sh": 0.60, "z_el": 0.63, "z_tip": 0.58}  # x in W/2 except shoulder (W)
-SKIRT_FR = {"head_r": 0.08, "tail_r": 0.38, "head_z": 0.16, "tail_z": 0.05}
-# weights
-W_BAND = 1.0                          # "joint softness": z-band blend half-width between axis bones
-ARM_IN, ARM_OUT = 0.16, 0.26          # arm starts leaving the torso at |x| = ARM_IN*W .. fully arm at ARM_OUT*W
-ARM_ZMAX = 0.66                       # arms never claim above the head joint (the hat stays on the head)
-ARM_ZMIN = 0.49                       # ... nor below this (the lower hands hang from the spine, as shipped)
-SKIRT_R = (1.4, 4.4)                  # skirt sector weights ramp in over this radius from the waist axis
-SKIRT_ZTOP = (8.2, 9.0)               # ... and fade out over this height (the torso above belongs to the axis)
-HAND_R = (7.4, 8.6)                   # the lower arms + spiked hands ramp in over this radius (outside the skirt, above ROOTS_ZLOW) ...
-HAND_ZTOP = (12.0, 13.5)              # ... below this height, and ride
-HAND_MIX = {"spine": 0.6, "arm": 0.1, "blade": 0.3}   # the SHIPPED heat weights' own-side mix there (spine .56 / arm .09 / blade .29)
+# ---- rig (fractions of the height H as v1's skirted totem where kept)
+BASE_BONE = (0.02, 0.10)              # ground ring bone z range (x H) -- never keyed: the shadow stays planted
+SWAY_Z = (1.4, 4.4)                   # lean pivot bone (units)
+JAW_Z = (4.4, 7.4)                    # lower jaw bone
+SPINE_Z0 = 8.6                        # upper jaw / spine head (the mouth line)
+Z_FR = {"chest": (0.52, 0.68), "head": (0.68, 0.82), "crown": (0.82, 0.99)}
+ARM_FR = {"shoulder_x": 0.10, "elbow_x": 0.55, "tip_x": 0.98, "z_sh": 0.60, "z_el": 0.63, "z_tip": 0.58}
+W_BAND = 1.0                          # joint softness (upper chain)
+BASE_W = (0.2, 3.2)                   # ground ring -> sway blend heights
+JAW_W = (4.4, 5.6)                    # sway -> jaw blend heights
+U_Z = (7.2, 9.6)                      # upper-jaw share by height for non-sculpt surfaces (throat walls, column)
+U_SMOOTH = 10                         # upper-jaw field smoothing iterations
+ARM_IN, ARM_OUT, ARM_ZMIN, ARM_ZMAX = 0.16, 0.26, 0.49, 0.66
+HAND_R, HAND_ZTOP, HAND_Y, HAND_ZLOW = (7.4, 8.6), (12.0, 13.5), 3.2, 3.8
+HAND_MIX = {"spine": 0.6, "arm": 0.1, "blade": 0.3}
+# ---- clips (feedback 1: idle chomp; feedback 2: glide)
+IDLE_N = 49                           # idle frames 1..49 (48-frame loop, 2.0 s)
+CHOMP = {"open_f": (6, 16), "shut_f": (16, 19), "hold_f": (19, 23), "rest_f": (23, 36)}   # beat (frames)
+CHOMP_OPEN = 0.9                      # "chomp wind-up": extra gap at the open peak (units)
+CHOMP_SHUT_GAP = -0.45                # side teeth tip-to-tip gap when shut (units; negative = the fangs interlock). The
+                                      # centre teeth sit 1.56 apart at rest vs the side pairs' 0.97: at +0.05 the first full
+                                      # run's bite left the centre of the mouth 0.64 open (the throat still showed at the bite)
+CHOMP_UPPER = 0.6                     # share of the travel done by the upper jaw (chest drops) vs the lower jaw (rises)
+CHOMP_ARMS = 9.0                      # arms flare on the bite (deg)
+IDLE_BOB = 0.18                       # idle float bob of the upper body (units)
+WALK_N = 33                           # glide frames 1..33 (32-frame loop, 1.33 s)
+LEAN_DEG, LEAN_OSC = 7.0, 1.5         # "glide lean" forward + its oscillation (deg)
+GLIDE_ROLL = 2.0                      # side drift (deg)
+GLIDE_BOB = 0.25                      # float bob (units, 2 per loop)
+ARM_TRAIL, ARM_FLUTTER = 14.0, 5.0    # arms trail back + flutter (deg)
+CROWN_TRAIL = 6.0                     # crown/hat trails back like a flame (deg)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None
@@ -105,13 +169,19 @@ for i_, a_ in enumerate(argv):
         k_, v_ = argv[i_ + 1].split("=", 1)
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
-OLD_BLEND = os.path.join(ROOT, "source-copies", "hero-monster_rigged.blend")
-OUT_IMPROVED = os.path.join(ROOT, "improved", UNIT + ".blend")
-OUT_RIGGED = os.path.join(ROOT, "rigged", UNIT + ".blend")
-OUT_GLB = os.path.join(ROOT, "rigged", UNIT + ".glb")
-TEX_DIR = os.path.join(ROOT, "improved", "textures")
-report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "source": bpy.data.filepath, "tier": "hero",
-          "tri_budget": TRI_BUDGET, "yaw_fix_deg": 0.0, "overrides": OVERRIDES}
+# --out-root <dir>: a determinism TWIN build writes the same tree (improved/, rigged/) under <dir> instead of the project
+OUT_ROOT = argv[argv.index("--out-root") + 1] if "--out-root" in argv else ROOT
+for d_ in ("improved", "rigged"):
+    os.makedirs(os.path.join(OUT_ROOT, d_), exist_ok=True)
+OUT_IMPROVED = os.path.join(OUT_ROOT, "improved", UNIT + ".blend")
+OUT_RIGGED = os.path.join(OUT_ROOT, "rigged", UNIT + ".blend")
+OUT_GLB = os.path.join(OUT_ROOT, "rigged", UNIT + ".glb")
+TEX_DIR = os.path.join(OUT_ROOT, "improved", "textures")
+# the normal-bake buffer for duskmaw_bake_diff.py (temp dir, never the project): main build 'main', twins by folder name
+NORMAL_NPY = os.path.join(__import__("tempfile").gettempdir(), "duskmaw_normal_%s.npy" %
+                          ("main" if OUT_ROOT == ROOT else os.path.basename(os.path.normpath(OUT_ROOT))))
+report = {"unit": UNIT, "version": "v2 shadow figure", "conquest_character_id": CHAR_ID, "source": bpy.data.filepath,
+          "tier": "hero", "tri_budget": TRI_BUDGET, "yaw_fix_deg": 0.0, "overrides": OVERRIDES}
 scene = bpy.context.scene
 
 
@@ -142,7 +212,7 @@ def tri_count(me):
 
 def new_obj(name, V, F):
     me = bpy.data.meshes.new(name)
-    me.from_pydata(np.asarray(V).tolist(), [], F)
+    me.from_pydata(np.asarray(V, float).tolist(), [], F)
     me.update()
     ob = bpy.data.objects.new(name, me)
     scene.collection.objects.link(ob)
@@ -158,7 +228,7 @@ def evaluated_arrays(ob):
 
 
 def keep_main_island(V, F, min_frac):
-    """Drop connected pieces smaller than min_frac of the vertices (sculpt crumbs / remesh specks)."""
+    """Drop connected pieces smaller than min_frac of the vertices (sculpt crumbs / SDF specks)."""
     n = len(V)
     par = np.arange(n)
 
@@ -178,8 +248,18 @@ def keep_main_island(V, F, min_frac):
     keep_v = keep_lab[inv]
     remap = -np.ones(n, dtype=np.int64); remap[keep_v] = np.arange(int(keep_v.sum()))
     F2 = [[int(remap[v]) for v in f] for f in F if keep_v[f[0]]]
+    order_ = np.argsort(-cnt, kind="stable")
+    pieces_ = [{"verts": int(cnt[k]), "kept": bool(keep_lab[k]), "bbox": [V[inv == k].min(0).round(2).tolist(), V[inv == k].max(0).round(2).tolist()]}
+               for k in order_[:6]]
     return V[keep_v], F2, {"pieces": int(len(cnt)), "kept": int(keep_lab.sum()), "dropped_verts": int((~keep_v).sum()),
-                           "largest_dropped": int(cnt[~keep_lab].max()) if (~keep_lab).any() else 0}
+                           "largest_dropped": int(cnt[~keep_lab].max()) if (~keep_lab).any() else 0, "largest_pieces": pieces_}
+
+
+def circ_smooth(a, w):
+    if w <= 0:
+        return a.copy()
+    k = np.ones(2 * w + 1) / (2 * w + 1)
+    return np.convolve(np.concatenate([a[-w:], a, a[:w]]), k, mode="valid")
 
 
 # =========================================================================== 1. sculpt -> origin
@@ -198,8 +278,295 @@ for o in list(bpy.data.objects):
 for m in list(bpy.data.meshes):
     if m.users == 0:
         bpy.data.meshes.remove(m)
-HIGH = new_obj(UNIT + "_high", SV, SF)
-size = SV.max(0) - SV.min(0)
+# the waist axis: centre of the throat column between the skirt and the chest (sculpt)
+_rs = np.hypot(SV[:, 0], SV[:, 1])
+_col = (SV[:, 2] > 6.2) & (SV[:, 2] < 8.9) & (_rs < 2.0)
+AX = SV[_col, :2].mean(0)
+report["waist_axis_sculpt_frame"] = AX.round(4).tolist()
+
+# =========================================================================== 2. SDF rebuild
+t_sdf = time.time()
+NT = 144
+TH = np.linspace(-math.pi, math.pi, NT, endpoint=False)
+dS = SV[:, :2] - AX
+rS = np.hypot(dS[:, 0], dS[:, 1]); thS = np.arctan2(dS[:, 0], -dS[:, 1])
+HANDS_S = (rS > HAND_R[0]) & (np.abs(dS[:, 1]) < HAND_Y) & (SV[:, 2] > HAND_ZLOW)
+
+
+def section_r(z0, z1, rmax):
+    m = (SV[:, 2] >= z0) & (SV[:, 2] < z1) & (rS < rmax) & ~HANDS_S
+    b = ((thS[m] + math.pi) / (2 * math.pi) * NT).astype(int) % NT
+    out = np.zeros(NT)
+    np.maximum.at(out, b, rS[m])
+    return out
+
+
+def ss1(e0, e1, x):
+    return float(smoothstep(e0, e1, x))
+
+
+OPEN_W = 1.0 - smoothstep(math.radians(THETA_OPEN - 10), math.radians(THETA_OPEN + 10), np.abs(TH))
+BACK_W = smoothstep(math.radians(THETA_C - D_BLEND), math.radians(THETA_C + D_BLEND), np.abs(TH))
+PINCH_T = PINCH + (PINCH_B - PINCH) * smoothstep(math.radians(PINCH_TH[0]), math.radians(PINCH_TH[1]), np.abs(TH))
+
+
+def lobe_mix(z0, z1, inset):
+    raw = section_r(z0, z1, 10.0)
+    return (circ_smooth(raw, 1) - inset) * (1 - BACK_W) + (circ_smooth(raw, CORE_W) - inset) * BACK_W
+
+
+R_bt = lobe_mix(Z_CUT, Z_BT, BT_INSET)
+R_cut = lobe_mix(Z_CUT - 0.3, Z_CUT + 0.3, -CUT_OUTSET)
+R_gnd = (1 - BASE_ROUND) * R_bt * (1 + FLARE) + BASE_ROUND * R_bt.mean() * (1 + FLARE)
+R_w0 = lobe_mix(Z_W0, Z_W1, BT_INSET)
+R_ch = circ_smooth(section_r(Z_TOP - 0.3, Z_TOP + 0.3, 9.3), 3) - CH_INSET
+
+
+def R_body(z):
+    """procedural lower body radius per angle bin at height z (sculpt frame)"""
+    if z <= Z_CUT:
+        zc = max(z, HEM_R)
+        w = ((Z_CUT - zc) / (Z_CUT - HEM_R)) ** FLARE_POW
+        R = R_cut + (R_gnd - R_cut) * w
+        if z < HEM_R:                                   # rounded hem: a quarter circle at the floor edge
+            R = R - HEM_R + math.sqrt(max(HEM_R ** 2 - (HEM_R - max(z, 0.0)) ** 2, 0.0))
+        return R
+    if z <= Z_BT:
+        t = ss1(Z_CUT, Z_BT, z)
+        return R_cut * (1 - t) + R_bt * t
+    if z <= Z_W0:
+        t = ss1(Z_BT, Z_W0, z)
+        return R_bt * (1 - t) + R_w0 * t
+    tl = (z - Z_W0) / (Z_TOP - Z_W0)
+    t = ss1(0.0, 1.0, tl)
+    fi = FRONT_INSET * ss1(0.0, 0.12, tl)
+    return (R_w0 * (1 - t) + R_ch * t) * (1 - PINCH_T * math.sin(math.pi * min(tl, 1.0)) ** 2) * (1 - fi * OPEN_W)
+
+
+def R_inner(z):
+    return (R_body(z) - T_WALL) * (1 - OPEN_W) + 14.0 * OPEN_W
+
+
+def radial_solid(Rfun, zs):
+    rings = []
+    for z in zs:
+        R = Rfun(z)
+        rings.append(np.stack([AX[0] + R * np.sin(TH), AX[1] - R * np.cos(TH), np.full(NT, z)], 1))
+    V = np.concatenate(rings + [np.array([[AX[0], AX[1], zs[0]], [AX[0], AX[1], zs[-1]]])])
+    F = []
+    nr = len(zs)
+    for k in range(nr - 1):
+        for i in range(NT):
+            a, b = k * NT + i, k * NT + (i + 1) % NT
+            F.append([a, b, b + NT, a + NT])
+    cb, ct = nr * NT, nr * NT + 1
+    for i in range(NT):
+        F.append([cb, (i + 1) % NT, i])
+        F.append([ct, (nr - 1) * NT + i, (nr - 1) * NT + (i + 1) % NT])
+    return V, F
+
+
+def ellipsoid(c, ab, nu=64, nv=40):
+    V, F = [], []
+    for j in range(1, nv):
+        ph = math.pi * j / nv
+        for i in range(nu):
+            t = 2 * math.pi * i / nu
+            V.append((c[0] + ab[0] * math.sin(ph) * math.cos(t), c[1] + ab[1] * math.sin(ph) * math.sin(t), c[2] + ab[2] * math.cos(ph)))
+    V += [(c[0], c[1], c[2] + ab[2]), (c[0], c[1], c[2] - ab[2])]
+    top, bot = len(V) - 2, len(V) - 1
+    for j in range(nv - 2):
+        for i in range(nu):
+            a, b = j * nu + i, j * nu + (i + 1) % nu
+            F.append([a, a + nu, b + nu, b])
+    for i in range(nu):
+        F.append([top, i, (i + 1) % nu])
+        F.append([bot, (nv - 2) * nu + (i + 1) % nu, (nv - 2) * nu + i])
+    return V, F
+
+
+def cylinder(c, rad, z0, z1, nu=64):
+    V = [(c[0] + rad * math.cos(2 * math.pi * i / nu), c[1] + rad * math.sin(2 * math.pi * i / nu), z) for z in (z0, z1) for i in range(nu)]
+    V += [(c[0], c[1], z0), (c[0], c[1], z1)]
+    F = [[i, (i + 1) % nu, nu + (i + 1) % nu, nu + i] for i in range(nu)]
+    F += [[2 * nu, (i + 1) % nu, i] for i in range(nu)] + [[2 * nu + 1, nu + i, nu + (i + 1) % nu] for i in range(nu)]
+    return V, F
+
+
+def param_box(fun, nu, nv, nw):
+    """closed quad surface of the (u, v, w) unit box mapped through fun"""
+    V, F, idx = [], [], {}
+
+    def vid(i, j, k):
+        key = (i, j, k)
+        if key not in idx:
+            idx[key] = len(V); V.append(fun(i / nu, j / nv, k / nw))
+        return idx[key]
+    for (a, b, na, nb, fix, val, flip) in (("u", "v", nu, nv, "w", 0, True), ("u", "v", nu, nv, "w", nw, False),
+                                           ("u", "w", nu, nw, "v", 0, False), ("u", "w", nu, nw, "v", nv, True),
+                                           ("v", "w", nv, nw, "u", 0, True), ("v", "w", nv, nw, "u", nu, False)):
+        for i in range(na):
+            for j in range(nb):
+                q = []
+                for (di, dj) in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                    co_ = {a: i + di, b: j + dj, fix: val}
+                    q.append(vid(co_["u"], co_["v"], co_["w"]))
+                F.append(q[::-1] if flip else q)
+    return V, F
+
+
+TH_D0 = math.radians(THETA_C - D_BLEND)
+
+
+def d_fun(u, v, w):
+    th = TH_D0 + u * (2 * math.pi - 2 * TH_D0)
+    th = (th + math.pi) % (2 * math.pi) - math.pi
+    z = (Z_CUT - 0.1) + w * (D_TOP - (Z_CUT - 0.1))
+    i = int(round((th + math.pi) / (2 * math.pi) * NT)) % NT
+    full = ss1(TH_D0, math.radians(THETA_C + D_BLEND), abs(th))
+    rin = (R_body(z)[i] - 0.05) * (1 - full) + D_RMIN * full
+    rr = rin + v * (D_RMAX - rin)
+    return (AX[0] + rr * math.sin(th), AX[1] - rr * math.cos(th), z)
+
+
+def obj_tmp(name, V, F):
+    m = bpy.data.meshes.new(name); m.from_pydata([tuple(map(float, v)) for v in V], [], F); m.update(); m.validate()
+    o = bpy.data.objects.new(name, m); scene.collection.objects.link(o); o.hide_render = True
+    return o
+
+
+CAVW = (AX[0] + CAV[0], AX[1] + CAV[1], CAV[2])          # throat ellipsoid centre, sculpt frame
+zs_body = np.concatenate([[-0.3 * VOX], np.linspace(0.0, HEM_R, 8)[1:], np.linspace(HEM_R, Z_W0, 40)[1:], np.linspace(Z_W0, Z_TOP, 40)[1:]])
+tmp_objs = [obj_tmp("sdf_sculpt", SV, SF), obj_tmp("sdf_body", *radial_solid(R_body, zs_body)),
+            obj_tmp("sdf_cav", *ellipsoid(CAVW, CAV_R)), obj_tmp("sdf_inner", *radial_solid(R_inner, np.linspace(Z_W0, Z_TOP + 1.0, 40))),
+            obj_tmp("sdf_legcut", *cylinder(AX, 16.0, -2.0, Z_CUT)), obj_tmp("sdf_backcut", *param_box(d_fun, 90, 6, 24))]
+o_s, o_b, o_c, o_i, o_x, o_d = tmp_objs
+ng = bpy.data.node_groups.new("duskmaw_sdf", "GeometryNodeTree")
+ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+NN = ng.nodes
+g_out = NN.new("NodeGroupOutput")
+
+
+def sdf(o):
+    oi = NN.new("GeometryNodeObjectInfo"); oi.inputs["Object"].default_value = o; oi.transform_space = "ORIGINAL"
+    ms = NN.new("GeometryNodeMeshToSDFGrid"); ms.inputs["Voxel Size"].default_value = VOX; ms.inputs["Band Width"].default_value = SDF_BAND
+    ng.links.new(oi.outputs["Geometry"], ms.inputs["Mesh"])
+    return ms.outputs["SDF Grid"]
+
+
+def sdf_bool(op, g1, g2s):
+    b = NN.new("GeometryNodeSDFGridBoolean"); b.operation = op
+    multi = [i for i in b.inputs if i.is_multi_input and i.enabled][0]
+    ng.links.new(g1, b.inputs["Grid 1"] if op == "DIFFERENCE" else multi)
+    for g in g2s:
+        ng.links.new(g, multi)
+    return b.outputs["Grid"]
+
+
+def nmath(op, x, y=None):
+    m = NN.new("ShaderNodeMath"); m.operation = op
+    ng.links.new(x, m.inputs[0])
+    if y is not None:
+        if isinstance(y, (int, float)):
+            m.inputs[1].default_value = float(y)
+        else:
+            ng.links.new(y, m.inputs[1])
+    return m.outputs[0]
+
+
+def nband(src_, a, b, c, d):
+    """smoothstep up over [a, b], down over [c, d] (field)"""
+    def mr(lo_, hi_, inv):
+        m = NN.new("ShaderNodeMapRange"); m.interpolation_type = "SMOOTHSTEP"; m.clamp = True
+        ng.links.new(src_, m.inputs["Value"])
+        m.inputs["From Min"].default_value = lo_; m.inputs["From Max"].default_value = hi_
+        m.inputs["To Min"].default_value = 1.0 if inv else 0.0; m.inputs["To Max"].default_value = 0.0 if inv else 1.0
+        return m.outputs["Result"]
+    return nmath("MULTIPLY", mr(a, b, False), mr(c, d, True))
+
+
+A_ = sdf_bool("DIFFERENCE", sdf(o_s), [sdf(o_x), sdf(o_d)])                # sculpt minus legs minus back teeth
+C_ = sdf_bool("INTERSECT", sdf(o_c), [sdf(o_i)])                            # the throat: ellipsoid inside the body walls
+W_ = sdf_bool("DIFFERENCE", sdf(o_b), [C_])                                 # procedural lower body, throat carved
+U_ = sdf_bool("UNION", A_, [W_])
+mean_ = NN.new("GeometryNodeSDFGridMean"); mean_.inputs["Width"].default_value = SM_W; mean_.inputs["Iterations"].default_value = SM_IT
+ng.links.new(U_, mean_.inputs["Grid"])
+pos = NN.new("GeometryNodeInputPosition")
+sep = NN.new("ShaderNodeSeparateXYZ"); ng.links.new(pos.outputs[0], sep.inputs[0])
+X_, Y_, Z_ = sep.outputs["X"], sep.outputs["Y"], sep.outputs["Z"]
+yf = nmath("SUBTRACT", Y_, float(FACE_AX_Y))
+rad_f = nmath("SQRT", nmath("ADD", nmath("MULTIPLY", X_, X_), nmath("MULTIPLY", yf, yf)))
+xa, ya = nmath("SUBTRACT", X_, float(AX[0])), nmath("SUBTRACT", Y_, float(AX[1]))
+rad_a = nmath("SQRT", nmath("ADD", nmath("MULTIPLY", xa, xa), nmath("MULTIPLY", ya, ya)))
+th_a = nmath("ABSOLUTE", nmath("DEGREES", nmath("ARCTAN2", xa, nmath("MULTIPLY", ya, -1.0))))
+m_face = nmath("MULTIPLY", nband(Z_, *FACE_Z), nband(rad_f, -1.0, -0.5, *FACE_RAD))
+m_low = nmath("MULTIPLY", nband(Z_, *LOW_Z), nband(rad_a, -1.0, -0.5, *LOW_RAD))
+m_w = nmath("MULTIPLY", nmath("MULTIPLY", nband(th_a, WAIST_TH[0], WAIST_TH[1], 400.0, 401.0), nband(Z_, *WAIST_Z)), float(WAIST_K))
+m_w = nmath("MULTIPLY", m_w, nband(rad_a, -1.0, -0.5, *WAIST_RAD))
+mask = nmath("MAXIMUM", nmath("MAXIMUM", m_face, m_low), m_w)
+s1 = NN.new("GeometryNodeSampleGrid"); ng.links.new(U_, s1.inputs["Grid"]); ng.links.new(pos.outputs[0], s1.inputs["Position"])
+s2 = NN.new("GeometryNodeSampleGrid"); ng.links.new(mean_.outputs["Grid"], s2.inputs["Grid"]); ng.links.new(pos.outputs[0], s2.inputs["Position"])
+mix = NN.new("ShaderNodeMix"); mix.data_type = "FLOAT"; mix.clamp_factor = True
+ng.links.new(mask, mix.inputs["Factor"]); ng.links.new(s1.outputs["Value"], mix.inputs[2]); ng.links.new(s2.outputs["Value"], mix.inputs[3])
+ftg = NN.new("GeometryNodeFieldToGrid"); ftg.grid_items.new("FLOAT", "sdf")
+ng.links.new(sdf_bool("UNION", U_, [mean_.outputs["Grid"]]), ftg.inputs["Topology"]); ng.links.new(mix.outputs[0], ftg.inputs["sdf"])
+g2m = NN.new("GeometryNodeGridToMesh"); g2m.inputs["Threshold"].default_value = 0.0; g2m.inputs["Adaptivity"].default_value = 0.0
+ng.links.new(ftg.outputs["sdf"], g2m.inputs["Grid"])
+ng.links.new(g2m.outputs["Mesh"], g_out.inputs[0])
+host = obj_tmp("sdf_host", [], [])
+md_ = host.modifiers.new("sdf", "NODES"); md_.node_group = ng
+HV, HF = evaluated_arrays(host)
+for o in tmp_objs + [host]:
+    me_ = o.data
+    bpy.data.objects.remove(o, do_unlink=True)
+    bpy.data.meshes.remove(me_)
+bpy.data.node_groups.remove(ng)
+n_raw = len(HV)
+HV, HF, hspecks = keep_main_island(HV, HF, 0.5)         # the outer shell only (see report: inner shells + specks dropped)
+
+
+def signed_volume(V, F):
+    vol = 0.0
+    for f in F:
+        a = V[f[0]]
+        for k in range(1, len(f) - 1):
+            vol += float(np.dot(a, np.cross(V[f[k]], V[f[k + 1]]))) / 6.0
+    return vol
+
+
+vol_h = signed_volume(HV, HF)
+if vol_h < 0:                                             # grid-to-mesh winds the shell inward: flip to outward normals
+    HF = [f[::-1] for f in HF]
+report["sdf_rebuild"] = {"method": "geometry-node SDF grids: (sculpt - legs(z<Z_CUT) - back teeth/skirt(|theta|>THETA_C)) U "
+                                   "(procedural lower body - throat(ellipsoid x body interior, open |theta|<THETA_OPEN)); masked "
+                                   "SDF mean (face / lower body / back waist) mixed in by Field-to-Grid; grid -> mesh",
+                         "voxel": VOX, "band_voxels": SDF_BAND, "raw_verts": n_raw,
+                         "inner_shells_note": "Field-to-Grid writes only the band voxels, so thick parts get an inverted inner "
+                                              "shell ~SDF_BAND voxels inside; it never touches the outer surface and is dropped "
+                                              "with the specks (only the largest shell is kept)", "high_faces": len(HF), "specks_dropped": hspecks,
+                         "seconds": round(time.time() - t_sdf, 1), "winding_flipped": bool(vol_h < 0), "enclosed_volume": round(abs(vol_h), 3),
+                         "profiles_sculpt_frame": {"R_ground_min_max": [round(float(R_gnd.min()), 3), round(float(R_gnd.max()), 3)],
+                                                   "R_waist_mid_min_max": [round(float(R_body(0.5 * (Z_W0 + Z_TOP)).min()), 3),
+                                                                           round(float(R_body(0.5 * (Z_W0 + Z_TOP)).max()), 3)]}}
+print("SDF", json.dumps(report["sdf_rebuild"]))
+
+# =========================================================================== 3. low: collapse decimation
+t = time.time()
+tmp = new_obj("dec_src", HV, HF)
+dm = tmp.modifiers.new("dec", "DECIMATE"); dm.decimate_type = "COLLAPSE"; dm.use_collapse_triangulate = True
+dm.ratio = min(1.0, LOW_TRIS / tri_count(tmp.data))
+LV, LF = evaluated_arrays(tmp)
+bpy.data.objects.remove(tmp, do_unlink=True)
+LV, LF, specks = keep_main_island(LV, LF, 0.01)
+lo2, hi2 = LV.min(0), LV.max(0)
+S2 = np.array([(lo2[0] + hi2[0]) / 2, (lo2[1] + hi2[1]) / 2, lo2[2]])
+LV = LV - S2; HV = HV - S2; SV = SV - S2
+AX = AX - S2[:2]
+CAVW = (CAVW[0] - S2[0], CAVW[1] - S2[1], CAVW[2] - S2[2])
+ZOFF = -S2[2]                                    # sculpt-frame heights -> final frame: z + ZOFF
+SHIFT = SHIFT + S2
+HIGH = new_obj(UNIT + "_high", HV, HF)
+size = LV.max(0) - LV.min(0)
 H = float(size[2])
 fp = float(max(size[0], size[1]))
 k_fit = min(CELL_MAX_H / H, CELL_MAX_FP / fp)
@@ -208,78 +575,123 @@ report["natural"] = {"height": round(H, 4), "width": round(float(size[0]), 4), "
                      "origin_shift_sculpt_units": SHIFT.round(5).tolist(),
                      "export_cell_fit_report_only": {"scale": round(k_fit, 5), "height_m": round(H * k_fit, 4),
                                                      "bound_by": "height" if CELL_MAX_H / H <= CELL_MAX_FP / fp else "footprint",
-                                                     "ceilings": [CELL_MAX_H, CELL_MAX_FP]},
-                     "shipped_glb_height_m": 1.8}
-
-# =========================================================================== 2. low: voxel remesh + collapse decimation
-t = time.time()
-tmp = new_obj("remesh_src", SV, SF)
-rm = tmp.modifiers.new("vox", "REMESH"); rm.mode = "VOXEL"; rm.voxel_size = VOXEL; rm.use_smooth_shade = False
-RV, RF = evaluated_arrays(tmp)
-bpy.data.objects.remove(tmp, do_unlink=True)
-tmp = new_obj("dec_src", RV, RF)
-dm = tmp.modifiers.new("dec", "DECIMATE"); dm.decimate_type = "COLLAPSE"; dm.use_collapse_triangulate = True
-dm.ratio = min(1.0, LOW_TRIS / tri_count(tmp.data))
-LV, LF = evaluated_arrays(tmp)
-bpy.data.objects.remove(tmp, do_unlink=True)
-LV, LF, specks = keep_main_island(LV, LF, 0.01)
-# re-centre on the LOW's own bounds (contract feet_origin: the delivered mesh's bbox centre + floor at the origin)
-lo2, hi2 = LV.min(0), LV.max(0)
-S2 = np.array([(lo2[0] + hi2[0]) / 2, (lo2[1] + hi2[1]) / 2, lo2[2]])
-LV = LV - S2
-SV = SV - S2
-SHIFT = SHIFT + S2
-HIGH.data.vertices.foreach_set("co", SV.ravel()); HIGH.data.update()
-report["natural"]["origin_shift_sculpt_units"] = SHIFT.round(5).tolist()
-report["retopo"] = {"method": "voxel remesh (%.3f) -> collapse decimation (deterministic) -> main shell" % VOXEL,
-                    "remesh_tris": int(sum(len(f) - 2 for f in RF)), "decimated_tris": int(sum(len(f) - 2 for f in LF)),
-                    "specks_dropped": specks, "seconds": round(time.time() - t, 1)}
-# retopo fidelity: low vertices -> high surface
-bvh_high = BVHTree.FromPolygons(SV.tolist(), SF)
+                                                     "ceilings": [CELL_MAX_H, CELL_MAX_FP]}}
+report["retopo"] = {"method": "collapse decimation of the SDF surface (deterministic) -> main shell",
+                    "decimated_tris": int(sum(len(f) - 2 for f in LF)), "specks_dropped": specks, "seconds": round(time.time() - t, 1)}
+bvh_high = BVHTree.FromPolygons(HV.tolist(), HF)
 dev = np.array([bvh_high.find_nearest(Vector(p))[3] for p in LV])
 report["retopo"]["low_to_high_distance"] = {"mean": round(float(dev.mean()), 4), "p99": round(float(np.percentile(dev, 99)), 4),
                                             "max": round(float(dev.max()), 4), "pct_of_height_p99": round(100 * float(np.percentile(dev, 99)) / H, 3)}
 
-# =========================================================================== 3. region fields (per low vertex)
+# ---- eye patch refinement (crisp eye outlines on the smooth face)
+t = time.time()
+
+
+def bm_from(V, F):
+    """bmesh from arrays; exact duplicate faces (decimation leftovers) are skipped and counted"""
+    b_ = bmesh.new()
+    for p in V:
+        b_.verts.new(p)
+    b_.verts.ensure_lookup_table()
+    dup = 0
+    for f in F:
+        try:
+            b_.faces.new([b_.verts[i] for i in f])
+        except ValueError:
+            dup += 1
+    b_.verts.index_update()
+    return b_, dup
+
+
+bm, dup0 = bm_from(LV, LF)
+bm.normal_update()
+
+
+def eye_field(x, zsc):
+    """front-projected eye lens field (> 0 inside): |x| mirrored about the waist axis, zsc in the sculpt frame"""
+    x = np.abs(np.asarray(x, float) - AX[0]); zsc = np.asarray(zsc, float)
+    ux = np.array(EYE_OUT) - np.array(EYE_IN); Le = float(np.linalg.norm(ux)); ux = ux / Le
+    vx = np.array([-ux[1], ux[0]])
+    vx = -vx if vx[1] < 0 else vx
+    pe_ = np.stack([x - EYE_IN[0], zsc - EYE_IN[1]], -1)
+    u = pe_ @ ux; v = pe_ @ vx
+    se = np.clip(u / Le, 0.0, 1.0)
+    f_ = np.minimum(EYE_TOP * np.sin(math.pi * se) ** EYE_POW[0] - v, v + EYE_BOT * np.sin(math.pi * se) ** EYE_POW[1])
+    return np.where((u > 0) & (u < Le), f_, -np.minimum(np.abs(u), np.abs(u - Le)) - 0.01)
+
+
+def grin_field(x, zsc):
+    x = np.abs(np.asarray(x, float) - AX[0]); zsc = np.asarray(zsc, float)
+    gs_ = np.clip(x / GRIN_W, 0.0, 1.0)
+    return np.where(x < GRIN_W, GRIN_Z[1] * (1 - gs_ ** 3) - np.abs(zsc - (GRIN_Z[0] + GRIN_Z[2] * gs_ ** 2)), -(x - GRIN_W) - 0.01)
+
+
+def in_eye_box(f):
+    c = f.calc_center_median()
+    if not (abs(c.x - AX[0]) < EYE_BOX[0] and EYE_BOX[1] + ZOFF < c.z < EYE_BOX[2] + ZOFF and f.normal.y < -0.1 and c.y < AX[1] - 1.0):
+        return False
+    return max(float(eye_field(c.x, c.z - ZOFF)), float(grin_field(c.x, c.z - ZOFF))) > -EYE_NEAR
+
+
+n_before = len(bm.faces)
+for it in range(6):
+    faces = [f for f in bm.faces if in_eye_box(f)]
+    edges = sorted({e for f in faces for e in f.edges if e.calc_length() > EYE_EDGE}, key=lambda e: e.index)
+    if not edges:
+        break
+    bmesh.ops.subdivide_edges(bm, edges=edges, cuts=1, use_grid_fill=False)
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    bm.verts.index_update(); bm.edges.index_update(); bm.faces.index_update()
+    bm.normal_update()
+moved = 0
+for v in bm.verts:
+    if v.index >= len(LV):
+        loc = bvh_high.find_nearest(v.co)[0]
+        if loc is not None:
+            v.co = loc; moved += 1
+bm.verts.index_update()
+LV = np.array([v.co[:] for v in bm.verts])
+LF = [[v.index for v in f.verts] for f in bm.faces]
+bm.free()
+report["eye_refinement"] = {"duplicate_faces_skipped": dup0, "iterations": it, "faces_added": len(LF) - n_before, "verts_projected": moved,
+                            "edge_max": EYE_EDGE, "seconds": round(time.time() - t, 1)}
+
+# =========================================================================== 4. region fields (per low vertex)
 low0 = new_obj("fields_tmp", LV, LF)
 M0 = K.MeshData(low0)
 NV = np.empty(len(LV) * 3); low0.data.vertex_normals.foreach_get("vector", NV); NV = NV.reshape(-1, 3)
 bpy.data.objects.remove(low0, do_unlink=True)
-# waist axis: centre of the column between the skirt and the chest
-col_m = (LV[:, 2] > MAW_Z[0] + 1.0) & (LV[:, 2] < MAW_Z[1] - 1.5) & (np.hypot(LV[:, 0], LV[:, 1]) < 2.0)
-AXIS = LV[col_m, :2].mean(0) if col_m.any() else np.zeros(2)
-dxy = LV[:, :2] - AXIS
+dxy = LV[:, :2] - AX
 r = np.hypot(dxy[:, 0], dxy[:, 1])
-rhat = dxy / np.maximum(r, 1e-9)[:, None]
-f_in = -(NV[:, 0] * rhat[:, 0] + NV[:, 1] * rhat[:, 1])
-f_down = -NV[:, 2]
-# spike tips: geodesic distance g from a ring round the torso middle; every spike tip is a maximum of g. A persistence
-# sweep (vertices by descending g, union-find of basins) gives each maximum its spike length = g(tip) - g(saddle where
-# its basin merges into a taller one); basins shorter than MIN_SPIKE are folded into the basin they merge into (sculpt
-# noise). Field tipf = g - (g_tip - burn length) per vertex, burn length = TIP_LEN x spike length clamped to TIP_ABS.
-t = time.time()
+th_deg = np.degrees(np.abs(np.arctan2(dxy[:, 0], -dxy[:, 1])))
+zl = LV[:, 2]
+zs_ = zl - ZOFF                                               # heights in the sculpt frame (the constants' frame)
 elen = np.linalg.norm(LV[M0.ev[:, 0]] - LV[M0.ev[:, 1]], axis=1)
 adj = [[] for _ in range(M0.n)]
 for (a, b), l_ in zip(M0.ev, elen):
     adj[a].append((b, l_)); adj[b].append((a, l_))
-ring = (np.abs(LV[:, 2] - SEED_Z_FRAC * H) < 0.35) & (r < 0.25 * H)
-g = np.full(M0.n, np.inf)
-pq = [(0.0, int(v)) for v in np.nonzero(ring)[0]]
-for _, v in pq:
-    g[v] = 0.0
-heapq.heapify(pq)
-while pq:
-    d_, v = heapq.heappop(pq)
-    if d_ > g[v]:
-        continue
-    for u, l_ in adj[v]:
-        nd = d_ + l_
-        if nd < g[u]:
-            g[u] = nd; heapq.heappush(pq, (nd, u))
-g[~np.isfinite(g)] = 0.0
+
+
+def dijkstra(seeds, limit=np.inf):
+    g_ = np.full(M0.n, np.inf)
+    pq = [(0.0, int(v)) for v in seeds]
+    for _, v in pq:
+        g_[v] = 0.0
+    heapq.heapify(pq)
+    while pq:
+        d_, v = heapq.heappop(pq)
+        if d_ > g_[v] or d_ > limit:
+            continue
+        for u, l_ in adj[v]:
+            nd = d_ + l_
+            if nd < g_[u]:
+                g_[u] = nd; heapq.heappush(pq, (nd, u))
+    return g_
+
+
 def persistence(fv, mask, min_pers):
-    """0-dim persistence of the maxima of fv over the mesh graph restricted to mask. Returns per vertex the owning
-    LIVE tip (-1 outside mask) and that tip's persistence; basins below min_pers fold into the basin they merge into."""
+    """0-dim persistence of the maxima of fv over the mesh graph restricted to mask (v1 build). Returns per vertex the
+    owning LIVE tip (-1 outside mask) and that tip's persistence; basins below min_pers fold into their merge target."""
     idx = np.nonzero(mask)[0]
     order = idx[np.argsort(-fv[idx], kind="stable")]
     par = -np.ones(M0.n, dtype=np.int64)
@@ -334,53 +746,78 @@ def tip_rows(tl, plen_d):
     return [[round(float(v), 2) for v in LV[i]] + [round(plen_d[i], 2)] for i in sorted(tl, key=lambda q: -plen_d[q])]
 
 
+t = time.time()
+# ---- spike tips (v1 rule: geodesic distance from a torso ring; persistence per spike)
+ring = (np.abs(zl - SEED_Z_FRAC * H) < 0.35) & (r < 0.25 * H)
+g = dijkstra(np.nonzero(ring)[0])
+g[~np.isfinite(g)] = 0.0
 spk, spk_plen, spk_pers = persistence(g, np.ones(M0.n, bool), MIN_SPIKE)
-tip_r = r[np.maximum(spk, 0)]
-tipf, spk_len, tips = burn_field(g, spk, spk_plen, TIP_LEN, TIP_ABS, MIN_SPIKE, valid=tip_r > SPIKE_RMIN * H)
-# the mouth's teeth (lore: "chest and bottom leg spikes form a mouth"): height persistence inside each jaw
-# jaws = the connected pieces of the mouth region once the throat pillar is removed: the piece reaching highest is the
-# chest (upper jaw), the piece reaching lowest is the skirt (lower jaw)
-jaw_m = (LV[:, 2] > JAW_Z[0]) & (LV[:, 2] < JAW_Z[1]) & (r > THROAT_R) & (r < JAW_RMAX)
-lab = -np.ones(M0.n, dtype=np.int64)
-ncomp = 0
-for s0 in np.nonzero(jaw_m)[0]:
-    if lab[s0] >= 0:
-        continue
-    stack = [s0]; lab[s0] = ncomp
-    while stack:
-        v = stack.pop()
-        for u, _ in adj[v]:
-            if jaw_m[u] and lab[u] < 0:
-                lab[u] = ncomp; stack.append(u)
-    ncomp += 1
-comp_top = int(lab[np.nonzero(jaw_m)[0][np.argmax(LV[jaw_m, 2])]])
-comp_bot = int(lab[np.nonzero(jaw_m)[0][np.argmin(LV[jaw_m, 2])]])
-up_jaw = lab == comp_top
-low_jaw = lab == comp_bot
-report["jaws"] = {"pieces": ncomp, "upper_jaw_verts": int(up_jaw.sum()), "lower_jaw_verts": int(low_jaw.sum()),
-                  "separate": comp_top != comp_bot,
-                  "upper_z": [round(float(LV[up_jaw, 2].min()), 3), round(float(LV[up_jaw, 2].max()), 3)],
-                  "lower_z": [round(float(LV[low_jaw, 2].min()), 3), round(float(LV[low_jaw, 2].max()), 3)]}
-assert comp_top != comp_bot, "chest and skirt are bridged inside the mouth region: %r" % report["jaws"]
-lo_tip, lo_plen, lo_pers = persistence(LV[:, 2], low_jaw, MIN_TOOTH)
-up_tip, up_plen, up_pers = persistence(-LV[:, 2], up_jaw, MIN_TOOTH)
-tlo, tlo_len, teeth_lo = burn_field(LV[:, 2], lo_tip, lo_plen, TOOTH_LEN, TOOTH_ABS, MIN_TOOTH, valid=r[np.maximum(lo_tip, 0)] > TOOTH_RMIN)
-tup, tup_len, teeth_up = burn_field(-LV[:, 2], up_tip, up_plen, TOOTH_LEN, TOOTH_ABS, MIN_TOOTH, valid=r[np.maximum(up_tip, 0)] > TOOTH_RMIN)
-report["tip_field"] = {"seed": "ring at SEED_Z_FRAC x H round the torso middle", "spikes_found": len(tips),
-                       "spikes_xyz_len": tip_rows(tips, spk_pers),
-                       "lower_teeth_xyz_len": tip_rows(teeth_lo, lo_pers), "upper_teeth_xyz_len": tip_rows(teeth_up, up_pers),
-                       "seconds": round(time.time() - t, 1)}
+tipf, spk_len, tips = burn_field(g, spk, spk_plen, TIP_LEN, TIP_ABS, MIN_SPIKE,
+                                 valid=(r[np.maximum(spk, 0)] > SPIKE_RMIN * H) & (zs_[np.maximum(spk, 0)] > BASE_Z + 1.0))
+if not SPIKE_TIPS:
+    tipf[:] = -1.0; spk_len[:] = 0.0; tips = []
+# ---- teeth: height persistence on the SCULPT-derived jaw surfaces in the open front
+bvh_s = BVHTree.FromPolygons(SV.tolist(), SF)
+dsc = np.array([bvh_s.find_nearest(Vector(p))[3] for p in LV])
+sculpt_ok = dsc < SCULPT_TOL
+front_ok = (th_deg < TEETH_TH) & (r > THROAT_R) & (r < JAW_RMAX)
+up_m = sculpt_ok & front_ok & (zs_ > UP_JAW_Z[0]) & (zs_ < UP_JAW_Z[1])
+seed_up = np.nonzero(up_m & (zs_ > 10.5))[0]
+upper = np.zeros(M0.n, bool)
+stack = list(seed_up); upper[seed_up] = True
+while stack:
+    v = stack.pop()
+    for u, _ in adj[v]:
+        if up_m[u] and not upper[u]:
+            upper[u] = True; stack.append(u)
+low_m = sculpt_ok & front_ok & (zs_ > LO_JAW_Z[0]) & (zs_ < LO_JAW_Z[1]) & ~upper
+lo_tip, lo_plen, lo_pers = persistence(zl, low_m, MIN_TOOTH)
+up_tip, up_plen, up_pers = persistence(-zl, upper, MIN_TOOTH)
+tlo, tlo_len, teeth_lo = burn_field(zl, lo_tip, lo_plen, TOOTH_LEN, TOOTH_ABS, MIN_TOOTH)
+tup, tup_len, teeth_up = burn_field(-zl, up_tip, up_plen, TOOTH_LEN, TOOTH_ABS, MIN_TOOTH)
+# ---- throat membership: inside the carved ellipsoid and inside the body walls
+e_val = ((LV[:, 0] - CAVW[0]) / CAV_R[0]) ** 2 + ((LV[:, 1] - CAVW[1]) / CAV_R[1]) ** 2 + ((LV[:, 2] - CAVW[2]) / CAV_R[2]) ** 2
+bins_ = ((np.arctan2(dxy[:, 0], -dxy[:, 1]) + math.pi) / (2 * math.pi) * NT).astype(int) % NT
+Rin_v = np.array([R_inner(float(z_))[b_] for z_, b_ in zip(np.clip(zs_, Z_W0, Z_TOP + 1.0), bins_)])
+def cav_field(P):
+    """> 0 inside the mouth. CONTINUOUS (min of smooth terms) so its iso-cut is a clean line: a hard -1 step here
+    put the cut at arbitrary edge fractions (the ragged lip edge of the first v2 preview)."""
+    d_ = P[:, :2] - AX
+    r_ = np.hypot(d_[:, 0], d_[:, 1])
+    z_s = P[:, 2] - ZOFF
+    e_ = ((P[:, 0] - CAVW[0]) / CAV_R[0]) ** 2 + ((P[:, 1] - CAVW[1]) / CAV_R[1]) ** 2 + ((P[:, 2] - CAVW[2]) / CAV_R[2]) ** 2
+    zq = np.clip(z_s, Z_W0, Z_TOP + 1.0)
+    zi = np.clip(np.round((zq - Z_W0) / (Z_TOP + 1.0 - Z_W0) * (len(RIN_TAB) - 1)).astype(int), 0, len(RIN_TAB) - 1)
+    bi = ((np.arctan2(d_[:, 0], -d_[:, 1]) + math.pi) / (2 * math.pi) * NT).astype(int) % NT
+    f_ = np.minimum(1.0 + CAV_TOL - e_, 0.5 * (RIN_TAB[zi, bi] + 0.2 - r_))
+    f_ = np.minimum(f_, np.minimum(z_s - (Z_W0 - 0.6), Z_TOP + 0.5 - z_s))
+    return np.maximum(f_, -0.99)
 
-# =========================================================================== 4. iso-contour cuts
-bm = bmesh.new()
-for p in LV:
-    bm.verts.new(p)
-bm.verts.ensure_lookup_table()
-for f in LF:
-    bm.faces.new([bm.verts[i] for i in f])
-bm.verts.index_update()
-FIELDS = {"z": LV[:, 2], "r": r, "fin": f_in, "fdown": f_down, "tip": tipf, "gtip": spk_len,
-          "tlo": tlo, "glo": tlo_len, "tup": tup, "gup": tup_len, "ady": np.abs(LV[:, 1] - AXIS[1])}
+
+RIN_TAB = np.array([R_inner(float(z_)) for z_ in np.linspace(Z_W0, Z_TOP + 1.0, 97)])
+cavf = cav_field(LV)
+in_cav_v = cavf > 0
+# ---- red lip: Euclidean distance to the mouth's inside, sampled on the dense rebuilt HIGH surface (smooth band edge;
+# graph distances on the low are edge-path jaggy), front only
+cav_h = HV[cav_field(HV) > 0]
+kd_cav = KDTree(len(cav_h))
+for i, p in enumerate(cav_h):
+    kd_cav.insert(p, i)
+kd_cav.balance()
+dcav = np.array([kd_cav.find(p)[2] for p in LV]) if len(cav_h) else np.full(M0.n, 99.0)
+dcav = np.where(in_cav_v, 0.0, np.minimum(dcav, 3.0 * LIP_W))
+lipf = LIP_W - dcav - 0.3 * np.maximum(th_deg - LIP_TH, 0.0) - 3.0 * np.maximum(4.5 - zs_, 0.0) - 3.0 * np.maximum(zs_ - 11.8, 0.0)
+lipf = np.maximum(lipf, -0.99)                              # continuous everywhere: the iso-cut draws every edge of the band
+# ---- eyes + grin (front-projected (x, z) fields on the face)
+face_front = (NV[:, 1] < -0.1) & (LV[:, 1] < AX[1] - 1.0) & (zs_ > EYE_BOX[1]) & (zs_ < EYE_BOX[2])
+eyef = np.where(face_front, np.maximum(eye_field(LV[:, 0], zs_), -0.99), -1.0)
+grinf = np.where(face_front, np.maximum(grin_field(LV[:, 0], zs_), -0.99), -1.0)
+report["fields_seconds"] = round(time.time() - t, 1)
+
+# =========================================================================== iso-contour cuts
+bm, dup1 = bm_from(LV, LF)
+FIELDS = {"z": zl, "r": r, "th": th_deg, "tip": tipf, "gtip": spk_len, "tlo": tlo, "glo": tlo_len, "tup": tup, "gup": tup_len,
+          "cav": cavf, "yb": LV[:, 1] - AX[1] - THROAT_BACK, "lip": lipf, "eye": eyef, "grin": grinf, "ady": np.abs(LV[:, 1] - AX[1])}
 LAY = {k: bm.verts.layers.float.new(k) for k in FIELDS}
 for v in bm.verts:
     for k, arr in FIELDS.items():
@@ -393,7 +830,6 @@ def iso_cut(key, tau, gate=None):
     on = lambda v: abs(v[L] - tau) <= eps
     side = lambda v: 0 if on(v) else (1 if v[L] > tau else -1)
     ok = (lambda a, b: True) if gate is None else gate
-    # pass 1: snap crossings that land near a vertex onto that vertex (no slivers)
     for e in bm.edges:
         a, b = e.verts
         sa, sb = side(a), side(b)
@@ -403,7 +839,6 @@ def iso_cut(key, tau, gate=None):
                 a[L] = tau
             elif tt > 1 - CUT_SNAP:
                 b[L] = tau
-    # pass 2: split the remaining crossings at the interpolated point
     cuts = [e for e in bm.edges if side(e.verts[0]) * side(e.verts[1]) < 0 and ok(e.verts[0], e.verts[1])]
     nsplit = 0
     for e in cuts:
@@ -415,7 +850,6 @@ def iso_cut(key, tau, gate=None):
             nv[LAY[k]] = vals[k]
         nv[L] = tau
         nsplit += 1
-    # pass 3: connect the contour vertices across every straddling face
     pairs = []
     for f in bm.faces:
         vs = list(f.verts)
@@ -433,40 +867,23 @@ def iso_cut(key, tau, gate=None):
     return {"field": key, "tau": round(float(tau), 4), "edge_splits": nsplit, "face_connects": len(pairs)}
 
 
-z_in = lambda a, b: MAW_Z[0] - 1e-4 <= a[LAY["z"]] <= MAW_Z[1] + 1e-4 and MAW_Z[0] - 1e-4 <= b[LAY["z"]] <= MAW_Z[1] + 1e-4
+pos_ = lambda k: (lambda a, b: a[LAY[k]] > -0.999 and b[LAY[k]] > -0.999)
 spike = lambda a, b: a[LAY["gtip"]] > MIN_SPIKE and b[LAY["gtip"]] > MIN_SPIKE
 tooth_lo = lambda a, b: a[LAY["glo"]] >= MIN_TOOTH and b[LAY["glo"]] >= MIN_TOOTH
 tooth_up = lambda a, b: a[LAY["gup"]] >= MIN_TOOTH and b[LAY["gup"]] >= MIN_TOOTH
-in_z = lambda v: ROOTS_ZLOW - 1e-4 <= v[LAY["z"]] <= ROOTS_FRAC * H + 1e-4
-in_r = lambda v: v[LAY["r"]] >= ROOTS_R - 1e-4
-in_y = lambda v: v[LAY["ady"]] <= HAND_Y + 1e-4
-roots_side = lambda a, b: all(in_z(v) and in_y(v) for v in (a, b))
-roots_out = lambda a, b: all(in_r(v) and in_y(v) for v in (a, b))
-hand_plane = lambda a, b: all(in_r(v) and in_z(v) for v in (a, b))
-CUTS = [("z", ROOTS_FRAC * H, None), ("z", CROWN_FRAC * H, None), ("z", MAW_Z[0], None), ("z", MAW_Z[1], None),
-        ("r", THROAT_R, z_in), ("r", MAW_ROUT, z_in), ("fin", MAW_IN, z_in), ("fdown", MAW_DOWN, z_in), ("tip", 0.0, spike),
-        ("r", ROOTS_R, roots_side), ("z", ROOTS_ZLOW, roots_out), ("ady", HAND_Y, hand_plane), ("tlo", 0.0, tooth_lo), ("tup", 0.0, tooth_up)]
+not_hand = lambda a, b: all(not (v[LAY["r"]] > HAND_R[0] and v[LAY["ady"]] < HAND_Y) for v in (a, b))
+in_mouth = lambda a, b: a[LAY["cav"]] > -1e-4 and b[LAY["cav"]] > -1e-4     # (cav is continuous: cut only inside the mouth)
+CUTS = [("z", BASE_Z + ZOFF, not_hand), ("z", 0.9 * H, None), ("tip", 0.0, spike), ("cav", 0.0, pos_("cav")),
+        ("yb", 0.0, in_mouth), ("r", THROAT_R, in_mouth),
+        ("lip", 0.0, pos_("lip")), ("tlo", 0.0, tooth_lo), ("tup", 0.0, tooth_up), ("eye", 0.0, pos_("eye")), ("grin", 0.0, pos_("grin"))]
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
-straddle = {}
-for key, tau, gate in CUTS:
-    L = LAY[key]; eps = 1e-5 * max(1.0, abs(tau)); n_ = 0
-    for f in bm.faces:
-        vs = list(f.verts)
-        if gate is not None and not all(gate(vs[i], vs[(i + 1) % len(vs)]) for i in range(len(vs))):
-            continue
-        vals = [v[L] for v in vs]
-        if min(vals) < tau - eps and max(vals) > tau + eps:
-            n_ += 1
-    straddle["%s=%.3f" % (key, tau)] = n_
-report["iso_cuts"] = {"cuts": cut_log, "seconds": round(time.time() - t, 1),
-                      "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; "
-                              "fields interpolate linearly along split edges; no face straddles any boundary afterwards",
-                      "straddling_faces_after_cut": straddle}
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
 bm.faces.index_update()
 nf = len(bm.faces)
 FVAL = {k: np.array([np.mean([v[LAY[k]] for v in f.verts]) for f in bm.faces]) for k in LAY}
+report["iso_cuts"] = {"cuts": cut_log, "seconds": round(time.time() - t, 1),
+                      "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects (v1 machinery)"}
 low_me = bpy.data.meshes.new(UNIT)
 bm.to_mesh(low_me)
 bm.free()
@@ -480,51 +897,60 @@ report["tris_final"] = tri_count(me)
 assert report["tris_final"] == nf
 
 # =========================================================================== regions
-REG = ["body", "roots", "flame", "maw_throat", "maw_inner"]
+REG = ["body", "base", "tips", "lip", "maw_inner", "maw_throat", "teeth", "eyes", "grin"]
 R_ = {n: i for i, n in enumerate(REG)}
-zc, rc, fin_c, fdn_c, tip_c, gt_c = (FVAL[k] for k in ("z", "r", "fin", "fdown", "tip", "gtip"))
-rid = np.full(nf, R_["body"], dtype=np.int32)
-hand_c = (rc > ROOTS_R) & (zc > ROOTS_ZLOW) & (FVAL["ady"] < HAND_Y)
-rid[(zc < ROOTS_FRAC * H) & ~hand_c] = R_["roots"]
-band = (zc > MAW_Z[0]) & (zc < MAW_Z[1])
-rid[band & (rc < MAW_ROUT) & ((fin_c > MAW_IN) | (fdn_c > MAW_DOWN))] = R_["maw_inner"]
-rid[band & (rc < THROAT_R)] = R_["maw_throat"]
-teeth = ((FVAL["tlo"] > 0.0) & (FVAL["glo"] >= MIN_TOOTH)) | ((FVAL["tup"] > 0.0) & (FVAL["gup"] >= MIN_TOOTH))
-flame = ((tip_c > 0.0) & (gt_c > MIN_SPIKE)) | (zc > CROWN_FRAC * H) | teeth
-rid[flame] = R_["flame"]
+zc, rc = FVAL["z"], FVAL["r"]
 FC = np.empty(nf * 3); me.polygons.foreach_get("center", FC); FC = FC.reshape(-1, 3)
 FN = np.empty(nf * 3); me.polygon_normals.foreach_get("vector", FN); FN = FN.reshape(-1, 3)
-# boundary straddle audit: a face whose vertex field values fall on both sides of a threshold would be a sawtooth step
+rid = np.full(nf, R_["body"], dtype=np.int32)
+hand_c = (rc > HAND_R[0]) & (FVAL["ady"] < HAND_Y)
+rid[(zc < BASE_Z + ZOFF) & ~hand_c] = R_["base"]
+rid[((FVAL["tip"] > 0.0) & (FVAL["gtip"] > MIN_SPIKE)) | (zc > 0.9 * H)] = R_["tips"]
+rid[FVAL["lip"] > 0.0] = R_["lip"]
+in_cav = FVAL["cav"] > 0.0
+rid[in_cav] = R_["maw_inner"]
+behind = FVAL["yb"] > 0.0
+rid[in_cav & (behind | (rc < THROAT_R))] = R_["maw_throat"]
+teeth = ((FVAL["tlo"] > 0.0) & (FVAL["glo"] >= MIN_TOOTH)) | ((FVAL["tup"] > 0.0) & (FVAL["gup"] >= MIN_TOOTH))
+rid[teeth] = R_["teeth"]
+rid[FVAL["eye"] > 0.0] = R_["eyes"]
+rid[FVAL["grin"] > 0.0] = R_["grin"]
 report["region_rule"] = {
-    "roots": "face height < ROOTS_FRAC x H (shipped rule, now an iso-line), except the lower hands (radius > ROOTS_R above ROOTS_ZLOW, within HAND_Y of the side plane)",
-    "teeth": "ember tips on the mouth's teeth: height-persistence maxima of the skirt (lower jaw) and minima "
-             "of the chest (upper jaw) -- the two pieces of JAW_Z x (THROAT_R, JAW_RMAX), outer TOOTH_LEN clamped to TOOTH_ABS",
-    "flame": "outer TIP_LEN of every persistent spike (geodesic persistence >= MIN_SPIKE, burn clamped to TIP_ABS), or height > CROWN_FRAC x H (shipped intent: ember-tipped spikes + crown apex)",
-    "maw_throat": "inside the mouth band MAW_Z, radius from the waist axis < THROAT_R",
-    "maw_inner": "inside MAW_Z, faces turned toward the throat (> MAW_IN) or downward (chest underside, > MAW_DOWN)",
-    "axis_xy": AXIS.round(4).tolist(), "mouth_band_z": list(MAW_Z)}
+    "base": "face height < BASE_Z (the shadow base; shade darkens to BASE_DARK at the floor), hands excluded",
+    "tips": "outer TIP_LEN of every persistent spike (v1 geodesic-persistence rule) + the hat apex (> 0.9 H) -- dim embers",
+    "lip": "outer surface within geodesic LIP_W of the mouth's inside, |theta| < LIP_TH -- the red frame of the devouring mouth",
+    "maw_inner": "inside the carved throat ellipsoid (tolerance CAV_TOL) and the body walls: chest underside, floor, teeth insides",
+    "maw_throat": "mouth faces behind the waist axis (+THROAT_BACK) or on the throat column (r < THROAT_R): the glowing throat",
+    "teeth": "height-persistence maxima (lower jaw) / minima (upper jaw) of the SCULPT-derived jaw surfaces in the open front; "
+             "outer TOOTH_LEN burns (ember teeth)",
+    "eyes": "front-projected lens field on the smoothed face (EYE_IN -> EYE_OUT, EYE_TOP / EYE_BOT), iso-cut",
+    "grin": "variant-only crescent under the eyes (default palette paints it as body)",
+    "waist_axis": AX.round(4).tolist(), "throat_centre": [round(float(c), 4) for c in CAVW]}
+report["tip_field"] = {"spikes_found": len(tips), "spikes_xyz_len": tip_rows(tips, spk_pers)[:24],
+                       "lower_teeth_xyz_len": tip_rows(teeth_lo, lo_pers), "upper_teeth_xyz_len": tip_rows(teeth_up, up_pers),
+                       "sculpt_derived_verts": int(sculpt_ok.sum()), "upper_jaw_verts": int(upper.sum()), "lower_jaw_verts": int(low_m.sum())}
 
-# cavity shade + deterministic per-face value jitter (improve_unit.py rule), cavity from the high sculpt
+# ---- cavity shade from the rebuilt high + deterministic per-face jitter + the base's floor darkening
 t = time.time()
-kd_h = KDTree(len(SV))
-for i, p in enumerate(SV):
+kd_h = KDTree(len(HV))
+for i, p in enumerate(HV):
     kd_h.insert(p, i)
 kd_h.balance()
 hme = HIGH.data
 ev_h = np.empty(len(hme.edges) * 2, dtype=np.int64); hme.edges.foreach_get("vertices", ev_h); ev_h = ev_h.reshape(-1, 2)
 nv_h = np.empty(len(hme.vertices) * 3); hme.vertex_normals.foreach_get("vector", nv_h); nv_h = nv_h.reshape(-1, 3)
-deg = np.bincount(ev_h.ravel(), minlength=len(SV)).astype(float)
+deg = np.bincount(ev_h.ravel(), minlength=len(HV)).astype(float)
 
 
 def nmean(X):
     s_ = np.zeros_like(X)
     for k in range(X.shape[1]):
-        s_[:, k] = np.bincount(ev_h[:, 0], X[ev_h[:, 1], k], minlength=len(SV)) + np.bincount(ev_h[:, 1], X[ev_h[:, 0], k], minlength=len(SV))
+        s_[:, k] = np.bincount(ev_h[:, 0], X[ev_h[:, 1], k], minlength=len(HV)) + np.bincount(ev_h[:, 1], X[ev_h[:, 0], k], minlength=len(HV))
     return s_ / np.maximum(deg, 1)[:, None]
 
 
-el = np.linalg.norm(SV[ev_h[:, 0]] - SV[ev_h[:, 1]], axis=1).mean()
-cav = ((nmean(SV) - SV) * nv_h).sum(1) / el
+el = np.linalg.norm(HV[ev_h[:, 0]] - HV[ev_h[:, 1]], axis=1).mean()
+cav = ((nmean(HV) - HV) * nv_h).sum(1) / el
 for _ in range(6):
     cav = nmean(cav[:, None])[:, 0] * 0.5 + cav * 0.5
 cav = np.clip(cav / (np.percentile(np.abs(cav), 95) + 1e-9), -1, 1)
@@ -533,31 +959,28 @@ cav_k = 0.40
 shade = 1.0 - cav_k * np.clip(fcav, 0, 1) + 0.08 * np.clip(-fcav, 0, 1)
 jit = (np.sin(FC @ np.array([12.9898, 78.233, 37.719]) * 43.7585) * 43758.5453) % 1.0
 shade *= 0.96 + 0.08 * jit
+bmask = rid == R_["base"]
+shade[bmask] *= BASE_DARK + (1 - BASE_DARK) * smoothstep(0.0, BASE_Z + ZOFF, FC[bmask, 2])
 PAL.store_regions(me, REG, rid, shade)
 pal_default = PAL.load(UNIT, "default")
 report["regions_faces"] = PAL.paint(me, pal_default)
 report["cavity_shade_k"] = cav_k
 report["cavity_seconds"] = round(time.time() - t, 1)
-
-# mouth-illusion front read: the maw's front-visible share (faces whose normal faces the -Y camera)
-maw = np.isin(rid, [R_["maw_throat"], R_["maw_inner"]])
 fa = np.empty(nf); me.polygons.foreach_get("area", fa)
 report["regions_area_share"] = {n: round(float(fa[rid == R_[n]].sum() / fa.sum()), 4) for n in REG}
-report["maw"] = {"faces": int(maw.sum()), "area": round(float(fa[maw].sum()), 3),
-                 "front_facing_area": round(float(fa[maw & (FN[:, 1] < -0.2)].sum()), 3),
-                 "z_range": [round(float(FC[maw, 2].min()), 3), round(float(FC[maw, 2].max()), 3)] if maw.any() else None,
-                 "shipped_mouth_was": "79 faces at z 20.55-22.01 (hat-brim underside / face under the hat), y -4.94..-3.99 -- repainted body"}
 
-# facing landmark (direction-free): the sculpted face under the hat -- concavity-weighted centroid of the face band
-fb = (SV[:, 2] > 0.52 * H) & (SV[:, 2] < 0.72 * H) & (np.hypot(SV[:, 0], SV[:, 1]) < 0.16 * H)
-anchor = SV[fb].mean(0)
-w_ = np.clip(cav[fb], 0.0, None) ** 2 + 1e-12
-landmark = anchor.copy()
-landmark[:2] = anchor[:2] + ((SV[fb, :2] - anchor[:2]) * w_[:, None]).sum(0) / w_.sum()
+# facing landmark (the mouth is the identity: "chest and bottom leg spikes form a mouth"): waist axis at mouth
+# height -> area centroid of the red lip framing the opening; the eyes' centroid is reported beside it
+lipm = rid == R_["lip"]
+anchor = np.array([AX[0], AX[1], float(np.average(FC[lipm, 2], weights=fa[lipm]))])
+landmark = np.average(FC[lipm], axis=0, weights=fa[lipm])
 dvec = landmark - anchor
-report["facing"] = {"rule": "face band (52-72% H, r < 16% H) centroid -> its concavity-weighted (smoothed cavity+ ^2: the eye sockets and teeth recesses of the sculpted face) centroid",
+eyem = rid == R_["eyes"]
+eye_c = np.average(FC[eyem], axis=0, weights=fa[eyem]) if eyem.any() else None
+report["facing"] = {"rule": "waist axis (at the lip's mean height) -> area centroid of the red lip region that frames the mouth opening",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
-                    "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 2)}
+                    "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 2),
+                    "eyes_centroid": eye_c.round(4).tolist() if eye_c is not None else None}
 
 # =========================================================================== flat + UV
 me.shade_flat()
@@ -566,8 +989,7 @@ for o in scene.objects:
     o.select_set(o is low)
 bpy.ops.object.mode_set(mode="EDIT")
 bpy.ops.mesh.select_all(action="SELECT")
-bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.004, area_weight=0.0,
-                         correct_aspect=True, scale_to_bounds=False)
+bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.004, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
 bpy.ops.uv.select_all(action="SELECT")
 bpy.ops.uv.pack_islands(rotate=True, margin=0.004)
 bpy.ops.object.mode_set(mode="OBJECT")
@@ -594,6 +1016,7 @@ low["conquest_front_landmark"] = landmark.tolist()
 low["conquest_facing_rule"] = report["facing"]["rule"]
 low["conquest_source"] = os.path.basename(bpy.data.filepath)
 low["conquest_scale_policy"] = "natural proportions, sculpt units; game scales at import (cell fit report-only)"
+low["conquest_version"] = "duskmaw v2 (shadow figure)"
 
 if PREVIEW:
     nt.links.new(vc.outputs["Color"], bsdf.inputs["Base Color"])
@@ -602,12 +1025,11 @@ if PREVIEW:
             bpy.data.objects.remove(o, do_unlink=True)
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
-    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "retopo", "regions_faces", "regions_area_share", "maw", "facing", "iso_cuts", "jaws",
-                                                             "region_rule")}))
-    print("TIPS", json.dumps(report["tip_field"]))
+    print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "sdf_rebuild", "retopo", "eye_refinement", "regions_faces",
+                                                             "regions_area_share", "facing", "tip_field")}))
     sys.stdout.flush(); os._exit(0)
 
-# =========================================================================== 5. bake (normal + AO from the 553k sculpt)
+# =========================================================================== 5. bake (normal + AO from the rebuilt high)
 try:
     import addon_utils
     addon_utils.enable("cycles", default_set=False, persistent=False)
@@ -616,6 +1038,9 @@ except Exception:
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
 scene.cycles.use_denoising = False
+# the NORMAL bake is not byte-deterministic (per-process Cycles tie-break, the vampito finding): two full v2 runs differed
+# ONLY there (geometry / colour / UV / AO / rig identical), and a single-thread bake (threads_mode FIXED, 1) did not
+# change that (tried 2026-09-26, reverted). duskmaw_run.ps1 -Determinism gates it with duskmaw_bake_diff.py instead.
 bk = scene.render.bake
 bk.use_selected_to_active = True; bk.cage_extrusion = BAKE_CAGE; bk.max_ray_distance = BAKE_CAGE * 2.0
 bk.margin = 16; bk.use_clear = False
@@ -676,19 +1101,9 @@ alltex_a = texels_of(np.ones(nf, bool), RA)
 bstats.update({
     "uv_texels_normal": int(alltex_n.sum()), "uv_coverage": round(float(alltex_n.mean()), 4),
     "normal_baked_pct_of_uv_texels": round(100 * float(cov_n[alltex_n].mean()), 2),
-    "normal_detail_fraction_dev_gt_0.05": round(float((devn[cov_n & alltex_n] > 0.05).mean()), 4),
     "normal_dev_mean": round(float(devn[cov_n & alltex_n].mean()), 4),
     "ao_baked_pct_of_uv_texels": round(100 * float(cov_a[alltex_a].mean()), 2),
-    "ao_mean": round(float(pa[cov_a & alltex_a, 0].mean()), 4),
-    "ao_p05": round(float(np.percentile(pa[cov_a & alltex_a, 0], 5)), 4)})
-per_region = {}
-for n_ in REG:
-    fm_ = rid == R_[n_]
-    if fm_.any():
-        tx = texels_of(fm_, RN)
-        per_region[n_] = {"texels": int(tx.sum()), "baked_pct": round(100 * float(cov_n[tx].mean()), 2),
-                          "normal_dev_mean": round(float(devn[tx & cov_n].mean()), 4) if (tx & cov_n).any() else None}
-bstats["per_region_normal"] = per_region
+    "ao_mean": round(float(pa[cov_a & alltex_a, 0].mean()), 4)})
 px[~cov_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 pa[~cov_a, :3] = bstats["ao_mean"]; img_ao.pixels.foreach_set(pa.ravel())
 os.makedirs(TEX_DIR, exist_ok=True)
@@ -702,9 +1117,10 @@ def set_tex_paths(rel_prefix):
 
 
 bstats["pixel_sha"] = {"normal": sha(px[:, :3]), "ao": sha(pa[:, :1])}
+np.save(NORMAL_NPY, px[:, :3])
 bstats["cage_extrusion"] = BAKE_CAGE
 bstats["resolution"] = {"normal": RN, "ao": RA}
-bstats["high_tris"] = report["tris_source"]
+bstats["high"] = "the SDF-rebuilt surface (%d faces)" % len(HF)
 bstats["seconds"] = round(time.time() - tb, 1)
 report["bake"] = bstats
 mul = nt.nodes.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"; mul.location = (-300, 300)
@@ -723,107 +1139,71 @@ low.visible_transmission = low.visible_volume_scatter = True
 
 uva = 0.5 * ((UVn[:, 1, 0] - UVn[:, 0, 0]) * (UVn[:, 2, 1] - UVn[:, 0, 1]) - (UVn[:, 2, 0] - UVn[:, 0, 0]) * (UVn[:, 1, 1] - UVn[:, 0, 1]))
 report["uv"] = {"method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked", "faces": nf,
-                "zero_area_faces": int((np.abs(uva) < 1e-9).sum()), "flipped_faces": int((uva < -1e-12).sum()),
-                "uv_sha": sha(UVn)}
+                "zero_area_faces": int((np.abs(uva) < 1e-9).sum()), "flipped_faces": int((uva < -1e-12).sum()), "uv_sha": sha(UVn)}
 LVf = np.array([v.co[:] for v in me.vertices])
 _cd = np.empty(len(me.loops) * 4, dtype=np.float32); me.color_attributes["Col"].data.foreach_get("color", _cd)
 report["digest_geometry_colour"] = hashlib.sha256(np.round(LVf, 6).astype(np.float32).tobytes() + np.round(_cd, 5).tobytes()).hexdigest()[:16]
 report["final_bbox"] = [LVf.min(0).round(4).tolist(), LVf.max(0).round(4).tolist()]
-report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"]}
+report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"], "skins": PAL.list_skins(UNIT)}
+
+
+# ---- see-through proof (ray casts through the waist core, every 15 degrees round the figure)
+def see_through(V, F, axis_xy, z_band=(6.0, 9.2), half_w=2.5, step=0.1):
+    bvh = BVHTree.FromPolygons(np.asarray(V).tolist(), F)
+    rows = {}
+    for deg_ in range(0, 360, 15):
+        a = math.radians(deg_)
+        d = Vector((-math.sin(a), math.cos(a), 0.0))                  # the ray travels from the camera at yaw deg_ inward
+        e1 = Vector((math.cos(a), math.sin(a), 0.0))
+        start = Vector((axis_xy[0], axis_xy[1], 0.0)) - d * 60.0
+        n_ = miss = 0
+        for u in np.arange(-half_w, half_w + 1e-9, step):
+            for z in np.arange(z_band[0], z_band[1] + 1e-9, step):
+                o = start + e1 * float(u) + Vector((0, 0, float(z)))
+                hit = bvh.ray_cast(o, d, 120.0)
+                n_ += 1
+                miss += hit[0] is None
+        rows[deg_] = round(100.0 * miss / n_, 2)
+    return rows
+
+
+LFf = [list(p.vertices) for p in me.polygons]
+st = see_through(LVf, LFf, AX, z_band=(6.0 + ZOFF, 9.2 + ZOFF))
+report["see_through"] = {"rule": "rays through the waist core (|u| <= 2.5 units about the waist axis, z 6.0-9.2 = the mouth band) "
+                                 "from 24 yaws (0 = the front camera, 180 = behind); value = % of rays that pass straight through",
+                         "pct_rays_through_by_yaw": st, "max_pct": max(st.values())}
+print("SEE_THROUGH", json.dumps(report["see_through"]))
 bpy.context.preferences.filepaths.save_version = 0
 set_tex_paths("//textures/")
 bpy.ops.wm.save_as_mainfile(filepath=OUT_IMPROVED, copy=True, compress=True, relative_remap=False)
-
-# palette fidelity vs the SHIPPED materials (appended read-only from the shipped rigged blend, removed before saving)
-with bpy.data.libraries.load(OLD_BLEND, link=False) as (src_d, dst_d):
-    dst_d.objects = ["Monster", "MonsterRig"]
-OLD_MESH = bpy.data.objects["Monster"]; OLD_RIG = bpy.data.objects["MonsterRig"]
-old_coll = bpy.data.collections.new("shipped_ref"); scene.collection.children.link(old_coll)
-old_coll.objects.link(OLD_MESH); old_coll.objects.link(OLD_RIG)
-MAP = {"body": "summoner_body", "roots": "summoner_roots", "flame": "summoner_flame", "maw_throat": "summoner_mouth",
-       "maw_inner": "summoner_mouth"}
-fid = {}
-worst = 0.0
-for reg, mname in MAP.items():
-    om = next(s.material for s in OLD_MESH.material_slots if s.material and s.material.name.startswith(mname))
-    ob_ = om.node_tree.nodes.get("Principled BSDF")
-    ship_base = np.array(ob_.inputs["Base Color"].default_value[:3])
-    ship_em = np.array(ob_.inputs["Emission Color"].default_value[:3]) * ob_.inputs["Emission Strength"].default_value
-    pr = pal_default["regions"][reg]
-    pb = PAL.srgb_to_linear(pr["rgb"])
-    pe = PAL.srgb_to_linear(pr["emission"]) * pr.get("emission_scale", 1.0) * pal_default["material"].get("emission_strength", 1.0) \
-        if "emission" in pr else np.zeros(3)
-    d_b = float(np.abs(pb - ship_base).max()); d_e = float(np.abs(pe - ship_em).max())
-    worst = max(worst, d_b, d_e)
-    fid[reg] = {"shipped_material": om.name, "shipped_base_linear": ship_base.round(4).tolist(), "palette_base_linear": pb.round(4).tolist(),
-                "base_max_abs_delta": round(d_b, 5), "shipped_emission_linear": ship_em.round(4).tolist(),
-                "palette_emission_linear": pe.round(4).tolist(), "emission_max_abs_delta": round(d_e, 5),
-                "shipped_roughness": round(ob_.inputs["Roughness"].default_value, 3)}
-report["palette_fidelity"] = {"regions": fid, "worst_linear_delta": round(worst, 5),
-                              "rule": "palette sRGB ints -> linear (palettes.srgb_to_linear) vs the shipped Principled values; "
-                                      "deltas are 8-bit sRGB quantisation only",
-                              "roughness_note": "palettes.py carries ONE material roughness (0.87); shipped per-material "
-                                                "roughness was body 0.85 / roots 0.92 / flame 0.90 / mouth 0.60"}
-old_coll.hide_render = True
 json.dump(report, open(OUT_IMPROVED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
 print("IMPROVED_SAVED", OUT_IMPROVED, round(time.time() - T0, 1))
 
-# =========================================================================== 6. rig (skirted-totem archetype, local)
-rep = {"unit": UNIT, "source": OUT_IMPROVED, "fps": K.FPS}
+# =========================================================================== 6. rig (jawed totem)
+rep = {"unit": UNIT, "source": OUT_IMPROVED, "fps": K.FPS, "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped "
+       "from v2 (artist scope: idle + locomotion); they remain in git history with the v1 build"}
 scene.render.fps = K.FPS; scene.render.fps_base = 1.0
-
-
-def skirted_totem_bones(lo_, hi_):
-    """Prior-art bone layout (tools/blender/autorig_skirted_totem.py) as a pure function of the mesh bounds.
-    Returns [(name, head, tail, parent, connect)], parents before children; the deforming trunk base is 'base'
-    (the shipped rig called it 'root'; 'root' is now the contract's static, non-deforming origin bone)."""
-    Hh = hi_[2] - lo_[2]; Ww = hi_[0] - lo_[0]
-    cx, cy = (lo_[0] + hi_[0]) / 2, (lo_[1] + hi_[1]) / 2
-    z = lambda f: lo_[2] + Hh * f
-    out = []
-    chain = [("base", "root"), ("spine", "base"), ("chest", "spine"), ("head", "chest"), ("crown", "head")]
-    for nm, par in chain:
-        a, b = Z_FR["root" if nm == "base" else nm]
-        out.append((nm, (cx, cy, z(a)), (cx, cy, z(b)), par, nm != "base"))
-    aw = Ww * 0.5
-    for sgn, s in ((1, "L"), (-1, "R")):
-        sh = (cx + sgn * Ww * ARM_FR["shoulder_x"], cy, z(ARM_FR["z_sh"]))
-        el_ = (cx + sgn * aw * ARM_FR["elbow_x"], cy, z(ARM_FR["z_el"]))
-        tp = (cx + sgn * aw * ARM_FR["tip_x"], cy, z(ARM_FR["z_tip"]))
-        out.append(("arm." + s, sh, el_, "chest", False))
-        out.append(("blade." + s, el_, tp, "arm." + s, True))
-    for nm, (dx, dy) in (("skirt.F", (0, -1)), ("skirt.B", (0, 1)), ("skirt.L", (1, 0)), ("skirt.R", (-1, 0))):
-        out.append((nm, (cx + dx * Ww * SKIRT_FR["head_r"], cy + dy * Ww * SKIRT_FR["head_r"], z(SKIRT_FR["head_z"])),
-                    (cx + dx * Ww * SKIRT_FR["tail_r"], cy + dy * Ww * SKIRT_FR["tail_r"], z(SKIRT_FR["tail_z"])), "base", False))
-    return out
-
-
 Mw = K.MeshData(low)
 W_ = Mw.W
 lo_n, hi_n = W_.min(0), W_.max(0)
 H_new = float(hi_n[2] - lo_n[2])
-BONES = skirted_totem_bones(lo_n, hi_n)
-# the shipped rig's bone layout, for the layout comparison
-old_me = OLD_MESH.data
-OW = np.array([OLD_MESH.matrix_world @ v.co for v in old_me.vertices])
-lo_o, hi_o = OW.min(0), OW.max(0)
-H_old = float(hi_o[2] - lo_o[2]); W_old = float(hi_o[0] - lo_o[0])
-c_old = np.array([(lo_o[0] + hi_o[0]) / 2, (lo_o[1] + hi_o[1]) / 2, lo_o[2]])
-c_new = np.array([(lo_n[0] + hi_n[0]) / 2, (lo_n[1] + hi_n[1]) / 2, lo_n[2]])
-RATIO = H_new / H_old
-OLDNAME = {"base": "root"}
-lay_dev = {}
-for (nm, h, t_, p, c) in BONES:
-    ob_b = OLD_RIG.data.bones[OLDNAME.get(nm, nm)]
-    for tag, pn, po in (("head", h, ob_b.head_local), ("tail", t_, ob_b.tail_local)):
-        dn = (np.array(pn) - c_new) / H_new; do = (np.array(po) - c_old) / H_old
-        lay_dev[nm + "." + tag] = float(np.linalg.norm(dn - do))
-rep["archetype"] = {"name": "skirted_totem (local; rigkit has no such archetype -- candidate for porting)",
-                    "source": "Conquest tools/blender/autorig_skirted_totem.py fractions (read-only prior art)",
-                    "H_new": round(H_new, 4), "H_shipped_rig_mesh": round(H_old, 4), "height_ratio": round(RATIO, 5),
-                    "W_new": round(float(hi_n[0] - lo_n[0]), 4), "W_shipped": round(W_old, 4),
-                    "layout_vs_shipped_max_pct_H": round(100 * max(lay_dev.values()), 3),
-                    "layout_vs_shipped_worst": max(lay_dev, key=lay_dev.get)}
+Wd = float(hi_n[0] - lo_n[0])
+cx, cy = float(AX[0]), float(AX[1])                       # the rig stands on the waist axis
+zf = lambda f: lo_n[2] + H_new * f
+BONES = [("base", (cx, cy, zf(BASE_BONE[0])), (cx, cy, zf(BASE_BONE[1])), "root", False),
+         ("sway", (cx, cy, SWAY_Z[0] + ZOFF), (cx, cy, SWAY_Z[1] + ZOFF), "base", False),
+         ("jaw", (cx, cy, JAW_Z[0] + ZOFF), (cx, cy, JAW_Z[1] + ZOFF), "sway", False),
+         ("spine", (cx, cy, SPINE_Z0 + ZOFF), (cx, cy, zf(Z_FR["chest"][0])), "sway", False),
+         ("chest", (cx, cy, zf(Z_FR["chest"][0])), (cx, cy, zf(Z_FR["chest"][1])), "spine", True),
+         ("head", (cx, cy, zf(Z_FR["head"][0])), (cx, cy, zf(Z_FR["head"][1])), "chest", True),
+         ("crown", (cx, cy, zf(Z_FR["crown"][0])), (cx, cy, zf(Z_FR["crown"][1])), "head", True)]
+aw = Wd * 0.5
+for sgn, s in ((1, "L"), (-1, "R")):
+    sh = (cx + sgn * Wd * ARM_FR["shoulder_x"], cy, zf(ARM_FR["z_sh"]))
+    el_ = (cx + sgn * aw * ARM_FR["elbow_x"], cy, zf(ARM_FR["z_el"]))
+    tp = (cx + sgn * aw * ARM_FR["tip_x"], cy, zf(ARM_FR["z_tip"]))
+    BONES.append(("arm." + s, sh, el_, "chest", False))
+    BONES.append(("blade." + s, el_, tp, "arm." + s, True))
 arm_data = bpy.data.armatures.new(UNIT + "_rig")
 rig = bpy.data.objects.new(UNIT + "_rig", arm_data)
 scene.collection.objects.link(rig)
@@ -840,64 +1220,64 @@ for (nm, h, t_, p, c) in BONES:
     e.use_connect = c
     e.use_deform = True
 bpy.ops.object.mode_set(mode="OBJECT")
-# roll parity with the shipped bones (both built with roll 0 from head/tail): bone-local axes must match
-roll_dev = 0.0
-for (nm, h, t_, p, c) in BONES:
-    mn_ = np.array(arm_data.bones[nm].matrix_local)[:3, :3]
-    mo_ = np.array(OLD_RIG.data.bones[OLDNAME.get(nm, nm)].matrix_local)[:3, :3]
-    roll_dev = max(roll_dev, float(np.degrees(np.arccos(np.clip((np.trace(mn_.T @ mo_) - 1) / 2, -1, 1)))))
-rep["archetype"]["bone_frame_vs_shipped_max_deg"] = round(roll_dev, 4)
 DEFORM = [b[0] for b in BONES]
 J = {n: j for j, n in enumerate(DEFORM)}
 BH = {b[0]: (np.array(b[1]), np.array(b[2])) for b in BONES}
 
 # ---- analytic weights (<= 4 influences)
-x, y, z = W_[:, 0] - c_new[0], W_[:, 1] - c_new[1], W_[:, 2]
-Wd = float(hi_n[0] - lo_n[0])
-Wt = np.zeros((Mw.n, len(DEFORM)))
-# axis chain by height (2-bone z blends at each joint)
-joints = [BH["spine"][0][2], BH["chest"][0][2], BH["head"][0][2], BH["crown"][0][2]]
-axis_names = ["base", "spine", "chest", "head", "crown"]
-axis_w = np.zeros((Mw.n, 5))
+x_, y_, z_ = W_[:, 0] - cx, W_[:, 1] - cy, W_[:, 2]
+zsk = z_ - ZOFF
+rr = np.hypot(x_, y_)
+# upper-jaw field: sculpt-derived chest = 1, sculpt-derived lower teeth = 0, the rest by height; lightly smoothed
+kd_low0 = KDTree(len(LV))
+for i, p in enumerate(LV):
+    kd_low0.insert(p, i)
+kd_low0.balance()
+near0 = np.array([kd_low0.find(p)[1] for p in W_])
+u_up = smoothstep(U_Z[0], U_Z[1], zsk)
+u_up = np.where(upper[near0] & (zsk > 6.5), 1.0, u_up)
+u_up = np.where(low_m[near0] & (zsk < 9.0), 0.0, u_up)
+for _ in range(U_SMOOTH):
+    u_up = 0.5 * u_up + 0.5 * Mw.neighbour_mean(u_up[:, None])[:, 0]
+u_up = np.where(zsk > U_Z[1] + 1.0, 1.0, np.where(zsk < U_Z[0] - 1.8, 0.0, u_up))
+# lower chain: base (ground ring) -> sway -> jaw
+w_base = 1.0 - smoothstep(BASE_W[0], BASE_W[1], zsk)
+w_jaw = (1.0 - w_base) * smoothstep(JAW_W[0], JAW_W[1], zsk)
+w_sway = 1.0 - w_base - w_jaw
+# upper chain: spine -> chest -> head -> crown by height
+joints = [BH["chest"][0][2], BH["head"][0][2], BH["crown"][0][2]]
+names_up = ["spine", "chest", "head", "crown"]
+up_w = np.zeros((Mw.n, 4))
 prev = np.ones(Mw.n)
 for k_, zj in enumerate(joints):
-    s_ = smoothstep(zj - W_BAND, zj + W_BAND, z)
-    axis_w[:, k_] = prev * (1 - s_)
+    s_ = smoothstep(zj - W_BAND, zj + W_BAND, z_)
+    up_w[:, k_] = prev * (1 - s_)
     prev = prev * s_
-axis_w[:, 4] = prev
-# arms: leave the torso over |x| ARM_IN..ARM_OUT (x W), inside the arm height window; arm -> blade across the elbow
-side = np.sign(x)
-ax_ = np.abs(x)
-armness = smoothstep(ARM_IN * Wd, ARM_OUT * Wd, ax_) * smoothstep(ARM_ZMIN * H_new - W_BAND, ARM_ZMIN * H_new + W_BAND, z) * \
-    (1 - smoothstep(ARM_ZMAX * H_new - W_BAND, ARM_ZMAX * H_new + W_BAND, z))
-elbow_x = abs(BH["arm.L"][1][0] - c_new[0])
+up_w[:, 3] = prev
+# arms (v1 rule) and the hanging lower arms + hands (v1 HAND_MIX)
+side_ = np.sign(x_)
+ax_ = np.abs(x_)
+armness = smoothstep(ARM_IN * Wd, ARM_OUT * Wd, ax_) * smoothstep(ARM_ZMIN * H_new - W_BAND, ARM_ZMIN * H_new + W_BAND, z_) * \
+    (1 - smoothstep(ARM_ZMAX * H_new - W_BAND, ARM_ZMAX * H_new + W_BAND, z_))
+elbow_x = abs(BH["arm.L"][1][0] - cx)
 bladeness = smoothstep(elbow_x - 1.2 * W_BAND, elbow_x + 1.2 * W_BAND, ax_)
-# skirt: 4 sectors by angle, ramp in by radius from the waist axis, fade out above the skirt
-dx_, dy_ = W_[:, 0] - AXIS[0], W_[:, 1] - AXIS[1]
-rr = np.hypot(dx_, dy_)
-skirtness = smoothstep(SKIRT_R[0], SKIRT_R[1], rr) * (1 - smoothstep(SKIRT_ZTOP[0], SKIRT_ZTOP[1], z))
-ang = np.arctan2(dy_, dx_)
-sec = {"skirt.L": 0.0, "skirt.B": math.pi / 2, "skirt.R": math.pi, "skirt.F": -math.pi / 2}
-sw = np.stack([np.maximum(np.cos(ang - a0), 0.0) ** 2 for a0 in sec.values()], 1)
-sw /= np.maximum(sw.sum(1), 1e-9)[:, None]
-# lower arms + spiked hands (below the arm window, outside the skirt): the shipped heat weights' own-side mix
-handness = smoothstep(HAND_R[0], HAND_R[1], rr) * smoothstep(ROOTS_ZLOW - 0.5, ROOTS_ZLOW + 0.5, z) * \
-    (1 - smoothstep(HAND_ZTOP[0], HAND_ZTOP[1], z)) * (1 - armness) * (1 - smoothstep(HAND_Y - 0.8, HAND_Y + 0.8, np.abs(dy_)))
-skirtness = skirtness * (1 - handness)
+handness = smoothstep(HAND_R[0], HAND_R[1], rr) * smoothstep(HAND_ZLOW - 0.5 + ZOFF, HAND_ZLOW + 0.5 + ZOFF, z_) * \
+    (1 - smoothstep(HAND_ZTOP[0] + ZOFF, HAND_ZTOP[1] + ZOFF, z_)) * (1 - armness) * (1 - smoothstep(HAND_Y - 0.8, HAND_Y + 0.8, np.abs(y_)))
 rest_w = 1 - armness - handness
-for k_, nm in enumerate(axis_names):
-    Wt[:, J[nm]] += axis_w[:, k_] * rest_w * (1 - skirtness)
-for k_, nm in enumerate(sec):
-    Wt[:, J[nm]] += sw[:, k_] * skirtness * rest_w
-L_ = side > 0
+Wt = np.zeros((Mw.n, len(DEFORM)))
+for k_, nm in enumerate(names_up):
+    Wt[:, J[nm]] += up_w[:, k_] * u_up * rest_w
+Wt[:, J["base"]] += w_base * (1 - u_up) * rest_w
+Wt[:, J["sway"]] += w_sway * (1 - u_up) * rest_w
+Wt[:, J["jaw"]] += w_jaw * (1 - u_up) * rest_w
 Wt[:, J["spine"]] += handness * HAND_MIX["spine"]
+L_ = side_ > 0
 for sgn_m, s in ((L_, "L"), (~L_, "R")):
     Wt[sgn_m, J["arm." + s]] += (armness * (1 - bladeness) + handness * HAND_MIX["arm"])[sgn_m]
     Wt[sgn_m, J["blade." + s]] += (armness * bladeness + handness * HAND_MIX["blade"])[sgn_m]
 Wt = np.where(Wt > 1e-4, Wt, 0.0)
-# keep the 4 largest
 if (Wt > 0).sum(1).max() > 4:
-    idx = np.argsort(-Wt, 1)[:, 4:]
+    idx = np.argsort(-Wt, 1, kind="stable")[:, 4:]
     np.put_along_axis(Wt, idx, 0.0, 1)
 Wt /= np.maximum(Wt.sum(1), 1e-30)[:, None]
 low.vertex_groups.clear()
@@ -909,72 +1289,142 @@ infl = (Wt > 0).sum(1)
 rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 0).sum()),
                   "sum_dev_max": float(np.abs(Wt.sum(1) - 1.0).max()),
                   "per_bone_dominant": {n: int((np.argmax(Wt, 1) == j).sum()) for j, n in enumerate(DEFORM)},
-                  "rule": ("axis base/spine/chest/head/crown by height (smoothstep +-W_BAND at each joint); arms claim "
-                           "|x| > ARM_IN..ARM_OUT x W inside ARM_ZMIN..ARM_ZMAX x H, arm -> blade across the elbow; skirt "
-                           "sectors F/B/L/R by cos^2 of the angle about the waist axis, ramped in over SKIRT_R and out over "
-                           "SKIRT_ZTOP; lower arms + hands (HAND_R, above ROOTS_ZLOW, below HAND_ZTOP) take HAND_MIX = the shipped heat weights' own-side mix; the skirt PEAKS (the lore's 'bottom leg spikes') ride the skirt sectors -- they are the legs")}
+                  "ground_ring_base_weight_min": round(float(Wt[z_ < lo_n[2] + 0.05, J["base"]].min()), 4),
+                  "rule": "upper-jaw field u (sculpt-derived chest = 1, sculpt-derived lower teeth = 0, else smoothstep U_Z, "
+                          "U_SMOOTH neighbour passes): u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by "
+                          "height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"}
 low.parent = rig
 low.matrix_parent_inverse = Matrix.Identity(4)
 amod = low.modifiers.new("Armature", "ARMATURE"); amod.object = rig
 
-# ---- clips: the shipped fcurves, key for key ('root' -> 'base', location keys x RATIO)
+# ---- clips: closed-form curves keyed on every frame (the last frame equals the first: seam 0 by construction)
 for pb in rig.pose.bones:
-    pb.rotation_mode = "XYZ"
-old_acts = {}
-# the appended OLD_RIG object pulled its NLA actions in: gather the shipped actions by name
-for a in sorted(bpy.data.actions, key=lambda a_: a_.name):
-    base_nm = a.name.split(".")[0]
-    if base_nm in ("idle", "walk", "attack", "hit", "death") and base_nm not in old_acts:
-        old_acts[base_nm] = a
-for nm_, a in old_acts.items():
-    a.name = "shipped_" + nm_
-CLIPS = ["idle", "walk", "attack", "hit", "death"]
-LOOPS = {"idle", "walk"}
-clip_rep = {}
+    pb.rotation_mode = "QUATERNION"
+REST3 = {b.name: Matrix([list(r_[:3]) for r_ in b.matrix_local[:3]]) for b in arm_data.bones}
 
 
-def copy_fcurves(old, new, target):
-    n_fc = 0
-    for fc in K.action_fcurves(old):
-        dp = fc.data_path
-        for nn_, on_ in OLDNAME.items():          # OLDNAME maps new -> shipped; the carry goes shipped -> new
-            dp = dp.replace('pose.bones["%s"]' % on_, 'pose.bones["%s"]' % nn_)
-        sc_ = RATIO if dp.endswith(".location") else 1.0
-        nfc = new.fcurve_ensure_for_datablock(target, dp, index=fc.array_index, group_name=dp.split('"')[1] if '"' in dp else "")
-        nfc.keyframe_points.clear()
-        nfc.keyframe_points.add(len(fc.keyframe_points))
-        for kp, nk in zip(fc.keyframe_points, nfc.keyframe_points):
-            nk.co = (kp.co[0], kp.co[1] * sc_)
-            nk.interpolation = kp.interpolation
-            nk.easing = kp.easing
-            nk.handle_left_type = kp.handle_left_type; nk.handle_right_type = kp.handle_right_type
-            nk.handle_left = (kp.handle_left[0], kp.handle_left[1] * sc_)
-            nk.handle_right = (kp.handle_right[0], kp.handle_right[1] * sc_)
-        nfc.extrapolation = fc.extrapolation
-        nfc.update()
-        n_fc += 1
-    return n_fc
+def world_rot(bone, axis, deg_):
+    """pose quaternion (bone local) for a rotation of deg_ about a WORLD axis at the bone head"""
+    B = REST3[bone]
+    Rw = Matrix.Rotation(math.radians(deg_), 3, Vector(axis))
+    return (B.inverted() @ Rw @ B).to_quaternion()
 
 
-NEW_ACTS = {}
-for cn in CLIPS:
-    old = old_acts[cn]
-    act = bpy.data.actions.new(cn)
+def world_loc(bone, v):
+    """pose location (bone local) for a WORLD translation v"""
+    return REST3[bone].inverted() @ Vector(v)
+
+
+def ease(t):
+    t = min(max(t, 0.0), 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def chomp_curve(f):
+    """jaw gap offset (units, + = wider than rest) for idle frame f: wind-up -> snap shut -> hold -> ease back"""
+    a0, a1 = CHOMP["open_f"]; s0, s1 = CHOMP["shut_f"]; h0, h1 = CHOMP["hold_f"]; r0, r1 = CHOMP["rest_f"]
+    shut = -(GAP_REST - CHOMP_SHUT_GAP)
+    if f <= a0:
+        return 0.0
+    if f <= a1:
+        return CHOMP_OPEN * ease((f - a0) / (a1 - a0))
+    if f <= s1:
+        u = (f - s0) / (s1 - s0)
+        return CHOMP_OPEN + (shut - CHOMP_OPEN) * (u ** 2)          # accelerating snap
+    if f <= h1:
+        return shut
+    if f <= r1:
+        return shut * (1 - ease((f - r0) / (r1 - r0)))
+    return 0.0
+
+
+# rest gap between the facing front teeth (upper minima vs lower maxima nearest in xy)
+lo_tips = np.array([LV[i] for i in teeth_lo]) if teeth_lo else np.zeros((0, 3))
+up_tips = np.array([LV[i] for i in teeth_up]) if teeth_up else np.zeros((0, 3))
+pairs = []
+for p in up_tips:
+    if len(lo_tips) == 0:
+        break
+    dxy_ = np.hypot(lo_tips[:, 0] - p[0], lo_tips[:, 1] - p[1])
+    j = int(np.argmin(dxy_))
+    if dxy_[j] < 1.2 and p[2] > lo_tips[j, 2]:
+        pairs.append((p, lo_tips[j], float(dxy_[j])))
+pairs.sort(key=lambda q: (q[0][2] - q[1][2]))
+GAP_REST = float(pairs[0][0][2] - pairs[0][1][2]) if pairs else 0.8
+rep["teeth_pairs"] = [{"upper": q[0].round(3).tolist(), "lower": q[1].round(3).tolist(), "xy_offset": round(q[2], 3),
+                       "gap": round(float(q[0][2] - q[1][2]), 3)} for q in pairs]
+
+
+def key_clip(name, n_frames, pose_fn):
+    act = bpy.data.actions.new(name)
     act.use_fake_user = True
     K.assign_action(rig, act)
-    nfc = copy_fcurves(old, act, rig)
-    f0, f1 = old.frame_range
+    for f in range(1, n_frames + 1):
+        scene.frame_set(f)
+        for pb in rig.pose.bones:
+            pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0)
+        pose = pose_fn(f, (f - 1) / (n_frames - 1))
+        for bn, (loc, q) in pose.items():
+            pb = rig.pose.bones[bn]
+            if loc is not None:
+                pb.location = loc
+            if q is not None:
+                pb.rotation_quaternion = q
+        for bn in DEFORM:
+            if bn == "base":
+                continue                       # the ground ring never moves
+            pb = rig.pose.bones[bn]
+            pb.keyframe_insert("location", frame=f, group=bn)
+            pb.keyframe_insert("rotation_quaternion", frame=f, group=bn)
+    for fc in K.action_fcurves(act):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "LINEAR"
     act.use_frame_range = True
-    act.frame_start, act.frame_end = f0, f1
-    act.use_cyclic = cn in LOOPS
-    NEW_ACTS[cn] = act
-    clip_rep[cn] = {"fcurves": nfc, "frames": [int(f0), int(f1)], "cyclic": cn in LOOPS,
-                    "keys": sorted(set(int(round(k.co[0])) for fc in K.action_fcurves(act) for k in fc.keyframe_points))}
+    act.frame_start, act.frame_end = 1, n_frames
+    act.use_cyclic = True
+    return act
+
+
+def qmul(*qs):
+    out = Quaternion()
+    for q in qs:
+        out = out @ q
+    return out
+
+
+def idle_pose(f, t):
+    g = chomp_curve(f)                                   # + = open wider
+    up = CHOMP_UPPER * g; dn = (1 - CHOMP_UPPER) * g
+    bob = IDLE_BOB * math.sin(2 * math.pi * t)
+    bite = max(0.0, -g) / max(GAP_REST - CHOMP_SHUT_GAP, 1e-6)          # 0..1 on the bite
+    windup = max(0.0, g) / max(CHOMP_OPEN, 1e-6)
+    P = {"spine": (world_loc("spine", (0, 0, up + bob)), None),
+         "jaw": (world_loc("jaw", (0, 0, -dn)), None),
+         "head": (None, world_rot("head", (1, 0, 0), -3.0 * windup + 2.0 * bite)),
+         "crown": (None, world_rot("crown", (0, 1, 0), 2.0 * math.sin(2 * math.pi * t)))}
+    for s, sg in (("L", 1), ("R", -1)):
+        flare = CHOMP_ARMS * (bite - 0.5 * windup)
+        P["arm." + s] = (None, world_rot("arm." + s, (0, 1, 0), -sg * (flare + 2.0 * math.sin(2 * math.pi * t))))
+        P["blade." + s] = (None, world_rot("blade." + s, (0, 1, 0), -sg * 0.6 * flare))
+    return P
+
+
+def walk_pose(f, t):
+    w = 2 * math.pi * t
+    lean = LEAN_DEG + LEAN_OSC * math.sin(w)
+    P = {"sway": (None, qmul(world_rot("sway", (0, 1, 0), GLIDE_ROLL * math.sin(w)), world_rot("sway", (1, 0, 0), lean))),
+         "spine": (world_loc("spine", (0, 0, GLIDE_BOB * math.sin(2 * w))), None),
+         "head": (None, world_rot("head", (1, 0, 0), -0.5 * lean)),
+         "crown": (None, world_rot("crown", (1, 0, 0), -CROWN_TRAIL - 2.0 * math.sin(w - 0.8)))}
+    for s, sg in (("L", 1), ("R", -1)):
+        P["arm." + s] = (None, qmul(world_rot("arm." + s, (0, 0, 1), sg * (ARM_TRAIL + ARM_FLUTTER * math.sin(w - 0.6))),
+                                    world_rot("arm." + s, (0, 1, 0), -sg * 3.0 * math.sin(2 * w - 1.0))))
+        P["blade." + s] = (None, world_rot("blade." + s, (0, 0, 1), sg * (0.5 * ARM_TRAIL + ARM_FLUTTER * math.sin(w - 1.4))))
+    return P
+
+
+NEW_ACTS = {"idle": key_clip("idle", IDLE_N, idle_pose), "walk": key_clip("walk", WALK_N, walk_pose)}
 rig.animation_data.action = None
-K.assign_action(OLD_RIG, None)
-if OLD_RIG.animation_data:
-    for tr in OLD_RIG.animation_data.nla_tracks:
-        tr.mute = True
 
 
 def eval_coords(ob):
@@ -987,117 +1437,74 @@ def eval_coords(ob):
     return co.reshape(-1, 3) @ M_[:3, :3].T + M_[:3, 3]
 
 
-# correspondences new -> shipped (rest, normalised by height about each floor centre)
-OWn = (OW - c_old) / H_old
-kd_o = KDTree(len(OWn))
-for i, p in enumerate(OWn):
-    kd_o.insert(p, i)
-kd_o.balance()
-Wn = (W_ - c_new) / H_new
-corr = np.array([kd_o.find(p)[1] for p in Wn])
-corr_d = np.array([kd_o.find(p)[2] for p in Wn])
-contact = W_[:, 2] < 0.005 * H_new + lo_n[2]
-OLD_VG = [g_.name for g_ in OLD_MESH.vertex_groups]
-OLD_WT = np.zeros((len(old_me.vertices), len(OLD_VG)))
-for v_ in old_me.vertices:
-    for g_ in v_.groups:
-        OLD_WT[v_.index, g_.group] = g_.weight
-rest_new = W_.copy()
-rest_old = OW.copy()
-bone_pairs = [(nm, OLDNAME.get(nm, nm)) for nm in DEFORM]
-for cn in CLIPS:
-    act = NEW_ACTS[cn]; old = old_acts[cn]
-    K.assign_action(rig, act); K.assign_action(OLD_RIG, old)
-    f0, f1 = int(round(act.frame_range[0])), int(round(act.frame_range[1]))
+# tooth-tip vertex handles on the final mesh (nearest low vertices to the rest pair)
+kd_w = KDTree(len(W_))
+for i, p in enumerate(W_):
+    kd_w.insert(p, i)
+kd_w.balance()
+pair_v = [(kd_w.find(Vector(q[0]))[1], kd_w.find(Vector(q[1]))[1]) for q in pairs[:2]]
+ground = W_[:, 2] < lo_n[2] + 0.05
+clip_rep = {}
+for cn, act in NEW_ACTS.items():
+    K.assign_action(rig, act)
+    f0, f1 = 1, int(round(act.frame_range[1]))
     first = last = None
-    bone_pos = bone_rot = 0.0
-    surf = []
-    slide_new = slide_old = 0.0
-    minz = 1e9
-    root_off = 0.0
-    base_xy = 0.0
+    gaps, gslide, gz, rootoff, spine_dz, jaw_dz, sway_deg = [], 0.0, 0.0, 0.0, [], [], []
     for f in range(f0, f1 + 1):
         scene.frame_set(f)
-        C = eval_coords(low); CO = eval_coords(OLD_MESH)
+        C = eval_coords(low)
         if f == f0:
             first = C
         if f == f1:
             last = C
-        for nn_, on_ in bone_pairs:
-            pn = np.array(rig.pose.bones[nn_].matrix); po = np.array(OLD_RIG.pose.bones[on_].matrix)
-            hp = (pn[:3, 3] - c_new) / H_new; ho = (po[:3, 3] - c_old) / H_old
-            bone_pos = max(bone_pos, float(np.linalg.norm(hp - ho)))
-            Rn = pn[:3, :3] / np.linalg.norm(pn[:3, :3], axis=0); Ro = po[:3, :3] / np.linalg.norm(po[:3, :3], axis=0)
-            bone_rot = max(bone_rot, float(np.degrees(np.arccos(np.clip((np.trace(Rn.T @ Ro) - 1) / 2, -1, 1)))))
-        dn = (C - rest_new) / H_new
-        do = (CO[corr] - rest_old[corr]) / H_old
-        surf.append(np.linalg.norm(dn - do, axis=1))
-        slide_new = max(slide_new, float(np.linalg.norm((C - rest_new)[contact, :2], axis=1).max()))
-        old_contact = rest_old[:, 2] < 0.005 * H_old + lo_o[2]
-        slide_old = max(slide_old, float(np.linalg.norm((CO - rest_old)[old_contact, :2], axis=1).max()) * RATIO)
-        minz = min(minz, float(C[:, 2].min()))
-        root_off = max(root_off, (rig.matrix_world @ rig.pose.bones["root"].head).length)
-        base_xy = max(base_xy, float(np.linalg.norm(np.array(rig.pose.bones["base"].head)[:2] - np.array(arm_data.bones["base"].head_local)[:2])))
-    surf_v = np.max(np.stack(surf), axis=0)
-    surf = np.concatenate(surf)
-    worst_v = np.argsort(-surf_v)[:5]
+        if pair_v:
+            gaps.append(min(float(C[a, 2] - C[b, 2]) for a, b in pair_v))
+        gslide = max(gslide, float(np.linalg.norm((C - W_)[ground, :2], axis=1).max()))
+        gz = max(gz, float(np.abs(C[ground, 2] - W_[ground, 2]).max()))
+        rootoff = max(rootoff, (rig.matrix_world @ rig.pose.bones["root"].head).length)
+        spine_dz.append(float((rig.pose.bones["spine"].head - arm_data.bones["spine"].head_local)[2]))
+        jaw_dz.append(float((rig.pose.bones["jaw"].head - arm_data.bones["jaw"].head_local)[2]))
+        ys_ = rig.pose.bones["spine"].matrix.to_3x3() @ Vector((0, 1, 0))
+        sway_deg.append(math.degrees(math.atan2(-ys_[1], ys_[2])))
     seam = float(np.linalg.norm(first - last, axis=1).max())
-    clip_rep[cn].update({
-        "seam_mm_sculpt_units_x1000": round(seam * 1000, 4),
-        "seam_pct_H": round(100 * seam / H_new, 5),
-        "contact_slide_max": round(slide_new, 4), "contact_slide_pct_H": round(100 * slide_new / H_new, 3),
-        "shipped_contact_slide_max_scaled": round(slide_old, 4),
-        "min_z": round(minz, 4), "min_z_pct_H": round(100 * minz / H_new, 3),
-        "root_offset_max": round(root_off, 8), "base_xy_drift_max": round(base_xy, 6),
-        "vs_shipped": {"bone_head_max_pct_H": round(100 * bone_pos, 4), "bone_rot_max_deg": round(bone_rot, 4),
-                       "surface_motion_dev_p50_pct_H": round(100 * float(np.percentile(surf, 50)), 3),
-                       "surface_motion_dev_p95_pct_H": round(100 * float(np.percentile(surf, 95)), 3),
-                       "surface_motion_dev_max_pct_H": round(100 * float(surf.max()), 3),
-                       "worst_vertices": [{"xyz": W_[i].round(2).tolist(), "dev_pct_H": round(100 * float(surf_v[i]), 2),
-                                           "new_bones": {DEFORM[j]: round(float(Wt[i, j]), 2) for j in np.nonzero(Wt[i] > 0.05)[0]},
-                                           "shipped_bones": {OLD_VG[j]: round(float(OLD_WT[corr[i], j]), 2)
-                                                             for j in np.nonzero(OLD_WT[corr[i]] > 0.05)[0]},
-                                           "corr_dist": round(float(corr_d[i] * H_new), 3)} for i in worst_v]}})
-    print("CLIP", cn, json.dumps(clip_rep[cn]))
+    row = {"frames": [f0, f1], "loop_frames": f1 - f0, "seconds": round((f1 - f0) / K.FPS, 3), "cyclic": True,
+           "seam_units_x1000": round(seam * 1000, 4), "ground_ring_slide_max": round(gslide, 6), "ground_ring_lift_max": round(gz, 6),
+           "root_offset_max": round(rootoff, 8),
+           "spine_dz_range": [round(min(spine_dz), 4), round(max(spine_dz), 4)], "jaw_dz_range": [round(min(jaw_dz), 4), round(max(jaw_dz), 4)],
+           "upper_body_forward_lean_deg_range": [round(min(sway_deg), 2), round(max(sway_deg), 2)]}
+    if gaps:
+        row["front_teeth_gap"] = {"rest": round(gaps[0], 4), "max_open": round(max(gaps), 4), "min_shut": round(min(gaps), 4),
+                                  "frame_open": int(np.argmax(gaps)) + f0, "frame_shut": int(np.argmin(gaps)) + f0,
+                                  "travel": round(max(gaps) - min(gaps), 4), "travel_pct_H": round(100 * (max(gaps) - min(gaps)) / H_new, 3)}
+    clip_rep[cn] = row
+    print("CLIP", cn, json.dumps(row))
 rep["clips"] = clip_rep
 rep["clip_rules"] = {
-    "carry": "shipped fcurves copied key-for-key (co, handles, interpolation); pose.bones['root'] -> ['base']; location keys x H_new/H_old",
-    "seam": "max vertex distance, first vs last frame of the clip (loops must close; one-shots report their end pose)",
-    "slide": "max horizontal displacement of ground-contact vertices (rest z < 0.5% H) over the clip (a skirted glider: the "
-             "skirt-flap rotation moves the hem; the shipped value is quoted beside it, scaled to the new height)",
-    "in_place": "contract root never moves (root_offset_max); 'base' offsets are the shipped clips' own trunk moves (the "
-                "prior art keyed root.location in BONE space: idle/walk 'bob' is a forward sway along -Y, hit a lift, death a drop)",
-    "vs_shipped": "per frame: pose-bone heads (normalised by height about each floor centre) and rotations vs the shipped rig; "
-                  "surface motion = each new vertex's displacement vs its nearest shipped vertex's displacement (/H)",
-    "correspondence_rest_distance_p95_pct_H": round(100 * float(np.percentile(corr_d, 95)), 3)}
+    "idle": "float bob (IDLE_BOB, 1 per loop) + ONE chomp per loop: wind-up open CHOMP_OPEN over open_f, accelerating snap to a "
+            "tip-to-tip gap CHOMP_SHUT_GAP over shut_f, hold, ease back over rest_f; the upper jaw (spine) does CHOMP_UPPER of "
+            "the travel, the lower jaw (jaw bone) the rest; arms flare CHOMP_ARMS on the bite",
+    "walk": "GLIDE: no stepping; sway leans the figure forward LEAN_DEG (+-LEAN_OSC) with GLIDE_ROLL side drift, float bob "
+            "GLIDE_BOB (2 per loop), arms trail ARM_TRAIL + flutter, crown trails CROWN_TRAIL; the ground ring (base) is never "
+            "keyed -- in place, the game moves the unit",
+    "keys": "every frame, LINEAR, closed-form curves (integer harmonics / beats that end at rest): last frame == first frame"}
 rig.animation_data.action = None
 for pb in rig.pose.bones:
-    pb.location = (0, 0, 0); pb.rotation_euler = (0, 0, 0)
+    pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0)
 scene.frame_set(1)
-scene.frame_start, scene.frame_end = 1, 48
+scene.frame_start, scene.frame_end = 1, IDLE_N
 rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, "deform": b.use_deform,
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rig["conquest_rig"] = "duskmaw v2: skirted totem (base/spine/chest/head/crown, arm+blade x2, skirt F/B/L/R) + contract root"
-low["conquest_clips"] = CLIPS
-low["conquest_clip_status"] = "the 5 shipped (artist-approved) clips, carried key-for-key onto the rebuilt rig"
-
-# remove the shipped reference data before saving
-for a in list(old_acts.values()):
-    bpy.data.actions.remove(a)
-for o in (OLD_MESH, OLD_RIG):
-    d_ = o.data
-    bpy.data.objects.remove(o, do_unlink=True)
-    if d_.users == 0:
-        (bpy.data.meshes if isinstance(d_, bpy.types.Mesh) else bpy.data.armatures).remove(d_)
-bpy.data.collections.remove(old_coll)
+rig["conquest_rig"] = "duskmaw v2: jawed totem (base/sway/jaw | spine/chest/head/crown, arm+blade x2) + contract root"
+low["conquest_clips"] = list(NEW_ACTS)
+low["conquest_clip_status"] = "v2: idle (float + chomp) and walk (glide), authored; v1's carried clips live in git history"
+for a in list(bpy.data.actions):
+    if a.name not in NEW_ACTS:
+        bpy.data.actions.remove(a)
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)
-for a in list(bpy.data.actions):
-    if a.name not in CLIPS:
-        bpy.data.actions.remove(a)
 bpy.context.preferences.filepaths.save_version = 0
 os.makedirs(os.path.dirname(OUT_RIGGED), exist_ok=True)
 set_tex_paths("//../improved/textures/")
@@ -1118,7 +1525,9 @@ rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": rou
 rig.animation_data.action = None
 rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
+rep["digest_rig"] = hashlib.sha256(np.round(Wt, 6).astype(np.float32).tobytes() +
+                                   np.array([[v for b in rep["bones"] for v in b["head"] + b["tail"]]], np.float32).tobytes()).hexdigest()[:16]
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
-print("RIG_DONE", json.dumps({k: rep[k] for k in ("bone_count", "weights", "archetype", "seconds")}))
+print("RIG_DONE", json.dumps({k: rep[k] for k in ("bone_count", "weights", "seconds")}))
 sys.stdout.flush()
 os._exit(0)

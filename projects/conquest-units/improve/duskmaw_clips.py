@@ -1,12 +1,11 @@
-"""Duskmaw animated preview mp4s (copy of render_animated.py, which this lane may not edit): idle, walk AND attack,
-three-quarter view,
+"""Duskmaw v2 animated preview mp4s (copy of render_animated.py, which this lane may not edit): idle (float + CHOMP, shot from
+near the front so the maw reads) and walk (the GLIDE, shot from the side-front so the forward lean reads),
 the SAME lighting as render_improved.py (key/fill/rim suns + grey world, Standard view
 transform, dark floor). In-memory only; never saves the blend.
 
     blender --background <rigged/duskmaw.blend> --factory-startup --python duskmaw_clips.py -- <out_dir> [res] [sheet] [clips]
 
-Writes <out_dir>/<unit>_{idle,walk,attack}.mp4 (H.264, 24 fps; attack is a one-shot that starts and ends at rest,
-played 3x back to back). Loops play by adding a
+Writes <out_dir>/<unit>_{idle,walk}.mp4 (H.264, 24 fps). Loops play by adding a
 CYCLES modifier to every fcurve in memory (the clip's last frame == its first, so the period
 is the clip's cycle length). Camera framing covers the union of the clip's extents so the
 whole motion stays in shot; the camera and lights never move.
@@ -92,7 +91,10 @@ def extents(n_frames):
 
 
 SHEET = "sheet" in argv
-CLIPS = [c for c in ("idle", "walk", "attack") if c in (argv[3].split(",") if len(argv) > 3 else ("idle", "walk", "attack"))]
+CLIPS = [c for c in ("idle", "walk") if c in (argv[3].split(",") if len(argv) > 3 else ("idle", "walk"))]
+VIEW = {"idle": (15.0, 8.0), "walk": (65.0, 10.0), "idle_maw": (0.0, 4.0)}   # camera yaw from the front, elevation (deg)
+# (tag, action): idle_maw = the idle clip framed on the mouth band (the chomp up close)
+SHOTS = [(c, c) for c in CLIPS] + ([("idle_maw", "idle")] if "idle" in CLIPS else [])
 
 
 def write_sheet(clip, N):
@@ -130,8 +132,8 @@ def write_sheet(clip, N):
 
 
 floor_built = False
-for clip in CLIPS:
-    act = bpy.data.actions.get(clip)
+for clip, act_name in SHOTS:
+    act = bpy.data.actions.get(act_name)
     if act is None:
         print("NO CLIP", clip); continue
     for fc in K.action_fcurves(act):
@@ -142,19 +144,21 @@ for clip in CLIPS:
     if nt is not None:
         K.assign_action(nt, act if has_nt else None)
     N = int(round(act.frame_range[1] - act.frame_range[0]))
-    loops = max(3, math.ceil(72 / N)) if clip in ("walk", "attack") else 2
+    loops = max(3, math.ceil(96 / N))
     lo, hi = extents(N)
     print("EXTENTS", clip, tuple(round(v, 3) for v in lo), tuple(round(v, 3) for v in hi))
     size = hi - lo
     centre = (lo + hi) / 2
     radius = max(size.length / 2, 1e-3)
+    if clip == "idle_maw":
+        centre = Vector((centre.x, centre.y, lo.z + 0.26 * size.z)); radius = 0.2 * size.z
     if not floor_built:
         R = radius * 6
         fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
         floor.location = (centre.x, centre.y, 0.0)
         floor_built = True
     cam_d.clip_start = radius * 0.01; cam_d.clip_end = radius * 100
-    a, e = math.radians(40.0), math.radians(15.0)
+    a, e = math.radians(VIEW[clip][0]), math.radians(VIEW[clip][1])
     dist = radius / math.sin(half_fov) * 1.08
     d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
     cam.location = centre + d * dist

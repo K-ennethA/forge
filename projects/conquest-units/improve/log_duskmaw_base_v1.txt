@@ -1,0 +1,40 @@
+﻿# one-time v1 baseline (2026-09-26): duskmaw_base_measure.py on the v1 build (master HEAD improved/duskmaw.blend, byte copy) + the v2 p2 preview
+{
+ "rule": "    blender --background --factory-startup --python duskmaw_base_measure.py -- <out.json> <label>=<blend> [...]",
+ "blends": {
+  "v1_improved": {
+   "file": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\v1\\duskmaw.blend",
+   "height": 30.8918,
+   "floor_ring_radius": {
+    "mean": 2.8534,
+    "min": 0.0,
+    "max": 11.4366,
+    "cv": 1.4937
+   },
+   "floor_contact_bins_pct": 5.56,
+   "rim_z": {
+    "mean": 1.5334,
+    "std": 0.4423,
+    "min": 0.6409,
+    "max": 2.6162
+   }
+  },
+  "p2_preview": {
+   "file": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\p2\\prev.blend",
+   "height": 30.9171,
+   "floor_ring_radius": {
+    "mean": 8.2077,
+    "min": 7.831,
+    "max": 9.0325,
+    "cv": 0.039
+   },
+   "floor_contact_bins_pct": 100.0,
+   "rim_z": {
+    "mean": 0.4063,
+    "std": 0.0298,
+    "min": 0.3329,
+    "max": 0.4563
+   }
+  }
+ }
+}

@@ -2,633 +2,131 @@
  "unit": "duskmaw",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.blend",
  "fps": 24,
- "archetype": {
-  "name": "skirted_totem (local; rigkit has no such archetype -- candidate for porting)",
-  "source": "Conquest tools/blender/autorig_skirted_totem.py fractions (read-only prior art)",
-  "H_new": 30.8918,
-  "H_shipped_rig_mesh": 30.7879,
-  "height_ratio": 1.00337,
-  "W_new": 28.9624,
-  "W_shipped": 28.8037,
-  "layout_vs_shipped_max_pct_H": 0.097,
-  "layout_vs_shipped_worst": "blade.L.tail",
-  "bone_frame_vs_shipped_max_deg": 0.0626
- },
+ "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped from v2 (artist scope: idle + locomotion); they remain in git history with the v1 build",
  "weights": {
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "base": 1095,
-   "spine": 4314,
-   "chest": 849,
-   "head": 1671,
-   "crown": 614,
-   "arm.L": 53,
-   "blade.L": 330,
-   "arm.R": 54,
-   "blade.R": 332,
-   "skirt.F": 1310,
-   "skirt.B": 1809,
-   "skirt.L": 1634,
-   "skirt.R": 1635
+   "base": 931,
+   "sway": 959,
+   "jaw": 1773,
+   "spine": 4774,
+   "chest": 3082,
+   "head": 2140,
+   "crown": 803,
+   "arm.L": 71,
+   "blade.L": 402,
+   "arm.R": 66,
+   "blade.R": 411
   },
-  "rule": "axis base/spine/chest/head/crown by height (smoothstep +-W_BAND at each joint); arms claim |x| > ARM_IN..ARM_OUT x W inside ARM_ZMIN..ARM_ZMAX x H, arm -> blade across the elbow; skirt sectors F/B/L/R by cos^2 of the angle about the waist axis, ramped in over SKIRT_R and out over SKIRT_ZTOP; lower arms + hands (HAND_R, above ROOTS_ZLOW, below HAND_ZTOP) take HAND_MIX = the shipped heat weights' own-side mix; the skirt PEAKS (the lore's 'bottom leg spikes') ride the skirt sectors -- they are the legs"
+  "ground_ring_base_weight_min": 1.0,
+  "rule": "upper-jaw field u (sculpt-derived chest = 1, sculpt-derived lower teeth = 0, else smoothstep U_Z, U_SMOOTH neighbour passes): u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"
  },
+ "teeth_pairs": [
+  {
+   "upper": [
+    4.711,
+    -2.097,
+    8.897
+   ],
+   "lower": [
+    4.544,
+    -2.142,
+    7.923
+   ],
+   "xy_offset": 0.172,
+   "gap": 0.974
+  },
+  {
+   "upper": [
+    -4.104,
+    -2.026,
+    8.905
+   ],
+   "lower": [
+    -4.575,
+    -2.114,
+    7.838
+   ],
+   "xy_offset": 0.479,
+   "gap": 1.067
+  }
+ ],
  "clips": {
   "idle": {
-   "fcurves": 78,
    "frames": [
     1,
-    48
+    49
    ],
+   "loop_frames": 48,
+   "seconds": 2.0,
    "cyclic": true,
-   "keys": [
-    1,
-    13,
-    25,
-    37,
-    48
-   ],
-   "seam_mm_sculpt_units_x1000": 0.0,
-   "seam_pct_H": 0.0,
-   "contact_slide_max": 0.2577,
-   "contact_slide_pct_H": 0.834,
-   "shipped_contact_slide_max_scaled": 0.2512,
-   "min_z": 0.0,
-   "min_z_pct_H": 0.0,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
    "root_offset_max": 0.0,
-   "base_xy_drift_max": 0.308918,
-   "vs_shipped": {
-    "bone_head_max_pct_H": 0.0547,
-    "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.019,
-    "surface_motion_dev_p95_pct_H": 0.171,
-    "surface_motion_dev_max_pct_H": 1.451,
-    "worst_vertices": [
-     {
-      "xyz": [
-       -6.23,
-       -4.29,
-       26.05
-      ],
-      "dev_pct_H": 1.45,
-      "new_bones": {
-       "head": 0.05,
-       "crown": 0.95
-      },
-      "shipped_bones": {
-       "chest": 0.15,
-       "head": 0.56,
-       "crown": 0.12,
-       "arm.R": 0.15
-      },
-      "corr_dist": 0.04
-     },
-     {
-      "xyz": [
-       -5.97,
-       -4.15,
-       26.14
-      ],
-      "dev_pct_H": 1.43,
-      "new_bones": {
-       "crown": 0.97
-      },
-      "shipped_bones": {
-       "chest": 0.15,
-       "head": 0.56,
-       "crown": 0.12,
-       "arm.R": 0.15
-      },
-      "corr_dist": 0.121
-     },
-     {
-      "xyz": [
-       -6.22,
-       -4.11,
-       26.05
-      ],
-      "dev_pct_H": 1.43,
-      "new_bones": {
-       "head": 0.05,
-       "crown": 0.95
-      },
-      "shipped_bones": {
-       "chest": 0.15,
-       "head": 0.56,
-       "crown": 0.12,
-       "arm.R": 0.15
-      },
-      "corr_dist": 0.076
-     },
-     {
-      "xyz": [
-       -5.82,
-       -4.22,
-       26.13
-      ],
-      "dev_pct_H": 1.42,
-      "new_bones": {
-       "crown": 0.97
-      },
-      "shipped_bones": {
-       "chest": 0.15,
-       "head": 0.56,
-       "crown": 0.12,
-       "arm.R": 0.15
-      },
-      "corr_dist": 0.108
-     },
-     {
-      "xyz": [
-       -5.91,
-       -4.32,
-       26.05
-      ],
-      "dev_pct_H": 1.41,
-      "new_bones": {
-       "head": 0.06,
-       "crown": 0.94
-      },
-      "shipped_bones": {
-       "chest": 0.15,
-       "head": 0.56,
-       "crown": 0.12,
-       "arm.R": 0.15
-      },
-      "corr_dist": 0.099
-     }
-    ]
+   "spine_dz_range": [
+    -0.8165,
+    0.7063
+   ],
+   "jaw_dz_range": [
+    -0.36,
+    0.5696
+   ],
+   "upper_body_forward_lean_deg_range": [
+    -0.0,
+    -0.0
+   ],
+   "front_teeth_gap": {
+    "rest": 0.9739,
+    "max_open": 1.8259,
+    "min_shut": -0.1266,
+    "frame_open": 16,
+    "frame_shut": 23,
+    "travel": 1.9525,
+    "travel_pct_H": 6.315
    }
   },
   "walk": {
-   "fcurves": 78,
    "frames": [
     1,
-    20
+    33
    ],
+   "loop_frames": 32,
+   "seconds": 1.333,
    "cyclic": true,
-   "keys": [
-    1,
-    6,
-    11,
-    16,
-    20
-   ],
-   "seam_mm_sculpt_units_x1000": 0.0,
-   "seam_pct_H": 0.0,
-   "contact_slide_max": 0.8926,
-   "contact_slide_pct_H": 2.889,
-   "shipped_contact_slide_max_scaled": 0.8803,
-   "min_z": -0.0408,
-   "min_z_pct_H": -0.132,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
    "root_offset_max": 0.0,
-   "base_xy_drift_max": 0.370702,
-   "vs_shipped": {
-    "bone_head_max_pct_H": 0.0547,
-    "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.08,
-    "surface_motion_dev_p95_pct_H": 0.536,
-    "surface_motion_dev_max_pct_H": 3.167,
-    "worst_vertices": [
-     {
-      "xyz": [
-       0.1,
-       4.49,
-       8.18
-      ],
-      "dev_pct_H": 3.17,
-      "new_bones": {
-       "skirt.B": 1.0
-      },
-      "shipped_bones": {
-       "root": 0.16,
-       "spine": 0.8
-      },
-      "corr_dist": 0.112
-     },
-     {
-      "xyz": [
-       -0.09,
-       4.5,
-       8.2
-      ],
-      "dev_pct_H": 3.16,
-      "new_bones": {
-       "skirt.B": 1.0
-      },
-      "shipped_bones": {
-       "root": 0.16,
-       "spine": 0.81
-      },
-      "corr_dist": 0.183
-     },
-     {
-      "xyz": [
-       0.04,
-       4.51,
-       8.06
-      ],
-      "dev_pct_H": 3.09,
-      "new_bones": {
-       "skirt.B": 1.0
-      },
-      "shipped_bones": {
-       "root": 0.16,
-       "spine": 0.8
-      },
-      "corr_dist": 0.101
-     },
-     {
-      "xyz": [
-       -0.11,
-       4.49,
-       8.09
-      ],
-      "dev_pct_H": 3.08,
-      "new_bones": {
-       "skirt.B": 1.0
-      },
-      "shipped_bones": {
-       "root": 0.16,
-       "spine": 0.8
-      },
-      "corr_dist": 0.147
-     },
-     {
-      "xyz": [
-       -0.1,
-       4.46,
-       8.06
-      ],
-      "dev_pct_H": 3.06,
-      "new_bones": {
-       "skirt.B": 1.0
-      },
-      "shipped_bones": {
-       "root": 0.16,
-       "spine": 0.8
-      },
-      "corr_dist": 0.119
-     }
-    ]
-   }
-  },
-  "attack": {
-   "fcurves": 78,
-   "frames": [
-    1,
-    16
+   "spine_dz_range": [
+    -0.3208,
+    0.2078
    ],
-   "cyclic": false,
-   "keys": [
-    1,
-    5,
-    8,
-    16
+   "jaw_dz_range": [
+    -0.0348,
+    -0.0156
    ],
-   "seam_mm_sculpt_units_x1000": 0.0,
-   "seam_pct_H": 0.0,
-   "contact_slide_max": 0.0,
-   "contact_slide_pct_H": 0.0,
-   "shipped_contact_slide_max_scaled": 0.0,
-   "min_z": 0.0,
-   "min_z_pct_H": 0.0,
-   "root_offset_max": 0.0,
-   "base_xy_drift_max": 0.0,
-   "vs_shipped": {
-    "bone_head_max_pct_H": 0.0547,
-    "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.0,
-    "surface_motion_dev_p95_pct_H": 2.851,
-    "surface_motion_dev_max_pct_H": 28.394,
-    "worst_vertices": [
-     {
-      "xyz": [
-       11.91,
-       -0.36,
-       10.81
-      ],
-      "dev_pct_H": 28.39,
-      "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
-      },
-      "shipped_bones": {
-       "blade.L": 1.03
-      },
-      "corr_dist": 0.137
-     },
-     {
-      "xyz": [
-       11.9,
-       -0.27,
-       10.8
-      ],
-      "dev_pct_H": 28.39,
-      "new_bones": {
-       "spine": 0.6,
-       "arm.L": 0.1,
-       "blade.L": 0.3
-      },
-      "shipped_bones": {
-       "blade.L": 1.03
-      },
-      "corr_dist": 0.117
-     },
-     {
-      "xyz": [
-       -7.73,
-       0.13,
-       14.43
-      ],
-      "dev_pct_H": 14.75,
-      "new_bones": {
-       "spine": 0.94
-      },
-      "shipped_bones": {
-       "spine": 0.28,
-       "arm.R": 0.32,
-       "blade.R": 0.34
-      },
-      "corr_dist": 0.277
-     },
-     {
-      "xyz": [
-       -7.72,
-       -0.12,
-       14.39
-      ],
-      "dev_pct_H": 14.69,
-      "new_bones": {
-       "spine": 0.96
-      },
-      "shipped_bones": {
-       "spine": 0.29,
-       "arm.R": 0.33,
-       "blade.R": 0.32
-      },
-      "corr_dist": 0.241
-     },
-     {
-      "xyz": [
-       7.52,
-       -0.41,
-       14.26
-      ],
-      "dev_pct_H": 14.59,
-      "new_bones": {
-       "spine": 0.99
-      },
-      "shipped_bones": {
-       "spine": 0.31,
-       "arm.L": 0.33,
-       "blade.L": 0.29
-      },
-      "corr_dist": 0.341
-     }
-    ]
-   }
-  },
-  "hit": {
-   "fcurves": 78,
-   "frames": [
-    1,
-    10
+   "upper_body_forward_lean_deg_range": [
+    5.5,
+    8.51
    ],
-   "cyclic": false,
-   "keys": [
-    1,
-    3,
-    10
-   ],
-   "seam_mm_sculpt_units_x1000": 0.0,
-   "seam_pct_H": 0.0,
-   "contact_slide_max": 0.0,
-   "contact_slide_pct_H": 0.0,
-   "shipped_contact_slide_max_scaled": 0.0,
-   "min_z": 0.0,
-   "min_z_pct_H": 0.0,
-   "root_offset_max": 0.0,
-   "base_xy_drift_max": 0.0,
-   "vs_shipped": {
-    "bone_head_max_pct_H": 0.0547,
-    "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.0,
-    "surface_motion_dev_p95_pct_H": 0.502,
-    "surface_motion_dev_max_pct_H": 5.963,
-    "worst_vertices": [
-     {
-      "xyz": [
-       5.92,
-       4.71,
-       8.59
-      ],
-      "dev_pct_H": 5.96,
-      "new_bones": {
-       "base": 0.45,
-       "skirt.B": 0.22,
-       "skirt.L": 0.3
-      },
-      "shipped_bones": {
-       "spine": 0.8,
-       "chest": 0.05,
-       "arm.L": 0.05
-      },
-      "corr_dist": 0.089
-     },
-     {
-      "xyz": [
-       6.01,
-       4.66,
-       8.62
-      ],
-      "dev_pct_H": 5.9,
-      "new_bones": {
-       "base": 0.49,
-       "skirt.B": 0.19,
-       "skirt.L": 0.28
-      },
-      "shipped_bones": {
-       "spine": 0.8,
-       "chest": 0.05,
-       "arm.L": 0.05
-      },
-      "corr_dist": 0.05
-     },
-     {
-      "xyz": [
-       5.96,
-       4.46,
-       8.54
-      ],
-      "dev_pct_H": 5.85,
-      "new_bones": {
-       "base": 0.37,
-       "skirt.B": 0.24,
-       "skirt.L": 0.37
-      },
-      "shipped_bones": {
-       "spine": 0.8,
-       "chest": 0.05,
-       "arm.L": 0.05
-      },
-      "corr_dist": 0.146
-     },
-     {
-      "xyz": [
-       5.87,
-       4.58,
-       8.55
-      ],
-      "dev_pct_H": 5.85,
-      "new_bones": {
-       "base": 0.38,
-       "skirt.B": 0.24,
-       "skirt.L": 0.35
-      },
-      "shipped_bones": {
-       "spine": 0.8,
-       "chest": 0.05,
-       "arm.L": 0.05
-      },
-      "corr_dist": 0.101
-     },
-     {
-      "xyz": [
-       5.69,
-       4.86,
-       8.66
-      ],
-      "dev_pct_H": 5.84,
-      "new_bones": {
-       "base": 0.55,
-       "spine": 0.06,
-       "skirt.B": 0.18,
-       "skirt.L": 0.21
-      },
-      "shipped_bones": {
-       "spine": 0.8,
-       "chest": 0.05,
-       "arm.L": 0.05
-      },
-      "corr_dist": 0.127
-     }
-    ]
-   }
-  },
-  "death": {
-   "fcurves": 78,
-   "frames": [
-    1,
-    26
-   ],
-   "cyclic": false,
-   "keys": [
-    1,
-    6,
-    18,
-    26
-   ],
-   "seam_mm_sculpt_units_x1000": 18259.229,
-   "seam_pct_H": 59.10705,
-   "contact_slide_max": 7.9754,
-   "contact_slide_pct_H": 25.817,
-   "shipped_contact_slide_max_scaled": 7.9735,
-   "min_z": -2.0755,
-   "min_z_pct_H": -6.719,
-   "root_offset_max": 0.0,
-   "base_xy_drift_max": 6.796196,
-   "vs_shipped": {
-    "bone_head_max_pct_H": 0.0547,
-    "bone_rot_max_deg": 0.056,
-    "surface_motion_dev_p50_pct_H": 0.27,
-    "surface_motion_dev_p95_pct_H": 2.899,
-    "surface_motion_dev_max_pct_H": 27.327,
-    "worst_vertices": [
-     {
-      "xyz": [
-       -11.44,
-       -3.64,
-       0.63
-      ],
-      "dev_pct_H": 27.33,
-      "new_bones": {
-       "skirt.F": 0.08,
-       "skirt.R": 0.92
-      },
-      "shipped_bones": {},
-      "corr_dist": 0.144
-     },
-     {
-      "xyz": [
-       -11.43,
-       -3.72,
-       0.64
-      ],
-      "dev_pct_H": 27.31,
-      "new_bones": {
-       "skirt.F": 0.08,
-       "skirt.R": 0.92
-      },
-      "shipped_bones": {},
-      "corr_dist": 0.156
-     },
-     {
-      "xyz": [
-       -11.38,
-       -3.71,
-       0.59
-      ],
-      "dev_pct_H": 27.3,
-      "new_bones": {
-       "skirt.F": 0.08,
-       "skirt.R": 0.92
-      },
-      "shipped_bones": {},
-      "corr_dist": 0.166
-     },
-     {
-      "xyz": [
-       -11.36,
-       -3.53,
-       0.63
-      ],
-      "dev_pct_H": 27.29,
-      "new_bones": {
-       "skirt.F": 0.07,
-       "skirt.R": 0.93
-      },
-      "shipped_bones": {},
-      "corr_dist": 0.093
-     },
-     {
-      "xyz": [
-       -11.35,
-       -3.59,
-       0.74
-      ],
-      "dev_pct_H": 27.24,
-      "new_bones": {
-       "skirt.F": 0.08,
-       "skirt.R": 0.92
-      },
-      "shipped_bones": {},
-      "corr_dist": 0.045
-     }
-    ]
+   "front_teeth_gap": {
+    "rest": 0.9721,
+    "max_open": 1.1757,
+    "min_shut": 0.7684,
+    "frame_open": 21,
+    "frame_shut": 13,
+    "travel": 0.4073,
+    "travel_pct_H": 1.317
    }
   }
  },
  "clip_rules": {
-  "carry": "shipped fcurves copied key-for-key (co, handles, interpolation); pose.bones['root'] -> ['base']; location keys x H_new/H_old",
-  "seam": "max vertex distance, first vs last frame of the clip (loops must close; one-shots report their end pose)",
-  "slide": "max horizontal displacement of ground-contact vertices (rest z < 0.5% H) over the clip (a skirted glider: the skirt-flap rotation moves the hem; the shipped value is quoted beside it, scaled to the new height)",
-  "in_place": "contract root never moves (root_offset_max); 'base' offsets are the shipped clips' own trunk moves (the prior art keyed root.location in BONE space: idle/walk 'bob' is a forward sway along -Y, hit a lift, death a drop)",
-  "vs_shipped": "per frame: pose-bone heads (normalised by height about each floor centre) and rotations vs the shipped rig; surface motion = each new vertex's displacement vs its nearest shipped vertex's displacement (/H)",
-  "correspondence_rest_distance_p95_pct_H": 1.146
+  "idle": "float bob (IDLE_BOB, 1 per loop) + ONE chomp per loop: wind-up open CHOMP_OPEN over open_f, accelerating snap to a tip-to-tip gap CHOMP_SHUT_GAP over shut_f, hold, ease back over rest_f; the upper jaw (spine) does CHOMP_UPPER of the travel, the lower jaw (jaw bone) the rest; arms flare CHOMP_ARMS on the bite",
+  "walk": "GLIDE: no stepping; sway leans the figure forward LEAN_DEG (+-LEAN_OSC) with GLIDE_ROLL side drift, float bob GLIDE_BOB (2 per loop), arms trail ARM_TRAIL + flutter, crown trails CROWN_TRAIL; the ground ring (base) is never keyed -- in place, the game moves the unit",
+  "keys": "every frame, LINEAR, closed-form curves (integer harmonics / beats that end at rest): last frame == first frame"
  },
  "bones": [
   {
@@ -643,7 +141,7 @@
    "tail": [
     0.0,
     0.0,
-    1.8535
+    1.855
    ]
   },
   {
@@ -651,29 +149,59 @@
    "parent": "root",
    "deform": true,
    "head": [
-    0.0,
-    0.0,
-    1.8535
+    0.0232,
+    -0.8377,
+    0.6183
    ],
    "tail": [
-    0.0,
-    0.0,
-    9.2675
+    0.0232,
+    -0.8377,
+    3.0917
+   ]
+  },
+  {
+   "name": "sway",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    1.421
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    4.421
+   ]
+  },
+  {
+   "name": "jaw",
+   "parent": "sway",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    4.421
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    7.421
    ]
   },
   {
    "name": "spine",
-   "parent": "base",
+   "parent": "sway",
    "deform": true,
    "head": [
-    0.0,
-    0.0,
-    9.2675
+    0.0232,
+    -0.8377,
+    8.621
    ],
    "tail": [
-    0.0,
-    0.0,
-    16.0637
+    0.0232,
+    -0.8377,
+    16.0769
    ]
   },
   {
@@ -681,14 +209,14 @@
    "parent": "spine",
    "deform": true,
    "head": [
-    0.0,
-    0.0,
-    16.0637
+    0.0232,
+    -0.8377,
+    16.0769
    ],
    "tail": [
-    0.0,
-    0.0,
-    21.0064
+    0.0232,
+    -0.8377,
+    21.0236
    ]
   },
   {
@@ -696,14 +224,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    0.0,
-    0.0,
-    21.0064
+    0.0232,
+    -0.8377,
+    21.0236
    ],
    "tail": [
-    0.0,
-    0.0,
-    25.3313
+    0.0232,
+    -0.8377,
+    25.352
    ]
   },
   {
@@ -711,14 +239,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0,
-    0.0,
-    25.3313
+    0.0232,
+    -0.8377,
+    25.352
    ],
    "tail": [
-    0.0,
-    0.0,
-    30.5829
+    0.0232,
+    -0.8377,
+    30.6079
    ]
   },
   {
@@ -726,14 +254,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    2.8962,
-    0.0,
-    18.5351
+    2.92,
+    -0.8377,
+    18.5502
    ],
    "tail": [
-    7.9646,
-    0.0,
-    19.4618
+    7.9894,
+    -0.8377,
+    19.4778
    ]
   },
   {
@@ -741,14 +269,14 @@
    "parent": "arm.L",
    "deform": true,
    "head": [
-    7.9646,
-    0.0,
-    19.4618
+    7.9894,
+    -0.8377,
+    19.4778
    ],
    "tail": [
-    14.1916,
-    0.0,
-    17.9172
+    14.2175,
+    -0.8377,
+    17.9319
    ]
   },
   {
@@ -756,14 +284,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    -2.8962,
-    0.0,
-    18.5351
+    -2.8737,
+    -0.8377,
+    18.5502
    ],
    "tail": [
-    -7.9646,
-    0.0,
-    19.4618
+    -7.9431,
+    -0.8377,
+    19.4778
    ]
   },
   {
@@ -771,85 +299,26 @@
    "parent": "arm.R",
    "deform": true,
    "head": [
-    -7.9646,
-    0.0,
-    19.4618
+    -7.9431,
+    -0.8377,
+    19.4778
    ],
    "tail": [
-    -14.1916,
-    0.0,
-    17.9172
-   ]
-  },
-  {
-   "name": "skirt.F",
-   "parent": "base",
-   "deform": true,
-   "head": [
-    0.0,
-    -2.317,
-    4.9427
-   ],
-   "tail": [
-    0.0,
-    -11.0057,
-    1.5446
-   ]
-  },
-  {
-   "name": "skirt.B",
-   "parent": "base",
-   "deform": true,
-   "head": [
-    0.0,
-    2.317,
-    4.9427
-   ],
-   "tail": [
-    0.0,
-    11.0057,
-    1.5446
-   ]
-  },
-  {
-   "name": "skirt.L",
-   "parent": "base",
-   "deform": true,
-   "head": [
-    2.317,
-    0.0,
-    4.9427
-   ],
-   "tail": [
-    11.0057,
-    0.0,
-    1.5446
-   ]
-  },
-  {
-   "name": "skirt.R",
-   "parent": "base",
-   "deform": true,
-   "head": [
-    -2.317,
-    0.0,
-    4.9427
-   ],
-   "tail": [
-    -11.0057,
-    0.0,
-    1.5446
+    -14.1712,
+    -0.8377,
+    17.9319
    ]
   }
  ],
- "bone_count": 14,
- "deform_bone_count": 13,
+ "bone_count": 12,
+ "deform_bone_count": 11,
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
-  "bytes": 12727476,
-  "seconds": 0.8,
-  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05819 reaches the 1.8 m cell (report-only)"
+  "bytes": 11754640,
+  "seconds": 0.6,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05822 reaches the 1.8 m cell (report-only)"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.json",
- "seconds": 46.7
+ "seconds": 74.3,
+ "digest_rig": "203f79c037851e6b"
 }

@@ -1,16 +1,23 @@
 {
  "unit": "duskmaw",
  "skin": "default",
- "description": "Dark hero (Conquest 'monster'): the SHIPPED, artist-approved palette carried over unchanged (source: monster_rigged.blend materials summoner_body / summoner_roots / summoner_flame / summoner_mouth, linear Principled values converted to sRGB). Void-black body and crown, scorched maroon roots (the skirt), ember-tipped spikes, and the red maw - now painted where the lore puts the mouth: the gap framed by the chest's lower points and the skirt's peaks.",
+ "description": "Duskmaw v2 - the shadow figure (artist 2026-09-25: Aku / Father (KND) / Darkrai; 'red around its chest/leg mouth piece to show its a mouth that it devours you with'). Near-black violet body sinking into a darker shadow base, the eyes as the face, a blood-red lip framing the chest/skirt maw, ember teeth and a glowing throat; spike tips only smoulder. v1's shipped palette (body 41,38,43 / maroon roots / orange flame tips) is in git history.",
  "regions": {
-  "body":       {"rgb": [41, 38, 43],   "note": "summoner_body (0.022, 0.019, 0.024 linear) - void-black body, hat and crown"},
-  "roots":      {"rgb": [60, 31, 34],   "note": "summoner_roots (0.045, 0.014, 0.016 linear) - scorched maroon skirt / lower jaw"},
-  "flame":      {"rgb": [188, 63, 33], "emission": [237, 89, 25], "emission_scale": 0.7,
-                 "note": "summoner_flame (0.50, 0.05, 0.015 linear; emission 0.85, 0.10, 0.01 x 0.7) - ember spike tips, crown apex"},
-  "maw_throat": {"rgb": [184, 39, 39], "emission": [196, 39, 25], "emission_scale": 0.35,
-                 "note": "summoner_mouth (0.48, 0.02, 0.02 linear; emission 0.55, 0.02, 0.01 x 0.35) - the waist column seen through the maw"},
-  "maw_inner":  {"rgb": [184, 39, 39], "emission": [196, 39, 25], "emission_scale": 0.35,
-                 "note": "summoner_mouth - inner walls of the maw: chest underside + the skirt faces turned toward the throat"}
+  "body":       {"rgb": [20, 17, 24],   "note": "near-black violet shadow body, hat, arms"},
+  "base":       {"rgb": [13, 10, 16],   "note": "the shadow rising out of the ground - darker still, the build darkens it further toward the floor (BASE_DARK)"},
+  "tips":       {"rgb": [96, 26, 20], "emission": [170, 40, 16], "emission_scale": 0.3,
+                 "note": "smouldering spike tips (arms, hands, hat) - dim so the maw and eyes lead"},
+  "lip":        {"rgb": [168, 16, 24], "emission": [190, 18, 22], "emission_scale": 0.3,
+                 "note": "blood-red lip framing the mouth opening (chest underside edge + skirt rim)"},
+  "maw_inner":  {"rgb": [70, 6, 10], "emission": [110, 10, 10], "emission_scale": 0.15,
+                 "note": "inner mouth: chest underside, floor, teeth insides - dark red"},
+  "maw_throat": {"rgb": [160, 30, 24], "emission": [255, 70, 20], "emission_scale": 0.75,
+                 "note": "the glowing throat: back wall + throat column"},
+  "teeth":      {"rgb": [226, 104, 40], "emission": [255, 120, 30], "emission_scale": 0.8,
+                 "note": "ember teeth (upper points of the chest, lower peaks of the skirt)"},
+  "eyes":       {"rgb": [255, 214, 120], "emission": [255, 200, 80], "emission_scale": 2.0,
+                 "note": "Father-style hot glowing slit eyes - the face's only feature"},
+  "grin":       {"rgb": [20, 17, 24],   "note": "variant-only mouth on the face: painted as the body here (the head stays mouthless)"}
  },
  "material": {"roughness": 0.87, "emission_strength": 1.0}
 }

@@ -1,0 +1,9 @@
+{
+ "unit": "duskmaw",
+ "skin": "darkrai_eyes",
+ "extends": "default",
+ "description": "Eye-colour option from the Darkrai reference (cyan eye) instead of Father's yellow-orange glow. Paint-only.",
+ "regions": {
+  "eyes": {"rgb": [120, 235, 255], "emission": [80, 220, 255], "emission_scale": 2.0, "note": "Darkrai-cyan glowing eyes"}
+ }
+}
