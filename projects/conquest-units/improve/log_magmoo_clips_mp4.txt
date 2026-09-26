@@ -1,0 +1,321 @@
+00:02.578  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo.blend"
+00:13.687  render           | Video append frame 1
+00:15.734  render           | Video append frame 2
+00:17.047  render           | Video append frame 3
+00:18.328  render           | Video append frame 4
+00:19.750  render           | Video append frame 5
+00:20.187  render           | Video append frame 6
+00:20.344  render           | Video append frame 7
+00:20.484  render           | Video append frame 8
+00:20.594  render           | Video append frame 9
+00:20.703  render           | Video append frame 10
+00:20.828  render           | Video append frame 11
+00:20.937  render           | Video append frame 12
+00:21.078  render           | Video append frame 13
+00:21.203  render           | Video append frame 14
+00:21.312  render           | Video append frame 15
+00:21.437  render           | Video append frame 16
+00:21.562  render           | Video append frame 17
+00:21.687  render           | Video append frame 18
+00:21.797  render           | Video append frame 19
+00:21.906  render           | Video append frame 20
+00:22.016  render           | Video append frame 21
+00:22.109  render           | Video append frame 22
+00:22.219  render           | Video append frame 23
+00:22.328  render           | Video append frame 24
+00:22.437  render           | Video append frame 25
+00:22.531  render           | Video append frame 26
+00:22.625  render           | Video append frame 27
+00:22.719  render           | Video append frame 28
+00:22.828  render           | Video append frame 29
+00:22.922  render           | Video append frame 30
+00:23.031  render           | Video append frame 31
+00:23.125  render           | Video append frame 32
+00:23.234  render           | Video append frame 33
+00:23.328  render           | Video append frame 34
+00:23.437  render           | Video append frame 35
+00:23.531  render           | Video append frame 36
+00:23.641  render           | Video append frame 37
+00:23.734  render           | Video append frame 38
+00:23.844  render           | Video append frame 39
+00:23.953  render           | Video append frame 40
+00:24.062  render           | Video append frame 41
+00:24.172  render           | Video append frame 42
+00:24.281  render           | Video append frame 43
+00:24.406  render           | Video append frame 44
+00:24.516  render           | Video append frame 45
+00:24.625  render           | Video append frame 46
+00:24.734  render           | Video append frame 47
+00:24.844  render           | Video append frame 48
+00:24.953  render           | Video append frame 49
+00:25.078  render           | Video append frame 50
+00:25.187  render           | Video append frame 51
+00:25.297  render           | Video append frame 52
+00:25.422  render           | Video append frame 53
+00:25.531  render           | Video append frame 54
+00:25.641  render           | Video append frame 55
+00:25.766  render           | Video append frame 56
+00:25.859  render           | Video append frame 57
+00:25.984  render           | Video append frame 58
+00:26.094  render           | Video append frame 59
+00:26.219  render           | Video append frame 60
+00:26.328  render           | Video append frame 61
+00:26.437  render           | Video append frame 62
+00:26.547  render           | Video append frame 63
+00:26.656  render           | Video append frame 64
+00:26.766  render           | Video append frame 65
+00:26.859  render           | Video append frame 66
+00:26.984  render           | Video append frame 67
+00:27.078  render           | Video append frame 68
+00:27.187  render           | Video append frame 69
+00:27.281  render           | Video append frame 70
+00:27.375  render           | Video append frame 71
+00:27.469  render           | Video append frame 72
+00:27.562  render           | Video append frame 73
+00:27.656  render           | Video append frame 74
+00:27.734  render           | Video append frame 75
+00:27.828  render           | Video append frame 76
+00:27.922  render           | Video append frame 77
+00:28.031  render           | Video append frame 78
+00:28.125  render           | Video append frame 79
+00:28.219  render           | Video append frame 80
+00:28.328  render           | Video append frame 81
+00:28.437  render           | Video append frame 82
+00:28.531  render           | Video append frame 83
+00:28.687  render           | Video append frame 84
+00:28.844  render           | Video append frame 85
+00:29.031  render           | Video append frame 86
+00:29.250  render           | Video append frame 87
+00:29.344  render           | Video append frame 88
+00:29.437  render           | Video append frame 89
+00:29.562  render           | Video append frame 90
+00:29.687  render           | Video append frame 91
+00:29.781  render           | Video append frame 92
+00:29.875  render           | Video append frame 93
+00:29.969  render           | Video append frame 94
+00:30.062  render           | Video append frame 95
+00:30.156  render           | Video append frame 96
+00:30.266  render           | Video append frame 97
+00:30.359  render           | Video append frame 98
+00:30.453  render           | Video append frame 99
+00:30.547  render           | Video append frame 100
+00:30.641  render           | Video append frame 101
+00:30.734  render           | Video append frame 102
+00:30.844  render           | Video append frame 103
+00:30.937  render           | Video append frame 104
+00:31.031  render           | Video append frame 105
+00:31.141  render           | Video append frame 106
+00:31.234  render           | Video append frame 107
+00:31.328  render           | Video append frame 108
+00:31.437  render           | Video append frame 109
+00:31.547  render           | Video append frame 110
+00:31.656  render           | Video append frame 111
+00:31.750  render           | Video append frame 112
+00:31.859  render           | Video append frame 113
+00:31.969  render           | Video append frame 114
+00:32.062  render           | Video append frame 115
+00:32.172  render           | Video append frame 116
+00:32.266  render           | Video append frame 117
+00:32.375  render           | Video append frame 118
+00:32.484  render           | Video append frame 119
+00:32.578  render           | Video append frame 120
+00:32.672  render           | Video append frame 121
+00:32.766  render           | Video append frame 122
+00:32.859  render           | Video append frame 123
+00:32.969  render           | Video append frame 124
+00:33.062  render           | Video append frame 125
+00:33.156  render           | Video append frame 126
+00:33.250  render           | Video append frame 127
+00:33.359  render           | Video append frame 128
+00:33.469  render           | Video append frame 129
+00:33.578  render           | Video append frame 130
+00:33.687  render           | Video append frame 131
+00:33.797  render           | Video append frame 132
+00:34.016  render           | Video append frame 133
+00:34.125  render           | Video append frame 134
+00:34.219  render           | Video append frame 135
+00:34.328  render           | Video append frame 136
+00:34.437  render           | Video append frame 137
+00:34.547  render           | Video append frame 138
+00:34.641  render           | Video append frame 139
+00:34.750  render           | Video append frame 140
+00:34.844  render           | Video append frame 141
+00:34.937  render           | Video append frame 142
+00:35.047  render           | Video append frame 143
+00:35.141  render           | Video append frame 144
+00:35.234  render           | Video append frame 145
+00:35.328  render           | Video append frame 146
+00:35.437  render           | Video append frame 147
+00:35.531  render           | Video append frame 148
+00:35.641  render           | Video append frame 149
+00:35.734  render           | Video append frame 150
+00:35.828  render           | Video append frame 151
+00:35.937  render           | Video append frame 152
+00:36.031  render           | Video append frame 153
+00:36.141  render           | Video append frame 154
+00:36.234  render           | Video append frame 155
+00:36.344  render           | Video append frame 156
+00:36.437  render           | Video append frame 157
+00:36.547  render           | Video append frame 158
+00:36.641  render           | Video append frame 159
+00:36.750  render           | Video append frame 160
+00:36.844  render           | Video append frame 161
+00:36.937  render           | Video append frame 162
+00:37.031  render           | Video append frame 163
+00:37.141  render           | Video append frame 164
+00:37.250  render           | Video append frame 165
+00:37.344  render           | Video append frame 166
+00:37.437  render           | Video append frame 167
+00:37.531  render           | Video append frame 168
+00:37.625  render           | Video append frame 169
+00:37.719  render           | Video append frame 170
+00:37.812  render           | Video append frame 171
+00:37.906  render           | Video append frame 172
+00:38.000  render           | Video append frame 173
+00:38.109  render           | Video append frame 174
+00:38.203  render           | Video append frame 175
+00:38.312  render           | Video append frame 176
+00:38.422  render           | Video append frame 177
+00:38.547  render           | Video append frame 178
+00:38.672  render           | Video append frame 179
+00:38.781  render           | Video append frame 180
+00:38.891  render           | Video append frame 181
+00:39.016  render           | Video append frame 182
+00:39.125  render           | Video append frame 183
+00:39.250  render           | Video append frame 184
+00:39.359  render           | Video append frame 185
+00:39.484  render           | Video append frame 186
+00:39.594  render           | Video append frame 187
+00:39.719  render           | Video append frame 188
+00:39.828  render           | Video append frame 189
+00:39.937  render           | Video append frame 190
+00:40.047  render           | Video append frame 191
+00:40.156  render           | Video append frame 192
+00:40.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:40.437  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:40.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:40.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:40.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:40.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:41.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:41.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:41.391  render           | Video append frame 1
+00:41.500  render           | Video append frame 2
+00:41.594  render           | Video append frame 3
+00:41.687  render           | Video append frame 4
+00:41.766  render           | Video append frame 5
+00:41.859  render           | Video append frame 6
+00:41.953  render           | Video append frame 7
+00:42.062  render           | Video append frame 8
+00:42.156  render           | Video append frame 9
+00:42.250  render           | Video append frame 10
+00:42.359  render           | Video append frame 11
+00:42.453  render           | Video append frame 12
+00:42.609  render           | Video append frame 13
+00:42.750  render           | Video append frame 14
+00:43.031  render           | Video append frame 15
+00:43.141  render           | Video append frame 16
+00:43.234  render           | Video append frame 17
+00:43.328  render           | Video append frame 18
+00:43.422  render           | Video append frame 19
+00:43.516  render           | Video append frame 20
+00:43.609  render           | Video append frame 21
+00:43.703  render           | Video append frame 22
+00:43.797  render           | Video append frame 23
+00:43.891  render           | Video append frame 24
+00:43.984  render           | Video append frame 25
+00:44.094  render           | Video append frame 26
+00:44.187  render           | Video append frame 27
+00:44.281  render           | Video append frame 28
+00:44.375  render           | Video append frame 29
+00:44.469  render           | Video append frame 30
+00:44.578  render           | Video append frame 31
+00:44.687  render           | Video append frame 32
+00:44.797  render           | Video append frame 33
+00:44.891  render           | Video append frame 34
+00:44.984  render           | Video append frame 35
+00:45.094  render           | Video append frame 36
+00:45.187  render           | Video append frame 37
+00:45.297  render           | Video append frame 38
+00:45.391  render           | Video append frame 39
+00:45.500  render           | Video append frame 40
+00:45.609  render           | Video append frame 41
+00:45.703  render           | Video append frame 42
+00:45.797  render           | Video append frame 43
+00:45.906  render           | Video append frame 44
+00:46.000  render           | Video append frame 45
+00:46.094  render           | Video append frame 46
+00:46.203  render           | Video append frame 47
+00:46.297  render           | Video append frame 48
+00:46.391  render           | Video append frame 49
+00:46.500  render           | Video append frame 50
+00:46.609  render           | Video append frame 51
+00:46.719  render           | Video append frame 52
+00:46.828  render           | Video append frame 53
+00:46.922  render           | Video append frame 54
+00:47.016  render           | Video append frame 55
+00:47.125  render           | Video append frame 56
+00:47.219  render           | Video append frame 57
+00:47.328  render           | Video append frame 58
+00:47.422  render           | Video append frame 59
+00:47.734  render           | Video append frame 60
+00:50.016  render           | Video append frame 61
+00:50.578  render           | Video append frame 62
+00:50.672  render           | Video append frame 63
+00:50.781  render           | Video append frame 64
+00:50.875  render           | Video append frame 65
+00:50.984  render           | Video append frame 66
+00:51.078  render           | Video append frame 67
+00:51.187  render           | Video append frame 68
+00:51.297  render           | Video append frame 69
+00:51.422  render           | Video append frame 70
+00:51.531  render           | Video append frame 71
+00:51.672  render           | Video append frame 72
+00:51.797  render           | Video append frame 73
+00:51.906  render           | Video append frame 74
+00:52.031  render           | Video append frame 75
+00:52.156  render           | Video append frame 76
+00:52.266  render           | Video append frame 77
+00:52.375  render           | Video append frame 78
+00:52.469  render           | Video append frame 79
+00:52.594  render           | Video append frame 80
+00:52.687  render           | Video append frame 81
+00:52.797  render           | Video append frame 82
+00:52.891  render           | Video append frame 83
+00:52.984  render           | Video append frame 84
+00:53.078  render           | Video append frame 85
+00:53.187  render           | Video append frame 86
+00:53.281  render           | Video append frame 87
+00:53.375  render           | Video append frame 88
+00:53.484  render           | Video append frame 89
+00:53.594  render           | Video append frame 90
+00:53.687  render           | Video append frame 91
+00:53.781  render           | Video append frame 92
+00:53.859  render           | Video append frame 93
+00:53.953  render           | Video append frame 94
+00:54.047  render           | Video append frame 95
+00:54.156  render           | Video append frame 96
+00:54.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:54.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:54.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:54.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:54.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:54.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.016  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.344  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.453  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.687  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:55.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:56.016  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+00:56.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_idle.mp4 frames 192 loops 2 cycle 96
+WROTE sheet idle
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_walk.mp4 frames 96 loops 2 cycle 48
+WROTE sheet walk
+WROTE sheet walk_top
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

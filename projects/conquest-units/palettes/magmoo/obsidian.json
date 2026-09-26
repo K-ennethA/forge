@@ -1,0 +1,16 @@
+{
+ "unit": "magmoo",
+ "skin": "obsidian",
+ "extends": "default",
+ "description": "Obsidian: black volcanic glass crust with cold blue-white magma - same regions, same glow tiers, palette swap only.",
+ "regions": {
+  "crust":     {"rgb": [18, 18, 26],    "note": "black volcanic glass"},
+  "crust_hot": {"rgb": [30, 36, 70],    "emission": [40, 110, 255],  "emission_scale": 0.10},
+  "crack":     {"rgb": [60, 170, 255],  "emission": [30, 140, 255],  "emission_scale": 0.60},
+  "flame":     {"rgb": [120, 210, 255], "emission": [60, 180, 255],  "emission_scale": 0.85},
+  "core":      {"rgb": [170, 232, 255], "emission": [90, 200, 255],  "emission_scale": 1.10},
+  "maw":       {"rgb": [80, 190, 255],  "emission": [40, 150, 255],  "emission_scale": 1.30},
+  "eye":       {"rgb": [225, 248, 255], "emission": [160, 230, 255], "emission_scale": 1.60}
+ },
+ "material": {"roughness": 0.35}
+}

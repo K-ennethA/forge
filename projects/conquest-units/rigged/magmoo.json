@@ -1,0 +1,1119 @@
+{
+ "unit": "magmoo",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.blend",
+ "fps": 24,
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "connected": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.5
+   ],
+   "length": 0.5
+  },
+  {
+   "name": "neck.0",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -0.2147,
+    -6.2192,
+    0.64
+   ],
+   "tail": [
+    -0.2147,
+    -7.0956,
+    0.8121
+   ],
+   "length": 0.8931
+  },
+  {
+   "name": "neck.1",
+   "parent": "neck.0",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -7.0956,
+    0.8121
+   ],
+   "tail": [
+    -0.2147,
+    -7.6461,
+    1.5055
+   ],
+   "length": 0.8853
+  },
+  {
+   "name": "neck.2",
+   "parent": "neck.1",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -7.6461,
+    1.5055
+   ],
+   "tail": [
+    -0.2147,
+    -7.617,
+    2.3918
+   ],
+   "length": 0.8869
+  },
+  {
+   "name": "neck.3",
+   "parent": "neck.2",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -7.617,
+    2.3918
+   ],
+   "tail": [
+    -0.2147,
+    -7.5192,
+    3.22
+   ],
+   "length": 0.8339
+  },
+  {
+   "name": "head",
+   "parent": "neck.3",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -7.5192,
+    3.22
+   ],
+   "tail": [
+    -0.2147,
+    -9.375,
+    2.6542
+   ],
+   "length": 1.9401
+  },
+  {
+   "name": "tongue",
+   "parent": "head",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -0.2147,
+    -8.5957,
+    2.7841
+   ],
+   "tail": [
+    -0.2147,
+    -9.8935,
+    2.5121
+   ],
+   "length": 1.3259
+  },
+  {
+   "name": "body.0",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -0.2147,
+    -5.0624,
+    0.7107
+   ],
+   "tail": [
+    -0.2147,
+    -3.7511,
+    0.7759
+   ],
+   "length": 1.313
+  },
+  {
+   "name": "body.1",
+   "parent": "body.0",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -3.7511,
+    0.7759
+   ],
+   "tail": [
+    -0.2147,
+    -2.4397,
+    0.8411
+   ],
+   "length": 1.313
+  },
+  {
+   "name": "body.2",
+   "parent": "body.1",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -2.4397,
+    0.8411
+   ],
+   "tail": [
+    -0.2147,
+    -1.1283,
+    0.9064
+   ],
+   "length": 1.313
+  },
+  {
+   "name": "body.3",
+   "parent": "body.2",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.2147,
+    -1.1283,
+    0.9064
+   ],
+   "tail": [
+    -0.2147,
+    0.183,
+    0.9716
+   ],
+   "length": 1.313
+  },
+  {
+   "name": "tail.0",
+   "parent": "root",
+   "deform": true,
+   "connected": false,
+   "head": [
+    -0.2147,
+    1.0033,
+    0.492
+   ],
+   "tail": [
+    -0.1219,
+    1.7044,
+    0.4321
+   ],
+   "length": 0.7098
+  },
+  {
+   "name": "tail.1",
+   "parent": "tail.0",
+   "deform": true,
+   "connected": true,
+   "head": [
+    -0.1219,
+    1.7044,
+    0.4321
+   ],
+   "tail": [
+    0.0326,
+    2.3994,
+    0.4311
+   ],
+   "length": 0.712
+  },
+  {
+   "name": "tail.2",
+   "parent": "tail.1",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.0326,
+    2.3994,
+    0.4311
+   ],
+   "tail": [
+    0.2221,
+    3.0871,
+    0.4193
+   ],
+   "length": 0.7134
+  },
+  {
+   "name": "tail.3",
+   "parent": "tail.2",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.2221,
+    3.0871,
+    0.4193
+   ],
+   "tail": [
+    0.4144,
+    3.7734,
+    0.3658
+   ],
+   "length": 0.7148
+  },
+  {
+   "name": "tail.4",
+   "parent": "tail.3",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.4144,
+    3.7734,
+    0.3658
+   ],
+   "tail": [
+    0.5775,
+    4.4685,
+    0.3198
+   ],
+   "length": 0.7154
+  },
+  {
+   "name": "tail.5",
+   "parent": "tail.4",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.5775,
+    4.4685,
+    0.3198
+   ],
+   "tail": [
+    0.6833,
+    5.1763,
+    0.2996
+   ],
+   "length": 0.7159
+  },
+  {
+   "name": "tail.6",
+   "parent": "tail.5",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.6833,
+    5.1763,
+    0.2996
+   ],
+   "tail": [
+    0.7121,
+    5.8915,
+    0.2728
+   ],
+   "length": 0.7163
+  },
+  {
+   "name": "tail.7",
+   "parent": "tail.6",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.7121,
+    5.8915,
+    0.2728
+   ],
+   "tail": [
+    0.6587,
+    6.6048,
+    0.2298
+   ],
+   "length": 0.7166
+  },
+  {
+   "name": "tail.8",
+   "parent": "tail.7",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.6587,
+    6.6048,
+    0.2298
+   ],
+   "tail": [
+    0.5329,
+    7.3094,
+    0.1892
+   ],
+   "length": 0.7169
+  },
+  {
+   "name": "tail.9",
+   "parent": "tail.8",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.5329,
+    7.3094,
+    0.1892
+   ],
+   "tail": [
+    0.3568,
+    8.0042,
+    0.1662
+   ],
+   "length": 0.7172
+  },
+  {
+   "name": "tail.10",
+   "parent": "tail.9",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.3568,
+    8.0042,
+    0.1662
+   ],
+   "tail": [
+    0.1622,
+    8.6886,
+    0.2427
+   ],
+   "length": 0.7156
+  },
+  {
+   "name": "tail.11",
+   "parent": "tail.10",
+   "deform": true,
+   "connected": true,
+   "head": [
+    0.1622,
+    8.6886,
+    0.2427
+   ],
+   "tail": [
+    -0.0106,
+    9.3465,
+    0.4677
+   ],
+   "length": 0.7164
+  }
+ ],
+ "bone_count": 23,
+ "segment_chains": {
+  "upper": [
+   "neck.0",
+   "neck.1",
+   "neck.2",
+   "neck.3",
+   "head",
+   "tongue"
+  ],
+  "body": [
+   "body.0",
+   "body.1",
+   "body.2",
+   "body.3"
+  ],
+  "tail": [
+   "tail.0",
+   "tail.1",
+   "tail.2",
+   "tail.3",
+   "tail.4",
+   "tail.5",
+   "tail.6",
+   "tail.7",
+   "tail.8",
+   "tail.9",
+   "tail.10",
+   "tail.11"
+  ]
+ },
+ "separability": "each segment's sub-chain root (neck.0 / body.0 / tail.0) is parented straight to 'root'; every segment mesh is weighted only to its own sub-chain (verified below)",
+ "weights": {
+  "upper": {
+   "bones": [
+    "neck.0",
+    "neck.1",
+    "neck.2",
+    "neck.3",
+    "head",
+    "tongue"
+   ],
+   "per_bone_dominant": {
+    "neck.0": 2081,
+    "neck.1": 852,
+    "neck.2": 661,
+    "neck.3": 2270,
+    "head": 1989
+   },
+   "audit": {
+    "weight_sum_min": 1.0,
+    "weight_sum_max": 1.0,
+    "unweighted": 0,
+    "max_influences": 2,
+    "bones_used": [
+     "head",
+     "neck.0",
+     "neck.1",
+     "neck.2",
+     "neck.3",
+     "tongue"
+    ]
+   },
+   "only_own_chain": true
+  },
+  "body": {
+   "bones": [
+    "body.0",
+    "body.1",
+    "body.2",
+    "body.3"
+   ],
+   "per_bone_dominant": {
+    "body.0": 1419,
+    "body.1": 1766,
+    "body.2": 2465,
+    "body.3": 2153
+   },
+   "audit": {
+    "weight_sum_min": 1.0,
+    "weight_sum_max": 1.0,
+    "unweighted": 0,
+    "max_influences": 2,
+    "bones_used": [
+     "body.0",
+     "body.1",
+     "body.2",
+     "body.3"
+    ]
+   },
+   "only_own_chain": true
+  },
+  "tail": {
+   "bones": [
+    "tail.0",
+    "tail.1",
+    "tail.2",
+    "tail.3",
+    "tail.4",
+    "tail.5",
+    "tail.6",
+    "tail.7",
+    "tail.8",
+    "tail.9",
+    "tail.10",
+    "tail.11"
+   ],
+   "per_bone_dominant": {
+    "tail.0": 1161,
+    "tail.1": 582,
+    "tail.2": 625,
+    "tail.3": 666,
+    "tail.4": 478,
+    "tail.5": 531,
+    "tail.6": 375,
+    "tail.7": 513,
+    "tail.8": 393,
+    "tail.9": 346,
+    "tail.10": 320,
+    "tail.11": 419
+   },
+   "audit": {
+    "weight_sum_min": 1.0,
+    "weight_sum_max": 1.0,
+    "unweighted": 0,
+    "max_influences": 2,
+    "bones_used": [
+     "tail.0",
+     "tail.1",
+     "tail.10",
+     "tail.11",
+     "tail.2",
+     "tail.3",
+     "tail.4",
+     "tail.5",
+     "tail.6",
+     "tail.7",
+     "tail.8",
+     "tail.9"
+    ]
+   },
+   "only_own_chain": true
+  },
+  "bridges": {
+   "bones": [
+    "body.0",
+    "body.3",
+    "neck.0",
+    "tail.0"
+   ],
+   "rule": "strand fraction u: (1-u) to segment A's end bone, u to B's start bone",
+   "audit": {
+    "weight_sum_min": 1.0,
+    "weight_sum_max": 1.0,
+    "unweighted": 0,
+    "max_influences": 2,
+    "bones_used": [
+     "body.0",
+     "body.3",
+     "neck.0",
+     "tail.0"
+    ]
+   }
+  }
+ },
+ "idle": {
+  "status": "PROPOSED (artist 2026-09-25: body on the floor, head and tail in motion)",
+  "frames": 97,
+  "cycle_frames": 96,
+  "cycle_s": 4.0,
+  "seam_first_last_max_per_object_x1000": {
+   "magmoo_upper": 0.0,
+   "magmoo_body": 0.0,
+   "magmoo_tail": 0.0,
+   "magmoo_bridges": 0.0
+  },
+  "min_z": -0.0,
+  "root_offset_max": 0.0,
+  "head_tip_z_range": [
+   2.4949,
+   2.8179
+  ],
+  "head_tip_x_range": [
+   -0.8046,
+   0.3752
+  ],
+  "body_vertex_max_displacement": 0.0,
+  "tail_tip_x_range": [
+   -0.5737,
+   0.5755
+  ],
+  "segment_gap_min_max_every_6th_frame": {
+   "upper|body": [
+    0.2629,
+    0.2652
+   ],
+   "body|tail": [
+    0.2683,
+    0.2683
+   ]
+  },
+  "extent": {
+   "width": 2.3723,
+   "length": 21.0131,
+   "height": 4.3166
+  },
+  "motion": {
+   "neck_sway_deg": 11.0,
+   "nod_deg": 5.0,
+   "tail_tip_deg": 16.0,
+   "glow_pulse": 0.35,
+   "tongue_scale": [
+    1.0,
+    1.9
+   ],
+   "procrustes_yaw_deg_range": [
+    0.0,
+    0.0
+   ],
+   "glow": {
+    "socket": "Principled BSDF.Emission Strength",
+    "base": 1.5,
+    "range": [
+     1.5,
+     2.025
+    ]
+   },
+   "slots": [
+    "OBmagmoo_rig",
+    "NTShader Nodetree"
+   ]
+  }
+ },
+ "walk": {
+  "status": "PROPOSED (in-place slither)",
+  "frames": 49,
+  "cycle_frames": 48,
+  "cycle_s": 2.0,
+  "seam_first_last_max_per_object_x1000": {
+   "magmoo_upper": 0.0,
+   "magmoo_body": 0.0,
+   "magmoo_tail": 0.0,
+   "magmoo_bridges": 0.0
+  },
+  "min_z": -0.0,
+  "root_offset_max": 0.0,
+  "head_tip_z_range": [
+   2.6542,
+   2.6542
+  ],
+  "head_tip_x_range": [
+   -1.0357,
+   0.6064
+  ],
+  "body_vertex_max_displacement": 0.203,
+  "tail_tip_x_range": [
+   -1.386,
+   1.5543
+  ],
+  "segment_gap_min_max_every_6th_frame": {
+   "upper|body": [
+    0.2588,
+    0.2664
+   ],
+   "body|tail": [
+    0.2667,
+    0.2737
+   ]
+  },
+  "extent": {
+   "width": 3.7437,
+   "length": 19.7453,
+   "height": 4.3015
+  },
+  "implied_forward_speed": {
+   "wave_speed_units_per_s": 4.0,
+   "body_lengths_per_s": 0.1969,
+   "m_per_s_at_report_only_cell_fit": 0.385,
+   "rule": "lateral undulation, zero-slip upper bound: forward speed = wave speed = wavelength / cycle time (the body follows its own path); real slip makes it slower -- the game glides the unit at its own speed"
+  },
+  "motion": {
+   "wavelength": 8.0,
+   "amp_neck_deg": 6.0,
+   "amp_body_deg": 11.0,
+   "amp_tail_tip_deg": 40.0,
+   "head_follow": 0.25,
+   "glow_pulse": 0.18,
+   "wave_direction": "head -> tail (posterior travelling wave = forward propulsion toward -Y)",
+   "procrustes_yaw_deg_range": [
+    -5.8435,
+    5.8435
+   ],
+   "glow": {
+    "socket": "Principled BSDF.Emission Strength",
+    "base": 1.5,
+    "range": [
+     1.5,
+     1.77
+    ]
+   },
+   "slots": [
+    "OBmagmoo_rig",
+    "NTShader Nodetree"
+   ]
+  }
+ },
+ "anim_seconds": 3.9,
+ "digest_full": "821bd195ec6204ee",
+ "digest_geometry_colour_uv": "10c98fbe464a56d6",
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.glb",
+  "bytes": 10090484,
+  "sha256_16": "4038bb6929ba8518",
+  "seconds": 0.7,
+  "structure": "armature identity + 4 skinned mesh children (upper/body/tail/bridges), natural scale; report-only cell fit 0.09624"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo.blend",
+   "palette": {
+    "crust": {
+     "rgb": [
+      40,
+      32,
+      31
+     ]
+    },
+    "crust_hot": {
+     "rgb": [
+      82,
+      38,
+      24
+     ],
+     "emission": [
+      255,
+      70,
+      12
+     ],
+     "emission_scale": 0.1
+    },
+    "crack": {
+     "rgb": [
+      236,
+      96,
+      26
+     ],
+     "emission": [
+      255,
+      92,
+      16
+     ],
+     "emission_scale": 0.6
+    },
+    "flame": {
+     "rgb": [
+      255,
+      156,
+      50
+     ],
+     "emission": [
+      255,
+      130,
+      30
+     ],
+     "emission_scale": 0.85
+    },
+    "core": {
+     "rgb": [
+      255,
+      196,
+      96
+     ],
+     "emission": [
+      255,
+      150,
+      44
+     ],
+     "emission_scale": 1.1
+    },
+    "maw": {
+     "rgb": [
+      255,
+      118,
+      36
+     ],
+     "emission": [
+      255,
+      96,
+      20
+     ],
+     "emission_scale": 1.3
+    },
+    "eye": {
+     "rgb": [
+      255,
+      238,
+      160
+     ],
+     "emission": [
+      255,
+      214,
+      110
+     ],
+     "emission_scale": 1.6
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "crust_hot": 0.1,
+     "crack": 0.6,
+     "flame": 0.85,
+     "core": 1.1,
+     "maw": 1.3,
+     "eye": 1.6
+    },
+    "rank": [
+     "eye",
+     "maw",
+     "core",
+     "flame",
+     "crack",
+     "crust_hot"
+    ],
+    "pass": true
+   },
+   "region_faces": {
+    "crust": 18888,
+    "crust_hot": 13970,
+    "crack": 6690,
+    "flame": 2943,
+    "core": 1920,
+    "maw": 865,
+    "eye": 282
+   },
+   "region_mean_linear": {
+    "Col": {
+     "crust": [
+      0.0212,
+      0.0144,
+      0.0137
+     ],
+     "crust_hot": [
+      0.0844,
+      0.0194,
+      0.0091
+     ],
+     "crack": [
+      0.8388,
+      0.117,
+      0.0103
+     ],
+     "flame": [
+      1.0,
+      0.3325,
+      0.0319
+     ],
+     "core": [
+      1.0,
+      0.552,
+      0.117
+     ],
+     "maw": [
+      1.0,
+      0.1812,
+      0.0176
+     ],
+     "eye": [
+      1.0,
+      0.855,
+      0.3515
+     ]
+    },
+    "Glow": {
+     "crust": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "crust_hot": [
+      0.1,
+      0.0061,
+      0.0004
+     ],
+     "crack": [
+      0.6,
+      0.0642,
+      0.0031
+     ],
+     "flame": [
+      0.85,
+      0.1898,
+      0.011
+     ],
+     "core": [
+      1.1,
+      0.3355,
+      0.0277
+     ],
+     "maw": [
+      1.3,
+      0.1521,
+      0.0091
+     ],
+     "eye": [
+      1.6,
+      1.0759,
+      0.2495
+     ]
+    }
+   }
+  },
+  "obsidian": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\magmoo__obsidian.blend",
+   "palette": {
+    "crust": {
+     "rgb": [
+      18,
+      18,
+      26
+     ]
+    },
+    "crust_hot": {
+     "rgb": [
+      30,
+      36,
+      70
+     ],
+     "emission": [
+      40,
+      110,
+      255
+     ],
+     "emission_scale": 0.1
+    },
+    "crack": {
+     "rgb": [
+      60,
+      170,
+      255
+     ],
+     "emission": [
+      30,
+      140,
+      255
+     ],
+     "emission_scale": 0.6
+    },
+    "flame": {
+     "rgb": [
+      120,
+      210,
+      255
+     ],
+     "emission": [
+      60,
+      180,
+      255
+     ],
+     "emission_scale": 0.85
+    },
+    "core": {
+     "rgb": [
+      170,
+      232,
+      255
+     ],
+     "emission": [
+      90,
+      200,
+      255
+     ],
+     "emission_scale": 1.1
+    },
+    "maw": {
+     "rgb": [
+      80,
+      190,
+      255
+     ],
+     "emission": [
+      40,
+      150,
+      255
+     ],
+     "emission_scale": 1.3
+    },
+    "eye": {
+     "rgb": [
+      225,
+      248,
+      255
+     ],
+     "emission": [
+      160,
+      230,
+      255
+     ],
+     "emission_scale": 1.6
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\obsidian.json"
+   ],
+   "glow_tiers": {
+    "skin": "obsidian",
+    "emission_scale_tiers": {
+     "crust_hot": 0.1,
+     "crack": 0.6,
+     "flame": 0.85,
+     "core": 1.1,
+     "maw": 1.3,
+     "eye": 1.6
+    },
+    "rank": [
+     "eye",
+     "maw",
+     "core",
+     "flame",
+     "crack",
+     "crust_hot"
+    ],
+    "pass": true
+   },
+   "region_faces": {
+    "crust": 18888,
+    "crust_hot": 13970,
+    "crack": 6690,
+    "flame": 2943,
+    "core": 1920,
+    "maw": 865,
+    "eye": 282
+   },
+   "region_mean_linear": {
+    "Col": {
+     "crust": [
+      0.006,
+      0.006,
+      0.0103
+     ],
+     "crust_hot": [
+      0.013,
+      0.0176,
+      0.0612
+     ],
+     "crack": [
+      0.0452,
+      0.402,
+      1.0
+     ],
+     "flame": [
+      0.1878,
+      0.6445,
+      1.0
+     ],
+     "core": [
+      0.402,
+      0.807,
+      1.0
+     ],
+     "maw": [
+      0.0802,
+      0.5149,
+      1.0
+     ],
+     "eye": [
+      0.7529,
+      0.9387,
+      1.0
+     ]
+    },
+    "Glow": {
+     "crust": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "crust_hot": [
+      0.0021,
+      0.0156,
+      0.1
+     ],
+     "crack": [
+      0.0078,
+      0.1573,
+      0.6
+     ],
+     "flame": [
+      0.0384,
+      0.3879,
+      0.85
+     ],
+     "core": [
+      0.1125,
+      0.6353,
+      1.1
+     ],
+     "maw": [
+      0.0276,
+      0.3965,
+      1.3
+     ],
+     "eye": [
+      0.5625,
+      1.2661,
+      1.6
+     ]
+    }
+   },
+   "geometry_colour_uv_digest": "81c5cf1e8488ef35",
+   "vertex_positions_sha": "a6598183215a257e"
+  },
+  "repaint_proof": {
+   "rule": "a skin is a pure palette swap: region face counts identical, vertex positions identical, colours differ only by the palette table; the default digest is restored after the swap",
+   "default_digest_before": "10c98fbe464a56d6",
+   "default_digest_after_restore": "10c98fbe464a56d6"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\magmoo.json",
+ "seconds": 72.8
+}

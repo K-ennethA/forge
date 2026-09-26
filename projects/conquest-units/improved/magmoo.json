@@ -1,0 +1,643 @@
+{
+ "unit": "magmoo",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-magmoo.blend",
+ "tier": "hero",
+ "tri_budget": [
+  30000,
+  50000
+ ],
+ "yaw_fix_deg": 0.0,
+ "overrides": {},
+ "segments": {
+  "body": {
+   "finish": {
+    "voxel": 0.03,
+    "remesh_tris": 85836,
+    "area": 27.005,
+    "target_tris": 8101,
+    "tris": 8100,
+    "specks": [
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     },
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     }
+    ],
+    "seconds": 2.4
+   },
+   "source_tris": 34396,
+   "regions_faces": {
+    "crust": 6705,
+    "crust_hot": 4956,
+    "crack": 2402,
+    "flame": 1287,
+    "core": 252,
+    "maw": 0,
+    "eye": 0
+   },
+   "iso_cuts": {
+    "cuts": [
+     {
+      "field": "cr",
+      "tau": 0.07,
+      "edge_splits": 1367,
+      "face_connects": 1622
+     },
+     {
+      "field": "cr",
+      "tau": 0.15,
+      "edge_splits": 1965,
+      "face_connects": 2201
+     },
+     {
+      "field": "tip",
+      "tau": 0.075,
+      "edge_splits": 163,
+      "face_connects": 188
+     },
+     {
+      "field": "end",
+      "tau": 0.3,
+      "edge_splits": 182,
+      "face_connects": 204
+     },
+     {
+      "field": "end",
+      "tau": 0.58,
+      "edge_splits": 74,
+      "face_connects": 87
+     }
+    ],
+    "straddling_faces_after_cut": {
+     "cr=0.070": 0,
+     "cr=0.150": 0,
+     "tip=0.075": 0,
+     "end=0.300": 0,
+     "end=0.580": 0
+    }
+   },
+   "voronoi_seeds": 41,
+   "tip_field_passes": 19,
+   "mean_edge": 0.0976,
+   "tris_final": 15602,
+   "min_z": 0.0,
+   "bbox": [
+    [
+     -1.0354,
+     -5.0803,
+     0.0
+    ],
+    [
+     0.6053,
+     0.2006,
+     2.6615
+    ]
+   ]
+  },
+  "upper": {
+   "finish": {
+    "voxel": 0.03,
+    "remesh_tris": 90108,
+    "area": 28.1972,
+    "target_tris": 8459,
+    "tris": 8458,
+    "specks": [
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     },
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     }
+    ],
+    "seconds": 3.7
+   },
+   "sdf": {
+    "step": 0.03,
+    "mt_verts": 141574,
+    "mt_tris": 283144,
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "grid": [
+     99,
+     179,
+     160
+    ],
+    "nan": 0,
+    "seconds": 5.5
+   },
+   "tongue": {
+    "voxel": 0.012,
+    "remesh_tris": 7724,
+    "area": 0.3839,
+    "target_tris": 115,
+    "tris": 114,
+    "specks": [
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     },
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     }
+    ],
+    "seconds": 0.2
+   },
+   "regions_faces": {
+    "crust": 6471,
+    "crust_hot": 4651,
+    "crack": 2209,
+    "flame": 1120,
+    "core": 104,
+    "maw": 865,
+    "eye": 282
+   },
+   "iso_cuts": {
+    "cuts": [
+     {
+      "field": "cr",
+      "tau": 0.07,
+      "edge_splits": 1296,
+      "face_connects": 1531
+     },
+     {
+      "field": "cr",
+      "tau": 0.15,
+      "edge_splits": 1831,
+      "face_connects": 2039
+     },
+     {
+      "field": "tip",
+      "tau": 0.075,
+      "edge_splits": 209,
+      "face_connects": 252
+     },
+     {
+      "field": "end",
+      "tau": 0.3,
+      "edge_splits": 49,
+      "face_connects": 56
+     },
+     {
+      "field": "end",
+      "tau": 0.58,
+      "edge_splits": 35,
+      "face_connects": 40
+     },
+     {
+      "field": "eye",
+      "tau": 0.13,
+      "edge_splits": 49,
+      "face_connects": 54
+     },
+     {
+      "field": "maw",
+      "tau": 0.035,
+      "edge_splits": 96,
+      "face_connects": 113
+     }
+    ],
+    "straddling_faces_after_cut": {
+     "cr=0.070": 27,
+     "cr=0.150": 0,
+     "tip=0.075": 0,
+     "end=0.300": 0,
+     "end=0.580": 0,
+     "eye=0.130": 0,
+     "maw=0.035": 0
+    }
+   },
+   "voronoi_seeds": 42,
+   "tip_field_passes": 20,
+   "mean_edge": 0.0942,
+   "tris_final": 15702,
+   "min_z": 0.0,
+   "bbox": [
+    [
+     -1.0728,
+     -9.8645,
+     0.0
+    ],
+    [
+     0.6427,
+     -5.3083,
+     4.3015
+    ]
+   ]
+  },
+  "tail": {
+   "finish": {
+    "voxel": 0.03,
+    "remesh_tris": 68956,
+    "area": 21.8134,
+    "target_tris": 6544,
+    "tris": 6544,
+    "specks": [
+     {
+      "pieces": 2,
+      "kept": 1,
+      "dropped_verts": 8
+     },
+     {
+      "pieces": 1,
+      "kept": 1,
+      "dropped_verts": 0
+     }
+    ],
+    "seconds": 2.6
+   },
+   "sdf": {
+    "step": 0.03,
+    "mt_verts": 106776,
+    "mt_tris": 213548,
+    "open_edges": 0,
+    "nonmanifold_edges": 0,
+    "grid": [
+     152,
+     362,
+     94
+    ],
+    "nan": 0,
+    "seconds": 3.9
+   },
+   "spine_arc_length": 8.6,
+   "regions_faces": {
+    "crust": 5712,
+    "crust_hot": 4363,
+    "crack": 2079,
+    "flame": 536,
+    "core": 124,
+    "maw": 0,
+    "eye": 0
+   },
+   "iso_cuts": {
+    "cuts": [
+     {
+      "field": "cr",
+      "tau": 0.07,
+      "edge_splits": 1204,
+      "face_connects": 1418
+     },
+     {
+      "field": "cr",
+      "tau": 0.15,
+      "edge_splits": 1745,
+      "face_connects": 1961
+     },
+     {
+      "field": "tip",
+      "tau": 0.075,
+      "edge_splits": 84,
+      "face_connects": 98
+     },
+     {
+      "field": "end",
+      "tau": 0.3,
+      "edge_splits": 66,
+      "face_connects": 78
+     },
+     {
+      "field": "end",
+      "tau": 0.58,
+      "edge_splits": 36,
+      "face_connects": 41
+     }
+    ],
+    "straddling_faces_after_cut": {
+     "cr=0.070": 0,
+     "cr=0.150": 0,
+     "tip=0.075": 0,
+     "end=0.300": 0,
+     "end=0.580": 0
+    }
+   },
+   "voronoi_seeds": 37,
+   "tip_field_passes": 18,
+   "mean_edge": 0.0977,
+   "tris_final": 12814,
+   "min_z": 0.0,
+   "bbox": [
+    [
+     -0.8481,
+     0.3858,
+     0.0
+    ],
+    [
+     1.0734,
+     9.8776,
+     1.2352
+    ]
+   ]
+  }
+ },
+ "source_mesh": {
+  "object": "Icosphere",
+  "verts": 17200,
+  "tris": 34396,
+  "object_rotation_deg": [
+   -78.538,
+   -0.192,
+   -47.896
+  ],
+  "materials": [],
+  "blend_materials": [
+   "Material"
+  ],
+  "colour_note": "no material on the mesh (the blend's only material is the unused default grey): crust/magma colours are authored in palettes/magmoo, not derived",
+  "frame_map": "local (x, y, z) -> game (-x, -z, -y); the artist's object rotation ([-78.538, -0.192, -47.896] deg) is dropped: the sculpt's own axes are the symmetry frame (local x range -0.805..0.812)"
+ },
+ "assembly": {
+  "gap_iterations": {
+   "upper": [
+    0.33616,
+    0.30108
+   ],
+   "tail": [
+    0.37252,
+    0.30669,
+    0.30063
+   ]
+  },
+  "seconds": 0.1,
+  "centre_shift": [
+   0.21469,
+   1.86226,
+   0.0
+  ],
+  "gaps": {
+   "upper|body": {
+    "mesh_gap_min": 0.3011,
+    "axial_gap_on_spine": 0.35,
+    "axis": [
+     0.0,
+     1.0,
+     0.0
+    ]
+   },
+   "body|tail": {
+    "mesh_gap_min": 0.3006,
+    "axial_gap_on_spine": 0.552,
+    "axis": [
+     0.0,
+     1.0,
+     0.0
+    ]
+   }
+  }
+ },
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "crust_hot": 0.1,
+    "crack": 0.6,
+    "flame": 0.85,
+    "core": 1.1,
+    "maw": 1.3,
+    "eye": 1.6
+   },
+   "rank": [
+    "eye",
+    "maw",
+    "core",
+    "flame",
+    "crack",
+    "crust_hot"
+   ],
+   "pass": true
+  }
+ },
+ "cut_seconds": 51.1,
+ "bridges": {
+  "strands": [
+   {
+    "gap": "upper|body",
+    "offset": [
+     0.0,
+     -0.1
+    ],
+    "r_end": 0.13,
+    "surface_span": 0.3348,
+    "strand_length": 0.6548
+   },
+   {
+    "gap": "upper|body",
+    "offset": [
+     0.26,
+     0.16
+    ],
+    "r_end": 0.1,
+    "surface_span": 0.515,
+    "strand_length": 0.835
+   },
+   {
+    "gap": "upper|body",
+    "offset": [
+     -0.24,
+     0.1
+    ],
+    "r_end": 0.09,
+    "surface_span": 0.4441,
+    "strand_length": 0.7641
+   },
+   {
+    "gap": "body|tail",
+    "offset": [
+     0.0,
+     -0.1
+    ],
+    "r_end": 0.13,
+    "surface_span": 0.7316,
+    "strand_length": 1.0516
+   },
+   {
+    "gap": "body|tail",
+    "offset": [
+     0.26,
+     0.16
+    ],
+    "r_end": 0.1,
+    "surface_span": 1.0114,
+    "strand_length": 1.3314
+   },
+   {
+    "gap": "body|tail",
+    "offset": [
+     -0.24,
+     0.1
+    ],
+    "r_end": 0.09,
+    "surface_span": 0.9682,
+    "strand_length": 1.2882
+   }
+  ],
+  "tris": 1440,
+  "pinch": 0.42,
+  "sag": 0.07,
+  "sink": 0.16,
+  "region": "core"
+ },
+ "facing": {
+  "rule": "midpoint of the two eye sockets -> the snout tip (head frame, built facing -Y)",
+  "anchor": [
+   -0.2147,
+   -8.4409,
+   3.1448
+  ],
+  "landmark": [
+   -0.2147,
+   -9.375,
+   2.6542
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "uv_seconds": 3.6,
+ "measure": {
+  "bbox": [
+   [
+    -1.0728,
+    -9.8645,
+    0.0
+   ],
+   [
+    1.0734,
+    9.8776,
+    4.3015
+   ]
+  ],
+  "length_y": 19.7422,
+  "width_x": 2.1462,
+  "height_z": 4.3015,
+  "spine_arc_length_nose_to_tail_tip": 20.3151,
+  "head_top_z": 4.3015,
+  "eye_z": 3.1448,
+  "snout_z": 2.6542,
+  "body_length": 5.2454,
+  "body_core_height_top": 2.4325,
+  "tail_spine_length": 8.6,
+  "units": "source units (the main blob's own sculpt scale, natural proportions)",
+  "segment_gap_final": {
+   "upper|body": 0.2652,
+   "body|tail": 0.2683
+  },
+  "segment_gap_note": "GAP_* is set on the finished shells; the crust domes (PLATE_DOME) then grow both facing surfaces, so the delivered gap is GAP - up to 2 x PLATE_DOME",
+  "export_cell_fit_report_only": {
+   "scale": 0.09624,
+   "bound_by": "footprint",
+   "length_m": 1.9,
+   "height_m": 0.414
+  }
+ },
+ "tris": {
+  "magmoo_upper": 15702,
+  "magmoo_body": 15602,
+  "magmoo_tail": 12814,
+  "magmoo_bridges": 1440,
+  "total": 45558
+ },
+ "digest_geometry_colour_uv": "10c98fbe464a56d6",
+ "palette": {
+  "default": {
+   "crust": {
+    "rgb": [
+     40,
+     32,
+     31
+    ]
+   },
+   "crust_hot": {
+    "rgb": [
+     82,
+     38,
+     24
+    ],
+    "emission": [
+     255,
+     70,
+     12
+    ],
+    "emission_scale": 0.1
+   },
+   "crack": {
+    "rgb": [
+     236,
+     96,
+     26
+    ],
+    "emission": [
+     255,
+     92,
+     16
+    ],
+    "emission_scale": 0.6
+   },
+   "flame": {
+    "rgb": [
+     255,
+     156,
+     50
+    ],
+    "emission": [
+     255,
+     130,
+     30
+    ],
+    "emission_scale": 0.85
+   },
+   "core": {
+    "rgb": [
+     255,
+     196,
+     96
+    ],
+    "emission": [
+     255,
+     150,
+     44
+    ],
+    "emission_scale": 1.1
+   },
+   "maw": {
+    "rgb": [
+     255,
+     118,
+     36
+    ],
+    "emission": [
+     255,
+     96,
+     20
+    ],
+    "emission_scale": 1.3
+   },
+   "eye": {
+    "rgb": [
+     255,
+     238,
+     160
+    ],
+    "emission": [
+     255,
+     214,
+     110
+    ],
+    "emission_scale": 1.6
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json"
+  ]
+ },
+ "seconds_to_improved": 67.4
+}

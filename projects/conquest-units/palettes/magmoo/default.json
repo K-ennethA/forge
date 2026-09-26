@@ -1,0 +1,15 @@
+{
+ "unit": "magmoo",
+ "skin": "default",
+ "description": "Lava serpent: dark basalt crust plates with a warm rim where they meet the cracks, glowing magma in every crack, hotter flame tips on the fins, crest and tail flick, a white-hot molten core on each segment's gap-facing end and on the lava strands bridging the gaps, a burning maw line and the hottest glow of all in the eyes. Colours authored fresh: the source blend carries no material (only Blender's unused default grey).",
+ "regions": {
+  "crust":     {"rgb": [40, 32, 31],    "note": "cooled basalt crust plates (cavity-free; per-face value jitter only)"},
+  "crust_hot": {"rgb": [82, 38, 24],    "emission": [255, 70, 12],   "emission_scale": 0.10, "note": "crust rim near a crack - still warm, faint glow"},
+  "crack":     {"rgb": [236, 96, 26],   "emission": [255, 92, 16],   "emission_scale": 0.60, "note": "magma in the cracks between plates"},
+  "flame":     {"rgb": [255, 156, 50],  "emission": [255, 130, 30],  "emission_scale": 0.85, "note": "flame-lick tips (fins, crest, tail flick) and the flame tongue"},
+  "core":      {"rgb": [255, 196, 96],  "emission": [255, 150, 44],  "emission_scale": 1.10, "note": "molten core: each segment's gap-facing end + the lava strands bridging the gaps"},
+  "maw":       {"rgb": [255, 118, 36],  "emission": [255, 96, 20],   "emission_scale": 1.30, "note": "the open mouth line and cavity"},
+  "eye":       {"rgb": [255, 238, 160], "emission": [255, 214, 110], "emission_scale": 1.60, "note": "eyes - top glow tier"}
+ },
+ "material": {"roughness": 0.82, "emission_strength": 1.5}
+}

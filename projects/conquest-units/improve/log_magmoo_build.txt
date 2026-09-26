@@ -1,0 +1,30 @@
+00:01.046  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\newunit-magmoo.blend"
+BODY {"y": [-3.20015287399292, 2.045293092727661], "zc": 0.9715754975259188, "z_front_mid": 0.7106882732987287, "voxel": 0.03, "remesh_tris": 85836, "area": 27.005, "target_tris": 8101, "tris": 8100, "specks": [{"pieces": 1, "kept": 1, "dropped_verts": 0}, {"pieces": 1, "kept": 1, "dropped_verts": 0}], "seconds": 2.4}
+UPPER {"voxel": 0.03, "remesh_tris": 90108, "area": 28.1972, "target_tris": 8459, "tris": 8458, "specks": [{"pieces": 1, "kept": 1, "dropped_verts": 0}, {"pieces": 1, "kept": 1, "dropped_verts": 0}], "seconds": 3.7}
+TAIL {"voxel": 0.03, "remesh_tris": 68956, "area": 21.8134, "target_tris": 6544, "tris": 6544, "specks": [{"pieces": 2, "kept": 1, "dropped_verts": 8}, {"pieces": 1, "kept": 1, "dropped_verts": 0}], "seconds": 2.6}
+GAPS {"upper|body": {"mesh_gap_min": 0.3011, "axial_gap_on_spine": 0.35, "axis": [0.0, 1.0, 0.0]}, "body|tail": {"mesh_gap_min": 0.3006, "axial_gap_on_spine": 0.552, "axis": [0.0, 1.0, 0.0]}}
+FIELDS upper {"tip_p50_p99_max": [0.0374, 0.0973, 0.1483], "seeds": 42, "tip_iters": 20, "sec": 0.0}
+FIELDS body {"tip_p50_p99_max": [0.025, 0.0817, 0.1239], "seeds": 41, "tip_iters": 19, "sec": 0.0}
+FIELDS tail {"tip_p50_p99_max": [0.0335, 0.0751, 0.1355], "seeds": 37, "tip_iters": 18, "sec": 0.0}
+MEASURE {"bbox": [[-1.0728, -9.8645, 0.0], [1.0734, 9.8776, 4.3015]], "length_y": 19.7422, "width_x": 2.1462, "height_z": 4.3015, "spine_arc_length_nose_to_tail_tip": 20.3151, "head_top_z": 4.3015, "eye_z": 3.1448, "snout_z": 2.6542, "body_length": 5.2454, "body_core_height_top": 2.4325, "tail_spine_length": 8.6, "units": "source units (the main blob's own sculpt scale, natural proportions)", "segment_gap_final": {"upper|body": 0.2652, "body|tail": 0.2683}, "segment_gap_note": "GAP_* is set on the finished shells; the crust domes (PLATE_DOME) then grow both facing surfaces, so the delivered gap is GAP - up to 2 x PLATE_DOME", "export_cell_fit_report_only": {"scale": 0.09624, "bound_by": "footprint", "length_m": 1.9, "height_m": 0.414}} {"magmoo_upper": 15702, "magmoo_body": 15602, "magmoo_tail": 12814, "magmoo_bridges": 1440, "total": 45558}
+Info: Saved copy as "magmoo.blend"
+Info: Saved copy as "magmoo_source_blob.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\magmoo.blend 10c98fbe464a56d6 67.4
+Info: Saved copy as "magmoo.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+22:30:12 | INFO: Starting glTF 2.0 export
+22:30:12 | INFO: Extracting primitive: magmoo_body
+22:30:12 | INFO: Primitives created: 1
+22:30:12 | INFO: Extracting primitive: magmoo_bridges
+22:30:12 | INFO: Primitives created: 1
+22:30:12 | INFO: Extracting primitive: magmoo_tail
+22:30:12 | INFO: Primitives created: 1
+22:30:12 | INFO: Extracting primitive: magmoo_upper
+22:30:12 | INFO: Primitives created: 1
+22:30:12 | INFO: Finished glTF 2.0 export in 0.5115430355072021 s
+
+Info: Saved copy as "magmoo__obsidian.blend"
+RIG_DONE {"bones": 23, "digest_full": "821bd195ec6204ee", "seconds": 72.8}
+IDLE {"status": "PROPOSED (artist 2026-09-25: body on the floor, head and tail in motion)", "frames": 97, "cycle_frames": 96, "cycle_s": 4.0, "seam_first_last_max_per_object_x1000": {"magmoo_upper": 0.0, "magmoo_body": 0.0, "magmoo_tail": 0.0, "magmoo_bridges": 0.0}, "min_z": -0.0, "root_offset_max": 0.0, "head_tip_z_range": [2.4949, 2.8179], "head_tip_x_range": [-0.8046, 0.3752], "body_vertex_max_displacement": 0.0, "tail_tip_x_range": [-0.5737, 0.5755], "segment_gap_min_max_every_6th_frame": {"upper|body": [0.2629, 0.2652], "body|tail": [0.2683, 0.2683]}, "extent": {"width": 2.3723, "length": 21.0131, "height": 4.3166}, "motion": {"neck_sway_deg": 11.0, "nod_deg": 5.0, "tail_tip_deg": 16.0, "glow_pulse": 0.35, "tongue_scale": [1.0, 1.9], "procrustes_yaw_deg_range": [0.0, 0.0], "glow": {"socket": "Principled BSDF.Emission Strength", "base": 1.5, "range": [1.5, 2.025]}, "slots": ["OBmagmoo_rig", "NTShader Nodetree"]}}
+WALK {"status": "PROPOSED (in-place slither)", "frames": 49, "cycle_frames": 48, "cycle_s": 2.0, "seam_first_last_max_per_object_x1000": {"magmoo_upper": 0.0, "magmoo_body": 0.0, "magmoo_tail": 0.0, "magmoo_bridges": 0.0}, "min_z": -0.0, "root_offset_max": 0.0, "head_tip_z_range": [2.6542, 2.6542], "head_tip_x_range": [-1.0357, 0.6064], "body_vertex_max_displacement": 0.203, "tail_tip_x_range": [-1.386, 1.5543], "segment_gap_min_max_every_6th_frame": {"upper|body": [0.2588, 0.2664], "body|tail": [0.2667, 0.2737]}, "extent": {"width": 3.7437, "length": 19.7453, "height": 4.3015}, "implied_forward_speed": {"wave_speed_units_per_s": 4.0, "body_lengths_per_s": 0.1969, "m_per_s_at_report_only_cell_fit": 0.385, "rule": "lateral undulation, zero-slip upper bound: forward speed = wave speed = wavelength / cycle time (the body follows its own path); real slip makes it slower -- the game glides the unit at its own speed"}, "motion": {"wavelength": 8.0, "amp_neck_deg": 6.0, "amp_body_deg": 11.0, "amp_tail_tip_deg": 40.0, "head_follow": 0.25, "glow_pulse": 0.18, "wave_direction": "head -> tail (posterior travelling wave = forward propulsion toward -Y)", "procrustes_yaw_deg_range": [-5.8435, 5.8435], "glow": {"socket": "Principled BSDF.Emission Strength", "base": 1.5, "range": [1.5, 1.77]}, "slots": ["OBmagmoo_rig", "NTShader Nodetree"]}}
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
