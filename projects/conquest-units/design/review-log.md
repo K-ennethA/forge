@@ -388,3 +388,37 @@ around the bottom per the drawn zigzag, layered on the even floor ring
 (uniform contact stays, silhouette gets the tendrils). (4) Arms thickened
 at the mid/elbow area — currently too skinny. (5) Proportions: a bit
 taller, slightly skinnier neck — reads short and fat now.
+
+## 2026-09-26 — Supaoctto v2 feedback (artist verbatim + references)
+
+References saved: design/reference/supaoctto-v2-goggle-annotation.png (the
+current head with orange wing accents drawn on the goggle corners) and
+supaoctto-v2-visor-reference.png (angular swept W-shaped orange visor -
+the superhero glasses shape wanted).
+
+"lets have supacctoo be all blue - the darker one that exists on the
+tentacles, it should all be the color,
+
+the color for the water is good but it should connect closer to the bottom
+of the full length of the tentacle cape
+
+for the googles lets do an orange on the outer permiter of the google and
+the inner a complimenting color
+
+can we also make the goggles look more like this or like the glasses look
+so hes more superhero-esque
+
+lets get rid of the mouth piece and just give a small circle hole in its
+place
+
+can we also smooth out the textures and align things to be btter placed,
+and give the head a thin neck so it connects better to the body"
+
+Binding reading: (1) whole body = the darker cape blue (no coral skin;
+one blue all over). (2) water webs keep their color but extend to near the
+FULL length of the cape tentacles (currently 62%). (3+4) goggles reshape to
+the angular swept W-visor of the reference; orange outer perimeter/frame,
+complementing inner (lens) color. (5) mouth piece removed, replaced by a
+small circular hole. (6) general polish: smoother surfaces/textures,
+better-aligned part placement, and a thin neck so the head connects to the
+body instead of floating.
