@@ -117,3 +117,51 @@ uniform-loose sleeves fail every sleeve zone). Poke-through 0; canary
 fires. Untested: the tight sleeves in MOTION - the retarget-onto-MPFB
 wave covers it. Pre-existing, out of spec: jeans yoke cleft line,
 jagged back-pocket stitches.
+
+## 2026-09-25 - outfit v3 seat verdict (artist, verbatim + render saved)
+> the butt still goes in thats now how butts look like and the area around
+> the groin is too tight as well
+
+Ref saved: design/refs/jeans-seat-v3-rejected.webp. Reading: the cloth
+still DIPS INWARD between the buttocks - the cleft reads as a valley. Real
+jeans bridge the cleft entirely: every horizontal cross-section of the
+seat band must be CONVEX across the back (fabric spans cheek apex to cheek
+apex like a chord; zero concavity between them) - that becomes a measured
+gate, not a clearance number. And the GROIN/front-crotch is too tight -
+raise its ease so the front drapes (fabric bridges the front the same
+way). v3's per-zone clearances were necessary but not sufficient: cloth
+shape is about CONVEXITY, not just distance from skin.
+
+## 2026-09-25 - v3 sleeve addendum (artist, verbatim)
+> and the biceps are too skin tight now
+> we overcorrected
+
+Reading: bicep target sits BETWEEN v2 (16.5/34.6 - loose) and v3 (4.6/6.1 -
+shrink-wrapped): snug enough to read the muscle, with visible cloth body -
+aim ~9-13 mm median, leather has thickness and never vacuum-seals. The
+zone floors get re-pinned to that band.
+
+> for both biceps and forearms
+
+Addendum: the ease-back applies to biceps AND forearms - both snug with
+cloth body, not skin-tight. Forearm target up from v3's 8.9/10.0 toward
+~11-15 mm median; wrist may stay near v3.
+
+> you can see it scrunched the armpit torso area as well
+
+Addendum: the ARMPIT/torso junction is scrunched in v3 - the tight-sleeve
+blend into the shoulder/armpit anchor band crumples there (a v2-era fold
+fix regressed under the new sleeve). v4 must smooth the armpit junction:
+the sleeve-to-torso transition is a clean saddle, no pinched folds; add a
+local surface-smoothness check (crease/fold detection in the armpit band)
+so it cannot silently return.
+
+## 2026-09-25 - outfit v4 delivered
+Seat convexity gate: worst cleft dip 38.0 (v2) / 26.8 (v3, the rejected
+render) / 0.42 mm (v4, limit 1) - the fabric now spans the cheeks. Groin
+bridged (front convexity 41.4 -> 0.97 mm; crotch-V floor 16 mm). Arms
+re-pinned mid-band per the overcorrection call: bicep 8.9/10.5, forearm
+10.6/12.8. Armpit: 0 sharp valleys (v2 and v3 both measured ~2x curvature
+noise - the scrunch predated v3). Poke-through 0, canaries fire, tris
+unchanged. Still open: stitch lines blockier where the span moved
+vertices (pre-existing spec), sleeves untested in motion (retarget wave).

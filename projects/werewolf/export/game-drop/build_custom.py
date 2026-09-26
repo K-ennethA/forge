@@ -19,16 +19,24 @@ Builds, end to end and headless:
     biceps, easing through the elbow, a little tighter than the body drape to a snug cuff (torso
     drape unchanged); the jeans seat as one designed, monotone ease curve from the fitted seat top
     into a monotone straight-leg taper,
+  * v4 (2026-09-25 v3 seat verdict + sleeve/forearm/armpit addenda): the jeans' seat and fly are
+    SPANNED - every horizontal section from above the crotch to the waistband lies on its own convex
+    hull (cheek apex to cheek apex, thigh to thigh), built as a constrained membrane (span_membrane)
+    with a crotch-V ease floor; sleeves eased back between v2 and v3 (SLEEVE_EASE); the armpit band
+    settled as a membrane (smooth core floor, Taubin rounds) instead of v3's one-shot lift,
   * garment poke-through checks + the PER-ZONE MINIMUM-CLEARANCE gate (CLEARANCE_ZONES: declared
-    zones, floors + median bands, v2 rejected baselines; the seat ease curve scored for
-    monotonic smoothness) in the A-pose + hair crown coverage + tri breakdown + UV metrics.
+    zones, floors + median bands, v2/v3 rejected baselines; the seat ease curve scored for
+    monotonic smoothness) + the v4 SHAPE gates (seat/groin section convexity, armpit fold detector,
+    fold-over count) in the A-pose + hair crown coverage + tri breakdown + UV metrics.
 
 build     : blender --background --factory-startup --python build_custom.py -- build <out.blend> <report.json>
 render    : blender --background --factory-startup <out.blend> --python build_custom.py -- render <prefix> [stills|turntable|all]
 clearance : blender --background --factory-startup <any.blend> --python build_custom.py -- clearance <out.json>
 sidebyside: blender --background --factory-startup --python build_custom.py -- sidebyside <left.png> <right.png> <out.png>
 grid      : blender --background --factory-startup --python build_custom.py -- grid <out.png> <a.png> <b.png> [...]   (2 columns)
-render modes: all | stills | turntable | face | fit (jacket_closeup + arm) | compare (arm + seat)
+render modes: all | stills | turntable | face | fit (jacket_closeup + arm) | compare (arm + seat + groin + armpit)
+             | detail (groin + armpit)
+clearance also scores the v4 shape gates (seat/groin convexity, armpit folds, fold-over) on any .blend
 """
 import bpy, bmesh, sys, os, json, math, heapq, uuid, addon_utils
 from mathutils import Vector
@@ -591,6 +599,178 @@ def _ray_poly(poly, ang):
     return best
 
 
+def _poly_nearest(H, p):
+    """(inside, nearest boundary point) of 2-D point p against the CCW convex polygon H."""
+    inside, best, bq = True, 1e18, None
+    n = len(H)
+    for k in range(n):
+        a, b = H[k], H[(k + 1) % n]
+        ex, ey = b[0] - a[0], b[1] - a[1]
+        if ex * (p[1] - a[1]) - ey * (p[0] - a[0]) < 0:
+            inside = False
+        L2 = ex * ex + ey * ey
+        t = 0.0 if L2 < 1e-18 else max(0.0, min(1.0, ((p[0] - a[0]) * ex + (p[1] - a[1]) * ey) / L2))
+        q = (a[0] + ex * t, a[1] + ey * t)
+        d = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2
+        if d < best:
+            best, bq = d, q
+    return inside, bq
+
+
+def span_membrane(bmr, P, z_full, z_free, body, dmin_fn, layers, w_of, rounds=10, dz=0.0025, rings=5, reslices=4,
+                  untangle_region=None, reslice_sel=None):
+    """v4 SEAT/GROIN SPAN. Target: every horizontal section between z_full[0] and z_full[1] lies on
+    the CONVEX HULL of the cloth's own draped section - the stretched-chord span, apex to apex across
+    the cleft and thigh to thigh over the fly (where the section is already convex the hull IS the
+    cloth, nothing moves) - by weight w_of(p) (a C2 fade-in above the crotch, where the section parts
+    into the two leg openings). Built as a constrained membrane, not a per-vertex push (a radial push
+    drove the notch walls into the thighs and folded the cloth over):
+      1. hull targets sliced from the draped cloth; every vertex inside its section's hull moves
+         toward the nearest hull point; the SPAN = the vertices that moved, plus `rings` edge rings
+         around them within z_free (cheeks, thigh backs and v3's fall are not touched),
+      2. rounds of TANGENTIAL relaxation over the span - the Laplacian step with its normal component
+         removed, so the shape (and v3's fall profile) stays while the vertices that gathered on a
+         chord spread along it (measured: a plain or horizontal Taubin here filled the gluteal fold
+         and bumped the seat ease curve +7 mm at z 0.92) - each followed by the constraints: hull
+         projection, skin/layer floors,
+      3. re-slice: hulls re-cut from the CURRENT mesh and the vertices projected again, so the edges
+         between hull vertices (which sag inside a curved hull by L^2/8R) are lifted too."""
+    faces = [tuple(v.index for v in f.verts) for f in bmr.faces]
+    zs = [z_full[0] + dz * k for k in range(int((z_full[1] - z_full[0]) / dz) + 2)]
+
+    def cut():
+        out = []
+        for z in zs:
+            sec = z_section(P, faces, z, xlim=0.40)
+            out.append(_hull2d(sec) if len(sec) >= 8 else None)
+        return out
+
+    hz = [i for i in range(len(P)) if zs[0] <= P[i].z <= zs[-1]]
+
+    def project(hulls, idxs):
+        moved = {}
+        for i in idxs:
+            p = P[i]
+            if not (zs[0] <= p.z <= zs[-1]):
+                continue
+            fz = (p.z - zs[0]) / dz
+            k0 = max(0, min(len(zs) - 2, int(math.floor(fz))))
+            tz = max(0.0, min(1.0, fz - k0))
+            qs = []
+            for H in (hulls[k0], hulls[k0 + 1]):
+                if H is None:
+                    qs.append((p.x, p.y))
+                    continue
+                inside, q = _poly_nearest(H, (p.x, p.y))
+                qs.append(q if inside else (p.x, p.y))
+            w = w_of(p)
+            qx = p.x + (qs[0][0] * (1 - tz) + qs[1][0] * tz - p.x) * w
+            qy = p.y + (qs[0][1] * (1 - tz) + qs[1][1] * tz - p.y) * w
+            d = math.hypot(qx - p.x, qy - p.y)
+            if d > 0.0:
+                moved[i] = d
+                P[i] = Vector((qx, qy, p.z))
+        return moved
+
+    hulls = cut()
+    m0 = project(hulls, hz)
+    seed = {bmr.verts[i] for i, d in m0.items() if d > 0.0005}
+    near = graph_dist(bmr, seed, rings) if seed else {}
+    band = sorted(v.index for v in near if not v.is_boundary and z_free[0] <= P[v.index].z <= z_free[1])
+    fixed = set(range(len(P))) - set(band)
+    for _ in range(rounds):
+        tangential_relax(bmr, P, band, 3)
+        project(hulls, band)
+        enforce(P, band, body, dmin_fn, layers)
+    unt = []
+    if untangle_region is not None:
+        # fold-over repair, then the hull constraint again (the repair's Laplacian steps may pull a
+        # vertex back inside its section's hull, the projection may fold a notch wall): alternate
+        # until a projection leaves no fold (ends on the projection when it does)
+        for _ in range(6):
+            unt.append(untangle(bmr, P, body, dmin_fn, layers, untangle_region))
+            project(hulls, hz)
+            enforce(P, band, body, dmin_fn, layers)
+            left = [f for f in inward_faces(bmr, P, body)
+                    if untangle_region(sum((P[v.index] for v in f.verts), Vector()) / len(f.verts))]
+            unt.append(["after_projection", len(left)])
+            if not left:
+                break
+    resl = []
+    rsel = [i for i in hz if reslice_sel is None or reslice_sel(P[i])]
+    for _ in range(reslices):
+        m = project(cut(), rsel)
+        mv = enforce(P, band, body, dmin_fn, layers)
+        resl.append([round(max(m.values(), default=0.0) * 1000, 2), mv])
+    if untangle_region is not None and reslices:
+        unt.append(["after_reslice", len([f for f in inward_faces(bmr, P, body)
+                    if untangle_region(sum((P[v.index] for v in f.verts), Vector()) / len(f.verts))])])
+    return {"span_seed_verts": len(seed), "span_band_verts": len(band), "rounds": rounds, "rings": rings,
+            "untangle_rounds_then_final_inward": unt,
+            "first_projection_max_mm": round(max(m0.values(), default=0.0) * 1000, 1),
+            "reslice_max_mm_and_floor_moves": resl,
+            "hull_z": [round(z_full[0], 4), round(z_full[1], 4)], "free_z": [round(z_free[0], 4), round(z_free[1], 4)]}
+
+
+def tangential_relax(bmr, P, idxs, iters, fac=0.5):
+    """Even out vertex spacing WITHIN the surface: umbrella Laplacian minus its normal component."""
+    for _ in range(iters):
+        vn = [Vector() for _ in P]
+        for f in bmr.faces:
+            vs = [v.index for v in f.verts]
+            a, b, c = P[vs[0]], P[vs[1]], P[vs[2]]
+            nn = (b - a).cross(c - a)
+            if len(vs) == 4:
+                nn = nn + (c - a).cross(P[vs[3]] - a)
+            for i in vs:
+                vn[i] += nn
+        Q = list(P)
+        for i in idxs:
+            v = bmr.verts[i]
+            nb = [e.other_vert(v).index for e in v.link_edges]
+            if not nb or vn[i].length < 1e-12:
+                continue
+            n = vn[i].normalized()
+            L = sum((P[j] for j in nb), Vector()) / len(nb) - P[i]
+            Q[i] = P[i] + (L - n * L.dot(n)) * fac
+        P[:] = Q
+
+
+def inward_faces(bmr, P, body):
+    """Faces whose outward normal points back at the skin (dot < -0.2 with the direction from the
+    nearest skin point): the sheet folded over itself."""
+    bad = []
+    for f in bmr.faces:
+        vs = [P[v.index] for v in f.verts]
+        c = sum(vs, Vector()) / len(vs)
+        nn = (vs[1] - vs[0]).cross(vs[2] - vs[0])
+        if len(vs) == 4:
+            nn = nn + (vs[2] - vs[0]).cross(vs[3] - vs[0])
+        _, loc, _ = body.sd(c)
+        o = c - loc
+        if nn.length > 1e-12 and o.length > 1e-6 and nn.normalized().dot(o.normalized()) < -0.2:
+            bad.append(f)
+    return bad
+
+
+def untangle(bmr, P, body, dmin_fn, layers, region, rounds=12):
+    """Local fold-over repair: the vertices of every inward face (+1 edge ring) within `region`
+    take a few plain Laplacian steps (a fold is a local extremum Laplacian flattens), then their
+    floors again; repeat until no inward face is left or `rounds` runs out."""
+    hist = []
+    for _ in range(rounds):
+        bad = [f for f in inward_faces(bmr, P, body) if region(sum((P[v.index] for v in f.verts), Vector()) / len(f.verts))]
+        hist.append(len(bad))
+        if not bad:
+            break
+        vs = {v for f in bad for v in f.verts}
+        vs |= {e.other_vert(v) for v in list(vs) for e in v.link_edges}
+        idx = {v.index for v in vs if not v.is_boundary}
+        taubin(bmr, P, 3, lam=0.5, mu=0.0, fixed=set(range(len(P))) - idx)
+        enforce(P, sorted(idx), body, dmin_fn, layers)
+    return hist
+
+
 class Envelope:
     """Radial silhouette around a vertical axis (ax, ay): per horizontal slice the convex hull of
     the outermost skin (cloth bridges every concavity: spine groove, sternum, waist), then hung:
@@ -664,12 +844,21 @@ def _bins(pts_t, lo, hi, n):
 # a little tighter than the body drape along the forearm, tapering snug to the cuff. The zone
 # boundaries are the SAME declared rules the clearance gate scores (jacket_zone).
 # ----------------------------------------------------------------------------------------------
-SLEEVE_EASE = {"bicep": 0.0050, "elbow": 0.0120, "forearm": 0.0095, "wrist": 0.0085}
+# v4 (2026-09-25 artist, v3 sleeve addendum: "the biceps are too skin tight now ... we
+# overcorrected ... for both biceps and forearms"): re-pinned between v2 (bicep median 34.6, forearm
+# 32.6 - loose) and v3 (6.1 / 10.0 - shrink-wrapped). v3 measured median ~= ease + 1 mm (bicep 5.0 ->
+# 6.1, forearm 9.5 -> 10.0), so ease = target median - ~1: bicep 10 mm -> ~11 (band 9-13), forearm
+# 12.5 mm -> ~13 (band 11-15). Elbow (bunching) and wrist (v3 9.8, "may stay") unchanged.
+SLEEVE_EASE = {"bicep": 0.0100, "elbow": 0.0120, "forearm": 0.0125, "wrist": 0.0085}
 # enforce() floors per zone (skin) and the tee margin under the sleeve (a leather thickness over
 # the CC0 tee sleeve instead of the torso's 7 mm air layer) - each a little above the gate floor
 # (MPFB refit drifts <= 0.2 mm, see refit_max_dev_mm)
-SLEEVE_DMIN = {"bicep": 0.0046, "elbow": 0.0046, "forearm": 0.0086, "wrist": 0.0086}
+SLEEVE_DMIN = {"bicep": 0.0086, "elbow": 0.0046, "forearm": 0.0106, "wrist": 0.0086}
 SLEEVE_TEE_MARGIN = 0.0015
+ARMPIT_MEMBRANE_ROUNDS = 8
+# armpit-core clearance (skin and tee) the lift hangs the leather at (v3's 6 mm; measured: 9 mm
+# sharpened the saddle - valley max 29.3 -> 32.8 deg, crease edges 10 -> 16 per side)
+ARMPIT_CORE_CLEAR = 0.006
 ZONE_T = {"bicep_end": 0.85, "elbow_end": 0.15, "forearm_end": 0.75}   # t along shoulder->elbow / elbow->wrist
 HAND_PREFIX = ("hand", "thumb", "index", "middle", "ring", "pinky")
 
@@ -948,7 +1137,7 @@ class LegTube:
         return p, u
 
 
-def taubin(bmr, P, iters, lam=0.5, mu=-0.53, fixed=()):
+def taubin(bmr, P, iters, lam=0.5, mu=-0.53, fixed=(), keep_z=False):
     bnd = {v for v in bmr.verts if v.is_boundary}
     nbrs = {}
     for v in bmr.verts:
@@ -965,6 +1154,8 @@ def taubin(bmr, P, iters, lam=0.5, mu=-0.53, fixed=()):
                 if nb:
                     avg = sum((P[j] for j in nb), Vector()) / len(nb)
                     Q[i] = P[i] + (avg - P[i]) * f
+                    if keep_z:
+                        Q[i].z = P[i].z
             P[:] = Q
 
 
@@ -1129,7 +1320,7 @@ def build_jeans(body, layers, rep):
     # seam hangs below the body's crotch (a real jeans crotch drop) instead of hugging it
     # The seam line is the lower convex hull of the body's midline profile (side view): it bridges
     # the perineum and the gluteal cleft like a gusset, then hangs CROTCH_DROP below it.
-    CROTCH_DROP = 0.018
+    CROTCH_DROP = 0.018               # v4 keeps it; the groin floor below lifts the V walls
     mid = sorted((round(body.co[i].y, 4), body.co[i].z) for i in range(len(body.co))
                  if body.in_body[i] and abs(body.co[i].x) < 0.035 and z_c - 0.02 < body.co[i].z < z_c + 0.16)
     low = []
@@ -1189,8 +1380,60 @@ def build_jeans(body, layers, rep):
     # 10.9 mm by luck over an 8 mm floor), lifted toward the designed ease on the rear fall
     WS = [w_seat(B[i][0]) for i in range(len(P))]
     WF = [_smooth(WAIST(B[i][0]) - 0.008, WAIST(B[i][0]) - 0.045, B[i][0].z) for i in range(len(P))]
-    dmin = lambda i: max(0.008 + 0.0023 * WF[i], 0.008 + max(0.0, E_seat(B[i][0].z) - 0.001 - 0.008) * WS[i])
+    # v4 GROIN (artist: "the area around the groin is too tight"): v3's front crotch sat on the hip
+    # hull + 13 mm and on the leg tubes' 11 mm, dipping into the notch between the thighs. The
+    # declared groin zone (groin_zone, the gate's own rule) gets a GROIN_FLOOR skin floor, blended
+    # C1 over 30-40 mm at every zone edge, and then the section span (convexify below) bridges it.
+    GROIN_FLOOR = 0.0160
+    # the hull span fades in C2 over SPAN_FADE from crotch + offset: the FRONT starts 15 mm lower so
+    # the fly panel is fully spanned by the groin gate's first slice (crotch + 30 mm); the REAR starts
+    # at the crotch apex (starting lower bridged the lower buttock from the thigh-back apexes: +7 mm
+    # of chord air on the resting cheek columns at z 0.91-0.92, a seat-ease-curve bump)
+    SPAN_OFFSET = {"front": -0.015, "rear": 0.0}
+    SPAN_FADE = 0.025
+    SPAN_TOP = 1.085                  # through the waistband: its sacral dip is spanned too (a lower top left
+                                      # the seat gate's top slice 4.8 mm concave: edges into the unspanned band)
+    SPAN_RINGS = 5
+    SPAN_RESLICES = 3                 # front only: re-cut hulls lift the edges that cross the fly span
+    SPAN_ROUNDS = 6
+
+    def w_groin(b, n):
+        g = GROIN_ZONE
+        return (_smooth(g["abs_x_m"] + 0.015, g["abs_x_m"] - 0.01, abs(b.x)) *
+                _smooth(ay + g["front_of_axis_m"] + 0.02, ay + g["front_of_axis_m"] - 0.01, b.y) *
+                _smooth(z_c + g["dz_m"][0] - 0.02, z_c + g["dz_m"][0] + 0.01, b.z) *
+                _smooth(z_c + g["dz_m"][1] + 0.03, z_c + g["dz_m"][1], b.z))
+    WG = [w_groin(B[i][0], B[i][1]) for i in range(len(P))]
+    dmin = lambda i: max(0.008 + 0.0023 * WF[i], 0.008 + max(0.0, E_seat(B[i][0].z) - 0.001 - 0.008) * WS[i],
+                         0.008 + (GROIN_FLOOR - 0.008) * WG[i] * WF[i])
     enforce(P, [v.index for v in bmr.verts], body, dmin, layers)
+    # v4 SEAT + GROIN SPAN (artist, v3 seat verdict: "the butt still goes in thats not how butts look
+    # like"): v3 held its ease on every seat column and still dipped 1.7 -> 32.6 mm into the cleft
+    # below z 0.99 (the leg tubes' notch blended in by the C2 fall, the level set on the inner cheek
+    # columns). Every cross-section from 25 mm above the crotch to the waistband anchor is made
+    # convex - the fabric spans cheek apex to cheek apex and thigh to thigh over the fly - and the
+    # membrane band blends it into the untouched legs below the crotch seam (below it the section is
+    # the two leg openings: a hull there would be a skirt) and into the waistband ring.
+    def w_span(p):
+        z0 = z_c + SPAN_OFFSET["front"] + (SPAN_OFFSET["rear"] - SPAN_OFFSET["front"]) * _smooth(ay - 0.03, ay + 0.03, p.y)
+        return _smoother(z0, z0 + SPAN_FADE, p.z)
+    rep["jeans_span"] = span_membrane(bmr, P, (z_c + min(SPAN_OFFSET.values()), SPAN_TOP), (z_c - 0.03, SPAN_TOP), body, dmin,
+                                      layers, w_span, rings=SPAN_RINGS, reslices=SPAN_RESLICES, rounds=SPAN_ROUNDS,
+                                      untangle_region=lambda c: abs(c.x) < 0.10 and z_c - 0.08 <= c.z <= z_c + 0.08,
+                                      reslice_sel=lambda p: p.y < ay - 0.02)
+    # crotch finish: the span gathers the V-wall vertices along the bottom of the fly panel (a rim of
+    # slivers that shades dark and jagged). Below both gate bands (crotch + 25 mm) a few rounds of
+    # Taubin low-pass + floors round that rim into the crotch curve, then the fold repair again.
+    crotch = [v.index for v in bmr.verts if not v.is_boundary and abs(P[v.index].x) < 0.08
+              and z_c - 0.05 <= P[v.index].z <= z_c + 0.025]
+    cfix = set(range(len(P))) - set(crotch)
+    for _ in range(3):
+        taubin(bmr, P, 6, fixed=cfix)
+        enforce(P, crotch, body, dmin, layers)
+    rep["jeans_span"]["crotch_finish"] = {"verts": len(crotch), "untangle": untangle(
+        bmr, P, body, dmin, layers, lambda c: abs(c.x) < 0.10 and z_c - 0.08 <= c.z <= z_c + 0.08)}
+    rep["jeans_span"].update({"groin_floor_mm": GROIN_FLOOR * 1000,
+                              "enforce_moved_after": enforce(P, [v.index for v in bmr.verts], body, dmin, layers)})
     for v in bmr.verts:
         v.co = P[v.index]
     bmr.normal_update()
@@ -1401,14 +1644,16 @@ def build_jacket(body, layers, rep):
     zone = [jacket_zone(b, dom, body.bones) for b, n, dom in B]
     wfree = [w_free_of(b) for b, n, dom in B]
 
+    # v4: the armpit-core floor (4 mm) reaches the band floor C1-smoothly over 50-90 mm from the apex;
+    # v3 stepped 4 -> 12 mm at exactly 70 mm, and enforce() lifted a ring of vertices 8 mm off their
+    # neighbours there - one source of the scrunched armpit ("you can see it scrunched the armpit
+    # torso area as well")
+    rpit = [min((b - pits[s]).length for s in "lr") for b, n, dom in B]
+
     def dmin_j(i):
-        b = B[i][0]
-        if min((b - pits[s]).length for s in "lr") < 0.07:
-            return 0.004
         z = zone[i]
-        if z in SLEEVE_DMIN:
-            return 0.012 + (SLEEVE_DMIN[z] - 0.012) * wfree[i]
-        return 0.012
+        base = 0.012 + (SLEEVE_DMIN[z] - 0.012) * wfree[i] if z in SLEEVE_DMIN else 0.012
+        return 0.004 + (base - 0.004) * _smooth(0.05, 0.09, rpit[i])
 
     relax(bmr, 40, 0.5, anchored, body, dmin_j, layers, P)
     snap()
@@ -1449,31 +1694,52 @@ def build_jacket(body, layers, rep):
     # Smooth the core flat, then move it along ONE shared direction (down, out of the hollow)
     # until it clears skin and tee.
     core = {s: [v.index for v in bmr.verts if (B[v.index][0] - pits[s]).length < 0.075] for s in "lr"}
+    out = Vector((0.0, -0.1, -1.0)).normalized()     # the hollow opens downward
+    tee_layer = layers[0]
+
+    def lift(i, step=0.0005):
+        p, n_steps = P[i], 0
+        for _ in range(120):
+            s_b, _, _ = body.sd(p)
+            ok = s_b >= ARMPIT_CORE_CLEAR
+            if ok:
+                loc, n_, _, _ = tee_layer.tree.find_nearest(p, 0.03)
+                if loc is not None:
+                    _, _, bn = body.sd(loc)
+                    if n_.dot(bn) < 0:
+                        n_ = -n_
+                    ok = (p - loc).dot(n_) >= ARMPIT_CORE_CLEAR
+            if ok:
+                break
+            p = p + out * step
+            n_steps += 1
+        P[i] = p
+        return n_steps * step
+
     for s, idxs in core.items():
         if not idxs:
             continue
-        out = Vector((0.0, -0.1, -1.0)).normalized()     # the hollow opens downward
         taubin(bmr, P, 12, lam=0.5, mu=0.0, fixed=set(range(len(P))) - set(idxs))   # plain Laplacian: unfold
-        tee_layer = layers[0]
-        lifted = 0
-        for i in idxs:
-            p = P[i]
-            for _ in range(60):
-                s_b, _, _ = body.sd(p)
-                ok = s_b >= 0.006
-                if ok:
-                    loc, n_, _, _ = tee_layer.tree.find_nearest(p, 0.03)
-                    if loc is not None:
-                        _, _, bn = body.sd(loc)
-                        if n_.dot(bn) < 0:
-                            n_ = -n_
-                        ok = (p - loc).dot(n_) >= 0.006
-                if ok:
-                    break
-                p = p + out * 0.001
-                lifted += 1
-            P[i] = p
-        rep.setdefault("jacket_armpit_lift_total_mm", {})[s] = lifted   # summed 1 mm steps over the core verts
+        lifted = sum(lift(i) for i in idxs)   # (v4: 0.5 mm steps, v3 1 mm)
+        rep.setdefault("jacket_armpit_lift_total_mm", {})[s] = round(lifted * 1000)   # summed lift over the core verts
+    # v4 ARMPIT JUNCTION (artist: "you can see it scrunched the armpit torso area as well"): the
+    # one-shot per-vertex lift above leaves neighbouring core vertices lifted by different amounts
+    # (v3: ~1000 mm summed over the core), and the band between core and sleeve carries the
+    # anchor-to-sleeve blend. Settle the whole armpit band (anchor radius) as a membrane: rounds of
+    # Taubin low-pass (no shrink) over the band, then the constraints again - the shared-direction
+    # lift in the core, skin/tee floors outside it - until the band rests smoothly on them (a clean
+    # saddle between the torso and sleeve). Scored by the armpit fold gate (shape_gates).
+    band = {v.index for v in bmr.verts if not v.is_boundary and rpit[v.index] < ANCHOR_R["armpit"]}
+    core_all = {i for idxs in core.values() for i in idxs}
+    outer = sorted(band - core_all)
+    fixed = set(range(len(P))) - band
+    lifts = []
+    for _ in range(ARMPIT_MEMBRANE_ROUNDS):
+        taubin(bmr, P, 6, fixed=fixed)
+        enforce(P, outer, body, dmin_j, layers)
+        lifts.append(round(sum(lift(i) for i in core_all) * 1000))
+    rep["jacket_armpit_membrane"] = {"band_verts": len(band), "core_verts": len(core_all), "rounds": ARMPIT_MEMBRANE_ROUNDS,
+                                     "core_lift_sum_mm_per_round": lifts}
     for v in bmr.verts:
         v.co = P[v.index]
     bmr.normal_update()
@@ -2358,14 +2624,16 @@ def inside_check(shell, body_tree, reach=0.03, tol=0.0005):
 CLEARANCE_ZONES = {
     "jacket": {
         "bicep":   {"rule": "upperarm-dominant skin, t < %.2f shoulder->elbow" % ZONE_T["bicep_end"],
-                    "min_mm": 4.0, "median_mm": [4.0, 8.0],
-                    "rejected_baseline_v2": {"n": 394, "min": 16.5, "median": 34.6}},
+                    "min_mm": 8.0, "median_mm": [9.0, 13.0],
+                    "rejected_baseline_v2": {"n": 394, "min": 16.5, "median": 34.6},
+                    "rejected_baseline_v3": {"n": 378, "min": 4.6, "median": 6.1}},
         "elbow":   {"rule": "upperarm t >= %.2f or lowerarm t < %.2f (eases through, bunching)" % (ZONE_T["bicep_end"], ZONE_T["elbow_end"]),
                     "min_mm": 4.0, "median_mm": [4.0, 20.0],
                     "rejected_baseline_v2": {"n": 342, "min": 17.2, "median": 43.3}},
         "forearm": {"rule": "lowerarm t in [%.2f, %.2f) elbow->wrist" % (ZONE_T["elbow_end"], ZONE_T["forearm_end"]),
-                    "min_mm": 8.0, "median_mm": [8.0, 14.0],
-                    "rejected_baseline_v2": {"n": 408, "min": 23.7, "median": 32.6}},
+                    "min_mm": 10.0, "median_mm": [11.0, 15.0],
+                    "rejected_baseline_v2": {"n": 408, "min": 23.7, "median": 32.6},
+                    "rejected_baseline_v3": {"n": 404, "min": 8.9, "median": 10.0}},
         "wrist":   {"rule": "lowerarm t >= %.2f, or hand-dominant skin" % ZONE_T["forearm_end"],
                     "min_mm": 8.0, "median_mm": [8.0, 12.0],
                     "rejected_baseline_v2": {"n": 266, "min": 23.5, "median": 32.1}},
@@ -2377,6 +2645,13 @@ CLEARANCE_ZONES = {
                       "min_mm": 8.0, "median_mm": [8.0, 12.0]},
         "seat_fall": {"rule": "rear-facing skin from the seat apex down to crotch - 100 mm",
                       "min_mm": 8.0, "median_mm": [None, None]},
+        "groin":     {"rule": "crotch V: skin |x| < 0.06, in front of hip axis + 30 mm, crotch - 40 mm .. crotch + 50 mm",
+                      # the artist's "too tight" is the V walls hugging the crotch: gated by the
+                      # zone MIN (v3 10.7 mm) against the ~15-20 mm ease asked; the median mixes
+                      # that ease with the span's chord air over the notch, so it is reported only
+                      "min_mm": 15.0, "median_mm": [None, None],
+                      "rejected_baseline_v2": {"n": 81, "min": 10.9, "median": 23.5},
+                      "rejected_baseline_v3": {"n": 80, "min": 10.7, "median": 21.8}},
         "hip":       {"rule": "front/sides above the crotch", "min_mm": 10.0, "median_mm": [None, None]},
         "leg":       {"rule": "below the crotch, not seat", "min_mm": 10.0, "median_mm": [25.0, None]},
     },
@@ -2391,10 +2666,25 @@ CLEARANCE_ZONES = {
 # Rejected baseline v2: 13.1 (z 1.01) rising to 27.7 (0.94), collapsing to 18.0 (0.91: the hung
 # seat envelope handed to the leg tube over 60 mm), back up to 28.8 (0.85), down to 22.7 (0.80);
 # worst drawdown 9.7 mm, worst step 5.5 mm/cm -> FAIL.
-SEAT_CURVE = {"abs_x_m": [0.04, 0.13], "bin_m": 0.01, "half_window_m": 0.010,
+# v4 RE-PIN (2026-09-25, v3 seat verdict): v3's inner bound 0.04 excluded the cleft band because that
+# band stayed bridged on the hull; v4 bridges the whole span between the cheek apexes (the convexity
+# gate), so column vertices over the spanned notch carry chord AIR, not ease - it rises where the
+# notch deepens and falls where the legs part, which a monotone-ease ruler reads as a collapse
+# (measured on v4 unfiltered: 23.1 mm at z 0.91 over the notch). Samples whose skin lies deeper than
+# span_depth_max_m inside its section's convex outline (body_hull_depth) are skipped: skin further
+# inside the outline than the seat's own design ease (EASE_SEAT 10.5 mm) is not what the cloth rests
+# on - that span is scored by the seat convexity gate. Columns, bins and limits unchanged.
+# Re-scored with this ruler: v2 drawdown 9.4 / step 5.4 FAIL (unchanged verdict), v3 0.8 / 1.7 PASS,
+# v4 0.8 / 2.1 PASS (v4 unfiltered: 5.0, the notch's chord air).
+SEAT_CURVE = {"abs_x_m": [0.04, 0.13], "span_depth_max_m": 0.010, "bin_m": 0.01, "half_window_m": 0.010,
               "max_dip_mm": 1.5, "max_step_mm": 3.0, "end_min_mm": 10.0}
 CLEAR_BINS_MM = [0, 5, 10, 15, 20, 30, 40, 60, 80, 1e9]
 ANCHOR_R = {"shoulder": 0.12, "armpit": 0.10}
+# v4 groin = the CROTCH V the v3 front read showed hugged (measured on v3: the fly above it stands 28-53
+# mm off the belly, the cloth in the V between the thighs 10.7-25 mm, following the notch): skin
+# within 60 mm of the midline, in front of the hip axis + 30 mm (front crotch + perineum), from 40 mm
+# below to 50 mm above the crotch apex - any facing (the V walls are the inner thighs)
+GROIN_ZONE = {"abs_x_m": 0.06, "dz_m": [-0.04, 0.05], "front_of_axis_m": 0.03}
 
 
 def armpit(body, s):
@@ -2423,14 +2713,35 @@ def seat_landmarks(body):
             and body.dom[i] in ("pelvis", "thigh_l", "thigh_r") and 0.03 < abs(body.co[i].x) < 0.15
             and z_c < body.co[i].z < 1.12]
     apex = max(butt, key=lambda p: p.y)
-    return {"crotch_z": z_c, "seat_z": apex.z, "seat_y": apex.y, "fall_end_z": z_c - 0.10}
+    pel = [body.co[i].y for i in range(len(body.co)) if body.in_body[i] and body.dom[i] == "pelvis"]
+    return {"crotch_z": z_c, "seat_z": apex.z, "seat_y": apex.y, "fall_end_z": z_c - 0.10,
+            "hip_axis_y": sum(pel) / max(1, len(pel))}      # the jeans' hip envelope axis (build_jeans ay)
 
 
 def _landmarks(rig, body):
-    b = {n: rig.matrix_world @ rig.data.bones[n].head_local for n in ("upperarm_l", "upperarm_r", "pelvis")}
+    b = {n: rig.matrix_world @ rig.data.bones[n].head_local for n in ("upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r", "pelvis")}
     b["armpit_l"], b["armpit_r"] = armpit(body, "l"), armpit(body, "r")
     b.update(seat_landmarks(body))
+    b["_body_hulls"] = body_section_hulls(body, b["fall_end_z"] - 0.02, b["seat_z"] + 0.07)
     return b
+
+
+def body_section_hulls(body, z0, z1, dz=0.005):
+    polys = [body.faces[fi] for fi in body.body_faces if body.fdom[fi] in (TORSO | LEGS)]
+    out, z = [], z0
+    while z <= z1 + 1e-9:
+        sec = z_section(body.co, polys, z, xlim=0.24)
+        out.append((z, _hull2d(sec) if len(sec) >= 8 else None))
+        z += dz
+    return out
+
+
+def body_hull_depth(hulls, p):
+    """How far skin point p lies inside its body section's convex hull: 0 on the anatomy's convex
+    outline (where cloth spanning the section RESTS), deep = under a span (the notch between the
+    thighs, the cleft)."""
+    z, H = min(hulls, key=lambda t: abs(t[0] - p.z))
+    return _hull_depth(H, (p.x, p.y)) if H else 0.0
 
 
 def anchor_band(key, p, lm):
@@ -2444,12 +2755,20 @@ def anchor_band(key, p, lm):
     return False
 
 
+def groin_zone(b, n, z, lm):
+    """v4 declared groin zone (GROIN_ZONE: the crotch V), shared by the build's ease floor and the gate."""
+    return (abs(b.x) < GROIN_ZONE["abs_x_m"] and b.y < lm["hip_axis_y"] + GROIN_ZONE["front_of_axis_m"] and
+            lm["crotch_z"] + GROIN_ZONE["dz_m"][0] <= z <= lm["crotch_z"] + GROIN_ZONE["dz_m"][1])
+
+
 def jeans_zone(p, b, n, lm):
     back = n.y > 0.3 and abs(b.x) < 0.16
     if back and p.z >= lm["seat_z"]:
         return "seat_top"
     if back and p.z >= lm["fall_end_z"]:
         return "seat_fall"
+    if groin_zone(b, n, p.z, lm):
+        return "groin"
     return "leg" if p.z < lm["crotch_z"] else "hip"
 
 
@@ -2476,9 +2795,11 @@ def _summ(xs):
 
 
 def seat_curve(samples, lm):
-    """samples: (z, gap_mm, |x|) of seat_top + seat_fall vertices -> the ease-vs-height curve + verdict."""
+    """samples: (z, gap_mm, |x|, span depth m) of seat_top + seat_fall vertices -> the ease-vs-height
+    curve + verdict. v4: samples whose skin lies deeper than span_depth_max_m inside its section's
+    convex outline are under the span (chord air, scored by the convexity gate) and skipped."""
     c = SEAT_CURVE
-    col = [(z, d) for z, d, ax in samples if c["abs_x_m"][0] <= ax <= c["abs_x_m"][1]]
+    col = [(z, d) for z, d, ax, dp in samples if c["abs_x_m"][0] <= ax <= c["abs_x_m"][1] and dp <= c["span_depth_max_m"]]
     if not col:
         return {"curve": [], "pass": False}
     z = math.floor(max(z for z, _ in col) / c["bin_m"]) * c["bin_m"]
@@ -2520,14 +2841,15 @@ def clearance_stats(body, obj, key, lm):
         free.append(d)
         tight.append((d, z, p))
         if z in ("seat_top", "seat_fall"):
-            seat.append((p.z, d, abs(p.x)))
+            seat.append((p.z, d, abs(p.x), body_hull_depth(lm["_body_hulls"], loc)))
     out_z, ok = {}, True
     for z, xs in zones.items():
         g = CLEARANCE_ZONES[key][z]
         sm = _summ(xs)
         lo, hi = g["median_mm"]
-        zok = sm["n"] > 0 and sm["min"] >= g["min_mm"] and (lo is None or sm["median"] >= lo) and \
-            (hi is None or sm["median"] <= hi)
+        med = sm.get("median")
+        zok = (sm["n"] > 0 and sm["min"] >= g["min_mm"] and med is not None and (lo is None or med >= lo)
+               and (hi is None or med <= hi))
         worst = sorted((t for t in tight if t[1] == z), key=lambda t: t[0])[:3]
         out_z[z] = {"gate": {"min_mm": g["min_mm"], "median_mm": g["median_mm"]}, "stats": sm, "pass": bool(zok),
                     "tightest": [[round(d, 1)] + [round(c, 3) for c in p] for d, _, p in worst]}
@@ -2542,18 +2864,289 @@ def clearance_stats(body, obj, key, lm):
 
 
 def clearance(blend_report):
-    """Score the loaded .blend (any version) against the per-zone minimum-clearance gate."""
+    """Score the loaded .blend (any version) against the per-zone minimum-clearance gate and the v4
+    shape gates (seat/groin cross-section convexity, armpit fold detector)."""
     bm = bpy.data.objects["Protagonist"]
     rig = bpy.data.objects["Protagonist.rig"]
     body = Body(bm, rig)
     lm = _landmarks(rig, body)
     out = {k: clearance_stats(body, bpy.data.objects["Protagonist." + k], k, lm) for k in ("jacket", "jeans")}
-    out["landmarks"] = {k: (round(v, 4) if isinstance(v, float) else [round(c, 4) for c in v]) for k, v in lm.items()}
+    out.update(shape_gates(body, bpy.data.objects["Protagonist.jeans"], bpy.data.objects["Protagonist.jacket"], lm))
+    out["landmarks"] = {k: (round(v, 4) if isinstance(v, float) else [round(c, 4) for c in v]) for k, v in lm.items()
+                        if not k.startswith("_")}
     json.dump(out, open(blend_report, "w"), indent=1)
     print("CLEARANCE", json.dumps({k: {"pass": v["pass"], **({z: [r["stats"].get("min"), r["stats"].get("median"), r["pass"]]
                                                                for z, r in v["zones"].items()})}
-                                   for k, v in out.items() if k != "landmarks"}, indent=1))
+                                   for k, v in out.items() if k in ("jacket", "jeans")}, indent=1))
+    print("SHAPE", json.dumps(shape_summary(out), indent=1))
     return out
+
+
+# ----------------------------------------------------------------------------------------------
+# v4 SHAPE GATES (2026-09-25 artist, v3 seat verdict: "the butt still goes in thats not how butts
+# look like and the area around the groin is too tight"; addendum: "you can see it scrunched the
+# armpit torso area"). Clearance numbers were necessary but not sufficient: v3 held 10.5-20 mm off
+# the skin everywhere on the seat and still dipped into the cleft. Cloth SHAPE is scored directly:
+#   * SEAT CONVEXITY - every horizontal cross-section of the jeans in the seat band is sliced exactly
+#     (mesh edges crossing the plane); the rear arc between the two cheek apexes (the rearmost section
+#     point each side of the midline) must lie ON the section's convex hull: fabric spans apex to apex
+#     like a stretched chord. Deviation = distance of each section point inside the hull boundary;
+#     gate: max over the band <= SHAPE_GATE["seat_dev_max_mm"].
+#   * GROIN - the same measure on the front arc between the two front apexes over the crotch band,
+#     plus the groin clearance zone (CLEARANCE_ZONES jeans "groin").
+#   * ARMPIT FOLD - dihedral angle of every jacket cloth edge (kind 0 faces both sides) within the
+#     armpit anchor radius of the apex, against the same statistic on the surrounding cloth ring:
+#     a crumple is a cluster of sharp edges where the reference ring has none.
+# ----------------------------------------------------------------------------------------------
+# SEAT band = the cheek-apex height range: from the lowest height (scanning down from the seat apex,
+# 5 mm steps) where the rearmost skin point each side is still ON THE BUTTOCK (|x| <= 100 mm; below
+# the cheeks it jumps out to the thigh back, measured 80 -> 108 mm between z 0.94 and 0.93) up to
+# 15 mm under the back waist edge (the waistband spans the sacrum too). GROIN band: 30 mm above the
+# crotch apex (below it the section pinches into the two leg openings - a hull there would be a
+# skirt between the legs) to 110 mm above it (the fly's lower half).
+SEAT_BAND = {"cheek_apex_x_max_m": 0.100, "z_hi_below_back_waist_m": 0.015, "step_m": 0.005}
+GROIN_BAND = {"z_lo_above_crotch_m": 0.030, "z_hi_above_crotch_m": 0.110, "step_m": 0.005}
+# reference ring stops at 160 mm: past it the elbow bunching (sigma 50 mm around the crook, ~230 mm
+# from the apex) is designed fold, not scrunch.
+# PINCH threshold: in the A-pose the cloth must turn ~139 deg across the armpit (torso side -> sleeve
+# underside: 180 - the upper arm's ~41 deg from vertical, reported per side as saddle_turn_deg), so a
+# CLEAN saddle carries valleys by construction (~20 deg per edge over a ~7-edge bridge at this mesh
+# density). A valley sharper than 35 deg takes the turn in < 4 edges (bridge radius under ~16 mm):
+# a pinch. SCRUNCH = oscillating curvature: the band's curvature-noise p95 may be no higher than
+# 1.25x the surrounding ring's (sleeve + torso drape, no designed folds).
+ARMPIT_FOLD = {"band_r_m": ANCHOR_R["armpit"], "ref_r_m": [ANCHOR_R["armpit"], 0.16], "crease_deg": 35.0}
+SHAPE_GATE = {"seat_dev_max_mm": 1.0, "groin_dev_max_mm": 1.0,
+              "armpit_noise_over_ref_max": 1.25, "armpit_pinch_edges_max": 0}
+
+
+def z_section(pts, polys, z, xlim=0.26):
+    """Exact horizontal cross-section: the points where mesh edges cross the plane z (x, y)."""
+    out = set()
+    for f in polys:
+        n = len(f)
+        for k in range(n):
+            a, b = pts[f[k]], pts[f[(k + 1) % n]]
+            if (a.z - z) * (b.z - z) < 0:
+                t = (z - a.z) / (b.z - a.z)
+                x = a.x + (b.x - a.x) * t
+                if abs(x) < xlim:
+                    out.add((round(x, 6), round(a.y + (b.y - a.y) * t, 6)))
+    return list(out)
+
+
+def _hull_depth(H, p):
+    """Distance of p inside the CCW convex polygon H (0 on the boundary)."""
+    best = 1e9
+    n = len(H)
+    for k in range(n):
+        a, b = H[k], H[(k + 1) % n]
+        ex, ey = b[0] - a[0], b[1] - a[1]
+        L = math.hypot(ex, ey)
+        if L < 1e-12:
+            continue
+        best = min(best, (ex * (p[1] - a[1]) - ey * (p[0] - a[0])) / L)
+    return max(0.0, best)
+
+
+def arc_convexity(sec, y_axis, rear=True):
+    """Rear (y > y_axis) or front arc of one closed section: the two apexes (extreme-y point on each
+    side of the midline), the chord between them and the max inward deviation from the hull of the
+    points between the apexes (the cleft / crotch span) and over the whole arc."""
+    sgn = 1.0 if rear else -1.0
+    arc = [p for p in sec if sgn * (p[1] - y_axis) > 0]
+    L = [p for p in arc if p[0] > 0]
+    R = [p for p in arc if p[0] < 0]
+    if len(sec) < 8 or not L or not R:
+        return None
+    aL = max(L, key=lambda p: sgn * p[1])
+    aR = max(R, key=lambda p: sgn * p[1])
+    H = _hull2d(sec)
+    span = [p for p in arc if aR[0] <= p[0] <= aL[0]]
+    dev_span = max((_hull_depth(H, p) for p in span), default=0.0)
+    dev_arc = max((_hull_depth(H, p) for p in arc), default=0.0)
+    mid = min(arc, key=lambda p: abs(p[0]))
+    t = (mid[0] - aR[0]) / max(1e-9, aL[0] - aR[0])
+    chord_y = aR[1] + (aL[1] - aR[1]) * t
+    return {"apex_l": [round(aL[0], 4), round(aL[1], 4)], "apex_r": [round(aR[0], 4), round(aR[1], 4)],
+            "span_dev_mm": round(dev_span * 1000, 2), "arc_dev_mm": round(dev_arc * 1000, 2),
+            "mid_below_chord_mm": round(sgn * (chord_y - mid[1]) * 1000, 2), "n": len(sec)}
+
+
+def _cloth_polys(obj):
+    pts, polys, kinds = eval_points(obj)
+    keep = [f for i, f in enumerate(polys) if kinds is None or kinds[i] == 0]
+    return pts, keep
+
+
+def band_convexity(body, obj, lm, z_lo, z_hi, step, rear, with_body=True):
+    pts, polys = _cloth_polys(obj)
+    zmin = z_lo - 0.02
+    polys = [f for f in polys if max(pts[v].z for v in f) >= zmin and min(pts[v].z for v in f) <= z_hi + 0.02]
+    bpolys = [body.faces[fi] for fi in body.body_faces
+              if body.fdom[fi] in (TORSO | LEGS) and z_lo - 0.02 <= body.center(fi).z <= z_hi + 0.02]
+    rows, worst, worst_mid = [], 0.0, 0.0
+    z = z_lo
+    while z <= z_hi + 1e-9:
+        r = arc_convexity(z_section(pts, polys, z), lm["hip_axis_y"], rear)
+        if r:
+            if with_body:
+                rb = arc_convexity(z_section(body.co, bpolys, z, xlim=0.24), lm["hip_axis_y"], rear)
+                r["body_span_dev_mm"] = rb["span_dev_mm"] if rb else None
+            r["z"] = round(z, 3)
+            rows.append(r)
+            worst = max(worst, r["span_dev_mm"])
+            worst_mid = max(worst_mid, r["mid_below_chord_mm"])
+        z += step
+    return {"z_band": [round(z_lo, 4), round(z_hi, 4)], "slices": rows, "worst_span_dev_mm": round(worst, 2),
+            "worst_arc_dev_mm": round(max((r["arc_dev_mm"] for r in rows), default=0.0), 2),
+            "worst_mid_below_chord_mm": round(worst_mid, 2)}
+
+
+class ClothSurface:
+    """Cloth shell (kind 0 faces) with face normals, edge->faces and per-vertex curvature. Two fold
+    signals, both measured on the same mesh the gate scores:
+      * CONCAVE CREASE edges - signed dihedral (the neighbour face bends toward the outward normal:
+        a valley) above ARMPIT_FOLD["crease_deg"]. A drape over a convex body has few valleys; a
+        crumple is a cluster of them.
+      * CURVATURE NOISE - per vertex |H_i - mean(H_neighbours)| with H the umbrella mean-curvature
+        proxy ((mean(nbrs) - p) . n / L^2): a clean saddle or cylinder has slowly varying curvature,
+        a scrunch oscillates vertex to vertex."""
+
+    def __init__(self, obj):
+        pts, polys = _cloth_polys(obj)
+        self.pts, self.polys = pts, polys
+        vn = [Vector() for _ in pts]
+        self.fn, self.cen = [], []
+        for f in polys:
+            a, b, c = pts[f[0]], pts[f[1]], pts[f[2]]
+            nn = (b - a).cross(c - a)
+            if len(f) == 4:
+                nn = nn + (c - a).cross(pts[f[3]] - a)
+            self.fn.append(nn.normalized() if nn.length > 1e-12 else nn)
+            self.cen.append(sum((pts[v] for v in f), Vector()) / len(f))
+            for v in f:
+                vn[v] += nn
+        vn = [n.normalized() if n.length > 1e-12 else n for n in vn]
+        self.nb, self.ef = {}, {}
+        for i, f in enumerate(polys):
+            for k in range(len(f)):
+                a, b = f[k], f[(k + 1) % len(f)]
+                self.nb.setdefault(a, set()).add(b)
+                self.nb.setdefault(b, set()).add(a)
+                self.ef.setdefault((min(a, b), max(a, b)), []).append(i)
+        H = {}
+        for i, ns in self.nb.items():
+            m = sum((pts[j] for j in ns), Vector()) / len(ns)
+            L = sum((pts[j] - pts[i]).length for j in ns) / len(ns)
+            H[i] = (m - pts[i]).dot(vn[i]) / (L * L) if L > 1e-9 else 0.0
+        self.noise = {i: abs(H[i] - sum(H[j] for j in ns) / len(ns)) for i, ns in self.nb.items()}
+
+    def fold_stats(self, centre, r_lo, r_hi, crease_deg):
+        inr = lambda v: r_lo <= (self.pts[v] - centre).length < r_hi
+        vs = [i for i in self.nb if inr(i)]
+        conc, where = [], []
+        for (a, b), fs in self.ef.items():
+            if len(fs) != 2 or not (inr(a) and inr(b)):
+                continue
+            f1, f2 = fs
+            g = math.degrees(math.acos(max(-1.0, min(1.0, self.fn[f1].dot(self.fn[f2])))))
+            if self.fn[f1].dot(self.cen[f2] - self.cen[f1]) > 0:        # valley
+                conc.append(g)
+                where.append((g, (self.pts[a] + self.pts[b]) / 2))
+            else:
+                conc.append(-g)
+        ne = len(conc)
+        valleys = sorted(g for g in conc if g > 0)
+        nz = sorted(self.noise[i] for i in vs)
+        top = sorted(where, key=lambda t: -t[0])[:3]
+        crease = sum(1 for g in valleys if g > crease_deg)
+        return {"verts": len(vs), "edges": ne, "valley_frac": round(len(valleys) / max(1, ne), 3),
+                "valley_p95_deg": round(_pct(valleys, 0.95) or 0.0, 1), "valley_max_deg": round(valleys[-1], 1) if valleys else 0.0,
+                "crease_edges": crease, "crease_per_100_edges": round(100.0 * crease / max(1, ne), 2),
+                "curv_noise_p50": round(_pct(nz, 0.5) or 0.0, 2), "curv_noise_p95": round(_pct(nz, 0.95) or 0.0, 2),
+                "sharpest_valleys": [[round(g, 1)] + [round(c, 3) for c in p] for g, p in top]}
+
+
+def cheek_band_lo(body, lm):
+    polys = [body.faces[fi] for fi in body.body_faces if body.fdom[fi] in (TORSO | LEGS)]
+    z, lo = lm["seat_z"], lm["seat_z"]
+    while z > lm["crotch_z"]:
+        r = arc_convexity(z_section(body.co, polys, z, xlim=0.24), lm["hip_axis_y"], True)
+        if not r or max(r["apex_l"][0], -r["apex_r"][0]) > SEAT_BAND["cheek_apex_x_max_m"]:
+            break
+        lo = z
+        z -= SEAT_BAND["step_m"]
+    return lo
+
+
+def shape_gates(body, jeans, jacket, lm):
+    out = {}
+    zc = lm["crotch_z"]
+    z_waist_back = 1.068 + 0.08 * (lm["seat_y"] - lm["pelvis"].y)          # jeans waist edge at the seat
+    seat = band_convexity(body, jeans, lm, cheek_band_lo(body, lm), z_waist_back - SEAT_BAND["z_hi_below_back_waist_m"],
+                          SEAT_BAND["step_m"], True)
+    seat["rule"] = dict(SEAT_BAND, max_dev_mm=SHAPE_GATE["seat_dev_max_mm"])
+    seat["pass"] = bool(seat["slices"]) and seat["worst_span_dev_mm"] <= SHAPE_GATE["seat_dev_max_mm"]
+    out["seat_convexity"] = seat
+    groin = band_convexity(body, jeans, lm, zc + GROIN_BAND["z_lo_above_crotch_m"], zc + GROIN_BAND["z_hi_above_crotch_m"],
+                           GROIN_BAND["step_m"], False)
+    groin["rule"] = dict(GROIN_BAND, max_dev_mm=SHAPE_GATE["groin_dev_max_mm"])
+    groin["pass"] = bool(groin["slices"]) and groin["worst_span_dev_mm"] <= SHAPE_GATE["groin_dev_max_mm"]
+    out["groin_convexity"] = groin
+    af = {"rule": dict(ARMPIT_FOLD, **{k: v for k, v in SHAPE_GATE.items() if k.startswith("armpit")})}
+    ok = True
+    cs = ClothSurface(jacket)
+    for s in "lr":
+        c = lm["armpit_" + s]
+        band = cs.fold_stats(c, 0.0, ARMPIT_FOLD["band_r_m"], ARMPIT_FOLD["crease_deg"])
+        ref = cs.fold_stats(c, ARMPIT_FOLD["ref_r_m"][0], ARMPIT_FOLD["ref_r_m"][1], ARMPIT_FOLD["crease_deg"])
+        ratio = band["curv_noise_p95"] / max(1e-6, ref["curv_noise_p95"])
+        sok = ratio <= SHAPE_GATE["armpit_noise_over_ref_max"] and band["crease_edges"] <= SHAPE_GATE["armpit_pinch_edges_max"]
+        d = (lm["lowerarm_" + s] - lm["upperarm_" + s]).normalized()
+        af[s] = {"band": band, "ref_ring": ref, "curv_noise_ratio": round(ratio, 2), "pass": bool(sok),
+                 "saddle_turn_deg": round(180.0 - math.degrees(math.acos(max(-1.0, min(1.0, -d.z)))), 1)}
+        ok = ok and sok
+    af["pass"] = bool(ok)
+    out["armpit_fold"] = af
+    # FOLD-OVER: cloth faces whose outward normal points back at the skin (dot < -0.2 with the
+    # direction from the nearest skin point) - a sheet folded over itself. Gated in the seat/groin
+    # region the v4 span rebuilds (crotch - 50 mm up to the waist); counted everywhere.
+    fo = {}
+    for key, obj in (("jeans", jeans), ("jacket", jacket)):
+        cs_ = cs if key == "jacket" else ClothSurface(obj)
+        bad = []
+        for fi in range(len(cs_.polys)):
+            c = cs_.cen[fi]
+            _, loc, _ = body.sd(c)
+            o = c - loc
+            if o.length > 1e-6 and cs_.fn[fi].dot(o.normalized()) < -0.2:
+                bad.append([round(x, 3) for x in c])
+        reg = [c for c in bad if key == "jeans" and zc - 0.05 <= c[2] <= 1.09]
+        fo[key] = {"inward_faces": len(bad), "in_span_region": len(reg), "where": bad[:8]}
+    fo["pass"] = fo["jeans"]["in_span_region"] == 0
+    out["foldover"] = fo
+    return out
+
+
+def shape_summary(out):
+    s = {}
+    for k in ("seat_convexity", "groin_convexity"):
+        g = out[k]
+        s[k] = {"pass": g["pass"], "worst_span_dev_mm": g["worst_span_dev_mm"], "worst_arc_dev_mm": g["worst_arc_dev_mm"],
+                "worst_mid_below_chord_mm": g["worst_mid_below_chord_mm"], "z_band": g["z_band"],
+                "per_z_span_dev_mm": [[r["z"], r["span_dev_mm"], r.get("body_span_dev_mm")] for r in g["slices"]]}
+    s["foldover"] = {"pass": out["foldover"]["pass"], "jeans": out["foldover"]["jeans"]["inward_faces"],
+                     "jeans_span_region": out["foldover"]["jeans"]["in_span_region"],
+                     "jacket": out["foldover"]["jacket"]["inward_faces"]}
+    a = out["armpit_fold"]
+    s["armpit_fold"] = {"pass": a["pass"], **{k: {"band_crease": a[k]["band"]["crease_edges"],
+                                                   "band_crease_per100": a[k]["band"]["crease_per_100_edges"],
+                                                   "ref_crease_per100": a[k]["ref_ring"]["crease_per_100_edges"],
+                                                   "band_valley_max": a[k]["band"]["valley_max_deg"],
+                                                   "band_noise_p95": a[k]["band"]["curv_noise_p95"],
+                                                   "ref_noise_p95": a[k]["ref_ring"]["curv_noise_p95"],
+                                                   "noise_ratio": a[k]["curv_noise_ratio"]} for k in "lr"}}
+    return s
 
 
 
@@ -2771,7 +3364,11 @@ def build(out_blend, report_path):
         "control_body_outside_jeans_inset25mm": poke_check(vis, garment_shell(jeans, inset=0.025)),
     }
     # minimum-clearance gate (drape, not skin suit) against the full skin, anchor bands declared
-    REP["clearance"] = {k: clearance_stats(body, o, k, _landmarks(rig, body)) for k, o in (("jacket", jacket), ("jeans", jeans))}
+    lm_all = _landmarks(rig, body)
+    REP["clearance"] = {k: clearance_stats(body, o, k, lm_all) for k, o in (("jacket", jacket), ("jeans", jeans))}
+    # v4 shape gates: seat/groin cross-section convexity, armpit fold detector
+    REP["shape"] = shape_gates(body, jeans, jacket, lm_all)
+    print("SHAPE", json.dumps(shape_summary(REP["shape"]), indent=1))
     # hair: crown coverage = skin points within 60 deg of straight up from the head centre whose
     # outward radial ray meets the hair mass (no scalp showing through the crown)
     hp, hpolys, _ = eval_points(hair)
@@ -2794,7 +3391,8 @@ def build(out_blend, report_path):
     bpy.ops.wm.save_as_mainfile(filepath=out_blend, compress=True)
     json.dump(REP, open(report_path, "w"), indent=1, default=str)
     print("REPORT", json.dumps({k: REP.get(k) for k in ("height_m", "tris", "fit_checks", "refit_max_dev_mm", "clearance",
-                                                        "hair", "hair_crown_coverage", "jacket_drape", "jeans_drape")},
+                                                        "hair", "hair_crown_coverage", "jacket_drape", "jeans_drape", "jeans_span",
+                                                        "jacket_armpit_membrane", "jacket_armpit_lift_total_mm")},
                                indent=1, default=str))
 
 
@@ -2901,10 +3499,20 @@ def render(prefix, mode="all"):
         cam_d.lens = 50
     if mode in ("stills", "all", "compare"):
         # v3: seat closeup from behind-left - the jeans' rear silhouette from the waistband over
-        # the seat into the thigh (the fall the artist flagged)
+        # the seat into the thigh (the fall the artist flagged; v4: the angle of the rejected shot,
+        # design/refs/jeans-seat-v3-rejected.webp)
         cam_d.lens = 85
         aim(125.0, elev=0.0, tgt=Vector((0.0, 0.03, 0.9)), d=1.55)
         still("seat")
+        cam_d.lens = 50
+    if mode in ("stills", "all", "compare", "detail"):
+        # v4: groin closeup, straight on and a touch low - the front crotch span between the thighs
+        cam_d.lens = 85
+        aim(15.0, elev=-0.02, tgt=Vector((0.0, -0.05, 0.93)), d=1.25)
+        still("groin")
+        # v4: armpit closeup from the front-outside and slightly below - the sleeve-to-torso saddle
+        aim(55.0, elev=-0.04, tgt=Vector((0.22, -0.02, 1.37)), d=0.85)
+        still("armpit")
         cam_d.lens = 50
     if mode in ("turntable", "all"):
         n = 72
