@@ -2,7 +2,7 @@
  "unit": "geode",
  "skin": "amethyst",
  "extends": "default",
- "description": "VARIANT (amethyst geode, the classic geode crystal): deep violet facet cores, lilac edge planes with a soft violet seam glow, magenta-violet inner light, pale lavender eyes and core.",
+ "description": "VARIANT (amethyst geode, the classic geode crystal): deep violet facet cores, lilac edge planes with a soft violet seam glow, magenta-violet inner light, pale lavender eyes and core, vivid violet electricity arcs.",
  "regions": {
   "pavilion":  {"rgb": [38, 12, 58]},
   "girdle":    {"rgb": [66, 26, 98]},
@@ -11,6 +11,7 @@
   "inner":     {"rgb": [130, 60, 190],  "emission": [180, 60, 255],  "emission_scale": 0.75},
   "eye":       {"rgb": [226, 196, 255], "emission": [200, 130, 255], "emission_scale": 1.2},
   "core":      {"rgb": [160, 90, 220],  "emission": [190, 120, 255], "emission_scale": 1.0},
-  "core_edge": {"rgb": [236, 210, 255], "emission": [225, 190, 255], "emission_scale": 1.4}
+  "core_edge": {"rgb": [236, 210, 255], "emission": [225, 190, 255], "emission_scale": 1.4},
+  "arc":       {"rgb": [205, 150, 255], "emission": [150, 70, 255],  "emission_scale": 1.7}
  }
 }

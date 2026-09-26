@@ -1,12 +1,12 @@
-00:01.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode__amethyst.blend"
-00:05.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_front.png'
-00:05.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_threequarter.png'
-00:05.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_tactical.png'
-00:05.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_facet.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_threequarter.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_tactical.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_amethyst_facet.png
+00:01.468  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode__amethyst.blend"
+00:03.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_front.png'
+00:03.968  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_threequarter.png'
+00:04.171  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_tactical.png'
+00:04.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_arcs_closeup.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_arcs_closeup.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

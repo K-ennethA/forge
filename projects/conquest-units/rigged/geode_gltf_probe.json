@@ -12,12 +12,13 @@
  },
  "options_missing": [],
  "glow_slot_bound_for_export": true,
+ "arc_key_slot_bound_for_export": true,
  "modes": {
   "ACTIONS": {
    "export_result": [
     "FINISHED"
    ],
-   "glb_bytes": 1149152,
+   "glb_bytes": 1462976,
    "extensionsUsed": [
     "KHR_materials_emissive_strength"
    ],
@@ -31,6 +32,9 @@
      "TEXCOORD_0",
      "WEIGHTS_0"
     ]
+   ],
+   "morph_targets_per_primitive": [
+    2
    ],
    "materials": [
     {
@@ -63,12 +67,42 @@
       "arm.L.translation",
       "arm.L.rotation",
       "arm.L.scale",
-      "arm.R.translation",
-      "arm.R.rotation",
-      "arm.R.scale",
       "leg.L.translation",
       "leg.L.rotation",
       "leg.L.scale",
+      "arm.R.translation",
+      "arm.R.rotation",
+      "arm.R.scale",
+      "leg.R.translation",
+      "leg.R.rotation",
+      "leg.R.scale",
+      "geode.weights"
+     ]
+    },
+    {
+     "name": "walk",
+     "channels": [
+      "root.translation",
+      "root.rotation",
+      "root.scale",
+      "body.translation",
+      "body.rotation",
+      "body.scale",
+      "head.translation",
+      "head.rotation",
+      "head.scale",
+      "core.translation",
+      "core.rotation",
+      "core.scale",
+      "arm.L.translation",
+      "arm.L.rotation",
+      "arm.L.scale",
+      "leg.L.translation",
+      "leg.L.rotation",
+      "leg.L.scale",
+      "arm.R.translation",
+      "arm.R.rotation",
+      "arm.R.scale",
       "leg.R.translation",
       "leg.R.rotation",
       "leg.R.scale"
@@ -79,6 +113,8 @@
     "glow_colour_set_exported_as_COLOR_1": true,
     "animated_emission_exported": false,
     "core_scale_pulse_exported": true,
+    "walk_clip_exported": true,
+    "arc_flicker_morph_weights_exported": true,
     "material_emissive_is_uniform_factor": true
    }
   },
@@ -86,7 +122,7 @@
    "export_result": [
     "FINISHED"
    ],
-   "glb_bytes": 1150048,
+   "glb_bytes": 1456228,
    "extensionsUsed": [
     "KHR_materials_emissive_strength",
     "KHR_animation_pointer"
@@ -101,6 +137,9 @@
      "TEXCOORD_0",
      "WEIGHTS_0"
     ]
+   ],
+   "morph_targets_per_primitive": [
+    2
    ],
    "materials": [
     {
@@ -133,15 +172,21 @@
       "arm.L.translation",
       "arm.L.rotation",
       "arm.L.scale",
-      "arm.R.translation",
-      "arm.R.rotation",
-      "arm.R.scale",
       "leg.L.translation",
       "leg.L.rotation",
       "leg.L.scale",
+      "arm.R.translation",
+      "arm.R.rotation",
+      "arm.R.scale",
       "leg.R.translation",
       "leg.R.rotation",
       "leg.R.scale"
+     ]
+    },
+    {
+     "name": "geode",
+     "channels": [
+      "geode.weights"
      ]
     },
     {
@@ -155,6 +200,8 @@
     "glow_colour_set_exported_as_COLOR_1": true,
     "animated_emission_exported": true,
     "core_scale_pulse_exported": true,
+    "walk_clip_exported": true,
+    "arc_flicker_morph_weights_exported": true,
     "material_emissive_is_uniform_factor": true
    }
   }

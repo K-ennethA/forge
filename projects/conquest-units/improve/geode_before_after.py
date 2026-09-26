@@ -1,5 +1,5 @@
 """Before/after sheet: the shipped beige gem_knight.glb (survey renders, same lights/camera rules as geode_render.py)
-vs the faceted Geode, default emerald + amethyst skin. Pure image assembly, no scene.
+vs the faceted Geode (motion v2: arcs), default emerald + amethyst skin. Pure image assembly, no scene.
 
     blender --background --factory-startup --python geode_before_after.py
 
@@ -12,8 +12,8 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 R = os.path.normpath(os.path.join(HERE, "..", "renders"))
 cols = [os.path.join(R, "survey", "hero-game_gem_knight_%s.png"),
-        os.path.join(R, "geode", "geode_default_%s.png"),
-        os.path.join(R, "geode", "geode_amethyst_%s.png")]
+        os.path.join(R, "geode", "geode_v2_%s.png"),
+        os.path.join(R, "geode", "geode_v2_amethyst_%s.png")]
 T = 512
 
 

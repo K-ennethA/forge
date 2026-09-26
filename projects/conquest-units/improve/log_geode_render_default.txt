@@ -1,12 +1,14 @@
-00:02.093  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode.blend"
-00:05.015  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_front.png'
-00:05.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_threequarter.png'
-00:05.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_tactical.png'
-00:05.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_facet.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_threequarter.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_tactical.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_default_facet.png
+00:01.469  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode.blend"
+00:03.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_front.png'
+00:03.984  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_threequarter.png'
+00:04.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_tactical.png'
+00:04.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_facet.png'
+00:04.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_arcs_closeup.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_facet.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_arcs_closeup.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

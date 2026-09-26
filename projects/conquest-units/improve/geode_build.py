@@ -5,7 +5,7 @@
 
 Outputs (the opened source copy is never saved over; save_as_mainfile copy=True):
     improved/geode.blend + .json      faceted hero mesh, UVs, palette regions + default paint (no rig)
-    rigged/geode.blend + .json        + one rigid bone per floating part, PROPOSED 'idle' (no walk: gait unknown)
+    rigged/geode.blend + .json        + one rigid bone per part, electricity arcs (shape-key flicker), 'idle' v2 + 'walk'
     rigged/geode__<skin>.blend        one per extra --skins entry: palette swap only (palettes/geode/<skin>.json)
 
 Artist context (design/review-log.md 2026-09-25): "geode is facing the correct way he is a sentient diamond
@@ -29,8 +29,19 @@ Pipeline:
      then every facet edge is chamfered (BEVEL_W) -> the "edge planes" / crystal seams, and triangulated.
   3. colour regions -> palettes.store_regions; paint from palettes/geode/default.json (Col + Glow, the
      Vineweave pattern: Glow feeds Emission Color). Inner facets = facets sunk below the part's convex hull.
-  4. rig: root + one bone per rigid part, rigid weights (1.0, one influence).
-  5. PROPOSED idle: floating parts hover / orbit out of phase, core contracts + flares; legs never keyed.
+  2d. ELECTRICITY ARCS (motion v2): per ARC_GAPS entry, ARC_STRANDS jagged triangular-tube strands from part A's surface
+     to part B's (ends buried ARC_SINK deep), ARC_VARIANTS shapes per strand on one vertex layout; painted from the
+     palette region ARC_REGION (gated to be the top glow tier in every skin).
+  4. rig: root + one bone per part; legs are children of the BODY (v2). Rigid weights (1.0, one influence) on the parts;
+     arc vertices blend part A -> part B along the strand. Arc variants 1.. become shape keys 'arc_flicker_<k>'.
+  5. motion v2 (artist 2026-09-25: "geode walks and its limbs are connected statically, maybe have some elecriticty
+     wiring them together, so it walks pretty normally, can floatish"):
+       idle  whole-body float + fore/aft sway about the foot line, core contraction + glow pulse, arc flicker; head, arms
+             and legs keyed at identity (static on the body).
+       walk  stiff biped: leg crystals hinge at the hip in antiphase, body rolls over the stance leg, shoulders
+             counter-twist, float at mid-stance, soft-min foot contacts; in place (root never keyed).
+     Arc flicker = shape-key swaps on CONSTANT keys in a Key slot of each clip's action (glTF morph weights, which
+     Godot imports natively; emission-strength keys need KHR_animation_pointer - see design/godot-import-notes.md).
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, heapq, ast
 import numpy as np
@@ -77,9 +88,10 @@ CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9                  # Conquest hero ceilings -- 
 ARC_GAPS = [("torso", "head"), ("torso", "arm.L"), ("torso", "arm.R"), ("torso", "core"),
             ("core", "leg.L"), ("core", "leg.R")]   # "which gaps get arcs" (legs hang below the core: 2.4 vs 4.4 to the torso)
 ARC_STRANDS = 2                                     # "arc count per gap" (strands)
-ARC_SEGMENTS = 7                                    # "arc kinks": segments per strand (tris per strand = 6 x this + 2)
-ARC_JAG = 0.16                                      # "jag amplitude": zig-zag offset, fraction of the strand length ...
+ARC_SEGMENTS = 8                                    # "arc kinks": segments per strand (tris per strand = 6 x this + 2)
+ARC_JAG = 0.16                                      # "jag amplitude": lightning wander, fraction of the strand length ...
 ARC_JAG_MAX = 0.42                                  # ... capped at this (sculpt units) so long arcs stay arcs, not loops
+ARC_BOW = 0.6                                       # how far the paired strands of one gap bow apart (x jag amplitude)
 ARC_RADIUS = 0.07                                   # "arc thickness" (strand radius, sculpt units; ~5 mm in game)
 ARC_SPREAD = 0.7                                    # how far apart the strands of one gap land (sculpt units)
 ARC_SINK = 0.18                                     # how deep each strand end buries into its part (sculpt units)
@@ -761,18 +773,23 @@ def arc_frame(dn):
     return e1, np.cross(dn, e1)
 
 
-def arc_path(a, b, e1, e2, seed):
+def arc_path(a, b, e1, e2, seed, side):
+    """lightning, not a spring: irregular kink spacing, a Brownian-bridge wander (ends pinned) plus a small alternating
+    zig so every vertex is a kink; paired strands bow apart (side = -1 / +1) so they read as two strands."""
     rng = np.random.default_rng(seed)
+    M = ARC_SEGMENTS
     d = b - a
     L = float(np.linalg.norm(d))
     amp = min(ARC_JAG * L, ARC_JAG_MAX)
-    P = np.array([a + d * k / ARC_SEGMENTS for k in range(ARC_SEGMENTS + 1)])
-    s0 = 1.0 if rng.uniform() < 0.5 else -1.0
-    for k in range(1, ARC_SEGMENTS):
-        env = math.sin(math.pi * k / ARC_SEGMENTS) ** 0.5
-        sg = s0 * (1.0 if k % 2 else -1.0)
-        P[k] += amp * env * (sg * rng.uniform(0.45, 1.0) * e1 + rng.uniform(-0.6, 0.6) * e2)
-    return P
+    seg = rng.uniform(0.55, 1.45, M)
+    tk = np.concatenate([[0.0], np.cumsum(seg)]) / seg.sum()
+    w = np.cumsum(np.vstack([np.zeros((1, 2)), rng.normal(0.0, 1.0, (M, 2))]), axis=0)
+    w -= tk[:, None] * w[-1]
+    w /= max(float(np.abs(w).max()), 1e-9)
+    zig = np.array([0.0] + [(-1.0) ** k * rng.uniform(0.25, 0.55) for k in range(1, M)] + [0.0])
+    off1 = amp * (0.75 * w[:, 0] + 0.45 * zig + side * ARC_BOW * np.sin(np.pi * tk))
+    off2 = amp * 0.5 * w[:, 1]
+    return a + tk[:, None] * d + off1[:, None] * e1 + off2[:, None] * e2
 
 
 def arc_tube(P, e2):
@@ -821,7 +838,8 @@ for gi, (pa, pb) in enumerate(ARC_GAPS):
         dn = (b - a) / np.linalg.norm(b - a)
         ae, be = a - dn * ARC_SINK, b + dn * ARC_SINK
         e1, e2 = arc_frame(dn)
-        shapes = [arc_tube(arc_path(ae, be, e1, e2, 7919 * gi + 131 * j + v), e2) for v in range(ARC_VARIANTS)]
+        side = 0.0 if ARC_STRANDS == 1 else 2.0 * (j / (ARC_STRANDS - 1)) - 1.0
+        shapes = [arc_tube(arc_path(ae, be, e1, e2, 7919 * gi + 131 * j + v, side), e2) for v in range(ARC_VARIANTS)]
         # latin assignment: slot k shows variant (gi + k) % V, so every swap changes every gap's shape
         for k in range(ARC_VARIANTS):
             ARC_VV[k].append(shapes[(gi + k) % ARC_VARIANTS])
@@ -848,7 +866,7 @@ FFID = np.concatenate([FFID, np.full(n_arc_tris, -1)])
 FCH = np.concatenate([FCH, np.zeros(n_arc_tris, dtype=FCH.dtype)])
 ARC_VIDX = np.arange(nmain_v, len(LV))
 report["arcs"] = {"gaps": arc_rep, "strands_per_gap": ARC_STRANDS, "segments": ARC_SEGMENTS, "variants": ARC_VARIANTS,
-                  "tris": int(n_arc_tris), "verts": int(len(ARC_VIDX)), "radius": ARC_RADIUS, "jag": ARC_JAG, "jag_max": ARC_JAG_MAX,
+                  "tris": int(n_arc_tris), "verts": int(len(ARC_VIDX)), "radius": ARC_RADIUS, "jag": ARC_JAG, "jag_max": ARC_JAG_MAX, "bow": ARC_BOW,
                   "sink": ARC_SINK, "min_strand_signed_volume": round(float(arc_vol_min), 6), "region": ARC_REGION,
                   "flicker": "shape-key swap: variant 0 = basis, %d shape keys, CONSTANT keys at %.0f Hz" % (ARC_VARIANTS - 1, ARC_FLICKER_HZ)}
 print("ARCS", json.dumps({k: report["arcs"][k] for k in ("tris", "verts", "min_strand_signed_volume")}))
@@ -943,16 +961,20 @@ pal_default = PAL.load(UNIT, "default")
 
 
 def glow_tier(pal):
-    """rank the regions by glow luminance (linear Rec.709 of emission x emission_scale); gate the arc tier."""
-    lum = {}
+    """the palette's glow tiers are its emission_scale values (edge 0.22 < inner 0.75 < core 1.0 < eye 1.2 < core_edge
+    1.4); 'top' = the arc region's scale is strictly the highest. (A luminance gate was tried first and measured wrong:
+    it forced the violet arcs to scale 2.4, which clips to white under the Standard view transform.) Luminance of
+    emission x scale is reported alongside for information."""
+    tier, lum = {}, {}
     for n, v in pal["regions"].items():
         if "emission" in v:
-            g = PAL.srgb_to_linear(v["emission"]) * v.get("emission_scale", 1.0)
+            tier[n] = float(v.get("emission_scale", 1.0))
+            g = PAL.srgb_to_linear(v["emission"]) * tier[n]
             lum[n] = round(float(0.2126 * g[0] + 0.7152 * g[1] + 0.0722 * g[2]), 4)
-    rank = sorted(lum, key=lambda n: -lum[n])
-    ok = ARC_GLOW_TIER != "top" or (ARC_REGION in lum and rank[0] == ARC_REGION)
-    return {"skin": pal["skin"], "glow_luminance": lum, "rank": rank, "arc_is_top_tier": bool(rank and rank[0] == ARC_REGION),
-            "gate": ARC_GLOW_TIER, "pass": bool(ok)}
+    rank = sorted(tier, key=lambda n: -tier[n])
+    top = bool(rank) and rank[0] == ARC_REGION and all(tier[n] < tier[ARC_REGION] for n in rank[1:])
+    return {"skin": pal["skin"], "emission_scale_tiers": tier, "rank": rank, "arc_is_top_tier": top,
+            "glow_luminance_info": lum, "gate": ARC_GLOW_TIER, "pass": bool(ARC_GLOW_TIER != "top" or top)}
 
 
 report["arc_glow_tier"] = {"default": glow_tier(pal_default)}
@@ -1096,93 +1118,173 @@ for k in range(1, ARC_VARIANTS):
 me.shape_keys.use_relative = True
 rep["arc_shape_keys"] = ARC_KEYS
 
-# =========================================================================== 5. PROPOSED idle
+# =========================================================================== 5. motion v2: idle + walk
+# The creature is ONE rigid assembly: head, arms and core are children of the body and are keyed at identity (static);
+# the legs are children of the body and only HINGE about their own head (the hip) in the walk. The body's transform is
+# a rotation about the ground point between the feet (rock / lean / sway there leaves the feet in place) plus a
+# vertical offset SOLVED each frame so the lowest leg point (soft-min over both legs) lands at the float height.
 pose = rig.pose.bones
 for pb in pose:
     pb.rotation_mode = "QUATERNION"
-N = IDLE_FRAMES
 REST = {b.name: b.matrix_local.to_3x3() for b in arm_data.bones}
+HEAD = {b.name: np.array(b.head_local) for b in arm_data.bones}
+KEYED = ["body", "head", "core", "arm.L", "arm.R", "leg.L", "leg.R"]   # every deform bone: clips are self-contained
+LEG_I = {s: np.nonzero(vpart == PARTS.index("leg." + s))[0] for s in ("L", "R")}
+LEG_TIP = {s: int(LEG_I[s][np.argmin(W[LEG_I[s], 2])]) for s in ("L", "R")}
+GROUND_PIVOT = np.array([0.0, float(np.mean([W[LEG_TIP[s], 1] for s in ("L", "R")])), 0.0])
+GAME_M_PER_UNIT = 1.8 / report["natural"]["height"]
 
 
-def loc_local(bn, off):
-    """armature-space offset -> the bone's own rest frame (pose location is expressed there)."""
-    return REST[bn].inverted() @ Vector(off)
+def rotm(axis, deg):
+    return np.array(Matrix.Rotation(math.radians(deg), 3, Vector(axis)))
 
 
-def rot_local(bn, axis, deg):
-    q = Quaternion(Vector(axis), math.radians(deg))
+def hinge(R, pivot):
+    M = np.eye(4); M[:3, :3] = R; M[:3, 3] = pivot - R @ pivot
+    return M
+
+
+def apply_m(M, P):
+    return P @ M[:3, :3].T + M[:3, 3]
+
+
+def softmin(a, b, tau):
+    m = min(a, b)
+    if tau <= 0:
+        return m
+    return m - tau * math.log(math.exp(-(a - m) / tau) + math.exp(-(b - m) / tau))
+
+
+def solve_body(Rb, legR, hover, tau):
+    """body deform matrix: hinge(Rb, ground pivot), lifted so the soft-min of the two legs' lowest points = hover."""
+    Mb = hinge(Rb, GROUND_PIVOT)
+    lows = [float(apply_m(Mb @ hinge(legR[s], HEAD["leg." + s]), W[LEG_I[s]])[:, 2].min()) for s in ("L", "R")]
+    Mb[2, 3] += hover - softmin(lows[0], lows[1], tau)
+    return Mb
+
+
+def pose_from_deform(bn, M):
+    """armature-space deform matrix (rigid, about nothing in particular) -> pose-bone (location, quaternion)."""
+    R = M[:3, :3]; h = HEAD[bn]
+    dloc = M[:3, 3] - h + R @ h
     R3 = REST[bn]
-    return (R3.inverted() @ q.to_matrix() @ R3).to_quaternion()
+    q = (R3.inverted() @ Matrix(R.tolist()) @ R3).to_quaternion()
+    return R3.inverted() @ Vector(dloc), q
 
 
-def sn(t, k=1, ph=0.0):
-    return math.sin(TAU * k * t + ph)
+def rel_pose(bn, R):
+    """a child hinged about its own head by the armature-space rotation R (relative to its parent)."""
+    R3 = REST[bn]
+    return Vector((0, 0, 0)), (R3.inverted() @ Matrix(R.tolist()) @ R3).to_quaternion()
 
 
-def beat(t):
-    """0 at rest, 1 at the peak; two beats per loop, smooth (integer harmonic -> seam-closed)."""
-    return 0.5 - 0.5 * math.cos(TAU * 2 * t)
-
-
-def idle_pose(t):
-    P = {}
-    P["body"] = (loc_local("body", (0, 0, IDLE_BODY_BOB * sn(t))),
-                 rot_local("body", (1, 0, 0), IDLE_BODY_TILT_DEG * sn(t, 1, 0.9)) @ rot_local("body", (0, 1, 0), 0.6 * IDLE_BODY_TILT_DEG * sn(t, 1, 2.2)),
-                 None)
-    P["head"] = (loc_local("head", (0, 0, IDLE_HEAD_BOB * sn(t, 1, -0.9))),
-                 rot_local("head", (1, 0, 0), IDLE_HEAD_TILT_DEG * sn(t, 1, -1.3)) @ rot_local("head", (0, 0, 1), 1.6 * IDLE_HEAD_TILT_DEG * sn(t, 1, 0.5)),
-                 None)
-    for side, sg, ph in (("L", 1.0, 0.0), ("R", -1.0, IDLE_ARM_PHASE)):
-        off = (sg * IDLE_ARM_ORBIT * (math.cos(TAU * t + ph) - 1.0) * 0.5, IDLE_ARM_ORBIT * sn(t, 1, ph), IDLE_ARM_BOB * sn(t, 1, ph - 0.6))
-        P["arm." + side] = (loc_local("arm." + side, off), rot_local("arm." + side, (0, 1, 0), -sg * IDLE_ARM_SWING_DEG * sn(t, 1, ph + 0.4)), None)
-    b = beat(t)
-    s = 1.0 - IDLE_CORE_PULSE * b
-    P["core"] = (loc_local("core", (0, 0, -IDLE_CORE_SINK * b)), rot_local("core", (0, 0, 1), IDLE_CORE_YAW_DEG * sn(t)), (s, s, s))
+def assemble(Mb, legR, core_s):
+    P = {"body": pose_from_deform("body", Mb) + ((1.0, 1.0, 1.0),)}
+    for n in ("head", "arm.L", "arm.R"):
+        P[n] = (Vector((0, 0, 0)), Quaternion(), (1.0, 1.0, 1.0))
+    for s in ("L", "R"):
+        P["leg." + s] = rel_pose("leg." + s, legR[s]) + ((1.0, 1.0, 1.0),)
+    P["core"] = (Vector((0, 0, 0)), Quaternion(), (core_s, core_s, core_s))
     return P
 
 
-act = bpy.data.actions.new("idle")
-act.use_fake_user = True
-K.assign_action(rig, act)
-KEYED = ["body", "head", "arm.L", "arm.R", "core"]
-prevq = {}
-for f in range(1, N + 2):
-    t = ((f - 1) / N) % 1.0
-    P = idle_pose(t)
-    for n in KEYED:
-        loc, q, sc = P[n]
-        if n in prevq and prevq[n].dot(q) < 0:
-            q.negate()
-        prevq[n] = q.copy()
-        pose[n].location = loc; pose[n].rotation_quaternion = q
-        pose[n].keyframe_insert("location", frame=f, group=n)
-        pose[n].keyframe_insert("rotation_quaternion", frame=f, group=n)
-        if sc is not None:
-            pose[n].scale = sc
-            pose[n].keyframe_insert("scale", frame=f, group=n)
-act.use_frame_range = True
-act.frame_start, act.frame_end = 1, N + 1
-act.use_cyclic = True
-# glow flare: emission strength keyed into the SAME 'idle' action on a node-tree slot (the Mycothrall pattern)
+def idle_pose(t):
+    """whole-body float (up only, lands softly at t = 0), fore/aft sway about the foot line, core beat x2."""
+    hover = IDLE_FLOAT * (0.5 - 0.5 * math.cos(TAU * t))
+    Rb = rotm((1, 0, 0), IDLE_SWAY_DEG * math.sin(TAU * t))
+    legR = {"L": np.eye(3), "R": np.eye(3)}
+    b = 0.5 - 0.5 * math.cos(TAU * 2 * t)
+    return assemble(solve_body(Rb, legR, hover, 0.0), legR, 1.0 - IDLE_CORE_PULSE * b), 1.0 + IDLE_GLOW_PULSE * b
+
+
+def walk_pose(t):
+    """stiff biped: legs pitch about the hip in antiphase (left foot front at t = 0), body rolls over the stance leg
+    (lifts the swing foot), shoulders counter-twist, constant lean, float at mid-stance, soft-min contacts."""
+    uL = math.cos(TAU * t)                                   # +1 = left foot at the front (-Y), -1 = at the back
+    legR = {"L": rotm((1, 0, 0), -WALK_LEG_SWING_DEG * uL), "R": rotm((1, 0, 0), WALK_LEG_SWING_DEG * uL)}
+    Rb = rotm((0, 0, 1), WALK_TORSO_YAW_DEG * uL) @ rotm((1, 0, 0), WALK_LEAN_DEG) @ rotm((0, 1, 0), WALK_ROLL_DEG * math.sin(TAU * t))
+    hover = WALK_FLOAT * (0.5 - 0.5 * math.cos(TAU * 2 * t))    # 0 at each footfall, peak at mid-stance
+    b = 0.5 + 0.5 * math.cos(TAU * 2 * t)                       # footfall beat: peaks at t = 0 and 0.5
+    return assemble(solve_body(Rb, legR, hover, WALK_CONTACT_SOFT), legR, 1.0 - WALK_CORE_PULSE * b), 1.0 + WALK_GLOW_PULSE * b
+
+
 sock = bsdf.inputs["Emission Strength"]
 base_es = sock.default_value
-glow_rep = {}
-try:
-    K.assign_action(nt, act)
-    for f in range(1, N + 2):
-        t = ((f - 1) / N) % 1.0
-        sock.default_value = base_es * (1.0 + IDLE_GLOW_PULSE * beat(t))
-        sock.keyframe_insert("default_value", frame=f)
-    glow_rep = {"socket": "Principled BSDF.Emission Strength", "base": base_es,
-                "law": "base * (1 + %.2f * (0.5 - 0.5 cos(2 pi 2t)))  (in step with the core contraction)" % IDLE_GLOW_PULSE,
-                "slots": [s_.identifier for s_ in act.slots]}
-except Exception as exc:  # noqa: BLE001
-    glow_rep = {"error": repr(exc)}
-nt.animation_data.action = None
-sock.default_value = base_es
+KEY = me.shape_keys
 
-# ---- measure over the loop
-legs = np.nonzero(np.isin(vpart, [PARTS.index("leg.L"), PARTS.index("leg.R")]))[0]
+
+def author(name, frames, pose_fn, seed):
+    act = bpy.data.actions.new(name)
+    act.use_fake_user = True
+    K.assign_action(rig, act)
+    prevq = {}
+    glow = []
+    for f in range(1, frames + 2):
+        t = ((f - 1) / frames) % 1.0
+        P, g = pose_fn(t)
+        glow.append(g)
+        for n in KEYED:
+            loc, q, sc = P[n]
+            if n in prevq and prevq[n].dot(q) < 0:
+                q.negate()
+            prevq[n] = q.copy()
+            pose[n].location = loc; pose[n].rotation_quaternion = q
+            pose[n].keyframe_insert("location", frame=f, group=n)
+            pose[n].keyframe_insert("rotation_quaternion", frame=f, group=n)
+            if n == "core":
+                pose[n].scale = sc
+                pose[n].keyframe_insert("scale", frame=f, group=n)
+    act.use_frame_range = True
+    act.frame_start, act.frame_end = 1, frames + 1
+    act.use_cyclic = True
+    out = {}
+    # glow flare: emission strength on the material node-tree slot of the SAME action (the v1 / Mycothrall pattern)
+    try:
+        K.assign_action(nt, act)
+        for f, g in enumerate(glow, start=1):
+            sock.default_value = base_es * g
+            sock.keyframe_insert("default_value", frame=f)
+        out["glow"] = {"socket": "Principled BSDF.Emission Strength", "base": base_es,
+                       "range": [round(base_es * min(glow), 4), round(base_es * max(glow), 4)]}
+    except Exception as exc:  # noqa: BLE001
+        out["glow"] = {"error": repr(exc)}
+    nt.animation_data.action = None
+    sock.default_value = base_es
+    # arc flicker: shape-key swaps on the Key slot of the SAME action, CONSTANT keys (electric snaps, no morphing)
+    step = max(1, int(round(K.FPS / ARC_FLICKER_HZ)))
+    assert frames % step == 0, "flicker step %d does not divide the %d-frame loop" % (step, frames)
+    nsteps = frames // step
+    rng = np.random.default_rng(seed)
+    st = [0]
+    for _ in range(1, nsteps):
+        st.append((st[-1] + 1 + int(rng.integers(0, max(ARC_VARIANTS - 1, 1)))) % ARC_VARIANTS)
+    if nsteps > 2 and ARC_VARIANTS > 2 and st[-1] == st[0]:
+        st[-1] = next(v for v in range(ARC_VARIANTS) if v not in (st[0], st[-2]))
+    if ARC_KEYS:
+        K.assign_action(KEY, act)
+        for i in range(nsteps + 1):
+            state = st[i % nsteps]
+            for k, kn in enumerate(ARC_KEYS, start=1):
+                kb = KEY.key_blocks[kn]
+                kb.value = 1.0 if state == k else 0.0
+                kb.keyframe_insert("value", frame=1 + i * step)
+        nconst = 0
+        for fc in K.action_fcurves(act):
+            if fc.data_path.startswith("key_blocks"):
+                for kp in fc.keyframe_points:
+                    kp.interpolation = "CONSTANT"; nconst += 1
+        KEY.animation_data.action = None
+        for kn in ARC_KEYS:
+            KEY.key_blocks[kn].value = 0.0
+        out["flicker"] = {"method": "shape-key swap (CONSTANT)", "step_frames": step, "hz": round(K.FPS / step, 3),
+                          "states": st, "keys_constant": nconst}
+    out["slots"] = [s_.identifier for s_ in act.slots]
+    return act, out
+
+
+def deform_m(n):
+    pb = pose[n]
+    return np.array(pb.matrix) @ np.array(pb.bone.matrix_local.inverted())
 
 
 def coords():
@@ -1194,86 +1296,166 @@ def coords():
     return co.reshape(-1, 3)
 
 
-first = last = None
-core_s = (9.0, 0.0)
-leg_move = 0.0
-min_z = 1e9
-stretch = 0.0
-worst = {}
-travel = {pn: 0.0 for pn in PARTS}
-ext_lo, ext_hi = np.full(3, 1e9), np.full(3, -1e9)
-for f in range(1, N + 2):
-    scene.frame_set(f)
-    C = coords()
-    if f == 1:
-        first = C
-    if f == N + 1:
-        last = C
-    leg_move = max(leg_move, float(np.linalg.norm(C[legs] - W[legs], axis=1).max()))
-    min_z = min(min_z, float(C[:, 2].min()))
-    ext_lo = np.minimum(ext_lo, C.min(0)); ext_hi = np.maximum(ext_hi, C.max(0))
-    for i, pn in enumerate(PARTS):
-        travel[pn] = max(travel[pn], float(np.linalg.norm(C[vpart == i] - W[vpart == i], axis=1).max()))
-    for pb in pose:
-        if pb.name != "core":                  # the core's scale IS the pulse (reported separately)
-            stretch = max(stretch, abs(pb.length - pb.bone.length) / pb.bone.length)
-        else:
-            core_s = (min(core_s[0], pb.scale[0]), max(core_s[1], pb.scale[0]))
-    if (f - 1) % 4 == 0:
-        for k_, v_ in clearance(C, PAIRS).items():
-            w_ = worst.setdefault(k_, {"overlap_tri_pairs_max": 0, "min_gap": 1e9, "min_gap_frame": None})
-            w_["overlap_tri_pairs_max"] = max(w_["overlap_tri_pairs_max"], v_["overlap_tri_pairs"])
-            if v_["min_gap"] < w_["min_gap"]:
-                w_["min_gap"], w_["min_gap_frame"] = v_["min_gap"], f
-rep["idle"] = {"status": "PROPOSED - the artist judges", "action": "idle", "frames": N + 1, "cycle_frames": N,
-               "cycle_s": round(N / K.FPS, 3), "keyed_bones": KEYED, "never_keyed": ["root", "leg.L", "leg.R"],
-               "seam_residual_mm_sculpt": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
-               "legs_move_max": round(leg_move, 9), "min_z": round(min_z, 6), "bone_stretch_max_pct_excl_core": round(stretch * 100, 6),
-               "core_scale_range": [round(core_s[0], 5), round(core_s[1], 5)],
-               "part_travel_max": {k: round(v, 4) for k, v in travel.items()},
-               "clearance_over_loop_every_4th_frame": worst,
-               "extent": {"width": round(float(ext_hi[0] - ext_lo[0]), 4), "depth": round(float(ext_hi[1] - ext_lo[1]), 4),
-                          "height": round(float(ext_hi[2] - ext_lo[2]), 4)},
-               "glow_pulse": glow_rep,
-               "motion": {"body_bob": IDLE_BODY_BOB, "body_tilt_deg": IDLE_BODY_TILT_DEG, "head_bob": IDLE_HEAD_BOB,
-                          "head_tilt_deg": IDLE_HEAD_TILT_DEG, "arm_orbit": IDLE_ARM_ORBIT, "arm_bob": IDLE_ARM_BOB,
-                          "arm_swing_deg": IDLE_ARM_SWING_DEG, "arm_phase_rad": round(IDLE_ARM_PHASE, 4),
-                          "core_pulse": IDLE_CORE_PULSE, "core_sink": IDLE_CORE_SINK, "core_yaw_deg": IDLE_CORE_YAW_DEG,
-                          "glow_pulse": IDLE_GLOW_PULSE, "harmonics": [1, 2]}}
-rig.animation_data.action = None
+def measure(act, frames):
+    K.assign_action(rig, act)
+    K.assign_action(KEY, act)
+    first = last = None
+    min_z = 1e9
+    stretch = 0.0
+    core_s = [9.0, 0.0]
+    static_res = {"head": 0.0, "arm.L": 0.0, "arm.R": 0.0}
+    pivot_res = {"leg.L": 0.0, "leg.R": 0.0, "core": 0.0}
+    worst = {}
+    tips, lows, body_z = [], [], []
+    arc_moves = 0.0
+    prev_arc = None
+    ext_lo, ext_hi = np.full(3, 1e9), np.full(3, -1e9)
+    for f in range(1, frames + 2):
+        scene.frame_set(f)
+        C = coords()
+        if f == 1:
+            first = C
+        if f == frames + 1:
+            last = C
+        min_z = min(min_z, float(C[:, 2].min()))
+        ext_lo = np.minimum(ext_lo, C.min(0)); ext_hi = np.maximum(ext_hi, C.max(0))
+        tips.append([C[LEG_TIP[s]].copy() for s in ("L", "R")])
+        lows.append([float(C[LEG_I[s], 2].min()) for s in ("L", "R")])
+        Mb = deform_m("body")
+        body_z.append(float(apply_m(Mb, HEAD["body"][None])[0, 2]))
+        for n in static_res:                            # static parts: their verts ride the body's transform exactly
+            Pn = W[vpart == PARTS.index(n)]
+            static_res[n] = max(static_res[n], float(np.linalg.norm(apply_m(deform_m(n), Pn) - apply_m(Mb, Pn), axis=1).max()))
+        for n in pivot_res:                             # hinged / pulsing parts: their pivot rides the body exactly
+            h_ = HEAD[n][None]
+            pivot_res[n] = max(pivot_res[n], float(np.linalg.norm(apply_m(deform_m(n), h_) - apply_m(Mb, h_))))
+        for pb in pose:
+            if pb.name != "core":
+                stretch = max(stretch, abs(pb.length - pb.bone.length) / pb.bone.length)
+            else:
+                core_s = [min(core_s[0], pb.scale[0]), max(core_s[1], pb.scale[0])]
+        A_ = C[ARC_VIDX]
+        if prev_arc is not None:
+            arc_moves = max(arc_moves, float(np.linalg.norm(A_ - prev_arc, axis=1).max()))
+        prev_arc = A_
+        if (f - 1) % 4 == 0:
+            for k_, v_ in clearance(C, PAIRS).items():
+                w_ = worst.setdefault(k_, {"overlap_tri_pairs_max": 0, "min_gap": 1e9, "min_gap_frame": None})
+                w_["overlap_tri_pairs_max"] = max(w_["overlap_tri_pairs_max"], v_["overlap_tri_pairs"])
+                if v_["min_gap"] < w_["min_gap"]:
+                    w_["min_gap"], w_["min_gap_frame"] = v_["min_gap"], f
+    rig.animation_data.action = None
+    KEY.animation_data.action = None
+    for kn in ARC_KEYS:
+        KEY.key_blocks[kn].value = 0.0
+    tips = np.array(tips); lows = np.array(lows)
+    return {"frames": frames + 1, "cycle_frames": frames, "cycle_s": round(frames / K.FPS, 4),
+            "seam_first_last_max_mm_sculpt": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
+            "seam_measured_with": "rig + shape-key (arc flicker) slots bound",
+            "min_z": round(min_z, 6), "bone_stretch_max_pct_excl_core": round(stretch * 100, 6),
+            "core_scale_range": [round(core_s[0], 5), round(core_s[1], 5)],
+            "static_parts_max_drift_vs_body": {k: round(v, 7) for k, v in static_res.items()},
+            "pivot_max_drift_vs_body": {k: round(v, 7) for k, v in pivot_res.items()},
+            "body_head_z_range": [round(min(body_z), 4), round(max(body_z), 4)],
+            "arc_max_vertex_jump_per_frame": round(arc_moves, 4),
+            "clearance_over_loop_every_4th_frame": worst,
+            "extent": {"width": round(float(ext_hi[0] - ext_lo[0]), 4), "depth": round(float(ext_hi[1] - ext_lo[1]), 4),
+                       "height": round(float(ext_hi[2] - ext_lo[2]), 4)}}, tips, lows
+
+
+t_anim = time.time()
+act_idle, idle_extra = author("idle", IDLE_FRAMES, idle_pose, 17)
+act_walk, walk_extra = author("walk", WALK_FRAMES, walk_pose, 29)
+m_idle, _, lows_i = measure(act_idle, IDLE_FRAMES)
+m_walk, tips_w, lows_w = measure(act_walk, WALK_FRAMES)
+# walk: foot travel (in place: the stance foot slides back = the ground passing under), contacts, swing lift
+Nw = WALK_FRAMES
+half = Nw // 2
+gait = {}
+for si, s in enumerate(("L", "R")):
+    st0 = 0 if s == "L" else half                       # left stance t in [0, .5), right stance t in [.5, 1)
+    stance = [(st0 + k) % Nw for k in range(half + 1)]
+    swing = [(st0 + half + k) % Nw for k in range(1, half)]
+    y = tips_w[:, si, 1]
+    gait[s] = {"tip_y_at_touchdown": round(float(y[stance[0]]), 4), "tip_y_at_liftoff": round(float(y[stance[-1]]), 4),
+               "step_length": round(float(y[stance[-1]] - y[stance[0]]), 4),
+               "stance_low_z_max": round(float(lows_w[stance, si].max()), 4),
+               "swing_low_z_max": round(float(lows_w[swing, si].max()), 4),
+               "swing_low_z_min": round(float(lows_w[swing, si].min()), 4)}
+step_len = float(np.mean([gait[s]["step_length"] for s in gait]))
+speed_units = 2.0 * step_len / (Nw / K.FPS)
+assert step_len > 0, "walk runs backwards (stance foot must slide toward +Y, the character faces -Y)"
+m_walk.update({"gait": gait, "step_length_units": round(step_len, 4), "stride_units": round(2 * step_len, 4),
+               "cadence_steps_per_min": round(2 * 60.0 * K.FPS / Nw, 2),
+               "implied_ground_speed": {"units_per_s": round(speed_units, 4), "m_per_s_at_game_scale": round(speed_units * GAME_M_PER_UNIT, 4),
+                                        "game_m_per_unit": round(GAME_M_PER_UNIT, 6),
+                                        "rule": "stride (2 x mean stance-foot travel) / cycle time"},
+               "lowest_point_each_frame_min_max": [round(float(lows_w.min(1).min()), 5), round(float(lows_w.min(1).max()), 5)],
+               "motion": {"leg_swing_deg": WALK_LEG_SWING_DEG, "roll_deg": WALK_ROLL_DEG, "torso_yaw_deg": WALK_TORSO_YAW_DEG,
+                          "lean_deg": WALK_LEAN_DEG, "float": WALK_FLOAT, "contact_soft": WALK_CONTACT_SOFT,
+                          "core_pulse": WALK_CORE_PULSE, "glow_pulse": WALK_GLOW_PULSE, "harmonics": [1, 2]}, **walk_extra})
+m_idle.update({"lowest_point_each_frame_min_max": [round(float(lows_i.min(1).min()), 5), round(float(lows_i.min(1).max()), 5)],
+               "motion": {"float": IDLE_FLOAT, "sway_deg": IDLE_SWAY_DEG, "core_pulse": IDLE_CORE_PULSE,
+                          "glow_pulse": IDLE_GLOW_PULSE, "harmonics": [1, 2]}, **idle_extra})
+rep["idle"] = {"status": "v2 PROPOSED (artist 2026-09-25: static limbs, electricity, float-ish)", "action": "idle", **m_idle}
+rep["walk"] = {"status": "v2 PROPOSED (artist 2026-09-25: walks pretty normally, can floatish)", "action": "walk", **m_walk}
+rep["anim_seconds"] = round(time.time() - t_anim, 2)
+K.assign_action(rig, None)
 scene.frame_set(1)
 for pb in pose:
     pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
-scene.frame_start, scene.frame_end = 1, N + 1
+scene.frame_start, scene.frame_end = 1, IDLE_FRAMES + 1
 rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, "deform": b.use_deform,
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local],
                  "length": round(b.length, 4)} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
-rig["conquest_rig"] = "rigid-parts v1 (one bone per floating part)"
-low["conquest_clips"] = ["idle"]
-low["conquest_clip_status"] = "idle PROPOSED; walk NOT AUTHORED (gait pending artist); no attacks"
+rig["conquest_rig"] = "rigid-parts v2 (one bone per part; head/arms/core static on the body, legs hinge at the hip)"
+low["conquest_clips"] = ["idle", "walk"]
+low["conquest_clip_status"] = "idle v2 + walk PROPOSED (motion v2, 2026-09-25); arcs flicker via shape keys; no attacks"
 bpy.context.preferences.filepaths.save_version = 0
 os.makedirs(os.path.dirname(OUT_RIGGED), exist_ok=True)
 bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True)
 
 # =========================================================================== skins (palette swap)
-rep["skins"] = {"default": {"file": OUT_RIGGED, "palette": PAL.table(pal_default), "palette_files": pal_default["files"]}}
+ARC_FACES = np.nonzero(FPART == ARC_PI)[0]
+
+
+def arc_paint_sample():
+    """mean linear Col / Glow over the arc faces' corners, read back from the painted mesh (repaint proof)."""
+    lt = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_total", lt)
+    ls = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_start", ls)
+    out = {}
+    for nm in ("Col", "Glow"):
+        cd = np.empty(len(me.loops) * 4, dtype=np.float32); me.color_attributes[nm].data.foreach_get("color", cd)
+        cd = cd.reshape(-1, 4)
+        out[nm] = [round(float(v), 4) for v in cd[ls[ARC_FACES]].mean(0)[:3]]
+    return out
+
+
+rep["skins"] = {"default": {"file": OUT_RIGGED, "palette": PAL.table(pal_default), "palette_files": pal_default["files"],
+                            "arc_glow_tier": report["arc_glow_tier"]["default"], "arc_paint_linear": arc_paint_sample()}}
 for skin in SKINS:
     if skin == "default":
         continue
     pal = PAL.load(UNIT, skin)
+    tier = glow_tier(pal)
+    assert tier["pass"], "arc glow tier gate failed for skin %s: %r" % (skin, tier)
     counts = PAL.paint(me, pal)
     PAL.apply_material(mat, pal)
     out = OUT_RIGGED[:-6] + "__" + skin + ".blend"
     bpy.ops.wm.save_as_mainfile(filepath=out, copy=True, compress=True)
     _cd = np.empty(len(me.loops) * 4, dtype=np.float32); me.color_attributes["Col"].data.foreach_get("color", _cd)
     rep["skins"][skin] = {"file": out, "palette": PAL.table(pal), "palette_files": pal["files"],
-                          "col_sha": hashlib.sha256(np.round(_cd, 5).tobytes()).hexdigest()[:16], "regions_faces": counts}
+                          "col_sha": hashlib.sha256(np.round(_cd, 5).tobytes()).hexdigest()[:16], "regions_faces": counts,
+                          "arc_glow_tier": tier, "arc_paint_linear": arc_paint_sample()}
 PAL.paint(me, pal_default); PAL.apply_material(mat, pal_default)
 rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
 print("RIG_DONE", json.dumps({k: rep[k] for k in ("bone_count", "weights", "seconds")}))
-print("IDLE", json.dumps(rep["idle"]))
+print("IDLE", json.dumps({k: v for k, v in rep["idle"].items() if k != "clearance_over_loop_every_4th_frame"}))
+print("WALK", json.dumps({k: v for k, v in rep["walk"].items() if k != "clearance_over_loop_every_4th_frame"}))
+print("SKINS_ARC", json.dumps({k: {"arc_paint_linear": v.get("arc_paint_linear"), "arc_top": v.get("arc_glow_tier", {}).get("arc_is_top_tier")}
+                               for k, v in rep["skins"].items()}))
 sys.stdout.flush()
 os._exit(0)

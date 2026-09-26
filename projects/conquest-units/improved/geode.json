@@ -150,7 +150,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 0,
-   "seconds": 1.77,
+   "seconds": 1.18,
    "tris": 2452,
    "signed_volume": 115.773,
    "volume_ratio_vs_source": 0.9962,
@@ -328,7 +328,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 3,
-   "seconds": 0.12,
+   "seconds": 0.09,
    "tris": 470,
    "signed_volume": 13.721,
    "volume_ratio_vs_source": 0.9687,
@@ -375,7 +375,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 10,
-   "seconds": 0.12,
+   "seconds": 0.1,
    "tris": 512,
    "signed_volume": 8.385,
    "volume_ratio_vs_source": 0.9698,
@@ -477,7 +477,120 @@
    "min_gap": 5.4576
   }
  },
- "tris_final": 5104,
+ "arcs": {
+  "gaps": [
+   {
+    "gap": "torso|head",
+    "nearest_gap": 1.9039,
+    "strands": [
+     {
+      "surface_gap": 1.9722,
+      "length_with_sink": 2.3322,
+      "jag_amp": 0.3731
+     },
+     {
+      "surface_gap": 1.9769,
+      "length_with_sink": 2.3369,
+      "jag_amp": 0.3739
+     }
+    ]
+   },
+   {
+    "gap": "torso|arm.L",
+    "nearest_gap": 0.9691,
+    "strands": [
+     {
+      "surface_gap": 1.0072,
+      "length_with_sink": 1.3672,
+      "jag_amp": 0.2187
+     },
+     {
+      "surface_gap": 1.2622,
+      "length_with_sink": 1.6222,
+      "jag_amp": 0.2596
+     }
+    ]
+   },
+   {
+    "gap": "torso|arm.R",
+    "nearest_gap": 1.071,
+    "strands": [
+     {
+      "surface_gap": 1.256,
+      "length_with_sink": 1.616,
+      "jag_amp": 0.2586
+     },
+     {
+      "surface_gap": 1.1065,
+      "length_with_sink": 1.4665,
+      "jag_amp": 0.2346
+     }
+    ]
+   },
+   {
+    "gap": "torso|core",
+    "nearest_gap": 0.3454,
+    "strands": [
+     {
+      "surface_gap": 0.394,
+      "length_with_sink": 0.754,
+      "jag_amp": 0.1206
+     },
+     {
+      "surface_gap": 0.5174,
+      "length_with_sink": 0.8774,
+      "jag_amp": 0.1404
+     }
+    ]
+   },
+   {
+    "gap": "core|leg.L",
+    "nearest_gap": 2.4248,
+    "strands": [
+     {
+      "surface_gap": 2.4427,
+      "length_with_sink": 2.8027,
+      "jag_amp": 0.42
+     },
+     {
+      "surface_gap": 2.5705,
+      "length_with_sink": 2.9305,
+      "jag_amp": 0.42
+     }
+    ]
+   },
+   {
+    "gap": "core|leg.R",
+    "nearest_gap": 2.5067,
+    "strands": [
+     {
+      "surface_gap": 2.6549,
+      "length_with_sink": 3.0149,
+      "jag_amp": 0.42
+     },
+     {
+      "surface_gap": 2.5251,
+      "length_with_sink": 2.8851,
+      "jag_amp": 0.42
+     }
+    ]
+   }
+  ],
+  "strands_per_gap": 2,
+  "segments": 8,
+  "variants": 3,
+  "tris": 600,
+  "verts": 324,
+  "radius": 0.07,
+  "jag": 0.16,
+  "jag_max": 0.42,
+  "bow": 0.6,
+  "sink": 0.18,
+  "min_strand_signed_volume": 0.003781,
+  "region": "arc",
+  "flicker": "shape-key swap: variant 0 = basis, 2 shape keys, CONSTANT keys at 12 Hz"
+ },
+ "tris_final": 5704,
  "tris_per_part": {
   "torso": 2452,
   "head": 412,
@@ -485,14 +598,15 @@
   "arm.L": 470,
   "arm.R": 470,
   "leg.L": 512,
-  "leg.R": 512
+  "leg.R": 512,
+  "arcs": 600
  },
  "uv": {
   "method": "Smart UV (66 deg, margin 0.003) + pack, whole joined faceted mesh",
-  "faces": 5104,
+  "faces": 5704,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "93a9569e723811ea"
+  "uv_sha": "2b0982b3e82c1a4b"
  },
  "inner_rule": {
   "rule": "facet centroid deeper than INNER_DEPTH x part diagonal below the part's convex hull",
@@ -535,6 +649,38 @@
    }
   }
  },
+ "arc_glow_tier": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "edge": 0.22,
+    "inner": 0.75,
+    "eye": 1.2,
+    "core": 1.0,
+    "core_edge": 1.4,
+    "arc": 1.7
+   },
+   "rank": [
+    "arc",
+    "core_edge",
+    "eye",
+    "core",
+    "inner",
+    "edge"
+   ],
+   "arc_is_top_tier": true,
+   "glow_luminance_info": {
+    "edge": 0.1285,
+    "inner": 0.546,
+    "eye": 0.8925,
+    "core": 0.7502,
+    "core_edge": 1.1504,
+    "arc": 1.2426
+   },
+   "gate": "top",
+   "pass": true
+  }
+ },
  "regions_faces": {
   "pavilion": 472,
   "girdle": 593,
@@ -543,7 +689,8 @@
   "inner": 144,
   "eye": 10,
   "core": 76,
-  "core_edge": 200
+  "core_edge": 200,
+  "arc": 600
  },
  "eye_rule": {
   "rule": "head gem-cut row 3: the two facets whose azimuth is nearest the front (-Y) each get a sunk inset gem (EYE_SCALE of the facet, sunk EYE_DEPTH) = the eyes",
@@ -574,7 +721,7 @@
   ],
   "angle_from_minusY_deg": 0.07
  },
- "digest_geometry_colour": "08be392762516e5c",
+ "digest_geometry_colour": "06c35ad61244fcdb",
  "final_bbox": [
   [
    -8.9239,
@@ -674,6 +821,19 @@
      200
     ],
     "emission_scale": 1.4
+   },
+   "arc": {
+    "rgb": [
+     150,
+     255,
+     180
+    ],
+    "emission": [
+     40,
+     255,
+     110
+    ],
+    "emission_scale": 1.7
    }
   },
   "files": [

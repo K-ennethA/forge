@@ -3,9 +3,11 @@ never touches a shared file). In-memory only; never saves.
 
     blender --background <blend> --factory-startup --python geode_render.py -- <out_prefix> [views]
 
-views: comma list of front, threequarter, tactical, facet (default: all four).
+views: comma list of front, threequarter, tactical, facet, arcs_closeup (default: all five).
 facet = the glow closeup: frames the eye facets + the torso's glowing inner facets (the neck hollow) from 25 deg
 off the front and 18 deg up, so the faceting, the edge planes and the emission read at full resolution.
+arcs_closeup = the electricity arcs (motion v2) of the lower cluster -- torso|core and core|legs -- from 20 deg off the
+front and 8 deg up; skipped when the mesh has no 'arc' region.
 """
 import bpy, sys, math
 import numpy as np
@@ -13,7 +15,7 @@ from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 PREFIX = argv[0]
-VIEWS = argv[1].split(",") if len(argv) > 1 and not argv[1].startswith("--") else ["front", "threequarter", "tactical", "facet"]
+VIEWS = argv[1].split(",") if len(argv) > 1 and not argv[1].startswith("--") else ["front", "threequarter", "tactical", "facet", "arcs_closeup"]
 scene = bpy.context.scene
 for o in scene.objects:
     if o.type == "ARMATURE":
@@ -29,7 +31,7 @@ for o in meshes:
 size = hi - lo
 
 
-def region_points(pred, zmin=None):
+def region_points(pred, zmin=None, zmax=None):
     for o in meshes:
         me = o.data
         if "region_id" not in me.attributes:
@@ -40,6 +42,8 @@ def region_points(pred, zmin=None):
         m = np.array([pred(names[r]) for r in rid])
         if zmin is not None:
             m &= fc[:, 2] > zmin
+        if zmax is not None:
+            m &= fc[:, 2] < zmax
         if m.any():
             return fc[m] @ np.array(o.matrix_world)[:3, :3].T + np.array(o.matrix_world)[:3, 3]
     return None
@@ -106,6 +110,10 @@ if P is not None:
     pts = np.vstack([P] + ([Q] if Q is not None else []))
     a_, b_ = Vector(pts.min(0)), Vector(pts.max(0))
     table["facet"] = (25.0, 18.0, 1024, 1.0, (a_ + b_) / 2, max((b_ - a_).length / 2 * 1.25, 0.12 * size.z))
+A_ = region_points(lambda n: n == "arc", zmax=lo.z + 0.45 * size.z)
+if A_ is not None:
+    a_, b_ = Vector(A_.min(0)), Vector(A_.max(0))
+    table["arcs_closeup"] = (20.0, 8.0, 1024, 1.0, (a_ + b_) / 2, max((b_ - a_).length / 2 * 1.2, 0.1 * size.z))
 for tag in VIEWS:
     if tag not in table:
         print("SKIP", tag); continue
