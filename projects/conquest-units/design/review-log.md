@@ -316,3 +316,24 @@ Artist: "another reference for duskmaw is darkrai inspiration" — add Darkrai
 eye vibe, tattered wraith body dissolving at the base, red spike collar.
 Reference set is now Aku + Father (KND) + Darkrai: crisp dark silhouette,
 minimal sharp face, body trailing into shadow at the ground.
+
+## 2026-09-26 — Magmoo v2 feedback (artist verbatim + original sketches)
+
+Artist shared the ORIGINAL magmoo concept sketches (notebook page "#002
+magmoo / lavazard / goo va..."), saved as design/reference/magmoo-sketch-1.jpg
+and magmoo-sketch-2.jpg, and ruled:
+
+"magmoo should look more like this, lets make it more of a slime vibe, like
+red lava instead of rock with lava in it, more lava blob monster
+
+also can we make the pieces separate and then combine into one long serpent
+piece as its idle animation"
+
+Binding reading: (1) identity rework rock -> GOO: smooth glossy red-lava
+slime blobs, not basalt crust with magma cracks; the sketch shows a rounded
+teardrop head with small simple dot eyes and flame-licks trailing off the
+back, a curved smooth mid-blob, small floating droplets between pieces, and
+a splashy bottom piece with finger-like splats. (2) IDLE = the split/combine
+cycle itself: pieces separate, then combine back into the one long serpent,
+looping. Slither walk stays. Resume of paused work also ordered (duskmaw v2
+restart, then supaoctto).
