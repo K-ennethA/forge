@@ -134,74 +134,74 @@
    {
     "node": "duskmaw",
     "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 13 'duskmaw_rig')",
-    "vertices": 90632,
+    "vertices": 85753,
     "placement_scale": 1.0,
     "measured_size": [
-     32.1715,
-     30.9171,
-     23.1368
+     32.5135,
+     34.5588,
+     24.4045
     ],
     "rendered_size": [
-     27.9717,
-     30.9171,
-     16.1551
+     27.9708,
+     34.5588,
+     17.3268
     ]
    }
   ],
   "measured_aabb_size": [
-   32.1715,
-   30.9171,
-   23.1368
+   32.5135,
+   34.5588,
+   24.4045
   ],
   "rendered_aabb_size": [
-   27.9717,
-   30.9171,
-   16.1551
+   27.9708,
+   34.5588,
+   17.3268
   ],
   "rendered_over_measured_height": 1.0,
   "portrait_camera": {
    "target": [
     0.0,
-    25.5066,
+    28.511,
     0.0
    ],
    "position": [
     0.0,
-    25.5066,
-    25.2403
+    28.511,
+    28.2133
    ],
-   "distance": 25.2403,
+   "distance": 28.2133,
    "distance_clamped_to_min_0.3": false,
-   "frame_height": 13.5262,
+   "frame_height": 15.1195,
    "frame_y_band": [
-    18.7435,
-    32.2697
+    20.9513,
+    36.0707
    ],
    "inside_rendered_model_aabb": false,
    "rendered_model_y": [
-    -0.0,
-    30.9171
+    0.0,
+    34.5588
    ],
-   "rendered_model_z_front": 8.0523
+   "rendered_model_z_front": 8.7135
   },
   "portrait_camera_if_measured_right": {
    "target": [
-    -0.0291,
-    25.5066,
-    -0.0252
+    -0.0117,
+    28.511,
+    0.0501
    ],
    "position": [
-    -0.0291,
-    25.5066,
-    25.2151
+    -0.0117,
+    28.511,
+    28.2634
    ],
-   "distance": 25.2403
+   "distance": 28.2133
   },
   "pass": true
  },
  "rerun_roster_fit": {
   "glb": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
-  "model_scale": 0.05822,
+  "model_scale": 0.05209,
   "model_yaw_deg": 180.0,
   "top_nodes": [
    "duskmaw_rig"
@@ -210,68 +210,68 @@
    {
     "node": "duskmaw",
     "kind": "skinned (Godot: MeshInstance3D under Skeleton3D, identity; skeleton under node 13 'duskmaw_rig')",
-    "vertices": 90632,
+    "vertices": 85753,
     "placement_scale": 1.0,
     "measured_size": [
-     1.873,
-     1.8,
-     1.347
+     1.6936,
+     1.8002,
+     1.2712
     ],
     "rendered_size": [
-     1.6285,
-     1.8,
-     0.9405
+     1.457,
+     1.8002,
+     0.9026
     ]
    }
   ],
   "measured_aabb_size": [
-   1.873,
-   1.8,
-   1.347
+   1.6936,
+   1.8002,
+   1.2712
   ],
   "rendered_aabb_size": [
-   1.6285,
-   1.8,
-   0.9405
+   1.457,
+   1.8002,
+   0.9026
   ],
   "rendered_over_measured_height": 1.0,
   "portrait_camera": {
    "target": [
     0.0,
-    1.485,
+    1.4851,
     0.0
    ],
    "position": [
     0.0,
-    1.485,
-    1.4695
+    1.4851,
+    1.4696
    ],
-   "distance": 1.4695,
+   "distance": 1.4696,
    "distance_clamped_to_min_0.3": false,
-   "frame_height": 0.7875,
+   "frame_height": 0.7876,
    "frame_y_band": [
-    1.0912,
-    1.8787
+    1.0914,
+    1.8789
    ],
    "inside_rendered_model_aabb": false,
    "rendered_model_y": [
-    -0.0,
-    1.8
+    0.0,
+    1.8002
    ],
-   "rendered_model_z_front": 0.4688
+   "rendered_model_z_front": 0.4539
   },
   "portrait_camera_if_measured_right": {
    "target": [
-    -0.0017,
-    1.485,
-    -0.0015
+    -0.0006,
+    1.4851,
+    0.0026
    ],
    "position": [
-    -0.0017,
-    1.485,
-    1.468
+    -0.0006,
+    1.4851,
+    1.4722
    ],
-   "distance": 1.4695
+   "distance": 1.4696
   },
   "pass": true
  }

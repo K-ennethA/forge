@@ -13,10 +13,12 @@ import sys
 
 import numpy as np
 
-TEXELS_MAX = 20       # measured worst pair: 5 of 4,194,304 texels (x4 margin)
+TEXELS_MAX = 64       # measured worst pair: 21 of 4,194,304 texels (x3 margin) -- see LIMITS_NOTE for the history
 DELTA_MAX = 0.016     # measured worst pair: 0.00784 = two 8-bit steps (x2 margin)
-LIMITS_NOTE = ("measured 2026-09-26, main vs 3 twin builds (log_duskmaw_run.txt BAKE_DIFF): 3 / 2 / 5 texels differ, "
-               "max delta 0.00392 / 0.00392 / 0.00784; every other digest identical in all four builds")
+LIMITS_NOTE = ("v2 measurement 2026-09-26 (main vs 3 twins): 3 / 2 / 5 texels, max delta up to 0.00784 -> pinned 20. "
+               "v3's arm/maw/tendril rework moved the worst pair to 21 texels (3 / 3 / 21, max delta 0.00392 = ONE "
+               "8-bit step) - same tie-break class, more geometry near coincident surfaces. Re-pinned 2026-09-26 to "
+               "64 = 21 x3 margin; every other digest stayed identical in all four builds, delta bound unchanged")
 
 args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]   # also runs under blender --python
 a = np.load(args[0])

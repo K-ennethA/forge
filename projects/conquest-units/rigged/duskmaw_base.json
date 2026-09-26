@@ -1,0 +1,161 @@
+{
+ "rule": "    blender --background --factory-startup --python duskmaw_base_measure.py -- <out.json> <label>=<blend> [...]",
+ "blends": {
+  "v2_improved": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw_v2.blend",
+   "height": 30.9171,
+   "floor_ring_radius": {
+    "mean": 8.2078,
+    "min": 7.831,
+    "max": 9.0325,
+    "cv": 0.039
+   },
+   "floor_contact_bins_pct": 100.0,
+   "rim_z": {
+    "mean": 0.4064,
+    "std": 0.0298,
+    "min": 0.3329,
+    "max": 0.4563
+   },
+   "tendrils": {
+    "count": 0,
+    "flames_found_at_z0": 0,
+    "height_mean": 0.0,
+    "height_max": 0.0,
+    "height_min": 0.0,
+    "height_mean_pct_H": 0.0,
+    "angles_deg_at_z0": [],
+    "heights": []
+   },
+   "mid_arm_radius": {
+    "L": {
+     "radius_median": 0.4726,
+     "points": 2577,
+     "axis_dir": [
+      0.762,
+      0.081,
+      -0.643
+     ],
+     "centre": [
+      8.494,
+      -0.519,
+      9.074
+     ]
+    },
+    "R": {
+     "radius_median": 0.4549,
+     "points": 2618,
+     "axis_dir": [
+      -0.767,
+      0.096,
+      -0.635
+     ],
+     "centre": [
+      -8.493,
+      -0.604,
+      9.069
+     ]
+    }
+   },
+   "neck_min_width": {
+    "width": 4.345,
+    "at_z": 18.3,
+    "pct_of_height": 14.05
+   }
+  },
+  "v3_improved": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.blend",
+   "height": 34.5588,
+   "floor_ring_radius": {
+    "mean": 8.786,
+    "min": 8.4148,
+    "max": 9.6523,
+    "cv": 0.0391
+   },
+   "floor_contact_bins_pct": 100.0,
+   "rim_z": {
+    "mean": 0.5144,
+    "std": 0.4164,
+    "min": 0.3523,
+    "max": 2.9696
+   },
+   "tendrils": {
+    "count": 15,
+    "flames_found_at_z0": 18,
+    "height_mean": 3.207,
+    "height_max": 4.6,
+    "height_min": 2.4,
+    "height_mean_pct_H": 9.28,
+    "angles_deg_at_z0": [
+     -158,
+     -137,
+     -94,
+     -76,
+     -56,
+     -18,
+     18,
+     36,
+     54,
+     74,
+     94,
+     114,
+     135,
+     158,
+     -180
+    ],
+    "heights": [
+     4.6,
+     2.8,
+     2.7,
+     3.8,
+     3.3,
+     2.4,
+     3.0,
+     2.8,
+     3.3,
+     3.8,
+     2.7,
+     2.5,
+     2.8,
+     4.6,
+     3.0
+    ]
+   },
+   "mid_arm_radius": {
+    "L": {
+     "radius_median": 0.8607,
+     "points": 2014,
+     "axis_dir": [
+      0.618,
+      0.108,
+      -0.779
+     ],
+     "centre": [
+      8.495,
+      -0.675,
+      9.907
+     ]
+    },
+    "R": {
+     "radius_median": 0.8798,
+     "points": 2130,
+     "axis_dir": [
+      -0.627,
+      0.109,
+      -0.771
+     ],
+     "centre": [
+      -8.495,
+      -0.674,
+      9.948
+     ]
+    }
+   },
+   "neck_min_width": {
+    "width": 3.3154,
+    "at_z": 20.3,
+    "pct_of_height": 9.59
+   }
+  }
+ }
+}

@@ -2,8 +2,9 @@
 
     blender --background --factory-startup --python duskmaw_seethrough.py -- <out.json> <label>=<blend> [<label>=<blend> ...]
 
-Per blend: rays through the WAIST CORE -- |u| <= 2.5 units either side of the waist axis, heights 6.0-9.2 (the mouth band
-between the chest's underside and the skirt's peaks), step 0.1 -- from 24 yaws round the figure (0 = the front camera,
+Per blend: rays through the WAIST CORE -- |u| <= 2.5 units either side of the waist axis, heights = the mouth band (v3 blends
+carry it as conquest_maw_band = the maw's hole heights; v1/v2 blends: 6.0-9.2, between the chest's underside and the
+skirt's peaks), step 0.1 -- from 24 yaws round the figure (0 = the front camera,
 180 = straight behind). Value = % of those rays that pass through the model without hitting anything (v1 = the open
 ring maw; v2 must be 0 from every side, including the front: there the rays enter the mouth and stop on the throat).
 Rigged blends are also measured on every 4th frame of every clip (the chomp's open/shut and the glide's lean).
@@ -23,7 +24,7 @@ JOBS = [a.split("=", 1) for a in argv[1:]]
 Z_BAND, HALF_W, STEP = (6.0, 9.2), 2.5, 0.1
 
 
-def rays(V, F, axis, where=None):
+def rays(V, F, axis, where=None, Z_BAND=Z_BAND):
     """% of rays through per yaw; if `where` is a dict, it also collects per yaw the missed rays' closest-approach
     points to the waist axis (y relative to the axis: negative = in FRONT of it) -- where the light gets through."""
     bvh = BVHTree.FromPolygons(V.tolist(), F)
@@ -77,7 +78,9 @@ for label, path in JOBS:
         col = (V[:, 2] > 6.2) & (V[:, 2] < 8.9) & (np.hypot(V[:, 0], V[:, 1]) < 2.0)
         axis = V[col, :2].mean(0).tolist()
     wh = {}
-    row = {"file": path, "axis_xy": [round(float(a), 4) for a in axis], "rest": rays(V, F, axis, wh)}
+    band = tuple(ob["conquest_maw_band"]) if "conquest_maw_band" in ob.keys() else Z_BAND
+    row = {"file": path, "axis_xy": [round(float(a), 4) for a in axis], "z_band": [round(float(b), 3) for b in band],
+           "rest": rays(V, F, axis, wh, band)}
     row["rest_max_pct"] = max(row["rest"].values())
     row["rest_front_pct"], row["rest_back_pct"] = row["rest"][0], row["rest"][180]
     row["rest_back_hemisphere_max_pct"] = max(v for k, v in row["rest"].items() if 105 <= k <= 255)
@@ -95,7 +98,7 @@ for label, path in JOBS:
             for f in range(f0, f1 + 1, 4):
                 sc.frame_set(f)
                 Vp, Fp = mesh_now(ob)
-                for k, v in rays(Vp, Fp, axis, wh_c).items():
+                for k, v in rays(Vp, Fp, axis, wh_c, band).items():
                     per_yaw[k] = max(per_yaw.get(k, 0.0), v)
             worst[act.name] = max(per_yaw.values())
             worst_yaw[act.name] = per_yaw

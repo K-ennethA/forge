@@ -4,12 +4,13 @@ lane never touches the shared file). In-memory only; never saves.
     blender --background <blend> --factory-startup --python duskmaw_render.py -- <out_prefix> [views] [--glb <path> --yaw <deg>]
 
 views: comma list of front, threequarter, tactical, maw, back, side, backthreequarter, mawback, lowfront, lowback, head,
-    headthreequarter (default front,threequarter,tactical,maw).
+    headthreequarter, mawthreequarter, hem, hemthreequarter (default front,threequarter,tactical,maw).
 --skin <unit>:<skin>: repaint in memory from palettes/<unit>/<skin>.json before rendering (palette variants).
 --glb: clear the scene, import the shipped glb and yaw it (the shipped monster.glb imports facing -Y: yaw 0 shows
 its TRUE front on the -Y camera; the survey game tiles used the roster yaw 180 and rendered its back).
 maw closeup: front camera (0 deg, 4 deg up) framed on the chest-to-skirt band (mouth illusion) -- the 14-40% height band at
     the model centre for BOTH the rework and the shipped glb, so both sides frame the same anatomy.
+hem closeup (v3 tendrils): the 0-20% height band, front camera 8 deg up (hem) / 35 deg round and 12 deg up (hemthreequarter).
 """
 import bpy, sys, math
 import numpy as np
@@ -133,6 +134,10 @@ table["lowback"] = (180.0, -6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.30 * siz
 # head closeup: the head/hat band (58-100 % of the height) on the front camera
 table["head"] = (0.0, 4.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
 table["headthreequarter"] = (30.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, lo.z + 0.645 * size.z)), 0.19 * size.z)
+table["mawthreequarter"] = (35.0, 6.0, 1024, 1.0, Vector((0.0, mc.y, mc.z)), mr * 1.1)
+hb = Vector((0.0, mc.y, lo.z + 0.10 * size.z))
+table["hem"] = (0.0, 8.0, 1024, 1.0, hb, 0.30 * size.x)
+table["hemthreequarter"] = (35.0, 12.0, 1024, 1.0, hb, 0.30 * size.x)
 for tag in VIEWS:
     if tag not in table:
         print("SKIP", tag); continue

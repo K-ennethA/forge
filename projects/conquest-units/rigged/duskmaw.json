@@ -2,55 +2,129 @@
  "unit": "duskmaw",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.blend",
  "fps": 24,
- "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped from v2 (artist scope: idle + locomotion); they remain in git history with the v1 build",
+ "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped since v2 (artist scope: idle + locomotion); they remain in git history with the v1 build",
  "weights": {
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "base": 931,
-   "sway": 959,
-   "jaw": 1773,
-   "spine": 4774,
-   "chest": 3082,
-   "head": 2140,
-   "crown": 803,
-   "arm.L": 71,
-   "blade.L": 402,
-   "arm.R": 66,
-   "blade.R": 411
+   "base": 2054,
+   "sway": 1804,
+   "jaw": 1303,
+   "spine": 4139,
+   "chest": 1967,
+   "head": 1714,
+   "crown": 647,
+   "arm.L": 54,
+   "blade.L": 340,
+   "arm.R": 56,
+   "blade.R": 325
   },
   "ground_ring_base_weight_min": 1.0,
-  "rule": "upper-jaw field u (sculpt-derived chest = 1, sculpt-derived lower teeth = 0, else smoothstep U_Z, U_SMOOTH neighbour passes): u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"
+  "rule": "on the pre-T coordinates: upper-jaw field u = smoothstep(MAW_MID -+ uw), uw = U_W[0] on the tooth plates (|x| < the hole, within the plate depth, front) -> U_W[1] elsewhere; u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"
  },
- "teeth_pairs": [
+ "teeth_tips": [
   {
-   "upper": [
-    4.711,
-    -2.097,
-    8.897
-   ],
-   "lower": [
-    4.544,
-    -2.142,
-    7.923
-   ],
-   "xy_offset": 0.172,
-   "gap": 0.974
+   "jaw": "upper",
+   "design_x": -3.375,
+   "vertex": 2126,
+   "xyz": [
+    -3.333,
+    -4.691,
+    10.088
+   ]
   },
   {
-   "upper": [
-    -4.104,
-    -2.026,
-    8.905
-   ],
-   "lower": [
-    -4.575,
-    -2.114,
-    7.838
-   ],
-   "xy_offset": 0.479,
-   "gap": 1.067
+   "jaw": "upper",
+   "design_x": -1.125,
+   "vertex": 1522,
+   "xyz": [
+    -1.139,
+    -4.458,
+    9.704
+   ]
+  },
+  {
+   "jaw": "upper",
+   "design_x": 1.125,
+   "vertex": 6228,
+   "xyz": [
+    1.116,
+    -4.477,
+    9.708
+   ]
+  },
+  {
+   "jaw": "upper",
+   "design_x": 3.375,
+   "vertex": 7661,
+   "xyz": [
+    3.393,
+    -4.192,
+    10.144
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": -2.25,
+   "vertex": 13689,
+   "xyz": [
+    -2.237,
+    -4.579,
+    7.511
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": 0.0,
+   "vertex": 13702,
+   "xyz": [
+    0.034,
+    -4.532,
+    7.667
+   ]
+  },
+  {
+   "jaw": "lower",
+   "design_x": 2.25,
+   "vertex": 6418,
+   "xyz": [
+    2.301,
+    -4.975,
+    7.462
+   ]
+  }
+ ],
+ "teeth_pairs": [
+  {
+   "upper_x": -1.125,
+   "lower_x": 0.0,
+   "gap_rest": 2.037
+  },
+  {
+   "upper_x": 1.125,
+   "lower_x": 0.0,
+   "gap_rest": 2.041
+  },
+  {
+   "upper_x": -1.125,
+   "lower_x": -2.25,
+   "gap_rest": 2.193
+  },
+  {
+   "upper_x": 1.125,
+   "lower_x": 2.25,
+   "gap_rest": 2.246
+  },
+  {
+   "upper_x": -3.375,
+   "lower_x": -2.25,
+   "gap_rest": 2.577
+  },
+  {
+   "upper_x": 3.375,
+   "lower_x": 2.25,
+   "gap_rest": 2.682
   }
  ],
  "clips": {
@@ -67,25 +141,35 @@
    "ground_ring_lift_max": 0.0,
    "root_offset_max": 0.0,
    "spine_dz_range": [
-    -0.8165,
+    -1.4457,
     0.7063
    ],
    "jaw_dz_range": [
     -0.36,
-    0.5696
+    0.9948
    ],
    "upper_body_forward_lean_deg_range": [
-    -0.0,
-    -0.0
+    0.05,
+    0.05
    ],
    "front_teeth_gap": {
-    "rest": 0.9739,
-    "max_open": 1.8259,
-    "min_shut": -0.1266,
+    "rest": 2.0371,
+    "max_open": 3.1034,
+    "min_shut": -0.4034,
     "frame_open": 16,
     "frame_shut": 23,
-    "travel": 1.9525,
-    "travel_pct_H": 6.315
+    "travel": 3.5068,
+    "travel_pct_H": 10.147,
+    "every_pair_at_shut": [
+     -0.4034,
+     -0.4,
+     -0.2477,
+     -0.1946,
+     0.1363,
+     0.2416
+    ],
+    "pairs_interlocked_at_shut": 4,
+    "pairs": 6
    }
   },
   "walk": {
@@ -101,25 +185,35 @@
    "ground_ring_lift_max": 0.0,
    "root_offset_max": 0.0,
    "spine_dz_range": [
-    -0.3208,
-    0.2078
+    -0.3231,
+    0.2065
    ],
    "jaw_dz_range": [
-    -0.0348,
-    -0.0156
+    -0.028,
+    -0.0126
    ],
    "upper_body_forward_lean_deg_range": [
-    5.5,
-    8.51
+    5.55,
+    8.56
    ],
    "front_teeth_gap": {
-    "rest": 0.9721,
-    "max_open": 1.1757,
-    "min_shut": 0.7684,
+    "rest": 2.0309,
+    "max_open": 2.2528,
+    "min_shut": 1.7533,
     "frame_open": 21,
     "frame_shut": 13,
-    "travel": 0.4073,
-    "travel_pct_H": 1.317
+    "travel": 0.4995,
+    "travel_pct_H": 1.445,
+    "every_pair_at_shut": [
+     1.8082,
+     1.7533,
+     1.9128,
+     2.0747,
+     2.3143,
+     2.4902
+    ],
+    "pairs_interlocked_at_shut": 0,
+    "pairs": 6
    }
   }
  },
@@ -141,7 +235,7 @@
    "tail": [
     0.0,
     0.0,
-    1.855
+    2.0735
    ]
   },
   {
@@ -149,14 +243,14 @@
    "parent": "root",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    0.6183
+    0.0219,
+    -0.9111,
+    0.6802
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    3.0917
+    0.0219,
+    -0.9111,
+    3.4009
    ]
   },
   {
@@ -164,14 +258,14 @@
    "parent": "base",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    1.421
+    0.0219,
+    -0.9111,
+    1.5631
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    4.421
+    0.0219,
+    -0.9111,
+    3.9831
    ]
   },
   {
@@ -179,14 +273,14 @@
    "parent": "sway",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    4.421
+    0.0219,
+    -0.9111,
+    3.9831
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    7.421
+    0.0219,
+    -0.9111,
+    7.9431
    ]
   },
   {
@@ -194,14 +288,14 @@
    "parent": "sway",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    8.621
+    0.0219,
+    -0.9111,
+    8.9881
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    16.0769
+    0.0217,
+    -0.9189,
+    17.6846
    ]
   },
   {
@@ -209,14 +303,14 @@
    "parent": "spine",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    16.0769
+    0.0217,
+    -0.9189,
+    17.6846
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    21.0236
+    0.0219,
+    -0.9111,
+    23.676
    ]
   },
   {
@@ -224,14 +318,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    21.0236
+    0.0219,
+    -0.9111,
+    23.676
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    25.352
+    0.0219,
+    -0.9111,
+    28.4372
    ]
   },
   {
@@ -239,14 +333,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0232,
-    -0.8377,
-    25.352
+    0.0219,
+    -0.9111,
+    28.4372
    ],
    "tail": [
-    0.0232,
-    -0.8377,
-    30.6079
+    0.0219,
+    -0.9111,
+    34.2187
    ]
   },
   {
@@ -254,14 +348,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    2.92,
-    -0.8377,
-    18.5502
+    2.5334,
+    -1.0158,
+    20.9553
    ],
    "tail": [
-    7.9894,
-    -0.8377,
-    19.4778
+    7.9888,
+    -0.9111,
+    21.9755
    ]
   },
   {
@@ -269,14 +363,14 @@
    "parent": "arm.L",
    "deform": true,
    "head": [
-    7.9894,
-    -0.8377,
-    19.4778
+    7.9888,
+    -0.9111,
+    21.9755
    ],
    "tail": [
     14.2175,
-    -0.8377,
-    17.9319
+    -0.9111,
+    20.2439
    ]
   },
   {
@@ -284,14 +378,14 @@
    "parent": "chest",
    "deform": true,
    "head": [
-    -2.8737,
-    -0.8377,
-    18.5502
+    -2.4842,
+    -1.0187,
+    20.9553
    ],
    "tail": [
-    -7.9431,
-    -0.8377,
-    19.4778
+    -7.945,
+    -0.9111,
+    21.9755
    ]
   },
   {
@@ -299,14 +393,14 @@
    "parent": "arm.R",
    "deform": true,
    "head": [
-    -7.9431,
-    -0.8377,
-    19.4778
+    -7.945,
+    -0.9111,
+    21.9755
    ],
    "tail": [
-    -14.1712,
-    -0.8377,
-    17.9319
+    -14.1737,
+    -0.9111,
+    20.2439
    ]
   }
  ],
@@ -314,11 +408,11 @@
  "deform_bone_count": 11,
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
-  "bytes": 11754640,
-  "seconds": 0.6,
-  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05822 reaches the 1.8 m cell (report-only)"
+  "bytes": 12053548,
+  "seconds": 0.7,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05209 reaches the 1.8 m cell (report-only)"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.json",
- "seconds": 74.3,
- "digest_rig": "203f79c037851e6b"
+ "seconds": 74.8,
+ "digest_rig": "5035ee061aca2f84"
 }

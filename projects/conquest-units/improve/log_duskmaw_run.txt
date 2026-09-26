@@ -1,10 +1,8 @@
-﻿build exit=0 wall=75.7s
+﻿build exit=0 wall=77.1s
 check_improved exit=1
 check_rigged exit=1
 render_after exit=0
-render_grin exit=0
-render_darkrai exit=0
-render_before exit=0
+render_v2extra exit=0
 aabb exit=0
 seethrough exit=0
 clips_mp4 exit=0
@@ -13,19 +11,20 @@ before_after exit=0
 check_improved : 7 checks, 1 failed
 check_rigged : 11 checks, 1 failed
 AABB shipped {"measured_aabb_size": [0.1159, 0.1052, 0.1032], "rendered_aabb_size": [1.6309, 1.8, 1.5059], "rendered_over_measured_height": 17.1044, "pass": false}
-AABB rerun_natural {"measured_aabb_size": [32.1715, 30.9171, 23.1368], "rendered_aabb_size": [27.9717, 30.9171, 16.1551], "rendered_over_measured_height": 1.0, "pass": true}
-AABB rerun_roster_fit {"measured_aabb_size": [1.873, 1.8, 1.347], "rendered_aabb_size": [1.6285, 1.8, 0.9405], "rendered_over_measured_height": 1.0, "pass": true}
+AABB rerun_natural {"measured_aabb_size": [32.5135, 34.5588, 24.4045], "rendered_aabb_size": [27.9708, 34.5588, 17.3268], "rendered_over_measured_height": 1.0, "pass": true}
+AABB rerun_roster_fit {"measured_aabb_size": [1.6936, 1.8002, 1.2712], "rendered_aabb_size": [1.457, 1.8002, 0.9026], "rendered_over_measured_height": 1.0, "pass": true}
+gates+renders wall=129.2s
 twin1 exit=0
 twin2 exit=0
 twin3 exit=0
-twins wall=105.8s
-MAIN  geom_colour=cc635a3280646ad0 uv=68deec6d1f49972f bake_ao=1b3a4c7cf2c3fd3d rig=203f79c037851e6b
-TWIN1 geom_colour=cc635a3280646ad0 uv=68deec6d1f49972f bake_ao=1b3a4c7cf2c3fd3d rig=203f79c037851e6b
-TWIN2 geom_colour=cc635a3280646ad0 uv=68deec6d1f49972f bake_ao=1b3a4c7cf2c3fd3d rig=203f79c037851e6b
-TWIN3 geom_colour=cc635a3280646ad0 uv=68deec6d1f49972f bake_ao=1b3a4c7cf2c3fd3d rig=203f79c037851e6b
+twins wall=112.6s
+MAIN  geom_colour=b880c990e3fd6734 uv=9ee64457dc42d45e bake_ao=ff879c47e8af197e rig=5035ee061aca2f84
+TWIN1 geom_colour=b880c990e3fd6734 uv=9ee64457dc42d45e bake_ao=ff879c47e8af197e rig=5035ee061aca2f84
+TWIN2 geom_colour=b880c990e3fd6734 uv=9ee64457dc42d45e bake_ao=ff879c47e8af197e rig=5035ee061aca2f84
+TWIN3 geom_colour=b880c990e3fd6734 uv=9ee64457dc42d45e bake_ao=ff879c47e8af197e rig=5035ee061aca2f84
 DIGESTS identical (all but the normal bake)=True
-BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin1.npy texels=3 of 4194304 max_delta=0.00392 p99_of_differing=0.00392 limits=(64, 0.050) pass=True
-BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin2.npy texels=2 of 4194304 max_delta=0.00392 p99_of_differing=0.00392 limits=(64, 0.050) pass=True
-BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin3.npy texels=5 of 4194304 max_delta=0.00784 p99_of_differing=0.00769 limits=(64, 0.050) pass=True
-bake_diff exit=0
-ALL DONE wall=235.6s
+BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin1.npy texels=3 of 4194304 max_delta=0.00392 p99_of_differing=0.00392 limits=(20, 0.016) pass=True
+BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin2.npy texels=3 of 4194304 max_delta=0.00392 p99_of_differing=0.00392 limits=(20, 0.016) pass=True
+BAKE_DIFF C:\Users\kenne\AppData\Local\Temp\duskmaw_normal_duskmaw_twin3.npy texels=21 of 4194304 max_delta=0.00392 p99_of_differing=0.00392 limits=(20, 0.016) pass=False
+bake_diff exit=1
+ALL DONE wall=243.8s

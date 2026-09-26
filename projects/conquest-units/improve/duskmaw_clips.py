@@ -5,7 +5,7 @@ transform, dark floor). In-memory only; never saves the blend.
 
     blender --background <rigged/duskmaw.blend> --factory-startup --python duskmaw_clips.py -- <out_dir> [res] [sheet] [clips]
 
-Writes <out_dir>/<unit>_{idle,walk}.mp4 (H.264, 24 fps). Loops play by adding a
+Writes <out_dir>/<unit>[_<tag>]_{idle,walk,idle_maw}.mp4 (H.264, 24 fps). Loops play by adding a
 CYCLES modifier to every fcurve in memory (the clip's last frame == its first, so the period
 is the clip's cycle length). Camera framing covers the union of the clip's extents so the
 whole motion stays in shot; the camera and lights never move.
@@ -18,6 +18,9 @@ sys.path.insert(0, HERE)
 import rigkit as K  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
+TAG = ""
+if "--tag" in argv:                      # --tag v3: files are <unit>_v3_<clip>.mp4 / _sheet.png (the version beside the old)
+    k_ = argv.index("--tag"); TAG = argv[k_ + 1]; argv = argv[:k_] + argv[k_ + 2:]
 OUT = argv[0]
 RES = int(argv[1]) if len(argv) > 1 else 768
 os.makedirs(OUT, exist_ok=True)
@@ -25,6 +28,7 @@ scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
 mesh = next(o for o in scene.objects if o.type == "MESH" and o.parent is rig)
 UNIT = mesh.name
+NAME = UNIT + ("_" + TAG if TAG else "")
 nt = mesh.data.materials[0].node_tree if mesh.data.materials else None
 
 scene.render.engine = "BLENDER_EEVEE"
@@ -122,7 +126,7 @@ def write_sheet(clip, N):
     sheet = np.concatenate(rows, axis=0)
     im = bpy.data.images.new("sheet", sheet.shape[1], sheet.shape[0], alpha=True)
     im.pixels.foreach_set(sheet.ravel())
-    im.filepath_raw = os.path.join(OUT, "%s_%s_sheet.png" % (UNIT, clip)); im.file_format = "PNG"; im.save()
+    im.filepath_raw = os.path.join(OUT, "%s_%s_sheet.png" % (NAME, clip)); im.file_format = "PNG"; im.save()
     bpy.data.images.remove(im)
     scene.render.resolution_x = scene.render.resolution_y = RES
     if hasattr(fmt, "media_type"):
@@ -164,13 +168,13 @@ for clip, act_name in SHOTS:
     cam.location = centre + d * dist
     cam.rotation_euler = (centre - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.frame_start, scene.frame_end = 1, N * loops
-    prefix = os.path.join(OUT, "%s_%s_" % (UNIT, clip))
+    prefix = os.path.join(OUT, "%s_%s_" % (NAME, clip))
     for old in glob.glob(prefix + "*.mp4"):
         os.remove(old)
     scene.render.filepath = prefix
     bpy.ops.render.render(animation=True)
     made = sorted(glob.glob(prefix + "*.mp4"), key=os.path.getmtime)
-    final = os.path.join(OUT, "%s_%s.mp4" % (UNIT, clip))
+    final = os.path.join(OUT, "%s_%s.mp4" % (NAME, clip))
     if made:
         if os.path.exists(final):
             os.remove(final)

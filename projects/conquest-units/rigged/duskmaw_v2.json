@@ -1,0 +1,324 @@
+{
+ "unit": "duskmaw",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.blend",
+ "fps": 24,
+ "v1_note": "v1's carried shipped clips (attack/hit/death) are dropped from v2 (artist scope: idle + locomotion); they remain in git history with the v1 build",
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "base": 931,
+   "sway": 959,
+   "jaw": 1773,
+   "spine": 4774,
+   "chest": 3082,
+   "head": 2140,
+   "crown": 803,
+   "arm.L": 71,
+   "blade.L": 402,
+   "arm.R": 66,
+   "blade.R": 411
+  },
+  "ground_ring_base_weight_min": 1.0,
+  "rule": "upper-jaw field u (sculpt-derived chest = 1, sculpt-derived lower teeth = 0, else smoothstep U_Z, U_SMOOTH neighbour passes): u x (spine/chest/head/crown by height) + (1-u) x (base -> sway -> jaw by height, BASE_W / JAW_W); arms + hanging hands as v1 (ARM_*, HAND_*, HAND_MIX)"
+ },
+ "teeth_pairs": [
+  {
+   "upper": [
+    4.711,
+    -2.097,
+    8.897
+   ],
+   "lower": [
+    4.544,
+    -2.142,
+    7.923
+   ],
+   "xy_offset": 0.172,
+   "gap": 0.974
+  },
+  {
+   "upper": [
+    -4.104,
+    -2.026,
+    8.905
+   ],
+   "lower": [
+    -4.575,
+    -2.114,
+    7.838
+   ],
+   "xy_offset": 0.479,
+   "gap": 1.067
+  }
+ ],
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    49
+   ],
+   "loop_frames": 48,
+   "seconds": 2.0,
+   "cyclic": true,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
+   "root_offset_max": 0.0,
+   "spine_dz_range": [
+    -0.8165,
+    0.7063
+   ],
+   "jaw_dz_range": [
+    -0.36,
+    0.5696
+   ],
+   "upper_body_forward_lean_deg_range": [
+    -0.0,
+    -0.0
+   ],
+   "front_teeth_gap": {
+    "rest": 0.9739,
+    "max_open": 1.8259,
+    "min_shut": -0.1266,
+    "frame_open": 16,
+    "frame_shut": 23,
+    "travel": 1.9525,
+    "travel_pct_H": 6.315
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    33
+   ],
+   "loop_frames": 32,
+   "seconds": 1.333,
+   "cyclic": true,
+   "seam_units_x1000": 0.0,
+   "ground_ring_slide_max": 0.0,
+   "ground_ring_lift_max": 0.0,
+   "root_offset_max": 0.0,
+   "spine_dz_range": [
+    -0.3208,
+    0.2078
+   ],
+   "jaw_dz_range": [
+    -0.0348,
+    -0.0156
+   ],
+   "upper_body_forward_lean_deg_range": [
+    5.5,
+    8.51
+   ],
+   "front_teeth_gap": {
+    "rest": 0.9721,
+    "max_open": 1.1757,
+    "min_shut": 0.7684,
+    "frame_open": 21,
+    "frame_shut": 13,
+    "travel": 0.4073,
+    "travel_pct_H": 1.317
+   }
+  }
+ },
+ "clip_rules": {
+  "idle": "float bob (IDLE_BOB, 1 per loop) + ONE chomp per loop: wind-up open CHOMP_OPEN over open_f, accelerating snap to a tip-to-tip gap CHOMP_SHUT_GAP over shut_f, hold, ease back over rest_f; the upper jaw (spine) does CHOMP_UPPER of the travel, the lower jaw (jaw bone) the rest; arms flare CHOMP_ARMS on the bite",
+  "walk": "GLIDE: no stepping; sway leans the figure forward LEAN_DEG (+-LEAN_OSC) with GLIDE_ROLL side drift, float bob GLIDE_BOB (2 per loop), arms trail ARM_TRAIL + flutter, crown trails CROWN_TRAIL; the ground ring (base) is never keyed -- in place, the game moves the unit",
+  "keys": "every frame, LINEAR, closed-form curves (integer harmonics / beats that end at rest): last frame == first frame"
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    1.855
+   ]
+  },
+  {
+   "name": "base",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    0.6183
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    3.0917
+   ]
+  },
+  {
+   "name": "sway",
+   "parent": "base",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    1.421
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    4.421
+   ]
+  },
+  {
+   "name": "jaw",
+   "parent": "sway",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    4.421
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    7.421
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "sway",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    8.621
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    16.0769
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    16.0769
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    21.0236
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    21.0236
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    25.352
+   ]
+  },
+  {
+   "name": "crown",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0232,
+    -0.8377,
+    25.352
+   ],
+   "tail": [
+    0.0232,
+    -0.8377,
+    30.6079
+   ]
+  },
+  {
+   "name": "arm.L",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    2.92,
+    -0.8377,
+    18.5502
+   ],
+   "tail": [
+    7.9894,
+    -0.8377,
+    19.4778
+   ]
+  },
+  {
+   "name": "blade.L",
+   "parent": "arm.L",
+   "deform": true,
+   "head": [
+    7.9894,
+    -0.8377,
+    19.4778
+   ],
+   "tail": [
+    14.2175,
+    -0.8377,
+    17.9319
+   ]
+  },
+  {
+   "name": "arm.R",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -2.8737,
+    -0.8377,
+    18.5502
+   ],
+   "tail": [
+    -7.9431,
+    -0.8377,
+    19.4778
+   ]
+  },
+  {
+   "name": "blade.R",
+   "parent": "arm.R",
+   "deform": true,
+   "head": [
+    -7.9431,
+    -0.8377,
+    19.4778
+   ],
+   "tail": [
+    -14.1712,
+    -0.8377,
+    17.9319
+   ]
+  }
+ ],
+ "bone_count": 12,
+ "deform_bone_count": 11,
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\duskmaw.glb",
+  "bytes": 11754640,
+  "seconds": 0.6,
+  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.05822 reaches the 1.8 m cell (report-only)"
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\duskmaw.json",
+ "seconds": 74.3,
+ "digest_rig": "203f79c037851e6b"
+}
