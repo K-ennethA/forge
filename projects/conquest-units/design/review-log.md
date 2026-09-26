@@ -359,3 +359,32 @@ clip "ball": all the goop merges into one big ball with only the eyes and
 ears (the head's flame licks) showing — ALLOWED_CLIP_NAMES extended with
 ball/ball-loop. (4) material becomes translucent/see-through lava; colors
 otherwise approved.
+
+## 2026-09-26 — Duskmaw v3 feedback (artist verbatim + annotated v2 renders)
+
+Annotated screenshots saved: design/reference/duskmaw-v3-maw-annotation.png
+(red outline drawn around the chest maw shape wanted) and
+duskmaw-v3-hem-annotation.png (red zigzag drawn along the base hem).
+
+"for duskmaw lets not have him have a mouth under his eyes and the body
+mouth should look more like this (and colored red) with the inside just a
+different shade of yellow orange so we can tell its inside
+
+we also lost the shadowy extensions on the bottom like this on he second
+picture
+
+the arms look like they got too skinny around the mid part, elbow area
+
+can we also make him a bit tallker and a skinnier neck a little he seems
+short and fat now"
+
+Binding reading: (1) NO face mouth under the eyes at all (drop the grin
+variant as default candidate; face = eyes only). (2) The body maw follows
+the annotation: bigger jagged-toothed opening, RED framing/teeth per the
+drawn outline, interior a distinct yellow-orange shade so it reads as the
+inside of the mouth. (3) The base hem regained uniformity but LOST the
+shadowy extensions — bring back jagged shadow tendrils/flame-like zigzag
+around the bottom per the drawn zigzag, layered on the even floor ring
+(uniform contact stays, silhouette gets the tendrils). (4) Arms thickened
+at the mid/elbow area — currently too skinny. (5) Proportions: a bit
+taller, slightly skinnier neck — reads short and fat now.
