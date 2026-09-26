@@ -7,47 +7,153 @@
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "per_bone_dominant": {
-   "body": 3701,
-   "crown": 1989,
-   "crown_flame.0": 478,
-   "crown_flame.1": 165,
-   "arm.L.0": 85,
-   "arm.L.1": 91,
-   "arm.L.2": 141,
-   "arm.R.0": 40,
-   "arm.R.1": 56,
-   "arm.R.2": 69,
-   "leg.L.0": 121,
-   "leg.L.1": 192,
-   "leg.R.0": 60,
-   "leg.R.1": 145,
+   "body": 2491,
+   "crown": 2043,
+   "crown_flame.0": 474,
+   "crown_flame.1": 171,
+   "arm.L.0": 116,
+   "arm.L.1": 150,
+   "arm.L.2": 233,
+   "arm.R.0": 62,
+   "arm.R.1": 107,
+   "arm.R.2": 128,
+   "leg.L.0": 15,
+   "leg.L.1": 51,
+   "leg.L.2": 174,
+   "leg.R.0": 15,
+   "leg.R.1": 62,
+   "leg.R.2": 149,
    "wand": 0,
-   "wand_flame": 0
+   "wand_flame": 0,
+   "lick.side.L.0": 104,
+   "lick.side.L.1": 41,
+   "lick.side.L.2": 64,
+   "lick.side.L.3": 47,
+   "lick.side.R.0": 80,
+   "lick.side.R.1": 0,
+   "lick.side.R.2": 61,
+   "lick.side.R.3": 49,
+   "lick.back.0": 95,
+   "lick.back.1": 94,
+   "lick.back.2": 81,
+   "lick.hem.0": 72,
+   "lick.hem.1": 64,
+   "lick.hem.2": 57,
+   "lick.hem.3": 64,
+   "lick.hem.4": 64,
+   "lick.hem.5": 68
   },
   "limbs": {
    "arm.L": {
-    "length": 1.6703,
-    "dominant_verts": 365
+    "length": 1.6185,
+    "dominant_verts": 555
    },
    "arm.R": {
-    "length": 0.8393,
-    "dominant_verts": 169
+    "length": 1.3627,
+    "dominant_verts": 328
    },
    "leg.L": {
     "length": 1.2529,
-    "dominant_verts": 333
+    "dominant_verts": 262
    },
    "leg.R": {
     "length": 1.2529,
-    "dominant_verts": 216
+    "dominant_verts": 246
+   },
+   "licks": {
+    "bones": 17,
+    "verts_on_a_lick_bone": 2496
    }
   },
   "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'",
-  "rule": "fire shell: soft SDF ownership (tau 0.05) between the block (+ its licks) and each limb; a limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root blends into body); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by height (root blends into crown)"
+  "rule": "fire shell: soft SDF ownership (tau 0.05) between the block (+ its licks) and each limb; a limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root blends into body); the block share splits onto the nearest body lick's bone out along its spine (LICK_RAMP); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by height (root blends into crown)"
  },
  "clips": {
   "idle": {
-   "status": "PLACEHOLDER (movement wave pending the artist's answers)",
+   "frames": [
+    1,
+    97
+   ],
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_wand_mm": 0.0,
+   "min_z_all": -0.0,
+   "min_z_main": -0.0,
+   "min_z_wand": 0.0287,
+   "root_offset_max": 0.0,
+   "floor_guard": {
+    "frames_lifted": 0,
+    "max_lift_mm": 0.0,
+    "max_iters": 1,
+    "max_reach_short_mm": 0.0
+   },
+   "status": "REAL: grounded stance, living fire",
+   "flame_flow": {
+    "FLAME_WILD": 1.0,
+    "flicker_hz": [
+     1.75,
+     2.75
+    ],
+    "lick_sway_deg_stretch": [
+     7.0,
+     0.1
+    ],
+    "crown_sway_deg_root_tip_stretch": [
+     4.0,
+     9.0,
+     0.08
+    ],
+    "wand_sway_deg_stretch": [
+     6.0,
+     0.09
+    ]
+   },
+   "flicker_harmonics_per_loop": [
+    7,
+    11
+   ],
+   "feet_planted_sole_min_z_mm": {
+    "L": [
+     -0.0,
+     0.0
+    ],
+    "R": [
+     0.29,
+     0.29
+    ]
+   },
+   "sole_drift_y_mm": {
+    "L": 0.97,
+    "R": 0.93
+   },
+   "body": {
+    "drop": 0.025,
+    "breath_dip": 0.015,
+    "sway_roll_pitch_yaw_deg": [
+     1.2,
+     0.8,
+     1.5
+    ],
+    "side_shift": 0.012
+   },
+   "arm_drift_root_tip_deg": {
+    "L": [
+     2.5,
+     7.0
+    ],
+    "R": [
+     0.5,
+     1.0
+    ]
+   },
+   "tip_excursion_mm": {
+    "crown_flame_tip": 239.5,
+    "wand_flame_tip": 268.2,
+    "body_lick_tips_mean": 113.2
+   }
+  },
+  "walk": {
    "frames": [
     1,
     49
@@ -56,39 +162,123 @@
    "cyclic": true,
    "seam_main_mm": 0.0,
    "seam_wand_mm": 0.0,
-   "min_z": -0.0123,
-   "body_sway_deg": [
-    1.0,
-    0.6
-   ],
-   "arm_wave_deg": {
-    "L": [
-     2.0,
-     5.0
+   "min_z_all": -0.0,
+   "min_z_main": -0.0,
+   "min_z_wand": 0.02575,
+   "root_offset_max": 0.0,
+   "floor_guard": {
+    "frames_lifted": 0,
+    "max_lift_mm": 0.0,
+    "max_iters": 1,
+    "max_reach_short_mm": 77.59
+   },
+   "status": "REAL: floaty steps (artist 2026-09-26 'movement is floaty steps')",
+   "flame_flow": {
+    "FLAME_WILD": 1.0,
+    "flicker_hz": [
+     1.75,
+     2.75
     ],
-    "R": [
-     0.8,
-     1.6
+    "lick_sway_deg_stretch": [
+     7.0,
+     0.1
+    ],
+    "crown_sway_deg_root_tip_stretch": [
+     4.0,
+     9.0,
+     0.08
+    ],
+    "wand_sway_deg_stretch": [
+     6.0,
+     0.09
     ]
    },
-   "leg_wave_deg": [
-    1.0,
-    2.5
+   "stream_at_drift_top": {
+    "lick": 16.0,
+    "crown": 12.0,
+    "wand": 12.0,
+    "stretch": 0.1
+   },
+   "flicker_harmonics_per_loop": [
+    4,
+    6
    ],
-   "crown_flame": {
-    "wave_deg": [
-     3.0,
-     7.0
+   "cadence_steps_per_min": 60.0,
+   "step_seconds": 1.0,
+   "step_length": 0.8,
+   "implied_speed_units_per_s": 0.8,
+   "implied_speed_game_m_per_s_at_cell_fit_scale": 0.3361,
+   "stance_share": 0.4,
+   "stance_slide_per_foot": 0.32,
+   "measured_planted_foot_speed_units_per_s": {
+    "mean": 0.8043,
+    "min": 0.7973,
+    "max": 0.8175
+   },
+   "contact_frames": {
+    "L": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     48
     ],
-    "stretch": 0.05
+    "R": [
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34
+    ]
    },
-   "wand_flame": {
-    "sway_deg": 4.0,
-    "stretch": 0.06
+   "hang": {
+    "airborne_frames_per_cycle": 26,
+    "hang_time_per_step_s": 0.5417,
+    "clear_air_frames_per_cycle_both_feet_gt_20mm": 22,
+    "design_drift_share_per_step": 0.6,
+    "design_drift_s": 0.6
    },
-   "root_offset_max": 0.0
+   "body_z": {
+    "touchdown": -0.06,
+    "low": -0.0999,
+    "top": 0.06,
+    "compression": 0.04,
+    "float_height": 0.12,
+    "hang_warp": 0.5
+   },
+   "swing_foot_peak": 0.28,
+   "surge": 0.04,
+   "lean_deg": [
+    3.0,
+    6.0
+   ],
+   "sole_min_z_mm": {
+    "L": -0.0,
+    "R": 0.29
+   },
+   "tip_excursion_mm": {
+    "crown_flame_tip": 290.2,
+    "wand_flame_tip": 464.8
+   },
+   "wand_carry_deg": [
+    14.0,
+    18.0
+   ]
   },
-  "walk": "NOT BUILT: locomotion identity (float vs hop, grounded vs hovering rest, flame-flow wildness) awaits the artist; clip_names fails on the missing walk by design"
+  "seconds": 0.8,
+  "rule": "in place (root at the origin, Conquest glides); closed-form, integer harmonics (exact seams); legs = analytic 2-bone IK onto foot targets + floor guard (no foot mesh below z 0)"
  },
  "bones": [
   {
@@ -111,14 +301,14 @@
    "parent": "root",
    "deform": true,
    "head": [
-    -0.0028,
-    -0.0617,
-    1.0003
+    0.0954,
+    -0.0614,
+    1.0001
    ],
    "tail": [
-    -0.0028,
-    -0.0617,
-    2.6003
+    0.0954,
+    -0.0614,
+    2.6001
    ]
   },
   {
@@ -126,14 +316,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    -0.0028,
-    -0.0617,
-    2.7603
+    0.0954,
+    -0.0614,
+    2.7601
    ],
    "tail": [
-    -0.0028,
-    -0.0617,
-    3.1103
+    0.0954,
+    -0.0614,
+    3.1101
    ]
   },
   {
@@ -141,14 +331,14 @@
    "parent": "crown",
    "deform": true,
    "head": [
-    -0.0028,
-    -0.0617,
-    2.9604
+    0.0954,
+    -0.0614,
+    2.9601
    ],
    "tail": [
-    -0.0028,
-    -0.0617,
-    3.6103
+    0.0954,
+    -0.0614,
+    3.6101
    ]
   },
   {
@@ -156,14 +346,14 @@
    "parent": "crown_flame.0",
    "deform": true,
    "head": [
-    -0.0028,
-    -0.0617,
-    3.6103
+    0.0954,
+    -0.0614,
+    3.6101
    ],
    "tail": [
-    -0.0028,
-    -0.0617,
-    4.2604
+    0.0954,
+    -0.0614,
+    4.2601
    ]
   },
   {
@@ -171,14 +361,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    0.4972,
-    -0.0617,
-    2.0203
+    0.5954,
+    -0.0614,
+    2.0201
    ],
    "tail": [
-    0.9356,
-    -0.0684,
-    1.6881
+    0.9561,
+    -0.0654,
+    1.6268
    ]
   },
   {
@@ -186,14 +376,14 @@
    "parent": "arm.L.0",
    "deform": true,
    "head": [
-    0.9356,
-    -0.0684,
-    1.6881
+    0.9561,
+    -0.0654,
+    1.6268
    ],
    "tail": [
-    1.2115,
-    -0.1074,
-    1.2086
+    1.1543,
+    -0.0969,
+    1.1278
    ]
   },
   {
@@ -201,14 +391,14 @@
    "parent": "arm.L.1",
    "deform": true,
    "head": [
-    1.2115,
-    -0.1074,
-    1.2086
+    1.1543,
+    -0.0969,
+    1.1278
    ],
    "tail": [
-    1.3772,
-    -0.1617,
-    0.6804
+    1.2554,
+    -0.1414,
+    0.6001
    ]
   },
   {
@@ -216,14 +406,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    -0.5028,
-    -0.0817,
-    2.0203
+    -0.4046,
+    -0.0814,
+    2.0201
    ],
    "tail": [
-    -0.7659,
-    -0.1349,
-    1.9427
+    -0.6788,
+    -0.1802,
+    1.6765
    ]
   },
   {
@@ -231,14 +421,14 @@
    "parent": "arm.R.0",
    "deform": true,
    "head": [
-    -0.7659,
-    -0.1349,
-    1.9427
+    -0.6788,
+    -0.1802,
+    1.6765
    ],
    "tail": [
-    -0.9863,
-    -0.2386,
-    1.8132
+    -0.7781,
+    -0.2702,
+    1.2455
    ]
   },
   {
@@ -246,14 +436,14 @@
    "parent": "arm.R.1",
    "deform": true,
    "head": [
-    -0.9863,
-    -0.2386,
-    1.8132
+    -0.7781,
+    -0.2702,
+    1.2455
    ],
    "tail": [
-    -0.9727,
-    -0.417,
-    1.6204
+    -0.7396,
+    -0.3437,
+    0.8001
    ]
   },
   {
@@ -261,14 +451,14 @@
    "parent": "arm.R.2",
    "deform": true,
    "head": [
-    -0.9727,
-    -0.417,
-    1.6204
+    -0.7396,
+    -0.3437,
+    0.8001
    ],
    "tail": [
-    -1.2028,
-    -0.5417,
-    3.0203
+    -1.1046,
+    -0.5414,
+    3.0201
    ]
   },
   {
@@ -276,14 +466,14 @@
    "parent": "wand",
    "deform": true,
    "head": [
-    -1.2028,
-    -0.5417,
-    3.2404
+    -1.1046,
+    -0.5414,
+    3.2401
    ],
    "tail": [
-    -1.2028,
-    -0.5417,
-    4.2203
+    -1.1046,
+    -0.5414,
+    4.2201
    ]
   },
   {
@@ -291,14 +481,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    0.2872,
-    -0.0617,
-    1.2204
+    0.3854,
+    -0.0614,
+    1.2201
    ],
    "tail": [
-    0.3216,
-    -0.0906,
-    0.5957
+    0.4133,
+    -0.0805,
+    0.8039
    ]
   },
   {
@@ -306,14 +496,29 @@
    "parent": "leg.L.0",
    "deform": true,
    "head": [
-    0.3216,
-    -0.0906,
-    0.5957
+    0.4133,
+    -0.0805,
+    0.8039
    ],
    "tail": [
-    0.3072,
-    -0.1217,
-    -0.0297
+    0.4211,
+    -0.1004,
+    0.3869
+   ]
+  },
+  {
+   "name": "leg.L.2",
+   "parent": "leg.L.1",
+   "deform": true,
+   "head": [
+    0.4211,
+    -0.1004,
+    0.3869
+   ],
+   "tail": [
+    0.4054,
+    -0.1214,
+    -0.0299
    ]
   },
   {
@@ -321,14 +526,14 @@
    "parent": "body",
    "deform": true,
    "head": [
-    -0.2928,
-    -0.0617,
-    1.2204
+    -0.1946,
+    -0.0614,
+    1.2201
    ],
    "tail": [
-    -0.3273,
-    -0.0906,
-    0.5957
+    -0.2224,
+    -0.0805,
+    0.8039
    ]
   },
   {
@@ -336,34 +541,304 @@
    "parent": "leg.R.0",
    "deform": true,
    "head": [
-    -0.3273,
-    -0.0906,
-    0.5957
+    -0.2224,
+    -0.0805,
+    0.8039
    ],
    "tail": [
-    -0.3128,
-    -0.1217,
-    -0.0297
+    -0.2302,
+    -0.1004,
+    0.3869
+   ]
+  },
+  {
+   "name": "leg.R.2",
+   "parent": "leg.R.1",
+   "deform": true,
+   "head": [
+    -0.2302,
+    -0.1004,
+    0.3869
+   ],
+   "tail": [
+    -0.2146,
+    -0.1214,
+    -0.0299
+   ]
+  },
+  {
+   "name": "lick.side.L.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5174,
+    -0.1614,
+    1.1601
+   ],
+   "tail": [
+    0.7274,
+    -0.1114,
+    1.6401
+   ]
+  },
+  {
+   "name": "lick.side.L.1",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5612,
+    0.0786,
+    1.5001
+   ],
+   "tail": [
+    0.7572,
+    0.1286,
+    2.0401
+   ]
+  },
+  {
+   "name": "lick.side.L.2",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5954,
+    -0.1414,
+    2.2801
+   ],
+   "tail": [
+    0.7774,
+    -0.0914,
+    2.7801
+   ]
+  },
+  {
+   "name": "lick.side.L.3",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.6046,
+    0.0786,
+    2.6001
+   ],
+   "tail": [
+    0.7586,
+    0.1286,
+    3.0401
+   ]
+  },
+  {
+   "name": "lick.side.R.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3347,
+    -0.0014,
+    1.2301
+   ],
+   "tail": [
+    -0.5447,
+    0.0486,
+    1.7101
+   ]
+  },
+  {
+   "name": "lick.side.R.1",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3806,
+    -0.1454,
+    1.5701
+   ],
+   "tail": [
+    -0.5766,
+    -0.0954,
+    2.1101
+   ]
+  },
+  {
+   "name": "lick.side.R.2",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.4066,
+    -0.0134,
+    2.3501
+   ],
+   "tail": [
+    -0.5886,
+    0.0366,
+    2.8501
+   ]
+  },
+  {
+   "name": "lick.side.R.3",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.4157,
+    -0.1454,
+    2.6701
+   ],
+   "tail": [
+    -0.5697,
+    -0.0954,
+    3.1101
+   ]
+  },
+  {
+   "name": "lick.back.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.2046,
+    0.2786,
+    2.1501
+   ],
+   "tail": [
+    -0.3246,
+    0.7386,
+    3.2501
+   ]
+  },
+  {
+   "name": "lick.back.1",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.1354,
+    0.2786,
+    2.3001
+   ],
+   "tail": [
+    0.1954,
+    0.7386,
+    3.5201
+   ]
+  },
+  {
+   "name": "lick.back.2",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.4254,
+    0.2786,
+    2.1001
+   ],
+   "tail": [
+    0.5654,
+    0.7386,
+    3.1801
+   ]
+  },
+  {
+   "name": "lick.hem.0",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5094,
+    -0.2121,
+    1.0901
+   ],
+   "tail": [
+    0.6478,
+    -0.2412,
+    0.6901
+   ]
+  },
+  {
+   "name": "lick.hem.1",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.5094,
+    0.0116,
+    1.0901
+   ],
+   "tail": [
+    0.6508,
+    0.0162,
+    0.6501
+   ]
+  },
+  {
+   "name": "lick.hem.2",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.3421,
+    0.1456,
+    1.0901
+   ],
+   "tail": [
+    0.4365,
+    0.2509,
+    0.7501
+   ]
+  },
+  {
+   "name": "lick.hem.3",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.1116,
+    0.1456,
+    1.0901
+   ],
+   "tail": [
+    -0.1964,
+    0.2587,
+    0.6901
+   ]
+  },
+  {
+   "name": "lick.hem.4",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3186,
+    0.0495,
+    1.0901
+   ],
+   "tail": [
+    -0.459,
+    0.0664,
+    0.6301
+   ]
+  },
+  {
+   "name": "lick.hem.5",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -0.3186,
+    -0.1959,
+    1.0901
+   ],
+   "tail": [
+    -0.4579,
+    -0.2202,
+    0.7301
    ]
   }
  ],
- "bone_count": 17,
- "deform_bone_count": 16,
+ "bone_count": 36,
+ "deform_bone_count": 35,
  "digest": {
   "parts": {
-   "bake_normal": "04bf171808d33cfc",
-   "bake_ao": "06041a60413390aa",
-   "geometry_colour_uv": "58797b400fd46301",
-   "weights": "b16d869a0fe5b5cb",
-   "keys": "09f7952d6701b756",
-   "clip_samples": "786f9c1e14a9f4ad"
+   "bake_normal": "748258c4001e124a",
+   "bake_ao": "d82f7a2ceaa0121f",
+   "geometry_colour_uv": "550bd505845877d0",
+   "weights": "d31b7e0995f687be",
+   "keys": "8b314be3bbfcd7e8",
+   "clip_samples": "e8b698c4bf6c80b1"
   },
-  "combined": "a51f9928724fb50d"
+  "combined": "b9ed70d172c9b03b"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firesprite.glb",
-  "bytes": 5438844,
-  "seconds": 0.5,
+  "bytes": 5674740,
+  "seconds": 0.7,
   "carries": {
    "materials": [
     {
@@ -438,22 +913,42 @@
     "firesprite_wand",
     "leg.L.0",
     "leg.L.1",
+    "leg.L.2",
     "leg.R.0",
     "leg.R.1",
+    "leg.R.2",
+    "lick.back.0",
+    "lick.back.1",
+    "lick.back.2",
+    "lick.hem.0",
+    "lick.hem.1",
+    "lick.hem.2",
+    "lick.hem.3",
+    "lick.hem.4",
+    "lick.hem.5",
+    "lick.side.L.0",
+    "lick.side.L.1",
+    "lick.side.L.2",
+    "lick.side.L.3",
+    "lick.side.R.0",
+    "lick.side.R.1",
+    "lick.side.R.2",
+    "lick.side.R.3",
     "root",
     "wand",
     "wand_flame"
    ],
    "animations": [
-    "idle"
+    "idle",
+    "walk"
    ],
    "skins": 1,
-   "joints": 17,
+   "joints": 36,
    "extensionsUsed": [
     "KHR_materials_emissive_strength"
    ]
   },
-  "structure": "armature identity + skinned 'firesprite' (fire BLEND + crown opaque primitives) + skinned 'firesprite_wand' (own node: bark opaque + flame BLEND); natural scale; report-only cell fit 0.42021"
+  "structure": "armature identity + skinned 'firesprite' (fire BLEND + crown opaque primitives) + skinned 'firesprite_wand' (own node: bark opaque + flame BLEND); natural scale; report-only cell fit 0.42007"
  },
  "skins": {
   "default": {
@@ -930,37 +1425,37 @@
    "region_faces": {
     "firesprite": {
      "fire_shadow": 0,
-     "fire_deep": 2509,
-     "fire": 5121,
-     "fire_bright": 564,
+     "fire_deep": 2298,
+     "fire": 5249,
+     "fire_bright": 457,
      "fire_core": 700,
-     "hole_wall": 226,
-     "hole_glow": 302,
-     "flame_tip": 368,
-     "flame_outer": 1272,
+     "hole_wall": 422,
+     "hole_glow": 594,
+     "flame_tip": 363,
+     "flame_outer": 1291,
      "flame_core": 450,
-     "crown": 879,
-     "crown_trim": 888,
-     "crown_boss": 510,
-     "crown_gem": 137,
-     "horn": 760
+     "crown": 632,
+     "crown_trim": 1102,
+     "crown_boss": 567,
+     "crown_gem": 164,
+     "horn": 807
     },
     "firesprite_wand": {
-     "wand_bark": 930,
-     "wand_prong": 478,
-     "flame_tip": 215,
-     "flame_outer": 597,
+     "wand_bark": 822,
+     "wand_prong": 592,
+     "flame_tip": 214,
+     "flame_outer": 602,
      "flame_core": 250
     }
    },
-   "geometry_colour_uv_digest": "4600b7953801ab1c"
+   "geometry_colour_uv_digest": "c6222f9e1796f518"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
-   "default_digest_before": "58797b400fd46301",
-   "default_digest_after_restore": "58797b400fd46301"
+   "default_digest_before": "550bd505845877d0",
+   "default_digest_after_restore": "550bd505845877d0"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firesprite.json",
- "seconds": 59.5
+ "seconds": 68.3
 }

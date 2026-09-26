@@ -12,9 +12,12 @@ oranges, dark red) + design/reference/firesprite-sketch.webp (the artist's drawi
 the crown, jagged hole eyes + zigzag hole mouth, ragged flame arms, two flame legs). ONE binding deviation from the sheet
 (artist verbatim): "make the body more square shape so the head and torso blend as one piece like this other reference".
 
-SCOPE: the model only. Movement identity is unanswered (float vs hop; grounded vs hovering rest; flame-flow wildness;
-casting = attack wave, deferred), so the only clip is a minimal flame-waver PLACEHOLDER named 'idle' and there is NO walk
-clip (clip_names fails on the missing walk -- expected until the movement wave).
+SCOPE (v1.2, the movement wave): the model + the real clips. Artist 2026-09-26: "movement is floaty steps" -> 'idle'
+(grounded stance, living fire: licks / crown flame / wand flame flicker with stretch, body sway + breath, the free arm
+drifting, feet planted) and 'walk' (in place: each step pushes off into a drift with hang time and settles softly on the
+other foot). Flame-flow wildness is still artist-open: FLAME_WILD is the master knob. Casting = attack wave, deferred.
+v1.2 body (artist 2026-09-26): the block funnels into the legs (HIP, CROTCH, LEG_K), arms wider + longer to the drawn
+outline.
 
 UNITS: 'sheet units' -- 1 unit = 100 px of the reference sheet's FRONT view (orthographic), floor z = 0 at the sheet's
 foot line (y 605 px): z = (605 - y_px) / 100; x = (x_px - 225) / 100 (the character axis). Natural proportions; cell fit
@@ -37,7 +40,8 @@ Pipeline:
      nubs, a claw of prongs cradling the WAND FLAME (outer + core, same flame language).
   7. palette (palettes.py regions -> Col / Glow + Col alpha), Smart UV, bake normal + AO (wired into the crown only).
   8. RIG: root > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; arm.R.2 > wand > wand_flame; body >
-     leg.{L,R}.{0,1}. PLACEHOLDER idle (flame waver + crown/wand flame flicker). glb export + variant skin.
+     leg.{L,R}.{0,1,2} (2 = the foot); body > one bone per body lick (lick.side / back / hem). Clips idle + walk
+     (closed-form, integer harmonics, leg IK + floor guard). glb export + variant skin.
 """
 import bpy, sys, os, math, json, time, hashlib, ast, tempfile
 import numpy as np
@@ -60,13 +64,17 @@ CHAR_ID = "firesprite"                # roster id: not yet in Conquest
 TRI_BUDGET = [8000, 22000]            # declared tier: REGULAR unit (see report 'tier_rationale')
 CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9    # Conquest regular-cell ceilings -- REPORT ONLY (scale policy 2026-09-25)
 CUT_SNAP = 0.18                       # iso-cut: crossings this close to a vertex snap to it (no sliver triangles)
-NODE_EPS = 0.10                       # SDF grid values closer than this x step to zero are pushed off (no node crossings)
+NODE_EPS = 0.02                       # SDF grid values closer than this x step to zero are pushed off (no node crossings)
+                                      #   v1.2: 0.10 -> 0.02 (still 0 zero-area tris, measured; half the body retopo p99)
 # ---- body block (the sketch's square one-piece head + torso)
 BLOCK_HALF = (0.58, 0.40)             # "body width / depth" (half; sheet face 1.1 wide, band 1.25)
 BLOCK_Z = (0.95, 2.98)                # "body bottom / top" (the hips / the crown seat)
 BLOCK_TAPER = 0.90                    # "hem narrowing": hem half-width as a fraction of the top's
 BLOCK_ROUND = 0.15                    # "corner rounding" of the block
-BODY_STEP, BODY_BAND = 0.016, 0.06    # "body surface finish": SDF step
+BODY_STEP, BODY_BAND = 0.016, 0.30    # "body surface finish": SDF step, far-field band. v1.2: 0.06 -> 0.30 -- the band
+                                      #   must cover the largest smooth-union k (LEG_K): a band below k clips the leg's
+                                      #   field inside the blend and the slanted hip funnel came out as a grid-aligned
+                                      #   STAIRCASE (measured: alternating (0,-1,0) / (0,0,-1) faces, 16 mm treads)
 BODY_TRIS = 7200                      # "body mesh detail": decimation target of the fire shell
 # ---- flame licks on the block: sides (per side: z, y, reach out, rise, root radius), back (x, root z, tip dx, tip z, r),
 #      hem (azimuth deg from the front, hang length, root radius)
@@ -74,17 +82,23 @@ SIDE_LICKS = [(1.16, -0.10, 0.30, 0.48, 0.14), (1.50, 0.14, 0.28, 0.54, 0.13), (
               (2.60, 0.14, 0.22, 0.44, 0.11)]
 SIDE_R_DZ = 0.07                      # the right side's licks sit this much higher (no mirror twin look)
 BACK_LICKS = [(-0.30, 2.15, -0.12, 3.25, 0.15), (0.04, 2.30, 0.06, 3.52, 0.17), (0.33, 2.10, 0.14, 3.18, 0.14)]
-HEM_LICKS = [(40.0, 0.30, 0.12), (70.0, 0.40, 0.13), (100.0, 0.44, 0.13), (130.0, 0.34, 0.12), (160.0, 0.42, 0.13),
-             (-165.0, 0.36, 0.12), (-135.0, 0.40, 0.13), (-105.0, 0.46, 0.13), (-72.0, 0.36, 0.12), (-42.0, 0.28, 0.11)]
+HEM_LICKS = [(70.0, 0.40, 0.13), (100.0, 0.44, 0.13), (130.0, 0.34, 0.12),
+             (-135.0, 0.40, 0.13), (-105.0, 0.46, 0.13), (-72.0, 0.36, 0.12)]
+                                      # v1.2: the front (+-40) and back (160, -165) hem licks dropped with the hip funnel
 LICK_K = 0.05                         # licks melt into the block over this (smooth union)
 LICK_DEEP_T = 0.52                    # "dark-red lick tips": the outer part of every lick past this fraction
 LICK_SHARP = 1.4                      # "lick tip whip": lick radius falls as (1 - u)^this (flame tongue, not a thorn)
 # ---- arms (R = wand hand, -X; L = free claw hand, +X)
 # v1.1 (artist 2026-09-26: "longer arms that dont really have elbows just flames coming out of his torso"):
 # both arms lengthened into smooth elbowless flame sweeps; the free hand drops far lower and further out
-ARM_R = {"shoulder": (-0.50, -0.02, 2.02), "ctrl": (-1.18, -0.12, 1.86), "r": (0.16, 0.075), "hand_r": 0.11}
-ARM_L = {"shoulder": (0.50, 0.0, 2.02), "ctrl": (1.12, 0.02, 1.78), "hand": (1.38, -0.10, 0.68), "r": (0.16, 0.07),
-         "hand_r": 0.10}
+# v1.2 (artist 2026-09-26: "make the arms a little bit shorter now and a little bit fatter" + a red outline on the v1.1
+# front render = the target silhouette: broad flame sweeps from the shoulders down past the hem to about shin height):
+# free hand (1.38, -0.10, 0.68) -> (1.16, -0.08, 0.60) (less reach out, down to the shin), ctrl (1.12, 0.02, 1.78) ->
+# (1.02, 0.02, 1.70); the wand hand drops down the staff with it (HAND_Z 1.62 -> 0.80); radii root 0.16 -> 0.21,
+# tip 0.07/0.075 -> 0.095, hands 0.10/0.11 -> 0.13/0.14
+ARM_R = {"shoulder": (-0.50, -0.02, 2.02), "ctrl": (-1.00, -0.16, 1.62), "r": (0.21, 0.095), "hand_r": 0.14}
+ARM_L = {"shoulder": (0.50, 0.0, 2.02), "ctrl": (1.02, 0.02, 1.70), "hand": (1.16, -0.08, 0.60), "r": (0.21, 0.095),
+         "hand_r": 0.13}
 ARM_LICKS = [(0.25, (0.14, 0.05, 0.32), 0.09), (0.50, (0.16, 0.0, 0.30), 0.085), (0.75, (0.12, -0.04, 0.24), 0.07)]   # (arc frac, tip offset (out, y,
                                       #   up), root radius) -- the ragged flames trailing up off each arm
 CLAW = [((0.10, -0.06, -0.30), 0.070), ((0.0, -0.11, -0.34), 0.072), ((-0.08, 0.02, -0.26), 0.060)]   # L hand claw licks
@@ -94,8 +108,18 @@ ARM_DEEP_T = {"L": 0.84, "R": 9.0}    # the free hand darkens at its tip; the wa
 # v1.1 (artist 2026-09-26: "skinnier and pointier legs"): root radius 0.29 -> 0.21, tip 0.05 -> 0.015, sharp 0.85 -> 1.0
 LEG = {"hip": (0.29, 0.0, 1.22), "ctrl": (0.35, -0.03, 0.55), "tip": (0.31, -0.06, -0.03), "r": (0.21, 0.015), "sharp": 1.0}
 TOES = [((0.33, -0.05, 0.28), (0.48, -0.15, 0.02), 0.06), ((0.25, 0.06, 0.32), (0.17, 0.20, 0.04), 0.05)]
-LEG_K = 0.18                          # legs melt into the block over this: the sketch's block SPLITS into two legs
+# v1.2 (artist 2026-09-26: "make the torso blend better with the legs so it doesn't look like a rectangle on top of
+# legs"): LEG_K 0.18 -> 0.30 (+ the legs melt in BEFORE the licks), a hip funnel, a crotch notch, the front / back hem
+# licks dropped (they drew the hem line)
+LEG_K = 0.30                          # "torso-leg blend": legs melt into the block over this (the sketch's block SPLITS
+                                      #   into two legs); keep BODY_BAND >= LEG_K
 LEG_DEEP_T = 0.70
+HIP = (1.60, 0.46, 0.23)              # "hip funnel": (top z, half width, half depth at the block bottom) -- the block's
+                                      #   lower part narrows (linear, one facet) into the leg roots, front AND side;
+                                      #   None = straight (v1.1: half width 0.52, half depth 0.40 at the hem)
+CROTCH = (1.45, 0.14, 0.05)           # "crotch notch": (apex z, half width at the block bottom, melt k) -- an inverted V
+                                      #   cut up into the block between the legs (the sketch's block splitting into legs);
+                                      #   None = no notch
 # ---- face: glowing HOLES carved into the flat front (sketch: jagged eyes, zigzag mouth; sheet: angled eyes)
 POCKET_DEPTH = 0.10                   # "hole depth"
 EYE_L = [(0.08, 2.40), (0.40, 2.55), (0.42, 2.36), (0.36, 2.24), (0.31, 2.31), (0.24, 2.19), (0.19, 2.28), (0.12, 2.22),
@@ -149,7 +173,8 @@ FLAME_TIP_T = 0.60                    # "flame tips": the outer part of every to
 CF_STEP, CF_TRIS, CF_CORE_TRIS = 0.016, 1500, 450
 # ---- wand (own object + bones): kinked shaft (t along the axis, offsets on the two perpendiculars, radius)
 WAND_BOTTOM, WAND_TOP = (-0.72, -0.22, 0.10), (-1.20, -0.48, 3.02)   # sheet: butt near the floor, leaning out + forward
-HAND_Z = 1.62                         # "grip height" (the R hand sits on the wand axis here)
+HAND_Z = 0.80                         # "grip height" (the R hand sits on the wand axis here; v1.1 1.62, v1.2 down the
+                                      #   staff with the longer arm outline)
 WAND_KINKS = [(0.00, 0.0, 0.0, 0.018), (0.05, 0.010, 0.0, 0.040), (0.17, -0.035, 0.020, 0.052),
               (0.30, 0.030, -0.025, 0.056), (0.44, -0.030, 0.015, 0.058), (0.58, 0.035, 0.020, 0.056),
               (0.72, -0.025, -0.030, 0.058), (0.85, 0.030, 0.010, 0.062), (0.95, -0.010, 0.0, 0.070), (1.0, 0.0, 0.0, 0.066)]
@@ -166,15 +191,49 @@ WF_TONGUES = [([(0.0, 0.0, 0.04), (0.07, -0.02, 0.36), (-0.05, 0.0, 0.66), (0.02
 WF_STEP, WF_TRIS, WF_CORE_TRIS = 0.012, 700, 250
 # ---- bake
 BAKE_RES = (1024, 512)                # normal, AO texture sizes
-# ---- rig + PLACEHOLDER idle
-ARM_BONES, LEG_BONES, CF_BONES = 3, 2, 2
+# ---- rig
+ARM_BONES, LEG_BONES, CF_BONES = 3, 3, 2   # v1.2: legs 2 -> 3 bones -- the bottom one is the FOOT (kept flat while
+                                      #   planted: a 2-bone flame leg tilts its toes into the floor whenever the knee bends)
 OWN_TAU = 0.05                        # limb / block weight blend softness (SDF ownership)
-IDLE_N = 48                           # 2 s loop
-BODY_SWAY = (1.0, 0.6)                # body waver deg (side, front-back)
-ARM_WAVE = {"L": (2.0, 5.0), "R": (0.8, 1.6)}   # arm chain waver root / tip deg (the wand arm barely moves)
-LEG_WAVE = (1.0, 2.5)
-CF_WAVE, CF_PULSE = (3.0, 7.0), 0.05  # crown flame sway deg root/tip, stretch flicker (2 per loop)
-WF_SWAY, WF_PULSE = 4.0, 0.06         # wand flame sway deg, stretch flicker (3 per loop)
+LICK_BONES = True                     # one bone per body lick (side / back / hem) so the licks waver and trail
+LICK_RAMP = (0.12, 0.65)              # a lick bone's weight ramps 0 -> 1 over this spine fraction (the root stays on body)
+# ---- MOVEMENT (artist 2026-09-26: "movement is floaty steps"). Every clip is in place (root at the origin; Conquest
+#      glides the unit); every periodic term is an integer harmonic of its loop -> exact seams.
+# FLAME FLOW -- artist-open ("flame-flow wildness"); this lane's proposal: moderate constant upward flicker on the body
+#      licks + crown / wand flames, streaming harder in the drift of each step. One master knob scales all of it:
+FLAME_WILD = 1.0                      # "flame wildness": 0 = still, 1 = the proposed moderate flicker, 2 = wild
+FLICKER_HZ = (1.75, 2.75)             # "flicker rates" (Hz; each loop snaps them to its nearest integer harmonics)
+LICK_FLICKER = (7.0, 0.10)            # body licks: sway deg, stretch fraction (x FLAME_WILD)
+CF_FLICKER = (4.0, 9.0, 0.08)         # crown flame: sway deg root / tip, stretch fraction (x FLAME_WILD)
+WF_FLICKER = (6.0, 0.09)              # wand flame: sway deg, stretch fraction (x FLAME_WILD)
+STREAM = {"lick": 16.0, "crown": 12.0, "wand": 12.0, "stretch": 0.10}   # walk: extra trail-back deg (and stretch) at
+                                      #   the top of each drift (x FLAME_WILD)
+# IDLE -- grounded stance, living fire
+IDLE_N = 96                           # "idle loop": 4 s
+IDLE_DROP, IDLE_BOB = 0.025, 0.015    # soft knees: the body sits this far below rest; breathing dips this much more (2 / loop)
+IDLE_SWAY = (1.2, 0.8, 1.5)           # body roll / pitch / yaw deg
+IDLE_SHIFT = 0.012                    # body side-shift over the planted feet
+IDLE_ARM = {"L": (2.5, 7.0), "R": (0.5, 1.0)}   # arm drift root / tip deg (the free flame arm drifts; the wand arm is still)
+# WALK -- floaty steps: a light push, a drift with hang time, a soft touchdown on the other foot
+WALK_N = 48                           # "walk loop": 2 s = two steps -> 1.0 s per step, cadence 60 steps / min
+STEP_LEN = 0.80                       # "step length": ground covered per step; implied speed = STEP_LEN / step time
+STANCE = 0.40                         # "contact share": fraction of each step a foot is planted (the rest is the drift)
+FLOAT_H = 0.12                        # "float height": body rise from touchdown height to the top of the drift
+HANG = 0.5                            # "hang": time-warp that lingers at the top of the drift + eases the touchdown (0..0.9)
+WALK_DROP = 0.06                      # the body sits this far below rest at touchdown (soft knees: the rest leg is straight)
+FOOT_LIFT = 0.28                      # "step height": swing-foot peak above the floor
+FOOT_TRAIL = 25.0                     # the swinging foot's pointed tip trails back this many deg mid-swing (flat at contact)
+LIFT_EARLY = 0.6                      # swing lift profile (< 1: the foot peels off fast and settles slowly = soft contact)
+SURGE = 0.04                          # the body drifts this far ahead of its mean in the float and settles back on contact
+WALK_LEAN = (3.0, 6.0)                # body pitch forward deg: at contact / at the top of the drift
+WALK_ROLL, WALK_YAW, WALK_SHIFT = 2.0, 4.0, 0.04   # roll over the stance foot deg, twist deg, side shift
+KNEE_POLE = (0.35, 1.0)               # knee bend direction in the body frame: (outward, forward)
+ARM_SWING = {"L": 9.0, "R": 3.0}      # arm counter-swing deg at the tip (the wand arm steadies the staff)
+ARM_TRAIL, ARM_FLOAT = 10.0, 8.0      # arms trail back / lift outward deg at the top of each drift
+WAND_CARRY = (14.0, 18.0)             # walk: the wand arm carries the staff forward deg, staff tilted forward deg (the butt
+                                      #   clears the floor through the stance dip)
+FLOOR_EPS = 0.0005                    # floor guard: any foot whose mesh dips below z 0 is lifted by its dip + this
+CONTACT_TOL = 0.002                   # a foot counts as planted within this of the floor (report)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None
@@ -310,18 +369,44 @@ HZ, ZC = (ZB1 - ZB0) / 2.0, (ZB1 + ZB0) / 2.0
 FACE_Y = -BD
 
 
+def hip_t(z):
+    """0 at the block bottom -> 1 at the top of the hip funnel. LINEAR (one flat slanted facet + a crease): a smoothstep
+    funnel decimated into thin horizontal flat-shaded strips that read as stripes (v1.2 preview)."""
+    return np.clip((np.asarray(z, float) - ZB0) / (HIP[0] - ZB0), 0.0, 1.0) if HIP else np.ones_like(np.asarray(z, float))
+
+
 def hx_of(z):
-    return BW * (BLOCK_TAPER + (1.0 - BLOCK_TAPER) * np.clip((np.asarray(z, float) - ZB0) / (ZB1 - ZB0), 0.0, 1.0))
+    base = BW * (BLOCK_TAPER + (1.0 - BLOCK_TAPER) * np.clip((np.asarray(z, float) - ZB0) / (ZB1 - ZB0), 0.0, 1.0))
+    return HIP[1] + (base - HIP[1]) * hip_t(z) if HIP else base
+
+
+def hy_of(z):
+    return HIP[2] + (BD - HIP[2]) * hip_t(z) if HIP else np.full(np.shape(z), BD)
 
 
 def sd_block(P):
-    half = np.stack([hx_of(P[:, 2]), np.full(len(P), BD), np.full(len(P), HZ)], 1)
+    half = np.stack([hx_of(P[:, 2]), hy_of(P[:, 2]), np.full(len(P), HZ)], 1)
     return FP.sd_round_box(P, (0.0, 0.0, ZC), half, BLOCK_ROUND)
+
+
+if CROTCH:                                   # sides through (0, apex) and (+-half width, ZB0), run on 0.3 below the block
+    _wb = CROTCH[1] * (CROTCH[0] - ZB0 + 0.3) / (CROTCH[0] - ZB0)
+    CROTCH_TRI = np.array([(0.0, CROTCH[0]), (-_wb, ZB0 - 0.3), (_wb, ZB0 - 0.3)])
+
+
+def sd_crotch(P):
+    """the inverted-V notch between the legs (a triangle in x-z, through the whole depth)."""
+    return FP.sd_poly2d(P[:, [0, 2]], CROTCH_TRI)
+
+
+def sd_torso(P):
+    """the block with the crotch notch cut (hard) -- the ownership / weight field of the block group."""
+    return np.maximum(sd_block(P), -sd_crotch(P)) if CROTCH else sd_block(P)
 
 
 def theta_of(P):
     """azimuth round the block, 0 at the front centre (-Y), +pi/2 at the unit's left side (+X)."""
-    return np.arctan2(P[:, 0] / hx_of(P[:, 2]), -P[:, 1] / BD)
+    return np.arctan2(P[:, 0] / hx_of(P[:, 2]), -P[:, 1] / hy_of(P[:, 2]))
 
 
 def wrap(a):
@@ -352,8 +437,8 @@ for i, (x, z0, dx, z1, r0) in enumerate(BACK_LICKS):
     add_el("lick.back.%d" % i, "block", FP.lick_path(path, r0, n=12, rtip=0.012, sharp=LICK_SHARP), LICK_DEEP_T, LICK_K)
 for i, (az, ln, r0) in enumerate(HEM_LICKS):
     d = np.array([math.sin(math.radians(az)), -math.cos(math.radians(az))])
-    hxb = float(hx_of(ZB0))
-    s_ = 1.0 / max(abs(d[0]) / hxb, abs(d[1]) / BD)
+    hxb, hyb = float(hx_of(ZB0)), float(hy_of(ZB0))
+    s_ = 1.0 / max(abs(d[0]) / hxb, abs(d[1]) / hyb)
     root = np.array([d[0] * s_ * 0.90, d[1] * s_ * 0.90, ZB0 + 0.14])
     out3, perp = np.array([d[0], d[1], 0.0]), np.array([-d[1], d[0], 0.0]) * (1.0 if i % 2 else -1.0)
     path = [root, root + out3 * 0.10 + np.array([0, 0, -0.30 * ln]),
@@ -434,7 +519,12 @@ BODY_LO = np.minimum.reduce([b[0] for b in _boxes] + [np.array([-BW, -BD, 0.0])]
 BODY_HI = np.maximum.reduce([b[1] for b in _boxes] + [np.array([BW, BD, ZB1])]) + 0.06
 BODY_LO[2] = -0.06
 ops = [(sd_block, (-BW, -BD, ZB0), (BW, BD, ZB1), 0.0, "union")]
-for e in EL:
+if CROTCH:
+    ops.append((sd_crotch, (-CROTCH[1] * 3.0, -BD - 0.05, ZB0 - 0.05), (CROTCH[1] * 3.0, BD + 0.05, CROTCH[0] + 0.05),
+                CROTCH[2], "subtract"))
+# v1.2: the legs (+ toes) melt into the block FIRST, the licks after -- a large LEG_K fillet taken after the hem licks
+# swelled them into round lumps at the leg roots (v1.2 preview)
+for e in sorted(EL, key=lambda e_: 0 if e_["group"].startswith("leg.") else 1):
     lo_, hi_ = FP.cones_box(e["cones"])
     ops.append((lambda P, c=e["cones"]: FP.cones_sdf(P, c), lo_, hi_, e["k"], "union"))
 _hl = np.vstack(list(HOLES.values()))
@@ -450,7 +540,7 @@ GROUPS = ["block", "arm.L", "arm.R", "leg.L", "leg.R"]
 def group_sdf(P):
     """(n, len(GROUPS)) SDF per weight group (the block group = the block + its side / back / hem licks)."""
     D = np.full((len(P), len(GROUPS)), 1e9)
-    D[:, 0] = sd_block(P)
+    D[:, 0] = sd_torso(P)
     for e in EL:
         j = GROUPS.index(e["group"])
         D[:, j] = np.minimum(D[:, j], FP.cones_sdf(P, e["cones"]))
@@ -459,7 +549,7 @@ def group_sdf(P):
 
 def element_fields(P):
     """owner element (block = -1) -> deep = arc fraction past the element's dark-tip threshold (block: -1)."""
-    D = np.stack([sd_block(P)] + [FP.cones_sdf(P, e["cones"]) for e in EL], 1)
+    D = np.stack([sd_torso(P)] + [FP.cones_sdf(P, e["cones"]) for e in EL], 1)
     own = np.argmin(D, 1)
     deep = np.full(len(P), -1.0)
     for j, e in enumerate(EL):
@@ -1110,6 +1200,9 @@ for ch, pts in sorted(CHAIN_PTS.items()):
 WF_TOP = float(max(p[-1][2] for p in WFL["tongues"]))
 BONES.append(("wand", P_(HAND_R_PT), P_(WTOP), "arm.R.%d" % (ARM_BONES - 1)))
 BONES.append(("wand_flame", P_(WF_BASE), P_(np.array([WF_BASE[0], WF_BASE[1], WF_TOP])), "wand"))
+LICK_EL = [e for e in EL if e["group"] == "block" and e["name"].startswith("lick.")] if LICK_BONES else []
+for e in LICK_EL:                                        # one bone per body lick: root -> tip, parent body (unconnected)
+    BONES.append((e["name"], P_(e["spine"][0]), P_(e["spine"][-1]), "body"))
 arm_data = bpy.data.armatures.new(UNIT + "_rig")
 rig = bpy.data.objects.new(UNIT + "_rig", arm_data)
 scene.collection.objects.link(rig)
@@ -1122,7 +1215,7 @@ for (nm, h, t_, p) in BONES:
     e = arm_data.edit_bones.new(nm)
     e.head = Vector(h); e.tail = Vector(t_); e.roll = 0.0
     e.parent = arm_data.edit_bones[p]
-    e.use_connect = nm[-1].isdigit() and not nm.endswith(".0")
+    e.use_connect = nm[-1].isdigit() and not nm.endswith(".0") and not nm.startswith("lick.")
     e.use_deform = True
 bpy.ops.object.mode_set(mode="OBJECT")
 DEFORM = [b[0] for b in BONES]
@@ -1149,6 +1242,21 @@ for gi, grp in enumerate(GROUPS[1:], start=1):
     for k in range(nb):
         Ws[:, J["%s.%d" % (grp, k)]] += Wg[:, gi] * Wv[:, k + 1]
     LIMB_W[grp] = {"length": round(L_, 4), "dominant_verts": int((np.argmax(Wg, 1) == gi).sum())}
+if LICK_EL:                                              # the block share splits onto the nearest lick's bone out its spine
+    DL = np.stack([FP.cones_sdf(Pw, e["cones"]) for e in LICK_EL], 1)
+    jn = np.argmin(DL, 1)
+    sig = smoothstep(-0.02, 0.02, sd_torso(Pw) - DL[np.arange(len(Pw)), jn])
+    tl = np.zeros(len(Pw))
+    for j, e in enumerate(LICK_EL):
+        m = jn == j
+        if m.any():
+            tl[m] = FP.spine_param(Pw[m], e["spine"])[0]
+    wl = Wg[:, 0] * sig * smoothstep(LICK_RAMP[0], LICK_RAMP[1], tl)
+    Ws[:, J["body"]] -= wl
+    for j, e in enumerate(LICK_EL):
+        m = jn == j
+        Ws[m, J[e["name"]]] += wl[m]
+    LIMB_W["licks"] = {"bones": len(LICK_EL), "verts_on_a_lick_bone": int((wl > 1e-4).sum())}
 Wt[a_:b_] = Ws
 a_, b_ = RANGE_M["core"]; Wt[a_:b_, J["body"]] = 1.0
 a_, b_ = RANGE_M["crown"]; Wt[a_:b_, J["crown"]] = 1.0
@@ -1184,56 +1292,211 @@ rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 
                   "limbs": LIMB_W, "wand_object": "shaft 100% 'wand', flame 100% 'wand_flame'",
                   "rule": "fire shell: soft SDF ownership (tau %.2f) between the block (+ its licks) and each limb; a "
                           "limb's share runs down its chain by rigkit.vine_weights arc-length hat weights (the root "
-                          "blends into body); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by "
+                          "blends into body); the block share splits onto the nearest body lick's bone out along its "
+                          "spine (LICK_RAMP); core -> body; crown -> crown (rigid); crown flame -> crown_flame chain by "
                           "height (root blends into crown)" % OWN_TAU}
 for ob_ in (low, wand):
     ob_.parent = rig
     ob_.matrix_parent_inverse = Matrix.Identity(4)
     am = ob_.modifiers.new("Armature", "ARMATURE"); am.object = rig
 
-# ---- PLACEHOLDER idle: flame waver (closed-form, integer harmonics -> exact seam)
+# ---- CLIPS: idle (grounded living fire) + walk (FLOATY STEPS, artist 2026-09-26). Both in place (root at the origin),
+# closed-form in the loop phase u with integer harmonics only (exact seams); the legs by analytic 2-bone IK onto foot
+# targets; a FLOOR GUARD lifts any foot whose deformed mesh dips below z 0 (the placeholder's leg waver dipped foot tips
+# -9 mm). Pass 1 poses + guards every frame with no action bound; pass 2 keys the stored channels; pass 3 measures the
+# clips exactly as the contract checker plays them.
 for pb in rig.pose.bones:
     pb.rotation_mode = "QUATERNION"
-act = bpy.data.actions.new("idle")
-act.use_fake_user = True
-K.assign_action(rig, act)
-key_rows = []
 TAU2 = 2 * math.pi
-for f in range(IDLE_N + 1):
-    u = (f % IDLE_N) / IDLE_N
-    pose = {"body": (Quaternion((1, 0, 0), math.radians(BODY_SWAY[1] * math.sin(TAU2 * u + 1.1))) @
-                     Quaternion((0, 0, 1), math.radians(BODY_SWAY[0] * math.sin(TAU2 * u))), None)}
-    for side in ("L", "R"):
-        for k in range(ARM_BONES):
-            ang = K.vine_wave(u, k, ARM_BONES, ARM_WAVE[side][0], ARM_WAVE[side][1], 0.7, 1, phase=0.0 if side == "L" else 2.0)
-            pose["arm.%s.%d" % (side, k)] = (Quaternion((1, 0, 0), math.radians(ang)), None)
-        for k in range(LEG_BONES):
-            ang = K.vine_wave(u, k, LEG_BONES, LEG_WAVE[0], LEG_WAVE[1], 0.6, 1, phase=0.9 if side == "L" else 2.6)
-            pose["leg.%s.%d" % (side, k)] = (Quaternion((0, 0, 1), math.radians(ang)), None)
+REST_R = {b.name: b.matrix_local.to_3x3() for b in arm_data.bones}
+REST_H = {b.name: Vector(b.head_local) for b in arm_data.bones}
+REST_T = {b.name: Vector(b.tail_local) for b in arm_data.bones}
+BODY_HEAD = REST_H["body"]
+UP, BACK, FWD = Vector((0.0, 0.0, 1.0)), Vector((0.0, 1.0, 0.0)), Vector((0.0, -1.0, 0.0))
+LICK_NAMES = [e["name"] for e in LICK_EL]
+SCALE_BONES = ["crown_flame.0", "crown_flame.1", "wand_flame"] + LICK_NAMES
+KEY_BONES = [b.name for b in arm_data.bones if b.name != "root"]
+
+
+def rotm(axis, deg):
+    return Matrix.Rotation(math.radians(deg), 3, Vector(axis).normalized())
+
+
+def bdir(bn):
+    return (REST_T[bn] - REST_H[bn]).normalized()
+
+
+def toward(bn, target, deg):
+    """rotation (parent frame) swinging bone bn's rest direction toward 'target' by deg (negative = away)."""
+    ax = bdir(bn).cross(Vector(target))
+    return rotm(ax, deg) if ax.length > 1e-6 else Matrix.Identity(3)
+
+
+def perp_axes(bn):
+    d = bdir(bn)
+    e1 = d.cross(UP)
+    if e1.length < 0.2:
+        e1 = d.cross(Vector((1.0, 0.0, 0.0)))
+    e1.normalize()
+    return e1, d.cross(e1).normalized()
+
+
+def harmonics(loop_s):
+    return tuple(max(1, int(round(hz * loop_s))) for hz in FLICKER_HZ)
+
+
+def flick(u, h, ph):
+    """flame flicker in [-1, 1]: two integer harmonics of the loop (seam exact), phase-shifted per flame."""
+    return 0.6 * math.sin(TAU2 * h[0] * u + ph) + 0.4 * math.sin(TAU2 * h[1] * u + 1.9 * ph + 0.7)
+
+
+LEGS = {}
+for side in ("L", "R"):
+    b0_, b1_, b2_ = "leg.%s.0" % side, "leg.%s.1" % side, "leg.%s.%d" % (side, LEG_BONES - 1)
+    LEGS[side] = {"H": REST_H[b0_], "a": (REST_H[b1_] - REST_H[b0_]).length, "b": (REST_T[b1_] - REST_H[b1_]).length,
+                  "r0": bdir(b0_), "r1": bdir(b1_), "foot": REST_T[b2_].copy(), "ankle": REST_H[b2_].copy(),
+                  "sg": 1.0 if side == "L" else -1.0}
+assert LEG_BONES == 3, "the leg IK is hip -> knee -> ankle + a foot bone"
+
+
+def solve_leg(side, Db, off, tip, F):
+    """analytic 2-bone IK (thigh + shin onto the ankle) + the foot bone held at world rotation F (identity = flat, as at
+    rest) -> (D0, D1, D2 parent-frame rotations, reach shortfall); the knee bends toward KNEE_POLE."""
+    L = LEGS[side]
+    target = tip - F @ (L["foot"] - L["ankle"])
+    Hp = BODY_HEAD + off + Db @ (L["H"] - BODY_HEAD)
+    dv = target - Hp
+    d = dv.length
+    un = dv / d
+    a, b = L["a"], L["b"]
+    dc = min(max(d, abs(a - b) + 1e-4), (a + b) * (1.0 - 1e-5))
+    x = (a * a - b * b + dc * dc) / (2.0 * dc)
+    h = math.sqrt(max(a * a - x * x, 0.0))
+    p = Db @ Vector((L["sg"] * KNEE_POLE[0], -KNEE_POLE[1], 0.0))
+    p = (p - un * p.dot(un)).normalized()
+    knee = Hp + un * x + p * h
+    v0 = (knee - Hp).normalized()
+    v1 = (Hp + un * dc - knee).normalized()
+    D0 = L["r0"].rotation_difference(Db.transposed() @ v0).to_matrix()
+    D1 = L["r1"].rotation_difference((Db @ D0).transposed() @ v1).to_matrix()
+    return D0, D1, (Db @ D0 @ D1).transposed() @ F, d - dc
+
+
+def flames_pose(u, h, envl):
+    """crown flame, wand flame, body licks: constant upward flicker (sway + stretch) x FLAME_WILD, plus the walk's
+    stream (envl(lag) in [0, 1], 0 in the idle): trail back + stretch at the top of each drift."""
+    W = FLAME_WILD
+    out = {}
     for k in range(CF_BONES):
-        a1 = K.vine_wave(u, k, CF_BONES, CF_WAVE[0], CF_WAVE[1], 0.9, 1, phase=0.3)
-        a2 = K.vine_wave(u, k, CF_BONES, CF_WAVE[0] * 0.6, CF_WAVE[1] * 0.6, 0.9, 2, phase=1.4)
-        sc = (1.0, 1.0 + CF_PULSE * math.sin(TAU2 * 2 * u + 0.5), 1.0) if k == 0 else None
-        pose["crown_flame.%d" % k] = (Quaternion((1, 0, 0), math.radians(a1)) @ Quaternion((0, 0, 1), math.radians(a2)), sc)
-    pose["wand_flame"] = (Quaternion((1, 0, 0), math.radians(WF_SWAY * math.sin(TAU2 * u + 0.4))) @
-                          Quaternion((0, 0, 1), math.radians(0.6 * WF_SWAY * math.sin(TAU2 * 2 * u))),
-                          (1.0, 1.0 + WF_PULSE * math.sin(TAU2 * 3 * u + 1.0), 1.0))
-    for bn, (q, sc) in pose.items():
-        pb = rig.pose.bones[bn]
-        pb.rotation_quaternion = q
-        pb.keyframe_insert("rotation_quaternion", frame=f + 1)
-        if sc is not None:
-            pb.scale = sc
-            pb.keyframe_insert("scale", frame=f + 1)
-        key_rows.append(list(pb.rotation_quaternion) + list(pb.scale))
-for fc in K.action_fcurves(act):
-    for kp in fc.keyframe_points:
-        kp.interpolation = "LINEAR"
-act.use_frame_range = True
-act.frame_start, act.frame_end = 1, IDLE_N + 1
-act.use_cyclic = True
-act["placeholder"] = "PLACEHOLDER idle (flame waver + crown / wand flame flicker): movement identity awaits the artist"
-DIG["keys"] = sha(np.array(key_rows))
+        bn = "crown_flame.%d" % k
+        amp = CF_FLICKER[0] + (CF_FLICKER[1] - CF_FLICKER[0]) * k / max(CF_BONES - 1, 1)
+        e1, e2 = perp_axes(bn)
+        D = rotm(e1, W * amp * flick(u, h, 0.3 + 0.9 * k)) @ rotm(e2, W * 0.7 * amp * flick(u, h, 1.4 + 0.9 * k))
+        st = envl(0.04 * (k + 1))
+        out[bn] = (toward(bn, BACK, W * STREAM["crown"] * st * (0.6 + 0.4 * k)) @ D, None,
+                   1.0 + W * (CF_FLICKER[2] * flick(u, h, 2.2 + 1.1 * k) + STREAM["stretch"] * st * (k == 0)))
+    e1, e2 = perp_axes("wand_flame")
+    D = rotm(e1, W * WF_FLICKER[0] * flick(u, h, 0.4)) @ rotm(e2, W * 0.7 * WF_FLICKER[0] * flick(u, h, 2.6))
+    st = envl(0.05)
+    out["wand_flame"] = (toward("wand_flame", BACK, W * STREAM["wand"] * st) @ D, None,
+                         1.0 + W * (WF_FLICKER[1] * flick(u, h, 1.0) + STREAM["stretch"] * st))
+    for j, bn in enumerate(LICK_NAMES):
+        e1, e2 = perp_axes(bn)
+        ph = 1.7 * j + 0.5
+        D = rotm(e1, W * LICK_FLICKER[0] * flick(u, h, ph)) @ rotm(e2, W * 0.7 * LICK_FLICKER[0] * flick(u, h, ph + 2.1))
+        st = envl(0.02 + 0.06 * ((j * 0.618) % 1.0))
+        out[bn] = (toward(bn, BACK, W * STREAM["lick"] * st) @ D, None,
+                   1.0 + W * (LICK_FLICKER[1] * flick(u, h, ph + 0.9) + STREAM["stretch"] * st))
+    return out
+
+
+def idle_pose(u):
+    h = harmonics(IDLE_N / K.FPS)
+    Db = (rotm(UP, IDLE_SWAY[2] * math.sin(TAU2 * u + 2.0)) @ rotm((1, 0, 0), IDLE_SWAY[1] * math.sin(TAU2 * 2 * u + 1.2))
+          @ rotm((0, 1, 0), IDLE_SWAY[0] * math.sin(TAU2 * u + 0.3)))
+    off = Vector((IDLE_SHIFT * math.sin(TAU2 * u + 0.3), 0.0,
+                  -IDLE_DROP - IDLE_BOB * (0.5 - 0.5 * math.cos(TAU2 * 2 * u))))
+    pose = {"body": (Db, off, None)}
+    for side, sg in (("L", 1.0), ("R", -1.0)):
+        r_, t_ = IDLE_ARM[side]
+        for k in range(ARM_BONES):
+            bn = "arm.%s.%d" % (side, k)
+            a1 = K.vine_wave(u, k, ARM_BONES, r_, t_, 0.7, 1, phase=0.0 if side == "L" else 2.0)
+            a2 = K.vine_wave(u, k, ARM_BONES, 0.6 * r_, 0.6 * t_, 0.7, 2, phase=1.1 if side == "L" else 0.4)
+            pose[bn] = (toward(bn, BACK, a1) @ toward(bn, (sg, 0, 0), a2), None, None)
+    pose.update(flames_pose(u, h, lambda lag: 0.0))
+    return pose, {s: (LEGS[s]["foot"].copy(), Matrix.Identity(3)) for s in ("L", "R")}
+
+
+C_COMP = FLOAT_H * (1.0 - HANG) * STANCE / (1.0 - STANCE)   # stance compression: C1 with the drift at every contact
+HALF_SLIDE = STEP_LEN * STANCE / 2.0                        # a planted foot slides +-this under the hip (in place)
+
+
+def drift_w(s):
+    return (s - STANCE) / (1.0 - STANCE)
+
+
+def body_z(s):
+    """touchdown -> soft compression (stance) -> push -> the drift: rise, HANG at the top, ease down to the next touchdown."""
+    if s < STANCE:
+        return -WALK_DROP - C_COMP * math.sin(math.pi * s / STANCE)
+    w = drift_w(s)
+    return -WALK_DROP + FLOAT_H * math.sin(math.pi * (w - HANG / (4 * math.pi) * math.sin(4 * math.pi * w)))
+
+
+def body_y(s):
+    """the body drifts ahead of its mean through the float, settles back through the stance (C1 at the joins)."""
+    return -SURGE * math.cos(math.pi * s / STANCE) if s < STANCE else SURGE * math.cos(math.pi * drift_w(s))
+
+
+def drift_env(s):
+    return 0.0 if s < STANCE else math.sin(math.pi * drift_w(s)) ** 2
+
+
+def foot_target(side, u):
+    """-> (tip target, planted, foot world rotation). Stance: flat, slides back at the ground speed; swing: Hermite
+    (lift-off / touchdown velocity = the ground speed: no skid), lift sin^2(pi w^LIFT_EARLY) (peels off fast, settles
+    with zero vertical speed), the pointed tip trailing back FOOT_TRAIL sin^2(pi w) (flat again at touchdown)."""
+    st = STANCE / 2.0
+    p = (u - (0.0 if side == "L" else 0.5)) % 1.0
+    base = LEGS[side]["foot"]
+    if p < st:
+        return base + Vector((0.0, -HALF_SLIDE + 2.0 * HALF_SLIDE * p / st, 0.0)), True, Matrix.Identity(3)
+    w = (p - st) / (1.0 - st)
+    m = 2.0 * HALF_SLIDE / st * (1.0 - st)
+    y = ((2 * w ** 3 - 3 * w ** 2 + 1) * HALF_SLIDE + (w ** 3 - 2 * w ** 2 + w) * m
+         + (-2 * w ** 3 + 3 * w ** 2) * -HALF_SLIDE + (w ** 3 - w ** 2) * m)
+    return (base + Vector((0.0, y, FOOT_LIFT * math.sin(math.pi * w ** LIFT_EARLY) ** 2)), False,
+            rotm((1, 0, 0), FOOT_TRAIL * math.sin(math.pi * w) ** 2))
+
+
+def walk_pose(u):
+    h = harmonics(WALK_N / K.FPS)
+    s = (2.0 * u) % 1.0
+    lat = math.cos(TAU2 * (u - STANCE / 4.0))            # +1 at the left foot's mid-stance, -1 at the right's
+    Db = (rotm(UP, -WALK_YAW * math.cos(TAU2 * u)) @ rotm((1, 0, 0), WALK_LEAN[0] + (WALK_LEAN[1] - WALK_LEAN[0]) * drift_env(s))
+          @ rotm((0, 1, 0), WALK_ROLL * lat))
+    pose = {"body": (Db, Vector((WALK_SHIFT * lat, body_y(s), body_z(s))), None)}
+
+    def envl(lag):
+        return drift_env((s - lag) % 1.0)
+    for side, sg, u0 in (("L", 1.0, 0.0), ("R", -1.0, 0.5)):
+        for k in range(ARM_BONES):
+            bn = "arm.%s.%d" % (side, k)
+            sw = ARM_SWING[side] * (0.4 + 0.6 * k / max(ARM_BONES - 1, 1)) * math.cos(TAU2 * (u - u0) - 0.5 * k)
+            tr = ARM_TRAIL * envl(0.05 * k) * (1.0 if side == "L" else 0.4)
+            fl = ARM_FLOAT * envl(0.03 * k) * (1.0 if k == 0 else 0.5)
+            D = toward(bn, BACK, sw + tr) @ toward(bn, (sg, 0, 0), fl)
+            if side == "R" and k == 0:
+                D = toward(bn, FWD, WAND_CARRY[0]) @ D
+            pose[bn] = (D, None, None)
+    pose["wand"] = (toward("wand", FWD, WAND_CARRY[1]), None, None)
+    pose.update(flames_pose(u, h, envl))
+    feet = {}
+    for side in ("L", "R"):
+        t_, _, F_ = foot_target(side, u)
+        feet[side] = (t_, F_)
+    return pose, feet
 
 
 def eval_coords(ob):
@@ -1246,29 +1509,189 @@ def eval_coords(ob):
     return co.reshape(-1, 3) @ M_[:3, :3].T + M_[:3, 3]
 
 
-samples, minz, root_off = [], 1e9, 0.0
-first = last = wfirst = wlast = None
-for f in range(1, IDLE_N + 2):
-    scene.frame_set(f)
-    C = eval_coords(low); Cw = eval_coords(wand)
-    samples.append(C[::7]); samples.append(Cw[::5])
-    if f == 1:
-        first, wfirst = C, Cw
-    if f == IDLE_N + 1:
-        last, wlast = C, Cw
-    minz = min(minz, float(C[:, 2].min()), float(Cw[:, 2].min()))
-    root_off = max(root_off, (rig.matrix_world @ rig.pose.bones["root"].head).length)
-DIG["clip_samples"] = sha(np.concatenate(samples))
-rep["clips"] = {"idle": {"status": "PLACEHOLDER (movement wave pending the artist's answers)", "frames": [1, IDLE_N + 1],
-                         "seconds": IDLE_N / K.FPS, "cyclic": True,
-                         "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
-                         "seam_wand_mm": round(float(np.linalg.norm(wfirst - wlast, axis=1).max()) * 1000, 6),
-                         "min_z": round(minz, 4), "body_sway_deg": list(BODY_SWAY), "arm_wave_deg": ARM_WAVE,
-                         "leg_wave_deg": list(LEG_WAVE), "crown_flame": {"wave_deg": list(CF_WAVE), "stretch": CF_PULSE},
-                         "wand_flame": {"sway_deg": WF_SWAY, "stretch": WF_PULSE}, "root_offset_max": round(root_off, 8)},
-                "walk": "NOT BUILT: locomotion identity (float vs hop, grounded vs hovering rest, flame-flow wildness) "
-                        "awaits the artist; clip_names fails on the missing walk by design"}
-rig.animation_data.action = None
+_dom = np.argmax(Wt, 1)
+SOLE = {s: np.nonzero(_dom == J["leg.%s.%d" % (s, LEG_BONES - 1)])[0] for s in ("L", "R")}   # the foot bone's verts
+
+
+def apply_pose(pose):
+    for bn in KEY_BONES:
+        pb = rig.pose.bones[bn]
+        D, off, sy = pose.get(bn, (None, None, None))
+        R = REST_R[bn]
+        q = (R.transposed() @ D @ R).to_quaternion() if D is not None else Quaternion()
+        if q.w < 0.0:
+            q.negate()
+        pb.rotation_quaternion = q
+        pb.location = (R.transposed() @ off) if off is not None else Vector((0.0, 0.0, 0.0))
+        pb.scale = (1.0, sy, 1.0) if sy is not None else (1.0, 1.0, 1.0)
+
+
+def bake_clip(name, N, pose_fn):
+    """pass 1 (no action bound: nothing overrides the pose) + pass 2 (key the stored channels, frame N+1 = frame 1)."""
+    if rig.animation_data is not None:
+        rig.animation_data.action = None
+    frames, guard = [], []
+    for f in range(N):
+        pose, feet = pose_fn(f / N)
+        Db, off = pose["body"][0], pose["body"][1]
+        lift = {"L": 0.0, "R": 0.0}
+        for it in range(8):
+            short = {}
+            for side in ("L", "R"):
+                tip_, F_ = feet[side]
+                D0, D1, D2, short[side] = solve_leg(side, Db, off, tip_ + Vector((0.0, 0.0, lift[side])), F_)
+                pose["leg.%s.0" % side] = (D0, None, None)
+                pose["leg.%s.1" % side] = (D1, None, None)
+                pose["leg.%s.2" % side] = (D2, None, None)
+            apply_pose(pose)
+            bpy.context.view_layer.update()
+            C = eval_coords(low)
+            dips = {s: float(C[SOLE[s], 2].min()) for s in ("L", "R")}
+            if min(dips.values()) >= -1e-6:                   # (float noise of an exactly-rest foot is not a dip)
+                break
+            for s in ("L", "R"):
+                if dips[s] < -1e-6:
+                    lift[s] += -dips[s] + FLOOR_EPS
+        frames.append({bn: (rig.pose.bones[bn].rotation_quaternion.copy(), rig.pose.bones[bn].location.copy(),
+                            rig.pose.bones[bn].scale.copy()) for bn in KEY_BONES})
+        guard.append({"lift": lift, "iters": it + 1, "reach_short": short})
+    act_ = bpy.data.actions.new(name)
+    act_.use_fake_user = True
+    K.assign_action(rig, act_)
+    rows = []
+    for f in range(N + 1):
+        fr = frames[f % N]
+        for bn in KEY_BONES:
+            pb = rig.pose.bones[bn]
+            q, l_, sc = fr[bn]
+            pb.rotation_quaternion = q
+            pb.keyframe_insert("rotation_quaternion", frame=f + 1)
+            if bn == "body":
+                pb.location = l_
+                pb.keyframe_insert("location", frame=f + 1)
+            if bn in SCALE_BONES:
+                pb.scale = sc
+                pb.keyframe_insert("scale", frame=f + 1)
+            rows.append(list(q) + list(l_) + list(sc))
+    for fc in K.action_fcurves(act_):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "LINEAR"
+    act_.use_frame_range = True
+    act_.frame_start, act_.frame_end = 1, N + 1
+    act_.use_cyclic = True
+    rig.animation_data.action = None
+    return act_, rows, guard
+
+
+def measure_clip(act_, N):
+    """pass 3: play the bound action frame by frame (as the checker does) -> per-frame arrays."""
+    K.assign_action(rig, act_)
+    out = {"minz_main": [], "minz_wand": [], "sole": {"L": [], "R": []}, "sole_y": {"L": [], "R": []}, "tails": {},
+           "root": 0.0, "samples": []}
+    TRACK = ["crown_flame.1", "wand_flame"] + LICK_NAMES
+    for f in range(1, N + 2):
+        scene.frame_set(f)
+        C = eval_coords(low); Cw = eval_coords(wand)
+        out["samples"] += [C[::7], Cw[::5]]
+        if f == 1:
+            out["first"] = (C, Cw)
+        if f == N + 1:
+            out["last"] = (C, Cw)
+        out["minz_main"].append(float(C[:, 2].min())); out["minz_wand"].append(float(Cw[:, 2].min()))
+        for s in ("L", "R"):
+            out["sole"][s].append(float(C[SOLE[s], 2].min()))
+            out["sole_y"][s].append(float(C[SOLE[s], 1].mean()))
+        for bn in TRACK:
+            out["tails"].setdefault(bn, []).append(np.array(rig.pose.bones[bn].tail))
+        out["root"] = max(out["root"], (rig.matrix_world @ rig.pose.bones["root"].head).length)
+    rig.animation_data.action = None
+    out["seam_main_mm"] = round(float(np.linalg.norm(out["first"][0] - out["last"][0], axis=1).max()) * 1000, 6)
+    out["seam_wand_mm"] = round(float(np.linalg.norm(out["first"][1] - out["last"][1], axis=1).max()) * 1000, 6)
+    return out
+
+
+def excursion_mm(pts):
+    P_a = np.array(pts)
+    return round(float(np.linalg.norm(P_a - P_a.mean(0), axis=1).max()) * 1000, 1)
+
+
+t_clip = time.time()
+act_idle, rows_idle, guard_idle = bake_clip("idle", IDLE_N, idle_pose)
+act_walk, rows_walk, guard_walk = bake_clip("walk", WALK_N, walk_pose)
+DIG["keys"] = sha(np.array(rows_idle + rows_walk))
+M_I = measure_clip(act_idle, IDLE_N)
+M_W = measure_clip(act_walk, WALK_N)
+DIG["clip_samples"] = sha(np.concatenate(M_I["samples"] + M_W["samples"]))
+act = act_idle
+FL_W = {"FLAME_WILD": FLAME_WILD, "flicker_hz": list(FLICKER_HZ), "lick_sway_deg_stretch": list(LICK_FLICKER),
+        "crown_sway_deg_root_tip_stretch": list(CF_FLICKER), "wand_sway_deg_stretch": list(WF_FLICKER)}
+
+
+def clip_common(M, N, guard):
+    return {"frames": [1, N + 1], "seconds": N / K.FPS, "cyclic": True, "seam_main_mm": M["seam_main_mm"],
+            "seam_wand_mm": M["seam_wand_mm"], "min_z_all": round(min(min(M["minz_main"]), min(M["minz_wand"])), 5),
+            "min_z_main": round(min(M["minz_main"]), 5), "min_z_wand": round(min(M["minz_wand"]), 5),
+            "root_offset_max": round(M["root"], 8),
+            "floor_guard": {"frames_lifted": int(sum(1 for g in guard if max(g["lift"].values()) > 0)),
+                            "max_lift_mm": round(1000 * max(max(g["lift"].values()) for g in guard), 2),
+                            "max_iters": max(g["iters"] for g in guard),
+                            "max_reach_short_mm": round(1000 * max(max(g["reach_short"].values()) for g in guard), 2)}}
+
+
+# idle numbers
+sole_i = {s: np.array(M_I["sole"][s]) for s in ("L", "R")}
+idle_rep = clip_common(M_I, IDLE_N, guard_idle)
+idle_rep.update({"status": "REAL: grounded stance, living fire", "flame_flow": FL_W,
+                 "flicker_harmonics_per_loop": list(harmonics(IDLE_N / K.FPS)),
+                 "feet_planted_sole_min_z_mm": {s: [round(1000 * float(sole_i[s].min()), 2), round(1000 * float(sole_i[s].max()), 2)]
+                                                for s in ("L", "R")},
+                 "sole_drift_y_mm": {s: round(1000 * float(np.ptp(M_I["sole_y"][s])), 2) for s in ("L", "R")},
+                 "body": {"drop": IDLE_DROP, "breath_dip": IDLE_BOB, "sway_roll_pitch_yaw_deg": list(IDLE_SWAY),
+                          "side_shift": IDLE_SHIFT},
+                 "arm_drift_root_tip_deg": IDLE_ARM,
+                 "tip_excursion_mm": {"crown_flame_tip": excursion_mm(M_I["tails"]["crown_flame.1"]),
+                                      "wand_flame_tip": excursion_mm(M_I["tails"]["wand_flame"]),
+                                      "body_lick_tips_mean": round(float(np.mean([excursion_mm(M_I["tails"][n]) for n in LICK_NAMES])), 1)
+                                      if LICK_NAMES else None}})
+# walk numbers
+step_s_ = WALK_N / 2 / K.FPS
+sole_w = {s: np.array(M_W["sole"][s]) for s in ("L", "R")}
+contact = {s: sole_w[s] <= CONTACT_TOL for s in ("L", "R")}
+air = ~contact["L"] & ~contact["R"]
+clear = (sole_w["L"] > 0.02) & (sole_w["R"] > 0.02)
+design_planted = {s: np.array([foot_target(s, (f % WALK_N) / WALK_N)[1] for f in range(WALK_N + 1)]) for s in ("L", "R")}
+slide = []
+for s in ("L", "R"):
+    y_ = np.array(M_W["sole_y"][s])
+    for f in range(WALK_N):
+        if design_planted[s][f] and design_planted[s][f + 1]:
+            slide.append((y_[f + 1] - y_[f]) * K.FPS)
+body_zs = [body_z((2.0 * f / WALK_N) % 1.0) for f in range(WALK_N)]
+walk_rep = clip_common(M_W, WALK_N, guard_walk)
+walk_rep.update({
+    "status": "REAL: floaty steps (artist 2026-09-26 'movement is floaty steps')", "flame_flow": FL_W,
+    "stream_at_drift_top": STREAM, "flicker_harmonics_per_loop": list(harmonics(WALK_N / K.FPS)),
+    "cadence_steps_per_min": round(60.0 / step_s_, 2), "step_seconds": step_s_, "step_length": STEP_LEN,
+    "implied_speed_units_per_s": round(STEP_LEN / step_s_, 4),
+    "implied_speed_game_m_per_s_at_cell_fit_scale": round(STEP_LEN / step_s_ * k_fit, 4),
+    "stance_share": STANCE, "stance_slide_per_foot": round(2 * HALF_SLIDE, 4),
+    "measured_planted_foot_speed_units_per_s": {"mean": round(float(np.mean(slide)), 4), "min": round(float(np.min(slide)), 4),
+                                                 "max": round(float(np.max(slide)), 4)},
+    "contact_frames": {s: [int(f + 1) for f in np.nonzero(contact[s][:WALK_N])[0]] for s in ("L", "R")},
+    "hang": {"airborne_frames_per_cycle": int(air[:WALK_N].sum()),
+             "hang_time_per_step_s": round(float(air[:WALK_N].sum()) / 2 / K.FPS, 4),
+             "clear_air_frames_per_cycle_both_feet_gt_20mm": int(clear[:WALK_N].sum()),
+             "design_drift_share_per_step": round(1.0 - STANCE, 3), "design_drift_s": round((1.0 - STANCE) * step_s_, 4)},
+    "body_z": {"touchdown": -WALK_DROP, "low": round(min(body_zs), 4), "top": round(max(body_zs), 4),
+               "compression": round(C_COMP, 4), "float_height": FLOAT_H, "hang_warp": HANG},
+    "swing_foot_peak": FOOT_LIFT, "surge": SURGE, "lean_deg": list(WALK_LEAN),
+    "sole_min_z_mm": {s: round(1000 * float(sole_w[s].min()), 2) for s in ("L", "R")},
+    "tip_excursion_mm": {"crown_flame_tip": excursion_mm(M_W["tails"]["crown_flame.1"]),
+                         "wand_flame_tip": excursion_mm(M_W["tails"]["wand_flame"])},
+    "wand_carry_deg": list(WAND_CARRY)})
+rep["clips"] = {"idle": idle_rep, "walk": walk_rep, "seconds": round(time.time() - t_clip, 1),
+                "rule": "in place (root at the origin, Conquest glides); closed-form, integer harmonics (exact seams); "
+                        "legs = analytic 2-bone IK onto foot targets + floor guard (no foot mesh below z 0)"}
 for pb in rig.pose.bones:
     pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
 scene.frame_set(1)
@@ -1277,11 +1700,13 @@ rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, 
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rig["conquest_rig"] = ("firesprite v1 (model lane): root > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; "
-                       "arm.R.2 > wand > wand_flame; body > leg.{L,R}.{0,1}")
-low["conquest_clips"] = ["idle"]
-low["conquest_clip_status"] = "idle = PLACEHOLDER flame waver + flame flicker; NO walk yet (movement wave awaits the artist)"
-low["conquest_locomotion"] = "UNANSWERED (float vs hop): rest pose stands on the floor per contract (leg tips z 0)"
+rig["conquest_rig"] = ("firesprite v1.2 (movement wave): root > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; "
+                       "arm.R.2 > wand > wand_flame; body > leg.{L,R}.{0,1,2 foot}; body > lick.{side.L.0-3, side.R.0-3, back.0-2, "
+                       "hem.0-5} (one bone per body flame lick)")
+low["conquest_clips"] = ["idle", "walk"]
+low["conquest_clip_status"] = "idle = grounded living fire (4 s); walk = floaty steps (2 s, two steps); both in place"
+low["conquest_locomotion"] = ("FLOATY STEPS (artist 2026-09-26): stands grounded on the flame legs; each step pushes off into "
+                              "a drift with hang time and settles softly on the other foot")
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)

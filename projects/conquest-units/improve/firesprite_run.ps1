@@ -1,4 +1,4 @@
-# Fire Sprite (from-scratch unit, the MODEL lane), one command (hidden, headless). Reads no source blend (sheet + sketch).
+# Fire Sprite (from-scratch unit; v1.2 = the movement wave: real idle + floaty-step walk), one command (hidden, headless). Reads no source blend (sheet + sketch).
 # Writes improved/firesprite.*, improved/textures/firesprite_*, rigged/firesprite.{blend,json,glb},
 # rigged/firesprite__soulfire.blend, improved/check_firesprite.json, rigged/check_firesprite.json, renders/firesprite/,
 # improve/log_firesprite_*.
@@ -46,7 +46,8 @@ $vJobs = @(
   @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\firesprite`"","face,crown,wand")),
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\firesprite`"","ortho_front,ortho_side")),
   @("render_soulfire",@("--background",$RV,"--factory-startup","--python",$R,"--","`"$OUT\firesprite_soulfire`"","front,ortho_front,ortho_side")),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\firesprite_clips.py`"","--","`"$OUT`"","768"))
+  @("clips_idle",     @("--background",$RB,"--factory-startup","--python","`"$I\firesprite_clips.py`"","--","`"$OUT`"","768","idle")),
+  @("clips_walk",     @("--background",$RB,"--factory-startup","--python","`"$I\firesprite_clips.py`"","--","`"$OUT`"","768","walk"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {

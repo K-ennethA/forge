@@ -1,1 +1,1 @@
-﻿DIGEST build=a51f9928724fb50d twin=a51f9928724fb50d identical=True | BAKE_DIFF normal texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True | BAKE_DIFF ao texels=0 of 262144 max_delta=0.00000 limits=(16, 0.008) pass=True
+﻿DIGEST build=b9ed70d172c9b03b twin=b9ed70d172c9b03b identical=True | BAKE_DIFF normal texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True | BAKE_DIFF ao texels=0 of 262144 max_delta=0.00000 limits=(16, 0.008) pass=True

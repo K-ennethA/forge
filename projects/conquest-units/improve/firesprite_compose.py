@@ -10,9 +10,14 @@ renders/firesprite/firesprite_sketch_vs_model.png
     the artist's sketch (the square one-piece block, jagged hole eyes, zigzag mouth) | the build front | the build face
     close-up. The sketch is a phone photo of paper (perspective), so this is side-by-side, not an overlay.
 renders/firesprite/firesprite_contact.png
-    every still: front / threequarter / side / back / tactical / face / crown / wand / soulfire front + the placeholder idle
-    8-frame sheet, labelled.
+    every still: front / threequarter / side / back / tactical / face / crown / wand / soulfire front + the idle 8-frame
+    sheet + the walk side-view sheet, labelled.
+renders/firesprite/firesprite_walk_side_sheet.png
+    labelled in place: every tile's frame + its MEASURED contact state (rigged/firesprite.json walk contact_frames).
+renders/firesprite/firesprite_v11_vs_v12.png
+    v1.1 (kept copies firesprite_{front,side}_v1_1.png) vs v1.2 front + side: the torso-leg blend and the arm outline.
 """
+import json
 import os
 
 import numpy as np
@@ -94,14 +99,47 @@ for fn, lab in items:
     p = os.path.join(R, fn)
     im = Image.open(p).convert("RGBA").resize((T, T), Image.LANCZOS if not fn.endswith("tactical.png") else Image.NEAREST)
     tiles.append(label(im, lab))
-idle = Image.open(os.path.join(R, "firesprite_idle_sheet.png")).convert("RGBA")
-idle = idle.resize((3 * T + 12, int(idle.height * (3 * T + 12) / idle.width)), Image.LANCZOS)
-label(idle, "PLACEHOLDER idle: 8 frames over the 2 s loop (flame waver + crown / wand flame flicker)")
 W = 3 * T + 12
-H = 3 * (T + 6) + idle.height
+# walk side sheet: label every tile with its frame + the MEASURED contact state (rigged/firesprite.json)
+rep = json.load(open(os.path.join(HERE, "..", "rigged", "firesprite.json")))
+walk = rep["clips"]["walk"]
+ws_path = os.path.join(R, "firesprite_walk_side_sheet.png")
+ws_meta = json.load(open(ws_path[:-4] + ".json"))
+ws = Image.open(ws_path).convert("RGBA")
+tp, cols = ws_meta["tile_px"], ws_meta["cols"]
+for k, f in enumerate(ws_meta["frames"]):
+    fl = (f - 1) % ws_meta["loop_frames"] + 1
+    st = [s + " down" for s in ("L", "R") if fl in walk["contact_frames"][s]] or ["AIR (drift)"]
+    label(ws, "f%d  %s" % (f, " + ".join(st)), ((k % cols) * tp + 8, (k // cols) * tp + 6))
+ws.convert("RGB").save(ws_path)
+print("WROTE", ws_path)
+sheets = []
+for fn, lab in (("firesprite_idle_sheet.png", "IDLE: 8 frames over the 4 s loop (grounded, living fire)"),
+                ("firesprite_walk_side_sheet.png", "WALK side view: floaty steps, 12 frames over the 2 s / 2-step loop "
+                 "(%.0f steps/min, hang %.2f s/step)" % (walk["cadence_steps_per_min"], walk["hang"]["hang_time_per_step_s"]))):
+    im = Image.open(os.path.join(R, fn)).convert("RGBA")
+    im = im.resize((W, int(im.height * W / im.width)), Image.LANCZOS)
+    sheets.append(label(im, lab, (8, im.height - 20)))
+H = 3 * (T + 6) + sum(s.height + 6 for s in sheets)
 cs = Image.new("RGBA", (W, H), (255, 255, 255, 255))
 for i, t in enumerate(tiles):
     cs.paste(t, ((i % 3) * (T + 6), (i // 3) * (T + 6)))
-cs.paste(idle, (0, 3 * (T + 6)))
+y = 3 * (T + 6)
+for s in sheets:
+    cs.paste(s, (0, y)); y += s.height + 6
 cs.convert("RGB").save(os.path.join(R, "firesprite_contact.png"))
 print("WROTE", os.path.join(R, "firesprite_contact.png"))
+
+# v1.1 -> v1.2 body (artist 2026-09-26: torso-leg blend, arms wider / longer to the drawn outline)
+ba = []
+for fn, lab in (("firesprite_front_v1_1.png", "v1.1 front"), ("firesprite_front.png", "v1.2 front"),
+                ("firesprite_side_v1_1.png", "v1.1 side"), ("firesprite_side.png", "v1.2 side")):
+    p = os.path.join(R, fn)
+    if os.path.exists(p):
+        ba.append(label(Image.open(p).convert("RGBA").resize((512, 512), Image.LANCZOS), lab))
+if ba:
+    out = Image.new("RGBA", (len(ba) * 518 - 6, 512), (255, 255, 255, 255))
+    for i, t in enumerate(ba):
+        out.paste(t, (i * 518, 0))
+    out.convert("RGB").save(os.path.join(R, "firesprite_v11_vs_v12.png"))
+    print("WROTE", os.path.join(R, "firesprite_v11_vs_v12.png"))
