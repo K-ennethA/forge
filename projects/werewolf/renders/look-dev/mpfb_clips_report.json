@@ -1,5 +1,5 @@
 {
- "blend_in": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\build_in.blend",
+ "blend_in": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\clips_build_copy.blend",
  "fps": 24,
  "game_scale": 0.929615,
  "contract_height_m": 1.75,
@@ -150,6 +150,34 @@
     "head_pitch_std_deg": 1.5652,
     "step_interval_mean_s": 0.5
    },
+   "soft_fist_layer_deg": {
+    "index": [
+     16.5,
+     24.8,
+     13.8
+    ],
+    "middle": [
+     19.2,
+     27.5,
+     16.5
+    ],
+    "ring": [
+     22.0,
+     30.3,
+     16.5
+    ],
+    "pinky": [
+     24.8,
+     30.3,
+     16.5
+    ],
+    "thumb": [
+     5.5,
+     11.0,
+     11.0
+    ]
+   },
+   "soft_fist_scale": 0.55,
    "arm_abduction_take_deg": {
     "l": {
      "min": -3.5,
@@ -244,8 +272,67 @@
     }
    },
    "arm_flare_layer_deg": 12.0,
+   "finger_pose": {
+    "l": {
+     "index": [
+      16.5,
+      24.7,
+      13.8
+     ],
+     "middle": [
+      19.2,
+      27.5,
+      16.5
+     ],
+     "ring": [
+      22.0,
+      30.2,
+      16.5
+     ],
+     "pinky": [
+      24.7,
+      30.2,
+      16.5
+     ],
+     "thumb": [
+      5.5,
+      11.0,
+      11.0
+     ],
+     "thumb_tip_to_index_mm": 52.7
+    },
+    "r": {
+     "index": [
+      16.5,
+      24.7,
+      13.8
+     ],
+     "middle": [
+      19.2,
+      27.5,
+      16.5
+     ],
+     "ring": [
+      22.0,
+      30.2,
+      16.5
+     ],
+     "pinky": [
+      24.7,
+      30.2,
+      16.5
+     ],
+     "thumb": [
+      5.5,
+      11.0,
+      11.0
+     ],
+     "thumb_tip_to_index_mm": 52.7
+    },
+    "swing_over_clip_deg": 0.0
+   },
    "seam_flesh": {
-    "worst_mm": 0.0007,
+    "worst_mm": 0.0008,
     "mesh": "Protagonist"
    },
    "pelvis_travel_m": {
@@ -357,7 +444,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 3.8
+   "seconds": 4.3
   },
   "run-loop": {
    "role": "run",
@@ -532,6 +619,7 @@
      20.0
     ]
    },
+   "soft_fist_scale": 1.0,
    "transfer_fidelity": {
     "legs": {
      "worst_mm": 0.097,
@@ -1189,7 +1277,7 @@
    "arm_lines_vs_take_deg": 0.83,
    "ready": true,
    "failed": [],
-   "seconds": 3.2
+   "seconds": 3.0
   },
   "crouch_walk-loop": {
    "role": "crouch_walk",
@@ -1615,7 +1703,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 4.8
+   "seconds": 4.4
   },
   "crouch_idle-loop": {
    "role": "crouch_idle",
@@ -1998,7 +2086,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 5.0
+   "seconds": 4.7
   },
   "attack_3": {
    "role": "attack_3",
@@ -2739,7 +2827,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 8.5
+   "seconds": 10.5
   },
   "counter": {
    "role": "counter",
@@ -3108,7 +3196,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 7.9
+   "seconds": 8.5
   },
   "dodge": {
    "role": "dodge",
@@ -3480,7 +3568,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 10.9
+   "seconds": 11.2
   },
   "hit": {
    "role": "hit",
@@ -3855,7 +3943,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 7.3
+   "seconds": 7.4
   },
   "hit_alt": {
    "role": "hit (alt)",
@@ -4227,7 +4315,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 10.1
+   "seconds": 10.3
   },
   "stagger": {
    "role": "stagger",
@@ -4594,7 +4682,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 8.2
+   "seconds": 8.3
   },
   "death": {
    "role": "death",
@@ -5336,7 +5424,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 13.5
+   "seconds": 12.9
   },
   "climb-loop": {
    "role": "climb",
@@ -5689,7 +5777,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 4.9
+   "seconds": 4.7
   },
   "talk-loop": {
    "role": "talk",
@@ -6040,7 +6128,7 @@
    },
    "ready": true,
    "failed": [],
-   "seconds": 15.5
+   "seconds": 15.1
   }
  },
  "proxy": {
@@ -6152,5 +6240,5 @@
   "talk-loop",
   "walk-loop"
  ],
- "seconds": 126.2
+ "seconds": 128.3
 }

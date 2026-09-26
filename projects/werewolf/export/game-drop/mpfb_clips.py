@@ -70,6 +70,9 @@ SOFT_FIST_CURL_DEG = {
     "pinky":  (45.0, 55.0, 30.0),
     "thumb":  (10.0, 20.0, 20.0),
 }
+# WALK carries the same soft fist at a fraction of the run's curl - "not as closed as running but
+# a little more [than] rest" (artist, 2026-09-25). 0.0 = the open rest hand, 1.0 = the run's fist.
+WALK_SOFT_FIST_SCALE = 0.55
 # CROUCH_WALK - "he should have his legs more spread apart". Each foot's IK target is moved this
 # far OUTWARD (mm, per foot - the stance widens by twice this); the hips are not moved by this
 # layer, the knees follow the feet (the knee pole moves with its foot when the clip keys one).
@@ -1092,7 +1095,7 @@ CLIPS = [
     # sprint-loop keeps its Mixamo take's own fingers - already curled (see the report's
     # sprint finger reading), so no soft-fist override.
     ("walk-loop", "walk", "cmu_08_01.bvh", {"mapping": "cmu", "motion_quality": True},
-     {"gait": True, "arm_carriage": True}),
+     {"gait": True, "arm_carriage": True, "soft_fist": WALK_SOFT_FIST_SCALE}),
     ("run-loop", "run", "cmu_16_46.bvh", {"mapping": "cmu", "motion_quality": True},
      {"gait": True, "soft_fist": True}),
     ("sprint-loop", "sprint", "mixamo:sprint-forward.fbx",
@@ -1321,13 +1324,15 @@ def stance_width(rows):
 FINGER_KEYS = ("index", "middle", "ring", "pinky", "thumb")
 
 
-def soft_fist_pose():
-    """{game finger bone: local basis Quaternion} - SOFT_FIST_CURL_DEG about each bone's local +X."""
+def soft_fist_pose(scale=1.0):
+    """{game finger bone: local basis Quaternion} - SOFT_FIST_CURL_DEG (times scale) about each
+    bone's local +X. scale < 1 gives a more at-rest hand (the walk uses WALK_SOFT_FIST_SCALE)."""
     out = {}
     for s in ("l", "r"):
         for f in FINGER_KEYS:
             for k, deg in enumerate(SOFT_FIST_CURL_DEG[f], 1):
-                out["%s_%02d_%s" % (f, k, s)] = Quaternion(Vector((1, 0, 0)), math.radians(deg))
+                out["%s_%02d_%s" % (f, k, s)] = Quaternion(Vector((1, 0, 0)),
+                                                           math.radians(deg * scale))
     return out
 
 
@@ -1559,9 +1564,12 @@ def run_clip(spec, proxy, game, probe, flesh_step):
     if extra.get("soft_fist"):
         if fingers:
             raise RuntimeError("soft_fist on a take that carries its own fingers (%s)" % action)
-        pose = soft_fist_pose()
+        fist_scale = 1.0 if extra["soft_fist"] is True else float(extra["soft_fist"])
+        pose = soft_fist_pose(fist_scale)
         fingers = [pose] * n
-        rep["soft_fist_layer_deg"] = SOFT_FIST_CURL_DEG
+        rep["soft_fist_layer_deg"] = {f: tuple(round(d * fist_scale, 1) for d in degs)
+                                      for f, degs in SOFT_FIST_CURL_DEG.items()}
+        rep["soft_fist_scale"] = fist_scale
     adjust, skip = None, ()
     flare = ARM_FLARE_DEG if extra.get("crouch") else (WALK_ARM_CARRIAGE_DEG if extra.get("arm_carriage") else None)
     if flare is not None:
