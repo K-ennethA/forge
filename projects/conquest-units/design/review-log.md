@@ -678,3 +678,28 @@ image supplied inline - not on disk, content transcribed):
 - Colour palette chips: bone-white, pale grey, near-black, dark red,
   deep maroon, black.
 Sheet deviations: none given - build to the sheet.
+
+## 2026-09-26 — NEW UNIT: Fire Sprite / Demon (sheet + artist sketch)
+
+References saved: design/reference/firesprite-character-sheet.webp (the
+three-view sheet: FIRE SPRITE / DEMON - headpiece solid ornamental dark
+charcoal crown with two horns and a diamond boss, flame rising through the
+top; FIRE WAND, gnarled angular design, grants control of flames; BODY =
+"pure hellfire, fluid / flowing, NO SOLID FORM"; glowing eye holes; action
+examples IDLE / CASTING / JUMP / FLOAT; palette charcoal greys + two
+oranges + dark red) and firesprite-sketch.webp (the artist's own notebook
+drawing: square one-piece head+torso block wearing the crown, jagged
+hole eyes + zigzag hole mouth, ragged flame arms and two flame legs,
+flame through the crown).
+
+Artist (verbatim): "another example only comment is to make the body more
+square shape so the head and torso blend as one piece like this other
+reference"
+
+Binding reading: build "firesprite" from the sheet with ONE deviation -
+the body is a SQUARE one-piece block: head and torso blend as a single
+squarish hellfire mass (per the sketch), the crown sitting on its top
+edge, eyes + zigzag mouth as glowing holes in the block face, ragged
+flame limbs. Wand on its own bone (game may hide/swap). Movement wave
+needs artist answers (the sheet shows idle/casting/jump/float poses;
+casting is attack-wave, deferred).
