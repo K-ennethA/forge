@@ -7,6 +7,8 @@ trace_limb    deterministic limb skeleton from the mesh: start at a contact tip,
               vertices, stop when the slab set jumps in size (the limb has merged into the body).
               (The probe that produced the landmark numbers in rig_unit.py's SPEC table.)
 seg_dist      point -> segment / polyline distances (vectorised).
+VineCurve / vine_weights / vine_wave
+              the vine-chain archetype (flexible multi-bone appendages; see its section).
 action_fcurves  Blender 5.0 slotted-action fcurve walk.
 """
 import math
@@ -136,6 +138,145 @@ def _flood(M, seeds, ok):
             if u not in out and ok(u):
                 out.add(u); stack.append(u)
     return out
+
+
+# =========================================================================== vine-chain archetype
+# A VINE is a flexible appendage (Vineweave's arms, tendrils, tentacle capes): a multi-bone
+# chain whose rest shape is a CURVE, not a posed rigid limb. Three pieces, all pure numpy:
+#   VineCurve     rest-straight vine (origin + direction + length) -> posed curve, defined by a
+#                 rotation field R(s) integrated along arc length from bend / twist ops. The
+#                 same field re-poses the high sculpt (deform) and places the chain's bones
+#                 (bones), so mesh and rig agree by construction.
+#   vine_weights  arc-length hat weights: every vertex blends the two bones whose midpoints
+#                 bracket its s (<= 2 chain influences), the root blends into a parent bone.
+#   vine_wave     per-bone idle angle: a travelling wave root -> tip, amplitude growing to the
+#                 tip, integer harmonics of the loop (seam-closed by construction).
+def _rot(axis, ang):
+    a = np.asarray(axis, float); a = a / max(np.linalg.norm(a), 1e-12)
+    c, s = math.cos(ang), math.sin(ang)
+    x, y, z = a
+    return np.array([[c + x * x * (1 - c), x * y * (1 - c) - z * s, x * z * (1 - c) + y * s],
+                     [y * x * (1 - c) + z * s, c + y * y * (1 - c), y * z * (1 - c) - x * s],
+                     [z * x * (1 - c) - y * s, z * y * (1 - c) + x * s, c + z * z * (1 - c)]])
+
+
+def _ramp_weight(s, s0, s1, ramp):
+    """Curvature density over [s0, s1]: smooth ramp-in/out of width ramp*(s1-s0), flat between."""
+    if s < s0 or s > s1:
+        return 0.0
+    w = max(ramp * (s1 - s0), 1e-9)
+    a = min((s - s0) / w, 1.0); b = min((s1 - s) / w, 1.0)
+    return (a * a * (3 - 2 * a)) * (b * b * (3 - 2 * b))
+
+
+class VineCurve:
+    """ops: [{"kind": "bend", "s0", "s1", "deg", "axis": world xyz, "ramp": 0..0.5},
+             {"kind": "twist", "s0", "s1", "deg", "ramp"}]   (twist = about the current tangent).
+    Angles are distributed over [s0, s1] by the ramp density so the total equals deg."""
+
+    def __init__(self, origin, rest_dir, length, ops, ds=0.002):
+        self.o = np.asarray(origin, float)
+        self.d0 = np.asarray(rest_dir, float) / np.linalg.norm(rest_dir)
+        self.L = float(length)
+        self.ops = ops
+        n = int(math.ceil(self.L / ds)) + 1
+        self.s = np.linspace(0.0, self.L, n)
+        ds = self.s[1] - self.s[0]
+        dens = []
+        for op in ops:
+            w = np.array([_ramp_weight(v, op["s0"], op["s1"], op.get("ramp", 0.25)) for v in self.s])
+            tot = w.sum() * ds
+            dens.append(w / tot * math.radians(op["deg"]) if tot > 0 else w)
+        R = np.eye(3)
+        C = self.o.copy()
+        self.R = np.empty((n, 3, 3)); self.C = np.empty((n, 3))
+        for i in range(n):
+            self.R[i] = R; self.C[i] = C
+            for op, dn in zip(ops, dens):
+                ang = dn[i] * ds
+                if ang == 0.0:
+                    continue
+                ax = op["axis"] if op["kind"] == "bend" else R @ self.d0
+                R = _rot(ax, ang) @ R
+            C = C + (R @ self.d0) * ds
+
+    def _idx(self, s):
+        f = np.clip(np.asarray(s, float), 0.0, self.L) / self.L * (len(self.s) - 1)
+        return np.clip(np.round(f).astype(int), 0, len(self.s) - 1)
+
+    def frame(self, s):
+        i = self._idx(s)
+        return self.C[i], self.R[i]
+
+    def tangent(self, s):
+        return self.frame(s)[1] @ self.d0
+
+    def deform(self, P, s):
+        """P (n,3) world points with arc parameter s (n,); s <= 0 -> unchanged (root side)."""
+        P = np.asarray(P, float); s = np.asarray(s, float)
+        out = P.copy()
+        m = s > 0
+        if m.any():
+            sc = np.clip(s[m], 0, self.L)
+            f = sc / self.L * (len(self.s) - 1)
+            i0 = np.clip(np.floor(f).astype(int), 0, len(self.s) - 2)
+            u = (f - i0)[:, None]
+            Ci = self.C[i0] * (1 - u) + self.C[i0 + 1] * u          # linear between the 2 mm nodes:
+            Ri = self.R[i0] * (1 - u[:, :, None]) + self.R[i0 + 1] * u[:, :, None]   # no per-node steps
+            off = P[m] - (self.o + np.outer(sc, self.d0))
+            out[m] = Ci + np.einsum("nij,nj->ni", Ri, off)
+        return out
+
+    def arc_stretch_min(self, P, s, eps=0.01, where=False):
+        """Fold check: min |d p'/ds| over points (1 = rigid, -> 0 = pinched, a fold makes the
+        mapped strand reverse; measured as the ratio of mapped to rest step along s).
+        where=True -> (min, s at the min, fraction of points below 0.15)."""
+        m = (np.asarray(s) > eps) & (np.asarray(s) < self.L - eps)
+        if not m.any():
+            return (1.0, None, 0.0) if where else 1.0
+        Pm, sm = np.asarray(P, float)[m], np.asarray(s, float)[m]
+        P0 = self.deform(Pm - self.d0 * eps, sm - eps)
+        P1 = self.deform(Pm + self.d0 * eps, sm + eps)
+        T = np.einsum("nij,j->ni", self.R[self._idx(sm)], self.d0)
+        f = np.einsum("ni,ni->n", P1 - P0, T) / (2 * eps)
+        if where:
+            return float(f.min()), float(sm[int(np.argmin(f))]), float((f < 0.15).mean())
+        return float(f.min())
+
+    def bones(self, n):
+        """n bones evenly in arc length: [(head, tail, s_head, s_tail)]."""
+        ks = np.linspace(0.0, self.L, n + 1)
+        H = [self.frame(k)[0] for k in ks]
+        return [(H[k], H[k + 1], ks[k], ks[k + 1]) for k in range(n)]
+
+
+def vine_weights(s, L, n, parent_s0=0.0):
+    """Arc-length hat weights -> (len(s), n + 1): column 0 = the parent bone, 1..n = chain.
+    Bone k's midpoint m_k = (k + .5) L / n; a vertex between m_k and m_k+1 blends those two
+    linearly; below m_0 it blends parent -> bone 0 from s = parent_s0; above m_n-1 bone n-1."""
+    s = np.asarray(s, float)
+    W = np.zeros((len(s), n + 1))
+    m = (np.arange(n) + 0.5) * L / n
+    lo = s <= m[0]
+    t = np.clip((s[lo] - parent_s0) / max(m[0] - parent_s0, 1e-9), 0, 1)
+    t = t * t * (3 - 2 * t)
+    W[lo, 0] = 1 - t; W[lo, 1] = t
+    hi = s >= m[-1]
+    W[hi, n] = 1.0
+    mid = ~lo & ~hi
+    k = np.clip(np.searchsorted(m, s[mid]) - 1, 0, n - 2)
+    u = (s[mid] - m[k]) / (m[k + 1] - m[k])
+    idx = np.nonzero(mid)[0]
+    W[idx, k + 1] = 1 - u; W[idx, k + 2] = u
+    return W
+
+
+def vine_wave(t, k, n, amp_root, amp_tip, lag, harmonic=1, phase=0.0):
+    """Angle (deg) of chain bone k (0 = root) at loop phase t in [0,1): a wave travelling
+    root -> tip (phase lag 'lag' rad per bone), amplitude root -> tip linear. Integer
+    'harmonic' keeps t=0 and t=1 identical (seam-closed)."""
+    a = amp_root + (amp_tip - amp_root) * (k / max(n - 1, 1))
+    return a * math.sin(2 * math.pi * harmonic * t + phase - k * lag)
 
 
 def action_fcurves(act):

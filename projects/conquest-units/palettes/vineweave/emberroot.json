@@ -1,0 +1,21 @@
+{
+ "unit": "vineweave",
+ "skin": "emberroot",
+ "extends": "default",
+ "description": "DEMO VARIANT (autumn / ember) named after the game's existing Emberroot skin (game/skins/content/vineweave_emberroot.tres: 'vine that drank from a scorched grove ... smoulders a deep coal-red, and the barbs run hot'). Autumn-orange leaves, coal-red vines with smouldering tips, charcoal bark.",
+ "regions": {
+  "head_mask":  {"rgb": [222, 178, 122]},
+  "eye_glow":   {"rgb": [90, 40, 16], "emission": [255, 150, 50], "emission_scale": 0.9},
+  "torso":      {"rgb": [56, 40, 32]},
+  "braid":      {"rgb": [150, 50, 28]},
+  "belt":       {"rgb": [40, 28, 24]},
+  "vine":       {"rgb": [118, 36, 22]},
+  "vine_tip":   {"rgb": [236, 112, 36], "emission": [255, 110, 30], "emission_scale": 0.35},
+  "leaf_front": {"rgb": [206, 104, 36]},
+  "leaf_back":  {"rgb": [178, 78, 30]},
+  "leaf_side":  {"rgb": [146, 56, 26]},
+  "leaf_edge":  {"rgb": [244, 182, 70]},
+  "leg":        {"rgb": [62, 44, 34]},
+  "foot":       {"rgb": [42, 30, 24]}
+ }
+}

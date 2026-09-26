@@ -1,0 +1,28 @@
+﻿00:00.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\source-copies\hero-green_hero.blend"
+00:01.031  reports          | WARNING Object has non-uniform scale, sculpting may be unpredictable
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+GEO {"vines": {"L": {"root": [0.85, 0.276, 3.1583], "length": 3.5579, "verts": 3303, "arc_stretch_min": 0.2528, "arc_stretch_min_at_s": 2.749, "pinched_fraction_lt_0.15": 0.0, "tip_rest_to_posed": [1.5501, -1.1189, 1.3776]}, "R": {"root": [-0.85, 0.2719, 3.1674], "length": 3.5651, "verts": 3277, "arc_stretch_min": 0.2992, "arc_stretch_min_at_s": 2.732, "pinched_fraction_lt_0.15": 0.0, "tip_rest_to_posed": [-1.5506, -1.1276, 1.3834]}}, "vine_ops": {"droop_deg": 86.0, "droop_s": [0.04, 0.78], "twist_deg": 90.0, "twist_s": [0.9, 1.9], "curl_deg": 110.0, "curl_s0": 1.6, "curl_out_deg": 0.0, "curl_trim": 0.45}, "vine_clearance_rest": {"min_m": 0.1102, "p01_m": 0.1941, "verts_within_2cm": 0, "rule": "vine verts s > 0.9 vs all non-vine verts (all parts)"}, "vine_min_z": 0.73, "natural": {"height": 5.2727, "width": 4.8711, "depth": 2.0467, "footprint": 4.8711, "units": "sculpt units (authored at natural proportions, no refit)", "export_cell_fit_report_only": {"scale": 0.34138, "height_m": 1.8, "bound_by": "height", "ceilings": [1.8, 1.9]}, "shipped_glb_height_m": 1.137, "source_tpose": {"width": 8.823, "height": 5.273}}}
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Baking map saved to internal image, save it externally or pack it
+Info: Saved copy as "vineweave.blend"
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\vineweave.blend 28.6
+Info: Saved copy as "vineweave.blend"
+Info: Saved copy as "vineweave__emberroot.blend"
+RIG_DONE {"bone_count": 24, "weights": {"max_influences": 3, "unweighted": 0, "sum_dev_max": 2.220446049250313e-16, "per_bone_dominant": {"pelvis": 5533, "chest": 4236, "head": 1417, "thigh.L": 132, "shin.L": 129, "foot.L": 122, "thigh.R": 130, "shin.R": 130, "foot.R": 131, "vine.L.01": 121, "vine.L.02": 305, "vine.L.03": 222, "vine.L.04": 203, "vine.L.05": 231, "vine.L.06": 237, "vine.L.07": 220, "vine.R.01": 118, "vine.R.02": 309, "vine.R.03": 216, "vine.R.04": 204, "vine.R.05": 216, "vine.R.06": 244, "vine.R.07": 204}, "rule": "body: proximity bands (label-gated bones, w = 1/d^4 to the bone segment, rig_unit.py); vines: rigkit.vine_weights arc-length hats (<= 2 chain bones, root blends into chest); 3 neighbour-mean passes; top-3; normalized"}, "seconds": 29.7}
+IDLE {"status": "PROPOSED - the artist judges", "action": "idle", "frames": 121, "cycle_frames": 120, "cycle_s": 5.0, "keyed_bones": ["chest", "head", "vine.L.01", "vine.L.02", "vine.L.03", "vine.L.04", "vine.L.05", "vine.L.06", "vine.L.07", "vine.R.01", "vine.R.02", "vine.R.03", "vine.R.04", "vine.R.05", "vine.R.06", "vine.R.07"], "never_keyed": ["root", "pelvis", "thigh.*", "shin.*", "foot.*"], "seam_residual_mm": 0.0, "feet_slide_mm": 6.4e-05, "feet_verts": 214, "min_z_m": -0.0, "bone_stretch_max_pct": 9.3e-05, "vine_tip_travel_m": {"L": 0.2875, "R": 0.3141}, "vine_clearance_min_m": 0.0341, "vine_clearance_by_frame": {"1": 0.0672, "7": 0.1028, "13": 0.1405, "19": 0.1785, "25": 0.1956, "31": 0.1826, "37": 0.1576, "43": 0.132, "49": 0.1044, "55": 0.0782, "61": 0.0577, "67": 0.0445, "73": 0.0395, "79": 0.0462, "85": 0.0445, "91": 0.0556, "97": 0.0483, "103": 0.0341, "109": 0.0391, "115": 0.0528, "121": 0.0672}, "vine_clearance_rule": "min distance, vine verts past s=0.9 vs every non-vine vert (body, head, legs, leaves, belt), every 6th frame", "extent": {"width": 5.1573, "depth": 2.1843, "height": 5.2906}, "motion": {"curl_deg_root_tip": [0.8, 3.2], "sway_deg_root_tip": [0.6, 2.2], "lag_rad_per_bone": 0.55, "breath_deg": 1.1, "head_deg": [0.8, 1.6], "harmonics": [1, 2]}}

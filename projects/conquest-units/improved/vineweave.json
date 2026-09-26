@@ -1,0 +1,453 @@
+{
+ "unit": "vineweave",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-green_hero.blend",
+ "tier": "hero",
+ "tri_budget": [
+  20000,
+  35000
+ ],
+ "yaw_fix_deg": 0.0,
+ "overrides": {},
+ "tris_source": 204224,
+ "belt_specks_dropped": {
+  "shells": 13,
+  "verts": 144
+ },
+ "geometry": {
+  "vines": {
+   "L": {
+    "root": [
+     0.85,
+     0.276,
+     3.1583
+    ],
+    "length": 3.5579,
+    "verts": 3303,
+    "arc_stretch_min": 0.2528,
+    "arc_stretch_min_at_s": 2.749,
+    "pinched_fraction_lt_0.15": 0.0,
+    "tip_rest_to_posed": [
+     1.5501,
+     -1.1189,
+     1.3776
+    ]
+   },
+   "R": {
+    "root": [
+     -0.85,
+     0.2719,
+     3.1674
+    ],
+    "length": 3.5651,
+    "verts": 3277,
+    "arc_stretch_min": 0.2992,
+    "arc_stretch_min_at_s": 2.732,
+    "pinched_fraction_lt_0.15": 0.0,
+    "tip_rest_to_posed": [
+     -1.5506,
+     -1.1276,
+     1.3834
+    ]
+   }
+  },
+  "vine_ops": {
+   "droop_deg": 86.0,
+   "droop_s": [
+    0.04,
+    0.78
+   ],
+   "twist_deg": 90.0,
+   "twist_s": [
+    0.9,
+    1.9
+   ],
+   "curl_deg": 110.0,
+   "curl_s0": 1.6,
+   "curl_out_deg": 0.0,
+   "curl_trim": 0.45
+  },
+  "vine_clearance_rest": {
+   "min_m": 0.1102,
+   "p01_m": 0.1941,
+   "verts_within_2cm": 0,
+   "rule": "vine verts s > 0.9 vs all non-vine verts (all parts)"
+  },
+  "vine_min_z": 0.73,
+  "natural": {
+   "height": 5.2727,
+   "width": 4.8711,
+   "depth": 2.0467,
+   "footprint": 4.8711,
+   "units": "sculpt units (authored at natural proportions, no refit)",
+   "export_cell_fit_report_only": {
+    "scale": 0.34138,
+    "height_m": 1.8,
+    "bound_by": "height",
+    "ceilings": [
+     1.8,
+     1.9
+    ]
+   },
+   "shipped_glb_height_m": 1.137,
+   "source_tpose": {
+    "width": 8.823,
+    "height": 5.273
+   }
+  }
+ },
+ "origin_shift_sculpt_units": [
+  -0.00206,
+  -0.11299,
+  0.06087
+ ],
+ "tris_final": 30000,
+ "tris_per_part": {
+  "body": 13000,
+  "belt": 9000,
+  "leaf_front": 2600,
+  "leaf_back": 2600,
+  "leaf_side_L": 1400,
+  "leaf_side_R": 1400
+ },
+ "eye_rule": {
+  "rule": "head faces > EYE_DEPTH inside the head's convex hull, front half of the mask, above 35% of the head height; glow = sockets deeper than 45% of the deepest",
+  "eye_depth": 0.06,
+  "max_depth": 0.2349,
+  "socket_faces": 328,
+  "glow_faces": 177,
+  "socket_x_split": [
+   168,
+   160
+  ],
+  "hull_depth_front_p95": 0.1987
+ },
+ "regions_faces": {
+  "head_mask": 2499,
+  "eye_socket": 151,
+  "eye_glow": 177,
+  "torso": 2476,
+  "braid": 3197,
+  "belt": 5803,
+  "vine": 4206,
+  "vine_tip": 1896,
+  "leaf_front": 2354,
+  "leaf_back": 2352,
+  "leaf_side": 2489,
+  "leaf_edge": 805,
+  "leg": 1024,
+  "foot": 571
+ },
+ "cavity_shade_k": 0.4,
+ "facing": {
+  "rule": "head faces centroid -> eye-hole faces centroid",
+  "anchor": [
+   0.0007,
+   -0.1551,
+   4.5534
+  ],
+  "landmark": [
+   -0.004,
+   -0.3838,
+   4.828
+  ],
+  "angle_from_minusY_deg": -1.18
+ },
+ "bake_groups": {
+  "body": 13000,
+  "belt": 9000,
+  "leaf_front.0": 1320,
+  "leaf_front.1": 1280,
+  "leaf_back.0": 1320,
+  "leaf_back.1": 1280,
+  "leaf_side_L.0": 1400,
+  "leaf_side_R.0": 1400
+ },
+ "bake": {
+  "pass_all": {
+   "NORMAL": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 3.7
+   },
+   "AO": {
+    "result": [
+     "FINISHED"
+    ],
+    "seconds": 2.1
+   }
+  },
+  "isolated_passes": {
+   "body": {
+    "faces": 13000,
+    "normal_texels": 636556,
+    "ao_texels": 159354,
+    "seconds": 2.0
+   },
+   "belt": {
+    "faces": 9000,
+    "normal_texels": 162042,
+    "ao_texels": 40578,
+    "seconds": 1.4
+   },
+   "leaf_front.0": {
+    "faces": 1320,
+    "normal_texels": 144088,
+    "ao_texels": 36027,
+    "seconds": 1.0
+   },
+   "leaf_front.1": {
+    "faces": 1280,
+    "normal_texels": 136976,
+    "ao_texels": 34239,
+    "seconds": 1.0
+   },
+   "leaf_back.0": {
+    "faces": 1320,
+    "normal_texels": 141824,
+    "ao_texels": 35472,
+    "seconds": 1.0
+   },
+   "leaf_back.1": {
+    "faces": 1280,
+    "normal_texels": 135475,
+    "ao_texels": 33868,
+    "seconds": 1.0
+   },
+   "leaf_side_L.0": {
+    "faces": 1400,
+    "normal_texels": 104005,
+    "ao_texels": 25996,
+    "seconds": 1.0
+   },
+   "leaf_side_R.0": {
+    "faces": 1400,
+    "normal_texels": 104050,
+    "ao_texels": 26022,
+    "seconds": 1.0
+   }
+  },
+  "rule": "base pass: whole low vs every high group (margins); then each group's texels re-baked against its own high only (body / belt+braid / each leaf shell), AO occluded by the whole scene; low hidden from rays",
+  "uv_texels_normal": 1566379,
+  "uv_coverage": 0.3735,
+  "normal_baked_pct_of_uv_texels": 99.91,
+  "normal_detail_fraction_dev_gt_0.05": 0.2715,
+  "normal_dev_mean": 0.0429,
+  "ao_baked_pct_of_uv_texels": 100.0,
+  "ao_mean": 0.4022,
+  "ao_p05": 0.0,
+  "per_region_normal": {
+   "head_mask": {
+    "texels": 135440,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0405
+   },
+   "eye_socket": {
+    "texels": 5126,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0767
+   },
+   "eye_glow": {
+    "texels": 7323,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.1209
+   },
+   "torso": {
+    "texels": 180550,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0308
+   },
+   "braid": {
+    "texels": 65182,
+    "baked_pct": 99.61,
+    "normal_dev_mean": 0.0896
+   },
+   "belt": {
+    "texels": 97309,
+    "baked_pct": 99.83,
+    "normal_dev_mean": 0.0988
+   },
+   "vine": {
+    "texels": 163753,
+    "baked_pct": 99.45,
+    "normal_dev_mean": 0.0643
+   },
+   "vine_tip": {
+    "texels": 73123,
+    "baked_pct": 99.99,
+    "normal_dev_mean": 0.0736
+   },
+   "leaf_front": {
+    "texels": 275674,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0183
+   },
+   "leaf_back": {
+    "texels": 271738,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0181
+   },
+   "leaf_side": {
+    "texels": 198881,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.0386
+   },
+   "leaf_edge": {
+    "texels": 20125,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.075
+   },
+   "leg": {
+    "texels": 53648,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.053
+   },
+   "foot": {
+    "texels": 18508,
+    "baked_pct": 99.98,
+    "normal_dev_mean": 0.0845
+   }
+  },
+  "pixel_sha": {
+   "normal": "6bf70b66a1793082",
+   "ao": "37de4310aa7a87f4"
+  },
+  "cage_extrusion": 0.035,
+  "resolution": {
+   "normal": 2048,
+   "ao": 1024
+  },
+  "seconds": 24.3
+ },
+ "uv": {
+  "method": "Smart UV after decimation (66 deg, margin 0.004), whole joined low",
+  "faces": 30000,
+  "zero_area_faces": 0,
+  "flipped_faces": 0,
+  "uv_sha": "081ca7003143ae8b"
+ },
+ "digest_geometry_colour": "381682a26ecf1b1c",
+ "final_bbox": [
+  [
+   -2.4355,
+   -1.0234,
+   0.0
+  ],
+  [
+   2.4355,
+   1.0234,
+   5.2711
+  ]
+ ],
+ "palette": {
+  "default": {
+   "head_mask": {
+    "rgb": [
+     206,
+     196,
+     150
+    ]
+   },
+   "eye_socket": {
+    "rgb": [
+     26,
+     30,
+     18
+    ]
+   },
+   "eye_glow": {
+    "rgb": [
+     60,
+     90,
+     30
+    ],
+    "emission": [
+     190,
+     255,
+     110
+    ],
+    "emission_scale": 0.9
+   },
+   "torso": {
+    "rgb": [
+     92,
+     70,
+     48
+    ]
+   },
+   "braid": {
+    "rgb": [
+     52,
+     94,
+     38
+    ]
+   },
+   "belt": {
+    "rgb": [
+     70,
+     50,
+     34
+    ]
+   },
+   "vine": {
+    "rgb": [
+     66,
+     118,
+     46
+    ]
+   },
+   "vine_tip": {
+    "rgb": [
+     158,
+     204,
+     88
+    ]
+   },
+   "leaf_front": {
+    "rgb": [
+     92,
+     150,
+     56
+    ]
+   },
+   "leaf_back": {
+    "rgb": [
+     78,
+     132,
+     48
+    ]
+   },
+   "leaf_side": {
+    "rgb": [
+     60,
+     108,
+     42
+    ]
+   },
+   "leaf_edge": {
+    "rgb": [
+     176,
+     204,
+     96
+    ]
+   },
+   "leg": {
+    "rgb": [
+     98,
+     72,
+     48
+    ]
+   },
+   "foot": {
+    "rgb": [
+     72,
+     52,
+     36
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vineweave\\default.json"
+  ]
+ }
+}

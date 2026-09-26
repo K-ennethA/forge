@@ -1,0 +1,796 @@
+{
+ "unit": "vineweave",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vineweave.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 3,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "per_bone_dominant": {
+   "pelvis": 5533,
+   "chest": 4236,
+   "head": 1417,
+   "thigh.L": 132,
+   "shin.L": 129,
+   "foot.L": 122,
+   "thigh.R": 130,
+   "shin.R": 130,
+   "foot.R": 131,
+   "vine.L.01": 121,
+   "vine.L.02": 305,
+   "vine.L.03": 222,
+   "vine.L.04": 203,
+   "vine.L.05": 231,
+   "vine.L.06": 237,
+   "vine.L.07": 220,
+   "vine.R.01": 118,
+   "vine.R.02": 309,
+   "vine.R.03": 216,
+   "vine.R.04": 204,
+   "vine.R.05": 216,
+   "vine.R.06": 244,
+   "vine.R.07": 204
+  },
+  "rule": "body: proximity bands (label-gated bones, w = 1/d^4 to the bone segment, rig_unit.py); vines: rigkit.vine_weights arc-length hats (<= 2 chain bones, root blends into chest); 3 neighbour-mean passes; top-3; normalized"
+ },
+ "idle": {
+  "status": "PROPOSED - the artist judges",
+  "action": "idle",
+  "frames": 121,
+  "cycle_frames": 120,
+  "cycle_s": 5.0,
+  "keyed_bones": [
+   "chest",
+   "head",
+   "vine.L.01",
+   "vine.L.02",
+   "vine.L.03",
+   "vine.L.04",
+   "vine.L.05",
+   "vine.L.06",
+   "vine.L.07",
+   "vine.R.01",
+   "vine.R.02",
+   "vine.R.03",
+   "vine.R.04",
+   "vine.R.05",
+   "vine.R.06",
+   "vine.R.07"
+  ],
+  "never_keyed": [
+   "root",
+   "pelvis",
+   "thigh.*",
+   "shin.*",
+   "foot.*"
+  ],
+  "seam_residual_mm": 0.0,
+  "feet_slide_mm": 6.4e-05,
+  "feet_verts": 214,
+  "min_z_m": -0.0,
+  "bone_stretch_max_pct": 9.3e-05,
+  "vine_tip_travel_m": {
+   "L": 0.2875,
+   "R": 0.3141
+  },
+  "vine_clearance_min_m": 0.0341,
+  "vine_clearance_by_frame": {
+   "1": 0.0672,
+   "7": 0.1028,
+   "13": 0.1405,
+   "19": 0.1785,
+   "25": 0.1956,
+   "31": 0.1826,
+   "37": 0.1576,
+   "43": 0.132,
+   "49": 0.1044,
+   "55": 0.0782,
+   "61": 0.0577,
+   "67": 0.0445,
+   "73": 0.0395,
+   "79": 0.0462,
+   "85": 0.0445,
+   "91": 0.0556,
+   "97": 0.0483,
+   "103": 0.0341,
+   "109": 0.0391,
+   "115": 0.0528,
+   "121": 0.0672
+  },
+  "vine_clearance_rule": "min distance, vine verts past s=0.9 vs every non-vine vert (body, head, legs, leaves, belt), every 6th frame",
+  "extent": {
+   "width": 5.1573,
+   "depth": 2.1843,
+   "height": 5.2906
+  },
+  "motion": {
+   "curl_deg_root_tip": [
+    0.8,
+    3.2
+   ],
+   "sway_deg_root_tip": [
+    0.6,
+    2.2
+   ],
+   "lag_rad_per_bone": 0.55,
+   "breath_deg": 1.1,
+   "head_deg": [
+    0.8,
+    1.6
+   ],
+   "harmonics": [
+    1,
+    2
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.7907
+   ],
+   "length": 0.7907
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0367,
+    1.1891
+   ],
+   "tail": [
+    0.0,
+    0.0367,
+    2.7241
+   ],
+   "length": 1.535
+  },
+  {
+   "name": "chest",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0,
+    0.0367,
+    2.7241
+   ],
+   "tail": [
+    0.0,
+    0.0367,
+    3.6591
+   ],
+   "length": 0.935
+  },
+  {
+   "name": "head",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1544,
+    3.6591
+   ],
+   "tail": [
+    0.0,
+    -0.1544,
+    5.1711
+   ],
+   "length": 1.512
+  },
+  {
+   "name": "vine.L.01",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    0.8521,
+    0.389,
+    3.0974
+   ],
+   "tail": [
+    1.2995,
+    0.389,
+    2.9251
+   ],
+   "length": 0.4795
+  },
+  {
+   "name": "vine.L.02",
+   "parent": "vine.L.01",
+   "deform": true,
+   "head": [
+    1.2995,
+    0.389,
+    2.9251
+   ],
+   "tail": [
+    1.3749,
+    0.389,
+    2.4271
+   ],
+   "length": 0.5037
+  },
+  {
+   "name": "vine.L.03",
+   "parent": "vine.L.02",
+   "deform": true,
+   "head": [
+    1.3749,
+    0.389,
+    2.4271
+   ],
+   "tail": [
+    1.4103,
+    0.389,
+    1.9204
+   ],
+   "length": 0.508
+  },
+  {
+   "name": "vine.L.04",
+   "parent": "vine.L.03",
+   "deform": true,
+   "head": [
+    1.4103,
+    0.389,
+    1.9204
+   ],
+   "tail": [
+    1.4459,
+    0.3327,
+    1.419
+   ],
+   "length": 0.5058
+  },
+  {
+   "name": "vine.L.05",
+   "parent": "vine.L.04",
+   "deform": true,
+   "head": [
+    1.4459,
+    0.3327,
+    1.419
+   ],
+   "tail": [
+    1.4813,
+    -0.0356,
+    1.094
+   ],
+   "length": 0.4925
+  },
+  {
+   "name": "vine.L.06",
+   "parent": "vine.L.05",
+   "deform": true,
+   "head": [
+    1.4813,
+    -0.0356,
+    1.094
+   ],
+   "tail": [
+    1.5168,
+    -0.5297,
+    1.1434
+   ],
+   "length": 0.4978
+  },
+  {
+   "name": "vine.L.07",
+   "parent": "vine.L.06",
+   "deform": true,
+   "head": [
+    1.5168,
+    -0.5297,
+    1.1434
+   ],
+   "tail": [
+    1.5522,
+    -1.0059,
+    1.3167
+   ],
+   "length": 0.508
+  },
+  {
+   "name": "vine.R.01",
+   "parent": "chest",
+   "deform": true,
+   "head": [
+    -0.8479,
+    0.3849,
+    3.1065
+   ],
+   "tail": [
+    -1.2964,
+    0.3849,
+    2.9326
+   ],
+   "length": 0.481
+  },
+  {
+   "name": "vine.R.02",
+   "parent": "vine.R.01",
+   "deform": true,
+   "head": [
+    -1.2964,
+    0.3849,
+    2.9326
+   ],
+   "tail": [
+    -1.3709,
+    0.3849,
+    2.4345
+   ],
+   "length": 0.5037
+  },
+  {
+   "name": "vine.R.03",
+   "parent": "vine.R.02",
+   "deform": true,
+   "head": [
+    -1.3709,
+    0.3849,
+    2.4345
+   ],
+   "tail": [
+    -1.4065,
+    0.3849,
+    1.9258
+   ],
+   "length": 0.5099
+  },
+  {
+   "name": "vine.R.04",
+   "parent": "vine.R.03",
+   "deform": true,
+   "head": [
+    -1.4065,
+    0.3849,
+    1.9258
+   ],
+   "tail": [
+    -1.442,
+    0.3278,
+    1.4247
+   ],
+   "length": 0.5056
+  },
+  {
+   "name": "vine.R.05",
+   "parent": "vine.R.04",
+   "deform": true,
+   "head": [
+    -1.442,
+    0.3278,
+    1.4247
+   ],
+   "tail": [
+    -1.4776,
+    -0.0426,
+    1.0993
+   ],
+   "length": 0.4943
+  },
+  {
+   "name": "vine.R.06",
+   "parent": "vine.R.05",
+   "deform": true,
+   "head": [
+    -1.4776,
+    -0.0426,
+    1.0993
+   ],
+   "tail": [
+    -1.513,
+    -0.5366,
+    1.1486
+   ],
+   "length": 0.4978
+  },
+  {
+   "name": "vine.R.07",
+   "parent": "vine.R.06",
+   "deform": true,
+   "head": [
+    -1.513,
+    -0.5366,
+    1.1486
+   ],
+   "tail": [
+    -1.5486,
+    -1.0146,
+    1.3226
+   ],
+   "length": 0.5099
+  },
+  {
+   "name": "thigh.L",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.2179,
+    0.0098,
+    1.2891
+   ],
+   "tail": [
+    0.3125,
+    -0.063,
+    0.6446
+   ],
+   "length": 0.6555
+  },
+  {
+   "name": "shin.L",
+   "parent": "thigh.L",
+   "deform": true,
+   "head": [
+    0.3125,
+    -0.063,
+    0.6446
+   ],
+   "tail": [
+    0.3796,
+    -0.2719,
+    0.16
+   ],
+   "length": 0.5319
+  },
+  {
+   "name": "foot.L",
+   "parent": "shin.L",
+   "deform": true,
+   "head": [
+    0.3796,
+    -0.2719,
+    0.16
+   ],
+   "tail": [
+    0.3796,
+    -0.5809,
+    0.08
+   ],
+   "length": 0.3192
+  },
+  {
+   "name": "thigh.R",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.1913,
+    -0.0327,
+    1.2891
+   ],
+   "tail": [
+    -0.3162,
+    -0.063,
+    0.6446
+   ],
+   "length": 0.6573
+  },
+  {
+   "name": "shin.R",
+   "parent": "thigh.R",
+   "deform": true,
+   "head": [
+    -0.3162,
+    -0.063,
+    0.6446
+   ],
+   "tail": [
+    -0.374,
+    -0.2612,
+    0.16
+   ],
+   "length": 0.5267
+  },
+  {
+   "name": "foot.R",
+   "parent": "shin.R",
+   "deform": true,
+   "head": [
+    -0.374,
+    -0.2612,
+    0.16
+   ],
+   "tail": [
+    -0.374,
+    -0.5841,
+    0.08
+   ],
+   "length": 0.3326
+  }
+ ],
+ "bone_count": 24,
+ "vine_chains": {
+  "L": {
+   "bones": [
+    "vine.L.01",
+    "vine.L.02",
+    "vine.L.03",
+    "vine.L.04",
+    "vine.L.05",
+    "vine.L.06",
+    "vine.L.07"
+   ],
+   "length": 3.5579,
+   "bone_length": 0.5083,
+   "local_x_axis": "the curl axis (idle rotates about local X = curl, local Z = sway)"
+  },
+  "R": {
+   "bones": [
+    "vine.R.01",
+    "vine.R.02",
+    "vine.R.03",
+    "vine.R.04",
+    "vine.R.05",
+    "vine.R.06",
+    "vine.R.07"
+   ],
+   "length": 3.5651,
+   "bone_length": 0.5093,
+   "local_x_axis": "the curl axis (idle rotates about local X = curl, local Z = sway)"
+  }
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vineweave.blend",
+   "palette": {
+    "head_mask": {
+     "rgb": [
+      206,
+      196,
+      150
+     ]
+    },
+    "eye_socket": {
+     "rgb": [
+      26,
+      30,
+      18
+     ]
+    },
+    "eye_glow": {
+     "rgb": [
+      60,
+      90,
+      30
+     ],
+     "emission": [
+      190,
+      255,
+      110
+     ],
+     "emission_scale": 0.9
+    },
+    "torso": {
+     "rgb": [
+      92,
+      70,
+      48
+     ]
+    },
+    "braid": {
+     "rgb": [
+      52,
+      94,
+      38
+     ]
+    },
+    "belt": {
+     "rgb": [
+      70,
+      50,
+      34
+     ]
+    },
+    "vine": {
+     "rgb": [
+      66,
+      118,
+      46
+     ]
+    },
+    "vine_tip": {
+     "rgb": [
+      158,
+      204,
+      88
+     ]
+    },
+    "leaf_front": {
+     "rgb": [
+      92,
+      150,
+      56
+     ]
+    },
+    "leaf_back": {
+     "rgb": [
+      78,
+      132,
+      48
+     ]
+    },
+    "leaf_side": {
+     "rgb": [
+      60,
+      108,
+      42
+     ]
+    },
+    "leaf_edge": {
+     "rgb": [
+      176,
+      204,
+      96
+     ]
+    },
+    "leg": {
+     "rgb": [
+      98,
+      72,
+      48
+     ]
+    },
+    "foot": {
+     "rgb": [
+      72,
+      52,
+      36
+     ]
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vineweave\\default.json"
+   ]
+  },
+  "emberroot": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vineweave__emberroot.blend",
+   "palette": {
+    "head_mask": {
+     "rgb": [
+      222,
+      178,
+      122
+     ]
+    },
+    "eye_socket": {
+     "rgb": [
+      26,
+      30,
+      18
+     ]
+    },
+    "eye_glow": {
+     "rgb": [
+      90,
+      40,
+      16
+     ],
+     "emission": [
+      255,
+      150,
+      50
+     ],
+     "emission_scale": 0.9
+    },
+    "torso": {
+     "rgb": [
+      56,
+      40,
+      32
+     ]
+    },
+    "braid": {
+     "rgb": [
+      150,
+      50,
+      28
+     ]
+    },
+    "belt": {
+     "rgb": [
+      40,
+      28,
+      24
+     ]
+    },
+    "vine": {
+     "rgb": [
+      118,
+      36,
+      22
+     ]
+    },
+    "vine_tip": {
+     "rgb": [
+      236,
+      112,
+      36
+     ],
+     "emission": [
+      255,
+      110,
+      30
+     ],
+     "emission_scale": 0.35
+    },
+    "leaf_front": {
+     "rgb": [
+      206,
+      104,
+      36
+     ]
+    },
+    "leaf_back": {
+     "rgb": [
+      178,
+      78,
+      30
+     ]
+    },
+    "leaf_side": {
+     "rgb": [
+      146,
+      56,
+      26
+     ]
+    },
+    "leaf_edge": {
+     "rgb": [
+      244,
+      182,
+      70
+     ]
+    },
+    "leg": {
+     "rgb": [
+      62,
+      44,
+      34
+     ]
+    },
+    "foot": {
+     "rgb": [
+      42,
+      30,
+      24
+     ]
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vineweave\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vineweave\\emberroot.json"
+   ],
+   "col_sha": "545ebd220c2d0d4f",
+   "regions_faces": {
+    "head_mask": 2499,
+    "eye_socket": 151,
+    "eye_glow": 177,
+    "torso": 2476,
+    "braid": 3197,
+    "belt": 5803,
+    "vine": 4206,
+    "vine_tip": 1896,
+    "leaf_front": 2354,
+    "leaf_back": 2352,
+    "leaf_side": 2489,
+    "leaf_edge": 805,
+    "leg": 1024,
+    "foot": 571
+   }
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vineweave.json",
+ "seconds": 29.7
+}

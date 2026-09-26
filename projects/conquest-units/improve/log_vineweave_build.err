@@ -1,0 +1,9 @@
+﻿blender.exe : C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\vineweave_build.py:429: 
+DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+At line:1 char:652
++ ... ave_build"; & $B --background "projects/conquest-units/source-copies/ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\kenne\... in Blender 6.0:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  mat.use_nodes = True

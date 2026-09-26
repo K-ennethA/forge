@@ -1,0 +1,22 @@
+{
+ "unit": "vineweave",
+ "skin": "default",
+ "description": "Nature hero, approved look direction: vine greens, bark browns, fresh-leaf accents; pale sapwood face mask with glowing eye sockets so the face reads at tactical zoom.",
+ "regions": {
+  "head_mask":  {"rgb": [206, 196, 150], "note": "pale sapwood mask - the face read"},
+  "eye_socket": {"rgb": [26, 30, 18],    "note": "eye holes, dark rim walls"},
+  "eye_glow":   {"rgb": [60, 90, 30], "emission": [190, 255, 110], "emission_scale": 0.9, "note": "back of the eye holes, soft green glow"},
+  "torso":      {"rgb": [92, 70, 48],    "note": "bark core (neck, shoulders, trunk under the leaves)"},
+  "braid":      {"rgb": [52, 94, 38],    "note": "vine braid across the chest (darker than the leaf tabard so it reads)"},
+  "belt":       {"rgb": [70, 50, 34],    "note": "dark bark belt"},
+  "vine":       {"rgb": [66, 118, 46],   "note": "vine arms"},
+  "vine_tip":   {"rgb": [158, 204, 88],  "note": "new-growth vine tips (blended over the last third)"},
+  "leaf_front": {"rgb": [92, 150, 56],   "note": "front leaf tabard"},
+  "leaf_back":  {"rgb": [78, 132, 48],   "note": "back leaf cloak"},
+  "leaf_side":  {"rgb": [60, 108, 42],   "note": "side leaf guards"},
+  "leaf_edge":  {"rgb": [176, 204, 96],  "note": "leaf rims (sun-lit edge accent)"},
+  "leg":        {"rgb": [98, 72, 48],    "note": "bark legs"},
+  "foot":       {"rgb": [72, 52, 36],    "note": "root feet"}
+ },
+ "material": {"roughness": 0.8, "emission_strength": 1.5}
+}
