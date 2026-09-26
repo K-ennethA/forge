@@ -2,16 +2,12 @@
 
     blender --background --factory-startup --python supaoctto_before_after.py
 
-v3 sheets (renders/supaoctto/):
-  v3_supaoctto_before_after.png        rows front / threequarter / side / tactical / back; columns: v2 (the committed v2
-                                       renders, idle frame 1) | v3 (rigged, idle frame 1) | the v3 deepsea skin (same pose)
-  v3_supaoctto_mouth.png               the smirk mouth, rest pose: front close-up SHUT | OPEN (morph 1.0), then the same
-                                       from 30 deg, then face SHUT | OPEN
-  v3_supaoctto_belt_gold_vs_orange.png rows front (idle 1) / belt close-up / belt from the side; columns gold (the
-                                       committed default) | orange (palettes/supaoctto/belt_orange.json)
-  v3_supaoctto_mask_w_vs_starfish.png  rows front (idle 1) / threequarter (idle 1) / face front / face 35 deg; columns
-                                       W-visor (the committed default) | starfish (MASK_STYLE = "starfish")
-  v3_supaoctto_closeups.png            one row: visor | mouth shut | mouth open | sigil | belt | cape + webs
+v4 sheets (renders/supaoctto/; the v3 sheets on disk stay as they were):
+  v4_supaoctto_before_after.png        v3 octopus chest vs v4 starfish chest: rows front / threequarter / emblem close-up /
+                                       tactical; columns v3 (the committed v3 renders) | v4 | the v4 deepsea skin (silver)
+  v4_supaoctto_mask_threeup.png        rows front + threequarter (idle 1), face front, face 35 deg, face 68 deg; columns
+                                       W-visor (committed default) | starfish glued (v3 variant) | starfish floating (v4)
+  v4_supaoctto_emblem.png              emblem close-up gold | deepsea silver | tactical (256 px, nearest x2) gold | deepsea
 Each tile is framed on its own model's bounds (the survey rule). 512 px tiles.
 """
 import bpy, os
@@ -54,18 +50,14 @@ def grid(rows_paths, out):
 
 
 P = lambda n: os.path.join(R, n + ".png")      # noqa: E731
-grid([[P("v2_supaoctto_" + v), P("v3_supaoctto_" + v), P("v3_supaoctto_deepsea_" + v)]
-      for v in ("front", "threequarter", "side", "tactical", "back")], P("v3_supaoctto_before_after"))
-grid([[P("v3_supaoctto_close_mouth"), P("v3_supaoctto_open_mouth")],
-      [P("v3_supaoctto_close_mouthside"), P("v3_supaoctto_open_mouthside")],
-      [P("v3_supaoctto_close_face"), P("v3_supaoctto_open_face")]], P("v3_supaoctto_mouth"))
-grid([[P("v3_supaoctto_front"), P("v3_supaoctto_beltorange_front")],
-      [P("v3_supaoctto_close_belt"), P("v3_supaoctto_beltorange_close_belt")],
-      [P("v3_supaoctto_close_beltside"), P("v3_supaoctto_beltorange_close_beltside")]], P("v3_supaoctto_belt_gold_vs_orange"))
-grid([[P("v3_supaoctto_front"), P("v3_supaoctto_starfish_front")],
-      [P("v3_supaoctto_threequarter"), P("v3_supaoctto_starfish_threequarter")],
-      [P("v3_supaoctto_close_visorfront"), P("v3_supaoctto_starfish_close_visorfront")],
-      [P("v3_supaoctto_close_facetq"), P("v3_supaoctto_starfish_close_facetq")]], P("v3_supaoctto_mask_w_vs_starfish"))
-grid([[P("v3_supaoctto_close_visor"), P("v3_supaoctto_close_mouth"), P("v3_supaoctto_open_mouth"),
-       P("v3_supaoctto_close_emblem"), P("v3_supaoctto_close_belt"), P("v3_supaoctto_close_capefull")]],
-     P("v3_supaoctto_closeups"))
+grid([[P("v3_supaoctto_" + v), P("v4_supaoctto_" + v), P("v4_supaoctto_deepsea_" + v)]
+      for v in ("front", "threequarter")] +
+     [[P("v3_supaoctto_close_emblem"), P("v4_supaoctto_close_emblem"), P("v4_supaoctto_deepsea_emblem")],
+      [P("v3_supaoctto_tactical"), P("v4_supaoctto_tactical"), P("v4_supaoctto_deepsea_tactical")]],
+     P("v4_supaoctto_before_after"))
+grid([[P("v4_supaoctto_" + v), P("v4_supaoctto_starfish_" + v), P("v4_supaoctto_starfish_floating_" + v)]
+      for v in ("front", "threequarter")] +
+     [[P("v4_supaoctto_close_" + v), P("v4_supaoctto_starfish_close_" + v), P("v4_supaoctto_starfish_floating_close_" + v)]
+      for v in ("visorfront", "facetq", "faceside")], P("v4_supaoctto_mask_threeup"))
+grid([[P("v4_supaoctto_close_emblem"), P("v4_supaoctto_deepsea_emblem"), P("v4_supaoctto_tactical"),
+       P("v4_supaoctto_deepsea_tactical")]], P("v4_supaoctto_emblem"))

@@ -10,7 +10,8 @@ views: comma list of front, threequarter, tactical, side, back, cape (the cape +
 --pose: evaluate a rigged blend at one frame of a clip (default: the rest pose).
 --skin: repaint the stored colour regions from palettes/supaoctto/<skin>.json in memory (the skin-swap proof).
 --key: set a shape key's value in memory (v3: --key smirk=1 shows the mouth open on the rest pose; default 0 = shut).
-v3 close-ups (landmarks from the mesh prop v3_landmarks): visor, face, mouth, mouthside, neck, emblem, belt, beltside, capefull.
+v3 close-ups (landmarks from the mesh prop v3_landmarks): visor, face, mouth, mouthside, neck, emblem, belt, beltside, capefull;
+v4: faceside (68 deg: the floating starfish mask's gap).
 --pose also binds the clip's KEY slot (the smirk weight rides every clip's action).
 The floor sits at z = 0 (the contract floor), or under the lowest vertex for a raw sculpt below it.
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X, back = on +Y.
@@ -146,6 +147,7 @@ if LM:
         "visorfront": (0.0, 4.0, 1024, 0.22, LM["visor"] + Vector((0.0, 0.0, 0.25))),
         "face": (0.0, 3.0, 1024, 0.30, (LM["visor"] + mo) / 2),
         "facetq": (35.0, 6.0, 1024, 0.32, (LM["visor"] + mo) / 2),
+        "faceside": (68.0, 4.0, 1024, 0.30, (LM["visor"] + mo) / 2),       # v4: the floating mask's gap reads best here
         "mouth": (0.0, 0.0, 1024, 0.075, mo),
         "mouthside": (30.0, 4.0, 1024, 0.09, mo),
         "siphon": (12.0, -4.0, 1024, 0.075, mo),

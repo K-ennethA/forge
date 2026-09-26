@@ -1,11 +1,23 @@
-"""Supaoctto v3 (the octopus superhero) through the shared pipeline, one headless run.
+"""Supaoctto v4 (the octopus superhero) through the shared pipeline, one headless run.
 
     blender --background source-copies/newunit-supaoctto.blend --factory-startup --python improve/supaoctto_build.py -- \
         [--preview <out.blend>]          (geometry + webs + UV + regions + palette only: no bake, no rig -- fast look loop)
         [--digest-only <out.json>]       (the whole pipeline, saves NOTHING but the digest json: the two-run determinism probe)
         [--set NAME=value ...]           (exploration override of a tunable constant; the committed build uses none)
         [--tag NAME]                     (alternative build: every output is named supaoctto__NAME.*, no glb -- the
-                                          starfish-mask renders use  --set MASK_STYLE='starfish' --tag starfish)
+                                          starfish-mask renders use  --set MASK_STYLE='starfish' --tag starfish  and
+                                          --set MASK_STYLE='starfish_floating' --tag starfish_floating)
+
+v4 (artist 2026-09-26 cross-unit round, verbatim, binding): "for supactto lets keep the non star-fish design for the goggles
+but instead of the octopus on the chest lets put the starfish there / possibly another version of the starfish mask is to
+not have it glued to his skin meaning it comes off towards the tips and doesn't connect with his face". v4 on the v3 build:
+  - the W-visor stays the committed mask (MASK_STYLE = "w"); the flag machinery stays.
+  - CHEST EMBLEM = a gold five-armed STARFISH (EMBLEM_STYLE = "starfish"; the v3 octopus sigil stays reachable as
+    EMBLEM_STYLE = "octopus"): the same SDF iso-cut, same 'emblem' region, the mask's starfish-arm language (disc + tapered
+    round-tipped arms, smooth-union fillets), one arm up.
+  - a second starfish mask, MASK_STYLE = "starfish_floating": the same outline + lenses, but each arm's plate lifts off the
+    mantle toward its tip (horizontal radial lift, 0 over the eye windows, ramping (t ** FLOAT_LIFT_POW) to FLOAT_TIP_LIFT
+    at the tip): rooted round the eyes, the tips float free with an open gap to the face.
 
 v3 (artist 2026-09-26, verbatim, binding): "the circle mouth should be more of smirk line when open like a confident hero,
 and there should be nothing visible when its closed so a smirk opening when open and nothing when closed" / "would a belt
@@ -83,9 +95,29 @@ import palettes as PAL  # noqa: E402  (read-only use)
 # frame: front -Y, floor (the leg-tentacle tips at rest) z = 0. The sculpt is ~20.6 units tall; natural scale.
 UNIT = "supaoctto"
 CHAR_ID = "supaoctto"                 # roster id: not yet in Conquest (ship path deferred by the artist)
-VERSION = "v3"
-# ---- v3 knobs first (the artist's v3 asks) -------------------------------------------------------------------------------
-MASK_STYLE = "w"                      # "mask style": "w" = the approved W-visor (COMMITTED DEFAULT) | "starfish" (the v3 variant)
+VERSION = "v4"
+# ---- v4 knobs first (the artist's v4 asks) -------------------------------------------------------------------------------
+EMBLEM_STYLE = "starfish"             # "chest emblem": "starfish" (v4, COMMITTED) | "octopus" (the v3 sigil)
+EMB_STAR_SCALE = 1.25                 # "chest starfish size" (x EMBLEM_SIZE; 1.0 = the v3 sigil's span; up for tactical zoom)
+EMB_STAR_C = (0.0, 0.09)              # "chest starfish centre" (emblem units about the chest point; raised so the bigger star
+                                      # keeps the v3 sigil's clearance above the belt)
+EMB_STAR_BODY = (0.30, 0.30)          # "chest starfish disc": half-width / half-height of the central disc (star units)
+EMB_STAR_ARMS = [(90.0, 0.98, 0.25, 0.10), (18.0, 0.98, 0.25, 0.10), (162.0, 0.98, 0.25, 0.10),
+                 (-54.0, 0.98, 0.25, 0.10), (-126.0, 0.98, 0.25, 0.10)]
+                                      # "chest starfish arms": (angle deg, reach, root half-width, tip radius), one arm up
+EMB_STAR_SMOOTH = 0.10                # "chest starfish fillets": smooth-union radius where the arms meet the disc
+# floating starfish mask (MASK_STYLE = "starfish_floating"): the plate lifts off the mantle toward each arm's tip
+FLOAT_TIP_LIFT = 0.60                 # "floating tip lift": the arm tip's plate stands this far off the mantle (horizontal
+                                      # radial; the open gap at the tip = this - VISOR_EMBED)
+FLOAT_LIFT_POW = 1.5                  # "curl-off curve": 1 = a straight ramp; > 1 hugs the face longer, then curves away
+FLOAT_TIP_THIN = 0.08                 # "floating arm thinning": the plate underside rises this much more by the tip (plate
+                                      # 0.30 thick where glued -> 0.22 at the tip: a mask, not a slab)
+FLOAT_LENS_CLEAR = 0.10               # the lift starts this far past the lens frame (the eye windows stay glued)
+FLOAT_GAP_REPORT = 0.10               # evidence: plate vertices whose rest gap to the face exceeds this are 'free' (tracked
+                                      # through every clip frame)
+# ---- v3 knobs (unchanged) ------------------------------------------------------------------------------------------------
+MASK_STYLE = "w"                      # "mask style": "w" = the approved W-visor (COMMITTED DEFAULT, re-confirmed v4) |
+                                      # "starfish" (the v3 glued variant) | "starfish_floating" (the v4 detached-tips variant)
 # starfish mask, (u, dz) round the visor centre like the W (u = arc round the mantle, dz up): a five-armed star (one arm
 # up the forehead, two swept out like the W's wing tips, two down-and-out under the eyes) with its own swept lenses
 STAR_C_DZ = 0.15                      # "starfish centre height" above the visor centre
@@ -276,14 +308,18 @@ for i_, a_ in enumerate(argv):
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
 TAG = argv[argv.index("--tag") + 1] if "--tag" in argv else None
-assert MASK_STYLE in ("w", "starfish"), MASK_STYLE
+assert MASK_STYLE in ("w", "starfish", "starfish_floating"), MASK_STYLE
+assert EMBLEM_STYLE in ("starfish", "octopus"), EMBLEM_STYLE
+STARFISH_MASK = MASK_STYLE.startswith("starfish")
+FLOATING = MASK_STYLE == "starfish_floating"
 OUT_NAME = UNIT + ("__" + TAG if TAG else "")          # an alternative (tagged) build never overwrites the default's files
 OUT_IMPROVED = os.path.join(ROOT, "improved", OUT_NAME + ".blend")
 OUT_RIGGED = os.path.join(ROOT, "rigged", OUT_NAME + ".blend")
 OUT_GLB = os.path.join(ROOT, "rigged", OUT_NAME + ".glb")
 TEX_DIR = os.path.join(ROOT, "improved", "textures")
 report = {"unit": UNIT, "version": VERSION, "conquest_character_id": CHAR_ID, "source": bpy.data.filepath, "tier": "regular",
-          "tri_budget": TRI_BUDGET, "yaw_fix_deg": YAW_FIX_DEG, "overrides": OVERRIDES, "tag": TAG, "mask_style": MASK_STYLE}
+          "tri_budget": TRI_BUDGET, "yaw_fix_deg": YAW_FIX_DEG, "overrides": OVERRIDES, "tag": TAG, "mask_style": MASK_STYLE,
+          "emblem_style": EMBLEM_STYLE}
 scene = bpy.context.scene
 DIG = {}                                # the determinism digest: every array a consumer receives
 TAU = 2.0 * math.pi
@@ -662,22 +698,26 @@ def lens_sdf(P):
     return np.minimum(poly_sdf(P, LENSES[0]), poly_sdf(P, LENSES[1]))
 
 
-def star_sdf(P):
-    """v3 starfish mask: smooth union of an elliptical body and five tapered, round-tipped arms (u, dz frame)."""
+def starfish_sdf(P, c, body, arms, smooth):
+    """The starfish shape (v3 mask, v4 chest emblem): smooth union of an elliptical body and tapered, round-tipped arms."""
     P = np.asarray(P, float)
-    c = np.array([0.0, STAR_C_DZ])
-    Q = P - c
-    ax, az = STAR_BODY
+    Q = P - np.asarray(c, float)
+    ax, az = body
     d = (np.hypot(Q[:, 0] / ax, Q[:, 1] / az) - 1.0) * min(ax, az)
-    for ang, reach, w0, w1 in STAR_ARMS:
+    for ang, reach, w0, w1 in arms:
         e = np.array([math.cos(math.radians(ang)), math.sin(math.radians(ang))])
         L_ = reach - w1                                   # the tip circle's centre (the arm ends exactly at 'reach')
         t_ = np.clip(Q @ e / L_, 0.0, 1.0)
         r_ = w0 + (w1 - w0) * t_
         da = np.linalg.norm(Q - t_[:, None] * (L_ * e), axis=1) - r_
-        h_ = np.clip(0.5 + 0.5 * (da - d) / STAR_SMOOTH, 0.0, 1.0)            # polynomial smooth-min
-        d = da * (1 - h_) + d * h_ - STAR_SMOOTH * h_ * (1 - h_)
+        h_ = np.clip(0.5 + 0.5 * (da - d) / smooth, 0.0, 1.0)                 # polynomial smooth-min
+        d = da * (1 - h_) + d * h_ - smooth * h_ * (1 - h_)
     return d
+
+
+def star_sdf(P):
+    """v3 starfish mask (u, dz frame)."""
+    return starfish_sdf(P, (0.0, STAR_C_DZ), STAR_BODY, STAR_ARMS, STAR_SMOOTH)
 
 
 def star_outline(n=720):
@@ -697,13 +737,41 @@ def star_outline(n=720):
     return ccw(np.array(out))
 
 
-if MASK_STYLE == "starfish":
+if STARFISH_MASK:
     LENSES = [ccw(STAR_LENS), ccw([(-u, z) for u, z in STAR_LENS])]      # same treatment (recessed, glowing), own shape
     MASK_OUT = star_outline()
     mask_sdf = lambda P: poly_sdf(P, MASK_OUT)             # noqa: E731  (the polygon: the geometry and the colour agree)
 else:
     MASK_OUT = W_OUT
     mask_sdf = lambda P: poly_sdf(P, W_OUT)                # noqa: E731
+# v4 floating starfish: per arm, the lift ramps from 'start' (past the body ellipse AND past both lens frames along the arm:
+# the eye windows stay glued) to the arm's reach; lift = FLOAT_TIP_LIFT x t ** FLOAT_LIFT_POW, max over the arms
+LIFT_ARMS = []
+if FLOATING:
+    _lp = np.vstack([resample_closed(L_, 0.02) for L_ in LENSES]) - np.array([0.0, STAR_C_DZ])
+    for ang, reach, w0, w1 in STAR_ARMS:
+        e_ = np.array([math.cos(math.radians(ang)), math.sin(math.radians(ang))])
+        rb_ = 1.0 / math.hypot(e_[0] / STAR_BODY[0], e_[1] / STAR_BODY[1])      # the body ellipse's radius along the arm
+        s0_ = max(rb_, float((_lp @ e_).max()) + VISOR_FRAME_W + FLOAT_LENS_CLEAR)
+        LIFT_ARMS.append((ang, e_, s0_, reach))
+
+
+def mask_lift(P):
+    """Design lift of the mask plate at (u, dz) points (0 everywhere unless MASK_STYLE = 'starfish_floating')."""
+    P = np.atleast_2d(np.asarray(P, float))
+    L = np.zeros(len(P))
+    for _, e_, s0_, s1_ in LIFT_ARMS:
+        t_ = np.clip(((P - np.array([0.0, STAR_C_DZ])) @ e_ - s0_) / (s1_ - s0_), 0.0, 1.0)
+        L = np.maximum(L, FLOAT_TIP_LIFT * t_ ** FLOAT_LIFT_POW)
+    return L
+
+
+def arm_t(P):
+    """(ramp parameter t in [0, 1], owning arm index) of (u, dz) points on the floating mask (the arm with the largest t)."""
+    P = np.atleast_2d(np.asarray(P, float))
+    T = np.stack([np.clip(((P - np.array([0.0, STAR_C_DZ])) @ e_ - s0_) / (s1_ - s0_), 0.0, 1.0)
+                  for _, e_, s0_, s1_ in LIFT_ARMS], 1)
+    return T.max(1), T.argmax(1)
 MASK_LO, MASK_HI = MASK_OUT.min(0), MASK_OUT.max(0)        # (u, dz) bbox: the face windows below use it
 lens_pts = np.vstack([resample_closed(L_, 0.02) for L_ in LENSES])
 LENS_MARGIN = float(-mask_sdf(lens_pts).max())            # every lens point this far inside the mask outline
@@ -732,8 +800,13 @@ for (u_, dz_) in P2c:                                  # thickness along the hor
     p_, _ = head_hit(u_ / R_REF, Z_VC + dz_)           # its (u, z), so the colour SDF and the geometry agree exactly
     S3.append(p_); N3.append([math.sin(u_ / R_REF), -math.cos(u_ / R_REF), 0.0])
 S3 = np.array(S3); N3 = np.array(N3)
-FRONT = S3 + N3 * thick[:, None]
-BACK = S3 - N3 * VISOR_EMBED
+if FLOATING:                                           # v4: the whole plate section rides the lift (0 over the eye windows)
+    lift_p = mask_lift(P2c)
+    FRONT = S3 + N3 * (thick + lift_p)[:, None]
+    BACK = S3 - N3 * (VISOR_EMBED - lift_p - FLOAT_TIP_THIN * lift_p / FLOAT_TIP_LIFT)[:, None]
+else:
+    FRONT = S3 + N3 * thick[:, None]
+    BACK = S3 - N3 * VISOR_EMBED
 nv2 = len(P2c)
 VV = np.vstack([FRONT, BACK])
 VF = [list(f) for f in F2c] + [[i + nv2 for i in f[::-1]] for f in F2c]
@@ -769,9 +842,20 @@ prep["visor"] = {"frame": "(u, z) round the mantle axis; u = theta x R_REF", "ce
                  "closed_manifold": visor_manifold, "thickness": {"frame": VISOR_T_FRAME, "lens": VISOR_T_LENS, "embed": VISOR_EMBED},
                  "reference": ("design/reference/supaoctto-v2-visor-reference.png (angular swept W)" if MASK_STYLE == "w" else
                                "design/reference/supaoctto-v3-starfish-mask-annotation.png (star arms round the eyes)")}
-if MASK_STYLE == "starfish":
+if STARFISH_MASK:
     prep["visor"]["starfish"] = {"centre_dz": STAR_C_DZ, "body": STAR_BODY, "arms_deg_reach_w0_tip": STAR_ARMS,
                                  "smooth": STAR_SMOOTH, "outline_points": int(len(MASK_OUT))}
+if FLOATING:
+    prep["visor"]["floating"] = {
+        "rule": "plate front/back both move lift(u, dz) along the horizontal radial (u, z kept: the colour SDF still agrees); "
+                "lift = FLOAT_TIP_LIFT x t ** FLOAT_LIFT_POW, t = the arm-axis projection ramped from 'start' (past the body "
+                "ellipse and past both lens frames + FLOAT_LENS_CLEAR) to the arm's reach; max over the arms",
+        "tip_lift": FLOAT_TIP_LIFT, "pow": FLOAT_LIFT_POW, "tip_thin": FLOAT_TIP_THIN,
+        "design_tip_gap": round(FLOAT_TIP_LIFT - VISOR_EMBED + FLOAT_TIP_THIN, 4),
+        "arms": [{"deg": a_, "lift_start": round(s0_, 4), "reach": s1_} for a_, _, s0_, s1_ in LIFT_ARMS],
+        "lift_over_lenses_max": float(mask_lift(np.vstack([resample_closed(L_, 0.02) for L_ in LENSES])).max()),
+        "plate_lift_max": round(float(lift_p.max()), 4)}
+    assert prep["visor"]["floating"]["lift_over_lenses_max"] == 0.0, "the eye windows must stay glued"
 prep["mouth_placement"] = {"centre_z": round(Z_MOUTH, 4), "rule": "the removed v2 siphon's centre height (the source mouth "
                                                                    "piece's centre) + MOUTH_DZ, on the midline"}
 prep["seconds"] = round(time.time() - t, 1)
@@ -1337,7 +1421,17 @@ def uz_of(P):
 
 
 def sigil_sdf(P2):
-    """The octopus-superhero sigil (emblem units): a mantle dome + 3 mirrored pairs of curling tentacles."""
+    """The chest emblem (emblem units). v4: the STARFISH (the mask's starfish-arm language, one arm up); the v3 octopus
+    sigil stays behind EMBLEM_STYLE = 'octopus'."""
+    if EMBLEM_STYLE == "starfish":
+        k_ = EMB_STAR_SCALE
+        return starfish_sdf(np.asarray(P2, float) / k_, np.array(EMB_STAR_C) / k_, EMB_STAR_BODY, EMB_STAR_ARMS,
+                            EMB_STAR_SMOOTH) * k_
+    return octopus_sdf(P2)
+
+
+def octopus_sdf(P2):
+    """The v3 octopus-superhero sigil (emblem units): a mantle dome + 3 mirrored pairs of curling tentacles."""
     (cx, cz), (rx, rz) = EMB_DOME
     k_ = np.hypot((P2[:, 0] - cx) / rx, (P2[:, 1] - cz) / rz)
     d = (k_ - 1.0) * min(rx, rz)
@@ -1366,7 +1460,8 @@ zone_mouth = np.zeros(len(fc_), bool)
 fm_ = np.nonzero(mfront_)[0]
 zone_mouth[fm_[np.abs(polyline_sd(np.stack([uzf[fm_, 0], fc_[fm_, 2] - Z_MOUTH], 1), MOUTH_C2)[0]) < MOUTH_BAND]] = True
 zone_head &= ~zone_mouth
-chest_ = (np.abs(fc_[:, 0] - X_MID) < EMBLEM_SIZE * 1.1 + 0.3) & (np.abs(fc_[:, 2] - Z_EMB) < EMBLEM_SIZE * 1.1 + 0.3) & \
+EMB_WIN = EMBLEM_SIZE * (1.1 if EMBLEM_STYLE == "octopus" else 1.1 * EMB_STAR_SCALE + abs(EMB_STAR_C[1])) + 0.3
+chest_ = (np.abs(fc_[:, 0] - X_MID) < EMB_WIN) & (np.abs(fc_[:, 2] - Z_EMB) < EMB_WIN) & \
          (fc_[:, 1] < EMB_C[1] + 1.0)
 zone_emb = np.zeros(len(fc_), bool)
 fe_ = np.nonzero(chest_)[0]
@@ -1424,6 +1519,30 @@ gate_face = (shell_id == 0) & (np.cos(thv) > 0.1) & (fhd > -0.25) & \
 gi_ = np.nonzero(gate_face)[0]
 vis_f = np.full(len(SV), 10.0); vis_f[gi_] = mask_sdf(uzv[gi_]) - VISOR_REGION_PAD
 lens_f = np.full(len(SV), 10.0); lens_f[gi_] = lens_sdf(uzv[gi_])
+
+
+def radial_height(P):
+    """Height of points above the smoothed mantle along the horizontal radial from the head axis (the lift direction)."""
+    out = np.zeros(len(P))
+    for i, p in enumerate(P):
+        th_ = math.atan2(p[0] - HXC, -(p[1] - HYC))
+        d_ = np.array([math.sin(th_), -math.cos(th_), 0.0])
+        hit_ = bvh_head.ray_cast(Vector((HXC, HYC, float(p[2]))) + Vector(d_ * 30.0), Vector(-d_))
+        out[i] = float(np.hypot(p[0] - HXC, p[1] - HYC) - np.hypot(hit_[0][0] - HXC, hit_[0][1] - HYC)) if hit_[0] else 0.0
+    return out
+
+
+FLOAT_FIELD = {}
+if FLOATING:
+    # v4: under a lifted arm the mantle skin has the same (u, z) as the plate above it -> the colour needs the height too.
+    # A vertex is mask when inside the outline AND its radial height is over half the plate underside's design height
+    # (lift - VISOR_EMBED); the -0.03 keeps the glued zone (no gap: no skin under the plate) all mask, as before.
+    lv_ = mask_lift(uzv[gi_])
+    hr_ = radial_height(SV[gi_])
+    tau_h = 0.5 * np.maximum(lv_ - VISOR_EMBED + FLOAT_TIP_THIN * lv_ / FLOAT_TIP_LIFT, 0.0) - 0.03
+    vis_f[gi_] = np.maximum(vis_f[gi_], tau_h - hr_)
+    FLOAT_FIELD = {"rule": "vis = max(mask_sdf - pad, (0.5 x max(lift - EMBED, 0) - 0.03) - radial height above the mantle)",
+                   "gated_vertices": int(len(gi_)), "lifted_vertices_gated": int((lv_ > VISOR_EMBED).sum())}
 # v3 smirk line: signed distance (+ above) to the line in the (u, z - Z_MOUTH) frame, only where the nearest point is
 # interior to the line (the cut stops short of the corners: the lips stay joined there)
 gate_mouth = (shell_id == 0) & (fhd > 0) & (np.cos(thv) > 0.3) & (np.abs(SV[:, 2] - Z_MOUTH) < 0.8) & (np.abs(uzv[:, 0]) < 1.3)
@@ -1751,7 +1870,8 @@ report["region_rule"] = {
     "lens": "inside either lens (the W wing inset by VISOR_FRAME_W; the bridge between them stays frame)",
     "mouth": "ONLY the pocket faces behind the slit (enclosed inside the mantle while the lips are shut: invisible at rest)",
     "belt": "torso faces inside the belt outline (band + two side plates) in the (u = theta x R_W, z) waist frame, + pad",
-    "emblem": "the octopus sigil SDF (mantle dome + 3 mirrored curling tentacle pairs), front projection about EMB_C",
+    "emblem": ("v4: the five-armed starfish SDF (disc + tapered round-tipped arms, one up)" if EMBLEM_STYLE == "starfish" else
+               "the octopus sigil SDF (mantle dome + 3 mirrored curling tentacle pairs)") + ", front projection about EMB_C",
     "arm_tip / leg_tip": "the traced arm / leg tentacle past ARM_TIP_FRAC / LEG_TIP_FRAC of its centreline",
     "cape_under": "cape surface whose smoothed normal faces the body axis more than UNDER_T (the sucker-side lining)",
     "cape_tip": "cape tentacle past CAPE_TIP_FRAC", "membrane": "the built water webs", "membrane_rim": "web rows past WEB_RIM_W"}
@@ -1807,6 +1927,37 @@ if BELT:                                               # belt fit: how far the b
         "standoff_p95": round(float(np.percentile(so_, 95)), 4), "standoff_max": round(float(so_.max()), 4),
         "design_thickness": {"band": BELT_T, "plate_max": PLATE_T},
         "gap_between_belt_and_body": "none by construction (one fused remesh shell)"}
+FREE_V, SKIN_F, PLATE_V = np.zeros(0, dtype=np.int64), [], np.zeros(0, dtype=np.int64)
+if FLOATING:                                           # v4 evidence at rest: the open gap between each arm and the face
+    t = time.time()
+    maskf_ = np.isin(rid, [R_["visor"], R_["lens"]])
+    pv_ = np.unique(np.array([v for fi, f in enumerate(FF) if maskf_[fi] for v in f], dtype=np.int64))
+    SKIN_F = [f for fi, f in enumerate(FF) if fi < nf_c and not fsh[fi] and not maskf_[fi] and rid[fi] != R_["mouth"]]
+    bvh_skin_ = BVHTree.FromPolygons(FV.tolist(), SKIN_F)
+    gap_ = np.array([bvh_skin_.find_nearest(Vector(FV[v]))[3] for v in pv_])
+    uzp_, _ = uz_of(FV[pv_])
+    tp_, ap_ = arm_t(uzp_)
+    arms_rep = {}
+    for k_, (ang_, _, s0_, s1_) in enumerate(LIFT_ARMS):
+        mk_ = ap_ == k_
+        prof_ = {}
+        for tb_ in (0.25, 0.5, 0.75, 1.0):
+            sel_ = mk_ & (np.abs(tp_ - tb_) <= 0.08)
+            prof_["t%.2f" % tb_] = {"design_lift": round(float(FLOAT_TIP_LIFT * tb_ ** FLOAT_LIFT_POW), 4),
+                                    "gap_min": round(float(gap_[sel_].min()), 4) if sel_.any() else None}
+        tip_ = mk_ & (tp_ >= 0.92)
+        arms_rep["arm_%+04d" % int(ang_)] = {"tip_standoff_min": round(float(gap_[tip_].min()), 4) if tip_.any() else None,
+                                              "tip_standoff_max": round(float(gap_[tip_].max()), 4) if tip_.any() else None,
+                                              "gap_profile_along_arm": prof_}
+    FREE_V = pv_[gap_ > FLOAT_GAP_REPORT]; PLATE_V = pv_
+    report["floating_mask"] = {
+        "rule": "mask-plate vertices (visor + lens regions) of the final mesh at rest: distance to the nearest face of the "
+                "rest of the body shell (the mantle skin + everything not mask); t = the arm ramp parameter (0 = glued)",
+        "field": FLOAT_FIELD, "plate_vertices": int(len(pv_)), "free_vertices_gap_gt": [FLOAT_GAP_REPORT, int(len(FREE_V))],
+        "per_arm": arms_rep, "design_tip_gap": round(FLOAT_TIP_LIFT - VISOR_EMBED + FLOAT_TIP_THIN, 4),
+        "seconds": round(time.time() - t, 1)}
+    print("FLOATING", json.dumps(report["floating_mask"]))
+    sys.stdout.flush()
 
 # alignment report: centroids of the placed parts vs the body midline
 def region_centroid(n):
@@ -1883,6 +2034,7 @@ low["conquest_scale_policy"] = "natural proportions, sculpt units; game scales a
 low["conquest_locomotion"] = "upright biped stride on the two leg tentacles; cape tentacles + water webs are secondary motion"
 low["conquest_version"] = VERSION
 low["conquest_mask_style"] = MASK_STYLE
+low["conquest_emblem_style"] = EMBLEM_STYLE
 low["v3_landmarks"] = json.dumps(LMK)
 
 # =========================================================================== v3 'smirk' morph target + the mouth evidence
@@ -2192,7 +2344,7 @@ report["digest_geometry_colour"] = hashlib.sha256(np.round(LVf, 6).astype(np.flo
 DIG["geometry_colour"] = report["digest_geometry_colour"]; DIG["uv"] = report["uv"]["uv_sha"]
 report["final_bbox"] = [LVf.min(0).round(4).tolist(), LVf.max(0).round(4).tolist()]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],
-                     "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses; v3: gold belt (= the sigil), near-black mouth pocket"}
+                     "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses; v3: gold belt (= the sigil), near-black mouth pocket; v4: the gold chest emblem is the starfish"}
 bpy.context.preferences.filepaths.save_version = 0
 if not DIGEST_ONLY:
     set_tex_paths("//textures/")
@@ -2393,6 +2545,8 @@ rep["weights"] = {"max_influences": int(infl.max()), "max_influences_before_cap"
                           "arm/leg/cape vertices = their traced chain, hat weights along the centreline arc, blended from the "
                           "parent (torso weights / chest) over ROOT_BLEND at the chain root; webs = the two side chains at the "
                           "same arc fraction, mixed into the web's own mid chain toward the middle of the gap"}
+if FLOATING:                                           # the floating mask plate must ride the head bone rigidly
+    rep["weights"]["mask_plate_head_weight_min"] = round(float(Wt[PLATE_V, J["head"]].min()), 6)
 low.parent = rig
 low.matrix_parent_inverse = Matrix.Identity(4)
 amod = low.modifiers.new("Armature", "ARMATURE"); amod.object = rig
@@ -2869,10 +3023,17 @@ for cn, N in CLIPS.items():
     flare = 0.0
     arm_torso, arm_arm = None, None
     ctip0 = None
+    fgap = [1e9, None, -1e9]                           # v4 floating mask: min free-plate-to-face gap, its frame, max
     for f in range(1, N + 2):
         scene.frame_set(f)
         C = eval_coords(low)
         samples.append(C[::7])
+        if FLOATING and len(FREE_V):
+            bvh_fs = BVHTree.FromPolygons(C.tolist(), SKIN_F)
+            gf_ = np.array([bvh_fs.find_nearest(Vector(C[v]))[3] for v in FREE_V])
+            if float(gf_.min()) < fgap[0]:
+                fgap[0], fgap[1] = float(gf_.min()), f
+            fgap[2] = max(fgap[2], float(gf_.max()))
         if f == 1:
             first = C
             D1, _ = pose(cn, 0)
@@ -2953,6 +3114,12 @@ for cn, N in CLIPS.items():
            "cape_tip_travel_in_chest_frame_max": round(flare, 4),
            "belt_to_arm_min_gap": round(float(belt_arm), 4) if len(belt_vids) else None,
            "belt_to_cape_or_web_min_gap": round(float(belt_cape), 4) if len(belt_vids) else None}
+    if FLOATING and len(FREE_V):
+        row["floating_mask_clearance"] = {
+            "rule": "every frame of the loop: distance from each FREE mask-plate vertex (rest gap > FLOAT_GAP_REPORT) to the "
+                    "nearest posed non-mask body-shell face (face, head, neck, torso, arms); > 0 = never touches the face",
+            "free_vertices": int(len(FREE_V)), "frames_checked": N + 1,
+            "min_gap": round(fgap[0], 4), "min_gap_frame": fgap[1], "max_gap": round(fgap[2], 4)}
     mw_ = [mouth_w(cn, f / N) for f in range(N + 1)]
     op_ = [f + 1 for f in range(N + 1) if mw_[f] > 1e-6]
     row["smirk"] = {"staging": {"float": FLOAT_SMIRK_T, "idle": IDLE_SMIRK_T, "walk": WALK_SMIRK_T}[cn],
@@ -3029,7 +3196,7 @@ rep["deform_bone_count"] = len(DEFORM)
 rep["landmarks"] = {"hip_z": round(Z_HIP, 4), "neck_z": round(Z_NECK, 4), "neck_ramp_z": [round(NECK_ZA, 4), round(NECK_ZB, 4)],
                     "head_top_z": round(Z_TOP, 4), "leg_tips": {s: TIP[s].round(4).tolist() for s in TIP},
                     "emblem_centre": EMB_C.round(4).tolist(), **LMK}
-rig["conquest_rig"] = ("supaoctto v3: root (contract) > pelvis > spine > chest > head (over the neck); thigh/shin/foot per leg "
+rig["conquest_rig"] = ("supaoctto v4: root (contract) > pelvis > spine > chest > head (over the neck); thigh/shin/foot per leg "
                        "(analytic IK); arm.L/R.0-3; cape_outer/inner.L/R.0-4; web.R/C/L.0-3 (water-web mid chains)")
 low["conquest_clips"] = list(CLIPS)
 low["conquest_clip_status"] = ("idle + walk (confident stride, in place) + float (rise, arms crossed + smirk, cape flare, "

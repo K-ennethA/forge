@@ -1,8 +1,8 @@
-00:01.734  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto__starfish.blend"
-00:05.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_visor.png'
-00:06.703  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_visorfront.png'
-00:07.390  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_facetq.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_visor.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_visorfront.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_starfish_close_facetq.png
+00:01.938  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto__starfish.blend"
+00:05.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_visorfront.png'
+00:06.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_facetq.png'
+00:06.610  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_faceside.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_visorfront.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_facetq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_starfish_close_faceside.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

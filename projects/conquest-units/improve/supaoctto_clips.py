@@ -2,7 +2,7 @@
 survey lighting (key/fill/rim suns + grey world, Standard view transform, dark floor AT z = 0 -- the contract floor).
 In-memory only; never saves the blend.
 
-    blender --background <rigged/supaoctto.blend> --factory-startup --python supaoctto_clips.py -- <out_dir> [res] [prefix]
+    blender --background <rigged/supaoctto.blend> --factory-startup --python supaoctto_clips.py -- <out_dir> [res] [prefix] [tags]
 
 Renders (camera angle measured from the -Y front, like supaoctto_render.py):
     supaoctto_idle.mp4 + _idle_sheet.png           three-quarter front (40 deg), 2 loops
@@ -17,6 +17,7 @@ Renders (camera angle measured from the -Y front, like supaoctto_render.py):
                                                    loop: the smirk opening over the arms-crossed hold
 v3: each clip's action also carries the 'smirk' morph weight (a KEY slot): it is bound with the rig for every job.
 [prefix] replaces the 'supaoctto' file prefix (v2 renders use v2_supaoctto so the v1 files stay for the before/after).
+[tags] (v4) a comma list limiting the jobs to those tags (e.g. float_face for the floating-mask variant's face cam).
 Loops play by adding a CYCLES modifier to every fcurve in memory (the clip's last frame == its first). The camera frames
 the union of the clip's extents and never moves. Contact sheets: 8 evenly spaced frames of one loop, 4x2.
 """
@@ -32,6 +33,7 @@ argv = sys.argv[sys.argv.index("--") + 1:]
 OUT = argv[0]
 RES = int(argv[1]) if len(argv) > 1 else 768
 PREFIX = argv[2] if len(argv) > 2 else None
+ONLY = set(argv[3].split(",")) if len(argv) > 3 else None
 os.makedirs(OUT, exist_ok=True)
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
@@ -195,7 +197,7 @@ JOBS = [("idle", "idle", 40.0, 15.0, 2, True), ("idle", "idle_back", 150.0, 18.0
         ("float", "float", 30.0, 12.0, 1, True), ("float", "float_back", 150.0, 18.0, 1, True),
         ("float", "float_side", 90.0, 6.0, 0, True)]
 for clip, tag, ang, elev, loops, sheet in JOBS:
-    if clip not in CLIPS:
+    if clip not in CLIPS or (ONLY is not None and tag not in ONLY):
         continue
     N = place_camera(clip, ang, elev)
     if loops is None:
@@ -237,7 +239,7 @@ def write_face(clip, tag, angle, elev, fill):
     cam.animation_data_clear()
 
 
-if "float" in CLIPS:
+if "float" in CLIPS and (ONLY is None or "float_face" in ONLY):
     write_face("float", "float_face", 20.0, 4.0, 0.26)
 sys.stdout.flush()
 os._exit(0)

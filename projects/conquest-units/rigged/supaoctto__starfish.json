@@ -1,6 +1,6 @@
 {
  "unit": "supaoctto",
- "version": "v3",
+ "version": "v4",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto__starfish.blend",
  "fps": 24,
  "weights": {
@@ -11,8 +11,8 @@
   "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
    "pelvis": 711,
-   "spine": 1705,
-   "chest": 1362,
+   "spine": 1464,
+   "chest": 1623,
    "head": 3535,
    "thigh.L": 75,
    "shin.L": 104,
@@ -1556,20 +1556,20 @@
  },
  "digest": {
   "parts": {
-   "smirk_key": "fbd4c6fc842b9e9c",
-   "bake_normal": "5390649905c27155",
-   "bake_ao": "f123610de64de6a7",
-   "geometry_colour": "cbbaf41c39a7b08d",
-   "uv": "f6b4cc24eb6fcde2",
-   "weights": "bc4ed55c2c3d5b88",
+   "smirk_key": "d05d76ff89ea9e0b",
+   "bake_normal": "7085ce40ff40446e",
+   "bake_ao": "15b0770775578b34",
+   "geometry_colour": "ffb74754720572aa",
+   "uv": "b1425293dedf94cb",
+   "weights": "f7f344f5af1f0357",
    "keys": "92db58dfa990f579",
-   "clip_samples": "0a4c7eae6d740ebb"
+   "clip_samples": "955fd71c4172c55e"
   },
-  "combined": "4da8500b4d1bc19b"
+  "combined": "ca7f0aa507210f02"
  },
  "glb": {
   "skipped": "tagged alternative build (starfish): renders only, no glb"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto__starfish.json",
- "seconds": 36.8
+ "seconds": 42.7
 }

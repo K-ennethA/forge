@@ -1,6 +1,6 @@
 {
  "unit": "supaoctto",
- "version": "v3",
+ "version": "v4",
  "conquest_character_id": "supaoctto",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-supaoctto.blend",
  "tier": "regular",
@@ -12,6 +12,7 @@
  "overrides": {},
  "tag": null,
  "mask_style": "w",
+ "emblem_style": "starfish",
  "source_parts": {
   "Body": {
    "group": "body",
@@ -228,7 +229,7 @@
    "centre_z": 1.3293,
    "rule": "the removed v2 siphon's centre height (the source mouth piece's centre) + MOUTH_DZ, on the midline"
   },
-  "seconds": 0.7
+  "seconds": 1.0
  },
  "sculpt_fixes": {
   "leg_tip_z_before": {
@@ -397,7 +398,7 @@
   "cape_member_overlap": 0,
   "cape_yoke_vertices": 3772,
   "body_torso_vertices": 15401,
-  "seconds": 0.5
+  "seconds": 0.6
  },
  "belt": {
   "rule": "a band round the waist (bottom edge dipping BELT_DIP at the front centre) + two side plates; each a closed solid BELT_T / PLATE_T proud of the waist, BELT_EMBED into it, fused by the body voxel remesh",
@@ -549,7 +550,7 @@
     ]
    }
   },
-  "seconds": 0.1,
+  "seconds": 0.2,
   "shape": {
    "v_root": 0.0,
    "v_edge": 0.93,
@@ -629,7 +630,7 @@
     "max_move": 0.2519
    }
   },
-  "seconds": 4.9,
+  "seconds": 5.6,
   "low_to_high_distance": {
    "mean": 0.0014,
    "p99": 0.012,
@@ -656,12 +657,12 @@
   "mouth_band": 0.4,
   "faces_selected": {
    "head": 823,
-   "emblem": 92,
+   "emblem": 102,
    "mouth": 27
   },
   "body_shell_tris_before": 9500,
-  "body_shell_tris_after": 13948,
-  "seconds": 0.1
+  "body_shell_tris_after": 14146,
+  "seconds": 0.2
  },
  "fields_seconds": 0.3,
  "iso_cuts": {
@@ -705,8 +706,8 @@
    {
     "field": "emb",
     "tau": 0.0,
-    "edge_splits": 229,
-    "face_connects": 270
+    "edge_splits": 150,
+    "face_connects": 174
    },
    {
     "field": "under",
@@ -727,7 +728,7 @@
     "face_connects": 206
    }
   ],
-  "seconds": 10.2,
+  "seconds": 11.3,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fhd=0.000": 0,
@@ -763,7 +764,7 @@
    "winding_inconsistent_edges": 0,
    "slit_length_3d": 0.9123,
    "corner_to_corner_3d": 0.8485,
-   "seconds": 0.3
+   "seconds": 0.39
   },
   "morph_target": {
    "name": "smirk",
@@ -874,10 +875,10 @@
    "zone_vertices": 145,
    "control_vertices": 139,
    "baked_normal_deviation_from_flat": {
-    "slit_faces_mean": 0.0134,
-    "slit_faces_p95": 0.0281,
-    "mouth_zone_faces_mean": 0.0115,
-    "mouth_zone_faces_p95": 0.0237,
+    "slit_faces_mean": 0.0122,
+    "slit_faces_p95": 0.0234,
+    "mouth_zone_faces_mean": 0.0119,
+    "mouth_zone_faces_p95": 0.0292,
     "slit_faces": 34,
     "zone_faces": 174
    }
@@ -1004,12 +1005,12 @@
   ],
   "depth": 0.16,
   "why_invisible_when_closed": "the dark 'mouth' colour is painted ONLY on the pocket faces, which sit behind the lips inside the mantle; at rest the two lips are duplicate vertices at identical positions (identical skin weights too), so the mantle surface is watertight and unchanged and the pocket is enclosed: no crease, no colour patch. The morph target is 0 at rest.",
-  "seconds": 2.3,
+  "seconds": 2.9,
   "bake_sharp_lip_edges": 34
  },
- "tris_final": 21976,
+ "tris_final": 22016,
  "tris_breakdown": {
-  "body_shell_and_cape_shell_after_cuts": 19936,
+  "body_shell_and_cape_shell_after_cuts": 19976,
   "webs": 2040
  },
  "tris_v1": {
@@ -1028,7 +1029,7 @@
   "lens": "inside either lens (the W wing inset by VISOR_FRAME_W; the bridge between them stays frame)",
   "mouth": "ONLY the pocket faces behind the slit (enclosed inside the mantle while the lips are shut: invisible at rest)",
   "belt": "torso faces inside the belt outline (band + two side plates) in the (u = theta x R_W, z) waist frame, + pad",
-  "emblem": "the octopus sigil SDF (mantle dome + 3 mirrored curling tentacle pairs), front projection about EMB_C",
+  "emblem": "v4: the five-armed starfish SDF (disc + tapered round-tipped arms, one up), front projection about EMB_C",
   "arm_tip / leg_tip": "the traced arm / leg tentacle past ARM_TIP_FRAC / LEG_TIP_FRAC of its centreline",
   "cape_under": "cape surface whose smoothed normal faces the body axis more than UNDER_T (the sucker-side lining)",
   "cape_tip": "cape tentacle past CAPE_TIP_FRAC",
@@ -1036,7 +1037,7 @@
   "membrane_rim": "web rows past WEB_RIM_W"
  },
  "regions_faces": {
-  "skin": 6852,
+  "skin": 6892,
   "head": 3212,
   "arm_tip": 479,
   "leg_tip": 303,
@@ -1064,13 +1065,13 @@
   ],
   "shade_std_body": 0.0622
  },
- "cavity_seconds": 1.2,
+ "cavity_seconds": 1.5,
  "regions_area_share": {
-  "skin": 0.1795,
+  "skin": 0.1791,
   "head": 0.1022,
   "arm_tip": 0.011,
   "leg_tip": 0.0046,
-  "emblem": 0.0023,
+  "emblem": 0.0027,
   "belt": 0.0138,
   "visor": 0.0046,
   "lens": 0.0019,
@@ -1087,7 +1088,7 @@
   "lens_centroid_x_offset": -0.005,
   "mouth_pocket_centroid_x_offset": 0.0307,
   "belt_centroid_x_offset": 0.007,
-  "emblem_centroid_x_offset": -0.0002,
+  "emblem_centroid_x_offset": 0.0007,
   "emblem_centre": [
    0.0010999999940395355,
    -2.9010000228881836,
@@ -1157,80 +1158,80 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.4
+   "seconds": 0.3
   },
-  "uv_texels_normal": 462361,
-  "uv_coverage": 0.4409,
+  "uv_texels_normal": 428743,
+  "uv_coverage": 0.4089,
   "web_texels_reset_flat": {
-   "normal": 191097,
-   "ao": 47829
+   "normal": 177469,
+   "ao": 44340
   },
-  "normal_baked_pct_of_sculpt_uv_texels": 99.98,
-  "normal_detail_fraction_dev_gt_0.05": 0.1602,
+  "normal_baked_pct_of_sculpt_uv_texels": 99.99,
+  "normal_detail_fraction_dev_gt_0.05": 0.1603,
   "normal_dev_mean": 0.0324,
   "ao_baked_pct_of_sculpt_uv_texels": 100.0,
   "ao_mean": 0.7977,
   "ao_p05": 0.0,
   "per_region_normal": {
    "skin": {
-    "texels": 80545,
+    "texels": 75209,
     "baked_pct": 99.98,
-    "normal_dev_mean": 0.0315
+    "normal_dev_mean": 0.0316
    },
    "head": {
-    "texels": 45734,
+    "texels": 42239,
     "baked_pct": 100.0,
     "normal_dev_mean": 0.0114
    },
    "arm_tip": {
-    "texels": 4775,
+    "texels": 4410,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.045
+    "normal_dev_mean": 0.0424
    },
    "leg_tip": {
-    "texels": 2183,
+    "texels": 2031,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0563
+    "normal_dev_mean": 0.0549
    },
    "emblem": {
-    "texels": 1167,
+    "texels": 1276,
     "baked_pct": 100.0,
     "normal_dev_mean": 0.0098
    },
    "belt": {
-    "texels": 5886,
+    "texels": 5470,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0881
+    "normal_dev_mean": 0.0869
    },
    "visor": {
-    "texels": 2047,
+    "texels": 1913,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1016
+    "normal_dev_mean": 0.1011
    },
    "lens": {
-    "texels": 878,
+    "texels": 826,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0427
+    "normal_dev_mean": 0.043
    },
    "cape": {
-    "texels": 79383,
-    "baked_pct": 99.96,
-    "normal_dev_mean": 0.0361
+    "texels": 73541,
+    "baked_pct": 99.97,
+    "normal_dev_mean": 0.036
    },
    "cape_under": {
-    "texels": 40189,
+    "texels": 36543,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0334
+    "normal_dev_mean": 0.0338
    },
    "cape_tip": {
-    "texels": 8496,
+    "texels": 7842,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.048
+    "normal_dev_mean": 0.0488
    }
   },
   "pixel_sha": {
-   "normal": "1ba992e34bd2f326",
-   "ao": "6e566e70319ec3f8"
+   "normal": "b9949b2e4182499e",
+   "ao": "085e8c9defbcd6de"
   },
   "cage_extrusion": 0.08,
   "resolution": {
@@ -1239,16 +1240,16 @@
   },
   "high_tris": 456280,
   "high": "the remeshed (smoothed, mask/neck/belt-fused) shells; the mouth pocket texels are reset flat like the webs",
-  "seconds": 4.6
+  "seconds": 5.4
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 21976,
+  "faces": 22016,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "81b19228dba676fb"
+  "uv_sha": "845aa7f575b8c626"
  },
- "digest_geometry_colour": "de39acf097231ac7",
+ "digest_geometry_colour": "1595c71fa98e17bc",
  "final_bbox": [
   [
    -10.3715,
@@ -1383,6 +1384,6 @@
   "files": [
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\supaoctto\\default.json"
   ],
-  "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses; v3: gold belt (= the sigil), near-black mouth pocket"
+  "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses; v3: gold belt (= the sigil), near-black mouth pocket; v4: the gold chest emblem is the starfish"
  }
 }

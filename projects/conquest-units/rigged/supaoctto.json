@@ -1,6 +1,6 @@
 {
  "unit": "supaoctto",
- "version": "v3",
+ "version": "v4",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.blend",
  "fps": 24,
  "weights": {
@@ -11,8 +11,8 @@
   "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
    "pelvis": 714,
-   "spine": 1706,
-   "chest": 1362,
+   "spine": 1465,
+   "chest": 1623,
    "head": 3241,
    "thigh.L": 75,
    "shin.L": 104,
@@ -1556,22 +1556,22 @@
  },
  "digest": {
   "parts": {
-   "smirk_key": "7fee4ee06d3884de",
-   "bake_normal": "1ba992e34bd2f326",
-   "bake_ao": "6e566e70319ec3f8",
-   "geometry_colour": "de39acf097231ac7",
-   "uv": "81b19228dba676fb",
-   "weights": "9ff5f1d1b4e0e6fa",
+   "smirk_key": "41205d4ba6d487a2",
+   "bake_normal": "b9949b2e4182499e",
+   "bake_ao": "085e8c9defbcd6de",
+   "geometry_colour": "1595c71fa98e17bc",
+   "uv": "845aa7f575b8c626",
+   "weights": "7f32ba84f748004b",
    "keys": "0589c48b2c6df67c",
-   "clip_samples": "039edbaf1c4ce4f8"
+   "clip_samples": "3006091d8cc337f7"
   },
-  "combined": "aa77eb5387ce61b1"
+  "combined": "5895c9fe36813f54"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\supaoctto.glb",
-  "bytes": 6405668,
-  "seconds": 1.5,
-  "sha256_16": "4e270c82aede4182",
+  "bytes": 6328200,
+  "seconds": 1.7,
+  "sha256_16": "04e911852d73aba9",
   "carries": {
    "morph_targets_per_primitive": [
     1
@@ -1665,5 +1665,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.json",
- "seconds": 36.1
+ "seconds": 41.1
 }

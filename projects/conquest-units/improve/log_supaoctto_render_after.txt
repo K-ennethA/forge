@@ -1,14 +1,14 @@
-00:01.750  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
-00:05.750  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_front.png'
-00:06.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_threequarter.png'
-00:07.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_tactical.png'
-00:07.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_side.png'
-00:07.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_back.png'
-00:08.140  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_cape.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_threequarter.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_tactical.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_side.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_back.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_cape.png
+00:01.844  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
+00:05.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_front.png'
+00:05.782  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_threequarter.png'
+00:06.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_tactical.png'
+00:06.704  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_side.png'
+00:07.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_back.png'
+00:07.469  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_cape.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_tactical.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v4_supaoctto_cape.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
