@@ -1,0 +1,7 @@
+00:01.766  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
+00:05.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_beltorange_front.png'
+00:06.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_beltorange_threequarter.png'
+SKIN belt_orange {'supaoctto': {'skin': 6852, 'head': 3212, 'arm_tip': 479, 'leg_tip': 303, 'emblem': 818, 'belt': 854, 'visor': 2604, 'lens': 416, 'mouth': 64, 'cape': 2542, 'cape_under': 1357, 'cape_tip': 435, 'membrane': 1884, 'membrane_rim': 156}}
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_beltorange_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_beltorange_threequarter.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

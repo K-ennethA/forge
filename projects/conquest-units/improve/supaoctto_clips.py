@@ -13,11 +13,14 @@ Renders (camera angle measured from the -Y front, like supaoctto_render.py):
     supaoctto_float.mp4 + _float_sheet.png         three-quarter front (30 deg): rise, arms cross, hover, land (1 loop)
     supaoctto_float_back.mp4 + _float_back_sheet   three-quarter BACK (150 deg): the cape flare + web ripple (1 loop)
     supaoctto_float_side_sheet.png                 side (90 deg)
+    supaoctto_float_face.mp4 + _float_face_sheet   v3: a FACE camera that follows the head (translation only, 20 deg), 1
+                                                   loop: the smirk opening over the arms-crossed hold
+v3: each clip's action also carries the 'smirk' morph weight (a KEY slot): it is bound with the rig for every job.
 [prefix] replaces the 'supaoctto' file prefix (v2 renders use v2_supaoctto so the v1 files stay for the before/after).
 Loops play by adding a CYCLES modifier to every fcurve in memory (the clip's last frame == its first). The camera frames
 the union of the clip's extents and never moves. Contact sheets: 8 evenly spaced frames of one loop, 4x2.
 """
-import bpy, sys, os, math, glob
+import bpy, sys, os, math, glob, json
 import numpy as np
 from mathutils import Vector
 
@@ -101,10 +104,19 @@ def extents(n_frames):
     return lo, hi
 
 
+KEYS = mesh.data.shape_keys
+
+
+def bind(act):
+    K.assign_action(rig, act)
+    if KEYS is not None:
+        K.assign_action(KEYS, act if any(s_.target_id_type == "KEY" for s_ in act.slots) else None)
+
+
 def place_camera(clip, angle, elev):
     global floor_built
     act = bpy.data.actions[clip]
-    K.assign_action(rig, act)
+    bind(act)
     N = int(round(act.frame_range[1] - act.frame_range[0]))
     lo, hi = extents(N)
     lo.z = min(lo.z, 0.0)
@@ -192,5 +204,40 @@ for clip, tag, ang, elev, loops, sheet in JOBS:
         write_mp4(clip, N, tag, loops)
     if sheet:
         write_sheet(clip, N, tag)
+
+
+def write_face(clip, tag, angle, elev, fill):
+    """v3: the camera follows the face (the head bone carries the rest-pose face landmark), orientation fixed."""
+    LMv = {}
+    for key_ in ("v3_landmarks", "v2_landmarks"):
+        if key_ in mesh.keys() and not LMv:
+            LMv = json.loads(mesh[key_])
+    if not LMv or "mouth" not in LMv:
+        print("SKIP face cam: no v3 landmarks"); return
+    act = bpy.data.actions[clip]
+    bind(act)
+    N = int(round(act.frame_range[1] - act.frame_range[0]))
+    face_rest = (Vector(LMv["visor"]) * 0.45 + Vector(LMv["mouth"]) * 0.55)
+    pbh = rig.pose.bones["head"]; bh = rig.data.bones["head"]
+    a, e = math.radians(angle), math.radians(elev)
+    d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+    scene.frame_set(1)
+    lo_, hi_ = extents(1)
+    dist = max((hi_ - lo_).length / 2, 1e-3) / math.sin(half_fov) * fill
+    cam.animation_data_clear()
+    for f in range(1, N + 2):
+        scene.frame_set(f)
+        M = rig.matrix_world @ pbh.matrix @ bh.matrix_local.inverted()
+        tgt = M @ face_rest
+        cam.location = tgt + d * dist
+        cam.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+        cam.keyframe_insert("location", frame=f); cam.keyframe_insert("rotation_euler", frame=f)
+    write_mp4(clip, N, tag, 1)
+    write_sheet(clip, N, tag)
+    cam.animation_data_clear()
+
+
+if "float" in CLIPS:
+    write_face("float", "float_face", 20.0, 4.0, 0.26)
 sys.stdout.flush()
 os._exit(0)

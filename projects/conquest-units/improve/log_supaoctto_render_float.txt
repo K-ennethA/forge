@@ -1,10 +1,8 @@
-00:01.172  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
-00:03.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_front.png'
-00:04.313  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_threequarter.png'
-00:04.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_side.png'
-00:05.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_back.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_threequarter.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_side.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v2_supaoctto_float_crossed_back.png
+00:01.687  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
+00:05.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_front.png'
+00:06.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_threequarter.png'
+00:07.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_side.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_threequarter.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_float_crossed_side.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

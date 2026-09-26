@@ -1,0 +1,11 @@
+00:01.719  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
+00:05.656  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_mouth.png'
+00:06.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_mouthside.png'
+00:06.797  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_face.png'
+00:07.453  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_facetq.png'
+KEY supaoctto smirk 1
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_mouth.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_mouthside.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\supaoctto\v3_supaoctto_open_facetq.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

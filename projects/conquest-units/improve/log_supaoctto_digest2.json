@@ -1,16 +1,17 @@
 {
  "digest": {
   "parts": {
-   "bake_normal": "c95c492e6630f823",
-   "bake_ao": "2e412de9aa126b09",
-   "geometry_colour": "3263ded3fb157aa5",
-   "uv": "ba7af42fbfba790c",
-   "weights": "19acaa7c6f0b1554",
-   "keys": "ca9553ac97b44eac",
-   "clip_samples": "3689d270427571db"
+   "smirk_key": "7fee4ee06d3884de",
+   "bake_normal": "1ba992e34bd2f326",
+   "bake_ao": "6e566e70319ec3f8",
+   "geometry_colour": "de39acf097231ac7",
+   "uv": "81b19228dba676fb",
+   "weights": "9ff5f1d1b4e0e6fa",
+   "keys": "0589c48b2c6df67c",
+   "clip_samples": "039edbaf1c4ce4f8"
   },
-  "combined": "25894ab6800122ff"
+  "combined": "aa77eb5387ce61b1"
  },
- "tris_final": 21640,
- "seconds": 27.4
+ "tris_final": 21976,
+ "seconds": 34.3
 }

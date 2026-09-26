@@ -2,13 +2,16 @@
 touches another lane's file). In-memory only; never saves.
 
     blender --background <blend> --factory-startup --python supaoctto_render.py -- <out_prefix> [views] [--yaw <deg>]
-            [--pose <clip>:<frame>] [--skin <palette skin>]
+            [--pose <clip>:<frame>] [--skin <palette skin>] [--key <shape key>=<value>]
 
 views: comma list of front, threequarter, tactical, side, back, cape (the cape + water-web close-up: from behind, above),
        front_yaw (front camera; the facing-candidate rows use it with --yaw).
 --yaw: rotate every root object about Z in memory (the facing-candidate renders of the raw sculpt use 0 / 90 / 180 / 270).
 --pose: evaluate a rigged blend at one frame of a clip (default: the rest pose).
 --skin: repaint the stored colour regions from palettes/supaoctto/<skin>.json in memory (the skin-swap proof).
+--key: set a shape key's value in memory (v3: --key smirk=1 shows the mouth open on the rest pose; default 0 = shut).
+v3 close-ups (landmarks from the mesh prop v3_landmarks): visor, face, mouth, mouthside, neck, emblem, belt, beltside, capefull.
+--pose also binds the clip's KEY slot (the smirk weight rides every clip's action).
 The floor sits at z = 0 (the contract floor), or under the lowest vertex for a raw sculpt below it.
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X, back = on +Y.
 """
@@ -37,11 +40,21 @@ for o in scene.objects:
     if o.type == "ARMATURE":
         if pose:
             clip, fr = pose.split(":")
-            K.assign_action(o, bpy.data.actions[clip])
+            act = bpy.data.actions[clip]
+            K.assign_action(o, act)
+            for m_ in scene.objects:
+                if m_.type == "MESH" and m_.data.shape_keys is not None and any(s_.target_id_type == "KEY" for s_ in act.slots):
+                    K.assign_action(m_.data.shape_keys, act)
             o.data.pose_position = "POSE"
             scene.frame_set(int(fr))
         else:
             o.data.pose_position = "REST"
+if "--key" in argv:
+    kn_, kv_ = argv[argv.index("--key") + 1].split("=")
+    for m_ in scene.objects:
+        if m_.type == "MESH" and m_.data.shape_keys is not None and kn_ in m_.data.shape_keys.key_blocks:
+            m_.data.shape_keys.key_blocks[kn_].value = float(kv_)
+            print("KEY", m_.name, kn_, kv_)
 for o in list(scene.objects):
     if o.type in ("CAMERA", "LIGHT"):
         bpy.data.objects.remove(o, do_unlink=True)
@@ -118,22 +131,32 @@ cape_target = Vector((centre.x, centre.y + 0.15 * size.y, lo.z + 0.62 * size.z))
 table = {"front": (0.0, 5.0, 1024, 1.0, None), "threequarter": (40.0, 15.0, 1024, 1.0, None), "tactical": (40.0, 55.0, 256, 1.6, None),
          "side": (90.0, 5.0, 1024, 1.0, None), "back": (180.0, 5.0, 1024, 1.0, None),
          "cape": (152.0, 24.0, 1024, 0.62, cape_target), "front_yaw": (0.0, 5.0, 768, 1.0, None)}
-# v2 close-ups: targets from the build's landmarks (mesh custom prop v2_landmarks, final frame, rest pose)
+# close-ups: targets from the build's landmarks (mesh custom prop v3_landmarks, final frame, rest pose)
 LM = {}
 for o in meshes:
-    if "v2_landmarks" in o.keys():
-        import json as _json
-        LM = {k: Vector(v) for k, v in _json.loads(o["v2_landmarks"]).items() if isinstance(v, list)}
+    for key_ in ("v3_landmarks", "v2_landmarks"):
+        if key_ in o.keys() and not LM:
+            import json as _json
+            LM = {k: Vector(v) for k, v in _json.loads(o[key_]).items() if isinstance(v, list)}
 if LM:
     nk = LM["neck"]
+    mo = LM.get("mouth", LM.get("siphon"))
     table.update({
         "visor": (18.0, 6.0, 1024, 0.20, LM["visor"]),
-        "face": (0.0, 3.0, 1024, 0.30, (LM["visor"] + LM["siphon"]) / 2),
-        "siphon": (12.0, -4.0, 1024, 0.075, LM["siphon"]),
+        "visorfront": (0.0, 4.0, 1024, 0.22, LM["visor"] + Vector((0.0, 0.0, 0.25))),
+        "face": (0.0, 3.0, 1024, 0.30, (LM["visor"] + mo) / 2),
+        "facetq": (35.0, 6.0, 1024, 0.32, (LM["visor"] + mo) / 2),
+        "mouth": (0.0, 0.0, 1024, 0.075, mo),
+        "mouthside": (30.0, 4.0, 1024, 0.09, mo),
+        "siphon": (12.0, -4.0, 1024, 0.075, mo),
         "emblem": (8.0, 4.0, 1024, 0.13, LM["emblem"]),
         "neck": (62.0, 4.0, 1024, 0.34, Vector((nk.x, nk.y, nk.z + 1.6))),
         "capefull": (160.0, 10.0, 1024, 0.92, Vector((centre.x, centre.y, lo.z + 0.5 * size.z))),
     })
+    if "belt" in LM:
+        bl = LM["belt"]
+        table.update({"belt": (0.0, 6.0, 1024, 0.26, Vector((bl.x, bl.y, bl.z + 0.3))),
+                      "beltside": (60.0, 8.0, 1024, 0.28, Vector((bl.x, bl.y + 1.2, bl.z + 0.3)))})
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     if tag not in table:

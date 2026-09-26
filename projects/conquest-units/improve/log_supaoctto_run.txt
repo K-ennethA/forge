@@ -1,17 +1,25 @@
-﻿build exit=0 wall_s=30
+﻿build exit=0 wall_s=37.6
 digest twin exit=0
-DIGEST build=25894ab6800122ff twin=25894ab6800122ff identical=True
+starfish build exit=0 wall_s=38.3
+DIGEST build=aa77eb5387ce61b1 twin=aa77eb5387ce61b1 identical=True
 skin exit=0
 check_improved exit=1
 check_rigged exit=1
+check_starfish exit=1
 render_after exit=0
 render_variant exit=0
 render_close exit=0
+render_open exit=0
+render_orange exit=0
+render_orange_c exit=0
+render_star exit=0
+render_star_c exit=0
 render_float exit=0
 render_rest exit=0
 clips_mp4 exit=0
 before_after exit=0
 check_improved : 7 checks, 1 failed
 check_rigged : 11 checks, 1 failed
-total wall_s=114.7
+check_starfish : 11 checks, 1 failed
+total wall_s=135.7
 ALL DONE

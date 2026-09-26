@@ -1,6 +1,6 @@
 {
  "unit": "supaoctto",
- "version": "v2",
+ "version": "v3",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.blend",
  "fps": 24,
  "weights": {
@@ -10,24 +10,24 @@
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
-   "pelvis": 515,
-   "spine": 1506,
-   "chest": 1407,
-   "head": 3353,
-   "thigh.L": 84,
-   "shin.L": 106,
-   "foot.L": 62,
-   "thigh.R": 68,
-   "shin.R": 98,
-   "foot.R": 60,
-   "arm.L.0": 33,
-   "arm.L.1": 117,
-   "arm.L.2": 139,
-   "arm.L.3": 158,
-   "arm.R.0": 41,
-   "arm.R.1": 119,
-   "arm.R.2": 144,
-   "arm.R.3": 182,
+   "pelvis": 714,
+   "spine": 1706,
+   "chest": 1362,
+   "head": 3241,
+   "thigh.L": 75,
+   "shin.L": 104,
+   "foot.L": 56,
+   "thigh.R": 63,
+   "shin.R": 92,
+   "foot.R": 57,
+   "arm.L.0": 30,
+   "arm.L.1": 111,
+   "arm.L.2": 135,
+   "arm.L.3": 155,
+   "arm.R.0": 36,
+   "arm.R.1": 114,
+   "arm.R.2": 136,
+   "arm.R.3": 173,
    "cape_outer.R.0": 90,
    "cape_outer.R.1": 112,
    "cape_outer.R.2": 102,
@@ -63,19 +63,19 @@
   },
   "chains": {
    "arm.L": {
-    "members": 504,
+    "members": 484,
     "root_blend_from_s": 0.9498
    },
    "leg.L": {
-    "members": 300,
-    "root_blend_from_s": 0.5458
+    "members": 280,
+    "root_blend_from_s": 0.5483
    },
    "arm.R": {
-    "members": 551,
-    "root_blend_from_s": 0.9464
+    "members": 520,
+    "root_blend_from_s": 0.9938
    },
    "leg.R": {
-    "members": 277,
+    "members": 263,
     "root_blend_from_s": 0.6492
    },
    "cape_outer.R": {
@@ -199,8 +199,8 @@
     "web.L.2": 4.898,
     "web.L.3": 6.419
    },
-   "arm_to_web_min_gap": 0.9953,
-   "leg_to_web_min_gap": 2.4176,
+   "arm_to_web_min_gap": 0.9327,
+   "leg_to_web_min_gap": 2.4155,
    "web_edge_stretch_range": [
     0.6776,
     1.5191
@@ -223,6 +223,21 @@
     "rest_len": 0.6571
    },
    "cape_tip_travel_in_chest_frame_max": 1.5403,
+   "belt_to_arm_min_gap": 0.7247,
+   "belt_to_cape_or_web_min_gap": 1.0644,
+   "smirk": {
+    "staging": null,
+    "weight_range": [
+     0.0,
+     0.0
+    ],
+    "open_frames": null,
+    "fully_open_frames": null,
+    "weight_at_loop_ends": [
+     0.0,
+     0.0
+    ]
+   },
    "stance_tip_z_range": {
     "L": [
      0.00345,
@@ -323,8 +338,8 @@
     "web.L.2": 4.328,
     "web.L.3": 5.359
    },
-   "arm_to_web_min_gap": 0.4788,
-   "leg_to_web_min_gap": 2.5318,
+   "arm_to_web_min_gap": 0.3482,
+   "leg_to_web_min_gap": 2.5291,
    "web_edge_stretch_range": [
     0.7488,
     1.4522
@@ -347,6 +362,21 @@
     "rest_len": 0.6571
    },
    "cape_tip_travel_in_chest_frame_max": 1.1736,
+   "belt_to_arm_min_gap": 0.7244,
+   "belt_to_cape_or_web_min_gap": 1.0452,
+   "smirk": {
+    "staging": null,
+    "weight_range": [
+     0.0,
+     0.0
+    ],
+    "open_frames": null,
+    "fully_open_frames": null,
+    "weight_at_loop_ends": [
+     0.0,
+     0.0
+    ]
+   },
    "gait": {
     "L": {
      "tip_y_touchdown": -2.4653,
@@ -425,12 +455,12 @@
     "R": 0.0
    },
    "mean_bone_amplitude_deg": {
-    "arm": 22.236,
+    "arm": 22.077,
     "leg": 13.693,
     "cape": 2.85,
     "web": 4.935
    },
-   "cape_vs_arm_ratio": 0.128,
+   "cape_vs_arm_ratio": 0.129,
    "cape_vs_leg_ratio": 0.208,
    "per_bone_amplitude_deg": {
     "pelvis": 0.0,
@@ -443,14 +473,14 @@
     "thigh.R": 12.141,
     "shin.R": 17.974,
     "foot.R": 10.0,
-    "arm.L.0": 45.13,
-    "arm.L.1": 18.722,
-    "arm.L.2": 21.812,
-    "arm.L.3": 6.83,
-    "arm.R.0": 26.938,
-    "arm.R.1": 22.688,
-    "arm.R.2": 24.21,
-    "arm.R.3": 11.56,
+    "arm.L.0": 44.767,
+    "arm.L.1": 19.256,
+    "arm.L.2": 21.566,
+    "arm.L.3": 6.217,
+    "arm.R.0": 26.5,
+    "arm.R.1": 23.374,
+    "arm.R.2": 24.01,
+    "arm.R.3": 10.924,
     "cape_outer.R.0": 1.337,
     "cape_outer.R.1": 2.048,
     "cape_outer.R.2": 2.849,
@@ -484,8 +514,8 @@
     "web.L.2": 5.815,
     "web.L.3": 6.592
    },
-   "arm_to_web_min_gap": 0.9866,
-   "leg_to_web_min_gap": 2.3364,
+   "arm_to_web_min_gap": 0.8911,
+   "leg_to_web_min_gap": 2.3334,
    "web_edge_stretch_range": [
     0.8299,
     1.8405
@@ -508,6 +538,32 @@
     "rest_len": 0.6571
    },
    "cape_tip_travel_in_chest_frame_max": 2.7597,
+   "belt_to_arm_min_gap": 0.725,
+   "belt_to_cape_or_web_min_gap": 1.0316,
+   "smirk": {
+    "staging": [
+     0.35,
+     0.4,
+     0.57,
+     0.62
+    ],
+    "weight_range": [
+     0.0,
+     1.0
+    ],
+    "open_frames": [
+     44,
+     75
+    ],
+    "fully_open_frames": [
+     49,
+     69
+    ],
+    "weight_at_loop_ends": [
+     0.0,
+     0.0
+    ]
+   },
    "stance_tip_z_range": {
     "L": [
      0.00345,
@@ -554,10 +610,10 @@
     },
     "crossed_pose_frame": 59,
     "forearm_ahead_of_belly_min_gap_at_crossed": {
-     "L": 1.4039,
-     "R": 1.0131
+     "L": 1.408,
+     "R": 0.8838
     },
-    "arm_L_to_arm_R_min_at_crossed": 0.0238,
+    "arm_L_to_arm_R_min_at_crossed": 0.0152,
     "cape_flare_tip_travel_max_units": 2.7597,
     "cape_flare_tip_travel_x_height": 0.1286,
     "cross": {
@@ -569,34 +625,34 @@
         11.1
        ],
        [
-        2.806,
-        -2.716,
-        11.087
+        2.849,
+        -2.714,
+        11.088
        ],
        [
-        1.822,
-        -4.337,
-        10.509
+        1.858,
+        -4.332,
+        10.511
        ],
        [
-        -0.11,
-        -4.509,
-        10.254
+        -0.075,
+        -4.506,
+        10.257
        ],
        [
-        -1.893,
-        -4.291,
+        -1.864,
+        -4.344,
         10.213
        ]
       ],
       "bone_angles_deg": [
-       90.26,
-       37.44,
-       43.62,
-       13.66
+       89.53,
+       38.51,
+       43.13,
+       12.43
       ],
       "forearm_height": 10.262,
-      "forearm_y": -4.455
+      "forearm_y": -4.454
      },
      "R": {
       "joints": [
@@ -606,39 +662,39 @@
         11.286
        ],
        [
-        -2.958,
-        -2.244,
-        10.122
+        -3.005,
+        -2.235,
+        10.126
        ],
        [
-        -1.76,
-        -3.81,
-        9.485
+        -1.804,
+        -3.799,
+        9.489
        ],
        [
-        0.275,
-        -3.918,
-        9.245
+        0.231,
+        -3.914,
+        9.247
        ],
        [
-        2.088,
-        -3.603,
-        9.216
+        2.051,
+        -3.655,
+        9.215
        ]
       ],
       "bone_angles_deg": [
-       53.88,
-       45.38,
-       48.42,
-       23.12
+       53.0,
+       46.75,
+       48.02,
+       21.85
       ],
       "forearm_height": 9.262,
-      "forearm_y": -3.855
+      "forearm_y": -3.854
      },
      "torso": {
       "cross_z": 9.762,
-      "front_y": -2.753,
-      "half_width": 2.42,
+      "front_y": -2.752,
+      "half_width": 2.462,
       "arm_radius": 0.802
      }
     }
@@ -661,7 +717,7 @@
    "web": 3.843
   },
   "float": {
-   "arm": 22.236,
+   "arm": 22.077,
    "leg": 13.693,
    "cape": 2.85,
    "web": 4.935
@@ -669,7 +725,7 @@
   "cape_vs_arm": {
    "idle": 0.272,
    "walk": 0.133,
-   "float": 0.128
+   "float": 0.129
   }
  },
  "bones": [
@@ -863,9 +919,9 @@
     6.4109
    ],
    "tail": [
-    -7.2519,
-    -2.48,
-    5.3802
+    -7.252,
+    -2.4788,
+    5.382
    ]
   },
   {
@@ -1467,19 +1523,19 @@
    11.474699974060059
   ],
   "visor": [
-   0.0047,
-   -3.4252,
-   17.8472
+   0.0036,
+   -3.425,
+   17.8476
   ],
   "emblem": [
    0.0010999999940395355,
    -2.9010000228881836,
    11.474699974060059
   ],
-  "siphon": [
-   0.0023,
-   -3.0867,
-   16.2581
+  "mouth": [
+   0.0085,
+   -3.211,
+   16.2333
   ],
   "neck": [
    0.0011,
@@ -1491,26 +1547,123 @@
    -1.1539,
    17.7949
   ],
-  "neck_bottom_z": 14.039
+  "neck_bottom_z": 14.039,
+  "belt": [
+   0.0011,
+   -2.599,
+   8.9059
+  ]
  },
  "digest": {
   "parts": {
-   "bake_normal": "c95c492e6630f823",
-   "bake_ao": "2e412de9aa126b09",
-   "geometry_colour": "3263ded3fb157aa5",
-   "uv": "ba7af42fbfba790c",
-   "weights": "19acaa7c6f0b1554",
-   "keys": "ca9553ac97b44eac",
-   "clip_samples": "3689d270427571db"
+   "smirk_key": "7fee4ee06d3884de",
+   "bake_normal": "1ba992e34bd2f326",
+   "bake_ao": "6e566e70319ec3f8",
+   "geometry_colour": "de39acf097231ac7",
+   "uv": "81b19228dba676fb",
+   "weights": "9ff5f1d1b4e0e6fa",
+   "keys": "0589c48b2c6df67c",
+   "clip_samples": "039edbaf1c4ce4f8"
   },
-  "combined": "25894ab6800122ff"
+  "combined": "aa77eb5387ce61b1"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\supaoctto.glb",
-  "bytes": 6048516,
-  "seconds": 1.1,
-  "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.08390 reaches the regular cell (report-only)"
+  "bytes": 6405668,
+  "seconds": 1.5,
+  "sha256_16": "4e270c82aede4182",
+  "carries": {
+   "morph_targets_per_primitive": [
+    1
+   ],
+   "morph_target_names": [
+    [
+     "smirk"
+    ]
+   ],
+   "default_weights": [
+    [
+     0
+    ]
+   ],
+   "animations": [
+    {
+     "name": "float",
+     "channels": 154,
+     "weights_channels": [
+      {
+       "node": "supaoctto",
+       "values": 121,
+       "max": 1.0,
+       "min": 0.0,
+       "seconds_above_half": [
+        1.958,
+        3.0
+       ]
+      }
+     ]
+    },
+    {
+     "name": "idle",
+     "channels": 154,
+     "weights_channels": [
+      {
+       "node": "supaoctto",
+       "values": 2,
+       "max": 0.0,
+       "min": 0.0,
+       "seconds_above_half": null
+      }
+     ]
+    },
+    {
+     "name": "walk",
+     "channels": 154,
+     "weights_channels": [
+      {
+       "node": "supaoctto",
+       "values": 2,
+       "max": 0.0,
+       "min": 0.0,
+       "seconds_above_half": null
+      }
+     ]
+    }
+   ],
+   "meshes": 1,
+   "skins": 1,
+   "joints": 51
+  },
+  "structure": "armature object identity (no scale), mesh child identity with 1 morph target (smirk), natural scale; game model_scale 0.08390 reaches the regular cell (report-only)",
+  "morph_gate": {
+   "targets": [
+    [
+     "smirk"
+    ]
+   ],
+   "animations": [
+    "float",
+    "idle",
+    "walk"
+   ],
+   "every_clip_has_weights": true,
+   "keyed_weight_range": {
+    "idle": [
+     0.0,
+     0.0
+    ],
+    "walk": [
+     0.0,
+     0.0
+    ],
+    "float": [
+     0.0,
+     1.0
+    ]
+   },
+   "pass": true
+  }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto.json",
- "seconds": 28.5
+ "seconds": 36.1
 }

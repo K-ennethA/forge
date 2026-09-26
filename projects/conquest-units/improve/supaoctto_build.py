@@ -1,9 +1,23 @@
-"""Supaoctto v2 (the octopus superhero) through the shared pipeline, one headless run.
+"""Supaoctto v3 (the octopus superhero) through the shared pipeline, one headless run.
 
     blender --background source-copies/newunit-supaoctto.blend --factory-startup --python improve/supaoctto_build.py -- \
         [--preview <out.blend>]          (geometry + webs + UV + regions + palette only: no bake, no rig -- fast look loop)
         [--digest-only <out.json>]       (the whole pipeline, saves NOTHING but the digest json: the two-run determinism probe)
         [--set NAME=value ...]           (exploration override of a tunable constant; the committed build uses none)
+        [--tag NAME]                     (alternative build: every output is named supaoctto__NAME.*, no glb -- the
+                                          starfish-mask renders use  --set MASK_STYLE='starfish' --tag starfish)
+
+v3 (artist 2026-09-26, verbatim, binding): "the circle mouth should be more of smirk line when open like a confident hero,
+and there should be nothing visible when its closed so a smirk opening when open and nothing when closed" / "would a belt
+like this help supacctto design" / "can we also try a version of the mask more like this, star fish inspire to give the
+aquatic hero vibe better". v3 on the approved v2 base:
+  - the siphon dimple is GONE. The mouth is a slit cut along an asymmetric smirk line (the character's left corner turned
+    up); at rest the two lips are exact duplicate vertices (the surface is watertight and unchanged: nothing visible) and a
+    dark pocket sits BEHIND them inside the mantle. The morph target 'smirk' parts the lips into a thin dark gap. The dark
+    'mouth' region is painted ONLY on the pocket faces, which are enclosed (invisible) while the lips are closed.
+  - a BELT (design/reference/supaoctto-v3-belt-annotation.png): a band round the waist whose bottom edge dips at the front
+    centre, and two side plates; raised plates fused into the body remesh (snug, no gap), its own palette region.
+  - MASK_STYLE: "w" (the approved W-visor, committed default) or "starfish" (star arms radiating round the same lenses).
 
 Reads (never writes): source-copies/newunit-supaoctto.blend (opened). Render meshes: Body (torso + 2 arm tentacles + 2 leg
 tentacles, one shell, NEGATIVE z scale), Cape (4 cape tentacles joined at a shoulder yoke, a Y-mirror modifier makes the
@@ -69,12 +83,58 @@ import palettes as PAL  # noqa: E402  (read-only use)
 # frame: front -Y, floor (the leg-tentacle tips at rest) z = 0. The sculpt is ~20.6 units tall; natural scale.
 UNIT = "supaoctto"
 CHAR_ID = "supaoctto"                 # roster id: not yet in Conquest (ship path deferred by the artist)
-VERSION = "v2"
+VERSION = "v3"
+# ---- v3 knobs first (the artist's v3 asks) -------------------------------------------------------------------------------
+MASK_STYLE = "w"                      # "mask style": "w" = the approved W-visor (COMMITTED DEFAULT) | "starfish" (the v3 variant)
+# starfish mask, (u, dz) round the visor centre like the W (u = arc round the mantle, dz up): a five-armed star (one arm
+# up the forehead, two swept out like the W's wing tips, two down-and-out under the eyes) with its own swept lenses
+STAR_C_DZ = 0.15                      # "starfish centre height" above the visor centre
+STAR_BODY = (1.50, 0.90)              # "starfish body": half-width / half-height of the central body the arms grow from
+STAR_ARMS = [(90.0, 2.20, 0.55, 0.16), (15.0, 2.60, 0.58, 0.16), (165.0, 2.60, 0.58, 0.16),
+             (-54.0, 2.05, 0.55, 0.16), (-126.0, 2.05, 0.55, 0.16)]
+                                      # "starfish arms": (angle deg from +u, reach from the centre, root half-width, tip radius)
+STAR_SMOOTH = 0.30                    # "starfish fillets": smooth-union radius where the arms meet the body
+STAR_LENS = [(0.18, -0.24), (0.86, -0.30), (1.40, 0.40), (0.72, 0.38), (0.18, 0.12)]
+                                      # "starfish lenses": the character's-left eye (mirrored for the right), swept up the side arm
+# smirk mouth (a slit + pocket, opened by the 'smirk' morph target)
+MOUTH_DZ = 0.0                        # "mouth height": offset from the removed siphon's centre height (v2 placement)
+MOUTH_LINE = [(-0.52, 0.02), (-0.24, -0.04), (0.06, -0.05), (0.33, 0.02), (0.56, 0.19)]
+                                      # "smirk line": (u, dz) right corner -> left corner; the character's LEFT corner (+u) up
+MOUTH_GAP_LOWER = 0.085               # "smirk opening": the lower lip drops this much at the widest point ...
+MOUTH_GAP_UPPER = 0.025               # ... the upper lip lifts this much ...
+MOUTH_GAP_PEAK = 0.60                 # ... the widest point this far along the line (0 = right corner, 1 = the upturned left)
+MOUTH_SOFT = 0.26                     # "lip softness": the mantle within this distance of the line moves with the lips
+MOUTH_DEPTH = 0.16                    # "mouth depth": the dark pocket behind the lips (inside the mantle)
+MOUTH_BAND = 0.40                     # detail zone half-width round the smirk line (covers the lip falloff)
+DETAIL_CUTS_MOUTH = 3                 # ... each low edge there split into 4 (a smooth line)
+SMIRK_KEY = "smirk"                   # the morph target's name (glTF target name)
+FLOAT_SMIRK_T = (0.35, 0.40, 0.57, 0.62)   # "float smirk": opens after the arms cross, holds over the hover, shuts before they part
+IDLE_SMIRK_T = None                   # "idle smirk beat": None = mouth shut all idle; (open0, open1, close0, close1) stages one
+WALK_SMIRK_T = None                   # "walk smirk": None = shut
+# belt (design/reference/supaoctto-v3-belt-annotation.png: side plates + a band whose bottom edge dips at the front centre)
+BELT = True                           # "belt on/off"
+BELT_TOP_FRAC = 0.395                 # "belt height": band top edge (hip -> neck fraction)
+BELT_BOT_FRAC = 0.325                 # band bottom edge at the sides
+BELT_DIP = 0.30                       # "belt centre dip": the bottom edge dips this much at the front centre ...
+BELT_DIP_W = 0.62                     # ... over this half-width (arc units round the waist)
+BELT_T = 0.12                         # "belt thickness" above the body surface (band)
+PLATE_T = 0.17                        # "side plate thickness"
+BELT_EMBED = 0.10                     # depth into the body (fused by the remesh: snug, no gap)
+PLATE_Z = (0.205, 0.475)              # "side plate height": bottom / top (hip -> neck fraction)
+PLATE_TH = (36.0, 86.0)               # "side plate span": inner / outer edge, degrees round the waist from the front centre
+PLATE_FLARE = 7.0                     # the plate's top outer corner flares this many degrees further out
+PLATE_TAPER = 7.0                     # the plate's inner edge moves this many degrees outward at the bottom
+PLATE_ROUND = (0.30, 0.14)            # corner rounding bottom / top (arc units)
+BELT_REGION_PAD = 0.05                # the belt colour region reaches this far past the outline (covers the plate rim wall)
+BELT_IN_WEB_CLEARANCE = False        # the approved v2 webs keep their shape: the belt is NOT an obstacle to the web solve
+                                      # (True pushed web.C 0.87 -> 1.55 and faceted it; measured with False: belt-to-cape/web
+                                      # min gap 1.03 over every sampled idle/walk/float frame -- the webs never reach the belt)
+# ---------------------------------------------------------------------------------------------------------------------------
 YAW_FIX_DEG = 180.0                   # "facing fix": applied to the mesh DATA (goggles + mouth were at +Y)
 VOXEL = 0.06                          # "retopo resolution" (voxel remesh size before decimation)
 LOW_TRIS_BODY = 9500                  # "body detail" (decimation target, body shell)            v1 6200
 LOW_TRIS_CAPE = 3600                  # "cape detail" (decimation target, cape tentacles + yoke) v1 2600
-TRI_BUDGET = [3000, 22000]            # declared tier: regular unit; v2 window raised for the smoother surface + detail zones
+TRI_BUDGET = [3000, 24000]            # declared tier: regular unit; v2 window 22000, v3 +2000 for the belt + smirk detail
 CRUMB_FRAC = 0.01                     # sculpt crumbs smaller than this fraction of their part are dropped
 # v2 polish ("smooth out the textures and align things")
 SMOOTH_ITERS = {"head": 150, "body": 30, "cape": 20}   # "surface smoothing": Taubin passes per sculpt part (0 = v1 clay lumps)
@@ -100,9 +160,7 @@ VISOR_FRAME_W = 0.16                        # "orange frame width" (lens inset f
 VISOR_T_FRAME, VISOR_T_LENS = 0.18, 0.10    # plate height above the mantle: frame / lens (lens sits recessed)
 VISOR_EMBED = 0.12                          # plate depth into the mantle (fused by the remesh: snug, no gap)
 VISOR_DS = 0.045                            # outline sample spacing (CDT)
-# v2 siphon ("get rid of the mouth piece and just give a small circle hole in its place")
-SIPHON_R = 0.28                       # "siphon hole size" (radius, arc units on the mantle)
-SIPHON_DEPTH = 0.20                   # "siphon depth" (pressed into the mantle: negative space, nothing protrudes)
+# v2 siphon ("a small circle hole") -- REMOVED in v3 (the smirk mouth replaces it; its centre height still places the mouth)
 # v2 emblem ("something more appropriate for an octopus superhero than just a circle")
 EMBLEM_Z_FRAC = 0.66                  # "chest emblem height" (hip -> neck)
 EMBLEM_SIZE = 1.10                    # "chest emblem size" (sigil half-width, units)
@@ -112,7 +170,7 @@ EMB_TENTACLES = [                            # right-side tentacle curls (mirror
     [(0.24, -0.02), (0.50, -0.14), (0.76, -0.16), (0.92, -0.03), (0.90, 0.12), (0.77, 0.14), (0.72, 0.04)],
     [(0.15, -0.09), (0.31, -0.38), (0.47, -0.60), (0.65, -0.70), (0.79, -0.62), (0.77, -0.48), (0.66, -0.48)],
     [(0.05, -0.11), (0.08, -0.45), (0.13, -0.77), (0.26, -0.95), (0.41, -0.93), (0.44, -0.80), (0.35, -0.75)]]
-DETAIL_CUTS = 1                       # detail zones (visor, siphon): each low edge split into DETAIL_CUTS + 1
+DETAIL_CUTS = 1                       # detail zones (mask): each low edge split into DETAIL_CUTS + 1
 DETAIL_CUTS_EMBLEM = 3                # ... the chest sigil (thin curling strokes need the finest triangles)
 DETAIL_BAND = 0.30                    # ... on the faces within this distance of a colour boundary
 VISOR_REGION_PAD = 0.05               # the orange frame region reaches this far past the outline (covers the plate's rim wall)
@@ -217,12 +275,15 @@ for i_, a_ in enumerate(argv):
         k_, v_ = argv[i_ + 1].split("=", 1)
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
-OUT_IMPROVED = os.path.join(ROOT, "improved", UNIT + ".blend")
-OUT_RIGGED = os.path.join(ROOT, "rigged", UNIT + ".blend")
-OUT_GLB = os.path.join(ROOT, "rigged", UNIT + ".glb")
+TAG = argv[argv.index("--tag") + 1] if "--tag" in argv else None
+assert MASK_STYLE in ("w", "starfish"), MASK_STYLE
+OUT_NAME = UNIT + ("__" + TAG if TAG else "")          # an alternative (tagged) build never overwrites the default's files
+OUT_IMPROVED = os.path.join(ROOT, "improved", OUT_NAME + ".blend")
+OUT_RIGGED = os.path.join(ROOT, "rigged", OUT_NAME + ".blend")
+OUT_GLB = os.path.join(ROOT, "rigged", OUT_NAME + ".glb")
 TEX_DIR = os.path.join(ROOT, "improved", "textures")
 report = {"unit": UNIT, "version": VERSION, "conquest_character_id": CHAR_ID, "source": bpy.data.filepath, "tier": "regular",
-          "tri_budget": TRI_BUDGET, "yaw_fix_deg": YAW_FIX_DEG, "overrides": OVERRIDES}
+          "tri_budget": TRI_BUDGET, "yaw_fix_deg": YAW_FIX_DEG, "overrides": OVERRIDES, "tag": TAG, "mask_style": MASK_STYLE}
 scene = bpy.context.scene
 DIG = {}                                # the determinism digest: every array a consumer receives
 TAU = 2.0 * math.pi
@@ -420,6 +481,29 @@ def resample_closed(Q, ds):
     return np.array(out)
 
 
+def polyline_sd(P2, C):
+    """Signed distance of 2D points to an open polyline C (CCW-left of the direction of travel = positive), the arc
+    parameter of the nearest point (0 .. 1) and whether that point is interior (not clamped at an end)."""
+    P2 = np.asarray(P2, float); C = np.asarray(C, float)
+    A_, B_ = C[:-1], C[1:]
+    AB = B_ - A_; L2 = (AB ** 2).sum(1)
+    seg = np.sqrt(L2); cum = np.concatenate([[0.0], np.cumsum(seg)]); tot = float(cum[-1])
+    best_d = np.full(len(P2), np.inf); best_s = np.zeros(len(P2)); best_sd = np.zeros(len(P2)); best_int = np.zeros(len(P2), bool)
+    for k in range(len(A_)):
+        ap = P2 - A_[k]
+        tr = (ap @ AB[k]) / L2[k]
+        t_ = np.clip(tr, 0.0, 1.0)
+        q = A_[k] + t_[:, None] * AB[k]
+        d = np.linalg.norm(P2 - q, axis=1)
+        cr = AB[k, 0] * ap[:, 1] - AB[k, 1] * ap[:, 0]
+        upd = d < best_d
+        best_d = np.where(upd, d, best_d)
+        best_sd = np.where(upd, np.where(cr >= 0, d, -d), best_sd)
+        best_s = np.where(upd, (cum[k] + t_ * seg[k]) / tot, best_s)
+        best_int = np.where(upd, ~(((k == 0) & (tr <= 0.0)) | ((k == len(A_) - 1) & (tr >= 1.0))), best_int)
+    return best_sd, best_s, best_int
+
+
 def catmull(P, n_per=24):
     P = np.asarray(P, float)
     Pp = np.vstack([2 * P[0] - P[1], P, 2 * P[-1] - P[-2]])
@@ -473,7 +557,7 @@ prep = {}
 GOG_LO, GOG_HI = PARTS["goggles"][0].min(0), PARTS["goggles"][0].max(0)
 MOUTH_C = PARTS["mouth"][0].mean(0)
 prep["removed_parts"] = {"Mask-Goggles": "replaced by the W-visor (its centre height places the visor)",
-                         "Icosphere": "the mouth piece, removed (artist v2); its centre places the siphon hole"}
+                         "Icosphere": "the mouth piece, removed (artist v2); its centre places the v3 smirk mouth"}
 del PARTS["goggles"], PARTS["mouth"]
 for g in ("body", "head", "cape"):
     V0, F0 = PARTS[g]
@@ -578,12 +662,58 @@ def lens_sdf(P):
     return np.minimum(poly_sdf(P, LENSES[0]), poly_sdf(P, LENSES[1]))
 
 
-ob_ = resample_closed(W_OUT, VISOR_DS)
+def star_sdf(P):
+    """v3 starfish mask: smooth union of an elliptical body and five tapered, round-tipped arms (u, dz frame)."""
+    P = np.asarray(P, float)
+    c = np.array([0.0, STAR_C_DZ])
+    Q = P - c
+    ax, az = STAR_BODY
+    d = (np.hypot(Q[:, 0] / ax, Q[:, 1] / az) - 1.0) * min(ax, az)
+    for ang, reach, w0, w1 in STAR_ARMS:
+        e = np.array([math.cos(math.radians(ang)), math.sin(math.radians(ang))])
+        L_ = reach - w1                                   # the tip circle's centre (the arm ends exactly at 'reach')
+        t_ = np.clip(Q @ e / L_, 0.0, 1.0)
+        r_ = w0 + (w1 - w0) * t_
+        da = np.linalg.norm(Q - t_[:, None] * (L_ * e), axis=1) - r_
+        h_ = np.clip(0.5 + 0.5 * (da - d) / STAR_SMOOTH, 0.0, 1.0)            # polynomial smooth-min
+        d = da * (1 - h_) + d * h_ - STAR_SMOOTH * h_ * (1 - h_)
+    return d
+
+
+def star_outline(n=720):
+    """The starfish is star-shaped about its centre: one zero crossing per ray -> bisection per angle."""
+    c = np.array([0.0, STAR_C_DZ]); out = []
+    for k in range(n):
+        a = TAU * k / n
+        e = np.array([math.cos(a), math.sin(a)])
+        lo_, hi_ = 0.0, 6.0
+        for _ in range(40):
+            m_ = 0.5 * (lo_ + hi_)
+            if star_sdf((c + m_ * e)[None])[0] < 0:
+                lo_ = m_
+            else:
+                hi_ = m_
+        out.append(c + lo_ * e)
+    return ccw(np.array(out))
+
+
+if MASK_STYLE == "starfish":
+    LENSES = [ccw(STAR_LENS), ccw([(-u, z) for u, z in STAR_LENS])]      # same treatment (recessed, glowing), own shape
+    MASK_OUT = star_outline()
+    mask_sdf = lambda P: poly_sdf(P, MASK_OUT)             # noqa: E731  (the polygon: the geometry and the colour agree)
+else:
+    MASK_OUT = W_OUT
+    mask_sdf = lambda P: poly_sdf(P, W_OUT)                # noqa: E731
+MASK_LO, MASK_HI = MASK_OUT.min(0), MASK_OUT.max(0)        # (u, dz) bbox: the face windows below use it
+lens_pts = np.vstack([resample_closed(L_, 0.02) for L_ in LENSES])
+LENS_MARGIN = float(-mask_sdf(lens_pts).max())            # every lens point this far inside the mask outline
+assert LENS_MARGIN > VISOR_FRAME_W * 0.99, ("lens pokes out of the mask frame", LENS_MARGIN)
+ob_ = resample_closed(MASK_OUT, VISOR_DS)
 lb_ = [resample_closed(L_, VISOR_DS) for L_ in LENSES]
-lo2d, hi2d = W_OUT.min(0), W_OUT.max(0)
+lo2d, hi2d = MASK_OUT.min(0), MASK_OUT.max(0)
 gu, gz = np.meshgrid(np.arange(lo2d[0], hi2d[0], 0.07), np.arange(lo2d[1], hi2d[1], 0.07), indexing="ij")
 G2 = np.stack([gu.ravel(), gz.ravel()], 1)
-dout = poly_sdf(G2, W_OUT); dl_ = np.abs(lens_sdf(G2))
+dout = mask_sdf(G2); dl_ = np.abs(lens_sdf(G2))
 G2 = G2[(dout < -0.03) & (dl_ > 0.03)]
 P2 = np.vstack([ob_] + lb_ + [G2])
 n_ob = len(ob_)
@@ -629,17 +759,23 @@ bmv.verts.index_update()
 VF = [[v.index for v in f.verts] for f in bmv.faces]
 bmv.free()
 PARTS["visor"] = (VV, VF)
-Z_SIPH = float(MOUTH_C[2])
+Z_MOUTH = float(MOUTH_C[2]) + MOUTH_DZ                 # v3: the removed siphon's centre height (the v2 mouth placement)
 prep["visor"] = {"frame": "(u, z) round the mantle axis; u = theta x R_REF", "centre_z": round(Z_VC, 4),
-                 "axis_xy": [round(HXC, 4), round(HYC, 4)], "R_REF": round(R_REF, 4),
-                 "outline_u_z": W_OUT.round(4).tolist(), "lenses_u_z": [L_.round(4).tolist() for L_ in LENSES],
-                 "tip_angle_deg": round(math.degrees(VISOR_TIP_U / R_REF), 2), "cdt_tris_per_face": len(F2c),
+                 "axis_xy": [round(HXC, 4), round(HYC, 4)], "R_REF": round(R_REF, 4), "mask_style": MASK_STYLE,
+                 "outline_u_z": (W_OUT if MASK_STYLE == "w" else MASK_OUT[::8]).round(4).tolist(),
+                 "lenses_u_z": [L_.round(4).tolist() for L_ in LENSES], "lens_inside_frame_min_margin": round(LENS_MARGIN, 4),
+                 "outline_bbox_u_dz": [MASK_LO.round(3).tolist(), MASK_HI.round(3).tolist()],
+                 "tip_angle_deg": round(math.degrees(float(np.abs(MASK_OUT[:, 0]).max()) / R_REF), 2), "cdt_tris_per_face": len(F2c),
                  "closed_manifold": visor_manifold, "thickness": {"frame": VISOR_T_FRAME, "lens": VISOR_T_LENS, "embed": VISOR_EMBED},
-                 "reference": "design/reference/supaoctto-v2-visor-reference.png (angular swept W)"}
-prep["siphon"] = {"centre_z": round(Z_SIPH, 4), "radius": SIPHON_R, "depth": SIPHON_DEPTH,
-                  "placement": "the removed mouth piece's centre height, on the midline"}
+                 "reference": ("design/reference/supaoctto-v2-visor-reference.png (angular swept W)" if MASK_STYLE == "w" else
+                               "design/reference/supaoctto-v3-starfish-mask-annotation.png (star arms round the eyes)")}
+if MASK_STYLE == "starfish":
+    prep["visor"]["starfish"] = {"centre_dz": STAR_C_DZ, "body": STAR_BODY, "arms_deg_reach_w0_tip": STAR_ARMS,
+                                 "smooth": STAR_SMOOTH, "outline_points": int(len(MASK_OUT))}
+prep["mouth_placement"] = {"centre_z": round(Z_MOUTH, 4), "rule": "the removed v2 siphon's centre height (the source mouth "
+                                                                   "piece's centre) + MOUTH_DZ, on the midline"}
 prep["seconds"] = round(time.time() - t, 1)
-report["v2_prep"] = prep
+report["prep"] = prep
 
 # =========================================================================== 2b. v1 fixes on the sculpt data
 BV, BF = PARTS["body"]
@@ -788,9 +924,183 @@ report["anatomy"] = {"method": "geodesic rings from each tentacle tip (Dijkstra 
                      "cape_member_overlap": overlap, "cape_yoke_vertices": int((CLAB == 20).sum()),
                      "body_torso_vertices": int((BLAB == 0).sum()), "seconds": round(time.time() - t, 1)}
 
+# =========================================================================== 3b. v3 belt (new geometry, fused by the body remesh)
+def grid_solid(FR, BK, periodic):
+    """Closed solid between two (ni, nj, 3) grids (front surface, back surface); periodic in i or not."""
+    ni, nj = FR.shape[:2]
+    V = np.vstack([FR.reshape(-1, 3), BK.reshape(-1, 3)])
+    ix = lambda l, i, j: l * ni * nj + (i % ni) * nj + j            # noqa: E731
+    F = []
+    for i in range(ni if periodic else ni - 1):
+        for j in range(nj - 1):
+            F.append([ix(0, i, j), ix(0, i + 1, j), ix(0, i + 1, j + 1), ix(0, i, j + 1)])
+            F.append([ix(1, i, j + 1), ix(1, i + 1, j + 1), ix(1, i + 1, j), ix(1, i, j)])
+    ring = [(i, 0) for i in range(ni)] if periodic else \
+        [(i, 0) for i in range(ni - 1)] + [(ni - 1, j) for j in range(nj - 1)] + \
+        [(i, nj - 1) for i in range(ni - 1, 0, -1)] + [(0, j) for j in range(nj - 1, 0, -1)]
+    rings = [ring, [(i, nj - 1) for i in range(ni)]] if periodic else [ring]
+    for rg in rings:
+        for k in range(len(rg)):
+            (i0, j0), (i1, j1) = rg[k], rg[(k + 1) % len(rg)]
+            F.append([ix(0, i0, j0), ix(1, i0, j0), ix(1, i1, j1), ix(0, i1, j1)])
+    bm_ = bmesh.new()
+    for p in V:
+        bm_.verts.new(p)
+    bm_.verts.ensure_lookup_table()
+    for f in F:
+        bm_.faces.new([bm_.verts[i] for i in f])
+    bmesh.ops.recalc_face_normals(bm_, faces=bm_.faces[:])
+    ok_ = all(e.is_manifold for e in bm_.edges)
+    bm_.verts.index_update()
+    F = [[v.index for v in f.verts] for f in bm_.faces]
+    bm_.free()
+    return V, F, ok_
+
+
+t = time.time()
+Z_HIP0 = float(np.mean([CHAINS["leg.L"]["P"][0][2], CHAINS["leg.R"]["P"][0][2]]))
+Z_NECK0 = 0.5 * ((Z_BODY_TOP - NECK_RAMP[0]) + (Z_HEAD_BOT + NECK_RAMP[1]))
+
+
+def zf(f):
+    return Z_HIP0 + f * (Z_NECK0 - Z_HIP0)
+
+
+BZ_TOP, BZ_BOT = zf(BELT_TOP_FRAC), zf(BELT_BOT_FRAC)
+PZ0, PZ1 = zf(PLATE_Z[0]), zf(PLATE_Z[1])
+ZSTEP = 0.05
+BZ_LO = min(BZ_BOT - BELT_DIP, PZ0) - 0.3
+BZ_HI = max(BZ_TOP, PZ1) + 0.3
+tor_ = (BLAB == 0) & (np.abs(BV[:, 0] - X_MID) < 1.0)
+zs_ = np.arange(BZ_LO, BZ_HI + 1e-9, 0.1)
+cys_ = []
+for z_ in zs_:
+    m_ = tor_ & (np.abs(BV[:, 2] - z_) < 0.12)
+    cys_.append(0.5 * (float(BV[m_, 1].min()) + float(BV[m_, 1].max())))
+AXB = np.polyfit(zs_, cys_, 1)                         # the waist axis: y mid-depth, a straight line over the belt span
+
+
+def belt_cy(z):
+    return AXB[0] * np.asarray(z, float) + AXB[1]
+
+
+bvh_bsc = BVHTree.FromPolygons(BV.tolist(), BF)
+NTH = 144
+TH_G = np.arange(NTH) * TAU / NTH - math.pi            # 0 = the front (-Y), + toward the character's left (+X)
+ZG = np.arange(BZ_LO, BZ_HI + 1e-9, ZSTEP)
+RG = np.zeros((NTH, len(ZG)))
+for i, th in enumerate(TH_G):
+    d_ = Vector((math.sin(th), -math.cos(th), 0.0))
+    for j, z_ in enumerate(ZG):
+        hit = bvh_bsc.ray_cast(Vector((X_MID, float(belt_cy(z_)), float(z_))), d_)   # outward from the axis: the torso wall
+        assert hit[0] is not None, ("belt ray missed the torso", th, z_)
+        RG[i, j] = hit[3]
+RG_RAW = RG.copy()
+# robust: a ray that slips into a crease (the armpit) reads far too long; replace samples off their row's running
+# median (7 around the waist) by that median before smoothing
+RGm = np.median(np.stack([np.roll(RG, k, axis=0) for k in range(-3, 4)]), axis=0)
+OUTL = np.abs(RG - RGm) > 0.15
+RG = np.where(OUTL, RGm, RG)
+for _ in range(24):                                    # the belt follows the waist, not the sculpt's lumps
+    RGp = np.vstack([RG[-1:], RG, RG[:1]])
+    RGs = RG.copy()
+    RGs[:, 1:-1] = 0.25 * (RGp[:-2, 1:-1] + RGp[2:, 1:-1] + RG[:, :-2] + RG[:, 2:])
+    RG = 0.5 * RG + 0.5 * RGs
+
+
+def belt_r(th, z):
+    th = np.asarray(th, float); z = np.asarray(z, float)
+    fi = (np.mod(th + math.pi, TAU)) / TAU * NTH
+    i0 = np.floor(fi).astype(int); a_ = fi - i0; i0 %= NTH; i1 = (i0 + 1) % NTH
+    fj = np.clip((z - ZG[0]) / ZSTEP, 0.0, len(ZG) - 1.000001)
+    j0 = np.floor(fj).astype(int); b_ = fj - j0; j1 = j0 + 1
+    return RG[i0, j0] * (1 - a_) * (1 - b_) + RG[i1, j0] * a_ * (1 - b_) + RG[i0, j1] * (1 - a_) * b_ + RG[i1, j1] * a_ * b_
+
+
+def belt_pt(th, z, off):
+    th = np.asarray(th, float); z = np.asarray(z, float)
+    r_ = belt_r(th, z) + off
+    return np.stack([X_MID + r_ * np.sin(th), belt_cy(z) - r_ * np.cos(th), z], -1)
+
+
+R_W = float(belt_r(TH_G, np.full(NTH, 0.5 * (BZ_TOP + BZ_BOT))).mean())      # u = theta x R_W round the waist
+DEG_U = math.radians(1.0) * R_W
+
+
+def band_zbot(u):
+    return BZ_BOT - BELT_DIP * (1.0 - smoothstep(0.0, BELT_DIP_W, np.abs(np.asarray(u, float))))
+
+
+def plate_rows(z, sg):
+    """Right/left plate edge (u_in, u_out) at height z; sg = +1 the character's left plate (+X), -1 the right."""
+    z = np.asarray(z, float)
+    s_ = np.clip((z - PZ0) / (PZ1 - PZ0), 0.0, 1.0)
+    u_in = (PLATE_TH[0] + PLATE_TAPER * (1 - s_)) * DEG_U
+    u_out = (PLATE_TH[1] + PLATE_FLARE * s_ * s_) * DEG_U
+    rb, rt = PLATE_ROUND
+    db_ = np.clip(rb - (z - PZ0), 0.0, rb); dt_ = np.clip(rt - (PZ1 - z), 0.0, rt)
+    sh = (rb - np.sqrt(np.maximum(rb * rb - db_ * db_, 0.0))) + (rt - np.sqrt(np.maximum(rt * rt - dt_ * dt_, 0.0)))
+    u_in, u_out = u_in + sh, u_out - sh
+    return (u_in, u_out) if sg > 0 else (-u_out, -u_in)
+
+
+BELT_POLYS = {}
+BELT_INFO = {}
+if BELT:
+    U_EXT = math.pi * R_W + 1.0                        # the band polygon runs past the back seam: no false edge there
+    ub_ = np.linspace(-U_EXT, U_EXT, 400)
+    BELT_POLYS["band"] = ccw(np.vstack([np.stack([ub_, np.full_like(ub_, BZ_TOP)], 1),
+                                        np.stack([ub_[::-1], band_zbot(ub_[::-1])], 1)]))
+    zp_ = PZ0 + (PZ1 - PZ0) * (0.5 - 0.5 * np.cos(np.linspace(0.0, math.pi, 64)))     # dense rows near the rounded ends
+    for nm_, sg in (("plate.L", 1.0), ("plate.R", -1.0)):
+        ui_, uo_ = plate_rows(zp_, sg)
+        BELT_POLYS[nm_] = ccw(np.vstack([np.stack([ui_, zp_], 1), np.stack([uo_[::-1], zp_[::-1]], 1)]))
+    parts_b = []
+    NTB, NJB = 288, 7
+    thb = np.arange(NTB) * TAU / NTB - math.pi
+    ubb = thb * R_W
+    zb_ = band_zbot(ubb)
+    Jb = np.linspace(0.0, 1.0, NJB)
+    ZZ = zb_[:, None] + (BZ_TOP - zb_)[:, None] * Jb[None, :]
+    THb = np.repeat(thb[:, None], NJB, 1)
+    Vb, Fb, okb = grid_solid(belt_pt(THb, ZZ, BELT_T), belt_pt(THb, ZZ, -BELT_EMBED), True)
+    parts_b.append((Vb, Fb))
+    NIP = 11
+    xs_ = np.linspace(-1.0, 1.0, NIP)
+    okp = []
+    for nm_, sg in (("plate.L", 1.0), ("plate.R", -1.0)):
+        ui_, uo_ = plate_rows(zp_, sg)
+        UU_ = ui_[None, :] + (uo_ - ui_)[None, :] * (0.5 + 0.5 * xs_)[:, None]      # (NIP, rows)
+        ZZp = np.repeat(zp_[None, :], NIP, 0)
+        dome = PLATE_T * (1.0 - 0.3 * xs_ ** 2)[:, None]                           # a slight dome across the plate
+        Vp, Fp, ok_ = grid_solid(belt_pt(UU_ / R_W, ZZp, dome), belt_pt(UU_ / R_W, ZZp, -BELT_EMBED), False)
+        parts_b.append((Vp, Fp)); okp.append(ok_)
+    PARTS["belt"] = join(parts_b)
+    BELT_INFO = {"rule": "a band round the waist (bottom edge dipping BELT_DIP at the front centre) + two side plates; each a "
+                         "closed solid BELT_T / PLATE_T proud of the waist, BELT_EMBED into it, fused by the body voxel remesh",
+                 "waist_axis_y_fit": [round(float(AXB[0]), 5), round(float(AXB[1]), 4)], "R_W": round(R_W, 4),
+                 "waist_radius_outliers_replaced": int(OUTL.sum()),
+                 "waist_radius_change_after_outliers": {
+                     "max": round(float(np.abs(RG - RG_RAW)[~OUTL].max()), 4),
+                     "p99": round(float(np.percentile(np.abs(RG - RG_RAW)[~OUTL], 99)), 4),
+                     "max_at_deg_z": [round(float(np.degrees(TH_G[np.unravel_index(np.argmax(np.where(OUTL, 0, np.abs(RG - RG_RAW))), RG.shape)[0]])), 1),
+                                      round(float(ZG[np.unravel_index(np.argmax(np.where(OUTL, 0, np.abs(RG - RG_RAW))), RG.shape)[1]]), 3)]},
+                 "band_z": {"top": round(BZ_TOP, 4), "bottom_sides": round(BZ_BOT, 4), "bottom_centre": round(BZ_BOT - BELT_DIP, 4)},
+                 "plate_z": [round(PZ0, 4), round(PZ1, 4)], "plate_deg": {"inner": PLATE_TH[0], "outer": PLATE_TH[1],
+                                                                         "flare": PLATE_FLARE, "taper": PLATE_TAPER},
+                 "hip_z_pre": round(Z_HIP0, 4), "neck_z_pre": round(Z_NECK0, 4), "solids_closed_manifold": [okb] + okp,
+                 "reference": "design/reference/supaoctto-v3-belt-annotation.png"}
+BELT_INFO["seconds"] = round(time.time() - t, 1)
+report["belt"] = BELT_INFO
+
+
+def belt_sdf(P2):
+    return np.min([poly_sdf(P2, Q_) for Q_ in BELT_POLYS.values()], axis=0)
+
+
 # =========================================================================== 4. water webs (new geometry)
 t = time.time()
-BODY_HIGH_V, BODY_HIGH_F = join([PARTS["body"], PARTS["head"], PARTS["neck"]])
+BODY_HIGH_V, BODY_HIGH_F = join([PARTS["body"], PARTS["head"], PARTS["neck"]] + ([PARTS["belt"]] if BELT and BELT_IN_WEB_CLEARANCE else []))
 bvh_body_hi = BVHTree.FromPolygons(BODY_HIGH_V.tolist(), BODY_HIGH_F)
 
 
@@ -887,38 +1197,28 @@ report["webs"] = {"added": "3 water webs (the sculpt has none): thin closed shee
 
 # =========================================================================== 5. low: two shells (remesh + decimate) + webs
 t = time.time()
-BODY_GROUPS = ["body", "head", "visor", "neck"]
+BODY_GROUPS = ["body", "head", "visor", "neck"] + (["belt"] if BELT else [])
 
 
-def siphon_dimple(RV):
-    th = np.arctan2(RV[:, 0] - HXC, -(RV[:, 1] - HYC))
-    r = np.hypot(th * R_REF, RV[:, 2] - Z_SIPH)
-    prof = (1.0 - smoothstep(SIPHON_R * 0.70, SIPHON_R * 1.15, r)) * (np.cos(th) > 0.6)
-    radial = np.stack([np.sin(th), -np.cos(th), np.zeros_like(th)], 1)
-    return RV - (SIPHON_DEPTH * prof)[:, None] * radial, int((prof > 0).sum())
-
-
-def shell(groups, target, dimple=False):
+def shell(groups, target, keep_face=False):
     V, F = join([PARTS[g] for g in groups])
     tmp = new_obj("remesh_src", V, F)
     rm = tmp.modifiers.new("vox", "REMESH"); rm.mode = "VOXEL"; rm.voxel_size = VOXEL; rm.use_smooth_shade = False
     RV, RF = evaluated_arrays(tmp)
     bpy.data.objects.remove(tmp, do_unlink=True)
     RV, RF, _ = keep_islands(RV, RF, 0.01)
-    nd = 0
-    if dimple:
-        RV, nd = siphon_dimple(RV)
     LV, LF = decimate(RV, RF, target)
     LV, LF, sp = keep_islands(LV, LF, 0.01)
-    LV, rx = relax(LV, LF, RV, RF, keep_face=dimple)
+    LV, rx = relax(LV, LF, RV, RF, keep_face=keep_face)
     return LV, LF, {"remesh_tris": tri_count_F(RF), "decimated_tris": tri_count_F(LF), "specks_dropped": sp,
-                    "siphon_dimple_vertices": nd, "relax": rx}, RV, RF
+                    "relax": rx}, RV, RF
 
 
 def relax(LV, LF, RV, RF, keep_face=False):
     """'Smooth out': tangential relaxation of the decimated shell (each vertex toward its neighbours' centroid, then
     snapped back onto the remeshed high surface) -- evens the collapse decimator's irregular triangles so the flat facets
-    shade as a smooth gradient instead of lumps. The visor/siphon window keeps its crisp edges (not moved)."""
+    shade as a smooth gradient instead of lumps. The mask window keeps its crisp edges (not moved); v3: the mouth area is
+    relaxed like the rest of the mantle (no dimple any more: it must read as smooth, untouched surface)."""
     if LOW_RELAX_ITERS <= 0:
         return LV, {"iters": 0}
     bvh = BVHTree.FromPolygons(RV.tolist(), RF)
@@ -928,8 +1228,8 @@ def relax(LV, LF, RV, RF, keep_face=False):
     free = np.ones(n, bool)
     if keep_face:
         th = np.arctan2(LV[:, 0] - HXC, -(LV[:, 1] - HYC))
-        free &= ~((np.cos(th) > 0.0) & (np.abs(th * R_REF) < VISOR_TIP_U + 0.4) &
-                  (LV[:, 2] > Z_SIPH - SIPHON_R - 0.4) & (LV[:, 2] < Z_VC + VISOR_TIP_DZ + 0.4))
+        free &= ~((np.cos(th) > 0.0) & (np.abs(th * R_REF) < float(np.abs(MASK_OUT[:, 0]).max()) + 0.4) &
+                  (LV[:, 2] > Z_VC + MASK_LO[1] - 0.4) & (LV[:, 2] < Z_VC + MASK_HI[1] + 0.4))
     el_ = np.linalg.norm(LV[E[:, 0]] - LV[E[:, 1]], axis=1)
     mel = (np.bincount(E[:, 0], el_, minlength=n) + np.bincount(E[:, 1], el_, minlength=n)) / deg
     cen0 = np.zeros_like(LV)
@@ -952,7 +1252,7 @@ def relax(LV, LF, RV, RF, keep_face=False):
                "mean_move": round(float(mv.mean()), 4), "max_move": round(float(mv.max()), 4)}
 
 
-SBV, SBF, rb_, RBV, RBF = shell(BODY_GROUPS, LOW_TRIS_BODY, dimple=True)
+SBV, SBF, rb_, RBV, RBF = shell(BODY_GROUPS, LOW_TRIS_BODY, keep_face=True)
 SCV, SCF, rc_, RCV, RCF = shell(["cape"], LOW_TRIS_CAPE)
 allV = np.vstack([SBV, SCV] + [w["V"] for w in WEB.values()])
 lo2, hi2 = allV.min(0), allV.max(0)
@@ -966,7 +1266,8 @@ for c in CHAINS.values():
 for w in WEB.values():
     w["V"] = w["V"] - SHIFT; w["mid"] = w["mid"] - SHIFT
 HXC, HYC = HXC - SHIFT[0], HYC - SHIFT[1]
-Z_VC, Z_SIPH, X_MID = Z_VC - SHIFT[2], Z_SIPH - SHIFT[2], X_MID - SHIFT[0]
+Z_VC, Z_MOUTH, X_MID = Z_VC - SHIFT[2], Z_MOUTH - SHIFT[2], X_MID - SHIFT[0]
+BELT_SHIFT = SHIFT.copy()                              # the belt frame (axis, radius grid) stays in the pre-shift frame
 NB, NT = NB - SHIFT, NT - SHIFT
 Z_BODY_TOP, Z_HEAD_BOT = Z_BODY_TOP - SHIFT[2], Z_HEAD_BOT - SHIFT[2]
 H = float(hi2[2] - lo2[2])
@@ -981,9 +1282,9 @@ report["natural"] = {"height": round(H, 4), "width": round(float(size[0]), 4), "
                                                      "footprint_m": round(fp * k_fit, 4),
                                                      "bound_by": "height" if CELL_MAX_H / H <= CELL_MAX_FP / fp else "footprint",
                                                      "ceilings": [CELL_MAX_H, CELL_MAX_FP]}}
-report["retopo"] = {"method": "body shell (Body+Head+visor+neck joined) and cape shell each: voxel remesh (%.3f) -> [siphon "
-                              "dimple pressed into the body remesh] -> collapse decimation (deterministic); remeshed separately "
-                              "so the cape never fuses to the back; the remeshed shells are the bake/cavity high" % VOXEL,
+report["retopo"] = {"method": "body shell (Body+Head+mask+neck+belt joined) and cape shell each: voxel remesh (%.3f) -> "
+                              "collapse decimation (deterministic) -> relax; remeshed separately so the cape never fuses to the "
+                              "back; the remeshed shells are the bake/cavity high (v3: no siphon dimple)" % VOXEL,
                     "body_shell": rb_, "cape_shell": rc_, "seconds": round(time.time() - t, 1)}
 bvh_highb = BVHTree.FromPolygons(RBV.tolist(), RBF)
 bvh_highc = BVHTree.FromPolygons(RCV.tolist(), RCF)
@@ -1053,19 +1354,24 @@ def sigil_sdf(P2):
 t = time.time()
 fc_ = np.array([SBV[f].mean(0) for f in SBF])
 uzf, thf = uz_of(fc_)
-front_ = (np.cos(thf) > 0.15) & (np.abs(uzf[:, 0]) < VISOR_TIP_U + 0.5) & \
-         (fc_[:, 2] > Z_SIPH - SIPHON_R - 0.5) & (fc_[:, 2] < Z_VC + VISOR_TIP_DZ + 0.5)
+front_ = (np.cos(thf) > 0.15) & (np.abs(uzf[:, 0]) < float(np.abs(MASK_OUT[:, 0]).max()) + 0.5) & \
+         (fc_[:, 2] > Z_VC + MASK_LO[1] - 0.5) & (fc_[:, 2] < Z_VC + MASK_HI[1] + 0.5)
 zone_head = np.zeros(len(fc_), bool)
 fi_ = np.nonzero(front_)[0]
-near_ = (np.abs(poly_sdf(uzf[fi_], W_OUT) - VISOR_REGION_PAD) < DETAIL_BAND) | (np.abs(lens_sdf(uzf[fi_])) < DETAIL_BAND) | \
-        (np.abs(np.hypot(uzf[fi_, 0], fc_[fi_, 2] - Z_SIPH) - SIPHON_R) < DETAIL_BAND)
+near_ = (np.abs(mask_sdf(uzf[fi_]) - VISOR_REGION_PAD) < DETAIL_BAND) | (np.abs(lens_sdf(uzf[fi_])) < DETAIL_BAND)
 zone_head[fi_[near_]] = True
+MOUTH_C2 = catmull(MOUTH_LINE, 40)                     # the dense smirk line, (u, dz about Z_MOUTH)
+mfront_ = (np.cos(thf) > 0.3) & (np.abs(fc_[:, 2] - Z_MOUTH) < 1.0) & (np.abs(uzf[:, 0]) < 1.5)
+zone_mouth = np.zeros(len(fc_), bool)
+fm_ = np.nonzero(mfront_)[0]
+zone_mouth[fm_[np.abs(polyline_sd(np.stack([uzf[fm_, 0], fc_[fm_, 2] - Z_MOUTH], 1), MOUTH_C2)[0]) < MOUTH_BAND]] = True
+zone_head &= ~zone_mouth
 chest_ = (np.abs(fc_[:, 0] - X_MID) < EMBLEM_SIZE * 1.1 + 0.3) & (np.abs(fc_[:, 2] - Z_EMB) < EMBLEM_SIZE * 1.1 + 0.3) & \
          (fc_[:, 1] < EMB_C[1] + 1.0)
 zone_emb = np.zeros(len(fc_), bool)
 fe_ = np.nonzero(chest_)[0]
 zone_emb[fe_[np.abs(sigil_sdf(np.stack([(fc_[fe_, 0] - EMB_C[0]) / EMBLEM_SIZE, (fc_[fe_, 2] - EMB_C[2]) / EMBLEM_SIZE], 1)) * EMBLEM_SIZE) < DETAIL_BAND]] = True
-zone = zone_head | zone_emb
+zone = zone_head | zone_emb | zone_mouth
 tris_pre_detail = tri_count_F(SBF)
 bm = bmesh.new()
 for p in SBV:
@@ -1075,23 +1381,28 @@ for f in SBF:
     bm.faces.new([bm.verts[i] for i in f])
 bm.faces.ensure_lookup_table()
 ekey = lambda e: (min(e.verts[0].index, e.verts[1].index), max(e.verts[0].index, e.verts[1].index))
-esel = {}
-for zmask, cuts_ in ((zone_emb, DETAIL_CUTS_EMBLEM), (zone_head, DETAIL_CUTS)):
-    es_ = set()
+ecut = {}                                              # edge -> cuts; an edge in two zones takes the finer one (disjoint sets)
+for zmask, cuts_ in ((zone_emb, DETAIL_CUTS_EMBLEM), (zone_head, DETAIL_CUTS), (zone_mouth, DETAIL_CUTS_MOUTH)):
     for fi in np.nonzero(zmask)[0]:
         for e in bm.faces[int(fi)].edges:
-            es_.add(e)
-    esel[cuts_] = esel.get(cuts_, []) + sorted(es_, key=ekey)
-for cuts_ in sorted(esel):                             # the two zones are far apart: no shared edges
+            ecut[e] = max(ecut.get(e, 0), cuts_)
+esel = {}
+for e, c_ in ecut.items():
+    esel.setdefault(c_, []).append(e)
+esel = {c_: sorted(es_, key=ekey) for c_, es_ in esel.items()}
+for cuts_ in sorted(esel, reverse=True):
     bmesh.ops.subdivide_edges(bm, edges=esel[cuts_], cuts=cuts_, use_grid_fill=True)
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
 bm.verts.index_update()
 SBV = np.array([v.co[:] for v in bm.verts])
 SBF = [[v.index for v in f.verts] for f in bm.faces]
 bm.free()
-report["detail_zones"] = {"zones": "faces within DETAIL_BAND of the visor / lens / siphon / sigil boundaries",
-                          "cuts": {"face": DETAIL_CUTS, "emblem": DETAIL_CUTS_EMBLEM}, "band": DETAIL_BAND,
-                          "faces_selected": {"head": int(zone_head.sum()), "emblem": int(zone_emb.sum())},
+report["detail_zones"] = {"zones": "faces within DETAIL_BAND of the mask / lens / sigil boundaries; within MOUTH_BAND of "
+                                   "the smirk line",
+                          "cuts": {"face": DETAIL_CUTS, "emblem": DETAIL_CUTS_EMBLEM, "mouth": DETAIL_CUTS_MOUTH},
+                          "band": DETAIL_BAND, "mouth_band": MOUTH_BAND,
+                          "faces_selected": {"head": int(zone_head.sum()), "emblem": int(zone_emb.sum()),
+                                             "mouth": int(zone_mouth.sum())},
                           "body_shell_tris_before": tris_pre_detail, "body_shell_tris_after": tri_count_F(SBF),
                           "seconds": round(time.time() - t, 1)}
 
@@ -1104,12 +1415,34 @@ DGd = np.array([[PB[g].find_nearest(Vector(p))[3] for g in BODY_GROUPS] for p in
 Jg = {g: j for j, g in enumerate(BODY_GROUPS)}
 d_headg = np.minimum(DGd[:, Jg["head"]], DGd[:, Jg["visor"]])
 d_bodyg = np.minimum(DGd[:, Jg["body"]], DGd[:, Jg["neck"]])
+if BELT:
+    d_bodyg = np.minimum(d_bodyg, DGd[:, Jg["belt"]])
 fhd = np.concatenate([d_bodyg - d_headg, np.full(nc_, -1.0)])          # > 0: the head group (mantle + visor)
 uzv, thv = uz_of(SV)
-gate_face = (shell_id == 0) & (np.cos(thv) > 0.1) & (fhd > -0.25) & (SV[:, 2] > Z_SIPH - 1.0) & (SV[:, 2] < Z_VC + 1.6)
-vis_f = np.where(gate_face, poly_sdf(uzv, W_OUT) - VISOR_REGION_PAD, 10.0)
-lens_f = np.where(gate_face, lens_sdf(uzv), 10.0)
-siph_f = np.where(gate_face, np.hypot(uzv[:, 0], SV[:, 2] - Z_SIPH) - SIPHON_R, 10.0)
+gate_face = (shell_id == 0) & (np.cos(thv) > 0.1) & (fhd > -0.25) & \
+            (SV[:, 2] > min(Z_MOUTH - 1.0, Z_VC + MASK_LO[1] - 0.6)) & (SV[:, 2] < Z_VC + MASK_HI[1] + 0.6)
+gi_ = np.nonzero(gate_face)[0]
+vis_f = np.full(len(SV), 10.0); vis_f[gi_] = mask_sdf(uzv[gi_]) - VISOR_REGION_PAD
+lens_f = np.full(len(SV), 10.0); lens_f[gi_] = lens_sdf(uzv[gi_])
+# v3 smirk line: signed distance (+ above) to the line in the (u, z - Z_MOUTH) frame, only where the nearest point is
+# interior to the line (the cut stops short of the corners: the lips stay joined there)
+gate_mouth = (shell_id == 0) & (fhd > 0) & (np.cos(thv) > 0.3) & (np.abs(SV[:, 2] - Z_MOUTH) < 0.8) & (np.abs(uzv[:, 0]) < 1.3)
+mq_ = np.nonzero(gate_mouth)[0]
+msd_, ms_, mint_ = polyline_sd(np.stack([uzv[mq_, 0], SV[mq_, 2] - Z_MOUTH], 1), MOUTH_C2)
+mline_f = np.full(len(SV), 10.0)
+mline_f[mq_] = np.where(mint_ & (np.abs(msd_) < MOUTH_SOFT + 0.15), msd_, 10.0)
+# v3 belt: the (u = theta x R_W, z) waist frame (pre-shift coordinates), gated to torso vertices on the waist surface
+belt_f = np.full(len(SV), 10.0)
+if BELT:
+    Ppre = SV + BELT_SHIFT
+    XM0 = X_MID + BELT_SHIFT[0]
+    gate_belt = (shell_id == 0) & (fhd < -0.05) & (Ppre[:, 2] > BZ_LO) & (Ppre[:, 2] < BZ_HI)
+    gb_ = np.nonzero(gate_belt)[0]
+    thb_ = np.arctan2(Ppre[gb_, 0] - XM0, -(Ppre[gb_, 1] - belt_cy(Ppre[gb_, 2])))
+    rv_ = np.hypot(Ppre[gb_, 0] - XM0, Ppre[gb_, 1] - belt_cy(Ppre[gb_, 2]))
+    on_ = rv_ < belt_r(thb_, Ppre[gb_, 2]) + PLATE_T + 0.15          # the waist surface + the belt (not an arm)
+    gb_ = gb_[on_]
+    belt_f[gb_] = belt_sdf(np.stack([thb_[on_] * R_W, Ppre[gb_, 2]], 1)) - BELT_REGION_PAD
 kd_b = KDTree(len(BV))
 for i, p in enumerate(BV):
     kd_b.insert(p, i)
@@ -1144,6 +1477,11 @@ lab_c, s_c = label_and_arc(SCV, True)
 # the neck / head / visor are not in the Body part: never an arm or leg, whatever the nearest Body vertex says
 lab_b = np.where(fhd[:nb_] > -0.05, 0, lab_b)
 lab_b = np.where(DGd[:, Jg["neck"]] < DGd[:, Jg["body"]] - 0.02, 0, lab_b)
+beltv = np.zeros(len(SV))
+if BELT:                                               # the belt is torso (never an arm or leg), whatever the nearest Body vertex says
+    bv_ = DGd[:, Jg["belt"]] < DGd[:, Jg["body"]] - 0.02
+    lab_b = np.where(bv_, 0, lab_b)
+    beltv[:nb_] = bv_
 s_b = np.where(lab_b == 0, -1.0, s_b)
 LAB0 = np.concatenate([lab_b, lab_c]); S0 = np.concatenate([s_b, s_c])
 frac = np.array([S0[i] / CHAINS[ID_TO_CH[int(LAB0[i])]]["L"] if int(LAB0[i]) in ID_TO_CH else -1.0 for i in range(len(SV))])
@@ -1162,8 +1500,9 @@ gate_emb = (shell_id == 0) & (LAB0 == 0) & (fhd < -0.05) & (SV[:, 1] < EMB_C[1] 
 emb_f = np.full(len(SV), 10.0)
 ge = np.nonzero(gate_emb)[0]
 emb_f[ge] = sigil_sdf(np.stack([(SV[ge, 0] - EMB_C[0]) / EMBLEM_SIZE, (SV[ge, 2] - EMB_C[2]) / EMBLEM_SIZE], 1)) * EMBLEM_SIZE
-FIELDS = {"fhd": fhd, "vis": vis_f, "lens": lens_f, "siph": siph_f, "armf": armf, "legf": legf, "capef": capef,
-          "under": under, "emb": emb_f, "shell": shell_id}
+FIELDS = {"fhd": fhd, "vis": vis_f, "lens": lens_f, "mline": mline_f, "belt": belt_f, "armf": armf, "legf": legf,
+          "capef": capef, "under": under, "emb": emb_f, "shell": shell_id, "beltv": beltv,
+          "pocket": np.zeros(len(SV)), "lipside": np.zeros(len(SV))}
 report["fields_seconds"] = round(time.time() - t, 1)
 
 # =========================================================================== iso-contour cuts (duskmaw's cutter)
@@ -1232,9 +1571,11 @@ g_leg = lambda a, b: g_body(a, b) and a[LAY["legf"]] >= 0 and b[LAY["legf"]] >= 
 g_emb = lambda a, b: g_body(a, b) and a[LAY["emb"]] < 9 and b[LAY["emb"]] < 9
 g_cape = lambda a, b: in_c(a) and in_c(b)
 g_ctip = lambda a, b: g_cape(a, b) and a[LAY["capef"]] >= 0 and b[LAY["capef"]] >= 0
-CUTS = [("fhd", 0.0, g_body), ("vis", 0.0, g_face), ("lens", 0.0, g_face), ("siph", 0.0, g_face),
+g_mline = lambda a, b: g_body(a, b) and a[LAY["mline"]] < 9 and b[LAY["mline"]] < 9
+g_beltc = lambda a, b: g_body(a, b) and a[LAY["belt"]] < 9 and b[LAY["belt"]] < 9
+CUTS = [("fhd", 0.0, g_body), ("vis", 0.0, g_face), ("lens", 0.0, g_face), ("mline", 0.0, g_mline),
         ("armf", ARM_TIP_FRAC, g_arm), ("legf", LEG_TIP_FRAC, g_leg), ("emb", 0.0, g_emb), ("under", UNDER_T, g_cape),
-        ("capef", CAPE_TIP_FRAC, g_ctip)]
+        ("capef", CAPE_TIP_FRAC, g_ctip)] + ([("belt", 0.0, g_beltc)] if BELT else [])
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
 straddle = {}
@@ -1253,7 +1594,107 @@ report["iso_cuts"] = {"cuts": cut_log, "seconds": round(time.time() - t, 1),
                               "fields interpolate linearly along split edges; no face straddles any boundary afterwards",
                       "straddling_faces_after_cut": straddle}
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+
+
+# =========================================================================== v3 smirk mouth: a slit along the line + a pocket
+def mouth_uz(P):
+    P = np.atleast_2d(np.asarray(P, float))
+    th_ = np.arctan2(P[:, 0] - HXC, -(P[:, 1] - HYC))
+    return np.stack([th_ * R_REF, P[:, 2] - Z_MOUTH], 1)
+
+
+t = time.time()
+LMl = LAY["mline"]
+bad_before = sum(1 for e in bm.edges if not e.is_manifold)
+bm.verts.index_update()
+line_vs = [v for v in bm.verts if v[LAY["shell"]] < 0.5 and abs(v[LMl]) <= 1e-5]
+s_of = {}
+for v in line_vs:
+    s_of[v] = float(polyline_sd(mouth_uz(v.co), MOUTH_C2)[1][0])
+line_vs.sort(key=lambda v: (s_of[v], v.index))
+runs, cur = [], [line_vs[0]]
+for a_, b_ in zip(line_vs[:-1], line_vs[1:]):
+    if bm.edges.get((a_, b_)) is not None:
+        cur.append(b_)
+    else:
+        runs.append(cur); cur = [b_]
+runs.append(cur)
+chain = max(runs, key=len)
+assert len(chain) >= 8, ("smirk cut too short", [len(r_) for r_ in runs])
+P_ch = np.array([v.co[:] for v in chain])
+arc_ch = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(P_ch, axis=0), axis=1))])
+sc_ch = arc_ch / arc_ch[-1]                               # 0 .. 1 along the slit (the lips stay joined at 0 and 1)
+cedges = [bm.edges.get((chain[i], chain[i + 1])) for i in range(len(chain) - 1)]
+assert all(e is not None for e in cedges)
+nv0 = len(bm.verts)
+bmesh.ops.split_edges(bm, edges=cedges)
+bm.verts.index_update()
+bm.verts.ensure_lookup_table()
+assert len(bm.verts) == nv0 + len(chain) - 2, ("split did not duplicate exactly the interior slit vertices", len(bm.verts) - nv0)
+VLIST = list(bm.verts)                                   # a snapshot: new pocket vertices invalidate bm.verts' lookup table
+kd_s = KDTree(len(VLIST))
+for j, v in enumerate(VLIST):
+    kd_s.insert(v.co, j)
+kd_s.balance()
+UPPER, LOWER, POCKET = [chain[0]], [chain[0]], [chain[0]]
+for i in range(1, len(chain) - 1):
+    cps = sorted([VLIST[j] for (_, j, _) in kd_s.find_range(Vector(P_ch[i]), 1e-7)], key=lambda v: v.index)
+    assert len(cps) == 2, ("slit vertex copies", i, len(cps))
+    side = []
+    for v in cps:
+        cen = np.array([f.calc_center_median()[:] for f in v.link_faces])
+        side.append(float(polyline_sd(mouth_uz(cen), MOUTH_C2)[0].mean()))
+    assert side[0] * side[1] < 0, ("slit copies on the same side", side)
+    up_, lo_ = (cps[0], cps[1]) if side[0] > 0 else (cps[1], cps[0])
+    UPPER.append(up_); LOWER.append(lo_)
+    th_ = math.atan2(P_ch[i, 0] - HXC, -(P_ch[i, 1] - HYC))
+    nrm_ = np.array([math.sin(th_), -math.cos(th_), 0.0])
+    q = bm.verts.new(P_ch[i] - nrm_ * MOUTH_DEPTH * math.sin(math.pi * sc_ch[i]) ** 0.5)
+    for k_, L_ in LAY.items():
+        q[L_] = up_[L_]
+    q[LAY["pocket"]] = 1.0
+    POCKET.append(q)
+    up_[LAY["lipside"]] = 1.0; lo_[LAY["lipside"]] = -1.0
+UPPER.append(chain[-1]); LOWER.append(chain[-1]); POCKET.append(chain[-1])
+
+
+def traverses(a_, b_):
+    e_ = bm.edges.get((a_, b_))
+    return any(lp.vert is a_ and lp.link_loop_next.vert is b_ for lp in e_.link_loops)
+
+
+new_f = []
+for i in range(len(chain) - 1):
+    for LIP in (UPPER, LOWER):
+        quad = [LIP[i], LIP[i + 1], POCKET[i + 1], POCKET[i]]
+        if traverses(LIP[i], LIP[i + 1]):              # the surface face owns lip_i -> lip_i+1: the pocket runs the other way
+            quad = quad[::-1]
+        vs_ = []
+        for v in quad:
+            if v not in vs_:
+                vs_.append(v)
+        new_f.append(bm.faces.new(vs_))
+bmesh.ops.triangulate(bm, faces=[f for f in new_f if len(f.verts) > 3])
+body_edges = [e for e in bm.edges if e.verts[0][LAY["shell"]] < 0.5]
+bad_after = sum(1 for e in body_edges if not e.is_manifold)
+incons = sum(1 for e in body_edges if not e.is_contiguous)
+assert bad_after == 0 and incons == 0, ("mouth surgery broke the body shell", bad_after, incons)
+MOUTH_SURGERY = {"rule": "iso-cut along the smirk line (field = signed distance in the (u, z) mantle frame, cut only where "
+                         "the nearest point is interior) -> the connected cut chain is split (interior vertices duplicated: "
+                         "the lips; the two end vertices stay shared: the corners) -> a pocket strip (upper lip -> pocket "
+                         "row -> lower lip) closes the slit INSIDE the mantle, MOUTH_DEPTH x sqrt(sin(pi s)) deep",
+                 "cut_runs": [len(r_) for r_ in runs], "slit_vertices": len(chain), "slit_s_range": [round(s_of[chain[0]], 4),
+                                                                                                   round(s_of[chain[-1]], 4)],
+                 "lip_pairs": len(chain) - 2, "pocket_vertices": len(chain) - 2, "pocket_faces_before_tri": len(new_f),
+                 "non_manifold_edges_before_after": [bad_before, bad_after], "winding_inconsistent_edges": incons,
+                 "slit_length_3d": round(float(arc_ch[-1]), 4),
+                 "corner_to_corner_3d": round(float(np.linalg.norm(P_ch[-1] - P_ch[0])), 4)}
 bm.verts.index_update(); bm.faces.index_update()
+MOUTH_PAIRS = [(UPPER[i].index, LOWER[i].index, float(sc_ch[i])) for i in range(1, len(chain) - 1)]
+MOUTH_CORNERS = [chain[0].index, chain[-1].index]
+MOUTH_SC = (s_of[chain[0]], s_of[chain[-1]])
+MOUTH_SURGERY["seconds"] = round(time.time() - t, 2)
+report["mouth"] = {"surgery": MOUTH_SURGERY}
 CV = np.array([v.co[:] for v in bm.verts])
 CF = [[v.index for v in f.verts] for f in bm.faces]
 FVAL = {k: np.array([np.mean([v[LAY[k]] for v in f.verts]) for f in bm.faces]) for k in LAY}
@@ -1261,7 +1702,7 @@ VFIELD = {k: np.array([v[LAY[k]] for v in bm.verts]) for k in LAY}
 bm.free()
 
 # =========================================================================== regions + final mesh (cut shells + webs)
-REG = ["skin", "head", "arm_tip", "leg_tip", "emblem", "visor", "lens", "siphon", "cape", "cape_under", "cape_tip",
+REG = ["skin", "head", "arm_tip", "leg_tip", "emblem", "belt", "visor", "lens", "mouth", "cape", "cape_under", "cape_tip",
        "membrane", "membrane_rim"]
 R_ = {n: i for i, n in enumerate(REG)}
 nf_c = len(CF)
@@ -1272,9 +1713,10 @@ bodyf = ~fsh & (FVAL["fhd"] <= 0)
 rid[bodyf & (FVAL["armf"] > ARM_TIP_FRAC)] = R_["arm_tip"]
 rid[bodyf & (FVAL["legf"] > LEG_TIP_FRAC)] = R_["leg_tip"]
 rid[bodyf & (FVAL["emb"] < 0)] = R_["emblem"]
+rid[bodyf & (FVAL["belt"] < 0)] = R_["belt"]
 rid[~fsh & (FVAL["vis"] < 0)] = R_["visor"]
 rid[~fsh & (FVAL["lens"] < 0)] = R_["lens"]
-rid[~fsh & (FVAL["siph"] < 0)] = R_["siphon"]
+rid[~fsh & (FVAL["pocket"] > 0)] = R_["mouth"]          # ONLY the pocket faces (enclosed while the lips are shut)
 rid[fsh] = R_["cape"]
 rid[fsh & (FVAL["under"] > UNDER_T)] = R_["cape_under"]
 rid[fsh & (FVAL["capef"] > CAPE_TIP_FRAC)] = R_["cape_tip"]
@@ -1302,11 +1744,13 @@ assert nf == len(rid)
 report["tris_final"] = int(sum(len(f) - 2 for f in FF))
 report["tris_breakdown"] = {"body_shell_and_cape_shell_after_cuts": tri_count_F(CF), "webs": N_WEB_TRIS}
 report["tris_v1"] = {"final": 11370, "shells_after_cuts": 9978, "webs": 1392}
+report["tris_v2"] = {"final": 21640, "shells_after_cuts": 19600, "webs": 2040}
 report["region_rule"] = {
     "head": "body-shell faces nearer the mantle/visor than the body/neck (part Voronoi, cut at 0)",
-    "visor": "head-front faces inside the W outline (SDF in the (u, z) mantle frame)",
-    "lens": "inside either lens (the wing inset by VISOR_FRAME_W; the bridge between them stays frame)",
-    "siphon": "the disc of SIPHON_R round the siphon centre in the (u, z) frame (the pressed-in hole)",
+    "visor": "head-front faces inside the mask outline (W or starfish; SDF in the (u, z) mantle frame)",
+    "lens": "inside either lens (the W wing inset by VISOR_FRAME_W; the bridge between them stays frame)",
+    "mouth": "ONLY the pocket faces behind the slit (enclosed inside the mantle while the lips are shut: invisible at rest)",
+    "belt": "torso faces inside the belt outline (band + two side plates) in the (u = theta x R_W, z) waist frame, + pad",
     "emblem": "the octopus sigil SDF (mantle dome + 3 mirrored curling tentacle pairs), front projection about EMB_C",
     "arm_tip / leg_tip": "the traced arm / leg tentacle past ARM_TIP_FRAC / LEG_TIP_FRAC of its centreline",
     "cape_under": "cape surface whose smoothed normal faces the body axis more than UNDER_T (the sucker-side lining)",
@@ -1353,6 +1797,16 @@ report["shade"] = {"cavity_k": CAVITY_K, "face_jitter": FACE_JITTER, "v1": {"cav
 report["cavity_seconds"] = round(time.time() - t, 1)
 fa = np.empty(nf); me.polygons.foreach_get("area", fa)
 report["regions_area_share"] = {n: round(float(fa[rid == R_[n]].sum() / fa.sum()), 4) for n in REG}
+if BELT:                                               # belt fit: how far the belt surface stands off the (belt-free) body
+    bvf_ = np.unique(np.array([v for fi, f in enumerate(FF) if rid[fi] == R_["belt"] for v in f], dtype=np.int64))
+    so_ = np.array([PB["body"].find_nearest(Vector(FV[v]))[3] for v in bvf_])
+    report["belt"]["fit"] = {
+        "rule": "belt-region vertices of the final mesh: distance to the smoothed body sculpt WITHOUT the belt (the waist "
+                "it sits on); the belt is fused by the remesh, so 0 = its rim meeting the body, the rest = its thickness",
+        "vertices": int(len(bvf_)), "standoff_p50": round(float(np.percentile(so_, 50)), 4),
+        "standoff_p95": round(float(np.percentile(so_, 95)), 4), "standoff_max": round(float(so_.max()), 4),
+        "design_thickness": {"band": BELT_T, "plate_max": PLATE_T},
+        "gap_between_belt_and_body": "none by construction (one fused remesh shell)"}
 
 # alignment report: centroids of the placed parts vs the body midline
 def region_centroid(n):
@@ -1363,7 +1817,8 @@ def region_centroid(n):
 report["alignment"] = {"body_midline_x": round(X_MID, 4),
                        "visor_centroid_x_offset": round(float(region_centroid("visor")[0] - X_MID), 4),
                        "lens_centroid_x_offset": round(float(region_centroid("lens")[0] - X_MID), 4),
-                       "siphon_centroid_x_offset": round(float(region_centroid("siphon")[0] - X_MID), 4),
+                       "mouth_pocket_centroid_x_offset": round(float(region_centroid("mouth")[0] - X_MID), 4),
+                       "belt_centroid_x_offset": round(float(region_centroid("belt")[0] - X_MID), 4) if BELT else None,
                        "emblem_centroid_x_offset": round(float(region_centroid("emblem")[0] - X_MID), 4),
                        "emblem_centre": EMB_C.round(4).tolist(), "v1_emblem_centre_x_offset": -0.314,
                        "neck_axis_x": round(float(NB[0]), 4)}
@@ -1379,11 +1834,16 @@ report["facing"] = {"rule": "head (mantle) bbox centre -> centroid of the W-viso
                     "source_angle_from_minusY_deg": round(math.degrees(math.atan2(src_d[0], -src_d[1])), 2),
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 2),
                     "cape_centroid_y": round(float(PARTS["cape"][0][:, 1].mean()), 4)}
-LMK ={"visor": (region_centroid("visor") * 0.5 + region_centroid("lens") * 0.5).round(4).tolist(),
-       "emblem": EMB_C.round(4).tolist(), "siphon": region_centroid("siphon").round(4).tolist(),
+MOUTH_CENTRE = CV[[p[0] for p in MOUTH_PAIRS]].mean(0)
+LMK = {"visor": (region_centroid("visor") * 0.5 + region_centroid("lens") * 0.5).round(4).tolist(),
+       "emblem": EMB_C.round(4).tolist(), "mouth": MOUTH_CENTRE.round(4).tolist(),
        "neck": (0.5 * (NB + NT)).round(4).tolist(), "head": anchor.round(4).tolist(),
        "head_top_z": round(Z_TOP, 4), "neck_bottom_z": round(float(NB[2]), 4)}
-report["landmarks_v2"] = LMK
+if BELT:
+    zc_ = 0.5 * (BZ_TOP + BZ_BOT)
+    LMK["belt"] = (np.array([X_MID + BELT_SHIFT[0], float(belt_cy(zc_)) - float(belt_r(0.0, zc_)) - BELT_T, zc_]) -
+                   BELT_SHIFT).round(4).tolist()
+report["landmarks_v3"] = LMK
 
 # =========================================================================== flat + UV
 me.shade_flat()
@@ -1422,7 +1882,139 @@ low["conquest_source"] = os.path.basename(bpy.data.filepath)
 low["conquest_scale_policy"] = "natural proportions, sculpt units; game scales at import (cell fit report-only)"
 low["conquest_locomotion"] = "upright biped stride on the two leg tentacles; cape tentacles + water webs are secondary motion"
 low["conquest_version"] = VERSION
-low["v2_landmarks"] = json.dumps(LMK)
+low["conquest_mask_style"] = MASK_STYLE
+low["v3_landmarks"] = json.dumps(LMK)
+
+# =========================================================================== v3 'smirk' morph target + the mouth evidence
+t = time.time()
+nvx = len(FV)
+PKv = np.concatenate([VFIELD["pocket"], np.zeros(nvx - len(CV))])
+LSv = np.concatenate([VFIELD["lipside"], np.zeros(nvx - len(CV))])
+SHv = np.concatenate([VFIELD["shell"], np.full(nvx - len(CV), 2.0)])
+FHv = np.concatenate([VFIELD["fhd"], np.full(nvx - len(CV), -1.0)])
+VIv = np.concatenate([VFIELD["vis"], np.full(nvx - len(CV), 10.0)])
+muz = mouth_uz(FV)
+thm_ = np.arctan2(FV[:, 0] - HXC, -(FV[:, 1] - HYC))
+gm_ = (SHv < 0.5) & (FHv > -0.05) & (np.cos(thm_) > 0.3) & (np.abs(muz[:, 1]) < 0.8) & (np.abs(muz[:, 0]) < 1.3) & (PKv < 0.5)
+gi_m = np.nonzero(gm_)[0]
+sdm, smm, _ = polyline_sd(muz[gi_m], MOUTH_C2)
+scm = np.clip((smm - MOUTH_SC[0]) / (MOUTH_SC[1] - MOUTH_SC[0]), 0.0, 1.0)
+GAM = math.log(0.5) / math.log(MOUTH_GAP_PEAK)            # sin(pi sc^GAM) peaks at sc = MOUTH_GAP_PEAK, 0 at both corners
+prof_m = np.sin(math.pi * scm ** GAM)
+side_m = np.where(LSv[gi_m] != 0, LSv[gi_m], np.sign(sdm))
+fall_m = 1.0 - smoothstep(0.0, MOUTH_SOFT, np.abs(sdm))
+DISP = np.zeros_like(FV)
+DISP[gi_m, 2] = np.where(side_m > 0, MOUTH_GAP_UPPER, np.where(side_m < 0, -MOUTH_GAP_LOWER, 0.0)) * prof_m * fall_m
+low.shape_key_add(name="Basis", from_mix=False)
+kb_ = low.shape_key_add(name=SMIRK_KEY, from_mix=False)
+kb_.data.foreach_set("co", (FV + DISP).ravel())
+kb_.slider_min, kb_.slider_max, kb_.value = 0.0, 1.0, 0.0
+me.shape_keys.use_relative = True
+low.active_shape_key_index = 0
+KEYB = me.shape_keys
+REST32 = np.empty(nvx * 3, dtype=np.float32); me.vertices.foreach_get("co", REST32); REST32 = REST32.reshape(-1, 3).astype(float)
+OPEN32 = np.empty(nvx * 3, dtype=np.float32); kb_.data.foreach_get("co", OPEN32); OPEN32 = OPEN32.reshape(-1, 3).astype(float)
+DIG["smirk_key"] = sha(OPEN32)
+pu_ = np.array([p[0] for p in MOUTH_PAIRS]); pl_ = np.array([p[1] for p in MOUTH_PAIRS]); psc = np.array([p[2] for p in MOUTH_PAIRS])
+gap_rest = np.linalg.norm(REST32[pu_] - REST32[pl_], axis=1)
+gap_open = np.linalg.norm(OPEN32[pu_] - OPEN32[pl_], axis=1)
+# closed-state flatness: the mouth zone vs the neighbouring mantle, both against the smooth surfaces (no dimple, no crease)
+zone_m = gi_m[np.abs(sdm) < MOUTH_SOFT]
+ctrl_m = gi_m[(np.abs(sdm) > MOUTH_SOFT + 0.05) & (VIv[gi_m] > 0.1)]
+bvh_head_s = BVHTree.FromPolygons(PARTS["head"][0].tolist(), PARTS["head"][1])      # the Taubin-smoothed mantle (final frame)
+dev_hi = lambda ids: np.array([bvh_highb.find_nearest(Vector(REST32[i]))[3] for i in ids])       # noqa: E731
+dev_sm = lambda ids: np.array([bvh_head_s.find_nearest(Vector(REST32[i]))[3] for i in ids])      # noqa: E731
+dz_hi, dc_hi, dz_sm, dc_sm = dev_hi(zone_m), dev_hi(ctrl_m), dev_sm(zone_m), dev_sm(ctrl_m)
+
+
+def tri_n(X, f):
+    n_ = np.cross(X[f[1]] - X[f[0]], X[f[2]] - X[f[0]])
+    return n_ / max(np.linalg.norm(n_), 1e-30)
+
+
+near_f = [fi for fi, f in enumerate(FF) if gm_[f[0]] or gm_[f[1]] or gm_[f[2]] or PKv[f[0]] > 0.5]
+e2f = {}
+for fi in near_f:
+    f = FF[fi]
+    for k in range(3):
+        e2f.setdefault(tuple(sorted((f[k], f[(k + 1) % 3]))), []).append(fi)
+surf = lambda fis: [fi for fi in fis if rid[fi] != R_["mouth"]]          # noqa: E731
+crease_slit = []
+lips_u = [MOUTH_CORNERS[0]] + list(pu_) + [MOUTH_CORNERS[1]]
+lips_l = [MOUTH_CORNERS[0]] + list(pl_) + [MOUTH_CORNERS[1]]
+for i in range(len(lips_u) - 1):
+    fu = surf(e2f.get(tuple(sorted((lips_u[i], lips_u[i + 1]))), []))
+    fl = surf(e2f.get(tuple(sorted((lips_l[i], lips_l[i + 1]))), []))
+    if fu and fl:
+        c_ = float(np.clip(tri_n(REST32, FF[fu[0]]) @ tri_n(REST32, FF[fl[0]]), -1, 1))
+        crease_slit.append(math.degrees(math.acos(c_)))
+zone_set = set(zone_m.tolist())
+crease_zone = []
+for (a_, b_), fis in e2f.items():
+    s_ = surf(fis)
+    if len(s_) == 2 and a_ in zone_set and b_ in zone_set:
+        crease_zone.append(math.degrees(math.acos(float(np.clip(tri_n(REST32, FF[s_[0]]) @ tri_n(REST32, FF[s_[1]]), -1, 1)))))
+# visibility: rays from 15 camera directions onto a window round the mouth; the first hit's region is what a viewer sees
+VIEWS_M = [(a, e) for a in (0, -30, 30, -55, 55) for e in (-20, 0, 20)]
+STEP_M = 0.012
+
+
+def mouth_visible(X):
+    bvh_ = BVHTree.FromPolygons(X.tolist(), FF)
+    out = {}
+    for a, e in VIEWS_M:
+        ar, er = math.radians(a), math.radians(e)
+        dc = np.array([math.sin(ar) * math.cos(er), -math.cos(ar) * math.cos(er), math.sin(er)])
+        e1 = np.cross([0.0, 0.0, 1.0], dc); e1 /= np.linalg.norm(e1); e2 = np.cross(dc, e1)
+        n_hit = n_mouth = 0
+        for x in np.arange(-0.9, 0.9001, STEP_M):
+            for y in np.arange(-0.55, 0.5501, STEP_M):
+                h_ = bvh_.ray_cast(Vector(MOUTH_CENTRE + dc * 10.0 + e1 * x + e2 * y), Vector(-dc))
+                if h_[2] is not None:
+                    n_hit += 1
+                    n_mouth += int(rid[h_[2]] == R_["mouth"])
+        out["yaw%+d_elev%+d" % (a, e)] = {"rays_hit": n_hit, "mouth_hits": n_mouth,
+                                          "mouth_area": round(n_mouth * STEP_M * STEP_M, 5)}
+    return out
+
+
+vis_rest = mouth_visible(REST32)
+vis_open = mouth_visible(OPEN32)
+qs_ = [0.1, 0.25, 0.5, MOUTH_GAP_PEAK, 0.75, 0.9]
+report["mouth"].update({
+    "morph_target": {"name": SMIRK_KEY, "moved_vertices": int((np.abs(DISP[:, 2]) > 1e-9).sum()),
+                     "max_offset": round(float(np.abs(DISP[:, 2]).max()), 4),
+                     "rule": "z offset: upper side +MOUTH_GAP_UPPER, lower side -MOUTH_GAP_LOWER, x sin(pi sc^g) along the slit "
+                             "(0 at both corners, peak at MOUTH_GAP_PEAK) x (1 - smoothstep(0, MOUTH_SOFT, |distance to the "
+                             "line|)); lips by their copy's side, the rest by the side of the line; the pocket stays"},
+    "closed": {"lip_pairs_max_separation": float(gap_rest.max()), "lip_pairs": int(len(gap_rest)),
+               "surface_deviation_vs_remeshed_high": {"mouth_zone_p99": round(float(np.percentile(dz_hi, 99)), 5),
+                                                      "mouth_zone_max": round(float(dz_hi.max()), 5),
+                                                      "neighbour_mantle_p99": round(float(np.percentile(dc_hi, 99)), 5),
+                                                      "neighbour_mantle_max": round(float(dc_hi.max()), 5)},
+               "surface_deviation_vs_smoothed_mantle": {"mouth_zone_mean": round(float(dz_sm.mean()), 5),
+                                                        "mouth_zone_max": round(float(dz_sm.max()), 5),
+                                                        "neighbour_mantle_mean": round(float(dc_sm.mean()), 5),
+                                                        "neighbour_mantle_max": round(float(dc_sm.max()), 5)},
+               "crease_deg": {"across_the_slit_max": round(max(crease_slit), 3), "across_the_slit_mean": round(float(np.mean(crease_slit)), 3),
+                              "mouth_zone_edges_p95": round(float(np.percentile(crease_zone, 95)), 3),
+                              "mouth_zone_edges_max": round(max(crease_zone), 3), "slit_segments": len(crease_slit)},
+               "visible_mouth_region": vis_rest,
+               "visible_mouth_region_total_hits": int(sum(v["mouth_hits"] for v in vis_rest.values())),
+               "zone_vertices": int(len(zone_m)), "control_vertices": int(len(ctrl_m))},
+    "open": {"gap_max": round(float(gap_open.max()), 4),
+             "gap_at": {("sc_%.2f" % q): round(float(np.interp(q, psc, gap_open)), 4) for q in qs_},
+             "gap_at_corners": [0.0, 0.0], "gap_peak_at_sc": round(float(psc[int(np.argmax(gap_open))]), 3),
+             "visible_mouth_region": vis_open,
+             "front_visible_dark_area": vis_open["yaw+0_elev+0"]["mouth_area"]},
+    "line_u_dz": MOUTH_LINE, "gap_lower_upper": [MOUTH_GAP_LOWER, MOUTH_GAP_UPPER], "depth": MOUTH_DEPTH,
+    "why_invisible_when_closed": "the dark 'mouth' colour is painted ONLY on the pocket faces, which sit behind the lips "
+                                 "inside the mantle; at rest the two lips are duplicate vertices at identical positions "
+                                 "(identical skin weights too), so the mantle surface is watertight and unchanged and the "
+                                 "pocket is enclosed: no crease, no colour patch. The morph target is 0 at rest.",
+    "seconds": round(time.time() - t, 1)})
+print("MOUTH", json.dumps({k: report["mouth"][k] for k in ("closed", "open")}, default=str)[:3000])
+sys.stdout.flush()
 
 if PREVIEW:
     nt.links.new(vc.outputs["Color"], bsdf.inputs["Base Color"])
@@ -1432,8 +2024,8 @@ if PREVIEW:
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
     print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris_final", "tris_breakdown", "retopo", "regions_faces", "regions_area_share",
-                                                             "facing", "iso_cuts", "natural", "v2_prep", "webs", "detail_zones",
-                                                             "alignment", "shade", "landmarks_v2")}, default=str))
+                                                             "facing", "iso_cuts", "natural", "prep", "webs", "detail_zones",
+                                                             "alignment", "shade", "landmarks_v3", "belt", "mouth")}, default=str))
     sys.stdout.flush(); os._exit(0)
 
 # =========================================================================== 7. bake (normal + AO from the remeshed shells)
@@ -1459,6 +2051,20 @@ ta = nt.nodes.new("ShaderNodeTexImage"); ta.image = img_ao; ta.location = (-900,
 low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = False
 low.visible_transmission = low.visible_volume_scatter = False
 me.shade_smooth()
+# v3: the lip edges (surface | pocket) are SHARP for the bake: otherwise the smoothed lip-vertex normals average in the
+# folded-in pocket faces, the tangent-space bake compensates for that tilt, and the flat-shaded render shows the slit as a
+# faint jagged line while the mouth is shut. Sharp, each lip's normals come from its own surface side (the two sides are
+# coplanar across the slit: crease 0 deg). Removed again after the bake (the delivered mesh is flat-shaded).
+lip_pairs_set = set()
+for LIP in ([MOUTH_CORNERS[0]] + [p[0] for p in MOUTH_PAIRS] + [MOUTH_CORNERS[1]],
+            [MOUTH_CORNERS[0]] + [p[1] for p in MOUTH_PAIRS] + [MOUTH_CORNERS[1]]):
+    for a_, b_ in zip(LIP[:-1], LIP[1:]):
+        lip_pairs_set.add((min(a_, b_), max(a_, b_)))
+ev_ = np.empty(len(me.edges) * 2, dtype=np.int64); me.edges.foreach_get("vertices", ev_); ev_ = ev_.reshape(-1, 2)
+sharp_ = np.array([(min(a_, b_), max(a_, b_)) in lip_pairs_set for a_, b_ in ev_], dtype=bool)
+if "sharp_edge" in me.attributes:
+    me.attributes.remove(me.attributes["sharp_edge"])
+me.attributes.new("sharp_edge", "BOOLEAN", "EDGE").data.foreach_set("value", sharp_)
 UVn = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", UVn)
 lt_ = np.empty(nf, dtype=np.int64); me.polygons.foreach_get("loop_total", lt_)
 assert (lt_ == 3).all(), "low must be all triangles"
@@ -1498,7 +2104,20 @@ for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, 16)):
 px = np.empty(RN * RN * 4, dtype=np.float32); img_n.pixels.foreach_get(px); px = px.reshape(-1, 4)
 pa = np.empty(RA * RA * 4, dtype=np.float32); img_ao.pixels.foreach_get(pa); pa = pa.reshape(-1, 4)
 me.shade_flat()
-web_faces = np.isin(rid, [R_["membrane"], R_["membrane_rim"]])
+if "sharp_edge" in me.attributes:
+    me.attributes.remove(me.attributes["sharp_edge"])
+report["mouth"]["bake_sharp_lip_edges"] = int(sharp_.sum())
+# closed-mouth evidence on the BAKE: the normal map on the faces touching the slit must look like the mantle around it
+devn_all = np.linalg.norm(px[:, :3] - np.array([0.5, 0.5, 1.0]), axis=1)
+lipv_ = set(v for e_ in lip_pairs_set for v in e_)
+lipf_ = np.array([rid[fi] != R_["mouth"] and len(lipv_.intersection(f)) >= 2 for fi, f in enumerate(FF)])
+zonef_ = np.array([rid[fi] != R_["mouth"] and not lipf_[fi] and all(v in zone_set for v in f) for fi, f in enumerate(FF)])
+txl_, txz_ = texels_of(lipf_, RN), texels_of(zonef_, RN)
+report["mouth"]["closed"]["baked_normal_deviation_from_flat"] = {
+    "slit_faces_mean": round(float(devn_all[txl_].mean()), 4), "slit_faces_p95": round(float(np.percentile(devn_all[txl_], 95)), 4),
+    "mouth_zone_faces_mean": round(float(devn_all[txz_].mean()), 4), "mouth_zone_faces_p95": round(float(np.percentile(devn_all[txz_], 95)), 4),
+    "slit_faces": int(lipf_.sum()), "zone_faces": int(zonef_.sum())}
+web_faces = np.isin(rid, [R_["membrane"], R_["membrane_rim"], R_["mouth"]])   # no sculpt beneath: flat normal, AO 1
 web_tx_n = texels_of(web_faces, RN)
 web_tx_a = texels_of(web_faces, RA)
 devn = np.linalg.norm(px[:, :3] - np.array([0.5, 0.5, 1.0]), axis=1)
@@ -1520,7 +2139,7 @@ bstats.update({
 per_region = {}
 for n_ in REG:
     fm_ = rid == R_[n_]
-    if fm_.any() and n_ not in ("membrane", "membrane_rim"):
+    if fm_.any() and n_ not in ("membrane", "membrane_rim", "mouth"):
         tx = texels_of(fm_, RN)
         per_region[n_] = {"texels": int(tx.sum()), "baked_pct": round(100 * float(cov_n[tx].mean()), 2),
                           "normal_dev_mean": round(float(devn[tx & cov_n].mean()), 4) if (tx & cov_n).any() else None}
@@ -1529,23 +2148,23 @@ px[~cov_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 pa[~cov_a, :3] = bstats["ao_mean"]; pa[web_tx_a, :3] = 1.0; img_ao.pixels.foreach_set(pa.ravel())
 if not DIGEST_ONLY:
     os.makedirs(TEX_DIR, exist_ok=True)
-    for img, nm in ((img_n, UNIT + "_normal.png"), (img_ao, UNIT + "_ao.png")):
+    for img, nm in ((img_n, OUT_NAME + "_normal.png"), (img_ao, OUT_NAME + "_ao.png")):
         img.filepath_raw = os.path.join(TEX_DIR, nm); img.file_format = "PNG"; img.save(); img.pack()
 
 
 def set_tex_paths(rel_prefix):
-    for img, nm in ((img_n, UNIT + "_normal.png"), (img_ao, UNIT + "_ao.png")):
+    for img, nm in ((img_n, OUT_NAME + "_normal.png"), (img_ao, OUT_NAME + "_ao.png")):
         img.filepath = rel_prefix + nm
 
 
 bstats["pixel_sha"] = {"normal": sha(np.clip(np.rint(px[:, :3] * 255.0), 0, 255).astype(np.uint8)),
                        "ao": sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))}
-np.save(os.path.join(tempfile.gettempdir(), "supaoctto_normal_twin.npy" if DIGEST_ONLY else "supaoctto_normal_main.npy"), px[:, :3])
-np.save(os.path.join(tempfile.gettempdir(), "supaoctto_ao_twin.npy" if DIGEST_ONLY else "supaoctto_ao_main.npy"), pa[:, :3])
+np.save(os.path.join(tempfile.gettempdir(), OUT_NAME + ("_normal_twin.npy" if DIGEST_ONLY else "_normal_main.npy")), px[:, :3])
+np.save(os.path.join(tempfile.gettempdir(), OUT_NAME + ("_ao_twin.npy" if DIGEST_ONLY else "_ao_main.npy")), pa[:, :3])
 bstats["cage_extrusion"] = BAKE_CAGE
 bstats["resolution"] = {"normal": RN, "ao": RA}
 bstats["high_tris"] = tri_count_F(HF_all)
-bstats["high"] = "the remeshed (smoothed, visor/neck-fused, siphon-dimpled) shells"
+bstats["high"] = "the remeshed (smoothed, mask/neck/belt-fused) shells; the mouth pocket texels are reset flat like the webs"
 bstats["seconds"] = round(time.time() - tb, 1)
 report["bake"] = bstats
 DIG["bake_normal"] = bstats["pixel_sha"]["normal"]; DIG["bake_ao"] = bstats["pixel_sha"]["ao"]
@@ -1573,7 +2192,7 @@ report["digest_geometry_colour"] = hashlib.sha256(np.round(LVf, 6).astype(np.flo
 DIG["geometry_colour"] = report["digest_geometry_colour"]; DIG["uv"] = report["uv"]["uv_sha"]
 report["final_bbox"] = [LVf.min(0).round(4).tolist(), LVf.max(0).round(4).tolist()]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],
-                     "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses"}
+                     "provenance": "v2: all-blue body = the v1 cape blue (artist); orange W-visor frame + pale cyan lenses; v3: gold belt (= the sigil), near-black mouth pocket"}
 bpy.context.preferences.filepaths.save_version = 0
 if not DIGEST_ONLY:
     set_tex_paths("//textures/")
@@ -1594,7 +2213,7 @@ vfhd = np.concatenate([VFIELD["fhd"], np.full(len(W_) - NVS, -1.0)])
 for i in range(NVS):
     cape_ = VFIELD["shell"][i] > 0.5
     lab_ = int((CLAB if cape_ else BLAB)[(kd_c if cape_ else kd_b).find(W_[i])[1]])
-    if not cape_ and (vfhd[i] > -0.05 or W_[i, 2] > Z_BODY_TOP - 0.2):
+    if not cape_ and (vfhd[i] > -0.05 or W_[i, 2] > Z_BODY_TOP - 0.2 or VFIELD["beltv"][i] > 0.5):
         lab_ = 0
     labF[i] = lab_
     ch = ID_TO_CH.get(lab_)
@@ -1995,6 +2614,14 @@ def float_env(t):
     return ss5(t0, t1, t) * (1.0 - ss5(t2, t3, t))
 
 
+def mouth_w(clip, t):
+    """v3 'smirk' morph weight at loop phase t: 0 = shut (nothing visible). Staged in the float's arms-crossed hold."""
+    T_ = {"float": FLOAT_SMIRK_T, "idle": IDLE_SMIRK_T, "walk": WALK_SMIRK_T}[clip]
+    if T_ is None:
+        return 0.0
+    return ss5(T_[0], T_[1], t) * (1.0 - ss5(T_[2], T_[3], t))
+
+
 def pose(clip, f):
     """Deform transforms of frame f (0-based within the period) -> ({bone: 4x4}, info)."""
     N = CLIP_N[clip]
@@ -2168,6 +2795,16 @@ for cn, N in CLIPS.items():
             if f < N:
                 Rrel = (np.linalg.inv(D[PARENT[n]]) @ D[n])[:3, :3]
                 REL[cn][n].append(Rrel)
+    # the 'smirk' morph weight rides the SAME action (a KEY slot on the mesh's shape keys); every clip carries it (0 when
+    # shut) so a clip switch in the game always resets the mouth
+    K.assign_action(KEYB, act)
+    for f in range(N + 1):
+        w_ = mouth_w(cn, (f % N) / N)
+        KEYB.key_blocks[SMIRK_KEY].value = w_
+        KEYB.key_blocks[SMIRK_KEY].keyframe_insert("value", frame=f + 1)
+        key_rows.append([w_] * 7)
+    KEYB.animation_data.action = None
+    KEYB.key_blocks[SMIRK_KEY].value = 0.0
     for fc in K.action_fcurves(act):
         for kp in fc.keyframe_points:
             kp.interpolation = "LINEAR"
@@ -2214,13 +2851,19 @@ rest_len_w = rest_len_w[rest_len_w > 2.5 * WEB_THICK]
 arm_side = {s: np.nonzero(labF == LAB_ID["arm." + s])[0] for s in ("L", "R")}
 arm_deep = {s: arm_side[s][sF[arm_side[s]] > 0.45 * CHAINS["arm." + s]["L"]] for s in ("L", "R")}   # the forearm (clear of the armpit openings)
 torso_vids = np.nonzero((vshell == 0) & (labF == 0) & (W_[:, 2] < NECK_ZA))[0]
+belt_vids = np.unique(np.array([v for fi, f in enumerate(FF_all) if rid[fi] == R_["belt"] for v in f], dtype=np.int64))
+capeweb_vids = np.nonzero(vshell >= 1)[0]
 samples = []
 pose_check = 0.0
+mouth_track = {}
+belt_gap = {}
 for cn, N in CLIPS.items():
     act = NEW_ACTS[cn]
     K.assign_action(rig, act)
+    K.assign_action(KEYB, act)                         # the smirk weight rides the clip (KEY slot)
     first = last = None
     minz, root_off = 1e9, 0.0
+    belt_arm, belt_cape = 1e9, 1e9
     tips, arm_web_gap, leg_web_gap, stretch = [], 1e9, 1e9, [1e9, 0.0]
     ends_minz = []
     flare = 0.0
@@ -2265,6 +2908,13 @@ for cn, N in CLIPS.items():
             kd_w.balance()
             arm_web_gap = min(arm_web_gap, min(kd_w.find(C[v])[2] for v in arm_vids[::3]))
             leg_web_gap = min(leg_web_gap, min(kd_w.find(C[v])[2] for v in leg_vids[::2]))
+            if len(belt_vids):
+                kd_bl = KDTree(len(belt_vids))
+                for i, v in enumerate(belt_vids):
+                    kd_bl.insert(C[v], i)
+                kd_bl.balance()
+                belt_arm = min(belt_arm, min(kd_bl.find(C[v])[2] for v in arm_vids[::2]))
+                belt_cape = min(belt_cape, min(kd_bl.find(C[v])[2] for v in capeweb_vids[::2]))
         if cn == "float" and f - 1 == int(round(0.48 * N)):
             Cy_mid = float(np.median(C[torso_vids, 1]))
             # forearm vs belly: for every forearm vertex over the torso's front, its y must be ahead of (below) the
@@ -2300,7 +2950,18 @@ for cn, N in CLIPS.items():
            "per_bone_amplitude_deg": {n: round(v, 3) for n, v in amp.items()},
            "arm_to_web_min_gap": round(float(arm_web_gap), 4), "leg_to_web_min_gap": round(float(leg_web_gap), 4),
            "web_edge_stretch_range": [round(stretch[0], 4), round(stretch[1], 4)], "web_edge_stretch_max_at": stretch_at,
-           "cape_tip_travel_in_chest_frame_max": round(flare, 4)}
+           "cape_tip_travel_in_chest_frame_max": round(flare, 4),
+           "belt_to_arm_min_gap": round(float(belt_arm), 4) if len(belt_vids) else None,
+           "belt_to_cape_or_web_min_gap": round(float(belt_cape), 4) if len(belt_vids) else None}
+    mw_ = [mouth_w(cn, f / N) for f in range(N + 1)]
+    op_ = [f + 1 for f in range(N + 1) if mw_[f] > 1e-6]
+    row["smirk"] = {"staging": {"float": FLOAT_SMIRK_T, "idle": IDLE_SMIRK_T, "walk": WALK_SMIRK_T}[cn],
+                    "weight_range": [round(min(mw_), 4), round(max(mw_), 4)],
+                    "open_frames": [op_[0], op_[-1]] if op_ else None,
+                    "fully_open_frames": None, "weight_at_loop_ends": [mw_[0], mw_[-1]]}
+    if op_:
+        fo_ = [f + 1 for f in range(N + 1) if mw_[f] > 1 - 1e-6]
+        row["smirk"]["fully_open_frames"] = [fo_[0], fo_[-1]] if fo_ else None
     if cn == "walk":
         half = N // 2
         gait = {}
@@ -2355,6 +3016,8 @@ rep["motion_hierarchy"] = {"rule": "mean over each chain group's bones of half t
                            **{cn: clip_rep[cn]["mean_bone_amplitude_deg"] for cn in CLIPS},
                            "cape_vs_arm": {cn: clip_rep[cn]["cape_vs_arm_ratio"] for cn in CLIPS}}
 rig.animation_data.action = None
+KEYB.animation_data.action = None
+KEYB.key_blocks[SMIRK_KEY].value = 0.0
 for pb in rig.pose.bones:
     pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0)
 scene.frame_set(1)
@@ -2366,10 +3029,13 @@ rep["deform_bone_count"] = len(DEFORM)
 rep["landmarks"] = {"hip_z": round(Z_HIP, 4), "neck_z": round(Z_NECK, 4), "neck_ramp_z": [round(NECK_ZA, 4), round(NECK_ZB, 4)],
                     "head_top_z": round(Z_TOP, 4), "leg_tips": {s: TIP[s].round(4).tolist() for s in TIP},
                     "emblem_centre": EMB_C.round(4).tolist(), **LMK}
-rig["conquest_rig"] = ("supaoctto v2: root (contract) > pelvis > spine > chest > head (over the neck); thigh/shin/foot per leg "
+rig["conquest_rig"] = ("supaoctto v3: root (contract) > pelvis > spine > chest > head (over the neck); thigh/shin/foot per leg "
                        "(analytic IK); arm.L/R.0-3; cape_outer/inner.L/R.0-4; web.R/C/L.0-3 (water-web mid chains)")
 low["conquest_clips"] = list(CLIPS)
-low["conquest_clip_status"] = "idle + walk (confident stride, in place) + float (rise, arms crossed, cape flare, land); no attack/hit/death"
+low["conquest_clip_status"] = ("idle + walk (confident stride, in place) + float (rise, arms crossed + smirk, cape flare, "
+                               "land); no attack/hit/death")
+low["conquest_shape_keys"] = ("smirk: glTF morph target; 0 = mouth shut (nothing visible), 1 = the smirk-line opening; its "
+                              "weight is keyed in every clip (float opens it over the arms-crossed hold)")
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)
@@ -2387,19 +3053,81 @@ os.makedirs(os.path.dirname(OUT_RIGGED), exist_ok=True)
 set_tex_paths("//../improved/textures/")
 bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True, relative_remap=False)
 
-# =========================================================================== 10. identity-scale glb
-for o in scene.objects:
-    o.select_set(o is rig or o is low)
-bpy.context.view_layer.objects.active = rig
-K.assign_action(rig, NEW_ACTS["idle"])
-t = time.time()
-bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
-                          export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
-                          export_skins=True, export_def_bones=False)
-rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t, 1),
-              "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale "
-                           "%.5f reaches the regular cell (report-only)" % k_fit}
-rig.animation_data.action = None
+# =========================================================================== 10. identity-scale glb (+ the smirk morph)
+def glb_carries(path):
+    import struct
+    data = open(path, "rb").read()
+    L = struct.unpack("<I", data[12:16])[0]
+    js = json.loads(data[20:20 + L])
+    b0 = 20 + L + 8                                   # the BIN chunk's payload
+    prims = [p for m in js.get("meshes", []) for p in m["primitives"]]
+    nodes = js.get("nodes", [])
+
+    def floats(ai):                                   # decode a FLOAT accessor from the BIN chunk (the keyed weights)
+        acc = js["accessors"][ai]; bv = js["bufferViews"][acc["bufferView"]]
+        assert acc["componentType"] == 5126
+        o_ = b0 + bv.get("byteOffset", 0) + acc.get("byteOffset", 0)
+        return np.frombuffer(data[o_:o_ + 4 * acc["count"]], dtype="<f4")
+
+    anims = []
+    for a in js.get("animations", []):
+        w = [c for c in a["channels"] if c["target"].get("path") == "weights"]
+        wk = []
+        for c in w:
+            smp = a["samplers"][c["sampler"]]
+            vals = floats(smp["output"]); tms = floats(smp["input"])
+            on_ = tms[vals > 0.5]
+            wk.append({"node": nodes[c["target"]["node"]].get("name"), "values": int(len(vals)),
+                       "max": round(float(vals.max()), 4), "min": round(float(vals.min()), 4),
+                       "seconds_above_half": [round(float(on_.min()), 3), round(float(on_.max()), 3)] if len(on_) else None})
+        anims.append({"name": a.get("name"), "channels": len(a["channels"]), "weights_channels": wk})
+    return {"morph_targets_per_primitive": [len(p.get("targets", [])) for p in prims],
+            "morph_target_names": [m.get("extras", {}).get("targetNames") for m in js.get("meshes", [])],
+            "default_weights": [m.get("weights") for m in js.get("meshes", [])],
+            "animations": anims, "meshes": len(js.get("meshes", [])), "skins": len(js.get("skins", [])),
+            "joints": len(js["skins"][0]["joints"]) if js.get("skins") else 0}
+
+
+if TAG is None:
+    for o in scene.objects:
+        o.select_set(o is rig or o is low)
+    bpy.context.view_layer.objects.active = rig
+    K.assign_action(rig, NEW_ACTS["idle"])
+    # the shape-key channel exports per clip only from the Key's NLA (magmoo's probe, 2026-09-26, Blender 5.0 ACTIONS mode:
+    # a KEY slot that is not bound or stacked is skipped): one strip per clip on the Key, for the export only
+    kad = KEYB.animation_data or KEYB.animation_data_create()
+    kad.action = None
+    for cn in CLIPS:
+        act = NEW_ACTS[cn]
+        tr = kad.nla_tracks.new(); tr.name = act.name
+        st = tr.strips.new(act.name, 1, act)
+        st.action_slot = next(s_ for s_ in act.slots if s_.target_id_type == "KEY")
+    t = time.time()
+    bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
+                              export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
+                              export_skins=True, export_def_bones=False, export_morph=True, export_morph_animation=True)
+    for tr in list(kad.nla_tracks):
+        kad.nla_tracks.remove(tr)
+    car = glb_carries(OUT_GLB)
+    rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t, 1),
+                  "sha256_16": hashlib.sha256(open(OUT_GLB, "rb").read()).hexdigest()[:16], "carries": car,
+                  "structure": "armature object identity (no scale), mesh child identity with 1 morph target (smirk), natural "
+                               "scale; game model_scale %.5f reaches the regular cell (report-only)" % k_fit}
+    anim_w = {a["name"]: a["weights_channels"] for a in car["animations"]}
+    rep["glb"]["morph_gate"] = {
+        "targets": car["morph_target_names"], "animations": sorted(anim_w),
+        "every_clip_has_weights": all(anim_w.get(cn) for cn in CLIPS),
+        "keyed_weight_range": {cn: [min(w_["min"] for w_ in anim_w.get(cn, [])), max(w_["max"] for w_ in anim_w.get(cn, []))]
+                               for cn in CLIPS if anim_w.get(cn)},
+        "pass": car["morph_targets_per_primitive"] == [1] and car["morph_target_names"] == [[SMIRK_KEY]] and
+        all(anim_w.get(cn) for cn in CLIPS) and len(car["animations"]) == len(CLIPS) and
+        max(w_["max"] for w_ in anim_w.get("float", [{"max": 0.0}])) > 0.999 and
+        all(max(w_["max"] for w_ in anim_w[cn]) < 1e-6 for cn in CLIPS if cn != "float" and anim_w.get(cn) and
+            {"idle": IDLE_SMIRK_T, "walk": WALK_SMIRK_T}[cn] is None)}
+    print("GLB", json.dumps(rep["glb"]["morph_gate"]))
+    rig.animation_data.action = None
+else:
+    rep["glb"] = {"skipped": "tagged alternative build (%s): renders only, no glb" % TAG}
 rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))

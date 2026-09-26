@@ -1,0 +1,9 @@
+{
+ "unit": "supaoctto",
+ "skin": "belt_orange",
+ "extends": "default",
+ "description": "v3 BELT COLOUR ALTERNATIVE (not a skin): the belt in the visor's orange instead of the sigil gold, for the artist's pick. Adopting it = copy this rgb into default.json's belt region (one line).",
+ "regions": {
+  "belt":         {"rgb": [255, 122, 30], "note": "belt = the W-visor frame's orange"}
+ }
+}

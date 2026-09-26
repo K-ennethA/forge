@@ -1,4 +1,4 @@
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\supaoctto_clips.py:49: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\supaoctto_clips.py:52: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
   world.use_nodes = True
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\supaoctto_clips.py:86: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\supaoctto_clips.py:89: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True

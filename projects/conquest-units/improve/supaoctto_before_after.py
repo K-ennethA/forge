@@ -2,10 +2,16 @@
 
     blender --background --factory-startup --python supaoctto_before_after.py
 
-renders/supaoctto/v2_supaoctto_before_after.png  rows front / threequarter / side / tactical / back; columns: v1 (the
-                                                  committed v1 renders, supaoctto_<view>.png, idle frame 1) | v2 (rigged,
-                                                  idle frame 1) | the v2 deepsea skin (same pose: the palette-swap proof)
-renders/supaoctto/v2_supaoctto_closeups.png       one row: visor | siphon | neck + head | chest sigil | cape + webs
+v3 sheets (renders/supaoctto/):
+  v3_supaoctto_before_after.png        rows front / threequarter / side / tactical / back; columns: v2 (the committed v2
+                                       renders, idle frame 1) | v3 (rigged, idle frame 1) | the v3 deepsea skin (same pose)
+  v3_supaoctto_mouth.png               the smirk mouth, rest pose: front close-up SHUT | OPEN (morph 1.0), then the same
+                                       from 30 deg, then face SHUT | OPEN
+  v3_supaoctto_belt_gold_vs_orange.png rows front (idle 1) / belt close-up / belt from the side; columns gold (the
+                                       committed default) | orange (palettes/supaoctto/belt_orange.json)
+  v3_supaoctto_mask_w_vs_starfish.png  rows front (idle 1) / threequarter (idle 1) / face front / face 35 deg; columns
+                                       W-visor (the committed default) | starfish (MASK_STYLE = "starfish")
+  v3_supaoctto_closeups.png            one row: visor | mouth shut | mouth open | sigil | belt | cape + webs
 Each tile is framed on its own model's bounds (the survey rule). 512 px tiles.
 """
 import bpy, os
@@ -25,15 +31,14 @@ def tile(path):
     return px[iy][:, ix]
 
 
-def sheet(cols, views, out):
+def grid(rows_paths, out):
     rows = []
-    for view in reversed(views):                  # pixel rows are bottom-up: the first listed view ends up on top
-        row = [tile(c % view) for c in cols]
+    for paths in reversed(rows_paths):              # pixel rows are bottom-up: the first listed row ends up on top
         parts = []
-        for k, t_ in enumerate(row):
+        for k, p in enumerate(paths):
             if k:
                 parts.append(np.ones((T, 6, 4), np.float32))
-            parts.append(t_)
+            parts.append(tile(p))
         rows.append(np.concatenate(parts, axis=1))
     stack = []
     for k, r_ in enumerate(rows):
@@ -48,7 +53,19 @@ def sheet(cols, views, out):
     print("WROTE", out)
 
 
-sheet([os.path.join(R, "supaoctto_%s.png"), os.path.join(R, "v2_supaoctto_%s.png"), os.path.join(R, "v2_supaoctto_deepsea_%s.png")],
-      ["front", "threequarter", "side", "tactical", "back"], os.path.join(R, "v2_supaoctto_before_after.png"))
-sheet([os.path.join(R, "v2_supaoctto_close_" + v + "%s.png") for v in ("visor", "siphon", "neck", "emblem", "capefull")],
-      [""], os.path.join(R, "v2_supaoctto_closeups.png"))
+P = lambda n: os.path.join(R, n + ".png")      # noqa: E731
+grid([[P("v2_supaoctto_" + v), P("v3_supaoctto_" + v), P("v3_supaoctto_deepsea_" + v)]
+      for v in ("front", "threequarter", "side", "tactical", "back")], P("v3_supaoctto_before_after"))
+grid([[P("v3_supaoctto_close_mouth"), P("v3_supaoctto_open_mouth")],
+      [P("v3_supaoctto_close_mouthside"), P("v3_supaoctto_open_mouthside")],
+      [P("v3_supaoctto_close_face"), P("v3_supaoctto_open_face")]], P("v3_supaoctto_mouth"))
+grid([[P("v3_supaoctto_front"), P("v3_supaoctto_beltorange_front")],
+      [P("v3_supaoctto_close_belt"), P("v3_supaoctto_beltorange_close_belt")],
+      [P("v3_supaoctto_close_beltside"), P("v3_supaoctto_beltorange_close_beltside")]], P("v3_supaoctto_belt_gold_vs_orange"))
+grid([[P("v3_supaoctto_front"), P("v3_supaoctto_starfish_front")],
+      [P("v3_supaoctto_threequarter"), P("v3_supaoctto_starfish_threequarter")],
+      [P("v3_supaoctto_close_visorfront"), P("v3_supaoctto_starfish_close_visorfront")],
+      [P("v3_supaoctto_close_facetq"), P("v3_supaoctto_starfish_close_facetq")]], P("v3_supaoctto_mask_w_vs_starfish"))
+grid([[P("v3_supaoctto_close_visor"), P("v3_supaoctto_close_mouth"), P("v3_supaoctto_open_mouth"),
+       P("v3_supaoctto_close_emblem"), P("v3_supaoctto_close_belt"), P("v3_supaoctto_close_capefull")]],
+     P("v3_supaoctto_closeups"))
