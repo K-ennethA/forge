@@ -651,3 +651,30 @@ Binding readings:
   not glued to the face, tips floating off the skin.
 - FIREFLY: near perfect; wings get HEAVIER smoke (denser/smokier read) -
   orchestrator handles as a direct tweak.
+
+## 2026-09-26 — Magmoo eye defect + NEW UNIT: Vampire Warrior
+
+MAGMOO EYE DEFECT (artist verbatim): "the eye for magmoo is titled wrong
+and sits an angle from the socket" + "the eye should be in the green area"
+(annotation: a green loop drawn around the socket region - the orb
+currently sits LOW and tilted, with the dark socket hole visible ABOVE it;
+the eye should fill the circled area, covering the opening, aligned to the
+socket, no hole peeking out). Defect goes back to the v5 lane.
+
+NEW UNIT (artist: "also start work on next character"): VAMPIRE WARRIOR,
+from a three-view character sheet (front / back / side + sword detail;
+image supplied inline - not on disk, content transcribed):
+- Tall female vampire warrior, INTIMIDATING PRESENCE (sheet's own note).
+- PALE SKIN, RED EYES, FANGS, very LONG bone-white hair (waist length,
+  parted center, drawn over the shoulders in front / full cascade behind).
+- Outfit: black high-collar armored bodice with silver seam trim + a red
+  gem at the throat; long TORN black cape/coat with dark red lining,
+  ragged hem to the ankles; long black gloves; black thigh-high
+  high-heeled boots with armored knees; bare upper thighs between boot
+  and skirt fauld.
+- SWORD nearly her own height, held point-down: LEAF/FLAME-SHAPED BLADE
+  (bone-pale, serrated leaf edges like a giant feather/leaf, dark
+  centre vein), SIMPLE HANDLE, red TASSEL at the guard.
+- Colour palette chips: bone-white, pale grey, near-black, dark red,
+  deep maroon, black.
+Sheet deviations: none given - build to the sheet.
