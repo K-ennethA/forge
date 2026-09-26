@@ -1,6 +1,6 @@
-00:01.265  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firefly__ember.blend"
-00:03.171  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_front.png'
-00:03.640  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_side.png'
+00:01.454  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firefly__ember.blend"
+00:03.532  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_front.png'
+00:04.032  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_ember_ortho_side.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

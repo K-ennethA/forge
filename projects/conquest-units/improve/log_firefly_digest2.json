@@ -3,13 +3,13 @@
   "parts": {
    "bake_normal": "2c4fa9244a282fa6",
    "bake_ao": "f0ab625fc2904dcc",
-   "geometry_colour_uv": "651d5c5b08af77a0",
+   "geometry_colour_uv": "1506517a23b3828b",
    "weights": "6fc780ed06ecbd6e",
    "keys": "d86323e14cbc38ac",
    "clip_samples": "7d3d9ae36c88ce2b"
   },
-  "combined": "f33198c8a7b05d78"
+  "combined": "a9bf794de9ec8426"
  },
  "tris": 20762,
- "seconds": 16.9
+ "seconds": 19.7
 }

@@ -374,14 +374,14 @@
  "deform_bone_count": 20,
  "digest": {
   "parts": {
-   "bake_normal": "2c4fa9244a282fa6",
+   "bake_normal": "49a1a1fa009c60b7",
    "bake_ao": "f0ab625fc2904dcc",
-   "geometry_colour_uv": "651d5c5b08af77a0",
+   "geometry_colour_uv": "1506517a23b3828b",
    "weights": "6fc780ed06ecbd6e",
    "keys": "d86323e14cbc38ac",
    "clip_samples": "7d3d9ae36c88ce2b"
   },
-  "combined": "f33198c8a7b05d78"
+  "combined": "27de046b821439ec"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.glb",
@@ -669,30 +669,30 @@
     },
     "smoke_root": {
      "rgb": [
-      74,
-      76,
-      81
+      56,
+      58,
+      63
      ]
     },
     "smoke": {
      "rgb": [
-      108,
-      112,
-      118
+      86,
+      90,
+      97
      ]
     },
     "smoke_wisp": {
      "rgb": [
-      150,
-      154,
-      160
+      126,
+      130,
+      137
      ]
     },
     "smoke_edge": {
      "rgb": [
-      128,
-      132,
-      138
+      110,
+      114,
+      121
      ]
     },
     "flame_lick": {
@@ -971,30 +971,30 @@
     },
     "smoke_root": {
      "rgb": [
-      74,
-      76,
-      81
+      56,
+      58,
+      63
      ]
     },
     "smoke": {
      "rgb": [
-      108,
-      112,
-      118
+      86,
+      90,
+      97
      ]
     },
     "smoke_wisp": {
      "rgb": [
-      150,
-      154,
-      160
+      126,
+      130,
+      137
      ]
     },
     "smoke_edge": {
      "rgb": [
-      128,
-      132,
-      138
+      110,
+      114,
+      121
      ]
     },
     "flame_lick": {
@@ -1116,14 +1116,14 @@
      "flame_core": 330
     }
    },
-   "geometry_colour_uv_digest": "e1b227a06fc495ee"
+   "geometry_colour_uv_digest": "8f401fcd715fbdcb"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions/faces/vertices; default restored",
-   "default_digest_before": "651d5c5b08af77a0",
-   "default_digest_after_restore": "651d5c5b08af77a0"
+   "default_digest_before": "1506517a23b3828b",
+   "default_digest_after_restore": "1506517a23b3828b"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firefly.json",
- "seconds": 17.5
+ "seconds": 20.1
 }

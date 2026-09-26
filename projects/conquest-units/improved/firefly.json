@@ -33,7 +33,7 @@
    "pieces": 1,
    "dropped_verts": 0
   },
-  "seconds": 3.4
+  "seconds": 4.5
  },
  "retopo": {
   "method": "SDF marching tetrahedra (step 0.015) -> collapse decimation (deterministic)",
@@ -51,7 +51,7 @@
    "p99": 0.00176,
    "max": 0.00632
   },
-  "seconds": 4.7
+  "seconds": 5.5
  },
  "iso_cuts": {
   "cuts": [
@@ -146,7 +146,7 @@
     "face_connects": 2
    }
   ],
-  "seconds": 2.5,
+  "seconds": 2.8,
   "shell_tris_after_cuts": 8862
  },
  "flame": {
@@ -263,10 +263,10 @@
    "nozzle": 1.0,
    "abdomen_tip": 1.0,
    "nozzle_throat": 1.0,
-   "smoke_root": 0.6200000047683716,
-   "smoke": 0.47999998927116394,
-   "smoke_wisp": 0.5,
-   "smoke_edge": 0.25999999046325684
+   "smoke_root": 0.8600000143051147,
+   "smoke": 0.699999988079071,
+   "smoke_wisp": 0.6399999856948853,
+   "smoke_edge": 0.4000000059604645
   },
   "flame": {
    "flame_outer": 0.7200000286102295,
@@ -434,12 +434,12 @@
   "ao_mean": 0.7519,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "2c4fa9244a282fa6",
+   "normal": "49a1a1fa009c60b7",
    "ao": "f0ab625fc2904dcc"
   },
-  "seconds": 3.0
+  "seconds": 3.3
  },
- "digest_geometry_colour_uv": "651d5c5b08af77a0",
+ "digest_geometry_colour_uv": "1506517a23b3828b",
  "palette": {
   "default": {
    "shell": {
@@ -633,30 +633,30 @@
    },
    "smoke_root": {
     "rgb": [
-     74,
-     76,
-     81
+     56,
+     58,
+     63
     ]
    },
    "smoke": {
     "rgb": [
-     108,
-     112,
-     118
+     86,
+     90,
+     97
     ]
    },
    "smoke_wisp": {
     "rgb": [
-     150,
-     154,
-     160
+     126,
+     130,
+     137
     ]
    },
    "smoke_edge": {
     "rgb": [
-     128,
-     132,
-     138
+     110,
+     114,
+     121
     ]
    },
    "flame_lick": {
