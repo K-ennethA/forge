@@ -53,10 +53,10 @@
   "hue_median_deg": 1.02,
   "hue_p25_p75_deg": [
    0.0,
-   23.56
+   23.7
   ],
-  "share_red_lt12deg": 0.7292,
-  "share_orange_12_30deg": 0.1507,
+  "share_red_lt12deg": 0.7255,
+  "share_orange_12_30deg": 0.1544,
   "share_yellow_ge30deg": 0.1201,
   "median_rgb_red_band": [
    182.0,
@@ -85,10 +85,10 @@
   "hue_median_deg": 0.98,
   "hue_p25_p75_deg": [
    0.0,
-   2.57
+   2.68
   ],
-  "share_red_lt12deg": 0.7788,
-  "share_orange_12_30deg": 0.1602,
+  "share_red_lt12deg": 0.7762,
+  "share_orange_12_30deg": 0.1628,
   "share_yellow_ge30deg": 0.061,
   "median_rgb_red_band": [
    178.0,
@@ -113,15 +113,15 @@
   ]
  },
  "v5_head": {
-  "pixels": 340992,
+  "pixels": 335019,
   "hue_median_deg": 1.64,
   "hue_p25_p75_deg": [
    0.62,
-   28.57
+   28.59
   ],
-  "share_red_lt12deg": 0.6166,
-  "share_orange_12_30deg": 0.153,
-  "share_yellow_ge30deg": 0.2304,
+  "share_red_lt12deg": 0.6128,
+  "share_orange_12_30deg": 0.157,
+  "share_yellow_ge30deg": 0.2302,
   "median_rgb_red_band": [
    198.0,
    76.0,

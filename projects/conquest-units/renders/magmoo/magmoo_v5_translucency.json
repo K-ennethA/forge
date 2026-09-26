@@ -9,19 +9,20 @@
   "flame": 0.8,
   "core": 0.88,
   "eye": 0.94,
-  "eye_goo": 0.97
+  "eye_goo": 0.97,
+  "eye_core": 0.97
  },
  "palette_goo_alpha": 0.64,
  "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible",
  "alpha_sweep": [
   {
    "goo_alpha": 0.35,
-   "T_mean": 0.4893,
+   "T_mean": 0.4894,
    "T_p90": 0.7329
   },
   {
    "goo_alpha": 0.45,
-   "T_mean": 0.4074,
+   "T_mean": 0.4075,
    "T_p90": 0.6279
   },
   {
@@ -37,7 +38,7 @@
   {
    "goo_alpha": 0.85,
    "T_mean": 0.1168,
-   "T_p90": 0.1998
+   "T_p90": 0.1997
   },
   {
    "goo_alpha": 1.0,
@@ -54,15 +55,15 @@
   },
   {
    "mode": "blended_overlap",
-   "T_mean": 0.2604,
+   "T_mean": 0.2603,
    "T_p90": 0.3915,
-   "mean_abs_diff_vs_dithered_0_255": 3.517
+   "mean_abs_diff_vs_dithered_0_255": 3.519
   },
   {
    "mode": "blended_prepass",
    "T_mean": 0.2763,
    "T_p90": 0.392,
-   "mean_abs_diff_vs_dithered_0_255": 4.26
+   "mean_abs_diff_vs_dithered_0_255": 4.263
   }
  ]
 }

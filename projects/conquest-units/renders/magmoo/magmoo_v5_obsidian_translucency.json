@@ -9,7 +9,8 @@
   "flame": 0.8,
   "core": 0.88,
   "eye": 0.94,
-  "eye_goo": 0.97
+  "eye_goo": 0.97,
+  "eye_core": 0.97
  },
  "palette_goo_alpha": 0.64,
  "rule": "T = mean |A-B| inside the silhouette / median |A-B| on open floor (unlit checker A vs inverted B, linear light): 0 opaque, 1 invisible",

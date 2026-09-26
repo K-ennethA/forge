@@ -9,7 +9,8 @@
   "flame":    {"rgb": [255, 196, 62],  "emission": [255, 184, 52],  "emission_scale": 0.85, "alpha": 0.80, "note": "ACCENT, v4 unchanged: flame tips: head flame licks, crown points, torn-end tufts, drip bulbs, finger tips, the ball's ears, the goo bridges + shed drips; the ring round each torn end"},
   "core":     {"rgb": [255, 232, 146], "emission": [255, 218, 116], "emission_scale": 1.15, "alpha": 0.88, "note": "ACCENT, v4 unchanged: white-hot molten core: the torn (join) end faces, the crater, the droplets"},
   "eye":      {"rgb": [92, 12, 10],    "emission": [96, 10, 6],     "emission_scale": 0.04, "alpha": 0.94, "note": "the carved eye socket (now mostly filled by the goo eye; its lip shows as a thin dark ring) - a darker shade of the body red, no glow"},
-  "eye_goo":  {"rgb": [150, 8, 20],    "emission": [255, 52, 30],   "emission_scale": 0.42, "alpha": 0.97, "note": "v5.1: the solid red goo eye filling each socket - one piece, no pupil, no white; INNER GLOW (artist 2026-09-26): lit from within, tier between the body goo (0.30) and the hot accents (0.55)"}
+  "eye_goo":  {"rgb": [150, 8, 20],    "emission": [255, 52, 30],   "emission_scale": 0.42, "alpha": 0.97, "note": "v5.1: the solid red goo eye filling each socket - one piece, no pupil, no white; INNER GLOW (artist 2026-09-26): lit from within, tier between the body goo (0.30) and the hot accents (0.55)"},
+  "eye_core": {"rgb": [255, 96, 36],   "emission": [255, 140, 60],  "emission_scale": 0.52, "alpha": 0.97, "note": "v5.3 (artist: 'needs something inside to show it reads more as an eye'): the molten inner disc of each eye - hotter than the eye ring, still under the goo_hot accents"}
  },
  "material": {"roughness": 0.20, "emission_strength": 1.4, "alpha": 1.0}
 }

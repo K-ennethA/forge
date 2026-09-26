@@ -109,6 +109,9 @@ EYE_ORB_FIT = "rim"                   # v5.2 "eye seating": 'rim' = the eye's to
                                       #   v5 sphere dome on the cutter axis at the mean rim height -- the real opening is
                                       #   tilted ~24 deg from that axis on the sloped head side, so the dish showed above
                                       #   the orb (artist: "titled wrong"); kept only for the before numbers
+EYE_CORE_FRAC = 0.45                  # "eye core size" (artist 2026-09-26: "needs something inside to show it reads more
+                                      #   as an eye then just a red circle"): the inner molten core disc, as a fraction
+                                      #   of the socket opening radius; its own hotter region 'eye_core'
 EYE_ORB_DENSITY = 1100.0              # "eye detail": triangles per square unit of the head's goo eyes
 BALL_EYE_ORB_DENSITY = 420.0          # ... of the ball's goo eyes (the ball is a coarser mesh)
 # ---- mid piece (the curved bean), knots rear (plugged into the crown) -> front (plugged into the head)
@@ -1157,7 +1160,8 @@ report["goo_extras"] = {"strand_tris": STRAND[2]["tris"], "drip_tris": DRIP[2]["
 print("EXTRAS", json.dumps(report["goo_extras"]))
 
 # =========================================================================== 5. regions (iso-contour cuts per piece)
-REG = ["goo_cool", "goo", "goo_hot", "flame", "core", "eye", "eye_goo"]    # v5: + eye_goo (the solid red goo eyes)
+REG = ["goo_cool", "goo", "goo_hot", "flame", "core", "eye", "eye_goo",
+       "eye_core"]                    # v5: + eye_goo (the solid red goo eyes); v5.3: + eye_core (the molten inner disc)
 R_ = {n: i for i, n in enumerate(REG)}
 CUT_SNAP = 0.15
 TIP_SMOOTH_R = 0.42                   # tip field: smoothing reach of the reference copy (units)
@@ -1456,9 +1460,11 @@ def glow_tiers(pal):
     ok_grade = all(tier[a] < tier[b] for a, b in zip(grade, grade[1:]))
     ok_eye = tier["eye"] < tier["goo_cool"] and lum("eye") < lum("goo")
     # v5.1 goo eye (artist 2026-09-26: "give me some inner glow to them"): a SOLID near-opaque piece that glows from
-    # within - tier ABOVE the body goo but BELOW the hot accents, so the eye reads lit without competing with goo_hot
+    # within - tier ABOVE the body goo but BELOW the hot accents, so the eye reads lit without competing with goo_hot.
+    # v5.3 (artist: "needs something inside"): eye_core, the molten inner disc, hotter than the eye but still under
+    # the goo_hot accents: goo < eye_goo < eye_core < goo_hot.
     a_eg = float(pal["regions"]["eye_goo"].get("alpha", 1.0))
-    ok_eg = tier["goo"] < tier["eye_goo"] < tier["goo_hot"] and a_eg >= 0.9
+    ok_eg = tier["goo"] < tier["eye_goo"] < tier["eye_core"] < tier["goo_hot"] and a_eg >= 0.9
     return {"skin": pal["skin"], "emission_scale_tiers": tier, "grade": grade, "grade_pass": ok_grade,
             "eye_dark_socket_pass": ok_eye, "eye_vs_goo_luminance": [round(lum("eye"), 4), round(lum("goo"), 4)],
             "eye_goo_solid_pass": ok_eg, "eye_goo_alpha": a_eg, "eye_goo_luminance": round(lum("eye_goo"), 4),
@@ -1490,13 +1496,23 @@ for i, (dV, dF_, _) in enumerate(DROP_G):
     add_island("drop.%d" % i, dV + DROP_REST[i], dF_, np.full(len(dF_), R_["core"]), np.ones(len(dF_)), "drop.%d" % i)
 BALL_FULL_V = CUT["ball"]["V"]
 add_island("ball", BALL_BIND_POS + BALL_FULL_V * HIDE_SCALE, CUT["ball"]["F"], CUT["ball"]["rid"], bone="ball")
-# v5 goo eyes: the head's ride the head (skinned like the socket goo round them), the ball's ride the ball bone
+# v5 goo eyes: the head's ride the head (skinned like the socket goo round them), the ball's ride the ball bone.
+# v5.3: an inner molten CORE disc (eye_core, hotter) inside each eye so it reads as an eye, not a flat red circle -
+# faces whose centroid lies within EYE_CORE_FRAC of the opening radius of the socket axis.
+def eye_rid(oV, oF, S):
+    C = np.array([np.asarray(oV)[list(f)].mean(0) for f in oF])
+    d = C - np.asarray(S["p"], float)[None]
+    ax = unit(np.asarray(S["n"], float))
+    r = np.linalg.norm(d - np.outer(d @ ax, ax), axis=1)
+    return np.where(r < EYE_CORE_FRAC * float(S["a"]), R_["eye_core"], R_["eye_goo"])
+
+
 EYE_ORB_ISL = ["eye_orb.%d" % i for i in range(len(EYE_ORBS))]
-for nm, (oV, oF, _, _) in zip(EYE_ORB_ISL, EYE_ORBS):
-    add_island(nm, apply_m(S_REST["head"], apply_m(HEAD_XF, oV)), oF, np.full(len(oF), R_["eye_goo"]), np.ones(len(oF)))
+for nm, (oV, oF, _, _), S in zip(EYE_ORB_ISL, EYE_ORBS, SOCKETS):
+    add_island(nm, apply_m(S_REST["head"], apply_m(HEAD_XF, oV)), oF, eye_rid(oV, oF, S), np.ones(len(oF)))
 BALL_EYE_ISL = ["ball_eye.%d" % i for i in range(len(BALL_EYE_ORBS))]
-for nm, (oV, oF, _, _) in zip(BALL_EYE_ISL, BALL_EYE_ORBS):
-    add_island(nm, BALL_BIND_POS + oV * HIDE_SCALE, oF, np.full(len(oF), R_["eye_goo"]), np.ones(len(oF)), "ball")
+for nm, (oV, oF, _, _), S in zip(BALL_EYE_ISL, BALL_EYE_ORBS, BALL_SOCKETS):
+    add_island(nm, BALL_BIND_POS + oV * HIDE_SCALE, oF, eye_rid(oV, oF, S), np.ones(len(oF)), "ball")
 
 
 def link_frame(d):
