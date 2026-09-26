@@ -1,4 +1,6 @@
-"""Magmoo stills (v4), the survey's lighting/camera rules. In-memory only; never saves.
+﻿"""Magmoo stills (v5), the survey's lighting/camera rules. In-memory only; never saves.
+v5: the eye pickers take the socket ('eye') + the goo eye ('eye_goo', islands eye_orb.* / ball_eye.*); + view
+'eyeclose' (one goo eye filling the frame, off its axis leaned toward the front). The rest pose = the v5 paused rest.
 
     blender --background <blend> --factory-startup --python magmoo_render.py -- <out_prefix> [views] \
         [--pose <clip>:<frame>] [--res N]
@@ -126,17 +128,25 @@ scene.camera = cam
 half_fov = math.atan(18.0 / 50.0)
 
 
-def perspective_refine(P, fill, iters=6):
+def perspective_refine(P, fill, iters=8):
+    """v5: centre + dolly with a MULTIPLICATIVE distance update (median depth x projected extent) that never lets the
+    nearest point come closer than 25 % of the median depth. The v4 additive step diverged on the v5 front view (the
+    raised head sits far in front of the long body: the camera ended up past it and the still came out empty)."""
     t = math.tan(half_fov)
     for _ in range(iters):
         R_ = np.array(cam.rotation_euler.to_matrix())
         q = (P - np.array(cam.location)) @ R_
         zc = -q[:, 2]
+        zm = float(np.median(zc))
+        if zc.min() < 0.25 * zm:                        # too close to the nearest point: back off first
+            cam.location = Vector(np.array(cam.location) + R_[:, 2] * (0.25 * zm - float(zc.min())) * 2.0)
+            continue
         x, y = q[:, 0] / zc / t, q[:, 1] / zc / t
         cx, cy = (x.min() + x.max()) / 2, (y.min() + y.max()) / 2
         ext = max(x.max() - x.min(), y.max() - y.min()) / 2
-        zm = float(np.median(zc))
-        cam.location = Vector(np.array(cam.location) + R_[:, 0] * cx * zm * t + R_[:, 1] * cy * zm * t + R_[:, 2] * zm * (ext * fill - 1.0))
+        new_zm = max(zm * ext * fill, zm - 0.75 * float(zc.min()))
+        cam.location = Vector(np.array(cam.location) + R_[:, 0] * cx * zm * t + R_[:, 1] * cy * zm * t +
+                              R_[:, 2] * (new_zm - zm))
 
 
 def aim_dir(dn, fill=1.08, P=None):
@@ -150,7 +160,45 @@ def aim_dir(dn, fill=1.08, P=None):
     dist = rad / math.tan(half_fov) * fill + float((P @ dn).max() - np.mean(P @ dn))
     cam.location = Vector(c + dn * dist)
     cam.rotation_euler = (Vector(c) - cam.location).to_track_quat("-Z", "Y" if abs(dn[2]) < 0.999 else "X").to_euler()
-    perspective_refine(P, fill * 1.06)
+    exact_fit(P, fill * 1.06)
+
+
+def exact_fit(P, fill):
+    """v5: exact perspective framing at a fixed camera rotation, by nested bisection: for a camera depth D, pan along
+    the camera right / up until the projected bounds are centred (each monotone in the pan), then pick the D whose
+    half-extent x fill = the frame edge (monotone in D). Replaces the v4 iterative refine, which diverged on the v5
+    front view (the raised head far in front of the long body)."""
+    t = math.tan(half_fov)
+    R_ = np.array(cam.rotation_euler.to_matrix())
+    rt, upv, bk = R_[:, 0], R_[:, 1], R_[:, 2]
+    pr, pu, pb = P @ rt, P @ upv, P @ bk
+
+    def centred(D):
+        zc = D - pb                                          # camera at depth D along bk
+        a, b = [], []
+        for comp in (pr, pu):
+            lo_, hi_ = comp.min(), comp.max()
+            for _ in range(40):
+                m = 0.5 * (lo_ + hi_)
+                x = (comp - m) / (zc * t)
+                if x.max() + x.min() > 0:
+                    lo_ = m
+                else:
+                    hi_ = m
+            a.append(0.5 * (lo_ + hi_))
+        x = (pr - a[0]) / (zc * t); y = (pu - a[1]) / (zc * t)
+        return a, max(x.max() - x.min(), y.max() - y.min()) / 2
+    lo_d = float(pb.max()) + 1e-3 * float(np.ptp(pb) + 1.0)
+    hi_d = lo_d + 50.0 * float(max(np.ptp(pr), np.ptp(pu), np.ptp(pb)) + 1.0)
+    for _ in range(50):
+        D = 0.5 * (lo_d + hi_d)
+        if centred(D)[1] * fill > 1.0:
+            lo_d = D
+        else:
+            hi_d = D
+    (a0, a1), _ = centred(hi_d)
+    cam.location = Vector(rt * a0 + upv * a1 + bk * hi_d)
+    cam_d.clip_start = max(1e-3, float((hi_d - pb).min()) * 0.2)
 
 
 def aim(angle_deg, elev_deg, fill=1.08, P=None):
@@ -173,7 +221,8 @@ def region_sel(pred, isl_pred=lambda n: True):
 table = {"front": (0.0, 5.0, RES, 1.0, None), "threequarter": (40.0, 15.0, RES, 1.0, None),
          "side": (90.0, 8.0, RES, 1.0, None), "tactical": (40.0, 55.0, 256, 1.6, None), "top": (0.0, 89.9, RES, 1.02, None),
          "back": (180.0, 12.0, RES, 1.0, None)}
-E, EN = region_sel(lambda r: r == "eye", lambda i: i in ("head", "ball"))
+EYE_ISL = lambda i: i in ("head", "ball") or i.startswith("eye_orb") or i.startswith("ball_eye")   # v5 goo eyes
+E, EN = region_sel(lambda r: r in ("eye", "eye_goo"), EYE_ISL)
 if E is not None:
     c_ = E.mean(0)
     rr = max(float(np.linalg.norm(E - c_, axis=1).max()) * 2.4, 1.1)
@@ -185,7 +234,7 @@ if E is not None:
         L = -L
     side = X @ L > 0
     c1 = E[side].mean(0)
-    Gc, Gn = region_sel(lambda r: r != "eye", lambda i: i in ("head", "ball"))
+    Gc, Gn = region_sel(lambda r: r not in ("eye", "eye_goo"), lambda i: i in ("head", "ball"))
     ring = np.linalg.norm(Gc - c1, axis=1) < float(np.linalg.norm(E[side] - c1, axis=1).max()) * 1.6
     n1 = Gn[ring].mean(0); n1 /= np.linalg.norm(n1)
     c2 = E[~side].mean(0)
@@ -198,6 +247,10 @@ if E is not None:
     rr2 = float(np.linalg.norm(E[side] - c1, axis=1).max())
     box2 = np.vstack([c1 + f * rr2 * 6.0, c1 - f * rr2 * 6.0, c1 + n1 * rr2 * 3.0, c1 - n1 * rr2 * 3.0])
     table["eyeprofile"] = (dn, None, RES, 1.0, box2)
+    # v5 eyeclose: one goo eye (the +X side) filling the frame, seen off its own axis leaned toward the front
+    dn3 = n1 + np.array([0.0, -0.75, 0.15]); dn3 /= np.linalg.norm(dn3)
+    box3 = np.vstack([c1 + np.array(o) * rr2 * 2.6 for o in [(1, 1, 1), (-1, -1, -1), (1, -1, 1), (-1, 1, -1)]])
+    table["eyeclose"] = (dn3, None, RES, 1.0, box3)
     Hc, _ = region_sel(lambda r: True, lambda i: i == "head")
     if Hc is not None:
         table["headside"] = (75.0, 10.0, RES, 1.05, Hc)

@@ -1,33 +1,33 @@
-00:01.282  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo.blend"
-00:03.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:03.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:03.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:04.157  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:04.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:04.844  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:05.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:05.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:05.735  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:06.079  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:06.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:06.735  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:07.235  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:07.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:07.766  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:08.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:08.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:08.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:08.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:09.063  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:09.329  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:09.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:09.844  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
-00:10.110  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v4.png'
+00:01.281  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\magmoo.blend"
+00:03.297  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:03.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:03.890  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:04.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:04.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:04.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:05.093  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:05.390  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:05.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:05.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:06.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:06.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:07.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:07.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:07.640  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:07.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:08.218  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:08.453  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:08.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:09.125  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:09.468  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:09.718  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:09.984  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
+00:10.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\_tile_magmoo_v5.png'
 NO CLIP none
-WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_transition_merge.png
-TRANSITION merge idle {'join': 'head', 'event': 'contact', 'frame': 102} frames [93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104]
-WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v4_transition_separation.png
-TRANSITION separation walk {'join': 'crown', 'event': 'snap', 'frame': 45, 'gap': 0.9711} frames [39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]
+WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_transition_merge.png
+TRANSITION merge idle {'join': 'crown', 'event': 'contact', 'frame': 108} frames [99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\magmoo\magmoo_v5_transition_separation.png
+TRANSITION separation walk {'join': 'crown', 'event': 'snap', 'frame': 48, 'gap': 0.9233} frames [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
 
 Blender quit

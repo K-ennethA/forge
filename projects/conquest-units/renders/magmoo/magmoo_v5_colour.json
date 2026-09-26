@@ -1,0 +1,133 @@
+{
+ "rule": "HSV hue (deg, red = 0, wrapped to [-60, 300)) of the saturated, lit pixels (sat > 0.45, max > 60/255): the\n    unit (the grey studio floor / background are unsaturated).",
+ "v5_reference": {
+  "pixels": 62580,
+  "hue_median_deg": 1.76,
+  "hue_p25_p75_deg": [
+   0.66,
+   9.23
+  ],
+  "share_red_lt12deg": 0.8634,
+  "share_orange_12_30deg": 0.0996,
+  "share_yellow_ge30deg": 0.037,
+  "median_rgb_red_band": [
+   194.0,
+   82.0,
+   78.0
+  ]
+ },
+ "v4_colour_reference": {
+  "pixels": 181512,
+  "hue_median_deg": 19.44,
+  "hue_p25_p75_deg": [
+   16.03,
+   23.48
+  ],
+  "share_red_lt12deg": 0.0032,
+  "share_orange_12_30deg": 0.957,
+  "share_yellow_ge30deg": 0.0398,
+  "median_rgb_red_band": [
+   148.0,
+   75.0,
+   60.0
+  ]
+ },
+ "v4_threequarter": {
+  "pixels": 88745,
+  "hue_median_deg": 16.86,
+  "hue_p25_p75_deg": [
+   14.48,
+   25.66
+  ],
+  "share_red_lt12deg": 0.0414,
+  "share_orange_12_30deg": 0.8225,
+  "share_yellow_ge30deg": 0.1361,
+  "median_rgb_red_band": [
+   130.0,
+   68.0,
+   62.0
+  ]
+ },
+ "v5_threequarter": {
+  "pixels": 107027,
+  "hue_median_deg": 0.99,
+  "hue_p25_p75_deg": [
+   0.0,
+   23.66
+  ],
+  "share_red_lt12deg": 0.729,
+  "share_orange_12_30deg": 0.1503,
+  "share_yellow_ge30deg": 0.1207,
+  "median_rgb_red_band": [
+   181.0,
+   75.0,
+   74.0
+  ]
+ },
+ "v4_side": {
+  "pixels": 50053,
+  "hue_median_deg": 15.12,
+  "hue_p25_p75_deg": [
+   13.64,
+   18.23
+  ],
+  "share_red_lt12deg": 0.0814,
+  "share_orange_12_30deg": 0.8488,
+  "share_yellow_ge30deg": 0.0698,
+  "median_rgb_red_band": [
+   128.0,
+   70.0,
+   66.0
+  ]
+ },
+ "v5_side": {
+  "pixels": 61068,
+  "hue_median_deg": 0.97,
+  "hue_p25_p75_deg": [
+   0.0,
+   2.33
+  ],
+  "share_red_lt12deg": 0.779,
+  "share_orange_12_30deg": 0.1605,
+  "share_yellow_ge30deg": 0.0605,
+  "median_rgb_red_band": [
+   177.0,
+   74.0,
+   72.0
+  ]
+ },
+ "v4_head": {
+  "pixels": 291385,
+  "hue_median_deg": 18.95,
+  "hue_p25_p75_deg": [
+   15.97,
+   30.53
+  ],
+  "share_red_lt12deg": 0.0265,
+  "share_orange_12_30deg": 0.7082,
+  "share_yellow_ge30deg": 0.2653,
+  "median_rgb_red_band": [
+   129.0,
+   65.0,
+   55.0
+  ]
+ },
+ "v5_head": {
+  "pixels": 288272,
+  "hue_median_deg": 1.52,
+  "hue_p25_p75_deg": [
+   0.57,
+   28.2
+  ],
+  "share_red_lt12deg": 0.6282,
+  "share_orange_12_30deg": 0.1484,
+  "share_yellow_ge30deg": 0.2234,
+  "median_rgb_red_band": [
+   194.0,
+   76.0,
+   74.0
+  ]
+ },
+ "body_hue_shift_deg_threequarter": -15.87,
+ "v5_minus_reference_deg_threequarter": -0.77
+}

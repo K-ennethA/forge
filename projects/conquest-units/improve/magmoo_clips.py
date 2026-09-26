@@ -1,4 +1,4 @@
-"""Magmoo animated previews (v4). In-memory only; never saves the blend.
+"""Magmoo animated previews (v4, unchanged for v5: v5 = --prefix magmoo_v5). In-memory only; never saves the blend.
 
     blender --background <rigged/magmoo.blend> --factory-startup --python magmoo_clips.py -- <out_dir> [res] [sheet] \
         [--prefix P] [--clips idle,walk,ball] [--no-mp4] [--transitions <rigged/magmoo.json>]

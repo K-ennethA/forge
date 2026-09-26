@@ -1,6 +1,6 @@
 {
  "unit": "magmoo",
- "version": "v4 living goo",
+ "version": "v5 living goo (paused rest, floaty leap, red goo eyes, red body)",
  "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\newunit-magmoo.blend",
  "tier": "hero",
  "tri_budget": [
@@ -29,7 +29,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.2,
+    "seconds": 1.1,
     "protected": {
      "zones": 2,
      "remesh_tris_kept": 1458,
@@ -131,7 +131,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 1.2
+    "seconds": 1.3
    },
    "sdf": {
     "step": 0.03,
@@ -145,7 +145,7 @@
      167
     ],
     "nan": 0,
-    "seconds": 2.5
+    "seconds": 2.6
    },
    "spine_arc_length": 4.8013,
    "regions_cut": {
@@ -210,7 +210,7 @@
       "dropped_verts": 0
      }
     ],
-    "seconds": 2.5
+    "seconds": 2.3
    },
    "sdf": {
     "step": 0.03,
@@ -224,7 +224,7 @@
      100
     ],
     "nan": 0,
-    "seconds": 5.1
+    "seconds": 5.0
    },
    "tail_spine_length": 6.6,
    "rest_curl_deg": 105.0,
@@ -387,6 +387,65 @@
    }
   ]
  },
+ "eye_goo": {
+  "rule": "v5 (artist: 'put a red goo eye no pupil just one solid piece where its carved out'): one lens per socket = the carved dish sphere (shrunk EYE_ORB_INSET) intersected with a shallow dome through the socket rim; its own region 'eye_goo' (solid deep red, no glow, near-opaque); no pupil, no white. Heights along the socket axis from the pre-socket goo surface point.",
+  "orbs": [
+   {
+    "rim_height": -0.04253,
+    "dome_top": 0.035,
+    "dome_radius": 0.4102,
+    "back_radius": 0.238,
+    "thickness": 0.2296,
+    "max_above_goo_surface": 0.03539,
+    "tris": 450,
+    "verts": 227,
+    "signed_dist_to_carved_head": {
+     "min": -0.1634,
+     "max": 0.2084,
+     "frac_inside_goo": 0.2511
+    }
+   },
+   {
+    "rim_height": -0.03846,
+    "dome_top": 0.035,
+    "dome_radius": 0.4288,
+    "back_radius": 0.238,
+    "thickness": 0.229,
+    "max_above_goo_surface": 0.03496,
+    "tris": 456,
+    "verts": 230,
+    "signed_dist_to_carved_head": {
+     "min": -0.17848,
+     "max": 0.21811,
+     "frac_inside_goo": 0.2783
+    }
+   }
+  ],
+  "bulge": 0.035,
+  "inset": 0.006,
+  "ball_orbs": [
+   {
+    "rim_height": -0.02618,
+    "dome_top": 0.04375,
+    "dome_radius": 0.6785,
+    "back_radius": 0.2975,
+    "thickness": 0.2863,
+    "max_above_goo_surface": 0.04405,
+    "tris": 284,
+    "verts": 144
+   },
+   {
+    "rim_height": -0.02618,
+    "dome_top": 0.04375,
+    "dome_radius": 0.6785,
+    "back_radius": 0.2975,
+    "thickness": 0.2836,
+    "max_above_goo_surface": 0.04217,
+    "tris": 284,
+    "verts": 144
+   }
+  ]
+ },
  "assembly": {
   "head_pitch_deg": 17.009,
   "head_axis_nose_down_deg": 21.982,
@@ -407,65 +466,108 @@
   }
  },
  "rest_layout": {
-  "rule": "the bind pose = the goo segments lying on the floor, visibly separate. Surface gaps solved by bisection (BVH nearest-surface distance, every vertex) to REST_GAP_*; tail as modelled, mid pitched level on both ends, head back in its own sculpt frame (lying on the floor), droplets on the floor beside the pieces.",
+  "rule": "v5 bind pose = PAUSED IN MOTION (magmoo-v5-rest-pose-reference.png): the mound + curled tail lie on the floor as modelled; the mid keeps its combined arch and is lifted off the crater along the crown join axis leaned REST_MID_FWD forward; the head rides in its combined (nose-down flight) attitude + REST_HEAD_PITCH_DEG and is thrown ahead along the arch's front tangent. Surface gaps solved by bisection (BVH nearest-surface distance, every vertex) to REST_GAP_*. Droplets beside the pieces: on the floor by the mound, HANGING in the air beside the arch.",
   "targets": {
    "head|mid": 1.1,
    "mid|tail": 1.1
   },
   "measured": {
    "head|mid": {
-    "min_surface_gap": 1.0965,
+    "min_surface_gap": 1.0897,
     "closest_a": [
-     -0.4768,
-     -4.5622,
-     0.8088
+     -0.4881,
+     -4.3487,
+     3.9057
     ],
     "closest_b": [
-     -0.47519999742507935,
-     -3.468100070953369,
-     0.7369999885559082
+     -0.6416000127792358,
+     -3.2960000038146973,
+     4.141499996185303
     ]
    },
    "mid|tail": {
-    "min_surface_gap": 1.1,
+    "min_surface_gap": 1.0953,
     "closest_a": [
-     -0.6487,
-     1.4532,
-     0.3972
+     -0.49,
+     1.2282,
+     2.3304
     ],
     "closest_b": [
-     -1.1852999925613403,
-     2.4056999683380127,
-     0.27489998936653137
+     -0.490200012922287,
+     2.2934999465942383,
+     2.0752999782562256
     ]
    },
    "head|tail": {
-    "min_surface_gap": 7.006,
+    "min_surface_gap": 5.6316,
     "closest_a": [
-     -0.4452,
-     -4.5611,
-     0.8393
+     -0.4459,
+     -3.9526,
+     1.803
     ],
     "closest_b": [
-     0.3391000032424927,
-     2.3756000995635986,
-     0.24719999730587006
+     0.30630001425743103,
+     1.4211000204086304,
+     0.2957000136375427
     ]
    }
   },
-  "mid_pitch_deg": 28.25,
+  "mid_lift": {
+   "direction": [
+    0.0,
+    -0.9303,
+    0.3669
+   ],
+   "offset": 2.4978
+  },
+  "head_throw": {
+   "direction": [
+    0.0,
+    -0.8662,
+    -0.4997
+   ],
+   "offset": 2.945,
+   "extra_pitch_deg": -8.0,
+   "nose_down_deg": 13.982
+  },
+  "piece_z_range": {
+   "head": [
+    1.1221,
+    4.0977
+   ],
+   "mid": [
+    1.7662,
+    5.3531
+   ],
+   "tail": [
+    0.0,
+    2.344
+   ]
+  },
+  "grounded_pieces": [
+   "tail"
+  ],
+  "airborne_pieces": {
+   "head": 1.1221,
+   "mid": 1.7662
+  },
+  "head_height": {
+   "top": 4.0977,
+   "underside_clearance": 1.1221,
+   "v4_head_top_lying": 2.6436
+  },
   "droplets": [
    {
     "rest": [
      2.2471,
-     3.3195,
+     2.352,
      0.2157
     ],
     "radius": 0.21,
     "piece": "tail",
     "clearance_to_pieces": {
-     "head": 8.1412,
-     "mid": 2.9594,
+     "head": 6.8133,
+     "mid": 3.0347,
      "tail": 0.2332
     },
     "in_a_gap_corridor": []
@@ -473,68 +575,82 @@
    {
     "rest": [
      -2.9437,
-     4.1075,
+     3.1399,
      0.1707
     ],
     "radius": 0.17,
     "piece": "tail",
     "clearance_to_pieces": {
-     "head": 8.8635,
-     "mid": 3.3462,
+     "head": 7.4652,
+     "mid": 3.3266,
      "tail": 0.4065
     },
     "in_a_gap_corridor": []
    },
    {
     "rest": [
-     1.7655,
-     4.8955,
-     0.1369
-    ],
-    "radius": 0.13,
-    "piece": "tail",
-    "clearance_to_pieces": {
-     "head": 9.607,
-     "mid": 3.9937,
-     "tail": 0.3057
-    },
-    "in_a_gap_corridor": []
-   },
-   {
-    "rest": [
-     0.6891,
-     -7.4434,
-     0.1661
+     0.5612,
+     -1.9365,
+     3.9469
     ],
     "radius": 0.16,
-    "piece": "head",
+    "piece": "mid",
     "clearance_to_pieces": {
-     "head": 0.5037,
-     "mid": 3.9689,
-     "tail": 9.6637
+     "head": 2.2158,
+     "mid": 0.4067,
+     "tail": 4.5689
     },
     "in_a_gap_corridor": []
    },
    {
     "rest": [
-     -1.5293,
-     -6.5517,
-     0.1216
+     -1.5115,
+     -0.9387,
+     3.6723
     ],
-    "radius": 0.12,
-    "piece": "head",
+    "radius": 0.13,
+    "piece": "mid",
     "clearance_to_pieces": {
-     "head": 0.6555,
-     "mid": 3.0336,
-     "tail": 8.8083
+     "head": 2.9533,
+     "mid": 0.5743,
+     "tail": 3.6069
     },
     "in_a_gap_corridor": []
+   },
+   {
+    "rest": [
+     0.5291,
+     0.3313,
+     2.7477
+    ],
+    "radius": 0.12,
+    "piece": "mid",
+    "clearance_to_pieces": {
+     "head": 3.9948,
+     "mid": 0.3952,
+     "tail": 2.1766
+    },
+    "in_a_gap_corridor": []
+   }
+  ],
+  "droplets_hanging": [
+   {
+    "i": 2,
+    "bottom_z": 3.7808
+   },
+   {
+    "i": 3,
+    "bottom_z": 3.5354
+   },
+   {
+    "i": 4,
+    "bottom_z": 2.6261
    }
   ],
   "droplets_in_a_gap_corridor": 0,
   "centre_shift": [
    0.4766,
-   -4.02693,
+   -3.05935,
    0.0
   ]
  },
@@ -559,7 +675,7 @@
   "bind": {
    "position": [
     -0.4766,
-    4.3019,
+    3.3343,
     0.9684
    ],
    "scale": 0.01
@@ -601,7 +717,7 @@
     222
    ],
    "nan": 0,
-   "seconds": 5.2
+   "seconds": 5.7
   }
  },
  "goo_extras": {
@@ -609,7 +725,7 @@
   "drip_tris": 68,
   "splat_tris": 436
  },
- "cut_seconds": 19.0,
+ "cut_seconds": 18.4,
  "flight_segment": {
   "rule": "shape key 'flight': every mound vertex (nearest tail-spine arc < mound exit + 0.35) maps onto a smooth round segment continuing the tail forward (unflattened space: the tube's own cross-section), seeded by closest-point projection then relaxed (uniform Laplacian, re-projected every pass, the tube boundary fixed) -> a fold-free map of the mound disc onto the segment",
   "free_verts": 6484,
@@ -630,7 +746,7 @@
    0.00329,
    0.02089
   ],
-  "seconds": 1.2
+  "seconds": 1.3
  },
  "glow_tiers": {
   "default": {
@@ -641,7 +757,8 @@
     "goo_hot": 0.55,
     "flame": 0.85,
     "core": 1.15,
-    "eye": 0.04
+    "eye": 0.04,
+    "eye_goo": 0.02
    },
    "grade": [
     "goo_cool",
@@ -653,13 +770,16 @@
    "grade_pass": true,
    "eye_dark_socket_pass": true,
    "eye_vs_goo_luminance": [
-    0.047,
-    0.3052
+    0.0256,
+    0.1806
    ],
+   "eye_goo_solid_pass": true,
+   "eye_goo_alpha": 0.97,
+   "eye_goo_luminance": 0.0671,
    "pass": true
   }
  },
- "uv_seconds": 2.2,
+ "uv_seconds": 1.9,
  "islands": {
   "head": {
    "verts": 6278,
@@ -682,12 +802,12 @@
    "faces": 118
   },
   "drop.2": {
-   "verts": 36,
-   "faces": 68
-  },
-  "drop.3": {
    "verts": 54,
    "faces": 104
+  },
+  "drop.3": {
+   "verts": 36,
+   "faces": 68
   },
   "drop.4": {
    "verts": 31,
@@ -696,6 +816,22 @@
   "ball": {
    "verts": 3516,
    "faces": 7028
+  },
+  "eye_orb.0": {
+   "verts": 227,
+   "faces": 450
+  },
+  "eye_orb.1": {
+   "verts": 230,
+   "faces": 456
+  },
+  "ball_eye.0": {
+   "verts": 144,
+   "faces": 284
+  },
+  "ball_eye.1": {
+   "verts": 144,
+   "faces": 284
   },
   "bridge.crown.a": {
    "verts": 152,
@@ -745,72 +881,72 @@
    "amount": 0.16,
    "radius": 0.95,
    "crown:mid": {
-    "verts": 935,
+    "verts": 1026,
     "max_offset": 0.16
    },
    "crown:tail": {
-    "verts": 551,
+    "verts": 923,
     "max_offset": 0.16
    },
    "head:mid": {
-    "verts": 935,
+    "verts": 823,
     "max_offset": 0.16
    },
    "head:head": {
-    "verts": 808,
+    "verts": 766,
     "max_offset": 0.16
    }
   },
   "max_offset": {
    "flight": 1.9669,
    "tuck_mid": 0.4023,
-   "sq_head": 0.9665,
-   "sq_mid": 0.9384,
+   "sq_head": 1.1261,
+   "sq_mid": 1.2961,
    "sq_tail": 0.8519,
    "bulge_crown": 0.16,
-   "bulge_head": 0.16
+   "bulge_head": 0.1596
   },
   "moved_verts": {
    "flight": 6484,
    "tuck_mid": 752,
-   "sq_head": 6278,
+   "sq_head": 6735,
    "sq_mid": 4604,
    "sq_tail": 8354,
-   "bulge_crown": 1484,
-   "bulge_head": 1743
+   "bulge_crown": 1947,
+   "bulge_head": 1589
   },
   "seconds": 0.1
  },
  "facing": {
   "rule": "midpoint of the two eye sockets -> the snout tip (the head's rounded front on its axis)",
   "anchor": [
-   -0.4713,
-   -7.8537,
-   1.5423
+   -0.4724,
+   -7.0269,
+   2.8213
   ],
   "landmark": [
-   -0.4754,
-   -9.8012,
-   0.7499
+   -0.4766,
+   -8.8263,
+   1.7337
   ],
-  "angle_from_minusY_deg": -0.122
+  "angle_from_minusY_deg": -0.132
  },
  "measure": {
   "bbox": [
    [
     -3.1193,
-    -9.8039,
-    -0.0
+    -8.8363,
+    0.0
    ],
    [
     3.1193,
-    9.8039,
-    2.6436
+    8.8363,
+    5.3531
    ]
   ],
-  "length_y": 19.6078,
+  "length_y": 17.6726,
   "width_x": 6.2386,
-  "height_z": 2.6436,
+  "height_z": 5.3531,
   "units": "source units (the head sculpt's own scale, natural proportions)",
   "v3_combined_rest_was": {
    "length_y": 14.579,
@@ -818,24 +954,34 @@
    "height_z": 4.7328,
    "cell_fit_scale": 0.13032
   },
+  "v4_segmented_rest_was": {
+   "length_y": 19.6078,
+   "width_x": 6.2386,
+   "height_z": 2.6436,
+   "cell_fit_scale": 0.0969
+  },
   "export_cell_fit_report_only": {
-   "scale": 0.0969,
+   "scale": 0.10751,
    "bound_by": "footprint",
    "length_m": 1.9,
-   "height_m": 0.2562
+   "height_m": 0.5755
   }
  },
  "tris": {
-  "total": 47858,
+  "total": 49332,
   "head": 12552,
   "mid": 9204,
   "tail": 16704,
   "drop.0": 182,
   "drop.1": 118,
-  "drop.2": 68,
-  "drop.3": 104,
+  "drop.2": 104,
+  "drop.3": 68,
   "drop.4": 58,
   "ball": 7028,
+  "eye_orb.0": 450,
+  "eye_orb.1": 456,
+  "ball_eye.0": 284,
+  "ball_eye.1": 284,
   "bridge.crown.a": 300,
   "bridge.crown.b": 300,
   "bridge.head.a": 300,
@@ -851,34 +997,35 @@
   "goo_hot": 9082,
   "flame": 6247,
   "core": 1387,
-  "eye": 2998
+  "eye": 2998,
+  "eye_goo": 1474
  },
- "digest_geometry_colour_uv": "d36108c879367da2",
+ "digest_geometry_colour_uv": "5d4db52b7e795794",
  "palette": {
   "default": {
    "goo_cool": {
     "rgb": [
-     196,
-     62,
-     12
+     168,
+     22,
+     18
     ],
     "emission": [
-     214,
-     58,
-     10
+     190,
+     22,
+     14
     ],
     "emission_scale": 0.16
    },
    "goo": {
     "rgb": [
-     242,
-     112,
-     20
+     226,
+     44,
+     30
     ],
     "emission": [
-     255,
-     104,
-     16
+     238,
+     40,
+     22
     ],
     "emission_scale": 0.3
    },
@@ -923,21 +1070,34 @@
    },
    "eye": {
     "rgb": [
-     118,
-     28,
-     8
+     92,
+     12,
+     10
+    ],
+    "emission": [
+     96,
+     10,
+     6
+    ],
+    "emission_scale": 0.04
+   },
+   "eye_goo": {
+    "rgb": [
+     150,
+     8,
+     20
     ],
     "emission": [
      120,
-     20,
-     4
+     6,
+     12
     ],
-    "emission_scale": 0.04
+    "emission_scale": 0.02
    }
   },
   "files": [
    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\magmoo\\default.json"
   ]
  },
- "seconds_to_improved": 39.7
+ "seconds_to_improved": 39.9
 }

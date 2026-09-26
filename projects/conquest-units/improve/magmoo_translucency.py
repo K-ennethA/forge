@@ -124,7 +124,7 @@ def set_goo_alpha(a_goo):
     for o in meshes:
         names, rid, lt, cd = REG[o.name]
         cd2 = cd.copy()
-        fa = np.array([1.0 if names[r] in ("eye", "pupil") else min(1.0, max(0.0, PAL_ALPHA[names[r]] + a_goo - GOO_A))
+        fa = np.array([1.0 if names[r] in ("eye", "pupil", "eye_goo") else min(1.0, max(0.0, PAL_ALPHA[names[r]] + a_goo - GOO_A))
                        for r in range(len(names))], np.float32)
         cd2[:, 3] = np.repeat(fa[rid], lt)
         o.data.color_attributes["Col"].data.foreach_set("color", cd2.ravel())

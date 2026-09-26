@@ -1,5 +1,18 @@
-"""Magmoo v4 -- the LIVING GOO: bright translucent orange lava serpent that rests as separate goo segments on the floor
-and comes to life through its movement (cartoon slime: anticipation squash, launch, stretch, splat, settle).
+"""Magmoo v5 -- the LIVING GOO: translucent RED lava serpent that rests PAUSED MID-MOTION (mound + tail grounded, the
+neck arch + head hanging in the air, droplets hanging beside it) and comes to life through its movement (cartoon slime:
+anticipation squash, launch, a FLOATY hang, splat, settle).
+
+v5 (design/review-log.md 2026-09-26 "Cross-unit feedback round", artist verbatim, binding; v4 was "a lot better"):
+  LEAP     floatier: longer air time + a flat-topped hop profile (1 - |2 tau - 1|^WALK_FLOAT: the arc dwells round its
+           apex, launch and splat stay snappy); longer cycle so the loop, the gather and the chase keep their beats.
+  REST     = the bind pose "paused in motion" per design/reference/magmoo-v5-rest-pose-reference.png: the mound + curled
+           tail lie on the floor (they carry feet_origin), the mid keeps its combined ARCH lifted clear of the crater
+           (REST_GAP_CROWN), the head rides the arch in its nose-down flight attitude thrown out ahead (REST_GAP_HEAD),
+           three droplets HANG in the air beside the arch, two sit on the floor by the mound. Visible gaps kept (v4).
+  EYES     a solid RED GOO EYE fills each carved socket: one lens-shaped piece (the dish below, a shallow dome
+           EYE_ORB_BULGE proud of the goo on top), no pupil, no white; own region 'eye_goo'. The ball's sockets too.
+  COLOUR   the body goo shifts from orange to the reference RED; accents (hot patches, flame tips, cores) unchanged.
+  FLOOR    v4 caveat fixed: the bulge keys + bridge strands (set after the floor solver) are re-settled per frame.
 
 v4 (design/review-log.md 2026-09-26 "Magmoo v4 feedback" + "Magmoo movement identity", artist verbatim, binding):
   COLOUR   bright glossy ORANGE lava per design/reference/magmoo-v4-color-reference.png, still a bit see-through
@@ -85,6 +98,11 @@ EYE_DEPTH = 0.20                      # "eye depth": how far the socket floor si
 EYE_RIM_SOFT = 3                      # "rim softness": smoothing passes on the socket lip (clamped: may only sink)
 EYE_SHADE_T = 0.03                    # the darker socket colour starts this far below the goo surface
 EYE_PROTECT_R = 0.28                  # decimation keeps remesh density within this radius of each eye (crisp sockets)
+# v5 red goo eye: one solid lens per socket (the carved dish below, a shallow dome on top), no pupil
+EYE_ORB_BULGE = 0.035                 # "eye bulge": the goo eye's dome rises this far above the goo surface at its centre
+EYE_ORB_INSET = 0.006                 # the eye's back sits this far inside the carved dish (clear of the socket surface)
+EYE_ORB_DENSITY = 1100.0              # "eye detail": triangles per square unit of the head's goo eyes
+BALL_EYE_ORB_DENSITY = 420.0          # ... of the ball's goo eyes (the ball is a coarser mesh)
 # ---- mid piece (the curved bean), knots rear (plugged into the crown) -> front (plugged into the head)
 MID_PTS = [(0, 0.0, 1.50), (0, -0.20, 2.55), (0, -0.85, 3.35), (0, -1.80, 3.75), (0, -2.75, 3.62), (0, -3.35, 3.30)]
 MID_R = [0.50, 0.58, 0.65, 0.67, 0.61, 0.52]                  # "bean thickness" at those knots
@@ -110,14 +128,22 @@ TAIL_BEND_DEG = 14.0                  # "rest S-curve": lateral heading swing of
 TAIL_CURL_DEG = 105.0                 # v4 "rest curl": the resting tail curls round to one side (shorter footprint)
 TAIL_STRAIGHT = 1.8                   # the first stretch of tail stays straight (the flight segment continues it)
 TAIL_TIP_FINGERS = [(-34, 0.60), (0, 0.72), (34, 0.60)]       # "tail-tip splat": (heading deg off the tail, length)
-# ---- droplets v4: resting on the FLOOR beside the pieces (never in a gap): (radius, piece, side, fraction along it)
-DROPLETS = [(0.21, "tail", 1.0, 0.30), (0.17, "tail", -1.0, 0.55), (0.13, "tail", 1.0, 0.80),
-            (0.16, "head", 1.0, 0.45), (0.12, "head", -1.0, 0.62)]
+# ---- droplets v5: beside the pieces (never in a gap): (radius, piece, side, fraction along it, hang)
+#      hang None = on the floor; a number = HANGING in the air beside the piece at that fraction of its height band
+DROPLETS = [(0.21, "tail", 1.0, 0.30, None), (0.17, "tail", -1.0, 0.55, None),
+            (0.16, "mid", 1.0, 0.30, 0.18), (0.13, "mid", -1.0, 0.52, 0.10), (0.12, "mid", 1.0, 0.80, 0.30)]
 DROP_TIP = 1.4                        # "droplet point": teardrop tip length / droplet radius (tips point up)
 DROP_CLEAR = 0.22                     # rest droplets sit this far off the piece's flank
-# ---- v4 REST layout (the bind pose): the segments lying on the floor, visibly apart
+# ---- v5 REST layout (the bind pose): paused in motion -- mound + tail grounded, arch + head in the air, visibly apart
 REST_GAP_HEAD = 1.10                  # "visible gap" head <-> mid: minimum surface distance at rest (units)
 REST_GAP_CROWN = 1.10                 # "visible gap" mid <-> mound: minimum surface distance at rest (units)
+REST_MID_FWD = 0.70                   # "arch lean": the arch lifts off the crown along its join axis blended this much forward
+                                      # (0.35 -> arch top 6.6, head underside 2.0: too tall vs the reference; 0.85 -> head
+                                      # nearly on the floor 0.21; 0.70 -> arch top 5.35, head in the air ~1.1)
+REST_HEAD_FWD = 0.0                   # "head throw": the head leaves the arch along its front tangent blended this much level
+REST_HEAD_PITCH_DEG = -8.0            # "head look": extra nose-down (+) of the head at rest beyond its flight attitude
+                                      # (-8: 22 -> 14 deg nose-down, "looking slightly down / forward")
+REST_BOB = 0.05                       # "hover bob": the airborne pieces + hanging droplets bob this much while resting
 # ---- v4 flight segment (the mound -> smooth body segment shape key)
 CAP_FRONT_AHEAD = 0.95                # the smooth segment's front tip sits this far ahead of the tail root (units)
 CAP_RELAX_ITERS = 900                 # relaxation passes of the mound -> segment map (fold-free projection)
@@ -147,14 +173,17 @@ IDLE_T = {"ball": (0.05, 0.17, 0.33, 0.45), "rise": (0.50, 0.60, 0.80, 0.90)}   
 IDLE_HOVER = 2.3                      # "hover height" of the S-rise (body centreline, units)
 IDLE_WAVE = (0.85, 7.5, 2.0)          # vertical-S wave: (amplitude units, wavelength units, waves travelled in the hold)
 IDLE_RISE_LAG = 0.0045                # cycle fraction per unit of body: the pieces rise/settle one after another
-WALK_FRAMES = 56                      # leap cycle (24 fps -> 2.33 s)
-WALK_GATHER = {"mid": (0.02, 0.15), "tail": (0.05, 0.19)}   # the rear pieces chase up to the head (start, arrive)
-WALK_GATHER_OVERLAP = 0.30            # ... and bump goo-into-goo this deep past touching
+WALK_FRAMES = 64                      # leap cycle (24 fps -> 2.67 s; v4 56 -> room for the floatier hang)
+WALK_GATHER = {"head": (0.03, 0.17), "mid": (0.02, 0.15), "tail": (0.05, 0.19)}   # v5: from the paused rest the arch
+                                      # + head drop back into the one serpent while the mound + tail chase forward under
+                                      # them (start, arrive): the combined serpent, goo-into-goo, before the crouch
 WALK_CROUCH = (0.10, 0.215)           # anticipation squash (start, peak = just before the launch)
 WALK_SQUASH = 0.85                    # anticipation squash key weight at the peak
 WALK_LAUNCH = 0.225                   # the head launches (cycle fraction)
 WALK_LAG = 0.0055                     # cycle fraction per unit of body: each body point launches this much later
-WALK_AIR = 0.30                       # air time of each body point (cycle fraction)
+WALK_AIR = 0.36                       # "hang time": air time of each body point (cycle fraction; v4 0.30 of 56 frames)
+WALK_FLOAT = 3.0                      # "floatiness": hop profile 1 - |2 tau - 1|^this (2 = the v4 parabola; higher =
+                                      # flatter apex dwell, snappier launch + landing)
 WALK_MOVE_END = 0.78                  # the last body point stops moving here
 WALK_HOP = 3.8                        # "leap height": apex of each body point's hop (units)
 WALK_DLS = 8.0                        # "leap length": how far every body point travels in the leap (units)
@@ -199,7 +228,7 @@ OUT_GLB = os.path.join(OUTROOT, "rigged", UNIT + ".glb")
 for d_ in (os.path.dirname(OUT_IMPROVED), os.path.dirname(OUT_RIGGED)):
     os.makedirs(d_, exist_ok=True)
 PIECES = ["head", "mid", "tail"]
-report = {"unit": UNIT, "version": "v4 living goo", "source": bpy.data.filepath, "tier": "hero", "tri_budget": TRI_BUDGET,
+report = {"unit": UNIT, "version": "v5 living goo (paused rest, floaty leap, red goo eyes, red body)", "source": bpy.data.filepath, "tier": "hero", "tri_budget": TRI_BUDGET,
           "yaw_fix_deg": 0.0, "overrides": OVERRIDES, "pieces": {}}
 scene = bpy.context.scene
 TAU = 2 * math.pi
@@ -568,6 +597,58 @@ report["eye_inset_proof"] = {
                  "depth": S["D"], "cutter_r": round(S["Rs"], 4)} for S in SOCKETS]}
 print("EYE_INSET", json.dumps(report["eye_inset_proof"]))
 
+
+# ---- v5 red goo eyes: one solid lens per carved socket (no pupil, no white)
+def eye_orb(S, sdf_fn, density, scale=1.0):
+    """the goo eye filling socket S: intersection of the dish sphere (shrunk EYE_ORB_INSET: the eye's back hugs the
+    carved dish) and a shallow dome through the socket rim whose top stands EYE_ORB_BULGE proud of the goo surface.
+    sdf_fn(P) = signed distance to the PRE-socket goo surface (+ outside): gives the rim height (where the dish meets
+    the goo, measured round the opening). -> (V, F, finish, geometry report)"""
+    n_ = S["n"]; p_ = S["p"]; a_ = S["a"]
+    e1 = unit(np.cross(n_, X_AX) if abs(n_[0]) < 0.9 else np.cross(n_, UP)); e2 = np.cross(n_, e1)
+    h_rim = []
+    for k in range(12):
+        q = p_ + (math.cos(TAU * k / 12) * e1 + math.sin(TAU * k / 12) * e2) * a_
+        lo_h, hi_h = -0.4 * scale, 0.4 * scale                     # bisection along the socket axis onto the surface
+        for _ in range(30):
+            mh = 0.5 * (lo_h + hi_h)
+            if float(sdf_fn((q + n_ * mh)[None])[0]) > 0:
+                hi_h = mh
+            else:
+                lo_h = mh
+        h_rim.append(0.5 * (lo_h + hi_h))
+    h_rim = float(np.mean(h_rim))
+    Ri = S["Rs"] - EYE_ORB_INSET * scale
+    h_top = EYE_ORB_BULGE * scale
+    dh = h_top - h_rim
+    Rd = (a_ * a_ + dh * dh) / (2.0 * dh)
+    dome_c = p_ + n_ * (h_top - Rd)
+    lo_ = S["cs"] - Ri - 0.04 * scale; hi_ = S["cs"] + Ri + 0.04 * scale
+    G_ = SD.Grid(lo_, hi_, 0.007 * scale, band=0.03 * scale)
+    G_.apply(lambda P: np.maximum(SD.sd_sphere(P, S["cs"], Ri), SD.sd_sphere(P, dome_c, Rd)), lo_, hi_, 0.0)
+    V_, T_ = SD.polygonise(G_)
+    V2, F2, fin = finish("eye_orb", V_, T_, voxel=0.009 * scale, density=density)
+    hgt = (V2 - p_) @ n_
+    return V2, F2, fin, {"rim_height": round(h_rim, 5), "dome_top": round(h_top, 5), "dome_radius": round(Rd, 4),
+                         "back_radius": round(Ri, 4), "thickness": round(float(np.ptp(hgt)), 4),
+                         "max_above_goo_surface": round(float(hgt.max()), 5), "tris": fin["tris"]}
+
+
+_bvh_pre = bvh_of(HEAD_ORIG["V"], HEAD_ORIG["F"])
+EYE_ORBS = [eye_orb(S, lambda P: signed_dist(_bvh_pre, P)[0], EYE_ORB_DENSITY) for S in SOCKETS]   # head-local
+_orb_sd = [signed_dist(bvh_of(hV, hF), o_[0])[0] for o_ in EYE_ORBS]      # vs the finished (carved) head surface
+report["eye_goo"] = {
+    "rule": "v5 (artist: 'put a red goo eye no pupil just one solid piece where its carved out'): one lens per socket = "
+            "the carved dish sphere (shrunk EYE_ORB_INSET) intersected with a shallow dome through the socket rim; its "
+            "own region 'eye_goo' (solid deep red, no glow, near-opaque); no pupil, no white. Heights along the socket "
+            "axis from the pre-socket goo surface point.",
+    "orbs": [{**o_[3], "verts": len(o_[0]),
+              "signed_dist_to_carved_head": {"min": round(float(sd_.min()), 5), "max": round(float(sd_.max()), 5),
+                                             "frac_inside_goo": round(float((sd_ < 0).mean()), 4)}}
+             for o_, sd_ in zip(EYE_ORBS, _orb_sd)],
+    "bulge": EYE_ORB_BULGE, "inset": EYE_ORB_INSET}
+print("EYE_GOO", json.dumps(report["eye_goo"]))
+
 # =========================================================================== 2a. MID piece (SDF bean arch)
 t_mid = time.time()
 MP = np.array(MID_PTS, float)
@@ -719,7 +800,7 @@ def mesh_volume(V, F):
 
 # ---- droplets (SDF teardrops, tips up), modelled at the origin (rest spots are set by the rest layout)
 DROP_G = []
-for i, (r, _, _, _) in enumerate(DROPLETS):
+for i, (r, _, _, _, _) in enumerate(DROPLETS):
     p = np.zeros(3)
     Gd = SD.Grid(p - r * 1.6, p + r * (1.6 + DROP_TIP), 0.012, band=0.04)
     Gd.apply(lambda P, c=p, r=r: SD.sd_sphere(P, c, r), p - r, p + r, 0.0)
@@ -750,40 +831,34 @@ def solve_offset(VA, FB_bvh, target, direction, lo_o, hi_o, iters=34):
 
 
 FWD = np.array([0.0, -1.0, 0.0])
-# tail: stays as modelled (the mound on the floor, the tail curled behind it)
+HEAD_INV = np.linalg.inv(HEAD_XF)                         # combined -> head-local (the sculpt frame, floor 0)
+# v5 PAUSED REST (design/reference/magmoo-v5-rest-pose-reference.png): tail stays as modelled (the mound + the curled
+# tail on the floor: the grounded pieces)
 S_REST = {"tail": np.eye(4)}
-# mid: pitched about X so its chord (rear end -> front end) is level: the hump lies on the floor on both ends
-v_ch = MF - C_JOIN
-phi_m = math.atan(-v_ch[2] / v_ch[1])
-Rm = rot_x(phi_m)
-piv = mV.mean(0)
-M_mid = rigid(Rm, piv - Rm @ piv)
-mV_r = apply_m(M_mid, mV)
-M_mid[:3, 3] += np.array([0.0, 0.0, -mV_r[:, 2].min()])
-mV_r = apply_m(M_mid, mV)
-mid_o = solve_offset(mV_r, BVH["tail"], REST_GAP_CROWN, FWD, 0.0, 20.0)   # offset 0: the rear end still in the crater
-M_mid[:3, 3] += FWD * mid_o
+# mid: keeps its combined ARCH (rising off the crown, curving forward and down) and lifts clear of the crater along
+# the crown join axis leaned REST_MID_FWD forward -> the neck arch hangs in the air, paused just after leaving the mound
+D_MID = unit(U2 * (1.0 - REST_MID_FWD) + FWD * REST_MID_FWD)
+mid_o = solve_offset(mV, BVH["tail"], REST_GAP_CROWN, D_MID, 0.0, 20.0)   # offset 0: the rear end in the crater
+M_mid = rigid(t=D_MID * mid_o)
 S_REST["mid"] = M_mid
 mid_rest_V = apply_m(M_mid, mV)
-# head: back in its own sculpt frame (lying on the floor as the artist sculpted it), facing -Y, in front of the mid
-HEAD_INV = np.linalg.inv(HEAD_XF)
-M_head = HEAD_INV.copy()
-hV_r = apply_m(M_head, hV)
-M_head[:3, 3] += np.array([-(hV_r[:, 0].min() + hV_r[:, 0].max()) / 2, 0.0, -hV_r[:, 2].min()])
-hV_r = apply_m(M_head, hV)
-shift0 = float(mid_rest_V[:, 1].min() - hV_r[:, 1].max())        # head's back flush with the mid's front
-M_head[:3, 3] += np.array([0.0, shift0, 0.0])
-hV_r = apply_m(M_head, hV)
+# head: rides the arch in its combined (flight) attitude -- nose down, looking down / forward -- tilted a further
+# REST_HEAD_PITCH_DEG about its socket, then thrown ahead along the arch's front tangent until the gap opens
+A1_r = A1 + D_MID * mid_o
+Rp_ = rot_x(math.radians(REST_HEAD_PITCH_DEG))
+M_head = rigid(Rp_, A1_r - Rp_ @ A1_r) @ rigid(t=D_MID * mid_o)
+D_HEAD = unit(U1 * (1.0 - REST_HEAD_FWD) + FWD * REST_HEAD_FWD)
 bvh_mid_rest = bvh_of(mid_rest_V, mF)
-head_o = solve_offset(hV_r, bvh_mid_rest, REST_GAP_HEAD, FWD, -6.0, 12.0)
-M_head[:3, 3] += FWD * head_o
+head_o = solve_offset(apply_m(M_head, hV), bvh_mid_rest, REST_GAP_HEAD, D_HEAD, 0.0, 12.0)
+M_head[:3, 3] += D_HEAD * head_o
 S_REST["head"] = M_head
 head_rest_V = apply_m(M_head, hV)
 tail_rest_V = lV.copy()
-# droplets: on the floor beside their piece, at a fraction along the piece's length, clear of its flank
+# droplets: beside their piece at a fraction along its length, clear of its flank; on the floor, or HANGING in the
+# air beside the arch (hang = height inside the piece's local height band)
 REST_V = {"head": head_rest_V, "mid": mid_rest_V, "tail": tail_rest_V}
 DROP_REST = []
-for i, (r, pc, side, frac) in enumerate(DROPLETS):
+for i, (r, pc, side, frac, hang) in enumerate(DROPLETS):
     Vp = REST_V[pc]
     if pc == "tail":                                   # along the mound, not the long tail
         Vp = Vp[Vp[:, 1] < MOUND_BASE[0][1] + MOUND_BASE[1][1]]
@@ -791,7 +866,8 @@ for i, (r, pc, side, frac) in enumerate(DROPLETS):
     band = Vp[np.abs(Vp[:, 1] - y0) < 0.45]
     xs = side * band[:, 0]
     x0 = side * (float(xs.max()) + DROP_CLEAR + r)
-    DROP_REST.append(np.array([x0, y0, DROP_BOT[i]]))
+    z0 = DROP_BOT[i] if hang is None else float(band[:, 2].min() + hang * np.ptp(band[:, 2]))
+    DROP_REST.append(np.array([x0, y0, max(z0, DROP_BOT[i])]))
 # recentre the whole rest layout (contract feet_origin: bbox centre XY at 0, floor at 0)
 ALLR = np.vstack([head_rest_V, mid_rest_V, tail_rest_V] + [DROP_G[i][0] + DROP_REST[i] for i in range(len(DROPLETS))])
 lo_a, hi_a = ALLR.min(0), ALLR.max(0)
@@ -845,14 +921,31 @@ JC = {"head": np.array([SNOUT, HMID, A1]),
       "mid": np.array([MID_J[i] for i in range(MID_BONES, -1, -1)]),          # MF ... C_JOIN
       "tail": np.array([C_JOIN] + list(TAIL_J))}                              # C_JOIN, T0, J1 ... J10
 JR = {pc: apply_m(S_REST[pc], JC[pc]) for pc in PIECES}                      # the REST (bind) joints
+_pz = {pc: (float(REST_V[pc][:, 2].min()), float(REST_V[pc][:, 2].max())) for pc in PIECES}
+_hl = apply_m(HEAD_INV, hV)                                     # the head lying in its sculpt frame (the v4 rest)
 report["rest_layout"] = {
-    "rule": "the bind pose = the goo segments lying on the floor, visibly separate. Surface gaps solved by bisection "
-            "(BVH nearest-surface distance, every vertex) to REST_GAP_*; tail as modelled, mid pitched level on both "
-            "ends, head back in its own sculpt frame (lying on the floor), droplets on the floor beside the pieces.",
+    "rule": "v5 bind pose = PAUSED IN MOTION (magmoo-v5-rest-pose-reference.png): the mound + curled tail lie on the "
+            "floor as modelled; the mid keeps its combined arch and is lifted off the crater along the crown join axis "
+            "leaned REST_MID_FWD forward; the head rides in its combined (nose-down flight) attitude + "
+            "REST_HEAD_PITCH_DEG and is thrown ahead along the arch's front tangent. Surface gaps solved by bisection "
+            "(BVH nearest-surface distance, every vertex) to REST_GAP_*. Droplets beside the pieces: on the floor by "
+            "the mound, HANGING in the air beside the arch.",
     "targets": {"head|mid": REST_GAP_HEAD, "mid|tail": REST_GAP_CROWN},
-    "measured": gaps, "mid_pitch_deg": round(math.degrees(phi_m), 3), "droplets": drop_rep,
+    "measured": gaps, "mid_lift": {"direction": D_MID.round(4).tolist(), "offset": round(mid_o, 4)},
+    "head_throw": {"direction": D_HEAD.round(4).tolist(), "offset": round(head_o, 4),
+                   "extra_pitch_deg": REST_HEAD_PITCH_DEG,
+                   "nose_down_deg": round(math.degrees(tgt) + REST_HEAD_PITCH_DEG, 3)},
+    "piece_z_range": {pc: [round(a, 4), round(b, 4)] for pc, (a, b) in _pz.items()},
+    "grounded_pieces": [pc for pc in PIECES if _pz[pc][0] < 0.01],
+    "airborne_pieces": {pc: round(_pz[pc][0], 4) for pc in PIECES if _pz[pc][0] >= 0.01},
+    "head_height": {"top": round(_pz["head"][1], 4), "underside_clearance": round(_pz["head"][0], 4),
+                    "v4_head_top_lying": round(float(_hl[:, 2].max() - _hl[:, 2].min()), 4)},
+    "droplets": drop_rep,
+    "droplets_hanging": [{"i": i, "bottom_z": round(float(DROP_REST[i][2] - DROP_BOT[i]), 4)}
+                         for i in range(len(DROPLETS)) if DROPLETS[i][4] is not None],
     "droplets_in_a_gap_corridor": int(sum(1 for d_ in drop_rep if d_["in_a_gap_corridor"])),
     "centre_shift": CENTER.round(5).tolist()}
+assert report["rest_layout"]["grounded_pieces"] == ["tail"] and _pz["tail"][0] > -1e-6, report["rest_layout"]
 print("REST", json.dumps(report["rest_layout"]))
 
 # =========================================================================== 4b. BALL piece: the one big goo ball
@@ -901,6 +994,8 @@ bV, bF, bfin = finish("ball", bV0, bT0, density=BALL_TRI_DENSITY,
 bV[:, 2] = np.maximum(bV[:, 2], 0.0)
 PIECE_V["ball"], PIECE_F["ball"] = bV, bF
 B_SINK = ball_base_sdf(bV)
+BALL_EYE_ORBS = [eye_orb(S, ball_base_sdf, BALL_EYE_ORB_DENSITY, BALL_EYE_SCALE) for S in BALL_SOCKETS]   # ball frame
+report["eye_goo"]["ball_orbs"] = [{**o_[3], "verts": len(o_[0])} for o_ in BALL_EYE_ORBS]
 MOUND_C_REST = apply_m(S_REST["tail"], np.array(MOUND_BASE[0])[None])[0]
 BALL_BIND_POS = 0.5 * (JR["tail"][0] + JR["tail"][1])    # hidden: rides tiny on the mound bone (inside the goo)
 report["ball"] = {"volumes": {k: round(v, 4) for k, v in VOL.items()}, "total_volume": round(sum(VOL.values()), 4),
@@ -957,7 +1052,7 @@ report["goo_extras"] = {"strand_tris": STRAND[2]["tris"], "drip_tris": DRIP[2]["
 print("EXTRAS", json.dumps(report["goo_extras"]))
 
 # =========================================================================== 5. regions (iso-contour cuts per piece)
-REG = ["goo_cool", "goo", "goo_hot", "flame", "core", "eye"]
+REG = ["goo_cool", "goo", "goo_hot", "flame", "core", "eye", "eye_goo"]    # v5: + eye_goo (the solid red goo eyes)
 R_ = {n: i for i, n in enumerate(REG)}
 CUT_SNAP = 0.15
 TIP_SMOOTH_R = 0.42                   # tip field: smoothing reach of the reference copy (units)
@@ -1255,9 +1350,14 @@ def glow_tiers(pal):
     lum = lambda n: float(np.dot(PAL.srgb_to_linear(pal["regions"][n]["rgb"]), [0.2126, 0.7152, 0.0722]))
     ok_grade = all(tier[a] < tier[b] for a, b in zip(grade, grade[1:]))
     ok_eye = tier["eye"] < tier["goo_cool"] and lum("eye") < lum("goo")
+    # v5 goo eye: a SOLID piece -- no glow above the coolest goo, near-opaque (reads as a flat solid against the
+    # glowing see-through body); its luminance vs the body is reported (default: darker; obsidian: lighter)
+    a_eg = float(pal["regions"]["eye_goo"].get("alpha", 1.0))
+    ok_eg = tier["eye_goo"] < tier["goo_cool"] and a_eg >= 0.9
     return {"skin": pal["skin"], "emission_scale_tiers": tier, "grade": grade, "grade_pass": ok_grade,
             "eye_dark_socket_pass": ok_eye, "eye_vs_goo_luminance": [round(lum("eye"), 4), round(lum("goo"), 4)],
-            "pass": ok_grade and ok_eye}
+            "eye_goo_solid_pass": ok_eg, "eye_goo_alpha": a_eg, "eye_goo_luminance": round(lum("eye_goo"), 4),
+            "pass": ok_grade and ok_eye and ok_eg}
 
 
 report["glow_tiers"] = {"default": glow_tiers(pal_default)}
@@ -1285,6 +1385,13 @@ for i, (dV, dF_, _) in enumerate(DROP_G):
     add_island("drop.%d" % i, dV + DROP_REST[i], dF_, np.full(len(dF_), R_["core"]), np.ones(len(dF_)), "drop.%d" % i)
 BALL_FULL_V = CUT["ball"]["V"]
 add_island("ball", BALL_BIND_POS + BALL_FULL_V * HIDE_SCALE, CUT["ball"]["F"], CUT["ball"]["rid"], bone="ball")
+# v5 goo eyes: the head's ride the head (skinned like the socket goo round them), the ball's ride the ball bone
+EYE_ORB_ISL = ["eye_orb.%d" % i for i in range(len(EYE_ORBS))]
+for nm, (oV, oF, _, _) in zip(EYE_ORB_ISL, EYE_ORBS):
+    add_island(nm, apply_m(S_REST["head"], apply_m(HEAD_XF, oV)), oF, np.full(len(oF), R_["eye_goo"]), np.ones(len(oF)))
+BALL_EYE_ISL = ["ball_eye.%d" % i for i in range(len(BALL_EYE_ORBS))]
+for nm, (oV, oF, _, _) in zip(BALL_EYE_ISL, BALL_EYE_ORBS):
+    add_island(nm, BALL_BIND_POS + oV * HIDE_SCALE, oF, np.full(len(oF), R_["eye_goo"]), np.ones(len(oF)), "ball")
 
 
 def link_frame(d):
@@ -1324,7 +1431,7 @@ for name, V, F, rid, shd, _ in ISL:
 VALL = np.vstack(VALL); RID = np.concatenate(RID); SHD = np.concatenate(SHD)
 # the hidden parts ride at HIDE_SCALE round their bone heads; they are UV-unwrapped at FULL size (a 1 % island would
 # have ~zero UV area and fail uv_health), then shrunk back to their bind size (UVs live on the loops, unaffected)
-HIDDEN = {"ball": BALL_BIND_POS, **{n: BRIDGES[n]["anchor"] for n in BRIDGES},
+HIDDEN = {"ball": BALL_BIND_POS, **{n: BALL_BIND_POS for n in BALL_EYE_ISL}, **{n: BRIDGES[n]["anchor"] for n in BRIDGES},
           **{"shed.%d" % i: SHED_BIND[i] for i in range(3)}, "splat": SPLAT_BIND}
 VALL_UV = VALL.copy()
 for n_, c_ in HIDDEN.items():
@@ -1365,21 +1472,28 @@ t_sk = time.time()
 REST_PIECE_V = {pc: VALL[sl(pc)] for pc in PIECES}
 
 
-def squash_offsets(V, pivot_xy, w):
-    """z -> z (1 - A w); xy spread about the pivot by 1 / sqrt(1 - A w) (volume kept); floor contact stays on z = 0."""
+def squash_offsets(V, pivot_xy, w, z0=0.0):
+    """z -> z0 + (z - z0) (1 - A w); xy spread about the pivot by 1 / sqrt(1 - A w) (volume kept). z0 = the piece's
+    own underside (v5: the arch + head rest in the air -- they squash onto their own bottoms; the grounded tail's
+    z0 = 0 keeps its floor contact on the floor)."""
     a = SQUASH_AMT * np.asarray(w, float)
     k = 1.0 / np.sqrt(1.0 - a) - 1.0
     D = np.zeros_like(V)
-    D[:, 2] = -V[:, 2] * a
+    D[:, 2] = -(V[:, 2] - z0) * a
     D[:, :2] = (V[:, :2] - pivot_xy) * k[:, None]
     return D
 
 
 KEYS = {}
 Vh = REST_PIECE_V["head"]
-D = np.zeros_like(VALL); D[sl("head")] = squash_offsets(Vh, Vh[:, :2].mean(0), np.ones(len(Vh))); KEYS["sq_head"] = D
+SQ_PIV = {"head": (Vh[:, :2].mean(0), float(Vh[:, 2].min()))}
+D = np.zeros_like(VALL); D[sl("head")] = squash_offsets(Vh, SQ_PIV["head"][0], np.ones(len(Vh)), SQ_PIV["head"][1])
+for nm in EYE_ORB_ISL:                                   # the goo eyes squash with the head (same affine map)
+    D[sl(nm)] = squash_offsets(VALL[sl(nm)], SQ_PIV["head"][0], np.ones(len(VALL[sl(nm)])), SQ_PIV["head"][1])
+KEYS["sq_head"] = D
 Vm = REST_PIECE_V["mid"]
-D = np.zeros_like(VALL); D[sl("mid")] = squash_offsets(Vm, Vm[:, :2].mean(0), np.ones(len(Vm))); KEYS["sq_mid"] = D
+D = np.zeros_like(VALL); D[sl("mid")] = squash_offsets(Vm, Vm[:, :2].mean(0), np.ones(len(Vm)), float(Vm[:, 2].min()))
+KEYS["sq_mid"] = D
 Vt = REST_PIECE_V["tail"]
 FREE_R = FREE                                                # tail island vertex order == CUT["tail"] order
 spine_rest = apply_m(S_REST["tail"], TAIL_SPINE)
@@ -1402,6 +1516,15 @@ for jn, (pc_a, pc_b) in (("crown", ("mid", "tail")), ("head", ("mid", "head"))):
         D[sl(pc), 2] = np.maximum(D[sl(pc), 2], -Vp[:, 2])          # a bulge never pushes goo through the floor
         BULGE_INFO["%s:%s" % (jn, pc)] = {"verts": int((fall > 0).sum()), "max_offset": round(float((BULGE_AMT * fall).max()), 4)}
     KEYS["bulge_" + jn] = D
+# the goo eyes follow the head surface round them: nearest head vertex (rest) -> its weights + bulge delta
+from mathutils.kdtree import KDTree  # noqa: E402
+_kd = KDTree(len(REST_PIECE_V["head"]))
+for i_, v_ in enumerate(REST_PIECE_V["head"]):
+    _kd.insert(Vector(v_), i_)
+_kd.balance()
+ORB_NEAR = {nm: np.array([_kd.find(Vector(v_))[1] for v_ in VALL[sl(nm)]]) for nm in EYE_ORB_ISL}
+for nm in EYE_ORB_ISL:
+    KEYS["bulge_head"][sl(nm)] = KEYS["bulge_head"][sl("head")][ORB_NEAR[nm]]
 # tuck_mid: the drips hanging under the mid pull up flush into its underside (the mid lies straight in the air line)
 Vmc = CUT["mid"]["V"]
 d2m = ((Vmc[:, None, :] - mid_poly[None, :, :]) ** 2).sum(2)
@@ -1452,14 +1575,16 @@ ob["conquest_scale_policy"] = "natural proportions, source units; game scales at
 ob["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color"
 ob["conquest_alpha_channel"] = "Col alpha (glTF COLOR_0.a, per-region palette alpha) x material alpha factor " \
                                "(baseColorFactor[3]); alphaMode BLEND, single-sided"
-ob["conquest_rest"] = "v4: the bind pose is the segmented rest - head | mid | mound+tail lying on the floor, apart"
+ob["conquest_rest"] = "v5: the bind pose is paused in motion - mound + tail on the floor, the arch + head in the air " \
+                      "(visibly apart), droplets hanging beside the arch"
 lo_a, hi_a = VALL.min(0), VALL.max(0)
 report["measure"] = {
     "bbox": [lo_a.round(4).tolist(), hi_a.round(4).tolist()],
     "length_y": round(float(hi_a[1] - lo_a[1]), 4), "width_x": round(float(hi_a[0] - lo_a[0]), 4),
     "height_z": round(float(hi_a[2] - lo_a[2]), 4),
     "units": "source units (the head sculpt's own scale, natural proportions)",
-    "v3_combined_rest_was": {"length_y": 14.579, "width_x": 4.5874, "height_z": 4.7328, "cell_fit_scale": 0.13032}}
+    "v3_combined_rest_was": {"length_y": 14.579, "width_x": 4.5874, "height_z": 4.7328, "cell_fit_scale": 0.13032},
+    "v4_segmented_rest_was": {"length_y": 19.6078, "width_x": 6.2386, "height_z": 2.6436, "cell_fit_scale": 0.0969}}
 fp = max(report["measure"]["length_y"], report["measure"]["width_x"])
 k_fit = min(CELL_MAX_H / report["measure"]["height_z"], CELL_MAX_FP / fp)
 report["measure"]["export_cell_fit_report_only"] = {
@@ -1500,7 +1625,7 @@ sys.stdout.flush()
 if STOP == "improved":
     os._exit(0)
 # =========================================================================== 7. rig (root + FLAT deform bones)
-rep = {"unit": UNIT, "version": "v4 living goo", "source": OUT_IMPROVED, "fps": K.FPS}
+rep = {"unit": UNIT, "version": report["version"], "source": OUT_IMPROVED, "fps": K.FPS}
 scene.render.fps = K.FPS; scene.render.fps_base = 1.0
 CHAIN =[("head.0", "head", 2, 1), ("head.1", "head", 1, 0)] + \
     [("body.%d" % i, "mid", MID_BONES - i, MID_BONES - 1 - i) for i in range(MID_BONES)] + \
@@ -1615,6 +1740,17 @@ for pc in PIECES:
     SKIN[pc] = {"b0": order[:, 0], "b1": order[:, 1], "w0": W[np.arange(len(V)), order[:, 0]],
                 "w1": W[np.arange(len(V)), order[:, 1]], "bones": bones}
     WREP[pc] = {"bones": bones, "per_bone_dominant": {b: int((np.argmax(W, 1) == j).sum()) for j, b in enumerate(bones)}}
+    if pc == "head":                                   # v5 goo eyes: the weights of the nearest head goo vertex
+        for nm in EYE_ORB_ISL:
+            a1 = RANGE[nm][0]
+            Wo = W[ORB_NEAR[nm]]
+            for j, bn in enumerate(bones):
+                idx = np.nonzero(Wo[:, j] > 1e-6)[0]
+                for w_ in np.unique(np.round(Wo[idx, j], 6)):
+                    sel = idx[np.round(Wo[idx, j], 6) == w_]
+                    VG[bn].add([int(i) + a1 for i in sel], float(w_), "REPLACE")
+        WREP["eye_goo"] = {"rule": "each goo-eye vertex copies the head-chain weights of its nearest rest head vertex",
+                           "verts": int(sum(RANGE[nm][1] - RANGE[nm][0] for nm in EYE_ORB_ISL))}
 WREP["tail"]["mound_rigid"] = {"mound_verts_forced_tail0": int(FREE_R.sum()), "root_blend_from_arc": round(S_J, 4)}
 for name, V, F, rid, shd, bone in ISL:
     if bone is not None:
@@ -1731,8 +1867,10 @@ C_T0 = C_MID[-1] + MID_R[0] + CAP_FRONT_AHEAD - CAP_OVERLAP
 C_TAIL = C_T0 + np.concatenate([[0.0], np.cumsum(LINK_LEN["tail"][1:])])     # T0, J1..J10
 L_AIR = float(C_TAIL[-1])
 C_CAP = C_T0 - CAP_FRONT_AHEAD                                                # the flight segment's front tip
-Z_LINE = {"head": JR["head"][:, 2].copy(), "mid": np.full(len(JC["mid"]), MID_R[0] * 1.05),
-          "tail": JR["tail"][1:, 2].copy()}
+# the line's floor heights (where each body point touches down): v5 the head's = its joints lying on the floor in its
+# sculpt frame (the rest head is in the air now), the mid's = its radius, the tail's = its rest (grounded) joints
+Z_LINE = {"head": apply_m(HEAD_INV, JC["head"])[:, 2] - float(_hl[:, 2].min()),
+          "mid": np.full(len(JC["mid"]), MID_R[0] * 1.05), "tail": JR["tail"][1:, 2].copy()}
 AIR_C = {"head": C_HEAD, "mid": C_MID, "tail": C_TAIL}
 Y_SNOUT = float(JR["head"][0][1])
 rep["air_line"] = {"rule": "the flight state = the combined serpent laid along one line: head (snout first), the mid's "
@@ -1871,13 +2009,23 @@ def breath(t, pc, cycles):
     return BREATH * math.sin(TAU * (cycles * t + ph))
 
 
+AIRBORNE = [pc for pc in PIECES if pc not in report["rest_layout"]["grounded_pieces"]]
+
+
+def bob(t, cycles, ph):
+    return UP * REST_BOB * math.sin(TAU * (cycles * t + ph))
+
+
 def rest_pose(t, cycles=1, off=None):
     J = {pc: JR[pc].copy() for pc in PIECES}
+    for pc in AIRBORNE:                                  # v5: the paused pieces hover, bobbing a hair
+        J[pc] = J[pc] + bob(t, cycles, {"head": 0.15, "mid": 0.0}[pc])
     if off is not None:
         J = shift(J, off)
     keys = {"sq_" + pc: breath(t, pc, cycles) for pc in PIECES}
-    drops = [(DROP_REST[i] + (off if off is not None else 0.0), 1.0 + 0.04 * math.sin(TAU * (cycles * t + 0.2 * i)))
-             for i in range(len(DROPLETS))]
+    drops = [(DROP_REST[i] + (off if off is not None else 0.0) + (bob(t, cycles, 0.3 + 0.17 * i) if DROPLETS[i][4] is not None
+                                                                   else 0.0),
+              1.0 + 0.04 * math.sin(TAU * (cycles * t + 0.2 * i))) for i in range(len(DROPLETS))]
     return {"J": J, "keys": keys, "drops": drops, "glow": 1.0}
 
 
@@ -2025,7 +2173,7 @@ def idle_rise_pose(t, T4, cycles):
         up_ = sstep(a + lag - 0.015, a + lag + 0.05, t)
         down_ = spring_between(t, d + lag - 0.02, d + lag + 0.05, IDLE_FRAMES / K.FPS)
         s[pc] = up_ * (1.0 - down_) if t < d + lag - 0.02 else (1.0 - down_)
-        P["J"][pc] = blend_pts(JR[pc], J_air[pc], s[pc])
+        P["J"][pc] = blend_pts(P["J"][pc], J_air[pc], s[pc])       # from the (bobbing) paused rest
     P["keys"]["flight"] = float(np.clip(s["tail"], 0.0, 1.0))
     for pc in PIECES:
         lag = IDLE_RISE_LAG * anchor_c[pc]
@@ -2058,12 +2206,17 @@ WALK_D = WALK_DLS + WALK_SEP_HEAD                         # per-cycle travel: re
 WALK_TMOVE = WALK_MOVE_END - WALK_LAUNCH - WALK_LAG * L_AIR
 CYC_W = WALK_FRAMES / K.FPS
 REST_Y_EXT = {pc: (float(REST_V[pc][:, 1].min()), float(REST_V[pc][:, 1].max())) for pc in PIECES}
-# gather: the rear pieces chase up to the piece in front until their surfaces bump WALK_GATHER_OVERLAP deep
-GATHER_D = {"mid": float(np.linalg.norm(np.array(gaps["head|mid"]["closest_b"]) - np.array(gaps["head|mid"]["closest_a"]))
-                         ) + WALK_GATHER_OVERLAP}
-GATHER_D["tail"] = GATHER_D["mid"] + float(np.linalg.norm(np.array(gaps["mid|tail"]["closest_b"]) -
-                                                         np.array(gaps["mid|tail"]["closest_a"]))) + WALK_GATHER_OVERLAP
+# v5 gather: from the paused rest the pieces pull together into the COMBINED serpent (the v3 assembly: goo-into-goo at
+# both joins) slid forward so the snout keeps its rest y -- the arch + head drop back onto the mound while the mound +
+# tail chase forward under them (anticipation); the launch leaves from there
+GATHER_K = float(JC["head"][0][1] - CENTER[1] - JR["head"][0][1])
+JG = {pc: JC[pc] - CENTER + FWD * GATHER_K for pc in PIECES}
 WALK_TRACE = []
+
+
+def hop(tau):
+    """v5 floaty hop profile, 0 at take-off and touch-down, 1 at the apex: 1 - |2 tau - 1|^WALK_FLOAT."""
+    return 1.0 - abs(2.0 * tau - 1.0) ** WALK_FLOAT if 0.0 < tau < 1.0 else 0.0
 
 
 def walk_disp(x):
@@ -2075,7 +2228,7 @@ def walk_point(cb, z0, t):
     x = min(1.0, max(0.0, (t - tl) / WALK_TMOVE))
     u = WALK_DLS * walk_disp(x)
     tau = (t - tl) / WALK_AIR
-    h = WALK_HOP * 4.0 * tau * (1.0 - tau) if 0.0 < tau < 1.0 else 0.0
+    h = WALK_HOP * hop(tau)
     env = math.sin(math.pi * tau) if 0.0 < tau < 1.0 else 0.0
     ph = (t - WALK_LAUNCH) / (WALK_MOVE_END - WALK_LAUNCH)
     wave = WALK_WAVE[0] * math.sin(TAU * (cb / WALK_WAVE[1] - WALK_WAVE[2] * ph)) * env
@@ -2093,10 +2246,9 @@ def walk_pose(t):
         a_s, b_s = WALK_SEP[pc]
         down_ = spring_between(t, a_s, b_s, CYC_W)
         s[pc] = up_ * (1.0 - down_) if t < a_s else 1.0 - down_
-        if t < a_s:                                        # before landing: the rest shape chasing forward (gather)
-            g = 0.0 if pc == "head" else GATHER_D[pc] * spring_between(t, *WALK_GATHER[pc], CYC_W)
-            ground[pc] = JR[pc] + FWD * g
-        else:                                              # after: the same rest spot one leap ahead
+        if t < a_s:                                        # before landing: paused rest -> gathered serpent
+            ground[pc] = blend_pts(JR[pc], JG[pc], spring_between(t, *WALK_GATHER[pc], CYC_W))
+        else:                                              # after: the same paused rest one leap ahead
             ground[pc] = JR[pc] + FWD * WALK_D
         P["J"][pc] = blend_pts(ground[pc], J_air[pc], s[pc])
     P["keys"]["flight"] = float(np.clip(s["tail"], 0.0, 1.0))
@@ -2292,6 +2444,29 @@ def author(name, frames, pose_fn):
             row[jn] = (g, xa if xa is not None else full[pa][0], xb if xb is not None else full[pb][0])
         fdata.append(row)
     tracks, bulge, events = bridge_tracks(fdata, frames, [P.get("bridge_ok", True) for P in poses])
+    # v5 floor fix (the v4 caveat: min z -0.023 idle / -0.011 walk): the bulge keys and the bridge strands are only
+    # known after pass 1, past the floor solver -- re-settle every frame with its bulge weights, and lift any strand
+    # whose posed goo dips under the floor
+    relift = {"pieces_frames": 0, "pieces_max": 0.0, "strand_frames": 0, "strand_max": 0.0}
+    for f, P in enumerate(poses):
+        for jn in JOINS:
+            P["keys"]["bulge_" + jn] = float(np.clip(bulge[jn][f], -1.0, 1.0))
+        n0 = len(FLOOR_LIFTS)
+        settle_floor(P)
+        lift_p = FLOOR_LIFTS[n0]
+        del FLOOR_LIFTS[n0:]
+        if lift_p > 0:
+            relift["pieces_frames"] += 1; relift["pieces_max"] = max(relift["pieces_max"], lift_p)
+        tr_f = tracks[f] if f < frames else tracks[0]
+        if tr_f:
+            P["bridges"] = tr_f
+            M = all_mats(P)
+            for bn, (p, d, L, th) in list(tr_f.items()):
+                Vb = VALL[sl(bn)]
+                z = float(((M[bn] @ REST_INV[bn])[:3, :3] @ Vb.T).T[:, 2].min() + (M[bn] @ REST_INV[bn])[2, 3])
+                if z < 0.0:
+                    tr_f[bn] = (p + UP * -z, d, L, th)
+                    relift["strand_frames"] += 1; relift["strand_max"] = max(relift["strand_max"], -z)
     act = bpy.data.actions.new(name)
     act.use_fake_user = True
     K.assign_action(rig, act)
@@ -2335,7 +2510,8 @@ def author(name, frames, pose_fn):
     for k in KEY_ORDER:
         KEY.key_blocks[k].value = 0.0
     out = {"frames": frames, "author_seconds": round(time.time() - t_a, 1),
-           "floor_contact_lift": {"frames_lifted": int(sum(1 for x in lifts if x > 0)), "max": round(max(lifts), 4)}}
+           "floor_contact_lift": {"frames_lifted": int(sum(1 for x in lifts if x > 0)), "max": round(max(lifts), 4)},
+           "floor_relift_after_bulge_and_strands": {k: (round(v, 5) if isinstance(v, float) else v) for k, v in relift.items()}}
     glow = [P["glow"] for P in poses]
     try:
         K.assign_action(nt, act)
@@ -2423,10 +2599,28 @@ fr_w = np.arange(1, WALK_FRAMES + 2)
 tw = (fr_w - 1) / WALK_FRAMES
 hmin = np.array(per_walk["head"]["minz"]); hmax = np.array(per_walk["head"]["maxz"])
 allmin = np.min([per_walk[k]["minz"] for k in PIECES], 0)
-air_head = hmin > 0.05
+tmin = np.array(per_walk["tail"]["minz"])
+air_tail = tmin > 0.05                                  # the grounded mound + tail leave the floor only in the leap
 air_all = allmin > 0.05
-rest_head_h = float(REST_PIECE_V["head"][:, 2].max())
-crouch_f = int(np.argmin(hmax[: int(WALK_LAUNCH * WALK_FRAMES) + 2])) + 1
+head_floor = hmin < 0.05                                # v5: the head touches the floor only at the landing splat
+crouch_lo = int(round(WALK_CROUCH[0] * WALK_FRAMES)) + 1
+crouch_f = crouch_lo - 1 + int(np.argmin(hmax[crouch_lo - 1: int(WALK_LAUNCH * WALK_FRAMES) + 2])) + 1
+rest_head_h = float(hmax[crouch_lo - 1])                # the gathered head top as the crouch starts
+AIR_S = WALK_AIR * CYC_W
+
+
+def dwell_s(frac, p, air_s):
+    """seconds of one body point's hop spent at or above frac x the apex (profile 1 - |2 tau - 1|^p)."""
+    return (1.0 - frac) ** (1.0 / p) * air_s
+
+
+V4_WAS = {"cycle_frames": 56, "per_body_point_air_s": 0.70, "hop_profile": "parabola (p = 2)",
+          "apex_dwell_s": {"ge_90pct": round(dwell_s(0.9, 2.0, 0.70), 4), "ge_75pct": round(dwell_s(0.75, 2.0, 0.70), 4)},
+          "launch_vertical_speed_u_per_s": round(4.0 * WALK_HOP / 0.70, 3),
+          "measured": {"source": "v4 rigged blend probed 2026-09-26 (rig + Key slots bound, every frame)",
+                       "whole_body_off_floor_frames": 13, "tail_off_floor_frames": 15,
+                       "head_min_z_ge_90pct_of_max_frames": 7, "head_min_z_ge_75pct_of_max_frames": 10,
+                       "head_max_clearance": 2.7816}}
 world_cy = np.array(per_walk["head"]["cy"]) - WALK_D * tw                     # local = world + D t (toward +Y)
 final_cy = float(REST_PIECE_V["head"][:, 1].mean()) - WALK_D
 after = tw > WALK_SEP["head"][0]
@@ -2435,13 +2629,20 @@ sep_travel = WALK_SEP_HEAD
 wk = walk_x["shape_key_range"]
 m_walk["launch_cycle"] = {
     "anticipation_squash": {"key_weight_peak": WALK_SQUASH, "height_drop_pct_by_key": round(100 * SQUASH_AMT * WALK_SQUASH, 2),
-                            "head_top_rest": round(rest_head_h, 4), "head_top_at_crouch": round(float(hmax[crouch_f - 1]), 4),
+                            "head_top_gathered": round(rest_head_h, 4), "head_top_at_crouch": round(float(hmax[crouch_f - 1]), 4),
                             "head_top_drop_pct_measured": round(100 * (1 - float(hmax[crouch_f - 1]) / rest_head_h), 2),
                             "crouch_frame": crouch_f},
     "launch_frame_head": 1 + int(round(WALK_LAUNCH * WALK_FRAMES)),
-    "air_time": {"per_body_point_s": round(WALK_AIR * CYC_W, 4), "per_body_point_frames": round(WALK_AIR * WALK_FRAMES, 2),
-                 "head_off_floor_frames": int(air_head.sum()), "whole_body_off_floor_frames": int(air_all.sum()),
-                 "head_off_floor_range": [int(fr_w[air_head].min()), int(fr_w[air_head].max())] if air_head.any() else None},
+    "air_time": {"per_body_point_s": round(AIR_S, 4), "per_body_point_frames": round(WALK_AIR * WALK_FRAMES, 2),
+                 "hop_profile": "1 - |2 tau - 1|^%.2f" % WALK_FLOAT,
+                 "apex_dwell_s": {"ge_90pct": round(dwell_s(0.9, WALK_FLOAT, AIR_S), 4),
+                                  "ge_75pct": round(dwell_s(0.75, WALK_FLOAT, AIR_S), 4)},
+                 "launch_vertical_speed_u_per_s": round(2.0 * WALK_FLOAT * WALK_HOP / AIR_S, 3),
+                 "measured": {"whole_body_off_floor_frames": int(air_all.sum()), "tail_off_floor_frames": int(air_tail.sum()),
+                              "head_min_z_ge_90pct_of_max_frames": int((hmin >= 0.9 * hmin.max()).sum()),
+                              "head_min_z_ge_75pct_of_max_frames": int((hmin >= 0.75 * hmin.max()).sum()),
+                              "head_on_floor_frames": [int(x) for x in fr_w[head_floor]]},
+                 "v4_was": V4_WAS},
     "arc_height": {"hop_apex_per_point": WALK_HOP, "vertical_S_wave_amp": WALK_WAVE[0],
                    "head_max_clearance": round(float(hmin.max()), 4), "head_top_max": round(float(hmax.max()), 4),
                    "body_top_max": round(float(np.max([per_walk[k]["maxz"] for k in PIECES])), 4)},
@@ -2455,8 +2656,10 @@ m_walk["launch_cycle"] = {
                 "spring_hz_damping": WALK_SPRING,
                 "spring_theory_overshoot_pct": round(100 * math.exp(-WALK_SPRING[1] * math.pi / math.sqrt(1 - WALK_SPRING[1] ** 2)), 2)},
     "shape_key_ranges": wk}
-m_walk["motion"] = {"gather": WALK_GATHER, "gather_distance": {k: round(v, 4) for k, v in GATHER_D.items()},
+m_walk["motion"] = {"gather": WALK_GATHER, "gather_rule": "paused rest -> the combined serpent slid %.4f forward "
+                    "(snout keeps its rest y): arch + head drop onto the mound, the mound + tail chase forward" % GATHER_K,
                     "crouch": WALK_CROUCH, "launch": WALK_LAUNCH, "lag_per_unit": WALK_LAG, "air": WALK_AIR,
+                    "float": WALK_FLOAT,
                     "move_end": WALK_MOVE_END, "hop": WALK_HOP, "wave": WALK_WAVE, "separate": WALK_SEP,
                     "head_runs_ahead": WALK_SEP_HEAD, "in_place": "root at the origin; the unit's rest spot advances "
                     "D per cycle toward -Y (the game glides it)", **{k: v for k, v in walk_x.items() if k not in ("gap_track",)}}
@@ -2485,11 +2688,13 @@ m_ball["bounce"] = {"bounces": BALL_BOUNCES, "hop_height": BALL_BOUNCE_H, "max_l
                     "bounce_apex_frames": [int(i) + 1 for i in np.nonzero((np.diff(np.sign(np.diff(lifts))) < 0))[0] + 1]}
 m_ball.update({k: v for k, v in ball_x.items() if k != "gap_track"})
 m_ball["form"] = report["ball"]
-rep["idle"] = {"status": "v4 PROPOSED (artist 2026-09-26 movement identity: 'resting state is segmented on the ground, "
-                         "and he idles between turning into a ball and the flying s shape')", **m_idle}
-rep["walk"] = {"status": "v4 PROPOSED (artist 2026-09-26: 'he more launches himself forward with the goops following him "
-                         "then landing on the next spot'; 'goops chasing each other'; 'cartoon slime'; vertical S)", **m_walk}
-rep["ball"] = {"status": "v4 PROPOSED (artist 2026-09-26 v4: 'when he is in ball form have him do a small bounce')", **m_ball}
+rep["idle"] = {"status": "v5 PROPOSED (v4 beats kept -- 'he idles between turning into a ball and the flying s shape' -- "
+                         "restaged from the v5 paused rest: 'we want some still flying as if he was paused in motion')",
+               **m_idle}
+rep["walk"] = {"status": "v5 PROPOSED (v4 leap kept -- launch, goops chasing, vertical S, splat -- made floatier: 'can we "
+                         "make him floatier while jumping'; launches from and lands back into the paused rest)", **m_walk}
+rep["ball"] = {"status": "v5 PROPOSED (v4 ball + bounces, from the v5 paused rest; red goo eyes in the ball's sockets)",
+               **m_ball}
 rep["gap_tracks"] = {"idle": idle_x["gap_track"], "walk": walk_x["gap_track"], "ball": ball_x["gap_track"]}
 rep["transition_events"] = {"idle": idle_x["bridge_events"], "walk": walk_x["bridge_events"], "ball": ball_x["bridge_events"]}
 rep["anim_seconds"] = round(time.time() - t_anim, 1)
@@ -2500,14 +2705,15 @@ scene.frame_set(1)
 for pb in pose:
     pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
 scene.frame_start, scene.frame_end = 1, IDLE_FRAMES + 1
-rig["conquest_rig"] = "magmoo v4 flat rig: root + head.0-1 | body.0-%d | tail.0-%d | drop.0-%d | ball | bridge x4 | " \
+rig["conquest_rig"] = "magmoo v5 flat rig: root + head.0-1 | body.0-%d | tail.0-%d | drop.0-%d | ball | bridge x4 | " \
                       "shed.0-2 | splat (every deform bone a child of root)" % (MID_BONES - 1, TAIL_BONES, len(DROPLETS) - 1)
 rig["conquest_idle_ball_hold_frame"] = IDLE_BALL_HOLD
 rig["conquest_idle_fly_frame"] = IDLE_FLY
 rig["conquest_ball_hold_frame"] = BALL_HOLD_FRAME
 ob["conquest_clips"] = ["idle", "walk", "ball"]
-ob["conquest_clip_status"] = "v4: idle = rest -> ball (+bounces) -> rest -> flying vertical S -> rest; walk = bounding " \
-                             "leap (goops chasing); ball = goo-ball round trip with bounces; all PROPOSED; no attack/hit/death"
+ob["conquest_clip_status"] = "v5: idle = paused rest -> ball (+bounces) -> rest -> flying vertical S -> rest; walk = " \
+                             "floaty bounding leap (gather, launch, goops chasing, splat, back into the paused rest); " \
+                             "ball = goo-ball round trip with bounces; all PROPOSED; no attack/hit/death"
 ob["conquest_shape_keys"] = "flight (mound -> smooth segment), sq_head/sq_mid/sq_tail (squash; negative = stretch), " \
                             "bulge_crown/bulge_head (torn ends bulge on contact); glTF morph targets, weights keyed per clip"
 

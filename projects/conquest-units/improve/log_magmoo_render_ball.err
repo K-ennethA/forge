@@ -1,4 +1,4 @@
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\magmoo_render.py:97: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\magmoo_render.py:99: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
   world.use_nodes = True
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\magmoo_render.py:118: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\magmoo_render.py:120: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   fm = bpy.data.materials.new("s_floor"); fm.use_nodes = True

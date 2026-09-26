@@ -1,20 +1,26 @@
-"""Before/after sheets (v4). Pure image assembly, no scene.
+"""Before/after sheets (v5). Pure image assembly, no scene.
 
     blender --background --factory-startup --python magmoo_before_after.py
 
-1. renders/magmoo/magmoo_v4_before_after.png -- left v3 (the combined serpent, deep-red translucent goo, glowing
-   eyes with pupils, horizontal-S flight; renders/magmoo/magmoo_v3_<view>.png, kept from the v3 lane), right v4
-   (magmoo_v4_<view>.png). Rows top -> bottom: threequarter (v4 = the segmented rest), side, tactical, head, flight side.
-2. renders/magmoo/magmoo_v4_colour_reference.png -- design/reference/magmoo-v4-color-reference.png beside the v4
-   threequarter rest and the v4 head closeup (each tile fitted into a square, aspect kept, grey padding).
+1. renders/magmoo/magmoo_v5_before_after.png -- left v4 (segmented rest on the floor, orange goo, empty sockets,
+   parabolic leap; renders/magmoo/magmoo_v4_<view>.png, kept from the v4 lane), right v5 (magmoo_v5_<view>.png).
+   Rows top -> bottom: threequarter (rest), side (rest), tactical, head closeup, walk mid-air side.
+2. renders/magmoo/magmoo_v5_rest_vs_reference.png -- design/reference/magmoo-v5-rest-pose-reference.png beside the v5
+   rest pose front / threequarter / side.
+3. renders/magmoo/magmoo_v5_colour_compare.png -- rows [reference | v4 threequarter | v5 threequarter] and
+   [v4 colour reference | v4 head | v5 head]; + magmoo_v5_colour.json: the hue of the saturated (unit) pixels of each
+   image (HSV hue, degrees, 0 = red; median + quartiles + the red / orange / yellow band shares) -- the body hue shift.
+4. renders/magmoo/magmoo_v5_eye_closeup.png -- [v4 head (empty socket) | v5 head | v5 eyeclose | v5 headside].
 Each tile is framed on its own model's projected bounds (the survey rule): this compares look, not absolute size.
 """
-import bpy, os
+import bpy, os, json
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 R = os.path.normpath(os.path.join(HERE, "..", "renders", "magmoo"))
-REF = os.path.normpath(os.path.join(HERE, "..", "design", "reference", "magmoo-v4-color-reference.png"))
+DREF = os.path.normpath(os.path.join(HERE, "..", "design", "reference"))
+REF5 = os.path.join(DREF, "magmoo-v5-rest-pose-reference.png")
+REF4 = os.path.join(DREF, "magmoo-v4-color-reference.png")
 T = 512
 
 
@@ -69,9 +75,38 @@ def grid(rows):
     return np.concatenate(out, axis=0)
 
 
-pairs = [("threequarter", "threequarter"), ("side", "side"), ("tactical", "tactical"), ("head", "head"),
-         ("fly_side", "fly_side")]
-save(grid([[tile(os.path.join(R, "magmoo_v3_%s.png" % a)), tile(os.path.join(R, "magmoo_v4_%s.png" % b))]
-           for a, b in pairs]), "magmoo_v4_before_after.png")
-save(grid([[tile(REF), tile(os.path.join(R, "magmoo_v4_threequarter.png")), tile(os.path.join(R, "magmoo_v4_head.png"))]]),
-     "magmoo_v4_colour_reference.png")
+def hue_stats(path):
+    """HSV hue (deg, red = 0, wrapped to [-60, 300)) of the saturated, lit pixels (sat > 0.45, max > 60/255): the
+    unit (the grey studio floor / background are unsaturated)."""
+    px = load(path)[..., :3].reshape(-1, 3)
+    mx = px.max(1); mn = px.min(1)
+    m = ((mx - mn) / np.maximum(mx, 1e-6) > 0.45) & (mx > 60 / 255.0)
+    p = px[m]; mx_, mn_ = mx[m], mn[m]; d = np.maximum(mx_ - mn_, 1e-6)
+    r, g, b = p[:, 0], p[:, 1], p[:, 2]
+    h = np.where(mx_ == r, ((g - b) / d) % 6.0, np.where(mx_ == g, (b - r) / d + 2.0, (r - g) / d + 4.0)) * 60.0
+    h = np.where(h >= 300.0, h - 360.0, h)
+    band = lambda a, b_: round(float(((h >= a) & (h < b_)).mean()), 4)
+    return {"pixels": int(m.sum()), "hue_median_deg": round(float(np.median(h)), 2),
+            "hue_p25_p75_deg": np.percentile(h, [25, 75]).round(2).tolist(),
+            "share_red_lt12deg": band(-60, 12), "share_orange_12_30deg": band(12, 30), "share_yellow_ge30deg": band(30, 300),
+            "median_rgb_red_band": (np.median(p[h < 12], 0) * 255).round().tolist() if (h < 12).any() else None}
+
+
+v = lambda ver, view: os.path.join(R, "magmoo_%s_%s.png" % (ver, view))
+pairs = ["threequarter", "side", "tactical", "head", "fly_side"]
+save(grid([[tile(v("v4", a)), tile(v("v5", a))] for a in pairs]), "magmoo_v5_before_after.png")
+save(grid([[tile(REF5), tile(v("v5", "front")), tile(v("v5", "threequarter")), tile(v("v5", "side"))]]),
+     "magmoo_v5_rest_vs_reference.png")
+save(grid([[tile(REF5), tile(v("v4", "threequarter")), tile(v("v5", "threequarter"))],
+           [tile(REF4), tile(v("v4", "head")), tile(v("v5", "head"))]]), "magmoo_v5_colour_compare.png")
+save(grid([[tile(v("v4", "head")), tile(v("v5", "head")), tile(v("v5", "eyeclose")), tile(v("v5", "headside"))]]),
+     "magmoo_v5_eye_closeup.png")
+col = {"rule": hue_stats.__doc__.strip(),
+       "v5_reference": hue_stats(REF5), "v4_colour_reference": hue_stats(REF4),
+       "v4_threequarter": hue_stats(v("v4", "threequarter")), "v5_threequarter": hue_stats(v("v5", "threequarter")),
+       "v4_side": hue_stats(v("v4", "side")), "v5_side": hue_stats(v("v5", "side")),
+       "v4_head": hue_stats(v("v4", "head")), "v5_head": hue_stats(v("v5", "head"))}
+col["body_hue_shift_deg_threequarter"] = round(col["v5_threequarter"]["hue_median_deg"] - col["v4_threequarter"]["hue_median_deg"], 2)
+col["v5_minus_reference_deg_threequarter"] = round(col["v5_threequarter"]["hue_median_deg"] - col["v5_reference"]["hue_median_deg"], 2)
+json.dump(col, open(os.path.join(R, "magmoo_v5_colour.json"), "w"), indent=1)
+print("COLOUR", json.dumps({k: (v_["hue_median_deg"] if isinstance(v_, dict) else v_) for k, v_ in col.items() if k != "rule"}))
