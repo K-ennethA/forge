@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 23236,
+   "tris": 23554,
    "budget": [
     3000,
     24000
@@ -50,12 +50,12 @@
     {
      "mesh": "supaoctto",
      "layers": 1,
-     "islands": 371,
+     "islands": 393,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 21% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4243,
-     "area_distortion_p95": 1.129
+     "overlap_note": "summed UV area is 20% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.438,
+     "area_distortion_p95": 1.134
     }
    ]
   },
@@ -63,7 +63,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 23236
+   "faces": 23554
   },
   {
    "check": "colour",

@@ -1,0 +1,9 @@
+{
+ "unit": "supaoctto",
+ "skin": "belt_gold",
+ "extends": "default",
+ "description": "BELT COLOUR ALTERNATIVE (not a skin): the belt in the sigil gold. The artist picked ORANGE as the default (2026-09-26), so gold is now the alternative; adopting it back = copy this rgb into default.json's belt region (one line).",
+ "regions": {
+  "belt":         {"rgb": [250, 196, 52], "note": "belt = the emblem's hero gold"}
+ }
+}

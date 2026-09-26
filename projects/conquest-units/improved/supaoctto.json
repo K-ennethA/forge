@@ -229,7 +229,7 @@
    "centre_z": 1.3293,
    "rule": "the removed v2 siphon's centre height (the source mouth piece's centre) + MOUTH_DZ, on the midline"
   },
-  "seconds": 1.0
+  "seconds": 0.8
  },
  "sculpt_fixes": {
   "leg_tip_z_before": {
@@ -398,7 +398,7 @@
   "cape_member_overlap": 0,
   "cape_yoke_vertices": 3772,
   "body_torso_vertices": 15401,
-  "seconds": 0.6
+  "seconds": 0.5
  },
  "belt": {
   "rule": "a band round the waist (bottom edge dipping BELT_DIP at the front centre) + two side plates; each a closed solid BELT_T / PLATE_T proud of the waist, BELT_EMBED into it, fused by the body voxel remesh",
@@ -550,7 +550,7 @@
     ]
    }
   },
-  "seconds": 0.2,
+  "seconds": 0.1,
   "shape": {
    "v_root": 0.0,
    "v_edge": 0.93,
@@ -630,7 +630,7 @@
     "max_move": 0.2519
    }
   },
-  "seconds": 5.6,
+  "seconds": 5.4,
   "low_to_high_distance": {
    "mean": 0.0014,
    "p99": 0.012,
@@ -710,6 +710,12 @@
     "face_connects": 174
    },
    {
+    "field": "emb",
+    "tau": 0.12,
+    "edge_splits": 160,
+    "face_connects": 194
+   },
+   {
     "field": "under",
     "tau": 0.35,
     "edge_splits": 298,
@@ -728,7 +734,7 @@
     "face_connects": 206
    }
   ],
-  "seconds": 11.3,
+  "seconds": 12.5,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fhd=0.000": 0,
@@ -738,6 +744,7 @@
    "armf=0.800": 0,
    "legf=0.720": 0,
    "emb=0.000": 0,
+   "emb=0.120": 0,
    "under=0.350": 0,
    "capef=0.880": 0,
    "belt=0.000": 0
@@ -764,7 +771,7 @@
    "winding_inconsistent_edges": 0,
    "slit_length_3d": 0.9123,
    "corner_to_corner_3d": 0.8485,
-   "seconds": 0.39
+   "seconds": 0.38
   },
   "morph_target": {
    "name": "smirk",
@@ -875,10 +882,10 @@
    "zone_vertices": 145,
    "control_vertices": 139,
    "baked_normal_deviation_from_flat": {
-    "slit_faces_mean": 0.0122,
-    "slit_faces_p95": 0.0234,
-    "mouth_zone_faces_mean": 0.0119,
-    "mouth_zone_faces_p95": 0.0292,
+    "slit_faces_mean": 0.0136,
+    "slit_faces_p95": 0.033,
+    "mouth_zone_faces_mean": 0.0115,
+    "mouth_zone_faces_p95": 0.0256,
     "slit_faces": 34,
     "zone_faces": 174
    }
@@ -1005,12 +1012,12 @@
   ],
   "depth": 0.16,
   "why_invisible_when_closed": "the dark 'mouth' colour is painted ONLY on the pocket faces, which sit behind the lips inside the mantle; at rest the two lips are duplicate vertices at identical positions (identical skin weights too), so the mantle surface is watertight and unchanged and the pocket is enclosed: no crease, no colour patch. The morph target is 0 at rest.",
-  "seconds": 2.9,
+  "seconds": 3.0,
   "bake_sharp_lip_edges": 34
  },
- "tris_final": 22016,
+ "tris_final": 22336,
  "tris_breakdown": {
-  "body_shell_and_cape_shell_after_cuts": 19976,
+  "body_shell_and_cape_shell_after_cuts": 20296,
   "webs": 2040
  },
  "tris_v1": {
@@ -1037,11 +1044,12 @@
   "membrane_rim": "web rows past WEB_RIM_W"
  },
  "regions_faces": {
-  "skin": 6892,
+  "skin": 6511,
   "head": 3212,
   "arm_tip": 479,
   "leg_tip": 303,
   "emblem": 818,
+  "emblem_outline": 701,
   "belt": 854,
   "visor": 2604,
   "lens": 416,
@@ -1063,15 +1071,16 @@
    0.75,
    1.05
   ],
-  "shade_std_body": 0.0622
+  "shade_std_body": 0.0617
  },
- "cavity_seconds": 1.5,
+ "cavity_seconds": 1.8,
  "regions_area_share": {
-  "skin": 0.1791,
+  "skin": 0.1776,
   "head": 0.1022,
   "arm_tip": 0.011,
   "leg_tip": 0.0046,
   "emblem": 0.0027,
+  "emblem_outline": 0.0015,
   "belt": 0.0138,
   "visor": 0.0046,
   "lens": 0.0019,
@@ -1152,86 +1161,91 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.4
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.3
+   "seconds": 0.4
   },
-  "uv_texels_normal": 428743,
-  "uv_coverage": 0.4089,
+  "uv_texels_normal": 431226,
+  "uv_coverage": 0.4112,
   "web_texels_reset_flat": {
-   "normal": 177469,
-   "ao": 44340
+   "normal": 178521,
+   "ao": 44676
   },
-  "normal_baked_pct_of_sculpt_uv_texels": 99.99,
-  "normal_detail_fraction_dev_gt_0.05": 0.1603,
+  "normal_baked_pct_of_sculpt_uv_texels": 99.98,
+  "normal_detail_fraction_dev_gt_0.05": 0.1599,
   "normal_dev_mean": 0.0324,
   "ao_baked_pct_of_sculpt_uv_texels": 100.0,
-  "ao_mean": 0.7977,
+  "ao_mean": 0.7973,
   "ao_p05": 0.0,
   "per_region_normal": {
    "skin": {
-    "texels": 75209,
+    "texels": 74979,
     "baked_pct": 99.98,
-    "normal_dev_mean": 0.0316
+    "normal_dev_mean": 0.0317
    },
    "head": {
-    "texels": 42239,
+    "texels": 42455,
     "baked_pct": 100.0,
     "normal_dev_mean": 0.0114
    },
    "arm_tip": {
-    "texels": 4410,
+    "texels": 4459,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0424
+    "normal_dev_mean": 0.0426
    },
    "leg_tip": {
-    "texels": 2031,
+    "texels": 2049,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0549
+    "normal_dev_mean": 0.0559
    },
    "emblem": {
-    "texels": 1276,
+    "texels": 1283,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0098
+    "normal_dev_mean": 0.0097
+   },
+   "emblem_outline": {
+    "texels": 684,
+    "baked_pct": 100.0,
+    "normal_dev_mean": 0.011
    },
    "belt": {
-    "texels": 5470,
+    "texels": 5538,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0869
+    "normal_dev_mean": 0.0871
    },
    "visor": {
-    "texels": 1913,
+    "texels": 1952,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1011
+    "normal_dev_mean": 0.1008
    },
    "lens": {
-    "texels": 826,
+    "texels": 837,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.043
+    "normal_dev_mean": 0.0421
    },
    "cape": {
-    "texels": 73541,
+    "texels": 73917,
     "baked_pct": 99.97,
-    "normal_dev_mean": 0.036
+    "normal_dev_mean": 0.0361
    },
    "cape_under": {
-    "texels": 36543,
+    "texels": 36686,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0338
+    "normal_dev_mean": 0.0337
    },
    "cape_tip": {
-    "texels": 7842,
+    "texels": 7894,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0488
+    "normal_dev_mean": 0.0481
    }
   },
   "pixel_sha": {
-   "normal": "b9949b2e4182499e",
-   "ao": "085e8c9defbcd6de"
+   "normal": "17a2275fc95ebdbf",
+   "ao": "c0a5470514e86a99"
   },
   "cage_extrusion": 0.08,
   "resolution": {
@@ -1240,16 +1254,16 @@
   },
   "high_tris": 456280,
   "high": "the remeshed (smoothed, mask/neck/belt-fused) shells; the mouth pocket texels are reset flat like the webs",
-  "seconds": 5.4
+  "seconds": 5.8
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 22016,
+  "faces": 22336,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "845aa7f575b8c626"
+  "uv_sha": "47ea61ab6ddd99ae"
  },
- "digest_geometry_colour": "1595c71fa98e17bc",
+ "digest_geometry_colour": "5f524e7114e9bc9b",
  "final_bbox": [
   [
    -10.3715,
@@ -1299,11 +1313,18 @@
      52
     ]
    },
+   "emblem_outline": {
+    "rgb": [
+     255,
+     122,
+     30
+    ]
+   },
    "belt": {
     "rgb": [
-     250,
-     196,
-     52
+     255,
+     122,
+     30
     ]
    },
    "visor": {

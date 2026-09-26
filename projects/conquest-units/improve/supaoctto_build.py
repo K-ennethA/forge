@@ -106,6 +106,9 @@ EMB_STAR_ARMS = [(90.0, 0.98, 0.25, 0.10), (18.0, 0.98, 0.25, 0.10), (162.0, 0.9
                  (-54.0, 0.98, 0.25, 0.10), (-126.0, 0.98, 0.25, 0.10)]
                                       # "chest starfish arms": (angle deg, reach, root half-width, tip radius), one arm up
 EMB_STAR_SMOOTH = 0.10                # "chest starfish fillets": smooth-union radius where the arms meet the disc
+EMB_OUTLINE_W = 0.12                  # "chest starfish outline width" (body units; artist 2026-09-26: "the starfish on
+                                      #   the chest can have orange outline") - the band just outside the star paints
+                                      #   'emblem_outline'; 0 disables it
 # floating starfish mask (MASK_STYLE = "starfish_floating"): the plate lifts off the mantle toward each arm's tip
 FLOAT_TIP_LIFT = 0.60                 # "floating tip lift": the arm tip's plate stands this far off the mantle (horizontal
                                       # radial; the open gap at the tip = this - VISOR_EMBED)
@@ -1693,7 +1696,8 @@ g_ctip = lambda a, b: g_cape(a, b) and a[LAY["capef"]] >= 0 and b[LAY["capef"]] 
 g_mline = lambda a, b: g_body(a, b) and a[LAY["mline"]] < 9 and b[LAY["mline"]] < 9
 g_beltc = lambda a, b: g_body(a, b) and a[LAY["belt"]] < 9 and b[LAY["belt"]] < 9
 CUTS = [("fhd", 0.0, g_body), ("vis", 0.0, g_face), ("lens", 0.0, g_face), ("mline", 0.0, g_mline),
-        ("armf", ARM_TIP_FRAC, g_arm), ("legf", LEG_TIP_FRAC, g_leg), ("emb", 0.0, g_emb), ("under", UNDER_T, g_cape),
+        ("armf", ARM_TIP_FRAC, g_arm), ("legf", LEG_TIP_FRAC, g_leg), ("emb", 0.0, g_emb),
+    ("emb", EMB_OUTLINE_W, g_emb), ("under", UNDER_T, g_cape),
         ("capef", CAPE_TIP_FRAC, g_ctip)] + ([("belt", 0.0, g_beltc)] if BELT else [])
 t = time.time()
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
@@ -1821,8 +1825,8 @@ VFIELD = {k: np.array([v[LAY[k]] for v in bm.verts]) for k in LAY}
 bm.free()
 
 # =========================================================================== regions + final mesh (cut shells + webs)
-REG = ["skin", "head", "arm_tip", "leg_tip", "emblem", "belt", "visor", "lens", "mouth", "cape", "cape_under", "cape_tip",
-       "membrane", "membrane_rim"]
+REG = ["skin", "head", "arm_tip", "leg_tip", "emblem", "emblem_outline", "belt", "visor", "lens", "mouth", "cape",
+       "cape_under", "cape_tip", "membrane", "membrane_rim"]
 R_ = {n: i for i, n in enumerate(REG)}
 nf_c = len(CF)
 fsh = FVAL["shell"] > 0.5
@@ -1831,6 +1835,7 @@ rid[~fsh & (FVAL["fhd"] > 0)] = R_["head"]
 bodyf = ~fsh & (FVAL["fhd"] <= 0)
 rid[bodyf & (FVAL["armf"] > ARM_TIP_FRAC)] = R_["arm_tip"]
 rid[bodyf & (FVAL["legf"] > LEG_TIP_FRAC)] = R_["leg_tip"]
+rid[bodyf & (FVAL["emb"] >= 0) & (FVAL["emb"] < EMB_OUTLINE_W)] = R_["emblem_outline"]
 rid[bodyf & (FVAL["emb"] < 0)] = R_["emblem"]
 rid[bodyf & (FVAL["belt"] < 0)] = R_["belt"]
 rid[~fsh & (FVAL["vis"] < 0)] = R_["visor"]

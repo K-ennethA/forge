@@ -11,8 +11,8 @@
   "sum_dev_max": 3.3306690738754696e-16,
   "per_bone_dominant": {
    "pelvis": 711,
-   "spine": 1464,
-   "chest": 1623,
+   "spine": 1565,
+   "chest": 1682,
    "head": 3535,
    "thigh.L": 75,
    "shin.L": 104,
@@ -1556,20 +1556,20 @@
  },
  "digest": {
   "parts": {
-   "smirk_key": "d05d76ff89ea9e0b",
-   "bake_normal": "7085ce40ff40446e",
-   "bake_ao": "15b0770775578b34",
-   "geometry_colour": "ffb74754720572aa",
-   "uv": "b1425293dedf94cb",
-   "weights": "f7f344f5af1f0357",
+   "smirk_key": "a0d0449fa6d5f1f9",
+   "bake_normal": "1932338a834306c4",
+   "bake_ao": "823b514133cd8163",
+   "geometry_colour": "e1e65c7856c0e4d4",
+   "uv": "2f20ee6b46d95166",
+   "weights": "d4ab9b6f5cac3f98",
    "keys": "92db58dfa990f579",
-   "clip_samples": "955fd71c4172c55e"
+   "clip_samples": "9a2b5bcb6206916e"
   },
-  "combined": "ca7f0aa507210f02"
+  "combined": "0585b61efe2bc8cd"
  },
  "glb": {
   "skipped": "tagged alternative build (starfish): renders only, no glb"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\supaoctto__starfish.json",
- "seconds": 42.7
+ "seconds": 47.1
 }

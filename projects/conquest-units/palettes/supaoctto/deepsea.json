@@ -1,4 +1,4 @@
-{
+﻿{
  "unit": "supaoctto",
  "skin": "deepsea",
  "extends": "default",
@@ -8,7 +8,8 @@
   "head":         {"rgb": [74, 38, 132]},
   "arm_tip":      {"rgb": [96, 232, 214], "emission": [40, 240, 210], "emission_scale": 0.35},
   "leg_tip":      {"rgb": [90, 220, 204], "emission": [40, 240, 210], "emission_scale": 0.30},
-  "emblem":       {"rgb": [214, 222, 232]},
+  "emblem":         {"rgb": [214, 222, 232]},
+  "emblem_outline": {"rgb": [60, 255, 210], "note": "deepsea outline = the teal accent"},
   "belt":         {"rgb": [214, 222, 232]},
   "visor":        {"rgb": [200, 208, 222]},
   "lens":         {"rgb": [180, 255, 236], "emission": [60, 255, 210], "emission_scale": 0.6},
@@ -20,3 +21,4 @@
   "membrane_rim": {"rgb": [170, 255, 236], "emission": [80, 255, 220], "emission_scale": 0.8}
  }
 }
+

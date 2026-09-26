@@ -1,4 +1,4 @@
-00:00.922  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
-Info: Saved copy as "supaoctto__deepsea.blend"
-PALETTE_DONE {"skin": "deepsea", "files": ["C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\supaoctto\\default.json", "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\supaoctto\\deepsea.json"], "meshes": {"supaoctto": {"skin": 6892, "head": 3212, "arm_tip": 479, "leg_tip": 303, "emblem": 818, "belt": 854, "visor": 2604, "lens": 416, "mouth": 64, "cape": 2542, "cape_under": 1357, "cape_tip": 435, "membrane": 1884, "membrane_rim": 156}}}
+00:01.015  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\supaoctto.blend"
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

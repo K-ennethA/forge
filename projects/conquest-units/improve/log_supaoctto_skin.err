@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\palettes.py", line 186, in <module>
+    pal, done = repaint_scene(kv["--unit"], kv["--skin"])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\palettes.py", line 172, in repaint_scene
+    pal = load(unit, skin)
+          ^^^^^^^^^^^^^^^^
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\palettes.py", line 61, in load
+    raw = json.load(open(p, encoding="utf-8"))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Blender Foundation\Blender 5.0\5.0\python\Lib\json\__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Blender Foundation\Blender 5.0\5.0\python\Lib\json\__init__.py", line 335, in loads
+    raise JSONDecodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)",
+json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)
