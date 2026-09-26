@@ -743,3 +743,14 @@ may correct): the fire streams DOWNWARD in thin wispy strands - trailing
 flame strands from the hem between/alongside the legs reaching toward the
 floor, and a few loose strands trailing off the arms; the torso-leg blend
 is this downward flow, not just a wider fillet.
+
+## 2026-09-26 — Firesprite annotation CORRECTED (artist verbatim)
+
+"the red strokes was showing the outline of how wide and long the arms
+should be nothing else"
+
+The previous entry's "downward fire strands" reading is WITHDRAWN. The
+annotation is the ARM OUTLINE: arms broad and long, shoulders down to
+about shin level, elbowless sweeps. The torso-leg blend stays the plain
+geometric blend from the v1.2 entry. Correction forwarded to the running
+movement lane before it built the strands.
