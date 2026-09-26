@@ -732,3 +732,14 @@ mass (raise the leg smooth-union / flare the lower band) - no rectangle-
 on-legs read. (2) arms: shorter than v1.1's full drop, and fatter
 (roots ~0.19, tips ~0.09), still elbowless smooth sweeps. Folded into
 the running movement lane (it owns the files and rebuilds anyway).
+
+## 2026-09-26 — Firesprite v1.2 addendum (artist annotation, transcribed)
+
+Artist sent an annotated v1.1 front render (inline image, not on disk):
+red strokes drawn as long thin vertical strands flowing from the lower
+torso/hem down through the legs to the floor, plus jagged strands over
+the wand-side arm. Reading (forwarded to the running movement lane, artist
+may correct): the fire streams DOWNWARD in thin wispy strands - trailing
+flame strands from the hem between/alongside the legs reaching toward the
+floor, and a few loose strands trailing off the arms; the torso-leg blend
+is this downward flow, not just a wider fillet.
