@@ -216,7 +216,7 @@
    "depth": 0.2,
    "placement": "the removed mouth piece's centre height, on the midline"
   },
-  "seconds": 1.0
+  "seconds": 0.6
  },
  "sculpt_fixes": {
   "leg_tip_z_before": {
@@ -385,7 +385,7 @@
   "cape_member_overlap": 0,
   "cape_yoke_vertices": 3772,
   "body_torso_vertices": 15401,
-  "seconds": 0.6
+  "seconds": 0.5
  },
  "webs": {
   "added": "3 water webs (the sculpt has none): thin closed sheets between neighbouring cape tentacles",
@@ -543,8 +543,8 @@
     "iters": 4,
     "k": 0.5,
     "frozen_vertices": 603,
-    "spiky_kept": 1447,
-    "mean_move": 0.0326,
+    "spiky_kept": 1506,
+    "mean_move": 0.0322,
     "max_move": 0.1679
    }
   },
@@ -561,23 +561,23 @@
     "iters": 4,
     "k": 0.5,
     "frozen_vertices": 0,
-    "spiky_kept": 637,
-    "mean_move": 0.0542,
+    "spiky_kept": 659,
+    "mean_move": 0.0531,
     "max_move": 0.2519
    }
   },
-  "seconds": 7.1,
+  "seconds": 4.9,
   "low_to_high_distance": {
-   "mean": 0.0012,
-   "p99": 0.0118,
+   "mean": 0.0013,
+   "p99": 0.012,
    "max": 0.031,
-   "pct_of_height_p99": 0.055,
-   "body_shell_p99": 0.0067,
+   "pct_of_height_p99": 0.056,
+   "body_shell_p99": 0.0068,
    "cape_shell_p99": 0.0182
   },
   "high_to_low_distance": {
-   "mean": 0.0052,
-   "p99": 0.0222,
+   "mean": 0.0051,
+   "p99": 0.0218,
    "max": 0.0527,
    "samples": 12274
   }
@@ -595,9 +595,9 @@
   },
   "body_shell_tris_before": 9500,
   "body_shell_tris_after": 13920,
-  "seconds": 0.3
+  "seconds": 0.1
  },
- "fields_seconds": 0.6,
+ "fields_seconds": 0.3,
  "iso_cuts": {
   "cuts": [
    {
@@ -633,8 +633,8 @@
    {
     "field": "legf",
     "tau": 0.72,
-    "edge_splits": 48,
-    "face_connects": 54
+    "edge_splits": 42,
+    "face_connects": 50
    },
    {
     "field": "emb",
@@ -645,17 +645,17 @@
    {
     "field": "under",
     "tau": 0.35,
-    "edge_splits": 300,
-    "face_connects": 359
+    "edge_splits": 298,
+    "face_connects": 356
    },
    {
     "field": "capef",
     "tau": 0.88,
-    "edge_splits": 71,
-    "face_connects": 86
+    "edge_splits": 69,
+    "face_connects": 85
    }
   ],
-  "seconds": 8.2,
+  "seconds": 7.8,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fhd=0.000": 0,
@@ -669,9 +669,9 @@
    "capef=0.880": 0
   }
  },
- "tris_final": 21660,
+ "tris_final": 21640,
  "tris_breakdown": {
-  "body_shell_and_cape_shell_after_cuts": 19620,
+  "body_shell_and_cape_shell_after_cuts": 19600,
   "webs": 2040
  },
  "tris_v1": {
@@ -692,17 +692,17 @@
   "membrane_rim": "web rows past WEB_RIM_W"
  },
  "regions_faces": {
-  "skin": 7129,
+  "skin": 7121,
   "head": 3118,
   "arm_tip": 502,
-  "leg_tip": 325,
+  "leg_tip": 321,
   "emblem": 828,
   "visor": 2771,
   "lens": 472,
   "siphon": 133,
-  "cape": 2545,
+  "cape": 2542,
   "cape_under": 1357,
-  "cape_tip": 440,
+  "cape_tip": 435,
   "membrane": 1884,
   "membrane_rim": 156
  },
@@ -717,22 +717,22 @@
    0.75,
    1.05
   ],
-  "shade_std_body": 0.0618
+  "shade_std_body": 0.0619
  },
  "cavity_seconds": 1.2,
  "regions_area_share": {
-  "skin": 0.1919,
+  "skin": 0.1918,
   "head": 0.1022,
   "arm_tip": 0.011,
-  "leg_tip": 0.0046,
+  "leg_tip": 0.0047,
   "emblem": 0.0023,
   "visor": 0.0046,
   "lens": 0.0019,
   "siphon": 0.0003,
   "cape": 0.1772,
   "cape_under": 0.0869,
-  "cape_tip": 0.0193,
-  "membrane": 0.3657,
+  "cape_tip": 0.0194,
+  "membrane": 0.3656,
   "membrane_rim": 0.032
  },
  "alignment": {
@@ -799,86 +799,86 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.3
+   "seconds": 0.5
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.3
+   "seconds": 0.4
   },
-  "uv_texels_normal": 443219,
-  "uv_coverage": 0.4227,
+  "uv_texels_normal": 452782,
+  "uv_coverage": 0.4318,
   "web_texels_reset_flat": {
-   "normal": 184417,
-   "ao": 46150
+   "normal": 187622,
+   "ao": 46886
   },
   "normal_baked_pct_of_sculpt_uv_texels": 99.98,
-  "normal_detail_fraction_dev_gt_0.05": 0.1363,
+  "normal_detail_fraction_dev_gt_0.05": 0.1365,
   "normal_dev_mean": 0.0298,
   "ao_baked_pct_of_sculpt_uv_texels": 100.0,
-  "ao_mean": 0.8003,
+  "ao_mean": 0.7994,
   "ao_p05": 0.0,
   "per_region_normal": {
    "skin": {
-    "texels": 83353,
+    "texels": 84836,
     "baked_pct": 99.98,
-    "normal_dev_mean": 0.0273
+    "normal_dev_mean": 0.0274
    },
    "head": {
-    "texels": 43164,
+    "texels": 44514,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0115
+    "normal_dev_mean": 0.0114
    },
    "arm_tip": {
-    "texels": 4552,
+    "texels": 4672,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0366
+    "normal_dev_mean": 0.0364
    },
    "leg_tip": {
-    "texels": 2092,
+    "texels": 2168,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0568
+    "normal_dev_mean": 0.0554
    },
    "emblem": {
-    "texels": 1133,
+    "texels": 1152,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0098
+    "normal_dev_mean": 0.0097
    },
    "visor": {
-    "texels": 1962,
+    "texels": 2044,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0977
+    "normal_dev_mean": 0.0994
    },
    "lens": {
-    "texels": 857,
+    "texels": 874,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0395
+    "normal_dev_mean": 0.0391
    },
    "siphon": {
-    "texels": 138,
+    "texels": 151,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.1092
+    "normal_dev_mean": 0.1183
    },
    "cape": {
-    "texels": 76776,
+    "texels": 77722,
     "baked_pct": 99.96,
-    "normal_dev_mean": 0.036
+    "normal_dev_mean": 0.0362
    },
    "cape_under": {
-    "texels": 36634,
+    "texels": 38709,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.034
+    "normal_dev_mean": 0.0336
    },
    "cape_tip": {
-    "texels": 8163,
+    "texels": 8330,
     "baked_pct": 100.0,
-    "normal_dev_mean": 0.0491
+    "normal_dev_mean": 0.0485
    }
   },
   "pixel_sha": {
-   "normal": "edbf629315cf50ba",
-   "ao": "e1e2f38612204bc4"
+   "normal": "c95c492e6630f823",
+   "ao": "2e412de9aa126b09"
   },
   "cage_extrusion": 0.08,
   "resolution": {
@@ -887,16 +887,16 @@
   },
   "high_tris": 454380,
   "high": "the remeshed (smoothed, visor/neck-fused, siphon-dimpled) shells",
-  "seconds": 4.2
+  "seconds": 4.5
  },
  "uv": {
   "method": "Smart UV after the iso cuts (66 deg, margin 0.004), repacked",
-  "faces": 21660,
+  "faces": 21640,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "af37fb242df8b430"
+  "uv_sha": "ba7af42fbfba790c"
  },
- "digest_geometry_colour": "f31d15b12ba4b9c1",
+ "digest_geometry_colour": "3263ded3fb157aa5",
  "final_bbox": [
   [
    -10.3715,

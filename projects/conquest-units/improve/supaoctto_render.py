@@ -118,6 +118,22 @@ cape_target = Vector((centre.x, centre.y + 0.15 * size.y, lo.z + 0.62 * size.z))
 table = {"front": (0.0, 5.0, 1024, 1.0, None), "threequarter": (40.0, 15.0, 1024, 1.0, None), "tactical": (40.0, 55.0, 256, 1.6, None),
          "side": (90.0, 5.0, 1024, 1.0, None), "back": (180.0, 5.0, 1024, 1.0, None),
          "cape": (152.0, 24.0, 1024, 0.62, cape_target), "front_yaw": (0.0, 5.0, 768, 1.0, None)}
+# v2 close-ups: targets from the build's landmarks (mesh custom prop v2_landmarks, final frame, rest pose)
+LM = {}
+for o in meshes:
+    if "v2_landmarks" in o.keys():
+        import json as _json
+        LM = {k: Vector(v) for k, v in _json.loads(o["v2_landmarks"]).items() if isinstance(v, list)}
+if LM:
+    nk = LM["neck"]
+    table.update({
+        "visor": (18.0, 6.0, 1024, 0.20, LM["visor"]),
+        "face": (0.0, 3.0, 1024, 0.30, (LM["visor"] + LM["siphon"]) / 2),
+        "siphon": (12.0, -4.0, 1024, 0.075, LM["siphon"]),
+        "emblem": (8.0, 4.0, 1024, 0.13, LM["emblem"]),
+        "neck": (62.0, 4.0, 1024, 0.34, Vector((nk.x, nk.y, nk.z + 1.6))),
+        "capefull": (160.0, 10.0, 1024, 0.92, Vector((centre.x, centre.y, lo.z + 0.5 * size.z))),
+    })
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     if tag not in table:

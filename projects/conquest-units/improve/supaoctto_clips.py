@@ -1,8 +1,8 @@
-"""Supaoctto animated previews (vampito_clips.py copied, not imported): idle + walk mp4s and 8-frame contact sheets, the
+"""Supaoctto animated previews (vampito_clips.py copied, not imported): idle + walk + float mp4s and 8-frame contact sheets, the
 survey lighting (key/fill/rim suns + grey world, Standard view transform, dark floor AT z = 0 -- the contract floor).
 In-memory only; never saves the blend.
 
-    blender --background <rigged/supaoctto.blend> --factory-startup --python supaoctto_clips.py -- <out_dir> [res]
+    blender --background <rigged/supaoctto.blend> --factory-startup --python supaoctto_clips.py -- <out_dir> [res] [prefix]
 
 Renders (camera angle measured from the -Y front, like supaoctto_render.py):
     supaoctto_idle.mp4 + _idle_sheet.png           three-quarter front (40 deg), 2 loops
@@ -10,6 +10,10 @@ Renders (camera angle measured from the -Y front, like supaoctto_render.py):
     supaoctto_walk.mp4 + _walk_sheet.png           three-quarter front, >= 3 s of loops
     supaoctto_walk_side_sheet.png                  side (90 deg): the stepping, one stride
     supaoctto_walk_back.mp4                        three-quarter back: the trailing cape, >= 3 s
+    supaoctto_float.mp4 + _float_sheet.png         three-quarter front (30 deg): rise, arms cross, hover, land (1 loop)
+    supaoctto_float_back.mp4 + _float_back_sheet   three-quarter BACK (150 deg): the cape flare + web ripple (1 loop)
+    supaoctto_float_side_sheet.png                 side (90 deg)
+[prefix] replaces the 'supaoctto' file prefix (v2 renders use v2_supaoctto so the v1 files stay for the before/after).
 Loops play by adding a CYCLES modifier to every fcurve in memory (the clip's last frame == its first). The camera frames
 the union of the clip's extents and never moves. Contact sheets: 8 evenly spaced frames of one loop, 4x2.
 """
@@ -24,11 +28,12 @@ import rigkit as K  # noqa: E402
 argv = sys.argv[sys.argv.index("--") + 1:]
 OUT = argv[0]
 RES = int(argv[1]) if len(argv) > 1 else 768
+PREFIX = argv[2] if len(argv) > 2 else None
 os.makedirs(OUT, exist_ok=True)
 scene = bpy.context.scene
 rig = next(o for o in scene.objects if o.type == "ARMATURE")
 mesh = next(o for o in scene.objects if o.type == "MESH" and o.parent is rig)
-UNIT = mesh.name
+UNIT = PREFIX or mesh.name
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.film_transparent = False
@@ -166,15 +171,20 @@ def write_mp4(clip, N, tag, loops):
     print("WROTE", final, "frames", N * loops, "loops", loops, "cycle", N)
 
 
-for clip in ("idle", "walk"):
+CLIPS = [c for c in ("idle", "walk", "float") if bpy.data.actions.get(c)]
+for clip in CLIPS:
     act = bpy.data.actions.get(clip)
     for fc in K.action_fcurves(act):
         if not any(m.type == "CYCLES" for m in fc.modifiers):
             fc.modifiers.new("CYCLES")
 JOBS = [("idle", "idle", 40.0, 15.0, 2, True), ("idle", "idle_back", 150.0, 18.0, 1, True),
         ("walk", "walk", 40.0, 15.0, None, True), ("walk", "walk_side", 90.0, 8.0, 0, True),
-        ("walk", "walk_back", 150.0, 18.0, None, False)]
+        ("walk", "walk_back", 150.0, 18.0, None, False),
+        ("float", "float", 30.0, 12.0, 1, True), ("float", "float_back", 150.0, 18.0, 1, True),
+        ("float", "float_side", 90.0, 6.0, 0, True)]
 for clip, tag, ang, elev, loops, sheet in JOBS:
+    if clip not in CLIPS:
+        continue
     N = place_camera(clip, ang, elev)
     if loops is None:
         loops = max(3, math.ceil(72 / N))

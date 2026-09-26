@@ -1,21 +1,21 @@
 {
  "unit": "supaoctto",
  "skin": "default",
- "description": "Octopus superhero: coral-red octopus skin with pale sucker-pink tentacle tips, a gold goggle mask and gold chest emblem as the heroic accent, glowing white-cyan lenses, a dark beak; royal-blue cape tentacles with a pale sucker-side lining and lighter tips, joined by translucent-reading pale cyan WATER webs with a bright glowing free edge.",
+ "description": "Octopus superhero v2 (artist 2026-09-26): ALL BLUE - the whole body (torso, head, neck, arm and leg tentacles) takes the cape's darker royal blue; every tentacle tip (arm, leg, cape) shares the cape's lighter tip blue; an angular swept W-visor with an ORANGE frame and complementing pale-cyan glowing lenses; a small dark siphon hole where the mouth piece was; a gold octopus sigil on the chest; pale periwinkle cape lining; the pale cyan WATER webs (unchanged, approved) with their bright glowing free edge.",
  "regions": {
-  "skin":         {"rgb": [206, 78, 58],   "note": "octopus body: torso, arm and leg tentacles"},
-  "head":         {"rgb": [218, 92, 68],   "note": "the mantle (head) - a touch lighter than the body"},
-  "arm_tip":      {"rgb": [246, 186, 160], "note": "arm tentacle paddle tips - pale sucker pink"},
-  "leg_tip":      {"rgb": [240, 176, 150], "note": "leg tentacle tips - pale sucker pink"},
-  "emblem":       {"rgb": [250, 196, 52],  "note": "chest emblem - hero gold"},
-  "mask":         {"rgb": [242, 184, 40],  "note": "goggle-mask frame - hero gold"},
-  "lens":         {"rgb": [214, 246, 255], "emission": [140, 225, 255], "emission_scale": 0.55, "note": "goggle lenses - bright glass glow"},
-  "mouth":        {"rgb": [120, 34, 46],   "note": "the beak/mouth - deep maroon (dark enough to read as an opening, not so dark it reads as a moustache)"},
-  "cape":         {"rgb": [34, 60, 170],   "note": "cape tentacles - royal blue"},
+  "skin":         {"rgb": [34, 60, 170],   "note": "octopus body: torso, neck, arm and leg tentacles - the cape's darker blue (artist v2: all one blue)"},
+  "head":         {"rgb": [34, 60, 170],   "note": "the mantle (head) - the same blue as the body"},
+  "arm_tip":      {"rgb": [70, 118, 226],  "note": "arm tentacle paddle tips - the cape tips' lighter blue (one tip shade on every tentacle)"},
+  "leg_tip":      {"rgb": [70, 118, 226],  "note": "leg tentacle tips - the cape tips' lighter blue"},
+  "emblem":       {"rgb": [250, 196, 52],  "note": "chest octopus sigil - hero gold"},
+  "visor":        {"rgb": [255, 122, 30],  "note": "W-visor outer frame - superhero orange (the reference sticker's orange)"},
+  "lens":         {"rgb": [206, 246, 255], "emission": [120, 226, 255], "emission_scale": 0.55, "note": "visor lenses - pale cyan glow, the complement of the orange frame"},
+  "siphon":       {"rgb": [10, 16, 44],    "note": "the siphon hole (replaces the mouth piece) - near-black navy: reads as an opening in the blue"},
+  "cape":         {"rgb": [34, 60, 170],   "note": "cape tentacles - royal blue (the colour the whole body now takes)"},
   "cape_under":   {"rgb": [150, 170, 236], "note": "cape tentacle lining (sucker side, faces the body) - pale periwinkle"},
   "cape_tip":     {"rgb": [70, 118, 226],  "note": "cape tentacle tips - lighter blue"},
-  "membrane":     {"rgb": [150, 226, 246], "emission": [60, 190, 255],  "emission_scale": 0.28, "note": "WATER webs between the cape tentacles - pale cyan, soft inner glow (reads translucent)"},
-  "membrane_rim": {"rgb": [226, 250, 255], "emission": [150, 240, 255], "emission_scale": 0.65, "note": "the webs' free edge - bright water/foam glow (top glow tier)"}
+  "membrane":     {"rgb": [150, 226, 246], "emission": [60, 190, 255],  "emission_scale": 0.28, "note": "WATER webs between the cape tentacles - pale cyan, soft inner glow (approved, unchanged)"},
+  "membrane_rim": {"rgb": [226, 250, 255], "emission": [150, 240, 255], "emission_scale": 0.65, "note": "the webs' free edge - bright water/foam glow"}
  },
  "material": {"roughness": 0.45, "emission_strength": 1.5}
 }

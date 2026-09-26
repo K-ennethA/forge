@@ -1,6 +1,6 @@
-# Supaoctto (the octopus superhero), one command (hidden, headless). Reads source-copies/newunit-supaoctto.blend only.
+# Supaoctto v2 (the octopus superhero), one command (hidden, headless). Reads source-copies/newunit-supaoctto.blend only.
 # Writes improved/supaoctto.*, improved/textures/supaoctto_*, rigged/supaoctto.{blend,json,glb}, rigged/supaoctto__deepsea.blend,
-# improved/check_supaoctto.json, rigged/check_supaoctto.json, renders/supaoctto/, improve/log_supaoctto_*.
+# improved/check_supaoctto.json, rigged/check_supaoctto.json, renders/supaoctto/v2_*, improve/log_supaoctto_*.
 #   -SkipBuild re-runs only the gates + renders.  The build runs TWICE in parallel: the real build and a --digest-only
 #   twin (saves nothing but its digest); the two digests must match (byte-determinism of every consumed array), with the
 #   bake buffers compared against pinned tolerances if (and only if) the bakes are the only difference.
@@ -38,17 +38,17 @@ if (-not $SkipBuild) {
 # the variant skin blend (pure palette swap of the rigged blend's stored regions; palettes.py read-only use)
 $sp = Start-Process -FilePath $B -ArgumentList @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\palettes.py`"","--","--unit","supaoctto","--skin","deepsea","--out","`"$P\rigged\supaoctto__deepsea.blend`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_supaoctto_skin.txt" -RedirectStandardError "$I\log_supaoctto_skin.err"
 $null = $sp.Handle; $sp.WaitForExit(); "skin exit=$($sp.ExitCode)"
+# v2 renders are prefixed v2_ (the v1 supaoctto_*.png stills stay as the before/after's v1 column; the v1 source-sculpt
+# facing renders are unchanged by v2 and are not re-rendered)
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\supaoctto.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_supaoctto.json`"")),
   @("check_rigged",   @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_supaoctto.json`"")),
-  @("render_src0",    @("--background","`"$SRC`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\source_yaw0`"","front,threequarter,side,tactical,back,front_yaw","--yaw","0")),
-  @("render_src90",   @("--background","`"$SRC`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\source_yaw90`"","front_yaw","--yaw","90")),
-  @("render_src180",  @("--background","`"$SRC`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\source_yaw180`"","front_yaw","--yaw","180")),
-  @("render_src270",  @("--background","`"$SRC`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\source_yaw270`"","front_yaw","--yaw","270")),
-  @("render_after",   @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\supaoctto`"","front,threequarter,tactical,side,back,cape","--pose","idle:1")),
-  @("render_variant", @("--background","`"$P\rigged\supaoctto__deepsea.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\supaoctto_deepsea`"","front,threequarter,tactical,side,back,cape","--pose","idle:1")),
-  @("render_rest",    @("--background","`"$P\improved\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\supaoctto_rest`"","front,threequarter")),
-  @("clips_mp4",      @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_clips.py`"","--","`"$OUT`"","768"))
+  @("render_after",   @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\v2_supaoctto`"","front,threequarter,tactical,side,back,cape","--pose","idle:1")),
+  @("render_variant", @("--background","`"$P\rigged\supaoctto__deepsea.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\v2_supaoctto_deepsea`"","front,threequarter,tactical,side,back,cape,visor","--pose","idle:1")),
+  @("render_close",   @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\v2_supaoctto_close`"","visor,face,siphon,neck,emblem,capefull")),
+  @("render_float",   @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\v2_supaoctto_float_crossed`"","front,threequarter,side,back","--pose","float:59")),
+  @("render_rest",    @("--background","`"$P\improved\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_render.py`"","--","`"$OUT\v2_supaoctto_rest`"","front,threequarter")),
+  @("clips_mp4",      @("--background","`"$P\rigged\supaoctto.blend`"","--factory-startup","--python","`"$I\supaoctto_clips.py`"","--","`"$OUT`"","768","v2_supaoctto"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {

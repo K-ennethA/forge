@@ -2,12 +2,10 @@
 
     blender --background --factory-startup --python supaoctto_before_after.py
 
-renders/supaoctto/supaoctto_before_after.png   rows front / threequarter / side / tactical / back; columns: the raw sculpt
-                                                AS SCULPTED (yaw 0, what the survey showed) | supaoctto (rigged, idle
-                                                frame 1) | the deepsea skin (same pose: the palette-swap proof)
-renders/supaoctto/facing_candidates.png        one row, the FRONT camera (on -Y) on the raw sculpt at yaw 0 / 90 / 180 / 270;
-                                                180 is chosen: the goggles + mouth lead toward the -Y camera and the cape
-                                                hangs behind
+renders/supaoctto/v2_supaoctto_before_after.png  rows front / threequarter / side / tactical / back; columns: v1 (the
+                                                  committed v1 renders, supaoctto_<view>.png, idle frame 1) | v2 (rigged,
+                                                  idle frame 1) | the v2 deepsea skin (same pose: the palette-swap proof)
+renders/supaoctto/v2_supaoctto_closeups.png       one row: visor | siphon | neck + head | chest sigil | cape + webs
 Each tile is framed on its own model's bounds (the survey rule). 512 px tiles.
 """
 import bpy, os
@@ -50,6 +48,7 @@ def sheet(cols, views, out):
     print("WROTE", out)
 
 
-sheet([os.path.join(R, "source_yaw0_%s.png"), os.path.join(R, "supaoctto_%s.png"), os.path.join(R, "supaoctto_deepsea_%s.png")],
-      ["front", "threequarter", "side", "tactical", "back"], os.path.join(R, "supaoctto_before_after.png"))
-sheet([os.path.join(R, "source_yaw%d_%%s.png" % y) for y in (0, 90, 180, 270)], ["front_yaw"], os.path.join(R, "facing_candidates.png"))
+sheet([os.path.join(R, "supaoctto_%s.png"), os.path.join(R, "v2_supaoctto_%s.png"), os.path.join(R, "v2_supaoctto_deepsea_%s.png")],
+      ["front", "threequarter", "side", "tactical", "back"], os.path.join(R, "v2_supaoctto_before_after.png"))
+sheet([os.path.join(R, "v2_supaoctto_close_" + v + "%s.png") for v in ("visor", "siphon", "neck", "emblem", "capefull")],
+      [""], os.path.join(R, "v2_supaoctto_closeups.png"))
