@@ -1,0 +1,162 @@
+{
+ "exporter_options_used": {
+  "export_format": "GLB",
+  "export_animations": true,
+  "export_skins": true,
+  "use_selection": false,
+  "export_all_vertex_colors": true,
+  "export_vertex_color": "ACTIVE",
+  "export_pointer_animation": true,
+  "export_apply": false,
+  "export_yup": true
+ },
+ "options_missing": [],
+ "glow_slot_bound_for_export": true,
+ "modes": {
+  "ACTIONS": {
+   "export_result": [
+    "FINISHED"
+   ],
+   "glb_bytes": 1149152,
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength"
+   ],
+   "primitive_attributes": [
+    [
+     "COLOR_0",
+     "COLOR_1",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   ],
+   "materials": [
+    {
+     "name": "geode_mat",
+     "emissiveFactor": [
+      1,
+      1,
+      1
+     ],
+     "emissiveTexture": false,
+     "emissive_strength": 1.5
+    }
+   ],
+   "animations": [
+    {
+     "name": "idle",
+     "channels": [
+      "root.translation",
+      "root.rotation",
+      "root.scale",
+      "body.translation",
+      "body.rotation",
+      "body.scale",
+      "head.translation",
+      "head.rotation",
+      "head.scale",
+      "core.translation",
+      "core.rotation",
+      "core.scale",
+      "arm.L.translation",
+      "arm.L.rotation",
+      "arm.L.scale",
+      "arm.R.translation",
+      "arm.R.rotation",
+      "arm.R.scale",
+      "leg.L.translation",
+      "leg.L.rotation",
+      "leg.L.scale",
+      "leg.R.translation",
+      "leg.R.rotation",
+      "leg.R.scale"
+     ]
+    }
+   ],
+   "verdict": {
+    "glow_colour_set_exported_as_COLOR_1": true,
+    "animated_emission_exported": false,
+    "core_scale_pulse_exported": true,
+    "material_emissive_is_uniform_factor": true
+   }
+  },
+  "SCENE": {
+   "export_result": [
+    "FINISHED"
+   ],
+   "glb_bytes": 1150048,
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength",
+    "KHR_animation_pointer"
+   ],
+   "primitive_attributes": [
+    [
+     "COLOR_0",
+     "COLOR_1",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   ],
+   "materials": [
+    {
+     "name": "geode_mat",
+     "emissiveFactor": [
+      1,
+      1,
+      1
+     ],
+     "emissiveTexture": false,
+     "emissive_strength": 1.5
+    }
+   ],
+   "animations": [
+    {
+     "name": "geode_rig",
+     "channels": [
+      "root.translation",
+      "root.rotation",
+      "root.scale",
+      "body.translation",
+      "body.rotation",
+      "body.scale",
+      "head.translation",
+      "head.rotation",
+      "head.scale",
+      "core.translation",
+      "core.rotation",
+      "core.scale",
+      "arm.L.translation",
+      "arm.L.rotation",
+      "arm.L.scale",
+      "arm.R.translation",
+      "arm.R.rotation",
+      "arm.R.scale",
+      "leg.L.translation",
+      "leg.L.rotation",
+      "leg.L.scale",
+      "leg.R.translation",
+      "leg.R.rotation",
+      "leg.R.scale"
+     ]
+    },
+    {
+     "name": "geode_mat",
+     "channels": [
+      "pointer /materials/0/extensions/KHR_materials_emissive_strength/emissiveStrength"
+     ]
+    }
+   ],
+   "verdict": {
+    "glow_colour_set_exported_as_COLOR_1": true,
+    "animated_emission_exported": true,
+    "core_scale_pulse_exported": true,
+    "material_emissive_is_uniform_factor": true
+   }
+  }
+ }
+}

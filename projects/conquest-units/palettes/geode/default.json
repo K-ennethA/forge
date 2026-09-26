@@ -1,0 +1,16 @@
+{
+ "unit": "geode",
+ "skin": "default",
+ "description": "Sentient emerald: deep emerald facet cores that darken from the up-facing crown to the down-facing pavilion, brighter gem-green edge planes whose seams glow softly, concave inner facets lit from within, two glowing eye facets, and a floating core gem that burns brightest.",
+ "regions": {
+  "pavilion":  {"rgb": [8, 62, 38],     "note": "down-facing facet cores - darkest emerald (core planes)"},
+  "girdle":    {"rgb": [14, 96, 58],    "note": "side-facing facet cores - deep emerald"},
+  "crown":     {"rgb": [26, 132, 80],   "note": "up-facing facet cores - brighter emerald"},
+  "edge":      {"rgb": [96, 222, 150],  "emission": [40, 230, 120],  "emission_scale": 0.22, "note": "edge planes / crystal seams - bright gem green, soft glow"},
+  "inner":     {"rgb": [30, 170, 96],   "emission": [20, 255, 110],  "emission_scale": 0.75, "note": "concave inner facets (sunk below the hull) - lit from within"},
+  "eye":       {"rgb": [150, 255, 190], "emission": [60, 255, 140],  "emission_scale": 1.2,  "note": "the two sunk eye gems - hot green glow"},
+  "core":      {"rgb": [50, 200, 120],  "emission": [70, 255, 150],  "emission_scale": 1.0,  "note": "floating core gem facets - burning emerald"},
+  "core_edge": {"rgb": [180, 255, 210], "emission": [150, 255, 200], "emission_scale": 1.4,  "note": "core gem edges - hottest"}
+ },
+ "material": {"roughness": 0.28, "emission_strength": 1.5}
+}

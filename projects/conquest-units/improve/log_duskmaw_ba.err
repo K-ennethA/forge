@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_before_after.py", line 29, in <module>
+    row = [tile(c % view) for c in cols]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_before_after.py", line 29, in <listcomp>
+    row = [tile(c % view) for c in cols]
+           ^^^^^^^^^^^^^^
+  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\duskmaw_before_after.py", line 19, in tile
+    img = bpy.data.images.load(path, check_existing=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Error: Cannot read 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\duskmaw\before_glb_tactical.png': No such file or directory
+

@@ -1,0 +1,683 @@
+{
+ "unit": "geode",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\source-copies\\hero-gem_knight.blend",
+ "tier": "hero",
+ "tri_budget": [
+  4000,
+  20000
+ ],
+ "yaw_fix_deg": 0.0,
+ "overrides": {},
+ "winding": {
+  "torso": {
+   "object": "Sphere",
+   "scale": [
+    2.0058,
+    2.0058,
+    2.0058
+   ],
+   "det": 8.0697,
+   "signed_volume_as_stored": 116.211,
+   "signed_volume_fixed": 116.211,
+   "winding_reversed": false,
+   "tris_src": 12220
+  },
+  "core": {
+   "object": "Sphere.001",
+   "scale": [
+    1.0,
+    1.0,
+    1.12
+   ],
+   "det": 1.12,
+   "signed_volume_as_stored": 3.241,
+   "signed_volume_fixed": 3.241,
+   "winding_reversed": false,
+   "tris_src": 960
+  },
+  "head": {
+   "object": "Sphere.006",
+   "scale": [
+    1.0,
+    1.0,
+    -2.2913
+   ],
+   "det": -2.2913,
+   "signed_volume_as_stored": -12.235,
+   "signed_volume_fixed": 12.235,
+   "winding_reversed": true,
+   "tris_src": 960
+  },
+  "leg.L": {
+   "object": "Sphere.002",
+   "scale": [
+    1.0,
+    1.0,
+    2.3973
+   ],
+   "det": 2.3973,
+   "signed_volume_as_stored": 8.646,
+   "signed_volume_fixed": 8.646,
+   "winding_reversed": false,
+   "tris_src": 960
+  },
+  "leg.R": {
+   "object": "Sphere.004",
+   "scale": [
+    1.0,
+    1.0,
+    2.3973
+   ],
+   "det": 2.3973,
+   "signed_volume_as_stored": 8.646,
+   "signed_volume_fixed": 8.646,
+   "winding_reversed": false,
+   "tris_src": 960
+  },
+  "arm.L": {
+   "object": "Sphere.003",
+   "scale": [
+    1.0,
+    1.0,
+    -4.0382
+   ],
+   "det": -4.0382,
+   "signed_volume_as_stored": -14.164,
+   "signed_volume_fixed": 14.164,
+   "winding_reversed": true,
+   "tris_src": 960
+  },
+  "arm.R": {
+   "object": "Sphere.005",
+   "scale": [
+    1.0,
+    1.0,
+    -4.0382
+   ],
+   "det": -4.0382,
+   "signed_volume_as_stored": -14.164,
+   "signed_volume_fixed": 14.164,
+   "winding_reversed": true,
+   "tris_src": 960
+  }
+ },
+ "tris_source": 17980,
+ "carried_parts": {
+  "leg.R": {
+   "from": "leg.L",
+   "same_mesh": true,
+   "relative_det": 1.0
+  },
+  "arm.R": {
+   "from": "arm.L",
+   "same_mesh": true,
+   "relative_det": 1.0
+  }
+ },
+ "faceting": {
+  "torso": {
+   "method": "VSA L2,1 + anchor/chain extraction (+ planarize, + poke repair of folded facets)",
+   "proxies": 220,
+   "error_first_last": [
+    6.28139,
+    4.94143
+   ],
+   "label_smooth_changed": [],
+   "facets_split_after_vote": 0,
+   "facets_nonempty": 220,
+   "anchors": 403,
+   "chains": 620,
+   "anchor_free_loops": 1,
+   "forced_splits": 2,
+   "kept_verts": 420,
+   "tessellated_facets": 2,
+   "failed_faces": 1,
+   "chain_tol": 0.3673,
+   "fold_repair": {
+    "folded_tris_ngon_triangulation": 22,
+    "folded_facets": 19
+   },
+   "facets": 212,
+   "facet_edges": 613,
+   "nonmanifold_edges_before_bevel": 0,
+   "short_edges_collapsed": 27,
+   "shortest_facet_edge": 0.1077,
+   "chamfer_faces": 987,
+   "seam_width_effective": 0.0225,
+   "weld": {
+    "verts_removed": 0,
+    "faces_removed": 0,
+    "tiny_tris_after_weld": 0
+   },
+   "nonmanifold_edges_final": 0,
+   "seconds": 1.77,
+   "tris": 2452,
+   "signed_volume": 115.773,
+   "volume_ratio_vs_source": 0.9962,
+   "folded_tris": 1,
+   "folded_area_frac": 7.3e-05,
+   "chamfer_tris_facing_away_from_their_facet": 0,
+   "facet_planarity_max_frac": 0.00895,
+   "surface_dev_mean_frac": 0.001,
+   "surface_dev_max_frac": 0.00507,
+   "diag": 14.6929
+  },
+  "head": {
+   "method": "gem cut (support half-spaces, volume-matched)",
+   "rows": [
+    [
+     -80,
+     1,
+     0.0
+    ],
+    [
+     -55,
+     8,
+     22.5
+    ],
+    [
+     -28,
+     8,
+     0.0
+    ],
+    [
+     0,
+     8,
+     22.5
+    ],
+    [
+     20,
+     8,
+     0.0
+    ],
+    [
+     42,
+     8,
+     22.5
+    ],
+    [
+     68,
+     8,
+     0.0
+    ]
+   ],
+   "planes": 49,
+   "volume_match_scale": 0.916,
+   "eyes": {
+    "row": 3,
+    "azimuth_off_front_deg": [
+     22.5,
+     22.5
+    ],
+    "scale": 0.42,
+    "sink_frac": 0.012
+   },
+   "facets": 38,
+   "facet_edges": 106,
+   "nonmanifold_edges_before_bevel": 0,
+   "short_edges_collapsed": 34,
+   "shortest_facet_edge": 0.1352,
+   "chamfer_faces": 164,
+   "seam_width_effective": 0.0831,
+   "weld": {
+    "verts_removed": 4,
+    "faces_removed": 8,
+    "tiny_tris_after_weld": 0
+   },
+   "nonmanifold_edges_final": 0,
+   "seconds": 0.01,
+   "tris": 412,
+   "signed_volume": 11.937,
+   "volume_ratio_vs_source": 0.9757,
+   "folded_tris": 0,
+   "folded_area_frac": 0.0,
+   "chamfer_tris_facing_away_from_their_facet": 0,
+   "facet_planarity_max_frac": 0.00493,
+   "surface_dev_mean_frac": 0.01364,
+   "surface_dev_max_frac": 0.03096,
+   "diag": 6.7754
+  },
+  "core": {
+   "method": "gem cut (support half-spaces, volume-matched)",
+   "rows": [
+    [
+     -62,
+     8,
+     0.0
+    ],
+    [
+     -30,
+     8,
+     22.5
+    ],
+    [
+     0,
+     8,
+     0.0
+    ],
+    [
+     30,
+     8,
+     22.5
+    ],
+    [
+     62,
+     8,
+     0.0
+    ]
+   ],
+   "planes": 40,
+   "volume_match_scale": 0.9441,
+   "facets": 32,
+   "facet_edges": 70,
+   "nonmanifold_edges_before_bevel": 0,
+   "short_edges_collapsed": 40,
+   "shortest_facet_edge": 0.1216,
+   "chamfer_faces": 110,
+   "seam_width_effective": 0.0838,
+   "weld": {
+    "verts_removed": 0,
+    "faces_removed": 0,
+    "tiny_tris_after_weld": 0
+   },
+   "nonmanifold_edges_final": 0,
+   "seconds": 0.01,
+   "tris": 276,
+   "signed_volume": 3.123,
+   "volume_ratio_vs_source": 0.9637,
+   "folded_tris": 0,
+   "folded_area_frac": 0.0,
+   "chamfer_tris_facing_away_from_their_facet": 0,
+   "facet_planarity_max_frac": 0.00301,
+   "surface_dev_mean_frac": 0.00768,
+   "surface_dev_max_frac": 0.0287,
+   "diag": 3.9284
+  },
+  "arm.L": {
+   "method": "VSA L2,1 + anchor/chain extraction (+ planarize, + poke repair of folded facets)",
+   "proxies": 44,
+   "error_first_last": [
+    1.61668,
+    1.26358
+   ],
+   "label_smooth_changed": [],
+   "facets_split_after_vote": 0,
+   "facets_nonempty": 44,
+   "anchors": 72,
+   "chains": 114,
+   "anchor_free_loops": 0,
+   "forced_splits": 0,
+   "kept_verts": 86,
+   "tessellated_facets": 0,
+   "failed_faces": 0,
+   "chain_tol": 0.2107,
+   "fold_repair": {
+    "folded_tris_ngon_triangulation": 4,
+    "folded_facets": 3
+   },
+   "facets": 43,
+   "facet_edges": 119,
+   "nonmanifold_edges_before_bevel": 3,
+   "short_edges_collapsed": 6,
+   "shortest_facet_edge": 0.1202,
+   "chamfer_faces": 185,
+   "seam_width_effective": 0.0623,
+   "weld": {
+    "verts_removed": 1,
+    "faces_removed": 2,
+    "tiny_tris_after_weld": 0
+   },
+   "nonmanifold_edges_final": 3,
+   "seconds": 0.12,
+   "tris": 470,
+   "signed_volume": 13.721,
+   "volume_ratio_vs_source": 0.9687,
+   "folded_tris": 1,
+   "folded_area_frac": 0.004586,
+   "chamfer_tris_facing_away_from_their_facet": 2,
+   "facet_planarity_max_frac": 0.01877,
+   "surface_dev_mean_frac": 0.00472,
+   "surface_dev_max_frac": 0.02244,
+   "diag": 8.4283
+  },
+  "leg.L": {
+   "method": "VSA L2,1 + anchor/chain extraction (+ planarize, + poke repair of folded facets)",
+   "proxies": 44,
+   "error_first_last": [
+    1.40255,
+    1.08019
+   ],
+   "label_smooth_changed": [],
+   "facets_split_after_vote": 0,
+   "facets_nonempty": 44,
+   "anchors": 71,
+   "chains": 113,
+   "anchor_free_loops": 0,
+   "forced_splits": 0,
+   "kept_verts": 117,
+   "tessellated_facets": 0,
+   "failed_faces": 0,
+   "chain_tol": 0.1837,
+   "fold_repair": {
+    "folded_tris_ngon_triangulation": 26,
+    "folded_facets": 13
+   },
+   "facets": 42,
+   "facet_edges": 130,
+   "nonmanifold_edges_before_bevel": 10,
+   "short_edges_collapsed": 17,
+   "shortest_facet_edge": 0.1358,
+   "chamfer_faces": 186,
+   "seam_width_effective": 0.0478,
+   "weld": {
+    "verts_removed": 2,
+    "faces_removed": 4,
+    "tiny_tris_after_weld": 0
+   },
+   "nonmanifold_edges_final": 10,
+   "seconds": 0.12,
+   "tris": 512,
+   "signed_volume": 8.385,
+   "volume_ratio_vs_source": 0.9698,
+   "folded_tris": 2,
+   "folded_area_frac": 0.001136,
+   "chamfer_tris_facing_away_from_their_facet": 7,
+   "facet_planarity_max_frac": 0.02443,
+   "surface_dev_mean_frac": 0.00318,
+   "surface_dev_max_frac": 0.01631,
+   "diag": 7.3497
+  },
+  "leg.R": {
+   "method": "carried from leg.L (source relative transform, rot z 180)",
+   "facets": 42,
+   "facet_edges": 130,
+   "tris": 512,
+   "signed_volume": 8.385,
+   "volume_ratio_vs_source": 0.9698,
+   "folded_tris": 2,
+   "folded_area_frac": 0.001136,
+   "chamfer_tris_facing_away_from_their_facet": 7,
+   "facet_planarity_max_frac": 0.02443,
+   "surface_dev_mean_frac": 0.00318,
+   "surface_dev_max_frac": 0.01631,
+   "diag": 7.3497
+  },
+  "arm.R": {
+   "method": "carried from arm.L (source relative transform, rot z 180)",
+   "facets": 43,
+   "facet_edges": 119,
+   "tris": 470,
+   "signed_volume": 13.721,
+   "volume_ratio_vs_source": 0.9687,
+   "folded_tris": 1,
+   "folded_area_frac": 0.004586,
+   "chamfer_tris_facing_away_from_their_facet": 2,
+   "facet_planarity_max_frac": 0.01877,
+   "surface_dev_mean_frac": 0.00472,
+   "surface_dev_max_frac": 0.02244,
+   "diag": 8.4283
+  }
+ },
+ "origin_shift_sculpt_units": [
+  -0.04518,
+  0.45002,
+  0.22455
+ ],
+ "natural": {
+  "height": 24.0355,
+  "width": 17.8478,
+  "depth": 5.1522,
+  "units": "sculpt units (natural proportions, no refit)",
+  "export_cell_fit_report_only": {
+   "scale": 0.07489,
+   "height_m": 1.8,
+   "bound_by": "height"
+  },
+  "shipped_glb_height_m": 1.8
+ },
+ "rest_clearance": {
+  "torso|head": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 1.9039
+  },
+  "torso|core": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 0.2375
+  },
+  "torso|arm.L": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 0.8756
+  },
+  "torso|arm.R": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 0.9706
+  },
+  "core|leg.L": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 2.4093
+  },
+  "core|leg.R": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 2.486
+  },
+  "torso|leg.L": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 4.3589
+  },
+  "torso|leg.R": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 4.4003
+  },
+  "arm.L|leg.L": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 5.4576
+  },
+  "arm.R|leg.R": {
+   "overlap_tri_pairs": 0,
+   "min_gap": 5.4576
+  }
+ },
+ "tris_final": 5104,
+ "tris_per_part": {
+  "torso": 2452,
+  "head": 412,
+  "core": 276,
+  "arm.L": 470,
+  "arm.R": 470,
+  "leg.L": 512,
+  "leg.R": 512
+ },
+ "uv": {
+  "method": "Smart UV (66 deg, margin 0.003) + pack, whole joined faceted mesh",
+  "faces": 5104,
+  "zero_area_faces": 0,
+  "flipped_faces": 0,
+  "uv_sha": "93a9569e723811ea"
+ },
+ "inner_rule": {
+  "rule": "facet centroid deeper than INNER_DEPTH x part diagonal below the part's convex hull",
+  "inner_depth": 0.045,
+  "per_part": {
+   "torso": {
+    "facets": 212,
+    "inner_facets": 38,
+    "depth_p95_frac": 0.0686
+   },
+   "head": {
+    "facets": 36,
+    "inner_facets": 0,
+    "depth_p95_frac": 0.007
+   },
+   "core": {
+    "facets": 32,
+    "inner_facets": 0,
+    "depth_p95_frac": 0.002
+   },
+   "arm.L": {
+    "facets": 43,
+    "inner_facets": 1,
+    "depth_p95_frac": 0.0314
+   },
+   "arm.R": {
+    "facets": 43,
+    "inner_facets": 1,
+    "depth_p95_frac": 0.0314
+   },
+   "leg.L": {
+    "facets": 42,
+    "inner_facets": 2,
+    "depth_p95_frac": 0.0442
+   },
+   "leg.R": {
+    "facets": 42,
+    "inner_facets": 2,
+    "depth_p95_frac": 0.0442
+   }
+  }
+ },
+ "regions_faces": {
+  "pavilion": 472,
+  "girdle": 593,
+  "crown": 385,
+  "edge": 3224,
+  "inner": 144,
+  "eye": 10,
+  "core": 76,
+  "core_edge": 200
+ },
+ "eye_rule": {
+  "rule": "head gem-cut row 3: the two facets whose azimuth is nearest the front (-Y) each get a sunk inset gem (EYE_SCALE of the facet, sunk EYE_DEPTH) = the eyes",
+  "facet_ids": [
+   269,
+   270
+  ],
+  "faces": 10,
+  "row": 3,
+  "azimuth_off_front_deg": [
+   22.5,
+   22.5
+  ],
+  "scale": 0.42,
+  "sink_frac": 0.012
+ },
+ "facing": {
+  "rule": "head faces centroid -> eye facets centroid",
+  "anchor": [
+   0.0474,
+   -1.3249,
+   20.7159
+  ],
+  "landmark": [
+   0.0482,
+   -1.9615,
+   21.0702
+  ],
+  "angle_from_minusY_deg": 0.07
+ },
+ "digest_geometry_colour": "08be392762516e5c",
+ "final_bbox": [
+  [
+   -8.9239,
+   -2.5761,
+   0.0
+  ],
+  [
+   8.9239,
+   2.5761,
+   24.0355
+  ]
+ ],
+ "palette": {
+  "default": {
+   "pavilion": {
+    "rgb": [
+     8,
+     62,
+     38
+    ]
+   },
+   "girdle": {
+    "rgb": [
+     14,
+     96,
+     58
+    ]
+   },
+   "crown": {
+    "rgb": [
+     26,
+     132,
+     80
+    ]
+   },
+   "edge": {
+    "rgb": [
+     96,
+     222,
+     150
+    ],
+    "emission": [
+     40,
+     230,
+     120
+    ],
+    "emission_scale": 0.22
+   },
+   "inner": {
+    "rgb": [
+     30,
+     170,
+     96
+    ],
+    "emission": [
+     20,
+     255,
+     110
+    ],
+    "emission_scale": 0.75
+   },
+   "eye": {
+    "rgb": [
+     150,
+     255,
+     190
+    ],
+    "emission": [
+     60,
+     255,
+     140
+    ],
+    "emission_scale": 1.2
+   },
+   "core": {
+    "rgb": [
+     50,
+     200,
+     120
+    ],
+    "emission": [
+     70,
+     255,
+     150
+    ],
+    "emission_scale": 1.0
+   },
+   "core_edge": {
+    "rgb": [
+     180,
+     255,
+     210
+    ],
+    "emission": [
+     150,
+     255,
+     200
+    ],
+    "emission_scale": 1.4
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\geode\\default.json"
+  ]
+ }
+}

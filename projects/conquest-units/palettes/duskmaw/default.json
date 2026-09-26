@@ -1,0 +1,16 @@
+{
+ "unit": "duskmaw",
+ "skin": "default",
+ "description": "Dark hero (Conquest 'monster'): the SHIPPED, artist-approved palette carried over unchanged (source: monster_rigged.blend materials summoner_body / summoner_roots / summoner_flame / summoner_mouth, linear Principled values converted to sRGB). Void-black body and crown, scorched maroon roots (the skirt), ember-tipped spikes, and the red maw - now painted where the lore puts the mouth: the gap framed by the chest's lower points and the skirt's peaks.",
+ "regions": {
+  "body":       {"rgb": [41, 38, 43],   "note": "summoner_body (0.022, 0.019, 0.024 linear) - void-black body, hat and crown"},
+  "roots":      {"rgb": [60, 31, 34],   "note": "summoner_roots (0.045, 0.014, 0.016 linear) - scorched maroon skirt / lower jaw"},
+  "flame":      {"rgb": [188, 63, 33], "emission": [237, 89, 25], "emission_scale": 0.7,
+                 "note": "summoner_flame (0.50, 0.05, 0.015 linear; emission 0.85, 0.10, 0.01 x 0.7) - ember spike tips, crown apex"},
+  "maw_throat": {"rgb": [184, 39, 39], "emission": [196, 39, 25], "emission_scale": 0.35,
+                 "note": "summoner_mouth (0.48, 0.02, 0.02 linear; emission 0.55, 0.02, 0.01 x 0.35) - the waist column seen through the maw"},
+  "maw_inner":  {"rgb": [184, 39, 39], "emission": [196, 39, 25], "emission_scale": 0.35,
+                 "note": "summoner_mouth - inner walls of the maw: chest underside + the skirt faces turned toward the throat"}
+ },
+ "material": {"roughness": 0.87, "emission_strength": 1.0}
+}

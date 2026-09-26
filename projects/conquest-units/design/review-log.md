@@ -240,3 +240,24 @@ that policy the SHIP build uses --no-cell-refit (standing 5.10 m,
 proportions identical - uniform scale changes no pixel of the sheet).
 Bake bug caught and fixed: v4 had overwritten v3's texture files; v3
 restored byte-for-byte, v4 writes its own names.
+
+## 2026-09-25 - Vineweave + Mortis answers (artist, verbatim)
+> vineweave steps and walks like a biped, the forming per attack ideally
+> should have the vines merge into a blade and then can un merge into
+> vines)not sure how this is done, whether to have a sword mesh that
+> morphs from the vines?
+
+> mortis glides - can have ghostly sleeves reaching toward the book, we
+> can make the skins as well
+
+Readings: VINEWEAVE walks as a BIPED (stepping on the bark legs, vines
+trailing/swinging) - walk clip unblocked. Attack form: vines MERGE into a
+blade and UN-MERGE back; implementation design (for the attack wave,
+attacks still deferred): animate the vine chains braiding tight while a
+faceted blade mesh grows along them (scale/visibility keys), reverse to
+unmerge - a swap-under-motion, cleaner for glTF/Godot than morph targets,
+though the braid pose itself is bone animation on the existing chains;
+blade mesh authored now-or-later with the attack wave. MORTIS: GLIDE
+confirmed (the dead carry him smoothly) - glide loop unblocked; ADD
+ghostly sleeves reaching toward the book (new geometry, ethereal read);
+AUTHOR the two game skins as palettes (Gravemoss, Boneash Sovereign).

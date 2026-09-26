@@ -1,0 +1,9 @@
+00:02.000  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+21:16:07 | INFO: Starting glTF 2.0 export
+21:16:07 | INFO: Extracting primitive: geode
+21:16:07 | INFO: Primitives created: 1
+21:16:07 | INFO: Finished glTF 2.0 export in 0.35097360610961914 s
+
+GLTF_PROBE {"glow_colour_set_exported": true, "animated_emission_exported": false, "core_scale_pulse_exported": true} ["KHR_materials_emissive_strength"]
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

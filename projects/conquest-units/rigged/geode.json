@@ -1,0 +1,472 @@
+{
+ "unit": "geode",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\geode.blend",
+ "fps": 24,
+ "weights": {
+  "rule": "rigid: every vertex 1.0 to its part's bone (one influence, no blending)",
+  "per_bone_verts": {
+   "body": 1254,
+   "head": 208,
+   "core": 140,
+   "arm.L": 237,
+   "arm.R": 237,
+   "leg.L": 258,
+   "leg.R": 258
+  }
+ },
+ "idle": {
+  "status": "PROPOSED - the artist judges",
+  "action": "idle",
+  "frames": 121,
+  "cycle_frames": 120,
+  "cycle_s": 5.0,
+  "keyed_bones": [
+   "body",
+   "head",
+   "arm.L",
+   "arm.R",
+   "core"
+  ],
+  "never_keyed": [
+   "root",
+   "leg.L",
+   "leg.R"
+  ],
+  "seam_residual_mm_sculpt": 0.0,
+  "legs_move_max": 1.067e-06,
+  "min_z": -1e-06,
+  "bone_stretch_max_pct_excl_core": 3.7e-05,
+  "core_scale_range": [
+   0.93,
+   1.0
+  ],
+  "part_travel_max": {
+   "torso": 0.2181,
+   "head": 0.2264,
+   "core": 0.2966,
+   "arm.L": 0.5535,
+   "arm.R": 0.5242,
+   "leg.L": 0.0,
+   "leg.R": 0.0
+  },
+  "clearance_over_loop_every_4th_frame": {
+   "torso|head": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 1.8498,
+    "min_gap_frame": 117
+   },
+   "torso|core": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 0.2375,
+    "min_gap_frame": 1
+   },
+   "torso|arm.L": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 0.7643,
+    "min_gap_frame": 77
+   },
+   "torso|arm.R": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 0.8661,
+    "min_gap_frame": 41
+   },
+   "core|leg.L": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 2.3674,
+    "min_gap_frame": 65
+   },
+   "core|leg.R": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 2.4062,
+    "min_gap_frame": 105
+   },
+   "torso|leg.L": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 4.287,
+    "min_gap_frame": 89
+   },
+   "torso|leg.R": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 4.3031,
+    "min_gap_frame": 93
+   },
+   "arm.L|leg.L": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 5.001,
+    "min_gap_frame": 89
+   },
+   "arm.R|leg.R": {
+    "overlap_tri_pairs_max": 0,
+    "min_gap": 5.0561,
+    "min_gap_frame": 53
+   }
+  },
+  "extent": {
+   "width": 18.4963,
+   "depth": 5.1593,
+   "height": 24.1827
+  },
+  "glow_pulse": {
+   "socket": "Principled BSDF.Emission Strength",
+   "base": 1.5,
+   "law": "base * (1 + 0.45 * (0.5 - 0.5 cos(2 pi 2t)))  (in step with the core contraction)",
+   "slots": [
+    "OBgeode_rig",
+    "NTShader Nodetree"
+   ]
+  },
+  "motion": {
+   "body_bob": 0.1,
+   "body_tilt_deg": 0.8,
+   "head_bob": 0.07,
+   "head_tilt_deg": 2.0,
+   "arm_orbit": 0.1,
+   "arm_bob": 0.12,
+   "arm_swing_deg": 2.5,
+   "arm_phase_rad": 1.7279,
+   "core_pulse": 0.07,
+   "core_sink": 0.06,
+   "core_yaw_deg": 10.0,
+   "glow_pulse": 0.45,
+   "harmonics": [
+    1,
+    2
+   ]
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    2.8843
+   ],
+   "length": 2.8843
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0,
+    -0.1325,
+    15.3119
+   ],
+   "tail": [
+    0.0,
+    -0.1325,
+    20.6697
+   ],
+   "length": 5.3578
+  },
+  {
+   "name": "head",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0,
+    -1.3218,
+    18.9228
+   ],
+   "tail": [
+    0.0,
+    -1.3218,
+    24.0355
+   ],
+   "length": 5.1127
+  },
+  {
+   "name": "core",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    0.0452,
+    -0.4499,
+    8.2924
+   ],
+   "tail": [
+    0.0452,
+    -0.4499,
+    9.6001
+   ],
+   "length": 1.3076
+  },
+  {
+   "name": "arm.L",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    5.9237,
+    -0.518,
+    16.0294
+   ],
+   "tail": [
+    8.5925,
+    -0.4692,
+    8.3281
+   ],
+   "length": 8.1507
+  },
+  {
+   "name": "arm.R",
+   "parent": "body",
+   "deform": true,
+   "head": [
+    -5.9237,
+    -0.382,
+    16.0294
+   ],
+   "tail": [
+    -8.5925,
+    -0.4308,
+    8.3281
+   ],
+   "length": 8.1507
+  },
+  {
+   "name": "leg.L",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    2.4581,
+    -0.4046,
+    6.4472
+   ],
+   "tail": [
+    3.661,
+    -0.4705,
+    0.0
+   ],
+   "length": 6.5588
+  },
+  {
+   "name": "leg.R",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -2.4581,
+    -0.4954,
+    6.4472
+   ],
+   "tail": [
+    -3.661,
+    -0.4295,
+    0.0
+   ],
+   "length": 6.5588
+  }
+ ],
+ "bone_count": 8,
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\geode.blend",
+   "palette": {
+    "pavilion": {
+     "rgb": [
+      8,
+      62,
+      38
+     ]
+    },
+    "girdle": {
+     "rgb": [
+      14,
+      96,
+      58
+     ]
+    },
+    "crown": {
+     "rgb": [
+      26,
+      132,
+      80
+     ]
+    },
+    "edge": {
+     "rgb": [
+      96,
+      222,
+      150
+     ],
+     "emission": [
+      40,
+      230,
+      120
+     ],
+     "emission_scale": 0.22
+    },
+    "inner": {
+     "rgb": [
+      30,
+      170,
+      96
+     ],
+     "emission": [
+      20,
+      255,
+      110
+     ],
+     "emission_scale": 0.75
+    },
+    "eye": {
+     "rgb": [
+      150,
+      255,
+      190
+     ],
+     "emission": [
+      60,
+      255,
+      140
+     ],
+     "emission_scale": 1.2
+    },
+    "core": {
+     "rgb": [
+      50,
+      200,
+      120
+     ],
+     "emission": [
+      70,
+      255,
+      150
+     ],
+     "emission_scale": 1.0
+    },
+    "core_edge": {
+     "rgb": [
+      180,
+      255,
+      210
+     ],
+     "emission": [
+      150,
+      255,
+      200
+     ],
+     "emission_scale": 1.4
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\geode\\default.json"
+   ]
+  },
+  "amethyst": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\geode__amethyst.blend",
+   "palette": {
+    "pavilion": {
+     "rgb": [
+      38,
+      12,
+      58
+     ]
+    },
+    "girdle": {
+     "rgb": [
+      66,
+      26,
+      98
+     ]
+    },
+    "crown": {
+     "rgb": [
+      104,
+      52,
+      146
+     ]
+    },
+    "edge": {
+     "rgb": [
+      200,
+      150,
+      244
+     ],
+     "emission": [
+      170,
+      90,
+      255
+     ],
+     "emission_scale": 0.22
+    },
+    "inner": {
+     "rgb": [
+      130,
+      60,
+      190
+     ],
+     "emission": [
+      180,
+      60,
+      255
+     ],
+     "emission_scale": 0.75
+    },
+    "eye": {
+     "rgb": [
+      226,
+      196,
+      255
+     ],
+     "emission": [
+      200,
+      130,
+      255
+     ],
+     "emission_scale": 1.2
+    },
+    "core": {
+     "rgb": [
+      160,
+      90,
+      220
+     ],
+     "emission": [
+      190,
+      120,
+      255
+     ],
+     "emission_scale": 1.0
+    },
+    "core_edge": {
+     "rgb": [
+      236,
+      210,
+      255
+     ],
+     "emission": [
+      225,
+      190,
+      255
+     ],
+     "emission_scale": 1.4
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\geode\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\geode\\amethyst.json"
+   ],
+   "col_sha": "09d81a23dbba249d",
+   "regions_faces": {
+    "pavilion": 472,
+    "girdle": 593,
+    "crown": 385,
+    "edge": 3224,
+    "inner": 144,
+    "eye": 10,
+    "core": 76,
+    "core_edge": 200
+   }
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\geode.json",
+ "seconds": 6.8
+}
