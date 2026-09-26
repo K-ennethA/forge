@@ -1,0 +1,2277 @@
+{
+ "unit": "vampwarrior",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampwarrior.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "seconds": 0.5,
+  "sword_object": "sword verts 1.0 on 'sword'; tassel on tassel.0/1 (vine weights)",
+  "rule": "body: MPFB game_engine weights (Root -> pelvis); cuffs / belt / toe caps / soles / collar: the MPFB weights of the nearest skin point (barycentric); knee cops / gem / buckle: the skin weights at their centroid (rigid ride); fauld: pelvis at the top blending to the skin under the hem (<= 55 %); heels foot, eyes / fangs / hair cap head; hair locks head until they leave the head then rigkit.vine_weights along their chain; cape: across-hat between the 5 chains x along-hat down each; <= 4 influences, normalised"
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_sword_mm": 0.0,
+   "min_z_main": -0.0,
+   "min_z_sword": -0.0,
+   "sword_tip_min_z": -0.0,
+   "root_offset_max": 0.0,
+   "grip_relation_max_dev": 4.2e-07,
+   "right_wrist_bend_max_deg": 44.62,
+   "ik_unreachable_max_m": {
+    "L": 0.0,
+    "R": 0.0,
+    "arm_R": 0.0,
+    "wrist_R": 0.0
+   },
+   "clearance_min_m": {
+    "cape_to_legs": 0.0663,
+    "cape_to_left_arm": 0.0182,
+    "cape_to_right_arm": 0.0017,
+    "blade_to_cape": 0.1118,
+    "blade_to_legs": 0.2372,
+    "blade_to_torso": 0.2375
+   },
+   "feet_planted": {
+    "L": {
+     "ball_contact_xy_drift": 0.0,
+     "ball_contact_z_range": [
+      0.0,
+      0.0
+     ]
+    },
+    "R": {
+     "ball_contact_xy_drift": 0.0,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    31
+   ],
+   "period_frames": 30,
+   "seconds": 1.25,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_sword_mm": 0.0,
+   "min_z_main": -0.00063,
+   "min_z_sword": 0.12498,
+   "sword_tip_min_z": 0.125,
+   "root_offset_max": 0.0,
+   "grip_relation_max_dev": 3.8e-07,
+   "right_wrist_bend_max_deg": 37.67,
+   "ik_unreachable_max_m": {
+    "L": 0.0,
+    "R": 0.0,
+    "arm_R": 0.0,
+    "wrist_R": 0.0,
+    "pelvis_dz": 0.05458
+   },
+   "clearance_min_m": {
+    "cape_to_legs": 0.09,
+    "cape_to_left_arm": 0.0119,
+    "cape_to_right_arm": 0.0032,
+    "blade_to_cape": 0.0215,
+    "blade_to_legs": 0.0665,
+    "blade_to_torso": 0.0669
+   },
+   "gait": {
+    "L": {
+     "flat_stance_frames": 15,
+     "ball_contact_z_range": [
+      0.0,
+      0.0
+     ],
+     "heel_tip_z_range": [
+      0.0,
+      0.0
+     ],
+     "lateral_x_drift": 0.0,
+     "slip_vs_ground_m": 0.0,
+     "swing_contact_z_max": 0.075
+    },
+    "R": {
+     "flat_stance_frames": 15,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "heel_tip_z_range": [
+      -0.0,
+      0.0
+     ],
+     "lateral_x_drift": 0.0,
+     "slip_vs_ground_m": 0.0,
+     "swing_contact_z_max": 0.075
+    }
+   },
+   "cadence_steps_per_min": 96.0,
+   "stance_travel_m": 0.58,
+   "step_length_m": 0.4833,
+   "stride_length_m": 0.9667,
+   "ground_speed_m_per_s": 0.7733,
+   "ground_speed_body_heights_per_s": 0.4221,
+   "stance_fraction": 0.6,
+   "foot_lift_m": 0.075,
+   "toe_off_roll_deg": 26.0,
+   "rule": "zero-slip: in flat stance (before toe-off) the ball-contact sole vertex moves back at exactly the ground speed (slip = max deviation from that line), with no lift and no lateral drift"
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.2,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0047,
+    -0.0225,
+    1.0423
+   ],
+   "tail": [
+    0.0047,
+    0.0201,
+    1.1107
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0047,
+    0.0201,
+    1.1107
+   ],
+   "tail": [
+    0.0047,
+    0.0006,
+    1.1745
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "deform": true,
+   "head": [
+    0.0047,
+    0.0006,
+    1.1745
+   ],
+   "tail": [
+    0.0047,
+    -0.0115,
+    1.2608
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "deform": true,
+   "head": [
+    0.0047,
+    -0.0115,
+    1.2608
+   ],
+   "tail": [
+    0.0047,
+    -0.012,
+    1.4152
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0292,
+    -0.0311,
+    1.4965
+   ],
+   "tail": [
+    0.1649,
+    -0.0251,
+    1.4804
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": "clavicle_l",
+   "deform": true,
+   "head": [
+    0.1649,
+    -0.0251,
+    1.4804
+   ],
+   "tail": [
+    0.3431,
+    -0.0342,
+    1.2855
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": "upperarm_l",
+   "deform": true,
+   "head": [
+    0.3431,
+    -0.0342,
+    1.2855
+   ],
+   "tail": [
+    0.4608,
+    -0.187,
+    1.1561
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "lowerarm_l",
+   "deform": true,
+   "head": [
+    0.4608,
+    -0.187,
+    1.1561
+   ],
+   "tail": [
+    0.4702,
+    -0.2104,
+    1.1406
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.4858,
+    -0.2722,
+    1.1158
+   ],
+   "tail": [
+    0.489,
+    -0.2907,
+    1.1016
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": "index_01_l",
+   "deform": true,
+   "head": [
+    0.489,
+    -0.2907,
+    1.1016
+   ],
+   "tail": [
+    0.4885,
+    -0.3052,
+    1.0862
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": "index_02_l",
+   "deform": true,
+   "head": [
+    0.4885,
+    -0.3052,
+    1.0862
+   ],
+   "tail": [
+    0.4852,
+    -0.3207,
+    1.0674
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.5,
+    -0.2553,
+    1.1061
+   ],
+   "tail": [
+    0.507,
+    -0.2734,
+    1.082
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": "middle_01_l",
+   "deform": true,
+   "head": [
+    0.507,
+    -0.2734,
+    1.082
+   ],
+   "tail": [
+    0.5095,
+    -0.2885,
+    1.062
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": "middle_02_l",
+   "deform": true,
+   "head": [
+    0.5095,
+    -0.2885,
+    1.062
+   ],
+   "tail": [
+    0.5097,
+    -0.3017,
+    1.0412
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.5089,
+    -0.2218,
+    1.0925
+   ],
+   "tail": [
+    0.5144,
+    -0.2281,
+    1.0749
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": "pinky_01_l",
+   "deform": true,
+   "head": [
+    0.5144,
+    -0.2281,
+    1.0749
+   ],
+   "tail": [
+    0.5161,
+    -0.233,
+    1.0616
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": "pinky_02_l",
+   "deform": true,
+   "head": [
+    0.5161,
+    -0.233,
+    1.0616
+   ],
+   "tail": [
+    0.5184,
+    -0.2388,
+    1.0447
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.5068,
+    -0.2396,
+    1.0996
+   ],
+   "tail": [
+    0.516,
+    -0.252,
+    1.077
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": "ring_01_l",
+   "deform": true,
+   "head": [
+    0.516,
+    -0.252,
+    1.077
+   ],
+   "tail": [
+    0.5198,
+    -0.2629,
+    1.0577
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": "ring_02_l",
+   "deform": true,
+   "head": [
+    0.5198,
+    -0.2629,
+    1.0577
+   ],
+   "tail": [
+    0.5223,
+    -0.2726,
+    1.0355
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.4614,
+    -0.2269,
+    1.1475
+   ],
+   "tail": [
+    0.4427,
+    -0.2459,
+    1.1389
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": "thumb_01_l",
+   "deform": true,
+   "head": [
+    0.4427,
+    -0.2459,
+    1.1389
+   ],
+   "tail": [
+    0.4315,
+    -0.2738,
+    1.1251
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": "thumb_02_l",
+   "deform": true,
+   "head": [
+    0.4315,
+    -0.2738,
+    1.1251
+   ],
+   "tail": [
+    0.4263,
+    -0.2929,
+    1.109
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0198,
+    -0.0311,
+    1.4965
+   ],
+   "tail": [
+    -0.1554,
+    -0.0251,
+    1.4804
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": "clavicle_r",
+   "deform": true,
+   "head": [
+    -0.1554,
+    -0.0251,
+    1.4804
+   ],
+   "tail": [
+    -0.3337,
+    -0.0342,
+    1.2855
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": "upperarm_r",
+   "deform": true,
+   "head": [
+    -0.3337,
+    -0.0342,
+    1.2855
+   ],
+   "tail": [
+    -0.4514,
+    -0.187,
+    1.1561
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "lowerarm_r",
+   "deform": true,
+   "head": [
+    -0.4514,
+    -0.187,
+    1.1561
+   ],
+   "tail": [
+    -0.4608,
+    -0.2104,
+    1.1406
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4764,
+    -0.2722,
+    1.1158
+   ],
+   "tail": [
+    -0.4796,
+    -0.2907,
+    1.1016
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": "index_01_r",
+   "deform": true,
+   "head": [
+    -0.4796,
+    -0.2907,
+    1.1016
+   ],
+   "tail": [
+    -0.4791,
+    -0.3052,
+    1.0862
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": "index_02_r",
+   "deform": true,
+   "head": [
+    -0.4791,
+    -0.3052,
+    1.0862
+   ],
+   "tail": [
+    -0.4758,
+    -0.3207,
+    1.0674
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4906,
+    -0.2553,
+    1.1061
+   ],
+   "tail": [
+    -0.4976,
+    -0.2734,
+    1.082
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": "middle_01_r",
+   "deform": true,
+   "head": [
+    -0.4976,
+    -0.2734,
+    1.082
+   ],
+   "tail": [
+    -0.5001,
+    -0.2885,
+    1.062
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": "middle_02_r",
+   "deform": true,
+   "head": [
+    -0.5001,
+    -0.2885,
+    1.062
+   ],
+   "tail": [
+    -0.5003,
+    -0.3017,
+    1.0412
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4995,
+    -0.2218,
+    1.0925
+   ],
+   "tail": [
+    -0.505,
+    -0.2281,
+    1.0749
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": "pinky_01_r",
+   "deform": true,
+   "head": [
+    -0.505,
+    -0.2281,
+    1.0749
+   ],
+   "tail": [
+    -0.5067,
+    -0.233,
+    1.0616
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": "pinky_02_r",
+   "deform": true,
+   "head": [
+    -0.5067,
+    -0.233,
+    1.0616
+   ],
+   "tail": [
+    -0.509,
+    -0.2388,
+    1.0447
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4974,
+    -0.2396,
+    1.0996
+   ],
+   "tail": [
+    -0.5065,
+    -0.252,
+    1.077
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": "ring_01_r",
+   "deform": true,
+   "head": [
+    -0.5065,
+    -0.252,
+    1.077
+   ],
+   "tail": [
+    -0.5104,
+    -0.2629,
+    1.0577
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": "ring_02_r",
+   "deform": true,
+   "head": [
+    -0.5104,
+    -0.2629,
+    1.0577
+   ],
+   "tail": [
+    -0.5129,
+    -0.2726,
+    1.0355
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.452,
+    -0.2269,
+    1.1475
+   ],
+   "tail": [
+    -0.4333,
+    -0.2459,
+    1.1389
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": "thumb_01_r",
+   "deform": true,
+   "head": [
+    -0.4333,
+    -0.2459,
+    1.1389
+   ],
+   "tail": [
+    -0.4221,
+    -0.2738,
+    1.1251
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": "thumb_02_r",
+   "deform": true,
+   "head": [
+    -0.4221,
+    -0.2738,
+    1.1251
+   ],
+   "tail": [
+    -0.4169,
+    -0.2929,
+    1.109
+   ]
+  },
+  {
+   "name": "sword",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4553,
+    -0.0847,
+    1.3516
+   ],
+   "tail": [
+    -0.4553,
+    -0.0847,
+    1.0516
+   ]
+  },
+  {
+   "name": "tassel.0",
+   "parent": "sword",
+   "deform": true,
+   "head": [
+    -0.4212,
+    -0.0847,
+    1.228
+   ],
+   "tail": [
+    -0.4212,
+    -0.0847,
+    1.168
+   ]
+  },
+  {
+   "name": "tassel.1",
+   "parent": "tassel.0",
+   "deform": true,
+   "head": [
+    -0.4212,
+    -0.0847,
+    1.168
+   ],
+   "tail": [
+    -0.4212,
+    -0.0847,
+    1.068
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0047,
+    -0.005,
+    1.5684
+   ],
+   "tail": [
+    0.0047,
+    -0.0416,
+    1.6916
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck_01",
+   "deform": true,
+   "head": [
+    0.0047,
+    -0.0416,
+    1.6916
+   ],
+   "tail": [
+    0.0047,
+    -0.036,
+    1.8282
+   ]
+  },
+  {
+   "name": "cape.0.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.1511,
+    0.0553,
+    1.4871
+   ],
+   "tail": [
+    -0.1866,
+    0.0601,
+    1.185
+   ]
+  },
+  {
+   "name": "cape.0.1",
+   "parent": "cape.0.0",
+   "deform": true,
+   "head": [
+    -0.1866,
+    0.0601,
+    1.185
+   ],
+   "tail": [
+    -0.2455,
+    0.0652,
+    0.8866
+   ]
+  },
+  {
+   "name": "cape.0.2",
+   "parent": "cape.0.1",
+   "deform": true,
+   "head": [
+    -0.2455,
+    0.0652,
+    0.8866
+   ],
+   "tail": [
+    -0.3227,
+    0.0645,
+    0.5922
+   ]
+  },
+  {
+   "name": "cape.0.3",
+   "parent": "cape.0.2",
+   "deform": true,
+   "head": [
+    -0.3227,
+    0.0645,
+    0.5922
+   ],
+   "tail": [
+    -0.4158,
+    0.0535,
+    0.3028
+   ]
+  },
+  {
+   "name": "cape.1.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0374,
+    0.0481,
+    1.5657
+   ],
+   "tail": [
+    -0.0737,
+    0.1014,
+    1.2166
+   ]
+  },
+  {
+   "name": "cape.1.1",
+   "parent": "cape.1.0",
+   "deform": true,
+   "head": [
+    -0.0737,
+    0.1014,
+    1.2166
+   ],
+   "tail": [
+    -0.1243,
+    0.167,
+    0.8715
+   ]
+  },
+  {
+   "name": "cape.1.2",
+   "parent": "cape.1.1",
+   "deform": true,
+   "head": [
+    -0.1243,
+    0.167,
+    0.8715
+   ],
+   "tail": [
+    -0.1722,
+    0.2171,
+    0.5192
+   ]
+  },
+  {
+   "name": "cape.1.3",
+   "parent": "cape.1.2",
+   "deform": true,
+   "head": [
+    -0.1722,
+    0.2171,
+    0.5192
+   ],
+   "tail": [
+    -0.2326,
+    0.2732,
+    0.1697
+   ]
+  },
+  {
+   "name": "cape.2.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0027,
+    0.0414,
+    1.5981
+   ],
+   "tail": [
+    0.0005,
+    0.1036,
+    1.2705
+   ]
+  },
+  {
+   "name": "cape.2.1",
+   "parent": "cape.2.0",
+   "deform": true,
+   "head": [
+    0.0005,
+    0.1036,
+    1.2705
+   ],
+   "tail": [
+    -0.0022,
+    0.1725,
+    0.944
+   ]
+  },
+  {
+   "name": "cape.2.2",
+   "parent": "cape.2.1",
+   "deform": true,
+   "head": [
+    -0.0022,
+    0.1725,
+    0.944
+   ],
+   "tail": [
+    -0.005,
+    0.2364,
+    0.6151
+   ]
+  },
+  {
+   "name": "cape.2.3",
+   "parent": "cape.2.2",
+   "deform": true,
+   "head": [
+    -0.005,
+    0.2364,
+    0.6151
+   ],
+   "tail": [
+    -0.0084,
+    0.3079,
+    0.2878
+   ]
+  },
+  {
+   "name": "cape.3.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0468,
+    0.0481,
+    1.5657
+   ],
+   "tail": [
+    0.0816,
+    0.099,
+    1.2269
+   ]
+  },
+  {
+   "name": "cape.3.1",
+   "parent": "cape.3.0",
+   "deform": true,
+   "head": [
+    0.0816,
+    0.099,
+    1.2269
+   ],
+   "tail": [
+    0.1273,
+    0.1576,
+    0.8897
+   ]
+  },
+  {
+   "name": "cape.3.2",
+   "parent": "cape.3.1",
+   "deform": true,
+   "head": [
+    0.1273,
+    0.1576,
+    0.8897
+   ],
+   "tail": [
+    0.1665,
+    0.1968,
+    0.5455
+   ]
+  },
+  {
+   "name": "cape.3.3",
+   "parent": "cape.3.2",
+   "deform": true,
+   "head": [
+    0.1665,
+    0.1968,
+    0.5455
+   ],
+   "tail": [
+    0.2161,
+    0.241,
+    0.2033
+   ]
+  },
+  {
+   "name": "cape.4.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.1605,
+    0.0553,
+    1.4871
+   ],
+   "tail": [
+    0.1981,
+    0.061,
+    1.1487
+   ]
+  },
+  {
+   "name": "cape.4.1",
+   "parent": "cape.4.0",
+   "deform": true,
+   "head": [
+    0.1981,
+    0.061,
+    1.1487
+   ],
+   "tail": [
+    0.264,
+    0.0683,
+    0.8148
+   ]
+  },
+  {
+   "name": "cape.4.2",
+   "parent": "cape.4.1",
+   "deform": true,
+   "head": [
+    0.264,
+    0.0683,
+    0.8148
+   ],
+   "tail": [
+    0.3522,
+    0.0698,
+    0.4858
+   ]
+  },
+  {
+   "name": "cape.4.3",
+   "parent": "cape.4.2",
+   "deform": true,
+   "head": [
+    0.3522,
+    0.0698,
+    0.4858
+   ],
+   "tail": [
+    0.4582,
+    0.0594,
+    0.1624
+   ]
+  },
+  {
+   "name": "hair_back.C.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0051,
+    0.0436,
+    1.6623
+   ],
+   "tail": [
+    0.0058,
+    0.0952,
+    1.5031
+   ]
+  },
+  {
+   "name": "hair_back.C.1",
+   "parent": "hair_back.C.0",
+   "deform": true,
+   "head": [
+    0.0058,
+    0.0952,
+    1.5031
+   ],
+   "tail": [
+    -0.0073,
+    0.1164,
+    1.3269
+   ]
+  },
+  {
+   "name": "hair_back.C.2",
+   "parent": "hair_back.C.1",
+   "deform": true,
+   "head": [
+    -0.0073,
+    0.1164,
+    1.3269
+   ],
+   "tail": [
+    -0.0156,
+    0.1386,
+    1.1576
+   ]
+  },
+  {
+   "name": "hair_back.C.3",
+   "parent": "hair_back.C.2",
+   "deform": true,
+   "head": [
+    -0.0156,
+    0.1386,
+    1.1576
+   ],
+   "tail": [
+    0.0047,
+    0.1849,
+    1.0013
+   ]
+  },
+  {
+   "name": "hair_back.L.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0455,
+    0.0192,
+    1.649
+   ],
+   "tail": [
+    0.0704,
+    0.0899,
+    1.5209
+   ]
+  },
+  {
+   "name": "hair_back.L.1",
+   "parent": "hair_back.L.0",
+   "deform": true,
+   "head": [
+    0.0704,
+    0.0899,
+    1.5209
+   ],
+   "tail": [
+    0.1016,
+    0.1069,
+    1.372
+   ]
+  },
+  {
+   "name": "hair_back.L.2",
+   "parent": "hair_back.L.1",
+   "deform": true,
+   "head": [
+    0.1016,
+    0.1069,
+    1.372
+   ],
+   "tail": [
+    0.1182,
+    0.1124,
+    1.2195
+   ]
+  },
+  {
+   "name": "hair_back.L.3",
+   "parent": "hair_back.L.2",
+   "deform": true,
+   "head": [
+    0.1182,
+    0.1124,
+    1.2195
+   ],
+   "tail": [
+    0.1388,
+    0.1407,
+    1.0736
+   ]
+  },
+  {
+   "name": "hair_back.R.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0327,
+    0.019,
+    1.6475
+   ],
+   "tail": [
+    -0.0651,
+    0.0857,
+    1.519
+   ]
+  },
+  {
+   "name": "hair_back.R.1",
+   "parent": "hair_back.R.0",
+   "deform": true,
+   "head": [
+    -0.0651,
+    0.0857,
+    1.519
+   ],
+   "tail": [
+    -0.0931,
+    0.106,
+    1.3714
+   ]
+  },
+  {
+   "name": "hair_back.R.2",
+   "parent": "hair_back.R.1",
+   "deform": true,
+   "head": [
+    -0.0931,
+    0.106,
+    1.3714
+   ],
+   "tail": [
+    -0.1079,
+    0.1109,
+    1.2198
+   ]
+  },
+  {
+   "name": "hair_back.R.3",
+   "parent": "hair_back.R.2",
+   "deform": true,
+   "head": [
+    -0.1079,
+    0.1109,
+    1.2198
+   ],
+   "tail": [
+    -0.1264,
+    0.1376,
+    1.0721
+   ]
+  },
+  {
+   "name": "hair_front.L.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.1045,
+    -0.0223,
+    1.6559
+   ],
+   "tail": [
+    0.1376,
+    -0.0715,
+    1.5273
+   ]
+  },
+  {
+   "name": "hair_front.L.1",
+   "parent": "hair_front.L.0",
+   "deform": true,
+   "head": [
+    0.1376,
+    -0.0715,
+    1.5273
+   ],
+   "tail": [
+    0.1363,
+    -0.1398,
+    1.4014
+   ]
+  },
+  {
+   "name": "hair_front.L.2",
+   "parent": "hair_front.L.1",
+   "deform": true,
+   "head": [
+    0.1363,
+    -0.1398,
+    1.4014
+   ],
+   "tail": [
+    0.1304,
+    -0.1097,
+    1.2595
+   ]
+  },
+  {
+   "name": "hair_front.L.3",
+   "parent": "hair_front.L.2",
+   "deform": true,
+   "head": [
+    0.1304,
+    -0.1097,
+    1.2595
+   ],
+   "tail": [
+    0.1304,
+    -0.1181,
+    1.1133
+   ]
+  },
+  {
+   "name": "hair_front.R.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0972,
+    -0.0242,
+    1.6666
+   ],
+   "tail": [
+    -0.1295,
+    -0.0681,
+    1.5328
+   ]
+  },
+  {
+   "name": "hair_front.R.1",
+   "parent": "hair_front.R.0",
+   "deform": true,
+   "head": [
+    -0.1295,
+    -0.0681,
+    1.5328
+   ],
+   "tail": [
+    -0.1266,
+    -0.1333,
+    1.4023
+   ]
+  },
+  {
+   "name": "hair_front.R.2",
+   "parent": "hair_front.R.1",
+   "deform": true,
+   "head": [
+    -0.1266,
+    -0.1333,
+    1.4023
+   ],
+   "tail": [
+    -0.121,
+    -0.1098,
+    1.2555
+   ]
+  },
+  {
+   "name": "hair_front.R.3",
+   "parent": "hair_front.R.2",
+   "deform": true,
+   "head": [
+    -0.121,
+    -0.1098,
+    1.2555
+   ],
+   "tail": [
+    -0.121,
+    -0.118,
+    1.1133
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0975,
+    -0.0187,
+    1.0289
+   ],
+   "tail": [
+    0.1473,
+    -0.0502,
+    0.562
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": "thigh_l",
+   "deform": true,
+   "head": [
+    0.1473,
+    -0.0502,
+    0.562
+   ],
+   "tail": [
+    0.1768,
+    -0.0186,
+    0.1226
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "calf_l",
+   "deform": true,
+   "head": [
+    0.1768,
+    -0.0186,
+    0.1226
+   ],
+   "tail": [
+    0.181,
+    -0.0986,
+    0.0211
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": "foot_l",
+   "deform": true,
+   "head": [
+    0.181,
+    -0.0986,
+    0.0211
+   ],
+   "tail": [
+    0.1764,
+    -0.1633,
+    0.023
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.0881,
+    -0.0187,
+    1.0289
+   ],
+   "tail": [
+    -0.1379,
+    -0.0502,
+    0.562
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": "thigh_r",
+   "deform": true,
+   "head": [
+    -0.1379,
+    -0.0502,
+    0.562
+   ],
+   "tail": [
+    -0.1674,
+    -0.0186,
+    0.1226
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "calf_r",
+   "deform": true,
+   "head": [
+    -0.1674,
+    -0.0186,
+    0.1226
+   ],
+   "tail": [
+    -0.1716,
+    -0.0986,
+    0.0211
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": "foot_r",
+   "deform": true,
+   "head": [
+    -0.1716,
+    -0.0986,
+    0.0211
+   ],
+   "tail": [
+    -0.167,
+    -0.1633,
+    0.023
+   ]
+  }
+ ],
+ "bone_count": 96,
+ "deform_bone_count": 95,
+ "grip": {
+  "rule": "hammer grip: the handle runs along the right hand's knuckle line (index -> pinky), blade out of the pinky side, the edge along the knuckles; the sword bone is a child of hand_r and every clip keys it at the SAME hand-relative transform (grip_relation_max_dev); the REST pose stands the sword point-down beside the right hand (not in it: in-hand at the A-pose would push the bbox off-centre)",
+  "G_hand_to_sword_rest4": [
+   [
+    -0.175843,
+    -0.643047,
+    -0.745366,
+    -0.019603
+   ],
+   [
+    0.939775,
+    -0.335087,
+    0.06738,
+    0.049666
+   ],
+   [
+    -0.293091,
+    -0.688627,
+    0.663242,
+    0.006035
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "sword_roll_search": {
+   "idle": {
+    "roll_deg": 240,
+    "wrist_bend_deg_at_t0": 42.98
+   },
+   "walk": {
+    "roll_deg": 20,
+    "wrist_bend_deg_at_t0": 25.91
+   }
+  }
+ },
+ "digest": {
+  "parts": {
+   "bake_normal": "807bad8770cba6f1",
+   "bake_ao": "bf5ffe8bff103102",
+   "geometry_colour_uv": "ea43e6e33db65ee4",
+   "weights": "766877d8b8619247",
+   "keys": "54be149eb7040142",
+   "clip_samples": "b511275a14f180ac"
+  },
+  "combined": "4ee0cb4e1c9a9f91"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampwarrior.glb",
+  "bytes": 14661848,
+  "seconds": 1.8,
+  "carries": {
+   "materials": [
+    {
+     "name": "vampwarrior_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "vampwarrior_sword",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "vampwarrior",
+     "material": "vampwarrior_body",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "vampwarrior_sword",
+     "material": "vampwarrior_sword",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    }
+   ],
+   "nodes": 99,
+   "mesh_nodes": [
+    "vampwarrior",
+    "vampwarrior_sword"
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": [
+    96
+   ],
+   "extensionsUsed": [
+    "KHR_materials_emissive_strength"
+   ]
+  },
+  "structure": "armature + skinned 'vampwarrior' (body, opaque) + skinned 'vampwarrior_sword' (own node, bone 'sword'); natural scale (metres); report-only cell fit 0.96950"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampwarrior.blend",
+   "palette": {
+    "skin": {
+     "rgb": [
+      226,
+      220,
+      218
+     ]
+    },
+    "lips": {
+     "rgb": [
+      96,
+      22,
+      36
+     ]
+    },
+    "liner": {
+     "rgb": [
+      44,
+      20,
+      28
+     ]
+    },
+    "eye_sclera": {
+     "rgb": [
+      214,
+      206,
+      204
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      206,
+      24,
+      34
+     ],
+     "emission": [
+      255,
+      30,
+      40
+     ],
+     "emission_scale": 0.55
+    },
+    "eye_pupil": {
+     "rgb": [
+      34,
+      4,
+      8
+     ]
+    },
+    "fang": {
+     "rgb": [
+      246,
+      242,
+      232
+     ]
+    },
+    "hair": {
+     "rgb": [
+      236,
+      231,
+      218
+     ]
+    },
+    "hair_shade": {
+     "rgb": [
+      192,
+      188,
+      182
+     ]
+    },
+    "hair_part": {
+     "rgb": [
+      214,
+      206,
+      204
+     ]
+    },
+    "bodice": {
+     "rgb": [
+      30,
+      28,
+      33
+     ]
+    },
+    "trim": {
+     "rgb": [
+      186,
+      188,
+      196
+     ]
+    },
+    "gloves": {
+     "rgb": [
+      18,
+      17,
+      20
+     ]
+    },
+    "boots": {
+     "rgb": [
+      20,
+      19,
+      22
+     ]
+    },
+    "boot_sole": {
+     "rgb": [
+      12,
+      11,
+      12
+     ]
+    },
+    "heel": {
+     "rgb": [
+      14,
+      13,
+      15
+     ]
+    },
+    "knee_cop": {
+     "rgb": [
+      40,
+      39,
+      45
+     ]
+    },
+    "cuff": {
+     "rgb": [
+      172,
+      174,
+      182
+     ]
+    },
+    "fauld": {
+     "rgb": [
+      32,
+      30,
+      35
+     ]
+    },
+    "fauld_trim": {
+     "rgb": [
+      180,
+      182,
+      190
+     ]
+    },
+    "belt": {
+     "rgb": [
+      22,
+      20,
+      24
+     ]
+    },
+    "collar": {
+     "rgb": [
+      26,
+      24,
+      28
+     ]
+    },
+    "collar_trim": {
+     "rgb": [
+      186,
+      188,
+      196
+     ]
+    },
+    "gem": {
+     "rgb": [
+      150,
+      12,
+      28
+     ],
+     "emission": [
+      220,
+      20,
+      40
+     ],
+     "emission_scale": 0.18
+    },
+    "gem_setting": {
+     "rgb": [
+      186,
+      188,
+      196
+     ]
+    },
+    "cape_outer": {
+     "rgb": [
+      16,
+      15,
+      17
+     ]
+    },
+    "cape_lining": {
+     "rgb": [
+      104,
+      14,
+      24
+     ]
+    },
+    "blade": {
+     "rgb": [
+      228,
+      222,
+      206
+     ]
+    },
+    "blade_vein": {
+     "rgb": [
+      62,
+      26,
+      34
+     ]
+    },
+    "guard": {
+     "rgb": [
+      70,
+      18,
+      28
+     ]
+    },
+    "handle": {
+     "rgb": [
+      20,
+      18,
+      20
+     ]
+    },
+    "pommel": {
+     "rgb": [
+      70,
+      18,
+      28
+     ]
+    },
+    "tassel": {
+     "rgb": [
+      170,
+      20,
+      32
+     ]
+    },
+    "tassel_cord": {
+     "rgb": [
+      120,
+      14,
+      24
+     ]
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "eye_iris": 0.55,
+     "gem": 0.18
+    },
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "eye_iris": 357.3,
+     "gem": 354.0
+    },
+    "hue_pass": true
+   }
+  },
+  "dawn": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampwarrior__dawn.blend",
+   "palette": {
+    "skin": {
+     "rgb": [
+      226,
+      220,
+      218
+     ]
+    },
+    "lips": {
+     "rgb": [
+      96,
+      22,
+      36
+     ]
+    },
+    "liner": {
+     "rgb": [
+      44,
+      20,
+      28
+     ]
+    },
+    "eye_sclera": {
+     "rgb": [
+      214,
+      206,
+      204
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      206,
+      24,
+      34
+     ],
+     "emission": [
+      255,
+      30,
+      40
+     ],
+     "emission_scale": 0.55
+    },
+    "eye_pupil": {
+     "rgb": [
+      34,
+      4,
+      8
+     ]
+    },
+    "fang": {
+     "rgb": [
+      246,
+      242,
+      232
+     ]
+    },
+    "hair": {
+     "rgb": [
+      236,
+      231,
+      218
+     ]
+    },
+    "hair_shade": {
+     "rgb": [
+      192,
+      188,
+      182
+     ]
+    },
+    "hair_part": {
+     "rgb": [
+      214,
+      206,
+      204
+     ]
+    },
+    "bodice": {
+     "rgb": [
+      232,
+      226,
+      212
+     ]
+    },
+    "trim": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "gloves": {
+     "rgb": [
+      238,
+      234,
+      226
+     ]
+    },
+    "boots": {
+     "rgb": [
+      236,
+      232,
+      222
+     ]
+    },
+    "boot_sole": {
+     "rgb": [
+      150,
+      120,
+      60
+     ]
+    },
+    "heel": {
+     "rgb": [
+      190,
+      150,
+      64
+     ]
+    },
+    "knee_cop": {
+     "rgb": [
+      214,
+      176,
+      84
+     ]
+    },
+    "cuff": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "fauld": {
+     "rgb": [
+      228,
+      222,
+      208
+     ]
+    },
+    "fauld_trim": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "belt": {
+     "rgb": [
+      196,
+      156,
+      70
+     ]
+    },
+    "collar": {
+     "rgb": [
+      232,
+      226,
+      212
+     ]
+    },
+    "collar_trim": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "gem": {
+     "rgb": [
+      150,
+      12,
+      28
+     ],
+     "emission": [
+      220,
+      20,
+      40
+     ],
+     "emission_scale": 0.18
+    },
+    "gem_setting": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "cape_outer": {
+     "rgb": [
+      236,
+      232,
+      220
+     ]
+    },
+    "cape_lining": {
+     "rgb": [
+      200,
+      158,
+      66
+     ]
+    },
+    "blade": {
+     "rgb": [
+      196,
+      202,
+      212
+     ]
+    },
+    "blade_vein": {
+     "rgb": [
+      200,
+      160,
+      70
+     ]
+    },
+    "guard": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "handle": {
+     "rgb": [
+      226,
+      220,
+      206
+     ]
+    },
+    "pommel": {
+     "rgb": [
+      204,
+      164,
+      72
+     ]
+    },
+    "tassel": {
+     "rgb": [
+      214,
+      170,
+      64
+     ]
+    },
+    "tassel_cord": {
+     "rgb": [
+      170,
+      130,
+      50
+     ]
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vampwarrior\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vampwarrior\\dawn.json"
+   ],
+   "glow_tiers": {
+    "skin": "dawn",
+    "emission_scale_tiers": {
+     "eye_iris": 0.55,
+     "gem": 0.18
+    },
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "eye_iris": 357.3,
+     "gem": 354.0
+    },
+    "hue_pass": true
+   },
+   "region_faces": {
+    "vampwarrior": {
+     "skin": 7074,
+     "lips": 348,
+     "liner": 2246,
+     "eye_sclera": 160,
+     "eye_iris": 64,
+     "eye_pupil": 32,
+     "fang": 36,
+     "hair": 2916,
+     "hair_shade": 2758,
+     "hair_part": 88,
+     "bodice": 3520,
+     "trim": 950,
+     "gloves": 8120,
+     "boots": 3276,
+     "boot_sole": 128,
+     "heel": 32,
+     "knee_cop": 168,
+     "cuff": 380,
+     "fauld": 432,
+     "fauld_trim": 224,
+     "belt": 80,
+     "collar": 387,
+     "collar_trim": 139,
+     "gem": 40,
+     "gem_setting": 80,
+     "cape_outer": 1326,
+     "cape_lining": 1116
+    },
+    "vampwarrior_sword": {
+     "blade": 381,
+     "blade_vein": 380,
+     "guard": 32,
+     "handle": 140,
+     "pommel": 32,
+     "tassel": 168,
+     "tassel_cord": 62
+    }
+   },
+   "geometry_colour_uv_digest": "e9032ea45ae09e78"
+  },
+  "repaint_proof": {
+   "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
+   "default_digest_before": "ea43e6e33db65ee4",
+   "default_digest_after_restore": "ea43e6e33db65ee4"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampwarrior.json",
+ "seconds": 31.0
+}

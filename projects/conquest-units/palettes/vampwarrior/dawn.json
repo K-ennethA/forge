@@ -1,0 +1,31 @@
+{
+ "unit": "vampwarrior",
+ "skin": "dawn",
+ "extends": "default",
+ "description": "Swap proof ('dawn', lane pick): the dark queen inverted -- ivory coat, bodice and armour with GOLD trim, a gold cape lining, white boots / gloves, a SILVER blade with a gold vein and an ivory grip, gold tassel. Skin, hair and the red eyes / gem are unchanged (her identity stays). Geometry, regions and glow tiers identical; only colours change.",
+ "regions": {
+  "bodice":      {"rgb": [232, 226, 212]},
+  "trim":        {"rgb": [204, 164, 72]},
+  "gloves":      {"rgb": [238, 234, 226]},
+  "boots":       {"rgb": [236, 232, 222]},
+  "boot_sole":   {"rgb": [150, 120, 60]},
+  "heel":        {"rgb": [190, 150, 64]},
+  "knee_cop":    {"rgb": [214, 176, 84]},
+  "cuff":        {"rgb": [204, 164, 72]},
+  "fauld":       {"rgb": [228, 222, 208]},
+  "fauld_trim":  {"rgb": [204, 164, 72]},
+  "belt":        {"rgb": [196, 156, 70]},
+  "collar":      {"rgb": [232, 226, 212]},
+  "collar_trim": {"rgb": [204, 164, 72]},
+  "gem_setting": {"rgb": [204, 164, 72]},
+  "cape_outer":  {"rgb": [236, 232, 220]},
+  "cape_lining": {"rgb": [200, 158, 66]},
+  "blade":       {"rgb": [196, 202, 212], "note": "silver blade"},
+  "blade_vein":  {"rgb": [200, 160, 70]},
+  "guard":       {"rgb": [204, 164, 72]},
+  "handle":      {"rgb": [226, 220, 206]},
+  "pommel":      {"rgb": [204, 164, 72]},
+  "tassel":      {"rgb": [214, 170, 64]},
+  "tassel_cord": {"rgb": [170, 130, 50]}
+ }
+}

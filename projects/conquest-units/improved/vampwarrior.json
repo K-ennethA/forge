@@ -1,0 +1,739 @@
+{
+ "unit": "vampwarrior",
+ "conquest_character_id": "vampwarrior",
+ "name_status": "WORKING NAME (artist may rename)",
+ "source": "none: from the artist's three-view sheet (transcribed in design/review-log.md 2026-09-26)",
+ "tier": "hero",
+ "tri_budget": [
+  30000,
+  50000
+ ],
+ "units": "metres; floor z = 0 at the soles",
+ "overrides": {},
+ "mpfb": {
+  "macro": {
+   "gender": 0.0,
+   "age": 0.5,
+   "muscle": 0.58,
+   "weight": 0.36,
+   "proportions": 1.0,
+   "height": 0.75,
+   "cupsize": 0.55,
+   "firmness": 0.8,
+   "race": {
+    "caucasian": 0.9,
+    "asian": 0.05,
+    "african": 0.05
+   }
+  },
+  "targets": {
+   "legs/upperlegs-height-incr": 0.35,
+   "legs/lowerlegs-height-incr": 0.25,
+   "torso/measure-waist-circ-decr": 0.45,
+   "neck/measure-neck-height-incr": 0.35,
+   "head/head-oval": 0.45,
+   "cheek/l-cheek-bones-incr": 0.45,
+   "cheek/r-cheek-bones-incr": 0.45,
+   "cheek/l-cheek-volume-decr": 0.35,
+   "cheek/r-cheek-volume-decr": 0.35,
+   "eyebrows/eyebrows-angle-down": 0.55,
+   "eyes/l-eye-height2-decr": 0.25,
+   "eyes/r-eye-height2-decr": 0.25,
+   "chin/chin-prominent-incr": 0.25,
+   "nose/nose-point-width-decr": 0.3,
+   "mouth/mouth-angles-down": 0.2
+  },
+  "rig": "game_engine",
+  "mpfb_bones": 53,
+  "scale_to_body_h": 0.87787,
+  "body_h_barefoot": 1.78,
+  "heel_deg": 24.0,
+  "heel_lift": 0.0919,
+  "seconds": 0.8
+ },
+ "landmarks": {
+  "height_total": 1.8323,
+  "hip_z": 1.0289,
+  "knee_z": 0.562,
+  "shoulder_z": 1.4804,
+  "neck_z": 1.5684,
+  "head_joint_z": 1.6916,
+  "eye_L": [
+   0.0288,
+   -0.113,
+   1.7211
+  ],
+  "eye_r": 0.0157,
+  "mouth": [
+   0.0,
+   -0.0568,
+   1.6895
+  ],
+  "ankle_z": 0.1226,
+  "bust_z": 1.3752,
+  "waist_z": 1.2236,
+  "crotch_z": 0.9459,
+  "underbust_z": 1.3552,
+  "lip_line_z": 1.6495,
+  "lip_front_y": -0.1443,
+  "head_centre": [
+   0.0,
+   -0.0487,
+   1.7211
+  ],
+  "head_radii": [
+   0.0862,
+   0.0936,
+   0.1111
+  ]
+ },
+ "iso_cuts": {
+  "cuts": 21,
+  "edge_splits": 1195,
+  "seconds": 13.0,
+  "body_tris_after_cuts": 29146
+ },
+ "hidden_skin_removed": {
+  "scalp_faces": 1126,
+  "toe_faces": 2836,
+  "tris_removed": 3962
+ },
+ "centre_shift": [
+  -0.004708,
+  0.004669,
+  0.0
+ ],
+ "min_z_before_shift": 0.0,
+ "glow_tiers": {
+  "default": {
+   "skin": "default",
+   "emission_scale_tiers": {
+    "eye_iris": 0.55,
+    "gem": 0.18
+   },
+   "grade_pass": true,
+   "accent_hue_deg": {
+    "eye_iris": 357.3,
+    "gem": 354.0
+   },
+   "hue_pass": true
+  }
+ },
+ "regions_faces": {
+  "vampwarrior": {
+   "skin": 7074,
+   "lips": 348,
+   "liner": 2246,
+   "eye_sclera": 160,
+   "eye_iris": 64,
+   "eye_pupil": 32,
+   "fang": 36,
+   "hair": 2916,
+   "hair_shade": 2758,
+   "hair_part": 88,
+   "bodice": 3520,
+   "trim": 950,
+   "gloves": 8120,
+   "boots": 3276,
+   "boot_sole": 128,
+   "heel": 32,
+   "knee_cop": 168,
+   "cuff": 380,
+   "fauld": 432,
+   "fauld_trim": 224,
+   "belt": 80,
+   "collar": 387,
+   "collar_trim": 139,
+   "gem": 40,
+   "gem_setting": 80,
+   "cape_outer": 1326,
+   "cape_lining": 1116
+  },
+  "vampwarrior_sword": {
+   "blade": 381,
+   "blade_vein": 380,
+   "guard": 32,
+   "handle": 140,
+   "pommel": 32,
+   "tassel": 168,
+   "tassel_cord": 62
+  }
+ },
+ "regions_area_share": {
+  "skin": 0.0653,
+  "lips": 0.0004,
+  "liner": 0.0012,
+  "eye_sclera": 0.0009,
+  "eye_iris": 0.0001,
+  "eye_pupil": 0.0,
+  "fang": 0.0,
+  "hair": 0.119,
+  "hair_shade": 0.1068,
+  "hair_part": 0.0004,
+  "bodice": 0.0593,
+  "trim": 0.0082,
+  "gloves": 0.0345,
+  "boots": 0.0892,
+  "boot_sole": 0.0146,
+  "heel": 0.0036,
+  "knee_cop": 0.0109,
+  "cuff": 0.0094,
+  "fauld": 0.0436,
+  "fauld_trim": 0.0108,
+  "belt": 0.0095,
+  "collar": 0.0095,
+  "collar_trim": 0.0023,
+  "gem": 0.0002,
+  "gem_setting": 0.0002,
+  "cape_outer": 0.2043,
+  "cape_lining": 0.1958
+ },
+ "facing": {
+  "rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
+  "anchor": [
+   0.0047,
+   -0.0533,
+   1.7211
+  ],
+  "landmark": [
+   0.0047,
+   -0.1639,
+   1.6908
+  ],
+  "angle_from_minusY_deg": 0.0
+ },
+ "tris": {
+  "total": 46622,
+  "main": 44372,
+  "sword": 1874,
+  "body": 25184,
+  "hair_locks": 6480,
+  "eye.L": 224,
+  "eye.R": 224,
+  "fang.L": 24,
+  "fang.R": 24,
+  "toecap.L": 216,
+  "sole.L": 120,
+  "heel.L": 24,
+  "toecap.R": 216,
+  "sole.R": 120,
+  "heel.R": 24,
+  "kneecop.L": 168,
+  "kneecop.R": 168,
+  "bootcuff.L": 192,
+  "glovecuff.L": 160,
+  "bootcuff.R": 192,
+  "glovecuff.R": 160,
+  "fauld.0": 164,
+  "fauld.1": 164,
+  "fauld.2": 164,
+  "fauld.3": 164,
+  "fauld.4": 164,
+  "fauld.5": 164,
+  "fauld.6": 164,
+  "fauld.7": 164,
+  "belt": 320,
+  "buckle": 48,
+  "collar": 1052,
+  "gem": 64,
+  "gem_setting": 160,
+  "cape": 4884,
+  "hair_cap": 2612,
+  "tassel": 376
+ },
+ "tier_rationale": "HERO role (the artist's first humanoid hero): window [30000, 50000]. The MPFB body at native resolution (face, hands, fingers for the grip) + a real hair mass + a torn two-colour cape + armour + a serrated sword lands mid-window.",
+ "open_edges": {},
+ "open_edges_rule": "every part is a closed solid (listed here only if not); the body is the MPFB skin",
+ "measure": {
+  "bbox": [
+   [
+    -0.5268,
+    -0.323,
+    0.0
+   ],
+   [
+    0.5268,
+    0.323,
+    1.8566
+   ]
+  ],
+  "height": 1.8566,
+  "width_x": 1.0537,
+  "depth_y": 0.646,
+  "export_cell_fit_report_only": {
+   "scale": 0.9695,
+   "height_m": 1.8,
+   "footprint_m": 1.0215
+  }
+ },
+ "parts": {
+  "boots": {
+   "L": {
+    "heel_top_z": 0.0679,
+    "foot_len": 0.2076,
+    "ball_s": 0.08
+   },
+   "R": {
+    "heel_top_z": 0.0679,
+    "foot_len": 0.2076,
+    "ball_s": 0.08
+   }
+  },
+  "fauld": [
+   {
+    "azimuth": 0.0,
+    "width_deg": 34.0,
+    "length": 0.196
+   },
+   {
+    "azimuth": 42.0,
+    "width_deg": 30.0,
+    "length": 0.175
+   },
+   {
+    "azimuth": -42.0,
+    "width_deg": 30.0,
+    "length": 0.175
+   },
+   {
+    "azimuth": 82.0,
+    "width_deg": 30.0,
+    "length": 0.166
+   },
+   {
+    "azimuth": -82.0,
+    "width_deg": 30.0,
+    "length": 0.166
+   },
+   {
+    "azimuth": 130.0,
+    "width_deg": 36.0,
+    "length": 0.158
+   },
+   {
+    "azimuth": -130.0,
+    "width_deg": 36.0,
+    "length": 0.158
+   },
+   {
+    "azimuth": 180.0,
+    "width_deg": 36.0,
+    "length": 0.158
+   }
+  ],
+  "cape": {
+   "columns": 47,
+   "rows": 26,
+   "slits": 3,
+   "top_z_back": 1.5984,
+   "top_z_side": 1.4404,
+   "hem_z": 0.13,
+   "tear_m": [
+    0.2,
+    0.07
+   ]
+  },
+  "sword": {
+   "total_len": 1.5282,
+   "blade_len": 1.24,
+   "x_height": 0.834,
+   "rest_tip": [
+    -0.46,
+    -0.08,
+    0.0
+   ],
+   "rest_grip": [
+    -0.46,
+    -0.08,
+    1.3516
+   ]
+  },
+  "locks": {
+   "lock.front.L.0": {
+    "length": 0.883,
+    "tip_z": 1.12,
+    "leaves_head_at_m": 0.295,
+    "min_clear": 0.019
+   },
+   "lock.front.L.1": {
+    "length": 1.001,
+    "tip_z": 1.06,
+    "leaves_head_at_m": 0.347,
+    "min_clear": 0.0188
+   },
+   "lock.front.L.2": {
+    "length": 0.925,
+    "tip_z": 1.16,
+    "leaves_head_at_m": 0.241,
+    "min_clear": 0.0187
+   },
+   "lock.front.R.0": {
+    "length": 0.958,
+    "tip_z": 1.12,
+    "leaves_head_at_m": 0.326,
+    "min_clear": 0.019
+   },
+   "lock.front.R.1": {
+    "length": 1.052,
+    "tip_z": 1.06,
+    "leaves_head_at_m": 0.328,
+    "min_clear": 0.0011
+   },
+   "lock.front.R.2": {
+    "length": 0.87,
+    "tip_z": 1.16,
+    "leaves_head_at_m": 0.225,
+    "min_clear": 0.0184
+   },
+   "lock.back.0": {
+    "length": 0.847,
+    "tip_z": 1.12,
+    "leaves_head_at_m": 0.262,
+    "min_clear": 0.0189
+   },
+   "lock.back.1": {
+    "length": 0.924,
+    "tip_z": 1.032,
+    "leaves_head_at_m": 0.264,
+    "min_clear": 0.0189
+   },
+   "lock.back.2": {
+    "length": 0.888,
+    "tip_z": 1.054,
+    "leaves_head_at_m": 0.232,
+    "min_clear": 0.019
+   },
+   "lock.back.3": {
+    "length": 0.948,
+    "tip_z": 1.088,
+    "leaves_head_at_m": 0.29,
+    "min_clear": 0.0166
+   },
+   "lock.back.4": {
+    "length": 0.967,
+    "tip_z": 1.001,
+    "leaves_head_at_m": 0.242,
+    "min_clear": 0.0189
+   },
+   "lock.back.5": {
+    "length": 0.853,
+    "tip_z": 1.079,
+    "leaves_head_at_m": 0.244,
+    "min_clear": 0.019
+   },
+   "lock.back.6": {
+    "length": 0.876,
+    "tip_z": 1.077,
+    "leaves_head_at_m": 0.273,
+    "min_clear": 0.0189
+   },
+   "lock.back.7": {
+    "length": 0.972,
+    "tip_z": 1.018,
+    "leaves_head_at_m": 0.265,
+    "min_clear": 0.0148
+   },
+   "lock.back.8": {
+    "length": 0.87,
+    "tip_z": 1.115,
+    "leaves_head_at_m": 0.281,
+    "min_clear": 0.0189
+   }
+  }
+ },
+ "bake": {
+  "NORMAL": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 2.3
+  },
+  "AO": {
+   "result": [
+    "FINISHED"
+   ],
+   "seconds": 1.7
+  },
+  "cage_extrusion": 0.012,
+  "cage_rule": "12 mm: > 3 x the measured low-skin -> subdivided-high distance (p99 / max below) so every low texel finds its high surface",
+  "low_to_high_skin_m": {
+   "p99": 0.00211,
+   "max": 0.00564
+  },
+  "resolution": {
+   "normal": 2048,
+   "ao": 1024
+  },
+  "high_tris": 128462,
+  "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
+  "normal_baked_texels_pct": 85.93,
+  "normal_detail_fraction_dev_gt_0.05": 0.7447,
+  "ao_baked_texels_pct": 99.19,
+  "ao_mean": 0.442,
+  "ao_p05": 0.0,
+  "pixel_sha": {
+   "normal": "807bad8770cba6f1",
+   "ao": "bf5ffe8bff103102"
+  },
+  "seconds": 5.8
+ },
+ "digest_geometry_colour_uv": "ea43e6e33db65ee4",
+ "palette": {
+  "default": {
+   "skin": {
+    "rgb": [
+     226,
+     220,
+     218
+    ]
+   },
+   "lips": {
+    "rgb": [
+     96,
+     22,
+     36
+    ]
+   },
+   "liner": {
+    "rgb": [
+     44,
+     20,
+     28
+    ]
+   },
+   "eye_sclera": {
+    "rgb": [
+     214,
+     206,
+     204
+    ]
+   },
+   "eye_iris": {
+    "rgb": [
+     206,
+     24,
+     34
+    ],
+    "emission": [
+     255,
+     30,
+     40
+    ],
+    "emission_scale": 0.55
+   },
+   "eye_pupil": {
+    "rgb": [
+     34,
+     4,
+     8
+    ]
+   },
+   "fang": {
+    "rgb": [
+     246,
+     242,
+     232
+    ]
+   },
+   "hair": {
+    "rgb": [
+     236,
+     231,
+     218
+    ]
+   },
+   "hair_shade": {
+    "rgb": [
+     192,
+     188,
+     182
+    ]
+   },
+   "hair_part": {
+    "rgb": [
+     214,
+     206,
+     204
+    ]
+   },
+   "bodice": {
+    "rgb": [
+     30,
+     28,
+     33
+    ]
+   },
+   "trim": {
+    "rgb": [
+     186,
+     188,
+     196
+    ]
+   },
+   "gloves": {
+    "rgb": [
+     18,
+     17,
+     20
+    ]
+   },
+   "boots": {
+    "rgb": [
+     20,
+     19,
+     22
+    ]
+   },
+   "boot_sole": {
+    "rgb": [
+     12,
+     11,
+     12
+    ]
+   },
+   "heel": {
+    "rgb": [
+     14,
+     13,
+     15
+    ]
+   },
+   "knee_cop": {
+    "rgb": [
+     40,
+     39,
+     45
+    ]
+   },
+   "cuff": {
+    "rgb": [
+     172,
+     174,
+     182
+    ]
+   },
+   "fauld": {
+    "rgb": [
+     32,
+     30,
+     35
+    ]
+   },
+   "fauld_trim": {
+    "rgb": [
+     180,
+     182,
+     190
+    ]
+   },
+   "belt": {
+    "rgb": [
+     22,
+     20,
+     24
+    ]
+   },
+   "collar": {
+    "rgb": [
+     26,
+     24,
+     28
+    ]
+   },
+   "collar_trim": {
+    "rgb": [
+     186,
+     188,
+     196
+    ]
+   },
+   "gem": {
+    "rgb": [
+     150,
+     12,
+     28
+    ],
+    "emission": [
+     220,
+     20,
+     40
+    ],
+    "emission_scale": 0.18
+   },
+   "gem_setting": {
+    "rgb": [
+     186,
+     188,
+     196
+    ]
+   },
+   "cape_outer": {
+    "rgb": [
+     16,
+     15,
+     17
+    ]
+   },
+   "cape_lining": {
+    "rgb": [
+     104,
+     14,
+     24
+    ]
+   },
+   "blade": {
+    "rgb": [
+     228,
+     222,
+     206
+    ]
+   },
+   "blade_vein": {
+    "rgb": [
+     62,
+     26,
+     34
+    ]
+   },
+   "guard": {
+    "rgb": [
+     70,
+     18,
+     28
+    ]
+   },
+   "handle": {
+    "rgb": [
+     20,
+     18,
+     20
+    ]
+   },
+   "pommel": {
+    "rgb": [
+     70,
+     18,
+     28
+    ]
+   },
+   "tassel": {
+    "rgb": [
+     170,
+     20,
+     32
+    ]
+   },
+   "tassel_cord": {
+    "rgb": [
+     120,
+     14,
+     24
+    ]
+   }
+  },
+  "files": [
+   "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\vampwarrior\\default.json"
+  ],
+  "provenance": "authored from the sheet's palette chips (bone-white, pale grey, near-black, dark red, deep maroon, black)"
+ }
+}
