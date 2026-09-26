@@ -308,3 +308,11 @@ maw so it reads as the devouring mouth. (5) the maw must be CLOSED from
 behind - no seeing through the body; back walls like a real mouth.
 Reference identity: shadowy figure/monster (Aku, Samurai Jack; Father,
 Codename: Kids Next Door).
+
+## 2026-09-25 — Duskmaw v2 addendum
+
+Artist: "another reference for duskmaw is darkrai inspiration" — add Darkrai
+(Pokemon) to the reference set: white smoke/hair plume, single visible cyan
+eye vibe, tattered wraith body dissolving at the base, red spike collar.
+Reference set is now Aku + Father (KND) + Darkrai: crisp dark silhouette,
+minimal sharp face, body trailing into shadow at the ground.
