@@ -50,12 +50,12 @@
     {
      "mesh": "geode",
      "layers": 1,
-     "islands": 365,
+     "islands": 362,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 27% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.5773,
-     "area_distortion_p95": 1.165
+     "overlap_note": "summed UV area is 29% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.549,
+     "area_distortion_p95": 1.164
     }
    ]
   },

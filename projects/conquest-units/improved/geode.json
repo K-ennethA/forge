@@ -150,7 +150,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 0,
-   "seconds": 1.18,
+   "seconds": 1.08,
    "tris": 2452,
    "signed_volume": 115.773,
    "volume_ratio_vs_source": 0.9962,
@@ -328,7 +328,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 3,
-   "seconds": 0.09,
+   "seconds": 0.08,
    "tris": 470,
    "signed_volume": 13.721,
    "volume_ratio_vs_source": 0.9687,
@@ -375,7 +375,7 @@
     "tiny_tris_after_weld": 0
    },
    "nonmanifold_edges_final": 10,
-   "seconds": 0.1,
+   "seconds": 0.11,
    "tris": 512,
    "signed_volume": 8.385,
    "volume_ratio_vs_source": 0.9698,
@@ -481,55 +481,99 @@
   "gaps": [
    {
     "gap": "torso|head",
-    "nearest_gap": 1.9039,
+    "anchor": "neck",
+    "nearest_gap": 2.6978,
+    "anchor_a": [
+     0.972,
+     -0.696,
+     16.884
+    ],
+    "anchor_b": [
+     0.596,
+     -0.878,
+     19.272
+    ],
     "strands": [
      {
-      "surface_gap": 1.9722,
-      "length_with_sink": 2.3322,
-      "jag_amp": 0.3731
+      "surface_gap": 2.3826,
+      "length_with_sink": 2.7426,
+      "jag_amp": 0.42
      },
      {
-      "surface_gap": 1.9769,
-      "length_with_sink": 2.3369,
-      "jag_amp": 0.3739
+      "surface_gap": 2.4132,
+      "length_with_sink": 2.7732,
+      "jag_amp": 0.42
      }
     ]
    },
    {
     "gap": "torso|arm.L",
-    "nearest_gap": 0.9691,
+    "anchor": "shoulder",
+    "nearest_gap": 1.5694,
+    "anchor_a": [
+     4.481,
+     -1.2,
+     16.951
+    ],
+    "anchor_b": [
+     5.371,
+     -0.612,
+     15.837
+    ],
     "strands": [
      {
-      "surface_gap": 1.0072,
-      "length_with_sink": 1.3672,
-      "jag_amp": 0.2187
+      "surface_gap": 1.7102,
+      "length_with_sink": 2.0702,
+      "jag_amp": 0.3312
      },
      {
-      "surface_gap": 1.2622,
-      "length_with_sink": 1.6222,
-      "jag_amp": 0.2596
+      "surface_gap": 1.5953,
+      "length_with_sink": 1.9553,
+      "jag_amp": 0.3129
      }
     ]
    },
    {
     "gap": "torso|arm.R",
-    "nearest_gap": 1.071,
+    "anchor": "shoulder",
+    "nearest_gap": 1.6875,
+    "anchor_a": [
+     -5.043,
+     -0.554,
+     17.232
+    ],
+    "anchor_b": [
+     -5.371,
+     -0.288,
+     15.837
+    ],
     "strands": [
      {
-      "surface_gap": 1.256,
-      "length_with_sink": 1.616,
-      "jag_amp": 0.2586
+      "surface_gap": 1.4999,
+      "length_with_sink": 1.8599,
+      "jag_amp": 0.2976
      },
      {
-      "surface_gap": 1.1065,
-      "length_with_sink": 1.4665,
-      "jag_amp": 0.2346
+      "surface_gap": 1.4785,
+      "length_with_sink": 1.8385,
+      "jag_amp": 0.2942
      }
     ]
    },
    {
     "gap": "torso|core",
+    "anchor": null,
     "nearest_gap": 0.3454,
+    "anchor_a": [
+     -0.247,
+     -0.351,
+     10.183
+    ],
+    "anchor_b": [
+     0.015,
+     -0.401,
+     9.965
+    ],
     "strands": [
      {
       "surface_gap": 0.394,
@@ -545,7 +589,18 @@
    },
    {
     "gap": "core|leg.L",
+    "anchor": null,
     "nearest_gap": 2.4248,
+    "anchor_a": [
+     0.405,
+     -0.403,
+     7.502
+    ],
+    "anchor_b": [
+     2.592,
+     -0.429,
+     6.456
+    ],
     "strands": [
      {
       "surface_gap": 2.4427,
@@ -561,7 +616,18 @@
    },
    {
     "gap": "core|leg.R",
+    "anchor": null,
     "nearest_gap": 2.5067,
+    "anchor_a": [
+     -0.314,
+     -0.497,
+     7.502
+    ],
+    "anchor_b": [
+     -2.592,
+     -0.471,
+     6.456
+    ],
     "strands": [
      {
       "surface_gap": 2.6549,
@@ -606,7 +672,7 @@
   "faces": 5704,
   "zero_area_faces": 0,
   "flipped_faces": 0,
-  "uv_sha": "2b0982b3e82c1a4b"
+  "uv_sha": "5205d24c48309dbd"
  },
  "inner_rule": {
   "rule": "facet centroid deeper than INNER_DEPTH x part diagonal below the part's convex hull",
@@ -721,7 +787,7 @@
   ],
   "angle_from_minusY_deg": 0.07
  },
- "digest_geometry_colour": "06c35ad61244fcdb",
+ "digest_geometry_colour": "d0284e8875a94222",
  "final_bbox": [
   [
    -8.9239,

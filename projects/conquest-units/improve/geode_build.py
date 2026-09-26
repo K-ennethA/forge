@@ -85,8 +85,14 @@ CELL_MAX_H, CELL_MAX_FP = 1.8, 1.9                  # Conquest hero ceilings -- 
 # Artist: "geode walks and its limbs are connected statically, maybe have some elecriticty wiring them together, so it
 # walks pretty normally, can floatish". Scale note: 1 sculpt unit ~= 7.5 cm in game (shipped height 1.8 m / 24.04).
 # ---- electricity arcs (thin jagged glowing strands bridging each gap between the static parts)
-ARC_GAPS = [("torso", "head"), ("torso", "arm.L"), ("torso", "arm.R"), ("torso", "core"),
-            ("core", "leg.L"), ("core", "leg.R")]   # "which gaps get arcs" (legs hang below the core: 2.4 vs 4.4 to the torso)
+ARC_GAPS = [("torso", "head", "neck"), ("torso", "arm.L", "shoulder"), ("torso", "arm.R", "shoulder"),
+            ("torso", "core"), ("core", "leg.L"), ("core", "leg.R")]
+#            "which gaps get arcs" (legs hang below the core: 2.4 vs 4.4 to the torso). Optional 3rd field = anchor
+#            mode (artist 2026-09-25): "neck" = the head arc goes straight down like a neck (plumb anchor pair);
+#            "shoulder" = the torso end attaches up in the shoulder band instead of the horizontal nearest pair.
+ARC_NECK_PLUMB_W = 8.0                              # "how strictly vertical the neck arc is" (horizontal-offset weight)
+ARC_SHOULDER_FRAC = 0.80                            # "how high on the torso the arm arcs attach" (0 = torso bottom, 1 = top)
+ARC_SHOULDER_W = 2.0                                # "how strongly the arm arcs snap to that height"
 ARC_STRANDS = 2                                     # "arc count per gap" (strands)
 ARC_SEGMENTS = 8                                    # "arc kinks": segments per strand (tris per strand = 6 x this + 2)
 ARC_JAG = 0.16                                      # "jag amplitude": lightning wander, fraction of the strand length ...
@@ -823,9 +829,16 @@ ARC_VV = [[] for _ in range(ARC_VARIANTS)]          # per variant slot (0 = basi
 ARC_F, ARC_W, ARC_GAP_OF_V = [], [], []             # faces (local idx), (partA, partB, s) per vertex, gap per vertex
 arc_rep = []
 nb_ = 0
-for gi, (pa, pb) in enumerate(ARC_GAPS):
+for gi, gap in enumerate(ARC_GAPS):
+    pa, pb = gap[0], gap[1]
+    anchor_mode = gap[2] if len(gap) > 2 else None
     A, B = PART_V[pa], PART_V[pb]
     d2 = ((A[:, None, :] - B[None, :, :]) ** 2).sum(-1)
+    if anchor_mode == "neck":
+        d2 = d2 + ((A[:, None, :2] - B[None, :, :2]) ** 2).sum(-1) * ARC_NECK_PLUMB_W
+    elif anchor_mode == "shoulder":
+        z_t = A[:, 2].min() + ARC_SHOULDER_FRAC * (A[:, 2].max() - A[:, 2].min())
+        d2 = d2 + (((A[:, 2] - z_t) * ARC_SHOULDER_W) ** 2)[:, None]
     ia, ib = np.unravel_index(int(np.argmin(d2)), d2.shape)
     a0, b0 = A[ia], B[ib]
     dn0 = (b0 - a0) / np.linalg.norm(b0 - a0)
@@ -850,7 +863,9 @@ for gi, (pa, pb) in enumerate(ARC_GAPS):
         nb_ += 3 * (ARC_SEGMENTS + 1)
         strands.append({"surface_gap": round(float(np.linalg.norm(b - a)), 4), "length_with_sink": round(float(np.linalg.norm(be - ae)), 4),
                         "jag_amp": round(min(ARC_JAG * float(np.linalg.norm(be - ae)), ARC_JAG_MAX), 4)})
-    arc_rep.append({"gap": pa + "|" + pb, "nearest_gap": round(float(np.sqrt(d2[ia, ib])), 4), "strands": strands})
+    arc_rep.append({"gap": pa + "|" + pb, "anchor": anchor_mode, "nearest_gap": round(float(np.sqrt(d2[ia, ib])), 4),
+                    "anchor_a": [round(float(v), 3) for v in a0], "anchor_b": [round(float(v), 3) for v in b0],
+                    "strands": strands})
 ARC_VV = [np.vstack(v) for v in ARC_VV]
 ARC_F = np.array(ARC_F, dtype=np.int64)
 n_arc_tris = len(ARC_F)

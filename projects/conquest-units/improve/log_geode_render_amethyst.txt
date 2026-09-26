@@ -1,8 +1,8 @@
-00:01.468  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode__amethyst.blend"
-00:03.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_front.png'
-00:03.968  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_threequarter.png'
-00:04.171  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_tactical.png'
-00:04.578  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_arcs_closeup.png'
+00:01.406  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\geode__amethyst.blend"
+00:03.172  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_front.png'
+00:03.516  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_threequarter.png'
+00:03.687  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_tactical.png'
+00:04.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_arcs_closeup.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\geode\geode_v2_amethyst_tactical.png
