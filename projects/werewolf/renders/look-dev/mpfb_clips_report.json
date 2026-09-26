@@ -1,0 +1,5191 @@
+{
+ "blend_in": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\werewolf\\models\\mpfb-clips-draft.blend",
+ "fps": 24,
+ "game_scale": 0.929615,
+ "contract_height_m": 1.75,
+ "clips": {
+  "walk-loop": {
+   "role": "walk",
+   "source": "cmu_08_01.bvh",
+   "source_sha256_16": "9b65a1090d56b121",
+   "retarget": {
+    "scale": 0.067146,
+    "mapping": "cmu",
+    "mapped_count": 20,
+    "unmapped": [
+     "LHipJoint",
+     "RHipJoint",
+     "LowerBack",
+     "Spine",
+     "Neck1",
+     "LeftFingerBase",
+     "LeftHandIndex1",
+     "LThumb",
+     "RightFingerBase",
+     "RightHandIndex1",
+     "RThumb"
+    ],
+    "loop_window": {
+     "window_frames": [
+      11,
+      35
+     ],
+     "window_s": [
+      0.4167,
+      1.4167
+     ],
+     "length_frames": 24,
+     "length_s": 1.0,
+     "seam_cost_deg": 3.1473,
+     "windows_tried": 946
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 1.9199,
+     "travel_direction": [
+      -0.005,
+      -1.0,
+      0.0
+     ],
+     "travel_along_forward": 1.0,
+     "removed_m": 1.9199
+    },
+    "heading": {
+     "mode": "auto",
+     "used": "travel",
+     "yaw_deg": -0.038,
+     "source_travel_m": 4.3641
+    },
+    "hip_lowering": {
+     "max_mm": 59.34,
+     "mean_mm": 25.88,
+     "frames": 56,
+     "after_seam": {
+      "max_mm": 7.55,
+      "mean_mm": 2.05,
+      "frames": 20
+     }
+    },
+    "resampled": {
+     "source_fps": 120.0005,
+     "source_frames": 277,
+     "output_fps": 24.0,
+     "output_frames": 25
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 12,
+      "used": true,
+      "foot": {
+       "tilt_deg": 25.84,
+       "toe_out_deg": 3.56
+      },
+      "toe": {
+       "tilt_deg": 25.54,
+       "toe_out_deg": 3.78
+      }
+     },
+     "R": {
+      "frames": 18,
+      "used": true,
+      "foot": {
+       "tilt_deg": 30.46,
+       "toe_out_deg": 11.85
+      },
+      "toe": {
+       "tilt_deg": 32.57,
+       "toe_out_deg": 11.19
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 8.3031,
+     "worst_bone": "toe_ik.R",
+     "worst_mm": 19.7583
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.805,
+     "worst_rotation_bone": "toe_ik.L",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 25,
+   "seconds_long": 1.0,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "attention",
+    "motion_quality_gate": "ok",
+    "treadmill_mps": 1.9199,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9803,
+    "ik_reach_verdict": "attention",
+    "gait_opposition": "attention",
+    "strike_lead": "attention",
+    "motion_quality": {
+     "trunk_to_leg_speed_ratio": [
+      0.2557,
+      0.07,
+      "ok"
+     ],
+     "trunk_pitch_std_deg": [
+      0.6941,
+      0.3,
+      "ok"
+     ],
+     "head_pitch_std_deg": [
+      1.5652,
+      0.35,
+      "ok"
+     ]
+    }
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.2557,
+    "trunk_pitch_std_deg": 0.6941,
+    "head_pitch_std_deg": 1.5652,
+    "step_interval_mean_s": 0.5
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.055,
+     "where": "ball_l.head",
+     "frame": 24
+    },
+    "upper": {
+     "worst_mm": 4.124,
+     "where": "hand_r.head",
+     "frame": 6
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 22.8,
+      "max": 72.5,
+      "mean": 41.5
+     },
+     "thigh_swing_deg": {
+      "min": -18.6,
+      "max": 33.6,
+      "amplitude": 52.2
+     },
+     "hip_joint_rotation_deg": {
+      "min": -22.9,
+      "max": 29.2,
+      "amplitude": 52.0
+     },
+     "hip_joint_fore_aft_travel_mm": 62.6
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 23.7,
+      "max": 70.3,
+      "mean": 37.5
+     },
+     "thigh_swing_deg": {
+      "min": -18.7,
+      "max": 36.6,
+      "amplitude": 55.3
+     },
+     "hip_joint_rotation_deg": {
+      "min": -23.0,
+      "max": 32.0,
+      "amplitude": 55.0
+     },
+     "hip_joint_fore_aft_travel_mm": 55.0
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -10.5,
+     "max": -1.7,
+     "max_rise_above_rest": 7.3
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -16.3,
+     "max": -7.5,
+     "max_rise_above_rest": 1.6
+    }
+   },
+   "seam_flesh": {
+    "worst_mm": 0.0007,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.035,
+    "drop_m": 0.069,
+    "pelvis_min_z_m": 0.918
+   },
+   "speed": {
+    "natural_rig_mps": 1.9199,
+    "in_game_mps": 1.7848,
+    "treadmill_rig_mps": 1.9199,
+    "agreement": 0.0,
+    "band": [
+     0.25,
+     3.0
+    ]
+   },
+   "belt_slide": {
+    "l": {
+     "plants": 1,
+     "planted_steps": 9,
+     "worst_plant_drift_mm": 3.63,
+     "worst_step_mm": 0.404
+    },
+    "r": {
+     "plants": 1,
+     "planted_steps": 10,
+     "worst_plant_drift_mm": 4.033,
+     "worst_step_mm": 0.404
+    },
+    "worst_mm": 4.033,
+    "belt_mps": 1.9199
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 92.66,
+     "strain_p99_pct": 39.54,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 7,
+      "strain_p99_pct": 7,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 139.71,
+     "strain_p99_pct": 52.5,
+     "flipped_faces": 14,
+     "at_frame": {
+      "strain_max_pct": 6,
+      "strain_p99_pct": 3,
+      "flipped_faces": 24
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 66.42,
+     "strain_p99_pct": 50.31,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 20,
+      "strain_p99_pct": 18,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 287.05,
+     "strain_p99_pct": 50.99,
+     "flipped_faces": 9,
+     "at_frame": {
+      "strain_max_pct": 19,
+      "strain_p99_pct": 13,
+      "flipped_faces": 12
+     }
+    },
+    "sleeve_skin": {
+     "outside": 24,
+     "worst_mm": 26.83,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 13
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 11,
+     "worst_mm": 9.1,
+     "at_frame": {
+      "outside": 11,
+      "worst_mm": 15
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 25
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 3.9
+  },
+  "run-loop": {
+   "role": "run",
+   "source": "cmu_16_46.bvh",
+   "source_sha256_16": "37cce0530fd47c1a",
+   "retarget": {
+    "scale": 0.064174,
+    "mapping": "cmu",
+    "mapped_count": 20,
+    "unmapped": [
+     "LHipJoint",
+     "RHipJoint",
+     "LowerBack",
+     "Spine",
+     "Neck1",
+     "LeftFingerBase",
+     "LeftHandIndex1",
+     "LThumb",
+     "RightFingerBase",
+     "RightHandIndex1",
+     "RThumb"
+    ],
+    "loop_window": {
+     "window_frames": [
+      10,
+      26
+     ],
+     "window_s": [
+      0.375,
+      1.0417
+     ],
+     "length_frames": 16,
+     "length_s": 0.6667,
+     "seam_cost_deg": 7.5787,
+     "windows_tried": 105
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 4.6917,
+     "travel_direction": [
+      -0.0011,
+      -1.0,
+      0.0
+     ],
+     "travel_along_forward": 1.0,
+     "removed_m": 3.1278
+    },
+    "heading": {
+     "mode": "auto",
+     "used": "travel",
+     "yaw_deg": 0.869,
+     "source_travel_m": 5.1247
+    },
+    "hip_lowering": {
+     "max_mm": 56.51,
+     "mean_mm": 30.22,
+     "frames": 27,
+     "after_seam": {
+      "max_mm": 36.56,
+      "mean_mm": 15.48,
+      "frames": 17
+     }
+    },
+    "resampled": {
+     "source_fps": 120.0005,
+     "source_frames": 136,
+     "output_fps": 24.0,
+     "output_frames": 17
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 3,
+      "used": true,
+      "foot": {
+       "tilt_deg": 28.25,
+       "toe_out_deg": 3.67
+      },
+      "toe": {
+       "tilt_deg": 25.69,
+       "toe_out_deg": 357.68
+      }
+     },
+     "R": {
+      "frames": 7,
+      "used": true,
+      "foot": {
+       "tilt_deg": 26.98,
+       "toe_out_deg": 17.81
+      },
+      "toe": {
+       "tilt_deg": 24.22,
+       "toe_out_deg": 343.67
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 17.6069,
+     "worst_bone": "toe_ik.R",
+     "worst_mm": 59.6774
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.0685,
+     "worst_rotation_bone": "torso",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 17,
+   "seconds_long": 0.667,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "attention",
+    "motion_quality_gate": "ok",
+    "treadmill_mps": 4.6917,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.98,
+    "ik_reach_verdict": "attention",
+    "gait_opposition": "ok",
+    "strike_lead": "attention",
+    "motion_quality": {
+     "trunk_to_leg_speed_ratio": [
+      0.198,
+      0.07,
+      "ok"
+     ],
+     "trunk_pitch_std_deg": [
+      0.8695,
+      0.3,
+      "ok"
+     ],
+     "head_pitch_std_deg": [
+      0.7913,
+      0.35,
+      "ok"
+     ]
+    }
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.198,
+    "trunk_pitch_std_deg": 0.8695,
+    "head_pitch_std_deg": 0.7913,
+    "step_interval_mean_s": 0.3333
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.097,
+     "where": "ball_l.head",
+     "frame": 15
+    },
+    "upper": {
+     "worst_mm": 3.734,
+     "where": "lowerarm_l.tail",
+     "frame": 16
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 23.5,
+      "max": 107.9,
+      "mean": 57.8
+     },
+     "thigh_swing_deg": {
+      "min": -25.7,
+      "max": 43.0,
+      "amplitude": 68.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": -36.1,
+      "max": 34.2,
+      "amplitude": 70.3
+     },
+     "hip_joint_fore_aft_travel_mm": 65.1
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 23.0,
+      "max": 103.7,
+      "mean": 53.5
+     },
+     "thigh_swing_deg": {
+      "min": -31.4,
+      "max": 36.2,
+      "amplitude": 67.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": -40.3,
+      "max": 26.3,
+      "amplitude": 66.6
+     },
+     "hip_joint_fore_aft_travel_mm": 60.7
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -4.7,
+     "max": 0.2,
+     "max_rise_above_rest": 9.3
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -17.4,
+     "max": -12.1,
+     "max_rise_above_rest": -3.0
+    }
+   },
+   "seam_flesh": {
+    "worst_mm": 0.0007,
+    "mesh": "Protagonist.eyebrow001"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.029,
+    "drop_m": 0.033,
+    "pelvis_min_z_m": 0.892
+   },
+   "speed": {
+    "natural_rig_mps": 4.6917,
+    "in_game_mps": 4.3615,
+    "treadmill_rig_mps": 4.6917,
+    "agreement": 0.0,
+    "band": [
+     3.0,
+     6.5
+    ]
+   },
+   "belt_slide": {
+    "l": {
+     "plants": 1,
+     "planted_steps": 2,
+     "worst_plant_drift_mm": 0.445,
+     "worst_step_mm": 0.223
+    },
+    "r": {
+     "plants": 1,
+     "planted_steps": 3,
+     "worst_plant_drift_mm": 0.667,
+     "worst_step_mm": 0.223
+    },
+    "worst_mm": 0.667,
+    "belt_mps": 4.6917
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 81.23,
+     "strain_p99_pct": 41.57,
+     "flipped_faces": 2,
+     "at_frame": {
+      "strain_max_pct": 1,
+      "strain_p99_pct": 14,
+      "flipped_faces": 6
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 247.41,
+     "strain_p99_pct": 62.88,
+     "flipped_faces": 14,
+     "at_frame": {
+      "strain_max_pct": 10,
+      "strain_p99_pct": 9,
+      "flipped_faces": 6
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 63.9,
+     "strain_p99_pct": 49.67,
+     "flipped_faces": 2,
+     "at_frame": {
+      "strain_max_pct": 10,
+      "strain_p99_pct": 10,
+      "flipped_faces": 6
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 345.02,
+     "strain_p99_pct": 78.04,
+     "flipped_faces": 27,
+     "at_frame": {
+      "strain_max_pct": 10,
+      "strain_p99_pct": 10,
+      "flipped_faces": 8
+     }
+    },
+    "sleeve_skin": {
+     "outside": 142,
+     "worst_mm": 25.0,
+     "at_frame": {
+      "outside": 9,
+      "worst_mm": 16
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 15,
+     "worst_mm": 11.58,
+     "at_frame": {
+      "outside": 12,
+      "worst_mm": 14
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 17
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 2.8
+  },
+  "sprint-loop": {
+   "role": "sprint",
+   "source": "mixamo:sprint-forward.fbx",
+   "source_sha256_16": "faf0c784fb1b0fe8",
+   "lock_min_samples": 2,
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": {
+     "window_frames": [
+      1,
+      13
+     ],
+     "window_s": [
+      0.0,
+      0.5
+     ],
+     "length_frames": 12,
+     "length_s": 0.5,
+     "seam_cost_deg": 0.0579,
+     "windows_tried": 1
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 7.7615,
+     "travel_direction": [
+      0.0,
+      -1.0,
+      0.0
+     ],
+     "travel_along_forward": 1.0,
+     "removed_m": 3.8808
+    },
+    "heading": {
+     "mode": "auto",
+     "used": "travel",
+     "yaw_deg": 0.0,
+     "source_travel_m": 3.8808
+    },
+    "hip_lowering": {
+     "max_mm": 10.19,
+     "mean_mm": 4.1,
+     "frames": 9,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 16,
+     "output_fps": 24.0,
+     "output_frames": 13
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 3,
+      "used": true,
+      "foot": {
+       "tilt_deg": 2.88,
+       "toe_out_deg": 341.89
+      },
+      "toe": {
+       "tilt_deg": 4.01,
+       "toe_out_deg": 342.74
+      }
+     },
+     "R": {
+      "frames": 4,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.99,
+       "toe_out_deg": 339.42
+      },
+      "toe": {
+       "tilt_deg": 1.07,
+       "toe_out_deg": 19.09
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 0.056,
+     "worst_bone": "head",
+     "worst_mm": 9.5675
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "shoulder.R",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 13,
+   "seconds_long": 0.5,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 32.61,
+    "deformation_gate": "fail",
+    "motion_quality_gate": "ok",
+    "treadmill_mps": 7.5023,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9799,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": "fail",
+    "strike_lead": "attention",
+    "motion_quality": {
+     "trunk_to_leg_speed_ratio": [
+      0.3481,
+      0.07,
+      "ok"
+     ],
+     "trunk_pitch_std_deg": [
+      1.5679,
+      0.3,
+      "ok"
+     ],
+     "head_pitch_std_deg": [
+      2.8836,
+      0.35,
+      "ok"
+     ]
+    }
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.3481,
+    "trunk_pitch_std_deg": 1.5679,
+    "head_pitch_std_deg": 2.8836,
+    "step_interval_mean_s": 0.25
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.054,
+     "where": "ball_r.head",
+     "frame": 5
+    },
+    "upper": {
+     "worst_mm": 10.038,
+     "where": "hand_r.head",
+     "frame": 6
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 23.0,
+      "max": 116.2,
+      "mean": 68.7
+     },
+     "thigh_swing_deg": {
+      "min": -39.8,
+      "max": 53.1,
+      "amplitude": 92.8
+     },
+     "hip_joint_rotation_deg": {
+      "min": -72.4,
+      "max": 20.7,
+      "amplitude": 93.0
+     },
+     "hip_joint_fore_aft_travel_mm": 30.6
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 31.1,
+      "max": 117.3,
+      "mean": 67.7
+     },
+     "thigh_swing_deg": {
+      "min": -29.6,
+      "max": 56.5,
+      "amplitude": 86.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": -62.9,
+      "max": 25.4,
+      "amplitude": 88.3
+     },
+     "hip_joint_fore_aft_travel_mm": 75.7
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -29.2,
+     "max": 2.5,
+     "max_rise_above_rest": 11.5
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -25.5,
+     "max": 11.5,
+     "max_rise_above_rest": 20.6
+    }
+   },
+   "seam_flesh": {
+    "worst_mm": 0.0007,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.069,
+    "drop_m": 0.008,
+    "pelvis_min_z_m": 0.865
+   },
+   "speed": {
+    "natural_rig_mps": 7.7615,
+    "in_game_mps": 7.2152,
+    "treadmill_rig_mps": 7.5023,
+    "agreement": 0.0334,
+    "band": [
+     6.5,
+     99.0
+    ]
+   },
+   "belt_slide": {
+    "l": {
+     "plants": 1,
+     "planted_steps": 2,
+     "worst_plant_drift_mm": 0.028,
+     "worst_step_mm": 0.014
+    },
+    "r": {
+     "plants": 1,
+     "planted_steps": 2,
+     "worst_plant_drift_mm": 0.014,
+     "worst_step_mm": 0.01
+    },
+    "worst_mm": 0.028,
+    "belt_mps": 7.7615
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 65.8,
+     "strain_p99_pct": 42.9,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 3,
+      "strain_p99_pct": 4,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 199.04,
+     "strain_p99_pct": 91.14,
+     "flipped_faces": 3,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 3,
+      "flipped_faces": 8
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 72.66,
+     "strain_p99_pct": 39.34,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 3,
+      "strain_p99_pct": 4,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 392.44,
+     "strain_p99_pct": 95.1,
+     "flipped_faces": 18,
+     "at_frame": {
+      "strain_max_pct": 3,
+      "strain_p99_pct": 1,
+      "flipped_faces": 9
+     }
+    },
+    "sleeve_skin": {
+     "outside": 82,
+     "worst_mm": 27.73,
+     "at_frame": {
+      "outside": 2,
+      "worst_mm": 3
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 3,
+     "worst_mm": 8.38,
+     "at_frame": {
+      "outside": 4,
+      "worst_mm": 2
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 13
+   },
+   "arm_lines_vs_take_deg": 0.83,
+   "ready": true,
+   "failed": [],
+   "seconds": 3.0
+  },
+  "crouch_walk-loop": {
+   "role": "crouch_walk",
+   "source": "s100_Crouched_FW.bvh",
+   "source_sha256_16": "4152fbade855ddc6",
+   "retarget": {
+    "scale": 0.010933,
+    "mapping": "100style",
+    "mapped_count": 20,
+    "unmapped": [
+     "Chest",
+     "Chest2",
+     "Chest3"
+    ],
+    "loop_window": {
+     "window_frames": [
+      49,
+      77
+     ],
+     "window_s": [
+      2.0,
+      3.1667
+     ],
+     "length_frames": 28,
+     "length_s": 1.1667,
+     "seam_cost_deg": 4.1242,
+     "windows_tried": 4278
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 0.7634,
+     "travel_direction": [
+      0.0188,
+      -0.9998,
+      0.0
+     ],
+     "travel_along_forward": 0.9998,
+     "removed_m": 0.8907
+    },
+    "heading": {
+     "mode": "auto",
+     "used": "travel",
+     "yaw_deg": 5.572,
+     "source_travel_m": 3.2696
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 15.85,
+      "mean_mm": 3.71,
+      "frames": 13
+     }
+    },
+    "resampled": {
+     "source_fps": 59.9988,
+     "source_frames": 261,
+     "output_fps": 24.0,
+     "output_frames": 29
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 45,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.39,
+       "toe_out_deg": 19.42
+      },
+      "toe": {
+       "tilt_deg": 1.34,
+       "toe_out_deg": 19.42
+      }
+     },
+     "R": {
+      "frames": 44,
+      "used": true,
+      "foot": {
+       "tilt_deg": 2.19,
+       "toe_out_deg": 13.09
+      },
+      "toe": {
+       "tilt_deg": 2.22,
+       "toe_out_deg": 13.09
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 7.918,
+     "worst_bone": "foot_ik.L",
+     "worst_mm": 79.0024
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.3449,
+     "worst_rotation_bone": "foot_ik.R",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 29,
+   "seconds_long": 1.167,
+   "crouch_depth_layer": {
+    "knee_flex_before_deg": 36.1,
+    "knee_flex_after_deg": 74.9,
+    "target_deg": 75.0,
+    "hips_lowered_mm": 157.3
+   },
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.87,
+    "deformation_gate": "ok",
+    "motion_quality_gate": "ok",
+    "treadmill_mps": 0.7615,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.8374,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": "unmeasured",
+    "strike_lead": "ok",
+    "motion_quality": {
+     "trunk_to_leg_speed_ratio": [
+      0.1117,
+      0.07,
+      "ok"
+     ],
+     "trunk_pitch_std_deg": [
+      1.3746,
+      0.3,
+      "ok"
+     ],
+     "head_pitch_std_deg": [
+      1.3987,
+      0.35,
+      "ok"
+     ]
+    }
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.1117,
+    "trunk_pitch_std_deg": 1.3746,
+    "head_pitch_std_deg": 1.3987,
+    "step_interval_mean_s": 0.5833
+   },
+   "arm_abduction_take_deg": {
+    "l": {
+     "min": 6.6,
+     "max": 10.5,
+     "mean": 8.1
+    },
+    "r": {
+     "min": 5.5,
+     "max": 7.2,
+     "mean": 6.4
+    }
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.084,
+     "where": "ball_r.tail",
+     "frame": 11
+    },
+    "upper": {
+     "worst_mm": 7.782,
+     "where": "clavicle_l.tail",
+     "frame": 8
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 66.3,
+      "max": 92.7,
+      "mean": 78.8
+     },
+     "thigh_swing_deg": {
+      "min": 37.0,
+      "max": 65.0,
+      "amplitude": 28.1
+     },
+     "hip_joint_rotation_deg": {
+      "min": 3.8,
+      "max": 31.4,
+      "amplitude": 27.7
+     },
+     "hip_joint_fore_aft_travel_mm": 39.3
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 71.1,
+      "max": 93.0,
+      "mean": 82.6
+     },
+     "thigh_swing_deg": {
+      "min": 27.4,
+      "max": 59.4,
+      "amplitude": 32.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": -3.2,
+      "max": 25.0,
+      "amplitude": 28.2
+     },
+     "hip_joint_fore_aft_travel_mm": 44.1
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -14.5,
+     "max": -7.8,
+     "max_rise_above_rest": 1.3
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -17.0,
+     "max": -11.8,
+     "max_rise_above_rest": -2.8
+    }
+   },
+   "arm_abduction_deg": {
+    "l": {
+     "min": 36.5,
+     "max": 40.3,
+     "mean": 38.0
+    },
+    "r": {
+     "min": 35.8,
+     "max": 37.8,
+     "mean": 37.1
+    }
+   },
+   "arm_flare_layer_deg": 32.0,
+   "seam_flesh": {
+    "worst_mm": 0.0005,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.092,
+    "drop_m": 0.041,
+    "pelvis_min_z_m": 0.768
+   },
+   "speed": {
+    "natural_rig_mps": 0.7634,
+    "in_game_mps": 0.7097,
+    "treadmill_rig_mps": 0.7615,
+    "agreement": 0.0025,
+    "band": [
+     0.25,
+     3.0
+    ]
+   },
+   "belt_slide": {
+    "l": {
+     "plants": 1,
+     "planted_steps": 14,
+     "worst_plant_drift_mm": 9.689,
+     "worst_step_mm": 5.171
+    },
+    "r": {
+     "plants": 1,
+     "planted_steps": 15,
+     "worst_plant_drift_mm": 9.175,
+     "worst_step_mm": 1.271
+    },
+    "worst_mm": 9.689,
+    "belt_mps": 0.7634
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 37.69,
+     "strain_p99_pct": 24.21,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 85.72,
+     "strain_p99_pct": 48.37,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 10,
+      "flipped_faces": 1
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 39.47,
+     "strain_p99_pct": 22.92,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 10,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 220.57,
+     "strain_p99_pct": 48.73,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 11,
+      "flipped_faces": 1
+     }
+    },
+    "sleeve_skin": {
+     "outside": 6,
+     "worst_mm": 2.03,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 12
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 29
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 4.6
+  },
+  "crouch_idle-loop": {
+   "role": "crouch_idle",
+   "source": "s100_Crouched_ID.bvh",
+   "source_sha256_16": "2dba87af12951b14",
+   "retarget": {
+    "scale": 0.010933,
+    "mapping": "100style",
+    "mapped_count": 20,
+    "unmapped": [
+     "Chest",
+     "Chest2",
+     "Chest3"
+    ],
+    "loop_window": {
+     "window_frames": [
+      75,
+      128
+     ],
+     "window_s": [
+      3.0833,
+      5.2917
+     ],
+     "length_frames": 53,
+     "length_s": 2.2083,
+     "seam_cost_deg": 0.6664,
+     "windows_tried": 11388
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 0.0065,
+     "travel_direction": [
+      -0.2569,
+      0.9664,
+      0.0
+     ],
+     "travel_along_forward": -0.9664,
+     "removed_m": 0.0144
+    },
+    "heading": {
+     "mode": "auto",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0046
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 59.9988,
+     "source_frames": 601,
+     "output_fps": 24.0,
+     "output_frames": 54
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 48,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.19,
+       "toe_out_deg": 0.57
+      },
+      "toe": {
+       "tilt_deg": 0.19,
+       "toe_out_deg": 0.57
+      }
+     },
+     "R": {
+      "frames": 76,
+      "used": true,
+      "foot": {
+       "tilt_deg": 2.64,
+       "toe_out_deg": 16.03
+      },
+      "toe": {
+       "tilt_deg": 2.64,
+       "toe_out_deg": 16.03
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 1.3763,
+     "worst_bone": "chest",
+     "worst_mm": 14.4406
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.6876,
+     "worst_rotation_bone": "chest",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 54,
+   "seconds_long": 2.208,
+   "crouch_depth_layer": {
+    "knee_flex_before_deg": 54.9,
+    "knee_flex_after_deg": 74.5,
+    "target_deg": 75.0,
+    "hips_lowered_mm": 89.2
+   },
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.8028,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": "fail",
+    "strike_lead": "unmeasured"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 1.0296,
+    "trunk_pitch_std_deg": 0.6512,
+    "head_pitch_std_deg": 0.2882,
+    "step_interval_mean_s": 1.1042
+   },
+   "arm_abduction_take_deg": {
+    "l": {
+     "min": 2.1,
+     "max": 3.1,
+     "mean": 2.6
+    },
+    "r": {
+     "min": 3.1,
+     "max": 4.1,
+     "mean": 3.6
+    }
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.039,
+     "where": "ball_r.head",
+     "frame": 48
+    },
+    "upper": {
+     "worst_mm": 6.42,
+     "where": "clavicle_r.head",
+     "frame": 40
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 73.5,
+      "max": 75.1,
+      "mean": 74.6
+     },
+     "thigh_swing_deg": {
+      "min": 50.2,
+      "max": 50.7,
+      "amplitude": 0.5
+     },
+     "hip_joint_rotation_deg": {
+      "min": 24.2,
+      "max": 26.8,
+      "amplitude": 2.6
+     },
+     "hip_joint_fore_aft_travel_mm": 13.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 73.2,
+      "max": 75.2,
+      "mean": 74.6
+     },
+     "thigh_swing_deg": {
+      "min": 49.9,
+      "max": 50.9,
+      "amplitude": 1.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": 24.1,
+      "max": 26.4,
+      "amplitude": 2.3
+     },
+     "hip_joint_fore_aft_travel_mm": 20.3
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -15.6,
+     "max": -14.9,
+     "max_rise_above_rest": -5.9
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -16.5,
+     "max": -15.1,
+     "max_rise_above_rest": -6.0
+    }
+   },
+   "arm_abduction_deg": {
+    "l": {
+     "min": 34.8,
+     "max": 35.7,
+     "mean": 35.2
+    },
+    "r": {
+     "min": 37.1,
+     "max": 38.1,
+     "mean": 37.7
+    }
+   },
+   "arm_flare_layer_deg": 32.0,
+   "seam_flesh": {
+    "worst_mm": 0.0006,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.017,
+    "drop_m": 0.001,
+    "pelvis_min_z_m": 0.814
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 54.75,
+     "strain_p99_pct": 38.21,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 43,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 97.61,
+     "strain_p99_pct": 59.86,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 39,
+      "strain_p99_pct": 45,
+      "flipped_faces": 1
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 44.99,
+     "strain_p99_pct": 31.26,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 39,
+      "strain_p99_pct": 39,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 237.87,
+     "strain_p99_pct": 70.98,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 39,
+      "strain_p99_pct": 27,
+      "flipped_faces": 1
+     }
+    },
+    "sleeve_skin": {
+     "outside": 6,
+     "worst_mm": 2.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 27
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 28
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 5.0
+  },
+  "attack_3": {
+   "role": "attack_3",
+   "source": "mixamo:punch-combo.fbx",
+   "source_sha256_16": "a55eaadd92f94228",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.0135,
+     "travel_direction": [
+      -0.9938,
+      -0.1116,
+      0.0
+     ],
+     "travel_along_forward": 0.1116
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.002
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 67,
+     "output_fps": 24.0,
+     "output_frames": 53
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.58,
+       "toe_out_deg": 318.11
+      },
+      "toe": {
+       "tilt_deg": 0.0,
+       "toe_out_deg": 41.89
+      }
+     },
+     "R": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 7.09,
+       "toe_out_deg": 284.23
+      },
+      "toe": {
+       "tilt_deg": 6.82,
+       "toe_out_deg": 75.69
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.0396,
+     "worst_rotation_bone": "neck",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 53,
+   "seconds_long": 2.167,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9204,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": "fail",
+    "strike_lead": "fail"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 1.6223,
+    "trunk_pitch_std_deg": 1.1992,
+    "head_pitch_std_deg": 1.1975,
+    "step_interval_mean_s": 0.6667
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.06,
+     "where": "ball_r.head",
+     "frame": 6
+    },
+    "upper": {
+     "worst_mm": 4.391,
+     "where": "spine_03.head",
+     "frame": 10
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 60.7,
+      "max": 67.9,
+      "mean": 63.1
+     },
+     "thigh_swing_deg": {
+      "min": 7.5,
+      "max": 31.0,
+      "amplitude": 23.5
+     },
+     "hip_joint_rotation_deg": {
+      "min": 4.0,
+      "max": 24.9,
+      "amplitude": 20.9
+     },
+     "hip_joint_fore_aft_travel_mm": 180.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 46.0,
+      "max": 63.4,
+      "mean": 55.5
+     },
+     "thigh_swing_deg": {
+      "min": -6.9,
+      "max": 10.1,
+      "amplitude": 17.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": -11.7,
+      "max": 6.1,
+      "amplitude": 17.8
+     },
+     "hip_joint_fore_aft_travel_mm": 167.1
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -17.6,
+     "max": 12.8,
+     "max_rise_above_rest": 21.9
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -19.3,
+     "max": 12.7,
+     "max_rise_above_rest": 21.7
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.002,
+    "max_from_start": 0.15,
+    "drop_m": 0.012,
+    "pelvis_min_z_m": 0.854
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 130.5,
+     "strain_p99_pct": 64.38,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 33,
+      "strain_p99_pct": 15,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 573.02,
+     "strain_p99_pct": 230.7,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 33,
+      "strain_p99_pct": 27,
+      "flipped_faces": 33
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 104.21,
+     "strain_p99_pct": 67.53,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 27,
+      "strain_p99_pct": 23,
+      "flipped_faces": 15
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 922.58,
+     "strain_p99_pct": 126.87,
+     "flipped_faces": 17,
+     "at_frame": {
+      "strain_max_pct": 33,
+      "strain_p99_pct": 25,
+      "flipped_faces": 1
+     }
+    },
+    "sleeve_skin": {
+     "outside": 99,
+     "worst_mm": 15.9,
+     "at_frame": {
+      "outside": 41,
+      "worst_mm": 17
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 2,
+     "worst_mm": 7.03,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 53
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 27
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 0.99,
+    "rig_gate_mm": 0.0,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "r": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "worst_added_mm": 0.0
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 7.8
+  },
+  "heavy": {
+   "role": "heavy",
+   "source": "mixamo:hook-punch-heavy.fbx",
+   "source_sha256_16": "8dd1286ceed7b0dd",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.0409,
+     "travel_direction": [
+      0.0626,
+      -0.998,
+      0.0
+     ],
+     "travel_along_forward": 0.998
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 66,
+     "output_fps": 24.0,
+     "output_frames": 53
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.51,
+       "toe_out_deg": 318.77
+      },
+      "toe": {
+       "tilt_deg": 1.51,
+       "toe_out_deg": 41.23
+      }
+     },
+     "R": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.0,
+       "toe_out_deg": 290.23
+      },
+      "toe": {
+       "tilt_deg": 0.14,
+       "toe_out_deg": 69.77
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "shoulder.R",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 53,
+   "seconds_long": 2.167,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9528,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": "fail"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.4674,
+    "trunk_pitch_std_deg": 5.5051,
+    "head_pitch_std_deg": 5.9391,
+    "step_interval_mean_s": 0.375
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.059,
+     "where": "ball_l.tail",
+     "frame": 19
+    },
+    "upper": {
+     "worst_mm": 1.937,
+     "where": "lowerarm_l.tail",
+     "frame": 15
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 35.3,
+      "max": 79.0,
+      "mean": 51.6
+     },
+     "thigh_swing_deg": {
+      "min": -6.8,
+      "max": 35.6,
+      "amplitude": 42.4
+     },
+     "hip_joint_rotation_deg": {
+      "min": -5.9,
+      "max": 18.9,
+      "amplitude": 24.8
+     },
+     "hip_joint_fore_aft_travel_mm": 122.1
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 37.9,
+      "max": 74.9,
+      "mean": 49.4
+     },
+     "thigh_swing_deg": {
+      "min": -21.5,
+      "max": 11.1,
+      "amplitude": 32.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": -35.0,
+      "max": 0.9,
+      "amplitude": 35.9
+     },
+     "hip_joint_fore_aft_travel_mm": 338.3
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -18.1,
+     "max": 10.0,
+     "max_rise_above_rest": 19.0
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -19.7,
+     "max": -2.2,
+     "max_rise_above_rest": 6.8
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.19,
+    "drop_m": 0.116,
+    "pelvis_min_z_m": 0.799
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 133.29,
+     "strain_p99_pct": 59.25,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 21,
+      "strain_p99_pct": 5,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 330.01,
+     "strain_p99_pct": 124.99,
+     "flipped_faces": 4,
+     "at_frame": {
+      "strain_max_pct": 27,
+      "strain_p99_pct": 27,
+      "flipped_faces": 17
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 112.93,
+     "strain_p99_pct": 63.25,
+     "flipped_faces": 1,
+     "at_frame": {
+      "strain_max_pct": 21,
+      "strain_p99_pct": 5,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 563.8,
+     "strain_p99_pct": 85.32,
+     "flipped_faces": 20,
+     "at_frame": {
+      "strain_max_pct": 27,
+      "strain_p99_pct": 27,
+      "flipped_faces": 1
+     }
+    },
+    "sleeve_skin": {
+     "outside": 117,
+     "worst_mm": 17.43,
+     "at_frame": {
+      "outside": 11,
+      "worst_mm": 21
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 10,
+     "worst_mm": 9.27,
+     "at_frame": {
+      "outside": 23,
+      "worst_mm": 23
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 27
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 2.58,
+    "rig_gate_mm": 0.0,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "r": {
+      "worst_added_mm": 0.24,
+      "frames": [
+       38,
+       53
+      ]
+     },
+     "worst_added_mm": 0.24
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 8.0
+  },
+  "counter": {
+   "role": "counter",
+   "source": "mixamo:center-block-counter.fbx",
+   "source_sha256_16": "1480c868e0b732d2",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.0505,
+     "travel_direction": [
+      0.7944,
+      0.6074,
+      0.0
+     ],
+     "travel_along_forward": -0.6074
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.005
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 49,
+     "output_fps": 24.0,
+     "output_frames": 39
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.58,
+       "toe_out_deg": 314.71
+      },
+      "toe": {
+       "tilt_deg": 0.0,
+       "toe_out_deg": 45.29
+      }
+     },
+     "R": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 6.23,
+       "toe_out_deg": 279.55
+      },
+      "toe": {
+       "tilt_deg": 6.23,
+       "toe_out_deg": 80.45
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "torso",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 39,
+   "seconds_long": 1.583,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "ok",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.921,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": null
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 1.1762,
+    "trunk_pitch_std_deg": 14.2543,
+    "head_pitch_std_deg": 23.9265,
+    "step_interval_mean_s": null
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.057,
+     "where": "ball_r.head",
+     "frame": 6
+    },
+    "upper": {
+     "worst_mm": 10.6,
+     "where": "lowerarm_l.tail",
+     "frame": 28
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 45.8,
+      "max": 62.0,
+      "mean": 54.7
+     },
+     "thigh_swing_deg": {
+      "min": 24.7,
+      "max": 35.3,
+      "amplitude": 10.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": 14.9,
+      "max": 59.4,
+      "amplitude": 44.4
+     },
+     "hip_joint_fore_aft_travel_mm": 106.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 48.0,
+      "max": 63.0,
+      "mean": 56.0
+     },
+     "thigh_swing_deg": {
+      "min": 1.4,
+      "max": 11.7,
+      "amplitude": 10.2
+     },
+     "hip_joint_rotation_deg": {
+      "min": -4.7,
+      "max": 33.4,
+      "amplitude": 38.1
+     },
+     "hip_joint_fore_aft_travel_mm": 119.8
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -21.7,
+     "max": 6.0,
+     "max_rise_above_rest": 15.0
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -32.7,
+     "max": -1.2,
+     "max_rise_above_rest": 7.9
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.005,
+    "max_from_start": 0.135,
+    "drop_m": 0.004,
+    "pelvis_min_z_m": 0.862
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 106.95,
+     "strain_p99_pct": 68.77,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 7,
+      "strain_p99_pct": 5,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 287.47,
+     "strain_p99_pct": 150.43,
+     "flipped_faces": 4,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 30,
+      "flipped_faces": 9
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 98.8,
+     "strain_p99_pct": 65.78,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 5,
+      "strain_p99_pct": 13,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 580.92,
+     "strain_p99_pct": 97.29,
+     "flipped_faces": 26,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 30,
+      "flipped_faces": 8
+     }
+    },
+    "sleeve_skin": {
+     "outside": 117,
+     "worst_mm": 15.63,
+     "at_frame": {
+      "outside": 16,
+      "worst_mm": 22
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 7,
+     "worst_mm": 7.16,
+     "at_frame": {
+      "outside": 13,
+      "worst_mm": 9
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 39
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 0.23,
+    "rig_gate_mm": 0.0,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "r": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "worst_added_mm": 0.0
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 7.4
+  },
+  "dodge": {
+   "role": "dodge",
+   "source": "mixamo:dodging-back.fbx",
+   "source_sha256_16": "99c30053ba845f61",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 1.2269,
+     "travel_direction": [
+      0.01,
+      1.0,
+      0.0
+     ],
+     "travel_along_forward": -1.0
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 2.4991
+    },
+    "hip_lowering": {
+     "max_mm": 12.77,
+     "mean_mm": 1.0,
+     "frames": 18,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 81,
+     "output_fps": 24.0,
+     "output_frames": 65
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 4,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.31,
+       "toe_out_deg": 1.54
+      },
+      "toe": {
+       "tilt_deg": 0.92,
+       "toe_out_deg": 358.22
+      }
+     },
+     "R": {
+      "frames": 5,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.88,
+       "toe_out_deg": 339.37
+      },
+      "toe": {
+       "tilt_deg": 0.14,
+       "toe_out_deg": 20.94
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "forearm_fk.R",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 65,
+   "seconds_long": 2.667,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 632.94,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.98,
+    "ik_reach_verdict": "attention",
+    "gait_opposition": "fail",
+    "strike_lead": "fail"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.284,
+    "trunk_pitch_std_deg": 15.6433,
+    "head_pitch_std_deg": 9.32,
+    "step_interval_mean_s": 0.2778
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.104,
+     "where": "ball_r.head",
+     "frame": 28
+    },
+    "upper": {
+     "worst_mm": 14.725,
+     "where": "hand_l.head",
+     "frame": 13
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 23.0,
+      "max": 92.5,
+      "mean": 47.5
+     },
+     "thigh_swing_deg": {
+      "min": 6.6,
+      "max": 60.0,
+      "amplitude": 53.5
+     },
+     "hip_joint_rotation_deg": {
+      "min": -45.1,
+      "max": 57.2,
+      "amplitude": 102.4
+     },
+     "hip_joint_fore_aft_travel_mm": 2500.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 36.9,
+      "max": 111.1,
+      "mean": 59.4
+     },
+     "thigh_swing_deg": {
+      "min": 5.3,
+      "max": 82.4,
+      "amplitude": 77.1
+     },
+     "hip_joint_rotation_deg": {
+      "min": -24.1,
+      "max": 92.9,
+      "amplitude": 117.1
+     },
+     "hip_joint_fore_aft_travel_mm": 2502.1
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -38.1,
+     "max": 30.1,
+     "max_rise_above_rest": 39.1
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -26.6,
+     "max": 19.1,
+     "max_rise_above_rest": 28.2
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 2.499,
+    "max_from_start": 2.5,
+    "drop_m": 0.189,
+    "pelvis_min_z_m": 0.775
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 151.03,
+     "strain_p99_pct": 52.69,
+     "flipped_faces": 2,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 25,
+      "flipped_faces": 23
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 446.43,
+     "strain_p99_pct": 192.32,
+     "flipped_faces": 8,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 29,
+      "flipped_faces": 31
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 115.86,
+     "strain_p99_pct": 56.58,
+     "flipped_faces": 2,
+     "at_frame": {
+      "strain_max_pct": 29,
+      "strain_p99_pct": 25,
+      "flipped_faces": 25
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 704.64,
+     "strain_p99_pct": 126.97,
+     "flipped_faces": 7,
+     "at_frame": {
+      "strain_max_pct": 31,
+      "strain_p99_pct": 29,
+      "flipped_faces": 31
+     }
+    },
+    "sleeve_skin": {
+     "outside": 23,
+     "worst_mm": 22.43,
+     "at_frame": {
+      "outside": 11,
+      "worst_mm": 13
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 7,
+     "worst_mm": 9.1,
+     "at_frame": {
+      "outside": 31,
+      "worst_mm": 9
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 33
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 594.91,
+    "rig_gate_mm": 632.94,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.23,
+      "frames": [
+       10,
+       16
+      ]
+     },
+     "r": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "worst_added_mm": 0.23
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 11.7
+  },
+  "hit": {
+   "role": "hit",
+   "source": "mixamo:hit-head.fbx",
+   "source_sha256_16": "fc2b8e45d5005cde",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.0747,
+     "travel_direction": [
+      0.5871,
+      0.8095,
+      0.0
+     ],
+     "travel_along_forward": -0.8095
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0005
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 47,
+     "output_fps": 24.0,
+     "output_frames": 37
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 4,
+      "used": true,
+      "foot": {
+       "tilt_deg": 1.84,
+       "toe_out_deg": 314.73
+      },
+      "toe": {
+       "tilt_deg": 0.06,
+       "toe_out_deg": 45.27
+      }
+     },
+     "R": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 6.23,
+       "toe_out_deg": 279.55
+      },
+      "toe": {
+       "tilt_deg": 6.23,
+       "toe_out_deg": 80.45
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "torso",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 37,
+   "seconds_long": 1.5,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 0.0,
+    "deformation_gate": "ok",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9762,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": null
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 1.1356,
+    "trunk_pitch_std_deg": 17.5748,
+    "head_pitch_std_deg": 30.5923,
+    "step_interval_mean_s": null
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.067,
+     "where": "ball_r.head",
+     "frame": 21
+    },
+    "upper": {
+     "worst_mm": 18.912,
+     "where": "hand_l.head",
+     "frame": 18
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 25.1,
+      "max": 75.0,
+      "mean": 55.3
+     },
+     "thigh_swing_deg": {
+      "min": -2.3,
+      "max": 26.1,
+      "amplitude": 28.3
+     },
+     "hip_joint_rotation_deg": {
+      "min": 5.0,
+      "max": 48.7,
+      "amplitude": 43.7
+     },
+     "hip_joint_fore_aft_travel_mm": 149.3
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 42.7,
+      "max": 73.2,
+      "mean": 59.5
+     },
+     "thigh_swing_deg": {
+      "min": -18.3,
+      "max": 16.6,
+      "amplitude": 34.9
+     },
+     "hip_joint_rotation_deg": {
+      "min": -1.1,
+      "max": 32.1,
+      "amplitude": 33.2
+     },
+     "hip_joint_fore_aft_travel_mm": 189.0
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -15.0,
+     "max": 64.4,
+     "max_rise_above_rest": 73.5
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -87.5,
+     "max": -7.1,
+     "max_rise_above_rest": 1.9
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.001,
+    "max_from_start": 0.177,
+    "drop_m": 0.069,
+    "pelvis_min_z_m": 0.8
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 113.86,
+     "strain_p99_pct": 77.72,
+     "flipped_faces": 10,
+     "at_frame": {
+      "strain_max_pct": 17,
+      "strain_p99_pct": 8,
+      "flipped_faces": 11
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 368.89,
+     "strain_p99_pct": 192.96,
+     "flipped_faces": 4,
+     "at_frame": {
+      "strain_max_pct": 24,
+      "strain_p99_pct": 18,
+      "flipped_faces": 12
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 113.05,
+     "strain_p99_pct": 80.49,
+     "flipped_faces": 5,
+     "at_frame": {
+      "strain_max_pct": 8,
+      "strain_p99_pct": 8,
+      "flipped_faces": 12
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 730.78,
+     "strain_p99_pct": 100.85,
+     "flipped_faces": 18,
+     "at_frame": {
+      "strain_max_pct": 10,
+      "strain_p99_pct": 17,
+      "flipped_faces": 28
+     }
+    },
+    "sleeve_skin": {
+     "outside": 98,
+     "worst_mm": 15.61,
+     "at_frame": {
+      "outside": 29,
+      "worst_mm": 17
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 6,
+     "worst_mm": 8.78,
+     "at_frame": {
+      "outside": 11,
+      "worst_mm": 12
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 37
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 1.79,
+    "rig_gate_mm": 0.0,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.01,
+      "frames": [
+       1,
+       37
+      ]
+     },
+     "r": {
+      "worst_added_mm": 0.0,
+      "frames": [
+       1,
+       37
+      ]
+     },
+     "worst_added_mm": 0.01
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 8.6
+  },
+  "hit_alt": {
+   "role": "hit (alt)",
+   "source": "mixamo:hit-body.fbx",
+   "source_sha256_16": "9e9f3eec4265f2a4",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.0112,
+     "travel_direction": [
+      0.9949,
+      -0.1013,
+      0.0
+     ],
+     "travel_along_forward": 0.1013
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0001
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 83,
+     "output_fps": 24.0,
+     "output_frames": 66
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.0,
+       "toe_out_deg": 5.49
+      },
+      "toe": {
+       "tilt_deg": 0.0,
+       "toe_out_deg": 354.51
+      }
+     },
+     "R": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.06,
+       "toe_out_deg": 314.58
+      },
+      "toe": {
+       "tilt_deg": 0.27,
+       "toe_out_deg": 45.42
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.0396,
+     "worst_rotation_bone": "neck",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 66,
+   "seconds_long": 2.708,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 189.01,
+    "deformation_gate": "ok",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9179,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": null
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 1.8982,
+    "trunk_pitch_std_deg": 10.7324,
+    "head_pitch_std_deg": 25.8525,
+    "step_interval_mean_s": null
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.065,
+     "where": "ball_r.head",
+     "frame": 30
+    },
+    "upper": {
+     "worst_mm": 5.127,
+     "where": "lowerarm_r.tail",
+     "frame": 29
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 46.7,
+      "max": 63.2,
+      "mean": 54.4
+     },
+     "thigh_swing_deg": {
+      "min": 18.9,
+      "max": 31.9,
+      "amplitude": 13.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": 22.2,
+      "max": 48.2,
+      "amplitude": 26.0
+     },
+     "hip_joint_fore_aft_travel_mm": 89.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 49.7,
+      "max": 72.7,
+      "mean": 57.8
+     },
+     "thigh_swing_deg": {
+      "min": 13.4,
+      "max": 28.0,
+      "amplitude": 14.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": 16.6,
+      "max": 48.2,
+      "amplitude": 31.6
+     },
+     "hip_joint_fore_aft_travel_mm": 56.0
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": 7.7,
+     "max": 42.9,
+     "max_rise_above_rest": 51.9
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -52.9,
+     "max": 0.7,
+     "max_rise_above_rest": 9.7
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.115,
+    "drop_m": 0.068,
+    "pelvis_min_z_m": 0.853
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 133.33,
+     "strain_p99_pct": 80.71,
+     "flipped_faces": 14,
+     "at_frame": {
+      "strain_max_pct": 59,
+      "strain_p99_pct": 11,
+      "flipped_faces": 39
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 436.62,
+     "strain_p99_pct": 217.97,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 57,
+      "strain_p99_pct": 57,
+      "flipped_faces": 1
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 112.42,
+     "strain_p99_pct": 78.33,
+     "flipped_faces": 5,
+     "at_frame": {
+      "strain_max_pct": 59,
+      "strain_p99_pct": 15,
+      "flipped_faces": 37
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 736.73,
+     "strain_p99_pct": 130.55,
+     "flipped_faces": 7,
+     "at_frame": {
+      "strain_max_pct": 57,
+      "strain_p99_pct": 51,
+      "flipped_faces": 35
+     }
+    },
+    "sleeve_skin": {
+     "outside": 46,
+     "worst_mm": 15.89,
+     "at_frame": {
+      "outside": 37,
+      "worst_mm": 21
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 17,
+     "worst_mm": 7.87,
+     "at_frame": {
+      "outside": 37,
+      "worst_mm": 31
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 34
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 179.97,
+    "rig_gate_mm": 189.01,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.0,
+      "frames": null
+     },
+     "r": {
+      "worst_added_mm": 0.04,
+      "frames": [
+       1,
+       66
+      ]
+     },
+     "worst_added_mm": 0.04
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 9.9
+  },
+  "stagger": {
+   "role": "stagger",
+   "source": "mixamo:stagger-stunned.fbx",
+   "source_sha256_16": "7ad2d5bfe72b9d7c",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.5109,
+     "travel_direction": [
+      -0.1609,
+      0.987,
+      0.0
+     ],
+     "travel_along_forward": -0.987
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 1.078
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 65,
+     "output_fps": 24.0,
+     "output_frames": 52
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 1,
+      "used": false
+     },
+     "R": {
+      "frames": 6,
+      "used": true,
+      "foot": {
+       "tilt_deg": 3.19,
+       "toe_out_deg": 324.93
+      },
+      "toe": {
+       "tilt_deg": 3.59,
+       "toe_out_deg": 35.09
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "upper_arm_fk.L",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 52,
+   "seconds_long": 2.125,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 212.46,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9756,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": "fail",
+    "strike_lead": "unmeasured"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.61,
+    "trunk_pitch_std_deg": 61.4763,
+    "head_pitch_std_deg": 74.7493,
+    "step_interval_mean_s": 0.4583
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.109,
+     "where": "ball_r.head",
+     "frame": 36
+    },
+    "upper": {
+     "worst_mm": 31.011,
+     "where": "upperarm_r.tail",
+     "frame": 20
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 27.8,
+      "max": 76.1,
+      "mean": 52.0
+     },
+     "thigh_swing_deg": {
+      "min": 23.5,
+      "max": 129.2,
+      "amplitude": 105.7
+     },
+     "hip_joint_rotation_deg": {
+      "min": 6.6,
+      "max": 215.1,
+      "amplitude": 208.5
+     },
+     "hip_joint_fore_aft_travel_mm": 1163.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 25.4,
+      "max": 131.1,
+      "mean": 95.6
+     },
+     "thigh_swing_deg": {
+      "min": -0.1,
+      "max": 135.5,
+      "amplitude": 135.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": -41.5,
+      "max": 230.3,
+      "amplitude": 271.8
+     },
+     "hip_joint_fore_aft_travel_mm": 976.4
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -56.5,
+     "max": 6.2,
+     "max_rise_above_rest": 15.3
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -33.3,
+     "max": 20.2,
+     "max_rise_above_rest": 29.3
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 1.091,
+    "max_from_start": 1.102,
+    "drop_m": 0.822,
+    "pelvis_min_z_m": 0.192
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 139.59,
+     "strain_p99_pct": 66.69,
+     "flipped_faces": 6,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 9
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 632.0,
+     "strain_p99_pct": 314.93,
+     "flipped_faces": 2,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 3
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 105.47,
+     "strain_p99_pct": 65.04,
+     "flipped_faces": 3,
+     "at_frame": {
+      "strain_max_pct": 3,
+      "strain_p99_pct": 13,
+      "flipped_faces": 9
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 999.59,
+     "strain_p99_pct": 166.74,
+     "flipped_faces": 21,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 1
+     }
+    },
+    "sleeve_skin": {
+     "outside": 105,
+     "worst_mm": 17.92,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 27
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 12,
+     "worst_mm": 10.25,
+     "at_frame": {
+      "outside": 45,
+      "worst_mm": 37
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 27
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 30.86,
+    "rig_gate_mm": 212.46,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.01,
+      "frames": [
+       48,
+       52
+      ]
+     },
+     "r": {
+      "worst_added_mm": 0.04,
+      "frames": [
+       39,
+       52
+      ]
+     },
+     "worst_added_mm": 0.04
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 8.0
+  },
+  "death": {
+   "role": "death",
+   "source": "mixamo:death-backward.fbx",
+   "source_sha256_16": "6c58928f081f1ef5",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.6682,
+     "travel_direction": [
+      -0.1743,
+      0.9847,
+      0.0
+     ],
+     "travel_along_forward": -0.9847
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 1.4622
+    },
+    "hip_lowering": {
+     "max_mm": 32.12,
+     "mean_mm": 6.72,
+     "frames": 18,
+     "after_seam": {
+      "max_mm": 0.0,
+      "mean_mm": 0.0,
+      "frames": 0
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 78,
+     "output_fps": 24.0,
+     "output_frames": 62
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 2,
+      "used": false
+     },
+     "R": {
+      "frames": 9,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.24,
+       "toe_out_deg": 270.92
+      },
+      "toe": {
+       "tilt_deg": 3.35,
+       "toe_out_deg": 88.89
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.056,
+     "worst_rotation_bone": "torso",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 62,
+   "seconds_long": 2.542,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 940.83,
+    "deformation_gate": "fail",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.98,
+    "ik_reach_verdict": "attention",
+    "gait_opposition": "fail",
+    "strike_lead": "unmeasured"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.3736,
+    "trunk_pitch_std_deg": 44.3707,
+    "head_pitch_std_deg": 37.9705,
+    "step_interval_mean_s": 0.4028
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.086,
+     "where": "ball_r.tail",
+     "frame": 40
+    },
+    "upper": {
+     "worst_mm": 9.642,
+     "where": "lowerarm_l.tail",
+     "frame": 2
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 33.1,
+      "max": 71.8,
+      "mean": 48.8
+     },
+     "thigh_swing_deg": {
+      "min": -3.5,
+      "max": 112.9,
+      "amplitude": 116.4
+     },
+     "hip_joint_rotation_deg": {
+      "min": -3.2,
+      "max": 215.0,
+      "amplitude": 218.2
+     },
+     "hip_joint_fore_aft_travel_mm": 1593.7
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 23.0,
+      "max": 101.4,
+      "mean": 53.0
+     },
+     "thigh_swing_deg": {
+      "min": -16.0,
+      "max": 91.6,
+      "amplitude": 107.6
+     },
+     "hip_joint_rotation_deg": {
+      "min": -25.6,
+      "max": 193.1,
+      "amplitude": 218.6
+     },
+     "hip_joint_fore_aft_travel_mm": 1327.5
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -27.2,
+     "max": -4.6,
+     "max_rise_above_rest": 4.4
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -30.4,
+     "max": 4.5,
+     "max_rise_above_rest": 13.6
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 1.47,
+    "max_from_start": 1.521,
+    "drop_m": 0.807,
+    "pelvis_min_z_m": 0.166
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 157.76,
+     "strain_p99_pct": 74.66,
+     "flipped_faces": 3,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 5,
+      "flipped_faces": 37
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 434.58,
+     "strain_p99_pct": 164.3,
+     "flipped_faces": 6,
+     "at_frame": {
+      "strain_max_pct": 11,
+      "strain_p99_pct": 11,
+      "flipped_faces": 37
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 126.59,
+     "strain_p99_pct": 72.85,
+     "flipped_faces": 3,
+     "at_frame": {
+      "strain_max_pct": 5,
+      "strain_p99_pct": 5,
+      "flipped_faces": 37
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 638.66,
+     "strain_p99_pct": 116.97,
+     "flipped_faces": 12,
+     "at_frame": {
+      "strain_max_pct": 62,
+      "strain_p99_pct": 9,
+      "flipped_faces": 23
+     }
+    },
+    "sleeve_skin": {
+     "outside": 24,
+     "worst_mm": 24.33,
+     "at_frame": {
+      "outside": 5,
+      "worst_mm": 35
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 9,
+     "worst_mm": 20.24,
+     "at_frame": {
+      "outside": 5,
+      "worst_mm": 35
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 32
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 890.58,
+    "rig_gate_mm": 940.83,
+    "added": {
+     "l": {
+      "worst_added_mm": 2.3,
+      "frames": [
+       52,
+       62
+      ]
+     },
+     "r": {
+      "worst_added_mm": 0.43,
+      "frames": [
+       50,
+       62
+      ]
+     },
+     "worst_added_mm": 2.3
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 9.4
+  },
+  "death_alt": {
+   "role": "death (alt)",
+   "source": "mixamo:death-react.fbx",
+   "source_sha256_16": "aee9b34b80ceb95c",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": null,
+    "root_motion": {
+     "mode": "keep",
+     "speed_mps": 0.3795,
+     "travel_direction": [
+      -0.1172,
+      0.9931,
+      0.0
+     ],
+     "travel_along_forward": -0.9931
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.9013
+    },
+    "hip_lowering": {
+     "max_mm": 67.96,
+     "mean_mm": 8.22,
+     "frames": 46,
+     "after_seam": {
+      "max_mm": 0.03,
+      "mean_mm": 0.0,
+      "frames": 25
+     }
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 110,
+     "output_fps": 24.0,
+     "output_frames": 88
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 13,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.45,
+       "toe_out_deg": 315.07
+      },
+      "toe": {
+       "tilt_deg": 0.46,
+       "toe_out_deg": 43.69
+      }
+     },
+     "R": {
+      "frames": 7,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.41,
+       "toe_out_deg": 290.73
+      },
+      "toe": {
+       "tilt_deg": 0.5,
+       "toe_out_deg": 70.96
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 2 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": null,
+     "worst_bone": null,
+     "worst_mm": null
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.0396,
+     "worst_rotation_bone": "chest",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 88,
+   "seconds_long": 3.625,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 128.2,
+    "deformation_gate": "attention",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.98,
+    "ik_reach_verdict": "attention",
+    "gait_opposition": null,
+    "strike_lead": "unmeasured"
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.5592,
+    "trunk_pitch_std_deg": 37.1038,
+    "head_pitch_std_deg": 42.712,
+    "step_interval_mean_s": 0.125
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.109,
+     "where": "ball_r.head",
+     "frame": 53
+    },
+    "upper": {
+     "worst_mm": 13.766,
+     "where": "hand_l.tail",
+     "frame": 52
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 23.0,
+      "max": 48.6,
+      "mean": 32.7
+     },
+     "thigh_swing_deg": {
+      "min": 16.0,
+      "max": 132.8,
+      "amplitude": 116.8
+     },
+     "hip_joint_rotation_deg": {
+      "min": 4.7,
+      "max": 220.9,
+      "amplitude": 216.2
+     },
+     "hip_joint_fore_aft_travel_mm": 1047.6
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 22.9,
+      "max": 129.5,
+      "mean": 46.4
+     },
+     "thigh_swing_deg": {
+      "min": -12.6,
+      "max": 149.5,
+      "amplitude": 162.1
+     },
+     "hip_joint_rotation_deg": {
+      "min": -11.4,
+      "max": 237.5,
+      "amplitude": 248.9
+     },
+     "hip_joint_fore_aft_travel_mm": 1041.4
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -31.9,
+     "max": 13.1,
+     "max_rise_above_rest": 22.1
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -41.4,
+     "max": 30.4,
+     "max_rise_above_rest": 39.5
+    }
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.91,
+    "max_from_start": 0.963,
+    "drop_m": 0.832,
+    "pelvis_min_z_m": 0.09
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 230.08,
+     "strain_p99_pct": 73.92,
+     "flipped_faces": 12,
+     "at_frame": {
+      "strain_max_pct": 75,
+      "strain_p99_pct": 67,
+      "flipped_faces": 9
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 770.38,
+     "strain_p99_pct": 326.02,
+     "flipped_faces": 7,
+     "at_frame": {
+      "strain_max_pct": 73,
+      "strain_p99_pct": 75,
+      "flipped_faces": 7
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 176.9,
+     "strain_p99_pct": 67.02,
+     "flipped_faces": 8,
+     "at_frame": {
+      "strain_max_pct": 81,
+      "strain_p99_pct": 49,
+      "flipped_faces": 9
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 1038.06,
+     "strain_p99_pct": 225.91,
+     "flipped_faces": 19,
+     "at_frame": {
+      "strain_max_pct": 73,
+      "strain_p99_pct": 79,
+      "flipped_faces": 65
+     }
+    },
+    "sleeve_skin": {
+     "outside": 49,
+     "worst_mm": 27.57,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 27
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 10,
+     "worst_mm": 23.66,
+     "at_frame": {
+      "outside": 9,
+      "worst_mm": 5
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 45
+   },
+   "slide_vs_take": {
+    "take_gate_mm": 120.71,
+    "rig_gate_mm": 128.2,
+    "added": {
+     "l": {
+      "worst_added_mm": 0.01,
+      "frames": [
+       1,
+       42
+      ]
+     },
+     "r": {
+      "worst_added_mm": 0.0,
+      "frames": [
+       1,
+       38
+      ]
+     },
+     "worst_added_mm": 0.01
+    },
+    "allowed_added_mm": 5.0
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 13.0
+  },
+  "climb-loop": {
+   "role": "climb",
+   "source": "mixamo:climbing-up-wall.fbx",
+   "source_sha256_16": "215917f1849509a2",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": {
+     "window_frames": [
+      1,
+      49
+     ],
+     "window_s": [
+      0.0,
+      2.0
+     ],
+     "length_frames": 48,
+     "length_s": 2.0,
+     "seam_cost_deg": 81.4607,
+     "windows_tried": 1
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 0.0,
+     "travel_direction": null,
+     "removed_m": 0.0
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 61,
+     "output_fps": 24.0,
+     "output_frames": 49
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 16,
+      "used": true,
+      "foot": {
+       "tilt_deg": 28.26,
+       "toe_out_deg": 349.12
+      },
+      "toe": {
+       "tilt_deg": 76.76,
+       "toe_out_deg": 340.49
+      }
+     },
+     "R": {
+      "frames": 0,
+      "used": false
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 4 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 0.056,
+     "worst_bone": "foot_fk.R",
+     "worst_mm": 1351.6424
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.0885,
+     "worst_rotation_bone": "thigh_fk.L",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 49,
+   "seconds_long": 2.0,
+   "check": {
+    "gate": "fail",
+    "worst_drift_mm": 288.34,
+    "deformation_gate": "ok",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.9737,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": null
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 0.3602,
+    "trunk_pitch_std_deg": 3.8838,
+    "head_pitch_std_deg": 4.0055,
+    "step_interval_mean_s": null
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "transfer_fidelity": {
+    "legs": {
+     "worst_mm": 0.002,
+     "where": "foot_r.tail",
+     "frame": 5
+    },
+    "upper": {
+     "worst_mm": 17.399,
+     "where": "hand_l.head",
+     "frame": 49
+    },
+    "upper_deg": {
+     "worst_deg": 0.0,
+     "where": null,
+     "frame": null
+    }
+   },
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 26.3,
+      "max": 142.8,
+      "mean": 83.6
+     },
+     "thigh_swing_deg": {
+      "min": 22.3,
+      "max": 131.3,
+      "amplitude": 109.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": 28.9,
+      "max": 130.2,
+      "amplitude": 101.2
+     },
+     "hip_joint_fore_aft_travel_mm": 359.6
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 29.6,
+      "max": 141.5,
+      "mean": 83.5
+     },
+     "thigh_swing_deg": {
+      "min": 25.7,
+      "max": 139.9,
+      "amplitude": 114.2
+     },
+     "hip_joint_rotation_deg": {
+      "min": 25.5,
+      "max": 152.1,
+      "amplitude": 126.6
+     },
+     "hip_joint_fore_aft_travel_mm": 300.6
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -49.2,
+     "max": 55.6,
+     "max_rise_above_rest": 64.7
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -43.9,
+     "max": 38.1,
+     "max_rise_above_rest": 47.1
+    }
+   },
+   "seam_flesh": {
+    "worst_mm": 0.001,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.366,
+    "drop_m": 0.0,
+    "pelvis_min_z_m": 0.955
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 285.5,
+     "strain_p99_pct": 91.04,
+     "flipped_faces": 4,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 23
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 995.89,
+     "strain_p99_pct": 370.86,
+     "flipped_faces": 4,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 35
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 213.11,
+     "strain_p99_pct": 68.64,
+     "flipped_faces": 3,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 21
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 1373.6,
+     "strain_p99_pct": 231.69,
+     "flipped_faces": 15,
+     "at_frame": {
+      "strain_max_pct": 9,
+      "strain_p99_pct": 9,
+      "flipped_faces": 23
+     }
+    },
+    "sleeve_skin": {
+     "outside": 60,
+     "worst_mm": 17.7,
+     "at_frame": {
+      "outside": 45,
+      "worst_mm": 33
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 5,
+     "worst_mm": 4.22,
+     "at_frame": {
+      "outside": 39,
+      "worst_mm": 39
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 25
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 4.6
+  },
+  "talk-loop": {
+   "role": "talk",
+   "source": "mixamo:talking.fbx",
+   "source_sha256_16": "f57401eebf0a0db8",
+   "retarget": {
+    "scale": 1.069448,
+    "mapping": "mixamo",
+    "mapped_count": 20,
+    "unmapped": [
+     "mixamorig:Spine",
+     "mixamorig:Spine1",
+     "mixamorig:RightHandThumb1",
+     "mixamorig:RightHandThumb2",
+     "mixamorig:RightHandThumb3",
+     "mixamorig:RightHandIndex1",
+     "mixamorig:RightHandIndex2",
+     "mixamorig:RightHandIndex3",
+     "mixamorig:RightHandMiddle1",
+     "mixamorig:RightHandMiddle2",
+     "mixamorig:RightHandMiddle3",
+     "mixamorig:RightHandRing1",
+     "mixamorig:RightHandRing2",
+     "mixamorig:RightHandRing3",
+     "mixamorig:RightHandPinky1",
+     "mixamorig:RightHandPinky2",
+     "mixamorig:RightHandPinky3",
+     "mixamorig:LeftHandThumb1",
+     "mixamorig:LeftHandThumb2",
+     "mixamorig:LeftHandThumb3",
+     "mixamorig:LeftHandIndex1",
+     "mixamorig:LeftHandIndex2",
+     "mixamorig:LeftHandIndex3",
+     "mixamorig:LeftHandMiddle1",
+     "mixamorig:LeftHandMiddle2",
+     "mixamorig:LeftHandMiddle3",
+     "mixamorig:LeftHandRing1",
+     "mixamorig:LeftHandRing2",
+     "mixamorig:LeftHandRing3",
+     "mixamorig:LeftHandPinky1",
+     "mixamorig:LeftHandPinky2",
+     "mixamorig:LeftHandPinky3"
+    ],
+    "loop_window": {
+     "window_frames": [
+      757,
+      940
+     ],
+     "window_s": [
+      31.5,
+      39.125
+     ],
+     "length_frames": 183,
+     "length_s": 7.625,
+     "seam_cost_deg": 1.6708,
+     "windows_tried": 83905
+    },
+    "root_motion": {
+     "mode": "in_place",
+     "speed_mps": 0.0004,
+     "travel_direction": [
+      0.2515,
+      0.9679,
+      0.0
+     ],
+     "travel_along_forward": -0.9679,
+     "removed_m": 0.0033
+    },
+    "heading": {
+     "mode": "rest",
+     "used": "rest",
+     "yaw_deg": 0.0,
+     "source_travel_m": 0.0
+    },
+    "hip_lowering": {
+     "max_mm": 0.0,
+     "mean_mm": 0.0,
+     "frames": 0
+    },
+    "resampled": {
+     "source_fps": 30.0,
+     "source_frames": 1323,
+     "output_fps": 24.0,
+     "output_frames": 184
+    },
+    "foot_flat_calibration": {
+     "L": {
+      "frames": 375,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.18,
+       "toe_out_deg": 356.11
+      },
+      "toe": {
+       "tilt_deg": 0.41,
+       "toe_out_deg": 3.89
+      }
+     },
+     "R": {
+      "frames": 499,
+      "used": true,
+      "foot": {
+       "tilt_deg": 0.06,
+       "toe_out_deg": 333.31
+      },
+      "toe": {
+       "tilt_deg": 0.42,
+       "toe_out_deg": 26.69
+      }
+     }
+    },
+    "warnings": [
+     "Rigify's IK/FK blend was moved to full FK on 4 limb(s) so the retargeted FK rotations reach the deform bones; the switch is keyframed into the baked action."
+    ],
+    "seam_residual": {
+     "worst_deg": 4.5015,
+     "worst_bone": "hand_fk.L",
+     "worst_mm": 2.6015
+    },
+    "transfer_check": {
+     "worst_rotation_deg": 0.6091,
+     "worst_rotation_bone": "shoulder.L",
+     "worst_position_mm": 0.0
+    }
+   },
+   "frames": 184,
+   "seconds_long": 7.625,
+   "check": {
+    "gate": "ok",
+    "worst_drift_mm": 2.12,
+    "deformation_gate": "ok",
+    "motion_quality_gate": null,
+    "treadmill_mps": 0.0,
+    "stretch_worst_pct": 0.0,
+    "stretch_verdict": "ok",
+    "ik_reach": 0.6843,
+    "ik_reach_verdict": "ok",
+    "gait_opposition": null,
+    "strike_lead": null
+   },
+   "motion_stats": {
+    "trunk_to_leg_speed_ratio": 2.6173,
+    "trunk_pitch_std_deg": 0.5961,
+    "head_pitch_std_deg": 1.6216,
+    "step_interval_mean_s": null
+   },
+   "fingers": {
+    "bones": 30,
+    "source_fps": 30.0
+   },
+   "standing_trunk_correction_deg": 17.56,
+   "transfer_fidelity": null,
+   "legs": {
+    "l": {
+     "knee_flex_deg": {
+      "min": 6.5,
+      "max": 6.5,
+      "mean": 6.5
+     },
+     "thigh_swing_deg": {
+      "min": 4.3,
+      "max": 4.3,
+      "amplitude": 0.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": -0.4,
+      "max": 2.9,
+      "amplitude": 3.3
+     },
+     "hip_joint_fore_aft_travel_mm": 0.0
+    },
+    "r": {
+     "knee_flex_deg": {
+      "min": 6.5,
+      "max": 6.5,
+      "mean": 6.5
+     },
+     "thigh_swing_deg": {
+      "min": 4.3,
+      "max": 4.3,
+      "amplitude": 0.0
+     },
+     "hip_joint_rotation_deg": {
+      "min": -0.4,
+      "max": 2.9,
+      "amplitude": 3.3
+     },
+     "hip_joint_fore_aft_travel_mm": 0.0
+    }
+   },
+   "clavicle_elevation_deg": {
+    "l": {
+     "rest": -9.1,
+     "min": -19.0,
+     "max": -16.3,
+     "max_rise_above_rest": -7.3
+    },
+    "r": {
+     "rest": -9.1,
+     "min": -22.1,
+     "max": -19.9,
+     "max_rise_above_rest": -10.9
+    }
+   },
+   "seam_flesh": {
+    "worst_mm": 0.0009,
+    "mesh": "Protagonist"
+   },
+   "pelvis_travel_m": {
+    "first_to_last": 0.0,
+    "max_from_start": 0.0,
+    "drop_m": 0.0,
+    "pelvis_min_z_m": 1.029
+   },
+   "flesh": {
+    "shoulder_cap_body": {
+     "strain_max_pct": 110.15,
+     "strain_p99_pct": 52.05,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 129,
+      "strain_p99_pct": 53,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_body": {
+     "strain_max_pct": 245.25,
+     "strain_p99_pct": 106.79,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 13,
+      "strain_p99_pct": 161,
+      "flipped_faces": 1
+     }
+    },
+    "shoulder_cap_jacket": {
+     "strain_max_pct": 87.93,
+     "strain_p99_pct": 46.48,
+     "flipped_faces": 0,
+     "at_frame": {
+      "strain_max_pct": 13,
+      "strain_p99_pct": 13,
+      "flipped_faces": 1
+     }
+    },
+    "armpit_jacket": {
+     "strain_max_pct": 452.42,
+     "strain_p99_pct": 51.18,
+     "flipped_faces": 6,
+     "at_frame": {
+      "strain_max_pct": 13,
+      "strain_p99_pct": 161,
+      "flipped_faces": 13
+     }
+    },
+    "sleeve_skin": {
+     "outside": 13,
+     "worst_mm": 15.28,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 57
+     }
+    },
+    "sleeve_skin_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "tee_sleeve_outside_jacket": {
+     "outside": 5,
+     "worst_mm": 8.05,
+     "at_frame": {
+      "outside": 173,
+      "worst_mm": 25
+     }
+    },
+    "tee_sleeve_outside_jacket_visible": {
+     "outside": 0,
+     "worst_mm": 0.0,
+     "at_frame": {
+      "outside": 1,
+      "worst_mm": 1
+     }
+    },
+    "frames_sampled": 47
+   },
+   "ready": true,
+   "failed": [],
+   "seconds": 13.4
+  }
+ },
+ "proxy": {
+  "bones": 213,
+  "rest_equality": {
+   "worst_bone": "ball_r",
+   "head_mm": 0.0,
+   "roll_deg": 145.2263
+  }
+ },
+ "sleeve_touchup": {
+  "tee_sleeve_vertices_hidden": 224,
+  "cuff_boundary_vertices": 48,
+  "arm_skin_newly_hidden": 168
+ },
+ "flesh_probe": {
+  "sleeve_skin_vertices": {
+   "l": 696,
+   "r": 696
+  },
+  "sleeve_skin_visible": {
+   "l": 73,
+   "r": 73
+  },
+  "sleeve_faces": {
+   "l": 915,
+   "r": 915
+  },
+  "tee_sleeve_vertices": {
+   "l": 112,
+   "r": 112
+  },
+  "regions": {
+   "Protagonist": {
+    "cap": {
+     "edges": 650,
+     "faces": 266
+    },
+    "armpit": {
+     "edges": 1080,
+     "faces": 492
+    }
+   },
+   "Protagonist.jacket": {
+    "cap": {
+     "edges": 532,
+     "faces": 216
+    },
+    "armpit": {
+     "edges": 1483,
+     "faces": 698
+    }
+   }
+  }
+ },
+ "flesh_rest": {
+  "shoulder_cap_body": {
+   "strain_max_pct": 0.0,
+   "strain_p99_pct": 0.0,
+   "flipped_faces": 0
+  },
+  "armpit_body": {
+   "strain_max_pct": 0.0,
+   "strain_p99_pct": 0.0,
+   "flipped_faces": 0
+  },
+  "shoulder_cap_jacket": {
+   "strain_max_pct": 0.0,
+   "strain_p99_pct": 0.0,
+   "flipped_faces": 0
+  },
+  "armpit_jacket": {
+   "strain_max_pct": 0.0,
+   "strain_p99_pct": 0.0,
+   "flipped_faces": 0
+  },
+  "sleeve_skin": {
+   "outside": 6,
+   "worst_mm": 1.94
+  },
+  "sleeve_skin_visible": {
+   "outside": 0,
+   "worst_mm": 0.0
+  },
+  "tee_sleeve_outside_jacket": {
+   "outside": 0,
+   "worst_mm": 0.0
+  },
+  "tee_sleeve_outside_jacket_visible": {
+   "outside": 0,
+   "worst_mm": 0.0
+  }
+ },
+ "actions_on_rig": [
+  "attack_3",
+  "climb-loop",
+  "counter",
+  "crouch_idle-loop",
+  "crouch_walk-loop",
+  "death",
+  "death_alt",
+  "dodge",
+  "heavy",
+  "hit",
+  "hit_alt",
+  "run-loop",
+  "sprint-loop",
+  "stagger",
+  "talk-loop",
+  "walk-loop"
+ ],
+ "seconds": 122.8
+}

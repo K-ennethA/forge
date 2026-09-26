@@ -362,10 +362,18 @@ def test_mixamo_heading_fps():
     result = call("rigforge_retarget", {"target_rig": RIG, "source_path": MIXAMO,
                                         "action_name": "mixamo_fk", "mapping": "mixamo",
                                         "heading": "travel"})
-    check("the mixamo preset was used and is labelled an assumption",
+    check("the mixamo preset was used and reports itself verified against real files",
           result["mapping"] == "mixamo"
-          and "assumption" in (result.get("mapping_preset_status") or ""),
+          and "verified" in (result.get("mapping_preset_status") or ""),
           result.get("mapping_preset_status"))
+    # Mixamo's Spine used to take spine_fk.001, the head of basic_spine's REVERSED hip
+    # chain (as CMU's LowerBack did): measured on real X Bot takes, the hip joints 45.5 mm
+    # off the retarget's path. Dropped on measurement.
+    mixed = {m["source"]: m["target"] for m in result["mapped"]}
+    check("the mixamo preset puts nothing on spine_fk.001 and Spine2 on the chest",
+          "spine_fk.001" not in mixed.values() and any(
+              s.lower().endswith("spine2") and t == "chest" for s, t in mixed.items()),
+          json.dumps(mixed))
     check("30 -> 24 fps: 79 source frames become 63",
           result["resampled"]["output_frames"] == 63, str(result["resampled"]))
     yaw = result["heading"]["yaw_deg"]
@@ -393,6 +401,89 @@ def test_mixamo_heading_fps():
     reset_pose()
 
 
+def test_fbx_clock_and_whole_take_loop():
+    section("an FBX take on its own clock (the importer re-clocks the scene), and a take "
+            "that already is one cycle")
+    scene = bpy.context.scene
+    fps_before = (scene.render.fps, scene.render.fps_base)
+    # the 30 fps Mixamo-named fixture, written out as an FBX at 30 fps by Blender itself
+    before = set(bpy.data.objects)
+    acts = set(bpy.data.actions)
+    bpy.ops.import_anim.bvh(filepath=MIXAMO, update_scene_fps=False, use_fps_scale=False)
+    made = [o for o in bpy.data.objects if o not in before]
+    fbx = os.path.join(tempfile.mkdtemp(prefix="forge_fbx_"), "walk_mixamo_30.fbx")
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in made:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = made[0]
+    scene.render.fps, scene.render.fps_base = 30, 1.0
+    range_before = (scene.frame_start, scene.frame_end)
+    scene.frame_start, scene.frame_end = 1, 79
+    # (the scene-animation bake exports no curves for this armature in 5.0; the per-action
+    # bake does - checked by the import below, which refuses a take with no animation)
+    bpy.ops.export_scene.fbx(filepath=fbx, use_selection=True, bake_anim=True,
+                             add_leaf_bones=False, bake_anim_use_all_actions=True,
+                             bake_anim_use_nla_strips=False,
+                             bake_anim_force_startend_keying=True)
+    scene.render.fps, scene.render.fps_base = fps_before
+    scene.frame_start, scene.frame_end = range_before
+    for o in made:
+        bpy.data.objects.remove(o, do_unlink=True)
+    for a in [a for a in bpy.data.actions if a not in acts]:
+        bpy.data.actions.remove(a)
+    result = call("rigforge_retarget", {"target_rig": RIG, "source_path": fbx,
+                                        "action_name": "fbx_clock", "mapping": "mixamo"})
+    rs = result["resampled"]
+    check("the FBX take is read at its own 30 fps (%s) and resampled to the scene's %s"
+          % (rs["source_fps"], rs["output_fps"]),
+          abs(rs["source_fps"] - 30.0) < 1e-6 and rs["output_fps"] == fps_before[0], json.dumps(rs))
+    check("... so its 2.6 s become 63 frames at 24 fps, as the BVH of the same take does",
+          rs["output_frames"] == 63, json.dumps(rs))
+    check("and the scene's clock is put back (%s fps)" % scene.render.fps,
+          (scene.render.fps, scene.render.fps_base) == fps_before)
+    # loop_whole_take: the window is the whole take and its seam is closed. The fixture holds
+    # 2.47 cycles, so its whole take is NOT one cycle and the residual ceiling refuses it...
+    refused = call("rigforge_retarget", {"target_rig": RIG, "source_path": MIXAMO,
+                                         "action_name": "whole", "mapping": "mixamo",
+                                         "loop": True, "loop_whole_take": True,
+                                         "root_motion": "in_place"}, expect_error=True)
+    check("loop_whole_take on a take that is not one cycle is refused by the residual ceiling",
+          refused.get("status") != "success" and "loop_max_residual_deg" in (
+              refused.get("message") or ""), refused.get("message"))
+    # ... and with the ceiling lifted the mechanism itself shows: whole window, seam closed
+    whole = call("rigforge_retarget", {"target_rig": RIG, "source_path": MIXAMO,
+                                       "action_name": "whole", "mapping": "mixamo",
+                                       "loop": True, "loop_whole_take": True,
+                                       "loop_max_residual_deg": 180.0,
+                                       "root_motion": "in_place"})
+    lw = whole["loop_window"]
+    check("loop_whole_take keeps the whole take as the window (%s of %s frames)"
+          % (lw["window_frames"], whole["resampled"]["output_frames"]),
+          lw["window_frames"] == [1, whole["resampled"]["output_frames"]], json.dumps(lw))
+    check("and closes its seam (residual reported, %s deg worst)"
+          % whole["seam_residual"]["worst_deg"], whole["seam_residual"] is not None)
+    # flat_window_s: the flat-foot calibration only reads samples inside the window
+    win = call("rigforge_retarget", {"target_rig": RIG, "source_path": MIXAMO,
+                                     "action_name": "flatwin", "mapping": "mixamo", "legs": "ik",
+                                     "flat_window_s": [0.0, 0.5]})
+    ff = win.get("foot_flat_calibration") or {}
+    limit = int(0.5 * win["fps"]) + 1
+    check("flat_window_s keeps the calibration inside the window (<= %d samples per foot: %s)"
+          % (limit, {k: v.get("frames") for k, v in ff.items()}),
+          ff and all(v.get("frames", 0) <= limit for v in ff.values()), json.dumps(ff))
+    bad = call("rigforge_retarget", {"target_rig": RIG, "source_path": MIXAMO,
+                                     "action_name": "flatwin", "flat_window_s": "soon"},
+               expect_error=True)
+    check("a malformed flat_window_s is refused", bad.get("status") != "success"
+          and "flat_window_s" in (bad.get("message") or ""), bad.get("message"))
+    for name in ("fbx_clock", "whole-loop", "whole", "flatwin"):
+        a = bpy.data.actions.get(name)
+        if a is not None:
+            a.use_fake_user = False
+            bpy.data.actions.remove(a)
+    reset_pose()
+
+
 def test_presets_and_root_modes():
     section("the CMU preset, and the three root-motion modes")
     from forge.tools import rigforge_anim as ra
@@ -410,6 +501,13 @@ def test_presets_and_root_modes():
           all("on purpose" in reasons.get(n, "") for n in ("lowerback", "upperback",
                                                              "upperneck", "lhipjoint")),
           json.dumps(reasons)[:300])
+    # the clavicle is carried rest-relative, never direction-matched: the cgspeed LeftShoulder
+    # segment rises ~30 deg in a neutral stance, and matched by direction it shrugged the MPFB
+    # rig's clavicles +20..+29 deg through a whole walk (the artist's "weird shoulder")
+    aligned = preset.get("rest_alignment_deg") or {}
+    check("the shoulder (clavicle) slot takes no rest-direction swing; the upper arm does",
+          not any(k.startswith("shoulder") for k in aligned)
+          and any(k.startswith("upper_arm") for k in aligned), json.dumps(aligned))
     check("the cmu preset reports itself verified against real files",
           "verified" in (preset.get("mapping_preset_status") or ""),
           preset.get("mapping_preset_status"))
@@ -679,6 +777,7 @@ def main():
         test_refusals()
         test_cmu_fk()
         test_mixamo_heading_fps()
+        test_fbx_clock_and_whole_take_loop()
         test_presets_and_root_modes()
         driver = test_driver_contract()
         test_motion_stats(driver)

@@ -301,9 +301,15 @@ MAPPING_PRESETS = {
         "leftankle": ("foot", "L"), "rightankle": ("foot", "R"),
         "lefttoe": ("toe", "L"), "righttoe": ("toe", "R"),
     },
-    # Mixamo (``mixamorig:`` prefix optional). ASSUMPTION until a vetted file is read.
+    # Mixamo (``mixamorig:`` prefix optional). Read off 12 real X Bot exports 2026-09-25
+    # (C:/forge-assets/thirdparty/mixamo, 52 joints once the importer drops the leaf ends; the
+    # prefix IS kept). "Spine" is the first joint above the hips, like CMU's LowerBack, and its
+    # old slot (spine -> spine_fk.001) is the head of Rigify's reversed hip chain: keyed, it
+    # swung the pelvis off the path the retarget placed it on - measured on the MPFB proxy, the
+    # hip joints 45.5 mm off it (sprint-forward) and 27.5 mm (punch-combo), 0.0 with it left out.
+    # Spine2 (the thorax) takes `chest`, as CMU's thorax does. Fingers are not slots here.
     "mixamo": {
-        "hips": ("hips", None), "spine": ("spine", None), "spine1": None,
+        "hips": ("hips", None), "spine": None, "spine1": None,
         "spine2": ("chest", None), "neck": ("neck", None), "head": ("head", None),
         "leftupleg": ("thigh", "L"), "rightupleg": ("thigh", "R"),
         "leftleg": ("shin", "L"), "rightleg": ("shin", "R"),
@@ -323,8 +329,9 @@ PRESET_STATUS_BY_NAME = {
             "names read, 20 mapped; LowerBack dropped on measurement (see the table)"),
     "100style": ("read off the 100STYLE files (Crouched_FW / Crouched_ID, 2026-09-24): "
                  "23 joints, 20 mapped, Chest..Chest3 left out on purpose"),
-    "mixamo": ("assumption: written from the published Mixamo naming convention; not "
-               "yet verified against a vetted file"),
+    "mixamo": ("verified 2026-09-25 against 12 Mixamo X Bot FBX exports (30 fps, "
+               "'mixamorig:' prefix kept, 52 joints after leaf ends): 20 mapped, Spine and "
+               "Spine1 left out on measurement (see the table), fingers not slots"),
 }
 PRESET_STATUS = PRESET_STATUS_BY_NAME["mixamo"]
 
@@ -905,7 +912,7 @@ def cmd_rigforge_mocap_clip(params):
         "replace": get_bool(params, "replace", True),
     }
     for key in ("fps", "loop_min_s", "loop_max_s", "loop_max_residual_deg", "foot_lock",
-                "reach_limit"):
+                "reach_limit", "loop_whole_take", "flat_window_s"):
         if params.get(key) is not None:
             retarget_params[key] = params[key]
     retarget = rigforge_anim.cmd_rigforge_retarget(retarget_params)

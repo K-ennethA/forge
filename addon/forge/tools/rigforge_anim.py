@@ -5738,7 +5738,16 @@ SEGMENT_END_SLOTS = {"thigh": "shin", "shin": "foot", "foot": "toe",
 #: Axial slots are left as they are: both rests are upright once the global
 #: orientation step has run, and a hips/chest *control* rarely points along
 #: its anatomical segment (Rigify's torso points backwards).
-ALIGNED_SLOTS = SIDED_SLOTS
+#: The SHOULDER (clavicle) is left out too, on measurement (2026-09-25, MPFB v4
+#: body): its segment runs from wherever a skeleton puts the clavicle's inner
+#: joint to the humeral head, and conventions differ - the cgspeed CMU
+#: LeftShoulder starts low on the chest, so its segment rises ~30 deg in the
+#: actor's neutral stance. Matched by direction, the rig's clavicle rose with
+#: it: +20..+29 deg above horizontal through all of 08_01 against -9.1 at rest,
+#: the shoulder joints ~0.1 m up by the ears (the artist's "weird shoulder",
+#: 2026-09-25). A clavicle's rest is a neutral girdle on every skeleton, so it
+#: carries its rest-relative delta like the axial slots.
+ALIGNED_SLOTS = tuple(slot for slot in SIDED_SLOTS if slot != "shoulder")
 
 
 def _quat_of(matrix):
@@ -6042,6 +6051,24 @@ def cmd_rigforge_retarget(params):
     foot_lock = get_bool(params, "foot_lock", True)
     reach_limit = get_bool(params, "reach_limit", True)
     find_loop = get_bool(params, "find_loop", False)
+    # A take that already IS one cycle (Mixamo's loops: the last frame is the first
+    # pose, plus the stride) cannot be found by the search - it compares velocity one
+    # sample past the window's end, so the full take is never a candidate. This
+    # keeps the whole take as the window and closes its seam the same way.
+    whole_take = get_bool(params, "loop_whole_take", False)
+    # Where the flat-stance foot calibration may look, in seconds of the take. Default: the
+    # whole take, which is right for a gait. A take that ends on the floor (a fall, a death)
+    # has its lowest ankles lying down: measured on Mixamo stagger-stunned, the left foot's
+    # "flat" frames came from the fall and read an 83 deg tilt, and the calibrated foot then
+    # slid 242 mm through a plant the take holds to 31 mm. A standing opening window fixes it.
+    flat_window = params.get("flat_window_s")
+    if flat_window is not None:
+        try:
+            flat_window = (float(flat_window[0]), float(flat_window[1]))
+        except (TypeError, ValueError, IndexError):
+            raise ForgeError("'flat_window_s' must be [start_s, end_s].")
+    if whole_take:
+        find_loop = True
     loop_min_s = get_float(params, "loop_min_s", 0.5, minimum=0.05, maximum=600.0)
     loop_max_s = None
     if params.get("loop_max_s") is not None:
@@ -6072,6 +6099,7 @@ def cmd_rigforge_retarget(params):
 
     previous_frame = scene.frame_current
     previous_range = (scene.frame_start, scene.frame_end)
+    previous_fps = (scene.render.fps, scene.render.fps_base)
     previous_action = None
     if target_rig.animation_data is not None:
         previous_action = target_rig.animation_data.action
@@ -6101,6 +6129,14 @@ def cmd_rigforge_retarget(params):
             refresh_view_layer()
 
             imported, kind = _import_clip(path, warnings)
+            # The FBX importer re-clocks the SCENE to the file's frame rate and lays
+            # the keys out on that clock (measured 2026-09-25 on the Mixamo batch: a
+            # 24 fps scene reads 30 after import, keys 1..16 for a 0.5 s take). Read
+            # the take's rate off the scene, then put the scene back - left at 30,
+            # every later gate on a 24 fps clip measured on the wrong clock.
+            file_fps = float(scene.render.fps) / float(scene.render.fps_base or 1.0)
+            if (scene.render.fps, scene.render.fps_base) != previous_fps:
+                scene.render.fps, scene.render.fps_base = previous_fps
             for obj in imported:
                 for existing_collection in list(obj.users_collection):
                     try:
@@ -6135,8 +6171,8 @@ def cmd_rigforge_retarget(params):
                 frame_time = source_info["frame_time"]
                 source_frames = source_info["frames"]
             else:
-                # FBX: the importer lays the take out on the scene's own clock.
-                frame_time = 1.0 / scene_fps
+                # FBX: the importer lays the take out on the file's clock (see above).
+                frame_time = 1.0 / file_fps
                 source_frames = max(2, clip_last - clip_first + 1)
 
             # --- mapping
@@ -6357,9 +6393,19 @@ def cmd_rigforge_retarget(params):
                     b_lo, b_hi = min(ball_z), max(ball_z)
                     ball_down = [ball_z[j] - b_lo <= FLAT_STANCE_BAND * max(1e-9, b_hi - b_lo)
                                  for j in range(count)]
-                flat_j = [j for j in range(count)
-                          if ankle_z[j] - a_lo <= FLAT_STANCE_BAND * max(1e-9, a_hi - a_lo)
-                          and ball_down[j]]
+                if flat_window is None:
+                    flat_j = [j for j in range(count)
+                              if ankle_z[j] - a_lo <= FLAT_STANCE_BAND * max(1e-9, a_hi - a_lo)
+                              and ball_down[j]]
+                else:
+                    # only the samples inside the window, banded on their own range (with a
+                    # 5 mm floor: a foot standing still in it reads a near-zero range)
+                    win = [j for j in range(count)
+                           if flat_window[0] <= j / fps_out <= flat_window[1]]
+                    w_lo = min(ankle_z[j] for j in win) if win else 0.0
+                    w_hi = max(ankle_z[j] for j in win) if win else 0.0
+                    band = max(FLAT_STANCE_BAND * (w_hi - w_lo), 0.005)
+                    flat_j = [j for j in win if ankle_z[j] - w_lo <= band and ball_down[j]]
                 if len(flat_j) < FLAT_STANCE_MIN_SAMPLES:
                     flat_report[side] = {"frames": len(flat_j), "used": False}
                     continue
@@ -6631,8 +6677,14 @@ def cmd_rigforge_retarget(params):
                 min_samples = max(2, int(math.ceil(loop_min_s * fps_out)))
                 max_samples = (int(math.floor(loop_max_s * fps_out))
                                if loop_max_s is not None else None)
-                found = mocap.find_loop_window(rot_tracks, heights, leg_t, min_samples,
-                                               max_samples)
+                if whole_take:
+                    last = count - 1
+                    found = {"start": 0, "end": last, "windows_tried": 1,
+                             "cost_deg": mocap._pose_distance(rot_tracks, heights, leg_t,
+                                                              0, last)}
+                else:
+                    found = mocap.find_loop_window(rot_tracks, heights, leg_t, min_samples,
+                                                   max_samples)
                 if found is None:
                     raise ForgeError(
                         "No loop window fits: the take is %d frames at %g fps (%.3f s) and "
@@ -7079,6 +7131,7 @@ def cmd_rigforge_retarget(params):
             except (ReferenceError, RuntimeError, TypeError):
                 continue
         scene.frame_start, scene.frame_end = previous_range
+        scene.render.fps, scene.render.fps_base = previous_fps
         try:
             scene.frame_set(previous_frame)
         except (RuntimeError, TypeError):

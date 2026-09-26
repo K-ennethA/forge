@@ -165,3 +165,30 @@ re-pinned mid-band per the overcorrection call: bicep 8.9/10.5, forearm
 noise - the scrunch predated v3). Poke-through 0, canaries fire, tris
 unchanged. Still open: stitch lines blockier where the span moved
 vertices (pre-existing spec), sleeves untested in motion (retarget wave).
+
+## 2026-09-25 - outfit v4 verdict (artist, verbatim)
+> yes this model is much better and at a good enough spot for now
+
+APPROVED - the protagonist look (body, outfit v4, hair) is locked for now.
+This unblocks the retarget wave: the full mocap set (CMU locomotion + the
+Mixamo sprint and combat batch) goes onto this body, then the contract
+delivery replaces the old character in the game. Also from the artist:
+palette-swap skins are approved as a standing feature; and iteration speed
+feedback - parameter-level tweaks go DRAFT MODE (direct edit + rebuild,
+minutes) instead of full lanes; lanes only for structural changes.
+
+## 2026-09-25 - retarget wave delivered: 16 clips on the approved body
+All 16 gated (stretch 0.0%, seams <=0.001 mm). Sprint 7.215 m/s IN-GAME -
+inside the 7-9 band, the honest sprint exists. The artist's three notes
+answered with numbers: (a) the shoulder was a CLAVICLE RETARGET BUG (rest
+direction matched absolutely; now carried relative to rest - walk peaks
+7.3 deg vs 38 before), not the body; (b) run thigh ROTATES 70.3/66.6 deg
+at the hip, knee to 108 - no sliding; (c) crouch got authored layers:
+knees to ~79-83 deg flexion, arms flared 32 deg out per the artist. Also
+fixed in shared code: FBX 30fps takes were playing on a 24fps clock;
+Mixamo preset verified on 12 real files (Spine mapping dropped - swung
+hips 45 mm). Sleeves in motion: 0 visible poke-through after masking
+covered layers. Delivery-lane decisions parked: talk take is seated
+(upper body used on standing legs), one-shot travel keep-or-strip,
+combat stance yaw. Speeds for the manifest: walk 1.785, run 4.362,
+sprint 7.215, crouch_walk 0.710.
