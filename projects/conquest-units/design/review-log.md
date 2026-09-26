@@ -261,3 +261,19 @@ blade mesh authored now-or-later with the attack wave. MORTIS: GLIDE
 confirmed (the dead carry him smoothly) - glide loop unblocked; ADD
 ghostly sleeves reaching toward the book (new geometry, ethereal read);
 AUTHOR the two game skins as palettes (Gravemoss, Boneash Sovereign).
+
+## 2026-09-25 — Geode movement answer + Godot import queue
+
+Artist: "note down the godot import issues for later" -> created
+design/godot-import-notes.md (glow-mask/glTF emission, KHR_animation_pointer,
+skin delivery shape, import scale). Ship-path lane starts from that file.
+
+Artist on Geode movement (verbatim): "geode walks and its limbs are connected
+statically, maybe have some elecriticty wiring them together, so it walks
+pretty normally, can floatish"
+
+Binding reading: limbs do NOT orbit/drift as free parts — they are statically
+connected to the body. Optional electricity arcs visually wire the parts
+together. Locomotion is a fairly normal walk on the leg crystals with a
+float-ish quality (soft contacts, slight body float allowed). Idle must be
+revised to match (no independent part drift; keep core pulse).
