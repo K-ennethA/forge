@@ -471,3 +471,46 @@ orange lava (not deep red), still a bit see-through. (5) eyes placed high
 on the head sides like a dragon, per the circle annotation. (6) flight
 undulation becomes VERTICAL (up/down waves) instead of the flat horizontal
 S, per the drawn S.
+
+## 2026-09-26 — Magmoo movement identity (artist verbatim, answers to the
+## orchestrator's v4 questions; binding, folds into the v4 lane)
+
+"resting state is segmented on the ground, and he idles between turning
+into a ball and the flying s shape
+
+also we should see visible disconnect between the blob sections, it seems
+they are all connected right now
+
+i imagine him moving from space to space as goops chasing each other
+
+cartoon slime
+
+he bounces by the flight pattern, so he more launches himself forward with
+the goops following him then landing on the next spot as the position
+touching the ground
+
+yes he can shed small lava or leave lava
+
+death can be a puddle yes"
+
+Binding reading:
+- REST = the segments lying on the ground, visibly separate. IDLE = from
+  that rest he cycles between forming the ball and doing the flying-S
+  rise, then settles back to segments. One loop can stage both beats.
+- VISIBLE DISCONNECT: the blob sections must read clearly separate
+  (current build reads connected - widen the gaps; droplets must not
+  bridge them into one silhouette).
+- LOCOMOTION = bounding leaps, "goops chasing each other": he launches
+  forward, the following pieces chase him through the air (the vertical S
+  arc is the launch trajectory), then he lands grounded at the next spot.
+  The walk clip is that launch->arc->land cycle in place.
+- FEEL = CARTOON SLIME: snappy, bouncy - anticipation squash before
+  launch, stretch in the air, splat + settle on landing.
+- Goo transitions must be FLAWLESS/believable (artist: "comes to life
+  from its movements") - stretchy deformation: liquid bridges that neck
+  and snap, bulge on contact, relax after. Shape-key work on top of
+  bones is approved effort.
+- SHEDDING: yes - small lava drips/splats shed in motion or left behind.
+- DEATH = collapse into an inert puddle - RECORDED for the deferred
+  attack/death wave (not built now); spawn as rising from a puddle noted
+  as the natural counterpart.
