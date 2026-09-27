@@ -1,14 +1,14 @@
-00:01.890  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampwarrior.blend"
-00:05.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_torso.png'
-00:05.984  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_torso_front.png'
-00:06.718  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_sword.png'
-00:07.468  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_hem.png'
-00:08.062  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_boots.png'
-00:08.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_hand.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_torso.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_torso_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_sword.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_hem.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_boots.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_hand.png
+00:01.750  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampwarrior.blend"
+00:05.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_torso.png'
+00:05.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_torso_front.png'
+00:06.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_sword.png'
+00:07.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_hem.png'
+00:07.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_boots.png'
+00:08.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_hand.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_torso.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_torso_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_sword.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_hem.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_boots.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_hand.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

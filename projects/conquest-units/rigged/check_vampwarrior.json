@@ -5,7 +5,7 @@
    "check": "cell_fit",
    "pass": false,
    "footprint": 1.0537,
-   "height": 1.8477,
+   "height": 1.8407,
    "width": 1.0537,
    "depth": 0.646,
    "max_footprint": 1.9,
@@ -50,12 +50,12 @@
     {
      "mesh": "vampwarrior",
      "layers": 1,
-     "islands": 1501,
+     "islands": 1514,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 30% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4881,
-     "area_distortion_p95": 1.295
+     "overlap_note": "summed UV area is 34% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.431,
+     "area_distortion_p95": 1.358
     },
     {
      "mesh": "vampwarrior_sword",
@@ -125,7 +125,7 @@
      "seam_mm": 0.0,
      "extent": {
       "footprint": 1.0705,
-      "height": 1.8164,
+      "height": 1.8104,
       "min_z": -0.0
      }
     },
@@ -140,7 +140,7 @@
      "seam_mm": 0.0,
      "extent": {
       "footprint": 1.3091,
-      "height": 1.8308,
+      "height": 1.8243,
       "min_z": -0.0
      }
     }

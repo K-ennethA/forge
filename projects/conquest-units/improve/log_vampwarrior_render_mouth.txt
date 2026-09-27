@@ -1,10 +1,10 @@
-00:01.828  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampwarrior.blend"
-00:05.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth.png'
-00:06.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_low.png'
-00:06.813  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_tq_low.png'
-00:07.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_high.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_low.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_tq_low.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v41_mouth_high.png
+00:01.781  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampwarrior.blend"
+00:05.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth.png'
+00:06.688  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_low.png'
+00:07.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_tq_low.png'
+00:07.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_high.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_low.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_tq_low.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v42_mouth_high.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

@@ -1,8 +1,7 @@
-﻿WROTE vampwarrior_v41_face_vs_reference.png
-WROTE vampwarrior_v41_hair_vs_annotation.png
-WROTE vampwarrior_v41_eyes_sheet.png
-WROTE vampwarrior_v41_brows.png
-WROTE vampwarrior_v41_fangs.png
-WROTE vampwarrior_v41_skin_tone.png {"palette_v3": [226, 220, 218], "palette_v4": [228, 210, 200], "rendered_cheek_v3": [[223, 218, 218], 0.0, 0.022, 0.875], "rendered_cheek_v4": [[224, 207, 200], 17.5, 0.107, 0.878], "rendered_forehead_v3": [[233, 229, 229], 0.0, 0.017, 0.914], "rendered_forehead_v4": [[232, 216, 209], 18.3, 0.099, 0.91], "reference_lit_median": [[131, 122, 117], 21.4, 0.107, 0.514, 11520]}
-WROTE vampwarrior_v41_shadow_regions.png
-WROTE vampwarrior_v41_contact.png
+WROTE vampwarrior_v42_hairline_vs_annotation.png
+WROTE vampwarrior_v42_face_vs_reference.png
+WROTE vampwarrior_v42_brows.png
+WROTE vampwarrior_v42_fangs.png
+WROTE vampwarrior_v42_skin_tone.png {"palette_v3": [226, 220, 218], "palette_v4": [228, 210, 200], "rendered_cheek_v3": [[223, 218, 218], 0.0, 0.022, 0.875], "rendered_cheek_v4": [[225, 209, 201], 20.0, 0.107, 0.882], "rendered_forehead_v3": [[233, 229, 229], 0.0, 0.017, 0.914], "rendered_forehead_v4": [[233, 217, 210], 18.3, 0.099, 0.914], "reference_lit_median": [[131, 122, 117], 21.4, 0.107, 0.514, 11520]}
+WROTE vampwarrior_v42_shadow_regions.png
+WROTE vampwarrior_v42_contact.png

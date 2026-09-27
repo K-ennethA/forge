@@ -1,10 +1,12 @@
-# Vampire Warrior v4.1 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
+# Vampire Warrior v4.2 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
 # shells, no tone bands, the v1 material back), liner contour, fangs from under the lip, the drawn stylised pass (shadow
 # shapes, face dials, brows, faint lips), armour overlays, long front hair strands; v4 = thicker brows, the face-framing
-# curtain strands from the centre part, warm skin, fang roots proven hidden; v4.1 = ONE broad front piece per side, the hair hugging the scalp, the darker eye red), one command (hidden, headless).
+# curtain strands from the centre part, warm skin, fang roots proven hidden; v4.1 = ONE broad front piece per side, the hair hugging the scalp, the darker eye red; v4.2 = the strand's top edge on the
+# artist's orange line, the scalp band out to the green line, the falls rooted under the strand), one command (hidden, headless).
 # Writes improved/vampwarrior.*, improved/textures/vampwarrior_*, rigged/vampwarrior.{blend,json,glb},
 # rigged/vampwarrior__dawn.blend, improved/check_vampwarrior.json, rigged/check_vampwarrior.json, renders/vampwarrior/
-# (v4.1 files are vampwarrior_v41*; v1 / v2 / v3 / v4 stills stay as the 'before'), improve/log_vampwarrior_*.
+# (v4.2 files are vampwarrior_v42*; v1 .. v4.1 stills stay as the 'before'), improve/log_vampwarrior_* (v4.2: the hairline
+# check improve/log_vampwarrior_hairline.json = built edges vs the traced annotation, vampwarrior_hairline_check.py).
 #   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
 #   (saves nothing but its digest); every digest part must match, except the two bakes, which are held to the pinned
 #   tolerance gate (vampwarrior_bake_diff.py) if they differ.
@@ -42,7 +44,7 @@ if (-not $SkipBuild) {
 $RB = "`"$P\rigged\vampwarrior.blend`""
 $RD = "`"$P\rigged\vampwarrior__dawn.blend`""
 $R = "`"$I\vampwarrior_render.py`""
-$V4 = "`"$OUT\vampwarrior_v41`""
+$V4 = "`"$OUT\vampwarrior_v42`""
 # debug tint for the authored regions (render-only, in memory): shadow shapes magenta / cyan, brows green, liner orange,
 # mouth line blue
 $DBG = "skin_shadow=255,40,220;bodice_shadow=40,220,255;brow=40,200,60;liner=255,160,0;mouth=0,90,255"
@@ -53,15 +55,16 @@ $BROWF = "-0.044,-0.12,1.676,0.050,-0.10,1.712"
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\vampwarrior.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_vampwarrior.json`"")),
   @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_vampwarrior.json`"")),
+  @("hairline",       @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_hairline_check.py`"","--","`"$I\log_vampwarrior_hairline.json`"")),
   @("render_main",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"front,threequarter,side,back,back_threequarter,tactical,tactical_small","--pose","idle:1")),
   @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"portrait,portrait_tq,portrait_low,face,face_side,eyes,head,head_front,head_back","--pose","idle:1")),
   @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"torso,torso_front,sword,hem,boots,hand","--pose","idle:1")),
   @("render_mouth",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"mouth,mouth_low,mouth_tq_low,mouth_high","--pose","idle:1","--focus",$MOUTHF)),
   @("render_brows",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"brows","--pose","idle:1","--focus",$BROWF)),
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"ortho_front,ortho_side","--pose","idle:1")),
-  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v41_dawn`"","front,threequarter,portrait","--pose","idle:1")),
-  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v41shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v41"))
+  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v42_dawn`"","front,threequarter,portrait","--pose","idle:1")),
+  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v42shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v42"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {
@@ -72,4 +75,5 @@ foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)"
 & $VPY -P "$I\vampwarrior_compose.py" 2>&1 | Out-File -Encoding utf8 "$I\log_vampwarrior_compose.txt"
 "compose exit=$LASTEXITCODE"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_vampwarrior_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
+(Get-Content "$I\log_vampwarrior_hairline.txt" | Select-String "HAIRLINE").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

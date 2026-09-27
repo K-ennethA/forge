@@ -6,7 +6,7 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
-  "seconds": 0.6,
+  "seconds": 0.5,
   "sword_object": "sword verts 1.0 on 'sword'; tassel on tassel.0/1 (vine weights)",
   "rule": "body: MPFB game_engine weights (Root -> pelvis); cuffs / belt / toe caps / soles / collar / v3 breastplate + pauldrons: the MPFB weights of the nearest skin point (barycentric); knee cops / gem / buckle: the skin weights at their centroid (rigid ride); fauld: pelvis at the top blending to the skin under the hem (<= 55 %); heels foot, eyes / fangs / hair cap / v4 curtain strands head; hair locks head until they leave the head then rigkit.vine_weights along their chain; cape: across-hat between the 5 chains x along-hat down each; <= 4 influences, normalised"
  },
@@ -145,24 +145,24 @@
     "hair_back.R": {
      "tip_lag_frames": 6,
      "axis": "y",
-     "driver_ptp_deg": 6.35,
-     "tip_follow_through_ptp_deg": 7.15
+     "driver_ptp_deg": 6.33,
+     "tip_follow_through_ptp_deg": 7.16
     },
     "hair_front.L": {
      "tip_lag_frames": 6,
      "axis": "x",
-     "driver_ptp_deg": 6.45,
-     "tip_follow_through_ptp_deg": 6.55
+     "driver_ptp_deg": 6.39,
+     "tip_follow_through_ptp_deg": 6.5
     },
     "hair_front.R": {
      "tip_lag_frames": 6,
      "axis": "x",
-     "driver_ptp_deg": 6.42,
-     "tip_follow_through_ptp_deg": 6.51
+     "driver_ptp_deg": 6.47,
+     "tip_follow_through_ptp_deg": 6.56
     }
    }
   },
-  "seconds": 0.3
+  "seconds": 0.2
  },
  "clips": {
   "idle": {
@@ -195,7 +195,7 @@
     "blade_to_legs": 0.2341,
     "blade_to_torso": 0.2396,
     "cape_to_pauldrons": 0.0031,
-    "front_hair_to_chest_signed": -0.0109
+    "front_hair_to_chest_signed": -0.0189
    },
    "feet_planted": {
     "L": {
@@ -245,7 +245,7 @@
     "blade_to_legs": 0.065,
     "blade_to_torso": 0.0673,
     "cape_to_pauldrons": 0.0149,
-    "front_hair_to_chest_signed": -0.0346
+    "front_hair_to_chest_signed": -0.0336
    },
    "gait": {
     "L": {
@@ -1377,12 +1377,12 @@
    "head": [
     0.0353,
     0.0176,
-    1.6256
+    1.6253
    ],
    "tail": [
     0.0662,
     0.0731,
-    1.4953
+    1.4951
    ]
   },
   {
@@ -1392,12 +1392,12 @@
    "head": [
     0.0662,
     0.0731,
-    1.4953
+    1.4951
    ],
    "tail": [
     0.0962,
     0.0981,
-    1.357
+    1.3569
    ]
   },
   {
@@ -1407,12 +1407,12 @@
    "head": [
     0.0962,
     0.0981,
-    1.357
+    1.3569
    ],
    "tail": [
     0.1128,
     0.1068,
-    1.2132
+    1.2131
    ]
   },
   {
@@ -1422,7 +1422,7 @@
    "head": [
     0.1128,
     0.1068,
-    1.2132
+    1.2131
    ],
    "tail": [
     0.1333,
@@ -1435,14 +1435,14 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    -0.0279,
-    0.0188,
-    1.6261
+    -0.0266,
+    0.017,
+    1.6304
    ],
    "tail": [
-    -0.0615,
-    0.0741,
-    1.4936
+    -0.0605,
+    0.0726,
+    1.4966
    ]
   },
   {
@@ -1450,14 +1450,14 @@
    "parent": "hair_back.R.0",
    "deform": true,
    "head": [
-    -0.0615,
-    0.0741,
-    1.4936
+    -0.0605,
+    0.0726,
+    1.4966
    ],
    "tail": [
-    -0.0913,
+    -0.0908,
     0.0965,
-    1.3519
+    1.3542
    ]
   },
   {
@@ -1465,14 +1465,14 @@
    "parent": "hair_back.R.1",
    "deform": true,
    "head": [
-    -0.0913,
+    -0.0908,
     0.0965,
-    1.3519
+    1.3542
    ],
    "tail": [
-    -0.1069,
+    -0.1066,
     0.1055,
-    1.2055
+    1.2065
    ]
   },
   {
@@ -1480,9 +1480,9 @@
    "parent": "hair_back.R.2",
    "deform": true,
    "head": [
-    -0.1069,
+    -0.1066,
     0.1055,
-    1.2055
+    1.2065
    ],
    "tail": [
     -0.1276,
@@ -1496,13 +1496,13 @@
    "deform": true,
    "head": [
     0.0876,
-    -0.0383,
-    1.6563
+    -0.0364,
+    1.6515
    ],
    "tail": [
-    0.1021,
-    -0.0769,
-    1.5152
+    0.1039,
+    -0.0781,
+    1.5108
    ]
   },
   {
@@ -1510,14 +1510,14 @@
    "parent": "hair_front.L.0",
    "deform": true,
    "head": [
-    0.1021,
-    -0.0769,
-    1.5152
+    0.1039,
+    -0.0781,
+    1.5108
    ],
    "tail": [
-    0.0953,
-    -0.157,
-    1.3905
+    0.0952,
+    -0.1571,
+    1.3859
    ]
   },
   {
@@ -1525,14 +1525,14 @@
    "parent": "hair_front.L.1",
    "deform": true,
    "head": [
-    0.0953,
-    -0.157,
-    1.3905
+    0.0952,
+    -0.1571,
+    1.3859
    ],
    "tail": [
-    0.0934,
-    -0.1708,
-    1.2426
+    0.0933,
+    -0.1702,
+    1.2377
    ]
   },
   {
@@ -1540,9 +1540,9 @@
    "parent": "hair_front.L.2",
    "deform": true,
    "head": [
-    0.0934,
-    -0.1708,
-    1.2426
+    0.0933,
+    -0.1702,
+    1.2377
    ],
    "tail": [
     0.0937,
@@ -1555,14 +1555,14 @@
    "parent": "spine_03",
    "deform": true,
    "head": [
-    -0.0796,
-    -0.0395,
-    1.6502
+    -0.0797,
+    -0.0379,
+    1.6554
    ],
    "tail": [
-    -0.0925,
-    -0.0805,
-    1.5106
+    -0.0948,
+    -0.0754,
+    1.5135
    ]
   },
   {
@@ -1570,14 +1570,14 @@
    "parent": "hair_front.R.0",
    "deform": true,
    "head": [
-    -0.0925,
-    -0.0805,
-    1.5106
+    -0.0948,
+    -0.0754,
+    1.5135
    ],
    "tail": [
-    -0.0857,
-    -0.1573,
-    1.3855
+    -0.0853,
+    -0.1574,
+    1.3907
    ]
   },
   {
@@ -1585,14 +1585,14 @@
    "parent": "hair_front.R.1",
    "deform": true,
    "head": [
-    -0.0857,
-    -0.1573,
-    1.3855
+    -0.0853,
+    -0.1574,
+    1.3907
    ],
    "tail": [
     -0.084,
     -0.1708,
-    1.2388
+    1.2426
    ]
   },
   {
@@ -1602,7 +1602,7 @@
    "head": [
     -0.084,
     -0.1708,
-    1.2388
+    1.2426
    ],
    "tail": [
     -0.0843,
@@ -1782,20 +1782,20 @@
  },
  "digest": {
   "parts": {
-   "bake_normal": "7810c5c35a194174",
-   "bake_ao": "0aea72d876e29079",
-   "ao_lifted": "2e2c2ed66b006a8f",
-   "geometry_colour_uv": "1c24817054f3c8ad",
-   "weights": "c1fea804f8747b90",
-   "keys": "c18e1a4b166ae5ac",
-   "clip_samples": "153fa7c013126199"
+   "bake_normal": "a54d8c2391fb2262",
+   "bake_ao": "924a4a415a6f93e8",
+   "ao_lifted": "abc7f7e768be494f",
+   "geometry_colour_uv": "f5297560ba0439d7",
+   "weights": "dcd955aa2a220845",
+   "keys": "a56caba8ce56ab3b",
+   "clip_samples": "a1a4f57176989ae5"
   },
-  "combined": "4b35d249a3583d9d"
+  "combined": "a434755a97597cfa"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampwarrior.glb",
-  "bytes": 13570652,
-  "seconds": 1.7,
+  "bytes": 13568088,
+  "seconds": 1.4,
   "carries": {
    "materials": [
     {
@@ -1850,14 +1850,14 @@
    ]
   },
   "body_winding_ref": {
-   "signed_volume_m3": 0.059776,
+   "signed_volume_m3": 0.059916,
    "inward": false,
    "tris": 45900,
    "double_sided": [
     false
    ]
   },
-  "structure": "armature + skinned 'vampwarrior' (body, opaque) + skinned 'vampwarrior_sword' (own node, bone 'sword'); material Col x AO + normal map (v1 wiring); natural scale (metres); report-only cell fit 0.97418"
+  "structure": "armature + skinned 'vampwarrior' (body, opaque) + skinned 'vampwarrior_sword' (own node, bone 'sword'); material Col x AO + normal map (v1 wiring); natural scale (metres); report-only cell fit 0.97787"
  },
  "skins": {
   "default": {
@@ -2529,14 +2529,14 @@
      "tassel_cord": 62
     }
    },
-   "geometry_colour_uv_digest": "6a4e72932c3e3670"
+   "geometry_colour_uv_digest": "20ee49b0df62525e"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "1c24817054f3c8ad",
-   "default_digest_after_restore": "1c24817054f3c8ad"
+   "default_digest_before": "f5297560ba0439d7",
+   "default_digest_after_restore": "f5297560ba0439d7"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampwarrior.json",
- "seconds": 51.4
+ "seconds": 44.6
 }

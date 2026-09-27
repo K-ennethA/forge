@@ -55,6 +55,13 @@ hairline (hair growing from the scalp, not a shell), the fringe shadow re-drawn 
 baked AO / normal detail (bake garbage where clumps interpenetrate) replaced by flat texels in its own UV strip; SKIN warmed
 to the reference's pale warm grey-mauve (sampled); FANGS sunk so that no fang surface is ever seen against the upper lip
 (a multi-view ray proof, the tuck depth solved per fang).
+
+v4.2 (design/review-log.md 2026-09-26 "Vampwarrior v4.2 nitpick" + design/reference/vampwarrior-v42-hairline-annotation.png):
+the front strand's TOP edge moves down to the artist's ORANGE line (CURTAIN_OUTER, traced; v4.1's ran up the part to
+the crown), the scalp cap above it becomes a visible band whose front outline follows the GREEN line (HAIR_BAND_VOL /
+HAIR_BAND_RAMP / HAIR_BAND_BACK: extra cap volume by coronal angle, only above the strand edge), and the long falls are
+re-rooted under the strand (HAIR_FALLS_HEAD) so no strand crosses the band. Built edges vs the traced lines are measured
+in the head_front image by vampwarrior_hairline_check.py.
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, tempfile, addon_utils
 import numpy as np
@@ -224,8 +231,29 @@ HAIR_FRONT_X = ((0.040, 0.160), (0.038, 0.150))   # the front strands' span |x| 
 HAIR_FRONT_TIPS = (1.14, 1.04, 1.10)  # "front strand length": tip heights, inner / middle / outer strand (m)
 # v4 long falls: re-rooted on the part BEHIND the curtain (top of the head) and down the side of the head behind the ear
 # (v3 rooted them on the front part and swept them across the forehead corner = the hood / helmet band)
-HAIR_FALLS_HEAD = ((2.5, 88.0, 8.0), (52.0, 18.0, 64.0, -6.0), (86.0, 12.0, 30.0, 0.0), (100.0, 10.0, 2.0, 0.0),
-                   (98.0, 12.0, -20.0, 0.0))   # on-head control points: (psi, dpsi / q, el, del / q) (deg)
+HAIR_FALLS_HEAD_V41 = ((2.5, 88.0, 8.0), (52.0, 18.0, 64.0, -6.0), (86.0, 12.0, 30.0, 0.0), (100.0, 10.0, 2.0, 0.0),
+                       (98.0, 12.0, -20.0, 0.0))   # v4.1 (kept to quote): rooted on the crown part, over the top-side
+# v4.2: the falls are rooted UNDER the front strand (on the temple below the orange line) and leave behind its outer edge
+# past the ear -- v4.1's crown roots sat in the new scalp band (strands across it) and stacked 9-12 mm on the crown
+HAIR_FALLS_HEAD = ((60.0, 22.0, -6.0), (80.0, 12.0, 12.0, -4.0), (100.0, 10.0, 0.0, 0.0),
+                   (98.0, 12.0, -20.0, 0.0))   # on-head control points: first (psi, el, del / q), then (psi, dpsi / q, el,
+                                               #   del / q) (deg)
+# v4.2 scalp band ("hair scalp goes to the green"): above the strand's top edge the scalp cap carries extra hair volume so
+# its front-view outline follows the GREEN line (traced like the orange; at the crown the green sits on the v4.1 cap top,
+# 0-2 mm; down the sides it runs 5-22 mm outside the bare cap). Extra cap thickness vs the coronal angle phi of the cap
+# point about the head centre (phi = atan2(z - HC z, |x|): 90 = crown, 0 = the side at eye height), measured as the
+# front-view gap between the cap outline and the green at each height on the falls-under-the-strand build:
+#   gaps (mm) phi 68 / 64 / 58 / 54 / 50 / 45: 4.7 / 6.9 / 10.5 / 12.2 / 13.1 / 12.2, then 17-22 below phi 40 (the
+#   freehand stroke ends beside the temples, where the two halves also differ most); the profile carries up to 18 mm
+#   because the band sits in front of the rim (|psi| <= 100) and the head is widest just behind it. The top values
+#   (phi 64-78) also bury the back cascade's crown roots, which otherwise poke through the band's corners.
+HAIR_BAND_VOL = ((20.0, 0.0), (30.0, 0.008), (38.0, 0.015), (45.0, 0.018), (52.0, 0.017), (58.0, 0.014),
+                 (64.0, 0.011), (70.0, 0.0075), (78.0, 0.003), (86.0, 0.0))   # "scalp band volume": (phi deg, extra m)
+HAIR_BAND_RAMP = (-2.0, 14.0)         # the volume grows in from el(top edge) - a to + b (deg): none under the strand, so
+                                      #   the strand's edge lies ON the band's foot (a 1..7 ramp let coarse cap faces
+                                      #   saw-tooth through it); past the outer edge (|psi| > 90) the edge el holds at 15
+HAIR_BAND_BACK = (100.0, 130.0, 0.0)  # toward the back the volume eases from |psi| a to b down to c x -- the back
+                                      #   cascade's clumps ride the cap there and were pushed out as lumps at 0.3 x
 # v4 front (artist: "its not strands up front showing the hair"; the red annotation over the v3 face): per side a
 # CURTAIN of HAIR_CURTAIN_N separate strands that leave the centre part, sweep out over the forehead corner and down
 # beside the temple / cheek to staggered pointed tips -- the face frame. Its inner (face-side) edge is traced off the
@@ -236,7 +264,20 @@ HAIR_CURTAIN_N = 1                    # "face-framing strands" per side (v4.1, a
                                       #   it should be one large one up front": ONE broad sweeping piece; v4 had 5)
 CURTAIN_INNER = ((2.0, 56.0), (24.0, 46.0), (47.0, 20.0), (60.0, -2.0), (68.0, -24.0))   # the face frame (mm)
 CURTAIN_INNER_OFF = (0.002, 0.004, 0.005, 0.006, 0.007)   # its lift off the scalp / skin (m)
-CURTAIN_OUTER = ((2.0, 84.0), (38.0, 70.0), (66.0, 42.0), (78.0, 12.0), (80.0, -14.0))  # outer edge on the head (psi, el deg)
+CURTAIN_OUTER_V41 = ((2.0, 84.0), (38.0, 70.0), (66.0, 42.0), (78.0, 12.0), (80.0, -14.0))  # v4.1 outer edge (kept to quote)
+# v4.2 (artist: "the strand should go to this red line, and then hair scalp goes to the green", design/reference/
+# vampwarrior-v42-hairline-annotation.png): the front strand's TOP edge = the ORANGE line. v4.1's outer edge ran up the
+# centre part to the crown (el 84), so the strand covered the whole front of the head; now its outer edge starts ON the
+# part at the orange line and follows the orange arc down to the temple, then the v4.1 temple / cheek run. Traced: the
+# annotation registered onto the v4.1 head_front still (masked SSD scale search: 0.5527 x, residual 19 grey levels),
+# both halves folded about the part and averaged (the two freehand halves differ by <= 11 px), every orange pixel's
+# idle:1 camera ray cast onto the v4.1 hair CAP alone and mapped back to the rest pose (barycentric on the hit face)
+# -> (psi, el) about the head centre: (3.5, 49.7) at the part, (30.2, 50.1), (45.1, 45.5), (56.5, 41.8), (62.8, 39.5),
+# then past the cap's rim. The control points are those, lowered by the measured built-edge offset (the strand's lift +
+# edge thickness put its visible edge 2-6 mm above the traced cap point, measured by vampwarrior_hairline_check.py over
+# four preview builds); the temple / cheek end moves out to psi 90 (v4.1 78-80 sat 3-7 mm inside the orange's end).
+# The trace (pixels + cap rays) is kept in renders/vampwarrior/vampwarrior_v42_hairline_trace.json.
+CURTAIN_OUTER = ((2.0, 47.6), (32.0, 43.5), (60.0, 29.0), (90.0, 15.0), (90.0, -14.0))  # "strand top edge" (psi, el deg)
 CURTAIN_OUTER_OFF = (0.002, 0.005, 0.005, 0.005, 0.005)  # its lift off the scalp (m) (v4.1: the v4 volume lobe 0.016 /
                                       #   0.012 either side of the part made the hair sit tall; now it hugs the scalp)
 CURTAIN_TIPS = ((-62.0, 72.0),)       # v4.1: the one front piece's single pointed tip (v4: 5 staggered, -46 .. -74 mm)
@@ -1753,7 +1794,22 @@ Fcap = [[mp_[i] for i in CF[k]] for k in cap_faces]
 tpart = np.clip(1.0 - np.abs(Vcap[:, 0]) / PART_W, 0, 1) * (Vcap[:, 1] < HC[1] + 0.02)
 # v4: the cap feathers out toward the hairline (hair growing from the scalp; v3's full-thickness edge was the hood rim)
 _capfe = smoothstep(0.0, HAIRLINE_FEATHER[0], Vcap[:, 2] - hairline_z(Vcap)[1])
-_capt = np.maximum(HAIRLINE_FEATHER[1], (HAIR_CAP_T - PART_DEPTH * tpart ** 1.5) * _capfe)
+# v4.2 scalp band: extra volume by the coronal angle, only above the front strand's top edge (CURTAIN_OUTER on the head)
+_dcap = Vcap - HC
+_capd = _dcap / np.linalg.norm(_dcap, axis=1)[:, None]
+_cpsi = np.degrees(np.arctan2(np.abs(_capd[:, 0]), -_capd[:, 1]))              # 0 = front .. 180 = back (both sides)
+_cel = np.degrees(np.arcsin(np.clip(_capd[:, 2], -1.0, 1.0)))
+_cphi = np.degrees(np.arctan2(_dcap[:, 2], np.abs(_dcap[:, 0])))
+_elo = np.interp(_cpsi, [p_[0] for p_ in CURTAIN_OUTER[:4]], [p_[1] for p_ in CURTAIN_OUTER[:4]])
+_bandm = smoothstep(-HAIR_BAND_RAMP[0], HAIR_BAND_RAMP[1], _cel - _elo) * \
+    (1.0 - (1.0 - HAIR_BAND_BACK[2]) * smoothstep(HAIR_BAND_BACK[0], HAIR_BAND_BACK[1], _cpsi))
+_bandv = np.interp(_cphi, [p_[0] for p_ in HAIR_BAND_VOL], [p_[1] for p_ in HAIR_BAND_VOL]) * _bandm
+_capt = np.maximum(HAIRLINE_FEATHER[1], (HAIR_CAP_T + _bandv - PART_DEPTH * tpart ** 1.5) * _capfe)
+BAND_INFO = {"rule": "cap outer thickness += HAIR_BAND_VOL(coronal angle) x [above the strand top edge, ramp %s deg] x "
+                     "(easing to %.1f x from |psi| %s to %s deg)" % (HAIR_BAND_RAMP, HAIR_BAND_BACK[2], HAIR_BAND_BACK[0],
+                                                                     HAIR_BAND_BACK[1]),
+             "max_extra_m": round(float(_bandv.max()), 4), "verts_with_volume": int((_bandv > 0.001).sum()),
+             "max_cap_thickness_m": round(float(_capt.max()), 4)}
 CAP_FEATHER_INFO = {"rule": "cap outer skin thickness x smoothstep(0, %.3f, height above the hairline), floor %.4f m"
                             % HAIRLINE_FEATHER, "rim_thickness_m_p50": round(float(np.median(_capt[_capfe < 0.05])), 4)
                     if (_capfe < 0.05).any() else None, "full_thickness_m": HAIR_CAP_T}
@@ -2265,8 +2321,8 @@ report["parts"] = {"boots": BOOT_INFO, "fauld": FAULD_INFO, "cape": CAPE_INFO, "
                    "armor": ARMOR_INFO}
 _cur_names = sorted(n for n in LOCK_INFO if n.startswith("lock.curtain"))
 report["hair_v4"] = {
-    "front": "curtain: %d separate strands per side from the centre part (face frame) + %d long falls per side behind it "
-             "(over the shoulders to the chest) + the back cascade (%d clumps, v3's)" % (HAIR_CURTAIN_N, HAIR_FRONT_N,
+    "front": "curtain: %d strand per side hanging from the orange line (v4.2; face frame) over the scalp band + %d long "
+             "falls per side from under it (over the shoulders to the chest) + the back cascade (%d clumps, v3's)" % (HAIR_CURTAIN_N, HAIR_FRONT_N,
                                                                                       HAIR_OPTS["A"]["back_clumps"]),
     "curtain_inner_edge_mm": [list(p) for p in CURTAIN_INNER], "curtain_inner_edge_on_head_psi_el_deg":
         [[round(a, 1), round(b, 1)] for a, b in CURTAIN_PE], "curtain_outer_edge_psi_el_deg": [list(p) for p in CURTAIN_OUTER],
@@ -2275,6 +2331,10 @@ report["hair_v4"] = {
                             "min_clear_m": LOCK_INFO[n]["min_clear"]} for n in _cur_names},
     "curtain_params": HAIR_CURTAIN, "curtain_weights": "rigid head (they lie on the head down to the cheek)",
     "falls_on_head": [list(p) for p in HAIR_FALLS_HEAD], "cap_feather": CAP_FEATHER_INFO,
+    "v42_hairline": {"strand_top_edge_psi_el_deg": [list(p) for p in CURTAIN_OUTER],
+                     "strand_top_edge_v41_psi_el_deg": [list(p) for p in CURTAIN_OUTER_V41],
+                     "falls_on_head_v41": [list(p) for p in HAIR_FALLS_HEAD_V41], "scalp_band": BAND_INFO,
+                     "band_vol_phi_m": [list(p) for p in HAIR_BAND_VOL]},
     "crown": (lambda HZ_, HM_: {"scalp_top_z": round(Z_TOP, 4), "hair_top_z": round(HZ_, 4),
                                 "crown_above_scalp_mm": round(1000 * (HZ_ - Z_TOP), 1),
                                 "midline_hair_top_above_scalp_mm": round(1000 * (HM_ - Z_TOP), 1),
@@ -2328,7 +2388,7 @@ if PREVIEW:
     bpy.ops.wm.save_as_mainfile(filepath=PREVIEW, copy=True, compress=True)
     print("PREVIEW", json.dumps({k: report.get(k) for k in ("tris", "measure", "facing", "open_edges", "regions_area_share",
                                                             "glow_tiers", "centre_shift", "parts", "chin", "mpfb",
-                                                            "hidden_skin_removed")}, default=str))
+                                                            "hidden_skin_removed", "hair_v4")}, default=str))
     sys.stdout.flush(); os._exit(0)
 
 # =========================================================================== 6. bake normal + AO (high = subdivided MPFB body + parts)
