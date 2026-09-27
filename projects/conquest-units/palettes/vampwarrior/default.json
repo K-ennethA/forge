@@ -10,7 +10,7 @@
   "liner":       {"rgb": [44, 20, 28],    "note": "near-black maroon lid-edge contour"},
   "brow":        {"rgb": [78, 60, 66],    "note": "v3 painted angled brows, dark ash"},
   "eye_sclera":  {"rgb": [214, 206, 204]},
-  "eye_iris":    {"rgb": [206, 24, 34],   "emission": [255, 30, 40], "emission_scale": 0.55, "note": "RED EYES, subtle glow tier"},
+  "eye_iris":    {"rgb": [214, 96, 108],  "emission": [255, 30, 40], "emission_scale": 0.28, "note": "RED EYES, v4.1 the darker / less bright tone (artist picked the v3 fainter-eye alternative: 'lets make the red eyes that darker less bright tone afterwall'); v3/v4 were rgb 206, 24, 34 at emission scale 0.55. Still the top glow tier above the gem's 0.18"},
   "eye_pupil":   {"rgb": [34, 4, 8]},
   "fang":        {"rgb": [246, 242, 232], "note": "bone-white"},
   "hair":        {"rgb": [236, 231, 218], "note": "bone-white"},

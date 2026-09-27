@@ -1,10 +1,10 @@
-# Vampire Warrior v4 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
+# Vampire Warrior v4.1 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
 # shells, no tone bands, the v1 material back), liner contour, fangs from under the lip, the drawn stylised pass (shadow
 # shapes, face dials, brows, faint lips), armour overlays, long front hair strands; v4 = thicker brows, the face-framing
-# curtain strands from the centre part, warm skin, fang roots proven hidden), one command (hidden, headless).
+# curtain strands from the centre part, warm skin, fang roots proven hidden; v4.1 = ONE broad front piece per side, the hair hugging the scalp, the darker eye red), one command (hidden, headless).
 # Writes improved/vampwarrior.*, improved/textures/vampwarrior_*, rigged/vampwarrior.{blend,json,glb},
 # rigged/vampwarrior__dawn.blend, improved/check_vampwarrior.json, rigged/check_vampwarrior.json, renders/vampwarrior/
-# (v4 files are vampwarrior_v4*; v1 / v2 / v3 stills stay as the 'before'), improve/log_vampwarrior_*.
+# (v4.1 files are vampwarrior_v41*; v1 / v2 / v3 / v4 stills stay as the 'before'), improve/log_vampwarrior_*.
 #   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
 #   (saves nothing but its digest); every digest part must match, except the two bakes, which are held to the pinned
 #   tolerance gate (vampwarrior_bake_diff.py) if they differ.
@@ -42,7 +42,7 @@ if (-not $SkipBuild) {
 $RB = "`"$P\rigged\vampwarrior.blend`""
 $RD = "`"$P\rigged\vampwarrior__dawn.blend`""
 $R = "`"$I\vampwarrior_render.py`""
-$V4 = "`"$OUT\vampwarrior_v4`""
+$V4 = "`"$OUT\vampwarrior_v41`""
 # debug tint for the authored regions (render-only, in memory): shadow shapes magenta / cyan, brows green, liner orange,
 # mouth line blue
 $DBG = "skin_shadow=255,40,220;bodice_shadow=40,220,255;brow=40,200,60;liner=255,160,0;mouth=0,90,255"
@@ -59,9 +59,9 @@ $vJobs = @(
   @("render_mouth",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"mouth,mouth_low,mouth_tq_low,mouth_high","--pose","idle:1","--focus",$MOUTHF)),
   @("render_brows",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"brows","--pose","idle:1","--focus",$BROWF)),
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"ortho_front,ortho_side","--pose","idle:1")),
-  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v4_dawn`"","front,threequarter,portrait","--pose","idle:1")),
-  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v4shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v4"))
+  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v41_dawn`"","front,threequarter,portrait","--pose","idle:1")),
+  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v41shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v41"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {

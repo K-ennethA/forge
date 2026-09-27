@@ -198,11 +198,12 @@ CAPE_SLITS = [(0.22, 0.55), (0.5, 0.42), (0.77, 0.6)]   # (column fraction, slit
 CAPE_T = 0.0045
 CAPE_FOLD, CAPE_FOLDS = 0.022, 6.5    # "cape folds": depth at the hem, folds across the width
 # ---- hair
-HAIR_CAP_T = 0.011                    # "hair volume" on the scalp
+HAIR_CAP_T = 0.006                    # "hair volume" on the scalp (v4.1: 0.011 -> 0.006, artist: "the hair is too tall now
+                                      #   on the head")
 HAIRLINE_FEATHER = (0.022, 0.0022)    # v4: the scalp cap's outer skin thins to the 2nd value (m; its inner skin sits 1.5 mm
                                       #   out, so 0.7 mm of hair) over the first (m) above the front / side hairline
                                       #   (v3: full thickness to the edge = the hood rim)
-PART_W, PART_DEPTH = 0.012, 0.005     # centre part groove
+PART_W, PART_DEPTH = 0.012, 0.003     # centre part groove (v4.1 depth 0.005 -> 0.003 with the thinner cap)
 HAIRLINE = (0.055, -0.035)            # hairline above the brow (front) / at the nape relative to the head joint
 LOCK_T = 0.016                        # lock half-thickness (a clump)
 LOCK_RINGS = 36                       # "hair lock detail": cross-sections per lock
@@ -231,23 +232,30 @@ HAIR_FALLS_HEAD = ((2.5, 88.0, 8.0), (52.0, 18.0, 64.0, -6.0), (86.0, 12.0, 30.0
 # annotation in front projection: (x from the midline, z above the eye centres) in mm, at 0.25 mm / px on the
 # annotation's 3x crop (calibrated on the eye spacing 57.6 mm and the eye -> slit drop 61.8 mm); its outer edge runs over
 # the top-side of the head (the annotation's lobes either side of the part dip) and down the head's side.
-HAIR_CURTAIN_N = 5                    # "face-framing strands" per side
+HAIR_CURTAIN_N = 1                    # "face-framing strands" per side (v4.1, artist: "there is too many hair strands now /
+                                      #   it should be one large one up front": ONE broad sweeping piece; v4 had 5)
 CURTAIN_INNER = ((2.0, 56.0), (24.0, 46.0), (47.0, 20.0), (60.0, -2.0), (68.0, -24.0))   # the face frame (mm)
 CURTAIN_INNER_OFF = (0.002, 0.004, 0.005, 0.006, 0.007)   # its lift off the scalp / skin (m)
 CURTAIN_OUTER = ((2.0, 84.0), (38.0, 70.0), (66.0, 42.0), (78.0, 12.0), (80.0, -14.0))  # outer edge on the head (psi, el deg)
-CURTAIN_OUTER_OFF = (0.003, 0.016, 0.012, 0.008, 0.008)  # its lift: the volume lobe either side of the part (m)
-CURTAIN_TIPS = ((-46.0, 68.0), (-60.0, 70.0), (-74.0, 73.0), (-64.0, 78.0), (-50.0, 82.0))   # per strand (inner -> outer):
+CURTAIN_OUTER_OFF = (0.002, 0.005, 0.005, 0.005, 0.005)  # its lift off the scalp (m) (v4.1: the v4 volume lobe 0.016 /
+                                      #   0.012 either side of the part made the hair sit tall; now it hugs the scalp)
+CURTAIN_TIPS = ((-62.0, 72.0),)       # v4.1: the one front piece's single pointed tip (v4: 5 staggered, -46 .. -74 mm)
+CURTAIN_TIPS_V4 = ((-46.0, 68.0), (-60.0, 70.0), (-74.0, 73.0), (-64.0, 78.0), (-50.0, 82.0))   # v4 per strand (inner -> outer):
                                       #   tip (z above the eye centre, |x|) in mm -- staggered, the longest mid-curtain;
                                       #   hugging the jaw line (at the annotation's 76-82 mm they hung ~20 mm off the
                                       #   narrower MPFB jaw as loose slivers)
 CURTAIN_TIP_Y = (0.028, 0.056)        # tip depth behind the eye centres' y: inner / outer strand (m) -- the depth of the
                                       #   curtain's last on-head point, so the tips hang straight down beside the jaw
                                       #   (shallower tips swung forward across the cheek as loose slivers)
-HAIR_CURTAIN = {"split": 0.84, "free_w": 0.80, "overlap": 0.10, "sub": 1, "sub_depth": 0.0, "T": 0.012, "tip_w": 0.06,
-                "cols": 4, "rows": 16, "edge_t": 0.30, "off": 0.003,   # strands apart over the last 84 % of their length
-                "q_span": (-0.16, 1.0)}   # the strands share q in this span: the inner strand narrows toward its own
-                                      #   centre as it separates, so the span starts past the traced edge (measured: at
-                                      #   q_span 0..1 the rendered inner edge sat 8-13 mm outside CURTAIN_INNER)
+HAIR_CURTAIN = {"split": 0.84, "free_w": 1.0, "overlap": 0.0, "sub": 1, "sub_depth": 0.0, "T": 0.016, "tip_w": 0.05,
+                "cols": 8, "rows": 18, "edge_t": 0.30, "off": 0.003, "root_k": 0.15,
+                "q_span": (-0.08, 1.0)}   # v4.1: one broad piece over the whole curtain span (no separation narrowing; at
+                                      #   q_span 0..1 its edge still sat ~10 mm outside the traced one at eye + 40 mm; v4's 5 strands needed the span
+                                      #   to start at -0.16 because each narrowed toward its own centre); root_k = its
+                                      #   thickness at the part (x T) -- thin where it grows from the scalp
+HAIR_ROOT_K = 0.20                    # v4.1 "hair height": every hair clump's thickness at its root (x its T; v4 0.35) --
+                                      #   the falls / back clumps root on the crown, where their root thickness stacked on
+                                      #   the cap
 HAIR_UV_STRIP = 0.14                  # v4: every hair face is packed into the right-hand 14 % of the UV square, whose
                                       #   normal / AO texels are flat / white (no bake garbage, no mip bleed from neighbours)
 HAIR_OPTS = {
@@ -1908,7 +1916,8 @@ def hair_clump(name, colfn, q0, q1, chain, P=None):
     across = P["edge_t"] + (1.0 - P["edge_t"]) * np.sqrt(np.maximum(0.0, 1.0 - (2.0 * fcol - 1.0) ** 2))
     if P["sub"] > 1:
         across *= 1.0 - P["sub_depth"] * 0.5 * (1.0 + np.cos(2.0 * math.pi * P["sub"] * fcol))
-    along = (0.35 + 0.65 * smoothstep(0.0, 0.2, vrow)) * (1.0 - 0.8 * smoothstep(0.7, 1.0, vrow))
+    rk_ = P.get("root_k", HAIR_ROOT_K)
+    along = (rk_ + (1.0 - rk_) * smoothstep(0.0, 0.2, vrow)) * (1.0 - 0.8 * smoothstep(0.7, 1.0, vrow))
     Vs, Fs, Rs = VP.solidify(V, F, P["T"] * across * along, 0.0012, "hair", "hair_shade", "hair")
     svert = np.tile(S_.T.reshape(-1), 2)
     Cc = P_[c]
@@ -1930,7 +1939,7 @@ def col_front_strand(sg, s, q, off, j):
     xb0 = HAIR_FRONT_X[0][0] + (HAIR_FRONT_X[0][1] - HAIR_FRONT_X[0][0]) * q
     xb1 = HAIR_FRONT_X[1][0] + (HAIR_FRONT_X[1][1] - HAIR_FRONT_X[1][0]) * q
     # v4: rooted on the part behind the curtain, over the top-side and down behind the ear (HAIR_FALLS_HEAD)
-    ctl = [on_head(sg * (p_[0] + p_[1] * q), p_[2] + p_[3] * q, off + (0.002 if k_ == 1 else 0.0))
+    ctl = [on_head(sg * (p_[0] + p_[1] * q), p_[2] + p_[3] * q, off)   # v4.1: no extra lift on the crown (v4 +2 mm)
            for k_, p_ in enumerate([(HAIR_FALLS_HEAD[0][0], 0.0, HAIR_FALLS_HEAD[0][1], HAIR_FALLS_HEAD[0][2])] +
                                    list(HAIR_FALLS_HEAD[1:]))]
     ctl += [np.array([sg * (0.072 + 0.055 * q), NECK0[1] - 0.058 + 0.012 * q, SHO[s][2] + 0.055]),
@@ -2266,6 +2275,15 @@ report["hair_v4"] = {
                             "min_clear_m": LOCK_INFO[n]["min_clear"]} for n in _cur_names},
     "curtain_params": HAIR_CURTAIN, "curtain_weights": "rigid head (they lie on the head down to the cheek)",
     "falls_on_head": [list(p) for p in HAIR_FALLS_HEAD], "cap_feather": CAP_FEATHER_INFO,
+    "crown": (lambda HZ_, HM_: {"scalp_top_z": round(Z_TOP, 4), "hair_top_z": round(HZ_, 4),
+                                "crown_above_scalp_mm": round(1000 * (HZ_ - Z_TOP), 1),
+                                "midline_hair_top_above_scalp_mm": round(1000 * (HM_ - Z_TOP), 1),
+                                "v4_crown_above_scalp_mm": 23.3,
+                                "rule": "highest hair vertex (cap + every lock) minus the MPFB scalp top; v4 value measured "
+                                        "the same way on the v4 build (hair top 1.8556 vs scalp 1.8323)"})(
+        max(float(p["V"][:, 2].max()) for p in PARTS if p["name"].startswith(("lock", "hair_cap"))),
+        max(float(p["V"][np.abs(p["V"][:, 0]) < 0.02, 2].max()) for p in PARTS
+            if p["name"].startswith(("lock", "hair_cap")) and (np.abs(p["V"][:, 0]) < 0.02).any())),
     "tris": {"curtain": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.curtain")),
              "falls": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.front")),
              "back": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.back")),
