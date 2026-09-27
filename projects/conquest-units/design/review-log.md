@@ -818,3 +818,34 @@ Binding readings for the NEXT working session (nothing dispatched now):
 - FIRESPRITE walk v1.3: legs stay STIFF (no realistic knee articulation),
   more cartoon, FASTER - a little creature hopping around (cadence up,
   hop read over stride).
+
+## 2026-09-26 — Vampwarrior v3 spec expanded (artist verbatim); RESUME
+
+"can we update it to make it a bit more stylized and fix the other issues,
+the hair still needs work on the front portion it doesnt match the drawing
+we want long strans in front even if there isnt mainy individual strans and
+its a solid piece, give a sharper chin for that stylized look as well and
+lower the red thickness and heaviness it should be a fainter red
+
+also the character needs some eyebrows that were shown in the drawing,
+maybe if we can do armor to match the clothes in the drawing that might
+help as well
+
+otherwise resume work with what i had said"
+
+Binding reading (joins the queued v3 items - cel/outline undo keeping the
+base, contour eyeliner, fangs from under the lip):
+- STYLIZED PASS via the drawn approach from the chat discussion: authored
+  shadow-shape regions + face/proportion dials toward the sheet (the
+  game-side toon ramp stays an import-wave item).
+- HAIR front: LONG STRANDS falling in front (over the shoulders to the
+  chest per the sheet) - may be solid pieces, few strands is fine; it is
+  the length/read that matters, not strand count.
+- SHARPER CHIN (stylized face read).
+- RED fainter: the heavy red paint band thinned + lightened to a faint
+  red (reads as the lip paint; lane renders it faint and flags if the
+  artist meant the eye red instead).
+- EYEBROWS added (the sheet shows drawn angled brows).
+- ARMOR detailing pushed toward the sheet's outfit (plate read on the
+  bodice/shoulders where the sheet shows it) - "might help" = lane
+  judgment, rendered for the artist.
