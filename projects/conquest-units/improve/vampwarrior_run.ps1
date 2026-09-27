@@ -1,9 +1,10 @@
-# Vampire Warrior v3 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
+# Vampire Warrior v4 (from-scratch HERO on an MPFB2 base: model + idle + walk; v3 = the v2 cel treatment undone (no outline
 # shells, no tone bands, the v1 material back), liner contour, fangs from under the lip, the drawn stylised pass (shadow
-# shapes, face dials, brows, faint lips), armour overlays, long front hair strands), one command (hidden, headless).
+# shapes, face dials, brows, faint lips), armour overlays, long front hair strands; v4 = thicker brows, the face-framing
+# curtain strands from the centre part, warm skin, fang roots proven hidden), one command (hidden, headless).
 # Writes improved/vampwarrior.*, improved/textures/vampwarrior_*, rigged/vampwarrior.{blend,json,glb},
 # rigged/vampwarrior__dawn.blend, improved/check_vampwarrior.json, rigged/check_vampwarrior.json, renders/vampwarrior/
-# (v3 files are vampwarrior_v3*; v1 / v2 stills stay as the 'before'), improve/log_vampwarrior_*.
+# (v4 files are vampwarrior_v4*; v1 / v2 / v3 stills stay as the 'before'), improve/log_vampwarrior_*.
 #   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
 #   (saves nothing but its digest); every digest part must match, except the two bakes, which are held to the pinned
 #   tolerance gate (vampwarrior_bake_diff.py) if they differ.
@@ -41,24 +42,26 @@ if (-not $SkipBuild) {
 $RB = "`"$P\rigged\vampwarrior.blend`""
 $RD = "`"$P\rigged\vampwarrior__dawn.blend`""
 $R = "`"$I\vampwarrior_render.py`""
-$V3 = "`"$OUT\vampwarrior_v3`""
+$V4 = "`"$OUT\vampwarrior_v4`""
 # debug tint for the authored regions (render-only, in memory): shadow shapes magenta / cyan, brows green, liner orange,
 # mouth line blue
 $DBG = "skin_shadow=255,40,220;bodice_shadow=40,220,255;brow=40,200,60;liner=255,160,0;mouth=0,90,255"
-# the fainter-eye ALTERNATIVE (flagged for the artist; the build keeps the default eyes): lighter, less saturated iris,
-# lower glow tier (still above the gem's 0.18)
-$FAINT = "eye_iris=214,96,108:0.28"
+# the v4 mouth / brow close-ups use the SAME fixed focus boxes as the v3 'before' close-ups (vampwarrior_v4cmp_v3_*,
+# rendered off the v3 rig before this build), so the pairs compare 1:1 (the body / head geometry is unchanged v3 -> v4)
+$MOUTHF = "-0.024,-0.15,1.608,0.030,-0.14,1.648"
+$BROWF = "-0.044,-0.12,1.676,0.050,-0.10,1.712"
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\vampwarrior.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_vampwarrior.json`"")),
   @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_vampwarrior.json`"")),
-  @("render_main",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V3,"front,threequarter,side,back,back_threequarter,tactical,tactical_small","--pose","idle:1")),
-  @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V3,"portrait,portrait_tq,portrait_low,face,face_side,eyes,head,head_front,head_back","--pose","idle:1")),
-  @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V3,"torso,torso_front,sword,hem,boots,hand","--pose","idle:1")),
-  @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V3,"ortho_front,ortho_side","--pose","idle:1")),
-  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v3_dawn`"","front,threequarter","--pose","idle:1")),
-  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v3shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
-  @("render_fainteye",@("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v3alt_fainteyes`"","portrait,portrait_tq,eyes","--pose","idle:1","--palette-override",$FAINT)),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v3"))
+  @("render_main",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"front,threequarter,side,back,back_threequarter,tactical,tactical_small","--pose","idle:1")),
+  @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"portrait,portrait_tq,portrait_low,face,face_side,eyes,head,head_front,head_back","--pose","idle:1")),
+  @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"torso,torso_front,sword,hem,boots,hand","--pose","idle:1")),
+  @("render_mouth",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"mouth,mouth_low,mouth_tq_low,mouth_high","--pose","idle:1","--focus",$MOUTHF)),
+  @("render_brows",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"brows","--pose","idle:1","--focus",$BROWF)),
+  @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$V4,"ortho_front,ortho_side","--pose","idle:1")),
+  @("render_dawn",    @("--background",$RD,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v4_dawn`"","front,threequarter,portrait","--pose","idle:1")),
+  @("render_shadow",  @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\vampwarrior_v4shadow`"","portrait,portrait_tq,portrait_low,eyes,torso_front","--pose","idle:1","--palette-override",$DBG)),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\vampwarrior_clips.py`"","--","`"$OUT`"","768","--prefix","vampwarrior_v4"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {

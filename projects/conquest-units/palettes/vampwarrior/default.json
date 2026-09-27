@@ -1,10 +1,10 @@
 {
  "unit": "vampwarrior",
  "skin": "default",
- "description": "The sheet's palette chips: bone-white, pale grey, near-black, dark red, deep maroon, black. Pale skin, bone-white hair, black armour / gloves / boots / cape with silver seam trim, dark-red cape lining, a faint rose-red lip paint (v3: 'a fainter red'), a near-black maroon liner contour, dark ash brows, red eyes (the one lit accent), a faint-glow red throat gem; the sword bone-pale with a dark centre vein, black grip, red tassel. v3 adds the authored shadow tones (skin_shadow, bodice_shadow) and the armour plates (armor, armor_trim).",
+ "description": "The sheet's palette chips: bone-white, pale grey, near-black, dark red, deep maroon, black. Pale skin, bone-white hair, black armour / gloves / boots / cape with silver seam trim, dark-red cape lining, a faint rose-red lip paint (v3: 'a fainter red'), a near-black maroon liner contour, dark ash brows, red eyes (the one lit accent), a faint-glow red throat gem; the sword bone-pale with a dark centre vein, black grip, red tassel. v3 adds the authored shadow tones (skin_shadow, bodice_shadow) and the armour plates (armor, armor_trim). v4 warms the skin / skin shadow / scalp part toward the face reference (pale warm grey-mauve).",
  "regions": {
-  "skin":        {"rgb": [226, 220, 218], "note": "pale (bone-white family, a touch warm so it reads as skin)"},
-  "skin_shadow": {"rgb": [196, 184, 194], "note": "v3 authored shadow shapes on the skin: a cool mauve-grey step down from the skin"},
+  "skin":        {"rgb": [228, 210, 200], "note": "v4 pale warm grey-mauve (artist: v3's 226, 220, 218 read as Blender-default grey). Sampled off design/reference/vampwarrior-v4-face-reference.png: lit skin median rgb 131, 122, 117 = hue 21 deg, saturation 0.11 (11,520 px); the hue / saturation taken, the value kept pale (vampiric pallor)"},
+  "skin_shadow": {"rgb": [196, 176, 168], "note": "v4 authored shadow shapes on the skin: the reference's shadow hue (18 deg, saturation 0.15, sampled 3,957 px) one step down from the skin (v3 196, 184, 194 was a cool mauve that read grey on the warm skin)"},
   "lips":        {"rgb": [170, 62, 80],   "note": "v3 faint rose-red lip paint (v2 was a heavy deep maroon 96, 22, 36)"},
   "mouth":       {"rgb": [70, 24, 34],    "note": "v3 the mouth line between the lips (inside the mouth), dark maroon"},
   "liner":       {"rgb": [44, 20, 28],    "note": "near-black maroon lid-edge contour"},
@@ -15,7 +15,7 @@
   "fang":        {"rgb": [246, 242, 232], "note": "bone-white"},
   "hair":        {"rgb": [236, 231, 218], "note": "bone-white"},
   "hair_shade":  {"rgb": [192, 188, 182], "note": "pale grey (lock undersides)"},
-  "hair_part":   {"rgb": [214, 206, 204], "note": "scalp in the centre part"},
+  "hair_part":   {"rgb": [210, 192, 184], "note": "scalp in the centre part (v4: the warm skin a step darker; v3 214, 206, 204)"},
   "bodice":      {"rgb": [30, 28, 33],    "note": "near-black armoured bodice"},
   "bodice_shadow": {"rgb": [14, 13, 16],  "note": "v3 authored shadow under the chest on the bodice"},
   "trim":        {"rgb": [186, 188, 196], "note": "silver seam trim"},

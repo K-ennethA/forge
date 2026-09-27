@@ -126,7 +126,11 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          "hem": (150.0, 10.0, 1.0), "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0),
          "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0), "head_front": (0.0, 4.0, 1.0),
          "portrait": (0.0, 3.0, 0.62), "portrait_tq": (32.0, 6.0, 0.66), "portrait_low": (12.0, -14.0, 0.66),
-         "eyes": (0.0, 1.0, 1.0), "torso_front": (0.0, 4.0, 1.0)}
+         "eyes": (0.0, 1.0, 1.0), "torso_front": (0.0, 4.0, 1.0),
+         # v4: brow close-up; the fang close-ups (the root must never show over the upper lip) at the portrait angle,
+         # from below, three-quarter-below and above
+         "brows": (0.0, 2.0, 1.0), "mouth": (0.0, 3.0, 1.0), "mouth_low": (0.0, -30.0, 1.0),
+         "mouth_tq_low": (35.0, -15.0, 1.0), "mouth_high": (0.0, 25.0, 1.0)}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"

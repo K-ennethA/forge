@@ -46,6 +46,15 @@ the v2 base; the freed shell triangles go back into the cape / collar grids. Eye
 rooted inside / under the upper lip, the DRAWN stylized pass (authored shadow-shape regions, face dials toward the
 sheet's graphic read, painted angled brows, a faint thin lip paint), armour overlays (breastplate + pauldrons,
 silver-trimmed), and the front hair reworked into long separate solid strands over the shoulders onto the chest.
+
+v4 (design/review-log.md 2026-09-26 "Vampwarrior v4 feedback" + design/reference/vampwarrior-v4-*.png): eyes unchanged;
+BROWS thicker (bold, strongest at the inner ends, measured off the face reference); the FRONT HAIR is rebuilt as
+face-framing CURTAIN strands that leave the centre part and sweep down beside the temples / cheeks to pointed tips (the
+artist's red annotation), the long over-shoulder falls re-rooted behind them, the scalp cap feathered to nothing at the
+hairline (hair growing from the scalp, not a shell), the fringe shadow re-drawn along the curtain edge, and the hair's
+baked AO / normal detail (bake garbage where clumps interpenetrate) replaced by flat texels in its own UV strip; SKIN warmed
+to the reference's pale warm grey-mauve (sampled); FANGS sunk so that no fang surface is ever seen against the upper lip
+(a multi-view ray proof, the tuck depth solved per fang).
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, tempfile, addon_utils
 import numpy as np
@@ -110,23 +119,44 @@ LINER_WING = (0.0010, 22.0, 12.0)     # "liner wing": extra width at the outer c
 # brows (v3, painted): an angled stroke above each eye, inner end low (the sheet's intimidating scowl), tapering outward.
 # control points (x = lateral from the eye centre in units of the eye's front half-width, z = height above the upper
 # lid edge in m), stroke width at the inner end -> tail
-BROW_PTS = ((-1.10, 0.0030), (-0.35, 0.0062), (0.55, 0.0098), (1.30, 0.0082))
-BROW_W = (0.0030, 0.0007)             # "brow thickness": inner end / tail (m)
+# v4 (artist: "she needs thicker eyebrows", face reference): the reference's brow is ~0.28 x the eye width thick at the
+# inner end and ~0.08 x at the tail (measured on design/reference/vampwarrior-v4-face-reference.png at 3x: eye ~95 px wide,
+# brow ~25-30 px at the inner third, ~8 px at the tail); this eye is 22.9 mm wide (liner aperture outer 12.8 + inner
+# 10.1) -> 6.4 mm / 1.8 mm. The stroke centre line moves up so the thicker stroke keeps its gap above the lid.
+BROW_PTS_V3 = ((-1.10, 0.0030), (-0.35, 0.0062), (0.55, 0.0098), (1.30, 0.0082))   # (kept only to quote the change)
+BROW_W_V3, BROW_TAPER_V3 = (0.0030, 0.0007), 0.8
+BROW_PTS = ((-1.10, 0.0052), (-0.35, 0.0080), (0.55, 0.0112), (1.30, 0.0094))
+BROW_W = (0.0064, 0.0018)             # "brow thickness": inner end / tail (m) (v3 0.0030 / 0.0007)
+BROW_TAPER = 1.4                      # "brow taper": width falls as t^this inner -> tail (> 1 = stays bold longer; v3 0.8)
 # ---- eyes + fangs
 EYE_IRIS_DEG, EYE_PUPIL_DEG = 36.0, 13.0  # iris / pupil cone half-angles on the eyeball (seen from the front)
 EYE_SEG = 20                          # eyeball segments round the view axis (v2 16)
 FANG_LEN, FANG_R = 0.0055, 0.0019     # "fangs": visible length below the mouth slit, radius where they leave the lip
 FANG_X = 0.0105                       # fang offset from the midline
-FANG_TUCK = (0.0055, 0.0030)          # the root is tucked this far ABOVE the slit / this far BEHIND the upper lip's front
+FANG_TUCK_V3 = (0.0055, 0.0030)       # v3: root this far ABOVE the slit / BEHIND the upper lip's front (22 % of the fang
+                                      #   above the lip edge stood in FRONT of the lip: the artist's circled root)
 FANG_PROUD = 0.0006                   # the tip stands this far in front of the lower lip's surface
+# v4 (artist: "we shouldnt be able to see this orange highlighted part of the fangs"): the root sits INSIDE the upper lip,
+# FANG_ROOT_DZ above its lower edge, and is pushed back behind the lip's front by the least tuck in FANG_TUCK_TRY for which
+# the multi-view proof passes: from every view in FANG_VIEW_YAW x FANG_VIEW_EL (orthographic rays), no visible fang
+# surface point is seen against the upper lip (a lip / skin face above the local slit that is not the dark mouth).
+FANG_ROOT_DZ = 0.0035                 # root height above the upper lip's lower edge (inside the lip)
+FANG_TUCK_TRY = tuple(round(0.0030 + 0.0005 * i, 4) for i in range(15))   # candidate tucks behind the lip front (m)
+FANG_WIDE_AT = "lip_edge"             # the fang is widest where it leaves the upper lip (v3: at the slit, 2.5 mm lower)
+FANG_VIEW_YAW = (-60.0, -40.0, -20.0, 0.0, 20.0, 40.0, 60.0)     # proof views: yaw from the front (deg)
+FANG_VIEW_EL = (-40.0, -25.0, -12.0, 0.0, 12.0, 25.0, 45.0)      # ... x camera elevation (deg; < 0 = from below)
 MOUTH_IN_D = 0.0025                   # lip-zone skin this far behind the front surface = inside the mouth (dark line)
 # ---- v3 authored shadow shapes (anime-style: few, crisp iso-cut edges, a slightly darker tone; NOT derived from AO)
 JAW_LIGHT_DEG = 42.0                  # "neck shadow length": the stylised key light's elevation above the horizon, from
                                       #   the front; the chin's cast shadow on the neck = skin that cannot see it
 JAW_SMOOTH = 3                        # neighbour-averaging passes on the cast-shadow indicator before the cut
 JAW_GATE = (0.008, 0.6, 0.012)        # never above the chin bottom + a, rising a slope b per metre of |x| beyond c (face)
-FRINGE_D = (0.0065, 0.0105)           # "fringe shadow depth": band under the hairline at the centre / at the temples (m)
-FRINGE_SCALLOP = (0.0040, 3.5)        # pointed lower edge (the strand ends): point depth (m), points per side
+FRINGE_D_V3 = (0.0065, 0.0105)        # v3 band under the (horizontal) hairline -- it drew the hood's rim shadow
+# v4: the fringe shadow is the curtain's shadow on the skin: a band on the FACE side of the curtain's inner edge
+# (CURTAIN_INNER, front projection), its face-side border scalloped like strand tips
+FRINGE_D = (0.0045, 0.0080)           # "fringe shadow depth": band width at the part / at the lower temple (m)
+FRINGE_SCALLOP = (0.0028, 70.0)       # scallop point depth (m), points per metre along the edge
+FRINGE_UNDER = 0.010                  # the band also runs this far UNDER the curtain edge (skin seen between strands)
 CHEST_SHADOW = (0.030, 0.045, 0.010)  # "chest shadow": depth under each breast (m), spread (m), depth at the centre (m)
 # ---- v3 armour overlays (the sheet's armoured bodice; silver-trimmed plates)
 BREASTPLATE = {"phi": 62.0, "nu": 17, "nv": 9, "clear": 0.0045, "t": 0.0035, "top_dz": -0.028, "side_drop": 0.055,
@@ -169,6 +199,9 @@ CAPE_T = 0.0045
 CAPE_FOLD, CAPE_FOLDS = 0.022, 6.5    # "cape folds": depth at the hem, folds across the width
 # ---- hair
 HAIR_CAP_T = 0.011                    # "hair volume" on the scalp
+HAIRLINE_FEATHER = (0.022, 0.0022)    # v4: the scalp cap's outer skin thins to the 2nd value (m; its inner skin sits 1.5 mm
+                                      #   out, so 0.7 mm of hair) over the first (m) above the front / side hairline
+                                      #   (v3: full thickness to the edge = the hood rim)
 PART_W, PART_DEPTH = 0.012, 0.005     # centre part groove
 HAIRLINE = (0.055, -0.035)            # hairline above the brow (front) / at the nape relative to the head joint
 LOCK_T = 0.016                        # lock half-thickness (a clump)
@@ -183,13 +216,43 @@ HAIR_STYLE = "A"                      # "hair option": A broad smooth masses / B
 # front of the shoulder and fall down the chest (not the v2 side curtains outside the shoulders); the back cascade is v2's.
 HAIR_FRONT_N = 3                      # "front strands" per side
 HAIR_FRONT = {"split": 0.42, "free_w": 0.82, "overlap": 0.25, "sub": 2, "sub_depth": 0.18, "T": 0.022, "tip_w": 0.08,
-              "cols": 7}            # strands separate this far up (fraction of the length from the tip), free width (x own
-                                      #   share), overlap on the scalp, strand grooves, thickness, tip width, columns
+              "cols": 6, "rows": 16}  # strands separate this far up (fraction of the length from the tip), free width (x own
+                                      #   share), overlap on the scalp, strand grooves, thickness, tip width, columns, rows
+                                      #   (v4: 6 x 16, v3 7 x 18 -- the triangles fund the curtain inside the hero budget)
 HAIR_FRONT_X = ((0.040, 0.160), (0.038, 0.150))   # the front strands' span |x| across the chest: at the bust top / bust
 HAIR_FRONT_TIPS = (1.14, 1.04, 1.10)  # "front strand length": tip heights, inner / middle / outer strand (m)
+# v4 long falls: re-rooted on the part BEHIND the curtain (top of the head) and down the side of the head behind the ear
+# (v3 rooted them on the front part and swept them across the forehead corner = the hood / helmet band)
+HAIR_FALLS_HEAD = ((2.5, 88.0, 8.0), (52.0, 18.0, 64.0, -6.0), (86.0, 12.0, 30.0, 0.0), (100.0, 10.0, 2.0, 0.0),
+                   (98.0, 12.0, -20.0, 0.0))   # on-head control points: (psi, dpsi / q, el, del / q) (deg)
+# v4 front (artist: "its not strands up front showing the hair"; the red annotation over the v3 face): per side a
+# CURTAIN of HAIR_CURTAIN_N separate strands that leave the centre part, sweep out over the forehead corner and down
+# beside the temple / cheek to staggered pointed tips -- the face frame. Its inner (face-side) edge is traced off the
+# annotation in front projection: (x from the midline, z above the eye centres) in mm, at 0.25 mm / px on the
+# annotation's 3x crop (calibrated on the eye spacing 57.6 mm and the eye -> slit drop 61.8 mm); its outer edge runs over
+# the top-side of the head (the annotation's lobes either side of the part dip) and down the head's side.
+HAIR_CURTAIN_N = 5                    # "face-framing strands" per side
+CURTAIN_INNER = ((2.0, 56.0), (24.0, 46.0), (47.0, 20.0), (60.0, -2.0), (68.0, -24.0))   # the face frame (mm)
+CURTAIN_INNER_OFF = (0.002, 0.004, 0.005, 0.006, 0.007)   # its lift off the scalp / skin (m)
+CURTAIN_OUTER = ((2.0, 84.0), (38.0, 70.0), (66.0, 42.0), (78.0, 12.0), (80.0, -14.0))  # outer edge on the head (psi, el deg)
+CURTAIN_OUTER_OFF = (0.003, 0.016, 0.012, 0.008, 0.008)  # its lift: the volume lobe either side of the part (m)
+CURTAIN_TIPS = ((-46.0, 68.0), (-60.0, 70.0), (-74.0, 73.0), (-64.0, 78.0), (-50.0, 82.0))   # per strand (inner -> outer):
+                                      #   tip (z above the eye centre, |x|) in mm -- staggered, the longest mid-curtain;
+                                      #   hugging the jaw line (at the annotation's 76-82 mm they hung ~20 mm off the
+                                      #   narrower MPFB jaw as loose slivers)
+CURTAIN_TIP_Y = (0.028, 0.056)        # tip depth behind the eye centres' y: inner / outer strand (m) -- the depth of the
+                                      #   curtain's last on-head point, so the tips hang straight down beside the jaw
+                                      #   (shallower tips swung forward across the cheek as loose slivers)
+HAIR_CURTAIN = {"split": 0.84, "free_w": 0.80, "overlap": 0.10, "sub": 1, "sub_depth": 0.0, "T": 0.012, "tip_w": 0.06,
+                "cols": 4, "rows": 16, "edge_t": 0.30, "off": 0.003,   # strands apart over the last 84 % of their length
+                "q_span": (-0.16, 1.0)}   # the strands share q in this span: the inner strand narrows toward its own
+                                      #   centre as it separates, so the span starts past the traced edge (measured: at
+                                      #   q_span 0..1 the rendered inner edge sat 8-13 mm outside CURTAIN_INNER)
+HAIR_UV_STRIP = 0.14                  # v4: every hair face is packed into the right-hand 14 % of the UV square, whose
+                                      #   normal / AO texels are flat / white (no bake garbage, no mip bleed from neighbours)
 HAIR_OPTS = {
     "A": {"kind": "mass", "front_clumps": 2, "back_clumps": 5, "cols": 7, "rows": 18, "T": 0.022, "edge_t": 0.35,
-          "sub": 2, "sub_depth": 0.22, "overlap": 0.30, "split": 0.25, "tip_w": 0.10, "off": 0.003, "front": "strands"},
+          "sub": 2, "sub_depth": 0.22, "overlap": 0.30, "split": 0.25, "tip_w": 0.10, "off": 0.003, "front": "curtain"},
     "B": {"kind": "mass", "front_clumps": 3, "back_clumps": 7, "cols": 5, "rows": 18, "T": 0.024, "edge_t": 0.30,
           "sub": 1, "sub_depth": 0.0, "overlap": 0.10, "split": 0.60, "tip_w": 0.10, "off": 0.003},
     "C": {"kind": "locks", "w_k": 1.7, "t_k": 1.25},
@@ -710,7 +773,7 @@ def brow_field(P, s):
         d_ = np.linalg.norm(q - (a_ + t_[:, None] * ab), axis=1)
         m_ = d_ < best
         best[m_] = d_[m_]; tb[m_] = (i + t_[m_]) / (len(cur) - 1)
-    hw = 0.5 * (BROW_W[0] + (BROW_W[1] - BROW_W[0]) * tb ** 0.8)
+    hw = 0.5 * (BROW_W[0] + (BROW_W[1] - BROW_W[0]) * tb ** BROW_TAPER)
     return best - hw
 
 
@@ -745,23 +808,54 @@ for _ in range(JAW_SMOOTH):
     _cast = 0.5 * _cast + 0.5 * acc_ / np.maximum(_bdeg, 1.0)
 FIELDS["jawsh"] = np.where(_jg, 0.5 - _cast, 1.0)          # < 0 = in the chin's shadow
 FIELDS["jawgate"] = _jg.astype(float)
-# (2) fringe: a band under the hairline over the forehead / temples, its lower edge scalloped like strand ends
-_fx = np.abs(X) / 0.07
-_fd = FRINGE_D[0] + (FRINGE_D[1] - FRINGE_D[0]) * np.clip(_fx, 0, 1) ** 1.5 + \
-    FRINGE_SCALLOP[0] * (1.0 - np.abs(2.0 * ((FRINGE_SCALLOP[1] * np.clip(_fx, 0, 1.2) + 0.5) % 1.0) - 1.0))  # pointed
+# (2) fringe (v4): the curtain's shadow on the skin -- a band along the curtain's inner edge (CURTAIN_INNER + the inner
+# strand's tip, front projection, mirrored), on the FACE side of it, its face-side border scalloped like strand tips; it
+# also runs FRINGE_UNDER under the edge (skin glimpsed between the strands). dface = signed front-projected distance to
+# the edge polyline (> 0 on the face side).
+_ecur = np.array([[x_ * 0.001, EYE["L"]["c"][2] + z_ * 0.001] for x_, z_ in
+                  list(CURTAIN_INNER) + [(CURTAIN_TIPS[0][1], CURTAIN_TIPS[0][0])]])
+_eseg = np.linalg.norm(np.diff(_ecur, axis=0), axis=1)
+_earc = np.concatenate([[0.0], np.cumsum(_eseg)])
+
+
+def curtain_edge_field(P):
+    """(dface, arc length along the edge from the part, t in 0..1) for points P (front projection, |x| mirrored)."""
+    q_ = np.stack([np.abs(P[:, 0]), P[:, 2]], 1)
+    best = np.full(len(P), 1e9); sgn = np.ones(len(P)); arc = np.zeros(len(P))
+    for i in range(len(_ecur) - 1):
+        a_, b_ = _ecur[i], _ecur[i + 1]
+        ab = b_ - a_
+        t_ = np.clip(((q_ - a_) @ ab) / float(ab @ ab), 0, 1)
+        v_ = q_ - (a_ + t_[:, None] * ab)
+        d_ = np.linalg.norm(v_, axis=1)
+        m_ = d_ < best
+        cr = ab[0] * v_[:, 1] - ab[1] * v_[:, 0]
+        best[m_] = d_[m_]; sgn[m_] = np.where(cr[m_] <= 0, 1.0, -1.0); arc[m_] = _earc[i] + t_[m_] * _eseg[i]
+    return sgn * best, arc, arc / _earc[-1]
+
+
+_dface, _farc, _ft = curtain_edge_field(BV)
+_fd = np.interp(_ft, [0.0, 0.45, 0.8, 1.0], [FRINGE_D[0], FRINGE_D[1], 0.6 * FRINGE_D[1], 0.0]) + \
+    FRINGE_SCALLOP[0] * (1.0 - np.abs(2.0 * ((FRINGE_SCALLOP[1] * _farc + 0.5) % 1.0) - 1.0)) * (_ft < 0.92)   # pointed
 # (3) chest: under the bust onto the bodice, two crescents meeting at the centre
 _bx = float(np.abs(BV[bust_m][np.argmin(BV[bust_m, 1]), 0]))
 _cd = (CHEST_SHADOW[2] + (CHEST_SHADOW[0] - CHEST_SHADOW[2]) * np.exp(-((np.abs(X) - _bx) / CHEST_SHADOW[1]) ** 2)) * \
     (1.0 - smoothstep(_bx + 0.5 * CHEST_SHADOW[1], _bx + 1.4 * CHEST_SHADOW[1], np.abs(X)))   # closes before the flank
 FIELDS["chestsh"] = Z - (Z_UB - TRIM_W * 0.5 - _cd)
 # hairline: front above the brows, sides above the ears, nape at the back
-_ce = (HC[1] - Y) / np.maximum(np.hypot(X, Y - HC[1]), 1e-9)          # 1 = front, -1 = back
-_hl = np.where(_ce >= 0, np.interp(_ce, [0.0, 0.55, 1.0], [EYE["L"]["c"][2] + 0.018, EYE["L"]["c"][2] + 0.040,
-                                                           EYE["L"]["c"][2] + HAIRLINE[0]]),
-               np.interp(_ce, [-1.0, -0.35, 0.0], [HEADJ[2] + HAIRLINE[1], HEADJ[2] + HAIRLINE[1] + 0.015,
-                                                   EYE["L"]["c"][2] + 0.018]))
+def hairline_z(P):
+    """the hairline height at points P (by their azimuth round the head centre); also the v4 cap feather reference."""
+    ce_ = (HC[1] - P[:, 1]) / np.maximum(np.hypot(P[:, 0], P[:, 1] - HC[1]), 1e-9)          # 1 = front, -1 = back
+    return ce_, np.where(ce_ >= 0, np.interp(ce_, [0.0, 0.55, 1.0], [EYE["L"]["c"][2] + 0.018, EYE["L"]["c"][2] + 0.040,
+                                                                     EYE["L"]["c"][2] + HAIRLINE[0]]),
+                         np.interp(ce_, [-1.0, -0.35, 0.0], [HEADJ[2] + HAIRLINE[1], HEADJ[2] + HAIRLINE[1] + 0.015,
+                                                             EYE["L"]["c"][2] + 0.018]))
+
+
+_ce, _hl = hairline_z(BV)
 FIELDS["hair"] = Z - _hl
-FIELDS["fringe"] = Z - (_hl - _fd)                  # > 0 (and hair < 0) = the fringe shadow band under the hairline
+FIELDS["fringe"] = _dface - _fd                     # < 0 (and fringe_u > 0, hair < 0) = the curtain-edge shadow band
+FIELDS["fringe_u"] = _dface + FRINGE_UNDER
 FIELDS["ce"] = _ce
 FIELDS["absx"] = np.abs(X)
 
@@ -848,7 +942,7 @@ for s in "LR":
     CUTS.append(("eye_" + s, 0.0, g_and(gv("headm", 0.5), gv("eye_" + s, -1, 0.03))))
     CUTS.append(("brow_" + s, 0.0, g_and(gv("headm", 0.5), gv("brow_" + s, -1, 0.03))))
 CUTS.append(("jawsh", 0.0, g_and(gv("jawgate", 0.5))))
-CUTS.append(("fringe", 0.0, g_and(gv("headm", 0.5), gv("ce", 0.1), gv("hair", -0.04, 0.002))))
+CUTS.append(("fringe", 0.0, g_and(gv("headm", 0.5), gv("ce", 0.1), gv("hair", -0.12, 0.002), gv("fringe_u", 0.0))))
 CUTS.append(("chestsh", 0.0, g_and(gv("y", -1, AX_Y), gv("z", Z_UB - 0.08, Z_UB), gv("armm_L", -1, 0.5), gv("armm_R", -1, 0.5))))
 CUTS.append(("hair", 0.0, g_and(gv("headm", 0.5))))
 for tau in (PART_W * 0.5,):
@@ -934,8 +1028,8 @@ boot = (_legL & (FV["boot_L"] < 0)) | (_legR & (FV["boot_R"] < 0))
 reg[boot] = "boots"
 # v3 authored shadow shapes (skin / bodice only; everything painted later wins over them)
 SH_MASK = {"jaw_neck": (reg == "skin") & (FV["jawgate"] > 0.5) & (FV["jawsh"] < 0),
-           "fringe": (reg == "skin") & _head & (FV["hair"] < 0) & (FV["fringe"] > 0) & (FV["ce"] > 0.1) &
-                     (FV["z"] > EYE["L"]["c"][2] + 0.016),
+           "fringe": (reg == "skin") & _head & (FV["hair"] < 0) & (FV["fringe"] < 0) & (FV["fringe_u"] > 0) &
+                     (FV["ce"] > 0.1),
            "chest": (reg == "bodice") & (FV["y"] < AX_Y) & (FV["chestsh"] > 0) & (FV["z"] < Z_UB - TRIM_W * 0.5) & ~_arm}
 for k_, m_ in SH_MASK.items():
     reg[m_] = "bodice_shadow" if k_ == "chest" else "skin_shadow"
@@ -1024,6 +1118,28 @@ report["brow"] = {"points_rule": "BROW_PTS: x in eye front half-widths from the 
                       - aperture(90.0, "L")), 1),
                   "area_cm2_per_brow": round(1e4 * 0.5 * float(sum(
                       0.5 * np.linalg.norm(np.cross(CV[f[1]] - CV[f[0]], CV[f[2]] - CV[f[0]])) for f, m in zip(CF, _bm) if m)), 3)}
+# v4 brow width, measured on the PAINTED cut mesh as a front view sees it: at stations along the stroke's centre line, +Y
+# rays every 0.05 mm along the stroke's front-plane normal; width = the run of rays whose first hit is a 'brow' face
+_bw = {}
+_cur = BROW_CURVE["L"][:, [0, 2]]
+for tt_ in (0.05, 0.25, 0.5, 0.75, 0.95):
+    i_ = int(round(tt_ * (len(_cur) - 1)))
+    tg_ = unit(np.append(_cur[min(i_ + 1, len(_cur) - 1)] - _cur[max(i_ - 1, 0)], 0.0))[:2]
+    nr_ = np.array([-tg_[1], tg_[0]])
+    run_, best_ = 0, 0
+    for k_ in range(-160, 161):
+        p_ = _cur[i_] + nr_ * k_ * 0.00005
+        h_ = BVH_CUT.ray_cast(Vector((float(p_[0]), -1.0, float(p_[1]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        if h_[0] is not None and reg[h_[2]] == "brow":
+            run_ += 1; best_ = max(best_, run_)
+        else:
+            run_ = 0
+    _bw["t%.2f" % tt_] = round(0.05 * best_, 2)
+report["brow"]["width_mm_measured"] = _bw
+report["brow"]["width_rule"] = ("front view: at stations t along the stroke (0 inner end .. 1 tail), +Y rays every 0.05 mm "
+                                "along the stroke normal; width = the longest run whose first hit is a brow face")
+report["brow"]["BROW_W_mm_v3"] = [w * 1000 for w in BROW_W_V3]
+report["brow"]["BROW_TAPER"] = BROW_TAPER
 print("LINER", json.dumps({k: v for k, v in report["liner_proof"].items() if k != "per_angle_L"}), "LIP", json.dumps(report["lip_fix"]))
 print("BROW", json.dumps(report["brow"]))
 _fa_cut = np.array([0.5 * np.linalg.norm(np.cross(CV[f[1]] - CV[f[0]], CV[f[2]] - CV[f[0]])) for f in CF])
@@ -1035,8 +1151,10 @@ report["shadow_shapes"] = {
     "jaw_neck": {"light_elevation_deg": JAW_LIGHT_DEG, "light_dir": L_JAW.round(4).tolist(), "smooth_passes": JAW_SMOOTH,
                  "rule": "the chin's cast shadow: skin whose ray toward the stylised key light hits the head, "
                          "neighbour-smoothed, cut at 0.5; gated below the chin bottom (+ the jaw rise) and off the nape"},
-    "fringe": {"depth_m": list(FRINGE_D), "scallop": list(FRINGE_SCALLOP),
-               "rule": "a band under the hairline on the forehead / temples, lower edge scalloped"},
+    "fringe": {"depth_m": list(FRINGE_D), "scallop": list(FRINGE_SCALLOP), "under_m": FRINGE_UNDER,
+               "rule": "v4: the curtain's shadow -- a band on the face side of the curtain's inner edge (CURTAIN_INNER + "
+                       "the inner strand's tip, front projection), its face-side border scalloped (v3: a band under the "
+                       "horizontal hairline = the hood rim's shadow)"},
     "chest": {"depth_m": list(CHEST_SHADOW), "bust_apex_x": round(_bx, 4),
               "rule": "under the underbust trim onto the bodice: two crescents under the breasts meeting at the centre"}}
 print("SHADOWS", json.dumps(report["shadow_shapes"]["shapes"]))
@@ -1057,10 +1175,98 @@ def add_part(name, V, F, R, w="transfer", obj="main", **kw):
 for s in "LR":
     V_, F_, R_ = EYE_MESH[s]                    # built in section 3 (the liner's lid edge is measured against it)
     add_part("eye." + s, V_, F_, R_, w="rigid:head")
-# ---- fangs (v3): rooted INSIDE the mouth, tucked up behind the upper lip; they emerge from the slit and hang in front of
-# the lower lip (v2's cones started on the upper lip's surface and lay over both lips). Per fang, the front-surface
-# profile at the fang's x (+Y rays every 0.25 mm) gives the local slit (the most recessed point between the lips).
+# ---- fangs (v4): the root sits INSIDE the upper lip (FANG_ROOT_DZ above its lower edge) and is pushed back behind the
+# lip's front surface by the least tuck in FANG_TUCK_TRY that passes the multi-view proof (below); the tip is v3's
+# (FANG_LEN below the slit, FANG_PROUD in front of the lower lip). v3 put the root 3 mm behind the lip's front at 5.5 mm
+# above the slit: the lip's front curls back toward its lower edge, so 22 % of the fang between the edge and the root
+# stood IN FRONT of the lip (the artist's circled root). Per fang, the front-surface profile at the fang's x (+Y rays
+# every 0.25 mm) gives the local slit and the upper lip's lower edge.
+# Proof (per candidate): fang surface samples (a barycentric grid per triangle) x the views FANG_VIEW_YAW x FANG_VIEW_EL
+# (orthographic): a sample facing the camera whose ray to the camera clears the painted cut body mesh is VISIBLE; its
+# BACKGROUND is the first camera-facing body face behind it along the view ray (back faces are culled in the render, so
+# they are skipped). A visible sample seen against the upper lip / skin above the local slit that is not the dark mouth
+# region, on the face's outer surface, is a VIOLATION -- the fang drawn over the lip (what the artist circled).
 FANG_INFO = {}
+_face_n = np.array([unit(np.cross(CV[f[1]] - CV[f[0]], CV[f[2]] - CV[f[0]])) for f in CF])
+if float(np.mean(np.einsum("ij,ij->i", _face_n, np.array([CV[f].mean(0) for f in CF]) - CV.mean(0)))) < 0:
+    _face_n = -_face_n
+# the local slit across the mouth (per x of the lip zone: the most recessed front-profile point near the midline slit):
+# a background point is 'above the slit' against the slit at ITS x (the mouth line curves toward the corners)
+_slx = np.arange(-LIP[0] - 0.002, LIP[0] + 0.0021, 0.001)
+_slz = []
+for x_ in _slx:
+    zz_ = np.arange(Z_SLIT - 0.006, Z_SLIT + 0.006, 0.00025)
+    yy_ = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(BVH_BODY.ray_cast(Vector((float(x_), -0.6, float(z_))),
+                                                                                         Vector((0.0, 1.0, 0.0)), 1.0)) for z_ in zz_])
+    yy_ = np.convolve(np.nan_to_num(yy_, nan=np.nanmax(yy_)), np.ones(5) / 5.0, mode="same")
+    _slz.append(float(zz_[2:-2][np.argmax(yy_[2:-2])]))
+_slz = np.array(_slz)
+_VIEWS = [(ya, el, np.array([math.sin(math.radians(ya)) * math.cos(math.radians(el)),
+                             -math.cos(math.radians(ya)) * math.cos(math.radians(el)), math.sin(math.radians(el))]))
+          for ya in FANG_VIEW_YAW for el in FANG_VIEW_EL]
+
+
+def fang_mesh(xf, zs_, yp_, zsl, z_ul, tuck):
+    z_root = z_ul + FANG_ROOT_DZ
+    root = np.array([xf, float(np.interp(z_root, zs_, yp_)) + tuck, z_root])
+    z_tip = zsl - FANG_LEN
+    tip = np.array([xf * 0.97, float(np.interp(z_tip, zs_, yp_)) - FANG_PROUD, z_tip])
+    ax = unit(root - tip)
+    Lf = float(np.linalg.norm(root - tip))
+    k_w = (z_ul - z_tip) / max(root[2] - z_tip, 1e-9)            # widest where it leaves the lip (tip 0 .. root 1)
+    prof_ = [(0.0, Lf), (FANG_R * 0.8, Lf * 0.9), (FANG_R, Lf * k_w), (FANG_R * 0.62, Lf * k_w * 0.45), (0.0, 0.0)]
+    V_, F_, R_ = VP.lathe(prof_, ["fang"] * 4, 6, tip, ax)
+    return V_, F_, R_, root, tip
+
+
+def fang_proof(V_, F_, zsl, views=None):
+    """-> (violations, visible samples per view, sample count)"""
+    views = _VIEWS if views is None else views
+    Pn = []
+    for f in F_:
+        q_ = V_[f]
+        n_ = unit(np.cross(q_[1] - q_[0], q_[2] - q_[0]))
+        for k in range(1, len(f) - 1):
+            a_, b_, c_ = q_[0], q_[k], q_[k + 1]
+            for i in range(4):
+                for j in range(4 - i):
+                    u_, v_ = (i + 0.33) / 4.0, (j + 0.33) / 4.0
+                    Pn.append((a_ + u_ * (b_ - a_) + v_ * (c_ - a_), n_))
+    viol, vis = [], {}
+    for ya, el, d in views:
+        nvis = 0
+        for p_, n_ in Pn:
+            if float(n_ @ d) <= 0.0:
+                continue
+            if BVH_CUT.ray_cast(Vector(p_ + d * 1e-5), Vector(d), 1.0)[0] is not None:
+                continue
+            nvis += 1
+            o_ = p_ - d * 1e-5
+            bg = None
+            for _ in range(6):                         # walk through culled back faces
+                h_ = BVH_CUT.ray_cast(Vector(o_), Vector(-d), 1.0)
+                if h_[0] is None:
+                    break
+                if float(_face_n[h_[2]] @ d) > 0.0:
+                    bg = h_; break
+                o_ = np.array(h_[0]) - d * 1e-5
+            # the upper lip's OUTSIDE: above the slit, not the dark mouth region, and on the face's outer surface (within
+            # MOUTH_IN_D of the lips' most forward point at that x -- deeper faces are the mouth cavity seen through the
+            # parted lips, not the lip)
+            # -- and FACING FORWARD (normal within ~70 deg of -Y): the lip's inner face at the far mouth corner (seen
+            # through the parted lips from 60 deg yaw) and the lip's underside (a fang coming from under the lip, seen
+            # from below) are not the lip's front
+            # -- and only for the fang ABOVE its own slit (the root half; the tip hanging in front of the lower lip is
+            # v3's accepted design and, from 60 deg yaw, is legitimately seen against the far cheek)
+            if bg is not None and p_[2] > zsl and reg[bg[2]] != "mouth" and \
+                    bg[0][2] > float(np.interp(bg[0][0], _slx, _slz)) + 0.0002 and \
+                    bg[0][1] < float(np.interp(bg[0][0], _mx, _mfront)) + MOUTH_IN_D and _face_n[bg[2]][1] < -0.35:
+                viol.append({"yaw": ya, "el": el, "p": np.round(p_, 5).tolist(), "bg_region": str(reg[bg[2]]),
+                             "bg_z_above_slit_mm": round(1000 * (bg[0][2] - float(np.interp(bg[0][0], _slx, _slz))), 2)})
+        vis["%+d/%+d" % (ya, el)] = nvis
+    return viol, vis, len(Pn)
+
+
 for s, sg in (("L", 1.0), ("R", -1.0)):
     xf = sg * FANG_X
     zs_ = np.arange(Z_SLIT - 0.012, Z_SLIT + 0.012, 0.00025)
@@ -1070,38 +1276,56 @@ for s, sg in (("L", 1.0), ("R", -1.0)):
     band_ = np.abs(zs_ - Z_SLIT) < 0.004
     zsl = float(zs_[band_][np.argmax(ypf_[band_])])
     ysl = float(np.interp(zsl, zs_, yp_))
-    z_root = zsl + FANG_TUCK[0]
-    root = np.array([xf, float(np.interp(z_root, zs_, yp_)) + FANG_TUCK[1], z_root])
-    z_tip = zsl - FANG_LEN
-    tip = np.array([xf * 0.97, float(np.interp(z_tip, zs_, yp_)) - FANG_PROUD, z_tip])
-    ax = unit(root - tip)
-    Lf = float(np.linalg.norm(root - tip))
-    k_sl = (zsl - z_tip) / max(root[2] - z_tip, 1e-9)            # the slit's fraction along the fang (tip 0 .. root 1)
-    prof_ = [(0.0, Lf), (FANG_R * 0.9, Lf * 0.92), (FANG_R, Lf * k_sl), (FANG_R * 0.62, Lf * k_sl * 0.45), (0.0, 0.0)]
-    V_, F_, R_ = VP.lathe(prof_, ["fang"] * 4, 6, tip, ax)
-    add_part("fang." + s, V_, F_, R_, w="rigid:head")
-    # proof: the fang's front-most generator line vs the lip surface -- hidden above the slit, proud below it
-    zz_ = np.linspace(z_tip + 0.0003, root[2] - 0.0003, 40)
-    tt_ = (zz_ - z_tip) / (root[2] - z_tip)
-    rr_ = np.interp(tt_ * Lf, [0.0, Lf * k_sl * 0.45, Lf * k_sl, Lf * 0.92, Lf], [0.0, FANG_R * 0.62, FANG_R, FANG_R * 0.9, 0.0])
-    yfront_ = tip[1] + tt_ * (root[1] - tip[1]) - rr_ / max(math.sqrt(ax[1] ** 2 + ax[2] ** 2), 1e-9) * abs(ax[2])
-    ysurf_ = np.interp(zz_, zs_, yp_)
     # the upper lip's lower edge at this x: down from the upper-lip bulge, the first sample where the front ray falls
-    # > 3 mm back (into the parted mouth); the fang must be hidden above it and seen below it
+    # > 3 mm back (into the parted mouth)
     _iu = int(np.nanargmin(np.where(zs_ > zsl, yp_, np.nan)))
     _z_ul = zsl
     for i_ in range(_iu, 0, -1):
         if not np.isnan(yp_[i_ - 1]) and yp_[i_ - 1] > yp_[_iu] + 0.003:
             _z_ul = float(zs_[i_]); break
-    above_, below_ = zz_ > _z_ul + 0.0003, zz_ < _z_ul - 0.0003
-    FANG_INFO[s] = {"slit_z": round(zsl, 4), "slit_front_y": round(ysl, 4), "root": root.round(4).tolist(), "tip": tip.round(4).tolist(),
-                    "upper_lip_edge_z": round(_z_ul, 4), "root_above_lip_edge_mm": round(1000 * (root[2] - _z_ul), 2),
-                    "visible_len_mm": round(1000 * (_z_ul - z_tip), 2),
-                    "hidden_above_lip_edge_pct": round(100.0 * float(np.mean(yfront_[above_] > ysurf_[above_])), 1),
-                    "in_front_below_lip_edge_pct": round(100.0 * float(np.mean(yfront_[below_] < ysurf_[below_])), 1)}
-report["fangs"] = {"rule": "root tucked FANG_TUCK above the slit / behind the upper lip's front surface; tip FANG_LEN below "
-                           "the slit, FANG_PROUD in front of the lower lip; proof along the fang's front-most line vs the "
-                           "lip surface profile at the fang's x", **FANG_INFO}
+    # v3's placement through the same proof (the 'before' number)
+    _zr3 = zsl + FANG_TUCK_V3[0]
+    _root3 = np.array([xf, float(np.interp(_zr3, zs_, yp_)) + FANG_TUCK_V3[1], _zr3])
+    _tip3 = np.array([xf * 0.97, float(np.interp(zsl - FANG_LEN, zs_, yp_)) - FANG_PROUD, zsl - FANG_LEN])
+    _ax3 = unit(_root3 - _tip3); _L3 = float(np.linalg.norm(_root3 - _tip3))
+    _k3 = (zsl - _tip3[2]) / max(_root3[2] - _tip3[2], 1e-9)
+    _V3, _F3, _ = VP.lathe([(0.0, _L3), (FANG_R * 0.9, _L3 * 0.92), (FANG_R, _L3 * _k3), (FANG_R * 0.62, _L3 * _k3 * 0.45),
+                            (0.0, 0.0)], ["fang"] * 4, 6, _tip3, _ax3)
+    _viol3, _vis3, _ = fang_proof(_V3, _F3, zsl)
+    tried, pick = [], None
+    for tuck in FANG_TUCK_TRY:
+        V_, F_, R_, root, tip = fang_mesh(xf, zs_, yp_, zsl, _z_ul, tuck)
+        viol_, vis_, nsamp_ = fang_proof(V_, F_, zsl)
+        tried.append({"tuck_mm": round(tuck * 1000, 2), "violations": len(viol_),
+                      "views": sorted(set("%+d/%+d" % (v["yaw"], v["el"]) for v in viol_)),
+                      "worst": max(viol_, key=lambda v: v["bg_z_above_slit_mm"]) if viol_ else None})
+        if not viol_:
+            pick = (tuck, V_, F_, R_, root, tip, viol_, vis_, nsamp_)
+            break
+    if pick is None:                                   # nothing passed: keep the deepest candidate and flag it
+        pick = (tuck, V_, F_, R_, root, tip, viol_, vis_, nsamp_)
+    tuck, V_, F_, R_, root, tip, viol_, vis_, nsamp_ = pick
+    add_part("fang." + s, V_, F_, R_, w="rigid:head")
+    FANG_INFO[s] = {"slit_z": round(zsl, 4), "slit_front_y": round(ysl, 4), "root": root.round(4).tolist(),
+                    "tip": tip.round(4).tolist(), "upper_lip_edge_z": round(_z_ul, 4),
+                    "root_above_lip_edge_mm": round(1000 * (root[2] - _z_ul), 2),
+                    "tuck_behind_lip_front_mm": round(1000 * tuck, 2), "tuck_search": tried,
+                    "tilt_from_vertical_deg": round(math.degrees(math.acos(abs(float(unit(root - tip)[2])))), 1),
+                    "visible_len_below_lip_edge_mm": round(1000 * (_z_ul - tip[2]), 2),
+                    "proof_views": len(_VIEWS), "proof_samples": nsamp_,
+                    "violations": len(viol_), "violation_examples": viol_[:4],
+                    "visible_samples_front_0_0": vis_.get("+0/+0"), "visible_samples_low_0_-25": vis_.get("+0/-25"),
+                    "visible_samples_min_view": min(vis_.values()),
+                    "v3_placement_violations": len(_viol3),
+                    "v3_violation_views": sorted(set("%+d/%+d" % (v["yaw"], v["el"]) for v in _viol3))[:14],
+                    "pass": len(viol_) == 0}
+report["fangs"] = {"rule": "v4: root FANG_ROOT_DZ above the upper lip's lower edge, the least tuck behind the lip's front "
+                           "(FANG_TUCK_TRY) whose multi-view proof shows no visible fang sample seen against the upper lip "
+                           "(a lip / skin face above the local slit that is not the dark mouth region); tip FANG_LEN below "
+                           "the slit, FANG_PROUD in front of the lower lip (v3's)",
+                   "views": {"yaw_deg": list(FANG_VIEW_YAW), "elevation_deg": list(FANG_VIEW_EL)},
+                   "local_slit_mm_vs_midline": [[round(1000 * float(x_)), round(1000 * float(z_ - Z_SLIT), 2)]
+                                                for x_, z_ in zip(_slx[::4], _slz[::4])], **FANG_INFO}
 print("FANGS", json.dumps(report["fangs"]))
 
 # ---- boots: pointed toe cap + sole (loft along the foot) + stiletto heel
@@ -1519,7 +1743,13 @@ mp_ = {v: k for k, v in enumerate(used)}
 Vcap = CV[used]
 Fcap = [[mp_[i] for i in CF[k]] for k in cap_faces]
 tpart = np.clip(1.0 - np.abs(Vcap[:, 0]) / PART_W, 0, 1) * (Vcap[:, 1] < HC[1] + 0.02)
-V_, F_, R_ = VP.solidify(Vcap, Fcap, HAIR_CAP_T - PART_DEPTH * tpart ** 1.5, -0.0015,
+# v4: the cap feathers out toward the hairline (hair growing from the scalp; v3's full-thickness edge was the hood rim)
+_capfe = smoothstep(0.0, HAIRLINE_FEATHER[0], Vcap[:, 2] - hairline_z(Vcap)[1])
+_capt = np.maximum(HAIRLINE_FEATHER[1], (HAIR_CAP_T - PART_DEPTH * tpart ** 1.5) * _capfe)
+CAP_FEATHER_INFO = {"rule": "cap outer skin thickness x smoothstep(0, %.3f, height above the hairline), floor %.4f m"
+                            % HAIRLINE_FEATHER, "rim_thickness_m_p50": round(float(np.median(_capt[_capfe < 0.05])), 4)
+                    if (_capfe < 0.05).any() else None, "full_thickness_m": HAIR_CAP_T}
+V_, F_, R_ = VP.solidify(Vcap, Fcap, _capt, -0.0015,
                          ["hair_part" if reg[k] == "hair_part" else "hair" for k in cap_faces], "hair_shade", "hair")
 CAP_V, CAP_F = V_, F_
 add_part("hair_cap", V_, F_, R_, w="rigid:head")
@@ -1643,7 +1873,8 @@ def hair_clump(name, colfn, q0, q1, chain, P=None):
     P = HO if P is None else P
     m, nr, ov = P["cols"], P["rows"], P["overlap"]
     w = q1 - q0
-    qs = np.linspace(max(0.0, q0 - ov * w), min(1.0, q1 + ov * w), m)
+    qc_ = P.get("q_span", (0.0, 1.0))
+    qs = np.linspace(max(qc_[0], q0 - ov * w), min(qc_[1], q1 + ov * w), m)
     off = P["off"]
     cols_, sarcs = [], []
     for q in qs:
@@ -1684,7 +1915,9 @@ def hair_clump(name, colfn, q0, q1, chain, P=None):
     dcap = np.array([BVH_CAP.find_nearest(Vector(p))[3] for p in Cc])
     i_leave = int(np.argmax(dcap > 0.02)) if (dcap > 0.02).any() else nr // 3
     Lc = float(S_[c][-1])
-    add_part(name, Vs, Fs, Rs, w="lock", s=svert, s_leave=float(S_[c][i_leave]), L=Lc, chain=chain, path=Cc[i_leave:])
+    # v4: a strand with no chain (the face-framing curtain: it lies on the head down to the cheek) rides the head rigidly
+    add_part(name, Vs, Fs, Rs, w="lock" if chain else "rigid:head", s=svert, s_leave=float(S_[c][i_leave]), L=Lc,
+             chain=chain, path=Cc[i_leave:])
     LOCK_INFO[name] = {"length": round(Lc, 3), "tip_z": round(float(Cc[-1][2]), 3), "q": [round(float(qs[0]), 3), round(float(qs[-1]), 3)],
                        "leaves_head_at_m": round(float(S_[c][i_leave]), 3),
                        "min_clear": round(float(min(BVH_HAIR.find_nearest(Vector(p))[3] for p in P_.reshape(-1, 3))), 4)}
@@ -1696,9 +1929,11 @@ def col_front_strand(sg, s, q, off, j):
     chest (over the breastplate), hanging free below the bust to the strand's own tip height."""
     xb0 = HAIR_FRONT_X[0][0] + (HAIR_FRONT_X[0][1] - HAIR_FRONT_X[0][0]) * q
     xb1 = HAIR_FRONT_X[1][0] + (HAIR_FRONT_X[1][1] - HAIR_FRONT_X[1][0]) * q
-    ctl = [on_head(sg * (3.0 + 30.0 * q), 62.0 - 12.0 * q, off), on_head(sg * (40.0 + 26.0 * q), 34.0 - 6.0 * q, off),
-           on_head(sg * (70.0 + 22.0 * q), 8.0, off), on_head(sg * (82.0 + 16.0 * q), -14.0, off),
-           np.array([sg * (0.072 + 0.055 * q), NECK0[1] - 0.058 + 0.012 * q, SHO[s][2] + 0.055]),
+    # v4: rooted on the part behind the curtain, over the top-side and down behind the ear (HAIR_FALLS_HEAD)
+    ctl = [on_head(sg * (p_[0] + p_[1] * q), p_[2] + p_[3] * q, off + (0.002 if k_ == 1 else 0.0))
+           for k_, p_ in enumerate([(HAIR_FALLS_HEAD[0][0], 0.0, HAIR_FALLS_HEAD[0][1], HAIR_FALLS_HEAD[0][2])] +
+                                   list(HAIR_FALLS_HEAD[1:]))]
+    ctl += [np.array([sg * (0.072 + 0.055 * q), NECK0[1] - 0.058 + 0.012 * q, SHO[s][2] + 0.055]),
            front_support(sg * xb0, Z_BUST + 0.07, off + 0.003),
            front_support(sg * xb1, Z_BUST - 0.01, off + 0.004)]
     tip = ctl[-1].copy(); tip[2] = HAIR_FRONT_TIPS[j]; tip[1] -= 0.004
@@ -1706,8 +1941,57 @@ def col_front_strand(sg, s, q, off, j):
     return np.array(ctl)
 
 
+def curtain_inner_pe():
+    """the curtain's inner edge (CURTAIN_INNER, front projection, mm) -> on-head (psi, el) (deg, psi >= 0): the skin
+    point a front ray hits at (x, z) (a side ray at the temple depth where the front ray misses / grazes the side), seen
+    from the head centre."""
+    out = []
+    for xm, zm in CURTAIN_INNER:
+        x_, z_ = xm * 0.001, float(EYE["L"]["c"][2]) + zm * 0.001
+        h_ = BVH_BODY.ray_cast(Vector((x_, -0.8, z_)), Vector((0.0, 1.0, 0.0)), 1.2)
+        if h_[0] is None or h_[0][1] > HC[1]:
+            h_ = BVH_BODY.ray_cast(Vector((0.5, float(EYE["L"]["c"][1]) + 0.02, z_)), Vector((-1.0, 0.0, 0.0)), 1.0)
+        d_ = unit(np.array(h_[0]) - HC)
+        out.append((math.degrees(math.atan2(abs(d_[0]), -d_[1])), math.degrees(math.asin(float(d_[2])))))
+    return out
+
+
+CURTAIN_PE = curtain_inner_pe()
+
+
+def col_curtain(sg, s, q, j):
+    """v4 curtain column at q (0 = the inner / face edge .. 1 = the outer edge) of curtain strand j: from the centre part
+    (the front hairline at q = 0 .. near the crown at q = 1) out over the forehead corner / the top-side lobe, down the
+    temple / side of the head, then free beside the cheek to strand j's pointed tip."""
+    ctl = []
+    for k_ in range(len(CURTAIN_INNER)):
+        pe0, pe1 = CURTAIN_PE[k_], CURTAIN_OUTER[k_]
+        qk = max(q, 0.0) if k_ == 0 else q          # q < 0 (HAIR_CURTAIN q_span) extends past the edge, not the root
+        psi_ = pe0[0] + (pe1[0] - pe0[0]) * qk
+        el_ = pe0[1] + (pe1[1] - pe0[1]) * qk
+        off_ = CURTAIN_INNER_OFF[k_] + (CURTAIN_OUTER_OFF[k_] - CURTAIN_INNER_OFF[k_]) * max(qk, 0.0)
+        ctl.append(on_head(sg * psi_, el_, off_))
+    zt_, xt_ = CURTAIN_TIPS[j]
+    ctl.append(np.array([sg * xt_ * 0.001, float(EYE["L"]["c"][1]) + CURTAIN_TIP_Y[0] + (CURTAIN_TIP_Y[1] - CURTAIN_TIP_Y[0]) * q,
+                         float(EYE["L"]["c"][2]) + zt_ * 0.001]))
+    return np.array(ctl)
+
+
 if HO["kind"] == "mass":
     for sg, s in ((1.0, "L"), (-1.0, "R")):
+        if HO.get("front") == "curtain":             # v4: the face-framing curtain + the long falls behind it
+            HOC = {**HO, **HAIR_CURTAIN}
+            n_ = HAIR_CURTAIN_N
+            qa_, qb_ = HOC["q_span"]
+            for j in range(n_):
+                hair_clump("lock.curtain.%s.%d" % (s, j), lambda q, sg=sg, s=s, j=j: col_curtain(sg, s, q, j),
+                           qa_ + (qb_ - qa_) * j / n_, qa_ + (qb_ - qa_) * (j + 1) / n_, None, HOC)
+            HOF = {**HO, **HAIR_FRONT}
+            n_ = HAIR_FRONT_N
+            for j in range(n_):
+                hair_clump("lock.front.%s.%d" % (s, j), lambda q, sg=sg, s=s, j=j: col_front_strand(sg, s, q, HOF["off"], j),
+                           j / n_, (j + 1) / n_, "hair_front." + s, HOF)
+            continue
         if HO.get("front") == "strands":
             HOF = {**HO, **HAIR_FRONT}
             n_ = HAIR_FRONT_N
@@ -1894,6 +2178,8 @@ dvec = landmark - anchor
 report["facing"] = {"rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
+HAIR_REG_IDS = [REG.index(r) for r in ("hair", "hair_shade", "hair_part")]
+_hairf = np.isin(rid, HAIR_REG_IDS)
 for ob_ in (low, swo):
     ob_.data.shade_flat()
     bpy.context.view_layer.objects.active = ob_
@@ -1903,9 +2189,52 @@ for ob_ in (low, swo):
     bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.002, area_weight=0.0,
                              correct_aspect=True, scale_to_bounds=False)
-    bpy.ops.uv.select_all(action="SELECT")
-    bpy.ops.uv.pack_islands(rotate=True, margin=0.002)
+    if ob_ is not low:
+        bpy.ops.uv.select_all(action="SELECT")
+        bpy.ops.uv.pack_islands(rotate=True, margin=0.002)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        continue
+    # v4: the hair faces get their own strip of the UV square (u > 1 - HAIR_UV_STRIP) whose normal / AO texels are
+    # flattened after the bake -- the hair's procedural locks interpenetrate, so the selected-to-active bake reads other
+    # locks' surfaces (the mottled v3 hair), and small hair islands among the others picked up their neighbours' texels
+    # through the texture mip chain
+    scene.tool_settings.mesh_select_mode = (False, False, True)
+    scene.tool_settings.use_uv_select_sync = False
+    for sel_hair in (False, True):
+        # the UV operators act on the SELECTED faces: select through bmesh (face select_set flushes to the verts /
+        # edges; setting the polygon flags in object mode alone was ignored and every face was packed)
+        bm_ = bmesh.from_edit_mesh(ob_.data)
+        bm_.faces.ensure_lookup_table()
+        for f_ in bm_.faces:
+            f_.select_set(False)
+        for f_ in bm_.faces:
+            if bool(_hairf[f_.index]) == sel_hair:
+                f_.select_set(True)
+        bmesh.update_edit_mesh(ob_.data)
+        bpy.ops.uv.select_all(action="SELECT")
+        if not sel_hair:
+            bpy.ops.uv.pack_islands(rotate=True, margin=0.002)
+            continue
+        bpy.ops.object.mode_set(mode="OBJECT")
+        uvd_ = np.empty(len(ob_.data.loops) * 2); ob_.data.uv_layers.active.data.foreach_get("uv", uvd_); uvd_ = uvd_.reshape(-1, 2)
+        lt_ = np.empty(len(ob_.data.polygons), dtype=np.int64); ob_.data.polygons.foreach_get("loop_total", lt_)
+        lpf_ = np.repeat(np.arange(len(lt_)), lt_)
+        hl_, nl_ = _hairf[lpf_], ~_hairf[lpf_]
+        uvd_[nl_, 0] *= (1.0 - HAIR_UV_STRIP - 0.012)          # the non-hair pack squeezed left of the strip
+        lo_u, hi_u = uvd_[hl_].min(0), uvd_[hl_].max(0)
+        uvd_[hl_] = np.array([1.0 - HAIR_UV_STRIP, 0.0]) + (uvd_[hl_] - lo_u) / np.maximum(hi_u - lo_u, 1e-9) * \
+            np.array([HAIR_UV_STRIP - 0.002, 1.0])
+        ob_.data.uv_layers.active.data.foreach_set("uv", uvd_.ravel())
+        ob_.data.update()
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.uv.select_all(action="SELECT")
+        bpy.ops.uv.pack_islands(udim_source="ORIGINAL_AABB", rotate=True, margin=0.002)
     bpy.ops.object.mode_set(mode="OBJECT")
+    ob_.data.polygons.foreach_set("select", np.ones(len(ob_.data.polygons), bool))
+    uvd_ = np.empty(len(ob_.data.loops) * 2); ob_.data.uv_layers.active.data.foreach_get("uv", uvd_); uvd_ = uvd_.reshape(-1, 2)
+    report["uv_hair_strip"] = {"strip_u_from": round(1.0 - HAIR_UV_STRIP, 4), "hair_faces": int(_hairf.sum()),
+                               "hair_uv_u_min": round(float(uvd_[_hairf[lpf_], 0].min()), 4),
+                               "nonhair_uv_u_max": round(float(uvd_[~_hairf[lpf_], 0].max()), 4)}
 tris_main = tri_count_F(OBJ["main"]["F"]); tris_sw = tri_count_F(OBJ["sword"]["F"])
 report["tris"] = {"total": tris_main + tris_sw, "main": tris_main, "sword": tris_sw, "body": tri_count_F(CF),
                   "hair_locks": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock")),
@@ -1925,6 +2254,22 @@ report["measure"] = {"bbox": [lo_a.round(4).tolist(), hi_a.round(4).tolist()], "
                                                      "footprint_m": round(fp * k_fit, 4)}}
 report["parts"] = {"boots": BOOT_INFO, "fauld": FAULD_INFO, "cape": CAPE_INFO, "sword": SWORD_INFO, "locks": LOCK_INFO,
                    "armor": ARMOR_INFO}
+_cur_names = sorted(n for n in LOCK_INFO if n.startswith("lock.curtain"))
+report["hair_v4"] = {
+    "front": "curtain: %d separate strands per side from the centre part (face frame) + %d long falls per side behind it "
+             "(over the shoulders to the chest) + the back cascade (%d clumps, v3's)" % (HAIR_CURTAIN_N, HAIR_FRONT_N,
+                                                                                      HAIR_OPTS["A"]["back_clumps"]),
+    "curtain_inner_edge_mm": [list(p) for p in CURTAIN_INNER], "curtain_inner_edge_on_head_psi_el_deg":
+        [[round(a, 1), round(b, 1)] for a, b in CURTAIN_PE], "curtain_outer_edge_psi_el_deg": [list(p) for p in CURTAIN_OUTER],
+    "curtain_strands": {n: {"length_m": LOCK_INFO[n]["length"], "tip_z": LOCK_INFO[n]["tip_z"],
+                            "tip_z_below_eye_mm": round(1000 * (float(EYE["L"]["c"][2]) - LOCK_INFO[n]["tip_z"]), 1),
+                            "min_clear_m": LOCK_INFO[n]["min_clear"]} for n in _cur_names},
+    "curtain_params": HAIR_CURTAIN, "curtain_weights": "rigid head (they lie on the head down to the cheek)",
+    "falls_on_head": [list(p) for p in HAIR_FALLS_HEAD], "cap_feather": CAP_FEATHER_INFO,
+    "tris": {"curtain": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.curtain")),
+             "falls": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.front")),
+             "back": sum(tri_count_F(p["F"]) for p in PARTS if p["name"].startswith("lock.back")),
+             "cap": tri_count_F(CAP_F)}}
 for ob_ in (low, swo):
     ob_["conquest_unit"] = UNIT
 low["conquest_character_id"] = CHAR_ID
@@ -2038,6 +2383,11 @@ bstats["pixel_sha"] = {"normal": sha(np.clip(np.rint(px[:, :3] * 255.0), 0, 255)
                        "ao": sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))}
 np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_normal_%s.npy" % TAG), px[:, :3])
 np.save(os.path.join(tempfile.gettempdir(), "vampwarrior_ao_%s.npy" % TAG), pa[:, :1])
+# v4: the hair strip (u > 1 - HAIR_UV_STRIP, less half the gap) is flat in the normal map (the digests / tolerance gate
+# above are on the RAW bake); its AO is set to white after the AO lift below
+_strip_n = (np.arange(RN * RN) % RN) >= int((1.0 - HAIR_UV_STRIP - 0.006) * RN)
+_strip_a = (np.arange(RA * RA) % RA) >= int((1.0 - HAIR_UV_STRIP - 0.006) * RA)
+px[_strip_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 bstats["seconds"] = round(time.time() - t_bake, 1)
 report["bake"] = bstats
 DIG["bake_normal"] = bstats["pixel_sha"]["normal"]; DIG["bake_ao"] = bstats["pixel_sha"]["ao"]
@@ -2076,7 +2426,13 @@ for _ in range(6):                                   # dilate the higher floors 
     _flr = f_
 _ao_raw = pa[:, 0].copy()
 pa[:, :3] = (_flr.reshape(-1) + (1.0 - _flr.reshape(-1)) * _ao_raw)[:, None]
+_hair_ao_raw = _ao_raw[_strip_a & cov_a]
+pa[_strip_a, :3] = 1.0                               # v4: the hair strip is white (no AO grime on the hair)
 img_ao.pixels.foreach_set(pa.ravel())
+bstats["hair_strip"] = {"rule": "hair faces packed into u > %.2f; normal texels there flat, AO texels white" % (1 - HAIR_UV_STRIP),
+                        "raw_ao_in_hair_strip_p05": round(float(np.percentile(_hair_ao_raw, 5)), 4) if len(_hair_ao_raw) else None,
+                        "raw_ao_in_hair_strip_min": round(float(_hair_ao_raw.min()), 4) if len(_hair_ao_raw) else None,
+                        "texels_normal": int(_strip_n.sum()), "texels_ao": int(_strip_a.sum())}
 bstats["ao_lift"] = {"floors": AO_FLOOR, "regions": AO_FLOOR_REGIONS,
                      "raw_p05": round(float(np.percentile(_ao_raw[cov_a], 5)), 4),
                      "lifted_p05": round(float(np.percentile(pa[cov_a, 0], 5)), 4),
@@ -2381,7 +2737,8 @@ rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 
                           "breastplate + pauldrons: the MPFB "
                           "weights of the nearest skin point (barycentric); knee cops / gem / buckle: the skin weights at their "
                           "centroid (rigid ride); fauld: pelvis at the top blending to the skin under the hem (<= 55 %); "
-                          "heels foot, eyes / fangs / hair cap head; hair locks head until they leave the head then "
+                          "heels foot, eyes / fangs / hair cap / v4 curtain strands head; hair locks head until they "
+                          "leave the head then "
                           "rigkit.vine_weights along their chain; cape: across-hat between the 5 chains x along-hat down "
                           "each; <= 4 influences, normalised"}
 print("WEIGHTS", json.dumps(rep["weights"]))
@@ -3028,6 +3385,10 @@ FOCUS["sword"] = box([guard1 + np.array([0, 0, -0.45]), guard1 + np.array([0, 0,
 FOCUS["sword_full"] = box(S1, 0.03)
 _eyes1 = C1[np.concatenate([rng("eye.L"), rng("eye.R")])]
 FOCUS["eyes"] = [(_eyes1.min(0) - np.array([0.012, 0.0, 0.004])).tolist(), (_eyes1.max(0) + np.array([0.012, 0.0, 0.016])).tolist()]
+# v4 close-ups: the brows (eyes + the stroke above) and the mouth (both fangs + the lips round them)
+FOCUS["brows"] = [(_eyes1.min(0) - np.array([0.016, 0.0, 0.002])).tolist(), (_eyes1.max(0) + np.array([0.016, 0.0, 0.022])).tolist()]
+_fang1 = C1[np.concatenate([rng("fang.L"), rng("fang.R")])]
+FOCUS["mouth"] = [(_fang1.min(0) - np.array([0.016, 0.0, 0.009])).tolist(), (_fang1.max(0) + np.array([0.016, 0.0, 0.009])).tolist()]
 FOCUS["hand"] = box([xf(np.array(rig.pose.bones["hand_r"].matrix) @ np.linalg.inv(REST4["hand_r"]), HEADP["hand_r"])], 0.10)
 low["conquest_focus"] = json.dumps(FOCUS)
 rig.animation_data.action = None
@@ -3047,14 +3408,15 @@ rep["grip"] = {"rule": "hammer grip: the handle runs along the right hand's knuc
                "sword_roll_search": ROLL_SEARCH}
 rep["tris"] = {"model": report["tris"]["total"], "outline_shells": 0, "budget": TRI_BUDGET}
 print("TRIS", json.dumps(rep["tris"]))
-rig["conquest_rig"] = ("vampwarrior v3: root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, "
+rig["conquest_rig"] = ("vampwarrior v4 (v3 rig; the face-framing curtain strands ride the head): root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, "
                        "clavicle / upperarm / lowerarm / hand + 15 finger bones per side, thigh / calf / foot / ball) + "
                        "hair_front.L/R.0-3, hair_back.L/C/R.0-3, cape.0-4.0-3 (chest children) + sword (hand_r child) > tassel.0-1")
 low["conquest_clips"] = list(CLIP_N)
 low["conquest_clip_status"] = ("idle (planted-sword guard, breath, eased weight shift) + walk (in-place stride, sword trailing, "
                                "chest / head overlap); hair + cape follow-through (damped-spring lag); no attack/hit/death")
-low["conquest_look"] = ("v3: v1 shaded material (Col x baked AO, baked normal map); no outline shells, no cel bands; the "
-                        "stylisation is DRAWN into the palette regions (shadow shapes, brows, liner contour)")
+low["conquest_look"] = ("v4: v1 shaded material (Col x baked AO, baked normal map; the hair's UV strip is flat / white); "
+                        "no outline shells, no cel bands; the stylisation is DRAWN into the palette regions (shadow "
+                        "shapes, brows, liner contour)")
 low["conquest_locomotion"] = "biped in heeled boots: rest pose on the floor per contract (soles z 0), clips in place"
 low["conquest_sword_grip"] = json.dumps(grip_rel.round(6).tolist())
 for m in list(bpy.data.materials):

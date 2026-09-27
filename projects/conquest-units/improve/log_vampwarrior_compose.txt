@@ -1,8 +1,7 @@
-﻿WROTE vampwarrior_v3_face_sheet.png
-WROTE vampwarrior_v3_hair.png
-WROTE vampwarrior_v3_shadow_regions.png
-WROTE vampwarrior_v3_armor.png
-WROTE vampwarrior_v3_red.png
-WROTE vampwarrior_v2_vs_v3.png
-WROTE vampwarrior_v3_contact.png
-DIALS {"cheek/l-cheek-volume-decr": [0.35, 0.5], "cheek/r-cheek-volume-decr": [0.35, 0.5], "chin/chin-prominent-incr": [0.25, 0.4], "chin/chin-triangle": [0.0, 0.6], "chin/chin-width-decr": [0.0, 0.55], "eyes/l-eye-scale-incr": [0.0, 0.45], "eyes/r-eye-scale-incr": [0.0, 0.45], "head/head-invertedtriangular": [0.0, 0.35]}
+﻿WROTE vampwarrior_v4_face_vs_reference.png
+WROTE vampwarrior_v4_hair_vs_annotation.png
+WROTE vampwarrior_v4_brows.png
+WROTE vampwarrior_v4_fangs.png
+WROTE vampwarrior_v4_skin_tone.png {"palette_v3": [226, 220, 218], "palette_v4": [228, 210, 200], "rendered_cheek_v3": [[223, 218, 218], 0.0, 0.022, 0.875], "rendered_cheek_v4": [[223, 207, 199], 20.0, 0.108, 0.875], "rendered_forehead_v3": [[233, 229, 229], 0.0, 0.017, 0.914], "rendered_forehead_v4": [[228, 212, 205], 18.3, 0.101, 0.894], "reference_lit_median": [[131, 122, 117], 21.4, 0.107, 0.514, 11520]}
+WROTE vampwarrior_v4_shadow_regions.png
+WROTE vampwarrior_v4_contact.png
