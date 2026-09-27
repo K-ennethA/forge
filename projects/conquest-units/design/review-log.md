@@ -876,3 +876,18 @@ read as a helmet/hood. (4) SKIN warmer per the reference - the current
 tone reads as Blender default grey; shift to the reference's pale warm
 grey-mauve. (5) FANGS: the circled fang ROOT visible at the lip line must
 be fully hidden - nothing shows above/at the lip edge.
+
+## 2026-09-26 — Vampwarrior v4.1 feedback (artist verbatim)
+
+"there is too many hair strands now
+
+it should be one large one up front and the rest normal hair (the hair is
+too tall now on the head)
+
+lets make the red eyes that darker less bright tone afterwall"
+
+Binding reading: (1) the 5-strand curtain per side becomes ONE LARGE
+front strand per side; the rest of the hair reads as normal hair mass.
+(2) the hair sits too TALL on the head - reduce the cap/lobe volume so it
+hugs the scalp. (3) eyes switch to the previously rendered darker/less
+bright red alternative (the v3alt_fainteyes tone).
