@@ -11,9 +11,11 @@ instead of that exact yellow should be more of a firefly glow type color / and t
 holes on its side". Two deviations from the sheet, both binding: (1) the amber accents become FIREFLY GLOW (palettes/firefly
 default; 'ember' = the sheet's amber, kept as the swap proof / A-B); (2) the smoke wings leave the SIDE-THRUSTER HOLES.
 
-SCOPE: the model only. Movement identity is unanswered (flame always-on vs perch; wings flap vs drift; darts vs cruise;
-machine vs bug-fused), so the only clip is a minimal hover-bob PLACEHOLDER named 'idle' and there is NO walk clip
-(clip_names fails on the missing walk -- expected until the movement wave).
+MOVEMENT (review-log 2026-09-26, artist: "firefly should float/hover"): it HOVERS at rest and DRIFTS to move; the flame
+stays on; the smoke wings read as drifting / billowing vapour (no flapping gait). idle = a true hover (lift HOVER_FRAC x H,
+gentle bob + pitch/roll wander, thrust-pulsed flickering flame, billowing smoke, swaying antennae; 4 s); walk = in-place
+hover-drift (nose-down lean, flame + smoke streaming back, faster ripple and antenna flutter; 2 s). The rest pose stays on
+the floor (flame tip z 0, contract feet_origin); the clips lift.
 
 UNITS: 'sheet units' -- 1 unit = 100 px of the reference sheet's front view (the sheet is orthographic, so every constant
 below is a direct sheet measurement / 100). Floor z = 0 at the flame tip (sheet y 845 px); z = (845 - y_px) / 100.
@@ -35,7 +37,7 @@ Pipeline:
      (flame material: alphaMode BLEND, single-sided), on its own bone.
   6. palette (palettes.py regions -> Col / Glow + Col alpha), Smart UV, bake normal + AO from the SDF high + parts.
   7. RIG: root (contract) > body > head > antenna.{L,R}.{0,1}; body > abdomen > flame; body > wing.{L,R}.{up,low}.{0,1,2}
-     (one chain per port; both sheets of a port ride it). PLACEHOLDER idle: hover bob + slight wing drift. glb export.
+     (one chain per port; both sheets of a port ride it). Clips idle (hover) + walk (hover-drift). glb export.
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, tempfile
 import numpy as np
@@ -140,16 +142,53 @@ CORE_R, CORE_TIP_Z = 0.24, 0.62       # "flame core": width / where it ends (z)
 FLAME_SEG, FLAME_ST = 30, 26
 # ---- bake
 BAKE_RES = (1024, 512)                # normal, AO texture sizes
-# ---- rig + placeholder idle
+# ---- rig
 NECK_Z = (5.02, 5.22)                 # head/body weight blend band
 WAIST_Z = (2.85, 3.15)                # abdomen/body weight blend band
 WING_BONES, ANT_BONES = 3, 2
-IDLE_N = 48                           # PLACEHOLDER idle: 2 s loop
-HOVER = 0.35                          # hover lift of the placeholder (units; the flame tip clears the floor by this)
-BOB = 0.06                            # hover bob amplitude (one bob per loop)
-WING_DRIFT = (3.0, 7.0)               # wing drift degrees at the chain root / tip (one wave per loop, travelling out)
-WING_LAG = 0.6
-ANT_SWAY = 2.5
+# ---- clips (movement wave; artist 2026-09-26 "firefly should float/hover": it HOVERS at rest and DRIFTS to move, the
+# flame stays on, the smoke wings drift / billow -- no flapping gait). 24 fps; every periodic term has an integer number
+# of cycles per loop, so frame N+1 == frame 1 exactly. Rotations are degrees; "cyc" = cycles per loop; "lag" = rad per
+# chain bone (a wave travelling root -> tip, i.e. downstream along the smoke / out along the antenna).
+HOVER_FRAC = 0.12                     # "hover height": both clips lift the body this fraction of the rest height (H 7.51 ->
+                                      #   0.90 u: the flame tip's clearance). vampito uses 0.15 H, but its body hangs
+                                      #   straight over the floor; here the 2.06 u flame already puts the nozzle at 25 % H,
+                                      #   so 0.12 H of clear air under the tip (body-to-floor 39 % H) reads as hovering
+                                      #   without floating off the tile, and clears bob + the longest flame pulse.
+IDLE_N = 96                           # "idle loop": 4 s
+IDLE_BOB = (0.012, 0.004)             # "hover bob": body z amplitude x H at 2 cyc (0.5 Hz) + a 3 cyc overtone (unmetronomic)
+IDLE_PITCH = (1.6, 0.6)               # "pitch wander": deg at 1 cyc + 3 cyc
+IDLE_ROLL = (1.2, 0.5)                # "roll wander": deg at 1 cyc + 2 cyc
+IDLE_YAW = 1.0                        # "yaw drift": deg at 1 cyc
+IDLE_HEAD = 1.2                       # head nod deg (2 cyc, lagging the bob)
+IDLE_ABD = 1.5                        # abdomen swing deg (1 cyc, lagging the pitch wander)
+FLAME_PULSE = {"idle": 0.07, "walk": 0.10}     # "thrust pulse": flame length +- this, phase-locked to the body's upward
+                                               #   acceleration (thrust = m (g + a): longest at the bottom of the bob)
+FLAME_FLICKER = {"idle": 0.035, "walk": 0.05}  # "flicker": fast length jitter (3 incommensurate-looking harmonics, 1.75-4.25 Hz)
+FLAME_MEAN = {"idle": 0.0, "walk": 0.08}       # "cruise thrust": mean flame lengthening
+FLAME_WIDTH_K = 0.6                   # the flame narrows by this share of its stretch (a longer jet is a thinner jet)
+FLAME_WOBBLE = {"idle": 1.2, "walk": 2.0}      # flame tip wobble deg (fast, two axes)
+WING_IDLE = {"Z": (1.5, 4.0, 1, 0.6),          # "smoke drift" per axis (root deg, tip deg, cyc, lag): Z = sweep breathing,
+             "X": (1.5, 5.0, 1, 0.7),          #   X = the hanging curtain swaying fore-aft, B = roll about the chain (billow),
+             "B": (1.5, 5.0, 2, 0.8),          #   Y = vertical ripple (kept small and de-synced L/R: a ripple, never a stroke)
+             "Y": (0.6, 2.0, 3, 0.9)}
+WING_PUFF = 0.03                      # "smoke puff": uniform scale +- of the mid chain bone (1 cyc): the vapour swells/settles
+CHAIN_PHASE = {"wing.L.up": 0.0, "wing.L.low": 1.9, "wing.R.up": 1.57, "wing.R.low": 3.47}  # per-chain phase: R runs a
+                                      #   quarter cycle off L (pi would mirror into a coherent see-saw, 0 into a flap)
+ANT_IDLE = {"X": (2.0, 4.0, 2, 0.7), "Y": (1.5, 3.0, 1, 0.6)}   # antenna sway (root deg, tip deg, cyc, lag)
+WALK_N = 48                           # "drift loop": 2 s
+WALK_BOB = 0.007                      # body z amplitude x H at 2 cyc (1 Hz)
+WALK_PITCH, WALK_PITCH_OSC = 12.0, 1.0         # "lean into the drift": nose-down pitch deg + its wobble (2 cyc)
+WALK_ROLL = 1.0                       # roll wobble deg (1 cyc)
+WALK_HEAD_COUNTER = 0.6               # the head undoes this share of the pitch (gaze stays level)
+WALK_ABD_TRAIL = 4.0                  # the abdomen (and the flame on it) trails back deg
+FLAME_TRAIL = 10.0                    # "flame streams back": extra deg on top of the lean
+WING_WALK_TRAIL = {"Z": (3.0, 6.0), "X": (4.0, 8.0)}  # "smoke trails back": per bone root -> tip deg (sums down the chain)
+WING_WALK_RIPPLE = {"B": (3.0, 8.0, 3, 0.9), "Y": (1.0, 3.0, 3, 0.9), "Z": (1.0, 3.0, 2, 0.7)}   # faster downstream ripple
+ANT_WALK_TRAIL = (-8.0, -5.0)         # antennae swept back by the airflow (root, tip deg)
+ANT_WALK_FLUTTER = {"X": (1.5, 4.5, 7, 0.9), "Y": (1.0, 2.5, 5, 0.8)}   # "antenna flutter" (3.5 / 2.5 Hz)
+FLAG_WAVE_RATIO = (0.5, 0.6, 1.0)     # implied drift speed: the smoke ripple's phase speed c = ratio x U (ASSUMPTION:
+                                      #   flag-in-wind travelling waves; settle in-engine by gliding at candidate speeds)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None
@@ -865,7 +904,8 @@ low["conquest_scale_policy"] = "natural proportions in sheet units (1 = 100 shee
 low["conquest_emission_channel"] = "Glow colour attribute (2nd colour set, glTF COLOR_1) -> Emission Color; Col -> Base Color"
 low["conquest_alpha_channel"] = ("Col alpha (glTF COLOR_0.a, per-region palette alpha) x material alpha factor; smoke "
                                  "material alphaMode BLEND double-sided, flame material alphaMode BLEND single-sided, body opaque")
-flame["conquest_toggle"] = "the exhaust flame is its own node: hide it to turn the flame off (artist question open: always-on?)"
+flame["conquest_toggle"] = ("the exhaust flame is ALWAYS ON (artist 2026-09-26: it hovers); it stays its own node, so the "
+                            "game can still hide it (e.g. on death)")
 # focus boxes for the close-up renders (world, after the centre shift)
 _head_pts = np.vstack([VALL[RANGE["goggle_rim.L"][0]:RANGE["goggle_rim.L"][1]], VALL[RANGE["goggle_rim.R"][0]:RANGE["goggle_rim.R"][1]],
                        (HC - SHIFT - HR * 1.1)[None], (HC - SHIFT + HR * 1.1)[None],
@@ -1144,48 +1184,159 @@ for ob_ in (low, flame):
     ob_.matrix_parent_inverse = Matrix.Identity(4)
     am = ob_.modifiers.new("Armature", "ARMATURE"); am.object = rig
 
-# ---- PLACEHOLDER idle: hover bob + slight wing drift + antenna sway (closed-form, integer cycles -> exact seam)
+# ---- clips: idle (hover) + walk (hover-drift), closed-form periodic curves keyed every frame (location, quaternion,
+#      scale on every deform bone in BOTH clips, so switching clips never leaves a stale channel); integer cycles per loop
+#      -> frame N+1 == frame 1 exactly
 for pb in rig.pose.bones:
     pb.rotation_mode = "QUATERNION"
 REST = {b.name: np.array(b.matrix_local)[:3, :3] for b in arm_data.bones}
+AXV = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}
+TAU = 2.0 * math.pi
+HH = report["measure"]["height"]                 # rest height (flame tip z 0 -> antenna tips)
+HOVER = HOVER_FRAC * HH
+WING_CHAINS = sorted(c for c in CHAIN_PTS if c.startswith("wing"))
+AX_OFF = {"Z": 0.0, "X": 1.1, "B": 2.3, "Y": 0.7}        # per-axis phase offsets inside a chain (no axis moves in lockstep)
 
 
 def local_loc(bone, dw):
     return Vector(REST[bone].T @ np.asarray(dw, float))
 
 
-act = bpy.data.actions.new("idle")
-act.use_fake_user = True
-K.assign_action(rig, act)
-key_rows = []
-wing_chains = sorted(c for c in CHAIN_PTS if c.startswith("wing"))
-for f in range(IDLE_N + 1):
-    u = (f % IDLE_N) / IDLE_N
-    pose = {"body": ((0.0, 0.0, HOVER + BOB * math.sin(2 * math.pi * u)), None)}
-    for ci, chain in enumerate(wing_chains):
+def local_quat(bone, rots):
+    """World-axis rotations (applied in order, about the bone head, relative to the parent's posed frame) -> the bone's
+    basis quaternion. Axis 'B' = the bone's own rest direction (roll about the chain: the smoke curtain billows)."""
+    Rw = Matrix.Identity(3)
+    for axis, deg in rots:
+        av = Vector(REST[bone][:, 1]) if axis == "B" else Vector(AXV[axis])
+        Rw = Matrix.Rotation(math.radians(deg), 3, av) @ Rw
+    R0 = Matrix(REST[bone].tolist())
+    q = (R0.transposed() @ Rw @ R0).to_quaternion()
+    q.normalize()
+    if q.w < 0:
+        q.negate()
+    return q
+
+
+def wave(u, k, n, spec, phase):
+    a0, a1, cyc, lag = spec
+    return K.vine_wave(u, k, n, a0, a1, lag, cyc, phase)
+
+
+def bob_terms(clip, u):
+    """body z offset (units) and its acceleration (units / loop^2 up to a constant) at loop phase u"""
+    if clip == "idle":
+        z = HH * (IDLE_BOB[0] * math.sin(TAU * 2 * u) + IDLE_BOB[1] * math.sin(TAU * 3 * u + 0.9))
+        a = -HH * (IDLE_BOB[0] * 4 * math.sin(TAU * 2 * u) + IDLE_BOB[1] * 9 * math.sin(TAU * 3 * u + 0.9))
+    else:
+        z = HH * WALK_BOB * math.sin(TAU * 2 * u)
+        a = -HH * WALK_BOB * 4 * math.sin(TAU * 2 * u)
+    return z, a
+
+
+CLIPS = {"idle": IDLE_N, "walk": WALK_N}
+ACC_MAX = {cn: max(abs(bob_terms(cn, f / N)[1]) for f in range(N)) for cn, N in CLIPS.items()}
+FLICK_H = {"idle": (7, 11, 17), "walk": (4, 6, 9)}     # flicker harmonics per loop: idle 1.75/2.75/4.25 Hz, walk 2/3/4.5 Hz
+WOB_H = {"idle": (9, 13), "walk": (5, 7)}              # flame wobble harmonics: idle 2.25/3.25 Hz, walk 2.5/3.5 Hz
+
+
+def pose_at(clip, f):
+    """Pose of frame f (0-based within the period) -> {bone: (loc_world | None, [(axis, deg)], scale | None)}, info."""
+    N = CLIPS[clip]
+    u = f / N
+    walk = clip == "walk"
+    z, acc = bob_terms(clip, u)
+    acc_n = acc / ACC_MAX[clip]                                   # +1 = strongest upward acceleration (bob bottom)
+    P = {}
+    if not walk:
+        pitch = IDLE_PITCH[0] * math.sin(TAU * u) + IDLE_PITCH[1] * math.sin(TAU * 3 * u + 0.5)
+        roll = IDLE_ROLL[0] * math.sin(TAU * u + 1.3) + IDLE_ROLL[1] * math.sin(TAU * 2 * u + 2.1)
+        yaw = IDLE_YAW * math.sin(TAU * u + 2.4)
+        head = IDLE_HEAD * math.sin(TAU * 2 * u - 0.8)
+        abd = IDLE_ABD * math.sin(TAU * u - 1.2)
+    else:
+        pitch = WALK_PITCH + WALK_PITCH_OSC * math.sin(TAU * 2 * u - 1.0)
+        roll = WALK_ROLL * math.sin(TAU * u + 0.6)
+        yaw = 0.0
+        head = -WALK_HEAD_COUNTER * WALK_PITCH + 1.0 * math.sin(TAU * 2 * u - 1.8)
+        abd = WALK_ABD_TRAIL + 1.2 * math.sin(TAU * 2 * u - 1.4)
+    P["body"] = ((0.0, 0.0, HOVER + z), [("X", pitch), ("Y", roll), ("Z", yaw)], None)
+    P["head"] = (None, [("X", head)], None)
+    P["abdomen"] = (None, [("X", abd)], None)
+    # flame: thrust pulse locked to the bob's upward acceleration + fast flicker; narrows as it stretches
+    h1, h2, h3 = FLICK_H[clip]
+    flick = 0.5 * math.sin(TAU * h1 * u + 0.3) + 0.3 * math.sin(TAU * h2 * u + 1.1) + 0.2 * math.sin(TAU * h3 * u + 2.0)
+    Lf = 1.0 + FLAME_MEAN[clip] + FLAME_PULSE[clip] * acc_n + FLAME_FLICKER[clip] * flick
+    Wf = 1.0 - FLAME_WIDTH_K * (Lf - 1.0)
+    w1, w2 = WOB_H[clip]
+    wob = FLAME_WOBBLE[clip]
+    P["flame"] = (None, [("X", (FLAME_TRAIL if walk else 0.0) + wob * math.sin(TAU * w1 * u + 0.4)),
+                         ("Y", wob * math.sin(TAU * w2 * u + 1.7))], (Wf, Lf, Wf))
+    # smoke wings: idle = drifting / billowing vapour; walk = trailing back + a faster downstream ripple
+    for chain in WING_CHAINS:
+        sg = 1.0 if ".L." in chain else -1.0
+        ph = CHAIN_PHASE[chain]
         for k in range(WING_BONES):
-            ang = K.vine_wave(u, k, WING_BONES, WING_DRIFT[0], WING_DRIFT[1], WING_LAG, 1, phase=0.4 * ci)
-            pose["%s.%d" % (chain, k)] = (None, ang)
+            bn = "%s.%d" % (chain, k)
+            t_ = k / max(WING_BONES - 1, 1)
+            if not walk:
+                rots = [("Z", sg * wave(u, k, WING_BONES, WING_IDLE["Z"], ph + AX_OFF["Z"])),
+                        ("X", wave(u, k, WING_BONES, WING_IDLE["X"], ph + AX_OFF["X"])),
+                        ("B", sg * wave(u, k, WING_BONES, WING_IDLE["B"], ph + AX_OFF["B"])),
+                        ("Y", sg * wave(u, k, WING_BONES, WING_IDLE["Y"], ph + AX_OFF["Y"]))]
+                puff = WING_PUFF
+            else:
+                trz = WING_WALK_TRAIL["Z"][0] + (WING_WALK_TRAIL["Z"][1] - WING_WALK_TRAIL["Z"][0]) * t_
+                trx = WING_WALK_TRAIL["X"][0] + (WING_WALK_TRAIL["X"][1] - WING_WALK_TRAIL["X"][0]) * t_
+                rots = [("Z", sg * (trz + wave(u, k, WING_BONES, WING_WALK_RIPPLE["Z"], ph + AX_OFF["Z"]))),
+                        ("X", trx),
+                        ("B", sg * wave(u, k, WING_BONES, WING_WALK_RIPPLE["B"], ph + AX_OFF["B"])),
+                        ("Y", sg * wave(u, k, WING_BONES, WING_WALK_RIPPLE["Y"], ph + AX_OFF["Y"]))]
+                puff = 0.7 * WING_PUFF
+            sc = None
+            if k == 1:
+                s_ = 1.0 + puff * math.sin(TAU * u + ph)
+                sc = (s_, s_, s_)                                 # uniform: no shear down the chain (glTF-safe)
+            P[bn] = (None, rots, sc)
     for side in ("L", "R"):
+        sg = 1.0 if side == "L" else -1.0
+        ph = 0.0 if side == "L" else 1.3
         for k in range(ANT_BONES):
-            pose["antenna.%s.%d" % (side, k)] = (None, ANT_SWAY * math.sin(2 * math.pi * u + 0.8 * k + (0 if side == "L" else 1.3)))
-    for bn, (loc, ang) in pose.items():
-        pb = rig.pose.bones[bn]
-        if loc is not None:
-            pb.location = local_loc(bn, loc)
-            pb.keyframe_insert("location", frame=f + 1)
-        q = Quaternion((1.0, 0.0, 0.0), math.radians(ang)) if ang is not None else Quaternion()
-        pb.rotation_quaternion = q
-        pb.keyframe_insert("rotation_quaternion", frame=f + 1)
-        key_rows.append(list(pb.location) + list(pb.rotation_quaternion))
-for fc in K.action_fcurves(act):
-    for kp in fc.keyframe_points:
-        kp.interpolation = "LINEAR"
-act.use_frame_range = True
-act.frame_start, act.frame_end = 1, IDLE_N + 1
-act.use_cyclic = True
-act["placeholder"] = "PLACEHOLDER idle (hover bob + slight wing drift): movement identity awaits the artist's answers"
-act["wingbeats"] = 1
+            bn = "antenna.%s.%d" % (side, k)
+            if not walk:
+                rots = [("X", wave(u, k, ANT_BONES, ANT_IDLE["X"], ph)), ("Y", sg * wave(u, k, ANT_BONES, ANT_IDLE["Y"], ph + 0.9))]
+            else:
+                tr = ANT_WALK_TRAIL[0] + (ANT_WALK_TRAIL[1] - ANT_WALK_TRAIL[0]) * k / max(ANT_BONES - 1, 1)
+                rots = [("X", tr + wave(u, k, ANT_BONES, ANT_WALK_FLUTTER["X"], ph)),
+                        ("Y", sg * wave(u, k, ANT_BONES, ANT_WALK_FLUTTER["Y"], ph + 0.9))]
+            P[bn] = (None, rots, None)
+    return P, {"lift": HOVER + z, "acc_n": acc_n, "pitch": pitch, "roll": roll, "flame_len": Lf, "flame_width": Wf}
+
+
+NEW_ACTS = {}
+key_rows = []
+for cn, N in CLIPS.items():
+    act = bpy.data.actions.new(cn)
+    act.use_fake_user = True
+    K.assign_action(rig, act)
+    for f in range(N + 1):                     # frames 1..N+1; frame N+1 == frame 1
+        P, _ = pose_at(cn, f % N)
+        for bn in DEFORM:
+            loc, rots, sc = P.get(bn, (None, [], None))
+            pb = rig.pose.bones[bn]
+            pb.location = local_loc(bn, loc) if loc is not None else Vector((0.0, 0.0, 0.0))
+            pb.rotation_quaternion = local_quat(bn, rots) if rots else Quaternion()
+            pb.scale = sc if sc is not None else (1.0, 1.0, 1.0)
+            for ch in ("location", "rotation_quaternion", "scale"):
+                pb.keyframe_insert(ch, frame=f + 1)
+            key_rows.append(list(pb.location) + list(pb.rotation_quaternion) + list(pb.scale))
+    for fc in K.action_fcurves(act):
+        for kp in fc.keyframe_points:
+            kp.interpolation = "LINEAR"
+    act.use_frame_range = True
+    act.frame_start, act.frame_end = 1, N + 1
+    act.use_cyclic = True
+    act["loop_seconds"] = N / K.FPS
+    NEW_ACTS[cn] = act
 DIG["keys"] = sha(np.array(key_rows))
 
 
@@ -1199,41 +1350,151 @@ def eval_coords(ob):
     return co.reshape(-1, 3) @ M_[:3, :3].T + M_[:3, 3]
 
 
-samples, minz, root_off = [], 1e9, 0.0
-first = last = ffirst = flast = None
-for f in range(1, IDLE_N + 2):
-    scene.frame_set(f)
-    C = eval_coords(low); Cf = eval_coords(flame)
-    samples.append(C[::7]); samples.append(Cf[::5])
-    if f == 1:
-        first, ffirst = C, Cf
-    if f == IDLE_N + 1:
-        last, flast = C, Cf
-    minz = min(minz, float(C[:, 2].min()), float(Cf[:, 2].min()))
-    root_off = max(root_off, (rig.matrix_world @ rig.pose.bones["root"].head).length)
+# smoke vertices (for the smoke-into-body probe) and the rest-frame body SDF (torso + jet-pack, sheet coordinates)
+SMOKE_V = np.concatenate([np.arange(*RANGE[p.name]) for p in PARTS if getattr(p, "smoke", False)])
+
+
+def body_sd(Pw_rest):
+    Q = Pw_rest + SHIFT
+    return np.minimum(sd_torso(Q), sd_pack(Q))
+
+
+PEN_TOL = 0.01                                   # a smoke vertex deeper than this inside the torso/pack counts
+pen_rest = int((body_sd(VALL[SMOKE_V]) < -PEN_TOL).sum())
+TIPS = {c: "%s.%d" % (c, WING_BONES - 1) for c in WING_CHAINS}
+ANT_TIPS = {s: "antenna.%s.%d" % (s, ANT_BONES - 1) for s in ("L", "R")}
+bl_rest = {b.name: (Matrix(b.matrix_local), Vector(b.tail_local)) for b in arm_data.bones}
+flame_top = Vector(arm_data.bones["flame"].head_local)
+fl_rest_len = float(np.linalg.norm(FLV - np.array(flame_top), axis=1).max())
+samples = []
+clip_rep = {}
+for cn, N in CLIPS.items():
+    K.assign_action(rig, NEW_ACTS[cn])
+    first = last = ffirst = flast = None
+    rows = []
+    pen_max = 0
+    for f in range(1, N + 2):
+        scene.frame_set(f)
+        C = eval_coords(low); Cf = eval_coords(flame)
+        samples.append(C[::7]); samples.append(Cf[::5])
+        if f == 1:
+            first, ffirst = C, Cf
+        if f == N + 1:
+            last, flast = C, Cf
+        pbs = rig.pose.bones
+        Mb = pbs["body"].matrix.copy()
+        Mb_inv_rest = bl_rest["body"][0] @ Mb.inverted()             # posed -> body rest frame
+        by = Mb.col[1].xyz
+        fy = pbs["flame"].matrix.col[1].xyz
+        Mh_inv_rest = bl_rest["head"][0] @ pbs["head"].matrix.inverted()
+        row = {"min_z_main": float(C[:, 2].min()), "min_z_flame": float(Cf[:, 2].min()),
+               "body_z": float(pbs["body"].head.z), "pitch": math.degrees(math.atan2(-by.y, by.z)),
+               "roll": math.degrees(math.atan2(by.x, by.z)),
+               "flame_back_deg": math.degrees(math.atan2(fy.y, -fy.z)), "flame_len_key": float(pbs["flame"].scale[1]),
+               "flame_len_mesh": float(np.linalg.norm(Cf - np.array(pbs["flame"].head), axis=1).max()) / fl_rest_len,
+               "root": float((rig.matrix_world @ pbs["root"].head).length)}
+        for c, tb in TIPS.items():
+            tw = pbs[tb].tail
+            row["tip_" + c] = list(tw)
+            row["tipb_" + c] = list(Mb_inv_rest @ tw - bl_rest[tb][1])      # tip displacement in the body frame vs rest
+        for s_, tb in ANT_TIPS.items():
+            row["ant_" + s_] = list(Mh_inv_rest @ pbs[tb].tail - bl_rest[tb][1])
+        if (f - 1) % 4 == 0:
+            Sw = C[SMOKE_V]
+            M3 = np.array(Mb_inv_rest)
+            pen_max = max(pen_max, int((body_sd(Sw @ M3[:3, :3].T + M3[:3, 3]) < -PEN_TOL).sum()))
+        rows.append(row)
+    R_ = rows[:-1]                                            # one period (frame N+1 == frame 1)
+    g = lambda k: np.array([r[k] for r in R_])
+    minz = np.minimum(g("min_z_main"), g("min_z_flame"))
+    bz = g("body_z")
+    acc_num = np.roll(bz, -1) - 2 * bz + np.roll(bz, 1)        # cyclic second difference
+    fl = g("flame_len_key")
+    corr = float(np.corrcoef(acc_num, fl)[0, 1]) if np.std(acc_num) > 1e-12 else None
+    wings = {}
+    for c in WING_CHAINS:
+        tb_ = np.array([r["tipb_" + c] for r in R_])
+        tw_ = np.array([r["tip_" + c] for r in R_])
+        wings[c] = {"tip_disp_body_frame_mean": tb_.mean(0).round(4).tolist(),
+                    "tip_disp_body_frame_p2p_xyz": (tb_.max(0) - tb_.min(0)).round(4).tolist(),
+                    "tip_world_p2p_xyz": (tw_.max(0) - tw_.min(0)).round(4).tolist()}
+    zl = np.array([r["tipb_wing.L.up"][2] for r in R_]); zr = np.array([r["tipb_wing.R.up"][2] for r in R_])
+    zl2 = np.array([r["tipb_wing.L.low"][2] for r in R_]); zr2 = np.array([r["tipb_wing.R.low"][2] for r in R_])
+    ants = {s_: {"tip_p2p_xyz_head_frame": (np.array([r["ant_" + s_] for r in R_]).max(0) -
+                                            np.array([r["ant_" + s_] for r in R_]).min(0)).round(4).tolist(),
+                 "tip_mean_disp_head_frame": np.array([r["ant_" + s_] for r in R_]).mean(0).round(4).tolist()}
+            for s_ in ("L", "R")}
+    clip_rep[cn] = {
+        "frames": [1, N + 1], "period_frames": N, "seconds": round(N / K.FPS, 3), "cyclic": True,
+        "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
+        "seam_flame_mm": round(float(np.linalg.norm(ffirst - flast, axis=1).max()) * 1000, 6),
+        "root_offset_max": round(max(r["root"] for r in rows), 8),
+        "clearance_min_z": round(float(minz.min()), 4), "clearance_min_z_pct_H": round(100 * float(minz.min()) / HH, 2),
+        "lowest_point_range": [round(float(minz.min()), 4), round(float(minz.max()), 4)],
+        "body_lift": {"mean": round(float(bz.mean() - bl_rest["body"][0].translation.z), 4),
+                      "bob_peak_to_peak": round(float(bz.max() - bz.min()), 4),
+                      "bob_amplitude": round(float(bz.max() - bz.min()) / 2, 4)},
+        "pitch_deg": {"mean": round(float(g("pitch").mean()), 3), "min": round(float(g("pitch").min()), 3),
+                      "max": round(float(g("pitch").max()), 3)},
+        "roll_deg": {"min": round(float(g("roll").min()), 3), "max": round(float(g("roll").max()), 3)},
+        "flame": {"length_scale_key": [round(float(fl.min()), 4), round(float(fl.max()), 4)],
+                  "length_scale_mesh": [round(float(g("flame_len_mesh").min()), 4), round(float(g("flame_len_mesh").max()), 4)],
+                  "back_angle_deg_from_vertical": {"mean": round(float(g("flame_back_deg").mean()), 2),
+                                                   "min": round(float(g("flame_back_deg").min()), 2),
+                                                   "max": round(float(g("flame_back_deg").max()), 2)},
+                  "corr_length_vs_body_upward_accel": round(corr, 4) if corr is not None else None,
+                  "rule": "length = 1 + mean + pulse x (body upward accel / max) + flicker; width = 1 - %.2f x stretch"
+                          % FLAME_WIDTH_K},
+        "wings": wings,
+        "wing_no_flap": {"tip_z_LR_corr_up": round(float(np.corrcoef(zl, zr)[0, 1]), 3),
+                         "tip_z_LR_corr_low": round(float(np.corrcoef(zl2, zr2)[0, 1]), 3),
+                         "rule": "a flap = large mirrored in-phase tip strokes (corr ~ +1); the vapour ripple is small and "
+                                 "de-synced per chain"},
+        "smoke_into_body_verts_max": pen_max, "smoke_into_body_verts_rest": pen_rest,
+        "antennae": ants}
+    print("CLIP", cn, json.dumps({k: clip_rep[cn][k] for k in ("seam_main_mm", "seam_flame_mm", "clearance_min_z",
+                                                                "body_lift", "pitch_deg", "flame", "wing_no_flap",
+                                                                "smoke_into_body_verts_max")}))
 DIG["clip_samples"] = sha(np.concatenate(samples))
-rep["clips"] = {"idle": {"status": "PLACEHOLDER (movement wave pending the artist's answers)", "frames": [1, IDLE_N + 1],
-                         "seconds": IDLE_N / K.FPS, "cyclic": True,
-                         "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
-                         "seam_flame_mm": round(float(np.linalg.norm(ffirst - flast, axis=1).max()) * 1000, 6),
-                         "min_z": round(minz, 4), "hover": HOVER, "bob": BOB, "wing_drift_deg": list(WING_DRIFT),
-                         "root_offset_max": round(root_off, 8)},
-                "walk": "NOT BUILT: locomotion identity (darts vs cruise, wings flap vs drift, flame always-on vs perch, "
-                        "machine vs bug-fused) awaits the artist; clip_names fails on the missing walk by design"}
+# implied drift speed: the walk's smoke ripple (roll 'B', the dominant term) travels root -> tip at c = omega l / lag
+wing_bone_len = float(np.mean([(Vector(b.tail_local) - Vector(b.head_local)).length for b in arm_data.bones
+                               if b.name.startswith("wing")]))
+_a0, _a1, _cyc, _lag = WING_WALK_RIPPLE["B"]
+omega = TAU * _cyc / (WALK_N / K.FPS)
+c_ripple = omega * wing_bone_len / _lag
+U_by = {str(r_): round(c_ripple / r_, 3) for r_ in FLAG_WAVE_RATIO}
+m_per_u = report["measure"]["export_cell_fit_report_only"]["scale"]
+clip_rep["walk"]["implied_drift_speed"] = {
+    "rule": "ASSUMPTION (flag-in-wind): the smoke ripple convects downstream at c = ratio x U, ratio 0.5-1.0; "
+            "c = omega x mean wing-bone length / lag. Settling experiment: glide the unit in-engine at the candidate "
+            "speeds and keep the one where the ripple does not read as slipping",
+    "ripple_phase_speed_units_per_s": round(c_ripple, 3), "ripple_hz": round(_cyc / (WALK_N / K.FPS), 3),
+    "units_per_s_by_ratio": U_by,
+    "body_heights_per_s_by_ratio": {k: round(v / HH, 3) for k, v in U_by.items()},
+    "m_per_s_at_cell_fit_by_ratio": {k: round(v * m_per_u, 3) for k, v in U_by.items()},
+    "game_m_per_unit_report_only": m_per_u,
+    "conquest_glide_reference": "UnitAnimator.move_glide_time 0.3 s per move (a 2 m tile = 6.7 m/s): the game glides, "
+                                "the clip only loops"}
+rep["hover"] = {"hover_frac_H": HOVER_FRAC, "hover_height_units": round(HOVER, 4), "rest_height_units": HH,
+                "hover_height_m_at_cell_fit": round(HOVER * m_per_u, 4),
+                "rule": "rest pose on the floor (contract feet_origin, flame tip z 0); both clips key body.location z = "
+                        "HOVER_FRAC x H + the bob; the contract root never moves"}
+rep["clips"] = clip_rep
 rig.animation_data.action = None
 for pb in rig.pose.bones:
-    pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0)
+    pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
 scene.frame_set(1)
 scene.frame_start, scene.frame_end = 1, IDLE_N + 1
 rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, "deform": b.use_deform,
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rig["conquest_rig"] = ("firefly v1 (model lane): root > body > head > antenna.{L,R}.{0,1}; body > abdomen > flame; "
+rig["conquest_rig"] = ("firefly v1: root > body > head > antenna.{L,R}.{0,1}; body > abdomen > flame; "
                        "body > wing.{L,R}.{up,low}.{0,1,2} (one chain per side thruster; both smoke sheets ride it)")
-low["conquest_clips"] = ["idle"]
-low["conquest_clip_status"] = "idle = PLACEHOLDER hover bob + wing drift; NO walk yet (movement wave awaits the artist)"
-low["conquest_locomotion"] = "hover (flyer): rest pose on the floor per contract (flame tip z 0); the idle lifts HOVER"
+low["conquest_clips"] = ["idle", "walk"]
+low["conquest_clip_status"] = ("idle = hover (4 s: bob + pitch/roll wander, thrust-pulsed flame, billowing smoke); walk = "
+                               "in-place hover-drift (2 s: nose-down lean, flame + smoke streaming back)")
+low["conquest_locomotion"] = "hover (flyer): rest pose on the floor per contract (flame tip z 0); both clips lift HOVER_FRAC x H"
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)
@@ -1252,7 +1513,7 @@ bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True, relat
 for o in scene.objects:
     o.select_set(o in (rig, low, flame))
 bpy.context.view_layer.objects.active = rig
-K.assign_action(rig, act)
+K.assign_action(rig, NEW_ACTS["idle"])
 t = time.time()
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
                           export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
@@ -1299,7 +1560,8 @@ rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
 print("RIG_DONE", json.dumps({k: rep[k] for k in ("bone_count", "weights", "digest", "seconds")}))
-print("CLIP", json.dumps(rep["clips"]["idle"]))
+print("HOVER", json.dumps(rep["hover"]))
+print("DRIFT", json.dumps(rep["clips"]["walk"]["implied_drift_speed"]))
 print("GLB", json.dumps(rep["glb"]["carries"]))
 sys.stdout.flush()
 os._exit(0)

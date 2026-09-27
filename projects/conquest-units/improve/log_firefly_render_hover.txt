@@ -1,9 +1,9 @@
-00:01.438  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firefly.blend"
-00:04.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_front.png'
-00:04.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_threequarter.png'
-00:05.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_side.png'
-00:05.391  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_back.png'
-00:05.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_tactical.png'
+00:01.516  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firefly.blend"
+00:04.234  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_front.png'
+00:04.719  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_threequarter.png'
+00:05.078  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_side.png'
+00:05.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_back.png'
+00:05.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_tactical.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_threequarter.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firefly\firefly_side.png

@@ -31,27 +31,340 @@
   "flame_object": "all 1024 vertices 1.0 on 'flame'",
   "rule": "shell: head above NECK_Z blend, abdomen below WAIST_Z blend, body between; goggles/lenses/straps head; thruster cans body; nozzle abdomen; antennae + smoke sheets: rigkit.vine_weights arc-length hat weights along their chain (root blends from the parent: the smoke root is pinned in its hole)"
  },
+ "hover": {
+  "hover_frac_H": 0.12,
+  "hover_height_units": 0.9016,
+  "rest_height_units": 7.5131,
+  "hover_height_m_at_cell_fit": 0.216,
+  "rule": "rest pose on the floor (contract feet_origin, flame tip z 0); both clips key body.location z = HOVER_FRAC x H + the bob; the contract root never moves"
+ },
  "clips": {
   "idle": {
-   "status": "PLACEHOLDER (movement wave pending the artist's answers)",
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_flame_mm": 0.0,
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.6119,
+   "clearance_min_z_pct_H": 8.14,
+   "lowest_point_range": [
+    0.6119,
+    1.1842
+   ],
+   "body_lift": {
+    "mean": 0.9016,
+    "bob_peak_to_peak": 0.2228,
+    "bob_amplitude": 0.1114
+   },
+   "pitch_deg": {
+    "mean": -0.005,
+    "min": -1.747,
+    "max": 1.731
+   },
+   "roll_deg": {
+    "min": -1.318,
+    "max": 1.594
+   },
+   "flame": {
+    "length_scale_key": [
+     0.9109,
+     1.0856
+    ],
+    "length_scale_mesh": [
+     0.9109,
+     1.0856
+    ],
+    "back_angle_deg_from_vertical": {
+     "mean": -0.0,
+     "min": -4.24,
+     "max": 4.2
+    },
+    "corr_length_vs_body_upward_accel": 0.9186,
+    "rule": "length = 1 + mean + pulse x (body upward accel / max) + flicker; width = 1 - 0.60 x stretch"
+   },
+   "wings": {
+    "wing.L.low": {
+     "tip_disp_body_frame_mean": [
+      -0.0036,
+      -0.0016,
+      0.005
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1346,
+      0.2909,
+      0.1393
+     ],
+     "tip_world_p2p_xyz": [
+      0.1993,
+      0.3249,
+      0.2207
+     ]
+    },
+    "wing.L.up": {
+     "tip_disp_body_frame_mean": [
+      -0.0047,
+      0.0007,
+      0.0067
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1209,
+      0.3893,
+      0.0693
+     ],
+     "tip_world_p2p_xyz": [
+      0.1078,
+      0.3494,
+      0.2675
+     ]
+    },
+    "wing.R.low": {
+     "tip_disp_body_frame_mean": [
+      0.0033,
+      -0.0017,
+      0.0045
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1133,
+      0.2444,
+      0.1286
+     ],
+     "tip_world_p2p_xyz": [
+      0.1129,
+      0.1844,
+      0.2819
+     ]
+    },
+    "wing.R.up": {
+     "tip_disp_body_frame_mean": [
+      0.0044,
+      0.0006,
+      0.0067
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1227,
+      0.4137,
+      0.1027
+     ],
+     "tip_world_p2p_xyz": [
+      0.1296,
+      0.3764,
+      0.2311
+     ]
+    }
+   },
+   "wing_no_flap": {
+    "tip_z_LR_corr_up": 0.122,
+    "tip_z_LR_corr_low": 0.036,
+    "rule": "a flap = large mirrored in-phase tip strokes (corr ~ +1); the vapour ripple is small and de-synced per chain"
+   },
+   "smoke_into_body_verts_max": 0,
+   "smoke_into_body_verts_rest": 0,
+   "antennae": {
+    "L": {
+     "tip_p2p_xyz_head_frame": [
+      0.1397,
+      0.1831,
+      0.0331
+     ],
+     "tip_mean_disp_head_frame": [
+      -0.0002,
+      -0.0001,
+      -0.0031
+     ]
+    },
+    "R": {
+     "tip_p2p_xyz_head_frame": [
+      0.1396,
+      0.1831,
+      0.037
+     ],
+     "tip_mean_disp_head_frame": [
+      0.0002,
+      -0.0001,
+      -0.0031
+     ]
+    }
+   }
+  },
+  "walk": {
    "frames": [
     1,
     49
    ],
+   "period_frames": 48,
    "seconds": 2.0,
    "cyclic": true,
    "seam_main_mm": 0.0,
    "seam_flame_mm": 0.0,
-   "min_z": 0.29,
-   "hover": 0.35,
-   "bob": 0.06,
-   "wing_drift_deg": [
-    3.0,
-    7.0
+   "root_offset_max": 0.0,
+   "clearance_min_z": 0.711,
+   "clearance_min_z_pct_H": 9.46,
+   "lowest_point_range": [
+    0.711,
+    1.3371
    ],
-   "root_offset_max": 0.0
-  },
-  "walk": "NOT BUILT: locomotion identity (darts vs cruise, wings flap vs drift, flame always-on vs perch, machine vs bug-fused) awaits the artist; clip_names fails on the missing walk by design"
+   "body_lift": {
+    "mean": 0.9016,
+    "bob_peak_to_peak": 0.1052,
+    "bob_amplitude": 0.0526
+   },
+   "pitch_deg": {
+    "mean": 12.001,
+    "min": 11.001,
+    "max": 13.001
+   },
+   "roll_deg": {
+    "min": -0.999,
+    "max": 0.999
+   },
+   "flame": {
+    "length_scale_key": [
+     0.9623,
+     1.2061
+    ],
+    "length_scale_mesh": [
+     0.9623,
+     1.2061
+    ],
+    "back_angle_deg_from_vertical": {
+     "mean": 26.0,
+     "min": 22.04,
+     "max": 30.08
+    },
+    "corr_length_vs_body_upward_accel": 0.9556,
+    "rule": "length = 1 + mean + pulse x (body upward accel / max) + flicker; width = 1 - 0.60 x stretch"
+   },
+   "wings": {
+    "wing.L.low": {
+     "tip_disp_body_frame_mean": [
+      -0.1217,
+      0.2316,
+      0.1762
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1242,
+      0.1123,
+      0.1403
+     ],
+     "tip_world_p2p_xyz": [
+      0.14,
+      0.0878,
+      0.2559
+     ]
+    },
+    "wing.L.up": {
+     "tip_disp_body_frame_mean": [
+      -0.0933,
+      0.3635,
+      0.1464
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.137,
+      0.2117,
+      0.1708
+     ],
+     "tip_world_p2p_xyz": [
+      0.138,
+      0.1828,
+      0.3433
+     ]
+    },
+    "wing.R.low": {
+     "tip_disp_body_frame_mean": [
+      0.1162,
+      0.2085,
+      0.167
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1154,
+      0.0965,
+      0.1287
+     ],
+     "tip_world_p2p_xyz": [
+      0.114,
+      0.0788,
+      0.2416
+     ]
+    },
+    "wing.R.up": {
+     "tip_disp_body_frame_mean": [
+      0.0912,
+      0.3633,
+      0.1436
+     ],
+     "tip_disp_body_frame_p2p_xyz": [
+      0.1417,
+      0.2093,
+      0.1755
+     ],
+     "tip_world_p2p_xyz": [
+      0.1413,
+      0.1874,
+      0.2813
+     ]
+    }
+   },
+   "wing_no_flap": {
+    "tip_z_LR_corr_up": -0.002,
+    "tip_z_LR_corr_low": -0.042,
+    "rule": "a flap = large mirrored in-phase tip strokes (corr ~ +1); the vapour ripple is small and de-synced per chain"
+   },
+   "smoke_into_body_verts_max": 0,
+   "smoke_into_body_verts_rest": 0,
+   "antennae": {
+    "L": {
+     "tip_p2p_xyz_head_frame": [
+      0.0997,
+      0.1604,
+      0.0661
+     ],
+     "tip_mean_disp_head_frame": [
+      -0.0001,
+      0.2502,
+      -0.0396
+     ]
+    },
+    "R": {
+     "tip_p2p_xyz_head_frame": [
+      0.0996,
+      0.1612,
+      0.0625
+     ],
+     "tip_mean_disp_head_frame": [
+      0.0001,
+      0.2502,
+      -0.0396
+     ]
+    }
+   },
+   "implied_drift_speed": {
+    "rule": "ASSUMPTION (flag-in-wind): the smoke ripple convects downstream at c = ratio x U, ratio 0.5-1.0; c = omega x mean wing-bone length / lag. Settling experiment: glide the unit in-engine at the candidate speeds and keep the one where the ripple does not read as slipping",
+    "ripple_phase_speed_units_per_s": 5.985,
+    "ripple_hz": 1.5,
+    "units_per_s_by_ratio": {
+     "0.5": 11.97,
+     "0.6": 9.975,
+     "1.0": 5.985
+    },
+    "body_heights_per_s_by_ratio": {
+     "0.5": 1.593,
+     "0.6": 1.328,
+     "1.0": 0.797
+    },
+    "m_per_s_at_cell_fit_by_ratio": {
+     "0.5": 2.868,
+     "0.6": 2.39,
+     "1.0": 1.434
+    },
+    "game_m_per_unit_report_only": 0.23958,
+    "conquest_glide_reference": "UnitAnimator.move_glide_time 0.3 s per move (a 2 m tile = 6.7 m/s): the game glides, the clip only loops"
+   }
+  }
  },
  "bones": [
   {
@@ -374,19 +687,19 @@
  "deform_bone_count": 20,
  "digest": {
   "parts": {
-   "bake_normal": "49a1a1fa009c60b7",
+   "bake_normal": "2c4fa9244a282fa6",
    "bake_ao": "f0ab625fc2904dcc",
    "geometry_colour_uv": "1506517a23b3828b",
    "weights": "6fc780ed06ecbd6e",
-   "keys": "d86323e14cbc38ac",
-   "clip_samples": "7d3d9ae36c88ce2b"
+   "keys": "2461c349d103bb88",
+   "clip_samples": "8eddbc8e436e2015"
   },
-  "combined": "27de046b821439ec"
+  "combined": "f28560054f37d01b"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\firefly.glb",
-  "bytes": 4985408,
-  "seconds": 0.4,
+  "bytes": 5043876,
+  "seconds": 0.6,
   "carries": {
    "materials": [
     {
@@ -464,7 +777,8 @@
     "wing.R.up.2"
    ],
    "animations": [
-    "idle"
+    "idle",
+    "walk"
    ],
    "skins": 1,
    "joints": 21,
@@ -1125,5 +1439,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\firefly.json",
- "seconds": 20.1
+ "seconds": 21.8
 }

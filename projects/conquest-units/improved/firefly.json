@@ -33,7 +33,7 @@
    "pieces": 1,
    "dropped_verts": 0
   },
-  "seconds": 4.5
+  "seconds": 4.2
  },
  "retopo": {
   "method": "SDF marching tetrahedra (step 0.015) -> collapse decimation (deterministic)",
@@ -51,7 +51,7 @@
    "p99": 0.00176,
    "max": 0.00632
   },
-  "seconds": 5.5
+  "seconds": 5.9
  },
  "iso_cuts": {
   "cuts": [
@@ -146,7 +146,7 @@
     "face_connects": 2
    }
   ],
-  "seconds": 2.8,
+  "seconds": 3.1,
   "shell_tris_after_cuts": 8862
  },
  "flame": {
@@ -434,10 +434,10 @@
   "ao_mean": 0.7519,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "49a1a1fa009c60b7",
+   "normal": "2c4fa9244a282fa6",
    "ao": "f0ab625fc2904dcc"
   },
-  "seconds": 3.3
+  "seconds": 3.5
  },
  "digest_geometry_colour_uv": "1506517a23b3828b",
  "palette": {

@@ -7,8 +7,8 @@ renders/firefly/firefly_sheet_vs_model.png
     scale (100 px per unit, floor = the sheet's flame-tip line) | overlay: the sheet with the build's silhouette outline
     (cyan) | the 'ember' skin (the sheet's own amber) at the same framing. Proportions compare 1:1.
 renders/firefly/firefly_contact.png
-    every still: front / threequarter / side / back / tactical / head / port / flame / ember front + the placeholder idle
-    8-frame sheet, labelled.
+    every still: front / threequarter / side / back / tactical / head / port / flame / ember front + the idle 8-frame sheet
+    + the walk (hover-drift) side-view 12-frame sheet, labelled.
 """
 import os
 
@@ -65,7 +65,7 @@ out.convert("RGB").save(os.path.join(R, "firefly_sheet_vs_model.png"))
 print("WROTE", os.path.join(R, "firefly_sheet_vs_model.png"))
 
 T = 400
-items = [("firefly_front.png", "front (placeholder hover)"), ("firefly_threequarter.png", "three-quarter"),
+items = [("firefly_front.png", "front (idle hover, frame 1)"), ("firefly_threequarter.png", "three-quarter"),
          ("firefly_side.png", "side"), ("firefly_back.png", "back"), ("firefly_tactical.png", "tactical (256 px)"),
          ("firefly_head.png", "head / mask"), ("firefly_port.png", "side ports + smoke roots"),
          ("firefly_flame.png", "flame"), ("firefly_ember_front.png", "ember skin (sheet amber)")]
@@ -74,14 +74,21 @@ for fn, lab in items:
     p = os.path.join(R, fn)
     im = Image.open(p).convert("RGBA").resize((T, T), Image.LANCZOS if not fn.endswith("tactical.png") else Image.NEAREST)
     tiles.append(label(im, lab))
-idle = Image.open(os.path.join(R, "firefly_idle_sheet.png")).convert("RGBA")
-idle = idle.resize((3 * T + 12, int(idle.height * (3 * T + 12) / idle.width)), Image.LANCZOS)
-label(idle, "PLACEHOLDER idle: 8 frames over the 2 s loop (hover bob + wing drift)")
 W = 3 * T + 12
-H = 3 * (T + 6) + idle.height
+strips = []
+for fn, lab in (("firefly_idle_sheet.png", "IDLE hover: 8 frames over the 4 s loop (bob + pitch/roll wander, thrust-pulsed "
+                                           "flame, billowing smoke)"),
+                ("firefly_walk_side_sheet.png", "WALK hover-drift, SIDE view: 12 frames over the 2 s loop (12 deg lean, "
+                                                "flame + smoke streaming back; front = image left)")):
+    im = Image.open(os.path.join(R, fn)).convert("RGBA")
+    im = im.resize((W, int(im.height * W / im.width)), Image.LANCZOS)
+    strips.append(label(im, lab))
+H = 3 * (T + 6) + sum(s.height + 6 for s in strips)
 cs = Image.new("RGBA", (W, H), (255, 255, 255, 255))
 for i, t in enumerate(tiles):
     cs.paste(t, ((i % 3) * (T + 6), (i // 3) * (T + 6)))
-cs.paste(idle, (0, 3 * (T + 6)))
+y = 3 * (T + 6)
+for s in strips:
+    cs.paste(s, (0, y)); y += s.height + 6
 cs.convert("RGB").save(os.path.join(R, "firefly_contact.png"))
 print("WROTE", os.path.join(R, "firefly_contact.png"))
