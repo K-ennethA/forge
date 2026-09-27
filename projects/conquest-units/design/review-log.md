@@ -849,3 +849,30 @@ base, contour eyeliner, fangs from under the lip):
 - ARMOR detailing pushed toward the sheet's outfit (plate read on the
   bodice/shoulders where the sheet shows it) - "might help" = lane
   judgment, rendered for the artist.
+
+## 2026-09-26 — Vampwarrior v4 feedback (artist verbatim + 3 references)
+
+References saved to design/reference/: vampwarrior-v4-hair-annotation.png
+(red strokes over the v3 face: swooping hair strands from the centre part
+framing the face in front - the current front pieces read as a hood, not
+hair), vampwarrior-v4-face-reference.png (the anime face target: warm
+pale grey-mauve skin, THICK expressive brows, red eyes, soft face-framing
+strands, parted mouth with small fangs), vampwarrior-v4-fang-annotation.png
+(orange circle on a fang ROOT visible at the lip edge).
+
+"regular red eyes is fine but she needs thicker eyebrows, look at the hair
+its not strands up front showing the hair, also the skin color is a bit too
+much like the grey default blender color
+
+It should be more like the reference
+
+we also shouldnt be able to see this orange highlighted part of the fangs"
+
+Binding reading: (1) eyes stay as the v3 build (regular red). (2) BROWS
+THICKER per the reference. (3) FRONT HAIR reworked to read as HAIR
+STRANDS framing the face per the red annotation - swooping from the part
+down beside the brows/cheeks, like the reference; the v3 front pieces
+read as a helmet/hood. (4) SKIN warmer per the reference - the current
+tone reads as Blender default grey; shift to the reference's pale warm
+grey-mauve. (5) FANGS: the circled fang ROOT visible at the lip line must
+be fully hidden - nothing shows above/at the lip edge.
