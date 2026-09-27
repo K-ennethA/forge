@@ -3,3 +3,4 @@ WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk_side_sheet.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_contact.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_v11_vs_v12.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk_v12_vs_v13.png

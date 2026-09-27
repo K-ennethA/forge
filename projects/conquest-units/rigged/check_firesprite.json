@@ -90,7 +90,7 @@
    ],
    "armature_identity": true,
    "root_max_offset_over_clips": 0.0,
-   "bones": 36
+   "bones": 37
   },
   {
    "check": "clip_names",
@@ -133,14 +133,14 @@
      "clip": "walk",
      "frames": [
       1,
-      49
+      25
      ],
      "cyclic": true,
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 2.8097,
-      "height": 4.4508,
+      "footprint": 2.8377,
+      "height": 4.7379,
       "min_z": -0.0
      }
     }

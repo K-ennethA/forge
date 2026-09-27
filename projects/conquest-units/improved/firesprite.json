@@ -39,7 +39,7 @@
   "shell_tris_after_cuts": 9020,
   "elements": 34,
   "limb_join": "FUSED: arms (k 0.10) and legs (k 0.30) smooth-union into the block -- one fire mass, no gaps",
-  "seconds": 33.8
+  "seconds": 34.5
  },
  "crown": {
   "cuts": [
@@ -282,7 +282,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 3886,
-   "seconds": 26.1
+   "seconds": 26.4
   },
   "core": {
    "step": 0.02,
@@ -303,7 +303,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 196,
-   "seconds": 0.3
+   "seconds": 0.4
   },
   "crown": {
    "step": 0.01,
@@ -324,7 +324,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 928,
    "nodes_pushed_off_surface": 6185,
-   "seconds": 7.2
+   "seconds": 8.6
   },
   "crown_flame.outer": {
    "step": 0.016,
@@ -345,7 +345,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 997,
-   "seconds": 2.3
+   "seconds": 2.2
   },
   "crown_flame.core": {
    "step": 0.02,
@@ -387,7 +387,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 834,
-   "seconds": 4.3
+   "seconds": 3.9
   },
   "wand_flame.outer": {
    "step": 0.012,
@@ -408,7 +408,7 @@
    "zero_area_tris": 0,
    "grid_exact_zero": 0,
    "nodes_pushed_off_surface": 391,
-   "seconds": 1.3
+   "seconds": 2.0
   },
   "wand_flame.core": {
    "step": 0.015,
@@ -445,7 +445,7 @@
     "p99": 0.00292,
     "max": 0.00681
    },
-   "seconds": 4.8
+   "seconds": 5.2
   },
   "core": {
    "target": 700,
@@ -459,7 +459,7 @@
     "p99": 0.00453,
     "max": 0.01406
    },
-   "seconds": 0.2
+   "seconds": 0.3
   },
   "crown": {
    "target": 2800,
@@ -473,7 +473,7 @@
     "p99": 0.00195,
     "max": 0.00486
    },
-   "seconds": 4.1
+   "seconds": 5.3
   },
   "crown_flame.outer": {
    "target": 1500,
@@ -487,7 +487,7 @@
     "p99": 0.01224,
     "max": 0.02624
    },
-   "seconds": 1.3
+   "seconds": 1.1
   },
   "crown_flame.core": {
    "target": 450,
@@ -515,7 +515,7 @@
     "p99": 0.00203,
     "max": 0.00489
    },
-   "seconds": 2.3
+   "seconds": 1.8
   },
   "wand_flame.outer": {
    "target": 700,
@@ -529,7 +529,7 @@
     "p99": 0.01021,
     "max": 0.01853
    },
-   "seconds": 0.7
+   "seconds": 1.1
   },
   "wand_flame.core": {
    "target": 250,
@@ -593,7 +593,7 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.5
+   "seconds": 0.6
   },
   "cage_extrusion": 0.02,
   "cage_rule": "3 x the sampled high->low p99 distance of the crown / body (floor 0.02)",
@@ -611,10 +611,10 @@
   "ao_mean_crown": 0.5112,
   "ao_p05_crown": 0.0,
   "pixel_sha": {
-   "normal": "748258c4001e124a",
+   "normal": "ab8325500545862a",
    "ao": "d82f7a2ceaa0121f"
   },
-  "seconds": 2.5
+  "seconds": 2.6
  },
  "digest_geometry_colour_uv": "550bd505845877d0",
  "palette": {

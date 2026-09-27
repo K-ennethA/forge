@@ -6,9 +6,9 @@ In-memory only; never saves the blend.
 
 clips (comma list, default idle,walk):
   idle   firesprite_idle.mp4 (three-quarter, wand side, 2 loops) + firesprite_idle_sheet.png (8 frames over the loop)
-  walk   firesprite_walk.mp4 (three-quarter from the free-arm side, 3 loops) + firesprite_walk_side_sheet.png (SIDE view,
-         12 frames over the 2-step loop, every 4th frame -- the step + drift read; labels are added by
-         firesprite_compose.py from rigged/firesprite.json's measured contact frames) + firesprite_walk_side_sheet.json
+  walk   firesprite_walk.mp4 (three-quarter from the free-arm side, 4 loops = 8 hops) + firesprite_walk_side_sheet.png
+         (SIDE view, 12 frames over the 1 s / 2-hop loop, every 2nd frame -- the squash / stretch + air read; labels are
+         added by firesprite_compose.py from rigged/firesprite.json's measured contact frames + body scale) + its .json
 The camera frames the union of the clip's extents over every mesh on the rig (the body AND the wand node) and never moves.
 Loops play by adding a CYCLES modifier to every fcurve in memory (the clip's last frame == its first).
 """
@@ -31,7 +31,7 @@ meshes = [o for o in scene.objects if o.type == "MESH" and o.parent is rig]
 UNIT = max(meshes, key=lambda o: len(o.data.polygons)).name
 # (movie angle deg, elevation deg, loops, sheet (tag, angle, elevation, tiles, cols))
 SPEC = {"idle": (-40.0, 15.0, 2, ("sheet", -40.0, 15.0, 8, 4)),
-        "walk": (60.0, 12.0, 3, ("side_sheet", 90.0, 3.0, 12, 6))}
+        "walk": (60.0, 12.0, 4, ("side_sheet", 90.0, 3.0, 12, 6))}
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.film_transparent = False

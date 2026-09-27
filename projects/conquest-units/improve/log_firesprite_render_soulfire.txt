@@ -1,7 +1,7 @@
-00:01.641  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firesprite__soulfire.blend"
+00:01.734  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firesprite__soulfire.blend"
 00:04.438  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_front.png'
-00:04.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_front.png'
-00:05.391  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_side.png'
+00:04.891  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_front.png'
+00:05.219  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_side.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_front.png
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_soulfire_ortho_side.png

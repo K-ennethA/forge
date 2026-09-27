@@ -1,4 +1,4 @@
-# Fire Sprite (from-scratch unit; v1.2 = the movement wave: real idle + floaty-step walk), one command (hidden, headless). Reads no source blend (sheet + sketch).
+# Fire Sprite (from-scratch unit; v1.2 = the movement wave: real idle; v1.3 = the walk as a stiff-legged cartoon hop), one command (hidden, headless). Reads no source blend (sheet + sketch).
 # Writes improved/firesprite.*, improved/textures/firesprite_*, rigged/firesprite.{blend,json,glb},
 # rigged/firesprite__soulfire.blend, improved/check_firesprite.json, rigged/check_firesprite.json, renders/firesprite/,
 # improve/log_firesprite_*.

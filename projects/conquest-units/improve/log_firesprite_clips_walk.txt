@@ -1,160 +1,112 @@
-00:01.640  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firesprite.blend"
-00:04.047  render           | Video append frame 1
-00:04.453  render           | Video append frame 2
-00:04.765  render           | Video append frame 3
-00:05.078  render           | Video append frame 4
-00:05.406  render           | Video append frame 5
-00:05.609  render           | Video append frame 6
-00:05.906  render           | Video append frame 7
-00:06.125  render           | Video append frame 8
-00:06.344  render           | Video append frame 9
-00:06.515  render           | Video append frame 10
-00:06.687  render           | Video append frame 11
-00:06.859  render           | Video append frame 12
-00:07.000  render           | Video append frame 13
-00:07.156  render           | Video append frame 14
-00:07.297  render           | Video append frame 15
-00:07.437  render           | Video append frame 16
-00:07.578  render           | Video append frame 17
-00:07.703  render           | Video append frame 18
-00:07.844  render           | Video append frame 19
-00:07.984  render           | Video append frame 20
-00:08.125  render           | Video append frame 21
-00:08.250  render           | Video append frame 22
-00:08.422  render           | Video append frame 23
-00:08.562  render           | Video append frame 24
-00:08.703  render           | Video append frame 25
-00:08.859  render           | Video append frame 26
-00:09.015  render           | Video append frame 27
-00:09.172  render           | Video append frame 28
-00:09.328  render           | Video append frame 29
-00:09.500  render           | Video append frame 30
-00:09.687  render           | Video append frame 31
-00:09.844  render           | Video append frame 32
-00:09.969  render           | Video append frame 33
-00:10.109  render           | Video append frame 34
-00:10.265  render           | Video append frame 35
-00:10.390  render           | Video append frame 36
-00:10.547  render           | Video append frame 37
-00:10.687  render           | Video append frame 38
-00:10.844  render           | Video append frame 39
-00:10.984  render           | Video append frame 40
-00:11.125  render           | Video append frame 41
-00:11.281  render           | Video append frame 42
-00:11.437  render           | Video append frame 43
-00:11.578  render           | Video append frame 44
-00:11.734  render           | Video append frame 45
-00:11.875  render           | Video append frame 46
-00:12.031  render           | Video append frame 47
-00:12.172  render           | Video append frame 48
-00:12.312  render           | Video append frame 49
-00:12.469  render           | Video append frame 50
-00:12.656  render           | Video append frame 51
-00:12.844  render           | Video append frame 52
-00:13.015  render           | Video append frame 53
-00:13.172  render           | Video append frame 54
-00:13.328  render           | Video append frame 55
-00:13.469  render           | Video append frame 56
-00:13.609  render           | Video append frame 57
-00:13.734  render           | Video append frame 58
-00:13.890  render           | Video append frame 59
-00:14.015  render           | Video append frame 60
-00:14.156  render           | Video append frame 61
-00:14.312  render           | Video append frame 62
-00:14.500  render           | Video append frame 63
-00:14.719  render           | Video append frame 64
-00:14.875  render           | Video append frame 65
-00:15.047  render           | Video append frame 66
-00:15.265  render           | Video append frame 67
-00:15.453  render           | Video append frame 68
-00:15.640  render           | Video append frame 69
-00:15.844  render           | Video append frame 70
-00:16.000  render           | Video append frame 71
-00:16.172  render           | Video append frame 72
-00:16.375  render           | Video append frame 73
-00:16.547  render           | Video append frame 74
-00:16.750  render           | Video append frame 75
-00:16.937  render           | Video append frame 76
-00:17.125  render           | Video append frame 77
-00:17.344  render           | Video append frame 78
-00:17.515  render           | Video append frame 79
-00:17.719  render           | Video append frame 80
-00:17.890  render           | Video append frame 81
-00:18.062  render           | Video append frame 82
-00:18.281  render           | Video append frame 83
-00:18.484  render           | Video append frame 84
-00:18.719  render           | Video append frame 85
-00:18.937  render           | Video append frame 86
-00:19.187  render           | Video append frame 87
-00:19.406  render           | Video append frame 88
-00:19.656  render           | Video append frame 89
-00:19.953  render           | Video append frame 90
-00:20.172  render           | Video append frame 91
-00:20.375  render           | Video append frame 92
-00:20.594  render           | Video append frame 93
-00:20.812  render           | Video append frame 94
-00:21.047  render           | Video append frame 95
-00:21.234  render           | Video append frame 96
-00:21.422  render           | Video append frame 97
-00:21.640  render           | Video append frame 98
-00:21.875  render           | Video append frame 99
-00:22.078  render           | Video append frame 100
-00:22.281  render           | Video append frame 101
-00:22.484  render           | Video append frame 102
-00:22.687  render           | Video append frame 103
-00:22.890  render           | Video append frame 104
-00:23.109  render           | Video append frame 105
-00:23.312  render           | Video append frame 106
-00:23.500  render           | Video append frame 107
-00:23.687  render           | Video append frame 108
-00:23.859  render           | Video append frame 109
-00:24.031  render           | Video append frame 110
-00:24.187  render           | Video append frame 111
-00:24.359  render           | Video append frame 112
-00:24.547  render           | Video append frame 113
-00:24.734  render           | Video append frame 114
-00:24.906  render           | Video append frame 115
-00:25.094  render           | Video append frame 116
-00:25.297  render           | Video append frame 117
-00:25.469  render           | Video append frame 118
-00:25.656  render           | Video append frame 119
-00:25.828  render           | Video append frame 120
-00:26.000  render           | Video append frame 121
-00:26.172  render           | Video append frame 122
-00:26.359  render           | Video append frame 123
-00:26.562  render           | Video append frame 124
-00:26.765  render           | Video append frame 125
-00:26.937  render           | Video append frame 126
-00:27.094  render           | Video append frame 127
-00:27.250  render           | Video append frame 128
-00:27.406  render           | Video append frame 129
-00:27.562  render           | Video append frame 130
-00:27.703  render           | Video append frame 131
-00:27.844  render           | Video append frame 132
-00:28.000  render           | Video append frame 133
-00:28.125  render           | Video append frame 134
-00:28.265  render           | Video append frame 135
-00:28.422  render           | Video append frame 136
-00:28.562  render           | Video append frame 137
-00:28.719  render           | Video append frame 138
-00:28.844  render           | Video append frame 139
-00:28.984  render           | Video append frame 140
-00:29.125  render           | Video append frame 141
-00:29.265  render           | Video append frame 142
-00:29.406  render           | Video append frame 143
-00:29.547  render           | Video append frame 144
-00:29.797  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:29.984  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:30.187  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:30.390  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:30.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:30.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:31.000  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:31.203  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:31.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:31.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:31.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-00:32.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk.mp4 frames 144 loops 3 cycle 48
-WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk_side_sheet.png [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45]
+00:01.906  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\firesprite.blend"
+00:04.234  render           | Video append frame 1
+00:04.531  render           | Video append frame 2
+00:04.859  render           | Video append frame 3
+00:05.156  render           | Video append frame 4
+00:05.375  render           | Video append frame 5
+00:05.562  render           | Video append frame 6
+00:05.750  render           | Video append frame 7
+00:05.937  render           | Video append frame 8
+00:06.093  render           | Video append frame 9
+00:06.265  render           | Video append frame 10
+00:06.406  render           | Video append frame 11
+00:06.547  render           | Video append frame 12
+00:06.687  render           | Video append frame 13
+00:06.828  render           | Video append frame 14
+00:06.968  render           | Video append frame 15
+00:07.109  render           | Video append frame 16
+00:07.250  render           | Video append frame 17
+00:07.406  render           | Video append frame 18
+00:07.547  render           | Video append frame 19
+00:07.672  render           | Video append frame 20
+00:07.812  render           | Video append frame 21
+00:07.953  render           | Video append frame 22
+00:08.093  render           | Video append frame 23
+00:08.234  render           | Video append frame 24
+00:08.375  render           | Video append frame 25
+00:08.500  render           | Video append frame 26
+00:08.640  render           | Video append frame 27
+00:08.765  render           | Video append frame 28
+00:08.906  render           | Video append frame 29
+00:09.047  render           | Video append frame 30
+00:09.187  render           | Video append frame 31
+00:09.328  render           | Video append frame 32
+00:09.468  render           | Video append frame 33
+00:09.609  render           | Video append frame 34
+00:09.750  render           | Video append frame 35
+00:09.906  render           | Video append frame 36
+00:10.047  render           | Video append frame 37
+00:10.187  render           | Video append frame 38
+00:10.328  render           | Video append frame 39
+00:10.468  render           | Video append frame 40
+00:10.609  render           | Video append frame 41
+00:10.750  render           | Video append frame 42
+00:10.875  render           | Video append frame 43
+00:11.015  render           | Video append frame 44
+00:11.172  render           | Video append frame 45
+00:11.312  render           | Video append frame 46
+00:11.437  render           | Video append frame 47
+00:11.562  render           | Video append frame 48
+00:11.703  render           | Video append frame 49
+00:11.828  render           | Video append frame 50
+00:11.953  render           | Video append frame 51
+00:12.078  render           | Video append frame 52
+00:12.218  render           | Video append frame 53
+00:12.359  render           | Video append frame 54
+00:12.484  render           | Video append frame 55
+00:12.625  render           | Video append frame 56
+00:12.765  render           | Video append frame 57
+00:12.922  render           | Video append frame 58
+00:13.062  render           | Video append frame 59
+00:13.203  render           | Video append frame 60
+00:13.359  render           | Video append frame 61
+00:13.515  render           | Video append frame 62
+00:13.640  render           | Video append frame 63
+00:13.781  render           | Video append frame 64
+00:13.922  render           | Video append frame 65
+00:14.062  render           | Video append frame 66
+00:14.187  render           | Video append frame 67
+00:14.328  render           | Video append frame 68
+00:14.468  render           | Video append frame 69
+00:14.609  render           | Video append frame 70
+00:14.750  render           | Video append frame 71
+00:14.890  render           | Video append frame 72
+00:15.031  render           | Video append frame 73
+00:15.172  render           | Video append frame 74
+00:15.312  render           | Video append frame 75
+00:15.453  render           | Video append frame 76
+00:15.609  render           | Video append frame 77
+00:15.765  render           | Video append frame 78
+00:15.906  render           | Video append frame 79
+00:16.031  render           | Video append frame 80
+00:16.172  render           | Video append frame 81
+00:16.312  render           | Video append frame 82
+00:16.453  render           | Video append frame 83
+00:16.578  render           | Video append frame 84
+00:16.718  render           | Video append frame 85
+00:16.859  render           | Video append frame 86
+00:16.984  render           | Video append frame 87
+00:17.125  render           | Video append frame 88
+00:17.265  render           | Video append frame 89
+00:17.390  render           | Video append frame 90
+00:17.531  render           | Video append frame 91
+00:17.672  render           | Video append frame 92
+00:17.797  render           | Video append frame 93
+00:17.922  render           | Video append frame 94
+00:18.062  render           | Video append frame 95
+00:18.187  render           | Video append frame 96
+00:18.422  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:18.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:18.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:18.968  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:19.187  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:19.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:19.562  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:19.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:19.968  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:20.140  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:20.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+00:20.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\_tile_firesprite.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk.mp4 frames 96 loops 4 cycle 24
+WROTE sheet C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\firesprite\firesprite_walk_side_sheet.png [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

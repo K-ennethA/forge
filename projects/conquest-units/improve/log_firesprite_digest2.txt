@@ -1,5 +1,5 @@
 Info: Baking map saved to internal image, save it externally or pack it
 Info: Baking map saved to internal image, save it externally or pack it
-IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\firesprite.blend 66.0
-DIGEST b9ed70d172c9b03b {"bake_normal": "748258c4001e124a", "bake_ao": "d82f7a2ceaa0121f", "geometry_colour_uv": "550bd505845877d0", "weights": "d31b7e0995f687be", "keys": "8b314be3bbfcd7e8", "clip_samples": "e8b698c4bf6c80b1"}
+IMPROVED_SAVED C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improved\firesprite.blend 70.1
+DIGEST 8a6a1dad22279fbb {"bake_normal": "ab8325500545862a", "bake_ao": "d82f7a2ceaa0121f", "geometry_colour_uv": "550bd505845877d0", "weights": "d31b7e0995f687be", "keys": "ba2f7385048e6ea2", "clip_samples": "39eb25e23dd3fb47"}
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

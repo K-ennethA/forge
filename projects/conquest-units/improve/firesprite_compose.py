@@ -13,7 +13,10 @@ renders/firesprite/firesprite_contact.png
     every still: front / threequarter / side / back / tactical / face / crown / wand / soulfire front + the idle 8-frame
     sheet + the walk side-view sheet, labelled.
 renders/firesprite/firesprite_walk_side_sheet.png
-    labelled in place: every tile's frame + its MEASURED contact state (rigged/firesprite.json walk contact_frames).
+    labelled in place: every tile's frame + its MEASURED contact state (rigged/firesprite.json walk contact_frames) + the
+    block's squash / stretch at that frame.
+renders/firesprite/firesprite_walk_v12_vs_v13.png
+    the v1.2 floaty-step side sheet (kept copy firesprite_walk_side_sheet_v1_2.png) over the v1.3 hop side sheet.
 renders/firesprite/firesprite_v11_vs_v12.png
     v1.1 (kept copies firesprite_{front,side}_v1_1.png) vs v1.2 front + side: the torso-leg blend and the arm outline.
 """
@@ -107,16 +110,22 @@ ws_path = os.path.join(R, "firesprite_walk_side_sheet.png")
 ws_meta = json.load(open(ws_path[:-4] + ".json"))
 ws = Image.open(ws_path).convert("RGBA")
 tp, cols = ws_meta["tile_px"], ws_meta["cols"]
+sy_f = walk["squash_stretch"]["per_frame_body_height_scale"]
 for k, f in enumerate(ws_meta["frames"]):
     fl = (f - 1) % ws_meta["loop_frames"] + 1
-    st = [s + " down" for s in ("L", "R") if fl in walk["contact_frames"][s]] or ["AIR (drift)"]
-    label(ws, "f%d  %s" % (f, " + ".join(st)), ((k % cols) * tp + 8, (k // cols) * tp + 6))
+    down = [s for s in ("L", "R") if fl in walk["contact_frames"][s]]
+    st = ("L+R down" if len(down) == 2 else down[0] + " down") if down else "AIR"
+    v = sy_f[fl - 1]
+    st += ("  squash %d%%" % round(100 * (1 - v))) if v < 0.995 else ("  stretch %d%%" % round(100 * (v - 1))) if v > 1.005 else ""
+    label(ws, "f%d  %s" % (f, st), ((k % cols) * tp + 8, (k // cols) * tp + 6))
 ws.convert("RGB").save(ws_path)
 print("WROTE", ws_path)
 sheets = []
 for fn, lab in (("firesprite_idle_sheet.png", "IDLE: 8 frames over the 4 s loop (grounded, living fire)"),
-                ("firesprite_walk_side_sheet.png", "WALK side view: floaty steps, 12 frames over the 2 s / 2-step loop "
-                 "(%.0f steps/min, hang %.2f s/step)" % (walk["cadence_steps_per_min"], walk["hang"]["hang_time_per_step_s"]))):
+                ("firesprite_walk_side_sheet.png", "WALK side view: stiff-legged hop, 12 frames over the 1 s / 2-hop loop "
+                 "(%.0f hops/min, air %.2f s/hop, squash %.0f%% / stretch %.0f%%)"
+                 % (walk["cadence_hops_per_min"], walk["air"]["air_time_per_hop_s"], walk["squash_stretch"]["squash_pct"],
+                    walk["squash_stretch"]["stretch_pct"]))):
     im = Image.open(os.path.join(R, fn)).convert("RGBA")
     im = im.resize((W, int(im.height * W / im.width)), Image.LANCZOS)
     sheets.append(label(im, lab, (8, im.height - 20)))
@@ -143,3 +152,17 @@ if ba:
         out.paste(t, (i * 518, 0))
     out.convert("RGB").save(os.path.join(R, "firesprite_v11_vs_v12.png"))
     print("WROTE", os.path.join(R, "firesprite_v11_vs_v12.png"))
+
+# v1.2 floaty steps -> v1.3 stiff-legged hop (artist 2026-09-26: "legs remains stiff ... like a little creature hopping")
+old_ws = os.path.join(R, "firesprite_walk_side_sheet_v1_2.png")
+if os.path.exists(old_ws):
+    a_ = Image.open(old_ws).convert("RGBA")
+    label(a_, "v1.2 WALK: floaty steps (60 steps/min, 2 s loop, every 4th frame)", (8, a_.height - 20))
+    b_ = Image.open(ws_path).convert("RGBA")
+    b_ = b_.resize((a_.width, int(b_.height * a_.width / b_.width)), Image.LANCZOS)
+    label(b_, "v1.3 WALK: stiff-legged hop (%.0f hops/min, 1 s loop, every 2nd frame)" % walk["cadence_hops_per_min"],
+          (8, b_.height - 20))
+    out = Image.new("RGBA", (a_.width, a_.height + b_.height + 10), (255, 255, 255, 255))
+    out.paste(a_, (0, 0)); out.paste(b_, (0, a_.height + 10))
+    out.convert("RGB").save(os.path.join(R, "firesprite_walk_v12_vs_v13.png"))
+    print("WROTE", os.path.join(R, "firesprite_walk_v12_vs_v13.png"))

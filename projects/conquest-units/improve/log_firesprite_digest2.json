@@ -1,15 +1,198 @@
 {
  "digest": {
   "parts": {
-   "bake_normal": "748258c4001e124a",
+   "bake_normal": "ab8325500545862a",
    "bake_ao": "d82f7a2ceaa0121f",
    "geometry_colour_uv": "550bd505845877d0",
    "weights": "d31b7e0995f687be",
-   "keys": "8b314be3bbfcd7e8",
-   "clip_samples": "e8b698c4bf6c80b1"
+   "keys": "ba2f7385048e6ea2",
+   "clip_samples": "39eb25e23dd3fb47"
   },
-  "combined": "b9ed70d172c9b03b"
+  "combined": "8a6a1dad22279fbb"
  },
  "tris": 17576,
- "seconds": 67.0
+ "seconds": 71.1,
+ "overrides": {},
+ "walk": {
+  "frames": [
+   1,
+   25
+  ],
+  "seconds": 1.0,
+  "cyclic": true,
+  "seam_main_mm": 0.0,
+  "seam_wand_mm": 0.0,
+  "min_z_all": -0.0,
+  "min_z_main": -0.0,
+  "min_z_wand": 0.04448,
+  "root_offset_max": 0.0,
+  "floor_guard": {
+   "frames_lifted": 0,
+   "max_lift_mm": 0.0,
+   "max_iters": 1,
+   "max_reach_short_mm": 0.0
+  },
+  "status": "REAL v1.3: stiff-legged cartoon hop (artist 2026-09-26 'legs remains stiff more cartoon movement than realistic and faster like a little creature hopping around')",
+  "hop_style": "together",
+  "flame_flow": {
+   "FLAME_WILD": 1.0,
+   "flicker_hz": [
+    1.75,
+    2.75
+   ],
+   "lick_sway_deg_stretch": [
+    7.0,
+    0.1
+   ],
+   "crown_sway_deg_root_tip_stretch": [
+    4.0,
+    9.0,
+    0.08
+   ],
+   "wand_sway_deg_stretch": [
+    6.0,
+    0.09
+   ]
+  },
+  "stream_in_air": {
+   "lick": 16.0,
+   "crown": 12.0,
+   "wand": 12.0,
+   "stretch": 0.1
+  },
+  "flicker_harmonics_per_loop": [
+   2,
+   3
+  ],
+  "hops_per_loop": 2,
+  "hop_seconds": 0.5,
+  "cadence_hops_per_min": 120.0,
+  "hop_length": 0.5,
+  "implied_speed_units_per_s": 1.0,
+  "implied_speed_game_m_per_s_at_cell_fit_scale": 0.4201,
+  "contact_share": 0.3333,
+  "stance_slide_per_foot": 0.1667,
+  "measured_planted_foot_speed_units_per_s": {
+   "mean": 1.0148,
+   "min": 1.013,
+   "max": 1.0173
+  },
+  "contact_frames": {
+   "L": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    13,
+    14,
+    15,
+    16,
+    17
+   ],
+   "R": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    13,
+    14,
+    15,
+    16,
+    17
+   ]
+  },
+  "air": {
+   "airborne_frames_per_cycle": 14,
+   "air_time_per_hop_s": 0.2917,
+   "design_air_s": 0.3333,
+   "hop_height_design": 0.3,
+   "foot_clearance_peak_measured": 0.3005
+  },
+  "squash_stretch": {
+   "body_height_scale_min": 0.8083,
+   "body_height_scale_max": 1.14,
+   "squash_pct": 19.2,
+   "stretch_pct": 14.0,
+   "width_at_squash_pct": 11.2,
+   "pivot": "the hip line z 1.220 (legs never scale)",
+   "crown_drop_at_squash": 0.3005,
+   "crown_rise_max": 0.3148,
+   "per_frame_body_height_scale": [
+    1.05,
+    0.8254,
+    0.8083,
+    0.9547,
+    1.14,
+    1.1181,
+    1.07,
+    1.0219,
+    1.0,
+    1.0037,
+    1.0209,
+    1.0406,
+    1.05,
+    0.8254,
+    0.8083,
+    0.9547,
+    1.14,
+    1.1181,
+    1.07,
+    1.0219,
+    1.0,
+    1.0037,
+    1.0209,
+    1.0406,
+    1.05
+   ]
+  },
+  "stiff_legs": {
+   "knee_deg_max": {
+    "L": 0.0,
+    "R": 0.0
+   },
+   "knee_note": "range of the thigh-shin angle over the clip (the knee bone is never posed: 0 = locked)",
+   "ankle_flex_deg_max": {
+    "L": 13.233,
+    "R": 13.233
+   },
+   "ankle_note": "max |shin-foot angle - its rest angle|: the foot bone only holds the sole flat / trails",
+   "hip_to_ankle_length_dev_mm": {
+    "L": 0.0003,
+    "R": 0.0004
+   },
+   "hip_pitch_deg_range": [
+    -10.18,
+    12.79
+   ],
+   "splay_deg_max": 3.83,
+   "foot_point_deg": 12.0,
+   "leg_swing_deg": 7.0
+  },
+  "sole_min_z_mm": {
+   "L": -0.0,
+   "R": 0.29
+  },
+  "lean_deg": [
+   2.0,
+   8.0
+  ],
+  "wobble_roll_yaw_deg": [
+   4.0,
+   5.0
+  ],
+  "arm_flap_trail_deg": [
+   24.0,
+   10.0
+  ],
+  "tip_excursion_mm": {
+   "crown_flame_tip": 816.4,
+   "wand_flame_tip": 721.1
+  },
+  "wand_carry_deg": [
+   22.0,
+   20.0
+  ]
+ }
 }

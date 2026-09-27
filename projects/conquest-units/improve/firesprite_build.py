@@ -17,7 +17,9 @@ SCOPE (v1.2, the movement wave): the model + the real clips. Artist 2026-09-26: 
 drifting, feet planted) and 'walk' (in place: each step pushes off into a drift with hang time and settles softly on the
 other foot). Flame-flow wildness is still artist-open: FLAME_WILD is the master knob. Casting = attack wave, deferred.
 v1.2 body (artist 2026-09-26): the block funnels into the legs (HIP, CROTCH, LEG_K), arms wider + longer to the drawn
-outline.
+outline. v1.3 walk (artist 2026-09-26: "legs remains stiff more cartoon movement than realistic and faster like a little
+creature hopping around"): the floaty steps are replaced by a STIFF-LEGGED CARTOON HOP (HOP_* knobs; knee locked, all
+the give in the block's squash / stretch on the new 'hips' > 'body' split); the idle is unchanged.
 
 UNITS: 'sheet units' -- 1 unit = 100 px of the reference sheet's FRONT view (orthographic), floor z = 0 at the sheet's
 foot line (y 605 px): z = (605 - y_px) / 100; x = (x_px - 225) / 100 (the character axis). Natural proportions; cell fit
@@ -39,9 +41,9 @@ Pipeline:
   6. WAND (own object 'firesprite_wand', own bones): kinked angular shaft (straight cone runs, hard joints), broken twig
      nubs, a claw of prongs cradling the WAND FLAME (outer + core, same flame language).
   7. palette (palettes.py regions -> Col / Glow + Col alpha), Smart UV, bake normal + AO (wired into the crown only).
-  8. RIG: root > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; arm.R.2 > wand > wand_flame; body >
-     leg.{L,R}.{0,1,2} (2 = the foot); body > one bone per body lick (lick.side / back / hem). Clips idle + walk
-     (closed-form, integer harmonics, leg IK + floor guard). glb export + variant skin.
+  8. RIG: root > hips (non-deform) > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; arm.R.2 > wand >
+     wand_flame; hips > leg.{L,R}.{0,1,2} (2 = the foot; never scaled); body > one bone per body lick (lick.side / back /
+     hem). Clips idle (leg IK) + walk (stiff-leg hop, closed-form legs), integer harmonics, floor guard. glb + skin.
 """
 import bpy, sys, os, math, json, time, hashlib, ast, tempfile
 import numpy as np
@@ -206,32 +208,45 @@ FLICKER_HZ = (1.75, 2.75)             # "flicker rates" (Hz; each loop snaps the
 LICK_FLICKER = (7.0, 0.10)            # body licks: sway deg, stretch fraction (x FLAME_WILD)
 CF_FLICKER = (4.0, 9.0, 0.08)         # crown flame: sway deg root / tip, stretch fraction (x FLAME_WILD)
 WF_FLICKER = (6.0, 0.09)              # wand flame: sway deg, stretch fraction (x FLAME_WILD)
-STREAM = {"lick": 16.0, "crown": 12.0, "wand": 12.0, "stretch": 0.10}   # walk: extra trail-back deg (and stretch) at
-                                      #   the top of each drift (x FLAME_WILD)
+STREAM = {"lick": 16.0, "crown": 12.0, "wand": 12.0, "stretch": 0.10}   # walk: extra trail-back deg (and stretch)
+                                      #   pulsed through the air of each hop (x FLAME_WILD)
 # IDLE -- grounded stance, living fire
 IDLE_N = 96                           # "idle loop": 4 s
 IDLE_DROP, IDLE_BOB = 0.025, 0.015    # soft knees: the body sits this far below rest; breathing dips this much more (2 / loop)
 IDLE_SWAY = (1.2, 0.8, 1.5)           # body roll / pitch / yaw deg
 IDLE_SHIFT = 0.012                    # body side-shift over the planted feet
 IDLE_ARM = {"L": (2.5, 7.0), "R": (0.5, 1.0)}   # arm drift root / tip deg (the free flame arm drifts; the wand arm is still)
-# WALK -- floaty steps: a light push, a drift with hang time, a soft touchdown on the other foot
-WALK_N = 48                           # "walk loop": 2 s = two steps -> 1.0 s per step, cadence 60 steps / min
-STEP_LEN = 0.80                       # "step length": ground covered per step; implied speed = STEP_LEN / step time
-STANCE = 0.40                         # "contact share": fraction of each step a foot is planted (the rest is the drift)
-FLOAT_H = 0.12                        # "float height": body rise from touchdown height to the top of the drift
-HANG = 0.5                            # "hang": time-warp that lingers at the top of the drift + eases the touchdown (0..0.9)
-WALK_DROP = 0.06                      # the body sits this far below rest at touchdown (soft knees: the rest leg is straight)
-FOOT_LIFT = 0.28                      # "step height": swing-foot peak above the floor
-FOOT_TRAIL = 25.0                     # the swinging foot's pointed tip trails back this many deg mid-swing (flat at contact)
-LIFT_EARLY = 0.6                      # swing lift profile (< 1: the foot peels off fast and settles slowly = soft contact)
-SURGE = 0.04                          # the body drifts this far ahead of its mean in the float and settles back on contact
-WALK_LEAN = (3.0, 6.0)                # body pitch forward deg: at contact / at the top of the drift
-WALK_ROLL, WALK_YAW, WALK_SHIFT = 2.0, 4.0, 0.04   # roll over the stance foot deg, twist deg, side shift
-KNEE_POLE = (0.35, 1.0)               # knee bend direction in the body frame: (outward, forward)
-ARM_SWING = {"L": 9.0, "R": 3.0}      # arm counter-swing deg at the tip (the wand arm steadies the staff)
-ARM_TRAIL, ARM_FLOAT = 10.0, 8.0      # arms trail back / lift outward deg at the top of each drift
-WAND_CARRY = (14.0, 18.0)             # walk: the wand arm carries the staff forward deg, staff tilted forward deg (the butt
-                                      #   clears the floor through the stance dip)
+KNEE_POLE = (0.35, 1.0)               # idle leg IK: knee bend direction in the body frame (outward, forward)
+# WALK v1.3 -- CARTOON HOP (artist 2026-09-26: "the walking animation should have its legs remains stiff more cartoon
+#      movement than realistic and faster like a little creature hopping around"). The legs are STIFF pegs (no knee:
+#      thigh + shin locked straight, pivoting only at the hip; the foot bone only keeps the sole flat on the floor); all
+#      the give is the BODY: squash on the landing / anticipation, stretch at takeoff. The squash lives on 'body' (the
+#      block + crown + arms + licks), scaled about the hip line; the legs hang off 'hips' and never scale.
+HOP_STYLE = "together"                # "hop style": "together" = both stiff legs take off + land together (pogo / bunny
+                                      #   hop -- the default: with no knees a two-footed spring is the clearest hop read);
+                                      #   "alternate" = land on one stiff leg, kick the other forward (skip-hop)
+WALK_N = 24                           # "walk loop": 1 s = two hops -> 0.5 s per hop, cadence 120 hops / min (v1.2: 60)
+HOP_LEN = 0.50                        # "hop length": ground covered per hop; implied speed = HOP_LEN / hop time
+CONTACT = 1.0 / 3.0                   # "contact share": fraction of each hop the feet are on the floor (land > squash > push)
+HOP_H = 0.30                          # "hop height": foot clearance at the top of the hop
+SQUASH = 0.20                         # "landing squash": block height lost at the deepest squash (volume kept: the width
+                                      #   grows by 1 / sqrt(height scale))
+STRETCH = 0.14                        # "takeoff stretch": block height gained at the takeoff instant
+FALL_STRETCH = 0.05                   # "fall stretch": the block stretches a little again dropping into the landing
+SQUASH_PEAK = 0.40                    # where in the contact the squash bottoms out (0 = on impact, 1 = at takeoff)
+LEG_SPLAY = 4.0                       # "landing splay": the stiff legs spread outward this many deg with the squash
+LEG_SWING = 7.0                       # stiff legs trail back after takeoff / reach forward before landing deg (hip only)
+ALT_KICK = 28.0                       # HOP_STYLE "alternate": the free stiff leg kicks forward this many deg
+FOOT_POINT = 12.0                     # the pointed foot tips trail back in the air deg (flat on the floor)
+HOP_LEAN = (2.0, 8.0)                 # body pitch forward deg: at landing / at takeoff (rights itself through the air)
+HOP_ROLL, HOP_YAW = 4.0, 5.0          # "hop wobble": roll / twist deg, alternating L / R per hop, in the air only (the feet
+                                      #   land flat); "alternate" rolls over the stance leg instead
+ARM_FLAP = 24.0                       # "arm flap": arms fling up + out at takeoff, splay with the squash deg (tip)
+ARM_TRAIL = 10.0                      # arms trail back in the air deg
+ARM_LAG = 0.05                        # each arm bone lags the one above by this hop fraction (the flap whips)
+WAND_ARM = 0.35                       # the wand arm flaps this fraction of the free arm (it steadies the staff)
+WAND_CARRY = (22.0, 20.0)             # walk: the wand arm carries the staff forward deg, staff tilted forward deg (the butt
+                                      #   clears the floor through the takeoff stretch)
 FLOOR_EPS = 0.0005                    # floor guard: any foot whose mesh dips below z 0 is lifted by its dip + this
 CONTACT_TOL = 0.002                   # a foot counts as planted within this of the floor (report)
 
@@ -1185,7 +1200,11 @@ def resample(pts, n):
 
 
 CF_TOP = float(max(p[-1][2] for p in CFL["tongues"]))
-BONES = [("body", P_((0, 0, 1.0)), P_((0, 0, 2.6)), "root"),
+HIP_LINE_Z = float(np.mean([LEG_SPINE[s][0][2] for s in ("L", "R")]))   # the leg roots: the squash pivot (v1.3)
+# v1.3: 'hips' (non-deform) carries the travel + tilt; 'body' (the block and everything on it) only squashes / stretches,
+# about its head ON the hip line; the legs hang off 'hips', so they never scale (stiff legs).
+BONES = [("hips", P_((0, 0, 1.0)), P_((0, 0, HIP_LINE_Z)), "root"),
+         ("body", P_((0, 0, HIP_LINE_Z)), P_((0, 0, 2.6)), "hips"),
          ("crown", P_((0, 0, BOSS["zc"])), P_((0, 0, CZ1 + 0.05)), "body")]
 _cfz = np.linspace(CF_BASE[2], CF_TOP, CF_BONES + 1)
 for k in range(CF_BONES):
@@ -1196,7 +1215,8 @@ for side in ("L", "R"):
     CHAIN_PTS["leg." + side] = resample(LEG_SPINE[side], LEG_BONES)
 for ch, pts in sorted(CHAIN_PTS.items()):
     for k in range(len(pts) - 1):
-        BONES.append(("%s.%d" % (ch, k), P_(pts[k]), P_(pts[k + 1]), "body" if k == 0 else "%s.%d" % (ch, k - 1)))
+        root_p = "hips" if ch.startswith("leg") else "body"
+        BONES.append(("%s.%d" % (ch, k), P_(pts[k]), P_(pts[k + 1]), root_p if k == 0 else "%s.%d" % (ch, k - 1)))
 WF_TOP = float(max(p[-1][2] for p in WFL["tongues"]))
 BONES.append(("wand", P_(HAND_R_PT), P_(WTOP), "arm.R.%d" % (ARM_BONES - 1)))
 BONES.append(("wand_flame", P_(WF_BASE), P_(np.array([WF_BASE[0], WF_BASE[1], WF_TOP])), "wand"))
@@ -1216,9 +1236,9 @@ for (nm, h, t_, p) in BONES:
     e.head = Vector(h); e.tail = Vector(t_); e.roll = 0.0
     e.parent = arm_data.edit_bones[p]
     e.use_connect = nm[-1].isdigit() and not nm.endswith(".0") and not nm.startswith("lick.")
-    e.use_deform = True
+    e.use_deform = nm != "hips"
 bpy.ops.object.mode_set(mode="OBJECT")
-DEFORM = [b[0] for b in BONES]
+DEFORM = [b[0] for b in BONES if b[0] != "hips"]
 J = {n: j for j, n in enumerate(DEFORM)}
 
 # ---- weights, main object (<= 4 influences)
@@ -1300,21 +1320,24 @@ for ob_ in (low, wand):
     ob_.matrix_parent_inverse = Matrix.Identity(4)
     am = ob_.modifiers.new("Armature", "ARMATURE"); am.object = rig
 
-# ---- CLIPS: idle (grounded living fire) + walk (FLOATY STEPS, artist 2026-09-26). Both in place (root at the origin),
-# closed-form in the loop phase u with integer harmonics only (exact seams); the legs by analytic 2-bone IK onto foot
-# targets; a FLOOR GUARD lifts any foot whose deformed mesh dips below z 0 (the placeholder's leg waver dipped foot tips
-# -9 mm). Pass 1 poses + guards every frame with no action bound; pass 2 keys the stored channels; pass 3 measures the
-# clips exactly as the contract checker plays them.
+# ---- CLIPS: idle (grounded living fire) + walk (v1.3 STIFF-LEGGED CARTOON HOP, artist 2026-09-26). Both in place (root
+# at the origin), closed-form in the loop phase u with integer harmonics only (exact seams). Idle legs: analytic 2-bone
+# IK onto planted foot targets. Walk legs: RIGID (knee locked straight), posed in closed form: each hip pivot angle is
+# solved so a planted foot tracks the floor exactly, and the hips height is solved so the feet land exactly on z 0 (no
+# IK, no guard needed). A FLOOR GUARD still lifts any foot whose deformed mesh dips below z 0 (it must stay idle).
+# Pass 1 poses + guards every frame with no action bound; pass 2 keys the stored channels; pass 3 measures the clips
+# exactly as the contract checker plays them.
 for pb in rig.pose.bones:
     pb.rotation_mode = "QUATERNION"
 TAU2 = 2 * math.pi
 REST_R = {b.name: b.matrix_local.to_3x3() for b in arm_data.bones}
 REST_H = {b.name: Vector(b.head_local) for b in arm_data.bones}
 REST_T = {b.name: Vector(b.tail_local) for b in arm_data.bones}
-BODY_HEAD = REST_H["body"]
+HIPS_HEAD = REST_H["hips"]                  # == the v1.2 body head: the idle's tilt pivot is unchanged
 UP, BACK, FWD = Vector((0.0, 0.0, 1.0)), Vector((0.0, 1.0, 0.0)), Vector((0.0, -1.0, 0.0))
 LICK_NAMES = [e["name"] for e in LICK_EL]
-SCALE_BONES = ["crown_flame.0", "crown_flame.1", "wand_flame"] + LICK_NAMES
+SCALE_BONES = ["body", "crown_flame.0", "crown_flame.1", "wand_flame"] + LICK_NAMES
+LOC_BONES = ["hips"]
 KEY_BONES = [b.name for b in arm_data.bones if b.name != "root"]
 
 
@@ -1364,7 +1387,7 @@ def solve_leg(side, Db, off, tip, F):
     rest) -> (D0, D1, D2 parent-frame rotations, reach shortfall); the knee bends toward KNEE_POLE."""
     L = LEGS[side]
     target = tip - F @ (L["foot"] - L["ankle"])
-    Hp = BODY_HEAD + off + Db @ (L["H"] - BODY_HEAD)
+    Hp = HIPS_HEAD + off + Db @ (L["H"] - HIPS_HEAD)
     dv = target - Hp
     d = dv.length
     un = dv / d
@@ -1416,7 +1439,7 @@ def idle_pose(u):
           @ rotm((0, 1, 0), IDLE_SWAY[0] * math.sin(TAU2 * u + 0.3)))
     off = Vector((IDLE_SHIFT * math.sin(TAU2 * u + 0.3), 0.0,
                   -IDLE_DROP - IDLE_BOB * (0.5 - 0.5 * math.cos(TAU2 * 2 * u))))
-    pose = {"body": (Db, off, None)}
+    pose = {"hips": (Db, off, None)}
     for side, sg in (("L", 1.0), ("R", -1.0)):
         r_, t_ = IDLE_ARM[side]
         for k in range(ARM_BONES):
@@ -1428,75 +1451,162 @@ def idle_pose(u):
     return pose, {s: (LEGS[s]["foot"].copy(), Matrix.Identity(3)) for s in ("L", "R")}
 
 
-C_COMP = FLOAT_H * (1.0 - HANG) * STANCE / (1.0 - STANCE)   # stance compression: C1 with the drift at every contact
-HALF_SLIDE = STEP_LEN * STANCE / 2.0                        # a planted foot slides +-this under the hip (in place)
+# ---- WALK v1.3: the stiff-legged cartoon hop. One hop = phase s in [0, 1): CONTACT (land > squash > push; planted feet
+# slide back at the glide speed, in place) then AIR (a parabola of height HOP_H). Two hops per loop (the wobble
+# alternates L / R; "alternate" lands on L, then on R). Legs: knee (leg.*.1) locked at rest; the hip pivot is solved so a
+# planted ankle tracks the floor; the foot bone only holds the sole flat (contact) or lets the pointed tip trail (air).
+HOP_S = WALK_N / 2.0 / K.FPS                                  # seconds per hop
+HALF_SLIDE = HOP_LEN * CONTACT / 2.0                          # a planted foot slides +-this under the hip (in place)
+assert HOP_STYLE in ("together", "alternate"), HOP_STYLE
+for side in ("L", "R"):
+    LEGS[side]["leg"] = LEGS[side]["ankle"] - LEGS[side]["H"]   # the rigid hip -> ankle vector (knee locked straight)
 
 
-def drift_w(s):
-    return (s - STANCE) / (1.0 - STANCE)
+def sfl(e0, e1, x):
+    return float(smoothstep(e0, e1, x))
 
 
-def body_z(s):
-    """touchdown -> soft compression (stance) -> push -> the drift: rise, HANG at the top, ease down to the next touchdown."""
-    if s < STANCE:
-        return -WALK_DROP - C_COMP * math.sin(math.pi * s / STANCE)
-    w = drift_w(s)
-    return -WALK_DROP + FLOAT_H * math.sin(math.pi * (w - HANG / (4 * math.pi) * math.sin(4 * math.pi * w)))
+def peak_warp(v, p):
+    """[0, 1] -> [0, 1] with p -> 0.5 (moves a sin(pi v) peak to v = p)."""
+    return v ** (math.log(0.5) / math.log(p)) if v > 0.0 else 0.0
 
 
-def body_y(s):
-    """the body drifts ahead of its mean through the float, settles back through the stance (C1 at the joins)."""
-    return -SURGE * math.cos(math.pi * s / STANCE) if s < STANCE else SURGE * math.cos(math.pi * drift_w(s))
+def hop_split(s):
+    """-> (in contact, v = contact progress | w = air progress)."""
+    return (True, s / CONTACT) if s <= CONTACT else (False, (s - CONTACT) / (1.0 - CONTACT))
 
 
-def drift_env(s):
-    return 0.0 if s < STANCE else math.sin(math.pi * drift_w(s)) ** 2
+def squash_y(s):
+    """block height scale: fall stretch at impact -> SQUASH (bottoming at SQUASH_PEAK of the contact) -> STRETCH at the
+    takeoff instant -> relaxed by mid-air -> FALL_STRETCH into the next landing. Width = 1 / sqrt(height): volume kept."""
+    c, x = hop_split(s)
+    if c:
+        return (1.0 - SQUASH * math.sin(math.pi * peak_warp(x, SQUASH_PEAK)) + STRETCH * sfl(0.5, 1.0, x)
+                + FALL_STRETCH * (1.0 - sfl(0.0, 0.3, x)))
+    return 1.0 + STRETCH * (1.0 - sfl(0.0, 0.5, x)) + FALL_STRETCH * sfl(0.55, 1.0, x)
 
 
-def foot_target(side, u):
-    """-> (tip target, planted, foot world rotation). Stance: flat, slides back at the ground speed; swing: Hermite
-    (lift-off / touchdown velocity = the ground speed: no skid), lift sin^2(pi w^LIFT_EARLY) (peels off fast, settles
-    with zero vertical speed), the pointed tip trailing back FOOT_TRAIL sin^2(pi w) (flat again at touchdown)."""
-    st = STANCE / 2.0
-    p = (u - (0.0 if side == "L" else 0.5)) % 1.0
-    base = LEGS[side]["foot"]
-    if p < st:
-        return base + Vector((0.0, -HALF_SLIDE + 2.0 * HALF_SLIDE * p / st, 0.0)), True, Matrix.Identity(3)
-    w = (p - st) / (1.0 - st)
-    m = 2.0 * HALF_SLIDE / st * (1.0 - st)
-    y = ((2 * w ** 3 - 3 * w ** 2 + 1) * HALF_SLIDE + (w ** 3 - 2 * w ** 2 + w) * m
-         + (-2 * w ** 3 + 3 * w ** 2) * -HALF_SLIDE + (w ** 3 - w ** 2) * m)
-    return (base + Vector((0.0, y, FOOT_LIFT * math.sin(math.pi * w ** LIFT_EARLY) ** 2)), False,
-            rotm((1, 0, 0), FOOT_TRAIL * math.sin(math.pi * w) ** 2))
+def squash_env(s):
+    c, x = hop_split(s)
+    return math.sin(math.pi * peak_warp(x, SQUASH_PEAK)) if c else 0.0
+
+
+def air_env(s):
+    c, x = hop_split(s)
+    return 0.0 if c else math.sin(math.pi * x) ** 2
+
+
+def air_z(s):
+    c, x = hop_split(s)
+    return 0.0 if c else HOP_H * 4.0 * x * (1.0 - x)
+
+
+def lean_env(s):
+    c, x = hop_split(s)
+    return sfl(0.35, 1.0, x) if c else 1.0 - sfl(0.15, 0.95, x)
+
+
+def flap_env(s):
+    """arm lift: splay out with the squash, fling up at takeoff, float back down through the air."""
+    c, x = hop_split(s)
+    if c:
+        return 0.35 * math.sin(math.pi * peak_warp(x, SQUASH_PEAK)) + sfl(0.55, 1.0, x)
+    return 1.0 - sfl(0.0, 0.85, x)
+
+
+def planted(side, k):
+    return HOP_STYLE == "together" or side == ("L" if k == 0 else "R")
+
+
+def body_rot(u):
+    k, s = int(2.0 * u) % 2, (2.0 * u) % 1.0
+    sgk = 1.0 if k == 0 else -1.0
+    pitch = HOP_LEAN[0] + (HOP_LEAN[1] - HOP_LEAN[0]) * lean_env(s)
+    if HOP_STYLE == "together":                            # wobble in the air only: both stiff legs land flat
+        roll, yaw = HOP_ROLL * sgk * air_env(s), HOP_YAW * sgk * air_env(s)
+    else:                                                  # lean over the stance leg (+ roll tips the top toward +X = L)
+        roll = HOP_ROLL * math.cos(TAU2 * (u - CONTACT / 4.0))
+        yaw = HOP_YAW * math.sin(TAU2 * (u - CONTACT / 4.0))
+    return rotm(UP, yaw) @ rotm((1, 0, 0), pitch) @ rotm((0, 1, 0), roll)
+
+
+def hip_pt(side, Db, off):
+    return HIPS_HEAD + off + Db @ (LEGS[side]["H"] - HIPS_HEAD)
+
+
+def leg_world(side, theta, splay):
+    """world rotation of a stiff leg: hip pitch theta deg (+ = foot back) after an outward splay deg."""
+    return rotm((1, 0, 0), theta) @ rotm((0, 1, 0), -LEGS[side]["sg"] * splay)
+
+
+def vault_theta(side, Db, splay, y_t):
+    """the hip pitch (deg) putting the rigid leg's ankle at world y = y_t (a planted foot tracking the floor)."""
+    v = rotm((0, 1, 0), -LEGS[side]["sg"] * splay) @ LEGS[side]["leg"]
+    d = y_t - hip_pt(side, Db, Vector((0.0, 0.0, 0.0))).y
+    R_ = math.hypot(v.y, v.z)
+    return math.degrees(-math.acos(max(-1.0, min(1.0, d / R_))) - math.atan2(v.z, v.y))
+
+
+def contact_theta(side, k, v):
+    """(hip pitch, splay) of a leg at contact progress v of hop k."""
+    if not planted(side, k):
+        return -ALT_KICK, 0.0
+    s = v * CONTACT
+    splay = LEG_SPLAY * squash_env(s)
+    y_t = LEGS[side]["ankle"].y - HALF_SLIDE + 2.0 * HALF_SLIDE * v
+    return vault_theta(side, body_rot((k + s) / 2.0), splay, y_t), splay
+
+
+def hop_legs(u):
+    """-> ({side: leg world rotation}, {side: foot world rotation}, hips offset, {side: (pitch, splay)})."""
+    k, s = int(2.0 * u) % 2, (2.0 * u) % 1.0
+    c, x = hop_split(s)
+    Db = body_rot(u)
+    Lw, Fw, ang = {}, {}, {}
+    for side in ("L", "R"):
+        if c:
+            th, sp = contact_theta(side, k, x)
+        else:                                              # air: takeoff angle -> next landing angle, trailing back
+            th0, _ = contact_theta(side, k, 1.0)           #   first, reaching forward last (hip only)
+            th1, _ = contact_theta(side, (k + 1) % 2, 0.0)
+            th, sp = th0 + (th1 - th0) * sfl(0.0, 1.0, x) + LEG_SWING * math.sin(TAU2 * x), 0.0
+        Lw[side] = leg_world(side, th, sp)
+        Fw[side] = rotm((1, 0, 0), FOOT_POINT * air_env(s))
+        ang[side] = (th, sp)
+    # the hips height puts the lowest (planted) ankle exactly at its rest height = sole on z 0, + the hop parabola
+    need = [LEGS[sd]["ankle"].z - (hip_pt(sd, Db, Vector((0.0, 0.0, 0.0))) + Lw[sd] @ LEGS[sd]["leg"]).z
+            for sd in ("L", "R") if (not c) or planted(sd, k)]
+    return Db, Lw, Fw, Vector((0.0, 0.0, max(need) + air_z(s))), ang
+
+
+ARM_SHARE = [(ARM_BONES - j) / (ARM_BONES * (ARM_BONES + 1) / 2.0) for j in range(ARM_BONES)]   # root-heavy, sums to 1
 
 
 def walk_pose(u):
     h = harmonics(WALK_N / K.FPS)
     s = (2.0 * u) % 1.0
-    lat = math.cos(TAU2 * (u - STANCE / 4.0))            # +1 at the left foot's mid-stance, -1 at the right's
-    Db = (rotm(UP, -WALK_YAW * math.cos(TAU2 * u)) @ rotm((1, 0, 0), WALK_LEAN[0] + (WALK_LEAN[1] - WALK_LEAN[0]) * drift_env(s))
-          @ rotm((0, 1, 0), WALK_ROLL * lat))
-    pose = {"body": (Db, Vector((WALK_SHIFT * lat, body_y(s), body_z(s))), None)}
+    Db, Lw, Fw, off, _ = hop_legs(u)
+    sy = squash_y(s)
+    pose = {"hips": (Db, off, None), "body": (None, None, (1.0 / math.sqrt(sy), sy, 1.0 / math.sqrt(sy)))}
+    for side in ("L", "R"):
+        pose["leg.%s.0" % side] = (Db.transposed() @ Lw[side], None, None)      # the knee leg.*.1 stays at rest
+        pose["leg.%s.%d" % (side, LEG_BONES - 1)] = (Lw[side].transposed() @ Fw[side], None, None)
 
     def envl(lag):
-        return drift_env((s - lag) % 1.0)
-    for side, sg, u0 in (("L", 1.0, 0.0), ("R", -1.0, 0.5)):
-        for k in range(ARM_BONES):
-            bn = "arm.%s.%d" % (side, k)
-            sw = ARM_SWING[side] * (0.4 + 0.6 * k / max(ARM_BONES - 1, 1)) * math.cos(TAU2 * (u - u0) - 0.5 * k)
-            tr = ARM_TRAIL * envl(0.05 * k) * (1.0 if side == "L" else 0.4)
-            fl = ARM_FLOAT * envl(0.03 * k) * (1.0 if k == 0 else 0.5)
-            D = toward(bn, BACK, sw + tr) @ toward(bn, (sg, 0, 0), fl)
-            if side == "R" and k == 0:
+        return air_env((s - lag) % 1.0)
+    for side, sg in (("L", 1.0), ("R", -1.0)):
+        f_ = 1.0 if side == "L" else WAND_ARM
+        for kb in range(ARM_BONES):
+            bn = "arm.%s.%d" % (side, kb)
+            sl = (s - ARM_LAG * kb) % 1.0
+            D = (toward(bn, BACK, f_ * ARM_TRAIL * ARM_SHARE[kb] * air_env(sl))
+                 @ toward(bn, (sg, 0, 0), f_ * ARM_FLAP * ARM_SHARE[kb] * flap_env(sl)))
+            if side == "R" and kb == 0:
                 D = toward(bn, FWD, WAND_CARRY[0]) @ D
             pose[bn] = (D, None, None)
     pose["wand"] = (toward("wand", FWD, WAND_CARRY[1]), None, None)
     pose.update(flames_pose(u, h, envl))
-    feet = {}
-    for side in ("L", "R"):
-        t_, _, F_ = foot_target(side, u)
-        feet[side] = (t_, F_)
-    return pose, feet
+    return pose, None
 
 
 def eval_coords(ob):
@@ -1523,7 +1633,7 @@ def apply_pose(pose):
             q.negate()
         pb.rotation_quaternion = q
         pb.location = (R.transposed() @ off) if off is not None else Vector((0.0, 0.0, 0.0))
-        pb.scale = (1.0, sy, 1.0) if sy is not None else (1.0, 1.0, 1.0)
+        pb.scale = (1.0, 1.0, 1.0) if sy is None else tuple(sy) if isinstance(sy, tuple) else (1.0, sy, 1.0)
 
 
 def bake_clip(name, N, pose_fn):
@@ -1532,23 +1642,30 @@ def bake_clip(name, N, pose_fn):
         rig.animation_data.action = None
     frames, guard = [], []
     for f in range(N):
-        pose, feet = pose_fn(f / N)
-        Db, off = pose["body"][0], pose["body"][1]
+        pose, feet = pose_fn(f / N)                           # feet None = stiff legs already posed (the hop)
+        Db, off = pose["hips"][0], pose["hips"][1]
         lift = {"L": 0.0, "R": 0.0}
         for it in range(8):
-            short = {}
-            for side in ("L", "R"):
-                tip_, F_ = feet[side]
-                D0, D1, D2, short[side] = solve_leg(side, Db, off, tip_ + Vector((0.0, 0.0, lift[side])), F_)
-                pose["leg.%s.0" % side] = (D0, None, None)
-                pose["leg.%s.1" % side] = (D1, None, None)
-                pose["leg.%s.2" % side] = (D2, None, None)
+            short = {"L": 0.0, "R": 0.0}
+            if feet is None:                                  # rigid legs: the guard can only lift the hips
+                pose["hips"] = (Db, off + Vector((0.0, 0.0, max(lift.values()))), None)
+            else:
+                for side in ("L", "R"):
+                    tip_, F_ = feet[side]
+                    D0, D1, D2, short[side] = solve_leg(side, Db, off, tip_ + Vector((0.0, 0.0, lift[side])), F_)
+                    pose["leg.%s.0" % side] = (D0, None, None)
+                    pose["leg.%s.1" % side] = (D1, None, None)
+                    pose["leg.%s.2" % side] = (D2, None, None)
             apply_pose(pose)
             bpy.context.view_layer.update()
             C = eval_coords(low)
             dips = {s: float(C[SOLE[s], 2].min()) for s in ("L", "R")}
             if min(dips.values()) >= -1e-6:                   # (float noise of an exactly-rest foot is not a dip)
                 break
+            if feet is None:
+                d_ = -min(dips.values()) + FLOOR_EPS
+                lift = {s: lift[s] + d_ for s in ("L", "R")}
+                continue
             for s in ("L", "R"):
                 if dips[s] < -1e-6:
                     lift[s] += -dips[s] + FLOOR_EPS
@@ -1566,7 +1683,7 @@ def bake_clip(name, N, pose_fn):
             q, l_, sc = fr[bn]
             pb.rotation_quaternion = q
             pb.keyframe_insert("rotation_quaternion", frame=f + 1)
-            if bn == "body":
+            if bn in LOC_BONES:
                 pb.location = l_
                 pb.keyframe_insert("location", frame=f + 1)
             if bn in SCALE_BONES:
@@ -1603,6 +1720,14 @@ def measure_clip(act_, N):
             out["sole_y"][s].append(float(C[SOLE[s], 1].mean()))
         for bn in TRACK:
             out["tails"].setdefault(bn, []).append(np.array(rig.pose.bones[bn].tail))
+        pbs = rig.pose.bones
+        for s in ("L", "R"):                       # leg stiffness as played: knee + ankle angles, hip -> ankle length
+            y0, y1, y2 = (pbs["leg.%s.%d" % (s, j)].matrix.col[1].to_3d().normalized() for j in range(3))
+            out.setdefault("knee_deg", {}).setdefault(s, []).append(math.degrees(y0.angle(y1, 0.0)))
+            out.setdefault("ankle_deg", {}).setdefault(s, []).append(math.degrees(y1.angle(y2, 0.0)))
+            out.setdefault("leg_len", {}).setdefault(s, []).append((pbs["leg.%s.2" % s].head - pbs["leg.%s.0" % s].head).length)
+        out.setdefault("crown_z", []).append(float(pbs["crown"].head.z))
+        out.setdefault("body_sy", []).append(float(pbs["body"].scale[1]))
         out["root"] = max(out["root"], (rig.matrix_world @ rig.pose.bones["root"].head).length)
     rig.animation_data.action = None
     out["seam_main_mm"] = round(float(np.linalg.norm(out["first"][0] - out["last"][0], axis=1).max()) * 1000, 6)
@@ -1653,45 +1778,63 @@ idle_rep.update({"status": "REAL: grounded stance, living fire", "flame_flow": F
                                       "wand_flame_tip": excursion_mm(M_I["tails"]["wand_flame"]),
                                       "body_lick_tips_mean": round(float(np.mean([excursion_mm(M_I["tails"][n]) for n in LICK_NAMES])), 1)
                                       if LICK_NAMES else None}})
-# walk numbers
-step_s_ = WALK_N / 2 / K.FPS
+# walk numbers (v1.3 hop)
 sole_w = {s: np.array(M_W["sole"][s]) for s in ("L", "R")}
 contact = {s: sole_w[s] <= CONTACT_TOL for s in ("L", "R")}
 air = ~contact["L"] & ~contact["R"]
-clear = (sole_w["L"] > 0.02) & (sole_w["R"] > 0.02)
-design_planted = {s: np.array([foot_target(s, (f % WALK_N) / WALK_N)[1] for f in range(WALK_N + 1)]) for s in ("L", "R")}
 slide = []
 for s in ("L", "R"):
     y_ = np.array(M_W["sole_y"][s])
     for f in range(WALK_N):
-        if design_planted[s][f] and design_planted[s][f + 1]:
+        if contact[s][f] and contact[s][f + 1]:
             slide.append((y_[f + 1] - y_[f]) * K.FPS)
-body_zs = [body_z((2.0 * f / WALK_N) % 1.0) for f in range(WALK_N)]
+sy_w = np.array(M_W["body_sy"][:WALK_N])
+ang_w = [hop_legs(f / WALK_N)[4] for f in range(WALK_N)]
+pitch_w = [a[s][0] for a in ang_w for s in ("L", "R")]
+crown_rest = float(REST_H["crown"].z)
+clear_w = np.minimum(sole_w["L"], sole_w["R"])
 walk_rep = clip_common(M_W, WALK_N, guard_walk)
 walk_rep.update({
-    "status": "REAL: floaty steps (artist 2026-09-26 'movement is floaty steps')", "flame_flow": FL_W,
-    "stream_at_drift_top": STREAM, "flicker_harmonics_per_loop": list(harmonics(WALK_N / K.FPS)),
-    "cadence_steps_per_min": round(60.0 / step_s_, 2), "step_seconds": step_s_, "step_length": STEP_LEN,
-    "implied_speed_units_per_s": round(STEP_LEN / step_s_, 4),
-    "implied_speed_game_m_per_s_at_cell_fit_scale": round(STEP_LEN / step_s_ * k_fit, 4),
-    "stance_share": STANCE, "stance_slide_per_foot": round(2 * HALF_SLIDE, 4),
+    "status": "REAL v1.3: stiff-legged cartoon hop (artist 2026-09-26 'legs remains stiff more cartoon movement than "
+              "realistic and faster like a little creature hopping around')", "hop_style": HOP_STYLE, "flame_flow": FL_W,
+    "stream_in_air": STREAM, "flicker_harmonics_per_loop": list(harmonics(WALK_N / K.FPS)),
+    "hops_per_loop": 2, "hop_seconds": HOP_S, "cadence_hops_per_min": round(60.0 / HOP_S, 2),
+    "hop_length": HOP_LEN, "implied_speed_units_per_s": round(HOP_LEN / HOP_S, 4),
+    "implied_speed_game_m_per_s_at_cell_fit_scale": round(HOP_LEN / HOP_S * k_fit, 4),
+    "contact_share": round(CONTACT, 4), "stance_slide_per_foot": round(2 * HALF_SLIDE, 4),
     "measured_planted_foot_speed_units_per_s": {"mean": round(float(np.mean(slide)), 4), "min": round(float(np.min(slide)), 4),
-                                                 "max": round(float(np.max(slide)), 4)},
+                                                 "max": round(float(np.max(slide)), 4)} if slide else None,
     "contact_frames": {s: [int(f + 1) for f in np.nonzero(contact[s][:WALK_N])[0]] for s in ("L", "R")},
-    "hang": {"airborne_frames_per_cycle": int(air[:WALK_N].sum()),
-             "hang_time_per_step_s": round(float(air[:WALK_N].sum()) / 2 / K.FPS, 4),
-             "clear_air_frames_per_cycle_both_feet_gt_20mm": int(clear[:WALK_N].sum()),
-             "design_drift_share_per_step": round(1.0 - STANCE, 3), "design_drift_s": round((1.0 - STANCE) * step_s_, 4)},
-    "body_z": {"touchdown": -WALK_DROP, "low": round(min(body_zs), 4), "top": round(max(body_zs), 4),
-               "compression": round(C_COMP, 4), "float_height": FLOAT_H, "hang_warp": HANG},
-    "swing_foot_peak": FOOT_LIFT, "surge": SURGE, "lean_deg": list(WALK_LEAN),
+    "air": {"airborne_frames_per_cycle": int(air[:WALK_N].sum()),
+            "air_time_per_hop_s": round(float(air[:WALK_N].sum()) / 2 / K.FPS, 4),
+            "design_air_s": round((1.0 - CONTACT) * HOP_S, 4),
+            "hop_height_design": HOP_H, "foot_clearance_peak_measured": round(float(clear_w.max()), 4)},
+    "squash_stretch": {"body_height_scale_min": round(float(sy_w.min()), 4), "body_height_scale_max": round(float(sy_w.max()), 4),
+                       "squash_pct": round(100 * (1 - float(sy_w.min())), 1), "stretch_pct": round(100 * (float(sy_w.max()) - 1), 1),
+                       "width_at_squash_pct": round(100 * (1 / math.sqrt(float(sy_w.min())) - 1), 1),
+                       "pivot": "the hip line z %.3f (legs never scale)" % float(REST_H["body"].z),
+                       "crown_drop_at_squash": round(crown_rest - float(min(M_W["crown_z"])), 4),
+                       "crown_rise_max": round(float(max(M_W["crown_z"])) - crown_rest, 4),
+                       "per_frame_body_height_scale": [round(float(v), 4) for v in M_W["body_sy"]]},
+    "stiff_legs": {"knee_deg_max": {s: round(max(M_W["knee_deg"][s]) - min(M_W["knee_deg"][s]), 4) for s in ("L", "R")},
+                   "knee_note": "range of the thigh-shin angle over the clip (the knee bone is never posed: 0 = locked)",
+                   "ankle_flex_deg_max": {s: round(max(abs(a - math.degrees(bdir("leg.%s.1" % s).angle(bdir("leg.%s.2" % s), 0.0)))
+                                                           for a in M_W["ankle_deg"][s]), 3) for s in ("L", "R")},
+                   "ankle_note": "max |shin-foot angle - its rest angle|: the foot bone only holds the sole flat / trails",
+                   "hip_to_ankle_length_dev_mm": {s: round(1000 * float(np.ptp(M_W["leg_len"][s])), 4) for s in ("L", "R")},
+                   "hip_pitch_deg_range": [round(min(pitch_w), 2), round(max(pitch_w), 2)],
+                   "splay_deg_max": round(max(a[s][1] for a in ang_w for s in ("L", "R")), 2),
+                   "foot_point_deg": FOOT_POINT, "leg_swing_deg": LEG_SWING},
     "sole_min_z_mm": {s: round(1000 * float(sole_w[s].min()), 2) for s in ("L", "R")},
+    "lean_deg": list(HOP_LEAN), "wobble_roll_yaw_deg": [HOP_ROLL, HOP_YAW], "arm_flap_trail_deg": [ARM_FLAP, ARM_TRAIL],
     "tip_excursion_mm": {"crown_flame_tip": excursion_mm(M_W["tails"]["crown_flame.1"]),
                          "wand_flame_tip": excursion_mm(M_W["tails"]["wand_flame"])},
     "wand_carry_deg": list(WAND_CARRY)})
 rep["clips"] = {"idle": idle_rep, "walk": walk_rep, "seconds": round(time.time() - t_clip, 1),
                 "rule": "in place (root at the origin, Conquest glides); closed-form, integer harmonics (exact seams); "
-                        "legs = analytic 2-bone IK onto foot targets + floor guard (no foot mesh below z 0)"}
+                        "idle legs = analytic 2-bone IK onto planted feet; walk legs = rigid (knee locked), hip pivot + "
+                        "hips height solved in closed form so planted soles sit exactly on z 0; floor guard on both "
+                        "(no foot mesh below z 0)"}
 for pb in rig.pose.bones:
     pb.location = (0, 0, 0); pb.rotation_quaternion = (1, 0, 0, 0); pb.scale = (1, 1, 1)
 scene.frame_set(1)
@@ -1700,21 +1843,24 @@ rep["bones"] = [{"name": b.name, "parent": b.parent.name if b.parent else None, 
                  "head": [round(v, 4) for v in b.head_local], "tail": [round(v, 4) for v in b.tail_local]} for b in arm_data.bones]
 rep["bone_count"] = len(arm_data.bones)
 rep["deform_bone_count"] = len(DEFORM)
-rig["conquest_rig"] = ("firesprite v1.2 (movement wave): root > body > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; "
-                       "arm.R.2 > wand > wand_flame; body > leg.{L,R}.{0,1,2 foot}; body > lick.{side.L.0-3, side.R.0-3, back.0-2, "
-                       "hem.0-5} (one bone per body flame lick)")
+rig["conquest_rig"] = ("firesprite v1.3 (stiff-leg hop): root > hips (non-deform: travel + tilt) > body (squash / stretch "
+                       "about the hip line) > crown > crown_flame.{0,1}; body > arm.{L,R}.{0,1,2}; arm.R.2 > wand > "
+                       "wand_flame; hips > leg.{L,R}.{0,1,2 foot} (never scaled); body > lick.{side.L.0-3, side.R.0-3, "
+                       "back.0-2, hem.0-5} (one bone per body flame lick)")
 low["conquest_clips"] = ["idle", "walk"]
-low["conquest_clip_status"] = "idle = grounded living fire (4 s); walk = floaty steps (2 s, two steps); both in place"
-low["conquest_locomotion"] = ("FLOATY STEPS (artist 2026-09-26): stands grounded on the flame legs; each step pushes off into "
-                              "a drift with hang time and settles softly on the other foot")
+low["conquest_clip_status"] = ("idle = grounded living fire (4 s); walk = stiff-legged cartoon hop (1 s, two hops, %s); "
+                               "both in place" % HOP_STYLE)
+low["conquest_locomotion"] = ("STIFF-LEGGED CARTOON HOP (artist 2026-09-26): a little creature hopping on locked-straight "
+                              "flame legs; the block squashes on landing, stretches at takeoff")
 for m in list(bpy.data.materials):
     if m.users == 0:
         bpy.data.materials.remove(m)
 DIG_ALL = hashlib.sha256(json.dumps(DIG, sort_keys=True).encode()).hexdigest()[:16]
 rep["digest"] = {"parts": DIG, "combined": DIG_ALL}
 if DIGEST_ONLY:
-    json.dump({"digest": rep["digest"], "tris": report["tris"]["total"], "seconds": round(time.time() - T0, 1)},
-              open(DIGEST_ONLY, "w"), indent=1)
+    json.dump({"digest": rep["digest"], "tris": report["tris"]["total"], "seconds": round(time.time() - T0, 1),
+               "overrides": OVERRIDES, "walk": rep["clips"]["walk"]}, open(DIGEST_ONLY, "w"), indent=1,
+              default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))
     print("DIGEST", DIG_ALL, json.dumps(DIG))
     sys.stdout.flush(); os._exit(0)
 os.makedirs(os.path.dirname(OUT_RIGGED), exist_ok=True)
