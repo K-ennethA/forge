@@ -891,3 +891,25 @@ front strand per side; the rest of the hair reads as normal hair mass.
 (2) the hair sits too TALL on the head - reduce the cap/lobe volume so it
 hugs the scalp. (3) eyes switch to the previously rendered darker/less
 bright red alternative (the v3alt_fainteyes tone).
+
+## 2026-09-26 — Vampwarrior v4.2 nitpick + firefly movement + firesprite OK
+
+Reference saved: design/reference/vampwarrior-v42-hairline-annotation.png
+(orange line drawn across the forehead where the front strand's top edge
+should sit; green line above it = where the scalp hairline goes).
+
+Artist (verbatim): "If I am nitpicking now the strand should go to this
+red line, and then hair scalp goes to the green does that make sense?
+
+firefly should float/hover
+
+fire sprite is fine"
+
+Binding readings: (1) VAMPWARRIOR v4.2: the front strand's upper edge
+starts at the ORANGE line (lower on the forehead than now); the scalp
+cap's hairline sits at the GREEN line above it - so scalp hair shows
+between green and orange, and the strand hangs from the orange line down.
+(2) FIREFLY movement identity = FLOAT/HOVER: it hovers to rest and drifts
+to move (no perching gait); flame stays on; wings read as drifting/
+billowing vapor. Movement wave unblocked. (3) FIRESPRITE v1.3 hop:
+APPROVED as-is - parked.
