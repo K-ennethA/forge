@@ -1,11 +1,14 @@
 {
  "unit": "vampwarrior",
  "skin": "default",
- "description": "The sheet's palette chips: bone-white, pale grey, near-black, dark red, deep maroon, black. Pale skin, bone-white hair, black armour / gloves / boots / cape with silver seam trim, dark-red cape lining, deep-maroon lips + liner, red eyes (the one lit accent), a faint-glow red throat gem; the sword bone-pale with a dark centre vein, black grip, red tassel.",
+ "description": "The sheet's palette chips: bone-white, pale grey, near-black, dark red, deep maroon, black. Pale skin, bone-white hair, black armour / gloves / boots / cape with silver seam trim, dark-red cape lining, a faint rose-red lip paint (v3: 'a fainter red'), a near-black maroon liner contour, dark ash brows, red eyes (the one lit accent), a faint-glow red throat gem; the sword bone-pale with a dark centre vein, black grip, red tassel. v3 adds the authored shadow tones (skin_shadow, bodice_shadow) and the armour plates (armor, armor_trim).",
  "regions": {
   "skin":        {"rgb": [226, 220, 218], "note": "pale (bone-white family, a touch warm so it reads as skin)"},
-  "lips":        {"rgb": [96, 22, 36],    "note": "deep maroon"},
-  "liner":       {"rgb": [44, 20, 28],    "note": "near-black maroon lid margin (intimidating eyes)"},
+  "skin_shadow": {"rgb": [196, 184, 194], "note": "v3 authored shadow shapes on the skin: a cool mauve-grey step down from the skin"},
+  "lips":        {"rgb": [170, 62, 80],   "note": "v3 faint rose-red lip paint (v2 was a heavy deep maroon 96, 22, 36)"},
+  "mouth":       {"rgb": [70, 24, 34],    "note": "v3 the mouth line between the lips (inside the mouth), dark maroon"},
+  "liner":       {"rgb": [44, 20, 28],    "note": "near-black maroon lid-edge contour"},
+  "brow":        {"rgb": [78, 60, 66],    "note": "v3 painted angled brows, dark ash"},
   "eye_sclera":  {"rgb": [214, 206, 204]},
   "eye_iris":    {"rgb": [206, 24, 34],   "emission": [255, 30, 40], "emission_scale": 0.55, "note": "RED EYES, subtle glow tier"},
   "eye_pupil":   {"rgb": [34, 4, 8]},
@@ -14,7 +17,10 @@
   "hair_shade":  {"rgb": [192, 188, 182], "note": "pale grey (lock undersides)"},
   "hair_part":   {"rgb": [214, 206, 204], "note": "scalp in the centre part"},
   "bodice":      {"rgb": [30, 28, 33],    "note": "near-black armoured bodice"},
+  "bodice_shadow": {"rgb": [14, 13, 16],  "note": "v3 authored shadow under the chest on the bodice"},
   "trim":        {"rgb": [186, 188, 196], "note": "silver seam trim"},
+  "armor":       {"rgb": [38, 37, 43],    "note": "v3 breastplate / pauldron plates (near-black plate, a step above the bodice)"},
+  "armor_trim":  {"rgb": [190, 192, 200], "note": "v3 silver plate edges"},
   "gloves":      {"rgb": [18, 17, 20],    "note": "black"},
   "boots":       {"rgb": [20, 19, 22],    "note": "black"},
   "boot_sole":   {"rgb": [12, 11, 12]},
@@ -36,8 +42,7 @@
   "handle":      {"rgb": [20, 18, 20],    "note": "simple black grip"},
   "pommel":      {"rgb": [70, 18, 28]},
   "tassel":      {"rgb": [170, 20, 32],   "note": "red tassel"},
-  "tassel_cord": {"rgb": [120, 14, 24]},
-  "outline":     {"rgb": [20, 12, 16],    "note": "v2 comic line: the inverted-hull shell (near-black, a touch of maroon)"}
+  "tassel_cord": {"rgb": [120, 14, 24]}
  },
- "material": {"roughness": 1.0, "emission_strength": 2.2, "note": "v2 cel treatment: fully rough (v1 0.62), no gloss"}
+ "material": {"roughness": 0.62, "emission_strength": 2.2, "note": "v3: the v1 material (v2's fully-rough cel setting undone)"}
 }

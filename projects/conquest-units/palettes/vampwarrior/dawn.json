@@ -5,6 +5,9 @@
  "description": "Swap proof ('dawn', lane pick): the dark queen inverted -- ivory coat, bodice and armour with GOLD trim, a gold cape lining, white boots / gloves, a SILVER blade with a gold vein and an ivory grip, gold tassel. Skin, hair and the red eyes / gem are unchanged (her identity stays). Geometry, regions and glow tiers identical; only colours change.",
  "regions": {
   "bodice":      {"rgb": [232, 226, 212]},
+  "bodice_shadow": {"rgb": [200, 192, 178]},
+  "armor":       {"rgb": [240, 236, 224]},
+  "armor_trim":  {"rgb": [204, 164, 72]},
   "trim":        {"rgb": [204, 164, 72]},
   "gloves":      {"rgb": [238, 234, 226]},
   "boots":       {"rgb": [236, 232, 222]},

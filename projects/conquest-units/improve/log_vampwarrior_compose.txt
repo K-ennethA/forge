@@ -1,5 +1,8 @@
-﻿WROTE vampwarrior_v2_face_fix.png
-WROTE vampwarrior_v2_hair_options.png
-WROTE vampwarrior_v2_cel_before_after.png
-WROTE vampwarrior_v2_outline_near_far.png
-WROTE vampwarrior_v2_contact.png
+﻿WROTE vampwarrior_v3_face_sheet.png
+WROTE vampwarrior_v3_hair.png
+WROTE vampwarrior_v3_shadow_regions.png
+WROTE vampwarrior_v3_armor.png
+WROTE vampwarrior_v3_red.png
+WROTE vampwarrior_v2_vs_v3.png
+WROTE vampwarrior_v3_contact.png
+DIALS {"cheek/l-cheek-volume-decr": [0.35, 0.5], "cheek/r-cheek-volume-decr": [0.35, 0.5], "chin/chin-prominent-incr": [0.25, 0.4], "chin/chin-triangle": [0.0, 0.6], "chin/chin-width-decr": [0.0, 0.55], "eyes/l-eye-scale-incr": [0.0, 0.45], "eyes/r-eye-scale-incr": [0.0, 0.45], "head/head-invertedtriangular": [0.0, 0.35]}

@@ -34,14 +34,53 @@
    "head/head-oval": 0.45,
    "cheek/l-cheek-bones-incr": 0.45,
    "cheek/r-cheek-bones-incr": 0.45,
-   "cheek/l-cheek-volume-decr": 0.35,
-   "cheek/r-cheek-volume-decr": 0.35,
+   "cheek/l-cheek-volume-decr": 0.5,
+   "cheek/r-cheek-volume-decr": 0.5,
    "eyebrows/eyebrows-angle-down": 0.55,
    "eyes/l-eye-height2-decr": 0.25,
    "eyes/r-eye-height2-decr": 0.25,
-   "chin/chin-prominent-incr": 0.25,
+   "chin/chin-prominent-incr": 0.4,
    "nose/nose-point-width-decr": 0.3,
-   "mouth/mouth-angles-down": 0.2
+   "mouth/mouth-angles-down": 0.2,
+   "chin/chin-width-decr": 0.55,
+   "chin/chin-triangle": 0.6,
+   "head/head-invertedtriangular": 0.35,
+   "eyes/l-eye-scale-incr": 0.45,
+   "eyes/r-eye-scale-incr": 0.45
+  },
+  "face_dials_v2_to_v3": {
+   "cheek/l-cheek-volume-decr": [
+    0.35,
+    0.5
+   ],
+   "cheek/r-cheek-volume-decr": [
+    0.35,
+    0.5
+   ],
+   "chin/chin-prominent-incr": [
+    0.25,
+    0.4
+   ],
+   "chin/chin-triangle": [
+    0.0,
+    0.6
+   ],
+   "chin/chin-width-decr": [
+    0.0,
+    0.55
+   ],
+   "eyes/l-eye-scale-incr": [
+    0.0,
+    0.45
+   ],
+   "eyes/r-eye-scale-incr": [
+    0.0,
+    0.45
+   ],
+   "head/head-invertedtriangular": [
+    0.0,
+    0.35
+   ]
   },
   "rig": "game_engine",
   "mpfb_bones": 53,
@@ -49,7 +88,7 @@
   "body_h_barefoot": 1.78,
   "heel_deg": 24.0,
   "heel_lift": 0.0919,
-  "seconds": 1.3
+  "seconds": 0.9
  },
  "landmarks": {
   "height_total": 1.8323,
@@ -82,47 +121,504 @@
    1.7211
   ],
   "head_radii": [
-   0.0862,
+   0.0868,
    0.0936,
    0.1111
   ]
  },
  "lip_fix": {
-  "v1_rule_z": 1.6495,
+  "v1_rule_z": 1.6494,
   "slit_z": 1.6593,
   "lip_dz": 0.0,
-  "lower_lip_bulge_z": 1.6526,
+  "lower_lip_bulge_z": 1.6518,
   "upper_lip_bulge_z": 1.6668,
   "teeth_edge_z": 1.6601,
-  "shift_up_m": 0.0098
+  "shift_up_m": 0.0099
+ },
+ "chin": {
+  "chin_bottom_z": 1.6143,
+  "chin_front_y": -0.1284,
+  "slit_to_chin_m": 0.045,
+  "jaw_half_width_m": {
+   "chin+5mm": 0.0184,
+   "chin+10mm": 0.0251,
+   "chin+20mm": 0.0365,
+   "chin+35mm": 0.0343
+  },
+  "rule": "chin bottom = last midline front-ray hit before the ray passes under the jaw; jaw half-width = max |x| of front-half head-dominant skin in a 3 mm slab at that height (the front silhouette)"
  },
  "iso_cuts": {
-  "cuts": 21,
-  "edge_splits": 1391,
-  "seconds": 23.1,
-  "body_tris_after_cuts": 29538
- },
- "liner_width_mm": {
-  "v1": {
-   "median": 7.07,
-   "p90": 9.17,
-   "wedges": 62
+  "cuts": 26,
+  "edge_splits": 1616,
+  "thin_stroke_refine_splits": {
+   "L": 6,
+   "R": 6
   },
-  "v2": {
-   "median": 1.36,
-   "p90": 1.6,
-   "wedges": 60
+  "degenerate_faces_dissolved": 60,
+  "seconds": 23.7,
+  "body_tris_after_cuts": 29952
+ },
+ "liner_proof": {
+  "rule": "front view, per 5-deg ray fan round each eye, +Y rays every 0.05 mm: visible liner width = rays whose first hit is a liner face; the lid edge = the first ray that sees skin in front of the eyeball mesh",
+  "widths_mm_target": {
+   "upper": 1.1,
+   "lower": 0.6,
+   "wing": 1.0
+  },
+  "upper_lid_width_mm": {
+   "median": 1.1,
+   "max": 2.15
+  },
+  "lower_lid_width_mm": {
+   "median": 0.65,
+   "max": 0.9
+  },
+  "max_visible_width_any_angle_mm": 2.15,
+  "contour_closed_pct": 100.0,
+  "starts_at_lid_edge_pct": 100.0,
+  "aperture_mm": {
+   "L": {
+    "outer": 12.8,
+    "up": 3.6,
+    "inner": 10.1,
+    "down": 5.5
+   },
+   "R": {
+    "outer": 12.8,
+    "up": 3.6,
+    "inner": 10.1,
+    "down": 5.5
+   }
+  },
+  "per_angle_L": [
+   [
+    0,
+    1.5
+   ],
+   [
+    5,
+    1.85
+   ],
+   [
+    10,
+    2.1
+   ],
+   [
+    15,
+    2.15
+   ],
+   [
+    20,
+    1.95
+   ],
+   [
+    25,
+    1.85
+   ],
+   [
+    30,
+    1.75
+   ],
+   [
+    35,
+    1.6
+   ],
+   [
+    40,
+    1.4
+   ],
+   [
+    45,
+    1.25
+   ],
+   [
+    50,
+    1.25
+   ],
+   [
+    55,
+    1.15
+   ],
+   [
+    60,
+    1.15
+   ],
+   [
+    65,
+    1.15
+   ],
+   [
+    70,
+    1.15
+   ],
+   [
+    75,
+    1.05
+   ],
+   [
+    80,
+    1.1
+   ],
+   [
+    85,
+    1.1
+   ],
+   [
+    90,
+    1.1
+   ],
+   [
+    95,
+    1.1
+   ],
+   [
+    100,
+    1.05
+   ],
+   [
+    105,
+    1.05
+   ],
+   [
+    110,
+    1.0
+   ],
+   [
+    115,
+    1.0
+   ],
+   [
+    120,
+    1.0
+   ],
+   [
+    125,
+    1.05
+   ],
+   [
+    130,
+    1.0
+   ],
+   [
+    135,
+    1.05
+   ],
+   [
+    140,
+    1.05
+   ],
+   [
+    145,
+    1.05
+   ],
+   [
+    150,
+    1.0
+   ],
+   [
+    155,
+    1.0
+   ],
+   [
+    160,
+    1.05
+   ],
+   [
+    165,
+    1.1
+   ],
+   [
+    170,
+    0.85
+   ],
+   [
+    175,
+    1.0
+   ],
+   [
+    180,
+    0.9
+   ],
+   [
+    185,
+    0.8
+   ],
+   [
+    190,
+    0.55
+   ],
+   [
+    195,
+    0.55
+   ],
+   [
+    200,
+    0.55
+   ],
+   [
+    205,
+    0.75
+   ],
+   [
+    210,
+    0.55
+   ],
+   [
+    215,
+    0.55
+   ],
+   [
+    220,
+    0.6
+   ],
+   [
+    225,
+    0.6
+   ],
+   [
+    230,
+    0.65
+   ],
+   [
+    235,
+    0.6
+   ],
+   [
+    240,
+    0.6
+   ],
+   [
+    245,
+    0.6
+   ],
+   [
+    250,
+    0.6
+   ],
+   [
+    255,
+    0.65
+   ],
+   [
+    260,
+    0.65
+   ],
+   [
+    265,
+    0.65
+   ],
+   [
+    270,
+    0.65
+   ],
+   [
+    275,
+    0.65
+   ],
+   [
+    280,
+    0.65
+   ],
+   [
+    285,
+    0.6
+   ],
+   [
+    290,
+    0.6
+   ],
+   [
+    295,
+    0.65
+   ],
+   [
+    300,
+    0.65
+   ],
+   [
+    305,
+    0.65
+   ],
+   [
+    310,
+    0.65
+   ],
+   [
+    315,
+    0.65
+   ],
+   [
+    320,
+    0.6
+   ],
+   [
+    325,
+    0.6
+   ],
+   [
+    330,
+    0.6
+   ],
+   [
+    335,
+    0.65
+   ],
+   [
+    340,
+    0.75
+   ],
+   [
+    345,
+    0.9
+   ],
+   [
+    350,
+    0.95
+   ],
+   [
+    355,
+    1.3
+   ]
+  ]
+ },
+ "brow": {
+  "points_rule": "BROW_PTS: x in eye front half-widths from the eye centre (lateral +), z in m above the upper lid edge; Catmull-Rom stroke, width BROW_W inner -> tail",
+  "BROW_PTS": [
+   [
+    -1.1,
+    0.003
+   ],
+   [
+    -0.35,
+    0.0062
+   ],
+   [
+    0.55,
+    0.0098
+   ],
+   [
+    1.3,
+    0.0082
+   ]
+  ],
+  "BROW_W_mm": [
+   3.0,
+   0.7
+  ],
+  "span_x_mm_from_eye_centre": [
+   -13.3,
+   10.1
+  ],
+  "span_z_mm_above_eye_centre": [
+   5.6,
+   13.3
+  ],
+  "inner_end_z_mm": 6.6,
+  "tail_z_mm": 11.8,
+  "slant_deg_inner_to_peak": 20.7,
+  "stroke_centre_above_upper_lid_mm_at_eye_centre": 7.8,
+  "area_cm2_per_brow": 1.167
+ },
+ "shadow_shapes": {
+  "rule": "authored, not AO: palette regions with crisp iso-cut edges in a darker tone (skin_shadow / bodice_shadow)",
+  "shapes": {
+   "jaw_neck": {
+    "region": "skin_shadow",
+    "area_cm2": 72.64,
+    "faces": 318
+   },
+   "fringe": {
+    "region": "skin_shadow",
+    "area_cm2": 25.93,
+    "faces": 156
+   },
+   "chest": {
+    "region": "bodice_shadow",
+    "area_cm2": 119.19,
+    "faces": 164
+   }
+  },
+  "jaw_neck": {
+   "light_elevation_deg": 42.0,
+   "light_dir": [
+    0.0,
+    -0.7431,
+    0.6691
+   ],
+   "smooth_passes": 3,
+   "rule": "the chin's cast shadow: skin whose ray toward the stylised key light hits the head, neighbour-smoothed, cut at 0.5; gated below the chin bottom (+ the jaw rise) and off the nape"
+  },
+  "fringe": {
+   "depth_m": [
+    0.0065,
+    0.0105
+   ],
+   "scallop": [
+    0.004,
+    3.5
+   ],
+   "rule": "a band under the hairline on the forehead / temples, lower edge scalloped"
+  },
+  "chest": {
+   "depth_m": [
+    0.03,
+    0.045,
+    0.01
+   ],
+   "bust_apex_x": 0.1034,
+   "rule": "under the underbust trim onto the bodice: two crescents under the breasts meeting at the centre"
   }
  },
- "liner_width_rule": "front view, per 10-deg wedge round each eye: the outermost visible liner vertex's distance from the lid edge (the innermost front-facing skin in front of the eyeball)",
+ "fangs": {
+  "rule": "root tucked FANG_TUCK above the slit / behind the upper lip's front surface; tip FANG_LEN below the slit, FANG_PROUD in front of the lower lip; proof along the fang's front-most line vs the lip surface profile at the fang's x",
+  "L": {
+   "slit_z": 1.6598,
+   "slit_front_y": -0.0441,
+   "root": [
+    0.0105,
+    -0.1419,
+    1.6653
+   ],
+   "tip": [
+    0.0102,
+    -0.1412,
+    1.6543
+   ],
+   "upper_lip_edge_z": 1.6623,
+   "root_above_lip_edge_mm": 3.0,
+   "visible_len_mm": 8.0,
+   "hidden_above_lip_edge_pct": 77.8,
+   "in_front_below_lip_edge_pct": 100.0
+  },
+  "R": {
+   "slit_z": 1.6598,
+   "slit_front_y": -0.0441,
+   "root": [
+    -0.0105,
+    -0.1419,
+    1.6653
+   ],
+   "tip": [
+    -0.0102,
+    -0.1412,
+    1.6543
+   ],
+   "upper_lip_edge_z": 1.6623,
+   "root_above_lip_edge_mm": 3.0,
+   "visible_len_mm": 8.0,
+   "hidden_above_lip_edge_pct": 77.8,
+   "in_front_below_lip_edge_pct": 100.0
+  }
+ },
  "hidden_skin_removed": {
   "scalp_faces": 1126,
   "toe_faces": 2836,
-  "tris_removed": 3962
+  "under_breastplate_faces": 444,
+  "tris_removed": 4406
  },
  "centre_shift": [
   -0.004708,
-  0.004343,
+  0.004669,
   0.0
  ],
  "min_z_before_shift": 0.0,
@@ -143,20 +639,20 @@
  },
  "regions_faces": {
   "vampwarrior": {
-   "skin": 8270,
-   "lips": 932,
-   "liner": 858,
-   "eye_sclera": 160,
-   "eye_iris": 64,
-   "eye_pupil": 32,
-   "fang": 36,
-   "hair": 2550,
-   "hair_shade": 2044,
+   "skin": 8515,
+   "lips": 86,
+   "liner": 621,
+   "eye_sclera": 200,
+   "eye_iris": 80,
+   "eye_pupil": 40,
+   "fang": 48,
+   "hair": 2846,
+   "hair_shade": 2248,
    "hair_part": 88,
-   "bodice": 3520,
-   "trim": 950,
+   "bodice": 3082,
+   "trim": 944,
    "gloves": 8120,
-   "boots": 3276,
+   "boots": 3288,
    "boot_sole": 128,
    "heel": 32,
    "knee_cop": 168,
@@ -164,12 +660,18 @@
    "fauld": 432,
    "fauld_trim": 224,
    "belt": 80,
-   "collar": 297,
-   "collar_trim": 109,
+   "collar": 387,
+   "collar_trim": 139,
    "gem": 40,
    "gem_setting": 80,
-   "cape_outer": 862,
-   "cape_lining": 696
+   "cape_outer": 1326,
+   "cape_lining": 1116,
+   "skin_shadow": 474,
+   "bodice_shadow": 164,
+   "brow": 137,
+   "armor": 580,
+   "armor_trim": 216,
+   "mouth": 465
   },
   "vampwarrior_sword": {
    "blade": 381,
@@ -182,58 +684,64 @@
   }
  },
  "regions_area_share": {
-  "skin": 0.0662,
-  "lips": 0.0004,
-  "liner": 0.0002,
-  "eye_sclera": 0.0009,
+  "skin": 0.0635,
+  "lips": 0.0,
+  "liner": 0.0001,
+  "eye_sclera": 0.0008,
   "eye_iris": 0.0001,
   "eye_pupil": 0.0,
   "fang": 0.0,
-  "hair": 0.1371,
-  "hair_shade": 0.0961,
+  "hair": 0.1292,
+  "hair_shade": 0.0793,
   "hair_part": 0.0004,
-  "bodice": 0.0593,
-  "trim": 0.0082,
-  "gloves": 0.0346,
-  "boots": 0.0893,
-  "boot_sole": 0.0146,
-  "heel": 0.0036,
-  "knee_cop": 0.0109,
-  "cuff": 0.0094,
-  "fauld": 0.0436,
-  "fauld_trim": 0.0108,
-  "belt": 0.0095,
-  "collar": 0.0095,
+  "bodice": 0.0509,
+  "trim": 0.008,
+  "gloves": 0.0338,
+  "boots": 0.0873,
+  "boot_sole": 0.0143,
+  "heel": 0.0035,
+  "knee_cop": 0.0107,
+  "cuff": 0.0092,
+  "fauld": 0.0426,
+  "fauld_trim": 0.0106,
+  "belt": 0.0093,
+  "collar": 0.0093,
   "collar_trim": 0.0023,
   "gem": 0.0002,
   "gem_setting": 0.0002,
-  "cape_outer": 0.2004,
-  "cape_lining": 0.192
+  "cape_outer": 0.2032,
+  "cape_lining": 0.1952,
+  "skin_shadow": 0.0015,
+  "bodice_shadow": 0.0019,
+  "brow": 0.0,
+  "armor": 0.0266,
+  "armor_trim": 0.0059,
+  "mouth": 0.0002
  },
  "facing": {
   "rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
   "anchor": [
    0.0047,
-   -0.053,
+   -0.0533,
    1.7211
   ],
   "landmark": [
    0.0047,
-   -0.1636,
+   -0.1639,
    1.6908
   ],
   "angle_from_minusY_deg": 0.0
  },
  "tris": {
-  "total": 43026,
-  "main": 40776,
+  "total": 47668,
+  "main": 45418,
   "sword": 1874,
-  "body": 25576,
-  "hair_locks": 4500,
-  "eye.L": 224,
-  "eye.R": 224,
-  "fang.L": 24,
-  "fang.R": 24,
+  "body": 25546,
+  "hair_locks": 5500,
+  "eye.L": 280,
+  "eye.R": 280,
+  "fang.L": 36,
+  "fang.R": 36,
   "toecap.L": 216,
   "sole.L": 120,
   "heel.L": 24,
@@ -256,10 +764,15 @@
   "fauld.7": 164,
   "belt": 320,
   "buckle": 48,
-  "collar": 812,
+  "collar": 1052,
   "gem": 64,
   "gem_setting": 160,
-  "cape": 3116,
+  "breastplate": 608,
+  "pauldron.L": 320,
+  "pauldronlame.L": 140,
+  "pauldron.R": 320,
+  "pauldronlame.R": 140,
+  "cape": 4884,
   "hair_cap": 2612,
   "tassel": 376
  },
@@ -270,18 +783,18 @@
   "bbox": [
    [
     -0.5268,
-    -0.3227,
+    -0.323,
     0.0
    ],
    [
     0.5268,
-    0.3227,
+    0.323,
     1.8481
    ]
   ],
   "height": 1.8481,
   "width_x": 1.0537,
-  "depth_y": 0.6453,
+  "depth_y": 0.646,
   "export_cell_fit_report_only": {
    "scale": 0.97397,
    "height_m": 1.8,
@@ -344,8 +857,8 @@
    }
   ],
   "cape": {
-   "columns": 39,
-   "rows": 20,
+   "columns": 47,
+   "rows": 26,
    "slits": 3,
    "top_z_back": 1.5984,
    "top_z_side": 1.4404,
@@ -372,94 +885,142 @@
   },
   "locks": {
    "lock.front.L.0": {
-    "length": 0.857,
-    "tip_z": 1.094,
+    "length": 0.775,
+    "tip_z": 1.14,
     "q": [
      0.0,
-     0.65
+     0.417
     ],
-    "leaves_head_at_m": 0.259,
-    "min_clear": 0.0
-   },
-   "lock.front.L.1": {
-    "length": 0.94,
-    "tip_z": 1.105,
-    "q": [
-     0.35,
-     1.0
-    ],
-    "leaves_head_at_m": 0.231,
-    "min_clear": 0.0002
-   },
-   "lock.front.R.0": {
-    "length": 0.857,
-    "tip_z": 1.094,
-    "q": [
-     0.0,
-     0.65
-    ],
-    "leaves_head_at_m": 0.259,
-    "min_clear": 0.0
-   },
-   "lock.front.R.1": {
-    "length": 0.948,
-    "tip_z": 1.105,
-    "q": [
-     0.35,
-     1.0
-    ],
-    "leaves_head_at_m": 0.232,
+    "leaves_head_at_m": 0.149,
     "min_clear": 0.0001
    },
+   "lock.front.L.1": {
+    "length": 0.867,
+    "tip_z": 1.04,
+    "q": [
+     0.25,
+     0.75
+    ],
+    "leaves_head_at_m": 0.212,
+    "min_clear": 0.0001
+   },
+   "lock.front.L.2": {
+    "length": 0.804,
+    "tip_z": 1.1,
+    "q": [
+     0.583,
+     1.0
+    ],
+    "leaves_head_at_m": 0.197,
+    "min_clear": 0.0005
+   },
+   "lock.front.R.0": {
+    "length": 0.776,
+    "tip_z": 1.14,
+    "q": [
+     0.0,
+     0.417
+    ],
+    "leaves_head_at_m": 0.149,
+    "min_clear": 0.0001
+   },
+   "lock.front.R.1": {
+    "length": 0.916,
+    "tip_z": 1.04,
+    "q": [
+     0.25,
+     0.75
+    ],
+    "leaves_head_at_m": 0.176,
+    "min_clear": 0.0003
+   },
+   "lock.front.R.2": {
+    "length": 0.809,
+    "tip_z": 1.1,
+    "q": [
+     0.583,
+     1.0
+    ],
+    "leaves_head_at_m": 0.198,
+    "min_clear": 0.0002
+   },
    "lock.back.0": {
-    "length": 0.825,
-    "tip_z": 1.121,
+    "length": 0.824,
+    "tip_z": 1.122,
     "q": [
      0.0,
      0.26
     ],
     "leaves_head_at_m": 0.298,
-    "min_clear": 0.0001
+    "min_clear": 0.0
    },
    "lock.back.1": {
-    "length": 0.908,
+    "length": 0.911,
     "tip_z": 1.024,
     "q": [
      0.14,
      0.46
     ],
-    "leaves_head_at_m": 0.274,
-    "min_clear": 0.0002
+    "leaves_head_at_m": 0.275,
+    "min_clear": 0.0001
    },
    "lock.back.2": {
-    "length": 0.85,
+    "length": 0.853,
     "tip_z": 1.063,
     "q": [
      0.34,
      0.66
     ],
-    "leaves_head_at_m": 0.257,
-    "min_clear": 0.0
+    "leaves_head_at_m": 0.258,
+    "min_clear": 0.0001
    },
    "lock.back.3": {
-    "length": 0.85,
+    "length": 0.842,
     "tip_z": 1.089,
     "q": [
      0.54,
      0.86
     ],
-    "leaves_head_at_m": 0.257,
-    "min_clear": 0.0
+    "leaves_head_at_m": 0.254,
+    "min_clear": 0.0001
    },
    "lock.back.4": {
-    "length": 0.912,
+    "length": 0.914,
     "tip_z": 1.036,
     "q": [
      0.74,
      1.0
     ],
-    "leaves_head_at_m": 0.275,
+    "leaves_head_at_m": 0.276,
     "min_clear": 0.0001
+   }
+  },
+  "armor": {
+   "breastplate": {
+    "top_z_centre": 1.5284,
+    "bottom_z": 1.3572,
+    "half_angle_deg": 62.0,
+    "min_clear_to_skin_m": 0.0023
+   },
+   "pauldrons": {
+    "L": {
+     "cap_apex": [
+      0.2088,
+      -0.0285,
+      1.5264
+     ],
+     "cap_rim_max_offset_m": 0.0069,
+     "cap_apex_offset_m": 0.0199
+    },
+    "R": {
+     "cap_apex": [
+      -0.2088,
+      -0.0285,
+      1.5264
+     ],
+     "cap_rim_max_offset_m": 0.0069,
+     "cap_apex_offset_m": 0.0199
+    }
    }
   }
  },
@@ -468,87 +1029,69 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 3.6
+   "seconds": 2.5
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 3.1
+   "seconds": 2.5
   },
   "cage_extrusion": 0.012,
   "cage_rule": "12 mm: > 3 x the measured low-skin -> subdivided-high distance (p99 / max below) so every low texel finds its high surface",
   "low_to_high_skin_m": {
    "p99": 0.0021,
-   "max": 0.00564
+   "max": 0.00562
   },
   "resolution": {
    "normal": 2048,
    "ao": 1024
   },
-  "high_tris": 124474,
+  "high_tris": 129146,
   "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
-  "normal_baked_texels_pct": 87.89,
-  "normal_detail_fraction_dev_gt_0.05": 0.7143,
-  "ao_baked_texels_pct": 98.54,
-  "ao_mean": 0.4592,
+  "normal_baked_texels_pct": 85.99,
+  "normal_detail_fraction_dev_gt_0.05": 0.73,
+  "ao_baked_texels_pct": 99.26,
+  "ao_mean": 0.4543,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "89f39e3e1bb57352",
-   "ao": "7b294e0580d2399d"
+   "normal": "452057ce7e4f3ddf",
+   "ao": "fe390f8db359b8f6"
   },
-  "seconds": 9.1
+  "seconds": 6.9,
+  "ao_lift": {
+   "floors": {
+    "default": 0.4,
+    "skin": 0.62,
+    "hair": 0.82
+   },
+   "regions": {
+    "skin": [
+     "skin",
+     "skin_shadow",
+     "lips",
+     "brow"
+    ],
+    "hair": [
+     "hair",
+     "hair_shade",
+     "hair_part"
+    ]
+   },
+   "raw_p05": 0.0,
+   "lifted_p05": 0.4,
+   "lifted_mean": 0.7504
+  }
  },
- "cel": {
-  "bands": [
-   [
-    0.55,
-    1.0
-   ],
-   [
-    0.25,
-    0.82
-   ],
-   [
-    -1.0,
-    0.64
-   ]
-  ],
-  "face_ao_quantiles": {
-   "5": 0.0,
-   "10": 0.005,
-   "25": 0.095,
-   "50": 0.515,
-   "75": 0.787,
-   "90": 0.917
-  },
-  "band_area_share": {
-   "1.0": 0.429,
-   "0.82": 0.263,
-   "0.64": 0.308
-  },
-  "band_face_share": {
-   "1.0": 0.474,
-   "0.82": 0.16,
-   "0.64": 0.366
-  },
-  "material": {
-   "roughness": 1.0,
-   "specular_ior_level": 0.0,
-   "normal_map": "unwired",
-   "ao_multiply": "unwired (collapsed into the bands)"
-  },
+ "material": {
+  "base_color": "Col x AO bake (multiply)",
+  "normal": "baked normal map",
   "jitter": false,
-  "smooth_passes": 4,
-  "raw_face_ao_quantiles": {
-   "10": 0.0,
-   "25": 0.023,
-   "50": 0.516,
-   "75": 0.833
-  },
-  "rule": "per-face AO = the mean of the AO bake at the face's UV corners, smoothed over the surface (area-weighted to vertices, CEL_SMOOTH neighbour passes, back to faces); band = the first (threshold, multiplier) the face AO reaches; the multiplier rides region_shade into Col. Thresholds: 0.55 ~ the face-AO median (lit = the open half of the surface), 0.25 ~ the lower quartile (shadow = the occluded quarter: under the collar / fauld / cape, cavities)"
+  "roughness": 0.62,
+  "cel_bands": "none (v2 treatment undone)",
+  "outline_shells": "none (v2 treatment undone)"
  },
- "digest_geometry_colour_uv": "ad9722649e098889",
+ "digest_geometry_colour_uv": "fc57ff2dcbe5dd6c",
  "palette": {
   "default": {
    "skin": {
@@ -558,11 +1101,25 @@
      218
     ]
    },
+   "skin_shadow": {
+    "rgb": [
+     196,
+     184,
+     194
+    ]
+   },
    "lips": {
     "rgb": [
-     96,
-     22,
-     36
+     170,
+     62,
+     80
+    ]
+   },
+   "mouth": {
+    "rgb": [
+     70,
+     24,
+     34
     ]
    },
    "liner": {
@@ -570,6 +1127,13 @@
      44,
      20,
      28
+    ]
+   },
+   "brow": {
+    "rgb": [
+     78,
+     60,
+     66
     ]
    },
    "eye_sclera": {
@@ -634,11 +1198,32 @@
      33
     ]
    },
+   "bodice_shadow": {
+    "rgb": [
+     14,
+     13,
+     16
+    ]
+   },
    "trim": {
     "rgb": [
      186,
      188,
      196
+    ]
+   },
+   "armor": {
+    "rgb": [
+     38,
+     37,
+     43
+    ]
+   },
+   "armor_trim": {
+    "rgb": [
+     190,
+     192,
+     200
     ]
    },
    "gloves": {
@@ -799,13 +1384,6 @@
      120,
      14,
      24
-    ]
-   },
-   "outline": {
-    "rgb": [
-     20,
-     12,
-     16
     ]
    }
   },

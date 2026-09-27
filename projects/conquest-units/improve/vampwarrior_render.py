@@ -41,6 +41,19 @@ if "--no-outline" in argv:
     print("HIDDEN", VT.hide_outlines(bpy))
 if "--toon" in argv:
     print("TOON", VT.toon_preview(bpy))
+if "--palette-override" in argv:
+    # in-memory repaint with some regions overridden: "name=r,g,b[:emission_scale];name=..." (debug tints, alternatives)
+    import palettes as PAL  # noqa: E402  (read-only use)
+    for o in scene.objects:
+        if o.type == "MESH" and "region_id" in o.data.attributes:
+            pal = PAL.load(o.get("conquest_unit", "vampwarrior"), o.data.get("conquest_skin", "default"))
+            for item in argv[argv.index("--palette-override") + 1].split(";"):
+                nm, val = item.split("=")
+                rgb, _, esc = val.partition(":")
+                pal["regions"][nm] = dict(pal["regions"][nm], rgb=[int(x) for x in rgb.split(",")])
+                if esc:
+                    pal["regions"][nm]["emission_scale"] = float(esc)
+            print("OVERRIDE", o.name, PAL.paint(o.data, pal) is not None)
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
@@ -111,7 +124,9 @@ table = {"front": (0.0, 5.0, 1.0), "threequarter": (35.0, 12.0, 1.0), "tactical"
          "back_threequarter": (145.0, 10.0, 1.0)}
 close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": (0.0, 2.0, 0.62), "sword": (20.0, 6.0, 1.0),
          "hem": (150.0, 10.0, 1.0), "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0),
-         "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0)}
+         "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0), "head_front": (0.0, 4.0, 1.0),
+         "portrait": (0.0, 3.0, 0.62), "portrait_tq": (32.0, 6.0, 0.66), "portrait_low": (12.0, -14.0, 0.66),
+         "eyes": (0.0, 1.0, 1.0), "torso_front": (0.0, 4.0, 1.0)}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"

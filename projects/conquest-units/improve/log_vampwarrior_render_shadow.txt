@@ -1,0 +1,14 @@
+00:01.766  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\vampwarrior.blend"
+00:05.109  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait.png'
+00:05.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait_tq.png'
+00:06.594  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait_low.png'
+00:07.094  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_eyes.png'
+00:07.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_torso_front.png'
+OVERRIDE vampwarrior True
+OVERRIDE vampwarrior_sword True
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_portrait_low.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_eyes.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\vampwarrior\vampwarrior_v3shadow_torso_front.png
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

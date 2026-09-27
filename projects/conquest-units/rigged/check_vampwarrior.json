@@ -4,10 +4,10 @@
   {
    "check": "cell_fit",
    "pass": false,
-   "footprint": 1.0634,
-   "height": 1.8566,
-   "width": 1.0634,
-   "depth": 0.6562,
+   "footprint": 1.0537,
+   "height": 1.8481,
+   "width": 1.0537,
+   "depth": 0.646,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -16,8 +16,8 @@
    "pass": true,
    "min_z": -0.0,
    "centre_xy": [
-    -0.00027,
-    0.00156
+    0.0,
+    0.0
    ],
    "transforms_applied": true
   },
@@ -32,7 +32,7 @@
   {
    "check": "tri_budget",
    "pass": true,
-   "tris": 49397,
+   "tris": 47668,
    "budget": [
     30000,
     50000
@@ -43,19 +43,19 @@
   {
    "check": "uv_health",
    "pass": true,
-   "zero_area_faces": 5,
-   "zero_area_pct": 0.012,
+   "zero_area_faces": 0,
+   "zero_area_pct": 0.0,
    "flipped": 0,
    "meshes": [
     {
      "mesh": "vampwarrior",
      "layers": 1,
-     "islands": 1416,
+     "islands": 1605,
      "flipped": 0,
      "overlap": false,
-     "overlap_note": "summed UV area is 30% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4242,
-     "area_distortion_p95": 1.138
+     "overlap_note": "summed UV area is 31% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
+     "coverage": 0.3794,
+     "area_distortion_p95": 1.123
     },
     {
      "mesh": "vampwarrior_sword",
@@ -64,28 +64,8 @@
      "flipped": 0,
      "overlap": false,
      "overlap_note": "summed UV area is 17% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.2489,
+     "coverage": 0.2488,
      "area_distortion_p95": 1.031
-    },
-    {
-     "mesh": "vampwarrior_outline",
-     "layers": 1,
-     "islands": 769,
-     "flipped": 0,
-     "overlap": false,
-     "overlap_note": "summed UV area is 34% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4855,
-     "area_distortion_p95": 1.142
-    },
-    {
-     "mesh": "vampwarrior_sword_outline",
-     "layers": 1,
-     "islands": 42,
-     "flipped": 0,
-     "overlap": false,
-     "overlap_note": "summed UV area is 24% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.2935,
-     "area_distortion_p95": 1.069
     }
    ]
   },
@@ -93,7 +73,7 @@
    "check": "flat_shaded",
    "pass": true,
    "smooth_faces": 0,
-   "faces": 41978
+   "faces": 37969
   },
   {
    "check": "colour",
@@ -144,7 +124,7 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.0046,
+      "footprint": 1.0705,
       "height": 1.818,
       "min_z": -0.0
      }
@@ -159,7 +139,7 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.2966,
+      "footprint": 1.3091,
       "height": 1.8314,
       "min_z": -0.0
      }
