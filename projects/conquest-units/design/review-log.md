@@ -1110,3 +1110,20 @@ boundaries). Likely work: smoother per-lock surfaces (more segments
 along each lock's sweep / less cut noise), continuous uninterrupted
 S-curves root to tip, cleaner lock-boundary edges, fewer random breaks;
 the figure refs are the quality bar. Dispatch after the v6 mouth lane.
+
+## 2026-09-29 — Wren v6.1 mouth feedback (artist verbatim, archer figure)
+
+"I think we need to add back some lip dimension and match this closer
+there is a lip coming out the bottom lip just a very simple design
+compared to what we previously had
+
+also seems lips are slightly less colored than the base color"
+
+Binding reading (target = the archer figure closeup, fe-archer-figure-
+hair.webp, mouth region): (1) add back a SIMPLE lower-lip form - one
+soft gentle bump under the mouth line that catches light (a single
+smooth volume, nothing like the old realistic paired lips; the upper
+stays flat). (2) the lip zone tints slightly LIGHTER/less colored than
+the base skin (a subtle pale tint, not a lipstick tone). Bounded
+follow-up to the v6 mouth lane; dispatch after the v7 hair lane frees
+the files.
