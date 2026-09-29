@@ -958,3 +958,22 @@ lip and the mouth reads too PINCHED - reshape so the lips pair naturally
 and the compression stops pinching. (4) general face SMOOTHING (facet/
 retopo density or targeted smoothing on the face). Everything below the
 neck is approved for now.
+
+## 2026-09-29 — Wren v3 feedback (artist verbatim): fire emblem style
+
+"lets keep iterating on the face this is an improvement but the style we
+are going for is more fire emblem/anime style, so the eyes still bigger,
+and what are best practices and techniques on hair to improve it"
+
+Binding reading + the agreed technique stack (orchestrator answered in
+chat): TARGET STYLE = Fire Emblem / anime game read.
+- EYES: bigger beyond the exhausted dial -> GEOMETRIC enlargement
+  (socket + eyeball scaled together) + the anime eye TREATMENT: large
+  iris covering most of the opening, thick dark upper-lash line,
+  highlight dot region.
+- HAIR, per the best-practice stack: fewer/bolder shell CLUMPS with
+  varied widths and S-curve rhythm (2-3 size tiers), flow from a crown
+  whorl, dark inner cap under the clumps, SMOOTH-PROXY NORMAL BAKE into
+  the hair UV strip (the anime one-volume shading trick, done inside the
+  flat-shaded contract like the v2 face), painted shading tiers (darker
+  roots/underside, angel-ring band highlight) as palette regions.
