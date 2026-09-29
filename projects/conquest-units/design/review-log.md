@@ -977,3 +977,34 @@ chat): TARGET STYLE = Fire Emblem / anime game read.
   the hair UV strip (the anime one-volume shading trick, done inside the
   flat-shaded contract like the v2 face), painted shading tiers (darker
   roots/underside, angel-ring band highlight) as palette regions.
+
+## 2026-09-29 — Wren v4 feedback (artist verbatim)
+
+"the eye socket is perfect now, whats wrong is the eyeball is too big --
+shrink down the iris to fit the eye socket
+and we need to get rid of the eye bags and the effect the eyes smoothing
+had on the nose and side
+
+let simplify lips and make them less realistic more standard anime smirk
+lines, so thinner lips less noticeable, like we were doing 2d
+
+the hair needs work, do we need shading between layers of hair so it
+doesnt look like a dome with lines going through it, also give the hair a
+side part rather than just straight down the middle, research hair
+technicques for anime style otherwise follow best practices for it"
+
+Binding reading:
+- EYES: the x1.30 SOCKET is approved-perfect; the EYEBALL/IRIS is too big
+  inside it - shrink the iris (and eyeball if needed) to fit the socket
+  proportionally (more visible white, smaller iris disc). Eye bags
+  REMOVED entirely (not dialed - gone). The orbit-blend distortion on the
+  NOSE and the SIDE of the face gets cleaned up (the scale blend leaked).
+- MOUTH: simplify to 2D-anime - thin, barely-there lips; the mouth reads
+  as a drawn smirk LINE, not modelled lip volume (drop the paired-volume
+  realism; keep the seal).
+- HAIR: (1) SHADING BETWEEN LAYERS - painted occlusion/shadow bands where
+  clumps overlap (the drawn crevice shadow under each overhanging clump,
+  on top of the proxy-normal volume) so it stops reading as a dome with
+  lines; (2) SIDE PART instead of the centre part (re-flow the whorl +
+  fringe accordingly); (3) follow anime-hair best practices throughout
+  (silhouette tips breaking the outline, tier rhythm).
