@@ -1,0 +1,2513 @@
+{
+ "unit": "wren",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.blend",
+ "fps": 24,
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 3.3306690738754696e-16,
+  "seconds": 0.5,
+  "pitchfork_object": "every pitchfork vertex 1.0 on 'pitchfork' (child of hand_r)",
+  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each"
+ },
+ "follow_through": {
+  "params": {
+   "hair_fringe": {
+    "driver": "head",
+    "hz": 3.4,
+    "zeta": 0.42,
+    "drag": 0.9,
+    "gain": 1.0
+   },
+   "hair_side": {
+    "driver": "head",
+    "hz": 3.2,
+    "zeta": 0.45,
+    "drag": 0.8,
+    "gain": 0.8
+   },
+   "hair_tail": {
+    "driver": "head",
+    "hz": 2.6,
+    "zeta": 0.4,
+    "drag": 1.2,
+    "gain": 1.0
+   },
+   "tie": {
+    "driver": "pelvis",
+    "hz": 2.4,
+    "zeta": 0.35,
+    "drag": 1.4,
+    "gain": 1.0
+   },
+   "cape": {
+    "driver": "spine_03",
+    "hz": 2.3,
+    "zeta": 0.6,
+    "drag": 1.1,
+    "gain": 1.0,
+    "axes": [
+     1.0,
+     0.3,
+     0.3
+    ]
+   }
+  },
+  "into_body_limit_deg": 1.5,
+  "drift_k": 0.6,
+  "per_clip": {
+   "idle": {
+    "cape.0": {
+     "tip_lag_frames": 8,
+     "axis": "x",
+     "driver_ptp_deg": 4.66,
+     "tip_follow_through_ptp_deg": 2.33
+    },
+    "cape.1": {
+     "tip_lag_frames": 8,
+     "axis": "x",
+     "driver_ptp_deg": 4.63,
+     "tip_follow_through_ptp_deg": 2.33
+    },
+    "cape.2": {
+     "tip_lag_frames": 8,
+     "axis": "x",
+     "driver_ptp_deg": 4.6,
+     "tip_follow_through_ptp_deg": 2.33
+    },
+    "cape.3": {
+     "tip_lag_frames": 8,
+     "axis": "x",
+     "driver_ptp_deg": 4.64,
+     "tip_follow_through_ptp_deg": 2.33
+    },
+    "cape.4": {
+     "tip_lag_frames": 8,
+     "axis": "x",
+     "driver_ptp_deg": 4.66,
+     "tip_follow_through_ptp_deg": 2.33
+    },
+    "hair_fringe": {
+     "tip_lag_frames": 3,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.31
+    },
+    "hair_side.L": {
+     "tip_lag_frames": 3,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.19
+    },
+    "hair_side.R": {
+     "tip_lag_frames": 3,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.19
+    },
+    "hair_tail": {
+     "tip_lag_frames": 4,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.64
+    },
+    "tie": {
+     "tip_lag_frames": 3,
+     "axis": "y",
+     "driver_ptp_deg": 0.68,
+     "tip_follow_through_ptp_deg": 1.55
+    }
+   },
+   "walk": {
+    "cape.0": {
+     "tip_lag_frames": 9,
+     "axis": "z",
+     "driver_ptp_deg": 12.72,
+     "tip_follow_through_ptp_deg": 7.02
+    },
+    "cape.1": {
+     "tip_lag_frames": 9,
+     "axis": "z",
+     "driver_ptp_deg": 12.72,
+     "tip_follow_through_ptp_deg": 7.02
+    },
+    "cape.2": {
+     "tip_lag_frames": 9,
+     "axis": "z",
+     "driver_ptp_deg": 12.72,
+     "tip_follow_through_ptp_deg": 7.02
+    },
+    "cape.3": {
+     "tip_lag_frames": 9,
+     "axis": "z",
+     "driver_ptp_deg": 12.72,
+     "tip_follow_through_ptp_deg": 7.02
+    },
+    "cape.4": {
+     "tip_lag_frames": 9,
+     "axis": "z",
+     "driver_ptp_deg": 12.72,
+     "tip_follow_through_ptp_deg": 7.02
+    },
+    "hair_fringe": {
+     "tip_lag_frames": 4,
+     "axis": "x",
+     "driver_ptp_deg": 8.81,
+     "tip_follow_through_ptp_deg": 7.67
+    },
+    "hair_side.L": {
+     "tip_lag_frames": 4,
+     "axis": "x",
+     "driver_ptp_deg": 8.96,
+     "tip_follow_through_ptp_deg": 6.3
+    },
+    "hair_side.R": {
+     "tip_lag_frames": 4,
+     "axis": "x",
+     "driver_ptp_deg": 8.94,
+     "tip_follow_through_ptp_deg": 6.3
+    },
+    "hair_tail": {
+     "tip_lag_frames": 5,
+     "axis": "x",
+     "driver_ptp_deg": 12.18,
+     "tip_follow_through_ptp_deg": 15.62
+    },
+    "tie": {
+     "tip_lag_frames": 3,
+     "axis": "y",
+     "driver_ptp_deg": 12.79,
+     "tip_follow_through_ptp_deg": 14.29
+    }
+   }
+  },
+  "seconds": 0.2
+ },
+ "clips": {
+  "idle": {
+   "frames": [
+    1,
+    97
+   ],
+   "period_frames": 96,
+   "seconds": 4.0,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_fork_mm": 0.0,
+   "min_z_main": -0.0,
+   "min_z_fork": 3e-05,
+   "fork_butt_z_range": [
+    0.002,
+    0.0022
+   ],
+   "root_offset_max": 0.0,
+   "grip_relation_max_dev": 3.6e-07,
+   "right_wrist_bend_max_deg": 44.21,
+   "ik_unreachable_max_m": {
+    "L": 0.0,
+    "R": 0.0,
+    "arm_R": 0.0,
+    "wrist_R": 0.0
+   },
+   "gates": {
+    "cloak_crossings_left_arm": 0,
+    "cloak_crossings_right_arm": 0,
+    "cloak_crossings_legs": 0,
+    "cloak_crossings_torso_outfit": 0,
+    "fork_shaft_through_cloak": 0,
+    "fork_shaft_through_body": 0,
+    "fork_to_cloak_min_m": 0.0437,
+    "fork_to_legs_min_m": 0.1918,
+    "cloak_to_legs_min_m": 0.0695
+   },
+   "feet_planted": {
+    "L": {
+     "ball_contact_xy_drift": 0.0,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "heel_z_range": [
+      -0.0,
+      0.0
+     ]
+    },
+    "R": {
+     "ball_contact_xy_drift": 0.0,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "heel_z_range": [
+      -0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "walk": {
+   "frames": [
+    1,
+    27
+   ],
+   "period_frames": 26,
+   "seconds": 1.0833,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_fork_mm": 0.0,
+   "min_z_main": -0.0,
+   "min_z_fork": 0.08921,
+   "fork_butt_z_range": [
+    0.0909,
+    0.155
+   ],
+   "root_offset_max": 0.0,
+   "grip_relation_max_dev": 3e-07,
+   "right_wrist_bend_max_deg": 47.66,
+   "ik_unreachable_max_m": {
+    "L": 0.0,
+    "R": 0.0,
+    "arm_R": 0.0,
+    "wrist_R": 0.0,
+    "pelvis_dz": 0.05292
+   },
+   "gates": {
+    "cloak_crossings_left_arm": 0,
+    "cloak_crossings_right_arm": 0,
+    "cloak_crossings_legs": 0,
+    "cloak_crossings_torso_outfit": 0,
+    "fork_shaft_through_cloak": 0,
+    "fork_shaft_through_body": 0,
+    "fork_to_cloak_min_m": 0.0436,
+    "fork_to_legs_min_m": 0.0806,
+    "cloak_to_legs_min_m": 0.1086
+   },
+   "gait": {
+    "L": {
+     "flat_stance_frames": 12,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "heel_z_range": [
+      -0.0,
+      0.0
+     ],
+     "lateral_x_drift": 0.0,
+     "slip_vs_ground_m": 0.0,
+     "swing_contact_z_max": 0.0792
+    },
+    "R": {
+     "flat_stance_frames": 12,
+     "ball_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "heel_z_range": [
+      -0.0,
+      0.0
+     ],
+     "lateral_x_drift": 0.0,
+     "slip_vs_ground_m": 0.0,
+     "swing_contact_z_max": 0.0792
+    }
+   },
+   "cadence_steps_per_min": 110.77,
+   "stance_travel_m": 0.47,
+   "step_length_m": 0.4052,
+   "stride_length_m": 0.8103,
+   "ground_speed_m_per_s": 0.748,
+   "ground_speed_body_heights_per_s": 0.4395,
+   "stance_fraction": 0.58,
+   "foot_lift_m": 0.08,
+   "toe_off_roll_deg": 24.0,
+   "heel_strike_toes_up_deg": 9.0,
+   "bounce_m": 0.014,
+   "rule": "zero-slip: in flat stance (before toe-off) the ball-contact sole vertex moves back at exactly the ground speed (slip = max deviation from that line), with no lift and no lateral drift"
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.2,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    0.0174,
+    -0.0013,
+    0.9235
+   ],
+   "tail": [
+    0.0174,
+    0.0287,
+    1.0072
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0174,
+    0.0287,
+    1.0072
+   ],
+   "tail": [
+    0.0174,
+    0.0203,
+    1.0667
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "deform": true,
+   "head": [
+    0.0174,
+    0.0203,
+    1.0667
+   ],
+   "tail": [
+    0.0174,
+    0.025,
+    1.1224
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "deform": true,
+   "head": [
+    0.0174,
+    0.025,
+    1.1224
+   ],
+   "tail": [
+    0.0174,
+    0.0577,
+    1.2602
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0392,
+    -0.0214,
+    1.3761
+   ],
+   "tail": [
+    0.2032,
+    -0.0126,
+    1.3408
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": "clavicle_l",
+   "deform": true,
+   "head": [
+    0.2032,
+    -0.0126,
+    1.3408
+   ],
+   "tail": [
+    0.281,
+    -0.0124,
+    1.1247
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": "upperarm_l",
+   "deform": true,
+   "head": [
+    0.281,
+    -0.0124,
+    1.1247
+   ],
+   "tail": [
+    0.361,
+    -0.0989,
+    0.9219
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "lowerarm_l",
+   "deform": true,
+   "head": [
+    0.361,
+    -0.0989,
+    0.9219
+   ],
+   "tail": [
+    0.3691,
+    -0.1164,
+    0.8956
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3827,
+    -0.1672,
+    0.8452
+   ],
+   "tail": [
+    0.3825,
+    -0.1814,
+    0.8238
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": "index_01_l",
+   "deform": true,
+   "head": [
+    0.3825,
+    -0.1814,
+    0.8238
+   ],
+   "tail": [
+    0.378,
+    -0.1924,
+    0.8041
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": "index_02_l",
+   "deform": true,
+   "head": [
+    0.378,
+    -0.1924,
+    0.8041
+   ],
+   "tail": [
+    0.3687,
+    -0.2038,
+    0.7825
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3902,
+    -0.1439,
+    0.8363
+   ],
+   "tail": [
+    0.3892,
+    -0.154,
+    0.8043
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": "middle_01_l",
+   "deform": true,
+   "head": [
+    0.3892,
+    -0.154,
+    0.8043
+   ],
+   "tail": [
+    0.3846,
+    -0.163,
+    0.7793
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": "middle_02_l",
+   "deform": true,
+   "head": [
+    0.3846,
+    -0.163,
+    0.7793
+   ],
+   "tail": [
+    0.3773,
+    -0.1707,
+    0.7551
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3859,
+    -0.1037,
+    0.8318
+   ],
+   "tail": [
+    0.3846,
+    -0.1042,
+    0.8109
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": "pinky_01_l",
+   "deform": true,
+   "head": [
+    0.3846,
+    -0.1042,
+    0.8109
+   ],
+   "tail": [
+    0.381,
+    -0.1051,
+    0.796
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": "pinky_02_l",
+   "deform": true,
+   "head": [
+    0.381,
+    -0.1051,
+    0.796
+   ],
+   "tail": [
+    0.3764,
+    -0.1059,
+    0.777
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3913,
+    -0.1241,
+    0.8333
+   ],
+   "tail": [
+    0.3913,
+    -0.1281,
+    0.804
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": "ring_01_l",
+   "deform": true,
+   "head": [
+    0.3913,
+    -0.1281,
+    0.804
+   ],
+   "tail": [
+    0.3883,
+    -0.133,
+    0.7803
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": "ring_02_l",
+   "deform": true,
+   "head": [
+    0.3883,
+    -0.133,
+    0.7803
+   ],
+   "tail": [
+    0.3819,
+    -0.1362,
+    0.7551
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3666,
+    -0.1373,
+    0.8997
+   ],
+   "tail": [
+    0.3467,
+    -0.1596,
+    0.8924
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": "thumb_01_l",
+   "deform": true,
+   "head": [
+    0.3467,
+    -0.1596,
+    0.8924
+   ],
+   "tail": [
+    0.3344,
+    -0.1882,
+    0.8743
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": "thumb_02_l",
+   "deform": true,
+   "head": [
+    0.3344,
+    -0.1882,
+    0.8743
+   ],
+   "tail": [
+    0.3255,
+    -0.2039,
+    0.8538
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0043,
+    -0.0214,
+    1.3761
+   ],
+   "tail": [
+    -0.1683,
+    -0.0126,
+    1.3408
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": "clavicle_r",
+   "deform": true,
+   "head": [
+    -0.1683,
+    -0.0126,
+    1.3408
+   ],
+   "tail": [
+    -0.2461,
+    -0.0124,
+    1.1247
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": "upperarm_r",
+   "deform": true,
+   "head": [
+    -0.2461,
+    -0.0124,
+    1.1247
+   ],
+   "tail": [
+    -0.3261,
+    -0.0989,
+    0.9219
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "lowerarm_r",
+   "deform": true,
+   "head": [
+    -0.3261,
+    -0.0989,
+    0.9219
+   ],
+   "tail": [
+    -0.3343,
+    -0.1164,
+    0.8956
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3479,
+    -0.1672,
+    0.8452
+   ],
+   "tail": [
+    -0.3477,
+    -0.1814,
+    0.8238
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": "index_01_r",
+   "deform": true,
+   "head": [
+    -0.3477,
+    -0.1814,
+    0.8238
+   ],
+   "tail": [
+    -0.3431,
+    -0.1924,
+    0.8041
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": "index_02_r",
+   "deform": true,
+   "head": [
+    -0.3431,
+    -0.1924,
+    0.8041
+   ],
+   "tail": [
+    -0.3338,
+    -0.2038,
+    0.7825
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3554,
+    -0.1439,
+    0.8363
+   ],
+   "tail": [
+    -0.3543,
+    -0.154,
+    0.8043
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": "middle_01_r",
+   "deform": true,
+   "head": [
+    -0.3543,
+    -0.154,
+    0.8043
+   ],
+   "tail": [
+    -0.3498,
+    -0.163,
+    0.7793
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": "middle_02_r",
+   "deform": true,
+   "head": [
+    -0.3498,
+    -0.163,
+    0.7793
+   ],
+   "tail": [
+    -0.3424,
+    -0.1707,
+    0.7551
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.351,
+    -0.1037,
+    0.8318
+   ],
+   "tail": [
+    -0.3498,
+    -0.1042,
+    0.8109
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": "pinky_01_r",
+   "deform": true,
+   "head": [
+    -0.3498,
+    -0.1042,
+    0.8109
+   ],
+   "tail": [
+    -0.3462,
+    -0.1051,
+    0.796
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": "pinky_02_r",
+   "deform": true,
+   "head": [
+    -0.3462,
+    -0.1051,
+    0.796
+   ],
+   "tail": [
+    -0.3415,
+    -0.1059,
+    0.777
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3564,
+    -0.1241,
+    0.8333
+   ],
+   "tail": [
+    -0.3564,
+    -0.1281,
+    0.804
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": "ring_01_r",
+   "deform": true,
+   "head": [
+    -0.3564,
+    -0.1281,
+    0.804
+   ],
+   "tail": [
+    -0.3534,
+    -0.133,
+    0.7803
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": "ring_02_r",
+   "deform": true,
+   "head": [
+    -0.3534,
+    -0.133,
+    0.7803
+   ],
+   "tail": [
+    -0.347,
+    -0.1362,
+    0.7551
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3318,
+    -0.1373,
+    0.8997
+   ],
+   "tail": [
+    -0.3118,
+    -0.1596,
+    0.8924
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": "thumb_01_r",
+   "deform": true,
+   "head": [
+    -0.3118,
+    -0.1596,
+    0.8924
+   ],
+   "tail": [
+    -0.2996,
+    -0.1882,
+    0.8743
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": "thumb_02_r",
+   "deform": true,
+   "head": [
+    -0.2996,
+    -0.1882,
+    0.8743
+   ],
+   "tail": [
+    -0.2907,
+    -0.2039,
+    0.8538
+   ]
+  },
+  {
+   "name": "pitchfork",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4226,
+    -0.0154,
+    1.1136
+   ],
+   "tail": [
+    -0.4226,
+    -0.0154,
+    1.4136
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0174,
+    -0.008,
+    1.4429
+   ],
+   "tail": [
+    0.0174,
+    -0.0472,
+    1.532
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck_01",
+   "deform": true,
+   "head": [
+    0.0174,
+    -0.0472,
+    1.532
+   ],
+   "tail": [
+    0.0174,
+    -0.0474,
+    1.693
+   ]
+  },
+  {
+   "name": "hair_fringe.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.018,
+    -0.1472,
+    1.6431
+   ],
+   "tail": [
+    0.0184,
+    -0.1491,
+    1.6275
+   ]
+  },
+  {
+   "name": "hair_fringe.1",
+   "parent": "hair_fringe.0",
+   "deform": true,
+   "head": [
+    0.0184,
+    -0.1491,
+    1.6275
+   ],
+   "tail": [
+    0.0185,
+    -0.1508,
+    1.612
+   ]
+  },
+  {
+   "name": "hair_fringe.2",
+   "parent": "hair_fringe.1",
+   "deform": true,
+   "head": [
+    0.0185,
+    -0.1508,
+    1.612
+   ],
+   "tail": [
+    0.0184,
+    -0.1518,
+    1.5963
+   ]
+  },
+  {
+   "name": "hair_side.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.1145,
+    -0.0404,
+    1.6088
+   ],
+   "tail": [
+    0.1203,
+    -0.0372,
+    1.5957
+   ]
+  },
+  {
+   "name": "hair_side.L.1",
+   "parent": "hair_side.L.0",
+   "deform": true,
+   "head": [
+    0.1203,
+    -0.0372,
+    1.5957
+   ],
+   "tail": [
+    0.1264,
+    -0.0349,
+    1.5827
+   ]
+  },
+  {
+   "name": "hair_side.L.2",
+   "parent": "hair_side.L.1",
+   "deform": true,
+   "head": [
+    0.1264,
+    -0.0349,
+    1.5827
+   ],
+   "tail": [
+    0.1329,
+    -0.0325,
+    1.5699
+   ]
+  },
+  {
+   "name": "hair_side.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0801,
+    -0.0407,
+    1.6078
+   ],
+   "tail": [
+    -0.0863,
+    -0.0378,
+    1.5946
+   ]
+  },
+  {
+   "name": "hair_side.R.1",
+   "parent": "hair_side.R.0",
+   "deform": true,
+   "head": [
+    -0.0863,
+    -0.0378,
+    1.5946
+   ],
+   "tail": [
+    -0.0927,
+    -0.0347,
+    1.5815
+   ]
+  },
+  {
+   "name": "hair_side.R.2",
+   "parent": "hair_side.R.1",
+   "deform": true,
+   "head": [
+    -0.0927,
+    -0.0347,
+    1.5815
+   ],
+   "tail": [
+    -0.1002,
+    -0.0327,
+    1.5688
+   ]
+  },
+  {
+   "name": "hair_tail.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0179,
+    0.0267,
+    1.5217
+   ],
+   "tail": [
+    0.0174,
+    0.0317,
+    1.5025
+   ]
+  },
+  {
+   "name": "hair_tail.1",
+   "parent": "hair_tail.0",
+   "deform": true,
+   "head": [
+    0.0174,
+    0.0317,
+    1.5025
+   ],
+   "tail": [
+    0.0174,
+    0.0362,
+    1.4831
+   ]
+  },
+  {
+   "name": "hair_tail.2",
+   "parent": "hair_tail.1",
+   "deform": true,
+   "head": [
+    0.0174,
+    0.0362,
+    1.4831
+   ],
+   "tail": [
+    0.0174,
+    0.0394,
+    1.4634
+   ]
+  },
+  {
+   "name": "cape.0.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.1638,
+    -0.0618,
+    1.3928
+   ],
+   "tail": [
+    -0.2351,
+    0.0367,
+    1.226
+   ]
+  },
+  {
+   "name": "cape.0.1",
+   "parent": "cape.0.0",
+   "deform": true,
+   "head": [
+    -0.2351,
+    0.0367,
+    1.226
+   ],
+   "tail": [
+    -0.2242,
+    0.0542,
+    0.989
+   ]
+  },
+  {
+   "name": "cape.0.2",
+   "parent": "cape.0.1",
+   "deform": true,
+   "head": [
+    -0.2242,
+    0.0542,
+    0.989
+   ],
+   "tail": [
+    -0.2554,
+    0.0573,
+    0.7425
+   ]
+  },
+  {
+   "name": "cape.0.3",
+   "parent": "cape.0.2",
+   "deform": true,
+   "head": [
+    -0.2554,
+    0.0573,
+    0.7425
+   ],
+   "tail": [
+    -0.3039,
+    0.0631,
+    0.4996
+   ]
+  },
+  {
+   "name": "cape.1.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0563,
+    0.06,
+    1.4149
+   ],
+   "tail": [
+    -0.0613,
+    0.1071,
+    1.1951
+   ]
+  },
+  {
+   "name": "cape.1.1",
+   "parent": "cape.1.0",
+   "deform": true,
+   "head": [
+    -0.0613,
+    0.1071,
+    1.1951
+   ],
+   "tail": [
+    -0.0927,
+    0.1498,
+    0.9723
+   ]
+  },
+  {
+   "name": "cape.1.2",
+   "parent": "cape.1.1",
+   "deform": true,
+   "head": [
+    -0.0927,
+    0.1498,
+    0.9723
+   ],
+   "tail": [
+    -0.1311,
+    0.1992,
+    0.7445
+   ]
+  },
+  {
+   "name": "cape.1.3",
+   "parent": "cape.1.2",
+   "deform": true,
+   "head": [
+    -0.1311,
+    0.1992,
+    0.7445
+   ],
+   "tail": [
+    -0.159,
+    0.2163,
+    0.5097
+   ]
+  },
+  {
+   "name": "cape.2.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0267,
+    0.0527,
+    1.4375
+   ],
+   "tail": [
+    0.0284,
+    0.1016,
+    1.1992
+   ]
+  },
+  {
+   "name": "cape.2.1",
+   "parent": "cape.2.0",
+   "deform": true,
+   "head": [
+    0.0284,
+    0.1016,
+    1.1992
+   ],
+   "tail": [
+    0.0349,
+    0.1571,
+    0.9702
+   ]
+  },
+  {
+   "name": "cape.2.2",
+   "parent": "cape.2.1",
+   "deform": true,
+   "head": [
+    0.0349,
+    0.1571,
+    0.9702
+   ],
+   "tail": [
+    0.0418,
+    0.2135,
+    0.7324
+   ]
+  },
+  {
+   "name": "cape.2.3",
+   "parent": "cape.2.2",
+   "deform": true,
+   "head": [
+    0.0418,
+    0.2135,
+    0.7324
+   ],
+   "tail": [
+    0.0467,
+    0.2493,
+    0.4895
+   ]
+  },
+  {
+   "name": "cape.3.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.1398,
+    0.0654,
+    1.4087
+   ],
+   "tail": [
+    0.1216,
+    0.1127,
+    1.1828
+   ]
+  },
+  {
+   "name": "cape.3.1",
+   "parent": "cape.3.0",
+   "deform": true,
+   "head": [
+    0.1216,
+    0.1127,
+    1.1828
+   ],
+   "tail": [
+    0.1532,
+    0.1453,
+    0.9513
+   ]
+  },
+  {
+   "name": "cape.3.2",
+   "parent": "cape.3.1",
+   "deform": true,
+   "head": [
+    0.1532,
+    0.1453,
+    0.9513
+   ],
+   "tail": [
+    0.1963,
+    0.1879,
+    0.72
+   ]
+  },
+  {
+   "name": "cape.3.3",
+   "parent": "cape.3.2",
+   "deform": true,
+   "head": [
+    0.1963,
+    0.1879,
+    0.72
+   ],
+   "tail": [
+    0.2199,
+    0.2084,
+    0.4823
+   ]
+  },
+  {
+   "name": "cape.4.0",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.1325,
+    -0.069,
+    1.3928
+   ],
+   "tail": [
+    0.3039,
+    -0.0107,
+    1.2388
+   ]
+  },
+  {
+   "name": "cape.4.1",
+   "parent": "cape.4.0",
+   "deform": true,
+   "head": [
+    0.3039,
+    -0.0107,
+    1.2388
+   ],
+   "tail": [
+    0.3184,
+    0.0287,
+    0.9947
+   ]
+  },
+  {
+   "name": "cape.4.2",
+   "parent": "cape.4.1",
+   "deform": true,
+   "head": [
+    0.3184,
+    0.0287,
+    0.9947
+   ],
+   "tail": [
+    0.3664,
+    0.0262,
+    0.7396
+   ]
+  },
+  {
+   "name": "cape.4.3",
+   "parent": "cape.4.2",
+   "deform": true,
+   "head": [
+    0.3664,
+    0.0262,
+    0.7396
+   ],
+   "tail": [
+    0.4149,
+    0.0218,
+    0.4847
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.1196,
+    0.0078,
+    0.924
+   ],
+   "tail": [
+    0.1591,
+    -0.0369,
+    0.511
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": "thigh_l",
+   "deform": true,
+   "head": [
+    0.1591,
+    -0.0369,
+    0.511
+   ],
+   "tail": [
+    0.2109,
+    -0.0106,
+    0.0878
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "calf_l",
+   "deform": true,
+   "head": [
+    0.2109,
+    -0.0106,
+    0.0878
+   ],
+   "tail": [
+    0.2149,
+    -0.1257,
+    0.0293
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": "foot_l",
+   "deform": true,
+   "head": [
+    0.2149,
+    -0.1257,
+    0.0293
+   ],
+   "tail": [
+    0.2111,
+    -0.1921,
+    0.0376
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.0847,
+    0.0078,
+    0.924
+   ],
+   "tail": [
+    -0.1242,
+    -0.0369,
+    0.511
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": "thigh_r",
+   "deform": true,
+   "head": [
+    -0.1242,
+    -0.0369,
+    0.511
+   ],
+   "tail": [
+    -0.1761,
+    -0.0106,
+    0.0878
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "calf_r",
+   "deform": true,
+   "head": [
+    -0.1761,
+    -0.0106,
+    0.0878
+   ],
+   "tail": [
+    -0.1801,
+    -0.1257,
+    0.0293
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": "foot_r",
+   "deform": true,
+   "head": [
+    -0.1801,
+    -0.1257,
+    0.0293
+   ],
+   "tail": [
+    -0.1762,
+    -0.1921,
+    0.0376
+   ]
+  },
+  {
+   "name": "tie.0",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.0674,
+    -0.1562,
+    0.9582
+   ],
+   "tail": [
+    0.0724,
+    -0.172,
+    0.849
+   ]
+  },
+  {
+   "name": "tie.1",
+   "parent": "tie.0",
+   "deform": true,
+   "head": [
+    0.0724,
+    -0.172,
+    0.849
+   ],
+   "tail": [
+    0.0724,
+    -0.1472,
+    0.7382
+   ]
+  }
+ ],
+ "bone_count": 88,
+ "deform_bone_count": 87,
+ "grip": {
+  "rule": "hammer grip: the shaft along the right hand's knuckle line, the tines out of the thumb / index side; the pitchfork bone is a child of hand_r and every clip keys it at the SAME hand-relative transform (grip_relation_max_dev); the hand+fork roll about the shaft is picked per clip (10-deg search, least wrist bend at t = 0); inside the grip the fork is turned about its own shaft (tine_roll_in_hand, one value) so the idle shows the tines face-on; the REST pose stands the fork upright beside the right hand, butt on the floor",
+  "G_hand_to_fork_rest4": [
+   [
+    -0.556619,
+    0.80858,
+    -0.190717,
+    -0.01804
+   ],
+   [
+    0.188611,
+    0.346568,
+    0.918867,
+    0.052512
+   ],
+   [
+    0.809074,
+    0.475488,
+    -0.345414,
+    0.011201
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "fork_roll_search": {
+   "idle": {
+    "roll_deg": 280,
+    "wrist_bend_deg_at_t0": 41.42
+   },
+   "walk": {
+    "roll_deg": 270,
+    "wrist_bend_deg_at_t0": 46.83
+   },
+   "tine_roll_in_hand": {
+    "deg": 80,
+    "idle_t0_tine_plane_to_front_deg": 0.4,
+    "walk_t0_tine_plane_to_front_deg": 6.0
+   }
+  },
+  "grip_at_m_from_butt": 1.1136
+ },
+ "tris": {
+  "model": 49662,
+  "outline_shells": 0,
+  "budget": [
+   30000,
+   50000
+  ]
+ },
+ "digest": {
+  "parts": {
+   "bake_normal": "a737aa5785c9991e",
+   "bake_ao": "9a6f81ebbdb694a6",
+   "ao_lifted": "788ec3347fc53a85",
+   "geometry_colour_uv": "4760cfe4cf8f0565",
+   "weights": "a962ce03f13eb5bc",
+   "keys": "9fe00f7f678abe8c",
+   "clip_samples": "f297de1ed30eb805"
+  },
+  "combined": "80747af2ed9baa03"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
+  "bytes": 11213020,
+  "seconds": 1.2,
+  "carries": {
+   "materials": [
+    {
+     "name": "wren_body",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": [
+      "baseColorTexture",
+      "normalTexture"
+     ]
+    },
+    {
+     "name": "wren_pitchfork",
+     "alphaMode": "OPAQUE",
+     "doubleSided": false,
+     "textures": []
+    }
+   ],
+   "primitives": [
+    {
+     "mesh": "wren",
+     "material": "wren_body",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    },
+    {
+     "mesh": "wren_pitchfork",
+     "material": "wren_pitchfork",
+     "colour_sets": [
+      "COLOR_0",
+      "COLOR_1"
+     ]
+    }
+   ],
+   "nodes": 91,
+   "mesh_nodes": [
+    "wren",
+    "wren_pitchfork"
+   ],
+   "animations": [
+    "idle",
+    "walk"
+   ],
+   "skins": 1,
+   "joints": [
+    88
+   ]
+  },
+  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02969"
+ },
+ "skins": {
+  "default": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.blend",
+   "palette": {
+    "skin": {
+     "rgb": [
+      192,
+      139,
+      100
+     ]
+    },
+    "skin_shadow": {
+     "rgb": [
+      158,
+      106,
+      74
+     ]
+    },
+    "lips": {
+     "rgb": [
+      178,
+      116,
+      90
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      104,
+      58,
+      44
+     ]
+    },
+    "liner": {
+     "rgb": [
+      52,
+      34,
+      26
+     ]
+    },
+    "brow": {
+     "rgb": [
+      66,
+      44,
+      30
+     ]
+    },
+    "eye_sclera": {
+     "rgb": [
+      236,
+      228,
+      214
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      118,
+      76,
+      46
+     ]
+    },
+    "eye_pupil": {
+     "rgb": [
+      30,
+      18,
+      12
+     ]
+    },
+    "hair": {
+     "rgb": [
+      104,
+      70,
+      46
+     ]
+    },
+    "hair_shade": {
+     "rgb": [
+      70,
+      46,
+      31
+     ]
+    },
+    "hair_tie": {
+     "rgb": [
+      84,
+      60,
+      42
+     ]
+    },
+    "shirt": {
+     "rgb": [
+      206,
+      184,
+      152
+     ]
+    },
+    "sleeve_roll": {
+     "rgb": [
+      214,
+      194,
+      164
+     ]
+    },
+    "vest": {
+     "rgb": [
+      52,
+      76,
+      80
+     ]
+    },
+    "trousers": {
+     "rgb": [
+      135,
+      98,
+      73
+     ]
+    },
+    "trousers_shade": {
+     "rgb": [
+      88,
+      62,
+      46
+     ]
+    },
+    "wrap": {
+     "rgb": [
+      214,
+      200,
+      174
+     ]
+    },
+    "wrap_lace": {
+     "rgb": [
+      132,
+      104,
+      80
+     ]
+    },
+    "boot": {
+     "rgb": [
+      111,
+      81,
+      59
+     ]
+    },
+    "boot_cuff": {
+     "rgb": [
+      96,
+      67,
+      49
+     ]
+    },
+    "boot_sole": {
+     "rgb": [
+      52,
+      38,
+      30
+     ]
+    },
+    "strap": {
+     "rgb": [
+      82,
+      60,
+      44
+     ]
+    },
+    "brass": {
+     "rgb": [
+      193,
+      152,
+      90
+     ]
+    },
+    "brass_dark": {
+     "rgb": [
+      138,
+      104,
+      58
+     ]
+    },
+    "rope": {
+     "rgb": [
+      150,
+      116,
+      82
+     ]
+    },
+    "rope_dark": {
+     "rgb": [
+      100,
+      74,
+      53
+     ]
+    },
+    "pouch": {
+     "rgb": [
+      104,
+      74,
+      52
+     ]
+    },
+    "pouch_flap": {
+     "rgb": [
+      86,
+      60,
+      42
+     ]
+    },
+    "cloak": {
+     "rgb": [
+      82,
+      96,
+      62
+     ]
+    },
+    "cloak_worn": {
+     "rgb": [
+      106,
+      108,
+      70
+     ]
+    },
+    "cloak_lining": {
+     "rgb": [
+      60,
+      70,
+      46
+     ]
+    },
+    "patch_a": {
+     "rgb": [
+      112,
+      87,
+      59
+     ]
+    },
+    "patch_b": {
+     "rgb": [
+      120,
+      108,
+      70
+     ]
+    },
+    "patch_c": {
+     "rgb": [
+      96,
+      110,
+      78
+     ]
+    },
+    "stitch": {
+     "rgb": [
+      60,
+      44,
+      32
+     ]
+    },
+    "crystal": {
+     "rgb": [
+      89,
+      177,
+      162
+     ],
+     "emission": [
+      60,
+      225,
+      200
+     ],
+     "emission_scale": 0.22
+    },
+    "cord": {
+     "rgb": [
+      74,
+      52,
+      36
+     ]
+    },
+    "bracer": {
+     "rgb": [
+      96,
+      70,
+      50
+     ]
+    },
+    "bracer_strap": {
+     "rgb": [
+      66,
+      47,
+      34
+     ]
+    },
+    "wood": {
+     "rgb": [
+      154,
+      113,
+      77
+     ]
+    },
+    "wood_dark": {
+     "rgb": [
+      132,
+      95,
+      64
+     ]
+    },
+    "grip": {
+     "rgb": [
+      90,
+      68,
+      52
+     ]
+    },
+    "grip_dark": {
+     "rgb": [
+      56,
+      40,
+      30
+     ]
+    },
+    "ferrule": {
+     "rgb": [
+      193,
+      152,
+      90
+     ]
+    }
+   },
+   "glow_tiers": {
+    "skin": "default",
+    "emission_scale_tiers": {
+     "crystal": 0.22
+    },
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "crystal": 170.9
+    },
+    "hue_pass": true
+   }
+  },
+  "winter": {
+   "file": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren__winter.blend",
+   "palette": {
+    "skin": {
+     "rgb": [
+      192,
+      139,
+      100
+     ]
+    },
+    "skin_shadow": {
+     "rgb": [
+      158,
+      106,
+      74
+     ]
+    },
+    "lips": {
+     "rgb": [
+      178,
+      116,
+      90
+     ]
+    },
+    "mouth": {
+     "rgb": [
+      104,
+      58,
+      44
+     ]
+    },
+    "liner": {
+     "rgb": [
+      52,
+      34,
+      26
+     ]
+    },
+    "brow": {
+     "rgb": [
+      66,
+      44,
+      30
+     ]
+    },
+    "eye_sclera": {
+     "rgb": [
+      236,
+      228,
+      214
+     ]
+    },
+    "eye_iris": {
+     "rgb": [
+      118,
+      76,
+      46
+     ]
+    },
+    "eye_pupil": {
+     "rgb": [
+      30,
+      18,
+      12
+     ]
+    },
+    "hair": {
+     "rgb": [
+      104,
+      70,
+      46
+     ]
+    },
+    "hair_shade": {
+     "rgb": [
+      70,
+      46,
+      31
+     ]
+    },
+    "hair_tie": {
+     "rgb": [
+      140,
+      66,
+      42
+     ]
+    },
+    "shirt": {
+     "rgb": [
+      206,
+      184,
+      152
+     ]
+    },
+    "sleeve_roll": {
+     "rgb": [
+      214,
+      194,
+      164
+     ]
+    },
+    "vest": {
+     "rgb": [
+      128,
+      62,
+      40
+     ]
+    },
+    "trousers": {
+     "rgb": [
+      84,
+      72,
+      66
+     ]
+    },
+    "trousers_shade": {
+     "rgb": [
+      56,
+      48,
+      44
+     ]
+    },
+    "wrap": {
+     "rgb": [
+      214,
+      200,
+      174
+     ]
+    },
+    "wrap_lace": {
+     "rgb": [
+      150,
+      74,
+      46
+     ]
+    },
+    "boot": {
+     "rgb": [
+      78,
+      58,
+      44
+     ]
+    },
+    "boot_cuff": {
+     "rgb": [
+      66,
+      48,
+      36
+     ]
+    },
+    "boot_sole": {
+     "rgb": [
+      52,
+      38,
+      30
+     ]
+    },
+    "strap": {
+     "rgb": [
+      120,
+      58,
+      38
+     ]
+    },
+    "brass": {
+     "rgb": [
+      193,
+      152,
+      90
+     ]
+    },
+    "brass_dark": {
+     "rgb": [
+      138,
+      104,
+      58
+     ]
+    },
+    "rope": {
+     "rgb": [
+      160,
+      84,
+      54
+     ]
+    },
+    "rope_dark": {
+     "rgb": [
+      110,
+      52,
+      34
+     ]
+    },
+    "pouch": {
+     "rgb": [
+      120,
+      60,
+      40
+     ]
+    },
+    "pouch_flap": {
+     "rgb": [
+      96,
+      46,
+      30
+     ]
+    },
+    "cloak": {
+     "rgb": [
+      118,
+      122,
+      128
+     ]
+    },
+    "cloak_worn": {
+     "rgb": [
+      138,
+      140,
+      144
+     ]
+    },
+    "cloak_lining": {
+     "rgb": [
+      84,
+      86,
+      92
+     ]
+    },
+    "patch_a": {
+     "rgb": [
+      92,
+      94,
+      102
+     ]
+    },
+    "patch_b": {
+     "rgb": [
+      150,
+      150,
+      150
+     ]
+    },
+    "patch_c": {
+     "rgb": [
+      104,
+      96,
+      90
+     ]
+    },
+    "stitch": {
+     "rgb": [
+      168,
+      82,
+      50
+     ]
+    },
+    "crystal": {
+     "rgb": [
+      89,
+      177,
+      162
+     ],
+     "emission": [
+      60,
+      225,
+      200
+     ],
+     "emission_scale": 0.22
+    },
+    "cord": {
+     "rgb": [
+      74,
+      52,
+      36
+     ]
+    },
+    "bracer": {
+     "rgb": [
+      96,
+      70,
+      50
+     ]
+    },
+    "bracer_strap": {
+     "rgb": [
+      132,
+      62,
+      40
+     ]
+    },
+    "wood": {
+     "rgb": [
+      154,
+      113,
+      77
+     ]
+    },
+    "wood_dark": {
+     "rgb": [
+      132,
+      95,
+      64
+     ]
+    },
+    "grip": {
+     "rgb": [
+      90,
+      68,
+      52
+     ]
+    },
+    "grip_dark": {
+     "rgb": [
+      56,
+      40,
+      30
+     ]
+    },
+    "ferrule": {
+     "rgb": [
+      193,
+      152,
+      90
+     ]
+    }
+   },
+   "palette_files": [
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\wren\\default.json",
+    "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\palettes\\wren\\winter.json"
+   ],
+   "glow_tiers": {
+    "skin": "winter",
+    "emission_scale_tiers": {
+     "crystal": 0.22
+    },
+    "grade_pass": true,
+    "accent_hue_deg": {
+     "crystal": 170.9
+    },
+    "hue_pass": true
+   },
+   "region_faces": {
+    "wren": {
+     "skin": 14393,
+     "skin_shadow": 474,
+     "lips": 18,
+     "mouth": 156,
+     "liner": 380,
+     "brow": 237,
+     "eye_sclera": 160,
+     "eye_iris": 64,
+     "eye_pupil": 32,
+     "hair": 3273,
+     "hair_shade": 2581,
+     "hair_tie": 40,
+     "shirt": 2200,
+     "sleeve_roll": 168,
+     "vest": 2492,
+     "trousers": 1636,
+     "trousers_shade": 554,
+     "wrap": 430,
+     "wrap_lace": 464,
+     "boot": 960,
+     "boot_cuff": 160,
+     "boot_sole": 160,
+     "strap": 192,
+     "brass": 564,
+     "brass_dark": 36,
+     "rope": 465,
+     "rope_dark": 253,
+     "pouch": 128,
+     "pouch_flap": 60,
+     "cloak": 2108,
+     "cloak_worn": 584,
+     "cloak_lining": 2532,
+     "patch_a": 45,
+     "patch_b": 51,
+     "patch_c": 27,
+     "stitch": 444,
+     "crystal": 40,
+     "cord": 185,
+     "bracer": 280,
+     "bracer_strap": 244
+    },
+    "wren_pitchfork": {
+     "wood": 227,
+     "wood_dark": 183,
+     "grip": 168,
+     "grip_dark": 64,
+     "ferrule": 40
+    }
+   },
+   "geometry_colour_uv_digest": "51c1052778fa6920"
+  },
+  "repaint_proof": {
+   "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
+   "default_digest_before": "4760cfe4cf8f0565",
+   "default_digest_after_restore": "4760cfe4cf8f0565"
+  }
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
+ "seconds": 55.6
+}

@@ -1,0 +1,28 @@
+{
+ "unit": "wren",
+ "skin": "winter",
+ "extends": "default",
+ "description": "Swap proof ('winter', lane pick per the brief): a grey wool cloak with slate / charcoal patches, RUST accents (vest, rope sash + ties, pouch, bracer straps), charcoal-brown trousers, darker boots. Skin, hair, eyes, shirt, wraps, the teal crystals and the brass are unchanged (his identity stays). Geometry, regions and glow tiers identical; only colours change.",
+ "regions": {
+  "cloak":       {"rgb": [118, 122, 128]},
+  "cloak_worn":  {"rgb": [138, 140, 144]},
+  "cloak_lining": {"rgb": [84, 86, 92]},
+  "patch_a":     {"rgb": [92, 94, 102]},
+  "patch_b":     {"rgb": [150, 150, 150]},
+  "patch_c":     {"rgb": [104, 96, 90]},
+  "stitch":      {"rgb": [168, 82, 50]},
+  "vest":        {"rgb": [128, 62, 40]},
+  "rope":        {"rgb": [160, 84, 54]},
+  "rope_dark":   {"rgb": [110, 52, 34]},
+  "pouch":       {"rgb": [120, 60, 40]},
+  "pouch_flap":  {"rgb": [96, 46, 30]},
+  "bracer_strap": {"rgb": [132, 62, 40]},
+  "trousers":    {"rgb": [84, 72, 66]},
+  "trousers_shade": {"rgb": [56, 48, 44]},
+  "boot":        {"rgb": [78, 58, 44]},
+  "boot_cuff":   {"rgb": [66, 48, 36]},
+  "strap":       {"rgb": [120, 58, 38]},
+  "wrap_lace":   {"rgb": [150, 74, 46]},
+  "hair_tie":    {"rgb": [140, 66, 42]}
+ }
+}
