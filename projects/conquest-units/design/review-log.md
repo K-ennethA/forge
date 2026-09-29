@@ -1033,3 +1033,21 @@ lower-lid line + faint shading go too. (2) LIPS: still realistic - go
 fully 2D: kill the 1.8 mm upper-lip proudness and the recess below the
 seam; the whole mouth area reads as flat skin + the drawn line, per the
 FE references.
+
+## 2026-09-29 — Wren v6 mouth feedback (artist verbatim)
+
+"the lip/mouh area is too large, we should have a faint lip line but we
+can see where the lip line is much further away from the mouth opening
+and leaves us with so much space in that area it looks off and not like
+the pictures"
+
+Binding reading: the drawn lip line and the visible mouth opening (the
+seam) read as TWO separate features with blank space between them, and
+the overall mouth area spans too large a region of the face. Target per
+the FE pictures: ONE compact faint line that IS the mouth - the line
+sits exactly on the (single, subtle) opening, the area reads small and
+tight, no visible second crease and no dead gap. Likely fixes: unify
+line + seam (they diverged after the v5 bridge flattening), and/or the
+mouth sits too low / spans too tall a zone - re-place per the FE
+portrait proportions (mouth-to-nose distance measured off the Ashe
+portrait). Dispatch after the hair-decoupling defect lane lands.
