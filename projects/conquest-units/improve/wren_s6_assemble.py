@@ -42,12 +42,54 @@ for i in (np.nonzero(_cand)[0] if len(_dirs) else []):          # (ENCLOSED_DIRS
     o_ = Vector(CV[i] + _cn[i] * 0.0004)
     _enc_v[i] = all(_bvh_enc.ray_cast(o_, Vector(d), 0.08)[0] is not None for d in _dirs)
 _enclosed = np.array([bool(_enc_v[f].all()) for f in CF]) & (reg != "hair")
-_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr & ~_enclosed
+
+
+def mouth_hidden(V, F):
+    """v5: per face in the mouth zone (MOUTH_HIDDEN[:3]; up to MOUTH_HIDDEN[4] behind the lips' front): whether it faces
+    BACKWARD (the rims folded flat against the bridge: culled, never drawn) and how far its NEAREST vertex lies behind the
+    front skin (m; front rays against the zone's forward-facing faces only -- a face with any vertex on the front stays).
+    -> in_zone, behind, back."""
+    fc_ = np.array([V[f].mean(0) for f in F])
+    dz_ = fc_[:, 2] - np.interp(fc_[:, 0], SEAM["xs"], SEAM["zc"])
+    inz_ = (np.abs(fc_[:, 0]) < MOUTH_HIDDEN[0]) & (dz_ < MOUTH_HIDDEN[1]) & (dz_ > -MOUTH_HIDDEN[2]) & \
+        (fc_[:, 1] < Y_LIP + MOUTH_HIDDEN[4])
+    fn_ = np.array([np.cross(V[f[1]] - V[f[0]], V[f[2]] - V[f[0]]) for f in F])
+    bvh0_ = BVHTree.FromPolygons(V.tolist(), F)
+    first_ = []
+    for fi_ in np.nonzero(inz_)[0]:
+        h_ = bvh0_.ray_cast(Vector((float(fc_[fi_, 0]), -1.0, float(fc_[fi_, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        if h_[0] is not None and h_[2] == fi_:
+            first_.append(fi_)
+    sg_ = -1.0 if float(np.median(fn_[first_, 1])) > 0 else 1.0   # (outward winding: the first-hit faces face -y)
+    back_ = inz_ & ((sg_ * fn_[:, 1]) > 0.1 * np.linalg.norm(fn_, axis=1))
+    fwd_ = [f for f, b in zip(F, back_) if not b]
+    bvh_ = BVHTree.FromPolygons(V.tolist(), fwd_)
+    vi_ = np.unique(np.concatenate([np.array(F[i]) for i in np.nonzero(inz_)[0]]))
+    vb_ = np.zeros(len(V))
+    for i in vi_:
+        h_ = bvh_.ray_cast(Vector((float(V[i, 0]), -1.0, float(V[i, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        vb_[i] = max(float(V[i, 1]) - h_[0][1], 0.0) if h_[0] is not None else 0.0
+    beh_ = np.array([float(vb_[f].min()) if z_ else 0.0 for f, z_ in zip(F, inz_)])
+    return inz_, beh_, back_
+
+
+# v5 MOUTH HIDDEN-LAYER HARVEST: in the flat mouth zone the rims folded against the bridge (backward-facing, culled) and
+# the layers tucked up to MOUTH_HIDDEN[5] behind the front skin are never seen; left in, smart-project folded their steep
+# fold faces into the flat skin's UV islands and their baked corrections (40-70 deg) bled into the flat faces' texels:
+# dark texel blotches above the drawn line (rendered; measured on the decoded map)
+_mouth_harvest = np.zeros(len(CF), bool)
+if MOUTH_HIDDEN is not None and SEAM is not None:
+    _mz, _mb, _mk = mouth_hidden(CV, CF)
+    _mouth_harvest = _mz & (_mk | ((_mb > MOUTH_HIDDEN[3]) & (_mb <= MOUTH_HIDDEN[5]))) & (reg != "hair")
+_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr & ~_enclosed & ~_mouth_harvest
 _usedv = np.unique(np.concatenate([np.array(f) for f, k in zip(CF, _keep) if k]))
 _rm = -np.ones(len(CV), dtype=np.int64); _rm[_usedv] = np.arange(len(_usedv))
 report["hidden_skin_removed"] = {"scalp_faces": int((reg == "hair").sum()), "foot_faces": int(_foot.sum()),
                                  "boot_shin_faces": int((reg == "boot").sum()), "under_blouse_faces": int(_underpuff.sum()), "under_bracer_faces": int(_underbr.sum()),
                                  "enclosed_face_faces_v2": int(_enclosed.sum()), "enclosed_rule": "every vertex's rays toward %d front / tactical directions hit body or eyeball within 8 cm" % len(_dirs),
+                                 "mouth_hidden_layer_faces_v5": int((_mouth_harvest & ~_enclosed).sum()),
+                                 "mouth_hidden_rule": "mouth-zone faces facing backward or %.2f-%.1f mm behind the front skin" % (
+                                     1000 * MOUTH_HIDDEN[3], 1000 * MOUTH_HIDDEN[5]) if MOUTH_HIDDEN is not None else None,
                                  "tris_removed": int(sum(len(f) - 2 for f, k in zip(CF, _keep) if not k))}
 CV_all, CF_all, reg_all = CV, CF, reg                  # (kept for the bake high and the clip gates)
 CV = CV[_usedv]; CW = CW[_usedv]
@@ -336,7 +378,41 @@ try:
 except Exception:
     pass
 t_bake = time.time()
-HIGHB = new_obj(UNIT + "_highbody", CV_all - SHIFT, CF_all)
+_high_keep = np.ones(len(CF_all), bool)            # (v5: body faces the bake high keeps)
+HIGH_MOUTH_INFO = None
+if MOUTH_HIDDEN is not None and SEAM is not None:
+    # v5: the bake high leaves out the mouth zone's HIDDEN sheets too -- every face behind the front skin (the rims, the
+    # mouth interior down to MOUTH_HIDDEN[4] behind the lips) or facing backward. Subdivided with them, the fold at each rim
+    # pulled the flat front sheet round into the seam and the baked normals there tilted away from the light; a bake ray
+    # slipping through the sealed seam read the interior's normals (a jagged crease past the drawn line, rendered). Left
+    # out, each rim is a boundary the subdivision keeps in place and a ray through the seam finds nothing (the texel falls
+    # back to the facet normal): the flat skin bakes flat.
+    _inm, _mbh, _mbk = mouth_hidden(CV_all, CF_all)
+    _hid = _inm & (_mbk | (_mbh > MOUTH_HIDDEN[3]))
+    _high_keep &= ~_hid
+    HIGH_MOUTH_INFO = {"zone_m": MOUTH_HIDDEN[:3], "hidden_tol_m": MOUTH_HIDDEN[3], "depth_behind_lips_m": MOUTH_HIDDEN[4],
+                       "faces_in_zone": int(_inm.sum()), "hidden_faces_left_out": int(_hid.sum())}
+HIGH_EYE_INFO = None
+if EYE_RIM_HIGH_OUT is not None:
+    # v5: the bake high also leaves out the lower lids' steep RIM faces (the lid edge's drop to the flat under-eye skin).
+    # Subdivided with them, the corner between the rim and the flat skin rounded over the first 1-3 mm under the liner and
+    # the flat faces there baked 15-35 deg tilted normals (decoded off the map): a faint line under each lower lid. Left
+    # out, the flat skin's edge is a boundary the subdivision keeps: it bakes flat right up to the liner.
+    _fcr = np.array([CV_all[f].mean(0) for f in CF_all])
+    _fnr = np.array([np.cross(CV_all[f[1]] - CV_all[f[0]], CV_all[f[2]] - CV_all[f[0]]) for f in CF_all])
+    _fnr /= np.maximum(np.linalg.norm(_fnr, axis=1, keepdims=True), 1e-18)
+    _rim = np.zeros(len(CF_all), bool)
+    for s in "LR":
+        _rad, _ang = eye_polar(_fcr, s)
+        _db = _rad - aperture(_ang, s)
+        _da = np.abs(((_ang - 270.0) + 180.0) % 360.0 - 180.0)
+        _rim |= (_db > -EYE_RIM_HIGH_OUT[0] * 1e-3) & (_db < EYE_RIM_HIGH_OUT[1] * 1e-3) & (_da < EYE_RIM_HIGH_OUT[2]) & \
+            (_fcr[:, 1] < EYE[s]["c"][1]) & (np.abs(_fnr[:, 1]) < math.cos(math.radians(EYE_RIM_HIGH_OUT[3])))
+    _high_keep &= ~_rim
+    HIGH_EYE_INFO = {"rule": "lower-lid faces from %.1f mm inside to %.1f mm outside the lid edge, within %.0f deg of straight "
+                             "down, tilted more than %.0f deg from the view axis" % tuple(EYE_RIM_HIGH_OUT),
+                     "rim_faces_left_out": int(_rim.sum())}
+HIGHB = new_obj(UNIT + "_highbody", CV_all - SHIFT, [f for f, k_ in zip(CF_all, _high_keep) if k_])
 HIGHB.data.shade_smooth()
 sm_ = HIGHB.modifiers.new("subd", "SUBSURF"); sm_.levels = 1; sm_.render_levels = 1
 HV_, HF_ = [], []
@@ -395,7 +471,7 @@ devn = np.linalg.norm(px[:, :3] - np.array([0.5, 0.5, 1.0]), axis=1)
 bstats.update({"cage_extrusion": BAKE_CAGE, "low_to_high_skin_m": {"p99": round(float(np.percentile(_shrink, 99)), 5),
                                                                    "max": round(float(_shrink.max()), 5)},
                "resolution": {"normal": RN, "ao": RA}, "high_tris": high_tris,
-               "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
+               "high_rule": "MPFB body at subdivision 1 (smooth) + every part", "high_mouth_hidden_out": HIGH_MOUTH_INFO, "high_lower_lid_rim_out": HIGH_EYE_INFO,
                "normal_baked_texels_pct": round(100 * float(cov_n.mean()), 2),
                "normal_detail_fraction_dev_gt_0.05": round(float((devn[cov_n] > 0.05).mean()), 4),
                "ao_baked_texels_pct": round(100 * float(cov_a.mean()), 2),
@@ -661,7 +737,51 @@ for cls_, regs_ in AO_FLOOR_REGIONS.items():
         inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
         _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], AO_FLOOR[cls_])
 AO_LIFT_INFO = None
-if AO_FACE_LIFT is not None:
+if AO_FACE_FLOOR is not None:
+    # v5 "AO fully floored" (review-log 2026-09-29 "Wren v5 feedback + FE reference set"): the flat under-eye skin and the
+    # flat mouth zone carry NO baked occlusion tone (the FE face: flat skin + the drawn lines). Per skin face a lift weight
+    # (1 inside, feathered to 0 over AO_FACE_FLOOR[1] mm at the zone border) -> floor = skin floor .. AO_FACE_FLOOR[0].
+    _fcb = np.array([CV[f].mean(0) for f in CF])
+    _fl = AO_FACE_FLOOR[1] * 1e-3
+    _we = np.zeros(len(CF))
+    _e0, _e1, _ea = AO_FACE_FLOOR[2]
+    for s in "LR":
+        _rad, _ang = eye_polar(_fcb, s)
+        _db = _rad - aperture(_ang, s)                       # m below / outside the lid edge along the polar ray
+        _da = np.abs(((_ang - 270.0) + 180.0) % 360.0 - 180.0)
+        _degf = math.degrees(_fl / max(float(aperture(270.0, s)) + 0.008, 1e-3))   # the feather as an angle at ~8 mm under the lid
+        _w = smoothstep(_e0 * 1e-3 - 1e-9, _e0 * 1e-3 + 1e-9, _db) * (1.0 - smoothstep(_e1 * 1e-3 - _fl, _e1 * 1e-3, _db)) * \
+            (1.0 - smoothstep(_ea - _degf, _ea, _da)) * (_fcb[:, 1] < EYE[s]["c"][1])
+        _we = np.maximum(_we, _w)
+    _wm = np.zeros(len(CF))
+    if SEAM is not None:
+        _X, _U, _D = AO_FACE_FLOOR[3]
+        _dzf = _fcb[:, 2] - np.interp(_fcb[:, 0], SEAM["xs"], SEAM["zc"])
+        _wm = (1.0 - smoothstep(_X - _fl, _X, np.abs(_fcb[:, 0]))) * (1.0 - smoothstep(_U - _fl, _U, _dzf)) * \
+            (1.0 - smoothstep(_D - _fl, _D, -_dzf)) * (_fcb[:, 1] < Y_LIP + 0.012)
+    _skinf = np.isin(np.array(reg), ["skin", "skin_shadow", "lips"])
+    _wf = np.where(_skinf, np.maximum(_we, _wm), 0.0)
+    _flf = AO_FLOOR["skin"] + (AO_FACE_FLOOR[0] - AO_FLOOR["skin"]) * _wf
+    _lf_tris = np.nonzero((_lt_p < len(CF)) & np.concatenate([_wf > 0, np.zeros(len(_ridf) - len(CF), bool)])[_lt_p])[0]
+    for tri_ in _lf_tris:
+        P3 = _uvl[_lt_l[tri_]] * RA - 0.5
+        x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
+        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        a_, b_, c_ = P3
+        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+        if abs(den_) < 1e-12:
+            continue
+        w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
+        w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
+        inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
+        _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], _flf[_lt_p[tri_]])
+    AO_LIFT_INFO = {"floor": AO_FACE_FLOOR[0], "feather_mm": AO_FACE_FLOOR[1], "undereye_faces": int((_skinf & (_we > 0)).sum()),
+                    "undereye_faces_full": int((_skinf & (_we > 0.999)).sum()), "mouth_faces": int((_skinf & (_wm > 0)).sum()),
+                    "mouth_faces_full": int((_skinf & (_wm > 0.999)).sum())}
+elif AO_FACE_LIFT is not None:
     # v4: skin faces in the mouth band + under the eyes get the AO_FACE_LIFT floor (see the constant)
     _fcb = np.array([CV[f].mean(0) for f in CF])
     _lift = np.zeros(len(CF), bool)
@@ -828,6 +948,27 @@ report["v4_round"] = {
                                            "paint_faces": HAIR_INFO["paint_faces"]}},
     "tris_total": {"v3": V3_FACE["total_tris"], "v4": report["tris"]["total"]}}
 print("V4_ROUND", json.dumps(report["v4_round"]))
+_ue = report.get("undereye") or {}
+report["v5_round"] = {
+    "spec": "review-log 2026-09-29 'Wren v5 feedback + FE reference set': eye bags completely gone (flat skin from the lower "
+            "lash line to the cheek, the lower-lid line and the under-eye shading gone) + lips fully 2D (flat skin + the drawn "
+            "smirk line + the seal); nothing else moves",
+    "eye_bags": {"v4": V4_FACE["undereye"], "v5_build_crease_mm": _ue.get("after"), "fill": _ue.get("fill"),
+                 "note": "the delivered-mesh numbers (crease 5-column / dense, flatness, lid line) are the probe's: "
+                         "renders/wren/wren_v5_face_probe.json vs wren_v4_face_probe.json"},
+    "mouth": {"v4": V4_FACE["mouth"], "profile": LIP_PROFILE, "bridge_mm": LIP_BRIDGE, "hidden_k": LIP_HIDDEN_K,
+              "zone_m": LIP_FLAT[:4] if LIP_FLAT else None,
+              "K": LIP_FLAT[4] if LIP_FLAT else None, "rim_step_mm": LIP_RIM_STEP * 1000,
+              "relief_vs_profile_mm": _lf.get("relief_vs_fit_mm"), "anchor_fit_residual_mm_median": _lf.get("anchor_fit_residual_mm_median"),
+              "lip_pairing_after": _lf.get("after"), "gap_columns_after": _lf.get("gap_columns_after"),
+              "line": {"width_mm": MOUTH_LINE[0] * 1000, "half_length_mm": None if MOUTH_LEN is None else MOUTH_LEN * 1000,
+                       "smirk_rise_mm": None if MOUTH_SMIRK is None else MOUTH_SMIRK[0] * 1000}},
+    "ao_floor": AO_LIFT_INFO,
+    "untouched": {"iris_deg": EYE_IRIS_DEG, "pupil_deg": EYE_PUPIL_DEG, "socket_scale": EYE_SCALE,
+                  "iris_coverage_pct": {s: _ep[s]["iris_coverage_pct"] for s in "LR"},
+                  "orbit_shape_dev_mm": {k: v["max"] for k, v in (report["eye_scale"].get("shape_dev_mm_vs_v2_surface") or {}).items()}},
+    "tris_total": {"v4": V4_FACE["total_tris"], "v5": report["tris"]["total"]}}
+print("V5_ROUND", json.dumps(report["v5_round"]))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

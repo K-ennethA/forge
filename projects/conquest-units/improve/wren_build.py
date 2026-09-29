@@ -27,6 +27,15 @@ FRINGE_PART_T / FRINGE_SWEEP, the sweep clumps over the crown) with LAYER SHADOW
 traced as a crevice band onto the hair beneath it), per-lock volume in the shading normal (HAIR_LOCK_NORMAL_MIX), a
 consistent clump stack (CLUMP_STACK), a broken angel ring (ANGEL_RING_JITTER) and a clearance pass (HAIR_CLEAR).
 Everything below the neck is v1.
+v5 (review-log 2026-09-29 "Wren v5 feedback + FE reference set": the under-eye and mouth purge, per the FE style references
+design/reference/fe-style/): EYE BAGS gone -- under each lower lid the skin becomes the front convex hull of the lash line
+and the cheek (EYE_BAG_FILL: the margin roll, the bag bulge and the trough under it all land on one straight run of skin,
+continued past the lid corners), the lid edge measured against the RENDERED lathe ball, the lower lids' steep rim faces left
+out of the bake high (EYE_RIM_HIGH_OUT) and the under-eye AO floored to 1.0 (AO_FACE_FLOOR); LIPS fully 2D -- per column
+the front convex hull of the nose base and the chin (LIP_PROFILE "bridge", LIP_BRIDGE: no lip volume, no lower-lip rim, no
+lip-chin notch; the rims folded flat against it, LIP_HIDDEN_K, LIP_RIM_STEP 0.1 mm), the mouth zone's hidden layers left out
+of the bake high and the folded rims harvested (MOUTH_HIDDEN), its AO floored to 1.0. The drawn smirk line + the seal kept;
+the eyes, lashes, brows, hair and everything below the neck are v4.
 
 LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 entries):
   - MPFB2 base tuned STYLISED immediately (age macro at 16 years, anime face dials: larger eyes, soft jaw, small nose),
@@ -87,13 +96,34 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
 }                                     # (v1's "expression/units/caucasian/mouth-compression": 1.0 is GONE: it rolled the upper lip in)
 LIP_SEAL = (0.009, 0.0003, 0.0025)    # "lip seal" (v2): the relaxed lips closed geometrically: falloff over the lip height (m),
                                       #   overlap past the seam (m), gap = front rays this far behind the lip front (m); None = off
-LIP_FLAT = (0.022, 0.009, 0.010, 0.003, 0.15, 0.003)   # v4 "2D-anime lips": the lip zone (half width, height above /
+LIP_FLAT = (0.026, 0.0088, 0.011, 0.005, 0.0, 0.0012)   # "2D-anime lips": the lip zone (half width, height above /
                                       #   below the seam, border fade, m) keeps this fraction of its offset from the no-lip
                                       #   profile (0.15 = thin, barely-there lips + a shallow seam; 1.0 = the v2/v3 paired
                                       #   volumes); the profile = per column a fit through anchor bands this wide (m) just
-                                      #   above / below the zone; None = off (v3)
-LIP_RIM_STEP = 0.0004                 # v4: after the flatten the upper lip's rim stays this far (m) in front of the lower's
-                                      #   along the seam (the drawn line's edge; 0 = let them interleave)
+                                      #   above / below the zone; None = off (v3). v4 (0.022, 0.009, 0.010, 0.003, 0.15,
+                                      #   0.003); v5 "lips fully 2D": K = 0 (flat skin), the zone widened past the mouth
+                                      #   corners (the crease past the line ends), 11 mm below (the lower-lip rim)
+LIP_PROFILE = "bridge"                # v5 "no-lip profile": per column the front convex hull of two anchor bands just
+                                      #   outside the LIP_BRIDGE zone (the nose base above, the chin below) = one straight run
+                                      #   of skin from the nose base to the chin, tangent to the chin (no lip volume, no lower-
+                                      #   lip rim, no lip-chin notch: measured on v4 the lower lip's rim dropped 3.7 mm over
+                                      #   2 mm at 13-14 mm under the seam = the "lower-lip hint"); "line" = v4 (one line
+                                      #   through LIP_FLAT's bands, K of the relief kept). (Tried and dropped: a C1 cubic
+                                      #   Hermite between the bands -- the steep chin / nose-base slopes bowed it into a 2-3 mm
+                                      #   muzzle mound, rendered.)
+LIP_BRIDGE = (12.0, 26.0, 13.0, 26.0, 4.0, 5.0, 2.0, 4.0, 2.0)   # v5 "mouth zone": its top / bottom edge above / below
+                                      #   the seam (mm: the nose-base crease / the chin's front) over |x| <= the 3rd mm,
+                                      #   narrowing linearly to the 5th / 6th mm at the 4th mm (the mouth corners: only the
+                                      #   seam crease there), anchor bands the 7th mm wide, faded out over the 8th mm past
+                                      #   the corners and in over the 9th mm inside the top / bottom edges
+LIP_HIDDEN_K = (0.0, 0.15, 0.002, 0.0001)   # v5: a mouth-zone vertex b behind the front skin lands K x b behind the
+                                      #   bridge, but never closer than the 4th m: the 1st K within the 3rd m of the seam (the
+                                      #   rims rolled into it: 0 = folded flat against the bridge, no steep fold faces at the
+                                      #   seam past the drawn line), the 2nd elsewhere (the lips' inner faces: v4's K, the
+                                      #   layers keep their order)
+LIP_RIM_STEP = 0.0001                # after the flatten the upper lip's rim stays this far (m) in front of the lower's
+                                      #   along the seam (0 = let them interleave into a sawtooth); v4 0.0004 = a visible
+                                      #   ledge; v5 0.1 mm = just the draw order of the two sealed rims
 LIP_FRONT_TOL = 0.003                 # v4: lip-zone vertices up to this far behind the front surface are flattened too (the
                                       #   rims tucked in the seam crease; the mouth interior sits >= 4.4 mm behind, measured)
 BODY_H = 1.68                         # "height" barefoot (m); the boot soles add SOLE_T
@@ -130,7 +160,21 @@ EYE_SLIDE = (1.0, 3.0)                # v4 "orbit slide": from the 1st mm inside
 EYE_ORBIT_DEPTH = (0.4, 1.1, 0.0, 0.6)   # v4: in depth (x eyeball radius behind the ball's centre) the whole scale is full
                                       #   to the 1st, none beyond the 2nd; its DEPTH component (the push back behind the
                                       #   cornea that sank the side of the face) full to the 3rd, none beyond the 4th
-EYE_BAG_FLAT = (1.0, 12.0, 2.0, 55.0, 0.0, (0.0, 0.7, 14.5, 19.5))   # v4 "eye bags: gone": under each lower lid, from
+EYE_BAG_FILL = (0.25, 12.0, 24.0, 4.0, 2.5, 2)   # v5 "eye bags: GONE, flat skin" (review-log 2026-09-29 "Wren v5
+                                      #   feedback + FE reference set": the FE face has NO under-eye geometry): per column
+                                      #   under each lower lid the skin becomes the FRONT CONVEX HULL of the lash-line point
+                                      #   (the lid edge + the 1st mm) and the cheek (from the 2nd to the 3rd mm under the lid
+                                      #   edge) = one straight run of skin from the lash line, tangent to the cheek: the lid-
+                                      #   margin roll (the thin lower-lid line), the bag bulge and the trough under it all
+                                      #   land on it. Full over the lower lid, continued past each lid corner at the corner's
+                                      #   height and faded out over the 4th mm (the orbit hollow under the outer corner is part
+                                      #   of the bag: 2.4-2.9 mm deep there with the fade inside the lid run); vertices up
+                                      #   to the 5th mm behind the front surface move with it (hidden lid / sleeve layers keep
+                                      #   their order); 6th = passes. (Tried: leaving out only the 1.5 mm margin band -- the
+                                      #   bag's forward bulge stayed ON the hull and set a raised shelf 1.3-2.8 mm in front of
+                                      #   the lid edge, measured.) None = the v4 EYE_BAG_FLAT fit
+EYE_BAG_FLAT = None                   # v5: replaced by EYE_BAG_FILL. v4 value (1.0, 12.0, 2.0, 55.0, 0.0, (0.0, 0.7, 14.5, 19.5)):
+                                      #   "eye bags: gone": under each lower lid, from
                                       #   the 1st to the 2nd mm below the lid edge (fading out over the 3rd mm), within the
                                       #   4th deg either side of straight down, the surface keeps the 5th x its offset from
                                       #   the no-bag profile (0 = flat) -- per column a fit through two anchor bands (mm below
@@ -408,12 +452,39 @@ V3_FACE = {                           # v3 baseline (commit 63078cf): its commit
     "hair": {"clumps": 29, "flow": "centre: every clump radiating from the whorl (176, 60)", "crown_above_scalp_mm": 17.1,
              "layer_shadows": "none", "tris_locks": 5776},
     "total_tris": 48766}
-AO_SAMPLES = 48                      # AO bake samples (v1 16: the v2 face texel density resolved the 16-sample noise as speckle in the lip crease)
+V4_FACE = {                           # v4 baseline (commit 39f29a6): its committed report improved/wren.json + the delivered
+                                      #   v4 mesh MEASURED by improve/wren_face_probe.py (renders/wren/wren_v4_face_probe.json):
+                                      #   the v5 report quotes it next to the live v5 numbers
+    "undereye": {"build_crease_mm_L_max": 0.606, "probe_crease_mm_5col_max": {"L": 0.683, "R": 0.684},
+                 "probe_crease_mm_dense_max": {"L": 2.799, "R": 2.865}, "probe_flatness_mm_max": {"L": 1.239, "R": 1.269},
+                 "probe_lid_line_mm_max": {"L": 1.038, "R": 1.067}, "ao_floor": "0.93, 0.6-14 mm under the lid, +-55 deg"},
+    "mouth": {"lip_pairing_x0": {"upper_fwd_mm": 1.83, "lower_fwd_mm": -0.01, "seam_z_offset_mm": -1.4},
+              "relief_vs_fit_mm_after": 0.465, "K": 0.15, "rim_step_mm": 0.4,
+              "probe_relief_mm_max": 0.912, "probe_past_line_ends_mm": 0.912, "probe_lower_lip_band_mm": 0.891,
+              "probe_upper_proud_detrended_mm": 0.718, "probe_seam_recess_mm": 0.612, "ao_floor": "0.93 within 2.5 mm of the seam"},
+    "iris_coverage_pct": {"L": 58.0, "R": 58.1}, "total_tris": 48428}
+MOUTH_HIDDEN = (0.034, 0.014, 0.030, 0.00005, 0.06, 0.003)   # v5 "flat mouth bakes flat": in the mouth zone (|x| <
+                                      #   the 1st m, the 2nd m above / the 3rd m below the seam, up to the 5th m behind the
+                                      #   lips' front) every face facing backward or lying more than the 4th m behind the front
+                                      #   skin is left out of the normal-bake high; of those, the ones up to the 6th m behind
+                                      #   (the rims folded against the bridge) are harvested from the low too. None = off (v4)
+EYE_RIM_HIGH_OUT = (0.5, 2.0, 100.0, 50.0)   # v5 "no lower-lid line": the normal-bake high leaves out the lower lids'
+                                      #   rim faces -- from the 1st mm inside to the 2nd mm outside the lid edge (front
+                                      #   projection), within the 3rd deg of straight down, tilted more than the 4th deg from
+                                      #   the view axis (the lid edge's drop to the flat skin); None = kept (v4)
+AO_SAMPLES = 48                   # AO bake samples (v1 16: the v2 face texel density resolved the 16-sample noise as speckle in the lip crease)
 AO_FLOOR = {"default": 0.42, "skin": 0.62, "hair": 0.82, "cloth": 0.50}
 AO_FACE_LIFT = (0.93, 0.0025, 0.6, 14.0)   # v4: the baked AO is floored at the 1st value on the skin in the MOUTH band
                                       #   (within the 2nd m of the seam: the crease baked in as a jagged dark streak past the
                                       #   short drawn line) and UNDER THE EYES (the 3rd .. 4th mm below the lid edge, the
-                                      #   EYE_BAG_FLAT angle: no baked bag shadow); None = off
+                                      #   EYE_BAG_FLAT angle: no baked bag shadow); None = off. (Used only when AO_FACE_FLOOR
+                                      #   is None.)
+AO_FACE_FLOOR = (1.0, 3.0, (0.0, 26.0, 100.0), (0.031, 0.013, 0.028))   # v5 "AO fully floored": the skin's baked AO
+                                      #   is lifted to the 1st value (1.0 = no occlusion tone at all) under each eye (from the
+                                      #   lid edge to the 3rd[1] mm below it, within 3rd[2] deg either side of straight down:
+                                      #   the whole lower lid to both corners) and over the whole mouth zone (|x| <= 4th[0],
+                                      #   4th[1] above / 4th[2] below the seam, m), feathered to the skin floor over the 2nd
+                                      #   mm at the border (no hard-edged light patch); None = the v4 AO_FACE_LIFT
 AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow"],
                     "hair": ["hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice"],
                     "cloth": ["cloak", "cloak_worn", "patch_a", "patch_b", "patch_c", "shirt", "vest", "trousers"]}

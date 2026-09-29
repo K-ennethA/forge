@@ -158,9 +158,13 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          # three-quarter, the side of the face in profile), all framed on the rest-pose 'face' box; the hair layer-shadow
          # close-ups (front-left over the part, right three-quarter over the sweep)
          "nose": (0.0, 1.0, 0.62), "nose_tq": (35.0, 2.0, 0.66), "face_side90": (90.0, 2.0, 1.0),
-         "hair_part": (25.0, 38.0, 0.80), "hair_sweep": (-50.0, 12.0, 0.80), "hair_back_close": (160.0, 18.0, 0.80)}
+         "hair_part": (25.0, 38.0, 0.80), "hair_sweep": (-50.0, 12.0, 0.80), "hair_back_close": (160.0, 18.0, 0.80),
+         # v5 (review-log 2026-09-29 "Wren v5 feedback + FE reference set"): the under-eye close-ups (the 'eyes' box
+         # moved 16 mm down: the lower lids, the under-eye skin and the cheeks), front and three-quarter
+         "undereye": (0.0, 1.0, 1.0), "undereye_tq": (30.0, 2.0, 1.0)}
 CLOSE_KEY = {"hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
-             "hair_sweep": "head", "hair_back_close": "head"}
+             "hair_sweep": "head", "hair_back_close": "head", "undereye": "eyes", "undereye_tq": "eyes"}
+CLOSE_SHIFT = {"undereye": (0.0, 0.0, -0.016), "undereye_tq": (0.0, 0.0, -0.016)}   # the focus box moved (m)
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"
@@ -182,6 +186,8 @@ for tag in VIEWS:
             key = tag if tag in FOCUS else ("fork_full" if tag.startswith("fork") and tag not in FOCUS else
                                              CLOSE_KEY.get(tag, tag.split("_")[0]))
             b0, b1 = (Vector(v) for v in FOCUS[key])
+            if tag in CLOSE_SHIFT:
+                b0, b1 = b0 + Vector(CLOSE_SHIFT[tag]), b1 + Vector(CLOSE_SHIFT[tag])
         ang, elev, fill = close[tag]
         aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, fill)
     elif tag in ("ortho_front", "ortho_side", "ortho_back"):

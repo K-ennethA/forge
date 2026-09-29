@@ -75,7 +75,7 @@
    }
   },
   "sole_lift": 0.0582,
-  "seconds": 0.8
+  "seconds": 0.9
  },
  "lip_seal": {
   "rule": "front rays deeper than 2.5 mm behind the lip front = the gap; half the gap closed from each lip, falloff 9.0 mm, overlap 0.30 mm",
@@ -84,7 +84,199 @@
   "gap_width_mm_before": 46.0,
   "gap_columns_after": 95,
   "verts_moved": 382,
-  "max_shift_mm": 2.64
+  "max_shift_mm": 2.64,
+  "seam": {
+   "xs": [
+    -0.023,
+    -0.0225,
+    -0.022,
+    -0.0215,
+    -0.021,
+    -0.0205,
+    -0.02,
+    -0.0195,
+    -0.019,
+    -0.0185,
+    -0.018,
+    -0.0175,
+    -0.017,
+    -0.0165,
+    -0.016,
+    -0.0155,
+    -0.015,
+    -0.0145,
+    -0.014,
+    -0.0135,
+    -0.013,
+    -0.0125,
+    -0.012,
+    -0.0115,
+    -0.011,
+    -0.0105,
+    -0.01,
+    -0.0095,
+    -0.009,
+    -0.0085,
+    -0.008,
+    -0.0075,
+    -0.007,
+    -0.0065,
+    -0.006,
+    -0.0055,
+    -0.005,
+    -0.0045,
+    -0.004,
+    -0.0035,
+    -0.003,
+    -0.0025,
+    -0.002,
+    -0.0015,
+    -0.001,
+    -0.0005,
+    0.0,
+    0.0005,
+    0.001,
+    0.0015,
+    0.002,
+    0.0025,
+    0.003,
+    0.0035,
+    0.004,
+    0.0045,
+    0.005,
+    0.0055,
+    0.006,
+    0.0065,
+    0.007,
+    0.0075,
+    0.008,
+    0.0085,
+    0.009,
+    0.0095,
+    0.01,
+    0.0105,
+    0.011,
+    0.0115,
+    0.012,
+    0.0125,
+    0.013,
+    0.0135,
+    0.014,
+    0.0145,
+    0.015,
+    0.0155,
+    0.016,
+    0.0165,
+    0.017,
+    0.0175,
+    0.018,
+    0.0185,
+    0.019,
+    0.0195,
+    0.02,
+    0.0205,
+    0.021,
+    0.0215,
+    0.022,
+    0.0225,
+    0.023
+   ],
+   "zc": [
+    1.49809,
+    1.49846,
+    1.4989,
+    1.49937,
+    1.49981,
+    1.50026,
+    1.5005,
+    1.50071,
+    1.50093,
+    1.50117,
+    1.50138,
+    1.50159,
+    1.5018,
+    1.502,
+    1.50216,
+    1.50232,
+    1.50248,
+    1.50264,
+    1.50281,
+    1.50297,
+    1.50313,
+    1.50328,
+    1.50339,
+    1.50345,
+    1.50349,
+    1.5035,
+    1.50349,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50347,
+    1.50346,
+    1.50345,
+    1.50344,
+    1.50343,
+    1.50342,
+    1.50341,
+    1.5034,
+    1.5034,
+    1.5034,
+    1.50341,
+    1.50342,
+    1.50343,
+    1.50342,
+    1.50341,
+    1.5034,
+    1.5034,
+    1.5034,
+    1.50341,
+    1.50342,
+    1.50343,
+    1.50344,
+    1.50345,
+    1.50346,
+    1.50347,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50348,
+    1.50349,
+    1.5035,
+    1.50349,
+    1.50345,
+    1.50339,
+    1.50328,
+    1.50313,
+    1.50297,
+    1.50281,
+    1.50264,
+    1.50248,
+    1.50232,
+    1.50216,
+    1.502,
+    1.5018,
+    1.50159,
+    1.50138,
+    1.50117,
+    1.50093,
+    1.50071,
+    1.5005,
+    1.50026,
+    1.49981,
+    1.49937,
+    1.4989,
+    1.49846,
+    1.49809
+   ]
+  }
  },
  "eye_scale": {
   "factor": 1.3,
@@ -171,7 +363,16 @@
     "vertex_move_max": 6.204
    }
   },
-  "shape_dev_rule": "distance (mm) of each vertex after the scale to the unscaled (v2) surface; zones in the unscaled frame; 'outside_socket_core' = outer skin beyond the full-scale core"
+  "shape_dev_rule": "distance (mm) of each vertex after the scale to the unscaled (v2) surface; zones in the unscaled frame; 'outside_socket_core' = outer skin beyond the full-scale core",
+  "v5_face_ops_move_mm_by_zone": {
+   "nose": 0.0,
+   "nose_bridge": 0.0,
+   "side": 0.662,
+   "temple": 0.0,
+   "cheek": 1.802,
+   "forehead": 0.0,
+   "outside_socket_core": 3.693
+  }
  },
  "undereye": {
   "rule": "front-ray profiles down 5 columns under each eye; depth = max sink behind the profile's front convex hull (mm)",
@@ -203,51 +404,122 @@
     "max": 3.449
    }
   },
-  "zone_mm_below_lid": [
-   1.0,
-   12.0,
-   2.0
-  ],
-  "half_angle_deg": 55.0,
-  "K": 0.0,
-  "anchors_mm_below_lid": [
-   0.0,
-   0.7,
-   14.5,
-   19.5
-  ],
-  "anchor_fit_residual_mm_median": {
-   "L": 0.448,
-   "R": 0.449
+  "fill": {
+   "rule": "per column under each lower lid: the skin -> the front convex hull of the lash-line point (0.25 mm under the lid edge) and the cheek (12.0 .. 24 mm under it); continued 4 mm past each lid corner, fading; vertices up to 2.5 mm behind the front move with it",
+   "passes": [
+    {
+     "L": {
+      "lid_columns_mm": [
+       -12.5,
+       20.0
+      ],
+      "fill_columns_mm": [
+       -16.5,
+       24.0
+      ],
+      "verts": 112,
+      "lid_edge_mm_below_centre": {
+       "dx-8": 8.7,
+       "dx+0": 9.9,
+       "dx+8": 9.8,
+       "dx+16": 7.7
+      },
+      "fill_forward_mm_max": 2.987,
+      "set_back_mm_max": 3.051,
+      "hull_sink_mm_before_max": 2.366
+     },
+     "R": {
+      "lid_columns_mm": [
+       -12.5,
+       20.0
+      ],
+      "fill_columns_mm": [
+       -16.5,
+       24.0
+      ],
+      "verts": 113,
+      "lid_edge_mm_below_centre": {
+       "dx-8": 8.7,
+       "dx+0": 9.9,
+       "dx+8": 9.8,
+       "dx+16": 7.7
+      },
+      "fill_forward_mm_max": 2.987,
+      "set_back_mm_max": 3.051,
+      "hull_sink_mm_before_max": 2.364
+     }
+    },
+    {
+     "L": {
+      "lid_columns_mm": [
+       -12.5,
+       20.0
+      ],
+      "fill_columns_mm": [
+       -16.5,
+       24.0
+      ],
+      "verts": 112,
+      "lid_edge_mm_below_centre": {
+       "dx-8": 8.7,
+       "dx+0": 9.9,
+       "dx+8": 9.8,
+       "dx+16": 7.7
+      },
+      "fill_forward_mm_max": 0.728,
+      "set_back_mm_max": 0.456,
+      "hull_sink_mm_before_max": 1.066
+     },
+     "R": {
+      "lid_columns_mm": [
+       -12.5,
+       20.0
+      ],
+      "fill_columns_mm": [
+       -16.5,
+       24.0
+      ],
+      "verts": 113,
+      "lid_edge_mm_below_centre": {
+       "dx-8": 8.7,
+       "dx+0": 9.9,
+       "dx+8": 9.8,
+       "dx+16": 7.7
+      },
+      "fill_forward_mm_max": 0.725,
+      "set_back_mm_max": 0.499,
+      "hull_sink_mm_before_max": 1.051
+     }
+    }
+   ],
+   "max_move_mm": 3.195
   },
-  "verts": 294,
-  "max_move_mm": 7.695,
   "after": {
    "L": {
-    "dx-8": 0.307,
-    "dx-8_at_dz_mm": -20.9,
-    "dx-4": 0.569,
-    "dx-4_at_dz_mm": -22.2,
-    "dx+0": 0.606,
-    "dx+0_at_dz_mm": -23.2,
-    "dx+4": 0.359,
-    "dx+4_at_dz_mm": -24.4,
-    "dx+8": 0.558,
-    "dx+8_at_dz_mm": -20.4,
-    "max": 0.606
+    "dx-8": 0.308,
+    "dx-8_at_dz_mm": -16.4,
+    "dx-4": 0.309,
+    "dx-4_at_dz_mm": -20.7,
+    "dx+0": 0.203,
+    "dx+0_at_dz_mm": -22.9,
+    "dx+4": 0.2,
+    "dx+4_at_dz_mm": -21.9,
+    "dx+8": 0.171,
+    "dx+8_at_dz_mm": -23.2,
+    "max": 0.309
    },
    "R": {
-    "dx-8": 0.307,
-    "dx-8_at_dz_mm": -20.9,
-    "dx-4": 0.569,
-    "dx-4_at_dz_mm": -22.2,
-    "dx+0": 0.617,
+    "dx-8": 0.308,
+    "dx-8_at_dz_mm": -16.4,
+    "dx-4": 0.309,
+    "dx-4_at_dz_mm": -20.7,
+    "dx+0": 0.202,
     "dx+0_at_dz_mm": -22.9,
-    "dx+4": 0.367,
-    "dx+4_at_dz_mm": -24.4,
-    "dx+8": 0.557,
-    "dx+8_at_dz_mm": -20.4,
-    "max": 0.617
+    "dx+4": 0.204,
+    "dx+4_at_dz_mm": -21.9,
+    "dx+8": 0.171,
+    "dx+8_at_dz_mm": -23.2,
+    "max": 0.309
    }
   }
  },
@@ -291,60 +563,60 @@
    }
   },
   "zone_m": [
-   0.022,
-   0.009,
-   0.01,
-   0.003
+   0.026,
+   0.0088,
+   0.011,
+   0.005
   ],
-  "K": 0.15,
-  "anchor_band_m": 0.003,
-  "anchor_fit_residual_mm_median": 0.393,
-  "verts": 173,
-  "max_move_mm": 2.576,
+  "K": 0.0,
+  "anchor_band_m": 0.0012,
+  "anchor_fit_residual_mm_median": 0.0,
+  "verts": 293,
+  "max_move_mm": 3.693,
   "relief_vs_fit_mm": {
-   "before_max": 2.837,
-   "after_max": 0.465,
+   "before_max": 3.693,
+   "after_max": 0.443,
    "rule": "max |offset| of the lip-zone core's front surface from the per-column no-lip profile fit (proud lips and the seam crease alike)"
   },
   "after": {
    "x+0": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 1.83,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -1.84,
+    "upper_fwd_mm": 1.71,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -1.73,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.7,
+    "upper_proud_h_mm": 5.9,
     "lower_proud_h_mm": 0.0
    },
    "x+4": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 2.0,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -2.0,
+    "upper_fwd_mm": 2.07,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -2.1,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.8,
+    "upper_proud_h_mm": 6.7,
     "lower_proud_h_mm": 0.0
    },
    "x+8": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 1.96,
-    "lower_fwd_mm": -0.0,
-    "lower_lead_mm": -1.96,
+    "upper_fwd_mm": 2.13,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -2.15,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.8,
+    "upper_proud_h_mm": 6.9,
     "lower_proud_h_mm": 0.0
    },
    "x+12": {
     "seam_z_offset_mm": -1.5,
-    "upper_fwd_mm": 1.59,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -1.6,
+    "upper_fwd_mm": 1.97,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -1.99,
     "open_through_mm": 0.0,
     "upper_proud_h_mm": 6.2,
     "lower_proud_h_mm": 0.0
    }
   },
-  "gap_columns_after": 16
+  "gap_columns_after": 0
  },
  "landmarks": {
   "height_total": 1.702,
@@ -415,7 +687,7 @@
  },
  "chin": {
   "chin_bottom_z": 1.4134,
-  "chin_front_y": -0.1636,
+  "chin_front_y": -0.1622,
   "slit_z": 1.5034,
   "slit_to_chin_m": 0.09,
   "jaw_half_width_m": {}
@@ -424,36 +696,36 @@
   "lip_pairing_pre_cut": {
    "x+0": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 1.83,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -1.84,
+    "upper_fwd_mm": 1.71,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -1.73,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.7,
+    "upper_proud_h_mm": 5.9,
     "lower_proud_h_mm": 0.0
    },
    "x+4": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 2.0,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -2.0,
+    "upper_fwd_mm": 2.07,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -2.1,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.8,
+    "upper_proud_h_mm": 6.7,
     "lower_proud_h_mm": 0.0
    },
    "x+8": {
     "seam_z_offset_mm": -1.4,
-    "upper_fwd_mm": 1.96,
-    "lower_fwd_mm": -0.0,
-    "lower_lead_mm": -1.96,
+    "upper_fwd_mm": 2.13,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -2.15,
     "open_through_mm": 0.0,
-    "upper_proud_h_mm": 6.8,
+    "upper_proud_h_mm": 6.9,
     "lower_proud_h_mm": 0.0
    },
    "x+12": {
     "seam_z_offset_mm": -1.5,
-    "upper_fwd_mm": 1.59,
-    "lower_fwd_mm": -0.01,
-    "lower_lead_mm": -1.6,
+    "upper_fwd_mm": 1.97,
+    "lower_fwd_mm": -0.02,
+    "lower_lead_mm": -1.99,
     "open_through_mm": 0.0,
     "upper_proud_h_mm": 6.2,
     "lower_proud_h_mm": 0.0
@@ -477,8 +749,8 @@
   "iris_deg": 27.0,
   "pupil_deg": 10.0,
   "L": {
-   "visible_opening_mm2": 408.2,
-   "iris_coverage_pct": 58.0,
+   "visible_opening_mm2": 410.5,
+   "iris_coverage_pct": 57.7,
    "highlight_visible_mm2": 6.44,
    "eyeball_poke_verts": 0,
    "poke_at_mm_dxyz_out": [],
@@ -495,8 +767,8 @@
    }
   },
   "R": {
-   "visible_opening_mm2": 407.8,
-   "iris_coverage_pct": 58.1,
+   "visible_opening_mm2": 410.0,
+   "iris_coverage_pct": 57.7,
    "highlight_visible_mm2": 6.44,
    "eyeball_poke_verts": 0,
    "poke_at_mm_dxyz_out": [],
@@ -515,15 +787,15 @@
  },
  "iso_cuts": {
   "cuts": 20,
-  "edge_splits": 1388,
+  "edge_splits": 1372,
   "thin_stroke_refine_splits": {
    "brow_L": 1,
    "brow_R": 1,
-   "mline": 130
+   "mline": 128
   },
-  "degenerate_faces_dissolved": 130,
-  "seconds": 18.9,
-  "body_tris_after_cuts": 29666
+  "degenerate_faces_dissolved": 116,
+  "seconds": 23.8,
+  "body_tris_after_cuts": 29644
  },
  "liner_proof": {
   "widths_mm_target": {
@@ -559,8 +831,8 @@
   "wing_mm_at_2_deg": 3.88,
   "upper_lid_width_mm_median": 2.0,
   "lower_lid_width_mm_median": 0.3,
-  "contour_closed_pct": 91.0,
-  "starts_at_lid_edge_pct": 95.1,
+  "contour_closed_pct": 96.5,
+  "starts_at_lid_edge_pct": 97.9,
   "aperture_mm_L": {
    "outer": 20.3,
    "up": 4.9,
@@ -609,19 +881,19 @@
   },
   "fringe": {
    "area_cm2": 64.23,
-   "faces": 565
+   "faces": 564
   }
  },
  "regions_body_faces": {
   "boot": 4728,
   "brow": 475,
   "hair": 1373,
-  "lash": 299,
-  "liner": 97,
-  "mouth": 433,
+  "lash": 296,
+  "liner": 108,
+  "mouth": 431,
   "shirt": 1982,
-  "skin": 14796,
-  "skin_shadow": 595,
+  "skin": 14769,
+  "skin_shadow": 594,
   "trousers": 2126,
   "vest": 2332,
   "wrap": 430
@@ -632,9 +904,11 @@
   "boot_shin_faces": 4728,
   "under_blouse_faces": 798,
   "under_bracer_faces": 120,
-  "enclosed_face_faces_v2": 2432,
+  "enclosed_face_faces_v2": 2372,
   "enclosed_rule": "every vertex's rays toward 12 front / tactical directions hit body or eyeball within 8 cm",
-  "tris_removed": 9451
+  "mouth_hidden_layer_faces_v5": 280,
+  "mouth_hidden_rule": "mouth-zone faces facing backward or 0.05-3.0 mm behind the front skin",
+  "tris_removed": 9671
  },
  "centre_shift": [
   -0.017431,
@@ -657,17 +931,17 @@
  },
  "regions_faces": {
   "wren": {
-   "skin": 12923,
-   "skin_shadow": 513,
+   "skin": 12697,
+   "skin_shadow": 512,
    "lips": 0,
-   "mouth": 103,
-   "liner": 97,
+   "mouth": 75,
+   "liner": 107,
    "brow": 234,
    "eye_sclera": 224,
    "eye_iris": 218,
    "eye_pupil": 298,
-   "hair": 968,
-   "hair_shade": 1916,
+   "hair": 971,
+   "hair_shade": 1944,
    "hair_tie": 40,
    "shirt": 2200,
    "sleeve_roll": 168,
@@ -697,14 +971,14 @@
    "cord": 185,
    "bracer": 280,
    "bracer_strap": 244,
-   "lash": 273,
+   "lash": 276,
    "eye_iris_dark": 128,
    "eye_hilite": 58,
-   "hair_root": 236,
-   "hair_ring": 315,
-   "hair_tip": 258,
+   "hair_root": 233,
+   "hair_ring": 302,
+   "hair_tip": 265,
    "hair_inner": 1592,
-   "hair_crevice": 428
+   "hair_crevice": 399
   },
   "wren_pitchfork": {
    "wood": 227,
@@ -715,23 +989,23 @@
   }
  },
  "regions_area_share": {
-  "skin": 0.0379,
+  "skin": 0.0374,
   "skin_shadow": 0.0011,
   "lips": 0.0,
   "mouth": 0.0,
-  "liner": 0.0,
+  "liner": 0.0001,
   "brow": 0.0001,
   "eye_sclera": 0.0013,
   "eye_iris": 0.0001,
   "eye_pupil": 0.0,
-  "hair": 0.0318,
-  "hair_shade": 0.0388,
+  "hair": 0.0316,
+  "hair_shade": 0.039,
   "hair_tie": 0.0002,
-  "shirt": 0.0451,
+  "shirt": 0.0452,
   "sleeve_roll": 0.0048,
-  "vest": 0.0743,
-  "trousers": 0.1064,
-  "trousers_shade": 0.0931,
+  "vest": 0.0744,
+  "trousers": 0.1066,
+  "trousers_shade": 0.0932,
   "wrap": 0.0195,
   "wrap_lace": 0.003,
   "boot": 0.0602,
@@ -741,12 +1015,12 @@
   "brass": 0.0011,
   "brass_dark": 0.0002,
   "rope": 0.0163,
-  "rope_dark": 0.01,
+  "rope_dark": 0.0101,
   "pouch": 0.0051,
   "pouch_flap": 0.0018,
-  "cloak": 0.1555,
+  "cloak": 0.1557,
   "cloak_worn": 0.0301,
-  "cloak_lining": 0.1794,
+  "cloak_lining": 0.1796,
   "patch_a": 0.0013,
   "patch_b": 0.0022,
   "patch_c": 0.001,
@@ -758,11 +1032,11 @@
   "lash": 0.0001,
   "eye_iris_dark": 0.0,
   "eye_hilite": 0.0,
-  "hair_root": 0.0036,
-  "hair_ring": 0.0029,
+  "hair_root": 0.0034,
+  "hair_ring": 0.0028,
   "hair_tip": 0.0009,
   "hair_inner": 0.0137,
-  "hair_crevice": 0.0081
+  "hair_crevice": 0.0077
  },
  "facing": {
   "rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
@@ -780,36 +1054,36 @@
  },
  "face_zone": {
   "rule": "body skin faces (skin, skin_shadow, lips, mouth, liner, brow, lash) with every vertex head- or neck_01-dominant",
-  "faces": 6857,
-  "tris": 6857,
-  "area_cm2": 1079.1,
+  "faces": 6615,
+  "tris": 6615,
+  "area_cm2": 1044.2,
   "dihedral_deg_p50_p90": [
-   6.43,
-   26.36
+   6.24,
+   25.88
   ],
-  "tris_per_cm2": 6.35
+  "tris_per_cm2": 6.34
  },
  "face_uv": {
   "linear_texel_density_vs_rest": {
-   "v1_rule": 0.989,
+   "v1_rule": 0.992,
    "v2": 4.5
   },
-  "uv_share_pct": 9.204,
-  "texels_per_mm_face": 1.892,
-  "texels_per_mm_rest": 0.42
+  "uv_share_pct": 9.131,
+  "texels_per_mm_face": 1.915,
+  "texels_per_mm_rest": 0.426
  },
  "uv_hair_strip": {
   "strip_u_from": 0.86,
-  "hair_faces": 5753,
+  "hair_faces": 5746,
   "hair_uv_u_min": 0.861,
-  "nonhair_uv_u_max": 0.8452
+  "nonhair_uv_u_max": 0.8451
  },
  "tris": {
-  "total": 48428,
-  "main": 47116,
+  "total": 48194,
+  "main": 46882,
   "pitchfork": 1312,
-  "body": 20215,
-  "hair_locks": 5878,
+  "body": 19973,
+  "hair_locks": 5886,
   "eye": 1556,
   "bootfoot": 912,
   "sole": 304,
@@ -843,7 +1117,7 @@
   "cowl": 716,
   "clasp": 144,
   "hair_cap": 1811,
-  "lock": 5878,
+  "lock": 5886,
   "hairtie": 80
  },
  "tier_rationale": "HERO role: window [30000, 50000]. The MPFB body (face, hands, fingers for the grip) + a real hair mass + a patched two-tone cloak with hood + cowl + boots + the outfit pieces + a detailed pitchfork.",
@@ -984,7 +1258,7 @@
     -0.0934,
     1.4139
    ],
-   "seconds": 0.9
+   "seconds": 1.0
   },
   "pitchfork": {
    "total_len": 1.7446,
@@ -1000,14 +1274,14 @@
    "lock.fringe.0": {
     "tier": "M",
     "width_mm": 52.4,
-    "length": 0.196,
+    "length": 0.195,
     "tip": [
      -0.0681,
      -0.1387,
      1.5909
     ],
     "chain": "hair_fringe.R",
-    "min_clear": 0.0038
+    "min_clear": 0.004
    },
    "lock.fringe.1": {
     "tier": "L",
@@ -1031,16 +1305,16 @@
      1.5942
     ],
     "chain": "hair_fringe.R",
-    "min_clear": 0.0094
+    "min_clear": 0.0093
    },
    "lock.fringe.6": {
     "tier": "M",
     "width_mm": 49.9,
-    "length": 0.089,
+    "length": 0.088,
     "tip": [
-     0.0618,
-     -0.1505,
-     1.605
+     0.0631,
+     -0.1491,
+     1.6039
     ],
     "chain": "hair_fringe.L",
     "min_clear": 0.0091
@@ -1048,19 +1322,19 @@
    "lock.fringe.5": {
     "tier": "M",
     "width_mm": 58.7,
-    "length": 0.101,
+    "length": 0.097,
     "tip": [
      0.0384,
      -0.1673,
      1.5975
     ],
     "chain": "hair_fringe.L",
-    "min_clear": 0.005
+    "min_clear": 0.0095
    },
    "lock.fringe.4": {
     "tier": "L",
     "width_mm": 78.7,
-    "length": 0.098,
+    "length": 0.1,
     "tip": [
      0.0174,
      -0.1741,
@@ -1132,14 +1406,14 @@
    "lock.side.L0": {
     "tier": "M",
     "width_mm": 62.5,
-    "length": 0.16,
+    "length": 0.143,
     "tip": [
      0.0901,
      -0.0898,
      1.5745
     ],
     "chain": "hair_side.L",
-    "min_clear": 0.0047
+    "min_clear": 0.0067
    },
    "lock.side.R0": {
     "tier": "M",
@@ -1156,14 +1430,14 @@
    "lock.side.L1": {
     "tier": "L",
     "width_mm": 74.7,
-    "length": 0.175,
+    "length": 0.179,
     "tip": [
      0.1061,
      -0.0607,
      1.5645
     ],
     "chain": "hair_side.L",
-    "min_clear": 0.0096
+    "min_clear": 0.0092
    },
    "lock.side.R1": {
     "tier": "L",
@@ -1276,19 +1550,19 @@
    "lock.back.0": {
     "tier": "L",
     "width_mm": 89.5,
-    "length": 0.298,
+    "length": 0.306,
     "tip": [
      -0.0002,
      0.0546,
      1.3905
     ],
     "chain": null,
-    "min_clear": 0.005
+    "min_clear": 0.0041
    },
    "lock.back.1": {
     "tier": "M",
     "width_mm": 58.1,
-    "length": 0.225,
+    "length": 0.227,
     "tip": [
      0.0269,
      0.0369,
@@ -1300,26 +1574,26 @@
    "lock.back.2": {
     "tier": "M",
     "width_mm": 65.2,
-    "length": 0.244,
+    "length": 0.231,
     "tip": [
      -0.0269,
      0.0369,
      1.4621
     ],
     "chain": null,
-    "min_clear": 0.0039
+    "min_clear": 0.0061
    },
    "lock.back.3": {
     "tier": "L",
     "width_mm": 88.4,
-    "length": 0.242,
+    "length": 0.231,
     "tip": [
      0.0663,
      0.0413,
      1.4986
     ],
     "chain": null,
-    "min_clear": 0.0077
+    "min_clear": 0.0071
    },
    "lock.back.4": {
     "tier": "L",
@@ -1336,14 +1610,14 @@
    "lock.back.5": {
     "tier": "M",
     "width_mm": 51.6,
-    "length": 0.227,
+    "length": 0.218,
     "tip": [
-     -0.0,
+     0.0,
      0.0515,
      1.4808
     ],
     "chain": null,
-    "min_clear": 0.0073
+    "min_clear": 0.0072
    },
    "lock.crown.0": {
     "tier": "S",
@@ -1355,7 +1629,7 @@
      1.686
     ],
     "chain": null,
-    "min_clear": 0.0063
+    "min_clear": 0.0062
    },
    "lock.crown.1": {
     "tier": "S",
@@ -1384,14 +1658,14 @@
    "lock.tail": {
     "tier": "S",
     "width_mm": 40.0,
-    "length": 0.115,
+    "length": 0.107,
     "tip": [
      0.0021,
      0.0539,
      1.4479
     ],
     "chain": "hair_tail",
-    "min_clear": 0.005
+    "min_clear": 0.0051
    }
   }
  },
@@ -1424,8 +1698,8 @@
    ],
    "jitter_deg": 2.0,
    "clumps_crossed": 23,
-   "edge_splits": 590,
-   "faces": 488
+   "edge_splits": 594,
+   "faces": 480
   },
   "cap_feather": {
    "rule": "cap outer thickness x smoothstep(0, 0.022, height above the hairline), floor 0.0022 m",
@@ -1549,53 +1823,53 @@
    "receiver_max_elevation_deg": 50.0,
    "downhill_tol_mm": 0.5,
    "clumps_receiving": 31,
-   "edge_splits": 209,
-   "faces": 478,
-   "area_cm2": 545.82,
-   "top_area_cm2": 3142.84,
-   "pairs": 139,
-   "share_of_clump_top_area_pct": 17.4,
+   "edge_splits": 219,
+   "faces": 449,
+   "area_cm2": 505.38,
+   "top_area_cm2": 3050.68,
+   "pairs": 134,
+   "share_of_clump_top_area_pct": 16.6,
    "casters_by_kind": {
-    "fringe": 48,
-    "sweep": 21,
+    "fringe": 47,
+    "sweep": 19,
     "side": 21,
-    "outer": 25,
-    "back": 18,
+    "outer": 26,
+    "back": 14,
     "crown": 5,
-    "tail": 1
+    "tail": 2
    }
   },
   "clearance_pass": {
    "skin_clear_mm": 2.5,
    "cap_clear_mm": 0.5,
-   "verts": 214,
-   "max_push_mm": 20.61,
+   "verts": 201,
+   "max_push_mm": 12.72,
    "max_at": {
-    "part": "lock.back.2",
-    "s_frac": 0.69,
-    "surface": "skin:head",
+    "part": "lock.tail",
+    "s_frac": 0.0,
+    "surface": "skin:neck_01",
     "xyz_mm": [
-     4.4,
-     84.8,
-     -36.4
+     -2.7,
+     76.0,
+     -50.8
     ]
    }
   },
   "slivers": {
-   "faces_removed": 448,
+   "faces_removed": 464,
    "rule": "faces under SLIVER_AREA collapse their shortest edge (3 passes)"
   },
-  "cut_repeated_faces_dropped": 14,
+  "cut_repeated_faces_dropped": 15,
   "paint_faces": {
-   "hair": 968,
-   "hair_shade": 1916,
-   "hair_root": 236,
-   "hair_ring": 315,
-   "hair_tip": 258,
+   "hair": 971,
+   "hair_shade": 1944,
+   "hair_root": 233,
+   "hair_ring": 302,
+   "hair_tip": 265,
    "hair_inner": 1592,
-   "hair_crevice": 428
+   "hair_crevice": 399
   },
-  "seconds": 2.0,
+  "seconds": 2.4,
   "fringe_tips_mm": [
    [
     -62.0,
@@ -1667,44 +1941,59 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 7.2
+   "seconds": 8.2
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 10.0
+   "seconds": 11.1
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
-   "p99": 0.00176,
-   "max": 0.00563
+   "p99": 0.00193,
+   "max": 0.01724
   },
   "resolution": {
    "normal": 2048,
    "ao": 1024
   },
-  "high_tris": 204897,
+  "high_tris": 195881,
   "high_rule": "MPFB body at subdivision 1 (smooth) + every part",
-  "normal_baked_texels_pct": 87.82,
-  "normal_detail_fraction_dev_gt_0.05": 0.7385,
-  "ao_baked_texels_pct": 99.36,
-  "ao_mean": 0.421,
+  "high_mouth_hidden_out": {
+   "zone_m": [
+    0.034,
+    0.014,
+    0.03
+   ],
+   "hidden_tol_m": 5e-05,
+   "depth_behind_lips_m": 0.06,
+   "faces_in_zone": 1906,
+   "hidden_faces_left_out": 1199
+  },
+  "high_lower_lid_rim_out": {
+   "rule": "lower-lid faces from 0.5 mm inside to 2.0 mm outside the lid edge, within 100 deg of straight down, tilted more than 50 deg from the view axis",
+   "rim_faces_left_out": 283
+  },
+  "normal_baked_texels_pct": 87.85,
+  "normal_detail_fraction_dev_gt_0.05": 0.7359,
+  "ao_baked_texels_pct": 99.2,
+  "ao_mean": 0.4233,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "be2504e3a3f97b01",
-   "ao": "0ebf40497deb2618"
+   "normal": "a1e6af7c0c3900cc",
+   "ao": "33bf3db3d3c66efd"
   },
   "normal_skin_only": {
    "rule": "normal texels outside the (dilated) skin-region UV triangles set flat",
-   "skin_texels_pct": 13.42
+   "skin_texels_pct": 13.26
   },
   "hair_proxy_bake": {
    "enabled": true,
    "result": [
     "FINISHED"
    ],
-   "seconds": 9.8,
+   "seconds": 9.3,
    "proxy": {
     "grid_lon_lat": [
      48,
@@ -1714,60 +2003,60 @@
     "pad_m": 0.003,
     "centre": [
      0.0176,
-     -0.0467,
+     -0.0469,
      1.5677
     ],
     "hull_dirs_hit": 744,
     "dirs": 1154,
     "radius_m_min_max": [
-     0.1299,
-     0.2151
+     0.1297,
+     0.2152
     ],
     "hair_verts_outside": 6
    },
    "cage_extrusion_m": 0.0004,
    "max_ray_m": 0.0012,
-   "hair_verts": 4064,
-   "hair_faces": 5753,
-   "strip_texels_covered": 490077,
-   "strip_texels_not_flat_pct(dev>0.05)": 92.9,
+   "hair_verts": 4068,
+   "hair_faces": 5746,
+   "strip_texels_covered": 486697,
+   "strip_texels_not_flat_pct(dev>0.05)": 92.5,
    "tangent_tilt_deg_p10_p50_p90": [
-    6.75,
-    26.29,
-    107.86
+    6.57,
+    25.21,
+    108.49
    ],
    "decode_vs_proxy_deg_p50_p90_p99": {
     "representable(facet.proxy>0.2)": [
-     13.52,
-     38.08,
-     103.56
+     13.2,
+     35.89,
+     98.7
     ],
     "all": [
-     23.44,
-     54.72,
-     132.26
+     22.84,
+     54.41,
+     134.87
     ],
     "note": "a tangent-space map can only turn a facet within its own hemisphere: underside facets (facing the scalp, painted hair_shade) cannot take a proxy normal > 90 deg away"
    },
-   "decode_samples": 6235,
-   "representable_pct": 65.5,
+   "decode_samples": 6239,
+   "representable_pct": 65.6,
    "facet_vs_proxy_deg_p50_p90": [
-    41.24,
-    147.58
+    40.37,
+    147.75
    ],
    "neighbour_angle_deg_p50_p90": {
     "flat_facets": [
-     16.13,
-     111.3
+     15.99,
+     111.02
     ],
     "baked_shading": [
-     3.19,
-     9.54
+     3.18,
+     9.38
     ]
    },
    "v2": "the strip was flat (0.5, 0.5, 1): every facet lit by its own face normal"
   },
-  "seconds": 34.4,
+  "seconds": 39.2,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.86; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -1782,13 +2071,16 @@
     "cloth": 0.5
    },
    "v4_face_lift": {
-    "floor": 0.93,
-    "mouth_band_faces": 299,
-    "faces": 478
+    "floor": 1.0,
+    "feather_mm": 3.0,
+    "undereye_faces": 1159,
+    "undereye_faces_full": 1002,
+    "mouth_faces": 442,
+    "mouth_faces_full": 412
    },
    "raw_p05": 0.0,
    "lifted_p05": 0.42,
-   "lifted_mean": 0.7488
+   "lifted_mean": 0.7494
   }
  },
  "material": {
@@ -1868,41 +2160,233 @@
     "gap_width_mm_before": 46.0,
     "gap_columns_after": 95,
     "verts_moved": 382,
-    "max_shift_mm": 2.64
+    "max_shift_mm": 2.64,
+    "seam": {
+     "xs": [
+      -0.023,
+      -0.0225,
+      -0.022,
+      -0.0215,
+      -0.021,
+      -0.0205,
+      -0.02,
+      -0.0195,
+      -0.019,
+      -0.0185,
+      -0.018,
+      -0.0175,
+      -0.017,
+      -0.0165,
+      -0.016,
+      -0.0155,
+      -0.015,
+      -0.0145,
+      -0.014,
+      -0.0135,
+      -0.013,
+      -0.0125,
+      -0.012,
+      -0.0115,
+      -0.011,
+      -0.0105,
+      -0.01,
+      -0.0095,
+      -0.009,
+      -0.0085,
+      -0.008,
+      -0.0075,
+      -0.007,
+      -0.0065,
+      -0.006,
+      -0.0055,
+      -0.005,
+      -0.0045,
+      -0.004,
+      -0.0035,
+      -0.003,
+      -0.0025,
+      -0.002,
+      -0.0015,
+      -0.001,
+      -0.0005,
+      0.0,
+      0.0005,
+      0.001,
+      0.0015,
+      0.002,
+      0.0025,
+      0.003,
+      0.0035,
+      0.004,
+      0.0045,
+      0.005,
+      0.0055,
+      0.006,
+      0.0065,
+      0.007,
+      0.0075,
+      0.008,
+      0.0085,
+      0.009,
+      0.0095,
+      0.01,
+      0.0105,
+      0.011,
+      0.0115,
+      0.012,
+      0.0125,
+      0.013,
+      0.0135,
+      0.014,
+      0.0145,
+      0.015,
+      0.0155,
+      0.016,
+      0.0165,
+      0.017,
+      0.0175,
+      0.018,
+      0.0185,
+      0.019,
+      0.0195,
+      0.02,
+      0.0205,
+      0.021,
+      0.0215,
+      0.022,
+      0.0225,
+      0.023
+     ],
+     "zc": [
+      1.49809,
+      1.49846,
+      1.4989,
+      1.49937,
+      1.49981,
+      1.50026,
+      1.5005,
+      1.50071,
+      1.50093,
+      1.50117,
+      1.50138,
+      1.50159,
+      1.5018,
+      1.502,
+      1.50216,
+      1.50232,
+      1.50248,
+      1.50264,
+      1.50281,
+      1.50297,
+      1.50313,
+      1.50328,
+      1.50339,
+      1.50345,
+      1.50349,
+      1.5035,
+      1.50349,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50347,
+      1.50346,
+      1.50345,
+      1.50344,
+      1.50343,
+      1.50342,
+      1.50341,
+      1.5034,
+      1.5034,
+      1.5034,
+      1.50341,
+      1.50342,
+      1.50343,
+      1.50342,
+      1.50341,
+      1.5034,
+      1.5034,
+      1.5034,
+      1.50341,
+      1.50342,
+      1.50343,
+      1.50344,
+      1.50345,
+      1.50346,
+      1.50347,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50348,
+      1.50349,
+      1.5035,
+      1.50349,
+      1.50345,
+      1.50339,
+      1.50328,
+      1.50313,
+      1.50297,
+      1.50281,
+      1.50264,
+      1.50248,
+      1.50232,
+      1.50216,
+      1.502,
+      1.5018,
+      1.50159,
+      1.50138,
+      1.50117,
+      1.50093,
+      1.50071,
+      1.5005,
+      1.50026,
+      1.49981,
+      1.49937,
+      1.4989,
+      1.49846,
+      1.49809
+     ]
+    }
    },
    "lip_pairing": {
     "x+0": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 1.83,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -1.84,
+     "upper_fwd_mm": 1.71,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.73,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.7,
+     "upper_proud_h_mm": 5.9,
      "lower_proud_h_mm": 0.0
     },
     "x+4": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 2.0,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -2.0,
+     "upper_fwd_mm": 2.07,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.1,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.8,
+     "upper_proud_h_mm": 6.7,
      "lower_proud_h_mm": 0.0
     },
     "x+8": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 1.96,
-     "lower_fwd_mm": -0.0,
-     "lower_lead_mm": -1.96,
+     "upper_fwd_mm": 2.13,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.15,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.8,
+     "upper_proud_h_mm": 6.9,
      "lower_proud_h_mm": 0.0
     },
     "x+12": {
      "seam_z_offset_mm": -1.5,
-     "upper_fwd_mm": 1.59,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -1.6,
+     "upper_fwd_mm": 1.97,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.99,
      "open_through_mm": 0.0,
      "upper_proud_h_mm": 6.2,
      "lower_proud_h_mm": 0.0
@@ -1924,26 +2408,26 @@
   },
   "face_zone_live": {
    "rule": "body skin faces (skin, skin_shadow, lips, mouth, liner, brow, lash) with every vertex head- or neck_01-dominant",
-   "faces": 6857,
-   "tris": 6857,
-   "area_cm2": 1079.1,
+   "faces": 6615,
+   "tris": 6615,
+   "area_cm2": 1044.2,
    "dihedral_deg_p50_p90": [
-    6.43,
-    26.36
+    6.24,
+    25.88
    ],
-   "tris_per_cm2": 6.35,
+   "tris_per_cm2": 6.34,
    "linear_texel_density_vs_rest": {
-    "v1_rule": 0.989,
+    "v1_rule": 0.992,
     "v2": 4.5
    },
-   "uv_share_pct": 9.204,
-   "texels_per_mm_face": 1.892,
-   "texels_per_mm_rest": 0.42,
+   "uv_share_pct": 9.131,
+   "texels_per_mm_face": 1.915,
+   "texels_per_mm_rest": 0.426,
    "normal_ref": "flat"
   },
   "tris_total": {
    "v1": 49662,
-   "live": 48428
+   "live": 48194
   },
   "body_untouched_rule": "every change is head / neck skin: targets are face dials, the seal / cuts / harvest are head-gated"
  },
@@ -2053,7 +2537,16 @@
        "vertex_move_max": 6.204
       }
      },
-     "shape_dev_rule": "distance (mm) of each vertex after the scale to the unscaled (v2) surface; zones in the unscaled frame; 'outside_socket_core' = outer skin beyond the full-scale core"
+     "shape_dev_rule": "distance (mm) of each vertex after the scale to the unscaled (v2) surface; zones in the unscaled frame; 'outside_socket_core' = outer skin beyond the full-scale core",
+     "v5_face_ops_move_mm_by_zone": {
+      "nose": 0.0,
+      "nose_bridge": 0.0,
+      "side": 0.662,
+      "temple": 0.0,
+      "cheek": 1.802,
+      "forehead": 0.0,
+      "outside_socket_core": 3.693
+     }
     },
     "aperture_mm_L": {
      "outer": 20.3,
@@ -2067,12 +2560,12 @@
     "iris_deg": 27.0,
     "pupil_deg": 10.0,
     "iris_coverage_pct": {
-     "L": 58.0,
-     "R": 58.1
+     "L": 57.7,
+     "R": 57.7
     },
     "visible_opening_mm2": {
-     "L": 408.2,
-     "R": 407.8
+     "L": 410.5,
+     "R": 410.0
     },
     "highlight_visible_mm2": {
      "L": 6.44,
@@ -2116,8 +2609,8 @@
      "wing_mm_at_2_deg": 3.88,
      "upper_lid_width_mm_median": 2.0,
      "lower_lid_width_mm_median": 0.3,
-     "contour_closed_pct": 91.0,
-     "starts_at_lid_edge_pct": 95.1,
+     "contour_closed_pct": 96.5,
+     "starts_at_lid_edge_pct": 97.9,
      "aperture_mm_L": {
       "outer": 20.3,
       "up": 4.9,
@@ -2166,10 +2659,10 @@
      "tail": 1
     },
     "tris": {
-     "lock": 5878,
+     "lock": 5886,
      "hair_cap": 1811,
      "hairtie": 80,
-     "total": 7769
+     "total": 7777
     },
     "crown_above_scalp_mm": 18.3,
     "angel_ring": {
@@ -2179,23 +2672,23 @@
      ],
      "jitter_deg": 2.0,
      "clumps_crossed": 23,
-     "edge_splits": 590,
-     "faces": 488
+     "edge_splits": 594,
+     "faces": 480
     },
     "paint_faces": {
-     "hair": 968,
-     "hair_shade": 1916,
-     "hair_root": 236,
-     "hair_ring": 315,
-     "hair_tip": 258,
+     "hair": 971,
+     "hair_shade": 1944,
+     "hair_root": 233,
+     "hair_ring": 302,
+     "hair_tip": 265,
      "hair_inner": 1592,
-     "hair_crevice": 428
+     "hair_crevice": 399
     }
    }
   },
   "tris_total": {
    "v2": 48137,
-   "v3": 48428
+   "v3": 48194
   },
   "body_untouched_rule": "every change is head skin (eye scale gated to the orbit), the eyeballs, or the hair parts"
  },
@@ -2226,12 +2719,12 @@
     "R": 83.3
    },
    "iris_coverage_pct_v4": {
-    "L": 58.0,
-    "R": 58.1
+    "L": 57.7,
+    "R": 57.7
    },
    "visible_opening_mm2_v4": {
-    "L": 408.2,
-    "R": 407.8
+    "L": 410.5,
+    "R": 410.0
    },
    "eyeball_poke_verts_v4": {
     "L": 0,
@@ -2277,51 +2770,122 @@
       "max": 3.449
      }
     },
-    "zone_mm_below_lid": [
-     1.0,
-     12.0,
-     2.0
-    ],
-    "half_angle_deg": 55.0,
-    "K": 0.0,
-    "anchors_mm_below_lid": [
-     0.0,
-     0.7,
-     14.5,
-     19.5
-    ],
-    "anchor_fit_residual_mm_median": {
-     "L": 0.448,
-     "R": 0.449
+    "fill": {
+     "rule": "per column under each lower lid: the skin -> the front convex hull of the lash-line point (0.25 mm under the lid edge) and the cheek (12.0 .. 24 mm under it); continued 4 mm past each lid corner, fading; vertices up to 2.5 mm behind the front move with it",
+     "passes": [
+      {
+       "L": {
+        "lid_columns_mm": [
+         -12.5,
+         20.0
+        ],
+        "fill_columns_mm": [
+         -16.5,
+         24.0
+        ],
+        "verts": 112,
+        "lid_edge_mm_below_centre": {
+         "dx-8": 8.7,
+         "dx+0": 9.9,
+         "dx+8": 9.8,
+         "dx+16": 7.7
+        },
+        "fill_forward_mm_max": 2.987,
+        "set_back_mm_max": 3.051,
+        "hull_sink_mm_before_max": 2.366
+       },
+       "R": {
+        "lid_columns_mm": [
+         -12.5,
+         20.0
+        ],
+        "fill_columns_mm": [
+         -16.5,
+         24.0
+        ],
+        "verts": 113,
+        "lid_edge_mm_below_centre": {
+         "dx-8": 8.7,
+         "dx+0": 9.9,
+         "dx+8": 9.8,
+         "dx+16": 7.7
+        },
+        "fill_forward_mm_max": 2.987,
+        "set_back_mm_max": 3.051,
+        "hull_sink_mm_before_max": 2.364
+       }
+      },
+      {
+       "L": {
+        "lid_columns_mm": [
+         -12.5,
+         20.0
+        ],
+        "fill_columns_mm": [
+         -16.5,
+         24.0
+        ],
+        "verts": 112,
+        "lid_edge_mm_below_centre": {
+         "dx-8": 8.7,
+         "dx+0": 9.9,
+         "dx+8": 9.8,
+         "dx+16": 7.7
+        },
+        "fill_forward_mm_max": 0.728,
+        "set_back_mm_max": 0.456,
+        "hull_sink_mm_before_max": 1.066
+       },
+       "R": {
+        "lid_columns_mm": [
+         -12.5,
+         20.0
+        ],
+        "fill_columns_mm": [
+         -16.5,
+         24.0
+        ],
+        "verts": 113,
+        "lid_edge_mm_below_centre": {
+         "dx-8": 8.7,
+         "dx+0": 9.9,
+         "dx+8": 9.8,
+         "dx+16": 7.7
+        },
+        "fill_forward_mm_max": 0.725,
+        "set_back_mm_max": 0.499,
+        "hull_sink_mm_before_max": 1.051
+       }
+      }
+     ],
+     "max_move_mm": 3.195
     },
-    "verts": 294,
-    "max_move_mm": 7.695,
     "after": {
      "L": {
-      "dx-8": 0.307,
-      "dx-8_at_dz_mm": -20.9,
-      "dx-4": 0.569,
-      "dx-4_at_dz_mm": -22.2,
-      "dx+0": 0.606,
-      "dx+0_at_dz_mm": -23.2,
-      "dx+4": 0.359,
-      "dx+4_at_dz_mm": -24.4,
-      "dx+8": 0.558,
-      "dx+8_at_dz_mm": -20.4,
-      "max": 0.606
+      "dx-8": 0.308,
+      "dx-8_at_dz_mm": -16.4,
+      "dx-4": 0.309,
+      "dx-4_at_dz_mm": -20.7,
+      "dx+0": 0.203,
+      "dx+0_at_dz_mm": -22.9,
+      "dx+4": 0.2,
+      "dx+4_at_dz_mm": -21.9,
+      "dx+8": 0.171,
+      "dx+8_at_dz_mm": -23.2,
+      "max": 0.309
      },
      "R": {
-      "dx-8": 0.307,
-      "dx-8_at_dz_mm": -20.9,
-      "dx-4": 0.569,
-      "dx-4_at_dz_mm": -22.2,
-      "dx+0": 0.617,
+      "dx-8": 0.308,
+      "dx-8_at_dz_mm": -16.4,
+      "dx-4": 0.309,
+      "dx-4_at_dz_mm": -20.7,
+      "dx+0": 0.202,
       "dx+0_at_dz_mm": -22.9,
-      "dx+4": 0.367,
-      "dx+4_at_dz_mm": -24.4,
-      "dx+8": 0.557,
-      "dx+8_at_dz_mm": -20.4,
-      "max": 0.617
+      "dx+4": 0.204,
+      "dx+4_at_dz_mm": -21.9,
+      "dx+8": 0.171,
+      "dx+8_at_dz_mm": -23.2,
+      "max": 0.309
      }
     }
    },
@@ -2421,49 +2985,49 @@
     "line": "1.1 mm over the whole 46 mm seam, level"
    },
    "relief_vs_fit_mm": {
-    "before_max": 2.837,
-    "after_max": 0.465,
+    "before_max": 3.693,
+    "after_max": 0.443,
     "rule": "max |offset| of the lip-zone core's front surface from the per-column no-lip profile fit (proud lips and the seam crease alike)"
    },
    "lip_pairing_after": {
     "x+0": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 1.83,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -1.84,
+     "upper_fwd_mm": 1.71,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.73,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.7,
+     "upper_proud_h_mm": 5.9,
      "lower_proud_h_mm": 0.0
     },
     "x+4": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 2.0,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -2.0,
+     "upper_fwd_mm": 2.07,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.1,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.8,
+     "upper_proud_h_mm": 6.7,
      "lower_proud_h_mm": 0.0
     },
     "x+8": {
      "seam_z_offset_mm": -1.4,
-     "upper_fwd_mm": 1.96,
-     "lower_fwd_mm": -0.0,
-     "lower_lead_mm": -1.96,
+     "upper_fwd_mm": 2.13,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.15,
      "open_through_mm": 0.0,
-     "upper_proud_h_mm": 6.8,
+     "upper_proud_h_mm": 6.9,
      "lower_proud_h_mm": 0.0
     },
     "x+12": {
      "seam_z_offset_mm": -1.5,
-     "upper_fwd_mm": 1.59,
-     "lower_fwd_mm": -0.01,
-     "lower_lead_mm": -1.6,
+     "upper_fwd_mm": 1.97,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.99,
      "open_through_mm": 0.0,
      "upper_proud_h_mm": 6.2,
      "lower_proud_h_mm": 0.0
     }
    },
-   "gap_columns_after": 16,
+   "gap_columns_after": 0,
    "lip_tint": "none",
    "line": {
     "width_mm": 1.1,
@@ -2597,20 +3161,20 @@
      "receiver_max_elevation_deg": 50.0,
      "downhill_tol_mm": 0.5,
      "clumps_receiving": 31,
-     "edge_splits": 209,
-     "faces": 478,
-     "area_cm2": 545.82,
-     "top_area_cm2": 3142.84,
-     "pairs": 139,
-     "share_of_clump_top_area_pct": 17.4,
+     "edge_splits": 219,
+     "faces": 449,
+     "area_cm2": 505.38,
+     "top_area_cm2": 3050.68,
+     "pairs": 134,
+     "share_of_clump_top_area_pct": 16.6,
      "casters_by_kind": {
-      "fringe": 48,
-      "sweep": 21,
+      "fringe": 47,
+      "sweep": 19,
       "side": 21,
-      "outer": 25,
-      "back": 18,
+      "outer": 26,
+      "back": 14,
       "crown": 5,
-      "tail": 1
+      "tail": 2
      }
     },
     "angel_ring": {
@@ -2620,33 +3184,301 @@
      ],
      "jitter_deg": 2.0,
      "clumps_crossed": 23,
-     "edge_splits": 590,
-     "faces": 488
+     "edge_splits": 594,
+     "faces": 480
     },
     "crown_above_scalp_mm": 18.3,
     "tris": {
-     "lock": 5878,
+     "lock": 5886,
      "hair_cap": 1811,
      "hairtie": 80,
-     "total": 7769
+     "total": 7777
     },
     "paint_faces": {
-     "hair": 968,
-     "hair_shade": 1916,
-     "hair_root": 236,
-     "hair_ring": 315,
-     "hair_tip": 258,
+     "hair": 971,
+     "hair_shade": 1944,
+     "hair_root": 233,
+     "hair_ring": 302,
+     "hair_tip": 265,
      "hair_inner": 1592,
-     "hair_crevice": 428
+     "hair_crevice": 399
     }
    }
   },
   "tris_total": {
    "v3": 48766,
-   "v4": 48428
+   "v4": 48194
   }
  },
- "digest_geometry_colour_uv": "1297c19c703df2c0",
+ "v5_round": {
+  "spec": "review-log 2026-09-29 'Wren v5 feedback + FE reference set': eye bags completely gone (flat skin from the lower lash line to the cheek, the lower-lid line and the under-eye shading gone) + lips fully 2D (flat skin + the drawn smirk line + the seal); nothing else moves",
+  "eye_bags": {
+   "v4": {
+    "build_crease_mm_L_max": 0.606,
+    "probe_crease_mm_5col_max": {
+     "L": 0.683,
+     "R": 0.684
+    },
+    "probe_crease_mm_dense_max": {
+     "L": 2.799,
+     "R": 2.865
+    },
+    "probe_flatness_mm_max": {
+     "L": 1.239,
+     "R": 1.269
+    },
+    "probe_lid_line_mm_max": {
+     "L": 1.038,
+     "R": 1.067
+    },
+    "ao_floor": "0.93, 0.6-14 mm under the lid, +-55 deg"
+   },
+   "v5_build_crease_mm": {
+    "L": {
+     "dx-8": 0.308,
+     "dx-8_at_dz_mm": -16.4,
+     "dx-4": 0.309,
+     "dx-4_at_dz_mm": -20.7,
+     "dx+0": 0.203,
+     "dx+0_at_dz_mm": -22.9,
+     "dx+4": 0.2,
+     "dx+4_at_dz_mm": -21.9,
+     "dx+8": 0.171,
+     "dx+8_at_dz_mm": -23.2,
+     "max": 0.309
+    },
+    "R": {
+     "dx-8": 0.308,
+     "dx-8_at_dz_mm": -16.4,
+     "dx-4": 0.309,
+     "dx-4_at_dz_mm": -20.7,
+     "dx+0": 0.202,
+     "dx+0_at_dz_mm": -22.9,
+     "dx+4": 0.204,
+     "dx+4_at_dz_mm": -21.9,
+     "dx+8": 0.171,
+     "dx+8_at_dz_mm": -23.2,
+     "max": 0.309
+    }
+   },
+   "fill": {
+    "rule": "per column under each lower lid: the skin -> the front convex hull of the lash-line point (0.25 mm under the lid edge) and the cheek (12.0 .. 24 mm under it); continued 4 mm past each lid corner, fading; vertices up to 2.5 mm behind the front move with it",
+    "passes": [
+     {
+      "L": {
+       "lid_columns_mm": [
+        -12.5,
+        20.0
+       ],
+       "fill_columns_mm": [
+        -16.5,
+        24.0
+       ],
+       "verts": 112,
+       "lid_edge_mm_below_centre": {
+        "dx-8": 8.7,
+        "dx+0": 9.9,
+        "dx+8": 9.8,
+        "dx+16": 7.7
+       },
+       "fill_forward_mm_max": 2.987,
+       "set_back_mm_max": 3.051,
+       "hull_sink_mm_before_max": 2.366
+      },
+      "R": {
+       "lid_columns_mm": [
+        -12.5,
+        20.0
+       ],
+       "fill_columns_mm": [
+        -16.5,
+        24.0
+       ],
+       "verts": 113,
+       "lid_edge_mm_below_centre": {
+        "dx-8": 8.7,
+        "dx+0": 9.9,
+        "dx+8": 9.8,
+        "dx+16": 7.7
+       },
+       "fill_forward_mm_max": 2.987,
+       "set_back_mm_max": 3.051,
+       "hull_sink_mm_before_max": 2.364
+      }
+     },
+     {
+      "L": {
+       "lid_columns_mm": [
+        -12.5,
+        20.0
+       ],
+       "fill_columns_mm": [
+        -16.5,
+        24.0
+       ],
+       "verts": 112,
+       "lid_edge_mm_below_centre": {
+        "dx-8": 8.7,
+        "dx+0": 9.9,
+        "dx+8": 9.8,
+        "dx+16": 7.7
+       },
+       "fill_forward_mm_max": 0.728,
+       "set_back_mm_max": 0.456,
+       "hull_sink_mm_before_max": 1.066
+      },
+      "R": {
+       "lid_columns_mm": [
+        -12.5,
+        20.0
+       ],
+       "fill_columns_mm": [
+        -16.5,
+        24.0
+       ],
+       "verts": 113,
+       "lid_edge_mm_below_centre": {
+        "dx-8": 8.7,
+        "dx+0": 9.9,
+        "dx+8": 9.8,
+        "dx+16": 7.7
+       },
+       "fill_forward_mm_max": 0.725,
+       "set_back_mm_max": 0.499,
+       "hull_sink_mm_before_max": 1.051
+      }
+     }
+    ],
+    "max_move_mm": 3.195
+   },
+   "note": "the delivered-mesh numbers (crease 5-column / dense, flatness, lid line) are the probe's: renders/wren/wren_v5_face_probe.json vs wren_v4_face_probe.json"
+  },
+  "mouth": {
+   "v4": {
+    "lip_pairing_x0": {
+     "upper_fwd_mm": 1.83,
+     "lower_fwd_mm": -0.01,
+     "seam_z_offset_mm": -1.4
+    },
+    "relief_vs_fit_mm_after": 0.465,
+    "K": 0.15,
+    "rim_step_mm": 0.4,
+    "probe_relief_mm_max": 0.912,
+    "probe_past_line_ends_mm": 0.912,
+    "probe_lower_lip_band_mm": 0.891,
+    "probe_upper_proud_detrended_mm": 0.718,
+    "probe_seam_recess_mm": 0.612,
+    "ao_floor": "0.93 within 2.5 mm of the seam"
+   },
+   "profile": "bridge",
+   "bridge_mm": [
+    12.0,
+    26.0,
+    13.0,
+    26.0,
+    4.0,
+    5.0,
+    2.0,
+    4.0,
+    2.0
+   ],
+   "hidden_k": [
+    0.0,
+    0.15,
+    0.002,
+    0.0001
+   ],
+   "zone_m": [
+    0.026,
+    0.0088,
+    0.011,
+    0.005
+   ],
+   "K": 0.0,
+   "rim_step_mm": 0.1,
+   "relief_vs_profile_mm": {
+    "before_max": 3.693,
+    "after_max": 0.443,
+    "rule": "max |offset| of the lip-zone core's front surface from the per-column no-lip profile fit (proud lips and the seam crease alike)"
+   },
+   "anchor_fit_residual_mm_median": 0.0,
+   "lip_pairing_after": {
+    "x+0": {
+     "seam_z_offset_mm": -1.4,
+     "upper_fwd_mm": 1.71,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.73,
+     "open_through_mm": 0.0,
+     "upper_proud_h_mm": 5.9,
+     "lower_proud_h_mm": 0.0
+    },
+    "x+4": {
+     "seam_z_offset_mm": -1.4,
+     "upper_fwd_mm": 2.07,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.1,
+     "open_through_mm": 0.0,
+     "upper_proud_h_mm": 6.7,
+     "lower_proud_h_mm": 0.0
+    },
+    "x+8": {
+     "seam_z_offset_mm": -1.4,
+     "upper_fwd_mm": 2.13,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -2.15,
+     "open_through_mm": 0.0,
+     "upper_proud_h_mm": 6.9,
+     "lower_proud_h_mm": 0.0
+    },
+    "x+12": {
+     "seam_z_offset_mm": -1.5,
+     "upper_fwd_mm": 1.97,
+     "lower_fwd_mm": -0.02,
+     "lower_lead_mm": -1.99,
+     "open_through_mm": 0.0,
+     "upper_proud_h_mm": 6.2,
+     "lower_proud_h_mm": 0.0
+    }
+   },
+   "gap_columns_after": 0,
+   "line": {
+    "width_mm": 1.1,
+    "half_length_mm": 16.5,
+    "smirk_rise_mm": 1.1
+   }
+  },
+  "ao_floor": {
+   "floor": 1.0,
+   "feather_mm": 3.0,
+   "undereye_faces": 1159,
+   "undereye_faces_full": 1002,
+   "mouth_faces": 442,
+   "mouth_faces_full": 412
+  },
+  "untouched": {
+   "iris_deg": 27.0,
+   "pupil_deg": 10.0,
+   "socket_scale": 1.3,
+   "iris_coverage_pct": {
+    "L": 57.7,
+    "R": 57.7
+   },
+   "orbit_shape_dev_mm": {
+    "nose": 0.0,
+    "nose_bridge": 0.0,
+    "side": 0.0,
+    "temple": 0.0,
+    "cheek": 0.0,
+    "forehead": 0.0,
+    "outside_socket_core": 2.387
+   }
+  },
+  "tris_total": {
+   "v4": 48428,
+   "v5": 48194
+  }
+ },
+ "digest_geometry_colour_uv": "c379238bb8ed20a1",
  "palette": {
   "default": {
    "skin": {
