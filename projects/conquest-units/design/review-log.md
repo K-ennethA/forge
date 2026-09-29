@@ -1089,3 +1089,24 @@ Study findings, applicable to Wren v6+:
 - HAIR: chunky braid/lock shells with crisp silhouettes; interior kept
   simple; shading soft and volume-wide (consistent with the proxy-
   normal approach).
+
+## 2026-09-29 — Wren v7 hair feedback (artist verbatim + 2 figure refs)
+
+References saved: design/reference/fe-style/fe-byleth-figure-hair.png
+(Byleth figure: long flowing locks, each a clean smooth ribbon with a
+sharp tip, clearly separated) and fe-archer-figure-hair.webp (silver-
+haired archer figure: crisp layered segments overlapping like feathers,
+every lock a smooth shell with a defined edge - the closest match to
+Wren's short messy cut).
+
+"the hair can still be improved more segmented and cleared ours look
+chopped up"
+
+Binding reading: the locks must read as SEGMENTED, CLEAN ribbons -
+each lock one smooth continuous surface with a crisp defined edge and a
+sharp tip, overlapping in clear layers like the figures; ours reads
+CHOPPED UP (broken/noisy surfaces, ragged edges, unclear lock
+boundaries). Likely work: smoother per-lock surfaces (more segments
+along each lock's sweep / less cut noise), continuous uninterrupted
+S-curves root to tip, cleaner lock-boundary edges, fewer random breaks;
+the figure refs are the quality bar. Dispatch after the v6 mouth lane.
