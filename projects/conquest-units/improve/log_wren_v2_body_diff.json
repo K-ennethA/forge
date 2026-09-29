@@ -1,0 +1,50 @@
+{
+ "rule": "v1 (96478b3) vs v2 rigged/wren.blend rest pose: symmetric nearest-vertex distance for every vertex below z",
+ "z_1.40": {
+  "wren": {
+   "z_below": 1.4,
+   "verts_v1": 15121,
+   "verts_v2": 15121,
+   "v2_to_v1_max_mm": 0.4909,
+   "v1_to_v2_max_mm": 0.4909,
+   "v2_to_v1_p99_mm": 0.0,
+   "moved_verts": 4,
+   "moved_z_range": [
+    1.3966,
+    1.3999
+   ]
+  },
+  "wren_pitchfork": {
+   "z_below": 1.4,
+   "verts_v1": 417,
+   "verts_v2": 417,
+   "v2_to_v1_max_mm": 0.0,
+   "v1_to_v2_max_mm": 0.0,
+   "v2_to_v1_p99_mm": 0.0,
+   "moved_verts": 0,
+   "moved_z_range": null
+  }
+ },
+ "z_1.30": {
+  "wren": {
+   "z_below": 1.3,
+   "verts_v1": 14040,
+   "verts_v2": 14040,
+   "v2_to_v1_max_mm": 0.0,
+   "v1_to_v2_max_mm": 0.0,
+   "v2_to_v1_p99_mm": 0.0,
+   "moved_verts": 0,
+   "moved_z_range": null
+  },
+  "wren_pitchfork": {
+   "z_below": 1.3,
+   "verts_v1": 353,
+   "verts_v2": 353,
+   "v2_to_v1_max_mm": 0.0,
+   "v1_to_v2_max_mm": 0.0,
+   "v2_to_v1_p99_mm": 0.0,
+   "moved_verts": 0,
+   "moved_z_range": null
+  }
+ }
+}

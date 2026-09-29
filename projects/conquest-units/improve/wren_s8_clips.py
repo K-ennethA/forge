@@ -688,6 +688,9 @@ FOCUS["fork_head_idle"] = box(np.vstack([_tt_, _tt_ - np.array([0.0, 0.0, 0.38])
 _eyes1 = C1[np.concatenate([rng("eye.L"), rng("eye.R")])]
 FOCUS["eyes"] = [(_eyes1.min(0) - np.array([0.012, 0.0, 0.004])).tolist(), (_eyes1.max(0) + np.array([0.012, 0.0, 0.016])).tolist()]
 FOCUS["brows"] = [(_eyes1.min(0) - np.array([0.016, 0.0, 0.002])).tolist(), (_eyes1.max(0) + np.array([0.016, 0.0, 0.022])).tolist()]
+_mb0 = np.array(FOCUS["mouth"])                      # v2: the rest-pose mouth box's skin, re-boxed in the idle pose
+_mi = np.nonzero(np.all((V0m >= _mb0[0]) & (V0m <= _mb0[1]), axis=1))[0]
+FOCUS["mouth"] = box(C1[_mi], 0.002)
 FOCUS["bracer"] = box(C1[np.concatenate([rng("bracer"), rng("bracergem")])], 0.03)
 FOCUS["necklace"] = box(C1[np.concatenate([rng("pendant"), rng("clasp"), rng("pendcap")])], 0.035)
 FOCUS["hand"] = box([xf(np.array(rig.pose.bones["hand_r"].matrix) @ np.linalg.inv(REST4["hand_r"]), HEADP["hand_r"])], 0.10)

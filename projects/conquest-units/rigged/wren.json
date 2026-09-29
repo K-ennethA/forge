@@ -6,7 +6,7 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
-  "seconds": 0.5,
+  "seconds": 0.6,
   "pitchfork_object": "every pitchfork vertex 1.0 on 'pitchfork' (child of hand_r)",
   "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each"
  },
@@ -158,8 +158,8 @@
     "hair_side.L": {
      "tip_lag_frames": 4,
      "axis": "x",
-     "driver_ptp_deg": 8.96,
-     "tip_follow_through_ptp_deg": 6.3
+     "driver_ptp_deg": 8.97,
+     "tip_follow_through_ptp_deg": 6.31
     },
     "hair_side.R": {
      "tip_lag_frames": 4,
@@ -170,7 +170,7 @@
     "hair_tail": {
      "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 12.18,
+     "driver_ptp_deg": 12.19,
      "tip_follow_through_ptp_deg": 15.62
     },
     "tie": {
@@ -181,7 +181,7 @@
     }
    }
   },
-  "seconds": 0.2
+  "seconds": 0.3
  },
  "clips": {
   "idle": {
@@ -1022,14 +1022,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.018,
+    0.0181,
     -0.1472,
     1.6431
    ],
    "tail": [
-    0.0184,
+    0.0185,
     -0.1491,
-    1.6275
+    1.6276
    ]
   },
   {
@@ -1037,9 +1037,9 @@
    "parent": "hair_fringe.0",
    "deform": true,
    "head": [
-    0.0184,
+    0.0185,
     -0.1491,
-    1.6275
+    1.6276
    ],
    "tail": [
     0.0185,
@@ -1059,7 +1059,7 @@
    "tail": [
     0.0184,
     -0.1518,
-    1.5963
+    1.5964
    ]
   },
   {
@@ -1067,14 +1067,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.1145,
-    -0.0404,
-    1.6088
+    0.115,
+    -0.0408,
+    1.6081
    ],
    "tail": [
-    0.1203,
-    -0.0372,
-    1.5957
+    0.1213,
+    -0.0381,
+    1.5949
    ]
   },
   {
@@ -1082,14 +1082,14 @@
    "parent": "hair_side.L.0",
    "deform": true,
    "head": [
-    0.1203,
-    -0.0372,
-    1.5957
+    0.1213,
+    -0.0381,
+    1.5949
    ],
    "tail": [
-    0.1264,
-    -0.0349,
-    1.5827
+    0.1279,
+    -0.0355,
+    1.5819
    ]
   },
   {
@@ -1097,14 +1097,14 @@
    "parent": "hair_side.L.1",
    "deform": true,
    "head": [
-    0.1264,
-    -0.0349,
-    1.5827
+    0.1279,
+    -0.0355,
+    1.5819
    ],
    "tail": [
-    0.1329,
-    -0.0325,
-    1.5699
+    0.135,
+    -0.0331,
+    1.569
    ]
   },
   {
@@ -1157,12 +1157,12 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0179,
-    0.0267,
+    0.0187,
+    0.0268,
     1.5217
    ],
    "tail": [
-    0.0174,
+    0.0175,
     0.0317,
     1.5025
    ]
@@ -1172,7 +1172,7 @@
    "parent": "hair_tail.0",
    "deform": true,
    "head": [
-    0.0174,
+    0.0175,
     0.0317,
     1.5025
    ],
@@ -1696,7 +1696,7 @@
   "grip_at_m_from_butt": 1.1136
  },
  "tris": {
-  "model": 49662,
+  "model": 48137,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1705,20 +1705,20 @@
  },
  "digest": {
   "parts": {
-   "bake_normal": "a737aa5785c9991e",
-   "bake_ao": "9a6f81ebbdb694a6",
-   "ao_lifted": "788ec3347fc53a85",
-   "geometry_colour_uv": "4760cfe4cf8f0565",
-   "weights": "a962ce03f13eb5bc",
-   "keys": "9fe00f7f678abe8c",
-   "clip_samples": "f297de1ed30eb805"
+   "bake_normal": "01130b2072d72ae8",
+   "bake_ao": "201732e007e7a296",
+   "ao_lifted": "603690cda56f51d9",
+   "geometry_colour_uv": "e69213d5dd9af0f6",
+   "weights": "b54594b332fb1d4c",
+   "keys": "44a7788d734b7318",
+   "clip_samples": "8b97fce24073cc5e"
   },
-  "combined": "80747af2ed9baa03"
+  "combined": "7bdbbaf7e1cd6d77"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 11213020,
-  "seconds": 1.2,
+  "bytes": 11430372,
+  "seconds": 2.1,
   "carries": {
    "materials": [
     {
@@ -2451,17 +2451,17 @@
    },
    "region_faces": {
     "wren": {
-     "skin": 14393,
-     "skin_shadow": 474,
-     "lips": 18,
-     "mouth": 156,
-     "liner": 380,
-     "brow": 237,
+     "skin": 12842,
+     "skin_shadow": 480,
+     "lips": 124,
+     "mouth": 146,
+     "liner": 353,
+     "brow": 180,
      "eye_sclera": 160,
      "eye_iris": 64,
      "eye_pupil": 32,
-     "hair": 3273,
-     "hair_shade": 2581,
+     "hair": 3280,
+     "hair_shade": 2580,
      "hair_tie": 40,
      "shirt": 2200,
      "sleeve_roll": 168,
@@ -2500,14 +2500,14 @@
      "ferrule": 40
     }
    },
-   "geometry_colour_uv_digest": "51c1052778fa6920"
+   "geometry_colour_uv_digest": "66346714ae816183"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "4760cfe4cf8f0565",
-   "default_digest_after_restore": "4760cfe4cf8f0565"
+   "default_digest_before": "e69213d5dd9af0f6",
+   "default_digest_after_restore": "e69213d5dd9af0f6"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 55.6
+ "seconds": 88.5
 }

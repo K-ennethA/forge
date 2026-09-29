@@ -144,6 +144,81 @@ for p in me0.polygons:
         BF.append([int(remap[i]) for i in vs])
 BV = V_all[body_idx].copy()
 BW = W0[body_idx].copy()
+
+
+# ---- v2 lip seal (review-log 2026-09-28 "Wren v2 face feedback": the lips pair). The MPFB base mouth rests PARTED; v1
+# closed it with the mouth-compression expression at 1.0, which rolled the upper lip in behind a protruding lower lip (the
+# mismatch) and squeezed the corners (the pinch). v2 drops the compression and seals the relaxed lips geometrically: the
+# gap (front rays that pass between the lips and hit deeper than LIP_SEAL[2] behind the lip front) is measured per x, and
+# the upper lip moves down / the lower lip up by half of it each, full at the rim, fading out over LIP_SEAL[0] of lip
+# height; the lips meet LIP_SEAL[1] past the midline (a closed seam, no slit hole). No MPFB dial closes the base mouth
+# (measured: upperlip-middle-down / lowerlip-middle-up at 1.0 still leave a 64-70 mm deep gap at x = 4 mm).
+def lip_gap(V, F, z_guess, xs, depth):
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    zs_ = np.arange(z_guess - 0.012, z_guess + 0.012, 0.0001)
+    top, bot = np.full(len(xs), np.nan), np.full(len(xs), np.nan)
+    for k, x_ in enumerate(xs):
+        ys_ = np.array([(lambda h: h[0][1] if h[0] is not None else 9.0)(bvh_.ray_cast(Vector((float(x_), -0.6, float(z_))),
+                                                                                          Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zs_])
+        # local front: the most forward hit within +-5 mm (a well between two lips, not the face's own slope)
+        loc_ = np.array([ys_[max(i - 50, 0):i + 51].min() for i in range(len(ys_))])
+        deep_ = np.nonzero(ys_ > loc_ + depth)[0]
+        if len(deep_):
+            # the gap = the deep run nearest the guess (one contiguous run)
+            i0 = deep_[np.argmin(np.abs(zs_[deep_] - z_guess))]
+            lo_, hi_ = i0, i0
+            while lo_ - 1 >= 0 and ys_[lo_ - 1] > loc_[lo_ - 1] + depth:
+                lo_ -= 1
+            while hi_ + 1 < len(zs_) and ys_[hi_ + 1] > loc_[hi_ + 1] + depth:
+                hi_ += 1
+            top[k], bot[k] = zs_[hi_] + 0.00005, zs_[lo_] - 0.00005
+    return top, bot
+
+
+def seal_lips(V, F, z_guess):
+    xs = np.arange(-0.030, 0.0301, 0.0005)
+    top, bot = lip_gap(V, F, z_guess, xs, LIP_SEAL[2])
+    has = ~np.isnan(top)
+    if not has.any():
+        return V, {"gap_max_mm": 0.0}
+    zc = np.interp(xs, xs[has], 0.5 * (top[has] + bot[has]))
+    half = np.where(has, 0.5 * (np.nan_to_num(top) - np.nan_to_num(bot)), 0.0)
+    half = np.convolve(half, np.ones(5) / 5.0, mode="same")          # the gap tapers into the corners smoothly
+    V = V.copy()
+    box_ = (np.abs(V[:, 0]) < 0.032) & (np.abs(V[:, 2] - z_guess) < 0.03)
+    y_front = float(V[box_ & (np.abs(V[:, 0]) < 0.02) & (np.abs(V[:, 2] - z_guess) < 0.015), 1].min())
+    near = box_ & (V[:, 1] < y_front + 0.02)
+    x_ = V[near, 0]; z_ = V[near, 2]
+    zc_ = np.interp(x_, xs, zc); h_ = np.interp(x_, xs, half)
+    up_ = z_ >= zc_
+    d_ = np.where(up_, z_ - (zc_ + h_), (zc_ - h_) - z_)                # distance past the rim (<= 0 inside the gap)
+    w_ = 1.0 - smoothstep(0.0, LIP_SEAL[0], np.maximum(d_, 0.0))
+    shift = w_ * np.where(h_ > 1e-5, h_ + LIP_SEAL[1], 0.0)
+    V[np.nonzero(near)[0], 2] = z_ + np.where(up_, -shift, shift)
+    top2, bot2 = lip_gap(V, F, z_guess, xs, LIP_SEAL[2])
+    global SEAM
+    # the seam as SEEN from the front after the seal: per column the most recessed front hit within +-3 mm of the gap mid
+    bvh2_ = BVHTree.FromPolygons(V.tolist(), F)
+    zc2 = []
+    for x_, z0_ in zip(xs[has], zc[has]):
+        zz_ = np.arange(z0_ - 0.003, z0_ + 0.003, 0.00005)
+        yy_ = np.array([(lambda h: h[0][1] if h[0] is not None else -9.0)(bvh2_.ray_cast(Vector((float(x_), -0.6, float(z_))),
+                                                                                         Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zz_])
+        zc2.append(float(zz_[int(np.argmax(yy_))]))
+    zc2 = np.convolve(np.pad(np.array(zc2), 2, mode="edge"), np.ones(5) / 5.0, mode="valid")
+    SEAM = {"xs": xs[has], "zc": zc2}               # the seam curve (the painted mouth line follows it)
+    return V, {"rule": "front rays deeper than %.1f mm behind the lip front = the gap; half the gap closed from each lip, "
+                       "falloff %.1f mm, overlap %.2f mm" % (LIP_SEAL[2] * 1000, LIP_SEAL[0] * 1000, LIP_SEAL[1] * 1000),
+               "gap_max_mm_before": round(1000 * float(np.nanmax(top - bot)), 2), "gap_columns_before": int(has.sum()),
+               "gap_width_mm_before": round(1000 * float(xs[has].max() - xs[has].min()), 1),
+               "gap_columns_after": int((~np.isnan(top2)).sum()), "verts_moved": int((shift > 1e-6).sum()),
+               "max_shift_mm": round(1000 * float(shift.max()), 2)}
+
+
+SEAM = None
+if LIP_SEAL is not None:
+    BV, report["lip_seal"] = seal_lips(BV, BF, float(TEETH[:, 2].min()))
+    print("LIPSEAL", json.dumps(report["lip_seal"]))
 for o in (hb, rig0):
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):
@@ -275,6 +350,8 @@ _mins = [i for i in range(3, len(_ypf) - 3) if _ypf[i] <= _ypf[i - 1] and _ypf[i
 _mins = sorted(sorted(_mins, key=lambda i: _ypf[i])[:2])
 _i_slit = _mins[0] + int(np.argmax(_ypf[_mins[0]:_mins[1] + 1]))
 Z_SLIT = float(_zs_l[_i_slit])
+if SEAM is not None:                                   # v2: the slit IS the sealed seam at the midline
+    Z_SLIT = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
 Z_LIP = Z_SLIT + LIP_DZ
 Y_LIP = float(np.nanmin(_yp[np.abs(_zs_l - Z_SLIT) < 0.003]))
 _zc_s = np.arange(Z_SLIT, Z_SLIT - 0.09, -0.00025)
@@ -288,6 +365,37 @@ report["chin"] = {"chin_bottom_z": round(Z_CHIN, 4), "chin_front_y": round(Y_CHI
                   "slit_to_chin_m": round(Z_SLIT - Z_CHIN, 4),
                   "jaw_half_width_m": {"chin+%dmm" % d: round(float(np.abs(BV[_hf & (np.abs(BV[:, 2] - Z_CHIN - d / 1000.0) < 0.0015), 0]).max()), 4)
                                        for d in (5, 10, 20, 35) if (_hf & (np.abs(BV[:, 2] - Z_CHIN - d / 1000.0) < 0.0015)).any()}}
+
+
+def lip_pairing(bvh_, z_slit, xs_mm=(0.0, 4.0, 8.0, 12.0)):
+    """mouth proof (v2): per column x the front-ray profile across the seam: how far each lip stands proud of the seam
+    (upper_fwd / lower_fwd), the lower lip's lead over the upper (lower_lead: v1's mismatch), whether rays pass between
+    the lips (open), and the lip-to-lip vertical span of the proud parts (each lip's height where it stands >= 0.5 mm
+    proud of the seam)."""
+    out = {}
+    zs_ = np.arange(z_slit - 0.012, z_slit + 0.012, 0.0001)
+    for xm in xs_mm:
+        ys_ = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(bvh_.ray_cast(Vector((xm * 0.001, -0.6, float(z_))),
+                                                                                           Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zs_])
+        zs0_ = float(np.interp(xm * 0.001, SEAM["xs"], SEAM["zc"])) if SEAM is not None else z_slit
+        near_ = np.abs(zs_ - zs0_) <= (0.0015 if SEAM is not None else 0.003)
+        i_s = int(np.nanargmax(np.where(near_, ys_, -9.0)))
+        ys_s = float(ys_[i_s])
+        upm = (zs_ > zs_[i_s]) & (zs_ < zs_[i_s] + 0.008); lom = (zs_ < zs_[i_s]) & (zs_ > zs_[i_s] - 0.008)
+        yu, yl = float(np.nanmin(ys_[upm])), float(np.nanmin(ys_[lom]))
+        front_ = min(yu, yl)
+        prd_u = upm & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
+        prd_l = lom & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
+        out["x%+d" % xm] = {"seam_z_offset_mm": round(1000 * float(zs_[i_s] - z_slit), 2),
+                            "upper_fwd_mm": round(1000 * (ys_s - yu), 2), "lower_fwd_mm": round(1000 * (ys_s - yl), 2),
+                            "lower_lead_mm": round(1000 * (yu - yl), 2),
+                            "open_through_mm": round(1000 * (ys_s - front_), 2) if ys_s - front_ > 0.006 else 0.0,
+                            "upper_proud_h_mm": round(0.1 * float(prd_u.sum()), 1), "lower_proud_h_mm": round(0.1 * float(prd_l.sum()), 1)}
+    return out
+
+
+report["mouth"] = {"lip_pairing_pre_cut": lip_pairing(BVH_BODY, Z_SLIT)}
+print("MOUTH", json.dumps(report["mouth"]))
 _scalp = HEAD_B & (BV[:, 2] > EYE["L"]["c"][2])
 HC = np.array([0.0, 0.5 * (BV[_scalp, 1].min() + BV[_scalp, 1].max()), EYE["L"]["c"][2]])
 HR = np.array([np.abs(BV[_scalp, 0]).max(), 0.5 * (BV[_scalp, 1].max() - BV[_scalp, 1].min()), Z_TOP - HC[2]])

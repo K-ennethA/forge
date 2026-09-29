@@ -130,7 +130,9 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          "cloak": (180.0, 8.0, 1.0), "cloak_tq": (140.0, 10.0, 1.0), "cloak_front": (0.0, 6.0, 1.0),
          "patches": (180.0, 10.0, 0.9), "necklace": (0.0, 6.0, 1.0), "bracer": (60.0, 8.0, 1.0),
          "bracer_front": (15.0, 6.0, 1.0), "fork_head": (10.0, 6.0, 1.0), "fork_full": (20.0, 4.0, 1.0),
-         "boots_front": (0.0, 10.0, 1.0)}
+         "boots_front": (0.0, 10.0, 1.0),
+         # v2 face round: the mouth (lip pairing) front + three-quarter
+         "mouth": (0.0, 2.0, 1.0), "mouth_tq": (30.0, 4.0, 1.0), "mouth_side": (90.0, 2.0, 1.0)}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"

@@ -23,11 +23,29 @@ _underpuff = np.array([all(_cdom[i].startswith(("thigh_", "calf_")) and _pz0 < C
 _bra = WRI["L"] + (ELB["L"] - WRI["L"]) * (BRACER["t"][0] + 0.06); _brb = WRI["L"] + (ELB["L"] - WRI["L"]) * (BRACER["t"][1] - 0.06)
 _bax = unit(_brb - _bra); _blen = float(np.linalg.norm(_brb - _bra))
 _underbr = np.array([all(_cdom[i] in ("lowerarm_l", "hand_l") and 0.0 < float((CV[i] - _bra) @ _bax) < _blen for i in f) for f in CF])
-_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr
+# v2: ENCLOSED skin (the harvest that pays for the face round's cuts -- the sealed mouth's interior sleeve and the eye-
+# socket skin behind the eyeballs): a head face goes only if EVERY one of its vertices is enclosed -- rays from the vertex
+# (lifted 0.4 mm off the skin) toward every viewing direction of the front / tactical hemisphere (ENCLOSED_DIRS) all hit
+# the body or an eyeball within 8 cm. The head carries no facial rig, so the enclosure holds in every clip.
+_bvh_enc = comb_bvh({"eye"})
+_cn = VP.vertex_normals(CV, CF)
+if float(np.mean(np.einsum("ij,ij->i", _cn, CV - CV.mean(0)))) < 0:
+    _cn = -_cn
+_cand = (_cdom == "head") & ((np.linalg.norm(CV - np.array([0.0, Y_LIP, Z_SLIT]), axis=1) < 0.030) |
+                             (np.linalg.norm(CV - EYE["L"]["c"], axis=1) < EYE["L"]["r"] + 0.006) |
+                             (np.linalg.norm(CV - EYE["R"]["c"], axis=1) < EYE["R"]["r"] + 0.006))
+_dirs = [unit(d) for d in ENCLOSED_DIRS]
+_enc_v = np.zeros(len(CV), bool)
+for i in (np.nonzero(_cand)[0] if len(_dirs) else []):          # (ENCLOSED_DIRS = () turns the harvest off)
+    o_ = Vector(CV[i] + _cn[i] * 0.0004)
+    _enc_v[i] = all(_bvh_enc.ray_cast(o_, Vector(d), 0.08)[0] is not None for d in _dirs)
+_enclosed = np.array([bool(_enc_v[f].all()) for f in CF]) & (reg != "hair")
+_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr & ~_enclosed
 _usedv = np.unique(np.concatenate([np.array(f) for f, k in zip(CF, _keep) if k]))
 _rm = -np.ones(len(CV), dtype=np.int64); _rm[_usedv] = np.arange(len(_usedv))
 report["hidden_skin_removed"] = {"scalp_faces": int((reg == "hair").sum()), "foot_faces": int(_foot.sum()),
                                  "boot_shin_faces": int((reg == "boot").sum()), "under_blouse_faces": int(_underpuff.sum()), "under_bracer_faces": int(_underbr.sum()),
+                                 "enclosed_face_faces_v2": int(_enclosed.sum()), "enclosed_rule": "every vertex's rays toward %d front / tactical directions hit body or eyeball within 8 cm" % len(_dirs),
                                  "tris_removed": int(sum(len(f) - 2 for f, k in zip(CF, _keep) if not k))}
 CV_all, CF_all, reg_all = CV, CF, reg                  # (kept for the bake high and the clip gates)
 CV = CV[_usedv]; CW = CW[_usedv]
@@ -125,6 +143,37 @@ report["facing"] = {"rule": "head centre (between the eyes, at the skull's mid d
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
 HAIR_REG_IDS = [REG.index(r) for r in ("hair", "hair_shade", "hair_tie")]
 _hairf = np.isin(rid, HAIR_REG_IDS)
+# v2 FACE ZONE: the body's skin faces (skin / shadow shapes / lips / mouth / liner / brow) whose every vertex is head- or
+# neck-dominant -- the face, ears and the bare neck down to the collar (a faceted neck under a smooth face read as a seam
+# at the jaw); the torso / arms / legs stay v1
+FACE_SKIN = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow"]
+_hdom = np.array([MB[j] in ("head", "neck_01") for j in np.argmax(CW, 1)])
+_facez = np.zeros(len(rid), bool)
+_facez[:len(CF)] = np.array([bool(_hdom[f].all()) for f in CF]) & np.isin(np.array(reg), FACE_SKIN)
+_pa3 = np.empty(len(me.polygons)); me.polygons.foreach_get("area", _pa3)
+_pn3 = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _pn3); _pn3 = _pn3.reshape(-1, 3)
+_eF = {}
+for fi_ in np.nonzero(_facez)[0]:
+    f_ = OBJ["main"]["F"][fi_]
+    for k_ in range(len(f_)):
+        _eF.setdefault((min(f_[k_], f_[(k_ + 1) % len(f_)]), max(f_[k_], f_[(k_ + 1) % len(f_)])), []).append(fi_)
+_dih = np.degrees(np.arccos(np.clip([float(_pn3[a_] @ _pn3[b_]) for a_, b_ in (v_ for v_ in _eF.values() if len(v_) == 2)], -1, 1)))
+report["face_zone"] = {"rule": "body skin faces (%s) with every vertex head- or neck_01-dominant" % ", ".join(FACE_SKIN),
+                       "faces": int(_facez.sum()), "tris": tri_count_F([OBJ["main"]["F"][i] for i in np.nonzero(_facez)[0]]),
+                       "area_cm2": round(1e4 * float(_pa3[_facez].sum()), 1),
+                       "dihedral_deg_p50_p90": [round(float(np.percentile(_dih, 50)), 2), round(float(np.percentile(_dih, 90)), 2)],
+                       "tris_per_cm2": round(tri_count_F([OBJ["main"]["F"][i] for i in np.nonzero(_facez)[0]]) / (1e4 * float(_pa3[_facez].sum())), 2)}
+
+
+def uv_share():
+    uvd = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", uvd); uvd = uvd.reshape(-1, 2)
+    lt = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_total", lt)
+    ls = np.concatenate([[0], np.cumsum(lt)[:-1]])
+    a = np.zeros(len(lt))
+    for k in range(len(lt)):
+        q = uvd[ls[k]:ls[k] + lt[k]]
+        a[k] = 0.5 * abs(float(np.dot(q[:, 0], np.roll(q[:, 1], -1)) - np.dot(q[:, 1], np.roll(q[:, 0], -1))))
+    return uvd, lt, ls, a
 for ob_ in (low, fko):
     ob_.data.shade_flat()
     bpy.context.view_layer.objects.active = ob_
@@ -141,6 +190,29 @@ for ob_ in (low, fko):
         continue
     scene.tool_settings.mesh_select_mode = (False, False, True)
     scene.tool_settings.use_uv_select_sync = False
+    if FACE_UV_SCALE != 1.0:
+        # v2: the face zone re-unwrapped as its own islands and scaled to FACE_UV_SCALE x the rest's texel density (the
+        # non-hair pack below keeps relative island sizes)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        _uv0, _lt0, _ls0, _ua0 = uv_share()
+        _dens0 = float(_ua0[_facez].sum() / _pa3[_facez].sum()) / float(_ua0[~_facez & ~_hairf].sum() / _pa3[~_facez & ~_hairf].sum())
+        bpy.ops.object.mode_set(mode="EDIT")
+        bm_ = bmesh.from_edit_mesh(ob_.data); bm_.faces.ensure_lookup_table()
+        for f_ in bm_.faces:
+            f_.select_set(bool(_facez[f_.index]))
+        bmesh.update_edit_mesh(ob_.data)
+        bpy.ops.uv.smart_project(angle_limit=math.radians(66.0), island_margin=0.002, area_weight=0.0,
+                                 correct_aspect=True, scale_to_bounds=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        _uv1, _lt1, _ls1, _ua1 = uv_share()
+        _db = float(_ua1[~_facez & ~_hairf].sum() / _pa3[~_facez & ~_hairf].sum())
+        _df = float(_ua1[_facez].sum() / _pa3[_facez].sum())
+        _k = math.sqrt(FACE_UV_SCALE ** 2 * _db / _df)
+        _fl = np.repeat(_facez, _lt1)
+        _uv1[_fl] = _uv1[_fl].min(0) + (_uv1[_fl] - _uv1[_fl].min(0)) * _k
+        ob_.data.uv_layers.active.data.foreach_set("uv", _uv1.ravel()); ob_.data.update()
+        report["face_uv"] = {"linear_texel_density_vs_rest": {"v1_rule": round(math.sqrt(_dens0), 3), "v2": FACE_UV_SCALE}}
+        bpy.ops.object.mode_set(mode="EDIT")
     for sel_hair in (False, True):
         bm_ = bmesh.from_edit_mesh(ob_.data)
         bm_.faces.ensure_lookup_table()
@@ -171,6 +243,11 @@ for ob_ in (low, fko):
     bpy.ops.object.mode_set(mode="OBJECT")
     ob_.data.polygons.foreach_set("select", np.ones(len(ob_.data.polygons), bool))
     uvd_ = np.empty(len(ob_.data.loops) * 2); ob_.data.uv_layers.active.data.foreach_get("uv", uvd_); uvd_ = uvd_.reshape(-1, 2)
+    _uvF, _ltF, _lsF, _uaF = uv_share()
+    report.setdefault("face_uv", {}).update({"uv_share_pct": round(100 * float(_uaF[_facez].sum()), 3),
+                                             "texels_per_mm_face": round(BAKE_RES[0] * math.sqrt(float(_uaF[_facez].sum() / _pa3[_facez].sum())) / 1000, 3),
+                                             "texels_per_mm_rest": round(BAKE_RES[0] * math.sqrt(float(_uaF[~_facez & ~_hairf].sum() / _pa3[~_facez & ~_hairf].sum())) / 1000, 3)})
+    print("FACE", json.dumps({"zone": report["face_zone"], "uv": report["face_uv"]}))
     report["uv_hair_strip"] = {"strip_u_from": round(1.0 - HAIR_UV_STRIP, 4), "hair_faces": int(_hairf.sum()),
                                "hair_uv_u_min": round(float(uvd_[_hairf[lpf_], 0].min()), 4),
                                "nonhair_uv_u_max": round(float(uvd_[~_hairf[lpf_], 0].max()), 4)}
@@ -236,7 +313,9 @@ FOCUS = {"face": box([EYE["L"]["c"] - SHIFT, EYE["R"]["c"] - SHIFT, np.array([0,
          "fork_head": box([FORK_T - SHIFT + np.array([0, 0, FORK["collar"][0] * FORK["len"] - 0.05]),
                            FORK_T - SHIFT + np.array([0, 0, FKL["top"] + 0.01])], 0.05),
          "fork_full": box(np.vstack([OBJ["fork"]["V"]]), 0.03),
-         "eyes": box([EYE["L"]["c"] - SHIFT + np.array([0.022, 0, 0.018]), EYE["R"]["c"] - SHIFT - np.array([0.022, 0, 0.012])], 0.004)}
+         "eyes": box([EYE["L"]["c"] - SHIFT + np.array([0.022, 0, 0.018]), EYE["R"]["c"] - SHIFT - np.array([0.022, 0, 0.012])], 0.004),
+         "brows": box([EYE["L"]["c"] - SHIFT + np.array([0.026, 0, 0.030]), EYE["R"]["c"] - SHIFT - np.array([0.026, 0, 0.006])], 0.004),
+         "mouth": box([np.array([-0.026, Y_LIP, Z_SLIT - 0.016]) - SHIFT, np.array([0.026, Y_LIP + 0.012, Z_SLIT + 0.014]) - SHIFT], 0.002)}
 low["conquest_focus"] = json.dumps(FOCUS)
 print("TRIS", json.dumps(report["tris"]))
 print("MEASURE", json.dumps(report["measure"]), "HIDDEN", json.dumps(report["hidden_skin_removed"]))
@@ -287,11 +366,16 @@ fko.hide_render = True
 low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = False
 low.visible_transmission = low.visible_volume_scatter = False
 me.shade_smooth()
+if FACE_NORMAL_REF == "flat":
+    # v2: the face zone bakes against its FLAT facets (tangent frames of the flat faces): the map carries the smooth high's
+    # normal per facet, so the flat-shaded face renders smooth; every other face bakes against the smooth low (v1)
+    _sm = np.ones(len(me.polygons), bool); _sm[_facez] = False
+    me.polygons.foreach_set("use_smooth", _sm); me.update()
 for o in scene.objects:
     o.select_set(o in (HIGHB, HIGHP, low))
 bpy.context.view_layer.objects.active = low
 bstats = {}
-for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, 16)):
+for typ, node, samples in (("NORMAL", tn, 1), ("AO", ta, AO_SAMPLES)):
     nt.nodes.active = node
     scene.cycles.samples = samples
     t_ = time.time()
@@ -445,6 +529,25 @@ def geometry_digest(obs):
     return h.hexdigest()[:16]
 
 
+_ap2 = report["liner_proof"]["aperture_mm_L"]
+report["face_round"] = {
+    "spec": "review-log 2026-09-28 'Wren v2 face feedback': bigger eyes, bigger brows, lips paired / not pinched, face smoothing",
+    "eyes_v1": {k: V1_FACE[k] for k in ("eye_dial", "aperture_mm_L", "open_w_mm", "open_h_mm")},
+    "eyes_v2": {"eye_dial": TARGETS["eyes/l-eye-scale-incr"], "lid_height2": TARGETS["eyes/l-eye-height2-incr"],
+                "slit": TARGETS["expression/units/caucasian/eye-left-slit"], "aperture_mm_L": _ap2,
+                "open_w_mm": round(_ap2["outer"] + _ap2["inner"], 2), "open_h_mm": round(_ap2["up"] + _ap2["down"], 2),
+                "eyeball_r_mm": round(1000 * EYE["L"]["r"], 2)},
+    "brows_v1_mm": V1_FACE["brow_width_mm_measured"], "brows_v2_mm": report["brow"]["width_mm_measured"],
+    "brow_W_mm": {"v1": V1_FACE["brow_W_mm"], "v2": [w * 1000 for w in BROW_W]},
+    "mouth_v1": {"mouth_compression": V1_FACE["mouth_compression"], "lip_pairing_x0": V1_FACE["lip_pairing_x0"]},
+    "mouth_v2": {"mouth_compression": TARGETS.get("expression/units/caucasian/mouth-compression", 0.0),
+                 "lip_seal": report.get("lip_seal"), "lip_pairing": report["mouth"]["lip_pairing_pre_cut"],
+                 "lip_tint_mm": {"upper": LIP[1] * 1000, "lower": LIP[2] * 1000}, "mouth_line_mm": MOUTH_LINE[0] * 1000},
+    "face_zone_v1": V1_FACE["face_zone_visible"], "face_zone_v2": dict(report["face_zone"], **report.get("face_uv", {}),
+                                                                       normal_ref=FACE_NORMAL_REF),
+    "tris_total": {"v1": V1_FACE["total_tris"], "v2": report["tris"]["total"]},
+    "body_untouched_rule": "every change is head / neck skin: targets are face dials, the seal / cuts / harvest are head-gated"}
+print("FACE_ROUND", json.dumps(report["face_round"]))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

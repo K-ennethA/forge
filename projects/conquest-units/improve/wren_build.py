@@ -8,6 +8,10 @@
 
 Spec: design/review-log.md 2026-09-28 "NEW UNIT: Wren" + design/reference/wren-character-sheet.webp (three views + head /
 necklace / bracer / cloak / cloth-patch / staff detail panels + palette chips). Age 16, village farm boy, HERO role.
+v2 (review-log 2026-09-28 "Wren v2 face feedback"): the FACE round -- bigger eyes, bigger brows, the lips re-paired (the
+v1 mouth-compression expression rolled the upper lip in behind a protruding lower lip = the mismatch + the pinch), face
+smoothing (a face-zone normal bake referenced to the flat facets at a raised face texel density: the face shades smooth
+while every face stays flat-shaded per the contract). Everything below the neck is v1.
 
 LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 entries):
   - MPFB2 base tuned STYLISED immediately (age macro at 16 years, anime face dials: larger eyes, soft jaw, small nose),
@@ -48,8 +52,9 @@ MACRO = {"gender": 1.0, "age": 0.30, "muscle": 0.52, "weight": 0.40, "proportion
          "cupsize": 0.5, "firmness": 0.5}
 RACE = {"caucasian": 0.72, "asian": 0.23, "african": 0.05}
 TARGETS = {                           # "face dials" (anime read: larger eyes, soft jaw, small nose, bold level brows)
-    "eyes/l-eye-scale-incr": 0.40, "eyes/r-eye-scale-incr": 0.40,          # larger eyes
-    "eyes/l-eye-height2-incr": 0.25, "eyes/r-eye-height2-incr": 0.25,      # a more open lid
+    "eyes/l-eye-scale-incr": 1.00, "eyes/r-eye-scale-incr": 1.00,          # "eye size" (v1 0.40; v2 bigger eyes: the dial's max)
+    "eyes/l-eye-height2-incr": 0.35, "eyes/r-eye-height2-incr": 0.35,      # "eye opening": a more open lid (v1 0.25)
+    "eyes/l-eye-bag-decr": 0.60, "eyes/r-eye-bag-decr": 0.60,              # v2: no under-eye bags (anime-smooth lower lid)
     "head/head-oval": 0.45,                                                # smooth oval head
     "chin/chin-bones-decr": 0.35,                                          # soft jaw
     "chin/chin-width-decr": 0.25, "chin/chin-triangle": 0.30,              # narrow, gently pointed chin (anime V)
@@ -60,10 +65,13 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
     "mouth/mouth-scale-horiz-decr": 0.20,                                  # small mouth
     "eyebrows/eyebrows-angle-down": 0.25,                                  # determined brow set
     "neck/neck-scale-horiz-decr": 0.20,                                    # slender teen neck
-    "expression/units/caucasian/mouth-compression": 1.0, "mouth/mouth-angles-down": 0.45,
-    "expression/units/caucasian/eye-left-slit": 0.30, "expression/units/caucasian/eye-right-slit": 0.30,   # the sheet's narrower, determined lids                  # lips closed (the MPFB base mouth rests parted)
+    "mouth/mouth-lowerlip-volume-incr": 0.50, "mouth/mouth-upperlip-volume-decr": 0.40,   # v2 "lip pairing": matched upper / lower lip
+    "mouth/mouth-angles-down": 0.15,                                       # "mouth corners": a relaxed neutral set (v1 0.45 + the compression = the pinch)
+    "expression/units/caucasian/eye-left-slit": 0.20, "expression/units/caucasian/eye-right-slit": 0.20,   # the sheet's determined lids (v1 0.30)
     "legs/upperlegs-height-incr": 0.20, "legs/lowerlegs-height-incr": 0.15,  # leggy stylised proportions
-}
+}                                     # (v1's "expression/units/caucasian/mouth-compression": 1.0 is GONE: it rolled the upper lip in)
+LIP_SEAL = (0.009, 0.0003, 0.0025)    # "lip seal" (v2): the relaxed lips closed geometrically: falloff over the lip height (m),
+                                      #   overlap past the seam (m), gap = front rays this far behind the lip front (m); None = off
 BODY_H = 1.68                         # "height" barefoot (m); the boot soles add SOLE_T
 REST_ARM_DOWN = 22.0                  # "rest arm drop": the MPFB A-pose arms lowered this much (deg) in the bind pose, so
                                       #   the cloak drapes over arms that already hang near the clip poses
@@ -88,11 +96,16 @@ LINER_W = (0.0013, 0.0003)            # "eye liner": upper / lower lid line widt
 LINER_WING = (0.0007, 20.0, 10.0)     # outer-corner flick: extra width (m), angular half-width, centre angle (deg)
 BROW_PTS = ((-1.15, 0.0058), (-0.40, 0.0074), (0.50, 0.0090), (1.28, 0.0080))   # "brows": (x in eye half-widths from the
                                       #   eye centre, height above the upper lid m) -- inner end low: the earnest set
-BROW_W = (0.0064, 0.0028)             # "brow thickness": inner end / tail (m) -- bold (the lesson: thick from the start)
+BROW_W = (0.0086, 0.0040)             # "brow thickness": inner end / tail (m) -- v2 bigger (v1 6.4 / 2.8 mm)
 BROW_TAPER = 1.2
-LIP = (0.017, 0.0024, 0.0032)         # subtle lip tint: half width / upper height / lower depth (m) around the slit
+LIP = (0.017, 0.0026, 0.0026)         # subtle lip tint: half width / upper height / lower depth (m) around the seam (v2: matched; v1 2.4 / 3.2 mm)
 LIP_DZ = 0.0
-MOUTH_IN_D = 0.0032                   # lip-zone skin this far behind the front surface = the mouth line
+MOUTH_LINE = (0.0011, 0.30)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
+FACE_UV_SCALE = 4.5                   # v2 "face smoothing": the face zone's texel density x this (linear) vs the rest of the
+                                      #   UV layout, so its normal bake resolves the smooth high per facet
+FACE_NORMAL_REF = "flat"              # v2 "face smoothing": the face zone's normal map is baked against its FLAT facets (it
+                                      #   then shades smooth although every face stays flat-shaded, the contract); "smooth" = v1
+MOUTH_IN_D = 0.0032                   # (v1 rule, LIP_SEAL = None only) lip-zone skin this far behind the front surface = the mouth
 JAW_LIGHT_DEG = 42.0                  # "neck shadow length" (the chin's cast shadow under a stylised key light)
 JAW_SMOOTH = 3
 JAW_GATE = (0.008, 0.6, 0.012)
@@ -204,6 +217,21 @@ FORK_ELBOW_POLE = (-0.55, -0.28, -0.80)   # the fork arm's elbow direction (IK p
 BAKE_RES = (2048, 1024)
 CUT_SNAP = 0.12
 SLIVER_AREA = 5e-8
+ENCLOSED_DIRS = ((0, -1, 0), (0.7, -0.7, 0), (-0.7, -0.7, 0), (0, -0.7, 0.7), (0, -0.7, -0.7), (0.5, -0.5, 0.5),
+                 (-0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, -0.5, -0.5), (0, -0.57, 0.82), (0.95, -0.3, 0), (-0.95, -0.3, 0))
+                                      # v2 hidden-skin harvest: a face vertex is enclosed when rays toward ALL of these (front /
+                                      #   three-quarter / side / below / the tactical view from above) hit the head or an eyeball
+V1_FACE = {                           # v1 baseline (commit 96478b3), MEASURED by this build run in the v1 configuration
+                                      #   (--set TARGETS=<v1> LIP_SEAL=None BROW_W=(0.0064,0.0028) LIP=(0.017,0.0024,0.0032)
+                                      #   FACE_UV_SCALE=1.0): the v2 report quotes it next to the live v2 numbers
+    "eye_dial": 0.40, "aperture_mm_L": {"outer": 13.7, "up": 2.6, "inner": 8.1, "down": 6.7}, "open_w_mm": 21.8, "open_h_mm": 9.3,
+    "brow_W_mm": [6.4, 2.8], "brow_width_mm_measured": {"t0.05": 5.95, "t0.25": 5.7, "t0.50": 4.75, "t0.75": 3.65, "t0.95": 2.4},
+    "mouth_compression": 1.0, "lip_pairing_x0": {"upper_fwd_mm": 4.24, "lower_fwd_mm": 0.53, "lower_lead_mm": -3.71,
+                                                  "upper_proud_h_mm": 7.5, "lower_proud_h_mm": 2.9},
+    "face_zone_visible": {"tris": 6596, "area_cm2": 1070.9, "tris_per_cm2": 6.16, "dihedral_deg_p50_p90": [6.99, 26.35],
+                          "texels_per_mm": 0.494, "normal_ref": "smooth low, rendered flat (the facets show)"},
+    "face_zone_incl_hidden_mouth_interior": {"tris": 8376}, "total_tris": 49662}
+AO_SAMPLES = 48                       # AO bake samples (v1 16: the v2 face texel density resolved the 16-sample noise as speckle in the lip crease)
 AO_FLOOR = {"default": 0.42, "skin": 0.62, "hair": 0.82, "cloth": 0.50}
 AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow"], "hair": ["hair", "hair_shade", "hair_tie"],
                     "cloth": ["cloak", "cloak_worn", "patch_a", "patch_b", "patch_c", "shirt", "vest", "trousers"]}

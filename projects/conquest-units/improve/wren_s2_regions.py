@@ -39,6 +39,19 @@ FIELDS["vopen"] = np.abs(X) - np.interp(Z, [Z_SASH, NECK0[2]], [VEST_X[1], VEST_
 FIELDS["z"] = Z.copy()
 FIELDS["y"] = Y.copy()
 FIELDS["lip"] = (X / LIP[0]) ** 2 + ((Z - Z_LIP) / np.where(Z > Z_LIP, LIP[1], LIP[2])) ** 2 - 1.0
+if SEAM is not None:
+    # v2 mouth line: a thin painted line ON the sealed seam (the sheet's closed mouth), tapering to the corners
+    _sx0, _sx1 = float(SEAM["xs"].min()), float(SEAM["xs"].max())
+    _su = np.clip((X - _sx0) / max(_sx1 - _sx0, 1e-6), 0.0, 1.0)
+    _shw = 0.5 * MOUTH_LINE[0] * (MOUTH_LINE[1] + (1.0 - MOUTH_LINE[1]) * np.sin(np.pi * _su) ** 0.6)
+    _szc = np.interp(X, SEAM["xs"], SEAM["zc"])
+    FIELDS["mline"] = np.where((X >= _sx0) & (X <= _sx1), np.abs(Z - _szc) - _shw, 1.0)
+
+
+    def mline_field(P_):
+        u_ = np.clip((P_[:, 0] - _sx0) / max(_sx1 - _sx0, 1e-6), 0.0, 1.0)
+        hw_ = 0.5 * MOUTH_LINE[0] * (MOUTH_LINE[1] + (1.0 - MOUTH_LINE[1]) * np.sin(np.pi * u_) ** 0.6)
+        return np.where((P_[:, 0] >= _sx0) & (P_[:, 0] <= _sx1), np.abs(P_[:, 2] - np.interp(P_[:, 0], SEAM["xs"], SEAM["zc"])) - hw_, 1.0)
 # ---- eyes: the lathe eyeball (rendered) + the lid-edge aperture per 5 deg (front rays: first skin hit in front of it)
 BN = VP.vertex_normals(BV, BF)
 if float(np.mean(np.einsum("ij,ij->i", BN, BV - BV.mean(0)))) < 0:
@@ -127,7 +140,7 @@ def brow_field(P, s):
 
 for s in "LR":
     gate_ = HEAD_B & (Y < EYE[s]["c"][1] + 0.03) & (np.abs(X - EYE[s]["c"][0]) < 0.04) & (Z > EYE[s]["c"][2]) & \
-        (Z < EYE[s]["c"][2] + 0.035) & (BN[:, 1] < -0.2)
+        (Z < EYE[s]["c"][2] + 0.035) & (BN[:, 1] < -0.05)
     FIELDS["brow_" + s] = np.where(gate_, brow_field(BV, s), 1.0)
 # ---- authored shadow (1): the chin's cast shadow on the neck under a stylised key light
 _el = math.radians(JAW_LIGHT_DEG)
@@ -310,6 +323,8 @@ CUTS.append(("sash", 0.0, g_and(gv("armm_L", -1, 0.5), gv("armm_R", -1, 0.5), gv
 CUTS.append(("vopen", 0.0, g_and(gv("y", -1, AX_Y), gv("z", Z_SASH - 0.01, NECK0[2] + 0.02), gv("armm_L", -1, 0.5),
                                   gv("armm_R", -1, 0.5), gv("headm", -1, 0.5))))
 CUTS.append(("lip", 0.0, g_and(gv("headm", 0.5), gv("y", -1, Y_LIP + 0.03), gv("z", Z_LIP - 0.03, Z_LIP + 0.03))))
+if SEAM is not None:
+    CUTS.append(("mline", 0.0, g_and(gv("headm", 0.5), gv("y", -1, Y_LIP + 0.012), gv("z", Z_LIP - 0.015, Z_LIP + 0.015))))
 for s in "LR":
     CUTS.append(("eye_" + s, 0.0, g_and(gv("headm", 0.5), gv("eye_" + s, -1, 0.03))))
     CUTS.append(("brow_" + s, 0.0, g_and(gv("headm", 0.5), gv("brow_" + s, -1, 0.03))))
@@ -319,6 +334,8 @@ CUTS.append(("fringe_u", 0.0, g_and(gv("fringe_gate", 0.5), gv("hair", -0.12, 0.
 CUTS.append(("hair", 0.0, g_and(gv("headm", 0.5))))
 t_ = time.time()
 REFINE = {"brow_" + s: refine_thin("brow_" + s, lambda P_, s=s: brow_field(P_, s)) for s in "LR"}
+if SEAM is not None:
+    REFINE["mline"] = refine_thin("mline", mline_field)
 cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
 _ndeg = len(bm.faces)
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
@@ -371,10 +388,13 @@ for x_ in _mx:
            for z_ in np.arange(Z_SLIT - 0.008, Z_SLIT + 0.008, 0.0005)]
     _mfront.append(min(h[1] for h in ys_ if h is not None))
 _mfront = np.array(_mfront)
-for fi in np.nonzero(reg == "lips")[0]:
-    c_ = CV[CF[fi]].mean(0)
-    if c_[1] > float(np.interp(c_[0], _mx, _mfront)) + MOUTH_IN_D:
-        reg[fi] = "mouth"
+if SEAM is None:                                   # v1 rule: lip-zone skin recessed behind the front = the mouth
+    for fi in np.nonzero(reg == "lips")[0]:
+        c_ = CV[CF[fi]].mean(0)
+        if c_[1] > float(np.interp(c_[0], _mx, _mfront)) + MOUTH_IN_D:
+            reg[fi] = "mouth"
+else:                                              # v2: the thin line on the sealed seam
+    reg[_head & (FV["mline"] < 0) & (FV["y"] < Y_LIP + 0.012) & (np.abs(FV["z"] - Z_LIP) < 0.015)] = "mouth"
 reg[_head & ((FV["eye_L"] < 0) | (FV["eye_R"] < 0))] = "liner"
 reg[_head & ((FV["brow_L"] < 0) | (FV["brow_R"] < 0)) & (FV["hair"] < 0)] = "brow"
 reg[_head & (FV["hair"] > 0)] = "hair"

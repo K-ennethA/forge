@@ -1,5 +1,7 @@
 # Wren (the Oakvale farm-boy HERO, from the artist's sheet design/reference/wren-character-sheet.webp; the vampwarrior
 # lessons applied from the start): model + idle + walk + the winter skin, one command (hidden, headless).
+# v2 (the face round): renders are written v2-prefixed (renders/wren/wren_v2_*) so the v1 stills stay as the comparison
+# baseline; renders/wren/wren_v1ref_* are v1 re-rendered once at the v2 close-up framing (see improved/wren.json face_round).
 # Writes improved/wren.{blend,json}, improved/textures/wren_*, rigged/wren.{blend,json,glb}, rigged/wren__winter.blend,
 # improved/check_wren.json, rigged/check_wren.json, renders/wren/*, improve/log_wren_*.
 #   -SkipBuild re-runs only the gates + renders. The build runs TWICE in parallel: the real build and a --digest-only twin
@@ -39,17 +41,17 @@ if (-not $SkipBuild) {
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""
 $R = "`"$I\wren_render.py`""
-$W = "`"$OUT\wren`""
+$W = "`"$OUT\wren_v2`""
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_wren.json`"")),
   @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_wren.json`"")),
   @("render_main",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,threequarter,side,back,back_threequarter,tactical,tactical_small","--pose","idle:1")),
-  @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face,eyes,brows,head_front,head_side,head_tq_back,head_back","--pose","idle:1")),
+  @("render_face",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face,eyes,brows,mouth,mouth_tq,mouth_side,head_front,head_side,head_tq_back,head_back","--pose","idle:1")),
   @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"cloak,cloak_tq,patches,necklace,bracer,bracer_front,fork_full,boots,boots_front,torso","--pose","idle:1")),
   @("render_fork",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"fork_head")),   # rest pose: the fork upright, tines face-on
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"ortho_front,ortho_side,ortho_back","--pose","idle:1")),
-  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_winter`"","front,threequarter,back,portrait","--pose","idle:1")),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren"))
+  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v2_winter`"","front,threequarter,back,portrait","--pose","idle:1")),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v2"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {

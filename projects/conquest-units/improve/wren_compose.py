@@ -1,4 +1,7 @@
 """Wren image assembly (plain Python + PIL, no Blender): run with the forge service venv.
+v2 (the face round): every model input / output is v2-prefixed (V = "wren_v2"); the v1 stills (wren_*.png) and the v1
+re-renders at the v2 close-up framing (wren_v1ref_*.png) are the comparison baseline; + the face-round composites
+wren_v2_face_threeup / _eyes_compare / _mouth_compare / _brows_compare / _body_untouched.
 
     python -P wren_compose.py
 
@@ -9,6 +12,7 @@ renders/wren/ (inputs: wren_<view>.png stills, wren_winter_<view>.png, wren_idle
   wren_hair.png             hair from the front, side, three-quarter back, back
   wren_contact.png          the main stills, close-ups, the winter skin + the idle / walk 8-frame sheets
   wren_skin_tone.json       sampled lit skin: the sheet vs the render
+(v2: all of the above as wren_v2_*)
 """
 import colorsys
 import json
@@ -26,7 +30,9 @@ IMP = json.load(open(os.path.join(ROOT, "improved", "wren.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "wren.json")))
 PAL = json.load(open(os.path.join(ROOT, "palettes", "wren", "default.json")))
 SH = Image.open(SHEET).convert("RGB")
-CROPS = {"front": (20, 90, 470, 970), "side": (470, 90, 710, 970), "back": (730, 90, 1030, 970),
+V = "wren_v2"
+CROPS = {"eyes": (1178, 152, 1292, 200), "mouth": (1200, 208, 1262, 244), "brows": (1172, 140, 1298, 196),
+         "front": (20, 90, 470, 970), "side": (470, 90, 710, 970), "back": (730, 90, 1030, 970),
          "head": (1116, 90, 1318, 322), "necklace": (1344, 98, 1497, 282), "bracer": (1118, 357, 1287, 560),
          "cloak": (1318, 335, 1500, 528), "patch": (1320, 568, 1500, 744), "staff": (1120, 598, 1290, 840),
          "chips": (1300, 790, 1480, 975)}
@@ -99,57 +105,57 @@ def lit_skin(img, box):
 
 
 # ---- sheet vs model
-grid([[(crop("front"), "SHEET front"), ("wren_ortho_front.png", "model, orthographic front (idle f1)"),
-       (crop("side"), "SHEET side"), ("wren_ortho_side.png", "model, orthographic side"),
-       (crop("back"), "SHEET back"), ("wren_ortho_back.png", "model, orthographic back")]],
-     300, 580, "Wren - the sheet vs the model (front / side / back)", "wren_sheet_vs_model.png")
+grid([[(crop("front"), "SHEET front"), (V + "_ortho_front.png", "model, orthographic front (idle f1)"),
+       (crop("side"), "SHEET side"), (V + "_ortho_side.png", "model, orthographic side"),
+       (crop("back"), "SHEET back"), (V + "_ortho_back.png", "model, orthographic back")]],
+     300, 580, "Wren - the sheet vs the model (front / side / back)", V + "_sheet_vs_model.png")
 
 # ---- face + skin numbers
 sk_sheet_front = lit_skin(SH, (228, 190, 262, 232))
 sk_sheet_head = lit_skin(SH, (1190, 200, 1300, 300))
-por = load("wren_portrait.png")
+por = load(V + "_portrait.png")
 W_, H_ = por.size
 sk_render = lit_skin(por, (int(W_ * 0.28), int(H_ * 0.45), int(W_ * 0.72), int(H_ * 0.75)))
 SKIN = {"palette_skin_rgb": PAL["regions"]["skin"]["rgb"], "sheet_front_face_lit": sk_sheet_front,
         "sheet_head_panel_lit": sk_sheet_head, "render_portrait_lit": sk_render,
         "rule": "median of lit warm-skin pixels (hue 12-40 deg, sat 0.25-0.65, value > 0.45) in a face box"}
-json.dump(SKIN, open(os.path.join(R, "wren_skin_tone.json"), "w"), indent=1)
+json.dump(SKIN, open(os.path.join(R, V + "_skin_tone.json"), "w"), indent=1)
 grid([[(crop("head"), "SHEET head panel\nlit skin %s (hue %.0f, sat %.2f)" % (sk_sheet_head["rgb"], sk_sheet_head["hue_deg"], sk_sheet_head["sat"])),
-       ("wren_portrait.png", "model portrait\nlit skin %s (hue %.0f, sat %.2f)" % (sk_render["rgb"], sk_render["hue_deg"], sk_render["sat"])),
-       ("wren_face.png", "three-quarter"), ("wren_eyes.png", "eyes: bold brows, lid liner, brown iris")]],
+       (V + "_portrait.png", "model portrait\nlit skin %s (hue %.0f, sat %.2f)" % (sk_render["rgb"], sk_render["hue_deg"], sk_render["sat"])),
+       (V + "_face.png", "three-quarter"), (V + "_eyes.png", "eyes: bold brows, lid liner, brown iris")]],
      420, 460, "Wren - face vs the sheet (palette skin %s, sampled off the sheet's lit face)" % (PAL["regions"]["skin"]["rgb"],),
-     "wren_face_vs_sheet.png")
+     V + "_face_vs_sheet.png")
 
 # ---- details
-grid([[(crop("necklace"), "SHEET necklace"), ("wren_necklace.png", "pendant + cord + clasp"),
-       (crop("bracer"), "SHEET bracer"), ("wren_bracer.png", "bracer (left forearm), teal diamond")],
-      [(crop("cloak"), "SHEET cloak + brass boss"), ("wren_cloak.png", "cloak from behind: hood, patches, ragged hem"),
-       (crop("patch"), "SHEET cloth patch"), ("wren_patches.png", "patches + cross stitches")],
-      [(crop("staff"), "SHEET staff"), ("wren_fork_head.png", "pitchfork head (rest pose): tines, brass collar, wrap"),
-       (crop("chips"), "SHEET palette chips"), ("wren_fork_full.png", "pitchfork, full (idle f1, planted)")]],
-     360, 360, "Wren - detail panels vs the model", "wren_details_vs_sheet.png")
+grid([[(crop("necklace"), "SHEET necklace"), (V + "_necklace.png", "pendant + cord + clasp"),
+       (crop("bracer"), "SHEET bracer"), (V + "_bracer.png", "bracer (left forearm), teal diamond")],
+      [(crop("cloak"), "SHEET cloak + brass boss"), (V + "_cloak.png", "cloak from behind: hood, patches, ragged hem"),
+       (crop("patch"), "SHEET cloth patch"), (V + "_patches.png", "patches + cross stitches")],
+      [(crop("staff"), "SHEET staff"), (V + "_fork_head.png", "pitchfork head (rest pose): tines, brass collar, wrap"),
+       (crop("chips"), "SHEET palette chips"), (V + "_fork_full.png", "pitchfork, full (idle f1, planted)")]],
+     360, 360, "Wren - detail panels vs the model", V + "_details_vs_sheet.png")
 
 # ---- hair
-grid([[("wren_head_front.png", "front"), ("wren_head_side.png", "side"), ("wren_head_tq_back.png", "three-quarter back"),
-       ("wren_head_back.png", "back: nape tail")]],
+grid([[(V + "_head_front.png", "front"), (V + "_head_side.png", "side"), (V + "_head_tq_back.png", "three-quarter back"),
+       (V + "_head_back.png", "back: nape tail")]],
      420, 420, "Wren - hair (crown %.1f mm above the scalp; cap feathered to %.1f mm at the hairline; own UV strip)"
      % (IMP["hair"]["crown"]["crown_above_scalp_mm"], 1000 * (IMP["hair"]["cap_feather"]["rim_thickness_m_p50"] or 0)),
-     "wren_hair.png")
+     V + "_hair.png")
 
 # ---- contact
 T = 400
-items = [("wren_front.png", "front (idle f1)"), ("wren_threequarter.png", "three-quarter"), ("wren_side.png", "side"),
-         ("wren_back.png", "back"), ("wren_tactical.png", "tactical (256 px)"), ("wren_portrait.png", "face"),
-         ("wren_head_tq_back.png", "hair"), ("wren_patches.png", "cloak patches"), ("wren_bracer.png", "bracer"),
-         ("wren_fork_head.png", "pitchfork"), ("wren_winter_front.png", "winter skin (swap proof)"),
-         ("wren_winter_threequarter.png", "winter, three-quarter")]
+items = [(V + "_front.png", "front (idle f1)"), (V + "_threequarter.png", "three-quarter"), (V + "_side.png", "side"),
+         (V + "_back.png", "back"), (V + "_tactical.png", "tactical (256 px)"), (V + "_portrait.png", "face"),
+         (V + "_head_tq_back.png", "hair"), (V + "_patches.png", "cloak patches"), (V + "_bracer.png", "bracer"),
+         (V + "_fork_head.png", "pitchfork"), (V + "_winter_front.png", "winter skin (swap proof)"),
+         (V + "_winter_threequarter.png", "winter, three-quarter")]
 tiles = [label(fit(load(fn), T, T), lab) for fn, lab in items]
 Wc = 4 * T + 18
 sheets = []
 for clip, txt in (("idle", "idle: 8 frames / 4 s (leaning on the planted fork, weight shift, cloak / fringe follow-through)"),
                   ("walk", "walk: 8 frames / %.2f s, %.0f steps/min (bounce, the fork carried, cloak / tail / ties lag)"
                    % (RIG["clips"]["walk"]["seconds"], RIG["clips"]["walk"]["cadence_steps_per_min"]))):
-    s_ = load("wren_%s_sheet.png" % clip)
+    s_ = load(V + "_%s_sheet.png" % clip)
     s_ = s_.resize((Wc, int(s_.height * Wc / s_.width)), Image.LANCZOS)
     sheets.append(label(s_, txt))
 Hc = 3 * (T + 6) + sum(s.height + 6 for s in sheets)
@@ -159,5 +165,27 @@ for i, t in enumerate(tiles):
 y = 3 * (T + 6)
 for s_ in sheets:
     cs.paste(s_, (0, y)); y += s_.height + 6
-cs.convert("RGB").save(os.path.join(R, "wren_contact.png"))
-print("WROTE wren_contact.png", json.dumps(SKIN))
+cs.convert("RGB").save(os.path.join(R, V + "_contact.png"))
+print("WROTE", V + "_contact.png", json.dumps(SKIN))
+
+# ---- v2 face round: v1 | v2 | the sheet
+FZ = IMP.get("face_round", {})
+m1, m2 = FZ.get("eyes_v1", {}), FZ.get("eyes_v2", {})
+grid([[("wren_portrait.png", "v1 portrait"), (V + "_portrait.png", "v2 portrait"), (crop("head"), "SHEET head panel")]],
+     460, 500, "Wren v2 face round - v1 | v2 | the sheet (eyes, brows, mouth, smoothing)", V + "_face_threeup.png")
+grid([[("wren_v1ref_eyes.png", "v1 eyes (dial +0.40): open %s x %s mm" % (m1.get("open_w_mm"), m1.get("open_h_mm"))),
+       (V + "_eyes.png", "v2 eyes (dial +1.00): open %s x %s mm" % (m2.get("open_w_mm"), m2.get("open_h_mm"))),
+       (crop("eyes"), "SHEET eyes")]], 520, 360, "Wren v2 - eyes (same framing)", V + "_eyes_compare.png")
+b1, b2 = FZ.get("brows_v1_mm", {}), FZ.get("brows_v2_mm", {})
+grid([[("wren_v1ref_brows.png", "v1 brows: inner %s / tail %s mm" % (b1.get("t0.05"), b1.get("t0.95"))),
+       (V + "_brows.png", "v2 brows: inner %s / tail %s mm" % (b2.get("t0.05"), b2.get("t0.95"))),
+       (crop("brows"), "SHEET brows")]], 520, 360, "Wren v2 - brows (same framing)", V + "_brows_compare.png")
+grid(
+     [[("wren_v1ref_mouth.png", "v1 mouth: compression 1.0 (upper lip rolled in, lower out)"), (V + "_mouth.png", "v2: relaxed + sealed"),
+       (crop("mouth"), "SHEET mouth")],
+      [("wren_v1ref_mouth_side.png", "v1 profile"), (V + "_mouth_side.png", "v2 profile"), (None, None)],
+      [("wren_v1ref_mouth_tq.png", "v1 three-quarter"), (V + "_mouth_tq.png", "v2 three-quarter"), (None, None)]],
+     440, 360, "Wren v2 - mouth: the lips paired, the mouth closed (same framing)", V + "_mouth_compare.png")
+grid([[("wren_front.png", "v1 front (idle f1)"), (V + "_front.png", "v2 front (idle f1)"),
+       ("wren_threequarter.png", "v1 three-quarter"), (V + "_threequarter.png", "v2 three-quarter")]],
+     360, 520, "Wren v2 - below the neck untouched (%s)" % FZ.get("body_untouched_rule", ""), V + "_body_untouched.png")

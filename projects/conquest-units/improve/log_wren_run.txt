@@ -1,6 +1,6 @@
-﻿build exit=0 wall_s=56.9
-digest twin exit=0 wall_s=56.9
-DIGEST build=80747af2ed9baa03 twin=a63c70fb056cd186 identical=except-bake_normal | BAKE_DIFF normal texels=1 of 4194304 max_delta=0.00392 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True gate=PASS
+﻿build exit=0 wall_s=89.9
+digest twin exit=0 wall_s=89.9
+DIGEST build=7bdbbaf7e1cd6d77 twin=7bdbbaf7e1cd6d77 identical=True | BAKE_DIFF normal texels=0 of 4194304 max_delta=0.00000 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True
 check_improved exit=0
 check_rigged exit=0
 render_main exit=0
@@ -10,7 +10,7 @@ render_fork exit=0
 render_ortho exit=0
 render_winter exit=0
 clips_mp4 exit=0
-compose exit=0
+compose exit=1
 check_improved : 7 checks, 0 failed
 check_rigged : 11 checks, 0 failed
-ALL DONE total_wall_s=101.5
+ALL DONE total_wall_s=141.1
