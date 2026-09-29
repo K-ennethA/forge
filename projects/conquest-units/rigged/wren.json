@@ -87,7 +87,19 @@
      "driver_ptp_deg": 4.66,
      "tip_follow_through_ptp_deg": 2.33
     },
-    "hair_fringe": {
+    "hair_fringe.C": {
+     "tip_lag_frames": 3,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.43
+    },
+    "hair_fringe.L": {
+     "tip_lag_frames": 3,
+     "axis": "z",
+     "driver_ptp_deg": 6.98,
+     "tip_follow_through_ptp_deg": 1.43
+    },
+    "hair_fringe.R": {
      "tip_lag_frames": 3,
      "axis": "z",
      "driver_ptp_deg": 6.98,
@@ -149,29 +161,41 @@
      "driver_ptp_deg": 12.72,
      "tip_follow_through_ptp_deg": 7.02
     },
-    "hair_fringe": {
+    "hair_fringe.C": {
      "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 9.79,
-     "tip_follow_through_ptp_deg": 8.21
+     "driver_ptp_deg": 10.14,
+     "tip_follow_through_ptp_deg": 8.39
+    },
+    "hair_fringe.L": {
+     "tip_lag_frames": 5,
+     "axis": "x",
+     "driver_ptp_deg": 10.29,
+     "tip_follow_through_ptp_deg": 8.47
+    },
+    "hair_fringe.R": {
+     "tip_lag_frames": 5,
+     "axis": "x",
+     "driver_ptp_deg": 10.1,
+     "tip_follow_through_ptp_deg": 8.37
     },
     "hair_side.L": {
      "tip_lag_frames": 5,
      "axis": "x",
      "driver_ptp_deg": 10.06,
-     "tip_follow_through_ptp_deg": 6.29
+     "tip_follow_through_ptp_deg": 6.3
     },
     "hair_side.R": {
      "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 10.02,
-     "tip_follow_through_ptp_deg": 6.27
+     "driver_ptp_deg": 9.84,
+     "tip_follow_through_ptp_deg": 6.2
     },
     "hair_tail": {
      "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 12.18,
-     "tip_follow_through_ptp_deg": 15.63
+     "driver_ptp_deg": 12.2,
+     "tip_follow_through_ptp_deg": 15.68
     },
     "tie": {
      "tip_lag_frames": 3,
@@ -214,18 +238,12 @@
     "cloak_crossings_right_arm": 0,
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
-    "hair_into_skin_verts_max": 6,
+    "hair_into_skin_verts_max": 0,
     "fork_shaft_through_cloak": 0,
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0437,
     "fork_to_legs_min_m": 0.1918,
-    "cloak_to_legs_min_m": 0.0695,
-    "hair_into_skin_worst": {
-     "lock.side.R0": 3,
-     "lock.side.L1": 1,
-     "lock.tail": 2,
-     "frame": 1
-    }
+    "cloak_to_legs_min_m": 0.0695
    },
    "feet_planted": {
     "L": {
@@ -283,18 +301,12 @@
     "cloak_crossings_right_arm": 0,
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
-    "hair_into_skin_verts_max": 6,
+    "hair_into_skin_verts_max": 0,
     "fork_shaft_through_cloak": 0,
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0436,
     "fork_to_legs_min_m": 0.0806,
-    "cloak_to_legs_min_m": 0.1086,
-    "hair_into_skin_worst": {
-     "lock.side.R0": 3,
-     "lock.side.L1": 1,
-     "lock.tail": 2,
-     "frame": 1
-    }
+    "cloak_to_legs_min_m": 0.1086
    },
    "gait": {
     "L": {
@@ -342,15 +354,11 @@
  },
  "hair_into_skin": {
   "rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates (every other idle frame, every walk frame); gate: no clip exceeds the rest pose",
-  "free_verts": 696,
-  "rest": 6,
-  "rest_by_part": {
-   "lock.side.R0": 3,
-   "lock.side.L1": 1,
-   "lock.tail": 2
-  },
-  "idle": 6,
-  "walk": 6,
+  "free_verts": 831,
+  "rest": 0,
+  "rest_by_part": {},
+  "idle": 0,
+  "walk": 0,
   "pass": true
  },
  "bones": [
@@ -1045,48 +1053,138 @@
    ]
   },
   {
-   "name": "hair_fringe.0",
+   "name": "hair_fringe.C.0",
    "parent": "head",
    "deform": true,
    "head": [
-    0.0176,
-    -0.1476,
-    1.6515
+    0.0455,
+    -0.1596,
+    1.6471
    ],
    "tail": [
-    0.0171,
-    -0.1514,
-    1.6337
+    0.0414,
+    -0.1638,
+    1.6261
    ]
   },
   {
-   "name": "hair_fringe.1",
-   "parent": "hair_fringe.0",
+   "name": "hair_fringe.C.1",
+   "parent": "hair_fringe.C.0",
    "deform": true,
    "head": [
-    0.0171,
-    -0.1514,
-    1.6337
+    0.0414,
+    -0.1638,
+    1.6261
    ],
    "tail": [
-    0.0174,
-    -0.1546,
-    1.6158
+    0.0343,
+    -0.1668,
+    1.6057
    ]
   },
   {
-   "name": "hair_fringe.2",
-   "parent": "hair_fringe.1",
+   "name": "hair_fringe.C.2",
+   "parent": "hair_fringe.C.1",
    "deform": true,
    "head": [
-    0.0174,
-    -0.1546,
-    1.6158
+    0.0343,
+    -0.1668,
+    1.6057
    ],
    "tail": [
-    0.0187,
-    -0.1563,
-    1.5977
+    0.0242,
+    -0.1664,
+    1.5866
+   ]
+  },
+  {
+   "name": "hair_fringe.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0576,
+    -0.1539,
+    1.6416
+   ],
+   "tail": [
+    0.0568,
+    -0.1553,
+    1.6284
+   ]
+  },
+  {
+   "name": "hair_fringe.L.1",
+   "parent": "hair_fringe.L.0",
+   "deform": true,
+   "head": [
+    0.0568,
+    -0.1553,
+    1.6284
+   ],
+   "tail": [
+    0.063,
+    -0.1543,
+    1.6156
+   ]
+  },
+  {
+   "name": "hair_fringe.L.2",
+   "parent": "hair_fringe.L.1",
+   "deform": true,
+   "head": [
+    0.063,
+    -0.1543,
+    1.6156
+   ],
+   "tail": [
+    0.0675,
+    -0.1544,
+    1.6013
+   ]
+  },
+  {
+   "name": "hair_fringe.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0097,
+    -0.1568,
+    1.6486
+   ],
+   "tail": [
+    -0.0178,
+    -0.1562,
+    1.6311
+   ]
+  },
+  {
+   "name": "hair_fringe.R.1",
+   "parent": "hair_fringe.R.0",
+   "deform": true,
+   "head": [
+    -0.0178,
+    -0.1562,
+    1.6311
+   ],
+   "tail": [
+    -0.0252,
+    -0.1558,
+    1.6139
+   ]
+  },
+  {
+   "name": "hair_fringe.R.2",
+   "parent": "hair_fringe.R.1",
+   "deform": true,
+   "head": [
+    -0.0252,
+    -0.1558,
+    1.6139
+   ],
+   "tail": [
+    -0.0282,
+    -0.1534,
+    1.5949
    ]
   },
   {
@@ -1094,14 +1192,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.1173,
-    -0.0388,
-    1.6055
+    0.1161,
+    -0.0544,
+    1.6042
    ],
    "tail": [
-    0.1187,
-    -0.0474,
-    1.5963
+    0.1162,
+    -0.0565,
+    1.5943
    ]
   },
   {
@@ -1109,14 +1207,14 @@
    "parent": "hair_side.L.0",
    "deform": true,
    "head": [
-    0.1187,
-    -0.0474,
-    1.5963
+    0.1162,
+    -0.0565,
+    1.5943
    ],
    "tail": [
-    0.1216,
-    -0.0551,
-    1.589
+    0.1209,
+    -0.0605,
+    1.587
    ]
   },
   {
@@ -1124,13 +1222,13 @@
    "parent": "hair_side.L.1",
    "deform": true,
    "head": [
-    0.1216,
-    -0.0551,
-    1.589
+    0.1209,
+    -0.0605,
+    1.587
    ],
    "tail": [
-    0.127,
-    -0.0601,
+    0.1271,
+    -0.0595,
     1.5786
    ]
   },
@@ -1139,14 +1237,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.0821,
-    -0.039,
-    1.6065
+    -0.0744,
+    -0.0565,
+    1.6194
    ],
    "tail": [
-    -0.0828,
-    -0.0467,
-    1.5967
+    -0.0805,
+    -0.0572,
+    1.6052
    ]
   },
   {
@@ -1154,14 +1252,14 @@
    "parent": "hair_side.R.0",
    "deform": true,
    "head": [
-    -0.0828,
-    -0.0467,
-    1.5967
+    -0.0805,
+    -0.0572,
+    1.6052
    ],
    "tail": [
-    -0.0868,
-    -0.0531,
-    1.5877
+    -0.0839,
+    -0.0596,
+    1.5905
    ]
   },
   {
@@ -1169,13 +1267,13 @@
    "parent": "hair_side.R.1",
    "deform": true,
    "head": [
-    -0.0868,
-    -0.0531,
-    1.5877
+    -0.0839,
+    -0.0596,
+    1.5905
    ],
    "tail": [
     -0.0915,
-    -0.0599,
+    -0.0593,
     1.5783
    ]
   },
@@ -1184,14 +1282,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0176,
-    0.0267,
-    1.5207
+    0.0174,
+    0.0288,
+    1.5182
    ],
    "tail": [
     0.0174,
-    0.0398,
-    1.4976
+    0.041,
+    1.4957
    ]
   },
   {
@@ -1200,13 +1298,13 @@
    "deform": true,
    "head": [
     0.0174,
-    0.0398,
-    1.4976
+    0.041,
+    1.4957
    ],
    "tail": [
     0.0177,
-    0.0496,
-    1.4728
+    0.0502,
+    1.4719
    ]
   },
   {
@@ -1215,8 +1313,8 @@
    "deform": true,
    "head": [
     0.0177,
-    0.0496,
-    1.4728
+    0.0502,
+    1.4719
    ],
    "tail": [
     0.0195,
@@ -1675,8 +1773,8 @@
    ]
   }
  ],
- "bone_count": 88,
- "deform_bone_count": 87,
+ "bone_count": 94,
+ "deform_bone_count": 93,
  "grip": {
   "rule": "hammer grip: the shaft along the right hand's knuckle line, the tines out of the thumb / index side; the pitchfork bone is a child of hand_r and every clip keys it at the SAME hand-relative transform (grip_relation_max_dev); the hand+fork roll about the shaft is picked per clip (10-deg search, least wrist bend at t = 0); inside the grip the fork is turned about its own shaft (tine_roll_in_hand, one value) so the idle shows the tines face-on; the REST pose stands the fork upright beside the right hand, butt on the floor",
   "G_hand_to_fork_rest4": [
@@ -1723,7 +1821,7 @@
   "grip_at_m_from_butt": 1.1136
  },
  "tris": {
-  "model": 48766,
+  "model": 48428,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1732,21 +1830,21 @@
  },
  "digest": {
   "parts": {
-   "bake_hair_normal": "efa26e1d93ec6233",
-   "bake_normal": "f330da1ba411bc75",
-   "bake_ao": "aa8c261e701324d7",
-   "ao_lifted": "6962f3cf3e594f2a",
-   "geometry_colour_uv": "89948e2eaaa7e288",
-   "weights": "770b0eaae64ffd38",
-   "keys": "ae3e17ecd6ee11f7",
-   "clip_samples": "2ad4dfab35da1028"
+   "bake_hair_normal": "01b55cc34e6f036e",
+   "bake_normal": "be2504e3a3f97b01",
+   "bake_ao": "0ebf40497deb2618",
+   "ao_lifted": "1a1068510bcdf1b1",
+   "geometry_colour_uv": "1297c19c703df2c0",
+   "weights": "929e9aa13bab7b3e",
+   "keys": "fa279deceff76e56",
+   "clip_samples": "f2c499d9b3adba83"
   },
-  "combined": "8345bdd864fdafe1"
+  "combined": "d4b1db2207d1b491"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 11940108,
-  "seconds": 1.4,
+  "bytes": 12200148,
+  "seconds": 1.6,
   "carries": {
    "materials": [
     {
@@ -1783,7 +1881,7 @@
      ]
     }
    ],
-   "nodes": 91,
+   "nodes": 97,
    "mesh_nodes": [
     "wren",
     "wren_pitchfork"
@@ -1794,10 +1892,10 @@
    ],
    "skins": 1,
    "joints": [
-    88
+    94
    ]
   },
-  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02747"
+  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02825"
  },
  "skins": {
   "default": {
@@ -1927,6 +2025,13 @@
       56,
       38,
       27
+     ]
+    },
+    "hair_crevice": {
+     "rgb": [
+      64,
+      42,
+      28
      ]
     },
     "hair_tie": {
@@ -2315,6 +2420,13 @@
       27
      ]
     },
+    "hair_crevice": {
+     "rgb": [
+      64,
+      42,
+      28
+     ]
+    },
     "hair_tie": {
      "rgb": [
       140,
@@ -2577,17 +2689,17 @@
    },
    "region_faces": {
     "wren": {
-     "skin": 12767,
-     "skin_shadow": 563,
-     "lips": 124,
-     "mouth": 146,
-     "liner": 88,
-     "brow": 248,
+     "skin": 12923,
+     "skin_shadow": 513,
+     "lips": 0,
+     "mouth": 103,
+     "liner": 97,
+     "brow": 234,
      "eye_sclera": 224,
-     "eye_iris": 238,
-     "eye_pupil": 428,
-     "hair": 801,
-     "hair_shade": 1479,
+     "eye_iris": 218,
+     "eye_pupil": 298,
+     "hair": 968,
+     "hair_shade": 1916,
      "hair_tie": 40,
      "shirt": 2200,
      "sleeve_roll": 168,
@@ -2617,13 +2729,14 @@
      "cord": 185,
      "bracer": 280,
      "bracer_strap": 244,
-     "lash": 270,
+     "lash": 273,
      "eye_iris_dark": 128,
-     "eye_hilite": 84,
-     "hair_root": 432,
-     "hair_ring": 267,
-     "hair_tip": 413,
-     "hair_inner": 1642
+     "eye_hilite": 58,
+     "hair_root": 236,
+     "hair_ring": 315,
+     "hair_tip": 258,
+     "hair_inner": 1592,
+     "hair_crevice": 428
     },
     "wren_pitchfork": {
      "wood": 227,
@@ -2633,14 +2746,14 @@
      "ferrule": 40
     }
    },
-   "geometry_colour_uv_digest": "56b2330365b58245"
+   "geometry_colour_uv_digest": "94b2e29a2e32ab1d"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "89948e2eaaa7e288",
-   "default_digest_after_restore": "89948e2eaaa7e288"
+   "default_digest_before": "1297c19c703df2c0",
+   "default_digest_after_restore": "1297c19c703df2c0"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 98.5
+ "seconds": 94.3
 }

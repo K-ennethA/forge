@@ -18,6 +18,15 @@ a bold tapered upper-lash band, a highlight dot, the pupil kept), and the hair r
 clumps in size tiers radiating from a crown whorl with S-curve rhythm, a dark inner cap, a SMOOTH-PROXY normal bake into
 the hair UV strip -- the whole hairdo shades as one soft volume while every face stays flat-shaded -- and painted shading
 tiers: roots / underside / angel ring / tips). Everything below the neck is v1.
+v4 (review-log 2026-09-29 "Wren v4 feedback"): the x1.30 socket kept (approved "perfect"), the IRIS shrunk into it
+(EYE_IRIS_DEG / EYE_PUPIL_DEG); the eye BAGS flattened away (EYE_BAG_FLAT: a per-column no-bag profile fit, + the baked
+AO floored there, AO_FACE_LIFT); the orbit-blend LEAK cleaned (EYE_ORBIT quadrant ellipses, EYE_ORBIT_DEPTH, and past the
+socket core the move SLIDES along the v2 surface: EYE_SLIDE); the 2D-anime MOUTH (LIP_FLAT relief to 15 %, no lip tint,
+a drawn smirk line MOUTH_LEN / MOUTH_SMIRK on the kept seam); the HAIR re-flowed from a SIDE PART on his left (HAIR_PART,
+FRINGE_PART_T / FRINGE_SWEEP, the sweep clumps over the crown) with LAYER SHADOWS (HAIR_CREVICE: every clump's outline
+traced as a crevice band onto the hair beneath it), per-lock volume in the shading normal (HAIR_LOCK_NORMAL_MIX), a
+consistent clump stack (CLUMP_STACK), a broken angel ring (ANGEL_RING_JITTER) and a clearance pass (HAIR_CLEAR).
+Everything below the neck is v1.
 
 LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 entries):
   - MPFB2 base tuned STYLISED immediately (age macro at 16 years, anime face dials: larger eyes, soft jaw, small nose),
@@ -78,6 +87,15 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
 }                                     # (v1's "expression/units/caucasian/mouth-compression": 1.0 is GONE: it rolled the upper lip in)
 LIP_SEAL = (0.009, 0.0003, 0.0025)    # "lip seal" (v2): the relaxed lips closed geometrically: falloff over the lip height (m),
                                       #   overlap past the seam (m), gap = front rays this far behind the lip front (m); None = off
+LIP_FLAT = (0.022, 0.009, 0.010, 0.003, 0.15, 0.003)   # v4 "2D-anime lips": the lip zone (half width, height above /
+                                      #   below the seam, border fade, m) keeps this fraction of its offset from the no-lip
+                                      #   profile (0.15 = thin, barely-there lips + a shallow seam; 1.0 = the v2/v3 paired
+                                      #   volumes); the profile = per column a fit through anchor bands this wide (m) just
+                                      #   above / below the zone; None = off (v3)
+LIP_RIM_STEP = 0.0004                 # v4: after the flatten the upper lip's rim stays this far (m) in front of the lower's
+                                      #   along the seam (the drawn line's edge; 0 = let them interleave)
+LIP_FRONT_TOL = 0.003                 # v4: lip-zone vertices up to this far behind the front surface are flattened too (the
+                                      #   rims tucked in the seam crease; the mouth interior sits >= 4.4 mm behind, measured)
 BODY_H = 1.68                         # "height" barefoot (m); the boot soles add SOLE_T
 REST_ARM_DOWN = 22.0                  # "rest arm drop": the MPFB A-pose arms lowered this much (deg) in the bind pose, so
                                       #   the cloak drapes over arms that already hang near the clip poses
@@ -98,15 +116,35 @@ WRAP_BANDS = 0.024                    # cloth band spacing of the wraps (a faint
 # ---- face
 EYE_SCALE = 1.30                      # v3 "eye size (geometric)": the socket + eyeball scaled together by this about each
                                       #   eye's cornea apex (the lids keep their fit on the ball; the dial was exhausted)
-EYE_SCALE_ZONE = (18.0, 30.0, 1.0, 2.2)   # the orbit blend: full scale within the 1st mm of the eye centre (face plane),
-                                      #   none beyond the 2nd; in depth full to the 3rd x eyeball radius behind the centre,
-                                      #   none beyond the 4th (the back of the head never moves)
-EYE_IRIS_DEG, EYE_PUPIL_DEG = 40.0, 15.0  # iris / pupil cone half-angles on the eyeball (see EYE_* v3 below)
+EYE_SCALE_ZONE = (18.0, 30.0, 1.0, 2.2)   # v3 orbit blend (used only when EYE_ORBIT = None): full scale within the 1st mm
+                                      #   of the eye centre (face plane), none beyond the 2nd; in depth full to the 3rd x
+                                      #   eyeball radius behind the centre, none beyond the 4th -- it LEAKED onto the nose
+                                      #   bridge and the side of the face (v4 feedback)
+EYE_ORBIT = {"outer": (19.0, 29.0), "up": (11.0, 21.0), "inner": (11.0, 18.5), "down": (11.5, 21.0)}   # v4 "orbit blend":
+                                      #   per direction from the eye centre (face plane, mm, before the scale): full scale
+                                      #   within the 1st value, none beyond the 2nd (quadrant ellipses between) -- the lids
+                                      #   (the approved socket) sit inside the 1st everywhere; the nose bridge / temple outside
+EYE_SLIDE = (1.0, 3.0)                # v4 "orbit slide": from the 1st mm inside the full-scale core to the 2nd mm outside
+                                      #   it, the scale's move turns into a slide ALONG the original (v2) surface: the skin
+                                      #   redistributes to make room, the orbit / nose / cheek / temple shape stays; None = off
+EYE_ORBIT_DEPTH = (0.4, 1.1, 0.0, 0.6)   # v4: in depth (x eyeball radius behind the ball's centre) the whole scale is full
+                                      #   to the 1st, none beyond the 2nd; its DEPTH component (the push back behind the
+                                      #   cornea that sank the side of the face) full to the 3rd, none beyond the 4th
+EYE_BAG_FLAT = (1.0, 12.0, 2.0, 55.0, 0.0, (0.0, 0.7, 14.5, 19.5))   # v4 "eye bags: gone": under each lower lid, from
+                                      #   the 1st to the 2nd mm below the lid edge (fading out over the 3rd mm), within the
+                                      #   4th deg either side of straight down, the surface keeps the 5th x its offset from
+                                      #   the no-bag profile (0 = flat) -- per column a fit through two anchor bands (mm below
+                                      #   the lid edge: the lid margin 6th[0..1], the cheek 6th[2..3]); None = off (v3). (The
+                                      #   zone starts 1 mm under the lid edge: started at 2 mm, the untouched lower-lid bulge
+                                      #   above it left a crease line under each eye, rendered)
+EYE_IRIS_DEG, EYE_PUPIL_DEG = 27.0, 10.0  # "iris size" / pupil: cone half-angles on the eyeball (v3 40 / 15 = 83 % of the
+                                      #   opening, "the eyeball is too big"; v4 27 / 10 fits the approved socket, FE-typical
+                                      #   ~60 %; the pupil keeps v3's pupil : iris ratio)
 EYE_SEG = 36                          # v3: 36 segments (the bigger iris read polygonal at 16; the dot needs the density)
 EYE_BACK = 110.0                      # v3: the ball's hidden back closes as a cone to a pole this far round (deg); None = v2 sphere
 IRIS_SHADE = 0.30                     # v3 "iris lid shadow": the iris above this fraction of its radius over its centre is
                                       #   the darker lid-shadow tone (anime iris: dark top, lit bottom); None = off
-EYE_HILITE = (32.0, 0.28, 5.5)        # v3 "eye highlight dot": direction from the iris centre (deg up from the OUTER side),
+EYE_HILITE = (32.0, 0.34, 3.9)        # v3 "eye highlight dot": direction from the iris centre (deg up from the OUTER side),
                                       #   distance (x the iris cone angle), dot radius (deg on the eyeball); None = off
 EYE_HILITE_RING = 2.0                 # extra eyeball rings this many deg apart through the dot's band (a round dot, not a triangle)
 LINER_W = (0.0013, 0.0003)            # "eye liner": upper / lower lid line width (m) (v2; v3 upper = LASH_PROFILE)
@@ -119,9 +157,14 @@ BROW_PTS = ((-1.15, 0.0058), (-0.40, 0.0074), (0.50, 0.0090), (1.28, 0.0080))   
                                       #   eye centre, height above the upper lid m) -- inner end low: the earnest set
 BROW_W = (0.0086, 0.0040)             # "brow thickness": inner end / tail (m) -- v2 bigger (v1 6.4 / 2.8 mm)
 BROW_TAPER = 1.2
-LIP = (0.017, 0.0026, 0.0026)         # subtle lip tint: half width / upper height / lower depth (m) around the seam (v2: matched; v1 2.4 / 3.2 mm)
+LIP = None                            # lip tint: half width / upper height / lower depth (m) around the seam (v2/v3 (0.017,
+                                      #   0.0026, 0.0026)); v4 None = no tint (the 2D-anime mouth is the drawn line alone)
 LIP_DZ = 0.0
 MOUTH_LINE = (0.0011, 0.30)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
+MOUTH_LEN = 0.0165                    # v4 "mouth line length": the line covers |x| <= this (m) of the seam (v3: the whole
+                                      #   46 mm seam); None = the whole seam
+MOUTH_SMIRK = (0.0011, 1.0, 0.45)     # v4 "smirk": the corner on his left (+1; -1 = his right) rises this much (m) over the
+                                      #   outer 3rd-value fraction of that half; None = level
 FACE_UV_SCALE = 4.5                   # v2 "face smoothing": the face zone's texel density x this (linear) vs the rest of the
                                       #   UV layout, so its normal bake resolves the smooth high per facet
 FACE_NORMAL_REF = "flat"              # v2 "face smoothing": the face zone's normal map is baked against its FLAT facets (it
@@ -132,9 +175,19 @@ JAW_SMOOTH = 3
 JAW_GATE = (0.008, 0.6, 0.012)
 # fringe: the pointed tips of the front locks, front projection (x mm from the midline, +x = his left; z mm above the eye
 # centres). The fringe clumps are BUILT to these tips and the forehead shadow band follows the same zigzag.
-FRINGE_TIPS = ((-60.0, 20.0), (-40.0, 27.0), (-20.0, 19.0), (4.0, -6.0), (22.0, 25.0), (41.0, 18.0), (60.0, 22.0))
-                                      # (tips at eye + 18..27 mm leave the bold brows showing; one narrow lock falls between
-                                      #   the eyes, as on the sheet's head panel)
+FRINGE_TIPS = ((-62.0, 13.0), (-43.0, 21.0), (-23.0, 15.0), (-3.0, -8.0), (17.0, 23.0), (37.0, 19.0), (57.0, 25.0))
+                                      # v4 side part: the tips on the sweep side (his right, x < FRINGE_SPLIT_X) reach lower
+                                      #   and further across; the two past the part (his left) are the short side. One
+                                      #   narrow lock (FRINGE_NARROW) still falls between the eyes, as on the sheet's head
+                                      #   panel (v3: a symmetric zigzag from the centre)
+FRINGE_TIP_OFF = 0.006                # v4: fringe tips stand this far (m) + LOCK_OFF in front of the forehead (v3 4.5 mm: the
+                                      #   swept outer locks swung into the brow in the walk -- hair gate)
+FRINGE_NARROW = 3                     # the FRINGE_TIPS index of the narrow lock between the eyes
+FRINGE_SPLIT_X = 28.0                 # v4: fringe tips left of this x (mm, his left = +) fall to the short side of the part
+FRINGE_PART_T = (0.28, 0.20, 0.12, 0.05, 0.0, 0.0, 0.02)   # v4 "sweep": where on the part (0 = front end .. 1 = whorl)
+                                      #   each fringe lock starts -- the further across the forehead, the further back
+FRINGE_SWEEP = 9.0                    # v4: each fringe lock aims this far (deg) toward the part above its tip, so its last
+                                      #   stretch crosses the forehead diagonally (the sweep) instead of hanging straight
 FRINGE_NOTCH = 17.0                   # the edge between two tips rises this far (mm) above the higher tip
 FRINGE_D = (0.0045, 0.0065)           # "fringe shadow depth": band under the fringe edge at the tips / at the notches (m)
 FRINGE_UNDER = 0.006                  # the band also runs this far ABOVE the edge (skin glimpsed between the locks)
@@ -148,7 +201,26 @@ LOCK_OFF = 0.0020                     # clumps ride this far off the cap (their 
 # great circle whorl -> tip, CLUMP_ROOT[kind] of the way out (roots never stack on one point: the low-crown lesson), and
 # its path follows that great circle, lifted off the cap, with an S-curve sway. Tiers: L = the big mass clumps that make
 # the silhouette, M = overlapping fillers, S = accent tips / flyaways.
-HAIR_WHORL = (176.0, 60.0)            # "crown whorl": (psi deg from the front toward his left, elevation deg about the head centre)
+HAIR_WHORL = (150.0, 60.0)            # "crown whorl": (psi deg from the front toward his left, elevation deg about the head
+                                      #   centre) -- v4: at the back end of the side part (v3 176 / 60, centre flow)
+HAIR_PART = ((30.0, 44.0), (52.0, 62.0), (110.0, 68.0))   # v4 "side part": the part line (psi, el deg) from the front
+                                      #   hairline back to the whorl, on his LEFT (the sheet's fringe sweeps toward his
+                                      #   right, image-left on the head panel); None = the v3 centre flow
+PART_ROOT_K = 0.60                    # v4: the root width (x width) of the clumps that start ON the part (sweep / side /
+                                      #   outer): the tiers' 0.30 -- made for roots converging on one whorl -- left the crown
+                                      #   either side of the part as dark cap between narrow roots
+CLUMP_STACK = 0.0004                  # v4 "layer stack": each later clump of a kind rides this much (m) further off the cap,
+                                      #   so every overlap has a clear upper and lower layer (the layer shadows need it)
+HAIR_CREVICE = (5.0, 2.0, 0.5, 14.0, 50.0, 0.5)   # v4 "layer shadows": the band each clump's outline traces onto the
+                                      #   hair beneath it: width at the root / at the tip (mm, tapering), the outline may sit
+                                      #   this far BELOW the receiving point (mm: the wrap tucks clump edges down) and at most
+                                      #   this far above (mm); receivers only below this elevation (deg: the lit crown keeps
+                                      #   the angel ring clean) and not above the edge by more than this (mm: the shadow falls
+                                      #   downhill); None = off (v3: the dome with lines)
+HAIR_CREVICE_SNAP = 0.25              # the band cut snaps a crossing within this edge fraction onto the nearer vertex (no
+                                      #   sliver splits: fewer tris for the same band shape)
+ANGEL_RING_JITTER = 2.0               # v4: every clump's angel-ring segment shifts by up to this (deg, a fixed per-clump
+                                      #   hash): broken per-lock highlight strokes, not one stripe round a dome
 CLUMP_TIER = {"L": (0.080, 0.0085, 0.30), "M": (0.058, 0.0072, 0.30), "S": (0.026, 0.0050, 0.70)}   # "clump size tiers":
                                       #   full width (m), half-thickness (m), root width (x width) (v2's locks: 72-84 mm wide);
                                       #   narrow roots at the whorl leave dark wedges between the clumps (the whorl's radiating read)
@@ -156,27 +228,40 @@ CLUMP_ROOT_GROW = 0.40                # a clump reaches full width this far alon
 CLUMP_W_VARY = 0.14                   # "varied widths": every clump's width x (1 +- this), a fixed per-clump hash
 CLUMP_WRAP = 1.0                      # "clump wrap": the cross-section bends with the head's curvature across its width
                                       #   (x the local head radius parabola; 0 = flat plates standing off the skull)
-CLUMP_TOP_THIN = (55.0, 80.0, 0.45)   # "low crown": a clump thins by up to the 3rd value where it crosses the top of the head
+CLUMP_TOP_THIN = (55.0, 80.0, 0.30)   # "low crown": a clump thins by up to the 3rd value where it crosses the top of the head
                                       #   (elevation between the 1st and 2nd deg) -- the bold read is the width; stacked
-                                      #   thick roots made the crown tall (vampwarrior v4.1)
-CLUMP_ROOT = {"fringe": 0.14, "side": 0.20, "outer": 0.22, "back": 0.16, "crown": 0.05}   # root position along whorl -> tip
-CLUMP_S = (0.0, 0.05, 0.10, 0.16, 0.24, 0.33, 0.42, 0.51, 0.60, 0.69, 0.77, 0.84, 0.90, 0.95, 1.0)
+                                      #   thick roots made the crown tall (vampwarrior v4.1) -- v3 0.45; v4 0.30: thicker
+                                      #   over the top = deeper visible gaps between the top clumps
+CLUMP_ROOT = {"fringe": 0.04, "sweep": 0.03, "side": 0.04, "outer": 0.05, "back": 0.16, "crown": 0.05}   # root position
+                                      #   along origin -> tip (the origin: the whorl, or v4 the part point; v3 fringe 0.14 /
+                                      #   side 0.20 / outer 0.22 -- measured at 0.08-0.16 the roots left a 15-25 mm dark swath
+                                      #   along the part: v4 roots start just off it, the part reads as a narrow dark line;
+                                      #   roots along a LINE never stack, the low-crown lesson was about one whorl point)
+CLUMP_S = (0.0, 0.16, 0.24, 0.33, 0.42, 0.51, 0.60, 0.69, 0.77, 0.84, 0.92, 1.0)
                                       # cross-sections along a clump (arc fractions); the root / tip paint tiers cut on these
+                                      #   (v4 12, v3 15: the dropped sections pay for the layer-shadow cuts, tris <= 50k)
 CLUMP_SWAY = 0.14                     # "S-curve rhythm": sideways sway amplitude (x the clump width), one S per clump,
                                       #   alternating hand clump to clump, faded in toward where the clump leaves the scalp
 CLUMP_SCALP_T = 0.62                  # "petal thickness": on the scalp a clump is this x its thickness (thin layered petals
                                       #   from the whorl); it thickens to full where it leaves the scalp
-CLUMP_LAYER = {"back": 0.0, "outer": 0.0009, "side": 0.0028, "crown": 0.0027, "fringe": 0.0027}   # "clump layering": extra
+CLUMP_LAYER = {"back": 0.0, "outer": 0.0009, "side": 0.0028, "sweep": 0.0018, "crown": 0.0027, "fringe": 0.0027}   # "clump layering": extra
                                       #   offset off the cap (m) per kind, so the petals stack (back under sides under fringe)
-CLUMP_LIFT = {"fringe": 0.005, "side": 0.016, "outer": 0.012, "back": 0.007, "crown": 0.006}   # "hair volume": lift off
+CLUMP_LIFT = {"fringe": 0.005, "side": 0.016, "outer": 0.012, "sweep": 0.012, "back": 0.007, "crown": 0.006}   # "hair volume": lift off
                                       #   the cap (m) down the sides; none over the top (elevation > 70 deg), full below 35 deg
 # the clumps: (kind, tier, tip, chain). Tips: fringe = FRINGE_TIPS index (front projection); side = (psi deg, z mm above
 # the eye centres, outward flick m); outer / back / crown = (psi deg, tip elevation deg about the head centre, flick m).
 # Side / outer clumps are mirrored L / R (psi > 0 = his left; R = -psi).
-HAIR_CLUMPS = (
-    ("fringe", "M", 0, "hair_fringe"), ("fringe", "L", 1, "hair_fringe"), ("fringe", "L", 2, "hair_fringe"),
-    ("fringe", "S", 3, "hair_fringe"), ("fringe", "L", 4, "hair_fringe"), ("fringe", "M", 5, "hair_fringe"),
-    ("fringe", "M", 6, "hair_fringe"),
+HAIR_CLUMPS = (                       # (v4: listed bottom -> top within a kind: CLUMP_STACK; the fringe from the lock that
+                                      #   starts furthest back on the part up to the between-eyes lock on top)
+    ("fringe", "M", 0, "hair_fringe.R"), ("fringe", "L", 1, "hair_fringe.R"), ("fringe", "L", 2, "hair_fringe.R"),
+    ("fringe", "M", 6, "hair_fringe.L"), ("fringe", "M", 5, "hair_fringe.L"), ("fringe", "L", 4, "hair_fringe.C"),
+    ("fringe", "S", 3, "hair_fringe.C"),      # (v4: three fringe chains -- the sweep's far locks, the centre, the short
+                                              #   side -- each lagging along its own mean path; one chain over the whole
+                                              #   fanned sweep swung its outer locks into the brow: hair gate)
+    ("sweep", "M", (-138.0, 26.0, 0.032), None), ("sweep", "L", (-92.0, 28.0, 0.036), None),
+    ("sweep", "L", (-48.0, 30.0, 0.030), None), ("sweep", "L", (-12.0, 50.0, 0.010), None),   # v4: the combed-over
+                                      #   top on his right (from the part, not mirrored; bottom -> top): covers the crown
+                                      #   right of the part, the front one lies flat over the top toward the fringe
     ("side", "M", (70.0, -4.0, 0.014), "hair_side"),
     ("side", "L", (88.0, -14.0, 0.022), "hair_side"), ("side", "M", (108.0, -30.0, 0.048), "hair_side"),
     ("outer", "S", (74.0, 22.0, 0.034), "hair_side"), ("outer", "L", (120.0, -6.0, 0.046), None),
@@ -192,13 +277,18 @@ TAIL = (0.070, 0.010, 0.0045)         # "nape tail": length (m), tie radius (m),
 AHOGE_H = 0.045                       # "cowlick" height above the crown
 HAIR_CAP_INNER = False                # v3 "dark inner cap": keep the cap's inner (scalp-facing) shell; False = harvest it
                                       #   (provably hidden: it faces into the closed head)
-HAIR_TIERS = (0.16, 0.84)             # "painted hair tiers": clump arc fraction below which the top faces are the dark ROOT
+HAIR_TIERS = (0.16, 0.90)             # "painted hair tiers": clump arc fraction below which the top faces are the dark ROOT
                                       #   tone / above which the lighter TIP tone
 ANGEL_RING = (43.0, 50.0)             # "angel ring": the highlight band on the clumps' top faces between these elevations
                                       #   (deg, about the head centre on the head's own ellipsoid): one consistent height
 HAIR_PROXY = (48, 24, 80, 0.003)      # "one-volume hair shading": the smooth proxy = a (lon x lat) sphere grid about the
                                       #   hairdo's centre, the smoothed upper envelope of the hair (iterations), padded (m);
                                       #   its normals are baked into the hair UV strip against the flat facets; None = flat (v2)
+HAIR_LOCK_NORMAL_MIX = 0.45           # v4 "per-lock volume": the hair shading normal = the proxy's (one soft volume) leaned
+                                      #   this far toward each clump's own smooth normal (0 = v3's pure proxy: "a dome with
+                                      #   lines"; 1 = every lock a separate tube)
+HAIR_CLEAR = (0.0025, 0.0005)         # v4 clearance pass: clump vertices pushed out to this far off the head / neck skin /
+                                      #   off the cap surface (m)
 HAIR_BAKE_CAGE = (0.0004, 0.0012)     # the hair normal bake: cage extrusion / max ray distance (m) (the high is the hair's
                                       #   own surface carrying the proxy normals)
 # ---- boots (solid)
@@ -302,10 +392,30 @@ V2_FACE = {                           # v2 baseline (commit f2b0703), from its c
     "hair": {"locks": 37, "tris_locks": 5328, "tris_cap": 3196, "tris_tie": 80, "tris_total": 8604,
              "crown_above_scalp_mm": 14.4, "normal_strip": "flat (0.5, 0.5, 1) everywhere"},
     "total_tris": 48137}
-AO_SAMPLES = 48                       # AO bake samples (v1 16: the v2 face texel density resolved the 16-sample noise as speckle in the lip crease)
+V3_FACE = {                           # v3 baseline (commit 63078cf): its committed report improved/wren.json + the numbers
+                                      #   MEASURED by this build in the v3 configuration (--set EYE_ORBIT=None
+                                      #   EYE_BAG_FLAT=None LIP_FLAT=None, EYE_IRIS_DEG / EYE_PUPIL_DEG 40 / 15): the v4 report
+                                      #   quotes it next to the live v4 numbers
+    "iris_deg": 40.0, "pupil_deg": 15.0, "iris_coverage_pct": {"L": 83.2, "R": 83.3}, "visible_opening_mm2": {"L": 411.8, "R": 411.4},
+    "aperture_mm_L": {"outer": 20.3, "up": 4.9, "inner": 12.6, "down": 9.9},
+    "shape_dev_mm_vs_v2_surface": {"nose": {"max": 4.17, "p95": 3.606}, "nose_bridge": {"max": 2.857, "p95": 2.817},
+                                   "side": {"max": 1.932, "p95": 0.622}, "temple": {"max": 0.985, "p95": 0.006},
+                                   "cheek": {"max": 0.874, "p95": 0.465}, "forehead": {"max": 0.074, "p95": 0.0},
+                                   "outside_socket_core": {"max": 4.054, "p95": 1.432}},
+    "undereye_crease_mm_L": {"dx-8": 1.678, "dx-4": 1.481, "dx+0": 1.338, "dx+4": 1.865, "dx+8": 2.853, "max": 2.853},
+    "lip_pairing_x0": {"upper_fwd_mm": 3.25, "lower_fwd_mm": 0.96, "upper_proud_h_mm": 7.6, "lower_proud_h_mm": 5.8},
+    "lip_tint_mm": [17.0, 2.6, 2.6], "mouth_line": "1.1 mm over the whole 46 mm seam, level",
+    "hair": {"clumps": 29, "flow": "centre: every clump radiating from the whorl (176, 60)", "crown_above_scalp_mm": 17.1,
+             "layer_shadows": "none", "tris_locks": 5776},
+    "total_tris": 48766}
+AO_SAMPLES = 48                      # AO bake samples (v1 16: the v2 face texel density resolved the 16-sample noise as speckle in the lip crease)
 AO_FLOOR = {"default": 0.42, "skin": 0.62, "hair": 0.82, "cloth": 0.50}
+AO_FACE_LIFT = (0.93, 0.0025, 0.6, 14.0)   # v4: the baked AO is floored at the 1st value on the skin in the MOUTH band
+                                      #   (within the 2nd m of the seam: the crease baked in as a jagged dark streak past the
+                                      #   short drawn line) and UNDER THE EYES (the 3rd .. 4th mm below the lid edge, the
+                                      #   EYE_BAG_FLAT angle: no baked bag shadow); None = off
 AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow"],
-                    "hair": ["hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner"],
+                    "hair": ["hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice"],
                     "cloth": ["cloak", "cloak_worn", "patch_a", "patch_b", "patch_c", "shirt", "vest", "trousers"]}
 HAIR_BONES, CAPE_BONES, CAPE_CHAINS = 3, 4, 5
 GRIP_CURL = (58.0, 72.0, 50.0)        # "grip": finger curl round the shaft, per joint (deg)

@@ -38,20 +38,33 @@ FIELDS["sash"] = Z - Z_SASH
 FIELDS["vopen"] = np.abs(X) - np.interp(Z, [Z_SASH, NECK0[2]], [VEST_X[1], VEST_X[0]])
 FIELDS["z"] = Z.copy()
 FIELDS["y"] = Y.copy()
-FIELDS["lip"] = (X / LIP[0]) ** 2 + ((Z - Z_LIP) / np.where(Z > Z_LIP, LIP[1], LIP[2])) ** 2 - 1.0
+if LIP is not None:                                   # (v4: None = no lip tint -- the 2D mouth is the line alone)
+    FIELDS["lip"] = (X / LIP[0]) ** 2 + ((Z - Z_LIP) / np.where(Z > Z_LIP, LIP[1], LIP[2])) ** 2 - 1.0
 if SEAM is not None:
-    # v2 mouth line: a thin painted line ON the sealed seam (the sheet's closed mouth), tapering to the corners
+    # v2 mouth line: a thin painted line ON the sealed seam (the sheet's closed mouth), tapering to the corners.
+    # v4: the drawn SMIRK line -- painted over the middle MOUTH_LEN of the seam only (the anime mouth is shorter than the
+    # modelled one), its corner on his MOUTH_SMIRK side lifted by MOUTH_SMIRK[0] (rising over the outer MOUTH_SMIRK[2] of
+    # that half), the other corner level
     _sx0, _sx1 = float(SEAM["xs"].min()), float(SEAM["xs"].max())
-    _su = np.clip((X - _sx0) / max(_sx1 - _sx0, 1e-6), 0.0, 1.0)
-    _shw = 0.5 * MOUTH_LINE[0] * (MOUTH_LINE[1] + (1.0 - MOUTH_LINE[1]) * np.sin(np.pi * _su) ** 0.6)
-    _szc = np.interp(X, SEAM["xs"], SEAM["zc"])
-    FIELDS["mline"] = np.where((X >= _sx0) & (X <= _sx1), np.abs(Z - _szc) - _shw, 1.0)
+    if MOUTH_LEN is not None:
+        _sx0, _sx1 = max(_sx0, -MOUTH_LEN), min(_sx1, MOUTH_LEN)
+
+
+    def mline_centre(x_):
+        zc_ = np.interp(x_, SEAM["xs"], SEAM["zc"])
+        if MOUTH_SMIRK is not None:
+            h_ = MOUTH_SMIRK[1] * x_ / max(_sx1 if MOUTH_SMIRK[1] > 0 else -_sx0, 1e-6)       # 0 at the centre .. 1 at the corner
+            zc_ = zc_ + MOUTH_SMIRK[0] * smoothstep(1.0 - MOUTH_SMIRK[2], 1.0, h_) ** 1.5
+        return zc_
 
 
     def mline_field(P_):
         u_ = np.clip((P_[:, 0] - _sx0) / max(_sx1 - _sx0, 1e-6), 0.0, 1.0)
         hw_ = 0.5 * MOUTH_LINE[0] * (MOUTH_LINE[1] + (1.0 - MOUTH_LINE[1]) * np.sin(np.pi * u_) ** 0.6)
-        return np.where((P_[:, 0] >= _sx0) & (P_[:, 0] <= _sx1), np.abs(P_[:, 2] - np.interp(P_[:, 0], SEAM["xs"], SEAM["zc"])) - hw_, 1.0)
+        return np.where((P_[:, 0] >= _sx0) & (P_[:, 0] <= _sx1), np.abs(P_[:, 2] - mline_centre(P_[:, 0])) - hw_, 1.0)
+
+
+    FIELDS["mline"] = mline_field(BV)
 # ---- eyes: the lathe eyeball (rendered) + the lid-edge aperture per 5 deg (front rays: first skin hit in front of it)
 BN = VP.vertex_normals(BV, BF)
 if float(np.mean(np.einsum("ij,ij->i", BN, BV - BV.mean(0)))) < 0:
@@ -444,7 +457,8 @@ CUTS.append(("neck", 0.0, g_and(gv("headm", -1, 0.5), gv("z", NECK0[2] - 0.12, H
 CUTS.append(("sash", 0.0, g_and(gv("armm_L", -1, 0.5), gv("armm_R", -1, 0.5), gv("headm", -1, 0.5))))
 CUTS.append(("vopen", 0.0, g_and(gv("y", -1, AX_Y), gv("z", Z_SASH - 0.01, NECK0[2] + 0.02), gv("armm_L", -1, 0.5),
                                   gv("armm_R", -1, 0.5), gv("headm", -1, 0.5))))
-CUTS.append(("lip", 0.0, g_and(gv("headm", 0.5), gv("y", -1, Y_LIP + 0.03), gv("z", Z_LIP - 0.03, Z_LIP + 0.03))))
+if LIP is not None:
+    CUTS.append(("lip", 0.0, g_and(gv("headm", 0.5), gv("y", -1, Y_LIP + 0.03), gv("z", Z_LIP - 0.03, Z_LIP + 0.03))))
 if SEAM is not None:
     CUTS.append(("mline", 0.0, g_and(gv("headm", 0.5), gv("y", -1, Y_LIP + 0.012), gv("z", Z_LIP - 0.015, Z_LIP + 0.015))))
 for s in "LR":
@@ -502,15 +516,16 @@ SH_MASK = {"jaw_neck": (reg == "skin") & (FV["jawgate"] > 0.5) & (FV["jawsh"] < 
            "fringe": (reg == "skin") & _head & (FV["hair"] < 0) & (FV["fringe"] < 0) & (FV["fringe_u"] > 0) & (FV["fringe_gate"] > 0.5)}
 for k_, m_ in SH_MASK.items():
     reg[m_] = "skin_shadow"
-reg[_head & (FV["lip"] < 0) & (FV["y"] < Y_LIP + 0.03) & (np.abs(FV["z"] - Z_LIP) < 0.03)] = "lips"
-_mx = np.arange(-LIP[0] - 0.002, LIP[0] + 0.0021, 0.0005)
-_mfront = []
-for x_ in _mx:
-    ys_ = [BVH_BODY.ray_cast(Vector((float(x_), -0.6, float(z_))), Vector((0.0, 1.0, 0.0)), 1.0)[0]
-           for z_ in np.arange(Z_SLIT - 0.008, Z_SLIT + 0.008, 0.0005)]
-    _mfront.append(min(h[1] for h in ys_ if h is not None))
-_mfront = np.array(_mfront)
+if LIP is not None:
+    reg[_head & (FV["lip"] < 0) & (FV["y"] < Y_LIP + 0.03) & (np.abs(FV["z"] - Z_LIP) < 0.03)] = "lips"
 if SEAM is None:                                   # v1 rule: lip-zone skin recessed behind the front = the mouth
+    _mx = np.arange(-LIP[0] - 0.002, LIP[0] + 0.0021, 0.0005)
+    _mfront = []
+    for x_ in _mx:
+        ys_ = [BVH_BODY.ray_cast(Vector((float(x_), -0.6, float(z_))), Vector((0.0, 1.0, 0.0)), 1.0)[0]
+               for z_ in np.arange(Z_SLIT - 0.008, Z_SLIT + 0.008, 0.0005)]
+        _mfront.append(min(h[1] for h in ys_ if h is not None))
+    _mfront = np.array(_mfront)
     for fi in np.nonzero(reg == "lips")[0]:
         c_ = CV[CF[fi]].mean(0)
         if c_[1] > float(np.interp(c_[0], _mx, _mfront)) + MOUTH_IN_D:

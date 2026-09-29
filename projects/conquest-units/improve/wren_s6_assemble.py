@@ -11,7 +11,7 @@ REG = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow", "eye_sclera", "e
        "boot_sole", "strap", "brass", "brass_dark", "rope", "rope_dark", "pouch", "pouch_flap", "cloak", "cloak_worn",
        "cloak_lining", "patch_a", "patch_b", "patch_c", "stitch", "crystal", "cord", "bracer", "bracer_strap",
        # v3: the anime eye (upper lash band, iris lid shadow, highlight dot) + the painted hair tiers + the dark inner cap
-       "lash", "eye_iris_dark", "eye_hilite", "hair_root", "hair_ring", "hair_tip", "hair_inner"]
+       "lash", "eye_iris_dark", "eye_hilite", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice"]
 REG_F = ["wood", "wood_dark", "grip", "grip_dark", "ferrule"]
 # hidden skin removed: the scalp under the cap, the feet inside the boot shells, the shins inside the boot shafts
 _cdom = np.array([MB[j] for j in np.argmax(CW, 1)], dtype=object)
@@ -143,7 +143,7 @@ dvec = landmark - anchor
 report["facing"] = {"rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
-HAIR_REGS = ("hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner")
+HAIR_REGS = ("hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice")
 HAIR_REG_IDS = [REG.index(r) for r in HAIR_REGS]
 low["conquest_hair_uv_strip"] = float(1.0 - HAIR_UV_STRIP)
 _hairf = np.isin(rid, HAIR_REG_IDS)
@@ -522,6 +522,16 @@ if HAIR_PROXY is not None:
         return out_
 
     _HN = proxy_normal(_HV)
+    if HAIR_LOCK_NORMAL_MIX:
+        # v4 (review-log 2026-09-29 "Wren v4 feedback": the one-volume proxy alone read as "a dome with lines"): the
+        # shading normal leans HAIR_LOCK_NORMAL_MIX of the way toward each clump's OWN smooth normal (its lens section
+        # rounds across its width): every lock keeps the soft global volume but turns darker toward its own edges -- the
+        # locks read as separate layers, the crevice bands sit in those darker edges
+        _own = VP.vertex_normals(_HV, _HF)
+        if float(np.mean(np.einsum("ij,ij->i", _own, _HV - _cen))) < 0:
+            _own = -_own
+        _HN = _HN * (1.0 - HAIR_LOCK_NORMAL_MIX) + _own * HAIR_LOCK_NORMAL_MIX
+        _HN = _HN / np.maximum(np.linalg.norm(_HN, axis=1), 1e-12)[:, None]
     HAIRH = new_obj(UNIT + "_hairhigh", _HV, _HF)
     HAIRH.data.shade_smooth()
     HAIRH.data.normals_split_custom_set_from_vertices([tuple(n_) for n_ in _HN])
@@ -650,6 +660,38 @@ for cls_, regs_ in AO_FLOOR_REGIONS.items():
         w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
         inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
         _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], AO_FLOOR[cls_])
+AO_LIFT_INFO = None
+if AO_FACE_LIFT is not None:
+    # v4: skin faces in the mouth band + under the eyes get the AO_FACE_LIFT floor (see the constant)
+    _fcb = np.array([CV[f].mean(0) for f in CF])
+    _lift = np.zeros(len(CF), bool)
+    if SEAM is not None:
+        _lift |= (np.abs(_fcb[:, 2] - np.interp(_fcb[:, 0], SEAM["xs"], SEAM["zc"])) < AO_FACE_LIFT[1]) & \
+            (np.abs(_fcb[:, 0]) < float(np.abs(SEAM["xs"]).max()) + 0.003) & (_fcb[:, 1] < Y_LIP + 0.012)
+    _n_mouth = int(_lift.sum())
+    for s in "LR":
+        _rad, _ang = eye_polar(_fcb, s)
+        _apd = float(aperture(270.0, s))
+        _lift |= (_rad > _apd + AO_FACE_LIFT[2] * 1e-3) & (_rad < _apd + AO_FACE_LIFT[3] * 1e-3) & \
+            (np.abs(_ang - 270.0) < EYE_BAG_FLAT[3]) & (_fcb[:, 1] < EYE[s]["c"][1])
+    _lift &= np.isin(np.array(reg), ["skin", "skin_shadow", "lips"])
+    _lf_tris = np.nonzero((_lt_p < len(CF)) & np.concatenate([_lift, np.zeros(len(_ridf) - len(CF), bool)])[_lt_p])[0]
+    for tri_ in _lf_tris:
+        P3 = _uvl[_lt_l[tri_]] * RA - 0.5
+        x0, y0 = np.floor(P3.min(0)).astype(int); x1, y1 = np.ceil(P3.max(0)).astype(int)
+        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RA - 1), min(y1, RA - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        a_, b_, c_ = P3
+        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+        if abs(den_) < 1e-12:
+            continue
+        w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
+        w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
+        inside_ = (w0 >= -0.02) & (w1 >= -0.02) & (1 - w0 - w1 >= -0.02)
+        _flr[gy_[inside_], gx_[inside_]] = np.maximum(_flr[gy_[inside_], gx_[inside_]], AO_FACE_LIFT[0])
+    AO_LIFT_INFO = {"floor": AO_FACE_LIFT[0], "mouth_band_faces": _n_mouth, "faces": int(_lift.sum())}
 for _ in range(6):
     f_ = _flr.copy()
     f_[1:] = np.maximum(f_[1:], _flr[:-1]); f_[:-1] = np.maximum(f_[:-1], _flr[1:])
@@ -663,7 +705,7 @@ img_ao.pixels.foreach_set(pa.ravel())
 bstats["hair_strip"] = {"rule": "hair faces packed into u > %.2f; normal texels there flat, AO texels white" % (1 - HAIR_UV_STRIP),
                         "raw_ao_in_hair_strip_p05": round(float(np.percentile(_hair_ao_raw, 5)), 4) if len(_hair_ao_raw) else None,
                         "texels_normal": int(_strip_n.sum()), "texels_ao": int(_strip_a.sum())}
-bstats["ao_lift"] = {"floors": AO_FLOOR, "raw_p05": round(float(np.percentile(_ao_raw[cov_a], 5)), 4),
+bstats["ao_lift"] = {"floors": AO_FLOOR, "v4_face_lift": AO_LIFT_INFO, "raw_p05": round(float(np.percentile(_ao_raw[cov_a], 5)), 4),
                      "lifted_p05": round(float(np.percentile(pa[cov_a, 0], 5)), 4), "lifted_mean": round(float(pa[cov_a, 0].mean()), 4)}
 DIG["ao_lifted"] = sha(np.clip(np.rint(pa[:, :1] * 255.0), 0, 255).astype(np.uint8))
 if not DIGEST_ONLY:
@@ -726,7 +768,8 @@ report["face_round"] = {   # (the v2 face round vs v1; "live" = this build)
     "mouth_v1": {"mouth_compression": V1_FACE["mouth_compression"], "lip_pairing_x0": V1_FACE["lip_pairing_x0"]},
     "mouth_live": {"mouth_compression": TARGETS.get("expression/units/caucasian/mouth-compression", 0.0),
                  "lip_seal": report.get("lip_seal"), "lip_pairing": report["mouth"]["lip_pairing_pre_cut"],
-                 "lip_tint_mm": {"upper": LIP[1] * 1000, "lower": LIP[2] * 1000}, "mouth_line_mm": MOUTH_LINE[0] * 1000},
+                 "lip_tint_mm": ({"upper": LIP[1] * 1000, "lower": LIP[2] * 1000} if LIP is not None else "none (v4: the line alone)"),
+                 "mouth_line_mm": MOUTH_LINE[0] * 1000},
     "face_zone_v1": V1_FACE["face_zone_visible"], "face_zone_live": dict(report["face_zone"], **report.get("face_uv", {}),
                                                                        normal_ref=FACE_NORMAL_REF),
     "tris_total": {"v1": V1_FACE["total_tris"], "live": report["tris"]["total"]},
@@ -756,6 +799,35 @@ report["fe_round"] = {
     "tris_total": {"v2": V2_FACE["total_tris"], "v3": report["tris"]["total"]},
     "body_untouched_rule": "every change is head skin (eye scale gated to the orbit), the eyeballs, or the hair parts"}
 print("FE_ROUND", json.dumps(report["fe_round"]))
+_lf = report.get("lip_flatten") or {}
+report["v4_round"] = {
+    "spec": "review-log 2026-09-29 'Wren v4 feedback': iris shrunk into the approved x1.30 socket, eye bags removed, the "
+            "orbit-blend leak on the nose / side cleaned, 2D-anime mouth (thin lips, drawn smirk line, no tint), hair: "
+            "layer shadows between clumps + a side part",
+    "eyes": {"socket_scale": EYE_SCALE, "aperture_mm_L": {"v3": V3_FACE["aperture_mm_L"], "v4": _ap2},
+             "iris_deg_v3": V3_FACE["iris_deg"], "pupil_deg_v3": V3_FACE["pupil_deg"], "iris_deg_v4": EYE_IRIS_DEG,
+             "pupil_deg_v4": EYE_PUPIL_DEG, "iris_coverage_pct_v3": V3_FACE["iris_coverage_pct"],
+             "iris_coverage_pct_v4": {s: _ep[s]["iris_coverage_pct"] for s in "LR"},
+             "visible_opening_mm2_v4": {s: _ep[s]["visible_opening_mm2"] for s in "LR"},
+             "eyeball_poke_verts_v4": {s: _ep[s]["eyeball_poke_verts"] for s in "LR"}},
+    "eye_bags": {"v3_crease_mm_L": V3_FACE["undereye_crease_mm_L"], "v4": report.get("undereye"),
+                 "dial": TARGETS.get("eyes/l-eye-bag-decr")},
+    "orbit": {"shape_dev_mm_vs_v2_surface": report["eye_scale"].get("shape_dev_mm_vs_v2_surface"),
+              "v3_shape_dev_mm_vs_v2_surface": V3_FACE["shape_dev_mm_vs_v2_surface"],
+              "radial_stretch_min": report["eye_scale"].get("radial_stretch_min"), "slid_verts": report["eye_scale"].get("slid_verts")},
+    "mouth": {"v3": {"lip_pairing_x0": V3_FACE["lip_pairing_x0"], "lip_tint_mm": V3_FACE["lip_tint_mm"], "line": V3_FACE["mouth_line"]},
+              "relief_vs_fit_mm": _lf.get("relief_vs_fit_mm"), "lip_pairing_after": _lf.get("after"),
+              "gap_columns_after": _lf.get("gap_columns_after"), "lip_tint": "none" if LIP is None else LIP,
+              "line": {"width_mm": MOUTH_LINE[0] * 1000, "half_length_mm": None if MOUTH_LEN is None else MOUTH_LEN * 1000,
+                       "smirk_rise_mm": None if MOUTH_SMIRK is None else MOUTH_SMIRK[0] * 1000,
+                       "smirk_side": None if MOUTH_SMIRK is None else ("his left" if MOUTH_SMIRK[1] > 0 else "his right")}},
+    "hair": {"v3": V3_FACE["hair"], "v4": {"clumps": HAIR_INFO["clumps"], "part": HAIR_INFO.get("part"),
+                                           "layer_shadows": HAIR_INFO.get("layer_shadows"), "angel_ring": HAIR_INFO["angel_ring"],
+                                           "crown_above_scalp_mm": HAIR_INFO["crown"]["crown_above_scalp_mm"],
+                                           "tris": dict(_hair_tris, total=sum(_hair_tris.values())),
+                                           "paint_faces": HAIR_INFO["paint_faces"]}},
+    "tris_total": {"v3": V3_FACE["total_tris"], "v4": report["tris"]["total"]}}
+print("V4_ROUND", json.dumps(report["v4_round"]))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

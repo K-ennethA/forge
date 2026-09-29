@@ -24,6 +24,9 @@ def tri_count_F(F):
     return int(sum(len(f) - 2 for f in F))
 
 
+CUT_DUP_FACES = [0]
+
+
 def cut_part(V, F, R, fn, tau=0.0, attrs=(), vgate=None, snap=0.12):
     """v3: split a part's faces along the iso-line fn = tau (the body's iso_cut, for a standalone part): fn maps (n, 3)
     positions -> values; attrs = per-vertex float arrays carried onto the new vertices (linear along the split edge);
@@ -38,7 +41,10 @@ def cut_part(V, F, R, fn, tau=0.0, attrs=(), vgate=None, snap=0.12):
     lg_ = bm_.verts.layers.int.new("g")
     vs_ = [bm_.verts.new(p) for p in V]
     for f_, r_ in zip(F, R):
-        fb_ = bm_.faces.new([vs_[i] for i in f_]); fb_[rl_] = names_.index(r_)
+        try:
+            fb_ = bm_.faces.new([vs_[i] for i in f_]); fb_[rl_] = names_.index(r_)
+        except ValueError:                             # (a repeated face -- same vertex set -- is kept once; counted)
+            CUT_DUP_FACES[0] += 1
     vals_ = np.asarray(fn(V), float)
     for i, v in enumerate(vs_):
         v[lf_] = float(vals_[i]); v[lg_] = 1 if vgate is None else int(bool(vgate[i]))
@@ -238,6 +244,19 @@ def lip_gap(V, F, z_guess, xs, depth):
     return top, bot
 
 
+def seam_curve(V, F, xs_, zc_):
+    """the seam as SEEN from the front after the seal: per column the most recessed front hit within +-3 mm of the gap mid."""
+    bvh2_ = BVHTree.FromPolygons(V.tolist(), F)
+    zc2 = []
+    for x_, z0_ in zip(xs_, zc_):
+        zz_ = np.arange(z0_ - 0.003, z0_ + 0.003, 0.00005)
+        yy_ = np.array([(lambda h: h[0][1] if h[0] is not None else -9.0)(bvh2_.ray_cast(Vector((float(x_), -0.6, float(z_))),
+                                                                                         Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zz_])
+        zc2.append(float(zz_[int(np.argmax(yy_))]))
+    zc2 = np.convolve(np.pad(np.array(zc2), 2, mode="edge"), np.ones(5) / 5.0, mode="valid")
+    return {"xs": np.asarray(xs_), "zc": zc2}
+
+
 def seal_lips(V, F, z_guess):
     xs = np.arange(-0.030, 0.0301, 0.0005)
     top, bot = lip_gap(V, F, z_guess, xs, LIP_SEAL[2])
@@ -254,22 +273,16 @@ def seal_lips(V, F, z_guess):
     x_ = V[near, 0]; z_ = V[near, 2]
     zc_ = np.interp(x_, xs, zc); h_ = np.interp(x_, xs, half)
     up_ = z_ >= zc_
+    global LIP_SIDE                                   # v4: which lip each sealed vertex belongs to (+1 upper, -1 lower)
+    LIP_SIDE = np.zeros(len(V)); LIP_SIDE[np.nonzero(near)[0]] = np.where(up_, 1.0, -1.0)
     d_ = np.where(up_, z_ - (zc_ + h_), (zc_ - h_) - z_)                # distance past the rim (<= 0 inside the gap)
     w_ = 1.0 - smoothstep(0.0, LIP_SEAL[0], np.maximum(d_, 0.0))
     shift = w_ * np.where(h_ > 1e-5, h_ + LIP_SEAL[1], 0.0)
     V[np.nonzero(near)[0], 2] = z_ + np.where(up_, -shift, shift)
     top2, bot2 = lip_gap(V, F, z_guess, xs, LIP_SEAL[2])
-    global SEAM
-    # the seam as SEEN from the front after the seal: per column the most recessed front hit within +-3 mm of the gap mid
-    bvh2_ = BVHTree.FromPolygons(V.tolist(), F)
-    zc2 = []
-    for x_, z0_ in zip(xs[has], zc[has]):
-        zz_ = np.arange(z0_ - 0.003, z0_ + 0.003, 0.00005)
-        yy_ = np.array([(lambda h: h[0][1] if h[0] is not None else -9.0)(bvh2_.ray_cast(Vector((float(x_), -0.6, float(z_))),
-                                                                                         Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zz_])
-        zc2.append(float(zz_[int(np.argmax(yy_))]))
-    zc2 = np.convolve(np.pad(np.array(zc2), 2, mode="edge"), np.ones(5) / 5.0, mode="valid")
-    SEAM = {"xs": xs[has], "zc": zc2}               # the seam curve (the painted mouth line follows it)
+    global SEAM, SEAM_GAP
+    SEAM_GAP = (xs[has], zc[has])
+    SEAM = seam_curve(V, F, xs[has], zc[has])        # the seam curve (the painted mouth line follows it)
     return V, {"rule": "front rays deeper than %.1f mm behind the lip front = the gap; half the gap closed from each lip, "
                        "falloff %.1f mm, overlap %.2f mm" % (LIP_SEAL[2] * 1000, LIP_SEAL[0] * 1000, LIP_SEAL[1] * 1000),
                "gap_max_mm_before": round(1000 * float(np.nanmax(top - bot)), 2), "gap_columns_before": int(has.sum()),
@@ -279,6 +292,7 @@ def seal_lips(V, F, z_guess):
 
 
 SEAM = None
+LIP_SIDE = None
 if LIP_SEAL is not None:
     BV, report["lip_seal"] = seal_lips(BV, BF, float(TEETH[:, 2].min()))
     print("LIPSEAL", json.dumps(report["lip_seal"]))
@@ -290,29 +304,322 @@ if LIP_SEAL is not None:
 # behind never moves). Everything painted on the face (liner / lash, brows, fringe shadow) is derived afterwards from the
 # scaled geometry, so it tracks.
 EYE_V2 = {s: {"c": EYE[s]["c"].copy(), "r": EYE[s]["r"]} for s in "LR"}
-EYE_SCALE_INFO = {"factor": EYE_SCALE, "zone": EYE_SCALE_ZONE}
+EYE_SCALE_INFO = {"factor": EYE_SCALE, "zone": EYE_SCALE_ZONE if EYE_ORBIT is None else {"orbit_mm": EYE_ORBIT, "depth_x_r": EYE_ORBIT_DEPTH}}
+
+
+def orbit_R(ang_deg, key):
+    """v4 orbit ellipse radius (m) at polar angle ang (0 = outer corner, 90 = up, 180 = inner, 270 = down): quadrant
+    ellipses through the per-direction radii EYE_ORBIT[dir][key] (key 0 = full scale within, 1 = no scale beyond)."""
+    a_ = np.radians(np.asarray(ang_deg, float))
+    c_, s_ = np.cos(a_), np.sin(a_)
+    ah_ = np.where(c_ >= 0, EYE_ORBIT["outer"][key], EYE_ORBIT["inner"][key]) * 1e-3
+    av_ = np.where(s_ >= 0, EYE_ORBIT["up"][key], EYE_ORBIT["down"][key]) * 1e-3
+    return 1.0 / np.sqrt((c_ / ah_) ** 2 + (s_ / av_) ** 2)
+
+
+def body_edges(F):
+    e_ = set()
+    for f in F:
+        for k in range(len(f)):
+            a_, b_ = f[k], f[(k + 1) % len(f)]
+            e_.add((min(a_, b_), max(a_, b_)))
+    return np.array(sorted(e_), dtype=np.int64)
+
+
+BE = body_edges(BF)
 if EYE_SCALE != 1.0:
     _moved = np.zeros(len(BV))
+    _V_unscaled = BV.copy()
+    _fold = []
+    _slide = np.zeros(len(BV))                     # v4: per vertex, how much of its move slides along the original surface
+    _core = np.zeros(len(BV))                      # v4: the similar-figure core weight (the approved socket)
     for s in "LR":
         c_, r_ = EYE[s]["c"], EYE[s]["r"]
         f_ = c_ + np.array([0.0, -r_, 0.0])
         d_ = np.hypot(BV[:, 0] - c_[0], BV[:, 2] - c_[2])
-        w_ = (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, d_)) * \
-            (1.0 - smoothstep(c_[1] + EYE_SCALE_ZONE[2] * r_, c_[1] + EYE_SCALE_ZONE[3] * r_, BV[:, 1]))
-        dv_ = (EYE_SCALE - 1.0) * w_[:, None] * (BV - f_)
+        if EYE_ORBIT is None:                          # v3 blend: circles in the face plane (it leaked onto the nose + side)
+            w_ = (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, d_)) * \
+                (1.0 - smoothstep(c_[1] + EYE_SCALE_ZONE[2] * r_, c_[1] + EYE_SCALE_ZONE[3] * r_, BV[:, 1]))
+            dv_ = (EYE_SCALE - 1.0) * w_[:, None] * (BV - f_)
+            _core = np.maximum(_core, (d_ < EYE_SCALE_ZONE[0] * 1e-3) * w_)
+        else:
+            # v4 blend (review-log 2026-09-29 "Wren v4 feedback": the v3 blend leaked onto the nose and the side of the
+            # face): (1) the face-plane falloff follows the ORBIT (quadrant ellipses: tight toward the nose, wider toward
+            # the temple); (2) the depth part of the scale is gated tighter than the lateral part; (3) past the socket
+            # core the move SLIDES along the original surface (EYE_SLIDE): the skin makes room for the bigger socket by
+            # redistributing over the orbit, the orbit / cheek / temple / nose SHAPE stays the v2 surface.
+            ang_ = np.degrees(np.arctan2(BV[:, 2] - c_[2], (BV[:, 0] - c_[0]) * (1.0 if s == "L" else -1.0))) % 360.0
+            R0_ = orbit_R(ang_, 0)
+            wl_ = 1.0 - smoothstep(R0_, orbit_R(ang_, 1), d_)
+            dl_ = 1.0 - smoothstep(c_[1] + EYE_ORBIT_DEPTH[0] * r_, c_[1] + EYE_ORBIT_DEPTH[1] * r_, BV[:, 1])
+            dd_ = 1.0 - smoothstep(c_[1] + EYE_ORBIT_DEPTH[2] * r_, c_[1] + EYE_ORBIT_DEPTH[3] * r_, BV[:, 1])
+            dv_ = (EYE_SCALE - 1.0) * (BV - f_) * np.stack([wl_ * dl_, wl_ * dl_ * dd_, wl_ * dl_], 1)
+            if EYE_SLIDE is not None:
+                ts_ = smoothstep(R0_ - EYE_SLIDE[0] * 1e-3, R0_ + EYE_SLIDE[1] * 1e-3, d_) * (np.linalg.norm(dv_, axis=1) > 0)
+                _slide = np.maximum(_slide, ts_)
+            _core = np.maximum(_core, (d_ <= R0_) * dl_)
+            # fold proof per direction: rho' = rho (1 + k w(rho)) stays monotone along every face-plane ray
+            for a_s in np.arange(0.0, 360.0, 5.0):
+                _dd = np.linspace(0.0, float(orbit_R(a_s, 1)) * 1.2, 400)
+                _rho = _dd * (1.0 + (EYE_SCALE - 1.0) * (1.0 - smoothstep(float(orbit_R(a_s, 0)), float(orbit_R(a_s, 1)), _dd)))
+                _fold.append(float(np.min(np.diff(_rho) / np.diff(_dd))))
         BV = BV + dv_
-        _moved = np.maximum(_moved, np.linalg.norm(dv_, axis=1))
         EYE[s] = {"c": f_ + EYE_SCALE * (c_ - f_), "r": EYE_SCALE * r_}
+    _bvh_un = BVHTree.FromPolygons(_V_unscaled.tolist(), BF)
+    _nun = VP.vertex_normals(_V_unscaled, BF)
+    if float(np.mean(np.einsum("ij,ij->i", _nun, _V_unscaled - _V_unscaled.mean(0)))) < 0:
+        _nun = -_nun
+    # the slide applies to the OUTER skin only (normal facing away from the nearer eye's centre; the socket sleeve behind
+    # the lids faces the ball and is left to the blend)
+    _eyec = np.where((_V_unscaled[:, 0] >= 0)[:, None], EYE_V2["L"]["c"], EYE_V2["R"]["c"])
+    _outer = np.einsum("ij,ij->i", _nun, _V_unscaled - _eyec) > 0.0
+    _sl = np.nonzero((_slide > 0) & _outer)[0]
+    for i in _sl:
+        q_ = np.array(_bvh_un.find_nearest(Vector(BV[i]))[0])
+        BV[i] = (1.0 - _slide[i]) * BV[i] + _slide[i] * q_
+    _moved = np.linalg.norm(BV - _V_unscaled, axis=1)
     # fold proof: the blended map must stay one-to-one -- the radial stretch d(rho')/d(rho) along face-plane rays from
     # the eye centre stays > 0 (sampled on the profile w(d))
-    _dd = np.linspace(0.0, EYE_SCALE_ZONE[1] * 1.2e-3, 400)
-    _rho = _dd * (1.0 + (EYE_SCALE - 1.0) * (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, _dd)))
+    if EYE_ORBIT is None:
+        _dd = np.linspace(0.0, EYE_SCALE_ZONE[1] * 1.2e-3, 400)
+        _rho = _dd * (1.0 + (EYE_SCALE - 1.0) * (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, _dd)))
+        _fold = [float(np.min(np.diff(_rho) / np.diff(_dd)))]
     EYE_SCALE_INFO.update({"verts_moved": int((_moved > 1e-6).sum()), "max_move_mm": round(1000 * float(_moved.max()), 2),
-                           "radial_stretch_min": round(float(np.min(np.diff(_rho) / np.diff(_dd))), 3),
+                           "radial_stretch_min": round(float(min(_fold)), 3),
+                           "slid_verts": int(len(_sl)), "slide_mm": EYE_SLIDE,
                            "eyeball_r_mm": {"v2": round(1000 * EYE_V2["L"]["r"], 2), "v3": round(1000 * EYE["L"]["r"], 2)},
                            "eyeball_centre_moved_back_mm": round(1000 * float(EYE["L"]["c"][1] - EYE_V2["L"]["c"][1]), 2)})
+    # v4 leak proof: SHAPE deviation from the v2 (unscaled) surface -- every moved vertex's distance to the original
+    # surface (a vertex sliding along the surface is no shape change) -- in fixed anatomical zones (nose, nose bridge,
+    # side of the face, temple, cheek, forehead) and over everything outside the socket core
+    _ec = EYE_V2["L"]["c"]
+    _sd = np.zeros(len(BV))
+    for i in np.nonzero(_moved > 1e-7)[0]:
+        _sd[i] = _bvh_un.find_nearest(Vector(BV[i]))[3]
+    _sd *= 1000
+    _Xu, _Yu, _Zu = _V_unscaled[:, 0], _V_unscaled[:, 1], _V_unscaled[:, 2]
+    _hd = np.isin(np.array([MB[j] for j in np.argmax(BW, 1)], dtype=object), ["head"])
+    _fr = _Yu < _ec[1] + 0.01
+    LEAK_ZONES = {"nose": _hd & (np.abs(_Xu) < 0.012) & (_Zu > _ec[2] - 0.040) & (_Zu < _ec[2] + 0.006) & _fr,
+                  "nose_bridge": _hd & (np.abs(_Xu) < 0.009) & (_Zu > _ec[2] - 0.012) & (_Zu < _ec[2] + 0.006) & _fr,
+                  "side": _hd & (np.abs(_Xu) > 0.052) & (np.abs(_Zu - _ec[2]) < 0.030) & _outer,
+                  "temple": _hd & (np.abs(_Xu) > 0.056) & (_Zu > _ec[2]) & (_Zu < _ec[2] + 0.035),
+                  "cheek": _hd & (np.abs(_Xu) > 0.014) & (np.abs(_Xu) < 0.055) & (_Zu > _ec[2] - 0.045) & (_Zu < _ec[2] - 0.022) & _fr,
+                  "forehead": _hd & (_Zu > _ec[2] + 0.024) & _fr,
+                  "outside_socket_core": _hd & _outer & (_core < 0.5)}
+    EYE_SCALE_INFO["shape_dev_mm_vs_v2_surface"] = {k: {"verts": int(m.sum()), "max": round(float(_sd[m].max()), 3),
+                                                        "p95": round(float(np.percentile(_sd[m], 95)), 3),
+                                                        "vertex_move_max": round(1000 * float(_moved[m].max()), 3)}
+                                                    for k, m in LEAK_ZONES.items()}
+    EYE_SCALE_INFO["shape_dev_rule"] = ("distance (mm) of each vertex after the scale to the unscaled (v2) surface; zones in "
+                                        "the unscaled frame; 'outside_socket_core' = outer skin beyond the full-scale core")
 report["eye_scale"] = EYE_SCALE_INFO
 print("EYESCALE", json.dumps(EYE_SCALE_INFO))
+
+
+# ---- v4 RELIEF FLATTEN (review-log 2026-09-29 "Wren v4 feedback"): a zone's front surface keeps only a fraction K of its
+# offset from the face's own profile WITHOUT the feature (profile_flatten: per vertical column a fit through anchor bands
+# above and below the feature): K = 0 in the zone core = flat, fading to 1 at the border. Only depth (y) changes, so the
+# lid edges, the seal overlap and the seam's position stay put; the offsets scale monotonically (no crossings).
+# (Tried first and dropped, measured: a Laplacian membrane over the zone -- isotropic it flattened the face's horizontal
+# curvature and sank the zone 3-7 mm; vertical-only it still anchored on the under-chin and receded the chin.)
+def front_mask(V, F, cand, tol):
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    out_ = np.zeros(len(V), bool)
+    for i in np.nonzero(cand)[0]:
+        h_ = bvh_.ray_cast(Vector((float(V[i, 0]), -1.0, float(V[i, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        out_[i] = h_[0] is not None and V[i, 1] <= h_[0][1] + tol
+    return out_
+
+
+def profile_flatten(V, F, xs, zc, anc_up, anc_dn, m, front, K, deg=1):
+    """v4 relief flatten along the face's VERTICAL profile: per column x (xs, reference height zc(x)) the front-ray
+    profile y(dz) is fitted (a line, deg = 1: a quadratic sagged into the gap and kept a crease) through two ANCHOR bands only -- dz in anc_up (above the feature)
+    and anc_dn (below it), metres relative to zc -- i.e. the face as it would run without the feature; every front vertex
+    in the zone then keeps K x its offset from that fit (m = zone weight: 1 core .. 0 border). Only y changes (the lid
+    edge, the lip seal overlap and the seam's position stay put; offsets scale monotonically: no crossings); the face's
+    horizontal curvature is untouched (each column is its own fit). -> V, per-vertex fit y, per-column fit residual."""
+    V = V.copy()
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    co_, res_ = [], []
+    for x_, z0_ in zip(xs, zc):
+        dzs_ = np.arange(anc_dn[0], anc_up[1] + 1e-9, 0.00025)
+        ys_ = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(bvh_.ray_cast(Vector((float(x_), -1.0, float(z0_ + d_))),
+                                                                                          Vector((0.0, 1.0, 0.0)), 2.0)) for d_ in dzs_])
+        a_ = (((dzs_ >= anc_up[0]) & (dzs_ <= anc_up[1])) | ((dzs_ >= anc_dn[0]) & (dzs_ <= anc_dn[1]))) & ~np.isnan(ys_)
+        c_ = np.polyfit(dzs_[a_], ys_[a_], deg)
+        co_.append(c_)
+        res_.append(float(np.abs(np.polyval(c_, dzs_[a_]) - ys_[a_]).max()))
+    co_ = np.array(co_)
+    upd_ = (m > 0) & front
+    zc_v = np.interp(V[:, 0], xs, zc)
+    cv_ = np.stack([np.interp(V[:, 0], xs, co_[:, k]) for k in range(deg + 1)], 1)
+    yfit_ = sum(cv_[:, k] * (V[:, 2] - zc_v) ** (deg - k) for k in range(deg + 1))
+    V[:, 1] = np.where(upd_, yfit_ + (1.0 - (1.0 - K) * m) * (V[:, 1] - yfit_), V[:, 1])
+    return V, yfit_, res_
+
+
+def eye_aperture_s1(s, V, F, n=72):
+    """the lid opening per polar angle (front rays: the skin in front of the analytic eyeball sphere) -- s1's own
+    aperture for the under-eye zone (s2 re-measures it on the lathe ball)."""
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    c_, r_ = EYE[s]["c"], EYE[s]["r"]; sg_ = 1.0 if s == "L" else -1.0
+    ap_ = np.zeros(n)
+    for k in range(n):
+        th_ = math.radians(360.0 * k / n)
+        for i in range(1, 300):
+            rho = i * 0.0001
+            x_, z_ = c_[0] + sg_ * rho * math.cos(th_), c_[2] + rho * math.sin(th_)
+            q_ = r_ ** 2 - (x_ - c_[0]) ** 2 - (z_ - c_[2]) ** 2
+            h_ = bvh_.ray_cast(Vector((x_, -1.0, z_)), Vector((0.0, 1.0, 0.0)), 2.0)
+            if q_ <= 0 or (h_[0] is not None and h_[0][1] < c_[1] - math.sqrt(q_) - 1e-6):
+                ap_[k] = rho
+                break
+    return ap_
+
+
+def undereye_profile(V, F, s, ap_down):
+    """crease depth under the lower lid: front-ray profiles y(z) down columns through the eye (x = centre + -8 .. +8 mm),
+    from 1 mm below the lid edge to 26 mm below the centre; depth = how far the profile sinks behind its own front convex
+    hull (a crease / bag reads as a dent in that hull). -> per column depth (mm) + the max."""
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    c_ = EYE[s]["c"]; sg_ = 1.0 if s == "L" else -1.0
+    out_ = {}
+    for dx_ in (-8.0, -4.0, 0.0, 4.0, 8.0):
+        x_ = c_[0] + sg_ * dx_ * 1e-3
+        zs_ = np.arange(c_[2] - ap_down - 0.001, c_[2] - 0.026, -0.00025)
+        ys_ = np.array([(lambda h: -h[0][1] if h[0] is not None else np.nan)(bvh_.ray_cast(Vector((float(x_), -1.0, float(z_))),
+                                                                                          Vector((0.0, 1.0, 0.0)), 2.0)) for z_ in zs_])
+        ok_ = ~np.isnan(ys_)
+        P_ = np.stack([zs_[ok_], ys_[ok_]], 1)[::-1]            # (z ascending, forwardness)
+        hull_ = []
+        for p_ in P_:                                            # the upper (front) hull, monotone chain
+            while len(hull_) >= 2 and np.cross(hull_[-1] - hull_[-2], p_ - hull_[-2]) >= 0:
+                hull_.pop()
+            hull_.append(p_)
+        hull_ = np.array(hull_)
+        hy_ = np.interp(P_[:, 0], hull_[:, 0], hull_[:, 1])
+        k_ = int(np.argmax(hy_ - P_[:, 1]))
+        out_["dx%+d" % dx_] = round(1000 * float((hy_ - P_[:, 1])[k_]), 3)
+        out_["dx%+d_at_dz_mm" % dx_] = round(1000 * float(P_[k_, 0] - c_[2]), 1)
+    out_["max"] = max(v_ for k_, v_ in out_.items() if not k_.endswith("_mm"))
+    return out_
+
+
+EYE_BAG_INFO = {"rule": "front-ray profiles down 5 columns under each eye; depth = max sink behind the profile's front convex hull (mm)"}
+_ap_dn = {}
+for s in "LR":
+    _ap = eye_aperture_s1(s, BV, BF)
+    _ap_dn[s] = float(np.interp(270.0, 360.0 * np.arange(72) / 72, _ap, period=360.0))
+EYE_BAG_INFO["before"] = {s: undereye_profile(BV, BF, s, _ap_dn[s]) for s in "LR"}
+if EYE_BAG_FLAT is not None:
+    # the zone: under each lower lid, EYE_BAG_FLAT[0] .. [1] below the lid edge at full weight (fading in over 1.5 mm
+    # above and out over EYE_BAG_FLAT[2] below), across EYE_BAG_FLAT[3] deg either side of straight down (fading 25 deg)
+    _m = np.zeros(len(BV))
+    for s in "LR":
+        c_ = EYE[s]["c"]
+        rad_ = np.hypot(BV[:, 0] - c_[0], BV[:, 2] - c_[2])
+        ang_ = np.degrees(np.arctan2(BV[:, 2] - c_[2], (BV[:, 0] - c_[0]) * (1.0 if s == "L" else -1.0))) % 360.0
+        dang_ = np.abs(ang_ - 270.0)
+        lo_ = _ap_dn[s] + EYE_BAG_FLAT[0] * 1e-3
+        hi_ = _ap_dn[s] + EYE_BAG_FLAT[1] * 1e-3
+        w_ = smoothstep(max(lo_ - 0.0015, _ap_dn[s] + 0.0002), lo_, rad_) *(1.0 - smoothstep(hi_, hi_ + EYE_BAG_FLAT[2] * 1e-3, rad_)) * \
+            (1.0 - smoothstep(EYE_BAG_FLAT[3], EYE_BAG_FLAT[3] + 25.0, dang_)) * (BV[:, 1] < c_[1])
+        _m = np.maximum(_m, w_)
+    _front = front_mask(BV, BF, _m > 0, 0.0015)
+    _y0 = BV[:, 1].copy()
+    _fitres = {}
+    for s in "LR":
+        # anchors: the lower-lid margin band just under the opening, and the cheek below the zone
+        c_ = EYE[s]["c"]
+        _xs = np.arange(c_[0] - 0.026, c_[0] + 0.0261, 0.001)
+        _au = (-(_ap_dn[s] + EYE_BAG_FLAT[5][1] * 1e-3), -(_ap_dn[s] + EYE_BAG_FLAT[5][0] * 1e-3))
+        _ad = (-(_ap_dn[s] + EYE_BAG_FLAT[5][3] * 1e-3), -(_ap_dn[s] + EYE_BAG_FLAT[5][2] * 1e-3))
+        _ms = _m * (np.sign(BV[:, 0]) == (1.0 if s == "L" else -1.0))
+        BV, _, _r = profile_flatten(BV, BF, _xs, np.full(len(_xs), c_[2]), _au, _ad, _ms, _front, EYE_BAG_FLAT[4])
+        _fitres[s] = round(1000 * float(np.median(_r)), 3)
+    EYE_BAG_INFO.update({"zone_mm_below_lid": EYE_BAG_FLAT[:3], "half_angle_deg": EYE_BAG_FLAT[3], "K": EYE_BAG_FLAT[4],
+                         "anchors_mm_below_lid": EYE_BAG_FLAT[5], "anchor_fit_residual_mm_median": _fitres,
+                         "verts": int(((_m > 0) & _front).sum()),
+                         "max_move_mm": round(1000 * float(np.abs(BV[:, 1] - _y0).max()), 3),
+                         "after": {s: undereye_profile(BV, BF, s, _ap_dn[s]) for s in "LR"}})
+report["undereye"] = EYE_BAG_INFO
+print("UNDEREYE", json.dumps(EYE_BAG_INFO))
+
+
+def lip_pairing(bvh_, z_slit, xs_mm=(0.0, 4.0, 8.0, 12.0)):
+    """mouth proof (v2): per column x the front-ray profile across the seam: how far each lip stands proud of the seam
+    (upper_fwd / lower_fwd), the lower lip's lead over the upper (lower_lead: v1's mismatch), whether rays pass between
+    the lips (open), and the lip-to-lip vertical span of the proud parts (each lip's height where it stands >= 0.5 mm
+    proud of the seam)."""
+    out = {}
+    zs_ = np.arange(z_slit - 0.012, z_slit + 0.012, 0.0001)
+    for xm in xs_mm:
+        ys_ = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(bvh_.ray_cast(Vector((xm * 0.001, -0.6, float(z_))),
+                                                                                           Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zs_])
+        zs0_ = float(np.interp(xm * 0.001, SEAM["xs"], SEAM["zc"])) if SEAM is not None else z_slit
+        near_ = np.abs(zs_ - zs0_) <= (0.0015 if SEAM is not None else 0.003)
+        i_s = int(np.nanargmax(np.where(near_, ys_, -9.0)))
+        ys_s = float(ys_[i_s])
+        upm = (zs_ > zs_[i_s]) & (zs_ < zs_[i_s] + 0.008); lom = (zs_ < zs_[i_s]) & (zs_ > zs_[i_s] - 0.008)
+        yu, yl = float(np.nanmin(ys_[upm])), float(np.nanmin(ys_[lom]))
+        front_ = min(yu, yl)
+        prd_u = upm & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
+        prd_l = lom & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
+        out["x%+d" % xm] = {"seam_z_offset_mm": round(1000 * float(zs_[i_s] - z_slit), 2),
+                            "upper_fwd_mm": round(1000 * (ys_s - yu), 2), "lower_fwd_mm": round(1000 * (ys_s - yl), 2),
+                            "lower_lead_mm": round(1000 * (yu - yl), 2),
+                            "open_through_mm": round(1000 * (ys_s - front_), 2) if ys_s - front_ > 0.006 else 0.0,
+                            "upper_proud_h_mm": round(0.1 * float(prd_u.sum()), 1), "lower_proud_h_mm": round(0.1 * float(prd_l.sum()), 1)}
+    return out
+
+
+# ---- v4 2D-ANIME MOUTH (review-log 2026-09-29 "Wren v4 feedback": thin, barely-there lips; the mouth reads as a drawn
+# smirk LINE, not modelled lip volume). The sealed lips' relief is flattened toward the no-lip profile (profile_flatten,
+# anchors LIP_FLAT[5] wide just above / below the zone): in the zone LIP_FLAT[0] half width x LIP_FLAT[1] above / [2]
+# below the seam (fading over LIP_FLAT[3] at the border) the front surface keeps LIP_FLAT[4] of its relief. The seal stays closed (only depth changes); the seam is re-traced afterwards.
+LIP_FLAT_INFO = None
+if LIP_FLAT is not None and SEAM is not None:
+    _zsl = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
+    _bvh0 = BVHTree.FromPolygons(BV.tolist(), BF)
+    LIP_FLAT_INFO = {"before": lip_pairing(_bvh0, _zsl)}
+    _zc_x = np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"])
+    _dz = BV[:, 2] - _zc_x
+    _hz = np.where(_dz >= 0, LIP_FLAT[1], LIP_FLAT[2])
+    _u = np.maximum(np.abs(BV[:, 0]) / LIP_FLAT[0], np.abs(_dz) / _hz)
+    _yfr = float(BV[(np.abs(BV[:, 0]) < 0.005) & (np.abs(BV[:, 2] - _zsl) < 0.006), 1].min())   # the lips' front
+    _m = (1.0 - smoothstep(1.0, 1.0 + LIP_FLAT[3] / min(LIP_FLAT[:3]), _u)) * (BV[:, 1] < _yfr + 0.014) * \
+        (np.abs(BV[:, 0]) < LIP_FLAT[0] * 1.6)
+    _front = front_mask(BV, BF, _m > 0, LIP_FRONT_TOL)    # (the lip rims tucked into the seam crease count: they ARE the crease)
+    _y0 = BV[:, 1].copy()
+    _xs = np.arange(-LIP_FLAT[0] * 1.6, LIP_FLAT[0] * 1.6 + 1e-4, 0.001)
+    _au = (LIP_FLAT[1], LIP_FLAT[1] + LIP_FLAT[5])
+    _ad = (-(LIP_FLAT[2] + LIP_FLAT[5]), -LIP_FLAT[2])
+    BV, _ys, _r = profile_flatten(BV, BF, _xs, np.interp(_xs, SEAM["xs"], SEAM["zc"]), _au, _ad, np.where(_front, _m, 0.0),
+                                  _front, LIP_FLAT[4])
+    if LIP_RIM_STEP and LIP_SIDE is not None:
+        # the two sealed rims keep a consistent order after the flatten (upper lip in front by LIP_RIM_STEP): with the
+        # relief scaled down their facets interleaved into a sawtooth along the seam
+        _dzs = np.abs(BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"]))
+        _rs = (1.0 - smoothstep(0.0006, 0.0025, _dzs)) * (_m > 0) * _front
+        BV[:, 1] -= 0.5 * LIP_RIM_STEP * _rs * LIP_SIDE
+    # (the seam's height is kept from the seal: only y moved; re-tracing "the most recessed hit" after the flatten slid
+    # 1.4 mm below the visible crease, measured -- the drawn line must sit ON it)
+    _bvh1 = BVHTree.FromPolygons(BV.tolist(), BF)
+    _zsl = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
+    _top, _bot = lip_gap(BV, BF, _zsl, np.arange(-0.030, 0.0301, 0.0005), LIP_SEAL[2])
+    _zm = (_m > 0.99) & _front
+    LIP_FLAT_INFO.update({"zone_m": LIP_FLAT[:4], "K": LIP_FLAT[4], "anchor_band_m": LIP_FLAT[5],
+                          "anchor_fit_residual_mm_median": round(1000 * float(np.median(_r)), 3),
+                          "verts": int(((_m > 0) & _front).sum()),
+                          "max_move_mm": round(1000 * float(np.abs(BV[:, 1] - _y0).max()), 3),
+                          "relief_vs_fit_mm": {"before_max": round(1000 * float(np.max(np.abs(_ys[_zm] - _y0[_zm]))), 3) if _zm.any() else None,
+                                               "after_max": round(1000 * float(np.max(np.abs(_ys[_zm] - BV[_zm, 1]))), 3) if _zm.any() else None,
+                                               "rule": "max |offset| of the lip-zone core's front surface from the per-column no-lip "
+                                                       "profile fit (proud lips and the seam crease alike)"},
+                          "after": lip_pairing(_bvh1, _zsl), "gap_columns_after": int((~np.isnan(_top)).sum())})
+report["lip_flatten"] = LIP_FLAT_INFO
+print("LIPFLAT", json.dumps(LIP_FLAT_INFO))
 for o in (hb, rig0):
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):
@@ -442,8 +749,11 @@ _yp = np.array(_yp)
 _ypf = np.convolve(np.nan_to_num(_yp, nan=np.nanmax(_yp)), np.ones(5) / 5.0, mode="same")
 _mins = [i for i in range(3, len(_ypf) - 3) if _ypf[i] <= _ypf[i - 1] and _ypf[i] <= _ypf[i + 1]]
 _mins = sorted(sorted(_mins, key=lambda i: _ypf[i])[:2])
-_i_slit = _mins[0] + int(np.argmax(_ypf[_mins[0]:_mins[1] + 1]))
-Z_SLIT = float(_zs_l[_i_slit])
+if len(_mins) == 2:
+    _i_slit = _mins[0] + int(np.argmax(_ypf[_mins[0]:_mins[1] + 1]))
+    Z_SLIT = float(_zs_l[_i_slit])
+else:                                                  # (v4 flattened lips: no two bulges; the sealed seam decides below)
+    Z_SLIT = float(_zt)
 if SEAM is not None:                                   # v2: the slit IS the sealed seam at the midline
     Z_SLIT = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
 Z_LIP = Z_SLIT + LIP_DZ
@@ -460,32 +770,6 @@ report["chin"] = {"chin_bottom_z": round(Z_CHIN, 4), "chin_front_y": round(Y_CHI
                   "jaw_half_width_m": {"chin+%dmm" % d: round(float(np.abs(BV[_hf & (np.abs(BV[:, 2] - Z_CHIN - d / 1000.0) < 0.0015), 0]).max()), 4)
                                        for d in (5, 10, 20, 35) if (_hf & (np.abs(BV[:, 2] - Z_CHIN - d / 1000.0) < 0.0015)).any()}}
 
-
-def lip_pairing(bvh_, z_slit, xs_mm=(0.0, 4.0, 8.0, 12.0)):
-    """mouth proof (v2): per column x the front-ray profile across the seam: how far each lip stands proud of the seam
-    (upper_fwd / lower_fwd), the lower lip's lead over the upper (lower_lead: v1's mismatch), whether rays pass between
-    the lips (open), and the lip-to-lip vertical span of the proud parts (each lip's height where it stands >= 0.5 mm
-    proud of the seam)."""
-    out = {}
-    zs_ = np.arange(z_slit - 0.012, z_slit + 0.012, 0.0001)
-    for xm in xs_mm:
-        ys_ = np.array([(lambda h: h[0][1] if h[0] is not None else np.nan)(bvh_.ray_cast(Vector((xm * 0.001, -0.6, float(z_))),
-                                                                                           Vector((0.0, 1.0, 0.0)), 1.2)) for z_ in zs_])
-        zs0_ = float(np.interp(xm * 0.001, SEAM["xs"], SEAM["zc"])) if SEAM is not None else z_slit
-        near_ = np.abs(zs_ - zs0_) <= (0.0015 if SEAM is not None else 0.003)
-        i_s = int(np.nanargmax(np.where(near_, ys_, -9.0)))
-        ys_s = float(ys_[i_s])
-        upm = (zs_ > zs_[i_s]) & (zs_ < zs_[i_s] + 0.008); lom = (zs_ < zs_[i_s]) & (zs_ > zs_[i_s] - 0.008)
-        yu, yl = float(np.nanmin(ys_[upm])), float(np.nanmin(ys_[lom]))
-        front_ = min(yu, yl)
-        prd_u = upm & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
-        prd_l = lom & (ys_ < ys_s - 0.0005) & (np.abs(zs_ - zs_[i_s]) < 0.010)
-        out["x%+d" % xm] = {"seam_z_offset_mm": round(1000 * float(zs_[i_s] - z_slit), 2),
-                            "upper_fwd_mm": round(1000 * (ys_s - yu), 2), "lower_fwd_mm": round(1000 * (ys_s - yl), 2),
-                            "lower_lead_mm": round(1000 * (yu - yl), 2),
-                            "open_through_mm": round(1000 * (ys_s - front_), 2) if ys_s - front_ > 0.006 else 0.0,
-                            "upper_proud_h_mm": round(0.1 * float(prd_u.sum()), 1), "lower_proud_h_mm": round(0.1 * float(prd_l.sum()), 1)}
-    return out
 
 
 report["mouth"] = {"lip_pairing_pre_cut": lip_pairing(BVH_BODY, Z_SLIT)}

@@ -63,6 +63,11 @@ if "--hair-normal-flat" in argv:
                     px_[:, int(u0 * W_):, :3] = (0.5, 0.5, 1.0)
                     img.pixels.foreach_set(px_.ravel()); img.update()
                     print("HAIR_NORMAL_FLAT", img.name, int(u0 * W_))
+if "--hide-fork" in argv:
+    # v4: the hair close-ups from his right / behind are taken without the pitchfork (its shaft crosses those views)
+    for o in scene.objects:
+        if o.type == "MESH" and o.name.endswith("_pitchfork"):
+            o.hide_render = True
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
@@ -148,7 +153,14 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          # v2 face round: the mouth (lip pairing) front + three-quarter
          "mouth": (0.0, 2.0, 1.0), "mouth_tq": (30.0, 4.0, 1.0), "mouth_side": (90.0, 2.0, 1.0),
          # v3 FE round: the hair one-volume close-up (three-quarter from above the brow line) + the single-eye close-up
-         "hair_close": (35.0, 16.0, 0.78), "eye_close": (0.0, 1.0, 0.55), "eyes_v2frame": (0.0, 1.0, 1.0)}
+         "hair_close": (35.0, 16.0, 0.78), "eye_close": (0.0, 1.0, 0.55), "eyes_v2frame": (0.0, 1.0, 1.0),
+         # v4 (review-log 2026-09-29 "Wren v4 feedback"): the orbit-blend cleanup views (nose bridge / nostrils front and
+         # three-quarter, the side of the face in profile), all framed on the rest-pose 'face' box; the hair layer-shadow
+         # close-ups (front-left over the part, right three-quarter over the sweep)
+         "nose": (0.0, 1.0, 0.62), "nose_tq": (35.0, 2.0, 0.66), "face_side90": (90.0, 2.0, 1.0),
+         "hair_part": (25.0, 38.0, 0.80), "hair_sweep": (-50.0, 12.0, 0.80), "hair_back_close": (160.0, 18.0, 0.80)}
+CLOSE_KEY = {"hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
+             "hair_sweep": "head", "hair_back_close": "head"}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"
@@ -168,7 +180,7 @@ for tag in VIEWS:
             b0, b1 = Vector(FOC[:3]), Vector(FOC[3:])
         else:
             key = tag if tag in FOCUS else ("fork_full" if tag.startswith("fork") and tag not in FOCUS else
-                                             {"hair_close": "head", "eye_close": "eye_L"}.get(tag, tag.split("_")[0]))
+                                             CLOSE_KEY.get(tag, tag.split("_")[0]))
             b0, b1 = (Vector(v) for v in FOCUS[key])
         ang, elev, fill = close[tag]
         aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, fill)

@@ -21,6 +21,7 @@
   "hair_ring":   {"rgb": [150, 108, 76],  "note": "v3 painted tier: the ANGEL RING highlight band (the head panel's lit hair 95th percentile 145,106,77)"},
   "hair_tip":    {"rgb": [120, 83, 56],   "note": "v3 painted tier: lighter tips (between the base and the ring)"},
   "hair_inner":  {"rgb": [56, 38, 27],    "note": "v3 DARK INNER CAP under the clumps: gaps read as shadowed hair, never scalp (the head panel's darkest hair 56,39,29)"},
+  "hair_crevice": {"rgb": [64, 42, 28],   "note": "v4 LAYER SHADOW: the drawn crevice band each clump's outline traces onto the hair beneath it (anime hair shadow); between the underside tone 70,46,31 and the inner cap 56,38,27"},
   "hair_tie":    {"rgb": [84, 60, 42],    "note": "leather tie on the nape tail"},
   "shirt":       {"rgb": [206, 184, 152], "note": "cream shirt: chip 2 (202,177,145) / sampled 188,159,128 on the lit sleeve"},
   "sleeve_roll": {"rgb": [214, 194, 164], "note": "the rolled cuffs, a touch lighter (fold highlight)"},

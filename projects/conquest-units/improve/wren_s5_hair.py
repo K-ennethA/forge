@@ -90,6 +90,7 @@ def ellip_el(P):
 
 LOCK_INFO = {}
 TIER_OF = {}
+LOCK_EDGES = {}                                        # v4: every clump's outline (the two lens corners per section + the tip)
 _sway_k = [0]
 
 
@@ -159,6 +160,12 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
         ring_ = ring_ - np.outer((max(hw, 0.0007) * xs_) ** 2 / (2.0 * rc_) * CLUMP_WRAP, unit(nout))
         rings.append(ring_)
     V_, F_, _ = VP.loft(rings, "pole", "pole", reg="hair", pole1=C[-1] + unit(Tg[-1]) * 0.006 * CLUMP_S_TIP_K[tier])
+    # v4: the clump's OUTLINE (what it traces onto the layer beneath): the lens corners (+-w) of every section, joined at
+    # the tip pole -- one polyline root(left) -> tip -> root(right), with each point's arc fraction
+    _tip = C[-1] + unit(Tg[-1]) * 0.006 * CLUMP_S_TIP_K[tier]
+    _ol = np.vstack([np.array([r_[0] for r_ in rings]), _tip[None], np.array([r_[3] for r_ in rings])[::-1]])
+    _os = np.concatenate([np.array(CLUMP_S), [1.0], np.array(CLUMP_S)[::-1]])
+    LOCK_EDGES[name] = (_ol, _os)
     svert = np.concatenate([np.repeat(sarc, 6), [0.0, Lt]])
     R_ = []
     for f in F_:
@@ -181,38 +188,84 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
 
 
 WHORL_D = hdir(*HAIR_WHORL)
+# v4 SIDE PART (review-log 2026-09-29 "Wren v4 feedback"): the part runs from the front hairline over the top back to the
+# crown whorl (HAIR_PART, then the whorl); hair flows AWAY from it -- the fringe and the sweep side (his right) cross
+# over from the part, the short side (his left) falls from it. HAIR_PART = None = the v3 centre flow from the whorl alone.
+PART_D = ([unit(hdir(*p_)) for p_ in HAIR_PART] + [WHORL_D]) if HAIR_PART is not None else [WHORL_D]
+_part_ang = [0.0] + [math.acos(float(np.clip(PART_D[i] @ PART_D[i + 1], -1, 1))) for i in range(len(PART_D) - 1)]
+_part_cum = np.cumsum(_part_ang) / max(float(np.sum(_part_ang)), 1e-9)
 
 
-def radiate(tip_d, kind, n_mid=3, lift=None, f_end=0.86):
-    """control points from the whorl toward the direction tip_d: the root CLUMP_ROOT[kind] of the way along the great
-    circle, n_mid points on to f_end, lifted off the cap by the volume profile (0 at the root, CLUMP_LIFT mid-way)."""
+def part_dir(t):
+    """the part line at parameter t (0 = the front hairline end, 1 = the whorl), by arc angle."""
+    if len(PART_D) == 1:
+        return PART_D[0]
+    t = float(np.clip(t, 0.0, 1.0))
+    i = int(np.clip(np.searchsorted(_part_cum, t) - 1, 0, len(PART_D) - 2))
+    u = (t - _part_cum[i]) / max(_part_cum[i + 1] - _part_cum[i], 1e-9)
+    return slerp(PART_D[i], PART_D[i + 1], u)
+
+
+def part_nearest(d):
+    """the part point a clump toward direction d starts from: the one at the same front-back position (y) as d -- hair
+    flows AWAY from the part across the head, square to the part line (which runs front to back); a direction ahead of
+    the part's front end / behind the whorl takes that end."""
+    ts_ = np.linspace(0.0, 1.0, 121)
+    ys_ = np.array([float(part_dir(t)[1]) for t in ts_])
+    return part_dir(float(ts_[int(np.argmin(np.abs(ys_ - float(unit(d)[1]))))]))
+
+
+def radiate(tip_d, kind, n_mid=3, lift=None, f_end=0.86, origin=None):
+    """control points from the origin (the whorl, or v4 a point on the part) toward the direction tip_d: the root
+    CLUMP_ROOT[kind] of the way along the great circle, n_mid points on to f_end, lifted off the cap by the volume
+    profile (0 at the root, CLUMP_LIFT mid-way)."""
     lift = CLUMP_LIFT[kind] if lift is None else lift
+    o_ = WHORL_D if origin is None else origin
     f0 = CLUMP_ROOT[kind]
-    pts = [on_dir(slerp(WHORL_D, tip_d, f0), 0.0)]
+    pts = [on_dir(slerp(o_, tip_d, f0), 0.0)]
     for j in range(1, n_mid + 1):
         f = f0 + (f_end - f0) * j / n_mid
-        d_ = slerp(WHORL_D, tip_d, f)
+        d_ = slerp(o_, tip_d, f)
         el_ = math.degrees(math.asin(float(np.clip(d_[2], -1.0, 1.0))))
         pts.append(on_dir(d_, LOCK_OFF + lift * (1.0 - float(smoothstep(35.0, 70.0, el_)))))
     return pts
 
 
-_nb = {"fringe": 0, "side": 0, "outer": 0, "back": 0, "crown": 0}
+_nb = {"fringe": 0, "side": 0, "outer": 0, "back": 0, "crown": 0, "sweep": 0}
+PART_USE = {}
 for kind, tier, tip, chain in HAIR_CLUMPS:
+    lay_ = CLUMP_LAYER[kind] + CLUMP_STACK * _nb[kind]           # v4: later clumps of a kind lie on top (a consistent stack)
     if kind == "fringe":
         # ---- fringe: to the FRINGE_TIPS zigzag (the same tips the forehead shadow band follows)
         xm, zm = FRINGE_TIPS[tip]
         xt, zt = xm * 0.001, EZ + zm * 0.001
         h = BVH_BODY.ray_cast(Vector((xt, -0.8, zt)), Vector((0.0, 1.0, 0.0)), 1.5)
-        yt = (h[0][1] if h[0] is not None else face_front_y) - LOCK_OFF - 0.0045
+        yt = (h[0][1] if h[0] is not None else face_front_y) - LOCK_OFF - FRINGE_TIP_OFF
         tip_pt = np.array([xt, yt, zt])
         psi_t = math.degrees(math.asin(float(np.clip(xt / (HR[0] * 1.02), -0.95, 0.95))))
-        # the fringe bends DOWN over the forehead: its great circle aims at the forehead top above the tip, then drops
-        ctl = radiate(hdir(psi_t, 30.0), "fringe", n_mid=3, f_end=0.92) + [tip_pt]
-        narrow = abs(zm) < 8.0 and abs(xm) < 12.0          # the long lock between the eyes
+        # the fringe bends DOWN over the forehead: its great circle aims at the forehead top above the tip, then drops.
+        # v4: it starts on the part (FRINGE_PART_T per tip: the sweep's locks from further back reach further across)
+        org_ = part_dir(FRINGE_PART_T[tip]) if HAIR_PART is not None else None
+        aim_ = hdir(psi_t + (FRINGE_SWEEP * (1.0 if xm < FRINGE_SPLIT_X else -1.0) if HAIR_PART is not None else 0.0), 30.0)
+        ctl = radiate(aim_, "fringe", n_mid=3, f_end=0.92, origin=org_) + [tip_pt]
+        narrow = tip == FRINGE_NARROW                      # the long lock between the eyes
         clump("lock.fringe.%d" % tip, tier, ctl, chain=chain, s_leave_k=3,
-              W=(0.032 if narrow else None), layer=CLUMP_LAYER["fringe"])
+              W=(0.032 if narrow else None), layer=lay_)
+        PART_USE["lock.fringe.%d" % tip] = None if org_ is None else round(float(FRINGE_PART_T[tip]), 3)
         _nb["fringe"] += 1
+        continue
+    if kind == "sweep":
+        # ---- v4 sweep: the combed-over top on his right (not mirrored): from the part point at the tip's front-back
+        # position over the top down toward his right temple / side (tip = (psi, elevation, flick))
+        psi_t, elt, flick = tip
+        tip_pt = on_head(psi_t, elt, LOCK_OFF + flick)
+        org_ = part_nearest(hdir(psi_t, elt)) if HAIR_PART is not None else None
+        ctl = radiate(hdir(psi_t, elt), "sweep", n_mid=3, f_end=0.84, origin=org_) + [tip_pt]
+        nm_ = "lock.sweep.%d" % _nb["sweep"]
+        clump(nm_, tier, ctl, chain=chain, s_leave_k=3, layer=lay_, root_k=PART_ROOT_K)
+        PART_USE[nm_] = None if org_ is None else [round(math.degrees(math.atan2(org_[0], -org_[1])), 1),
+                                                   round(math.degrees(math.asin(float(np.clip(org_[2], -1, 1)))), 1)]
+        _nb["sweep"] += 1
         continue
     if kind in ("side", "outer"):
         for s, sg in (("L", 1.0), ("R", -1.0)):
@@ -220,20 +273,26 @@ for kind, tier, tip, chain in HAIR_CLUMPS:
             if kind == "side":
                 psi_t, zm, flick = tip
                 tip_pt = side_pt(sg * psi_t, EZ + zm * 0.001, flick)
-                ctl = radiate(unit(tip_pt - HC), "side", n_mid=3, f_end=0.78) + [tip_pt]
-                clump("lock.side.%s%d" % (s, _nb["side"] // 2), tier, ctl, chain=ch_, s_leave_k=3, layer=CLUMP_LAYER["side"])
+                org_ = part_nearest(tip_pt - HC) if HAIR_PART is not None else None
+                ctl = radiate(unit(tip_pt - HC), "side", n_mid=3, f_end=0.78, origin=org_) + [tip_pt]
+                nm_ = "lock.side.%s%d" % (s, _nb["side"] // 2)
+                clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, root_k=(PART_ROOT_K if HAIR_PART is not None else None))
             else:
                 psi_t, elt, flick = tip
                 w_ = 1.0 + 0.10 * math.cos(3.1 * _nb["outer"] + (0.0 if s == "L" else 1.7))
                 tip_pt = on_head(sg * psi_t, elt, LOCK_OFF + flick * w_)
-                ctl = radiate(hdir(sg * psi_t, elt), "outer", n_mid=3, f_end=0.80) + [tip_pt]
-                clump("lock.outer.%s%d" % (s, _nb["outer"] // 2), tier, ctl, chain=ch_, s_leave_k=3, layer=CLUMP_LAYER["outer"])
+                org_ = part_nearest(hdir(sg * psi_t, elt)) if HAIR_PART is not None else None
+                ctl = radiate(hdir(sg * psi_t, elt), "outer", n_mid=3, f_end=0.80, origin=org_) + [tip_pt]
+                nm_ = "lock.outer.%s%d" % (s, _nb["outer"] // 2)
+                clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, root_k=(PART_ROOT_K if HAIR_PART is not None else None))
+            PART_USE[nm_] = None if org_ is None else [round(math.degrees(math.atan2(org_[0], -org_[1])), 1),
+                                                       round(math.degrees(math.asin(float(np.clip(org_[2], -1, 1)))), 1)]
             _nb[kind] += 1
     else:
         psi_t, elt, flick = tip
         tip_pt = on_head(psi_t, elt, LOCK_OFF + flick)
         ctl = radiate(hdir(psi_t, elt), kind, n_mid=(3 if kind == "back" else 2), f_end=0.82) + [tip_pt]
-        clump("lock.%s.%d" % (kind, _nb[kind]), tier, ctl, chain=chain, free_k=(3 if kind == "back" else 2), layer=CLUMP_LAYER[kind])
+        clump("lock.%s.%d" % (kind, _nb[kind]), tier, ctl, chain=chain, free_k=(3 if kind == "back" else 2), layer=lay_)
         _nb[kind] += 1
 # ---- cowlick at the whorl's front (an S accent)
 _a0 = on_dir(slerp(WHORL_D, hdir(0.0, 60.0), 0.35), 0.0)
@@ -247,32 +306,190 @@ clump("lock.tail", "S", [_t0 + np.array([0.0, -0.012, 0.012]), _t0, _t0 + np.arr
 _tt = unit(np.array([0.0, 0.010, -0.025]))
 V_, F_, R_ = VP.torus(TAIL[1], 0.0032, 10, 4, _t0 + _tt * 0.006, _tt, up_hint=(0, 1, 0), region="hair_tie")
 add_part("hairtie", V_, F_, R_, w="rigid:head")
+# ---- v4 CLEARANCE PASS: every clump vertex that ends up inside the head / neck skin (an ear under a side clump that now
+# falls straight from the part, a swept fringe tip at the brow) or sunk under the cap's surface is pushed out along the
+# surface normal to HAIR_CLEAR[0] off the skin / HAIR_CLEAR[1] off the cap (the hair-into-head gate's rest baseline)
+PUSH_INFO = {"skin_clear_mm": HAIR_CLEAR[0] * 1000, "cap_clear_mm": HAIR_CLEAR[1] * 1000, "verts": 0, "max_push_mm": 0.0}
+_ncap = len(Fcap)
+BVH_CAP_OUT = BVHTree.FromPolygons(CAP_V.tolist(), CAP_F[:_ncap] + CAP_F[2 * _ncap:])   # (outer shell + rim: the inner
+#                                                              shell's normals face the scalp and would push INTO the head)
+for p in PARTS:
+    if not p["name"].startswith("lock."):
+        continue
+    V_ = p["V"].copy()
+    for i in range(len(V_)):
+        for bvh_, clr_, skin_ in ((BVH_BODY, HAIR_CLEAR[0], True), (BVH_CAP_OUT, HAIR_CLEAR[1], False)):
+            q_, n_, fi_, d_ = bvh_.find_nearest(Vector(V_[i]), 0.03)
+            if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")):
+                continue
+            sd_ = float((V_[i] - np.array(q_)) @ np.array(n_))
+            if sd_ < clr_:
+                V_[i] = V_[i] + np.array(n_) * (clr_ - sd_)
+                PUSH_INFO["verts"] += 1
+                if 1000 * (clr_ - sd_) > PUSH_INFO["max_push_mm"]:
+                    PUSH_INFO["max_push_mm"] = round(1000 * (clr_ - sd_), 2)
+                    PUSH_INFO["max_at"] = {"part": p["name"], "s_frac": round(float(p["s"][i] / p["L"]), 2) if i < len(p["s"]) else None,
+                                           "surface": "skin:" + str(fdomn[fi_]) if skin_ else "cap",
+                                           "xyz_mm": (1000 * (V_[i] - HC)).round(1).tolist()}
+    p["V"] = V_
+print("HAIRPUSH", json.dumps(PUSH_INFO))
 # ---- the ANGEL RING: one consistent height (ANGEL_RING elevations on the head's ellipsoid), cut exactly into every clump
 # that crosses it; the band's TOP faces (not the undersides, not the tips) take the highlight tone
-RING_INFO = {"elevation_deg": ANGEL_RING, "clumps_crossed": 0, "edge_splits": 0, "faces": 0}
+RING_INFO = {"elevation_deg": ANGEL_RING, "jitter_deg": ANGEL_RING_JITTER, "clumps_crossed": 0, "edge_splits": 0, "faces": 0}
 if ANGEL_RING is not None:
-    for p in PARTS:
+    for k_, p in enumerate(PARTS):
         if not p["name"].startswith("lock.") or p["name"] in ("lock.ahoge", "lock.tail"):
             continue
+        # v4: every clump's ring segment sits at its own height (+- ANGEL_RING_JITTER, a fixed per-clump hash): the band
+        # reads as the broken per-lock highlight strokes of anime hair, not one stripe round a dome
+        jr_ = ANGEL_RING_JITTER * (2.0 * hash01(k_, 5.3) - 1.0)
+        ring_ = (ANGEL_RING[0] + jr_, ANGEL_RING[1] + jr_)
         el_ = ellip_el(p["V"])
-        if el_.max() < ANGEL_RING[0] or el_.min() > ANGEL_RING[1]:
+        if el_.max() < ring_[0] or el_.min() > ring_[1]:
             continue
         V_, F_, R_, s_ = p["V"], p["F"], p["R"], p["s"]
-        for tau_ in ANGEL_RING:
+        for tau_ in ring_:
             V_, F_, R_, (s_,), n_ = cut_part(V_, F_, R_, ellip_el, tau_, attrs=(s_,))
             RING_INFO["edge_splits"] += n_
         el_f = np.array([float(ellip_el(V_[f].mean(0)[None])[0]) for f in F_])
-        R_ = [("hair_ring" if (r_ in ("hair", "hair_root") and ANGEL_RING[0] <= e_ <= ANGEL_RING[1]) else r_)
+        R_ = [("hair_ring" if (r_ in ("hair", "hair_root") and ring_[0] <= e_ <= ring_[1]) else r_)
               for r_, e_ in zip(R_, el_f)]
         p["V"], p["F"], p["R"], p["s"] = np.asarray(V_), [list(map(int, f)) for f in F_], R_, s_
         RING_INFO["clumps_crossed"] += 1
         RING_INFO["faces"] += R_.count("hair_ring")
+# ---- v4 LAYER SHADOWS (review-log 2026-09-29 "Wren v4 feedback": "shading between layers of hair so it doesn't look like
+# a dome with lines"): the drawn crevice shadow of anime hair. Every clump's OUTLINE (LOCK_EDGES) is traced onto whatever
+# hair lies beneath it: a point p of another clump is in the band when its distance to the outline, measured ALONG the
+# head (the radial component about the head centre removed), is under the band width w(s) (HAIR_CREVICE[0] at the root
+# tapering to [1] at the tip), and the outline is not below p (edge radius >= p's radius - HAIR_CREVICE[2]: the upper
+# layer casts, the lower receives; up to HAIR_CREVICE[3] above). The band is cut EXACTLY into the receiving clump
+# (cut_part at field = 0) and its top faces take the crevice tone (undersides stay hair_shade).
+CREVICE_INFO = {"enabled": HAIR_CREVICE is not None}
+if HAIR_CREVICE is not None:
+    _occ = [n_ for n_ in LOCK_EDGES if n_ != "lock.ahoge"]
+    _SA, _SB, _SS, _SO = [], [], [], []
+    for k_, n_ in enumerate(_occ):
+        P_, s_ = LOCK_EDGES[n_]
+        _SA.append(P_[:-1]); _SB.append(P_[1:]); _SS.append(0.5 * (s_[:-1] + s_[1:])); _SO.append(np.full(len(P_) - 1, k_))
+    _SA, _SB, _SS, _SO = np.vstack(_SA), np.vstack(_SB), np.concatenate(_SS), np.concatenate(_SO)
+    _AB = _SB - _SA
+    _ABl2 = np.maximum((_AB * _AB).sum(1), 1e-18)
+
+    def crevice_field(P_, own_k):
+        """< 0 inside the band traced by any OTHER clump's outline lying over P_ (see above)."""
+        P_ = np.atleast_2d(P_)
+        out_ = np.ones(len(P_))
+        pair_ = np.full(len(P_), -1)
+        ok_s = _SO != own_k
+        A_, AB_, l2_, S_, O_ = _SA[ok_s], _AB[ok_s], _ABl2[ok_s], _SS[ok_s], _SO[ok_s]
+        for i0 in range(0, len(P_), 256):
+            Pc = P_[i0:i0 + 256]
+            t_ = np.clip(np.einsum("pmk,mk->pm", Pc[:, None, :] - A_[None], AB_) / l2_[None], 0.0, 1.0)
+            Q_ = A_[None] + t_[..., None] * AB_[None]
+            v_ = Pc[:, None, :] - Q_
+            rq_ = Q_ - HC
+            rql_ = np.linalg.norm(rq_, axis=2)
+            rh_ = rq_ / np.maximum(rql_, 1e-9)[..., None]
+            vt_ = v_ - np.einsum("pmk,pmk->pm", v_, rh_)[..., None] * rh_
+            dt_ = np.linalg.norm(vt_, axis=2)
+            dh_ = rql_ - np.linalg.norm(Pc - HC, axis=1)[:, None]            # > 0: the outline stands above p
+            w_ = (HAIR_CREVICE[0] + (HAIR_CREVICE[1] - HAIR_CREVICE[0]) * S_)[None] * 1e-3
+            ok_ = (dh_ >= -HAIR_CREVICE[2] * 1e-3) & (dh_ <= HAIR_CREVICE[3] * 1e-3)
+            # the shadow falls DOWNHILL of the edge (under a light from above: the receiver is not higher than the edge),
+            # and only below the crown (receivers under HAIR_CREVICE[4] deg elevation: the lit top keeps the angel ring)
+            ok_ &= (Pc[:, None, 2] <= Q_[..., 2] + HAIR_CREVICE[5] * 1e-3)
+            ok_ &= (ellip_el(Pc) <= HAIR_CREVICE[4])[:, None]
+            f_ = np.where(ok_, dt_ - w_, 1.0)
+            j_ = np.argmin(f_, axis=1)
+            out_[i0:i0 + 256] = f_[np.arange(len(Pc)), j_]
+            pair_[i0:i0 + 256] = np.where(out_[i0:i0 + 256] < 0, O_[j_], -1)
+        return out_, pair_
+
+    CREVICE_INFO.update({"band_w_mm_root_tip": HAIR_CREVICE[:2], "edge_below_tol_mm": HAIR_CREVICE[2],
+                         "edge_above_max_mm": HAIR_CREVICE[3], "receiver_max_elevation_deg": HAIR_CREVICE[4],
+                         "downhill_tol_mm": HAIR_CREVICE[5], "clumps_receiving": 0, "edge_splits": 0, "faces": 0,
+                         "area_cm2": 0.0, "top_area_cm2": 0.0, "pairs": 0})
+    _pairs = set()
+    for p in PARTS:
+        if not p["name"].startswith("lock.") or p["name"] == "lock.ahoge":
+            continue
+        own_ = _occ.index(p["name"])
+        f0_, _ = crevice_field(p["V"], own_)
+        if not (f0_ < 0).any():
+            continue
+        V_, F_, R_, (s_,), n_ = cut_part(p["V"], p["F"], p["R"], lambda P_, o_=own_: crevice_field(P_, o_)[0], 0.0,
+                                         attrs=(p["s"],), snap=HAIR_CREVICE_SNAP)
+        cen_ = np.array([np.asarray(V_)[f].mean(0) for f in F_])
+        fc_, pc_ = crevice_field(cen_, own_)
+        area_ = np.array([0.5 * np.linalg.norm(np.cross(np.asarray(V_)[f[1]] - np.asarray(V_)[f[0]], np.asarray(V_)[f[2]] - np.asarray(V_)[f[0]]))
+                          + (0.5 * np.linalg.norm(np.cross(np.asarray(V_)[f[2]] - np.asarray(V_)[f[0]], np.asarray(V_)[f[3]] - np.asarray(V_)[f[0]])) if len(f) == 4 else 0.0)
+                          for f in F_])
+        top_ = np.array([r_ in ("hair", "hair_root", "hair_ring", "hair_tip") for r_ in R_])
+        hit_ = top_ & (fc_ < 0)
+        R_ = [("hair_crevice" if h_ else r_) for r_, h_ in zip(R_, hit_)]
+        for k2 in np.unique(pc_[hit_]):
+            _pairs.add((_occ[int(k2)], p["name"]))
+        p["V"], p["F"], p["R"], p["s"] = np.asarray(V_), [list(map(int, f)) for f in F_], R_, s_
+        CREVICE_INFO["clumps_receiving"] += int(hit_.any())
+        CREVICE_INFO["edge_splits"] += n_
+        CREVICE_INFO["faces"] += int(hit_.sum())
+        CREVICE_INFO["area_cm2"] += 1e4 * float(area_[hit_].sum())
+        CREVICE_INFO["top_area_cm2"] += 1e4 * float(area_[top_].sum())
+    CREVICE_INFO["pairs"] = len(_pairs)
+    CREVICE_INFO["area_cm2"] = round(CREVICE_INFO["area_cm2"], 2)
+    CREVICE_INFO["share_of_clump_top_area_pct"] = round(100.0 * CREVICE_INFO["area_cm2"] / max(CREVICE_INFO["top_area_cm2"], 1e-9), 1)
+    CREVICE_INFO["top_area_cm2"] = round(CREVICE_INFO["top_area_cm2"], 2)
+    CREVICE_INFO["casters_by_kind"] = {k: sum(1 for a_, b_ in _pairs if a_.split(".")[1] == k) for k in ("fringe", "sweep", "side", "outer", "back", "crown", "tail")}
+print("CREVICE", json.dumps(CREVICE_INFO))
+
+
+def collapse_slivers(V, F, R, s_, area_min=SLIVER_AREA, passes=3):
+    """v4: the clearance pass + the ring / crevice cuts leave sliver faces (3D area ~ 1e-12 m2: zero UV area, the
+    uv_health gate); collapse each sliver's shortest edge (s2's body rule), carrying the region + arc length."""
+    bm_ = bmesh.new()
+    rl_ = bm_.faces.layers.int.new("r"); sl_ = bm_.verts.layers.float.new("s")
+    names_ = sorted(set(R))
+    vs_ = [bm_.verts.new(p_) for p_ in V]
+    for v_, sv_ in zip(vs_, s_):
+        v_[sl_] = float(sv_)
+    for f_, r_ in zip(F, R):
+        try:
+            fb_ = bm_.faces.new([vs_[i] for i in f_]); fb_[rl_] = names_.index(r_)
+        except ValueError:
+            CUT_DUP_FACES[0] += 1
+    n0_ = len(bm_.faces)
+    for _ in range(passes):
+        es_, seen_ = [], set()
+        for f_ in bm_.faces:
+            if f_.calc_area() < area_min:
+                e_ = min(f_.edges, key=lambda e: e.calc_length())
+                if e_.is_valid and not (set(e_.verts) & seen_):
+                    es_.append(e_); seen_ |= set(e_.verts)
+        if not es_:
+            break
+        bmesh.ops.collapse(bm_, edges=es_, uvs=False)
+    bm_.verts.index_update()
+    V2 = np.array([v.co[:] for v in bm_.verts]); S2 = np.array([v[sl_] for v in bm_.verts])
+    F2 = [[v.index for v in f_.verts] for f_ in bm_.faces]; R2 = [names_[f_[rl_]] for f_ in bm_.faces]
+    bm_.free()
+    return V2, F2, R2, S2, n0_ - len(F2)
+
+
+SLIVER_INFO = {"faces_removed": 0, "rule": "faces under SLIVER_AREA collapse their shortest edge (3 passes)"}
+for p in PARTS:
+    if p["name"].startswith("lock."):
+        p["V"], p["F"], p["R"], p["s"], n_ = collapse_slivers(p["V"], p["F"], p["R"], p["s"])
+        SLIVER_INFO["faces_removed"] += n_
+print("HAIRSLIVERS", json.dumps(SLIVER_INFO))
 _clumps = [p for p in PARTS if p["name"].startswith("lock.")]
 HAIR_INFO = {"clumps": len(_clumps), "tiers": {t: sum(1 for n in TIER_OF.values() if n == t) for t in "LMS"},
-             "by_kind": {k: sum(1 for p in _clumps if p["name"].split(".")[1] == k) for k in ("fringe", "side", "outer", "back", "crown", "ahoge", "tail")},
+             "by_kind": {k: sum(1 for p in _clumps if p["name"].split(".")[1] == k) for k in ("fringe", "sweep", "side", "outer", "back", "crown", "ahoge", "tail")},
              "whorl": HAIR_WHORL, "sway_x_width": CLUMP_SWAY, "angel_ring": RING_INFO, "cap_feather": CAP_FEATHER_INFO,
+             "part": {"line_psi_el_deg": HAIR_PART, "whorl": HAIR_WHORL, "fringe_part_t": FRINGE_PART_T,
+                      "fringe_sweep_deg": FRINGE_SWEEP, "clump_origin_on_part": PART_USE, "stack_mm": CLUMP_STACK * 1000},
+             "layer_shadows": CREVICE_INFO, "clearance_pass": PUSH_INFO, "slivers": SLIVER_INFO, "cut_repeated_faces_dropped": CUT_DUP_FACES[0],
              "paint_faces": {r_: sum(p["R"].count(r_) for p in _clumps + [q for q in PARTS if q["name"] == "hair_cap"])
-                             for r_ in ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner")},
+                             for r_ in ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice")},
              "seconds": round(time.time() - t_hair, 1), "fringe_tips_mm": [list(t) for t in FRINGE_TIPS],
              "crown": (lambda HZ_: {"scalp_top_z": round(Z_TOP, 4), "hair_top_z_excl_cowlick": round(HZ_, 4),
                                     "crown_above_scalp_mm": round(1000 * (HZ_ - Z_TOP), 1),
