@@ -1008,3 +1008,28 @@ Binding reading:
   lines; (2) SIDE PART instead of the centre part (re-flow the whorl +
   fringe accordingly); (3) follow anime-hair best practices throughout
   (silhouette tips breaking the outline, tier rhythm).
+
+## 2026-09-29 — Wren v5 feedback + FE reference set
+
+Artist (verbatim): "the eyes are better, we still have the eye bags and
+the lips are still realistic / can you get an actual fire emblem 3d model
+to compare to?"
+
+On the model request: ripped FE meshes are Nintendo assets - not brought
+into the pipeline even as reference (IP hygiene for a commercial game).
+Instead, official artwork saved as measurable style references in
+design/reference/fe-style/: fe-ashe-official-art.png + fe-ashe-portrait
+(Three Houses Ashe - boyish village archer, Wren's closest archetype) and
+fe-alear-male-art.png (Engage protagonist - the modern FE 3D-model face
+style). What the FE face treatment does, for the lane: NO under-eye
+geometry at all (skin runs flat from the lower lash line to the cheek -
+any crease is at most a faint painted line), and NO modelled lip volume
+(the mouth is a drawn line with at most a hint of shading beneath;
+philtrum/lip relief effectively zero).
+
+Binding v5 items: (1) EYE BAGS: still visible - remove COMPLETELY: the
+under-lid region becomes flat skin (crease 0.61 -> ~0 mm), the remaining
+lower-lid line + faint shading go too. (2) LIPS: still realistic - go
+fully 2D: kill the 1.8 mm upper-lip proudness and the recess below the
+seam; the whole mouth area reads as flat skin + the drawn line, per the
+FE references.
