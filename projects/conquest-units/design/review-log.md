@@ -1127,3 +1127,12 @@ stays flat). (2) the lip zone tints slightly LIGHTER/less colored than
 the base skin (a subtle pale tint, not a lipstick tone). Bounded
 follow-up to the v6 mouth lane; dispatch after the v7 hair lane frees
 the files.
+
+## 2026-09-29 — Wren v6.1 addendum (artist verbatim)
+
+"there is a small upper lip as well very small subtle"
+
+Addendum: the upper lip also gets a form - VERY small and subtle, less
+pronounced than the lower (per the archer figure: a faint upper-lip
+plane above the line, barely catching light). So v6.1 = subtle upper +
+soft simple lower, both minimal single volumes, paler-than-skin tint.
