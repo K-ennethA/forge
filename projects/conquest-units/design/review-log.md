@@ -1062,3 +1062,30 @@ both directions at once: tighten the oversized mouth area AND lengthen/
 scale the line so it fills it - the line's width relative to the face
 matches the FE portrait proportions (measure the Ashe portrait's mouth
 width vs face width and match that ratio).
+
+## 2026-09-29 — 3D anime reference acquired (Alicia Solid) + study notes
+
+Per the artist: "look at 3d references for anime style to better
+understand how it should look". Acquired: Alicia Solid VRM (the standard
+free anime reference model; license permits use, no credit, commercial-
+excluding-corporations; recorded in C:\forge-assets\thirdparty\
+MANIFEST.md - STUDY REFERENCE ONLY, nothing ships). Face renders in
+design/reference/anime-3d/ (front / threequarter / side / full).
+
+Study findings, applicable to Wren v6+:
+- MOUTH: a tiny faint line sitting HIGH - close under the nose, roughly
+  one nose-width wide, with NO surrounding features: no philtrum, no
+  chin crease, no visible seam apart from the line itself. The line IS
+  the whole mouth. (Exactly the artist's v6 point.)
+- UNDER-EYE: zero geometry - flat cheek straight to the lower lashline;
+  any accent is a faint blush TEXTURE tint on the cheek, not shading.
+- EYES: enormous, and the detail is TEXTURE-drawn (iris gradient,
+  sparkle highlights, lash fan) on a simple mesh; brows are thin painted
+  strokes ABOVE the eye, visible through/over the fringe.
+- FACE GEOMETRY: extremely simple and smooth - the mesh carries the
+  silhouette only (cheek curve, tiny nose wedge, pointed chin); ALL
+  facial features are texture/paint. The nose is a minimal bump with no
+  nostril geometry.
+- HAIR: chunky braid/lock shells with crisp silhouettes; interior kept
+  simple; shading soft and volume-wide (consistent with the proxy-
+  normal approach).
