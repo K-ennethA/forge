@@ -943,3 +943,18 @@ undone; game-side toon stays the import-note path), clips with follow-
 through + zero toe dips from the start, pitchfork on its own bone with
 the grip transform recorded. Age 16: younger slimmer proportions than
 the vampire, boyish earnest bearing.
+
+## 2026-09-28 — Wren v2 face feedback (artist verbatim)
+
+"for next time, we need to spend some time on his face
+bigger eyes and bigger eyebrows
+the lips and mouth need a touch up, seems the bottom lip does not match top
+lip and its too pinched
+and in general some smoothing on the fouce,rest looks fine enough for now"
+
+Binding reading: face-focused round. (1) EYES bigger (beyond the +0.40
+dial). (2) BROWS bigger. (3) MOUTH: the bottom lip does not match the top
+lip and the mouth reads too PINCHED - reshape so the lips pair naturally
+and the compression stops pinching. (4) general face SMOOTHING (facet/
+retopo density or targeted smoothing on the face). Everything below the
+neck is approved for now.
