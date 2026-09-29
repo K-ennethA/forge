@@ -47,6 +47,14 @@ from the nose bottom to the chin -- the Ashe portrait's ratios, REF_MOUTH), the 
 the line painted over the WHOLE seam (MOUTH_LEN None, MOUTH_LINE_EXT; MOUTH_LINE_REFINE / _SNAP / _CENTROID: no gap at the
 risen corner), and nose-to-chin smooth skin: the mouth zone's front skin moved onto its Gaussian-smoothed heightfield
 (MOUTH_SMOOTH) and its normal texels written from that smooth proxy (MOUTH_PROXY). Everything else is v5.1.
+v7 (review-log 2026-09-29 "Wren v7 hair feedback": "more segmented and cleared, ours look chopped up"; the FE figure refs).
+Diagnosed on the v6 rig (improve/wren_hair_diag.py + lock-id renders): every clump cut through its neighbours (103 lock
+pairs, 9397 triangle pairs, 3245 on the visible top sheets), 13.5 paint patches per clump (the crevice / ring cuts), 12
+lens sections with spine turns p90 35 deg and silhouette-edge turns p90 67 deg. v7 = RIBBON locks (RIBBON_*): faired
+spines, rotation-minimising frames, a bend limit, 13-19 stations crowded into the bends and the taper, a 6-vertex section
+with sharp corners tapering to a point, whole-segment paint (no cuts); the LAYER RESOLVE (LAYER_*) puts the top sheets in
+one layer order and lifts / tucks them apart; the layer shadow becomes the TUCK SHADE (RIBBON_TUCK); the mouth-interior
+faces are no longer scalp (HAIR_INTERIOR_R; HAIRSTABLE gains a mouth-dial probe via TARGETS_EDIT). Everything else is v6.
 
 LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 entries):
   - MPFB2 base tuned STYLISED immediately (age macro at 16 years, anime face dials: larger eyes, soft jaw, small nose),
@@ -112,6 +120,8 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
     "expression/units/caucasian/eye-left-slit": 0.20, "expression/units/caucasian/eye-right-slit": 0.20,   # the sheet's determined lids (v1 0.30)
     "legs/upperlegs-height-incr": 0.20, "legs/lowerlegs-height-incr": 0.15,  # leggy stylised proportions
 }                                     # (v1's "expression/units/caucasian/mouth-compression": 1.0 is GONE: it rolled the upper lip in)
+TARGETS_EDIT = None                   # v7 probe hook: {dial: value} applied over TARGETS (the HAIRSTABLE mouth-dial probe runs
+                                      #   with a mouth edit here); None = TARGETS as listed (the build)
 LIP_SEAL = (0.009, 0.0003, 0.0025)    # "lip seal" (v2): the relaxed lips closed geometrically: falloff over the lip height (m),
                                       #   overlap past the seam (m), gap = front rays this far behind the lip front (m); None = off
 LIP_FLAT = (0.026, 0.0088, 0.011, 0.005, 0.0, 0.0012)   # "2D-anime lips": the lip zone (half width, height above /
@@ -287,6 +297,10 @@ FRINGE_SWEEP = 9.0                    # v4: each fringe lock aims this far (deg)
 FRINGE_NOTCH = 17.0                   # the edge between two tips rises this far (mm) above the higher tip
 FRINGE_D = (0.0045, 0.0065)           # "fringe shadow depth": band under the fringe edge at the tips / at the notches (m)
 FRINGE_UNDER = 0.006                  # the band also runs this far ABOVE the edge (skin glimpsed between the locks)
+HAIR_INTERIOR_R = 0.70                # v7: a hairline face whose centroid lies under this fraction of the head ellipsoid (the
+                                      #   mouth interior's back wall, measured 0.42-0.62; the scalp >= 0.75) is never hair;
+                                      #   None = the v6 rule (42 mouth-interior faces in the cap: the hair digest followed the
+                                      #   mouth dials)
 HAIRLINE = (0.060, -0.050)            # scalp hairline above the eye centres (front) / at the nape relative to the head joint
 HAIR_CAP_T = 0.0055                   # "hair volume" on the scalp
 HAIR_ROOT_K = 0.30                    # every lock's thickness at its root (x its T): roots stacked on the crown made it tall (vampwarrior v4.1 lesson)
@@ -368,6 +382,63 @@ HAIR_CLUMPS = (                       # (v4: listed bottom -> top within a kind:
     ("back", "M", (180.0, -42.0, 0.050), None),                                      # the flared points over it
     ("crown", "S", (130.0, 52.0, 0.012), None), ("crown", "S", (232.0, 50.0, 0.012), None))
 CLUMP_S_TIP_K = {"L": 1.0, "M": 1.0, "S": 0.9}
+# ---- v7 RIBBON LOCKS (review-log 2026-09-29 "Wren v7 hair feedback": "more segmented and cleared, ours look chopped up";
+# the figure refs design/reference/fe-style/fe-archer-figure-hair.webp + fe-byleth-figure-hair.png are the bar). Every
+# lock = ONE smooth ribbon: a faired spine (Catmull -> arc-length resample -> Taubin fairing -> smooth clearance push),
+# rotation-minimising frames, a constant-topology section tapering to a sharp tip, painted by whole segments (no cuts),
+# and the LAYER RESOLVE: the locks' top sheets put in one layer order and lifted / tucked until they stop cutting through
+# each other.
+RIBBON = True                         # False = the v6 lens clumps (CLUMP_S sections, ring + crevice cuts)
+RIBBON_STATIONS = {"L": 16, "M": 15, "S": 12}   # "lock segments": cross-sections per lock (root .. the last one before
+                                      #   the tip point); v6 12 for every tier (spine turn p90 35 deg, edge turn p90 67 deg)
+RIBBON_DENSE = 64                     # the spine is faired as this many arc-length points
+RIBBON_FAIR = (10, 0.50, -0.53)       # Taubin fairing (iterations, lambda, mu): smooths without shrinking the S-curve
+RIBBON_PUSH_SMOOTH = 3.0              # the spine's clearance push is dilated + Gaussian-smoothed over this many spine points
+RIBBON_ROOT_RAMP = 0.12               # the spine's clearance margin ramps in over this arc fraction from the root
+RIBBON_BEND = (0.45, 60)              # "no folded edges": the spine's sideways curvature x the ribbon's half width stays under
+                                      #   the 1st value (1 = the inner edge folds back on itself), by local fairing (at most the
+                                      #   2nd passes)
+RIBBON_TAIL_TUCK = 0.40               # the nape tail's clearance ramps in over this arc fraction (its root is tucked into the
+                                      #   nape by design)
+RIBBON_CURV_K = 0.35                  # station spacing: this share follows the spine's turning (denser through the S
+                                      #   bends), the rest plain arc length
+RIBBON_TIP_DENSE = 1.35               # stations crowd toward the tip (1 = even): the taper is where the silhouette turns
+RIBBON_TOP = (0.55, 0.80)             # "lock section": the top shoulder vertices at +-this x the half width, this x the
+                                      #   thickness (the centre ridge = 1, the corners = 0: the sharp defined edges)
+RIBBON_UNDER = 0.45                   # the underside: one centre vertex this x the thickness below (a shallow V)
+RIBBON_TAPER = (1.15, 0.03)           # "tip taper": exponent on the free-part fraction, width left at the last section
+                                      #   (x the width) before the tip point
+RIBBON_BELLY = 0.05                   # the free part swells this much just past leaving the scalp (v6 CLUMP_BELLY 0.12:
+                                      #   the lens bellies read as blobs)
+RIBBON_FRAME_SMOOTH = 3.0             # the section frames (outward normal) Gaussian-smoothed over this many spine points
+RIBBON_RADIAL = 0.35                  # the outward normal leans this share toward the head-centre radial (stable frames
+                                      #   where the nearest surface jumps: cap -> ear -> cloak)
+RIBBON_TIER = {"L": (0.058, 0.0036, 0.40), "M": (0.044, 0.0032, 0.40), "S": (0.024, 0.0026, 0.70)}   # v7 "lock size
+                                      #   tiers": full width (m), half-thickness (m), root width (x width) -- narrower and
+                                      #   thinner than v6 CLUMP_TIER (80 / 58 / 26 mm, 8.5 / 7.2 / 5.0 mm): the fringe's 7
+                                      #   locks spanned ~3x the forehead and cut through each other (9397 triangle pairs)
+RIBBON_KIND_W = {"fringe": 0.70, "sweep": 1.0, "side": 1.15, "outer": 1.10, "back": 1.05, "crown": 1.0}   # "lock width by
+                                      #   kind" (x the tier width): the fringe's 7 tips sit ~20 mm apart (FRINGE_TIPS), so its
+                                      #   locks overlap their neighbours partly (feathers), not 3-deep; the sides / back cover
+                                      #   the head (the dark cap between them reads as the grooves)
+RIBBON_NARROW_W = 0.024               # the narrow lock between the eyes (FRINGE_NARROW) full width (v6 0.032)
+LAYER_GAP = 0.0006                    # "layer stack" (v7 resolve): a lock's top sheet rides at least this (m) over the top
+                                      #   sheet of every lock layered beneath it (> the 0.4 mm hair-bake cage)
+LAYER_ROOT = 0.10                     # a lock's root (below this arc fraction) is left out of the resolve (roots cross at
+                                      #   the part line / whorl by nature)
+LAYER_NEAR = 0.005                    # only top sheets within this (m) of a vertex along its normal count (crossings / near
+                                      #   contacts; a lock passing well above or below is no conflict)
+LAYER_WINDOW = 0.030                  # a lock vertex is tested along its section's outward normal within this (m)
+LAYER_LIFT_MAX = 0.009                # a section's total resolve lift / drop is clipped to this (m): the lock keeps its
+                                      #   authored place (a stuck conflict stays, counted in "after")
+LAYER_SMOOTH = 1.3                    # the lift profile is Gaussian-smoothed over this many stations (a gentle ramp, no kink)
+LAYER_ITERS = 4                       # resolve rounds over every lock (test, move, rebuild), bottom layer first
+RIBBON_RING_JITTER = 0.6              # v7: every ribbon's angel-ring stroke shifts by up to this (deg; v4 ANGEL_RING_JITTER 2.0:
+                                      #   on whole-segment strokes the 4 deg spread read as zebra stripes over the crown)
+RIBBON_TUCK = (0.6, 3, 0.012)         # v7 "layer shadows" (TUCK SHADE, replaces the v4 HAIR_CREVICE cut bands on ribbons): a
+                                      #   ribbon segment takes the crevice tone on its whole top when at least the 1st share of
+                                      #   its sample points (the 2nd per top facet) lie under a lock layered above it, within
+                                      #   the 3rd (m) along the section normal; None = off
 CLUMP_BELLY = 0.12                    # "clump belly": the free part swells this much just past where it leaves the scalp
 TAIL = (0.070, 0.010, 0.0045)         # "nape tail": length (m), tie radius (m), layer (m: it rides over the back clumps)
 AHOGE_H = 0.045                       # "cowlick" height above the crown

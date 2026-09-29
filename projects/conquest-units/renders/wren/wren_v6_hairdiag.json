@@ -1,0 +1,80 @@
+{
+ "blend": "C:\\Users\\kenne\\AppData\\Local\\Temp\\claude\\C--Users-kenne-OneDrive-Desktop-git\\a6338be1-4610-4ccd-bfa8-c1613afb2354\\scratchpad\\v6\\wren.blend",
+ "locks": 33,
+ "tris": {
+  "locks": 5900,
+  "cap": 1835
+ },
+ "interpenetration": {
+  "lock_pairs": 103,
+  "tri_pairs": 9397,
+  "lock_cap_tri_pairs": 380,
+  "locks_involved": 33,
+  "worst_pairs": [
+   [
+    "lock.sweep.2",
+    "lock.sweep.3",
+    257
+   ],
+   [
+    "lock.fringe.1",
+    "lock.sweep.2",
+    246
+   ],
+   [
+    "lock.fringe.1",
+    "lock.fringe.2",
+    235
+   ],
+   [
+    "lock.fringe.2",
+    "lock.sweep.2",
+    232
+   ],
+   [
+    "lock.outer.R1",
+    "lock.sweep.0",
+    214
+   ],
+   [
+    "lock.side.R1",
+    "lock.sweep.1",
+    211
+   ],
+   [
+    "lock.fringe.4",
+    "lock.fringe.5",
+    200
+   ],
+   [
+    "lock.fringe.2",
+    "lock.sweep.3",
+    191
+   ]
+  ],
+  "top_sheets": {
+   "lock_pairs": 96,
+   "tri_pairs": 3245
+  }
+ },
+ "paint": {
+  "patches_total": 447,
+  "patches_per_lock": 13.55,
+  "crevice_patches": 142,
+  "ring_patches": 55,
+  "region_boundary_edges": 2127
+ },
+ "facet_kinks_top_deg": {
+  "p50": 16.78,
+  "p90": 49.4,
+  "max": 179.95,
+  "share_over_20deg_pct": 45.5,
+  "edges": 3049
+ },
+ "faces": {
+  "lock_faces": 4146,
+  "tiny_under_0.25mm2": 4,
+  "sliver_aspect_over_20": 26,
+  "lock_area_cm2": 5400.4
+ }
+}

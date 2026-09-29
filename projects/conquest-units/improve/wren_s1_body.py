@@ -115,7 +115,7 @@ macro.update(MACRO)
 macro["race"] = dict(RACE)
 hb = HumanService.create_human(macro_detail_dict=macro)
 tdir = LocationService.get_mpfb_data("targets")
-for rel, w in TARGETS.items():
+for rel, w in {**TARGETS, **(TARGETS_EDIT or {})}.items():   # (v7: TARGETS_EDIT = the HAIRSTABLE mouth-dial probe)
     p_ = os.path.join(tdir, rel + ".target.gz")
     assert os.path.exists(p_), p_
     TargetService.load_target(hb, p_, weight=w)

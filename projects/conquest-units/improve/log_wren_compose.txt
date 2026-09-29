@@ -1,11 +1,11 @@
-﻿WROTE wren_v6_sheet_vs_model.png
-WROTE wren_v6_face_vs_sheet.png
-WROTE wren_v6_details_vs_sheet.png
-WROTE wren_v6_hair.png
-WROTE wren_v6_winter.png
-WROTE wren_v6_contact.png {"palette_skin_rgb": [192, 139, 100], "sheet_front_face_lit": {"rgb": [189, 135, 95], "hue_deg": 25.5, "sat": 0.497, "val": 0.741, "pixels": 1392}, "sheet_head_panel_lit": {"rgb": [162, 116, 85], "hue_deg": 24.2, "sat": 0.475, "val": 0.635, "pixels": 5355}, "render_portrait_lit": {"rgb": [177, 130, 97], "hue_deg": 24.7, "sat": 0.452, "val": 0.694, "pixels": 109773}, "rule": "median of lit warm-skin pixels (hue 12-40 deg, sat 0.25-0.65, value > 0.45) in a face box"}
-WROTE wren_v6_mouth_compare.png
-WROTE wren_v6_face_vs_refs.png
-WROTE wren_v6_portrait_compare.png
-WROTE wren_v6_undereye_untouched.png
-WROTE wren_v6_body_untouched.png
+﻿python.exe :   File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\wren_compose.py", line 
+221
+At C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\wren_run.ps1:103 char:1
++ & $VPY -P "$I\wren_compose.py" 2>&1 | Out-File -Encoding utf8 "$I\log ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  File "C:\User...e.py", line 221:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    return ("locks cutting through each other: %d pairs / %d triangle pairs (top sheets %d)
+            ^
+SyntaxError: unterminated string literal (detected at line 221)

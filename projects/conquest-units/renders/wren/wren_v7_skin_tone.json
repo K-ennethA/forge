@@ -1,0 +1,41 @@
+{
+ "palette_skin_rgb": [
+  192,
+  139,
+  100
+ ],
+ "sheet_front_face_lit": {
+  "rgb": [
+   189,
+   135,
+   95
+  ],
+  "hue_deg": 25.5,
+  "sat": 0.497,
+  "val": 0.741,
+  "pixels": 1392
+ },
+ "sheet_head_panel_lit": {
+  "rgb": [
+   162,
+   116,
+   85
+  ],
+  "hue_deg": 24.2,
+  "sat": 0.475,
+  "val": 0.635,
+  "pixels": 5355
+ },
+ "render_portrait_lit": {
+  "rgb": [
+   177,
+   130,
+   97
+  ],
+  "hue_deg": 24.7,
+  "sat": 0.452,
+  "val": 0.694,
+  "pixels": 109832
+ },
+ "rule": "median of lit warm-skin pixels (hue 12-40 deg, sat 0.25-0.65, value > 0.45) in a face box"
+}

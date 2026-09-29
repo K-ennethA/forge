@@ -63,6 +63,32 @@ if "--hair-normal-flat" in argv:
                     px_[:, int(u0 * W_):, :3] = (0.5, 0.5, 1.0)
                     img.pixels.foreach_set(px_.ravel()); img.update()
                     print("HAIR_NORMAL_FLAT", img.name, int(u0 * W_))
+if "--lock-ids" in argv:
+    # v7 diagnosis: every hair lock painted its own flat hue (the cap dark grey), in memory -- lock boundaries, overlaps
+    # and interpenetrations read directly
+    import colorsys
+    for o in scene.objects:
+        if o.type == "MESH" and "conquest_islands" in o.data.keys() and "Col" in o.data.color_attributes:
+            isl_ = json.loads(o.data["conquest_islands"])
+            me_ = o.data
+            owner_ = np.full(len(me_.vertices), -1)
+            names_ = sorted(n_ for n_ in isl_ if n_.startswith(("lock.", "hair_cap")))
+            for k_, n_ in enumerate(names_):
+                a_, b_ = isl_[n_]; owner_[a_:b_] = k_
+            lt_ = np.empty(len(me_.polygons), dtype=np.int64); me_.polygons.foreach_get("loop_total", lt_)
+            ls_ = np.empty(len(me_.polygons), dtype=np.int64); me_.polygons.foreach_get("loop_start", ls_)
+            lv_ = np.empty(len(me_.loops), dtype=np.int64); me_.loops.foreach_get("vertex_index", lv_)
+            col_ = np.empty(len(me_.loops) * 4, dtype=np.float32); me_.color_attributes["Col"].data.foreach_get("color", col_)
+            col_ = col_.reshape(-1, 4)
+            for fi_ in range(len(me_.polygons)):
+                k_ = owner_[lv_[ls_[fi_]]]
+                if k_ < 0:
+                    continue
+                n_ = names_[k_]
+                c_ = (0.12, 0.12, 0.12) if n_ == "hair_cap" else colorsys.hsv_to_rgb((k_ * 0.618034) % 1.0, 0.75, 0.85)
+                col_[ls_[fi_]:ls_[fi_] + lt_[fi_], :3] = c_
+            me_.color_attributes["Col"].data.foreach_set("color", col_.ravel())
+            print("LOCK_IDS", o.name, len(names_))
 if "--hide-fork" in argv:
     # v4: the hair close-ups from his right / behind are taken without the pitchfork (its shaft crosses those views)
     for o in scene.objects:

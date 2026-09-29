@@ -548,7 +548,19 @@ if LASH_PROFILE is not None:
                                                             (np.abs(((_ang + 180.0) % 360.0) - 180.0) < LASH_WING[1] * 1.6))
         reg[_lash] = "lash"
 reg[_head & ((FV["brow_L"] < 0) | (FV["brow_R"] < 0)) & (FV["hair"] < 0)] = "brow"
-reg[_head & (FV["hair"] > 0)] = "hair"
+# v7 (fold-in of the v6 "grown" finding): the hairline field (height over the front / back hairline, by the azimuth about
+# the head's vertical axis) is ill-defined near that axis, and the mouth INTERIOR's back wall sits right on it, deep inside
+# the head -- 42 of its faces scored "hair", joined the scalp cap (hair_cap) and coupled the hair digest to the mouth dials.
+# Only the head's outer skin is scalp: a face whose centroid lies under HAIR_INTERIOR_R of the head ellipsoid (HC / HR) is
+# never hair (measured: the interior faces 0.42-0.62, every scalp face >= 0.75, nothing between)
+_fcr_h = np.array([CV[f].mean(0) for f in CF])
+_hair_outer = (np.linalg.norm((_fcr_h - HC) / HR, axis=1) >= HAIR_INTERIOR_R) if HAIR_INTERIOR_R is not None else np.ones(len(CF), bool)
+HAIR_INTERIOR_MASK = _head & (FV["hair"] > 0) & ~_hair_outer    # (hidden deep in the head: s6 still removes them from the
+#   body exactly as v6 did when they counted as scalp -- the body mesh, its UVs and its bakes stay the v6 ones)
+report["hair_interior_excluded"] = {"rule": "hairline faces with centroid under %s of the head ellipsoid: not scalp (no cap), "
+                                            "removed from the body as hidden (as in v6)" % HAIR_INTERIOR_R,
+                                    "faces": int(HAIR_INTERIOR_MASK.sum())}
+reg[_head & (FV["hair"] > 0) & _hair_outer] = "hair"
 report["iso_cuts"] = {"cuts": len(cut_log), "edge_splits": int(sum(c["edge_splits"] for c in cut_log)),
                       "thin_stroke_refine_splits": REFINE, "degenerate_faces_dissolved": int(_ndeg),
                       "seconds": round(time.time() - t_, 1), "body_tris_after_cuts": nF}

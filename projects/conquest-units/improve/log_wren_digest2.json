@@ -1,19 +1,19 @@
 {
  "digest": {
   "parts": {
-   "hair_geometry": "891e271c1300c27c",
-   "bake_hair_normal": "d4c515eb3fb88954",
+   "hair_geometry": "a99447b48c4af4be",
+   "bake_hair_normal": "5f89385f22b1a036",
    "mouth_proxy_core": "d5f16563785f4be2",
-   "bake_normal": "5ce6993c618b5942",
-   "bake_ao": "44bb526a2868ee59",
-   "ao_lifted": "3cbc3d574d49ade9",
-   "geometry_colour_uv": "67834307237b8076",
-   "weights": "7d5ebd0d46e7eed4",
-   "keys": "a3b268a317b7a8d7",
-   "clip_samples": "15d659d5dec1bd59"
+   "bake_normal": "a0a257070f9a2ebe",
+   "bake_ao": "ccc8db7aa0522109",
+   "ao_lifted": "af804856867cf098",
+   "geometry_colour_uv": "10d6a64a41822a65",
+   "weights": "2d1a2b45782e5e03",
+   "keys": "65304135c582bb3c",
+   "clip_samples": "a24446dbbf49a1ed"
   },
-  "combined": "d331694f131dd240"
+  "combined": "f8f507c98ecfbb09"
  },
- "tris": 48375,
- "seconds": 99.9
+ "tris": 48805,
+ "seconds": 125.5
 }

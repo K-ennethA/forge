@@ -81,10 +81,11 @@ _mouth_harvest = np.zeros(len(CF), bool)
 if MOUTH_HIDDEN is not None and SEAM is not None:
     _mz, _mb, _mk = mouth_hidden(CV, CF)
     _mouth_harvest = _mz & (_mk | ((_mb > MOUTH_HIDDEN[3]) & (_mb <= MOUTH_HIDDEN[5]))) & (reg != "hair")
-_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr & ~_enclosed & ~_mouth_harvest
+_keep = (reg != "hair") & ~_foot & (reg != "boot") & ~_underpuff & ~_underbr & ~_enclosed & ~_mouth_harvest & ~HAIR_INTERIOR_MASK
 _usedv = np.unique(np.concatenate([np.array(f) for f, k in zip(CF, _keep) if k]))
 _rm = -np.ones(len(CV), dtype=np.int64); _rm[_usedv] = np.arange(len(_usedv))
-report["hidden_skin_removed"] = {"scalp_faces": int((reg == "hair").sum()), "foot_faces": int(_foot.sum()),
+report["hidden_skin_removed"] = {"scalp_faces": int((reg == "hair").sum()), "mouth_interior_v7": int(HAIR_INTERIOR_MASK.sum()),
+                                 "foot_faces": int(_foot.sum()),
                                  "boot_shin_faces": int((reg == "boot").sum()), "under_blouse_faces": int(_underpuff.sum()), "under_bracer_faces": int(_underbr.sum()),
                                  "enclosed_face_faces_v2": int(_enclosed.sum()), "enclosed_rule": "every vertex's rays toward %d front / tactical directions hit body or eyeball within 8 cm" % len(_dirs),
                                  "mouth_hidden_layer_faces_v5": int((_mouth_harvest & ~_enclosed).sum()),

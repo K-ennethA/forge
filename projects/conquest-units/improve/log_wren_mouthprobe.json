@@ -1,0 +1,10 @@
+{
+ "hair_geometry": "a99447b48c4af4be",
+ "overrides": {
+  "TARGETS_EDIT": {
+   "mouth/mouth-trans-up": 0.0,
+   "mouth/mouth-scale-horiz-decr": 0.2
+  }
+ },
+ "seconds": 48.7
+}

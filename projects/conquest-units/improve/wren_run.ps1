@@ -23,6 +23,12 @@
 # before the v6 build replaced it). + the MOUTH PROBE on the delivered v6 rig (improve/wren_mouth_probe.py ->
 # wren_v6_mprobe.*: orthographic mouth renders with the line repainted skin -- the second-feature proof -- and the
 # placement ratios vs the FE portrait).
+# v7 (review-log 2026-09-29 "Wren v7 hair feedback": the ribbon locks): renders are written v7-prefixed (wren_v7_*); the v6
+# stills are the comparison baseline (+ the v6 diagnosis renders wren_v6_diag_* -- lock-id / as-is / flat-normal, rendered
+# once off the committed v6 rig -- and its hair metrics wren_v6_hairdiag.json / wren_v6_ribbon.json). + the hair metrics on
+# the delivered v7 rig (improve/wren_hair_diag.py -> wren_v7_hairdiag.json), the lock-id renders (wren_v7_lockids_*), the
+# large hair close-up (wren_v7_large_hair_close). HAIRSTABLE gains a fourth digest: sections 1-5 under a MOUTH-DIAL edit
+# (TARGETS_EDIT: the v5 mouth height / width dials) -- the v6 grown finding (mouth-interior faces in the scalp cap).
 param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # never assign lowercase $p: PowerShell names are case-insensitive
@@ -38,10 +44,14 @@ if (-not $SkipBuild) {
   # profile = a geometry edit + the v1 brows = a paint-cut edit next to the hairline); its exact hair digest must equal the
   # build's (face edits never move approved hair).
   $hp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_hairprobe.json`"","--set","`"LIP_PROFILE='line'`"","--set","`"BROW_W=(0.0064,0.0028)`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_hairprobe.txt" -RedirectStandardError "$I\log_wren_hairprobe.err"
-  $null = $bp.Handle; $null = $dp.Handle; $null = $hp.Handle
+  # v7: + the mouth-dial probe (the mouth's MPFB height / width dials back at their v5 values: a body-geometry edit inside
+  # the head, where the v6 region rule leaked 42 mouth-interior faces into the scalp cap)
+  $mp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_mouthprobe.json`"","--set","`"TARGETS_EDIT={'mouth/mouth-trans-up':0.0,'mouth/mouth-scale-horiz-decr':0.2}`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_mouthprobe.txt" -RedirectStandardError "$I\log_wren_mouthprobe.err"
+  $null = $bp.Handle; $null = $dp.Handle; $null = $hp.Handle; $null = $mp.Handle
   $bp.WaitForExit(); $bwall = [math]::Round(((Get-Date)-$T0).TotalSeconds,1); "build exit=$($bp.ExitCode) wall_s=$bwall"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
   $hp.WaitForExit(); "hair probe exit=$($hp.ExitCode)"
+  $mp.WaitForExit(); "mouth-dial probe exit=$($mp.ExitCode)"
   $j1 = (Get-Content "$P\rigged\wren.json" -Raw | ConvertFrom-Json).digest
   $j2 = (Get-Content "$I\log_wren_digest2.json" -Raw | ConvertFrom-Json).digest
   $mismatch = @()
@@ -58,13 +68,14 @@ if (-not $SkipBuild) {
     $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=FALSE mismatched=$($mismatch -join ',') gate=FAIL"
   }
   $h3 = (Get-Content "$I\log_wren_hairprobe.json" -Raw | ConvertFrom-Json).hair_geometry
-  $hline = "HAIRSTABLE build=$($j1.parts.hair_geometry) twin=$($j2.parts.hair_geometry) face_edited=$h3 identical=$(($j1.parts.hair_geometry -eq $j2.parts.hair_geometry) -and ($j1.parts.hair_geometry -eq $h3))"
+  $h4 = (Get-Content "$I\log_wren_mouthprobe.json" -Raw | ConvertFrom-Json).hair_geometry
+  $hline = "HAIRSTABLE build=$($j1.parts.hair_geometry) twin=$($j2.parts.hair_geometry) face_edited=$h3 mouth_dials_edited=$h4 identical=$(($j1.parts.hair_geometry -eq $j2.parts.hair_geometry) -and ($j1.parts.hair_geometry -eq $h3) -and ($j1.parts.hair_geometry -eq $h4))"
   $line; $hline; "$line | build_wall_s=$bwall`r`n$hline" | Out-File -Encoding utf8 "$I\log_wren_digest.txt"
 }
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""
 $R = "`"$I\wren_render.py`""
-$W = "`"$OUT\wren_v6`""
+$W = "`"$OUT\wren_v7`""
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_wren.json`"")),
   @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_wren.json`"")),
@@ -75,10 +86,13 @@ $vJobs = @(
   @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"cloak,cloak_tq,patches,necklace,bracer,bracer_front,fork_full,boots,boots_front,torso","--pose","idle:1")),
   @("render_fork",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"fork_head")),   # rest pose: the fork upright, tines face-on
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"ortho_front,ortho_side,ortho_back","--pose","idle:1")),
-  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v6_winter`"","front,threequarter,back,portrait,hair_close,head_tq_back","--pose","idle:1")),
-  @("face_probe",     @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\wren_v6_face_probe`"")),
-  @("mouth_probe",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_mouth_probe.py`"","--","`"$OUT\wren_v6_mprobe`"")),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v6"))
+  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v7_winter`"","front,threequarter,back,portrait,hair_close,head_tq_back","--pose","idle:1")),
+  @("face_probe",     @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\wren_v7_face_probe`"")),
+  @("mouth_probe",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_mouth_probe.py`"","--","`"$OUT\wren_v7_mprobe`"")),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v7")),
+  @("render_hairlarge", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\wren_v7_large`"","hair_close,head_side","--pose","idle:1","--res","1600","--hide-fork")),
+  @("render_lockids", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\wren_v7_lockids`"","hair_close,head_front,head_side,head_back,head_top","--pose","idle:1","--hide-fork","--lock-ids")),
+  @("hair_diag",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\wren_v7_hairdiag.json`""))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {
@@ -91,4 +105,6 @@ foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_wren_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 (Get-Content "$I\log_wren_face_probe.txt" | Select-String "^PROBE").Line
 (Get-Content "$I\log_wren_mouth_probe.txt" | Select-String "^MPROBE ").Line
+(Get-Content "$I\log_wren_hair_diag.txt" | Select-String "^HAIRDIAG").Line
+(Get-Content "$I\log_wren_compose.txt" | Select-String "^(FACEPROBE|MPROBE_SAME)").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
