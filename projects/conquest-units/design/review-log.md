@@ -913,3 +913,33 @@ between green and orange, and the strand hangs from the orange line down.
 to move (no perching gait); flame stays on; wings read as drifting/
 billowing vapor. Movement wave unblocked. (3) FIRESPRITE v1.3 hop:
 APPROVED as-is - parked.
+
+## 2026-09-28 — NEW UNIT: Wren (artist sheet; apply the humanoid lessons)
+
+Reference saved: design/reference/wren-character-sheet.webp — "WREN,
+OAKVALE VILLAGE / AGE: 16 / ORIGIN: OAKVALE (VILLAGE FARM BOY) / ROLE:
+HERO". Three views + detail panels: messy brown hair with a front fringe,
+brown eyes, anime face; green PATCHED hooded cloak (worn open, ragged hem,
+stitched patches, round brass clasp - cloak + cloth-patch detail panels);
+cream shirt with rolled sleeves; dark blue-teal vest; rope sash/belt with
+brown ties + belt pouch; baggy brown trousers into white cross-laced sock
+wraps; brown buckled boots; TEAL CRYSTAL pendant necklace (detail panel);
+leather BRACER on the right forearm with a teal crystal diamond (detail
+panel); STAFF = a wooden PITCHFORK, brass ferrule, wrapped grip (detail
+panel). Palette chips: brown, cream, olive, sage, teal, gold. Windmill in
+the backdrop (village flavor only).
+
+Artist (verbatim): "lets use what we learned and improve our generation
+for this new character"
+
+Binding reading: build "wren" applying the vampwarrior lessons from the
+START (first pass should land where her v4.2 did): MPFB2 base tuned
+STYLIZED from the outset (anime face read - the sheet's), warm sampled
+skin (never neutral grey), bold brows, hair as shaped masses with a
+proper feathered hairline + fringe strands (no hood read; hair on its own
+UV strip so bakes stay clean), painted tight garments + solid loose
+pieces, authored subtle shadow shapes, NO cel/outline treatment (learned:
+undone; game-side toon stays the import-note path), clips with follow-
+through + zero toe dips from the start, pitchfork on its own bone with
+the grip transform recorded. Age 16: younger slimmer proportions than
+the vampire, boyish earnest bearing.
