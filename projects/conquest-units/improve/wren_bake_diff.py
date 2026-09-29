@@ -8,7 +8,9 @@ area (this unit's normal map is 2048^2 = 4x vampito's 1024^2): 16 -> 64 texels f
 and keeps 16. The unit's own twin measurement is printed every run and quoted in the lane report; a failure here is a
 REAL regression.
 
-Usage: python -P wren_bake_diff.py <normal_main.npy> <normal_twin.npy> <ao_main.npy> <ao_twin.npy>  (exit 0 / 1)
+Usage: python -P wren_bake_diff.py <normal_main.npy> <normal_twin.npy> <ao_main.npy> <ao_twin.npy>
+                                   [<hairnormal_main.npy> <hairnormal_twin.npy>]  (exit 0 / 1)
+v3: the optional third pair is the smooth-proxy hair normal bake (2048^2, the normal map's limits: same bake route).
 """
 import sys
 
@@ -18,7 +20,10 @@ DELTA_MAX = 0.008     # vampito measured worst pair: 0.0039 (one 8-bit step)
 TEXELS_PER_MTEXEL = 16  # vampito: 16 texels allowed per 1024^2 texels
 
 ok_all = True
-for tag, a_p, b_p in (("normal", sys.argv[1], sys.argv[2]), ("ao", sys.argv[3], sys.argv[4])):
+PAIRS = [("normal", sys.argv[1], sys.argv[2]), ("ao", sys.argv[3], sys.argv[4])]
+if len(sys.argv) >= 7:
+    PAIRS.append(("hair_normal", sys.argv[5], sys.argv[6]))
+for tag, a_p, b_p in PAIRS:
     a = np.load(a_p)
     b = np.load(b_p)
     d = np.abs(a - b).max(1)

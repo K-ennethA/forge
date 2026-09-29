@@ -24,6 +24,69 @@ def tri_count_F(F):
     return int(sum(len(f) - 2 for f in F))
 
 
+def cut_part(V, F, R, fn, tau=0.0, attrs=(), vgate=None, snap=0.12):
+    """v3: split a part's faces along the iso-line fn = tau (the body's iso_cut, for a standalone part): fn maps (n, 3)
+    positions -> values; attrs = per-vertex float arrays carried onto the new vertices (linear along the split edge);
+    vgate = per-vertex bool: an edge is cut only when both its ends pass. Untouched faces keep their topology; a face the
+    cut crosses is split, pieces with more than 4 corners are triangulated. -> V, F, R, attrs, new vertex count."""
+    V = np.asarray(V, float)
+    bm_ = bmesh.new()
+    names_ = sorted(set(R))
+    rl_ = bm_.faces.layers.int.new("r")                 # (layers first: Blender 5 reallocates elements on a new layer)
+    lf_ = bm_.verts.layers.float.new("f")
+    la_ = [bm_.verts.layers.float.new("a%d" % k) for k in range(len(attrs))]
+    lg_ = bm_.verts.layers.int.new("g")
+    vs_ = [bm_.verts.new(p) for p in V]
+    for f_, r_ in zip(F, R):
+        fb_ = bm_.faces.new([vs_[i] for i in f_]); fb_[rl_] = names_.index(r_)
+    vals_ = np.asarray(fn(V), float)
+    for i, v in enumerate(vs_):
+        v[lf_] = float(vals_[i]); v[lg_] = 1 if vgate is None else int(bool(vgate[i]))
+        for k, a in enumerate(attrs):
+            v[la_[k]] = float(a[i])
+    eps_ = 1e-9
+    side_ = lambda v: 0 if abs(v[lf_] - tau) <= eps_ else (1 if v[lf_] > tau else -1)
+    for e in bm_.edges:
+        a, b = e.verts
+        if side_(a) * side_(b) < 0 and a[lg_] and b[lg_]:
+            tt = (tau - a[lf_]) / (b[lf_] - a[lf_])
+            if tt < snap:
+                a[lf_] = tau
+            elif tt > 1 - snap:
+                b[lf_] = tau
+    cuts_ = [e for e in bm_.edges if side_(e.verts[0]) * side_(e.verts[1]) < 0 and e.verts[0][lg_] and e.verts[1][lg_]]
+    for e in cuts_:
+        a, b = e.verts
+        tt = (tau - a[lf_]) / (b[lf_] - a[lf_])
+        av = [a[l] * (1 - tt) + b[l] * tt for l in la_]
+        _, nv = bmesh.utils.edge_split(e, a, tt)
+        nv[lf_] = tau; nv[lg_] = 1
+        for l, x in zip(la_, av):
+            nv[l] = x
+    pairs_ = []
+    for f_ in bm_.faces:
+        sd_ = [side_(v) for v in f_.verts]
+        if 1 in sd_ and -1 in sd_:
+            cv_ = [v for v, s_ in zip(f_.verts, sd_) if s_ == 0]
+            if len(cv_) == 2:
+                pairs_.append(cv_)
+    for cv_ in pairs_:
+        try:
+            bmesh.ops.connect_verts(bm_, verts=cv_)
+        except Exception:
+            pass
+    big_ = [f_ for f_ in bm_.faces if len(f_.verts) > 4]
+    if big_:
+        bmesh.ops.triangulate(bm_, faces=big_)
+    bm_.verts.index_update()
+    V2 = np.array([v.co[:] for v in bm_.verts])
+    F2 = [[v.index for v in f_.verts] for f_ in bm_.faces]
+    R2 = [names_[f_[rl_]] for f_ in bm_.faces]
+    A2 = [np.array([v[l] for v in bm_.verts]) for l in la_]
+    bm_.free()
+    return V2, F2, R2, A2, len(cuts_)
+
+
 def mesh_arrays(me):
     n = len(me.vertices)
     co = np.empty(n * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
@@ -219,6 +282,37 @@ SEAM = None
 if LIP_SEAL is not None:
     BV, report["lip_seal"] = seal_lips(BV, BF, float(TEETH[:, 2].min()))
     print("LIPSEAL", json.dumps(report["lip_seal"]))
+# ---- v3 GEOMETRIC eye enlargement (review-log 2026-09-29: the eye dial was exhausted at 1.0). Each eye's socket and
+# eyeball scale TOGETHER by EYE_SCALE about the eyeball's front pole (the cornea apex): the lids keep their exact fit on the
+# ball (a similar figure), the opening grows by the factor, and the cornea stays at its depth (no bug-eyed bulge). The
+# scale blends out over the orbit: full within EYE_SCALE_ZONE[0] mm of the eye centre in the face plane, none beyond
+# [1] mm; in depth full to [2] x the eyeball radius behind the centre (the socket sleeve), none beyond [3] x (the head
+# behind never moves). Everything painted on the face (liner / lash, brows, fringe shadow) is derived afterwards from the
+# scaled geometry, so it tracks.
+EYE_V2 = {s: {"c": EYE[s]["c"].copy(), "r": EYE[s]["r"]} for s in "LR"}
+EYE_SCALE_INFO = {"factor": EYE_SCALE, "zone": EYE_SCALE_ZONE}
+if EYE_SCALE != 1.0:
+    _moved = np.zeros(len(BV))
+    for s in "LR":
+        c_, r_ = EYE[s]["c"], EYE[s]["r"]
+        f_ = c_ + np.array([0.0, -r_, 0.0])
+        d_ = np.hypot(BV[:, 0] - c_[0], BV[:, 2] - c_[2])
+        w_ = (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, d_)) * \
+            (1.0 - smoothstep(c_[1] + EYE_SCALE_ZONE[2] * r_, c_[1] + EYE_SCALE_ZONE[3] * r_, BV[:, 1]))
+        dv_ = (EYE_SCALE - 1.0) * w_[:, None] * (BV - f_)
+        BV = BV + dv_
+        _moved = np.maximum(_moved, np.linalg.norm(dv_, axis=1))
+        EYE[s] = {"c": f_ + EYE_SCALE * (c_ - f_), "r": EYE_SCALE * r_}
+    # fold proof: the blended map must stay one-to-one -- the radial stretch d(rho')/d(rho) along face-plane rays from
+    # the eye centre stays > 0 (sampled on the profile w(d))
+    _dd = np.linspace(0.0, EYE_SCALE_ZONE[1] * 1.2e-3, 400)
+    _rho = _dd * (1.0 + (EYE_SCALE - 1.0) * (1.0 - smoothstep(EYE_SCALE_ZONE[0] * 1e-3, EYE_SCALE_ZONE[1] * 1e-3, _dd)))
+    EYE_SCALE_INFO.update({"verts_moved": int((_moved > 1e-6).sum()), "max_move_mm": round(1000 * float(_moved.max()), 2),
+                           "radial_stretch_min": round(float(np.min(np.diff(_rho) / np.diff(_dd))), 3),
+                           "eyeball_r_mm": {"v2": round(1000 * EYE_V2["L"]["r"], 2), "v3": round(1000 * EYE["L"]["r"], 2)},
+                           "eyeball_centre_moved_back_mm": round(1000 * float(EYE["L"]["c"][1] - EYE_V2["L"]["c"][1]), 2)})
+report["eye_scale"] = EYE_SCALE_INFO
+print("EYESCALE", json.dumps(EYE_SCALE_INFO))
 for o in (hb, rig0):
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):

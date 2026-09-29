@@ -2,7 +2,7 @@
  "unit": "wren",
  "skin": "winter",
  "extends": "default",
- "description": "Swap proof ('winter', lane pick per the brief): a grey wool cloak with slate / charcoal patches, RUST accents (vest, rope sash + ties, pouch, bracer straps), charcoal-brown trousers, darker boots. Skin, hair, eyes, shirt, wraps, the teal crystals and the brass are unchanged (his identity stays). Geometry, regions and glow tiers identical; only colours change.",
+ "description": "Swap proof ('winter', lane pick per the brief): a grey wool cloak with slate / charcoal patches, RUST accents (vest, rope sash + ties, pouch, bracer straps), charcoal-brown trousers, darker boots. Skin, hair, eyes, shirt, wraps, the teal crystals and the brass are unchanged (his identity stays). Geometry, regions and glow tiers identical; only colours change. v3: the hair tiers (roots / angel ring / tips / dark inner cap) and the anime-eye regions (lash, iris lid shadow, highlight) repaint through this skin from the default (identity tones, unchanged).",
  "regions": {
   "cloak":       {"rgb": [118, 122, 128]},
   "cloak_worn":  {"rgb": [138, 140, 144]},

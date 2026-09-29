@@ -1,7 +1,8 @@
 """Wren image assembly (plain Python + PIL, no Blender): run with the forge service venv.
-v2 (the face round): every model input / output is v2-prefixed (V = "wren_v2"); the v1 stills (wren_*.png) and the v1
-re-renders at the v2 close-up framing (wren_v1ref_*.png) are the comparison baseline; + the face-round composites
-wren_v2_face_threeup / _eyes_compare / _mouth_compare / _brows_compare / _body_untouched.
+v3 (the Fire Emblem round): every model input / output is v3-prefixed (V = "wren_v3"); the v2 stills (wren_v2_*.png) are
+the comparison baseline; + the FE-round composites wren_v3_face_threeup (v2 | v3 | sheet), _eyes_compare, _hair (front /
+side / back / three-quarter back + the close-up), _hair_shading_ab (the hair strip flat = v2 shading | the smooth-proxy
+bake), _winter (the hair tiers repainted through the winter skin), _body_untouched.
 
     python -P wren_compose.py
 
@@ -30,7 +31,8 @@ IMP = json.load(open(os.path.join(ROOT, "improved", "wren.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "wren.json")))
 PAL = json.load(open(os.path.join(ROOT, "palettes", "wren", "default.json")))
 SH = Image.open(SHEET).convert("RGB")
-V = "wren_v2"
+V = "wren_v3"
+V2 = "wren_v2"
 CROPS = {"eyes": (1178, 152, 1292, 200), "mouth": (1200, 208, 1262, 244), "brows": (1172, 140, 1298, 196),
          "front": (20, 90, 470, 970), "side": (470, 90, 710, 970), "back": (730, 90, 1030, 970),
          "head": (1116, 90, 1318, 322), "necklace": (1344, 98, 1497, 282), "bracer": (1118, 357, 1287, 560),
@@ -122,7 +124,7 @@ SKIN = {"palette_skin_rgb": PAL["regions"]["skin"]["rgb"], "sheet_front_face_lit
 json.dump(SKIN, open(os.path.join(R, V + "_skin_tone.json"), "w"), indent=1)
 grid([[(crop("head"), "SHEET head panel\nlit skin %s (hue %.0f, sat %.2f)" % (sk_sheet_head["rgb"], sk_sheet_head["hue_deg"], sk_sheet_head["sat"])),
        (V + "_portrait.png", "model portrait\nlit skin %s (hue %.0f, sat %.2f)" % (sk_render["rgb"], sk_render["hue_deg"], sk_render["sat"])),
-       (V + "_face.png", "three-quarter"), (V + "_eyes.png", "eyes: bold brows, lid liner, brown iris")]],
+       (V + "_face.png", "three-quarter"), (V + "_eyes.png", "eyes: lash band, iris shade, highlight")]],
      420, 460, "Wren - face vs the sheet (palette skin %s, sampled off the sheet's lit face)" % (PAL["regions"]["skin"]["rgb"],),
      V + "_face_vs_sheet.png")
 
@@ -136,19 +138,36 @@ grid([[(crop("necklace"), "SHEET necklace"), (V + "_necklace.png", "pendant + co
      360, 360, "Wren - detail panels vs the model", V + "_details_vs_sheet.png")
 
 # ---- hair
+HB = IMP.get("bake", {}).get("hair_proxy_bake", {})
+HI = IMP["hair"]
 grid([[(V + "_head_front.png", "front"), (V + "_head_side.png", "side"), (V + "_head_tq_back.png", "three-quarter back"),
-       (V + "_head_back.png", "back: nape tail")]],
-     420, 420, "Wren - hair (crown %.1f mm above the scalp; cap feathered to %.1f mm at the hairline; own UV strip)"
-     % (IMP["hair"]["crown"]["crown_above_scalp_mm"], 1000 * (IMP["hair"]["cap_feather"]["rim_thickness_m_p50"] or 0)),
+       (V + "_head_back.png", "back: layered points + nape tail")],
+      [(V + "_hair_close.png", "close-up: one-volume shading, angel ring"), (V + "_head_top.png", "from above: whorl flow"),
+       (V2 + "_head_front.png", "v2 front (37 uniform locks)"), (V2 + "_head_tq_back.png", "v2 three-quarter back")]],
+     420, 420, "Wren v3 - hair: %d clumps (tiers L %d / M %d / S %d) from the crown whorl; crown %.1f mm above the scalp; "
+     "angel ring %s deg; dark inner cap" % (HI["clumps"], HI["tiers"]["L"], HI["tiers"]["M"], HI["tiers"]["S"],
+                                            HI["crown"]["crown_above_scalp_mm"], tuple(HI["angel_ring"]["elevation_deg"])),
      V + "_hair.png")
+_nb = HB.get("neighbour_angle_deg_p50_p90", {})
+grid([[(V + "_hairflat_hair_close.png", "hair strip normals FLAT (the v2 shading)\nneighbour facets p50/p90 %s deg" % (_nb.get("flat_facets"),)),
+       (V + "_hair_close.png", "smooth-proxy normal bake (v3)\nshading neighbours p50/p90 %s deg" % (_nb.get("baked_shading"),))],
+      [(V + "_hairflat_head_front.png", "flat strip, front"), (V + "_head_front.png", "proxy bake, front")],
+      [(V + "_hairflat_head_tq_back.png", "flat strip, three-quarter back"), (V + "_head_tq_back.png", "proxy bake, three-quarter back")]],
+     560, 460, "Wren v3 - the one-volume hair: same geometry, same light; left the hair UV strip's normals flat, right the proxy bake",
+     V + "_hair_shading_ab.png")
+grid([[(V + "_winter_front.png", "winter front"), (V + "_winter_threequarter.png", "winter three-quarter"),
+       (V + "_winter_back.png", "winter back")],
+      [(V + "_winter_portrait.png", "winter portrait"), (V + "_winter_hair_close.png", "winter: hair tiers repainted"),
+       (V + "_winter_head_tq_back.png", "winter: hair three-quarter back")]],
+     420, 460, "Wren v3 - the winter skin (a pure palette swap: the hair tiers + eye regions repaint through it)", V + "_winter.png")
 
 # ---- contact
 T = 400
 items = [(V + "_front.png", "front (idle f1)"), (V + "_threequarter.png", "three-quarter"), (V + "_side.png", "side"),
          (V + "_back.png", "back"), (V + "_tactical.png", "tactical (256 px)"), (V + "_portrait.png", "face"),
-         (V + "_head_tq_back.png", "hair"), (V + "_patches.png", "cloak patches"), (V + "_bracer.png", "bracer"),
-         (V + "_fork_head.png", "pitchfork"), (V + "_winter_front.png", "winter skin (swap proof)"),
-         (V + "_winter_threequarter.png", "winter, three-quarter")]
+         (V + "_eye_close.png", "eye: lash, iris shade, highlight"), (V + "_hair_close.png", "hair: one volume + angel ring"),
+         (V + "_head_tq_back.png", "hair from behind"), (V + "_fork_head.png", "pitchfork"),
+         (V + "_winter_front.png", "winter skin (swap proof)"), (V + "_winter_hair_close.png", "winter: hair tiers")]
 tiles = [label(fit(load(fn), T, T), lab) for fn, lab in items]
 Wc = 4 * T + 18
 sheets = []
@@ -168,24 +187,18 @@ for s_ in sheets:
 cs.convert("RGB").save(os.path.join(R, V + "_contact.png"))
 print("WROTE", V + "_contact.png", json.dumps(SKIN))
 
-# ---- v2 face round: v1 | v2 | the sheet
-FZ = IMP.get("face_round", {})
-m1, m2 = FZ.get("eyes_v1", {}), FZ.get("eyes_v2", {})
-grid([[("wren_portrait.png", "v1 portrait"), (V + "_portrait.png", "v2 portrait"), (crop("head"), "SHEET head panel")]],
-     460, 500, "Wren v2 face round - v1 | v2 | the sheet (eyes, brows, mouth, smoothing)", V + "_face_threeup.png")
-grid([[("wren_v1ref_eyes.png", "v1 eyes (dial +0.40): open %s x %s mm" % (m1.get("open_w_mm"), m1.get("open_h_mm"))),
-       (V + "_eyes.png", "v2 eyes (dial +1.00): open %s x %s mm" % (m2.get("open_w_mm"), m2.get("open_h_mm"))),
-       (crop("eyes"), "SHEET eyes")]], 520, 360, "Wren v2 - eyes (same framing)", V + "_eyes_compare.png")
-b1, b2 = FZ.get("brows_v1_mm", {}), FZ.get("brows_v2_mm", {})
-grid([[("wren_v1ref_brows.png", "v1 brows: inner %s / tail %s mm" % (b1.get("t0.05"), b1.get("t0.95"))),
-       (V + "_brows.png", "v2 brows: inner %s / tail %s mm" % (b2.get("t0.05"), b2.get("t0.95"))),
-       (crop("brows"), "SHEET brows")]], 520, 360, "Wren v2 - brows (same framing)", V + "_brows_compare.png")
-grid(
-     [[("wren_v1ref_mouth.png", "v1 mouth: compression 1.0 (upper lip rolled in, lower out)"), (V + "_mouth.png", "v2: relaxed + sealed"),
-       (crop("mouth"), "SHEET mouth")],
-      [("wren_v1ref_mouth_side.png", "v1 profile"), (V + "_mouth_side.png", "v2 profile"), (None, None)],
-      [("wren_v1ref_mouth_tq.png", "v1 three-quarter"), (V + "_mouth_tq.png", "v2 three-quarter"), (None, None)]],
-     440, 360, "Wren v2 - mouth: the lips paired, the mouth closed (same framing)", V + "_mouth_compare.png")
-grid([[("wren_front.png", "v1 front (idle f1)"), (V + "_front.png", "v2 front (idle f1)"),
-       ("wren_threequarter.png", "v1 three-quarter"), (V + "_threequarter.png", "v2 three-quarter")]],
-     360, 520, "Wren v2 - below the neck untouched (%s)" % FZ.get("body_untouched_rule", ""), V + "_body_untouched.png")
+# ---- v3 FE round: v2 | v3 | the sheet
+FE = IMP.get("fe_round", {})
+e2, e3 = FE.get("eyes", {}).get("v2", {}), FE.get("eyes", {}).get("v3", {})
+grid([[(V2 + "_portrait.png", "v2 portrait"), (V + "_portrait.png", "v3 portrait"), (crop("head"), "SHEET head panel")]],
+     460, 500, "Wren v3 FE round - v2 | v3 | the sheet (eyes x%.2f geometric, anime eye treatment, clump hair)"
+     % (IMP.get("eye_scale", {}).get("factor", 0)), V + "_face_threeup.png")
+grid([[(V2 + "_eyes.png", "v2 eyes: open %s x %s mm" % (e2.get("open_w_mm"), e2.get("open_h_mm"))),
+       (V + "_eyes_v2frame.png", "v3 eyes (v2 framing): open %s x %s mm, iris %s%% of the opening" % (e3.get("open_w_mm"), e3.get("open_h_mm"),
+                                                                            (e3.get("iris_coverage_pct") or {}).get("L"))),
+       (crop("eyes"), "SHEET eyes")],
+      [(V + "_eye_close.png", "v3 his left eye: lash band + wing, iris lid shadow, highlight dot"), (None, None), (None, None)]],
+     520, 360, "Wren v3 - eyes (same framing for v2 | v3)", V + "_eyes_compare.png")
+grid([[(V2 + "_front.png", "v2 front (idle f1)"), (V + "_front.png", "v3 front (idle f1)"),
+       (V2 + "_threequarter.png", "v2 three-quarter"), (V + "_threequarter.png", "v3 three-quarter")]],
+     360, 520, "Wren v3 - below the neck untouched (%s)" % FE.get("body_untouched_rule", ""), V + "_body_untouched.png")

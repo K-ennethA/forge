@@ -58,12 +58,49 @@ if float(np.mean(np.einsum("ij,ij->i", BN, BV - BV.mean(0)))) < 0:
     BN = -BN
 EYE_MESH, EYE_AP = {}, {}
 AP_STEP, AP_N = 0.0001, 72
+EYE_PAINT = {}
 for s in "LR":
     e = EYE[s]
-    angs = [0.0, EYE_PUPIL_DEG, EYE_PUPIL_DEG + 4, EYE_IRIS_DEG, 60.0, 90.0, 125.0, 155.0, 180.0]
+    _im = 0.5 * (EYE_PUPIL_DEG + 4 + EYE_IRIS_DEG)
+    angs = [0.0, EYE_PUPIL_DEG, EYE_PUPIL_DEG + 4, _im, EYE_IRIS_DEG, max(EYE_IRIS_DEG + 10.0, 60.0), 90.0] +         ([125.0, 155.0, 180.0] if EYE_BACK is None else [])
+    if EYE_HILITE is not None:
+        # v3: extra rings every EYE_HILITE_RING deg through the highlight dot's polar band, so the dot's cut resolves round
+        _hc = EYE_HILITE[1] * EYE_IRIS_DEG
+        angs += [a_ for a_ in np.arange(max(_hc - EYE_HILITE[2] - 1.0, 1.0), _hc + EYE_HILITE[2] + 1.0, EYE_HILITE_RING)
+                 if min(abs(a_ - b_) for b_ in angs) > 0.6]
+        angs = sorted(float(a_) for a_ in angs)
     prof = [(e["r"] * math.sin(math.radians(a)), e["r"] * math.cos(math.radians(a))) for a in angs]
-    regs = ["eye_pupil", "eye_iris", "eye_iris", "eye_sclera", "eye_sclera", "eye_sclera", "eye_sclera", "eye_sclera"]
-    EYE_MESH[s] = VP.lathe(prof, regs, EYE_SEG, e["c"], (0.0, -1.0, 0.0), up_hint=(0, 0, 1))
+    if EYE_BACK is not None:
+        # v3: the hidden back of the ball (behind the socket, never visible) closes as a cone to a pole on the axis
+        prof.append((0.0, e["r"] * math.cos(math.radians(EYE_BACK))))
+        angs = angs + [180.0]
+    regs = [("eye_pupil" if a1_ <= EYE_PUPIL_DEG + 1e-6 else ("eye_iris" if a1_ <= EYE_IRIS_DEG + 1e-6 else "eye_sclera"))
+            for a1_ in angs[1:]]
+    Ve_, Fe_, Re_ = VP.lathe(prof, regs, EYE_SEG, e["c"], (0.0, -1.0, 0.0), up_hint=(0, 0, 1))
+    _ax = np.array([0.0, -1.0, 0.0])
+    _ang = lambda P_, c_=e["c"]: np.degrees(np.arccos(np.clip((P_ - c_) @ _ax / np.maximum(np.linalg.norm(P_ - c_, axis=1), 1e-12), -1, 1)))
+    _ncut = 0
+    if IRIS_SHADE is not None:
+        # v3 iris lid shadow: the iris above IRIS_SHADE x its radius (over the iris centre) = the darker tone
+        _zc = e["c"][2] + IRIS_SHADE * e["r"] * math.sin(math.radians(EYE_IRIS_DEG))
+        Ve_, Fe_, Re_, _, n_ = cut_part(Ve_, Fe_, Re_, lambda P_: P_[:, 2] - _zc, 0.0,
+                                        vgate=_ang(Ve_) <= EYE_IRIS_DEG + 0.01)
+        _ncut += n_
+        _fc = np.array([Ve_[f].mean(0) for f in Fe_])
+        Re_ = [("eye_iris_dark" if (r_ in ("eye_iris",) and fc_[2] > _zc) else r_) for r_, fc_ in zip(Re_, _fc)]
+    if EYE_HILITE is not None:
+        # v3 highlight dot: a small disc on the ball, up-and-OUTER from the iris centre (paint-only: the faces stay on the sphere)
+        _sg = 1.0 if s == "L" else -1.0
+        _ph, _al = math.radians(EYE_HILITE[0]), math.radians(EYE_HILITE[1] * EYE_IRIS_DEG)
+        _hd = math.cos(_al) * _ax + math.sin(_al) * np.array([_sg * math.cos(_ph), 0.0, math.sin(_ph)])
+        _hf = lambda P_, c_=e["c"], hd_=_hd: np.degrees(np.arccos(np.clip(((P_ - c_) / np.maximum(np.linalg.norm(P_ - c_, axis=1), 1e-12)[:, None]) @ hd_, -1, 1))) - EYE_HILITE[2]
+        Ve_, Fe_, Re_, _, n_ = cut_part(Ve_, Fe_, Re_, _hf, 0.0)
+        _ncut += n_
+        _fc = np.array([Ve_[f].mean(0) for f in Fe_])
+        _hv = _hf(_fc)
+        Re_ = [("eye_hilite" if hv_ < 0 else r_) for r_, hv_ in zip(Re_, _hv)]
+    EYE_MESH[s] = (Ve_, Fe_, Re_)
+    EYE_PAINT[s] = {"faces": {r_: Re_.count(r_) for r_ in sorted(set(Re_))}, "edge_splits": _ncut, "tris": tri_count_F(Fe_)}
 
 
 def eye_polar(P, s):
@@ -103,9 +140,94 @@ def aperture(ang_, s):
     return np.interp(ang_, 360.0 * np.arange(AP_N) / AP_N, EYE_AP[s], period=360.0)
 
 
+# v3 EYEBALL TUCK: the lathe ball (radius = the MPFB eye helper's mean radius) stood through the lower lid / outer orbit
+# skin by up to 1.45 mm already in v2 (9 vertices, measured with the v2 eye configuration) and more once scaled. Every
+# eyeball vertex OUTSIDE the opening's front projection (polar radius > aperture + EYE_TUCK[0]) whose ray from the ball's
+# centre meets the skin before it is pulled back along that ray to EYE_TUCK[1] inside the skin. The visible cap (inside
+# the opening) is untouched, so the aperture and the painted iris are unchanged (re-measured below).
+EYE_TUCK = (0.001, 0.0005)
+EYE_TUCK_INFO = {}
+for s in "LR":
+    c_ = EYE[s]["c"]
+    Ve_ = EYE_MESH[s][0].copy()
+    rad_, ang_ = eye_polar(Ve_, s)
+    moved_ = []
+    for i, p_ in enumerate(Ve_):
+        if rad_[i] <= aperture(ang_[i], s) + EYE_TUCK[0]:
+            continue
+        L_ = float(np.linalg.norm(p_ - c_))
+        d_ = (p_ - c_) / max(L_, 1e-12)
+        h_ = BVH_BODY.ray_cast(Vector(c_), Vector(d_), L_ + EYE_TUCK[1])
+        # (only the OUTER skin -- facing away from the ball's centre -- counts: through the socket sleeve, whose normals
+        # face the ball, lies the closed head interior)
+        if h_[0] is not None and h_[3] < L_ + EYE_TUCK[1] and float(np.array(h_[1]) @ d_) > 0.0:
+            Ve_[i] = c_ + d_ * max(h_[3] - EYE_TUCK[1], 0.3 * L_)
+            moved_.append(L_ - float(np.linalg.norm(Ve_[i] - c_)))
+    EYE_MESH[s] = (Ve_, EYE_MESH[s][1], EYE_MESH[s][2])
+    EYE_TUCK_INFO[s] = {"verts": len(moved_), "max_pull_mm": round(1000 * max(moved_), 2) if moved_ else 0.0}
+BVH_EYE = {s: BVHTree.FromPolygons(EYE_MESH[s][0].tolist(), EYE_MESH[s][1]) for s in "LR"}
+_ap_before = {s: EYE_AP[s].copy() for s in "LR"}
+for s in "LR":
+    c_ = EYE[s]["c"]; sg_ = 1.0 if s == "L" else -1.0
+    for k in range(AP_N):
+        th_ = math.radians(360.0 * k / AP_N)
+        for i in range(1, 300):
+            rho = i * AP_STEP
+            who, _ = front_first_hit(s, BVH_BODY, BVH_EYE[s], c_[0] + sg_ * rho * math.cos(th_), c_[2] + rho * math.sin(th_))
+            if who == "skin":
+                EYE_AP[s][k] = rho
+                break
+    EYE_TUCK_INFO[s]["aperture_change_mm_max"] = round(1000 * float(np.abs(EYE_AP[s] - _ap_before[s]).max()), 2)
+report["eye_tuck"] = EYE_TUCK_INFO
+print("EYETUCK", json.dumps(EYE_TUCK_INFO))
+
+
+# v3 eye proofs. IRIS COVERAGE: front rays on a 0.25 mm grid over each eye; of the rays whose first hit is the eyeball
+# (the visible opening), the share landing on the iris family (iris / lid-shadow iris / pupil / highlight). EYEBALL POKE:
+# eyeball vertices standing > 0.3 mm outside the skin (nearest skin point, its face normal) OUTSIDE the opening's front
+# projection (polar radius beyond the aperture + 1 mm) = the enlarged ball showing through the face somewhere else.
+_IRIS_FAM = ("eye_iris", "eye_iris_dark", "eye_pupil", "eye_hilite")
+EYE_PROOF = {}
+for s in "LR":
+    c_ = EYE[s]["c"]
+    Re_ = EYE_MESH[s][2]
+    n_eye, n_iris, n_hil = 0, 0, 0
+    for x_ in np.arange(c_[0] - 0.026, c_[0] + 0.026, 0.00025):
+        for z_ in np.arange(c_[2] - 0.016, c_[2] + 0.016, 0.00025):
+            who, h_ = front_first_hit(s, BVH_BODY, BVH_EYE[s], float(x_), float(z_))
+            if who == "eye":
+                n_eye += 1
+                n_iris += Re_[h_[2]] in _IRIS_FAM
+                n_hil += Re_[h_[2]] == "eye_hilite"
+    Ve_ = EYE_MESH[s][0]
+    rad_, ang_ = eye_polar(Ve_, s)
+    poke_, poke_at = 0, []
+    for i, p_ in enumerate(Ve_):
+        q_, n_, _, _ = BVH_BODY.find_nearest(Vector(p_))
+        if q_ is not None and float((p_ - np.array(q_)) @ np.array(n_)) > 0.0003 and rad_[i] > aperture(ang_[i], s) + 0.001 \
+                and float((np.array(q_) - c_) @ np.array(n_)) > 0.0:
+            poke_ += 1
+            poke_at.append([round(1000 * float(x), 1) for x in (p_ - c_)] + [round(1000 * float((p_ - np.array(q_)) @ np.array(n_)), 2)])
+    EYE_PROOF[s] = {"visible_opening_mm2": round(n_eye * 0.0625, 1), "iris_coverage_pct": round(100.0 * n_iris / max(n_eye, 1), 1),
+                    "highlight_visible_mm2": round(n_hil * 0.0625, 2), "eyeball_poke_verts": poke_,
+                    "poke_at_mm_dxyz_out": poke_at[:12], "paint": EYE_PAINT[s]}
+report["eye_proof"] = {"rule": "front rays on a 0.25 mm grid: iris coverage = iris-family hits / eyeball hits (the visible "
+                                "opening); poke = eyeball vertices > 0.3 mm outside the OUTER skin (the nearest skin point "
+                                "faces away from the ball's centre) beyond the opening's projection",
+                       "iris_deg": EYE_IRIS_DEG, "pupil_deg": EYE_PUPIL_DEG, **EYE_PROOF}
+print("EYEPROOF", json.dumps(report["eye_proof"]))
+
+
 def liner_w(ang_):
     ang_ = np.asarray(ang_, float)
     up_ = smoothstep(-0.25, 0.25, np.sin(np.radians(ang_)))
+    if LASH_PROFILE is not None:
+        # v3 upper LASH band: the width profile round the upper lid (bold over the outer two thirds, tapering to the inner
+        # corner) + the wing flick past the outer corner; the lower lid keeps the thin v2 line
+        a_ = np.where(np.sin(np.radians(ang_)) >= 0, ang_ % 360.0, np.where(np.cos(np.radians(ang_)) >= 0, 0.0, 180.0))
+        wu_ = 1e-3 * np.interp(a_, [p[0] for p in LASH_PROFILE], [p[1] for p in LASH_PROFILE])
+        dw_ = np.minimum(np.abs(ang_ - LASH_WING[2]) % 360.0, 360.0 - np.abs(ang_ - LASH_WING[2]) % 360.0)
+        return LINER_W[1] + (wu_ - LINER_W[1]) * up_ + 1e-3 * LASH_WING[0] * np.exp(-(dw_ / LASH_WING[1]) ** 2)
     dw_ = np.minimum(np.abs(ang_ - LINER_WING[2]) % 360.0, 360.0 - np.abs(ang_ - LINER_WING[2]) % 360.0)
     return LINER_W[1] + (LINER_W[0] - LINER_W[1]) * up_ + LINER_WING[0] * np.exp(-(dw_ / LINER_WING[1]) ** 2)
 
@@ -396,6 +518,14 @@ if SEAM is None:                                   # v1 rule: lip-zone skin rece
 else:                                              # v2: the thin line on the sealed seam
     reg[_head & (FV["mline"] < 0) & (FV["y"] < Y_LIP + 0.012) & (np.abs(FV["z"] - Z_LIP) < 0.015)] = "mouth"
 reg[_head & ((FV["eye_L"] < 0) | (FV["eye_R"] < 0))] = "liner"
+if LASH_PROFILE is not None:
+    # v3: the upper band (and the wing) is the LASH region (near-black); the thin lower line stays 'liner' (lighter)
+    _fcen = np.array([CV[f].mean(0) for f in CF])
+    for s in "LR":
+        _rad, _ang = eye_polar(_fcen, s)
+        _lash = (reg == "liner") & (FV["eye_" + s] < 0) & ((np.sin(np.radians(_ang)) > -0.05) |
+                                                            (np.abs(((_ang + 180.0) % 360.0) - 180.0) < LASH_WING[1] * 1.6))
+        reg[_lash] = "lash"
 reg[_head & ((FV["brow_L"] < 0) | (FV["brow_R"] < 0)) & (FV["hair"] < 0)] = "brow"
 reg[_head & (FV["hair"] > 0)] = "hair"
 report["iso_cuts"] = {"cuts": len(cut_log), "edge_splits": int(sum(c["edge_splits"] for c in cut_log)),
@@ -412,23 +542,30 @@ for s in "LR":
     for k in range(AP_N):
         th_ = math.radians(360.0 * k / AP_N)
         seen, edge_, first_ = [], None, None
-        for i in range(1, 300):
+        for i in range(1, int((float(EYE_AP[s].max()) + 0.008) / 0.00005)):   # (v3: past the enlarged outer corner + the wing)
             rho = i * 0.00005
             who, h_ = front_first_hit(s, BVH_CUT, BVH_EYE[s], c_[0] + sg_ * rho * math.cos(th_), c_[2] + rho * math.sin(th_))
             if who == "skin":
                 r_ = reg[h_[2]]
                 if edge_ is None:
                     edge_, first_ = rho, r_
-                seen.append(r_ == "liner")
+                seen.append(r_ in ("liner", "lash"))
             elif edge_ is not None:
                 seen.append(False)
         seen = np.array(seen, bool)
-        rows_.append({"deg": 360.0 * k / AP_N, "width_mm": 0.05 * float(seen.sum()), "starts_at_lid_edge": first_ == "liner"})
+        rows_.append({"deg": 360.0 * k / AP_N, "width_mm": 0.05 * float(seen.sum()), "starts_at_lid_edge": first_ in ("liner", "lash")})
     _lp[s] = rows_
 _all = [r for s in "LR" for r in _lp[s]]
 _up = [r["width_mm"] for r in _all if 15.0 <= r["deg"] <= 165.0]
 _lo = [r["width_mm"] for r in _all if 195.0 <= r["deg"] <= 345.0]
-report["liner_proof"] = {"widths_mm_target": {"upper": LINER_W[0] * 1000, "lower": LINER_W[1] * 1000},
+_prof = lambda lo_, hi_: round(float(np.median([r["width_mm"] for r in _all if lo_ <= r["deg"] <= hi_])), 2)
+report["liner_proof"] = {"widths_mm_target": {"upper": (LASH_PROFILE if LASH_PROFILE is not None else LINER_W[0] * 1000),
+                                              "lower": LINER_W[1] * 1000},
+                         "upper_by_zone_mm_median": {"outer_0_40": _prof(0.0, 40.0), "mid_60_120": _prof(60.0, 120.0),
+                                                     "inner_140_175": _prof(140.0, 175.0)},
+                         "wing_mm_at_%d_deg" % (LASH_WING[2] if LASH_PROFILE is not None else LINER_WING[2]):
+                             round(float(np.median([r["width_mm"] for r in _all if abs(r["deg"] - (LASH_WING[2] if LASH_PROFILE is not None else LINER_WING[2])) <= 5.0
+                                                    or abs(r["deg"] - 360.0 - (LASH_WING[2] if LASH_PROFILE is not None else LINER_WING[2])) <= 5.0])), 2),
                          "upper_lid_width_mm_median": round(float(np.median(_up)), 2),
                          "lower_lid_width_mm_median": round(float(np.median(_lo)), 2),
                          "contour_closed_pct": round(100.0 * float(np.mean([r["width_mm"] >= 0.2 for r in _all])), 1),

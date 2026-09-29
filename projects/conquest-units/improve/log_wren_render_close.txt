@@ -1,22 +1,22 @@
-00:01.421  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
-00:04.062  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_cloak.png'
-00:04.781  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_cloak_tq.png'
-00:05.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_patches.png'
-00:05.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_necklace.png'
-00:06.437  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_bracer.png'
-00:06.953  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_bracer_front.png'
-00:07.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_fork_full.png'
-00:07.796  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_boots.png'
-00:08.171  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_boots_front.png'
-00:08.515  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_torso.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_cloak.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_cloak_tq.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_patches.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_necklace.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_bracer.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_bracer_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_fork_full.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_boots.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_boots_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_torso.png
+00:01.547  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
+00:04.343  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_cloak.png'
+00:04.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_cloak_tq.png'
+00:05.625  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_patches.png'
+00:06.265  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_necklace.png'
+00:06.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_bracer.png'
+00:07.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_bracer_front.png'
+00:08.031  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_fork_full.png'
+00:08.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_boots.png'
+00:08.937  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_boots_front.png'
+00:09.359  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_torso.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_cloak.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_cloak_tq.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_patches.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_necklace.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_bracer.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_bracer_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_fork_full.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_boots.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_boots_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_torso.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)

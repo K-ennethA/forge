@@ -1,2 +1,2 @@
-C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\wren_s6_assemble.py:78: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\wren_s6_assemble.py:80: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
   mat.use_nodes = True

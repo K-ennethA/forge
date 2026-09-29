@@ -14,17 +14,17 @@
   "params": {
    "hair_fringe": {
     "driver": "head",
-    "hz": 3.4,
-    "zeta": 0.42,
-    "drag": 0.9,
-    "gain": 1.0
+    "hz": 3.0,
+    "zeta": 0.45,
+    "drag": 1.0,
+    "gain": 0.9
    },
    "hair_side": {
     "driver": "head",
-    "hz": 3.2,
-    "zeta": 0.45,
-    "drag": 0.8,
-    "gain": 0.8
+    "hz": 2.8,
+    "zeta": 0.48,
+    "drag": 0.9,
+    "gain": 0.65
    },
    "hair_tail": {
     "driver": "head",
@@ -91,19 +91,19 @@
      "tip_lag_frames": 3,
      "axis": "z",
      "driver_ptp_deg": 6.98,
-     "tip_follow_through_ptp_deg": 1.31
+     "tip_follow_through_ptp_deg": 1.43
     },
     "hair_side.L": {
-     "tip_lag_frames": 3,
+     "tip_lag_frames": 4,
      "axis": "z",
      "driver_ptp_deg": 6.98,
-     "tip_follow_through_ptp_deg": 1.19
+     "tip_follow_through_ptp_deg": 1.18
     },
     "hair_side.R": {
-     "tip_lag_frames": 3,
+     "tip_lag_frames": 4,
      "axis": "z",
      "driver_ptp_deg": 6.98,
-     "tip_follow_through_ptp_deg": 1.19
+     "tip_follow_through_ptp_deg": 1.18
     },
     "hair_tail": {
      "tip_lag_frames": 4,
@@ -150,28 +150,28 @@
      "tip_follow_through_ptp_deg": 7.02
     },
     "hair_fringe": {
-     "tip_lag_frames": 4,
+     "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 8.81,
-     "tip_follow_through_ptp_deg": 7.67
+     "driver_ptp_deg": 9.79,
+     "tip_follow_through_ptp_deg": 8.21
     },
     "hair_side.L": {
-     "tip_lag_frames": 4,
+     "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 8.97,
-     "tip_follow_through_ptp_deg": 6.31
+     "driver_ptp_deg": 10.06,
+     "tip_follow_through_ptp_deg": 6.29
     },
     "hair_side.R": {
-     "tip_lag_frames": 4,
+     "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 8.94,
-     "tip_follow_through_ptp_deg": 6.3
+     "driver_ptp_deg": 10.02,
+     "tip_follow_through_ptp_deg": 6.27
     },
     "hair_tail": {
      "tip_lag_frames": 5,
      "axis": "x",
-     "driver_ptp_deg": 12.19,
-     "tip_follow_through_ptp_deg": 15.62
+     "driver_ptp_deg": 12.18,
+     "tip_follow_through_ptp_deg": 15.63
     },
     "tie": {
      "tip_lag_frames": 3,
@@ -214,11 +214,18 @@
     "cloak_crossings_right_arm": 0,
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
+    "hair_into_skin_verts_max": 6,
     "fork_shaft_through_cloak": 0,
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0437,
     "fork_to_legs_min_m": 0.1918,
-    "cloak_to_legs_min_m": 0.0695
+    "cloak_to_legs_min_m": 0.0695,
+    "hair_into_skin_worst": {
+     "lock.side.R0": 3,
+     "lock.side.L1": 1,
+     "lock.tail": 2,
+     "frame": 1
+    }
    },
    "feet_planted": {
     "L": {
@@ -276,11 +283,18 @@
     "cloak_crossings_right_arm": 0,
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
+    "hair_into_skin_verts_max": 6,
     "fork_shaft_through_cloak": 0,
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0436,
     "fork_to_legs_min_m": 0.0806,
-    "cloak_to_legs_min_m": 0.1086
+    "cloak_to_legs_min_m": 0.1086,
+    "hair_into_skin_worst": {
+     "lock.side.R0": 3,
+     "lock.side.L1": 1,
+     "lock.tail": 2,
+     "frame": 1
+    }
    },
    "gait": {
     "L": {
@@ -325,6 +339,19 @@
    "bounce_m": 0.014,
    "rule": "zero-slip: in flat stance (before toe-off) the ball-contact sole vertex moves back at exactly the ground speed (slip = max deviation from that line), with no lift and no lateral drift"
   }
+ },
+ "hair_into_skin": {
+  "rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates (every other idle frame, every walk frame); gate: no clip exceeds the rest pose",
+  "free_verts": 696,
+  "rest": 6,
+  "rest_by_part": {
+   "lock.side.R0": 3,
+   "lock.side.L1": 1,
+   "lock.tail": 2
+  },
+  "idle": 6,
+  "walk": 6,
+  "pass": true
  },
  "bones": [
   {
@@ -1022,14 +1049,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0181,
-    -0.1472,
-    1.6431
+    0.0176,
+    -0.1476,
+    1.6515
    ],
    "tail": [
-    0.0185,
-    -0.1491,
-    1.6276
+    0.0171,
+    -0.1514,
+    1.6337
    ]
   },
   {
@@ -1037,14 +1064,14 @@
    "parent": "hair_fringe.0",
    "deform": true,
    "head": [
-    0.0185,
-    -0.1491,
-    1.6276
+    0.0171,
+    -0.1514,
+    1.6337
    ],
    "tail": [
-    0.0185,
-    -0.1508,
-    1.612
+    0.0174,
+    -0.1546,
+    1.6158
    ]
   },
   {
@@ -1052,14 +1079,14 @@
    "parent": "hair_fringe.1",
    "deform": true,
    "head": [
-    0.0185,
-    -0.1508,
-    1.612
+    0.0174,
+    -0.1546,
+    1.6158
    ],
    "tail": [
-    0.0184,
-    -0.1518,
-    1.5964
+    0.0187,
+    -0.1563,
+    1.5977
    ]
   },
   {
@@ -1067,14 +1094,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.115,
-    -0.0408,
-    1.6081
+    0.1173,
+    -0.0388,
+    1.6055
    ],
    "tail": [
-    0.1213,
-    -0.0381,
-    1.5949
+    0.1187,
+    -0.0474,
+    1.5963
    ]
   },
   {
@@ -1082,14 +1109,14 @@
    "parent": "hair_side.L.0",
    "deform": true,
    "head": [
-    0.1213,
-    -0.0381,
-    1.5949
+    0.1187,
+    -0.0474,
+    1.5963
    ],
    "tail": [
-    0.1279,
-    -0.0355,
-    1.5819
+    0.1216,
+    -0.0551,
+    1.589
    ]
   },
   {
@@ -1097,14 +1124,14 @@
    "parent": "hair_side.L.1",
    "deform": true,
    "head": [
-    0.1279,
-    -0.0355,
-    1.5819
+    0.1216,
+    -0.0551,
+    1.589
    ],
    "tail": [
-    0.135,
-    -0.0331,
-    1.569
+    0.127,
+    -0.0601,
+    1.5786
    ]
   },
   {
@@ -1112,14 +1139,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.0801,
-    -0.0407,
-    1.6078
+    -0.0821,
+    -0.039,
+    1.6065
    ],
    "tail": [
-    -0.0863,
-    -0.0378,
-    1.5946
+    -0.0828,
+    -0.0467,
+    1.5967
    ]
   },
   {
@@ -1127,14 +1154,14 @@
    "parent": "hair_side.R.0",
    "deform": true,
    "head": [
-    -0.0863,
-    -0.0378,
-    1.5946
+    -0.0828,
+    -0.0467,
+    1.5967
    ],
    "tail": [
-    -0.0927,
-    -0.0347,
-    1.5815
+    -0.0868,
+    -0.0531,
+    1.5877
    ]
   },
   {
@@ -1142,14 +1169,14 @@
    "parent": "hair_side.R.1",
    "deform": true,
    "head": [
-    -0.0927,
-    -0.0347,
-    1.5815
+    -0.0868,
+    -0.0531,
+    1.5877
    ],
    "tail": [
-    -0.1002,
-    -0.0327,
-    1.5688
+    -0.0915,
+    -0.0599,
+    1.5783
    ]
   },
   {
@@ -1157,14 +1184,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0187,
-    0.0268,
-    1.5217
+    0.0176,
+    0.0267,
+    1.5207
    ],
    "tail": [
-    0.0175,
-    0.0317,
-    1.5025
+    0.0174,
+    0.0398,
+    1.4976
    ]
   },
   {
@@ -1172,14 +1199,14 @@
    "parent": "hair_tail.0",
    "deform": true,
    "head": [
-    0.0175,
-    0.0317,
-    1.5025
+    0.0174,
+    0.0398,
+    1.4976
    ],
    "tail": [
-    0.0174,
-    0.0362,
-    1.4831
+    0.0177,
+    0.0496,
+    1.4728
    ]
   },
   {
@@ -1187,14 +1214,14 @@
    "parent": "hair_tail.1",
    "deform": true,
    "head": [
-    0.0174,
-    0.0362,
-    1.4831
+    0.0177,
+    0.0496,
+    1.4728
    ],
    "tail": [
-    0.0174,
-    0.0394,
-    1.4634
+    0.0195,
+    0.0585,
+    1.4479
    ]
   },
   {
@@ -1696,7 +1723,7 @@
   "grip_at_m_from_butt": 1.1136
  },
  "tris": {
-  "model": 48137,
+  "model": 48766,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1705,20 +1732,21 @@
  },
  "digest": {
   "parts": {
-   "bake_normal": "01130b2072d72ae8",
-   "bake_ao": "201732e007e7a296",
-   "ao_lifted": "603690cda56f51d9",
-   "geometry_colour_uv": "e69213d5dd9af0f6",
-   "weights": "b54594b332fb1d4c",
-   "keys": "44a7788d734b7318",
-   "clip_samples": "8b97fce24073cc5e"
+   "bake_hair_normal": "efa26e1d93ec6233",
+   "bake_normal": "f330da1ba411bc75",
+   "bake_ao": "aa8c261e701324d7",
+   "ao_lifted": "6962f3cf3e594f2a",
+   "geometry_colour_uv": "89948e2eaaa7e288",
+   "weights": "770b0eaae64ffd38",
+   "keys": "ae3e17ecd6ee11f7",
+   "clip_samples": "2ad4dfab35da1028"
   },
-  "combined": "7bdbbaf7e1cd6d77"
+  "combined": "8345bdd864fdafe1"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 11430372,
-  "seconds": 2.1,
+  "bytes": 11940108,
+  "seconds": 1.4,
   "carries": {
    "materials": [
     {
@@ -1769,7 +1797,7 @@
     88
    ]
   },
-  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02969"
+  "structure": "armature + skinned 'wren' (body, opaque) + skinned 'wren_pitchfork' (own node, bone 'pitchfork'); material Col x AO + normal map; natural scale (metres); report-only cell fit 1.02747"
  },
  "skins": {
   "default": {
@@ -1805,9 +1833,16 @@
     },
     "liner": {
      "rgb": [
-      52,
+      98,
+      64,
+      46
+     ]
+    },
+    "lash": {
+     "rgb": [
       34,
-      26
+      22,
+      16
      ]
     },
     "brow": {
@@ -1831,6 +1866,20 @@
       46
      ]
     },
+    "eye_iris_dark": {
+     "rgb": [
+      72,
+      45,
+      28
+     ]
+    },
+    "eye_hilite": {
+     "rgb": [
+      250,
+      244,
+      232
+     ]
+    },
     "eye_pupil": {
      "rgb": [
       30,
@@ -1850,6 +1899,34 @@
       70,
       46,
       31
+     ]
+    },
+    "hair_root": {
+     "rgb": [
+      82,
+      55,
+      37
+     ]
+    },
+    "hair_ring": {
+     "rgb": [
+      150,
+      108,
+      76
+     ]
+    },
+    "hair_tip": {
+     "rgb": [
+      120,
+      83,
+      56
+     ]
+    },
+    "hair_inner": {
+     "rgb": [
+      56,
+      38,
+      27
      ]
     },
     "hair_tie": {
@@ -2142,9 +2219,16 @@
     },
     "liner": {
      "rgb": [
-      52,
+      98,
+      64,
+      46
+     ]
+    },
+    "lash": {
+     "rgb": [
       34,
-      26
+      22,
+      16
      ]
     },
     "brow": {
@@ -2168,6 +2252,20 @@
       46
      ]
     },
+    "eye_iris_dark": {
+     "rgb": [
+      72,
+      45,
+      28
+     ]
+    },
+    "eye_hilite": {
+     "rgb": [
+      250,
+      244,
+      232
+     ]
+    },
     "eye_pupil": {
      "rgb": [
       30,
@@ -2187,6 +2285,34 @@
       70,
       46,
       31
+     ]
+    },
+    "hair_root": {
+     "rgb": [
+      82,
+      55,
+      37
+     ]
+    },
+    "hair_ring": {
+     "rgb": [
+      150,
+      108,
+      76
+     ]
+    },
+    "hair_tip": {
+     "rgb": [
+      120,
+      83,
+      56
+     ]
+    },
+    "hair_inner": {
+     "rgb": [
+      56,
+      38,
+      27
      ]
     },
     "hair_tie": {
@@ -2451,17 +2577,17 @@
    },
    "region_faces": {
     "wren": {
-     "skin": 12842,
-     "skin_shadow": 480,
+     "skin": 12767,
+     "skin_shadow": 563,
      "lips": 124,
      "mouth": 146,
-     "liner": 353,
-     "brow": 180,
-     "eye_sclera": 160,
-     "eye_iris": 64,
-     "eye_pupil": 32,
-     "hair": 3280,
-     "hair_shade": 2580,
+     "liner": 88,
+     "brow": 248,
+     "eye_sclera": 224,
+     "eye_iris": 238,
+     "eye_pupil": 428,
+     "hair": 801,
+     "hair_shade": 1479,
      "hair_tie": 40,
      "shirt": 2200,
      "sleeve_roll": 168,
@@ -2490,7 +2616,14 @@
      "crystal": 40,
      "cord": 185,
      "bracer": 280,
-     "bracer_strap": 244
+     "bracer_strap": 244,
+     "lash": 270,
+     "eye_iris_dark": 128,
+     "eye_hilite": 84,
+     "hair_root": 432,
+     "hair_ring": 267,
+     "hair_tip": 413,
+     "hair_inner": 1642
     },
     "wren_pitchfork": {
      "wood": 227,
@@ -2500,14 +2633,14 @@
      "ferrule": 40
     }
    },
-   "geometry_colour_uv_digest": "66346714ae816183"
+   "geometry_colour_uv_digest": "56b2330365b58245"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "e69213d5dd9af0f6",
-   "default_digest_after_restore": "e69213d5dd9af0f6"
+   "default_digest_before": "89948e2eaaa7e288",
+   "default_digest_after_restore": "89948e2eaaa7e288"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 88.5
+ "seconds": 98.5
 }

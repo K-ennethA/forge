@@ -9,7 +9,9 @@ FORK_INFO = {"total_len": round(float(FKL["top"]), 4), "x_height": round(float(F
 REG = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow", "eye_sclera", "eye_iris", "eye_pupil", "hair", "hair_shade",
        "hair_tie", "shirt", "sleeve_roll", "vest", "trousers", "trousers_shade", "wrap", "wrap_lace", "boot", "boot_cuff",
        "boot_sole", "strap", "brass", "brass_dark", "rope", "rope_dark", "pouch", "pouch_flap", "cloak", "cloak_worn",
-       "cloak_lining", "patch_a", "patch_b", "patch_c", "stitch", "crystal", "cord", "bracer", "bracer_strap"]
+       "cloak_lining", "patch_a", "patch_b", "patch_c", "stitch", "crystal", "cord", "bracer", "bracer_strap",
+       # v3: the anime eye (upper lash band, iris lid shadow, highlight dot) + the painted hair tiers + the dark inner cap
+       "lash", "eye_iris_dark", "eye_hilite", "hair_root", "hair_ring", "hair_tip", "hair_inner"]
 REG_F = ["wood", "wood_dark", "grip", "grip_dark", "ferrule"]
 # hidden skin removed: the scalp under the cap, the feet inside the boot shells, the shins inside the boot shafts
 _cdom = np.array([MB[j] for j in np.argmax(CW, 1)], dtype=object)
@@ -141,12 +143,14 @@ dvec = landmark - anchor
 report["facing"] = {"rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
-HAIR_REG_IDS = [REG.index(r) for r in ("hair", "hair_shade", "hair_tie")]
+HAIR_REGS = ("hair", "hair_shade", "hair_tie", "hair_root", "hair_ring", "hair_tip", "hair_inner")
+HAIR_REG_IDS = [REG.index(r) for r in HAIR_REGS]
+low["conquest_hair_uv_strip"] = float(1.0 - HAIR_UV_STRIP)
 _hairf = np.isin(rid, HAIR_REG_IDS)
 # v2 FACE ZONE: the body's skin faces (skin / shadow shapes / lips / mouth / liner / brow) whose every vertex is head- or
 # neck-dominant -- the face, ears and the bare neck down to the collar (a faceted neck under a smooth face read as a seam
 # at the jaw); the torso / arms / legs stay v1
-FACE_SKIN = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow"]
+FACE_SKIN = ["skin", "skin_shadow", "lips", "mouth", "liner", "brow", "lash"]
 _hdom = np.array([MB[j] in ("head", "neck_01") for j in np.argmax(CW, 1)])
 _facez = np.zeros(len(rid), bool)
 _facez[:len(CF)] = np.array([bool(_hdom[f].all()) for f in CF]) & np.isin(np.array(reg), FACE_SKIN)
@@ -408,7 +412,7 @@ px[_strip_n, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 # only the SKIN keeps the baked normal detail (the MPFB high's smooth face / hands); every garment / part face gets flat
 # normal texels: the parts have no high detail (their high IS the low) and the body under the painted clothes carries the
 # naked MPFB anatomy (pectorals, navel, knees) that the shirt / vest / trousers must not show
-_skin_ids = [REG.index(r) for r in ("skin", "skin_shadow", "lips", "mouth", "liner", "brow")]
+_skin_ids = [REG.index(r) for r in FACE_SKIN]
 me.calc_loop_triangles()
 _ntq = len(me.loop_triangles)
 _ltl = np.empty(_ntq * 3, dtype=np.int64); me.loop_triangles.foreach_get("loops", _ltl); _ltl = _ltl.reshape(-1, 3)
@@ -439,6 +443,185 @@ _flatn = ~_skinmask.reshape(-1)
 px[_flatn, :3] = (0.5, 0.5, 1.0); img_n.pixels.foreach_set(px.ravel())
 bstats["normal_skin_only"] = {"rule": "normal texels outside the (dilated) skin-region UV triangles set flat",
                               "skin_texels_pct": round(100.0 * float(_skinmask.mean()), 2)}
+# ---- v3 SMOOTH-PROXY hair normal bake (the anime one-volume trick, done inside the flat-shaded contract like the v2 face):
+# (1) the PROXY: a sphere grid about the hairdo's centre whose radius per direction is the hair's outer hull (rays from
+#     outside against the hair faces), smoothed as an upper envelope (r <- max(hull, neighbour mean), HAIR_PROXY[2] passes)
+#     and padded: a smooth egg enclosing the whole hairdo;
+# (2) every hair vertex takes the proxy's normal at its nearest proxy point (barycentric on the proxy's vertex normals:
+#     the data-transfer "nearest face interpolated" rule); a HIGH copy of the hair faces carries those as custom normals;
+# (3) Cycles bakes the high's shading normal onto the low's FLAT hair facets (tangent frames of the flat faces, like the v2
+#     face zone): the hair strip of the normal map now turns every flat facet toward the proxy's smooth normal, so the
+#     hairdo lights as one soft volume while every face stays flat-shaded.
+HAIR_BAKE = {"enabled": HAIR_PROXY is not None}
+if HAIR_PROXY is not None:
+    t_hb = time.time()
+    _Vl = OBJ["main"]["V"]; _Fl = OBJ["main"]["F"]
+    _hfi = np.nonzero(_hairf)[0]
+    _hvi = np.unique(np.concatenate([np.array(_Fl[i]) for i in _hfi]))
+    _hmap = -np.ones(len(_Vl), dtype=np.int64); _hmap[_hvi] = np.arange(len(_hvi))
+    _HV = _Vl[_hvi]
+    _HF = [[int(_hmap[i]) for i in _Fl[k]] for k in _hfi]
+    _bvh_hair_only = BVHTree.FromPolygons(_HV.tolist(), _HF)
+    _cen = 0.5 * (_HV.min(0) + _HV.max(0))
+    _nlon, _nlat, _iters, _pad = HAIR_PROXY
+    _lats = np.radians(np.linspace(-90.0, 90.0, _nlat + 2)[1:-1]); _lons = 2 * np.pi * np.arange(_nlon) / _nlon
+    _dirs = [np.array([0.0, 0.0, -1.0])] + [np.array([math.cos(la) * math.sin(lo), -math.cos(la) * math.cos(lo), math.sin(la)])
+                                            for la in _lats for lo in _lons] + [np.array([0.0, 0.0, 1.0])]
+    _dirs = np.array(_dirs)
+    _nd = len(_dirs)
+    _hull = np.full(_nd, np.nan)
+    for i, d_ in enumerate(_dirs):
+        h_ = _bvh_hair_only.ray_cast(Vector(_cen + d_ * 0.5), Vector(-d_), 0.5)
+        if h_[0] is not None:
+            _hull[i] = 0.5 - h_[3]
+    # the sphere grid's neighbours (longitude wraps; the poles join the first / last latitude ring)
+    _vid = lambda j, i: 1 + j * _nlon + (i % _nlon)
+    _nbr = [[] for _ in range(_nd)]
+    for j in range(_nlat):
+        for i in range(_nlon):
+            k = _vid(j, i)
+            _nbr[k] += [_vid(j, i - 1), _vid(j, i + 1)]
+            _nbr[k].append(_vid(j - 1, i) if j > 0 else 0)
+            _nbr[k].append(_vid(j + 1, i) if j < _nlat - 1 else _nd - 1)
+    _nbr[0] = [_vid(0, i) for i in range(_nlon)]; _nbr[_nd - 1] = [_vid(_nlat - 1, i) for i in range(_nlon)]
+    # + every hair vertex's own radius into its nearest grid direction (the rays miss thin flicked tips between samples)
+    _vd = (_HV - _cen) / np.maximum(np.linalg.norm(_HV - _cen, axis=1), 1e-12)[:, None]
+    _vg = np.argmax(_vd @ _dirs.T, axis=1)
+    _vr = np.linalg.norm(_HV - _cen, axis=1)
+    for g_, r_ in zip(_vg, _vr):
+        _hull[g_] = r_ if np.isnan(_hull[g_]) else max(_hull[g_], r_)
+    _has = ~np.isnan(_hull)
+    _r = np.where(_has, _hull, np.nanmean(_hull))
+    for _ in range(_iters):
+        _rs = np.array([_r[n_].mean() for n_ in _nbr])
+        _r = np.where(_has, np.maximum(_hull, _rs), _rs)
+    _r = _r + _pad
+    _PV = _cen + _dirs * _r[:, None]
+    _PF = [[0, _vid(0, i + 1), _vid(0, i)] for i in range(_nlon)]
+    for j in range(_nlat - 1):
+        for i in range(_nlon):
+            _PF.append([_vid(j, i), _vid(j, i + 1), _vid(j + 1, i + 1), _vid(j + 1, i)])
+    _PF += [[_nd - 1, _vid(_nlat - 1, i), _vid(_nlat - 1, i + 1)] for i in range(_nlon)]
+    _PN = VP.vertex_normals(_PV, _PF)
+    if float(np.mean(np.einsum("ij,ij->i", _PN, _PV - _cen))) < 0:
+        _PN = -_PN
+    _PT = [[f[0], f[k], f[k + 1]] for f in _PF for k in range(1, len(f) - 1)]
+    _bvh_px = BVHTree.FromPolygons(_PV.tolist(), _PT)
+
+    def proxy_normal(P_):
+        out_ = np.zeros((len(P_), 3))
+        for i, p_ in enumerate(P_):
+            q_, _, ti_, _ = _bvh_px.find_nearest(Vector(p_))
+            a_, b_, c_ = (_PV[j] for j in _PT[ti_])
+            v0, v1, v2 = b_ - a_, c_ - a_, np.array(q_) - a_
+            d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+            den_ = max(d00 * d11 - d01 * d01, 1e-20)
+            bv_ = (d11 * d20 - d01 * d21) / den_; bw_ = (d00 * d21 - d01 * d20) / den_
+            bb_ = np.clip([1.0 - bv_ - bw_, bv_, bw_], 0.0, 1.0); bb_ /= bb_.sum()
+            out_[i] = unit(bb_[0] * _PN[_PT[ti_][0]] + bb_[1] * _PN[_PT[ti_][1]] + bb_[2] * _PN[_PT[ti_][2]])
+        return out_
+
+    _HN = proxy_normal(_HV)
+    HAIRH = new_obj(UNIT + "_hairhigh", _HV, _HF)
+    HAIRH.data.shade_smooth()
+    HAIRH.data.normals_split_custom_set_from_vertices([tuple(n_) for n_ in _HN])
+    HAIRH.data.update()
+    img_hn = bpy.data.images.new(UNIT + "_hairnormal", RN, RN, alpha=False)
+    img_hn.colorspace_settings.name = "Non-Color"; img_hn.generated_color = (0.0, 0.0, 0.0, 1.0)
+    th_ = nt.nodes.new("ShaderNodeTexImage"); th_.image = img_hn; th_.location = (-900, -900)
+    nt.nodes.active = th_
+    me.shade_flat()                                     # the hair (every face) bakes against its FLAT facets
+    for o in scene.objects:
+        o.select_set(o in (HAIRH, low))
+    bpy.context.view_layer.objects.active = low
+    scene.cycles.samples = 1
+    _rh = bpy.ops.object.bake(type="NORMAL", use_selected_to_active=True, cage_extrusion=HAIR_BAKE_CAGE[0],
+                              max_ray_distance=HAIR_BAKE_CAGE[1], margin=16, use_clear=False)
+    phn = np.empty(RN * RN * 4, dtype=np.float32); img_hn.pixels.foreach_get(phn); phn = phn.reshape(-1, 4)
+    _covh = (phn[:, 2] > 0.25) & _strip_n
+    DIG["bake_hair_normal"] = sha(np.clip(np.rint(phn[:, :3] * 255.0), 0, 255).astype(np.uint8))
+    np.save(os.path.join(tempfile.gettempdir(), "wren_hairnormal_%s.npy" % TAG), phn[:, :3])
+    px[_covh, :3] = phn[_covh, :3]
+    img_n.pixels.foreach_set(px.ravel())
+    # proof 1: the strip is no longer flat -- the tangent-space tilt of the covered hair texels
+    _nt3 = 2.0 * phn[_covh, :3] - 1.0
+    _tilt = np.degrees(np.arccos(np.clip(_nt3[:, 2] / np.maximum(np.linalg.norm(_nt3, axis=1), 1e-9), -1, 1)))
+    # proof 2: decode the baked texel at every hair triangle's centroid with that flat triangle's own tangent frame
+    # (T, B from the UV gradients, N = the facet normal; B = sign x N x T) and compare with the proxy normal there; and
+    # the facet-to-proxy angle the map corrects (what the flat facets alone would show)
+    me.calc_loop_triangles()
+    _nq = len(me.loop_triangles)
+    _ll = np.empty(_nq * 3, dtype=np.int64); me.loop_triangles.foreach_get("loops", _ll); _ll = _ll.reshape(-1, 3)
+    _lp = np.empty(_nq, dtype=np.int64); me.loop_triangles.foreach_get("polygon_index", _lp)
+    _lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", _lv)
+    _uvh = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", _uvh); _uvh = _uvh.reshape(-1, 2)
+    _dec, _fac, _adj = [], [], []
+    for t_i in np.nonzero(_hairf[_lp])[0]:
+        P3_ = _Vl[_lv[_ll[t_i]]]; U3_ = _uvh[_ll[t_i]]
+        e1, e2 = P3_[1] - P3_[0], P3_[2] - P3_[0]; d1, d2 = U3_[1] - U3_[0], U3_[2] - U3_[0]
+        Nf_ = np.cross(e1, e2)
+        det_ = d1[0] * d2[1] - d2[0] * d1[1]
+        if np.linalg.norm(Nf_) < 1e-12 or abs(det_) < 1e-14:
+            continue
+        Nf_ = unit(Nf_)
+        Tt_ = (e1 * d2[1] - e2 * d1[1]) / det_; Bt_ = (e2 * d1[0] - e1 * d2[0]) / det_
+        Tt_ = unit(Tt_ - Nf_ * float(Nf_ @ Tt_)); Bt_ = (1.0 if float(np.cross(Nf_, Tt_) @ Bt_) >= 0 else -1.0) * np.cross(Nf_, Tt_)
+        uc_ = U3_.mean(0)
+        ix_, iy_ = min(RN - 1, int(uc_[0] * RN)), min(RN - 1, int(uc_[1] * RN))
+        if not _covh[iy_ * RN + ix_]:
+            continue
+        tn_ = 2.0 * px[iy_ * RN + ix_, :3] - 1.0
+        nw_ = unit(Tt_ * tn_[0] + Bt_ * tn_[1] + Nf_ * tn_[2])
+        np_ = proxy_normal(P3_.mean(0)[None])[0]
+        _dec.append((math.degrees(math.acos(float(np.clip(nw_ @ np_, -1, 1)))), float(Nf_ @ np_)))
+        _fac.append(math.degrees(math.acos(float(np.clip(Nf_ @ np_, -1, 1)))))
+    # proof 3: across every edge shared by two hair faces, the facet normals' angle vs the proxy normals' angle at the two
+    # face centroids (the dihedral a flat render shows vs the one the baked shading shows)
+    _hfc = {k: _Vl[_Fl[k]].mean(0) for k in _hfi}
+    _pnc = dict(zip(_hfi, proxy_normal(np.array([_hfc[k] for k in _hfi]))))
+    _fnn = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _fnn); _fnn = _fnn.reshape(-1, 3)
+    _eh = {}
+    for k in _hfi:
+        f_ = _Fl[k]
+        for j in range(len(f_)):
+            _eh.setdefault((min(f_[j], f_[(j + 1) % len(f_)]), max(f_[j], f_[(j + 1) % len(f_)])), []).append(k)
+    _dih_f, _dih_p = [], []
+    for e_, ks_ in _eh.items():
+        if len(ks_) == 2:
+            a_, b_ = ks_
+            _dih_f.append(math.degrees(math.acos(float(np.clip(_fnn[a_] @ _fnn[b_], -1, 1)))))
+            _dih_p.append(math.degrees(math.acos(float(np.clip(_pnc[a_] @ _pnc[b_], -1, 1)))))
+    nt.nodes.remove(th_)
+    bpy.data.images.remove(img_hn)
+    _hm = HAIRH.data
+    bpy.data.objects.remove(HAIRH, do_unlink=True); bpy.data.meshes.remove(_hm)
+    pct = lambda a_, q_: round(float(np.percentile(a_, q_)), 2) if len(a_) else None
+    HAIR_BAKE.update({
+        "result": sorted(_rh), "seconds": round(time.time() - t_hb, 1),
+        "proxy": {"grid_lon_lat": [_nlon, _nlat], "smoothing_passes": _iters, "pad_m": _pad, "centre": _cen.round(4).tolist(),
+                  "hull_dirs_hit": int(_has.sum()), "dirs": _nd, "radius_m_min_max": [round(float(_r.min()), 4), round(float(_r.max()), 4)]},
+        "cage_extrusion_m": HAIR_BAKE_CAGE[0], "max_ray_m": HAIR_BAKE_CAGE[1],
+        "hair_verts": int(len(_HV)), "hair_faces": int(len(_HF)),
+        "strip_texels_covered": int(_covh.sum()),
+        "strip_texels_not_flat_pct(dev>0.05)": round(100.0 * float((np.linalg.norm(phn[_covh, :3] - np.array([0.5, 0.5, 1.0]), axis=1) > 0.05).mean()), 1),
+        "tangent_tilt_deg_p10_p50_p90": [pct(_tilt, 10), pct(_tilt, 50), pct(_tilt, 90)],
+        "decode_vs_proxy_deg_p50_p90_p99": {
+            "representable(facet.proxy>0.2)": [pct([d_ for d_, c_ in _dec if c_ > 0.2], q_) for q_ in (50, 90, 99)],
+            "all": [pct([d_ for d_, c_ in _dec], q_) for q_ in (50, 90, 99)],
+            "note": "a tangent-space map can only turn a facet within its own hemisphere: underside facets (facing the "
+                    "scalp, painted hair_shade) cannot take a proxy normal > 90 deg away"},
+        "decode_samples": len(_dec), "representable_pct": round(100.0 * float(np.mean([c_ > 0.2 for _, c_ in _dec])), 1) if _dec else None,
+        "facet_vs_proxy_deg_p50_p90": [pct(_fac, 50), pct(_fac, 90)],
+        "neighbour_angle_deg_p50_p90": {"flat_facets": [pct(_dih_f, 50), pct(_dih_f, 90)], "baked_shading": [pct(_dih_p, 50), pct(_dih_p, 90)]},
+        "v2": "the strip was flat (0.5, 0.5, 1): every facet lit by its own face normal"})
+    # enclosure proof: a hair vertex is OUTSIDE the proxy when it lies farther from the centre than the proxy surface along
+    # the same ray (the ray from outside toward the centre meets the proxy at radius 0.5 - hit distance)
+    def _proxy_r(d_):
+        h_ = _bvh_px.ray_cast(Vector(_cen + d_ * 0.5), Vector(-d_), 0.5)
+        return 0.5 - h_[3] if h_[0] is not None else 0.0
+    HAIR_BAKE["proxy"]["hair_verts_outside"] = int(sum(1 for p_ in _HV if float(np.linalg.norm(p_ - _cen)) > _proxy_r(unit(p_ - _cen)) + 1e-6))
+    print("HAIRBAKE", json.dumps(HAIR_BAKE))
+bstats["hair_proxy_bake"] = HAIR_BAKE
 bstats["seconds"] = round(time.time() - t_bake, 1)
 report["bake"] = bstats
 DIG["bake_normal"] = bstats["pixel_sha"]["normal"]; DIG["bake_ao"] = bstats["pixel_sha"]["ao"]
@@ -530,24 +713,49 @@ def geometry_digest(obs):
 
 
 _ap2 = report["liner_proof"]["aperture_mm_L"]
-report["face_round"] = {
+report["face_round"] = {   # (the v2 face round vs v1; "live" = this build)
+    
     "spec": "review-log 2026-09-28 'Wren v2 face feedback': bigger eyes, bigger brows, lips paired / not pinched, face smoothing",
     "eyes_v1": {k: V1_FACE[k] for k in ("eye_dial", "aperture_mm_L", "open_w_mm", "open_h_mm")},
-    "eyes_v2": {"eye_dial": TARGETS["eyes/l-eye-scale-incr"], "lid_height2": TARGETS["eyes/l-eye-height2-incr"],
+    "eyes_live": {"eye_dial": TARGETS["eyes/l-eye-scale-incr"], "lid_height2": TARGETS["eyes/l-eye-height2-incr"],
                 "slit": TARGETS["expression/units/caucasian/eye-left-slit"], "aperture_mm_L": _ap2,
                 "open_w_mm": round(_ap2["outer"] + _ap2["inner"], 2), "open_h_mm": round(_ap2["up"] + _ap2["down"], 2),
                 "eyeball_r_mm": round(1000 * EYE["L"]["r"], 2)},
-    "brows_v1_mm": V1_FACE["brow_width_mm_measured"], "brows_v2_mm": report["brow"]["width_mm_measured"],
-    "brow_W_mm": {"v1": V1_FACE["brow_W_mm"], "v2": [w * 1000 for w in BROW_W]},
+    "brows_v1_mm": V1_FACE["brow_width_mm_measured"], "brows_live_mm": report["brow"]["width_mm_measured"],
+    "brow_W_mm": {"v1": V1_FACE["brow_W_mm"], "live": [w * 1000 for w in BROW_W]},
     "mouth_v1": {"mouth_compression": V1_FACE["mouth_compression"], "lip_pairing_x0": V1_FACE["lip_pairing_x0"]},
-    "mouth_v2": {"mouth_compression": TARGETS.get("expression/units/caucasian/mouth-compression", 0.0),
+    "mouth_live": {"mouth_compression": TARGETS.get("expression/units/caucasian/mouth-compression", 0.0),
                  "lip_seal": report.get("lip_seal"), "lip_pairing": report["mouth"]["lip_pairing_pre_cut"],
                  "lip_tint_mm": {"upper": LIP[1] * 1000, "lower": LIP[2] * 1000}, "mouth_line_mm": MOUTH_LINE[0] * 1000},
-    "face_zone_v1": V1_FACE["face_zone_visible"], "face_zone_v2": dict(report["face_zone"], **report.get("face_uv", {}),
+    "face_zone_v1": V1_FACE["face_zone_visible"], "face_zone_live": dict(report["face_zone"], **report.get("face_uv", {}),
                                                                        normal_ref=FACE_NORMAL_REF),
-    "tris_total": {"v1": V1_FACE["total_tris"], "v2": report["tris"]["total"]},
+    "tris_total": {"v1": V1_FACE["total_tris"], "live": report["tris"]["total"]},
     "body_untouched_rule": "every change is head / neck skin: targets are face dials, the seal / cuts / harvest are head-gated"}
 print("FACE_ROUND", json.dumps(report["face_round"]))
+_hair_tris = {g_: report["tris"].get(g_, 0) for g_ in ("lock", "hair_cap", "hairtie")}
+_ep = report["eye_proof"]
+report["fe_round"] = {
+    "spec": "review-log 2026-09-29 'Wren v3 feedback': Fire Emblem / anime read -- geometric eye enlargement + the anime eye "
+            "treatment; hair rebuilt to the clump stack (tiers, whorl flow, dark inner cap, smooth-proxy normal bake, painted tiers)",
+    "eyes": {"v2": {k: V2_FACE[k] for k in ("aperture_mm_L", "open_w_mm", "open_h_mm", "eyeball_r_mm", "iris_deg", "pupil_deg",
+                                             "iris_coverage_pct", "visible_opening_mm2", "eyeball_poke_verts", "liner_upper_mm")},
+             "v3": {"scale": report["eye_scale"], "aperture_mm_L": _ap2, "open_w_mm": round(_ap2["outer"] + _ap2["inner"], 2),
+                    "open_h_mm": round(_ap2["up"] + _ap2["down"], 2), "eyeball_r_mm": round(1000 * EYE["L"]["r"], 2),
+                    "iris_deg": EYE_IRIS_DEG, "pupil_deg": EYE_PUPIL_DEG,
+                    "iris_coverage_pct": {s: _ep[s]["iris_coverage_pct"] for s in "LR"},
+                    "visible_opening_mm2": {s: _ep[s]["visible_opening_mm2"] for s in "LR"},
+                    "highlight_visible_mm2": {s: _ep[s]["highlight_visible_mm2"] for s in "LR"},
+                    "eyeball_poke_verts": {s: _ep[s]["eyeball_poke_verts"] for s in "LR"},
+                    "lash": report["liner_proof"], "brows_mm": report["brow"]["width_mm_measured"]},
+             "opening_growth_pct": {"w": round(100.0 * ((_ap2["outer"] + _ap2["inner"]) / V2_FACE["open_w_mm"] - 1.0), 1),
+                                    "h": round(100.0 * ((_ap2["up"] + _ap2["down"]) / V2_FACE["open_h_mm"] - 1.0), 1)}},
+    "hair": {"v2": V2_FACE["hair"], "v3": {"clumps": HAIR_INFO["clumps"], "tiers": HAIR_INFO["tiers"], "by_kind": HAIR_INFO["by_kind"],
+                                           "tris": dict(_hair_tris, total=sum(_hair_tris.values())),
+                                           "crown_above_scalp_mm": HAIR_INFO["crown"]["crown_above_scalp_mm"],
+                                           "angel_ring": HAIR_INFO["angel_ring"], "paint_faces": HAIR_INFO["paint_faces"]}},
+    "tris_total": {"v2": V2_FACE["total_tris"], "v3": report["tris"]["total"]},
+    "body_untouched_rule": "every change is head skin (eye scale gated to the orbit), the eyeballs, or the hair parts"}
+print("FE_ROUND", json.dumps(report["fe_round"]))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

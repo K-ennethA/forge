@@ -11,6 +11,7 @@ views (comma list):
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (her left), back = on +Y.
 """
 import bpy, sys, os, math, json
+import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +50,19 @@ if "--palette-override" in argv:
                 if esc:
                     pal["regions"][nm]["emission_scale"] = float(esc)
             print("OVERRIDE", o.name, PAL.paint(o.data, pal) is not None)
+if "--hair-normal-flat" in argv:
+    # v3 A/B proof: the hair UV strip of the normal map set back to flat (0.5, 0.5, 1) in memory = the v2 hair shading
+    # (every facet lit by its own face normal) on the v3 geometry
+    for o in scene.objects:
+        if o.type == "MESH" and "conquest_hair_uv_strip" in o.keys():
+            u0 = float(o["conquest_hair_uv_strip"]) - 0.006
+            for img in bpy.data.images:
+                if img.name.endswith("_normal") and img.size[0] > 0:
+                    W_, H_ = img.size
+                    px_ = np.empty(W_ * H_ * 4, dtype=np.float32); img.pixels.foreach_get(px_); px_ = px_.reshape(H_, W_, 4)
+                    px_[:, int(u0 * W_):, :3] = (0.5, 0.5, 1.0)
+                    img.pixels.foreach_set(px_.ravel()); img.update()
+                    print("HAIR_NORMAL_FLAT", img.name, int(u0 * W_))
 bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
@@ -132,7 +146,9 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          "bracer_front": (15.0, 6.0, 1.0), "fork_head": (10.0, 6.0, 1.0), "fork_full": (20.0, 4.0, 1.0),
          "boots_front": (0.0, 10.0, 1.0),
          # v2 face round: the mouth (lip pairing) front + three-quarter
-         "mouth": (0.0, 2.0, 1.0), "mouth_tq": (30.0, 4.0, 1.0), "mouth_side": (90.0, 2.0, 1.0)}
+         "mouth": (0.0, 2.0, 1.0), "mouth_tq": (30.0, 4.0, 1.0), "mouth_side": (90.0, 2.0, 1.0),
+         # v3 FE round: the hair one-volume close-up (three-quarter from above the brow line) + the single-eye close-up
+         "hair_close": (35.0, 16.0, 0.78), "eye_close": (0.0, 1.0, 0.55), "eyes_v2frame": (0.0, 1.0, 1.0)}
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:
     cam_d.type = "PERSP"
@@ -151,7 +167,8 @@ for tag in VIEWS:
         if FOC is not None:
             b0, b1 = Vector(FOC[:3]), Vector(FOC[3:])
         else:
-            key = tag if tag in FOCUS else ("fork_full" if tag.startswith("fork") and tag not in FOCUS else tag.split("_")[0])
+            key = tag if tag in FOCUS else ("fork_full" if tag.startswith("fork") and tag not in FOCUS else
+                                             {"hair_close": "head", "eye_close": "eye_L"}.get(tag, tag.split("_")[0]))
             b0, b1 = (Vector(v) for v in FOCUS[key])
         ang, elev, fill = close[tag]
         aim((b0 + b1) / 2, max((b1 - b0).length / 2, 1e-3), ang, elev, fill)

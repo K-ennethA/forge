@@ -579,6 +579,39 @@ E_GROUPS = {"left_arm": group_edges(LARM_IDS, [n for n in RM if n.split(".")[0] 
             "torso_outfit": group_edges(TORSO_IDS, [n for n in RM if n.split(".")[0] in ("skirt", "sash", "pouch", "pouchflap", "knot")])}
 
 
+# v3 HAIR-INTO-HEAD gate: the chain-driven clump vertices (fringe / side / tail, follow-through weight > 0.05) inside the
+# posed head: the reference surface is the head / neck skin + the hair cap (the scalp skin under the cap is removed, so
+# skin alone has a hole there and its nearest-point sign flips at the hole's rim). Counted: > 1 mm inside the skin, or
+# > 2 mm under the cap's surface (the cap is 2.2-5.5 mm of dark hair tone: a clump dipping less than 2 mm into it shows
+# nothing). The rest pose is the baseline; a clip must not add any.
+_chain_j = [J[n] for n in DEFORM if n.startswith(("hair_fringe", "hair_side", "hair_tail"))]
+HAIR_FREE_IDS = np.nonzero(WM[:, _chain_j].sum(1) > 0.05)[0]
+_HEAD_TRIS = [list(f) for f in OBJ["main"]["F"][_bf[0]:_bf[1]] if all(domM[i] in ("head", "neck_01") for i in f)]
+_HEAD_TRIS = [[f[0], f[k], f[k + 1]] for f in _HEAD_TRIS for k in range(1, len(f) - 1)]
+_NSKIN = len(_HEAD_TRIS)
+_cf = OBJ["main"]["FRANGE"]["hair_cap"]
+_HEAD_TRIS += [[f[0], f[k], f[k + 1]] for f in OBJ["main"]["F"][_cf[0]:_cf[1]] for k in range(1, len(f) - 1)]
+
+
+_PART_OF = {}
+for n_, (a_, b_) in RM.items():
+    for i in range(a_, b_):
+        _PART_OF[i] = n_
+
+
+def hair_into_skin(C_, by_part=False):
+    bvh_h = BVHTree.FromPolygons(C_.tolist(), _HEAD_TRIS)
+    n_, parts_ = 0, {}
+    for i in HAIR_FREE_IDS:
+        q_, nn_, ti_, _ = bvh_h.find_nearest(Vector(C_[i]))
+        if q_ is not None and float((C_[i] - np.array(q_)) @ np.array(nn_)) < (-0.001 if ti_ < _NSKIN else -0.002):
+            n_ += 1
+            parts_[_PART_OF[int(i)]] = parts_.get(_PART_OF[int(i)], 0) + 1
+    return (n_, parts_) if by_part else n_
+
+
+HAIR_SKIN_REST, HAIR_SKIN_REST_PARTS = hair_into_skin(OBJ["main"]["V"], True)
+print("HAIRSKIN_REST", HAIR_SKIN_REST, json.dumps(HAIR_SKIN_REST_PARTS))
 samples = []
 clip_rep = {}
 grip_rel = np.linalg.inv(REST4["hand_r"]) @ G @ AXROT @ REST4["pitchfork"]
@@ -588,6 +621,7 @@ for cn, N in CLIP_N.items():
     minz, minz_f, root_off, grip_dev, wrist_max = 1e9, 1e9, 0.0, 0.0, 0.0
     tips, heels = {s: [] for s in "LR"}, {s: [] for s in "LR"}
     gate = {"cloak_crossings_" + g: 0 for g in E_GROUPS}
+    gate["hair_into_skin_verts_max"] = 0
     gate.update({"fork_shaft_through_cloak": 0,
             "fork_shaft_through_body": 0, "fork_to_cloak_min_m": 1e9, "fork_to_legs_min_m": 1e9, "cloak_to_legs_min_m": 1e9})
     for f in range(1, N + 2):
@@ -626,6 +660,9 @@ for cn, N in CLIP_N.items():
                 kc.insert(C[vi], i)
             kc.balance()
             gate["fork_to_cloak_min_m"] = min(gate["fork_to_cloak_min_m"], float(min(kc.find(p)[2] for p in ax_p)))
+            _hn, _hp = hair_into_skin(C, True)
+            if _hn > gate["hair_into_skin_verts_max"]:
+                gate["hair_into_skin_verts_max"], gate["hair_into_skin_worst"] = _hn, dict(_hp, frame=f)
             gate["cloak_to_legs_min_m"] = min(gate["cloak_to_legs_min_m"], float(min(kc.find(p)[2] for p in C[LEG_IDS[::4]])))
             kl = KDTree(len(LEG_IDS))
             for i, vi in enumerate(LEG_IDS):
@@ -680,6 +717,13 @@ for cn, N in CLIP_N.items():
     sys.stdout.flush()
 DIG["clip_samples"] = sha(np.concatenate(samples))
 rep["clips"] = clip_rep
+rep["hair_into_skin"] = {"rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside "
+                                 "the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates "
+                                 "(every other idle frame, every walk frame); gate: no clip exceeds the rest pose",
+                         "free_verts": int(len(HAIR_FREE_IDS)), "rest": HAIR_SKIN_REST, "rest_by_part": HAIR_SKIN_REST_PARTS,
+                         **{cn: clip_rep[cn]["gates"]["hair_into_skin_verts_max"] for cn in clip_rep},
+                         "pass": all(clip_rep[cn]["gates"]["hair_into_skin_verts_max"] <= HAIR_SKIN_REST for cn in clip_rep)}
+print("HAIRSKIN", json.dumps(rep["hair_into_skin"]))
 K.assign_action(rig, ACTS["idle"]); scene.frame_set(1)
 C1 = eval_coords(low); F1 = eval_coords(fko)
 FOCUS["fork_full"] = box(F1, 0.03)
@@ -687,6 +731,13 @@ _tt_ = F1[np.argsort(-F1[:, 2])[:40]]
 FOCUS["fork_head_idle"] = box(np.vstack([_tt_, _tt_ - np.array([0.0, 0.0, 0.38])]), 0.05)   # ("fork_head" stays the rest-pose box)
 _eyes1 = C1[np.concatenate([rng("eye.L"), rng("eye.R")])]
 FOCUS["eyes"] = [(_eyes1.min(0) - np.array([0.012, 0.0, 0.004])).tolist(), (_eyes1.max(0) + np.array([0.012, 0.0, 0.016])).tolist()]
+# v3: the v2-equivalent eyes frame (same centre, the extents shrunk by the eyeball growth) so v2 | v3 compare at one scale
+_dr = EYE["L"]["r"] - EYE_V2["L"]["r"]
+FOCUS["eyes_v2frame"] = [(np.array(FOCUS["eyes"][0]) + np.array([_dr, 0.0, _dr])).tolist(),
+                         (np.array(FOCUS["eyes"][1]) - np.array([_dr, 0.0, _dr])).tolist()]
+_eL = C1[rng("eye.L")]                                # v3: his left eye alone (the iris / lash / highlight close-up)
+_eLc = 0.5 * (_eL.min(0) + _eL.max(0))
+FOCUS["eye_L"] = [(_eLc - np.array([0.022, 0.0, 0.014])).tolist(), (_eLc + np.array([0.022, 0.0, 0.016])).tolist()]
 FOCUS["brows"] = [(_eyes1.min(0) - np.array([0.016, 0.0, 0.002])).tolist(), (_eyes1.max(0) + np.array([0.016, 0.0, 0.022])).tolist()]
 _mb0 = np.array(FOCUS["mouth"])                      # v2: the rest-pose mouth box's skin, re-boxed in the idle pose
 _mi = np.nonzero(np.all((V0m >= _mb0[0]) & (V0m <= _mb0[1]), axis=1))[0]
@@ -721,8 +772,10 @@ low["conquest_clips"] = list(CLIP_N)
 low["conquest_clip_status"] = ("idle (leaning a little on the planted pitchfork, breath, eased weight shift, chin-up look) + walk "
                                "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap); "
                                "cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); no attack / hit / death")
-low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (the hair's UV strip flat / white); no outline shells, no cel "
-                        "bands; the stylisation is DRAWN into the palette regions (shadow shapes, brows, liner contour)")
+low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (v3: the hair's UV strip carries the smooth-proxy normals -- the "
+                        "hairdo shades as one soft volume on flat facets -- with white AO); no outline shells, no cel bands; the "
+                        "stylisation is DRAWN into the palette regions (shadow shapes, brows, lash band, iris shade + highlight, "
+                        "hair tiers: roots / angel ring / tips / dark inner cap)")
 low["conquest_locomotion"] = "biped in flat boots: rest pose on the floor per contract (soles z 0), clips in place"
 low["conquest_pitchfork_grip"] = json.dumps(grip_rel.round(6).tolist())
 for m in list(bpy.data.materials):

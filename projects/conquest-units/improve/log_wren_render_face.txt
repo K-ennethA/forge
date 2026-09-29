@@ -1,24 +1,28 @@
-00:01.438  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
-00:03.938  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_portrait.png'
-00:04.484  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_face.png'
-00:04.906  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_eyes.png'
-00:05.375  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_brows.png'
-00:05.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth.png'
-00:06.406  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth_tq.png'
-00:06.875  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth_side.png'
-00:07.281  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_front.png'
-00:07.641  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_side.png'
-00:07.969  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_tq_back.png'
-00:08.281  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_back.png'
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_portrait.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_face.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_eyes.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_brows.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth_tq.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_mouth_side.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_front.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_side.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_tq_back.png
-WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v2_head_back.png
+00:01.562  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
+00:04.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_portrait.png'
+00:05.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_face.png'
+00:06.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eyes.png'
+00:06.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eyes_v2frame.png'
+00:07.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eye_close.png'
+00:08.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_brows.png'
+00:08.500  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_mouth.png'
+00:08.922  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_front.png'
+00:09.328  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_side.png'
+00:09.609  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_tq_back.png'
+00:09.890  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_back.png'
+00:10.187  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_hair_close.png'
+00:10.547  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_top.png'
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_portrait.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_face.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eyes.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eyes_v2frame.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_eye_close.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_brows.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_mouth.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_front.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_side.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_tq_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_back.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_hair_close.png
+WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v3_head_top.png
 Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
