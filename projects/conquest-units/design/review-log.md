@@ -1051,3 +1051,14 @@ line + seam (they diverged after the v5 bridge flattening), and/or the
 mouth sits too low / spans too tall a zone - re-place per the FE
 portrait proportions (mouth-to-nose distance measured off the Ashe
 portrait). Dispatch after the hair-decoupling defect lane lands.
+
+## 2026-09-29 — Wren v6 mouth addendum (artist verbatim)
+
+"and the actual line mouth doesnt fill the area"
+
+Addendum to the v6 reading: the drawn line is also TOO SMALL for the
+mouth area - it does not span the mouth region. The v6 fix is therefore
+both directions at once: tighten the oversized mouth area AND lengthen/
+scale the line so it fills it - the line's width relative to the face
+matches the FE portrait proportions (measure the Ashe portrait's mouth
+width vs face width and match that ratio).
