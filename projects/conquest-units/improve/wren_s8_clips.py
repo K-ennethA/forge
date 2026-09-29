@@ -603,7 +603,10 @@ def hair_into_skin(C_, by_part=False):
     bvh_h = BVHTree.FromPolygons(C_.tolist(), _HEAD_TRIS)
     n_, parts_ = 0, {}
     for i in HAIR_FREE_IDS:
-        q_, nn_, ti_, _ = bvh_h.find_nearest(Vector(C_[i]))
+        # v5.1: s5's tie-invariant nearest() (the pseudo-normal at a shared edge / vertex). The raw find_nearest took ONE
+        # tied face's normal for the sign test: a side-clump vertex 26.5 mm OUTSIDE the head, nearest a cap vertex shared
+        # by 5 faces, read -2.4 mm "inside" (the pseudo-normal: +20.7 mm) -- measured on the decoupled build, idle f21
+        q_, nn_, ti_, _ = nearest(bvh_h, C_[i])
         if q_ is not None and float((C_[i] - np.array(q_)) @ np.array(nn_)) < (-0.001 if ti_ < _NSKIN else -0.002):
             n_ += 1
             parts_[_PART_OF[int(i)]] = parts_.get(_PART_OF[int(i)], 0) + 1

@@ -23,9 +23,44 @@ add_part("hair_cap", V_, F_, R_, w="rigid:head")
 CAP_FEATHER_INFO = {"rule": "cap outer thickness x smoothstep(0, %.3f, height above the hairline), floor %.4f m" % HAIRLINE_FEATHER,
                     "full_thickness_m": HAIR_CAP_T, "inner_shell": HAIR_CAP_INNER, "region": "hair_inner (the dark inner cap)",
                     "rim_thickness_m_p50": round(float(np.median(_capt[_capfe < 0.05])), 4) if (_capfe < 0.05).any() else None}
-BVH_HAIR = comb_bvh({"hair_cap", "cloak", "cowl", "hood", "cord", "pendant", "clasp"})
+# v5.1 HAIR-FACE DECOUPLING (2): the hair's surroundings take the UNCUT body (BV / BF: the MPFB surface itself), never the
+# painted cut mesh CV / CF. The paint cuts (brows, liner, mouth line, shadow shapes) re-tessellate the same surface, so a
+# brow or smirk edit moved the nearest sub-triangle, its normal and location by float32 ULPs (measured: 1.2e-7 m at the
+# nape for a smirk edit), and the clump stack's discrete steps (the cut snaps, the sliver collapse) amplified that into
+# whole-vertex jumps. The uncut body is the same surface, tessellated by nothing but the MPFB base.
+_hv, _hf, _ho = [BV], [list(f) for f in BF], len(BV)
+for p in PARTS:
+    if p["name"].split(".")[0] in {"hair_cap", "cloak", "cowl", "hood", "cord", "pendant", "clasp"}:
+        _hv.append(p["V"]); _hf += [[i + _ho for i in f] for f in p["F"]]; _ho += len(p["V"])
+BVH_HAIR = BVHTree.FromPolygons(np.vstack(_hv).tolist(), _hf)
 BVH_CAP = BVHTree.FromPolygons(CAP_V.tolist(), CAP_F)
 EZ = float(EYE["L"]["c"][2])
+
+
+def nearest(bvh, p, dmax=None):
+    """v5.1 HAIR-FACE DECOUPLING: the tie-invariant BVHTree.find_nearest. When the query's nearest surface point lies on
+    an edge / vertex shared by several faces, their distances tie exactly and find_nearest returns whichever face the
+    tree's traversal meets first -- an order set by EVERY polygon in the tree. BVH_HAIR / BVH_BODY hold the whole body, so
+    a face edit (the v4 <-> v5 mouth profile, 0 hair inputs changed) re-balanced the tree, flipped which neighbour's
+    normal relax_path pushed a clump along, and the divergence grew through the clump stack (measured: same query, same
+    point, same distance, a different face + normal; one geometry-free triangle added 10 m away did the same to 30 of 33
+    clumps). Here the tie set is gathered exhaustively (find_nearest_range to the nearest distance + NEAREST_TIE) and
+    resolved canonically: location / face of the smallest (distance, normal, location, index) and, on a tie, the normal =
+    the normalised sum of the tied faces' normals in that order (the edge / vertex pseudo-normal). The result is a function
+    of the faces AT the nearest point only. Returns (location, normal, index, distance) like find_nearest."""
+    p = Vector(p)
+    h = bvh.find_nearest(p) if dmax is None else bvh.find_nearest(p, dmax)
+    if h[0] is None:
+        return h
+    ts_ = sorted(((float(d_), tuple(n_), tuple(q_), int(i_)) for q_, n_, i_, d_ in bvh.find_nearest_range(p, h[3] + NEAREST_TIE)))
+    if not ts_:
+        return h
+    d0_ = ts_[0][0]
+    ts_ = [t_ for t_ in ts_ if t_[0] <= d0_ + NEAREST_TIE]
+    d_, n_, q_, i_ = ts_[0]
+    if len(ts_) > 1:
+        n_ = tuple(unit(np.sum([t_[1] for t_ in ts_], axis=0)))
+    return Vector(q_), Vector(n_), i_, d_
 
 
 def hdir(psi, el):
@@ -71,7 +106,7 @@ def relax_path(C, margin, iters=6, fix=1):
         Cn[fix:-1] = C[fix:-1] + 0.35 * (0.5 * (C[fix - 1:-2] + C[fix + 1:]) - C[fix:-1])
         C = Cn
         for i in range(fix, len(C)):
-            q, n_, _, d = BVH_HAIR.find_nearest(Vector(C[i]))
+            q, n_, _, d = nearest(BVH_HAIR, C[i])
             if q is None:
                 continue
             q = np.array(q); n_ = np.array(n_)
@@ -128,7 +163,7 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
         _sway_k[0] += 1
         Tgd = np.gradient(Cd, axis=0)
         for i in range(1, len(Cd)):
-            q, _, _, _ = BVH_HAIR.find_nearest(Vector(Cd[i]))
+            q, _, _, _ = nearest(BVH_HAIR, Cd[i])
             nout = unit(Cd[i] - np.array(q)) if np.linalg.norm(Cd[i] - np.array(q)) > 1e-5 else unit(Cd[i] - HC)
             wdir = unit(np.cross(nout, unit(Tgd[i])))
             Cd[i] = Cd[i] + wdir * hand * CLUMP_SWAY * W * math.sin(2 * math.pi * sd[i]) * \
@@ -143,7 +178,7 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
     for i, p in enumerate(C):
         sfr = CLUMP_S[i]
         u_ = min(max((sfr - s_free) / (1.0 - s_free), 0.0), 1.0)
-        q, n_, _, _ = BVH_HAIR.find_nearest(Vector(p))
+        q, n_, _, _ = nearest(BVH_HAIR, p)
         nout = unit(p - np.array(q)) if np.linalg.norm(p - np.array(q)) > 1e-5 else unit(p - HC)
         wdir = np.cross(nout, unit(Tg[i]))
         hw = 0.5 * W * (root_k + (1.0 - root_k) * float(smoothstep(0.0, CLUMP_ROOT_GROW, sfr))) * (1.0 + CLUMP_BELLY * math.sin(math.pi * min(u_ / 0.35, 1.0))) * \
@@ -172,7 +207,7 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
         q_ = V_[f]
         nn = np.cross(q_[1] - q_[0], q_[2] - q_[0])
         c_ = q_.mean(0)
-        qq, _, _, _ = BVH_HAIR.find_nearest(Vector(c_))
+        qq, _, _, _ = nearest(BVH_HAIR, c_)
         sf_ = float(np.mean(svert[f])) / Lt
         if np.dot(unit(nn), unit(c_ - np.array(qq))) < -0.25:
             R_.append("hair_shade")
@@ -184,7 +219,7 @@ def clump(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=None,
              path=C[int(np.argmin(np.abs(sarc - s_leave))):])
     TIER_OF[name] = tier
     LOCK_INFO[name] = {"tier": tier, "width_mm": round(1000 * W, 1), "length": round(Lt, 3), "tip": C[-1].round(4).tolist(),
-                       "chain": chain, "min_clear": round(float(min(BVH_HAIR.find_nearest(Vector(p))[3] for p in C[1:])), 4)}
+                       "chain": chain, "min_clear": round(float(min(nearest(BVH_HAIR, p)[3] for p in C[1:])), 4)}
 
 
 WHORL_D = hdir(*HAIR_WHORL)
@@ -319,7 +354,7 @@ for p in PARTS:
     V_ = p["V"].copy()
     for i in range(len(V_)):
         for bvh_, clr_, skin_ in ((BVH_BODY, HAIR_CLEAR[0], True), (BVH_CAP_OUT, HAIR_CLEAR[1], False)):
-            q_, n_, fi_, d_ = bvh_.find_nearest(Vector(V_[i]), 0.03)
+            q_, n_, fi_, d_ = nearest(bvh_, V_[i], 0.03)
             if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")):
                 continue
             sd_ = float((V_[i] - np.array(q_)) @ np.array(n_))
@@ -503,4 +538,12 @@ HAIR_INFO = {"clumps": len(_clumps), "tiers": {t: sum(1 for n in TIER_OF.values(
 _tops = sorted(((float(p["V"][:, 2].max()), p["name"], round(float(p["s"][int(np.argmax(p["V"][:, 2]))] / p["L"]), 2) if "s" in p else None)
                 for p in PARTS if p["name"].startswith("lock") and p["name"] != "lock.ahoge"), reverse=True)[:5]
 HAIR_INFO["crown"]["top5_mm_part_sfrac"] = [[round(1000 * (z_ - Z_TOP), 1), n_, s_] for z_, n_, s_ in _tops]
+# v5.1 HAIR DIGEST: the exact bytes (float64 positions, faces, regions -- no rounding) of every hair part as s5 hands them to
+# the assembly; the hair-face decoupling proof compares it across builds with different FACE constants (wren_run.ps1).
+_hd = hashlib.sha256()
+for p in PARTS:
+    if p["name"].startswith(("lock.", "hair_cap", "hairtie")):
+        _hd.update(p["name"].encode()); _hd.update(np.ascontiguousarray(p["V"], dtype=np.float64).tobytes())
+        _hd.update(np.array([i for f in p["F"] for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); _hd.update("|".join(p["R"]).encode())
+DIG["hair_geometry"] = HAIR_INFO["digest_exact"] = _hd.hexdigest()[:16]
 print("HAIR", json.dumps(HAIR_INFO))

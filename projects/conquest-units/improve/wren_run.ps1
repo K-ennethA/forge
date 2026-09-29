@@ -16,6 +16,8 @@
 #   (saves nothing but its digest); every digest part must match, except the two bakes (+ ao_lifted = f(bake_ao)), which
 #   are held to the pinned tolerance gate (wren_bake_diff.py) if they differ. v3: + the hair proxy normal bake
 #   (bake_hair_normal), same gate.
+#   v5.1 (the hair-face decoupling): + a third process, the hair-stability probe (wren_build.py --hair-digest-only under a
+#   face edit); HAIRSTABLE = the build's, the twin's and the face-edited exact hair digests, all three must match.
 param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # never assign lowercase $p: PowerShell names are case-insensitive
@@ -27,9 +29,14 @@ $T0 = Get-Date
 if (-not $SkipBuild) {
   $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_build.txt" -RedirectStandardError "$I\log_wren_build.err"
   $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--digest-only","`"$I\log_wren_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_digest2.txt" -RedirectStandardError "$I\log_wren_digest2.err"
-  $null = $bp.Handle; $null = $dp.Handle
+  # v5.1 HAIR-STABILITY PROBE (the hair-face decoupling): sections 1-5 again under a deliberate FACE edit (the v4 mouth
+  # profile = a geometry edit + the v1 brows = a paint-cut edit next to the hairline); its exact hair digest must equal the
+  # build's (face edits never move approved hair).
+  $hp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--hair-digest-only","`"$I\log_wren_hairprobe.json`"","--set","`"LIP_PROFILE='line'`"","--set","`"BROW_W=(0.0064,0.0028)`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_hairprobe.txt" -RedirectStandardError "$I\log_wren_hairprobe.err"
+  $null = $bp.Handle; $null = $dp.Handle; $null = $hp.Handle
   $bp.WaitForExit(); $bwall = [math]::Round(((Get-Date)-$T0).TotalSeconds,1); "build exit=$($bp.ExitCode) wall_s=$bwall"
   $dp.WaitForExit(); "digest twin exit=$($dp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
+  $hp.WaitForExit(); "hair probe exit=$($hp.ExitCode)"
   $j1 = (Get-Content "$P\rigged\wren.json" -Raw | ConvertFrom-Json).digest
   $j2 = (Get-Content "$I\log_wren_digest2.json" -Raw | ConvertFrom-Json).digest
   $mismatch = @()
@@ -45,7 +52,9 @@ if (-not $SkipBuild) {
   } else {
     $line = "DIGEST build=$($j1.combined) twin=$($j2.combined) identical=FALSE mismatched=$($mismatch -join ',') gate=FAIL"
   }
-  $line; "$line | build_wall_s=$bwall" | Out-File -Encoding utf8 "$I\log_wren_digest.txt"
+  $h3 = (Get-Content "$I\log_wren_hairprobe.json" -Raw | ConvertFrom-Json).hair_geometry
+  $hline = "HAIRSTABLE build=$($j1.parts.hair_geometry) twin=$($j2.parts.hair_geometry) face_edited=$h3 identical=$(($j1.parts.hair_geometry -eq $j2.parts.hair_geometry) -and ($j1.parts.hair_geometry -eq $h3))"
+  $line; $hline; "$line | build_wall_s=$bwall`r`n$hline" | Out-File -Encoding utf8 "$I\log_wren_digest.txt"
 }
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""

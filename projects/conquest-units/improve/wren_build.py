@@ -3,6 +3,8 @@
     blender --background --factory-startup --python improve/wren_build.py -- \
         [--preview <out.blend>]          (body + outfit + hair + pitchfork + regions + palette only: no bake, no rig)
         [--digest-only <out.json>]       (the whole pipeline, saves NOTHING but the digest json: the twin determinism probe)
+        [--hair-digest-only <out.json>]  (v5.1: sections 1-5 only, saves NOTHING but the exact hair digest: the hair-face
+                                          decoupling probe -- run with a face --set, it must equal the build's hair_geometry)
         [--scratch <dir>]                (exploration: every output goes to <dir>, nothing in the project is written)
         [--set NAME=value ...]           (exploration override of a tunable constant; the committed build uses none)
 
@@ -411,6 +413,11 @@ FORK_ELBOW_POLE = (-0.55, -0.28, -0.80)   # the fork arm's elbow direction (IK p
 BAKE_RES = (2048, 1024)
 CUT_SNAP = 0.12
 SLIVER_AREA = 5e-8
+NEAREST_TIE = 1e-6                    # v5.1 hair-face decoupling (s5 nearest()): faces within this distance (m) of the
+                                      #   nearest one form the tie set resolved canonically (not by BVH traversal order):
+                                      #   the BVH's float32 coordinates at head height (z ~ 1.7 m) carry a 1.2e-7 m ULP, so
+                                      #   1 um (~8 ULP) covers two faces rounding one shared edge point; 3 orders under the
+                                      #   1.2 mm clump path margin, so no genuinely farther face ever joins
 ENCLOSED_DIRS = ((0, -1, 0), (0.7, -0.7, 0), (-0.7, -0.7, 0), (0, -0.7, 0.7), (0, -0.7, -0.7), (0.5, -0.5, 0.5),
                  (-0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, -0.5, -0.5), (0, -0.57, 0.82), (0.95, -0.3, 0), (-0.95, -0.3, 0))
                                       # v2 hidden-skin harvest: a face vertex is enclosed when rays toward ALL of these (front /
@@ -562,6 +569,13 @@ report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "name_status": "named 
 DIG = {}
 SECTIONS = ["wren_s1_body.py", "wren_s2_regions.py", "wren_s3_outfit.py", "wren_s4_cloak.py", "wren_s5_hair.py",
             "wren_s6_assemble.py", "wren_s7_rig.py", "wren_s8_clips.py"]
+HAIR_DIGEST_ONLY = argv[argv.index("--hair-digest-only") + 1] if "--hair-digest-only" in argv else None
 for sec_ in SECTIONS:
+    if HAIR_DIGEST_ONLY and sec_ == "wren_s6_assemble.py":
+        # v5.1 hair-stability probe (wren_run.ps1): sections 1-5 only (nothing saved), the exact hair digest -> json
+        json.dump({"hair_geometry": DIG["hair_geometry"], "overrides": OVERRIDES, "seconds": round(time.time() - T0, 1)},
+                  open(HAIR_DIGEST_ONLY, "w"), indent=1)
+        print("HAIRDIGEST", DIG["hair_geometry"], json.dumps(OVERRIDES))
+        sys.stdout.flush(); os._exit(0)
     _p = os.path.join(HERE, sec_)
     exec(compile(open(_p, encoding="utf-8").read(), _p, "exec"), globals())

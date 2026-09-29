@@ -168,3 +168,14 @@ and the delivery is gated against the declared budget, not a universal one.
 What was actually below the bar on the first protagonist: an asset in a
 HERO role delivered at crowd quality — a mismatch of tier to role, which
 this knob exists to prevent.
+
+- **`BVHTree.find_nearest` tie-breaks are tree-order-dependent** (wren
+  decoupling lane, 2026-09-29): when the nearest point lies on a shared
+  edge/vertex, the returned face depends on every polygon in the tree - a
+  control triangle added 10 m away changed 30 of 33 hair clumps. Where an
+  output must be stable across unrelated edits, use a tie-invariant
+  lookup: `find_nearest_range` within a 1e-6 m band, resolve in a fixed
+  order, and use the normalised SUM of tied faces' normals (also fixes
+  sign tests in gates). Query against uncut source surfaces, not painted
+  cut meshes (re-tessellation shifts sub-triangles by ULPs that discrete
+  passes amplify).
