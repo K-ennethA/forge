@@ -707,6 +707,177 @@ if HAIR_PROXY is not None:
         return 0.5 - h_[3] if h_[0] is not None else 0.0
     HAIR_BAKE["proxy"]["hair_verts_outside"] = int(sum(1 for p_ in _HV if float(np.linalg.norm(p_ - _cen)) > _proxy_r(unit(p_ - _cen)) + 1e-6))
     print("HAIRBAKE", json.dumps(HAIR_BAKE))
+# ---- v6 SMOOTH MOUTH PROXY (review-log 2026-09-29 "Wren v6 mouth feedback": nose to chin reads as smooth uninterrupted
+# skin, the drawn line the only feature). The mouth zone's normal texels are WRITTEN from a smooth proxy surface instead of
+# taken from the ray bake: the subdivided high's FRONT heightfield y(x, z), sampled by front rays every MOUTH_PROXY_GRID m
+# (valid: a front-facing hit within 2 mm of the local front -- not a ray through the seam's crack -- below the nose bottom
+# - MOUTH_PROXY[5]), Gaussian-smoothed (normalised convolution over the valid samples); its normal (dS/dx, -1, dS/dz) at
+# every texel's own surface point, encoded in that flat facet's tangent frame (T, B from the UV gradients, N = the facet
+# normal, B = sign x N x T: the frame the hair proof decodes with), blended with the ray-baked normal by W (1 over the zone
+# core, 0 past its MOUTH_PROXY[4] mm fade). The seam's rim sheets and crack, the bridge zone's edge kinks, the folded rims'
+# slivers and the flat facets all shade as ONE smooth surface, with no ray to miss. Only the normal map changes: the mesh,
+# the seam and the seal are untouched. (Tried and dropped, rendered: moving the high's own vertices to the smoothed
+# heightfield, and a bake-only proxy sheet in front of the high -- both left the texels of the low's steep sliver faces
+# baking wild normals (a bright blob and dark dots under the line) and the sheet's holes printed its outline.)
+MOUTH_PROXY_INFO = None
+if MOUTH_PROXY is not None and SEAM is not None:
+    t_mp = time.time()
+    _sg, _X0, _U0, _D0, _FD, _NC = [v_ * 1e-3 for v_ in MOUTH_PROXY]
+    _GS = 0.0005
+    _xs0 = float(SHIFT[0])                                  # build x = mesh x + SHIFT[0] (the low / high are centre-shifted)
+    _zm = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
+    _pad = _FD + 3.0 * _sg
+    _gx = np.arange(-(_X0 + _pad), _X0 + _pad + 1e-9, _GS)
+    _gz = np.arange(_zm - (_D0 + _pad), _zm + _U0 + _pad + 1e-9, _GS)
+    _H, _S, _val, _wsum, _ = front_heightfield_smooth(_hV + SHIFT, _hF, _gx, _gz, _sg, Z_NOSE_BOTTOM - _NC)   # (build frame)
+    _Hn = np.where(np.isnan(_H), 9.0, _H)
+    _dSz, _dSx = np.gradient(_S, _GS, _GS)
+
+    def _grid_at(A, x_, z_):
+        return grid_bilinear(A, _gx, _gz, x_, z_)
+
+    def _wzone(x_, z_):
+        dz_ = z_ - np.interp(x_, SEAM["xs"], SEAM["zc"])
+        w_ = (1.0 - smoothstep(_X0, _X0 + _FD, np.abs(x_))) * (1.0 - smoothstep(_U0, _U0 + _FD, dz_)) * \
+            (1.0 - smoothstep(_D0, _D0 + _FD, -dz_))
+        return w_ * (_grid_at(_wsum, x_, z_) > 0.5 * float(_wsum.max())) * (z_ < Z_NOSE_BOTTOM - _NC)
+    me.calc_loop_triangles()
+    _nq6 = len(me.loop_triangles)
+    _ll6 = np.empty(_nq6 * 3, dtype=np.int64); me.loop_triangles.foreach_get("loops", _ll6); _ll6 = _ll6.reshape(-1, 3)
+    _lp6 = np.empty(_nq6, dtype=np.int64); me.loop_triangles.foreach_get("polygon_index", _lp6)
+    _lv6 = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", _lv6)
+    _uv6 = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", _uv6); _uv6 = _uv6.reshape(-1, 2)
+    _pn6 = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _pn6); _pn6 = _pn6.reshape(-1, 3)
+    _Vl6 = OBJ["main"]["V"]
+    _pc6 = _Vl6[_lv6[_ll6]].mean(1)                        # triangle centroids (mesh frame)
+    _dzc6 = _pc6[:, 2] - np.interp(_pc6[:, 0] + _xs0, SEAM["xs"], SEAM["zc"])
+    _cand6 = np.nonzero(_facez[_lp6] & (np.abs(_pc6[:, 0] + _xs0) < _X0 + _FD + 0.003) & (_dzc6 < _U0 + _FD + 0.003) &
+                        (_dzc6 > -(_D0 + _FD + 0.003)))[0]
+    # only the VISIBLE zone triangles (the first front-ray hit at the centroid) own texels: a hidden rim / fold packed in
+    # the same UV island wrote the proxy in its own (backward) frame, and the visible faces too small to own a texel centre
+    # decoded it from there (a bright blob under the line, rendered); their texels are filled by the margin pass instead
+    _bl6 = BVHTree.FromPolygons(_Vl6.tolist(), OBJ["main"]["F"])
+    _vis6 = []
+    for t_ in _cand6:
+        h_ = _bl6.ray_cast(Vector((float(_pc6[t_, 0]), -1.0, float(_pc6[t_, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        if h_[0] is not None and (h_[2] == _lp6[t_] or float(_pc6[t_, 1]) - h_[0][1] < 5e-5) and _pn6[_lp6[t_], 1] < 0.0:
+            _vis6.append(t_)
+    _vis6 = np.array(_vis6, dtype=np.int64)
+    # texels inside any OTHER triangle of the main object near the zone's UV patch are protected (another island's own)
+    _done6 = np.zeros(RN * RN, bool)
+    _prot6 = np.zeros(RN * RN, bool)
+    _zuv = _uv6[_ll6[_cand6]].reshape(-1, 2)
+    _u0, _u1 = _zuv.min(0) - 4.0 / RN, _zuv.max(0) + 4.0 / RN
+    _tuv = _uv6[_ll6]
+    _near6 = np.nonzero((_tuv[:, :, 0].max(1) >= _u0[0]) & (_tuv[:, :, 0].min(1) <= _u1[0]) &
+                        (_tuv[:, :, 1].max(1) >= _u0[1]) & (_tuv[:, :, 1].min(1) <= _u1[1]))[0]
+    _isc6 = np.zeros(_nq6, bool); _isc6[_cand6] = True
+    for t_ in _near6[~_isc6[_near6]]:
+        Q3 = _uv6[_ll6[t_]] * RN - 0.5
+        x0, y0 = np.floor(Q3.min(0)).astype(int); x1, y1 = np.ceil(Q3.max(0)).astype(int)
+        x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RN - 1), min(y1, RN - 1)
+        gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+        a_, b_, c_ = Q3
+        den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+        if abs(den_) < 1e-12:
+            continue
+        w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
+        w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
+        _prot6[(gy_ * RN + gx_)[(w0 >= -1e-6) & (w1 >= -1e-6) & (1 - w0 - w1 >= -1e-6)]] = True
+    _done6 |= _prot6
+    _px6 = px[:, :3].copy()
+    _core_dev, _nt6 = [], 0
+    for _pass in (0, 1):                                    # 0: the texels inside each triangle; 1: its bake margin (2 px)
+        for t_ in _vis6:
+            P3_ = _Vl6[_lv6[_ll6[t_]]]; U3_ = _uv6[_ll6[t_]]
+            e1, e2 = P3_[1] - P3_[0], P3_[2] - P3_[0]; d1, d2 = U3_[1] - U3_[0], U3_[2] - U3_[0]
+            det_ = d1[0] * d2[1] - d2[0] * d1[1]
+            Nf_ = _pn6[_lp6[t_]]
+            if abs(det_) < 1e-14 or np.linalg.norm(Nf_) < 0.5:
+                continue
+            Tt_ = (e1 * d2[1] - e2 * d1[1]) / det_; Bt_ = (e2 * d1[0] - e1 * d2[0]) / det_
+            Tt_ = unit(Tt_ - Nf_ * float(Nf_ @ Tt_)); Bt_ = (1.0 if float(np.cross(Nf_, Tt_) @ Bt_) >= 0 else -1.0) * np.cross(Nf_, Tt_)
+            Q3 = U3_ * RN - 0.5
+            x0, y0 = np.floor(Q3.min(0)).astype(int) - 2; x1, y1 = np.ceil(Q3.max(0)).astype(int) + 2
+            x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, RN - 1), min(y1, RN - 1)
+            gx_, gy_ = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+            a_, b_, c_ = Q3
+            den_ = (b_[1] - c_[1]) * (a_[0] - c_[0]) + (c_[0] - b_[0]) * (a_[1] - c_[1])
+            if abs(den_) < 1e-12:
+                continue
+            w0 = ((b_[1] - c_[1]) * (gx_ - c_[0]) + (c_[0] - b_[0]) * (gy_ - c_[1])) / den_
+            w1 = ((c_[1] - a_[1]) * (gx_ - c_[0]) + (a_[0] - c_[0]) * (gy_ - c_[1])) / den_
+            w2 = 1.0 - w0 - w1
+            if _pass == 0:
+                sel_ = (w0 >= -1e-6) & (w1 >= -1e-6) & (w2 >= -1e-6)
+            else:                                           # within 2 px of the triangle (its altitudes in texels)
+                ed_ = [np.linalg.norm(Q3[(k + 1) % 3] - Q3[(k + 2) % 3]) for k in range(3)]
+                tol_ = [2.0 * ed_[k] / max(abs(den_), 1e-9) for k in range(3)]   # 2 px as a barycentric margin per vertex
+                sel_ = (w0 >= -tol_[0]) & (w1 >= -tol_[1]) & (w2 >= -tol_[2])
+            ti_ = (gy_ * RN + gx_)[sel_]
+            keep_ = ~_done6[ti_]
+            if not keep_.any():
+                continue
+            ti_ = ti_[keep_]
+            W3 = np.stack([w0[sel_][keep_], w1[sel_][keep_], w2[sel_][keep_]], 1)
+            Pw_ = W3 @ P3_                                   # the texel's surface point (mesh frame)
+            xb_, zb_ = Pw_[:, 0] + _xs0, Pw_[:, 2]
+            wz_ = _wzone(xb_, zb_)
+            npx_ = np.stack([_grid_at(_dSx, xb_, zb_), -np.ones(len(xb_)), _grid_at(_dSz, xb_, zb_)], 1)
+            npx_ /= np.linalg.norm(npx_, axis=1, keepdims=True)
+            tb_ = 2.0 * px[ti_, :3] - 1.0
+            nb_ = tb_[:, :1] * Tt_ + tb_[:, 1:2] * Bt_ + tb_[:, 2:3] * Nf_
+            nb_ /= np.maximum(np.linalg.norm(nb_, axis=1, keepdims=True), 1e-9)
+            nw_ = wz_[:, None] * npx_ + (1.0 - wz_[:, None]) * nb_
+            nw_ /= np.maximum(np.linalg.norm(nw_, axis=1, keepdims=True), 1e-9)
+            _px6[ti_] = 0.5 + 0.5 * np.stack([nw_ @ Tt_, nw_ @ Bt_, nw_ @ Nf_], 1)
+            _done6[ti_] = True
+            if _pass == 0:
+                _nt6 += 1
+                cf_ = wz_ > 0.999
+                if cf_.any():                                # proof: the facet-to-proxy angle the map corrects here
+                    _core_dev += np.degrees(np.arccos(np.clip(npx_[cf_] @ Nf_, -1, 1))).tolist()
+    _done6 &= ~_prot6
+    _chg6 = _done6 & (np.abs(_px6 - px[:, :3]).max(1) > 0)
+    px[:, :3] = np.clip(_px6, 0.0, 1.0)
+    img_n.pixels.foreach_set(px.ravel())
+    # the proof on the written map: decode every zone triangle's centroid texel with its own frame vs the proxy normal
+    _dec6 = []
+    for t_ in _vis6:
+        P3_ = _Vl6[_lv6[_ll6[t_]]]; U3_ = _uv6[_ll6[t_]]; Nf_ = _pn6[_lp6[t_]]
+        e1, e2 = P3_[1] - P3_[0], P3_[2] - P3_[0]; d1, d2 = U3_[1] - U3_[0], U3_[2] - U3_[0]
+        det_ = d1[0] * d2[1] - d2[0] * d1[1]
+        if abs(det_) < 1e-14:
+            continue
+        Tt_ = (e1 * d2[1] - e2 * d1[1]) / det_; Bt_ = (e2 * d1[0] - e1 * d2[0]) / det_
+        Tt_ = unit(Tt_ - Nf_ * float(Nf_ @ Tt_)); Bt_ = (1.0 if float(np.cross(Nf_, Tt_) @ Bt_) >= 0 else -1.0) * np.cross(Nf_, Tt_)
+        uc_ = U3_.mean(0); pc_ = P3_.mean(0)
+        if _wzone(np.array([pc_[0] + _xs0]), np.array([pc_[2]]))[0] < 0.999:
+            continue
+        tn_ = 2.0 * px[min(RN - 1, int(uc_[1] * RN)) * RN + min(RN - 1, int(uc_[0] * RN)), :3] - 1.0
+        nd_ = unit(Tt_ * tn_[0] + Bt_ * tn_[1] + Nf_ * tn_[2])
+        npc_ = unit(np.array([float(_grid_at(_dSx, np.array([pc_[0] + _xs0]), np.array([pc_[2]]))[0]), -1.0,
+                              float(_grid_at(_dSz, np.array([pc_[0] + _xs0]), np.array([pc_[2]]))[0])]))
+        _dec6.append(math.degrees(math.acos(float(np.clip(nd_ @ npc_, -1, 1)))))
+    _cz6 = _wzone(np.tile(_gx, len(_gz)), np.repeat(_gz, len(_gx))).reshape(len(_gz), len(_gx)) > 0.999
+    DIG["mouth_proxy_core"] = sha(np.clip(np.rint(np.where(_cz6, _S, 0.0) * 1e6), -2 ** 31, 2 ** 31 - 1).astype(np.int64))
+    MOUTH_PROXY_INFO = {"sigma_mm": MOUTH_PROXY[0], "zone_mm": {"half_width": MOUTH_PROXY[1], "above_seam": MOUTH_PROXY[2],
+                                                                 "below_seam": MOUTH_PROXY[3], "fade": MOUTH_PROXY[4]},
+                        "nose_clear_mm": MOUTH_PROXY[5], "grid": [len(_gz), len(_gx)], "grid_mm": _GS * 1000,
+                        "valid_samples": int(_val.sum()),
+                        "invalid_in_core(seam crack / deep hits)": int((_cz6 & ~_val).sum()),
+                        "smooth_vs_high_mm_in_core": {"max": round(1000 * float(np.abs(_S - _Hn)[_cz6 & _val].max()), 3),
+                                                      "p99": round(1000 * float(np.percentile(np.abs(_S - _Hn)[_cz6 & _val], 99)), 3)},
+                        "zone_triangles": {"candidates": int(len(_cand6)), "visible": int(len(_vis6)), "with_texel_centres": int(_nt6)},
+                        "protected_texels(other islands)": int(_prot6.sum()),
+                        "texels_written": int(_done6.sum()), "texels_changed": int(_chg6.sum()),
+                        "facet_vs_proxy_deg_core_p50_p90_max": [round(float(np.percentile(_core_dev, q_)), 2) for q_ in (50, 90)] +
+                                                                [round(float(np.max(_core_dev)), 2)] if _core_dev else None,
+                        "decode_vs_proxy_deg_core_p50_p99_max": [round(float(np.percentile(_dec6, q_)), 3) for q_ in (50, 99)] +
+                                                                 [round(float(np.max(_dec6)), 3)] if _dec6 else None,
+                        "seconds": round(time.time() - t_mp, 1)}
+    print("MOUTHPROXY", json.dumps(MOUTH_PROXY_INFO))
+bstats["mouth_proxy_v6"] = MOUTH_PROXY_INFO
 bstats["hair_proxy_bake"] = HAIR_BAKE
 bstats["seconds"] = round(time.time() - t_bake, 1)
 report["bake"] = bstats
@@ -969,6 +1140,24 @@ report["v5_round"] = {
                   "orbit_shape_dev_mm": {k: v["max"] for k, v in (report["eye_scale"].get("shape_dev_mm_vs_v2_surface") or {}).items()}},
     "tris_total": {"v4": V4_FACE["total_tris"], "v5": report["tris"]["total"]}}
 print("V5_ROUND", json.dumps(report["v5_round"]))
+_mp6 = report.get("mouth_placement") or {}
+report["v6_round"] = {
+    "spec": "review-log 2026-09-29 'Wren v6 mouth feedback' + 'addendum': ONE compact faint line that IS the mouth, sitting "
+            "on the single opening, placed high and sized per the FE portrait; nose to chin smooth uninterrupted skin",
+    "v51": V51_MOUTH, "references": REF_MOUTH,
+    "placement": {"targets": {k: TARGETS.get(k) for k in ("mouth/mouth-trans-up", "mouth/mouth-scale-horiz-decr",
+                                                          "mouth/mouth-angles-up", "mouth/mouth-angles-down")},
+                  "live": _mp6},
+    "line": {"width_mm_centre": MOUTH_LINE[0] * 1000, "end_width_x": MOUTH_LINE[1], "covers": "the whole seam + %.1f mm past each end"
+             % (MOUTH_LINE_EXT * 1000) if MOUTH_LEN is None else "|x| <= %.1f mm" % (MOUTH_LEN * 1000),
+             "smirk": {"rise_mm": MOUTH_SMIRK[0] * 1000 if MOUTH_SMIRK else None, "in_geometry": MOUTH_SMIRK_GEO is not None,
+                       "seal_smirk_warp": (report.get("lip_seal") or {}).get("smirk_geo")}},
+    "smooth_skin": {"geometry": report.get("mouth_smooth"), "normal_proxy": bstats.get("mouth_proxy_v6"),
+                    "ao_floor": AO_LIFT_INFO},
+    "note": "the delivered-mesh / rendered numbers are the probes': renders/wren/wren_v6_mprobe.json (vs wren_v5_mprobe.json) and "
+            "wren_v6_face_probe.json (vs wren_v5_face_probe.json)",
+    "tris_total": {"v5.1": 48208, "v6": report["tris"]["total"]}}
+print("V6_ROUND", json.dumps({k: v for k, v in report["v6_round"].items() if k not in ("v51", "references")}))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

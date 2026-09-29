@@ -1,4 +1,10 @@
 """Wren image assembly (plain Python + PIL, no Blender): run with the forge service venv.
+v6 (review-log 2026-09-29 "Wren v6 mouth feedback" + "addendum"): every model input / output is v6-prefixed (V = "wren_v6");
+the v5 stills (wren_v5_*.png) + the v5.1 mouth probe (wren_v5_mprobe.*, run once off the committed v5.1 rig) are the
+comparison baseline; the v6 composites: wren_v6_mouth_compare (v5 | v6 close-ups + the probe's orthographic renders with the
+line repainted skin: the second feature), wren_v6_face_vs_refs (v6 portrait | Ashe portrait | Alicia front, the placement
+ratios measured on each), _portrait_compare, _undereye_untouched + _body_untouched (v5 | v6), _contact. The v5-round
+composites (v4 | v5) are not rebuilt.
 v5 (review-log 2026-09-29 "Wren v5 feedback + FE reference set"): every model input / output is v5-prefixed (V = "wren_v5");
 the v4 stills (wren_v4_*.png, + wren_v4_undereye / _undereye_tq rendered once off the committed v4 rig) are the comparison
 baseline; + the v5 composites wren_v5_undereye_compare (v4 | v5), _mouth_compare (v4 | v5 | the FE mouths), _face_vs_fe
@@ -40,7 +46,8 @@ IMP = json.load(open(os.path.join(ROOT, "improved", "wren.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "wren.json")))
 PAL = json.load(open(os.path.join(ROOT, "palettes", "wren", "default.json")))
 SH = Image.open(SHEET).convert("RGB")
-V = "wren_v5"
+V = "wren_v6"
+V5 = "wren_v5"
 V4 = "wren_v4"
 V3 = "wren_v3"
 V2 = "wren_v2"
@@ -173,7 +180,7 @@ T = 400
 items = [(V + "_front.png", "front (idle f1)"), (V + "_threequarter.png", "three-quarter"), (V + "_side.png", "side"),
          (V + "_back.png", "back"), (V + "_tactical.png", "tactical (256 px)"), (V + "_portrait.png", "face"),
          (V + "_undereye.png", "under the eyes: flat skin, the liner only"), (V + "_hair_close.png", "hair: layer shadows"),
-         (V + "_mouth.png", "mouth: flat skin + the drawn smirk line"), (V + "_head_top.png", "hair from above: side part"),
+         (V + "_mouth.png", "mouth: one line on smooth skin (v6)"), (V + "_head_top.png", "hair from above: side part"),
          (V + "_winter_front.png", "winter skin (swap proof)"), (V + "_winter_hair_close.png", "winter: hair tiers")]
 tiles = [label(fit(load(fn), T, T), lab) for fn, lab in items]
 Wc = 4 * T + 18
@@ -194,83 +201,61 @@ for s_ in sheets:
 cs.convert("RGB").save(os.path.join(R, V + "_contact.png"))
 print("WROTE", V + "_contact.png", json.dumps(SKIN))
 
-# ---- v5 round: v4 | v5 (| the FE references)
-V5R = IMP.get("v5_round", {})
-PRB = {v: json.load(open(os.path.join(R, v + "_face_probe.json"))) for v in (V4, V)}
-PRBM = {v: np.load(os.path.join(R, v + "_face_probe.npz")) for v in (V4, V)}
+# ---- v6 round: v5 | v6 (| the references)
+V6R = IMP.get("v6_round", {})
+PRB = {v: json.load(open(os.path.join(R, v + "_face_probe.json"))) for v in (V5, V)}
+MPR = {v: json.load(open(os.path.join(R, v + "_mprobe.json"))) for v in (V5, V)}
+ASHE = Image.open(os.path.join(FE, "fe-ashe-portrait.png")).convert("RGBA")
+ALICIA = Image.open(os.path.join(ROOT, "design", "reference", "anime-3d", "alicia_face_front.png")).convert("RGBA")
+REFM = V6R.get("references", {})
+
+
+def mp_lab(v, var="noline"):
+    g, b = MPR[v]["geometry"], MPR[v]["features"][var]["seam_band"]
+    return ("line %.1f mm wide, %.1f mm under the eyes; second trace: %d columns%s, contrast %.3f, up to %.1f mm below the line"
+            % (g["line"]["width_mm"], g["line_mm_below_eyes"], b["columns_with_trace"],
+               (" x %+.0f..%+.0f mm" % tuple(b["x_mm_range"])) if b["x_mm_range"] else "", b["contrast_max"], b["dz_mm_below_line_max"]))
+
+
+def mp_crop(v, var):
+    im = Image.open(os.path.join(R, "%s_mprobe_%s.png" % (v, var))).convert("RGBA")
+    return im.crop((60, 100, 740, 560))          # x -34 .. +34 mm, z -55 .. -101 mm under the eyes (the same frame for both)
+
+
+grid([[(V5 + "_mouth.png", "v5.1 mouth close-up"), (V + "_mouth.png", "v6 mouth close-up")],
+      [(V5 + "_mouth_tq.png", "v5.1 three-quarter"), (V + "_mouth_tq.png", "v6 three-quarter")],
+      [(mp_crop(V5, "base"), "v5.1 orthographic front, as delivered (fixed frame about the eyes)"),
+       (mp_crop(V, "base"), "v6 orthographic front, as delivered (same frame: the mouth 6 mm higher)")],
+      [(mp_crop(V5, "noline"), "v5.1 with the line repainted skin -- the SECOND feature (the seam)\n" + mp_lab(V5)),
+       (mp_crop(V, "noline"), "v6 with the line repainted skin\n" + mp_lab(V))],
+      [(V5 + "_mouth_side.png", "v5.1 profile"), (V + "_mouth_side.png", "v6 profile")]],
+     700, 470, "Wren v6 - ONE mouth: the line IS the opening, higher, filling the mouth; nose to chin smooth skin (v5.1 | v6)",
+     V + "_mouth_compare.png")
+g6 = MPR[V]["geometry"]
+A_ = REFM.get("ashe", {}); L_ = REFM.get("alicia", {})
+grid([[(V + "_portrait.png", "Wren v6: mouth at %.2f of nose->chin, line %.2f x eye spacing, %.2f x face width\n(v5.1: %.2f / %.2f / %.2f)"
+        % (g6["v_ratio"], g6["w_eyes"], g6["w_face"], MPR[V5]["geometry"]["v_ratio"], MPR[V5]["geometry"]["w_eyes"],
+           MPR[V5]["geometry"]["w_face"])),
+       (ASHE, "FE Three Houses: Ashe (official portrait)\nmouth at %.2f of nose->chin, %.2f x eye spacing, %.2f x face (3/4 view)"
+        % (A_.get("v_ratio", 0), A_.get("w_eyes", 0), A_.get("w_face_projected", 0))),
+       (ALICIA.crop((260, 330, 780, 850)), "Alicia Solid (3D anime study ref, front)\nmouth %.2f x eye spacing, %.2f x face width"
+        % (L_.get("w_eyes", 0), L_.get("w_face", 0)))]],
+     560, 600, "Wren v6 - face vs the references: one faint line, high under the nose, nothing else on the skin",
+     V + "_face_vs_refs.png")
+grid([[(V5 + "_portrait.png", "v5.1 portrait"), (V + "_portrait.png", "v6 portrait")],
+      [(V5 + "_face.png", "v5.1 three-quarter"), (V + "_face.png", "v6 three-quarter")]],
+     620, 620, "Wren v6 - portrait (v5.1 | v6, same camera, same light)", V + "_portrait_compare.png")
 
 
 def ue_lab(v):
     u = PRB[v]["undereye"]["L"]
-    return "crease %.2f mm (5 col) / %.2f (dense), flatness max %.2f / median %.2f mm" % (
-        u["crease_mm_5col"]["max"], u["crease_mm_dense"]["max"], u["flatness_mm"]["max"], u["flatness_mm"]["median"])
+    return "crease %.3f mm (5 col) / %.3f (dense), flatness max %.3f, lid line %.3f mm" % (
+        u["crease_mm_5col"]["max"], u["crease_mm_dense"]["max"], u["flatness_mm"]["max"], u["lid_line_mm"]["max"])
 
 
-grid([[(V4 + "_undereye.png", "v4 under the eyes\n" + ue_lab(V4)), (V + "_undereye.png", "v5 under the eyes\n" + ue_lab(V))],
-      [(V4 + "_undereye_tq.png", "v4 three-quarter"), (V + "_undereye_tq.png", "v5 three-quarter")],
-      [(V4 + "_eye_close.png", "v4 his left eye"), (V + "_eye_close.png", "v5 his left eye (iris / lash / dot untouched)")]],
-     620, 560, "Wren v5 - eye bags gone: flat skin from the lower liner to the cheek (v4 | v5, same views, same light)",
-     V + "_undereye_compare.png")
-ASHE = Image.open(os.path.join(FE, "fe-ashe-portrait.png")).convert("RGBA")
-ALEAR = Image.open(os.path.join(FE, "fe-alear-male-art.png")).convert("RGBA")
-
-
-def m_lab(v):
-    m = PRB[v]["mouth"]
-    z = m.get("relief_in_zone_mm", {}).get("max")
-    return "relief in the zone max %s mm; upper-lip proud %.2f, seam recess %.2f mm" % (
-        z, m["upper_proud_detrended_mm_max"], m["seam_recess_mm_max"])
-
-
-grid([[(V4 + "_mouth.png", "v4 mouth\n" + m_lab(V4)), (V + "_mouth.png", "v5 mouth\n" + m_lab(V)),
-       (ASHE.crop((240, 300, 400, 400)), "FE (Ashe portrait): a drawn line on flat skin")],
-      [(V4 + "_mouth_tq.png", "v4 three-quarter"), (V + "_mouth_tq.png", "v5 three-quarter"),
-       (ALEAR.crop((510, 80, 590, 140)), "FE (Alear art): the mouth")],
-      [(V4 + "_mouth_side.png", "v4 profile"), (V + "_mouth_side.png", "v5 profile: nose base -> chin, one run of skin"),
-       (None, None)]],
-     520, 420, "Wren v5 - lips fully 2D: flat skin + the drawn smirk line + the seal (v4 | v5 | FE)", V + "_mouth_compare.png")
-grid([[(V + "_portrait.png", "Wren v5 portrait"), (ASHE, "FE Three Houses: Ashe (official portrait)"),
-       (ALEAR.crop((490, 30, 630, 170)), "FE Engage: Alear (official art, crop)")]],
-     500, 520, "Wren v5 - face vs the FE references: no under-eye geometry, no lip volume", V + "_face_vs_fe.png")
-
-
-def heat(G, cols_mm, rows_mm, scale_mm=1.0, px_mm=10, mark=None):
-    """a depth-deviation map as an image: + (deeper than the smooth profile: a recess / crease) blue, - (proud) red, 0
-    white, no skin dark grey; mark = cells drawn black (the painted mouth line)."""
-    g = np.clip(np.nan_to_num(G, nan=0.0) * 1000.0 / scale_mm, -1.0, 1.0)
-    rgb = np.ones(G.shape + (3,))
-    pos, neg = g > 0, g < 0
-    rgb[pos] = np.stack([1 - g[pos], 1 - 0.6 * g[pos], np.ones(pos.sum())], 1)
-    rgb[neg] = np.stack([np.ones(neg.sum()), 1 + 0.75 * g[neg], 1 + g[neg]], 1)
-    rgb[np.isnan(G)] = (0.16, 0.16, 0.17)
-    if mark is not None:
-        rgb[mark > 0] = (0.05, 0.05, 0.05)
-    im = Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
-    dx = abs(cols_mm[1] - cols_mm[0]); dz = abs(rows_mm[1] - rows_mm[0])
-    return im.resize((int(len(cols_mm) * dx * px_mm), int(len(rows_mm) * dz * px_mm)), Image.NEAREST)
-
-
-tiles = []
-for v, lab in ((V4, "v4"), (V, "v5")):
-    M = PRBM[v]
-    mz = M["m_zone"] if "m_zone" in M.files else None
-    t = heat(M["m_dev"], M["m_xs"], M["m_zs"], mark=M["m_mouthpaint"])
-    if mz is not None:                       # the zone outline
-        d = ImageDraw.Draw(t)
-        e = np.argwhere(mz > 0)
-        if len(e):
-            k = t.width / mz.shape[1], t.height / mz.shape[0]
-            for (i, j) in e:
-                if i == 0 or j == 0 or i == mz.shape[0] - 1 or j == mz.shape[1] - 1 or not (mz[i - 1, j] and mz[i + 1, j] and mz[i, j - 1] and mz[i, j + 1]):
-                    d.point((int((j + 0.5) * k[0]), int((i + 0.5) * k[1])), fill=(40, 160, 40))
-    tiles.append((t, "%s mouth relief vs the smooth no-lip profile (+-1 mm full colour)\n%s" % (lab, m_lab(v))))
-for v, lab in ((V4, "v4"), (V, "v5")):
-    M = PRBM[v]
-    tiles.append((heat(M["ue_L_dev"], M["ue_L_cols"], M["ue_L_rows"]),
-                  "%s his left under-eye: deviation from a smooth lashline-to-cheek surface\n%s" % (lab, ue_lab(v))))
-grid([[tiles[0], tiles[1]], [tiles[2], tiles[3]]], 620, 420,
-     "Wren v5 - face probe relief maps (delivered meshes): red proud, blue recessed, black the drawn "
-     "line, green the flat zone", V + "_relief_maps.png")
-grid([[(V4 + "_front.png", "v4 front (idle f1)"), (V + "_front.png", "v5 front (idle f1)"),
-       (V4 + "_threequarter.png", "v4 three-quarter"), (V + "_threequarter.png", "v5 three-quarter")]],
-     360, 520, "Wren v5 - below the neck untouched", V + "_body_untouched.png")
+grid([[(V5 + "_undereye.png", "v5.1 under the eyes\n" + ue_lab(V5)), (V + "_undereye.png", "v6 under the eyes\n" + ue_lab(V))],
+      [(V5 + "_eye_close.png", "v5.1 his left eye"), (V + "_eye_close.png", "v6 his left eye")]],
+     620, 560, "Wren v6 - the rest of the face untouched (face probe on both delivered meshes)", V + "_undereye_untouched.png")
+grid([[(V5 + "_front.png", "v5.1 front (idle f1)"), (V + "_front.png", "v6 front (idle f1)"),
+       (V5 + "_head_tq_back.png", "v5.1 hair three-quarter back"), (V + "_head_tq_back.png", "v6 hair three-quarter back")]],
+     360, 520, "Wren v6 - body + hair untouched", V + "_body_untouched.png")

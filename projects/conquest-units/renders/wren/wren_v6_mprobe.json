@@ -1,0 +1,991 @@
+{
+ "rule": "Wren v6 MOUTH probe (review-log 2026-09-29 \"Wren v6 mouth feedback\" + \"addendum\"): what the artist SEES in the mouth",
+ "window_mm": [
+  -40.0,
+  40.0,
+  -135.0,
+  -45.0
+ ],
+ "px_per_mm": 10.0,
+ "zone_rows_mm_rel_line": [
+  12.0,
+  -44.5
+ ],
+ "geometry": {
+  "eye_z": 1.5785,
+  "midline_x": 0.01743,
+  "eye_spacing_mm": 60.8,
+  "nose_tip_mm_below_eyes": 40.3,
+  "nose_bottom_mm_below_eyes": 48.4,
+  "line_mm_below_eyes": 69.28,
+  "chin_mm_below_eyes": 119.9,
+  "nose_to_line_mm": 20.88,
+  "line_to_chin_mm": 50.62,
+  "face_w_at_line_mm": 130.0,
+  "line": {
+   "x_mm": [
+    -20.17,
+    20.17
+   ],
+   "width_mm": 40.34,
+   "z_mid_mm_below_eyes": 69.28,
+   "z_per_col_mm_rel_eyes": {
+    "-20": -68.88,
+    "-18": -68.86,
+    "-16": -68.72,
+    "-14": -68.48,
+    "-12": -68.67,
+    "-10": -68.74,
+    "-8": -68.71,
+    "-6": -69.09,
+    "-4": -69.12,
+    "-2": -69.25,
+    "+0": -69.43,
+    "+2": -69.25,
+    "+4": -69.12,
+    "+6": -69.09,
+    "+8": -68.71,
+    "+10": -68.74,
+    "+12": -68.53,
+    "+14": -68.27,
+    "+16": -68.04,
+    "+18": -67.94,
+    "+20": -67.72
+   },
+   "faces": 169
+  },
+  "v_ratio": 0.292,
+  "w_face": 0.31,
+  "w_eyes": 0.663,
+  "open_cracks": {
+   "columns": 0,
+   "x_mm_range": null,
+   "rows_total_0.05mm": 0,
+   "per_column(x, dz_mm, rows)": []
+  }
+ },
+ "features": {
+  "base": {
+   "traces": 10,
+   "line_traces": 1,
+   "other_traces": 9,
+   "other_px": 6122,
+   "other_contrast_max": 0.155,
+   "seam_band": {
+    "columns_with_trace": 35,
+    "x_mm_range": [
+     -21.0,
+     20.0
+    ],
+    "contrast_max": 0.106,
+    "dz_mm_below_line_max": 1.2,
+    "per_column(x_mm, dz_mm, contrast)": [
+     [
+      -21.0,
+      1.3,
+      0.033
+     ],
+     [
+      -20.0,
+      1.3,
+      0.05
+     ],
+     [
+      -19.0,
+      2.0,
+      0.084
+     ],
+     [
+      -18.0,
+      -0.4,
+      0.051
+     ],
+     [
+      -17.0,
+      -0.4,
+      0.048
+     ],
+     [
+      -14.0,
+      -0.3,
+      0.035
+     ],
+     [
+      -13.0,
+      0.6,
+      0.036
+     ],
+     [
+      -11.0,
+      -0.3,
+      0.034
+     ],
+     [
+      -10.0,
+      0.6,
+      0.04
+     ],
+     [
+      -9.0,
+      -1.2,
+      0.093
+     ],
+     [
+      -8.0,
+      -1.2,
+      0.077
+     ],
+     [
+      -7.0,
+      -1.1,
+      0.076
+     ],
+     [
+      -6.0,
+      -1.0,
+      0.045
+     ],
+     [
+      -5.0,
+      0.7,
+      0.036
+     ],
+     [
+      -4.0,
+      -0.5,
+      0.032
+     ],
+     [
+      -3.0,
+      0.7,
+      0.041
+     ],
+     [
+      -2.0,
+      -1.2,
+      0.039
+     ],
+     [
+      -1.0,
+      0.7,
+      0.036
+     ],
+     [
+      1.0,
+      0.7,
+      0.036
+     ],
+     [
+      2.0,
+      -1.2,
+      0.038
+     ],
+     [
+      3.0,
+      0.7,
+      0.033
+     ],
+     [
+      4.0,
+      -0.5,
+      0.04
+     ],
+     [
+      5.0,
+      -0.4,
+      0.044
+     ],
+     [
+      6.0,
+      0.7,
+      0.04
+     ],
+     [
+      7.0,
+      -1.1,
+      0.052
+     ],
+     [
+      8.0,
+      -1.2,
+      0.106
+     ],
+     [
+      9.0,
+      -1.2,
+      0.049
+     ],
+     [
+      10.0,
+      0.6,
+      0.038
+     ],
+     [
+      13.0,
+      -0.5,
+      0.036
+     ],
+     [
+      15.0,
+      0.5,
+      0.045
+     ],
+     [
+      16.0,
+      -0.5,
+      0.035
+     ],
+     [
+      17.0,
+      -0.4,
+      0.031
+     ],
+     [
+      18.0,
+      0.0,
+      0.039
+     ],
+     [
+      19.0,
+      1.8,
+      0.059
+     ],
+     [
+      20.0,
+      1.1,
+      0.05
+     ]
+    ]
+   },
+   "top": [
+    {
+     "px": 3864,
+     "x_mm": [
+      -16.9,
+      9.0
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -42.3
+     ],
+     "contrast_max": 0.155,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 3640,
+     "x_mm": [
+      -20.1,
+      20.0
+     ],
+     "z_mm_rel_line": [
+      -0.3,
+      1.9
+     ],
+     "contrast_max": 0.308,
+     "on_line_frac": 0.99
+    },
+    {
+     "px": 1105,
+     "x_mm": [
+      -26.4,
+      -17.7
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.6
+     ],
+     "contrast_max": 0.124,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 814,
+     "x_mm": [
+      7.9,
+      15.2
+     ],
+     "z_mm_rel_line": [
+      10.5,
+      12.0
+     ],
+     "contrast_max": 0.14,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 123,
+     "x_mm": [
+      25.8,
+      27.9
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -43.4
+     ],
+     "contrast_max": 0.044,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 75,
+     "x_mm": [
+      -10.0,
+      -7.7
+     ],
+     "z_mm_rel_line": [
+      -42.7,
+      -41.8
+     ],
+     "contrast_max": 0.097,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 45,
+     "x_mm": [
+      -9.1,
+      -6.5
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.093,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 37,
+     "x_mm": [
+      6.6,
+      8.7
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.106,
+     "on_line_frac": 0.0
+    }
+   ]
+  },
+  "noline": {
+   "traces": 9,
+   "line_traces": 0,
+   "other_traces": 9,
+   "other_px": 6124,
+   "other_contrast_max": 0.155,
+   "seam_band": {
+    "columns_with_trace": 17,
+    "x_mm_range": [
+     -21.0,
+     20.0
+    ],
+    "contrast_max": 0.109,
+    "dz_mm_below_line_max": 2.9,
+    "per_column(x_mm, dz_mm, contrast)": [
+     [
+      -21.0,
+      1.3,
+      0.033
+     ],
+     [
+      -20.0,
+      1.3,
+      0.05
+     ],
+     [
+      -19.0,
+      2.0,
+      0.084
+     ],
+     [
+      -18.0,
+      -0.4,
+      0.053
+     ],
+     [
+      -9.0,
+      -1.2,
+      0.096
+     ],
+     [
+      -8.0,
+      -1.2,
+      0.079
+     ],
+     [
+      -7.0,
+      -1.1,
+      0.076
+     ],
+     [
+      -6.0,
+      -1.0,
+      0.046
+     ],
+     [
+      -3.0,
+      -1.3,
+      0.039
+     ],
+     [
+      -2.0,
+      -1.2,
+      0.042
+     ],
+     [
+      2.0,
+      -1.2,
+      0.038
+     ],
+     [
+      5.0,
+      -2.9,
+      0.033
+     ],
+     [
+      7.0,
+      -1.1,
+      0.053
+     ],
+     [
+      8.0,
+      -1.2,
+      0.109
+     ],
+     [
+      9.0,
+      -1.2,
+      0.054
+     ],
+     [
+      19.0,
+      1.8,
+      0.059
+     ],
+     [
+      20.0,
+      1.1,
+      0.05
+     ]
+    ]
+   },
+   "top": [
+    {
+     "px": 3864,
+     "x_mm": [
+      -16.9,
+      9.0
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -42.3
+     ],
+     "contrast_max": 0.155,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 1105,
+     "x_mm": [
+      -26.4,
+      -17.7
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.6
+     ],
+     "contrast_max": 0.124,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 814,
+     "x_mm": [
+      7.9,
+      15.2
+     ],
+     "z_mm_rel_line": [
+      10.5,
+      12.0
+     ],
+     "contrast_max": 0.14,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 123,
+     "x_mm": [
+      25.8,
+      27.9
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -43.4
+     ],
+     "contrast_max": 0.044,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 75,
+     "x_mm": [
+      -10.0,
+      -7.7
+     ],
+     "z_mm_rel_line": [
+      -42.7,
+      -41.8
+     ],
+     "contrast_max": 0.097,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 46,
+     "x_mm": [
+      -9.1,
+      -6.5
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.096,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 38,
+     "x_mm": [
+      6.5,
+      8.7
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.109,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 33,
+     "x_mm": [
+      0.4,
+      2.1
+     ],
+     "z_mm_rel_line": [
+      -37.3,
+      -37.1
+     ],
+     "contrast_max": 0.08,
+     "on_line_frac": 0.0
+    }
+   ]
+  },
+  "flatnormal": {
+   "traces": 14,
+   "line_traces": 0,
+   "other_traces": 14,
+   "other_px": 5371,
+   "other_contrast_max": 0.209,
+   "seam_band": {
+    "columns_with_trace": 15,
+    "x_mm_range": [
+     -19.0,
+     21.0
+    ],
+    "contrast_max": 0.111,
+    "dz_mm_below_line_max": 1.3,
+    "per_column(x_mm, dz_mm, contrast)": [
+     [
+      -19.0,
+      2.0,
+      0.064
+     ],
+     [
+      -9.0,
+      -1.2,
+      0.092
+     ],
+     [
+      -8.0,
+      -1.2,
+      0.081
+     ],
+     [
+      -7.0,
+      -1.1,
+      0.08
+     ],
+     [
+      -6.0,
+      -1.0,
+      0.046
+     ],
+     [
+      -3.0,
+      -1.3,
+      0.038
+     ],
+     [
+      -2.0,
+      -1.2,
+      0.041
+     ],
+     [
+      2.0,
+      -1.2,
+      0.041
+     ],
+     [
+      7.0,
+      -1.2,
+      0.055
+     ],
+     [
+      8.0,
+      -1.2,
+      0.111
+     ],
+     [
+      9.0,
+      -1.2,
+      0.045
+     ],
+     [
+      18.0,
+      -0.6,
+      0.03
+     ],
+     [
+      19.0,
+      1.8,
+      0.058
+     ],
+     [
+      20.0,
+      1.2,
+      0.038
+     ],
+     [
+      21.0,
+      1.5,
+      0.039
+     ]
+    ]
+   },
+   "top": [
+    {
+     "px": 2420,
+     "x_mm": [
+      -11.2,
+      11.0
+     ],
+     "z_mm_rel_line": [
+      -44.3,
+      -41.5
+     ],
+     "contrast_max": 0.209,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 756,
+     "x_mm": [
+      7.9,
+      15.0
+     ],
+     "z_mm_rel_line": [
+      10.6,
+      12.0
+     ],
+     "contrast_max": 0.14,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 453,
+     "x_mm": [
+      -19.1,
+      -13.3
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.1
+     ],
+     "contrast_max": 0.102,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 350,
+     "x_mm": [
+      -22.8,
+      -18.5
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.6
+     ],
+     "contrast_max": 0.131,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 347,
+     "x_mm": [
+      -26.4,
+      -22.3
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.6
+     ],
+     "contrast_max": 0.094,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 273,
+     "x_mm": [
+      22.5,
+      24.7
+     ],
+     "z_mm_rel_line": [
+      -26.9,
+      -24.4
+     ],
+     "contrast_max": 0.038,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 233,
+     "x_mm": [
+      25.3,
+      27.9
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -42.8
+     ],
+     "contrast_max": 0.061,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 173,
+     "x_mm": [
+      6.0,
+      10.5
+     ],
+     "z_mm_rel_line": [
+      -13.5,
+      -12.4
+     ],
+     "contrast_max": 0.038,
+     "on_line_frac": 0.0
+    }
+   ]
+  },
+  "noao": {
+   "traces": 9,
+   "line_traces": 0,
+   "other_traces": 9,
+   "other_px": 5970,
+   "other_contrast_max": 0.156,
+   "seam_band": {
+    "columns_with_trace": 17,
+    "x_mm_range": [
+     -21.0,
+     20.0
+    ],
+    "contrast_max": 0.109,
+    "dz_mm_below_line_max": 2.9,
+    "per_column(x_mm, dz_mm, contrast)": [
+     [
+      -21.0,
+      1.3,
+      0.033
+     ],
+     [
+      -20.0,
+      1.3,
+      0.05
+     ],
+     [
+      -19.0,
+      2.0,
+      0.067
+     ],
+     [
+      -18.0,
+      -0.4,
+      0.053
+     ],
+     [
+      -9.0,
+      -1.2,
+      0.096
+     ],
+     [
+      -8.0,
+      -1.2,
+      0.079
+     ],
+     [
+      -7.0,
+      -1.1,
+      0.076
+     ],
+     [
+      -6.0,
+      -1.0,
+      0.046
+     ],
+     [
+      -3.0,
+      -1.3,
+      0.039
+     ],
+     [
+      -2.0,
+      -1.2,
+      0.042
+     ],
+     [
+      2.0,
+      -1.2,
+      0.038
+     ],
+     [
+      5.0,
+      -2.9,
+      0.033
+     ],
+     [
+      7.0,
+      -1.1,
+      0.053
+     ],
+     [
+      8.0,
+      -1.2,
+      0.109
+     ],
+     [
+      9.0,
+      -1.2,
+      0.054
+     ],
+     [
+      19.0,
+      1.8,
+      0.059
+     ],
+     [
+      20.0,
+      1.1,
+      0.05
+     ]
+    ]
+   },
+   "top": [
+    {
+     "px": 3742,
+     "x_mm": [
+      -16.9,
+      8.3
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -42.3
+     ],
+     "contrast_max": 0.156,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 1099,
+     "x_mm": [
+      -26.6,
+      -17.7
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -41.6
+     ],
+     "contrast_max": 0.125,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 814,
+     "x_mm": [
+      7.9,
+      15.2
+     ],
+     "z_mm_rel_line": [
+      10.5,
+      12.0
+     ],
+     "contrast_max": 0.14,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 114,
+     "x_mm": [
+      25.8,
+      27.9
+     ],
+     "z_mm_rel_line": [
+      -44.4,
+      -43.4
+     ],
+     "contrast_max": 0.043,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 58,
+     "x_mm": [
+      -10.0,
+      -7.7
+     ],
+     "z_mm_rel_line": [
+      -42.4,
+      -41.8
+     ],
+     "contrast_max": 0.1,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 46,
+     "x_mm": [
+      -9.1,
+      -6.5
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.096,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 38,
+     "x_mm": [
+      6.5,
+      8.7
+     ],
+     "z_mm_rel_line": [
+      -0.8,
+      -0.5
+     ],
+     "contrast_max": 0.109,
+     "on_line_frac": 0.0
+    },
+    {
+     "px": 33,
+     "x_mm": [
+      0.4,
+      2.1
+     ],
+     "z_mm_rel_line": [
+      -37.3,
+      -37.1
+     ],
+     "contrast_max": 0.08,
+     "on_line_frac": 0.0
+    }
+   ]
+  }
+ },
+ "renders": {
+  "base": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\wren\\wren_v6_mprobe_base.png",
+  "noline": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\wren\\wren_v6_mprobe_noline.png",
+  "flatnormal": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\wren\\wren_v6_mprobe_flatnormal.png",
+  "noao": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\renders\\wren\\wren_v6_mprobe_noao.png"
+ }
+}

@@ -1,2 +1,2 @@
-﻿DIGEST build=9c3ce19348b57647 twin=f316d3d3f04fc86b identical=except-bake_normal | BAKE_DIFF normal texels=1 of 4194304 max_delta=0.00392 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True | BAKE_DIFF hair_normal texels=0 of 4194304 max_delta=0.00000 limits=(64, 0.008) pass=True gate=PASS | build_wall_s=99.1
-HAIRSTABLE build=4b7c134cc09bf83f twin=4b7c134cc09bf83f face_edited=4b7c134cc09bf83f identical=True
+﻿DIGEST build=390bfd4ee1108e8d twin=d331694f131dd240 identical=except-bake_normal | BAKE_DIFF normal texels=2 of 4194304 max_delta=0.00392 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True | BAKE_DIFF hair_normal texels=0 of 4194304 max_delta=0.00000 limits=(64, 0.008) pass=True gate=PASS | build_wall_s=103.9
+HAIRSTABLE build=891e271c1300c27c twin=891e271c1300c27c face_edited=891e271c1300c27c identical=True

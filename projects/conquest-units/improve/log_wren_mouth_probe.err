@@ -1,0 +1,2 @@
+C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\wren_mouth_probe.py:157: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True

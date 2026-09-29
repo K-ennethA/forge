@@ -1821,7 +1821,7 @@
   "grip_at_m_from_butt": 1.1136
  },
  "tris": {
-  "model": 48208,
+  "model": 48375,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1830,22 +1830,23 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "4b7c134cc09bf83f",
-   "bake_hair_normal": "be42f513902c884e",
-   "bake_normal": "ab155627be8a91c8",
-   "bake_ao": "02a4cb9519a4ea71",
-   "ao_lifted": "33257ee11c3592d4",
-   "geometry_colour_uv": "5d67691d0507941a",
-   "weights": "773ff82e2783315a",
+   "hair_geometry": "891e271c1300c27c",
+   "bake_hair_normal": "d4c515eb3fb88954",
+   "mouth_proxy_core": "d5f16563785f4be2",
+   "bake_normal": "3c891d341bc137ec",
+   "bake_ao": "44bb526a2868ee59",
+   "ao_lifted": "3cbc3d574d49ade9",
+   "geometry_colour_uv": "67834307237b8076",
+   "weights": "7d5ebd0d46e7eed4",
    "keys": "a3b268a317b7a8d7",
-   "clip_samples": "4708dc14f95b5d5e"
+   "clip_samples": "15d659d5dec1bd59"
   },
-  "combined": "9c3ce19348b57647"
+  "combined": "390bfd4ee1108e8d"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 12099416,
-  "seconds": 1.4,
+  "bytes": 12159580,
+  "seconds": 1.5,
   "carries": {
    "materials": [
     {
@@ -2690,10 +2691,10 @@
    },
    "region_faces": {
     "wren": {
-     "skin": 12697,
-     "skin_shadow": 512,
+     "skin": 12718,
+     "skin_shadow": 540,
      "lips": 0,
-     "mouth": 75,
+     "mouth": 169,
      "liner": 107,
      "brow": 234,
      "eye_sclera": 224,
@@ -2736,7 +2737,7 @@
      "hair_root": 222,
      "hair_ring": 302,
      "hair_tip": 255,
-     "hair_inner": 1592,
+     "hair_inner": 1610,
      "hair_crevice": 392
     },
     "wren_pitchfork": {
@@ -2747,14 +2748,14 @@
      "ferrule": 40
     }
    },
-   "geometry_colour_uv_digest": "ae71663f0289edae"
+   "geometry_colour_uv_digest": "aac32fab67c08b75"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "5d67691d0507941a",
-   "default_digest_after_restore": "5d67691d0507941a"
+   "default_digest_before": "67834307237b8076",
+   "default_digest_after_restore": "67834307237b8076"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 97.2
+ "seconds": 102.3
 }

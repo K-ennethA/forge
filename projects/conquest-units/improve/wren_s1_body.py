@@ -296,8 +296,34 @@ LIP_SIDE = None
 if LIP_SEAL is not None:
     BV, report["lip_seal"] = seal_lips(BV, BF, float(TEETH[:, 2].min()))
     print("LIPSEAL", json.dumps(report["lip_seal"]))
-    if SEAM is not None:                               # v5: the seam curve (m, build frame) for the face probe's zone masks
-        report["lip_seal"]["seam"] = {"xs": np.round(SEAM["xs"], 5).tolist(), "zc": np.round(SEAM["zc"], 5).tolist()}
+
+def smirk_rise(x_, x0_, x1_):
+    """v4 smirk profile (m, >= 0) at x on a seam spanning x0 .. x1: 0 over the middle, rising by MOUTH_SMIRK[0] over the
+    outer MOUTH_SMIRK[2] of the MOUTH_SMIRK[1] side's half (the same curve s2 painted in v4/v5)."""
+    h_ = MOUTH_SMIRK[1] * np.asarray(x_) / max(x1_ if MOUTH_SMIRK[1] > 0 else -x0_, 1e-6)
+    return MOUTH_SMIRK[0] * smoothstep(1.0 - MOUTH_SMIRK[2], 1.0, h_) ** 1.5
+
+
+if LIP_SEAL is not None and SEAM is not None and MOUTH_SMIRK is not None and MOUTH_SMIRK_GEO is not None:
+    # v6 GEOMETRIC SMIRK (review-log 2026-09-29 "Wren v6 mouth feedback": ONE mouth -- the drawn line sits exactly on the
+    # opening): the sealed lips near the seam are lifted by the smirk profile (full on the seam, fading to none
+    # MOUTH_SMIRK_GEO above / below it and over 5 mm past the seam's end), the seam curve with them; s2 then paints the line
+    # on the seam as it is (no painted-only offset). Only z moves, the same amount above and below the seam at each x: the
+    # seal's overlap and the layer order are kept.
+    _sx0, _sx1 = float(SEAM["xs"].min()), float(SEAM["xs"].max())
+    _xc = np.clip(BV[:, 0], _sx0, _sx1)
+    _rise = smirk_rise(_xc, _sx0, _sx1) * (1.0 - smoothstep(0.0, 0.005, np.maximum(np.abs(BV[:, 0]) - np.where(BV[:, 0] > 0, _sx1, -_sx0), 0.0)))
+    _dzs = np.abs(BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"]))
+    _yfr6 = float(BV[(np.abs(BV[:, 0]) < 0.02) & (_dzs < 0.015), 1].min())
+    _wz = (1.0 - smoothstep(0.0, MOUTH_SMIRK_GEO, _dzs)) * (BV[:, 1] < _yfr6 + 0.030) * (np.abs(BV[:, 0]) < 0.06)
+    _z0 = BV[:, 2].copy()
+    BV[:, 2] += _rise * _wz
+    SEAM["zc"] = SEAM["zc"] + smirk_rise(SEAM["xs"], _sx0, _sx1)
+    report["lip_seal"]["smirk_geo"] = {"rise_mm": MOUTH_SMIRK[0] * 1000, "falloff_mm": MOUTH_SMIRK_GEO * 1000,
+                                       "verts_moved": int((np.abs(BV[:, 2] - _z0) > 1e-7).sum()),
+                                       "max_move_mm": round(1000 * float(np.abs(BV[:, 2] - _z0).max()), 3)}
+if LIP_SEAL is not None and SEAM is not None:          # v5: the seam curve (m, build frame) for the face probe's zone masks
+    report["lip_seal"]["seam"] = {"xs": np.round(SEAM["xs"], 5).tolist(), "zc": np.round(SEAM["zc"], 5).tolist()}
 # ---- v3 GEOMETRIC eye enlargement (review-log 2026-09-29: the eye dial was exhausted at 1.0). Each eye's socket and
 # eyeball scale TOGETHER by EYE_SCALE about the eyeball's front pole (the cornea apex): the lids keep their exact fit on the
 # ball (a similar figure), the opening grows by the factor, and the cornea stays at its depth (no bug-eyed bulge). The
@@ -847,6 +873,107 @@ if EYE_SCALE != 1.0:
     _mv5 = 1000 * np.linalg.norm(BV - BV_POST_SCALE, axis=1)
     report["eye_scale"]["v5_face_ops_move_mm_by_zone"] = {k: round(float(_mv5[m].max()), 3) for k, m in LEAK_ZONES.items()}
     print("V5MOVE", json.dumps(report["eye_scale"]["v5_face_ops_move_mm_by_zone"]))
+
+
+def nose_bottom_z(V, F):
+    """v6: going down the midline from the nose tip, the end of the nose's underside (front-ray hit normals facing down
+    past -0.55) = the lowest edge of the nose in a front view (the drawn nose mark of the FE / anime faces)."""
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    zm_ = np.arange(EYE["L"]["c"][2] - 0.020, EYE["L"]["c"][2] - 0.150, -0.0001)
+    hs_ = [bvh_.ray_cast(Vector((0.0, -0.6, float(z_))), Vector((0.0, 1.0, 0.0)), 1.0) for z_ in zm_]
+    y_ = np.array([h[0][1] if h[0] is not None else np.nan for h in hs_])
+    nz_ = np.array([h[1][2] if h[0] is not None else np.nan for h in hs_])
+    i_ = int(np.nanargmin(np.where(zm_ > EYE["L"]["c"][2] - 0.080, y_, np.nan)))
+    ztip_ = float(zm_[i_])
+    while i_ + 1 < len(zm_) and not (nz_[i_] < -0.55):
+        i_ += 1
+    while i_ + 1 < len(zm_) and nz_[i_] < -0.55:
+        i_ += 1
+    return float(zm_[i_]), ztip_
+
+
+def front_heightfield_smooth(V, F, gx, gz, sigma, z_max):
+    """v6: the front heightfield y(x, z) of the mesh on the grid (front rays; valid = a front-facing hit within 2 mm of
+    the local median front -- not a ray through the seam's crack -- below z_max), Gaussian-smoothed by normalised
+    convolution over the valid samples. -> raw H (nan = invalid), smoothed S, valid mask, weight sum, H filled (the
+    invalid samples -- the seam's crack -- filled by a 0.75 mm normalised blur of the valid ones)."""
+    bvh_ = BVHTree.FromPolygons(V.tolist(), F)
+    gs_ = float(gx[1] - gx[0])
+    H_ = np.full((len(gz), len(gx)), np.nan)
+    for a_, z_ in enumerate(gz):
+        for b_, x_ in enumerate(gx):
+            h_ = bvh_.ray_cast(Vector((float(x_), -1.0, float(z_))), Vector((0.0, 1.0, 0.0)), 2.0)
+            if h_[0] is not None and abs(h_[1][1]) > 0.2:
+                H_[a_, b_] = h_[0][1]
+    Hn_ = np.where(np.isnan(H_), 9.0, H_)
+    r_ = int(round(0.002 / gs_))
+    med_ = np.median(np.lib.stride_tricks.sliding_window_view(np.pad(Hn_, r_, mode="edge"), (2 * r_ + 1, 2 * r_ + 1)), axis=(2, 3))
+    val_ = ~np.isnan(H_) & (np.abs(Hn_ - med_) < 0.002) & (gz[:, None] < z_max)
+    k_ = np.exp(-0.5 * (np.arange(-int(3 * sigma / gs_), int(3 * sigma / gs_) + 1) * gs_ / sigma) ** 2)
+
+    def blur_(A):
+        A = np.apply_along_axis(lambda r: np.convolve(r, k_, mode="same"), 1, A)
+        return np.apply_along_axis(lambda c: np.convolve(c, k_, mode="same"), 0, A)
+    ws_ = blur_(val_.astype(float))
+    S_ = blur_(np.where(val_, H_, 0.0)) / np.maximum(ws_, 1e-9)
+    k_ = np.exp(-0.5 * (np.arange(-int(3 * 0.00075 / gs_), int(3 * 0.00075 / gs_) + 1) * gs_ / 0.00075) ** 2)
+    f_ = blur_(val_.astype(float))
+    Hf_ = np.where(val_, H_, np.where(f_ > 1e-3, blur_(np.where(val_, H_, 0.0)) / np.maximum(f_, 1e-9), np.nan))
+    return H_, S_, val_, ws_, Hf_
+
+
+def grid_bilinear(A, gx, gz, x_, z_):
+    gs_ = float(gx[1] - gx[0])
+    ix_ = np.clip((x_ - gx[0]) / gs_, 0, len(gx) - 1.000001); iz_ = np.clip((z_ - gz[0]) / gs_, 0, len(gz) - 1.000001)
+    j_, i_ = np.floor(ix_).astype(int), np.floor(iz_).astype(int); tx_, tz_ = ix_ - j_, iz_ - i_
+    return (A[i_, j_] * (1 - tx_) * (1 - tz_) + A[i_, j_ + 1] * tx_ * (1 - tz_) + A[i_ + 1, j_] * (1 - tx_) * tz_ +
+            A[i_ + 1, j_ + 1] * tx_ * tz_)
+
+
+MOUTH_SMOOTH_INFO = None
+if MOUTH_SMOOTH is not None and SEAM is not None:
+    # v6 SMOOTH MOUTH SKIN (review-log 2026-09-29 "Wren v6 mouth feedback": nose to chin reads as smooth uninterrupted
+    # skin): the mouth zone's front skin moves onto its own Gaussian-smoothed front heightfield (MOUTH_SMOOTH: full over
+    # the zone core, faded out over the border; hidden layers up to the 7th mm behind move with it, none past the 8th --
+    # every layer keeps its order and the upper rim its LIP_RIM_STEP lead). The bridge zone's edge kinks, the seam's rim
+    # strip (tilted 5 deg down, measured on v5.1) and the lip-corner folds become one smooth surface; the line's iso-cut
+    # slivers then lie in their parent facets' planes (same tangent frame as their neighbours: a sliver too small to own a
+    # texel no longer decodes a neighbour's texel into a wrong normal -- the dark band along the seam, rendered).
+    _sg, _X0, _U0, _D0, _FD, _NC, _DF, _DN = [v_ * 1e-3 for v_ in MOUTH_SMOOTH]
+    Z_NOSE_BOTTOM_S1, _ = nose_bottom_z(BV, BF)
+    _zs0 = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
+    _pad = _FD + 3.0 * _sg
+    _gx = np.arange(-(_X0 + _pad), _X0 + _pad + 1e-9, 0.0005)
+    _gz = np.arange(_zs0 - (_D0 + _pad), _zs0 + _U0 + _pad + 1e-9, 0.0005)
+    _H, _S, _val, _ws, _Hf = front_heightfield_smooth(BV, BF, _gx, _gz, _sg, Z_NOSE_BOTTOM_S1 - _NC)
+    _okg = ~np.isnan(_Hf) & (_ws > 0.5 * float(_ws.max())) & (_gz[:, None] < Z_NOSE_BOTTOM_S1 - _NC)
+    _Dg = np.where(_okg, _S - np.where(_okg, _Hf, 0.0), 0.0)
+    _dzv = BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"])
+    _W = (1.0 - smoothstep(_X0, _X0 + _FD, np.abs(BV[:, 0]))) * (1.0 - smoothstep(_U0, _U0 + _FD, _dzv)) * \
+        (1.0 - smoothstep(_D0, _D0 + _FD, -_dzv)) * (BV[:, 2] < Z_NOSE_BOTTOM_S1 - _NC)
+    _inb = (_W > 0) & (grid_bilinear(_okg.astype(float), _gx, _gz, BV[:, 0], BV[:, 2]) > 0.999)   # (the seam's own
+    #   vertices included: the crack's invalid rays are filled -- left out, they stayed put and tilted the tiny faces round them)
+    _Hv = grid_bilinear(np.where(_okg, _Hf, 9.0), _gx, _gz, BV[:, 0], BV[:, 2])
+    _beh = np.maximum(BV[:, 1] - _Hv, 0.0)
+    _wd = 1.0 - smoothstep(_DF, _DN, _beh)
+    _mv6 = np.where(_inb, _W * _wd * grid_bilinear(_Dg, _gx, _gz, BV[:, 0], BV[:, 2]), 0.0)
+    _y06 = BV[:, 1].copy()
+    BV[:, 1] += _mv6
+    _core = _val & (np.abs(_gx)[None, :] <= _X0) & ((_gz[:, None] - np.interp(_gx, SEAM["xs"], SEAM["zc"])[None, :]) <= _U0) & \
+        ((_gz[:, None] - np.interp(_gx, SEAM["xs"], SEAM["zc"])[None, :]) >= -_D0) & (_gz[:, None] < Z_NOSE_BOTTOM_S1 - _NC)
+    MOUTH_SMOOTH_INFO = {"sigma_mm": MOUTH_SMOOTH[0], "zone_mm": {"half_width": MOUTH_SMOOTH[1], "above_seam": MOUTH_SMOOTH[2],
+                                                                  "below_seam": MOUTH_SMOOTH[3], "fade": MOUTH_SMOOTH[4]},
+                         "nose_clear_mm": MOUTH_SMOOTH[5], "depth_mm": MOUTH_SMOOTH[6:8], "nose_bottom_z": round(Z_NOSE_BOTTOM_S1, 5),
+                         "grid": [len(_gz), len(_gx)], "valid_samples": int(_val.sum()),
+                         "verts_moved": int((np.abs(_mv6) > 1e-7).sum()), "move_mm_max": round(1000 * float(np.abs(_mv6).max()), 3),
+                         "move_mm_p95": round(1000 * float(np.percentile(np.abs(_mv6[np.abs(_mv6) > 1e-7]), 95)), 3) if (np.abs(_mv6) > 1e-7).any() else 0.0,
+                         "front_vs_smooth_mm_in_core_before": {"max": round(1000 * float(np.abs(_S - _H)[_core].max()), 3),
+                                                               "p95": round(1000 * float(np.percentile(np.abs(_S - _H)[_core], 95)), 3)}}
+    if EYE_SCALE != 1.0:
+        _mvz = 1000 * np.abs(BV[:, 1] - _y06)
+        MOUTH_SMOOTH_INFO["move_mm_by_v4_zone"] = {k: round(float(_mvz[m].max()), 3) for k, m in LEAK_ZONES.items()}
+    report["mouth_smooth"] = MOUTH_SMOOTH_INFO
+    print("MOUTHSMOOTH", json.dumps(MOUTH_SMOOTH_INFO))
 for o in (hb, rig0):
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):
@@ -999,6 +1126,34 @@ report["chin"] = {"chin_bottom_z": round(Z_CHIN, 4), "chin_front_y": round(Y_CHI
 
 
 
+
+# v6 MOUTH PLACEMENT (review-log 2026-09-29 "Wren v6 mouth feedback": re-placed per the FE portrait's proportions) -- the
+# same landmarks improve/wren_mouth_probe.py measures on the delivered mesh: going down the midline from the nose tip, the
+# NOSE BOTTOM = the end of the nose's underside (front-ray hit normals facing down past -0.55: the drawn nose mark of the
+# FE / anime faces); the CHIN = below the seam, the first row whose hit is edge-on (|n_y| < 0.34: the jaw outline of a front
+# view) or that jumps back > 8 mm. v_ratio = (nose bottom - seam) / (nose bottom - chin): the Ashe portrait 0.29.
+Z_NOSE_BOTTOM, Z_NOSE_TIP = nose_bottom_z(BV, BF)
+_zm6 = np.arange(EYE["L"]["c"][2] - 0.020, EYE["L"]["c"][2] - 0.150, -0.0001)
+_h6 = [BVH_BODY.ray_cast(Vector((0.0, -0.6, float(z_))), Vector((0.0, 1.0, 0.0)), 1.0) for z_ in _zm6]
+_y6 = np.array([h[0][1] if h[0] is not None else np.nan for h in _h6])
+_ny6 = np.array([h[1][1] if h[0] is not None else np.nan for h in _h6])
+_i6 = int(np.argmin(np.abs(_zm6 - Z_SLIT)))
+while _i6 + 1 < len(_zm6) and not ((not np.isnan(_ny6[_i6]) and abs(_ny6[_i6]) < 0.34) or
+                                   (not np.isnan(_y6[_i6 + 1]) and _y6[_i6 + 1] - _y6[_i6] > 0.008)):
+    _i6 += 1
+Z_CHIN_OUTLINE = float(_zm6[_i6])
+report["mouth_placement"] = {"nose_tip_z": round(Z_NOSE_TIP, 5), "nose_bottom_z": round(Z_NOSE_BOTTOM, 5), "seam_z": round(Z_SLIT, 5),
+                             "chin_outline_z": round(Z_CHIN_OUTLINE, 5),
+                             "nose_bottom_to_seam_mm": round(1000 * (Z_NOSE_BOTTOM - Z_SLIT), 2),
+                             "seam_to_chin_mm": round(1000 * (Z_SLIT - Z_CHIN_OUTLINE), 2),
+                             "v_ratio": round((Z_NOSE_BOTTOM - Z_SLIT) / (Z_NOSE_BOTTOM - Z_CHIN_OUTLINE), 3),
+                             "seam_width_mm": round(1000 * float(SEAM["xs"].max() - SEAM["xs"].min()), 1) if SEAM is not None else None,
+                             "eye_spacing_mm": round(2000 * float(EYE["L"]["c"][0]), 2)}
+if SEAM is not None:
+    report["mouth_placement"]["w_eyes"] = round(float(SEAM["xs"].max() - SEAM["xs"].min()) / (2.0 * float(EYE["L"]["c"][0])), 3)
+    report["mouth_placement"]["seam_level_mm"] = round(1000 * float(np.ptp(SEAM["zc"] - (smirk_rise(SEAM["xs"], SEAM["xs"].min(), SEAM["xs"].max())
+                                                                                      if MOUTH_SMIRK is not None and MOUTH_SMIRK_GEO is not None else 0.0))), 2)
+print("PLACEMENT", json.dumps(report["mouth_placement"]))
 report["mouth"] = {"lip_pairing_pre_cut": lip_pairing(BVH_BODY, Z_SLIT)}
 print("MOUTH", json.dumps(report["mouth"]))
 _scalp = HEAD_B & (BV[:, 2] > EYE["L"]["c"][2])

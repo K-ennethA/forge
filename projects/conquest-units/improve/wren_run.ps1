@@ -18,6 +18,11 @@
 #   (bake_hair_normal), same gate.
 #   v5.1 (the hair-face decoupling): + a third process, the hair-stability probe (wren_build.py --hair-digest-only under a
 #   face edit); HAIRSTABLE = the build's, the twin's and the face-edited exact hair digests, all three must match.
+# v6 (review-log 2026-09-29 "Wren v6 mouth feedback" + "addendum"): renders are written v6-prefixed (wren_v6_*); the v5
+# stills are the comparison baseline (the v5.1 mouth probe wren_v5_mprobe.{json,png} was run once off the committed v5.1 rig
+# before the v6 build replaced it). + the MOUTH PROBE on the delivered v6 rig (improve/wren_mouth_probe.py ->
+# wren_v6_mprobe.*: orthographic mouth renders with the line repainted skin -- the second-feature proof -- and the
+# placement ratios vs the FE portrait).
 param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # never assign lowercase $p: PowerShell names are case-insensitive
@@ -59,7 +64,7 @@ if (-not $SkipBuild) {
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""
 $R = "`"$I\wren_render.py`""
-$W = "`"$OUT\wren_v5`""
+$W = "`"$OUT\wren_v6`""
 $vJobs = @(
   @("check_improved", @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\improved\check_wren.json`"")),
   @("check_rigged",   @("--background",$RB,"--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$P\rigged\check_wren.json`"")),
@@ -70,9 +75,10 @@ $vJobs = @(
   @("render_close",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"cloak,cloak_tq,patches,necklace,bracer,bracer_front,fork_full,boots,boots_front,torso","--pose","idle:1")),
   @("render_fork",    @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"fork_head")),   # rest pose: the fork upright, tines face-on
   @("render_ortho",   @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"ortho_front,ortho_side,ortho_back","--pose","idle:1")),
-  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v5_winter`"","front,threequarter,back,portrait,hair_close,head_tq_back","--pose","idle:1")),
-  @("face_probe",     @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\wren_v5_face_probe`"")),
-  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v5"))
+  @("render_winter",  @("--background",$RW,"--factory-startup","--python",$R,"--","`"$OUT\wren_v6_winter`"","front,threequarter,back,portrait,hair_close,head_tq_back","--pose","idle:1")),
+  @("face_probe",     @("--background","`"$P\improved\wren.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\wren_v6_face_probe`"")),
+  @("mouth_probe",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_mouth_probe.py`"","--","`"$OUT\wren_v6_mprobe`"")),
+  @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v6"))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {
@@ -84,4 +90,5 @@ foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)"
 "compose exit=$LASTEXITCODE"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_wren_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 (Get-Content "$I\log_wren_face_probe.txt" | Select-String "^PROBE").Line
+(Get-Content "$I\log_wren_mouth_probe.txt" | Select-String "^MPROBE ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

@@ -38,6 +38,15 @@ the front convex hull of the nose base and the chin (LIP_PROFILE "bridge", LIP_B
 lip-chin notch; the rims folded flat against it, LIP_HIDDEN_K, LIP_RIM_STEP 0.1 mm), the mouth zone's hidden layers left out
 of the bake high and the folded rims harvested (MOUTH_HIDDEN), its AO floored to 1.0. The drawn smirk line + the seal kept;
 the eyes, lashes, brows, hair and everything below the neck are v4.
+v6 (review-log 2026-09-29 "Wren v6 mouth feedback" + "addendum": ONE mouth). Diagnosed on the v5.1 rig (wren_mouth_probe.py:
+orthographic renders with the line repainted skin): TWO features -- the drawn line (29 mm) and the sealed seam's crease
+(46 mm, running 0.5-1.4 mm under the line and curving down to 3 mm below its level past its ends: the MPFB mouth corners
+5.3 mm down) -- plus the bridge zone's edge kinks as a lip-lens outline. v6: the MOUTH itself re-placed and re-sized by the
+MPFB dials (MOUTH HEIGHT / MOUTH WIDTH / mouth corners level: the seam 39 mm = 0.64 x the eye spacing, at 0.29 of the way
+from the nose bottom to the chin -- the Ashe portrait's ratios, REF_MOUTH), the smirk built into the seam (MOUTH_SMIRK_GEO),
+the line painted over the WHOLE seam (MOUTH_LEN None, MOUTH_LINE_EXT; MOUTH_LINE_REFINE / _SNAP / _CENTROID: no gap at the
+risen corner), and nose-to-chin smooth skin: the mouth zone's front skin moved onto its Gaussian-smoothed heightfield
+(MOUTH_SMOOTH) and its normal texels written from that smooth proxy (MOUTH_PROXY). Everything else is v5.1.
 
 LESSONS APPLIED FROM THE START (vampwarrior v1 -> v4.2, review-log 2026-09-26 entries):
   - MPFB2 base tuned STYLISED immediately (age macro at 16 years, anime face dials: larger eyes, soft jaw, small nose),
@@ -88,11 +97,18 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
     "nose/nose-scale-horiz-decr": 0.40, "nose/nose-volume-decr": 0.45, "nose/nose-point-width-decr": 0.60,  # small nose
     "nose/nose-flaring-decr": 0.50, "nose/nose-nostrils-width-decr": 0.50, "nose/nose-scale-vert-decr": 0.20,  # (anime: no nostril read)
     "head/head-scale-vert-incr": 0.18, "cheek/l-cheek-bones-incr": 0.20, "cheek/r-cheek-bones-incr": 0.20,  # longer teen face
-    "mouth/mouth-scale-horiz-decr": 0.20,                                  # small mouth
+    "mouth/mouth-scale-horiz-decr": 0.80,                                  # v6 "MOUTH WIDTH": the seam (= the drawn line) spans
+                                      #   39 mm = 0.64 x the eye spacing, the FE Ashe portrait's mouth : eye-spacing ratio
+                                      #   (measured 64.3 / 100.3 px); v1-v5 0.20 = a 46 mm seam under a 29 mm line (v6 feedback)
+    "mouth/mouth-trans-up": 0.85,                                          # v6 "MOUTH HEIGHT": the mouth moved up 6 mm, to 0.29 of
+                                      #   the way from the nose bottom to the chin (the Ashe portrait: 0.29, measured along
+                                      #   the tilted face axis); v1-v5 0 = 0.36
     "eyebrows/eyebrows-angle-down": 0.25,                                  # determined brow set
     "neck/neck-scale-horiz-decr": 0.20,                                    # slender teen neck
     "mouth/mouth-lowerlip-volume-incr": 0.50, "mouth/mouth-upperlip-volume-decr": 0.40,   # v2 "lip pairing": matched upper / lower lip
-    "mouth/mouth-angles-down": 0.15,                                       # "mouth corners": a relaxed neutral set (v1 0.45 + the compression = the pinch)
+    "mouth/mouth-angles-up": 0.50,                                         # v6 "mouth corners": the seam LEVEL to its ends (within
+                                      #   +-0.7 mm; v1-v5 "mouth-angles-down" 0.15 = the corners 5.3 mm down: the drawn line
+                                      #   stopped short of a seam that curved down past it = the second feature)
     "expression/units/caucasian/eye-left-slit": 0.20, "expression/units/caucasian/eye-right-slit": 0.20,   # the sheet's determined lids (v1 0.30)
     "legs/upperlegs-height-incr": 0.20, "legs/lowerlegs-height-incr": 0.15,  # leggy stylised proportions
 }                                     # (v1's "expression/units/caucasian/mouth-compression": 1.0 is GONE: it rolled the upper lip in)
@@ -206,11 +222,45 @@ BROW_TAPER = 1.2
 LIP = None                            # lip tint: half width / upper height / lower depth (m) around the seam (v2/v3 (0.017,
                                       #   0.0026, 0.0026)); v4 None = no tint (the 2D-anime mouth is the drawn line alone)
 LIP_DZ = 0.0
-MOUTH_LINE = (0.0011, 0.30)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
-MOUTH_LEN = 0.0165                    # v4 "mouth line length": the line covers |x| <= this (m) of the seam (v3: the whole
-                                      #   46 mm seam); None = the whole seam
+MOUTH_LINE = (0.0011, 0.45)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
+                                      #   (v2-v5 0.30: the 0.33 mm ends fell between the mesh's vertices and the painted line
+                                      #   stopped 1.7 mm short of each seam end; v6 0.45 = 0.5 mm ends)
+MOUTH_LINE_EXT = 0.0010               # v6: with MOUTH_LEN None the line runs this far (m) past each seam end, over the corner
+                                      #   folds (the seam's last millimetre was the "second feature" at the corners)
+MOUTH_LINE_REFINE = {"passes": 3, "samples": 41}   # v6: the thin-stroke edge refinement of the line (v2-v5 the default 2 /
+                                      #   11: an edge crossing the rising smirk corner missed the 0.8 mm stroke = a gap in
+                                      #   the line, rendered)
+MOUTH_LINE_CENTROID = 0.00015         # v6: a face is also painted when its centroid lies this far (m) inside the stroke by the
+                                      #   exact field (the rim faces the interpolated field missed: a gap at the smirk
+                                      #   corner); 0 = every straddling face too (spiky edges, rendered)
+MOUTH_LINE_SNAP = 0.02                # v6: the line's iso-cut snaps a crossing onto a vertex only within this edge fraction
+                                      #   (the default CUT_SNAP 0.12 stepped the rising smirk corner by up to 0.3 mm)
+MOUTH_LEN = None                      # v4 "mouth line length": the line covers |x| <= this (m) of the seam; None = the whole
+                                      #   seam. v4/v5 0.0165 (a 29 mm line on a 46 mm seam: "the line doesn't fill the area");
+                                      #   v6 None: the seam is narrowed to the line's width instead (MOUTH WIDTH), ONE mouth
 MOUTH_SMIRK = (0.0011, 1.0, 0.45)     # v4 "smirk": the corner on his left (+1; -1 = his right) rises this much (m) over the
                                       #   outer 3rd-value fraction of that half; None = level
+MOUTH_SMIRK_GEO = 0.006               # v6: the smirk is built INTO the seam (the lips near it lifted by the smirk profile,
+                                      #   full on the seam, fading to none this far (m) above / below it and 5 mm past its
+                                      #   end), so the line sits exactly on the opening at the risen corner too (v4/v5: painted
+                                      #   only, 1.1 mm above the seam there); None = painted only
+MOUTH_SMOOTH = (4.0, 30.0, 12.0, 28.0, 6.0, 2.0, 2.0, 5.0)   # v6 "smooth skin, nose to chin" (GEOMETRY): the mouth
+                                      #   zone's front skin moves onto its own front heightfield Gaussian-smoothed (sigma,
+                                      #   mm) -- full within |x| <= the 2nd mm, the 3rd mm above / 4th mm below the seam,
+                                      #   faded out over the 5th mm; samples above (nose bottom - the 6th mm) left out; hidden
+                                      #   layers up to the 7th mm behind the front move with it, none past the 8th. The seam's
+                                      #   5-deg rim strip, the bridge edge kinks and the corner folds become one smooth
+                                      #   surface, and the line's cut slivers lie in their parent facets' planes; None = off
+MOUTH_PROXY = (4.0, 30.0, 12.0, 28.0, 6.0, 2.0)   # v6 "smooth skin, nose to chin": the mouth zone's normal texels are
+                                      #   WRITTEN from a SMOOTH PROXY (the hair's one-volume trick, face side): the bake
+                                      #   high's front heightfield Gaussian-smoothed (sigma, mm; normalised over the valid
+                                      #   samples), its normal encoded per texel in the flat facet's tangent frame -- full
+                                      #   within |x| <= the 2nd mm, the 3rd mm above / 4th mm below the seam, blended out to the
+                                      #   ray bake over the 5th mm; samples above (nose bottom - the 6th mm) left out (the
+                                      #   nose's own underside never bleeds in). The seam's rim sheets, the bridge zone's edge
+                                      #   kinks and the flat facets then shade as one smooth surface: nothing but the drawn
+                                      #   line reads (v5: the seam baked as a jagged crease 3 mm below the line's ends); None
+                                      #   = off (v5)
 FACE_UV_SCALE = 4.5                   # v2 "face smoothing": the face zone's texel density x this (linear) vs the rest of the
                                       #   UV layout, so its normal bake resolves the smooth high per facet
 FACE_NORMAL_REF = "flat"              # v2 "face smoothing": the face zone's normal map is baked against its FLAT facets (it
@@ -470,6 +520,27 @@ V4_FACE = {                           # v4 baseline (commit 39f29a6): its commit
               "probe_relief_mm_max": 0.912, "probe_past_line_ends_mm": 0.912, "probe_lower_lip_band_mm": 0.891,
               "probe_upper_proud_detrended_mm": 0.718, "probe_seam_recess_mm": 0.612, "ao_floor": "0.93 within 2.5 mm of the seam"},
     "iris_coverage_pct": {"L": 58.0, "R": 58.1}, "total_tris": 48428}
+V51_MOUTH = {                         # v5.1 baseline (commit f69ec03), MEASURED by improve/wren_mouth_probe.py on the committed
+                                      #   v5.1 rig (renders/wren/wren_v5_mprobe.json, rendered once before the v6 build
+                                      #   replaced it) + the v5.1 seam off its report: the v6 report quotes it next to v6
+    "line": {"x_mm": [-14.52, 14.78], "width_mm": 29.3, "mm_below_eyes": 75.24},
+    "seam": {"width_mm": 46.0, "corner_drop_mm": 5.3},
+    "second_feature_seam_trace_noline": {"columns": 44, "x_mm": [-23.0, 23.0], "dz_mm_below_line_max": 3.0,
+                                          "contrast_max": 0.126, "under_the_line_dz_mm": [-1.4, -0.5]},
+    "placement": {"nose_bottom_mm_below_eyes": 49.9, "chin_mm_below_eyes": 119.9, "v_ratio": 0.362,
+                  "w_eyes": 0.482, "w_face": 0.237, "face_w_at_line_mm": 123.6}}
+REF_MOUTH = {                         # v6: the reference proportions MEASURED off the pictures (pixel picks on 3-6x zooms,
+                                      #   design/reference/): Ashe (fe-ashe-portrait.png, 512 px, three-quarter, head tilted
+                                      #   16.8 deg -- distances along the tilted face axis / the eye line): eyes (240, 246) /
+                                      #   (336, 275), nose-mark bottom (298.3, 336.3), mouth ends (241.3, 348.7) / (304.7,
+                                      #   359.5), chin point (269.2, 415), face outline along the eye line through the mouth
+                                      #   (166.7, 321.7) / (323.3, 370.3). Alicia (alicia_face_front.png, 1024 px, front):
+                                      #   eyes (410, 535) / (615, 535), nose dot (512.5, 602.5), mouth 484 .. 540 at 677.5,
+                                      #   face 292 px wide at the mouth
+    "ashe": {"v_ratio": 0.29, "w_eyes": 0.64, "w_face_projected": 0.39, "mouth_px": 64.3, "eye_spacing_px": 100.3,
+             "face_px_at_mouth": 164.0, "nose_to_mouth_px": 24.3, "nose_to_chin_px": 83.7},
+    "alicia": {"w_eyes": 0.27, "w_face": 0.19, "mouth_px": 56.0, "eye_spacing_px": 205.0, "face_px_at_mouth": 292.0,
+               "note": "chibi proportions (tiny lower face): the Ashe portrait is the binding target (spec)"}}
 MOUTH_HIDDEN = (0.034, 0.014, 0.030, 0.00005, 0.06, 0.003)   # v5 "flat mouth bakes flat": in the mouth zone (|x| <
                                       #   the 1st m, the 2nd m above / the 3rd m below the seam, up to the 5th m behind the
                                       #   lips' front) every face facing backward or lying more than the 4th m behind the front
@@ -558,10 +629,12 @@ for i_, a_ in enumerate(argv):
         assert k_ in globals() and k_.isupper(), "unknown constant " + k_
         globals()[k_] = OVERRIDES[k_] = ast.literal_eval(v_)
 SCRATCH = argv[argv.index("--scratch") + 1] if "--scratch" in argv else None
-OUT_IMPROVED = os.path.join(SCRATCH or os.path.join(ROOT, "improved"), UNIT + ".blend")
-OUT_RIGGED = os.path.join(SCRATCH or os.path.join(ROOT, "rigged"), UNIT + ".blend")
-OUT_GLB = os.path.join(SCRATCH or os.path.join(ROOT, "rigged"), UNIT + ".glb")
-TEX_DIR = os.path.join(SCRATCH or os.path.join(ROOT, "improved"), "textures")
+_OUT_ROOT = SCRATCH or ROOT            # (v6: a scratch build mirrors improved/ + rigged/, so its reports never overwrite
+                                      #   each other and the probes run on it unchanged)
+OUT_IMPROVED = os.path.join(_OUT_ROOT, "improved", UNIT + ".blend")
+OUT_RIGGED = os.path.join(_OUT_ROOT, "rigged", UNIT + ".blend")
+OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
+TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "twin" if DIGEST_ONLY else ("scratch" if SCRATCH else "main")
 report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "name_status": "named by the sheet (WREN, Oakvale Village)",
           "source": "none: the artist's three-view sheet design/reference/wren-character-sheet.webp", "tier": "hero",

@@ -48,11 +48,13 @@ if SEAM is not None:
     _sx0, _sx1 = float(SEAM["xs"].min()), float(SEAM["xs"].max())
     if MOUTH_LEN is not None:
         _sx0, _sx1 = max(_sx0, -MOUTH_LEN), min(_sx1, MOUTH_LEN)
+    else:                                          # v6: the line runs MOUTH_LINE_EXT past each end of the seam (over the
+        _sx0, _sx1 = _sx0 - MOUTH_LINE_EXT, _sx1 + MOUTH_LINE_EXT   # corner folds: no seam end is left unpainted)
 
 
     def mline_centre(x_):
         zc_ = np.interp(x_, SEAM["xs"], SEAM["zc"])
-        if MOUTH_SMIRK is not None:
+        if MOUTH_SMIRK is not None and MOUTH_SMIRK_GEO is None:   # (v6: the seam carries the smirk itself)
             h_ = MOUTH_SMIRK[1] * x_ / max(_sx1 if MOUTH_SMIRK[1] > 0 else -_sx0, 1e-6)       # 0 at the centre .. 1 at the corner
             zc_ = zc_ + MOUTH_SMIRK[0] * smoothstep(1.0 - MOUTH_SMIRK[2], 1.0, h_) ** 1.5
         return zc_
@@ -471,8 +473,8 @@ CUTS.append(("hair", 0.0, g_and(gv("headm", 0.5))))
 t_ = time.time()
 REFINE = {"brow_" + s: refine_thin("brow_" + s, lambda P_, s=s: brow_field(P_, s)) for s in "LR"}
 if SEAM is not None:
-    REFINE["mline"] = refine_thin("mline", mline_field)
-cut_log = [iso_cut(k_, tau_, gate_) for k_, tau_, gate_ in CUTS]
+    REFINE["mline"] = refine_thin("mline", mline_field, **MOUTH_LINE_REFINE)
+cut_log = [iso_cut(k_, tau_, gate_, **({"snap": MOUTH_LINE_SNAP} if k_ == "mline" else {})) for k_, tau_, gate_ in CUTS]
 _ndeg = len(bm.faces)
 bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
 for _ in range(3):
@@ -531,7 +533,11 @@ if SEAM is None:                                   # v1 rule: lip-zone skin rece
         if c_[1] > float(np.interp(c_[0], _mx, _mfront)) + MOUTH_IN_D:
             reg[fi] = "mouth"
 else:                                              # v2: the thin line on the sealed seam
-    reg[_head & (FV["mline"] < 0) & (FV["y"] < Y_LIP + 0.012) & (np.abs(FV["z"] - Z_LIP) < 0.015)] = "mouth"
+    # (v6: + every face whose centroid lies in the stroke by the EXACT field -- a cut vertex of a later field carries the
+    # line's field linearly interpolated, and a rim face over the stroke averaged outside it: a gap in the line, rendered)
+    _mfc = np.array([CV[f].mean(0) for f in CF])
+    reg[_head & ((FV["mline"] < 0) | (mline_field(_mfc) < -MOUTH_LINE_CENTROID)) & (FV["y"] < Y_LIP + 0.012) &
+        (np.abs(FV["z"] - Z_LIP) < 0.015)] = "mouth"
 reg[_head & ((FV["eye_L"] < 0) | (FV["eye_R"] < 0))] = "liner"
 if LASH_PROFILE is not None:
     # v3: the upper band (and the wing) is the LASH region (near-black); the thin lower line stays 'liner' (lighter)
