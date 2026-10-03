@@ -14,12 +14,15 @@ survey/color1_probe.md, set explicitly: export_vertex_color='ACTIVE' + export_al
 active set ('Col', palette albedo), COLOR_1 = 'Glow' (the glow mask the Conquest CUSTOM0 extension reads).
 (export_all_vertex_colors already defaults True in Blender 5.0, which is why the builds' calls carry COLOR_1.)
 
-Gate: every primitive carries COLOR_0 and COLOR_1, and the glb's colour values are the blend's ('Col' -> COLOR_0,
-'Glow' -> COLOR_1): every distinct RGBA in each glb set lies within COLOUR_TOL of a distinct source value, and every
-source value on a non-sliver triangle is in the glb (catches a swapped / missing / re-ordered set). KNOWN EXPORTER LOSSES, flagged not hidden: (a) HDR_CLAMPED -
-the extra set (COLOR_1) is written as normalized u16 and CLIPPED to [0, 1], so palette glow with emission_scale > 1
-loses its HDR tiers; (b) ALPHA_DROPPED - a set is written VEC3 (material reads no vertex alpha) while the source
-carries alpha < 1. Exit codes: 0 = EXACT, 2 = only those flagged losses (glb == clip(source) exactly), 1 = FAIL.
+GLOW CARRIER = '_GLOW' (decision 2026-10-02): a float VEC3 copy of Glow.rgb added in memory before export and
+written by export_attributes=True without any clamp. Every unit gets it (one read path in the Godot extension).
+
+Gate: every primitive carries COLOR_0, COLOR_1 and _GLOW, and the glb's values are the blend's ('Col' -> COLOR_0,
+'Glow' -> COLOR_1 and _GLOW): every distinct value in each glb set lies within COLOUR_TOL of a distinct source value,
+and every source value on a non-sliver triangle is in the glb (catches a swapped / missing / re-ordered set).
+_GLOW must be EXACT. COLOR_1 stays for compat but is normalized u16 CLIPPED to [0, 1] by the exporter, so glow > 1
+is lost there - reported as color1_compat_hdr_values_clamped, not failed. ALPHA_DROPPED = a colour set written VEC3
+(material reads no vertex alpha) while the source carries alpha < 1. Exit: 0 = EXACT, 2 = ALPHA_DROPPED only, 1 = FAIL.
 Prints one GLB_EXPORT {json}.
 Emission-strength keys (geode/mycothrall idle pulse) are NOT exported in ACTIONS mode (rigged/geode_gltf_probe.json):
 godot-import-notes item 2 fallback = shader-side pulse.
@@ -33,6 +36,7 @@ import sys
 COLOUR_TOL = 2e-3          # distinct-value match tolerance: the exporter writes normalized u16 (step 1.5e-5)
 SLIVER_M2 = 1e-6           # a source colour found ONLY on tris below 1 mm2 may be absent from the glb (exporter drops slivers)
 GLOW_SET, ALBEDO_SET = "Glow", "Col"
+GLOW_ATTR = "_GLOW"        # float copy of Glow.rgb, exported unclamped (decision 2026-10-02: glow ships as _GLOW)
 # unit -> rigged source blend (project-relative) when it is not rigged/<unit>.blend
 SOURCES = {
     "eldroot": "rigged/eldroot_standing4.blend",   # standing v4 = current (review-log 2026-09-25 "Eldroot v4 delivered")
@@ -41,7 +45,8 @@ EXPORT_KW = dict(export_format="GLB", use_selection=True, export_yup=True, expor
                  export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
                  export_skins=True, export_def_bones=False, export_morph=True, export_morph_animation=True,
                  export_vertex_color="ACTIVE", export_all_vertex_colors=True,
-                 export_active_vertex_color_when_no_material=True)
+                 export_active_vertex_color_when_no_material=True,
+                 export_attributes=True)      # ships the float '_GLOW' attribute (see GLOW_ATTR)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -78,6 +83,7 @@ def audit(path):
     return {"glb": os.path.basename(path), "bytes": len(d), "tris": tris, "primitives": prims,
             "COLOR_0": all("COLOR_0" in p["attributes"] for p in prims),
             "COLOR_1": all("COLOR_1" in p["attributes"] for p in prims),
+            "_GLOW": all("_GLOW" in p["attributes"] for p in prims),
             "animations": [a.get("name") for a in js.get("animations", [])],
             "skins": len(js.get("skins", [])), "joints": [len(s["joints"]) for s in js.get("skins", [])],
             "extensionsUsed": js.get("extensionsUsed", [])}
@@ -158,6 +164,18 @@ def main():
                 tr = kad.nla_tracks.new(); tr.name = a.name
                 st = tr.strips.new(a.name, int(a.frame_range[0]), a)
                 st.action_slot = ks
+    # _GLOW: a FLOAT_VECTOR copy of Glow.rgb on Glow's domain, added in memory only (the blend is never saved).
+    # export_attributes writes '_'-prefixed generic attributes as float accessors -- no [0, 1] clip, unlike the
+    # u16n COLOR_1 (measured: geode _GLOW max G 1.7, 7/7 distinct values). Glow's alpha is always 1 (palettes.paint).
+    underscore = {}
+    for o in meshes:
+        me = o.data
+        gl = me.color_attributes.get(GLOW_SET)
+        if not check_only and gl is not None and GLOW_ATTR not in me.attributes:
+            raw = np.empty(len(gl.data) * 4); gl.data.foreach_get("color", raw)
+            ga = me.attributes.new(GLOW_ATTR, "FLOAT_VECTOR", gl.domain)
+            ga.data.foreach_set("vector", raw.reshape(-1, 4)[:, :3].ravel())
+        underscore[o.name] = sorted(a.name for a in me.attributes if a.name.startswith("_"))
     missing = []
     if check_only:
         assert os.path.exists(out), out
@@ -170,9 +188,9 @@ def main():
     rep = audit(out)
     rep.update({"unit": unit, "source_blend": os.path.relpath(blend, ROOT), "rig": rig.name, "check_only": check_only,
                 "meshes": [o.name for o in meshes], "options_missing": missing,
-                "clips_in_blend": sorted(acts), "colour_gate": {}})
+                "clips_in_blend": sorted(acts), "underscore_attributes": underscore, "colour_gate": {}})
     d, js, bo = read_glb(out)
-    structure_ok = rep["COLOR_0"] and rep["COLOR_1"]
+    structure_ok = rep["COLOR_0"] and rep["COLOR_1"] and rep[GLOW_ATTR]
     hdr_lost = alpha_lost = 0
     for o in meshes:
         me = o.data
@@ -189,7 +207,7 @@ def main():
         big = lt.reshape(-1, 3)[ar > SLIVER_M2].ravel()
         tri_idx = {"CORNER": (lt, big), "POINT": (lv[lt], lv[big])}
         g = {}
-        for aname, cset in ((ALBEDO_SET, "COLOR_0"), (GLOW_SET, "COLOR_1")):
+        for aname, cset in ((ALBEDO_SET, "COLOR_0"), (GLOW_SET, "COLOR_1"), (GLOW_SET, GLOW_ATTR)):
             attr = me.color_attributes.get(aname)
             if attr is None or not prims:
                 g[cset] = "source attribute %r or glb mesh %r missing" % (aname, me.name)
@@ -211,12 +229,14 @@ def main():
             s_all, s_big, g_ = (np.unique(x[:, :c], axis=0) for x in (src, src_big, glb))
             clip = lambda x: np.unique(np.clip(x, 0, 1), axis=0)  # noqa: E731
             exact = covered(g_, s_all) == 0 and covered(s_big, g_) == 0
-            clamp_only = not exact and covered(g_, clip(s_all)) == 0 and covered(clip(s_big), g_) == 0
+            clamp_only = (cset == "COLOR_1" and not exact and covered(g_, clip(s_all)) == 0
+                          and covered(clip(s_big), g_) == 0)   # _GLOW must be EXACT; only compat COLOR_1 may clamp
             hdr = src[(src[:, :3] > 1 + 1e-6).any(axis=1) | (src[:, :3] < -1e-6).any(axis=1)]
-            alpha_dropped = bool(has_vec3 and (src[:, 3] < 1 - 1e-6).any())
+            alpha_dropped = bool(has_vec3 and cset != GLOW_ATTR and (src[:, 3] < 1 - 1e-6).any())
             g[cset] = {"from": aname, "encoding": sorted({"%s/%s%s" % (a["type"], a["componentType"],
                                                                        "n" if a.get("normalized") else "") for a in acc}),
                        "distinct_src": len(src), "distinct_glb": len(glb), "exact": exact,
+                       "glb_max": round(float(glb[:, :3].max()), 4),
                        "clamp_only": clamp_only, "alpha_dropped": alpha_dropped,
                        "src_values_only_on_slivers": covered(s_all, s_big),
                        "src_alpha_values": sorted({round(float(x), 3) for x in src[:, 3]})[:8],
@@ -238,9 +258,9 @@ def main():
         chans[a.get("name")] = kinds
     rep["animation_channels"] = chans
     rep["pass_structure"] = bool(structure_ok)
-    rep["hdr_values_clamped"] = hdr_lost
+    rep["color1_compat_hdr_values_clamped"] = hdr_lost   # informational: the glow carrier is _GLOW (gated EXACT)
     rep["alpha_dropped_sets"] = alpha_lost
-    flags = ["HDR_CLAMPED"] * bool(hdr_lost) + ["ALPHA_DROPPED"] * bool(alpha_lost)
+    flags = ["ALPHA_DROPPED"] * bool(alpha_lost)
     rep["verdict"] = "FAIL" if not structure_ok else ("+".join(flags) or "EXACT")
     print("GLB_EXPORT " + json.dumps(rep))
     sys.stdout.flush()

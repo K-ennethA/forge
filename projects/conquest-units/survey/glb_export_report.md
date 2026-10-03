@@ -80,3 +80,28 @@ Encoding in every glb: COLOR_0 is VEC3 float when the material reads no vertex a
   byte-identical to its build's own glb, which shows the call pattern matches the builds.
 - Not exported: skin variants (`*__<skin>.blend`). Not in scope.
 - Emission-pulse keys (geode, mycothrall) are absent in ACTIONS mode, as before (godot-import-notes item 2 fallback).
+
+## 2026-10-02 follow-up: glow now ships as float `_GLOW` (option (a))
+- What changed in the exporter (`improve/export_glb.py`):
+  - Before export, it adds a CORNER FLOAT_VECTOR `_GLOW` holding Glow.rgb. This happens in memory only; the blend is never saved.
+  - It exports with `export_attributes=True`, so `_GLOW` is written as a VEC3 float accessor with no clamp.
+  - COLOR_0 and COLOR_1 are unchanged, kept for compatibility.
+  - The gate now requires `_GLOW` to be EXACT. A clamped COLOR_1 is informational only (`color1_compat_hdr_values_clamped`). Exit codes: 0 = EXACT, 2 = ALPHA_DROPPED only, 1 = FAIL.
+- **Uniformity: all 16 units carry `_GLOW`.** The Godot extension reads `_GLOW` whenever a primitive has it and falls back to COLOR_1 only for glbs that don't. Every forge unit therefore takes the `_GLOW` branch. No other `_`-prefixed attribute exists on any unit mesh.
+- Re-export results:
+  - All 16 were re-exported, and a second export of each is byte-identical.
+  - An audit diff against the previous glbs shows nothing changed except the added `_GLOW` and the file size (+9 to 16%; geode 1.46 to 1.67 MB, magmoo 19.51 to 21.26 MB).
+  - `_GLOW` is EXACT on every unit. Glow max per unit: geode 1.70 (7/7 distinct values), duskmaw 2.00 (7/7), firefly_flame 1.60 (3/3), firesprite 1.40 (10/10, wand 4/4), magmoo 1.15 (8/8).
+  - firefly and firesprite still report ALPHA_DROPPED on COLOR_0. This is the material-wiring issue already noted and is not glow-related.
+- Extension (`addons/color1/color1_ext.gd`): the source is now `_GLOW` if present, else COLOR_1. The morph-name fix is kept.
+- Godot 4.6 gate (`compare_unit.py`, which checks against `_GLOW`; results identical on the editor-import and runtime paths):
+  | unit | verts | mismatch | unmatched | max glow read back in CUSTOM0 | verts > 1.0 |
+  |---|---|---|---|---|---|
+  | geode (skinned, 2 morphs) | 16934 | 0 | 0 | 1.70 (7 distinct = glb) | 2404 |
+  | duskmaw | 87482 | 0 | 0 | 2.00 (7 distinct) | 3076 |
+  | firefly (2 meshes, 3 surfaces) | 51250 | 0 | 0 | 1.60 (flame) | 3510 |
+  - COLOR_1 fallback: `probe.glb`, which has no `_GLOW`, still gives 0/24 mismatches.
+  - Godot keeps `_GLOW` in `state.json` and in the accessors, and its stock importer ignores the attribute without error.
+- Open item: the self-exporting `_build.py` scripts (duskmaw, firefly, firesprite, magmoo, supaoctto, vampito, vampwarrior, wren) still
+  write glbs without `_GLOW`. Their next build run would overwrite the current glbs and drop `_GLOW`. Fix: have the builds run `export_glb.py` after building,
+  or add the same attribute to their export calls. Those files are outside this lane's allowlist.

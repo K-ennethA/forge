@@ -1,7 +1,9 @@
 @tool
 class_name Color1Ext
 extends GLTFDocumentExtension
-# Decodes glTF COLOR_1 from the raw accessor and re-adds each surface with it as ARRAY_CUSTOM0 (RGBA_FLOAT).
+# Decodes the glow mask from the raw accessor and re-adds each surface with it as ARRAY_CUSTOM0 (RGBA_FLOAT).
+# Source: the float '_GLOW' attribute (forge export, unclamped HDR glow; decision 2026-10-02) when the primitive
+# has it, else COLOR_1 (normalized u16, clipped to [0, 1] by Blender). Forge ships _GLOW on every unit.
 
 func _read_accessor(state: GLTFState, ai: int) -> PackedColorArray:
 	var j: Dictionary = state.json
@@ -36,15 +38,16 @@ func _import_post_parse(state: GLTFState) -> Error:
 			var attrs: Dictionary = prims[si]["attributes"]
 			var arrays := im.get_surface_arrays(si)
 			var fmt := im.get_surface_format(si)
-			if attrs.has("COLOR_1"):
-				var cols := _read_accessor(state, int(attrs["COLOR_1"]))
+			var key := "_GLOW" if attrs.has("_GLOW") else "COLOR_1"
+			if attrs.has(key):
+				var cols := _read_accessor(state, int(attrs[key]))
 				var f := PackedFloat32Array()
 				for c in cols:
 					f.append_array([c.r, c.g, c.b, c.a])
 				if f.size() / 4 == (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size():
 					arrays[Mesh.ARRAY_CUSTOM0] = f
 					fmt |= Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT
-					print("Color1Ext: COLOR_1 -> CUSTOM0 on mesh ", mi, " surface ", si, " (", cols.size(), " verts)")
+					print("Color1Ext: ", key, " -> CUSTOM0 on mesh ", mi, " surface ", si, " (", cols.size(), " verts)")
 				else:
 					print("Color1Ext: vertex count mismatch, skipped")
 			var bsa := []

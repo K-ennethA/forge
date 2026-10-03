@@ -1,4 +1,4 @@
-"""Vertex-by-vertex check of Godot's CUSTOM0 against the glb's COLOR_1 (skinned-unit gate, 2026-10-02).
+"""Vertex-by-vertex check of Godot's CUSTOM0 against the glb's glow (_GLOW float when present, else COLOR_1) (skinned-unit gate, 2026-10-02).
 
     python compare_unit.py <unit.glb> <dump_unit.json>
 
@@ -41,7 +41,8 @@ def check_surface(gs, prim, d, js, bo):
     P = acc(d, js, bo, prim["attributes"]["POSITION"])
     N = acc(d, js, bo, prim["attributes"]["NORMAL"])
     U = acc(d, js, bo, prim["attributes"]["TEXCOORD_0"])
-    C = acc(d, js, bo, prim["attributes"]["COLOR_1"])
+    ref = "_GLOW" if "_GLOW" in prim["attributes"] else "COLOR_1"   # the extension's own source choice
+    C = acc(d, js, bo, prim["attributes"][ref])
     if C.shape[1] == 3:
         C = np.hstack([C, np.ones((len(C), 1))])
     gp = np.array(gs["pos"]).reshape(-1, 3)
@@ -53,12 +54,15 @@ def check_surface(gs, prim, d, js, bo):
     grid = defaultdict(list)
     for i, p in enumerate(P):
         grid[tuple(np.floor(p / tol).astype(int))].append(i)
-    res = {"godot_verts": len(gp), "glb_verts": len(P), "pos_tol_m": round(tol, 6),
+    res = {"ref_attr": ref, "ref_max": round(float(C[:, :3].max()), 4),
+           "godot_verts": len(gp), "glb_verts": len(P), "pos_tol_m": round(tol, 6),
            "custom0_present": gc is not None, "match": 0, "mismatch": 0, "unmatched": 0,
            "glb_colour_distinct": len(np.unique(np.round(C, 4), axis=0))}
     if gc is None:
         return res
     res["custom0_distinct"] = len(np.unique(np.round(gc, 4), axis=0))
+    res["custom0_max"] = round(float(gc[:, :3].max()), 4)
+    res["custom0_verts_above_1"] = int((gc[:, :3] > 1 + 1e-6).any(axis=1).sum())
     res["same_index_order_matches"] = int((np.abs(gc - C).max(1) < 2e-3).sum()) if len(gc) == len(C) else None
     bad = []
     for i in range(len(gp)):
