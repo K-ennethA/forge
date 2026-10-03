@@ -2872,9 +2872,11 @@ for act in (act_idle, act_walk, act_ball):
     st = tr.strips.new(act.name, 1, act)
     st.action_slot = next(s for s in act.slots if s.target_id_type == "KEY")
 t = time.time()
+import export_glb as _EG; _EG.add_glow_attr([o for o in scene.objects if o.select_get() and o.type == "MESH"])
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
                           export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
-                          export_skins=True, export_def_bones=False, export_morph=True, export_morph_animation=True)
+                          export_skins=True, export_def_bones=False, export_morph=True, export_morph_animation=True,
+                          export_attributes=True)
 for tr in list(kad.nla_tracks):
     kad.nla_tracks.remove(tr)
 rig.animation_data.action = None

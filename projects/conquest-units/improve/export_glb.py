@@ -101,6 +101,25 @@ import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 
 
+def add_glow_attr(meshes):
+    """Add the '_GLOW' FLOAT_VECTOR attribute (a copy of Glow.rgb) to every mesh object in *meshes*, in memory only.
+
+    Call this on the mesh objects that will be selected for glb export, immediately before
+    bpy.ops.export_scene.gltf(..., export_attributes=True).  The blend is never saved; the attribute exists only for
+    the duration of the export call.  Safe to call if '_GLOW' already exists (idempotent).
+
+    Used by the 8 self-exporting unit builds so they do not each duplicate the injection logic (DRY, 2026-10-02).
+    """
+    for o in meshes:
+        me = o.data
+        gl = me.color_attributes.get(GLOW_SET)
+        if gl is not None and GLOW_ATTR not in me.attributes:
+            raw = np.empty(len(gl.data) * 4)
+            gl.data.foreach_get("color", raw)
+            ga = me.attributes.new(GLOW_ATTR, "FLOAT_VECTOR", gl.domain)
+            ga.data.foreach_set("vector", raw.reshape(-1, 4)[:, :3].ravel())
+
+
 def distinct(rows):
     """distinct RGBA rows; a VEC3 colour set (the exporter drops a constant-1 alpha) is compared as alpha 1."""
     a = np.asarray(rows, dtype=np.float64)

@@ -1040,9 +1040,10 @@ for o in scene.objects:
 bpy.context.view_layer.objects.active = rig
 K.assign_action(rig, NEW_ACTS["idle"])
 t = time.time()
+import export_glb as _EG; _EG.add_glow_attr([o for o in scene.objects if o.select_get() and o.type == "MESH"])
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
                           export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
-                          export_skins=True, export_def_bones=False)
+                          export_skins=True, export_def_bones=False, export_attributes=True)
 rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t, 1),
               "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale "
                            "%.5f reaches the regular cell (report-only)" % k_fit}

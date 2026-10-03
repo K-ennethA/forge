@@ -282,7 +282,7 @@
     "face_connects": 26
    }
   ],
-  "seconds": 2.0,
+  "seconds": 2.2,
   "rule": "edge split at the field's iso-value (snap within CUT_SNAP of a vertex) + face connects; fields interpolate linearly along split edges; no face straddles any boundary afterwards",
   "straddling_faces_after_cut": {
    "fe=0.000": 0,
@@ -321,7 +321,7 @@
   "antennae": 120
  },
  "cavity_shade_k": 0.4,
- "cavity_seconds": 0.4,
+ "cavity_seconds": 0.6,
  "regions_area_share": {
   "body": 0.0817,
   "abdomen": 0.1005,
@@ -366,13 +366,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.4
+   "seconds": 0.3
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 0.4
+   "seconds": 0.3
   },
   "uv_texels_normal": 405953,
   "uv_coverage": 0.3871,

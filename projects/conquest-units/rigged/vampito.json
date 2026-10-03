@@ -223,10 +223,10 @@
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\vampito.glb",
-  "bytes": 4357332,
-  "seconds": 0.3,
+  "bytes": 4742552,
+  "seconds": 0.4,
   "structure": "armature object identity (no scale), mesh child identity, natural scale; game model_scale 0.09057 reaches the regular cell (report-only)"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\vampito.json",
- "seconds": 12.0
+ "seconds": 12.8
 }
