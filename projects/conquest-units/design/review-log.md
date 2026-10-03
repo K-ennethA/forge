@@ -1151,3 +1151,45 @@ files (wren_STATE.md is the pilot), ~40-line brief budget pointing at
 STATE + the one spec entry, resume-first for deltas, terse <=60-line
 handbacks, render economy (changed views + one compare sheet only),
 clear-and-point recaps on stale resumes.
+
+## 2026-10-02 — Wren APPROVED; style saved; import wave ordered; NEW UNIT: Elias
+
+Artist (verbatim): "great good enough lets save this style for all our
+other conquest characters, hair, eyes, lips and other styling weve done,
+and lets begin having an agent import the models weve worked on
+coordinate with a conquest agent for the characters that do not have an
+exisitng character sheet" + "and start working on the next character"
+
+(1) WREN v6.1 APPROVED - good enough; unit parked current at d1a43af.
+(2) HOUSE STYLE codified: design/character-style-guide.md (Wren pipeline
+= reference implementation; applies from the first pass on all future
+humanoids; shared principles for creatures).
+(3) IMPORT WAVE ordered: an import agent brings the built units into
+git/Conquest (additive, new branch, never touching source assets),
+working through design/godot-import-notes.md (6 items), coordinating
+with a Conquest-side agent; that agent also audits the game roster for
+characters that have NO sheet and NO forge model, so the artist can
+supply designs.
+
+NEW UNIT: PROFESSOR ELIAS (sheet inline-only; transcription binding):
+"PROFESSOR ELIAS - ROYAL RESEARCHER. AGE: 60+. ROLE: ROYAL RESEARCHER
+(MAGIC / HISTORY / SCIENCE). Wiser, calm, intelligent; royal service;
+wears glasses." Three views + detail panels:
+- Tousled grey hair, round wire GLASSES, full grey beard + mustache
+  (head detail panel: lined kind face, heavy brows).
+- Blue cravat/ascot at the throat; navy scholar MANTLE/coat with short
+  capelet shoulders, gold trim + gold diamond motifs, ragged-ish hem;
+  ACCESSORY detail: a gold trident/crest brooch with a teal gem on the
+  chest; the same trident crest appears on the mantle back and the book.
+- Cream/parchment under-robe, big rolled sleeves; dark bracers; wide
+  brown belt with pouches + SCROLL TUBES tucked in; brown cross-body
+  SATCHEL (bag detail: buckled flap, scrolls poking out) worn on the
+  back; dark brown trousers; brown gold-trimmed boots.
+- STAFF (detail panel): tall wooden staff topped with a brass ARMILLARY
+  SPHERE holding a teal orb; brass ferrule.
+- BOOK (detail panel): dark tome with the trident crest + clasp (likely
+  a prop for casting/idle flavor; own node like all props).
+- Palette chips: navy, dark brown, taupe, cream, gold, teal.
+Build per the HOUSE STYLE GUIDE from the first pass (elderly dials:
+age-appropriate face, the beard as groomed masses, glasses as thin
+geometry, hero tier). QUEUED for the fresh session.
