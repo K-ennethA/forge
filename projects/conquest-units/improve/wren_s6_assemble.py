@@ -529,7 +529,11 @@ bstats["normal_skin_only"] = {"rule": "normal texels outside the (dilated) skin-
 # (3) Cycles bakes the high's shading normal onto the low's FLAT hair facets (tangent frames of the flat faces, like the v2
 #     face zone): the hair strip of the normal map now turns every flat facet toward the proxy's smooth normal, so the
 #     hairdo lights as one soft volume while every face stays flat-shaded.
+# (3') 2026-10-03 HAIR_NORMAL_CARRIER "vertex" (default): step (3) replaced -- the tangent map could not represent the
+#     proxy normals on underside facets (v6.1: 22.6 % unrepresentable, decode p90 40.8 deg = the checkered facets); the
+#     normals of (2) go onto the hair faces as custom split normals instead (applied after the bake, see HAIR_CN below).
 HAIR_BAKE = {"enabled": HAIR_PROXY is not None}
+HAIR_CN = None
 if HAIR_PROXY is not None:
     t_hb = time.time()
     _Vl = OBJ["main"]["V"]; _Fl = OBJ["main"]["F"]
@@ -609,98 +613,114 @@ if HAIR_PROXY is not None:
             _own = -_own
         _HN = _HN * (1.0 - HAIR_LOCK_NORMAL_MIX) + _own * HAIR_LOCK_NORMAL_MIX
         _HN = _HN / np.maximum(np.linalg.norm(_HN, axis=1), 1e-12)[:, None]
-    HAIRH = new_obj(UNIT + "_hairhigh", _HV, _HF)
-    HAIRH.data.shade_smooth()
-    HAIRH.data.normals_split_custom_set_from_vertices([tuple(n_) for n_ in _HN])
-    HAIRH.data.update()
-    img_hn = bpy.data.images.new(UNIT + "_hairnormal", RN, RN, alpha=False)
-    img_hn.colorspace_settings.name = "Non-Color"; img_hn.generated_color = (0.0, 0.0, 0.0, 1.0)
-    th_ = nt.nodes.new("ShaderNodeTexImage"); th_.image = img_hn; th_.location = (-900, -900)
-    nt.nodes.active = th_
-    me.shade_flat()                                     # the hair (every face) bakes against its FLAT facets
-    for o in scene.objects:
-        o.select_set(o in (HAIRH, low))
-    bpy.context.view_layer.objects.active = low
-    scene.cycles.samples = 1
-    _rh = bpy.ops.object.bake(type="NORMAL", use_selected_to_active=True, cage_extrusion=HAIR_BAKE_CAGE[0],
-                              max_ray_distance=HAIR_BAKE_CAGE[1], margin=16, use_clear=False)
-    phn = np.empty(RN * RN * 4, dtype=np.float32); img_hn.pixels.foreach_get(phn); phn = phn.reshape(-1, 4)
-    _covh = (phn[:, 2] > 0.25) & _strip_n
-    DIG["bake_hair_normal"] = sha(np.clip(np.rint(phn[:, :3] * 255.0), 0, 255).astype(np.uint8))
-    np.save(os.path.join(tempfile.gettempdir(), "wren_hairnormal_%s.npy" % TAG), phn[:, :3])
-    px[_covh, :3] = phn[_covh, :3]
-    img_n.pixels.foreach_set(px.ravel())
-    # proof 1: the strip is no longer flat -- the tangent-space tilt of the covered hair texels
-    _nt3 = 2.0 * phn[_covh, :3] - 1.0
-    _tilt = np.degrees(np.arccos(np.clip(_nt3[:, 2] / np.maximum(np.linalg.norm(_nt3, axis=1), 1e-9), -1, 1)))
-    # proof 2: decode the baked texel at every hair triangle's centroid with that flat triangle's own tangent frame
-    # (T, B from the UV gradients, N = the facet normal; B = sign x N x T) and compare with the proxy normal there; and
-    # the facet-to-proxy angle the map corrects (what the flat facets alone would show)
-    me.calc_loop_triangles()
-    _nq = len(me.loop_triangles)
-    _ll = np.empty(_nq * 3, dtype=np.int64); me.loop_triangles.foreach_get("loops", _ll); _ll = _ll.reshape(-1, 3)
-    _lp = np.empty(_nq, dtype=np.int64); me.loop_triangles.foreach_get("polygon_index", _lp)
-    _lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", _lv)
-    _uvh = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", _uvh); _uvh = _uvh.reshape(-1, 2)
-    _dec, _fac, _adj = [], [], []
-    for t_i in np.nonzero(_hairf[_lp])[0]:
-        P3_ = _Vl[_lv[_ll[t_i]]]; U3_ = _uvh[_ll[t_i]]
-        e1, e2 = P3_[1] - P3_[0], P3_[2] - P3_[0]; d1, d2 = U3_[1] - U3_[0], U3_[2] - U3_[0]
-        Nf_ = np.cross(e1, e2)
-        det_ = d1[0] * d2[1] - d2[0] * d1[1]
-        if np.linalg.norm(Nf_) < 1e-12 or abs(det_) < 1e-14:
-            continue
-        Nf_ = unit(Nf_)
-        Tt_ = (e1 * d2[1] - e2 * d1[1]) / det_; Bt_ = (e2 * d1[0] - e1 * d2[0]) / det_
-        Tt_ = unit(Tt_ - Nf_ * float(Nf_ @ Tt_)); Bt_ = (1.0 if float(np.cross(Nf_, Tt_) @ Bt_) >= 0 else -1.0) * np.cross(Nf_, Tt_)
-        uc_ = U3_.mean(0)
-        ix_, iy_ = min(RN - 1, int(uc_[0] * RN)), min(RN - 1, int(uc_[1] * RN))
-        if not _covh[iy_ * RN + ix_]:
-            continue
-        tn_ = 2.0 * px[iy_ * RN + ix_, :3] - 1.0
-        nw_ = unit(Tt_ * tn_[0] + Bt_ * tn_[1] + Nf_ * tn_[2])
-        np_ = proxy_normal(P3_.mean(0)[None])[0]
-        _dec.append((math.degrees(math.acos(float(np.clip(nw_ @ np_, -1, 1)))), float(Nf_ @ np_)))
-        _fac.append(math.degrees(math.acos(float(np.clip(Nf_ @ np_, -1, 1)))))
-    # proof 3: across every edge shared by two hair faces, the facet normals' angle vs the proxy normals' angle at the two
-    # face centroids (the dihedral a flat render shows vs the one the baked shading shows)
-    _hfc = {k: _Vl[_Fl[k]].mean(0) for k in _hfi}
-    _pnc = dict(zip(_hfi, proxy_normal(np.array([_hfc[k] for k in _hfi]))))
-    _fnn = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _fnn); _fnn = _fnn.reshape(-1, 3)
-    _eh = {}
-    for k in _hfi:
-        f_ = _Fl[k]
-        for j in range(len(f_)):
-            _eh.setdefault((min(f_[j], f_[(j + 1) % len(f_)]), max(f_[j], f_[(j + 1) % len(f_)])), []).append(k)
-    _dih_f, _dih_p = [], []
-    for e_, ks_ in _eh.items():
-        if len(ks_) == 2:
-            a_, b_ = ks_
-            _dih_f.append(math.degrees(math.acos(float(np.clip(_fnn[a_] @ _fnn[b_], -1, 1)))))
-            _dih_p.append(math.degrees(math.acos(float(np.clip(_pnc[a_] @ _pnc[b_], -1, 1)))))
-    nt.nodes.remove(th_)
-    bpy.data.images.remove(img_hn)
-    _hm = HAIRH.data
-    bpy.data.objects.remove(HAIRH, do_unlink=True); bpy.data.meshes.remove(_hm)
     pct = lambda a_, q_: round(float(np.percentile(a_, q_)), 2) if len(a_) else None
-    HAIR_BAKE.update({
-        "result": sorted(_rh), "seconds": round(time.time() - t_hb, 1),
-        "proxy": {"grid_lon_lat": [_nlon, _nlat], "smoothing_passes": _iters, "pad_m": _pad, "centre": _cen.round(4).tolist(),
-                  "hull_dirs_hit": int(_has.sum()), "dirs": _nd, "radius_m_min_max": [round(float(_r.min()), 4), round(float(_r.max()), 4)]},
-        "cage_extrusion_m": HAIR_BAKE_CAGE[0], "max_ray_m": HAIR_BAKE_CAGE[1],
-        "hair_verts": int(len(_HV)), "hair_faces": int(len(_HF)),
-        "strip_texels_covered": int(_covh.sum()),
-        "strip_texels_not_flat_pct(dev>0.05)": round(100.0 * float((np.linalg.norm(phn[_covh, :3] - np.array([0.5, 0.5, 1.0]), axis=1) > 0.05).mean()), 1),
-        "tangent_tilt_deg_p10_p50_p90": [pct(_tilt, 10), pct(_tilt, 50), pct(_tilt, 90)],
-        "decode_vs_proxy_deg_p50_p90_p99": {
-            "representable(facet.proxy>0.2)": [pct([d_ for d_, c_ in _dec if c_ > 0.2], q_) for q_ in (50, 90, 99)],
-            "all": [pct([d_ for d_, c_ in _dec], q_) for q_ in (50, 90, 99)],
-            "note": "a tangent-space map can only turn a facet within its own hemisphere: underside facets (facing the "
-                    "scalp, painted hair_shade) cannot take a proxy normal > 90 deg away"},
-        "decode_samples": len(_dec), "representable_pct": round(100.0 * float(np.mean([c_ > 0.2 for _, c_ in _dec])), 1) if _dec else None,
-        "facet_vs_proxy_deg_p50_p90": [pct(_fac, 50), pct(_fac, 90)],
-        "neighbour_angle_deg_p50_p90": {"flat_facets": [pct(_dih_f, 50), pct(_dih_f, 90)], "baked_shading": [pct(_dih_p, 50), pct(_dih_p, 90)]},
-        "v2": "the strip was flat (0.5, 0.5, 1): every facet lit by its own face normal"})
+    HAIR_BAKE.update({"carrier": HAIR_NORMAL_CARRIER,
+                      "proxy": {"grid_lon_lat": [_nlon, _nlat], "smoothing_passes": _iters, "pad_m": _pad,
+                                "centre": _cen.round(4).tolist(), "hull_dirs_hit": int(_has.sum()), "dirs": _nd,
+                                "radius_m_min_max": [round(float(_r.min()), 4), round(float(_r.max()), 4)]},
+                      "hair_verts": int(len(_HV)), "hair_faces": int(len(_HF)), "lock_normal_mix": HAIR_LOCK_NORMAL_MIX})
+    if HAIR_NORMAL_CARRIER == "vertex":
+        # research H5 (design/research/hair-face-best-practices.md; the Guilty Gear Xrd vertex-normal route): the same
+        # proxy-leaned normals are written as CUSTOM SPLIT NORMALS on the hair faces after the bake (below, before the
+        # save) -- an exact per-vertex carry, exported as glTF NORMAL; the hair UV strip of the normal map stays flat
+        # (0.5, 0.5, 1), so nothing is counted twice. No hair bake runs.
+        HAIR_CN = {"hvi": _hvi, "HN": _HN}
+        HAIR_BAKE.update({"result": ["SKIPPED (carrier vertex)"], "seconds": round(time.time() - t_hb, 1),
+                          "strip": "flat (0.5, 0.5, 1): the normal map carries nothing on hair"})
+    else:
+        assert HAIR_NORMAL_CARRIER == "map", HAIR_NORMAL_CARRIER
+        HAIRH = new_obj(UNIT + "_hairhigh", _HV, _HF)
+        HAIRH.data.shade_smooth()
+        HAIRH.data.normals_split_custom_set_from_vertices([tuple(n_) for n_ in _HN])
+        HAIRH.data.update()
+        img_hn = bpy.data.images.new(UNIT + "_hairnormal", RN, RN, alpha=False)
+        img_hn.colorspace_settings.name = "Non-Color"; img_hn.generated_color = (0.0, 0.0, 0.0, 1.0)
+        th_ = nt.nodes.new("ShaderNodeTexImage"); th_.image = img_hn; th_.location = (-900, -900)
+        nt.nodes.active = th_
+        me.shade_flat()                                     # the hair (every face) bakes against its FLAT facets
+        for o in scene.objects:
+            o.select_set(o in (HAIRH, low))
+        bpy.context.view_layer.objects.active = low
+        scene.cycles.samples = 1
+        _rh = bpy.ops.object.bake(type="NORMAL", use_selected_to_active=True, cage_extrusion=HAIR_BAKE_CAGE[0],
+                                  max_ray_distance=HAIR_BAKE_CAGE[1], margin=16, use_clear=False)
+        phn = np.empty(RN * RN * 4, dtype=np.float32); img_hn.pixels.foreach_get(phn); phn = phn.reshape(-1, 4)
+        _covh = (phn[:, 2] > 0.25) & _strip_n
+        DIG["bake_hair_normal"] = sha(np.clip(np.rint(phn[:, :3] * 255.0), 0, 255).astype(np.uint8))
+        np.save(os.path.join(tempfile.gettempdir(), "wren_hairnormal_%s.npy" % TAG), phn[:, :3])
+        px[_covh, :3] = phn[_covh, :3]
+        img_n.pixels.foreach_set(px.ravel())
+        # proof 1: the strip is no longer flat -- the tangent-space tilt of the covered hair texels
+        _nt3 = 2.0 * phn[_covh, :3] - 1.0
+        _tilt = np.degrees(np.arccos(np.clip(_nt3[:, 2] / np.maximum(np.linalg.norm(_nt3, axis=1), 1e-9), -1, 1)))
+        # proof 2: decode the baked texel at every hair triangle's centroid with that flat triangle's own tangent frame
+        # (T, B from the UV gradients, N = the facet normal; B = sign x N x T) and compare with the proxy normal there; and
+        # the facet-to-proxy angle the map corrects (what the flat facets alone would show)
+        me.calc_loop_triangles()
+        _nq = len(me.loop_triangles)
+        _ll = np.empty(_nq * 3, dtype=np.int64); me.loop_triangles.foreach_get("loops", _ll); _ll = _ll.reshape(-1, 3)
+        _lp = np.empty(_nq, dtype=np.int64); me.loop_triangles.foreach_get("polygon_index", _lp)
+        _lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", _lv)
+        _uvh = np.empty(len(me.loops) * 2); me.uv_layers.active.data.foreach_get("uv", _uvh); _uvh = _uvh.reshape(-1, 2)
+        _dec, _fac, _adj = [], [], []
+        for t_i in np.nonzero(_hairf[_lp])[0]:
+            P3_ = _Vl[_lv[_ll[t_i]]]; U3_ = _uvh[_ll[t_i]]
+            e1, e2 = P3_[1] - P3_[0], P3_[2] - P3_[0]; d1, d2 = U3_[1] - U3_[0], U3_[2] - U3_[0]
+            Nf_ = np.cross(e1, e2)
+            det_ = d1[0] * d2[1] - d2[0] * d1[1]
+            if np.linalg.norm(Nf_) < 1e-12 or abs(det_) < 1e-14:
+                continue
+            Nf_ = unit(Nf_)
+            Tt_ = (e1 * d2[1] - e2 * d1[1]) / det_; Bt_ = (e2 * d1[0] - e1 * d2[0]) / det_
+            Tt_ = unit(Tt_ - Nf_ * float(Nf_ @ Tt_)); Bt_ = (1.0 if float(np.cross(Nf_, Tt_) @ Bt_) >= 0 else -1.0) * np.cross(Nf_, Tt_)
+            uc_ = U3_.mean(0)
+            ix_, iy_ = min(RN - 1, int(uc_[0] * RN)), min(RN - 1, int(uc_[1] * RN))
+            if not _covh[iy_ * RN + ix_]:
+                continue
+            tn_ = 2.0 * px[iy_ * RN + ix_, :3] - 1.0
+            nw_ = unit(Tt_ * tn_[0] + Bt_ * tn_[1] + Nf_ * tn_[2])
+            np_ = proxy_normal(P3_.mean(0)[None])[0]
+            _dec.append((math.degrees(math.acos(float(np.clip(nw_ @ np_, -1, 1)))), float(Nf_ @ np_)))
+            _fac.append(math.degrees(math.acos(float(np.clip(Nf_ @ np_, -1, 1)))))
+        # proof 3: across every edge shared by two hair faces, the facet normals' angle vs the proxy normals' angle at the two
+        # face centroids (the dihedral a flat render shows vs the one the baked shading shows)
+        _hfc = {k: _Vl[_Fl[k]].mean(0) for k in _hfi}
+        _pnc = dict(zip(_hfi, proxy_normal(np.array([_hfc[k] for k in _hfi]))))
+        _fnn = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _fnn); _fnn = _fnn.reshape(-1, 3)
+        _eh = {}
+        for k in _hfi:
+            f_ = _Fl[k]
+            for j in range(len(f_)):
+                _eh.setdefault((min(f_[j], f_[(j + 1) % len(f_)]), max(f_[j], f_[(j + 1) % len(f_)])), []).append(k)
+        _dih_f, _dih_p = [], []
+        for e_, ks_ in _eh.items():
+            if len(ks_) == 2:
+                a_, b_ = ks_
+                _dih_f.append(math.degrees(math.acos(float(np.clip(_fnn[a_] @ _fnn[b_], -1, 1)))))
+                _dih_p.append(math.degrees(math.acos(float(np.clip(_pnc[a_] @ _pnc[b_], -1, 1)))))
+        nt.nodes.remove(th_)
+        bpy.data.images.remove(img_hn)
+        _hm = HAIRH.data
+        bpy.data.objects.remove(HAIRH, do_unlink=True); bpy.data.meshes.remove(_hm)
+        pct = lambda a_, q_: round(float(np.percentile(a_, q_)), 2) if len(a_) else None
+        HAIR_BAKE.update({
+            "result": sorted(_rh), "seconds": round(time.time() - t_hb, 1),
+            "proxy": {"grid_lon_lat": [_nlon, _nlat], "smoothing_passes": _iters, "pad_m": _pad, "centre": _cen.round(4).tolist(),
+                      "hull_dirs_hit": int(_has.sum()), "dirs": _nd, "radius_m_min_max": [round(float(_r.min()), 4), round(float(_r.max()), 4)]},
+            "cage_extrusion_m": HAIR_BAKE_CAGE[0], "max_ray_m": HAIR_BAKE_CAGE[1],
+            "hair_verts": int(len(_HV)), "hair_faces": int(len(_HF)),
+            "strip_texels_covered": int(_covh.sum()),
+            "strip_texels_not_flat_pct(dev>0.05)": round(100.0 * float((np.linalg.norm(phn[_covh, :3] - np.array([0.5, 0.5, 1.0]), axis=1) > 0.05).mean()), 1),
+            "tangent_tilt_deg_p10_p50_p90": [pct(_tilt, 10), pct(_tilt, 50), pct(_tilt, 90)],
+            "decode_vs_proxy_deg_p50_p90_p99": {
+                "representable(facet.proxy>0.2)": [pct([d_ for d_, c_ in _dec if c_ > 0.2], q_) for q_ in (50, 90, 99)],
+                "all": [pct([d_ for d_, c_ in _dec], q_) for q_ in (50, 90, 99)],
+                "note": "a tangent-space map can only turn a facet within its own hemisphere: underside facets (facing the "
+                        "scalp, painted hair_shade) cannot take a proxy normal > 90 deg away"},
+            "decode_samples": len(_dec), "representable_pct": round(100.0 * float(np.mean([c_ > 0.2 for _, c_ in _dec])), 1) if _dec else None,
+            "facet_vs_proxy_deg_p50_p90": [pct(_fac, 50), pct(_fac, 90)],
+            "neighbour_angle_deg_p50_p90": {"flat_facets": [pct(_dih_f, 50), pct(_dih_f, 90)], "baked_shading": [pct(_dih_p, 50), pct(_dih_p, 90)]},
+            "v2": "the strip was flat (0.5, 0.5, 1): every facet lit by its own face normal"})
     # enclosure proof: a hair vertex is OUTSIDE the proxy when it lies farther from the centre than the proxy surface along
     # the same ray (the ray from outside toward the centre meets the proxy at radius 0.5 - hit distance)
     def _proxy_r(d_):
@@ -1032,6 +1052,66 @@ fko.hide_render = False
 low.visible_camera = low.visible_diffuse = low.visible_glossy = low.visible_shadow = True
 low.visible_transmission = low.visible_volume_scatter = True
 print("BAKE", json.dumps({k: v for k, v in bstats.items() if k != "pixel_sha"}))
+if HAIR_CN is not None:
+    # research H5: the hair faces (HAIR_REGS) are flagged smooth and carry the proxy-leaned normals as custom split normals
+    # (stored INT16_2D in the auto-normal corner frame, so they ride the armature deformation); every other face stays
+    # flat (sharp, a zero custom vector = its auto normal = the face normal). The contract checker's flat_shaded exempts
+    # exactly the regions declared in conquest_smooth_regions (hair family only, checker-capped).
+    _lvc = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", _lvc)
+    _ltc = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_total", _ltc)
+    _lpc = np.repeat(np.arange(len(_ltc)), _ltc)
+    _hl = _hairf[_lpc]
+    _hnf = np.zeros((len(me.vertices), 3)); _hnf[HAIR_CN["hvi"]] = HAIR_CN["HN"]
+    _want = np.where(_hl[:, None], _hnf[_lvc], 0.0)
+    me.polygons.foreach_set("use_smooth", _hairf)
+    me.normals_split_custom_set(_want.tolist())
+    me.update()
+    low.data["conquest_smooth_regions"] = list(HAIR_REGS)
+    _cn = np.empty(len(me.loops) * 3); me.corner_normals.foreach_get("vector", _cn); _cn = _cn.reshape(-1, 3)
+    _pnc3 = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", _pnc3); _pnc3 = _pnc3.reshape(-1, 3)
+    _ang = lambda a_, b_: np.degrees(np.arctan2(np.linalg.norm(np.cross(a_, b_), axis=1), np.einsum("ij,ij->i", a_, b_)))
+    _carry = _ang(_cn[_hl], _want[_hl])
+    _nonhair = _ang(_cn[~_hl], _pnc3[_lpc[~_hl]])
+    # facet visibility: across every edge shared by two hair faces, the facet dihedral (what a flat render shows) and the
+    # SHADING JUMP -- the angle between the two faces' corner normals at the edge's shared vertices (0 = the shading is
+    # continuous across the edge; the v6.1 map carrier's jump = its decode error difference between the facets)
+    _cl = {}
+    for li_, (f_, v_) in enumerate(zip(_lpc, _lvc)):
+        if _hairf[f_]:
+            _cl[(int(f_), int(v_))] = li_
+    _ehc = {}
+    for k in np.nonzero(_hairf)[0]:
+        f_ = OBJ["main"]["F"][k]
+        for j in range(len(f_)):
+            _ehc.setdefault((min(f_[j], f_[(j + 1) % len(f_)]), max(f_[j], f_[(j + 1) % len(f_)])), []).append(k)
+    _pairs, _jl = [], []
+    for e_, ks_ in _ehc.items():
+        if len(ks_) == 2:
+            _pairs.append(ks_)
+            _jl += [(_cl[(ks_[0], e_[0])], _cl[(ks_[1], e_[0])]), (_cl[(ks_[0], e_[1])], _cl[(ks_[1], e_[1])])]
+    _pairs = np.array(_pairs); _jl = np.array(_jl)
+    _dfc = _ang(_pnc3[_pairs[:, 0]], _pnc3[_pairs[:, 1]]); _dsc = _ang(_cn[_jl[:, 0]], _cn[_jl[:, 1]])
+    _cnd = me.attributes["custom_normal"]
+    _cnr = np.empty(len(_cnd.data) * 2, dtype=np.int16); _cnd.data.foreach_get("value", _cnr)
+    DIG["hair_custom_normals"] = sha(_cnr)
+    # the intended normals (float64, before the INT16 encoding) + their vertex positions, for the glb read-back gate
+    np.save(os.path.join(tempfile.gettempdir(), "wren_hair_intended_%s.npy" % TAG),
+            np.hstack([OBJ["main"]["V"][HAIR_CN["hvi"]], HAIR_CN["HN"]]))
+    _pq = lambda a_: [round(float(np.percentile(a_, q_)), 4) for q_ in (50, 90, 99)] + [round(float(a_.max()), 4)]
+    HAIR_BAKE["vertex_carrier"] = {
+        "rule": "hair faces (%s) smooth + custom split normals = the proxy normal leaned %.2f toward each lock's own smooth "
+                "normal (the map bake's high, unchanged); all other faces flat" % (", ".join(HAIR_REGS), HAIR_LOCK_NORMAL_MIX),
+        "hair_faces_smooth": int(_hairf.sum()), "hair_loops": int(_hl.sum()), "custom_normal_storage": "%s %s" % (_cnd.domain, _cnd.data_type),
+        "carry_vs_intended_deg_p50_p90_p99_max": _pq(_carry),
+        "nonhair_corner_vs_face_deg_max": round(float(_nonhair.max()), 6),
+        "hair_edges": int(len(_pairs)),
+        "facet_dihedral_deg_p50_p90": [round(float(np.percentile(_dfc, q_)), 2) for q_ in (50, 90)],
+        "shading_jump_at_shared_vertices_deg_p50_p90_max": [round(float(np.percentile(_dsc, q_)), 4) for q_ in (50, 90)]
+                                                           + [round(float(_dsc.max()), 4)],
+        "v61_map_carrier_measured": {"representable_pct": 77.4, "decode_vs_proxy_deg_p50_p90_p99": {
+            "representable": [13.67, 40.75, 84.15], "all": [20.23, 52.53, 125.81]}, "neighbour_baked_shading_p50_p90": [3.4, 8.26]},
+        "digest": DIG["hair_custom_normals"]}
+    print("HAIRCN", json.dumps(HAIR_BAKE["vertex_carrier"]))
 
 
 def set_tex_paths(rel_prefix):

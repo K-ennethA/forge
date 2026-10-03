@@ -1,0 +1,5 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+Color1Ext: _GLOW -> CUSTOM0 on mesh 0 surface 0 (110512 verts)
+Color1Ext: _GLOW -> CUSTOM0 on mesh 1 surface 0 (2596 verts)
+DUMP_UNIT wrote res://dump_wren.json

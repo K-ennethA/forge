@@ -72,8 +72,29 @@
   {
    "check": "flat_shaded",
    "pass": true,
-   "smooth_faces": 0,
-   "faces": 38154
+   "smooth_faces": 4992,
+   "faces": 38154,
+   "smooth_outside_exemption": 0,
+   "smooth_exempt": 4992,
+   "exemption": [
+    {
+     "mesh": "wren",
+     "declared": [
+      "hair",
+      "hair_shade",
+      "hair_tie",
+      "hair_root",
+      "hair_ring",
+      "hair_tip",
+      "hair_inner",
+      "hair_crevice"
+     ],
+     "smooth_in_declared": 4992,
+     "declared_faces": 4992
+    }
+   ],
+   "declared_not_allowed": null,
+   "rule": "use_smooth or corner normal > 0.5 deg off the face normal; exempt only in declared hair-family regions"
   },
   {
    "check": "colour",

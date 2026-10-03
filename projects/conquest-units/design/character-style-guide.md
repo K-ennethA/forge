@@ -46,7 +46,11 @@ smooth geometry).
   SHADE (covered segments take the crevice tone) — never vertex-level cut bands.
 - Dark inner cap; feathered hairline (thick caps read as helmets); hair on its OWN UV
   strip (overlapping locks otherwise bake blotches onto each other); smooth-proxy
-  normal bake (egg from the hair hull) leaned ~45% toward per-lock normals.
+  normals (egg from the hair hull) leaned ~45% toward per-lock normals, carried as
+  CUSTOM SPLIT VERTEX NORMALS (HAIR_NORMAL_CARRIER="vertex", proven on Wren
+  2026-10-03: decode p90 40.75deg->0.006deg, facets gone; the tangent-space map
+  carrier is deprecated — it cannot represent ~27% of proxy normals). Hair faces
+  are the ONLY flat_shaded exemption (checker enforces hair-prefixed regions).
 - Flow from a part/whorl per the sheet; follow-through chains on fringe/sides/tail.
 
 ## Pipeline invariants (all characters)

@@ -480,7 +480,12 @@ HAIR_LOCK_NORMAL_MIX = 0.45           # v4 "per-lock volume": the hair shading n
 HAIR_CLEAR = (0.0025, 0.0005)         # v4 clearance pass: clump vertices pushed out to this far off the head / neck skin /
                                       #   off the cap surface (m)
 HAIR_BAKE_CAGE = (0.0004, 0.0012)     # the hair normal bake: cage extrusion / max ray distance (m) (the high is the hair's
-                                      #   own surface carrying the proxy normals)
+                                      #   own surface carrying the proxy normals) -- used only by HAIR_NORMAL_CARRIER "map"
+HAIR_NORMAL_CARRIER = "vertex"        # "hair normal carrier" (research H5, 2026-10-03): how the proxy-leaned hair normals
+                                      #   reach the renderer. "vertex" = CUSTOM SPLIT NORMALS on the hair faces only (smooth,
+                                      #   exported as glTF NORMAL; the hair UV strip of the normal map stays flat); "map" = the
+                                      #   v3-v6.1 tangent-space bake onto flat facets (measured: 22.6 % of samples
+                                      #   unrepresentable, decode p90 40.8 deg -- the checkered facets)
 # ---- boots (solid)
 BOOT_MARGIN = (0.010, 0.012)          # foot shell clearance: sides / top
 TOE_EXT = 0.022                       # the rounded toe reaches this far past the toes

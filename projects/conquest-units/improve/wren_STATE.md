@@ -8,7 +8,11 @@
   move hair â€” 4-case runner gate).
 - **Style bar:** FE/anime â€” refs in design/reference/fe-style/ (archer figure = hair
   + mouth bar; Ashe portrait = face ratios) and anime-3d/ (Alicia = construction).
-- **Key knobs:** EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
+- **Hair normals (research H5, 2026-10-03, pending commit):** HAIR_NORMAL_CARRIER="vertex" -- proxy-leaned normals ship
+  as custom split normals on the hair regions (smooth), hair strip of the normal map flat; body/outfit flat and glb
+  rows byte-identical to v6.1. Contract flat_shaded exempts only `conquest_smooth_regions` (hair-family, checker-capped).
+  "map" restores the v6.1 bake. Paint tiers still read blocky (per-face paint, not shading).
+- **Key knobs:** HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
   probe (second-feature traces), hair diag (interpenetration/kinks), HAIRSTABLE,

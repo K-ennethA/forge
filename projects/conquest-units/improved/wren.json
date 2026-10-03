@@ -890,7 +890,7 @@
    "mline": 173
   },
   "degenerate_faces_dissolved": 240,
-  "seconds": 36.2,
+  "seconds": 25.5,
   "body_tris_after_cuts": 30330
  },
  "liner_proof": {
@@ -1356,7 +1356,7 @@
     -0.0934,
     1.4139
    ],
-   "seconds": 1.0
+   "seconds": 0.9
   },
   "pitchfork": {
    "total_len": 1.7446,
@@ -3425,7 +3425,7 @@
    "hair_inner": 1538,
    "hair_crevice": 464
   },
-  "seconds": 4.3,
+  "seconds": 3.9,
   "fringe_tips_mm": [
    [
     -62.0,
@@ -3498,13 +3498,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 6.8
+   "seconds": 8.1
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 10.2
+   "seconds": 10.7
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
@@ -3583,14 +3583,11 @@
     22.535,
     71.085
    ],
-   "seconds": 3.8
+   "seconds": 3.1
   },
   "hair_proxy_bake": {
    "enabled": true,
-   "result": [
-    "FINISHED"
-   ],
-   "seconds": 9.3,
+   "carrier": "vertex",
    "proxy": {
     "grid_lon_lat": [
      48,
@@ -3611,49 +3608,59 @@
     ],
     "hair_verts_outside": 3
    },
-   "cage_extrusion_m": 0.0004,
-   "max_ray_m": 0.0012,
    "hair_verts": 4287,
    "hair_faces": 4992,
-   "strip_texels_covered": 495723,
-   "strip_texels_not_flat_pct(dev>0.05)": 89.5,
-   "tangent_tilt_deg_p10_p50_p90": [
-    5.47,
-    35.46,
-    111.21
+   "lock_normal_mix": 0.45,
+   "result": [
+    "SKIPPED (carrier vertex)"
    ],
-   "decode_vs_proxy_deg_p50_p90_p99": {
-    "representable(facet.proxy>0.2)": [
-     13.67,
-     40.75,
-     84.15
+   "seconds": 0.8,
+   "strip": "flat (0.5, 0.5, 1): the normal map carries nothing on hair",
+   "vertex_carrier": {
+    "rule": "hair faces (hair, hair_shade, hair_tie, hair_root, hair_ring, hair_tip, hair_inner, hair_crevice) smooth + custom split normals = the proxy normal leaned 0.45 toward each lock's own smooth normal (the map bake's high, unchanged); all other faces flat",
+    "hair_faces_smooth": 4992,
+    "hair_loops": 18229,
+    "custom_normal_storage": "CORNER INT16_2D",
+    "carry_vs_intended_deg_p50_p90_p99_max": [
+     0.0024,
+     0.0045,
+     0.0074,
+     0.7851
     ],
-    "all": [
-     20.23,
-     52.53,
-     125.81
-    ],
-    "note": "a tangent-space map can only turn a facet within its own hemisphere: underside facets (facing the scalp, painted hair_shade) cannot take a proxy normal > 90 deg away"
-   },
-   "decode_samples": 7028,
-   "representable_pct": 77.4,
-   "facet_vs_proxy_deg_p50_p90": [
-    25.5,
-    136.12
-   ],
-   "neighbour_angle_deg_p50_p90": {
-    "flat_facets": [
+    "nonhair_corner_vs_face_deg_max": 0.081572,
+    "hair_edges": 9017,
+    "facet_dihedral_deg_p50_p90": [
      13.05,
      145.62
     ],
-    "baked_shading": [
-     3.4,
-     8.26
-    ]
-   },
-   "v2": "the strip was flat (0.5, 0.5, 1): every facet lit by its own face normal"
+    "shading_jump_at_shared_vertices_deg_p50_p90_max": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "v61_map_carrier_measured": {
+     "representable_pct": 77.4,
+     "decode_vs_proxy_deg_p50_p90_p99": {
+      "representable": [
+       13.67,
+       40.75,
+       84.15
+      ],
+      "all": [
+       20.23,
+       52.53,
+       125.81
+      ]
+     },
+     "neighbour_baked_shading_p50_p90": [
+      3.4,
+      8.26
+     ]
+    },
+    "digest": "42b1a490e96c7e2c"
+   }
   },
-  "seconds": 39.6,
+  "seconds": 32.3,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.86; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -5230,7 +5237,7 @@
      22.535,
      71.085
     ],
-    "seconds": 3.8
+    "seconds": 3.1
    },
    "ao_floor": {
     "floor": 1.0,

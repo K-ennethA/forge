@@ -16,7 +16,12 @@ Checks every render-visible mesh together (the unit as the game would receive it
   tri_budget    triangle count within conquest_tri_budget [min, max] (the declared tier).
   uv_health     one UV layer; zero-area UV faces <= 0.5 %; flipped UV faces = 0; overlap
                 heuristic false (forge verify.uv_metrics, raster 512).
-  flat_shaded   0 smooth faces (faceted look, docs/BLENDER_RIGGING.md "Facet, don't smooth").
+  flat_shaded   0 smooth faces (faceted look, docs/BLENDER_RIGGING.md "Facet, don't smooth"). A face is smooth when
+                use_smooth is set OR any corner normal leaves its face normal by > FLAT_TOL_DEG (authored custom
+                normals on a sharp face count too). Scoped exemption (2026-10-03, research H5 hair normals): smooth
+                faces are allowed only in the palette regions the mesh declares in its 'conquest_smooth_regions'
+                prop (read through the region_id face attribute + 'conquest_regions'), and only hair-family regions
+                (names starting with SMOOTH_OK_PREFIX) may be declared; anything else declared = FAIL.
   colour        a colour attribute exists and the material reads it.
 Rigged files (an ARMATURE is present; rig wave 2026-09-25) are measured at the REST pose for the
 seven checks above (feet-at-origin and cell-fit must survive rigging), plus:
@@ -37,6 +42,9 @@ import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+SMOOTH_OK_PREFIX = ("hair",)   # flat_shaded exemption cap: only hair-family palette regions may ship smooth/authored normals
+FLAT_TOL_DEG = 0.5             # a sharp face's corner normals equal its face normal exactly (measured 0.0 deg, Blender 5.0);
+                               #   0.5 deg = far below any visible shading turn, far above float noise
 sys.path.insert(0, os.path.normpath(os.path.join(HERE, "..", "..", "..", "addon")))
 from forge.tools import verify  # noqa: E402
 
@@ -76,6 +84,7 @@ else:
 
     dg = bpy.context.evaluated_depsgraph_get()
     pts, tris, smooth, zero_uv, flipped_tot, faces_tot = [], 0, 0, 0, 0, 0
+    smooth_exempt, smooth_bad, declared_bad, exempt_rows = 0, 0, [], []
     uv_reports, colour_ok, transforms_ok = [], True, True
     for o in meshes:
         ev = o.evaluated_get(dg)
@@ -86,7 +95,26 @@ else:
         lt = np.empty(len(me.polygons), dtype=np.int64); me.polygons.foreach_get("loop_total", lt)
         tris += int((lt - 2).sum())
         sm = np.empty(len(me.polygons), dtype=bool); me.polygons.foreach_get("use_smooth", sm)
+        if len(me.loops) and me.has_custom_normals:   # (no custom normals: a sharp face's corners ARE its face normal)
+            cn_ = np.empty(len(me.loops) * 3); me.corner_normals.foreach_get("vector", cn_); cn_ = cn_.reshape(-1, 3)
+            pn_ = np.empty(len(me.polygons) * 3); me.polygons.foreach_get("normal", pn_); pn_ = pn_.reshape(-1, 3)
+            lp_ = np.repeat(np.arange(len(lt)), lt)
+            dev_ = np.degrees(np.arctan2(np.linalg.norm(np.cross(cn_, pn_[lp_]), axis=1), np.einsum("ij,ij->i", cn_, pn_[lp_])))
+            fdev_ = np.zeros(len(lt)); np.maximum.at(fdev_, lp_, dev_)
+            sm = sm | (fdev_ > FLAT_TOL_DEG)
         smooth += int(sm.sum())
+        decl_ = [str(n_) for n_ in o.data.get("conquest_smooth_regions", [])]
+        names_ = [str(n_) for n_ in o.data.get("conquest_regions", [])]
+        declared_bad += [n_ for n_ in decl_ if not n_.startswith(SMOOTH_OK_PREFIX) or n_ not in names_]
+        ok_ = np.zeros(len(lt), bool)
+        ok_names_ = [n_ for n_ in decl_ if n_.startswith(SMOOTH_OK_PREFIX) and n_ in names_]
+        if ok_names_ and "region_id" in me.attributes:
+            rid_ = np.empty(len(lt), dtype=np.int64); me.attributes["region_id"].data.foreach_get("value", rid_)
+            ok_ = np.isin(rid_, [names_.index(n_) for n_ in ok_names_])
+        smooth_exempt += int((sm & ok_).sum()); smooth_bad += int((sm & ~ok_).sum())
+        if decl_:
+            exempt_rows.append({"mesh": o.name, "declared": decl_, "smooth_in_declared": int((sm & ok_).sum()),
+                                "declared_faces": int(ok_.sum())})
         faces_tot += len(me.polygons)
         transforms_ok &= bool(np.abs(np.array(o.matrix_world) - np.eye(4)).max() < 1e-6)
         if len(me.uv_layers) >= 1:
@@ -137,7 +165,10 @@ else:
         zero_uv / max(faces_tot, 1) <= 0.005 and flipped_tot == 0
     check("uv_health", uv_ok, zero_area_faces=zero_uv, zero_area_pct=round(100.0 * zero_uv / max(faces_tot, 1), 3),
           flipped=flipped_tot, meshes=uv_reports)
-    check("flat_shaded", smooth == 0, smooth_faces=smooth, faces=faces_tot)
+    check("flat_shaded", smooth_bad == 0 and not declared_bad, smooth_faces=smooth, faces=faces_tot,
+          smooth_outside_exemption=smooth_bad, smooth_exempt=smooth_exempt, exemption=exempt_rows or None,
+          declared_not_allowed=declared_bad or None, rule="use_smooth or corner normal > %.1f deg off the face normal; "
+          "exempt only in declared hair-family regions" % FLAT_TOL_DEG)
     check("colour", colour_ok)
 
 if meshes and rigs:
