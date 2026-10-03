@@ -103,3 +103,6 @@ next_pass material on the body with cull_front + grow; if the game goes
 that way the forge stops exporting the shells and returns ~6.4k tris to
 the model. glb lists KHR_materials_specular (specular 0); Godot may
 ignore it - roughness 1 already carries the flat look.
+
+## 7. Emissive palette cap (2026-10-03, research godot-world-feel.md T2)
+Keep every unit emissive peak (_GLOW x glow_energy) <= 2.0: the phone (Mobile renderer, RGB10A2) clips at 2.0, and WorldLook glow ramps hdr_threshold 1.2 -> full at exactly 2.0; get "brighter" via glow intensity, never emissive magnitude.
