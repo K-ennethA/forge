@@ -1249,3 +1249,17 @@ for Elias). Beard shell v4 is NOT in question here. PROCESS LESSON
 (binding for every unit): hair/garment SILHOUETTE is judged against
 the SHEET VIEWS, not the text transcription; every sheet gets saved
 as a file and silhouette-matched before a first pass ships.
+
+## 2026-10-03 — Elias v5 hair APPROVED; beard same treatment; Wren drops pitchfork
+
+Artist (verbatim): "hair looks good on elias, maybe the beard can get
+the same treatment and can we drop the pitchfork from wren."
+(1) Elias v5 scalp APPROVED.
+(2) Elias beard v6: the SAME treatment as the scalp — mass-first,
+sheet-silhouette-matched construction (the sheet's beard is flowing
+clumped strands with a soft rounded taper; judge against the sheet
+views incl. the head detail panel), replacing/overlaying the v4
+smooth lobed shell wherever the sheet disagrees with it.
+(3) WREN: pitchfork REMOVED from the model and all clips (the hero
+carries nothing until a weapon is designed). Queued behind the
+in-flight s7 sash lane (same files).
