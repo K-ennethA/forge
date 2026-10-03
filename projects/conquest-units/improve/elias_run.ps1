@@ -1,16 +1,20 @@
 # Professor Elias v1 DRAFT (two-speeds law: one clean headless build + probes-as-sanity + ONE comparison sheet; no gate
-# wall, no determinism twin, no clips). One command, hidden, headless:
+# wall, no clips). One command, hidden, headless:
 #   1. the build (improve/elias_build.py -> improved/elias.{blend,json} + improved/textures/elias_* + rigged/elias.{blend,json,glb};
 #      v4: the glb always, through the shared _GLOW path: export_glb.add_glow_attr + EXPORT_KW, audited in the build)
+#      v5 -Twin: a second identical build into a scratch root (%TEMP%\elias_twin, never the project) in parallel; glb +
+#      textures + the build's combined digest compared byte-for-byte (the v4 determinism precedent)
 #   2. in parallel: the full-body stills, the face / props close-ups, the face probe (improve/wren_face_probe.py, read-only
 #      reuse, --report improved/elias.json), the contract checker on the IMPROVED and (v4) the RIGGED file (the rigged run
 #      needs the shared checker's no-clip guard; its clip checks fail by design: no clips this pass)
 #   + v2: the hair diagnosis (improve/wren_hair_diag.py, read-only reuse) on the rigged file
-#   + v4: the one-tone hair still (face 3/4, every hair region painted the one hair grey in memory: shading only)
-#   3. the comparison sheet + the v3 | v4 strip (improve/elias_compose.py -> renders/elias/<ver>_sheet.png, _hair_compare.png;
-#      the strip = portrait, face 3/4, chin-up, front + the one-tone column)
+#   + v4: the one-tone hair still (every hair region painted the one hair tone in memory: shading only)
+#   + v5: the sheet's four head views (headc_front / headc_tq = the head panel's 3/4, his right / headc_side = his left /
+#     headc_back; staff hidden) + the one-tone head 3/4
+#   3. the comparison sheet + the v4 | v5 | SHEET strip (improve/elias_compose.py -> renders/elias/<ver>_sheet.png,
+#      _hair_compare.png; the strip = front, 3/4, side, back + the one-tone column)
 # Logs + probe outputs live in renders/elias/ (the lane allowlist). -SkipBuild re-runs 2 + 3 only.
-param([switch]$SkipBuild)
+param([switch]$SkipBuild, [switch]$Twin)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 $P = "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units"   # (never a lowercase $p: PowerShell names are case-insensitive)
 $I = "$P\improve"
@@ -24,19 +28,47 @@ if (-not $SkipBuild) {
   $args_ = @("--background","--factory-startup","--python","`"$I\elias_build.py`"","--","--glb")
   $bp = Start-Process -FilePath $B -ArgumentList $args_ -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\build.txt" -RedirectStandardError "$LOG\build.err"
   $null = $bp.Handle
+  if ($Twin) {
+    $TW = "$env:TEMP\elias_twin"
+    Remove-Item -Recurse -Force $TW -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force $TW | Out-Null
+    $targs = @("--background","--factory-startup","--python","`"$I\elias_build.py`"","--","--glb","--scratch","`"$TW`"")
+    $tp = Start-Process -FilePath $B -ArgumentList $targs -WindowStyle Hidden -PassThru -RedirectStandardOutput "$LOG\twin.txt" -RedirectStandardError "$LOG\twin.err"
+    $null = $tp.Handle
+  }
   $bp.WaitForExit()
   "build exit=$($bp.ExitCode) wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"
   if (-not (Test-Path "$P\rigged\elias.blend")) { "BUILD FAILED -- see $LOG\build.txt / build.err"; Get-Content "$LOG\build.err" -Tail 15; exit 1 }
+  if ($Twin) {
+    $tp.WaitForExit()
+    "twin exit=$($tp.ExitCode)"
+    $same = $true
+    foreach ($rel in @("rigged\elias.glb", "improved\textures\elias_normal.png", "improved\textures\elias_ao.png")) {
+      $h1 = (Get-FileHash "$P\$rel" -Algorithm SHA256).Hash
+      $h2 = if (Test-Path "$TW\$rel") { (Get-FileHash "$TW\$rel" -Algorithm SHA256).Hash } else { "missing" }
+      "TWIN $rel main=$($h1.Substring(0,16)) twin=$($h2.Substring(0, [Math]::Min(16, $h2.Length))) equal=$($h1 -eq $h2)"
+      $same = $same -and ($h1 -eq $h2)
+    }
+    $m1 = (Get-Content "$LOG\build.txt" | Select-String '"combined": "([0-9a-f]+)"' | Select-Object -Last 1)
+    $m2 = (Get-Content "$LOG\twin.txt" | Select-String '"combined": "([0-9a-f]+)"' | Select-Object -Last 1)
+    $d1 = if ($m1) { $m1.Matches[0].Groups[1].Value } else { "" }
+    $d2 = if ($m2) { $m2.Matches[0].Groups[1].Value } else { "" }
+    "TWIN digest main=$d1 twin=$d2 equal=$(($d1 -eq $d2) -and ($d1 -ne ''))"
+    "TWIN_ALL_EQUAL=$($same -and ($d1 -eq $d2) -and ($d1 -ne ''))"
+  }
 }
 $RB = "`"$P\rigged\elias.blend`""
 $R = "`"$I\elias_render.py`""
-$VER = "elias_v4"                     # (render / probe prefix; v3 stills stay as the comparison baseline)
+$VER = "elias_v5"                     # (render / probe prefix; v4 stills stay as the comparison baseline)
 $W = "`"$OUT\$VER`""
-$ONE = "hair_shade=186,186,182;hair_root=186,186,182;hair_ring=186,186,182;hair_tip=186,186,182;hair_inner=186,186,182;hair_crevice=186,186,182;hair_beard=186,186,182;hair_beard_shade=186,186,182;hair_beard_root=186,186,182;hair_beard_tip=186,186,182;hair_beard_crevice=186,186,182"
+$G1 = "154,131,113"                   # v5: the one-tone = the SAMPLED hair (palette "hair"; v4's used the v1 grey 186,186,182)
+$ONE = (@("hair","hair_shade","hair_root","hair_ring","hair_tip","hair_inner","hair_crevice","hair_beard","hair_beard_shade",
+          "hair_beard_root","hair_beard_tip","hair_beard_crevice") | ForEach-Object { "$_=$G1" }) -join ";"
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
   @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,portrait_low,glasses,staff_head,book,satchel,belt,brooch","--res","800")),
-  @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$($VER)_onetone`"","face_tq","--res","800","--palette-override","`"$ONE`"")),
+  @("render_head",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"headc_front,headc_tq,headc_side,headc_back","--res","800","--hide-fork")),
+  @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$($VER)_onetone`"","face_tq,headc_tq","--res","800","--hide-fork","--palette-override","`"$ONE`"")),
   @("face_probe",   @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\elias.json`"")),
   @("hair_diag",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hairdiag.json`"")),
   @("check_improved", @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$OUT\$($VER)_check_improved.json`"")),
@@ -48,12 +80,14 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v3"; $env:ELIAS_ONETONE = "1"
+$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v4"; $env:ELIAS_ONETONE = "1"; $env:ELIAS_ONETONE_VIEW = "onetone_headc_tq"
+$env:ELIAS_STRIP_REF = "1"
+$env:ELIAS_STRIP_VIEWS = "headc_front:front,headc_tq:3/4 (his right),headc_side:side (his left),headc_back:back"
 & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
 (Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }
-(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE|BEARDSHELL|BEARDCOVER|HAIRCN|SCALPDIGEST)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
+(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE|BEARDSHELL|BEARDCOVER|HAIRCN|SCALPDIGEST|BEARDDIGEST|MASSES|HAIRCLEAR|CAPEXPOSE|HAIRPUSH)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
 (Get-Content "$LOG\check_improved.txt" | Select-String "checks, ").Line
 (Get-Content "$LOG\check_rigged.txt" | Select-String "checks, ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

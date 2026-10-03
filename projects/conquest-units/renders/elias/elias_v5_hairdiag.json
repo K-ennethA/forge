@@ -1,0 +1,80 @@
+{
+ "blend": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\elias.blend",
+ "locks": 48,
+ "tris": {
+  "locks": 8924,
+  "cap": 1740
+ },
+ "interpenetration": {
+  "lock_pairs": 153,
+  "tri_pairs": 5996,
+  "lock_cap_tri_pairs": 21,
+  "locks_involved": 48,
+  "worst_pairs": [
+   [
+    "lock.bang.3",
+    "lock.bang.4",
+    134
+   ],
+   [
+    "lock.crown.5",
+    "lock.crown.7",
+    134
+   ],
+   [
+    "lock.bang.3",
+    "lock.fall.4",
+    128
+   ],
+   [
+    "lock.crown.1",
+    "lock.sider.7",
+    128
+   ],
+   [
+    "lock.crown.3",
+    "lock.sider.5",
+    122
+   ],
+   [
+    "lock.crown.5",
+    "lock.crown.6",
+    122
+   ],
+   [
+    "lock.back.2",
+    "lock.back.4",
+    118
+   ],
+   [
+    "lock.bang.2",
+    "lock.bang.5",
+    118
+   ]
+  ],
+  "top_sheets": {
+   "lock_pairs": 147,
+   "tri_pairs": 1918
+  }
+ },
+ "paint": {
+  "patches_total": 267,
+  "patches_per_lock": 5.56,
+  "crevice_patches": 27,
+  "ring_patches": 28,
+  "region_boundary_edges": 2268
+ },
+ "facet_kinks_top_deg": {
+  "p50": 13.12,
+  "p90": 33.95,
+  "max": 139.36,
+  "share_over_20deg_pct": 25.8,
+  "edges": 5348
+ },
+ "faces": {
+  "lock_faces": 4750,
+  "tiny_under_0.25mm2": 0,
+  "sliver_aspect_over_20": 70,
+  "lock_area_cm2": 5434.2
+ }
+}

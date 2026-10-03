@@ -94,18 +94,30 @@ print("SHEET", out, sheet.size)
 BASE = os.environ.get("ELIAS_BASE", "elias_v1")
 if V != BASE:
     pairs = [("portrait", "face"), ("face_tq", "face 3/4"), ("portrait_low", "face from below (chin)"), ("front", "front")]
+    if os.environ.get("ELIAS_STRIP_VIEWS"):          # v5: "view:label,view:label" (the head views the artist compared)
+        pairs = [tuple(x_.split(":", 1)) for x_ in os.environ["ELIAS_STRIP_VIEWS"].split(",")]
     if os.environ.get("ELIAS_ONETONE"):              # v4: + the one-tone hair shading column (every hair region painted the
-        pairs.append(("onetone_face_tq", "face 3/4 hair one-tone"))   #   one grey: shading only -- Wren's H5 proof column)
+        pairs.append((os.environ.get("ELIAS_ONETONE_VIEW", "onetone_face_tq"), "hair one-tone"))   #   one grey: shading only)
+    # v5: + the SHEET's own view beside each pair (the judge: design/reference/elias/elias_sheet.webp crops, 1536 x 1024 px)
+    REF = {"headc_front": (170, 85, 300, 215), "headc_tq": (1056, 52, 1300, 296), "headc_side": (480, 85, 610, 215),
+           "headc_back": (800, 95, 930, 225)} if os.environ.get("ELIAS_STRIP_REF") else {}
+    SHEET_IMG = os.path.join(ROOT, "design", "reference", "elias", "elias_sheet.webp")
     S = 420
-    st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 6 * 22), (28, 28, 30))
+    ncol = [3 if v in REF else 2 for v, _ in pairs]
+    st = Image.new("RGB", (PAD + sum(c_ * (S + PAD) + PAD for c_ in ncol), PAD + LAB + S + PAD + 6 * 22), (28, 28, 30))
     ds = ImageDraw.Draw(st)
+    x0 = PAD
     for k, (v, lab) in enumerate(pairs):
-        x0 = PAD + k * (2 * S + 3 * PAD)
         for j, ver in enumerate((BASE, V)):
             p = os.path.join(R, "%s_%s.png" % (ver, v))
             im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
             st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
             ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)
+        if v in REF:
+            im = Image.open(SHEET_IMG).convert("RGB").crop(REF[v]).resize((S, S), Image.LANCZOS)
+            st.paste(im, (x0 + 2 * (S + PAD), PAD + LAB))
+            ds.text((x0 + 2 * (S + PAD) + 4, PAD + 2), "%s  SHEET" % lab, fill=(235, 235, 235), font=FONT)
+        x0 += ncol[k] * (S + PAD) + PAD
 
     def diag(ver):
         p = os.path.join(R, ver + "_hairdiag.json")

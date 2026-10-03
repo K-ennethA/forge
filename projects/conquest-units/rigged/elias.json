@@ -149,19 +149,19 @@
  "chains": {
   "hair_back": {
    "bones": 3,
-   "length_m": 0.0342
+   "length_m": 0.0361
   },
   "hair_front": {
    "bones": 3,
-   "length_m": 0.0166
+   "length_m": 0.032
   },
   "hair_side.L": {
    "bones": 3,
-   "length_m": 0.0224
+   "length_m": 0.0306
   },
   "hair_side.R": {
    "bones": 3,
-   "length_m": 0.0244
+   "length_m": 0.0534
   },
   "beard.C": {
    "bones": 3,
@@ -1022,14 +1022,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0226,
-    0.006,
-    1.5629
+    0.0286,
+    0.0109,
+    1.5967
    ],
    "tail": [
-    0.0224,
-    0.0035,
-    1.5518
+    0.0263,
+    0.0089,
+    1.585
    ]
   },
   {
@@ -1037,14 +1037,14 @@
    "parent": "hair_back.0",
    "deform": true,
    "head": [
-    0.0224,
-    0.0035,
-    1.5518
+    0.0263,
+    0.0089,
+    1.585
    ],
    "tail": [
-    0.0219,
-    0.0043,
-    1.5405
+    0.0245,
+    0.008,
+    1.5732
    ]
   },
   {
@@ -1052,14 +1052,14 @@
    "parent": "hair_back.1",
    "deform": true,
    "head": [
-    0.0219,
-    0.0043,
-    1.5405
+    0.0245,
+    0.008,
+    1.5732
    ],
    "tail": [
-    0.0211,
-    0.006,
-    1.5292
+    0.0228,
+    0.0069,
+    1.5613
    ]
   },
   {
@@ -1067,14 +1067,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0211,
-    -0.1748,
-    1.6916
+    0.0137,
+    -0.1913,
+    1.6653
    ],
    "tail": [
-    0.0211,
-    -0.1762,
-    1.6862
+    0.0068,
+    -0.1909,
+    1.6572
    ]
   },
   {
@@ -1082,14 +1082,14 @@
    "parent": "hair_front.0",
    "deform": true,
    "head": [
-    0.0211,
-    -0.1762,
-    1.6862
+    0.0068,
+    -0.1909,
+    1.6572
    ],
    "tail": [
-    0.0211,
-    -0.1769,
-    1.6808
+    -0.0,
+    -0.1895,
+    1.6492
    ]
   },
   {
@@ -1097,14 +1097,14 @@
    "parent": "hair_front.1",
    "deform": true,
    "head": [
-    0.0211,
-    -0.1769,
-    1.6808
+    -0.0,
+    -0.1895,
+    1.6492
    ],
    "tail": [
-    0.0212,
-    -0.1771,
-    1.6752
+    -0.0071,
+    -0.1875,
+    1.6415
    ]
   },
   {
@@ -1112,14 +1112,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.1163,
-    -0.0647,
-    1.6248
+    0.1107,
+    -0.0927,
+    1.6406
    ],
    "tail": [
-    0.1182,
-    -0.0651,
-    1.6176
+    0.1123,
+    -0.0901,
+    1.6309
    ]
   },
   {
@@ -1127,14 +1127,14 @@
    "parent": "hair_side.L.0",
    "deform": true,
    "head": [
-    0.1182,
-    -0.0651,
-    1.6176
+    0.1123,
+    -0.0901,
+    1.6309
    ],
    "tail": [
-    0.1191,
-    -0.0651,
-    1.6102
+    0.1139,
+    -0.088,
+    1.621
    ]
   },
   {
@@ -1142,14 +1142,14 @@
    "parent": "hair_side.L.1",
    "deform": true,
    "head": [
-    0.1191,
-    -0.0651,
-    1.6102
+    0.1139,
+    -0.088,
+    1.621
    ],
    "tail": [
-    0.1195,
-    -0.0652,
-    1.6028
+    0.114,
+    -0.0871,
+    1.611
    ]
   },
   {
@@ -1157,14 +1157,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.0737,
-    -0.0641,
-    1.6268
+    -0.0711,
+    -0.0565,
+    1.6463
    ],
    "tail": [
-    -0.0753,
-    -0.0646,
-    1.6189
+    -0.0763,
+    -0.0543,
+    1.6294
    ]
   },
   {
@@ -1172,14 +1172,14 @@
    "parent": "hair_side.R.0",
    "deform": true,
    "head": [
-    -0.0753,
-    -0.0646,
-    1.6189
+    -0.0763,
+    -0.0543,
+    1.6294
    ],
    "tail": [
-    -0.0767,
-    -0.0649,
-    1.6109
+    -0.0816,
+    -0.0509,
+    1.6128
    ]
   },
   {
@@ -1187,14 +1187,14 @@
    "parent": "hair_side.R.1",
    "deform": true,
    "head": [
-    -0.0767,
-    -0.0649,
-    1.6109
+    -0.0816,
+    -0.0509,
+    1.6128
    ],
    "tail": [
-    -0.0774,
-    -0.0653,
-    1.6028
+    -0.084,
+    -0.0471,
+    1.5956
    ]
   },
   {
@@ -1320,7 +1320,7 @@
  ],
  "bone_count": 76,
  "tris": {
-  "model": 46463,
+  "model": 49339,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1329,21 +1329,21 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "c34ec701a3ba7cf0",
+   "hair_geometry": "91694cd799ac469a",
    "mouth_proxy_core": "07a63097c5b13dc3",
-   "bake_normal": "3dae82595b8b68c9",
-   "bake_ao": "47231238b4bc2e02",
-   "ao_lifted": "e01c9e6de20f61de",
-   "hair_custom_normals": "647c492d41fb061a",
-   "geometry_colour_uv": "529ba0cd33eb1715",
-   "weights": "ca39c22a4b539dd0"
+   "bake_normal": "393186cd7fa06334",
+   "bake_ao": "a04b787708e282ac",
+   "ao_lifted": "45b9c3491ac48977",
+   "hair_custom_normals": "44341668e0a4a6a5",
+   "geometry_colour_uv": "185d92913abcfc8f",
+   "weights": "1e8304435c0cc272"
   },
-  "combined": "bf2cdf1a129a7bf8"
+  "combined": "9eabb848fb4e3dd8"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\elias.glb",
-  "bytes": 10437360,
-  "tris": 46463,
+  "bytes": 10730836,
+  "tris": 49339,
   "COLOR_0": true,
   "COLOR_1": true,
   "_GLOW": true,
@@ -1358,5 +1358,5 @@
   ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\elias.json",
- "seconds": 72.8
+ "seconds": 89.2
 }

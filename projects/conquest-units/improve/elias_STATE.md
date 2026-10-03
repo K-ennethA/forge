@@ -1,32 +1,33 @@
 # Elias - unit state (orchestrator-maintained; briefs point here instead of restating history)
 
-- **Current:** v4 DRAFT (research H5 + H8: vertex-normal hair carrier + LONG beard shell) on v3 (hair coverage fix). Static, no clips.
-  Spec: review-log 2026-10-02 "NEW UNIT: PROFESSOR ELIAS" (full grey beard + mustache, groomed masses) + design/research/hair-face-best-practices.md H5 / H8.
-  Runner: improve/elias_run.ps1 (~85 s; $VER elias_v4, ELIAS_BASE elias_v3; glb always (shared _GLOW path); checker on improved AND rigged;
-  -> renders/elias/elias_v4_sheet.png + elias_v4_hair_compare.png = portrait / face 3/4 / chin-up / front / face 3/4 hair one-tone, v3 | v4).
-- **LOCKED:** nothing yet (awaiting the verdict on the v4 sheet + strip: the "groomed masses" read of the shell).
-- **v4 hair carrier:** HAIR_NORMAL_CARRIER "vertex" for the whole hair system (Wren f1dcc74 pattern): proxy-leaned normals as custom split
-  normals on hair_* faces, map bake skipped (strip flat); shells lean HAIR_SHELL_NORMAL_MIX 0.85 to their own normals. Decode p90 44.9 deg
-  (v3 map, representable; 59.2 all) -> carry p90 0.0041 deg; shading jump across 11.8k hair edges 0. conquest_smooth_regions = hair family.
-- **v4 beard:** 24 locks + core + 6 mustache locks REPLACED by two conforming shells (s5: Varden's column builder, long variant): zone top edge
-  sunk -> thickness ramp (4.5 cheek / 9.5 mm chin) -> below the chin a hanging mass over the DROP envelope (cravat / chest / capelet +
-  hang_off 6 mm, taper 0.20 / 0.35) -> LOBED hem (BEARD_HEM U, 75 mm front; lobe joins 8/23/40/60/80 deg = 7 hanging lobes + jaw masses,
-  sine-rounded, grooved 5 mm, belly 2 mm) -> underside onto the neck (sunk, clear of the cravat). Mustache shell 2 lobes / side, no teeth,
-  no crevice paint. Regions hair_beard* (grey = the hair tones); zone lower edge neck_rise; stubble fade beard_fade1-3 (s2, painted by centroid);
-  beard_inner lightened to the fade's first tone. Chains beard.L/C/R KEPT, re-anchored on the shell's hanging mass ("beard_shell" weights,
-  head above BEARD_CHAIN_LEAVE 10 mm over the chin; 76 bones).
-- **v4 knobs (top of elias_build.py):** BEARD_LEN, BEARD_HEM, BEARD_SHELL (offset / offset_psi / sink / ramp / hang_off / taper / col_deg /
-  lobe_edges / lobe_len / lobe_round / lobe_jitter / groove_depth / groove_from / lobe_belly / rows / tip_f / crevice_f), BEARD_ZONE neck_rise,
-  BEARD_FADE, BEARD_CHAIN_PSI / BEARD_CHAIN_LEAVE, MUSTACHE_SHELL, HAIR_NORMAL_CARRIER, HAIR_SHELL_NORMAL_MIX; palette hair_beard* / beard_fade*.
-- **Key knobs (unchanged):** HAIR_WHORL / HAIR_LOCKS / CLUMP_ROOT / HAIR_KIND_W / HAIR_LIFT, MACRO / TARGETS, BROW_W, FACE_LINES, GLASSES,
-  MANTLE_* / CAPELET / CREST, SATCHEL, STAFF, BOOK, CRAVAT; palette palettes/elias/default.json.
-- **Numbers (v4):** 46.5k tris (v3 49.8k: 3.5k headroom BANKED); beard+mustache 3,432 (shell 2,952 + mustache 480) vs v3 6,706 (locks 6,358 +
-  core 348); body 15,583 (zone re-cut; v3 15,623); scalp locks + cap byte-identical to v3 (s5 scalp digest 8b1fccca837e1101, same centre
-  shift; hair-strip UVs repacked); 5.96 heads; zone visibility probe (21 views): 168 beard_inner faces / 14.7 cm2 visible, 35 deeper than 3 mm.
-- **Known residuals:** shell top edge reads as a thin bright ledge on the cheek line; thin pale strip at the sideburn->jaw back edge (sunk end
-  columns, 3/4 + side); hem tip band + groove lines read a little like fingers from straight below/front; 50 side columns lengthened to the
-  zone's lower edge (neck_rise could rise further); plus v3's: narrow dark gaps between hairline tips, under-eye flatness, MPFB robe relief,
-  fingers through the tome, cell_fit on the 1.86 m staff (report-only). Rigged check: clip_names / clip_loops fail (no clips, by design).
-- **Open artist questions:** beard length / lobe shape (now 75 mm, 7 hanging lobes) + cravat visibility (hidden under the beard, band shows at
-  the neck sides, not forced); skin tone; eye colour; mustache droop; glasses lens + frame colour; staff scale / hold; tome rest place; hair
-  volume on top; age lines; movement intent before clips.
+- **Current:** v5 DRAFT (sheet-matched SCALP, review-log 2026-10-03 "Elias SHEET SAVED + scalp hair rejected") on v4 (vertex-normal hair
+  carrier + LONG beard shell). Static, no clips. Judge = design/reference/elias/elias_sheet.webp (front / side / back + head panel).
+  Runner: improve/elias_run.ps1 [-Twin] (~100 s; $VER elias_v5, ELIAS_BASE elias_v4; glb always; checker on improved AND rigged; -Twin =
+  scratch twin build, glb + textures + combined digest compared) -> renders/elias/elias_v5_sheet.png + elias_v5_hair_compare.png =
+  v4 | v5 | SHEET for headc_front / headc_tq (his right, = head panel) / headc_side (his left) / headc_back + one-tone 3/4 column.
+- **LOCKED:** nothing yet (awaiting the artist's verdict on the v5 strip: the scalp style + the sampled palette).
+- **v5 scalp:** HAIR_MASSES = 6 primary masses, 48 ribbon locks, widths 14..64 mm hand-set (spread 4.57 overall, >= 3.0 in every mass):
+  bang (6, hair_front: long bangs from the side part across the forehead to his right temple), fall (5, hair_side.L: the short side down
+  his left temple past the outer rim), sidel (7) / sider (8, hair_side.L / .R: swept-back waves flaring over the ears, under-layers
+  beneath), crown (10, rigid: top sweep from the part toward his right/back + flicks), back (12, hair_back: from the whorl, flaring at the
+  nape). HAIR_PART (his left, front hairline -> whorl 150/62); every non-back lock roots ON the part (PART_ROOT_K 0.60). Cap thickened
+  HAIR_CAP_T 5 -> 12 mm (feather 30 mm) so the voluminous locks rest on it; cap clearance pushes ignore cap RIM faces (23 mm spike fix).
+  Scalp built AFTER the beard/mustache shells (they are in BVH_HAIR); GLASSES moved verbatim s6 -> s5 so clear_spine keeps off them
+  (BVH_HAIR_CLR, wire inflated GLASSES_HAIR_CLEAR 2.5 mm). v4 HAIR_LOCKS / HAIRLINE_LOCKS / whorl flow removed.
+- **v5 palette:** skin / skin_shadow / eyes (iris, iris_dark, lash, brow) / hair family / beard family PIXEL-SAMPLED from the sheet
+  (band medians, notes say SAMPLED vs derived); fades / lips / mouth / liner / face_line / inner / crevice derived by the v1-v4 rules.
+- **Key knobs (top of elias_build.py):** HAIR_MASSES (per lock tier / width / part origin / tip / lift x), HAIR_PART, HAIR_WHORL,
+  PART_ROOT_K, HAIR_LIFT_RAMP, BANG_TIP_OFF / BANG_AIM_EL / BANG_SWEEP, GLASSES_HAIR_CLEAR, HAIR_CAP_T / HAIRLINE_FEATHER; v4 beard knobs
+  (BEARD_*, MUSTACHE_SHELL) and HAIR_NORMAL_CARRIER / HAIR_SHELL_NORMAL_MIX unchanged; palette palettes/elias/default.json.
+- **Numbers (v5):** 49,339 tris (v4 46,463; budget 50k: 661 left); scalp locks 8,924 (v4 6,048); cap 1,740; beard digest 3bf848d4b1d8600d
+  (= v4 shells); 89 non-hair parts + painted body byte-equal to v4. Cap exposure (37 views) 23.5 % (v4 24.8 %); hair <-> glasses 0 tri
+  pairs, 7.2 mm min gap; hair <-> beard 0 pairs. Hair diag: kinks p50 13.1 (v4 12.0), top-sheet tri pairs / lock 40 (v4 37). Carry p90
+  0.0043 deg. Twins byte-equal (glb ced4306f81a0cf75, 10,730,836 B).
+- **Unit gates beyond the contract:** HAIRCLEAR (locks vs glasses / beard), CAPEXPOSE (vs v4 24.8 %), BEARDDIGEST (= v4), MASSES spread.
+- **Known residuals:** paint tiers (ring / tuck) still read as per-segment patches on the wide locks; the crown flick roots bunch into a
+  small knob at the whorl (back view); cap shows at both temples under the side hair (as v4); sidel.1 tip pushed 5.5 mm by the cap
+  clearance; sampled beard tone sits close to the skin luminance; plus v4's beard / face / prop residuals. Rigged check: clip_names /
+  clip_loops fail (no clips, by design); cell_fit report-only (staff).
+- **Open artist questions:** the v5 scalp read vs the sheet (part side, bang length, side flare, volume); beard tone (sampled, lighter
+  than the hair) vs the skin; beard length / lobe shape + cravat visibility; mustache droop; glasses lens + frame colour; staff scale /
+  hold; tome rest place; age lines; movement intent before clips.

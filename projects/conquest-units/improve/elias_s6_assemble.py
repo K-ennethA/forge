@@ -69,68 +69,8 @@ add_part("book", Vb0_ @ BOOK_R3.T + BOOK_C, Fb_, Rb_, w="rigid:book", obj="book"
 BOOK_INFO = {"roll_about_palm_deg": BOOK_ROLL, "penetrating_samples": _best[0][0], "centre": BOOK_C.round(4).tolist(),
              "size_m": list(BOOK["size"]), "rule": "roll searched -60..60 deg (10 deg): fewest book vertices within 2 mm of / "
                                                    "inside the body (left arm excluded), then the smallest roll"}
-# ---- the GLASSES: round wire rims about each eye's opening (rim = the opening's furthest edge + margin), pantoscopic tilt,
-# a bridge arching over the nose, temples running back over the ears; open rims (GLASSES["lens"] None: no glass this pass)
-G_ = GLASSES
-_bvh_skin = BVHTree.FromPolygons(BV.tolist(), [f for f, n in zip(BF, fdomn) if n in ("head", "neck_01")])
-_tilt = math.radians(G_["tilt_deg"])
-_gn = np.array([0.0, -math.cos(_tilt), -math.sin(_tilt)])   # rim plane normal: forward, the bottom tipped toward the cheek
-_gup = unit(np.array([0.0, 0.0, 1.0]) - _gn * float(_gn[2]))
-GL_RIM = {}
-for s in "LR":
-    sg_ = 1.0 if s == "L" else -1.0
-    c_ = EYE[s]["c"]
-    ox_ = 0.5 * (float(aperture(0.0, s)) - float(aperture(180.0, s)))
-    oz_ = 0.5 * (float(aperture(90.0, s)) - float(aperture(270.0, s)))
-    cen_ = np.array([c_[0] + sg_ * ox_, c_[1] - EYE[s]["r"] - G_["front_off"], c_[2] + oz_])
-    angs_ = np.arange(0.0, 360.0, 5.0)
-    pts_ = np.stack([c_[0] + sg_ * aperture(angs_, s) * np.cos(np.radians(angs_)), c_[2] + aperture(angs_, s) * np.sin(np.radians(angs_))], 1)
-    R0_ = max(G_["rim_min_r"], float(np.max(np.hypot(pts_[:, 0] - cen_[0], pts_[:, 1] - cen_[2]))) + G_["rim_margin"])
-    # keep the rim clear of the skin in front: push the rim plane forward until every rim sample sits >= 2 mm off the skin
-    for _ in range(12):
-        worst_ = 9.0
-        for a_ in np.radians(np.arange(0.0, 360.0, 15.0)):
-            pr_ = cen_ + R0_ * (math.cos(a_) * np.array([1.0, 0.0, 0.0]) + math.sin(a_) * _gup)
-            h_ = _bvh_skin.ray_cast(Vector(pr_ + np.array([0.0, -0.2, 0.0])), Vector((0.0, 1.0, 0.0)), 0.4)
-            if h_[0] is not None:
-                worst_ = min(worst_, float(h_[0][1]) - float(pr_[1]))
-        if worst_ >= 0.002 + G_["wire_r"]:
-            break
-        cen_[1] -= (0.002 + G_["wire_r"] - worst_) + 0.0005
-    GL_RIM[s] = {"c": cen_, "r": R0_}
-    V_, F_, R_ = VP.torus(R0_, G_["wire_r"], G_["rim_seg"], 5, cen_, _gn, up_hint=(0.0, 0.0, 1.0), region="glasses")
-    add_part("glasses.rim" + s, V_, F_, R_, w="rigid:head")
-_gyb = min(GL_RIM["L"]["c"][1], GL_RIM["R"]["c"][1])
-_inL = GL_RIM["L"]["c"] - np.array([GL_RIM["L"]["r"], 0.0, 0.0]) + _gup * 0.004
-_inR = GL_RIM["R"]["c"] + np.array([GL_RIM["R"]["r"], 0.0, 0.0]) + _gup * 0.004
-_zbr = 0.5 * (_inL[2] + _inR[2]) + G_["bridge_rise"]
-_hn = _bvh_skin.ray_cast(Vector((0.0, -0.5, float(_zbr))), Vector((0.0, 1.0, 0.0)), 1.0)
-_ybr = min(_gyb, (float(_hn[0][1]) if _hn[0] is not None else _gyb) - 0.0025 - G_["wire_r"])
-_bc = VP.resample(VP.catmull(np.array([_inR, np.array([-0.006, _ybr, _zbr]), np.array([0.006, _ybr, _zbr]), _inL]), 8), 12)[0]
-V_, F_, R_, _ = VP.tube_path(_bc, G_["wire_r"], 5, "glasses", cap0="flat", cap1="flat")
-add_part("glasses.bridge", V_, F_, R_, w="rigid:head")
-GL_TEMPLE = {}
-for s in "LR":
-    sg_ = 1.0 if s == "L" else -1.0
-    rc_ = GL_RIM[s]
-    hinge_ = rc_["c"] + np.array([sg_ * rc_["r"], 0.0, 0.0]) + _gup * 0.004
-    pts_ = [hinge_]
-    ys_ = np.linspace(hinge_[1] + 0.008, hinge_[1] + G_["temple_back"], 9)
-    for k_, y_ in enumerate(ys_):
-        f_ = (k_ + 1) / len(ys_)
-        z_ = hinge_[2] - G_["temple_drop"] * smoothstep(0.65, 1.0, f_)
-        h_ = _bvh_skin.ray_cast(Vector((sg_ * 0.35, float(y_), float(z_))), Vector((-sg_, 0.0, 0.0)), 0.5)
-        x_ = (float(h_[0][0]) if h_[0] is not None else pts_[-1][0]) + sg_ * (G_["temple_clear"] + G_["wire_r"])
-        x_ = sg_ * max(sg_ * x_, sg_ * hinge_[0] - 0.004)
-        pts_.append(np.array([x_, y_, z_]))
-    Ct_ = VP.resample(VP.catmull(np.array(pts_), 6), 24)[0]
-    V_, F_, R_, _ = VP.tube_path(Ct_, G_["wire_r"], 5, "glasses", cap0="flat", cap1="pole")
-    add_part("glasses.temple" + s, V_, F_, R_, w="rigid:head")
-    GL_TEMPLE[s] = {"hinge": hinge_.round(4).tolist(), "end": Ct_[-1].round(4).tolist()}
-GLASSES_INFO = {"rim_r_mm": {s: round(1000 * GL_RIM[s]["r"], 1) for s in "LR"},
-                "rim_in_front_of_cornea_mm": {s: round(1000 * float(EYE[s]["c"][1] - EYE[s]["r"] - GL_RIM[s]["c"][1]), 1) for s in "LR"},
-                "wire_r_mm": G_["wire_r"] * 1000, "tilt_deg": G_["tilt_deg"], "bridge_y_vs_rims_mm": round(1000 * (_ybr - _gyb), 1),
-                "lens": G_["lens"], "temples": GL_TEMPLE}
+# ---- (v5: the GLASSES are built in s5, before the scalp locks: the bangs / side locks clear the rims and temples;
+# the code moved verbatim -- GLASSES_INFO, GL_RIM, GL_TEMPLE are set there)
 print("PROPS", json.dumps({"staff": STAFF_INFO, "book": BOOK_INFO, "glasses": GLASSES_INFO, "seconds": round(time.time() - t_props, 1)}))
 REG = ["skin", "skin_shadow", "lips", "mouth", "liner", "lash", "brow", "face_line", "beard_inner",
        "beard_fade1", "beard_fade2", "beard_fade3",

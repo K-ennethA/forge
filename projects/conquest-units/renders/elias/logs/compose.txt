@@ -1,2 +1,2 @@
-﻿SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\elias\elias_v4_sheet.png (2280, 1984)
-STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\elias\elias_v4_hair_compare.png (4328, 592)
+﻿SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\elias\elias_v5_sheet.png (2280, 1984)
+STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\elias\elias_v5_hair_compare.png (6040, 592)

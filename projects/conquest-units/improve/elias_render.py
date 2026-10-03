@@ -192,9 +192,13 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          "undereye": (0.0, 1.0, 1.0), "undereye_tq": (30.0, 2.0, 1.0),
          # ELIAS close-ups (framed on the build's conquest_focus boxes)
          "staff_head": (20.0, 8.0, 1.0), "book": (70.0, 6.0, 1.0), "glasses": (28.0, 4.0, 1.0), "beard": (20.0, 2.0, 1.0),
-         "satchel": (155.0, 8.0, 1.0), "belt": (12.0, 6.0, 1.0), "brooch": (0.0, 4.0, 1.0), "face_tq": (32.0, 4.0, 1.0)}
+         "satchel": (155.0, 8.0, 1.0), "belt": (12.0, 6.0, 1.0), "brooch": (0.0, 4.0, 1.0), "face_tq": (32.0, 4.0, 1.0),
+         # v5 scalp: the sheet's four head reads on the 'head' box -- front, the head-detail panel's 3/4 (his RIGHT side
+         # toward the camera), the SIDE view (the sheet's: his left), back
+         "headc_front": (0.0, 4.0, 0.80), "headc_tq": (-32.0, 6.0, 0.80), "headc_side": (90.0, 4.0, 0.80), "headc_back": (180.0, 6.0, 0.80)}
 CLOSE_KEY = {"face_tq": "face", "hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
-             "hair_sweep": "head", "hair_back_close": "head", "undereye": "eyes", "undereye_tq": "eyes"}
+             "hair_sweep": "head", "hair_back_close": "head", "undereye": "eyes", "undereye_tq": "eyes",
+             "headc_front": "head", "headc_tq": "head", "headc_side": "head", "headc_back": "head"}
 CLOSE_SHIFT = {"undereye": (0.0, 0.0, -0.016), "undereye_tq": (0.0, 0.0, -0.016)}   # the focus box moved (m)
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:

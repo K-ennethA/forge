@@ -179,45 +179,97 @@ MUSTACHE_LIP_CLEAR = 0.0018           # the mustache's lower edge stays this far
 # ---- scalp hair (ribbon locks, the house style; tousled grey, swept back from a receding front hairline)
 HAIR_INTERIOR_R = 0.70
 HAIRLINE = (0.074, -0.050)            # "hairline": above the eye centres at the front (receding) / at the nape vs the head joint
-HAIR_CAP_T = 0.0050                   # "hair volume" on the scalp
+HAIR_CAP_T = 0.0120                   # "hair volume" on the scalp (v5: the inner volume under the masses -- v4 5 mm; the
+                                      #   locks rest on it instead of standing off a thin cap with open cavities under them)
 HAIR_CAP_INNER = False                # the cap's scalp-facing shell harvested (provably hidden)
 HAIR_ROOT_K = 0.30
-HAIRLINE_FEATHER = (0.022, 0.0022)
+HAIRLINE_FEATHER = (0.030, 0.0022)     # (v5: the thicker cap feathers over 30 mm above the hairline; v4 22 mm)
 HAIR_UV_STRIP = 0.16                  # hair + beard faces packed into the right 16 % of the UV square
 LOCK_OFF = 0.0020
-HAIR_WHORL = (174.0, 62.0)            # v2 "crown whorl" (psi deg from the front toward his left, elevation deg): every scalp
-                                      #   lock radiates from it along its great circle (Wren's flow rule; the sheet gives no
-                                      #   part line, so the tousled hair falls from one slightly off-centre whorl)
-HAIR_LOCKS = (                        # v2 (Wren's clump stack): (kind, tier, tip (psi, elevation deg, flick m), mirrored L / R?,
-                                      #   follow-through chain or None) -- listed bottom -> top within a kind
-    ("back", "L", (180.0, -52.0, 0.020), False, "hair_back"),
-    ("back", "M", (158.0, -44.0, 0.032), True, "hair_back"),
-    ("back", "L", (180.0, -36.0, 0.030), False, "hair_back"),
-    ("outer", "M", (136.0, -24.0, 0.034), True, "hair_side"),
-    ("outer", "L", (112.0, -16.0, 0.030), True, "hair_side"),
-    ("side", "L", (88.0, -6.0, 0.024), True, "hair_side"),        # over the ear top, flicking out behind it
-    ("side", "M", (66.0, 14.0, 0.020), True, "hair_side"),
-    ("front", "M", (52.0, 24.0, 0.006), True, "hair_front"),      # the front locks run forward from the whorl over the top and
-    ("front", "M", (37.0, 26.0, 0.005), True, "hair_front"),      #   their tips fall just PAST the receding hairline (el ~38 deg)
-    ("front", "L", (24.0, 28.0, 0.004), True, "hair_front"),      #   onto the forehead, lifting a little (tousled): overlapping
-    ("front", "L", (11.0, 29.0, 0.004), True, "hair_front"),      #   neighbours, so the hairline is covered by lock bodies, never
-    ("front", "L", (0.0, 30.0, 0.004), False, "hair_front"),      #   a cap rim (the helmet rule)
-    ("top", "L", (-12.0, 52.0, 0.006), False, None),              # the top layer over the crown (the angel-ring band)
-    ("top", "L", (14.0, 54.0, 0.006), False, None),
-    ("tousle", "S", (130.0, 72.0, 0.020), False, None),           # "tousled": short flicks lifting off the crown
-    ("tousle", "S", (210.0, 70.0, 0.022), False, None),
-    ("tousle", "S", (32.0, 30.0, 0.010), False, None))            # the one forelock toward his left brow
-HAIRLINE_LOCKS = (                    # v3 "hairline row" (artist arrow 1: the dark cap band under the front tips): short locks
-                                      #   lying flat on the cap just above the receding hairline, interleaved between the front
-                                      #   tips and layered UNDER them: (tier, root (psi, el), tip (psi, el, flick)), mirrored
-    ("S", (7.0, 47.0), (7.0, 31.0, 0.002)), ("S", (21.0, 46.0), (21.0, 30.0, 0.002)), ("S", (40.0, 42.0), (42.0, 26.0, 0.003)))
-CLUMP_ROOT = {"front": 0.06, "top": 0.04, "side": 0.10, "outer": 0.12, "back": 0.16, "tousle": 0.03}   # root position along
-                                      #   whorl -> tip (Wren's: roots never stack on the whorl point -- the low-crown lesson)
-HAIR_KIND_W = {"back": 1.05, "outer": 1.10, "side": 1.15, "front": 1.30, "top": 1.0, "tousle": 0.80,
-               "hairline": 1.55}   # "lock width by kind" (x the tier width; Wren's scalp values)
-HAIR_LAYER = {"back": 0.0, "outer": 0.0009, "side": 0.0018, "front": 0.0027, "top": 0.0032, "tousle": 0.0036,
-              "hairline": 0.0021}   # stack order offset (m)
-HAIR_LIFT = {"back": 0.007, "outer": 0.012, "side": 0.016, "front": 0.003, "top": 0.006, "hairline": 0.0015, "tousle": 0.010}   # "hair volume" lift (m)
+# ---- v5 SCALP (review-log 2026-10-03 "Elias SHEET SAVED + scalp hair rejected"; silhouette-matched to
+# design/reference/elias/elias_sheet.webp front / side / back + head panel): a SIDE PART on his left, LONG BANGS sweeping from
+# it across the forehead to his right temple, the short side falling from it down his left temple, flowing tousled side waves
+# flaring out over both ears, a tousled crown and a layered back -- built MASS-FIRST (research H1: 4-7 primary masses, lock
+# width spread >= 3:1), every mass made of Wren-grade ribbon locks of hand-set widths; flow from the part (the whorl only at
+# its back end, for the back mass and the crown flicks)
+HAIR_PART = ((30.0, 40.0), (44.0, 56.0), (82.0, 68.0))   # "side part": the part line (psi deg from the front toward his left,
+                                      #   elevation deg about the head centre) from the front hairline over his left brow back
+                                      #   over the top to the whorl (the sheet's head panel: the hair splits over his left eye)
+HAIR_WHORL = (150.0, 62.0)            # "crown whorl": the part's back end (the back mass and the crown flicks start here)
+PART_ROOT_K = 0.60                    # root width (x width) of the locks that start ON the part (Wren v4's measured value: the
+                                      #   tiers' 0.30-0.40, made for roots converging on one whorl, left dark cap beside the part)
+BANG_TIP_OFF = 0.006                  # "bang tips off the forehead": face-projected tips stand this far (m) + LOCK_OFF off the skin
+BANG_AIM_EL = 8.0                     # the bangs aim this far (deg) above their own tip, so each arcs over the forehead from the
+                                      #   part straight down-across to it (a front-top "brim" stretch read as a helmet edge)
+GLASSES_HAIR_CLEAR = 0.0025           # "hair over the glasses": the locks' spines keep this much more (m) off the rims / temple arms
+BANG_SWEEP = 10.0                     # "bang sweep": each bang aims this far (deg) toward the part above its tip, so its last
+                                      #   stretch crosses the forehead diagonally (the sweep) instead of hanging straight
+HAIR_MASSES = {                       # "primary masses": per mass the follow-through chain, stack offset (m), volume lift off the
+    # cap (m: down the sides / over the top), root position along origin -> tip, free point (control index where the lock
+    # leaves the head), and its LOCKS listed bottom -> top: (tier, full width mm, origin = part parameter 0 (front end) .. 1
+    # (whorl) or "whorl", tip[, lift x]) with tip = ("face", x mm, z mm above the eye centres) | ("side", psi deg, z mm,
+    # outward flick m) | ("head", psi deg, elevation deg, flick m); psi + = his left; lift x scales the mass lift (the
+    # under-layers lie closer to the cap and fill under the flared outer locks)
+    "back":  {"chain": "hair_back", "layer": 0.0, "lift": (0.010, 0.005), "root": 0.12, "free_k": 3, "locks": (
+        ("M", 36.0, "whorl", ("head", 180.0, -50.0, 0.010), 0.40),   # the nape under-layer (the sheet's shadowed nape)
+        ("S", 16.0, "whorl", ("head", -158.0, -50.0, 0.012), 0.40),
+        ("S", 15.0, "whorl", ("head", 158.0, -48.0, 0.012), 0.40),
+        ("L", 58.0, "whorl", ("head", -146.0, -26.0, 0.040)),        # the big back waves, flaring out over the nape
+        ("L", 56.0, "whorl", ("head", 146.0, -24.0, 0.040)),
+        ("L", 62.0, "whorl", ("head", 178.0, -30.0, 0.036)),
+        ("M", 38.0, "whorl", ("head", -170.0, -4.0, 0.032)),         # the upper back layer
+        ("M", 36.0, "whorl", ("head", 165.0, -6.0, 0.032)),
+        ("M", 34.0, "whorl", ("head", -128.0, -40.0, 0.010), 0.40),  # under-layers behind the ears (the back <-> side seam)
+        ("M", 34.0, "whorl", ("head", 128.0, -40.0, 0.010), 0.40),
+        ("L", 52.0, "whorl", ("head", -128.0, -16.0, 0.040)),        # the back waves bridging into the side waves
+        ("L", 52.0, "whorl", ("head", 128.0, -14.0, 0.040)))},
+    "sidel": {"chain": "hair_side.L", "layer": 0.0009, "lift": (0.015, 0.006), "root": 0.0, "free_k": 3, "locks": (
+        ("M", 30.0, 0.18, ("side", 78.0, 10.0, 0.008), 0.30),        # under-layer over the temple / ear front (covers the cap edge)
+        ("L", 44.0, 0.50, ("side", 108.0, -36.0, 0.012), 0.35),      # under-layer under the flare
+        ("M", 36.0, 0.70, ("side", 124.0, -22.0, 0.006), 0.30),      # under-layer behind the ear (the cap edge there)
+        ("L", 56.0, 0.40, ("side", 98.0, -24.0, 0.044)),             # his left side wave: swept back over / behind the ear,
+        ("L", 54.0, 0.62, ("side", 120.0, -32.0, 0.050)),            #   flaring out (the front view's wings)
+        ("M", 36.0, 0.82, ("side", 142.0, -38.0, 0.040)),
+        ("S", 17.0, 0.52, ("side", 110.0, -48.0, 0.058)))},          #   the long thin wisp under the jaw line
+    "sider": {"chain": "hair_side.R", "layer": 0.0012, "lift": (0.015, 0.006), "root": 0.0, "free_k": 3, "locks": (
+        ("M", 32.0, 0.22, ("side", -78.0, 10.0, 0.008), 0.30),       # under-layer over the temple / ear front (covers the cap edge)
+        ("L", 46.0, 0.55, ("side", -108.0, -36.0, 0.012), 0.35),     # under-layer under the flare
+        ("M", 36.0, 0.72, ("side", -124.0, -22.0, 0.006), 0.30),     # under-layer behind the ear (the cap edge there)
+        ("L", 60.0, 0.40, ("side", -94.0, -22.0, 0.052)),            # his right side wave (the sweep side: fuller)
+        ("L", 58.0, 0.62, ("side", -120.0, -32.0, 0.052)),
+        ("M", 40.0, 0.82, ("side", -144.0, -40.0, 0.040)),
+        ("S", 16.0, 0.50, ("side", -108.0, -50.0, 0.060)),
+        ("M", 36.0, 0.28, ("side", -80.0, -8.0, 0.030)))},           # over the temple / the ear's front top
+    "crown": {"chain": None, "layer": 0.0024, "lift": (0.012, 0.016), "root": 0.0, "free_k": 2, "locks": (
+        ("L", 58.0, 0.12, ("head", -34.0, 34.0, 0.014)),             # the front top (under the bangs: no seam between them)
+        ("L", 64.0, 0.30, ("head", -66.0, 32.0, 0.024)),             # the top sweep: from the part over the top toward his
+        ("L", 60.0, 0.58, ("head", -118.0, 38.0, 0.026)),            #   right / back (the sheet's big swept volume)
+        ("M", 42.0, 0.86, ("head", -155.0, 40.0, 0.026)),
+        ("M", 40.0, 0.38, ("head", 76.0, 46.0, 0.022)),              # the short side's top, toward his left
+        ("S", 22.0, "whorl", ("head", 175.0, 76.0, 0.026)),          # "tousled": flicks lifting off the crown (back view)
+        ("S", 19.0, "whorl", ("head", 125.0, 72.0, 0.024)),
+        ("S", 21.0, "whorl", ("head", -150.0, 70.0, 0.026)),
+        ("S", 18.0, 0.50, ("head", -95.0, 68.0, 0.024)),
+        ("S", 18.0, 0.06, ("head", 14.0, 60.0, 0.026)))},            # the strand rising off the part's front (head panel)
+    "fall":  {"chain": "hair_side.L", "layer": 0.0030, "lift": (0.006, 0.004), "root": 0.0, "free_k": 2, "locks": (
+        ("L", 48.0, 0.14, ("side", 86.0, 18.0, 0.020)),              # the short side: the wing over his left temple
+        ("M", 32.0, 0.00, ("side", 58.0, 8.0, 0.010)),               #   strands falling down his left temple past the outer rim
+        ("S", 15.0, 0.03, ("side", 68.0, -2.0, 0.010)),              #   (head panel) -- the thin one in front of the ear (side view)
+        ("S", 16.0, 0.00, ("face", 42.0, 24.0)),
+        ("M", 30.0, 0.04, ("face", 28.0, 32.0)))},                   #   the strand at the part falling onto his left forehead
+    "bang":  {"chain": "hair_front", "layer": 0.0036, "lift": (0.004, 0.006), "root": 0.0, "free_k": 2, "locks": (
+        ("L", 56.0, 0.34, ("side", -66.0, 14.0, 0.014)),             # LONG BANGS: the outer sweep down to his right temple
+        ("L", 54.0, 0.24, ("face", -46.0, 26.0)),                    #   across the forehead toward his right brow
+        ("L", 46.0, 0.14, ("face", -28.0, 22.0)),
+        ("M", 34.0, 0.06, ("face", -10.0, 18.0)),
+        ("M", 28.0, 0.02, ("face", 6.0, 26.0)),
+        ("S", 16.0, 0.10, ("face", -4.0, 15.0)))}}                   #   the long thin wisp falling between the brows (on top)
+CLUMP_ROOT = {m_: v_["root"] for m_, v_ in HAIR_MASSES.items()}
+HAIR_KIND_W = {m_: 1.0 for m_ in HAIR_MASSES}   # (widths are set per lock in HAIR_MASSES)
+HAIR_LAYER = {m_: v_["layer"] for m_, v_ in HAIR_MASSES.items()}   # stack order offset (m)
+HAIR_LIFT = {m_: v_["lift"][0] for m_, v_ in HAIR_MASSES.items()}   # "hair volume" lift (m)
+HAIR_LIFT_RAMP = (0.55, 1.0, 1.0)     # the lift per control point after the root (share of the mass lift): the volume
+                                      #   swells in off the part instead of stepping up at the first point
 HAIR_BONES = 3                        # follow-through bones per chain (Wren's)
 CLUMP_STACK = 0.0004
 CLUMP_W_VARY = 0.14
@@ -227,7 +279,7 @@ CLUMP_ROOT_GROW = 0.40
 CLUMP_SWAY = 0.16                     # "tousled S-curve": sideways sway amplitude (x the lock width); Wren 0.14
 CLUMP_SCALP_T = 0.62
 CLUMP_S_TIP_K = {"L": 1.0, "M": 1.0, "S": 0.9}
-RIBBON_STATIONS_KIND = {"back": 13, "outer": 13, "side": 14}   # v3: the half-hidden layers at the style
+RIBBON_STATIONS_KIND = {"back": 14, "sidel": 14, "sider": 14}   # v5 (v3 rule): the half-hidden layers near the style
                                       #   guide's floor (pays for the coverage locks)
 RIBBON_STATIONS = {"L": 16, "M": 15, "S": 13}   # "lock segments": the style guide's 13-19 sections (v1 11-15: under it)
 RIBBON_DENSE = 64
@@ -375,7 +427,7 @@ OUT_RIGGED = os.path.join(_OUT_ROOT, "rigged", UNIT + ".blend")
 OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
 TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "scratch" if SCRATCH else "main"
-report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v4 draft (beard shell + vertex-normal hair)",
+report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v5 draft (sheet-matched scalp: side part, long bangs, mass-first)",
           "name_status": "named by the sheet (PROFESSOR ELIAS - ROYAL RESEARCHER)",
           "source": "none: the artist's inline three-view sheet, transcribed in design/review-log.md 2026-10-02", "tier": "hero",
           "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}
