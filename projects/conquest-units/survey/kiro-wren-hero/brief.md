@@ -10,7 +10,7 @@ PATTERN TO COPY EXACTLY (9 units already done this way — read these first):
 - The white-unit fix is already on the branch (self-healing glow import); do not re-implement anything, just follow the pattern.
 
 TASK:
-1. Copy forge/projects/conquest-units/rigged/wren.glb (read-only source) to the fitting biome/story dir as wren_forge.glb with a .import file per the pattern. Scale: root_scale so she stands a plausible human-hero height in-game (the 9-unit table used 1.80 m for humanoid heroes; wren's natural height is in rigged/wren.json — compute root_scale the same way geode/mortis did).
+1. Copy forge/projects/conquest-units/rigged/wren.glb (read-only source) to the fitting biome/story dir as wren_forge.glb with a .import file per the pattern. Scale: root_scale so he stands a plausible human-hero height in-game (the 9-unit table used 1.80 m for humanoid heroes; wren's natural height is in rigged/wren.json — compute root_scale the same way geode/mortis did).
 2. Point the hero resource (hero.tres / HeroResource) model_scene at wren_forge.glb, model_scale 1.0, yaw 0. Check every consumer the audit lists (portrait, preview, overworld) picks it up via the same field — change ONLY the hero resource.
 3. GATE (all headless): project --import exits clean with the Color1Ext + unit_glow lines for wren; a dump (reuse the lane's dump pattern from the import report / probe project) showing wren_forge: CUSTOM0 present, emission=false, next_pass=true, vcol_as_albedo=true; run the GUT suites that touch the hero resource (find them by grepping tests for hero.tres/HeroResource) and report pass counts.
 
