@@ -1,0 +1,68 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+GODOT 4.6-stable (official)
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+   GDScript backtrace (most recent call first):
+       [0] _walk (res://dump.gd:47)
+       [1] _walk (res://dump.gd:52)
+       [2] _init (res://dump.gd:60)
+== IMPORTED: mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, INDEX
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: null
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0
+RUNTIME append err=0
+GLTFMesh additional_data/instance materials ok; importer surfaces=1
+== RUNTIME_IMPORTERMESH mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, INDEX
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: null
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0
+ERROR: Cannot get path of node as it is not in a scene tree.
+   at: get_path (scene/main/node.cpp:2419)
+   GDScript backtrace (most recent call first):
+       [0] _walk (res://dump.gd:47)
+       [1] _walk (res://dump.gd:52)
+       [2] _init (res://dump.gd:74)
+== RUNTIME_SCENE: mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, INDEX
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: null
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0

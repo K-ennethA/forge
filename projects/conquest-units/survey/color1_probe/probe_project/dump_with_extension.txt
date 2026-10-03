@@ -1,0 +1,64 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+GODOT 4.6-stable (official)
+== IMPORTED:Probe mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, CUSTOM0, INDEX, CUSTOM0_type=7
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: PackedFloat32Array size=96
+    unique values: ["0.0", "0.14285495877266", "0.25000381469727", "0.28570991754532", "0.42856487631798", "0.5714350938797", "0.71429008245468", "0.74999618530273", "0.85714501142502", "1.0"]
+    CUSTOM0.r == blender_vertex_index/7 by position: mismatches=0/24
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0
+runtime: Color1Ext registered
+Color1Ext: COLOR_1 -> CUSTOM0 on mesh 0 surface 0 (24 verts)
+RUNTIME append err=0
+GLTFMesh additional_data/instance materials ok; importer surfaces=1
+== RUNTIME_IMPORTERMESH mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, CUSTOM0, INDEX, CUSTOM0_type=7
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: PackedFloat32Array size=96
+    unique values: ["0.0", "0.14285495877266", "0.25000381469727", "0.28570991754532", "0.42856487631798", "0.5714350938797", "0.71429008245468", "0.74999618530273", "0.85714501142502", "1.0"]
+    CUSTOM0.r == blender_vertex_index/7 by position: mismatches=0/24
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0
+== RUNTIME_SCENE:Probe mesh class=ArrayMesh surfaces=1
+  surface 0 format flags: VERTEX, NORMAL, TANGENT, COLOR, CUSTOM0, INDEX, CUSTOM0_type=7
+  ARRAY_VERTEX: PackedVector3Array size=24
+  ARRAY_NORMAL: PackedVector3Array size=24
+  ARRAY_TANGENT: PackedFloat32Array size=96
+  ARRAY_COLOR: PackedColorArray size=24
+    unique values: ["(1.0, 0.0, 0.0, 1.0)"]
+  ARRAY_TEX_UV: null
+  ARRAY_TEX_UV2: null
+  ARRAY_CUSTOM0: PackedFloat32Array size=96
+    unique values: ["0.0", "0.14285495877266", "0.25000381469727", "0.28570991754532", "0.42856487631798", "0.5714350938797", "0.71429008245468", "0.74999618530273", "0.85714501142502", "1.0"]
+    CUSTOM0.r == blender_vertex_index/7 by position: mismatches=0/24
+  ARRAY_CUSTOM1: null
+  ARRAY_CUSTOM2: null
+  ARRAY_CUSTOM3: null
+  ARRAY_BONES: null
+  ARRAY_WEIGHTS: null
+  ARRAY_INDEX: PackedInt32Array size=36
+  blend shapes: 0

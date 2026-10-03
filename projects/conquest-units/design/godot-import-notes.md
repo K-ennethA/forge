@@ -23,6 +23,17 @@ Options, decide at import time:
 
 Probe evidence: `improve/geode_gltf_probe.py` → `rigged/geode_gltf_probe.json`.
 
+MEASURED 2026-10-02 (survey/color1_probe.md): stock Godot 4.6 DROPS COLOR_1
+(no import option keeps it). A ~60-line GLTFDocumentExtension re-adds it as
+ARRAY_CUSTOM0 / shader `CUSTOM0` (RGBA_FLOAT; 0/24 vertex mismatches; survives
+tangents/LODs/shadow meshes) — working addon at survey/color1_probe/probe_project/
+addons/color1/. So the shader path requires shipping that addon in Conquest
+(additive, rides the import branch); otherwise baked emissive. UNTESTED: skinned
+meshes, multi-primitive surfaces — the import lane must verify on a real glowing
+skinned unit (geode) before committing to the format. EXPORTER CAVEAT: Blender
+writes COLOR_1 only with `export_all_vertex_colors=True` (+ `export_vertex_color=
+'ACTIVE'`) — audit existing glbs for missing COLOR_1 and fix forge export calls.
+
 ## 2. Idle emission-pulse keys export only via KHR_animation_pointer
 
 Geode's idle keys emission strength for the core pulse. Blender's glTF
