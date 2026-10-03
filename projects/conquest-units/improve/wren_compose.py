@@ -31,6 +31,8 @@ side / back / three-quarter back + the close-up), _hair_shading_ab (the hair str
 bake), _winter (the hair tiers repainted through the winter skin), _body_untouched.
 
     python -P wren_compose.py
+    python -P wren_compose.py --run-preview <strip tile prefix> [--rig <rigged report.json>] [--out <png>]
+        (2026-10-03: ONLY the run preview strip -> renders/wren/wren_run_preview.png; see the block below the helpers)
 
 renders/wren/ (inputs: wren_<view>.png stills, wren_winter_<view>.png, wren_idle_sheet.png, wren_walk_sheet.png):
   wren_sheet_vs_model.png   the sheet's front / side / back figures | the model's orthographic front / side / back (idle f1)
@@ -138,6 +140,47 @@ def lit_skin(img, box):
     h, s, v = colorsys.rgb_to_hsv(*(med / 255.0))
     return {"rgb": med.astype(int).tolist(), "hue_deg": round(h * 360, 1), "sat": round(s, 3), "val": round(v, 3), "pixels": int(m.sum())}
 
+
+import sys  # noqa: E402
+
+if "--run-preview" in sys.argv:
+    # run preview strip (2026-10-03, review-log "young hero sprint"): the strip tiles wren_render.py --strip run:<n> wrote
+    # (<prefix>_<view>_<k>.png) -> renders/wren/wren_run_preview.png, one row per view, each tile labelled with its
+    # frame and gait phase (from the rigged report); nothing else in this script runs
+    pre = sys.argv[sys.argv.index("--run-preview") + 1]
+    # (--rig <report.json> / --out <png>: a scratch build's report and output; default the project's)
+    RR = (json.load(open(sys.argv[sys.argv.index("--rig") + 1])) if "--rig" in sys.argv else RIG)["clips"]["run"]
+    OUTP = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else os.path.join(R, "wren_run_preview.png")
+    Nr = RR["period_frames"]
+    VIEWS = [("side", "side (his left)"), ("side_r", "side (his right: the fork)"), ("threequarter_r", "three-quarter (fork side)")]
+    n = 0
+    while os.path.exists("%s_side_%02d.png" % (pre, n)):
+        n += 1
+    frames = [1 + int(round(k * Nr / n)) for k in range(n)]
+    air = set(RR["airborne_frames_both_soles_up"])
+    stL, stR = set(RR["gait"]["L"]["stance_frames"]), set(RR["gait"]["R"]["stance_frames"])
+
+    def phase(f):
+        return "FLIGHT" if f in air else ("L foot down" if f in stL else ("R foot down" if f in stR else ""))
+    T = 300
+    head_h = 70
+    cs = Image.new("RGBA", (n * (T + 4), len(VIEWS) * (T + 4) + head_h), (28, 28, 30, 255))
+    d = ImageDraw.Draw(cs)
+    d.text((10, 8), "Wren - run (young hero sprint): %d frames / %.2f s at 24 fps, %.0f steps/min; stride %.2f m at %.2f m/s "
+           "(zero slip %.1e m); airborne frames %s; seam pose delta %.1e deg" %
+           (Nr, RR["seconds"], RR["cadence_steps_per_min"], RR["stride_length_m"], RR["ground_speed_m_per_s"],
+            max(RR["gait"][s]["slip_vs_ground_m"] for s in "LR"), RR["airborne_frames_both_soles_up"],
+            RR["seam_joints"]["pose_delta_deg_max"]), fill=(255, 255, 255, 255), font=font(20))
+    d.text((10, 38), "one fixed camera per row; dark floor at z = 0 (the flight frames show the shadow gap)",
+           fill=(200, 200, 200, 255), font=font(16))
+    for r_, (v_, vl_) in enumerate(VIEWS):
+        for k_, f_ in enumerate(frames):
+            t_ = fit(load("%s_%s_%02d.png" % (pre, v_, k_)), T, T)
+            label(t_, "f%d  %s" % (f_, phase(f_)) + ("\n" + vl_ if k_ == 0 else ""), sz=14)
+            cs.paste(t_, (k_ * (T + 4), head_h + r_ * (T + 4)))
+    cs.convert("RGB").save(OUTP)
+    print("WROTE", OUTP, n, "frames x", len(VIEWS), "views")
+    sys.exit(0)
 
 # ---- sheet vs model
 grid([[(crop("front"), "SHEET front"), (V + "_ortho_front.png", "model, orthographic front (idle f1)"),

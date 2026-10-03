@@ -203,6 +203,80 @@
      "driver_ptp_deg": 12.79,
      "tip_follow_through_ptp_deg": 14.29
     }
+   },
+   "run": {
+    "cape.0": {
+     "tip_lag_frames": -2,
+     "axis": "x",
+     "driver_ptp_deg": 25.91,
+     "tip_follow_through_ptp_deg": 9.25
+    },
+    "cape.1": {
+     "tip_lag_frames": -2,
+     "axis": "x",
+     "driver_ptp_deg": 20.69,
+     "tip_follow_through_ptp_deg": 4.79
+    },
+    "cape.2": {
+     "tip_lag_frames": -3,
+     "axis": "x",
+     "driver_ptp_deg": 17.77,
+     "tip_follow_through_ptp_deg": 1.35
+    },
+    "cape.3": {
+     "tip_lag_frames": -2,
+     "axis": "x",
+     "driver_ptp_deg": 24.13,
+     "tip_follow_through_ptp_deg": 6.8
+    },
+    "cape.4": {
+     "tip_lag_frames": -2,
+     "axis": "x",
+     "driver_ptp_deg": 20.25,
+     "tip_follow_through_ptp_deg": 6.52
+    },
+    "hair_fringe.C": {
+     "tip_lag_frames": 6,
+     "axis": "x",
+     "driver_ptp_deg": 17.27,
+     "tip_follow_through_ptp_deg": 4.3
+    },
+    "hair_fringe.L": {
+     "tip_lag_frames": 6,
+     "axis": "x",
+     "driver_ptp_deg": 17.38,
+     "tip_follow_through_ptp_deg": 4.44
+    },
+    "hair_fringe.R": {
+     "tip_lag_frames": 6,
+     "axis": "x",
+     "driver_ptp_deg": 17.23,
+     "tip_follow_through_ptp_deg": 4.23
+    },
+    "hair_side.L": {
+     "tip_lag_frames": 6,
+     "axis": "x",
+     "driver_ptp_deg": 16.21,
+     "tip_follow_through_ptp_deg": 2.95
+    },
+    "hair_side.R": {
+     "tip_lag_frames": 6,
+     "axis": "x",
+     "driver_ptp_deg": 16.19,
+     "tip_follow_through_ptp_deg": 2.92
+    },
+    "hair_tail": {
+     "tip_lag_frames": -5,
+     "axis": "x",
+     "driver_ptp_deg": 20.49,
+     "tip_follow_through_ptp_deg": 2.95
+    },
+    "tie": {
+     "tip_lag_frames": 4,
+     "axis": "y",
+     "driver_ptp_deg": 26.33,
+     "tip_follow_through_ptp_deg": 66.44
+    }
    }
   },
   "seconds": 0.3
@@ -243,7 +317,19 @@
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0437,
     "fork_to_legs_min_m": 0.1918,
-    "cloak_to_legs_min_m": 0.0695
+    "cloak_to_legs_min_m": 0.0695,
+    "fork_to_mesh_min_m": 0.1052,
+    "fork_to_mesh_worst": {
+     "frame": 73,
+     "axis_m_from_butt": 1.375,
+     "part": "cowl"
+    }
+   },
+   "seam_joints": {
+    "pose_delta_deg_max": 0.0,
+    "loc_delta_m_max": 0.0,
+    "ang_vel_jump_at_seam_deg_per_frame": 0.0571,
+    "ang_vel_change_interior_max_deg_per_frame": 0.1959
    },
    "feet_planted": {
     "L": {
@@ -293,8 +379,7 @@
     "L": 0.0,
     "R": 0.0,
     "arm_R": 0.0,
-    "wrist_R": 0.0,
-    "pelvis_dz": 0.05292
+    "wrist_R": 0.0
    },
    "gates": {
     "cloak_crossings_left_arm": 0,
@@ -306,7 +391,19 @@
     "fork_shaft_through_body": 0,
     "fork_to_cloak_min_m": 0.0436,
     "fork_to_legs_min_m": 0.0806,
-    "cloak_to_legs_min_m": 0.1086
+    "cloak_to_legs_min_m": 0.1086,
+    "fork_to_mesh_min_m": 0.0806,
+    "fork_to_mesh_worst": {
+     "frame": 10,
+     "axis_m_from_butt": 0.138,
+     "part": "bootcuff.R"
+    }
+   },
+   "seam_joints": {
+    "pose_delta_deg_max": 0.0,
+    "loc_delta_m_max": 0.0,
+    "ang_vel_jump_at_seam_deg_per_frame": 11.1707,
+    "ang_vel_change_interior_max_deg_per_frame": 12.8358
    },
    "gait": {
     "L": {
@@ -350,15 +447,137 @@
    "heel_strike_toes_up_deg": 9.0,
    "bounce_m": 0.014,
    "rule": "zero-slip: in flat stance (before toe-off) the ball-contact sole vertex moves back at exactly the ground speed (slip = max deviation from that line), with no lift and no lateral drift"
+  },
+  "run": {
+   "frames": [
+    1,
+    13
+   ],
+   "period_frames": 12,
+   "seconds": 0.5,
+   "cyclic": true,
+   "seam_main_mm": 0.0,
+   "seam_fork_mm": 0.0,
+   "min_z_main": -0.0,
+   "min_z_fork": 0.0361,
+   "fork_butt_z_range": [
+    0.0381,
+    0.0893
+   ],
+   "root_offset_max": 0.0,
+   "grip_relation_max_dev": 3e-07,
+   "right_wrist_bend_max_deg": 43.92,
+   "ik_unreachable_max_m": {
+    "L": 0.0,
+    "R": 0.0,
+    "arm_R": 0.0,
+    "wrist_R": 0.0
+   },
+   "gates": {
+    "cloak_crossings_left_arm": 0,
+    "cloak_crossings_right_arm": 0,
+    "cloak_crossings_legs": 0,
+    "cloak_crossings_torso_outfit": 24,
+    "hair_into_skin_verts_max": 0,
+    "fork_shaft_through_cloak": 0,
+    "fork_shaft_through_body": 0,
+    "fork_to_cloak_min_m": 0.0492,
+    "fork_to_legs_min_m": 0.0652,
+    "cloak_to_legs_min_m": 0.0884,
+    "fork_to_mesh_min_m": 0.0652,
+    "cloak_crossings_worst_frame": {
+     "torso_outfit": 3
+    },
+    "fork_to_mesh_worst": {
+     "frame": 7,
+     "axis_m_from_butt": 0.373,
+     "part": "puff.R"
+    }
+   },
+   "seam_joints": {
+    "pose_delta_deg_max": 0.0,
+    "loc_delta_m_max": 0.0,
+    "ang_vel_jump_at_seam_deg_per_frame": 34.8589,
+    "ang_vel_change_interior_max_deg_per_frame": 76.4549
+   },
+   "gait": {
+    "L": {
+     "stance_frames": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "toe_contact_vertex_ball_weight": 1.0,
+     "toe_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "lateral_x_drift": 1e-06,
+     "slip_vs_ground_m": 1e-06,
+     "sole_min_z_m": -0.0,
+     "boot_min_z_m": -0.0,
+     "swing_sole_min_z_m": 0.0115,
+     "swing_sole_max_z_m": 0.4126,
+     "heel_z_range_stance": [
+      0.0127,
+      0.134
+     ]
+    },
+    "R": {
+     "stance_frames": [
+      7,
+      8,
+      9,
+      10
+     ],
+     "toe_contact_vertex_ball_weight": 1.0,
+     "toe_contact_z_range": [
+      -0.0,
+      0.0
+     ],
+     "lateral_x_drift": 1e-06,
+     "slip_vs_ground_m": 1e-06,
+     "sole_min_z_m": -0.0,
+     "boot_min_z_m": -0.0,
+     "swing_sole_min_z_m": 0.0115,
+     "swing_sole_max_z_m": 0.4126,
+     "heel_z_range_stance": [
+      0.0127,
+      0.134
+     ]
+    }
+   },
+   "airborne_frames_both_soles_up": [
+    5,
+    6,
+    11,
+    12
+   ],
+   "airborne_min_sole_clearance_m": 0.0115,
+   "cadence_steps_per_min": 240.0,
+   "step_seconds": 0.25,
+   "game_cells_per_step_at_0.12s": 2.083,
+   "stance_fraction": 0.3,
+   "flight_seconds_per_step": 0.1,
+   "stance_travel_m": 0.7,
+   "ground_speed_m_per_s": 4.6667,
+   "stride_length_m": 2.3333,
+   "step_length_m": 1.1667,
+   "ground_speed_body_heights_per_s": 2.7419,
+   "pelvis_mean_dz_m": -0.0407,
+   "bounce_m": 0.022,
+   "rule": "zero-slip: through each stance the toe-sole contact vertex (ball-bone dominant; the ball joint is the pinned pivot, the toes stay flat) moves back at exactly the ground speed = stance travel / stance time; stride = ground speed x cycle; airborne = both soles above 1 mm"
   }
  },
  "hair_into_skin": {
-  "rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates (every other idle frame, every walk frame); gate: no clip exceeds the rest pose",
+  "rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates (every other idle frame, every walk / run frame); gate: no clip exceeds the rest pose",
   "free_verts": 905,
   "rest": 0,
   "rest_by_part": {},
   "idle": 0,
   "walk": 0,
+  "run": 0,
   "pass": true
  },
  "bones": [
@@ -1812,6 +2031,10 @@
     "roll_deg": 270,
     "wrist_bend_deg_at_t0": 46.83
    },
+   "run": {
+    "roll_deg": 270,
+    "wrist_bend_deg_at_t0": 39.89
+   },
    "tine_roll_in_hand": {
     "deg": 80,
     "idle_t0_tine_plane_to_front_deg": 0.4,
@@ -1838,15 +2061,15 @@
    "hair_custom_normals": "42b1a490e96c7e2c",
    "geometry_colour_uv": "656deb68b2d01036",
    "weights": "bd94f0edfe3d2c38",
-   "keys": "65304135c582bb3c",
-   "clip_samples": "a72279f2b43046b3"
+   "keys": "613d525212565896",
+   "clip_samples": "5781e0d65003bec5"
   },
-  "combined": "63ae21a5350f6525"
+  "combined": "c9215939245d39b5"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 12069092,
-  "seconds": 1.6,
+  "bytes": 12139800,
+  "seconds": 2.1,
   "carries": {
    "materials": [
     {
@@ -1890,6 +2113,7 @@
    ],
    "animations": [
     "idle",
+    "run",
     "walk"
    ],
    "skins": 1,
@@ -2757,5 +2981,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 101.9
+ "seconds": 132.3
 }

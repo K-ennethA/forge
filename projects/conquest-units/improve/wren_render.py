@@ -8,6 +8,9 @@ views (comma list):
   face, face_side, sword, hem, boots, torso     close-ups framed on the build's 'conquest_focus' boxes (or --focus)
   ortho_front, ortho_side, ortho_back           orthographic sheet-style views (transparent film)
 --pose: evaluate at one frame of a clip (default: the rest pose).
+--strip <clip>:<n>: n frames evenly across the clip per view, one fixed camera per view (the clip's union extents);
+  writes <out_prefix>_<view>_<k>.png (the run preview: wren_compose.py --run-preview assembles them).
+  side_r / threequarter_r = his right (the fork side).
 Cameras: front = on -Y looking +Y (the Conquest front), side = on +X (her left), back = on +Y.
 """
 import bpy, sys, os, math, json
@@ -50,19 +53,20 @@ if "--palette-override" in argv:
                 if esc:
                     pal["regions"][nm]["emission_scale"] = float(esc)
             print("OVERRIDE", o.name, PAL.paint(o.data, pal) is not None)
-if "--hair-normal-flat" in argv:
-    # v3 A/B proof: the hair UV strip of the normal map set back to flat (0.5, 0.5, 1) in memory = the v2 hair shading
-    # (every facet lit by its own face normal) on the v3 geometry
+# (2026-10-03: the v3 '--hair-normal-flat' A/B flag is retired -- under HAIR_NORMAL_CARRIER "vertex" the hair strip of the
+# normal map is already flat and the hair shading rides custom split normals, so flattening the strip changed nothing)
+STRIP = None
+if "--strip" in argv:
+    # run-clip preview strip (2026-10-03): '--strip <clip>:<n>' renders n frames evenly across the clip for every view,
+    # ONE fixed camera per view framed on the union of the clip's extents (the motion reads against a still frame);
+    # writes <prefix>_<view>_<k>.png
+    _sc, _sn = argv[argv.index("--strip") + 1].split(":")
     for o in scene.objects:
-        if o.type == "MESH" and "conquest_hair_uv_strip" in o.keys():
-            u0 = float(o["conquest_hair_uv_strip"]) - 0.006
-            for img in bpy.data.images:
-                if img.name.endswith("_normal") and img.size[0] > 0:
-                    W_, H_ = img.size
-                    px_ = np.empty(W_ * H_ * 4, dtype=np.float32); img.pixels.foreach_get(px_); px_ = px_.reshape(H_, W_, 4)
-                    px_[:, int(u0 * W_):, :3] = (0.5, 0.5, 1.0)
-                    img.pixels.foreach_set(px_.ravel()); img.update()
-                    print("HAIR_NORMAL_FLAT", img.name, int(u0 * W_))
+        if o.type == "ARMATURE":
+            K.assign_action(o, bpy.data.actions[_sc])
+            o.data.pose_position = "POSE"
+            _N = int(round(bpy.data.actions[_sc].frame_range[1] - bpy.data.actions[_sc].frame_range[0]))
+    STRIP = [1 + int(round(k * _N / int(_sn))) for k in range(int(_sn))]
 if "--lock-ids" in argv:
     # v7 diagnosis: every hair lock painted its own flat hue (the cap dark grey), in memory -- lock boundaries, overlaps
     # and interpenetrations read directly
@@ -98,15 +102,21 @@ bpy.context.view_layer.update()
 meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
 main = max(meshes, key=lambda o: len(o.data.polygons))
 FOCUS = json.loads(main["conquest_focus"]) if "conquest_focus" in main.keys() else {}
-dg = bpy.context.evaluated_depsgraph_get()
 lo = Vector((1e9, 1e9, 1e9)); hi = -lo
-for o in meshes:
-    ev = o.evaluated_get(dg)
-    me = ev.to_mesh()
-    for v in me.vertices:
-        w = o.matrix_world @ v.co
-        lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
-    ev.to_mesh_clear()
+for fr_ in (STRIP or [None]):
+    if fr_ is not None:
+        scene.frame_set(fr_)
+    dg = bpy.context.evaluated_depsgraph_get()
+    for o in meshes:
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        co_ = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co_)
+        ev.to_mesh_clear()
+        M_ = np.array(o.matrix_world)
+        co_ = co_.reshape(-1, 3) @ M_[:3, :3].T + M_[:3, 3]
+        lo = Vector(np.minimum(np.array(lo), co_.min(0))); hi = Vector(np.maximum(np.array(hi), co_.max(0)))
+if STRIP:
+    lo.z = min(lo.z, 0.0)
 size = hi - lo
 
 scene.render.engine = "BLENDER_EEVEE"
@@ -161,7 +171,8 @@ def aim(c, rad, angle_deg, elev_deg, fill=1.08):
 
 table = {"front": (0.0, 5.0, 1.0), "threequarter": (35.0, 12.0, 1.0), "tactical": (40.0, 55.0, 1.6),
          "tactical_small": (40.0, 55.0, 1.6), "side": (90.0, 5.0, 1.0), "back": (180.0, 5.0, 1.0),
-         "back_threequarter": (145.0, 10.0, 1.0)}
+         "back_threequarter": (145.0, 10.0, 1.0),
+         "side_r": (-90.0, 5.0, 1.0), "threequarter_r": (-35.0, 12.0, 1.0)}   # (his right: the fork side)
 close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": (0.0, 2.0, 0.62), "sword": (20.0, 6.0, 1.0),
          "hem": (150.0, 10.0, 1.0), "boots": (30.0, 12.0, 1.0), "torso": (20.0, 6.0, 1.0), "hand": (35.0, 10.0, 1.0),
          "head": (25.0, 6.0, 1.0), "head_back": (160.0, 8.0, 1.0), "head_front": (0.0, 4.0, 1.0),
@@ -233,8 +244,11 @@ for tag in VIEWS:
             cam.location = (20.0, centre.y, zc); cam.rotation_euler = (math.radians(90), 0, math.radians(90))
     else:
         print("SKIP", tag); continue
-    scene.render.filepath = "%s_%s.png" % (PREFIX, tag)
-    bpy.ops.render.render(write_still=True)
-    print("WROTE", scene.render.filepath)
+    for k_, fr_ in enumerate(STRIP or [None]):
+        if fr_ is not None:
+            scene.frame_set(fr_)
+        scene.render.filepath = "%s_%s.png" % (PREFIX, tag) if fr_ is None else "%s_%s_%02d.png" % (PREFIX, tag, k_)
+        bpy.ops.render.render(write_still=True)
+        print("WROTE", scene.render.filepath, "" if fr_ is None else "frame %d" % fr_)
 sys.stdout.flush()
 os._exit(0)

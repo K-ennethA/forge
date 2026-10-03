@@ -1,4 +1,4 @@
-# Wren build section 8: clips (closed-form poses -> keyed FK; legs + the pitchfork arm by analytic IK), follow-through
+# Wren build section 8: clips idle / walk / run (closed-form poses -> keyed FK; legs + the pitchfork arm by analytic IK), follow-through
 # as the periodic steady state of damped springs, the clip gates (zero foot slip / drift, zero toe dips, exact seams,
 # grip relation, cloak poke-through, the fork vs the cloak / body), the rigged save, the glb, the winter skin.
 TAU = 2 * math.pi
@@ -65,7 +65,7 @@ for s in "LR":
     _wb = np.concatenate([smoothstep(-0.022, 0.0, (p["V"] - p["c0"]) @ p["fd"]) for p in _tp])
     TOE_PTS[s] = (_V - SHIFT, _wb)
 TOE_REACH = max(float(np.max((TOE_PTS[s][0] - LEGS[s]["C0"]) @ BOOT_RING[s]["fd"])) for s in "LR")
-ROLL = {"idle": 0.0, "walk": 0.0}
+ROLL = {"idle": 0.0, "walk": 0.0, "run": 0.0}
 TINE_ROLL = 0.0
 AXROT = np.eye(4)
 
@@ -307,13 +307,195 @@ def pose_walk(t):
     return D, info
 
 
+# ---- run (review-log 2026-10-03 "young hero sprint"): in place; each foot's BALL JOINT is the planted pivot -- in stance
+# it slides back at exactly the ground speed at its rest height while the foot rolls about it (forefoot touchdown, heel
+# down, push-off) and the toes stay flat (zero slip on the toe sole); the swing is a C1 Hermite path through the heel
+# recovery, the knee drive and the reach, landing pawing back at ground speed; a flight phase between the steps; the
+# pelvis rides a bounce lowest at mid-stance, its mean set so the stance leg never over-reaches; the fork charged forward
+RUN_V_U = (RUN_STEP[0] + RUN_STEP[1]) / RUN_STANCE              # ball travel per unit cycle phase in stance (m)
+RUN_SPEED = RUN_V_U * K.FPS / RUN_N                              # the ground speed (m/s)
+RUN_CX = float(HEADP["pelvis"][0])
+RUN_T_HI = RUN_STANCE + (0.5 - RUN_STANCE) / 2                   # mid-flight (pelvis high point), and + 0.5
+RUN_PH = {"arm_L": RUN_STANCE + RUN_SWING[1][0] * (1 - RUN_STANCE) - 0.5, "pelvis": -0.08}   # the left arm forward-most
+                                                                 #   when the RIGHT knee drives (the left's knee-drive key
+                                                                 #   minus half a cycle); pelvis yaw: the left hip forward
+                                                                 #   just before its touchdown
+
+
+def _herm(keys, q):
+    """C1 cubic Hermite through keys (q_i, value, tangent or None = Catmull-Rom) at q."""
+    i = max(j for j in range(len(keys) - 1) if keys[j][0] <= q)
+    i = min(i, len(keys) - 2)
+
+    def tan(j):
+        if keys[j][2] is not None:
+            return np.asarray(keys[j][2], float)
+        return (np.asarray(keys[j + 1][1], float) - np.asarray(keys[j - 1][1], float)) / (keys[j + 1][0] - keys[j - 1][0])
+    q0, v0, _ = keys[i]; q1, v1, _ = keys[i + 1]
+    h = q1 - q0
+    s = (q - q0) / h
+    h00, h10, h01, h11 = 2 * s ** 3 - 3 * s ** 2 + 1, s ** 3 - 2 * s ** 2 + s, -2 * s ** 3 + 3 * s ** 2, s ** 3 - s ** 2
+    return h00 * np.asarray(v0, float) + h10 * h * tan(i) + h01 * np.asarray(v1, float) + h11 * h * tan(i + 1)
+
+
+_vq = RUN_V_U * (1 - RUN_STANCE)                                 # stance ball speed in swing-q units (continuity at both ends)
+RUN_KEYS = ([(0.0, (RUN_STEP[1], 0.0, RUN_ROLL[2]), (_vq, 0.0, 0.0))] +
+            [(q_, (dy_, z_, r_), None) for q_, dy_, z_, r_ in RUN_SWING] +
+            [(1.0, (-RUN_STEP[0], 0.0, RUN_ROLL[0]), (_vq, 0.0, 0.0))])
+
+
+def foot_run(s, t):
+    t0 = 0.0 if s == "L" else 0.5
+    u = (t - t0) % 1.0
+    sg = 1.0 if s == "L" else -1.0
+    lo_ = s.lower()
+    C0 = LEGS[s]["C0"]
+    x = RUN_CX + (C0[0] - RUN_CX) * RUN_FOOT_X
+    beta = RUN_STANCE
+    yaw = Rz(-sg * 3.0)
+    if u < beta:
+        p = u / beta
+        dy = -RUN_STEP[0] + (RUN_STEP[0] + RUN_STEP[1]) * p
+        z = 0.0
+        roll = RUN_ROLL[0] + (RUN_ROLL[1] - RUN_ROLL[0]) * ss5(0.0, 0.4, p) + (RUN_ROLL[2] - RUN_ROLL[1]) * ss5(0.45, 1.0, p)
+        bend = roll                                              # the toes stay flat on the floor
+        stance = True
+    else:
+        q = (u - beta) / (1 - beta)
+        dy, z, roll = (float(v_) for v_ in _herm(RUN_KEYS, q))
+        bend = RUN_ROLL[2] * (1.0 - ss5(0.0, 0.3, q)) + RUN_ROLL[0] * ss5(0.7, 1.0, q)
+        stance = False
+    Rf = yaw @ Rx(roll)
+    Rb = yaw @ Rx(roll - bend)
+    hb = np.array([0.0, 0.0, BALL_H[s]])
+    Pb = np.array([x, C0[1] + dy, BALL_H[s] + z])                # the ball joint (the stance pivot)
+    if not stance:
+        # the swing-foot lift proof (as the walk): the boot posed rigidly (foot / ball blend as skinned), lifted by whatever
+        # still reaches below z = 0
+        C_ = Pb - Rf @ hb
+        pf = C_ + (TOE_PTS[s][0] - C0) @ Rf.T
+        pb = Pb + (TOE_PTS[s][0] - HEADP["ball_" + lo_]) @ Rb.T
+        zmin = float(((1.0 - TOE_PTS[s][1]) * pf[:, 2] + TOE_PTS[s][1] * pb[:, 2]).min())
+        Pb[2] += max(0.0, -zmin)
+    return Pb - Rf @ hb, Rf, Rb, stance
+
+
+def plant_legs_run(D, feet):
+    """plant_legs with the knee pole turned by the foot's YAW only (the swing foot rolls past 90 deg at the heel recovery:
+    a pole rolled with it would point the knee down)."""
+    info = {}
+    for s in "LR":
+        lo_ = s.lower()
+        C, Rf, Rb = feet[s]
+        A = C + Rf @ (HEADP["foot_" + lo_] - LEGS[s]["C0"])
+        H = xf(D["pelvis"], HEADP["thigh_" + lo_])
+        sg = 1.0 if s == "L" else -1.0
+        pole = Rz(-sg * 3.0) @ LEGS[s]["knee_dir"]
+        D["thigh_" + lo_], D["calf_" + lo_], At, err = two_bone("thigh_" + lo_, "calf_" + lo_, "foot_" + lo_, H, A, pole)
+        D["foot_" + lo_] = TRT(At, Rf, HEADP["foot_" + lo_])
+        D["ball_" + lo_] = TRT(xf(D["foot_" + lo_], HEADP["ball_" + lo_]), Rb, HEADP["ball_" + lo_])
+        info[s] = err
+    return info
+
+
+def run_pelvis_R(t):
+    yaw = -RUN_PELVIS[0] * math.cos(TAU * (t - RUN_PH["pelvis"]))
+    drop = -RUN_PELVIS[1] * math.cos(TAU * (t - RUN_STANCE / 2))
+    tilt = RUN_LEAN[0] + 0.5 * RUN_LEAN[2] * math.cos(2 * TAU * (t - RUN_STANCE * 0.8))
+    off = np.array([RUN_PELVIS[2] * math.cos(TAU * (t - RUN_STANCE / 2)), 0.0, 0.0])
+    return Rz(yaw) @ Ry(drop) @ Rx(tilt), off, yaw, drop
+
+
+def run_bounce(t):
+    return RUN_BOUNCE * math.cos(2 * TAU * (t - RUN_T_HI))
+
+
+def run_room(t):
+    """how far the pelvis may rise (from rest) with every STANCE foot within RUN_REACH; None in flight."""
+    Rp, off, _, _ = run_pelvis_R(t)
+    best = None
+    for s in "LR":
+        C, Rf, _, stc = foot_run(s, t)
+        if not stc:
+            continue
+        lo_ = s.lower()
+        A = C + Rf @ (HEADP["foot_" + lo_] - LEGS[s]["C0"])
+        h0 = HEADP["pelvis"] + Rp @ (HEADP["thigh_" + lo_] - HEADP["pelvis"]) + off
+        r = RUN_REACH * LEGS[s]["len"]
+        dxy2 = float((A[0] - h0[0]) ** 2 + (A[1] - h0[1]) ** 2)
+        v = A[2] + math.sqrt(max(r * r - dxy2, 1e-9)) - h0[2]
+        best = v if best is None else min(best, v)
+    return best
+
+
+# the pelvis mean height: the highest that keeps the stance leg within reach over the WHOLE stance (sampled 20x the key
+# rate, the keyed frames included)
+_rz = [(run_room(i / (20 * RUN_N)), i / (20 * RUN_N)) for i in range(20 * RUN_N)]
+RUN_Z0 = min(r_ - run_bounce(t_) for r_, t_ in _rz if r_ is not None)
+
+
+def pose_run(t):
+    D = {"root": np.eye(4)}
+    info = {}
+    feet, st = {}, {}
+    for s in "LR":
+        C, Rf, Rb, stc = foot_run(s, t)
+        feet[s] = (C, Rf, Rb); st[s] = stc
+    Rp, off, yaw, drop = run_pelvis_R(t)
+    dz = RUN_Z0 + run_bounce(t)
+    D["pelvis"] = Tt(off + np.array([0, 0, dz])) @ Tr(HEADP["pelvis"], Rp)
+    tc = t - RUN_OVERLAP / RUN_N
+    chest = RUN_CHEST * math.cos(TAU * (tc - RUN_PH["arm_L"] - 0.5))     # + = the left shoulder back (right arm forward)
+    lean = RUN_LEAN[1] + 0.5 * RUN_LEAN[2] * math.cos(2 * TAU * (tc - RUN_STANCE * 0.8))
+    trunk = RUN_LEAN[0] + lean
+    fk(D, "spine_01", Rz(-0.5 * yaw) @ Ry(-0.5 * drop) @ Rx(0.30 * lean))
+    fk(D, "spine_02", Rz(0.45 * chest) @ Ry(-0.3 * drop) @ Rx(0.35 * lean))
+    fk(D, "spine_03", Rz(0.55 * chest) @ Ry(-0.2 * drop) @ Rx(0.35 * lean))
+    # the head STABILISED (eyes locked ahead, the hero's focus): its world rotation = a fixed forward pitch + a small
+    # share of the chest's yaw, whatever the trunk does -- the neck takes 40 % of the correction, the head the rest (the
+    # fringe / side locks then lag only the head's small residual motion, not the whole trunk's rock)
+    Rs3 = D["spine_03"][:3, :3]
+    W_ = Rz(RUN_HEAD[1] * math.degrees(math.atan2(Rs3[1, 0], Rs3[0, 0]))) @ Rx(RUN_HEAD[0])
+    Rtot = Rs3.T @ W_
+    _ang = math.acos(float(np.clip((np.trace(Rtot) - 1) / 2, -1, 1)))
+    _ax = np.array([Rtot[2, 1] - Rtot[1, 2], Rtot[0, 2] - Rtot[2, 0], Rtot[1, 0] - Rtot[0, 1]])
+    Rn = K._rot(_ax / max(float(np.linalg.norm(_ax)), 1e-12), 0.4 * _ang) if _ang > 1e-9 else np.eye(3)
+    fk(D, "neck_01", Rn)
+    fk(D, "head", Rn.T @ Rtot)
+    info.update(plant_legs_run(D, feet))
+    # the fork: charged forward in the right hand, the hand pumping with the right arm's half of the swing (forward-most
+    # half a cycle after the left arm's), the shaft rocking with it; the grip relation (hand -> fork) is the house one
+    fr = FORK_RUN
+    w_r = math.cos(TAU * (t - RUN_PH["arm_L"] - 0.5))
+    fk(D, "clavicle_r")
+    Hs = xf(D["clavicle_r"], HEADP["upperarm_r"])
+    Rch = D["spine_03"][:3, :3]
+    grip = Hs + Rch @ (np.array(fr["grip"]) + np.array([0.0, -fr["pump"][0] * w_r, fr["pump"][1] * w_r]))
+    yaw_c = math.degrees(math.atan2(Rch[1, 0], Rch[0, 0]))
+    Rfk = Rz(0.6 * yaw_c) @ Rx(fr["tilt_fwd"] + fr["swing"] * w_r) @ Ry(-fr["tilt_out"]) @ Rz(ROLL["run"])
+    Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
+    info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
+    # the free (left) arm: a full pump, forward-most when the right knee drives; the elbow closes in front, opens behind,
+    # the forearm trailing the upper arm by a frame (follow-through)
+    w_l = math.cos(TAU * (t - RUN_PH["arm_L"]))
+    w_lb = math.cos(TAU * (t - RUN_PH["arm_L"] - 1.0 / RUN_N))
+    la = RUN_LARM
+    free_arm(D, "L", la[0], la[1] - la[2] * w_l, la[3], lag_bend=la[4] * w_lb)
+    fingers(D, "R", GRIP_CURL, GRIP_THUMB)
+    fingers(D, "L", (34.0, 52.0, 38.0), (18.0, 24.0))
+    info["stance"] = st
+    info["pelvis_dz"] = dz
+    info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
+    return D, info
+
+
 def wrist_bend(D):
     Rw = D["lowerarm_r"][:3, :3].T @ D["hand_r"][:3, :3]
     return math.degrees(math.acos(float(np.clip((np.trace(Rw) - 1) / 2, -1, 1))))
 
 
 ROLL_SEARCH = {}
-for cn_, fn_ in (("idle", pose_idle), ("walk", pose_walk)):
+for cn_, fn_ in (("idle", pose_idle), ("walk", pose_walk), ("run", pose_run)):
     best_ = None
     for r_ in range(0, 360, 10):
         ROLL[cn_] = float(r_)
@@ -342,8 +524,8 @@ ROLL_SEARCH["tine_roll_in_hand"] = {"deg": _best_tr[0], "idle_t0_tine_plane_to_f
                                     round(math.degrees(math.acos(min(1.0, _best_tr[1]))), 1),
                                     "walk_t0_tine_plane_to_front_deg": round(math.degrees(math.acos(min(1.0, tine_face(pose_walk(0.0)[0])))), 1)}
 print("ROLL", json.dumps(ROLL_SEARCH))
-CLIP_N = {"idle": IDLE_N, "walk": WALK_N}
-POSE = {"idle": pose_idle, "walk": pose_walk}
+CLIP_N = {"idle": IDLE_N, "walk": WALK_N, "run": RUN_N}        # (insertion order = key / export order: idle, walk untouched)
+POSE = {"idle": pose_idle, "walk": pose_walk, "run": pose_run}
 for pb in rig.pose.bones:
     pb.rotation_mode = "QUATERNION"
 ORDER = ["root"] + DEFORM
@@ -396,7 +578,7 @@ def secondary(cn, N):
         rp = np.array([rotvec(D[par][:3, :3] @ Ds[0][par][:3, :3].T) for D in Ds])
         anc = np.array([xf(D[par], HEADP[ch + ".0"]) for D in Ds])
         acc = np.real(np.fft.ifft(np.fft.fft(anc, axis=0) * (-(w ** 2))[:, None], axis=0))
-        u = rd + P_["drag"] * np.stack([-acc[:, 1], acc[:, 0], np.zeros(N)], 1) / 9.81
+        u = rd + P_["drag"] * (RUN_FT_DRAG if cn == "run" else 1.0) * np.stack([-acc[:, 1], acc[:, 0], np.zeros(N)], 1) / 9.81
         w0 = 2 * math.pi * P_["hz"]
         H = w0 ** 2 / (w0 ** 2 - w ** 2 + 2j * P_["zeta"] * w0 * w)
         y, rows = u, []
@@ -419,9 +601,28 @@ def secondary(cn, N):
     return out, lag
 
 
-def drape_local(cn, ch, k, t):
+def drape_local(cn, ch, k, t, lift=None):
     dk = FT_DRIFT_K
     kind = ft_kind(ch)
+    if cn == "run":
+        # the sprint: the cloak streams back (relative to the leaning chest; the front-wrapping edges less), the chains
+        # over the left arm follow its pump (lift["arm_L"], deg past rest, + = forward: a -X turn swings the drape forward),
+        # the nape tail trails, the fringe lifts off the brow, the flutter rides the steps (2nd harmonic); the sash ties
+        # (hanging in FRONT of the left hip) ride the left thigh's forward swing (lift["tie"], deg)
+        if kind == "cape":
+            c_ = int(ch[-1])
+            arm_ = RUN_CAPE_ARM[c_] * lift["arm_L"] * (RUN_CAPE_ARM_FWD if lift["arm_L"] > 0 else 1.0) if k == 0 else 0.0
+            return Rx(RUN_CAPE[0] * RUN_CAPE_SPREAD[c_] * (0.55 + 0.45 * k / (CAPE_BONES - 1)) - arm_ +
+                      dk * K.vine_wave(t, k, CAPE_BONES, RUN_CAPE[1], RUN_CAPE[2], 0.9, 2, 0.8 * c_)) \
+                @ Ry(0.5 * dk * K.vine_wave(t, k, CAPE_BONES, RUN_CAPE[1], RUN_CAPE[2], 0.9, 2, 1.7 + c_))
+        nb = ft_nb(ch)
+        wy = Ry(0.4 * dk * K.vine_wave(t, k, nb, RUN_HAIR[1], RUN_HAIR[2], 0.8, 2, 1.3 + len(ch)))
+        if kind == "tie":
+            return Rx(-lift["tie"] * (1.0 if k == 0 else 0.25)) @ wy
+        a = RUN_HAIR[0] * (k + 1) / nb + 0.5 * dk * K.vine_wave(t, k, nb, RUN_HAIR[1], RUN_HAIR[2], 0.8, 2, 0.4 + len(ch))
+        if kind == "hair_fringe":
+            a = -RUN_HAIR[3] if k == 0 else 0.0
+        return Rx(a if kind in ("hair_tail", "hair_fringe") else 0.0) @ wy
     if cn == "idle":
         if kind != "cape":
             nb = ft_nb(ch)
@@ -439,14 +640,26 @@ def drape_local(cn, ch, k, t):
         @ Ry(0.5 * dk * K.vine_wave(t, k, CAPE_BONES, WALK_CAPE[1], WALK_CAPE[2], 0.9, 1, 1.7 + int(ch[-1])))
 
 
+def fwd_deg(D, n, rel=None):
+    """bone n's forward swing past its rest direction (deg, sagittal angle from straight down: + = the tail forward),
+    in the world or (rel) in that bone's posed frame."""
+    d0 = TAILP[n] - HEADP[n]
+    d = D[n][:3, :3] @ d0
+    if rel is not None:
+        d = D[rel][:3, :3].T @ d
+    return math.degrees(math.atan2(-float(d[1]), -float(d[2])) - math.atan2(-float(d0[1]), -float(d0[2])))
+
+
 def apply_chains(D, cn, t, f):
+    lift = ({"tie": RUN_TIE_LIFT * max(0.0, fwd_deg(D, "thigh_l", "pelvis")), "arm_L": fwd_deg(D, "upperarm_l", "spine_03")}
+            if cn == "run" else None)
     for ch in FT_CHAINS:
         Lp = np.eye(3)
         for k in range(ft_nb(ch)):
             n = "%s.%d" % (ch, k)
             Rpv = D[PARENT[n]][:3, :3]
             Lk = SEC[cn][ch][f][k]
-            fk(D, n, Rpv.T @ Lk @ Lp.T @ Rpv @ drape_local(cn, ch, k, t))
+            fk(D, n, Rpv.T @ Lk @ Lp.T @ Rpv @ drape_local(cn, ch, k, t, lift))
             Lp = Lk
 
 
@@ -458,7 +671,7 @@ rep["follow_through"] = {"params": FT, "into_body_limit_deg": FT_INTO_BODY_DEG, 
                          "seconds": round(time.time() - t_, 1)}
 print("FOLLOW", json.dumps(FT_LAG))
 t_ = time.time()
-ACTS, key_rows, ik_worst, butt = {}, [], {}, {}
+ACTS, key_rows, ik_worst, butt, KEYQ = {}, [], {}, {}, {}
 for cn, N in CLIP_N.items():
     act = bpy.data.actions.new(cn)
     act.use_fake_user = True
@@ -468,9 +681,10 @@ for cn, N in CLIP_N.items():
         D, info = POSE[cn]((f % N) / N)
         apply_chains(D, cn, (f % N) / N, f % N)
         for k_, v_ in info.items():
-            if isinstance(v_, float) and k_ != "fork_butt_z":
+            if isinstance(v_, float) and k_ not in ("fork_butt_z", "pelvis_dz"):
                 ik_worst[(cn, k_)] = max(ik_worst.get((cn, k_), 0.0), abs(v_))
         butt.setdefault(cn, []).append(info["fork_butt_z"])
+        KEYQ.setdefault(cn, []).append([])
         for n in ORDER:
             Bm = np.eye(4) if n == "root" else basis(D, n)
             q = Matrix(Bm[:3, :3].tolist()).to_quaternion(); q.normalize()
@@ -482,6 +696,7 @@ for cn, N in CLIP_N.items():
             pb.keyframe_insert("location", frame=f + 1)
             pb.keyframe_insert("rotation_quaternion", frame=f + 1)
             key_rows.append(list(pb.location) + list(pb.rotation_quaternion))
+            KEYQ[cn][-1].append(list(pb.rotation_quaternion) + list(pb.location))
     for fc in K.action_fcurves(act):
         for kp in fc.keyframe_points:
             kp.interpolation = "LINEAR"
@@ -542,6 +757,16 @@ for s in "LR":
     bot = so[np.abs(V0m[so, 2]) < 1e-6]
     CONTACT[s] = int(bot[np.argmin(np.linalg.norm(V0m[bot, :2] - LEGS[s]["C0"][:2], axis=1))])
     CONTACT["heel" + s] = bot[np.argsort(-((V0m[bot] - LEGS[s]["C0"]) @ -BOOT_RING[s]["fd"]))[:2]]
+    # (run) the toe-sole contact: the sole-bottom vertex most weighted to the toe (ball) bone -- the run's stance pins the
+    # ball joint and keeps the toe segment flat, so this vertex is the run's zero-slip witness
+    CONTACT["toe" + s] = int(bot[np.argmax(WM[bot, J["ball_" + s.lower()]])])
+SOLE_IDS = {s: rng("sole." + s) for s in "LR"}
+BOOT_IDS = {s: np.concatenate([rng(n) for n in RM if n.split(".")[0] in BOOT_PARTS and n.split(".")[1].startswith(s)])
+            for s in "LR"}
+# (every clip) the fork's shaft vs EVERY main-mesh vertex but the gripping hand + its forearm (the clearance number for
+# body + outfit + cloak + boots + hair together)
+_rfa = _rhand | {"lowerarm_r"}
+FORK_FREE_IDS = np.nonzero(np.array([d not in _rfa for d in domM]))[0]
 
 
 def group_edges(ids, extra_parts=()):
@@ -613,6 +838,30 @@ def hair_into_skin(C_, by_part=False):
     return (n_, parts_) if by_part else n_
 
 
+def _qrel(a, b):
+    """rotation vector of conj(a) * b (quaternions w, x, y, z; the short way)."""
+    a = np.asarray(a, float); b = np.asarray(b, float)
+    w = a[0] * b[0] + a[1:] @ b[1:]
+    v = a[0] * b[1:] - b[0] * a[1:] - np.cross(a[1:], b[1:])
+    if w < 0:
+        w, v = -w, -v
+    s = float(np.linalg.norm(v))
+    return v / s * 2 * math.atan2(s, w) if s > 1e-12 else np.zeros(3)
+
+
+def seam_joints(cn, N):
+    """the loop seam on the KEYS: pose (first vs last key, every bone) and velocity (the angular step into the seam,
+    key N-1 -> N, vs the step out of it, key 0 -> 1, compared with the largest step-to-step change anywhere inside)."""
+    Q = np.array(KEYQ[cn])
+    nb = Q.shape[1]
+    W = np.array([[_qrel(Q[f, b, :4], Q[f + 1, b, :4]) for b in range(nb)] for f in range(N)])
+    acc = np.linalg.norm(W[1:] - W[:-1], axis=2)
+    return {"pose_delta_deg_max": round(math.degrees(max(float(np.linalg.norm(_qrel(Q[0, b, :4], Q[N, b, :4]))) for b in range(nb))), 6),
+            "loc_delta_m_max": round(float(np.abs(Q[0, :, 4:] - Q[N, :, 4:]).max()), 9),
+            "ang_vel_jump_at_seam_deg_per_frame": round(math.degrees(float(np.linalg.norm(W[0] - W[N - 1], axis=1).max())), 4),
+            "ang_vel_change_interior_max_deg_per_frame": round(math.degrees(float(acc.max())), 4)}
+
+
 HAIR_SKIN_REST, HAIR_SKIN_REST_PARTS = hair_into_skin(OBJ["main"]["V"], True)
 print("HAIRSKIN_REST", HAIR_SKIN_REST, json.dumps(HAIR_SKIN_REST_PARTS))
 samples = []
@@ -623,10 +872,12 @@ for cn, N in CLIP_N.items():
     first = last = firstf = lastf = None
     minz, minz_f, root_off, grip_dev, wrist_max = 1e9, 1e9, 0.0, 0.0, 0.0
     tips, heels = {s: [] for s in "LR"}, {s: [] for s in "LR"}
+    toes, sole_z, boot_z = {s: [] for s in "LR"}, {s: [] for s in "LR"}, {s: [] for s in "LR"}
     gate = {"cloak_crossings_" + g: 0 for g in E_GROUPS}
     gate["hair_into_skin_verts_max"] = 0
     gate.update({"fork_shaft_through_cloak": 0,
-            "fork_shaft_through_body": 0, "fork_to_cloak_min_m": 1e9, "fork_to_legs_min_m": 1e9, "cloak_to_legs_min_m": 1e9})
+            "fork_shaft_through_body": 0, "fork_to_cloak_min_m": 1e9, "fork_to_legs_min_m": 1e9, "cloak_to_legs_min_m": 1e9,
+            "fork_to_mesh_min_m": 1e9})
     for f in range(1, N + 2):
         scene.frame_set(f)
         C = eval_coords(low); Fk = eval_coords(fko)
@@ -644,10 +895,15 @@ for cn, N in CLIP_N.items():
         wrist_max = max(wrist_max, math.degrees(math.acos(float(np.clip((np.trace(Rw) - 1) / 2, -1, 1)))))
         for s in "LR":
             tips[s].append(C[CONTACT[s]].copy()); heels[s].append(C[CONTACT["heel" + s]].mean(0))
-        if (f % 2 == 1 or cn == "walk") and f <= N:
+            toes[s].append(C[CONTACT["toe" + s]].copy()); sole_z[s].append(float(C[SOLE_IDS[s], 2].min()))
+            boot_z[s].append(float(C[BOOT_IDS[s], 2].min()))
+        if (f % 2 == 1 or cn != "idle") and f <= N:
             bvh_c = BVHTree.FromPolygons(C.tolist(), CLOAK_TRIS)
             for g_, E_ in E_GROUPS.items():
-                gate["cloak_crossings_" + g_] = max(gate["cloak_crossings_" + g_], crossings(bvh_c, C, E_))
+                _nc = crossings(bvh_c, C, E_)
+                if _nc > gate["cloak_crossings_" + g_]:
+                    gate["cloak_crossings_" + g_] = _nc
+                    gate.setdefault("cloak_crossings_worst_frame", {})[g_] = f
             Mfk = np.array(rig.pose.bones["pitchfork"].matrix) @ np.linalg.inv(REST4["pitchfork"])
             ax_p = np.array([xf(Mfk, p) for p in FORK_AXIS])
             bvh_b = BVHTree.FromPolygons(C.tolist(), BODY_TRIS)
@@ -672,6 +928,15 @@ for cn, N in CLIP_N.items():
                 kl.insert(C[vi], i)
             kl.balance()
             gate["fork_to_legs_min_m"] = min(gate["fork_to_legs_min_m"], float(min(kl.find(p)[2] for p in ax_p)))
+            km = KDTree(len(FORK_FREE_IDS))
+            for i, vi in enumerate(FORK_FREE_IDS):
+                km.insert(C[vi], i)
+            km.balance()
+            _fm = min((km.find(p)[2], i) for i, p in enumerate(ax_p))
+            if _fm[0] < gate["fork_to_mesh_min_m"]:
+                gate["fork_to_mesh_min_m"] = float(_fm[0])
+                gate["fork_to_mesh_worst"] = {"frame": f, "axis_m_from_butt": round(float(np.linalg.norm(FORK_AXIS[_fm[1]] - _butt_rest)), 3),
+                                              "part": _PART_OF.get(int(FORK_FREE_IDS[km.find(ax_p[_fm[1]])[1]]), "?")}
     row = {"frames": [1, N + 1], "period_frames": N, "seconds": round(N / K.FPS, 4), "cyclic": True,
            "seam_main_mm": round(float(np.linalg.norm(first - last, axis=1).max()) * 1000, 6),
            "seam_fork_mm": round(float(np.linalg.norm(firstf - lastf, axis=1).max()) * 1000, 6),
@@ -681,6 +946,7 @@ for cn, N in CLIP_N.items():
            "right_wrist_bend_max_deg": round(wrist_max, 2),
            "ik_unreachable_max_m": {k[1]: round(v, 5) for k, v in ik_worst.items() if k[0] == cn},
            "gates": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in gate.items()}}
+    row["seam_joints"] = seam_joints(cn, N)
     tips = {s: np.array(v) for s, v in tips.items()}; heels = {s: np.array(v) for s, v in heels.items()}
     if cn == "walk":
         gait = {}
@@ -710,6 +976,39 @@ for cn, N in CLIP_N.items():
                     "heel_strike_toes_up_deg": WALK_HEELSTRIKE, "bounce_m": WALK_BOUNCE,
                     "rule": "zero-slip: in flat stance (before toe-off) the ball-contact sole vertex moves back at exactly the "
                             "ground speed (slip = max deviation from that line), with no lift and no lateral drift"})
+    elif cn == "run":
+        gait, air = {}, []
+        for s in "LR":
+            fl = [f for f in range(N) if foot_run(s, f / N)[3]]    # (one contiguous stance per foot: touchdowns at t = 0 / 0.5)
+            P_ = np.array(toes[s])[fl]
+            dy = P_[:, 1] - P_[0, 1]
+            ideal = RUN_SPEED * (np.array(fl) - fl[0]) / K.FPS
+            sw = [f for f in range(N) if f not in fl]
+            gait[s] = {"stance_frames": [f + 1 for f in fl], "toe_contact_vertex_ball_weight": round(float(WM[CONTACT["toe" + s], J["ball_" + s.lower()]]), 3),
+                       "toe_contact_z_range": [round(float(P_[:, 2].min()), 6), round(float(P_[:, 2].max()), 6)],
+                       "lateral_x_drift": round(float(np.ptp(P_[:, 0])), 6),
+                       "slip_vs_ground_m": round(float(np.abs(dy - ideal).max()), 6),
+                       "sole_min_z_m": round(float(min(sole_z[s])), 6), "boot_min_z_m": round(float(min(boot_z[s])), 6),
+                       "swing_sole_min_z_m": round(float(min(sole_z[s][f] for f in sw)), 4),
+                       "swing_sole_max_z_m": round(float(max(sole_z[s][f] for f in sw)), 4),
+                       "heel_z_range_stance": [round(float(np.array(heels[s])[fl][:, 2].min()), 4), round(float(np.array(heels[s])[fl][:, 2].max()), 4)]}
+        for f in range(N):
+            cl = min(sole_z["L"][f], sole_z["R"][f])
+            if cl > 0.001:
+                air.append((f + 1, round(cl, 4)))
+        T_ = N / K.FPS
+        row.update({"gait": gait, "airborne_frames_both_soles_up": [a_[0] for a_ in air],
+                    "airborne_min_sole_clearance_m": round(min(a_[1] for a_ in air), 4) if air else None,
+                    "cadence_steps_per_min": round(2 * 60.0 * K.FPS / N, 2), "step_seconds": round(T_ / 2, 4),
+                    "game_cells_per_step_at_0.12s": round(T_ / 2 / 0.12, 3),
+                    "stance_fraction": RUN_STANCE, "flight_seconds_per_step": round((0.5 - RUN_STANCE) * T_, 4),
+                    "stance_travel_m": round(RUN_STEP[0] + RUN_STEP[1], 4), "ground_speed_m_per_s": round(RUN_SPEED, 4),
+                    "stride_length_m": round(RUN_SPEED * T_, 4), "step_length_m": round(RUN_SPEED * T_ / 2, 4),
+                    "ground_speed_body_heights_per_s": round(RUN_SPEED / Z_TOP, 4), "pelvis_mean_dz_m": round(RUN_Z0, 4),
+                    "bounce_m": RUN_BOUNCE,
+                    "rule": "zero-slip: through each stance the toe-sole contact vertex (ball-bone dominant; the ball joint is the "
+                            "pinned pivot, the toes stay flat) moves back at exactly the ground speed = stance travel / stance "
+                            "time; stride = ground speed x cycle; airborne = both soles above 1 mm"})
     else:
         row["feet_planted"] = {s: {"ball_contact_xy_drift": round(float(np.linalg.norm(tips[s][:, :2] - tips[s][0, :2], axis=1).max()), 6),
                                    "ball_contact_z_range": [round(float(tips[s][:, 2].min()), 5), round(float(tips[s][:, 2].max()), 5)],
@@ -722,7 +1021,7 @@ DIG["clip_samples"] = sha(np.concatenate(samples))
 rep["clips"] = clip_rep
 rep["hair_into_skin"] = {"rule": "chain-driven clump vertices (fringe / side / tail follow-through weight > 0.05) > 1 mm inside "
                                  "the posed head / neck skin or > 2 mm under the hair cap's surface; sampled with the cloak gates "
-                                 "(every other idle frame, every walk frame); gate: no clip exceeds the rest pose",
+                                 "(every other idle frame, every walk / run frame); gate: no clip exceeds the rest pose",
                          "free_verts": int(len(HAIR_FREE_IDS)), "rest": HAIR_SKIN_REST, "rest_by_part": HAIR_SKIN_REST_PARTS,
                          **{cn: clip_rep[cn]["gates"]["hair_into_skin_verts_max"] for cn in clip_rep},
                          "pass": all(clip_rep[cn]["gates"]["hair_into_skin_verts_max"] <= HAIR_SKIN_REST for cn in clip_rep)}
@@ -773,12 +1072,17 @@ rig["conquest_rig"] = ("wren: root (contract) > MPFB2 game_engine skeleton (pelv
                        "(hand_r child)")
 low["conquest_clips"] = list(CLIP_N)
 low["conquest_clip_status"] = ("idle (leaning a little on the planted pitchfork, breath, eased weight shift, chin-up look) + walk "
-                               "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap); "
-                               "cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); no attack / hit / death")
-low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (v3: the hair's UV strip carries the smooth-proxy normals -- the "
-                        "hairdo shades as one soft volume on flat facets -- with white AO); no outline shells, no cel bands; the "
-                        "stylisation is DRAWN into the palette regions (shadow shapes, brows, lash band, iris shade + highlight, "
-                        "hair tiers: roots / angel ring / tips / dark inner cap)")
+                               "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap) + run "
+                               "(young hero sprint: forward lean, high knee drive, flight phase, full left-arm pump, the fork charged "
+                               "forward); cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); "
+                               "no attack / hit / death")
+low["conquest_look"] = ("shaded: Col x baked AO, baked normal map; the hair " +
+                        ("faces smooth-shaded with CUSTOM SPLIT NORMALS (the smooth-proxy normals leaned toward each lock's own "
+                         "-- the hairdo shades as one soft volume; research H5, 2026-10-03), its UV strip of the normal map flat "
+                         "and white AO" if HAIR_NORMAL_CARRIER == "vertex" else
+                         "UV strip of the normal map carries the smooth-proxy normals (one soft volume on flat facets), white AO") +
+                        "; no outline shells, no cel bands; the stylisation is DRAWN into the palette regions (shadow shapes, "
+                        "brows, lash band, iris shade + highlight, hair tiers: roots / angel ring / tips / dark inner cap)")
 low["conquest_locomotion"] = "biped in flat boots: rest pose on the floor per contract (soles z 0), clips in place"
 low["conquest_pitchfork_grip"] = json.dumps(grip_rel.round(6).tolist())
 for m in list(bpy.data.materials):

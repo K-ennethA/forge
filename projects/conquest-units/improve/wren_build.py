@@ -706,6 +706,51 @@ WALK_CAPE = (8.0, 1.2, 3.0)           # cloak trail (deg), flutter root / tip (d
 WALK_HAIR = (3.0, 1.0, 3.0)
 WALK_OVERLAP = (2.0, 4.0)
 WALK_NOD = (1.6, 1.0)
+# ---- run (review-log 2026-10-03 "young hero sprint": an eager, youthful FULL sprint, not a soldier's measured stride)
+RUN_N = 12                            # "run cycle": 12 frames per stride (2 steps) = 0.5 s at 24 fps = 240 steps/min.
+                                      #   Derivation: the game's run pace (StoryRuleset.run_step_seconds 0.12 s/cell) x 24 fps
+                                      #   = 2.88 frames/cell; one step = 6 frames = 0.25 s = 2.08 cells (4 % under 2 cells),
+                                      #   the stride = 4.2 cells; an EVEN integer cycle keeps L / R exact half-cycle mirrors on
+                                      #   keyed frames and the seam exact. 240/min reads as a full sprint (recreational sprint
+                                      #   180-210, elite top speed ~260-280); 14 (206/min) read as a fast jog, 10 as a scramble
+RUN_STANCE = 0.30                     # "ground time": fraction of the cycle each foot is down (duty < 0.5 = a flight phase):
+                                      #   1.8 of 6 frames per step airborne -> frames 4-5 and 10-11 have both feet off the floor
+RUN_STEP = (0.24, 0.46)               # "stride reach": the ball joint lands this far AHEAD of / leaves this far BEHIND its rest
+                                      #   spot (m); stance travel 0.70 m in 0.15 s = the ground speed (4.67 m/s)
+RUN_ROLL = (8.0, 3.0, 50.0)           # stance heel lift (deg): forefoot touchdown / mid-stance / toe-off push
+RUN_SWING = ((0.30, 0.30, 0.36, 100.0), (0.60, -0.20, 0.42, -6.0), (0.82, -0.36, 0.13, -10.0))
+                                      # swing keys (q = swing fraction, ball joint dy from rest (m, < 0 = ahead), ball height
+                                      #   above its rest (m), heel lift (deg)): heel recovery (folded under the seat), KNEE
+                                      #   DRIVE (thigh ~horizontal, toes cocked), reach; it lands pawing back at ground speed
+RUN_FOOT_X = 0.62                     # feet land this x their rest half-width (a runner's narrow track)
+RUN_REACH = 0.985                     # stance leg reach (x the leg length) at its longest (touchdown / toe-off)
+RUN_BOUNCE = 0.022                    # "bounce": pelvis rise / fall about its mean (m), high in flight, low at mid-stance
+RUN_PELVIS = (7.0, 3.0, 0.006)        # pelvis yaw (deg), drop (deg), side shift (m)
+RUN_LEAN = (7.0, 12.0, 0.5)           # "forward lean": pelvis tilt (deg), spine total (deg), push-off lean pulse (deg)
+RUN_CHEST = 9.0                       # chest counter-yaw against the pelvis (deg; the shoulders drive the arms)
+RUN_HEAD = (4.0, 0.2)                 # head (stabilised, eyes locked ahead): world forward pitch (deg), share of the chest's
+                                      #   yaw it keeps (a head bobbing with the trunk drove the fringe into the brow)
+RUN_LARM = (12.0, -12.0, 28.0, 50.0, 10.0)   # free (left) arm pump: lowered (deg), swing centre (deg, < 0 = forward),
+                                      #   swing amplitude (deg), elbow bend (deg), bend pulse (deg; closes in front)
+FORK_RUN = {"grip": (-0.08, -0.24, -0.04), "pump": (0.02, 0.005), "tilt_fwd": 9.0, "tilt_out": 0.0, "swing": 3.0}
+                                      # fork carry at a sprint = the walk's convention (carried upright at his right side,
+                                      #   the right hand at chest height) leaned into the run: the grip in the chest frame
+                                      #   relative to the right shoulder joint (m), its pump fore-aft / up (m), the shaft
+                                      #   tilted top-forward and top-inward (deg; < 0 = the butt out, clear of the knee drive
+                                      #   and the heel kick), the pump's shaft rock (deg). (A 30-deg "charging" tilt was
+                                      #   tried: its butt trailed into the back leg and the floor, the wrist bent 112 deg)
+RUN_CAPE = (34.0, 2.0, 6.0)           # cloak trail relative to the leaning chest (deg, root .. tip x0.55 .. 1), flutter
+RUN_CAPE_SPREAD = (0.0, 0.75, 1.0, 0.75, 0.35)   # the trail per cloak chain (his right front edge .. his left front
+                                      #   edge): the front-wrapping edges trail less (at 55 deg x 1 the left wrap rose
+                                      #   into the face and cut the torso)
+RUN_CAPE_ARM = (0.0, 0.0, 0.0, 0.25, 0.4)   # each cloak chain follows the LEFT upper arm's fore-aft swing by this x
+                                      #   (the cloak drapes over that arm: a full pump under a still cloak pokes through)
+RUN_CAPE_ARM_FWD = 1.0                # ... x this on the FORWARD swing (the arm leaves under the front edge; a wrap
+                                      #   dragged fully forward hung as a curtain over the legs)
+RUN_HAIR = (6.0, 1.0, 2.5, 0.0)      # nape-tail trail (deg), flutter root / tip (deg), fringe lift off the brow (deg)
+RUN_FT_DRAG = 0.5                     # the follow-through's pendulum drag (anchor acceleration) x this in the run only
+RUN_TIE_LIFT = 0.85                  # the sash ties ride the left thigh's forward swing (x its angle past vertical)
+RUN_OVERLAP = 1.0                     # chest lag behind the pelvis (frames)
 FT = {"hair_fringe": {"driver": "head", "hz": 3.0, "zeta": 0.45, "drag": 1.0, "gain": 0.9},   # v3 re-tune (v2 3.4 / 0.42 /
       #   0.9 / 1.0): the bolder, heavier clumps swing slower and a touch less far (a 60-80 mm clump whipping at the thin
       #   lock's rate read as paper)

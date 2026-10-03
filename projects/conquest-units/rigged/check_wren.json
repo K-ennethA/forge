@@ -115,12 +115,15 @@
   },
   {
    "check": "clip_names",
-   "pass": true,
+   "pass": false,
    "clips": [
     "idle",
+    "run",
     "walk"
    ],
-   "not_allowed": [],
+   "not_allowed": [
+    "run"
+   ],
    "idle": [
     "idle",
     "exact"
@@ -147,6 +150,21 @@
      "extent": {
       "footprint": 0.9488,
       "height": 1.7278,
+      "min_z": -0.0
+     }
+    },
+    {
+     "clip": "run",
+     "frames": [
+      1,
+      13
+     ],
+     "cyclic": true,
+     "manual_range": true,
+     "seam_mm": 0.0,
+     "extent": {
+      "footprint": 1.4724,
+      "height": 1.693,
       "min_z": -0.0
      }
     },
@@ -178,6 +196,6 @@
    "deform_bones": 93
   }
  ],
- "passed": 11,
- "failed": 0
+ "passed": 10,
+ "failed": 1
 }

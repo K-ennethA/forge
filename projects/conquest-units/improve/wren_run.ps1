@@ -2,7 +2,12 @@
 # lessons applied from the start): model + idle + walk + the winter skin, one command (hidden, headless).
 # v3 (the Fire Emblem round): renders are written v3-prefixed (renders/wren/wren_v3_*) so the v2 stills stay as the
 # comparison baseline (v2: wren_v2_*; v1: wren_* + wren_v1ref_*). + wren_v3_hairflat_* = the same views with the hair
-# strip's normals set flat in memory (the v2 hair shading on the v3 geometry: the one-volume A/B proof).
+# strip's normals set flat in memory (the v2 hair shading on the v3 geometry: the one-volume A/B proof). [2026-10-03: that
+# '--hair-normal-flat' flag is retired from wren_render.py -- under HAIR_NORMAL_CARRIER "vertex" the strip is already flat.]
+# 2026-10-03 run clip (review-log "young hero sprint"): + render_runstrip (wren_render.py --strip run:12, side / his-right
+# side / fork-side three-quarter, tiles in renders/wren/run_strip/) -> wren_compose.py --run-preview ->
+# renders/wren/wren_run_preview.png. The bake gate reads the hair-normal npy pair ONLY when this build wrote it (carrier
+# "map"): the stale pair a past map build left in %TEMP% was being compared to itself (texels=0 every run).
 # v4 (review-log 2026-09-29 "Wren v4 feedback"): renders are written v4-prefixed (wren_v4_*); the v3 stills are the
 # comparison baseline (the v4-only views nose / nose_tq / face_side(90) / mouth_tq / mouth_side / hair_part / hair_sweep /
 # hair_back_close were rendered once off the committed v3 rig as wren_v3_* before the v4 build replaced it).
@@ -40,6 +45,7 @@ $VPY = "C:\Users\kenne\OneDrive\Desktop\git\forge\service\.venv\Scripts\python.e
 New-Item -ItemType Directory -Force $OUT | Out-Null
 $T0 = Get-Date
 if (-not $SkipBuild) {
+  Remove-Item "$env:TEMP\wren_hairnormal_main.npy","$env:TEMP\wren_hairnormal_twin.npy" -ErrorAction SilentlyContinue
   $bp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_build.txt" -RedirectStandardError "$I\log_wren_build.err"
   $dp = Start-Process -FilePath $B -ArgumentList @("--background","--factory-startup","--python","`"$I\wren_build.py`"","--","--digest-only","`"$I\log_wren_digest2.json`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_digest2.txt" -RedirectStandardError "$I\log_wren_digest2.err"
   # v5.1 HAIR-STABILITY PROBE (the hair-face decoupling): sections 1-5 again under a deliberate FACE edit (the v4 mouth
@@ -59,7 +65,9 @@ if (-not $SkipBuild) {
   $mismatch = @()
   foreach ($k in $j1.parts.PSObject.Properties.Name) { if ($j1.parts.$k -ne $j2.parts.$k) { $mismatch += $k } }
   $T = $env:TEMP
-  $bd = & $VPY -P "$I\wren_bake_diff.py" "$T\wren_normal_main.npy" "$T\wren_normal_twin.npy" "$T\wren_ao_main.npy" "$T\wren_ao_twin.npy" "$T\wren_hairnormal_main.npy" "$T\wren_hairnormal_twin.npy"
+  $bdArgs = @("$T\wren_normal_main.npy", "$T\wren_normal_twin.npy", "$T\wren_ao_main.npy", "$T\wren_ao_twin.npy")
+  if ((Test-Path "$T\wren_hairnormal_main.npy") -and (Test-Path "$T\wren_hairnormal_twin.npy")) { $bdArgs += @("$T\wren_hairnormal_main.npy", "$T\wren_hairnormal_twin.npy") }
+  $bd = & $VPY -P "$I\wren_bake_diff.py" @bdArgs
   $bdok = ($LASTEXITCODE -eq 0)
   $onlyBake = ($mismatch | Where-Object { $_ -notin @("bake_normal","bake_ao","ao_lifted","bake_hair_normal") }).Count -eq 0
   if ($mismatch.Count -eq 0) {
@@ -94,8 +102,10 @@ $vJobs = @(
   @("clips_mp4",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_clips.py`"","--","`"$OUT`"","768","--prefix","wren_v61")),
   @("render_hairlarge", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\wren_v61_large`"","hair_close,head_side","--pose","idle:1","--res","1600","--hide-fork")),
   @("render_lockids", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\wren_v61_lockids`"","hair_close,head_front,head_side,head_back,head_top","--pose","idle:1","--hide-fork","--lock-ids")),
-  @("hair_diag",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\wren_v61_hairdiag.json`""))
+  @("hair_diag",      @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\wren_v61_hairdiag.json`"")),
+  @("render_runstrip", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\run_strip\wren_run`"","side,side_r,threequarter_r","--strip","run:12","--res","400"))
 )
+New-Item -ItemType Directory -Force "$OUT\run_strip" | Out-Null
 $vProcs = @()
 foreach ($j in $vJobs) {
   $pr = Start-Process -FilePath $B -ArgumentList $j[1] -WindowStyle Hidden -PassThru -RedirectStandardOutput "$I\log_wren_$($j[0]).txt" -RedirectStandardError "$I\log_wren_$($j[0]).err"
@@ -104,6 +114,8 @@ foreach ($j in $vJobs) {
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
 & $VPY -P "$I\wren_compose.py" 2>&1 | Out-File -Encoding utf8 "$I\log_wren_compose.txt"
 "compose exit=$LASTEXITCODE"
+& $VPY -P "$I\wren_compose.py" --run-preview "$OUT\run_strip\wren_run" 2>&1 | Out-File -Encoding utf8 "$I\log_wren_compose_run.txt"
+"compose run-preview exit=$LASTEXITCODE"
 foreach ($c in @("check_improved","check_rigged")) { (Get-Content "$I\log_wren_$c.txt" | Select-String "checks, ").Line | % { "$c : $_" } }
 (Get-Content "$I\log_wren_face_probe.txt" | Select-String "^PROBE").Line
 (Get-Content "$I\log_wren_mouth_probe.txt" | Select-String "^MPROBE ").Line
