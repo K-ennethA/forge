@@ -430,6 +430,27 @@ for ob_ in [fko, bko, low]:                     # (the props first: the low's lo
     report["uv_hair_strip"] = {"strip_u_from": round(1.0 - HAIR_UV_STRIP, 4), "hair_faces": int(_hairf.sum()),
                                "hair_uv_u_min": round(float(uvd_[_hairf[lpf_], 0].min()), 4),
                                "nonhair_uv_u_max": round(float(uvd_[~_hairf[lpf_], 0].max()), 4)}
+# VARDEN v2: UV WINDING FIX -- smart-project can leave a near-degenerate sliver wound against the rest (the uv_health
+# gate's 'flipped' = the minority sign of the signed UV areas; v2 measured 1 face); such a face's UVs are mirrored about
+# their own centroid (sub-texel faces: no visible change), counted in the report
+def _uv_fix_winding(me_):
+    uvd_ = np.empty(len(me_.loops) * 2); me_.uv_layers.active.data.foreach_get("uv", uvd_); uvd_ = uvd_.reshape(-1, 2)
+    lt_ = np.empty(len(me_.polygons), dtype=np.int64); me_.polygons.foreach_get("loop_total", lt_)
+    ls_ = np.concatenate([[0], np.cumsum(lt_)[:-1]])
+    sa_ = np.array([0.5 * float(np.dot(q_[:, 0], np.roll(q_[:, 1], -1)) - np.dot(q_[:, 1], np.roll(q_[:, 0], -1)))
+                    for q_ in (uvd_[a_:a_ + n_] for a_, n_ in zip(ls_, lt_))])
+    maj_ = 1.0 if (sa_ > 0).sum() >= (sa_ < 0).sum() else -1.0
+    bad_ = np.nonzero(sa_ * maj_ < 0)[0]
+    for f_ in bad_:
+        q_ = uvd_[ls_[f_]:ls_[f_] + lt_[f_]]
+        q_[:, 0] = 2.0 * q_[:, 0].mean() - q_[:, 0]
+        uvd_[ls_[f_]:ls_[f_] + lt_[f_]] = q_
+    me_.uv_layers.active.data.foreach_set("uv", uvd_.ravel()); me_.update()
+    return int(len(bad_))
+
+
+report["uv_winding_fixed"] = {o_.name: _uv_fix_winding(o_.data) for o_ in [low] + PROP_OBS}
+print("UVWIND", json.dumps(report["uv_winding_fixed"]))
 tris_main = tri_count_F(OBJ["main"]["F"]); tris_st = tri_count_F(OBJ["sword"]["F"]); tris_bk = tri_count_F(OBJ["scabbard"]["F"])
 _groups = {}
 for p in PARTS:

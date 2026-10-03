@@ -117,7 +117,7 @@ macro.update(MACRO)
 macro["race"] = dict(RACE)
 hb = HumanService.create_human(macro_detail_dict=macro)
 tdir = LocationService.get_mpfb_data("targets")
-for rel, w in {**TARGETS, **(TARGETS_EDIT or {})}.items():   # (v7: TARGETS_EDIT = the HAIRSTABLE mouth-dial probe)
+for rel, w in {**TARGETS, **FRAME_TARGETS, **(TARGETS_EDIT or {})}.items():   # (VARDEN v2: + FRAME_TARGETS, the body-only frame dials)
     p_ = os.path.join(tdir, rel + ".target.gz")
     assert os.path.exists(p_), p_
     TargetService.load_target(hb, p_, weight=w)
@@ -157,7 +157,8 @@ for v in me0.vertices:
         elif nm in ("helper-l-eye", "helper-r-eye", "helper-upper-teeth", "joint-mouth") and g.weight > 0.5:
             helper.setdefault(nm, []).append(v.index)
 Hbody = float(V_rest0[in_body, 2].max() - V_rest0[in_body, 2].min())
-SCALE = BODY_H / Hbody
+SCALE = BODY_SCALE if BODY_SCALE else BODY_H / Hbody   # (VARDEN v2: a FIXED scale keeps the v1 head size while the frame
+#                                                        dials lengthen the body -- BODY_H then only applies when BODY_SCALE is None)
 # the MPFB A-pose arm angle, measured before the drop (shoulder -> wrist below the horizontal)
 _arm_deg0 = {}
 for side in ("l", "r"):
@@ -1091,6 +1092,12 @@ report["landmarks"] = {"height_total": round(Z_TOP, 4), "hip_z": round(float(HIP
                        "shoulder_L": SHO["L"].round(4).tolist(), "elbow_L": ELB["L"].round(4).tolist(),
                        "wrist_L": WRI["L"].round(4).tolist(), "pelvis": PELVIS.round(4).tolist(),
                        "arm_deg": report["mpfb"]["arm_below_horizontal_deg"]}
+_shb = BV[(np.abs(BV[:, 2] - SHO["L"][2]) < 0.02) & ~HEAD_B]
+report["frame"] = {"shoulder_joint_span_m": round(float(SHO["L"][0] - SHO["R"][0]), 4),
+                   "shoulder_outer_width_m": round(float(_shb[:, 0].max() - _shb[:, 0].min()), 4),
+                   "rule": "joint span = upperarm heads; outer width = the body's x extent within 20 mm of the shoulder joints' height",
+                   "scale": round(SCALE, 5), "frame_targets": FRAME_TARGETS}
+print("FRAME", json.dumps(report["frame"]))
 print("BODY", json.dumps({"verts": len(BV), "tris": tri_count_F(BF), **report["landmarks"]}))
 
 # =========================================================================== 1b. BVHs, profiles, transfer, landmarks

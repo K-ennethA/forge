@@ -104,3 +104,24 @@ for k, ln in enumerate(lines):
 out = os.path.join(R, V + "_sheet.png")
 sheet.save(out)
 print("SHEET", out, sheet.size)
+# ---- v2: the ONE before / after strip (BASE | this version): front + three-quarter full body + the frame numbers
+BASE = os.environ.get("VARDEN_BASE", "")
+if BASE and BASE != V:
+    S = 560
+    pairs = [("front", "front"), ("threequarter", "three-quarter")]
+    st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 30), (28, 28, 30))
+    ds = ImageDraw.Draw(st)
+    for k, (v, lab) in enumerate(pairs):
+        x0 = PAD + k * (2 * S + 3 * PAD)
+        for j, ver in enumerate((BASE, V)):
+            p = os.path.join(R, "%sfix_%s.png" % (ver, v))           # the SAME fixed frame for both (--fixed): heights compare
+            im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
+            st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
+            ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)
+    fr = IMP.get("frame", {})
+    ds.text((PAD + 4, PAD + LAB + S + 6), "same camera / frame both sides.  %s: height %.3f m, heads %.2f, shoulder joint span %.3f m, outer shoulder width %.3f m" % (
+        V.split("_")[-1], IMP["landmarks"]["height_total"], IMP["landmarks"]["heads_tall"], fr.get("shoulder_joint_span_m", 0),
+        fr.get("shoulder_outer_width_m", 0)), fill=(220, 220, 210), font=FONT_S)
+    outs = os.path.join(R, V + "_compare.png")
+    st.save(outs)
+    print("STRIP", outs, st.size)

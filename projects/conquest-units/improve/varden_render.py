@@ -138,6 +138,11 @@ light("s_key", 3.2, (50, 0, 150)); light("s_fill", 1.0, (65, 0, 215), (0.85, 0.9
 rig.rotation_euler = (0, 0, math.radians(180))
 centre = (lo + hi) / 2
 radius = max(size.length / 2, 1e-3)
+if "--fixed" in argv:
+    # VARDEN v2: a FIXED full-body frame (centre height, radius m) for same-scale before / after strips -- the default frame
+    # fits each model's own bbox and hides a height change
+    _fz, _fr = (float(x) for x in argv[argv.index("--fixed") + 1].split(","))
+    centre = Vector((0.0, 0.0, _fz)); radius = _fr
 fm_me = bpy.data.meshes.new("s_floor"); R = radius * 6
 fm_me.from_pydata([(-R, -R, 0), (R, -R, 0), (R, R, 0), (-R, R, 0)], [], [(0, 1, 2, 3)])
 floor = bpy.data.objects.new("s_floor", fm_me); scene.collection.objects.link(floor)
