@@ -1231,3 +1231,21 @@ v6.1+ model is unchanged.
 (not a soldier's measured stride). First locomotion clip beyond
 idle/walk; game side selects run by move speed with walk fallback
 (hero-anim lane). Walk/idle clips stay as approved.
+
+## 2026-10-03 — Elias SHEET SAVED + scalp hair rejected (artist, verbatim)
+
+Sheet file now at design/reference/elias/elias_sheet.webp (was
+inline-only; pixel-sample skin/eye/hair tones from it — kills the
+placeholder-tone open question). Artist on v4's scalp: "the hair is
+split with long bangs and hair flowing but in our pass its just a
+hair bowl, the hair is much closer to wrens but we just have a bowl,
+why are we not taking our learnings and improving." BINDING: Elias
+scalp v5 = the sheet's actual style — side-split part, long bangs
+sweeping across the forehead, flowing tousled side/back masses with
+real silhouette variation (Wren-grade lock construction + the
+research's mass-first hierarchy: 4-7 primary masses, lock width
+spread >= 3:1 — the artist's critique green-lights that direction
+for Elias). Beard shell v4 is NOT in question here. PROCESS LESSON
+(binding for every unit): hair/garment SILHOUETTE is judged against
+the SHEET VIEWS, not the text transcription; every sheet gets saved
+as a file and silhouette-matched before a first pass ships.
