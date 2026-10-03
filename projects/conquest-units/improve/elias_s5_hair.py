@@ -616,14 +616,17 @@ def radiate2(root_d, tip_d, kind, n_mid=3, f_end=0.86):
 
 _nb = {}
 SCALP_INFO = {}
-for kind, tier, (p0_, e0_), (p1_, e1_, fl_), mir_ in HAIR_LOCKS:
+WHORL_D = unit(hdir(*HAIR_WHORL))
+for kind, tier, (p1_, e1_, fl_), mir_, chain_ in HAIR_LOCKS:
     for sg_, sn_ in (((1.0, "L"), (-1.0, "R")) if mir_ else ((1.0, ""),)):
         lay_ = HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0)
-        root_d, tip_d = unit(hdir(sg_ * p0_, e0_)), unit(hdir(sg_ * p1_, e1_))
+        tip_d = unit(hdir(sg_ * p1_, e1_))
+        root_d = slerp(WHORL_D, tip_d, CLUMP_ROOT[kind])            # (Wren: radiating from the whorl, root CLUMP_ROOT out)
         ctl = radiate2(root_d, tip_d, kind) + [on_dir(tip_d, LOCK_OFF + fl_)]
         nm_ = "lock.%s.%s%d" % (kind, sn_, _nb.get(kind, 0))
-        clump(nm_, tier, ctl, chain=None, s_leave_k=3, layer=lay_)
-        SCALP_INFO[nm_] = {"root_psi_el": [sg_ * p0_, e0_], "tip_psi_el_flick": [sg_ * p1_, e1_, fl_]}
+        ch_ = None if chain_ is None else (chain_ + "." + (sn_ or "C") if chain_ == "hair_side" else chain_)
+        clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, free_k=(3 if kind in ("back", "outer", "side") else 2))
+        SCALP_INFO[nm_] = {"tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": ch_}
         _nb[kind] = _nb.get(kind, 0) + 1
 # ---- the BEARD: groomed ribbon-lock masses rooted on the face skin (over the painted under-beard zone), falling from
 # the sideburns / cheeks / chin to a soft point BEARD_LEN below the chin, standing BEARD_FWD in front of the chest
@@ -666,7 +669,13 @@ def front_pt(x, z, off, bvh=None):
 
 BEARD_INFO = {}
 for kind, tier, psi_, (lm_, dz_), share_ in BEARD_LOCKS:
-    zr_ = LANDMARK_Z[lm_] + dz_
+    if lm_ == "edge":                                           # v2: rooted ON the under-beard zone's top edge (no grey mask)
+        x0_ = abs(float(face_pt(psi_, EZ - 0.05, 0.0)[0]))
+        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_
+        x0_ = abs(float(face_pt(psi_, zr_, 0.0)[0]))
+        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_
+    else:
+        zr_ = LANDMARK_Z[lm_] + dz_
     root_ = face_pt(psi_, zr_, 0.0)
     xt_ = float(np.clip(root_[0] * (1.0 - BEARD_POINT * share_), -BEARD_TIP_W, BEARD_TIP_W))
     zt_ = Z_CHIN_B - BEARD_LEN * share_
@@ -674,7 +683,8 @@ for kind, tier, psi_, (lm_, dz_), share_ in BEARD_LOCKS:
     ctl = [root_] + [beard_env_pt(root_ + (tip_ - root_) * t_, LOCK_OFF + 0.002 + t_ * 0.6 * BEARD_FWD)
                      for t_ in (0.22, 0.45, 0.70)] + [tip_]
     nm_ = "lock.%s.%d" % (kind, _nb.get(kind, 0))
-    clump(nm_, tier, ctl, chain=None, s_leave_k=2, free_k=2, layer=HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0))
+    ch_ = "beard.C" if abs(psi_) <= BEARD_CHAIN_PSI else ("beard.L" if psi_ > 0 else "beard.R")
+    clump(nm_, tier, ctl, chain=ch_, s_leave_k=2, free_k=2, T=BEARD_T[kind], layer=HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0))
     BEARD_INFO[nm_] = {"root": (1000 * (root_ - HC)).round(1).tolist(), "tip": (1000 * (tip_ - HC)).round(1).tolist()}
     _nb[kind] = _nb.get(kind, 0) + 1
 # ---- the BEARD CORE: the hanging beard's dark inner mass (the scalp's "dark inner cap" principle: gaps between locks read
@@ -1004,8 +1014,7 @@ if TUCK_INFO["enabled"]:
     _tpairs = set()
     for p in PARTS:
         nm_ = p["name"]
-        if not nm_.startswith("lock.") or nm_ in ("lock.ahoge",) or nm_ not in PLAN or \
-                nm_.split(".")[1] in ("beard_in", "beard", "beard_top", "must"):   # (ELIAS: no tuck stripes on the beard)
+        if not nm_.startswith("lock.") or nm_ in ("lock.ahoge",) or nm_ not in PLAN:   # (v2: the tuck shade on every lock, beard too)
             continue
         ups_ = [n_ for n_ in _res if n_ != nm_ and ABOVE.get((nm_, n_), False)]
         if not ups_:

@@ -124,7 +124,7 @@ FACE_LINES = {"crow": (3, 0.0042, 0.0007, 0.0035), "brow_furrow": (2, 0.020, 0.0
                                       #   forehead lines (count, half length m, width m); None = none
 FOREHEAD_LINES_Z = (0.030, 0.038)     # the forehead lines' heights above the eye centres (m)
 # ---- the under-beard paint + the beard / mustache (ribbon locks, the hair stack)
-BEARD_ZONE = {"sideburn_z": 0.004, "cheek": ((0.026, -0.060), (0.042, -0.057), (0.058, -0.045), (0.072, -0.026)),
+BEARD_ZONE = {"sideburn_z": -0.008, "cheek": ((0.026, -0.064), (0.042, -0.062), (0.058, -0.052), (0.072, -0.036)),
               "lip_band": (0.0045, 0.0060, 0.0050), "neck_drop": 0.040}   # "beard coverage" on the skin: the top edge
                                       #   (|x| m from the midline, z m below the eye centres) from the sideburn down the
                                       #   cheek to the mustache; the lip band kept skin (m past the seam ends, above / below
@@ -135,18 +135,28 @@ BEARD_POINT = 0.78                    # "groomed point": how strongly the tips c
 BEARD_FWD = 0.012                     # the tips stand this far in front of the chest / cravat (m)
 BEARD_CORE_W = 0.058                  # "beard core": the dark inner mass's half width at the jaw line (m), narrowing to the point
 BEARD_CORE_OFF = 0.0045               # the core stands this far outside the throat / cravat envelope (m; under the locks)
-BEARD_LOCKS = (                       # (layer kind, tier, root azimuth deg from the front (+ his left), root height:
-                                      #   'eye' / 'nose' / 'slit' / 'chin' landmark + offset m, length share of BEARD_LEN)
-    ("beard_in", "M", 0.0, ("chin", 0.010), 0.85), ("beard_in", "M", 26.0, ("slit", -0.010), 0.80),
-    ("beard_in", "M", -26.0, ("slit", -0.010), 0.80), ("beard_in", "M", 52.0, ("nose", -0.022), 0.74),
-    ("beard_in", "M", -52.0, ("nose", -0.022), 0.74),
-    ("beard", "L", 74.0, ("eye", -0.030), 0.62), ("beard", "L", -74.0, ("eye", -0.030), 0.62),
-    ("beard", "L", 60.0, ("nose", -0.006), 0.76), ("beard", "L", -60.0, ("nose", -0.006), 0.76),
-    ("beard", "L", 40.0, ("slit", 0.002), 0.82), ("beard", "L", -40.0, ("slit", 0.002), 0.82),
-    ("beard", "L", 15.0, ("slit", -0.012), 1.0), ("beard", "L", -15.0, ("slit", -0.012), 1.0),
-    ("beard_top", "M", 84.0, ("eye", -0.012), 0.46), ("beard_top", "M", -84.0, ("eye", -0.012), 0.46),
-    ("beard_top", "S", 32.0, ("slit", -0.004), 0.95), ("beard_top", "S", -32.0, ("slit", -0.004), 0.95),
-    ("beard_top", "S", 0.0, ("chin", 0.018), 1.06))
+BEARD_LOCKS = (                       # v2 (artist: "match the style we decided on for wren"): GROOMED MASSES of narrow ribbon
+                                      #   locks with real cross-section in THREE LAYERED LENGTHS, bottom -> top (the layer
+                                      #   resolve's stack): (layer kind, tier, root azimuth deg from the front (+ his left),
+                                      #   root height = 'eye' / 'nose' / 'slit' / 'chin' landmark + offset m, or 'edge' = the
+                                      #   under-beard zone's top edge + offset m (roots cover the painted zone: no grey mask),
+                                      #   length share of BEARD_LEN)
+    ("beard_in", "M", 0.0, ("chin", 0.006), 0.62), ("beard_in", "M", 17.0, ("slit", -0.016), 0.60),
+    ("beard_in", "M", -17.0, ("slit", -0.016), 0.60), ("beard_in", "M", 34.0, ("slit", -0.010), 0.56),
+    ("beard_in", "M", -34.0, ("slit", -0.010), 0.56), ("beard_in", "M", 52.0, ("edge", -0.016), 0.50),
+    ("beard_in", "M", -52.0, ("edge", -0.016), 0.50),
+    ("beard", "L", 8.0, ("slit", -0.012), 0.86), ("beard", "L", -8.0, ("slit", -0.012), 0.86),
+    ("beard", "L", 25.0, ("slit", -0.004), 0.84), ("beard", "L", -25.0, ("slit", -0.004), 0.84),
+    ("beard", "L", 42.0, ("edge", -0.004), 0.80), ("beard", "L", -42.0, ("edge", -0.004), 0.80),
+    ("beard", "L", 58.0, ("edge", -0.003), 0.74), ("beard", "L", -58.0, ("edge", -0.003), 0.74),
+    ("beard", "M", 76.0, ("edge", -0.003), 0.62), ("beard", "M", -76.0, ("edge", -0.003), 0.62),
+    ("beard_top", "M", 0.0, ("chin", 0.014), 1.04), ("beard_top", "M", 15.0, ("slit", -0.007), 1.00),
+    ("beard_top", "M", -15.0, ("slit", -0.007), 1.00), ("beard_top", "S", 32.0, ("edge", -0.002), 0.94),
+    ("beard_top", "S", -32.0, ("edge", -0.002), 0.94), ("beard_top", "S", 84.0, ("edge", -0.012), 0.50),
+    ("beard_top", "S", -84.0, ("edge", -0.012), 0.50))
+BEARD_T = {"beard_in": 0.0046, "beard": 0.0044, "beard_top": 0.0038}   # "beard lock thickness": half-thickness (m) -- a
+                                      #   real cross-section (v1 3.2-3.6 mm on 44-55 mm widths read as flat strips)
+BEARD_CHAIN_PSI = 12.0                # beard locks beyond this azimuth ride the beard.L / beard.R chains, the middle beard.C
 MUSTACHE = ((0.003, 0.036, 0.50, 0.0115), (0.008, 0.032, 0.32, 0.0085))   # "mustache" per side, bottom -> top layer:
                                       #   (root |x| m at the lip centre, tip |x| m, tip drop below the mouth line as a share of
                                       #   the seam-to-chin height, width m = the lip height it covers); each runs ALONG the
@@ -162,36 +172,46 @@ HAIR_ROOT_K = 0.30
 HAIRLINE_FEATHER = (0.022, 0.0022)
 HAIR_UV_STRIP = 0.16                  # hair + beard faces packed into the right 16 % of the UV square
 LOCK_OFF = 0.0020
-HAIR_LOCKS = (                        # (kind, tier, root (psi deg from the front toward his left, elevation deg about the
-                                      #   head centre), tip (psi, elevation, flick m), mirrored L / R?) -- bottom -> top
-    ("back", "L", (180.0, 58.0), (180.0, -50.0, 0.020), False),
-    ("back", "L", (152.0, 56.0), (160.0, -44.0, 0.030), True),
-    ("back", "M", (128.0, 50.0), (138.0, -32.0, 0.026), True),
-    ("side", "L", (82.0, 34.0), (112.0, -26.0, 0.024), True),          # over the ear top, flicking out behind it
-    ("side", "M", (66.0, 40.0), (100.0, -6.0, 0.022), True),
-    ("front", "L", (-12.0, 48.0), (-168.0, 44.0, 0.022), False),       # swept back over the crown from the hairline
-    ("front", "L", (14.0, 48.0), (170.0, 46.0, 0.020), False),
-    ("front", "M", (-34.0, 45.0), (-138.0, 34.0, 0.026), False),
-    ("front", "M", (36.0, 45.0), (136.0, 32.0, 0.028), False),
-    ("top", "L", (-4.0, 56.0), (-112.0, 22.0, 0.024), False),
-    ("top", "L", (6.0, 58.0), (118.0, 20.0, 0.026), False),
-    ("tousle", "S", (-20.0, 52.0), (-62.0, 62.0, 0.020), False),        # "tousled": stray flicks lifting off the top
-    ("tousle", "S", (150.0, 62.0), (196.0, 74.0, 0.026), False),
-    ("tousle", "S", (24.0, 47.0), (44.0, 24.0, 0.010), False))          # the one forelock falling toward his left brow
-HAIR_KIND_W = {"back": 1.30, "side": 1.20, "front": 1.25, "top": 1.30, "tousle": 0.85, "beard_in": 1.00, "beard": 0.95,
-               "beard_top": 0.80, "must": 1.0}   # "lock width by kind" (x the tier width)
-HAIR_LAYER = {"back": 0.0, "side": 0.0009, "front": 0.0018, "top": 0.0027, "tousle": 0.0036,
+HAIR_WHORL = (174.0, 62.0)            # v2 "crown whorl" (psi deg from the front toward his left, elevation deg): every scalp
+                                      #   lock radiates from it along its great circle (Wren's flow rule; the sheet gives no
+                                      #   part line, so the tousled hair falls from one slightly off-centre whorl)
+HAIR_LOCKS = (                        # v2 (Wren's clump stack): (kind, tier, tip (psi, elevation deg, flick m), mirrored L / R?,
+                                      #   follow-through chain or None) -- listed bottom -> top within a kind
+    ("back", "L", (180.0, -52.0, 0.020), False, "hair_back"),
+    ("back", "M", (158.0, -44.0, 0.032), True, "hair_back"),
+    ("back", "L", (180.0, -36.0, 0.030), False, "hair_back"),
+    ("outer", "M", (136.0, -24.0, 0.034), True, "hair_side"),
+    ("outer", "L", (112.0, -16.0, 0.030), True, "hair_side"),
+    ("side", "L", (88.0, -6.0, 0.024), True, "hair_side"),        # over the ear top, flicking out behind it
+    ("side", "M", (66.0, 14.0, 0.020), True, "hair_side"),
+    ("front", "M", (52.0, 24.0, 0.006), True, "hair_front"),      # the front locks run forward from the whorl over the top and
+    ("front", "M", (37.0, 26.0, 0.005), True, "hair_front"),      #   their tips fall just PAST the receding hairline (el ~38 deg)
+    ("front", "L", (24.0, 28.0, 0.004), True, "hair_front"),      #   onto the forehead, lifting a little (tousled): overlapping
+    ("front", "L", (11.0, 29.0, 0.004), True, "hair_front"),      #   neighbours, so the hairline is covered by lock bodies, never
+    ("front", "L", (0.0, 30.0, 0.004), False, "hair_front"),      #   a cap rim (the helmet rule)
+    ("top", "L", (-12.0, 52.0, 0.006), False, None),              # the top layer over the crown (the angel-ring band)
+    ("top", "L", (14.0, 54.0, 0.006), False, None),
+    ("tousle", "S", (130.0, 72.0, 0.020), False, None),           # "tousled": short flicks lifting off the crown
+    ("tousle", "S", (210.0, 70.0, 0.022), False, None),
+    ("tousle", "S", (32.0, 30.0, 0.010), False, None))            # the one forelock toward his left brow
+CLUMP_ROOT = {"front": 0.06, "top": 0.04, "side": 0.10, "outer": 0.12, "back": 0.16, "tousle": 0.03}   # root position along
+                                      #   whorl -> tip (Wren's: roots never stack on the whorl point -- the low-crown lesson)
+HAIR_KIND_W = {"back": 1.05, "outer": 1.10, "side": 1.15, "front": 1.30, "top": 1.0, "tousle": 0.80,
+               "beard_in": 0.58, "beard": 0.55, "beard_top": 0.48, "must": 1.0}   # "lock width by kind" (x the tier width;
+                                      #   Wren's scalp values; the beard narrow -> 25-32 mm locks with real thickness)
+HAIR_LAYER = {"back": 0.0, "outer": 0.0009, "side": 0.0018, "front": 0.0027, "top": 0.0032, "tousle": 0.0036,
               "beard_in": 0.0, "beard": 0.0010, "beard_top": 0.0020, "must": 0.0012}   # stack order offset (m)
-HAIR_LIFT = {"back": 0.008, "side": 0.014, "front": 0.010, "top": 0.010, "tousle": 0.012}   # "hair volume" lift (m)
+HAIR_LIFT = {"back": 0.007, "outer": 0.012, "side": 0.016, "front": 0.004, "top": 0.006, "tousle": 0.010}   # "hair volume" lift (m)
+HAIR_BONES = 3                        # follow-through bones per chain (Wren's)
 CLUMP_STACK = 0.0004
 CLUMP_W_VARY = 0.14
 CLUMP_WRAP = 1.0
 CLUMP_TOP_THIN = (55.0, 80.0, 0.30)
 CLUMP_ROOT_GROW = 0.40
-CLUMP_SWAY = 0.20                     # "tousled S-curve": sideways sway amplitude (x the lock width); Wren 0.14
+CLUMP_SWAY = 0.16                     # "tousled S-curve": sideways sway amplitude (x the lock width); Wren 0.14
 CLUMP_SCALP_T = 0.62
 CLUMP_S_TIP_K = {"L": 1.0, "M": 1.0, "S": 0.9}
-RIBBON_STATIONS = {"L": 15, "M": 14, "S": 11}
+RIBBON_STATIONS = {"L": 16, "M": 15, "S": 13}   # "lock segments": the style guide's 13-19 sections (v1 11-15: under it)
 RIBBON_DENSE = 64
 RIBBON_FAIR = (10, 0.50, -0.53)
 RIBBON_PUSH_SMOOTH = 3.0
@@ -212,7 +232,7 @@ LAYER_NEAR = 0.005
 LAYER_WINDOW = 0.030
 LAYER_LIFT_MAX = 0.009
 LAYER_SMOOTH = 1.3
-LAYER_ITERS = 3
+LAYER_ITERS = 4                       # (Wren's rounds)
 RIBBON_RING_JITTER = 0.6
 RIBBON_TUCK = (0.6, 3, 0.012)
 HAIR_TIERS = (0.16, 0.90)             # "painted hair tiers": root below / tip above these arc fractions

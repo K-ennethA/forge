@@ -67,6 +67,17 @@ BONES = [(n, h, t, _MP[n], z) for (n, h, t, _, z) in BONES]
 STAFF_GRIP0 = STAFF_T + SKL["grip_centre"]                 # the grip point on the rest (upright) staff
 BONES.append(("staff", S_(STAFF_GRIP0), S_(STAFF_GRIP0 + np.array([0, 0, 0.30])), "hand_r", None))
 BONES.append(("book", S_(BOOK_C), S_(BOOK_C + BOOK_R3[:, 2] * 0.12), "hand_l", None))
+# v2 FOLLOW-THROUGH CHAINS (Wren's): per chain the mean path of its locks from where the chain takes over (s_leave),
+# HAIR_BONES bones, children of the head -- hair_front, hair_side.L / .R, hair_back, beard.L / .C / .R (keyed by no clip
+# this pass; the clip lane drives them with the damped springs)
+CHAIN_PTS = {}
+for ch in sorted(set(p["chain"] for p in PARTS if p["w"] == "lock")):
+    paths = [VP.resample(p["path"], 40)[0] for p in PARTS if p["w"] == "lock" and p["chain"] == ch]
+    rs, Lc = VP.resample(np.mean(paths, 0), HAIR_BONES + 1)
+    CHAIN_PTS[ch] = (rs, Lc, "head")
+for ch, (pts, Lc, par) in sorted(CHAIN_PTS.items()):
+    for k in range(len(pts) - 1):
+        BONES.append(("%s.%d" % (ch, k), S_(pts[k]), S_(pts[k + 1]), par if k == 0 else "%s.%d" % (ch, k - 1), None))
 arm_data = bpy.data.armatures.new(UNIT + "_rig")
 rig = bpy.data.objects.new(UNIT + "_rig", arm_data)
 scene.collection.objects.link(rig)
@@ -107,6 +118,15 @@ def onehot(n, bone):
     return W
 
 
+def chain_w(s, L, ch, nb, parent_bone, s0=0.0):
+    Wv = K.vine_weights(np.clip(s, 0, L), L, nb, parent_s0=s0)
+    W = np.zeros((len(s), len(DEFORM)))
+    W[:, J[parent_bone]] += Wv[:, 0]
+    for k in range(nb):
+        W[:, J["%s.%d" % (ch, k)]] += Wv[:, k + 1]
+    return W
+
+
 def part_weights(p):
     V, w = p["V"], p["w"]
     n = len(V)
@@ -138,6 +158,13 @@ def part_weights(p):
                 Wt[:, J["spine_03"]] += Wt[:, J[nm_]]; Wt[:, J[nm_]] = 0.0
         k_ = smoothstep(Z_BELT + 0.05, Z_BELT - 0.25, V[:, 2])[:, None]
         return (1.0 - k_) * Wt + k_ * onehot(n, "pelvis")
+    if w == "lock":                                   # (Wren's: head until the chain takes over, then rigkit.vine_weights)
+        s = p["s"]
+        Lc = CHAIN_PTS[p["chain"]][1]
+        sc = (s - p["s_leave"]) / max(p["L"] - p["s_leave"], 1e-6) * Lc
+        W = chain_w(sc, Lc, p["chain"], HAIR_BONES, "head", s0=-0.03)
+        W[s <= p["s_leave"] - 0.03] = onehot(1, "head")[0]
+        return W
     raise ValueError(w)
 
 
@@ -180,7 +207,7 @@ rep["weights"] = {"max_influences": int(max((W > 0).sum(1).max() for W in WOBJ.v
                           "their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / "
                           "half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm "
                           "influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and "
-                          "mustache lock / glasses: head (no chains this pass); staff: 'staff' (child of hand_r); tome: 'book' "
+                          "mustache lock root / glasses: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; staff: 'staff' (child of hand_r); tome: 'book' "
                           "(child of hand_l)"}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
@@ -264,8 +291,9 @@ rep["grip"] = {"staff": {"rule": "hammer grip: the shaft along the right hand's 
                         "penetrating_samples": BOOK_INFO["penetrating_samples"]}}
 print("GRIP", json.dumps({"staff_roll": STAFF_ROLL, "wrist_bend": round(_best[2], 2), "shortfall": round(max(_best[3], 0.0), 4),
                           "book_roll": BOOK_ROLL}))
-rig["conquest_rig"] = ("elias: root (contract) > MPFB2 game_engine skeleton + staff (hand_r child) + book (hand_l child); no "
-                       "follow-through chains this pass")
+rig["conquest_rig"] = ("elias: root (contract) > MPFB2 game_engine skeleton + staff (hand_r child) + book (hand_l child) + "
+                       "follow-through chains %s x %d bones (head children)" % (sorted(CHAIN_PTS), HAIR_BONES))
+rep["chains"] = {ch: {"bones": HAIR_BONES, "length_m": round(float(Lc), 4)} for ch, (_, Lc, _) in CHAIN_PTS.items()}
 low["conquest_clips"] = []
 low["conquest_clip_status"] = "none (v1 draft: static build + rig; movement intent is an open artist question)"
 low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (the hair strip carries the smooth-proxy normals, scalp and beard "

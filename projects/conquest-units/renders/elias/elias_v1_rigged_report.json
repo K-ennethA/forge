@@ -9,7 +9,7 @@
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
   "seconds": 0.4,
-  "rule": "body: MPFB game_engine weights; boots / sleeve rolls / bracers / belt / strap / capelet: the nearest skin point's weights; boot feet: foot -> ball; pouches / scroll tubes / buckle / brooch / satchel: rigid at their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and mustache lock root / glasses: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; staff: 'staff' (child of hand_r); tome: 'book' (child of hand_l)"
+  "rule": "body: MPFB game_engine weights; boots / sleeve rolls / bracers / belt / strap / capelet: the nearest skin point's weights; boot feet: foot -> ball; pouches / scroll tubes / buckle / brooch / satchel: rigid at their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and mustache lock / glasses: head (no chains this pass); staff: 'staff' (child of hand_r); tome: 'book' (child of hand_l)"
  },
  "grip": {
   "staff": {
@@ -144,36 +144,6 @@
    ],
    "roll_deg": 0,
    "penetrating_samples": 0
-  }
- },
- "chains": {
-  "beard.C": {
-   "bones": 3,
-   "length_m": 0.0747
-  },
-  "beard.L": {
-   "bones": 3,
-   "length_m": 0.0666
-  },
-  "beard.R": {
-   "bones": 3,
-   "length_m": 0.0648
-  },
-  "hair_back": {
-   "bones": 3,
-   "length_m": 0.0341
-  },
-  "hair_front": {
-   "bones": 3,
-   "length_m": 0.0253
-  },
-  "hair_side.L": {
-   "bones": 3,
-   "length_m": 0.0227
-  },
-  "hair_side.R": {
-   "bones": 3,
-   "length_m": 0.0251
   }
  },
  "bones": [
@@ -883,321 +853,6 @@
    ]
   },
   {
-   "name": "beard.C.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.0211,
-    -0.1923,
-    1.4815
-   ],
-   "tail": [
-    0.0217,
-    -0.183,
-    1.4588
-   ]
-  },
-  {
-   "name": "beard.C.1",
-   "parent": "beard.C.0",
-   "deform": true,
-   "head": [
-    0.0217,
-    -0.183,
-    1.4588
-   ],
-   "tail": [
-    0.0217,
-    -0.1614,
-    1.4467
-   ]
-  },
-  {
-   "name": "beard.C.2",
-   "parent": "beard.C.1",
-   "deform": true,
-   "head": [
-    0.0217,
-    -0.1614,
-    1.4467
-   ],
-   "tail": [
-    0.0219,
-    -0.1399,
-    1.4352
-   ]
-  },
-  {
-   "name": "beard.L.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.0907,
-    -0.1418,
-    1.5091
-   ],
-   "tail": [
-    0.0917,
-    -0.1327,
-    1.489
-   ]
-  },
-  {
-   "name": "beard.L.1",
-   "parent": "beard.L.0",
-   "deform": true,
-   "head": [
-    0.0917,
-    -0.1327,
-    1.489
-   ],
-   "tail": [
-    0.092,
-    -0.126,
-    1.4679
-   ]
-  },
-  {
-   "name": "beard.L.2",
-   "parent": "beard.L.1",
-   "deform": true,
-   "head": [
-    0.092,
-    -0.126,
-    1.4679
-   ],
-   "tail": [
-    0.0916,
-    -0.1224,
-    1.4461
-   ]
-  },
-  {
-   "name": "beard.R.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    -0.0454,
-    -0.1424,
-    1.5081
-   ],
-   "tail": [
-    -0.0483,
-    -0.134,
-    1.4885
-   ]
-  },
-  {
-   "name": "beard.R.1",
-   "parent": "beard.R.0",
-   "deform": true,
-   "head": [
-    -0.0483,
-    -0.134,
-    1.4885
-   ],
-   "tail": [
-    -0.05,
-    -0.1268,
-    1.4683
-   ]
-  },
-  {
-   "name": "beard.R.2",
-   "parent": "beard.R.1",
-   "deform": true,
-   "head": [
-    -0.05,
-    -0.1268,
-    1.4683
-   ],
-   "tail": [
-    -0.051,
-    -0.1239,
-    1.4469
-   ]
-  },
-  {
-   "name": "hair_back.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.0234,
-    0.0052,
-    1.5627
-   ],
-   "tail": [
-    0.0231,
-    0.0028,
-    1.5517
-   ]
-  },
-  {
-   "name": "hair_back.1",
-   "parent": "hair_back.0",
-   "deform": true,
-   "head": [
-    0.0231,
-    0.0028,
-    1.5517
-   ],
-   "tail": [
-    0.0228,
-    0.0038,
-    1.5404
-   ]
-  },
-  {
-   "name": "hair_back.2",
-   "parent": "hair_back.1",
-   "deform": true,
-   "head": [
-    0.0228,
-    0.0038,
-    1.5404
-   ],
-   "tail": [
-    0.0223,
-    0.0056,
-    1.5292
-   ]
-  },
-  {
-   "name": "hair_front.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.0224,
-    -0.1736,
-    1.6985
-   ],
-   "tail": [
-    0.0222,
-    -0.1757,
-    1.6904
-   ]
-  },
-  {
-   "name": "hair_front.1",
-   "parent": "hair_front.0",
-   "deform": true,
-   "head": [
-    0.0222,
-    -0.1757,
-    1.6904
-   ],
-   "tail": [
-    0.0221,
-    -0.1764,
-    1.682
-   ]
-  },
-  {
-   "name": "hair_front.2",
-   "parent": "hair_front.1",
-   "deform": true,
-   "head": [
-    0.0221,
-    -0.1764,
-    1.682
-   ],
-   "tail": [
-    0.0221,
-    -0.1765,
-    1.6736
-   ]
-  },
-  {
-   "name": "hair_side.L.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.1179,
-    -0.0652,
-    1.6252
-   ],
-   "tail": [
-    0.1189,
-    -0.0655,
-    1.6177
-   ]
-  },
-  {
-   "name": "hair_side.L.1",
-   "parent": "hair_side.L.0",
-   "deform": true,
-   "head": [
-    0.1189,
-    -0.0655,
-    1.6177
-   ],
-   "tail": [
-    0.1197,
-    -0.0661,
-    1.6102
-   ]
-  },
-  {
-   "name": "hair_side.L.2",
-   "parent": "hair_side.L.1",
-   "deform": true,
-   "head": [
-    0.1197,
-    -0.0661,
-    1.6102
-   ],
-   "tail": [
-    0.1205,
-    -0.0659,
-    1.6027
-   ]
-  },
-  {
-   "name": "hair_side.R.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    -0.0727,
-    -0.0642,
-    1.6275
-   ],
-   "tail": [
-    -0.0739,
-    -0.065,
-    1.6192
-   ]
-  },
-  {
-   "name": "hair_side.R.1",
-   "parent": "hair_side.R.0",
-   "deform": true,
-   "head": [
-    -0.0739,
-    -0.065,
-    1.6192
-   ],
-   "tail": [
-    -0.0749,
-    -0.0658,
-    1.611
-   ]
-  },
-  {
-   "name": "hair_side.R.2",
-   "parent": "hair_side.R.1",
-   "deform": true,
-   "head": [
-    -0.0749,
-    -0.0658,
-    1.611
-   ],
-   "tail": [
-    -0.0759,
-    -0.0659,
-    1.6027
-   ]
-  },
-  {
    "name": "thigh_l",
    "parent": "pelvis",
    "deform": true,
@@ -1318,9 +973,9 @@
    ]
   }
  ],
- "bone_count": 76,
+ "bone_count": 55,
  "tris": {
-  "model": 49125,
+  "model": 45697,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1329,17 +984,17 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "326b9dc378052943",
-   "bake_hair_normal": "3bb2914b74ba89bb",
-   "mouth_proxy_core": "7e3413754a775c73",
-   "bake_normal": "0db799f6f4aceda1",
-   "bake_ao": "1b58b4d5ffd67d87",
-   "ao_lifted": "7036118ea17853fa",
-   "geometry_colour_uv": "0fe5de27192a4445",
-   "weights": "90ec0553caf6ac4c"
+   "hair_geometry": "5a10226620c29d14",
+   "bake_hair_normal": "847b7c3c93930248",
+   "mouth_proxy_core": "318ec2f6c7f7fa3f",
+   "bake_normal": "76aa475dae3accc4",
+   "bake_ao": "568688f5c7fd216e",
+   "ao_lifted": "e25d052ea49f3f74",
+   "geometry_colour_uv": "99eb2af3e15df258",
+   "weights": "3d5a632fec670a7b"
   },
-  "combined": "06b12d739c3c1d1e"
+  "combined": "36061686b9bc5bb4"
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\elias.json",
- "seconds": 80.1
+ "seconds": 75.9
 }

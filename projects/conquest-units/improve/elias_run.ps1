@@ -4,7 +4,8 @@
 #   2. in parallel: the full-body stills, the face / props close-ups, the face probe (improve/wren_face_probe.py, read-only
 #      reuse, --report improved/elias.json), the contract checker on the IMPROVED file (report only; on the rigged file
 #      the read-only checker crashes on a rig with no animation data -- no clips this pass)
-#   3. the comparison sheet (improve/elias_compose.py -> renders/elias/elias_v1_sheet.png)
+#   + v2: the hair diagnosis (improve/wren_hair_diag.py, read-only reuse) on the rigged file
+#   3. the comparison sheet + the v1 | v2 hair strip (improve/elias_compose.py -> renders/elias/<ver>_sheet.png, _hair_compare.png)
 # Logs + probe outputs live in renders/elias/ (the lane allowlist). -SkipBuild re-runs 2 + 3 only. -Glb also exports
 # rigged/elias.glb.
 param([switch]$SkipBuild, [switch]$Glb)
@@ -27,12 +28,14 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\elias.blend`""
 $R = "`"$I\elias_render.py`""
-$W = "`"$OUT\elias_v1`""
+$VER = "elias_v2"                     # (render / probe prefix; v1 stills stay as the comparison baseline)
+$W = "`"$OUT\$VER`""
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
   @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,glasses,staff_head,book,satchel,belt,brooch","--res","800")),
-  @("face_probe",   @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\elias_v1_face_probe`"","--report","`"$P\improved\elias.json`"")),
-  @("check_improved", @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$OUT\elias_v1_check_improved.json`""))
+  @("face_probe",   @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\elias.json`"")),
+  @("hair_diag",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hairdiag.json`"")),
+  @("check_improved", @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$OUT\$($VER)_check_improved.json`""))
 )
 $vProcs = @()
 foreach ($j in $vJobs) {
@@ -40,9 +43,10 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-& $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
+$env:ELIAS_V = $VER; & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
-(Get-Content "$LOG\compose.txt" | Select-String "^SHEET").Line
+(Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
+(Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }
 (Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|RIG_DONE)").Line | % { $_.Substring(0, [Math]::Min(300, $_.Length)) }
 (Get-Content "$LOG\check_improved.txt" | Select-String "checks, ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

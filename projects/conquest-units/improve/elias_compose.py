@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, ".."))
 R = os.path.join(ROOT, "renders", "elias")
-V = "elias_v1"
+V = os.environ.get("ELIAS_V", "elias_v1")
 IMP = json.load(open(os.path.join(ROOT, "improved", "elias.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "elias.json")))
 FP = os.path.join(R, V + "_face_probe.json")
@@ -64,8 +64,8 @@ mp = IMP.get("mouth_placement", {})
 ep = IMP.get("eye_proof", {})
 gl = IMP.get("parts", {}).get("glasses", {})
 lines = [
-    "PROFESSOR ELIAS v1 DRAFT (hero tier)   tris %d (main %d + staff %d + book %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d"
-    % (t["total"], t["main"], t["staff"], t["book"], t["body"], t["scalp_locks"], t["beard_mustache_locks"]),
+    "PROFESSOR ELIAS %s (hero tier)   tris %d (main %d + staff %d + book %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d"
+    % (V.split("_")[-1] + " draft", t["total"], t["main"], t["staff"], t["book"], t["body"], t["scalp_locks"], t["beard_mustache_locks"]),
     "heads tall %.2f (house rule; Wren 5.94)  /  %.2f by chin outline (Wren 6.90)   height %.3f m (staff top %.3f m)"
     % (pr.get("heads_tall_house_rule", 0), pr.get("heads_tall_chin_outline", 0), IMP["landmarks"]["height_total"],
        IMP["measure"]["height"]),
@@ -89,3 +89,34 @@ for k, ln in enumerate(lines):
 out = os.path.join(R, V + "_sheet.png")
 sheet.save(out)
 print("SHEET", out, sheet.size)
+# ---- v2: the ONE before / after hair strip (v1 | this version): portrait, face 3/4, front, back + the hair-diag numbers
+if V != "elias_v1":
+    pairs = [("portrait", "face"), ("face_tq", "face 3/4"), ("front", "front"), ("back", "back")]
+    S = 420
+    st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 6 * 22), (28, 28, 30))
+    ds = ImageDraw.Draw(st)
+    for k, (v, lab) in enumerate(pairs):
+        x0 = PAD + k * (2 * S + 3 * PAD)
+        for j, ver in enumerate(("elias_v1", V)):
+            p = os.path.join(R, "%s_%s.png" % (ver, v))
+            im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
+            st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
+            ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)
+
+    def diag(ver):
+        p = os.path.join(R, ver + "_hairdiag.json")
+        return json.load(open(p)) if os.path.exists(p) else None
+    yl = PAD + LAB + S + PAD
+    for k, ver in enumerate(("elias_v1", V)):
+        d_ = diag(ver)
+        if d_:
+            ip = d_["interpenetration"]
+            ds.text((PAD + 4, yl + 22 * k), "%s hair diag: %d locks | lock pairs cutting %d (tri pairs %d), top sheets %d / %d | paint patches / lock %.2f | "
+                    "top-facet kinks p50 / p90 %.1f / %.1f deg (>20 deg %.1f%%) | slivers %d" % (
+                        ver.split("_")[-1], d_["locks"], ip["lock_pairs"], ip["tri_pairs"], ip["top_sheets"]["lock_pairs"],
+                        ip["top_sheets"]["tri_pairs"], d_["paint"]["patches_per_lock"], d_["facet_kinks_top_deg"]["p50"],
+                        d_["facet_kinks_top_deg"]["p90"], d_["facet_kinks_top_deg"]["share_over_20deg_pct"],
+                        d_["faces"]["sliver_aspect_over_20"]), fill=(220, 220, 210), font=FONT_S)
+    outs = os.path.join(R, V + "_hair_compare.png")
+    st.save(outs)
+    print("STRIP", outs, st.size)
