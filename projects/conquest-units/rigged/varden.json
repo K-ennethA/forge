@@ -9,7 +9,7 @@
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
   "seconds": 0.5,
-  "rule": "body: MPFB game_engine weights; boots / straps / sleeve rolls / vambraces / belt / sword strap: the nearest skin point's weights; boot feet: foot -> ball; buckles / studs / brooch / pendant / chain: rigid at their centroid's skin weights; tunic skirt / tabard / stars / sword belt: pelvis -> skin under the hem (<= 55 %); high collar: skin with head / half the neck moved to spine_03; cloak + crest + motifs + FUR roll + tufts ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and mustache lock root: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; scabbard: 'scabbard' (child of the pelvis); sword: 'sword' (child of 'scabbard' while sheathed; the hand_r grip transform is recorded for the draw)"
+  "rule": "body: MPFB game_engine weights; boots / straps / sleeve rolls / vambraces / belt / sword strap: the nearest skin point's weights; boot feet: foot -> ball; buckles / studs / brooch / pendant / chain: rigid at their centroid's skin weights; tunic skirt / tabard / stars / sword belt: pelvis -> skin under the hem (<= 55 %); high collar: skin with head / half the neck moved to spine_03; cloak + crest + motifs + FUR roll + tufts ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every scalp lock root / the beard + mustache shells: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each; v4: no beard chains -- the short-crop shell rides the head); scabbard: 'scabbard' (child of the pelvis); sword: 'sword' (child of 'scabbard' while sheathed; the hand_r grip transform is recorded for the draw)"
  },
  "grip": {
   "sword": {
@@ -149,18 +149,6 @@
   }
  },
  "chains": {
-  "beard.C": {
-   "bones": 3,
-   "length_m": 0.0284
-  },
-  "beard.L": {
-   "bones": 3,
-   "length_m": 0.0502
-  },
-  "beard.R": {
-   "bones": 3,
-   "length_m": 0.0501
-  },
   "hair_back": {
    "bones": 3,
    "length_m": 0.0302
@@ -855,141 +843,6 @@
    ]
   },
   {
-   "name": "beard.C.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    -0.0018,
-    -0.2089,
-    1.6814
-   ],
-   "tail": [
-    -0.0021,
-    -0.2059,
-    1.6724
-   ]
-  },
-  {
-   "name": "beard.C.1",
-   "parent": "beard.C.0",
-   "deform": true,
-   "head": [
-    -0.0021,
-    -0.2059,
-    1.6724
-   ],
-   "tail": [
-    -0.0021,
-    -0.2011,
-    1.6643
-   ]
-  },
-  {
-   "name": "beard.C.2",
-   "parent": "beard.C.1",
-   "deform": true,
-   "head": [
-    -0.0021,
-    -0.2011,
-    1.6643
-   ],
-   "tail": [
-    -0.0015,
-    -0.1993,
-    1.6551
-   ]
-  },
-  {
-   "name": "beard.L.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    0.052,
-    -0.1818,
-    1.7112
-   ],
-   "tail": [
-    0.0502,
-    -0.18,
-    1.6947
-   ]
-  },
-  {
-   "name": "beard.L.1",
-   "parent": "beard.L.0",
-   "deform": true,
-   "head": [
-    0.0502,
-    -0.18,
-    1.6947
-   ],
-   "tail": [
-    0.0447,
-    -0.1788,
-    1.6791
-   ]
-  },
-  {
-   "name": "beard.L.2",
-   "parent": "beard.L.1",
-   "deform": true,
-   "head": [
-    0.0447,
-    -0.1788,
-    1.6791
-   ],
-   "tail": [
-    0.0369,
-    -0.1732,
-    1.6657
-   ]
-  },
-  {
-   "name": "beard.R.0",
-   "parent": "head",
-   "deform": true,
-   "head": [
-    -0.0555,
-    -0.1826,
-    1.7104
-   ],
-   "tail": [
-    -0.0537,
-    -0.181,
-    1.6939
-   ]
-  },
-  {
-   "name": "beard.R.1",
-   "parent": "beard.R.0",
-   "deform": true,
-   "head": [
-    -0.0537,
-    -0.181,
-    1.6939
-   ],
-   "tail": [
-    -0.048,
-    -0.1801,
-    1.6783
-   ]
-  },
-  {
-   "name": "beard.R.2",
-   "parent": "beard.R.1",
-   "deform": true,
-   "head": [
-    -0.048,
-    -0.1801,
-    1.6783
-   ],
-   "tail": [
-    -0.0405,
-    -0.1737,
-    1.6654
-   ]
-  },
-  {
    "name": "hair_back.0",
    "parent": "head",
    "deform": true,
@@ -1320,9 +1173,9 @@
    ]
   }
  ],
- "bone_count": 76,
+ "bone_count": 67,
  "tris": {
-  "model": 48814,
+  "model": 45114,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1331,27 +1184,27 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "6083326632e6c393",
-   "bake_hair_normal": "b975a2946550c51d",
+   "hair_geometry": "5140f12158767a55",
    "mouth_proxy_core": "3343d22a7d3026d4",
-   "bake_normal": "9a6e843bb9f4cd5e",
-   "bake_ao": "12dbbada33daa49a",
-   "ao_lifted": "e7445b1f1590a4e6",
-   "geometry_colour_uv": "0830fd4e51765a85",
-   "weights": "275e11039aba1301"
+   "bake_normal": "aa0076cf1923908b",
+   "bake_ao": "553e451048ff0049",
+   "ao_lifted": "e2268d8901e501b1",
+   "hair_custom_normals": "b82d1d343da60396",
+   "geometry_colour_uv": "4e556e6484063a97",
+   "weights": "60217937153900dc"
   },
-  "combined": "9d1680c7e35a7bd0"
+  "combined": "25d4beada5cf7740"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\varden.glb",
-  "bytes": 12489268,
-  "tris": 48814,
+  "bytes": 10184420,
+  "tris": 45114,
   "COLOR_0": true,
   "COLOR_1": true,
   "_GLOW": true,
   "skins": 1,
   "joints": [
-   76
+   67
   ],
   "meshes": [
    "varden",
@@ -1360,5 +1213,5 @@
   ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\varden.json",
- "seconds": 82.9
+ "seconds": 77.0
 }

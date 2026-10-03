@@ -8,6 +8,7 @@
 #      the read-only checker crashes on a rig with no animation data -- no clips this pass)
 #   3. the comparison sheet (improve/varden_compose.py -> renders/varden/<ver>_sheet.png)
 # v2 (frame): + the ONE v1 | v2 compare strip (front + three-quarter full body).
+# v4 (beard shell): the strip = portrait, face 3/4, chin-up (portrait_low), fixed front; v3 | v4.
 # Logs + probe outputs live in renders/varden/ (the lane allowlist). -SkipBuild re-runs 2 + 3 only.
 param([switch]$SkipBuild)
 $B = "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
@@ -29,11 +30,11 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\varden.blend`""
 $R = "`"$I\varden_render.py`""
-$VER = "varden_v3"                    # (render / probe prefix; v2 stills stay as the compare baseline)
+$VER = "varden_v4"                    # (render / probe prefix; v2 stills stay as the compare baseline)
 $W = "`"$OUT\$VER`""
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
-  @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,fur,fur_back,sword,sword_full,emblem,brooch","--res","800")),
+  @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,portrait_low,fur,fur_back,sword,sword_full,emblem,brooch","--res","800")),
   @("render_fixed", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$($VER)fix`"","front,threequarter","--res","1024","--fixed","1.0,1.25")),
   @("face_probe",   @("--background","`"$P\improved\varden.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\varden.json`"")),
   @("hair_diag",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hairdiag.json`"")),
@@ -45,10 +46,10 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:VARDEN_V = $VER; $env:VARDEN_BASE = "varden_v2"; & $VPY -P "$I\varden_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
+$env:VARDEN_V = $VER; $env:VARDEN_BASE = "varden_v3"; $env:VARDEN_STRIP = "portrait,face_tq,portrait_low,fix:front"; & $VPY -P "$I\varden_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
 (Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }
-(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE)").Line | % { $_.Substring(0, [Math]::Min(300, $_.Length)) }
+(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE|BEARDSHELL|HAIRCN)").Line | % { $_.Substring(0, [Math]::Min(300, $_.Length)) }
 (Get-Content "$LOG\check_improved.txt" | Select-String "checks, ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

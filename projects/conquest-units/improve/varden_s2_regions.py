@@ -316,12 +316,19 @@ def beard_top_z(ax_):
     return np.where(ax_ > _zx[-1], EZ0 + BEARD_ZONE["sideburn_z"], np.interp(ax_, _zx, _zz))
 
 
+def beard_neck_z(ax_):
+    """v4: the zone's lower edge on the neck -- BEARD_ZONE["neck_drop"] below the chin at the front, rising neck_rise[0] toward
+    the jaw corners (|x| neck_rise[1] -> [2]): the short crop's shell ends along the jaw at the sides, never hangs down the neck."""
+    nr_ = BEARD_ZONE.get("neck_rise", (0.0, 0.0, 1.0))
+    return Z_CHIN_B - BEARD_ZONE["neck_drop"] + nr_[0] * smoothstep(nr_[1], nr_[2], ax_)
+
+
 def beard_field(P):
     ax_ = np.abs(P[:, 0])
     f_ = P[:, 2] - beard_top_z(ax_)                                       # > 0 above the top edge
     ylim_ = np.where(P[:, 2] > Z_CHIN_B, HC[1] - 0.006, NECK0[1] - 0.004)
     f_ = np.maximum(f_, P[:, 1] - ylim_)                                  # > 0 behind the ear / neck line
-    f_ = np.maximum(f_, (Z_CHIN_B - BEARD_ZONE["neck_drop"]) - P[:, 2])   # > 0 below the neck limit
+    f_ = np.maximum(f_, beard_neck_z(ax_) - P[:, 2])                    # > 0 below the neck limit
     if SEAM is not None:
         hw_ = 0.5 * float(SEAM["xs"].max() - SEAM["xs"].min()) + BEARD_ZONE["lip_band"][0]
         dz_ = P[:, 2] - np.interp(P[:, 0], SEAM["xs"], SEAM["zc"])
@@ -333,6 +340,35 @@ def beard_field(P):
 
 _bg = (HEAD_B | dom_in(["neck_01"])) & (Z < EZ0 + 0.01) & (Z > Z_CHIN_B - BEARD_ZONE["neck_drop"] - 0.02)
 FIELDS["beard"] = np.where(_bg, beard_field(BV), 1.0)
+# v4 BEARD FADE (research H9, design/research/hair-face-best-practices.md: "a painted fade band of 3-6 mm on the skin just
+# outside the edge ... gives the stubble read"): BEARD_FADE[1] painted steps beard_fade1 (next to the shell, darkest) ..
+# beard_fadeN (lightest) on the skin OUTSIDE the zone edge, each step's outer boundary an iso-line of the zone field minus a
+# SERRATION (teeth along the edge, deterministic per-tooth jitter, amplitude growing outward) -- the shell's sunk edge sits
+# on the zone edge, so the beard runs out into stubble, never into a flat painted patch. The palette is per FACE, so the
+# fade is stepped bands (painted by face centroid, no cuts), not a per-corner gradient. The lip band rises steeply (x BEARD_FADE[4])
+# so the fade only rims the bare skin round the mouth.
+_BF_W, _BF_N, _BF_A, _BF_TW, _BF_LIP = BEARD_FADE
+
+
+def beard_fade_field(P, k):
+    """zone field (beard_field's terms, the lip band scaled by _BF_LIP) minus the step-k serration (k = 1 .. _BF_N)."""
+    ax_ = np.abs(P[:, 0])
+    f_ = P[:, 2] - beard_top_z(ax_)
+    ylim_ = np.where(P[:, 2] > Z_CHIN_B, HC[1] - 0.006, NECK0[1] - 0.004)
+    f_ = np.maximum(f_, P[:, 1] - ylim_)
+    f_ = np.maximum(f_, beard_neck_z(ax_) - P[:, 2])
+    if SEAM is not None:
+        hw_ = 0.5 * float(SEAM["xs"].max() - SEAM["xs"].min()) + BEARD_ZONE["lip_band"][0]
+        dz_ = P[:, 2] - np.interp(P[:, 0], SEAM["xs"], SEAM["zc"])
+        hz_ = np.where(dz_ > 0, BEARD_ZONE["lip_band"][1], BEARD_ZONE["lip_band"][2])
+        f_ = np.maximum(f_, _BF_LIP * (1.0 - np.sqrt((P[:, 0] / hw_) ** 2 + (dz_ / hz_) ** 2)))
+    s_ = (ax_ + (P[:, 2] - EZ0)) / _BF_TW + 0.37 * k                     # (runs along the cheek line, the sideburn, the neck)
+    i_ = np.floor(s_)
+    u_ = s_ - i_
+    a_ = 0.55 + 0.9 * np.array([hash01(int(q_), 3.1 + k) for q_ in i_])
+    return f_ - _BF_A * (k / _BF_N) * a_ * (1.0 - np.abs(2.0 * u_ - 1.0)) ** 1.3
+
+
 
 
 def hairline_z(P):
@@ -541,6 +577,16 @@ if SCAR_CURVES:
 reg[_head & ((FV["brow_L"] < 0) | (FV["brow_R"] < 0)) & (FV["hair"] < 0)] = "brow"
 _bz = (FV["beard"] < 0) & np.isin(reg, ["skin", "skin_shadow", "face_line", "scar", "scar_shadow"]) & ((_head | (FV["neckm"] > 0.5)))
 reg[_bz] = "beard_inner"
+# v4 stubble fade steps: outermost first, so each inner step paints over the outer ones (skin-family faces only, outside the
+# zone, head / neck)
+#   NOT cut: each face takes the step of the fade field at its CENTROID (measured: exact iso-cuts cost ~940 body tris per
+#   step, 2,814 for three; by centroid the steps cost none and their edges break along the mesh's own triangles -- a ragged
+#   stubble edge on top of the field's serration)
+for _k in range(_BF_N, 0, -1):
+    _fz = (FV["beard"] >= 0) & (beard_fade_field(_mfc, _k) < _BF_W * _k / _BF_N) & \
+        np.isin(reg, ["skin", "skin_shadow", "face_line", "scar", "scar_shadow"] + ["beard_fade%d" % q_ for q_ in range(_k + 1, _BF_N + 1)]) & \
+        (_head | (FV["neckm"] > 0.5))
+    reg[_fz] = "beard_fade%d" % _k
 _fcr_h = _mfc
 _hair_outer = (np.linalg.norm((_fcr_h - HC) / HR, axis=1) >= HAIR_INTERIOR_R) if HAIR_INTERIOR_R is not None else np.ones(len(CF), bool)
 HAIR_INTERIOR_MASK = _head & (FV["hair"] > 0) & ~_hair_outer
@@ -602,6 +648,9 @@ _fa_cut = np.array([0.5 * np.linalg.norm(np.cross(CV[f[1]] - CV[f[0]], CV[f[2]] 
 report["regions_body_faces"] = {r: int((reg == r).sum()) for r in sorted(set(reg))}
 report["scars"] = {"curves": len(SCAR_CURVES), "faces_scar": int((reg == "scar").sum()),
                    "faces_shadow": int((reg == "scar_shadow").sum()), "rule": "painted: pale line + shadow edge below (SCAR_SHADOW)"}
-report["beard_zone"] = {"faces": int((reg == "beard_inner").sum()), "area_cm2": round(1e4 * float(_fa_cut[reg == "beard_inner"].sum()), 1)}
+report["beard_zone"] = {"faces": int((reg == "beard_inner").sum()), "area_cm2": round(1e4 * float(_fa_cut[reg == "beard_inner"].sum()), 1),
+                        "fade_band": {"width_m": _BF_W, "steps": _BF_N, "serration_m": _BF_A, "tooth_w_m": _BF_TW,
+                                      "faces": {"beard_fade%d" % k_: int((reg == "beard_fade%d" % k_).sum()) for k_ in range(1, _BF_N + 1)},
+                                      "area_cm2": round(1e4 * float(_fa_cut[np.isin(reg, ["beard_fade%d" % k_ for k_ in range(1, _BF_N + 1)])].sum()), 1)}}
 print("LINER", json.dumps(report["liner_proof"]), "BROW", json.dumps(report["brow"]))
 print("BODYREG", json.dumps(report["regions_body_faces"]), "BEARDZONE", json.dumps(report["beard_zone"]))

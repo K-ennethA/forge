@@ -74,9 +74,9 @@ sw = IMP.get("parts", {}).get("sword", {})
 fur = IMP.get("parts", {}).get("cloak", {}).get("fur", {})
 g = RIG.get("grip", {}).get("sword", {})
 lines = [
-    "GENERAL VARDEN %s (hero tier)   tris %d (main %d + sword %d + scabbard %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d, "
+    "GENERAL VARDEN %s (hero tier)   tris %d (main %d + sword %d + scabbard %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d (v4: shells), "
     "fur %d (%d tufts) + roll %d" % (V.split("_")[-1] + " draft", t["total"], t["main"], t["sword"], t["scabbard"], t["body"],
-                                     t["scalp_locks"], t["beard_mustache_locks"], t.get("fur", 0), fur.get("tufts", 0), t.get("furroll", 0)),
+                                     t["scalp_locks"], t.get("beard_mustache", t.get("beard_mustache_locks", 0)), t.get("fur", 0), fur.get("tufts", 0), t.get("furroll", 0)),
     "heads tall %.2f (house rule; Wren 5.94, Elias 5.96)  /  %.2f by chin outline   height %.3f m" %
     (pr.get("heads_tall_house_rule", 0), pr.get("heads_tall_chin_outline", 0), IMP["measure"]["height"]),
     "mouth: v_ratio %.3f (Ashe 0.29), width / eye spacing %.3f (house 0.65-0.73), seam %.1f mm   eyes: iris coverage L %.1f%% (55-65%%)"
@@ -108,13 +108,17 @@ print("SHEET", out, sheet.size)
 BASE = os.environ.get("VARDEN_BASE", "")
 if BASE and BASE != V:
     S = 560
-    pairs = [("front", "front"), ("threequarter", "three-quarter")]
+    # v4: VARDEN_STRIP picks the strip's views ("fix:<view>" = the fixed full-body frame; else the close-up of that name)
+    LABS = {"front": "front", "threequarter": "three-quarter", "portrait": "portrait", "face_tq": "face 3/4",
+            "portrait_low": "chin-up"}
+    pairs = [(v_, LABS.get(v_.split(":")[-1], v_)) for v_ in os.environ.get("VARDEN_STRIP", "fix:front,fix:threequarter").split(",")]
     st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 30), (28, 28, 30))
     ds = ImageDraw.Draw(st)
     for k, (v, lab) in enumerate(pairs):
         x0 = PAD + k * (2 * S + 3 * PAD)
         for j, ver in enumerate((BASE, V)):
-            p = os.path.join(R, "%sfix_%s.png" % (ver, v))           # the SAME fixed frame for both (--fixed): heights compare
+            p = os.path.join(R, ("%sfix_%s.png" if v.startswith("fix:") else "%s_%s.png") % (ver, v.split(":")[-1]))   # (fix: the
+            #   SAME fixed frame for both, --fixed; close-ups frame on the same face landmarks both sides)
             im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
             st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
             ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)

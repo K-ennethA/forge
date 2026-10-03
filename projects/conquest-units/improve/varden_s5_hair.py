@@ -14,7 +14,8 @@
 # table in the middle: the tousled grey-brown scalp hair SWEPT BACK -- under layers radiating from the crown whorl
 # (HAIR_LOCKS), the swept top layer ROOTED on the front hairline / temples and running back over the head (HAIR_SWEEP),
 # the hairline row under it (HAIRLINE_LOCKS, the Elias v3 coverage rule), a few loose strands over the forehead
-# (HAIR_LOOSE); the SHORT-CROPPED BEARD + MUSTACHE as dense ribbon-lock masses (BEARD_LOCKS / MUSTACHE: Elias's v3 roots,
+# (HAIR_LOOSE); v4: the SHORT-CROPPED BEARD + MUSTACHE as two conforming SHELLS (BEARD_SHELL / MUSTACHE_SHELL; was v3's
+# ribbon-lock masses, BEARD_LOCKS / MUSTACHE: Elias's v3 roots,
 # shorter layers) -- then (after the tuck shade) the beard's own tones + the GREY STREAKS painted by whole locks
 # (BEARD_GREY). Comments mentioning fringe / tail / cowlick are Wren's.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -668,117 +669,254 @@ for k_, (tier, (p0_, e0_), (p1_, e1_, fl_)) in enumerate(HAIR_LOOSE):
     nm_ = "lock.loose.%d" % k_
     clump(nm_, tier, ctl, chain="hair_front", s_leave_k=1, free_k=1, layer=HAIR_LAYER["loose"] + CLUMP_STACK * k_)
     SCALP_INFO[nm_] = {"root_psi_el": [p0_, e0_], "tip_psi_el_flick": [p1_, e1_, fl_], "chain": "hair_front"}
-# ---- the BEARD: groomed ribbon-lock masses rooted on the face skin (over the painted under-beard zone), falling from
-# the sideburns / cheeks / chin to a soft point BEARD_LEN below the chin, standing BEARD_FWD in front of the chest
-LANDMARK_Z = {"eye": EZ, "nose": Z_NOSE_BOTTOM, "slit": Z_SLIT, "chin": Z_CHIN_B}
-
-
-def beard_env_pt(p, off):
-    """the beard ENVELOPE: p moved out along the horizontal ray from the head's vertical axis to at least `off` outside the
-    outermost surface there (head / neck / cravat / chest: BVH_HAIR) -- a lock path sampled straight from root to tip and
-    pushed onto this envelope hugs the cheek and jaw, then hangs in front of the throat (one convex groomed mass)."""
-    v_ = np.array([p[0], p[1] - HC[1]])
-    r_ = float(np.linalg.norm(v_))
-    d_ = np.array([v_[0] / max(r_, 1e-9), v_[1] / max(r_, 1e-9), 0.0])
-    c_ = np.array([0.0, HC[1], p[2]])
-    h_ = BVH_BEARDENV.ray_cast(Vector(c_ + d_ * 0.5), Vector(-d_), 0.5)
-    rs_ = 0.5 - h_[3] if h_[0] is not None else 0.0
-    return c_ + d_ * max(r_, rs_ + off)
-
-
-def face_pt(psi, z, off):
-    """the head skin at azimuth psi (from the front, + his left) and height z, reached horizontally from outside toward
-    the head's vertical axis, + off along the skin normal."""
-    d = np.array([math.sin(math.radians(psi)), -math.cos(math.radians(psi)), 0.0])
-    o = np.array([0.0, HC[1], z]) + d * 0.4
-    hit = BVH_HEADONLY.ray_cast(Vector(o), Vector(-d), 0.4)
-    if hit[0] is None:
-        hit = BVH_BODY.ray_cast(Vector(o), Vector(-d), 0.4)
-    n_ = unit(np.array(hit[1]))
-    n_ = n_ if float(n_ @ d) > 0 else -n_
-    return np.array(hit[0]) + n_ * off
-
-
-def front_pt(x, z, off, bvh=None):
-    """the first surface hit by a front ray at (x, z) (default: the head skin), + off toward the camera (-y)."""
-    hit = (bvh or BVH_HEADONLY).ray_cast(Vector((float(x), -0.8, float(z))), Vector((0.0, 1.0, 0.0)), 1.6)
-    if hit[0] is None:
-        return None
-    return np.array(hit[0]) + np.array([0.0, -off, 0.0])
-
-
+# ---- v4 BEARD_SHELL / BEARD_CROP (research H9 + H8, design/research/hair-face-best-practices.md: short crops are "a
+# conforming volume whose SILHOUETTE edge breaks into ... clumps, with grooves carried by shading", stubble in colour). The
+# v3 beard (27 ribbon locks + a core sheet + 6 mustache locks, 5,794 tris) read as vertical strips over a dark painted patch
+# (STATE residual). Now ONE shell: COLUMNS round the head's vertical axis (azimuth psi from the front, + his left), each a
+# profile in its own half-plane -- from the zone's top edge (the s2 beard field on the skin: the column's LOWEST in-zone run,
+# so below the lip band at the front, the cheek line / sideburn at the sides; + a small serration up into the fade band),
+# sunk BEARD_SHELL["sink"] under the skin; down the cheek / jaw offset by the thickness field (ramping in over "ramp", chin
+# -> cheek "offset", clump lobes and grooves deepening toward the hem); below the jaw the shell HANGS (the envelope slopes
+# inward "taper" m per m down: it rounds under the chin instead of standing off as a curtain) to the serrated HEM
+# (BEARD_LEN at the front, rising BEARD_JAW_RISE toward the ears, one jittered tooth per "cols_per_tooth" columns); then
+# the underside back onto the neck at the zone's lower edge, sunk. The two end columns (the sideburns) are sunk whole. Paint
+# by whole faces of the column grid: root tier at the top (continuous with the skin's stubble fade, s2 BEARD_FADE), body,
+# lighter tips on the tooth strips, the groove crevice (tuck shade along the steep side of every tooth) from "crevice_f"
+# down, the underside shade, the grey chin centre + cheek streaks (BEARD_GREY). Regions = the hair family ("hair_beard*"),
+# so the vertex-normal carrier (s6) gives the shell smooth normals. The MUSTACHE is the same column builder over the upper
+# lip (MUSTACHE_SHELL): a short crop's mustache is one trimmed mass continuous with the beard (the sheet), so a shell with
+# 2 lobes per side and a toothed lower edge reads as it; its drooping ends lie ON the beard shell and sink into it.
 BEARD_INFO = {}
-# VARDEN: the beard envelope is the head + neck skin ONLY (the collar / fur roll in BVH_HAIR pushed the cheek locks out
-# past the collar: measured on the first build, the side locks stood off the face as hanging dreadlocks)
-#   + the EARS left out (head faces behind HC - BEARD_ENV_EAR_Y): the radial envelope push otherwise met the ear as the
-#   outermost surface beside the cheek and stood the cheek locks out past it as flaps (measured on the second build)
+# VARDEN: the beard envelope is the head + neck skin ONLY, the EARS left out (head faces behind HC - BEARD_ENV_EAR_Y)
 BVH_BEARDENV = BVHTree.FromPolygons(BV.tolist(), [f for f, n in zip(BF, fdomn) if (n == "neck_01") or
                                                   (n == "head" and float(BV[f, 1].mean()) < HC[1] - BEARD_ENV_EAR_Y)])
-for kind, tier, psi_, (lm_, dz_), share_ in BEARD_LOCKS:
-    if lm_ == "edge":                                           # v2: rooted ON the under-beard zone's top edge (no grey mask)
-        x0_ = abs(float(face_pt(psi_, EZ - 0.05, 0.0)[0]))
-        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_
-        x0_ = abs(float(face_pt(psi_, zr_, 0.0)[0]))
-        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_ + BEARD_EDGE_LIFT
+_BS = BEARD_SHELL
+_R_CHIN = abs(Y_CHIN - HC[1])
+_TSHAPE = {2: (1.0, 0.0), 3: (1.0, 0.38, 0.0), 4: (1.0, 0.45, 0.0, 0.45)}[_BS["cols_per_tooth"]]   # hem drop by phase
+_TVAL = _TSHAPE.index(0.0)                                         # (the valley phase)
+
+
+def col_dir(psi):
+    return np.array([math.sin(math.radians(psi)), -math.cos(math.radians(psi)), 0.0])
+
+
+def env_hit(bvhs, psi, z):
+    """the horizontal ray from outside toward the head's vertical axis at azimuth psi, height z: the OUTERMOST hit over the
+    BVHs -> (radius about the axis, point, normal facing out) or None."""
+    d_ = col_dir(psi)
+    c_ = np.array([0.0, HC[1], z])
+    best_ = None
+    for b_ in bvhs:
+        h_ = b_.ray_cast(Vector(c_ + d_ * 0.4), Vector(-d_), 0.4)
+        if h_[0] is not None and (best_ is None or 0.4 - h_[3] > best_[0]):
+            n_ = unit(np.array(h_[1]))
+            best_ = (0.4 - h_[3], np.array(h_[0]), n_ if float(n_ @ d_) > 0 else -n_)
+    return best_
+
+
+def zone_run(psi, dz=0.0005, min_n=8):
+    """the column's beard coverage on the skin: the lowest in-zone run (beard_field < 0) at least 4 mm long -> (z_top,
+    z_bot) or None."""
+    zs_ = np.arange(EZ0 + BEARD_ZONE["sideburn_z"] + 0.008, Z_CHIN_B - BEARD_ZONE["neck_drop"] - 0.008, -dz)
+    hs_ = [env_hit([BVH_BEARDENV], psi, z_) for z_ in zs_]
+    ok_ = np.array([h_ is not None for h_ in hs_])
+    P_ = np.array([h_[1] if h_ is not None else [0.0, 0.0, 0.0] for h_ in hs_])
+    inz_ = ok_ & (beard_field(P_) < 0)
+    runs_, k_ = [], 0
+    while k_ < len(inz_):
+        if inz_[k_]:
+            k0_ = k_
+            while k_ + 1 < len(inz_) and inz_[k_ + 1]:
+                k_ += 1
+            if k_ - k0_ >= min_n - 1:
+                runs_.append((k0_, k_))
+        k_ += 1
+    return (float(zs_[runs_[-1][0]]), float(zs_[runs_[-1][1]])) if runs_ else None
+
+
+def shell_column(psi, ztop, zhem, zund, thick, taper, bvhs, rows, sink, clear, dz=0.0005):
+    """one column profile -> (points (rows[0] + 1 + rows[1], 3), outer arc fractions (rows[0] + 1,)). Outer: from ztop down the
+    hanging envelope r(z) = max(skin r + thick(d, f) / n_h, r(z + dz) - taper dz) to zhem (d = distance below ztop, f = the
+    share of ztop -> zhem, n_h = the skin normal's outward horizontal part, floored), resampled by arc length (rows packed
+    toward the top edge's ramp). Underside: straight from the hem to the skin at zund (sunk), every interior point kept
+    clear off the skin."""
+    d_ = col_dir(psi)
+    zs_ = list(np.arange(ztop, zhem, -dz)) + [zhem]
+    hs_ = [env_hit(bvhs, psi, z_) for z_ in zs_]
+    ok_ = [k_ for k_, h_ in enumerate(hs_) if h_ is not None]
+    assert ok_, ("beard column with no skin", psi, ztop, zhem)
+    hs_ = [h_ if h_ is not None else hs_[min(ok_, key=lambda q_: abs(q_ - k_))] for k_, h_ in enumerate(hs_)]   # (a miss
+    #   -- a ray past the ear cut-out at the sideburn top -- takes the nearest sample's hit)
+    ro_, last_ = [], hs_[-1]
+    for k_, z_ in enumerate(zs_):
+        h_ = hs_[k_]
+        f_ = (ztop - z_) / max(ztop - zhem, 1e-9)
+        r_ = h_[0] + thick(ztop - z_, f_) / max(float(h_[2] @ d_), 0.35)
+        if k_:
+            r_ = max(r_, ro_[-1] - taper * (zs_[k_ - 1] - z_))
+        ro_.append(r_)
+    C_ = np.array([[0.0, HC[1], z_] for z_ in zs_]) + np.outer(ro_, d_)
+    af_, _ = arc_frac(C_)
+    u_ = (np.arange(rows[0] + 1) / rows[0]) ** 1.35
+    Po_ = interp_rows(u_, af_, C_)
+    hs_ = env_hit(bvhs[:1], psi, zund) or last_
+    U_ = np.array([0.0, HC[1], zund]) + d_ * (hs_[0] - sink / max(float(hs_[2] @ d_), 0.35))
+    Pu_ = []
+    for j_ in range(1, rows[1] + 1):
+        q_ = Po_[-1] + (U_ - Po_[-1]) * (j_ / rows[1])
+        if j_ < rows[1]:
+            hq_ = env_hit(bvhs[:1], psi, float(q_[2]))
+            rq_ = float(np.hypot(q_[0], q_[1] - HC[1]))
+            if hq_ is not None and rq_ < hq_[0] + clear:
+                q_ = np.array([0.0, HC[1], q_[2]]) + d_ * (hq_[0] + clear)
+        Pu_.append(q_)
+    return np.vstack([Po_, np.array(Pu_)]), u_
+
+
+def shell_grid(cols):
+    """the column profiles side by side -> V, quads wound outward (majority vote against the head axis)."""
+    nu_, nv_ = len(cols), len(cols[0])
+    V_ = np.array([cols[i][j] for j in range(nv_) for i in range(nu_)])
+    F_ = VP.grid_faces(nu_, nv_)
+    out_ = 0
+    for f_ in F_:
+        q_ = V_[f_]
+        c_ = q_.mean(0)
+        out_ += 1 if float(np.cross(q_[1] - q_[0], q_[3] - q_[0]) @ (c_ - np.array([0.0, HC[1], c_[2]]))) > 0 else -1
+    if out_ < 0:
+        F_ = [f_[::-1] for f_ in F_]
+    return V_, F_, nu_, nv_
+
+
+# ---- the beard columns: the coverage per azimuth (the zone runs), the azimuth span (both sides, symmetric), the teeth
+_psi_lim = []
+for sg_ in (1.0, -1.0):
+    p_ = 0.0
+    while p_ < 110.0 and zone_run(sg_ * (p_ + 1.0), min_n=1) is not None:   # (the last azimuth with ANY zone skin)
+        p_ += 1.0
+    _psi_lim.append(p_)
+_PSI_MAX = max(_psi_lim)
+_dpsi = math.degrees(_BS["tooth_w"] / _BS["cols_per_tooth"] / _R_CHIN)
+_nh = int(_PSI_MAX // _dpsi)
+_cpt = _BS["cols_per_tooth"]
+_bcols, _bmeta = [], []
+_nh += 2                                                           # (+2 columns past the zone's last skin each side: the
+#   two sunk end columns lie OUTSIDE the zone, so no strip of the painted zone shows behind them -- measured at the
+#   sideburns before this; a column without its own 4 mm run takes its inner neighbour's range)
+_zr = {}
+for ic_ in sorted(range(-_nh, _nh + 1), key=lambda q_: (abs(q_), q_)):   # (inner columns first)
+    psi_ = ic_ * _dpsi
+    zr_ = zone_run(psi_) if abs(ic_) <= _nh - 2 else None   # (None past a 4 mm run too)
+    _zr[ic_] = zr_ if zr_ is not None else _zr.get(ic_ - int(math.copysign(1, ic_)))
+for ic_ in range(-_nh, _nh + 1):
+    psi_ = ic_ * _dpsi
+    zt_, zb_ = _zr[ic_]
+    k_, ph_ = abs(ic_) // _cpt, abs(ic_) % _cpt
+    jit_ = 1.0 + _BS["tooth_jitter"] * (hash01(int(math.copysign(k_, ic_ if ic_ else 1)) + 40, 9.7) - 0.5)
+    end_ = abs(ic_) >= _nh - 1                                     # (the sideburn ends: sunk whole / half)
+    zt_ = zt_ + _BS["top_tooth"] * _TSHAPE[(ph_ + _cpt // 2) % _cpt] * jit_
+    aps_ = abs(psi_)
+    zh_ = Z_CHIN_B - BEARD_LEN * (1.0 - 0.65 * float(smoothstep(0.0, 55.0, aps_))) + \
+        BEARD_JAW_RISE * float(smoothstep(BEARD_JAW_PSI[0], BEARD_JAW_PSI[1], aps_)) - _BS["tooth_len"] * jit_ * _TSHAPE[ph_]
+    zh_ = min(max(zh_, zb_ + 0.0015), zt_ - 0.010)
+    T_ = _BS["offset"][1] + (_BS["offset"][0] - _BS["offset"][1]) * float(smoothstep(_BS["offset_psi"][0], _BS["offset_psi"][1], aps_))
+    T_ *= 0.0 if abs(ic_) == _nh else (0.5 if end_ else 1.0)
+    cf_ = {0: 1.06, _TVAL: 1.0 - _BS["groove"]}.get(ph_, 1.0)
+    tap_ = 20.0 if abs(ic_) == _nh else _BS["taper"][0] + (_BS["taper"][1] - _BS["taper"][0]) * float(smoothstep(10.0, 60.0, aps_))
+
+    def thick_(d, f, T_=T_, cf_=cf_):
+        return -_BS["sink"] + (T_ + _BS["sink"]) * float(smoothstep(0.0, _BS["ramp"], d)) * (1.0 + (cf_ - 1.0) * float(smoothstep(_BS["crevice_f"] - 0.25, 1.0, f)))
+    P_, u_ = shell_column(psi_, zt_, zh_, zb_, thick_, tap_, [BVH_BEARDENV], _BS["rows"], _BS["sink"], _BS["under_clear"])
+    _bcols.append(P_)
+    _bmeta.append({"psi": psi_, "ic": ic_, "phase": ph_, "z_top": zt_, "z_hem": zh_, "z_bot": zb_, "T": T_})
+BS_V, BS_F, _bnu, _bnv = shell_grid(_bcols)
+_bu = (np.arange(_BS["rows"][0] + 1) / _BS["rows"][0]) ** 1.35
+_gc, _gs = BEARD_GREY["chin"], BEARD_GREY["streaks"]
+BS_R = []
+for f_ in BS_F:
+    j_, i0_ = min(f_) // _bnu, min(f_) % _bnu                      # (the quad's top-left grid vertex)
+    a_, b_ = _bmeta[i0_], _bmeta[i0_ + 1]
+    inner_ = a_ if abs(a_["ic"]) < abs(b_["ic"]) else b_           # the strip's phase: its column nearer the chin centre
+    sph_ = inner_["phase"]
+    pm_ = 0.5 * (a_["psi"] + b_["psi"])
+    if j_ >= _BS["rows"][0]:
+        BS_R.append("hair_beard_shade"); continue
+    fr_ = 0.5 * (_bu[j_] + _bu[j_ + 1])
+    grey_ = (abs(pm_) <= _gc[0] and fr_ >= _gc[1]) or any(abs(pm_ - c_) <= 0.5 * _cpt * _dpsi and fr_ >= f0_ for c_, f0_ in _gs)
+    if fr_ < _BS["root_f"]:
+        BS_R.append("hair_beard_root")
+    elif sph_ == (_TVAL if _cpt > 2 else 1) and fr_ >= _BS["crevice_f"]:
+        BS_R.append("hair_beard_crevice")                          # (valley -> next tip: the steep side, tucked under it)
+    elif sph_ == 0 and fr_ >= _BS["tip_f"]:
+        BS_R.append("hair_beard_grey_tip" if grey_ else "hair_beard_tip")
     else:
-        zr_ = LANDMARK_Z[lm_] + dz_
-    root_ = face_pt(psi_, zr_, 0.0)
-    xt_ = float(np.clip(root_[0] * (1.0 - BEARD_POINT * share_), -BEARD_TIP_W, BEARD_TIP_W))
-    zt_ = Z_CHIN_B - BEARD_LEN * share_ + BEARD_JAW_RISE * float(smoothstep(BEARD_JAW_PSI[0], BEARD_JAW_PSI[1], abs(psi_)))
-    #   (VARDEN short crop: the cheek locks end ON the jaw line, rising toward the ear -- dropped straight to the chin height
-    #   they hung outside the jaw as curtains on the first build)
-    _pt = math.radians(psi_ * (1.0 - BEARD_TIP_TURN * share_))
-    _rs = max(0.004, 0.9 * abs(Y_CHIN - HC[1]) * math.cos(_pt) ** 2)   # (the front tips keep the chin's forward line)
-    tip_ = beard_env_pt(np.array([_rs * math.sin(_pt), HC[1] - _rs * math.cos(_pt), zt_]), BEARD_FWD)
-    #   (VARDEN short crop: the tip is seeded on the head axis at an azimuth turned from the root's toward the front and pushed
-    #   out to the jaw envelope -- seeded off-axis the side tips either wrapped onto the neck (first build) or all landed on
-    #   the chin's front plane, the cheek locks hanging as curtains (second build))
-    ctl = [root_] + [beard_env_pt(root_ + (tip_ - root_) * t_, LOCK_OFF + 0.002 + t_ * 0.6 * BEARD_FWD)
-                     for t_ in (0.22, 0.45, 0.70)] + [tip_]
-    nm_ = "lock.%s.%d" % (kind, _nb.get(kind, 0))
-    ch_ = "beard.C" if abs(psi_) <= BEARD_CHAIN_PSI else ("beard.L" if psi_ > 0 else "beard.R")
-    clump(nm_, tier, ctl, chain=ch_, s_leave_k=2, free_k=2, T=BEARD_T[kind], root_k=BEARD_ROOT_K,
-          layer=HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0))
-    BEARD_INFO[nm_] = {"root": (1000 * (root_ - HC)).round(1).tolist(), "tip": (1000 * (tip_ - HC)).round(1).tolist()}
-    _nb[kind] = _nb.get(kind, 0) + 1
-# ---- the BEARD CORE: the hanging beard's dark inner mass (the scalp's "dark inner cap" principle: gaps between locks read
-# as shadowed beard, never as the cravat / chest behind) -- a sheet on the beard envelope from the jaw line down to near
-# the point, narrowing like the beard, just inside the locks
-_bc_rows, _bc_cols = 8, 11
-_bcV = []
-_jx = BEARD_CORE_W
-for j in range(_bc_rows):
-    t_ = j / (_bc_rows - 1)
-    z_ = Z_CHIN_B + 0.012 - t_ * (0.012 + 0.90 * BEARD_LEN)
-    hw_ = _jx * (1.0 - t_) + BEARD_TIP_W * (1.0 - BEARD_POINT) * 0.8 * t_
-    for i in range(_bc_cols):
-        x_ = -hw_ + 2.0 * hw_ * i / (_bc_cols - 1)
-        _bcV.append(beard_env_pt(np.array([x_, HC[1] - 0.02, z_]), BEARD_CORE_OFF + 0.4 * t_ * BEARD_FWD))
-_bcV = np.array(_bcV)
-_bcF = VP.grid_faces(_bc_cols, _bc_rows)
-_bcF = [f if np.dot(np.cross(_bcV[f[1]] - _bcV[f[0]], _bcV[f[2]] - _bcV[f[0]]), _bcV[f].mean(0) - np.array([0.0, HC[1], _bcV[f].mean(0)[2]])) > 0
-        else f[::-1] for f in _bcF]
-V_, F_, R_ = VP.solidify(_bcV, _bcF, 0.0010, 0.0010, "hair_inner", "hair_inner", "hair_inner")
-add_part("beardcore", V_, F_, R_, w="rigid:head")
-# ---- the MUSTACHE: from under the nose over the upper lip, drooping past the mouth corners; its lower edge kept above
-# the drawn mouth line at the centre (MUSTACHE_LIP_CLEAR) so the one-line mouth still reads
+        BS_R.append("hair_beard_grey" if grey_ else "hair_beard")
+add_part("beardshell", BS_V, BS_F, BS_R, w="rigid:head")
+_bsk = np.array([m_["T"] for m_ in _bmeta])
+_hem_d = [float(BVH_BEARDENV.find_nearest(Vector(q_))[3]) for P_ in _bcols for q_ in P_[:_BS["rows"][0] + 1]]   # the outer
+#   surface's distance off the skin (the silhouette offset: research H9's "max silhouette offset from the jaw")
+BEARD_INFO["shell"] = {"columns": _bnu, "rows": _bnv, "psi_max_deg": _PSI_MAX, "col_step_deg": round(_dpsi, 3),
+                       "teeth": int(round((2 * _nh + 1) / _cpt)), "tris": tri_count_F(BS_F),
+                       "offset_mm_min_max": [round(1000 * float(_bsk[_bsk > 0].min()), 2), round(1000 * float(_bsk.max()), 2)],
+                       "outer_off_skin_mm_p50_p90_max": [round(1000 * float(np.percentile(_hem_d, q_)), 1) for q_ in (50, 90, 100)],
+                       "hem_z_below_chin_mm_front_side": [round(1000 * (Z_CHIN_B - _bmeta[_nh]["z_hem"]), 1),
+                                                          round(1000 * (Z_CHIN_B - _bmeta[2]["z_hem"]), 1)],
+                       "regions": {r_: BS_R.count(r_) for r_ in sorted(set(BS_R))}}
+# ---- the MUSTACHE shell: columns over the upper lip (the same builder; the envelope = the skin AND the beard shell, so its
+# drooping ends lie on the beard and sink into it)
+_MS = MUSTACHE_SHELL
+_BVH_BS = BVHTree.FromPolygons(BS_V.tolist(), BS_F)
 _seam_hw = 0.5 * float(SEAM["xs"].max() - SEAM["xs"].min()) if SEAM is not None else 0.022
-# each mustache lock runs ALONG the upper lip (centre -> corner) and droops past the corner: its ribbon width is then the
-# lip's height (nose bottom down to MUSTACHE_LIP_CLEAR above the line), full at the centre (root_k 1), tapering to the tip
-_zm0 = 0.5 * (Z_NOSE_BOTTOM + Z_SLIT) + 0.0008
-for k, (xr_, xtp_, drop_, w_) in enumerate(MUSTACHE):
-    for sg_, sn_ in ((1.0, "L"), (-1.0, "R")):
-        off_ = LOCK_OFF + MUSTACHE_T * (1.0 + k)
-        pts_ = [front_pt(sg_ * xr_, _zm0 + 0.0006 * k, off_),
-                front_pt(sg_ * (0.5 * (xr_ + _seam_hw)), _zm0 - 0.0008, off_),
-                front_pt(sg_ * (_seam_hw + 0.002), Z_SLIT + 0.0030 - 0.001 * k, off_ + 0.0005),
-                front_pt(sg_ * xtp_, Z_SLIT - drop_ * (Z_SLIT - Z_CHIN_B), off_ + 0.0010)]
-        if any(p_ is None for p_ in pts_):
-            continue
-        nm_ = "lock.must.%s%d" % (sn_, k)
-        clump(nm_, "M", pts_, chain=None, s_leave_k=1, free_k=1, W=w_, T=MUSTACHE_T, sway=False, root_k=1.0,
-              layer=HAIR_LAYER["must"] + CLUMP_STACK * k)
-        BEARD_INFO[nm_] = {"root": (1000 * (pts_[0] - HC)).round(1).tolist(), "tip": (1000 * (pts_[-1] - HC)).round(1).tolist()}
+_rsl = env_hit([BVH_BEARDENV], 0.0, Z_SLIT)[0]
+_psm = 0.0
+while _psm < 80.0:
+    h_ = env_hit([BVH_BEARDENV], _psm + 0.5, Z_SLIT)
+    if h_ is None or abs(float(h_[1][0])) >= _MS["tip_x"]:
+        break
+    _psm += 0.5
+_zdroop = Z_SLIT - _MS["tip_drop"] * (Z_SLIT - Z_CHIN_B)
+_mcols, _mmeta = [], []
+_nmc = _MS["cols"]
+for i_ in range(_nmc + 1):
+    psi_ = -_psm + 2.0 * _psm * i_ / _nmc
+    x_ = float(env_hit([BVH_BEARDENV], psi_, Z_SLIT)[1][0])
+    ax_ = abs(x_)
+    zt_ = Z_NOSE_BOTTOM - 0.0012 - _MS["top_slope"] * max(ax_ - 0.010, 0.0)
+    w_ = float(smoothstep(0.75 * _seam_hw, _MS["tip_x"], ax_))
+    zs_ = float(np.interp(np.clip(x_, SEAM["xs"].min(), SEAM["xs"].max()), SEAM["xs"], SEAM["zc"])) if SEAM is not None else Z_SLIT
+    zh_ = (1.0 - w_) * (zs_ + MUSTACHE_LIP_CLEAR) + w_ * _zdroop - _MS["tooth_len"] * (i_ % 2) * (1.0 - w_)
+    zh_ = min(zh_, zt_ - 0.004)
+    u_l = (psi_ / _psm + 1.0) * 0.5 * (2 * _MS["lobes"])           # lobe coordinate: 0 .. 2 x lobes across the mustache
+    gr_ = 1.0 - _MS["groove"] * max(0.0, 1.0 - abs(u_l - round(u_l)) / 0.18)   # grooves at the lobe joins (+ the centre part)
+    end_ = i_ in (0, _nmc)
+    T_ = _MS["offset"] * gr_ * (0.55 + 0.45 * (1.0 - w_)) * float(smoothstep(0.0, 4.0, min(i_, _nmc - i_)))   # (the ends
+    #   taper in over 4 columns into the beard: sunk at the last column, never a squared block)
+
+    def thick_m(d, f, T_=T_):
+        return -_BS["sink"] + (T_ + _BS["sink"]) * float(smoothstep(0.0, 0.0030, d))
+    P_, um_ = shell_column(psi_, zt_, zh_, zh_ + 0.0015, thick_m, 20.0 if end_ else _MS["taper"], [BVH_BEARDENV, _BVH_BS],
+                           _MS["rows"], _BS["sink"], 0.0006)
+    _mcols.append(P_)
+    _mmeta.append({"psi": psi_, "groove": gr_ < 0.85, "z_top": zt_, "z_hem": zh_})
+MS_V, MS_F, _mnu, _mnv = shell_grid(_mcols)
+MS_R = []
+for f_ in MS_F:
+    j_, i0_ = min(f_) // _mnu, min(f_) % _mnu
+    fr_ = 0.5 * (um_[min(j_, _MS["rows"][0] - 1)] + um_[min(j_ + 1, _MS["rows"][0])])
+    if j_ >= _MS["rows"][0]:
+        MS_R.append("hair_beard_shade")
+    elif fr_ < 0.12:
+        MS_R.append("hair_beard_root")
+    elif (_mmeta[i0_]["groove"] or _mmeta[i0_ + 1]["groove"]) and fr_ >= 0.55:
+        MS_R.append("hair_beard_crevice")
+    elif fr_ >= 0.80:
+        MS_R.append("hair_beard_tip")
+    else:
+        MS_R.append("hair_beard")
+add_part("mustache", MS_V, MS_F, MS_R, w="rigid:head")
+BEARD_INFO["mustache"] = {"columns": _mnu, "rows": _mnv, "psi_span_deg": _psm, "tris": tri_count_F(MS_F),
+                          "lip_clear_mm": 1000 * MUSTACHE_LIP_CLEAR, "regions": {r_: MS_R.count(r_) for r_ in sorted(set(MS_R))}}
+print("BEARDSHELL", json.dumps(BEARD_INFO))
 _ncap = len(Fcap)
 BVH_CAP_OUT = BVHTree.FromPolygons(CAP_V.tolist(), CAP_F[:_ncap] + CAP_F[2 * _ncap:])   # (outer shell + rim: the inner
 #                                                              shell's normals face the scalp and would push INTO the head)
@@ -1183,29 +1321,11 @@ if CREVICE_INFO["enabled"]:
 print("CREVICE", json.dumps(CREVICE_INFO))
 
 
-# ---- VARDEN: the beard's own tones (a step darker / warmer than the scalp hair on the sheet) + the GREY STREAKS, painted
-# by WHOLE LOCKS (the house rule: no vertex-level bands) -- BEARD_GREY "locks" grey their body + tips, "tip_only" their
-# tip tier; roots stay dark (the streaks grow out of the mass). After the tuck shade, so crevice faces keep the shade.
-BEARD_KINDS = ("beard_in", "beard", "beard_top", "beard_chin", "beard_cheek", "must")
-_BMAP = {"hair": "beard", "hair_root": "beard_root", "hair_tip": "beard_tip", "hair_shade": "beard_shade",
-         "hair_crevice": "beard_crevice", "hair_ring": "beard"}
-_grey_w = set("lock.%s.%d" % (k_, i_) for k_, i_ in BEARD_GREY["locks"])
-_grey_t = set("lock.%s.%d" % (k_, i_) for k_, i_ in BEARD_GREY["tip_only"])
-BEARD_TONE_INFO = {"locks": 0, "grey_whole": 0, "grey_tip": 0}
-for p in PARTS:
-    nm_ = p["name"]
-    if not nm_.startswith("lock.") or nm_.split(".")[1] not in BEARD_KINDS:
-        continue
-    R2_ = [_BMAP.get(r_, r_) for r_ in p["R"]]
-    if nm_ in _grey_w:
-        R2_ = [{"beard": "beard_grey", "beard_tip": "beard_grey_tip"}.get(r_, r_) for r_ in R2_]
-        BEARD_TONE_INFO["grey_whole"] += 1
-    elif nm_ in _grey_t:
-        R2_ = [{"beard_tip": "beard_grey_tip"}.get(r_, r_) for r_ in R2_]
-        BEARD_TONE_INFO["grey_tip"] += 1
-    p["R"] = R2_
-    BEARD_TONE_INFO["locks"] += 1
-print("BEARDTONE", json.dumps(BEARD_TONE_INFO))
+# ---- v4: the beard + mustache are SHELLS (painted by their own column grids above, BEARD_GREY included); no beard locks
+# remain, so every "lock." part is scalp hair. BEARD_PARTS names the shell parts for s6 (the beard proxy group, the focus
+# box, the tri report).
+BEARD_KINDS = ()
+BEARD_PARTS = ("beardshell", "mustache")
 
 
 def collapse_slivers(V, F, R, s_, area_min=SLIVER_AREA, passes=3):
@@ -1254,24 +1374,25 @@ _HZ = max(float(p["V"][:, 2].max()) for p in PARTS if p["name"].startswith(("loc
 HAIR_INFO = {"ribbon": RIBBON_INFO, "layer_resolve": {k_: v_ for k_, v_ in LAYER_INFO.items() if k_ != "lift_profile_mm"},
              "tuck_shade": TUCK_INFO, "locks": len(_clumps), "tiers": {t: sum(1 for n in TIER_OF.values() if n == t) for t in "LMS"},
              "by_kind": {k: sum(1 for p in _clumps if p["name"].split(".")[1] == k) for k in _kinds},
-             "scalp_locks": sum(1 for p in _clumps if p["name"].split(".")[1] not in BEARD_KINDS),
-             "beard_locks": sum(1 for p in _clumps if p["name"].split(".")[1] in BEARD_KINDS and p["name"].split(".")[1] != "must"),
-             "mustache_locks": sum(1 for p in _clumps if p["name"].split(".")[1] == "must"),
+             "scalp_locks": len(_clumps), "beard": "v4 shell (beard_table)",
              "sway_x_width": CLUMP_SWAY, "angel_ring": RING_INFO, "cap_feather": CAP_FEATHER_INFO,
              "clearance_pass": PUSH_INFO, "slivers": SLIVER_INFO, "scalp_table": SCALP_INFO, "beard_table": BEARD_INFO,
              "paint_faces": {r_: sum(p["R"].count(r_) for p in _clumps + [q for q in PARTS if q["name"] == "hair_cap"])
-                             for r_ in ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice",
-                                        "beard", "beard_shade", "beard_root", "beard_tip", "beard_crevice", "beard_grey",
-                                        "beard_grey_tip")},
-             "beard_tones": BEARD_TONE_INFO,
+                             for r_ in ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice")},
              "seconds": round(time.time() - t_hair, 1),
              "crown": {"scalp_top_z": round(Z_TOP, 4), "hair_top_z": round(_HZ, 4), "crown_above_scalp_mm": round(1000 * (_HZ - Z_TOP), 1)}}
 # v5.1 HAIR DIGEST: the exact bytes (float64 positions, faces, regions -- no rounding) of every hair part as s5 hands them to
 # the assembly; the hair-face decoupling proof compares it across builds with different FACE constants (wren_run.ps1).
 _hd = hashlib.sha256()
 for p in PARTS:
-    if p["name"].startswith(("lock.", "hair_cap", "hairtie")):
+    if p["name"].startswith(("lock.", "hair_cap", "hairtie")) or p["name"] in BEARD_PARTS:
         _hd.update(p["name"].encode()); _hd.update(np.ascontiguousarray(p["V"], dtype=np.float64).tobytes())
         _hd.update(np.array([i for f in p["F"] for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); _hd.update("|".join(p["R"]).encode())
 DIG["hair_geometry"] = HAIR_INFO["digest_exact"] = _hd.hexdigest()[:16]
+_hs = hashlib.sha256()
+for p in PARTS:
+    if p["name"].startswith(("lock.", "hair_cap")):
+        _hs.update(p["name"].encode()); _hs.update(np.ascontiguousarray(p["V"], dtype=np.float64).tobytes())
+        _hs.update(np.array([i for f in p["F"] for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); _hs.update("|".join(p["R"]).encode())
+HAIR_INFO["scalp_digest_exact"] = _hs.hexdigest()[:16]
 print("HAIR", json.dumps({k_: v_ for k_, v_ in HAIR_INFO.items() if k_ not in ("scalp_table", "beard_table")}))

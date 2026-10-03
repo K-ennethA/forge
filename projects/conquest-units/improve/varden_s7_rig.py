@@ -207,9 +207,9 @@ rep["weights"] = {"max_influences": int(max((W > 0).sum(1).max() for W in WOBJ.v
                           "their centroid's skin weights; tunic skirt / tabard / stars / sword belt: pelvis -> skin under the hem "
                           "(<= 55 %); high collar: skin with head / half the neck moved to spine_03; cloak + crest + motifs + FUR "
                           "roll + tufts ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the "
-                          "pelvis alone below it; eyes / cap / every hair, beard and mustache lock root: head; scalp + beard locks "
-                          "past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones "
-                          "each); mustache: head; scabbard: 'scabbard' (child of the pelvis); sword: 'sword' (child of 'scabbard' "
+                          "pelvis alone below it; eyes / cap / every scalp lock root / the beard + mustache shells: head; scalp locks "
+                          "past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones "
+                          "each; v4: no beard chains -- the short-crop shell rides the head); scabbard: 'scabbard' (child of the pelvis); sword: 'sword' (child of 'scabbard' "
                           "while sheathed; the hand_r grip transform is recorded for the draw)"}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
@@ -304,8 +304,9 @@ rig["conquest_rig"] = ("varden: root (contract) > MPFB2 game_engine skeleton + s
 rep["chains"] = {ch: {"bones": HAIR_BONES, "length_m": round(float(Lc), 4)} for ch, (_, Lc, _) in CHAIN_PTS.items()}
 low["conquest_clips"] = []
 low["conquest_clip_status"] = "none (v1 draft: static build + rig; movement intent is an open artist question)"
-low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (the hair strip carries the smooth-proxy normals, scalp and beard "
-                        "as separate volumes) -- no outline shells, no cel bands; stylisation drawn into the palette regions")
+low["conquest_look"] = ("shaded: Col x baked AO, baked normal map on the skin; the hair family (scalp locks + cap + the v4 beard / "
+                        "mustache SHELLS) smooth with custom split vertex normals (the per-group smooth-proxy normals: glTF NORMAL) "
+                        "-- no outline shells, no cel bands; stylisation drawn into the palette regions")
 low["conquest_sword_grip"] = json.dumps(np.round(G_HAND_TO_SWORD, 6).tolist())
 low["conquest_sword_roll_deg"] = SWORD_ROLL
 for m in list(bpy.data.materials):

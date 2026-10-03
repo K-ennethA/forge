@@ -19,7 +19,7 @@ grip, dark scabbard with gold chape). Palette chips: navy, dark brown, grey-taup
 House style: design/character-style-guide.md. Reference implementation: the ELIAS pipeline (improve/elias_*, read-only),
 itself the Wren stack: s1 verbatim; s2 garments + scars re-cut; s3 the Varden outfit; s4 the cloak + FUR MANTLE (a new
 garment class: fur clumps, not cloth) + brooch + strap; s5 the ribbon-lock stack with Varden's swept-back hair + short
-beard; s6 the sword / scabbard objects + bake; s7 rig + prop bones + grip record + roll search + save + glb (_GLOW).
+beard (v4: the BEARD_SHELL crop + mustache shell); s6 the sword / scabbard objects + bake; s7 rig + prop bones + grip record + roll search + save + glb (_GLOW).
 UNITS: metres, floor z = 0 at the boot soles, front -Y, left +X ("his left" = +X).
 """
 import bpy, bmesh, sys, os, math, json, time, hashlib, ast, tempfile, addon_utils
@@ -159,58 +159,53 @@ FACE_SCARS = (                        # "SCARRED" (sheet head panel): authored s
     ("L", ((-0.004, 0.024), (0.004, 0.012)), 0.0011),                     # a nick through his left brow (the sheet's brow cut)
 )
 SCAR_SHADOW = (0.0009, 0.6)           # the scar's shadow edge: offset below the scar line (m), width x the scar width
-# ---- the under-beard paint + the SHORT-CROPPED beard / mustache (ribbon locks, the hair stack -- shorter layers)
+# ---- the under-beard paint + the SHORT-CROPPED beard / mustache (v4: one conforming shell each + the skin fade band)
 BEARD_ZONE = {"sideburn_z": -0.022, "cheek": ((0.024, -0.054), (0.040, -0.049), (0.054, -0.040), (0.066, -0.026)),
-              "lip_band": (0.0040, 0.0055, 0.0045), "neck_drop": 0.030}   # "beard coverage" on the skin: the top edge
+              "lip_band": (0.0040, 0.0055, 0.0045), "neck_drop": 0.030,
+              "neck_rise": (0.030, 0.022, 0.056)}   # "beard coverage" on the skin: the top edge
                                       #   (|x| m from the midline, z m below the eye centres) from the sideburn (joins the hair)
                                       #   down the cheek line to the mustache -- HIGHER on the cheek than Elias (the sheet's
                                       #   full beard); the lip band kept skin; under the jaw down this far below the chin
-BEARD_LEN = 0.020                     # "beard length": SHORT-CROPPED -- the trimmed edge falls this far below the chin (m)
-BEARD_TIP_W = 0.046                   # "beard width at the bottom": the outer locks' tips at most this far off the midline
-BEARD_POINT = 0.30                    # "beard shape": squared trimmed edge (0 = straight down, 1 = one point; Elias 0.78)
-BEARD_FWD = 0.003                     # the tips stand this far in front of the jaw / throat (m): dense, close-cropped
-BEARD_CORE_W = 0.056                  # "beard core": the dark inner mass's half width at the jaw line (m)
-BEARD_CORE_OFF = 0.0035               # the core stands this far outside the throat envelope (m; under the locks)
-BEARD_LOCKS = (                       # SHORT-CROPPED groomed masses of narrow ribbon locks with real cross-section, three short
-                                      #   layered lengths, bottom -> top (the layer resolve's stack): (layer kind, tier, root
-                                      #   azimuth deg from the front (+ his left), root height = 'eye' / 'nose' / 'slit' / 'chin'
-                                      #   landmark + offset m, or 'edge' = the under-beard zone's top edge + offset m (roots
-                                      #   cover the painted zone: no grey mask), length share of BEARD_LEN, past the jaw line)
-    ("beard_in", "S", 0.0, ("chin", 0.006), 0.70), ("beard_in", "S", 18.0, ("slit", -0.016), 0.66),
-    ("beard_in", "S", -18.0, ("slit", -0.016), 0.66), ("beard_in", "S", 36.0, ("slit", -0.010), 0.60),
-    ("beard_in", "S", -36.0, ("slit", -0.010), 0.60), ("beard_in", "S", 54.0, ("edge", -0.014), 0.50),
-    ("beard_in", "S", -54.0, ("edge", -0.014), 0.50),
-    ("beard", "M", 8.0, ("slit", -0.012), 0.95), ("beard", "M", -8.0, ("slit", -0.012), 0.95),
-    ("beard", "M", 25.0, ("slit", -0.004), 0.90), ("beard", "M", -25.0, ("slit", -0.004), 0.90),
-    ("beard", "M", 42.0, ("edge", -0.004), 0.82), ("beard", "M", -42.0, ("edge", -0.004), 0.82),
-    ("beard", "M", 58.0, ("edge", -0.003), 0.70), ("beard", "M", -58.0, ("edge", -0.003), 0.70),
-    ("beard", "M", 72.0, ("edge", -0.003), 0.55), ("beard", "M", -72.0, ("edge", -0.003), 0.55),
-    ("beard_top", "M", 0.0, ("chin", 0.014), 1.00), ("beard_top", "S", 15.0, ("slit", -0.007), 0.96),
-    ("beard_top", "S", -15.0, ("slit", -0.007), 0.96), ("beard_top", "S", 34.0, ("edge", -0.001), 0.86),
-    ("beard_top", "S", -34.0, ("edge", -0.001), 0.86),
-    ("beard_chin", "S", 0.0, ("slit", -0.0065), 0.80), ("beard_chin", "S", 9.0, ("slit", -0.0070), 0.76),   # the chin under
-    ("beard_chin", "S", -9.0, ("slit", -0.0070), 0.76),                   #   the lip (the Elias v3 coverage lesson)
-    ("beard_cheek", "S", 25.0, ("slit", 0.0055), 0.80), ("beard_cheek", "S", -25.0, ("slit", 0.0055), 0.80))   # beside the
-                                                                          #   mustache ends (no painted zone showing)
-BEARD_T = {"beard_in": 0.0032, "beard": 0.0032, "beard_top": 0.0030, "beard_chin": 0.0026, "beard_cheek": 0.0026}   # "beard
-                                      #   lock thickness": half-thickness (m) -- real clumps, not flat panels (Elias v2 lesson)
-BEARD_ROOT_K = 0.80                   # "beard root width" (x the lock width): roots along a LINE start near full width (Elias v3)
-BEARD_EDGE_LIFT = 0.004               # 'edge' roots sit this far ABOVE the zone's top edge (on skin): the lock body hides the
-                                      #   painted edge, never starts on it (Elias v3)
-BEARD_JAW_RISE = 0.040                # "trimmed jaw line": the cheek locks' tips rise this much (m) toward the ear (short crop)
-BEARD_JAW_PSI = (28.0, 85.0)          #   ramping in over this root-azimuth span (deg from the front)
-BEARD_ENV_EAR_Y = 0.012               # the beard envelope uses head skin in front of (head centre y - this) only: no ears
-BEARD_TIP_TURN = 0.35                 # the tip azimuth = the root azimuth x (1 - this x share): the locks converge toward the chin
-BEARD_CHAIN_PSI = 12.0                # beard locks beyond this azimuth ride the beard.L / beard.R chains, the middle beard.C
-BEARD_GREY = {"locks": (("beard_top", 0), ("beard_chin", 0), ("beard", 0), ("beard", 1), ("beard_in", 0)),
-              "tip_only": (("beard", 4), ("beard", 5), ("beard_top", 3))}   # "grey streaks" (sheet): whole locks painted the
-                                      #   grey beard tones (the chin centre) + locks whose TIP tier only greys (the cheeks):
-                                      #   (kind, index within the kind). The streak pattern is an artist question.
-MUSTACHE = ((0.003, 0.035, 0.22, 0.0115), (0.007, 0.032, 0.15, 0.0092), (0.012, 0.029, 0.08, 0.0068))   # "mustache" per side,
-                                      #   bottom -> top: (root |x| m at the lip centre, tip |x| m, tip drop below the mouth line
-                                      #   as a share of the seam-to-chin height, width m); runs ALONG the upper lip and turns
-                                      #   down into the beard at the corners (trimmed, no walrus droop)
-MUSTACHE_T = 0.0024                   # "mustache thickness": half-thickness (m)
+                                      #   at the front, the lower edge rising (v4 neck_rise: m, over |x| m -> m) to the jaw corners
+BEARD_LEN = 0.012                     # "beard length": SHORT-CROPPED -- the trimmed hem falls this far below the chin at the front (m)
+BEARD_JAW_RISE = 0.040                # "trimmed jaw line": the hem rises this much (m) toward the ear (short crop)
+BEARD_JAW_PSI = (28.0, 85.0)          #   ramping in over this azimuth span (deg from the front)
+BEARD_ENV_EAR_Y = 0.005               # the beard envelope uses head skin in front of (head centre y - this) only: no ears (v4:
+                                      #   0.012 -> 0.005, inside the zone's own back edge HC - 0.006: at 0.012 the shell could not
+                                      #   see the zone's last 6 mm at the sideburns and that strip showed as flat paint)
+# v4 BEARD_SHELL / BEARD_CROP (research H9, design/research/hair-face-best-practices.md): the short crop is ONE conforming shell
+# (no hanging strips): columns round the head's vertical axis, each a profile from the zone's top edge (sunk under the skin)
+# down the cheek / jaw (offset by the thickness field) to a serrated HEM, then the underside back onto the neck (sunk).
+BEARD_SHELL = {"offset": (0.0032, 0.0058),   # "shell offset": thickness over the cheeks / at the chin front (m; research 2-4 mm)
+               "offset_psi": (12.0, 48.0),   #   the chin -> cheek blend over this azimuth span (deg)
+               "sink": 0.0006,               # the shell's boundary rows sit this far UNDER the skin: no visible edge, the fade takes over
+               "ramp": 0.0120,               # the thickness ramps in over this distance (m, down from the top edge; a short ramp
+                                             #   catches the key light as a bright visor rim -- measured at 5.5 mm)
+               "taper": (0.90, 1.25),        # below the jaw the shell hangs, sloping inward this much per metre down: front / sides
+               "tooth_w": 0.0120,            # "edge serration": clump tooth width along the hem (m at the chin radius)
+               "cols_per_tooth": 3,          #   columns per tooth (tip, shoulder, valley: a sawtooth leaning to the chin)
+               "tooth_len": 0.0045,          #   tooth depth (m) ...
+               "tooth_jitter": 0.80,         #   ... x (1 - j/2 .. 1 + j/2), a fixed per-tooth hash (irregular, never a comb)
+               "top_tooth": 0.0,             # the cheek-line edge's own geometric teeth (m; 0: the fade band's painted serration carries it)
+               "groove": 0.30,               # clump grooves: thickness dip at the valley columns (share), only toward the hem
+               "rows": (9, 3),               # outer rows (top edge -> hem) / underside rows (hem -> neck)
+               "under_clear": 0.0012,        # the underside keeps this far off the jaw / neck skin (m)
+               "root_f": 0.05, "tip_f": 0.86, "crevice_f": 0.70}   # paint: root tier below / tip tier above these row fractions;
+                                      #   the groove crevice from this fraction to the hem
+BEARD_FADE = (0.0080, 3, 0.0030, 0.0060, 0.03)   # "fade band width": the stubble fade on the skin outside the shell edge -- width
+                                      #   (m of the zone field = height above the cheek line: ~6 mm across the sloped edge; measured, 5.5 read as a 2 mm fringe
+                                      #   at portrait size), painted steps, edge serration amplitude (m), serration tooth width (m),
+                                      #   lip-band steepness
+BEARD_GREY = {"chin": (8.0, 0.55), "streaks": ((42.0, 0.62), (-42.0, 0.62), (30.0, 0.70))}   # "grey streaks" (sheet; v1's
+                                      #   reading carried over): the chin centre grey within +-deg from this row fraction down, and
+                                      #   one-tooth-wide cheek streaks (centre azimuth deg, from this row fraction to the hem). The
+                                      #   streak pattern is an artist question.
+MUSTACHE_SHELL = {"offset": 0.0045,   # "mustache": ONE shell over the upper lip (2 lobes per side), thickness (m)
+                  "tip_x": 0.039,     #   the drooping ends reach this far off the midline (m), over the beard shell
+                  "tip_drop": 0.34,   #   ... and this far below the mouth line (share of the seam-to-chin height)
+                  "top_slope": 0.15,  #   the top edge falls outward from under the nose (m per m)
+                  "lobes": 2, "groove": 0.35, "cols": 26, "rows": (6, 2),   # lobes per side, groove dip, columns, outer / underside rows
+                  "tooth_len": 0.0016, "taper": 0.60}   # the lower edge's small teeth over the lip (m), hang slope
 MUSTACHE_LIP_CLEAR = 0.0018           # the mustache's lower edge stays this far above the mouth line at the centre (m)
 # ---- scalp hair (ribbon locks, the house style; tousled grey-brown SWEPT BACK from the front hairline)
 HAIR_INTERIOR_R = 0.70
@@ -257,11 +252,9 @@ HAIRLINE_LOCKS = ()                   # "hairline row" (Elias v3): short flat lo
 CLUMP_ROOT = {"top": 0.04, "side": 0.10, "outer": 0.12, "back": 0.16, "tousle": 0.03}   # root position along whorl -> tip
                                       #   (Wren's: roots never stack on the whorl point -- the low-crown lesson)
 HAIR_KIND_W = {"back": 1.05, "outer": 1.10, "side": 1.20, "sweep": 1.30, "front": 1.30, "top": 1.0, "tousle": 0.80,
-               "loose": 0.55, "beard_in": 0.70, "beard": 0.66, "beard_top": 0.60, "beard_chin": 0.80, "beard_cheek": 0.85,
-               "must": 1.0, "hairline": 1.55}   # "lock width by kind" (x the tier width)
+               "loose": 0.55, "hairline": 1.55}   # "lock width by kind" (x the tier width)
 HAIR_LAYER = {"back": 0.0, "outer": 0.0009, "side": 0.0018, "hairline": 0.0021, "sweep": 0.0027, "top": 0.0032,
-              "tousle": 0.0036, "loose": 0.0040, "beard_in": 0.0, "beard": 0.0010, "beard_top": 0.0020, "beard_chin": 0.0026,
-              "beard_cheek": 0.0026, "must": 0.0012}   # stack order offset (m)
+              "tousle": 0.0036, "loose": 0.0040}   # stack order offset (m)
 HAIR_LIFT = {"back": 0.007, "outer": 0.011, "side": 0.010, "sweep": 0.006, "top": 0.006, "hairline": 0.0015, "tousle": 0.010,
              "loose": 0.003}          # "hair volume" lift (m)
 HAIR_BONES = 3                        # follow-through bones per chain (Wren's)
@@ -273,7 +266,7 @@ CLUMP_ROOT_GROW = 0.40
 CLUMP_SWAY = 0.16                     # "tousled S-curve": sideways sway amplitude (x the lock width); Wren 0.14
 CLUMP_SCALP_T = 0.62
 CLUMP_S_TIP_K = {"L": 1.0, "M": 1.0, "S": 0.9}
-RIBBON_STATIONS_KIND = {"back": 13, "outer": 13, "beard_in": 13}   # the half-hidden layers at the style guide's floor
+RIBBON_STATIONS_KIND = {"back": 13, "outer": 13}   # the half-hidden layers at the style guide's floor
 RIBBON_STATIONS = {"L": 15, "M": 14, "S": 13}   # "lock segments": the style guide's 13-19 sections
 RIBBON_DENSE = 64
 RIBBON_FAIR = (10, 0.50, -0.53)
@@ -304,6 +297,11 @@ HAIR_CREVICE_MAX_EL = 60.0            # tuck shade only below this elevation (th
 HAIR_PROXY = (48, 24, 80, 0.003)      # "one-volume hair shading" proxy (lon x lat, smoothing passes, pad m) -- PER GROUP:
                                       #   the scalp hairdo and the beard + mustache each get their own smooth egg
 HAIR_LOCK_NORMAL_MIX = 0.45
+HAIR_SHELL_NORMAL_MIX = 0.85          # "beard shell normals": the beard / mustache shells' share of their OWN smooth normal (vs
+                                      #   the per-group proxy egg); the scalp locks keep HAIR_LOCK_NORMAL_MIX
+HAIR_NORMAL_CARRIER = "vertex"      # "hair normal carrier" (v4; research H5, the Wren pilot f1dcc74 = house standard): the
+                                      #   proxy-leaned hair normals ship as CUSTOM SPLIT VERTEX NORMALS on the hair faces (glTF
+                                      #   NORMAL; contract: conquest_smooth_regions = the hair family) -- "map" = the v3 tangent-map bake
 HAIR_CLEAR = (0.0025, 0.0005)
 HAIR_BAKE_CAGE = (0.0004, 0.0012)
 NEAREST_TIE = 1e-6
@@ -411,10 +409,11 @@ AO_SAMPLES = 48
 AO_FLOOR = {"default": 0.42, "skin": 0.62, "hair": 0.82, "cloth": 0.50, "fur": 0.70}
 AO_FACE_LIFT = None
 AO_FACE_FLOOR = (1.0, 3.0, (0.0, 26.0, 100.0), (0.031, 0.013, 0.028))
-AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow", "face_line", "scar", "scar_shadow"],
+AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow", "face_line", "scar", "scar_shadow", "beard_fade1", "beard_fade2",
+                             "beard_fade3"],
                     "hair": ["hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice",
-                             "beard_inner", "beard", "beard_shade", "beard_root", "beard_tip", "beard_crevice", "beard_grey",
-                             "beard_grey_tip"],
+                             "beard_inner", "hair_beard", "hair_beard_shade", "hair_beard_root", "hair_beard_tip",
+                             "hair_beard_crevice", "hair_beard_grey", "hair_beard_grey_tip"],
                     "cloth": ["cloak", "cloak_lining", "tunic", "tunic_shade", "tabard", "sleeve", "sleeve_roll", "trousers"],
                     "fur": ["fur", "fur_shade", "fur_tip", "fur_inner"]}
 
@@ -436,7 +435,7 @@ OUT_RIGGED = os.path.join(_OUT_ROOT, "rigged", UNIT + ".blend")
 OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
 TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "scratch" if SCRATCH else "main"
-report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v3 draft (shoulders)",
+report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v4 draft (beard shell)",
           "name_status": "named by the sheet (GENERAL VARDEN - KINGDOM GENERAL)",
           "source": "design/reference/varden/varden_sheet.webp (saved sheet; transcription design/review-log.md 2026-10-02)",
           "tier": "hero", "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}

@@ -1,0 +1,311 @@
+{
+ "mesh": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\varden.blend",
+ "rule": "see improve/wren_face_probe.py docstring",
+ "undereye": {
+  "L": {
+   "columns_mm": [
+    -14.0,
+    20.5
+   ],
+   "per_column": {},
+   "lid_edge_below_centre_mm": {
+    "min": 0.25,
+    "max": 9.5,
+    "at_dx0": 9.5
+   },
+   "crease_mm_5col": {
+    "dx-8": 0.201,
+    "dx-4": 0.249,
+    "dx+0": 0.131,
+    "dx+4": 0.132,
+    "dx+8": 0.085,
+    "max": 0.249
+   },
+   "crease_mm_dense": {
+    "max": 4.756,
+    "at_dx_mm": 19.0,
+    "at_mm_below_centre": 6.0,
+    "per_column_mm": {
+     "-14.0": 1.03,
+     "-13.5": 1.06,
+     "-13.0": 0.98,
+     "-12.5": 0.89,
+     "-12.0": 0.8,
+     "-11.5": 0.71,
+     "-11.0": 0.6,
+     "-10.5": 0.49,
+     "-10.0": 0.4,
+     "-9.5": 0.3,
+     "-9.0": 0.26,
+     "-8.5": 0.23,
+     "-8.0": 0.2,
+     "-7.5": 0.2,
+     "-7.0": 0.19,
+     "-6.5": 0.2,
+     "-6.0": 0.23,
+     "-5.5": 0.25,
+     "-5.0": 0.26,
+     "-4.5": 0.26,
+     "-4.0": 0.25,
+     "-3.5": 0.23,
+     "-3.0": 0.21,
+     "-2.5": 0.18,
+     "-2.0": 0.15,
+     "-1.5": 0.13,
+     "-1.0": 0.13,
+     "-0.5": 0.13,
+     "+0.0": 0.13,
+     "+0.5": 0.12,
+     "+1.0": 0.13,
+     "+1.5": 0.13,
+     "+2.0": 0.13,
+     "+2.5": 0.14,
+     "+3.0": 0.14,
+     "+3.5": 0.14,
+     "+4.0": 0.13,
+     "+4.5": 0.12,
+     "+5.0": 0.11,
+     "+5.5": 0.1,
+     "+6.0": 0.1,
+     "+6.5": 0.09,
+     "+7.0": 0.08,
+     "+7.5": 0.06,
+     "+8.0": 0.08,
+     "+8.5": 0.08,
+     "+9.0": 0.07,
+     "+9.5": 0.07,
+     "+10.0": 0.09,
+     "+10.5": 0.11,
+     "+11.0": 0.13,
+     "+11.5": 0.16,
+     "+12.0": 0.19,
+     "+12.5": 0.22,
+     "+13.0": 0.24,
+     "+13.5": 0.4,
+     "+14.0": 0.72,
+     "+14.5": 1.06,
+     "+15.0": 1.36,
+     "+15.5": 1.62,
+     "+16.0": 1.93,
+     "+16.5": 2.26,
+     "+17.0": 2.56,
+     "+17.5": 2.73,
+     "+18.0": 2.69,
+     "+18.5": 2.55,
+     "+19.0": 4.76,
+     "+19.5": 4.65,
+     "+20.0": 2.22,
+     "+20.5": 2.06
+    },
+    "p90": 2.224,
+    "columns": 70
+   },
+   "flatness_mm": {
+    "max": 1.81,
+    "p90": 1.042,
+    "median": 0.153
+   },
+   "lid_line_mm": {
+    "max": 1.808,
+    "p90": 1.011
+   },
+   "regions_in_band": {
+    "lash": 42,
+    "liner": 82,
+    "skin": 6593
+   }
+  },
+  "R": {
+   "columns_mm": [
+    -14.0,
+    20.5
+   ],
+   "per_column": {},
+   "lid_edge_below_centre_mm": {
+    "min": 0.25,
+    "max": 9.5,
+    "at_dx0": 9.5
+   },
+   "crease_mm_5col": {
+    "dx-8": 0.201,
+    "dx-4": 0.249,
+    "dx+0": 0.131,
+    "dx+4": 0.132,
+    "dx+8": 0.074,
+    "max": 0.249
+   },
+   "crease_mm_dense": {
+    "max": 5.177,
+    "at_dx_mm": 19.5,
+    "at_mm_below_centre": 5.5,
+    "per_column_mm": {
+     "-14.0": 1.03,
+     "-13.5": 1.06,
+     "-13.0": 0.98,
+     "-12.5": 0.89,
+     "-12.0": 0.8,
+     "-11.5": 0.71,
+     "-11.0": 0.6,
+     "-10.5": 0.49,
+     "-10.0": 0.4,
+     "-9.5": 0.3,
+     "-9.0": 0.26,
+     "-8.5": 0.23,
+     "-8.0": 0.2,
+     "-7.5": 0.2,
+     "-7.0": 0.19,
+     "-6.5": 0.2,
+     "-6.0": 0.23,
+     "-5.5": 0.25,
+     "-5.0": 0.26,
+     "-4.5": 0.26,
+     "-4.0": 0.25,
+     "-3.5": 0.23,
+     "-3.0": 0.21,
+     "-2.5": 0.18,
+     "-2.0": 0.15,
+     "-1.5": 0.13,
+     "-1.0": 0.13,
+     "-0.5": 0.13,
+     "+0.0": 0.13,
+     "+0.5": 0.12,
+     "+1.0": 0.13,
+     "+1.5": 0.14,
+     "+2.0": 0.14,
+     "+2.5": 0.14,
+     "+3.0": 0.14,
+     "+3.5": 0.14,
+     "+4.0": 0.13,
+     "+4.5": 0.12,
+     "+5.0": 0.11,
+     "+5.5": 0.1,
+     "+6.0": 0.09,
+     "+6.5": 0.09,
+     "+7.0": 0.08,
+     "+7.5": 0.06,
+     "+8.0": 0.07,
+     "+8.5": 0.06,
+     "+9.0": 0.07,
+     "+9.5": 0.06,
+     "+10.0": 0.08,
+     "+10.5": 0.09,
+     "+11.0": 0.11,
+     "+11.5": 0.13,
+     "+12.0": 0.15,
+     "+12.5": 0.19,
+     "+13.0": 0.21,
+     "+13.5": 0.39,
+     "+14.0": 0.72,
+     "+14.5": 0.96,
+     "+15.0": 1.31,
+     "+15.5": 1.58,
+     "+16.0": 1.92,
+     "+16.5": 2.27,
+     "+17.0": 2.57,
+     "+17.5": 2.74,
+     "+18.0": 2.69,
+     "+18.5": 2.55,
+     "+19.0": 4.65,
+     "+19.5": 5.18,
+     "+20.0": 2.22,
+     "+20.5": 2.04
+    },
+    "p90": 2.227,
+    "columns": 70
+   },
+   "flatness_mm": {
+    "max": 3.556,
+    "p90": 1.033,
+    "median": 0.158
+   },
+   "lid_line_mm": {
+    "max": 3.556,
+    "p90": 1.007
+   },
+   "regions_in_band": {
+    "lash": 40,
+    "liner": 79,
+    "skin": 6240
+   }
+  }
+ },
+ "undereye_rule": "front rays, 0.25 mm rows x 0.5 mm columns; crease = sink behind the column's front convex hull (from 1 mm under the lid edge to 26 mm under the eye centre); flatness = |skin - per-column quadratic fit| from the liner's outer edge to 18 mm under the lid edge; lid_line = the same in the first 3 mm",
+ "mouth": {
+  "relief_in_zone_mm": {
+   "max": 136.766,
+   "p99": 116.99,
+   "zone": "the whole probe window (no bridge in the report)"
+  },
+  "relief_mm": {
+   "max": 136.766,
+   "p99": 116.99,
+   "p95": 98.055,
+   "max_at_x_dz_mm": [
+    -12.5,
+    -4.5
+   ],
+   "past_line_ends_max(|x|>16.5)": 130.468,
+   "lower_lip_band_max(dz -3..-10)": 136.766,
+   "upper_lip_band_max(dz +1..+8)": 114.391
+  },
+  "upper_proud_detrended_mm_max": 180.063,
+  "seam_recess_mm_max": 61.425,
+  "columns": {
+   "x+0": {
+    "seam_dz_mm": -0.5,
+    "upper_fwd_raw_mm": 0.881,
+    "upper_proud_detrended_mm": 53.055,
+    "seam_recess_mm": -25.897,
+    "relief_max_mm": 124.427
+   },
+   "x+4": {
+    "seam_dz_mm": -0.25,
+    "upper_fwd_raw_mm": 1.053,
+    "upper_proud_detrended_mm": 47.788,
+    "seam_recess_mm": -29.845,
+    "relief_max_mm": 122.684
+   },
+   "x+8": {
+    "seam_dz_mm": 0.0,
+    "upper_fwd_raw_mm": 1.032,
+    "upper_proud_detrended_mm": 44.173,
+    "seam_recess_mm": -44.476,
+    "relief_max_mm": 98.261
+   },
+   "x+12": {
+    "seam_dz_mm": 0.0,
+    "upper_fwd_raw_mm": 0.834,
+    "upper_proud_detrended_mm": 11.483,
+    "seam_recess_mm": -39.98,
+    "relief_max_mm": 61.953
+   },
+   "x+16": {
+    "seam_dz_mm": -1.5,
+    "upper_fwd_raw_mm": 0.683,
+    "upper_proud_detrended_mm": -0.843,
+    "seam_recess_mm": -90.201,
+    "relief_max_mm": 98.414
+   },
+   "x+20": {
+    "seam_dz_mm": -1.25,
+    "upper_fwd_raw_mm": 181.494,
+    "upper_proud_detrended_mm": 176.656,
+    "seam_recess_mm": 46.189,
+    "relief_max_mm": 130.467
+   },
+   "x+24": {
+    "seam_dz_mm": 1.5,
+    "upper_fwd_raw_mm": -0.07,
+    "upper_proud_detrended_mm": 11.729,
+    "seam_recess_mm": -0.142,
+    "relief_max_mm": 64.824
+   }
+  },
+  "rule": "front rays over |x| <= 26 mm, 11 mm above .. 12 mm below the lip line; relief = |skin - per-column least-squares cubic| (the no-lip S profile)",
+  "regions": {
+   "lips": 1869,
+   "mouth": 385,
+   "skin": 7511
+  }
+ }
+}
