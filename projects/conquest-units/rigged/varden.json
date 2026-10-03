@@ -1,0 +1,1364 @@
+{
+ "unit": "varden",
+ "source": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\varden.blend",
+ "fps": 24,
+ "version": "v1 draft",
+ "clips": "none this pass (artist-gated)",
+ "weights": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "sum_dev_max": 2.220446049250313e-16,
+  "seconds": 0.7,
+  "rule": "body: MPFB game_engine weights; boots / straps / sleeve rolls / vambraces / belt / sword strap: the nearest skin point's weights; boot feet: foot -> ball; buckles / studs / brooch / pendant / chain: rigid at their centroid's skin weights; tunic skirt / tabard / stars / sword belt: pelvis -> skin under the hem (<= 55 %); high collar: skin with head / half the neck moved to spine_03; cloak + crest + motifs + FUR roll + tufts ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and mustache lock root: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; scabbard: 'scabbard' (child of the pelvis); sword: 'sword' (child of 'scabbard' while sheathed; the hand_r grip transform is recorded for the draw)"
+ },
+ "grip": {
+  "sword": {
+   "rule": "hammer grip: the grip along the right hand's knuckle line, pommel out of the pinky side, blade out of the thumb side, true edge toward the knuckles; REST: sheathed at the left hip (bone 'sword' child of 'scabbard', child of the pelvis); hand_r_to_sword_bone_held4 = the sword bone's matrix in hand_r space when held (the draw re-parents with it); the guard hold (unkeyed) searched the sword's roll about its blade in 10-deg steps for the least wrist bend",
+   "G_sword_rest_to_held": [
+    [
+     -0.262413,
+     0.935827,
+     -0.235303,
+     0.088804
+    ],
+    [
+     0.054108,
+     0.257735,
+     0.964699,
+     -1.150114
+    ],
+    [
+     0.963437,
+     0.240418,
+     -0.118269,
+     1.007871
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "hand_r_to_sword_bone_held4": [
+    [
+     0.48675,
+     -0.741575,
+     0.461672,
+     -0.018408
+    ],
+    [
+     -0.866124,
+     -0.340982,
+     0.365459,
+     0.057143
+    ],
+    [
+     -0.113595,
+     -0.577752,
+     -0.80827,
+     0.006508
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "pelvis_to_scabbard_rest4": [
+    [
+     0.9790899753570557,
+     0.13236600160598755,
+     0.15447500348091125,
+     0.11930400133132935
+    ],
+    [
+     0.09769099950790405,
+     -0.9720020294189453,
+     0.213701993227005,
+     -0.1103530004620552
+    ],
+    [
+     0.1784379929304123,
+     -0.19414299726486206,
+     -0.9646090269088745,
+     0.14737600088119507
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "roll_deg": 250.0,
+   "wrist_bend_deg": 48.55,
+   "reach_shortfall_m": 0.0,
+   "elbow_pole": [
+    -0.15,
+    0.85,
+    -0.5
+   ],
+   "guard_pose": {
+    "grip_from_shoulder_m": [
+     0.12,
+     -0.4,
+     -0.22
+    ],
+    "blade_elevation_deg": 40.0
+   },
+   "bend_by_roll_deg_at_that_pole": {
+    "0": 118.3,
+    "10": 127.0,
+    "20": 135.8,
+    "30": 144.6,
+    "40": 153.3,
+    "50": 162.0,
+    "60": 170.9,
+    "70": 179.7,
+    "80": 171.5,
+    "90": 162.8,
+    "100": 154.1,
+    "110": 145.4,
+    "120": 136.7,
+    "130": 127.9,
+    "140": 119.1,
+    "150": 110.5,
+    "160": 102.1,
+    "170": 93.7,
+    "180": 85.7,
+    "190": 77.9,
+    "200": 70.5,
+    "210": 63.7,
+    "220": 57.8,
+    "230": 53.1,
+    "240": 49.9,
+    "250": 48.6,
+    "260": 49.3,
+    "270": 52.0,
+    "280": 56.4,
+    "290": 62.2,
+    "300": 68.9,
+    "310": 76.3,
+    "320": 84.2,
+    "330": 92.5,
+    "340": 100.9,
+    "350": 109.6
+   }
+  }
+ },
+ "chains": {
+  "beard.C": {
+   "bones": 3,
+   "length_m": 0.0284
+  },
+  "beard.L": {
+   "bones": 3,
+   "length_m": 0.0504
+  },
+  "beard.R": {
+   "bones": 3,
+   "length_m": 0.0512
+  },
+  "hair_back": {
+   "bones": 3,
+   "length_m": 0.0295
+  },
+  "hair_front": {
+   "bones": 3,
+   "length_m": 0.0527
+  },
+  "hair_side.L": {
+   "bones": 3,
+   "length_m": 0.03
+  },
+  "hair_side.R": {
+   "bones": 3,
+   "length_m": 0.0297
+  }
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "deform": false,
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.2,
+    0.0
+   ]
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0338,
+    1.0004
+   ],
+   "tail": [
+    -0.0013,
+    -0.0021,
+    1.0842
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0021,
+    1.0842
+   ],
+   "tail": [
+    -0.0013,
+    -0.0105,
+    1.1481
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0105,
+    1.1481
+   ],
+   "tail": [
+    -0.0013,
+    0.0043,
+    1.2093
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "deform": true,
+   "head": [
+    -0.0013,
+    0.0043,
+    1.2093
+   ],
+   "tail": [
+    -0.0013,
+    0.0237,
+    1.3475
+   ]
+  },
+  {
+   "name": "clavicle_l",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    0.0218,
+    -0.0553,
+    1.4782
+   ],
+   "tail": [
+    0.1944,
+    -0.0433,
+    1.4515
+   ]
+  },
+  {
+   "name": "upperarm_l",
+   "parent": "clavicle_l",
+   "deform": true,
+   "head": [
+    0.1944,
+    -0.0433,
+    1.4515
+   ],
+   "tail": [
+    0.2816,
+    -0.0488,
+    1.2097
+   ]
+  },
+  {
+   "name": "lowerarm_l",
+   "parent": "upperarm_l",
+   "deform": true,
+   "head": [
+    0.2816,
+    -0.0488,
+    1.2097
+   ],
+   "tail": [
+    0.3682,
+    -0.1435,
+    0.9905
+   ]
+  },
+  {
+   "name": "hand_l",
+   "parent": "lowerarm_l",
+   "deform": true,
+   "head": [
+    0.3682,
+    -0.1435,
+    0.9905
+   ],
+   "tail": [
+    0.3754,
+    -0.1618,
+    0.9619
+   ]
+  },
+  {
+   "name": "index_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.391,
+    -0.2167,
+    0.9077
+   ],
+   "tail": [
+    0.3906,
+    -0.2319,
+    0.8846
+   ]
+  },
+  {
+   "name": "index_02_l",
+   "parent": "index_01_l",
+   "deform": true,
+   "head": [
+    0.3906,
+    -0.2319,
+    0.8846
+   ],
+   "tail": [
+    0.3852,
+    -0.2438,
+    0.8635
+   ]
+  },
+  {
+   "name": "index_03_l",
+   "parent": "index_02_l",
+   "deform": true,
+   "head": [
+    0.3852,
+    -0.2438,
+    0.8635
+   ],
+   "tail": [
+    0.3759,
+    -0.2561,
+    0.8403
+   ]
+  },
+  {
+   "name": "middle_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3987,
+    -0.1917,
+    0.898
+   ],
+   "tail": [
+    0.3972,
+    -0.2024,
+    0.8635
+   ]
+  },
+  {
+   "name": "middle_02_l",
+   "parent": "middle_01_l",
+   "deform": true,
+   "head": [
+    0.3972,
+    -0.2024,
+    0.8635
+   ],
+   "tail": [
+    0.3925,
+    -0.2122,
+    0.8368
+   ]
+  },
+  {
+   "name": "middle_03_l",
+   "parent": "middle_02_l",
+   "deform": true,
+   "head": [
+    0.3925,
+    -0.2122,
+    0.8368
+   ],
+   "tail": [
+    0.3851,
+    -0.2205,
+    0.8108
+   ]
+  },
+  {
+   "name": "pinky_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.394,
+    -0.1483,
+    0.8934
+   ],
+   "tail": [
+    0.3926,
+    -0.1489,
+    0.8708
+   ]
+  },
+  {
+   "name": "pinky_02_l",
+   "parent": "pinky_01_l",
+   "deform": true,
+   "head": [
+    0.3926,
+    -0.1489,
+    0.8708
+   ],
+   "tail": [
+    0.3889,
+    -0.15,
+    0.8548
+   ]
+  },
+  {
+   "name": "pinky_03_l",
+   "parent": "pinky_02_l",
+   "deform": true,
+   "head": [
+    0.3889,
+    -0.15,
+    0.8548
+   ],
+   "tail": [
+    0.3839,
+    -0.1508,
+    0.8345
+   ]
+  },
+  {
+   "name": "ring_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3996,
+    -0.1703,
+    0.8949
+   ],
+   "tail": [
+    0.3995,
+    -0.1746,
+    0.8634
+   ]
+  },
+  {
+   "name": "ring_02_l",
+   "parent": "ring_01_l",
+   "deform": true,
+   "head": [
+    0.3995,
+    -0.1746,
+    0.8634
+   ],
+   "tail": [
+    0.3965,
+    -0.1799,
+    0.8379
+   ]
+  },
+  {
+   "name": "ring_03_l",
+   "parent": "ring_02_l",
+   "deform": true,
+   "head": [
+    0.3965,
+    -0.1799,
+    0.8379
+   ],
+   "tail": [
+    0.39,
+    -0.1835,
+    0.8108
+   ]
+  },
+  {
+   "name": "thumb_01_l",
+   "parent": "hand_l",
+   "deform": true,
+   "head": [
+    0.3726,
+    -0.1843,
+    0.9664
+   ],
+   "tail": [
+    0.3523,
+    -0.2084,
+    0.9582
+   ]
+  },
+  {
+   "name": "thumb_02_l",
+   "parent": "thumb_01_l",
+   "deform": true,
+   "head": [
+    0.3523,
+    -0.2084,
+    0.9582
+   ],
+   "tail": [
+    0.339,
+    -0.2392,
+    0.9386
+   ]
+  },
+  {
+   "name": "thumb_03_l",
+   "parent": "thumb_02_l",
+   "deform": true,
+   "head": [
+    0.339,
+    -0.2392,
+    0.9386
+   ],
+   "tail": [
+    0.3296,
+    -0.2561,
+    0.917
+   ]
+  },
+  {
+   "name": "clavicle_r",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0244,
+    -0.0553,
+    1.4782
+   ],
+   "tail": [
+    -0.197,
+    -0.0433,
+    1.4515
+   ]
+  },
+  {
+   "name": "upperarm_r",
+   "parent": "clavicle_r",
+   "deform": true,
+   "head": [
+    -0.197,
+    -0.0433,
+    1.4515
+   ],
+   "tail": [
+    -0.2843,
+    -0.0488,
+    1.2097
+   ]
+  },
+  {
+   "name": "lowerarm_r",
+   "parent": "upperarm_r",
+   "deform": true,
+   "head": [
+    -0.2843,
+    -0.0488,
+    1.2097
+   ],
+   "tail": [
+    -0.3708,
+    -0.1435,
+    0.9905
+   ]
+  },
+  {
+   "name": "hand_r",
+   "parent": "lowerarm_r",
+   "deform": true,
+   "head": [
+    -0.3708,
+    -0.1435,
+    0.9905
+   ],
+   "tail": [
+    -0.378,
+    -0.1618,
+    0.9619
+   ]
+  },
+  {
+   "name": "index_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3936,
+    -0.2167,
+    0.9077
+   ],
+   "tail": [
+    -0.3932,
+    -0.2319,
+    0.8846
+   ]
+  },
+  {
+   "name": "index_02_r",
+   "parent": "index_01_r",
+   "deform": true,
+   "head": [
+    -0.3932,
+    -0.2319,
+    0.8846
+   ],
+   "tail": [
+    -0.3878,
+    -0.2438,
+    0.8635
+   ]
+  },
+  {
+   "name": "index_03_r",
+   "parent": "index_02_r",
+   "deform": true,
+   "head": [
+    -0.3878,
+    -0.2438,
+    0.8635
+   ],
+   "tail": [
+    -0.3785,
+    -0.2561,
+    0.8403
+   ]
+  },
+  {
+   "name": "middle_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4013,
+    -0.1917,
+    0.898
+   ],
+   "tail": [
+    -0.3998,
+    -0.2024,
+    0.8635
+   ]
+  },
+  {
+   "name": "middle_02_r",
+   "parent": "middle_01_r",
+   "deform": true,
+   "head": [
+    -0.3998,
+    -0.2024,
+    0.8635
+   ],
+   "tail": [
+    -0.3951,
+    -0.2122,
+    0.8368
+   ]
+  },
+  {
+   "name": "middle_03_r",
+   "parent": "middle_02_r",
+   "deform": true,
+   "head": [
+    -0.3951,
+    -0.2122,
+    0.8368
+   ],
+   "tail": [
+    -0.3877,
+    -0.2205,
+    0.8108
+   ]
+  },
+  {
+   "name": "pinky_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3966,
+    -0.1483,
+    0.8934
+   ],
+   "tail": [
+    -0.3952,
+    -0.1489,
+    0.8708
+   ]
+  },
+  {
+   "name": "pinky_02_r",
+   "parent": "pinky_01_r",
+   "deform": true,
+   "head": [
+    -0.3952,
+    -0.1489,
+    0.8708
+   ],
+   "tail": [
+    -0.3915,
+    -0.15,
+    0.8548
+   ]
+  },
+  {
+   "name": "pinky_03_r",
+   "parent": "pinky_02_r",
+   "deform": true,
+   "head": [
+    -0.3915,
+    -0.15,
+    0.8548
+   ],
+   "tail": [
+    -0.3866,
+    -0.1508,
+    0.8345
+   ]
+  },
+  {
+   "name": "ring_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.4022,
+    -0.1703,
+    0.8949
+   ],
+   "tail": [
+    -0.4021,
+    -0.1746,
+    0.8634
+   ]
+  },
+  {
+   "name": "ring_02_r",
+   "parent": "ring_01_r",
+   "deform": true,
+   "head": [
+    -0.4021,
+    -0.1746,
+    0.8634
+   ],
+   "tail": [
+    -0.3991,
+    -0.1799,
+    0.8379
+   ]
+  },
+  {
+   "name": "ring_03_r",
+   "parent": "ring_02_r",
+   "deform": true,
+   "head": [
+    -0.3991,
+    -0.1799,
+    0.8379
+   ],
+   "tail": [
+    -0.3927,
+    -0.1835,
+    0.8108
+   ]
+  },
+  {
+   "name": "thumb_01_r",
+   "parent": "hand_r",
+   "deform": true,
+   "head": [
+    -0.3752,
+    -0.1843,
+    0.9664
+   ],
+   "tail": [
+    -0.3549,
+    -0.2084,
+    0.9582
+   ]
+  },
+  {
+   "name": "thumb_02_r",
+   "parent": "thumb_01_r",
+   "deform": true,
+   "head": [
+    -0.3549,
+    -0.2084,
+    0.9582
+   ],
+   "tail": [
+    -0.3416,
+    -0.2392,
+    0.9386
+   ]
+  },
+  {
+   "name": "thumb_03_r",
+   "parent": "thumb_02_r",
+   "deform": true,
+   "head": [
+    -0.3416,
+    -0.2392,
+    0.9386
+   ],
+   "tail": [
+    -0.3322,
+    -0.2561,
+    0.917
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_03",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0393,
+    1.5539
+   ],
+   "tail": [
+    -0.0013,
+    -0.0608,
+    1.6374
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck_01",
+   "deform": true,
+   "head": [
+    -0.0013,
+    -0.0608,
+    1.6374
+   ],
+   "tail": [
+    -0.0013,
+    -0.0621,
+    1.8196
+   ]
+  },
+  {
+   "name": "beard.C.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0016,
+    -0.1873,
+    1.564
+   ],
+   "tail": [
+    -0.0019,
+    -0.1843,
+    1.5551
+   ]
+  },
+  {
+   "name": "beard.C.1",
+   "parent": "beard.C.0",
+   "deform": true,
+   "head": [
+    -0.0019,
+    -0.1843,
+    1.5551
+   ],
+   "tail": [
+    -0.0019,
+    -0.1795,
+    1.547
+   ]
+  },
+  {
+   "name": "beard.C.2",
+   "parent": "beard.C.1",
+   "deform": true,
+   "head": [
+    -0.0019,
+    -0.1795,
+    1.547
+   ],
+   "tail": [
+    -0.0013,
+    -0.1776,
+    1.5378
+   ]
+  },
+  {
+   "name": "beard.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0527,
+    -0.1609,
+    1.5941
+   ],
+   "tail": [
+    0.0508,
+    -0.1586,
+    1.5776
+   ]
+  },
+  {
+   "name": "beard.L.1",
+   "parent": "beard.L.0",
+   "deform": true,
+   "head": [
+    0.0508,
+    -0.1586,
+    1.5776
+   ],
+   "tail": [
+    0.0452,
+    -0.1568,
+    1.562
+   ]
+  },
+  {
+   "name": "beard.L.2",
+   "parent": "beard.L.1",
+   "deform": true,
+   "head": [
+    0.0452,
+    -0.1568,
+    1.562
+   ],
+   "tail": [
+    0.0377,
+    -0.1519,
+    1.5481
+   ]
+  },
+  {
+   "name": "beard.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0556,
+    -0.1609,
+    1.5951
+   ],
+   "tail": [
+    -0.0536,
+    -0.1594,
+    1.5783
+   ]
+  },
+  {
+   "name": "beard.R.1",
+   "parent": "beard.R.0",
+   "deform": true,
+   "head": [
+    -0.0536,
+    -0.1594,
+    1.5783
+   ],
+   "tail": [
+    -0.0477,
+    -0.1576,
+    1.5625
+   ]
+  },
+  {
+   "name": "beard.R.2",
+   "parent": "beard.R.1",
+   "deform": true,
+   "head": [
+    -0.0477,
+    -0.1576,
+    1.5625
+   ],
+   "tail": [
+    -0.0402,
+    -0.1516,
+    1.5488
+   ]
+  },
+  {
+   "name": "hair_back.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0008,
+    0.0192,
+    1.6253
+   ],
+   "tail": [
+    -0.0015,
+    0.0177,
+    1.6156
+   ]
+  },
+  {
+   "name": "hair_back.1",
+   "parent": "hair_back.0",
+   "deform": true,
+   "head": [
+    -0.0015,
+    0.0177,
+    1.6156
+   ],
+   "tail": [
+    -0.002,
+    0.0163,
+    1.6058
+   ]
+  },
+  {
+   "name": "hair_back.2",
+   "parent": "hair_back.1",
+   "deform": true,
+   "head": [
+    -0.002,
+    0.0163,
+    1.6058
+   ],
+   "tail": [
+    -0.0013,
+    0.015,
+    1.5961
+   ]
+  },
+  {
+   "name": "hair_front.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.0074,
+    -0.0969,
+    1.8005
+   ],
+   "tail": [
+    0.0091,
+    -0.0795,
+    1.7988
+   ]
+  },
+  {
+   "name": "hair_front.1",
+   "parent": "hair_front.0",
+   "deform": true,
+   "head": [
+    0.0091,
+    -0.0795,
+    1.7988
+   ],
+   "tail": [
+    0.0098,
+    -0.0623,
+    1.7959
+   ]
+  },
+  {
+   "name": "hair_front.2",
+   "parent": "hair_front.1",
+   "deform": true,
+   "head": [
+    0.0098,
+    -0.0623,
+    1.7959
+   ],
+   "tail": [
+    0.0106,
+    -0.0451,
+    1.7955
+   ]
+  },
+  {
+   "name": "hair_side.L.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    0.096,
+    -0.0343,
+    1.6856
+   ],
+   "tail": [
+    0.0957,
+    -0.027,
+    1.6787
+   ]
+  },
+  {
+   "name": "hair_side.L.1",
+   "parent": "hair_side.L.0",
+   "deform": true,
+   "head": [
+    0.0957,
+    -0.027,
+    1.6787
+   ],
+   "tail": [
+    0.0944,
+    -0.0189,
+    1.673
+   ]
+  },
+  {
+   "name": "hair_side.L.2",
+   "parent": "hair_side.L.1",
+   "deform": true,
+   "head": [
+    0.0944,
+    -0.0189,
+    1.673
+   ],
+   "tail": [
+    0.0958,
+    -0.0095,
+    1.6705
+   ]
+  },
+  {
+   "name": "hair_side.R.0",
+   "parent": "head",
+   "deform": true,
+   "head": [
+    -0.0997,
+    -0.0328,
+    1.6862
+   ],
+   "tail": [
+    -0.0981,
+    -0.0263,
+    1.6789
+   ]
+  },
+  {
+   "name": "hair_side.R.1",
+   "parent": "hair_side.R.0",
+   "deform": true,
+   "head": [
+    -0.0981,
+    -0.0263,
+    1.6789
+   ],
+   "tail": [
+    -0.0956,
+    -0.0188,
+    1.6732
+   ]
+  },
+  {
+   "name": "hair_side.R.2",
+   "parent": "hair_side.R.1",
+   "deform": true,
+   "head": [
+    -0.0956,
+    -0.0188,
+    1.6732
+   ],
+   "tail": [
+    -0.0981,
+    -0.0097,
+    1.6705
+   ]
+  },
+  {
+   "name": "thigh_l",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.1104,
+    -0.0234,
+    0.9846
+   ],
+   "tail": [
+    0.1472,
+    -0.0559,
+    0.5495
+   ]
+  },
+  {
+   "name": "calf_l",
+   "parent": "thigh_l",
+   "deform": true,
+   "head": [
+    0.1472,
+    -0.0559,
+    0.5495
+   ],
+   "tail": [
+    0.1875,
+    -0.0345,
+    0.1021
+   ]
+  },
+  {
+   "name": "foot_l",
+   "parent": "calf_l",
+   "deform": true,
+   "head": [
+    0.1875,
+    -0.0345,
+    0.1021
+   ],
+   "tail": [
+    0.1903,
+    -0.1649,
+    0.0386
+   ]
+  },
+  {
+   "name": "ball_l",
+   "parent": "foot_l",
+   "deform": true,
+   "head": [
+    0.1903,
+    -0.1649,
+    0.0386
+   ],
+   "tail": [
+    0.1863,
+    -0.237,
+    0.0437
+   ]
+  },
+  {
+   "name": "thigh_r",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    -0.113,
+    -0.0234,
+    0.9846
+   ],
+   "tail": [
+    -0.1498,
+    -0.0559,
+    0.5495
+   ]
+  },
+  {
+   "name": "calf_r",
+   "parent": "thigh_r",
+   "deform": true,
+   "head": [
+    -0.1498,
+    -0.0559,
+    0.5495
+   ],
+   "tail": [
+    -0.1901,
+    -0.0345,
+    0.1021
+   ]
+  },
+  {
+   "name": "foot_r",
+   "parent": "calf_r",
+   "deform": true,
+   "head": [
+    -0.1901,
+    -0.0345,
+    0.1021
+   ],
+   "tail": [
+    -0.1929,
+    -0.1649,
+    0.0386
+   ]
+  },
+  {
+   "name": "ball_r",
+   "parent": "foot_r",
+   "deform": true,
+   "head": [
+    -0.1929,
+    -0.1649,
+    0.0386
+   ],
+   "tail": [
+    -0.189,
+    -0.237,
+    0.0437
+   ]
+  },
+  {
+   "name": "scabbard",
+   "parent": "pelvis",
+   "deform": true,
+   "head": [
+    0.118,
+    -0.2107,
+    0.9493
+   ],
+   "tail": [
+    0.1577,
+    -0.2593,
+    0.6559
+   ]
+  },
+  {
+   "name": "sword",
+   "parent": "scabbard",
+   "deform": true,
+   "head": [
+    0.1021,
+    -0.1912,
+    1.0666
+   ],
+   "tail": [
+    0.0756,
+    -0.1588,
+    1.2622
+   ]
+  }
+ ],
+ "bone_count": 76,
+ "tris": {
+  "model": 48185,
+  "outline_shells": 0,
+  "budget": [
+   30000,
+   50000
+  ]
+ },
+ "digest": {
+  "parts": {
+   "hair_geometry": "7bd4b66dfb85a977",
+   "bake_hair_normal": "c95312d0705ced11",
+   "mouth_proxy_core": "f0bd6f2af79ac5af",
+   "bake_normal": "041404074e85144e",
+   "bake_ao": "2ec268eeda1497a6",
+   "ao_lifted": "f85d9da3227d601e",
+   "geometry_colour_uv": "73dbc1ec990e2a7d",
+   "weights": "ae1d97c99644d203"
+  },
+  "combined": "496eb820bcd4d929"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\varden.glb",
+  "bytes": 12344552,
+  "tris": 48185,
+  "COLOR_0": true,
+  "COLOR_1": true,
+  "_GLOW": true,
+  "skins": 1,
+  "joints": [
+   76
+  ],
+  "meshes": [
+   "varden",
+   "varden_scabbard",
+   "varden_sword"
+  ]
+ },
+ "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\varden.json",
+ "seconds": 106.9
+}

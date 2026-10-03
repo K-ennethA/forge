@@ -1,0 +1,106 @@
+"""General Varden v1 draft comparison sheet (plain Python + PIL, no Blender; run with the forge service venv):
+
+    python -P varden_compose.py          (env VARDEN_V = the render prefix, default varden_v1)
+
+renders/varden/ inputs: <ver>_<view>.png (front / side / back / threequarter full body; portrait / face_tq / fur / fur_back
+/ sword / sword_full / emblem / brooch close-ups) + improved/varden.json + rigged/varden.json + the face probe json + the
+hair diag json + the sheet itself (design/reference/varden/varden_sheet.webp, shown small for the side-by-side read).
+Output: renders/varden/<ver>_sheet.png -- ONE sheet (render economy): row 1 the full body four ways + the reference,
+row 2 the face / fur mantle / sword / emblem / brooch detail, a strip of the measured numbers under it.
+"""
+import json
+import os
+
+from PIL import Image, ImageDraw, ImageFont
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.normpath(os.path.join(HERE, ".."))
+R = os.path.join(ROOT, "renders", "varden")
+V = os.environ.get("VARDEN_V", "varden_v1")
+IMP = json.load(open(os.path.join(ROOT, "improved", "varden.json")))
+RIG = json.load(open(os.path.join(ROOT, "rigged", "varden.json")))
+FP = os.path.join(R, V + "_face_probe.json")
+PROBE = json.load(open(FP)) if os.path.exists(FP) else None
+HD = os.path.join(R, V + "_hairdiag.json")
+HDIAG = json.load(open(HD)) if os.path.exists(HD) else None
+ROW1 = [("front", "front"), ("side", "side (his left)"), ("back", "back"), ("threequarter", "three-quarter")]
+ROW2 = [("portrait", "face"), ("face_tq", "face 3/4"), ("fur", "fur mantle (clumps)"), ("fur_back", "fur mantle, behind"),
+        ("sword", "sword hilt (left hip)"), ("sword_full", "sword + scabbard"), ("emblem", "cloak emblem (back)"),
+        ("brooch", "brooch + pendant + chain")]
+W1, PAD, LAB = 520, 8, 24
+try:
+    FONT = ImageFont.truetype("arial.ttf", 18); FONT_S = ImageFont.truetype("arial.ttf", 15)
+except Exception:
+    FONT = FONT_S = ImageFont.load_default()
+
+
+def tile(name, w):
+    p = os.path.join(R, "%s_%s.png" % (V, name))
+    if not os.path.exists(p):
+        return Image.new("RGB", (w, w), (60, 30, 30))
+    return Image.open(p).convert("RGB").resize((w, w), Image.LANCZOS)
+
+
+ref = Image.open(os.path.join(ROOT, "design", "reference", "varden", "varden_sheet.webp")).convert("RGB")
+ref_w = int(W1 * ref.width / ref.height)
+cols2 = 4
+Wt = 4 * W1 + ref_w + 6 * PAD
+row2_w = (Wt - (cols2 + 1) * PAD) // cols2
+rows2 = (len(ROW2) + cols2 - 1) // cols2
+H = PAD + LAB + W1 + PAD + rows2 * (LAB + row2_w + PAD) + 210
+sheet = Image.new("RGB", (Wt, H), (28, 28, 30))
+d = ImageDraw.Draw(sheet)
+y = PAD
+for k, (v, lab) in enumerate(ROW1):
+    x = PAD + k * (W1 + PAD)
+    d.text((x + 4, y + 2), lab, fill=(235, 235, 235), font=FONT)
+    sheet.paste(tile(v, W1), (x, y + LAB))
+x = PAD + 4 * (W1 + PAD)
+d.text((x + 4, y + 2), "reference: design/reference/varden/varden_sheet.webp", fill=(235, 235, 235), font=FONT)
+sheet.paste(ref.resize((ref_w, W1), Image.LANCZOS), (x, y + LAB))
+y += LAB + W1 + PAD
+for k, (v, lab) in enumerate(ROW2):
+    r_, c_ = divmod(k, cols2)
+    x = PAD + c_ * (row2_w + PAD)
+    yy = y + r_ * (LAB + row2_w + PAD)
+    d.text((x + 4, yy + 2), lab, fill=(235, 235, 235), font=FONT)
+    sheet.paste(tile(v, row2_w), (x, yy + LAB))
+y += rows2 * (LAB + row2_w + PAD)
+t = IMP["tris"]
+pr = IMP.get("proportions", {})
+mp = IMP.get("mouth_placement", {})
+ep = IMP.get("eye_proof", {})
+sw = IMP.get("parts", {}).get("sword", {})
+fur = IMP.get("parts", {}).get("cloak", {}).get("fur", {})
+g = RIG.get("grip", {}).get("sword", {})
+lines = [
+    "GENERAL VARDEN %s (hero tier)   tris %d (main %d + sword %d + scabbard %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d, "
+    "fur %d (%d tufts) + roll %d" % (V.split("_")[-1] + " draft", t["total"], t["main"], t["sword"], t["scabbard"], t["body"],
+                                     t["scalp_locks"], t["beard_mustache_locks"], t.get("fur", 0), fur.get("tufts", 0), t.get("furroll", 0)),
+    "heads tall %.2f (house rule; Wren 5.94, Elias 5.96)  /  %.2f by chin outline   height %.3f m" %
+    (pr.get("heads_tall_house_rule", 0), pr.get("heads_tall_chin_outline", 0), IMP["measure"]["height"]),
+    "mouth: v_ratio %.3f (Ashe 0.29), width / eye spacing %.3f (house 0.65-0.73), seam %.1f mm   eyes: iris coverage L %.1f%% (55-65%%)"
+    % (mp.get("v_ratio", 0), mp.get("w_eyes", 0), mp.get("seam_width_mm", 0), ep.get("L", {}).get("iris_coverage_pct", 0)),
+    "sword %.2f m at the left hip (stand-off %s m, tilt fwd / out %s deg); guard-hold roll %s deg, wrist bend %.1f deg   clips: none (artist-gated)"
+    % (sw.get("total_len_m", 0), sw.get("standoff_m"), sw.get("tilt_fwd_out_deg"), g.get("roll_deg"), g.get("wrist_bend_deg", 0)),
+]
+if HDIAG:
+    ip = HDIAG["interpenetration"]
+    lines.append("hair diag: %d locks | lock pairs cutting %d (tri pairs %d), top sheets %d / %d | paint patches / lock %.2f | "
+                 "top-facet kinks p50 / p90 %.1f / %.1f deg" % (HDIAG["locks"], ip["lock_pairs"], ip["tri_pairs"],
+                                                                ip["top_sheets"]["lock_pairs"], ip["top_sheets"]["tri_pairs"],
+                                                                HDIAG["paint"]["patches_per_lock"], HDIAG["facet_kinks_top_deg"]["p50"],
+                                                                HDIAG["facet_kinks_top_deg"]["p90"]))
+if PROBE:
+    ue = PROBE.get("undereye", {})
+    try:
+        lines.append("face probe (under-eye, max): flatness L %.2f / R %.2f mm, lid line L %.2f / R %.2f mm (Wren v6.1: 0.55 / 0.47)"
+                     % (ue["L"]["flatness_mm"]["max"], ue["R"]["flatness_mm"]["max"], ue["L"]["lid_line_mm"]["max"],
+                        ue["R"]["lid_line_mm"]["max"]))
+    except Exception:
+        lines.append("face probe: " + ", ".join(sorted(PROBE.keys()))[:160])
+for k, ln in enumerate(lines):
+    d.text((PAD + 4, y + 6 + 26 * k), ln, fill=(220, 220, 210), font=FONT_S)
+out = os.path.join(R, V + "_sheet.png")
+sheet.save(out)
+print("SHEET", out, sheet.size)
