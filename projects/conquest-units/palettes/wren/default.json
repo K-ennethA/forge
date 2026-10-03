@@ -5,7 +5,7 @@
  "regions": {
   "skin":        {"rgb": [192, 139, 100], "note": "sampled: the front view's lit face, median rgb 192,139,100 = hue 25 deg, sat 0.48 (warm tan; the head panel's cheek 168,121,88 and the hand 183,124,88 agree in hue 23-25). Never Blender-default grey (the vampwarrior v4 lesson)"},
   "skin_shadow": {"rgb": [158, 106, 74],  "note": "authored shadow shapes (jaw / neck cast shadow, fringe shadow): the sheet's neck shadow 143,98,73 / 166,115,82, one step down in value at the same hue"},
-  "lips":        {"rgb": [178, 116, 90],  "note": "barely-there lip tint (a boy: no paint read)"},
+  "lips":        {"rgb": [197, 147, 112], "note": "v6.1 'lips slightly less colored than the base color' (the archer figure): a step paler + less saturated than skin (hue 24 deg, sat 0.43, val 0.77 vs skin 25 / 0.48 / 0.75); v2-v3 178,116,90 (darker; unused v4-v6)"},
   "mouth":       {"rgb": [104, 58, 44],   "note": "the mouth line between the lips"},
   "liner":       {"rgb": [98, 64, 46],    "note": "v3: the thin LOWER lid line, lighter (anime lower lash); v2 52,34,26 when it was the whole contour"},
   "lash":        {"rgb": [34, 22, 16],    "note": "v3 upper-lash band + wing: near-black brown (the sheet's darkest lid line 53,37,27, one step deeper for the FE read)"},

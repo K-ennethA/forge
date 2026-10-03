@@ -847,9 +847,33 @@ if LIP_FLAT is not None and SEAM is not None:
     if LIP_RIM_STEP and LIP_SIDE is not None:
         # the two sealed rims keep a consistent order after the flatten (upper lip in front by LIP_RIM_STEP): with the
         # relief scaled down their facets interleaved into a sawtooth along the seam
-        _dzs = np.abs(BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"]))
+        _dzr = BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"])
+        _dzs = np.abs(_dzr)
         _rs = (1.0 - smoothstep(0.0006, 0.0025, _dzs)) * (_m > 0) * _front
         BV[:, 1] -= 0.5 * LIP_RIM_STEP * _rs * LIP_SIDE
+        if LIP_RIM_TUCK is not None:
+            # v6.1 RIM TUCK: each sheet's overhang past the seam goes BEHIND the other sheet. Measured on v6: the upper
+            # lip's rolled rim hung 1.2-1.5 mm below the seam, 0.06-0.3 mm IN FRONT of the lower sheet, tilted 13 deg up --
+            # lit slivers with a soft shadow under their edge (v6's "diamonds"; bigger once the lower lip rises). Every
+            # upper-sheet vertex more than LIP_RIM_TUCK[0] below the seam (and lower-sheet vertex above it) lands
+            # LIP_RIM_TUCK[1] behind the other sheet's surface there (front rays against that sheet's faces only)
+            # (the UPPER sheet only, over the inner LIP_RIM_TUCK[2] of the seam's half-width: tucking the lower sheet's top
+            # too, or at the corners, broke the line into notches and folded the corners, rendered)
+            _tk = {}
+            _hw = 0.5 * float(SEAM["xs"].max() - SEAM["xs"].min())
+            for _sd in LIP_RIM_TUCK_SIDES:
+                _Fo = [f for f in BF if (LIP_SIDE[f] == -_sd).any() and not (LIP_SIDE[f] == _sd).any()]
+                _bo = BVHTree.FromPolygons(BV.tolist(), _Fo)
+                _vi = np.nonzero((LIP_SIDE == _sd) & (_sd * _dzr < -LIP_RIM_TUCK[0]) & (_dzs < 0.004) &
+                                 (np.abs(BV[:, 0]) < LIP_RIM_TUCK[2] * _hw))[0]
+                _n = 0
+                for _i in _vi:
+                    _h = _bo.ray_cast(Vector((float(BV[_i, 0]), -1.0, float(BV[_i, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+                    if _h[0] is not None and abs(_h[0][1] - BV[_i, 1]) < 0.003 and BV[_i, 1] < _h[0][1] + LIP_RIM_TUCK[1]:
+                        BV[_i, 1] = _h[0][1] + LIP_RIM_TUCK[1]; _n += 1
+                _tk["upper_below_seam" if _sd > 0 else "lower_above_seam"] = {"candidates": int(len(_vi)), "tucked": _n}
+            report["lip_rim_tuck"] = _tk
+            print("RIMTUCK", json.dumps(_tk))
     # (the seam's height is kept from the seal: only y moved; re-tracing "the most recessed hit" after the flatten slid
     # 1.4 mm below the visible crease, measured -- the drawn line must sit ON it)
     _bvh1 = BVHTree.FromPolygons(BV.tolist(), BF)
@@ -974,6 +998,56 @@ if MOUTH_SMOOTH is not None and SEAM is not None:
         MOUTH_SMOOTH_INFO["move_mm_by_v4_zone"] = {k: round(float(_mvz[m].max()), 3) for k, m in LEAK_ZONES.items()}
     report["mouth_smooth"] = MOUTH_SMOOTH_INFO
     print("MOUTHSMOOTH", json.dumps(MOUTH_SMOOTH_INFO))
+
+
+def lip_field(x, z):
+    """v6.1 LIP_FORMS: the forward displacement (m, >= 0) of the lip volumes at (x, z) (build frame) about the seam."""
+    x = np.asarray(x, float); z = np.asarray(z, float)
+    if LIP_FORMS is None or SEAM is None:
+        return np.zeros(np.broadcast(x, z).shape)
+    xc_ = 0.5 * (float(SEAM["xs"].min()) + float(SEAM["xs"].max())); hw_ = 0.5 * (float(SEAM["xs"].max()) - float(SEAM["xs"].min()))
+    dz_ = z - np.interp(x, SEAM["xs"], SEAM["zc"])
+    out_ = np.zeros(np.broadcast(x, z).shape)
+    for key_, sg_ in (("lower", -1.0), ("upper", 1.0)):
+        A_, H_, p_, xr_, xf_ = LIP_FORMS[key_]
+        t_ = np.clip(sg_ * dz_ / H_, 0.0, 1.0)
+        prof_ = np.where(sg_ * dz_ > 0, np.sin(np.pi * t_ ** p_) ** 2, 0.0)
+        r_ = xr_ * hw_
+        lat_ = 1.0 - smoothstep(r_ * (1.0 - xf_), r_, np.abs(x - xc_))
+        out_ = out_ + A_ * prof_ * lat_
+    return out_
+
+
+LIP_FORMS_INFO = None
+if LIP_FORMS is not None and SEAM is not None:
+    # v6.1 LIP FORMS (review-log 2026-09-29 "Wren v6.1 mouth feedback" + addendum, the archer figure): one soft lower-lip
+    # volume under the line and a very small upper-lip plane above it, added ON the smoothed mouth skin (after
+    # MOUTH_SMOOTH): every front vertex near the mouth moves forward by lip_field(x, z); a hidden layer up to 2 mm behind
+    # the front moves with it, none past 5 mm (the layers keep their order: the field has zero slope across the seam band)
+    _bl = BVHTree.FromPolygons(BV.tolist(), BF)
+    _cand = np.nonzero((np.abs(BV[:, 0]) < 0.035) & (np.abs(BV[:, 2] - np.interp(BV[:, 0], SEAM["xs"], SEAM["zc"])) < 0.012))[0]
+    _lf = lip_field(BV[_cand, 0], BV[_cand, 2])
+    _mvl = np.zeros(len(BV))
+    for _i, _l in zip(_cand, _lf):
+        if _l <= 0:
+            continue
+        _h = _bl.ray_cast(Vector((float(BV[_i, 0]), -1.0, float(BV[_i, 2]))), Vector((0.0, 1.0, 0.0)), 2.0)
+        _b = max(float(BV[_i, 1]) - _h[0][1], 0.0) if _h[0] is not None else 1.0
+        _mvl[_i] = -_l * (1.0 - smoothstep(0.002, 0.005, _b))
+    BV[:, 1] += _mvl
+    _zs1 = float(np.interp(0.0, SEAM["xs"], SEAM["zc"]))
+    _pz = np.arange(-0.010, 0.0101, 0.0001)
+    _pf = lip_field(np.zeros(len(_pz)), _zs1 + _pz)
+    LIP_FORMS_INFO = {"forms_mm": {k: [round(v[0] * 1000, 2), round(v[1] * 1000, 2), v[2], v[3], v[4]] for k, v in LIP_FORMS.items()},
+                      "verts_moved": int((np.abs(_mvl) > 1e-7).sum()), "move_mm_max": round(1000 * float(np.abs(_mvl).max()), 3),
+                      "lower_peak_mm_below_seam": round(-1000 * float(_pz[np.argmax(np.where(_pz < 0, _pf, 0))]), 2),
+                      "upper_peak_mm_above_seam": round(1000 * float(_pz[np.argmax(np.where(_pz > 0, _pf, 0))]), 2),
+                      "field_at_seam_band_mm(+-0.3)": round(1000 * float(lip_field(np.zeros(7), _zs1 + np.linspace(-3e-4, 3e-4, 7)).max()), 4)}
+    if EYE_SCALE != 1.0:
+        _mvz = 1000 * np.abs(_mvl)
+        LIP_FORMS_INFO["move_mm_by_v4_zone"] = {k: round(float(_mvz[m].max()), 3) for k, m in LEAK_ZONES.items()}
+    report["lip_forms"] = LIP_FORMS_INFO
+    print("LIPFORMS", json.dumps(LIP_FORMS_INFO))
 for o in (hb, rig0):
     bpy.data.objects.remove(o, do_unlink=True)
 for m in list(bpy.data.meshes):

@@ -1,4 +1,9 @@
 """Wren image assembly (plain Python + PIL, no Blender): run with the forge service venv.
+v6.1 (review-log 2026-09-29 "Wren v6.1 mouth feedback" + addendum, + "a bit larger"): every model input / output is
+v61-prefixed (V = "wren_v61"); the v7 stills (the v6 mouth on the v7 hair) are the baseline; the v6.1 composites:
+wren_v61_mouth_compare (the FE archer figure's mouth | v7 | v6.1: close-up, three-quarter, profile, orthographic),
+_portrait_compare (v7 | v6.1, + FACEPROBE under-eye / HAIRDIAG equality lines), _hair, _winter, _contact. The v7-round
+composites (v6 | v7 hair) are not rebuilt.
 v7 (review-log 2026-09-29 "Wren v7 hair feedback": the ribbon locks): every model input / output is v7-prefixed (V = "wren_v7");
 the v6 stills (wren_v6_*.png) + the v6 diagnosis renders / metrics (wren_v6_diag_*, wren_v6_hairdiag.json, wren_v6_ribbon.json,
 made once off the committed v6 rig) are the baseline; the v7 composites: wren_v7_hair_compare (v6 | v7, five views),
@@ -52,7 +57,8 @@ IMP = json.load(open(os.path.join(ROOT, "improved", "wren.json")))
 RIG = json.load(open(os.path.join(ROOT, "rigged", "wren.json")))
 PAL = json.load(open(os.path.join(ROOT, "palettes", "wren", "default.json")))
 SH = Image.open(SHEET).convert("RGB")
-V = "wren_v7"
+V = "wren_v61"
+V7 = "wren_v7"
 V6 = "wren_v6"
 V5 = "wren_v5"
 V4 = "wren_v4"
@@ -189,7 +195,7 @@ T = 400
 items = [(V + "_front.png", "front (idle f1)"), (V + "_threequarter.png", "three-quarter"), (V + "_side.png", "side"),
          (V + "_back.png", "back"), (V + "_tactical.png", "tactical (256 px)"), (V + "_portrait.png", "face"),
          (V + "_undereye.png", "under the eyes: flat skin, the liner only"), (V + "_hair_close.png", "hair: ribbon locks (v7)"),
-         (V + "_mouth.png", "mouth: one line (v6, untouched)"), (V + "_head_top.png", "hair from above: side part"),
+         (V + "_mouth.png", "mouth: line + simple lips (v6.1)"), (V + "_head_top.png", "hair from above: side part"),
          (V + "_winter_front.png", "winter skin (swap proof)"), (V + "_winter_hair_close.png", "winter: hair tiers")]
 tiles = [label(fit(load(fn), T, T), lab) for fn, lab in items]
 Wc = 4 * T + 18
@@ -210,53 +216,36 @@ for s_ in sheets:
 cs.convert("RGB").save(os.path.join(R, V + "_contact.png"))
 print("WROTE", V + "_contact.png", json.dumps(SKIN))
 
-# ---- v7 round: v6 | v7 (| the figure references)
-DG = {v: json.load(open(os.path.join(R, v + "_hairdiag.json"))) for v in (V6, V)}
-RB6 = json.load(open(os.path.join(R, V6 + "_ribbon.json")))
+# ---- v6.1 round: v7 (the v6 mouth) | v6.1 (| the FE archer figure)
+ARCHER = Image.open(os.path.join(FE, "fe-archer-figure-hair.webp")).convert("RGBA")
+FP = {v: json.load(open(os.path.join(R, v + "_face_probe.json"))) for v in (V7, V)}
+MP = {v: json.load(open(os.path.join(R, v + "_mprobe.json"))) for v in (V7, V)}
+HD = {v: json.load(open(os.path.join(R, v + "_hairdiag.json"))) for v in (V7, V)}
+_ue_same = FP[V7]["undereye"] == FP[V]["undereye"]
+print("FACEPROBE undereye_identical=%s (mouth changes by design)" % _ue_same)
+print("HAIRDIAG identical=%s" % (HD[V7] == HD[V]))
+LF = IMP.get("lip_forms") or {}
+FM = FP[V]["mouth"]
 
 
-def dg_lab(v, rb):
-    d = DG[v]
-    ip = d["interpenetration"]
-    return ("locks cutting through each other: %d pairs / %d triangle pairs (top sheets %d)\npaint patches %.1f per lock, "
-            "top-facet kinks p50 %.0f / p90 %.0f deg\nspine turn p90 %.0f deg, silhouette-edge turn p90 %.0f deg (%d%% > 20)"
-            % (ip["lock_pairs"], ip["tri_pairs"], ip.get("top_sheets", {}).get("tri_pairs", -1), d["paint"]["patches_per_lock"],
-               d["facet_kinks_top_deg"]["p50"], d["facet_kinks_top_deg"]["p90"], rb["spine_turn_deg_p50_p90_max"][1],
-               rb["edge_turn_deg_p50_p90_max"][1], round(100.0 * rb["edge_turns_over_20deg"] / max(rb["edge_points"], 1))))
+def mp_crop(v, var="base"):
+    im = Image.open(os.path.join(R, "%s_mprobe_%s.png" % (v, var))).convert("RGBA")
+    return im.crop((60, 100, 740, 560))          # x -34 .. +34 mm, z -55 .. -101 mm under the eyes (the same frame for both)
 
 
-grid([[(V6 + "_hair_close.png", "v6 close-up"), (V + "_hair_close.png", "v7 close-up")],
-      [(V6 + "_head_front.png", "v6 front"), (V + "_head_front.png", "v7 front")],
-      [(V6 + "_head_side.png", "v6 side (his left)"), (V + "_head_side.png", "v7 side")],
-      [(V6 + "_head_back.png", "v6 back"), (V + "_head_back.png", "v7 back")],
-      [(V6 + "_head_top.png", "v6 from above"), (V + "_head_top.png", "v7 from above")]],
-     640, 640, "Wren v7 - hair: v6 clumps (chopped) | v7 ribbon locks (same cameras, same light, idle f1)", V + "_hair_compare.png")
-ARCH = Image.open(os.path.join(FE, "fe-archer-figure-hair.webp")).convert("RGBA")
-BYL = Image.open(os.path.join(FE, "fe-byleth-figure-hair.png")).convert("RGBA")
-grid([[(V + "_large_hair_close.png", "Wren v7 (1600 px close-up)\n" + dg_lab(V, RB)),
-       (ARCH.crop((200, 0, 760, 560)), "reference: the silver-haired archer figure (the bar)"),
-       (BYL, "reference: the Byleth figure")]],
-     700, 700, "Wren v7 - hair vs the figure references: one smooth ribbon per lock, crisp edge, sharp tip, feathered layers",
-     V + "_hair_vs_ref.png")
-grid([[(V6 + "_diag_lockids_hair_close.png", "v6, every clump its own hue\n" + dg_lab(V6, RB6)),
-       (V + "_lockids_hair_close.png", "v7, every ribbon its own hue\n" + dg_lab(V, RB))],
-      [(V6 + "_diag_lockids_head_top.png", "v6 from above: the fringe / sweep patchwork (clumps cutting through clumps)"),
-       (V + "_lockids_head_top.png", "v7 from above: one layer order, ribbons over / under each other")],
-      [(V6 + "_diag_flatnormal_head_side.png", "v6 facets (hair normal strip flat): 12 lens sections per clump"),
-       (V + "_large_head_side.png", "v7 side (1600 px): %s-%s sections per ribbon, whole-segment paint"
-        % (RB.get("stations_per_lock_min_mean_max", ["?"] * 3)[0], RB.get("stations_per_lock_min_mean_max", ["?"] * 3)[2]))]],
-     700, 700, "Wren v7 - the chopped-read diagnosis: v6 | v7 (resolve: %s -> %s top-sheet triangle pairs in the build)"
-     % (LR.get("before", {}).get("top", {}).get("tri_pairs"), LR.get("after", {}).get("top", {}).get("tri_pairs")),
-     V + "_diagnosis.png")
-# the face untouched: the probes on both delivered meshes
-FP = {v: json.load(open(os.path.join(R, v + "_face_probe.json"))) for v in (V6, V)}
-MP = {v: json.load(open(os.path.join(R, v + "_mprobe.json"))) for v in (V6, V)}
-_fp_same = all(FP[V6][k] == FP[V][k] for k in ("undereye", "mouth"))
-print("FACEPROBE identical=%s (undereye + mouth sections, byte-equal json values)" % _fp_same)
-print("MPROBE_SAME geometry=%s line=%s features=%s" % (MP[V6].get("geometry") == MP[V].get("geometry"),
-                                                       MP[V6].get("line") == MP[V].get("line"),
-                                                       MP[V6].get("features") == MP[V].get("features")))
-grid([[(V6 + "_portrait.png", "v6 portrait"), (V + "_portrait.png", "v7 portrait")],
-      [(V6 + "_front.png", "v6 front (idle f1)"), (V + "_front.png", "v7 front (idle f1)")]],
-     620, 620, "Wren v7 - portrait + body (v6 | v7): face probe identical=%s, mouth probe geometry identical=%s"
-     % (_fp_same, MP[V6].get("geometry") == MP[V].get("geometry")), V + "_portrait_compare.png")
+g7, g61 = MP[V7]["geometry"], MP[V]["geometry"]
+grid([[(ARCHER.crop((470, 380, 720, 580)), "FE archer figure: line, soft lit lower lip,\nfaint upper-lip plane, paler lip tone"),
+       (V7 + "_mouth.png", "v6/v7 mouth: line %.1f mm" % g7["line"]["width_mm"]),
+       (V + "_mouth.png", "v6.1 mouth: line %.1f mm, lower lip %.1f mm fwd, upper %.1f mm"
+        % (g61["line"]["width_mm"], LF.get("forms_mm", {}).get("lower", [0])[0], LF.get("forms_mm", {}).get("upper", [0])[0]))],
+      [(None, None), (V7 + "_mouth_tq.png", "v6/v7 three-quarter"), (V + "_mouth_tq.png", "v6.1 three-quarter")],
+      [(None, None), (V7 + "_mouth_side.png", "v6/v7 profile"), (V + "_mouth_side.png", "v6.1 profile: the lips catch the light")],
+      [(None, None), (mp_crop(V7), "v6/v7 orthographic front"),
+       (mp_crop(V), "v6.1 orthographic front (same frame)\nprobe relief max %.2f mm, upper proud %.2f mm"
+        % (FM["relief_mm"]["max"], FM["upper_proud_detrended_mm_max"]))]],
+     560, 460, "Wren v6.1 - simple lips: a soft lower lip, a very small upper plane, a paler lip tone, the line widened",
+     V + "_mouth_compare.png")
+grid([[(V7 + "_portrait.png", "v6/v7 portrait"), (V + "_portrait.png", "v6.1 portrait")],
+      [(V7 + "_face.png", "v6/v7 three-quarter"), (V + "_face.png", "v6.1 three-quarter")]],
+     620, 620, "Wren v6.1 - portrait (v7 | v6.1): under-eye probe identical=%s, hair metrics identical=%s"
+     % (_ue_same, HD[V7] == HD[V]), V + "_portrait_compare.png")

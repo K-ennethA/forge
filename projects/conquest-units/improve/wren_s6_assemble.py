@@ -731,6 +731,14 @@ if MOUTH_PROXY is not None and SEAM is not None:
     _gx = np.arange(-(_X0 + _pad), _X0 + _pad + 1e-9, _GS)
     _gz = np.arange(_zm - (_D0 + _pad), _zm + _U0 + _pad + 1e-9, _GS)
     _H, _S, _val, _wsum, _ = front_heightfield_smooth(_hV + SHIFT, _hF, _gx, _gz, _sg, Z_NOSE_BOTTOM - _NC)   # (build frame)
+    # v6.1: the lip forms ride ON the smoothed surface -- smooth the heightfield WITHOUT them (+ the analytic forward
+    # field), then put them back analytically, so they shade as the soft volumes they are (not blurred away by sigma)
+    _LF = lip_field(_gx[None, :], _gz[:, None])
+    _Hb = np.where(np.isnan(_H), np.nan, _H + _LF)
+    _k6 = np.exp(-0.5 * (np.arange(-int(3 * _sg / _GS), int(3 * _sg / _GS) + 1) * _GS / _sg) ** 2)
+    _blur6 = lambda A: np.apply_along_axis(lambda c: np.convolve(c, _k6, mode="same"), 0,
+                                           np.apply_along_axis(lambda r: np.convolve(r, _k6, mode="same"), 1, A))
+    _S = _blur6(np.where(_val, _Hb, 0.0)) / np.maximum(_wsum, 1e-9) - _LF
     _Hn = np.where(np.isnan(_H), 9.0, _H)
     _dSz, _dSx = np.gradient(_S, _GS, _GS)
 
@@ -1159,6 +1167,15 @@ report["v6_round"] = {
             "wren_v6_face_probe.json (vs wren_v5_face_probe.json)",
     "tris_total": {"v5.1": 48208, "v6": report["tris"]["total"]}}
 print("V6_ROUND", json.dumps({k: v for k, v in report["v6_round"].items() if k not in ("v51", "references")}))
+report["v61_round"] = {
+    "spec": "review-log 2026-09-29 'Wren v6.1 mouth feedback' + addendum + 'a bit larger': a soft simple lower lip, a very small "
+            "upper-lip plane, a paler lip tone (the FE archer figure), the mouth widened",
+    "lip_forms": report.get("lip_forms"), "rim_tuck": report.get("lip_rim_tuck"),
+    "tint": {"zone_m": LIP, "rgb": pal_default["regions"]["lips"]["rgb"], "skin_rgb": pal_default["regions"]["skin"]["rgb"]},
+    "width": {"mouth/mouth-scale-horiz-decr": TARGETS.get("mouth/mouth-scale-horiz-decr"),
+              "seam_width_mm": (report.get("mouth_placement") or {}).get("seam_width_mm"), "line_w_mm": MOUTH_LINE[0] * 1000},
+    "placement": report.get("mouth_placement"), "tris_total": report["tris"]["total"]}
+print("V61_ROUND", json.dumps(report["v61_round"]))
 DIG["geometry_colour_uv"] = geometry_digest([low, fko])
 report["digest_geometry_colour_uv"] = DIG["geometry_colour_uv"]
 report["palette"] = {"default": PAL.table(pal_default), "files": pal_default["files"],

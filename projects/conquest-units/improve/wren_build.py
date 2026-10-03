@@ -47,6 +47,11 @@ from the nose bottom to the chin -- the Ashe portrait's ratios, REF_MOUTH), the 
 the line painted over the WHOLE seam (MOUTH_LEN None, MOUTH_LINE_EXT; MOUTH_LINE_REFINE / _SNAP / _CENTROID: no gap at the
 risen corner), and nose-to-chin smooth skin: the mouth zone's front skin moved onto its Gaussian-smoothed heightfield
 (MOUTH_SMOOTH) and its normal texels written from that smooth proxy (MOUTH_PROXY). Everything else is v5.1.
+v6.1 (review-log 2026-09-29 "Wren v6.1 mouth feedback" + addendum + "a bit larger"; target the FE archer figure): simple
+lips ON the smoothed skin -- a soft lower-lip volume and a very small upper-lip plane (LIP_FORMS; the normal proxy smooths
+without them and adds them back analytically, so they shade as volumes), a paler-than-skin lip tone (LIP + the palette's
+'lips'), the upper rim's overhang below the seam tucked behind the lower sheet (LIP_RIM_TUCK: it read as lit slivers), the
+mouth widened (MOUTH WIDTH 0.30: the line ~46 mm) and the line 1.3 mm. Everything else is v7.
 v7 (review-log 2026-09-29 "Wren v7 hair feedback": "more segmented and cleared, ours look chopped up"; the FE figure refs).
 Diagnosed on the v6 rig (improve/wren_hair_diag.py + lock-id renders): every clump cut through its neighbours (103 lock
 pairs, 9397 triangle pairs, 3245 on the visible top sheets), 13.5 paint patches per clump (the crevice / ring cuts), 12
@@ -105,7 +110,9 @@ TARGETS = {                           # "face dials" (anime read: larger eyes, s
     "nose/nose-scale-horiz-decr": 0.40, "nose/nose-volume-decr": 0.45, "nose/nose-point-width-decr": 0.60,  # small nose
     "nose/nose-flaring-decr": 0.50, "nose/nose-nostrils-width-decr": 0.50, "nose/nose-scale-vert-decr": 0.20,  # (anime: no nostril read)
     "head/head-scale-vert-incr": 0.18, "cheek/l-cheek-bones-incr": 0.20, "cheek/r-cheek-bones-incr": 0.20,  # longer teen face
-    "mouth/mouth-scale-horiz-decr": 0.80,                                  # v6 "MOUTH WIDTH": the seam (= the drawn line) spans
+    "mouth/mouth-scale-horiz-decr": 0.30,                                  # v6.1 "MOUTH WIDTH" ("a bit larger"): the seam 44.5 mm,
+                                      #   the line 46.5 mm = 0.36 x the face width at the line (the Ashe 3/4 portrait's 0.39 is the
+                                      #   ceiling: kept under it, boyish); v6 0.80: the seam
                                       #   39 mm = 0.64 x the eye spacing, the FE Ashe portrait's mouth : eye-spacing ratio
                                       #   (measured 64.3 / 100.3 px); v1-v5 0.20 = a 46 mm seam under a 29 mm line (v6 feedback)
     "mouth/mouth-trans-up": 0.85,                                          # v6 "MOUTH HEIGHT": the mouth moved up 6 mm, to 0.29 of
@@ -152,6 +159,12 @@ LIP_HIDDEN_K = (0.0, 0.15, 0.002, 0.0001)   # v5: a mouth-zone vertex b behind t
 LIP_RIM_STEP = 0.0001                # after the flatten the upper lip's rim stays this far (m) in front of the lower's
                                       #   along the seam (0 = let them interleave into a sawtooth); v4 0.0004 = a visible
                                       #   ledge; v5 0.1 mm = just the draw order of the two sealed rims
+LIP_RIM_TUCK = (0.0002, 0.0010, 0.85) # v6.1 "rim tuck": the upper sheet's vertices more than the 1st m below the seam land the
+                                      #   2nd m behind the lower sheet, within the 3rd x the seam half-width (v4-v6 None: the
+                                      #   upper rim hung 1.2-1.5 mm below the seam in front of the lower sheet = lit slivers +
+                                      #   a shadow under them; 0.05 mm behind left the straddling faces crossing 0.5 mm down)
+LIP_RIM_TUCK_SIDES = (1.0,)          # v6.1: which sheets tuck (+1 the upper below the seam, -1 the lower above it: tried,
+                                      #   it opened dark notches into the mouth along the line, rendered)
 LIP_FRONT_TOL = 0.003                 # v4: lip-zone vertices up to this far behind the front surface are flattened too (the
                                       #   rims tucked in the seam crease; the mouth interior sits >= 4.4 mm behind, measured)
 BODY_H = 1.68                         # "height" barefoot (m); the boot soles add SOLE_T
@@ -229,10 +242,20 @@ BROW_PTS = ((-1.15, 0.0058), (-0.40, 0.0074), (0.50, 0.0090), (1.28, 0.0080))   
                                       #   eye centre, height above the upper lid m) -- inner end low: the earnest set
 BROW_W = (0.0086, 0.0040)             # "brow thickness": inner end / tail (m) -- v2 bigger (v1 6.4 / 2.8 mm)
 BROW_TAPER = 1.2
-LIP = None                            # lip tint: half width / upper height / lower depth (m) around the seam (v2/v3 (0.017,
-                                      #   0.0026, 0.0026)); v4 None = no tint (the 2D-anime mouth is the drawn line alone)
+LIP = (0.0190, 0.0035, 0.0065)        # lip tint: half width / upper height / lower depth (m) around the seam (v2/v3 (0.017,
+                                      #   0.0026, 0.0026)); v4-v6 None = no tint; v6.1 "lips slightly less colored than the base":
+                                      #   the zone over both LIP_FORMS takes the palette's 'lips' tone (paler, less saturated)
+LIP_FORMS = {"lower": (0.0012, 0.0070, 0.80, 0.80, 0.40),   # v6.1 "simple lip dimension" (the archer figure): forward
+             "upper": (0.0004, 0.0050, 0.70, 0.90, 0.40)}   #   bumps ON the smoothed mouth skin -- (amplitude m, height
+                                      #   m from the seam, peak shape p: the profile sin^2(pi t^p) peaks at t = 0.5^(1/p) of the
+                                      #   height, lateral reach x the seam half-width, the outer fraction of that reach faded
+                                      #   out). LOWER = one soft simple volume under the line; UPPER = a very small plane
+                                      #   above it (a third of the lower). Both start from zero WITH zero slope at the seam: the
+                                      #   seal's overlap band moves by ~0, the line stays in the crease between; None = off (v6)
 LIP_DZ = 0.0
-MOUTH_LINE = (0.0011, 0.45)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
+MOUTH_LINE = (0.0013, 0.45)           # v2 "mouth line": painted width on the sealed seam (m) at the centre, x this at the corners
+                                      #   (v6.1 1.3 mm: the archer figure's line is bolder, and it covers the sealed rims'
+                                      #   +-0.6 mm zigzag; v2-v6 1.1)
                                       #   (v2-v5 0.30: the 0.33 mm ends fell between the mesh's vertices and the painted line
                                       #   stopped 1.7 mm short of each seam end; v6 0.45 = 0.5 mm ends)
 MOUTH_LINE_EXT = 0.0010               # v6: with MOUTH_LEN None the line runs this far (m) past each seam end, over the corner
