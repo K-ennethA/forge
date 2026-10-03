@@ -1136,3 +1136,18 @@ Addendum: the upper lip also gets a form - VERY small and subtle, less
 pronounced than the lower (per the archer figure: a faint upper-lip
 plane above the line, barely catching light). So v6.1 = subtle upper +
 soft simple lower, both minimal single volumes, paler-than-skin tint.
+
+## 2026-10-02 — Wren v6.1 resumed + context-economy rules (artist)
+
+Artist (verbatim): "lets continue on improving the mouth, making it a bit
+larger with a bit of lip how we had discussed before session limits /
+after we need to improve our task handling, clearing context and passing
+needed context so we can save tokens"
+
+(1) v6.1 mouth lane resumed with the addition: the line widens from
+40 mm toward ~46-50 mm (answers the v6 width question: larger). (2)
+Context-economy rules added to docs/lane-conventions.md: per-unit STATE
+files (wren_STATE.md is the pilot), ~40-line brief budget pointing at
+STATE + the one spec entry, resume-first for deltas, terse <=60-line
+handbacks, render economy (changed views + one compare sheet only),
+clear-and-point recaps on stale resumes.

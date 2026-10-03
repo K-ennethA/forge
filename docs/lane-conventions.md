@@ -179,3 +179,31 @@ this knob exists to prevent.
   sign tests in gates). Query against uncut source surfaces, not painted
   cut meshes (re-tessellation shifts sub-triangles by ULPs that discrete
   passes amplify).
+
+## Context economy (2026-10-02, from the artist's token-cost critique)
+
+Token spend per iteration round was dominated by re-stated history:
+briefs re-pasting every prior version's facts, reports re-stating briefs,
+and full 40-view render sets regenerated for single-feature changes.
+Rules:
+
+- **Per-unit STATE file** (improve/<unit>_STATE.md, ~15 lines, updated by
+  the orchestrator at each commit): current version + commit, approved
+  facts (what is LOCKED), the knobs that matter, unit-specific gates,
+  open artist questions. It replaces history in briefs.
+- **Brief budget ~40 lines**: a lane brief is law pointer + STATE pointer
+  + the ONE review-log entry that is the spec + the delta + allowlist +
+  evidence asks. Never re-paste version history or technique stacks that
+  the STATE/log already hold; the lane reads them at one file cost.
+- **Resume-first for deltas**: a small delta on a unit whose lane is
+  recent goes to THAT lane by resume (context already paid for), within
+  the standing resume rules. Fresh lanes are for structural pivots.
+- **Terse handbacks**: deltas + numbers only, no brief restating, target
+  <= 60 lines. The orchestrator writes the commit message from it; prose
+  padding is paid for twice.
+- **Render economy**: re-render ONLY the views the change affects plus
+  one comparison sheet. The full still set regenerates only when
+  geometry moves globally (artist can always ask for a full set).
+- **Clear-and-point**: when resuming a lane whose context may be stale
+  or truncated, send a compact recap (the STATE file's content), not the
+  transcript's history.
