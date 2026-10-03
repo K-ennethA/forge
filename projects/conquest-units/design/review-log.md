@@ -1221,3 +1221,13 @@ commands respect." Three views + detail panels:
 Build per the HOUSE STYLE GUIDE from the first pass; hero tier; the
 fur mantle is a new garment class (fur clumps, not cloth). Elias
 pipeline is the nearest reference implementation.
+
+## 2026-10-03 — Wren corrections + run movement intent (artist, verbatim)
+
+(1) "wren is a male not a farmgirl" — WREN IS MALE, the Conquest story
+hero. Binding for all docs, briefs, clips and voice work; the approved
+v6.1+ model is unchanged.
+(2) Run clip intent: "young hero sprint" — eager, youthful full sprint
+(not a soldier's measured stride). First locomotion clip beyond
+idle/walk; game side selects run by move speed with walk fallback
+(hero-anim lane). Walk/idle clips stay as approved.
