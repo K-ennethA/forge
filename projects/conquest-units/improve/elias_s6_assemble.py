@@ -730,7 +730,13 @@ if HAIR_PROXY is not None:
             m_ = _vgrp == g_
             if m_.any() and float(np.mean(np.einsum("ij,ij->i", _own[m_], _HV[m_] - PROXIES[g_]["cen"]))) < 0:
                 _own[m_] = -_own[m_]
-        _mix = np.where(_vgrp == 1, HAIR_SHELL_NORMAL_MIX, HAIR_LOCK_NORMAL_MIX)[:, None]   # (v4: the beard / mustache
+        _vsh = np.zeros(len(_HV), bool)                     # (v6: only the beard CORE shell takes the shell mix; the beard /
+        for n_, (fa_, fb_) in OBJ["main"]["FRANGE"].items():  #   mustache LOCKS lean like the scalp locks)
+            if n_ in BEARD_SHELL_PARTS:
+                for k_, f_ in zip(_hfi, _HF):
+                    if fa_ <= k_ < fb_:
+                        _vsh[f_] = True
+        _mix = np.where(_vsh, HAIR_SHELL_NORMAL_MIX, HAIR_LOCK_NORMAL_MIX)[:, None]   # (v4: the beard / mustache
         #   shells lean HAIR_SHELL_NORMAL_MIX toward their OWN smooth surface -- research H8 "normals come from the shell's own
         #   smooth offset surface"; measured: at the lock mix 0.45 the egg proxy lit the whole shell flat-on, a skin-bright mask)
         _HN = _HN * (1.0 - _mix) + _own * _mix
@@ -1227,7 +1233,7 @@ if HAIR_CN is not None:
     _cnr = np.empty(len(_cnd.data) * 2, dtype=np.int16); _cnd.data.foreach_get("value", _cnr)
     DIG["hair_custom_normals"] = sha(_cnr)
     _bsl = np.zeros(len(me.polygons), bool)                  # (the beard / mustache shell faces, for their own carry figure)
-    for n_ in BEARD_PARTS:
+    for n_ in BEARD_SHELL_PARTS:                             # (v6: the beard core shell)
         fa_, fb_ = OBJ["main"]["FRANGE"][n_]; _bsl[fa_:fb_] = True
     _pq = lambda a_: [round(float(np.percentile(a_, q_)), 4) for q_ in (50, 90, 99)] + [round(float(a_.max()), 4)]
     HAIR_BAKE["vertex_carrier"] = {

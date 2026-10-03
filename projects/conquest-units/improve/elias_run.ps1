@@ -11,7 +11,8 @@
 #   + v4: the one-tone hair still (every hair region painted the one hair tone in memory: shading only)
 #   + v5: the sheet's four head views (headc_front / headc_tq = the head panel's 3/4, his right / headc_side = his left /
 #     headc_back; staff hidden) + the one-tone head 3/4
-#   3. the comparison sheet + the v4 | v5 | SHEET strip (improve/elias_compose.py -> renders/elias/<ver>_sheet.png,
+#   + v6: the head + beard views (hb_front / hb_tql = 3/4 his left / hb_side / hb_low = chin-up / hb_tq = the head panel)
+#   3. the comparison sheet + the v5 | v6 | SHEET strip (improve/elias_compose.py -> renders/elias/<ver>_sheet.png,
 #      _hair_compare.png; the strip = front, 3/4, side, back + the one-tone column)
 # Logs + probe outputs live in renders/elias/ (the lane allowlist). -SkipBuild re-runs 2 + 3 only.
 param([switch]$SkipBuild, [switch]$Twin)
@@ -59,7 +60,7 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\elias.blend`""
 $R = "`"$I\elias_render.py`""
-$VER = "elias_v5"                     # (render / probe prefix; v4 stills stay as the comparison baseline)
+$VER = "elias_v6"                     # (render / probe prefix; v5 stills stay as the comparison baseline)
 $W = "`"$OUT\$VER`""
 $G1 = "154,131,113"                   # v5: the one-tone = the SAMPLED hair (palette "hair"; v4's used the v1 grey 186,186,182)
 $ONE = (@("hair","hair_shade","hair_root","hair_ring","hair_tip","hair_inner","hair_crevice","hair_beard","hair_beard_shade",
@@ -67,8 +68,8 @@ $ONE = (@("hair","hair_shade","hair_root","hair_ring","hair_tip","hair_inner","h
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
   @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,portrait_low,glasses,staff_head,book,satchel,belt,brooch","--res","800")),
-  @("render_head",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"headc_front,headc_tq,headc_side,headc_back","--res","800","--hide-fork")),
-  @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$($VER)_onetone`"","face_tq,headc_tq","--res","800","--hide-fork","--palette-override","`"$ONE`"")),
+  @("render_head",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"headc_front,headc_tq,headc_side,headc_back,hb_front,hb_tql,hb_side,hb_low,hb_tq","--res","800","--hide-fork")),
+  @("render_onetone", @("--background",$RB,"--factory-startup","--python",$R,"--","`"$OUT\$($VER)_onetone`"","face_tq,headc_tq,hb_tq","--res","800","--hide-fork","--palette-override","`"$ONE`"")),
   @("face_probe",   @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\elias.json`"")),
   @("hair_diag",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hairdiag.json`"")),
   @("check_improved", @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$OUT\$($VER)_check_improved.json`"")),
@@ -80,14 +81,14 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v4"; $env:ELIAS_ONETONE = "1"; $env:ELIAS_ONETONE_VIEW = "onetone_headc_tq"
+$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v5"; $env:ELIAS_ONETONE = "1"; $env:ELIAS_ONETONE_VIEW = "onetone_hb_tq"
 $env:ELIAS_STRIP_REF = "1"
-$env:ELIAS_STRIP_VIEWS = "headc_front:front,headc_tq:3/4 (his right),headc_side:side (his left),headc_back:back"
+$env:ELIAS_STRIP_VIEWS = "hb_front:front,hb_tql:3/4 (his left),hb_side:side (his left),hb_low:chin-up,hb_tq:head detail (his right)"
 & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
 (Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }
-(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE|BEARDSHELL|BEARDCOVER|HAIRCN|SCALPDIGEST|BEARDDIGEST|MASSES|HAIRCLEAR|CAPEXPOSE|HAIRPUSH)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
+(Get-Content "$LOG\build.txt" | Select-String "^(TRIS|GRIP|GLB|RIG_DONE|BEARD6|BEARDMASSES|BEARDLAYER|BEARDCOVER|HAIRCN|SCALPDIGEST|BEARDDIGEST|MASSES|HAIRCLEAR|CAPEXPOSE|HAIRPUSH)").Line | % { $_.Substring(0, [Math]::Min(400, $_.Length)) }
 (Get-Content "$LOG\check_improved.txt" | Select-String "checks, ").Line
 (Get-Content "$LOG\check_rigged.txt" | Select-String "checks, ").Line
 "ALL DONE total_wall_s=$([math]::Round(((Get-Date)-$T0).TotalSeconds,1))"

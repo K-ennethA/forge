@@ -100,7 +100,9 @@ if V != BASE:
         pairs.append((os.environ.get("ELIAS_ONETONE_VIEW", "onetone_face_tq"), "hair one-tone"))   #   one grey: shading only)
     # v5: + the SHEET's own view beside each pair (the judge: design/reference/elias/elias_sheet.webp crops, 1536 x 1024 px)
     REF = {"headc_front": (170, 85, 300, 215), "headc_tq": (1056, 52, 1300, 296), "headc_side": (480, 85, 610, 215),
-           "headc_back": (800, 95, 930, 225)} if os.environ.get("ELIAS_STRIP_REF") else {}
+           "headc_back": (800, 95, 930, 225),
+           # v6: the head + beard reads (square crops including the whole beard)
+           "hb_front": (160, 95, 310, 245), "hb_side": (475, 95, 625, 245), "hb_tq": (1056, 80, 1300, 324)}         if os.environ.get("ELIAS_STRIP_REF") else {}
     SHEET_IMG = os.path.join(ROOT, "design", "reference", "elias", "elias_sheet.webp")
     S = 420
     ncol = [3 if v in REF else 2 for v, _ in pairs]

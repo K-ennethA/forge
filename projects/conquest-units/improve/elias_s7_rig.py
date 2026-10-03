@@ -75,8 +75,8 @@ for ch in sorted(set(p["chain"] for p in PARTS if p["w"] == "lock")):
     paths = [VP.resample(p["path"], 40)[0] for p in PARTS if p["w"] == "lock" and p["chain"] == ch]
     rs, Lc = VP.resample(np.mean(paths, 0), HAIR_BONES + 1)
     CHAIN_PTS[ch] = (rs, Lc, "head")
-for ch, bc_ in BEARD_CHAINS.items():                       # v4: beard.L / .C / .R re-anchored on the shell's hanging mass
-    CHAIN_PTS[ch] = (bc_["pts"], bc_["L"], "head")          #   (s5: the mean outer profile below BEARD_CHAIN_LEAVE)
+for ch, bc_ in BEARD_CHAINS.items():                       # v6: beard.L / .C / .R = s5's mean path of each chain's clump locks
+    CHAIN_PTS[ch] = (bc_["pts"], bc_["L"], "head")          #   (computed there by this same rule: identical values)
 for ch, (pts, Lc, par) in sorted(CHAIN_PTS.items()):
     for k in range(len(pts) - 1):
         BONES.append(("%s.%d" % (ch, k), S_(pts[k]), S_(pts[k + 1]), par if k == 0 else "%s.%d" % (ch, k - 1), None))
@@ -219,7 +219,7 @@ rep["weights"] = {"max_influences": int(max((W > 0).sum(1).max() for W in WOBJ.v
                           "their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / "
                           "half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm "
                           "influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and "
-                          "glasses / the mustache shell: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each); v4 BEARD SHELL: head above BEARD_CHAIN_LEAVE, below it vine weights onto beard.C / beard.L / beard.R (3 bones each, re-anchored on the shell's hanging mass; C <-> L/R blended over BEARD_CHAIN_PSI +-4 deg; underside ramps back to the head at the neck); staff: 'staff' (child of hand_r); tome: 'book' "
+                          "glasses / the mustache locks / the cheek beard locks: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each); v6 BEARD: the chin / jaw clump locks past their s_leave (below BEARD_CHAIN_LEAVE) vine weights onto beard.C / beard.L / beard.R (3 bones each, chains = the mean path of their locks); the CORE shell head above BEARD_CHAIN_LEAVE, below it the same chains by drop (C <-> L/R blended over BEARD_CHAIN_PSI +-4 deg; underside ramps back to the head at the neck); staff: 'staff' (child of hand_r); tome: 'book' "
                           "(child of hand_l)"}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
