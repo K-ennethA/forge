@@ -188,6 +188,26 @@ BREST = {}
 for pb in rig0.pose.bones:
     Mp = np.array(pb.matrix)
     BREST[pb.name] = {"head": np.array(pb.head) * SCALE, "tail": np.array(pb.tail) * SCALE, "z": Mp[:3, 2].copy()}
+# VARDEN v3 "wider shoulders still": the MPFB shoulder-distance dial is exhausted at 1.0 (weights > 1 clamp: measured, the
+# span stayed 0.533 m at 1.6), so the clavicle span is widened GEOMETRICALLY past it: each arm chain (upperarm .. fingers)
+# moves SHOULDER_WIDEN[0] m outward along x, every vertex by its MPFB skin weight on that chain + SHOULDER_WIDEN[1] x its
+# clavicle weight -- the trapezius / deltoid transition stretches over the MPFB weight falloff (smooth by construction);
+# the arm bones move with it and the clavicle's tail follows (its head stays at the sternum). Head / neck weights are 0.
+SHOULDER_INFO = None
+if SHOULDER_WIDEN and SHOULDER_WIDEN[0]:
+    _vsh = V_all.copy()
+    for side, sg in (("l", 1.0), ("r", -1.0)):
+        _chain = [n for n in MB if n.endswith("_" + side) and n.startswith(("upperarm", "lowerarm", "hand", "index", "middle", "ring",
+                                                                            "pinky", "thumb"))]
+        _w = W0[:, [MBI[n] for n in _chain]].sum(1) + SHOULDER_WIDEN[1] * W0[:, MBI["clavicle_" + side]]
+        V_all[:, 0] += sg * SHOULDER_WIDEN[0] * np.clip(_w, 0.0, 1.0)
+        for n in _chain:
+            BREST[n]["head"][0] += sg * SHOULDER_WIDEN[0]; BREST[n]["tail"][0] += sg * SHOULDER_WIDEN[0]
+        BREST["clavicle_" + side]["tail"][0] += sg * SHOULDER_WIDEN[0]
+    _mv = np.abs(V_all[:, 0] - _vsh[:, 0])
+    SHOULDER_INFO = {"widen_m_per_side": SHOULDER_WIDEN[0], "clavicle_weight_k": SHOULDER_WIDEN[1],
+                     "verts_moved": int((_mv > 1e-6).sum()), "verts_partial": int(((_mv > 1e-6) & (_mv < SHOULDER_WIDEN[0] - 1e-6)).sum())}
+report["shoulder_widen"] = SHOULDER_INFO
 _arm_deg1 = {s: math.degrees(math.atan2(BREST["upperarm_" + s]["head"][2] - BREST["hand_" + s]["head"][2],
                                         abs(BREST["hand_" + s]["head"][0] - BREST["upperarm_" + s]["head"][0]))) for s in "lr"}
 body_idx = np.nonzero(in_body)[0]

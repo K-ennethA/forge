@@ -1,2 +1,2 @@
-﻿SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\varden\varden_v2_sheet.png (2908, 2268)
-STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\varden\varden_v2_compare.png (2296, 630)
+﻿SHEET C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\varden\varden_v3_sheet.png (2908, 2268)
+STRIP C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\varden\varden_v3_compare.png (2296, 630)

@@ -29,7 +29,7 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\varden.blend`""
 $R = "`"$I\varden_render.py`""
-$VER = "varden_v2"                    # (render / probe prefix; v1 stills stay as the compare baseline)
+$VER = "varden_v3"                    # (render / probe prefix; v2 stills stay as the compare baseline)
 $W = "`"$OUT\$VER`""
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
@@ -45,7 +45,7 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:VARDEN_V = $VER; $env:VARDEN_BASE = "varden_v1"; & $VPY -P "$I\varden_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
+$env:VARDEN_V = $VER; $env:VARDEN_BASE = "varden_v2"; & $VPY -P "$I\varden_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
 (Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }

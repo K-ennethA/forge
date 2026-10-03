@@ -69,16 +69,19 @@ TARGETS = {                           # "face dials": the house-style anime base
 FRAME_TARGETS = {                     # v2 "TALLER + a BROADER / WIDER FRAME, WIDER SHOULDERS" (artist, 2026-10-03): BODY-ONLY
                                       #   dials (torso / arms / legs / neck targets never touch the head mesh: the v1 face and
                                       #   hair are not in question); the macros stay v1's (they reshape the whole body, face too)
-    "torso/measure-shoulder-dist-incr": 0.90,                              # "shoulder width": the clavicle / acromion span
-    "torso/torso-scale-horiz-incr": 0.45, "torso/torso-vshape-incr": 0.55,   # "broad chest / back", tapering to the waist
-    "torso/torso-scale-depth-incr": 0.30, "torso/torso-muscle-dorsi-incr": 0.60, "torso/torso-muscle-pectoral-incr": 0.40,
+    "torso/measure-shoulder-dist-incr": 1.00,                              # "shoulder width": the clavicle / acromion span (v3:
+                                                                           #   the dial's max -- weights above 1.0 clamp)
+    "torso/torso-scale-horiz-incr": 0.80, "torso/torso-vshape-incr": 0.85,   # "broad chest / back", tapering to the waist (v3)
+    "torso/torso-scale-depth-incr": 0.35, "torso/torso-muscle-dorsi-incr": 0.75, "torso/torso-muscle-pectoral-incr": 0.45,
     "torso/torso-scale-vert-incr": 0.25,                                   # "taller": a longer torso
-    "arms/l-upperarm-shoulder-muscle-incr": 0.60, "arms/r-upperarm-shoulder-muscle-incr": 0.60,   # heavy deltoids
-    "arms/l-upperarm-muscle-incr": 0.35, "arms/r-upperarm-muscle-incr": 0.35,
+    "arms/l-upperarm-shoulder-muscle-incr": 0.80, "arms/r-upperarm-shoulder-muscle-incr": 0.80,   # heavy deltoids (v3)
+    "arms/l-upperarm-muscle-incr": 0.40, "arms/r-upperarm-muscle-incr": 0.40,
     "legs/upperlegs-height-incr": 0.55, "legs/lowerlegs-height-incr": 0.50,   # "taller": longer legs
     "legs/l-upperleg-muscle-incr": 0.30, "legs/r-upperleg-muscle-incr": 0.30,
-    "neck/measure-neck-circ-incr": 0.45,                                   # the thicker neck to match the frame
+    "neck/measure-neck-circ-incr": 0.55,                                   # the thicker neck to match the frame (v3)
 }
+SHOULDER_WIDEN = (0.015, 0.55)        # v3 "wider shoulders still": past the exhausted dial, each arm chain moved this far out (m
+                                      #   per side) by its skin weight + this share of its clavicle weight (s1); (0, 0) = off
 BODY_SCALE = 0.95203                  # v2: the MPFB -> metres scale FIXED at v1's value (the v1 head size kept); the frame dials
                                       #   above set the new height. None = scale to BODY_H (v1 behaviour)
 TARGETS_EDIT = None                   # (s1 probe hook kept from Wren; None = TARGETS as listed)
@@ -433,7 +436,7 @@ OUT_RIGGED = os.path.join(_OUT_ROOT, "rigged", UNIT + ".blend")
 OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
 TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "scratch" if SCRATCH else "main"
-report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v2 draft (frame)",
+report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v3 draft (shoulders)",
           "name_status": "named by the sheet (GENERAL VARDEN - KINGDOM GENERAL)",
           "source": "design/reference/varden/varden_sheet.webp (saved sheet; transcription design/review-log.md 2026-10-02)",
           "tier": "hero", "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}
