@@ -147,9 +147,46 @@ def chain_w(s, L, ch, nb, parent_bone, s0=0.0):
     return W
 
 
+# (2026-10-03 weight-source fix) the torso-hung garment parts (TORSO_HUNG) copy their skin weights from the TRUNK only:
+# the nearest-skin search over the whole body found the hand resting at the hip (12 sash verts per wrap at ~1.0 on the
+# forearms, the pouch on thumb_02_l at 0.93). Same barycentric copy as s1's transfer(), on the non-arm triangles.
+ARM_CHAIN = ("clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
+_ARM_COLS = np.array([n.split("_")[0] in ARM_CHAIN for n in MB])
+_TRI_TRUNK = TRI[~is_arm_f[np.asarray(TRI_F)]]
+BVH_TRI_TRUNK = BVHTree.FromPolygons(BV.tolist(), _TRI_TRUNK.tolist())
+
+
+def transfer_trunk(Ps):
+    Ps = np.asarray(Ps, float)
+    loc = np.empty_like(Ps); ti = np.empty(len(Ps), dtype=np.int64)
+    for k, p in enumerate(Ps):
+        l_, _, i_, _ = BVH_TRI_TRUNK.find_nearest(Vector(p))
+        loc[k] = l_; ti[k] = i_
+    T3 = _TRI_TRUNK[ti]
+    a, b, c = BV[T3[:, 0]], BV[T3[:, 1]], BV[T3[:, 2]]
+    v0, v1, v2 = b - a, c - a, loc - a
+    d00 = (v0 * v0).sum(1); d01 = (v0 * v1).sum(1); d11 = (v1 * v1).sum(1)
+    d20 = (v2 * v0).sum(1); d21 = (v2 * v1).sum(1)
+    den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+    bv = (d11 * d20 - d01 * d21) / den; bw = (d00 * d21 - d01 * d20) / den
+    B = np.clip(np.stack([1.0 - bv - bw, bv, bw], 1), 0, 1); B /= B.sum(1, keepdims=True)
+    Wm = B[:, 0:1] * BW[T3[:, 0]] + B[:, 1:2] * BW[T3[:, 1]] + B[:, 2:3] * BW[T3[:, 2]]
+    Wm[:, _ARM_COLS] = 0.0                            # a trunk vertex's own armpit share is not a source either
+    return Wm / np.maximum(Wm.sum(1), 1e-30)[:, None]
+
+
+FA_SEG = {s: (np.asarray(BREST["lowerarm_" + s]["head"], float), np.asarray(BREST["hand_" + s]["head"], float)) for s in "lr"}
+
+
 def part_weights(p):
     V, w = p["V"], p["w"]
     n = len(V)
+    if p["name"].split(".")[0] in TORSO_HUNG:
+        if w == "transfer":
+            return mpfb_to_rig(transfer_trunk(V))
+        if w == "rigid_transfer":
+            return np.repeat(mpfb_to_rig(transfer_trunk(V.mean(0)[None])), n, 0)
+        raise ValueError("TORSO_HUNG part %s has weight rule %s" % (p["name"], w))
     if w == "body":
         return mpfb_to_rig(CW)
     if w == "transfer":
@@ -192,7 +229,32 @@ def part_weights(p):
             q_, _, fi_, d_ = BVH_BODY.find_nearest(Vector(pt))
             if q_ is not None and fdomn[fi_].startswith(("upperarm", "lowerarm", "hand", "clavicle")):
                 k_[i] = CLOAK_ARM_FOLLOW[0] * float(smoothstep(CLOAK_ARM_FOLLOW[2], CLOAK_ARM_FOLLOW[1], d_))
-        return (1.0 - k_)[:, None] * W + k_[:, None] * Wt
+                if fdomn[fi_].startswith(("lowerarm", "hand")):
+                    # (2026-10-03) down the forearm toward the wrist the coupling fades to CLOAK_FOREARM[0]: the posed hand
+                    # comes in onto the hip, and a cloak glued to it was dragged through the sash / pouch
+                    sd_ = fdomn[fi_][-1]
+                    e_, h_ = FA_SEG[sd_]
+                    cf_ = CLOAK_FOREARM[sd_]
+                    tf_ = float(np.clip((pt - e_) @ (h_ - e_) / float((h_ - e_) @ (h_ - e_)), 0.0, 1.0))
+                    k_[i] *= 1.0 - (1.0 - cf_[0]) * float(smoothstep(cf_[1], cf_[2], tf_))
+        if any(h[0] > 0.0 for h in CLOAK_HIP.values()):
+            # (2026-10-03) the side panels at the sash line ride the hip -- the chain-hung share (not the arm share)
+            # blends toward the trunk's weights (no leg share): chain-only they hang from the chest, and the pelvis'
+            # counter-twist drove the hip / sash through them
+            dz_ = np.abs(V[:, 2] - Z_SASH)
+            az_ = np.abs(np.degrees(np.arctan2(V[:, 0], V[:, 1] - AX_Y)))
+            kh_ = np.zeros(n)
+            for sd_, h_ in CLOAK_HIP.items():
+                m_ = (V[:, 0] > 0.0) if sd_ == "l" else (V[:, 0] <= 0.0)
+                kz_ = 1.0 - smoothstep(h_[1], h_[1] + h_[2], dz_)
+                ka_ = smoothstep(h_[3] - h_[5], h_[3], az_) * (1.0 - smoothstep(h_[4], h_[4] + h_[5], az_))
+                kh_ = np.where(m_, h_[0] * kz_ * ka_, kh_)
+            Wh_ = transfer_trunk(V)
+            Wh_[:, [j for j, nm in enumerate(MB) if nm.startswith(("thigh", "calf", "foot", "ball"))]] = 0.0
+            Wh_ = mpfb_to_rig(Wh_ / np.maximum(Wh_.sum(1), 1e-30)[:, None])
+            W = (1.0 - kh_)[:, None] * W + kh_[:, None] * Wh_
+        W = (1.0 - k_)[:, None] * W + k_[:, None] * Wt
+        return W
     if w == "lock":
         s = p["s"]
         Lc = CHAIN_PTS[p["chain"]][1]
@@ -245,5 +307,19 @@ rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 
                           "pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / "
                           "half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; "
                           "fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: "
-                          "pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each"}
+                          "pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. "
+                          "2026-10-03 weight-source knobs (all OFF = v6.1): TORSO_HUNG parts copy from the TRUNK faces only (no "
+                          "arm-chain source); the cloak's forearm coupling fades elbow -> wrist (CLOAK_FOREARM, per side) and its "
+                          "side panels at the sash line hang part from the hip (CLOAK_HIP)"}
+_arm_j = [J[n] for n in DEFORM if n.split("_")[0] in ARM_CHAIN]
+_th = np.array([i for nm in OBJ["main"]["RANGE"] if nm.split(".")[0] in TORSO_HUNG
+                for i in range(*OBJ["main"]["RANGE"][nm])], dtype=np.int64)
+_cl = np.arange(*OBJ["main"]["RANGE"]["cloak"])
+_fa_j = [J[n] for n in DEFORM if n.split("_")[0] in ARM_CHAIN[2:]]
+_la_j = [J[n] for n in DEFORM if n.endswith("_l") and n.split("_")[0] in ARM_CHAIN]
+rep["weights"]["weight_sources"] = {"torso_hung_parts": list(TORSO_HUNG),
+                                    "torso_hung_arm_chain_weight_max": round(float(WM[_th][:, _arm_j].sum(1).max()), 6) if len(_th) else None,
+                                    "cloak_verts_forearm_hand_weight": int((WM[_cl][:, _fa_j].sum(1) > 0).sum()),
+                                    "cloak_verts_left_arm_weight": int((WM[_cl][:, _la_j].sum(1) > 0).sum()),
+                                    "cloak_left_arm_weight_max": round(float(WM[_cl][:, _la_j].sum(1).max()), 3)}
 print("WEIGHTS", json.dumps(rep["weights"]))

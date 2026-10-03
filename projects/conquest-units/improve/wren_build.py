@@ -538,6 +538,29 @@ CLOAK_WORN = (0.74, 0.50)
 CLOAK_ARM_FOLLOW = (0.97, 0.05, 0.15)   # "cloak rides the arms": where the cloak lies over a shoulder / arm it takes up to
                                       #   this share of that arm's skin weights, fully within the 2nd value (m) of it, none
                                       #   beyond the 3rd             # worn / sun-faded mottle: noise threshold, feature scale (m)
+CLOAK_FOREARM = {"l": (1.0, 0.2, 0.5), "r": (1.0, 0.35, 0.75)}   # (s7 weight-source fix 2026-10-03) per side (his
+                                      #   left = the free arm, right = the fork arm): where the cloak's nearest skin is the
+                                      #   FOREARM / HAND its arm coupling (CLOAK_ARM_FOLLOW) fades down the forearm to the 1st
+                                      #   value's share at the wrist -- full up to the 2nd value of the elbow -> wrist span,
+                                      #   the wrist share from the 3rd on (clavicle / upper arm keep the full share). The posed
+                                      #   hand comes in onto the hip: a cloak glued to it is dragged through the sash / pouch;
+                                      #   with no forearm coupling the elbow passes through it. (1.0, *, *) = the v6.1 weights
+CLOAK_HIP = {"l": (0.0, 0.10, 0.05, 55.0, 125.0, 15.0), "r": (0.0, 0.10, 0.05, 55.0, 125.0, 15.0)}   # (s7 2026-10-03)
+                                      #   per side: the cloak's side panels at the sash line ride the hip -- this share of
+                                      #   their chain-hung weights moves to the trunk's skin weights (no leg share), full
+                                      #   within the 2nd value (m) of the sash line, none past + the 3rd; side azimuths (deg
+                                      #   from the back centre) 4th .. 5th, fading over the 6th. 0.0 = the v6.1 weights
+# ---- s7 weight sources (2026-10-03 fix: the sash's nearest-skin copy grabbed the hand resting at the hip -- 12 verts per
+# wrap at ~1.0 on lowerarm_l / _r, 24 torso crossings in the run; the pouch rode thumb_02_l at 0.93)
+TORSO_HUNG = ()                       # garment parts hanging from the torso ("sash", "knot", "pouch", ...): their skin
+                                      #   weight copy sees the trunk faces only (no arm-chain face is a source) and any
+                                      #   arm-chain share left on a trunk vertex is dropped (renormalised)
+# STATUS 2026-10-03: all three knobs ship OFF (= the v6.1 weights, weights digest bd94f0edfe3d2c38 reproduced). Measured
+#   with them ON (TORSO_HUNG = the five parts above, CLOAK_FOREARM l (0.0, 0.2, 0.5) / r (0.0, 0.35, 0.75), CLOAK_HIP 0.5
+#   both sides): every cloak crossing 0 in idle / walk / run -- but s3 BUILT the sash and the pouch around the REST-pose
+#   hands (BVH_SASH's radial profile sees the A-pose hands: one ring per wrap at 344-380 mm vs ~140-180 mm, the pouch at
+#   x 0.32-0.40 = on the hand), so trunk weights leave a rope spike and a floating pouch out at the rest hands. Needs the
+#   s3 geometry fix first (outside the s7 lane); retune CLOAK_FOREARM / CLOAK_HIP after it.
 # patches: (a m across from the cloak's right front edge along the row, b m down from the top, half w, half h, rot deg,
 # kind) -- the sheet's back view (right shoulder blade, mid left, lower left + right, the hem) + the front-left panel
 PATCHES = ((0.42, 0.20, 0.050, 0.042, 12.0, "a"), (0.86, 0.34, 0.046, 0.058, -8.0, "b"), (0.56, 0.58, 0.058, 0.044, 20.0, "c"),

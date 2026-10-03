@@ -19,6 +19,14 @@
   (runner: render_runstrip + compose --run-preview). Contract clip_names needs "run" in rigkit.ALLOWED_CLIP_NAMES (outside
   the lane). KNOWN: run torso_outfit cloak crossings 24 = the s7 sash weight defect (12 sash verts/part at 1.0 on the
   forearms; the strand is visible in the approved walk too) -- s7 fix queued, not a clip issue.
+- **s7 weight-source lane (2026-10-03, STOPPED - needs s3):** knobs TORSO_HUNG / CLOAK_FOREARM / CLOAK_HIP added to
+  wren_build.py + s7, shipped OFF (build digest c9215939245d39b5 reproduced, every part). With them ON: every cloak crossing
+  0 in idle / walk / run (run torso 24 -> 0), keys byte-identical, sash stretch strand gone -- BUT the root cause is s3
+  GEOMETRY: BVH_SASH (comb_bvh, whole body incl. the A-pose hands) shapes the sash rings and places the pouch, so one ring
+  per wrap sits at the rest hand (344-380 mm radius vs ~140-180) and the pouch sits ON the hand (x 0.32-0.40, phi 58).
+  Trunk weights leave a rope spike + a pouch floating at the rest hands (renders/wren/wren_s7fix_walk6_before_after.png);
+  v6.1 hides it by gluing them to the forearm / thumb_02_l (the pouch rides the hand to the chest in the run). Next: s3
+  profile against the trunk (touches the LOCKED outfit look: the pouch moves onto the hip -- artist call), then retune.
 - **Key knobs:** HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
