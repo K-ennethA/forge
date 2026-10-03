@@ -1,8 +1,9 @@
 @tool
 extends EditorPlugin
-var ext: Color1Ext
+const COLOR1_EXT: Script = preload("res://addons/color1/color1_ext.gd")
+var ext: GLTFDocumentExtension
 func _enter_tree() -> void:
-	ext = Color1Ext.new()
+	ext = COLOR1_EXT.new()
 	GLTFDocument.register_gltf_document_extension(ext, true)
 func _exit_tree() -> void:
 	GLTFDocument.unregister_gltf_document_extension(ext)
