@@ -1,0 +1,4 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+Color1Ext: COLOR_1 -> CUSTOM0 on mesh 0 surface 0 (16934 verts)
+DUMP_UNIT wrote res://dump_geode.json

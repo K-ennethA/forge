@@ -51,7 +51,17 @@ func _import_post_parse(state: GLTFState) -> Error:
 			for b in im.get_blend_shape_count():
 				bsa.append(im.get_surface_blend_shape_arrays(si, b))
 			saved.append([im.get_surface_primitive_type(si), arrays, bsa, im.get_surface_material(si), im.get_surface_name(si), fmt])
+		# ImporterMesh.clear() also drops the blend-shape NAMES; add_surface then rejects every surface that
+		# carries morph arrays ("p_blend_shapes.size() != blend_shapes.size()") and the mesh imports EMPTY
+		# (measured on geode.glb, 2 morph targets, 2026-10-02). Re-declare them before re-adding the surfaces.
+		var bs_names := []
+		for b in im.get_blend_shape_count():
+			bs_names.append(im.get_blend_shape_name(b))
+		var bs_mode := im.get_blend_shape_mode()
 		im.clear()
+		for nm in bs_names:
+			im.add_blend_shape(nm)
+		im.set_blend_shape_mode(bs_mode)
 		for s in saved:
 			im.add_surface(s[0], s[1], s[2], {}, s[3], s[4], s[5])
 	return OK

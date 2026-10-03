@@ -68,6 +68,19 @@ index order, so the inner plugs show and flicker. With it, only the front
 goo surface blends over the world. Evidence:
 renders/magmoo/magmoo_v3_sorting_modes.png + magmoo_v3_translucency.json.
 
+### 5b. COLOR_0 alpha dropped on firefly/firesprite (found 2026-10-02, glb export lane)
+
+`firefly_smoke` and `firesprite_fire` materials don't read vertex alpha, so the
+exporter writes no COLOR_0 alpha for them — source alpha 0.4–0.95 lost in the
+glb. Fix is in those units' build material wiring (small lane), before or during
+the import wave. Evidence: survey/glb_export_report.md.
+
+### 4b. Eldroot ship height (found 2026-10-02)
+
+Current rigged blend (eldroot_standing4) is the 0.895x auto-refit at 4.561 m;
+the review-log ship build is --no-cell-refit at 5.10 m. Import scale must
+account for this, or eldroot gets the --no-cell-refit rebuild first.
+
 ## 6. Cel-shaded units (vampwarrior v2): toon shader + outline shells
 
 Toon lighting on the unit material: the asset bakes AO tone bands into

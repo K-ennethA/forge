@@ -1,0 +1,77 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+Color1Ext: COLOR_1 -> CUSTOM0 on mesh 0 surface 0 (16934 verts)
+ERROR: Condition "p_blend_shapes.size() != blend_shapes.size()" is true.
+   at: add_surface (scene/resources/3d/importer_mesh.cpp:68)
+   GDScript backtrace (most recent call first):
+       [0] _import_post_parse (res://addons/color1/color1_ext.gd:56)
+       [1] _init (res://dump_unit.gd:72)
+ERROR: Condition "surfaces.is_empty()" is true. Returning: Ref<ArrayMesh>()
+   at: get_mesh (scene/resources/3d/importer_mesh.cpp:579)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "mesh->get_mesh()->get_mesh().is_null()" is true. Continuing.
+   at: _import_animation (modules/gltf/gltf_document.cpp:5663)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "surfaces.is_empty()" is true. Returning: Ref<ArrayMesh>()
+   at: get_mesh (scene/resources/3d/importer_mesh.cpp:579)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "mesh->get_mesh()->get_mesh().is_null()" is true. Continuing.
+   at: _import_animation (modules/gltf/gltf_document.cpp:5663)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "surfaces.is_empty()" is true. Returning: Ref<ArrayMesh>()
+   at: get_mesh (scene/resources/3d/importer_mesh.cpp:579)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "mesh->get_mesh()->get_mesh().is_null()" is true. Continuing.
+   at: _import_animation (modules/gltf/gltf_document.cpp:5663)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "surfaces.is_empty()" is true. Returning: Ref<ArrayMesh>()
+   at: get_mesh (scene/resources/3d/importer_mesh.cpp:579)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "mesh->get_mesh()->get_mesh().is_null()" is true. Continuing.
+   at: _import_animation (modules/gltf/gltf_document.cpp:5663)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+ERROR: Condition "surfaces.is_empty()" is true. Returning: Ref<ArrayMesh>()
+   at: get_mesh (scene/resources/3d/importer_mesh.cpp:579)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://dump_unit.gd:75)
+
+================================================================
+CrashHandlerException: Program crashed with signal 11
+Engine version: Godot Engine v4.6.stable.official (89cea143987d564363e15d207438530651d943ac)
+Dumping the backtrace. Please include this when reporting the bug on: https://github.com/godotengine/godot/issues
+[1] error(-1): no debug info in PE/COFF executable
+[2] error(-1): no debug info in PE/COFF executable
+[3] error(-1): no debug info in PE/COFF executable
+[4] error(-1): no debug info in PE/COFF executable
+[5] error(-1): no debug info in PE/COFF executable
+[6] error(-1): no debug info in PE/COFF executable
+[7] error(-1): no debug info in PE/COFF executable
+[8] error(-1): no debug info in PE/COFF executable
+[9] error(-1): no debug info in PE/COFF executable
+[10] error(-1): no debug info in PE/COFF executable
+[11] error(-1): no debug info in PE/COFF executable
+[12] error(-1): no debug info in PE/COFF executable
+[13] error(-1): no debug info in PE/COFF executable
+[14] error(-1): no debug info in PE/COFF executable
+[15] error(-1): no debug info in PE/COFF executable
+[16] error(-1): no debug info in PE/COFF executable
+[17] error(-1): no debug info in PE/COFF executable
+[18] error(-1): no debug info in PE/COFF executable
+[19] error(-1): no debug info in PE/COFF executable
+[20] error(-1): no debug info in PE/COFF executable
+[21] error(-1): no debug info in PE/COFF executable
+[22] error(-1): no debug info in PE/COFF executable
+-- END OF C++ BACKTRACE --
+================================================================
+GDScript backtrace (most recent call first):
+    [0] _init (res://dump_unit.gd:75)
+-- END OF GDSCRIPT BACKTRACE --
+================================================================
