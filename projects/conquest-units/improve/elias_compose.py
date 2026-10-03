@@ -90,14 +90,15 @@ out = os.path.join(R, V + "_sheet.png")
 sheet.save(out)
 print("SHEET", out, sheet.size)
 # ---- v2: the ONE before / after hair strip (v1 | this version): portrait, face 3/4, front, back + the hair-diag numbers
-if V != "elias_v1":
-    pairs = [("portrait", "face"), ("face_tq", "face 3/4"), ("front", "front"), ("back", "back")]
+BASE = os.environ.get("ELIAS_BASE", "elias_v1")
+if V != BASE:
+    pairs = [("portrait", "face"), ("face_tq", "face 3/4"), ("portrait_low", "face from below (chin)"), ("front", "front")]
     S = 420
     st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 6 * 22), (28, 28, 30))
     ds = ImageDraw.Draw(st)
     for k, (v, lab) in enumerate(pairs):
         x0 = PAD + k * (2 * S + 3 * PAD)
-        for j, ver in enumerate(("elias_v1", V)):
+        for j, ver in enumerate((BASE, V)):
             p = os.path.join(R, "%s_%s.png" % (ver, v))
             im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
             st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
@@ -107,7 +108,7 @@ if V != "elias_v1":
         p = os.path.join(R, ver + "_hairdiag.json")
         return json.load(open(p)) if os.path.exists(p) else None
     yl = PAD + LAB + S + PAD
-    for k, ver in enumerate(("elias_v1", V)):
+    for k, ver in enumerate((BASE, V)):
         d_ = diag(ver)
         if d_:
             ip = d_["interpenetration"]

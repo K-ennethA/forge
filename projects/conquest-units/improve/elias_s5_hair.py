@@ -416,7 +416,7 @@ def ribbon_plan(name, tier, ctl, chain, s_leave_k, W, T, root_k, sway, free_k, l
     Td, Nd, Wdd = spine_frames(Cd)
     # the angel-ring band on this lock: the first run of the spine inside the (per-lock jittered) ring elevations
     band_ = None
-    if ANGEL_RING is not None and name.split(".")[1] not in ("beard", "beard_in", "beard_top", "must"):
+    if ANGEL_RING is not None and not (name.split(".")[1].startswith("beard") or name.split(".")[1] == "must"):
         jr_ = RIBBON_RING_JITTER * (2.0 * hash01(len(LOCK_INFO), 5.3) - 1.0)
         el_ = ellip_el(Cd)
         ins_ = (el_ >= ANGEL_RING[0] + jr_) & (el_ <= ANGEL_RING[1] + jr_)
@@ -430,7 +430,7 @@ def ribbon_plan(name, tier, ctl, chain, s_leave_k, W, T, root_k, sway, free_k, l
                 band_ = (a0_, a1_)
     RING_BANDS[name] = band_
     forced_ = [HAIR_TIERS[0], HAIR_TIERS[1]] + (list(band_) if band_ else [])
-    fr = station_fracs(Cd, RIBBON_STATIONS.get(tier, 16), forced_)
+    fr = station_fracs(Cd, RIBBON_STATIONS_KIND.get(name.split(".")[1], RIBBON_STATIONS.get(tier, 16)), forced_)
     C = interp_rows(fr, af, Cd)
     Tg = interp_rows(fr, af, Td); Tg /= np.linalg.norm(Tg, axis=1)[:, None]
     Nn = interp_rows(fr, af, Nd); Nn = Nn - Tg * np.einsum("ij,ij->i", Nn, Tg)[:, None]; Nn /= np.linalg.norm(Nn, axis=1)[:, None]
@@ -628,6 +628,16 @@ for kind, tier, (p1_, e1_, fl_), mir_, chain_ in HAIR_LOCKS:
         clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, free_k=(3 if kind in ("back", "outer", "side") else 2))
         SCALP_INFO[nm_] = {"tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": ch_}
         _nb[kind] = _nb.get(kind, 0) + 1
+# ---- v3 HAIRLINE ROW (artist arrow 1): short flat locks on the cap just above the hairline, between the front tips and
+# under them -- the visible surface over the hairline band is hair, never the dark cap
+for k_, (tier, (p0_, e0_), (p1_, e1_, fl_)) in enumerate(HAIRLINE_LOCKS):
+    for sg_, sn_ in ((1.0, "L"), (-1.0, "R")):
+        root_d, tip_d = unit(hdir(sg_ * p0_, e0_)), unit(hdir(sg_ * p1_, e1_))
+        ctl = radiate2(root_d, tip_d, "hairline", n_mid=2, f_end=0.80) + [on_dir(tip_d, LOCK_OFF + fl_)]
+        nm_ = "lock.hairline.%s%d" % (sn_, k_)
+        clump(nm_, tier, ctl, chain="hair_front", s_leave_k=2, free_k=2, root_k=0.85, sway=False,
+              layer=HAIR_LAYER["hairline"] + CLUMP_STACK * k_)
+        SCALP_INFO[nm_] = {"tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": "hair_front"}
 # ---- the BEARD: groomed ribbon-lock masses rooted on the face skin (over the painted under-beard zone), falling from
 # the sideburns / cheeks / chin to a soft point BEARD_LEN below the chin, standing BEARD_FWD in front of the chest
 LANDMARK_Z = {"eye": EZ, "nose": Z_NOSE_BOTTOM, "slit": Z_SLIT, "chin": Z_CHIN_B}
@@ -673,7 +683,7 @@ for kind, tier, psi_, (lm_, dz_), share_ in BEARD_LOCKS:
         x0_ = abs(float(face_pt(psi_, EZ - 0.05, 0.0)[0]))
         zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_
         x0_ = abs(float(face_pt(psi_, zr_, 0.0)[0]))
-        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_
+        zr_ = float(beard_top_z(np.array([x0_]))[0]) + dz_ + BEARD_EDGE_LIFT
     else:
         zr_ = LANDMARK_Z[lm_] + dz_
     root_ = face_pt(psi_, zr_, 0.0)
@@ -684,13 +694,14 @@ for kind, tier, psi_, (lm_, dz_), share_ in BEARD_LOCKS:
                      for t_ in (0.22, 0.45, 0.70)] + [tip_]
     nm_ = "lock.%s.%d" % (kind, _nb.get(kind, 0))
     ch_ = "beard.C" if abs(psi_) <= BEARD_CHAIN_PSI else ("beard.L" if psi_ > 0 else "beard.R")
-    clump(nm_, tier, ctl, chain=ch_, s_leave_k=2, free_k=2, T=BEARD_T[kind], layer=HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0))
+    clump(nm_, tier, ctl, chain=ch_, s_leave_k=2, free_k=2, T=BEARD_T[kind], root_k=BEARD_ROOT_K,
+          layer=HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0))
     BEARD_INFO[nm_] = {"root": (1000 * (root_ - HC)).round(1).tolist(), "tip": (1000 * (tip_ - HC)).round(1).tolist()}
     _nb[kind] = _nb.get(kind, 0) + 1
 # ---- the BEARD CORE: the hanging beard's dark inner mass (the scalp's "dark inner cap" principle: gaps between locks read
 # as shadowed beard, never as the cravat / chest behind) -- a sheet on the beard envelope from the jaw line down to near
 # the point, narrowing like the beard, just inside the locks
-_bc_rows, _bc_cols = 10, 13
+_bc_rows, _bc_cols = 8, 11
 _bcV = []
 _jx = BEARD_CORE_W
 for j in range(_bc_rows):
@@ -1171,7 +1182,7 @@ _clumps = [p for p in PARTS if p["name"].startswith("lock.")]
 RIBBON_INFO = ribbon_metrics()
 print("RIBBON", json.dumps(RIBBON_INFO))
 _kinds = sorted(set(p["name"].split(".")[1] for p in _clumps))
-BEARD_KINDS = ("beard_in", "beard", "beard_top", "must")
+BEARD_KINDS = ("beard_in", "beard", "beard_top", "beard_chin", "beard_cheek", "must")
 _HZ = max(float(p["V"][:, 2].max()) for p in PARTS if p["name"].startswith(("lock", "hair_cap")))
 HAIR_INFO = {"ribbon": RIBBON_INFO, "layer_resolve": {k_: v_ for k_, v_ in LAYER_INFO.items() if k_ != "lift_profile_mm"},
              "tuck_shade": TUCK_INFO, "locks": len(_clumps), "tiers": {t: sum(1 for n in TIER_OF.values() if n == t) for t in "LMS"},

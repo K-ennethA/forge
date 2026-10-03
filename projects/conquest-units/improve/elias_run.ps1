@@ -28,11 +28,11 @@ if (-not $SkipBuild) {
 }
 $RB = "`"$P\rigged\elias.blend`""
 $R = "`"$I\elias_render.py`""
-$VER = "elias_v2"                     # (render / probe prefix; v1 stills stay as the comparison baseline)
+$VER = "elias_v3"                     # (render / probe prefix; v1 stills stay as the comparison baseline)
 $W = "`"$OUT\$VER`""
 $vJobs = @(
   @("render_full",  @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"front,side,back,threequarter","--res","1024")),
-  @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,glasses,staff_head,book,satchel,belt,brooch","--res","800")),
+  @("render_close", @("--background",$RB,"--factory-startup","--python",$R,"--",$W,"portrait,face_tq,portrait_low,glasses,staff_head,book,satchel,belt,brooch","--res","800")),
   @("face_probe",   @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\wren_face_probe.py`"","--","`"$OUT\$($VER)_face_probe`"","--report","`"$P\improved\elias.json`"")),
   @("hair_diag",    @("--background",$RB,"--factory-startup","--python","`"$I\wren_hair_diag.py`"","--","`"$OUT\$($VER)_hairdiag.json`"")),
   @("check_improved", @("--background","`"$P\improved\elias.blend`"","--factory-startup","--python","`"$I\conquest_contract_check.py`"","--","`"$OUT\$($VER)_check_improved.json`""))
@@ -43,7 +43,7 @@ foreach ($j in $vJobs) {
   $null = $pr.Handle; $vProcs += ,@($j[0], $pr)
 }
 foreach ($x in $vProcs) { $x[1].WaitForExit(); "$($x[0]) exit=$($x[1].ExitCode)" }
-$env:ELIAS_V = $VER; & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
+$env:ELIAS_V = $VER; $env:ELIAS_BASE = "elias_v2"; & $VPY -P "$I\elias_compose.py" 2>&1 | Out-File -Encoding utf8 "$LOG\compose.txt"
 "compose exit=$LASTEXITCODE"
 (Get-Content "$LOG\compose.txt" | Select-String "^(SHEET|STRIP)").Line
 (Get-Content "$LOG\hair_diag.txt" | Select-String "^HAIRDIAG").Line | % { $_.Substring(0, [Math]::Min(600, $_.Length)) }
