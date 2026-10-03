@@ -1193,3 +1193,31 @@ wears glasses." Three views + detail panels:
 Build per the HOUSE STYLE GUIDE from the first pass (elderly dials:
 age-appropriate face, the beard as groomed masses, glasses as thin
 geometry, hero tier). QUEUED for the fresh session.
+
+## 2026-10-02 — NEW UNIT: General Varden (sheet SAVED, transcription binding)
+
+Sheet file: design/reference/varden/varden_sheet.webp (pixel-sample skin
+and palette from it — do not eyeball tones). Transcription (binding):
+"GENERAL VARDEN — KINGDOM GENERAL. AGE: 48+. ROLE: KINGDOM GENERAL
+(MILITARY / COMMAND). Scarred / battle-hardened; gruff / stubborn;
+commands respect." Three views + detail panels:
+- HEAD: tousled grey-brown hair swept back, SHORT-CROPPED full beard +
+  mustache with grey streaks, heavy brow, lined stern face (48+, not
+  elderly — harder/squarer than Elias), weathered/scarred skin.
+- CLOAK: huge navy cloak with a dark FUR MANTLE over the shoulders/
+  collar, gold trim at hem, gold kingdom-emblem motifs on the skirt,
+  the angular gold TRIDENT-CREST EMBLEM large on the back (cloak
+  emblem detail panel), round gold BROOCH with radial pattern + chain
+  at the collar (cloak/brooch detail panel).
+- OUTFIT: high-collar navy tunic with gold-trimmed collar; cream/white
+  rolled under-sleeves; dark gloves with gold-trimmed VAMBRACES; white
+  tabard panel under the cloak front; wide brown leather BELT + cross-
+  body sword strap, heavy buckles and studs (belt/strap detail panel);
+  dark trousers; heavy brown buckled BOOTS with gold-edged cuffs.
+- SWORD (detail panel): longsword at the left hip — gold cruciform
+  crossguard and pommel, dark wrapped grip, dark scabbard with gold
+  chape. Own bone + node per props law.
+- Palette chips: navy, dark brown, grey-taupe, cream, gold, steel teal.
+Build per the HOUSE STYLE GUIDE from the first pass; hero tier; the
+fur mantle is a new garment class (fur clumps, not cloth). Elias
+pipeline is the nearest reference implementation.
