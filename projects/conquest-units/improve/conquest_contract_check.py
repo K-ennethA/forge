@@ -207,7 +207,8 @@ if meshes and rigs:
                           "manual_range": bool(act.use_frame_range), "seam_mm": round(seam, 4),
                           "extent": {"footprint": round(float(max(hi_c[0] - lo_c[0], hi_c[1] - lo_c[1])), 4),
                                      "height": round(float(hi_c[2] - lo_c[2]), 4), "min_z": round(float(lo_c[2]), 4)}})
-    rig.animation_data.action = None
+    if rig.animation_data is not None:   # (a clip-less rig has no animation data: guard, 2026-10-03 elias v4 lane)
+        rig.animation_data.action = None
     check("rig_root", root_ok and worst_root < 1e-6, root_present=rb is not None,
           root_head=[round(v, 6) for v in rb.head_local] if rb else None, armature_identity=rig_ident,
           root_max_offset_over_clips=round(worst_root, 8), bones=len(rig.data.bones))

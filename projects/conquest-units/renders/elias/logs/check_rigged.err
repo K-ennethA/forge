@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\improve\conquest_contract_check.py", line 179, in <module>
-    rig.animation_data.action = None
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'action'

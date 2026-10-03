@@ -8,8 +8,8 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 2.220446049250313e-16,
-  "seconds": 0.5,
-  "rule": "body: MPFB game_engine weights; boots / sleeve rolls / bracers / belt / strap / capelet: the nearest skin point's weights; boot feet: foot -> ball; pouches / scroll tubes / buckle / brooch / satchel: rigid at their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and mustache lock root / glasses: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; staff: 'staff' (child of hand_r); tome: 'book' (child of hand_l)"
+  "seconds": 0.4,
+  "rule": "body: MPFB game_engine weights; boots / sleeve rolls / bracers / belt / strap / capelet: the nearest skin point's weights; boot feet: foot -> ball; pouches / scroll tubes / buckle / brooch / satchel: rigid at their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and glasses / the mustache shell: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each); v4 BEARD SHELL: head above BEARD_CHAIN_LEAVE, below it vine weights onto beard.C / beard.L / beard.R (3 bones each, re-anchored on the shell's hanging mass; C <-> L/R blended over BEARD_CHAIN_PSI +-4 deg; underside ramps back to the head at the neck); staff: 'staff' (child of hand_r); tome: 'book' (child of hand_l)"
  },
  "grip": {
   "staff": {
@@ -147,18 +147,6 @@
   }
  },
  "chains": {
-  "beard.C": {
-   "bones": 3,
-   "length_m": 0.0758
-  },
-  "beard.L": {
-   "bones": 3,
-   "length_m": 0.0683
-  },
-  "beard.R": {
-   "bones": 3,
-   "length_m": 0.0669
-  },
   "hair_back": {
    "bones": 3,
    "length_m": 0.0342
@@ -174,6 +162,18 @@
   "hair_side.R": {
    "bones": 3,
    "length_m": 0.0244
+  },
+  "beard.C": {
+   "bones": 3,
+   "length_m": 0.0796
+  },
+  "beard.L": {
+   "bones": 3,
+   "length_m": 0.0446
+  },
+  "beard.R": {
+   "bones": 3,
+   "length_m": 0.0446
   }
  },
  "bones": [
@@ -887,14 +887,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0207,
-    -0.1966,
-    1.487
+    0.0211,
+    -0.1912,
+    1.5087
    ],
    "tail": [
-    0.0206,
-    -0.1838,
-    1.4656
+    0.0211,
+    -0.1954,
+    1.4831
    ]
   },
   {
@@ -902,14 +902,14 @@
    "parent": "beard.C.0",
    "deform": true,
    "head": [
-    0.0206,
-    -0.1838,
-    1.4656
+    0.0211,
+    -0.1954,
+    1.4831
    ],
    "tail": [
-    0.0207,
-    -0.1608,
-    1.4557
+    0.0211,
+    -0.1904,
+    1.4571
    ]
   },
   {
@@ -917,14 +917,14 @@
    "parent": "beard.C.1",
    "deform": true,
    "head": [
-    0.0207,
-    -0.1608,
-    1.4557
+    0.0211,
+    -0.1904,
+    1.4571
    ],
    "tail": [
-    0.0207,
-    -0.146,
-    1.4369
+    0.0211,
+    -0.1852,
+    1.431
    ]
   },
   {
@@ -932,14 +932,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    0.0847,
-    -0.147,
-    1.5072
+    0.0713,
+    -0.1261,
+    1.5065
    ],
    "tail": [
-    0.0871,
-    -0.137,
-    1.487
+    0.075,
+    -0.1287,
+    1.4925
    ]
   },
   {
@@ -947,14 +947,14 @@
    "parent": "beard.L.0",
    "deform": true,
    "head": [
-    0.0871,
-    -0.137,
-    1.487
+    0.075,
+    -0.1287,
+    1.4925
    ],
    "tail": [
-    0.0879,
-    -0.1287,
-    1.4659
+    0.0745,
+    -0.127,
+    1.4778
    ]
   },
   {
@@ -962,14 +962,14 @@
    "parent": "beard.L.1",
    "deform": true,
    "head": [
-    0.0879,
-    -0.1287,
-    1.4659
+    0.0745,
+    -0.127,
+    1.4778
    ],
    "tail": [
-    0.0883,
-    -0.1235,
-    1.4437
+    0.0725,
+    -0.1245,
+    1.4633
    ]
   },
   {
@@ -977,14 +977,14 @@
    "parent": "head",
    "deform": true,
    "head": [
-    -0.046,
-    -0.1425,
-    1.5098
+    -0.0291,
+    -0.1261,
+    1.5065
    ],
    "tail": [
-    -0.0496,
-    -0.1345,
-    1.4893
+    -0.0328,
+    -0.1287,
+    1.4925
    ]
   },
   {
@@ -992,14 +992,14 @@
    "parent": "beard.R.0",
    "deform": true,
    "head": [
-    -0.0496,
-    -0.1345,
-    1.4893
+    -0.0328,
+    -0.1287,
+    1.4925
    ],
    "tail": [
-    -0.0519,
-    -0.1282,
-    1.4681
+    -0.0323,
+    -0.1269,
+    1.4778
    ]
   },
   {
@@ -1007,14 +1007,14 @@
    "parent": "beard.R.1",
    "deform": true,
    "head": [
-    -0.0519,
-    -0.1282,
-    1.4681
+    -0.0323,
+    -0.1269,
+    1.4778
    ],
    "tail": [
-    -0.0528,
-    -0.1243,
-    1.4462
+    -0.0302,
+    -0.1245,
+    1.4632
    ]
   },
   {
@@ -1320,7 +1320,7 @@
  ],
  "bone_count": 76,
  "tris": {
-  "model": 49777,
+  "model": 46463,
   "outline_shells": 0,
   "budget": [
    30000,
@@ -1329,17 +1329,34 @@
  },
  "digest": {
   "parts": {
-   "hair_geometry": "03c00918678cec9e",
-   "bake_hair_normal": "11c3525de5bd1c97",
+   "hair_geometry": "c34ec701a3ba7cf0",
    "mouth_proxy_core": "07a63097c5b13dc3",
-   "bake_normal": "f812404100028867",
-   "bake_ao": "0e3973b73481e244",
-   "ao_lifted": "d3641b0eee9f8d19",
-   "geometry_colour_uv": "4239b8b5675b1044",
-   "weights": "2c20a6f535904ad7"
+   "bake_normal": "3dae82595b8b68c9",
+   "bake_ao": "47231238b4bc2e02",
+   "ao_lifted": "e01c9e6de20f61de",
+   "hair_custom_normals": "647c492d41fb061a",
+   "geometry_colour_uv": "529ba0cd33eb1715",
+   "weights": "ca39c22a4b539dd0"
   },
-  "combined": "317c0ad34877991f"
+  "combined": "bf2cdf1a129a7bf8"
+ },
+ "glb": {
+  "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\elias.glb",
+  "bytes": 10437360,
+  "tris": 46463,
+  "COLOR_0": true,
+  "COLOR_1": true,
+  "_GLOW": true,
+  "skins": 1,
+  "joints": [
+   76
+  ],
+  "meshes": [
+   "elias",
+   "elias_book",
+   "elias_staff"
+  ]
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\elias.json",
- "seconds": 114.9
+ "seconds": 72.8
 }

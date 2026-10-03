@@ -75,6 +75,8 @@ for ch in sorted(set(p["chain"] for p in PARTS if p["w"] == "lock")):
     paths = [VP.resample(p["path"], 40)[0] for p in PARTS if p["w"] == "lock" and p["chain"] == ch]
     rs, Lc = VP.resample(np.mean(paths, 0), HAIR_BONES + 1)
     CHAIN_PTS[ch] = (rs, Lc, "head")
+for ch, bc_ in BEARD_CHAINS.items():                       # v4: beard.L / .C / .R re-anchored on the shell's hanging mass
+    CHAIN_PTS[ch] = (bc_["pts"], bc_["L"], "head")          #   (s5: the mean outer profile below BEARD_CHAIN_LEAVE)
 for ch, (pts, Lc, par) in sorted(CHAIN_PTS.items()):
     for k in range(len(pts) - 1):
         BONES.append(("%s.%d" % (ch, k), S_(pts[k]), S_(pts[k + 1]), par if k == 0 else "%s.%d" % (ch, k - 1), None))
@@ -165,6 +167,16 @@ def part_weights(p):
         W = chain_w(sc, Lc, p["chain"], HAIR_BONES, "head", s0=-0.03)
         W[s <= p["s_leave"] - 0.03] = onehot(1, "head")[0]
         return W
+    if w == "beard_shell":                            # v4: the long beard shell -- head above the leave line, then each chain's
+        W = np.zeros((n, len(DEFORM)))                #   vine weights by its own drop (s5 bs_chain: chain, blend weight, s)
+        wsum_ = np.zeros(n)
+        for ch_, wc_, sc_ in p["bs_chain"]:
+            Wc_ = chain_w(sc_, CHAIN_PTS[ch_][1], ch_, HAIR_BONES, "head", s0=-0.03)
+            Wc_[sc_ <= 0.0] = onehot(1, "head")[0]
+            W += np.asarray(wc_, float)[:, None] * Wc_
+            wsum_ += np.asarray(wc_, float)
+        W[:, J["head"]] += np.clip(1.0 - wsum_, 0.0, 1.0)
+        return W
     raise ValueError(w)
 
 
@@ -207,7 +219,7 @@ rep["weights"] = {"max_influences": int(max((W > 0).sum(1).max() for W in WOBJ.v
                           "their centroid's skin weights; robe skirt: pelvis -> skin under the hem (<= 55 %); cravat: skin with head / "
                           "half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm "
                           "influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and "
-                          "mustache lock root / glasses: head; scalp + beard locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back / beard.L/C/R (3 bones each); mustache: head; staff: 'staff' (child of hand_r); tome: 'book' "
+                          "glasses / the mustache shell: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each); v4 BEARD SHELL: head above BEARD_CHAIN_LEAVE, below it vine weights onto beard.C / beard.L / beard.R (3 bones each, re-anchored on the shell's hanging mass; C <-> L/R blended over BEARD_CHAIN_PSI +-4 deg; underside ramps back to the head at the neck); staff: 'staff' (child of hand_r); tome: 'book' "
                           "(child of hand_l)"}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
@@ -296,8 +308,9 @@ rig["conquest_rig"] = ("elias: root (contract) > MPFB2 game_engine skeleton + st
 rep["chains"] = {ch: {"bones": HAIR_BONES, "length_m": round(float(Lc), 4)} for ch, (_, Lc, _) in CHAIN_PTS.items()}
 low["conquest_clips"] = []
 low["conquest_clip_status"] = "none (v1 draft: static build + rig; movement intent is an open artist question)"
-low["conquest_look"] = ("shaded: Col x baked AO, baked normal map (the hair strip carries the smooth-proxy normals, scalp and beard "
-                        "as separate volumes) -- no outline shells, no cel bands; stylisation drawn into the palette regions")
+low["conquest_look"] = ("shaded: Col x baked AO, baked normal map on the skin; the hair family (scalp locks + cap + the v4 beard / "
+                        "mustache SHELLS) smooth with custom split vertex normals (the per-group smooth-proxy normals: glTF NORMAL) "
+                        "-- no outline shells, no cel bands; stylisation drawn into the palette regions")
 low["conquest_staff_grip"] = json.dumps(np.round(G_HAND_TO_STAFF, 6).tolist())
 low["conquest_book_grip"] = json.dumps(np.round(G_HAND_TO_BOOK, 6).tolist())
 for m in list(bpy.data.materials):
@@ -316,12 +329,23 @@ os.makedirs(os.path.dirname(OUT_RIGGED), exist_ok=True)
 set_tex_paths("//../improved/textures/" if not SCRATCH else "//textures/")
 bpy.ops.wm.save_as_mainfile(filepath=OUT_RIGGED, copy=True, compress=True, relative_remap=False)
 if WANT_GLB:
+    # v4: the shared game-ready path (import wave 2026-10-02; Varden's s7): export_glb.add_glow_attr puts the float '_GLOW'
+    # copy of Glow.rgb on every exported mesh in memory (the blend above is already saved without it), then the shared
+    # EXPORT_KW flags (COLOR_0 = Col, COLOR_1 = Glow, export_attributes -> _GLOW) minus animations (no clips); audited after.
+    # The hair faces' custom split normals ride glTF NORMAL.
+    import export_glb as _EG
     for o in scene.objects:
         o.select_set(o in (rig, low, fko, bko))
     bpy.context.view_layer.objects.active = rig
-    bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
-                              export_animations=False, export_materials="EXPORT", export_skins=True, export_def_bones=False)
-    rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB)}
+    _EG.add_glow_attr([o for o in scene.objects if o.select_get() and o.type == "MESH"])
+    _props = {q.identifier for q in bpy.ops.export_scene.gltf.get_rna_type().properties}
+    _kw = {k_: v_ for k_, v_ in dict(_EG.EXPORT_KW, export_animations=False).items() if k_ in _props}
+    bpy.ops.export_scene.gltf(filepath=OUT_GLB, **_kw)
+    _au = _EG.audit(OUT_GLB)
+    rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "tris": _au["tris"], "COLOR_0": _au["COLOR_0"],
+                  "COLOR_1": _au["COLOR_1"], "_GLOW": _au["_GLOW"], "skins": _au["skins"], "joints": _au["joints"],
+                  "meshes": [q_["mesh"] for q_ in _au["primitives"]]}
+    print("GLB", json.dumps(rep["glb"]))
 rep["improved_report"] = OUT_IMPROVED[:-6] + ".json"
 rep["seconds"] = round(time.time() - T0, 1)
 json.dump(rep, open(OUT_RIGGED[:-6] + ".json", "w"), indent=1, default=lambda o: o.tolist() if hasattr(o, "tolist") else str(o))

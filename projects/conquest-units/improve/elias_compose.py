@@ -64,8 +64,9 @@ mp = IMP.get("mouth_placement", {})
 ep = IMP.get("eye_proof", {})
 gl = IMP.get("parts", {}).get("glasses", {})
 lines = [
-    "PROFESSOR ELIAS %s (hero tier)   tris %d (main %d + staff %d + book %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d"
-    % (V.split("_")[-1] + " draft", t["total"], t["main"], t["staff"], t["book"], t["body"], t["scalp_locks"], t["beard_mustache_locks"]),
+    "PROFESSOR ELIAS %s (hero tier)   tris %d (main %d + staff %d + book %d; budget 30-50k)   body %d, scalp locks %d, beard+mustache %d%s"
+    % (V.split("_")[-1] + " draft", t["total"], t["main"], t["staff"], t["book"], t["body"], t["scalp_locks"],
+       t.get("beard_mustache", t.get("beard_mustache_locks", 0)), " (v4: shells)" if "beard_mustache" in t else ""),
     "heads tall %.2f (house rule; Wren 5.94)  /  %.2f by chin outline (Wren 6.90)   height %.3f m (staff top %.3f m)"
     % (pr.get("heads_tall_house_rule", 0), pr.get("heads_tall_chin_outline", 0), IMP["landmarks"]["height_total"],
        IMP["measure"]["height"]),
@@ -93,6 +94,8 @@ print("SHEET", out, sheet.size)
 BASE = os.environ.get("ELIAS_BASE", "elias_v1")
 if V != BASE:
     pairs = [("portrait", "face"), ("face_tq", "face 3/4"), ("portrait_low", "face from below (chin)"), ("front", "front")]
+    if os.environ.get("ELIAS_ONETONE"):              # v4: + the one-tone hair shading column (every hair region painted the
+        pairs.append(("onetone_face_tq", "face 3/4 hair one-tone"))   #   one grey: shading only -- Wren's H5 proof column)
     S = 420
     st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 6 * 22), (28, 28, 30))
     ds = ImageDraw.Draw(st)
@@ -118,6 +121,8 @@ if V != BASE:
                         ip["top_sheets"]["tri_pairs"], d_["paint"]["patches_per_lock"], d_["facet_kinks_top_deg"]["p50"],
                         d_["facet_kinks_top_deg"]["p90"], d_["facet_kinks_top_deg"]["share_over_20deg_pct"],
                         d_["faces"]["sliver_aspect_over_20"]), fill=(220, 220, 210), font=FONT_S)
+    if os.environ.get("ELIAS_STRIP_NOTE"):
+        ds.text((PAD + 4, yl + 44), os.environ["ELIAS_STRIP_NOTE"], fill=(220, 220, 210), font=FONT_S)
     outs = os.path.join(R, V + "_hair_compare.png")
     st.save(outs)
     print("STRIP", outs, st.size)
