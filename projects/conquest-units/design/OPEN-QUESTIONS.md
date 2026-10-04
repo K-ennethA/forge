@@ -34,6 +34,10 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - V4 Fur mantle: length/shagginess/tuft count (FUR, FUR_ROWS, FUR_TUFT knobs).
 - V5 Sword: sheathed at hip (current) vs drawn idle; movement intent for clips.
 - V6 Cloak hem 0.24 m off the floor; eye colour (sampled grey-hazel was a thin guess).
+- V7 Ears: enclosed by the painted hairline since v1 (the cap covers the upper ear) —
+  freeing them = redraw the hairline around the ear, own small lane (body digest changes).
+- V8 v5 scalp smalls: front locks read ribbed head-on, dark notch at top centre, crown
+  under-arch — verdict after seeing the renders; knobs in varden_build.py mass tables.
 
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
