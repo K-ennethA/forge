@@ -1263,3 +1263,19 @@ smooth lobed shell wherever the sheet disagrees with it.
 (3) WREN: pitchfork REMOVED from the model and all clips (the hero
 carries nothing until a weapon is designed). Queued behind the
 in-flight s7 sash lane (same files).
+
+## 2026-10-04 — Wren in-game verdicts (artist, verbatim)
+
+"we want his hands closed and not holding anything" + "his leg goes
+up too much right now in the run animation and in the game itself
+its the walk animation doesnt seem to properly cycle same for the
+run animation" + "the walking and camera doesnt seem to match
+pokemon sun and moon style".
+(1) HANDS: closed (relaxed fists), both hands, all clips — never a
+grip/holding read.
+(2) RUN: knee drive too high — lower it from thigh-horizontal; keep
+the young-hero sprint identity otherwise.
+(3) IN-GAME DEFECT: walk and run do not cycle properly in the game
+(forge loop seams are 0.0 — the break is game-side playback).
+(4) DIRECTION: overworld walking + camera should match Pokemon
+Sun/Moon style (smooth continuous follow, not stepped).
