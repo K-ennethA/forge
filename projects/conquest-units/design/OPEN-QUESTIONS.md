@@ -24,6 +24,8 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
 - E6 Tome placement: left hand / belt / satchel (currently left-hand prop, own bone).
 - E7 Known smalls in elias_STATE.md: zone sliver above the mustache by the nose, beard tone
   close to skin brightness, tuck-shade off for beard (horizontal-bar artifact).
+- E8 In-game faint glow: his _GLOW is not all zeros (body/staff peak ~0.17 teal — the orb
+  and gem accents will faintly glow in-game). Intended look, or zero the non-orb regions?
 
 ## Varden (scalp rebuild in flight; ships to compendium after)
 - V1 Heft verdict: 1.927 m, shoulder joints 0.563 m (next step = SHOULDER_WIDEN one-liner).
