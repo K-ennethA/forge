@@ -1284,3 +1284,20 @@ the young-hero sprint identity otherwise.
 (forge loop seams are 0.0 — the break is game-side playback).
 (4) DIRECTION: overworld walking + camera should match Pokemon
 Sun/Moon style (smooth continuous follow, not stepped).
+
+## 2026-10-04 — Wren posture verdicts (artist, verbatim + 2 markups)
+
+"wren needs both arms to swing, and the cape not to be stuck to his
+arm" + "his legs are also angled inward it should be more like the
+second picture with a more regular standing up posture and carry
+over to his running, more like the motion we did with the werewolf
+character, currently it looks like his legs are broken."
+(1) ARMS: BOTH arms swing freely in walk and run (this ANSWERS the
+open right-arm question: free swing, yes). The left hand releases
+the cloak strap in locomotion; the cloak must read free of the
+arms, never pinned to a fist.
+(2) LEGS: current stance is knock-kneed (markup 1: both shins angle
+inward). Required: regular upright stance, legs tracking straight
+(markup 2's vertical line), in idle AND carried through walk/run.
+Werewolf project's locomotion work is the motion reference.
+(3) Overworld pace: artist bumped (free preset 2.2/5.0 m/s).
