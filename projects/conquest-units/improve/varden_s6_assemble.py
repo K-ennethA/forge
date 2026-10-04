@@ -94,7 +94,8 @@ REG = ["skin", "skin_shadow", "lips", "mouth", "liner", "lash", "brow", "face_li
        "tunic", "tunic_shade", "tunic_trim", "tabard", "tabard_shade", "sleeve", "sleeve_roll", "glove", "trousers",
        "boot", "boot_cuff", "boot_trim", "boot_sole", "strap", "strap_edge",
        "belt", "belt_edge", "brass", "brass_dark", "vambrace", "gem_teal",
-       "cloak", "cloak_trim", "cloak_lining", "fur", "fur_shade", "fur_tip", "fur_root", "fur_inner"]
+       "cloak", "cloak_trim", "cloak_lining", "fur", "fur_shade", "fur_tip", "fur_root", "fur_inner",
+       "hair_grey", "hair_grey_tip"]   # (v5: the scalp grey streaks -- appended: every older region keeps its id)
 REG_S = ["steel", "steel_dark", "brass", "brass_dark", "grip", "grip_dark", "gem_dark"]
 REG_B = ["scabbard", "scabbard_dark", "brass"]
 # hidden skin removed: the scalp under the cap, the feet inside the boot shells, the shins inside the boot shafts, the
@@ -224,6 +225,67 @@ if GLOVE_DECIMATE is not None and GLOVE_DECIMATE < 1.0:
     GLOVE_INFO["faces_after"] = int((reg == "glove").sum())
 report["glove_decimation"] = GLOVE_INFO
 print("GLOVES", json.dumps(GLOVE_INFO))
+
+
+# v5 NON-SCALP DIGEST (the scalp rebuild's untouched proof, Elias v5 pattern): the exact bytes (float64 positions, faces,
+# regions) of the painted body as the assembly receives it + of EVERY part that is not the scalp (lock.* / hair_cap): the
+# face, the beard / mustache shells, the fur mantle, the outfit, the props -- compared per part against the v4 build
+def _pdig(V_, F_, R_):
+    h_ = hashlib.sha256(); h_.update(np.ascontiguousarray(V_, dtype=np.float64).tobytes())
+    h_.update(np.array([i for f in F_ for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); h_.update("|".join(map(str, R_)).encode())
+    return h_.hexdigest()[:16]
+
+
+NONSCALP = {"body": _pdig(CV, CF, list(reg))}
+for p in PARTS:
+    if not p["name"].startswith(("lock.", "hair_cap")):
+        NONSCALP[p["name"]] = _pdig(p["V"], p["F"], p["R"])
+DIG["nonscalp_geometry"] = hashlib.sha256(json.dumps(NONSCALP, sort_keys=True).encode()).hexdigest()[:16]
+report["nonscalp_digest"] = {"combined": DIG["nonscalp_geometry"], "parts": NONSCALP}
+print("NONSCALPDIGEST", json.dumps({"combined": DIG["nonscalp_geometry"], "parts": len(NONSCALP),
+                                    "beardshell": NONSCALP.get("beardshell"), "mustache": NONSCALP.get("mustache"),
+                                    "body": NONSCALP["body"]}))
+print("NONSCALPPARTS", json.dumps(NONSCALP, sort_keys=True))
+# v5 RIGGED FLAT-SHADING FIX (found 2026-10-03: the rigged file's contract check read 2 body faces -- a skin + a scar_shadow
+# NEEDLE, area 3e-11 / 8e-11 m2, left by the face round's cuts -- as smooth: 6.1 / 17.4 deg corner-vs-face). Their explicit
+# face normals (the carrier below) hold on the improved file, but the armature evaluation re-rounds every vertex to float32
+# (~1e-7 m at 1.8 m) and a needle 0.03 um high swings its polygon normal by degrees; no stored normal can follow that. The
+# body's degenerate faces (area < SLIVER_AREA) are therefore collapsed here (s2's / s5's rule: the shortest edge, 3 passes;
+# regions + skin weights carried), AFTER the non-scalp digest above (which proves the inputs untouched): measured delta =
+# the collapsed faces + the merged vertices' moves (reported)
+_bmb = bmesh.new()
+_bil = _bmb.verts.layers.int.new("i"); _brl = _bmb.faces.layers.int.new("r")
+_regn = sorted(set(reg))
+_bvs = [_bmb.verts.new(p_) for p_ in CV]
+for i_, v_ in enumerate(_bvs):
+    v_[_bil] = i_
+for f_, r_ in zip(CF, reg):
+    _fb = _bmb.faces.new([_bvs[i] for i in f_]); _fb[_brl] = _regn.index(r_)
+_nf0 = len(_bmb.faces)
+_sl_area = sorted(round(f_.calc_area(), 14) for f_ in _bmb.faces if f_.calc_area() < SLIVER_AREA)
+for _ in range(3):
+    _es, _seen = [], set()
+    for f_ in _bmb.faces:
+        if f_.calc_area() < SLIVER_AREA:
+            e_ = min(f_.edges, key=lambda e: e.calc_length())
+            if e_.is_valid and not (set(e_.verts) & _seen):
+                _es.append(e_); _seen |= set(e_.verts)
+    if not _es:
+        break
+    bmesh.ops.collapse(_bmb, edges=_es, uvs=False)
+_bmb.verts.index_update()
+_oi = np.array([v_[_bil] for v_ in _bmb.verts])
+_cv2 = np.array([v_.co[:] for v_ in _bmb.verts])
+BODY_SLIVER = {"rule": "body faces under SLIVER_AREA %.0e m2: shortest edge collapsed (3 passes), after the non-scalp digest" % SLIVER_AREA,
+               "faces_before": _nf0, "faces_after": len(_bmb.faces), "degenerate_faces_found": len(_sl_area),
+               "areas_m2": _sl_area[:12], "verts_merged": int(len(CV) - len(_cv2)),
+               "max_vertex_move_mm": round(1000 * float(np.linalg.norm(_cv2 - CV[_oi], axis=1).max()), 3)}
+CF = [[v_.index for v_ in f_.verts] for f_ in _bmb.faces]
+reg = np.array([_regn[f_[_brl]] for f_ in _bmb.faces], dtype=object)
+CV = _cv2; CW = CW[_oi]
+_bmb.free()
+report["body_sliver_collapse"] = BODY_SLIVER
+print("BODYSLIVER", json.dumps(BODY_SLIVER))
 ISL = [{"name": "body", "V": CV, "F": CF, "R": list(reg), "w": "body", "obj": "main"}] + PARTS
 allV = np.vstack([p["V"] for p in ISL])
 lo0, hi0 = allV.min(0), allV.max(0)
@@ -319,7 +381,7 @@ dvec = landmark - anchor
 report["facing"] = {"rule": "head centre (between the eyes, at the skull's mid depth) -> nose tip (midline)",
                     "anchor": anchor.round(4).tolist(), "landmark": landmark.round(4).tolist(),
                     "angle_from_minusY_deg": round(math.degrees(math.atan2(dvec[0], -dvec[1])), 3)}
-HAIR_REGS = ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice",
+HAIR_REGS = ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice", "hair_grey", "hair_grey_tip",
              "hair_beard", "hair_beard_shade", "hair_beard_root", "hair_beard_tip", "hair_beard_crevice", "hair_beard_grey",
              "hair_beard_grey_tip")       # (v4: the beard family renamed hair_beard* -- the contract's smooth-region cap is
 #                                            the 'hair' prefix, and the beard shell is a hair region)

@@ -200,8 +200,13 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          # VARDEN close-ups: the fur mantle (three-quarter from above / behind), the sword hilt, the sheathed sword full,
          # the cloak emblem (behind), the vambrace
          "fur": (40.0, 18.0, 0.95), "fur_back": (150.0, 16.0, 0.95), "sword": (40.0, 6.0, 1.0), "sword_full": (55.0, 4.0, 1.0),
-         "emblem": (180.0, 4.0, 1.0), "vambrace": (40.0, 8.0, 1.0)}
-CLOSE_KEY = {"fur_back": "fur", "face_tq": "face", "hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
+         "emblem": (180.0, 4.0, 1.0), "vambrace": (40.0, 8.0, 1.0),
+         # v5 scalp (Elias v5's headc_* set): the sheet's four head reads on the 'head' box (HC / HR only: the same frame
+         # for every version) -- front, the head-detail panel's 3/4 (his RIGHT side toward the camera), the SIDE view (the
+         # sheet's: he faces image-left = his LEFT side), back; fill 0.95 (the swept-up volume stands above the box top)
+         "headc_front": (0.0, 4.0, 0.95), "headc_tq": (-32.0, 6.0, 0.95), "headc_side": (90.0, 4.0, 0.95),
+         "headc_back": (180.0, 6.0, 0.95)}
+CLOSE_KEY = {"headc_front": "head", "headc_tq": "head", "headc_side": "head", "headc_back": "head", "fur_back": "fur","face_tq": "face", "hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
              "hair_sweep": "head", "hair_back_close": "head", "undereye": "eyes", "undereye_tq": "eyes"}
 CLOSE_SHIFT = {"undereye": (0.0, 0.0, -0.016), "undereye_tq": (0.0, 0.0, -0.016)}   # the focus box moved (m)
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)

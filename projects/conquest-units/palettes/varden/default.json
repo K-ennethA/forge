@@ -29,6 +29,8 @@
   "hair_tip":      {"rgb": [126, 120, 108], "note": "SAMPLED #7e786c: the low-saturation grey lights (the greying tips)"},
   "hair_inner":    {"rgb": [60, 49, 42],    "note": "derived: the DARK inner cap (Wren ratio inner / hair ~0.55)"},
   "hair_crevice":  {"rgb": [70, 57, 47],    "note": "derived: tuck shade (Wren ratio ~0.62)"},
+  "hair_grey":     {"rgb": [131, 124, 112], "note": "v5 SAMPLED: the scalp GREY STREAK -- head panel side hair, sat < 0.25 / value > 0.5 pixels (median #837c70; 22 % of the side hair vs 4-8 % top / front)"},
+  "hair_grey_tip": {"rgb": [150, 143, 131], "note": "v5 derived: the grey streak lighter tips (toward the panel top highlights #b0a293)"},
   "hair_beard":    {"rgb": [105, 83, 67],   "note": "SAMPLED #695343: the beard median (a step warmer / darker than the hair)"},
   "hair_beard_shade":   {"rgb": [69, 54, 45],    "note": "derived from the beard 15th pct #513e34"},
   "hair_beard_root":    {"rgb": [81, 62, 52],    "note": "SAMPLED #513e34: beard 15th pct"},

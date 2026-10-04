@@ -24,7 +24,8 @@ PROBE = json.load(open(FP)) if os.path.exists(FP) else None
 HD = os.path.join(R, V + "_hairdiag.json")
 HDIAG = json.load(open(HD)) if os.path.exists(HD) else None
 ROW1 = [("front", "front"), ("side", "side (his left)"), ("back", "back"), ("threequarter", "three-quarter")]
-ROW2 = [("portrait", "face"), ("face_tq", "face 3/4"), ("fur", "fur mantle (clumps)"), ("fur_back", "fur mantle, behind"),
+ROW2 = [("headc_front", "head front (v5 scalp)"), ("headc_tq", "head 3/4, his right (sheet head panel)"),
+        ("headc_side", "head side (his left)"), ("headc_back", "head back"), ("portrait", "face"), ("face_tq", "face 3/4"), ("fur", "fur mantle (clumps)"), ("fur_back", "fur mantle, behind"),
         ("sword", "sword hilt (left hip)"), ("sword_full", "sword + scabbard"), ("emblem", "cloak emblem (back)"),
         ("brooch", "brooch + pendant + chain")]
 W1, PAD, LAB = 520, 8, 24
@@ -109,21 +110,44 @@ BASE = os.environ.get("VARDEN_BASE", "")
 if BASE and BASE != V:
     S = 560
     # v4: VARDEN_STRIP picks the strip's views ("fix:<view>" = the fixed full-body frame; else the close-up of that name)
-    LABS = {"front": "front", "threequarter": "three-quarter", "portrait": "portrait", "face_tq": "face 3/4",
+    LABS = {"headc_front": "front", "headc_tq": "3/4 (his right)", "headc_side": "side (his left)", "headc_back": "back", "front": "front", "threequarter": "three-quarter", "portrait": "portrait", "face_tq": "face 3/4",
             "portrait_low": "chin-up"}
     pairs = [(v_, LABS.get(v_.split(":")[-1], v_)) for v_ in os.environ.get("VARDEN_STRIP", "fix:front,fix:threequarter").split(",")]
-    st = Image.new("RGB", (PAD + len(pairs) * (2 * S + 3 * PAD), PAD + LAB + S + PAD + 30), (28, 28, 30))
+    if os.environ.get("VARDEN_ONETONE"):              # v5: + the one-tone hair column (every hair region one tone: shading only)
+        pairs.append((os.environ["VARDEN_ONETONE"], "hair one-tone"))
+    # v5: + the SHEET's own view beside each head pair (the judge: design/reference/varden/varden_sheet.webp crops, 1536 x 1024)
+    REF = {"headc_front": (150, 85, 290, 225), "headc_tq": (1073, 53, 1295, 275), "headc_side": (480, 85, 620, 225),
+           "headc_back": (820, 90, 960, 230)}
+    ncol = [3 if v_.split(":")[-1] in REF else (1 if v_.startswith("onetone") else 2) for v_, _ in pairs]
+    st = Image.new("RGB", (PAD + sum(c_ * (S + PAD) + PAD for c_ in ncol), PAD + LAB + S + PAD + 30), (28, 28, 30))
     ds = ImageDraw.Draw(st)
+    x0 = PAD
     for k, (v, lab) in enumerate(pairs):
-        x0 = PAD + k * (2 * S + 3 * PAD)
+        if v.startswith("onetone"):
+            p = os.path.join(R, "%s_%s.png" % (V, v))
+            im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
+            st.paste(im, (x0, PAD + LAB)); ds.text((x0 + 4, PAD + 2), "%s  %s" % (lab, V.split("_")[-1]), fill=(235, 235, 235), font=FONT)
+            x0 += S + 2 * PAD
+            continue
+        if v.split(":")[-1] in REF:
+            im = ref.crop(REF[v.split(":")[-1]]).resize((S, S), Image.LANCZOS)
+            st.paste(im, (x0 + 2 * (S + PAD), PAD + LAB))
+            ds.text((x0 + 2 * (S + PAD) + 4, PAD + 2), "%s  SHEET" % lab, fill=(235, 235, 235), font=FONT)
         for j, ver in enumerate((BASE, V)):
             p = os.path.join(R, ("%sfix_%s.png" if v.startswith("fix:") else "%s_%s.png") % (ver, v.split(":")[-1]))   # (fix: the
             #   SAME fixed frame for both, --fixed; close-ups frame on the same face landmarks both sides)
             im = Image.open(p).convert("RGB").resize((S, S), Image.LANCZOS) if os.path.exists(p) else Image.new("RGB", (S, S), (60, 30, 30))
             st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
             ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)
+        x0 += ncol[k] * (S + PAD) + PAD
     fr = IMP.get("frame", {})
-    ds.text((PAD + 4, PAD + LAB + S + 6), "same camera / frame both sides.  %s: height %.3f m, heads %.2f, shoulder joint span %.3f m, outer shoulder width %.3f m" % (
+    ms_ = IMP.get("hair", {}).get("masses")
+    if ms_ and os.environ.get("VARDEN_ONETONE"):      # v5: the scalp numbers under the head strip
+        ds.text((PAD + 4, PAD + LAB + S + 6), "same head frame both sides (HC / HR box).  %s scalp: %d masses / %d locks, width spread per mass %s (all %.2f), grey locks %d; scalp locks %d tris, total %d" % (
+            V.split("_")[-1], ms_["_all"]["masses"], ms_["_all"]["locks"], ", ".join("%s %.2f" % (k_, v_["width_spread"]) for k_, v_ in ms_.items() if k_ != "_all"),
+            ms_["_all"]["width_spread"], ms_["_all"]["grey_locks"], IMP["tris"]["scalp_locks"], IMP["tris"]["total"]), fill=(220, 220, 210), font=FONT_S)
+    else:
+      ds.text((PAD + 4, PAD + LAB + S + 6), "same camera / frame both sides.  %s: height %.3f m, heads %.2f, shoulder joint span %.3f m, outer shoulder width %.3f m" % (
         V.split("_")[-1], IMP["landmarks"]["height_total"], IMP["landmarks"]["heads_tall"], fr.get("shoulder_joint_span_m", 0),
         fr.get("shoulder_outer_width_m", 0)), fill=(220, 220, 210), font=FONT_S)
     outs = os.path.join(R, V + "_compare.png")

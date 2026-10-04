@@ -10,11 +10,10 @@
 # stations, the TUCK SHADE instead of the v4 cut bands); RIBBON = False keeps the v6 lens clumps (clump_lens) for A/B.
 # ---------------------------------------------------------------------------------------------------------------------
 # VARDEN: elias_s5_hair.py (= wren_s5_hair.py's ribbon-lock stack spliced verbatim: the cap, nearest() tie-invariance,
-# ribbon_plan / build_lock, the LAYER RESOLVE, clearance pass, tuck shade, sliver collapse, digest) with VARDEN's lock
-# table in the middle: the tousled grey-brown scalp hair SWEPT BACK -- under layers radiating from the crown whorl
-# (HAIR_LOCKS), the swept top layer ROOTED on the front hairline / temples and running back over the head (HAIR_SWEEP),
-# the hairline row under it (HAIRLINE_LOCKS, the Elias v3 coverage rule), a few loose strands over the forehead
-# (HAIR_LOOSE); v4: the SHORT-CROPPED BEARD + MUSTACHE as two conforming SHELLS (BEARD_SHELL / MUSTACHE_SHELL; was v3's
+# ribbon_plan / build_lock, the LAYER RESOLVE, clearance pass, tuck shade, sliver collapse, digest) with VARDEN's tables
+# in the middle: (v5) the SCALP as primary masses swept back from the hairline (HAIR_MASSES: the swept-up front, two side
+# sweeps, the crown layer, the tousled back -- matched to the sheet's views + head panel; v1-v4's whorl-radiating
+# HAIR_LOCKS / HAIR_SWEEP / HAIR_LOOSE are gone) + the grey-streak locks (HAIR_GREY_MAP) + the CAPEXPOSE / HAIRCLEAR probes; v4: the SHORT-CROPPED BEARD + MUSTACHE as two conforming SHELLS (BEARD_SHELL / MUSTACHE_SHELL; was v3's
 # ribbon-lock masses, BEARD_LOCKS / MUSTACHE: Elias's v3 roots,
 # shorter layers) -- then (after the tuck shade) the beard's own tones + the GREY STREAKS painted by whole locks
 # (BEARD_GREY). Comments mentioning fringe / tail / cowlick are Wren's.
@@ -33,7 +32,13 @@ mp_ = {v: k for k, v in enumerate(used)}
 Vcap = CV[used]
 Fcap = [[mp_[i] for i in CF[k]] for k in cap_faces]
 _capfe = smoothstep(0.0, HAIRLINE_FEATHER[0], Vcap[:, 2] - hairline_z(Vcap)[1])
-_capt = np.maximum(HAIRLINE_FEATHER[1], HAIR_CAP_T * _capfe)
+# v5 FRONT VOLUME (the sheet: the hair swept UP off the forehead stands high over the front top): the cap thickens by
+# CAP_BULGE[0] round the front-top axis (elevation CAP_BULGE[1] over the front; full inside CAP_BULGE[3] deg, none past
+# CAP_BULGE[2] deg) -- the inner volume under the swept-up front locks, so their lift stands on hair, not over a dark cavity
+_cbd = (Vcap - HC) / np.linalg.norm(Vcap - HC, axis=1)[:, None]
+_cba = np.array([0.0, -math.cos(math.radians(CAP_BULGE[1])), math.sin(math.radians(CAP_BULGE[1]))])   # (hdir(0, el))
+_cbw = smoothstep(math.cos(math.radians(CAP_BULGE[2])), math.cos(math.radians(CAP_BULGE[3])), _cbd @ _cba)
+_capt = np.maximum(HAIRLINE_FEATHER[1], (HAIR_CAP_T + CAP_BULGE[0] * _cbw) * _capfe)
 V_, F_, R_ = VP.solidify(Vcap, Fcap, _capt, -0.0015, "hair_inner", "hair_inner", "hair_inner")
 # VARDEN: the cap's HAIRLINE RIM (outer faces within CAP_RIM_PAINT of the feather + the rim strip) painted the hair ROOT tone,
 # not the dark inner cap: the swept roots sit just above the rim and the first build showed the dark rim as a band across
@@ -41,6 +46,16 @@ V_, F_, R_ = VP.solidify(Vcap, Fcap, _capt, -0.0015, "hair_inner", "hair_inner",
 _nfc = len(Fcap)
 R_ = [("hair_root" if (fi_ < _nfc and float(np.mean(_capfe[Fcap[fi_]])) < CAP_RIM_PAINT) or fi_ >= 2 * _nfc else r_)
       for fi_, r_ in enumerate(R_)]
+# v5 CROP SHELL (research H9: a short crop is a conforming shell + paint): the cap's outer faces over the SHORT sides / back
+# (below CAP_CROP elevation, |psi| beyond its azimuth) take the hair ROOT tone, not the dark inner cap -- the sheet's sides
+# over / behind the ears are short hair, and the locks there are kept short and high so the ear shows
+_cfc = np.array([Vcap[f].mean(0) for f in Fcap])
+_cfd = (_cfc - HC) / np.linalg.norm(_cfc - HC, axis=1)[:, None]
+_cfel = np.degrees(np.arcsin(np.clip(_cfd[:, 2], -1, 1)))
+_cfps = np.abs(np.degrees(np.arctan2(_cfc[:, 0] - HC[0], -(_cfc[:, 1] - HC[1]))))
+_crop = (_cfel < CAP_CROP[0]) & (_cfps > CAP_CROP[1])
+R_ = [("hair_root" if (fi_ < _nfc and _crop[fi_] and r_ == "hair_inner") else r_) for fi_, r_ in enumerate(R_)]
+CAP_CROP_INFO = {"rule": "outer cap faces below %.0f deg elevation beyond |psi| %.0f deg -> hair_root" % CAP_CROP, "faces": int(_crop.sum())}
 CAP_V, CAP_F = V_, F_
 if not HAIR_CAP_INNER:
     # the inner (scalp-facing) shell faces into the closed head (skin + cap outer + rim seal it): provably hidden
@@ -48,7 +63,7 @@ if not HAIR_CAP_INNER:
     F_ = F_[:_nf] + F_[2 * _nf:]; R_ = R_[:_nf] + R_[2 * _nf:]
 add_part("hair_cap", V_, F_, R_, w="rigid:head")
 CAP_FEATHER_INFO = {"rule": "cap outer thickness x smoothstep(0, %.3f, height above the hairline), floor %.4f m" % HAIRLINE_FEATHER,
-                    "full_thickness_m": HAIR_CAP_T, "inner_shell": HAIR_CAP_INNER, "region": "hair_inner (the dark inner cap)",
+                    "full_thickness_m": HAIR_CAP_T, "front_bulge": CAP_BULGE, "inner_shell": HAIR_CAP_INNER, "region": "hair_inner (the dark inner cap)",
                     "rim_thickness_m_p50": round(float(np.median(_capt[_capfe < 0.05])), 4) if (_capfe < 0.05).any() else None}
 # v5.1 HAIR-FACE DECOUPLING (2): the hair's surroundings take the UNCUT body (BV / BF: the MPFB surface itself), never the
 # painted cut mesh CV / CF. The paint cuts (brows, liner, mouth line, shadow shapes) re-tessellate the same surface, so a
@@ -612,63 +627,83 @@ def clump_lens(name, tier, ctl, chain=None, s_leave_k=2, W=None, T=None, root_k=
                        "chain": chain, "min_clear": round(float(min(nearest(BVH_HAIR, p)[3] for p in C[1:])), 4)}
 
 
-# =========================================================================== VARDEN LOCK TABLE
-def radiate2(root_d, tip_d, kind, n_mid=3, f_end=0.86):
-    """scalp lock control points: the root ON the cap at root_d, n_mid points along the great circle toward tip_d (to
-    f_end), lifted off the cap by HAIR_LIFT[kind] down the sides (none over the top: elevation > 70 deg)."""
-    pts = [on_dir(root_d, 0.0)]
-    for j in range(1, n_mid + 1):
-        f = f_end * j / n_mid
-        d_ = slerp(root_d, tip_d, f)
-        el_ = math.degrees(math.asin(float(np.clip(d_[2], -1.0, 1.0))))
-        pts.append(on_dir(d_, LOCK_OFF + HAIR_LIFT[kind] * (1.0 - float(smoothstep(35.0, 70.0, el_)))))
+# =========================================================================== VARDEN v5 SCALP: MASS-FIRST, SWEPT BACK FROM THE HAIRLINE
+# (review-log 2026-10-04 item 3: v4's scalp -- whorl-radiating under layers + a swept layer + loose strands, the v1-era
+# construction -- read as a flat helmet: no volume above the brow, hair over the ears, one smooth dome). HAIR_MASSES lists the
+# primary masses (research H1; the Elias v5 hierarchy) -- the swept-up FRONT, the two SIDE sweeps, the CROWN layer, the
+# tousled BACK -- each a set of ribbon locks of hand-set widths (spread >= 3:1 inside every mass). Flow from the style's own
+# origin: the front / side locks start ON THE PAINTED HAIRLINE (hl_dir: the meridian at psi searched for the point
+# HL_ROOT_ABOVE above it) and sweep back; the back mass falls from the crown whorl; the crown layer from the top. Control
+# points: the root on the cap, n_mid points along the great circle toward the tip lifted off the cap by the mass's lift
+# profile (the front's 20-24 mm = the volume standing above the brow), the tip a side / head point (flick = outward / radial:
+# the tousled points that break the silhouette).
+WHORL_D = unit(hdir(*HAIR_WHORL))
+
+
+def hl_dir(psi, above=HL_ROOT_ABOVE):
+    """the direction (from HC) of the point on the head surface at azimuth psi that lies 'above' m above the painted
+    hairline (s2's hairline_z), by bisection on the elevation (the field rises with the elevation at the front / sides)."""
+    def f_(el_):
+        d_ = hdir(psi, el_)
+        h_ = BVH_BODY.ray_cast(Vector(HC + d_ * 0.4), Vector(-d_), 0.4)
+        P_ = np.array(h_[0]) if h_[0] is not None else HC + d_ * HR[0]
+        return float(P_[2] - hairline_z(P_[None])[1][0]) - above
+    lo_, hi_ = -40.0, 85.0
+    for _ in range(40):
+        mid_ = 0.5 * (lo_ + hi_)
+        if f_(mid_) < 0.0:
+            lo_ = mid_
+        else:
+            hi_ = mid_
+    return hdir(psi, 0.5 * (lo_ + hi_)), 0.5 * (lo_ + hi_)
+
+
+def tip_point(spec):
+    if spec[0] == "side":
+        return side_pt(spec[1], EZ + spec[2] * 1e-3, spec[3])
+    return on_head(spec[1], spec[2], LOCK_OFF + spec[3])
+
+
+def radiate_m(origin, aim_d, M_, f_end, lift_k):
+    """control points from the origin toward aim_d: the root M_['root'] of the way along the great circle (on the cap), then
+    M_['n_mid'] points on to f_end lifted off the cap by the mass's lift profile x lift_k."""
+    f0_, n_ = M_["root"], M_["n_mid"]
+    pts = [on_dir(slerp(origin, aim_d, f0_), 0.0)]
+    for j in range(1, n_ + 1):
+        f = f0_ + (f_end - f0_) * j / n_
+        pts.append(on_dir(slerp(origin, aim_d, f), LOCK_OFF + lift_k * M_["lift"][min(j, len(M_["lift"])) - 1]))
     return pts
 
 
-_nb = {}
 SCALP_INFO = {}
-WHORL_D = unit(hdir(*HAIR_WHORL))
-# ---- the UNDER layers (back / outer / tousle): radiating from the crown whorl (Wren's flow rule)
-for kind, tier, (p1_, e1_, fl_), mir_, chain_ in HAIR_LOCKS:
-    for sg_, sn_ in (((1.0, "L"), (-1.0, "R")) if mir_ else ((1.0, ""),)):
-        lay_ = HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0)
-        tip_d = unit(hdir(sg_ * p1_, e1_))
-        root_d = slerp(WHORL_D, tip_d, CLUMP_ROOT[kind])
-        ctl = radiate2(root_d, tip_d, kind) + [on_dir(tip_d, LOCK_OFF + fl_)]
-        nm_ = "lock.%s.%s%d" % (kind, sn_, _nb.get(kind, 0))
-        ch_ = None if chain_ is None else (chain_ + "." + (sn_ or "C") if chain_ == "hair_side" else chain_)
-        clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, free_k=(3 if kind in ("back", "outer") else 2))
-        SCALP_INFO[nm_] = {"tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": ch_}
-        _nb[kind] = _nb.get(kind, 0) + 1
-# ---- the HAIRLINE ROW (Elias v3): short flat locks lying on the cap right at the hairline, running back, layered under
-# the swept locks -- the visible surface over the hairline band is hair, never the dark cap
-for k_, (tier, (p0_, e0_), (p1_, e1_, fl_)) in enumerate(HAIRLINE_LOCKS):
-    for sg_, sn_ in ((1.0, "L"), (-1.0, "R")):
-        root_d, tip_d = unit(hdir(sg_ * p0_, e0_)), unit(hdir(sg_ * p1_, e1_))
-        ctl = radiate2(root_d, tip_d, "hairline", n_mid=2, f_end=0.80) + [on_dir(tip_d, LOCK_OFF + fl_)]
-        nm_ = "lock.hairline.%s%d" % (sn_, k_)
-        clump(nm_, tier, ctl, chain="hair_front", s_leave_k=2, free_k=3, root_k=0.95, sway=False,
-              layer=HAIR_LAYER["hairline"] + CLUMP_STACK * k_)
-        SCALP_INFO[nm_] = {"root_psi_el": [sg_ * p0_, e0_], "tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": "hair_front"}
-# ---- the SWEPT-BACK layer: rooted along the front hairline / temples (wide roots: no cap band), running back over the
-# head along great circles, lifting a little at the tips (tousled)
-for kind, tier, (p0_, e0_), (p1_, e1_, fl_), mir_, chain_ in HAIR_SWEEP:
-    for sg_, sn_ in (((1.0, "L"), (-1.0, "R")) if mir_ else ((1.0, ""),)):
-        lay_ = HAIR_LAYER[kind] + CLUMP_STACK * _nb.get(kind, 0)
-        root_d, tip_d = unit(hdir(sg_ * p0_, e0_)), unit(hdir(sg_ * p1_, e1_))
-        ctl = radiate2(root_d, tip_d, kind, n_mid=4, f_end=0.88) + [on_dir(tip_d, LOCK_OFF + fl_)]
-        nm_ = "lock.%s.%s%d" % (kind, sn_, _nb.get(kind, 0))
-        ch_ = None if chain_ is None else (chain_ + "." + (sn_ or "C") if chain_ == "hair_side" else chain_)
-        clump(nm_, tier, ctl, chain=ch_, s_leave_k=3, layer=lay_, free_k=3, root_k=0.95)
-        SCALP_INFO[nm_] = {"root_psi_el": [sg_ * p0_, e0_], "tip_psi_el_flick": [sg_ * p1_, e1_, fl_], "chain": ch_}
-        _nb[kind] = _nb.get(kind, 0) + 1
-# ---- the LOOSE strands falling forward over the forehead (toward his left)
-for k_, (tier, (p0_, e0_), (p1_, e1_, fl_)) in enumerate(HAIR_LOOSE):
-    root_d, tip_d = unit(hdir(p0_, e0_)), unit(hdir(p1_, e1_))
-    ctl = radiate2(root_d, tip_d, "loose", n_mid=2, f_end=0.80) + [on_dir(tip_d, LOCK_OFF + fl_)]
-    nm_ = "lock.loose.%d" % k_
-    clump(nm_, tier, ctl, chain="hair_front", s_leave_k=1, free_k=1, layer=HAIR_LAYER["loose"] + CLUMP_STACK * k_)
-    SCALP_INFO[nm_] = {"root_psi_el": [p0_, e0_], "tip_psi_el_flick": [p1_, e1_, fl_], "chain": "hair_front"}
+MASS_INFO = {}
+GREY_LOCKS = set()
+for mass_, M_ in HAIR_MASSES.items():
+    MASS_INFO[mass_] = {"chain": M_["chain"], "locks": len(M_["locks"]), "widths_mm": [l_[1] for l_ in M_["locks"]],
+                        "width_spread": round(max(l_[1] for l_ in M_["locks"]) / min(l_[1] for l_ in M_["locks"]), 2),
+                        "grey_locks": sum(1 for l_ in M_["locks"] if l_[5])}
+    for k_, (tier, w_mm, org_, tip_, lkk_, grey_) in enumerate(M_["locks"]):
+        tip_pt = tip_point(tip_)
+        if org_ == "whorl":
+            o_, oinfo_ = WHORL_D, "whorl"
+        elif org_[0] == "hl":
+            o_, el_o = hl_dir(org_[1])
+            oinfo_ = ["hl", org_[1], round(el_o, 2)]
+        else:
+            o_, oinfo_ = unit(hdir(org_[1], org_[2])), list(org_)
+        ctl = radiate_m(o_, unit(tip_pt - HC), M_, 0.78 if tip_[0] == "side" else 0.82, lkk_) + [tip_pt]
+        nm_ = "lock.%s.%d" % (mass_, k_)
+        clump(nm_, tier, ctl, chain=M_["chain"], s_leave_k=3, layer=M_["layer"] + CLUMP_STACK * k_, W=w_mm * 1e-3,
+              root_k=(HL_ROOT_K if (org_ != "whorl" and org_[0] == "hl") else None), free_k=M_["free_k"])
+        if grey_:
+            GREY_LOCKS.add(nm_)
+        SCALP_INFO[nm_] = {"mass": mass_, "tier": tier, "width_mm": w_mm, "origin": oinfo_, "tip": list(tip_), "lift_x": lkk_,
+                           "grey": bool(grey_), "chain": M_["chain"]}
+_wall = [v_["width_mm"] for v_ in SCALP_INFO.values()]
+MASS_INFO["_all"] = {"masses": len(HAIR_MASSES), "locks": len(_wall), "width_mm_min_max": [min(_wall), max(_wall)],
+                     "width_spread": round(max(_wall) / min(_wall), 2), "min_mass_spread": min(v_["width_spread"] for v_ in MASS_INFO.values()),
+                     "grey_locks": len(GREY_LOCKS), "whorl": HAIR_WHORL}
+print("MASSES", json.dumps(MASS_INFO))
 # ---- v4 BEARD_SHELL / BEARD_CROP (research H9 + H8, design/research/hair-face-best-practices.md: short crops are "a
 # conforming volume whose SILHOUETTE edge breaks into ... clumps, with grooves carried by shading", stubble in colour). The
 # v3 beard (27 ribbon locks + a core sheet + 6 mustache locks, 5,794 tris) read as vertical strips over a dark painted patch
@@ -983,8 +1018,9 @@ def _skin_room(v_, n_):
     need_, room_ = 0.0, 9.0
     for bvh_, clr_, skin_ in ((BVH_BODY, HAIR_CLEAR[0], True), (BVH_CAP_OUT, HAIR_CLEAR[1], False)):
         q_, nn_, fi_, _ = nearest(bvh_, v_, 0.03)
-        if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")):
-            continue
+        if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")) or (not skin_ and fi_ >= _ncap):
+            continue                                       # (v5, Elias v5's: never off a cap RIM face -- a lock passing
+            #   under the rim read the rim's outward-down normal as "inside" and was pushed out)
         nn_ = np.array(nn_)
         sd_ = float((v_ - np.array(q_)) @ nn_)
         c_ = max(float(nn_ @ n_), 0.3)
@@ -1137,8 +1173,8 @@ for p in PARTS:
     for i in range(len(V_)):
         for bvh_, clr_, skin_ in ((BVH_BODY, HAIR_CLEAR[0], True), (BVH_CAP_OUT, HAIR_CLEAR[1], False)):
             q_, n_, fi_, d_ = nearest(bvh_, V_[i], 0.03)
-            if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")):
-                continue
+            if q_ is None or (skin_ and fdomn[fi_] not in ("head", "neck_01")) or (not skin_ and fi_ >= _ncap):
+                continue                                   # (v5: the outer cap shell only, never a rim face -- see _skin_room)
             sd_ = float((V_[i] - np.array(q_)) @ np.array(n_))
             if sd_ < clr_:
                 V_[i] = V_[i] + np.array(n_) * (clr_ - sd_)
@@ -1319,6 +1355,18 @@ if CREVICE_INFO["enabled"]:
     CREVICE_INFO["top_area_cm2"] = round(CREVICE_INFO["top_area_cm2"], 2)
     CREVICE_INFO["casters_by_kind"] = {k: sum(1 for a_, b_ in _pairs if a_.split(".")[1] == k) for k in ("fringe", "sweep", "side", "outer", "back", "crown", "tail")}
 print("CREVICE", json.dumps(CREVICE_INFO))
+# ---- v5 GREY STREAKS (the sheet's head panel: the grey sits at the temples / sides -- light low-saturation pixels 22 % of the
+# side hair vs 4-8 % over the top and the front -- plus a streak through the top): the grey-streak locks (HAIR_MASSES grey
+# flag) take hair_grey / hair_grey_tip on their top tiers (HAIR_GREY_MAP); roots, undersides and the tuck shade stay dark
+GREY_INFO = {"locks": sorted(GREY_LOCKS), "faces": 0, "by_mass": {}}
+for p in PARTS:
+    if p["name"] in GREY_LOCKS:
+        n0_ = sum(1 for r_ in p["R"] if r_ in HAIR_GREY_MAP)
+        p["R"] = [HAIR_GREY_MAP.get(r_, r_) for r_ in p["R"]]
+        GREY_INFO["faces"] += n0_
+        m_ = p["name"].split(".")[1]
+        GREY_INFO["by_mass"][m_] = GREY_INFO["by_mass"].get(m_, 0) + 1
+print("SCALPGREY", json.dumps(GREY_INFO))
 
 
 # ---- v4: the beard + mustache are SHELLS (painted by their own column grids above, BEARD_GREY included); no beard locks
@@ -1369,6 +1417,77 @@ print("HAIRSLIVERS", json.dumps(SLIVER_INFO))
 _clumps = [p for p in PARTS if p["name"].startswith("lock.")]
 RIBBON_INFO = ribbon_metrics()
 print("RIBBON", json.dumps(RIBBON_INFO))
+# ---- v5 CLEARANCE REPORT (Elias v5's): the scalp locks against the beard / mustache shells (the side sweeps end above the
+# ears, the shells start at the sideburns): triangle pairs cutting through each other (BVHTree.overlap) + the smallest gap
+def _tris_of(p):
+    return [[f[0], f[k], f[k + 1]] for f in p["F"] for k in range(1, len(f) - 1)]
+
+
+_lk5 = [p for p in PARTS if p["name"].startswith("lock.")]
+_obs = [p for p in PARTS if p["name"] in BEARD_PARTS]
+_ov, _of, _oo = [], [], 0
+for p in _obs:
+    _ov.append(p["V"]); _of += [[i + _oo for i in t] for t in _tris_of(p)]; _oo += len(p["V"])
+_bo = BVHTree.FromPolygons(np.vstack(_ov).tolist(), _of)
+_pairs5, _gap5, _gapat5 = 0, 9.0, None
+for p in _lk5:
+    _pairs5 += len(BVHTree.FromPolygons(p["V"].tolist(), _tris_of(p)).overlap(_bo))
+    for v_ in p["V"]:
+        h_ = _bo.find_nearest(Vector(v_), 0.03)
+        if h_[0] is not None and float(h_[3]) < _gap5:
+            _gap5, _gapat5 = float(h_[3]), p["name"]
+CLEAR_INFO = {"beard_mustache": {"tri_pairs": _pairs5, "min_gap_mm": round(1000 * _gap5, 2) if _gap5 < 9.0 else "> 30",
+                                 "min_gap_lock": _gapat5}}
+print("HAIRCLEAR", json.dumps(CLEAR_INFO))
+# ---- v5 CAP EXPOSURE PROBE (Elias v5's CAPEXPOSE): every outer cap face (hair_cap; the scalp-facing shell is harvested) is
+# looked at from CAP_PROBE_VIEWS (azimuth deg x elevation deg round the head + the top); VISIBLE when the ray from 1 m out
+# toward its centroid first hits the face itself (every part occludes). Reported: count / area / share of the cap's outer
+# area; the share within CAP_HL_BAND m above the hairline is the root line (painted the root tone: CAP_RIM_PAINT)
+CAP_PROBE_VIEWS = [(a_, e_) for a_ in range(0, 360, 30) for e_ in (5.0, 25.0, 50.0)] + [(0.0, 85.0)]
+CAP_HL_BAND = 0.006
+_cvs, _cfs, _cos, _cap_off = [CV], [list(f) for f in CF], len(CV), None
+for p in PARTS:
+    if p["name"] == "hair_cap":
+        _cap_off = (len(_cfs), len(p["F"]))
+    _cvs.append(p["V"]); _cfs += [[i + _cos for i in f] for f in p["F"]]; _cos += len(p["V"])
+_BVH_ALL = BVHTree.FromPolygons(np.vstack(_cvs).tolist(), _cfs)
+_cvd = [np.array([math.sin(math.radians(a_)) * math.cos(math.radians(e_)), -math.cos(math.radians(a_)) * math.cos(math.radians(e_)),
+                  math.sin(math.radians(e_))]) for a_, e_ in CAP_PROBE_VIEWS]
+_pcap = next(p for p in PARTS if p["name"] == "hair_cap")
+_cn, _ca, _vn, _va, _vhn, _vha = 0, 0.0, 0, 0.0, 0, 0.0
+_vis_where = []
+_vdk = [0, 0.0]                                       # (visible faces painted the DARK inner cap)
+for j_, f_ in enumerate(_pcap["F"]):
+    q_ = _pcap["V"][f_]
+    c_ = q_.mean(0)
+    n_ = sum((np.cross(q_[i] - q_[0], q_[i + 1] - q_[0]) for i in range(1, len(q_) - 1)), np.zeros(3))
+    a_ = 0.5 * float(np.linalg.norm(n_))
+    if a_ < 1e-12:
+        continue
+    n_ = n_ / (2.0 * a_)
+    if float(n_ @ unit(c_ - HC)) < 0.0:                            # (the scalp-facing / rim-inner faces are never outer)
+        continue
+    _cn += 1; _ca += a_
+    for d_ in _cvd:
+        if float(d_ @ n_) <= 0.0:
+            continue
+        h_ = _BVH_ALL.ray_cast(Vector(c_ + d_ * 1.0), Vector(-d_), 1.0 + 1e-4)
+        if h_[0] is not None and h_[2] == _cap_off[0] + j_:
+            _vn += 1; _va += a_
+            if _pcap["R"][j_] == "hair_inner":
+                _vdk[0] += 1; _vdk[1] += a_
+            if float(c_[2] - hairline_z(c_[None])[1][0]) < CAP_HL_BAND:
+                _vhn += 1; _vha += a_
+            else:
+                _vis_where.append([round(math.degrees(math.atan2(float(c_[0] - HC[0]), -float(c_[1] - HC[1])))),
+                                   round(math.degrees(math.asin(float(np.clip(unit(c_ - HC)[2], -1, 1)))))])
+            break
+CAP_EXPOSE = {"outer_faces": _cn, "outer_area_cm2": round(1e4 * _ca, 2), "views": len(_cvd), "visible_faces": _vn,
+              "visible_area_mm2": round(1e6 * _va, 1), "visible_share_pct": round(100.0 * _va / max(_ca, 1e-12), 2),
+              "visible_dark_inner_faces": _vdk[0], "visible_dark_inner_share_pct": round(100.0 * _vdk[1] / max(_ca, 1e-12), 2), "crop_paint": CAP_CROP_INFO,
+              "on_root_line_faces": _vhn, "on_root_line_area_mm2": round(1e6 * _vha, 1), "root_line_band_m": CAP_HL_BAND,
+              "visible_above_root_line_psi_el_sample": sorted(_vis_where)[:40]}
+print("CAPEXPOSE", json.dumps({k_: v_ for k_, v_ in CAP_EXPOSE.items() if k_ != "visible_above_root_line_psi_el_sample"}))
 _kinds = sorted(set(p["name"].split(".")[1] for p in _clumps))
 _HZ = max(float(p["V"][:, 2].max()) for p in PARTS if p["name"].startswith(("lock", "hair_cap")))
 HAIR_INFO = {"ribbon": RIBBON_INFO, "layer_resolve": {k_: v_ for k_, v_ in LAYER_INFO.items() if k_ != "lift_profile_mm"},
@@ -1380,7 +1499,8 @@ HAIR_INFO = {"ribbon": RIBBON_INFO, "layer_resolve": {k_: v_ for k_, v_ in LAYER
              "paint_faces": {r_: sum(p["R"].count(r_) for p in _clumps + [q for q in PARTS if q["name"] == "hair_cap"])
                              for r_ in ("hair", "hair_shade", "hair_root", "hair_ring", "hair_tip", "hair_inner", "hair_crevice")},
              "seconds": round(time.time() - t_hair, 1),
-             "crown": {"scalp_top_z": round(Z_TOP, 4), "hair_top_z": round(_HZ, 4), "crown_above_scalp_mm": round(1000 * (_HZ - Z_TOP), 1)}}
+             "crown": {"scalp_top_z": round(Z_TOP, 4), "hair_top_z": round(_HZ, 4), "crown_above_scalp_mm": round(1000 * (_HZ - Z_TOP), 1)},
+             "masses": MASS_INFO, "grey": GREY_INFO, "clearance_v5": CLEAR_INFO, "cap_exposure": CAP_EXPOSE}
 # v5.1 HAIR DIGEST: the exact bytes (float64 positions, faces, regions -- no rounding) of every hair part as s5 hands them to
 # the assembly; the hair-face decoupling proof compares it across builds with different FACE constants (wren_run.ps1).
 _hd = hashlib.sha256()
@@ -1395,4 +1515,13 @@ for p in PARTS:
         _hs.update(p["name"].encode()); _hs.update(np.ascontiguousarray(p["V"], dtype=np.float64).tobytes())
         _hs.update(np.array([i for f in p["F"] for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); _hs.update("|".join(p["R"]).encode())
 HAIR_INFO["scalp_digest_exact"] = _hs.hexdigest()[:16]
+print("SCALPDIGEST", HAIR_INFO["scalp_digest_exact"])
+# v5: the BEARD digest (beard + mustache shells only) -- the scalp rebuild must leave it byte-identical to v4's shells
+_hb = hashlib.sha256()
+for p in PARTS:
+    if p["name"] in BEARD_PARTS:
+        _hb.update(p["name"].encode()); _hb.update(np.ascontiguousarray(p["V"], dtype=np.float64).tobytes())
+        _hb.update(np.array([i for f in p["F"] for i in [len(f)] + list(f)], dtype=np.int64).tobytes()); _hb.update("|".join(p["R"]).encode())
+HAIR_INFO["beard_digest_exact"] = _hb.hexdigest()[:16]
+print("BEARDDIGEST", HAIR_INFO["beard_digest_exact"])
 print("HAIR", json.dumps({k_: v_ for k_, v_ in HAIR_INFO.items() if k_ not in ("scalp_table", "beard_table")}))

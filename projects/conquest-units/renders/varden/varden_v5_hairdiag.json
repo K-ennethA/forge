@@ -1,0 +1,80 @@
+{
+ "blend": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\varden.blend",
+ "locks": 48,
+ "tris": {
+  "locks": 8610,
+  "cap": 1814
+ },
+ "interpenetration": {
+  "lock_pairs": 80,
+  "tri_pairs": 2957,
+  "lock_cap_tri_pairs": 76,
+  "locks_involved": 48,
+  "worst_pairs": [
+   [
+    "lock.front.5",
+    "lock.sider.5",
+    114
+   ],
+   [
+    "lock.front.8",
+    "lock.sidel.5",
+    110
+   ],
+   [
+    "lock.back.7",
+    "lock.back.8",
+    92
+   ],
+   [
+    "lock.sider.0",
+    "lock.sider.1",
+    76
+   ],
+   [
+    "lock.front.2",
+    "lock.front.7",
+    74
+   ],
+   [
+    "lock.back.3",
+    "lock.back.4",
+    73
+   ],
+   [
+    "lock.front.3",
+    "lock.front.4",
+    70
+   ],
+   [
+    "lock.crown.4",
+    "lock.front.1",
+    68
+   ]
+  ],
+  "top_sheets": {
+   "lock_pairs": 69,
+   "tri_pairs": 845
+  }
+ },
+ "paint": {
+  "patches_total": 243,
+  "patches_per_lock": 5.06,
+  "crevice_patches": 30,
+  "ring_patches": 13,
+  "region_boundary_edges": 2120
+ },
+ "facet_kinks_top_deg": {
+  "p50": 13.25,
+  "p90": 37.58,
+  "max": 178.1,
+  "share_over_20deg_pct": 27.7,
+  "edges": 5168
+ },
+ "faces": {
+  "lock_faces": 4591,
+  "tiny_under_0.25mm2": 7,
+  "sliver_aspect_over_20": 124,
+  "lock_area_cm2": 4619.5
+ }
+}
