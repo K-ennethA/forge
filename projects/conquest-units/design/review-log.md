@@ -1272,7 +1272,12 @@ its the walk animation doesnt seem to properly cycle same for the
 run animation" + "the walking and camera doesnt seem to match
 pokemon sun and moon style".
 (1) HANDS: closed (relaxed fists), both hands, all clips — never a
-grip/holding read.
+grip/holding read. CORRECTION (artist, verbatim): "he shouldn't hold
+anything including weapons unless he's in combat scenarios" —
+BINDING RULE: Wren's out-of-combat clips (idle/walk/run, overworld)
+are permanently empty-handed; any future weapon appears ONLY in
+combat-scenario clips (the HAS_FORK-style prop machinery serves
+those, never locomotion).
 (2) RUN: knee drive too high — lower it from thigh-horizontal; keep
 the young-hero sprint identity otherwise.
 (3) IN-GAME DEFECT: walk and run do not cycle properly in the game
