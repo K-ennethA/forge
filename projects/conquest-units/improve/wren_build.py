@@ -700,9 +700,27 @@ AO_FLOOR_REGIONS = {"skin": ["skin", "skin_shadow", "lips", "brow"],
 HAIR_BONES, CAPE_BONES, CAPE_CHAINS = 3, 4, 5
 GRIP_CURL = (58.0, 72.0, 50.0)        # "grip": finger curl round the shaft, per joint (deg)
 GRIP_THUMB = (22.0, 30.0)
-RELAX_CURL = (12.0, 18.0, 12.0)       # (HAS_FORK False: both hands take the clip's left-hand curl -- RELAX_CURL + thumb
-                                      #   (4, 8) in idle / walk, RUN_HAND in the run)
-RUN_HAND = ((34.0, 52.0, 38.0), (18.0, 24.0))   # the run's free hand: a loose fist (curl per joint, thumb; deg)
+RELAX_CURL = (12.0, 18.0, 12.0)       # the v1 open relaxed hand (idle / walk until 2026-10-04)
+RUN_HAND = ((34.0, 52.0, 38.0), (18.0, 24.0))   # the v1 run's loose half-fist (curl per joint, thumb; deg)
+FIST_CURL = (80.0, 100.0, 35.0)       # review-log 2026-10-04 "Wren in-game verdicts" (1): a RELAXED CLOSED FIST, "not holding
+                                      #   anything": finger curl per joint (knuckle, middle, tip; deg; the index x0.92). The tips
+                                      #   rest against the palm (a smaller tip joint keeps the nails off it; a bigger knuckle
+                                      #   curl tucks the fist tighter)
+FIST_THUMB = (-60.0, 27.5, 60.0, 17.5, 90.0)   # the thumb WRAPPED OUTSIDE the fingers, lying across the front of the curled
+                                      #   index (never tucked inside -- that reads broken at game distance): (base flex, base
+                                      #   swing toward the pinky, base roll toward the palm side, middle flex, tip flex; deg).
+                                      #   Solved once on the rest skeleton: the thumb's tip joint over the index's middle
+                                      #   segment, its tip toward the middle finger, >= the two segments' radii - 2 mm clear
+HAND_POSES = {                        # named finger poses: {"curl": (knuckle, middle, tip), "thumb": (flex, flex) = the v1
+                                      #   2-value thumb (base / middle+tip flex) or the 5-value FIST_THUMB form}
+    "relaxed": {"curl": RELAX_CURL, "thumb": (4.0, 8.0)},
+    "loose_fist": {"curl": RUN_HAND[0], "thumb": RUN_HAND[1]},
+    "fist": {"curl": FIST_CURL, "thumb": FIST_THUMB},
+    "grip": {"curl": GRIP_CURL, "thumb": GRIP_THUMB}}   # the prop grip (HAS_FORK: the right hand round the shaft; kept
+                                      #   for combat clips -- weapons are combat-only, nothing in locomotion uses it)
+CLIP_HANDS = {"idle": ("fist", "fist"), "walk": ("fist", "fist"), "run": ("fist", "fist")}   # per clip: (left, right)
+                                      #   hand pose names from HAND_POSES (HAS_FORK True forces the right to "grip"). The v1
+                                      #   assignment: idle / walk ("relaxed", "relaxed"), run ("loose_fist", "loose_fist")
 # ---- idle: earnest stance, leaning a little on the planted pitchfork at his right
 IDLE_N = 96                           # "idle loop": 4 s
 IDLE_BREATH_DEG = 1.4
@@ -752,10 +770,21 @@ RUN_STANCE = 0.30                     # "ground time": fraction of the cycle eac
 RUN_STEP = (0.24, 0.46)               # "stride reach": the ball joint lands this far AHEAD of / leaves this far BEHIND its rest
                                       #   spot (m); stance travel 0.70 m in 0.15 s = the ground speed (4.67 m/s)
 RUN_ROLL = (8.0, 3.0, 50.0)           # stance heel lift (deg): forefoot touchdown / mid-stance / toe-off push
-RUN_SWING = ((0.30, 0.30, 0.36, 100.0), (0.60, -0.20, 0.42, -6.0), (0.82, -0.36, 0.13, -10.0))
+RUN_SWING = ((0.30, 0.30, 0.36, 100.0), (0.60, -0.08, 0.42, -6.0), (0.82, -0.36, 0.13, -10.0))
                                       # swing keys (q = swing fraction, ball joint dy from rest (m, < 0 = ahead), ball height
                                       #   above its rest (m), heel lift (deg)): heel recovery (folded under the seat), KNEE
-                                      #   DRIVE (thigh ~horizontal, toes cocked), reach; it lands pawing back at ground speed
+                                      #   DRIVE (thigh ~horizontal, toes cocked), reach; it lands pawing back at ground speed.
+                                      #   (2026-10-04: the knee-drive key's ball HEIGHT is now solved from RUN_KNEE_DRIVE_DEG --
+                                      #   the 0.42 here is used only with RUN_KNEE_DRIVE_DEG = None -- and its ball sits 0.08 m
+                                      #   ahead (v1 0.20): under the lowered knee the foot stays cocked up under it, shin angled
+                                      #   back, instead of skimming forward 12 cm off the floor (that read as a jog shuffle).
+                                      #   v1 drive = this key at (-0.20, 0.42) with RUN_KNEE_DRIVE_DEG = None)
+RUN_KNEE_DRIVE_DEG = 25.0             # review-log 2026-10-04 "Wren in-game verdicts" (2) "his leg goes up too much": the knee
+                                      #   drive's PEAK thigh angle BELOW HORIZONTAL (deg, world, the hip joint -> knee, over the
+                                      #   keyed frames); the knee-drive key's ball height is solved (bisection) to hit it. v1 =
+                                      #   0.3 ABOVE horizontal; 25 = hip flexion 65 deg: still a driving sprint (a jog sits
+                                      #   ~40-50 below) with the same flight, cadence, stride and arm pump. Nudge here (lower =
+                                      #   higher knee; 0 = the v1 height)
 RUN_FOOT_X = 0.62                     # feet land this x their rest half-width (a runner's narrow track)
 RUN_REACH = 0.985                     # stance leg reach (x the leg length) at its longest (touchdown / toe-off)
 RUN_BOUNCE = 0.022                    # "bounce": pelvis rise / fall about its mean (m), high in flight, low at mid-stance

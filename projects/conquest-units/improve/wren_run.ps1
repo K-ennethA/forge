@@ -83,6 +83,9 @@ if (-not $SkipBuild) {
   $h4 = (Get-Content "$I\log_wren_mouthprobe.json" -Raw | ConvertFrom-Json).hair_geometry
   $hline = "HAIRSTABLE build=$($j1.parts.hair_geometry) twin=$($j2.parts.hair_geometry) face_edited=$h3 mouth_dials_edited=$h4 identical=$(($j1.parts.hair_geometry -eq $j2.parts.hair_geometry) -and ($j1.parts.hair_geometry -eq $h3) -and ($j1.parts.hair_geometry -eq $h4))"
   $line; $hline; "$line | build_wall_s=$bwall`r`n$hline" | Out-File -Encoding utf8 "$I\log_wren_digest.txt"
+  # 2026-10-04 (review-log "Wren in-game verdicts"): the run knee-drive solve + the glb loop-key gate (t0 = 0, the true
+  # period, both boundary intervals moving -- the doubled-leading-key class)
+  (Get-Content "$I\log_wren_build.txt" | Select-String "^(RUNKNEE|GLBLOOP) ").Line
 }
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""

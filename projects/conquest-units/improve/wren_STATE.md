@@ -1,6 +1,7 @@
 ﻿# Wren â€” unit state (orchestrator-maintained; briefs point here instead of restating history)
 
-- **Current:** v6.1 (lips + wider mouth) delivered on v7 base; see this commit.
+- **Current:** v6.1 (lips + wider mouth) on v7 base, fork dropped (8b7bce7), + 2026-10-04 fists / lower run knee / glb
+  loop keys (entry below; pending commit; pouch side effect open).
 - **LOCKED (artist-approved, do not regress):** body/outfit/clips below the neck (v1);
   eye SOCKET scale x1.30 ("perfect"); iris at ~58% coverage; flat under-eye (v5 fill);
   one unified mouth line at Ashe ratios (v6) + subtle lip volumes, paler tint, 44 mm width (v6.1); side part on his left; ribbon locks +
@@ -39,7 +40,26 @@
   reproduces build digest c9215939245d39b5 exactly. Before/after: renders/wren/wren_nofork_{idle,walk,run}_before_after.png.
   OPEN ARTIST CALL: empty-handed, the carry path reads as a raised open hand at the chest in the walk (and a hand at the
   waist in the idle); a free right-arm swing (mirror of the left) is the natural follow-up but changes the approved arm path.
-- **Key knobs:** HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
+- **Fists + lower run knee + loop keys (2026-10-04, review-log "Wren in-game verdicts" (1)(2) + the cycle-defect addendum,
+  pending commit):** HANDS = a table: HAND_POSES {"relaxed" (v1 idle/walk), "loose_fist" (v1 run), "fist", "grip" (prop grip,
+  kept for combat clips)} each {"curl": (knuckle, middle, tip), "thumb": 2-value v1 flex or 5-value (base flex, swing to
+  pinky, roll to palm, middle flex, tip flex)}; CLIP_HANDS {clip: (left, right)} = "fist" both hands, all clips (HAS_FORK
+  forces right = "grip"). FIST_CURL (80, 100, 35), FIST_THUMB (-60, 27.5, 60, 17.5, 90) = thumb wrapped OUTSIDE across the
+  curled index (solved on the rest skeleton, mirror-exact L/R). RUN: RUN_KNEE_DRIVE_DEG = 25 (peak thigh angle below
+  horizontal, keyed frames; v1 measured -0.28 = just above horizontal); the drive key's ball height is bisection-solved
+  (0.299 m) and its ball moved 0.20 -> 0.08 m ahead (RUN_SWING[1]) so the foot stays cocked under the lower knee (at 0.20
+  it skimmed 12 cm off the floor = a jog shuffle). Run gates held: seam 0, slip 1e-6, airborne f5-6/f11-12 (clearance
+  11.5 -> 12.8 mm), torso crossings 24 (= the known s7 defect), stride 2.333 m. Blender keys changed ONLY fingers/thumbs
+  (all clips) + thigh/calf/foot + the coupled sash ties tie.0/1 (RUN_TIE_LIFT) in the run; the glb shows <= 0.052 deg
+  exporter jitter elsewhere (a plain re-export of the unchanged v-prior blend shows the same). LOOP KEYS: the glb samplers
+  started at 1/24 s (keys at frames 1..N+1) -> the game held the first pose 42 ms per wrap; export_anim_slide_to_zero=True
+  now: idle 97 keys 0..4.0 s, walk 27 keys 0..1.0833 s, run 13 keys 0..0.5 s (the last key = the first: glTF's closing key
+  carries the period). New gates: seam_joints.boundary_motion_ok (first / last key interval >= BOUNDARY_STEP_MIN 0.25 x the
+  median step) + GLBLOOP (t0 = 0, t_last = N/24, N+1 keys, both boundary intervals moving, closing dev < 0.1 deg).
+  KNOWN SIDE EFFECT (needs s3/s7, outside this lane): the pouch is 92 % weighted to thumb_02_l, so the fist's thumb wrap
+  moves it 39 mm mean / 59 mm max (run 48 / 73) and turns it ~90 deg (flap sideways) in every clip -- see
+  renders/wren/wren_fist_{idle,walk,run}_before_after.png; the queued s3 pouch-onto-the-hip lane fixes it.
+- **Key knobs:** HAND_POSES / CLIP_HANDS / FIST_*, RUN_KNEE_DRIVE_DEG, HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
   probe (second-feature traces), hair diag (interpenetration/kinks), HAIRSTABLE,

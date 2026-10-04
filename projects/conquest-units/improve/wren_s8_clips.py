@@ -3,7 +3,7 @@
 # grip relation, cloak poke-through, the fork vs the cloak / body), the rigged save, the glb, the winter skin.
 # HAS_FORK False (review-log 2026-10-03): the right arm still follows the carry frame (the approved path: the same IK
 # targets, the same roll search), but no 'pitchfork' bone is keyed, the right fingers take the clip's left-hand pose
-# (right_hand()), and every fork gate / report field is left out.
+# (hands(): 2026-10-04 both hands from CLIP_HANDS / HAND_POSES), and every fork gate / report field is left out.
 TAU = 2 * math.pi
 
 
@@ -107,9 +107,28 @@ def fingers(D, side, curl, thumb=(0.0, 0.0)):
     tip0 = TAILP["thumb_03_" + lo_] - HEADP["thumb_01_" + lo_]
     if float((K._rot(tax, 0.3) @ tip0 - tip0) @ HANDS[side]["n"]) < 0:
         tax = -tax
+    if len(thumb) == 5:
+        # (2026-10-04) the 5-value thumb (base flex, swing toward the pinky, roll toward the palm side, middle flex, tip
+        # flex): the swing / roll axes are the palm normal / the hand's long axis, signed by their effect (mirror-exact)
+        f1, sw_, rl_, f2, f3 = thumb
+        nn_, ee_ = HANDS[side]["n"], HANDS[side]["e"]
+        nax = nn_ if float((K._rot(nn_, 0.3) @ tip0 - tip0) @ HANDS[side]["a"]) > 0 else -nn_
+        eax = ee_ if float((K._rot(ee_, 0.3) @ tip0 - tip0) @ nn_) > 0 else -ee_
+        fk(D, "thumb_01_" + lo_, K._rot(nax, math.radians(sw_)) @ K._rot(eax, math.radians(rl_)) @ K._rot(tax, math.radians(f1)))
+        fk(D, "thumb_02_" + lo_, K._rot(tax, math.radians(f2)))
+        fk(D, "thumb_03_" + lo_, K._rot(tax, math.radians(f3)))
+        return
     fk(D, "thumb_01_" + lo_, K._rot(tax, math.radians(thumb[0])))
     fk(D, "thumb_02_" + lo_, K._rot(tax, math.radians(thumb[1])))
     fk(D, "thumb_03_" + lo_, K._rot(tax, math.radians(thumb[1] * 0.6)))
+
+
+def hands(D, clip):
+    """both hands' finger poses from CLIP_HANDS[clip] = (left, right) names in HAND_POSES (HAS_FORK: the right = "grip")."""
+    for side, nm in zip("LR", CLIP_HANDS[clip]):
+        if side == "R" and HAS_FORK:
+            nm = "grip"
+        fingers(D, side, HAND_POSES[nm]["curl"], HAND_POSES[nm]["thumb"])
 
 
 ELB_AX = {}
@@ -142,15 +161,6 @@ def fork_arm(D, Dfk):
     if HAS_FORK:
         D["pitchfork"] = Dfk @ AXROT
     return err, float(np.linalg.norm(reached - wrist))
-
-
-def right_hand(D, curl, thumb):
-    """the right fingers: the grip round the shaft (HAS_FORK), else the clip's LEFT-hand pose (curl, thumb) -- the empty
-    hand's natural counterpart; only the 15 right finger bones change."""
-    if HAS_FORK:
-        fingers(D, "R", GRIP_CURL, GRIP_THUMB)
-    else:
-        fingers(D, "R", curl, thumb)
 
 
 def plant_legs(D, feet):
@@ -221,8 +231,7 @@ def pose_idle(t):
     Dfk = TRT(IDLE_BUTT + np.array([0.0, 0.0, FORK_BUTT_R * math.sin(tilt_)]), Rl, _butt_rest)
     info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", IDLE_LARM[0] + 1.0 * br, IDLE_LARM[1] + 1.5 * sway_h, IDLE_LARM[2])
-    right_hand(D, RELAX_CURL, (4.0, 8.0))
-    fingers(D, "L", RELAX_CURL, (4.0, 8.0))
+    hands(D, "idle")
     if HAS_FORK:
         info["fork_butt_z"] = float(xf(Dfk, _butt_rest)[2])
     return D, info
@@ -314,8 +323,7 @@ def pose_walk(t):
     Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
     info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", WALK_LARM[0], WALK_LARM[1] * c1, WALK_LARM[2], lag_bend=7.0 * math.cos(TAU * t - 0.6) + 7.0)
-    right_hand(D, RELAX_CURL, (4.0, 8.0))
-    fingers(D, "L", RELAX_CURL, (4.0, 8.0))
+    hands(D, "walk")
     info["stance"] = st
     info["pelvis_dz"] = dz
     if HAS_FORK:
@@ -355,9 +363,17 @@ def _herm(keys, q):
 
 
 _vq = RUN_V_U * (1 - RUN_STANCE)                                 # stance ball speed in swing-q units (continuity at both ends)
-RUN_KEYS = ([(0.0, (RUN_STEP[1], 0.0, RUN_ROLL[2]), (_vq, 0.0, 0.0))] +
-            [(q_, (dy_, z_, r_), None) for q_, dy_, z_, r_ in RUN_SWING] +
+def run_keys(z_drive=None, dy_drive=None):
+    """the swing keys; z_drive / dy_drive (m) replace the KNEE-DRIVE key's ball height / fore-aft (RUN_SWING[1]) when given."""
+    sw_ = [tuple(k_) for k_ in RUN_SWING]
+    if z_drive is not None:
+        sw_[1] = (sw_[1][0], sw_[1][1] if dy_drive is None else float(dy_drive), float(z_drive), sw_[1][3])
+    return ([(0.0, (RUN_STEP[1], 0.0, RUN_ROLL[2]), (_vq, 0.0, 0.0))] +
+            [(q_, (dy_, z_, r_), None) for q_, dy_, z_, r_ in sw_] +
             [(1.0, (-RUN_STEP[0], 0.0, RUN_ROLL[0]), (_vq, 0.0, 0.0))])
+
+
+RUN_KEYS = run_keys()
 
 
 def foot_run(s, t):
@@ -450,6 +466,43 @@ _rz = [(run_room(i / (20 * RUN_N)), i / (20 * RUN_N)) for i in range(20 * RUN_N)
 RUN_Z0 = min(r_ - run_bounce(t_) for r_, t_ in _rz if r_ is not None)
 
 
+def run_thigh_below(t, s):
+    """the leg's thigh (hip joint -> knee, world) angle below horizontal at cycle phase t (deg; 0 = horizontal)."""
+    Rp, off, _, _ = run_pelvis_R(t)
+    D = {"root": np.eye(4), "pelvis": Tt(off + np.array([0, 0, RUN_Z0 + run_bounce(t)])) @ Tr(HEADP["pelvis"], Rp)}
+    plant_legs_run(D, {s_: foot_run(s_, t)[:3] for s_ in "LR"})
+    lo_ = s.lower()
+    v = xf(D["calf_" + lo_], HEADP["calf_" + lo_]) - xf(D["thigh_" + lo_], HEADP["thigh_" + lo_])
+    return math.degrees(math.atan2(-float(v[2]), math.hypot(float(v[0]), float(v[1]))))
+
+
+def run_thigh_peak(dense=1):
+    """the knee drive's peak = the smallest thigh angle below horizontal over the cycle (keyed frames at dense = 1)."""
+    return min(run_thigh_below(i / (dense * RUN_N), s) for s in "LR" for i in range(dense * RUN_N))
+
+
+# (2026-10-04, review-log "Wren in-game verdicts" (2)) the knee-drive key's ball height solved so the keyed-frame thigh
+# peak sits RUN_KNEE_DRIVE_DEG below horizontal (bisection; the peak falls monotonically as the key rises)
+RUN_DRIVE_V1 = (-0.20, 0.42)            # the v1 (2026-10-03) knee-drive key: ball dy / height (m) -- measured for the report
+RUN_KEYS = run_keys(RUN_DRIVE_V1[1], RUN_DRIVE_V1[0])
+RUN_KNEE_V1 = {"keyed_deg": round(run_thigh_peak(), 2), "dense_deg": round(run_thigh_peak(20), 2), "dy_z_drive_m": RUN_DRIVE_V1}
+RUN_KEYS = run_keys()
+RUN_KNEE_SOLVE = None
+if RUN_KNEE_DRIVE_DEG is not None:
+    _zlo, _zhi = 0.0, max(float(RUN_SWING[1][2]), 0.6)
+    for _ in range(40):
+        _zm = 0.5 * (_zlo + _zhi)
+        RUN_KEYS = run_keys(_zm)
+        if run_thigh_peak() > RUN_KNEE_DRIVE_DEG:
+            _zlo = _zm                                           # too low a knee: raise the key
+        else:
+            _zhi = _zm
+    RUN_KEYS = run_keys(0.5 * (_zlo + _zhi))
+    RUN_KNEE_SOLVE = {"dy_drive_m": RUN_SWING[1][1], "z_drive_m": round(0.5 * (_zlo + _zhi), 5), "keyed_deg": round(run_thigh_peak(), 2),
+                      "dense_deg": round(run_thigh_peak(20), 2)}
+print("RUNKNEE", json.dumps({"target_deg_below_horizontal": RUN_KNEE_DRIVE_DEG, "v1": RUN_KNEE_V1, "solved": RUN_KNEE_SOLVE}))
+
+
 def pose_run(t):
     D = {"root": np.eye(4)}
     info = {}
@@ -497,8 +550,7 @@ def pose_run(t):
     w_lb = math.cos(TAU * (t - RUN_PH["arm_L"] - 1.0 / RUN_N))
     la = RUN_LARM
     free_arm(D, "L", la[0], la[1] - la[2] * w_l, la[3], lag_bend=la[4] * w_lb)
-    right_hand(D, *RUN_HAND)
-    fingers(D, "L", *RUN_HAND)
+    hands(D, "run")
     info["stance"] = st
     info["pelvis_dz"] = dz
     if HAS_FORK:
@@ -869,6 +921,9 @@ def _qrel(a, b):
     return v / s * 2 * math.atan2(s, w) if s > 1e-12 else np.zeros(3)
 
 
+BOUNDARY_STEP_MIN = 0.25                # a boundary key interval below this x the clip's median step = a doubled key
+
+
 def seam_joints(cn, N):
     """the loop seam on the KEYS: pose (first vs last key, every bone) and velocity (the angular step into the seam,
     key N-1 -> N, vs the step out of it, key 0 -> 1, compared with the largest step-to-step change anywhere inside)."""
@@ -876,7 +931,14 @@ def seam_joints(cn, N):
     nb = Q.shape[1]
     W = np.array([[_qrel(Q[f, b, :4], Q[f + 1, b, :4]) for b in range(nb)] for f in range(N)])
     acc = np.linalg.norm(W[1:] - W[:-1], axis=2)
-    return {"pose_delta_deg_max": round(math.degrees(max(float(np.linalg.norm(_qrel(Q[0, b, :4], Q[N, b, :4]))) for b in range(nb))), 6),
+    # (2026-10-04, the in-game cycle defect: a doubled endpoint = a ~0 step at a boundary = a static hold every wrap) the
+    # first and the last key INTERVAL must move like the rest of the cycle: each >= BOUNDARY_STEP_MIN x the median step
+    stp = np.degrees(np.linalg.norm(W, axis=2).max(1))
+    med = float(np.median(stp))
+    return {"boundary_step_deg_first_last": [round(float(stp[0]), 4), round(float(stp[N - 1]), 4)],
+            "step_median_deg": round(med, 4),
+            "boundary_motion_ok": bool(min(stp[0], stp[N - 1]) >= BOUNDARY_STEP_MIN * med and min(stp[0], stp[N - 1]) > 1e-4),
+            "pose_delta_deg_max": round(math.degrees(max(float(np.linalg.norm(_qrel(Q[0, b, :4], Q[N, b, :4]))) for b in range(nb))), 6),
             "loc_delta_m_max": round(float(np.abs(Q[0, :, 4:] - Q[N, :, 4:]).max()), 9),
             "ang_vel_jump_at_seam_deg_per_frame": round(math.degrees(float(np.linalg.norm(W[0] - W[N - 1], axis=1).max())), 4),
             "ang_vel_change_interior_max_deg_per_frame": round(math.degrees(float(acc.max())), 4)}
@@ -1040,6 +1102,9 @@ for cn, N in CLIP_N.items():
                     "stride_length_m": round(RUN_SPEED * T_, 4), "step_length_m": round(RUN_SPEED * T_ / 2, 4),
                     "ground_speed_body_heights_per_s": round(RUN_SPEED / Z_TOP, 4), "pelvis_mean_dz_m": round(RUN_Z0, 4),
                     "bounce_m": RUN_BOUNCE,
+                    "knee_drive": {"rule": "peak thigh (hip joint -> knee, world) angle below horizontal over the keyed "
+                                   "frames (dense = 20x sampled); the knee-drive key's ball height solved to RUN_KNEE_DRIVE_DEG",
+                                   "target_deg": RUN_KNEE_DRIVE_DEG, "v1": RUN_KNEE_V1, "solved": RUN_KNEE_SOLVE},
                     "rule": "zero-slip: through each stance the toe-sole contact vertex (ball-bone dominant; the ball joint is the "
                             "pinned pivot, the toes stay flat) moves back at exactly the ground speed = stance travel / stance "
                             "time; stride = ground speed x cycle; airborne = both soles above 1 mm"})
@@ -1104,7 +1169,7 @@ if HAS_FORK:
 else:
     rep["grip"] = {"rule": "no prop (HAS_FORK False, review-log 2026-10-03): the right arm keeps the approved carry path (the "
                            "hand frame the fork grip drove, roll search unchanged); the right fingers take the clip's left-hand "
-                           "pose (idle / walk RELAX_CURL + thumb (4, 8), run RUN_HAND)", "fork_roll_search": ROLL_SEARCH}
+                           "pose (2026-10-04: both hands from CLIP_HANDS / HAND_POSES)", "clip_hands": CLIP_HANDS, "hand_poses": HAND_POSES, "fork_roll_search": ROLL_SEARCH}
 rep["tris"] = {"model": report["tris"]["total"], "outline_shells": 0, "budget": TRI_BUDGET}
 print("TRIS", json.dumps(rep["tris"]))
 rig["conquest_rig"] = ("wren: root (contract) > MPFB2 game_engine skeleton (pelvis, spine_01-03, neck_01, head, clavicle / upperarm / "
@@ -1114,10 +1179,10 @@ rig["conquest_rig"] = ("wren: root (contract) > MPFB2 game_engine skeleton (pelv
 low["conquest_clips"] = list(CLIP_N)
 low["conquest_clip_status"] = (("idle (leaning a little on the planted pitchfork, breath, eased weight shift, chin-up look) + walk "
                                 "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap) + run "
-                                "(young hero sprint: forward lean, high knee drive, flight phase, full left-arm pump, the fork charged "
+                                "(young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, full left-arm pump, the fork charged "
                                 "forward)") if HAS_FORK else
                                ("idle (breath, eased weight shift, chin-up look) + walk (boyish quick stride with a contact bounce, "
-                                "chest / head overlap) + run (young hero sprint: forward lean, high knee drive, flight phase, full "
+                                "chest / head overlap) + run (young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, full "
                                 "left-arm pump); empty-handed: the right arm keeps the approved carry path")) + \
                               ("; cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); "
                                "no attack / hit / death")
@@ -1157,8 +1222,54 @@ t_ = time.time()
 import export_glb as _EG; _EG.add_glow_attr([o for o in scene.objects if o.select_get() and o.type == "MESH"])
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", use_selection=True, export_yup=True, export_apply=False,
                           export_animations=True, export_animation_mode="ACTIONS", export_materials="EXPORT",
-                          export_skins=True, export_def_bones=False, export_attributes=True)
+                          export_skins=True, export_def_bones=False, export_attributes=True,
+                          export_anim_slide_to_zero=True)
+# (2026-10-04, the in-game cycle defect) every clip starts at t = 0: keyed at frames 1..N+1 the samplers began at 1/24 s
+# and the game's importer held the first pose from 0 to 1/24 s -- a doubled leading key = a 42 ms static hold each wrap
 rig.animation_data.action = None
+
+
+def glb_loop_gate(path):
+    """per glb animation: the sampler times start at 0 and end at the true period N / FPS with N + 1 keys (the last =
+    the first: the closing key that carries the period in glTF), and BOTH boundary key intervals move (>= BOUNDARY_STEP_MIN
+    x the median step over the densest rotation channels) -- no doubled key at either end."""
+    import struct
+    data = open(path, "rb").read()
+    L_ = struct.unpack("<I", data[12:16])[0]
+    js = json.loads(data[20:20 + L_]); b0 = 20 + L_ + 8
+
+    def acc_(i):
+        a_ = js["accessors"][i]; bv = js["bufferViews"][a_["bufferView"]]
+        nc = {"SCALAR": 1, "VEC3": 3, "VEC4": 4}[a_["type"]]
+        o_ = b0 + bv.get("byteOffset", 0) + a_.get("byteOffset", 0)
+        return np.frombuffer(data[o_:o_ + a_["count"] * nc * 4], dtype=np.float32).reshape(a_["count"], nc)
+    out = {}
+    for an in js["animations"]:
+        Nc = CLIP_N[an["name"]]
+        tm = None; rq = []
+        for ch in an["channels"]:
+            s_ = an["samplers"][ch["sampler"]]
+            t_in = acc_(s_["input"])[:, 0]
+            if tm is None or len(t_in) > len(tm):
+                tm = t_in
+            if ch["target"]["path"] == "rotation":
+                rq.append(acc_(s_["output"]).astype(float))
+        rq = np.array([q_ for q_ in rq if len(q_) == len(tm)])          # (constant channels export 2 keys)
+        dots = np.clip(np.abs(np.einsum("bki,bki->bk", rq[:, :-1], rq[:, 1:])), 0, 1)
+        stp = np.degrees(2 * np.arccos(dots)).max(0)                    # per key interval, the largest bone step
+        med = float(np.median(stp))
+        close = float(np.degrees(2 * np.arccos(np.clip(np.abs(np.einsum("bi,bi->b", rq[:, 0], rq[:, -1])), 0, 1))).max())
+        r_ = {"keys": int(len(tm)), "t_first_s": round(float(tm[0]), 6), "t_last_s": round(float(tm[-1]), 6),
+              "period_s": round(Nc / K.FPS, 6), "boundary_step_deg_first_last": [round(float(stp[0]), 4), round(float(stp[-1]), 4)],
+              "step_median_deg": round(med, 4), "closing_key_dev_deg": round(close, 4)}
+        r_["pass"] = bool(len(tm) == Nc + 1 and abs(float(tm[0])) < 1e-6 and abs(float(tm[-1]) - Nc / K.FPS) < 1e-4 and
+                          min(stp[0], stp[-1]) >= BOUNDARY_STEP_MIN * med and min(stp[0], stp[-1]) > 1e-4 and close < 0.1)
+        out[an["name"]] = r_
+    return out
+
+
+GLB_LOOP = glb_loop_gate(OUT_GLB)
+print("GLBLOOP", json.dumps(GLB_LOOP))
 
 
 def glb_carries(path):
@@ -1180,7 +1291,8 @@ def glb_carries(path):
 rep["glb"] = {"path": OUT_GLB, "bytes": os.path.getsize(OUT_GLB), "seconds": round(time.time() - t_, 1), "carries": glb_carries(OUT_GLB),
               "structure": "armature + skinned 'wren' (body, opaque)" +
                            (" + skinned 'wren_pitchfork' (own node, bone 'pitchfork')" if HAS_FORK else " (no prop: HAS_FORK False)") +
-                           "; material Col x AO + normal map; natural scale (metres); report-only cell fit %.5f" % k_fit}
+                           "; material Col x AO + normal map; natural scale (metres); report-only cell fit %.5f" % k_fit,
+              "loop_keys": GLB_LOOP}
 ALLM = list(MESHES)
 geo0 = geometry_digest(ALLM)
 rep["skins"] = {"default": {"file": OUT_RIGGED, "palette": PAL.table(pal_default), "glow_tiers": report["glow_tiers"]["default"]}}

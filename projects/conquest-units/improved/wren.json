@@ -890,7 +890,7 @@
    "mline": 173
   },
   "degenerate_faces_dissolved": 240,
-  "seconds": 33.1,
+  "seconds": 26.7,
   "body_tris_after_cuts": 30330
  },
  "liner_proof": {
@@ -3417,7 +3417,7 @@
    "hair_inner": 1538,
    "hair_crevice": 464
   },
-  "seconds": 3.5,
+  "seconds": 3.3,
   "fringe_tips_mm": [
    [
     -62.0,
@@ -3490,13 +3490,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 6.5
+   "seconds": 6.1
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 10.6
+   "seconds": 8.1
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
@@ -3530,7 +3530,7 @@
   "ao_mean": 0.4305,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "9dbd009c7377aa0a",
+   "normal": "e27cc104d263ca30",
    "ao": "6c0a5245a136045e"
   },
   "normal_skin_only": {
@@ -3575,7 +3575,7 @@
     19.826,
     45.516
    ],
-   "seconds": 2.6
+   "seconds": 2.4
   },
   "hair_proxy_bake": {
    "enabled": true,
@@ -3606,7 +3606,7 @@
    "result": [
     "SKIPPED (carrier vertex)"
    ],
-   "seconds": 0.7,
+   "seconds": 0.6,
    "strip": "flat (0.5, 0.5, 1): the normal map carries nothing on hair",
    "vertex_carrier": {
     "rule": "hair faces (hair, hair_shade, hair_tie, hair_root, hair_ring, hair_tip, hair_inner, hair_crevice) smooth + custom split normals = the proxy normal leaned 0.45 toward each lock's own smooth normal (the map bake's high, unchanged); all other faces flat",
@@ -3652,7 +3652,7 @@
     "digest": "1328e889bba76209"
    }
   },
-  "seconds": 27.4,
+  "seconds": 24.4,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.86; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -5229,7 +5229,7 @@
      19.826,
      45.516
     ],
-    "seconds": 2.6
+    "seconds": 2.4
    },
    "ao_floor": {
     "floor": 1.0,
