@@ -1,11 +1,19 @@
 # Elias - unit state (orchestrator-maintained; briefs point here instead of restating history)
 
-- **Current:** v6 DRAFT (sheet-matched BEARD, review-log 2026-10-03 "Elias v5 hair APPROVED; beard same treatment") on the v5 scalp
-  (APPROVED, byte-identical). Static, no clips. Judge = design/reference/elias/elias_sheet.webp (front / side / back + head panel).
-  Runner: improve/elias_run.ps1 [-Twin] (~85 s; $VER elias_v6, ELIAS_BASE elias_v5; glb always; checker on improved AND rigged; -Twin =
-  scratch twin build, glb + textures + combined digest compared) -> renders/elias/elias_v6_sheet.png + elias_v6_hair_compare.png =
-  v5 | v6 | SHEET for hb_front / hb_tql (3/4 his left) / hb_side (his left) / hb_low (chin-up) / hb_tq (head panel, his right) + one-tone
-  column; hb_* = the head + beard focus box (elias_render.py; headc_* kept).
+- **Current:** v7 DEFECT FIX (review-log 2026-10-04 "Elias staff/robe": "not holding his staff ... his robe stretches") on the v6
+  beard / v5 scalp (both byte-identical: SCALPDIGEST 9c9d60d59a0df692, BEARDDIGEST 7a8c8264831b975f). Runner elias_run.ps1 [-Twin]
+  ($VER elias_v7, ELIAS_BASE elias_v6; render economy: full body + props + hold_* views; strip renders/elias/elias_v7_hold_compare.png
+  = v6 | v7 | SHEET for front / 3/4 / hold_tq / hold_side). v7 = (1) s3: belt / pouch / scroll hosts are TRUNK_F only (the belt band's
+  side rays hit the hanging hands -> two spikes to the wrists; the mantle, hung over the belt, tented out over both hands = the
+  "stretch"); (2) s7 TORSO_HUNG port (robeskirt, belt, buckle, pouches, scrolls, satchel + strap; the coat too) = transfer_trunk, arm
+  chain incl. clavicle never a source; (3) s7 STAFF HOLD BAKED INTO THE BIND POSE: staff planted upright (STAFF_HOLD out -0.150 / fwd
+  -0.120 vs the right shoulder joint, grip_at 0.70 = 1.302 m), two-bone IK + roll search (roll 240, wrist 23.7 deg after
+  HOLD_TWIST_SHARE 0.5 of a 35.9 deg twist), fingers HOLD_CURL (Wren grip), thumb "wrap" solved (-30, 30, -30, 60, 48); meshes LBS'd
+  into the pose, 19 bones re-seated, model re-centred (+38.3 mm x); (4) s6: forearm / hand faces never in the under-coat harvest.
+- **Numbers (v7):** 51,689 tris = OVER the 50k hero ceiling by 1,689: v6's 49,749 was under only because the tent made the under-coat
+  harvest delete ~1,934 hand tris (ring / pinky fingers inside the mantle: holes). Twins byte-equal (glb 97d8e239ba080808,
+  11,362,512 B, digest c7c27810e99ad4d6). Checks: improved 5/7 (cell_fit report-only + tri_budget), rigged 7/11 (+ clip_names /
+  clip_loops by design).
 - **LOCKED:** v5 scalp (HAIR_MASSES, palette hair family; SCALPDIGEST 9c9d60d59a0df692 must stay).
 - **v6 beard:** STRANDS OVER A THIN CORE. Core shell (BEARD_CORE: v4 column builder, 6 deg columns, 2.5-4.8 mm thick, hem 26 mm below
   the chin, rounded U, painted dark-inner below the chin) keeps the zone covered; 7 masses / 28 ribbon locks on top (BEARD_MASSES:
@@ -27,6 +35,8 @@
   thin edge-on slivers at the face outline; chains beard.L / .R carry 2 locks each (the other jaw locks only dip their tip below the
   leave line: rigid); beard tone sampled, close to the skin luminance. Rigged check: clip_names / clip_loops fail (no clips, by
   design); cell_fit report-only (staff).
+- **Open (v7):** tri budget decision (hand density lane ~3k tris per MPFB hand, or re-declare); capelet stays shoulder-hung
+  (704 verts arm-weighted, rides the raised upper arm). 
 - **Open artist questions:** the v6 beard read vs the sheet (clump size / count, point length 38 mm, cheek coverage height, mustache
-  sweep density); beard tone vs skin; glasses lens + frame colour; staff scale / hold; tome rest place; age lines; movement intent
+  sweep density); beard tone vs skin; glasses lens + frame colour; staff scale / hold height (v7 grip 1.30 m; the sheet's fist sits near the shoulder); tome rest place; age lines; movement intent
   before clips (beard sway).

@@ -112,6 +112,11 @@ for i in np.nonzero(~np.isin(_cdom, ["head", "neck_01"]))[0]:
     _cov_v[i] = all(_bvh_coat.ray_cast(o_, Vector(unit(d_)), 0.35)[0] is not None
                     for d_ in (n_, n_ + t1_, n_ - t1_, n_ + t2_, n_ - t2_))
 _undercoat = np.array([bool(_cov_v[f].all()) for f in CF]) & (reg != "hair")
+# v7: never the forearms / hands -- they hang free of the coat by design and move (the bind-pose staff hold re-seats the
+# right arm after this harvest). v6's tented mantle closed round both hanging hands and this pass deleted ~1,930 of their
+# tris (the ring / pinky fingers inside the mantle panel: holes the tent hid)
+_undercoat &= np.array([not any(_cdom[i].startswith(("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")) for i in f)
+                        for f in CF])
 # v2: ENCLOSED skin (the harvest that pays for the face round's cuts -- the sealed mouth's interior sleeve and the eye-
 # socket skin behind the eyeballs): a head face goes only if EVERY one of its vertices is enclosed -- rays from the vertex
 # (lifted 0.4 mm off the skin) toward every viewing direction of the front / tactical hemisphere (ENCLOSED_DIRS) all hit

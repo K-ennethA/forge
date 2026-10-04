@@ -204,12 +204,14 @@ close = {"face": (18.0, 4.0, 1.0), "face_side": (70.0, 4.0, 1.0), "face_front": 
          # v6 beard strip: the same reads on the head + beard box (front, 3/4 his left, side = his left, chin-up, the head-detail
          # panel's 3/4 = his right)
          "hb_front": (0.0, 4.0, 0.84), "hb_tql": (32.0, 6.0, 0.84), "hb_side": (90.0, 4.0, 0.84), "hb_low": (10.0, -24.0, 0.84),
-         "hb_tq": (-32.0, 6.0, 0.84)}
+         "hb_tq": (-32.0, 6.0, 0.84),
+         # v7 staff hold: the right fist round the shaft on the build's 'hold' box -- front, 3/4 from his right, his right side
+         "hold": (0.0, 6.0, 1.0), "hold_tq": (-40.0, 8.0, 1.0), "hold_side": (-90.0, 4.0, 1.0)}
 CLOSE_KEY = {"face_tq": "face", "hair_close": "head", "eye_close": "eye_L", "nose": "face", "nose_tq": "face", "hair_part": "head",
              "hair_sweep": "head", "hair_back_close": "head", "undereye": "eyes", "undereye_tq": "eyes",
              "headc_front": "head", "headc_tq": "head", "headc_side": "head", "headc_back": "head", "headc_tql": "head",
              "headc_low": "head", "hb_front": "headbeard", "hb_tql": "headbeard", "hb_side": "headbeard",
-             "hb_low": "headbeard", "hb_tq": "headbeard"}
+             "hb_low": "headbeard", "hb_tq": "headbeard", "hold_tq": "hold", "hold_side": "hold"}
 CLOSE_SHIFT = {"undereye": (0.0, 0.0, -0.016), "undereye_tq": (0.0, 0.0, -0.016)}   # the focus box moved (m)
 os.makedirs(os.path.dirname(PREFIX), exist_ok=True)
 for tag in VIEWS:

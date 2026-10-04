@@ -185,12 +185,15 @@ add_part("robeskirt", V_, F_, R_, w="fauld", v_param=np.tile(np.array(vrow_sk), 
 ROBE_INFO = {"hem_z_front": round(Z_BELT - ROBE_LEN[0], 4), "hem_z_back": round(Z_BELT - ROBE_LEN[1], 4)}
 
 # ---- the wide belt (a band over the robe top), the gold buckle, pouches, scroll tubes tucked in at his right hip
-BVH_BELTP = comb_bvh({"robeskirt"})
+# (v7 defect fix, review-log 2026-10-04 "Elias staff/robe") the belt / pouch / scroll hosts take the TRUNK + legs only: with
+# the whole body the belt band's side rays hit the hanging hands (the band ran out to the wrists in two spikes), and the
+# mantle -- hung over the belt -- tented out over them (the artist's "robe stretches")
+BVH_BELTP = comb_bvh({"robeskirt"}, body=(BV, TRUNK_F))
 _bz0, _bz1 = Z_BELT - 0.5 * BELT["h"], Z_BELT + 0.5 * BELT["h"]
 Vb_, Fb_ = ring_band(BVH_BELTP, _bz0, _bz1, BELT["clear"], nu=44, rows=3)
 V_, F_, R_ = VP.solidify(Vb_, Fb_, BELT["t"], 0.0, "belt", "belt", "belt_edge")
 add_part("belt", V_, F_, R_, w="transfer")
-BVH_BELT = comb_bvh({"robeskirt", "belt"})
+BVH_BELT = comb_bvh({"robeskirt", "belt"}, body=(BV, TRUNK_F))
 _bf = BVH_BELT.ray_cast(Vector((0.0, -0.8, Z_BELT)), Vector((0.0, 1.0, 0.0)), 1.5)
 BUCKLE_C = np.array(_bf[0]) + np.array([0.0, -0.002 - BUCKLE[2] * 0.5, 0.0])
 V_, F_, R_ = VP.rounded_box(BUCKLE_C, (1, 0, 0), (0, -1, 0), (0, 0, 1), BUCKLE[0], BUCKLE[2] * 0.5, BUCKLE[1], nr=2, rows=3,

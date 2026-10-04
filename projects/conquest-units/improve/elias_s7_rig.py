@@ -129,9 +129,49 @@ def chain_w(s, L, ch, nb, parent_bone, s0=0.0):
     return W
 
 
+# (v7 weight-source fix, wren_s7's TORSO_HUNG port) the trunk-hung garment parts copy their skin weights from the TRUNK
+# only: the nearest-skin search over the whole body found the hands hanging at the hips (the belt: 16 verts at 1.0 on the
+# hand / fingers; the satchel strap 105 verts up to 1.0 on the arms). Same barycentric copy as s1's transfer(), on the non-arm
+# triangles, the arm-chain share (clavicle included) zeroed and renormalised. The mantle ('coat') takes the same source.
+TORSO_HUNG = ("robeskirt", "belt", "buckle", "buckleinset", "pouch", "pouchflap", "pouchbutton", "scrolltube", "scrollring",
+              "satchelstrap", "satchel", "satchelflap", "satchelbuckle", "satchelscroll")
+ARM_CHAIN = ("clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
+_ARM_COLS = np.array([n.split("_")[0] in ARM_CHAIN for n in MB])
+_TRI_TRUNK = TRI[~is_arm_f[np.asarray(TRI_F)]]
+BVH_TRI_TRUNK = BVHTree.FromPolygons(BV.tolist(), _TRI_TRUNK.tolist())
+
+
+def transfer_trunk(Ps):
+    Ps = np.asarray(Ps, float)
+    loc = np.empty_like(Ps); ti = np.empty(len(Ps), dtype=np.int64)
+    for k, p in enumerate(Ps):
+        l_, _, i_, _ = BVH_TRI_TRUNK.find_nearest(Vector(p))
+        loc[k] = l_; ti[k] = i_
+    T3 = _TRI_TRUNK[ti]
+    a, b, c = BV[T3[:, 0]], BV[T3[:, 1]], BV[T3[:, 2]]
+    v0, v1, v2 = b - a, c - a, loc - a
+    d00 = (v0 * v0).sum(1); d01 = (v0 * v1).sum(1); d11 = (v1 * v1).sum(1)
+    d20 = (v2 * v0).sum(1); d21 = (v2 * v1).sum(1)
+    den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+    bv = (d11 * d20 - d01 * d21) / den; bw = (d00 * d21 - d01 * d20) / den
+    B = np.clip(np.stack([1.0 - bv - bw, bv, bw], 1), 0, 1); B /= B.sum(1, keepdims=True)
+    Wm = B[:, 0:1] * BW[T3[:, 0]] + B[:, 1:2] * BW[T3[:, 1]] + B[:, 2:3] * BW[T3[:, 2]]
+    Wm[:, _ARM_COLS] = 0.0                            # a trunk vertex's own armpit / clavicle share is not a source either
+    return Wm / np.maximum(Wm.sum(1), 1e-30)[:, None]
+
+
 def part_weights(p):
     V, w = p["V"], p["w"]
     n = len(V)
+    if p["name"].split(".")[0] in TORSO_HUNG:
+        if w == "transfer":
+            return mpfb_to_rig(transfer_trunk(V))
+        if w == "rigid_transfer":
+            return np.repeat(mpfb_to_rig(transfer_trunk(V.mean(0)[None])), n, 0)
+        if w == "fauld":
+            b_ = 0.55 * smoothstep(0.2, 1.0, p["v_param"])[:, None]
+            return (1 - b_) * onehot(n, "pelvis") + b_ * mpfb_to_rig(transfer_trunk(V))
+        raise ValueError("TORSO_HUNG part %s has weight rule %s" % (p["name"], w))
     if w == "body":
         return mpfb_to_rig(CW)
     if w == "transfer":
@@ -153,11 +193,9 @@ def part_weights(p):
         return W
     if w == "coat":
         # the mantle (draft rule; chains are the clip pass's): above the belt it rides the trunk skin under it; below, it
-        # blends to the pelvis alone (a long coat must not stretch with each thigh) -- arms never pull it
-        Wt = mpfb_to_rig(transfer(V))
-        for nm_ in DEFORM:
-            if nm_.startswith(("upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")):
-                Wt[:, J["spine_03"]] += Wt[:, J[nm_]]; Wt[:, J[nm_]] = 0.0
+        # blends to the pelvis alone (a long coat must not stretch with each thigh) -- arms never pull it (v7: the source is
+        # the trunk skin only, transfer_trunk; v6 moved the arm share to spine_03 but kept the clavicles: 186 verts <= 0.47)
+        Wt = mpfb_to_rig(transfer_trunk(V))
         k_ = smoothstep(Z_BELT + 0.05, Z_BELT - 0.25, V[:, 2])[:, None]
         return (1.0 - k_) * Wt + k_ * onehot(n, "pelvis")
     if w == "lock":                                   # (Wren's: head until the chain takes over, then rigkit.vine_weights)
@@ -220,7 +258,25 @@ rep["weights"] = {"max_influences": int(max((W > 0).sum(1).max() for W in WOBJ.v
                           "half the neck moved to spine_03; mantle + crest + motifs ('coat'): trunk skin above the belt (arm "
                           "influence moved to spine_03), blending to the pelvis alone below it; eyes / cap / every hair, beard and "
                           "glasses / the mustache locks / the cheek beard locks: head; scalp locks past their s_leave: Wren vine_weights onto hair_front / hair_side.L/R / hair_back (3 bones each); v6 BEARD: the chin / jaw clump locks past their s_leave (below BEARD_CHAIN_LEAVE) vine weights onto beard.C / beard.L / beard.R (3 bones each, chains = the mean path of their locks); the CORE shell head above BEARD_CHAIN_LEAVE, below it the same chains by drop (C <-> L/R blended over BEARD_CHAIN_PSI +-4 deg; underside ramps back to the head at the neck); staff: 'staff' (child of hand_r); tome: 'book' "
-                          "(child of hand_l)"}
+                          "(child of hand_l). v7 weight source: TORSO_HUNG parts (" + ", ".join(TORSO_HUNG) + ") and the coat "
+                          "copy from the TRUNK faces only (the arm chain, clavicles included, is never a source)"}
+_arm_j = [J[n] for n in DEFORM if n.split("_")[0] in ARM_CHAIN]
+_leg_j = [J[n] for n in DEFORM if n.split("_")[0] in ("thigh", "calf", "foot", "ball")]
+
+
+def _census(names):
+    ids_ = np.array([i for nm in OBJ["main"]["RANGE"] if nm.split(".")[0] in names for i in range(*OBJ["main"]["RANGE"][nm])],
+                    dtype=np.int64)
+    a_ = WM[ids_][:, _arm_j].sum(1); l_ = WM[ids_][:, _leg_j].sum(1)
+    return {"verts": int(len(ids_)), "arm_verts": int((a_ > 0).sum()), "arm_max": round(float(a_.max()), 4),
+            "leg_verts": int((l_ > 0).sum()), "leg_max": round(float(l_.max()), 4)}
+
+
+rep["weights"]["census"] = {k_: _census(v_) for k_, v_ in (
+    ("mantle+crest+motifs", ("mantle", "crest", "motif")), ("robeskirt", ("robeskirt",)), ("belt", ("belt",)),
+    ("buckle+pouches+scrolls", ("buckle", "buckleinset", "pouch", "pouchflap", "pouchbutton", "scrolltube", "scrollring")),
+    ("satchel+strap", ("satchelstrap", "satchel", "satchelflap", "satchelbuckle", "satchelscroll")),
+    ("capelet (shoulder-hung, report)", ("capelet",)))}
 print("WEIGHTS", json.dumps(rep["weights"]))
 
 # =========================================================================== grips: recorded transforms + the roll search
@@ -265,49 +321,234 @@ def two_bone(b1, b2, b3, H, T, pole):
 R_G = frame_to(HANDS["R"]["e"], -HANDS["R"]["a"])
 G_STAFF = TRT(HANDS["R"]["grip"], R_G, S_(STAFF_GRIP0))     # rest staff -> held in the rest right hand
 G_STAFF_inv = np.linalg.inv(G_STAFF)
-# the HOLD EVALUATION (not keyed): the staff planted upright where it rests; the right hand must take its grip. Per roll of
-# the hand about the shaft (10-deg search) the arm reaches the wrist by analytic IK (elbow out / back / down) and the wrist
-# bend is the angle between the lowerarm and the hand; the roll with the least bend (+ any reach shortfall x 1000) wins.
+# =========================================================================== v7 the STAFF HOLD, baked into the bind pose
+# (review-log 2026-10-04 "he is not holding his staff its just attached to his robe": v1-v6 only EVALUATED this hold -- the
+# rest staff stood beside the empty hanging hand, and with no clips the rest is what the game shows.) The staff is planted
+# upright at STAFF_HOLD (vs the right shoulder joint), butt on the floor. Per roll of the staff about its own axis (10-deg
+# search) x elbow pole the right arm reaches the grip by analytic two-bone IK; the wrist bend = the angle between the
+# lowerarm and the hand; the least bend (+ any reach shortfall x 1000) wins. Then: HOLD_TWIST_SHARE of the wrist's twist
+# about the forearm axis moves to the forearm, the fingers close (HOLD_CURL, Wren's HAND_POSES "grip" machinery), every
+# mesh is skinned into that pose (linear blend, the weights above) and the bones are re-seated there: the hold IS the bind
+# pose (pose bones identity; the glb, the contract checker and the stills all read it). Last, the model is re-centred
+# (bbox centre X/Y at the origin: the feet_origin contract; the root bone stays at the origin).
+PLANT_XY = np.array([HEADP["upperarm_r"][0] + STAFF_HOLD["out"], HEADP["upperarm_r"][1] + STAFF_HOLD["fwd"]])
+
+
+def staff_plant(roll_deg):
+    """rest staff -> planted at PLANT_XY, turned about its own (vertical) axis by roll_deg."""
+    g0 = S_(STAFF_GRIP0)
+    M = Tr(g0, rot((0, 0, 1), roll_deg))
+    M[:2, 3] += PLANT_XY - g0[:2]
+    return M
+
+
+def rot_angle(R):
+    return math.degrees(math.acos(float(np.clip((np.trace(R) - 1) / 2, -1, 1))))
+
+
 def staff_hold(roll_deg, pole):
-    Dst = Tr(S_(STAFF_GRIP0), rot((0, 0, 1), roll_deg))     # the planted staff, turned about its own axis by the roll
+    Dst = staff_plant(roll_deg)
     Dh = Dst @ G_STAFF_inv
-    Hs = HEADP["upperarm_r"]
     wrist = xf(Dh, HEADP["hand_r"])
-    Du, Dl, reached, err = two_bone("upperarm_r", "lowerarm_r", "hand_r", Hs, wrist, unit(np.array(pole)))
-    Rw = Dl[:3, :3].T @ Dh[:3, :3]
-    bend = math.degrees(math.acos(float(np.clip((np.trace(Rw) - 1) / 2, -1, 1))))
-    return bend, err, float(np.linalg.norm(reached - wrist))
+    Du, Dl, reached, err = two_bone("upperarm_r", "lowerarm_r", "hand_r", HEADP["upperarm_r"], wrist, unit(np.array(pole)))
+    return rot_angle(Dl[:3, :3].T @ Dh[:3, :3]), err, (Dst, Dh, Du, Dl)
 
 
 _rs = []
 for pk_, pole_ in enumerate(STAFF_ELBOW_POLES):
     for r_ in range(0, 360, 10):
-        b_, e_, m_ = staff_hold(float(r_), pole_)
+        b_, e_, _ = staff_hold(float(r_), pole_)
         _rs.append((b_ + 1000.0 * max(e_, 0.0), r_, b_, e_, pk_))
 _best = min(_rs)
 STAFF_ROLL = float(_best[1])
+_, _, (D_ST, D_H, D_U, D_L) = staff_hold(STAFF_ROLL, STAFF_ELBOW_POLES[_best[4]])
+# the twist split: the wrist's rotation (rest frame) -> swing x twist about the rest forearm axis; the forearm takes
+# HOLD_TWIST_SHARE of the twist about its own axis (the elbow and wrist joints lie on it: neither moves)
+AX_FA = unit(HEADP["hand_r"] - HEADP["lowerarm_r"])
+_q = Matrix((D_L[:3, :3].T @ D_H[:3, :3]).tolist()).to_quaternion()
+TWIST0 = math.degrees(2.0 * math.atan2(float(np.dot([_q.x, _q.y, _q.z], AX_FA)), _q.w))
+TWIST0 = (TWIST0 + 180.0) % 360.0 - 180.0
+D_L2 = D_L @ Tr(HEADP["lowerarm_r"], rot(AX_FA, HOLD_TWIST_SHARE * TWIST0))
+_q2 = Matrix((D_L2[:3, :3].T @ D_H[:3, :3]).tolist()).to_quaternion()
+TWIST1 = (math.degrees(2.0 * math.atan2(float(np.dot([_q2.x, _q2.y, _q2.z], AX_FA)), _q2.w)) + 180.0) % 360.0 - 180.0
+D = {n: np.eye(4) for n in DEFORM}
+D["root"] = np.eye(4)
+D["upperarm_r"], D["lowerarm_r"], D["hand_r"], D["staff"] = D_U, D_L2, D_H, D_ST
+
+
+def fk(D_, n, R=None):
+    D_[n] = D_[PARENT[n]] @ Tr(HEADP[n], np.eye(3) if R is None else R)
+
+
+def curl_axis(side, finger):
+    lo_ = side.lower()
+    a = HANDS[side]["a"]
+    tip = TAILP["%s_03_%s" % (finger, lo_)] - HEADP["%s_01_%s" % (finger, lo_)]
+    return a if float((K._rot(a, 0.3) @ tip - tip) @ HANDS[side]["n"]) > 0 else -a
+
+
+def thumb_pose(D_, side, thumb):
+    """(Wren s8's thumb, both forms) 2 values = (base flex, middle+tip flex); 5 values = (base flex, swing toward the pinky,
+    roll toward the palm side, middle flex, tip flex), the swing / roll axes the palm normal / the hand's long axis."""
+    lo_ = side.lower()
+    tax = unit(np.cross(HANDS[side]["n"], unit(TAILP["thumb_01_" + lo_] - HEADP["thumb_01_" + lo_])))
+    tip0 = TAILP["thumb_03_" + lo_] - HEADP["thumb_01_" + lo_]
+    if float((K._rot(tax, 0.3) @ tip0 - tip0) @ HANDS[side]["n"]) < 0:
+        tax = -tax
+    if len(thumb) == 5:
+        f1, sw_, rl_, f2, f3 = thumb
+        nn_, ee_ = HANDS[side]["n"], HANDS[side]["e"]
+        nax = nn_ if float((K._rot(nn_, 0.3) @ tip0 - tip0) @ HANDS[side]["a"]) > 0 else -nn_
+        eax = ee_ if float((K._rot(ee_, 0.3) @ tip0 - tip0) @ nn_) > 0 else -ee_
+        fk(D_, "thumb_01_" + lo_, K._rot(nax, math.radians(sw_)) @ K._rot(eax, math.radians(rl_)) @ K._rot(tax, math.radians(f1)))
+        fk(D_, "thumb_02_" + lo_, K._rot(tax, math.radians(f2)))
+        fk(D_, "thumb_03_" + lo_, K._rot(tax, math.radians(f3)))
+        return
+    fk(D_, "thumb_01_" + lo_, K._rot(tax, math.radians(thumb[0])))
+    fk(D_, "thumb_02_" + lo_, K._rot(tax, math.radians(thumb[1])))
+    fk(D_, "thumb_03_" + lo_, K._rot(tax, math.radians(thumb[1] * 0.6)))
+
+
+def fingers(D_, side, curl):
+    """(Wren s8's fingers()) the four fingers curl about the knuckle line."""
+    lo_ = side.lower()
+    for f in ("index", "middle", "ring", "pinky"):
+        ax = curl_axis(side, f)
+        for k in range(3):
+            fk(D_, "%s_%02d_%s" % (f, k + 1, lo_), K._rot(ax, math.radians(curl[k] * (0.92 if f == "index" else 1.0))))
+
+
+fingers(D, "R", HOLD_CURL[0])
+# the THUMB WRAP (v7): solved on the posed hand -- the 5-value thumb grid (base flex, swing, roll, middle flex; tip = 0.8 x
+# middle) whose tip lands nearest the curled index's middle joint pushed THUMB_PAD out from the shaft axis (the thumb closes
+# over the fingers round the shaft), every thumb joint kept >= the shaft radius + THUMB_PAD off the axis (no thumb in the wood)
+THUMB_PAD = 0.008
+_axp = PLANT_XY
+
+
+def _thumb_pts(D_):
+    return [xf(D_["thumb_%02d_r" % k], HEADP["thumb_%02d_r" % k]) for k in (2, 3)] + [xf(D_["thumb_03_r"], TAILP["thumb_03_r"])]
+
+
+_tgt = xf(D["index_02_r"], TAILP["index_02_r"])
+_rad = _tgt[:2] - _axp
+_tgt = _tgt + np.array([*(unit(_rad) * THUMB_PAD), 0.0])
+_tbest = None
+if HOLD_CURL[1] == "wrap":
+    for f1_ in range(-60, 61, 10):
+        for sw_ in range(-30, 61, 10):
+            for rl_ in range(-30, 91, 15):
+                for f2_ in range(0, 91, 15):
+                    th_ = (float(f1_), float(sw_), float(rl_), float(f2_), 0.8 * f2_)
+                    thumb_pose(D, "R", th_)
+                    pts_ = _thumb_pts(D)
+                    r_shaft = float(np.interp(pts_[-1][2] / STAFF["len"], [0.0, 1.0], STAFF["shaft_r"]))
+                    pen_ = sum(max(0.0, r_shaft + THUMB_PAD - float(np.linalg.norm(q_[:2] - _axp))) for q_ in pts_)
+                    sc_ = float(np.linalg.norm(pts_[-1] - _tgt)) + 10.0 * pen_
+                    if _tbest is None or sc_ < _tbest[0] - 1e-12:
+                        _tbest = (sc_, th_, float(np.linalg.norm(pts_[-1] - _tgt)), pen_)
+    HOLD_THUMB = _tbest[1]
+else:
+    HOLD_THUMB = HOLD_CURL[1]
+thumb_pose(D, "R", HOLD_THUMB)
+HOLD_BONES = [n for n in DEFORM if not np.allclose(D[n], np.eye(4), atol=1e-12)]
+DIG["hold"] = sha(np.stack([D[n] for n in HOLD_BONES]))
+
+
+def lbs(V, W):
+    out = V.copy()
+    for n in HOLD_BONES:
+        w = W[:, J[n]]
+        m = w > 0
+        if m.any():
+            Vm = V[m]
+            out[m] += w[m][:, None] * ((Vm @ D[n][:3, :3].T + D[n][:3, 3]) - Vm)
+    return out
+
+
+HOLD_V = {}
+for ob_, k_ in ((low, "main"), (fko, "staff"), (bko, "book")):
+    me_ = ob_.data
+    V0 = np.empty(len(me_.vertices) * 3); me_.vertices.foreach_get("co", V0); V0 = V0.reshape(-1, 3)
+    HOLD_V[k_] = lbs(V0, WOBJ[k_])
+_all = np.vstack(list(HOLD_V.values()))
+SHIFT2 = np.array([0.5 * (_all[:, 0].min() + _all[:, 0].max()), 0.5 * (_all[:, 1].min() + _all[:, 1].max()), 0.0])
+for ob_, k_ in ((low, "main"), (fko, "staff"), (bko, "book")):
+    HOLD_V[k_] = HOLD_V[k_] - SHIFT2
+    ob_.data.vertices.foreach_set("co", HOLD_V[k_].ravel())
+    ob_.data.update()
+T_S2 = np.eye(4); T_S2[:3, 3] = -SHIFT2
+bpy.context.view_layer.objects.active = rig
+for o in scene.objects:
+    o.select_set(o is rig)
+bpy.ops.object.mode_set(mode="EDIT")
+for n in DEFORM:
+    e = arm_data.edit_bones[n]
+    if n in HOLD_BONES:
+        e.matrix = Matrix((T_S2 @ D[n] @ REST4[n]).tolist())
+    else:
+        e.head = Vector(np.array(e.head) - SHIFT2); e.tail = Vector(np.array(e.tail) - SHIFT2)
+bpy.ops.object.mode_set(mode="OBJECT")
+REST4_0 = REST4
+REST4 = {b.name: np.array(b.matrix_local) for b in arm_data.bones}
+_seat = max(float(np.abs(REST4[n] - T_S2 @ D[n] @ REST4_0[n]).max()) for n in DEFORM)
+for key_ in ("conquest_front_anchor", "conquest_front_landmark"):
+    if key_ in low.keys():
+        low[key_] = (np.array(low[key_]) - SHIFT2).tolist()
+_FOC = json.loads(low["conquest_focus"])
+for k_, (lo_, hi_) in list(_FOC.items()):
+    c8 = np.array([[x, y, z] for x in (lo_[0], hi_[0]) for y in (lo_[1], hi_[1]) for z in (lo_[2], hi_[2])])
+    if k_.startswith("staff"):
+        c8 = c8 @ D_ST[:3, :3].T + D_ST[:3, 3]
+    c8 = c8 - SHIFT2
+    _FOC[k_] = [c8.min(0).tolist(), c8.max(0).tolist()]
+_FOC["hold"] = [(xf(D_H, HEADP["hand_r"]) - SHIFT2 - 0.13).tolist(), (xf(D_H, HEADP["hand_r"]) - SHIFT2 + 0.13).tolist()]
+low["conquest_focus"] = json.dumps(_FOC)
+# ---- the hold, measured on the re-seated rig / skinned meshes
+_gp = xf(T_S2 @ D_H, HANDS["R"]["grip"])                          # the fist centre
+_ax_xy = PLANT_XY - SHIFT2[:2]                                     # the staff axis (vertical line)
+_sb = REST4["staff"]
+_tips = {f: TAILP["%s_03_r" % f] for f in ("index", "middle", "ring", "pinky", "thumb")}
+_tipd = {f: round(1000.0 * (float(np.linalg.norm(xf(T_S2 @ D["%s_03_r" % f], p_)[:2] - _ax_xy)) -
+                            float(np.interp(xf(T_S2 @ D["%s_03_r" % f], p_)[2] / STAFF["len"], [0.0, 1.0], STAFF["shaft_r"]))), 1)
+         for f, p_ in _tips.items()}
+HOLD_INFO = {"staff_axis_xy": _ax_xy.round(4).tolist(), "grip_z_m": round(float(_gp[2]), 4),
+             "grip_off_axis_mm": round(1000.0 * float(np.linalg.norm(_gp[:2] - _ax_xy)), 3),
+             "staff_tilt_deg": round(math.degrees(math.acos(float(np.clip(unit(_sb[:3, 1]) @ np.array([0, 0, 1.0]), -1, 1)))), 4),
+             "ferrule_min_z_m": round(float(HOLD_V["staff"][:, 2].min()), 5),
+             "wrist_bend_deg": round(rot_angle(D_L2[:3, :3].T @ D_H[:3, :3]), 2), "wrist_bend_before_twist_split_deg": round(_best[2], 2),
+             "twist_deg": {"total": round(TWIST0, 2), "forearm": round(HOLD_TWIST_SHARE * TWIST0, 2), "wrist_left": round(TWIST1, 2)},
+             "elbow_flex_deg": round(math.degrees(math.acos(float(np.clip(unit(xf(D_U, HEADP["lowerarm_r"]) - HEADP["upperarm_r"]) @
+                                                                          unit(xf(D_L2, HEADP["hand_r"]) - xf(D_U, HEADP["lowerarm_r"])), -1, 1)))), 1),
+             "upperarm_swing_deg": round(rot_angle(D_U[:3, :3]), 1),
+             "fingertip_to_shaft_surface_mm": _tipd, "thumb": list(HOLD_THUMB),
+             "thumb_tip_to_wrap_target_mm": round(1000.0 * _tbest[2], 1) if _tbest else None, "bones_reseated": len(HOLD_BONES), "reseat_err": _seat,
+             "recentre_shift_m": SHIFT2.round(5).tolist(), "reach_shortfall_m": round(max(_best[3], 0.0), 5)}
+print("HOLD", json.dumps(HOLD_INFO))
 G_HAND_TO_STAFF = np.linalg.inv(REST4["hand_r"]) @ REST4["staff"]
 G_HAND_TO_BOOK = np.linalg.inv(REST4["hand_l"]) @ REST4["book"]
-rep["grip"] = {"staff": {"rule": "hammer grip: the shaft along the right hand's knuckle line, the orb out of the thumb side; the bone "
-                                 "'staff' is a child of hand_r; REST pose stands the staff upright beside the right hand, butt on "
-                                 "the floor; the hold evaluation (unkeyed, the staff planted at rest) searched the hand's roll about "
-                                 "the shaft in 10-deg steps for the least wrist bend",
+rep["grip"] = {"staff": {"rule": "v7: the BIND POSE holds the staff (the sheet's front view): planted upright at STAFF_HOLD vs the right "
+                                 "shoulder joint, butt on the floor, the right hand's hammer grip round it (the shaft along the knuckle "
+                                 "line, the orb out of the thumb side), the arm by analytic two-bone IK, the staff's roll about its axis "
+                                 "searched (10 deg x the elbow poles) for the least wrist bend, HOLD_TWIST_SHARE of the twist on the "
+                                 "forearm, the fingers closed (HOLD_CURL); the bone 'staff' is a child of hand_r",
                          "G_staff_rest_to_held": np.round(G_STAFF, 6).tolist(), "hand_r_to_staff_bone_rest4": np.round(G_HAND_TO_STAFF, 6).tolist(),
-                         "roll_deg": STAFF_ROLL, "wrist_bend_deg": round(_best[2], 2), "reach_shortfall_m": round(max(_best[3], 0.0), 4),
-                         "elbow_pole": list(STAFF_ELBOW_POLES[_best[4]]),
+                         "roll_deg": STAFF_ROLL, "elbow_pole": list(STAFF_ELBOW_POLES[_best[4]]), "hold": HOLD_INFO,
+                         "wrist_bend_deg": HOLD_INFO["wrist_bend_deg"], "reach_shortfall_m": HOLD_INFO["reach_shortfall_m"],
                          "bend_by_roll_deg_at_that_pole": {int(r_): round(b_, 1) for _, r_, b_, _, pk_ in _rs if pk_ == _best[4]},
                          "grip_at_m_from_butt": round(STAFF["grip_at"] * STAFF["len"], 4)},
                "book": {"rule": "held in the rest left hand by its spine edge (no clip pose): the bone 'book' is a child of hand_l at "
                                 "this transform; roll about the palm normal picked in s6 (fit: no body penetration, least turn)",
                         "hand_l_to_book_bone_rest4": np.round(G_HAND_TO_BOOK, 6).tolist(), "roll_deg": BOOK_ROLL,
                         "penetrating_samples": BOOK_INFO["penetrating_samples"]}}
-print("GRIP", json.dumps({"staff_roll": STAFF_ROLL, "wrist_bend": round(_best[2], 2), "shortfall": round(max(_best[3], 0.0), 4),
+print("GRIP", json.dumps({"staff_roll": STAFF_ROLL, "wrist_bend": HOLD_INFO["wrist_bend_deg"], "shortfall": round(max(_best[3], 0.0), 4),
                           "book_roll": BOOK_ROLL}))
 rig["conquest_rig"] = ("elias: root (contract) > MPFB2 game_engine skeleton + staff (hand_r child) + book (hand_l child) + "
                        "follow-through chains %s x %d bones (head children)" % (sorted(CHAIN_PTS), HAIR_BONES))
 rep["chains"] = {ch: {"bones": HAIR_BONES, "length_m": round(float(Lc), 4)} for ch, (_, Lc, _) in CHAIN_PTS.items()}
 low["conquest_clips"] = []
-low["conquest_clip_status"] = "none (v1 draft: static build + rig; movement intent is an open artist question)"
+low["conquest_clip_status"] = ("none (static build + rig; movement intent is an open artist question); v7: the BIND POSE is the "
+                               "sheet's staff hold (the default pose the game shows)")
 low["conquest_look"] = ("shaded: Col x baked AO, baked normal map on the skin; the hair family (scalp locks + cap + the v4 beard / "
                         "mustache SHELLS) smooth with custom split vertex normals (the per-group smooth-proxy normals: glTF NORMAL) "
                         "-- no outline shells, no cel bands; stylisation drawn into the palette regions")

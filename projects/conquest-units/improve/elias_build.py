@@ -439,13 +439,25 @@ BRACER = {"t": (0.04, 0.52), "clear": 0.0045, "t_leather": 0.0038, "nu": 14, "nv
 # ---- staff (own object + bone 'staff', child of hand_r)
 STAFF = {"len": 1.86, "shaft_r": (0.0165, 0.0135), "head_h": 0.235, "ferrule": (0.0, 0.065), "collar": 0.045,
          "brass_t": 0.0022, "rings": 16, "cup_h": 0.045, "sphere_r": 0.082, "ring_r": 0.0034, "ring_seg": (24, 4),
-         "ecliptic_deg": 23.5, "finial": 0.018, "finial_r": 0.0085, "orb_r": 0.038, "grip_at": 0.62}   # "staff": length
+         "ecliptic_deg": 23.5, "finial": 0.018, "finial_r": 0.0085, "orb_r": 0.038, "grip_at": 0.70}   # "staff": length
                                       #   (sheet: taller than him), shaft radii, the head (cup + armillary + finial) height,
                                       #   ferrule span, collar, the armillary radius / ring thickness, the teal orb radius,
-                                      #   the hand grips at grip_at x len
+                                      #   the hand grips at grip_at x len (v7 0.62 -> 0.70: the sheet's fist sits high, near
+                                      #   the shoulder; 1.30 m keeps the elbow bend skinnable)
 STAFF_REST_OFF = (-0.060, 0.010)      # rest pose: the staff stands upright this far (x, y m) from the right hand's grip point
 STAFF_ELBOW_POLES = ((-0.55, 0.15, -0.80), (-0.30, 0.55, -0.80), (-0.75, -0.15, -0.65), (-0.15, 0.85, -0.50))   # the
-                                      #   staff-hold evaluation's elbow directions tried (out, back, down) with the roll search
+                                      #   staff-hold elbow directions tried (out, back, down) with the roll search
+# ---- v7 "STAFF HOLD" (review-log 2026-10-04 "he is not holding his staff"): the sheet's front-view hold BAKED INTO THE BIND
+# POSE (no clips: the glb's default pose is what the game shows) -- the staff planted upright beside his right foot, the
+# right arm reaching it by the analytic two-bone IK, the fist closed round the shaft
+STAFF_HOLD = {"out": -0.150, "fwd": -0.120}   # "staff place": the planted staff's axis vs the right shoulder joint (x m, -
+                                      #   = out to his right; y m, - = forward)
+HOLD_TWIST_SHARE = 0.5                # "forearm twist share": the forearm takes this share of the grip's twist about its own
+                                      #   axis (the rest stays at the wrist; 0 = all at the wrist)
+HOLD_CURL = ((58.0, 72.0, 50.0), "wrap")   # "grip fingers": finger curl per joint (knuckle, middle, tip; deg; Wren's
+                                      #   HAND_POSES "grip") + the thumb: "wrap" = solved in s7 (closed over the fingers round
+                                      #   the shaft), or Wren's 2- / 5-value thumb tuple (Wren's "grip" (22, 30) left the thumb
+                                      #   standing 53 mm off the shaft)
 # ---- book (own object + bone 'book', child of hand_l)
 BOOK = {"size": (0.165, 0.230, 0.048), "cover_t": 0.0045, "overhang": 0.003, "spine_bulge": 0.009, "crest_h": 0.120,
         "crest_w": 0.0028, "strap_w": 0.020}   # "tome": width / height / thickness, board thickness, overhang, spine bulge,
@@ -482,7 +494,7 @@ OUT_RIGGED = os.path.join(_OUT_ROOT, "rigged", UNIT + ".blend")
 OUT_GLB = os.path.join(_OUT_ROOT, "rigged", UNIT + ".glb")
 TEX_DIR = os.path.join(_OUT_ROOT, "improved", "textures")
 TAG = "scratch" if SCRATCH else "main"
-report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v6 draft (sheet-matched beard: mass-first clumped strands over a thin core; v5 scalp unchanged)",
+report = {"unit": UNIT, "conquest_character_id": CHAR_ID, "version": "v7 (defect fix: the staff HELD in the bind pose; belt / mantle no longer tented over the hands; trunk-only weight sources; v6 beard + v5 scalp unchanged)",
           "name_status": "named by the sheet (PROFESSOR ELIAS - ROYAL RESEARCHER)",
           "source": "none: the artist's inline three-view sheet, transcribed in design/review-log.md 2026-10-02", "tier": "hero",
           "tri_budget": TRI_BUDGET, "units": "metres; floor z = 0 at the soles", "overrides": OVERRIDES}

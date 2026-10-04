@@ -72,7 +72,7 @@ lines = [
        IMP["measure"]["height"]),
     "mouth: v_ratio %.3f (Ashe 0.29), width / eye spacing %.3f (house 0.65-0.73), seam %.1f mm   eyes: iris coverage L %.1f%% (55-65%%)"
     % (mp.get("v_ratio", 0), mp.get("w_eyes", 0), mp.get("seam_width_mm", 0), ep.get("L", {}).get("iris_coverage_pct", 0)),
-    "glasses rim r %.1f mm, %.1f mm in front of the cornea, open rims (no lens)   staff roll %s deg, wrist bend %.1f deg (hold evaluation)   clips: none (artist-gated)"
+    "glasses rim r %.1f mm, %.1f mm in front of the cornea, open rims (no lens)   staff roll %s deg, wrist bend %.1f deg (v7: the bind-pose hold)   clips: none (artist-gated)"
     % (gl.get("rim_r_mm", {}).get("L", 0), gl.get("rim_in_front_of_cornea_mm", {}).get("L", 0), RIG["grip"]["staff"]["roll_deg"],
        RIG["grip"]["staff"]["wrist_bend_deg"]),
 ]
@@ -102,7 +102,9 @@ if V != BASE:
     REF = {"headc_front": (170, 85, 300, 215), "headc_tq": (1056, 52, 1300, 296), "headc_side": (480, 85, 610, 215),
            "headc_back": (800, 95, 930, 225),
            # v6: the head + beard reads (square crops including the whole beard)
-           "hb_front": (160, 95, 310, 245), "hb_side": (475, 95, 625, 245), "hb_tq": (1056, 80, 1300, 324)}         if os.environ.get("ELIAS_STRIP_REF") else {}
+           "hb_front": (160, 95, 310, 245), "hb_side": (475, 95, 625, 245), "hb_tq": (1056, 80, 1300, 324),
+           # v7: the staff hold -- the front figure (fitted, not stretched) and the fist round the shaft
+           "front": (0, 90, 430, 960), "hold": (20, 200, 200, 380)}         if os.environ.get("ELIAS_STRIP_REF") else {}
     SHEET_IMG = os.path.join(ROOT, "design", "reference", "elias", "elias_sheet.webp")
     S = 420
     ncol = [3 if v in REF else 2 for v, _ in pairs]
@@ -116,8 +118,10 @@ if V != BASE:
             st.paste(im, (x0 + j * (S + PAD), PAD + LAB))
             ds.text((x0 + j * (S + PAD) + 4, PAD + 2), "%s  %s" % (lab, ver.split("_")[-1]), fill=(235, 235, 235), font=FONT)
         if v in REF:
-            im = Image.open(SHEET_IMG).convert("RGB").crop(REF[v]).resize((S, S), Image.LANCZOS)
-            st.paste(im, (x0 + 2 * (S + PAD), PAD + LAB))
+            im = Image.open(SHEET_IMG).convert("RGB").crop(REF[v])
+            im.thumbnail((S, S), Image.LANCZOS) if im.size[0] != im.size[1] else None
+            im = im.resize((S, S), Image.LANCZOS) if im.size[0] == im.size[1] else im
+            st.paste(im, (x0 + 2 * (S + PAD) + (S - im.size[0]) // 2, PAD + LAB + (S - im.size[1]) // 2))
             ds.text((x0 + 2 * (S + PAD) + 4, PAD + 2), "%s  SHEET" % lab, fill=(235, 235, 235), font=FONT)
         x0 += ncol[k] * (S + PAD) + PAD
 
@@ -137,6 +141,6 @@ if V != BASE:
                         d_["faces"]["sliver_aspect_over_20"]), fill=(220, 220, 210), font=FONT_S)
     if os.environ.get("ELIAS_STRIP_NOTE"):
         ds.text((PAD + 4, yl + 44), os.environ["ELIAS_STRIP_NOTE"], fill=(220, 220, 210), font=FONT_S)
-    outs = os.path.join(R, V + "_hair_compare.png")
+    outs = os.path.join(R, V + "_" + os.environ.get("ELIAS_STRIP_OUT", "hair_compare") + ".png")
     st.save(outs)
     print("STRIP", outs, st.size)
