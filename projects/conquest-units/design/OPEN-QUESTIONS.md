@@ -38,6 +38,8 @@ docs/lane-conventions.md. Per-unit facts: improve/<unit>_STATE.md.
   freeing them = redraw the hairline around the ear, own small lane (body digest changes).
 - V8 v5 scalp smalls: front locks read ribbed head-on, dark notch at top centre, crown
   under-arch — verdict after seeing the renders; knobs in varden_build.py mass tables.
+- V9 His _GLOW is all zero — the brooch's teal gem does NOT glow in-game (Elias's orb
+  does). Should the gem get a glow tier in palettes/varden? One palette edit + re-export.
 
 ## Game-side (Conquest; all behind debug keys, defaults live)
 - G1 F7 look verdict: warm vs warm-neutralLUT vs new (WorldLook presets).
