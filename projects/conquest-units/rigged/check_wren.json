@@ -7,7 +7,7 @@
    "footprint": 0.9335,
    "height": 1.7506,
    "width": 0.9335,
-   "depth": 0.5312,
+   "depth": 0.4815,
    "max_footprint": 1.9,
    "max_height": 1.8
   },
@@ -16,7 +16,7 @@
    "pass": true,
    "min_z": -0.0,
    "centre_xy": [
-    0.0,
+    -0.0,
     -0.0
    ],
    "transforms_applied": true
@@ -50,12 +50,12 @@
     {
      "mesh": "wren",
      "layers": 1,
-     "islands": 2235,
+     "islands": 2225,
      "flipped": 0,
      "overlap": false,
      "overlap_note": "summed UV area is 32% below the rasterised coverage at 512x512 \u2014 consistent with no overlap. A raster quantises every island edge, so anything under 8% is counted as clean.",
-     "coverage": 0.4194,
-     "area_distortion_p95": 15.435
+     "coverage": 0.4233,
+     "area_distortion_p95": 15.491
     }
    ]
   },
@@ -151,7 +151,7 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.4836,
+      "footprint": 1.4669,
       "height": 1.693,
       "min_z": -0.0
      }
@@ -166,7 +166,7 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.0265,
+      "footprint": 1.0226,
       "height": 1.7276,
       "min_z": -0.0
      }

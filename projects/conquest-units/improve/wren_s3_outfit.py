@@ -248,8 +248,17 @@ SKIRT_INFO = {"columns": int(nsk), "rows": SKIRT_NV, "hem_z_front": round(Z_SASH
               "hem_z_back": round(Z_SASH - SKIRT_LEN[1], 4)}
 
 # ---- rope sash: two wraps round the waist over the tunic top, a knot at his front-left, two hanging ties
-BVH_SASH = comb_bvh({"skirt"})
+# (2026-10-04 SASH_SOURCE "trunk") the wraps' radial profile and the pouch's seat see the TRUNK (s1 TRUNK_F, the uncut
+# source surface: no arm-chain / head faces) + the tunic tails. The whole-body BVH ("body" = v-prior) saw the A-pose rest
+# hands at the waist: one ring per wrap flared round the hand (344-380 mm vs 140-180) and the pouch sat on the hand.
+if SASH_SOURCE == "trunk":
+    _sk = next(p for p in PARTS if p["name"] == "skirt")
+    BVH_SASH = BVHTree.FromPolygons(np.vstack([BV, _sk["V"]]).tolist(),
+                                    [list(f) for f in TRUNK_F] + [[i + len(BV) for i in f] for f in _sk["F"]])
+else:
+    BVH_SASH = comb_bvh({"skirt"})
 ROPE_INFO = {}
+ROPE_RING_R = []
 for k, dz in enumerate(ROPE_DROP):
     C_ = []
     for i in range(32):
@@ -259,6 +268,7 @@ for k, dz in enumerate(ROPE_DROP):
         r = float(radial_profile(BVH_SASH, 0.0, AX_Y, 180.0 + a_, [z - 0.008, z, z + 0.008]).max()) + ROPE_R * 0.85
         ph = math.radians(180.0 + a_)
         C_.append([r * math.sin(ph), AX_Y + r * math.cos(ph), z])
+    ROPE_RING_R.append([math.hypot(c_[0], c_[1] - AX_Y) for c_ in C_])
     V_, F_, R_, _ = VP.rope(np.array(C_), ROPE_R, n=6, pitch=0.020, closed=True)
     add_part("sash.%d" % k, V_, F_, R_, w="transfer")
 _kh = BVH_SASH.ray_cast(Vector((KNOT_X, -0.8, Z_SASH - 0.004)), Vector((0.0, 1.0, 0.0)), 1.5)
@@ -287,7 +297,10 @@ for j, (ln, dx, rr) in enumerate(TIES):
     add_part("tieend.%d" % j, V_[0], V_[1], V_[2], w="tie", s=np.full(len(V_[0]), float(S_.max()) + 0.02))
     TIE_PATHS.append(C_)
 ROPE_INFO = {"wraps": len(ROPE_DROP), "radius": ROPE_R, "knot": KNOT_C.round(4).tolist(),
-             "ties_len_m": [round(float(np.linalg.norm(np.diff(c_, axis=0), axis=1).sum()), 3) for c_ in TIE_PATHS]}
+             "ties_len_m": [round(float(np.linalg.norm(np.diff(c_, axis=0), axis=1).sum()), 3) for c_ in TIE_PATHS],
+             "profile_source": SASH_SOURCE,
+             "ring_centreline_radius_mm": [{"min": round(1000 * min(r_), 1), "median": round(1000 * float(np.median(r_)), 1),
+                                            "max": round(1000 * max(r_), 1)} for r_ in ROPE_RING_R]}
 
 # ---- belt pouch on his left hip
 _pa = math.radians(POUCH["phi"])
@@ -305,6 +318,8 @@ V_, F_, R_ = VP.rounded_box(_fc, _pt, _pd, [0.0, 0.0, 1.0], hx_ * 1.04, 0.0035, 
 add_part("pouchflap", V_, F_, R_, w="rigid_transfer")
 V_, F_, R_ = VP.gem(_fc + _pd * 0.004 - np.array([0.0, 0.0, hz_ * 0.40]), _pd, 0.0055, 0.003, n=8, region="brass")
 add_part("pouchbutton", V_, F_, R_, w="rigid_transfer")
+POUCH_INFO = {"side": "his left", "phi_deg": POUCH["phi"], "seat_radius_mm": round(1000 * _pr, 1),
+              "centre": POUCH_C.round(4).tolist(), "top_below_sash_m": POUCH["drop"]}
 
 # ---- rolled sleeve cuffs
 for s in "LR":
@@ -407,6 +422,6 @@ for s, sg in (("L", 1.0), ("R", -1.0)):
         h = BVH_BODY.ray_cast(Vector((x_, -0.8, float(z))), Vector((0.0, 1.0, 0.0)), 1.5)
         V_, F_, R_ = VP.gem(np.array(h[0]) + np.array(h[1]) * 0.0008, np.array(h[1]), 0.0030, 0.0017, n=5, region="brass")
         add_part("rivet.%s%d" % (s, i), V_, F_, R_, w="rigid_transfer")
-print("OUTFIT", json.dumps({"boots": BOOT_INFO, "puff": PUFF_INFO, "skirt": SKIRT_INFO, "rope": ROPE_INFO,
+print("OUTFIT", json.dumps({"boots": BOOT_INFO, "puff": PUFF_INFO, "skirt": SKIRT_INFO, "rope": ROPE_INFO, "pouch": POUCH_INFO,
                             "bracer": BRACER_INFO, "pendant": PENDANT_INFO,
                             "open_edges": {p["name"]: VP.open_edges(p["F"]) for p in PARTS if VP.open_edges(p["F"])}}))

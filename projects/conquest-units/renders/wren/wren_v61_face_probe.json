@@ -213,7 +213,7 @@
      "+20.5": 0.95,
      "+21.0": 1.18
     },
-    "p90": 0.536,
+    "p90": 0.537,
     "columns": 71
    },
    "flatness_mm": {
@@ -247,7 +247,7 @@
     -12.5,
     1.0
    ],
-   "past_line_ends_max(|x|>16.5)": 0.164,
+   "past_line_ends_max(|x|>16.5)": 0.165,
    "lower_lip_band_max(dz -3..-10)": 0.509,
    "upper_lip_band_max(dz +1..+8)": 0.558
   },
@@ -263,7 +263,7 @@
    },
    "x+4": {
     "seam_dz_mm": -1.5,
-    "upper_fwd_raw_mm": 1.558,
+    "upper_fwd_raw_mm": 1.557,
     "upper_proud_detrended_mm": 0.143,
     "seam_recess_mm": 0.035,
     "relief_max_mm": 0.227
@@ -298,7 +298,7 @@
    },
    "x+24": {
     "seam_dz_mm": -1.5,
-    "upper_fwd_raw_mm": 1.824,
+    "upper_fwd_raw_mm": 1.825,
     "upper_proud_detrended_mm": 0.053,
     "seam_recess_mm": 0.02,
     "relief_max_mm": 0.049

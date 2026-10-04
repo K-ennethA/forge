@@ -1,2 +1,2 @@
-﻿DIGEST build=f782e8150e9e09ec twin=f782e8150e9e09ec identical=True | BAKE_DIFF normal texels=0 of 4194304 max_delta=0.00000 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True | build_wall_s=90.4
+﻿DIGEST build=c76e46bbcc5c4b6f twin=b3a307d1da89e3fd identical=except-bake_normal | BAKE_DIFF normal texels=1 of 4194304 max_delta=0.00392 limits=(64, 0.008) pass=True | BAKE_DIFF ao texels=0 of 1048576 max_delta=0.00000 limits=(16, 0.008) pass=True gate=PASS | build_wall_s=86.5
 HAIRSTABLE build=a99447b48c4af4be twin=a99447b48c4af4be face_edited=a99447b48c4af4be mouth_dials_edited=a99447b48c4af4be identical=True

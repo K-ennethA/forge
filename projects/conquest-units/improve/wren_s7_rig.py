@@ -153,6 +153,7 @@ def chain_w(s, L, ch, nb, parent_bone, s0=0.0):
 # forearms, the pouch on thumb_02_l at 0.93). Same barycentric copy as s1's transfer(), on the non-arm triangles.
 ARM_CHAIN = ("clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
 _ARM_COLS = np.array([n.split("_")[0] in ARM_CHAIN for n in MB])
+_LEG_COLS = np.array([n.startswith(("thigh", "calf", "foot", "ball")) for n in MB])
 _TRI_TRUNK = TRI[~is_arm_f[np.asarray(TRI_F)]]
 BVH_TRI_TRUNK = BVHTree.FromPolygons(BV.tolist(), _TRI_TRUNK.tolist())
 
@@ -186,7 +187,11 @@ def part_weights(p):
         if w == "transfer":
             return mpfb_to_rig(transfer_trunk(V))
         if w == "rigid_transfer":
-            return np.repeat(mpfb_to_rig(transfer_trunk(V.mean(0)[None])), n, 0)
+            # (2026-10-04) a hung rigid piece (the knot, the pouch) keeps HUNG_LEG_SHARE of its centroid's leg weights (the
+            # pouch's centroid sits over the hip joint: 61 % thigh_l -- the thigh pushes it; 0 = it rides the trunk only)
+            Wr = transfer_trunk(V.mean(0)[None])
+            Wr[:, _LEG_COLS] *= HUNG_LEG_SHARE
+            return np.repeat(mpfb_to_rig(Wr / np.maximum(Wr.sum(1), 1e-30)[:, None]), n, 0)
         raise ValueError("TORSO_HUNG part %s has weight rule %s" % (p["name"], w))
     if w == "body":
         return mpfb_to_rig(CW)
@@ -309,10 +314,13 @@ rep["weights"] = {"max_influences": int(infl.max()), "unweighted": int((infl == 
                           "pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / "
                           "half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; "
                           "fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: "
-                          "pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. "
-                          "2026-10-03 weight-source knobs (all OFF = v6.1): TORSO_HUNG parts copy from the TRUNK faces only (no "
-                          "arm-chain source); the cloak's forearm coupling fades elbow -> wrist (CLOAK_FOREARM, per side) and its "
-                          "side panels at the sash line hang part from the hip (CLOAK_HIP)"}
+                          "pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. " +
+                          ("weight-source knobs (2026-10-03 staged, 2026-10-04 ON with the trunk-fitted sash / pouch, s3 "
+                          "SASH_SOURCE): TORSO_HUNG parts (%s) copy from the TRUNK faces only (no arm-chain source); the cloak's "
+                          "forearm coupling fades elbow -> wrist to CLOAK_FOREARM's wrist share (l %.2f / r %.2f; 1.0 = v6.1) and "
+                          "its side panels at the sash line hang part from the hip (CLOAK_HIP l %.2f / r %.2f)"
+                          % (", ".join(TORSO_HUNG) or "none", CLOAK_FOREARM["l"][0], CLOAK_FOREARM["r"][0],
+                             CLOAK_HIP["l"][0], CLOAK_HIP["r"][0]))}
 _arm_j = [J[n] for n in DEFORM if n.split("_")[0] in ARM_CHAIN]
 _th = np.array([i for nm in OBJ["main"]["RANGE"] if nm.split(".")[0] in TORSO_HUNG
                 for i in range(*OBJ["main"]["RANGE"][nm])], dtype=np.int64)

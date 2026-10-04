@@ -1,7 +1,7 @@
 ﻿# Wren â€” unit state (orchestrator-maintained; briefs point here instead of restating history)
 
-- **Current:** v6.1 (lips + wider mouth) on v7 base, fork dropped (8b7bce7), + 2026-10-04 fists / lower run knee / glb
-  loop keys (entry below; pending commit; pouch side effect open).
+- **Current:** v6.1 (lips + wider mouth) on v7 base, fork dropped (8b7bce7), fists / lower run knee / glb loop keys
+  (dc5be59), + 2026-10-04 trunk-fitted sash / pouch on the hip + garment weights ON (entry below; pending commit).
 - **LOCKED (artist-approved, do not regress):** body/outfit/clips below the neck (v1);
   eye SOCKET scale x1.30 ("perfect"); iris at ~58% coverage; flat under-eye (v5 fill);
   one unified mouth line at Ashe ratios (v6) + subtle lip volumes, paler tint, 44 mm width (v6.1); side part on his left; ribbon locks +
@@ -59,7 +59,22 @@
   KNOWN SIDE EFFECT (needs s3/s7, outside this lane): the pouch is 92 % weighted to thumb_02_l, so the fist's thumb wrap
   moves it 39 mm mean / 59 mm max (run 48 / 73) and turns it ~90 deg (flap sideways) in every clip -- see
   renders/wren/wren_fist_{idle,walk,run}_before_after.png; the queued s3 pouch-onto-the-hip lane fixes it.
-- **Key knobs:** HAND_POSES / CLIP_HANDS / FIST_*, RUN_KNEE_DRIVE_DEG, HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
+- **Sash / pouch on the trunk + weights ON (2026-10-04, pending commit; forced by the fist mandate, artist reviews the
+  look):** s3 SASH_SOURCE "trunk" fits the rope rings + pouch seat to the trunk faces (s1 TRUNK_F) + tunic tails: ring
+  max 363.5 / 364.9 -> 167.1 / 173.1 mm (min / median unchanged 95.7 / 149.3, 98.9 / 152.6); the pouch stays on HIS LEFT
+  at phi 58 (the design value), seat radius 375.8 -> 192.6 mm, centre x 0.342 -> 0.186. Weights: TORSO_HUNG = sash, knot,
+  pouch, flap, button (arm-chain weight 0); CLOAK_FOREARM wrist share 0.5 both sides (1.0 = 27 run torso crossings on the
+  new geometry; 0.9..0.0 all clean); CLOAK_HIP stays 0 (changed nothing); NEW HUNG_LEG_SHARE 0.5 (pouch keeps half its
+  hip skin's thigh share: run thigh clearance +3.0 mm, pouch turn off the pelvis run 28 / walk 12 / idle 6 deg; 0.0 ->
+  thigh 10.7 mm inside it). Pouch finger-pose displacement 46.7 mean / 71.8 max mm -> 0 every clip; fist-to-pouch
+  clearance idle 27.5 / walk 66.6 / run 22.1 mm. Cloak crossings 0 in every group, every clip (run torso 24 -> 0). Arm
+  pump (RUN_LARM[2], shipped 28) clean through 36 deg, first crossing 38 (1 torso edge). v-prior reproduced exactly
+  (--set SASH_SOURCE='body' TORSO_HUNG=() CLOAK_FOREARM 1.0: every digest part of f782e815). KNOWN: the old pouch was
+  the front-most point, so the s6 bbox re-centre moves the model 24.8 mm in y (glb translations +-24.8 mm); keys equal
+  to float noise (non-cape <= 4.8e-7, cape chains <= 8.3e-5 quat: the cloak rest drape moved <= 1.26 mm off the old rope
+  loop) -- NOT byte-identical; byte-identical needs an s6 SHIFT pin (outside the lane). Renders:
+  renders/wren/wren_pouch_{walk7,idle_run}_before_after.png, wren_pouch_look_front_tq.png (artist veto sheet).
+- **Key knobs:** SASH_SOURCE / TORSO_HUNG / CLOAK_FOREARM / HUNG_LEG_SHARE, HAND_POSES / CLIP_HANDS / FIST_*, RUN_KNEE_DRIVE_DEG, HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
   probe (second-feature traces), hair diag (interpenetration/kinks), HAIRSTABLE,

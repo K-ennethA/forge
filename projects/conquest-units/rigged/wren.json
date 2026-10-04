@@ -6,15 +6,21 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
-  "seconds": 0.5,
+  "seconds": 0.4,
   "pitchfork_object": "none (HAS_FORK False)",
-  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. 2026-10-03 weight-source knobs (all OFF = v6.1): TORSO_HUNG parts copy from the TRUNK faces only (no arm-chain source); the cloak's forearm coupling fades elbow -> wrist (CLOAK_FOREARM, per side) and its side panels at the sash line hang part from the hip (CLOAK_HIP)",
+  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. weight-source knobs (2026-10-03 staged, 2026-10-04 ON with the trunk-fitted sash / pouch, s3 SASH_SOURCE): TORSO_HUNG parts (sash, knot, pouch, pouchflap, pouchbutton) copy from the TRUNK faces only (no arm-chain source); the cloak's forearm coupling fades elbow -> wrist to CLOAK_FOREARM's wrist share (l 0.50 / r 0.50; 1.0 = v6.1) and its side panels at the sash line hang part from the hip (CLOAK_HIP l 0.00 / r 0.00)",
   "weight_sources": {
-   "torso_hung_parts": [],
-   "torso_hung_arm_chain_weight_max": null,
+   "torso_hung_parts": [
+    "sash",
+    "knot",
+    "pouch",
+    "pouchflap",
+    "pouchbutton"
+   ],
+   "torso_hung_arm_chain_weight_max": 0.0,
    "cloak_verts_forearm_hand_weight": 310,
    "cloak_verts_left_arm_weight": 299,
-   "cloak_left_arm_weight_max": 1.0
+   "cloak_left_arm_weight_max": 0.979
   }
  },
  "follow_through": {
@@ -313,7 +319,7 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.0695
+    "cloak_to_legs_min_m": 0.0696
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
@@ -376,7 +382,7 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.1086
+    "cloak_to_legs_min_m": 0.1144
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
@@ -455,12 +461,9 @@
     "cloak_crossings_left_arm": 0,
     "cloak_crossings_right_arm": 0,
     "cloak_crossings_legs": 0,
-    "cloak_crossings_torso_outfit": 24,
+    "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.0881,
-    "cloak_crossings_worst_frame": {
-     "torso_outfit": 3
-    }
+    "cloak_to_legs_min_m": 0.0899
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
@@ -471,7 +474,7 @@
     "boundary_motion_ok": true,
     "pose_delta_deg_max": 0.0,
     "loc_delta_m_max": 0.0,
-    "ang_vel_jump_at_seam_deg_per_frame": 40.5526,
+    "ang_vel_jump_at_seam_deg_per_frame": 40.5525,
     "ang_vel_change_interior_max_deg_per_frame": 76.6931
    },
    "gait": {
@@ -594,12 +597,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    -0.0013,
+    -0.0262,
     0.9235
    ],
    "tail": [
     -0.0144,
-    0.0287,
+    0.0039,
     1.0072
    ]
   },
@@ -609,12 +612,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    0.0287,
+    0.0039,
     1.0072
    ],
    "tail": [
     -0.0144,
-    0.0203,
+    -0.0045,
     1.0667
    ]
   },
@@ -624,12 +627,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    0.0203,
+    -0.0045,
     1.0667
    ],
    "tail": [
     -0.0144,
-    0.025,
+    0.0002,
     1.1224
    ]
   },
@@ -639,12 +642,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    0.025,
+    0.0002,
     1.1224
    ],
    "tail": [
     -0.0144,
-    0.0577,
+    0.0329,
     1.2602
    ]
   },
@@ -654,12 +657,12 @@
    "deform": true,
    "head": [
     0.0074,
-    -0.0214,
+    -0.0462,
     1.3761
    ],
    "tail": [
     0.1714,
-    -0.0126,
+    -0.0374,
     1.3408
    ]
   },
@@ -669,12 +672,12 @@
    "deform": true,
    "head": [
     0.1714,
-    -0.0126,
+    -0.0374,
     1.3408
    ],
    "tail": [
     0.2491,
-    -0.0124,
+    -0.0373,
     1.1247
    ]
   },
@@ -684,12 +687,12 @@
    "deform": true,
    "head": [
     0.2491,
-    -0.0124,
+    -0.0373,
     1.1247
    ],
    "tail": [
     0.3291,
-    -0.0989,
+    -0.1237,
     0.9219
    ]
   },
@@ -699,12 +702,12 @@
    "deform": true,
    "head": [
     0.3291,
-    -0.0989,
+    -0.1237,
     0.9219
    ],
    "tail": [
     0.3373,
-    -0.1164,
+    -0.1412,
     0.8956
    ]
   },
@@ -714,12 +717,12 @@
    "deform": true,
    "head": [
     0.3509,
-    -0.1672,
+    -0.192,
     0.8452
    ],
    "tail": [
     0.3507,
-    -0.1814,
+    -0.2062,
     0.8238
    ]
   },
@@ -729,12 +732,12 @@
    "deform": true,
    "head": [
     0.3507,
-    -0.1814,
+    -0.2062,
     0.8238
    ],
    "tail": [
     0.3461,
-    -0.1924,
+    -0.2172,
     0.8041
    ]
   },
@@ -744,12 +747,12 @@
    "deform": true,
    "head": [
     0.3461,
-    -0.1924,
+    -0.2172,
     0.8041
    ],
    "tail": [
     0.3369,
-    -0.2038,
+    -0.2287,
     0.7825
    ]
   },
@@ -759,12 +762,12 @@
    "deform": true,
    "head": [
     0.3584,
-    -0.1439,
+    -0.1687,
     0.8363
    ],
    "tail": [
     0.3574,
-    -0.154,
+    -0.1788,
     0.8043
    ]
   },
@@ -774,12 +777,12 @@
    "deform": true,
    "head": [
     0.3574,
-    -0.154,
+    -0.1788,
     0.8043
    ],
    "tail": [
     0.3528,
-    -0.163,
+    -0.1879,
     0.7793
    ]
   },
@@ -789,12 +792,12 @@
    "deform": true,
    "head": [
     0.3528,
-    -0.163,
+    -0.1879,
     0.7793
    ],
    "tail": [
     0.3454,
-    -0.1707,
+    -0.1955,
     0.7551
    ]
   },
@@ -804,12 +807,12 @@
    "deform": true,
    "head": [
     0.3541,
-    -0.1037,
+    -0.1286,
     0.8318
    ],
    "tail": [
     0.3528,
-    -0.1042,
+    -0.129,
     0.8109
    ]
   },
@@ -819,12 +822,12 @@
    "deform": true,
    "head": [
     0.3528,
-    -0.1042,
+    -0.129,
     0.8109
    ],
    "tail": [
     0.3492,
-    -0.1051,
+    -0.13,
     0.796
    ]
   },
@@ -834,12 +837,12 @@
    "deform": true,
    "head": [
     0.3492,
-    -0.1051,
+    -0.13,
     0.796
    ],
    "tail": [
     0.3446,
-    -0.1059,
+    -0.1307,
     0.777
    ]
   },
@@ -849,12 +852,12 @@
    "deform": true,
    "head": [
     0.3595,
-    -0.1241,
+    -0.149,
     0.8333
    ],
    "tail": [
     0.3594,
-    -0.1281,
+    -0.1529,
     0.804
    ]
   },
@@ -864,12 +867,12 @@
    "deform": true,
    "head": [
     0.3594,
-    -0.1281,
+    -0.1529,
     0.804
    ],
    "tail": [
     0.3564,
-    -0.133,
+    -0.1579,
     0.7803
    ]
   },
@@ -879,12 +882,12 @@
    "deform": true,
    "head": [
     0.3564,
-    -0.133,
+    -0.1579,
     0.7803
    ],
    "tail": [
     0.3501,
-    -0.1362,
+    -0.1611,
     0.7551
    ]
   },
@@ -894,12 +897,12 @@
    "deform": true,
    "head": [
     0.3348,
-    -0.1373,
+    -0.1621,
     0.8997
    ],
    "tail": [
     0.3149,
-    -0.1596,
+    -0.1844,
     0.8924
    ]
   },
@@ -909,12 +912,12 @@
    "deform": true,
    "head": [
     0.3149,
-    -0.1596,
+    -0.1844,
     0.8924
    ],
    "tail": [
     0.3026,
-    -0.1882,
+    -0.213,
     0.8743
    ]
   },
@@ -924,12 +927,12 @@
    "deform": true,
    "head": [
     0.3026,
-    -0.1882,
+    -0.213,
     0.8743
    ],
    "tail": [
     0.2937,
-    -0.2039,
+    -0.2287,
     0.8538
    ]
   },
@@ -939,12 +942,12 @@
    "deform": true,
    "head": [
     -0.0361,
-    -0.0214,
+    -0.0462,
     1.3761
    ],
    "tail": [
     -0.2002,
-    -0.0126,
+    -0.0374,
     1.3408
    ]
   },
@@ -954,12 +957,12 @@
    "deform": true,
    "head": [
     -0.2002,
-    -0.0126,
+    -0.0374,
     1.3408
    ],
    "tail": [
     -0.2779,
-    -0.0124,
+    -0.0373,
     1.1247
    ]
   },
@@ -969,12 +972,12 @@
    "deform": true,
    "head": [
     -0.2779,
-    -0.0124,
+    -0.0373,
     1.1247
    ],
    "tail": [
     -0.3579,
-    -0.0989,
+    -0.1237,
     0.9219
    ]
   },
@@ -984,12 +987,12 @@
    "deform": true,
    "head": [
     -0.3579,
-    -0.0989,
+    -0.1237,
     0.9219
    ],
    "tail": [
     -0.3661,
-    -0.1164,
+    -0.1412,
     0.8956
    ]
   },
@@ -999,12 +1002,12 @@
    "deform": true,
    "head": [
     -0.3797,
-    -0.1672,
+    -0.192,
     0.8452
    ],
    "tail": [
     -0.3795,
-    -0.1814,
+    -0.2062,
     0.8238
    ]
   },
@@ -1014,12 +1017,12 @@
    "deform": true,
    "head": [
     -0.3795,
-    -0.1814,
+    -0.2062,
     0.8238
    ],
    "tail": [
     -0.3749,
-    -0.1924,
+    -0.2172,
     0.8041
    ]
   },
@@ -1029,12 +1032,12 @@
    "deform": true,
    "head": [
     -0.3749,
-    -0.1924,
+    -0.2172,
     0.8041
    ],
    "tail": [
     -0.3656,
-    -0.2038,
+    -0.2287,
     0.7825
    ]
   },
@@ -1044,12 +1047,12 @@
    "deform": true,
    "head": [
     -0.3872,
-    -0.1439,
+    -0.1687,
     0.8363
    ],
    "tail": [
     -0.3861,
-    -0.154,
+    -0.1788,
     0.8043
    ]
   },
@@ -1059,12 +1062,12 @@
    "deform": true,
    "head": [
     -0.3861,
-    -0.154,
+    -0.1788,
     0.8043
    ],
    "tail": [
     -0.3816,
-    -0.163,
+    -0.1879,
     0.7793
    ]
   },
@@ -1074,12 +1077,12 @@
    "deform": true,
    "head": [
     -0.3816,
-    -0.163,
+    -0.1879,
     0.7793
    ],
    "tail": [
     -0.3742,
-    -0.1707,
+    -0.1955,
     0.7551
    ]
   },
@@ -1089,12 +1092,12 @@
    "deform": true,
    "head": [
     -0.3828,
-    -0.1037,
+    -0.1286,
     0.8318
    ],
    "tail": [
     -0.3816,
-    -0.1042,
+    -0.129,
     0.8109
    ]
   },
@@ -1104,12 +1107,12 @@
    "deform": true,
    "head": [
     -0.3816,
-    -0.1042,
+    -0.129,
     0.8109
    ],
    "tail": [
     -0.378,
-    -0.1051,
+    -0.13,
     0.796
    ]
   },
@@ -1119,12 +1122,12 @@
    "deform": true,
    "head": [
     -0.378,
-    -0.1051,
+    -0.13,
     0.796
    ],
    "tail": [
     -0.3733,
-    -0.1059,
+    -0.1307,
     0.777
    ]
   },
@@ -1134,12 +1137,12 @@
    "deform": true,
    "head": [
     -0.3882,
-    -0.1241,
+    -0.149,
     0.8333
    ],
    "tail": [
     -0.3882,
-    -0.1281,
+    -0.1529,
     0.804
    ]
   },
@@ -1149,12 +1152,12 @@
    "deform": true,
    "head": [
     -0.3882,
-    -0.1281,
+    -0.1529,
     0.804
    ],
    "tail": [
     -0.3852,
-    -0.133,
+    -0.1579,
     0.7803
    ]
   },
@@ -1164,12 +1167,12 @@
    "deform": true,
    "head": [
     -0.3852,
-    -0.133,
+    -0.1579,
     0.7803
    ],
    "tail": [
     -0.3788,
-    -0.1362,
+    -0.1611,
     0.7551
    ]
   },
@@ -1179,12 +1182,12 @@
    "deform": true,
    "head": [
     -0.3636,
-    -0.1373,
+    -0.1621,
     0.8997
    ],
    "tail": [
     -0.3436,
-    -0.1596,
+    -0.1844,
     0.8924
    ]
   },
@@ -1194,12 +1197,12 @@
    "deform": true,
    "head": [
     -0.3436,
-    -0.1596,
+    -0.1844,
     0.8924
    ],
    "tail": [
     -0.3314,
-    -0.1882,
+    -0.213,
     0.8743
    ]
   },
@@ -1209,12 +1212,12 @@
    "deform": true,
    "head": [
     -0.3314,
-    -0.1882,
+    -0.213,
     0.8743
    ],
    "tail": [
     -0.3225,
-    -0.2039,
+    -0.2287,
     0.8538
    ]
   },
@@ -1224,12 +1227,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    -0.008,
+    -0.0328,
     1.4429
    ],
    "tail": [
     -0.0144,
-    -0.0472,
+    -0.0721,
     1.532
    ]
   },
@@ -1239,12 +1242,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    -0.0472,
+    -0.0721,
     1.532
    ],
    "tail": [
     -0.0144,
-    -0.0474,
+    -0.0722,
     1.693
    ]
   },
@@ -1254,12 +1257,12 @@
    "deform": true,
    "head": [
     0.0166,
-    -0.166,
+    -0.1908,
     1.6482
    ],
    "tail": [
     0.0088,
-    -0.1683,
+    -0.1931,
     1.6276
    ]
   },
@@ -1269,12 +1272,12 @@
    "deform": true,
    "head": [
     0.0088,
-    -0.1683,
+    -0.1931,
     1.6276
    ],
    "tail": [
     0.0008,
-    -0.1668,
+    -0.1916,
     1.6068
    ]
   },
@@ -1284,12 +1287,12 @@
    "deform": true,
    "head": [
     0.0008,
-    -0.1668,
+    -0.1916,
     1.6068
    ],
    "tail": [
     -0.0074,
-    -0.164,
+    -0.1888,
     1.5862
    ]
   },
@@ -1299,12 +1302,12 @@
    "deform": true,
    "head": [
     0.0269,
-    -0.1565,
+    -0.1813,
     1.6419
    ],
    "tail": [
     0.0272,
-    -0.1533,
+    -0.1781,
     1.6282
    ]
   },
@@ -1314,12 +1317,12 @@
    "deform": true,
    "head": [
     0.0272,
-    -0.1533,
+    -0.1781,
     1.6282
    ],
    "tail": [
     0.0302,
-    -0.1517,
+    -0.1765,
     1.6145
    ]
   },
@@ -1329,12 +1332,12 @@
    "deform": true,
    "head": [
     0.0302,
-    -0.1517,
+    -0.1765,
     1.6145
    ],
    "tail": [
     0.0342,
-    -0.1516,
+    -0.1764,
     1.6007
    ]
   },
@@ -1344,12 +1347,12 @@
    "deform": true,
    "head": [
     -0.04,
-    -0.1557,
+    -0.1805,
     1.6487
    ],
    "tail": [
     -0.0491,
-    -0.1555,
+    -0.1803,
     1.6318
    ]
   },
@@ -1359,12 +1362,12 @@
    "deform": true,
    "head": [
     -0.0491,
-    -0.1555,
+    -0.1803,
     1.6318
    ],
    "tail": [
     -0.0548,
-    -0.1537,
+    -0.1786,
     1.6134
    ]
   },
@@ -1374,12 +1377,12 @@
    "deform": true,
    "head": [
     -0.0548,
-    -0.1537,
+    -0.1786,
     1.6134
    ],
    "tail": [
     -0.0588,
-    -0.1512,
+    -0.176,
     1.5947
    ]
   },
@@ -1389,12 +1392,12 @@
    "deform": true,
    "head": [
     0.0868,
-    -0.0543,
+    -0.0792,
     1.6032
    ],
    "tail": [
     0.0886,
-    -0.0549,
+    -0.0797,
     1.5944
    ]
   },
@@ -1404,12 +1407,12 @@
    "deform": true,
    "head": [
     0.0886,
-    -0.0549,
+    -0.0797,
     1.5944
    ],
    "tail": [
     0.0911,
-    -0.057,
+    -0.0819,
     1.5862
    ]
   },
@@ -1419,12 +1422,12 @@
    "deform": true,
    "head": [
     0.0911,
-    -0.057,
+    -0.0819,
     1.5862
    ],
    "tail": [
     0.0953,
-    -0.0595,
+    -0.0843,
     1.5786
    ]
   },
@@ -1434,12 +1437,12 @@
    "deform": true,
    "head": [
     -0.113,
-    -0.0565,
+    -0.0813,
     1.6193
    ],
    "tail": [
     -0.1162,
-    -0.0563,
+    -0.0811,
     1.6055
    ]
   },
@@ -1449,12 +1452,12 @@
    "deform": true,
    "head": [
     -0.1162,
-    -0.0563,
+    -0.0811,
     1.6055
    ],
    "tail": [
     -0.1195,
-    -0.0569,
+    -0.0817,
     1.5918
    ]
   },
@@ -1464,12 +1467,12 @@
    "deform": true,
    "head": [
     -0.1195,
-    -0.0569,
+    -0.0817,
     1.5918
    ],
    "tail": [
     -0.1236,
-    -0.0591,
+    -0.0839,
     1.5784
    ]
   },
@@ -1479,12 +1482,12 @@
    "deform": true,
    "head": [
     -0.0163,
-    0.0269,
+    0.0021,
     1.522
    ],
    "tail": [
     -0.0144,
-    0.0425,
+    0.0177,
     1.5018
    ]
   },
@@ -1494,12 +1497,12 @@
    "deform": true,
    "head": [
     -0.0144,
-    0.0425,
+    0.0177,
     1.5018
    ],
    "tail": [
     -0.0148,
-    0.0491,
+    0.0242,
     1.4764
    ]
   },
@@ -1509,12 +1512,12 @@
    "deform": true,
    "head": [
     -0.0148,
-    0.0491,
+    0.0242,
     1.4764
    ],
    "tail": [
     -0.0147,
-    0.0587,
+    0.0339,
     1.4522
    ]
   },
@@ -1524,12 +1527,12 @@
    "deform": true,
    "head": [
     -0.1956,
-    -0.0618,
+    -0.0866,
     1.3928
    ],
    "tail": [
     -0.2669,
-    0.0367,
+    0.0118,
     1.226
    ]
   },
@@ -1539,12 +1542,12 @@
    "deform": true,
    "head": [
     -0.2669,
-    0.0367,
+    0.0118,
     1.226
    ],
    "tail": [
     -0.256,
-    0.0542,
+    0.0293,
     0.989
    ]
   },
@@ -1554,12 +1557,12 @@
    "deform": true,
    "head": [
     -0.256,
-    0.0542,
+    0.0293,
     0.989
    ],
    "tail": [
     -0.2872,
-    0.0573,
+    0.0325,
     0.7425
    ]
   },
@@ -1569,12 +1572,12 @@
    "deform": true,
    "head": [
     -0.2872,
-    0.0573,
+    0.0325,
     0.7425
    ],
    "tail": [
     -0.3358,
-    0.0631,
+    0.0383,
     0.4996
    ]
   },
@@ -1584,12 +1587,12 @@
    "deform": true,
    "head": [
     -0.0881,
-    0.06,
+    0.0351,
     1.4149
    ],
    "tail": [
     -0.0931,
-    0.1071,
+    0.0823,
     1.1951
    ]
   },
@@ -1599,12 +1602,12 @@
    "deform": true,
    "head": [
     -0.0931,
-    0.1071,
+    0.0823,
     1.1951
    ],
    "tail": [
-    -0.1245,
-    0.1498,
+    -0.1244,
+    0.1249,
     0.9723
    ]
   },
@@ -1613,13 +1616,13 @@
    "parent": "cape.1.1",
    "deform": true,
    "head": [
-    -0.1245,
-    0.1498,
+    -0.1244,
+    0.1249,
     0.9723
    ],
    "tail": [
     -0.1629,
-    0.1992,
+    0.1744,
     0.7445
    ]
   },
@@ -1629,12 +1632,12 @@
    "deform": true,
    "head": [
     -0.1629,
-    0.1992,
+    0.1744,
     0.7445
    ],
    "tail": [
     -0.1908,
-    0.2163,
+    0.1914,
     0.5097
    ]
   },
@@ -1644,12 +1647,12 @@
    "deform": true,
    "head": [
     -0.0052,
-    0.0527,
+    0.0279,
     1.4375
    ],
    "tail": [
     -0.0034,
-    0.1016,
+    0.0768,
     1.1992
    ]
   },
@@ -1659,13 +1662,13 @@
    "deform": true,
    "head": [
     -0.0034,
-    0.1016,
+    0.0768,
     1.1992
    ],
    "tail": [
-    0.0031,
-    0.1571,
-    0.9702
+    0.003,
+    0.132,
+    0.9701
    ]
   },
   {
@@ -1673,13 +1676,13 @@
    "parent": "cape.2.1",
    "deform": true,
    "head": [
-    0.0031,
-    0.1571,
-    0.9702
+    0.003,
+    0.132,
+    0.9701
    ],
    "tail": [
     0.01,
-    0.2135,
+    0.1887,
     0.7324
    ]
   },
@@ -1689,12 +1692,12 @@
    "deform": true,
    "head": [
     0.01,
-    0.2135,
+    0.1887,
     0.7324
    ],
    "tail": [
     0.0149,
-    0.2493,
+    0.2245,
     0.4895
    ]
   },
@@ -1704,12 +1707,12 @@
    "deform": true,
    "head": [
     0.1079,
-    0.0654,
+    0.0406,
     1.4087
    ],
    "tail": [
     0.0898,
-    0.1127,
+    0.0878,
     1.1828
    ]
   },
@@ -1719,13 +1722,13 @@
    "deform": true,
    "head": [
     0.0898,
-    0.1127,
+    0.0878,
     1.1828
    ],
    "tail": [
-    0.1214,
-    0.1453,
-    0.9513
+    0.1215,
+    0.1206,
+    0.9514
    ]
   },
   {
@@ -1733,13 +1736,13 @@
    "parent": "cape.3.1",
    "deform": true,
    "head": [
-    0.1214,
-    0.1453,
-    0.9513
+    0.1215,
+    0.1206,
+    0.9514
    ],
    "tail": [
     0.1645,
-    0.1879,
+    0.163,
     0.72
    ]
   },
@@ -1749,12 +1752,12 @@
    "deform": true,
    "head": [
     0.1645,
-    0.1879,
+    0.163,
     0.72
    ],
    "tail": [
     0.1881,
-    0.2084,
+    0.1835,
     0.4823
    ]
   },
@@ -1764,12 +1767,12 @@
    "deform": true,
    "head": [
     0.1007,
-    -0.069,
+    -0.0938,
     1.3928
    ],
    "tail": [
     0.2721,
-    -0.0107,
+    -0.0356,
     1.2388
    ]
   },
@@ -1779,12 +1782,12 @@
    "deform": true,
    "head": [
     0.2721,
-    -0.0107,
+    -0.0356,
     1.2388
    ],
    "tail": [
     0.2866,
-    0.0287,
+    0.0039,
     0.9947
    ]
   },
@@ -1794,12 +1797,12 @@
    "deform": true,
    "head": [
     0.2866,
-    0.0287,
+    0.0039,
     0.9947
    ],
    "tail": [
     0.3346,
-    0.0262,
+    0.0014,
     0.7396
    ]
   },
@@ -1809,12 +1812,12 @@
    "deform": true,
    "head": [
     0.3346,
-    0.0262,
+    0.0014,
     0.7396
    ],
    "tail": [
     0.3831,
-    0.0218,
+    -0.003,
     0.4847
    ]
   },
@@ -1824,12 +1827,12 @@
    "deform": true,
    "head": [
     0.0878,
-    0.0078,
+    -0.0171,
     0.924
    ],
    "tail": [
     0.1273,
-    -0.0369,
+    -0.0617,
     0.511
    ]
   },
@@ -1839,12 +1842,12 @@
    "deform": true,
    "head": [
     0.1273,
-    -0.0369,
+    -0.0617,
     0.511
    ],
    "tail": [
     0.1791,
-    -0.0106,
+    -0.0354,
     0.0878
    ]
   },
@@ -1854,12 +1857,12 @@
    "deform": true,
    "head": [
     0.1791,
-    -0.0106,
+    -0.0354,
     0.0878
    ],
    "tail": [
     0.1831,
-    -0.1257,
+    -0.1505,
     0.0293
    ]
   },
@@ -1869,12 +1872,12 @@
    "deform": true,
    "head": [
     0.1831,
-    -0.1257,
+    -0.1505,
     0.0293
    ],
    "tail": [
     0.1793,
-    -0.1921,
+    -0.2169,
     0.0376
    ]
   },
@@ -1884,12 +1887,12 @@
    "deform": true,
    "head": [
     -0.1166,
-    0.0078,
+    -0.0171,
     0.924
    ],
    "tail": [
     -0.156,
-    -0.0369,
+    -0.0617,
     0.511
    ]
   },
@@ -1899,12 +1902,12 @@
    "deform": true,
    "head": [
     -0.156,
-    -0.0369,
+    -0.0617,
     0.511
    ],
    "tail": [
     -0.2079,
-    -0.0106,
+    -0.0354,
     0.0878
    ]
   },
@@ -1914,12 +1917,12 @@
    "deform": true,
    "head": [
     -0.2079,
-    -0.0106,
+    -0.0354,
     0.0878
    ],
    "tail": [
     -0.2119,
-    -0.1257,
+    -0.1505,
     0.0293
    ]
   },
@@ -1929,12 +1932,12 @@
    "deform": true,
    "head": [
     -0.2119,
-    -0.1257,
+    -0.1505,
     0.0293
    ],
    "tail": [
     -0.2081,
-    -0.1921,
+    -0.2169,
     0.0376
    ]
   },
@@ -1944,12 +1947,12 @@
    "deform": true,
    "head": [
     0.0356,
-    -0.1562,
+    -0.181,
     0.9582
    ],
    "tail": [
     0.0406,
-    -0.172,
+    -0.1969,
     0.849
    ]
   },
@@ -1959,12 +1962,12 @@
    "deform": true,
    "head": [
     0.0406,
-    -0.172,
+    -0.1969,
     0.849
    ],
    "tail": [
     0.0406,
-    -0.1472,
+    -0.172,
     0.7382
    ]
   }
@@ -2062,21 +2065,21 @@
  "digest": {
   "parts": {
    "hair_geometry": "a99447b48c4af4be",
-   "mouth_proxy_core": "a525eff59f68880f",
-   "bake_normal": "e27cc104d263ca30",
-   "bake_ao": "6c0a5245a136045e",
-   "ao_lifted": "0196fdb2ee43ace8",
-   "hair_custom_normals": "1328e889bba76209",
-   "geometry_colour_uv": "1270e0bb085e733b",
-   "weights": "ad11dcffb6f57147",
-   "keys": "2c166a9990682a84",
-   "clip_samples": "70b43506a6be5b7f"
+   "mouth_proxy_core": "85819b2cf622600f",
+   "bake_normal": "98d077b9999bae7e",
+   "bake_ao": "b3bdd6119260b3a4",
+   "ao_lifted": "c03431a22196c799",
+   "hair_custom_normals": "2476f1c128e8ded9",
+   "geometry_colour_uv": "c898b9d896f584cf",
+   "weights": "698568cab845a0cc",
+   "keys": "b78a6ee980c7ee35",
+   "clip_samples": "3db3ddb69888deb3"
   },
-  "combined": "f782e8150e9e09ec"
+  "combined": "c76e46bbcc5c4b6f"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 11905892,
+  "bytes": 11930076,
   "seconds": 1.5,
   "carries": {
    "materials": [
@@ -2122,11 +2125,11 @@
     "t_last_s": 4.0,
     "period_s": 4.0,
     "boundary_step_deg_first_last": [
-     0.274,
-     0.2703
+     0.2741,
+     0.2704
     ],
-    "step_median_deg": 0.2462,
-    "closing_key_dev_deg": 0.0351,
+    "step_median_deg": 0.2475,
+    "closing_key_dev_deg": 0.0389,
     "pass": true
    },
    "run": {
@@ -2135,11 +2138,11 @@
     "t_last_s": 0.5,
     "period_s": 0.5,
     "boundary_step_deg_first_last": [
-     29.564,
+     29.5641,
      36.6517
     ],
-    "step_median_deg": 36.7916,
-    "closing_key_dev_deg": 0.0557,
+    "step_median_deg": 36.7917,
+    "closing_key_dev_deg": 0.047,
     "pass": true
    },
    "walk": {
@@ -2149,10 +2152,10 @@
     "period_s": 1.083333,
     "boundary_step_deg_first_last": [
      12.4543,
-     10.2175
+     10.2174
     ],
-    "step_median_deg": 6.2249,
-    "closing_key_dev_deg": 0.0397,
+    "step_median_deg": 6.225,
+    "closing_key_dev_deg": 0.0255,
     "pass": true
    }
   }
@@ -2999,14 +3002,14 @@
      "hair_crevice": 464
     }
    },
-   "geometry_colour_uv_digest": "03d054dc9ace7eb0"
+   "geometry_colour_uv_digest": "818b341ceeedc38d"
   },
   "repaint_proof": {
    "rule": "a skin is a pure palette swap: same regions / faces / vertices; default restored",
-   "default_digest_before": "1270e0bb085e733b",
-   "default_digest_after_restore": "1270e0bb085e733b"
+   "default_digest_before": "c898b9d896f584cf",
+   "default_digest_after_restore": "c898b9d896f584cf"
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 89.0
+ "seconds": 85.1
 }
