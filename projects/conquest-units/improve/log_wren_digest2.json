@@ -3,17 +3,17 @@
   "parts": {
    "hair_geometry": "a99447b48c4af4be",
    "mouth_proxy_core": "85819b2cf622600f",
-   "bake_normal": "b682169beb20fdc3",
+   "bake_normal": "98d077b9999bae7e",
    "bake_ao": "b3bdd6119260b3a4",
    "ao_lifted": "c03431a22196c799",
    "hair_custom_normals": "2476f1c128e8ded9",
    "geometry_colour_uv": "c898b9d896f584cf",
-   "weights": "698568cab845a0cc",
-   "keys": "b78a6ee980c7ee35",
-   "clip_samples": "3db3ddb69888deb3"
+   "weights": "303e6fd7fba467fa",
+   "keys": "540a77997f223150",
+   "clip_samples": "633bfc567899eae2"
   },
-  "combined": "b3a307d1da89e3fd"
+  "combined": "e0fcf55951f41a03"
  },
  "tris": 47541,
- "seconds": 83.8
+ "seconds": 116.3
 }

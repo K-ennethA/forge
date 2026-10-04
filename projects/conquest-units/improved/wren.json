@@ -76,7 +76,7 @@
    }
   },
   "sole_lift": 0.0582,
-  "seconds": 0.7
+  "seconds": 1.0
  },
  "lip_seal": {
   "rule": "front rays deeper than 2.5 mm behind the lip front = the gap; half the gap closed from each lip, falloff 9.0 mm, overlap 0.30 mm",
@@ -890,7 +890,7 @@
    "mline": 173
   },
   "degenerate_faces_dissolved": 240,
-  "seconds": 24.6,
+  "seconds": 36.9,
   "body_tris_after_cuts": 30330
  },
  "liner_proof": {
@@ -1367,7 +1367,7 @@
     -0.0934,
     1.4139
    ],
-   "seconds": 0.7
+   "seconds": 0.9
   },
   "pitchfork": {
    "has_fork": false,
@@ -3430,7 +3430,7 @@
    "hair_inner": 1538,
    "hair_crevice": 464
   },
-  "seconds": 3.3,
+  "seconds": 4.5,
   "fringe_tips_mm": [
    [
     -62.0,
@@ -3503,13 +3503,13 @@
    "result": [
     "FINISHED"
    ],
-   "seconds": 5.3
+   "seconds": 7.2
   },
   "AO": {
    "result": [
     "FINISHED"
    ],
-   "seconds": 8.0
+   "seconds": 10.8
   },
   "cage_extrusion": 0.012,
   "low_to_high_skin_m": {
@@ -3543,7 +3543,7 @@
   "ao_mean": 0.4301,
   "ao_p05": 0.0,
   "pixel_sha": {
-   "normal": "98d077b9999bae7e",
+   "normal": "b682169beb20fdc3",
    "ao": "b3bdd6119260b3a4"
   },
   "normal_skin_only": {
@@ -3588,7 +3588,7 @@
     19.434,
     43.956
    ],
-   "seconds": 2.4
+   "seconds": 3.7
   },
   "hair_proxy_bake": {
    "enabled": true,
@@ -3619,7 +3619,7 @@
    "result": [
     "SKIPPED (carrier vertex)"
    ],
-   "seconds": 0.6,
+   "seconds": 1.0,
    "strip": "flat (0.5, 0.5, 1): the normal map carries nothing on hair",
    "vertex_carrier": {
     "rule": "hair faces (hair, hair_shade, hair_tie, hair_root, hair_ring, hair_tip, hair_inner, hair_crevice) smooth + custom split normals = the proxy normal leaned 0.45 toward each lock's own smooth normal (the map bake's high, unchanged); all other faces flat",
@@ -3665,7 +3665,7 @@
     "digest": "2476f1c128e8ded9"
    }
   },
-  "seconds": 23.1,
+  "seconds": 32.0,
   "hair_strip": {
    "rule": "hair faces packed into u > 0.86; normal texels there flat, AO texels white",
    "raw_ao_in_hair_strip_p05": 0.0,
@@ -5242,7 +5242,7 @@
      19.434,
      43.956
     ],
-    "seconds": 2.4
+    "seconds": 3.7
    },
    "ao_floor": {
     "floor": 1.0,

@@ -1,7 +1,7 @@
-00:01.984  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
-00:05.828  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_front.png'
-00:06.812  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_side.png'
-00:08.047  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_back.png'
+00:02.562  blend            | Read blend: "C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\rigged\wren.blend"
+00:07.250  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_front.png'
+00:07.672  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_side.png'
+00:08.734  render           | Saved: 'C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_back.png'
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_front.png 
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_side.png 
 WROTE C:\Users\kenne\OneDrive\Desktop\git\forge\projects\conquest-units\renders\wren\wren_v61_ortho_back.png 

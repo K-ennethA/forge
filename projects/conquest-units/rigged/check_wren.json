@@ -137,7 +137,7 @@
      "seam_mm": 0.0,
      "extent": {
       "footprint": 0.9488,
-      "height": 1.7278,
+      "height": 1.7461,
       "min_z": -0.0
      }
     },
@@ -151,7 +151,7 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.4669,
+      "footprint": 1.4729,
       "height": 1.693,
       "min_z": -0.0
      }
@@ -166,8 +166,8 @@
      "manual_range": true,
      "seam_mm": 0.0,
      "extent": {
-      "footprint": 1.0226,
-      "height": 1.7276,
+      "footprint": 1.0242,
+      "height": 1.7297,
       "min_z": -0.0
      }
     }

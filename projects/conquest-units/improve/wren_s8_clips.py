@@ -47,6 +47,33 @@ for s in "LR":
     LEGS[s] = {"len": float(np.linalg.norm(Kn - H0) + np.linalg.norm(A0 - Kn)),
                "C0": np.array([HEADP["ball_" + lo_][0], HEADP["ball_" + lo_][1], 0.0]),
                "knee_dir": unit((Kn - H0) - float((Kn - H0) @ unit(A0 - H0)) * unit(A0 - H0))}
+# (2026-10-04 posture rework, review-log "Wren posture verdicts" (2)) the knock-knee's sources, all in the stance targets the
+# three clips share: the toe-out yaw applied inward (TOE_OUT_FIX), the knee pole = the rest knee direction (9 deg inward)
+# turned with the foot (KNEE_POLE), and the ankles on the rest A-stance spots, ~2x the hip spacing (LEG_TRACK)
+ARMS_SWING = ARMS == "swing" and not HAS_FORK
+HIP_CX = 0.5 * float(HEADP["thigh_l"][0] + HEADP["thigh_r"][0])     # the hip centre (x) between the hip joints
+
+
+def toe_yaw(s, deg):
+    """the foot's toe-out yaw (deg > 0 = the toes OUT, away from the midline; TOE_OUT_FIX False = the v-prior inward turn)."""
+    return Rz((1.0 if TOE_OUT_FIX else -1.0) * (1.0 if s == "L" else -1.0) * deg)
+
+
+def knee_pole(s, Ryaw, Rfull=None):
+    """the knee's IK pole: KNEE_POLE "toes" = the foot's own forward (toe) direction (knee over the toes); "rest" = the rest
+    knee direction turned with the foot (v-prior; Rfull = the foot's full rotation where v-prior used it)."""
+    if KNEE_POLE == "toes":
+        return Ryaw @ np.array([0.0, -1.0, 0.0])
+    return (Rfull if Rfull is not None else Ryaw) @ LEGS[s]["knee_dir"]
+
+
+def track_x(s, k, Ryaw):
+    """the ball-joint x that sets the ANKLE joint (flat foot, yaw Ryaw) at the hip centre + k x the hip joint's offset."""
+    lo_ = s.lower()
+    ax_ = HIP_CX + k * (float(HEADP["thigh_" + lo_][0]) - HIP_CX)
+    return ax_ - float((Ryaw @ (HEADP["foot_" + lo_] - LEGS[s]["C0"]))[0])
+
+
 HANDS = {}
 for s in "LR":
     lo_ = s.lower()
@@ -170,7 +197,9 @@ def plant_legs(D, feet):
         C, Rf, Rb = feet[s]
         A = C + Rf @ (HEADP["foot_" + lo_] - LEGS[s]["C0"])
         H = xf(D["pelvis"], HEADP["thigh_" + lo_])
-        pole = Rf @ LEGS[s]["knee_dir"]
+        # (the foot's yaw alone = its rotation with the toe-roll about x taken out: the toe direction's heading)
+        fd_ = Rf @ np.array([0.0, -1.0, 0.0])
+        pole = knee_pole(s, Rz(math.degrees(math.atan2(float(fd_[0]), -float(fd_[1])))), Rf)
         D["thigh_" + lo_], D["calf_" + lo_], At, err = two_bone("thigh_" + lo_, "calf_" + lo_, "foot_" + lo_, H, A, pole)
         D["foot_" + lo_] = TRT(At, Rf, HEADP["foot_" + lo_])
         D["ball_" + lo_] = TRT(xf(D["foot_" + lo_], HEADP["ball_" + lo_]), Rb, HEADP["ball_" + lo_])
@@ -203,7 +232,11 @@ IDLE_FEET_C = {}
 for s in "LR":
     dx, dy, yaw = IDLE_FEET[s]
     sg = 1.0 if s == "L" else -1.0
-    IDLE_FEET_C[s] = (LEGS[s]["C0"] + np.array([sg * dx, dy, 0.0]), Rz(-sg * yaw))
+    _Ry = toe_yaw(s, yaw)
+    if LEG_TRACK is None:
+        IDLE_FEET_C[s] = (LEGS[s]["C0"] + np.array([sg * dx, dy, 0.0]), _Ry)
+    else:
+        IDLE_FEET_C[s] = (np.array([track_x(s, LEG_TRACK["idle"], _Ry), LEGS[s]["C0"][1] + dy, 0.0]), _Ry)
 
 
 def pose_idle(t):
@@ -229,7 +262,13 @@ def pose_idle(t):
     # the leaning shaft stands on the RIM of its butt ferrule: lift the butt by rim radius x sin(tilt) (no floor dip)
     tilt_ = math.acos(max(-1.0, min(1.0, float(Rl[2, 2]))))
     Dfk = TRT(IDLE_BUTT + np.array([0.0, 0.0, FORK_BUTT_R * math.sin(tilt_)]), Rl, _butt_rest)
-    info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
+    if ARMS_SWING:
+        # (2026-10-04) both arms relaxed at his sides, breathing with the chest; the slow weight-shift sway moves them in
+        # opposite fore-aft senses (the shoulders turn with the sway)
+        free_arm(D, "R", IDLE_RARM[0] + 1.0 * br, IDLE_RARM[1] - 1.5 * sway_h, IDLE_RARM[2])
+        info["arm_R"], info["wrist_R"] = 0.0, 0.0
+    else:
+        info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", IDLE_LARM[0] + 1.0 * br, IDLE_LARM[1] + 1.5 * sway_h, IDLE_LARM[2])
     hands(D, "idle")
     if HAS_FORK:
@@ -249,7 +288,11 @@ def foot_walk(s, t):
     u = (t - t0) % 1.0
     sg = 1.0 if s == "L" else -1.0
     C0 = LEGS[s]["C0"]
-    x = WALK_X0 + (C0[0] - WALK_X0) * WALK_FOOT_X    # (about the v6.1 frame's x = 0: = C0[0] x WALK_FOOT_X when HAS_FORK)
+    yaw = toe_yaw(s, 4.0)
+    if LEG_TRACK is None:
+        x = WALK_X0 + (C0[0] - WALK_X0) * WALK_FOOT_X    # (about the v6.1 frame's x = 0: = C0[0] x WALK_FOOT_X when HAS_FORK)
+    else:
+        x = track_x(s, LEG_TRACK["walk"], yaw)           # (2026-10-04) the ankle under the hip joint
     Yc = C0[1]
     beta = WALK_STANCE
     if u < beta:
@@ -264,7 +307,6 @@ def foot_walk(s, t):
         z = WALK_LIFT * math.sin(math.pi * q) ** 1.2
         roll = WALK_TOEOFF[1] * (1.0 - ss5(0.0, 0.55, q)) - WALK_HEELSTRIKE * ss5(0.45, 0.85, q) * (1.0 - ss5(0.88, 1.0, q))
         stance = False
-    yaw = Rz(-sg * 4.0)
     Rf = yaw @ Rx(roll)
     z += BALL_H[s] * (1.0 - math.cos(math.radians(roll))) if roll > 0 else 0.0
     toe = 0.0 if stance else (min(0.35 * roll, 0.3 * math.degrees(math.asin(min(1.0, max(z, 0.0) / TOE_REACH)))) if roll > 0 else roll)
@@ -312,16 +354,22 @@ def pose_walk(t):
     fk(D, "head", Rz(-0.4 * WALK_CHEST[0] * c1h) @ Rx(0.6 * WALK_CHEST[1] - 1.0 - WALK_NOD[0] * math.sin(2 * TAU * th))
        @ Ry(-0.5 * WALK_PELVIS[1] * s1h))
     info.update(plant_legs(D, feet))
-    # the fork: the grip rides the chest (a small bob + pendulum swing with the stride), shaft upright, top forward / out
-    fw = FORK_WALK
-    fk(D, "clavicle_r")
-    Hs = xf(D["clavicle_r"], HEADP["upperarm_r"])
-    Rch = D["spine_03"][:3, :3]
-    grip = Hs + Rch @ np.array(fw["grip"]) + np.array([0.0, 0.0, fw["bob"] * math.sin(2 * TAU * (t - 0.12))])
-    yaw_c = math.degrees(math.atan2(Rch[1, 0], Rch[0, 0]))
-    Rfk = Rz(0.6 * yaw_c) @ Rx(fw["tilt_fwd"] + fw["swing"] * c1) @ Ry(-fw["tilt_out"]) @ Rz(ROLL["walk"])
-    Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
-    info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
+    if ARMS_SWING:
+        # (2026-10-04) the right arm swings free, half a cycle from the left (forward with the left leg)
+        free_arm(D, "R", WALK_RARM[0], -WALK_RARM[1] * c1, WALK_RARM[2], lag_bend=-7.0 * math.cos(TAU * t - 0.6) + 7.0)
+        info["arm_R"], info["wrist_R"] = 0.0, 0.0
+        Dfk = None
+    else:
+        # the fork: the grip rides the chest (a small bob + pendulum swing with the stride), shaft upright, top forward / out
+        fw = FORK_WALK
+        fk(D, "clavicle_r")
+        Hs = xf(D["clavicle_r"], HEADP["upperarm_r"])
+        Rch = D["spine_03"][:3, :3]
+        grip = Hs + Rch @ np.array(fw["grip"]) + np.array([0.0, 0.0, fw["bob"] * math.sin(2 * TAU * (t - 0.12))])
+        yaw_c = math.degrees(math.atan2(Rch[1, 0], Rch[0, 0]))
+        Rfk = Rz(0.6 * yaw_c) @ Rx(fw["tilt_fwd"] + fw["swing"] * c1) @ Ry(-fw["tilt_out"]) @ Rz(ROLL["walk"])
+        Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
+        info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     free_arm(D, "L", WALK_LARM[0], WALK_LARM[1] * c1, WALK_LARM[2], lag_bend=7.0 * math.cos(TAU * t - 0.6) + 7.0)
     hands(D, "walk")
     info["stance"] = st
@@ -382,9 +430,9 @@ def foot_run(s, t):
     sg = 1.0 if s == "L" else -1.0
     lo_ = s.lower()
     C0 = LEGS[s]["C0"]
-    x = RUN_CX + (C0[0] - RUN_CX) * RUN_FOOT_X
+    yaw = toe_yaw(s, 3.0)
+    x = RUN_CX + (C0[0] - RUN_CX) * RUN_FOOT_X if LEG_TRACK is None else track_x(s, LEG_TRACK["run"], yaw)
     beta = RUN_STANCE
-    yaw = Rz(-sg * 3.0)
     if u < beta:
         p = u / beta
         dy = -RUN_STEP[0] + (RUN_STEP[0] + RUN_STEP[1]) * p
@@ -421,8 +469,7 @@ def plant_legs_run(D, feet):
         C, Rf, Rb = feet[s]
         A = C + Rf @ (HEADP["foot_" + lo_] - LEGS[s]["C0"])
         H = xf(D["pelvis"], HEADP["thigh_" + lo_])
-        sg = 1.0 if s == "L" else -1.0
-        pole = Rz(-sg * 3.0) @ LEGS[s]["knee_dir"]
+        pole = knee_pole(s, toe_yaw(s, 3.0))
         D["thigh_" + lo_], D["calf_" + lo_], At, err = two_bone("thigh_" + lo_, "calf_" + lo_, "foot_" + lo_, H, A, pole)
         D["foot_" + lo_] = TRT(At, Rf, HEADP["foot_" + lo_])
         D["ball_" + lo_] = TRT(xf(D["foot_" + lo_], HEADP["ball_" + lo_]), Rb, HEADP["ball_" + lo_])
@@ -536,14 +583,22 @@ def pose_run(t):
     # half a cycle after the left arm's), the shaft rocking with it; the grip relation (hand -> fork) is the house one
     fr = FORK_RUN
     w_r = math.cos(TAU * (t - RUN_PH["arm_L"] - 0.5))
-    fk(D, "clavicle_r")
-    Hs = xf(D["clavicle_r"], HEADP["upperarm_r"])
-    Rch = D["spine_03"][:3, :3]
-    grip = Hs + Rch @ (np.array(fr["grip"]) + np.array([0.0, -fr["pump"][0] * w_r, fr["pump"][1] * w_r]))
-    yaw_c = math.degrees(math.atan2(Rch[1, 0], Rch[0, 0]))
-    Rfk = Rz(0.6 * yaw_c) @ Rx(fr["tilt_fwd"] + fr["swing"] * w_r) @ Ry(-fr["tilt_out"]) @ Rz(ROLL["run"])
-    Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
-    info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
+    if ARMS_SWING:
+        # (2026-10-04) the right arm pumps free: the left's pump half a cycle later (forward-most when the LEFT knee drives)
+        w_rb = math.cos(TAU * (t - RUN_PH["arm_L"] - 0.5 - 1.0 / RUN_N))
+        ra = RUN_RARM
+        free_arm(D, "R", ra[0], ra[1] - ra[2] * w_r, ra[3], lag_bend=ra[4] * w_rb)
+        info["arm_R"], info["wrist_R"] = 0.0, 0.0
+        Dfk = None
+    else:
+        fk(D, "clavicle_r")
+        Hs = xf(D["clavicle_r"], HEADP["upperarm_r"])
+        Rch = D["spine_03"][:3, :3]
+        grip = Hs + Rch @ (np.array(fr["grip"]) + np.array([0.0, -fr["pump"][0] * w_r, fr["pump"][1] * w_r]))
+        yaw_c = math.degrees(math.atan2(Rch[1, 0], Rch[0, 0]))
+        Rfk = Rz(0.6 * yaw_c) @ Rx(fr["tilt_fwd"] + fr["swing"] * w_r) @ Ry(-fr["tilt_out"]) @ Rz(ROLL["run"])
+        Dfk = TRT(grip, Rfk, FORK_GRIP_REST)
+        info["arm_R"], info["wrist_R"] = fork_arm(D, Dfk)
     # the free (left) arm: a full pump, forward-most when the right knee drives; the elbow closes in front, opens behind,
     # the forearm trailing the upper arm by a frame (follow-through)
     w_l = math.cos(TAU * (t - RUN_PH["arm_L"]))
@@ -682,6 +737,9 @@ def drape_local(cn, ch, k, t, lift=None):
         if kind == "cape":
             c_ = int(ch[-1])
             arm_ = RUN_CAPE_ARM[c_] * lift["arm_L"] * (RUN_CAPE_ARM_FWD if lift["arm_L"] > 0 else 1.0) if k == 0 else 0.0
+            if ARMS_SWING and k == 0:
+                # (2026-10-04) the chains over the right arm follow ITS pump too (both arms swing)
+                arm_ += RUN_CAPE_RARM[c_] * lift["arm_R"] * (RUN_CAPE_ARM_FWD if lift["arm_R"] > 0 else 1.0)
             return Rx(RUN_CAPE[0] * RUN_CAPE_SPREAD[c_] * (0.55 + 0.45 * k / (CAPE_BONES - 1)) - arm_ +
                       dk * K.vine_wave(t, k, CAPE_BONES, RUN_CAPE[1], RUN_CAPE[2], 0.9, 2, 0.8 * c_)) \
                 @ Ry(0.5 * dk * K.vine_wave(t, k, CAPE_BONES, RUN_CAPE[1], RUN_CAPE[2], 0.9, 2, 1.7 + c_))
@@ -721,7 +779,8 @@ def fwd_deg(D, n, rel=None):
 
 
 def apply_chains(D, cn, t, f):
-    lift = ({"tie": RUN_TIE_LIFT * max(0.0, fwd_deg(D, "thigh_l", "pelvis")), "arm_L": fwd_deg(D, "upperarm_l", "spine_03")}
+    lift = ({"tie": RUN_TIE_LIFT * max(0.0, fwd_deg(D, "thigh_l", "pelvis")), "arm_L": fwd_deg(D, "upperarm_l", "spine_03"),
+             "arm_R": fwd_deg(D, "upperarm_r", "spine_03")}
             if cn == "run" else None)
     for ch in FT_CHAINS:
         Lp = np.eye(3)
@@ -777,6 +836,53 @@ for cn, N in CLIP_N.items():
     ACTS[cn] = act
 DIG["keys"] = sha(np.array(key_rows))
 print("KEYED", round(time.time() - t_, 1), json.dumps({"%s.%s" % k: round(v, 5) for k, v in ik_worst.items()}))
+
+
+def posture_report():
+    """(2026-10-04 posture rework) per clip over the keyed frames: the hip -> knee -> ankle alignment in the FRONT view
+    (x lateral, z up; + = outward, his own side) -- the hip -> ankle line's angle from vertical, the thigh / shin angles
+    (stance frames: the foot down), the knee's offset off the hip -> ankle line, the leg plane's yaw off the foot's heading
+    (bent frames: knee >= 30 mm off the line), the joint spacings -- and both upper arms' fore-aft swing (deg past rest,
+    relative to the chest, + = forward) with their phase correlation (-1 = opposite phase)."""
+    out = {}
+    for cn, N in CLIP_N.items():
+        acc = {k_: [] for k_ in ("line", "thigh", "shin", "knee_off", "plane_yaw", "sep_ankle", "sep_knee", "sep_hip")}
+        arms = {"L": [], "R": []}
+        for f in range(N):
+            D, info = POSE[cn](f / N)
+            P = {s: [xf(D[b + "_" + s.lower()], HEADP[b + "_" + s.lower()]) for b in ("thigh", "calf", "foot")] for s in "LR"}
+            for s in "LR":
+                sg = 1.0 if s == "L" else -1.0
+                H, Kn, A = P[s]
+                acc["line"].append(math.degrees(math.atan2(sg * (A[0] - H[0]), H[2] - A[2])))
+                tt = (Kn[2] - H[2]) / (A[2] - H[2])
+                acc["knee_off"].append(1000.0 * sg * (Kn[0] - (H[0] + tt * (A[0] - H[0]))))
+                if cn == "idle" or (info.get("stance") or {}).get(s):
+                    acc["thigh"].append(math.degrees(math.atan2(sg * (Kn[0] - H[0]), H[2] - Kn[2])))
+                    acc["shin"].append(math.degrees(math.atan2(sg * (A[0] - Kn[0]), Kn[2] - A[2])))
+                dl = unit(A - H); kp = (Kn - H) - float((Kn - H) @ dl) * dl
+                if float(np.linalg.norm(kp)) >= 0.03:
+                    Rft = D["foot_" + s.lower()][:3, :3]                                   # (the foot's lateral axis carries
+                    hf = sg * math.degrees(math.atan2(float(Rft[1, 0]), float(Rft[0, 0])))   # its yaw at any toe roll: + = out)
+                    hk = math.degrees(math.atan2(sg * float(kp[0]), -float(kp[1])))      # the knee's heading (+ = out)
+                    acc["plane_yaw"].append((hk - hf + 180.0) % 360.0 - 180.0)
+            acc["sep_ankle"].append(1000.0 * float(P["L"][2][0] - P["R"][2][0]))
+            acc["sep_knee"].append(1000.0 * float(P["L"][1][0] - P["R"][1][0]))
+            acc["sep_hip"].append(1000.0 * float(P["L"][0][0] - P["R"][0][0]))
+            arms["L"].append(fwd_deg(D, "upperarm_l", "spine_03")); arms["R"].append(fwd_deg(D, "upperarm_r", "spine_03"))
+        row = {k_: [round(min(v_), 1), round(max(v_), 1)] for k_, v_ in acc.items() if v_}
+        aL, aR = np.array(arms["L"]), np.array(arms["R"])
+        row["arm_swing_deg"] = {"L": [round(float(aL.min()), 1), round(float(aL.max()), 1)], "R": [round(float(aR.min()), 1), round(float(aR.max()), 1)],
+                                "ptp_L_R": [round(float(np.ptp(aL)), 1), round(float(np.ptp(aR)), 1)],
+                                "phase_corr": round(float(np.corrcoef(aL, aR)[0, 1]), 3) if np.ptp(aL) > 1e-6 and np.ptp(aR) > 1e-6 else None}
+        out[cn] = row
+    return {"rule": posture_report.__doc__.split("(2026-10-04 posture rework) ")[1].replace("\n   ", ""),
+            "knobs": {"LEG_TRACK": LEG_TRACK, "KNEE_POLE": KNEE_POLE, "TOE_OUT_FIX": TOE_OUT_FIX, "ARMS": ARMS,
+                      "IDLE_REACH": IDLE_REACH}, "per_clip_min_max": out}
+
+
+rep["posture"] = posture_report()
+print("POSTURE", json.dumps(rep["posture"]["per_clip_min_max"]))
 
 
 def eval_coords(ob):
@@ -1167,8 +1273,11 @@ if HAS_FORK:
                "G_hand_to_fork_rest4": grip_rel.round(6).tolist(), "fork_roll_search": ROLL_SEARCH,
                "grip_at_m_from_butt": round(FORK["grip_at"] * FORK["len"], 4)}
 else:
-    rep["grip"] = {"rule": "no prop (HAS_FORK False, review-log 2026-10-03): the right arm keeps the approved carry path (the "
-                           "hand frame the fork grip drove, roll search unchanged); the right fingers take the clip's left-hand "
+    rep["grip"] = {"rule": "no prop (HAS_FORK False, review-log 2026-10-03): " +
+                           ("both arms swing free (ARMS 'swing', review-log 2026-10-04 'Wren posture verdicts'); the fork carry "
+                            "path is unused (roll search inert)" if ARMS_SWING else
+                            "the right arm keeps the approved carry path (the hand frame the fork grip drove, roll search unchanged)") +
+                           "; the right fingers take the clip's left-hand "
                            "pose (2026-10-04: both hands from CLIP_HANDS / HAND_POSES)", "clip_hands": CLIP_HANDS, "hand_poses": HAND_POSES, "fork_roll_search": ROLL_SEARCH}
 rep["tris"] = {"model": report["tris"]["total"], "outline_shells": 0, "budget": TRI_BUDGET}
 print("TRIS", json.dumps(rep["tris"]))
@@ -1181,9 +1290,14 @@ low["conquest_clip_status"] = (("idle (leaning a little on the planted pitchfork
                                 "(boyish quick stride with a contact bounce, the fork carried upright, chest / head overlap) + run "
                                 "(young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, full left-arm pump, the fork charged "
                                 "forward)") if HAS_FORK else
-                               ("idle (breath, eased weight shift, chin-up look) + walk (boyish quick stride with a contact bounce, "
-                                "chest / head overlap) + run (young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, full "
-                                "left-arm pump); empty-handed: the right arm keeps the approved carry path")) + \
+                               (("idle (breath, eased weight shift, chin-up look, both arms relaxed at his sides) + walk (boyish "
+                                 "quick stride with a contact bounce, chest / head overlap, both arms swinging opposite the legs) + run "
+                                 "(young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, "
+                                 "a full double-arm pump); legs tracking straight under the hips (LEG_TRACK, knees over the toes)")
+                                if ARMS_SWING else
+                                ("idle (breath, eased weight shift, chin-up look) + walk (boyish quick stride with a contact bounce, "
+                                 "chest / head overlap) + run (young hero sprint: forward lean, knee drive to RUN_KNEE_DRIVE_DEG below horizontal, flight phase, full "
+                                 "left-arm pump); empty-handed: the right arm keeps the approved carry path"))) + \
                               ("; cloak / fringe / side hair / nape tail / sash ties follow-through (damped-spring lag); "
                                "no attack / hit / death")
 low["conquest_look"] = ("shaded: Col x baked AO, baked normal map; the hair " +

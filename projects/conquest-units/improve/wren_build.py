@@ -543,7 +543,7 @@ CLOAK_WORN = (0.74, 0.50)
 CLOAK_ARM_FOLLOW = (0.97, 0.05, 0.15)   # "cloak rides the arms": where the cloak lies over a shoulder / arm it takes up to
                                       #   this share of that arm's skin weights, fully within the 2nd value (m) of it, none
                                       #   beyond the 3rd             # worn / sun-faded mottle: noise threshold, feature scale (m)
-CLOAK_FOREARM = {"l": (0.5, 0.2, 0.5), "r": (0.5, 0.35, 0.75)}   # (s7 weight-source fix 2026-10-03) per side (his
+CLOAK_FOREARM = {"l": (0.0, 0.2, 0.5), "r": (0.0, 0.35, 0.75)}   # (s7 weight-source fix 2026-10-03) per side (his
                                       #   left = the free arm, right = the fork arm): where the cloak's nearest skin is the
                                       #   FOREARM / HAND its arm coupling (CLOAK_ARM_FOLLOW) fades down the forearm to the 1st
                                       #   value's share at the wrist -- full up to the 2nd value of the elbow -> wrist span,
@@ -555,6 +555,12 @@ CLOAK_FOREARM = {"l": (0.5, 0.2, 0.5), "r": (0.5, 0.35, 0.75)}   # (s7 weight-so
                                       #   0.5 = half the v6.1 coupling kept; 0.5 and 0.75 both stay clean through a 36 deg
                                       #   run pump (RUN_LARM[2], shipped 28), past it 0.5 crosses least (1 / 1 torso edges
                                       #   at 38 / 40 deg vs 8 / 10 at 0.75)
+                                      #   2026-10-04 posture rework (review-log "Wren posture verdicts": "the cape not to be
+                                      #   stuck to his arm"): wrist share 0.5 -> 0.0 both sides = NO forearm / hand coupling
+                                      #   (the cloak never rides a fist; the shoulder / upper-arm drape keeps CLOAK_ARM_FOLLOW).
+                                      #   Measured with both arms swinging (walk 16, run pump 36): at 0.5 the right forearm
+                                      #   drags its cloak panel through the sash -- run torso crossings 27 (f4); at 0.0 every
+                                      #   group, every clip 0
 CLOAK_HIP = {"l": (0.0, 0.10, 0.05, 55.0, 125.0, 15.0), "r": (0.0, 0.10, 0.05, 55.0, 125.0, 15.0)}   # (s7 2026-10-03)
                                       #   per side: the cloak's side panels at the sash line ride the hip -- this share of
                                       #   their chain-hung weights moves to the trunk's skin weights (no leg share), full
@@ -734,6 +740,27 @@ HAND_POSES = {                        # named finger poses: {"curl": (knuckle, m
     "fist": {"curl": FIST_CURL, "thumb": FIST_THUMB},
     "grip": {"curl": GRIP_CURL, "thumb": GRIP_THUMB}}   # the prop grip (HAS_FORK: the right hand round the shaft; kept
                                       #   for combat clips -- weapons are combat-only, nothing in locomotion uses it)
+# ---- posture rework (review-log 2026-10-04 "Wren posture verdicts" + the two leg markups): legs straight, both arms swing,
+# the cloak free of the arms. v-prior (7420786) = --set LEG_TRACK=None KNEE_POLE='rest' TOE_OUT_FIX=False ARMS='carry'
+# IDLE_REACH=0.975 IDLE_FEET={'L':(0.020,-0.03,9.0),'R':(-0.015,0.02,11.0)} RUN_LARM=(12.0,-12.0,28.0,50.0,10.0)
+# WALK_LARM=(4.0,16.0,14.0) CLOAK_FOREARM={'l':(0.5,0.2,0.5),'r':(0.5,0.35,0.75)} -- digest-only run reproduces every
+# digest part of 7420786 (keys, clip_samples, weights, geometry...) except bake_normal (the known 1-texel bake jitter)
+LEG_TRACK = {"idle": 1.06, "walk": 1.0, "run": 0.95}   # "leg track": each ANKLE joint lands at the hip centre + this x the
+                                      #   hip joint's half spacing (DEF thigh heads, 204 mm apart): 1.0 = straight under the hip
+                                      #   joint = markup 2's vertical leg; idle a touch wider (relaxed), the run a touch narrower
+                                      #   (a runner's track). None = v-prior: the rest A-stance spots (ankles 387 mm apart; idle
+                                      #   432, walk 347, run 240 mm) -- the shins splayed out under knees pulled in
+KNEE_POLE = "toes"                    # "knee tracking": "toes" = every knee bends toward its own foot's toe direction (knee
+                                      #   over the toes: the leg stays in one sagittal plane at any knee bend); "rest" = v-prior
+                                      #   (the rest skeleton's knee direction -- 9 deg INWARD of forward -- turned with the foot:
+                                      #   a bent knee swung toward the midline, valgus up to 16 deg walk / 52 deg run swing)
+TOE_OUT_FIX = True                    # the clips' toe-out yaw turns the toes OUT. v-prior False: the yaw was applied with the
+                                      #   wrong sign (feet toed IN 9 / 11 deg idle, 4 walk, 3 run) and the knee pole turned in
+                                      #   with them -- the knock-knee's second half
+ARMS = "swing"                        # "arm mode": "swing" = both arms free (relaxed at the sides in the idle, an opposite-
+                                      #   phase double swing in walk / run, review-log 2026-10-04 (1)); "carry" = v-prior (the
+                                      #   right arm on the old fork carry path: the raised fist at the chest / waist). HAS_FORK
+                                      #   True forces "carry"
 CLIP_HANDS = {"idle": ("fist", "fist"), "walk": ("fist", "fist"), "run": ("fist", "fist")}   # per clip: (left, right)
                                       #   hand pose names from HAND_POSES (HAS_FORK True forces the right to "grip"). The v1
                                       #   assignment: idle / walk ("relaxed", "relaxed"), run ("loose_fist", "loose_fist")
@@ -742,10 +769,16 @@ IDLE_N = 96                           # "idle loop": 4 s
 IDLE_BREATH_DEG = 1.4
 IDLE_SWAY = 0.008                     # pelvis side sway (m)
 IDLE_WEIGHT = (-0.014, 2.2)           # weight toward the pitchfork: pelvis shift (m) / hip roll (deg)
-IDLE_REACH = 0.975
-IDLE_FEET = {"L": (0.020, -0.03, 9.0), "R": (-0.015, 0.02, 11.0)}   # foot offset from rest (x, y) + toes-out yaw (deg)
+IDLE_REACH = 0.99                     # (2026-10-04 posture rework) "standing knee": the idle legs at this x their reach -- a
+                                      #   soft, upright knee (v-prior 0.975 = ~26 deg of knee flex: a crouched "ready" stance
+                                      #   that, with the knees pulled in, read as broken legs)
+IDLE_FEET = {"L": (0.020, -0.03, 5.0), "R": (-0.015, 0.02, 6.0)}   # foot offset from rest (x, y) + toes-out yaw (deg).
+                                      #   2026-10-04: the x offsets are used only with LEG_TRACK None (the track sets x); yaw
+                                      #   v-prior 9 / 11 (applied INWARD then: TOE_OUT_FIX) -> 5 / 6, feet near-parallel
 IDLE_HEAD = (-3.0, 3.5)               # "earnest": chin slightly UP (deg, < 0) / slow look yaw amplitude (deg)
 IDLE_LARM = (10.0, 3.0, 10.0)         # free (left) arm: lowered further (deg), forward (deg), elbow bend (deg)
+IDLE_RARM = (10.0, 3.0, 10.0)         # (ARMS "swing") the right arm relaxed at his side, the left's mirror (v-prior: the fork
+                                      #   carry path's hand at the waist)
 FORK_IDLE_BUTT = (-0.40, -0.30)       # the planted fork's butt on the floor (x, y)
 FORK_IDLE_LEAN = (5.0, 4.0)           # its lean (deg): top toward +X (him) / toward +Y (back, toward him)
 FORK_IDLE_SWAY = 0.7                  # breath sway of the planted fork about its butt (deg)
@@ -765,7 +798,9 @@ WALK_REACH = 0.975
 WALK_PELVIS = (4.0, 2.5, 0.010)       # pelvis yaw (deg), roll (deg), side sway (m) -- less hip than the vampire
 WALK_BOUNCE = 0.014                   # "bounce": extra pelvis dip at each foot contact (m)
 WALK_CHEST = (6.0, -2.0)              # chest counter-yaw (deg), chest lean (deg; < 0 = a slight forward eagerness)
-WALK_LARM = (4.0, 16.0, 14.0)         # free arm: lowered (deg), swing (deg), elbow bend (deg)
+WALK_LARM = (4.0, 20.0, 14.0)         # free arm: lowered (deg), swing (deg), elbow bend (deg). 2026-10-04: swing 16 -> 20 (both
+                                      #   arms free; measured clean through 24, crossings 0)
+WALK_RARM = (4.0, 20.0, 14.0)         # (ARMS "swing") the right arm's swing, opposite phase to the left (= to its own leg)
 FORK_WALK = {"grip": (-0.08, -0.24, -0.06), "tilt_fwd": 7.0, "tilt_out": -3.0, "swing": 2.5, "bob": 0.010}
                                       # fork carry: the grip in the chest frame relative to the right shoulder joint (m),
                                       #   shaft tilt top-forward / top-outward (deg; < 0 = the top toward him, the butt clear
@@ -809,8 +844,12 @@ RUN_LEAN = (7.0, 12.0, 0.5)           # "forward lean": pelvis tilt (deg), spine
 RUN_CHEST = 9.0                       # chest counter-yaw against the pelvis (deg; the shoulders drive the arms)
 RUN_HEAD = (4.0, 0.2)                 # head (stabilised, eyes locked ahead): world forward pitch (deg), share of the chest's
                                       #   yaw it keeps (a head bobbing with the trunk drove the fringe into the brow)
-RUN_LARM = (12.0, -12.0, 28.0, 50.0, 10.0)   # free (left) arm pump: lowered (deg), swing centre (deg, < 0 = forward),
-                                      #   swing amplitude (deg), elbow bend (deg), bend pulse (deg; closes in front)
+RUN_LARM = (12.0, -12.0, 36.0, 50.0, 10.0)   # free (left) arm pump: lowered (deg), swing centre (deg, < 0 = forward),
+                                      #   swing amplitude (deg), elbow bend (deg), bend pulse (deg; closes in front).
+                                      #   2026-10-04: amplitude 28 -> 36 (the measured clean cloak headroom: a real sprint pump)
+RUN_RARM = (12.0, -12.0, 36.0, 50.0, 10.0)   # (ARMS "swing") the right arm's pump, half a cycle from the left's
+RUN_CAPE_RARM = (0.4, 0.25, 0.0, 0.0, 0.0)   # (ARMS "swing") each cloak chain follows the RIGHT upper arm's fore-aft swing
+                                      #   by this x (RUN_CAPE_ARM's mirror: chain 0 = his right front edge)
 FORK_RUN = {"grip": (-0.08, -0.24, -0.04), "pump": (0.02, 0.005), "tilt_fwd": 9.0, "tilt_out": 0.0, "swing": 3.0}
                                       # fork carry at a sprint = the walk's convention (carried upright at his right side,
                                       #   the right hand at chest height) leaned into the run: the grip in the chest frame

@@ -85,7 +85,9 @@ if (-not $SkipBuild) {
   $line; $hline; "$line | build_wall_s=$bwall`r`n$hline" | Out-File -Encoding utf8 "$I\log_wren_digest.txt"
   # 2026-10-04 (review-log "Wren in-game verdicts"): the run knee-drive solve + the glb loop-key gate (t0 = 0, the true
   # period, both boundary intervals moving -- the doubled-leading-key class)
-  (Get-Content "$I\log_wren_build.txt" | Select-String "^(RUNKNEE|GLBLOOP) ").Line
+  # 2026-10-04 (review-log "Wren posture verdicts"): + the posture report (front-view hip-knee-ankle alignment, joint
+  # spacings, both arms' swing + phase per clip)
+  (Get-Content "$I\log_wren_build.txt" | Select-String "^(RUNKNEE|GLBLOOP|POSTURE) ").Line
 }
 $RB = "`"$P\rigged\wren.blend`""
 $RW = "`"$P\rigged\wren__winter.blend`""

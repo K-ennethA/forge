@@ -6,9 +6,9 @@
   "max_influences": 4,
   "unweighted": 0,
   "sum_dev_max": 3.3306690738754696e-16,
-  "seconds": 0.4,
+  "seconds": 0.6,
   "pitchfork_object": "none (HAS_FORK False)",
-  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. weight-source knobs (2026-10-03 staged, 2026-10-04 ON with the trunk-fitted sash / pouch, s3 SASH_SOURCE): TORSO_HUNG parts (sash, knot, pouch, pouchflap, pouchbutton) copy from the TRUNK faces only (no arm-chain source); the cloak's forearm coupling fades elbow -> wrist to CLOAK_FOREARM's wrist share (l 0.50 / r 0.50; 1.0 = v6.1) and its side panels at the sash line hang part from the hip (CLOAK_HIP l 0.00 / r 0.00)",
+  "rule": "body: MPFB game_engine weights (Root -> pelvis); boot shafts / cuffs, trouser blouse, sash wraps, sleeve rolls, bracer + straps, cord: the MPFB weights of the nearest skin point (barycentric); boot foot shells / soles / straps: foot, blending to ball ahead of the ball line; rivets / buckles (foot) / knot / pouch / crystals / clasp: rigid at their centroid's skin weights; tunic tails: pelvis at the top blending to the skin under the hem (<= 55 %); cowl: the skin weights with head / half the neck moved to spine_03; eyes / cap / back + crown locks / cowlick / tail tie: head; fringe / side / tail locks: head until their chain takes over, then rigkit.vine_weights; ties: pelvis -> tie.0/1; cloak + hood + stitches: across-hat between the 5 chains x along-hat down each. weight-source knobs (2026-10-03 staged, 2026-10-04 ON with the trunk-fitted sash / pouch, s3 SASH_SOURCE): TORSO_HUNG parts (sash, knot, pouch, pouchflap, pouchbutton) copy from the TRUNK faces only (no arm-chain source); the cloak's forearm coupling fades elbow -> wrist to CLOAK_FOREARM's wrist share (l 0.00 / r 0.00; 1.0 = v6.1) and its side panels at the sash line hang part from the hip (CLOAK_HIP l 0.00 / r 0.00)",
   "weight_sources": {
    "torso_hung_parts": [
     "sash",
@@ -18,8 +18,8 @@
     "pouchbutton"
    ],
    "torso_hung_arm_chain_weight_max": 0.0,
-   "cloak_verts_forearm_hand_weight": 310,
-   "cloak_verts_left_arm_weight": 299,
+   "cloak_verts_forearm_hand_weight": 217,
+   "cloak_verts_left_arm_weight": 229,
    "cloak_left_arm_weight_max": 0.979
   }
  },
@@ -292,7 +292,170 @@
     }
    }
   },
-  "seconds": 0.2
+  "seconds": 0.3
+ },
+ "posture": {
+  "rule": "per clip over the keyed frames: the hip -> knee -> ankle alignment in the FRONT view (x lateral, z up; + = outward, his own side) -- the hip -> ankle line's angle from vertical, the thigh / shin angles (stance frames: the foot down), the knee's offset off the hip -> ankle line, the leg plane's yaw off the foot's heading (bent frames: knee >= 30 mm off the line), the joint spacings -- and both upper arms' fore-aft swing (deg past rest, relative to the chest, + = forward) with their phase correlation (-1 = opposite phase).",
+  "knobs": {
+   "LEG_TRACK": {
+    "idle": 1.06,
+    "walk": 1.0,
+    "run": 0.95
+   },
+   "KNEE_POLE": "toes",
+   "TOE_OUT_FIX": true,
+   "ARMS": "swing",
+   "IDLE_REACH": 0.99
+  },
+  "per_clip_min_max": {
+   "idle": {
+    "line": [
+     -1.1,
+     1.9
+    ],
+    "thigh": [
+     -0.2,
+     2.9
+    ],
+    "shin": [
+     -1.9,
+     1.0
+    ],
+    "knee_off": [
+     6.2,
+     7.8
+    ],
+    "plane_yaw": [
+     -0.1,
+     0.0
+    ],
+    "sep_ankle": [
+     216.6,
+     216.6
+    ],
+    "sep_knee": [
+     222.9,
+     225.2
+    ],
+    "sep_hip": [
+     204.0,
+     204.1
+    ],
+    "arm_swing_deg": {
+     "L": [
+      -4.5,
+      -1.5
+     ],
+     "R": [
+      -4.5,
+      -1.5
+     ],
+     "ptp_L_R": [
+      3.0,
+      3.0
+     ],
+     "phase_corr": -1.0
+    }
+   },
+   "walk": {
+    "line": [
+     -0.7,
+     0.8
+    ],
+    "thigh": [
+     0.3,
+     2.3
+    ],
+    "shin": [
+     -2.0,
+     -1.0
+    ],
+    "knee_off": [
+     6.6,
+     14.6
+    ],
+    "plane_yaw": [
+     -0.0,
+     0.3
+    ],
+    "sep_ankle": [
+     203.5,
+     207.5
+    ],
+    "sep_knee": [
+     219.0,
+     228.0
+    ],
+    "sep_hip": [
+     203.8,
+     204.2
+    ],
+    "arm_swing_deg": {
+     "L": [
+      -20.0,
+      20.0
+     ],
+     "R": [
+      -20.0,
+      20.0
+     ],
+     "ptp_L_R": [
+      40.0,
+      40.0
+     ],
+     "phase_corr": -1.0
+    }
+   },
+   "run": {
+    "line": [
+     -0.8,
+     1.4
+    ],
+    "thigh": [
+     0.0,
+     0.9
+    ],
+    "shin": [
+     -2.1,
+     -1.2
+    ],
+    "knee_off": [
+     3.8,
+     20.3
+    ],
+    "plane_yaw": [
+     -0.0,
+     0.9
+    ],
+    "sep_ankle": [
+     195.7,
+     204.8
+    ],
+    "sep_knee": [
+     219.5,
+     231.8
+    ],
+    "sep_hip": [
+     202.8,
+     204.1
+    ],
+    "arm_swing_deg": {
+     "L": [
+      -23.4,
+      47.4
+     ],
+     "R": [
+      -23.4,
+      47.4
+     ],
+     "ptp_L_R": [
+      70.7,
+      70.7
+     ],
+     "phase_corr": -1.0
+    }
+   }
+  }
  },
  "clips": {
   "idle": {
@@ -306,7 +469,7 @@
    "seam_main_mm": 0.0,
    "min_z_main": -0.0,
    "root_offset_max": 0.0,
-   "right_wrist_bend_max_deg": 44.21,
+   "right_wrist_bend_max_deg": 0.0,
    "ik_unreachable_max_m": {
     "L": 0.0,
     "R": 0.0,
@@ -319,19 +482,19 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.0696
+    "cloak_to_legs_min_m": 0.0714
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
-     0.2772,
-     0.2724
+     0.1412,
+     0.1571
     ],
-    "step_median_deg": 0.2479,
+    "step_median_deg": 0.1879,
     "boundary_motion_ok": true,
     "pose_delta_deg_max": 0.0,
     "loc_delta_m_max": 0.0,
     "ang_vel_jump_at_seam_deg_per_frame": 0.0571,
-    "ang_vel_change_interior_max_deg_per_frame": 0.1959
+    "ang_vel_change_interior_max_deg_per_frame": 0.1643
    },
    "feet_planted": {
     "L": {
@@ -369,7 +532,7 @@
    "seam_main_mm": 0.0,
    "min_z_main": -0.0,
    "root_offset_max": 0.0,
-   "right_wrist_bend_max_deg": 47.66,
+   "right_wrist_bend_max_deg": 0.0,
    "ik_unreachable_max_m": {
     "L": 0.0,
     "R": 0.0,
@@ -382,19 +545,19 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.1144
+    "cloak_to_legs_min_m": 0.1037
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
      12.4544,
-     10.2175
+     10.4225
     ],
-    "step_median_deg": 6.225,
+    "step_median_deg": 6.2304,
     "boundary_motion_ok": true,
     "pose_delta_deg_max": 0.0,
     "loc_delta_m_max": 0.0,
-    "ang_vel_jump_at_seam_deg_per_frame": 11.1707,
-    "ang_vel_change_interior_max_deg_per_frame": 12.8358
+    "ang_vel_jump_at_seam_deg_per_frame": 11.2075,
+    "ang_vel_change_interior_max_deg_per_frame": 12.5328
    },
    "gait": {
     "L": {
@@ -450,7 +613,7 @@
    "seam_main_mm": 0.0,
    "min_z_main": -0.0,
    "root_offset_max": 0.0,
-   "right_wrist_bend_max_deg": 43.92,
+   "right_wrist_bend_max_deg": 0.0,
    "ik_unreachable_max_m": {
     "L": 0.0,
     "R": 0.0,
@@ -463,19 +626,19 @@
     "cloak_crossings_legs": 0,
     "cloak_crossings_torso_outfit": 0,
     "hair_into_skin_verts_max": 0,
-    "cloak_to_legs_min_m": 0.0899
+    "cloak_to_legs_min_m": 0.0464
    },
    "seam_joints": {
     "boundary_step_deg_first_last": [
-     29.5641,
-     36.6517
+     29.7253,
+     36.5158
     ],
-    "step_median_deg": 36.7917,
+    "step_median_deg": 36.6111,
     "boundary_motion_ok": true,
     "pose_delta_deg_max": 0.0,
     "loc_delta_m_max": 0.0,
-    "ang_vel_jump_at_seam_deg_per_frame": 40.5525,
-    "ang_vel_change_interior_max_deg_per_frame": 76.6931
+    "ang_vel_jump_at_seam_deg_per_frame": 40.1303,
+    "ang_vel_change_interior_max_deg_per_frame": 76.4761
    },
    "gait": {
     "L": {
@@ -491,11 +654,11 @@
       0.0
      ],
      "lateral_x_drift": 1e-06,
-     "slip_vs_ground_m": 1e-06,
+     "slip_vs_ground_m": 0.0,
      "sole_min_z_m": -0.0,
      "boot_min_z_m": -0.0,
-     "swing_sole_min_z_m": 0.0128,
-     "swing_sole_max_z_m": 0.312,
+     "swing_sole_min_z_m": 0.0129,
+     "swing_sole_max_z_m": 0.3077,
      "heel_z_range_stance": [
       0.0127,
       0.134
@@ -517,8 +680,8 @@
      "slip_vs_ground_m": 1e-06,
      "sole_min_z_m": -0.0,
      "boot_min_z_m": -0.0,
-     "swing_sole_min_z_m": 0.0128,
-     "swing_sole_max_z_m": 0.312,
+     "swing_sole_min_z_m": 0.0129,
+     "swing_sole_max_z_m": 0.3077,
      "heel_z_range_stance": [
       0.0127,
       0.134
@@ -531,7 +694,7 @@
     11,
     12
    ],
-   "airborne_min_sole_clearance_m": 0.0128,
+   "airborne_min_sole_clearance_m": 0.0129,
    "cadence_steps_per_min": 240.0,
    "step_seconds": 0.25,
    "game_cells_per_step_at_0.12s": 2.083,
@@ -548,8 +711,8 @@
     "rule": "peak thigh (hip joint -> knee, world) angle below horizontal over the keyed frames (dense = 20x sampled); the knee-drive key's ball height solved to RUN_KNEE_DRIVE_DEG",
     "target_deg": 25.0,
     "v1": {
-     "keyed_deg": -0.28,
-     "dense_deg": -0.59,
+     "keyed_deg": -2.09,
+     "dense_deg": -2.39,
      "dy_z_drive_m": [
       -0.2,
       0.42
@@ -557,9 +720,9 @@
     },
     "solved": {
      "dy_drive_m": -0.08,
-     "z_drive_m": 0.29891,
+     "z_drive_m": 0.28673,
      "keyed_deg": 25.0,
-     "dense_deg": 24.76
+     "dense_deg": 24.47
     }
    },
    "rule": "zero-slip: through each stance the toe-sole contact vertex (ball-bone dominant; the ball joint is the pinned pivot, the toes stay flat) moves back at exactly the ground speed = stance travel / stance time; stride = ground speed x cycle; airborne = both soles above 1 mm"
@@ -1975,7 +2138,7 @@
  "bone_count": 93,
  "deform_bone_count": 92,
  "grip": {
-  "rule": "no prop (HAS_FORK False, review-log 2026-10-03): the right arm keeps the approved carry path (the hand frame the fork grip drove, roll search unchanged); the right fingers take the clip's left-hand pose (2026-10-04: both hands from CLIP_HANDS / HAND_POSES)",
+  "rule": "no prop (HAS_FORK False, review-log 2026-10-03): both arms swing free (ARMS 'swing', review-log 2026-10-04 'Wren posture verdicts'); the fork carry path is unused (roll search inert); the right fingers take the clip's left-hand pose (2026-10-04: both hands from CLIP_HANDS / HAND_POSES)",
   "clip_hands": {
    "idle": [
     "fist",
@@ -2041,16 +2204,16 @@
   },
   "fork_roll_search": {
    "idle": {
-    "roll_deg": 280,
-    "wrist_bend_deg_at_t0": 41.42
+    "roll_deg": 0,
+    "wrist_bend_deg_at_t0": 0.0
    },
    "walk": {
-    "roll_deg": 270,
-    "wrist_bend_deg_at_t0": 46.83
+    "roll_deg": 0,
+    "wrist_bend_deg_at_t0": 0.0
    },
    "run": {
-    "roll_deg": 270,
-    "wrist_bend_deg_at_t0": 39.89
+    "roll_deg": 0,
+    "wrist_bend_deg_at_t0": 0.0
    }
   }
  },
@@ -2066,21 +2229,21 @@
   "parts": {
    "hair_geometry": "a99447b48c4af4be",
    "mouth_proxy_core": "85819b2cf622600f",
-   "bake_normal": "98d077b9999bae7e",
+   "bake_normal": "b682169beb20fdc3",
    "bake_ao": "b3bdd6119260b3a4",
    "ao_lifted": "c03431a22196c799",
    "hair_custom_normals": "2476f1c128e8ded9",
    "geometry_colour_uv": "c898b9d896f584cf",
-   "weights": "698568cab845a0cc",
-   "keys": "b78a6ee980c7ee35",
-   "clip_samples": "3db3ddb69888deb3"
+   "weights": "303e6fd7fba467fa",
+   "keys": "540a77997f223150",
+   "clip_samples": "633bfc567899eae2"
   },
-  "combined": "c76e46bbcc5c4b6f"
+  "combined": "ea6a0ec986fd6421"
  },
  "glb": {
   "path": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\rigged\\wren.glb",
-  "bytes": 11930076,
-  "seconds": 1.5,
+  "bytes": 11923464,
+  "seconds": 1.9,
   "carries": {
    "materials": [
     {
@@ -2125,11 +2288,11 @@
     "t_last_s": 4.0,
     "period_s": 4.0,
     "boundary_step_deg_first_last": [
-     0.2741,
-     0.2704
+     0.14,
+     0.156
     ],
-    "step_median_deg": 0.2475,
-    "closing_key_dev_deg": 0.0389,
+    "step_median_deg": 0.1848,
+    "closing_key_dev_deg": 0.0376,
     "pass": true
    },
    "run": {
@@ -2138,11 +2301,11 @@
     "t_last_s": 0.5,
     "period_s": 0.5,
     "boundary_step_deg_first_last": [
-     29.5641,
-     36.6517
+     29.7253,
+     36.5158
     ],
-    "step_median_deg": 36.7917,
-    "closing_key_dev_deg": 0.047,
+    "step_median_deg": 36.611,
+    "closing_key_dev_deg": 0.0509,
     "pass": true
    },
    "walk": {
@@ -2152,10 +2315,10 @@
     "period_s": 1.083333,
     "boundary_step_deg_first_last": [
      12.4543,
-     10.2174
+     10.4226
     ],
-    "step_median_deg": 6.225,
-    "closing_key_dev_deg": 0.0255,
+    "step_median_deg": 6.2303,
+    "closing_key_dev_deg": 0.0326,
     "pass": true
    }
   }
@@ -3011,5 +3174,5 @@
   }
  },
  "improved_report": "C:\\Users\\kenne\\OneDrive\\Desktop\\git\\forge\\projects\\conquest-units\\improved\\wren.json",
- "seconds": 85.1
+ "seconds": 119.4
 }

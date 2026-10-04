@@ -74,7 +74,23 @@
   to float noise (non-cape <= 4.8e-7, cape chains <= 8.3e-5 quat: the cloak rest drape moved <= 1.26 mm off the old rope
   loop) -- NOT byte-identical; byte-identical needs an s6 SHIFT pin (outside the lane). Renders:
   renders/wren/wren_pouch_{walk7,idle_run}_before_after.png, wren_pouch_look_front_tq.png (artist veto sheet).
-- **Key knobs:** SASH_SOURCE / TORSO_HUNG / CLOAK_FOREARM / HUNG_LEG_SHARE, HAND_POSES / CLIP_HANDS / FIST_*, RUN_KNEE_DRIVE_DEG, HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
+- **Posture rework (2026-10-04, review-log "Wren posture verdicts" + 2 leg markups, pending commit):** KNOCK-KNEE root cause
+  = the IK stance targets shared by all clips (rest pose and keys innocent; rest valgus 1.5 deg): (a) toe-out yaw applied
+  with the wrong sign -> feet toed IN 9/11 idle, 4 walk, 3 run deg, (b) knee pole = rest knee dir (9 deg inward) turned with
+  the foot, (c) ankles on the rest A-stance spots (idle 432 / walk 347 mm apart under 204 mm hips). Measured v-prior valgus:
+  idle 8-10 deg (knee 30-37 mm inside the hip-ankle line), walk 6-16, run up to 52 (knees 110 mm apart, 202 leg-leg edge
+  crossings). Fix: TOE_OUT_FIX, KNEE_POLE "toes" (knee over its toes), LEG_TRACK {idle 1.06, walk 1.0, run 0.95} x hip half
+  spacing, IDLE_REACH 0.975 -> 0.99, idle toe-out 5/6. Now: hip-ankle line within -1.1..1.9 deg of vertical all clips, stance
+  thigh/shin |angle| <= 2.9, knee plane yaw <= 0.9 deg off the toes, ankle sep idle 217 / walk 204-208 / run 196-205 mm,
+  leg-leg crossings 0. ARMS "swing": idle both arms relaxed at the sides (fists; the carry/strap-hold path retired), walk
+  +-20 both (WALK_LARM/RARM), run pump 36 both (RUN_LARM/RARM, ptp 70.7), phase corr -1.0; RUN_CAPE_RARM mirrors the cape
+  arm-follow. CLOAK_FOREARM wrist share 0.5 -> 0.0 (0.5 = run torso crossings 27 with the right arm swinging). Cloak
+  crossings 0 every group every clip; headroom: walk clean to 24, run first crossings at 40 (torso 5). Strides UNCHANGED
+  (walk 0.81 m / 1.0833 s, run 2.333 m / 0.5 s), run slip 1e-6, airborne f5-6/f11-12 clearance 12.9 mm, knee drive 25.
+  v-prior reproduced by --set (wren_build.py comment; every digest part but bake_normal). New report block rep["posture"]
+  + POSTURE log line. Renders: renders/wren/wren_posture_{idle,walk,run}_before_after.png, wren_run_preview.png (refreshed;
+  old = wren_posture_run_preview_before.png).
+- **Key knobs:** LEG_TRACK / KNEE_POLE / TOE_OUT_FIX / ARMS / IDLE_RARM / WALK_RARM / RUN_RARM / RUN_CAPE_RARM, SASH_SOURCE / TORSO_HUNG / CLOAK_FOREARM / HUNG_LEG_SHARE, HAND_POSES / CLIP_HANDS / FIST_*, RUN_KNEE_DRIVE_DEG, HAS_FORK, HAIR_NORMAL_CARRIER, EYE_SCALE, LIP_* / MOUTH_* (seal, smirk, smooth, proxy), RIBBON_* /
   LAYER_* (hair), HAIR_INTERIOR_R, NEAREST_TIE. All top-of-file in wren_build.py.
 - **Unit gates beyond the contract:** face probe (under-eye/mouth numbers), mouth
   probe (second-feature traces), hair diag (interpenetration/kinks), HAIRSTABLE,
@@ -86,8 +102,8 @@
   muzzle side-to-side wrap (open artist question).
 - **Open artist questions:** smirk strength/side; under-lip shading absent (confirm);
   hair paint tiers vs one-tone; lock count increase; back-lock length; winter
-  angel-ring tint; run: arm pump amplitude (capped by the cloak drape), cloak trail; the empty right arm (keep the carry
-  path vs a free swing); the weapon design (HAS_FORK machinery re-usable).
+  angel-ring tint; run: cloak trail; the weapon design (HAS_FORK machinery re-usable). (ANSWERED 2026-10-04: the empty
+  right arm = free swing; run pump = 36 deg, both arms.)
 - **Stale items fixed 2026-10-03:** s8 conquest_look string follows HAIR_NORMAL_CARRIER; wren_run.ps1 reads the hair-normal
   bake pair only when this build wrote it; wren_render.py '--hair-normal-flat' retired.
 
